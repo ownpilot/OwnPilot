@@ -129,14 +129,14 @@ describe('analyzeCodeRisk', () => {
       // process.env score is 25, which is >= 15 (medium) but < 30 (high)
       expect(result.score).toBe(25);
       expect(result.blocked).toBe(false);
-      expect(result.factors.some(f => f.description.includes('Environment variable'))).toBe(true);
+      expect(result.factors.some((f) => f.description.includes('Environment variable'))).toBe(true);
     });
 
     it('detects child_process require in JavaScript', () => {
       const result = analyzeCodeRisk('const cp = require("child_process");', 'javascript');
       expect(result.score).toBe(30);
       expect(result.level).toBe('high');
-      expect(result.factors.some(f => f.description.includes('Child process'))).toBe(true);
+      expect(result.factors.some((f) => f.description.includes('Child process'))).toBe(true);
     });
 
     it('detects child_process import in JavaScript', () => {
@@ -149,7 +149,7 @@ describe('analyzeCodeRisk', () => {
       const result = analyzeCodeRisk('import subprocess\nsubprocess.run(["ls"])', 'python');
       expect(result.score).toBeGreaterThanOrEqual(30);
       expect(result.level).toBe('high');
-      expect(result.factors.some(f => f.description.includes('Subprocess'))).toBe(true);
+      expect(result.factors.some((f) => f.description.includes('Subprocess'))).toBe(true);
     });
 
     it('detects os.system in Python', () => {
@@ -166,7 +166,9 @@ describe('analyzeCodeRisk', () => {
     it('detects eval() in JavaScript', () => {
       const result = analyzeCodeRisk('eval("alert(1)")', 'javascript');
       expect(result.score).toBe(25);
-      expect(result.factors.some(f => f.description.includes('Dynamic code evaluation'))).toBe(true);
+      expect(result.factors.some((f) => f.description.includes('Dynamic code evaluation'))).toBe(
+        true
+      );
     });
 
     it('detects eval() in Python', () => {
@@ -177,32 +179,36 @@ describe('analyzeCodeRisk', () => {
     it('detects exec() in JavaScript', () => {
       const result = analyzeCodeRisk('exec("some code")', 'javascript');
       expect(result.score).toBe(25);
-      expect(result.factors.some(f => f.description.includes('Dynamic code execution'))).toBe(true);
+      expect(result.factors.some((f) => f.description.includes('Dynamic code execution'))).toBe(
+        true
+      );
     });
 
     it('detects fs write operations in JavaScript', () => {
       const result = analyzeCodeRisk('fs.writeFile("/tmp/out.txt", data)', 'javascript');
-      expect(result.factors.some(f => f.description.includes('Filesystem write'))).toBe(true);
+      expect(result.factors.some((f) => f.description.includes('Filesystem write'))).toBe(true);
     });
 
     it('detects fs.unlink in JavaScript', () => {
       const result = analyzeCodeRisk('fs.unlink("/tmp/file.txt")', 'javascript');
-      expect(result.factors.some(f => f.description.includes('Filesystem write'))).toBe(true);
+      expect(result.factors.some((f) => f.description.includes('Filesystem write'))).toBe(true);
     });
 
     it('detects file write mode in Python', () => {
       const result = analyzeCodeRisk('open("/tmp/out.txt", "w")', 'python');
-      expect(result.factors.some(f => f.description.includes('File write mode'))).toBe(true);
+      expect(result.factors.some((f) => f.description.includes('File write mode'))).toBe(true);
     });
 
     it('detects shutil operations in Python', () => {
       const result = analyzeCodeRisk('shutil.rmtree("/tmp/dir")', 'python');
-      expect(result.factors.some(f => f.description.includes('File system manipulation'))).toBe(true);
+      expect(result.factors.some((f) => f.description.includes('File system manipulation'))).toBe(
+        true
+      );
     });
 
     it('detects ctypes in Python', () => {
       const result = analyzeCodeRisk('import ctypes', 'python');
-      expect(result.factors.some(f => f.description.includes('C-level API'))).toBe(true);
+      expect(result.factors.some((f) => f.description.includes('C-level API'))).toBe(true);
     });
   });
 
@@ -211,7 +217,7 @@ describe('analyzeCodeRisk', () => {
       const result = analyzeCodeRisk('fetch("https://api.example.com")', 'javascript');
       expect(result.score).toBe(15);
       expect(result.level).toBe('medium');
-      expect(result.factors.some(f => f.description.includes('Network request'))).toBe(true);
+      expect(result.factors.some((f) => f.description.includes('Network request'))).toBe(true);
     });
 
     it('detects requests.get in Python', () => {
@@ -228,53 +234,53 @@ describe('analyzeCodeRisk', () => {
     it('detects curl in shell', () => {
       const result = analyzeCodeRisk('curl https://example.com', 'shell');
       expect(result.level).toBe('medium');
-      expect(result.factors.some(f => f.description.includes('curl'))).toBe(true);
+      expect(result.factors.some((f) => f.description.includes('curl'))).toBe(true);
     });
 
     it('detects wget in shell', () => {
       const result = analyzeCodeRisk('wget https://example.com/file.tar.gz', 'shell');
       expect(result.level).toBe('medium');
-      expect(result.factors.some(f => f.description.includes('wget'))).toBe(true);
+      expect(result.factors.some((f) => f.description.includes('wget'))).toBe(true);
     });
 
     it('detects fs require in JavaScript', () => {
       const result = analyzeCodeRisk('const fs = require("fs");', 'javascript');
-      expect(result.factors.some(f => f.description.includes('Filesystem module'))).toBe(true);
+      expect(result.factors.some((f) => f.description.includes('Filesystem module'))).toBe(true);
     });
 
     it('detects fs import in JavaScript', () => {
       const result = analyzeCodeRisk('import fs from "fs";', 'javascript');
-      expect(result.factors.some(f => f.description.includes('Filesystem import'))).toBe(true);
+      expect(result.factors.some((f) => f.description.includes('Filesystem import'))).toBe(true);
     });
 
     it('detects socket operations', () => {
       const result = analyzeCodeRisk('const s = new socket()', 'javascript');
-      expect(result.factors.some(f => f.description.includes('Socket'))).toBe(true);
+      expect(result.factors.some((f) => f.description.includes('Socket'))).toBe(true);
     });
 
     it('detects npm install in shell', () => {
       const result = analyzeCodeRisk('npm install malicious-package', 'shell');
-      expect(result.factors.some(f => f.description.includes('Package installation'))).toBe(true);
+      expect(result.factors.some((f) => f.description.includes('Package installation'))).toBe(true);
     });
 
     it('detects pip install in shell', () => {
       const result = analyzeCodeRisk('pip install some-package', 'shell');
-      expect(result.factors.some(f => f.description.includes('Pip installation'))).toBe(true);
+      expect(result.factors.some((f) => f.description.includes('Pip installation'))).toBe(true);
     });
 
     it('detects sudo in shell', () => {
       const result = analyzeCodeRisk('sudo apt-get update', 'shell');
-      expect(result.factors.some(f => f.description.includes('Superuser'))).toBe(true);
+      expect(result.factors.some((f) => f.description.includes('Superuser'))).toBe(true);
     });
 
     it('detects chmod in shell', () => {
       const result = analyzeCodeRisk('chmod +x script.sh', 'shell');
-      expect(result.factors.some(f => f.description.includes('Permission change'))).toBe(true);
+      expect(result.factors.some((f) => f.description.includes('Permission change'))).toBe(true);
     });
 
     it('detects chown in shell', () => {
       const result = analyzeCodeRisk('chown root:root file.txt', 'shell');
-      expect(result.factors.some(f => f.description.includes('Ownership change'))).toBe(true);
+      expect(result.factors.some((f) => f.description.includes('Ownership change'))).toBe(true);
     });
   });
 
@@ -287,44 +293,44 @@ describe('analyzeCodeRisk', () => {
       const result = analyzeCodeRisk('console.log("hello")', 'javascript');
       expect(result.level).toBe('safe'); // score 0 => safe level
       expect(result.score).toBe(0);
-      expect(result.factors.some(f => f.description.includes('Console output'))).toBe(true);
-      expect(result.factors.some(f => f.severity === 'low')).toBe(true);
+      expect(result.factors.some((f) => f.description.includes('Console output'))).toBe(true);
+      expect(result.factors.some((f) => f.severity === 'low')).toBe(true);
     });
 
     it('detects console.warn in JavaScript', () => {
       const result = analyzeCodeRisk('console.warn("warning")', 'javascript');
-      expect(result.factors.some(f => f.description.includes('Console output'))).toBe(true);
+      expect(result.factors.some((f) => f.description.includes('Console output'))).toBe(true);
     });
 
     it('detects console.error in JavaScript', () => {
       const result = analyzeCodeRisk('console.error("error")', 'javascript');
-      expect(result.factors.some(f => f.description.includes('Console output'))).toBe(true);
+      expect(result.factors.some((f) => f.description.includes('Console output'))).toBe(true);
     });
 
     it('detects print() in Python', () => {
       const result = analyzeCodeRisk('print("hello")', 'python');
       expect(result.level).toBe('safe'); // score 0 => safe level
       expect(result.score).toBe(0);
-      expect(result.factors.some(f => f.description.includes('Print output'))).toBe(true);
+      expect(result.factors.some((f) => f.description.includes('Print output'))).toBe(true);
     });
 
     it('detects echo in shell', () => {
       const result = analyzeCodeRisk('echo hello', 'shell');
       expect(result.level).toBe('safe'); // score 0 => safe level
       expect(result.score).toBe(0);
-      expect(result.factors.some(f => f.description.includes('Echo output'))).toBe(true);
+      expect(result.factors.some((f) => f.description.includes('Echo output'))).toBe(true);
     });
 
     it('detects JSON operations in JavaScript', () => {
       const result = analyzeCodeRisk('JSON.parse(data)', 'javascript');
       expect(result.level).toBe('safe'); // score 0 => safe level
-      expect(result.factors.some(f => f.description.includes('JSON operation'))).toBe(true);
+      expect(result.factors.some((f) => f.description.includes('JSON operation'))).toBe(true);
     });
 
     it('detects Math operations in JavaScript', () => {
       const result = analyzeCodeRisk('Math.floor(3.7)', 'javascript');
       expect(result.level).toBe('safe'); // score 0 => safe level
-      expect(result.factors.some(f => f.description.includes('Math operation'))).toBe(true);
+      expect(result.factors.some((f) => f.description.includes('Math operation'))).toBe(true);
     });
 
     it('low risk factors have score 0 but still appear in factors array', () => {
@@ -459,99 +465,107 @@ describe('analyzeCodeRisk', () => {
     it('does not match Python subprocess pattern in JavaScript', () => {
       const result = analyzeCodeRisk('subprocess.run(["ls"])', 'javascript');
       // subprocess is Python-only, should not appear in JS factors
-      expect(result.factors.some(f => f.description.includes('Subprocess'))).toBe(false);
+      expect(result.factors.some((f) => f.description.includes('Subprocess'))).toBe(false);
     });
 
     it('does not match JavaScript process.env in Python', () => {
       const result = analyzeCodeRisk('const key = process.env.SECRET;', 'python');
-      expect(result.factors.some(f => f.description.includes('Environment variable'))).toBe(false);
+      expect(result.factors.some((f) => f.description.includes('Environment variable'))).toBe(
+        false
+      );
     });
 
     it('does not match JavaScript process.env in shell', () => {
       const result = analyzeCodeRisk('process.env.HOME', 'shell');
-      expect(result.factors.some(f => f.description.includes('Environment variable'))).toBe(false);
+      expect(result.factors.some((f) => f.description.includes('Environment variable'))).toBe(
+        false
+      );
     });
 
     it('does not match shell curl in JavaScript', () => {
       const result = analyzeCodeRisk('curl https://example.com', 'javascript');
-      expect(result.factors.some(f => f.description.includes('curl'))).toBe(false);
+      expect(result.factors.some((f) => f.description.includes('curl'))).toBe(false);
     });
 
     it('does not match shell curl in Python', () => {
       const result = analyzeCodeRisk('curl https://example.com', 'python');
-      expect(result.factors.some(f => f.description.includes('curl'))).toBe(false);
+      expect(result.factors.some((f) => f.description.includes('curl'))).toBe(false);
     });
 
     it('does not match Python requests.get in JavaScript', () => {
       const result = analyzeCodeRisk('requests.get("https://example.com")', 'javascript');
-      expect(result.factors.some(f => f.description.includes('HTTP request'))).toBe(false);
+      expect(result.factors.some((f) => f.description.includes('HTTP request'))).toBe(false);
     });
 
     it('does not match JavaScript console.log in Python', () => {
       const result = analyzeCodeRisk('console.log("test")', 'python');
-      expect(result.factors.some(f => f.description.includes('Console output'))).toBe(false);
+      expect(result.factors.some((f) => f.description.includes('Console output'))).toBe(false);
     });
 
     it('does not match shell echo in JavaScript', () => {
       const result = analyzeCodeRisk('echo hello', 'javascript');
-      expect(result.factors.some(f => f.description.includes('Echo output'))).toBe(false);
+      expect(result.factors.some((f) => f.description.includes('Echo output'))).toBe(false);
     });
 
     it('matches cross-language patterns (eval in both JS and Python)', () => {
       const jsResult = analyzeCodeRisk('eval("code")', 'javascript');
       const pyResult = analyzeCodeRisk('eval("code")', 'python');
-      expect(jsResult.factors.some(f => f.description.includes('Dynamic code evaluation'))).toBe(true);
-      expect(pyResult.factors.some(f => f.description.includes('Dynamic code evaluation'))).toBe(true);
+      expect(jsResult.factors.some((f) => f.description.includes('Dynamic code evaluation'))).toBe(
+        true
+      );
+      expect(pyResult.factors.some((f) => f.description.includes('Dynamic code evaluation'))).toBe(
+        true
+      );
     });
 
     it('matches socket pattern in both JavaScript and Python', () => {
       const jsResult = analyzeCodeRisk('new socket()', 'javascript');
       const pyResult = analyzeCodeRisk('socket.connect()', 'python');
-      expect(jsResult.factors.some(f => f.description.includes('Socket'))).toBe(true);
-      expect(pyResult.factors.some(f => f.description.includes('Socket'))).toBe(true);
+      expect(jsResult.factors.some((f) => f.description.includes('Socket'))).toBe(true);
+      expect(pyResult.factors.some((f) => f.description.includes('Socket'))).toBe(true);
     });
   });
 
   describe('shell-specific patterns', () => {
     it('detects curl command', () => {
       const result = analyzeCodeRisk('curl -X POST https://api.com/data', 'shell');
-      expect(result.factors.some(f => f.description.includes('curl'))).toBe(true);
+      expect(result.factors.some((f) => f.description.includes('curl'))).toBe(true);
     });
 
     it('detects wget command', () => {
       const result = analyzeCodeRisk('wget -q https://releases.example.com/v2.tar.gz', 'shell');
-      expect(result.factors.some(f => f.description.includes('wget'))).toBe(true);
+      expect(result.factors.some((f) => f.description.includes('wget'))).toBe(true);
     });
 
     it('detects npm install', () => {
       const result = analyzeCodeRisk('npm install express', 'shell');
-      expect(result.factors.some(f => f.description.includes('Package installation'))).toBe(true);
+      expect(result.factors.some((f) => f.description.includes('Package installation'))).toBe(true);
     });
 
     it('detects npm i shorthand', () => {
       const result = analyzeCodeRisk('npm i lodash', 'shell');
-      expect(result.factors.some(f => f.description.includes('Package installation'))).toBe(true);
+      expect(result.factors.some((f) => f.description.includes('Package installation'))).toBe(true);
     });
 
     it('detects pip install', () => {
       const result = analyzeCodeRisk('pip install numpy', 'shell');
-      expect(result.factors.some(f => f.description.includes('Pip installation'))).toBe(true);
+      expect(result.factors.some((f) => f.description.includes('Pip installation'))).toBe(true);
     });
 
     it('detects sudo command', () => {
       const result = analyzeCodeRisk('sudo systemctl restart nginx', 'shell');
-      expect(result.factors.some(f => f.description.includes('Superuser'))).toBe(true);
+      expect(result.factors.some((f) => f.description.includes('Superuser'))).toBe(true);
       expect(result.score).toBe(20);
     });
 
     it('detects chmod command', () => {
       const result = analyzeCodeRisk('chmod 755 deploy.sh', 'shell');
-      expect(result.factors.some(f => f.description.includes('Permission change'))).toBe(true);
+      expect(result.factors.some((f) => f.description.includes('Permission change'))).toBe(true);
     });
 
     it('detects chown command', () => {
       const result = analyzeCodeRisk('chown www-data:www-data /var/www', 'shell');
-      expect(result.factors.some(f => f.description.includes('Ownership change'))).toBe(true);
+      expect(result.factors.some((f) => f.description.includes('Ownership change'))).toBe(true);
     });
 
     it('accumulates multiple shell risks', () => {

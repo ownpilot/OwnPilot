@@ -87,7 +87,9 @@ class ComposioService {
 
     const apiKey = this.getApiKey();
     if (!apiKey) {
-      throw new Error('Composio API key not configured. Set it in Config Center → Composio, or set COMPOSIO_API_KEY environment variable.');
+      throw new Error(
+        'Composio API key not configured. Set it in Config Center → Composio, or set COMPOSIO_API_KEY environment variable.'
+      );
     }
 
     try {
@@ -96,7 +98,9 @@ class ComposioService {
       log.info('Composio SDK initialized');
       return this.client;
     } catch (err) {
-      throw new Error(`Failed to initialize Composio SDK: ${err instanceof Error ? err.message : String(err)}`);
+      throw new Error(
+        `Failed to initialize Composio SDK: ${err instanceof Error ? err.message : String(err)}`
+      );
     }
   }
 
@@ -120,9 +124,9 @@ class ComposioService {
       return this.appsCache.data;
     }
 
-    const client = await this.getClient() as Record<string, unknown>;
+    const client = (await this.getClient()) as Record<string, unknown>;
     const toolkits = client.toolkits as { get: (q?: unknown) => Promise<unknown> };
-    const response = await toolkits.get() as { items?: unknown[] };
+    const response = (await toolkits.get()) as { items?: unknown[] };
 
     const apps: ComposioApp[] = (response.items || []).map((item: unknown) => {
       const t = item as Record<string, unknown>;
@@ -147,13 +151,13 @@ class ComposioService {
    * Search for available Composio actions.
    */
   async searchActions(query: string, appName?: string, limit = 10): Promise<ComposioActionInfo[]> {
-    const client = await this.getClient() as Record<string, unknown>;
+    const client = (await this.getClient()) as Record<string, unknown>;
     const tools = client.tools as { getRawComposioTools: (q: unknown) => Promise<unknown> };
 
     const filters: Record<string, unknown> = { search: query, limit: Math.min(limit, 25) };
     if (appName) filters.toolkit = appName;
 
-    const response = await tools.getRawComposioTools(filters) as { items?: unknown[] };
+    const response = (await tools.getRawComposioTools(filters)) as { items?: unknown[] };
 
     return (response.items || []).map((item: unknown) => {
       const t = item as Record<string, unknown>;
@@ -171,9 +175,15 @@ class ComposioService {
   /**
    * Execute a Composio action.
    */
-  async executeAction(userId: string, actionSlug: string, args: Record<string, unknown>): Promise<unknown> {
-    const client = await this.getClient() as Record<string, unknown>;
-    const tools = client.tools as { execute: (slug: string, body: unknown, modifiers?: unknown) => Promise<unknown> };
+  async executeAction(
+    userId: string,
+    actionSlug: string,
+    args: Record<string, unknown>
+  ): Promise<unknown> {
+    const client = (await this.getClient()) as Record<string, unknown>;
+    const tools = client.tools as {
+      execute: (slug: string, body: unknown, modifiers?: unknown) => Promise<unknown>;
+    };
 
     const result = await tools.execute(actionSlug, {
       userId,
@@ -192,10 +202,10 @@ class ComposioService {
    * List all connections for a user.
    */
   async getConnections(userId: string): Promise<ComposioConnection[]> {
-    const client = await this.getClient() as Record<string, unknown>;
+    const client = (await this.getClient()) as Record<string, unknown>;
     const accounts = client.connectedAccounts as { list: (q?: unknown) => Promise<unknown> };
 
-    const response = await accounts.list({ userId }) as { items?: unknown[] };
+    const response = (await accounts.list({ userId })) as { items?: unknown[] };
 
     return (response.items || []).map((item: unknown) => {
       const c = item as Record<string, unknown>;
@@ -214,17 +224,23 @@ class ComposioService {
    */
   async getConnectionStatus(userId: string, appName: string): Promise<ComposioConnection | null> {
     const connections = await this.getConnections(userId);
-    return connections.find(c => c.appName.toLowerCase() === appName.toLowerCase()) ?? null;
+    return connections.find((c) => c.appName.toLowerCase() === appName.toLowerCase()) ?? null;
   }
 
   /**
    * Initiate OAuth connection for an app.
    */
-  async initiateConnection(userId: string, appName: string, _redirectUrl?: string): Promise<ComposioConnectionRequest> {
-    const client = await this.getClient() as Record<string, unknown>;
-    const toolkits = client.toolkits as { authorize: (userId: string, toolkit: string, authConfigId?: string) => Promise<unknown> };
+  async initiateConnection(
+    userId: string,
+    appName: string,
+    _redirectUrl?: string
+  ): Promise<ComposioConnectionRequest> {
+    const client = (await this.getClient()) as Record<string, unknown>;
+    const toolkits = client.toolkits as {
+      authorize: (userId: string, toolkit: string, authConfigId?: string) => Promise<unknown>;
+    };
 
-    const result = await toolkits.authorize(userId, appName) as Record<string, unknown>;
+    const result = (await toolkits.authorize(userId, appName)) as Record<string, unknown>;
 
     return {
       redirectUrl: result.redirectUrl ? toStr(result.redirectUrl) : null,
@@ -236,11 +252,19 @@ class ComposioService {
   /**
    * Wait for a connection to become active.
    */
-  async waitForConnection(connectedAccountId: string, timeoutSeconds = 60): Promise<ComposioConnection> {
-    const client = await this.getClient() as Record<string, unknown>;
-    const accounts = client.connectedAccounts as { waitForConnection: (id: string, timeout?: number) => Promise<unknown> };
+  async waitForConnection(
+    connectedAccountId: string,
+    timeoutSeconds = 60
+  ): Promise<ComposioConnection> {
+    const client = (await this.getClient()) as Record<string, unknown>;
+    const accounts = client.connectedAccounts as {
+      waitForConnection: (id: string, timeout?: number) => Promise<unknown>;
+    };
 
-    const result = await accounts.waitForConnection(connectedAccountId, timeoutSeconds) as Record<string, unknown>;
+    const result = (await accounts.waitForConnection(connectedAccountId, timeoutSeconds)) as Record<
+      string,
+      unknown
+    >;
 
     return {
       id: toStr(result.id) || toStr(result.nanoid) || connectedAccountId,
@@ -255,7 +279,7 @@ class ComposioService {
    * Disconnect (delete) a connected account.
    */
   async disconnect(connectionId: string): Promise<void> {
-    const client = await this.getClient() as Record<string, unknown>;
+    const client = (await this.getClient()) as Record<string, unknown>;
     const accounts = client.connectedAccounts as { delete: (id: string) => Promise<unknown> };
     await accounts.delete(connectionId);
   }
@@ -264,9 +288,9 @@ class ComposioService {
    * Refresh a connection's tokens.
    */
   async refreshConnection(connectionId: string): Promise<ComposioConnection> {
-    const client = await this.getClient() as Record<string, unknown>;
+    const client = (await this.getClient()) as Record<string, unknown>;
     const accounts = client.connectedAccounts as { refresh: (id: string) => Promise<unknown> };
-    const result = await accounts.refresh(connectionId) as Record<string, unknown>;
+    const result = (await accounts.refresh(connectionId)) as Record<string, unknown>;
 
     return {
       id: toStr(result.id) || toStr(result.nanoid) || connectionId,

@@ -88,7 +88,14 @@ describe('ResourceRegistry', () => {
         displayName: 'A',
         description: 'Resource A',
         ownerType: 'user',
-        capabilities: { create: true, read: true, update: false, delete: false, list: true, search: false },
+        capabilities: {
+          create: true,
+          read: true,
+          update: false,
+          delete: false,
+          list: true,
+          search: false,
+        },
         userScoped: true,
       });
       registry.register({
@@ -96,7 +103,14 @@ describe('ResourceRegistry', () => {
         displayName: 'B',
         description: 'Resource B',
         ownerType: 'system',
-        capabilities: { create: true, read: true, update: true, delete: true, list: true, search: true },
+        capabilities: {
+          create: true,
+          read: true,
+          update: true,
+          delete: true,
+          list: true,
+          search: true,
+        },
         userScoped: false,
       });
 
@@ -116,7 +130,14 @@ describe('ResourceRegistry', () => {
         displayName: 'User Resource',
         description: 'Owned by user',
         ownerType: 'user',
-        capabilities: { create: true, read: true, update: true, delete: true, list: true, search: false },
+        capabilities: {
+          create: true,
+          read: true,
+          update: true,
+          delete: true,
+          list: true,
+          search: false,
+        },
         userScoped: true,
       });
       registry.register({
@@ -124,7 +145,14 @@ describe('ResourceRegistry', () => {
         displayName: 'System Resource',
         description: 'Owned by system',
         ownerType: 'system',
-        capabilities: { create: true, read: true, update: false, delete: false, list: true, search: false },
+        capabilities: {
+          create: true,
+          read: true,
+          update: false,
+          delete: false,
+          list: true,
+          search: false,
+        },
         userScoped: false,
       });
     });
@@ -158,7 +186,14 @@ describe('ResourceRegistry', () => {
         displayName: 'Searchable',
         description: 'Has search',
         ownerType: 'user',
-        capabilities: { create: true, read: true, update: true, delete: true, list: true, search: true },
+        capabilities: {
+          create: true,
+          read: true,
+          update: true,
+          delete: true,
+          list: true,
+          search: true,
+        },
         userScoped: true,
       });
       registry.register({
@@ -166,7 +201,14 @@ describe('ResourceRegistry', () => {
         displayName: 'Readonly',
         description: 'Read and list only',
         ownerType: 'system',
-        capabilities: { create: false, read: true, update: false, delete: false, list: true, search: false },
+        capabilities: {
+          create: false,
+          read: true,
+          update: false,
+          delete: false,
+          list: true,
+          search: false,
+        },
         userScoped: false,
       });
     });
@@ -204,7 +246,14 @@ describe('ResourceRegistry', () => {
         displayName: 'Goals',
         description: 'User goals',
         ownerType: 'user',
-        capabilities: { create: true, read: true, update: true, delete: true, list: true, search: false },
+        capabilities: {
+          create: true,
+          read: true,
+          update: true,
+          delete: true,
+          list: true,
+          search: false,
+        },
         userScoped: true,
       });
 
@@ -224,7 +273,14 @@ describe('ResourceRegistry', () => {
         displayName: 'Minimal',
         description: 'Read only',
         ownerType: 'system',
-        capabilities: { create: false, read: true, update: false, delete: false, list: false, search: false },
+        capabilities: {
+          create: false,
+          read: true,
+          update: false,
+          delete: false,
+          list: false,
+          search: false,
+        },
         userScoped: false,
       });
 
@@ -244,7 +300,14 @@ describe('ResourceRegistry', () => {
         displayName: 'Temp',
         description: 'Temporary',
         ownerType: 'user',
-        capabilities: { create: true, read: true, update: true, delete: true, list: true, search: true },
+        capabilities: {
+          create: true,
+          read: true,
+          update: true,
+          delete: true,
+          list: true,
+          search: true,
+        },
         userScoped: true,
       });
 

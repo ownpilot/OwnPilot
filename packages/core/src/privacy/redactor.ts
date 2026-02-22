@@ -42,10 +42,7 @@ export class PIIRedactor {
   private readonly detector: PIIDetector;
   private readonly options: Required<RedactionOptions>;
 
-  constructor(
-    detector?: PIIDetector,
-    options: RedactionOptions = {}
-  ) {
+  constructor(detector?: PIIDetector, options: RedactionOptions = {}) {
     this.detector = detector ?? createDetector();
     this.options = { ...DEFAULT_OPTIONS, ...options };
   }
@@ -67,8 +64,7 @@ export class PIIRedactor {
     }
 
     // Filter matches by category and severity
-    const categorySet =
-      opts.categories.length > 0 ? new Set(opts.categories) : null;
+    const categorySet = opts.categories.length > 0 ? new Set(opts.categories) : null;
     const minSeverityOrder = SEVERITY_ORDER[opts.minSeverity];
 
     const matchesToRedact = detection.matches.filter((match) => {
@@ -93,17 +89,13 @@ export class PIIRedactor {
     }
 
     // Sort matches by position (reverse order for safe replacement)
-    const sortedMatches = [...matchesToRedact].sort(
-      (a, b) => b.start - a.start
-    );
+    const sortedMatches = [...matchesToRedact].sort((a, b) => b.start - a.start);
 
     let redactedText = text;
     for (const match of sortedMatches) {
       const replacement = this.getRedaction(match, opts);
       redactedText =
-        redactedText.slice(0, match.start) +
-        replacement +
-        redactedText.slice(match.end);
+        redactedText.slice(0, match.start) + replacement + redactedText.slice(match.end);
     }
 
     return {
@@ -117,10 +109,7 @@ export class PIIRedactor {
   /**
    * Get the redaction string for a match
    */
-  private getRedaction(
-    match: PIIMatch,
-    opts: Required<RedactionOptions>
-  ): string {
+  private getRedaction(match: PIIMatch, opts: Required<RedactionOptions>): string {
     const { mode, maskChar, keepFirst, keepLast } = opts;
     const { match: text, category } = match;
 
@@ -145,12 +134,7 @@ export class PIIRedactor {
   /**
    * Mask text with asterisks (or other char)
    */
-  private maskText(
-    text: string,
-    maskChar: string,
-    keepFirst: number,
-    keepLast: number
-  ): string {
+  private maskText(text: string, maskChar: string, keepFirst: number, keepLast: number): string {
     const len = text.length;
 
     // Handle edge cases
@@ -169,10 +153,7 @@ export class PIIRedactor {
    * Hash text for deterministic redaction
    */
   private hashText(text: string): string {
-    const hash = createHash('sha256')
-      .update(text)
-      .digest('hex')
-      .slice(0, 8);
+    const hash = createHash('sha256').update(text).digest('hex').slice(0, 8);
     return `[REDACTED:${hash}]`;
   }
 
@@ -208,20 +189,14 @@ export class PIIRedactor {
 /**
  * Create a redactor with default configuration
  */
-export function createRedactor(
-  detector?: PIIDetector,
-  options?: RedactionOptions
-): PIIRedactor {
+export function createRedactor(detector?: PIIDetector, options?: RedactionOptions): PIIRedactor {
   return new PIIRedactor(detector, options);
 }
 
 /**
  * Quick redaction with default settings
  */
-export function redactPII(
-  text: string,
-  options?: RedactionOptions
-): RedactionResult {
+export function redactPII(text: string, options?: RedactionOptions): RedactionResult {
   return createRedactor().redact(text, options);
 }
 

@@ -32,10 +32,13 @@ export function AgentsPage() {
     fetchAgents();
   }, []);
 
-  const handleChatWithAgent = useCallback((agent: Agent) => {
-    // Navigate to chat with the agent's provider and model
-    navigate(`/?agent=${agent.id}&provider=${agent.provider}&model=${agent.model}`);
-  }, [navigate]);
+  const handleChatWithAgent = useCallback(
+    (agent: Agent) => {
+      // Navigate to chat with the agent's provider and model
+      navigate(`/?agent=${agent.id}&provider=${agent.provider}&model=${agent.model}`);
+    },
+    [navigate]
+  );
 
   const fetchAgents = async () => {
     try {
@@ -48,31 +51,43 @@ export function AgentsPage() {
     }
   };
 
-  const deleteAgent = useCallback(async (id: string) => {
-    if (!await confirm({ message: 'Are you sure you want to delete this agent?', variant: 'danger' })) return;
+  const deleteAgent = useCallback(
+    async (id: string) => {
+      if (
+        !(await confirm({
+          message: 'Are you sure you want to delete this agent?',
+          variant: 'danger',
+        }))
+      )
+        return;
 
-    try {
-      await agentsApi.delete(id);
-      toast.success('Agent deleted');
-      setAgents((prev) => prev.filter((a) => a.id !== id));
-      setSelectedAgent((prev) => prev?.id === id ? null : prev);
-    } catch {
-      // API client handles error reporting
-    }
-  }, [confirm, toast]);
+      try {
+        await agentsApi.delete(id);
+        toast.success('Agent deleted');
+        setAgents((prev) => prev.filter((a) => a.id !== id));
+        setSelectedAgent((prev) => (prev?.id === id ? null : prev));
+      } catch {
+        // API client handles error reporting
+      }
+    },
+    [confirm, toast]
+  );
 
   const openEditModal = useCallback((agentId: string) => {
     setEditingAgentId(agentId);
     setShowEditModal(true);
   }, []);
 
-  const handleAgentUpdated = useCallback((updatedAgent: Agent) => {
-    toast.success('Agent updated');
-    setAgents((prev) => prev.map((a) => (a.id === updatedAgent.id ? updatedAgent : a)));
-    setSelectedAgent((prev) => prev?.id === updatedAgent.id ? updatedAgent : prev);
-    setShowEditModal(false);
-    setEditingAgentId(null);
-  }, [toast]);
+  const handleAgentUpdated = useCallback(
+    (updatedAgent: Agent) => {
+      toast.success('Agent updated');
+      setAgents((prev) => prev.map((a) => (a.id === updatedAgent.id ? updatedAgent : a)));
+      setSelectedAgent((prev) => (prev?.id === updatedAgent.id ? updatedAgent : prev));
+      setShowEditModal(false);
+      setEditingAgentId(null);
+    },
+    [toast]
+  );
 
   return (
     <div className="flex flex-col h-full">
@@ -179,7 +194,12 @@ function AgentCard({ agent, onDelete, onSelect, onChat, onConfigure, isSelected 
       role="button"
       tabIndex={0}
       onClick={onSelect}
-      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelect(); } }}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onSelect();
+        }
+      }}
       className={`card-elevated p-4 bg-bg-secondary dark:bg-dark-bg-secondary border rounded-xl cursor-pointer transition-all ${
         isSelected
           ? 'border-primary ring-2 ring-primary/20'

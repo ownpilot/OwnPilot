@@ -10,8 +10,8 @@ const mockReadFile = vi.hoisted(() => vi.fn());
 const mockStat = vi.hoisted(() => vi.fn());
 const mockMkdir = vi.hoisted(() => vi.fn());
 const mockWriteFile = vi.hoisted(() => vi.fn());
-const mockDirname = vi.hoisted(
-  () => vi.fn((p: string) => p.substring(0, p.lastIndexOf('/')) || '.'),
+const mockDirname = vi.hoisted(() =>
+  vi.fn((p: string) => p.substring(0, p.lastIndexOf('/')) || '.')
 );
 
 vi.mock('./module-resolver.js', () => ({
@@ -125,9 +125,7 @@ function makePdfKitMock(chunkContent = 'pdf-bytes') {
 
 beforeEach(() => {
   vi.resetAllMocks();
-  mockDirname.mockImplementation(
-    (p: string) => p.substring(0, p.lastIndexOf('/')) || '.',
-  );
+  mockDirname.mockImplementation((p: string) => p.substring(0, p.lastIndexOf('/')) || '.');
 });
 
 // =====================================================================
@@ -162,9 +160,7 @@ describe('Tool definitions', () => {
   });
 
   it('createPdfTool requires path and content', () => {
-    expect(createPdfTool.parameters.required).toEqual(
-      expect.arrayContaining(['path', 'content']),
-    );
+    expect(createPdfTool.parameters.required).toEqual(expect.arrayContaining(['path', 'content']));
   });
 
   it('createPdfTool exposes format, title, author, pageSize, margins params', () => {
@@ -236,7 +232,7 @@ describe('readPdfExecutor', () => {
     const result = await readPdfExecutor({ path: '/missing.pdf' }, emptyContext);
     expect(result.isError).toBe(true);
     expect((result.content as Record<string, unknown>).error).toContain(
-      'PDF file not found: /missing.pdf',
+      'PDF file not found: /missing.pdf'
     );
   });
 
@@ -265,10 +261,7 @@ describe('readPdfExecutor', () => {
       default: vi.fn().mockResolvedValueOnce(makePdfParseResult()),
     });
 
-    const result = await readPdfExecutor(
-      { path: '/test.pdf', pages: 'all' },
-      emptyContext,
-    );
+    const result = await readPdfExecutor({ path: '/test.pdf', pages: 'all' }, emptyContext);
     expect((result.content as Record<string, unknown>).note).toBeUndefined();
   });
 
@@ -279,12 +272,9 @@ describe('readPdfExecutor', () => {
       default: vi.fn().mockResolvedValueOnce(makePdfParseResult()),
     });
 
-    const result = await readPdfExecutor(
-      { path: '/test.pdf', pages: '1-3' },
-      emptyContext,
-    );
+    const result = await readPdfExecutor({ path: '/test.pdf', pages: '1-3' }, emptyContext);
     expect((result.content as Record<string, unknown>).note).toBe(
-      'Page filtering applied at text level',
+      'Page filtering applied at text level'
     );
   });
 
@@ -303,15 +293,10 @@ describe('readPdfExecutor', () => {
     mockAccess.mockResolvedValueOnce(undefined);
     mockReadFile.mockResolvedValueOnce(Buffer.from('x'));
     mockTryImport.mockResolvedValueOnce({
-      default: vi
-        .fn()
-        .mockResolvedValueOnce(makePdfParseResult({ text: '' })),
+      default: vi.fn().mockResolvedValueOnce(makePdfParseResult({ text: '' })),
     });
 
-    const result = await readPdfExecutor(
-      { path: '/test.pdf', pages: '2' },
-      emptyContext,
-    );
+    const result = await readPdfExecutor({ path: '/test.pdf', pages: '2' }, emptyContext);
     // data.text is '', which is falsy, so pages-filter branch not entered
     expect((result.content as Record<string, unknown>).note).toBeUndefined();
   });
@@ -323,10 +308,7 @@ describe('readPdfExecutor', () => {
       default: vi.fn().mockResolvedValueOnce(makePdfParseResult()),
     });
 
-    const result = await readPdfExecutor(
-      { path: '/test.pdf', extractTables: false },
-      emptyContext,
-    );
+    const result = await readPdfExecutor({ path: '/test.pdf', extractTables: false }, emptyContext);
     expect((result.content as Record<string, unknown>).tables).toBeUndefined();
   });
 
@@ -342,24 +324,15 @@ describe('readPdfExecutor', () => {
   });
 
   it('extracts tables when extractTables is true', async () => {
-    const textWithTable = [
-      'Name  Age  City',
-      'Alice  30  NYC',
-      'Bob  25  LA',
-    ].join('\n');
+    const textWithTable = ['Name  Age  City', 'Alice  30  NYC', 'Bob  25  LA'].join('\n');
 
     mockAccess.mockResolvedValueOnce(undefined);
     mockReadFile.mockResolvedValueOnce(Buffer.from('x'));
     mockTryImport.mockResolvedValueOnce({
-      default: vi
-        .fn()
-        .mockResolvedValueOnce(makePdfParseResult({ text: textWithTable })),
+      default: vi.fn().mockResolvedValueOnce(makePdfParseResult({ text: textWithTable })),
     });
 
-    const result = await readPdfExecutor(
-      { path: '/test.pdf', extractTables: true },
-      emptyContext,
-    );
+    const result = await readPdfExecutor({ path: '/test.pdf', extractTables: true }, emptyContext);
     const content = result.content as Record<string, unknown>;
     expect(content.tables).toBeDefined();
     const tables = content.tables as Array<{ rows: string[][] }>;
@@ -389,7 +362,7 @@ describe('readPdfExecutor', () => {
     const result = await readPdfExecutor({ path: '/test.pdf' }, emptyContext);
     expect(result.isError).toBe(true);
     expect((result.content as Record<string, unknown>).error).toContain(
-      'Failed to read PDF: read failed',
+      'Failed to read PDF: read failed'
     );
   });
 });
@@ -403,14 +376,9 @@ describe('extractTablesFromText (via readPdfExecutor)', () => {
     mockAccess.mockResolvedValueOnce(undefined);
     mockReadFile.mockResolvedValueOnce(Buffer.from('x'));
     mockTryImport.mockResolvedValueOnce({
-      default: vi
-        .fn()
-        .mockResolvedValueOnce(makePdfParseResult({ text })),
+      default: vi.fn().mockResolvedValueOnce(makePdfParseResult({ text })),
     });
-    const result = await readPdfExecutor(
-      { path: '/t.pdf', extractTables: true },
-      emptyContext,
-    );
+    const result = await readPdfExecutor({ path: '/t.pdf', extractTables: true }, emptyContext);
     return (result.content as Record<string, unknown>).tables as Array<{
       rows: string[][];
     }>;
@@ -422,9 +390,7 @@ describe('extractTablesFromText (via readPdfExecutor)', () => {
   });
 
   it('returns empty array when table has only 1 row (minimum is 2)', async () => {
-    const tables = await extractTables(
-      'single line\nName  Age  City\nnot a table',
-    );
+    const tables = await extractTables('single line\nName  Age  City\nnot a table');
     // Only one table-like line between non-table lines
     expect(tables).toEqual([]);
   });
@@ -437,12 +403,7 @@ describe('extractTablesFromText (via readPdfExecutor)', () => {
   });
 
   it('detects a single table with multiple rows', async () => {
-    const text = [
-      'Name  Age  City',
-      'Alice  30  NYC',
-      'Bob  25  LA',
-      'Carol  35  SF',
-    ].join('\n');
+    const text = ['Name  Age  City', 'Alice  30  NYC', 'Bob  25  LA', 'Carol  35  SF'].join('\n');
     const tables = await extractTables(text);
     expect(tables).toHaveLength(1);
     expect(tables[0].rows).toHaveLength(4);
@@ -456,13 +417,7 @@ describe('extractTablesFromText (via readPdfExecutor)', () => {
   });
 
   it('detects multiple separate tables', async () => {
-    const text = [
-      'A  B',
-      'C  D',
-      'not a table line',
-      'X  Y  Z',
-      'P  Q  R',
-    ].join('\n');
+    const text = ['A  B', 'C  D', 'not a table line', 'X  Y  Z', 'P  Q  R'].join('\n');
     const tables = await extractTables(text);
     expect(tables).toHaveLength(2);
     expect(tables[0].rows).toHaveLength(2);
@@ -470,24 +425,16 @@ describe('extractTablesFromText (via readPdfExecutor)', () => {
   });
 
   it('handles trailing table at end of text (no closing non-table line)', async () => {
-    const text = [
-      'some preamble',
-      'Col1  Col2',
-      'Val1  Val2',
-      'Val3  Val4',
-    ].join('\n');
+    const text = ['some preamble', 'Col1  Col2', 'Val1  Val2', 'Val3  Val4'].join('\n');
     const tables = await extractTables(text);
     expect(tables).toHaveLength(1);
     expect(tables[0].rows).toHaveLength(3);
   });
 
   it('skips single-column lines (not table-like)', async () => {
-    const text = [
-      'SingleWord',
-      'Another single column line',
-      'Col1  Col2',
-      'Val1  Val2',
-    ].join('\n');
+    const text = ['SingleWord', 'Another single column line', 'Col1  Col2', 'Val1  Val2'].join(
+      '\n'
+    );
     const tables = await extractTables(text);
     expect(tables).toHaveLength(1);
   });
@@ -556,10 +503,7 @@ describe('createPdfExecutor', () => {
     mockMkdir.mockResolvedValueOnce(undefined);
     mockWriteFile.mockResolvedValueOnce(undefined);
 
-    await createPdfExecutor(
-      { path: '/out/dir/test.pdf', content: 'hello' },
-      emptyContext,
-    );
+    await createPdfExecutor({ path: '/out/dir/test.pdf', content: 'hello' }, emptyContext);
     expect(mockMkdir).toHaveBeenCalledWith('/out/dir', { recursive: true });
   });
 
@@ -577,7 +521,7 @@ describe('createPdfExecutor', () => {
         author: 'Tester',
         pageSize: 'Letter',
       },
-      emptyContext,
+      emptyContext
     );
     expect(result.isError).toBe(false);
     const content = result.content as Record<string, unknown>;
@@ -597,7 +541,7 @@ describe('createPdfExecutor', () => {
 
     const result = await createPdfExecutor(
       { path: '/out/test.pdf', content: 'plain text' },
-      emptyContext,
+      emptyContext
     );
     const content = result.content as Record<string, unknown>;
     expect(content.pageSize).toBe('A4');
@@ -621,7 +565,7 @@ describe('createPdfExecutor', () => {
         title: 'T',
         author: 'A',
       },
-      emptyContext,
+      emptyContext
     );
     expect(MockPDFDocument).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -630,7 +574,7 @@ describe('createPdfExecutor', () => {
           Author: 'A',
           Creator: 'OwnPilot',
         }),
-      }),
+      })
     );
   });
 
@@ -640,15 +584,9 @@ describe('createPdfExecutor', () => {
     mockMkdir.mockResolvedValueOnce(undefined);
     mockWriteFile.mockResolvedValueOnce(undefined);
 
-    await createPdfExecutor(
-      { path: '/out/test.pdf', content: 'x' },
-      emptyContext,
-    );
+    await createPdfExecutor({ path: '/out/test.pdf', content: 'x' }, emptyContext);
     expect(mockWriteFile).toHaveBeenCalledTimes(1);
-    const [writePath, writeBuf] = mockWriteFile.mock.calls[0] as [
-      string,
-      Buffer,
-    ];
+    const [writePath, writeBuf] = mockWriteFile.mock.calls[0] as [string, Buffer];
     expect(writePath).toBe('/out/test.pdf');
     expect(writeBuf.toString()).toBe('chunk-data');
   });
@@ -665,7 +603,7 @@ describe('createPdfExecutor', () => {
         content: '<h1>Title</h1><p>Body</p>',
         format: 'html',
       },
-      emptyContext,
+      emptyContext
     );
     expect(docRef.current!.text).toHaveBeenCalledWith('TitleBody', {
       align: 'left',
@@ -684,7 +622,7 @@ describe('createPdfExecutor', () => {
         content: '# Hello\n**bold**',
         format: 'markdown',
       },
-      emptyContext,
+      emptyContext
     );
     const textArg = docRef.current!.text.mock.calls[0][0] as string;
     // Header converted: "# Hello" -> "\nHello\n"
@@ -703,10 +641,7 @@ describe('createPdfExecutor', () => {
       mockMkdir.mockResolvedValueOnce(undefined);
       mockWriteFile.mockResolvedValueOnce(undefined);
 
-      await createPdfExecutor(
-        { path: '/test.pdf', content: 'x', format },
-        emptyContext,
-      );
+      await createPdfExecutor({ path: '/test.pdf', content: 'x', format }, emptyContext);
       expect(docRef.current!.fontSize).toHaveBeenCalledWith(12);
     }
   });
@@ -715,10 +650,7 @@ describe('createPdfExecutor', () => {
     mockTryImport.mockRejectedValueOnce(new Error('not found'));
     mockMkdir.mockResolvedValueOnce(undefined);
 
-    const result = await createPdfExecutor(
-      { path: '/out/test.pdf', content: 'x' },
-      emptyContext,
-    );
+    const result = await createPdfExecutor({ path: '/out/test.pdf', content: 'x' }, emptyContext);
     expect(result.isError).toBe(true);
     const content = result.content as Record<string, unknown>;
     expect(content.error).toContain('pdfkit library not installed');
@@ -730,11 +662,11 @@ describe('createPdfExecutor', () => {
 
     const result = await createPdfExecutor(
       { path: '/no-perms/test.pdf', content: 'x' },
-      emptyContext,
+      emptyContext
     );
     expect(result.isError).toBe(true);
     expect((result.content as Record<string, unknown>).error).toContain(
-      'Failed to create PDF: EACCES',
+      'Failed to create PDF: EACCES'
     );
   });
 
@@ -744,10 +676,7 @@ describe('createPdfExecutor', () => {
     mockMkdir.mockResolvedValueOnce(undefined);
     mockWriteFile.mockResolvedValueOnce(undefined);
 
-    const result = await createPdfExecutor(
-      { path: '/out/test.pdf', content: 'x' },
-      emptyContext,
-    );
+    const result = await createPdfExecutor({ path: '/out/test.pdf', content: 'x' }, emptyContext);
     const content = result.content as Record<string, unknown>;
     expect(content.title).toBeUndefined();
     expect(content.author).toBeUndefined();
@@ -759,10 +688,7 @@ describe('createPdfExecutor', () => {
     mockMkdir.mockResolvedValueOnce(undefined);
     mockWriteFile.mockResolvedValueOnce(undefined);
 
-    await createPdfExecutor(
-      { path: '/out/test.pdf', content: 'test' },
-      emptyContext,
-    );
+    await createPdfExecutor({ path: '/out/test.pdf', content: 'test' }, emptyContext);
     expect(docRef.current!.end).toHaveBeenCalledTimes(1);
   });
 
@@ -774,11 +700,9 @@ describe('createPdfExecutor', () => {
 
     await createPdfExecutor(
       { path: '/out/test.pdf', content: 'x', pageSize: 'Legal' },
-      emptyContext,
+      emptyContext
     );
-    expect(MockPDFDocument).toHaveBeenCalledWith(
-      expect.objectContaining({ size: 'Legal' }),
-    );
+    expect(MockPDFDocument).toHaveBeenCalledWith(expect.objectContaining({ size: 'Legal' }));
   });
 });
 
@@ -796,7 +720,7 @@ describe('convertMarkdownToText (via createPdfExecutor)', () => {
 
     await createPdfExecutor(
       { path: '/t.pdf', content: markdown, format: 'markdown' },
-      emptyContext,
+      emptyContext
     );
     return docRef.current!.text.mock.calls[0][0] as string;
   }
@@ -1018,10 +942,7 @@ describe('pdfInfoExecutor', () => {
     const mockParse = vi.fn().mockResolvedValueOnce(parseData);
     mockTryImport.mockResolvedValueOnce({ default: mockParse });
 
-    const result = await pdfInfoExecutor(
-      { path: '/info.pdf' },
-      emptyContext,
-    );
+    const result = await pdfInfoExecutor({ path: '/info.pdf' }, emptyContext);
     expect(result.isError).toBe(false);
     const content = result.content as Record<string, unknown>;
     expect(content.path).toBe('/info.pdf');
@@ -1050,10 +971,7 @@ describe('pdfInfoExecutor', () => {
     mockReadFile.mockResolvedValueOnce(Buffer.from('x'));
     mockTryImport.mockRejectedValueOnce(new Error('not found'));
 
-    const result = await pdfInfoExecutor(
-      { path: '/info.pdf' },
-      emptyContext,
-    );
+    const result = await pdfInfoExecutor({ path: '/info.pdf' }, emptyContext);
     expect(result.isError).toBe(false);
     const content = result.content as Record<string, unknown>;
     expect(content.path).toBe('/info.pdf');
@@ -1066,13 +984,10 @@ describe('pdfInfoExecutor', () => {
   it('returns error when file does not exist (stat fails)', async () => {
     mockStat.mockRejectedValueOnce(new Error('ENOENT'));
 
-    const result = await pdfInfoExecutor(
-      { path: '/missing.pdf' },
-      emptyContext,
-    );
+    const result = await pdfInfoExecutor({ path: '/missing.pdf' }, emptyContext);
     expect(result.isError).toBe(true);
     expect((result.content as Record<string, unknown>).error).toContain(
-      'Failed to get PDF info: ENOENT',
+      'Failed to get PDF info: ENOENT'
     );
   });
 
@@ -1080,13 +995,10 @@ describe('pdfInfoExecutor', () => {
     mockStat.mockResolvedValueOnce(makeStat());
     mockReadFile.mockRejectedValueOnce(new Error('read error'));
 
-    const result = await pdfInfoExecutor(
-      { path: '/bad.pdf' },
-      emptyContext,
-    );
+    const result = await pdfInfoExecutor({ path: '/bad.pdf' }, emptyContext);
     expect(result.isError).toBe(true);
     expect((result.content as Record<string, unknown>).error).toContain(
-      'Failed to get PDF info: read error',
+      'Failed to get PDF info: read error'
     );
   });
 
@@ -1097,14 +1009,9 @@ describe('pdfInfoExecutor', () => {
       default: vi.fn().mockRejectedValueOnce(new Error('corrupt PDF')),
     });
 
-    const result = await pdfInfoExecutor(
-      { path: '/corrupt.pdf' },
-      emptyContext,
-    );
+    const result = await pdfInfoExecutor({ path: '/corrupt.pdf' }, emptyContext);
     expect(result.isError).toBe(true);
-    expect((result.content as Record<string, unknown>).error).toContain(
-      'corrupt PDF',
-    );
+    expect((result.content as Record<string, unknown>).error).toContain('corrupt PDF');
   });
 
   it('does not include warning field when pdf-parse succeeds', async () => {
@@ -1114,13 +1021,8 @@ describe('pdfInfoExecutor', () => {
       default: vi.fn().mockResolvedValueOnce(makePdfParseResult()),
     });
 
-    const result = await pdfInfoExecutor(
-      { path: '/info.pdf' },
-      emptyContext,
-    );
-    expect(
-      (result.content as Record<string, unknown>).warning,
-    ).toBeUndefined();
+    const result = await pdfInfoExecutor({ path: '/info.pdf' }, emptyContext);
+    expect((result.content as Record<string, unknown>).warning).toBeUndefined();
   });
 });
 
@@ -1135,18 +1037,11 @@ describe('Edge cases', () => {
     mockTryImport.mockResolvedValueOnce({
       default: vi
         .fn()
-        .mockResolvedValueOnce(
-          makePdfParseResult({ text: 'No tables here at all.' }),
-        ),
+        .mockResolvedValueOnce(makePdfParseResult({ text: 'No tables here at all.' })),
     });
 
-    const result = await readPdfExecutor(
-      { path: '/t.pdf', extractTables: true },
-      emptyContext,
-    );
-    expect(
-      (result.content as Record<string, unknown>).tables,
-    ).toEqual([]);
+    const result = await readPdfExecutor({ path: '/t.pdf', extractTables: true }, emptyContext);
+    expect((result.content as Record<string, unknown>).tables).toEqual([]);
   });
 
   it('createPdfExecutor with empty content succeeds', async () => {
@@ -1155,10 +1050,7 @@ describe('Edge cases', () => {
     mockMkdir.mockResolvedValueOnce(undefined);
     mockWriteFile.mockResolvedValueOnce(undefined);
 
-    const result = await createPdfExecutor(
-      { path: '/out/empty.pdf', content: '' },
-      emptyContext,
-    );
+    const result = await createPdfExecutor({ path: '/out/empty.pdf', content: '' }, emptyContext);
     expect(result.isError).toBe(false);
   });
 
@@ -1167,19 +1059,12 @@ describe('Edge cases', () => {
     mockAccess.mockResolvedValueOnce(undefined);
     mockReadFile.mockResolvedValueOnce(Buffer.from('x'));
     mockTryImport.mockResolvedValueOnce({
-      default: vi.fn().mockResolvedValueOnce(
-        makePdfParseResult({ text: 'A  B\nC  D' }),
-      ),
+      default: vi.fn().mockResolvedValueOnce(makePdfParseResult({ text: 'A  B\nC  D' })),
     });
 
-    const result = await readPdfExecutor(
-      { path: '/t.pdf', extractTables: 'yes' },
-      emptyContext,
-    );
+    const result = await readPdfExecutor({ path: '/t.pdf', extractTables: 'yes' }, emptyContext);
     // 'yes' !== true, so no tables extracted
-    expect(
-      (result.content as Record<string, unknown>).tables,
-    ).toBeUndefined();
+    expect((result.content as Record<string, unknown>).tables).toBeUndefined();
   });
 
   it('createPdfExecutor with multiple chunks concatenates correctly', async () => {
@@ -1214,10 +1099,7 @@ describe('Edge cases', () => {
     mockMkdir.mockResolvedValueOnce(undefined);
     mockWriteFile.mockResolvedValueOnce(undefined);
 
-    await createPdfExecutor(
-      { path: '/out/multi.pdf', content: 'x' },
-      emptyContext,
-    );
+    await createPdfExecutor({ path: '/out/multi.pdf', content: 'x' }, emptyContext);
     const writtenBuf = mockWriteFile.mock.calls[0]![1] as Buffer;
     expect(writtenBuf.toString()).toBe('chunk1chunk2');
   });
@@ -1227,10 +1109,7 @@ describe('Edge cases', () => {
     mockReadFile.mockResolvedValueOnce(Buffer.from('x'));
     mockTryImport.mockRejectedValueOnce(new Error('not found'));
 
-    const result = await pdfInfoExecutor(
-      { path: '/deep/nested/file.pdf' },
-      emptyContext,
-    );
+    const result = await pdfInfoExecutor({ path: '/deep/nested/file.pdf' }, emptyContext);
     const content = result.content as Record<string, unknown>;
     expect(content.path).toBe('/deep/nested/file.pdf');
   });
@@ -1245,7 +1124,7 @@ describe('Edge cases', () => {
 
     const result = await readPdfExecutor(
       { path: '/t.pdf', pages: '1-2', extractTables: true },
-      emptyContext,
+      emptyContext
     );
     const content = result.content as Record<string, unknown>;
     expect(content.note).toBe('Page filtering applied at text level');
@@ -1276,7 +1155,7 @@ describe('Edge cases', () => {
         content: '<div><span>nested</span></div>',
         format: 'html',
       },
-      emptyContext,
+      emptyContext
     );
     expect(docRef.current!.text).toHaveBeenCalledWith('nested', {
       align: 'left',
@@ -1289,10 +1168,7 @@ describe('Edge cases', () => {
     mockReadFile.mockResolvedValueOnce(Buffer.from('x'));
     mockTryImport.mockRejectedValueOnce(new Error('not found'));
 
-    const result = await pdfInfoExecutor(
-      { path: '/info.pdf' },
-      emptyContext,
-    );
+    const result = await pdfInfoExecutor({ path: '/info.pdf' }, emptyContext);
     const content = result.content as Record<string, unknown>;
     expect(content.modified).toBe('2024-01-15T08:30:00.000Z');
   });

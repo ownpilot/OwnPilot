@@ -311,7 +311,7 @@ describe('WorkspacesRepository', () => {
 
     it('should handle containerConfig that is already an object', async () => {
       mockAdapter.queryOne.mockResolvedValueOnce(
-        makeWorkspaceRow({ container_config: sampleContainerConfig }),
+        makeWorkspaceRow({ container_config: sampleContainerConfig })
       );
 
       const result = await repo.get('ws-1');
@@ -359,9 +359,7 @@ describe('WorkspacesRepository', () => {
 
     it('should use input.userId when provided', async () => {
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
-      mockAdapter.queryOne.mockResolvedValueOnce(
-        makeWorkspaceRow({ user_id: 'custom-user' }),
-      );
+      mockAdapter.queryOne.mockResolvedValueOnce(makeWorkspaceRow({ user_id: 'custom-user' }));
 
       await repo.create({
         userId: 'custom-user',
@@ -405,9 +403,7 @@ describe('WorkspacesRepository', () => {
 
     it('should store description when provided', async () => {
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
-      mockAdapter.queryOne.mockResolvedValueOnce(
-        makeWorkspaceRow({ description: 'A workspace' }),
-      );
+      mockAdapter.queryOne.mockResolvedValueOnce(makeWorkspaceRow({ description: 'A workspace' }));
 
       await repo.create({
         name: 'Test',
@@ -429,7 +425,7 @@ describe('WorkspacesRepository', () => {
           name: 'Test',
           storagePath: '/data/test',
           containerConfig: sampleContainerConfig,
-        }),
+        })
       ).rejects.toThrow('Failed to create workspace');
     });
 
@@ -456,9 +452,7 @@ describe('WorkspacesRepository', () => {
   describe('update', () => {
     it('should update name and return the updated workspace', async () => {
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
-      mockAdapter.queryOne.mockResolvedValueOnce(
-        makeWorkspaceRow({ name: 'Updated Workspace' }),
-      );
+      mockAdapter.queryOne.mockResolvedValueOnce(makeWorkspaceRow({ name: 'Updated Workspace' }));
 
       const result = await repo.update('ws-1', { name: 'Updated Workspace' });
 
@@ -478,7 +472,7 @@ describe('WorkspacesRepository', () => {
     it('should update description', async () => {
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
       mockAdapter.queryOne.mockResolvedValueOnce(
-        makeWorkspaceRow({ description: 'New description' }),
+        makeWorkspaceRow({ description: 'New description' })
       );
 
       const result = await repo.update('ws-1', { description: 'New description' });
@@ -488,9 +482,7 @@ describe('WorkspacesRepository', () => {
 
     it('should update status', async () => {
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
-      mockAdapter.queryOne.mockResolvedValueOnce(
-        makeWorkspaceRow({ status: 'paused' }),
-      );
+      mockAdapter.queryOne.mockResolvedValueOnce(makeWorkspaceRow({ status: 'paused' }));
 
       const result = await repo.update('ws-1', { status: 'paused' });
 
@@ -501,7 +493,7 @@ describe('WorkspacesRepository', () => {
       const newConfig = { ...sampleContainerConfig, memoryMB: 1024 };
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
       mockAdapter.queryOne.mockResolvedValueOnce(
-        makeWorkspaceRow({ container_config: JSON.stringify(newConfig) }),
+        makeWorkspaceRow({ container_config: JSON.stringify(newConfig) })
       );
 
       await repo.update('ws-1', { containerConfig: newConfig });
@@ -517,7 +509,7 @@ describe('WorkspacesRepository', () => {
           name: 'NewName',
           description: 'NewDesc',
           status: 'paused',
-        }),
+        })
       );
 
       const result = await repo.update('ws-1', {
@@ -730,9 +722,9 @@ describe('WorkspacesRepository', () => {
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
       mockAdapter.queryOne.mockResolvedValueOnce(null);
 
-      await expect(
-        repo.createExecution('ws-1', 'python', 'print("hello")'),
-      ).rejects.toThrow('Failed to create execution');
+      await expect(repo.createExecution('ws-1', 'python', 'print("hello")')).rejects.toThrow(
+        'Failed to create execution'
+      );
     });
 
     it('should insert with status pending', async () => {

@@ -37,15 +37,13 @@ const mockEmit = vi.hoisted(() => vi.fn());
 
 vi.mock('@ownpilot/core', () => ({
   getEventBus: () => ({ emit: mockEmit }),
-  createEvent: vi.fn(
-    (type: string, category: string, source: string, data: unknown) => ({
-      type,
-      category,
-      source,
-      data,
-      timestamp: new Date().toISOString(),
-    }),
-  ),
+  createEvent: vi.fn((type: string, category: string, source: string, data: unknown) => ({
+    type,
+    category,
+    source,
+    data,
+    timestamp: new Date().toISOString(),
+  })),
   EventTypes: {
     RESOURCE_CREATED: 'resource.created',
     RESOURCE_UPDATED: 'resource.updated',
@@ -458,9 +456,7 @@ describe('GoalsRepository', () => {
 
   describe('getUpcoming', () => {
     it('returns goals with upcoming due dates', async () => {
-      mockAdapter.query.mockResolvedValue([
-        goalRow({ due_date: '2025-01-20' }),
-      ]);
+      mockAdapter.query.mockResolvedValue([goalRow({ due_date: '2025-01-20' })]);
 
       const goals = await repo.getUpcoming(7);
 

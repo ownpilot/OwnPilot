@@ -103,7 +103,11 @@ function parseSimpleYaml(yaml: string): Record<string, unknown> {
 
     // Flow-style array: [item1, item2]
     if (rawValue.startsWith('[') && rawValue.endsWith(']')) {
-      const items = rawValue.slice(1, -1).split(',').map(s => unquote(s.trim())).filter(Boolean);
+      const items = rawValue
+        .slice(1, -1)
+        .split(',')
+        .map((s) => unquote(s.trim()))
+        .filter(Boolean);
       result[key] = items;
       continue;
     }
@@ -152,7 +156,9 @@ export function scanSkillDirectory(skillDir: string): {
           scriptPaths.push(`scripts/${entry.name}`);
         }
       }
-    } catch { /* skip unreadable */ }
+    } catch {
+      /* skip unreadable */
+    }
   }
 
   const refsDir = join(skillDir, 'references');
@@ -163,7 +169,9 @@ export function scanSkillDirectory(skillDir: string): {
           referencePaths.push(`references/${entry.name}`);
         }
       }
-    } catch { /* skip unreadable */ }
+    } catch {
+      /* skip unreadable */
+    }
   }
 
   const assetsDir = join(skillDir, 'assets');
@@ -174,7 +182,9 @@ export function scanSkillDirectory(skillDir: string): {
           assetPaths.push(`assets/${entry.name}`);
         }
       }
-    } catch { /* skip unreadable */ }
+    } catch {
+      /* skip unreadable */
+    }
   }
 
   return { scriptPaths, referencePaths, assetPaths };
@@ -192,10 +202,7 @@ export function scanSkillDirectory(skillDir: string): {
  * is instruction-based, not tool-based). Scripts from scripts/ are listed
  * in `script_paths` for optional bridge-to-tools.
  */
-export function parseAgentSkillsMd(
-  content: string,
-  skillDir?: string,
-): ExtensionManifest {
+export function parseAgentSkillsMd(content: string, skillDir?: string): ExtensionManifest {
   const { frontmatter, body } = parseSkillMdFrontmatter(content);
 
   // Validate frontmatter
@@ -217,10 +224,9 @@ export function parseAgentSkillsMd(
   }
 
   // Parse allowed-tools (space-delimited string → array)
-  const allowedToolsRaw = fm['allowed-tools'] ?? (frontmatter['allowed-tools'] as string | undefined);
-  const allowedTools = allowedToolsRaw
-    ? allowedToolsRaw.split(/\s+/).filter(Boolean)
-    : undefined;
+  const allowedToolsRaw =
+    fm['allowed-tools'] ?? (frontmatter['allowed-tools'] as string | undefined);
+  const allowedTools = allowedToolsRaw ? allowedToolsRaw.split(/\s+/).filter(Boolean) : undefined;
 
   const manifest: ExtensionManifest = {
     id: fm.name, // agentskills uses name as ID (must match directory name)
@@ -273,21 +279,48 @@ export function isAgentSkillsDir(dir: string): boolean {
 /** Infer category from description/body keywords */
 function inferCategory(description: string, body: string): ExtensionManifest['category'] {
   const text = `${description} ${body}`.toLowerCase();
-  if (text.includes('code') || text.includes('developer') || text.includes('git') || text.includes('debug')) return 'developer';
-  if (text.includes('email') || text.includes('slack') || text.includes('message')) return 'communication';
-  if (text.includes('data') || text.includes('csv') || text.includes('database') || text.includes('sql')) return 'data';
-  if (text.includes('image') || text.includes('video') || text.includes('audio') || text.includes('pdf')) return 'media';
-  if (text.includes('api') || text.includes('integration') || text.includes('webhook')) return 'integrations';
-  if (text.includes('task') || text.includes('calendar') || text.includes('note') || text.includes('plan')) return 'productivity';
+  if (
+    text.includes('code') ||
+    text.includes('developer') ||
+    text.includes('git') ||
+    text.includes('debug')
+  )
+    return 'developer';
+  if (text.includes('email') || text.includes('slack') || text.includes('message'))
+    return 'communication';
+  if (
+    text.includes('data') ||
+    text.includes('csv') ||
+    text.includes('database') ||
+    text.includes('sql')
+  )
+    return 'data';
+  if (
+    text.includes('image') ||
+    text.includes('video') ||
+    text.includes('audio') ||
+    text.includes('pdf')
+  )
+    return 'media';
+  if (text.includes('api') || text.includes('integration') || text.includes('webhook'))
+    return 'integrations';
+  if (
+    text.includes('task') ||
+    text.includes('calendar') ||
+    text.includes('note') ||
+    text.includes('plan')
+  )
+    return 'productivity';
   return 'other';
 }
 
 /** Extract tags from name and description */
 function inferTags(name: string, description: string): string[] {
-  const words = `${name} ${description}`.toLowerCase()
+  const words = `${name} ${description}`
+    .toLowerCase()
     .replace(/[^a-z0-9\s-]/g, '')
     .split(/\s+/)
-    .filter(w => w.length > 2 && w.length < 20);
+    .filter((w) => w.length > 2 && w.length < 20);
   // Deduplicate and take top 5
   return [...new Set(words)].slice(0, 5);
 }

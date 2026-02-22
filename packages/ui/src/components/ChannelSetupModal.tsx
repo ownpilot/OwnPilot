@@ -220,18 +220,14 @@ export function ChannelSetupModal({ onClose, onSuccess }: ChannelSetupModalProps
                   }}
                   placeholder={platform.tokenPlaceholder}
                   className={`w-full px-3 py-2 rounded-lg border ${
-                    tokenError
-                      ? 'border-error'
-                      : 'border-border dark:border-dark-border'
+                    tokenError ? 'border-error' : 'border-border dark:border-dark-border'
                   } bg-bg-secondary dark:bg-dark-bg-secondary text-text-primary dark:text-dark-text-primary focus:outline-none focus:ring-2 focus:ring-primary`}
                   autoFocus
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') handleSubmit();
                   }}
                 />
-                {tokenError && (
-                  <p className="text-sm text-error mt-1">{tokenError}</p>
-                )}
+                {tokenError && <p className="text-sm text-error mt-1">{tokenError}</p>}
                 <a
                   href={platform.docsUrl}
                   target="_blank"
@@ -311,7 +307,10 @@ export function ChannelSetupModal({ onClose, onSuccess }: ChannelSetupModalProps
                     </p>
                   )}
                   <button
-                    onClick={() => { onSuccess(); onClose(); }}
+                    onClick={() => {
+                      onSuccess();
+                      onClose();
+                    }}
                     className="mt-6 px-6 py-2 text-sm font-medium bg-primary text-white rounded-lg hover:bg-primary-hover transition-colors"
                   >
                     Done

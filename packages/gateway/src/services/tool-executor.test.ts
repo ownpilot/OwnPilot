@@ -37,7 +37,9 @@ vi.mock('@ownpilot/core', async () => {
   const actual = await vi.importActual<typeof import('@ownpilot/core')>('@ownpilot/core');
   return {
     ...actual,
-    ToolRegistry: vi.fn(function() { return mockToolRegistry; }),
+    ToolRegistry: vi.fn(function () {
+      return mockToolRegistry;
+    }),
     registerAllTools: vi.fn(),
     registerCoreTools: vi.fn(),
     hasServiceRegistry: vi.fn(() => true),
@@ -214,11 +216,15 @@ describe('Tool Executor', () => {
         result: 'tool result',
         error: undefined,
       });
-      expect(mockToolRegistry.execute).toHaveBeenCalledWith('some_tool', { arg1: 'val' }, {
-        conversationId: 'system-execution',
-        userId: 'user-1',
-        executionPermissions: undefined,
-      });
+      expect(mockToolRegistry.execute).toHaveBeenCalledWith(
+        'some_tool',
+        { arg1: 'val' },
+        {
+          conversationId: 'system-execution',
+          userId: 'user-1',
+          executionPermissions: undefined,
+        }
+      );
     });
 
     it('returns error when registry tool execution returns isError', async () => {

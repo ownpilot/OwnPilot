@@ -19,7 +19,7 @@ describe('CORE_TOOLS', () => {
   });
 
   it('all tools have unique names', () => {
-    const names = CORE_TOOLS.map(t => t.name);
+    const names = CORE_TOOLS.map((t) => t.name);
     const uniqueNames = new Set(names);
     expect(uniqueNames.size).toBe(names.length);
   });
@@ -47,9 +47,7 @@ describe('CORE_TOOLS', () => {
     for (const tool of CORE_TOOLS) {
       if (tool.parameters.required) {
         for (const req of tool.parameters.required) {
-          expect(tool.parameters.properties).toHaveProperty(
-            req,
-          );
+          expect(tool.parameters.properties).toHaveProperty(req);
         }
       }
     }
@@ -60,7 +58,10 @@ describe('CORE_TOOLS', () => {
 
     for (const tool of CORE_TOOLS) {
       for (const [propName, prop] of Object.entries(tool.parameters.properties)) {
-        expect(validTypes.has(prop.type), `${tool.name}.${propName} has invalid type "${prop.type}"`).toBe(true);
+        expect(
+          validTypes.has(prop.type),
+          `${tool.name}.${propName} has invalid type "${prop.type}"`
+        ).toBe(true);
       }
     }
   });
@@ -79,7 +80,7 @@ describe('CORE_TOOLS', () => {
         if (prop.type === 'array') {
           expect(
             prop.items,
-            `${tool.name}.${propName} is array but missing items schema`,
+            `${tool.name}.${propName} is array but missing items schema`
           ).toBeDefined();
         }
       }
@@ -90,10 +91,7 @@ describe('CORE_TOOLS', () => {
     for (const tool of CORE_TOOLS) {
       for (const [propName, prop] of Object.entries(tool.parameters.properties)) {
         if (prop.enum) {
-          expect(
-            prop.enum.length,
-            `${tool.name}.${propName} has empty enum`,
-          ).toBeGreaterThan(0);
+          expect(prop.enum.length, `${tool.name}.${propName} has empty enum`).toBeGreaterThan(0);
         }
       }
     }
@@ -120,7 +118,7 @@ describe('CORE_TOOLS', () => {
 
     for (const name of essentialTools) {
       it(`includes ${name}`, () => {
-        const tool = CORE_TOOLS.find(t => t.name === name);
+        const tool = CORE_TOOLS.find((t) => t.name === name);
         expect(tool, `Missing essential tool: ${name}`).toBeDefined();
       });
     }
@@ -146,48 +144,48 @@ describe('CORE_TOOLS', () => {
 
   describe('specific tool schemas', () => {
     it('calculate requires expression', () => {
-      const tool = CORE_TOOLS.find(t => t.name === 'calculate')!;
+      const tool = CORE_TOOLS.find((t) => t.name === 'calculate')!;
       expect(tool.parameters.required).toContain('expression');
       expect(tool.parameters.properties.expression.type).toBe('string');
     });
 
     it('write_file requires path and content', () => {
-      const tool = CORE_TOOLS.find(t => t.name === 'write_file')!;
+      const tool = CORE_TOOLS.find((t) => t.name === 'write_file')!;
       expect(tool.parameters.required).toContain('path');
       expect(tool.parameters.required).toContain('content');
     });
 
     it('read_file requires path', () => {
-      const tool = CORE_TOOLS.find(t => t.name === 'read_file')!;
+      const tool = CORE_TOOLS.find((t) => t.name === 'read_file')!;
       expect(tool.parameters.required).toContain('path');
     });
 
     it('create_task requires title', () => {
-      const tool = CORE_TOOLS.find(t => t.name === 'create_task')!;
+      const tool = CORE_TOOLS.find((t) => t.name === 'create_task')!;
       expect(tool.parameters.required).toContain('title');
     });
 
     it('hash_text has algorithm property with description', () => {
-      const tool = CORE_TOOLS.find(t => t.name === 'hash_text')!;
+      const tool = CORE_TOOLS.find((t) => t.name === 'hash_text')!;
       expect(tool.parameters.properties.algorithm).toBeDefined();
       expect(tool.parameters.properties.algorithm.description).toContain('sha256');
     });
 
     it('convert_units requires value, from, to', () => {
-      const tool = CORE_TOOLS.find(t => t.name === 'convert_units')!;
+      const tool = CORE_TOOLS.find((t) => t.name === 'convert_units')!;
       expect(tool.parameters.required).toContain('value');
       expect(tool.parameters.required).toContain('from');
       expect(tool.parameters.required).toContain('to');
     });
 
     it('random_number has min/max parameters', () => {
-      const tool = CORE_TOOLS.find(t => t.name === 'random_number')!;
+      const tool = CORE_TOOLS.find((t) => t.name === 'random_number')!;
       expect(tool.parameters.properties.min).toBeDefined();
       expect(tool.parameters.properties.max).toBeDefined();
     });
 
     it('text_transform requires text and operation', () => {
-      const tool = CORE_TOOLS.find(t => t.name === 'text_transform')!;
+      const tool = CORE_TOOLS.find((t) => t.name === 'text_transform')!;
       expect(tool.parameters.required).toContain('text');
       expect(tool.parameters.required).toContain('operation');
       expect(tool.parameters.properties.operation.description).toContain('uppercase');

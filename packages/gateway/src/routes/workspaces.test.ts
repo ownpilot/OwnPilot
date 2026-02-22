@@ -72,7 +72,9 @@ describe('Workspaces Routes', () => {
     };
 
     // Mock WorkspacesRepository constructor
-    vi.mocked(WorkspacesRepository).mockImplementation(function() { return mockRepo; } as never);
+    vi.mocked(WorkspacesRepository).mockImplementation(function () {
+      return mockRepo;
+    } as never);
 
     // Create mock orchestrator
     mockOrchestrator = {
@@ -309,7 +311,13 @@ describe('Workspaces Routes', () => {
     it('should update container config', async () => {
       mockRepo.get.mockResolvedValue({
         id: 'ws-123',
-        containerConfig: { memoryMB: 512, cpuCores: 1, storageGB: 2, timeoutMs: 30000, networkPolicy: 'none' },
+        containerConfig: {
+          memoryMB: 512,
+          cpuCores: 1,
+          storageGB: 2,
+          timeoutMs: 30000,
+          networkPolicy: 'none',
+        },
       });
 
       const res = await app.request('/workspaces/ws-123', {
@@ -322,7 +330,13 @@ describe('Workspaces Routes', () => {
 
       expect(res.status).toBe(200);
       expect(mockRepo.update).toHaveBeenCalledWith('ws-123', {
-        containerConfig: { memoryMB: 1024, cpuCores: 1, storageGB: 2, timeoutMs: 30000, networkPolicy: 'none' },
+        containerConfig: {
+          memoryMB: 1024,
+          cpuCores: 1,
+          storageGB: 2,
+          timeoutMs: 30000,
+          networkPolicy: 'none',
+        },
       });
     });
 
@@ -600,7 +614,11 @@ describe('Workspaces Routes', () => {
 
       expect(res.status).toBe(200);
       expect(mockOrchestrator.createContainer).toHaveBeenCalled();
-      expect(mockRepo.updateContainerStatus).toHaveBeenCalledWith('ws-123', 'new-container-1', 'running');
+      expect(mockRepo.updateContainerStatus).toHaveBeenCalledWith(
+        'ws-123',
+        'new-container-1',
+        'running'
+      );
     });
   });
 
@@ -672,7 +690,11 @@ describe('Workspaces Routes', () => {
       expect(data.success).toBe(true);
       expect(data.data.containerId).toBe('container-1');
       expect(data.data.status).toBe('running');
-      expect(mockRepo.updateContainerStatus).toHaveBeenCalledWith('ws-123', 'container-1', 'running');
+      expect(mockRepo.updateContainerStatus).toHaveBeenCalledWith(
+        'ws-123',
+        'container-1',
+        'running'
+      );
     });
 
     it('should return existing container if already running', async () => {

@@ -1,11 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import {
-  createRedactor,
-  redactPII,
-  maskPII,
-  labelPII,
-  removePII,
-} from './redactor.js';
+import { createRedactor, redactPII, maskPII, labelPII, removePII } from './redactor.js';
 
 describe('PIIRedactor', () => {
   describe('mask mode', () => {
@@ -111,10 +105,9 @@ describe('PIIRedactor', () => {
   describe('category filtering', () => {
     it('redacts only specified categories', () => {
       const redactor = createRedactor();
-      const result = redactor.redactCategories(
-        'Email: test@example.com SSN: 123-45-6789',
-        ['email']
-      );
+      const result = redactor.redactCategories('Email: test@example.com SSN: 123-45-6789', [
+        'email',
+      ]);
       expect(result.redacted).toContain('123-45-6789');
       expect(result.redacted).not.toContain('test@example.com');
     });
@@ -142,10 +135,9 @@ describe('PIIRedactor', () => {
     });
 
     it('respects minSeverity option', () => {
-      const result = redactPII(
-        'Email: test@example.com SSN: 123-45-6789',
-        { minSeverity: 'critical' }
-      );
+      const result = redactPII('Email: test@example.com SSN: 123-45-6789', {
+        minSeverity: 'critical',
+      });
       // Email is medium severity, should remain
       expect(result.redacted).toContain('test@example.com');
       // SSN is critical, should be redacted

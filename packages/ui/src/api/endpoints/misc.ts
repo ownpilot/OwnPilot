@@ -29,7 +29,6 @@ import type {
   ChannelMessage,
   AIBriefing,
   DailyBriefingData,
-
   MergedModel,
   AvailableProvider,
   CapabilityDef,
@@ -49,9 +48,12 @@ import type {
 // ---- Autonomy ----
 
 export const autonomyApi = {
-  getConfig: () => apiClient.get<{ config: AutonomyConfig; levels: AutonomyLevel[] }>('/autonomy/config'),
+  getConfig: () =>
+    apiClient.get<{ config: AutonomyConfig; levels: AutonomyLevel[] }>('/autonomy/config'),
   getApprovals: () =>
-    apiClient.get<{ pending: PendingApproval[]; count: number }>('/autonomy/approvals').then((r) => r.pending ?? []),
+    apiClient
+      .get<{ pending: PendingApproval[]; count: number }>('/autonomy/approvals')
+      .then((r) => r.pending ?? []),
   setLevel: (level: number) => apiClient.post<void>('/autonomy/level', { level }),
   updateBudget: (budget: Record<string, unknown>) =>
     apiClient.patch<void>('/autonomy/budget', budget),
@@ -75,27 +77,22 @@ export const systemApi = {
       sandbox?: SandboxStatus;
       database?: DatabaseStatus;
     }>('/health'),
-  databaseStatus: () =>
-    apiClient.get<{ backups: BackupInfo[] }>('/database/status'),
+  databaseStatus: () => apiClient.get<{ backups: BackupInfo[] }>('/database/status'),
   databaseStats: () => apiClient.get<DatabaseStats>('/database/stats'),
   databaseOperation: (endpoint: string, body?: Record<string, unknown>) =>
     apiClient.post<Record<string, unknown>>(`/database/${endpoint}`, body),
   databaseOperationStatus: () =>
     apiClient.get<{ output: string[]; isRunning: boolean; lastResult?: string }>(
-      '/database/operation/status',
+      '/database/operation/status'
     ),
-  deleteBackup: (filename: string) =>
-    apiClient.delete<void>(`/database/backup/${filename}`),
+  deleteBackup: (filename: string) => apiClient.delete<void>(`/database/backup/${filename}`),
 };
 
 // ---- Debug / Logs ----
 
 export const debugApi = {
   get: (count?: number) =>
-    apiClient.get<DebugInfo>(
-      '/debug',
-      { params: count ? { count: String(count) } : undefined },
-    ),
+    apiClient.get<DebugInfo>('/debug', { params: count ? { count: String(count) } : undefined }),
   clear: () => apiClient.delete<void>('/debug'),
   listLogs: (params?: Record<string, string>) =>
     apiClient.get<{ logs: RequestLog[] }>('/chat/logs', { params }),
@@ -120,10 +117,8 @@ export const pluginsApi = {
 // ---- Workspaces ----
 
 export const workspacesApi = {
-  list: () =>
-    apiClient.get<{ workspaces: WorkspaceSelectorInfo[] }>('/workspaces'),
-  create: (name: string) =>
-    apiClient.post<WorkspaceSelectorInfo>('/workspaces', { name }),
+  list: () => apiClient.get<{ workspaces: WorkspaceSelectorInfo[] }>('/workspaces'),
+  create: (name: string) => apiClient.post<WorkspaceSelectorInfo>('/workspaces', { name }),
   delete: (id: string) => apiClient.delete<void>(`/workspaces/${id}`),
 };
 
@@ -138,7 +133,7 @@ export const customDataApi = {
   records: (tableId: string, limit?: number) =>
     apiClient.get<{ records: CustomRecord[]; total: number }>(
       `/custom-data/tables/${tableId}/records`,
-      { params: limit ? { limit: String(limit) } : undefined },
+      { params: limit ? { limit: String(limit) } : undefined }
     ),
   createTable: (table: {
     name: string;
@@ -146,14 +141,12 @@ export const customDataApi = {
     description?: string;
     columns: ColumnDefinition[];
   }) => apiClient.post<CustomTable>('/custom-data/tables', table),
-  deleteTable: (tableId: string) =>
-    apiClient.delete<void>(`/custom-data/tables/${tableId}`),
+  deleteTable: (tableId: string) => apiClient.delete<void>(`/custom-data/tables/${tableId}`),
   createRecord: (tableId: string, data: Record<string, unknown>) =>
     apiClient.post<CustomRecord>(`/custom-data/tables/${tableId}/records`, { data }),
   updateRecord: (recordId: string, data: Record<string, unknown>) =>
     apiClient.put<CustomRecord>(`/custom-data/records/${recordId}`, { data }),
-  deleteRecord: (recordId: string) =>
-    apiClient.delete<void>(`/custom-data/records/${recordId}`),
+  deleteRecord: (recordId: string) => apiClient.delete<void>(`/custom-data/records/${recordId}`),
 };
 
 // ---- Dashboard ----
@@ -161,21 +154,18 @@ export const customDataApi = {
 export const dashboardApi = {
   data: () => apiClient.get<DailyBriefingData>('/dashboard/data'),
   briefing: (options?: RequestOptions) =>
-    apiClient.get<{ aiBriefing?: AIBriefing; error?: string }>(
-      '/dashboard/briefing',
-      options,
-    ),
+    apiClient.get<{ aiBriefing?: AIBriefing; error?: string }>('/dashboard/briefing', options),
   /** Returns raw Response for SSE stream parsing */
   briefingStream: (options?: StreamOptions) =>
     apiClient.stream('/dashboard/briefing/stream', {}, options),
 };
 
-
 // ---- Model Configs ----
 
 export const modelConfigsApi = {
   list: () => apiClient.get<MergedModel[]>('/model-configs'),
-  availableProviders: () => apiClient.get<AvailableProvider[]>('/model-configs/providers/available'),
+  availableProviders: () =>
+    apiClient.get<AvailableProvider[]>('/model-configs/providers/available'),
   capabilities: () => apiClient.get<CapabilityDef[]>('/model-configs/capabilities/list'),
   syncApply: () => apiClient.post<SyncApplyResult>('/model-configs/sync/apply'),
   syncReset: () => apiClient.post<SyncResetResult>('/model-configs/sync/reset'),
@@ -186,47 +176,53 @@ export const modelConfigsApi = {
 export const localProvidersApi = {
   list: () => apiClient.get<LocalProvider[]>('/local-providers'),
   templates: () => apiClient.get<LocalProviderTemplate[]>('/local-providers/templates'),
-  create: (data: { name: string; providerType: string; baseUrl: string; apiKey?: string; discoveryEndpoint?: string }) =>
-    apiClient.post<LocalProvider>('/local-providers', data),
+  create: (data: {
+    name: string;
+    providerType: string;
+    baseUrl: string;
+    apiKey?: string;
+    discoveryEndpoint?: string;
+  }) => apiClient.post<LocalProvider>('/local-providers', data),
   models: (id: string) =>
-    apiClient.get<Array<{ modelId: string; displayName?: string }>>(`/local-providers/${id}/models`),
+    apiClient.get<Array<{ modelId: string; displayName?: string }>>(
+      `/local-providers/${id}/models`
+    ),
 };
 
 // ---- File Workspaces ----
 
 export const fileWorkspacesApi = {
-  list: () =>
-    apiClient.get<{ workspaces: FileWorkspaceInfo[]; count: number }>('/file-workspaces'),
+  list: () => apiClient.get<{ workspaces: FileWorkspaceInfo[]; count: number }>('/file-workspaces'),
   files: (id: string, path?: string) =>
     apiClient.get<{ path: string; files: WorkspaceFile[]; count: number }>(
       `/file-workspaces/${id}/files`,
-      { params: path ? { path } : undefined },
+      { params: path ? { path } : undefined }
     ),
   /** Returns URL for browser download (not an API call) */
   downloadUrl: (id: string) => `/api/v1/file-workspaces/${id}/download`,
   delete: (id: string) => apiClient.delete<void>(`/file-workspaces/${id}`),
   cleanup: (options?: { mode?: 'empty' | 'old' | 'both'; maxAgeDays?: number }) =>
-    apiClient.post<{ deleted: number; kept: number; mode: string; stats: { deletedEmpty: number; deletedOld: number } }>(
-      '/file-workspaces/cleanup',
-      { mode: options?.mode ?? 'old', maxAgeDays: options?.maxAgeDays ?? 7 },
-    ),
+    apiClient.post<{
+      deleted: number;
+      kept: number;
+      mode: string;
+      stats: { deletedEmpty: number; deletedOld: number };
+    }>('/file-workspaces/cleanup', {
+      mode: options?.mode ?? 'old',
+      maxAgeDays: options?.maxAgeDays ?? 7,
+    }),
 };
 
 // ---- Config Services ----
 
 export const configServicesApi = {
-  list: () =>
-    apiClient.get<{ services: ConfigServiceView[]; count: number }>('/config-services'),
+  list: () => apiClient.get<{ services: ConfigServiceView[]; count: number }>('/config-services'),
   stats: () => apiClient.get<ConfigServiceStats>('/config-services/stats'),
-  categories: () =>
-    apiClient.get<{ categories: string[] }>('/config-services/categories'),
+  categories: () => apiClient.get<{ categories: string[] }>('/config-services/categories'),
   createEntry: (serviceName: string, body: Record<string, unknown>) =>
     apiClient.post<ConfigEntryView>(`/config-services/${serviceName}/entries`, body),
   updateEntry: (serviceName: string, entryId: string, body: Record<string, unknown>) =>
-    apiClient.put<ConfigEntryView>(
-      `/config-services/${serviceName}/entries/${entryId}`,
-      body,
-    ),
+    apiClient.put<ConfigEntryView>(`/config-services/${serviceName}/entries/${entryId}`, body),
   deleteEntry: (serviceName: string, entryId: string) =>
     apiClient.delete<void>(`/config-services/${serviceName}/entries/${entryId}`),
   setDefault: (serviceName: string, entryId: string) =>
@@ -252,8 +248,7 @@ export const channelsApi = {
       total: number;
       unreadCount: number;
     }>('/channels/messages/inbox', { params: params as Record<string, string> }),
-  markRead: (messageId: string) =>
-    apiClient.post<void>(`/channels/messages/${messageId}/read`),
+  markRead: (messageId: string) => apiClient.post<void>(`/channels/messages/${messageId}/read`),
   setup: (channelId: string, config: Record<string, unknown>) =>
     apiClient.post<{
       pluginId: string;
@@ -264,10 +259,18 @@ export const channelsApi = {
     apiClient.post<{ pluginId: string; status: string }>(`/channels/${channelId}/connect`),
   disconnect: (channelId: string) =>
     apiClient.post<{ pluginId: string; status: string }>(`/channels/${channelId}/disconnect`),
-  reply: (channelId: string, body: { text: string; platformChatId?: string; replyToMessageId?: string }) =>
-    apiClient.post<{ messageId: string; platformMessageId: string }>(`/channels/${channelId}/reply`, body),
+  reply: (
+    channelId: string,
+    body: { text: string; platformChatId?: string; replyToMessageId?: string }
+  ) =>
+    apiClient.post<{ messageId: string; platformMessageId: string }>(
+      `/channels/${channelId}/reply`,
+      body
+    ),
   clearMessages: (channelId?: string) =>
-    apiClient.delete<{ deleted: number }>('/channels/messages', { params: channelId ? { channelId } : undefined }),
+    apiClient.delete<{ deleted: number }>('/channels/messages', {
+      params: channelId ? { channelId } : undefined,
+    }),
 };
 
 // ---- Expenses ----

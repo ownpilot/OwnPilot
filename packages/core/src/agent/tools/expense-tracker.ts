@@ -81,7 +81,8 @@ export interface ExpenseDatabase {
 /**
  * Default expense database path
  */
-const DEFAULT_EXPENSE_DB_PATH = process.env.EXPENSE_DB_PATH ??
+const DEFAULT_EXPENSE_DB_PATH =
+  process.env.EXPENSE_DB_PATH ??
   path.join(process.env.HOME ?? process.env.USERPROFILE ?? '.', '.ownpilot', 'expenses.json');
 
 /**
@@ -126,7 +127,10 @@ async function loadExpenseDb(dbPath: string = DEFAULT_EXPENSE_DB_PATH): Promise<
 /**
  * Save expense database
  */
-async function saveExpenseDb(db: ExpenseDatabase, dbPath: string = DEFAULT_EXPENSE_DB_PATH): Promise<void> {
+async function saveExpenseDb(
+  db: ExpenseDatabase,
+  dbPath: string = DEFAULT_EXPENSE_DB_PATH
+): Promise<void> {
   db.lastUpdated = new Date().toISOString();
 
   // Ensure directory exists
@@ -151,9 +155,19 @@ function generateExpenseId(): string {
  * Export expenses to CSV
  */
 async function exportToCsv(expenses: ExpenseEntry[], filePath: string): Promise<void> {
-  const headers = ['Date', 'Amount', 'Currency', 'Category', 'Description', 'Payment Method', 'Tags', 'Source', 'Notes'];
+  const headers = [
+    'Date',
+    'Amount',
+    'Currency',
+    'Category',
+    'Description',
+    'Payment Method',
+    'Tags',
+    'Source',
+    'Notes',
+  ];
 
-  const rows = expenses.map(e => [
+  const rows = expenses.map((e) => [
     e.date,
     e.amount.toString(),
     e.currency,
@@ -165,7 +179,7 @@ async function exportToCsv(expenses: ExpenseEntry[], filePath: string): Promise<
     e.notes ? `"${e.notes.replace(/"/g, '""')}"` : '',
   ]);
 
-  const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+  const csv = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
 
   await fs.mkdir(path.dirname(filePath), { recursive: true });
   await fs.writeFile(filePath, csv, 'utf-8');
@@ -181,7 +195,8 @@ async function exportToCsv(expenses: ExpenseEntry[], filePath: string): Promise<
 export const addExpenseTool: ToolDefinition = {
   name: 'add_expense',
   brief: 'Record a purchase, payment, or transaction',
-  description: 'Add a new expense entry to the tracker. Use this to record purchases, payments, or any financial transaction.',
+  description:
+    'Add a new expense entry to the tracker. Use this to record purchases, payments, or any financial transaction.',
   parameters: {
     type: 'object',
     properties: {
@@ -201,7 +216,19 @@ export const addExpenseTool: ToolDefinition = {
       category: {
         type: 'string',
         description: 'Expense category',
-        enum: ['food', 'transport', 'utilities', 'entertainment', 'shopping', 'health', 'education', 'travel', 'subscription', 'housing', 'other'],
+        enum: [
+          'food',
+          'transport',
+          'utilities',
+          'entertainment',
+          'shopping',
+          'health',
+          'education',
+          'travel',
+          'subscription',
+          'housing',
+          'other',
+        ],
       },
       description: {
         type: 'string',
@@ -225,7 +252,10 @@ export const addExpenseTool: ToolDefinition = {
   },
 };
 
-export const addExpenseExecutor: ToolExecutor = async (args, _context): Promise<ToolExecutionResult> => {
+export const addExpenseExecutor: ToolExecutor = async (
+  args,
+  _context
+): Promise<ToolExecutionResult> => {
   try {
     const db = await loadExpenseDb();
 
@@ -268,7 +298,8 @@ export const addExpenseExecutor: ToolExecutor = async (args, _context): Promise<
 export const batchAddExpensesTool: ToolDefinition = {
   name: 'batch_add_expenses',
   brief: 'Add multiple expenses at once',
-  description: 'Add multiple expenses at once. Use this for bulk import or adding several transactions efficiently.',
+  description:
+    'Add multiple expenses at once. Use this for bulk import or adding several transactions efficiently.',
   parameters: {
     type: 'object',
     properties: {
@@ -294,7 +325,19 @@ export const batchAddExpensesTool: ToolDefinition = {
             category: {
               type: 'string',
               description: 'Expense category',
-              enum: ['food', 'transport', 'utilities', 'entertainment', 'shopping', 'health', 'education', 'travel', 'subscription', 'housing', 'other'],
+              enum: [
+                'food',
+                'transport',
+                'utilities',
+                'entertainment',
+                'shopping',
+                'health',
+                'education',
+                'travel',
+                'subscription',
+                'housing',
+                'other',
+              ],
             },
             description: {
               type: 'string',
@@ -322,7 +365,10 @@ export const batchAddExpensesTool: ToolDefinition = {
   },
 };
 
-export const batchAddExpensesExecutor: ToolExecutor = async (args, _context): Promise<ToolExecutionResult> => {
+export const batchAddExpensesExecutor: ToolExecutor = async (
+  args,
+  _context
+): Promise<ToolExecutionResult> => {
   try {
     const db = await loadExpenseDb();
     const expensesInput = args.expenses as Array<{
@@ -385,7 +431,8 @@ export const batchAddExpensesExecutor: ToolExecutor = async (args, _context): Pr
 export const parseReceiptTool: ToolDefinition = {
   name: 'parse_receipt',
   brief: 'Extract expense data from a receipt image',
-  description: 'Parse expense information from a receipt image. Returns extracted data that can be used with add_expense. Requires a vision-capable model. Provide either "imagePath" (file path) or "imageBase64" (base64 data) — at least one is required.',
+  description:
+    'Parse expense information from a receipt image. Returns extracted data that can be used with add_expense. Requires a vision-capable model. Provide either "imagePath" (file path) or "imageBase64" (base64 data) — at least one is required.',
   parameters: {
     type: 'object',
     properties: {
@@ -406,7 +453,10 @@ export const parseReceiptTool: ToolDefinition = {
   },
 };
 
-export const parseReceiptExecutor: ToolExecutor = async (args, _context): Promise<ToolExecutionResult> => {
+export const parseReceiptExecutor: ToolExecutor = async (
+  args,
+  _context
+): Promise<ToolExecutionResult> => {
   // Note: This is a placeholder. The actual image parsing would be done by the AI model
   // when this tool is called. The model should analyze the image and return structured data.
 
@@ -449,7 +499,8 @@ export const parseReceiptExecutor: ToolExecutor = async (args, _context): Promis
 export const queryExpensesTool: ToolDefinition = {
   name: 'query_expenses',
   brief: 'Query and filter expenses with aggregations',
-  description: 'Query and filter expenses from the tracker. Returns matching expenses with optional aggregations.',
+  description:
+    'Query and filter expenses from the tracker. Returns matching expenses with optional aggregations.',
   parameters: {
     type: 'object',
     properties: {
@@ -464,7 +515,19 @@ export const queryExpensesTool: ToolDefinition = {
       category: {
         type: 'string',
         description: 'Filter by category',
-        enum: ['food', 'transport', 'utilities', 'entertainment', 'shopping', 'health', 'education', 'travel', 'subscription', 'housing', 'other'],
+        enum: [
+          'food',
+          'transport',
+          'utilities',
+          'entertainment',
+          'shopping',
+          'health',
+          'education',
+          'travel',
+          'subscription',
+          'housing',
+          'other',
+        ],
       },
       minAmount: {
         type: 'number',
@@ -496,7 +559,10 @@ export const queryExpensesTool: ToolDefinition = {
   },
 };
 
-export const queryExpensesExecutor: ToolExecutor = async (args, _context): Promise<ToolExecutionResult> => {
+export const queryExpensesExecutor: ToolExecutor = async (
+  args,
+  _context
+): Promise<ToolExecutionResult> => {
   try {
     const db = await loadExpenseDb();
     let expenses = [...db.expenses];
@@ -513,31 +579,30 @@ export const queryExpensesExecutor: ToolExecutor = async (args, _context): Promi
     const aggregate = args.aggregate as boolean | undefined;
 
     if (startDate) {
-      expenses = expenses.filter(e => e.date >= startDate);
+      expenses = expenses.filter((e) => e.date >= startDate);
     }
     if (endDate) {
-      expenses = expenses.filter(e => e.date <= endDate);
+      expenses = expenses.filter((e) => e.date <= endDate);
     }
     if (category) {
-      expenses = expenses.filter(e => e.category === category);
+      expenses = expenses.filter((e) => e.category === category);
     }
     if (minAmount !== undefined) {
-      expenses = expenses.filter(e => e.amount >= minAmount);
+      expenses = expenses.filter((e) => e.amount >= minAmount);
     }
     if (maxAmount !== undefined) {
-      expenses = expenses.filter(e => e.amount <= maxAmount);
+      expenses = expenses.filter((e) => e.amount <= maxAmount);
     }
     if (search) {
       const searchLower = search.toLowerCase();
-      expenses = expenses.filter(e =>
-        e.description.toLowerCase().includes(searchLower) ||
-        e.notes?.toLowerCase().includes(searchLower)
+      expenses = expenses.filter(
+        (e) =>
+          e.description.toLowerCase().includes(searchLower) ||
+          e.notes?.toLowerCase().includes(searchLower)
       );
     }
     if (tags && tags.length > 0) {
-      expenses = expenses.filter(e =>
-        e.tags?.some(t => tags.includes(t))
-      );
+      expenses = expenses.filter((e) => e.tags?.some((t) => tags.includes(t)));
     }
 
     // Sort by date descending
@@ -626,7 +691,10 @@ export const exportExpensesTool: ToolDefinition = {
   },
 };
 
-export const exportExpensesExecutor: ToolExecutor = async (args, _context): Promise<ToolExecutionResult> => {
+export const exportExpensesExecutor: ToolExecutor = async (
+  args,
+  _context
+): Promise<ToolExecutionResult> => {
   try {
     const db = await loadExpenseDb();
     let expenses = [...db.expenses];
@@ -637,13 +705,13 @@ export const exportExpensesExecutor: ToolExecutor = async (args, _context): Prom
     const category = args.category as ExpenseCategory | undefined;
 
     if (startDate) {
-      expenses = expenses.filter(e => e.date >= startDate);
+      expenses = expenses.filter((e) => e.date >= startDate);
     }
     if (endDate) {
-      expenses = expenses.filter(e => e.date <= endDate);
+      expenses = expenses.filter((e) => e.date <= endDate);
     }
     if (category) {
-      expenses = expenses.filter(e => e.category === category);
+      expenses = expenses.filter((e) => e.category === category);
     }
 
     // Sort by date
@@ -682,7 +750,8 @@ export const exportExpensesExecutor: ToolExecutor = async (args, _context): Prom
 export const expenseSummaryTool: ToolDefinition = {
   name: 'expense_summary',
   brief: 'Get totals by category and spending trends',
-  description: 'Get a summary of expenses for a time period. Shows totals by category, trends, and insights.',
+  description:
+    'Get a summary of expenses for a time period. Shows totals by category, trends, and insights.',
   parameters: {
     type: 'object',
     properties: {
@@ -704,7 +773,10 @@ export const expenseSummaryTool: ToolDefinition = {
   },
 };
 
-export const expenseSummaryExecutor: ToolExecutor = async (args, _context): Promise<ToolExecutionResult> => {
+export const expenseSummaryExecutor: ToolExecutor = async (
+  args,
+  _context
+): Promise<ToolExecutionResult> => {
   try {
     const db = await loadExpenseDb();
     let startDate: string;
@@ -750,7 +822,7 @@ export const expenseSummaryExecutor: ToolExecutor = async (args, _context): Prom
     }
 
     // Filter expenses
-    const expenses = db.expenses.filter(e => e.date >= startDate && e.date <= endDate);
+    const expenses = db.expenses.filter((e) => e.date >= startDate && e.date <= endDate);
 
     // Calculate summary
     const totalByCategory: Record<string, number> = {};
@@ -786,7 +858,7 @@ export const expenseSummaryExecutor: ToolExecutor = async (args, _context): Prom
     const biggestExpenses = [...expenses]
       .sort((a, b) => b.amount - a.amount)
       .slice(0, 5)
-      .map(e => ({
+      .map((e) => ({
         date: e.date,
         amount: e.amount,
         currency: e.currency,
@@ -880,12 +952,15 @@ export const deleteExpenseTool: ToolDefinition = {
   },
 };
 
-export const deleteExpenseExecutor: ToolExecutor = async (args, _context): Promise<ToolExecutionResult> => {
+export const deleteExpenseExecutor: ToolExecutor = async (
+  args,
+  _context
+): Promise<ToolExecutionResult> => {
   try {
     const db = await loadExpenseDb();
     const expenseId = args.expenseId as string;
 
-    const index = db.expenses.findIndex(e => e.id === expenseId);
+    const index = db.expenses.findIndex((e) => e.id === expenseId);
     if (index === -1) {
       return {
         content: `Expense not found: ${expenseId}`,
@@ -915,12 +990,13 @@ export const deleteExpenseExecutor: ToolExecutor = async (args, _context): Promi
 // Export All Tools
 // =============================================================================
 
-export const EXPENSE_TRACKER_TOOLS: Array<{ definition: ToolDefinition; executor: ToolExecutor }> = [
-  { definition: addExpenseTool, executor: addExpenseExecutor },
-  { definition: batchAddExpensesTool, executor: batchAddExpensesExecutor },
-  { definition: parseReceiptTool, executor: parseReceiptExecutor },
-  { definition: queryExpensesTool, executor: queryExpensesExecutor },
-  { definition: exportExpensesTool, executor: exportExpensesExecutor },
-  { definition: expenseSummaryTool, executor: expenseSummaryExecutor },
-  { definition: deleteExpenseTool, executor: deleteExpenseExecutor },
-];
+export const EXPENSE_TRACKER_TOOLS: Array<{ definition: ToolDefinition; executor: ToolExecutor }> =
+  [
+    { definition: addExpenseTool, executor: addExpenseExecutor },
+    { definition: batchAddExpensesTool, executor: batchAddExpensesExecutor },
+    { definition: parseReceiptTool, executor: parseReceiptExecutor },
+    { definition: queryExpensesTool, executor: queryExpensesExecutor },
+    { definition: exportExpensesTool, executor: exportExpensesExecutor },
+    { definition: expenseSummaryTool, executor: expenseSummaryExecutor },
+    { definition: deleteExpenseTool, executor: deleteExpenseExecutor },
+  ];

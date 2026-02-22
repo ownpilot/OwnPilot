@@ -39,14 +39,16 @@ function apiError(code: string, message: string, status = 500) {
   };
 }
 
-function channelListData(channels: Array<{
-  id: string;
-  type: string;
-  name: string;
-  status: string;
-  botInfo?: { username: string; firstName: string };
-}> = []) {
-  const connected = channels.filter(c => c.status === 'connected').length;
+function channelListData(
+  channels: Array<{
+    id: string;
+    type: string;
+    name: string;
+    status: string;
+    botInfo?: { username: string; firstName: string };
+  }> = []
+) {
+  const connected = channels.filter((c) => c.status === 'connected').length;
   return {
     channels,
     summary: {
@@ -94,18 +96,30 @@ describe('Channel CLI Commands', () => {
 
   describe('channelList()', () => {
     it('displays channels in table format', async () => {
-      mockFetch.mockResolvedValue(apiOk(channelListData([
-        { id: 'channel.telegram', type: 'telegram', name: 'Telegram', status: 'connected', botInfo: { username: 'mybot', firstName: 'My Bot' } },
-      ])));
+      mockFetch.mockResolvedValue(
+        apiOk(
+          channelListData([
+            {
+              id: 'channel.telegram',
+              type: 'telegram',
+              name: 'Telegram',
+              status: 'connected',
+              botInfo: { username: 'mybot', firstName: 'My Bot' },
+            },
+          ])
+        )
+      );
 
       await channelList();
 
       expect(mockFetch).toHaveBeenCalledWith(
         'http://localhost:8080/api/v1/channels',
-        expect.objectContaining({ headers: expect.objectContaining({ 'Content-Type': 'application/json' }) }),
+        expect.objectContaining({
+          headers: expect.objectContaining({ 'Content-Type': 'application/json' }),
+        })
       );
 
-      const output = logSpy.mock.calls.map(c => c.join(' ')).join('\n');
+      const output = logSpy.mock.calls.map((c) => c.join(' ')).join('\n');
       expect(output).toContain('channel.telegram');
       expect(output).toContain('telegram');
       expect(output).toContain('Telegram');
@@ -117,7 +131,7 @@ describe('Channel CLI Commands', () => {
 
       await channelList();
 
-      const output = logSpy.mock.calls.map(c => c.join(' ')).join('\n');
+      const output = logSpy.mock.calls.map((c) => c.join(' ')).join('\n');
       expect(output).toContain('No channels configured');
     });
 
@@ -131,7 +145,7 @@ describe('Channel CLI Commands', () => {
 
       expect(mockFetch).toHaveBeenCalledWith(
         'http://custom:9090/api/v1/channels',
-        expect.any(Object),
+        expect.any(Object)
       );
 
       // delete instead of assign — assigning undefined to process.env creates string "undefined"
@@ -151,7 +165,7 @@ describe('Channel CLI Commands', () => {
 
       await expect(channelList()).rejects.toThrow('process.exit');
 
-      const errOutput = errorSpy.mock.calls.map(c => c.join(' ')).join('\n');
+      const errOutput = errorSpy.mock.calls.map((c) => c.join(' ')).join('\n');
       expect(errOutput).toContain('Could not reach gateway');
 
       exitSpy.mockRestore();
@@ -168,11 +182,13 @@ describe('Channel CLI Commands', () => {
       vi.mocked(input).mockResolvedValue('123:ABC');
       vi.mocked(confirm).mockResolvedValue(false);
 
-      mockFetch.mockResolvedValue(apiOk({
-        pluginId: 'channel.telegram',
-        status: 'connected',
-        botInfo: { username: 'testbot', firstName: 'Test Bot' },
-      }));
+      mockFetch.mockResolvedValue(
+        apiOk({
+          pluginId: 'channel.telegram',
+          status: 'connected',
+          botInfo: { username: 'testbot', firstName: 'Test Bot' },
+        })
+      );
 
       await channelAdd();
 
@@ -182,10 +198,10 @@ describe('Channel CLI Commands', () => {
         expect.objectContaining({
           method: 'POST',
           body: expect.stringContaining('bot_token'),
-        }),
+        })
       );
 
-      const output = logSpy.mock.calls.map(c => c.join(' ')).join('\n');
+      const output = logSpy.mock.calls.map((c) => c.join(' ')).join('\n');
       expect(output).toContain('connected');
       expect(output).toContain('@testbot');
     });
@@ -195,16 +211,18 @@ describe('Channel CLI Commands', () => {
       vi.mocked(input).mockResolvedValue('a'.repeat(60)); // long token
       vi.mocked(confirm).mockResolvedValue(false);
 
-      mockFetch.mockResolvedValue(apiOk({
-        pluginId: 'channel.discord',
-        status: 'connected',
-      }));
+      mockFetch.mockResolvedValue(
+        apiOk({
+          pluginId: 'channel.discord',
+          status: 'connected',
+        })
+      );
 
       await channelAdd();
 
       expect(mockFetch).toHaveBeenCalledWith(
         'http://localhost:8080/api/v1/channels/channel.discord/setup',
-        expect.objectContaining({ method: 'POST' }),
+        expect.objectContaining({ method: 'POST' })
       );
     });
 
@@ -221,7 +239,7 @@ describe('Channel CLI Commands', () => {
 
       await expect(channelAdd()).rejects.toThrow('process.exit');
 
-      const errOutput = errorSpy.mock.calls.map(c => c.join(' ')).join('\n');
+      const errOutput = errorSpy.mock.calls.map((c) => c.join(' ')).join('\n');
       expect(errOutput).toContain('Invalid token');
 
       exitSpy.mockRestore();
@@ -240,7 +258,7 @@ describe('Channel CLI Commands', () => {
 
       expect(mockFetch).toHaveBeenCalledWith(
         expect.stringContaining('/channels'),
-        expect.any(Object),
+        expect.any(Object)
       );
     });
   });
@@ -252,16 +270,25 @@ describe('Channel CLI Commands', () => {
   describe('channelConnect()', () => {
     it('connects a channel by ID', async () => {
       mockFetch
-        .mockResolvedValueOnce(apiOk(channelListData([
-          { id: 'channel.telegram', type: 'telegram', name: 'Telegram', status: 'disconnected' },
-        ])))
+        .mockResolvedValueOnce(
+          apiOk(
+            channelListData([
+              {
+                id: 'channel.telegram',
+                type: 'telegram',
+                name: 'Telegram',
+                status: 'disconnected',
+              },
+            ])
+          )
+        )
         .mockResolvedValueOnce(apiOk({ pluginId: 'channel.telegram', status: 'connected' }));
 
       await channelConnect({ id: 'channel.telegram' });
 
       expect(mockFetch).toHaveBeenCalledWith(
         'http://localhost:8080/api/v1/channels/channel.telegram/connect',
-        expect.objectContaining({ method: 'POST' }),
+        expect.objectContaining({ method: 'POST' })
       );
     });
 
@@ -270,7 +297,7 @@ describe('Channel CLI Commands', () => {
 
       await channelConnect({});
 
-      const output = logSpy.mock.calls.map(c => c.join(' ')).join('\n');
+      const output = logSpy.mock.calls.map((c) => c.join(' ')).join('\n');
       expect(output).toContain('No channels configured');
     });
   });
@@ -282,27 +309,35 @@ describe('Channel CLI Commands', () => {
   describe('channelDisconnect()', () => {
     it('disconnects a channel by ID', async () => {
       mockFetch
-        .mockResolvedValueOnce(apiOk(channelListData([
-          { id: 'channel.telegram', type: 'telegram', name: 'Telegram', status: 'connected' },
-        ])))
+        .mockResolvedValueOnce(
+          apiOk(
+            channelListData([
+              { id: 'channel.telegram', type: 'telegram', name: 'Telegram', status: 'connected' },
+            ])
+          )
+        )
         .mockResolvedValueOnce(apiOk({ pluginId: 'channel.telegram', status: 'disconnected' }));
 
       await channelDisconnect({ id: 'channel.telegram' });
 
       expect(mockFetch).toHaveBeenCalledWith(
         'http://localhost:8080/api/v1/channels/channel.telegram/disconnect',
-        expect.objectContaining({ method: 'POST' }),
+        expect.objectContaining({ method: 'POST' })
       );
     });
 
     it('shows message when no connected channels', async () => {
-      mockFetch.mockResolvedValue(apiOk(channelListData([
-        { id: 'channel.telegram', type: 'telegram', name: 'Telegram', status: 'disconnected' },
-      ])));
+      mockFetch.mockResolvedValue(
+        apiOk(
+          channelListData([
+            { id: 'channel.telegram', type: 'telegram', name: 'Telegram', status: 'disconnected' },
+          ])
+        )
+      );
 
       await channelDisconnect({});
 
-      const output = logSpy.mock.calls.map(c => c.join(' ')).join('\n');
+      const output = logSpy.mock.calls.map((c) => c.join(' ')).join('\n');
       expect(output).toContain('No connected channels');
     });
   });
@@ -315,7 +350,7 @@ describe('Channel CLI Commands', () => {
     it('shows informational message about plugin-based channels', async () => {
       await channelRemove({});
 
-      const output = logSpy.mock.calls.map(c => c.join(' ')).join('\n');
+      const output = logSpy.mock.calls.map((c) => c.join(' ')).join('\n');
       expect(output).toContain('plugin');
       expect(output).toContain('disconnect');
     });

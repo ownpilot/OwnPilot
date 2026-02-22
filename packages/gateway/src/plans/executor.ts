@@ -156,7 +156,9 @@ export class PlanExecutor extends EventEmitter {
       if (!updatedPlan) {
         throw new Error(`Plan ${planId} was deleted during execution`);
       }
-      const completedSteps = (await this.planService.getStepsByStatus(this.config.userId, planId, 'completed')).length;
+      const completedSteps = (
+        await this.planService.getStepsByStatus(this.config.userId, planId, 'completed')
+      ).length;
       const totalSteps = steps.length;
 
       const result: ExecutionResult = {
@@ -169,7 +171,9 @@ export class PlanExecutor extends EventEmitter {
       };
 
       if (updatedPlan.status === 'completed') {
-        await this.planService.logEvent(this.config.userId, planId, 'completed', undefined, { duration: result.duration });
+        await this.planService.logEvent(this.config.userId, planId, 'completed', undefined, {
+          duration: result.duration,
+        });
         this.emit('plan:completed', updatedPlan, result);
       }
 
@@ -179,14 +183,21 @@ export class PlanExecutor extends EventEmitter {
       abortController.abort();
 
       const errorMessage = getErrorMessage(error);
-      await this.planService.updatePlan(this.config.userId, planId, { status: 'failed', error: errorMessage });
-      await this.planService.logEvent(this.config.userId, planId, 'failed', undefined, { error: errorMessage });
+      await this.planService.updatePlan(this.config.userId, planId, {
+        status: 'failed',
+        error: errorMessage,
+      });
+      await this.planService.logEvent(this.config.userId, planId, 'failed', undefined, {
+        error: errorMessage,
+      });
       this.emit('plan:failed', plan, errorMessage);
 
       return {
         planId,
         status: 'failed',
-        completedSteps: (await this.planService.getStepsByStatus(this.config.userId, planId, 'completed')).length,
+        completedSteps: (
+          await this.planService.getStepsByStatus(this.config.userId, planId, 'completed')
+        ).length,
         totalSteps: (await this.planService.getSteps(this.config.userId, planId)).length,
         duration: Date.now() - startTime,
         results,
@@ -263,8 +274,16 @@ export class PlanExecutor extends EventEmitter {
       data,
     };
 
-    await this.planService.updatePlan(this.config.userId, planId, { checkpoint: JSON.stringify(checkpointData) });
-    await this.planService.logEvent(this.config.userId, planId, 'checkpoint', undefined, checkpointData);
+    await this.planService.updatePlan(this.config.userId, planId, {
+      checkpoint: JSON.stringify(checkpointData),
+    });
+    await this.planService.logEvent(
+      this.config.userId,
+      planId,
+      'checkpoint',
+      undefined,
+      checkpointData
+    );
   }
 
   /**
@@ -347,9 +366,13 @@ export class PlanExecutor extends EventEmitter {
       }
 
       // Check dependencies
-      if (!await this.planService.areDependenciesMet(this.config.userId, step.id)) {
+      if (!(await this.planService.areDependenciesMet(this.config.userId, step.id))) {
         // Try to find another step that can run
-        const pendingSteps = await this.planService.getStepsByStatus(this.config.userId, planId, 'pending');
+        const pendingSteps = await this.planService.getStepsByStatus(
+          this.config.userId,
+          planId,
+          'pending'
+        );
 
         // Find a ready step (one with met dependencies)
         let readyStep: PlanStep | undefined;
@@ -367,11 +390,14 @@ export class PlanExecutor extends EventEmitter {
           if (stallCount >= MAX_STALL) {
             // Deadlock detected — mark blocked steps and fail plan
             for (const s of pendingSteps) {
-              if (!await this.planService.areDependenciesMet(this.config.userId, s.id)) {
+              if (!(await this.planService.areDependenciesMet(this.config.userId, s.id))) {
                 await this.planService.updateStep(this.config.userId, s.id, { status: 'blocked' });
               }
             }
-            await this.planService.updatePlan(this.config.userId, planId, { status: 'failed', error: 'Dependency deadlock: all pending steps have unmet dependencies' });
+            await this.planService.updatePlan(this.config.userId, planId, {
+              status: 'failed',
+              error: 'Dependency deadlock: all pending steps have unmet dependencies',
+            });
             throw new Error('Dependency deadlock: all pending steps have unmet dependencies');
           }
 
@@ -425,10 +451,7 @@ export class PlanExecutor extends EventEmitter {
 
       // Execute with timeout
       const timeout = step.timeoutMs ?? this.config.defaultTimeout;
-      const result = await this.executeWithTimeout(
-        () => handler(step.config, context),
-        timeout
-      );
+      const result = await this.executeWithTimeout(() => handler(step.config, context), timeout);
 
       // Handle result
       if (result.success) {
@@ -437,7 +460,9 @@ export class PlanExecutor extends EventEmitter {
           status: 'completed',
           result: result.data,
         });
-        await this.planService.logEvent(this.config.userId, planId, 'step_completed', step.id, { result: result.data });
+        await this.planService.logEvent(this.config.userId, planId, 'step_completed', step.id, {
+          result: result.data,
+        });
         this.emit('step:completed', plan, step, result);
 
         // Handle branching
@@ -449,7 +474,11 @@ export class PlanExecutor extends EventEmitter {
             // Mark skipped steps
             const steps = await this.planService.getSteps(this.config.userId, planId);
             for (const s of steps) {
-              if (s.orderNum > step.orderNum && s.orderNum < targetStep.orderNum && s.status === 'pending') {
+              if (
+                s.orderNum > step.orderNum &&
+                s.orderNum < targetStep.orderNum &&
+                s.status === 'pending'
+              ) {
                 await this.planService.updateStep(this.config.userId, s.id, { status: 'skipped' });
                 this.emit('step:skipped', plan, s, 'Skipped due to condition branch');
               }
@@ -478,7 +507,9 @@ export class PlanExecutor extends EventEmitter {
       if (step.retryCount < step.maxRetries) {
         const retryNum = step.retryCount + 1;
         const backoffMs = Math.min(1000 * Math.pow(2, step.retryCount), PLAN_MAX_BACKOFF_MS);
-        this.log(`Step ${step.name} failed, retrying in ${backoffMs}ms (${retryNum}/${step.maxRetries})`);
+        this.log(
+          `Step ${step.name} failed, retrying in ${backoffMs}ms (${retryNum}/${step.maxRetries})`
+        );
 
         await new Promise((r) => setTimeout(r, backoffMs));
 
@@ -495,7 +526,9 @@ export class PlanExecutor extends EventEmitter {
         status: 'failed',
         error: errorMessage,
       });
-      await this.planService.logEvent(this.config.userId, planId, 'step_failed', step.id, { error: errorMessage });
+      await this.planService.logEvent(this.config.userId, planId, 'step_failed', step.id, {
+        error: errorMessage,
+      });
       this.emit('step:failed', plan, step, errorMessage);
 
       // Handle failure action
@@ -515,10 +548,7 @@ export class PlanExecutor extends EventEmitter {
     }
   }
 
-  private async executeWithTimeout<T>(
-    fn: () => Promise<T>,
-    timeout: number
-  ): Promise<T> {
+  private async executeWithTimeout<T>(fn: () => Promise<T>, timeout: number): Promise<T> {
     let settled = false;
 
     return new Promise<T>((resolve, reject) => {
@@ -561,7 +591,7 @@ export class PlanExecutor extends EventEmitter {
       const toolName = config.toolName as string;
       const toolArgs = (config.toolArgs ?? {}) as Record<string, unknown>;
 
-      if (!await hasTool(toolName)) {
+      if (!(await hasTool(toolName))) {
         return { success: false, error: `Tool '${toolName}' not found` };
       }
 
@@ -596,7 +626,10 @@ export class PlanExecutor extends EventEmitter {
         const { getOrCreateChatAgent } = await import('../routes/agents.js');
         const { resolveProviderAndModel } = await import('../routes/settings.js');
         const resolved = await resolveProviderAndModel('default', 'default');
-        const agent = await getOrCreateChatAgent(resolved.provider ?? 'openai', resolved.model ?? 'gpt-4o-mini');
+        const agent = await getOrCreateChatAgent(
+          resolved.provider ?? 'openai',
+          resolved.model ?? 'gpt-4o-mini'
+        );
 
         // Build the prompt with choices if provided
         let fullPrompt = config.prompt as string;
@@ -692,7 +725,10 @@ export class PlanExecutor extends EventEmitter {
       const steps = rawSteps.map((s) => {
         if (typeof s === 'object' && s !== null) {
           const obj = s as Record<string, unknown>;
-          return { toolName: obj.toolName as string, toolArgs: (obj.toolArgs ?? {}) as Record<string, unknown> };
+          return {
+            toolName: obj.toolName as string,
+            toolArgs: (obj.toolArgs ?? {}) as Record<string, unknown>,
+          };
         }
         return { toolName: String(s), toolArgs: {} as Record<string, unknown> };
       });
@@ -703,13 +739,18 @@ export class PlanExecutor extends EventEmitter {
       const batchSize = this.config.maxConcurrent;
       this.log(`Executing ${steps.length} steps in parallel (batch size: ${batchSize})`);
 
-      const allOutputs: Array<{ step: string | undefined; success: boolean; error?: string; result?: unknown }> = [];
+      const allOutputs: Array<{
+        step: string | undefined;
+        success: boolean;
+        error?: string;
+        result?: unknown;
+      }> = [];
 
       // Process in batches to respect maxConcurrent
       for (let i = 0; i < steps.length; i += batchSize) {
         const batch = steps.slice(i, i + batchSize);
         const promises = batch.map(async (step) => {
-          if (step.toolName && await hasTool(step.toolName)) {
+          if (step.toolName && (await hasTool(step.toolName))) {
             return executeTool(step.toolName, step.toolArgs ?? {}, this.config.userId);
           }
           return { success: false, error: `Tool '${step.toolName}' not found` };
@@ -718,7 +759,9 @@ export class PlanExecutor extends EventEmitter {
         const results = await Promise.allSettled(promises);
         const batchOutputs = results.map((r, j) => ({
           step: batch[j]?.toolName,
-          ...(r.status === 'fulfilled' ? r.value : { success: false, error: r.reason?.message ?? 'Failed' }),
+          ...(r.status === 'fulfilled'
+            ? r.value
+            : { success: false, error: r.reason?.message ?? 'Failed' }),
         }));
         allOutputs.push(...batchOutputs);
       }
@@ -737,7 +780,7 @@ export class PlanExecutor extends EventEmitter {
       const toolName = config.toolName as string;
       const toolArgs = (config.toolArgs ?? {}) as Record<string, unknown>;
 
-      if (!toolName || !await hasTool(toolName)) {
+      if (!toolName || !(await hasTool(toolName))) {
         return { success: false, error: `Loop tool '${toolName}' not found` };
       }
 
@@ -745,7 +788,11 @@ export class PlanExecutor extends EventEmitter {
       const iterationResults: unknown[] = [];
 
       for (let i = 0; i < maxIterations; i++) {
-        const result = await executeTool(toolName, { ...toolArgs, iteration: i }, this.config.userId);
+        const result = await executeTool(
+          toolName,
+          { ...toolArgs, iteration: i },
+          this.config.userId
+        );
         iterationResults.push(result.result);
 
         if (!result.success) {

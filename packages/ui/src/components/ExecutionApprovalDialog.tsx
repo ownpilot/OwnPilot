@@ -37,7 +37,9 @@ function RiskBadge({ risk }: { risk: CodeRiskAnalysis }) {
   const color = RISK_COLORS[risk.level] ?? 'text-text-muted';
   const bg = RISK_BG[risk.level] ?? 'bg-bg-tertiary';
   return (
-    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${color} ${bg}`}>
+    <span
+      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${color} ${bg}`}
+    >
       {risk.level.charAt(0).toUpperCase() + risk.level.slice(1)} (score: {risk.score})
     </span>
   );
@@ -81,11 +83,14 @@ export function ExecutionApprovalDialog({ approval, onResolve }: ExecutionApprov
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [onResolve]);
 
-  const handleBackdropClick = useCallback((e: React.MouseEvent) => {
-    if (e.target === backdropRef.current) {
-      onResolve(false);
-    }
-  }, [onResolve]);
+  const handleBackdropClick = useCallback(
+    (e: React.MouseEvent) => {
+      if (e.target === backdropRef.current) {
+        onResolve(false);
+      }
+    },
+    [onResolve]
+  );
 
   const minutes = Math.floor(remaining / 60);
   const seconds = remaining % 60;
@@ -143,13 +148,18 @@ export function ExecutionApprovalDialog({ approval, onResolve }: ExecutionApprov
           <div className="mx-6 mb-3 space-y-2">
             <div className="flex items-center gap-2">
               <Shield className="w-3.5 h-3.5 text-text-muted dark:text-dark-text-muted" />
-              <span className="text-xs text-text-muted dark:text-dark-text-muted">Risk Analysis:</span>
+              <span className="text-xs text-text-muted dark:text-dark-text-muted">
+                Risk Analysis:
+              </span>
               <RiskBadge risk={approval.riskAnalysis} />
             </div>
             {approval.riskAnalysis.factors.length > 0 && (
               <ul className="space-y-0.5 pl-5">
                 {approval.riskAnalysis.factors.map((factor, idx) => (
-                  <li key={idx} className="text-xs text-text-secondary dark:text-dark-text-secondary flex items-start gap-1.5">
+                  <li
+                    key={idx}
+                    className="text-xs text-text-secondary dark:text-dark-text-secondary flex items-start gap-1.5"
+                  >
                     <span className="mt-1 w-1.5 h-1.5 rounded-full bg-text-muted dark:bg-dark-text-muted flex-shrink-0" />
                     {factor.description}
                   </li>
@@ -161,8 +171,12 @@ export function ExecutionApprovalDialog({ approval, onResolve }: ExecutionApprov
 
         {/* Timer */}
         <div className="mx-6 mb-4 flex items-center gap-2">
-          <Clock className={`w-3.5 h-3.5 ${isUrgent ? 'text-red-500 animate-pulse' : 'text-text-muted dark:text-dark-text-muted'}`} />
-          <span className={`text-xs ${isUrgent ? 'text-red-500 font-medium' : 'text-text-muted dark:text-dark-text-muted'}`}>
+          <Clock
+            className={`w-3.5 h-3.5 ${isUrgent ? 'text-red-500 animate-pulse' : 'text-text-muted dark:text-dark-text-muted'}`}
+          />
+          <span
+            className={`text-xs ${isUrgent ? 'text-red-500 font-medium' : 'text-text-muted dark:text-dark-text-muted'}`}
+          >
             Auto-reject in {timeStr}
           </span>
         </div>

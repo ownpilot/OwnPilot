@@ -80,15 +80,15 @@ CREATE TABLE IF NOT EXISTS custom_table_schemas (
 );
 ```
 
-| Column | Type | Constraints | Description |
-|--------|------|-------------|-------------|
-| `id` | TEXT | PRIMARY KEY | Generated as `table_<timestamp>_<random6>` |
-| `name` | TEXT | NOT NULL, UNIQUE | Machine-readable name, lowercase with underscores only |
-| `display_name` | TEXT | NOT NULL | Human-readable name shown in the UI |
-| `description` | TEXT | nullable | Optional prose description of the table's purpose |
-| `columns` | JSONB | NOT NULL, default `'[]'` | Array of `ColumnDefinition` objects (see below) |
-| `created_at` | TIMESTAMP | NOT NULL, default `NOW()` | Row creation timestamp |
-| `updated_at` | TIMESTAMP | NOT NULL, default `NOW()` | Last modification timestamp |
+| Column         | Type      | Constraints               | Description                                            |
+| -------------- | --------- | ------------------------- | ------------------------------------------------------ |
+| `id`           | TEXT      | PRIMARY KEY               | Generated as `table_<timestamp>_<random6>`             |
+| `name`         | TEXT      | NOT NULL, UNIQUE          | Machine-readable name, lowercase with underscores only |
+| `display_name` | TEXT      | NOT NULL                  | Human-readable name shown in the UI                    |
+| `description`  | TEXT      | nullable                  | Optional prose description of the table's purpose      |
+| `columns`      | JSONB     | NOT NULL, default `'[]'`  | Array of `ColumnDefinition` objects (see below)        |
+| `created_at`   | TIMESTAMP | NOT NULL, default `NOW()` | Row creation timestamp                                 |
+| `updated_at`   | TIMESTAMP | NOT NULL, default `NOW()` | Last modification timestamp                            |
 
 **Index:**
 
@@ -111,13 +111,13 @@ CREATE TABLE IF NOT EXISTS custom_data_records (
 );
 ```
 
-| Column | Type | Constraints | Description |
-|--------|------|-------------|-------------|
-| `id` | TEXT | PRIMARY KEY | Generated as `rec_<timestamp>_<random6>` |
-| `table_id` | TEXT | NOT NULL, FK -> `custom_table_schemas.id` ON DELETE CASCADE | The table this record belongs to |
-| `data` | JSONB | NOT NULL, default `'{}'` | The record payload, keys matching column names |
-| `created_at` | TIMESTAMP | NOT NULL, default `NOW()` | Row creation timestamp |
-| `updated_at` | TIMESTAMP | NOT NULL, default `NOW()` | Last modification timestamp |
+| Column       | Type      | Constraints                                                 | Description                                    |
+| ------------ | --------- | ----------------------------------------------------------- | ---------------------------------------------- |
+| `id`         | TEXT      | PRIMARY KEY                                                 | Generated as `rec_<timestamp>_<random6>`       |
+| `table_id`   | TEXT      | NOT NULL, FK -> `custom_table_schemas.id` ON DELETE CASCADE | The table this record belongs to               |
+| `data`       | JSONB     | NOT NULL, default `'{}'`                                    | The record payload, keys matching column names |
+| `created_at` | TIMESTAMP | NOT NULL, default `NOW()`                                   | Row creation timestamp                         |
+| `updated_at` | TIMESTAMP | NOT NULL, default `NOW()`                                   | Last modification timestamp                    |
 
 **Index:**
 
@@ -145,15 +145,15 @@ CREATE TABLE IF NOT EXISTS custom_data (
 );
 ```
 
-| Column | Type | Constraints | Description |
-|--------|------|-------------|-------------|
-| `id` | TEXT | PRIMARY KEY | Unique row identifier |
-| `user_id` | TEXT | NOT NULL, default `'default'` | Owner of this key-value entry |
-| `key` | TEXT | NOT NULL, UNIQUE per `user_id` | The lookup key |
-| `value` | JSONB | NOT NULL | The stored value |
-| `metadata` | JSONB | default `'{}'` | Arbitrary metadata |
-| `created_at` | TIMESTAMP | NOT NULL, default `NOW()` | Row creation timestamp |
-| `updated_at` | TIMESTAMP | NOT NULL, default `NOW()` | Last modification timestamp |
+| Column       | Type      | Constraints                    | Description                   |
+| ------------ | --------- | ------------------------------ | ----------------------------- |
+| `id`         | TEXT      | PRIMARY KEY                    | Unique row identifier         |
+| `user_id`    | TEXT      | NOT NULL, default `'default'`  | Owner of this key-value entry |
+| `key`        | TEXT      | NOT NULL, UNIQUE per `user_id` | The lookup key                |
+| `value`      | JSONB     | NOT NULL                       | The stored value              |
+| `metadata`   | JSONB     | default `'{}'`                 | Arbitrary metadata            |
+| `created_at` | TIMESTAMP | NOT NULL, default `NOW()`      | Row creation timestamp        |
+| `updated_at` | TIMESTAMP | NOT NULL, default `NOW()`      | Last modification timestamp   |
 
 **Indexes:**
 
@@ -168,21 +168,21 @@ Each element in the `columns` JSONB array of `custom_table_schemas` conforms to 
 
 ```typescript
 interface ColumnDefinition {
-  name: string;          // Column name (lowercase, alphanumeric + underscore)
+  name: string; // Column name (lowercase, alphanumeric + underscore)
   type: 'text' | 'number' | 'boolean' | 'date' | 'datetime' | 'json';
-  required?: boolean;    // Whether the column must be present in every record
-  defaultValue?: string | number | boolean | null;  // Fallback when value is omitted
-  description?: string;  // Human-readable explanation of this column
+  required?: boolean; // Whether the column must be present in every record
+  defaultValue?: string | number | boolean | null; // Fallback when value is omitted
+  description?: string; // Human-readable explanation of this column
 }
 ```
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `name` | string | Yes | Internal column name. Only `[a-zA-Z0-9_]` characters are allowed; the repository rejects names with other characters. |
-| `type` | enum | Yes | One of `text`, `number`, `boolean`, `date`, `datetime`, `json`. Used by the UI to render appropriate input controls and by the AI tool description for context. |
-| `required` | boolean | No | When `true`, the repository throws an error if a record is added or updated without this column. Defaults to `false`. |
-| `defaultValue` | mixed | No | Applied automatically when a record omits this column. |
-| `description` | string | No | Free-text explanation. Not currently enforced but useful for AI comprehension. |
+| Field          | Type    | Required | Description                                                                                                                                                     |
+| -------------- | ------- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `name`         | string  | Yes      | Internal column name. Only `[a-zA-Z0-9_]` characters are allowed; the repository rejects names with other characters.                                           |
+| `type`         | enum    | Yes      | One of `text`, `number`, `boolean`, `date`, `datetime`, `json`. Used by the UI to render appropriate input controls and by the AI tool description for context. |
+| `required`     | boolean | No       | When `true`, the repository throws an error if a record is added or updated without this column. Defaults to `false`.                                           |
+| `defaultValue` | mixed   | No       | Applied automatically when a record omits this column.                                                                                                          |
+| `description`  | string  | No       | Free-text explanation. Not currently enforced but useful for AI comprehension.                                                                                  |
 
 ---
 
@@ -265,13 +265,13 @@ Lists records belonging to a table.
 
 **Options:**
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `limit` | number | 100 | Maximum rows to return |
-| `offset` | number | 0 | Pagination offset |
-| `orderBy` | string | -- | (Accepted but currently unused; records are ordered by `created_at DESC`) |
-| `orderDir` | `'asc'` \| `'desc'` | -- | (Accepted but currently unused) |
-| `filter` | `Record<string, unknown>` | -- | Key-value pairs; records where `data[key] !== value` are excluded |
+| Option     | Type                      | Default | Description                                                               |
+| ---------- | ------------------------- | ------- | ------------------------------------------------------------------------- |
+| `limit`    | number                    | 100     | Maximum rows to return                                                    |
+| `offset`   | number                    | 0       | Pagination offset                                                         |
+| `orderBy`  | string                    | --      | (Accepted but currently unused; records are ordered by `created_at DESC`) |
+| `orderDir` | `'asc'` \| `'desc'`       | --      | (Accepted but currently unused)                                           |
+| `filter`   | `Record<string, unknown>` | --      | Key-value pairs; records where `data[key] !== value` are excluded         |
 
 Returns `{ records: CustomDataRecord[]; total: number }`.
 
@@ -299,9 +299,9 @@ The search term is wrapped with `%` wildcards on both sides.
 
 **Options:**
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `limit` | number | 50 | Maximum results |
+| Option  | Type   | Default | Description     |
+| ------- | ------ | ------- | --------------- |
+| `limit` | number | 50      | Maximum results |
 
 Returns `CustomDataRecord[]`.
 
@@ -401,12 +401,12 @@ Create a new custom table.
 }
 ```
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `name` | string | Yes | Machine name (sanitized to lowercase + underscores) |
-| `displayName` | string | Yes | Human-readable name |
-| `description` | string | No | Table description |
-| `columns` | ColumnDefinition[] | Yes | At least one column required |
+| Field         | Type               | Required | Description                                         |
+| ------------- | ------------------ | -------- | --------------------------------------------------- |
+| `name`        | string             | Yes      | Machine name (sanitized to lowercase + underscores) |
+| `displayName` | string             | Yes      | Human-readable name                                 |
+| `description` | string             | No       | Table description                                   |
+| `columns`     | ColumnDefinition[] | Yes      | At least one column required                        |
 
 **Response** `201 Created`:
 
@@ -426,10 +426,10 @@ Create a new custom table.
 
 **Errors:**
 
-| Status | Code | Cause |
-|--------|------|-------|
-| 400 | `INVALID_REQUEST` | Missing `name`, `displayName`, or `columns` |
-| 400 | `CREATE_FAILED` | Duplicate name or invalid column names |
+| Status | Code              | Cause                                       |
+| ------ | ----------------- | ------------------------------------------- |
+| 400    | `INVALID_REQUEST` | Missing `name`, `displayName`, or `columns` |
+| 400    | `CREATE_FAILED`   | Duplicate name or invalid column names      |
 
 #### `GET /api/v1/custom-data/tables/:table`
 
@@ -437,9 +437,9 @@ Get a single table's schema and statistics.
 
 **Path Parameters:**
 
-| Parameter | Description |
-|-----------|-------------|
-| `table` | Table ID or name |
+| Parameter | Description      |
+| --------- | ---------------- |
+| `table`   | Table ID or name |
 
 **Response** `200 OK`:
 
@@ -465,9 +465,9 @@ Get a single table's schema and statistics.
 
 **Errors:**
 
-| Status | Code | Cause |
-|--------|------|-------|
-| 404 | `NOT_FOUND` | Table does not exist |
+| Status | Code        | Cause                |
+| ------ | ----------- | -------------------- |
+| 404    | `NOT_FOUND` | Table does not exist |
 
 #### `PUT /api/v1/custom-data/tables/:table`
 
@@ -487,9 +487,9 @@ Update a table's display name, description, or column definitions.
 
 **Errors:**
 
-| Status | Code | Cause |
-|--------|------|-------|
-| 404 | `NOT_FOUND` | Table does not exist |
+| Status | Code        | Cause                |
+| ------ | ----------- | -------------------- |
+| 404    | `NOT_FOUND` | Table does not exist |
 
 #### `DELETE /api/v1/custom-data/tables/:table`
 
@@ -506,9 +506,9 @@ Delete a table and all of its records. This is irreversible.
 
 **Errors:**
 
-| Status | Code | Cause |
-|--------|------|-------|
-| 404 | `NOT_FOUND` | Table does not exist |
+| Status | Code        | Cause                |
+| ------ | ----------- | -------------------- |
+| 404    | `NOT_FOUND` | Table does not exist |
 
 ### Record Endpoints
 
@@ -518,11 +518,11 @@ List records in a table with optional filtering and pagination.
 
 **Query Parameters:**
 
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `limit` | number | 50 | Maximum records to return |
-| `offset` | number | 0 | Pagination offset |
-| `filter` | JSON string | -- | URL-encoded JSON object for exact-match filtering (e.g., `{"genre":"sci-fi"}`) |
+| Parameter | Type        | Default | Description                                                                    |
+| --------- | ----------- | ------- | ------------------------------------------------------------------------------ |
+| `limit`   | number      | 50      | Maximum records to return                                                      |
+| `offset`  | number      | 0       | Pagination offset                                                              |
+| `filter`  | JSON string | --      | URL-encoded JSON object for exact-match filtering (e.g., `{"genre":"sci-fi"}`) |
 
 **Response** `200 OK`:
 
@@ -553,9 +553,9 @@ List records in a table with optional filtering and pagination.
 
 **Errors:**
 
-| Status | Code | Cause |
-|--------|------|-------|
-| 400 | `LIST_FAILED` | Table not found or query error |
+| Status | Code          | Cause                          |
+| ------ | ------------- | ------------------------------ |
+| 400    | `LIST_FAILED` | Table not found or query error |
 
 #### `POST /api/v1/custom-data/tables/:table/records`
 
@@ -590,10 +590,10 @@ Add a single record.
 
 **Errors:**
 
-| Status | Code | Cause |
-|--------|------|-------|
-| 400 | `INVALID_REQUEST` | Missing `data` field |
-| 400 | `ADD_FAILED` | Table not found, or required column missing |
+| Status | Code              | Cause                                       |
+| ------ | ----------------- | ------------------------------------------- |
+| 400    | `INVALID_REQUEST` | Missing `data` field                        |
+| 400    | `ADD_FAILED`      | Table not found, or required column missing |
 
 #### `GET /api/v1/custom-data/tables/:table/search`
 
@@ -601,10 +601,10 @@ Full-text search across all columns in a table.
 
 **Query Parameters:**
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `q` | string | Yes | Search query |
-| `limit` | number | No | Maximum results (default: 20) |
+| Parameter | Type   | Required | Description                   |
+| --------- | ------ | -------- | ----------------------------- |
+| `q`       | string | Yes      | Search query                  |
+| `limit`   | number | No       | Maximum results (default: 20) |
 
 **Response** `200 OK`:
 
@@ -625,10 +625,10 @@ Full-text search across all columns in a table.
 
 **Errors:**
 
-| Status | Code | Cause |
-|--------|------|-------|
-| 400 | `INVALID_REQUEST` | Missing `q` parameter |
-| 400 | `SEARCH_FAILED` | Table not found |
+| Status | Code              | Cause                 |
+| ------ | ----------------- | --------------------- |
+| 400    | `INVALID_REQUEST` | Missing `q` parameter |
+| 400    | `SEARCH_FAILED`   | Table not found       |
 
 #### `GET /api/v1/custom-data/records/:id`
 
@@ -651,9 +651,9 @@ Get a single record by its ID.
 
 **Errors:**
 
-| Status | Code | Cause |
-|--------|------|-------|
-| 404 | `NOT_FOUND` | Record does not exist |
+| Status | Code        | Cause                 |
+| ------ | ----------- | --------------------- |
+| 404    | `NOT_FOUND` | Record does not exist |
 
 #### `PUT /api/v1/custom-data/records/:id`
 
@@ -673,11 +673,11 @@ Update a record. Only the provided fields are merged; existing fields not mentio
 
 **Errors:**
 
-| Status | Code | Cause |
-|--------|------|-------|
-| 400 | `INVALID_REQUEST` | Missing `data` field |
-| 400 | `UPDATE_FAILED` | Required field removed by merge |
-| 404 | `NOT_FOUND` | Record does not exist |
+| Status | Code              | Cause                           |
+| ------ | ----------------- | ------------------------------- |
+| 400    | `INVALID_REQUEST` | Missing `data` field            |
+| 400    | `UPDATE_FAILED`   | Required field removed by merge |
+| 404    | `NOT_FOUND`       | Record does not exist           |
 
 #### `DELETE /api/v1/custom-data/records/:id`
 
@@ -694,9 +694,9 @@ Delete a single record.
 
 **Errors:**
 
-| Status | Code | Cause |
-|--------|------|-------|
-| 404 | `NOT_FOUND` | Record does not exist |
+| Status | Code        | Cause                 |
+| ------ | ----------- | --------------------- |
+| 404    | `NOT_FOUND` | Record does not exist |
 
 ---
 
@@ -739,9 +739,9 @@ Get detailed schema information about a single table, including column definitio
 
 **Parameters:**
 
-| Name | Type | Required | Description |
-|------|------|----------|-------------|
-| `table` | string | Yes | Table name or ID |
+| Name    | Type   | Required | Description      |
+| ------- | ------ | -------- | ---------------- |
+| `table` | string | Yes      | Table name or ID |
 
 **Return shape:**
 
@@ -772,21 +772,21 @@ The tool description includes an explicit warning to the AI: do not create custo
 
 **Parameters:**
 
-| Name | Type | Required | Description |
-|------|------|----------|-------------|
-| `name` | string | Yes | Machine name (lowercase, no spaces, e.g., `"books"`) |
-| `displayName` | string | Yes | Human-readable name (e.g., `"My Books"`) |
-| `description` | string | No | What this table stores |
-| `columns` | array | Yes | Array of column definition objects |
+| Name          | Type   | Required | Description                                          |
+| ------------- | ------ | -------- | ---------------------------------------------------- |
+| `name`        | string | Yes      | Machine name (lowercase, no spaces, e.g., `"books"`) |
+| `displayName` | string | Yes      | Human-readable name (e.g., `"My Books"`)             |
+| `description` | string | No       | What this table stores                               |
+| `columns`     | array  | Yes      | Array of column definition objects                   |
 
 Each column object:
 
-| Name | Type | Required | Description |
-|------|------|----------|-------------|
-| `name` | string | Yes | Column name (lowercase, no spaces) |
-| `displayName` | string | Yes | Human-readable column name |
-| `type` | string | Yes | One of: `text`, `number`, `boolean`, `date`, `json` |
-| `required` | boolean | No | Whether the column is mandatory |
+| Name          | Type    | Required | Description                                         |
+| ------------- | ------- | -------- | --------------------------------------------------- |
+| `name`        | string  | Yes      | Column name (lowercase, no spaces)                  |
+| `displayName` | string  | Yes      | Human-readable column name                          |
+| `type`        | string  | Yes      | One of: `text`, `number`, `boolean`, `date`, `json` |
+| `required`    | boolean | No       | Whether the column is mandatory                     |
 
 **Return shape:**
 
@@ -805,10 +805,10 @@ Delete a table and all its records. Requires explicit confirmation.
 
 **Parameters:**
 
-| Name | Type | Required | Description |
-|------|------|----------|-------------|
-| `table` | string | Yes | Table name to delete |
-| `confirm` | boolean | Yes | Must be `true` to proceed |
+| Name      | Type    | Required | Description               |
+| --------- | ------- | -------- | ------------------------- |
+| `table`   | string  | Yes      | Table name to delete      |
+| `confirm` | boolean | Yes      | Must be `true` to proceed |
 
 **Return shape:**
 
@@ -828,10 +828,10 @@ Add a single record to a table.
 
 **Parameters:**
 
-| Name | Type | Required | Description |
-|------|------|----------|-------------|
-| `table` | string | Yes | Table name or ID |
-| `data` | object | Yes | Key-value pairs matching the table's columns (e.g., `{"title": "Dune", "rating": 9}`) |
+| Name    | Type   | Required | Description                                                                           |
+| ------- | ------ | -------- | ------------------------------------------------------------------------------------- |
+| `table` | string | Yes      | Table name or ID                                                                      |
+| `data`  | object | Yes      | Key-value pairs matching the table's columns (e.g., `{"title": "Dune", "rating": 9}`) |
 
 **Return shape:**
 
@@ -856,10 +856,10 @@ Add multiple records to a table in one call.
 
 **Parameters:**
 
-| Name | Type | Required | Description |
-|------|------|----------|-------------|
-| `table` | string | Yes | Table name or ID |
-| `records` | array | Yes | Array of data objects, each matching the table schema |
+| Name      | Type   | Required | Description                                           |
+| --------- | ------ | -------- | ----------------------------------------------------- |
+| `table`   | string | Yes      | Table name or ID                                      |
+| `records` | array  | Yes      | Array of data objects, each matching the table schema |
 
 **Return shape:**
 
@@ -881,12 +881,12 @@ List records with optional filtering and pagination.
 
 **Parameters:**
 
-| Name | Type | Required | Default | Description |
-|------|------|----------|---------|-------------|
-| `table` | string | Yes | -- | Table name or ID |
-| `limit` | number | No | 20 | Maximum records to return |
-| `offset` | number | No | 0 | Pagination offset |
-| `filter` | object | No | -- | Exact-match filter as column-value pairs (e.g., `{"genre": "sci-fi"}`) |
+| Name     | Type   | Required | Default | Description                                                            |
+| -------- | ------ | -------- | ------- | ---------------------------------------------------------------------- |
+| `table`  | string | Yes      | --      | Table name or ID                                                       |
+| `limit`  | number | No       | 20      | Maximum records to return                                              |
+| `offset` | number | No       | 0       | Pagination offset                                                      |
+| `filter` | object | No       | --      | Exact-match filter as column-value pairs (e.g., `{"genre": "sci-fi"}`) |
 
 **Return shape:**
 
@@ -911,11 +911,11 @@ Full-text search across all text values in a table's records.
 
 **Parameters:**
 
-| Name | Type | Required | Default | Description |
-|------|------|----------|---------|-------------|
-| `table` | string | Yes | -- | Table name or ID |
-| `query` | string | Yes | -- | Search text |
-| `limit` | number | No | 20 | Maximum results |
+| Name    | Type   | Required | Default | Description      |
+| ------- | ------ | -------- | ------- | ---------------- |
+| `table` | string | Yes      | --      | Table name or ID |
+| `query` | string | Yes      | --      | Search text      |
+| `limit` | number | No       | 20      | Maximum results  |
 
 **Return shape:**
 
@@ -936,9 +936,9 @@ Retrieve a single record by its ID.
 
 **Parameters:**
 
-| Name | Type | Required | Description |
-|------|------|----------|-------------|
-| `recordId` | string | Yes | The record ID |
+| Name       | Type   | Required | Description   |
+| ---------- | ------ | -------- | ------------- |
+| `recordId` | string | Yes      | The record ID |
 
 **Return shape:**
 
@@ -964,10 +964,10 @@ Partially update a record. Only the provided fields are changed; all other field
 
 **Parameters:**
 
-| Name | Type | Required | Description |
-|------|------|----------|-------------|
-| `recordId` | string | Yes | The record ID to update |
-| `data` | object | Yes | Fields to update (e.g., `{"rating": 10}`) |
+| Name       | Type   | Required | Description                               |
+| ---------- | ------ | -------- | ----------------------------------------- |
+| `recordId` | string | Yes      | The record ID to update                   |
+| `data`     | object | Yes      | Fields to update (e.g., `{"rating": 10}`) |
 
 **Return shape:**
 
@@ -992,9 +992,9 @@ Delete a single record.
 
 **Parameters:**
 
-| Name | Type | Required | Description |
-|------|------|----------|-------------|
-| `recordId` | string | Yes | The record ID to delete |
+| Name       | Type   | Required | Description             |
+| ---------- | ------ | -------- | ----------------------- |
+| `recordId` | string | Yes      | The record ID to delete |
 
 **Return shape:**
 
@@ -1072,16 +1072,16 @@ This is the primary interface for users to browse and manage custom tables and t
 
 **API calls made by this page:**
 
-| Action | Method | Endpoint |
-|--------|--------|----------|
-| Load tables | GET | `/api/v1/custom-data/tables` |
-| Create table | POST | `/api/v1/custom-data/tables` |
-| Delete table | DELETE | `/api/v1/custom-data/tables/:id` |
-| Load records | GET | `/api/v1/custom-data/tables/:id/records?limit=100` |
-| Search records | GET | `/api/v1/custom-data/tables/:id/search?q=...` |
-| Add record | POST | `/api/v1/custom-data/tables/:id/records` |
-| Update record | PUT | `/api/v1/custom-data/records/:id` |
-| Delete record | DELETE | `/api/v1/custom-data/records/:id` |
+| Action         | Method | Endpoint                                           |
+| -------------- | ------ | -------------------------------------------------- |
+| Load tables    | GET    | `/api/v1/custom-data/tables`                       |
+| Create table   | POST   | `/api/v1/custom-data/tables`                       |
+| Delete table   | DELETE | `/api/v1/custom-data/tables/:id`                   |
+| Load records   | GET    | `/api/v1/custom-data/tables/:id/records?limit=100` |
+| Search records | GET    | `/api/v1/custom-data/tables/:id/search?q=...`      |
+| Add record     | POST   | `/api/v1/custom-data/tables/:id/records`           |
+| Update record  | PUT    | `/api/v1/custom-data/records/:id`                  |
+| Delete record  | DELETE | `/api/v1/custom-data/records/:id`                  |
 
 ### DataBrowserPage (`packages/ui/src/pages/DataBrowserPage.tsx`)
 
@@ -1153,18 +1153,19 @@ This page is a companion that covers the **built-in** data types (tasks, bookmar
 
 ## Use Cases
 
-| Scenario | Table Name | Example Columns |
-|----------|-----------|-----------------|
-| Movie watchlist | `movies` | `title` (text, required), `genre` (text), `rating` (number), `watched` (boolean) |
-| Recipe collection | `recipes` | `name` (text, required), `ingredients` (json), `steps` (json), `cooking_time` (number), `cuisine` (text) |
-| Book lending tracker | `book_lending` | `book_title` (text, required), `borrower` (text, required), `lent_date` (date), `returned` (boolean) |
-| Research results | `research` | `topic` (text, required), `source` (text), `findings` (text), `date` (date), `relevance` (number) |
-| Workout log | `workouts` | `exercise` (text, required), `sets` (number), `reps` (number), `weight` (number), `date` (date) |
-| Inventory tracking | `inventory` | `item` (text, required), `quantity` (number), `location` (text), `last_checked` (date) |
-| Project ideas | `project_ideas` | `title` (text, required), `description` (text), `priority` (text), `status` (text), `tags` (json) |
-| Knowledge base | `knowledge` | `topic` (text, required), `content` (text, required), `source` (text), `confidence` (number) |
+| Scenario             | Table Name      | Example Columns                                                                                          |
+| -------------------- | --------------- | -------------------------------------------------------------------------------------------------------- |
+| Movie watchlist      | `movies`        | `title` (text, required), `genre` (text), `rating` (number), `watched` (boolean)                         |
+| Recipe collection    | `recipes`       | `name` (text, required), `ingredients` (json), `steps` (json), `cooking_time` (number), `cuisine` (text) |
+| Book lending tracker | `book_lending`  | `book_title` (text, required), `borrower` (text, required), `lent_date` (date), `returned` (boolean)     |
+| Research results     | `research`      | `topic` (text, required), `source` (text), `findings` (text), `date` (date), `relevance` (number)        |
+| Workout log          | `workouts`      | `exercise` (text, required), `sets` (number), `reps` (number), `weight` (number), `date` (date)          |
+| Inventory tracking   | `inventory`     | `item` (text, required), `quantity` (number), `location` (text), `last_checked` (date)                   |
+| Project ideas        | `project_ideas` | `title` (text, required), `description` (text), `priority` (text), `status` (text), `tags` (json)        |
+| Knowledge base       | `knowledge`     | `topic` (text, required), `content` (text, required), `source` (text), `confidence` (number)             |
 
 The AI should prefer built-in modules when applicable:
+
 - Bookmarks -> `add_bookmark`, `list_bookmarks`
 - Tasks/TODO -> `add_task`, `list_tasks`, `complete_task`
 - Notes -> `add_note`, `list_notes`
@@ -1214,17 +1215,17 @@ Both table IDs (`table_<timestamp>_<random>`) and record IDs (`rec_<timestamp>_<
 
 ## File Reference
 
-| File | Purpose |
-|------|---------|
-| `packages/core/src/agent/tools/custom-data.ts` | AI tool definitions (11 tools) and `CUSTOM_DATA_TOOLS` export |
+| File                                                   | Purpose                                                                                 |
+| ------------------------------------------------------ | --------------------------------------------------------------------------------------- |
+| `packages/core/src/agent/tools/custom-data.ts`         | AI tool definitions (11 tools) and `CUSTOM_DATA_TOOLS` export                           |
 | `packages/gateway/src/services/custom-data-service.ts` | CustomDataService -- business logic layer for custom data operations, EventBus emission |
-| `packages/gateway/src/routes/custom-data.ts` | Hono REST routes (thin HTTP handler, delegates to CustomDataService) |
-| `packages/gateway/src/db/repositories/custom-data.ts` | `CustomDataRepository` class with all database operations |
-| `packages/gateway/src/db/schema.ts` | SQL DDL for `custom_table_schemas`, `custom_data_records`, and `custom_data` |
-| `packages/gateway/src/app.ts` | Mounts routes at `/api/v1/custom-data` |
-| `packages/gateway/src/routes/index.ts` | Re-exports `customDataRoutes` and `executeCustomDataTool` |
-| `packages/gateway/src/routes/agents.ts` | Registers custom data tools with the chat agent |
-| `packages/gateway/src/services/tool-executor.ts` | Registers custom data tools in the centralized executor |
-| `packages/gateway/src/services/tool-source.ts` | Maps custom data tool names for dynamic resolution |
-| `packages/ui/src/pages/CustomDataPage.tsx` | React UI for browsing custom tables and records |
-| `packages/ui/src/pages/DataBrowserPage.tsx` | React UI for built-in data types (companion page) |
+| `packages/gateway/src/routes/custom-data.ts`           | Hono REST routes (thin HTTP handler, delegates to CustomDataService)                    |
+| `packages/gateway/src/db/repositories/custom-data.ts`  | `CustomDataRepository` class with all database operations                               |
+| `packages/gateway/src/db/schema.ts`                    | SQL DDL for `custom_table_schemas`, `custom_data_records`, and `custom_data`            |
+| `packages/gateway/src/app.ts`                          | Mounts routes at `/api/v1/custom-data`                                                  |
+| `packages/gateway/src/routes/index.ts`                 | Re-exports `customDataRoutes` and `executeCustomDataTool`                               |
+| `packages/gateway/src/routes/agents.ts`                | Registers custom data tools with the chat agent                                         |
+| `packages/gateway/src/services/tool-executor.ts`       | Registers custom data tools in the centralized executor                                 |
+| `packages/gateway/src/services/tool-source.ts`         | Maps custom data tool names for dynamic resolution                                      |
+| `packages/ui/src/pages/CustomDataPage.tsx`             | React UI for browsing custom tables and records                                         |
+| `packages/ui/src/pages/DataBrowserPage.tsx`            | React UI for built-in data types (companion page)                                       |

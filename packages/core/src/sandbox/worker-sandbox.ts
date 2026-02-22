@@ -318,8 +318,7 @@ export class WorkerSandbox {
   private updateStats(result: ExecutionResult): void {
     this.stats.totalExecutions++;
     this.stats.totalExecutionTime += result.executionTime;
-    this.stats.averageExecutionTime =
-      this.stats.totalExecutionTime / this.stats.totalExecutions;
+    this.stats.averageExecutionTime = this.stats.totalExecutionTime / this.stats.totalExecutions;
 
     if (result.success) {
       this.stats.successfulExecutions++;

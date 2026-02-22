@@ -57,12 +57,14 @@ This document outlines the architectural isolation strategy for OwnPilot's plugi
 **Location**: `@ownpilot/core/services/tool-registry`
 
 **Responsibilities**:
+
 - Central registry for ALL tools (built-in, custom, plugin)
 - Tool discovery and search
 - Tool execution routing
 - Tool permission management
 
 **Database Tables**:
+
 ```sql
 -- System table (locked)
 CREATE TABLE tool_registry (
@@ -95,21 +97,26 @@ CREATE TABLE custom_tools (
 ```
 
 **API**:
+
 ```typescript
 interface IToolRegistry {
   // Registration
   registerBuiltinTool(definition: ToolDefinition, executor: ToolExecutor): Promise<void>;
   registerCustomTool(userId: string, tool: CustomToolDefinition): Promise<string>;
-  registerPluginTool(pluginId: string, definition: ToolDefinition, executor: ToolExecutor): Promise<void>;
-  
+  registerPluginTool(
+    pluginId: string,
+    definition: ToolDefinition,
+    executor: ToolExecutor
+  ): Promise<void>;
+
   // Discovery
   searchTools(query: string, filters?: ToolFilters): Promise<ToolDefinition[]>;
   getTool(name: string): Promise<ToolInfo | null>;
   listTools(source?: ToolSource): Promise<ToolDefinition[]>;
-  
+
   // Execution
   executeTool(name: string, args: unknown, context: ToolContext): Promise<ToolExecutionResult>;
-  
+
   // Management
   enableTool(name: string): Promise<void>;
   disableTool(name: string): Promise<void>;
@@ -118,6 +125,7 @@ interface IToolRegistry {
 ```
 
 **Events Emitted**:
+
 - `tool.registered` - When a tool is registered
 - `tool.unregistered` - When a tool is removed
 - `tool.executed` - After tool execution
@@ -131,17 +139,19 @@ interface IToolRegistry {
 **Location**: `@ownpilot/gateway/services/database-acl`
 
 **Responsibilities**:
+
 - Table access control (locked, protected, user)
 - Plugin database table management
 - Query permission validation
 - Schema migration for plugin tables
 
 **Table Types**:
+
 ```typescript
 enum TableAccessLevel {
-  LOCKED = 'locked',      // System tables, read-only via API
+  LOCKED = 'locked', // System tables, read-only via API
   PROTECTED = 'protected', // Plugin tables, only plugin can write
-  USER = 'user',          // User custom tables, full access
+  USER = 'user', // User custom tables, full access
 }
 
 interface TableMetadata {
@@ -155,6 +165,7 @@ interface TableMetadata {
 ```
 
 **Database Tables**:
+
 ```sql
 -- System table (locked)
 CREATE TABLE table_metadata (
@@ -189,24 +200,26 @@ INSERT INTO table_metadata (table_name, access_level, is_system) VALUES
 ```
 
 **API**:
+
 ```typescript
 interface IDatabaseACL {
   // Table management
   createPluginTable(pluginId: string, tableDef: PluginDatabaseTable): Promise<void>;
   dropPluginTable(pluginId: string, tableName: string): Promise<void>;
   getTableMetadata(tableName: string): Promise<TableMetadata | null>;
-  
+
   // Access control
   canRead(tableName: string, requesterId: string): Promise<boolean>;
   canWrite(tableName: string, requesterId: string): Promise<boolean>;
   canDelete(tableName: string, requesterId: string): Promise<boolean>;
-  
+
   // Query validation
   validateQuery(query: string, requesterId: string): Promise<ValidationResult>;
 }
 ```
 
 **Events Emitted**:
+
 - `database.table_created` - When a plugin table is created
 - `database.table_dropped` - When a plugin table is dropped
 - `database.access_denied` - When access is denied
@@ -218,21 +231,23 @@ interface IDatabaseACL {
 **Location**: `@ownpilot/core/services/event-bus`
 
 **Enhancements**:
+
 - Event namespace isolation
 - Plugin event sandboxing
 - Event rate limiting
 - Event audit logging
 
 **Event Namespaces**:
+
 ```typescript
 enum EventNamespace {
-  SYSTEM = 'system',     // system.* - Core system events
-  TOOL = 'tool',         // tool.* - Tool lifecycle events
+  SYSTEM = 'system', // system.* - Core system events
+  TOOL = 'tool', // tool.* - Tool lifecycle events
   RESOURCE = 'resource', // resource.* - CRUD events
-  PLUGIN = 'plugin',     // plugin.* - Plugin lifecycle events
-  AGENT = 'agent',       // agent.* - Agent execution events
-  TRIGGER = 'trigger',   // trigger.* - Trigger events
-  PLAN = 'plan',         // plan.* - Plan execution events
+  PLUGIN = 'plugin', // plugin.* - Plugin lifecycle events
+  AGENT = 'agent', // agent.* - Agent execution events
+  TRIGGER = 'trigger', // trigger.* - Trigger events
+  PLAN = 'plan', // plan.* - Plan execution events
 }
 
 interface EventSubscription {
@@ -246,26 +261,28 @@ interface EventSubscription {
 ```
 
 **API**:
+
 ```typescript
 interface IEventBus {
   // Publishing
   emit<T>(event: TypedEvent<T>): void;
   emitAsync<T>(event: TypedEvent<T>): Promise<void>;
-  
+
   // Subscribing
   subscribe<T>(subscriberId: string, pattern: string, handler: EventHandler<T>): string;
   unsubscribe(subscriptionId: string): void;
-  
+
   // Management
   listSubscriptions(subscriberId?: string): EventSubscription[];
   clearSubscriptions(subscriberId: string): void;
-  
+
   // Audit
   getEventHistory(filters: EventFilters): Promise<TypedEvent[]>;
 }
 ```
 
 **Database Tables**:
+
 ```sql
 -- Event audit log (locked)
 CREATE TABLE event_log (
@@ -290,12 +307,14 @@ CREATE INDEX idx_event_log_timestamp ON event_log(timestamp);
 **Location**: `@ownpilot/core/services/plugin-service`
 
 **Enhancements**:
+
 - Database-backed storage (not file-based)
 - Centralized tool registration via Tool Registry
 - Event subscription via Event Bus
 - Database table creation via Database ACL
 
 **Database Tables**:
+
 ```sql
 -- Plugin registry (locked)
 CREATE TABLE plugins (
@@ -326,6 +345,7 @@ CREATE TABLE plugin_event_subscriptions (
 ```
 
 **API**:
+
 ```typescript
 interface IPluginService {
   // Lifecycle
@@ -333,23 +353,23 @@ interface IPluginService {
   uninstall(pluginId: string): Promise<void>;
   enable(pluginId: string): Promise<void>;
   disable(pluginId: string): Promise<void>;
-  
+
   // Management
   getPlugin(pluginId: string): Promise<Plugin | null>;
   listPlugins(status?: PluginStatus): Promise<Plugin[]>;
   updateConfig(pluginId: string, config: Record<string, unknown>): Promise<void>;
-  
+
   // Storage (scoped to plugin)
   getStorage(pluginId: string): IPluginStorage;
-  
+
   // Tools (delegates to Tool Registry)
   registerTool(pluginId: string, definition: ToolDefinition, executor: ToolExecutor): Promise<void>;
   unregisterTools(pluginId: string): Promise<void>;
-  
+
   // Events (delegates to Event Bus)
   subscribeToEvent(pluginId: string, pattern: string, handler: EventHandler): Promise<string>;
   unsubscribeFromEvents(pluginId: string): Promise<void>;
-  
+
   // Database (delegates to Database ACL)
   createTable(pluginId: string, tableDef: PluginDatabaseTable): Promise<void>;
   dropTables(pluginId: string): Promise<void>;
@@ -363,6 +383,7 @@ interface IPluginService {
 **Location**: `@ownpilot/gateway/services/trigger-service`
 
 **Responsibilities**:
+
 - Trigger lifecycle management
 - Schedule-based execution (cron)
 - Event-based execution (listens to Event Bus)
@@ -370,12 +391,14 @@ interface IPluginService {
 - Webhook handling
 
 **Database Tables** (already exist, mark as locked):
+
 ```sql
 -- triggers (locked)
 -- trigger_history (locked)
 ```
 
 **API**:
+
 ```typescript
 interface ITriggerService {
   // CRUD
@@ -384,18 +407,19 @@ interface ITriggerService {
   deleteTrigger(id: string): Promise<void>;
   getTrigger(id: string): Promise<Trigger | null>;
   listTriggers(filters?: TriggerFilters): Promise<Trigger[]>;
-  
+
   // Execution
   executeTrigger(id: string, context?: unknown): Promise<void>;
   enableTrigger(id: string): Promise<void>;
   disableTrigger(id: string): Promise<void>;
-  
+
   // History
   getTriggerHistory(id: string, limit?: number): Promise<TriggerExecution[]>;
 }
 ```
 
 **Event Integration**:
+
 - Subscribes to `resource.*` events for event-based triggers
 - Emits `trigger.executed`, `trigger.failed` events
 
@@ -406,12 +430,14 @@ interface ITriggerService {
 **Location**: `@ownpilot/gateway/services/plan-service`
 
 **Responsibilities**:
+
 - Plan lifecycle management
 - Multi-step execution
 - Checkpoint management
 - Rollback on failure
 
 **Database Tables** (already exist, mark as locked):
+
 ```sql
 -- plans (locked)
 -- plan_steps (locked)
@@ -419,6 +445,7 @@ interface ITriggerService {
 ```
 
 **API**:
+
 ```typescript
 interface IPlanService {
   // CRUD
@@ -427,23 +454,24 @@ interface IPlanService {
   deletePlan(id: string): Promise<void>;
   getPlan(id: string): Promise<Plan | null>;
   listPlans(filters?: PlanFilters): Promise<Plan[]>;
-  
+
   // Execution
   executePlan(id: string, context?: unknown): Promise<void>;
   pausePlan(id: string): Promise<void>;
   resumePlan(id: string): Promise<void>;
   cancelPlan(id: string): Promise<void>;
-  
+
   // Checkpoints
   createCheckpoint(planId: string): Promise<string>;
   rollbackToCheckpoint(planId: string, checkpointId: string): Promise<void>;
-  
+
   // History
   getPlanHistory(id: string, limit?: number): Promise<PlanExecution[]>;
 }
 ```
 
 **Event Integration**:
+
 - Emits `plan.started`, `plan.step_completed`, `plan.completed`, `plan.failed` events
 - Can be triggered by Trigger Service
 
@@ -484,6 +512,7 @@ interface IPlanService {
 ```
 
 **Key Points**:
+
 - All services communicate via Event Bus (no direct dependencies)
 - Plugin Service delegates to Tool Registry and Database ACL
 - Trigger Service can execute Plans
@@ -494,30 +523,35 @@ interface IPlanService {
 ## Migration Strategy
 
 ### Phase 1: Database ACL Service
+
 1. Create `table_metadata` table
 2. Implement `DatabaseACL` service
 3. Mark all existing tables as `locked`
 4. Add middleware to validate all DB queries
 
 ### Phase 2: Tool Registry Service
+
 1. Create `tool_registry` table
 2. Migrate built-in tools to registry
 3. Migrate custom tools to registry
 4. Update plugin system to use registry
 
 ### Phase 3: Event Bus Enhancement
+
 1. Add event namespaces
 2. Add rate limiting
 3. Add event audit logging
 4. Migrate all event emitters to use namespaces
 
 ### Phase 4: Plugin Service Enhancement
+
 1. Migrate plugin storage from files to DB
 2. Update plugin registration to use Tool Registry
 3. Update plugin database creation to use Database ACL
 4. Update plugin events to use Event Bus namespaces
 
 ### Phase 5: Service Isolation
+
 1. Isolate Trigger Service
 2. Isolate Plan Service
 3. Remove direct dependencies between services
@@ -528,16 +562,19 @@ interface IPlanService {
 ## Testing Strategy
 
 ### Unit Tests
+
 - Each service has comprehensive unit tests
 - Mock all dependencies
 - Test access control rules
 
 ### Integration Tests
+
 - Test service-to-service communication via Event Bus
 - Test plugin lifecycle with all services
 - Test database access control
 
 ### End-to-End Tests
+
 - Test complete workflows (plugin install → tool registration → execution)
 - Test trigger → plan execution
 - Test event propagation across services
@@ -547,18 +584,21 @@ interface IPlanService {
 ## Monitoring & Observability
 
 ### Metrics
+
 - Tool execution count/duration per source
 - Event emission/subscription counts
 - Database query counts per service
 - Plugin lifecycle events
 
 ### Logging
+
 - Structured logging with service name
 - Event audit trail
 - Access control violations
 - Performance bottlenecks
 
 ### Alerts
+
 - Plugin crashes
 - Database access violations
 - Event bus overload
@@ -569,18 +609,21 @@ interface IPlanService {
 ## Security Considerations
 
 ### Access Control
+
 - All database access goes through Database ACL
 - Plugin tools are sandboxed
 - Event subscriptions are rate-limited
 - Tool execution requires permissions
 
 ### Isolation
+
 - Plugins cannot access other plugins' storage
 - Plugins cannot modify system tables
 - Plugins cannot unregister other plugins' tools
 - Event handlers are isolated per plugin
 
 ### Audit
+
 - All tool executions are logged
 - All database writes are logged
 - All plugin lifecycle events are logged
@@ -591,12 +634,14 @@ interface IPlanService {
 ## Performance Considerations
 
 ### Caching
+
 - Tool definitions cached in memory
 - Table metadata cached in memory
 - Plugin manifests cached in memory
 - Event subscriptions indexed
 
 ### Optimization
+
 - Batch tool registration
 - Lazy plugin loading
 - Event bus uses async handlers
@@ -631,6 +676,7 @@ interface IPlanService {
 ## Conclusion
 
 This architecture provides **clean service boundaries** with:
+
 - ✅ Single responsibility per service
 - ✅ Clear interfaces and contracts
 - ✅ Event-driven communication

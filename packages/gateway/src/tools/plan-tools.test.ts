@@ -100,12 +100,16 @@ describe('Plan Tools', () => {
         status: 'pending',
       });
 
-      const result = await executePlanTool('create_plan', {
-        name: 'Test Plan',
-        goal: 'Test goal',
-        description: 'A test',
-        priority: 7,
-      }, 'user-1');
+      const result = await executePlanTool(
+        'create_plan',
+        {
+          name: 'Test Plan',
+          goal: 'Test goal',
+          description: 'A test',
+          priority: 7,
+        },
+        'user-1'
+      );
 
       expect(result.success).toBe(true);
       expect(mockPlanService.createPlan).toHaveBeenCalledWith('user-1', {
@@ -131,21 +135,29 @@ describe('Plan Tools', () => {
         orderNum: 1,
       });
 
-      const result = await executePlanTool('add_plan_step', {
-        plan_id: 'p1',
-        order: 1,
-        type: 'tool_call',
-        name: 'Fetch data',
-        tool_name: 'search_memories',
-        tool_args: { query: 'test' },
-      }, 'user-1');
+      const result = await executePlanTool(
+        'add_plan_step',
+        {
+          plan_id: 'p1',
+          order: 1,
+          type: 'tool_call',
+          name: 'Fetch data',
+          tool_name: 'search_memories',
+          tool_args: { query: 'test' },
+        },
+        'user-1'
+      );
 
       expect(result.success).toBe(true);
-      expect(mockPlanService.addStep).toHaveBeenCalledWith('user-1', 'p1', expect.objectContaining({
-        type: 'tool_call',
-        name: 'Fetch data',
-        config: { toolName: 'search_memories', toolArgs: { query: 'test' } },
-      }));
+      expect(mockPlanService.addStep).toHaveBeenCalledWith(
+        'user-1',
+        'p1',
+        expect.objectContaining({
+          type: 'tool_call',
+          name: 'Fetch data',
+          config: { toolName: 'search_memories', toolArgs: { query: 'test' } },
+        })
+      );
     });
 
     it('adds an llm_decision step', async () => {
@@ -166,9 +178,13 @@ describe('Plan Tools', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(mockPlanService.addStep).toHaveBeenCalledWith('default', 'p1', expect.objectContaining({
-        config: { prompt: 'What should we do?', choices: ['option A', 'option B'] },
-      }));
+      expect(mockPlanService.addStep).toHaveBeenCalledWith(
+        'default',
+        'p1',
+        expect.objectContaining({
+          config: { prompt: 'What should we do?', choices: ['option A', 'option B'] },
+        })
+      );
     });
 
     it('adds a user_input step', async () => {
@@ -188,9 +204,13 @@ describe('Plan Tools', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(mockPlanService.addStep).toHaveBeenCalledWith('default', 'p1', expect.objectContaining({
-        config: { question: 'Which format?', inputType: 'text' },
-      }));
+      expect(mockPlanService.addStep).toHaveBeenCalledWith(
+        'default',
+        'p1',
+        expect.objectContaining({
+          config: { question: 'Which format?', inputType: 'text' },
+        })
+      );
     });
 
     it('handles service errors', async () => {
@@ -261,8 +281,26 @@ describe('Plan Tools', () => {
         currentStep: 1,
       });
       mockPlanService.getSteps.mockResolvedValue([
-        { id: 's1', orderNum: 1, type: 'tool_call', name: 'Step 1', status: 'completed', result: 'ok', error: null, durationMs: 100 },
-        { id: 's2', orderNum: 2, type: 'tool_call', name: 'Step 2', status: 'running', result: null, error: null, durationMs: null },
+        {
+          id: 's1',
+          orderNum: 1,
+          type: 'tool_call',
+          name: 'Step 1',
+          status: 'completed',
+          result: 'ok',
+          error: null,
+          durationMs: 100,
+        },
+        {
+          id: 's2',
+          orderNum: 2,
+          type: 'tool_call',
+          name: 'Step 2',
+          status: 'running',
+          result: null,
+          error: null,
+          durationMs: null,
+        },
       ]);
       mockPlanService.getHistory.mockResolvedValue([
         { eventType: 'started', stepId: null, createdAt: new Date('2025-01-01') },
@@ -293,10 +331,7 @@ describe('Plan Tools', () => {
   describe('execute_plan', () => {
     it('starts plan execution', async () => {
       mockPlanService.getPlan.mockResolvedValue({ id: 'p1', name: 'Plan A', status: 'pending' });
-      mockPlanService.getSteps.mockResolvedValue([
-        { id: 's1' },
-        { id: 's2' },
-      ]);
+      mockPlanService.getSteps.mockResolvedValue([{ id: 's1' }, { id: 's2' }]);
       mockPlanExecutor.execute.mockReturnValue(Promise.resolve());
 
       const result = await executePlanTool('execute_plan', { plan_id: 'p1' }, 'user-1');

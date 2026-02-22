@@ -111,10 +111,7 @@ function codeIsInvalid(errors: string[] = ['Dangerous pattern detected']) {
 function setupAutoReadyWorker() {
   mockWorkerInstance.on.mockImplementation((event: string, handler: (msg: unknown) => void) => {
     if (event === 'message') {
-      setTimeout(
-        () => handler({ type: 'result', result: { success: true, executionTime: 0 } }),
-        0
-      );
+      setTimeout(() => handler({ type: 'result', result: { success: true, executionTime: 0 } }), 0);
     }
   });
 }
@@ -934,9 +931,7 @@ describe('WorkerSandbox handleWorkerMessage (tested via execute)', () => {
     await sandbox.initialize();
 
     const messageHandler = getWorkerHandler('message');
-    expect(() =>
-      messageHandler?.({ type: 'error', error: 'spurious error' })
-    ).not.toThrow();
+    expect(() => messageHandler?.({ type: 'error', error: 'spurious error' })).not.toThrow();
   });
 });
 
@@ -1086,7 +1081,9 @@ describe('WorkerSandbox.terminate()', () => {
     setupAutoReadyWorker();
     await sandbox.initialize();
 
-    expect((WorkerMock as ReturnType<typeof vi.fn>).mock.calls.length).toBeGreaterThan(prevCallCount);
+    expect((WorkerMock as ReturnType<typeof vi.fn>).mock.calls.length).toBeGreaterThan(
+      prevCallCount
+    );
   });
 
   it('sets state to terminated', async () => {
@@ -1303,9 +1300,7 @@ describe('WorkerSandbox updateStats (tested via execute)', () => {
     // 2 successes
     for (let i = 0; i < 2; i++) {
       const p = sandbox.execute('return 1');
-      await vi.waitFor(
-        () => mockWorkerInstance.postMessage.mock.calls.length >= i + 1
-      );
+      await vi.waitFor(() => mockWorkerInstance.postMessage.mock.calls.length >= i + 1);
       messageHandler?.({
         type: 'result',
         result: { success: true, value: 1, executionTime: 5 },
@@ -1514,7 +1509,9 @@ describe('WorkerSandbox edge cases', () => {
 
     const result = await executePromise;
     expect(result.ok).toBe(true);
-    expect((WorkerMock as ReturnType<typeof vi.fn>).mock.calls.length).toBeGreaterThan(firstCallCount);
+    expect((WorkerMock as ReturnType<typeof vi.fn>).mock.calls.length).toBeGreaterThan(
+      firstCallCount
+    );
   });
 
   it('does not crash when worker receives unexpected message type', async () => {

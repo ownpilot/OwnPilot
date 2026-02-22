@@ -23,7 +23,7 @@ import * as fs from 'node:fs/promises';
 function makeMemoryInput(
   overrides: Partial<
     Omit<MemoryEntry, 'id' | 'userId' | 'createdAt' | 'updatedAt' | 'accessCount' | 'archived'>
-  > = {},
+  > = {}
 ) {
   return {
     category: 'fact' as const,
@@ -37,7 +37,7 @@ function makeMemoryInput(
 }
 
 function makeSummaryInput(
-  overrides: Partial<Omit<ConversationSummary, 'createdAt'>> = {},
+  overrides: Partial<Omit<ConversationSummary, 'createdAt'>> = {}
 ): Omit<ConversationSummary, 'createdAt'> {
   return {
     conversationId: 'conv-1',
@@ -197,9 +197,9 @@ describe('ConversationMemoryStore', () => {
       it('persists to disk', async () => {
         await store.addMemory(makeMemoryInput());
         expect(fs.writeFile).toHaveBeenCalled();
-        const writeCall = vi.mocked(fs.writeFile).mock.calls.find((c) =>
-          String(c[0]).includes('memories.json'),
-        );
+        const writeCall = vi
+          .mocked(fs.writeFile)
+          .mock.calls.find((c) => String(c[0]).includes('memories.json'));
         expect(writeCall).toBeDefined();
       });
     });
@@ -219,7 +219,7 @@ describe('ConversationMemoryStore', () => {
         expect(updated!.content).toBe('Updated content');
         expect(updated!.importance).toBe('high');
         expect(new Date(updated!.updatedAt).getTime()).toBeGreaterThanOrEqual(
-          new Date(originalCreatedAt).getTime(),
+          new Date(originalCreatedAt).getTime()
         );
       });
 
@@ -449,8 +449,12 @@ describe('ConversationMemoryStore', () => {
     });
 
     it('getFacts returns fact category sorted by importance', async () => {
-      await store.addMemory(makeMemoryInput({ category: 'fact', importance: 'low', content: 'low fact' }));
-      await store.addMemory(makeMemoryInput({ category: 'fact', importance: 'high', content: 'high fact' }));
+      await store.addMemory(
+        makeMemoryInput({ category: 'fact', importance: 'low', content: 'low fact' })
+      );
+      await store.addMemory(
+        makeMemoryInput({ category: 'fact', importance: 'high', content: 'high fact' })
+      );
       await store.addMemory(makeMemoryInput({ category: 'preference', content: 'pref' }));
       const facts = await store.getFacts();
       expect(facts).toHaveLength(2);
@@ -467,7 +471,9 @@ describe('ConversationMemoryStore', () => {
     });
 
     it('getInstructions returns instruction category', async () => {
-      await store.addMemory(makeMemoryInput({ category: 'instruction', content: 'Always reply briefly' }));
+      await store.addMemory(
+        makeMemoryInput({ category: 'instruction', content: 'Always reply briefly' })
+      );
       await store.addMemory(makeMemoryInput({ category: 'fact', content: 'some fact' }));
       const instructions = await store.getInstructions();
       expect(instructions).toHaveLength(1);
@@ -484,7 +490,9 @@ describe('ConversationMemoryStore', () => {
     });
 
     it('searchMemories searches with relevance sort and limit', async () => {
-      await store.addMemory(makeMemoryInput({ content: 'I love coffee in the morning', tags: ['coffee'] }));
+      await store.addMemory(
+        makeMemoryInput({ content: 'I love coffee in the morning', tags: ['coffee'] })
+      );
       await store.addMemory(makeMemoryInput({ content: 'I drink tea at night', tags: ['tea'] }));
       await store.addMemory(makeMemoryInput({ content: 'Coffee is great', tags: ['coffee'] }));
       const results = await store.searchMemories('coffee', 1);
@@ -531,18 +539,24 @@ describe('ConversationMemoryStore', () => {
     });
 
     it('getRecentSummaries returns sorted by endedAt descending, limited', async () => {
-      await store.addConversationSummary(makeSummaryInput({
-        conversationId: 'conv-old',
-        endedAt: '2025-01-01T10:00:00.000Z',
-      }));
-      await store.addConversationSummary(makeSummaryInput({
-        conversationId: 'conv-new',
-        endedAt: '2025-06-01T10:00:00.000Z',
-      }));
-      await store.addConversationSummary(makeSummaryInput({
-        conversationId: 'conv-mid',
-        endedAt: '2025-03-01T10:00:00.000Z',
-      }));
+      await store.addConversationSummary(
+        makeSummaryInput({
+          conversationId: 'conv-old',
+          endedAt: '2025-01-01T10:00:00.000Z',
+        })
+      );
+      await store.addConversationSummary(
+        makeSummaryInput({
+          conversationId: 'conv-new',
+          endedAt: '2025-06-01T10:00:00.000Z',
+        })
+      );
+      await store.addConversationSummary(
+        makeSummaryInput({
+          conversationId: 'conv-mid',
+          endedAt: '2025-03-01T10:00:00.000Z',
+        })
+      );
       const summaries = await store.getRecentSummaries(2);
       expect(summaries).toHaveLength(2);
       expect(summaries[0].conversationId).toBe('conv-new');
@@ -556,7 +570,9 @@ describe('ConversationMemoryStore', () => {
     });
 
     it('getUserProfile builds profile from facts, preferences, instructions, goals, relationships', async () => {
-      await store.addMemory(makeMemoryInput({ category: 'fact', content: 'Works at Acme', tags: ['job'] }));
+      await store.addMemory(
+        makeMemoryInput({ category: 'fact', content: 'Works at Acme', tags: ['job'] })
+      );
       await store.addMemory(makeMemoryInput({ category: 'preference', content: 'Dark mode' }));
       await store.addMemory(makeMemoryInput({ category: 'instruction', content: 'Be concise' }));
       await store.addMemory(makeMemoryInput({ category: 'goal', content: 'Learn Rust' }));
@@ -571,12 +587,14 @@ describe('ConversationMemoryStore', () => {
     });
 
     it('getUserProfile extracts name from facts with name tag', async () => {
-      await store.addMemory(makeMemoryInput({
-        category: 'fact',
-        content: 'Name is Alice',
-        tags: ['name'],
-        data: { name: 'Alice' },
-      }));
+      await store.addMemory(
+        makeMemoryInput({
+          category: 'fact',
+          content: 'Name is Alice',
+          tags: ['name'],
+          data: { name: 'Alice' },
+        })
+      );
       const profile = await store.getUserProfile();
       expect(profile.name).toBe('Alice');
     });
@@ -584,9 +602,15 @@ describe('ConversationMemoryStore', () => {
     it('getUserProfile calculates completeness percentage', async () => {
       const emptyProfile = await store.getUserProfile();
       expect(emptyProfile.completeness).toBe(0);
-      await store.addMemory(makeMemoryInput({ category: 'fact', tags: ['name'], content: 'Alice' }));
-      await store.addMemory(makeMemoryInput({ category: 'fact', tags: ['job'], content: 'Engineer' }));
-      await store.addMemory(makeMemoryInput({ category: 'fact', tags: ['location'], content: 'NYC' }));
+      await store.addMemory(
+        makeMemoryInput({ category: 'fact', tags: ['name'], content: 'Alice' })
+      );
+      await store.addMemory(
+        makeMemoryInput({ category: 'fact', tags: ['job'], content: 'Engineer' })
+      );
+      await store.addMemory(
+        makeMemoryInput({ category: 'fact', tags: ['location'], content: 'NYC' })
+      );
       await store.addMemory(makeMemoryInput({ category: 'preference', content: 'Dark mode' }));
       const fullProfile = await store.getUserProfile();
       expect(fullProfile.completeness).toBe(100);
@@ -607,9 +631,15 @@ describe('ConversationMemoryStore', () => {
 
     describe('getStats', () => {
       it('returns correct counts by category, importance, source', async () => {
-        await store.addMemory(makeMemoryInput({ category: 'fact', importance: 'high', source: 'user_stated' }));
-        await store.addMemory(makeMemoryInput({ category: 'preference', importance: 'low', source: 'ai_inferred' }));
-        await store.addMemory(makeMemoryInput({ category: 'fact', importance: 'high', source: 'user_stated' }));
+        await store.addMemory(
+          makeMemoryInput({ category: 'fact', importance: 'high', source: 'user_stated' })
+        );
+        await store.addMemory(
+          makeMemoryInput({ category: 'preference', importance: 'low', source: 'ai_inferred' })
+        );
+        await store.addMemory(
+          makeMemoryInput({ category: 'fact', importance: 'high', source: 'user_stated' })
+        );
         const stats = await store.getStats();
         expect(stats.totalMemories).toBe(3);
         expect(stats.byCategory.fact).toBe(2);
@@ -665,7 +695,9 @@ describe('ConversationMemoryStore', () => {
           retentionPolicy: { lowImportanceMaxAgeDays: 1 },
         });
         await s.initialize();
-        const entry = await s.addMemory(makeMemoryInput({ category: 'episode', importance: 'low' }));
+        const entry = await s.addMemory(
+          makeMemoryInput({ category: 'episode', importance: 'low' })
+        );
         const mem = await s.getMemory(entry.id);
         mem!.createdAt = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
         const result = await s.applyRetentionPolicy();
@@ -678,7 +710,9 @@ describe('ConversationMemoryStore', () => {
           retentionPolicy: { mediumImportanceMaxAgeDays: 1 },
         });
         await s.initialize();
-        const entry = await s.addMemory(makeMemoryInput({ category: 'episode', importance: 'medium' }));
+        const entry = await s.addMemory(
+          makeMemoryInput({ category: 'episode', importance: 'medium' })
+        );
         const mem = await s.getMemory(entry.id);
         mem!.createdAt = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
         const result = await s.applyRetentionPolicy();
@@ -706,9 +740,15 @@ describe('ConversationMemoryStore', () => {
           retentionPolicy: { maxMemories: 2 },
         });
         await s.initialize();
-        await s.addMemory(makeMemoryInput({ content: 'a', category: 'episode', importance: 'low' }));
-        await s.addMemory(makeMemoryInput({ content: 'b', category: 'episode', importance: 'medium' }));
-        await s.addMemory(makeMemoryInput({ content: 'c', category: 'episode', importance: 'high' }));
+        await s.addMemory(
+          makeMemoryInput({ content: 'a', category: 'episode', importance: 'low' })
+        );
+        await s.addMemory(
+          makeMemoryInput({ content: 'b', category: 'episode', importance: 'medium' })
+        );
+        await s.addMemory(
+          makeMemoryInput({ content: 'c', category: 'episode', importance: 'high' })
+        );
         const result = await s.applyRetentionPolicy();
         expect(result.deleted).toBeGreaterThanOrEqual(1);
         const stats = await s.getStats();

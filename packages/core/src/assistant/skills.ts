@@ -642,8 +642,7 @@ export class SkillManager {
    * Get skills by category
    */
   getSkillsByCategory(category: SkillCategory): Skill[] {
-    return Array.from(this.skills.values())
-      .filter(s => s.category === category && s.enabled);
+    return Array.from(this.skills.values()).filter((s) => s.category === category && s.enabled);
   }
 
   /**
@@ -680,7 +679,7 @@ export class SkillManager {
       }
 
       // Boost by proficiency and success rate
-      score *= (1 + skill.successRate * 0.5);
+      score *= 1 + skill.successRate * 0.5;
 
       if (score > 0) {
         scores.push({ skill, score });
@@ -690,7 +689,7 @@ export class SkillManager {
     return scores
       .sort((a, b) => b.score - a.score)
       .slice(0, maxSkills)
-      .map(s => s.skill);
+      .map((s) => s.skill);
   }
 
   /**
@@ -719,9 +718,7 @@ export class SkillManager {
   /**
    * Add a new role
    */
-  async addRole(
-    role: Omit<Role, 'id' | 'createdAt' | 'updatedAt' | 'usageCount'>
-  ): Promise<Role> {
+  async addRole(role: Omit<Role, 'id' | 'createdAt' | 'updatedAt' | 'usageCount'>): Promise<Role> {
     await this.ensureInitialized();
 
     const now = new Date().toISOString();
@@ -922,7 +919,7 @@ export class SkillManager {
           results.push(instruction);
           break;
         case 'specific_topics':
-          if (topics && instruction.topics?.some(t => topics.includes(t))) {
+          if (topics && instruction.topics?.some((t) => topics.includes(t))) {
             results.push(instruction);
           }
           break;
@@ -1002,7 +999,7 @@ export class SkillManager {
 
   private async ensureBuiltins(): Promise<void> {
     // Add builtin skills if not present
-    const existingSkillNames = new Set(Array.from(this.skills.values()).map(s => s.name));
+    const existingSkillNames = new Set(Array.from(this.skills.values()).map((s) => s.name));
     for (const builtin of BUILTIN_SKILLS) {
       if (!existingSkillNames.has(builtin.name)) {
         const now = new Date().toISOString();
@@ -1017,7 +1014,7 @@ export class SkillManager {
     }
 
     // Add builtin roles if not present
-    const existingRoleNames = new Set(Array.from(this.roles.values()).map(r => r.name));
+    const existingRoleNames = new Set(Array.from(this.roles.values()).map((r) => r.name));
     for (const builtin of BUILTIN_ROLES) {
       if (!existingRoleNames.has(builtin.name)) {
         const now = new Date().toISOString();
@@ -1040,7 +1037,7 @@ export class SkillManager {
     try {
       const content = await fs.readFile(filePath, 'utf-8');
       const skills = JSON.parse(content) as Skill[];
-      this.skills = new Map(skills.map(s => [s.id, s]));
+      this.skills = new Map(skills.map((s) => [s.id, s]));
     } catch {
       this.skills = new Map();
     }
@@ -1057,7 +1054,7 @@ export class SkillManager {
     try {
       const content = await fs.readFile(filePath, 'utf-8');
       const roles = JSON.parse(content) as Role[];
-      this.roles = new Map(roles.map(r => [r.id, r]));
+      this.roles = new Map(roles.map((r) => [r.id, r]));
     } catch {
       this.roles = new Map();
     }
@@ -1074,7 +1071,7 @@ export class SkillManager {
     try {
       const content = await fs.readFile(filePath, 'utf-8');
       const instructions = JSON.parse(content) as CustomInstruction[];
-      this.instructions = new Map(instructions.map(i => [i.id, i]));
+      this.instructions = new Map(instructions.map((i) => [i.id, i]));
     } catch {
       this.instructions = new Map();
     }

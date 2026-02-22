@@ -38,12 +38,7 @@ vi.stubGlobal('fetch', mockFetch);
 // Import after mocks
 // ---------------------------------------------------------------------------
 
-import {
-  tunnelStartNgrok,
-  tunnelStartCloudflare,
-  tunnelStop,
-  tunnelStatus,
-} from './tunnel.js';
+import { tunnelStartNgrok, tunnelStartCloudflare, tunnelStop, tunnelStatus } from './tunnel.js';
 import { spawn } from 'node:child_process';
 
 // ---------------------------------------------------------------------------
@@ -163,17 +158,17 @@ describe('tunnel commands', () => {
       await vi.waitFor(() => {
         expect(mockFetch).toHaveBeenCalledWith(
           expect.stringContaining('/channels/channel.telegram/reconnect'),
-          expect.objectContaining({ method: 'POST' }),
+          expect.objectContaining({ method: 'POST' })
         );
       });
 
       // Verify gateway calls
       expect(mockFetch).toHaveBeenCalledWith(
-        expect.stringContaining('/api/v1/config-services/telegram_bot'),
+        expect.stringContaining('/api/v1/config-services/telegram_bot')
       );
       expect(mockFetch).toHaveBeenCalledWith(
         expect.stringContaining('/entries/entry-1'),
-        expect.objectContaining({ method: 'PUT' }),
+        expect.objectContaining({ method: 'PUT' })
       );
     });
 
@@ -190,9 +185,7 @@ describe('tunnel commands', () => {
       tunnelStartNgrok({});
 
       expect(exitSpy).toHaveBeenCalledWith(1);
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        expect.stringContaining('already running'),
-      );
+      expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('already running'));
     });
 
     it('should exit(1) if ngrok URL is null', async () => {
@@ -207,9 +200,7 @@ describe('tunnel commands', () => {
         expect(exitSpy).toHaveBeenCalledWith(1);
       });
 
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        expect.stringContaining('ngrok tunnel failed'),
-      );
+      expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('ngrok tunnel failed'));
     });
 
     it('should warn when gateway is unreachable', async () => {
@@ -220,7 +211,7 @@ describe('tunnel commands', () => {
 
       await vi.waitFor(() => {
         expect(consoleWarnSpy).toHaveBeenCalledWith(
-          expect.stringContaining('Could not reach gateway'),
+          expect.stringContaining('Could not reach gateway')
         );
       });
     });
@@ -275,7 +266,7 @@ describe('tunnel commands', () => {
       expect(spawn).toHaveBeenCalledWith(
         'cloudflared',
         ['tunnel', '--url', 'http://localhost:5000'],
-        { stdio: ['ignore', 'pipe', 'pipe'] },
+        { stdio: ['ignore', 'pipe', 'pipe'] }
       );
     });
 
@@ -292,7 +283,7 @@ describe('tunnel commands', () => {
       expect(spawn).toHaveBeenCalledWith(
         'cloudflared',
         ['tunnel', '--url', 'http://localhost:8080', '--hostname', 'my.tunnel.dev'],
-        expect.any(Object),
+        expect.any(Object)
       );
     });
 
@@ -305,7 +296,7 @@ describe('tunnel commands', () => {
 
       expect(exitSpy).toHaveBeenCalledWith(1);
       expect(consoleErrorSpy).toHaveBeenCalledWith(
-        expect.stringContaining('cloudflared binary not found'),
+        expect.stringContaining('cloudflared binary not found')
       );
     });
 
@@ -322,7 +313,7 @@ describe('tunnel commands', () => {
       expect(spawn).toHaveBeenCalledWith(
         'cloudflared',
         ['tunnel', '--url', 'http://localhost:8080'],
-        expect.any(Object),
+        expect.any(Object)
       );
     });
   });

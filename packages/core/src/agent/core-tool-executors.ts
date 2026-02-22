@@ -191,16 +191,17 @@ export const CORE_EXECUTORS: Record<string, ToolExecutor> = {
           if (entry.isDirectory()) {
             results.push(`📁 ${relativePath}/`);
             if (recursive) {
-              results.push(...await listDir(path.join(dir, entry.name), relativePath));
+              results.push(...(await listDir(path.join(dir, entry.name), relativePath)));
             }
           } else {
             const filePath = path.join(dir, entry.name);
             const fileStats = await fsp.stat(filePath);
-            const size = fileStats.size < 1024
-              ? `${fileStats.size} B`
-              : fileStats.size < 1024 * 1024
-                ? `${(fileStats.size / 1024).toFixed(1)} KB`
-                : `${(fileStats.size / (1024 * 1024)).toFixed(1)} MB`;
+            const size =
+              fileStats.size < 1024
+                ? `${fileStats.size} B`
+                : fileStats.size < 1024 * 1024
+                  ? `${(fileStats.size / 1024).toFixed(1)} KB`
+                  : `${(fileStats.size / (1024 * 1024)).toFixed(1)} MB`;
             results.push(`📄 ${relativePath} (${size})`);
           }
         }
@@ -243,7 +244,10 @@ export const CORE_EXECUTORS: Record<string, ToolExecutor> = {
         // Only delete empty directories for safety
         const contents = await fsp.readdir(resolvedPath);
         if (contents.length > 0) {
-          return { content: `Error: Directory is not empty: ${filePath}. Delete contents first.`, isError: true };
+          return {
+            content: `Error: Directory is not empty: ${filePath}. Delete contents first.`,
+            isError: true,
+          };
         }
         await fsp.rmdir(resolvedPath);
         return { content: `Folder deleted: ${filePath}` };
@@ -277,7 +281,10 @@ export const CORE_EXECUTORS: Record<string, ToolExecutor> = {
       return { content: 'Error: Invalid source path (must be within workspace)', isError: true };
     }
     if (!destPath) {
-      return { content: 'Error: Invalid destination path (must be within workspace)', isError: true };
+      return {
+        content: 'Error: Invalid destination path (must be within workspace)',
+        isError: true,
+      };
     }
 
     try {
@@ -381,7 +388,10 @@ export const CORE_EXECUTORS: Record<string, ToolExecutor> = {
         result = text.toLowerCase();
         break;
       case 'titlecase':
-        result = text.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.slice(1).toLowerCase());
+        result = text.replace(
+          /\w\S*/g,
+          (txt) => txt.charAt(0).toUpperCase() + txt.slice(1).toLowerCase()
+        );
         break;
       case 'reverse':
         result = text.split('').reverse().join('');
@@ -390,7 +400,10 @@ export const CORE_EXECUTORS: Record<string, ToolExecutor> = {
         result = text.trim();
         break;
       case 'slug':
-        result = text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+        result = text
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/^-|-$/g, '');
         break;
       default:
         return { content: `Error: Unknown operation: ${operation}`, isError: true };
@@ -420,7 +433,9 @@ export const CORE_EXECUTORS: Record<string, ToolExecutor> = {
         }
       }
 
-      const count = (text.length - result.length + replace.length * (text.split(search).length - 1)) / search.length;
+      const count =
+        (text.length - result.length + replace.length * (text.split(search).length - 1)) /
+        search.length;
       return { content: `Replaced ${Math.max(0, Math.round(count))} occurrence(s):\n\n${result}` };
     } catch (error) {
       return {
@@ -607,29 +622,59 @@ export const CORE_EXECUTORS: Record<string, ToolExecutor> = {
     const conversions: Record<string, Record<string, number>> = {
       // Length (base: meters)
       length: {
-        m: 1, meter: 1, meters: 1,
-        km: 1000, kilometer: 1000, kilometers: 1000,
-        cm: 0.01, centimeter: 0.01, centimeters: 0.01,
-        mm: 0.001, millimeter: 0.001, millimeters: 0.001,
-        mi: 1609.344, mile: 1609.344, miles: 1609.344,
-        yd: 0.9144, yard: 0.9144, yards: 0.9144,
-        ft: 0.3048, foot: 0.3048, feet: 0.3048,
-        in: 0.0254, inch: 0.0254, inches: 0.0254,
+        m: 1,
+        meter: 1,
+        meters: 1,
+        km: 1000,
+        kilometer: 1000,
+        kilometers: 1000,
+        cm: 0.01,
+        centimeter: 0.01,
+        centimeters: 0.01,
+        mm: 0.001,
+        millimeter: 0.001,
+        millimeters: 0.001,
+        mi: 1609.344,
+        mile: 1609.344,
+        miles: 1609.344,
+        yd: 0.9144,
+        yard: 0.9144,
+        yards: 0.9144,
+        ft: 0.3048,
+        foot: 0.3048,
+        feet: 0.3048,
+        in: 0.0254,
+        inch: 0.0254,
+        inches: 0.0254,
       },
       // Weight (base: grams)
       weight: {
-        g: 1, gram: 1, grams: 1,
-        kg: 1000, kilogram: 1000, kilograms: 1000,
-        mg: 0.001, milligram: 0.001, milligrams: 0.001,
-        lb: 453.592, pound: 453.592, pounds: 453.592,
-        oz: 28.3495, ounce: 28.3495, ounces: 28.3495,
-        ton: 1000000, tons: 1000000,
+        g: 1,
+        gram: 1,
+        grams: 1,
+        kg: 1000,
+        kilogram: 1000,
+        kilograms: 1000,
+        mg: 0.001,
+        milligram: 0.001,
+        milligrams: 0.001,
+        lb: 453.592,
+        pound: 453.592,
+        pounds: 453.592,
+        oz: 28.3495,
+        ounce: 28.3495,
+        ounces: 28.3495,
+        ton: 1000000,
+        tons: 1000000,
       },
       // Temperature (special handling)
       temperature: {
-        c: 1, celsius: 1,
-        f: 1, fahrenheit: 1,
-        k: 1, kelvin: 1,
+        c: 1,
+        celsius: 1,
+        f: 1,
+        fahrenheit: 1,
+        k: 1,
+        kelvin: 1,
       },
     };
 
@@ -655,12 +700,12 @@ export const CORE_EXECUTORS: Record<string, ToolExecutor> = {
       // Convert to Celsius first
       let celsius: number;
       if (fromUnit === 'c') celsius = value;
-      else if (fromUnit === 'f') celsius = (value - 32) * 5 / 9;
+      else if (fromUnit === 'f') celsius = ((value - 32) * 5) / 9;
       else celsius = value - 273.15;
 
       // Convert from Celsius to target
       if (toUnit === 'c') result = celsius;
-      else if (toUnit === 'f') result = celsius * 9 / 5 + 32;
+      else if (toUnit === 'f') result = (celsius * 9) / 5 + 32;
       else result = celsius + 273.15;
     } else {
       const categoryUnits = conversions[category];
@@ -685,21 +730,46 @@ export const CORE_EXECUTORS: Record<string, ToolExecutor> = {
 
     // Approximate exchange rates (USD base)
     const rates: Record<string, number> = {
-      USD: 1, EUR: 0.92, GBP: 0.79, JPY: 149.50, CNY: 7.24,
-      TRY: 32.50, AUD: 1.53, CAD: 1.36, CHF: 0.88, INR: 83.12,
-      KRW: 1320, BRL: 4.97, MXN: 17.15, RUB: 89.50, SEK: 10.42,
-      NOK: 10.58, DKK: 6.87, PLN: 3.98, THB: 35.20, SGD: 1.34,
-      HKD: 7.82, NZD: 1.64, ZAR: 18.65, AED: 3.67, SAR: 3.75,
+      USD: 1,
+      EUR: 0.92,
+      GBP: 0.79,
+      JPY: 149.5,
+      CNY: 7.24,
+      TRY: 32.5,
+      AUD: 1.53,
+      CAD: 1.36,
+      CHF: 0.88,
+      INR: 83.12,
+      KRW: 1320,
+      BRL: 4.97,
+      MXN: 17.15,
+      RUB: 89.5,
+      SEK: 10.42,
+      NOK: 10.58,
+      DKK: 6.87,
+      PLN: 3.98,
+      THB: 35.2,
+      SGD: 1.34,
+      HKD: 7.82,
+      NZD: 1.64,
+      ZAR: 18.65,
+      AED: 3.67,
+      SAR: 3.75,
     };
 
     if (!rates[from] || !rates[to]) {
-      return { content: `Error: Unknown currency code. Supported: ${Object.keys(rates).join(', ')}`, isError: true };
+      return {
+        content: `Error: Unknown currency code. Supported: ${Object.keys(rates).join(', ')}`,
+        isError: true,
+      };
     }
 
     const inUsd = amount / rates[from];
     const result = inUsd * rates[to];
 
-    return { content: `${amount.toLocaleString()} ${from} = ${result.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${to}` };
+    return {
+      content: `${amount.toLocaleString()} ${from} = ${result.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${to}`,
+    };
   },
 
   // ===== ENCODING TOOLS =====
@@ -737,7 +807,10 @@ export const CORE_EXECUTORS: Record<string, ToolExecutor> = {
 
     const validAlgorithms = ['md5', 'sha1', 'sha256', 'sha512'];
     if (!validAlgorithms.includes(algorithm)) {
-      return { content: `Error: Invalid algorithm. Use: ${validAlgorithms.join(', ')}`, isError: true };
+      return {
+        content: `Error: Invalid algorithm. Use: ${validAlgorithms.join(', ')}`,
+        isError: true,
+      };
     }
 
     const hash = createHash(algorithm).update(text).digest('hex');
@@ -927,7 +1000,10 @@ export const CORE_EXECUTORS: Record<string, ToolExecutor> = {
       await fsp.mkdir(notesDir, { recursive: true });
     }
 
-    const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    const slug = title
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '');
     const filename = `${slug}.md`;
     const filepath = path.join(notesDir, filename);
 
@@ -1084,11 +1160,16 @@ ${content}
     }
 
     // Markdown table
-    const colWidths = headers.map((h, i) => Math.max(h.length, ...rows.map((r) => (r[i] || '').length)));
+    const colWidths = headers.map((h, i) =>
+      Math.max(h.length, ...rows.map((r) => (r[i] || '').length))
+    );
 
-    const headerRow = '| ' + headers.map((h, i) => h.padEnd(colWidths[i] ?? h.length)).join(' | ') + ' |';
+    const headerRow =
+      '| ' + headers.map((h, i) => h.padEnd(colWidths[i] ?? h.length)).join(' | ') + ' |';
     const separator = '| ' + colWidths.map((w) => '-'.repeat(w)).join(' | ') + ' |';
-    const dataRows = rows.map((r) => '| ' + headers.map((_, i) => (r[i] || '').padEnd(colWidths[i] ?? 0)).join(' | ') + ' |');
+    const dataRows = rows.map(
+      (r) => '| ' + headers.map((_, i) => (r[i] || '').padEnd(colWidths[i] ?? 0)).join(' | ') + ' |'
+    );
 
     return { content: [headerRow, separator, ...dataRows].join('\n') };
   },
@@ -1166,14 +1247,68 @@ ${password}
     const count = (args.count as number) ?? 3;
 
     const words = [
-      'lorem', 'ipsum', 'dolor', 'sit', 'amet', 'consectetur', 'adipiscing', 'elit',
-      'sed', 'do', 'eiusmod', 'tempor', 'incididunt', 'ut', 'labore', 'et', 'dolore',
-      'magna', 'aliqua', 'enim', 'ad', 'minim', 'veniam', 'quis', 'nostrud',
-      'exercitation', 'ullamco', 'laboris', 'nisi', 'aliquip', 'ex', 'ea', 'commodo',
-      'consequat', 'duis', 'aute', 'irure', 'in', 'reprehenderit', 'voluptate',
-      'velit', 'esse', 'cillum', 'fugiat', 'nulla', 'pariatur', 'excepteur', 'sint',
-      'occaecat', 'cupidatat', 'non', 'proident', 'sunt', 'culpa', 'qui', 'officia',
-      'deserunt', 'mollit', 'anim', 'id', 'est', 'laborum',
+      'lorem',
+      'ipsum',
+      'dolor',
+      'sit',
+      'amet',
+      'consectetur',
+      'adipiscing',
+      'elit',
+      'sed',
+      'do',
+      'eiusmod',
+      'tempor',
+      'incididunt',
+      'ut',
+      'labore',
+      'et',
+      'dolore',
+      'magna',
+      'aliqua',
+      'enim',
+      'ad',
+      'minim',
+      'veniam',
+      'quis',
+      'nostrud',
+      'exercitation',
+      'ullamco',
+      'laboris',
+      'nisi',
+      'aliquip',
+      'ex',
+      'ea',
+      'commodo',
+      'consequat',
+      'duis',
+      'aute',
+      'irure',
+      'in',
+      'reprehenderit',
+      'voluptate',
+      'velit',
+      'esse',
+      'cillum',
+      'fugiat',
+      'nulla',
+      'pariatur',
+      'excepteur',
+      'sint',
+      'occaecat',
+      'cupidatat',
+      'non',
+      'proident',
+      'sunt',
+      'culpa',
+      'qui',
+      'officia',
+      'deserunt',
+      'mollit',
+      'anim',
+      'id',
+      'est',
+      'laborum',
     ];
 
     const getWord = () => words[Math.floor(Math.random() * words.length)];
@@ -1214,7 +1349,10 @@ ${password}
     if (hexMatch && hexMatch[1]) {
       let hex = hexMatch[1];
       if (hex.length === 3) {
-        hex = hex.split('').map((c) => c + c).join('');
+        hex = hex
+          .split('')
+          .map((c) => c + c)
+          .join('');
       }
       r = parseInt(hex.slice(0, 2), 16);
       g = parseInt(hex.slice(2, 4), 16);
@@ -1270,11 +1408,14 @@ ${password}
     const max = Math.max(r, g, b) / 255;
     const min = Math.min(r, g, b) / 255;
     const l = (max + min) / 2;
-    let h = 0, s = 0;
+    let h = 0,
+      s = 0;
     if (max !== min) {
       const d = max - min;
       s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-      const rr = r / 255, gg = g / 255, bb = b / 255;
+      const rr = r / 255,
+        gg = g / 255,
+        bb = b / 255;
       if (rr === max) h = (gg - bb) / d + (gg < bb ? 6 : 0);
       else if (gg === max) h = (bb - rr) / d + 2;
       else h = (rr - gg) / d + 4;
@@ -1328,8 +1469,22 @@ HSL: ${hsl}`,
 ➕ Added: ${added.length}
 ➖ Removed: ${removed.length}
 
-${added.length > 0 ? `\n➕ Added:\n${added.slice(0, 10).map((u) => `  + ${u}`).join('\n')}${added.length > 10 ? `\n  ... and ${added.length - 10} more` : ''}` : ''}
-${removed.length > 0 ? `\n➖ Removed:\n${removed.slice(0, 10).map((u) => `  - ${u}`).join('\n')}${removed.length > 10 ? `\n  ... and ${removed.length - 10} more` : ''}` : ''}`,
+${
+  added.length > 0
+    ? `\n➕ Added:\n${added
+        .slice(0, 10)
+        .map((u) => `  + ${u}`)
+        .join('\n')}${added.length > 10 ? `\n  ... and ${added.length - 10} more` : ''}`
+    : ''
+}
+${
+  removed.length > 0
+    ? `\n➖ Removed:\n${removed
+        .slice(0, 10)
+        .map((u) => `  - ${u}`)
+        .join('\n')}${removed.length > 10 ? `\n  ... and ${removed.length - 10} more` : ''}`
+    : ''
+}`,
     };
   },
 
@@ -1406,7 +1561,9 @@ ${sorted.map(([word, count], i) => `${i + 1}. "${word}" - ${count} times`).join(
     for (const { find, replace } of replacements) {
       const before = result;
       result = result.split(find).join(replace);
-      totalReplacements += (before.length - result.length + replace.length * (before.split(find).length - 1)) / find.length;
+      totalReplacements +=
+        (before.length - result.length + replace.length * (before.split(find).length - 1)) /
+        find.length;
     }
 
     return {
@@ -1494,12 +1651,14 @@ ${sorted.map(([word, count], i) => `${i + 1}. "${word}" - ${count} times`).join(
 
       const headers = Object.keys(data[0]);
       const rows = data.map((obj) =>
-        headers.map((h) => {
-          const val = String(obj[h] ?? '');
-          return val.includes(delimiter) || val.includes('"') || val.includes('\n')
-            ? `"${val.replace(/"/g, '""')}"`
-            : val;
-        }).join(delimiter)
+        headers
+          .map((h) => {
+            const val = String(obj[h] ?? '');
+            return val.includes(delimiter) || val.includes('"') || val.includes('\n')
+              ? `"${val.replace(/"/g, '""')}"`
+              : val;
+          })
+          .join(delimiter)
       );
 
       return { content: [headers.join(delimiter), ...rows].join('\n') };
@@ -1544,7 +1703,9 @@ ${sorted.map(([word, count], i) => `${i + 1}. "${word}" - ${count} times`).join(
       return values;
     };
 
-    const headers = hasHeaders ? parseRow(firstLine) : parseRow(firstLine).map((_, i) => `column${i + 1}`);
+    const headers = hasHeaders
+      ? parseRow(firstLine)
+      : parseRow(firstLine).map((_, i) => `column${i + 1}`);
     const dataLines = hasHeaders ? lines.slice(1) : lines;
 
     const result = dataLines.map((line) => {
@@ -1599,10 +1760,12 @@ ${sorted.map(([word, count], i) => `${i + 1}. "${word}" - ${count} times`).join(
     const sum = numbers.reduce((a, b) => a + b, 0);
     const mean = sum / numbers.length;
     const len = numbers.length;
-    const median = len % 2 === 0
-      ? ((sorted[len / 2 - 1] ?? 0) + (sorted[len / 2] ?? 0)) / 2
-      : (sorted[Math.floor(len / 2)] ?? 0);
-    const variance = numbers.reduce((acc, val) => acc + Math.pow(val - mean, 2), 0) / numbers.length;
+    const median =
+      len % 2 === 0
+        ? ((sorted[len / 2 - 1] ?? 0) + (sorted[len / 2] ?? 0)) / 2
+        : (sorted[Math.floor(len / 2)] ?? 0);
+    const variance =
+      numbers.reduce((acc, val) => acc + Math.pow(val - mean, 2), 0) / numbers.length;
     const stdDev = Math.sqrt(variance);
     const min = sorted[0] ?? 0;
     const max = sorted[sorted.length - 1] ?? 0;
@@ -1698,7 +1861,9 @@ Variance: ${variance.toFixed(2)}`,
     let result: string;
     switch (caseType) {
       case 'camel':
-        result = words.map((w, i) => i === 0 ? w : w.charAt(0).toUpperCase() + w.slice(1)).join('');
+        result = words
+          .map((w, i) => (i === 0 ? w : w.charAt(0).toUpperCase() + w.slice(1)))
+          .join('');
         break;
       case 'pascal':
         result = words.map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join('');
@@ -1793,7 +1958,9 @@ Variance: ${variance.toFixed(2)}`,
       return { content: 'No bookmarks match the filter.' };
     }
 
-    const list = bookmarks.map((b) => `📌 ${b.title}\n   🔗 ${b.url}${b.tags?.length ? `\n   🏷️ ${b.tags.join(', ')}` : ''}`);
+    const list = bookmarks.map(
+      (b) => `📌 ${b.title}\n   🔗 ${b.url}${b.tags?.length ? `\n   🏷️ ${b.tags.join(', ')}` : ''}`
+    );
 
     return { content: `🔖 Bookmarks (${bookmarks.length}):\n\n${list.join('\n\n')}` };
   },

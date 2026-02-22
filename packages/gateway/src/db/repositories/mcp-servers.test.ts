@@ -267,8 +267,8 @@ describe('McpServersRepository', () => {
       });
 
       const params = mockAdapter.execute.mock.calls[0]![1] as unknown[];
-      expect(params[6]).toBe('["--port","3000"]');   // args
-      expect(params[7]).toBe('{"KEY":"val"}');        // env
+      expect(params[6]).toBe('["--port","3000"]'); // args
+      expect(params[7]).toBe('{"KEY":"val"}'); // env
       expect(params[9]).toBe('{"Authorization":"Bearer xyz"}'); // headers
     });
 
@@ -284,8 +284,8 @@ describe('McpServersRepository', () => {
       });
 
       const params = mockAdapter.execute.mock.calls[0]![1] as unknown[];
-      expect(params[10]).toBe(true);  // enabled !== false → true
-      expect(params[11]).toBe(true);  // autoConnect !== false → true
+      expect(params[10]).toBe(true); // enabled !== false → true
+      expect(params[11]).toBe(true); // autoConnect !== false → true
     });
 
     it('should default userId to "default"', async () => {
@@ -308,7 +308,7 @@ describe('McpServersRepository', () => {
       mockAdapter.query.mockResolvedValueOnce([]); // getById returns null
 
       await expect(
-        repo.create({ name: 'srv', displayName: 'Srv', transport: 'stdio' }),
+        repo.create({ name: 'srv', displayName: 'Srv', transport: 'stdio' })
       ).rejects.toThrow('Failed to create MCP server record');
     });
   });
@@ -384,13 +384,17 @@ describe('McpServersRepository', () => {
       const sql = mockAdapter.execute.mock.calls[0]![0] as string;
       expect(sql).toContain('metadata = ?');
       const params = mockAdapter.execute.mock.calls[0]![1] as unknown[];
-      expect(params).toContain(JSON.stringify({ toolSettings: { my_tool: { workflowUsable: false } } }));
+      expect(params).toContain(
+        JSON.stringify({ toolSettings: { my_tool: { workflowUsable: false } } })
+      );
     });
 
     it('should build dynamic SET clause for partial updates', async () => {
       mockAdapter.query.mockResolvedValueOnce([makeRow()]);
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
-      mockAdapter.query.mockResolvedValueOnce([makeRow({ transport: 'sse', url: 'http://localhost:3000' })]);
+      mockAdapter.query.mockResolvedValueOnce([
+        makeRow({ transport: 'sse', url: 'http://localhost:3000' }),
+      ]);
 
       await repo.update('mcp-1', { transport: 'sse', url: 'http://localhost:3000' });
 
@@ -509,9 +513,7 @@ describe('McpServersRepository', () => {
 
   describe('JSON parsing', () => {
     it('should parse args from JSON string', async () => {
-      mockAdapter.query.mockResolvedValueOnce([
-        makeRow({ args: '["--port","3000","--verbose"]' }),
-      ]);
+      mockAdapter.query.mockResolvedValueOnce([makeRow({ args: '["--port","3000","--verbose"]' })]);
 
       const result = await repo.getById('mcp-1');
 
@@ -599,9 +601,7 @@ describe('McpServersRepository', () => {
 
   describe('Boolean coercion', () => {
     it('should coerce numeric enabled/auto_connect to boolean', async () => {
-      mockAdapter.query.mockResolvedValueOnce([
-        makeRow({ enabled: 1, auto_connect: 0 }),
-      ]);
+      mockAdapter.query.mockResolvedValueOnce([makeRow({ enabled: 1, auto_connect: 0 })]);
 
       const result = await repo.getById('mcp-1');
 
@@ -610,9 +610,7 @@ describe('McpServersRepository', () => {
     });
 
     it('should handle boolean enabled/auto_connect directly', async () => {
-      mockAdapter.query.mockResolvedValueOnce([
-        makeRow({ enabled: false, auto_connect: true }),
-      ]);
+      mockAdapter.query.mockResolvedValueOnce([makeRow({ enabled: false, auto_connect: true })]);
 
       const result = await repo.getById('mcp-1');
 
@@ -635,9 +633,7 @@ describe('McpServersRepository', () => {
     });
 
     it('should map url to optional string', async () => {
-      mockAdapter.query.mockResolvedValueOnce([
-        makeRow({ url: 'http://localhost:3000/sse' }),
-      ]);
+      mockAdapter.query.mockResolvedValueOnce([makeRow({ url: 'http://localhost:3000/sse' })]);
 
       const result = await repo.getById('mcp-1');
 
@@ -645,9 +641,7 @@ describe('McpServersRepository', () => {
     });
 
     it('should map error_message to optional string', async () => {
-      mockAdapter.query.mockResolvedValueOnce([
-        makeRow({ error_message: 'Connection timeout' }),
-      ]);
+      mockAdapter.query.mockResolvedValueOnce([makeRow({ error_message: 'Connection timeout' })]);
 
       const result = await repo.getById('mcp-1');
 

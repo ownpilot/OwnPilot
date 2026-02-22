@@ -33,17 +33,20 @@ const PERSONA_TEMPLATES: Array<{ name: string; prompt: string; description: stri
   },
   {
     name: 'Code Expert',
-    prompt: 'You are an expert software engineer. Write clean, efficient code. Explain your reasoning. Follow best practices and modern patterns.',
+    prompt:
+      'You are an expert software engineer. Write clean, efficient code. Explain your reasoning. Follow best practices and modern patterns.',
     description: 'Specialized in programming and technical tasks',
   },
   {
     name: 'Creative Writer',
-    prompt: 'You are a creative writing assistant. Help with stories, articles, and content. Be imaginative and engaging while maintaining clarity.',
+    prompt:
+      'You are a creative writing assistant. Help with stories, articles, and content. Be imaginative and engaging while maintaining clarity.',
     description: 'Writing, storytelling, and content creation',
   },
   {
     name: 'Research Analyst',
-    prompt: 'You are a research analyst. Provide thorough, well-sourced analysis. Consider multiple perspectives. Present findings clearly with supporting evidence.',
+    prompt:
+      'You are a research analyst. Provide thorough, well-sourced analysis. Consider multiple perspectives. Present findings clearly with supporting evidence.',
     description: 'Deep analysis and research tasks',
   },
   {
@@ -66,7 +69,9 @@ export function AgentCreatorWizard({ onComplete, onCancel }: Props) {
   const [maxTurns, setMaxTurns] = useState(25);
   const [selectedTools, setSelectedTools] = useState<Set<string>>(new Set());
   const [isProcessing, setIsProcessing] = useState(false);
-  const [result, setResult] = useState<{ ok: boolean; agentId?: string; error?: string } | null>(null);
+  const [result, setResult] = useState<{ ok: boolean; agentId?: string; error?: string } | null>(
+    null
+  );
 
   const [aiGenerating, setAiGenerating] = useState(false);
   const aiAbortRef = useRef<AbortController | null>(null);
@@ -76,8 +81,14 @@ export function AgentCreatorWizard({ onComplete, onCancel }: Props) {
   const [tools, setTools] = useState<Tool[]>([]);
 
   useEffect(() => {
-    providersApi.list().then((d) => setProviders(d.providers)).catch(() => {});
-    toolsApi.list().then((d) => setTools(d)).catch(() => {});
+    providersApi
+      .list()
+      .then((d) => setProviders(d.providers))
+      .catch(() => {});
+    toolsApi
+      .list()
+      .then((d) => setTools(d))
+      .catch(() => {});
   }, []);
 
   // Load models when provider changes
@@ -85,20 +96,29 @@ export function AgentCreatorWizard({ onComplete, onCancel }: Props) {
     if (!selectedProvider) return;
     setModels([]);
     setSelectedModel('');
-    providersApi.models(selectedProvider).then((d) => {
-      setModels(d.models);
-      if (d.models.length > 0) setSelectedModel(d.models[0]!.id);
-    }).catch(() => {});
+    providersApi
+      .models(selectedProvider)
+      .then((d) => {
+        setModels(d.models);
+        if (d.models.length > 0) setSelectedModel(d.models[0]!.id);
+      })
+      .catch(() => {});
   }, [selectedProvider]);
 
   const canGoNext = useMemo(() => {
     switch (step) {
-      case 0: return name.trim().length >= 2;
-      case 1: return !!selectedProvider && !!selectedModel;
-      case 2: return systemPrompt.trim().length >= 10;
-      case 3: return true; // params always valid with defaults
-      case 4: return true; // tools optional
-      default: return false;
+      case 0:
+        return name.trim().length >= 2;
+      case 1:
+        return !!selectedProvider && !!selectedModel;
+      case 2:
+        return systemPrompt.trim().length >= 10;
+      case 3:
+        return true; // params always valid with defaults
+      case 4:
+        return true; // tools optional
+      default:
+        return false;
     }
   }, [step, name, selectedProvider, selectedModel, systemPrompt]);
 
@@ -121,7 +141,10 @@ export function AgentCreatorWizard({ onComplete, onCancel }: Props) {
         setResult({ ok: true, agentId: agent.id });
         setStep(5);
       } catch (err) {
-        setResult({ ok: false, error: err instanceof Error ? err.message : 'Failed to create agent' });
+        setResult({
+          ok: false,
+          error: err instanceof Error ? err.message : 'Failed to create agent',
+        });
         setStep(5);
       } finally {
         setIsProcessing(false);
@@ -138,9 +161,10 @@ export function AgentCreatorWizard({ onComplete, onCancel }: Props) {
     const ctrl = new AbortController();
     aiAbortRef.current = ctrl;
     try {
-      const persona = selectedPersona && selectedPersona !== 'Custom'
-        ? `The agent's persona is "${selectedPersona}".`
-        : '';
+      const persona =
+        selectedPersona && selectedPersona !== 'Custom'
+          ? `The agent's persona is "${selectedPersona}".`
+          : '';
       const desc = description.trim() ? `Description: "${description.trim()}".` : '';
       const prompt = `Generate a detailed system prompt for an AI agent called "${name.trim()}". ${persona} ${desc}
 
@@ -214,7 +238,10 @@ Return ONLY the system prompt text, no explanations or markdown.`;
             </div>
             <div>
               <label className="block text-sm font-medium text-text-primary dark:text-dark-text-primary mb-2">
-                Description <span className="text-text-muted dark:text-dark-text-muted font-normal">(optional)</span>
+                Description{' '}
+                <span className="text-text-muted dark:text-dark-text-muted font-normal">
+                  (optional)
+                </span>
               </label>
               <input
                 type="text"
@@ -250,7 +277,9 @@ Return ONLY the system prompt text, no explanations or markdown.`;
               >
                 <option value="">Select a provider...</option>
                 {providers.map((p) => (
-                  <option key={p.id} value={p.id}>{p.name}</option>
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                  </option>
                 ))}
               </select>
             </div>
@@ -261,7 +290,9 @@ Return ONLY the system prompt text, no explanations or markdown.`;
                   Model
                 </label>
                 {models.length === 0 ? (
-                  <p className="text-sm text-text-muted dark:text-dark-text-muted">Loading models...</p>
+                  <p className="text-sm text-text-muted dark:text-dark-text-muted">
+                    Loading models...
+                  </p>
                 ) : (
                   <select
                     value={selectedModel}
@@ -269,7 +300,9 @@ Return ONLY the system prompt text, no explanations or markdown.`;
                     className="w-full px-3 py-2.5 rounded-lg border border-border dark:border-dark-border bg-bg-primary dark:bg-dark-bg-primary text-text-primary dark:text-dark-text-primary text-sm"
                   >
                     {models.map((m) => (
-                      <option key={m.id} value={m.id}>{m.name || m.id}</option>
+                      <option key={m.id} value={m.id}>
+                        {m.name || m.id}
+                      </option>
                     ))}
                   </select>
                 )}
@@ -286,7 +319,8 @@ Return ONLY the system prompt text, no explanations or markdown.`;
             System Prompt
           </h2>
           <p className="text-sm text-text-muted dark:text-dark-text-muted mb-4">
-            Define your agent's personality and instructions. Start from a template or write your own.
+            Define your agent's personality and instructions. Start from a template or write your
+            own.
           </p>
 
           {/* Persona templates */}
@@ -321,7 +355,10 @@ Return ONLY the system prompt text, no explanations or markdown.`;
 
           <textarea
             value={systemPrompt}
-            onChange={(e) => { setSystemPrompt(e.target.value); setSelectedPersona('Custom'); }}
+            onChange={(e) => {
+              setSystemPrompt(e.target.value);
+              setSelectedPersona('Custom');
+            }}
             placeholder="You are a helpful AI assistant that..."
             rows={8}
             className="w-full px-3 py-2.5 rounded-lg border border-border dark:border-dark-border bg-bg-primary dark:bg-dark-bg-primary text-text-primary dark:text-dark-text-primary text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 resize-y font-mono"
@@ -348,7 +385,9 @@ Return ONLY the system prompt text, no explanations or markdown.`;
                 <label className="text-sm font-medium text-text-primary dark:text-dark-text-primary">
                   Temperature
                 </label>
-                <span className="text-sm font-mono text-text-muted dark:text-dark-text-muted">{temperature}</span>
+                <span className="text-sm font-mono text-text-muted dark:text-dark-text-muted">
+                  {temperature}
+                </span>
               </div>
               <input
                 type="range"
@@ -375,7 +414,9 @@ Return ONLY the system prompt text, no explanations or markdown.`;
                 className="w-full px-3 py-2.5 rounded-lg border border-border dark:border-dark-border bg-bg-primary dark:bg-dark-bg-primary text-text-primary dark:text-dark-text-primary text-sm"
               >
                 {[1024, 2048, 4096, 8192, 16384, 32768].map((v) => (
-                  <option key={v} value={v}>{v.toLocaleString()} tokens</option>
+                  <option key={v} value={v}>
+                    {v.toLocaleString()} tokens
+                  </option>
                 ))}
               </select>
             </div>
@@ -390,7 +431,9 @@ Return ONLY the system prompt text, no explanations or markdown.`;
                 className="w-full px-3 py-2.5 rounded-lg border border-border dark:border-dark-border bg-bg-primary dark:bg-dark-bg-primary text-text-primary dark:text-dark-text-primary text-sm"
               >
                 {[5, 10, 15, 25, 50].map((v) => (
-                  <option key={v} value={v}>{v} turns</option>
+                  <option key={v} value={v}>
+                    {v} turns
+                  </option>
                 ))}
               </select>
             </div>
@@ -411,7 +454,10 @@ Return ONLY the system prompt text, no explanations or markdown.`;
           <div className="text-xs text-text-muted dark:text-dark-text-muted mb-3">
             {selectedTools.size === 0 ? 'All tools (default)' : `${selectedTools.size} selected`}
             {selectedTools.size > 0 && (
-              <button onClick={() => setSelectedTools(new Set())} className="ml-2 text-primary hover:underline">
+              <button
+                onClick={() => setSelectedTools(new Set())}
+                className="ml-2 text-primary hover:underline"
+              >
                 Clear
               </button>
             )}
@@ -429,7 +475,9 @@ Return ONLY the system prompt text, no explanations or markdown.`;
                   onChange={() => toggleTool(t.name)}
                   className="w-3.5 h-3.5 rounded border-border text-primary focus:ring-primary"
                 />
-                <span className="text-sm text-text-primary dark:text-dark-text-primary">{t.name}</span>
+                <span className="text-sm text-text-primary dark:text-dark-text-primary">
+                  {t.name}
+                </span>
                 {t.description && (
                   <span className="text-xs text-text-muted dark:text-dark-text-muted truncate ml-auto">
                     {t.description}
@@ -458,7 +506,8 @@ Return ONLY the system prompt text, no explanations or markdown.`;
                 Agent Created!
               </h2>
               <p className="text-sm text-text-muted dark:text-dark-text-muted mb-6 max-w-md mx-auto">
-                <strong>{name}</strong> is ready. Use it in Chat by selecting it from the agent picker.
+                <strong>{name}</strong> is ready. Use it in Chat by selecting it from the agent
+                picker.
               </p>
               <a
                 href="/agents"
@@ -477,7 +526,10 @@ Return ONLY the system prompt text, no explanations or markdown.`;
               </h3>
               <p className="text-sm text-error max-w-md mx-auto">{result?.error}</p>
               <button
-                onClick={() => { setStep(4); setResult(null); }}
+                onClick={() => {
+                  setStep(4);
+                  setResult(null);
+                }}
                 className="mt-3 text-sm text-primary hover:underline"
               >
                 Go back and try again

@@ -97,11 +97,12 @@ export async function logChatEvent(params: {
   const logger = getAuditLogger();
 
   // Map chat event types to audit event types
-  const eventType = params.type === 'error'
-    ? 'system.error'  // Use system.error for chat errors
-    : params.type === 'start'
-      ? 'message.receive'
-      : 'message.send';
+  const eventType =
+    params.type === 'error'
+      ? 'system.error' // Use system.error for chat errors
+      : params.type === 'start'
+        ? 'message.receive'
+        : 'message.send';
 
   const event: AuditEventInput = {
     type: eventType,
@@ -230,18 +231,29 @@ function sanitizeForAudit(data: unknown, maxLength = 1000): unknown {
 
   if (Array.isArray(data)) {
     if (data.length > 10) {
-      return [...data.slice(0, 10).map(item => sanitizeForAudit(item, maxLength)), `... [${data.length - 10} more items]`];
+      return [
+        ...data.slice(0, 10).map((item) => sanitizeForAudit(item, maxLength)),
+        `... [${data.length - 10} more items]`,
+      ];
     }
-    return data.map(item => sanitizeForAudit(item, maxLength));
+    return data.map((item) => sanitizeForAudit(item, maxLength));
   }
 
   if (typeof data === 'object') {
     const sanitized: Record<string, unknown> = {};
-    const sensitiveKeys = ['password', 'apikey', 'api_key', 'secret', 'token', 'authorization', 'credential'];
+    const sensitiveKeys = [
+      'password',
+      'apikey',
+      'api_key',
+      'secret',
+      'token',
+      'authorization',
+      'credential',
+    ];
 
     for (const [key, value] of Object.entries(data as Record<string, unknown>)) {
       // Mask sensitive fields
-      if (sensitiveKeys.some(sk => key.toLowerCase().includes(sk))) {
+      if (sensitiveKeys.some((sk) => key.toLowerCase().includes(sk))) {
         sanitized[key] = '[REDACTED]';
       } else {
         sanitized[key] = sanitizeForAudit(value, maxLength);

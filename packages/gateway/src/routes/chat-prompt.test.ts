@@ -11,7 +11,8 @@ vi.mock('@ownpilot/core', () => ({
   hasServiceRegistry: (...args: unknown[]) => mockHasServiceRegistry(...args),
   getServiceRegistry: (...args: unknown[]) => mockGetServiceRegistry(...args),
   Services: { Message: 'message', Database: 'database' },
-  getBaseName: (name: string) => name.includes('.') ? name.substring(name.lastIndexOf('.') + 1) : name,
+  getBaseName: (name: string) =>
+    name.includes('.') ? name.substring(name.lastIndexOf('.') + 1) : name,
 }));
 
 vi.mock('../config/defaults.js', () => ({
@@ -44,7 +45,7 @@ function makePerms(overrides: Record<string, unknown> = {}) {
     compile_code: 'blocked',
     package_manager: 'blocked',
     ...overrides,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } as any;
 }
 
@@ -56,7 +57,7 @@ function makeTool(overrides: Record<string, unknown> = {}) {
     category: 'Custom',
     parameters: {},
     ...overrides,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } as any;
 }
 
@@ -285,7 +286,11 @@ describe('buildToolCatalog', () => {
       get: vi.fn().mockReturnValue({ listTables: vi.fn().mockResolvedValue([]) }),
     });
 
-    const tool = makeTool({ name: 'my_custom_tool', description: 'Does something custom', category: 'Custom' });
+    const tool = makeTool({
+      name: 'my_custom_tool',
+      description: 'Does something custom',
+      category: 'Custom',
+    });
     const result = await buildToolCatalog([tool]);
 
     expect(result).toContain('Active Custom & Extension Tools');
@@ -336,9 +341,7 @@ describe('buildToolCatalog', () => {
     mockHasServiceRegistry.mockReturnValue(true);
     mockGetServiceRegistry.mockReturnValue({
       get: vi.fn().mockReturnValue({
-        listTables: vi.fn().mockResolvedValue([
-          { name: 'my_notes', displayName: 'My Notes' },
-        ]),
+        listTables: vi.fn().mockResolvedValue([{ name: 'my_notes', displayName: 'My Notes' }]),
       }),
     });
 
@@ -353,9 +356,7 @@ describe('buildToolCatalog', () => {
     mockHasServiceRegistry.mockReturnValue(true);
     mockGetServiceRegistry.mockReturnValue({
       get: vi.fn().mockReturnValue({
-        listTables: vi.fn().mockResolvedValue([
-          { name: 'tasks', displayName: 'tasks' },
-        ]),
+        listTables: vi.fn().mockResolvedValue([{ name: 'tasks', displayName: 'tasks' }]),
       }),
     });
 

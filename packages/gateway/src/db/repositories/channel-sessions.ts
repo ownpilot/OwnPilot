@@ -160,30 +160,26 @@ export class ChannelSessionsRepository extends BaseRepository {
    * Update the conversation link for a session.
    */
   async linkConversation(sessionId: string, conversationId: string): Promise<void> {
-    await this.execute(
-      `UPDATE channel_sessions SET conversation_id = $1 WHERE id = $2`,
-      [conversationId, sessionId]
-    );
+    await this.execute(`UPDATE channel_sessions SET conversation_id = $1 WHERE id = $2`, [
+      conversationId,
+      sessionId,
+    ]);
   }
 
   /**
    * Touch last_message_at.
    */
   async touchLastMessage(sessionId: string): Promise<void> {
-    await this.execute(
-      `UPDATE channel_sessions SET last_message_at = NOW() WHERE id = $1`,
-      [sessionId]
-    );
+    await this.execute(`UPDATE channel_sessions SET last_message_at = NOW() WHERE id = $1`, [
+      sessionId,
+    ]);
   }
 
   /**
    * Deactivate a session.
    */
   async deactivate(sessionId: string): Promise<void> {
-    await this.execute(
-      `UPDATE channel_sessions SET is_active = FALSE WHERE id = $1`,
-      [sessionId]
-    );
+    await this.execute(`UPDATE channel_sessions SET is_active = FALSE WHERE id = $1`, [sessionId]);
   }
 
   /**
@@ -203,20 +199,17 @@ export class ChannelSessionsRepository extends BaseRepository {
    * Merge key-value pairs into the session context (JSONB).
    */
   async updateContext(sessionId: string, context: Record<string, unknown>): Promise<void> {
-    await this.execute(
-      `UPDATE channel_sessions SET context = context || $1::jsonb WHERE id = $2`,
-      [JSON.stringify(context), sessionId]
-    );
+    await this.execute(`UPDATE channel_sessions SET context = context || $1::jsonb WHERE id = $2`, [
+      JSON.stringify(context),
+      sessionId,
+    ]);
   }
 
   /**
    * Delete a session.
    */
   async delete(id: string): Promise<boolean> {
-    const result = await this.execute(
-      `DELETE FROM channel_sessions WHERE id = $1`,
-      [id]
-    );
+    const result = await this.execute(`DELETE FROM channel_sessions WHERE id = $1`, [id]);
     return result.changes > 0;
   }
 

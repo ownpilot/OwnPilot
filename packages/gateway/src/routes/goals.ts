@@ -17,7 +17,16 @@ import type {
 } from '../db/repositories/goals.js';
 import { GoalServiceError } from '../services/goal-service.js';
 import { getServiceRegistry, Services } from '@ownpilot/core';
-import { getUserId, apiResponse, apiError, getIntParam, ERROR_CODES, sanitizeId, notFoundError, getErrorMessage } from './helpers.js';
+import {
+  getUserId,
+  apiResponse,
+  apiError,
+  getIntParam,
+  ERROR_CODES,
+  sanitizeId,
+  notFoundError,
+  getErrorMessage,
+} from './helpers.js';
 import { MAX_DAYS_LOOKBACK } from '../config/defaults.js';
 import { wsGateway } from '../ws/server.js';
 import { getLog } from '../services/log.js';
@@ -37,9 +46,10 @@ goalsRoutes.get('/', async (c) => {
   const userId = getUserId(c);
   const VALID_GOAL_STATUSES: GoalStatus[] = ['active', 'paused', 'completed', 'abandoned'];
   const rawStatus = c.req.query('status');
-  const status = rawStatus && VALID_GOAL_STATUSES.includes(rawStatus as GoalStatus)
-    ? (rawStatus as GoalStatus)
-    : undefined;
+  const status =
+    rawStatus && VALID_GOAL_STATUSES.includes(rawStatus as GoalStatus)
+      ? (rawStatus as GoalStatus)
+      : undefined;
   const limit = getIntParam(c, 'limit', 20, 1, 100);
   const parentId = c.req.query('parentId');
 
@@ -52,9 +62,9 @@ goalsRoutes.get('/', async (c) => {
   });
 
   return apiResponse(c, {
-      goals,
-      total: goals.length,
-    });
+    goals,
+    total: goals.length,
+  });
 });
 
 /**
@@ -70,12 +80,21 @@ goalsRoutes.post('/', async (c) => {
     const service = getServiceRegistry().get(Services.Goal);
     const goal = await service.createGoal(userId, body);
 
-    log.info('Goal created', { userId, goalId: goal.id, title: goal.title, priority: goal.priority });
+    log.info('Goal created', {
+      userId,
+      goalId: goal.id,
+      title: goal.title,
+      priority: goal.priority,
+    });
     wsGateway.broadcast('data:changed', { entity: 'goal', action: 'created', id: goal.id });
-    return apiResponse(c, {
+    return apiResponse(
+      c,
+      {
         goal,
         message: 'Goal created successfully.',
-      }, 201);
+      },
+      201
+    );
   } catch (err) {
     if (err instanceof GoalServiceError && err.code === 'VALIDATION_ERROR') {
       log.warn('Goal validation error', { userId, error: err.message });
@@ -108,9 +127,9 @@ goalsRoutes.get('/next-actions', async (c) => {
   const actions = await service.getNextActions(userId, limit);
 
   return apiResponse(c, {
-      actions,
-      count: actions.length,
-    });
+    actions,
+    count: actions.length,
+  });
 });
 
 /**
@@ -124,9 +143,9 @@ goalsRoutes.get('/upcoming', async (c) => {
   const goals = await service.getUpcoming(userId, days);
 
   return apiResponse(c, {
-      goals,
-      count: goals.length,
-    });
+    goals,
+    count: goals.length,
+  });
 });
 
 /**
@@ -183,8 +202,8 @@ goalsRoutes.delete('/:id', async (c) => {
 
   wsGateway.broadcast('data:changed', { entity: 'goal', action: 'deleted', id });
   return apiResponse(c, {
-      message: 'Goal deleted successfully.',
-    });
+    message: 'Goal deleted successfully.',
+  });
 });
 
 // ============================================================================
@@ -199,7 +218,9 @@ goalsRoutes.post('/:id/steps', async (c) => {
   const goalId = c.req.param('id');
   const rawBody = await c.req.json().catch(() => null);
   const { validateBody, createGoalStepsSchema } = await import('../middleware/validation.js');
-  const body = validateBody(createGoalStepsSchema, rawBody) as { steps: CreateStepInput[] } | CreateStepInput;
+  const body = validateBody(createGoalStepsSchema, rawBody) as
+    | { steps: CreateStepInput[] }
+    | CreateStepInput;
 
   try {
     const service = getServiceRegistry().get(Services.Goal);
@@ -212,11 +233,15 @@ goalsRoutes.post('/:id/steps', async (c) => {
     const createdSteps = await service.decomposeGoal(userId, goalId, validSteps);
 
     wsGateway.broadcast('data:changed', { entity: 'goal', action: 'updated', id: goalId });
-    return apiResponse(c, {
+    return apiResponse(
+      c,
+      {
         steps: createdSteps,
         count: createdSteps.length,
         message: `Added ${createdSteps.length} step(s) to goal.`,
-      }, 201);
+      },
+      201
+    );
   } catch (err) {
     if (err instanceof GoalServiceError) {
       const status = err.code === 'NOT_FOUND' ? 404 : 400;
@@ -237,9 +262,9 @@ goalsRoutes.get('/:id/steps', async (c) => {
   const steps = await service.getSteps(userId, goalId);
 
   return apiResponse(c, {
-      steps,
-      count: steps.length,
-    });
+    steps,
+    count: steps.length,
+  });
 });
 
 /**
@@ -265,7 +290,11 @@ goalsRoutes.patch('/:goalId/steps/:stepId', async (c) => {
     return notFoundError(c, 'Step', stepId);
   }
 
-  wsGateway.broadcast('data:changed', { entity: 'goal', action: 'updated', id: c.req.param('goalId') });
+  wsGateway.broadcast('data:changed', {
+    entity: 'goal',
+    action: 'updated',
+    id: c.req.param('goalId'),
+  });
   return apiResponse(c, updated);
 });
 
@@ -287,11 +316,15 @@ goalsRoutes.post('/:goalId/steps/:stepId/complete', async (c) => {
     return notFoundError(c, 'Step', stepId);
   }
 
-  wsGateway.broadcast('data:changed', { entity: 'goal', action: 'updated', id: c.req.param('goalId') });
+  wsGateway.broadcast('data:changed', {
+    entity: 'goal',
+    action: 'updated',
+    id: c.req.param('goalId'),
+  });
   return apiResponse(c, {
-      step: updated,
-      message: 'Step completed successfully.',
-    });
+    step: updated,
+    message: 'Step completed successfully.',
+  });
 });
 
 /**
@@ -309,10 +342,14 @@ goalsRoutes.delete('/:goalId/steps/:stepId', async (c) => {
     return notFoundError(c, 'Step', stepId);
   }
 
-  wsGateway.broadcast('data:changed', { entity: 'goal', action: 'updated', id: c.req.param('goalId') });
+  wsGateway.broadcast('data:changed', {
+    entity: 'goal',
+    action: 'updated',
+    id: c.req.param('goalId'),
+  });
   return apiResponse(c, {
-      message: 'Step deleted successfully.',
-    });
+    message: 'Step deleted successfully.',
+  });
 });
 
 // ============================================================================
@@ -463,7 +500,7 @@ export async function executeGoalTool(
         const createdSteps = await service.decomposeGoal(
           userId,
           goalId,
-          steps.filter((s) => s.title),
+          steps.filter((s) => s.title)
         );
 
         // Get goal title for message

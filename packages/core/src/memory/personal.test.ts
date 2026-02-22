@@ -163,7 +163,7 @@ describe('PersonalMemoryStore', () => {
 
     it('filters by categories', async () => {
       const results = await store.search('a', ['identity']);
-      expect(results.every(r => r.category === 'identity')).toBe(true);
+      expect(results.every((r) => r.category === 'identity')).toBe(true);
     });
 
     it('excludes expired entries', async () => {
@@ -181,7 +181,9 @@ describe('PersonalMemoryStore', () => {
       await store.set('identity', 'name', 'Alice');
       await store.set('identity', 'age', '30');
       await store.set('location', 'home_city', 'New York');
-      await store.set('occupation', 'developer', 'Software Engineer', { data: { company: 'Acme' } });
+      await store.set('occupation', 'developer', 'Software Engineer', {
+        data: { company: 'Acme' },
+      });
       await store.set('hobbies', 'h1', 'reading');
       await store.set('communication', 'style', 'casual');
       await store.set('goals_short', 'g1', 'learn Rust');
@@ -256,7 +258,9 @@ describe('PersonalMemoryStore', () => {
       await store.set('identity', 'birthday', '1990-05-15');
       await store.set('identity', 'gender', 'female');
       await store.set('identity', 'nationality', 'American');
-      await store.set('identity', 'languages', 'English', { data: { languages: ['English', 'Spanish'] } });
+      await store.set('identity', 'languages', 'English', {
+        data: { languages: ['English', 'Spanish'] },
+      });
 
       const profile = await store.getProfile();
       expect(profile.identity.nickname).toBe('Al');

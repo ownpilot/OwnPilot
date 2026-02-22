@@ -17,13 +17,7 @@ import { homedir } from 'node:os';
 import { webcrypto } from 'node:crypto';
 import { type Result, ok, err, fromPromise } from '../types/result.js';
 import { CryptoError, NotFoundError, ValidationError } from '../types/errors.js';
-import {
-  deriveKey,
-  generateSalt,
-  generateIV,
-  toBase64,
-  fromBase64,
-} from './derive.js';
+import { deriveKey, generateSalt, generateIV, toBase64, fromBase64 } from './derive.js';
 
 const crypto = webcrypto;
 type CryptoKeyType = Awaited<ReturnType<typeof crypto.subtle.deriveKey>>;
@@ -71,17 +65,17 @@ export interface StoredCredentials {
   // Built-in providers
   openaiApiKey?: string;
   anthropicApiKey?: string;
-  googleApiKey?: string;       // Google AI (Gemini)
+  googleApiKey?: string; // Google AI (Gemini)
 
   // OpenAI-compatible providers
-  zhipuApiKey?: string;        // ZAI GLM (Zhipu AI)
-  deepseekApiKey?: string;     // DeepSeek
-  groqApiKey?: string;         // Groq
-  togetherApiKey?: string;     // Together AI
-  mistralApiKey?: string;      // Mistral AI
-  fireworksApiKey?: string;    // Fireworks AI
-  perplexityApiKey?: string;   // Perplexity
-  xaiApiKey?: string;          // xAI (Grok)
+  zhipuApiKey?: string; // ZAI GLM (Zhipu AI)
+  deepseekApiKey?: string; // DeepSeek
+  groqApiKey?: string; // Groq
+  togetherApiKey?: string; // Together AI
+  mistralApiKey?: string; // Mistral AI
+  fireworksApiKey?: string; // Fireworks AI
+  perplexityApiKey?: string; // Perplexity
+  xaiApiKey?: string; // xAI (Grok)
 
   // Communication
   telegramBotToken?: string;
@@ -211,14 +205,18 @@ export class CredentialStore {
 
       return ok(undefined);
     } catch (error) {
-      return err(new CryptoError('encrypt', 'Failed to initialize credential store', { cause: error }));
+      return err(
+        new CryptoError('encrypt', 'Failed to initialize credential store', { cause: error })
+      );
     }
   }
 
   /**
    * Unlock the credential store with the master password
    */
-  async unlock(password: string): Promise<Result<void, ValidationError | CryptoError | NotFoundError>> {
+  async unlock(
+    password: string
+  ): Promise<Result<void, ValidationError | CryptoError | NotFoundError>> {
     if (this.isUnlocked) {
       return ok(undefined);
     }
@@ -230,7 +228,9 @@ export class CredentialStore {
     // Read file
     const readResult = await fromPromise(readFile(this.config.path, 'utf-8'));
     if (!readResult.ok) {
-      return err(new CryptoError('decrypt', 'Failed to read credentials file', { cause: readResult.error }));
+      return err(
+        new CryptoError('decrypt', 'Failed to read credentials file', { cause: readResult.error })
+      );
     }
 
     let file: CredentialsFile;
@@ -321,7 +321,9 @@ export class CredentialStore {
   /**
    * Set credentials (merges with existing)
    */
-  async setCredentials(credentials: Partial<StoredCredentials>): Promise<Result<void, ValidationError | CryptoError>> {
+  async setCredentials(
+    credentials: Partial<StoredCredentials>
+  ): Promise<Result<void, ValidationError | CryptoError>> {
     if (!this.isUnlocked || !this.derivedKey) {
       return err(new ValidationError('Credential store is locked'));
     }
@@ -339,7 +341,9 @@ export class CredentialStore {
   /**
    * Delete a specific credential
    */
-  async deleteCredential(key: keyof StoredCredentials): Promise<Result<void, ValidationError | CryptoError>> {
+  async deleteCredential(
+    key: keyof StoredCredentials
+  ): Promise<Result<void, ValidationError | CryptoError>> {
     if (!this.isUnlocked || !this.credentials) {
       return err(new ValidationError('Credential store is locked'));
     }
@@ -356,7 +360,10 @@ export class CredentialStore {
   /**
    * Change the master password
    */
-  async changePassword(currentPassword: string, newPassword: string): Promise<Result<void, ValidationError | CryptoError | NotFoundError>> {
+  async changePassword(
+    currentPassword: string,
+    newPassword: string
+  ): Promise<Result<void, ValidationError | CryptoError | NotFoundError>> {
     // First unlock with current password
     if (!this.isUnlocked) {
       const unlockResult = await this.unlock(currentPassword);
@@ -372,7 +379,9 @@ export class CredentialStore {
     // Read current file to get structure
     const readResult = await fromPromise(readFile(this.config.path, 'utf-8'));
     if (!readResult.ok) {
-      return err(new CryptoError('decrypt', 'Failed to read credentials file', { cause: readResult.error }));
+      return err(
+        new CryptoError('decrypt', 'Failed to read credentials file', { cause: readResult.error })
+      );
     }
 
     try {

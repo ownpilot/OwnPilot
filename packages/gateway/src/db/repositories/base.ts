@@ -50,7 +50,10 @@ export abstract class BaseRepository {
   /**
    * Execute a query that returns a single row
    */
-  protected async queryOne<T extends object = Row>(sql: string, params?: unknown[]): Promise<T | null> {
+  protected async queryOne<T extends object = Row>(
+    sql: string,
+    params?: unknown[]
+  ): Promise<T | null> {
     const adapter = await this.getAdapter();
     return adapter.queryOne<T>(sql, params);
   }
@@ -58,7 +61,10 @@ export abstract class BaseRepository {
   /**
    * Execute a statement (INSERT, UPDATE, DELETE)
    */
-  protected async execute(sql: string, params?: unknown[]): Promise<{ changes: number; lastInsertRowid?: number | bigint }> {
+  protected async execute(
+    sql: string,
+    params?: unknown[]
+  ): Promise<{ changes: number; lastInsertRowid?: number | bigint }> {
     const adapter = await this.getAdapter();
     return adapter.execute(sql, params);
   }
@@ -123,7 +129,7 @@ export abstract class BaseRepository {
     countSql: string,
     query: StandardQuery = {},
     params: unknown[] = [],
-    defaultOrderBy = 'created_at DESC',
+    defaultOrderBy = 'created_at DESC'
   ): Promise<{ rows: T[]; total: number; limit: number; offset: number }> {
     const limit = query.limit ?? 50;
     const offset = query.offset ?? 0;
@@ -156,7 +162,7 @@ export abstract class BaseRepository {
     items: T[],
     total: number,
     limit: number,
-    offset: number,
+    offset: number
   ): PaginatedResult<T> {
     return buildPaginatedResult(items, total, limit, offset);
   }
@@ -192,8 +198,11 @@ export async function ensureTable(tableName: string, createSQL: string): Promise
 export function parseJsonField<T>(value: unknown, fallback: T): T {
   if (typeof value === 'string') {
     if (!value) return fallback;
-    try { return JSON.parse(value) as T; }
-    catch { return fallback; }
+    try {
+      return JSON.parse(value) as T;
+    } catch {
+      return fallback;
+    }
   }
   return (value as T) ?? fallback;
 }
@@ -215,8 +224,11 @@ export function parseJsonFieldNullable<T>(value: unknown): T | null {
   if (value == null) return null;
   if (typeof value === 'string') {
     if (!value) return null;
-    try { return JSON.parse(value) as T; }
-    catch { return null; }
+    try {
+      return JSON.parse(value) as T;
+    } catch {
+      return null;
+    }
   }
   return value as T;
 }

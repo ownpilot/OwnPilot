@@ -12,7 +12,14 @@ import { getErrorMessage } from '../services/error-utils.js';
  */
 export interface DebugLogEntry {
   timestamp: string;
-  type: 'request' | 'response' | 'tool_call' | 'tool_result' | 'error' | 'retry' | 'sandbox_execution';
+  type:
+    | 'request'
+    | 'response'
+    | 'tool_call'
+    | 'tool_result'
+    | 'error'
+    | 'retry'
+    | 'sandbox_execution';
   provider?: string;
   model?: string;
   data: unknown;
@@ -114,10 +121,12 @@ export interface ToolResultDebugInfo {
  * Check if verbose debug logging should be enabled
  */
 function shouldLogToConsole(): boolean {
-  return process.env.DEBUG_AI_REQUESTS === 'true' ||
-         process.env.DEBUG_AGENT === 'true' ||
-         process.env.DEBUG_LLM === 'true' ||
-         process.env.NODE_ENV === 'development';
+  return (
+    process.env.DEBUG_AI_REQUESTS === 'true' ||
+    process.env.DEBUG_AGENT === 'true' ||
+    process.env.DEBUG_LLM === 'true' ||
+    process.env.NODE_ENV === 'development'
+  );
 }
 
 /**
@@ -201,25 +210,35 @@ export function logRequest(info: RequestDebugInfo): void {
     console.log(`Provider: ${info.provider}`);
     console.log(`Model: ${info.model}`);
     console.log(`Endpoint: ${info.endpoint}`);
-    console.log(`MaxTokens: ${info.maxTokens ?? 'default'} | Temperature: ${info.temperature ?? 'default'} | Stream: ${info.stream}`);
+    console.log(
+      `MaxTokens: ${info.maxTokens ?? 'default'} | Temperature: ${info.temperature ?? 'default'} | Stream: ${info.stream}`
+    );
     console.log('─'.repeat(40));
     console.log(`Messages (${info.messages.length}):`);
     for (let i = 0; i < info.messages.length; i++) {
       const msg = info.messages[i];
       if (!msg) continue;
-      console.log(`  [${i}] ${msg.role.toUpperCase().padEnd(10)} │ ${truncate(msg.contentPreview, 150)} (${msg.contentLength} chars)`);
+      console.log(
+        `  [${i}] ${msg.role.toUpperCase().padEnd(10)} │ ${truncate(msg.contentPreview, 150)} (${msg.contentLength} chars)`
+      );
     }
     if (info.tools?.length) {
       console.log('─'.repeat(40));
-      console.log(`Tools (${info.tools.length}): ${info.tools.slice(0, 10).join(', ')}${info.tools.length > 10 ? '...' : ''}`);
+      console.log(
+        `Tools (${info.tools.length}): ${info.tools.slice(0, 10).join(', ')}${info.tools.length > 10 ? '...' : ''}`
+      );
     }
     if (info.payload) {
       console.log('─'.repeat(40));
       console.log(`📊 PAYLOAD BREAKDOWN:`);
-      console.log(`  Total: ${info.payload.totalChars.toLocaleString()} chars (~${info.payload.estimatedTokens.toLocaleString()} tokens)`);
+      console.log(
+        `  Total: ${info.payload.totalChars.toLocaleString()} chars (~${info.payload.estimatedTokens.toLocaleString()} tokens)`
+      );
       console.log(`  System Prompt: ${info.payload.systemPromptChars.toLocaleString()} chars`);
       console.log(`  Messages: ${info.payload.messagesChars.toLocaleString()} chars`);
-      console.log(`  Tools: ${info.payload.toolsChars.toLocaleString()} chars (${info.payload.toolCount} tools, avg ${info.payload.perToolAvgChars} chars/tool)`);
+      console.log(
+        `  Tools: ${info.payload.toolsChars.toLocaleString()} chars (${info.payload.toolCount} tools, avg ${info.payload.perToolAvgChars} chars/tool)`
+      );
     }
     console.log('═'.repeat(80));
   }
@@ -242,13 +261,17 @@ export function logResponse(info: ResponseDebugInfo): void {
     const statusColor = info.status === 'success' ? '🟢' : '🔴';
 
     console.log('\n' + '═'.repeat(80));
-    console.log(`📥 LLM RESPONSE - ${statusColor} ${info.status.toUpperCase()} - ${info.durationMs}ms`);
+    console.log(
+      `📥 LLM RESPONSE - ${statusColor} ${info.status.toUpperCase()} - ${info.durationMs}ms`
+    );
     console.log('═'.repeat(80));
     console.log(`Provider: ${info.provider} | Model: ${info.model}`);
     console.log(`Finish Reason: ${info.finishReason ?? 'N/A'}`);
 
     if (info.usage) {
-      console.log(`Tokens: ${info.usage.promptTokens} in → ${info.usage.completionTokens} out → ${info.usage.totalTokens} total`);
+      console.log(
+        `Tokens: ${info.usage.promptTokens} in → ${info.usage.completionTokens} out → ${info.usage.totalTokens} total`
+      );
     }
 
     if (info.status === 'success') {
@@ -319,7 +342,12 @@ export function logToolResult(info: ToolResultDebugInfo): void {
 /**
  * Log a retry attempt
  */
-export function logRetry(attempt: number, maxRetries: number, error: unknown, delayMs: number): void {
+export function logRetry(
+  attempt: number,
+  maxRetries: number,
+  error: unknown,
+  delayMs: number
+): void {
   debugLog.add({
     type: 'retry',
     data: {
@@ -382,16 +410,14 @@ export function buildRequestDebugInfo(
     provider,
     model,
     endpoint,
-    messages: messages.map(msg => ({
+    messages: messages.map((msg) => ({
       role: msg.role,
-      contentPreview: typeof msg.content === 'string'
-        ? truncate(msg.content, 100)
-        : '[multipart content]',
-      contentLength: typeof msg.content === 'string'
-        ? msg.content.length
-        : JSON.stringify(msg.content).length,
+      contentPreview:
+        typeof msg.content === 'string' ? truncate(msg.content, 100) : '[multipart content]',
+      contentLength:
+        typeof msg.content === 'string' ? msg.content.length : JSON.stringify(msg.content).length,
     })),
-    tools: tools?.map(t => t.name),
+    tools: tools?.map((t) => t.name),
     maxTokens,
     temperature,
     stream,
@@ -402,11 +428,13 @@ export function buildRequestDebugInfo(
  * Calculate payload size breakdown from the actual API request body.
  * Call this after body is constructed and attach to RequestDebugInfo.
  */
-export function calculatePayloadBreakdown(body: Record<string, unknown>): RequestDebugInfo['payload'] {
+export function calculatePayloadBreakdown(
+  body: Record<string, unknown>
+): RequestDebugInfo['payload'] {
   const messagesJson = JSON.stringify(body.messages ?? []);
   const toolsJson = JSON.stringify(body.tools ?? []);
   const systemMsg = Array.isArray(body.messages)
-    ? (body.messages as Array<{ role?: string; content?: string }>).find(m => m.role === 'system')
+    ? (body.messages as Array<{ role?: string; content?: string }>).find((m) => m.role === 'system')
     : undefined;
   const systemPromptChars = systemMsg?.content?.length ?? 0;
   const toolCount = Array.isArray(body.tools) ? body.tools.length : 0;
@@ -447,7 +475,7 @@ export function buildResponseDebugInfo(
     status: error ? 'error' : 'success',
     contentPreview: content ? truncate(content, 200) : undefined,
     contentLength: content?.length,
-    toolCalls: toolCalls?.map(tc => ({
+    toolCalls: toolCalls?.map((tc) => ({
       id: tc.id,
       name: tc.name,
       argumentsPreview: truncate(tc.arguments, 100),
@@ -473,7 +501,8 @@ export function logSandboxExecution(info: SandboxExecutionDebugInfo): void {
   if (shouldLogToConsole()) {
     const sandboxIcon = info.sandboxed ? '🐳' : '⚠️';
     const statusIcon = info.success ? '✅' : '❌';
-    const langEmoji = info.language === 'python' ? '🐍' : info.language === 'javascript' ? '📜' : '💻';
+    const langEmoji =
+      info.language === 'python' ? '🐍' : info.language === 'javascript' ? '📜' : '💻';
 
     console.log('\n' + '═'.repeat(80));
     console.log(`${sandboxIcon} SANDBOX EXECUTION - ${langEmoji} ${info.language.toUpperCase()}`);
@@ -524,12 +553,12 @@ export function getDebugInfo(): {
     enabled: debugLog.isEnabled(),
     entries,
     summary: {
-      requests: entries.filter(e => e.type === 'request').length,
-      responses: entries.filter(e => e.type === 'response').length,
-      toolCalls: entries.filter(e => e.type === 'tool_call').length,
-      errors: entries.filter(e => e.type === 'error').length,
-      retries: entries.filter(e => e.type === 'retry').length,
-      sandboxExecutions: entries.filter(e => e.type === 'sandbox_execution').length,
+      requests: entries.filter((e) => e.type === 'request').length,
+      responses: entries.filter((e) => e.type === 'response').length,
+      toolCalls: entries.filter((e) => e.type === 'tool_call').length,
+      errors: entries.filter((e) => e.type === 'error').length,
+      retries: entries.filter((e) => e.type === 'retry').length,
+      sandboxExecutions: entries.filter((e) => e.type === 'sandbox_execution').length,
     },
   };
 }

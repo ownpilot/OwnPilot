@@ -42,7 +42,9 @@ export const chatApi = {
       total: number;
       limit: number;
       offset: number;
-    }>('/chat/history', { params: params as Record<string, string | number | boolean | undefined> }),
+    }>('/chat/history', {
+      params: params as Record<string, string | number | boolean | undefined>,
+    }),
 
   /** Get a single conversation with all messages */
   getHistory: (id: string) =>
@@ -52,8 +54,7 @@ export const chatApi = {
     }>(`/chat/history/${id}`),
 
   /** Delete a conversation */
-  deleteHistory: (id: string) =>
-    apiClient.delete<{ deleted: boolean }>(`/chat/history/${id}`),
+  deleteHistory: (id: string) => apiClient.delete<{ deleted: boolean }>(`/chat/history/${id}`),
 
   /** Archive or unarchive a conversation */
   archiveHistory: (id: string, archived: boolean) =>
@@ -75,7 +76,10 @@ export const chatApi = {
 
   /** Bulk archive/unarchive conversations */
   bulkArchiveHistory: (ids: string[], archived: boolean) =>
-    apiClient.post<{ updated: number; archived: boolean }>('/chat/history/bulk-archive', { ids, archived }),
+    apiClient.post<{ updated: number; archived: boolean }>('/chat/history/bulk-archive', {
+      ids,
+      archived,
+    }),
 
   // ---- Context Management ----
 
@@ -87,6 +91,10 @@ export const chatApi = {
 
   /** Compact conversation context by summarizing old messages */
   compactContext: (provider: string, model: string, keepRecentMessages?: number) =>
-    apiClient.post<{ compacted: boolean; summary?: string; removedMessages: number; newTokenEstimate: number }>(
-      '/chat/compact', { provider, model, keepRecentMessages }),
+    apiClient.post<{
+      compacted: boolean;
+      summary?: string;
+      removedMessages: number;
+      newTokenEstimate: number;
+    }>('/chat/compact', { provider, model, keepRecentMessages }),
 };

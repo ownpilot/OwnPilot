@@ -15,7 +15,11 @@ import { apiClient, ApiError } from './client.js';
 function okEnvelope<T>(data: T) {
   return {
     ok: true,
-    json: async () => ({ success: true, data, meta: { requestId: 'req-1', timestamp: new Date().toISOString() } }),
+    json: async () => ({
+      success: true,
+      data,
+      meta: { requestId: 'req-1', timestamp: new Date().toISOString() },
+    }),
   } as unknown as Response;
 }
 
@@ -23,7 +27,11 @@ function errorEnvelope(status: number, code: string, message: string) {
   return {
     ok: false,
     status,
-    json: async () => ({ success: false, error: { code, message }, meta: { requestId: 'req-2', timestamp: '' } }),
+    json: async () => ({
+      success: false,
+      error: { code, message },
+      meta: { requestId: 'req-2', timestamp: '' },
+    }),
   } as unknown as Response;
 }
 
@@ -52,7 +60,7 @@ describe('apiClient.get', () => {
     expect(result).toEqual({ items: [1, 2, 3] });
     expect(mockFetch).toHaveBeenCalledWith(
       '/api/v1/tasks',
-      expect.objectContaining({ method: 'GET' }),
+      expect.objectContaining({ method: 'GET' })
     );
   });
 
@@ -129,7 +137,9 @@ describe('apiClient.get', () => {
   });
 
   it('re-throws AbortError unchanged', async () => {
-    const abortError = Object.assign(new Error('The user aborted a request.'), { name: 'AbortError' });
+    const abortError = Object.assign(new Error('The user aborted a request.'), {
+      name: 'AbortError',
+    });
     mockFetch.mockRejectedValueOnce(abortError);
 
     await expect(apiClient.get('/tasks')).rejects.toMatchObject({ name: 'AbortError' });
@@ -138,7 +148,9 @@ describe('apiClient.get', () => {
   it('handles non-JSON response with PARSE_ERROR', async () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
-      json: async () => { throw new Error('Invalid JSON'); },
+      json: async () => {
+        throw new Error('Invalid JSON');
+      },
     });
 
     await expect(apiClient.get('/tasks')).rejects.toMatchObject({ code: 'PARSE_ERROR' });
@@ -225,7 +237,7 @@ describe('apiClient.stream', () => {
     expect(result).toBe(mockResponse);
     expect(mockFetch).toHaveBeenCalledWith(
       '/api/v1/chat',
-      expect.objectContaining({ method: 'POST' }),
+      expect.objectContaining({ method: 'POST' })
     );
   });
 
@@ -233,7 +245,10 @@ describe('apiClient.stream', () => {
     mockFetch.mockResolvedValueOnce({
       ok: false,
       status: 429,
-      json: async () => ({ success: false, error: { code: 'RATE_LIMITED', message: 'Too many requests' } }),
+      json: async () => ({
+        success: false,
+        error: { code: 'RATE_LIMITED', message: 'Too many requests' },
+      }),
     });
 
     await expect(apiClient.stream('/chat', {})).rejects.toMatchObject({

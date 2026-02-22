@@ -24,7 +24,8 @@ export const calculateTool: ToolDefinition = {
     properties: {
       expression: {
         type: 'string',
-        description: 'Mathematical expression to evaluate (e.g., "2 + 2", "15% of 200", "sqrt(16)")',
+        description:
+          'Mathematical expression to evaluate (e.g., "2 + 2", "15% of 200", "sqrt(16)")',
       },
       precision: {
         type: 'number',
@@ -77,7 +78,9 @@ export const calculateExecutor: ToolExecutor = async (args): Promise<ToolExecuti
     expr = expr.replace(/\be\b/gi, 'Math.E');
 
     // Validate expression (only allow safe characters)
-    if (!/^[0-9+\-*/().%\s,Math.PIELOGSQRTSINCOSTABNFLRCEUXP]+$/i.test(expr.replace(/Math\./g, ''))) {
+    if (
+      !/^[0-9+\-*/().%\s,Math.PIELOGSQRTSINCOSTABNFLRCEUXP]+$/i.test(expr.replace(/Math\./g, ''))
+    ) {
       return {
         content: JSON.stringify({ error: 'Invalid characters in expression' }),
         isError: true,
@@ -145,77 +148,183 @@ export const convertUnitsTool: ToolDefinition = {
 const UNIT_CONVERSIONS: Record<string, Record<string, number | ((v: number) => number)>> = {
   // Length (base: meters)
   length: {
-    m: 1, meter: 1, meters: 1,
-    km: 1000, kilometer: 1000, kilometers: 1000,
-    cm: 0.01, centimeter: 0.01, centimeters: 0.01,
-    mm: 0.001, millimeter: 0.001, millimeters: 0.001,
-    mi: 1609.344, mile: 1609.344, miles: 1609.344,
-    yd: 0.9144, yard: 0.9144, yards: 0.9144,
-    ft: 0.3048, foot: 0.3048, feet: 0.3048,
-    in: 0.0254, inch: 0.0254, inches: 0.0254,
-    nm: 1852, 'nautical mile': 1852, 'nautical miles': 1852,
+    m: 1,
+    meter: 1,
+    meters: 1,
+    km: 1000,
+    kilometer: 1000,
+    kilometers: 1000,
+    cm: 0.01,
+    centimeter: 0.01,
+    centimeters: 0.01,
+    mm: 0.001,
+    millimeter: 0.001,
+    millimeters: 0.001,
+    mi: 1609.344,
+    mile: 1609.344,
+    miles: 1609.344,
+    yd: 0.9144,
+    yard: 0.9144,
+    yards: 0.9144,
+    ft: 0.3048,
+    foot: 0.3048,
+    feet: 0.3048,
+    in: 0.0254,
+    inch: 0.0254,
+    inches: 0.0254,
+    nm: 1852,
+    'nautical mile': 1852,
+    'nautical miles': 1852,
   },
   // Weight (base: grams)
   weight: {
-    g: 1, gram: 1, grams: 1,
-    kg: 1000, kilogram: 1000, kilograms: 1000,
-    mg: 0.001, milligram: 0.001, milligrams: 0.001,
-    lb: 453.592, pound: 453.592, pounds: 453.592,
-    oz: 28.3495, ounce: 28.3495, ounces: 28.3495,
-    ton: 1000000, tons: 1000000,
-    tonne: 1000000, tonnes: 1000000,
+    g: 1,
+    gram: 1,
+    grams: 1,
+    kg: 1000,
+    kilogram: 1000,
+    kilograms: 1000,
+    mg: 0.001,
+    milligram: 0.001,
+    milligrams: 0.001,
+    lb: 453.592,
+    pound: 453.592,
+    pounds: 453.592,
+    oz: 28.3495,
+    ounce: 28.3495,
+    ounces: 28.3495,
+    ton: 1000000,
+    tons: 1000000,
+    tonne: 1000000,
+    tonnes: 1000000,
   },
   // Volume (base: liters)
   volume: {
-    l: 1, liter: 1, liters: 1, litre: 1, litres: 1,
-    ml: 0.001, milliliter: 0.001, milliliters: 0.001,
-    gal: 3.78541, gallon: 3.78541, gallons: 3.78541,
-    qt: 0.946353, quart: 0.946353, quarts: 0.946353,
-    pt: 0.473176, pint: 0.473176, pints: 0.473176,
-    cup: 0.236588, cups: 0.236588,
-    floz: 0.0295735, 'fluid ounce': 0.0295735, 'fluid ounces': 0.0295735,
-    m3: 1000, 'cubic meter': 1000, 'cubic meters': 1000,
+    l: 1,
+    liter: 1,
+    liters: 1,
+    litre: 1,
+    litres: 1,
+    ml: 0.001,
+    milliliter: 0.001,
+    milliliters: 0.001,
+    gal: 3.78541,
+    gallon: 3.78541,
+    gallons: 3.78541,
+    qt: 0.946353,
+    quart: 0.946353,
+    quarts: 0.946353,
+    pt: 0.473176,
+    pint: 0.473176,
+    pints: 0.473176,
+    cup: 0.236588,
+    cups: 0.236588,
+    floz: 0.0295735,
+    'fluid ounce': 0.0295735,
+    'fluid ounces': 0.0295735,
+    m3: 1000,
+    'cubic meter': 1000,
+    'cubic meters': 1000,
   },
   // Area (base: square meters)
   area: {
-    m2: 1, sqm: 1, 'square meter': 1, 'square meters': 1,
-    km2: 1000000, sqkm: 1000000, 'square kilometer': 1000000,
-    cm2: 0.0001, sqcm: 0.0001, 'square centimeter': 0.0001,
-    ft2: 0.092903, sqft: 0.092903, 'square foot': 0.092903, 'square feet': 0.092903,
-    mi2: 2589988, sqmi: 2589988, 'square mile': 2589988,
-    acre: 4046.86, acres: 4046.86,
-    hectare: 10000, hectares: 10000, ha: 10000,
+    m2: 1,
+    sqm: 1,
+    'square meter': 1,
+    'square meters': 1,
+    km2: 1000000,
+    sqkm: 1000000,
+    'square kilometer': 1000000,
+    cm2: 0.0001,
+    sqcm: 0.0001,
+    'square centimeter': 0.0001,
+    ft2: 0.092903,
+    sqft: 0.092903,
+    'square foot': 0.092903,
+    'square feet': 0.092903,
+    mi2: 2589988,
+    sqmi: 2589988,
+    'square mile': 2589988,
+    acre: 4046.86,
+    acres: 4046.86,
+    hectare: 10000,
+    hectares: 10000,
+    ha: 10000,
   },
   // Speed (base: m/s)
   speed: {
-    'mps': 1, 'm/s': 1, 'meters per second': 1,
-    'kmh': 0.277778, 'km/h': 0.277778, 'kph': 0.277778, 'kilometers per hour': 0.277778,
-    'mph': 0.44704, 'miles per hour': 0.44704,
-    'knot': 0.514444, 'knots': 0.514444,
-    'fps': 0.3048, 'ft/s': 0.3048, 'feet per second': 0.3048,
+    mps: 1,
+    'm/s': 1,
+    'meters per second': 1,
+    kmh: 0.277778,
+    'km/h': 0.277778,
+    kph: 0.277778,
+    'kilometers per hour': 0.277778,
+    mph: 0.44704,
+    'miles per hour': 0.44704,
+    knot: 0.514444,
+    knots: 0.514444,
+    fps: 0.3048,
+    'ft/s': 0.3048,
+    'feet per second': 0.3048,
   },
   // Time (base: seconds)
   time: {
-    s: 1, sec: 1, second: 1, seconds: 1,
-    ms: 0.001, millisecond: 0.001, milliseconds: 0.001,
-    min: 60, minute: 60, minutes: 60,
-    h: 3600, hr: 3600, hour: 3600, hours: 3600,
-    d: 86400, day: 86400, days: 86400,
-    wk: 604800, week: 604800, weeks: 604800,
-    mo: 2592000, month: 2592000, months: 2592000, // 30 days
-    yr: 31536000, year: 31536000, years: 31536000, // 365 days
+    s: 1,
+    sec: 1,
+    second: 1,
+    seconds: 1,
+    ms: 0.001,
+    millisecond: 0.001,
+    milliseconds: 0.001,
+    min: 60,
+    minute: 60,
+    minutes: 60,
+    h: 3600,
+    hr: 3600,
+    hour: 3600,
+    hours: 3600,
+    d: 86400,
+    day: 86400,
+    days: 86400,
+    wk: 604800,
+    week: 604800,
+    weeks: 604800,
+    mo: 2592000,
+    month: 2592000,
+    months: 2592000, // 30 days
+    yr: 31536000,
+    year: 31536000,
+    years: 31536000, // 365 days
   },
   // Data (base: bytes)
   data: {
-    b: 1, byte: 1, bytes: 1,
-    kb: 1024, kilobyte: 1024, kilobytes: 1024,
-    mb: 1048576, megabyte: 1048576, megabytes: 1048576,
-    gb: 1073741824, gigabyte: 1073741824, gigabytes: 1073741824,
-    tb: 1099511627776, terabyte: 1099511627776, terabytes: 1099511627776,
-    bit: 0.125, bits: 0.125,
-    kbit: 128, kilobit: 128, kilobits: 128,
-    mbit: 131072, megabit: 131072, megabits: 131072,
-    gbit: 134217728, gigabit: 134217728, gigabits: 134217728,
+    b: 1,
+    byte: 1,
+    bytes: 1,
+    kb: 1024,
+    kilobyte: 1024,
+    kilobytes: 1024,
+    mb: 1048576,
+    megabyte: 1048576,
+    megabytes: 1048576,
+    gb: 1073741824,
+    gigabyte: 1073741824,
+    gigabytes: 1073741824,
+    tb: 1099511627776,
+    terabyte: 1099511627776,
+    terabytes: 1099511627776,
+    bit: 0.125,
+    bits: 0.125,
+    kbit: 128,
+    kilobit: 128,
+    kilobits: 128,
+    mbit: 131072,
+    megabit: 131072,
+    megabits: 131072,
+    gbit: 134217728,
+    gigabit: 134217728,
+    gigabits: 134217728,
   },
 };
 
@@ -238,18 +347,29 @@ function convertTemperature(value: number, from: string, to: string): number | n
   // Convert to Celsius first
   let celsius: number;
   switch (f) {
-    case 'c': celsius = value; break;
-    case 'f': celsius = (value - 32) * 5 / 9; break;
-    case 'k': celsius = value - 273.15; break;
-    default: return null;
+    case 'c':
+      celsius = value;
+      break;
+    case 'f':
+      celsius = ((value - 32) * 5) / 9;
+      break;
+    case 'k':
+      celsius = value - 273.15;
+      break;
+    default:
+      return null;
   }
 
   // Convert from Celsius to target
   switch (t) {
-    case 'c': return celsius;
-    case 'f': return celsius * 9 / 5 + 32;
-    case 'k': return celsius + 273.15;
-    default: return null;
+    case 'c':
+      return celsius;
+    case 'f':
+      return (celsius * 9) / 5 + 32;
+    case 'k':
+      return celsius + 273.15;
+    default:
+      return null;
   }
 }
 
@@ -339,7 +459,9 @@ export const calculateStatisticsTool: ToolDefinition = {
   },
 };
 
-export const calculateStatisticsExecutor: ToolExecutor = async (args): Promise<ToolExecutionResult> => {
+export const calculateStatisticsExecutor: ToolExecutor = async (
+  args
+): Promise<ToolExecutionResult> => {
   try {
     const numbersInput = args.numbers as string;
     const percentile = args.percentile as number | undefined;
@@ -355,9 +477,10 @@ export const calculateStatisticsExecutor: ToolExecutor = async (args): Promise<T
       }
     } catch {
       // Try comma-separated
-      numbers = numbersInput.split(',')
-        .map(s => parseFloat(s.trim()))
-        .filter(n => !isNaN(n));
+      numbers = numbersInput
+        .split(',')
+        .map((s) => parseFloat(s.trim()))
+        .filter((n) => !isNaN(n));
     }
 
     if (numbers.length === 0) {
@@ -370,9 +493,8 @@ export const calculateStatisticsExecutor: ToolExecutor = async (args): Promise<T
     const mean = sum / n;
 
     // Median
-    const median = n % 2 === 0
-      ? (sorted[n / 2 - 1]! + sorted[n / 2]!) / 2
-      : sorted[Math.floor(n / 2)]!;
+    const median =
+      n % 2 === 0 ? (sorted[n / 2 - 1]! + sorted[n / 2]!) / 2 : sorted[Math.floor(n / 2)]!;
 
     // Mode
     const freq = new Map<number, number>();

@@ -32,7 +32,16 @@ import {
   type UpdateContactInput,
   type ContactQuery,
 } from '../db/repositories/index.js';
-import { apiResponse, apiError, ERROR_CODES, getUserId, getIntParam, getOptionalIntParam, validateQueryEnum, notFoundError } from './helpers.js';
+import {
+  apiResponse,
+  apiError,
+  ERROR_CODES,
+  getUserId,
+  getIntParam,
+  getOptionalIntParam,
+  validateQueryEnum,
+  notFoundError,
+} from './helpers.js';
 import { MAX_DAYS_LOOKBACK, MAX_PAGINATION_OFFSET } from '../config/defaults.js';
 import { wsGateway } from '../ws/server.js';
 import type { ServerEvents } from '../ws/types.js';
@@ -55,8 +64,18 @@ const tasksRoutes = new Hono();
 tasksRoutes.get('/', async (c) => {
   const repo = new TasksRepository(getUserId(c));
   const query: TaskQuery = {
-    status: validateQueryEnum(c.req.query('status'), ['pending', 'in_progress', 'completed', 'cancelled'] as const),
-    priority: validateQueryEnum(c.req.query('priority'), ['low', 'normal', 'high', 'urgent'] as const),
+    status: validateQueryEnum(c.req.query('status'), [
+      'pending',
+      'in_progress',
+      'completed',
+      'cancelled',
+    ] as const),
+    priority: validateQueryEnum(c.req.query('priority'), [
+      'low',
+      'normal',
+      'high',
+      'urgent',
+    ] as const),
     category: c.req.query('category'),
     projectId: c.req.query('projectId'),
     search: c.req.query('search'),

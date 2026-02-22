@@ -4,11 +4,22 @@
 
 // Category display order
 export const CATEGORY_ORDER = [
-  'core', 'filesystem', 'memory', 'goals',
-  'personalData', 'customData', 'utilities',
-  'media', 'communication', 'devTools', 'finance',
-  'codeExecution', 'webFetch',
-  'automation', 'plugins', 'other'
+  'core',
+  'filesystem',
+  'memory',
+  'goals',
+  'personalData',
+  'customData',
+  'utilities',
+  'media',
+  'communication',
+  'devTools',
+  'finance',
+  'codeExecution',
+  'webFetch',
+  'automation',
+  'plugins',
+  'other',
 ];
 
 // Category display names

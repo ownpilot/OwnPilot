@@ -134,7 +134,7 @@ describe('addExpenseExecutor', () => {
   it('adds an expense successfully with required fields only', async () => {
     const result = await addExpenseExecutor(
       { amount: 50, category: 'food', description: 'Lunch' },
-      dummyContext,
+      dummyContext
     );
     expect(result.isError).toBeUndefined();
     const data = parseContent(result.content);
@@ -147,7 +147,7 @@ describe('addExpenseExecutor', () => {
   it('uses default currency TRY when not provided', async () => {
     const result = await addExpenseExecutor(
       { amount: 100, category: 'shopping', description: 'Clothes' },
-      dummyContext,
+      dummyContext
     );
     const data = parseContent(result.content);
     const expense = data.expense as ExpenseEntry;
@@ -157,7 +157,7 @@ describe('addExpenseExecutor', () => {
   it('uses provided currency', async () => {
     const result = await addExpenseExecutor(
       { amount: 20, category: 'food', description: 'Coffee', currency: 'USD' },
-      dummyContext,
+      dummyContext
     );
     const data = parseContent(result.content);
     const expense = data.expense as ExpenseEntry;
@@ -167,7 +167,7 @@ describe('addExpenseExecutor', () => {
   it('sets default date to today when not provided', async () => {
     const result = await addExpenseExecutor(
       { amount: 10, category: 'transport', description: 'Bus' },
-      dummyContext,
+      dummyContext
     );
     const data = parseContent(result.content);
     const expense = data.expense as ExpenseEntry;
@@ -177,7 +177,7 @@ describe('addExpenseExecutor', () => {
   it('uses provided date', async () => {
     const result = await addExpenseExecutor(
       { amount: 200, category: 'utilities', description: 'Electric bill', date: '2025-02-01' },
-      dummyContext,
+      dummyContext
     );
     const data = parseContent(result.content);
     const expense = data.expense as ExpenseEntry;
@@ -194,7 +194,7 @@ describe('addExpenseExecutor', () => {
         tags: ['medical', 'routine'],
         notes: 'Annual checkup',
       },
-      dummyContext,
+      dummyContext
     );
     const data = parseContent(result.content);
     const expense = data.expense as ExpenseEntry;
@@ -206,7 +206,7 @@ describe('addExpenseExecutor', () => {
   it('sets source to "manual"', async () => {
     const result = await addExpenseExecutor(
       { amount: 10, category: 'other', description: 'Misc' },
-      dummyContext,
+      dummyContext
     );
     const data = parseContent(result.content);
     const expense = data.expense as ExpenseEntry;
@@ -216,7 +216,7 @@ describe('addExpenseExecutor', () => {
   it('generates a unique expense ID', async () => {
     const result = await addExpenseExecutor(
       { amount: 10, category: 'other', description: 'Misc' },
-      dummyContext,
+      dummyContext
     );
     const data = parseContent(result.content);
     const expense = data.expense as ExpenseEntry;
@@ -224,10 +224,7 @@ describe('addExpenseExecutor', () => {
   });
 
   it('saves the database after adding', async () => {
-    await addExpenseExecutor(
-      { amount: 10, category: 'other', description: 'Misc' },
-      dummyContext,
-    );
+    await addExpenseExecutor({ amount: 10, category: 'other', description: 'Misc' }, dummyContext);
     expect(mockWriteFile).toHaveBeenCalledTimes(1);
     expect(mockMkdir).toHaveBeenCalledTimes(1);
   });
@@ -239,7 +236,7 @@ describe('addExpenseExecutor', () => {
     mockWriteFile.mockRejectedValue(new Error('disk full'));
     const result = await addExpenseExecutor(
       { amount: 10, category: 'other', description: 'Misc' },
-      dummyContext,
+      dummyContext
     );
     expect(result.isError).toBe(true);
     expect(result.content).toContain('disk full');
@@ -251,7 +248,7 @@ describe('addExpenseExecutor', () => {
 
     const result = await addExpenseExecutor(
       { amount: 50, category: 'food', description: 'New expense' },
-      dummyContext,
+      dummyContext
     );
     const data = parseContent(result.content);
     expect(data.totalExpenses).toBe(2);
@@ -292,7 +289,7 @@ describe('batchAddExpensesExecutor', () => {
           { amount: 30, category: 'shopping', description: 'Book' },
         ],
       },
-      dummyContext,
+      dummyContext
     );
     const data = parseContent(result.content);
     expect(data.success).toBe(true);
@@ -303,11 +300,9 @@ describe('batchAddExpensesExecutor', () => {
   it('uses default currency TRY when not provided', async () => {
     const result = await batchAddExpensesExecutor(
       {
-        expenses: [
-          { amount: 10, category: 'food', description: 'Coffee' },
-        ],
+        expenses: [{ amount: 10, category: 'food', description: 'Coffee' }],
       },
-      dummyContext,
+      dummyContext
     );
     const data = parseContent(result.content);
     const expenses = data.expenses as ExpenseEntry[];
@@ -322,7 +317,7 @@ describe('batchAddExpensesExecutor', () => {
           { amount: 20, category: 'food', description: 'Lunch', currency: 'EUR' },
         ],
       },
-      dummyContext,
+      dummyContext
     );
     const data = parseContent(result.content);
     const expenses = data.expenses as ExpenseEntry[];
@@ -333,11 +328,9 @@ describe('batchAddExpensesExecutor', () => {
   it('sets default date when not provided', async () => {
     const result = await batchAddExpensesExecutor(
       {
-        expenses: [
-          { amount: 10, category: 'food', description: 'Coffee' },
-        ],
+        expenses: [{ amount: 10, category: 'food', description: 'Coffee' }],
       },
-      dummyContext,
+      dummyContext
     );
     const data = parseContent(result.content);
     const expenses = data.expenses as ExpenseEntry[];
@@ -347,11 +340,9 @@ describe('batchAddExpensesExecutor', () => {
   it('includes message with total amount and currency', async () => {
     const result = await batchAddExpensesExecutor(
       {
-        expenses: [
-          { amount: 50, category: 'food', description: 'Dinner', currency: 'EUR' },
-        ],
+        expenses: [{ amount: 50, category: 'food', description: 'Dinner', currency: 'EUR' }],
       },
-      dummyContext,
+      dummyContext
     );
     const data = parseContent(result.content);
     expect(data.message).toContain('1 expenses');
@@ -366,7 +357,7 @@ describe('batchAddExpensesExecutor', () => {
           { amount: 20, category: 'food', description: 'B' },
         ],
       },
-      dummyContext,
+      dummyContext
     );
     expect(mockWriteFile).toHaveBeenCalledTimes(1);
   });
@@ -375,11 +366,9 @@ describe('batchAddExpensesExecutor', () => {
     mockWriteFile.mockRejectedValue(new Error('write failed'));
     const result = await batchAddExpensesExecutor(
       {
-        expenses: [
-          { amount: 10, category: 'food', description: 'Coffee' },
-        ],
+        expenses: [{ amount: 10, category: 'food', description: 'Coffee' }],
       },
-      dummyContext,
+      dummyContext
     );
     expect(result.isError).toBe(true);
     expect(result.content).toContain('write failed');
@@ -393,7 +382,7 @@ describe('batchAddExpensesExecutor', () => {
           { amount: 20, category: 'food', description: 'B' },
         ],
       },
-      dummyContext,
+      dummyContext
     );
     const data = parseContent(result.content);
     const expenses = data.expenses as ExpenseEntry[];
@@ -414,7 +403,7 @@ describe('batchAddExpensesExecutor', () => {
           },
         ],
       },
-      dummyContext,
+      dummyContext
     );
     const data = parseContent(result.content);
     const expenses = data.expenses as ExpenseEntry[];
@@ -462,10 +451,7 @@ describe('parseReceiptExecutor', () => {
   });
 
   it('returns instruction data when imagePath is provided', async () => {
-    const result = await parseReceiptExecutor(
-      { imagePath: '/path/to/receipt.jpg' },
-      dummyContext,
-    );
+    const result = await parseReceiptExecutor({ imagePath: '/path/to/receipt.jpg' }, dummyContext);
     expect(result.isError).toBeUndefined();
     const data = parseContent(result.content);
     expect(data.imagePath).toBe('/path/to/receipt.jpg');
@@ -475,10 +461,7 @@ describe('parseReceiptExecutor', () => {
   });
 
   it('returns instruction data when imageBase64 is provided', async () => {
-    const result = await parseReceiptExecutor(
-      { imageBase64: 'base64data...' },
-      dummyContext,
-    );
+    const result = await parseReceiptExecutor({ imageBase64: 'base64data...' }, dummyContext);
     expect(result.isError).toBeUndefined();
     const data = parseContent(result.content);
     expect(data.hasImageData).toBe(true);
@@ -486,18 +469,12 @@ describe('parseReceiptExecutor', () => {
   });
 
   it('sets requiresVision in metadata', async () => {
-    const result = await parseReceiptExecutor(
-      { imagePath: '/path/to/receipt.jpg' },
-      dummyContext,
-    );
+    const result = await parseReceiptExecutor({ imagePath: '/path/to/receipt.jpg' }, dummyContext);
     expect(result.metadata).toEqual({ requiresVision: true });
   });
 
   it('includes extractFields with expected keys', async () => {
-    const result = await parseReceiptExecutor(
-      { imagePath: '/path/to/receipt.jpg' },
-      dummyContext,
-    );
+    const result = await parseReceiptExecutor({ imagePath: '/path/to/receipt.jpg' }, dummyContext);
     const data = parseContent(result.content);
     const fields = data.extractFields as Record<string, string>;
     expect(fields).toHaveProperty('date');
@@ -510,10 +487,7 @@ describe('parseReceiptExecutor', () => {
   });
 
   it('includes note about using add_expense tool', async () => {
-    const result = await parseReceiptExecutor(
-      { imagePath: '/path/to/receipt.jpg' },
-      dummyContext,
-    );
+    const result = await parseReceiptExecutor({ imagePath: '/path/to/receipt.jpg' }, dummyContext);
     const data = parseContent(result.content);
     expect(data.note).toContain('add_expense');
   });
@@ -671,7 +645,7 @@ describe('queryExpensesExecutor', () => {
 
   it('applies limit to results', async () => {
     const expenses = Array.from({ length: 10 }, (_, i) =>
-      makeExpense({ id: `exp_${i}`, description: `Item ${i}` }),
+      makeExpense({ id: `exp_${i}`, description: `Item ${i}` })
     );
     setupFs(makeDb(expenses));
 
@@ -683,7 +657,7 @@ describe('queryExpensesExecutor', () => {
 
   it('defaults limit to 50', async () => {
     const expenses = Array.from({ length: 60 }, (_, i) =>
-      makeExpense({ id: `exp_${i}`, description: `Item ${i}` }),
+      makeExpense({ id: `exp_${i}`, description: `Item ${i}` })
     );
     setupFs(makeDb(expenses));
 
@@ -711,9 +685,27 @@ describe('queryExpensesExecutor', () => {
 
   it('includes aggregation summary when aggregate is true', async () => {
     const expenses = [
-      makeExpense({ id: 'exp_1', category: 'food', amount: 100, currency: 'TRY', date: '2025-01-10' }),
-      makeExpense({ id: 'exp_2', category: 'transport', amount: 50, currency: 'TRY', date: '2025-01-20' }),
-      makeExpense({ id: 'exp_3', category: 'food', amount: 80, currency: 'TRY', date: '2025-01-15' }),
+      makeExpense({
+        id: 'exp_1',
+        category: 'food',
+        amount: 100,
+        currency: 'TRY',
+        date: '2025-01-10',
+      }),
+      makeExpense({
+        id: 'exp_2',
+        category: 'transport',
+        amount: 50,
+        currency: 'TRY',
+        date: '2025-01-20',
+      }),
+      makeExpense({
+        id: 'exp_3',
+        category: 'food',
+        amount: 80,
+        currency: 'TRY',
+        date: '2025-01-15',
+      }),
     ];
     setupFs(makeDb(expenses));
 
@@ -789,15 +781,33 @@ describe('queryExpensesExecutor', () => {
 
   it('combines multiple filters', async () => {
     const expenses = [
-      makeExpense({ id: 'exp_1', date: '2025-01-10', category: 'food', amount: 50, description: 'Coffee' }),
-      makeExpense({ id: 'exp_2', date: '2025-01-20', category: 'food', amount: 200, description: 'Restaurant' }),
-      makeExpense({ id: 'exp_3', date: '2025-02-01', category: 'transport', amount: 30, description: 'Coffee bus' }),
+      makeExpense({
+        id: 'exp_1',
+        date: '2025-01-10',
+        category: 'food',
+        amount: 50,
+        description: 'Coffee',
+      }),
+      makeExpense({
+        id: 'exp_2',
+        date: '2025-01-20',
+        category: 'food',
+        amount: 200,
+        description: 'Restaurant',
+      }),
+      makeExpense({
+        id: 'exp_3',
+        date: '2025-02-01',
+        category: 'transport',
+        amount: 30,
+        description: 'Coffee bus',
+      }),
     ];
     setupFs(makeDb(expenses));
 
     const result = await queryExpensesExecutor(
       { category: 'food', minAmount: 100, startDate: '2025-01-01', endDate: '2025-01-31' },
-      dummyContext,
+      dummyContext
     );
     const data = parseContent(result.content);
     expect(data.totalCount).toBe(1);
@@ -828,14 +838,12 @@ describe('exportExpensesExecutor', () => {
   });
 
   it('exports expenses to CSV format', async () => {
-    const expenses = [
-      makeExpense({ id: 'exp_1', amount: 100, description: 'Test' }),
-    ];
+    const expenses = [makeExpense({ id: 'exp_1', amount: 100, description: 'Test' })];
     setupFs(makeDb(expenses));
 
     const result = await exportExpensesExecutor(
       { format: 'csv', outputPath: '/tmp/expenses.csv' },
-      dummyContext,
+      dummyContext
     );
     const data = parseContent(result.content);
     expect(data.success).toBe(true);
@@ -854,7 +862,7 @@ describe('exportExpensesExecutor', () => {
 
     const result = await exportExpensesExecutor(
       { format: 'json', outputPath: '/tmp/expenses.json' },
-      dummyContext,
+      dummyContext
     );
     const data = parseContent(result.content);
     expect(data.success).toBe(true);
@@ -871,7 +879,7 @@ describe('exportExpensesExecutor', () => {
 
     const result = await exportExpensesExecutor(
       { format: 'json', outputPath: '/tmp/out.json', startDate: '2025-01-15' },
-      dummyContext,
+      dummyContext
     );
     const data = parseContent(result.content);
     expect(data.expenseCount).toBe(1);
@@ -886,7 +894,7 @@ describe('exportExpensesExecutor', () => {
 
     const result = await exportExpensesExecutor(
       { format: 'json', outputPath: '/tmp/out.json', endDate: '2025-02-01' },
-      dummyContext,
+      dummyContext
     );
     const data = parseContent(result.content);
     expect(data.expenseCount).toBe(1);
@@ -901,7 +909,7 @@ describe('exportExpensesExecutor', () => {
 
     const result = await exportExpensesExecutor(
       { format: 'json', outputPath: '/tmp/out.json', category: 'food' },
-      dummyContext,
+      dummyContext
     );
     const data = parseContent(result.content);
     expect(data.expenseCount).toBe(1);
@@ -912,7 +920,7 @@ describe('exportExpensesExecutor', () => {
 
     await exportExpensesExecutor(
       { format: 'json', outputPath: '/some/deep/path/out.json' },
-      dummyContext,
+      dummyContext
     );
     expect(mockMkdir).toHaveBeenCalled();
   });
@@ -923,7 +931,7 @@ describe('exportExpensesExecutor', () => {
 
     const result = await exportExpensesExecutor(
       { format: 'json', outputPath: '/tmp/out.json' },
-      dummyContext,
+      dummyContext
     );
     expect(result.isError).toBe(true);
     expect(result.content).toContain('write error');
@@ -934,7 +942,7 @@ describe('exportExpensesExecutor', () => {
 
     const result = await exportExpensesExecutor(
       { format: 'csv', outputPath: '/tmp/empty.csv' },
-      dummyContext,
+      dummyContext
     );
     const data = parseContent(result.content);
     expect(data.expenseCount).toBe(0);
@@ -956,10 +964,7 @@ describe('exportExpensesExecutor', () => {
     ];
     setupFs(makeDb(expenses));
 
-    await exportExpensesExecutor(
-      { format: 'csv', outputPath: '/tmp/expenses.csv' },
-      dummyContext,
-    );
+    await exportExpensesExecutor({ format: 'csv', outputPath: '/tmp/expenses.csv' }, dummyContext);
 
     const writtenContent = mockWriteFile.mock.calls[0]![1] as string;
     expect(writtenContent).toContain('Date,Amount,Currency,Category,Description');
@@ -975,10 +980,7 @@ describe('exportExpensesExecutor', () => {
     ];
     setupFs(makeDb(expenses));
 
-    await exportExpensesExecutor(
-      { format: 'json', outputPath: '/tmp/out.json' },
-      dummyContext,
-    );
+    await exportExpensesExecutor({ format: 'json', outputPath: '/tmp/out.json' }, dummyContext);
 
     // The second writeFile call is from exportExpensesExecutor (first is from the mock setup).
     // Actually, the first writeFile call is the JSON export.
@@ -1045,7 +1047,7 @@ describe('expenseSummaryExecutor', () => {
 
     const result = await expenseSummaryExecutor(
       { startDate: '2025-01-01', endDate: '2025-01-31' },
-      dummyContext,
+      dummyContext
     );
     const data = parseContent(result.content);
     const summary = data.summary as Record<string, unknown>;
@@ -1055,15 +1057,33 @@ describe('expenseSummaryExecutor', () => {
 
   it('calculates top categories sorted by amount', async () => {
     const expenses = [
-      makeExpense({ id: 'exp_1', category: 'food', amount: 500, currency: 'TRY', date: '2025-01-01' }),
-      makeExpense({ id: 'exp_2', category: 'transport', amount: 200, currency: 'TRY', date: '2025-01-02' }),
-      makeExpense({ id: 'exp_3', category: 'food', amount: 300, currency: 'TRY', date: '2025-01-03' }),
+      makeExpense({
+        id: 'exp_1',
+        category: 'food',
+        amount: 500,
+        currency: 'TRY',
+        date: '2025-01-01',
+      }),
+      makeExpense({
+        id: 'exp_2',
+        category: 'transport',
+        amount: 200,
+        currency: 'TRY',
+        date: '2025-01-02',
+      }),
+      makeExpense({
+        id: 'exp_3',
+        category: 'food',
+        amount: 300,
+        currency: 'TRY',
+        date: '2025-01-03',
+      }),
     ];
     setupFs(makeDb(expenses));
 
     const result = await expenseSummaryExecutor(
       { startDate: '2025-01-01', endDate: '2025-01-31' },
-      dummyContext,
+      dummyContext
     );
     const data = parseContent(result.content);
     const summary = data.summary as Record<string, unknown>;
@@ -1082,7 +1102,7 @@ describe('expenseSummaryExecutor', () => {
 
     const result = await expenseSummaryExecutor(
       { startDate: '2025-01-01', endDate: '2025-01-31' },
-      dummyContext,
+      dummyContext
     );
     const data = parseContent(result.content);
     const summary = data.summary as Record<string, unknown>;
@@ -1092,15 +1112,33 @@ describe('expenseSummaryExecutor', () => {
 
   it('returns biggest expenses', async () => {
     const expenses = [
-      makeExpense({ id: 'exp_1', amount: 50, description: 'Small', currency: 'TRY', date: '2025-01-01' }),
-      makeExpense({ id: 'exp_2', amount: 500, description: 'Big', currency: 'TRY', date: '2025-01-02' }),
-      makeExpense({ id: 'exp_3', amount: 200, description: 'Medium', currency: 'TRY', date: '2025-01-03' }),
+      makeExpense({
+        id: 'exp_1',
+        amount: 50,
+        description: 'Small',
+        currency: 'TRY',
+        date: '2025-01-01',
+      }),
+      makeExpense({
+        id: 'exp_2',
+        amount: 500,
+        description: 'Big',
+        currency: 'TRY',
+        date: '2025-01-02',
+      }),
+      makeExpense({
+        id: 'exp_3',
+        amount: 200,
+        description: 'Medium',
+        currency: 'TRY',
+        date: '2025-01-03',
+      }),
     ];
     setupFs(makeDb(expenses));
 
     const result = await expenseSummaryExecutor(
       { startDate: '2025-01-01', endDate: '2025-01-31' },
-      dummyContext,
+      dummyContext
     );
     const data = parseContent(result.content);
     const summary = data.summary as Record<string, unknown>;
@@ -1111,13 +1149,19 @@ describe('expenseSummaryExecutor', () => {
 
   it('generates insights for non-empty period', async () => {
     const expenses = [
-      makeExpense({ id: 'exp_1', category: 'food', amount: 100, currency: 'TRY', date: '2025-01-01' }),
+      makeExpense({
+        id: 'exp_1',
+        category: 'food',
+        amount: 100,
+        currency: 'TRY',
+        date: '2025-01-01',
+      }),
     ];
     setupFs(makeDb(expenses));
 
     const result = await expenseSummaryExecutor(
       { startDate: '2025-01-01', endDate: '2025-01-31' },
-      dummyContext,
+      dummyContext
     );
     const data = parseContent(result.content);
     const insights = data.insights as string[];
@@ -1130,7 +1174,7 @@ describe('expenseSummaryExecutor', () => {
 
     const result = await expenseSummaryExecutor(
       { startDate: '2025-01-01', endDate: '2025-01-31' },
-      dummyContext,
+      dummyContext
     );
     const data = parseContent(result.content);
     const insights = data.insights as string[];
@@ -1139,9 +1183,7 @@ describe('expenseSummaryExecutor', () => {
 
   it('handles "today" period', async () => {
     const today = new Date().toISOString().split('T')[0]!;
-    const expenses = [
-      makeExpense({ id: 'exp_1', date: today, amount: 42, currency: 'TRY' }),
-    ];
+    const expenses = [makeExpense({ id: 'exp_1', date: today, amount: 42, currency: 'TRY' })];
     setupFs(makeDb(expenses));
 
     const result = await expenseSummaryExecutor({ period: 'today' }, dummyContext);
@@ -1211,7 +1253,7 @@ describe('expenseSummaryExecutor', () => {
 
     const result = await expenseSummaryExecutor(
       { startDate: '2025-01-01', endDate: '2025-01-31' },
-      dummyContext,
+      dummyContext
     );
     const data = parseContent(result.content);
     const summary = data.summary as Record<string, number>;
@@ -1386,7 +1428,7 @@ describe('database initialization', () => {
 
     const result = await addExpenseExecutor(
       { amount: 10, category: 'other', description: 'First expense' },
-      dummyContext,
+      dummyContext
     );
     const data = parseContent(result.content);
     expect(data.success).toBe(true);
@@ -1400,7 +1442,7 @@ describe('database initialization', () => {
 
     const result = await addExpenseExecutor(
       { amount: 10, category: 'other', description: 'After corrupt' },
-      dummyContext,
+      dummyContext
     );
     // JSON.parse throws SyntaxError, loadExpenseDb catches and returns fresh DB
     const data = parseContent(result.content);
@@ -1415,12 +1457,9 @@ describe('database initialization', () => {
 
     await addExpenseExecutor(
       { amount: 10, category: 'other', description: 'Dir test' },
-      dummyContext,
+      dummyContext
     );
-    expect(mockMkdir).toHaveBeenCalledWith(
-      expect.any(String),
-      { recursive: true },
-    );
+    expect(mockMkdir).toHaveBeenCalledWith(expect.any(String), { recursive: true });
   });
 });
 
@@ -1430,15 +1469,10 @@ describe('CSV export edge cases', () => {
   });
 
   it('escapes double quotes in description for CSV', async () => {
-    const expenses = [
-      makeExpense({ id: 'exp_q', description: 'Item "A"' }),
-    ];
+    const expenses = [makeExpense({ id: 'exp_q', description: 'Item "A"' })];
     setupFs(makeDb(expenses));
 
-    await exportExpensesExecutor(
-      { format: 'csv', outputPath: '/tmp/test.csv' },
-      dummyContext,
-    );
+    await exportExpensesExecutor({ format: 'csv', outputPath: '/tmp/test.csv' }, dummyContext);
 
     const writtenContent = mockWriteFile.mock.calls[0]![1] as string;
     // Double quotes should be escaped as ""
@@ -1446,30 +1480,20 @@ describe('CSV export edge cases', () => {
   });
 
   it('escapes double quotes in notes for CSV', async () => {
-    const expenses = [
-      makeExpense({ id: 'exp_n', notes: 'Said "hello"' }),
-    ];
+    const expenses = [makeExpense({ id: 'exp_n', notes: 'Said "hello"' })];
     setupFs(makeDb(expenses));
 
-    await exportExpensesExecutor(
-      { format: 'csv', outputPath: '/tmp/test.csv' },
-      dummyContext,
-    );
+    await exportExpensesExecutor({ format: 'csv', outputPath: '/tmp/test.csv' }, dummyContext);
 
     const writtenContent = mockWriteFile.mock.calls[0]![1] as string;
     expect(writtenContent).toContain('""hello""');
   });
 
   it('handles expenses with no optional fields in CSV', async () => {
-    const expenses = [
-      makeExpense({ id: 'exp_min' }),
-    ];
+    const expenses = [makeExpense({ id: 'exp_min' })];
     setupFs(makeDb(expenses));
 
-    await exportExpensesExecutor(
-      { format: 'csv', outputPath: '/tmp/test.csv' },
-      dummyContext,
-    );
+    await exportExpensesExecutor({ format: 'csv', outputPath: '/tmp/test.csv' }, dummyContext);
 
     expect(mockWriteFile).toHaveBeenCalled();
     const writtenContent = mockWriteFile.mock.calls[0]![1] as string;
@@ -1478,15 +1502,10 @@ describe('CSV export edge cases', () => {
   });
 
   it('joins tags with semicolons in CSV', async () => {
-    const expenses = [
-      makeExpense({ id: 'exp_tags', tags: ['a', 'b', 'c'] }),
-    ];
+    const expenses = [makeExpense({ id: 'exp_tags', tags: ['a', 'b', 'c'] })];
     setupFs(makeDb(expenses));
 
-    await exportExpensesExecutor(
-      { format: 'csv', outputPath: '/tmp/test.csv' },
-      dummyContext,
-    );
+    await exportExpensesExecutor({ format: 'csv', outputPath: '/tmp/test.csv' }, dummyContext);
 
     const writtenContent = mockWriteFile.mock.calls[0]![1] as string;
     expect(writtenContent).toContain('a;b;c');

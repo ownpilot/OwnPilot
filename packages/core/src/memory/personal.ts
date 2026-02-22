@@ -29,61 +29,61 @@ import * as path from 'node:path';
  */
 export type PersonalDataCategory =
   // Core identity
-  | 'identity'         // Name, age, gender, nationality
-  | 'contact'          // Email, phone, addresses
-  | 'occupation'       // Job, company, role
-  | 'education'        // Schools, degrees, certifications
+  | 'identity' // Name, age, gender, nationality
+  | 'contact' // Email, phone, addresses
+  | 'occupation' // Job, company, role
+  | 'education' // Schools, degrees, certifications
 
   // Location & Time
-  | 'location'         // Home, work, current location
-  | 'timezone'         // Preferred timezone, travel patterns
-  | 'places'           // Favorite places, frequent locations
+  | 'location' // Home, work, current location
+  | 'timezone' // Preferred timezone, travel patterns
+  | 'places' // Favorite places, frequent locations
 
   // Lifestyle
-  | 'routine'          // Daily schedule, habits
-  | 'food'             // Eating habits, favorite foods, dietary needs
-  | 'sleep'            // Sleep patterns, preferences
-  | 'exercise'         // Fitness routines, sports
-  | 'hobbies'          // Hobbies, activities
+  | 'routine' // Daily schedule, habits
+  | 'food' // Eating habits, favorite foods, dietary needs
+  | 'sleep' // Sleep patterns, preferences
+  | 'exercise' // Fitness routines, sports
+  | 'hobbies' // Hobbies, activities
 
   // Preferences
-  | 'communication'    // How they like to communicate
-  | 'technology'       // Tech preferences, devices
-  | 'entertainment'    // Movies, music, games, books
-  | 'style'            // Fashion, aesthetics
+  | 'communication' // How they like to communicate
+  | 'technology' // Tech preferences, devices
+  | 'entertainment' // Movies, music, games, books
+  | 'style' // Fashion, aesthetics
 
   // Health & Wellness
-  | 'health'           // Health conditions, medications
-  | 'diet'             // Dietary restrictions, allergies
-  | 'wellness'         // Mental health, self-care
+  | 'health' // Health conditions, medications
+  | 'diet' // Dietary restrictions, allergies
+  | 'wellness' // Mental health, self-care
 
   // Social
-  | 'family'           // Family members, relationships
-  | 'friends'          // Friends, social circle
-  | 'colleagues'       // Work relationships
-  | 'pets'             // Pets and animal companions
+  | 'family' // Family members, relationships
+  | 'friends' // Friends, social circle
+  | 'colleagues' // Work relationships
+  | 'pets' // Pets and animal companions
 
   // Work & Productivity
-  | 'work_style'       // How they work best
-  | 'projects'         // Current and past projects
-  | 'skills'           // Technical and soft skills
-  | 'tools'            // Preferred tools and software
+  | 'work_style' // How they work best
+  | 'projects' // Current and past projects
+  | 'skills' // Technical and soft skills
+  | 'tools' // Preferred tools and software
 
   // Goals & Aspirations
-  | 'goals_short'      // Short-term goals (days/weeks)
-  | 'goals_medium'     // Medium-term goals (months)
-  | 'goals_long'       // Long-term goals (years)
-  | 'dreams'           // Life dreams, aspirations
+  | 'goals_short' // Short-term goals (days/weeks)
+  | 'goals_medium' // Medium-term goals (months)
+  | 'goals_long' // Long-term goals (years)
+  | 'dreams' // Life dreams, aspirations
 
   // History & Context
-  | 'history'          // Important life events
-  | 'milestones'       // Achievements, milestones
-  | 'context'          // Current context, situation
+  | 'history' // Important life events
+  | 'milestones' // Achievements, milestones
+  | 'context' // Current context, situation
 
   // AI Interaction
-  | 'ai_preferences'   // How they want AI to behave
-  | 'instructions'     // Custom instructions
-  | 'boundaries';      // Things AI should not do
+  | 'ai_preferences' // How they want AI to behave
+  | 'instructions' // Custom instructions
+  | 'boundaries'; // Things AI should not do
 
 /**
  * Personal data entry
@@ -447,7 +447,9 @@ export class PersonalMemoryStore {
 
     // Location & Time
     if (profile.location.home?.city) {
-      lines.push(`Lives in: ${profile.location.home.city}${profile.location.home.country ? `, ${profile.location.home.country}` : ''}`);
+      lines.push(
+        `Lives in: ${profile.location.home.city}${profile.location.home.country ? `, ${profile.location.home.country}` : ''}`
+      );
     }
     if (profile.location.home?.timezone) {
       lines.push(`Timezone: ${profile.location.home.timezone}`);
@@ -455,15 +457,21 @@ export class PersonalMemoryStore {
 
     // Work
     if (profile.work.occupation) {
-      lines.push(`Occupation: ${profile.work.occupation}${profile.work.company ? ` at ${profile.work.company}` : ''}`);
+      lines.push(
+        `Occupation: ${profile.work.occupation}${profile.work.company ? ` at ${profile.work.company}` : ''}`
+      );
     }
 
     // Lifestyle
     if (profile.lifestyle.eatingHabits?.favoriteFoods?.length) {
-      lines.push(`Favorite foods: ${profile.lifestyle.eatingHabits.favoriteFoods.slice(0, 5).join(', ')}`);
+      lines.push(
+        `Favorite foods: ${profile.lifestyle.eatingHabits.favoriteFoods.slice(0, 5).join(', ')}`
+      );
     }
     if (profile.lifestyle.eatingHabits?.dietaryRestrictions?.length) {
-      lines.push(`Dietary restrictions: ${profile.lifestyle.eatingHabits.dietaryRestrictions.join(', ')}`);
+      lines.push(
+        `Dietary restrictions: ${profile.lifestyle.eatingHabits.dietaryRestrictions.join(', ')}`
+      );
     }
     if (profile.lifestyle.hobbies?.length) {
       lines.push(`Hobbies: ${profile.lifestyle.hobbies.slice(0, 5).join(', ')}`);
@@ -502,12 +510,14 @@ export class PersonalMemoryStore {
   /**
    * Import bulk data
    */
-  async importData(entries: Array<{
-    category: PersonalDataCategory;
-    key: string;
-    value: string;
-    data?: Record<string, unknown>;
-  }>): Promise<number> {
+  async importData(
+    entries: Array<{
+      category: PersonalDataCategory;
+      key: string;
+      value: string;
+      data?: Record<string, unknown>;
+    }>
+  ): Promise<number> {
     let imported = 0;
 
     for (const entry of entries) {
@@ -567,7 +577,8 @@ export class PersonalMemoryStore {
         else if (key === 'birthday') profile.identity.birthday = value;
         else if (key === 'gender') profile.identity.gender = value;
         else if (key === 'nationality') profile.identity.nationality = value;
-        else if (key === 'languages') profile.identity.languages = data?.languages as string[] ?? [value];
+        else if (key === 'languages')
+          profile.identity.languages = (data?.languages as string[]) ?? [value];
         break;
 
       case 'location':
@@ -619,50 +630,43 @@ export class PersonalMemoryStore {
         break;
 
       case 'hobbies':
-        profile.lifestyle.hobbies = [
-          ...(profile.lifestyle.hobbies ?? []),
-          value,
-        ];
+        profile.lifestyle.hobbies = [...(profile.lifestyle.hobbies ?? []), value];
         break;
 
       case 'communication':
-        if (key === 'style') profile.communication.preferredStyle = value as 'formal' | 'casual' | 'mixed';
-        else if (key === 'verbosity') profile.communication.verbosity = value as 'concise' | 'detailed' | 'mixed';
+        if (key === 'style')
+          profile.communication.preferredStyle = value as 'formal' | 'casual' | 'mixed';
+        else if (key === 'verbosity')
+          profile.communication.verbosity = value as 'concise' | 'detailed' | 'mixed';
         else if (key === 'language') profile.communication.primaryLanguage = value;
         else if (key === 'emoji') profile.communication.emoji = value === 'true';
         else if (key === 'humor') profile.communication.humor = value === 'true';
         break;
 
       case 'skills':
-        profile.work.skills = [
-          ...(profile.work.skills ?? []),
-          value,
-        ];
+        profile.work.skills = [...(profile.work.skills ?? []), value];
         break;
 
       case 'goals_short':
-        profile.goals.shortTerm = [
-          ...(profile.goals.shortTerm ?? []),
-          value,
-        ];
+        profile.goals.shortTerm = [...(profile.goals.shortTerm ?? []), value];
         break;
 
       case 'goals_medium':
-        profile.goals.mediumTerm = [
-          ...(profile.goals.mediumTerm ?? []),
-          value,
-        ];
+        profile.goals.mediumTerm = [...(profile.goals.mediumTerm ?? []), value];
         break;
 
       case 'goals_long':
-        profile.goals.longTerm = [
-          ...(profile.goals.longTerm ?? []),
-          value,
-        ];
+        profile.goals.longTerm = [...(profile.goals.longTerm ?? []), value];
         break;
 
       case 'ai_preferences':
-        if (key === 'autonomy') profile.aiPreferences.autonomyLevel = value as 'none' | 'low' | 'medium' | 'high' | 'full';
+        if (key === 'autonomy')
+          profile.aiPreferences.autonomyLevel = value as
+            | 'none'
+            | 'low'
+            | 'medium'
+            | 'high'
+            | 'full';
         else if (key === 'proactive') profile.aiPreferences.proactivity = value === 'true';
         else if (key === 'reminders') profile.aiPreferences.reminders = value === 'true';
         else if (key === 'suggestions') profile.aiPreferences.suggestions = value === 'true';
@@ -676,23 +680,24 @@ export class PersonalMemoryStore {
         break;
 
       case 'boundaries':
-        profile.aiPreferences.boundaries = [
-          ...(profile.aiPreferences.boundaries ?? []),
-          value,
-        ];
+        profile.aiPreferences.boundaries = [...(profile.aiPreferences.boundaries ?? []), value];
         break;
 
       case 'family':
         profile.social.family = [
           ...(profile.social.family ?? []),
-          { name: value, relation: data?.relation as string ?? 'family', notes: data?.notes as string },
+          {
+            name: value,
+            relation: (data?.relation as string) ?? 'family',
+            notes: data?.notes as string,
+          },
         ];
         break;
 
       case 'pets':
         profile.social.pets = [
           ...(profile.social.pets ?? []),
-          { name: value, type: data?.type as string ?? 'pet', breed: data?.breed as string },
+          { name: value, type: (data?.type as string) ?? 'pet', breed: data?.breed as string },
         ];
         break;
     }
@@ -718,7 +723,7 @@ export class PersonalMemoryStore {
     try {
       const content = await fs.readFile(filePath, 'utf-8');
       const entries = JSON.parse(content) as PersonalDataEntry[];
-      this.data = new Map(entries.map(e => [e.id, e]));
+      this.data = new Map(entries.map((e) => [e.id, e]));
     } catch {
       this.data = new Map();
     }

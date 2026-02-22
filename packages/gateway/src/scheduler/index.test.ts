@@ -97,13 +97,15 @@ async function freshModule(): Promise<SchedulerModule> {
 // Task / notification helpers
 // ============================================================================
 
-function makeTask(overrides: {
-  id?: string;
-  name?: string;
-  type?: string;
-  payload?: Record<string, unknown>;
-  notifyChannels?: string[];
-} = {}) {
+function makeTask(
+  overrides: {
+    id?: string;
+    name?: string;
+    type?: string;
+    payload?: Record<string, unknown>;
+    notifyChannels?: string[];
+  } = {}
+) {
   return {
     id: overrides.id ?? 'task-001',
     name: overrides.name ?? 'Test Task',
@@ -186,7 +188,10 @@ async function initFresh() {
 
   // Capture the notification handler registered with the bridge
   const notificationHandler = capturedNotificationHandler as
-    | ((event: ReturnType<typeof makeNotificationEvent>, notification: ReturnType<typeof makeNotificationRequest>) => Promise<void>)
+    | ((
+        event: ReturnType<typeof makeNotificationEvent>,
+        notification: ReturnType<typeof makeNotificationRequest>
+      ) => Promise<void>)
     | null;
 
   return { mod, executor: executor!, notificationHandler: notificationHandler! };
@@ -208,7 +213,10 @@ describe('scheduler/index', () => {
     it('passes checkInterval from defaults to createScheduler', async () => {
       const { mod } = await initFresh();
       const { createScheduler } = await import('@ownpilot/core');
-      const config = (createScheduler as ReturnType<typeof vi.fn>).mock.calls[0]![0] as Record<string, unknown>;
+      const config = (createScheduler as ReturnType<typeof vi.fn>).mock.calls[0]![0] as Record<
+        string,
+        unknown
+      >;
       expect(config.checkInterval).toBe(60000);
       mod.stopScheduler();
     });
@@ -216,7 +224,10 @@ describe('scheduler/index', () => {
     it('passes defaultTimeout from defaults to createScheduler', async () => {
       const { mod } = await initFresh();
       const { createScheduler } = await import('@ownpilot/core');
-      const config = (createScheduler as ReturnType<typeof vi.fn>).mock.calls[0]![0] as Record<string, unknown>;
+      const config = (createScheduler as ReturnType<typeof vi.fn>).mock.calls[0]![0] as Record<
+        string,
+        unknown
+      >;
       expect(config.defaultTimeout).toBe(300000);
       mod.stopScheduler();
     });
@@ -224,7 +235,10 @@ describe('scheduler/index', () => {
     it('passes maxHistoryPerTask from defaults to createScheduler', async () => {
       const { mod } = await initFresh();
       const { createScheduler } = await import('@ownpilot/core');
-      const config = (createScheduler as ReturnType<typeof vi.fn>).mock.calls[0]![0] as Record<string, unknown>;
+      const config = (createScheduler as ReturnType<typeof vi.fn>).mock.calls[0]![0] as Record<
+        string,
+        unknown
+      >;
       expect(config.maxHistoryPerTask).toBe(100);
       mod.stopScheduler();
     });
@@ -232,7 +246,10 @@ describe('scheduler/index', () => {
     it('builds tasksFilePath containing scheduler/tasks.json', async () => {
       const { mod } = await initFresh();
       const { createScheduler } = await import('@ownpilot/core');
-      const config = (createScheduler as ReturnType<typeof vi.fn>).mock.calls[0]![0] as Record<string, unknown>;
+      const config = (createScheduler as ReturnType<typeof vi.fn>).mock.calls[0]![0] as Record<
+        string,
+        unknown
+      >;
       expect(String(config.tasksFilePath)).toMatch(/scheduler/);
       expect(String(config.tasksFilePath)).toMatch(/tasks\.json/);
       mod.stopScheduler();
@@ -241,7 +258,10 @@ describe('scheduler/index', () => {
     it('builds historyFilePath containing scheduler/history.json', async () => {
       const { mod } = await initFresh();
       const { createScheduler } = await import('@ownpilot/core');
-      const config = (createScheduler as ReturnType<typeof vi.fn>).mock.calls[0]![0] as Record<string, unknown>;
+      const config = (createScheduler as ReturnType<typeof vi.fn>).mock.calls[0]![0] as Record<
+        string,
+        unknown
+      >;
       expect(String(config.historyFilePath)).toMatch(/scheduler/);
       expect(String(config.historyFilePath)).toMatch(/history\.json/);
       mod.stopScheduler();
@@ -258,7 +278,9 @@ describe('scheduler/index', () => {
       const { mod } = await initFresh();
       const { createSchedulerNotificationBridge } = await import('@ownpilot/core');
       expect(createSchedulerNotificationBridge).toHaveBeenCalledOnce();
-      expect(typeof (createSchedulerNotificationBridge as ReturnType<typeof vi.fn>).mock.calls[0]![0]).toBe('function');
+      expect(
+        typeof (createSchedulerNotificationBridge as ReturnType<typeof vi.fn>).mock.calls[0]![0]
+      ).toBe('function');
       mod.stopScheduler();
     });
 
@@ -439,7 +461,7 @@ describe('scheduler/index', () => {
         });
 
         await executor(
-          makeTask({ type: 'prompt', payload: { type: 'prompt', prompt: 'Summarize today' } }),
+          makeTask({ type: 'prompt', payload: { type: 'prompt', prompt: 'Summarize today' } })
         );
 
         expect(mockAgent.chat).toHaveBeenCalledWith('Summarize today');
@@ -453,7 +475,7 @@ describe('scheduler/index', () => {
         });
 
         const result = await executor(
-          makeTask({ id: 'p1', type: 'prompt', payload: { type: 'prompt', prompt: 'Go' } }),
+          makeTask({ id: 'p1', type: 'prompt', payload: { type: 'prompt', prompt: 'Go' } })
         );
 
         expect(result.status).toBe('completed');
@@ -613,7 +635,7 @@ describe('scheduler/index', () => {
         const { executor } = await initFresh();
         const { getOrCreateDefaultAgent } = await import('../routes/agents.js');
         (getOrCreateDefaultAgent as ReturnType<typeof vi.fn>).mockRejectedValueOnce(
-          new Error('Agent unavailable'),
+          new Error('Agent unavailable')
         );
 
         const result = await executor(makeTask());
@@ -672,7 +694,7 @@ describe('scheduler/index', () => {
         mockAgent.getTools.mockReturnValue([]);
 
         const result = await executor(
-          makeTask({ id: 'notfound-42', type: 'tool', payload: toolPayload }),
+          makeTask({ id: 'notfound-42', type: 'tool', payload: toolPayload })
         );
 
         expect(result.taskId).toBe('notfound-42');
@@ -800,8 +822,14 @@ describe('scheduler/index', () => {
       it('collects results from all successful steps', async () => {
         const { executor } = await initFresh();
         mockAgent.chat
-          .mockResolvedValueOnce({ ok: true, value: { content: 'A done', model: 'm', usage: null } })
-          .mockResolvedValueOnce({ ok: true, value: { content: 'B done', model: 'm', usage: null } });
+          .mockResolvedValueOnce({
+            ok: true,
+            value: { content: 'A done', model: 'm', usage: null },
+          })
+          .mockResolvedValueOnce({
+            ok: true,
+            value: { content: 'B done', model: 'm', usage: null },
+          });
 
         const payload = {
           type: 'workflow',
@@ -857,7 +885,10 @@ describe('scheduler/index', () => {
       it('includes partial results up to the failure point', async () => {
         const { executor } = await initFresh();
         mockAgent.chat
-          .mockResolvedValueOnce({ ok: true, value: { content: 'first ok', model: 'm', usage: null } })
+          .mockResolvedValueOnce({
+            ok: true,
+            value: { content: 'first ok', model: 'm', usage: null },
+          })
           .mockResolvedValueOnce({ ok: false, error: { message: 'second failed' } });
 
         const payload = {
@@ -960,7 +991,7 @@ describe('scheduler/index', () => {
         const { executor } = await initFresh();
 
         const result = await executor(
-          makeTask({ id: 'unk-1', type: 'whatever', payload: { type: 'whatever' } }),
+          makeTask({ id: 'unk-1', type: 'whatever', payload: { type: 'whatever' } })
         );
 
         expect(result.taskId).toBe('unk-1');
@@ -978,9 +1009,7 @@ describe('scheduler/index', () => {
       it('returns error message matching "Unknown task type: <type>"', async () => {
         const { executor } = await initFresh();
 
-        const result = await executor(
-          makeTask({ type: 'foobar', payload: { type: 'foobar' } }),
-        );
+        const result = await executor(makeTask({ type: 'foobar', payload: { type: 'foobar' } }));
 
         expect(result.error).toMatch(/Unknown task type: foobar/);
       });
@@ -997,7 +1026,7 @@ describe('scheduler/index', () => {
 
       await notificationHandler(
         makeNotificationEvent({ notifyChannels: [] }),
-        makeNotificationRequest([]),
+        makeNotificationRequest([])
       );
 
       expect(mockChannelService.send).not.toHaveBeenCalled();
@@ -1009,7 +1038,7 @@ describe('scheduler/index', () => {
 
       await notificationHandler(
         makeNotificationEvent({ notifyChannels: [] }),
-        makeNotificationRequest([]),
+        makeNotificationRequest([])
       );
 
       expect(getChannelService).not.toHaveBeenCalled();
@@ -1020,7 +1049,7 @@ describe('scheduler/index', () => {
 
       await notificationHandler(
         makeNotificationEvent({ notifyChannels: undefined }),
-        makeNotificationRequest([]),
+        makeNotificationRequest([])
       );
 
       expect(mockChannelService.send).not.toHaveBeenCalled();
@@ -1033,7 +1062,7 @@ describe('scheduler/index', () => {
 
       await notificationHandler(
         makeNotificationEvent({ notifyChannels: ['task-chan'] }),
-        makeNotificationRequest(['notif-chan']),
+        makeNotificationRequest(['notif-chan'])
       );
 
       expect(mockChannelService.getChannel).toHaveBeenCalledWith('task-chan');
@@ -1046,7 +1075,7 @@ describe('scheduler/index', () => {
 
       await notificationHandler(
         makeNotificationEvent({ notifyChannels: undefined }),
-        makeNotificationRequest(['fallback-chan']),
+        makeNotificationRequest(['fallback-chan'])
       );
 
       expect(mockChannelService.getChannel).toHaveBeenCalledWith('fallback-chan');
@@ -1058,7 +1087,7 @@ describe('scheduler/index', () => {
 
       await notificationHandler(
         makeNotificationEvent({ notifyChannels: ['plugin-xyz'] }),
-        makeNotificationRequest(['plugin-xyz']),
+        makeNotificationRequest(['plugin-xyz'])
       );
 
       expect(mockChannelService.send).toHaveBeenCalledOnce();
@@ -1074,7 +1103,10 @@ describe('scheduler/index', () => {
         content: { title: 'My Title', body: 'My Body' },
       };
 
-      await notificationHandler(makeNotificationEvent({ notifyChannels: ['plugin-abc'] }), notification);
+      await notificationHandler(
+        makeNotificationEvent({ notifyChannels: ['plugin-abc'] }),
+        notification
+      );
 
       const payload = mockChannelService.send.mock.calls[0]![1] as { text: string };
       expect(payload.text).toContain('My Title');
@@ -1087,7 +1119,7 @@ describe('scheduler/index', () => {
 
       await notificationHandler(
         makeNotificationEvent({ notifyChannels: ['my-plugin-id'] }),
-        makeNotificationRequest(['my-plugin-id']),
+        makeNotificationRequest(['my-plugin-id'])
       );
 
       const payload = mockChannelService.send.mock.calls[0]![1] as { platformChatId: string };
@@ -1104,7 +1136,7 @@ describe('scheduler/index', () => {
 
       await notificationHandler(
         makeNotificationEvent({ notifyChannels: ['telegram'] }),
-        makeNotificationRequest(['telegram']),
+        makeNotificationRequest(['telegram'])
       );
 
       expect(mockChannelService.listChannels).toHaveBeenCalled();
@@ -1122,12 +1154,12 @@ describe('scheduler/index', () => {
 
       await notificationHandler(
         makeNotificationEvent({ notifyChannels: ['slack'] }),
-        makeNotificationRequest(['slack']),
+        makeNotificationRequest(['slack'])
       );
 
       expect(mockChannelService.send).toHaveBeenCalledWith(
         'slack-connected',
-        expect.objectContaining({ text: expect.any(String) }),
+        expect.objectContaining({ text: expect.any(String) })
       );
     });
 
@@ -1138,7 +1170,7 @@ describe('scheduler/index', () => {
 
       await notificationHandler(
         makeNotificationEvent({ notifyChannels: ['nonexistent'] }),
-        makeNotificationRequest(['nonexistent']),
+        makeNotificationRequest(['nonexistent'])
       );
 
       expect(mockChannelService.send).not.toHaveBeenCalled();
@@ -1154,7 +1186,7 @@ describe('scheduler/index', () => {
 
       await notificationHandler(
         makeNotificationEvent({ notifyChannels: ['telegram'] }),
-        makeNotificationRequest(['telegram']),
+        makeNotificationRequest(['telegram'])
       );
 
       expect(mockChannelService.send).not.toHaveBeenCalled();
@@ -1172,8 +1204,8 @@ describe('scheduler/index', () => {
       await expect(
         notificationHandler(
           makeNotificationEvent({ notifyChannels: ['chan-a', 'chan-b'] }),
-          makeNotificationRequest(['chan-a', 'chan-b']),
-        ),
+          makeNotificationRequest(['chan-a', 'chan-b'])
+        )
       ).resolves.not.toThrow();
 
       expect(mockChannelService.send).toHaveBeenCalledTimes(2);
@@ -1187,8 +1219,8 @@ describe('scheduler/index', () => {
       await expect(
         notificationHandler(
           makeNotificationEvent({ notifyChannels: ['ch-1'] }),
-          makeNotificationRequest(['ch-1']),
-        ),
+          makeNotificationRequest(['ch-1'])
+        )
       ).resolves.toBeUndefined();
     });
 
@@ -1200,7 +1232,7 @@ describe('scheduler/index', () => {
 
       await notificationHandler(
         makeNotificationEvent({ notifyChannels: ['ch-a', 'ch-b'] }),
-        makeNotificationRequest(['ch-a', 'ch-b']),
+        makeNotificationRequest(['ch-a', 'ch-b'])
       );
 
       expect(mockChannelService.send).toHaveBeenCalledTimes(2);
@@ -1213,7 +1245,7 @@ describe('scheduler/index', () => {
 
       await notificationHandler(
         makeNotificationEvent({ notifyChannels: ['a', 'b', 'c'] }),
-        makeNotificationRequest(['a', 'b', 'c']),
+        makeNotificationRequest(['a', 'b', 'c'])
       );
 
       // getChannelService() is called once before the for-loop; the same service

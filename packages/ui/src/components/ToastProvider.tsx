@@ -172,48 +172,45 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     // Prevent double-removal
     if (exitTimersRef.current.has(id)) return;
     // Mark as exiting first for slide-out animation
-    setToasts(prev => prev.map(t => t.id === id ? { ...t, exiting: true } : t));
+    setToasts((prev) => prev.map((t) => (t.id === id ? { ...t, exiting: true } : t)));
     // Remove from DOM after animation completes
     const timer = setTimeout(() => {
       exitTimersRef.current.delete(id);
-      setToasts(prev => prev.filter(t => t.id !== id));
+      setToasts((prev) => prev.filter((t) => t.id !== id));
     }, 300);
     exitTimersRef.current.set(id, timer);
   }, []);
 
-  const addToast = useCallback(
-    (input: Omit<Toast, 'id' | 'duration'> & { duration?: number }) => {
-      const id = `toast-${++toastCounter}`;
-      const duration = input.duration ?? DEFAULT_DURATION[input.type];
-      setToasts(prev => {
-        // Deduplicate: skip if same message already visible
-        if (prev.some(t => t.message === input.message && !t.exiting)) return prev;
-        // Cap at 5 visible toasts — drop oldest
-        const capped = prev.length >= 5 ? prev.slice(1) : prev;
-        return [...capped, { ...input, id, duration }];
-      });
-    },
-    [],
-  );
+  const addToast = useCallback((input: Omit<Toast, 'id' | 'duration'> & { duration?: number }) => {
+    const id = `toast-${++toastCounter}`;
+    const duration = input.duration ?? DEFAULT_DURATION[input.type];
+    setToasts((prev) => {
+      // Deduplicate: skip if same message already visible
+      if (prev.some((t) => t.message === input.message && !t.exiting)) return prev;
+      // Cap at 5 visible toasts — drop oldest
+      const capped = prev.length >= 5 ? prev.slice(1) : prev;
+      return [...capped, { ...input, id, duration }];
+    });
+  }, []);
 
   const success = useCallback(
     (message: string, title?: string) => addToast({ type: 'success', message, title }),
-    [addToast],
+    [addToast]
   );
 
   const error = useCallback(
     (message: string, title?: string) => addToast({ type: 'error', message, title }),
-    [addToast],
+    [addToast]
   );
 
   const warning = useCallback(
     (message: string, title?: string) => addToast({ type: 'warning', message, title }),
-    [addToast],
+    [addToast]
   );
 
   const info = useCallback(
     (message: string, title?: string) => addToast({ type: 'info', message, title }),
-    [addToast],
+    [addToast]
   );
 
   const value: ToastContextValue = { addToast, removeToast, success, error, warning, info };
@@ -227,7 +224,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
           className="fixed top-4 right-4 z-[9999] flex flex-col gap-2 pointer-events-auto"
           aria-live="polite"
         >
-          {toasts.map(toast => (
+          {toasts.map((toast) => (
             <ToastItem key={toast.id} toast={toast} onRemove={removeToast} />
           ))}
         </div>

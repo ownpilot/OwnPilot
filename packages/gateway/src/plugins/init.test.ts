@@ -142,7 +142,8 @@ vi.mock('@ownpilot/core', () => {
   // Minimal PluginBuilder implementation to capture tool registrations
   class FakePluginBuilder {
     private _manifest: Record<string, unknown> = {};
-    private _tools: Array<{ def: Record<string, unknown>; exec: (...args: unknown[]) => unknown }> = [];
+    private _tools: Array<{ def: Record<string, unknown>; exec: (...args: unknown[]) => unknown }> =
+      [];
     private _tables: Array<{ name: string }> = [];
 
     meta(data: Record<string, unknown>) {
@@ -150,15 +151,36 @@ vi.mock('@ownpilot/core', () => {
       return this;
     }
 
-    id(val: string) { this._manifest.id = val; return this; }
-    name(val: string) { this._manifest.name = val; return this; }
-    version(val: string) { this._manifest.version = val; return this; }
-    description(val: string) { this._manifest.description = val; return this; }
-    capabilities(val: unknown) { this._manifest.capabilities = val; return this; }
-    permissions(val: unknown) { this._manifest.permissions = val; return this; }
+    id(val: string) {
+      this._manifest.id = val;
+      return this;
+    }
+    name(val: string) {
+      this._manifest.name = val;
+      return this;
+    }
+    version(val: string) {
+      this._manifest.version = val;
+      return this;
+    }
+    description(val: string) {
+      this._manifest.description = val;
+      return this;
+    }
+    capabilities(val: unknown) {
+      this._manifest.capabilities = val;
+      return this;
+    }
+    permissions(val: unknown) {
+      this._manifest.permissions = val;
+      return this;
+    }
 
     database(name: string, displayName: string, columns: unknown[], opts?: unknown) {
-      this._tables.push({ name, displayName, columns, ...(opts ?? {}) } as Record<string, unknown> as { name: string });
+      this._tables.push({ name, displayName, columns, ...(opts ?? {}) } as Record<
+        string,
+        unknown
+      > as { name: string });
       return this;
     }
 
@@ -167,24 +189,53 @@ vi.mock('@ownpilot/core', () => {
       return this;
     }
 
-    tools(arr: Array<{ definition: Record<string, unknown>; executor: (...args: unknown[]) => unknown }>) {
+    tools(
+      arr: Array<{ definition: Record<string, unknown>; executor: (...args: unknown[]) => unknown }>
+    ) {
       for (const { definition, executor } of arr) {
         this._tools.push({ def: definition, exec: executor });
       }
       return this;
     }
 
-    publicApi(api: unknown) { this._manifest.api = api; return this; }
-    handler(h: unknown) { void h; return this; }
-    hooks(h: unknown) { void h; return this; }
-    onLoad(fn: unknown) { void fn; return this; }
-    onUnload(fn: unknown) { void fn; return this; }
-    onEnable(fn: unknown) { void fn; return this; }
-    onDisable(fn: unknown) { void fn; return this; }
-    channelApi(factory: unknown) { this._manifest.channelApiFactory = factory; return this; }
+    publicApi(api: unknown) {
+      this._manifest.api = api;
+      return this;
+    }
+    handler(h: unknown) {
+      void h;
+      return this;
+    }
+    hooks(h: unknown) {
+      void h;
+      return this;
+    }
+    onLoad(fn: unknown) {
+      void fn;
+      return this;
+    }
+    onUnload(fn: unknown) {
+      void fn;
+      return this;
+    }
+    onEnable(fn: unknown) {
+      void fn;
+      return this;
+    }
+    onDisable(fn: unknown) {
+      void fn;
+      return this;
+    }
+    channelApi(factory: unknown) {
+      this._manifest.channelApiFactory = factory;
+      return this;
+    }
 
     build() {
-      const toolsMap = new Map<string, { definition: Record<string, unknown>; executor: (...args: unknown[]) => unknown }>();
+      const toolsMap = new Map<
+        string,
+        { definition: Record<string, unknown>; executor: (...args: unknown[]) => unknown }
+      >();
       for (const { def, exec } of this._tools) {
         toolsMap.set(def.name as string, { definition: def, executor: exec });
       }
@@ -261,14 +312,16 @@ import { getDefaultPluginRegistry } from '@ownpilot/core';
 // Helpers
 // =============================================================================
 
-function makeDbRecord(overrides: Partial<{
-  id: string;
-  name: string;
-  version: string;
-  status: string;
-  settings: Record<string, unknown>;
-  grantedPermissions: string[];
-}> = {}) {
+function makeDbRecord(
+  overrides: Partial<{
+    id: string;
+    name: string;
+    version: string;
+    status: string;
+    settings: Record<string, unknown>;
+    grantedPermissions: string[];
+  }> = {}
+) {
   return {
     id: 'plugin-id',
     name: 'Test Plugin',
@@ -299,11 +352,23 @@ function resetMockPlugin() {
  */
 function setupDefaultPluginMocks() {
   mockBuildCorePlugin.mockImplementation(() => ({
-    manifest: { id: 'core', name: 'Core', version: '1.0.0', requiredServices: [], defaultConfig: {} },
+    manifest: {
+      id: 'core',
+      name: 'Core',
+      version: '1.0.0',
+      requiredServices: [],
+      defaultConfig: {},
+    },
     implementation: {},
   }));
   mockBuildGatewayPlugin.mockImplementation(() => ({
-    manifest: { id: 'gateway', name: 'OwnPilot Gateway', version: '1.0.0', requiredServices: [], defaultConfig: {} },
+    manifest: {
+      id: 'gateway',
+      name: 'OwnPilot Gateway',
+      version: '1.0.0',
+      requiredServices: [],
+      defaultConfig: {},
+    },
     implementation: {},
   }));
   mockBuildComposioPlugin.mockImplementation(() => ({
@@ -348,7 +413,9 @@ async function captureNewsRssTool(toolName: string) {
   const calls = mockRegistry.register.mock.calls;
   for (const [manifest, implementation] of calls) {
     if ((manifest as { id: string }).id === 'news-rss') {
-      const tools = (implementation as { tools?: Map<string, { executor: (...args: unknown[]) => unknown }> }).tools;
+      const tools = (
+        implementation as { tools?: Map<string, { executor: (...args: unknown[]) => unknown }> }
+      ).tools;
       if (tools) {
         const entry = tools.get(toolName);
         if (entry) return entry.executor;
@@ -364,7 +431,9 @@ async function capturePomodoroTool(toolName: string) {
   const calls = mockRegistry.register.mock.calls;
   for (const [manifest, implementation] of calls) {
     if ((manifest as { id: string }).id === 'pomodoro') {
-      const tools = (implementation as { tools?: Map<string, { executor: (...args: unknown[]) => unknown }> }).tools;
+      const tools = (
+        implementation as { tools?: Map<string, { executor: (...args: unknown[]) => unknown }> }
+      ).tools;
       if (tools) {
         const entry = tools.get(toolName);
         if (entry) return entry.executor;
@@ -521,19 +590,43 @@ describe('initializePlugins()', () => {
     it('does NOT call registerToolConfigRequirements when requiredServices is empty', async () => {
       // Override all plugins to have no required services
       mockBuildCorePlugin.mockReturnValue({
-        manifest: { id: 'core', name: 'Core', version: '1.0.0', requiredServices: [], defaultConfig: {} },
+        manifest: {
+          id: 'core',
+          name: 'Core',
+          version: '1.0.0',
+          requiredServices: [],
+          defaultConfig: {},
+        },
         implementation: {},
       });
       mockBuildGatewayPlugin.mockReturnValue({
-        manifest: { id: 'gateway', name: 'Gateway', version: '1.0.0', requiredServices: [], defaultConfig: {} },
+        manifest: {
+          id: 'gateway',
+          name: 'Gateway',
+          version: '1.0.0',
+          requiredServices: [],
+          defaultConfig: {},
+        },
         implementation: {},
       });
       mockBuildComposioPlugin.mockReturnValue({
-        manifest: { id: 'composio', name: 'Composio', version: '1.0.0', requiredServices: [], defaultConfig: {} },
+        manifest: {
+          id: 'composio',
+          name: 'Composio',
+          version: '1.0.0',
+          requiredServices: [],
+          defaultConfig: {},
+        },
         implementation: {},
       });
       mockBuildTelegramChannelPlugin.mockReturnValue({
-        manifest: { id: 'channel.telegram', name: 'Telegram', version: '1.0.0', requiredServices: [], defaultConfig: {} },
+        manifest: {
+          id: 'channel.telegram',
+          name: 'Telegram',
+          version: '1.0.0',
+          requiredServices: [],
+          defaultConfig: {},
+        },
         implementation: {},
       });
 
@@ -547,11 +640,15 @@ describe('initializePlugins()', () => {
 
       // registerToolConfigRequirements(toolName, toolId, source, requirements)
       // composio and telegram both have requiredServices; find either call
-      const allCalls = mockRegisterToolConfigReqs.mock.calls as Array<[string, string, string, unknown[]]>;
+      const allCalls = mockRegisterToolConfigReqs.mock.calls as Array<
+        [string, string, string, unknown[]]
+      >;
       expect(allCalls.length).toBeGreaterThan(0);
 
       // Validate the shape of the first call that has a non-empty services array
-      const callWithServices = allCalls.find(([, , , services]) => Array.isArray(services) && services.length > 0);
+      const callWithServices = allCalls.find(
+        ([, , , services]) => Array.isArray(services) && services.length > 0
+      );
       expect(callWithServices).toBeDefined();
       const [, , source, services] = callWithServices!;
       expect(source).toBe('plugin');
@@ -799,7 +896,7 @@ describe('initializePlugins()', () => {
 
       await initializePlugins();
       expect(mockLog.info).toHaveBeenCalledWith(
-        expect.stringContaining('2'),
+        expect.stringContaining('2')
         // The log message may be a single string containing both counts
       );
     });
@@ -1086,7 +1183,7 @@ describe('News RSS Plugin — structure', () => {
       ([m]) => (m as { id: string }).id === 'news-rss'
     );
     const manifest = call![0] as { databaseTables?: Array<{ name: string }> };
-    const tableNames = manifest.databaseTables?.map(t => t.name) ?? [];
+    const tableNames = manifest.databaseTables?.map((t) => t.name) ?? [];
     expect(tableNames).toContain('plugin_rss_feeds');
   });
 
@@ -1096,7 +1193,7 @@ describe('News RSS Plugin — structure', () => {
       ([m]) => (m as { id: string }).id === 'news-rss'
     );
     const manifest = call![0] as { databaseTables?: Array<{ name: string }> };
-    const tableNames = manifest.databaseTables?.map(t => t.name) ?? [];
+    const tableNames = manifest.databaseTables?.map((t) => t.name) ?? [];
     expect(tableNames).toContain('plugin_rss_items');
   });
 
@@ -1106,7 +1203,7 @@ describe('News RSS Plugin — structure', () => {
       ([m]) => (m as { id: string }).id === 'news-rss'
     );
     const manifest = call![0] as { pluginConfigSchema?: Array<{ name: string }> };
-    const fieldNames = manifest.pluginConfigSchema?.map(f => f.name) ?? [];
+    const fieldNames = manifest.pluginConfigSchema?.map((f) => f.name) ?? [];
     expect(fieldNames).toContain('max_feeds');
   });
 
@@ -1116,7 +1213,7 @@ describe('News RSS Plugin — structure', () => {
       ([m]) => (m as { id: string }).id === 'news-rss'
     );
     const manifest = call![0] as { pluginConfigSchema?: Array<{ name: string }> };
-    const fieldNames = manifest.pluginConfigSchema?.map(f => f.name) ?? [];
+    const fieldNames = manifest.pluginConfigSchema?.map((f) => f.name) ?? [];
     expect(fieldNames).toContain('refresh_interval');
   });
 
@@ -1126,7 +1223,7 @@ describe('News RSS Plugin — structure', () => {
       ([m]) => (m as { id: string }).id === 'news-rss'
     );
     const manifest = call![0] as { pluginConfigSchema?: Array<{ name: string }> };
-    const fieldNames = manifest.pluginConfigSchema?.map(f => f.name) ?? [];
+    const fieldNames = manifest.pluginConfigSchema?.map((f) => f.name) ?? [];
     expect(fieldNames).toContain('default_category');
   });
 });
@@ -1192,7 +1289,9 @@ describe('news_add_feed executor', () => {
 
   it('returns success with feedId and itemsFetched', async () => {
     const exec = await captureNewsRssTool('news_add_feed');
-    const result = await exec!({ url: 'http://example.com/feed.rss' }) as { content: { success: boolean; feedId: string; itemsFetched: number } };
+    const result = (await exec!({ url: 'http://example.com/feed.rss' })) as {
+      content: { success: boolean; feedId: string; itemsFetched: number };
+    };
     expect(result.content.success).toBe(true);
     expect(result.content.feedId).toBe('feed-1');
     expect(result.content.itemsFetched).toBe(1);
@@ -1211,7 +1310,9 @@ describe('news_add_feed executor', () => {
     (fetch as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('Network error'));
 
     const exec = await captureNewsRssTool('news_add_feed');
-    const result = await exec!({ url: 'http://bad-url.example.com/feed.rss' }) as { content: { success: boolean } };
+    const result = (await exec!({ url: 'http://bad-url.example.com/feed.rss' })) as {
+      content: { success: boolean };
+    };
 
     expect(mockDatabaseRepo.updateRecord).toHaveBeenCalledWith(
       'feed-1',
@@ -1225,7 +1326,9 @@ describe('news_add_feed executor', () => {
     (fetch as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('Timeout'));
 
     const exec = await captureNewsRssTool('news_add_feed');
-    const result = await exec!({ url: 'http://example.com/feed.rss' }) as { content: { itemsFetched: number } };
+    const result = (await exec!({ url: 'http://example.com/feed.rss' })) as {
+      content: { itemsFetched: number };
+    };
     expect(result.content.itemsFetched).toBe(0);
   });
 
@@ -1235,7 +1338,9 @@ describe('news_add_feed executor', () => {
     });
 
     const exec = await captureNewsRssTool('news_add_feed');
-    const result = await exec!({ url: 'http://example.com/feed.rss' }) as { content: { title: string } };
+    const result = (await exec!({ url: 'http://example.com/feed.rss' })) as {
+      content: { title: string };
+    };
     expect(result.content.title).toBe('http://example.com/feed.rss');
   });
 
@@ -1254,7 +1359,9 @@ describe('news_add_feed executor', () => {
     });
 
     const exec = await captureNewsRssTool('news_add_feed');
-    const result = await exec!({ url: 'http://example.com/feed.rss' }) as { content: { itemsFetched: number } };
+    const result = (await exec!({ url: 'http://example.com/feed.rss' })) as {
+      content: { itemsFetched: number };
+    };
     expect(result.content.itemsFetched).toBe(1);
   });
 });
@@ -1269,13 +1376,31 @@ describe('news_list_feeds executor', () => {
   it('lists all feeds from plugin_rss_feeds', async () => {
     mockDatabaseRepo.listRecords.mockResolvedValue({
       records: [
-        { id: 'feed-1', data: { url: 'http://a.com/feed', title: 'Feed A', category: 'Tech', status: 'active', last_fetched: null } },
-        { id: 'feed-2', data: { url: 'http://b.com/feed', title: 'Feed B', category: '', status: 'error', last_fetched: '2024-01-01' } },
+        {
+          id: 'feed-1',
+          data: {
+            url: 'http://a.com/feed',
+            title: 'Feed A',
+            category: 'Tech',
+            status: 'active',
+            last_fetched: null,
+          },
+        },
+        {
+          id: 'feed-2',
+          data: {
+            url: 'http://b.com/feed',
+            title: 'Feed B',
+            category: '',
+            status: 'error',
+            last_fetched: '2024-01-01',
+          },
+        },
       ],
     });
 
     const exec = await captureNewsRssTool('news_list_feeds');
-    const result = await exec!({}) as { content: { success: boolean; feeds: unknown[] } };
+    const result = (await exec!({})) as { content: { success: boolean; feeds: unknown[] } };
     expect(result.content.success).toBe(true);
     expect(result.content.feeds).toHaveLength(2);
   });
@@ -1285,18 +1410,41 @@ describe('news_list_feeds executor', () => {
 
     const exec = await captureNewsRssTool('news_list_feeds');
     await exec!({});
-    expect(mockDatabaseRepo.listRecords).toHaveBeenCalledWith('plugin_rss_feeds', expect.objectContaining({ limit: 100 }));
+    expect(mockDatabaseRepo.listRecords).toHaveBeenCalledWith(
+      'plugin_rss_feeds',
+      expect.objectContaining({ limit: 100 })
+    );
   });
 
   it('maps record fields to feed shape with id, url, title, category, status, lastFetched', async () => {
     mockDatabaseRepo.listRecords.mockResolvedValue({
       records: [
-        { id: 'f1', data: { url: 'http://x.com', title: 'X Feed', category: 'News', status: 'active', last_fetched: '2024-06-01' } },
+        {
+          id: 'f1',
+          data: {
+            url: 'http://x.com',
+            title: 'X Feed',
+            category: 'News',
+            status: 'active',
+            last_fetched: '2024-06-01',
+          },
+        },
       ],
     });
 
     const exec = await captureNewsRssTool('news_list_feeds');
-    const result = await exec!({}) as { content: { feeds: Array<{ id: string; url: string; title: string; category: string; status: string; lastFetched: string }> } };
+    const result = (await exec!({})) as {
+      content: {
+        feeds: Array<{
+          id: string;
+          url: string;
+          title: string;
+          category: string;
+          status: string;
+          lastFetched: string;
+        }>;
+      };
+    };
     const feed = result.content.feeds[0]!;
     expect(feed.id).toBe('f1');
     expect(feed.url).toBe('http://x.com');
@@ -1310,7 +1458,7 @@ describe('news_list_feeds executor', () => {
     mockDatabaseRepo.listRecords.mockResolvedValue({ records: [] });
 
     const exec = await captureNewsRssTool('news_list_feeds');
-    const result = await exec!({}) as { content: { feeds: unknown[] } };
+    const result = (await exec!({})) as { content: { feeds: unknown[] } };
     expect(result.content.feeds).toHaveLength(0);
   });
 });
@@ -1323,7 +1471,17 @@ describe('news_get_latest executor', () => {
 
     mockDatabaseRepo.listRecords.mockResolvedValue({
       records: [
-        { id: 'item-1', data: { feed_id: 'f1', title: 'Item 1', link: 'http://a.com', content: 'Content', published_at: '2024-01-01', is_read: false } },
+        {
+          id: 'item-1',
+          data: {
+            feed_id: 'f1',
+            title: 'Item 1',
+            link: 'http://a.com',
+            content: 'Content',
+            published_at: '2024-01-01',
+            is_read: false,
+          },
+        },
       ],
     });
   });
@@ -1331,7 +1489,10 @@ describe('news_get_latest executor', () => {
   it('queries plugin_rss_items table', async () => {
     const exec = await captureNewsRssTool('news_get_latest');
     await exec!({});
-    expect(mockDatabaseRepo.listRecords).toHaveBeenCalledWith('plugin_rss_items', expect.any(Object));
+    expect(mockDatabaseRepo.listRecords).toHaveBeenCalledWith(
+      'plugin_rss_items',
+      expect.any(Object)
+    );
   });
 
   it('uses default limit of 20 when not provided', async () => {
@@ -1379,7 +1540,7 @@ describe('news_get_latest executor', () => {
 
   it('maps items to correct shape with id, feedId, title, link, content, publishedAt, isRead', async () => {
     const exec = await captureNewsRssTool('news_get_latest');
-    const result = await exec!({}) as { content: { items: Array<Record<string, unknown>> } };
+    const result = (await exec!({})) as { content: { items: Array<Record<string, unknown>> } };
     const item = result.content.items[0]!;
     expect(item).toMatchObject({
       id: 'item-1',
@@ -1393,18 +1554,28 @@ describe('news_get_latest executor', () => {
     const longContent = 'x'.repeat(500);
     mockDatabaseRepo.listRecords.mockResolvedValue({
       records: [
-        { id: 'item-1', data: { feed_id: 'f1', title: 'T', link: 'http://a.com', content: longContent, published_at: '2024-01-01', is_read: false } },
+        {
+          id: 'item-1',
+          data: {
+            feed_id: 'f1',
+            title: 'T',
+            link: 'http://a.com',
+            content: longContent,
+            published_at: '2024-01-01',
+            is_read: false,
+          },
+        },
       ],
     });
 
     const exec = await captureNewsRssTool('news_get_latest');
-    const result = await exec!({}) as { content: { items: Array<{ content: string }> } };
+    const result = (await exec!({})) as { content: { items: Array<{ content: string }> } };
     expect(result.content.items[0]!.content.length).toBe(300);
   });
 
   it('returns success: true with items array', async () => {
     const exec = await captureNewsRssTool('news_get_latest');
-    const result = await exec!({}) as { content: { success: boolean; items: unknown[] } };
+    const result = (await exec!({})) as { content: { success: boolean; items: unknown[] } };
     expect(result.content.success).toBe(true);
     expect(Array.isArray(result.content.items)).toBe(true);
   });
@@ -1449,7 +1620,9 @@ describe('news_remove_feed executor', () => {
 
   it('returns success with item count in message', async () => {
     const exec = await captureNewsRssTool('news_remove_feed');
-    const result = await exec!({ feed_id: 'feed-abc' }) as { content: { success: boolean; message: string } };
+    const result = (await exec!({ feed_id: 'feed-abc' })) as {
+      content: { success: boolean; message: string };
+    };
     expect(result.content.success).toBe(true);
     expect(result.content.message).toContain('2');
   });
@@ -1458,7 +1631,7 @@ describe('news_remove_feed executor', () => {
     mockDatabaseRepo.listRecords.mockResolvedValue({ records: [] });
 
     const exec = await captureNewsRssTool('news_remove_feed');
-    const result = await exec!({ feed_id: 'empty-feed' }) as { content: { success: boolean } };
+    const result = (await exec!({ feed_id: 'empty-feed' })) as { content: { success: boolean } };
     expect(result.content.success).toBe(true);
     // Only the feed itself should be deleted (no items)
     expect(mockDatabaseRepo.deleteRecord).toHaveBeenCalledTimes(1);
@@ -1472,7 +1645,10 @@ describe('news_refresh_feed executor', () => {
     resetMockPlugin();
     setupDefaultPluginMocks();
 
-    mockDatabaseRepo.getRecord.mockResolvedValue({ id: 'feed-1', data: { url: 'http://example.com/feed.rss' } });
+    mockDatabaseRepo.getRecord.mockResolvedValue({
+      id: 'feed-1',
+      data: { url: 'http://example.com/feed.rss' },
+    });
     mockDatabaseRepo.listRecords.mockResolvedValue({ records: [] }); // No existing items
     mockDatabaseRepo.addRecord.mockResolvedValue({ id: 'new-item' });
     mockDatabaseRepo.updateRecord.mockResolvedValue({});
@@ -1490,7 +1666,10 @@ describe('news_refresh_feed executor', () => {
     mockDatabaseRepo.getRecord.mockResolvedValue(null);
 
     const exec = await captureNewsRssTool('news_refresh_feed');
-    const result = await exec!({ feed_id: 'nonexistent' }) as { content: { error: string }; isError: boolean };
+    const result = (await exec!({ feed_id: 'nonexistent' })) as {
+      content: { error: string };
+      isError: boolean;
+    };
     expect(result.isError).toBe(true);
     expect(result.content.error).toContain('not found');
   });
@@ -1499,7 +1678,7 @@ describe('news_refresh_feed executor', () => {
     mockDatabaseRepo.getRecord.mockResolvedValue({ id: 'feed-1', data: { url: null } });
 
     const exec = await captureNewsRssTool('news_refresh_feed');
-    const result = await exec!({ feed_id: 'feed-1' }) as { isError: boolean };
+    const result = (await exec!({ feed_id: 'feed-1' })) as { isError: boolean };
     expect(result.isError).toBe(true);
   });
 
@@ -1520,13 +1699,11 @@ describe('news_refresh_feed executor', () => {
 
   it('skips items with links already in existing records', async () => {
     mockDatabaseRepo.listRecords.mockResolvedValue({
-      records: [
-        { id: 'old-item', data: { link: 'http://example.com/new' } },
-      ],
+      records: [{ id: 'old-item', data: { link: 'http://example.com/new' } }],
     });
 
     const exec = await captureNewsRssTool('news_refresh_feed');
-    const result = await exec!({ feed_id: 'feed-1' }) as { content: { newItems: number } };
+    const result = (await exec!({ feed_id: 'feed-1' })) as { content: { newItems: number } };
     expect(result.content.newItems).toBe(0);
     expect(mockDatabaseRepo.addRecord).not.toHaveBeenCalled();
   });
@@ -1542,7 +1719,9 @@ describe('news_refresh_feed executor', () => {
 
   it('returns success with newItems count', async () => {
     const exec = await captureNewsRssTool('news_refresh_feed');
-    const result = await exec!({ feed_id: 'feed-1' }) as { content: { success: boolean; newItems: number } };
+    const result = (await exec!({ feed_id: 'feed-1' })) as {
+      content: { success: boolean; newItems: number };
+    };
     expect(result.content.success).toBe(true);
     expect(result.content.newItems).toBe(1);
   });
@@ -1551,7 +1730,7 @@ describe('news_refresh_feed executor', () => {
     (fetch as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('Timeout'));
 
     const exec = await captureNewsRssTool('news_refresh_feed');
-    const result = await exec!({ feed_id: 'feed-1' }) as { isError: boolean };
+    const result = (await exec!({ feed_id: 'feed-1' })) as { isError: boolean };
     expect(result.isError).toBe(true);
     expect(mockDatabaseRepo.updateRecord).toHaveBeenCalledWith(
       'feed-1',
@@ -1621,7 +1800,7 @@ describe('Pomodoro Plugin — structure', () => {
       ([m]) => (m as { id: string }).id === 'pomodoro'
     );
     const manifest = call![0] as { pluginConfigSchema?: Array<{ name: string }> };
-    const fieldNames = manifest.pluginConfigSchema?.map(f => f.name) ?? [];
+    const fieldNames = manifest.pluginConfigSchema?.map((f) => f.name) ?? [];
     expect(fieldNames).toContain('work_minutes');
   });
 
@@ -1631,7 +1810,7 @@ describe('Pomodoro Plugin — structure', () => {
       ([m]) => (m as { id: string }).id === 'pomodoro'
     );
     const manifest = call![0] as { pluginConfigSchema?: Array<{ name: string }> };
-    const fieldNames = manifest.pluginConfigSchema?.map(f => f.name) ?? [];
+    const fieldNames = manifest.pluginConfigSchema?.map((f) => f.name) ?? [];
     expect(fieldNames).toContain('short_break');
   });
 
@@ -1641,7 +1820,7 @@ describe('Pomodoro Plugin — structure', () => {
       ([m]) => (m as { id: string }).id === 'pomodoro'
     );
     const manifest = call![0] as { pluginConfigSchema?: Array<{ name: string }> };
-    const fieldNames = manifest.pluginConfigSchema?.map(f => f.name) ?? [];
+    const fieldNames = manifest.pluginConfigSchema?.map((f) => f.name) ?? [];
     expect(fieldNames).toContain('long_break');
   });
 
@@ -1651,7 +1830,7 @@ describe('Pomodoro Plugin — structure', () => {
       ([m]) => (m as { id: string }).id === 'pomodoro'
     );
     const manifest = call![0] as { pluginConfigSchema?: Array<{ name: string }> };
-    const fieldNames = manifest.pluginConfigSchema?.map(f => f.name) ?? [];
+    const fieldNames = manifest.pluginConfigSchema?.map((f) => f.name) ?? [];
     expect(fieldNames).toContain('sessions_before_long');
   });
 
@@ -1698,21 +1877,29 @@ describe('pomodoro_start executor', () => {
     });
 
     const exec = await capturePomodoroTool('pomodoro_start');
-    const result = await exec!({ task: 'New task' }) as { content: { success: boolean } };
+    const result = (await exec!({ task: 'New task' })) as { content: { success: boolean } };
     expect(result.content.success).toBe(false);
   });
 
   it('includes existing session info in error response', async () => {
-    const existingSession = { id: 'existing', taskDescription: 'Old task', startedAt: '2024-01-01T10:00:00Z' };
+    const existingSession = {
+      id: 'existing',
+      taskDescription: 'Old task',
+      startedAt: '2024-01-01T10:00:00Z',
+    };
     mockPomodoroRepo.getActiveSession.mockResolvedValue(existingSession);
 
     const exec = await capturePomodoroTool('pomodoro_start');
-    const result = await exec!({}) as { content: { session: unknown } };
+    const result = (await exec!({})) as { content: { session: unknown } };
     expect(result.content.session).toBe(existingSession);
   });
 
   it('does NOT call startSession when a session is already active', async () => {
-    mockPomodoroRepo.getActiveSession.mockResolvedValue({ id: 'existing', taskDescription: 'X', startedAt: new Date() });
+    mockPomodoroRepo.getActiveSession.mockResolvedValue({
+      id: 'existing',
+      taskDescription: 'X',
+      startedAt: new Date(),
+    });
 
     const exec = await capturePomodoroTool('pomodoro_start');
     await exec!({});
@@ -1746,21 +1933,35 @@ describe('pomodoro_start executor', () => {
   });
 
   it('returns success: true with session data on successful start', async () => {
-    const session = { id: 's1', taskDescription: 'Test', durationMinutes: 25, startedAt: new Date() };
+    const session = {
+      id: 's1',
+      taskDescription: 'Test',
+      durationMinutes: 25,
+      startedAt: new Date(),
+    };
     mockPomodoroRepo.startSession.mockResolvedValue(session);
 
     const exec = await capturePomodoroTool('pomodoro_start');
-    const result = await exec!({ task: 'Test', duration: 25 }) as { content: { success: boolean; session: unknown } };
+    const result = (await exec!({ task: 'Test', duration: 25 })) as {
+      content: { success: boolean; session: unknown };
+    };
     expect(result.content.success).toBe(true);
     expect(result.content.session).toBe(session);
   });
 
   it('message on success mentions task description and duration', async () => {
-    const session = { id: 's1', taskDescription: 'My Task', durationMinutes: 30, startedAt: new Date() };
+    const session = {
+      id: 's1',
+      taskDescription: 'My Task',
+      durationMinutes: 30,
+      startedAt: new Date(),
+    };
     mockPomodoroRepo.startSession.mockResolvedValue(session);
 
     const exec = await capturePomodoroTool('pomodoro_start');
-    const result = await exec!({ task: 'My Task', duration: 30 }) as { content: { message: string } };
+    const result = (await exec!({ task: 'My Task', duration: 30 })) as {
+      content: { message: string };
+    };
     expect(result.content.message).toContain('My Task');
     expect(result.content.message).toContain('30');
   });
@@ -1772,8 +1973,14 @@ describe('pomodoro_status executor', () => {
     resetMockPlugin();
     setupDefaultPluginMocks();
 
-    mockPomodoroRepo.getDailyStats.mockResolvedValue({ completedSessions: 2, totalWorkMinutes: 50 });
-    mockPomodoroRepo.getTotalStats.mockResolvedValue({ completedSessions: 100, totalWorkMinutes: 2500 });
+    mockPomodoroRepo.getDailyStats.mockResolvedValue({
+      completedSessions: 2,
+      totalWorkMinutes: 50,
+    });
+    mockPomodoroRepo.getTotalStats.mockResolvedValue({
+      completedSessions: 100,
+      totalWorkMinutes: 2500,
+    });
   });
 
   it('calls getActiveSession', async () => {
@@ -1805,7 +2012,7 @@ describe('pomodoro_status executor', () => {
     mockPomodoroRepo.getActiveSession.mockResolvedValue(null);
 
     const exec = await capturePomodoroTool('pomodoro_status');
-    const result = await exec!({}) as { content: { active: boolean; message: string } };
+    const result = (await exec!({})) as { content: { active: boolean; message: string } };
     expect(result.content.active).toBe(false);
     expect(result.content.message).toContain('No active');
   });
@@ -1818,7 +2025,7 @@ describe('pomodoro_status executor', () => {
     mockPomodoroRepo.getTotalStats.mockResolvedValue(totalStats);
 
     const exec = await capturePomodoroTool('pomodoro_status');
-    const result = await exec!({}) as { content: { today: unknown; total: unknown } };
+    const result = (await exec!({})) as { content: { today: unknown; total: unknown } };
     expect(result.content.today).toBe(todayStats);
     expect(result.content.total).toBe(totalStats);
   });
@@ -1834,7 +2041,9 @@ describe('pomodoro_status executor', () => {
     mockPomodoroRepo.getActiveSession.mockResolvedValue(activeSession);
 
     const exec = await capturePomodoroTool('pomodoro_status');
-    const result = await exec!({}) as { content: { active: boolean; session: { elapsedMinutes: number; remainingMinutes: number } } };
+    const result = (await exec!({})) as {
+      content: { active: boolean; session: { elapsedMinutes: number; remainingMinutes: number } };
+    };
     expect(result.content.active).toBe(true);
     expect(result.content.session.elapsedMinutes).toBeGreaterThanOrEqual(9);
     expect(result.content.session.elapsedMinutes).toBeLessThanOrEqual(11);
@@ -1850,20 +2059,24 @@ describe('pomodoro_status executor', () => {
     });
 
     const exec = await capturePomodoroTool('pomodoro_status');
-    const result = await exec!({}) as { content: { session: { remainingMinutes: number } } };
+    const result = (await exec!({})) as { content: { session: { remainingMinutes: number } } };
     expect(result.content.session.remainingMinutes).toBe(0);
   });
 
   it('includes today and total stats in active session response', async () => {
     const startedAt = new Date(Date.now() - 5 * 60 * 1000).toISOString();
-    mockPomodoroRepo.getActiveSession.mockResolvedValue({ id: 's1', durationMinutes: 25, startedAt });
+    mockPomodoroRepo.getActiveSession.mockResolvedValue({
+      id: 's1',
+      durationMinutes: 25,
+      startedAt,
+    });
     const todayStats = { completedSessions: 1, totalWorkMinutes: 25 };
     const totalStats = { completedSessions: 10 };
     mockPomodoroRepo.getDailyStats.mockResolvedValue(todayStats);
     mockPomodoroRepo.getTotalStats.mockResolvedValue(totalStats);
 
     const exec = await capturePomodoroTool('pomodoro_status');
-    const result = await exec!({}) as { content: { today: unknown; total: unknown } };
+    const result = (await exec!({})) as { content: { today: unknown; total: unknown } };
     expect(result.content.today).toBe(todayStats);
     expect(result.content.total).toBe(totalStats);
   });
@@ -1883,14 +2096,19 @@ describe('pomodoro_stop executor', () => {
     mockPomodoroRepo.getActiveSession.mockResolvedValue(null);
 
     const exec = await capturePomodoroTool('pomodoro_stop');
-    const result = await exec!({}) as { content: { success: boolean; message: string } };
+    const result = (await exec!({})) as { content: { success: boolean; message: string } };
     expect(result.content.success).toBe(false);
     expect(result.content.message).toContain('No active');
   });
 
   it('calls completeSession when elapsed time >= duration (session complete)', async () => {
     const startedAt = new Date(Date.now() - 30 * 60 * 1000).toISOString(); // 30 minutes ago
-    mockPomodoroRepo.getActiveSession.mockResolvedValue({ id: 's1', taskDescription: 'Work', durationMinutes: 25, startedAt });
+    mockPomodoroRepo.getActiveSession.mockResolvedValue({
+      id: 's1',
+      taskDescription: 'Work',
+      durationMinutes: 25,
+      startedAt,
+    });
 
     const exec = await capturePomodoroTool('pomodoro_stop');
     await exec!({});
@@ -1899,7 +2117,12 @@ describe('pomodoro_stop executor', () => {
 
   it('calls completeSession when no reason provided even if not complete', async () => {
     const startedAt = new Date(Date.now() - 5 * 60 * 1000).toISOString(); // Only 5 minutes
-    mockPomodoroRepo.getActiveSession.mockResolvedValue({ id: 's1', taskDescription: 'Work', durationMinutes: 25, startedAt });
+    mockPomodoroRepo.getActiveSession.mockResolvedValue({
+      id: 's1',
+      taskDescription: 'Work',
+      durationMinutes: 25,
+      startedAt,
+    });
 
     const exec = await capturePomodoroTool('pomodoro_stop');
     await exec!({ reason: undefined }); // No reason — treated as complete
@@ -1909,7 +2132,12 @@ describe('pomodoro_stop executor', () => {
 
   it('calls interruptSession with reason when session not complete and reason provided', async () => {
     const startedAt = new Date(Date.now() - 5 * 60 * 1000).toISOString(); // Only 5 minutes
-    mockPomodoroRepo.getActiveSession.mockResolvedValue({ id: 's1', taskDescription: 'Work', durationMinutes: 25, startedAt });
+    mockPomodoroRepo.getActiveSession.mockResolvedValue({
+      id: 's1',
+      taskDescription: 'Work',
+      durationMinutes: 25,
+      startedAt,
+    });
 
     const exec = await capturePomodoroTool('pomodoro_stop');
     await exec!({ reason: 'Emergency call' });
@@ -1919,38 +2147,58 @@ describe('pomodoro_stop executor', () => {
 
   it('returns success: true with session data on stop', async () => {
     const startedAt = new Date(Date.now() - 30 * 60 * 1000).toISOString();
-    mockPomodoroRepo.getActiveSession.mockResolvedValue({ id: 's1', taskDescription: 'Work', durationMinutes: 25, startedAt });
+    mockPomodoroRepo.getActiveSession.mockResolvedValue({
+      id: 's1',
+      taskDescription: 'Work',
+      durationMinutes: 25,
+      startedAt,
+    });
 
     const exec = await capturePomodoroTool('pomodoro_stop');
-    const result = await exec!({}) as { content: { success: boolean; session: unknown } };
+    const result = (await exec!({})) as { content: { success: boolean; session: unknown } };
     expect(result.content.success).toBe(true);
     expect(result.content.session).toBeDefined();
   });
 
   it('message says "completed" when duration was exceeded', async () => {
     const startedAt = new Date(Date.now() - 30 * 60 * 1000).toISOString();
-    mockPomodoroRepo.getActiveSession.mockResolvedValue({ id: 's1', taskDescription: 'Focus Work', durationMinutes: 25, startedAt });
+    mockPomodoroRepo.getActiveSession.mockResolvedValue({
+      id: 's1',
+      taskDescription: 'Focus Work',
+      durationMinutes: 25,
+      startedAt,
+    });
 
     const exec = await capturePomodoroTool('pomodoro_stop');
-    const result = await exec!({}) as { content: { message: string } };
+    const result = (await exec!({})) as { content: { message: string } };
     expect(result.content.message.toLowerCase()).toContain('complet');
   });
 
   it('message says "interrupted" when stopped early with reason', async () => {
     const startedAt = new Date(Date.now() - 5 * 60 * 1000).toISOString();
-    mockPomodoroRepo.getActiveSession.mockResolvedValue({ id: 's1', taskDescription: 'Focus', durationMinutes: 25, startedAt });
+    mockPomodoroRepo.getActiveSession.mockResolvedValue({
+      id: 's1',
+      taskDescription: 'Focus',
+      durationMinutes: 25,
+      startedAt,
+    });
 
     const exec = await capturePomodoroTool('pomodoro_stop');
-    const result = await exec!({ reason: 'Meeting' }) as { content: { message: string } };
+    const result = (await exec!({ reason: 'Meeting' })) as { content: { message: string } };
     expect(result.content.message.toLowerCase()).toContain('interrupt');
   });
 
   it('message includes task description when completed', async () => {
     const startedAt = new Date(Date.now() - 30 * 60 * 1000).toISOString();
-    mockPomodoroRepo.getActiveSession.mockResolvedValue({ id: 's1', taskDescription: 'Important Task', durationMinutes: 25, startedAt });
+    mockPomodoroRepo.getActiveSession.mockResolvedValue({
+      id: 's1',
+      taskDescription: 'Important Task',
+      durationMinutes: 25,
+      startedAt,
+    });
 
     const exec = await capturePomodoroTool('pomodoro_stop');
-    const result = await exec!({}) as { content: { message: string } };
+    const result = (await exec!({})) as { content: { message: string } };
     expect(result.content.message).toContain('Important Task');
   });
 });

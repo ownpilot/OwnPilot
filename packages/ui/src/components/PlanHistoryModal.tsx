@@ -46,7 +46,10 @@ export function PlanHistoryModal({ history, onClose }: PlanHistoryModalProps) {
   const { onBackdropClick } = useModalClose(onClose);
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onBackdropClick}>
+    <div
+      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+      onClick={onBackdropClick}
+    >
       <div className="w-full max-w-lg bg-bg-primary dark:bg-dark-bg-primary border border-border dark:border-dark-border rounded-xl shadow-xl max-h-[90vh] overflow-hidden flex flex-col">
         <div className="p-6 border-b border-border dark:border-dark-border">
           <h3 className="text-lg font-semibold text-text-primary dark:text-dark-text-primary">
@@ -56,9 +59,7 @@ export function PlanHistoryModal({ history, onClose }: PlanHistoryModalProps) {
 
         <div className="flex-1 overflow-y-auto p-6">
           {history.length === 0 ? (
-            <p className="text-text-muted dark:text-dark-text-muted text-center">
-              No history yet
-            </p>
+            <p className="text-text-muted dark:text-dark-text-muted text-center">No history yet</p>
           ) : (
             <div className="space-y-2">
               {history.map((entry) => (

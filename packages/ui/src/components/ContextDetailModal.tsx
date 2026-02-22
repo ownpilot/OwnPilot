@@ -45,8 +45,9 @@ export function ContextDetailModal({
   const [compacting, setCompacting] = useState(false);
 
   useEffect(() => {
-    chatApi.getContextDetail(provider, model)
-      .then(r => setBreakdown(r.breakdown))
+    chatApi
+      .getContextDetail(provider, model)
+      .then((r) => setBreakdown(r.breakdown))
       .catch(() => setBreakdown(null))
       .finally(() => setLoading(false));
   }, [provider, model]);
@@ -72,17 +73,23 @@ export function ContextDetailModal({
   const fillPct = Math.min(100, Math.round((totalUsed / maxTokens) * 100));
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onClose}>
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+      onClick={onClose}
+    >
       <div
         className="bg-bg-primary dark:bg-dark-bg-primary rounded-xl shadow-xl border border-border dark:border-dark-border w-full max-w-md mx-4 overflow-hidden"
-        onClick={e => e.stopPropagation()}
+        onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-border dark:border-dark-border">
           <h2 className="text-base font-semibold text-text-primary dark:text-dark-text-primary">
             Context Usage
           </h2>
-          <button onClick={onClose} className="p-1 rounded-lg hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary text-text-muted dark:text-dark-text-muted">
+          <button
+            onClick={onClose}
+            className="p-1 rounded-lg hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary text-text-muted dark:text-dark-text-muted"
+          >
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -100,17 +107,27 @@ export function ContextDetailModal({
           {/* Segmented progress bar */}
           <div>
             <div className="flex items-center gap-2 mb-1.5">
-              <span className="text-sm font-medium text-text-primary dark:text-dark-text-primary">{fillPct}% used</span>
+              <span className="text-sm font-medium text-text-primary dark:text-dark-text-primary">
+                {fillPct}% used
+              </span>
               <span className="text-xs text-text-muted dark:text-dark-text-muted">
                 {formatNumber(totalUsed)} / {formatNumber(maxTokens)}
               </span>
             </div>
             <div className="h-3 rounded-full overflow-hidden flex bg-bg-tertiary dark:bg-dark-bg-tertiary">
               {systemPct > 0 && (
-                <div className={`${COLORS.system} transition-all duration-300`} style={{ width: `${systemPct}%` }} title={`System: ${formatNumber(systemTokens)}`} />
+                <div
+                  className={`${COLORS.system} transition-all duration-300`}
+                  style={{ width: `${systemPct}%` }}
+                  title={`System: ${formatNumber(systemTokens)}`}
+                />
               )}
               {messagePct > 0 && (
-                <div className={`${COLORS.messages} transition-all duration-300`} style={{ width: `${messagePct}%` }} title={`Messages: ${formatNumber(messageTokens)}`} />
+                <div
+                  className={`${COLORS.messages} transition-all duration-300`}
+                  style={{ width: `${messagePct}%` }}
+                  title={`Messages: ${formatNumber(messageTokens)}`}
+                />
               )}
             </div>
             <div className="flex items-center gap-4 mt-1.5 text-[10px] text-text-muted dark:text-dark-text-muted">
@@ -128,16 +145,26 @@ export function ContextDetailModal({
 
           {/* Section breakdown */}
           {loading ? (
-            <div className="text-xs text-text-muted dark:text-dark-text-muted py-2">Loading breakdown...</div>
+            <div className="text-xs text-text-muted dark:text-dark-text-muted py-2">
+              Loading breakdown...
+            </div>
           ) : breakdown && breakdown.sections.length > 0 ? (
             <div>
-              <h3 className="text-xs font-medium text-text-secondary dark:text-dark-text-secondary mb-2">System Prompt Sections</h3>
+              <h3 className="text-xs font-medium text-text-secondary dark:text-dark-text-secondary mb-2">
+                System Prompt Sections
+              </h3>
               <div className="space-y-0.5 max-h-48 overflow-y-auto">
                 {breakdown.sections.map((section, i) => {
-                  const sectionPct = systemTokens > 0 ? Math.round((section.tokens / systemTokens) * 100) : 0;
+                  const sectionPct =
+                    systemTokens > 0 ? Math.round((section.tokens / systemTokens) * 100) : 0;
                   return (
-                    <div key={i} className="flex items-center justify-between px-2 py-1 rounded text-xs hover:bg-bg-secondary dark:hover:bg-dark-bg-secondary">
-                      <span className="text-text-primary dark:text-dark-text-primary truncate flex-1">{section.name}</span>
+                    <div
+                      key={i}
+                      className="flex items-center justify-between px-2 py-1 rounded text-xs hover:bg-bg-secondary dark:hover:bg-dark-bg-secondary"
+                    >
+                      <span className="text-text-primary dark:text-dark-text-primary truncate flex-1">
+                        {section.name}
+                      </span>
                       <span className="text-text-muted dark:text-dark-text-muted ml-2 tabular-nums whitespace-nowrap">
                         ~{formatNumber(section.tokens)} ({sectionPct}%)
                       </span>
@@ -155,9 +182,17 @@ export function ContextDetailModal({
             onClick={handleCompact}
             disabled={compacting || sessionInfo.messageCount < 10}
             className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg bg-primary text-white hover:bg-primary-dark disabled:opacity-40 transition-colors"
-            title={sessionInfo.messageCount < 10 ? 'Need at least 10 messages to compact' : 'Summarize old messages'}
+            title={
+              sessionInfo.messageCount < 10
+                ? 'Need at least 10 messages to compact'
+                : 'Summarize old messages'
+            }
           >
-            {compacting ? <RefreshCw className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}
+            {compacting ? (
+              <RefreshCw className="w-3 h-3 animate-spin" />
+            ) : (
+              <RefreshCw className="w-3 h-3" />
+            )}
             Compact
           </button>
           <button

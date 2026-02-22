@@ -10,12 +10,7 @@
  * - Revocation checking
  */
 
-import {
-  createHash,
-  createSign,
-  createVerify,
-  generateKeyPairSync,
-} from 'node:crypto';
+import { createHash, createSign, createVerify, generateKeyPairSync } from 'node:crypto';
 import type { PluginCapability } from './isolation.js';
 import type { Result } from '../types/result.js';
 import { ok, err } from '../types/result.js';
@@ -232,7 +227,9 @@ export interface RevocationEntry {
 /**
  * Calculate security risk based on declarations
  */
-export function calculateSecurityRisk(declaration: Omit<SecurityDeclaration, 'riskLevel' | 'riskFactors'>): {
+export function calculateSecurityRisk(
+  declaration: Omit<SecurityDeclaration, 'riskLevel' | 'riskFactors'>
+): {
   riskLevel: SecurityRisk;
   riskFactors: string[];
 } {
@@ -332,10 +329,7 @@ export function generatePublisherKeys(): {
     privateKeyEncoding: { type: 'pkcs8', format: 'pem' },
   });
 
-  const keyId = createHash('sha256')
-    .update(publicKey)
-    .digest('hex')
-    .substring(0, 16);
+  const keyId = createHash('sha256').update(publicKey).digest('hex').substring(0, 16);
 
   return { publicKey, privateKey, keyId };
 }
@@ -476,10 +470,7 @@ export class PluginVerifier {
   /**
    * Verify a plugin completely
    */
-  verify(
-    manifest: MarketplaceManifest,
-    contentHash?: string
-  ): VerificationResult {
+  verify(manifest: MarketplaceManifest, contentHash?: string): VerificationResult {
     const result: VerificationResult = {
       valid: true,
       trustLevel: 'unverified',
@@ -515,9 +506,7 @@ export class PluginVerifier {
 
         if (sigResult.ok && sigResult.value) {
           result.signatureValid = true;
-          result.publisherVerified = this.trustedPublishers.has(
-            manifest.signature.publisherKeyId
-          );
+          result.publisherVerified = this.trustedPublishers.has(manifest.signature.publisherKeyId);
 
           // Check content hash if provided
           if (contentHash) {
@@ -664,7 +653,10 @@ export function validateManifest(
   // Validate security declaration
   if (manifest.security) {
     if (manifest.security.networkAccess.makesExternalRequests) {
-      if (!manifest.security.networkAccess.domains || manifest.security.networkAccess.domains.length === 0) {
+      if (
+        !manifest.security.networkAccess.domains ||
+        manifest.security.networkAccess.domains.length === 0
+      ) {
         errors.push({
           field: 'security.networkAccess.domains',
           message: 'Domains must be declared if plugin makes external requests',
@@ -673,7 +665,10 @@ export function validateManifest(
       }
     }
 
-    if (manifest.security.dataAccess.collectsPersonalData && !manifest.security.privacy.privacyPolicyUrl) {
+    if (
+      manifest.security.dataAccess.collectsPersonalData &&
+      !manifest.security.privacy.privacyPolicyUrl
+    ) {
       errors.push({
         field: 'security.privacy.privacyPolicyUrl',
         message: 'Privacy policy URL required when collecting personal data',
@@ -832,16 +827,13 @@ export class MarketplaceRegistry {
 
     // Filter by tags
     if (criteria.tags && criteria.tags.length > 0) {
-      results = results.filter((p) =>
-        criteria.tags!.some((t) => p.tags.includes(t))
-      );
+      results = results.filter((p) => criteria.tags!.some((t) => p.tags.includes(t)));
     }
 
     // Filter by trust level
     if (criteria.trustLevel && criteria.trustLevel.length > 0) {
       results = results.filter(
-        (p) =>
-          p.marketplace && criteria.trustLevel!.includes(p.marketplace.trustLevel)
+        (p) => p.marketplace && criteria.trustLevel!.includes(p.marketplace.trustLevel)
       );
     }
 
@@ -849,23 +841,17 @@ export class MarketplaceRegistry {
     if (criteria.maxRiskLevel) {
       const riskOrder: SecurityRisk[] = ['low', 'medium', 'high', 'critical'];
       const maxIndex = riskOrder.indexOf(criteria.maxRiskLevel);
-      results = results.filter(
-        (p) => riskOrder.indexOf(p.security.riskLevel) <= maxIndex
-      );
+      results = results.filter((p) => riskOrder.indexOf(p.security.riskLevel) <= maxIndex);
     }
 
     // Filter by rating
     if (criteria.minRating !== undefined) {
-      results = results.filter(
-        (p) => (p.marketplace?.rating ?? 0) >= criteria.minRating!
-      );
+      results = results.filter((p) => (p.marketplace?.rating ?? 0) >= criteria.minRating!);
     }
 
     // Filter by pricing
     if (criteria.pricing && criteria.pricing.length > 0) {
-      results = results.filter(
-        (p) => criteria.pricing!.includes(p.pricing?.type ?? 'free')
-      );
+      results = results.filter((p) => criteria.pricing!.includes(p.pricing?.type ?? 'free'));
     }
 
     // Sort
@@ -882,7 +868,7 @@ export class MarketplaceRegistry {
         case 'updated':
           return (
             multiplier *
-            ((a.marketplace?.updatedAt ?? '').localeCompare(b.marketplace?.updatedAt ?? ''))
+            (a.marketplace?.updatedAt ?? '').localeCompare(b.marketplace?.updatedAt ?? '')
           );
         case 'name':
           return multiplier * a.name.localeCompare(b.name);

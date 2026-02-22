@@ -37,15 +37,13 @@ const mockEmit = vi.hoisted(() => vi.fn());
 
 vi.mock('@ownpilot/core', () => ({
   getEventBus: () => ({ emit: mockEmit }),
-  createEvent: vi.fn(
-    (type: string, category: string, source: string, data: unknown) => ({
-      type,
-      category,
-      source,
-      data,
-      timestamp: new Date().toISOString(),
-    }),
-  ),
+  createEvent: vi.fn((type: string, category: string, source: string, data: unknown) => ({
+    type,
+    category,
+    source,
+    data,
+    timestamp: new Date().toISOString(),
+  })),
   EventTypes: {
     RESOURCE_CREATED: 'resource.created',
     RESOURCE_UPDATED: 'resource.updated',
@@ -175,9 +173,9 @@ describe('MemoriesRepository', () => {
       mockAdapter.execute.mockResolvedValue({ changes: 1 });
       mockAdapter.queryOne.mockResolvedValue(null);
 
-      await expect(
-        repo.create({ type: 'fact', content: 'Test' }),
-      ).rejects.toThrow('Failed to create memory');
+      await expect(repo.create({ type: 'fact', content: 'Test' })).rejects.toThrow(
+        'Failed to create memory'
+      );
     });
   });
 
@@ -215,7 +213,7 @@ describe('MemoriesRepository', () => {
 
     it('parses JSON tags and metadata', async () => {
       mockAdapter.queryOne.mockResolvedValue(
-        memoryRow({ tags: '["a","b"]', metadata: '{"key":"val"}' }),
+        memoryRow({ tags: '["a","b"]', metadata: '{"key":"val"}' })
       );
 
       const memory = await repo.get('mem-1', false);
@@ -226,7 +224,7 @@ describe('MemoriesRepository', () => {
 
     it('handles already-parsed object metadata (PostgreSQL JSONB)', async () => {
       mockAdapter.queryOne.mockResolvedValue(
-        memoryRow({ tags: ['a', 'b'], metadata: { key: 'val' } }),
+        memoryRow({ tags: ['a', 'b'], metadata: { key: 'val' } })
       );
 
       const memory = await repo.get('mem-1', false);
@@ -301,9 +299,7 @@ describe('MemoriesRepository', () => {
     });
 
     it('emits RESOURCE_UPDATED event', async () => {
-      mockAdapter.queryOne
-        .mockResolvedValueOnce(memoryRow())
-        .mockResolvedValueOnce(memoryRow());
+      mockAdapter.queryOne.mockResolvedValueOnce(memoryRow()).mockResolvedValueOnce(memoryRow());
       mockAdapter.execute.mockResolvedValue({ changes: 1 });
 
       await repo.update('mem-1', { content: 'New' });
@@ -812,9 +808,7 @@ describe('MemoriesRepository', () => {
 
   describe('findSimilar', () => {
     it('finds by embedding when provided', async () => {
-      mockAdapter.query.mockResolvedValue([
-        { ...memoryRow(), similarity: 0.98 },
-      ]);
+      mockAdapter.query.mockResolvedValue([{ ...memoryRow(), similarity: 0.98 }]);
 
       const result = await repo.findSimilar('Test', 'fact', [0.1, 0.2], 0.95);
 

@@ -36,9 +36,20 @@ vi.mock('../db/repositories/config-services.js', () => ({
 import { CONFIG_TOOLS, executeConfigTool } from './config-tools.js';
 
 // Type helpers for accessing dynamic result shapes in tests
-interface ServiceListResult { services: Array<Record<string, unknown>>; configured: number; unconfigured: number }
-interface ServiceDetailResult { service: Record<string, unknown>; schema: unknown[]; configured: boolean; entries: Array<{ data: Record<string, unknown> }> }
-interface SetEntryResult { action: string }
+interface ServiceListResult {
+  services: Array<Record<string, unknown>>;
+  configured: number;
+  unconfigured: number;
+}
+interface ServiceDetailResult {
+  service: Record<string, unknown>;
+  schema: unknown[];
+  configured: boolean;
+  entries: Array<{ data: Record<string, unknown> }>;
+}
+interface SetEntryResult {
+  action: string;
+}
 
 // ---------------------------------------------------------------------------
 // Tests
@@ -81,8 +92,20 @@ describe('Config Tools', () => {
   describe('config_list_services', () => {
     it('returns services with configuration status', async () => {
       mockConfigServicesRepo.list.mockReturnValue([
-        { name: 'deepl', displayName: 'DeepL', category: 'translation', multiEntry: false, requiredBy: [] },
-        { name: 'smtp', displayName: 'SMTP', category: 'email', multiEntry: true, requiredBy: [{ type: 'tool', name: 'send_email' }] },
+        {
+          name: 'deepl',
+          displayName: 'DeepL',
+          category: 'translation',
+          multiEntry: false,
+          requiredBy: [],
+        },
+        {
+          name: 'smtp',
+          displayName: 'SMTP',
+          category: 'email',
+          multiEntry: true,
+          requiredBy: [{ type: 'tool', name: 'send_email' }],
+        },
       ]);
       // deepl: has configured entry
       mockConfigServicesRepo.getEntries
@@ -127,7 +150,13 @@ describe('Config Tools', () => {
 
     it('formats requiredBy correctly', async () => {
       mockConfigServicesRepo.list.mockReturnValue([
-        { name: 'svc', displayName: 'Svc', category: 'test', multiEntry: false, requiredBy: [{ type: 'tool', name: 'my_tool' }] },
+        {
+          name: 'svc',
+          displayName: 'Svc',
+          category: 'test',
+          multiEntry: false,
+          requiredBy: [{ type: 'tool', name: 'my_tool' }],
+        },
       ]);
       mockConfigServicesRepo.getEntries.mockReturnValue([]);
 
@@ -153,11 +182,23 @@ describe('Config Tools', () => {
         multiEntry: false,
         configSchema: [
           { name: 'api_key', label: 'API Key', type: 'secret', required: true },
-          { name: 'base_url', label: 'Base URL', type: 'text', required: false, defaultValue: 'https://api.deepl.com' },
+          {
+            name: 'base_url',
+            label: 'Base URL',
+            type: 'text',
+            required: false,
+            defaultValue: 'https://api.deepl.com',
+          },
         ],
       });
       mockConfigServicesRepo.getEntries.mockReturnValue([
-        { id: 'e1', label: 'Default', isDefault: true, isActive: true, data: { api_key: 'sk-123456789abcdef', base_url: 'https://api.deepl.com' } },
+        {
+          id: 'e1',
+          label: 'Default',
+          isDefault: true,
+          isActive: true,
+          data: { api_key: 'sk-123456789abcdef', base_url: 'https://api.deepl.com' },
+        },
       ]);
 
       const result = await executeConfigTool('config_get_service', { service: 'deepl' });
@@ -189,9 +230,7 @@ describe('Config Tools', () => {
         name: 'svc',
         displayName: 'Svc',
         category: 'test',
-        configSchema: [
-          { name: 'api_key', label: 'API Key', type: 'secret', required: true },
-        ],
+        configSchema: [{ name: 'api_key', label: 'API Key', type: 'secret', required: true }],
       });
       mockConfigServicesRepo.getEntries.mockReturnValue([
         { id: 'e1', label: 'Default', isDefault: true, isActive: true, data: { api_key: '' } },
@@ -259,7 +298,7 @@ describe('Config Tools', () => {
         'existing-entry',
         expect.objectContaining({
           data: { api_key: 'new-key', base_url: 'https://old.api.com' },
-        }),
+        })
       );
     });
 
@@ -310,7 +349,7 @@ describe('Config Tools', () => {
         'e1',
         expect.objectContaining({
           data: { api_key: 'real-secret-key', base_url: 'https://new.api.com' },
-        }),
+        })
       );
     });
 

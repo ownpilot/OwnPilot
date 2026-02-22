@@ -5,11 +5,7 @@
  * and user identity resolution for channel users.
  */
 
-import {
-  type ChannelUserVerifiedData,
-  getEventBus,
-  createEvent,
-} from '@ownpilot/core';
+import { type ChannelUserVerifiedData, getEventBus, createEvent } from '@ownpilot/core';
 
 import {
   ChannelVerificationRepository,
@@ -77,11 +73,7 @@ export class ChannelVerificationService {
     });
 
     // Mark as verified
-    await this.usersRepo.markVerified(
-      channelUser.id,
-      tokenEntity.ownpilotUserId,
-      'pin'
-    );
+    await this.usersRepo.markVerified(channelUser.id, tokenEntity.ownpilotUserId, 'pin');
 
     // Consume the token
     await this.verificationRepo.consumeToken(tokenEntity.id, channelUser.id);
@@ -124,10 +116,7 @@ export class ChannelVerificationService {
    * Check if a user is in the whitelist for a channel plugin.
    * Whitelist is stored in the channel plugin's config.
    */
-  async checkWhitelist(
-    allowedList: string[],
-    platformUserId: string
-  ): Promise<boolean> {
+  async checkWhitelist(allowedList: string[], platformUserId: string): Promise<boolean> {
     if (allowedList.length === 0) return true; // No whitelist = allow all
     return allowedList.includes(platformUserId);
   }
@@ -159,10 +148,7 @@ export class ChannelVerificationService {
    * Resolve a channel user to their OwnPilot user ID.
    * Returns null if not verified.
    */
-  async resolveUser(
-    platform: string,
-    platformUserId: string
-  ): Promise<string | null> {
+  async resolveUser(platform: string, platformUserId: string): Promise<string | null> {
     const user = await this.usersRepo.findByPlatform(platform, platformUserId);
     if (!user || !user.isVerified || user.isBlocked) return null;
     return user.ownpilotUserId;

@@ -283,10 +283,10 @@ export class ContactsRepository extends BaseRepository {
   }
 
   async delete(id: string): Promise<boolean> {
-    const result = await this.execute(
-      `DELETE FROM contacts WHERE id = $1 AND user_id = $2`,
-      [id, this.userId]
-    );
+    const result = await this.execute(`DELETE FROM contacts WHERE id = $1 AND user_id = $2`, [
+      id,
+      this.userId,
+    ]);
     return result.changes > 0;
   }
 
@@ -412,7 +412,7 @@ export class ContactsRepository extends BaseRepository {
       `SELECT DISTINCT relationship FROM contacts WHERE user_id = $1 AND relationship IS NOT NULL ORDER BY relationship`,
       [this.userId]
     );
-    return rows.map(r => r.relationship);
+    return rows.map((r) => r.relationship);
   }
 
   async getCompanies(): Promise<string[]> {
@@ -420,7 +420,7 @@ export class ContactsRepository extends BaseRepository {
       `SELECT DISTINCT company FROM contacts WHERE user_id = $1 AND company IS NOT NULL ORDER BY company`,
       [this.userId]
     );
-    return rows.map(r => r.company);
+    return rows.map((r) => r.company);
   }
 
   async getTags(): Promise<string[]> {

@@ -7,7 +7,6 @@ import { useDebouncedValue, useModalClose } from '../hooks';
 import { customToolsApi } from '../api';
 import type { CustomTool, ToolStats, ToolStatus, ToolPermission } from '../types';
 
-
 const STATUS_COLORS: Record<ToolStatus, string> = {
   active: 'bg-green-500/10 text-green-600 dark:text-green-400',
   disabled: 'bg-gray-500/10 text-gray-600 dark:text-gray-400',
@@ -68,32 +67,45 @@ export function CustomToolsPage() {
     fetchStats();
   }, [fetchTools, fetchStats]);
 
-  const handleAction = useCallback(async (toolId: string, action: 'enable' | 'disable' | 'approve' | 'reject' | 'delete') => {
-    try {
-      if (action === 'delete') {
-        await customToolsApi.delete(toolId);
-      } else {
-        await customToolsApi.action(toolId, action);
+  const handleAction = useCallback(
+    async (toolId: string, action: 'enable' | 'disable' | 'approve' | 'reject' | 'delete') => {
+      try {
+        if (action === 'delete') {
+          await customToolsApi.delete(toolId);
+        } else {
+          await customToolsApi.action(toolId, action);
+        }
+        const labels: Record<string, string> = {
+          enable: 'Tool enabled',
+          disable: 'Tool disabled',
+          approve: 'Tool approved',
+          reject: 'Tool rejected',
+          delete: 'Tool deleted',
+        };
+        toast.success(labels[action]!);
+        fetchTools();
+        fetchStats();
+        setSelectedTool((prev) => (prev?.id === toolId ? null : prev));
+      } catch {
+        // API client handles error reporting
       }
-      const labels: Record<string, string> = { enable: 'Tool enabled', disable: 'Tool disabled', approve: 'Tool approved', reject: 'Tool rejected', delete: 'Tool deleted' };
-      toast.success(labels[action]!);
-      fetchTools();
-      fetchStats();
-      setSelectedTool((prev) => prev?.id === toolId ? null : prev);
-    } catch {
-      // API client handles error reporting
-    }
-  }, [toast, fetchTools, fetchStats]);
+    },
+    [toast, fetchTools, fetchStats]
+  );
 
-  const filteredTools = useMemo(() => tools.filter(tool => {
-    if (!debouncedSearch) return true;
-    const query = debouncedSearch.toLowerCase();
-    return (
-      tool.name.toLowerCase().includes(query) ||
-      tool.description.toLowerCase().includes(query) ||
-      (tool.category?.toLowerCase().includes(query) ?? false)
-    );
-  }), [tools, debouncedSearch]);
+  const filteredTools = useMemo(
+    () =>
+      tools.filter((tool) => {
+        if (!debouncedSearch) return true;
+        const query = debouncedSearch.toLowerCase();
+        return (
+          tool.name.toLowerCase().includes(query) ||
+          tool.description.toLowerCase().includes(query) ||
+          (tool.category?.toLowerCase().includes(query) ?? false)
+        );
+      }),
+    [tools, debouncedSearch]
+  );
 
   const pendingCount = stats?.pendingApproval ?? 0;
 
@@ -111,7 +123,9 @@ export function CustomToolsPage() {
             )}
           </h2>
           <p className="text-sm text-text-muted dark:text-dark-text-muted">
-            {stats ? `${stats.total} tools (${stats.createdByLLM} by AI, ${stats.createdByUser} by user)` : 'Loading...'}
+            {stats
+              ? `${stats.total} tools (${stats.createdByLLM} by AI, ${stats.createdByUser} by user)`
+              : 'Loading...'}
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -149,15 +163,21 @@ export function CustomToolsPage() {
           <div className="flex items-center gap-6 text-sm">
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-green-500"></span>
-              <span className="text-text-muted dark:text-dark-text-muted">Active: {stats.active}</span>
+              <span className="text-text-muted dark:text-dark-text-muted">
+                Active: {stats.active}
+              </span>
             </div>
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-gray-500"></span>
-              <span className="text-text-muted dark:text-dark-text-muted">Disabled: {stats.disabled}</span>
+              <span className="text-text-muted dark:text-dark-text-muted">
+                Disabled: {stats.disabled}
+              </span>
             </div>
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-yellow-500"></span>
-              <span className="text-text-muted dark:text-dark-text-muted">Pending: {stats.pendingApproval}</span>
+              <span className="text-text-muted dark:text-dark-text-muted">
+                Pending: {stats.pendingApproval}
+              </span>
             </div>
             <div className="ml-auto text-text-muted dark:text-dark-text-muted">
               Total Usage: {stats.totalUsage}
@@ -174,8 +194,16 @@ export function CustomToolsPage() {
           <EmptyState
             icon={Code}
             title={searchQuery ? 'No tools match your search' : 'No custom tools yet'}
-            description={searchQuery ? 'Try a different search term.' : 'Create your first custom tool or let the AI create one for you.'}
-            action={!searchQuery ? { label: 'Create Tool', onClick: () => setIsCreateModalOpen(true), icon: Plus } : undefined}
+            description={
+              searchQuery
+                ? 'Try a different search term.'
+                : 'Create your first custom tool or let the AI create one for you.'
+            }
+            action={
+              !searchQuery
+                ? { label: 'Create Tool', onClick: () => setIsCreateModalOpen(true), icon: Plus }
+                : undefined
+            }
           />
         ) : (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -237,14 +265,14 @@ function ToolCard({ tool, onClick, onAction }: ToolCardProps) {
             <h4 className="font-medium text-text-primary dark:text-dark-text-primary">
               {tool.name}
             </h4>
-            <span className={`inline-block px-2 py-0.5 text-xs rounded-full ${STATUS_COLORS[tool.status]}`}>
+            <span
+              className={`inline-block px-2 py-0.5 text-xs rounded-full ${STATUS_COLORS[tool.status]}`}
+            >
               {STATUS_LABELS[tool.status]}
             </span>
           </div>
         </div>
-        <span className="text-xs text-text-muted dark:text-dark-text-muted">
-          v{tool.version}
-        </span>
+        <span className="text-xs text-text-muted dark:text-dark-text-muted">v{tool.version}</span>
       </div>
 
       <p className="text-sm text-text-muted dark:text-dark-text-muted line-clamp-2 mb-3">
@@ -334,7 +362,10 @@ function ToolDetailModal({ tool, onClose, onAction, onRefresh }: ToolDetailModal
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onBackdropClick}>
+    <div
+      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+      onClick={onBackdropClick}
+    >
       <div className="w-full max-w-3xl bg-bg-primary dark:bg-dark-bg-primary border border-border dark:border-dark-border rounded-xl shadow-xl max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
         <div className="p-6 border-b border-border dark:border-dark-border">
@@ -435,25 +466,33 @@ function ToolDetailModal({ tool, onClose, onAction, onRefresh }: ToolDetailModal
               {/* Metadata */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="p-4 bg-bg-secondary dark:bg-dark-bg-secondary rounded-lg">
-                  <div className="text-xs text-text-muted dark:text-dark-text-muted mb-1">Created By</div>
+                  <div className="text-xs text-text-muted dark:text-dark-text-muted mb-1">
+                    Created By
+                  </div>
                   <div className="text-sm text-text-primary dark:text-dark-text-primary">
                     {tool.createdBy === 'llm' ? 'AI Assistant' : 'User'}
                   </div>
                 </div>
                 <div className="p-4 bg-bg-secondary dark:bg-dark-bg-secondary rounded-lg">
-                  <div className="text-xs text-text-muted dark:text-dark-text-muted mb-1">Version</div>
+                  <div className="text-xs text-text-muted dark:text-dark-text-muted mb-1">
+                    Version
+                  </div>
                   <div className="text-sm text-text-primary dark:text-dark-text-primary">
                     v{tool.version}
                   </div>
                 </div>
                 <div className="p-4 bg-bg-secondary dark:bg-dark-bg-secondary rounded-lg">
-                  <div className="text-xs text-text-muted dark:text-dark-text-muted mb-1">Usage Count</div>
+                  <div className="text-xs text-text-muted dark:text-dark-text-muted mb-1">
+                    Usage Count
+                  </div>
                   <div className="text-sm text-text-primary dark:text-dark-text-primary">
                     {tool.usageCount} times
                   </div>
                 </div>
                 <div className="p-4 bg-bg-secondary dark:bg-dark-bg-secondary rounded-lg">
-                  <div className="text-xs text-text-muted dark:text-dark-text-muted mb-1">Last Used</div>
+                  <div className="text-xs text-text-muted dark:text-dark-text-muted mb-1">
+                    Last Used
+                  </div>
                   <div className="text-sm text-text-primary dark:text-dark-text-primary">
                     {tool.lastUsedAt ? new Date(tool.lastUsedAt).toLocaleString() : 'Never'}
                   </div>
@@ -575,8 +614,12 @@ function CreateToolModal({ onClose, onCreated }: CreateToolModalProps) {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('');
-  const [parameters, setParameters] = useState('{\n  "type": "object",\n  "properties": {},\n  "required": []\n}');
-  const [code, setCode] = useState('// Access arguments via `args` object\n// Return the result\nreturn { message: "Hello from custom tool!" };');
+  const [parameters, setParameters] = useState(
+    '{\n  "type": "object",\n  "properties": {},\n  "required": []\n}'
+  );
+  const [code, setCode] = useState(
+    '// Access arguments via `args` object\n// Return the result\nreturn { message: "Hello from custom tool!" };'
+  );
   const [permissions, setPermissions] = useState<ToolPermission[]>([]);
   const [requiresApproval, setRequiresApproval] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -593,7 +636,9 @@ function CreateToolModal({ onClose, onCreated }: CreateToolModalProps) {
 
     // Validate name
     if (!name || !/^[a-z][a-z0-9_]*$/.test(name)) {
-      setError('Tool name must start with lowercase letter and contain only lowercase letters, numbers, and underscores');
+      setError(
+        'Tool name must start with lowercase letter and contain only lowercase letters, numbers, and underscores'
+      );
       return;
     }
 
@@ -630,7 +675,10 @@ function CreateToolModal({ onClose, onCreated }: CreateToolModalProps) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onBackdropClick}>
+    <div
+      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+      onClick={onBackdropClick}
+    >
       <div className="w-full max-w-2xl bg-bg-primary dark:bg-dark-bg-primary border border-border dark:border-dark-border rounded-xl shadow-xl max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
         <div className="p-6 border-b border-border dark:border-dark-border">

@@ -9,11 +9,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import type {
-  NormalizedMessage,
-  MessageProcessingResult,
-  PipelineContext,
-} from '@ownpilot/core';
+import type { NormalizedMessage, MessageProcessingResult, PipelineContext } from '@ownpilot/core';
 
 // ============================================================================
 // Mocks — vi.hoisted() ensures variables are available in hoisted vi.mock()
@@ -58,13 +54,17 @@ vi.mock('../../routes/costs.js', () => ({
 
 // --- db/repositories/index.js ---
 vi.mock('../../db/repositories/index.js', () => ({
-  LogsRepository: vi.fn().mockImplementation(function() { return {
-    log: mockLogsLog,
-  }; }),
-  ChatRepository: vi.fn().mockImplementation(function() { return {
-    getOrCreateConversation: mockGetOrCreateConversation,
-    addMessage: mockAddMessage,
-  }; }),
+  LogsRepository: vi.fn().mockImplementation(function () {
+    return {
+      log: mockLogsLog,
+    };
+  }),
+  ChatRepository: vi.fn().mockImplementation(function () {
+    return {
+      getOrCreateConversation: mockGetOrCreateConversation,
+      addMessage: mockAddMessage,
+    };
+  }),
 }));
 
 // --- audit/index.js ---
@@ -146,7 +146,9 @@ function createMockMessage(overrides: Partial<NormalizedMessage> = {}): Normaliz
   } as NormalizedMessage;
 }
 
-function createMockResult(overrides: Partial<MessageProcessingResult> = {}): MessageProcessingResult {
+function createMockResult(
+  overrides: Partial<MessageProcessingResult> = {}
+): MessageProcessingResult {
   return {
     response: {
       id: 'resp-001',
@@ -174,7 +176,11 @@ function createMockNext(result?: MessageProcessingResult): ReturnType<typeof vi.
 
 // Typed helper to access test internals on the context
 function ctxInternals(ctx: PipelineContext) {
-  return ctx as PipelineContext & { _warnings: string[]; _stages: string[]; _store: Map<string, unknown> };
+  return ctx as PipelineContext & {
+    _warnings: string[];
+    _stages: string[];
+    _store: Map<string, unknown>;
+  };
 }
 
 // ============================================================================
@@ -243,7 +249,7 @@ describe('Pipeline Middleware', () => {
           totalTokens: 150,
           latencyMs: 200,
           requestType: 'chat',
-        }),
+        })
       );
     });
 
@@ -271,7 +277,7 @@ describe('Pipeline Middleware', () => {
           latencyMs: 300,
           requestType: 'chat',
           error: 'Rate limit',
-        }),
+        })
       );
     });
 
@@ -291,7 +297,7 @@ describe('Pipeline Middleware', () => {
           outputTokens: 0,
           totalTokens: 0,
           error: undefined,
-        }),
+        })
       );
     });
 
@@ -332,7 +338,7 @@ describe('Pipeline Middleware', () => {
           toolCallCount: 1,
           error: undefined,
           requestId: 'req-xyz',
-        }),
+        })
       );
     });
 
@@ -350,7 +356,7 @@ describe('Pipeline Middleware', () => {
         expect.objectContaining({
           type: 'error',
           error: 'Timeout',
-        }),
+        })
       );
     });
 
@@ -378,7 +384,7 @@ describe('Pipeline Middleware', () => {
           method: 'POST',
           statusCode: 200,
           durationMs: 120,
-        }),
+        })
       );
     });
 
@@ -398,7 +404,7 @@ describe('Pipeline Middleware', () => {
       expect(mockLogsLog).toHaveBeenCalledWith(
         expect.objectContaining({
           requestBody: { message: 'My message', source: 'telegram' },
-        }),
+        })
       );
     });
 
@@ -421,7 +427,7 @@ describe('Pipeline Middleware', () => {
       expect(mockLogsLog).toHaveBeenCalledWith(
         expect.objectContaining({
           responseBody: { contentLength: 25 },
-        }),
+        })
       );
     });
 
@@ -439,7 +445,7 @@ describe('Pipeline Middleware', () => {
         expect.objectContaining({
           statusCode: 500,
           error: 'fail',
-        }),
+        })
       );
     });
 
@@ -513,7 +519,7 @@ describe('Pipeline Middleware', () => {
           sessionId: 'unknown',
           provider: 'unknown',
           model: 'unknown',
-        }),
+        })
       );
     });
 
@@ -532,7 +538,7 @@ describe('Pipeline Middleware', () => {
       expect(mockUsageRecord).toHaveBeenCalledWith(
         expect.objectContaining({
           latencyMs: 999,
-        }),
+        })
       );
     });
   });
@@ -644,10 +650,7 @@ describe('Pipeline Middleware', () => {
 
       await middleware(message, ctx, next);
 
-      expect(mockGetOrCreateConversation).toHaveBeenCalledWith(
-        'from-metadata',
-        expect.any(Object),
-      );
+      expect(mockGetOrCreateConversation).toHaveBeenCalledWith('from-metadata', expect.any(Object));
     });
 
     it('creates conversation and saves user + assistant messages on success', async () => {
@@ -689,7 +692,7 @@ describe('Pipeline Middleware', () => {
           content: 'What is the weather?',
           provider: 'openai',
           model: 'gpt-4o',
-        }),
+        })
       );
 
       // Assistant message
@@ -700,7 +703,7 @@ describe('Pipeline Middleware', () => {
           content: 'The weather is sunny.',
           provider: 'openai',
           model: 'gpt-4o',
-        }),
+        })
       );
     });
 
@@ -720,7 +723,7 @@ describe('Pipeline Middleware', () => {
         'conv-1',
         expect.objectContaining({
           title: 'A'.repeat(50) + '...',
-        }),
+        })
       );
     });
 
@@ -740,7 +743,7 @@ describe('Pipeline Middleware', () => {
         'conv-1',
         expect.objectContaining({
           title: 'A'.repeat(50),
-        }),
+        })
       );
     });
 
@@ -761,7 +764,7 @@ describe('Pipeline Middleware', () => {
         expect.objectContaining({
           agentId: undefined,
           agentName: 'Chat',
-        }),
+        })
       );
     });
 
@@ -780,13 +783,13 @@ describe('Pipeline Middleware', () => {
 
       // The second addMessage call is for the assistant
       const assistantCall = mockAddMessage.mock.calls.find(
-        (call: unknown[]) => (call[0] as Record<string, unknown>).role === 'assistant',
+        (call: unknown[]) => (call[0] as Record<string, unknown>).role === 'assistant'
       );
       expect(assistantCall).toBeDefined();
       expect(assistantCall![0]).toEqual(
         expect.objectContaining({
           trace: traceData,
-        }),
+        })
       );
     });
 
@@ -803,13 +806,13 @@ describe('Pipeline Middleware', () => {
       await middleware(message, ctx, next);
 
       const assistantCall = mockAddMessage.mock.calls.find(
-        (call: unknown[]) => (call[0] as Record<string, unknown>).role === 'assistant',
+        (call: unknown[]) => (call[0] as Record<string, unknown>).role === 'assistant'
       );
       expect(assistantCall).toBeDefined();
       expect(assistantCall![0]).toEqual(
         expect.objectContaining({
           toolCalls: [...toolCalls],
-        }),
+        })
       );
     });
 
@@ -828,14 +831,14 @@ describe('Pipeline Middleware', () => {
       await middleware(message, ctx, next);
 
       const assistantCall = mockAddMessage.mock.calls.find(
-        (call: unknown[]) => (call[0] as Record<string, unknown>).role === 'assistant',
+        (call: unknown[]) => (call[0] as Record<string, unknown>).role === 'assistant'
       );
       expect(assistantCall).toBeDefined();
       expect(assistantCall![0]).toEqual(
         expect.objectContaining({
           inputTokens: 100,
           outputTokens: 50,
-        }),
+        })
       );
     });
 
@@ -929,17 +932,14 @@ describe('Pipeline Middleware', () => {
 
       await middleware(message, ctx, next);
 
-      expect(mockBuildEnhancedSystemPrompt).toHaveBeenCalledWith(
-        'My custom prompt',
-        {
-          userId: 'user-5',
-          agentId: 'agent-abc',
-          maxMemories: 10,
-          maxGoals: 5,
-          enableTriggers: true,
-          enableAutonomy: true,
-        },
-      );
+      expect(mockBuildEnhancedSystemPrompt).toHaveBeenCalledWith('My custom prompt', {
+        userId: 'user-5',
+        agentId: 'agent-abc',
+        maxMemories: 10,
+        maxGoals: 5,
+        enableTriggers: true,
+        enableAutonomy: true,
+      });
     });
 
     it('updates agent system prompt with enhanced prompt', async () => {
@@ -995,7 +995,7 @@ describe('Pipeline Middleware', () => {
 
       expect(mockBuildEnhancedSystemPrompt).toHaveBeenCalledWith(
         'You are a helpful AI assistant.',
-        expect.any(Object),
+        expect.any(Object)
       );
     });
 
@@ -1013,7 +1013,7 @@ describe('Pipeline Middleware', () => {
 
       expect(mockBuildEnhancedSystemPrompt).toHaveBeenCalledWith(
         'You are a helpful AI assistant.',
-        expect.any(Object),
+        expect.any(Object)
       );
     });
 
@@ -1037,7 +1037,7 @@ describe('Pipeline Middleware', () => {
       expect(internals._warnings).toContain('Context injection failed: Memory DB unavailable');
       expect(mockLogWarn).toHaveBeenCalledWith(
         'Failed to build enhanced prompt',
-        expect.objectContaining({ error: 'Memory DB unavailable' }),
+        expect.objectContaining({ error: 'Memory DB unavailable' })
       );
     });
 
@@ -1108,7 +1108,7 @@ describe('Pipeline Middleware', () => {
         expect.objectContaining({
           userId: 'default',
           agentId: 'chat',
-        }),
+        })
       );
     });
 
@@ -1266,7 +1266,10 @@ describe('Pipeline Middleware', () => {
 
     it('calls extractMemories for channel messages', async () => {
       const middleware = createPostProcessingMiddleware();
-      const message = createMockMessage({ content: 'I love dogs', metadata: { source: 'channel' } });
+      const message = createMockMessage({
+        content: 'I love dogs',
+        metadata: { source: 'channel' },
+      });
       const mockResult = createMockResult({
         response: {
           ...createMockResult().response,
@@ -1283,7 +1286,11 @@ describe('Pipeline Middleware', () => {
 
       // Allow fire-and-forget promises to settle
       await vi.waitFor(() => {
-        expect(mockExtractMemories).toHaveBeenCalledWith('user-3', 'I love dogs', 'Dogs are great!');
+        expect(mockExtractMemories).toHaveBeenCalledWith(
+          'user-3',
+          'I love dogs',
+          'Dogs are great!'
+        );
       });
     });
 
@@ -1328,7 +1335,7 @@ describe('Pipeline Middleware', () => {
           'user-4',
           'Search for test',
           'Found results',
-          toolCalls,
+          toolCalls
         );
       });
     });
@@ -1351,7 +1358,11 @@ describe('Pipeline Middleware', () => {
       await middleware(message, ctx, next);
 
       await vi.waitFor(() => {
-        expect(mockEvaluateTriggers).toHaveBeenCalledWith('user-6', 'Check triggers', 'Triggers checked');
+        expect(mockEvaluateTriggers).toHaveBeenCalledWith(
+          'user-6',
+          'Check triggers',
+          'Triggers checked'
+        );
       });
     });
 
@@ -1378,12 +1389,13 @@ describe('Pipeline Middleware', () => {
       // Create slow mock operations
       let memoriesResolved = false;
       mockExtractMemories.mockImplementation(
-        () => new Promise<number>((resolve) => {
-          setTimeout(() => {
-            memoriesResolved = true;
-            resolve(3);
-          }, 500);
-        }),
+        () =>
+          new Promise<number>((resolve) => {
+            setTimeout(() => {
+              memoriesResolved = true;
+              resolve(3);
+            }, 500);
+          })
       );
 
       const middleware = createPostProcessingMiddleware();
@@ -1412,7 +1424,11 @@ describe('Pipeline Middleware', () => {
       await middleware(message, ctx, next);
 
       await vi.waitFor(() => {
-        expect(mockExtractMemories).toHaveBeenCalledWith('default', expect.any(String), expect.any(String));
+        expect(mockExtractMemories).toHaveBeenCalledWith(
+          'default',
+          expect.any(String),
+          expect.any(String)
+        );
       });
     });
 
@@ -1454,7 +1470,7 @@ describe('Pipeline Middleware', () => {
           'user-9',
           expect.any(String),
           expect.any(String),
-          undefined,
+          undefined
         );
       });
     });

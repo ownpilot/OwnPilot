@@ -86,7 +86,9 @@ export class CustomDataRepository extends BaseRepository {
     const invalidChars = /[^a-zA-Z0-9_]/;
     for (const col of columns) {
       if (invalidChars.test(col.name)) {
-        throw new Error(`Invalid column name: ${col.name}. Only alphanumeric and underscore allowed.`);
+        throw new Error(
+          `Invalid column name: ${col.name}. Only alphanumeric and underscore allowed.`
+        );
       }
     }
 
@@ -98,7 +100,17 @@ export class CustomDataRepository extends BaseRepository {
     await this.execute(
       `INSERT INTO custom_table_schemas (id, name, display_name, description, columns, owner_plugin_id, is_protected, created_at, updated_at)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
-      [id, sanitizedName, displayName, description ?? null, JSON.stringify(columns), ownerPluginId, isProtected, now, now]
+      [
+        id,
+        sanitizedName,
+        displayName,
+        description ?? null,
+        JSON.stringify(columns),
+        ownerPluginId,
+        isProtected,
+        now,
+        now,
+      ]
     );
 
     return {
@@ -245,13 +257,15 @@ export class CustomDataRepository extends BaseRepository {
     name: string,
     displayName: string,
     columns: ColumnDefinition[],
-    description?: string,
+    description?: string
   ): Promise<CustomTableSchema> {
     const existing = await this.getTable(name);
     if (existing) {
       // Verify ownership
       if (existing.ownerPluginId && existing.ownerPluginId !== pluginId) {
-        throw new Error(`Table "${name}" is owned by plugin "${existing.ownerPluginId}", not "${pluginId}"`);
+        throw new Error(
+          `Table "${name}" is owned by plugin "${existing.ownerPluginId}", not "${pluginId}"`
+        );
       }
       return existing;
     }
@@ -275,7 +289,10 @@ export class CustomDataRepository extends BaseRepository {
   /**
    * Add a record to a pre-resolved table (avoids repeated getTable() lookups in batch).
    */
-  async insertRecord(table: CustomTableSchema, data: Record<string, unknown>): Promise<CustomDataRecord> {
+  async insertRecord(
+    table: CustomTableSchema,
+    data: Record<string, unknown>
+  ): Promise<CustomDataRecord> {
     // Validate required fields
     for (const col of table.columns) {
       if (col.required && (data[col.name] === undefined || data[col.name] === null)) {
@@ -315,10 +332,9 @@ export class CustomDataRepository extends BaseRepository {
    * Get a record by ID
    */
   async getRecord(recordId: string): Promise<CustomDataRecord | null> {
-    const row = await this.queryOne<RecordRow>(
-      'SELECT * FROM custom_data_records WHERE id = $1',
-      [recordId]
-    );
+    const row = await this.queryOne<RecordRow>('SELECT * FROM custom_data_records WHERE id = $1', [
+      recordId,
+    ]);
 
     if (!row) return null;
 
@@ -396,7 +412,10 @@ export class CustomDataRepository extends BaseRepository {
   /**
    * Update a record
    */
-  async updateRecord(recordId: string, data: Record<string, unknown>): Promise<CustomDataRecord | null> {
+  async updateRecord(
+    recordId: string,
+    data: Record<string, unknown>
+  ): Promise<CustomDataRecord | null> {
     const existing = await this.getRecord(recordId);
     if (!existing) return null;
 
@@ -415,10 +434,11 @@ export class CustomDataRepository extends BaseRepository {
 
     const now = new Date().toISOString();
 
-    await this.execute(
-      'UPDATE custom_data_records SET data = $1, updated_at = $2 WHERE id = $3',
-      [JSON.stringify(newData), now, recordId]
-    );
+    await this.execute('UPDATE custom_data_records SET data = $1, updated_at = $2 WHERE id = $3', [
+      JSON.stringify(newData),
+      now,
+      recordId,
+    ]);
 
     return {
       ...existing,

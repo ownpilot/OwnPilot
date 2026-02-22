@@ -13,12 +13,12 @@ import { randomUUID } from 'node:crypto';
 // =============================================================================
 
 export type ToolPermission =
-  | 'network'      // HTTP requests
-  | 'filesystem'   // File read/write
-  | 'database'     // Custom data access
-  | 'shell'        // Shell command execution
-  | 'email'        // Send emails
-  | 'scheduling';  // Create scheduled tasks
+  | 'network' // HTTP requests
+  | 'filesystem' // File read/write
+  | 'database' // Custom data access
+  | 'shell' // Shell command execution
+  | 'email' // Send emails
+  | 'scheduling'; // Create scheduled tasks
 
 export type ToolStatus = 'active' | 'disabled' | 'pending_approval' | 'rejected';
 
@@ -100,7 +100,10 @@ function rowToRecord(row: CustomToolRow): CustomToolRecord {
     userId: row.user_id,
     name: row.name,
     description: row.description,
-    parameters: parseJsonField<CustomToolRecord['parameters']>(row.parameters, { type: 'object', properties: {} }),
+    parameters: parseJsonField<CustomToolRecord['parameters']>(row.parameters, {
+      type: 'object',
+      properties: {},
+    }),
     code: row.code,
     category: row.category ?? undefined,
     status: row.status as ToolStatus,
@@ -340,10 +343,10 @@ export class CustomToolsRepository extends BaseRepository {
    * Delete a tool
    */
   async delete(id: string): Promise<boolean> {
-    const result = await this.execute(
-      'DELETE FROM custom_tools WHERE id = $1 AND user_id = $2',
-      [id, this.userId]
-    );
+    const result = await this.execute('DELETE FROM custom_tools WHERE id = $1 AND user_id = $2', [
+      id,
+      this.userId,
+    ]);
     return result.changes > 0;
   }
 

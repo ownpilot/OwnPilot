@@ -21,7 +21,10 @@ export function escapeHtml(text: string): string {
 // ============================================================================
 
 type PlaceholderMap = Map<string, string>;
-interface PlaceholderState { counter: number; map: PlaceholderMap }
+interface PlaceholderState {
+  counter: number;
+  map: PlaceholderMap;
+}
 
 function makePlaceholder(state: PlaceholderState, html: string): string {
   const key = `\x00PH${++state.counter}\x00`;
@@ -56,30 +59,28 @@ function applyInlineFormatting(text: string, ph: PlaceholderState): string {
 
   // Bold-italic: ***text*** or ___text___
   result = result.replace(/(\*\*\*|___)(.+?)\1/g, (_m, _d, content) =>
-    makePlaceholder(ph, `<b><i>${content}</i></b>`),
+    makePlaceholder(ph, `<b><i>${content}</i></b>`)
   );
 
   // Bold: **text** or __text__
   result = result.replace(/(\*\*|__)(.+?)\1/g, (_m, _d, content) =>
-    makePlaceholder(ph, `<b>${content}</b>`),
+    makePlaceholder(ph, `<b>${content}</b>`)
   );
 
   // Italic: *text* or _text_  (but not inside words for underscores)
   result = result.replace(/(?<!\w)\*([^\s*](?:.*?[^\s*])?)\*(?!\w)/g, (_m, content) =>
-    makePlaceholder(ph, `<i>${content}</i>`),
+    makePlaceholder(ph, `<i>${content}</i>`)
   );
   result = result.replace(/(?<!\w)_([^\s_](?:.*?[^\s_])?)_(?!\w)/g, (_m, content) =>
-    makePlaceholder(ph, `<i>${content}</i>`),
+    makePlaceholder(ph, `<i>${content}</i>`)
   );
 
   // Strikethrough: ~~text~~
-  result = result.replace(/~~(.+?)~~/g, (_m, content) =>
-    makePlaceholder(ph, `<s>${content}</s>`),
-  );
+  result = result.replace(/~~(.+?)~~/g, (_m, content) => makePlaceholder(ph, `<s>${content}</s>`));
 
   // Links: [text](url)
   result = result.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_m, text, url) =>
-    makePlaceholder(ph, `<a href="${url}">${text}</a>`),
+    makePlaceholder(ph, `<a href="${url}">${text}</a>`)
   );
 
   return result;
@@ -107,22 +108,18 @@ export function markdownToTelegramHtml(markdown: string): string {
   // ------------------------------------------------------------------
   // Step 1: Extract fenced code blocks
   // ------------------------------------------------------------------
-  let text = markdown.replace(
-    /```(\w*)\n([\s\S]*?)```/g,
-    (_m, lang: string, code: string) => {
-      // Remove trailing newline inside code block if present
-      const trimmedCode = code.endsWith('\n') ? code.slice(0, -1) : code;
-      const langAttr = lang ? ` class="language-${lang}"` : '';
-      return makePlaceholder(ph, `<pre><code${langAttr}>${escapeHtml(trimmedCode)}</code></pre>`);
-    },
-  );
+  let text = markdown.replace(/```(\w*)\n([\s\S]*?)```/g, (_m, lang: string, code: string) => {
+    // Remove trailing newline inside code block if present
+    const trimmedCode = code.endsWith('\n') ? code.slice(0, -1) : code;
+    const langAttr = lang ? ` class="language-${lang}"` : '';
+    return makePlaceholder(ph, `<pre><code${langAttr}>${escapeHtml(trimmedCode)}</code></pre>`);
+  });
 
   // ------------------------------------------------------------------
   // Step 2: Extract inline code
   // ------------------------------------------------------------------
-  text = text.replace(
-    /`([^`]+)`/g,
-    (_m, code: string) => makePlaceholder(ph, `<code>${escapeHtml(code)}</code>`),
+  text = text.replace(/`([^`]+)`/g, (_m, code: string) =>
+    makePlaceholder(ph, `<code>${escapeHtml(code)}</code>`)
   );
 
   // ------------------------------------------------------------------

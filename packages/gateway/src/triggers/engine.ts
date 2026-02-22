@@ -15,11 +15,23 @@ import {
   type EventConfig,
 } from '../db/repositories/triggers.js';
 import { executeTool, hasTool, waitForToolSync } from '../services/tool-executor.js';
-import { getNextRunTime, getServiceRegistry, Services, type ITriggerService, type IGoalService, type IMemoryService, type ExecutionPermissions } from '@ownpilot/core';
+import {
+  getNextRunTime,
+  getServiceRegistry,
+  Services,
+  type ITriggerService,
+  type IGoalService,
+  type IMemoryService,
+  type ExecutionPermissions,
+} from '@ownpilot/core';
 import { executionPermissionsRepo } from '../db/repositories/execution-permissions.js';
 import { getLog } from '../services/log.js';
 import { getErrorMessage } from '../routes/helpers.js';
-import { MS_PER_DAY, TRIGGER_POLL_INTERVAL_MS, TRIGGER_CONDITION_CHECK_MS } from '../config/defaults.js';
+import {
+  MS_PER_DAY,
+  TRIGGER_POLL_INTERVAL_MS,
+  TRIGGER_CONDITION_CHECK_MS,
+} from '../config/defaults.js';
 
 const log = getLog('TriggerEngine');
 
@@ -67,7 +79,8 @@ export class TriggerEngine {
   private isProcessingConditions = false;
   private executingTriggers: Set<string> = new Set();
   private eventHandlers: Map<string, EventHandler[]> = new Map();
-  private actionHandlers: Map<string, (payload: Record<string, unknown>) => Promise<ActionResult>> = new Map();
+  private actionHandlers: Map<string, (payload: Record<string, unknown>) => Promise<ActionResult>> =
+    new Map();
   private chatHandler: ChatHandler | null = null;
   private broadcaster: ((event: string, data: Record<string, unknown>) => void) | null = null;
 
@@ -125,7 +138,9 @@ export class TriggerEngine {
     // Start polling for schedule triggers
     this.pollTimer = setInterval(() => {
       try {
-        this.processScheduleTriggers().catch((err) => log.error('Schedule trigger poll failed', { error: err }));
+        this.processScheduleTriggers().catch((err) =>
+          log.error('Schedule trigger poll failed', { error: err })
+        );
       } catch (err) {
         log.error('Schedule trigger poll threw synchronously', { error: err });
       }
@@ -135,7 +150,9 @@ export class TriggerEngine {
     // Start checking conditions
     this.conditionTimer = setInterval(() => {
       try {
-        this.processConditionTriggers().catch((err) => log.error('Condition trigger check failed', { error: err }));
+        this.processConditionTriggers().catch((err) =>
+          log.error('Condition trigger check failed', { error: err })
+        );
       } catch (err) {
         log.error('Condition trigger check threw synchronously', { error: err });
       }
@@ -143,10 +160,16 @@ export class TriggerEngine {
     this.conditionTimer.unref();
 
     // Wait for custom tool sync then run initial checks
-    waitForToolSync().then(() => {
-      this.processScheduleTriggers().catch((err) => log.error('Initial schedule trigger poll failed', { error: err }));
-      this.processConditionTriggers().catch((err) => log.error('Initial condition trigger check failed', { error: err }));
-    }).catch((err) => log.error('Tool sync wait failed', { error: err }));
+    waitForToolSync()
+      .then(() => {
+        this.processScheduleTriggers().catch((err) =>
+          log.error('Initial schedule trigger poll failed', { error: err })
+        );
+        this.processConditionTriggers().catch((err) =>
+          log.error('Initial condition trigger check failed', { error: err })
+        );
+      })
+      .catch((err) => log.error('Tool sync wait failed', { error: err }));
 
     log.info('Started');
   }
@@ -206,10 +229,10 @@ export class TriggerEngine {
 
     // Goal check action
     this.registerActionHandler('goal_check', async (payload) => {
-      const goals = await this.goalService.getActive(this.config.userId,5);
+      const goals = await this.goalService.getActive(this.config.userId, 5);
       const staleGoals = goals.filter((g) => {
         const daysSinceUpdate = (Date.now() - g.updatedAt.getTime()) / MS_PER_DAY;
-        return daysSinceUpdate > (payload.staleDays as number ?? 3);
+        return daysSinceUpdate > ((payload.staleDays as number) ?? 3);
       });
 
       return {
@@ -232,7 +255,7 @@ export class TriggerEngine {
     // Chat action - sends a message through the AI agent system
     // The chatHandler is injected later via setChatHandler() once agents are initialized
     this.registerActionHandler('chat', async (payload) => {
-      const message = payload.prompt as string ?? payload.message as string;
+      const message = (payload.prompt as string) ?? (payload.message as string);
       if (!message) {
         return { success: false, error: 'No message/prompt provided for chat action' };
       }
@@ -271,7 +294,7 @@ export class TriggerEngine {
       // Extract tool arguments (everything except internal fields)
       const { tool: _tool, triggerId: _tid, triggerName: _tn, manual: _m, ...toolArgs } = payload;
 
-      if (!await hasTool(toolName)) {
+      if (!(await hasTool(toolName))) {
         return { success: false, error: `Tool '${toolName}' not found` };
       }
 
@@ -280,11 +303,14 @@ export class TriggerEngine {
       const triggerPerms = {
         ...userPerms,
         // Downgrade 'prompt' to 'blocked' for category permissions only
-        execute_javascript: userPerms.execute_javascript === 'prompt' ? 'blocked' : userPerms.execute_javascript,
-        execute_python: userPerms.execute_python === 'prompt' ? 'blocked' : userPerms.execute_python,
+        execute_javascript:
+          userPerms.execute_javascript === 'prompt' ? 'blocked' : userPerms.execute_javascript,
+        execute_python:
+          userPerms.execute_python === 'prompt' ? 'blocked' : userPerms.execute_python,
         execute_shell: userPerms.execute_shell === 'prompt' ? 'blocked' : userPerms.execute_shell,
         compile_code: userPerms.compile_code === 'prompt' ? 'blocked' : userPerms.compile_code,
-        package_manager: userPerms.package_manager === 'prompt' ? 'blocked' : userPerms.package_manager,
+        package_manager:
+          userPerms.package_manager === 'prompt' ? 'blocked' : userPerms.package_manager,
       } as ExecutionPermissions;
 
       log.info('Executing tool', { toolName });
@@ -292,7 +318,9 @@ export class TriggerEngine {
 
       return {
         success: result.success,
-        message: result.success ? `Tool ${toolName} executed successfully` : `Tool ${toolName} failed`,
+        message: result.success
+          ? `Tool ${toolName} executed successfully`
+          : `Tool ${toolName} failed`,
         data: result.result,
         error: result.error,
       };
@@ -372,7 +400,7 @@ export class TriggerEngine {
     this.isProcessingSchedule = true;
     try {
       const dueTriggers = await this.triggerService.getDueTriggers(this.config.userId);
-      await Promise.allSettled(dueTriggers.map(t => this.executeTrigger(t)));
+      await Promise.allSettled(dueTriggers.map((t) => this.executeTrigger(t)));
     } finally {
       this.isProcessingSchedule = false;
     }
@@ -409,25 +437,25 @@ export class TriggerEngine {
     if (this.isProcessingConditions) return;
     this.isProcessingConditions = true;
     try {
-    const triggers = await this.triggerService.getConditionTriggers(this.config.userId);
+      const triggers = await this.triggerService.getConditionTriggers(this.config.userId);
 
-    for (const trigger of triggers) {
-      const config = trigger.config as ConditionConfig;
+      for (const trigger of triggers) {
+        const config = trigger.config as ConditionConfig;
 
-      // Respect checkInterval to avoid firing too frequently
-      // Default: don't re-fire within the condition check interval
-      if (trigger.lastFired) {
-        const minIntervalMs = (config.checkInterval ?? 60) * 60 * 1000; // default 60 min
-        const timeSinceFire = Date.now() - trigger.lastFired.getTime();
-        if (timeSinceFire < minIntervalMs) continue;
+        // Respect checkInterval to avoid firing too frequently
+        // Default: don't re-fire within the condition check interval
+        if (trigger.lastFired) {
+          const minIntervalMs = (config.checkInterval ?? 60) * 60 * 1000; // default 60 min
+          const timeSinceFire = Date.now() - trigger.lastFired.getTime();
+          if (timeSinceFire < minIntervalMs) continue;
+        }
+
+        const shouldFire = await this.evaluateCondition(config);
+
+        if (shouldFire) {
+          await this.executeTrigger(trigger);
+        }
       }
-
-      const shouldFire = await this.evaluateCondition(config);
-
-      if (shouldFire) {
-        await this.executeTrigger(trigger);
-      }
-    }
     } finally {
       this.isProcessingConditions = false;
     }
@@ -442,7 +470,7 @@ export class TriggerEngine {
     switch (config.condition) {
       case 'stale_goals': {
         // Fire if any goals haven't been updated in X days
-        const goals = await this.goalService.getActive(this.config.userId,10);
+        const goals = await this.goalService.getActive(this.config.userId, 10);
         const staleDays = threshold || 3;
         const hasStaleGoals = goals.some((g) => {
           const daysSinceUpdate = (Date.now() - g.updatedAt.getTime()) / MS_PER_DAY;
@@ -453,7 +481,7 @@ export class TriggerEngine {
 
       case 'upcoming_deadline': {
         // Fire if any goals have deadlines within X days
-        const upcoming = await this.goalService.getUpcoming(this.config.userId,threshold || 7);
+        const upcoming = await this.goalService.getUpcoming(this.config.userId, threshold || 7);
         return upcoming.length > 0;
       }
 
@@ -465,7 +493,7 @@ export class TriggerEngine {
 
       case 'low_progress': {
         // Fire if active goals have low progress
-        const goals = await this.goalService.getActive(this.config.userId,10);
+        const goals = await this.goalService.getActive(this.config.userId, 10);
         const lowProgressGoals = goals.filter((g) => g.progress < (threshold || 20));
         return lowProgressGoals.length > 0;
       }
@@ -540,7 +568,9 @@ export class TriggerEngine {
         if (nextFire) {
           log.info('Next fire scheduled', { trigger: trigger.name, nextFire });
         } else {
-          log.warn('Trigger has no next fire time — will not auto-fire again', { trigger: trigger.name });
+          log.warn('Trigger has no next fire time — will not auto-fire again', {
+            trigger: trigger.name,
+          });
         }
       } else {
         await this.triggerService.markFired(this.config.userId, trigger.id);
@@ -552,7 +582,15 @@ export class TriggerEngine {
       const errorMessage = getErrorMessage(error);
 
       // Log failure
-      await this.triggerService.logExecution(this.config.userId, trigger.id, trigger.name, 'failure', undefined, errorMessage, durationMs);
+      await this.triggerService.logExecution(
+        this.config.userId,
+        trigger.id,
+        trigger.name,
+        'failure',
+        undefined,
+        errorMessage,
+        durationMs
+      );
       this.broadcaster?.('trigger:executed', {
         triggerId: trigger.id,
         triggerName: trigger.name,
@@ -643,7 +681,15 @@ export class TriggerEngine {
       const durationMs = Date.now() - startTime;
       const errorMessage = getErrorMessage(error);
 
-      await this.triggerService.logExecution(this.config.userId, trigger.id, trigger.name, 'failure', undefined, errorMessage, durationMs);
+      await this.triggerService.logExecution(
+        this.config.userId,
+        trigger.id,
+        trigger.name,
+        'failure',
+        undefined,
+        errorMessage,
+        durationMs
+      );
       this.broadcaster?.('trigger:executed', {
         triggerId: trigger.id,
         triggerName: trigger.name,

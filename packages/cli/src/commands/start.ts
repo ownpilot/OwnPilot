@@ -40,7 +40,9 @@ export async function startAll(options: StartOptions): Promise<void> {
 
   if (isDemoMode) {
     console.warn('⚠️  Warning: No AI provider API key configured');
-    console.warn('   Configure an API key via the web UI at http://localhost:' + options.port + '/settings');
+    console.warn(
+      '   Configure an API key via the web UI at http://localhost:' + options.port + '/settings'
+    );
     console.warn('');
   } else {
     console.log(`✅ Default provider: ${provider}`);
@@ -55,7 +57,9 @@ export async function startAll(options: StartOptions): Promise<void> {
   const serverConfig: Partial<GatewayConfig> = {
     port,
     host: '0.0.0.0',
-    corsOrigins: process.env.CORS_ORIGINS?.split(',') ?? [`http://localhost:${process.env.UI_PORT || '5173'}`],
+    corsOrigins: process.env.CORS_ORIGINS?.split(',') ?? [
+      `http://localhost:${process.env.UI_PORT || '5173'}`,
+    ],
     auth: { type: 'none' },
   };
 

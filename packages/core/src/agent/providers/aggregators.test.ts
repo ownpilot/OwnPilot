@@ -52,7 +52,8 @@ describe('Aggregator Providers', () => {
     it('models have either per-token or per-request pricing', () => {
       for (const provider of Object.values(AGGREGATOR_PROVIDERS)) {
         for (const model of provider.defaultModels) {
-          const hasTokenPricing = model.pricingInput !== undefined || model.pricingOutput !== undefined;
+          const hasTokenPricing =
+            model.pricingInput !== undefined || model.pricingOutput !== undefined;
           const hasRequestPricing = model.pricingPerRequest !== undefined;
           // At least one pricing model should be defined (some may have neither for free tiers)
           if (hasTokenPricing) {

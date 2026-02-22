@@ -265,9 +265,7 @@ export function buildSandboxContext(
       : {}),
 
     // Crypto utilities (if allowed)
-    ...(perms.crypto
-      ? { crypto: buildCrypto(true) }
-      : {}),
+    ...(perms.crypto ? { crypto: buildCrypto(true) } : {}),
 
     // Custom globals
     ...customGlobals,
@@ -293,9 +291,20 @@ export function buildSandboxContext(
   // However, Object.defineProperty on the context object is safe — createContext
   // preserves property descriptors, so these become non-writable VM globals.
   const dangerousKeys = [
-    'process', 'require', 'module', 'exports', '__dirname', '__filename',
-    'global', 'globalThis', 'eval', 'Function', 'Atomics', 'SharedArrayBuffer',
-    'Proxy', 'Reflect',
+    'process',
+    'require',
+    'module',
+    'exports',
+    '__dirname',
+    '__filename',
+    'global',
+    'globalThis',
+    'eval',
+    'Function',
+    'Atomics',
+    'SharedArrayBuffer',
+    'Proxy',
+    'Reflect',
   ];
   for (const key of dangerousKeys) {
     Object.defineProperty(context, key, {

@@ -47,10 +47,9 @@ vi.mock('node:path', async () => {
 // Helpers
 // =============================================================================
 
-function makeSkillInput(overrides: Partial<Skill> = {}): Omit<
-  Skill,
-  'id' | 'createdAt' | 'updatedAt' | 'usageCount' | 'successRate'
-> {
+function makeSkillInput(
+  overrides: Partial<Skill> = {}
+): Omit<Skill, 'id' | 'createdAt' | 'updatedAt' | 'usageCount' | 'successRate'> {
   return {
     name: 'Test Skill',
     description: 'A test skill',
@@ -67,10 +66,9 @@ function makeSkillInput(overrides: Partial<Skill> = {}): Omit<
   };
 }
 
-function makeRoleInput(overrides: Partial<Role> = {}): Omit<
-  Role,
-  'id' | 'createdAt' | 'updatedAt' | 'usageCount'
-> {
+function makeRoleInput(
+  overrides: Partial<Role> = {}
+): Omit<Role, 'id' | 'createdAt' | 'updatedAt' | 'usageCount'> {
   return {
     name: 'Test Role',
     description: 'A test role',
@@ -91,7 +89,7 @@ function makeRoleInput(overrides: Partial<Role> = {}): Omit<
 }
 
 function makeInstructionInput(
-  overrides: Partial<CustomInstruction> = {},
+  overrides: Partial<CustomInstruction> = {}
 ): Omit<CustomInstruction, 'id' | 'userId' | 'createdAt' | 'updatedAt'> {
   return {
     name: 'Test Instruction',
@@ -131,7 +129,7 @@ describe('BUILTIN_SKILLS', () => {
   });
 
   it('includes expected skill names', () => {
-    const names = BUILTIN_SKILLS.map(s => s.name);
+    const names = BUILTIN_SKILLS.map((s) => s.name);
     expect(names).toContain('Python Developer');
     expect(names).toContain('TypeScript Developer');
     expect(names).toContain('Technical Writer');
@@ -145,7 +143,7 @@ describe('BUILTIN_SKILLS', () => {
   });
 
   it('covers all expected categories', () => {
-    const categories = new Set(BUILTIN_SKILLS.map(s => s.category));
+    const categories = new Set(BUILTIN_SKILLS.map((s) => s.category));
     expect(categories).toContain('coding');
     expect(categories).toContain('writing');
     expect(categories).toContain('analysis');
@@ -157,14 +155,14 @@ describe('BUILTIN_SKILLS', () => {
   });
 
   it('has requiredTools on skills that need them', () => {
-    const python = BUILTIN_SKILLS.find(s => s.name === 'Python Developer');
+    const python = BUILTIN_SKILLS.find((s) => s.name === 'Python Developer');
     expect(python?.requiredTools).toContain('code_execute');
 
-    const research = BUILTIN_SKILLS.find(s => s.name === 'Research Assistant');
+    const research = BUILTIN_SKILLS.find((s) => s.name === 'Research Assistant');
     expect(research?.requiredTools).toContain('web_search');
     expect(research?.requiredTools).toContain('web_fetch');
 
-    const writer = BUILTIN_SKILLS.find(s => s.name === 'Technical Writer');
+    const writer = BUILTIN_SKILLS.find((s) => s.name === 'Technical Writer');
     expect(writer?.requiredTools).toBeUndefined();
   });
 });
@@ -193,7 +191,7 @@ describe('BUILTIN_ROLES', () => {
   });
 
   it('includes expected role names', () => {
-    const names = BUILTIN_ROLES.map(r => r.name);
+    const names = BUILTIN_ROLES.map((r) => r.name);
     expect(names).toContain('Personal Assistant');
     expect(names).toContain('Senior Developer');
     expect(names).toContain('Writing Coach');
@@ -293,7 +291,8 @@ describe('SkillManager', () => {
         },
       ];
       readFileMock.mockImplementation((filePath: any) => {
-        if (String(filePath).includes('skills.json')) return Promise.resolve(JSON.stringify(existingSkills));
+        if (String(filePath).includes('skills.json'))
+          return Promise.resolve(JSON.stringify(existingSkills));
         if (String(filePath).includes('roles.json')) return Promise.resolve('[]');
         if (String(filePath).includes('instructions.json')) return Promise.resolve('[]');
         return Promise.reject(new Error('ENOENT'));
@@ -326,7 +325,8 @@ describe('SkillManager', () => {
       ];
       readFileMock.mockImplementation((filePath: any) => {
         if (String(filePath).includes('skills.json')) return Promise.resolve('[]');
-        if (String(filePath).includes('roles.json')) return Promise.resolve(JSON.stringify(existingRoles));
+        if (String(filePath).includes('roles.json'))
+          return Promise.resolve(JSON.stringify(existingRoles));
         if (String(filePath).includes('instructions.json')) return Promise.resolve('[]');
         return Promise.reject(new Error('ENOENT'));
       });
@@ -361,7 +361,7 @@ describe('SkillManager', () => {
 
       await manager.initialize();
       const instructions = manager.getApplicableInstructions();
-      expect(instructions.some(i => i.name === 'Existing Instruction')).toBe(true);
+      expect(instructions.some((i) => i.name === 'Existing Instruction')).toBe(true);
     });
 
     it('adds builtin skills if not already present', async () => {
@@ -370,7 +370,7 @@ describe('SkillManager', () => {
       expect(allSkills.length).toBeGreaterThanOrEqual(BUILTIN_SKILLS.length);
 
       for (const builtin of BUILTIN_SKILLS) {
-        const found = allSkills.find(s => s.name === builtin.name);
+        const found = allSkills.find((s) => s.name === builtin.name);
         expect(found).toBeDefined();
         expect(found?.isSystem).toBe(true);
       }
@@ -382,7 +382,7 @@ describe('SkillManager', () => {
       expect(allRoles.length).toBeGreaterThanOrEqual(BUILTIN_ROLES.length);
 
       for (const builtin of BUILTIN_ROLES) {
-        const found = allRoles.find(r => r.name === builtin.name);
+        const found = allRoles.find((r) => r.name === builtin.name);
         expect(found).toBeDefined();
         expect(found?.isSystem).toBe(true);
       }
@@ -410,14 +410,15 @@ describe('SkillManager', () => {
         },
       ];
       readFileMock.mockImplementation((filePath: any) => {
-        if (String(filePath).includes('skills.json')) return Promise.resolve(JSON.stringify(existingSkills));
+        if (String(filePath).includes('skills.json'))
+          return Promise.resolve(JSON.stringify(existingSkills));
         if (String(filePath).includes('roles.json')) return Promise.resolve('[]');
         if (String(filePath).includes('instructions.json')) return Promise.resolve('[]');
         return Promise.reject(new Error('ENOENT'));
       });
 
       await manager.initialize();
-      const pythonSkills = manager.getAllSkills().filter(s => s.name === 'Python Developer');
+      const pythonSkills = manager.getAllSkills().filter((s) => s.name === 'Python Developer');
       expect(pythonSkills).toHaveLength(1);
       // Should keep the existing one, not overwrite with default
       expect(pythonSkills[0].usageCount).toBe(10);
@@ -447,7 +448,7 @@ describe('SkillManager', () => {
       await manager.addSkill(makeSkillInput());
 
       const writeCalls = writeFileMock.mock.calls;
-      const skillsWrite = writeCalls.find(c => String(c[0]).includes('skills.json'));
+      const skillsWrite = writeCalls.find((c) => String(c[0]).includes('skills.json'));
       expect(skillsWrite).toBeDefined();
     });
 
@@ -491,7 +492,7 @@ describe('SkillManager', () => {
 
     it('returns null when trying to update a system skill', async () => {
       await manager.initialize();
-      const systemSkill = manager.getAllSkills().find(s => s.isSystem);
+      const systemSkill = manager.getAllSkills().find((s) => s.isSystem);
       expect(systemSkill).toBeDefined();
 
       const result = await manager.updateSkill(systemSkill!.id, { name: 'Hacked' });
@@ -520,7 +521,7 @@ describe('SkillManager', () => {
       await manager.updateSkill(added.id, { name: 'Updated' });
 
       const writeCalls = writeFileMock.mock.calls;
-      const skillsWrite = writeCalls.find(c => String(c[0]).includes('skills.json'));
+      const skillsWrite = writeCalls.find((c) => String(c[0]).includes('skills.json'));
       expect(skillsWrite).toBeDefined();
     });
   });
@@ -543,7 +544,7 @@ describe('SkillManager', () => {
 
     it('returns false when trying to delete a system skill', async () => {
       await manager.initialize();
-      const systemSkill = manager.getAllSkills().find(s => s.isSystem);
+      const systemSkill = manager.getAllSkills().find((s) => s.isSystem);
       expect(systemSkill).toBeDefined();
 
       const result = await manager.deleteSkill(systemSkill!.id);
@@ -559,7 +560,7 @@ describe('SkillManager', () => {
       await manager.deleteSkill(added.id);
 
       const writeCalls = writeFileMock.mock.calls;
-      const skillsWrite = writeCalls.find(c => String(c[0]).includes('skills.json'));
+      const skillsWrite = writeCalls.find((c) => String(c[0]).includes('skills.json'));
       expect(skillsWrite).toBeDefined();
     });
   });
@@ -588,7 +589,7 @@ describe('SkillManager', () => {
       await manager.initialize();
       const added = await manager.addSkill(makeSkillInput());
       const allSkills = manager.getAllSkills();
-      expect(allSkills.some(s => s.id === added.id)).toBe(true);
+      expect(allSkills.some((s) => s.id === added.id)).toBe(true);
     });
   });
 
@@ -597,14 +598,16 @@ describe('SkillManager', () => {
       await manager.initialize();
       const codingSkills = manager.getSkillsByCategory('coding');
       expect(codingSkills.length).toBeGreaterThan(0);
-      expect(codingSkills.every(s => s.category === 'coding')).toBe(true);
+      expect(codingSkills.every((s) => s.category === 'coding')).toBe(true);
     });
 
     it('only returns enabled skills', async () => {
       await manager.initialize();
-      await manager.addSkill(makeSkillInput({ category: 'custom', enabled: false, name: 'Disabled Custom' }));
+      await manager.addSkill(
+        makeSkillInput({ category: 'custom', enabled: false, name: 'Disabled Custom' })
+      );
       const customSkills = manager.getSkillsByCategory('custom');
-      expect(customSkills.every(s => s.enabled)).toBe(true);
+      expect(customSkills.every((s) => s.enabled)).toBe(true);
     });
 
     it('returns empty array for category with no skills', async () => {
@@ -623,13 +626,13 @@ describe('SkillManager', () => {
       await manager.initialize();
       const skills = manager.findRelevantSkills('I need help with python code');
       expect(skills.length).toBeGreaterThan(0);
-      expect(skills.some(s => s.name === 'Python Developer')).toBe(true);
+      expect(skills.some((s) => s.name === 'Python Developer')).toBe(true);
     });
 
     it('finds skills matching example triggers', async () => {
       await manager.initialize();
       const skills = manager.findRelevantSkills('write python script for me');
-      expect(skills.some(s => s.name === 'Python Developer')).toBe(true);
+      expect(skills.some((s) => s.name === 'Python Developer')).toBe(true);
     });
 
     it('finds skills matching tags', async () => {
@@ -646,7 +649,9 @@ describe('SkillManager', () => {
 
     it('defaults to max 3 skills', async () => {
       await manager.initialize();
-      const skills = manager.findRelevantSkills('code review python typescript data analysis research translate');
+      const skills = manager.findRelevantSkills(
+        'code review python typescript data analysis research translate'
+      );
       expect(skills.length).toBeLessThanOrEqual(3);
     });
 
@@ -664,10 +669,10 @@ describe('SkillManager', () => {
           keywords: ['unicorns123'],
           exampleTriggers: ['unicorns123'],
           enabled: false,
-        }),
+        })
       );
       const skills = manager.findRelevantSkills('unicorns123');
-      expect(skills.some(s => s.id === added.id)).toBe(false);
+      expect(skills.some((s) => s.id === added.id)).toBe(false);
     });
 
     it('boosts score by success rate', async () => {
@@ -679,7 +684,7 @@ describe('SkillManager', () => {
           exampleTriggers: [],
           tags: [],
           successRate: 1.0,
-        } as any),
+        } as any)
       );
       const lowSuccess = await manager.addSkill(
         makeSkillInput({
@@ -688,7 +693,7 @@ describe('SkillManager', () => {
           exampleTriggers: [],
           tags: [],
           successRate: 0.0,
-        } as any),
+        } as any)
       );
 
       // Need to manually set successRate since addSkill resets it
@@ -711,7 +716,7 @@ describe('SkillManager', () => {
           keywords: [],
           exampleTriggers: ['booga wooga'],
           tags: [],
-        }),
+        })
       );
       await manager.addSkill(
         makeSkillInput({
@@ -719,7 +724,7 @@ describe('SkillManager', () => {
           keywords: ['booga'],
           exampleTriggers: [],
           tags: [],
-        }),
+        })
       );
 
       const skills = manager.findRelevantSkills('booga wooga');
@@ -805,7 +810,7 @@ describe('SkillManager', () => {
       await manager.recordSkillUsage(added.id);
 
       const writeCalls = writeFileMock.mock.calls;
-      const skillsWrite = writeCalls.find(c => String(c[0]).includes('skills.json'));
+      const skillsWrite = writeCalls.find((c) => String(c[0]).includes('skills.json'));
       expect(skillsWrite).toBeDefined();
     });
   });
@@ -832,7 +837,7 @@ describe('SkillManager', () => {
       await manager.addRole(makeRoleInput());
 
       const writeCalls = writeFileMock.mock.calls;
-      const rolesWrite = writeCalls.find(c => String(c[0]).includes('roles.json'));
+      const rolesWrite = writeCalls.find((c) => String(c[0]).includes('roles.json'));
       expect(rolesWrite).toBeDefined();
     });
 
@@ -870,7 +875,7 @@ describe('SkillManager', () => {
 
     it('returns null when trying to update a system role', async () => {
       await manager.initialize();
-      const systemRole = manager.getAllRoles().find(r => r.isSystem);
+      const systemRole = manager.getAllRoles().find((r) => r.isSystem);
       expect(systemRole).toBeDefined();
 
       const result = await manager.updateRole(systemRole!.id, { name: 'Hacked' });
@@ -922,7 +927,7 @@ describe('SkillManager', () => {
 
     it('returns false when trying to delete a system role', async () => {
       await manager.initialize();
-      const systemRole = manager.getAllRoles().find(r => r.isSystem);
+      const systemRole = manager.getAllRoles().find((r) => r.isSystem);
       expect(systemRole).toBeDefined();
 
       const result = await manager.deleteRole(systemRole!.id);
@@ -938,7 +943,7 @@ describe('SkillManager', () => {
       await manager.deleteRole(added.id);
 
       const writeCalls = writeFileMock.mock.calls;
-      const rolesWrite = writeCalls.find(c => String(c[0]).includes('roles.json'));
+      const rolesWrite = writeCalls.find((c) => String(c[0]).includes('roles.json'));
       expect(rolesWrite).toBeDefined();
     });
   });
@@ -967,7 +972,7 @@ describe('SkillManager', () => {
       await manager.initialize();
       const added = await manager.addRole(makeRoleInput());
       const allRoles = manager.getAllRoles();
-      expect(allRoles.some(r => r.id === added.id)).toBe(true);
+      expect(allRoles.some((r) => r.id === added.id)).toBe(true);
     });
   });
 
@@ -1012,7 +1017,7 @@ describe('SkillManager', () => {
           triggers: ['uniquetrigger12345'],
           domains: [],
           enabled: false,
-        }),
+        })
       );
       const role = manager.findRelevantRole('uniquetrigger12345');
       expect(role?.id).not.toBe(added.id);
@@ -1025,14 +1030,14 @@ describe('SkillManager', () => {
           name: 'Low Score',
           triggers: ['matchme'],
           domains: [],
-        }),
+        })
       );
       await manager.addRole(
         makeRoleInput({
           name: 'High Score',
           triggers: ['matchme', 'please matchme'],
           domains: ['matchme'],
-        }),
+        })
       );
 
       const role = manager.findRelevantRole('matchme please matchme');
@@ -1109,7 +1114,7 @@ describe('SkillManager', () => {
       await manager.addInstruction(makeInstructionInput());
 
       const writeCalls = writeFileMock.mock.calls;
-      const instructionsWrite = writeCalls.find(c => String(c[0]).includes('instructions.json'));
+      const instructionsWrite = writeCalls.find((c) => String(c[0]).includes('instructions.json'));
       expect(instructionsWrite).toBeDefined();
     });
 
@@ -1191,7 +1196,7 @@ describe('SkillManager', () => {
       await manager.deleteInstruction(added.id);
 
       const writeCalls = writeFileMock.mock.calls;
-      const instructionsWrite = writeCalls.find(c => String(c[0]).includes('instructions.json'));
+      const instructionsWrite = writeCalls.find((c) => String(c[0]).includes('instructions.json'));
       expect(instructionsWrite).toBeDefined();
     });
 
@@ -1202,7 +1207,7 @@ describe('SkillManager', () => {
       await manager.deleteInstruction('non-existent');
 
       const writeCalls = writeFileMock.mock.calls;
-      const instructionsWrite = writeCalls.find(c => String(c[0]).includes('instructions.json'));
+      const instructionsWrite = writeCalls.find((c) => String(c[0]).includes('instructions.json'));
       expect(instructionsWrite).toBeUndefined();
     });
   });
@@ -1227,11 +1232,11 @@ describe('SkillManager', () => {
           name: 'Topic Instruction',
           applyWhen: 'specific_topics',
           topics: ['cooking', 'recipes'],
-        }),
+        })
       );
 
       const results = manager.getApplicableInstructions(['cooking']);
-      expect(results.some(i => i.name === 'Topic Instruction')).toBe(true);
+      expect(results.some((i) => i.name === 'Topic Instruction')).toBe(true);
     });
 
     it('does not return topic instruction when topics do not match', async () => {
@@ -1241,11 +1246,11 @@ describe('SkillManager', () => {
           name: 'Topic Instruction',
           applyWhen: 'specific_topics',
           topics: ['cooking'],
-        }),
+        })
       );
 
       const results = manager.getApplicableInstructions(['programming']);
-      expect(results.some(i => i.name === 'Topic Instruction')).toBe(false);
+      expect(results.some((i) => i.name === 'Topic Instruction')).toBe(false);
     });
 
     it('does not return topic instruction when no topics provided', async () => {
@@ -1255,11 +1260,11 @@ describe('SkillManager', () => {
           name: 'Topic Instruction',
           applyWhen: 'specific_topics',
           topics: ['cooking'],
-        }),
+        })
       );
 
       const results = manager.getApplicableInstructions();
-      expect(results.some(i => i.name === 'Topic Instruction')).toBe(false);
+      expect(results.some((i) => i.name === 'Topic Instruction')).toBe(false);
     });
 
     it('returns instructions for matching roles', async () => {
@@ -1269,11 +1274,11 @@ describe('SkillManager', () => {
           name: 'Role Instruction',
           applyWhen: 'specific_roles',
           roles: ['role_dev'],
-        }),
+        })
       );
 
       const results = manager.getApplicableInstructions(undefined, 'role_dev');
-      expect(results.some(i => i.name === 'Role Instruction')).toBe(true);
+      expect(results.some((i) => i.name === 'Role Instruction')).toBe(true);
     });
 
     it('does not return role instruction when roleId does not match', async () => {
@@ -1283,11 +1288,11 @@ describe('SkillManager', () => {
           name: 'Role Instruction',
           applyWhen: 'specific_roles',
           roles: ['role_dev'],
-        }),
+        })
       );
 
       const results = manager.getApplicableInstructions(undefined, 'role_other');
-      expect(results.some(i => i.name === 'Role Instruction')).toBe(false);
+      expect(results.some((i) => i.name === 'Role Instruction')).toBe(false);
     });
 
     it('does not return role instruction when no roleId provided', async () => {
@@ -1297,11 +1302,11 @@ describe('SkillManager', () => {
           name: 'Role Instruction',
           applyWhen: 'specific_roles',
           roles: ['role_dev'],
-        }),
+        })
       );
 
       const results = manager.getApplicableInstructions();
-      expect(results.some(i => i.name === 'Role Instruction')).toBe(false);
+      expect(results.some((i) => i.name === 'Role Instruction')).toBe(false);
     });
 
     it('does not include manual instructions', async () => {
@@ -1310,11 +1315,11 @@ describe('SkillManager', () => {
         makeInstructionInput({
           name: 'Manual Instruction',
           applyWhen: 'manual',
-        }),
+        })
       );
 
       const results = manager.getApplicableInstructions();
-      expect(results.some(i => i.name === 'Manual Instruction')).toBe(false);
+      expect(results.some((i) => i.name === 'Manual Instruction')).toBe(false);
     });
 
     it('skips disabled instructions', async () => {
@@ -1324,11 +1329,11 @@ describe('SkillManager', () => {
           name: 'Disabled Instruction',
           applyWhen: 'always',
           enabled: false,
-        }),
+        })
       );
 
       const results = manager.getApplicableInstructions();
-      expect(results.some(i => i.name === 'Disabled Instruction')).toBe(false);
+      expect(results.some((i) => i.name === 'Disabled Instruction')).toBe(false);
     });
 
     it('sorts by priority descending', async () => {
@@ -1338,14 +1343,14 @@ describe('SkillManager', () => {
           name: 'Low Priority',
           applyWhen: 'always',
           priority: 1,
-        }),
+        })
       );
       await manager.addInstruction(
         makeInstructionInput({
           name: 'High Priority',
           applyWhen: 'always',
           priority: 100,
-        }),
+        })
       );
 
       const results = manager.getApplicableInstructions();
@@ -1410,7 +1415,7 @@ describe('SkillManager', () => {
           name: 'Always Be Kind',
           content: 'ALWAYS BE KIND',
           applyWhen: 'always',
-        }),
+        })
       );
 
       const ctx = manager.buildContext('write python code');
@@ -1426,11 +1431,11 @@ describe('SkillManager', () => {
           content: 'Use metric measurements',
           applyWhen: 'specific_topics',
           topics: ['cooking'],
-        }),
+        })
       );
 
       const ctx = manager.buildContext('write a recipe', ['cooking']);
-      expect(ctx.instructions.some(i => i.name === 'Cooking Instruction')).toBe(true);
+      expect(ctx.instructions.some((i) => i.name === 'Cooking Instruction')).toBe(true);
       expect(ctx.systemPrompt).toContain('Use metric measurements');
     });
 
@@ -1452,7 +1457,7 @@ describe('SkillManager', () => {
           name: 'Custom Rule',
           content: 'CUSTOM RULE CONTENT',
           applyWhen: 'always',
-        }),
+        })
       );
 
       const ctx = manager.buildContext('write python code');

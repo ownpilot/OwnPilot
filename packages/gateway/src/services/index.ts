@@ -18,10 +18,7 @@ export { SessionService, createSessionService } from './session-service-impl.js'
 export { MessageBus, createMessageBus } from './message-bus-impl.js';
 
 // Config Center
-export {
-  GatewayConfigCenter,
-  gatewayConfigCenter,
-} from './config-center-impl.js';
+export { GatewayConfigCenter, gatewayConfigCenter } from './config-center-impl.js';
 
 // Tool Service
 export { ToolService, createToolService } from './tool-service-impl.js';

@@ -8,10 +8,13 @@
 import { generateId } from '@ownpilot/core';
 
 /** In-memory pending approvals */
-const pendingApprovals = new Map<string, {
-  resolve: (approved: boolean) => void;
-  timer: ReturnType<typeof setTimeout>;
-}>();
+const pendingApprovals = new Map<
+  string,
+  {
+    resolve: (approved: boolean) => void;
+    timer: ReturnType<typeof setTimeout>;
+  }
+>();
 
 /** Default timeout for approval requests (2 minutes) */
 const APPROVAL_TIMEOUT_MS = 120_000;
@@ -61,5 +64,3 @@ export function resolveApproval(approvalId: string, approved: boolean): boolean 
 export function generateApprovalId(): string {
   return generateId('approval');
 }
-
-

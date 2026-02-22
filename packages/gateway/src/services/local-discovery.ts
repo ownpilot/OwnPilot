@@ -40,9 +40,9 @@ export interface DiscoveryResult {
  */
 function buildDisplayName(modelId: string): string {
   return modelId
-    .replace(/^.*\//, '')       // strip org prefix
-    .replace(/:[^:]+$/, '')     // strip :tag (e.g. ":latest")
-    .replace(/[-_]/g, ' ')      // dashes / underscores -> spaces
+    .replace(/^.*\//, '') // strip org prefix
+    .replace(/:[^:]+$/, '') // strip :tag (e.g. ":latest")
+    .replace(/[-_]/g, ' ') // dashes / underscores -> spaces
     .replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
@@ -57,10 +57,7 @@ const FETCH_TIMEOUT_MS = 8_000;
  * Perform a GET request with an 8-second timeout.
  * Returns the raw Response on success or `null` on any network / timeout error.
  */
-async function timedFetch(
-  url: string,
-  headers: Record<string, string>,
-): Promise<Response | null> {
+async function timedFetch(url: string, headers: Record<string, string>): Promise<Response | null> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
 
@@ -83,7 +80,7 @@ async function timedFetch(
  */
 function authHeaders(apiKey: string | null | undefined): Record<string, string> {
   const headers: Record<string, string> = {
-    'Accept': 'application/json',
+    Accept: 'application/json',
   };
   if (apiKey) {
     headers['Authorization'] = `Bearer ${apiKey}`;
@@ -110,9 +107,7 @@ interface LMStudioModelsResponse {
 async function discoverLMStudio(provider: LocalProvider): Promise<DiscoveryResult> {
   // If baseUrl already ends with /v1, just append /models
   const base = provider.baseUrl.replace(/\/+$/, '');
-  const modelsUrl = base.endsWith('/v1')
-    ? `${base}/models`
-    : `${base}/v1/models`;
+  const modelsUrl = base.endsWith('/v1') ? `${base}/models` : `${base}/v1/models`;
 
   const headers = authHeaders(provider.apiKey);
   const response = await timedFetch(modelsUrl, headers);

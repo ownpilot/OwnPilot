@@ -97,7 +97,13 @@ export type CategoryOf<T extends string> = T extends `${infer Cat}.${string}` ? 
 export function deriveCategory(type: string): EventCategory {
   const firstSegment = type.split('.')[0];
   const validCategories: EventCategory[] = [
-    'agent', 'tool', 'resource', 'plugin', 'system', 'channel', 'gateway',
+    'agent',
+    'tool',
+    'resource',
+    'plugin',
+    'system',
+    'channel',
+    'gateway',
   ];
   if (validCategories.includes(firstSegment as EventCategory)) {
     return firstSegment as EventCategory;

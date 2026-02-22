@@ -27,10 +27,12 @@ vi.stubGlobal('fetch', mockFetch);
 
 const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20 MB
 
-function createMockBot(fileResult: { file_path?: string; file_size?: number } = {
-  file_path: 'photos/test.jpg',
-  file_size: 1024,
-}) {
+function createMockBot(
+  fileResult: { file_path?: string; file_size?: number } = {
+    file_path: 'photos/test.jpg',
+    file_size: 1024,
+  }
+) {
   return {
     api: { getFile: vi.fn().mockResolvedValue(fileResult) },
     token: 'test-token-123',
@@ -41,9 +43,11 @@ function createFetchResponse(buffer: Buffer, ok = true, status = 200) {
   return {
     ok,
     status,
-    arrayBuffer: vi.fn().mockResolvedValue(
-      buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength),
-    ),
+    arrayBuffer: vi
+      .fn()
+      .mockResolvedValue(
+        buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength)
+      ),
   };
 }
 
@@ -113,7 +117,7 @@ function makeVideo(overrides: Record<string, unknown> = {}) {
 // ---------------------------------------------------------------------------
 
 describe('Telegram File Handler', () => {
-  let downloadTelegramAttachments: typeof import('./file-handler.js')['downloadTelegramAttachments'];
+  let downloadTelegramAttachments: (typeof import('./file-handler.js'))['downloadTelegramAttachments'];
 
   beforeEach(async () => {
     vi.clearAllMocks();
@@ -179,7 +183,7 @@ describe('Telegram File Handler', () => {
 
       expect(mockLogWarn).toHaveBeenCalledWith(
         'Telegram getFile returned no file_path',
-        expect.objectContaining({ fileId: 'nofp-id' }),
+        expect.objectContaining({ fileId: 'nofp-id' })
       );
     });
 
@@ -203,7 +207,7 @@ describe('Telegram File Handler', () => {
 
       expect(mockLogWarn).toHaveBeenCalledWith(
         'File exceeds size limit (pre-download)',
-        expect.objectContaining({ size: oversized, max: MAX_FILE_SIZE }),
+        expect.objectContaining({ size: oversized, max: MAX_FILE_SIZE })
       );
     });
 
@@ -226,7 +230,7 @@ describe('Telegram File Handler', () => {
 
       expect(mockLogWarn).toHaveBeenCalledWith(
         'Telegram file download failed',
-        expect.objectContaining({ status: 500, fileId: 'fetch-fail-id' }),
+        expect.objectContaining({ status: 500, fileId: 'fetch-fail-id' })
       );
     });
 
@@ -251,7 +255,7 @@ describe('Telegram File Handler', () => {
 
       expect(mockLogWarn).toHaveBeenCalledWith(
         'File exceeds size limit',
-        expect.objectContaining({ size: MAX_FILE_SIZE + 1, max: MAX_FILE_SIZE }),
+        expect.objectContaining({ size: MAX_FILE_SIZE + 1, max: MAX_FILE_SIZE })
       );
     });
 
@@ -275,7 +279,7 @@ describe('Telegram File Handler', () => {
 
       expect(mockLogWarn).toHaveBeenCalledWith(
         'Failed to download file from Telegram',
-        expect.objectContaining({ fileId: 'throw-id', error: err }),
+        expect.objectContaining({ fileId: 'throw-id', error: err })
       );
     });
 
@@ -299,7 +303,7 @@ describe('Telegram File Handler', () => {
 
       expect(mockLogWarn).toHaveBeenCalledWith(
         'Failed to download file from Telegram',
-        expect.objectContaining({ fileId: 'net-err-id', error: err }),
+        expect.objectContaining({ fileId: 'net-err-id', error: err })
       );
     });
 
@@ -637,7 +641,11 @@ describe('Telegram File Handler', () => {
       const bot = createMockBot();
 
       const msg = makeMessage({
-        document: makeDocument({ mime_type: 'application/zip', file_name: 'archive.zip', file_size: 5000 }),
+        document: makeDocument({
+          mime_type: 'application/zip',
+          file_name: 'archive.zip',
+          file_size: 5000,
+        }),
       });
       const result = await downloadTelegramAttachments(bot as never, msg as never);
 
@@ -1093,7 +1101,11 @@ describe('Telegram File Handler', () => {
       const bot = createMockBot();
 
       const msg = makeMessage({
-        video: makeVideo({ file_size: MAX_FILE_SIZE + 1, file_name: undefined, file_id: 'bigvid-id' }),
+        video: makeVideo({
+          file_size: MAX_FILE_SIZE + 1,
+          file_name: undefined,
+          file_id: 'bigvid-id',
+        }),
       });
       const result = await downloadTelegramAttachments(bot as never, msg as never);
 
@@ -1149,7 +1161,7 @@ describe('Telegram File Handler', () => {
 
     it('should process all attachment types in order', async () => {
       const bot = createMockBot();
-      const bufs = ['photo', 'doc', 'audio', 'voice', 'video'].map(s => Buffer.from(s));
+      const bufs = ['photo', 'doc', 'audio', 'voice', 'video'].map((s) => Buffer.from(s));
       for (const buf of bufs) {
         mockFetch.mockResolvedValueOnce(createFetchResponse(buf));
       }
@@ -1176,7 +1188,11 @@ describe('Telegram File Handler', () => {
       const bot = createMockBot();
 
       const msg = makeMessage({
-        document: makeDocument({ mime_type: 'application/x-rar', file_name: 'archive.rar', file_size: 4096 }),
+        document: makeDocument({
+          mime_type: 'application/x-rar',
+          file_name: 'archive.rar',
+          file_size: 4096,
+        }),
       });
       const result = await downloadTelegramAttachments(bot as never, msg as never);
 
@@ -1217,24 +1233,22 @@ describe('Telegram File Handler', () => {
     // If analyzable, download is attempted (getFile called).
     // If not analyzable, metadata-only is returned (no getFile).
 
-    it.each([
-      'image/jpeg',
-      'image/png',
-      'image/gif',
-      'image/webp',
-    ])('should treat %s as analyzable (image types)', async (mime) => {
-      const bot = createMockBot();
-      mockFetch.mockResolvedValueOnce(createFetchResponse(Buffer.from('x')));
+    it.each(['image/jpeg', 'image/png', 'image/gif', 'image/webp'])(
+      'should treat %s as analyzable (image types)',
+      async (mime) => {
+        const bot = createMockBot();
+        mockFetch.mockResolvedValueOnce(createFetchResponse(Buffer.from('x')));
 
-      const msg = makeMessage({
-        document: makeDocument({ mime_type: mime, file_size: 100 }),
-      });
-      const result = await downloadTelegramAttachments(bot as never, msg as never);
+        const msg = makeMessage({
+          document: makeDocument({ mime_type: mime, file_size: 100 }),
+        });
+        const result = await downloadTelegramAttachments(bot as never, msg as never);
 
-      expect(bot.api.getFile).toHaveBeenCalled();
-      expect(result).toHaveLength(1);
-      expect(result[0]!.data).toBeDefined();
-    });
+        expect(bot.api.getFile).toHaveBeenCalled();
+        expect(result).toHaveLength(1);
+        expect(result[0]!.data).toBeDefined();
+      }
+    );
 
     it('should treat application/pdf as analyzable', async () => {
       const bot = createMockBot();
@@ -1249,24 +1263,21 @@ describe('Telegram File Handler', () => {
       expect(result[0]!.data).toBeDefined();
     });
 
-    it.each([
-      'audio/ogg',
-      'audio/mpeg',
-      'audio/mp4',
-      'audio/wav',
-      'audio/webm',
-    ])('should treat %s as analyzable (audio types)', async (mime) => {
-      const bot = createMockBot();
-      mockFetch.mockResolvedValueOnce(createFetchResponse(Buffer.from('x')));
+    it.each(['audio/ogg', 'audio/mpeg', 'audio/mp4', 'audio/wav', 'audio/webm'])(
+      'should treat %s as analyzable (audio types)',
+      async (mime) => {
+        const bot = createMockBot();
+        mockFetch.mockResolvedValueOnce(createFetchResponse(Buffer.from('x')));
 
-      const msg = makeMessage({
-        document: makeDocument({ mime_type: mime, file_size: 100 }),
-      });
-      const result = await downloadTelegramAttachments(bot as never, msg as never);
+        const msg = makeMessage({
+          document: makeDocument({ mime_type: mime, file_size: 100 }),
+        });
+        const result = await downloadTelegramAttachments(bot as never, msg as never);
 
-      expect(bot.api.getFile).toHaveBeenCalled();
-      expect(result[0]!.data).toBeDefined();
-    });
+        expect(bot.api.getFile).toHaveBeenCalled();
+        expect(result[0]!.data).toBeDefined();
+      }
+    );
 
     it('should NOT treat text/plain as analyzable', async () => {
       const bot = createMockBot();

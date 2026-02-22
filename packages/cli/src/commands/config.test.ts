@@ -25,7 +25,9 @@ const mockInitializeAdapter = vi.hoisted(() => vi.fn().mockResolvedValue(undefin
 const mockGetDatabasePath = vi.hoisted(() => vi.fn(() => '/test/db/ownpilot.db'));
 
 // readline question callback — overridden per-test when testing stdin path
-const mockQuestion = vi.hoisted(() => vi.fn((prompt: string, cb: (a: string) => void) => cb('test-value')));
+const mockQuestion = vi.hoisted(() =>
+  vi.fn((prompt: string, cb: (a: string) => void) => cb('test-value'))
+);
 const mockRlClose = vi.hoisted(() => vi.fn());
 const mockRlOn = vi.hoisted(() => vi.fn().mockReturnThis());
 
@@ -309,7 +311,7 @@ describe('Config CLI Commands', () => {
 
     it('reads value from stdin when value option is omitted', async () => {
       mockQuestion.mockImplementationOnce((_prompt: string, cb: (a: string) => void) =>
-        cb('stdin-value'),
+        cb('stdin-value')
       );
 
       await configSet({ key: 'openai-api-key' });
@@ -331,7 +333,7 @@ describe('Config CLI Commands', () => {
 
     it('trims whitespace from stdin value', async () => {
       mockQuestion.mockImplementationOnce((_prompt: string, cb: (a: string) => void) =>
-        cb('  whitespace-padded  '),
+        cb('  whitespace-padded  ')
       );
 
       await configSet({ key: 'openai-api-key' });
@@ -340,12 +342,16 @@ describe('Config CLI Commands', () => {
     });
 
     it('calls process.exit(1) when the explicit value is only whitespace', async () => {
-      await expect(configSet({ key: 'openai-api-key', value: '   ' })).rejects.toThrow('process.exit');
+      await expect(configSet({ key: 'openai-api-key', value: '   ' })).rejects.toThrow(
+        'process.exit'
+      );
       expect(exitSpy).toHaveBeenCalledWith(1);
     });
 
     it('logs an error message when value is whitespace-only before exiting', async () => {
-      await expect(configSet({ key: 'openai-api-key', value: '   ' })).rejects.toThrow('process.exit');
+      await expect(configSet({ key: 'openai-api-key', value: '   ' })).rejects.toThrow(
+        'process.exit'
+      );
       expect(errorOutput(errorSpy)).toContain('Value cannot be empty');
     });
 
@@ -395,14 +401,14 @@ describe('Config CLI Commands', () => {
     it('propagates errors thrown by initializeAdapter', async () => {
       mockInitializeAdapter.mockRejectedValueOnce(new Error('DB init failed'));
       await expect(configSet({ key: 'openai-api-key', value: 'sk-test' })).rejects.toThrow(
-        'DB init failed',
+        'DB init failed'
       );
     });
 
     it('propagates errors thrown by settingsRepo.set', async () => {
       mockSettingsRepo.set.mockRejectedValueOnce(new Error('DB write error'));
       await expect(configSet({ key: 'openai-api-key', value: 'sk-test' })).rejects.toThrow(
-        'DB write error',
+        'DB write error'
       );
     });
   });
@@ -661,8 +667,15 @@ describe('Config CLI Commands', () => {
       await configList();
       const out = logOutput(logSpy);
       const providers = [
-        'openai', 'anthropic', 'zhipu', 'deepseek', 'groq',
-        'together', 'mistral', 'fireworks', 'perplexity',
+        'openai',
+        'anthropic',
+        'zhipu',
+        'deepseek',
+        'groq',
+        'together',
+        'mistral',
+        'fireworks',
+        'perplexity',
       ];
       for (const p of providers) {
         expect(out).toContain(`${p}-api-key`);
@@ -954,25 +967,19 @@ describe('Config CLI Commands', () => {
     });
 
     it('sets ANTHROPIC_API_KEY in process.env when returned from DB', async () => {
-      mockSettingsRepo.getByPrefix.mockResolvedValueOnce([
-        apiKeyRow('anthropic', 'sk-ant-loaded'),
-      ]);
+      mockSettingsRepo.getByPrefix.mockResolvedValueOnce([apiKeyRow('anthropic', 'sk-ant-loaded')]);
       await loadCredentialsToEnv();
       expect(process.env['ANTHROPIC_API_KEY']).toBe('sk-ant-loaded');
     });
 
     it('sets GROQ_API_KEY in process.env when returned from DB', async () => {
-      mockSettingsRepo.getByPrefix.mockResolvedValueOnce([
-        apiKeyRow('groq', 'groq-loaded'),
-      ]);
+      mockSettingsRepo.getByPrefix.mockResolvedValueOnce([apiKeyRow('groq', 'groq-loaded')]);
       await loadCredentialsToEnv();
       expect(process.env['GROQ_API_KEY']).toBe('groq-loaded');
     });
 
     it('sets MISTRAL_API_KEY in process.env when returned from DB', async () => {
-      mockSettingsRepo.getByPrefix.mockResolvedValueOnce([
-        apiKeyRow('mistral', 'mistral-loaded'),
-      ]);
+      mockSettingsRepo.getByPrefix.mockResolvedValueOnce([apiKeyRow('mistral', 'mistral-loaded')]);
       await loadCredentialsToEnv();
       expect(process.env['MISTRAL_API_KEY']).toBe('mistral-loaded');
     });
@@ -986,17 +993,13 @@ describe('Config CLI Commands', () => {
     });
 
     it('sets FIREWORKS_API_KEY in process.env when returned from DB', async () => {
-      mockSettingsRepo.getByPrefix.mockResolvedValueOnce([
-        apiKeyRow('fireworks', 'fw-loaded'),
-      ]);
+      mockSettingsRepo.getByPrefix.mockResolvedValueOnce([apiKeyRow('fireworks', 'fw-loaded')]);
       await loadCredentialsToEnv();
       expect(process.env['FIREWORKS_API_KEY']).toBe('fw-loaded');
     });
 
     it('sets PERPLEXITY_API_KEY in process.env when returned from DB', async () => {
-      mockSettingsRepo.getByPrefix.mockResolvedValueOnce([
-        apiKeyRow('perplexity', 'pplx-loaded'),
-      ]);
+      mockSettingsRepo.getByPrefix.mockResolvedValueOnce([apiKeyRow('perplexity', 'pplx-loaded')]);
       await loadCredentialsToEnv();
       expect(process.env['PERPLEXITY_API_KEY']).toBe('pplx-loaded');
     });
@@ -1006,9 +1009,7 @@ describe('Config CLI Commands', () => {
       const prev = process.env['DEEPSEEK_API_KEY'];
       try {
         delete process.env['DEEPSEEK_API_KEY'];
-        mockSettingsRepo.getByPrefix.mockResolvedValueOnce([
-          apiKeyRow('deepseek', 'ds-loaded'),
-        ]);
+        mockSettingsRepo.getByPrefix.mockResolvedValueOnce([apiKeyRow('deepseek', 'ds-loaded')]);
         await loadCredentialsToEnv();
         expect(process.env['DEEPSEEK_API_KEY']).toBe('ds-loaded');
       } finally {
@@ -1024,9 +1025,7 @@ describe('Config CLI Commands', () => {
       const prev = process.env['ZHIPU_API_KEY'];
       try {
         delete process.env['ZHIPU_API_KEY'];
-        mockSettingsRepo.getByPrefix.mockResolvedValueOnce([
-          apiKeyRow('zhipu', 'zhipu-loaded'),
-        ]);
+        mockSettingsRepo.getByPrefix.mockResolvedValueOnce([apiKeyRow('zhipu', 'zhipu-loaded')]);
         await loadCredentialsToEnv();
         expect(process.env['ZHIPU_API_KEY']).toBe('zhipu-loaded');
       } finally {

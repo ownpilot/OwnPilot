@@ -356,7 +356,9 @@ describe('TOOL_SETS', () => {
   it('every tool in every set has an executor function', () => {
     for (const [key, set] of Object.entries(TOOL_SETS)) {
       for (const tool of set) {
-        expect(typeof tool.executor, `TOOL_SETS.${key} tool executor should be a function`).toBe('function');
+        expect(typeof tool.executor, `TOOL_SETS.${key} tool executor should be a function`).toBe(
+          'function'
+        );
       }
     }
   });
@@ -725,7 +727,7 @@ describe('registerAllTools()', () => {
     const mockRegistry = { register: vi.fn() };
     registerAllTools(mockRegistry);
     const registeredDescriptions = mockRegistry.register.mock.calls.map(
-      (c) => (c[0] as { description: string }).description,
+      (c) => (c[0] as { description: string }).description
     );
     for (const tool of ALL_TOOLS) {
       expect(registeredDescriptions).toContain(tool.definition.description);

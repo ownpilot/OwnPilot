@@ -54,7 +54,8 @@ export const CORE_TOOLS: readonly ToolDefinition[] = [
       properties: {
         path: {
           type: 'string',
-          description: 'Relative path of the folder to create (e.g., "projects/my-project" or "notes/2024")',
+          description:
+            'Relative path of the folder to create (e.g., "projects/my-project" or "notes/2024")',
         },
       },
       required: ['path'],
@@ -62,13 +63,15 @@ export const CORE_TOOLS: readonly ToolDefinition[] = [
   },
   {
     name: 'write_file',
-    description: 'Write content to a file in the workspace. Creates the file if it does not exist, or overwrites if it does. Parent folders are created automatically.',
+    description:
+      'Write content to a file in the workspace. Creates the file if it does not exist, or overwrites if it does. Parent folders are created automatically.',
     parameters: {
       type: 'object',
       properties: {
         path: {
           type: 'string',
-          description: 'Relative path of the file (e.g., "notes/meeting.md" or "data/contacts.json")',
+          description:
+            'Relative path of the file (e.g., "notes/meeting.md" or "data/contacts.json")',
         },
         content: {
           type: 'string',
@@ -249,7 +252,8 @@ export const CORE_TOOLS: readonly ToolDefinition[] = [
       properties: {
         date: {
           type: 'string',
-          description: 'Date string to format (ISO format or natural language like "tomorrow", "next week")',
+          description:
+            'Date string to format (ISO format or natural language like "tomorrow", "next week")',
         },
         format: {
           type: 'string',
@@ -973,7 +977,8 @@ export const CORE_TOOLS: readonly ToolDefinition[] = [
       properties: {
         operation: {
           type: 'string',
-          description: 'Operation: "of" (X% of Y), "is" (X is what % of Y), "change" (% change from X to Y)',
+          description:
+            'Operation: "of" (X% of Y), "is" (X is what % of Y), "change" (% change from X to Y)',
         },
         value1: {
           type: 'number',

@@ -31,7 +31,18 @@ import {
   executeCustomToolUnified,
   unregisterToolFromRegistries,
 } from '../services/custom-tool-registry.js';
-import { getUserId, apiResponse, apiError, ERROR_CODES, getOptionalIntParam, sanitizeId, sanitizeText, notFoundError, getErrorMessage, validateQueryEnum } from './helpers.js';
+import {
+  getUserId,
+  apiResponse,
+  apiError,
+  ERROR_CODES,
+  getOptionalIntParam,
+  sanitizeId,
+  sanitizeText,
+  notFoundError,
+  getErrorMessage,
+  validateQueryEnum,
+} from './helpers.js';
 import { TOOL_TEMPLATES } from './tool-templates.js';
 import { TOOL_ARGS_MAX_SIZE } from '../config/defaults.js';
 import { wsGateway } from '../ws/server.js';
@@ -58,7 +69,12 @@ customToolsRoutes.get('/stats', async (c) => {
 customToolsRoutes.get('/', async (c) => {
   const repo = createCustomToolsRepo(getUserId(c));
 
-  const status = validateQueryEnum(c.req.query('status'), ['active', 'disabled', 'pending_approval', 'rejected'] as const);
+  const status = validateQueryEnum(c.req.query('status'), [
+    'active',
+    'disabled',
+    'pending_approval',
+    'rejected',
+  ] as const);
   const category = c.req.query('category');
   const createdBy = validateQueryEnum(c.req.query('createdBy'), ['user', 'llm'] as const);
   const limit = getOptionalIntParam(c, 'limit', 1, 100);
@@ -67,9 +83,9 @@ customToolsRoutes.get('/', async (c) => {
   const tools = await repo.list({ status, category, createdBy, limit, offset });
 
   return apiResponse(c, {
-      tools,
-      count: tools.length,
-    });
+    tools,
+    count: tools.length,
+  });
 });
 
 /**
@@ -80,9 +96,9 @@ customToolsRoutes.get('/pending', async (c) => {
   const tools = await repo.getPendingApproval();
 
   return apiResponse(c, {
-      tools,
-      count: tools.length,
-    });
+    tools,
+    count: tools.length,
+  });
 });
 
 /**
@@ -94,11 +110,11 @@ customToolsRoutes.get('/templates', (c) => {
 
   let templates = TOOL_TEMPLATES;
   if (category) {
-    templates = templates.filter(t => t.category.toLowerCase() === category.toLowerCase());
+    templates = templates.filter((t) => t.category.toLowerCase() === category.toLowerCase());
   }
 
   return apiResponse(c, {
-    templates: templates.map(t => ({
+    templates: templates.map((t) => ({
       id: t.id,
       name: t.name,
       displayName: t.displayName,
@@ -110,7 +126,7 @@ customToolsRoutes.get('/templates', (c) => {
       requiredApiKeys: t.requiredApiKeys,
     })),
     count: templates.length,
-    categories: [...new Set(TOOL_TEMPLATES.map(t => t.category))],
+    categories: [...new Set(TOOL_TEMPLATES.map((t) => t.category))],
   });
 });
 
@@ -151,7 +167,14 @@ customToolsRoutes.post('/', async (c) => {
   // Validate code using centralized validator
   const codeValidation = validateToolCode(body.code);
   if (!codeValidation.valid) {
-    return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: `Tool code validation failed: ${codeValidation.errors[0]}` }, 400);
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.INVALID_INPUT,
+        message: `Tool code validation failed: ${codeValidation.errors[0]}`,
+      },
+      400
+    );
   }
 
   const repo = createCustomToolsRepo(getUserId(c));
@@ -159,7 +182,14 @@ customToolsRoutes.post('/', async (c) => {
   // Check if tool name already exists
   const existing = await repo.getByName(body.name);
   if (existing) {
-    return apiError(c, { code: ERROR_CODES.ALREADY_EXISTS, message: `Tool with name '${sanitizeText(body.name)}' already exists` }, 409);
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.ALREADY_EXISTS,
+        message: `Tool with name '${sanitizeText(body.name)}' already exists`,
+      },
+      409
+    );
   }
 
   const tool = await repo.create({
@@ -216,7 +246,14 @@ customToolsRoutes.patch('/:id', async (c) => {
   if (body.code) {
     const codeValidation = validateToolCode(body.code);
     if (!codeValidation.valid) {
-      return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: `Tool code validation failed: ${codeValidation.errors[0]}` }, 400);
+      return apiError(
+        c,
+        {
+          code: ERROR_CODES.INVALID_INPUT,
+          message: `Tool code validation failed: ${codeValidation.errors[0]}`,
+        },
+        400
+      );
     }
   }
 
@@ -282,9 +319,13 @@ customToolsRoutes.delete('/:id', async (c) => {
  */
 customToolsRoutes.patch('/:id/workflow-usable', async (c) => {
   const id = c.req.param('id');
-  const body = await c.req.json().catch(() => null) as { enabled: boolean } | null;
+  const body = (await c.req.json().catch(() => null)) as { enabled: boolean } | null;
   if (!body || typeof body.enabled !== 'boolean') {
-    return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'enabled (boolean) is required' }, 400);
+    return apiError(
+      c,
+      { code: ERROR_CODES.INVALID_INPUT, message: 'enabled (boolean) is required' },
+      400
+    );
   }
 
   const repo = createCustomToolsRepo(getUserId(c));
@@ -364,7 +405,14 @@ customToolsRoutes.post('/:id/approve', async (c) => {
   }
 
   if (tool.status !== 'pending_approval') {
-    return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: `Tool is not pending approval. Current status: ${tool.status}` }, 400);
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.INVALID_REQUEST,
+        message: `Tool is not pending approval. Current status: ${tool.status}`,
+      },
+      400
+    );
   }
 
   const approved = await repo.approve(id);
@@ -391,7 +439,14 @@ customToolsRoutes.post('/:id/reject', async (c) => {
   }
 
   if (tool.status !== 'pending_approval') {
-    return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: `Tool is not pending approval. Current status: ${tool.status}` }, 400);
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.INVALID_REQUEST,
+        message: `Tool is not pending approval. Current status: ${tool.status}`,
+      },
+      400
+    );
   }
 
   const rejected = await repo.reject(id);
@@ -410,7 +465,9 @@ customToolsRoutes.post('/:id/reject', async (c) => {
  */
 customToolsRoutes.post('/:id/execute', async (c) => {
   const id = c.req.param('id');
-  const body = await c.req.json().catch(() => null) as { arguments?: Record<string, unknown> } | null;
+  const body = (await c.req.json().catch(() => null)) as {
+    arguments?: Record<string, unknown>;
+  } | null;
   if (!body) {
     return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'Invalid JSON body' }, 400);
   }
@@ -423,13 +480,24 @@ customToolsRoutes.post('/:id/execute', async (c) => {
   }
 
   if (tool.status !== 'active') {
-    return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: `Tool is not active. Current status: ${tool.status}` }, 400);
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.INVALID_REQUEST,
+        message: `Tool is not active. Current status: ${tool.status}`,
+      },
+      400
+    );
   }
 
   // Validate arguments size to prevent abuse
   const argsStr = JSON.stringify(body.arguments ?? {});
   if (argsStr.length > TOOL_ARGS_MAX_SIZE) {
-    return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'Arguments payload too large (max 100KB)' }, 400);
+    return apiError(
+      c,
+      { code: ERROR_CODES.INVALID_INPUT, message: 'Arguments payload too large (max 100KB)' },
+      400
+    );
   }
 
   // Ensure tool is registered
@@ -437,14 +505,10 @@ customToolsRoutes.post('/:id/execute', async (c) => {
 
   const startTime = Date.now();
   try {
-    const result = await executeCustomToolUnified(
-      tool.name,
-      body.arguments ?? {},
-      {
-        conversationId: 'direct-execution',
-        userId: getUserId(c),
-      }
-    );
+    const result = await executeCustomToolUnified(tool.name, body.arguments ?? {}, {
+      conversationId: 'direct-execution',
+      userId: getUserId(c),
+    });
     const duration = Date.now() - startTime;
 
     // Record usage
@@ -454,12 +518,12 @@ customToolsRoutes.post('/:id/execute', async (c) => {
     recordExecution(id, body.arguments ?? {}, result, duration);
 
     return apiResponse(c, {
-        tool: tool.name,
-        result: result.content,
-        isError: result.isError,
-        duration,
-        metadata: result.metadata,
-      });
+      tool: tool.name,
+      result: result.content,
+      isError: result.isError,
+      duration,
+      metadata: result.metadata,
+    });
   } catch (execError) {
     const duration = Date.now() - startTime;
     const errorResult = {
@@ -508,7 +572,7 @@ customToolsRoutes.get('/:id/executions', async (c) => {
  * Test a tool without saving (dry run)
  */
 customToolsRoutes.post('/test', async (c) => {
-  const body = await c.req.json().catch(() => null) as {
+  const body = (await c.req.json().catch(() => null)) as {
     name: string;
     description: string;
     parameters: CustomToolRecord['parameters'];
@@ -522,13 +586,27 @@ customToolsRoutes.post('/test', async (c) => {
 
   // Validate required fields
   if (!body.name || !body.description || !body.parameters || !body.code) {
-    return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'Missing required fields: name, description, parameters, code' }, 400);
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.INVALID_INPUT,
+        message: 'Missing required fields: name, description, parameters, code',
+      },
+      400
+    );
   }
 
   // Validate code using centralized validator
   const codeValidation = validateToolCode(body.code);
   if (!codeValidation.valid) {
-    return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: `Tool code validation failed: ${codeValidation.errors[0]}` }, 400);
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.INVALID_INPUT,
+        message: `Tool code validation failed: ${codeValidation.errors[0]}`,
+      },
+      400
+    );
   }
 
   // Create temporary registry for testing, with all built-in tools available via callTool
@@ -546,25 +624,21 @@ customToolsRoutes.post('/test', async (c) => {
 
   const startTime = Date.now();
   try {
-    const result = await testRegistry.execute(
-      body.name,
-      body.testArguments ?? {},
-      {
-        callId: `test_${Date.now()}`,
-        conversationId: 'test-execution',
-        userId: getUserId(c),
-      }
-    );
+    const result = await testRegistry.execute(body.name, body.testArguments ?? {}, {
+      callId: `test_${Date.now()}`,
+      conversationId: 'test-execution',
+      userId: getUserId(c),
+    });
     const duration = Date.now() - startTime;
 
     return apiResponse(c, {
-        tool: body.name,
-        result: result.content,
-        isError: result.isError,
-        duration,
-        metadata: result.metadata,
-        testMode: true,
-      });
+      tool: body.name,
+      result: result.content,
+      isError: result.isError,
+      duration,
+      metadata: result.metadata,
+      testMode: true,
+    });
   } catch (execError) {
     const duration = Date.now() - startTime;
     return apiResponse(c, {
@@ -585,7 +659,7 @@ customToolsRoutes.post('/test', async (c) => {
  * LLM can use this to verify tool code before creating it.
  */
 customToolsRoutes.post('/validate', async (c) => {
-  const body = await c.req.json().catch(() => null) as {
+  const body = (await c.req.json().catch(() => null)) as {
     code: string;
     name?: string;
     permissions?: string[];
@@ -622,7 +696,7 @@ customToolsRoutes.post('/validate', async (c) => {
  * Returns structured review with risks, improvements, and overall assessment.
  */
 customToolsRoutes.post('/llm-review', async (c) => {
-  const body = await c.req.json().catch(() => null) as {
+  const body = (await c.req.json().catch(() => null)) as {
     code: string;
     name?: string;
     description?: string;
@@ -638,7 +712,14 @@ customToolsRoutes.post('/llm-review', async (c) => {
   const score = calculateSecurityScore(body.code, body.permissions);
 
   // Build the review prompt for LLM
-  const reviewPrompt = buildLlmReviewPrompt(body.code, body.name, body.description, body.permissions, analysis, score);
+  const reviewPrompt = buildLlmReviewPrompt(
+    body.code,
+    body.name,
+    body.description,
+    body.permissions,
+    analysis,
+    score
+  );
 
   return apiResponse(c, {
     staticAnalysis: {
@@ -733,14 +814,17 @@ Please provide:
 // =============================================================================
 
 /** In-memory execution audit trail (per tool, capped) */
-const executionAuditTrail = new Map<string, Array<{
-  timestamp: string;
-  argsHash: string;
-  resultSummary: string;
-  duration: number;
-  success: boolean;
-  error?: string;
-}>>();
+const executionAuditTrail = new Map<
+  string,
+  Array<{
+    timestamp: string;
+    argsHash: string;
+    resultSummary: string;
+    duration: number;
+    success: boolean;
+    error?: string;
+  }>
+>();
 
 const MAX_AUDIT_ENTRIES_PER_TOOL = 100;
 
@@ -760,12 +844,14 @@ function recordExecution(
 
   // Hash args for privacy (don't store raw arguments)
   const argsStr = JSON.stringify(args);
-  const argsHash = argsStr.length > 0
-    ? `sha256:${Buffer.from(argsStr).toString('base64').slice(0, 16)}...`
-    : 'empty';
+  const argsHash =
+    argsStr.length > 0
+      ? `sha256:${Buffer.from(argsStr).toString('base64').slice(0, 16)}...`
+      : 'empty';
 
   // Summarize result
-  const resultStr = typeof result.content === 'string' ? result.content : JSON.stringify(result.content);
+  const resultStr =
+    typeof result.content === 'string' ? result.content : JSON.stringify(result.content);
   const resultSummary = resultStr.length > 200 ? resultStr.slice(0, 200) + '...' : resultStr;
 
   trail.push({
@@ -783,13 +869,12 @@ function recordExecution(
   }
 }
 
-
 /**
  * POST /custom-tools/templates/:id/create - Create a tool from a template
  */
 customToolsRoutes.post('/templates/:templateId/create', async (c) => {
   const templateId = c.req.param('templateId');
-  const body = await c.req.json().catch(() => null) as {
+  const body = (await c.req.json().catch(() => null)) as {
     name?: string;
     description?: string;
     code?: string;
@@ -797,7 +882,7 @@ customToolsRoutes.post('/templates/:templateId/create', async (c) => {
     requiredApiKeys?: CustomToolRecord['requiredApiKeys'];
   } | null;
 
-  const template = TOOL_TEMPLATES.find(t => t.id === templateId);
+  const template = TOOL_TEMPLATES.find((t) => t.id === templateId);
   if (!template) {
     return notFoundError(c, 'Template', templateId);
   }
@@ -810,7 +895,14 @@ customToolsRoutes.post('/templates/:templateId/create', async (c) => {
   // Validate the final code
   const codeValidation = validateToolCode(toolCode);
   if (!codeValidation.valid) {
-    return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: `Tool code validation failed: ${codeValidation.errors[0]}` }, 400);
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.INVALID_INPUT,
+        message: `Tool code validation failed: ${codeValidation.errors[0]}`,
+      },
+      400
+    );
   }
 
   const repo = createCustomToolsRepo(getUserId(c));
@@ -818,7 +910,11 @@ customToolsRoutes.post('/templates/:templateId/create', async (c) => {
   // Check duplicate
   const existing = await repo.getByName(toolName);
   if (existing) {
-    return apiError(c, { code: ERROR_CODES.ALREADY_EXISTS, message: `Tool with name '${toolName}' already exists` }, 409);
+    return apiError(
+      c,
+      { code: ERROR_CODES.ALREADY_EXISTS, message: `Tool with name '${toolName}' already exists` },
+      409
+    );
   }
 
   const tool = await repo.create({
@@ -860,15 +956,16 @@ customToolsRoutes.get('/active/definitions', async (c) => {
     parameters: tool.parameters,
     category: tool.category ?? 'Custom',
     requiresConfirmation: tool.requiresApproval,
-    workflowUsable: tool.metadata?.workflowUsable !== undefined
-      ? Boolean(tool.metadata.workflowUsable)
-      : undefined,
+    workflowUsable:
+      tool.metadata?.workflowUsable !== undefined
+        ? Boolean(tool.metadata.workflowUsable)
+        : undefined,
   }));
 
   return apiResponse(c, {
-      tools: definitions,
-      count: definitions.length,
-    });
+    tools: definitions,
+    count: definitions.length,
+  });
 });
 
 // =============================================================================
@@ -899,19 +996,38 @@ export async function executeCustomToolTool(
   try {
     switch (toolId) {
       case 'create_tool': {
-        const { name, description, parameters: parametersInput, code, category, permissions, required_api_keys } = params as {
+        const {
+          name,
+          description,
+          parameters: parametersInput,
+          code,
+          category,
+          permissions,
+          required_api_keys,
+        } = params as {
           name: string;
           description: string;
-          parameters: string | { type: 'object'; properties: Record<string, unknown>; required?: string[] };
+          parameters:
+            | string
+            | { type: 'object'; properties: Record<string, unknown>; required?: string[] };
           code: string;
           category?: string;
           permissions?: string[];
-          required_api_keys?: Array<{ name: string; displayName?: string; description?: string; category?: string; docsUrl?: string }>;
+          required_api_keys?: Array<{
+            name: string;
+            displayName?: string;
+            description?: string;
+            category?: string;
+            docsUrl?: string;
+          }>;
         };
 
         // Validate required fields
         if (!name || !description || !parametersInput || !code) {
-          return { success: false, error: 'Missing required fields: name, description, parameters, code' };
+          return {
+            success: false,
+            error: 'Missing required fields: name, description, parameters, code',
+          };
         }
 
         // Enforce length limits (same as Zod schema)
@@ -929,24 +1045,42 @@ export async function executeCustomToolTool(
         }
 
         // Validate permissions enum
-        const VALID_PERMISSIONS = ['network', 'filesystem', 'database', 'shell', 'email', 'scheduling', 'local'];
+        const VALID_PERMISSIONS = [
+          'network',
+          'filesystem',
+          'database',
+          'shell',
+          'email',
+          'scheduling',
+          'local',
+        ];
         if (permissions) {
           if (!Array.isArray(permissions) || permissions.length > 7) {
             return { success: false, error: 'Permissions must be an array with max 7 entries' };
           }
-          const invalid = permissions.filter(p => !VALID_PERMISSIONS.includes(p));
+          const invalid = permissions.filter((p) => !VALID_PERMISSIONS.includes(p));
           if (invalid.length > 0) {
-            return { success: false, error: `Invalid permissions: ${invalid.join(', ')}. Allowed: ${VALID_PERMISSIONS.join(', ')}` };
+            return {
+              success: false,
+              error: `Invalid permissions: ${invalid.join(', ')}. Allowed: ${VALID_PERMISSIONS.join(', ')}`,
+            };
           }
         }
 
         // Parse parameters if it's a JSON string
-        let parameters: { type: 'object'; properties: Record<string, unknown>; required?: string[] };
+        let parameters: {
+          type: 'object';
+          properties: Record<string, unknown>;
+          required?: string[];
+        };
         if (typeof parametersInput === 'string') {
           try {
             parameters = JSON.parse(parametersInput);
           } catch {
-            return { success: false, error: 'Invalid JSON in parameters field. Must be a valid JSON Schema object.' };
+            return {
+              success: false,
+              error: 'Invalid JSON in parameters field. Must be a valid JSON Schema object.',
+            };
           }
         } else {
           parameters = parametersInput;
@@ -954,14 +1088,18 @@ export async function executeCustomToolTool(
 
         // Validate parameters structure
         if (!parameters || typeof parameters !== 'object' || parameters.type !== 'object') {
-          return { success: false, error: 'Parameters must be a JSON Schema object with type: "object"' };
+          return {
+            success: false,
+            error: 'Parameters must be a JSON Schema object with type: "object"',
+          };
         }
 
         // Validate tool name format
         if (!/^[a-z][a-z0-9_]*$/.test(name)) {
           return {
             success: false,
-            error: 'Tool name must start with lowercase letter and contain only lowercase letters, numbers, and underscores',
+            error:
+              'Tool name must start with lowercase letter and contain only lowercase letters, numbers, and underscores',
           };
         }
 
@@ -974,7 +1112,10 @@ export async function executeCustomToolTool(
         // Validate code using centralized validator
         const codeValidation = validateToolCode(code);
         if (!codeValidation.valid) {
-          return { success: false, error: `Tool code validation failed: ${codeValidation.errors[0]}` };
+          return {
+            success: false,
+            error: `Tool code validation failed: ${codeValidation.errors[0]}`,
+          };
         }
 
         // Parse required_api_keys
@@ -1005,7 +1146,7 @@ export async function executeCustomToolTool(
             requiresApproval: true,
             pendingToolId: tool.id,
             result: {
-              message: `Tool '${sanitizeText(name)}' created but requires user approval before it can be used. It has been flagged for review because it requests dangerous permissions (${permissions?.map(p => sanitizeId(p)).join(', ')}).`,
+              message: `Tool '${sanitizeText(name)}' created but requires user approval before it can be used. It has been flagged for review because it requests dangerous permissions (${permissions?.map((p) => sanitizeId(p)).join(', ')}).`,
               toolId: tool.id,
               status: tool.status,
             },
@@ -1038,7 +1179,10 @@ export async function executeCustomToolTool(
         // Validate status enum if provided
         const VALID_STATUSES = ['active', 'disabled', 'pending_approval', 'rejected'];
         if (status && !VALID_STATUSES.includes(status)) {
-          return { success: false, error: `Invalid status '${status}'. Allowed: ${VALID_STATUSES.join(', ')}` };
+          return {
+            success: false,
+            error: `Invalid status '${status}'. Allowed: ${VALID_STATUSES.join(', ')}`,
+          };
         }
 
         // Validate category length
@@ -1079,7 +1223,10 @@ export async function executeCustomToolTool(
         const { name, confirm } = params as { name: string; confirm?: boolean };
 
         if (!name || typeof name !== 'string' || name.length > 100) {
-          return { success: false, error: 'Tool name must be a non-empty string with max 100 characters' };
+          return {
+            success: false,
+            error: 'Tool name must be a non-empty string with max 100 characters',
+          };
         }
         if (confirm !== undefined && typeof confirm !== 'boolean') {
           return { success: false, error: 'confirm must be a boolean' };
@@ -1134,7 +1281,10 @@ export async function executeCustomToolTool(
         const { name, enabled } = params as { name: string; enabled: boolean };
 
         if (!name || typeof name !== 'string' || name.length > 100) {
-          return { success: false, error: 'Tool name must be a non-empty string with max 100 characters' };
+          return {
+            success: false,
+            error: 'Tool name must be a non-empty string with max 100 characters',
+          };
         }
         if (typeof enabled !== 'boolean') {
           return { success: false, error: 'enabled must be a boolean value (true or false)' };
@@ -1172,7 +1322,10 @@ export async function executeCustomToolTool(
         };
 
         if (!name || typeof name !== 'string' || name.length > 100) {
-          return { success: false, error: 'Tool name must be a non-empty string with max 100 characters' };
+          return {
+            success: false,
+            error: 'Tool name must be a non-empty string with max 100 characters',
+          };
         }
 
         const tool = await repo.getByName(name);
@@ -1190,7 +1343,10 @@ export async function executeCustomToolTool(
         if (code !== undefined && typeof code === 'string' && code.trim()) {
           const codeValidation = validateToolCode(code);
           if (!codeValidation.valid) {
-            return { success: false, error: `Tool code validation failed: ${codeValidation.errors[0]}` };
+            return {
+              success: false,
+              error: `Tool code validation failed: ${codeValidation.errors[0]}`,
+            };
           }
           updateFields.code = code;
         }
@@ -1199,7 +1355,10 @@ export async function executeCustomToolTool(
           try {
             const parsed = typeof parameters === 'string' ? JSON.parse(parameters) : parameters;
             if (!parsed || typeof parsed !== 'object' || parsed.type !== 'object') {
-              return { success: false, error: 'Parameters must be a valid JSON Schema with type "object"' };
+              return {
+                success: false,
+                error: 'Parameters must be a valid JSON Schema with type "object"',
+              };
             }
             updateFields.parameters = parsed;
           } catch {
@@ -1216,7 +1375,11 @@ export async function executeCustomToolTool(
         }
 
         if (Object.keys(updateFields).length === 0) {
-          return { success: false, error: 'No fields provided to update. Provide at least one of: description, parameters, code, category, permissions.' };
+          return {
+            success: false,
+            error:
+              'No fields provided to update. Provide at least one of: description, parameters, code, category, permissions.',
+          };
         }
 
         const updated = await repo.update(tool.id, updateFields);
@@ -1278,7 +1441,10 @@ export async function executeActiveCustomTool(
         error: `Tool '${sanitizeText(toolName)}' is pending approval. Please approve it in the Custom Tools page before use.`,
       };
     }
-    return { success: false, error: `Tool '${sanitizeText(toolName)}' is ${sanitizeId(tool.status)}` };
+    return {
+      success: false,
+      error: `Tool '${sanitizeText(toolName)}' is ${sanitizeId(tool.status)}`,
+    };
   }
 
   // Ensure tool is registered
@@ -1309,7 +1475,9 @@ export async function executeActiveCustomTool(
 /**
  * Get all active custom tool definitions for LLM
  */
-export async function getActiveCustomToolDefinitions(userId = 'default'): Promise<ToolDefinition[]> {
+export async function getActiveCustomToolDefinitions(
+  userId = 'default'
+): Promise<ToolDefinition[]> {
   const repo = createCustomToolsRepo(userId);
   const tools = await repo.getActiveTools();
 
@@ -1319,9 +1487,7 @@ export async function getActiveCustomToolDefinitions(userId = 'default'): Promis
     parameters: t.parameters as ToolDefinition['parameters'],
     category: t.category ?? 'Custom',
     requiresConfirmation: t.requiresApproval,
-    workflowUsable: t.metadata?.workflowUsable !== undefined
-      ? Boolean(t.metadata.workflowUsable)
-      : undefined,
+    workflowUsable:
+      t.metadata?.workflowUsable !== undefined ? Boolean(t.metadata.workflowUsable) : undefined,
   }));
 }
-

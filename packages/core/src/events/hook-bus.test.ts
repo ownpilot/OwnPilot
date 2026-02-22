@@ -59,9 +59,27 @@ describe('HookBus', () => {
     it('executes handlers in priority order (lower first)', async () => {
       const order: number[] = [];
 
-      hooks.tap('tool:before-execute', () => { order.push(2); }, 20);
-      hooks.tap('tool:before-execute', () => { order.push(1); }, 10);
-      hooks.tap('tool:before-execute', () => { order.push(3); }, 30);
+      hooks.tap(
+        'tool:before-execute',
+        () => {
+          order.push(2);
+        },
+        20
+      );
+      hooks.tap(
+        'tool:before-execute',
+        () => {
+          order.push(1);
+        },
+        10
+      );
+      hooks.tap(
+        'tool:before-execute',
+        () => {
+          order.push(3);
+        },
+        30
+      );
 
       await hooks.call('tool:before-execute', { toolName: 'test', args: {} });
 
@@ -71,8 +89,16 @@ describe('HookBus', () => {
     it('uses default priority of 10', async () => {
       const order: number[] = [];
 
-      hooks.tap('tool:before-execute', () => { order.push(2); }); // default 10
-      hooks.tap('tool:before-execute', () => { order.push(1); }, 5);
+      hooks.tap('tool:before-execute', () => {
+        order.push(2);
+      }); // default 10
+      hooks.tap(
+        'tool:before-execute',
+        () => {
+          order.push(1);
+        },
+        5
+      );
 
       await hooks.call('tool:before-execute', { toolName: 'test', args: {} });
 
@@ -99,15 +125,23 @@ describe('HookBus', () => {
     });
 
     it('passes modified data through the handler chain', async () => {
-      hooks.tap('tool:before-execute', (ctx) => {
-        (ctx.data.args as Record<string, unknown>).step1 = true;
-      }, 10);
+      hooks.tap(
+        'tool:before-execute',
+        (ctx) => {
+          (ctx.data.args as Record<string, unknown>).step1 = true;
+        },
+        10
+      );
 
-      hooks.tap('tool:before-execute', (ctx) => {
-        (ctx.data.args as Record<string, unknown>).step2 = true;
-        // Verify step1 was already applied
-        expect((ctx.data.args as Record<string, unknown>).step1).toBe(true);
-      }, 20);
+      hooks.tap(
+        'tool:before-execute',
+        (ctx) => {
+          (ctx.data.args as Record<string, unknown>).step2 = true;
+          // Verify step1 was already applied
+          expect((ctx.data.args as Record<string, unknown>).step1).toBe(true);
+        },
+        20
+      );
 
       const result = await hooks.call('tool:before-execute', {
         toolName: 'test',
@@ -118,13 +152,21 @@ describe('HookBus', () => {
     });
 
     it('allows metadata communication between handlers', async () => {
-      hooks.tap('tool:before-execute', (ctx) => {
-        ctx.metadata.validatedBy = 'security-middleware';
-      }, 10);
+      hooks.tap(
+        'tool:before-execute',
+        (ctx) => {
+          ctx.metadata.validatedBy = 'security-middleware';
+        },
+        10
+      );
 
-      hooks.tap('tool:before-execute', (ctx) => {
-        expect(ctx.metadata.validatedBy).toBe('security-middleware');
-      }, 20);
+      hooks.tap(
+        'tool:before-execute',
+        (ctx) => {
+          expect(ctx.metadata.validatedBy).toBe('security-middleware');
+        },
+        20
+      );
 
       const result = await hooks.call('tool:before-execute', {
         toolName: 'test',
@@ -156,9 +198,13 @@ describe('HookBus', () => {
     it('subsequent handlers still run after cancellation', async () => {
       const secondHandler = vi.fn();
 
-      hooks.tap('tool:before-execute', (ctx) => {
-        ctx.cancelled = true;
-      }, 10);
+      hooks.tap(
+        'tool:before-execute',
+        (ctx) => {
+          ctx.cancelled = true;
+        },
+        10
+      );
 
       hooks.tap('tool:before-execute', secondHandler, 20);
 
@@ -179,14 +225,22 @@ describe('HookBus', () => {
     it('awaits async handlers sequentially', async () => {
       const order: number[] = [];
 
-      hooks.tap('tool:before-execute', async () => {
-        await new Promise((resolve) => setTimeout(resolve, 20));
-        order.push(1);
-      }, 10);
+      hooks.tap(
+        'tool:before-execute',
+        async () => {
+          await new Promise((resolve) => setTimeout(resolve, 20));
+          order.push(1);
+        },
+        10
+      );
 
-      hooks.tap('tool:before-execute', async () => {
-        order.push(2);
-      }, 20);
+      hooks.tap(
+        'tool:before-execute',
+        async () => {
+          order.push(2);
+        },
+        20
+      );
 
       await hooks.call('tool:before-execute', { toolName: 'test', args: {} });
 
@@ -203,9 +257,13 @@ describe('HookBus', () => {
       const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
       const secondHandler = vi.fn();
 
-      hooks.tap('tool:before-execute', () => {
-        throw new Error('handler crashed');
-      }, 10);
+      hooks.tap(
+        'tool:before-execute',
+        () => {
+          throw new Error('handler crashed');
+        },
+        10
+      );
 
       hooks.tap('tool:before-execute', secondHandler, 20);
 

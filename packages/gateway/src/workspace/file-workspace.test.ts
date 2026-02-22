@@ -275,9 +275,9 @@ describe('listWorkspaceFiles', () => {
     // .map() processes ALL elements first, then .filter() processes ALL elements.
     // Order: map(test.py), map(main.js), filter(test.py), filter(main.js)
     mockFs.statSync
-      .mockReturnValueOnce(stat1)  // map for test.py
-      .mockReturnValueOnce(stat2)  // map for main.js
-      .mockReturnValueOnce(stat1)  // filter for test.py
+      .mockReturnValueOnce(stat1) // map for test.py
+      .mockReturnValueOnce(stat2) // map for main.js
+      .mockReturnValueOnce(stat1) // filter for test.py
       .mockReturnValueOnce(stat2); // filter for main.js
 
     const result = listWorkspaceFiles('scripts');
@@ -308,7 +308,7 @@ describe('listWorkspaceFiles', () => {
     // map(script.py), map(subdir), filter(script.py), filter(subdir)
     mockFs.statSync
       .mockReturnValueOnce(fileStat) // map for script.py
-      .mockReturnValueOnce(dirStat)  // map for subdir
+      .mockReturnValueOnce(dirStat) // map for subdir
       .mockReturnValueOnce(fileStat) // filter for script.py (isFile=true -> keep)
       .mockReturnValueOnce(dirStat); // filter for subdir (isFile=false -> drop)
 
@@ -330,7 +330,9 @@ describe('listWorkspaceFiles', () => {
       .mockReturnValueOnce(goodStat) // map for good.py
       .mockReturnValueOnce(goodStat) // map for bad.py
       .mockReturnValueOnce(goodStat) // filter for good.py
-      .mockImplementationOnce(() => { throw new Error('permission denied'); }); // filter for bad.py
+      .mockImplementationOnce(() => {
+        throw new Error('permission denied');
+      }); // filter for bad.py
 
     const result = listWorkspaceFiles('scripts');
 
@@ -373,9 +375,7 @@ describe('cleanTempFiles', () => {
       isDirectory: () => false,
     });
 
-    mockFs.statSync
-      .mockReturnValueOnce(oldStat)
-      .mockReturnValueOnce(newStat);
+    mockFs.statSync.mockReturnValueOnce(oldStat).mockReturnValueOnce(newStat);
 
     const count = cleanTempFiles(24); // 24 hours maxAge
 
@@ -440,7 +440,9 @@ describe('cleanTempFiles', () => {
 
     const now = Date.now();
     mockFs.statSync
-      .mockImplementationOnce(() => { throw new Error('EPERM'); })
+      .mockImplementationOnce(() => {
+        throw new Error('EPERM');
+      })
       .mockReturnValueOnce(
         makeStat({ mtime: new Date(now - 48 * 3_600_000), isDirectory: () => false })
       );
@@ -472,8 +474,12 @@ describe('cleanTempFiles', () => {
 
     const now = Date.now();
     mockFs.statSync
-      .mockReturnValueOnce(makeStat({ mtime: new Date(now - 100 * 3_600_000), isDirectory: () => false }))
-      .mockReturnValueOnce(makeStat({ mtime: new Date(now - 200 * 3_600_000), isDirectory: () => false }));
+      .mockReturnValueOnce(
+        makeStat({ mtime: new Date(now - 100 * 3_600_000), isDirectory: () => false })
+      )
+      .mockReturnValueOnce(
+        makeStat({ mtime: new Date(now - 200 * 3_600_000), isDirectory: () => false })
+      );
 
     expect(cleanTempFiles(24)).toBe(2);
     expect(mockFs.unlinkSync).toHaveBeenCalledTimes(2);
@@ -504,16 +510,16 @@ describe('getFileWorkspaceStats', () => {
 
     // For each of the 4 subdirs (scripts, output, temp, downloads), readdirSync is called
     mockFs.readdirSync
-      .mockReturnValueOnce(['a.py', 'b.py'])  // scripts
-      .mockReturnValueOnce(['result.json'])    // output
-      .mockReturnValueOnce([])                 // temp
-      .mockReturnValueOnce(['file.zip']);       // downloads
+      .mockReturnValueOnce(['a.py', 'b.py']) // scripts
+      .mockReturnValueOnce(['result.json']) // output
+      .mockReturnValueOnce([]) // temp
+      .mockReturnValueOnce(['file.zip']); // downloads
 
     // statSync called for each file to get size
     mockFs.statSync
-      .mockReturnValueOnce(makeStat({ size: 100, isFile: () => true }))  // a.py
-      .mockReturnValueOnce(makeStat({ size: 200, isFile: () => true }))  // b.py
-      .mockReturnValueOnce(makeStat({ size: 500, isFile: () => true }))  // result.json
+      .mockReturnValueOnce(makeStat({ size: 100, isFile: () => true })) // a.py
+      .mockReturnValueOnce(makeStat({ size: 200, isFile: () => true })) // b.py
+      .mockReturnValueOnce(makeStat({ size: 500, isFile: () => true })) // result.json
       .mockReturnValueOnce(makeStat({ size: 1000, isFile: () => true })); // file.zip
 
     const stats = getFileWorkspaceStats();
@@ -529,10 +535,10 @@ describe('getFileWorkspaceStats', () => {
     mockFs.existsSync.mockReturnValue(true);
 
     mockFs.readdirSync
-      .mockReturnValueOnce(['subdir'])  // scripts
-      .mockReturnValueOnce([])          // output
-      .mockReturnValueOnce([])          // temp
-      .mockReturnValueOnce([]);         // downloads
+      .mockReturnValueOnce(['subdir']) // scripts
+      .mockReturnValueOnce([]) // output
+      .mockReturnValueOnce([]) // temp
+      .mockReturnValueOnce([]); // downloads
 
     mockFs.statSync.mockReturnValueOnce(makeDirStat({ size: 4096 })); // subdir is a directory
 
@@ -551,7 +557,9 @@ describe('getFileWorkspaceStats', () => {
       .mockReturnValueOnce([])
       .mockReturnValueOnce([]);
 
-    mockFs.statSync.mockImplementationOnce(() => { throw new Error('EPERM'); });
+    mockFs.statSync.mockImplementationOnce(() => {
+      throw new Error('EPERM');
+    });
 
     const stats = getFileWorkspaceStats();
 
@@ -562,14 +570,14 @@ describe('getFileWorkspaceStats', () => {
   it('should handle some directories existing and others not', () => {
     // scripts exists, output not, temp exists, downloads not
     mockFs.existsSync
-      .mockReturnValueOnce(true)  // scripts
+      .mockReturnValueOnce(true) // scripts
       .mockReturnValueOnce(false) // output
-      .mockReturnValueOnce(true)  // temp
+      .mockReturnValueOnce(true) // temp
       .mockReturnValueOnce(false); // downloads
 
     mockFs.readdirSync
-      .mockReturnValueOnce(['a.py'])    // scripts
-      .mockReturnValueOnce(['t.tmp']);   // temp
+      .mockReturnValueOnce(['a.py']) // scripts
+      .mockReturnValueOnce(['t.tmp']); // temp
 
     mockFs.statSync
       .mockReturnValueOnce(makeStat({ size: 300, isFile: () => true }))
@@ -811,10 +819,16 @@ describe('createSessionWorkspace', () => {
 
     // Root workspace dir + 4 subdirs = 5 calls
     expect(mockFs.mkdirSync).toHaveBeenCalledWith('/data/workspace/ws-1', { recursive: true });
-    expect(mockFs.mkdirSync).toHaveBeenCalledWith('/data/workspace/ws-1/scripts', { recursive: true });
-    expect(mockFs.mkdirSync).toHaveBeenCalledWith('/data/workspace/ws-1/output', { recursive: true });
+    expect(mockFs.mkdirSync).toHaveBeenCalledWith('/data/workspace/ws-1/scripts', {
+      recursive: true,
+    });
+    expect(mockFs.mkdirSync).toHaveBeenCalledWith('/data/workspace/ws-1/output', {
+      recursive: true,
+    });
     expect(mockFs.mkdirSync).toHaveBeenCalledWith('/data/workspace/ws-1/temp', { recursive: true });
-    expect(mockFs.mkdirSync).toHaveBeenCalledWith('/data/workspace/ws-1/downloads', { recursive: true });
+    expect(mockFs.mkdirSync).toHaveBeenCalledWith('/data/workspace/ws-1/downloads', {
+      recursive: true,
+    });
     expect(mockFs.mkdirSync).toHaveBeenCalledTimes(5);
   });
 
@@ -920,12 +934,14 @@ describe('getSessionWorkspace', () => {
 
   it('should return default meta when meta.json has invalid JSON', () => {
     mockFs.existsSync
-      .mockReturnValueOnce(true)  // workspace exists
+      .mockReturnValueOnce(true) // workspace exists
       .mockReturnValueOnce(true); // meta file exists
-    mockFs.statSync.mockReturnValueOnce(makeDirStat({
-      birthtime: new Date('2026-01-01T00:00:00Z'),
-      mtime: new Date('2026-01-15T12:00:00Z'),
-    }));
+    mockFs.statSync.mockReturnValueOnce(
+      makeDirStat({
+        birthtime: new Date('2026-01-01T00:00:00Z'),
+        mtime: new Date('2026-01-15T12:00:00Z'),
+      })
+    );
     mockFs.readFileSync.mockReturnValueOnce('NOT VALID JSON {{{');
 
     // calculateDirSize
@@ -942,12 +958,14 @@ describe('getSessionWorkspace', () => {
 
   it('should return default meta when .meta.json does not exist (legacy workspace)', () => {
     mockFs.existsSync
-      .mockReturnValueOnce(true)   // workspace exists
+      .mockReturnValueOnce(true) // workspace exists
       .mockReturnValueOnce(false); // meta file does not exist
-    mockFs.statSync.mockReturnValueOnce(makeDirStat({
-      birthtime: new Date('2025-12-01T00:00:00Z'),
-      mtime: new Date('2025-12-15T00:00:00Z'),
-    }));
+    mockFs.statSync.mockReturnValueOnce(
+      makeDirStat({
+        birthtime: new Date('2025-12-01T00:00:00Z'),
+        mtime: new Date('2025-12-15T00:00:00Z'),
+      })
+    );
 
     // calculateDirSize
     mockFs.readdirSync.mockReturnValueOnce([]);
@@ -963,15 +981,17 @@ describe('getSessionWorkspace', () => {
 
   it('should calculate size and fileCount from directory contents', () => {
     mockFs.existsSync
-      .mockReturnValueOnce(true)  // workspace exists
+      .mockReturnValueOnce(true) // workspace exists
       .mockReturnValueOnce(true); // meta exists
     mockFs.statSync.mockReturnValueOnce(makeDirStat());
-    mockFs.readFileSync.mockReturnValueOnce(JSON.stringify({
-      id: 'ws-stats',
-      name: 'Stats WS',
-      createdAt: '2026-01-01T00:00:00Z',
-      updatedAt: '2026-01-15T00:00:00Z',
-    }));
+    mockFs.readFileSync.mockReturnValueOnce(
+      JSON.stringify({
+        id: 'ws-stats',
+        name: 'Stats WS',
+        createdAt: '2026-01-01T00:00:00Z',
+        updatedAt: '2026-01-15T00:00:00Z',
+      })
+    );
 
     // calculateDirSize: traverse root dir
     mockFs.readdirSync.mockReturnValueOnce([
@@ -981,9 +1001,7 @@ describe('getSessionWorkspace', () => {
     // statSync for file1.txt
     mockFs.statSync.mockReturnValueOnce(makeStat({ size: 500 }));
     // traverse subdir
-    mockFs.readdirSync.mockReturnValueOnce([
-      makeDirent('file2.txt', false),
-    ]);
+    mockFs.readdirSync.mockReturnValueOnce([makeDirent('file2.txt', false)]);
     // statSync for file2.txt
     mockFs.statSync.mockReturnValueOnce(makeStat({ size: 300 }));
 
@@ -1005,15 +1023,17 @@ describe('getSessionWorkspace', () => {
 describe('getOrCreateSessionWorkspace', () => {
   it('should return existing workspace when it exists', () => {
     mockFs.existsSync
-      .mockReturnValueOnce(true)  // workspace exists
+      .mockReturnValueOnce(true) // workspace exists
       .mockReturnValueOnce(true); // meta exists
     mockFs.statSync.mockReturnValueOnce(makeDirStat());
-    mockFs.readFileSync.mockReturnValueOnce(JSON.stringify({
-      id: 'existing',
-      name: 'Existing WS',
-      createdAt: '2026-01-01T00:00:00Z',
-      updatedAt: '2026-01-15T00:00:00Z',
-    }));
+    mockFs.readFileSync.mockReturnValueOnce(
+      JSON.stringify({
+        id: 'existing',
+        name: 'Existing WS',
+        createdAt: '2026-01-01T00:00:00Z',
+        updatedAt: '2026-01-15T00:00:00Z',
+      })
+    );
     mockFs.readdirSync.mockReturnValueOnce([]);
 
     const result = getOrCreateSessionWorkspace('existing');
@@ -1060,9 +1080,7 @@ describe('listSessionWorkspaces', () => {
 
   it('should skip non-directory entries', () => {
     mockFs.existsSync.mockReturnValueOnce(true); // root exists
-    mockFs.readdirSync.mockReturnValueOnce([
-      makeDirent('file.txt', false),
-    ]);
+    mockFs.readdirSync.mockReturnValueOnce([makeDirent('file.txt', false)]);
 
     const result = listSessionWorkspaces();
 
@@ -1071,9 +1089,7 @@ describe('listSessionWorkspaces', () => {
 
   it('should skip directories starting with underscore', () => {
     mockFs.existsSync.mockReturnValueOnce(true); // root exists
-    mockFs.readdirSync.mockReturnValueOnce([
-      makeDirent('_shared', true),
-    ]);
+    mockFs.readdirSync.mockReturnValueOnce([makeDirent('_shared', true)]);
 
     const result = listSessionWorkspaces();
 
@@ -1082,9 +1098,7 @@ describe('listSessionWorkspaces', () => {
 
   it('should skip entries ending with .zip', () => {
     mockFs.existsSync.mockReturnValueOnce(true); // root exists
-    mockFs.readdirSync.mockReturnValueOnce([
-      makeDirent('session1.zip', true),
-    ]);
+    mockFs.readdirSync.mockReturnValueOnce([makeDirent('session1.zip', true)]);
 
     const result = listSessionWorkspaces();
 
@@ -1095,29 +1109,34 @@ describe('listSessionWorkspaces', () => {
     // root exists
     mockFs.existsSync.mockReturnValueOnce(true);
 
-    mockFs.readdirSync.mockReturnValueOnce([
-      makeDirent('ws-1', true),
-      makeDirent('ws-2', true),
-    ]);
+    mockFs.readdirSync.mockReturnValueOnce([makeDirent('ws-1', true), makeDirent('ws-2', true)]);
 
     // getSessionWorkspace('ws-1')
-    mockFs.existsSync.mockReturnValueOnce(true);  // ws-1 path exists
+    mockFs.existsSync.mockReturnValueOnce(true); // ws-1 path exists
     mockFs.statSync.mockReturnValueOnce(makeDirStat());
-    mockFs.existsSync.mockReturnValueOnce(true);  // ws-1 meta exists
-    mockFs.readFileSync.mockReturnValueOnce(JSON.stringify({
-      id: 'ws-1', name: 'WS1',
-      createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-10T00:00:00Z',
-    }));
+    mockFs.existsSync.mockReturnValueOnce(true); // ws-1 meta exists
+    mockFs.readFileSync.mockReturnValueOnce(
+      JSON.stringify({
+        id: 'ws-1',
+        name: 'WS1',
+        createdAt: '2026-01-01T00:00:00Z',
+        updatedAt: '2026-01-10T00:00:00Z',
+      })
+    );
     mockFs.readdirSync.mockReturnValueOnce([]); // calculateDirSize
 
     // getSessionWorkspace('ws-2')
-    mockFs.existsSync.mockReturnValueOnce(true);  // ws-2 path exists
+    mockFs.existsSync.mockReturnValueOnce(true); // ws-2 path exists
     mockFs.statSync.mockReturnValueOnce(makeDirStat());
-    mockFs.existsSync.mockReturnValueOnce(true);  // ws-2 meta exists
-    mockFs.readFileSync.mockReturnValueOnce(JSON.stringify({
-      id: 'ws-2', name: 'WS2',
-      createdAt: '2026-01-05T00:00:00Z', updatedAt: '2026-01-15T00:00:00Z',
-    }));
+    mockFs.existsSync.mockReturnValueOnce(true); // ws-2 meta exists
+    mockFs.readFileSync.mockReturnValueOnce(
+      JSON.stringify({
+        id: 'ws-2',
+        name: 'WS2',
+        createdAt: '2026-01-05T00:00:00Z',
+        updatedAt: '2026-01-15T00:00:00Z',
+      })
+    );
     mockFs.readdirSync.mockReturnValueOnce([]); // calculateDirSize
 
     const result = listSessionWorkspaces();
@@ -1131,29 +1150,36 @@ describe('listSessionWorkspaces', () => {
   it('should filter by userId when provided', () => {
     mockFs.existsSync.mockReturnValueOnce(true); // root exists
 
-    mockFs.readdirSync.mockReturnValueOnce([
-      makeDirent('ws-1', true),
-      makeDirent('ws-2', true),
-    ]);
+    mockFs.readdirSync.mockReturnValueOnce([makeDirent('ws-1', true), makeDirent('ws-2', true)]);
 
     // ws-1 belongs to user-1
     mockFs.existsSync.mockReturnValueOnce(true);
     mockFs.statSync.mockReturnValueOnce(makeDirStat());
     mockFs.existsSync.mockReturnValueOnce(true);
-    mockFs.readFileSync.mockReturnValueOnce(JSON.stringify({
-      id: 'ws-1', name: 'WS1', userId: 'user-1',
-      createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-10T00:00:00Z',
-    }));
+    mockFs.readFileSync.mockReturnValueOnce(
+      JSON.stringify({
+        id: 'ws-1',
+        name: 'WS1',
+        userId: 'user-1',
+        createdAt: '2026-01-01T00:00:00Z',
+        updatedAt: '2026-01-10T00:00:00Z',
+      })
+    );
     mockFs.readdirSync.mockReturnValueOnce([]);
 
     // ws-2 belongs to user-2
     mockFs.existsSync.mockReturnValueOnce(true);
     mockFs.statSync.mockReturnValueOnce(makeDirStat());
     mockFs.existsSync.mockReturnValueOnce(true);
-    mockFs.readFileSync.mockReturnValueOnce(JSON.stringify({
-      id: 'ws-2', name: 'WS2', userId: 'user-2',
-      createdAt: '2026-01-05T00:00:00Z', updatedAt: '2026-01-15T00:00:00Z',
-    }));
+    mockFs.readFileSync.mockReturnValueOnce(
+      JSON.stringify({
+        id: 'ws-2',
+        name: 'WS2',
+        userId: 'user-2',
+        createdAt: '2026-01-05T00:00:00Z',
+        updatedAt: '2026-01-15T00:00:00Z',
+      })
+    );
     mockFs.readdirSync.mockReturnValueOnce([]);
 
     const result = listSessionWorkspaces('user-1');
@@ -1168,19 +1194,21 @@ describe('listSessionWorkspaces', () => {
     // When info.userId is undefined, the condition short-circuits → workspace is included
     mockFs.existsSync.mockReturnValueOnce(true);
 
-    mockFs.readdirSync.mockReturnValueOnce([
-      makeDirent('legacy', true),
-    ]);
+    mockFs.readdirSync.mockReturnValueOnce([makeDirent('legacy', true)]);
 
     // legacy workspace has no userId
     mockFs.existsSync.mockReturnValueOnce(true);
     mockFs.statSync.mockReturnValueOnce(makeDirStat());
     mockFs.existsSync.mockReturnValueOnce(true);
-    mockFs.readFileSync.mockReturnValueOnce(JSON.stringify({
-      id: 'legacy', name: 'Legacy',
-      createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-10T00:00:00Z',
-      // no userId
-    }));
+    mockFs.readFileSync.mockReturnValueOnce(
+      JSON.stringify({
+        id: 'legacy',
+        name: 'Legacy',
+        createdAt: '2026-01-01T00:00:00Z',
+        updatedAt: '2026-01-10T00:00:00Z',
+        // no userId
+      })
+    );
     mockFs.readdirSync.mockReturnValueOnce([]);
 
     const result = listSessionWorkspaces('user-1');
@@ -1193,9 +1221,7 @@ describe('listSessionWorkspaces', () => {
   it('should skip entries where getSessionWorkspace returns null', () => {
     mockFs.existsSync.mockReturnValueOnce(true);
 
-    mockFs.readdirSync.mockReturnValueOnce([
-      makeDirent('broken', true),
-    ]);
+    mockFs.readdirSync.mockReturnValueOnce([makeDirent('broken', true)]);
 
     // getSessionWorkspace returns null (path does not exist)
     mockFs.existsSync.mockReturnValueOnce(false);
@@ -1261,16 +1287,18 @@ describe('getSessionWorkspaceFiles', () => {
     ]);
 
     // statSync for test.py
-    mockFs.statSync.mockReturnValueOnce(makeStat({ size: 200, mtime: new Date('2026-01-15T00:00:00Z') }));
+    mockFs.statSync.mockReturnValueOnce(
+      makeStat({ size: 200, mtime: new Date('2026-01-15T00:00:00Z') })
+    );
 
     // statSync for output dir
     mockFs.statSync.mockReturnValueOnce(makeDirStat({ mtime: new Date('2026-01-15T00:00:00Z') }));
 
     // buildFileTree recurse into output dir
-    mockFs.readdirSync.mockReturnValueOnce([
-      makeDirent('result.json', false),
-    ]);
-    mockFs.statSync.mockReturnValueOnce(makeStat({ size: 150, mtime: new Date('2026-01-14T00:00:00Z') }));
+    mockFs.readdirSync.mockReturnValueOnce([makeDirent('result.json', false)]);
+    mockFs.statSync.mockReturnValueOnce(
+      makeStat({ size: 150, mtime: new Date('2026-01-14T00:00:00Z') })
+    );
 
     const result = getSessionWorkspaceFiles('ws-1');
 
@@ -1337,9 +1365,7 @@ describe('getSessionWorkspaceFiles', () => {
   it('should include relativePath from workspace root', () => {
     mockFs.existsSync.mockReturnValue(true);
 
-    mockFs.readdirSync.mockReturnValueOnce([
-      makeDirent('file.txt', false),
-    ]);
+    mockFs.readdirSync.mockReturnValueOnce([makeDirent('file.txt', false)]);
     mockFs.statSync.mockReturnValueOnce(makeStat({ size: 50 }));
 
     const result = getSessionWorkspaceFiles('ws-1');
@@ -1384,9 +1410,7 @@ describe('readSessionWorkspaceFile', () => {
     const result = readSessionWorkspaceFile('ws-1', 'scripts/test.py');
 
     expect(result).toBe(content);
-    expect(mockFs.readFileSync).toHaveBeenCalledWith(
-      '/data/workspace/ws-1/scripts/test.py'
-    );
+    expect(mockFs.readFileSync).toHaveBeenCalledWith('/data/workspace/ws-1/scripts/test.py');
   });
 
   it('should read file from subdirectory', () => {
@@ -1406,7 +1430,9 @@ describe('readSessionWorkspaceFile', () => {
 
 describe('writeSessionWorkspaceFile', () => {
   it('should throw for invalid workspace ID', () => {
-    expect(() => writeSessionWorkspaceFile('../evil', 'file.txt', 'content')).toThrow('Invalid workspace ID');
+    expect(() => writeSessionWorkspaceFile('../evil', 'file.txt', 'content')).toThrow(
+      'Invalid workspace ID'
+    );
   });
 
   it('should write file content', () => {
@@ -1426,23 +1452,22 @@ describe('writeSessionWorkspaceFile', () => {
     // The code: join(fullPath, '..') -> dir, then existsSync(dir)
     mockFs.existsSync
       .mockReturnValueOnce(false) // parent dir does not exist
-      .mockReturnValueOnce(true)  // meta file exists for updateSessionWorkspaceMeta
-      ;
+      .mockReturnValueOnce(true); // meta file exists for updateSessionWorkspaceMeta
     mockFs.readFileSync.mockReturnValue(JSON.stringify({ id: 'ws-1', updatedAt: '' }));
 
     writeSessionWorkspaceFile('ws-1', 'scripts/deep/test.py', 'content');
 
-    expect(mockFs.mkdirSync).toHaveBeenCalledWith(
-      expect.any(String),
-      { recursive: true }
-    );
+    expect(mockFs.mkdirSync).toHaveBeenCalledWith(expect.any(String), { recursive: true });
   });
 
   it('should update workspace metadata after writing', () => {
     mockFs.existsSync.mockReturnValue(true);
-    mockFs.readFileSync.mockReturnValueOnce(JSON.stringify({
-      id: 'ws-1', updatedAt: '2026-01-01T00:00:00Z',
-    }));
+    mockFs.readFileSync.mockReturnValueOnce(
+      JSON.stringify({
+        id: 'ws-1',
+        updatedAt: '2026-01-01T00:00:00Z',
+      })
+    );
 
     writeSessionWorkspaceFile('ws-1', 'test.txt', 'hello');
 
@@ -1489,24 +1514,27 @@ describe('deleteSessionWorkspaceFile', () => {
 
   it('should delete file and return true', () => {
     mockFs.existsSync
-      .mockReturnValueOnce(true)  // file exists
+      .mockReturnValueOnce(true) // file exists
       .mockReturnValueOnce(true); // meta exists for updateMeta
     mockFs.readFileSync.mockReturnValue(JSON.stringify({ id: 'ws-1', updatedAt: '' }));
 
     const result = deleteSessionWorkspaceFile('ws-1', 'scripts/old.py');
 
     expect(result).toBe(true);
-    expect(mockFs.rmSync).toHaveBeenCalledWith(
-      '/data/workspace/ws-1/scripts/old.py',
-      { recursive: true, force: true }
-    );
+    expect(mockFs.rmSync).toHaveBeenCalledWith('/data/workspace/ws-1/scripts/old.py', {
+      recursive: true,
+      force: true,
+    });
   });
 
   it('should update workspace metadata after deleting', () => {
     mockFs.existsSync.mockReturnValue(true);
-    mockFs.readFileSync.mockReturnValue(JSON.stringify({
-      id: 'ws-1', updatedAt: '2026-01-01T00:00:00Z',
-    }));
+    mockFs.readFileSync.mockReturnValue(
+      JSON.stringify({
+        id: 'ws-1',
+        updatedAt: '2026-01-01T00:00:00Z',
+      })
+    );
 
     deleteSessionWorkspaceFile('ws-1', 'file.txt');
 
@@ -1535,33 +1563,36 @@ describe('deleteSessionWorkspace', () => {
 
   it('should delete workspace directory recursively', () => {
     mockFs.existsSync
-      .mockReturnValueOnce(true)   // workspace exists
+      .mockReturnValueOnce(true) // workspace exists
       .mockReturnValueOnce(false); // zip does not exist
 
     const result = deleteSessionWorkspace('ws-1');
 
     expect(result).toBe(true);
-    expect(mockFs.rmSync).toHaveBeenCalledWith(
-      '/data/workspace/ws-1',
-      { recursive: true, force: true }
-    );
+    expect(mockFs.rmSync).toHaveBeenCalledWith('/data/workspace/ws-1', {
+      recursive: true,
+      force: true,
+    });
   });
 
   it('should also delete zip file if it exists', () => {
     mockFs.existsSync
-      .mockReturnValueOnce(true)  // workspace exists
+      .mockReturnValueOnce(true) // workspace exists
       .mockReturnValueOnce(true); // zip exists
 
     deleteSessionWorkspace('ws-1');
 
     expect(mockFs.rmSync).toHaveBeenCalledTimes(2);
-    expect(mockFs.rmSync).toHaveBeenCalledWith('/data/workspace/ws-1', { recursive: true, force: true });
+    expect(mockFs.rmSync).toHaveBeenCalledWith('/data/workspace/ws-1', {
+      recursive: true,
+      force: true,
+    });
     expect(mockFs.rmSync).toHaveBeenCalledWith('/data/workspace/ws-1.zip', { force: true });
   });
 
   it('should not delete zip if it does not exist', () => {
     mockFs.existsSync
-      .mockReturnValueOnce(true)   // workspace exists
+      .mockReturnValueOnce(true) // workspace exists
       .mockReturnValueOnce(false); // zip does not exist
 
     deleteSessionWorkspace('ws-1');
@@ -1570,9 +1601,7 @@ describe('deleteSessionWorkspace', () => {
   });
 
   it('should log deletion', () => {
-    mockFs.existsSync
-      .mockReturnValueOnce(true)
-      .mockReturnValueOnce(false);
+    mockFs.existsSync.mockReturnValueOnce(true).mockReturnValueOnce(false);
 
     deleteSessionWorkspace('ws-del');
 
@@ -1594,7 +1623,9 @@ describe('zipSessionWorkspace', () => {
   it('should throw when workspace does not exist', async () => {
     mockFs.existsSync.mockReturnValue(false);
 
-    await expect(zipSessionWorkspace('nonexistent')).rejects.toThrow('Workspace nonexistent not found');
+    await expect(zipSessionWorkspace('nonexistent')).rejects.toThrow(
+      'Workspace nonexistent not found'
+    );
   });
 
   it('should create zip archive and return path', async () => {
@@ -1651,7 +1682,7 @@ describe('cleanupSessionWorkspaces', () => {
   it('should delete workspaces older than maxAgeDays', () => {
     const now = Date.now();
     const oldDate = new Date(now - 10 * 86_400_000).toISOString(); // 10 days old
-    const newDate = new Date(now - 2 * 86_400_000).toISOString();  // 2 days old
+    const newDate = new Date(now - 2 * 86_400_000).toISOString(); // 2 days old
 
     // Mock listSessionWorkspaces by mocking its internal calls
     // root exists
@@ -1662,26 +1693,36 @@ describe('cleanupSessionWorkspaces', () => {
     ]);
 
     // getSessionWorkspace('old-ws')
-    mockFs.existsSync.mockReturnValueOnce(true);  // workspace exists
+    mockFs.existsSync.mockReturnValueOnce(true); // workspace exists
     mockFs.statSync.mockReturnValueOnce(makeDirStat());
-    mockFs.existsSync.mockReturnValueOnce(true);  // meta exists
-    mockFs.readFileSync.mockReturnValueOnce(JSON.stringify({
-      id: 'old-ws', name: 'Old', createdAt: oldDate, updatedAt: oldDate,
-    }));
+    mockFs.existsSync.mockReturnValueOnce(true); // meta exists
+    mockFs.readFileSync.mockReturnValueOnce(
+      JSON.stringify({
+        id: 'old-ws',
+        name: 'Old',
+        createdAt: oldDate,
+        updatedAt: oldDate,
+      })
+    );
     mockFs.readdirSync.mockReturnValueOnce([]); // calculateDirSize
 
     // getSessionWorkspace('new-ws')
     mockFs.existsSync.mockReturnValueOnce(true);
     mockFs.statSync.mockReturnValueOnce(makeDirStat());
     mockFs.existsSync.mockReturnValueOnce(true);
-    mockFs.readFileSync.mockReturnValueOnce(JSON.stringify({
-      id: 'new-ws', name: 'New', createdAt: newDate, updatedAt: newDate,
-    }));
+    mockFs.readFileSync.mockReturnValueOnce(
+      JSON.stringify({
+        id: 'new-ws',
+        name: 'New',
+        createdAt: newDate,
+        updatedAt: newDate,
+      })
+    );
     mockFs.readdirSync.mockReturnValueOnce([]);
 
     // deleteSessionWorkspace('old-ws') — called internally
     mockFs.existsSync
-      .mockReturnValueOnce(true)   // workspace exists
+      .mockReturnValueOnce(true) // workspace exists
       .mockReturnValueOnce(false); // zip doesn't exist
 
     const result = cleanupSessionWorkspaces(7);
@@ -1701,9 +1742,7 @@ describe('cleanupSessionWorkspaces', () => {
 
   it('should use default maxAgeDays of 7', () => {
     mockFs.existsSync.mockReturnValueOnce(true); // root exists
-    mockFs.readdirSync.mockReturnValueOnce([
-      makeDirent('ws-1', true),
-    ]);
+    mockFs.readdirSync.mockReturnValueOnce([makeDirent('ws-1', true)]);
 
     const now = Date.now();
     const eightDaysOld = new Date(now - 8 * 86_400_000).toISOString();
@@ -1711,15 +1750,18 @@ describe('cleanupSessionWorkspaces', () => {
     mockFs.existsSync.mockReturnValueOnce(true);
     mockFs.statSync.mockReturnValueOnce(makeDirStat());
     mockFs.existsSync.mockReturnValueOnce(true);
-    mockFs.readFileSync.mockReturnValueOnce(JSON.stringify({
-      id: 'ws-1', name: 'Old', createdAt: eightDaysOld, updatedAt: eightDaysOld,
-    }));
+    mockFs.readFileSync.mockReturnValueOnce(
+      JSON.stringify({
+        id: 'ws-1',
+        name: 'Old',
+        createdAt: eightDaysOld,
+        updatedAt: eightDaysOld,
+      })
+    );
     mockFs.readdirSync.mockReturnValueOnce([]);
 
     // deleteSessionWorkspace
-    mockFs.existsSync
-      .mockReturnValueOnce(true)
-      .mockReturnValueOnce(false);
+    mockFs.existsSync.mockReturnValueOnce(true).mockReturnValueOnce(false);
 
     const result = cleanupSessionWorkspaces();
 
@@ -1728,9 +1770,7 @@ describe('cleanupSessionWorkspaces', () => {
 
   it('should log when workspaces are deleted', () => {
     mockFs.existsSync.mockReturnValueOnce(true);
-    mockFs.readdirSync.mockReturnValueOnce([
-      makeDirent('ws-1', true),
-    ]);
+    mockFs.readdirSync.mockReturnValueOnce([makeDirent('ws-1', true)]);
 
     const now = Date.now();
     const oldDate = new Date(now - 30 * 86_400_000).toISOString();
@@ -1738,9 +1778,14 @@ describe('cleanupSessionWorkspaces', () => {
     mockFs.existsSync.mockReturnValueOnce(true);
     mockFs.statSync.mockReturnValueOnce(makeDirStat());
     mockFs.existsSync.mockReturnValueOnce(true);
-    mockFs.readFileSync.mockReturnValueOnce(JSON.stringify({
-      id: 'ws-1', name: 'Old', createdAt: oldDate, updatedAt: oldDate,
-    }));
+    mockFs.readFileSync.mockReturnValueOnce(
+      JSON.stringify({
+        id: 'ws-1',
+        name: 'Old',
+        createdAt: oldDate,
+        updatedAt: oldDate,
+      })
+    );
     mockFs.readdirSync.mockReturnValueOnce([]);
 
     mockFs.existsSync.mockReturnValueOnce(true).mockReturnValueOnce(false);
@@ -1759,39 +1804,41 @@ describe('cleanupSessionWorkspaces', () => {
 
 describe('smartCleanupSessionWorkspaces', () => {
   // Helper to set up listSessionWorkspaces mock
-  function setupListMock(workspaces: Array<{
-    id: string;
-    updatedAt: string;
-    fileCount: number;
-    userId?: string;
-  }>) {
+  function setupListMock(
+    workspaces: Array<{
+      id: string;
+      updatedAt: string;
+      fileCount: number;
+      userId?: string;
+    }>
+  ) {
     // root exists
     mockFs.existsSync.mockReturnValueOnce(true);
 
     // readdirSync for workspace root
-    mockFs.readdirSync.mockReturnValueOnce(
-      workspaces.map(w => makeDirent(w.id, true))
-    );
+    mockFs.readdirSync.mockReturnValueOnce(workspaces.map((w) => makeDirent(w.id, true)));
 
     // For each workspace: getSessionWorkspace calls
     for (const w of workspaces) {
-      mockFs.existsSync.mockReturnValueOnce(true);  // workspace exists
+      mockFs.existsSync.mockReturnValueOnce(true); // workspace exists
       mockFs.statSync.mockReturnValueOnce(makeDirStat());
-      mockFs.existsSync.mockReturnValueOnce(true);  // meta exists
-      mockFs.readFileSync.mockReturnValueOnce(JSON.stringify({
-        id: w.id, name: `WS-${w.id}`,
-        createdAt: w.updatedAt, updatedAt: w.updatedAt,
-        userId: w.userId,
-      }));
+      mockFs.existsSync.mockReturnValueOnce(true); // meta exists
+      mockFs.readFileSync.mockReturnValueOnce(
+        JSON.stringify({
+          id: w.id,
+          name: `WS-${w.id}`,
+          createdAt: w.updatedAt,
+          updatedAt: w.updatedAt,
+          userId: w.userId,
+        })
+      );
 
       // calculateDirSize: simulate fileCount
       if (w.fileCount === 0) {
         mockFs.readdirSync.mockReturnValueOnce([]);
       } else if (w.fileCount === 1) {
         // Single entry
-        mockFs.readdirSync.mockReturnValueOnce([
-          makeDirent('.meta.json', false),
-        ]);
+        mockFs.readdirSync.mockReturnValueOnce([makeDirent('.meta.json', false)]);
         mockFs.statSync.mockReturnValueOnce(makeStat({ size: 50 }));
       } else {
         // Multiple entries
@@ -1809,7 +1856,7 @@ describe('smartCleanupSessionWorkspaces', () => {
   function setupDeleteMock(count: number) {
     for (let i = 0; i < count; i++) {
       mockFs.existsSync
-        .mockReturnValueOnce(true)   // workspace exists
+        .mockReturnValueOnce(true) // workspace exists
         .mockReturnValueOnce(false); // zip doesn't exist
     }
   }
@@ -1890,9 +1937,7 @@ describe('smartCleanupSessionWorkspaces', () => {
 
   it('should not delete anything in "old" mode when all are recent', () => {
     const now = Date.now();
-    setupListMock([
-      { id: 'ws-1', updatedAt: new Date(now - 1000).toISOString(), fileCount: 5 },
-    ]);
+    setupListMock([{ id: 'ws-1', updatedAt: new Date(now - 1000).toISOString(), fileCount: 5 }]);
 
     const result = smartCleanupSessionWorkspaces('old', 30);
 
@@ -1928,29 +1973,24 @@ describe('smartCleanupSessionWorkspaces', () => {
 
   it('should log when workspaces are deleted', () => {
     const now = Date.now();
-    setupListMock([
-      { id: 'ws-1', updatedAt: new Date(now - 1000).toISOString(), fileCount: 0 },
-    ]);
+    setupListMock([{ id: 'ws-1', updatedAt: new Date(now - 1000).toISOString(), fileCount: 0 }]);
     setupDeleteMock(1);
 
     smartCleanupSessionWorkspaces('empty');
 
-    expect(mockLog.info).toHaveBeenCalledWith(
-      expect.stringContaining('Smart cleanup (empty)')
-    );
+    expect(mockLog.info).toHaveBeenCalledWith(expect.stringContaining('Smart cleanup (empty)'));
   });
 
   it('should not log when no workspaces are deleted', () => {
     const now = Date.now();
-    setupListMock([
-      { id: 'ws-1', updatedAt: new Date(now - 1000).toISOString(), fileCount: 5 },
-    ]);
+    setupListMock([{ id: 'ws-1', updatedAt: new Date(now - 1000).toISOString(), fileCount: 5 }]);
 
     smartCleanupSessionWorkspaces('empty');
 
     // Only log calls should be from other operations, not from smartCleanup
     const smartCleanupLogs = mockLog.info.mock.calls.filter(
-      (args: unknown[]) => typeof args[0] === 'string' && (args[0] as string).includes('Smart cleanup')
+      (args: unknown[]) =>
+        typeof args[0] === 'string' && (args[0] as string).includes('Smart cleanup')
     );
     expect(smartCleanupLogs).toHaveLength(0);
   });
@@ -1958,9 +1998,7 @@ describe('smartCleanupSessionWorkspaces', () => {
   it('should pass userId filter to listSessionWorkspaces', () => {
     // When userId is provided, only that user's workspaces are listed
     mockFs.existsSync.mockReturnValueOnce(true); // root exists
-    mockFs.readdirSync.mockReturnValueOnce([
-      makeDirent('ws-1', true),
-    ]);
+    mockFs.readdirSync.mockReturnValueOnce([makeDirent('ws-1', true)]);
 
     const now = Date.now();
 
@@ -1968,11 +2006,15 @@ describe('smartCleanupSessionWorkspaces', () => {
     mockFs.existsSync.mockReturnValueOnce(true);
     mockFs.statSync.mockReturnValueOnce(makeDirStat());
     mockFs.existsSync.mockReturnValueOnce(true);
-    mockFs.readFileSync.mockReturnValueOnce(JSON.stringify({
-      id: 'ws-1', name: 'WS1', userId: 'other-user',
-      createdAt: new Date(now - 1000).toISOString(),
-      updatedAt: new Date(now - 1000).toISOString(),
-    }));
+    mockFs.readFileSync.mockReturnValueOnce(
+      JSON.stringify({
+        id: 'ws-1',
+        name: 'WS1',
+        userId: 'other-user',
+        createdAt: new Date(now - 1000).toISOString(),
+        updatedAt: new Date(now - 1000).toISOString(),
+      })
+    );
     mockFs.readdirSync.mockReturnValueOnce([]); // calculateDirSize
 
     const result = smartCleanupSessionWorkspaces('empty', 30, 'target-user');
@@ -1995,10 +2037,16 @@ describe('getSessionWorkspacePath', () => {
   });
 
   it('should return path with subdir when provided', () => {
-    expect(getSessionWorkspacePath('my-session', 'scripts')).toBe('/data/workspace/my-session/scripts');
-    expect(getSessionWorkspacePath('my-session', 'output')).toBe('/data/workspace/my-session/output');
+    expect(getSessionWorkspacePath('my-session', 'scripts')).toBe(
+      '/data/workspace/my-session/scripts'
+    );
+    expect(getSessionWorkspacePath('my-session', 'output')).toBe(
+      '/data/workspace/my-session/output'
+    );
     expect(getSessionWorkspacePath('my-session', 'temp')).toBe('/data/workspace/my-session/temp');
-    expect(getSessionWorkspacePath('my-session', 'downloads')).toBe('/data/workspace/my-session/downloads');
+    expect(getSessionWorkspacePath('my-session', 'downloads')).toBe(
+      '/data/workspace/my-session/downloads'
+    );
   });
 
   it('should throw for invalid workspace ID', () => {
@@ -2065,11 +2113,15 @@ describe('Path traversal security', () => {
   });
 
   it('should prevent writing files outside workspace via ID manipulation', () => {
-    expect(() => writeSessionWorkspaceFile('../..', 'etc/crontab', 'evil')).toThrow('Invalid workspace ID');
+    expect(() => writeSessionWorkspaceFile('../..', 'etc/crontab', 'evil')).toThrow(
+      'Invalid workspace ID'
+    );
   });
 
   it('should prevent deleting files outside workspace via ID manipulation', () => {
-    expect(() => deleteSessionWorkspaceFile('../..', 'important.db')).toThrow('Invalid workspace ID');
+    expect(() => deleteSessionWorkspaceFile('../..', 'important.db')).toThrow(
+      'Invalid workspace ID'
+    );
   });
 
   it('should prevent getting workspace files outside workspace via ID', () => {
@@ -2158,7 +2210,7 @@ describe('Edge cases', () => {
       // writeSessionWorkspaceFile -> updateSessionWorkspaceMeta
       // meta file not found -> no-op
       mockFs.existsSync
-        .mockReturnValueOnce(true)   // parent dir exists for writeFileSync
+        .mockReturnValueOnce(true) // parent dir exists for writeFileSync
         .mockReturnValueOnce(false); // meta file does not exist
 
       // Should not throw
@@ -2184,25 +2236,31 @@ describe('Edge cases', () => {
 
       const now = Date.now();
       mockFs.statSync
-        .mockReturnValueOnce(makeStat({
-          mtime: new Date(now - 48 * 3_600_000),
-          isDirectory: () => false,
-        }))
-        .mockReturnValueOnce(makeStat({
-          mtime: new Date(now - 48 * 3_600_000),
-          isDirectory: () => true,
-          isFile: () => false,
-        }))
-        .mockReturnValueOnce(makeStat({
-          mtime: new Date(now - 1000),
-          isDirectory: () => false,
-        }));
+        .mockReturnValueOnce(
+          makeStat({
+            mtime: new Date(now - 48 * 3_600_000),
+            isDirectory: () => false,
+          })
+        )
+        .mockReturnValueOnce(
+          makeStat({
+            mtime: new Date(now - 48 * 3_600_000),
+            isDirectory: () => true,
+            isFile: () => false,
+          })
+        )
+        .mockReturnValueOnce(
+          makeStat({
+            mtime: new Date(now - 1000),
+            isDirectory: () => false,
+          })
+        );
 
       const count = cleanTempFiles(24);
 
       expect(count).toBe(2);
       expect(mockFs.unlinkSync).toHaveBeenCalledTimes(1); // old file
-      expect(mockFs.rmSync).toHaveBeenCalledTimes(1);     // old dir
+      expect(mockFs.rmSync).toHaveBeenCalledTimes(1); // old dir
     });
   });
 
@@ -2238,13 +2296,17 @@ describe('Edge cases', () => {
   describe('getSessionWorkspace with empty directory tree', () => {
     it('should return size 0 and fileCount 0 for empty workspace', () => {
       mockFs.existsSync
-        .mockReturnValueOnce(true)  // workspace exists
+        .mockReturnValueOnce(true) // workspace exists
         .mockReturnValueOnce(true); // meta exists
       mockFs.statSync.mockReturnValueOnce(makeDirStat());
-      mockFs.readFileSync.mockReturnValueOnce(JSON.stringify({
-        id: 'empty', name: 'Empty WS',
-        createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-15T00:00:00Z',
-      }));
+      mockFs.readFileSync.mockReturnValueOnce(
+        JSON.stringify({
+          id: 'empty',
+          name: 'Empty WS',
+          createdAt: '2026-01-01T00:00:00Z',
+          updatedAt: '2026-01-15T00:00:00Z',
+        })
+      );
       mockFs.readdirSync.mockReturnValueOnce([]); // calculateDirSize -> empty
 
       const result = getSessionWorkspace('empty');
@@ -2256,14 +2318,16 @@ describe('Edge cases', () => {
 
   describe('calculateDirSize handles errors', () => {
     it('should skip inaccessible files in size calculation', () => {
-      mockFs.existsSync
-        .mockReturnValueOnce(true)
-        .mockReturnValueOnce(true);
+      mockFs.existsSync.mockReturnValueOnce(true).mockReturnValueOnce(true);
       mockFs.statSync.mockReturnValueOnce(makeDirStat());
-      mockFs.readFileSync.mockReturnValueOnce(JSON.stringify({
-        id: 'ws-err', name: 'WS',
-        createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-15T00:00:00Z',
-      }));
+      mockFs.readFileSync.mockReturnValueOnce(
+        JSON.stringify({
+          id: 'ws-err',
+          name: 'WS',
+          createdAt: '2026-01-01T00:00:00Z',
+          updatedAt: '2026-01-15T00:00:00Z',
+        })
+      );
 
       // calculateDirSize
       mockFs.readdirSync.mockReturnValueOnce([
@@ -2271,8 +2335,10 @@ describe('Edge cases', () => {
         makeDirent('bad.txt', false),
       ]);
       mockFs.statSync
-        .mockReturnValueOnce(makeStat({ size: 500 }))    // good.txt
-        .mockImplementationOnce(() => { throw new Error('EPERM'); }); // bad.txt
+        .mockReturnValueOnce(makeStat({ size: 500 })) // good.txt
+        .mockImplementationOnce(() => {
+          throw new Error('EPERM');
+        }); // bad.txt
 
       const result = getSessionWorkspace('ws-err');
 
@@ -2281,19 +2347,19 @@ describe('Edge cases', () => {
     });
 
     it('should skip inaccessible directories in traversal', () => {
-      mockFs.existsSync
-        .mockReturnValueOnce(true)
-        .mockReturnValueOnce(true);
+      mockFs.existsSync.mockReturnValueOnce(true).mockReturnValueOnce(true);
       mockFs.statSync.mockReturnValueOnce(makeDirStat());
-      mockFs.readFileSync.mockReturnValueOnce(JSON.stringify({
-        id: 'ws-dir-err', name: 'WS',
-        createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-15T00:00:00Z',
-      }));
+      mockFs.readFileSync.mockReturnValueOnce(
+        JSON.stringify({
+          id: 'ws-dir-err',
+          name: 'WS',
+          createdAt: '2026-01-01T00:00:00Z',
+          updatedAt: '2026-01-15T00:00:00Z',
+        })
+      );
 
       // Root dir has a subdirectory that throws on readdir
-      mockFs.readdirSync.mockReturnValueOnce([
-        makeDirent('broken-dir', true),
-      ]);
+      mockFs.readdirSync.mockReturnValueOnce([makeDirent('broken-dir', true)]);
       mockFs.readdirSync.mockImplementationOnce(() => {
         throw new Error('EACCES');
       });
@@ -2310,9 +2376,7 @@ describe('Edge cases', () => {
     it('should calculate directory size from sum of children', () => {
       mockFs.existsSync.mockReturnValue(true);
 
-      mockFs.readdirSync.mockReturnValueOnce([
-        makeDirent('scripts', true),
-      ]);
+      mockFs.readdirSync.mockReturnValueOnce([makeDirent('scripts', true)]);
 
       mockFs.statSync.mockReturnValueOnce(makeDirStat()); // scripts dir stat
 
@@ -2323,7 +2387,7 @@ describe('Edge cases', () => {
       ]);
 
       mockFs.statSync
-        .mockReturnValueOnce(makeStat({ size: 100 }))  // a.py
+        .mockReturnValueOnce(makeStat({ size: 100 })) // a.py
         .mockReturnValueOnce(makeStat({ size: 200 })); // b.py
 
       const result = getSessionWorkspaceFiles('ws-1');

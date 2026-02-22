@@ -10,7 +10,15 @@ import { BaseRepository, parseJsonField } from './base.js';
 // Types
 // =============================================================================
 
-export type CaptureType = 'idea' | 'thought' | 'todo' | 'link' | 'quote' | 'snippet' | 'question' | 'other';
+export type CaptureType =
+  | 'idea'
+  | 'thought'
+  | 'todo'
+  | 'link'
+  | 'quote'
+  | 'snippet'
+  | 'question'
+  | 'other';
 export type ProcessedAsType = 'note' | 'task' | 'bookmark' | 'discarded';
 
 export interface Capture {
@@ -98,9 +106,14 @@ function detectType(content: string): CaptureType {
 
   if (/https?:\/\/[^\s]+/.test(content)) return 'link';
   if (/^["'].*["']$/.test(content.trim()) || /^>/.test(content)) return 'quote';
-  if (/\?$/.test(content.trim()) || /^(what|why|how|when|where|who|can|should|would)/i.test(content)) return 'question';
+  if (
+    /\?$/.test(content.trim()) ||
+    /^(what|why|how|when|where|who|can|should|would)/i.test(content)
+  )
+    return 'question';
   if (/^(todo|task|remember to|don't forget|need to|must|should)/i.test(lower)) return 'todo';
-  if (/```|function\s|const\s|let\s|var\s|import\s|class\s|def\s|public\s/.test(content)) return 'snippet';
+  if (/```|function\s|const\s|let\s|var\s|import\s|class\s|def\s|public\s/.test(content))
+    return 'snippet';
   if (/^(idea|what if|maybe|could|might be|consider)/i.test(lower)) return 'idea';
 
   return 'thought';
@@ -111,12 +124,12 @@ function extractTags(content: string): string[] {
 
   const hashtagMatches = content.match(/#(\w+)/g);
   if (hashtagMatches) {
-    tags.push(...hashtagMatches.map(t => t.slice(1).toLowerCase()));
+    tags.push(...hashtagMatches.map((t) => t.slice(1).toLowerCase()));
   }
 
   const mentionMatches = content.match(/@(\w+)/g);
   if (mentionMatches) {
-    tags.push(...mentionMatches.map(t => `person:${t.slice(1).toLowerCase()}`));
+    tags.push(...mentionMatches.map((t) => `person:${t.slice(1).toLowerCase()}`));
   }
 
   return [...new Set(tags)];
@@ -152,7 +165,15 @@ export class CapturesRepository extends BaseRepository {
     await this.execute(
       `INSERT INTO captures (id, user_id, content, type, tags, source, url)
        VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-      [id, this.userId, input.content, type, JSON.stringify(allTags), input.source ?? null, url ?? null]
+      [
+        id,
+        this.userId,
+        input.content,
+        type,
+        JSON.stringify(allTags),
+        input.source ?? null,
+        url ?? null,
+      ]
     );
 
     const result = await this.get(id);
@@ -203,10 +224,10 @@ export class CapturesRepository extends BaseRepository {
   }
 
   async delete(id: string): Promise<boolean> {
-    const result = await this.execute(
-      `DELETE FROM captures WHERE id = $1 AND user_id = $2`,
-      [id, this.userId]
-    );
+    const result = await this.execute(`DELETE FROM captures WHERE id = $1 AND user_id = $2`, [
+      id,
+      this.userId,
+    ]);
     return result.changes > 0;
   }
 
@@ -306,7 +327,7 @@ export class CapturesRepository extends BaseRepository {
       processedAs[row.processed_as_type] = parseInt(String(row.count), 10);
     }
 
-    const topTags = tagRows.map(row => ({
+    const topTags = tagRows.map((row) => ({
       tag: row.tag,
       count: parseInt(String(row.count), 10),
     }));
@@ -322,7 +343,16 @@ export class CapturesRepository extends BaseRepository {
   }
 
   async getRecentByType(): Promise<Record<CaptureType, Capture[]>> {
-    const types: CaptureType[] = ['idea', 'thought', 'todo', 'link', 'quote', 'snippet', 'question', 'other'];
+    const types: CaptureType[] = [
+      'idea',
+      'thought',
+      'todo',
+      'link',
+      'quote',
+      'snippet',
+      'question',
+      'other',
+    ];
     const result: Record<string, Capture[]> = {};
 
     for (const type of types) {

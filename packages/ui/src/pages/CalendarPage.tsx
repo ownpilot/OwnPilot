@@ -8,7 +8,6 @@ import { SkeletonCard } from '../components/Skeleton';
 import { calendarApi } from '../api';
 import type { CalendarEvent } from '../api';
 
-
 const colorOptions = [
   { value: 'blue', label: 'Blue', class: 'bg-primary' },
   { value: 'green', label: 'Green', class: 'bg-success' },
@@ -56,11 +55,19 @@ export function CalendarPage() {
     const unsub = subscribe<{ entity: string }>('data:changed', (data) => {
       if (data.entity === 'calendar') debouncedRefresh();
     });
-    return () => { unsub(); };
+    return () => {
+      unsub();
+    };
   }, [subscribe, debouncedRefresh]);
 
   const handleDelete = async (eventId: string) => {
-    if (!await confirm({ message: 'Are you sure you want to delete this event?', variant: 'danger' })) return;
+    if (
+      !(await confirm({
+        message: 'Are you sure you want to delete this event?',
+        variant: 'danger',
+      }))
+    )
+      return;
 
     try {
       await calendarApi.delete(eventId);
@@ -71,9 +78,7 @@ export function CalendarPage() {
     }
   };
 
-  const todayEvents = events.filter(
-    (e) => e.startDate === new Date().toISOString().split('T')[0]
-  );
+  const todayEvents = events.filter((e) => e.startDate === new Date().toISOString().split('T')[0]);
 
   const upcomingEvents = events.filter(
     (e) => e.startDate > new Date().toISOString().split('T')[0]!
@@ -88,7 +93,8 @@ export function CalendarPage() {
             Calendar
           </h2>
           <p className="text-sm text-text-muted dark:text-dark-text-muted">
-            {todayEvents.length} event{todayEvents.length !== 1 ? 's' : ''} today, {upcomingEvents.length} upcoming
+            {todayEvents.length} event{todayEvents.length !== 1 ? 's' : ''} today,{' '}
+            {upcomingEvents.length} upcoming
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -218,9 +224,7 @@ function EventItem({ event, onEdit, onDelete }: EventItemProps) {
   const colorClass = colorOptions.find((c) => c.value === event.color)?.class ?? 'bg-primary';
 
   return (
-    <div
-      className="flex items-start gap-3 p-4 bg-bg-secondary dark:bg-dark-bg-secondary border border-border dark:border-dark-border rounded-lg hover:border-primary transition-colors"
-    >
+    <div className="flex items-start gap-3 p-4 bg-bg-secondary dark:bg-dark-bg-secondary border border-border dark:border-dark-border rounded-lg hover:border-primary transition-colors">
       <div className={`w-1 h-full min-h-[40px] rounded-full ${colorClass}`} />
 
       <div className="flex-1 min-w-0 cursor-pointer" onClick={onEdit}>
@@ -321,7 +325,10 @@ function EventModal({ event, defaultDate, onClose, onSave }: EventModalProps) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onBackdropClick}>
+    <div
+      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+      onClick={onBackdropClick}
+    >
       <div className="w-full max-w-lg bg-bg-primary dark:bg-dark-bg-primary border border-border dark:border-dark-border rounded-xl shadow-xl">
         <form onSubmit={handleSubmit}>
           <div className="p-6 border-b border-border dark:border-dark-border">
@@ -366,7 +373,10 @@ function EventModal({ event, defaultDate, onClose, onSave }: EventModalProps) {
                 onChange={(e) => setIsAllDay(e.target.checked)}
                 className="w-4 h-4 rounded border-border dark:border-dark-border"
               />
-              <label htmlFor="isAllDay" className="text-sm text-text-secondary dark:text-dark-text-secondary">
+              <label
+                htmlFor="isAllDay"
+                className="text-sm text-text-secondary dark:text-dark-text-secondary"
+              >
                 All day event
               </label>
             </div>
@@ -520,7 +530,12 @@ function formatDateRange(date: string, mode: 'day' | 'week' | 'month'): string {
   const options: Intl.DateTimeFormatOptions = { month: 'long', year: 'numeric' };
 
   if (mode === 'day') {
-    return d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+    return d.toLocaleDateString('en-US', {
+      weekday: 'long',
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric',
+    });
   }
   if (mode === 'week') {
     const start = new Date(getViewStartDate(date, 'week'));
@@ -545,12 +560,15 @@ function formatDateHeader(date: string): string {
 }
 
 function groupEventsByDate(events: CalendarEvent[]): [string, CalendarEvent[]][] {
-  const grouped = events.reduce((acc, event) => {
-    const date = event.startDate;
-    if (!acc[date]) acc[date] = [];
-    acc[date].push(event);
-    return acc;
-  }, {} as Record<string, CalendarEvent[]>);
+  const grouped = events.reduce(
+    (acc, event) => {
+      const date = event.startDate;
+      if (!acc[date]) acc[date] = [];
+      acc[date].push(event);
+      return acc;
+    },
+    {} as Record<string, CalendarEvent[]>
+  );
 
   return Object.entries(grouped).sort(([a], [b]) => a.localeCompare(b));
 }

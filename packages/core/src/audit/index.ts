@@ -21,11 +21,7 @@ export {
 } from './events.js';
 
 // Logger
-export {
-  AuditLogger,
-  createAuditLogger,
-  type AuditLoggerConfig,
-} from './logger.js';
+export { AuditLogger, createAuditLogger, type AuditLoggerConfig } from './logger.js';
 
 // Verification
 export {

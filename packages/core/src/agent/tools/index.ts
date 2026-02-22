@@ -254,10 +254,7 @@ export function registerAllTools(registry: IToolRegistry): void {
 /**
  * Register specific tool sets
  */
-export function registerToolSet(
-  registry: IToolRegistry,
-  setName: keyof typeof TOOL_SETS
-): void {
+export function registerToolSet(registry: IToolRegistry, setName: keyof typeof TOOL_SETS): void {
   const toolSet = TOOL_SETS[setName];
   for (const tool of toolSet) {
     const qName = qualifyToolName(tool.definition.name, 'core');
@@ -268,7 +265,9 @@ export function registerToolSet(
 /**
  * Get a tool by name
  */
-export function getTool(name: string): { definition: ToolDefinition; executor: ToolExecutor } | undefined {
+export function getTool(
+  name: string
+): { definition: ToolDefinition; executor: ToolExecutor } | undefined {
   const baseName = getBaseName(name);
   return ALL_TOOLS.find((t) => t.definition.name === baseName);
 }
@@ -282,7 +281,7 @@ export function getTool(name: string): { definition: ToolDefinition; executor: T
  */
 export const TOOL_CATEGORIES = {
   // Personal Data
-  'Tasks': [
+  Tasks: [
     'add_task',
     'batch_add_tasks',
     'list_tasks',
@@ -290,26 +289,15 @@ export const TOOL_CATEGORIES = {
     'update_task',
     'delete_task',
   ],
-  'Bookmarks': [
-    'add_bookmark',
-    'batch_add_bookmarks',
-    'list_bookmarks',
-    'delete_bookmark',
-  ],
-  'Notes': [
-    'add_note',
-    'batch_add_notes',
-    'list_notes',
-    'update_note',
-    'delete_note',
-  ],
-  'Calendar': [
+  Bookmarks: ['add_bookmark', 'batch_add_bookmarks', 'list_bookmarks', 'delete_bookmark'],
+  Notes: ['add_note', 'batch_add_notes', 'list_notes', 'update_note', 'delete_note'],
+  Calendar: [
     'add_calendar_event',
     'batch_add_calendar_events',
     'list_calendar_events',
     'delete_calendar_event',
   ],
-  'Contacts': [
+  Contacts: [
     'add_contact',
     'batch_add_contacts',
     'list_contacts',
@@ -341,11 +329,7 @@ export const TOOL_CATEGORIES = {
     'delete_file',
     'copy_file',
   ],
-  'PDF': [
-    'read_pdf',
-    'create_pdf',
-    'get_pdf_info',
-  ],
+  PDF: ['read_pdf', 'create_pdf', 'get_pdf_info'],
 
   // Code & Development
   'Code Execution (Sandbox Required)': [
@@ -355,26 +339,13 @@ export const TOOL_CATEGORIES = {
     'compile_code',
     'package_manager',
   ],
-  'Git': [
-    'git_status',
-    'git_diff',
-    'git_log',
-    'git_commit',
-    'git_add',
-    'git_branch',
-    'git_checkout',
-  ],
+  Git: ['git_status', 'git_diff', 'git_log', 'git_commit', 'git_add', 'git_branch', 'git_checkout'],
 
   // Web & API
-  'Web & API': [
-    'http_request',
-    'fetch_web_page',
-    'search_web',
-    'call_json_api',
-  ],
+  'Web & API': ['http_request', 'fetch_web_page', 'search_web', 'call_json_api'],
 
   // Communication
-  'Email': [
+  Email: [
     'send_email',
     'list_emails',
     'read_email',
@@ -384,27 +355,14 @@ export const TOOL_CATEGORIES = {
   ],
 
   // Media
-  'Image': [
-    'analyze_image',
-    'generate_image',
-    'resize_image',
-  ],
-  'Audio': [
-    'text_to_speech',
-    'speech_to_text',
-    'translate_audio',
-    'get_audio_info',
-    'split_audio',
-  ],
+  Image: ['analyze_image', 'generate_image', 'resize_image'],
+  Audio: ['text_to_speech', 'speech_to_text', 'translate_audio', 'get_audio_info', 'split_audio'],
 
   // AI & NLP
-  'Data Extraction': [
-    'extract_entities',
-    'extract_table_data',
-  ],
+  'Data Extraction': ['extract_entities', 'extract_table_data'],
 
   // Finance
-  'Finance': [
+  Finance: [
     'add_expense',
     'batch_add_expenses',
     'parse_receipt',
@@ -415,13 +373,10 @@ export const TOOL_CATEGORIES = {
   ],
 
   // Weather
-  'Weather': [
-    'get_weather',
-    'get_weather_forecast',
-  ],
+  Weather: ['get_weather', 'get_weather_forecast'],
 
   // Memory & Goals
-  'Memory': [
+  Memory: [
     'create_memory',
     'batch_create_memories',
     'search_memories',
@@ -430,7 +385,7 @@ export const TOOL_CATEGORIES = {
     'update_memory_importance',
     'get_memory_stats',
   ],
-  'Goals': [
+  Goals: [
     'create_goal',
     'list_goals',
     'update_goal',
@@ -442,15 +397,10 @@ export const TOOL_CATEGORIES = {
   ],
 
   // Meta - Dynamic Tool Management
-  'Dynamic Tools': [
-    'create_tool',
-    'list_custom_tools',
-    'delete_custom_tool',
-    'toggle_custom_tool',
-  ],
+  'Dynamic Tools': ['create_tool', 'list_custom_tools', 'delete_custom_tool', 'toggle_custom_tool'],
 
   // Utility Tools
-  'Utilities': [
+  Utilities: [
     'get_current_datetime',
     'date_diff',
     'date_add',

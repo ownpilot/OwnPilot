@@ -64,19 +64,13 @@ vi.mock('../tracing/index.js', () => ({
   traceDbRead: vi.fn(),
 }));
 vi.mock('./helpers.js', () => ({
-  getErrorMessage: (err: unknown) =>
-    err instanceof Error ? err.message : String(err),
+  getErrorMessage: (err: unknown) => (err instanceof Error ? err.message : String(err)),
   truncate: (s: string) => s,
 }));
 vi.mock('../config/defaults.js', () => ({
   TOOL_ARGS_MAX_SIZE: 100_000,
   MAX_BATCH_TOOL_CALLS: 20,
-  AI_META_TOOL_NAMES: [
-    'search_tools',
-    'get_tool_help',
-    'use_tool',
-    'batch_use_tool',
-  ],
+  AI_META_TOOL_NAMES: ['search_tools', 'get_tool_help', 'use_tool', 'batch_use_tool'],
 }));
 vi.mock('../services/log.js', () => ({
   getLog: () => ({
@@ -151,18 +145,11 @@ describe('agent-tools helpers', () => {
     });
 
     it('filters out objects from a mixed array', () => {
-      expect(safeStringArray(['a', { b: 1 }, 'c', [1, 2]])).toEqual([
-        'a',
-        'c',
-      ]);
+      expect(safeStringArray(['a', { b: 1 }, 'c', [1, 2]])).toEqual(['a', 'c']);
     });
 
     it('filters out null and undefined from an array', () => {
-      expect(safeStringArray(['a', null, 'b', undefined, 'c'])).toEqual([
-        'a',
-        'b',
-        'c',
-      ]);
+      expect(safeStringArray(['a', null, 'b', undefined, 'c'])).toEqual(['a', 'b', 'c']);
     });
 
     it('returns empty array when no elements are strings', () => {
@@ -198,12 +185,7 @@ describe('agent-tools helpers', () => {
 
     it('handles strings with special characters', () => {
       const input = ['hello\nworld', 'tab\there', 'emoji😀', ''];
-      expect(safeStringArray(input)).toEqual([
-        'hello\nworld',
-        'tab\there',
-        'emoji😀',
-        '',
-      ]);
+      expect(safeStringArray(input)).toEqual(['hello\nworld', 'tab\there', 'emoji😀', '']);
     });
   });
 });

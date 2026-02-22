@@ -97,8 +97,14 @@ export interface ForEachNodeData {
   timeoutMs?: number;
 }
 
-export type WorkflowNodeData = ToolNodeData | TriggerNodeData | LlmNodeData
-  | ConditionNodeData | CodeNodeData | TransformerNodeData | ForEachNodeData;
+export type WorkflowNodeData =
+  | ToolNodeData
+  | TriggerNodeData
+  | LlmNodeData
+  | ConditionNodeData
+  | CodeNodeData
+  | TransformerNodeData
+  | ForEachNodeData;
 
 export interface WorkflowNode {
   id: string;
@@ -348,10 +354,10 @@ export class WorkflowsRepository extends BaseRepository {
       );
     }
 
-    const result = await this.execute(
-      'DELETE FROM workflows WHERE id = $1 AND user_id = $2',
-      [id, this.userId]
-    );
+    const result = await this.execute('DELETE FROM workflows WHERE id = $1 AND user_id = $2', [
+      id,
+      this.userId,
+    ]);
     return result.changes > 0;
   }
 

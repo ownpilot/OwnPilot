@@ -28,7 +28,8 @@ export const DEFAULT_TRIGGERS: CreateTriggerInput[] = [
     action: {
       type: 'chat',
       payload: {
-        prompt: 'Generate a morning briefing including: active goals and their progress, upcoming deadlines, scheduled events today, and suggested priorities for the day.',
+        prompt:
+          'Generate a morning briefing including: active goals and their progress, upcoming deadlines, scheduled events today, and suggested priorities for the day.',
       },
     },
     priority: 7,
@@ -124,7 +125,8 @@ export const DEFAULT_TRIGGERS: CreateTriggerInput[] = [
     action: {
       type: 'chat',
       payload: {
-        prompt: 'Review my goal progress for today. What did I accomplish? What should I focus on tomorrow?',
+        prompt:
+          'Review my goal progress for today. What did I accomplish? What should I focus on tomorrow?',
       },
     },
     priority: 6,
@@ -208,10 +210,7 @@ export async function getProactiveStatus(userId = 'default'): Promise<{
 /**
  * Enable a proactive feature by name
  */
-export async function enableProactiveFeature(
-  name: string,
-  userId = 'default'
-): Promise<boolean> {
+export async function enableProactiveFeature(name: string, userId = 'default'): Promise<boolean> {
   const service = getServiceRegistry().get(Services.Trigger);
   const triggers = await service.listTriggers(userId, { limit: 100 });
   const trigger = triggers.find((t) => t.name === name);
@@ -227,10 +226,7 @@ export async function enableProactiveFeature(
 /**
  * Disable a proactive feature by name
  */
-export async function disableProactiveFeature(
-  name: string,
-  userId = 'default'
-): Promise<boolean> {
+export async function disableProactiveFeature(name: string, userId = 'default'): Promise<boolean> {
   const service = getServiceRegistry().get(Services.Trigger);
   const triggers = await service.listTriggers(userId, { limit: 100 });
   const trigger = triggers.find((t) => t.name === name);

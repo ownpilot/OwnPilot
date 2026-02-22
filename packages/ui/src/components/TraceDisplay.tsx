@@ -28,7 +28,10 @@ export function TraceDisplay({ trace }: TraceDisplayProps) {
   // Calculate summary stats
   const totalInputTokens = trace.modelCalls.reduce((sum, m) => sum + (m.inputTokens ?? 0), 0);
   const totalOutputTokens = trace.modelCalls.reduce((sum, m) => sum + (m.outputTokens ?? 0), 0);
-  const totalTokens = trace.modelCalls.reduce((sum, m) => sum + (m.tokens ?? (m.inputTokens ?? 0) + (m.outputTokens ?? 0)), 0);
+  const totalTokens = trace.modelCalls.reduce(
+    (sum, m) => sum + (m.tokens ?? (m.inputTokens ?? 0) + (m.outputTokens ?? 0)),
+    0
+  );
   const hasErrors = trace.errors.length > 0;
   const autonomyBlocked = trace.autonomyChecks.filter((a) => !a.approved).length;
   const hasRetries = (trace.retries?.length ?? 0) > 0;
@@ -62,7 +65,10 @@ export function TraceDisplay({ trace }: TraceDisplayProps) {
               </span>
 
               {totalTokens > 0 && (
-                <span className="flex items-center gap-1 text-blue-500" title={`${totalInputTokens} in / ${totalOutputTokens} out`}>
+                <span
+                  className="flex items-center gap-1 text-blue-500"
+                  title={`${totalInputTokens} in / ${totalOutputTokens} out`}
+                >
                   <Brain className="w-3 h-3" />
                   {totalInputTokens} in / {totalOutputTokens} out
                 </span>
@@ -117,14 +123,14 @@ export function TraceDisplay({ trace }: TraceDisplayProps) {
                       <span className="text-xs text-text-primary dark:text-dark-text-primary">
                         {model.provider}/{model.model}
                       </span>
-                      {(model.inputTokens !== undefined || model.outputTokens !== undefined) ? (
+                      {model.inputTokens !== undefined || model.outputTokens !== undefined ? (
                         <span className="text-xs text-blue-500">
                           {model.inputTokens ?? 0} in / {model.outputTokens ?? 0} out
                         </span>
-                      ) : model.tokens !== undefined && (
-                        <span className="text-xs text-blue-500">
-                          {model.tokens} tokens
-                        </span>
+                      ) : (
+                        model.tokens !== undefined && (
+                          <span className="text-xs text-blue-500">{model.tokens} tokens</span>
+                        )
                       )}
                       {model.duration !== undefined && (
                         <span className="text-xs text-text-muted dark:text-dark-text-muted ml-auto">
@@ -145,9 +151,7 @@ export function TraceDisplay({ trace }: TraceDisplayProps) {
                     <div
                       key={i}
                       className={`flex items-center gap-2 px-2 py-1 rounded ${
-                        check.approved
-                          ? 'bg-green-500/10'
-                          : 'bg-red-500/10'
+                        check.approved ? 'bg-green-500/10' : 'bg-red-500/10'
                       }`}
                     >
                       {check.approved ? (
@@ -295,7 +299,9 @@ export function TraceDisplay({ trace }: TraceDisplayProps) {
                   </div>
                   {trace.response.finishReason && (
                     <div className="flex gap-2 px-2 py-1 rounded bg-bg-secondary dark:bg-dark-bg-secondary">
-                      <span className="text-text-muted dark:text-dark-text-muted">Finish Reason:</span>
+                      <span className="text-text-muted dark:text-dark-text-muted">
+                        Finish Reason:
+                      </span>
                       <span className="text-text-primary dark:text-dark-text-primary font-mono">
                         {trace.response.finishReason}
                       </span>
@@ -303,7 +309,9 @@ export function TraceDisplay({ trace }: TraceDisplayProps) {
                   )}
                   {trace.response.contentLength !== undefined && (
                     <div className="flex gap-2 px-2 py-1 rounded bg-bg-secondary dark:bg-dark-bg-secondary">
-                      <span className="text-text-muted dark:text-dark-text-muted">Content Length:</span>
+                      <span className="text-text-muted dark:text-dark-text-muted">
+                        Content Length:
+                      </span>
                       <span className="text-text-primary dark:text-dark-text-primary">
                         {trace.response.contentLength} chars
                       </span>
@@ -344,9 +352,7 @@ export function TraceDisplay({ trace }: TraceDisplayProps) {
       </div>
 
       {/* Debug Info Modal */}
-      {showModal && (
-        <DebugInfoModal trace={trace} onClose={() => setShowModal(false)} />
-      )}
+      {showModal && <DebugInfoModal trace={trace} onClose={() => setShowModal(false)} />}
     </>
   );
 }
@@ -403,11 +409,7 @@ function EventsSection({ events, toolCalls = [] }: EventsSectionProps) {
         onClick={() => setIsExpanded(!isExpanded)}
         className="flex items-center gap-2 text-text-secondary dark:text-dark-text-secondary"
       >
-        {isExpanded ? (
-          <ChevronDown className="w-3 h-3" />
-        ) : (
-          <ChevronRight className="w-3 h-3" />
-        )}
+        {isExpanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
         <span className="text-xs font-medium">All Events ({events.length})</span>
       </button>
 
@@ -427,7 +429,9 @@ function EventsSection({ events, toolCalls = [] }: EventsSectionProps) {
                 <div
                   onClick={() => hasDetails && toggleEventExpanded(i)}
                   className={`flex items-center gap-2 px-2 py-1 text-xs ${
-                    hasDetails ? 'cursor-pointer hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary' : ''
+                    hasDetails
+                      ? 'cursor-pointer hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary'
+                      : ''
                   }`}
                 >
                   <span
@@ -435,8 +439,8 @@ function EventsSection({ events, toolCalls = [] }: EventsSectionProps) {
                       event.success === false
                         ? 'bg-red-500'
                         : event.success === true
-                        ? 'bg-green-500'
-                        : 'bg-gray-400'
+                          ? 'bg-green-500'
+                          : 'bg-gray-400'
                     }`}
                   />
                   <span className="px-1.5 py-0.5 bg-bg-tertiary dark:bg-dark-bg-tertiary rounded text-text-muted dark:text-dark-text-muted">
@@ -506,4 +510,3 @@ function EventsSection({ events, toolCalls = [] }: EventsSectionProps) {
     </div>
   );
 }
-

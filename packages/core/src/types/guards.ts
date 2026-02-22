@@ -113,10 +113,7 @@ export function isFunction(value: unknown): value is (...args: unknown[]) => unk
 /**
  * Check if object has a specific property
  */
-export function hasProperty<K extends string>(
-  value: unknown,
-  key: K
-): value is Record<K, unknown> {
+export function hasProperty<K extends string>(value: unknown, key: K): value is Record<K, unknown> {
   return isObject(value) && key in value;
 }
 

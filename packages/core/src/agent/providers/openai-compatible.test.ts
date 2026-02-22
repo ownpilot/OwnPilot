@@ -211,7 +211,7 @@ describe('OpenAICompatibleProvider', () => {
     it('returns the first model when none is marked default', () => {
       const config: ResolvedProviderConfig = {
         ...mockConfig,
-        models: mockConfig.models.map(m => ({ ...m, default: undefined })),
+        models: mockConfig.models.map((m) => ({ ...m, default: undefined })),
       };
       const provider = new OpenAICompatibleProvider(config);
       expect(provider.getDefaultModel()).toBe('gpt-4');
@@ -306,7 +306,7 @@ describe('OpenAICompatibleProvider', () => {
       const provider = new OpenAICompatibleProvider(mockConfig);
       const messages: Message[] = [
         { role: 'system', content: 'You are helpful.' }, // 16 chars
-        { role: 'user', content: 'Hi' },                 // 2 chars
+        { role: 'user', content: 'Hi' }, // 2 chars
       ];
       // total = 18 chars => ceil(18/4) = 5
       expect(provider.countTokens(messages)).toBe(5);
@@ -320,11 +320,7 @@ describe('OpenAICompatibleProvider', () => {
     it('aborts the abort controller', () => {
       const provider = new OpenAICompatibleProvider(mockConfig);
       // Trigger creation of an abort controller by starting a request
-      const fetchMock = mockFetchResponse(
-        { choices: [{ message: { content: 'hi' } }] },
-        true,
-        200,
-      );
+      const fetchMock = mockFetchResponse({ choices: [{ message: { content: 'hi' } }] }, true, 200);
       vi.stubGlobal('fetch', fetchMock);
 
       // Start request (don't await it yet)
@@ -425,7 +421,7 @@ describe('OpenAICompatibleProvider', () => {
 
       expect(fetchMock).toHaveBeenCalledWith(
         'https://api.openai.com/v1/chat/completions',
-        expect.objectContaining({ method: 'POST' }),
+        expect.objectContaining({ method: 'POST' })
       );
 
       const body = JSON.parse(fetchMock.mock.calls[0][1].body);
@@ -467,7 +463,7 @@ describe('OpenAICompatibleProvider', () => {
       expect(result.ok).toBe(true);
       if (result.ok) {
         expect(result.value.content).toBe(
-          '<thinking>\nLet me think step by step...\n</thinking>\n\nThe answer is 42.',
+          '<thinking>\nLet me think step by step...\n</thinking>\n\nThe answer is 42.'
         );
       }
     });
@@ -514,10 +510,7 @@ describe('OpenAICompatibleProvider', () => {
 
     it('returns InternalError on non-ok response', async () => {
       const provider = new OpenAICompatibleProvider(mockConfig);
-      vi.stubGlobal(
-        'fetch',
-        mockFetchResponse({ error: { message: 'Rate limited' } }, false, 429),
-      );
+      vi.stubGlobal('fetch', mockFetchResponse({ error: { message: 'Rate limited' } }, false, 429));
 
       const result = await provider.complete(makeRequest());
 
@@ -616,7 +609,7 @@ describe('OpenAICompatibleProvider', () => {
         expect.objectContaining({
           ok: false,
           error: expect.objectContaining({ code: 'INTERNAL_ERROR' }),
-        }),
+        })
       );
     });
 
@@ -634,7 +627,7 @@ describe('OpenAICompatibleProvider', () => {
         expect.objectContaining({
           ok: false,
           error: expect.objectContaining({ code: 'INTERNAL_ERROR' }),
-        }),
+        })
       );
     });
 
@@ -746,20 +739,23 @@ describe('OpenAICompatibleProvider', () => {
       }
 
       // Should have A, B, and DONE (the malformed chunk is silently skipped)
-      const contentChunks = chunks.filter(c => c.ok && c.value.content);
-      expect(contentChunks.map(c => c.ok && c.value.content)).toContain('A');
-      expect(contentChunks.map(c => c.ok && c.value.content)).toContain('B');
+      const contentChunks = chunks.filter((c) => c.ok && c.value.content);
+      expect(contentChunks.map((c) => c.ok && c.value.content)).toContain('A');
+      expect(contentChunks.map((c) => c.ok && c.value.content)).toContain('B');
     });
 
     it('yields InternalError on non-ok fetch response', async () => {
       const provider = new OpenAICompatibleProvider(mockConfig);
-      vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-        ok: false,
-        status: 500,
-        body: null,
-        json: () => Promise.resolve({}),
-        text: () => Promise.resolve('Server error'),
-      }));
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          ok: false,
+          status: 500,
+          body: null,
+          json: () => Promise.resolve({}),
+          text: () => Promise.resolve('Server error'),
+        })
+      );
 
       const chunks: unknown[] = [];
       for await (const chunk of provider.stream(makeRequest())) {
@@ -771,7 +767,7 @@ describe('OpenAICompatibleProvider', () => {
         expect.objectContaining({
           ok: false,
           error: expect.objectContaining({ code: 'INTERNAL_ERROR' }),
-        }),
+        })
       );
     });
 
@@ -792,7 +788,7 @@ describe('OpenAICompatibleProvider', () => {
             code: 'INTERNAL_ERROR',
             message: expect.stringContaining('Network down'),
           }),
-        }),
+        })
       );
     });
 
@@ -827,7 +823,7 @@ describe('OpenAICompatibleProvider', () => {
       }
 
       // The content chunk with finish_reason
-      const contentChunk = chunks.find(c => c.ok && c.value.content === 'Done');
+      const contentChunk = chunks.find((c) => c.ok && c.value.content === 'Done');
       expect(contentChunk).toBeDefined();
       expect(contentChunk?.ok && contentChunk.value.done).toBe(true);
       expect(contentChunk?.ok && contentChunk.value.finishReason).toBe('stop');
@@ -855,7 +851,7 @@ describe('OpenAICompatibleProvider', () => {
         }
       }
 
-      const contentChunks = chunks.filter(c => c.ok && c.value.content);
+      const contentChunks = chunks.filter((c) => c.ok && c.value.content);
       expect(contentChunks).toHaveLength(1);
       expect(contentChunks[0].ok && contentChunks[0].value.content).toBe('ok');
     });
@@ -875,7 +871,7 @@ describe('OpenAICompatibleProvider', () => {
             Promise.resolve({
               data: [{ id: 'gpt-4' }, { id: 'gpt-4-turbo' }, { id: 'gpt-3.5-turbo' }],
             }),
-        }),
+        })
       );
 
       const result = await provider.fetchModelsFromAPI();
@@ -906,16 +902,13 @@ describe('OpenAICompatibleProvider', () => {
             Authorization: 'Bearer sk-test-key',
             'X-Org': 'test-org',
           }),
-        }),
+        })
       );
     });
 
     it('falls back to config models on API error', async () => {
       const provider = new OpenAICompatibleProvider(mockConfig);
-      vi.stubGlobal(
-        'fetch',
-        vi.fn().mockResolvedValue({ ok: false, status: 401 }),
-      );
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 401 }));
 
       const result = await provider.fetchModelsFromAPI();
 
@@ -973,7 +966,7 @@ describe('OpenAICompatibleProvider', () => {
               parameters: { type: 'object', properties: {} },
             },
           ],
-        }),
+        })
       );
 
       const body = JSON.parse(fetchMock.mock.calls[0][1].body);
@@ -987,9 +980,7 @@ describe('OpenAICompatibleProvider', () => {
       });
       vi.stubGlobal('fetch', fetchMock);
 
-      await provider.complete(
-        makeRequest({ model: { model: 'gpt-4', responseFormat: 'json' } }),
-      );
+      await provider.complete(makeRequest({ model: { model: 'gpt-4', responseFormat: 'json' } }));
 
       const body = JSON.parse(fetchMock.mock.calls[0][1].body);
       expect(body.response_format).toEqual({ type: 'json_object' });
@@ -1005,9 +996,7 @@ describe('OpenAICompatibleProvider', () => {
       });
       vi.stubGlobal('fetch', fetchMock);
 
-      await provider.complete(
-        makeRequest({ model: { model: 'gpt-4', responseFormat: 'json' } }),
-      );
+      await provider.complete(makeRequest({ model: { model: 'gpt-4', responseFormat: 'json' } }));
 
       const body = JSON.parse(fetchMock.mock.calls[0][1].body);
       expect(body.response_format).toBeUndefined();

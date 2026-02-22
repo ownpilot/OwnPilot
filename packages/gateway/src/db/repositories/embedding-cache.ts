@@ -54,12 +54,12 @@ export class EmbeddingCacheRepository extends BaseRepository {
    */
   async lookup(
     contentHash: string,
-    modelName = 'text-embedding-3-small',
+    modelName = 'text-embedding-3-small'
   ): Promise<number[] | null> {
     const row = await this.queryOne<EmbeddingCacheRow>(
       `SELECT * FROM embedding_cache
        WHERE content_hash = $1 AND model_name = $2`,
-      [contentHash, modelName],
+      [contentHash, modelName]
     );
     if (!row) return null;
 
@@ -68,7 +68,7 @@ export class EmbeddingCacheRepository extends BaseRepository {
       `UPDATE embedding_cache
        SET last_used_at = NOW(), use_count = use_count + 1
        WHERE id = $1`,
-      [row.id],
+      [row.id]
     ).catch(() => {});
 
     return parseEmbedding(row.embedding);
@@ -78,11 +78,7 @@ export class EmbeddingCacheRepository extends BaseRepository {
    * Store a new embedding in the cache.
    * On conflict (same hash+model), just touch the existing entry.
    */
-  async store(
-    contentHash: string,
-    modelName: string,
-    embedding: number[],
-  ): Promise<void> {
+  async store(contentHash: string, modelName: string, embedding: number[]): Promise<void> {
     const id = crypto.randomUUID();
     await this.execute(
       `INSERT INTO embedding_cache (id, content_hash, model_name, embedding, created_at, last_used_at, use_count)
@@ -90,7 +86,7 @@ export class EmbeddingCacheRepository extends BaseRepository {
        ON CONFLICT (content_hash, model_name) DO UPDATE SET
          last_used_at = NOW(),
          use_count = embedding_cache.use_count + 1`,
-      [id, contentHash, modelName, JSON.stringify(embedding)],
+      [id, contentHash, modelName, JSON.stringify(embedding)]
     );
   }
 
@@ -101,7 +97,7 @@ export class EmbeddingCacheRepository extends BaseRepository {
     const result = await this.execute(
       `DELETE FROM embedding_cache
        WHERE last_used_at < NOW() - ($1 || ' days')::INTERVAL`,
-      [daysUnused],
+      [daysUnused]
     );
     if (result.changes > 0) {
       log.info(`Evicted ${result.changes} stale embedding cache entries`);
@@ -115,7 +111,7 @@ export class EmbeddingCacheRepository extends BaseRepository {
   async getStats(): Promise<{ total: number; totalHits: number }> {
     const row = await this.queryOne<{ total: string; total_hits: string }>(
       `SELECT COUNT(*) as total, COALESCE(SUM(use_count), 0) as total_hits
-       FROM embedding_cache`,
+       FROM embedding_cache`
     );
     return {
       total: Number(row?.total ?? 0),

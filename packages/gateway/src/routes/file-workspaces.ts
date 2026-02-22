@@ -16,9 +16,9 @@ import { MAX_DAYS_LOOKBACK } from '../config/defaults.js';
 /** Sanitize a filename for use in Content-Disposition headers */
 function sanitizeFilename(name: string): string {
   return name
-    .replace(/[/\\:*?"<>|\r\n]/g, '_')  // Replace path separators, control chars, shell-dangerous chars
-    .replace(/[^\x20-\x7E]/g, '_')       // Replace non-printable / non-ASCII
-    .slice(0, 255);                        // Limit length
+    .replace(/[/\\:*?"<>|\r\n]/g, '_') // Replace path separators, control chars, shell-dangerous chars
+    .replace(/[^\x20-\x7E]/g, '_') // Replace non-printable / non-ASCII
+    .slice(0, 255); // Limit length
 }
 import {
   listSessionWorkspaces,
@@ -37,11 +37,19 @@ import type { Context } from 'hono';
 import type { SessionWorkspaceInfo } from '../workspace/file-workspace.js';
 
 /** Get workspace and verify it belongs to the requesting user. Returns null with error response if not found/forbidden. */
-function getOwnedWorkspace(c: Context, workspaceId: string, userId: string): SessionWorkspaceInfo | Response {
+function getOwnedWorkspace(
+  c: Context,
+  workspaceId: string,
+  userId: string
+): SessionWorkspaceInfo | Response {
   const workspace = getSessionWorkspace(workspaceId);
 
   if (!workspace) {
-    return apiError(c, { code: ERROR_CODES.WORKSPACE_NOT_FOUND, message: 'Workspace not found' }, 404);
+    return apiError(
+      c,
+      { code: ERROR_CODES.WORKSPACE_NOT_FOUND, message: 'Workspace not found' },
+      404
+    );
   }
 
   // Deny access if workspace has a userId set and it doesn't match
@@ -67,7 +75,14 @@ app.get('/', async (c) => {
       count: workspaces.length,
     });
   } catch (error) {
-    return apiError(c, { code: ERROR_CODES.WORKSPACE_LIST_ERROR, message: getErrorMessage(error, 'Failed to list workspaces') }, 500);
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.WORKSPACE_LIST_ERROR,
+        message: getErrorMessage(error, 'Failed to list workspaces'),
+      },
+      500
+    );
   }
 });
 
@@ -90,7 +105,14 @@ app.post('/', async (c) => {
 
     return apiResponse(c, workspace, 201);
   } catch (error) {
-    return apiError(c, { code: ERROR_CODES.WORKSPACE_CREATE_ERROR, message: getErrorMessage(error, 'Failed to create workspace') }, 500);
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.WORKSPACE_CREATE_ERROR,
+        message: getErrorMessage(error, 'Failed to create workspace'),
+      },
+      500
+    );
   }
 });
 
@@ -107,7 +129,14 @@ app.get('/:id', async (c) => {
 
     return apiResponse(c, result);
   } catch (error) {
-    return apiError(c, { code: ERROR_CODES.WORKSPACE_FETCH_ERROR, message: getErrorMessage(error, 'Failed to fetch workspace') }, 500);
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.WORKSPACE_FETCH_ERROR,
+        message: getErrorMessage(error, 'Failed to fetch workspace'),
+      },
+      500
+    );
   }
 });
 
@@ -126,7 +155,14 @@ app.delete('/:id', async (c) => {
 
     return apiResponse(c, { deleted: true });
   } catch (error) {
-    return apiError(c, { code: ERROR_CODES.WORKSPACE_DELETE_ERROR, message: getErrorMessage(error, 'Failed to delete workspace') }, 500);
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.WORKSPACE_DELETE_ERROR,
+        message: getErrorMessage(error, 'Failed to delete workspace'),
+      },
+      500
+    );
   }
 });
 
@@ -145,12 +181,19 @@ app.get('/:id/files', async (c) => {
     const files = getSessionWorkspaceFiles(workspaceId, path);
 
     return apiResponse(c, {
-        path,
-        files,
-        count: files.length,
-      });
+      path,
+      files,
+      count: files.length,
+    });
   } catch (error) {
-    return apiError(c, { code: ERROR_CODES.FILE_LIST_ERROR, message: getErrorMessage(error, 'Failed to list files') }, 500);
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.FILE_LIST_ERROR,
+        message: getErrorMessage(error, 'Failed to list files'),
+      },
+      500
+    );
   }
 });
 
@@ -190,12 +233,21 @@ app.get('/:id/file/*', async (c) => {
     if (raw) {
       const ext = filePath.split('.').pop()?.toLowerCase() ?? '';
       const mimeTypes: Record<string, string> = {
-        png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg',
-        gif: 'image/gif', webp: 'image/webp', svg: 'image/svg+xml',
-        bmp: 'image/bmp', ico: 'image/x-icon',
-        mp4: 'video/mp4', webm: 'video/webm',
-        pdf: 'application/pdf', txt: 'text/plain',
-        html: 'text/html', css: 'text/css', js: 'text/javascript',
+        png: 'image/png',
+        jpg: 'image/jpeg',
+        jpeg: 'image/jpeg',
+        gif: 'image/gif',
+        webp: 'image/webp',
+        svg: 'image/svg+xml',
+        bmp: 'image/bmp',
+        ico: 'image/x-icon',
+        mp4: 'video/mp4',
+        webm: 'video/webm',
+        pdf: 'application/pdf',
+        txt: 'text/plain',
+        html: 'text/html',
+        css: 'text/css',
+        js: 'text/javascript',
         json: 'application/json',
       };
       const contentType = mimeTypes[ext] || 'application/octet-stream';
@@ -210,15 +262,19 @@ app.get('/:id/file/*', async (c) => {
 
     // Return as JSON with content
     return apiResponse(c, {
-        path: filePath,
-        content: content.toString('utf-8'),
-        size: content.length,
-      });
+      path: filePath,
+      content: content.toString('utf-8'),
+      size: content.length,
+    });
   } catch (error) {
     if (error instanceof Error && error.message.includes('traversal')) {
       return apiError(c, { code: ERROR_CODES.ACCESS_DENIED, message: error.message }, 403);
     }
-    return apiError(c, { code: ERROR_CODES.FILE_READ_ERROR, message: getErrorMessage(error, 'Failed to read file') }, 500);
+    return apiError(
+      c,
+      { code: ERROR_CODES.FILE_READ_ERROR, message: getErrorMessage(error, 'Failed to read file') },
+      500
+    );
   }
 });
 
@@ -245,14 +301,21 @@ app.put('/:id/file/*', async (c) => {
     writeSessionWorkspaceFile(workspaceId, filePath, content);
 
     return apiResponse(c, {
-        path: filePath,
-        written: true,
-      });
+      path: filePath,
+      written: true,
+    });
   } catch (error) {
     if (error instanceof Error && error.message.includes('traversal')) {
       return apiError(c, { code: ERROR_CODES.ACCESS_DENIED, message: error.message }, 403);
     }
-    return apiError(c, { code: ERROR_CODES.FILE_WRITE_ERROR, message: getErrorMessage(error, 'Failed to write file') }, 500);
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.FILE_WRITE_ERROR,
+        message: getErrorMessage(error, 'Failed to write file'),
+      },
+      500
+    );
   }
 });
 
@@ -275,14 +338,21 @@ app.delete('/:id/file/*', async (c) => {
     }
 
     return apiResponse(c, {
-        path: filePath,
-        deleted: true,
-      });
+      path: filePath,
+      deleted: true,
+    });
   } catch (error) {
     if (error instanceof Error && error.message.includes('traversal')) {
       return apiError(c, { code: ERROR_CODES.ACCESS_DENIED, message: error.message }, 403);
     }
-    return apiError(c, { code: ERROR_CODES.FILE_DELETE_ERROR, message: getErrorMessage(error, 'Failed to delete file') }, 500);
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.FILE_DELETE_ERROR,
+        message: getErrorMessage(error, 'Failed to delete file'),
+      },
+      500
+    );
   }
 });
 
@@ -311,8 +381,12 @@ app.get('/:id/download', async (c) => {
 
     // Stream the file, then clean up temp ZIP
     const stream = createReadStream(zipPath);
-    stream.on('end', () => { unlink(zipPath).catch(() => {}); });
-    stream.on('error', () => { unlink(zipPath).catch(() => {}); });
+    stream.on('end', () => {
+      unlink(zipPath).catch(() => {});
+    });
+    stream.on('error', () => {
+      unlink(zipPath).catch(() => {});
+    });
     return new Response(stream as unknown as ReadableStream, {
       headers: {
         'Content-Type': 'application/zip',
@@ -321,7 +395,14 @@ app.get('/:id/download', async (c) => {
       },
     });
   } catch (error) {
-    return apiError(c, { code: ERROR_CODES.DOWNLOAD_ERROR, message: getErrorMessage(error, 'Failed to download workspace') }, 500);
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.DOWNLOAD_ERROR,
+        message: getErrorMessage(error, 'Failed to download workspace'),
+      },
+      500
+    );
   }
 });
 
@@ -332,7 +413,9 @@ app.post('/cleanup', async (c) => {
   const userId = getUserId(c);
   try {
     const body = await c.req.json().catch(() => ({}));
-    const mode: 'empty' | 'old' | 'both' = ['empty', 'old', 'both'].includes(body.mode) ? body.mode : 'old';
+    const mode: 'empty' | 'old' | 'both' = ['empty', 'old', 'both'].includes(body.mode)
+      ? body.mode
+      : 'old';
     const raw = Number(body.maxAgeDays) || 7;
     const maxAgeDays = Math.max(1, Math.min(MAX_DAYS_LOOKBACK, raw));
 
@@ -345,7 +428,14 @@ app.post('/cleanup', async (c) => {
       stats: { deletedEmpty: result.deletedEmpty, deletedOld: result.deletedOld },
     });
   } catch (error) {
-    return apiError(c, { code: ERROR_CODES.CLEANUP_ERROR, message: getErrorMessage(error, 'Failed to cleanup workspaces') }, 500);
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.CLEANUP_ERROR,
+        message: getErrorMessage(error, 'Failed to cleanup workspaces'),
+      },
+      500
+    );
   }
 });
 
@@ -363,7 +453,14 @@ app.post('/session/:sessionId', async (c) => {
 
     return apiResponse(c, workspace);
   } catch (error) {
-    return apiError(c, { code: ERROR_CODES.WORKSPACE_ERROR, message: getErrorMessage(error, 'Failed to get or create workspace') }, 500);
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.WORKSPACE_ERROR,
+        message: getErrorMessage(error, 'Failed to get or create workspace'),
+      },
+      500
+    );
   }
 });
 

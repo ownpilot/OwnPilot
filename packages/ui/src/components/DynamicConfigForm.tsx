@@ -27,8 +27,7 @@ const INPUT_CLASSES =
 const LABEL_CLASSES =
   'block text-sm font-medium text-text-secondary dark:text-dark-text-secondary mb-1.5';
 
-const DESCRIPTION_CLASSES =
-  'text-xs text-text-muted dark:text-dark-text-muted mt-1';
+const DESCRIPTION_CLASSES = 'text-xs text-text-muted dark:text-dark-text-muted mt-1';
 
 export function DynamicConfigForm({
   schema,
@@ -50,7 +49,7 @@ export function DynamicConfigForm({
     (fieldName: string, value: unknown) => {
       onChange({ ...values, [fieldName]: value });
     },
-    [values, onChange],
+    [values, onChange]
   );
 
   const toggleSecretVisibility = useCallback((fieldName: string) => {
@@ -87,23 +86,13 @@ export function DynamicConfigForm({
               field={field}
               checked={Boolean(values[field.name] ?? field.defaultValue)}
               disabled={disabled}
-              onToggle={() =>
-                handleChange(
-                  field.name,
-                  !(values[field.name] ?? field.defaultValue),
-                )
-              }
+              onToggle={() => handleChange(field.name, !(values[field.name] ?? field.defaultValue))}
             />
           ) : (
             <>
-              <label
-                htmlFor={`field-${field.name}`}
-                className={LABEL_CLASSES}
-              >
+              <label htmlFor={`field-${field.name}`} className={LABEL_CLASSES}>
                 {field.label}
-                {field.required && (
-                  <span className="text-error ml-0.5">*</span>
-                )}
+                {field.required && <span className="text-error ml-0.5">*</span>}
               </label>
 
               {field.type === 'select' ? (
@@ -114,9 +103,7 @@ export function DynamicConfigForm({
                   disabled={disabled}
                   className={`${INPUT_CLASSES} disabled:opacity-50 disabled:cursor-not-allowed`}
                 >
-                  <option value="">
-                    {field.placeholder ?? 'Select an option...'}
-                  </option>
+                  <option value="">{field.placeholder ?? 'Select an option...'}</option>
                   {field.options?.map((opt) => (
                     <option key={opt.value} value={opt.value}>
                       {opt.label}
@@ -134,15 +121,11 @@ export function DynamicConfigForm({
                     placeholder={field.placeholder}
                     rows={4}
                     className={`${INPUT_CLASSES} font-mono resize-y disabled:opacity-50 disabled:cursor-not-allowed ${
-                      jsonErrors[field.name]
-                        ? 'border-error focus:ring-error/50'
-                        : ''
+                      jsonErrors[field.name] ? 'border-error focus:ring-error/50' : ''
                     }`}
                   />
                   {jsonErrors[field.name] && (
-                    <p className="text-xs text-error mt-1">
-                      {jsonErrors[field.name]}
-                    </p>
+                    <p className="text-xs text-error mt-1">{jsonErrors[field.name]}</p>
                   )}
                 </>
               ) : field.type === 'secret' ? (
@@ -160,9 +143,7 @@ export function DynamicConfigForm({
                     type="button"
                     onClick={() => toggleSecretVisibility(field.name)}
                     className="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 text-text-muted dark:text-dark-text-muted hover:text-text-primary dark:hover:text-dark-text-primary"
-                    title={
-                      visibleSecrets[field.name] ? 'Hide value' : 'Show value'
-                    }
+                    title={visibleSecrets[field.name] ? 'Hide value' : 'Show value'}
                   >
                     {visibleSecrets[field.name] ? (
                       <EyeOff className="w-4 h-4" />
@@ -174,13 +155,7 @@ export function DynamicConfigForm({
               ) : (
                 <input
                   id={`field-${field.name}`}
-                  type={
-                    field.type === 'number'
-                      ? 'number'
-                      : field.type === 'url'
-                        ? 'url'
-                        : 'text'
-                  }
+                  type={field.type === 'number' ? 'number' : field.type === 'url' ? 'url' : 'text'}
                   value={String(values[field.name] ?? field.defaultValue ?? '')}
                   onChange={(e) =>
                     handleChange(
@@ -189,7 +164,7 @@ export function DynamicConfigForm({
                         ? e.target.value === ''
                           ? ''
                           : Number(e.target.value)
-                        : e.target.value,
+                        : e.target.value
                     )
                   }
                   disabled={disabled}
@@ -198,9 +173,7 @@ export function DynamicConfigForm({
                 />
               )}
 
-              {field.description && (
-                <p className={DESCRIPTION_CLASSES}>{field.description}</p>
-              )}
+              {field.description && <p className={DESCRIPTION_CLASSES}>{field.description}</p>}
               {field.envVar && (
                 <p className={DESCRIPTION_CLASSES}>
                   Environment variable:{' '}
@@ -236,9 +209,7 @@ function BooleanField({
           {field.required && <span className="text-error ml-0.5">*</span>}
         </p>
         {field.description && (
-          <p className="text-xs text-text-muted dark:text-dark-text-muted">
-            {field.description}
-          </p>
+          <p className="text-xs text-text-muted dark:text-dark-text-muted">{field.description}</p>
         )}
         {field.envVar && (
           <p className="text-xs text-text-muted dark:text-dark-text-muted mt-0.5">

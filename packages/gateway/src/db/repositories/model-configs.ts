@@ -270,7 +270,11 @@ export class ModelConfigsRepository extends BaseRepository {
   /**
    * Get a specific model config
    */
-  async getModel(userId: string, providerId: string, modelId: string): Promise<UserModelConfig | null> {
+  async getModel(
+    userId: string,
+    providerId: string,
+    modelId: string
+  ): Promise<UserModelConfig | null> {
     const row = await this.queryOne<ModelConfigRow>(
       `SELECT * FROM user_model_configs
        WHERE user_id = $1 AND provider_id = $2 AND model_id = $3`,
@@ -414,7 +418,12 @@ export class ModelConfigsRepository extends BaseRepository {
   /**
    * Toggle model enabled status
    */
-  async toggleModel(userId: string, providerId: string, modelId: string, enabled: boolean): Promise<boolean> {
+  async toggleModel(
+    userId: string,
+    providerId: string,
+    modelId: string,
+    enabled: boolean
+  ): Promise<boolean> {
     const result = await this.execute(
       `UPDATE user_model_configs SET
         is_enabled = $1,
@@ -661,7 +670,10 @@ export class ModelConfigsRepository extends BaseRepository {
   /**
    * Get a specific user provider config
    */
-  async getUserProviderConfig(userId: string, providerId: string): Promise<UserProviderConfig | null> {
+  async getUserProviderConfig(
+    userId: string,
+    providerId: string
+  ): Promise<UserProviderConfig | null> {
     const row = await this.queryOne<UserProviderConfigRow>(
       `SELECT * FROM user_provider_configs
        WHERE user_id = $1 AND provider_id = $2`,
@@ -673,7 +685,9 @@ export class ModelConfigsRepository extends BaseRepository {
   /**
    * Create or update a user provider config
    */
-  async upsertUserProviderConfig(input: CreateUserProviderConfigInput): Promise<UserProviderConfig> {
+  async upsertUserProviderConfig(
+    input: CreateUserProviderConfigInput
+  ): Promise<UserProviderConfig> {
     const userId = input.userId || 'default';
     const existing = await this.getUserProviderConfig(userId, input.providerId);
     const now = new Date().toISOString();
@@ -789,7 +803,11 @@ export class ModelConfigsRepository extends BaseRepository {
   /**
    * Toggle user provider config enabled status
    */
-  async toggleUserProviderConfig(userId: string, providerId: string, enabled: boolean): Promise<boolean> {
+  async toggleUserProviderConfig(
+    userId: string,
+    providerId: string,
+    enabled: boolean
+  ): Promise<boolean> {
     // First check if config exists, if not create it
     const existing = await this.getUserProviderConfig(userId, providerId);
     if (!existing) {
@@ -827,7 +845,10 @@ export class ModelConfigsRepository extends BaseRepository {
    * Get provider override (baseUrl, type) for a built-in provider
    * Returns null if no override exists
    */
-  async getProviderOverride(userId: string, providerId: string): Promise<{ baseUrl?: string; providerType?: string } | null> {
+  async getProviderOverride(
+    userId: string,
+    providerId: string
+  ): Promise<{ baseUrl?: string; providerType?: string } | null> {
     const config = await this.getUserProviderConfig(userId, providerId);
     if (!config) return null;
     return {
@@ -840,10 +861,9 @@ export class ModelConfigsRepository extends BaseRepository {
    * Delete ALL user provider configs (for full reset)
    */
   async deleteAllUserProviderConfigs(userId: string = 'default'): Promise<number> {
-    const result = await this.execute(
-      `DELETE FROM user_provider_configs WHERE user_id = $1`,
-      [userId]
-    );
+    const result = await this.execute(`DELETE FROM user_provider_configs WHERE user_id = $1`, [
+      userId,
+    ]);
     return result.changes;
   }
 
@@ -851,10 +871,9 @@ export class ModelConfigsRepository extends BaseRepository {
    * Delete ALL user model configs (for full reset)
    */
   async deleteAllUserModelConfigs(userId: string = 'default'): Promise<number> {
-    const result = await this.execute(
-      `DELETE FROM user_model_configs WHERE user_id = $1`,
-      [userId]
-    );
+    const result = await this.execute(`DELETE FROM user_model_configs WHERE user_id = $1`, [
+      userId,
+    ]);
     return result.changes;
   }
 
@@ -862,17 +881,16 @@ export class ModelConfigsRepository extends BaseRepository {
    * Delete ALL custom providers (for full reset)
    */
   async deleteAllCustomProviders(userId: string = 'default'): Promise<number> {
-    const result = await this.execute(
-      `DELETE FROM custom_providers WHERE user_id = $1`,
-      [userId]
-    );
+    const result = await this.execute(`DELETE FROM custom_providers WHERE user_id = $1`, [userId]);
     return result.changes;
   }
 
   /**
    * Full reset - delete all user model data
    */
-  async fullReset(userId: string = 'default'): Promise<{ providerConfigs: number; modelConfigs: number; customProviders: number }> {
+  async fullReset(
+    userId: string = 'default'
+  ): Promise<{ providerConfigs: number; modelConfigs: number; customProviders: number }> {
     const providerConfigs = await this.deleteAllUserProviderConfigs(userId);
     const modelConfigs = await this.deleteAllUserModelConfigs(userId);
     const customProviders = await this.deleteAllCustomProviders(userId);

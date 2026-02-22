@@ -71,7 +71,7 @@ export interface IDatabaseService {
     displayName: string,
     columns: TableColumn[],
     description?: string,
-    options?: { ownerPluginId?: string; isProtected?: boolean },
+    options?: { ownerPluginId?: string; isProtected?: boolean }
   ): Promise<TableSchema>;
 
   /**
@@ -87,16 +87,16 @@ export interface IDatabaseService {
   /**
    * List tables with record stats.
    */
-  listTablesWithStats(
-    filter?: { pluginId?: string },
-  ): Promise<Array<TableSchema & { stats: TableStats }>>;
+  listTablesWithStats(filter?: {
+    pluginId?: string;
+  }): Promise<Array<TableSchema & { stats: TableStats }>>;
 
   /**
    * Update table metadata.
    */
   updateTable(
     nameOrId: string,
-    updates: Partial<Pick<TableSchema, 'displayName' | 'description' | 'columns'>>,
+    updates: Partial<Pick<TableSchema, 'displayName' | 'description' | 'columns'>>
   ): Promise<TableSchema | null>;
 
   /**
@@ -114,7 +114,7 @@ export interface IDatabaseService {
     name: string,
     displayName: string,
     columns: TableColumn[],
-    description?: string,
+    description?: string
   ): Promise<TableSchema>;
 
   /**
@@ -139,7 +139,7 @@ export interface IDatabaseService {
    */
   batchAddRecords(
     tableNameOrId: string,
-    records: Array<Record<string, unknown>>,
+    records: Array<Record<string, unknown>>
   ): Promise<DataRecord[]>;
 
   /**
@@ -158,7 +158,7 @@ export interface IDatabaseService {
       orderBy?: string;
       orderDir?: 'asc' | 'desc';
       filter?: Record<string, unknown>;
-    },
+    }
   ): Promise<{ records: DataRecord[]; total: number }>;
 
   /**
@@ -177,7 +177,7 @@ export interface IDatabaseService {
   searchRecords(
     tableNameOrId: string,
     query: string,
-    options?: { limit?: number },
+    options?: { limit?: number }
   ): Promise<DataRecord[]>;
 
   /**

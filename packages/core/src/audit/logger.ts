@@ -121,7 +121,9 @@ export class AuditLogger {
       this.initialized = true;
       return ok(undefined);
     } catch (error) {
-      return err(new InternalError(`Failed to initialize audit logger: ${error}`, { cause: error }));
+      return err(
+        new InternalError(`Failed to initialize audit logger: ${error}`, { cause: error })
+      );
     }
   }
 

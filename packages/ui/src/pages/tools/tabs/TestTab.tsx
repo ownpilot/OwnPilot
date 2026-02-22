@@ -44,7 +44,11 @@ export function TestTab({ tool }: TestTabProps) {
       } else if (type === 'boolean') {
         args[name] = value === 'true';
       } else if (type === 'array' || type === 'object') {
-        try { args[name] = JSON.parse(value); } catch { /* skip invalid */ }
+        try {
+          args[name] = JSON.parse(value);
+        } catch {
+          /* skip invalid */
+        }
       } else {
         args[name] = value;
       }
@@ -80,7 +84,8 @@ export function TestTab({ tool }: TestTabProps) {
     setTestResult(null);
   };
 
-  const inputClass = 'w-full px-3 py-2 bg-bg-tertiary dark:bg-dark-bg-tertiary border border-border dark:border-dark-border rounded-lg text-text-primary dark:text-dark-text-primary text-sm focus:outline-none focus:ring-2 focus:ring-primary/50';
+  const inputClass =
+    'w-full px-3 py-2 bg-bg-tertiary dark:bg-dark-bg-tertiary border border-border dark:border-dark-border rounded-lg text-text-primary dark:text-dark-text-primary text-sm focus:outline-none focus:ring-2 focus:ring-primary/50';
 
   return (
     <div className="space-y-4">
@@ -160,32 +165,25 @@ function FieldInput({ name, prop, isRequired, value, onChange, inputClass }: Fie
         {name}
         {isRequired && <span className="text-red-500 ml-1">*</span>}
         <span className="ml-2 text-xs text-text-muted dark:text-dark-text-muted font-normal">
-          {type}{prop?.enum ? ` [${prop.enum.join(', ')}]` : ''}
+          {type}
+          {prop?.enum ? ` [${prop.enum.join(', ')}]` : ''}
         </span>
       </label>
       {prop?.description && (
-        <p className="text-xs text-text-muted dark:text-dark-text-muted mb-1">
-          {prop.description}
-        </p>
+        <p className="text-xs text-text-muted dark:text-dark-text-muted mb-1">{prop.description}</p>
       )}
 
       {prop?.enum ? (
-        <select
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          className={inputClass}
-        >
+        <select value={value} onChange={(e) => onChange(e.target.value)} className={inputClass}>
           <option value="">-- select --</option>
           {prop.enum.map((val) => (
-            <option key={val} value={val}>{val}</option>
+            <option key={val} value={val}>
+              {val}
+            </option>
           ))}
         </select>
       ) : type === 'boolean' ? (
-        <select
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          className={inputClass}
-        >
+        <select value={value} onChange={(e) => onChange(e.target.value)} className={inputClass}>
           <option value="false">false</option>
           <option value="true">true</option>
         </select>

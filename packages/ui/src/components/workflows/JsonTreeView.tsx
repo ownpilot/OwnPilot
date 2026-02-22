@@ -33,12 +33,17 @@ function truncateValue(value: unknown): string {
 function tryParseJson(value: unknown): Record<string, unknown> | unknown[] | null {
   if (typeof value !== 'string') return null;
   const trimmed = value.trim();
-  if ((!trimmed.startsWith('{') || !trimmed.endsWith('}')) &&
-      (!trimmed.startsWith('[') || !trimmed.endsWith(']'))) return null;
+  if (
+    (!trimmed.startsWith('{') || !trimmed.endsWith('}')) &&
+    (!trimmed.startsWith('[') || !trimmed.endsWith(']'))
+  )
+    return null;
   try {
     const parsed = JSON.parse(trimmed);
     if (typeof parsed === 'object' && parsed !== null) return parsed;
-  } catch { /* not JSON */ }
+  } catch {
+    /* not JSON */
+  }
   return null;
 }
 
@@ -63,10 +68,28 @@ export function JsonTreeView({ data, onClickPath, pathPrefix, maxDepth = 6 }: Js
   const type = detectType(resolved);
 
   if (type === 'object' && !Array.isArray(resolved)) {
-    return <TreeObject value={resolved as Record<string, unknown>} path={[]} depth={0} onClickPath={onClickPath} pathPrefix={pathPrefix} maxDepth={maxDepth} />;
+    return (
+      <TreeObject
+        value={resolved as Record<string, unknown>}
+        path={[]}
+        depth={0}
+        onClickPath={onClickPath}
+        pathPrefix={pathPrefix}
+        maxDepth={maxDepth}
+      />
+    );
   }
   if (type === 'array') {
-    return <TreeArray value={resolved as unknown[]} path={[]} depth={0} onClickPath={onClickPath} pathPrefix={pathPrefix} maxDepth={maxDepth} />;
+    return (
+      <TreeArray
+        value={resolved as unknown[]}
+        path={[]}
+        depth={0}
+        onClickPath={onClickPath}
+        pathPrefix={pathPrefix}
+        maxDepth={maxDepth}
+      />
+    );
   }
 
   // Primitive root value
@@ -99,7 +122,12 @@ function buildFullPath(prefix: string | undefined, path: string[]): string {
   return parts.join('.');
 }
 
-function TreeObject({ value, path, depth, ...ctx }: TreeNodeProps & { value: Record<string, unknown> }) {
+function TreeObject({
+  value,
+  path,
+  depth,
+  ...ctx
+}: TreeNodeProps & { value: Record<string, unknown> }) {
   const keys = Object.keys(value);
   if (keys.length === 0) {
     return <span className="text-[10px] text-text-muted pl-2">{'{}'}</span>;
@@ -107,7 +135,14 @@ function TreeObject({ value, path, depth, ...ctx }: TreeNodeProps & { value: Rec
   return (
     <div>
       {keys.map((key) => (
-        <TreeValue key={key} keyName={key} value={value[key]} path={[...path, key]} depth={depth} {...ctx} />
+        <TreeValue
+          key={key}
+          keyName={key}
+          value={value[key]}
+          path={[...path, key]}
+          depth={depth}
+          {...ctx}
+        />
       ))}
     </div>
   );
@@ -120,13 +155,26 @@ function TreeArray({ value, path, depth, ...ctx }: TreeNodeProps & { value: unkn
   return (
     <div>
       {value.map((item, i) => (
-        <TreeValue key={i} keyName={`[${i}]`} value={item} path={[...path, String(i)]} depth={depth} {...ctx} />
+        <TreeValue
+          key={i}
+          keyName={`[${i}]`}
+          value={item}
+          path={[...path, String(i)]}
+          depth={depth}
+          {...ctx}
+        />
       ))}
     </div>
   );
 }
 
-function TreeValue({ keyName, value, path, depth, ...ctx }: TreeNodeProps & { keyName: string; value: unknown }) {
+function TreeValue({
+  keyName,
+  value,
+  path,
+  depth,
+  ...ctx
+}: TreeNodeProps & { keyName: string; value: unknown }) {
   if (depth > ctx.maxDepth) return null;
 
   // Auto-parse nested JSON strings into expandable trees
@@ -136,7 +184,16 @@ function TreeValue({ keyName, value, path, depth, ...ctx }: TreeNodeProps & { ke
   const isExpandable = (type === 'object' || type === 'array') && resolved !== null;
 
   if (isExpandable) {
-    return <CollapsibleNode keyName={keyName} value={resolved} type={type} path={path} depth={depth} {...ctx} />;
+    return (
+      <CollapsibleNode
+        keyName={keyName}
+        value={resolved}
+        type={type}
+        path={path}
+        depth={depth}
+        {...ctx}
+      />
+    );
   }
 
   return <TreeLeaf keyName={keyName} value={resolved} path={path} depth={depth} {...ctx} />;
@@ -154,14 +211,20 @@ function CollapsibleNode({
 }: TreeNodeProps & { keyName: string; value: unknown; type: string }) {
   const [isOpen, setIsOpen] = useState(depth < 2);
   const fullPath = buildFullPath(pathPrefix, path);
-  const childCount = Array.isArray(value) ? value.length : Object.keys(value as Record<string, unknown>).length;
+  const childCount = Array.isArray(value)
+    ? value.length
+    : Object.keys(value as Record<string, unknown>).length;
   const clickable = !!onClickPath;
 
   return (
     <div style={{ paddingLeft: depth * 12 }}>
       <div className="group flex items-center gap-1 px-1 py-0.5 rounded hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary">
         <button onClick={() => setIsOpen(!isOpen)} className="shrink-0 p-0.5">
-          {isOpen ? <ChevronDown className="w-2.5 h-2.5 text-text-muted" /> : <ChevronRight className="w-2.5 h-2.5 text-text-muted" />}
+          {isOpen ? (
+            <ChevronDown className="w-2.5 h-2.5 text-text-muted" />
+          ) : (
+            <ChevronRight className="w-2.5 h-2.5 text-text-muted" />
+          )}
         </button>
         <span
           className={`text-[11px] font-mono text-text-primary dark:text-dark-text-primary ${clickable ? 'cursor-pointer hover:text-primary' : ''}`}
@@ -169,17 +232,34 @@ function CollapsibleNode({
         >
           {keyName}
         </span>
-        <span className={`px-1 py-0 text-[9px] font-medium rounded font-mono ${typeColors[type] ?? typeColors.null}`}>
+        <span
+          className={`px-1 py-0 text-[9px] font-medium rounded font-mono ${typeColors[type] ?? typeColors.null}`}
+        >
           {type}
         </span>
         <span className="text-[9px] text-text-muted">{childCount} items</span>
         <CopyBtn text={fullPath ? `{{${fullPath}}}` : JSON.stringify(value)} className="ml-auto" />
       </div>
-      {isOpen && (
-        type === 'array'
-          ? <TreeArray value={value as unknown[]} path={path} depth={depth + 1} onClickPath={onClickPath} pathPrefix={pathPrefix} maxDepth={maxDepth} />
-          : <TreeObject value={value as Record<string, unknown>} path={path} depth={depth + 1} onClickPath={onClickPath} pathPrefix={pathPrefix} maxDepth={maxDepth} />
-      )}
+      {isOpen &&
+        (type === 'array' ? (
+          <TreeArray
+            value={value as unknown[]}
+            path={path}
+            depth={depth + 1}
+            onClickPath={onClickPath}
+            pathPrefix={pathPrefix}
+            maxDepth={maxDepth}
+          />
+        ) : (
+          <TreeObject
+            value={value as Record<string, unknown>}
+            path={path}
+            depth={depth + 1}
+            onClickPath={onClickPath}
+            pathPrefix={pathPrefix}
+            maxDepth={maxDepth}
+          />
+        ))}
     </div>
   );
 }
@@ -201,13 +281,19 @@ function TreeLeaf({
     <div
       style={{ paddingLeft: depth * 12 + 16 }}
       className={`group flex items-center gap-1 px-1 py-0.5 rounded transition-colors ${
-        clickable ? 'cursor-pointer hover:bg-primary/10' : 'hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary'
+        clickable
+          ? 'cursor-pointer hover:bg-primary/10'
+          : 'hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary'
       }`}
       onClick={clickable ? () => onClickPath!(`{{${fullPath}}}`) : undefined}
       title={clickable ? `Insert {{${fullPath}}}` : String(value)}
     >
-      <span className="text-[11px] font-mono text-text-primary dark:text-dark-text-primary">{keyName}</span>
-      <span className={`px-1 py-0 text-[9px] font-medium rounded font-mono ${typeColors[type] ?? typeColors.null}`}>
+      <span className="text-[11px] font-mono text-text-primary dark:text-dark-text-primary">
+        {keyName}
+      </span>
+      <span
+        className={`px-1 py-0 text-[9px] font-medium rounded font-mono ${typeColors[type] ?? typeColors.null}`}
+      >
         {type}
       </span>
       <span className="text-[10px] text-text-muted dark:text-dark-text-muted truncate flex-1">
@@ -221,13 +307,16 @@ function TreeLeaf({
 function CopyBtn({ text, className = '' }: { text: string; className?: string }) {
   const [copied, setCopied] = useState(false);
 
-  const handleCopy = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation();
-    navigator.clipboard?.writeText(text).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
-    });
-  }, [text]);
+  const handleCopy = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      navigator.clipboard?.writeText(text).then(() => {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 1500);
+      });
+    },
+    [text]
+  );
 
   return (
     <button

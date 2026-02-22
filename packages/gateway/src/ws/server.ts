@@ -41,7 +41,7 @@ function validateWsToken(token: string | null): boolean {
   if (!token) return false;
   // Timing-safe comparison against all valid keys
   const tokenBuf = Buffer.from(token);
-  return apiKeys.some(key => {
+  return apiKeys.some((key) => {
     const keyBuf = Buffer.from(key);
     return tokenBuf.length === keyBuf.length && timingSafeEqual(tokenBuf, keyBuf);
   });
@@ -49,13 +49,24 @@ function validateWsToken(token: string | null): boolean {
 
 /** Whitelist of valid client event types (static set, avoid re-creating per message) */
 const VALID_CLIENT_EVENTS = new Set<string>([
-  'chat:send', 'chat:stop', 'chat:retry',
-  'channel:connect', 'channel:disconnect', 'channel:subscribe', 'channel:unsubscribe',
-  'channel:send', 'channel:list',
-  'workspace:create', 'workspace:switch', 'workspace:delete', 'workspace:list',
-  'agent:configure', 'agent:stop',
+  'chat:send',
+  'chat:stop',
+  'chat:retry',
+  'channel:connect',
+  'channel:disconnect',
+  'channel:subscribe',
+  'channel:unsubscribe',
+  'channel:send',
+  'channel:list',
+  'workspace:create',
+  'workspace:switch',
+  'workspace:delete',
+  'workspace:list',
+  'agent:configure',
+  'agent:stop',
   'tool:cancel',
-  'session:ping', 'session:pong',
+  'session:ping',
+  'session:pong',
 ]);
 
 export interface WSGatewayConfig {
@@ -94,7 +105,7 @@ function isOriginAllowed(origin: string | undefined, allowedOrigins: string[]): 
   if (allowedOrigins.length === 0) return true;
   // No origin header — reject when restrictions are configured
   if (!origin) return false;
-  return allowedOrigins.some(allowed => origin === allowed);
+  return allowedOrigins.some((allowed) => origin === allowed);
 }
 
 /**
@@ -198,12 +209,15 @@ export class WSGateway {
     this.heartbeatTimer.unref();
 
     // Start cleanup timer (unref so timer doesn't block process exit)
-    this.cleanupTimer = setInterval(() => {
-      const removed = sessionManager.cleanup(this.config.sessionTimeout);
-      if (removed > 0) {
-        log.info('Cleaned up stale sessions', { removed });
-      }
-    }, Math.min(this.config.sessionTimeout / 3, 60_000));
+    this.cleanupTimer = setInterval(
+      () => {
+        const removed = sessionManager.cleanup(this.config.sessionTimeout);
+        if (removed > 0) {
+          log.info('Cleaned up stale sessions', { removed });
+        }
+      },
+      Math.min(this.config.sessionTimeout / 3, 60_000)
+    );
     this.cleanupTimer.unref();
   }
 
@@ -213,7 +227,10 @@ export class WSGateway {
   private handleConnection(socket: WebSocket, request: IncomingMessage): void {
     // Enforce max connections
     if (sessionManager.count >= this.config.maxConnections) {
-      log.warn('Connection rejected: max connections reached', { current: sessionManager.count, max: this.config.maxConnections });
+      log.warn('Connection rejected: max connections reached', {
+        current: sessionManager.count,
+        max: this.config.maxConnections,
+      });
       socket.close(1013, 'Maximum connections reached');
       return;
     }
@@ -238,7 +255,10 @@ export class WSGateway {
     // Create session
     const session = sessionManager.create(socket);
 
-    log.info('New connection', { sessionId: session.id, remoteAddress: request.socket.remoteAddress });
+    log.info('New connection', {
+      sessionId: session.id,
+      remoteAddress: request.socket.remoteAddress,
+    });
 
     // Send ready event
     sessionManager.send(session.id, 'connection:ready', { sessionId: session.id });
@@ -296,11 +316,7 @@ export class WSGateway {
           .process(eventType, message.payload as ClientEvents[typeof eventType], sessionId)
           .catch((error) => {
             log.error('Error processing event', { eventType, error });
-            this.sendError(
-              sessionId,
-              'HANDLER_ERROR',
-              'Failed to process event'
-            );
+            this.sendError(sessionId, 'HANDLER_ERROR', 'Failed to process event');
           });
       } else {
         log.warn('Unknown client event', { type: message.type });
@@ -472,7 +488,8 @@ export class WSGateway {
       try {
         // Generate channel ID if not provided
         const config = data.config as Record<string, unknown>;
-        const channelId = (config.id as string) || `${data.type}-${crypto.randomUUID().slice(0, 8)}`;
+        const channelId =
+          (config.id as string) || `${data.type}-${crypto.randomUUID().slice(0, 8)}`;
         const channelName = (config.name as string) || `${data.type} Channel`;
 
         // Build the full config based on channel type
@@ -569,7 +586,9 @@ export class WSGateway {
         const success = sessionManager.unsubscribeFromChannel(sessionId, data.channelId);
         sessionManager.send(sessionId, 'system:notification', {
           type: success ? 'success' : 'error',
-          message: success ? `Unsubscribed from channel ${data.channelId}` : 'Failed to unsubscribe',
+          message: success
+            ? `Unsubscribed from channel ${data.channelId}`
+            : 'Failed to unsubscribe',
         });
       }
     });

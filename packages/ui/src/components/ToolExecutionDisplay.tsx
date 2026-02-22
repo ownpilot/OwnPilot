@@ -30,7 +30,11 @@ interface ToolExecutionDisplayProps {
   workspaceId?: string | null;
 }
 
-export function ToolExecutionDisplay({ toolCalls, onRerun, workspaceId }: ToolExecutionDisplayProps) {
+export function ToolExecutionDisplay({
+  toolCalls,
+  onRerun,
+  workspaceId,
+}: ToolExecutionDisplayProps) {
   return (
     <div className="space-y-2 mt-3">
       {toolCalls.map((call) => (
@@ -62,12 +66,17 @@ function ToolCallCard({ toolCall, onRerun, workspaceId }: ToolCallCardProps) {
         className="w-full flex items-center gap-3 px-4 py-3 hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary transition-colors"
       >
         {/* Status Icon */}
-        <div className={`flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center ${
-          status === 'pending' ? 'bg-yellow-500/10 text-yellow-500' :
-          status === 'running' ? 'bg-blue-500/10 text-blue-500 animate-pulse' :
-          status === 'success' ? 'bg-green-500/10 text-green-500' :
-          'bg-red-500/10 text-red-500'
-        }`}>
+        <div
+          className={`flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center ${
+            status === 'pending'
+              ? 'bg-yellow-500/10 text-yellow-500'
+              : status === 'running'
+                ? 'bg-blue-500/10 text-blue-500 animate-pulse'
+                : status === 'success'
+                  ? 'bg-green-500/10 text-green-500'
+                  : 'bg-red-500/10 text-red-500'
+          }`}
+        >
           {status === 'pending' && <Clock className="w-4 h-4" />}
           {status === 'running' && <Wrench className="w-4 h-4 animate-spin" />}
           {status === 'success' && <Check className="w-4 h-4" />}
@@ -99,11 +108,7 @@ function ToolCallCard({ toolCall, onRerun, workspaceId }: ToolCallCardProps) {
 
         {/* Expand/Collapse */}
         <div className="flex-shrink-0 text-text-muted dark:text-dark-text-muted">
-          {isExpanded ? (
-            <ChevronDown className="w-5 h-5" />
-          ) : (
-            <ChevronRight className="w-5 h-5" />
-          )}
+          {isExpanded ? <ChevronDown className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
         </div>
       </button>
 
@@ -116,7 +121,11 @@ function ToolCallCard({ toolCall, onRerun, workspaceId }: ToolCallCardProps) {
               onClick={() => setShowArgs(!showArgs)}
               className="flex items-center gap-2 text-sm text-text-secondary dark:text-dark-text-secondary hover:text-text-primary dark:hover:text-dark-text-primary"
             >
-              {showArgs ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+              {showArgs ? (
+                <ChevronDown className="w-4 h-4" />
+              ) : (
+                <ChevronRight className="w-4 h-4" />
+              )}
               <span>Arguments</span>
             </button>
             {showArgs && (
@@ -162,7 +171,11 @@ function ToolCallCard({ toolCall, onRerun, workspaceId }: ToolCallCardProps) {
                 <p className="text-sm text-red-500">{toolCall.error}</p>
               </div>
             ) : toolCall.result !== undefined ? (
-              <ToolResultDisplay result={toolCall.result} toolName={toolCall.name} workspaceId={workspaceId} />
+              <ToolResultDisplay
+                result={toolCall.result}
+                toolName={toolCall.name}
+                workspaceId={workspaceId}
+              />
             ) : status === 'running' ? (
               <div className="flex items-center gap-2 text-text-muted dark:text-dark-text-muted">
                 <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
@@ -185,7 +198,9 @@ interface ToolResultDisplayProps {
 
 function ToolResultDisplay({ result, toolName, workspaceId }: ToolResultDisplayProps) {
   // Strip namespace prefix (e.g. 'core.read_file' → 'read_file') for display matching
-  const baseName = toolName.includes('.') ? toolName.substring(toolName.lastIndexOf('.') + 1) : toolName;
+  const baseName = toolName.includes('.')
+    ? toolName.substring(toolName.lastIndexOf('.') + 1)
+    : toolName;
 
   // Image tools — show inline preview
   if (isImageToolResult(baseName, result)) {
@@ -231,35 +246,48 @@ function ToolResultDisplay({ result, toolName, workspaceId }: ToolResultDisplayP
   }
 
   // Directory listing
-  if (baseName === 'list_directory' && typeof result === 'object' && result !== null && result.files) {
+  if (
+    baseName === 'list_directory' &&
+    typeof result === 'object' &&
+    result !== null &&
+    result.files
+  ) {
     return (
       <div className="space-y-1">
-        {result.files.map((file: { isDirectory?: boolean; name?: string; size?: number }, i: number) => (
-          <div
-            key={i}
-            className="flex items-center gap-2 px-3 py-1.5 text-sm bg-bg-tertiary dark:bg-dark-bg-tertiary rounded"
-          >
-            {file.isDirectory ? (
-              <span className="text-blue-400">📁</span>
-            ) : (
-              <span className="text-gray-400">📄</span>
-            )}
-            <span className="flex-1 font-mono text-text-primary dark:text-dark-text-primary">
-              {file.name}
-            </span>
-            {file.size !== undefined && (
-              <span className="text-xs text-text-muted dark:text-dark-text-muted">
-                {formatBytes(file.size)}
+        {result.files.map(
+          (file: { isDirectory?: boolean; name?: string; size?: number }, i: number) => (
+            <div
+              key={i}
+              className="flex items-center gap-2 px-3 py-1.5 text-sm bg-bg-tertiary dark:bg-dark-bg-tertiary rounded"
+            >
+              {file.isDirectory ? (
+                <span className="text-blue-400">📁</span>
+              ) : (
+                <span className="text-gray-400">📄</span>
+              )}
+              <span className="flex-1 font-mono text-text-primary dark:text-dark-text-primary">
+                {file.name}
               </span>
-            )}
-          </div>
-        ))}
+              {file.size !== undefined && (
+                <span className="text-xs text-text-muted dark:text-dark-text-muted">
+                  {formatBytes(file.size)}
+                </span>
+              )}
+            </div>
+          )
+        )}
       </div>
     );
   }
 
   // Code execution results
-  if ((baseName.startsWith('execute_') || baseName === 'compile_code' || baseName === 'package_manager') && typeof result === 'object' && result !== null) {
+  if (
+    (baseName.startsWith('execute_') ||
+      baseName === 'compile_code' ||
+      baseName === 'package_manager') &&
+    typeof result === 'object' &&
+    result !== null
+  ) {
     return (
       <div className="space-y-3">
         {result.stdout && (
@@ -304,16 +332,24 @@ function ToolResultDisplay({ result, toolName, workspaceId }: ToolResultDisplayP
   }
 
   // Web fetch results
-  if ((baseName === 'fetch_web_page' || baseName === 'http_request') && typeof result === 'object' && result !== null) {
+  if (
+    (baseName === 'fetch_web_page' || baseName === 'http_request') &&
+    typeof result === 'object' &&
+    result !== null
+  ) {
     return (
       <div className="space-y-3">
         {result.status && (
           <div className="flex items-center gap-2">
-            <span className={`px-2 py-0.5 text-xs font-medium rounded ${
-              result.status >= 200 && result.status < 300 ? 'bg-green-500/10 text-green-500' :
-              result.status >= 400 ? 'bg-red-500/10 text-red-500' :
-              'bg-yellow-500/10 text-yellow-500'
-            }`}>
+            <span
+              className={`px-2 py-0.5 text-xs font-medium rounded ${
+                result.status >= 200 && result.status < 300
+                  ? 'bg-green-500/10 text-green-500'
+                  : result.status >= 400
+                    ? 'bg-red-500/10 text-red-500'
+                    : 'bg-yellow-500/10 text-yellow-500'
+              }`}
+            >
               {result.status}
             </span>
             {isSafeUrl(result.url) && (
@@ -353,28 +389,38 @@ function ToolResultDisplay({ result, toolName, workspaceId }: ToolResultDisplayP
   }
 
   // Search results
-  if (baseName === 'search_web' && typeof result === 'object' && result !== null && result.results) {
+  if (
+    baseName === 'search_web' &&
+    typeof result === 'object' &&
+    result !== null &&
+    result.results
+  ) {
     return (
       <div className="space-y-2">
-        {result.results.map((item: { url?: string; title?: string; description?: string; snippet?: string }, i: number) => (
-          <a
-            key={i}
-            href={isSafeUrl(item.url) ? item.url : '#'}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="block p-3 bg-bg-tertiary dark:bg-dark-bg-tertiary rounded hover:bg-primary/10 transition-colors"
-          >
-            <p className="text-sm font-medium text-primary">{item.title}</p>
-            <p className="text-xs text-text-muted dark:text-dark-text-muted truncate mt-1">
-              {item.url}
-            </p>
-            {item.snippet && (
-              <p className="text-sm text-text-secondary dark:text-dark-text-secondary mt-2 line-clamp-2">
-                {item.snippet}
+        {result.results.map(
+          (
+            item: { url?: string; title?: string; description?: string; snippet?: string },
+            i: number
+          ) => (
+            <a
+              key={i}
+              href={isSafeUrl(item.url) ? item.url : '#'}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block p-3 bg-bg-tertiary dark:bg-dark-bg-tertiary rounded hover:bg-primary/10 transition-colors"
+            >
+              <p className="text-sm font-medium text-primary">{item.title}</p>
+              <p className="text-xs text-text-muted dark:text-dark-text-muted truncate mt-1">
+                {item.url}
               </p>
-            )}
-          </a>
-        ))}
+              {item.snippet && (
+                <p className="text-sm text-text-secondary dark:text-dark-text-secondary mt-2 line-clamp-2">
+                  {item.snippet}
+                </p>
+              )}
+            </a>
+          )
+        )}
       </div>
     );
   }
@@ -382,13 +428,23 @@ function ToolResultDisplay({ result, toolName, workspaceId }: ToolResultDisplayP
   // Default display - detect JSON strings
   const isObject = typeof result === 'object';
   const resultStr = isObject ? JSON.stringify(result, null, 2) : String(result);
-  const isJsonString = !isObject && typeof result === 'string' && (() => {
-    const trimmed = result.trim();
-    if ((trimmed.startsWith('{') && trimmed.endsWith('}')) || (trimmed.startsWith('[') && trimmed.endsWith(']'))) {
-      try { return JSON.stringify(JSON.parse(trimmed), null, 2); } catch { return null; }
-    }
-    return null;
-  })();
+  const isJsonString =
+    !isObject &&
+    typeof result === 'string' &&
+    (() => {
+      const trimmed = result.trim();
+      if (
+        (trimmed.startsWith('{') && trimmed.endsWith('}')) ||
+        (trimmed.startsWith('[') && trimmed.endsWith(']'))
+      ) {
+        try {
+          return JSON.stringify(JSON.parse(trimmed), null, 2);
+        } catch {
+          return null;
+        }
+      }
+      return null;
+    })();
 
   return (
     <CodeBlock
@@ -403,13 +459,27 @@ function ToolResultDisplay({ result, toolName, workspaceId }: ToolResultDisplayP
 function getToolCategory(name: string): string {
   // Strip namespace prefix for category matching
   const baseName = name.includes('.') ? name.substring(name.lastIndexOf('.') + 1) : name;
-  if (baseName.startsWith('read_') || baseName.startsWith('write_') || baseName.includes('file') || baseName.includes('directory')) {
+  if (
+    baseName.startsWith('read_') ||
+    baseName.startsWith('write_') ||
+    baseName.includes('file') ||
+    baseName.includes('directory')
+  ) {
     return 'File System';
   }
-  if (baseName.startsWith('execute_') || baseName.includes('compile') || baseName.includes('package')) {
+  if (
+    baseName.startsWith('execute_') ||
+    baseName.includes('compile') ||
+    baseName.includes('package')
+  ) {
     return 'Code Execution';
   }
-  if (baseName.includes('http') || baseName.includes('web') || baseName.includes('fetch') || baseName.includes('api')) {
+  if (
+    baseName.includes('http') ||
+    baseName.includes('web') ||
+    baseName.includes('fetch') ||
+    baseName.includes('api')
+  ) {
     return 'Web & API';
   }
   return 'Other';
@@ -435,7 +505,9 @@ function isLocalExecution(result: any): boolean {
       if (typeof parsed === 'object' && parsed !== null && 'sandboxed' in parsed) {
         return parsed.sandboxed === false;
       }
-    } catch { /* not JSON */ }
+    } catch {
+      /* not JSON */
+    }
   }
 
   return false;
@@ -476,7 +548,13 @@ function detectLanguage(path: string): string {
 // Image tool result helpers
 // =============================================================================
 
-const IMAGE_TOOLS = new Set(['resize_image', 'generate_image', 'edit_image', 'image_variation', 'analyze_image']);
+const IMAGE_TOOLS = new Set([
+  'resize_image',
+  'generate_image',
+  'edit_image',
+  'image_variation',
+  'analyze_image',
+]);
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic tool output
 function isImageToolResult(baseName: string, result: any): boolean {
@@ -485,7 +563,10 @@ function isImageToolResult(baseName: string, result: any): boolean {
   return !!(result.output || result.outputPath || result.source);
 }
 
-function resolveWorkspaceImageUrl(path: string | undefined, workspaceId?: string | null): string | null {
+function resolveWorkspaceImageUrl(
+  path: string | undefined,
+  workspaceId?: string | null
+): string | null {
   if (!path) return null;
   if (path.startsWith('http://') || path.startsWith('https://')) return path;
   if (path.startsWith('data:')) return path;

@@ -7,7 +7,12 @@
  */
 
 import { configServicesRepo } from '../db/repositories/config-services.js';
-import type { ConfigServiceRequiredBy, ConfigFieldDefinition, ToolSource, ToolConfigRequirement } from '@ownpilot/core';
+import type {
+  ConfigServiceRequiredBy,
+  ConfigFieldDefinition,
+  ToolSource,
+  ToolConfigRequirement,
+} from '@ownpilot/core';
 
 /**
  * Unified config service registration for ALL tool sources (core, custom, plugin).
@@ -19,7 +24,7 @@ export async function registerToolConfigRequirements(
   toolName: string,
   toolId: string,
   source: ToolSource,
-  requirements: readonly ToolConfigRequirement[],
+  requirements: readonly ToolConfigRequirement[]
 ): Promise<void> {
   const dependentType = source === 'plugin' ? 'plugin' : 'tool';
   const dependent: ConfigServiceRequiredBy = { type: dependentType, name: toolName, id: toolId };

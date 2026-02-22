@@ -33,13 +33,20 @@ export interface ParseError {
 // ============================================================================
 
 const WEEKDAY_MAP: Record<string, number> = {
-  sunday: 0, sun: 0,
-  monday: 1, mon: 1,
-  tuesday: 2, tue: 2,
-  wednesday: 3, wed: 3,
-  thursday: 4, thu: 4,
-  friday: 5, fri: 5,
-  saturday: 6, sat: 6,
+  sunday: 0,
+  sun: 0,
+  monday: 1,
+  mon: 1,
+  tuesday: 2,
+  tue: 2,
+  wednesday: 3,
+  wed: 3,
+  thursday: 4,
+  thu: 4,
+  friday: 5,
+  fri: 5,
+  saturday: 6,
+  sat: 6,
 };
 
 const TIME_OF_DAY_DEFAULTS: Record<string, { hour: number; minute: number }> = {
@@ -59,7 +66,11 @@ const TIME_OF_DAY_DEFAULTS: Record<string, { hour: number; minute: number }> = {
  * Extract time (HH:MM) from the end of a text.
  * Returns defaults if no time found.
  */
-function extractTime(text: string, defaultHour: number, defaultMinute = 0): { hour: number; minute: number; rest: string } {
+function extractTime(
+  text: string,
+  defaultHour: number,
+  defaultMinute = 0
+): { hour: number; minute: number; rest: string } {
   // Match HH:MM at end (with optional "at" prefix)
   const timeMatch = text.match(/(?:\bat\s+)?(\d{1,2}):(\d{2})\s*$/i);
   if (timeMatch) {
@@ -122,7 +133,8 @@ export function parseSchedule(text: string): ScheduleParseResult {
   const everyMinutesMatch = lower.match(/^every\s+(\d+)\s+minutes?$/);
   if (everyMinutesMatch) {
     const n = parseInt(everyMinutesMatch[1]!, 10);
-    if (n < 1 || n > 59) throw new HeartbeatParseError(`Minutes must be between 1 and 59, got ${n}`);
+    if (n < 1 || n > 59)
+      throw new HeartbeatParseError(`Minutes must be between 1 and 59, got ${n}`);
     const cron = `*/${n} * * * *`;
     return validateAndReturn(cron, `Every ${n} minutes`);
   }
@@ -204,13 +216,19 @@ export function parseSchedule(text: string): ScheduleParseResult {
   }
 
   // "Every Month [Nth] [HH:MM]"
-  const monthMatch = lower.match(/^every\s+month(?:\s+(?:on\s+)?(?:the\s+)?(\d{1,2})(?:st|nd|rd|th)?)?/i);
+  const monthMatch = lower.match(
+    /^every\s+month(?:\s+(?:on\s+)?(?:the\s+)?(\d{1,2})(?:st|nd|rd|th)?)?/i
+  );
   if (monthMatch) {
     const dayOfMonth = monthMatch[1] ? parseInt(monthMatch[1], 10) : 1;
-    if (dayOfMonth < 1 || dayOfMonth > 31) throw new HeartbeatParseError(`Day of month must be 1-31, got ${dayOfMonth}`);
+    if (dayOfMonth < 1 || dayOfMonth > 31)
+      throw new HeartbeatParseError(`Day of month must be 1-31, got ${dayOfMonth}`);
     const { hour, minute } = extractTime(trimmed, 9);
     const cron = `${minute} ${hour} ${dayOfMonth} * *`;
-    return validateAndReturn(cron, `Monthly on the ${ordinal(dayOfMonth)} at ${formatTime(hour, minute)}`);
+    return validateAndReturn(
+      cron,
+      `Monthly on the ${ordinal(dayOfMonth)} at ${formatTime(hour, minute)}`
+    );
   }
 
   // "Every Day [at HH:MM]"
@@ -228,7 +246,9 @@ export function parseSchedule(text: string): ScheduleParseResult {
     return validateAndReturn(cron, `Daily at ${formatTime(hour, minute)}`);
   }
 
-  throw new HeartbeatParseError(`Cannot parse schedule: "${trimmed}". Try formats like "Every Morning 8:00", "Every Friday 17:00", "Every Hour", "Weekdays 9:00".`);
+  throw new HeartbeatParseError(
+    `Cannot parse schedule: "${trimmed}". Try formats like "Every Morning 8:00", "Every Friday 17:00", "Every Hour", "Weekdays 9:00".`
+  );
 }
 
 // ============================================================================

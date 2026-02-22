@@ -21,26 +21,20 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 // Hoisted mocks — same reference reused across all vi.resetModules() calls
 // ============================================================================
 
-const {
-  mockExistsSync,
-  mockMkdirSync,
-  mockChmodSync,
-  mockLog,
-  mockHomedir,
-  mockPlatform,
-} = vi.hoisted(() => ({
-  mockExistsSync: vi.fn(() => false),
-  mockMkdirSync: vi.fn(),
-  mockChmodSync: vi.fn(),
-  mockLog: {
-    info: vi.fn(),
-    error: vi.fn(),
-    warn: vi.fn(),
-    debug: vi.fn(),
-  },
-  mockHomedir: vi.fn(() => '/home/testuser'),
-  mockPlatform: vi.fn(() => 'linux'),
-}));
+const { mockExistsSync, mockMkdirSync, mockChmodSync, mockLog, mockHomedir, mockPlatform } =
+  vi.hoisted(() => ({
+    mockExistsSync: vi.fn(() => false),
+    mockMkdirSync: vi.fn(),
+    mockChmodSync: vi.fn(),
+    mockLog: {
+      info: vi.fn(),
+      error: vi.fn(),
+      warn: vi.fn(),
+      debug: vi.fn(),
+    },
+    mockHomedir: vi.fn(() => '/home/testuser'),
+    mockPlatform: vi.fn(() => 'linux'),
+  }));
 
 vi.mock('node:fs', () => ({
   existsSync: mockExistsSync,
@@ -209,9 +203,7 @@ describe('getAppDataDir() — via getDataPaths()', () => {
       mockPlatform.mockReturnValue('linux');
       mockHomedir.mockReturnValue('/home/testuser');
       // .local exists → XDG branch taken
-      mockExistsSync.mockImplementation((p: string) =>
-        p === '/home/testuser/.local',
-      );
+      mockExistsSync.mockImplementation((p: string) => p === '/home/testuser/.local');
     });
 
     it('uses ~/.local/share/ownpilot when .local exists', async () => {
@@ -239,9 +231,7 @@ describe('getAppDataDir() — via getDataPaths()', () => {
       mockHomedir.mockReturnValue('/home/testuser');
       process.env.XDG_DATA_HOME = '/custom/xdg/share';
       // .local must exist for the XDG branch to activate
-      mockExistsSync.mockImplementation((p: string) =>
-        p === '/home/testuser/.local',
-      );
+      mockExistsSync.mockImplementation((p: string) => p === '/home/testuser/.local');
     });
 
     it('uses XDG_DATA_HOME/ownpilot when XDG_DATA_HOME is set and .local exists', async () => {
@@ -294,18 +284,26 @@ describe('getDataPaths()', () => {
   beforeEach(() => {
     mockPlatform.mockReturnValue('linux');
     mockHomedir.mockReturnValue('/home/testuser');
-    mockExistsSync.mockImplementation((p: string) =>
-      p === '/home/testuser/.local',
-    );
+    mockExistsSync.mockImplementation((p: string) => p === '/home/testuser/.local');
   });
 
   it('returns an object with all required DataPaths keys', async () => {
     const { getDataPaths } = await freshModule();
     const paths = getDataPaths();
     const expectedKeys: Array<keyof typeof paths> = [
-      'root', 'config', 'data', 'credentials', 'personal',
-      'workspace', 'logs', 'cache', 'scripts', 'output',
-      'temp', 'downloads', 'database',
+      'root',
+      'config',
+      'data',
+      'credentials',
+      'personal',
+      'workspace',
+      'logs',
+      'cache',
+      'scripts',
+      'output',
+      'temp',
+      'downloads',
+      'database',
     ];
     for (const key of expectedKeys) {
       expect(paths).toHaveProperty(key);
@@ -422,9 +420,7 @@ describe('getDataPath()', () => {
   beforeEach(() => {
     mockPlatform.mockReturnValue('linux');
     mockHomedir.mockReturnValue('/home/testuser');
-    mockExistsSync.mockImplementation((p: string) =>
-      p === '/home/testuser/.local',
-    );
+    mockExistsSync.mockImplementation((p: string) => p === '/home/testuser/.local');
   });
 
   it("returns root for type 'root'", async () => {
@@ -469,7 +465,16 @@ describe('getDataPath()', () => {
 
   it('returns a non-empty string for every DataDirType', async () => {
     const { getDataPath } = await freshModule();
-    const types = ['root', 'config', 'data', 'credentials', 'personal', 'workspace', 'logs', 'cache'] as const;
+    const types = [
+      'root',
+      'config',
+      'data',
+      'credentials',
+      'personal',
+      'workspace',
+      'logs',
+      'cache',
+    ] as const;
     for (const type of types) {
       const result = getDataPath(type);
       expect(typeof result).toBe('string');
@@ -486,9 +491,7 @@ describe('getWorkspacePath()', () => {
   beforeEach(() => {
     mockPlatform.mockReturnValue('linux');
     mockHomedir.mockReturnValue('/home/testuser');
-    mockExistsSync.mockImplementation((p: string) =>
-      p === '/home/testuser/.local',
-    );
+    mockExistsSync.mockImplementation((p: string) => p === '/home/testuser/.local');
   });
 
   it("returns scripts path for subdir 'scripts'", async () => {
@@ -534,9 +537,7 @@ describe('getDatabasePath()', () => {
   beforeEach(() => {
     mockPlatform.mockReturnValue('linux');
     mockHomedir.mockReturnValue('/home/testuser');
-    mockExistsSync.mockImplementation((p: string) =>
-      p === '/home/testuser/.local',
-    );
+    mockExistsSync.mockImplementation((p: string) => p === '/home/testuser/.local');
   });
 
   it('returns the database path', async () => {
@@ -567,9 +568,7 @@ describe('initializeDataDirectories()', () => {
     mockPlatform.mockReturnValue('linux');
     mockHomedir.mockReturnValue('/home/testuser');
     // .local exists for getAppDataDir; all data dirs do NOT exist → will be created
-    mockExistsSync.mockImplementation((p: string) =>
-      p === '/home/testuser/.local',
-    );
+    mockExistsSync.mockImplementation((p: string) => p === '/home/testuser/.local');
   });
 
   it('returns a DataPaths object with root, database, and workspace', async () => {
@@ -677,7 +676,7 @@ describe('initializeDataDirectories()', () => {
     initializeDataDirectories();
     const infoCalls = mockLog.info.mock.calls.map((c: unknown[]) => String(c[0]));
     const rootLog = infoCalls.find(
-      (msg: string) => msg.includes('Data root') && msg.includes(ROOT),
+      (msg: string) => msg.includes('Data root') && msg.includes(ROOT)
     );
     expect(rootLog).toBeDefined();
   });
@@ -722,8 +721,7 @@ describe('areDataDirectoriesInitialized()', () => {
 
   // Helper: make existsSync return true for .local AND a given set of data dirs
   function makeExistsMock(existing: string[]) {
-    return (p: string) =>
-      p === '/home/testuser/.local' || existing.includes(p);
+    return (p: string) => p === '/home/testuser/.local' || existing.includes(p);
   }
 
   beforeEach(() => {
@@ -880,9 +878,7 @@ describe('getDataDirectoryInfo()', () => {
   beforeEach(() => {
     mockPlatform.mockReturnValue('linux');
     mockHomedir.mockReturnValue('/home/testuser');
-    mockExistsSync.mockImplementation((p: string) =>
-      p === '/home/testuser/.local',
-    );
+    mockExistsSync.mockImplementation((p: string) => p === '/home/testuser/.local');
   });
 
   it('returns an object with all six expected keys', async () => {
@@ -979,9 +975,7 @@ describe('setDataPathEnvironment()', () => {
   beforeEach(() => {
     mockPlatform.mockReturnValue('linux');
     mockHomedir.mockReturnValue('/home/testuser');
-    mockExistsSync.mockImplementation((p: string) =>
-      p === '/home/testuser/.local',
-    );
+    mockExistsSync.mockImplementation((p: string) => p === '/home/testuser/.local');
   });
 
   it('sets DATA_DIR to paths.root', async () => {
@@ -1018,9 +1012,7 @@ describe('setDataPathEnvironment()', () => {
     const { setDataPathEnvironment } = await freshModule();
     setDataPathEnvironment();
     const infoCalls = mockLog.info.mock.calls.map((c: unknown[]) => String(c[0]));
-    const headerLog = infoCalls.find((msg: string) =>
-      msg.includes('Environment configured'),
-    );
+    const headerLog = infoCalls.find((msg: string) => msg.includes('Environment configured'));
     expect(headerLog).toBeDefined();
   });
 
@@ -1028,8 +1020,8 @@ describe('setDataPathEnvironment()', () => {
     const { setDataPathEnvironment, getDataPaths } = await freshModule();
     setDataPathEnvironment();
     const infoCalls = mockLog.info.mock.calls.map((c: unknown[]) => String(c[0]));
-    const dataLog = infoCalls.find((msg: string) =>
-      msg.includes('DATA_DIR') && msg.includes(getDataPaths().root),
+    const dataLog = infoCalls.find(
+      (msg: string) => msg.includes('DATA_DIR') && msg.includes(getDataPaths().root)
     );
     expect(dataLog).toBeDefined();
   });
@@ -1038,8 +1030,8 @@ describe('setDataPathEnvironment()', () => {
     const { setDataPathEnvironment, getDataPaths } = await freshModule();
     setDataPathEnvironment();
     const infoCalls = mockLog.info.mock.calls.map((c: unknown[]) => String(c[0]));
-    const wsLog = infoCalls.find((msg: string) =>
-      msg.includes('WORKSPACE_DIR') && msg.includes(getDataPaths().workspace),
+    const wsLog = infoCalls.find(
+      (msg: string) => msg.includes('WORKSPACE_DIR') && msg.includes(getDataPaths().workspace)
     );
     expect(wsLog).toBeDefined();
   });
@@ -1048,8 +1040,8 @@ describe('setDataPathEnvironment()', () => {
     const { setDataPathEnvironment, getDataPaths } = await freshModule();
     setDataPathEnvironment();
     const infoCalls = mockLog.info.mock.calls.map((c: unknown[]) => String(c[0]));
-    const dbLog = infoCalls.find((msg: string) =>
-      msg.includes('DATABASE_PATH') && msg.includes(getDataPaths().database),
+    const dbLog = infoCalls.find(
+      (msg: string) => msg.includes('DATABASE_PATH') && msg.includes(getDataPaths().database)
     );
     expect(dbLog).toBeDefined();
   });

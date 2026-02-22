@@ -32,7 +32,13 @@ function isExpression(value: unknown): boolean {
 const INPUT_CLASSES =
   'w-full px-2.5 py-1.5 text-xs bg-bg-primary dark:bg-dark-bg-primary border border-border dark:border-dark-border rounded-md text-text-primary dark:text-dark-text-primary focus:outline-none focus:ring-1 focus:ring-primary';
 
-export function SchemaFormFields({ schema, toolArgs, onFieldChange, onFieldFocus, focusedField }: SchemaFormFieldsProps) {
+export function SchemaFormFields({
+  schema,
+  toolArgs,
+  onFieldChange,
+  onFieldFocus,
+  focusedField,
+}: SchemaFormFieldsProps) {
   const properties = schema?.properties ?? {};
   const requiredFields = schema?.required ?? [];
   const paramNames = Object.keys(properties);
@@ -95,16 +101,16 @@ function FieldRow({ name, prop, isRequired, value, isFocused, onChange, onFocus 
         <span className="text-xs font-medium text-text-secondary dark:text-dark-text-secondary font-mono">
           {name}
         </span>
-        <span className={`px-1 py-0 text-[9px] font-medium rounded font-mono ${typeColors[type] ?? 'bg-gray-500/10 text-gray-500'}`}>
+        <span
+          className={`px-1 py-0 text-[9px] font-medium rounded font-mono ${typeColors[type] ?? 'bg-gray-500/10 text-gray-500'}`}
+        >
           {type}
         </span>
         {isRequired && <span className="text-[9px] text-red-500 font-medium">*</span>}
         <button
           onClick={toggleExpr}
           className={`ml-auto p-0.5 rounded transition-colors ${
-            exprMode
-              ? 'bg-primary/20 text-primary'
-              : 'text-text-muted hover:text-text-secondary'
+            exprMode ? 'bg-primary/20 text-primary' : 'text-text-muted hover:text-text-secondary'
           }`}
           title={exprMode ? 'Switch to literal value' : 'Switch to expression {{...}}'}
         >
@@ -172,7 +178,9 @@ function TypedInput({ type, prop, value, onChange, onFocus, isFocused }: TypedIn
       >
         <option value="">-- select --</option>
         {prop.enum.map((val) => (
-          <option key={val} value={val}>{val}</option>
+          <option key={val} value={val}>
+            {val}
+          </option>
         ))}
       </select>
     );
@@ -203,27 +211,34 @@ function TypedInput({ type, prop, value, onChange, onFocus, isFocused }: TypedIn
         value={value != null ? String(value) : ''}
         onChange={(e) => {
           const v = e.target.value;
-          if (v === '') { onChange(undefined); return; }
+          if (v === '') {
+            onChange(undefined);
+            return;
+          }
           const num = Number(v);
           if (!isNaN(num)) onChange(num);
         }}
         onFocus={onFocus}
-        placeholder={prop?.default !== undefined ? `Default: ${JSON.stringify(prop.default)}` : `Enter ${type}`}
+        placeholder={
+          prop?.default !== undefined ? `Default: ${JSON.stringify(prop.default)}` : `Enter ${type}`
+        }
         className={`${INPUT_CLASSES} ${focusRing}`}
       />
     );
   }
 
   if (type === 'array' || type === 'object') {
-    const strValue = value != null
-      ? (typeof value === 'string' ? value : JSON.stringify(value, null, 2))
-      : '';
+    const strValue =
+      value != null ? (typeof value === 'string' ? value : JSON.stringify(value, null, 2)) : '';
     return (
       <textarea
         value={strValue}
         onChange={(e) => {
           const v = e.target.value;
-          if (!v.trim()) { onChange(undefined); return; }
+          if (!v.trim()) {
+            onChange(undefined);
+            return;
+          }
           try {
             onChange(JSON.parse(v));
           } catch {
@@ -246,7 +261,9 @@ function TypedInput({ type, prop, value, onChange, onFocus, isFocused }: TypedIn
       value={value != null ? String(value) : ''}
       onChange={(e) => onChange(e.target.value || undefined)}
       onFocus={onFocus}
-      placeholder={prop?.default !== undefined ? `Default: ${JSON.stringify(prop.default)}` : `Enter ${type}`}
+      placeholder={
+        prop?.default !== undefined ? `Default: ${JSON.stringify(prop.default)}` : `Enter ${type}`
+      }
       className={`${INPUT_CLASSES} ${focusRing}`}
     />
   );

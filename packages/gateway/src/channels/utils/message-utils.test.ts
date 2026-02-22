@@ -48,7 +48,7 @@ describe('message-utils', () => {
       const msg = 'a'.repeat(300);
       const parts = splitMessage(msg, 100);
       expect(parts).toHaveLength(3);
-      parts.forEach(p => expect(p.length).toBeLessThanOrEqual(100));
+      parts.forEach((p) => expect(p.length).toBeLessThanOrEqual(100));
     });
 
     it('should trim leading whitespace on continuation parts', () => {

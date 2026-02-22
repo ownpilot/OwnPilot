@@ -117,13 +117,17 @@ export function combine<T, E>(results: readonly Result<T, E>[]): Result<T[], E> 
 /**
  * Type guard to check if result is ok
  */
-export function isOk<T, E>(result: Result<T, E>): result is { readonly ok: true; readonly value: T } {
+export function isOk<T, E>(
+  result: Result<T, E>
+): result is { readonly ok: true; readonly value: T } {
   return result.ok;
 }
 
 /**
  * Type guard to check if result is error
  */
-export function isErr<T, E>(result: Result<T, E>): result is { readonly ok: false; readonly error: E } {
+export function isErr<T, E>(
+  result: Result<T, E>
+): result is { readonly ok: false; readonly error: E } {
   return !result.ok;
 }

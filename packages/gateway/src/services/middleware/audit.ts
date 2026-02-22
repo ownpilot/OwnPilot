@@ -33,7 +33,9 @@ export function createAuditMiddleware(): MessageMiddleware {
     const conversationId = ctx.get<string>('conversationId');
     const agentId = ctx.get<string>('agentId') ?? 'chat';
     const requestId = ctx.get<string>('requestId');
-    const usage = ctx.get<{ promptTokens: number; completionTokens: number; totalTokens: number }>('usage');
+    const usage = ctx.get<{ promptTokens: number; completionTokens: number; totalTokens: number }>(
+      'usage'
+    );
     const agentResult = ctx.get<{ ok: boolean; error?: { message: string } }>('agentResult');
 
     // Usage tracking

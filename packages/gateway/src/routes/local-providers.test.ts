@@ -146,7 +146,11 @@ describe('Local Providers Routes', () => {
       const res = await app.request('/local-providers', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: 'Ollama', providerType: 'ollama', baseUrl: 'http://localhost:11434' }),
+        body: JSON.stringify({
+          name: 'Ollama',
+          providerType: 'ollama',
+          baseUrl: 'http://localhost:11434',
+        }),
       });
 
       expect(res.status).toBe(201);
@@ -197,7 +201,10 @@ describe('Local Providers Routes', () => {
   describe('PUT /local-providers/:id', () => {
     it('updates a provider', async () => {
       mockLocalProvidersRepo.getProvider.mockResolvedValue(sampleProvider);
-      mockLocalProvidersRepo.updateProvider.mockResolvedValue({ ...sampleProvider, name: 'Updated Ollama' });
+      mockLocalProvidersRepo.updateProvider.mockResolvedValue({
+        ...sampleProvider,
+        name: 'Updated Ollama',
+      });
 
       const res = await app.request('/local-providers/ollama-1', {
         method: 'PUT',
@@ -247,7 +254,10 @@ describe('Local Providers Routes', () => {
   describe('PATCH /local-providers/:id/toggle', () => {
     it('toggles provider enabled state', async () => {
       mockLocalProvidersRepo.getProvider.mockResolvedValue(sampleProvider);
-      mockLocalProvidersRepo.updateProvider.mockResolvedValue({ ...sampleProvider, isEnabled: false });
+      mockLocalProvidersRepo.updateProvider.mockResolvedValue({
+        ...sampleProvider,
+        isEnabled: false,
+      });
 
       const res = await app.request('/local-providers/ollama-1/toggle', {
         method: 'PATCH',

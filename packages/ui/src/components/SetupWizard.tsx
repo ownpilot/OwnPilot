@@ -13,7 +13,8 @@ const SETUP_STEPS: SetupStep[] = [
   {
     id: 'welcome',
     title: 'Welcome to OwnPilot',
-    description: 'Your privacy-first personal AI assistant. Let\'s get you started in 2 simple steps.',
+    description:
+      "Your privacy-first personal AI assistant. Let's get you started in 2 simple steps.",
   },
   {
     id: 'api-key',
@@ -22,16 +23,36 @@ const SETUP_STEPS: SetupStep[] = [
   },
   {
     id: 'ready',
-    title: 'You\'re Ready!',
+    title: "You're Ready!",
     description: 'Start chatting with your AI assistant. Type anything in the chat box below.',
   },
 ];
 
 const PROVIDERS = [
-  { id: 'openai', name: 'OpenAI', models: 'GPT-4o, GPT-4o-mini', url: 'https://platform.openai.com/api-keys' },
-  { id: 'anthropic', name: 'Anthropic', models: 'Claude 3.5, Claude 3', url: 'https://console.anthropic.com/settings/keys' },
-  { id: 'google', name: 'Google AI', models: 'Gemini 2.0, Gemini 1.5', url: 'https://aistudio.google.com/apikey' },
-  { id: 'groq', name: 'Groq', models: 'Llama 3.3, Mixtral (Free)', url: 'https://console.groq.com/keys' },
+  {
+    id: 'openai',
+    name: 'OpenAI',
+    models: 'GPT-4o, GPT-4o-mini',
+    url: 'https://platform.openai.com/api-keys',
+  },
+  {
+    id: 'anthropic',
+    name: 'Anthropic',
+    models: 'Claude 3.5, Claude 3',
+    url: 'https://console.anthropic.com/settings/keys',
+  },
+  {
+    id: 'google',
+    name: 'Google AI',
+    models: 'Gemini 2.0, Gemini 1.5',
+    url: 'https://aistudio.google.com/apikey',
+  },
+  {
+    id: 'groq',
+    name: 'Groq',
+    models: 'Llama 3.3, Mixtral (Free)',
+    url: 'https://console.groq.com/keys',
+  },
 ];
 
 export function SetupWizard({ onComplete }: { onComplete: () => void }) {
@@ -45,8 +66,9 @@ export function SetupWizard({ onComplete }: { onComplete: () => void }) {
 
   // Check if any provider is already configured
   useEffect(() => {
-    settingsApi.getProviders()
-      .then(data => {
+    settingsApi
+      .getProviders()
+      .then((data) => {
         if (data.providers?.length > 0) {
           // Already has providers, skip to ready
           setProviderConfigured(true);
@@ -117,19 +139,27 @@ export function SetupWizard({ onComplete }: { onComplete: () => void }) {
             <div className="grid grid-cols-2 gap-3 text-sm">
               <div className="p-3 rounded-lg bg-bg-tertiary dark:bg-dark-bg-tertiary">
                 <span className="font-medium">Chat</span>
-                <p className="text-text-muted dark:text-dark-text-muted text-xs mt-1">Ask anything, get smart answers</p>
+                <p className="text-text-muted dark:text-dark-text-muted text-xs mt-1">
+                  Ask anything, get smart answers
+                </p>
               </div>
               <div className="p-3 rounded-lg bg-bg-tertiary dark:bg-dark-bg-tertiary">
                 <span className="font-medium">Tasks & Notes</span>
-                <p className="text-text-muted dark:text-dark-text-muted text-xs mt-1">Manage via chat commands</p>
+                <p className="text-text-muted dark:text-dark-text-muted text-xs mt-1">
+                  Manage via chat commands
+                </p>
               </div>
               <div className="p-3 rounded-lg bg-bg-tertiary dark:bg-dark-bg-tertiary">
                 <span className="font-medium">148+ Tools</span>
-                <p className="text-text-muted dark:text-dark-text-muted text-xs mt-1">Auto-discovered by AI</p>
+                <p className="text-text-muted dark:text-dark-text-muted text-xs mt-1">
+                  Auto-discovered by AI
+                </p>
               </div>
               <div className="p-3 rounded-lg bg-bg-tertiary dark:bg-dark-bg-tertiary">
                 <span className="font-medium">Privacy-First</span>
-                <p className="text-text-muted dark:text-dark-text-muted text-xs mt-1">All data stays on your machine</p>
+                <p className="text-text-muted dark:text-dark-text-muted text-xs mt-1">
+                  All data stays on your machine
+                </p>
               </div>
             </div>
             <button
@@ -150,7 +180,7 @@ export function SetupWizard({ onComplete }: { onComplete: () => void }) {
                 Choose a provider:
               </label>
               <div className="grid grid-cols-2 gap-2">
-                {PROVIDERS.map(p => (
+                {PROVIDERS.map((p) => (
                   <button
                     key={p.id}
                     onClick={() => setSelectedProvider(p.id)}
@@ -161,7 +191,9 @@ export function SetupWizard({ onComplete }: { onComplete: () => void }) {
                     }`}
                   >
                     <span className="font-medium">{p.name}</span>
-                    <p className="text-xs text-text-muted dark:text-dark-text-muted mt-0.5">{p.models}</p>
+                    <p className="text-xs text-text-muted dark:text-dark-text-muted mt-0.5">
+                      {p.models}
+                    </p>
                   </button>
                 ))}
               </div>
@@ -175,7 +207,7 @@ export function SetupWizard({ onComplete }: { onComplete: () => void }) {
                     API Key:
                   </label>
                   <a
-                    href={PROVIDERS.find(p => p.id === selectedProvider)?.url}
+                    href={PROVIDERS.find((p) => p.id === selectedProvider)?.url}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-xs text-primary hover:underline"
@@ -186,16 +218,14 @@ export function SetupWizard({ onComplete }: { onComplete: () => void }) {
                 <input
                   type="password"
                   value={apiKey}
-                  onChange={e => setApiKey(e.target.value)}
+                  onChange={(e) => setApiKey(e.target.value)}
                   placeholder="sk-... or paste your key"
                   className="w-full px-3 py-2 rounded-lg border border-border dark:border-dark-border bg-bg-primary dark:bg-dark-bg-primary text-sm focus:ring-2 focus:ring-primary focus:border-transparent"
                 />
               </div>
             )}
 
-            {error && (
-              <p className="text-sm text-error">{error}</p>
-            )}
+            {error && <p className="text-sm text-error">{error}</p>}
 
             <div className="flex gap-2">
               <button
@@ -220,9 +250,7 @@ export function SetupWizard({ onComplete }: { onComplete: () => void }) {
           <div className="space-y-4">
             <div className="p-4 rounded-lg bg-success/10 border border-success/20">
               <p className="text-sm text-success font-medium">
-                {providerConfigured
-                  ? 'AI provider is configured and ready!'
-                  : 'Setup complete!'}
+                {providerConfigured ? 'AI provider is configured and ready!' : 'Setup complete!'}
               </p>
               <p className="text-xs text-text-muted dark:text-dark-text-muted mt-1">
                 Try asking: "What can you help me with?" or "Create a task for tomorrow"

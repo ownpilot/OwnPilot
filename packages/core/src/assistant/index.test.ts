@@ -25,9 +25,7 @@ vi.mock('../agent/code-generator.js', () => ({
 }));
 
 vi.mock('../services/error-utils.js', () => ({
-  getErrorMessage: vi.fn((err: unknown) =>
-    err instanceof Error ? err.message : String(err)
-  ),
+  getErrorMessage: vi.fn((err: unknown) => (err instanceof Error ? err.message : String(err))),
 }));
 
 // =============================================================================
@@ -77,11 +75,13 @@ function makeConfig(overrides: Partial<AssistantConfig> = {}): AssistantConfig {
   };
 }
 
-function makePluginRegistry(overrides: Partial<{
-  routeMessage: ReturnType<typeof vi.fn>;
-  getTool: ReturnType<typeof vi.fn>;
-  getAllTools: ReturnType<typeof vi.fn>;
-}> = {}) {
+function makePluginRegistry(
+  overrides: Partial<{
+    routeMessage: ReturnType<typeof vi.fn>;
+    getTool: ReturnType<typeof vi.fn>;
+    getAllTools: ReturnType<typeof vi.fn>;
+  }> = {}
+) {
   return {
     routeMessage: vi.fn().mockResolvedValue({ handled: false }),
     getTool: vi.fn().mockReturnValue(undefined),
@@ -315,7 +315,7 @@ describe('classifyIntent()', () => {
 
     it('returns confidence 0.80 for schedule', () => {
       const result = classifyIntent('remind me to drink water', ctx);
-      expect(result.confidence).toBe(0.80);
+      expect(result.confidence).toBe(0.8);
     });
 
     it('includes suggested tools for schedule', () => {
@@ -443,7 +443,7 @@ describe('classifyIntent()', () => {
 
     it('returns confidence 0.80 for memory', () => {
       const result = classifyIntent('remember this for me', ctx);
-      expect(result.confidence).toBe(0.80);
+      expect(result.confidence).toBe(0.8);
     });
 
     it('includes suggested tools for memory', () => {
@@ -496,7 +496,7 @@ describe('classifyIntent()', () => {
 
     it('returns confidence 0.90 for help', () => {
       const result = classifyIntent('help me out', ctx);
-      expect(result.confidence).toBe(0.90);
+      expect(result.confidence).toBe(0.9);
     });
 
     it('returns empty entities for help', () => {
@@ -557,7 +557,7 @@ describe('classifyIntent()', () => {
 
     it('returns confidence 0.70 for question', () => {
       const result = classifyIntent('what is TypeScript?', ctx);
-      expect(result.confidence).toBe(0.70);
+      expect(result.confidence).toBe(0.7);
     });
 
     it('returns empty entities for question', () => {
@@ -644,7 +644,7 @@ describe('classifyIntent()', () => {
 
     it('returns confidence 0.50 for general_chat', () => {
       const result = classifyIntent('random message', ctx);
-      expect(result.confidence).toBe(0.50);
+      expect(result.confidence).toBe(0.5);
     });
 
     it('returns empty entities for general_chat', () => {
@@ -842,9 +842,9 @@ describe('PersonalAssistant', () => {
         { name: 'tool_b', description: 'B', parameters: {} },
       ];
       const registry = makePluginRegistry({
-        getAllTools: vi.fn().mockReturnValue(
-          toolDefs.map(d => ({ definition: d, executor: vi.fn() }))
-        ),
+        getAllTools: vi
+          .fn()
+          .mockReturnValue(toolDefs.map((d) => ({ definition: d, executor: vi.fn() }))),
       });
       assistant.initialize({ pluginRegistry: registry as never });
       expect(assistant.getAvailableTools()).toHaveLength(2);
@@ -899,9 +899,7 @@ describe('PersonalAssistant', () => {
 
     it('routes general_chat to handleGeneralRequest', async () => {
       const assistant = new PersonalAssistant(makeConfig());
-      const response = await assistant.process(
-        makeRequest({ message: 'I love sunny days' })
-      );
+      const response = await assistant.process(makeRequest({ message: 'I love sunny days' }));
       expect(response.message).toContain('LLM integration');
     });
 
@@ -949,9 +947,7 @@ describe('PersonalAssistant', () => {
 
     it('skips plugin routing when no registry', async () => {
       const assistant = new PersonalAssistant(makeConfig());
-      const response = await assistant.process(
-        makeRequest({ message: 'I love sunny days' })
-      );
+      const response = await assistant.process(makeRequest({ message: 'I love sunny days' }));
       expect(response).toBeDefined();
     });
 
@@ -986,9 +982,7 @@ describe('PersonalAssistant', () => {
         metadata: { generatedAt: new Date().toISOString(), validationPassed: true },
       });
       const assistant = new PersonalAssistant(makeConfig());
-      const response = await assistant.process(
-        makeRequest({ message: 'write javascript code' })
-      );
+      const response = await assistant.process(makeRequest({ message: 'write javascript code' }));
       expect(response.code).toBeDefined();
       expect(response.code?.code).toBe('const x = 42;');
     });
@@ -1011,25 +1005,19 @@ describe('PersonalAssistant', () => {
 
     it('includes explanation when code generation succeeds', async () => {
       const assistant = new PersonalAssistant(makeConfig());
-      const response = await assistant.process(
-        makeRequest({ message: 'write javascript code' })
-      );
+      const response = await assistant.process(makeRequest({ message: 'write javascript code' }));
       expect(response.message).toContain('Explanation');
     });
 
     it('includes execution result when execution succeeds', async () => {
       const assistant = new PersonalAssistant(makeConfig());
-      const response = await assistant.process(
-        makeRequest({ message: 'write javascript code' })
-      );
+      const response = await assistant.process(makeRequest({ message: 'write javascript code' }));
       expect(response.message).toContain('Execution Result');
     });
 
     it('includes execution duration when execution succeeds', async () => {
       const assistant = new PersonalAssistant(makeConfig());
-      const response = await assistant.process(
-        makeRequest({ message: 'write javascript code' })
-      );
+      const response = await assistant.process(makeRequest({ message: 'write javascript code' }));
       expect(response.message).toContain('10ms');
     });
 
@@ -1043,9 +1031,7 @@ describe('PersonalAssistant', () => {
         metadata: { generatedAt: new Date().toISOString(), validationPassed: true },
       });
       const assistant = new PersonalAssistant(makeConfig());
-      const response = await assistant.process(
-        makeRequest({ message: 'write javascript code' })
-      );
+      const response = await assistant.process(makeRequest({ message: 'write javascript code' }));
       expect(response.message).toContain('Execution Error');
       expect(response.message).toContain('SyntaxError');
     });
@@ -1060,34 +1046,26 @@ describe('PersonalAssistant', () => {
         metadata: { generatedAt: new Date().toISOString(), validationPassed: true },
       });
       const assistant = new PersonalAssistant(makeConfig());
-      const response = await assistant.process(
-        makeRequest({ message: 'write javascript code' })
-      );
+      const response = await assistant.process(makeRequest({ message: 'write javascript code' }));
       expect(response.message).not.toContain('Execution Result');
       expect(response.message).not.toContain('Execution Error');
     });
 
     it('includes three suggestions on success', async () => {
       const assistant = new PersonalAssistant(makeConfig());
-      const response = await assistant.process(
-        makeRequest({ message: 'write javascript code' })
-      );
+      const response = await assistant.process(makeRequest({ message: 'write javascript code' }));
       expect(response.suggestions).toHaveLength(3);
     });
 
     it('includes executionResult in code property', async () => {
       const assistant = new PersonalAssistant(makeConfig());
-      const response = await assistant.process(
-        makeRequest({ message: 'write javascript code' })
-      );
+      const response = await assistant.process(makeRequest({ message: 'write javascript code' }));
       expect(response.code?.executionResult).toBe('hello');
     });
 
     it('includes intent in metadata on success', async () => {
       const assistant = new PersonalAssistant(makeConfig());
-      const response = await assistant.process(
-        makeRequest({ message: 'write javascript code' })
-      );
+      const response = await assistant.process(makeRequest({ message: 'write javascript code' }));
       expect(response.metadata?.intent).toBe('code_request');
     });
 
@@ -1099,9 +1077,7 @@ describe('PersonalAssistant', () => {
         metadata: { generatedAt: new Date().toISOString(), validationPassed: false },
       });
       const assistant = new PersonalAssistant(makeConfig());
-      const response = await assistant.process(
-        makeRequest({ message: 'write javascript code' })
-      );
+      const response = await assistant.process(makeRequest({ message: 'write javascript code' }));
       expect(response.message).toBe('LLM unavailable');
     });
 
@@ -1112,9 +1088,7 @@ describe('PersonalAssistant', () => {
         metadata: { generatedAt: new Date().toISOString(), validationPassed: false },
       });
       const assistant = new PersonalAssistant(makeConfig());
-      const response = await assistant.process(
-        makeRequest({ message: 'write javascript code' })
-      );
+      const response = await assistant.process(makeRequest({ message: 'write javascript code' }));
       expect(response.message).toBe(
         'Could not generate code. Please provide a more detailed description.'
       );
@@ -1127,9 +1101,7 @@ describe('PersonalAssistant', () => {
         metadata: { generatedAt: new Date().toISOString(), validationPassed: false },
       });
       const assistant = new PersonalAssistant(makeConfig());
-      const response = await assistant.process(
-        makeRequest({ message: 'write javascript code' })
-      );
+      const response = await assistant.process(makeRequest({ message: 'write javascript code' }));
       expect(response.suggestions).toHaveLength(3);
     });
 
@@ -1141,9 +1113,7 @@ describe('PersonalAssistant', () => {
         metadata: { generatedAt: new Date().toISOString(), validationPassed: false },
       });
       const assistant = new PersonalAssistant(makeConfig());
-      const response = await assistant.process(
-        makeRequest({ message: 'write javascript code' })
-      );
+      const response = await assistant.process(makeRequest({ message: 'write javascript code' }));
       expect(response.code).toBeUndefined();
     });
 
@@ -1164,9 +1134,7 @@ describe('PersonalAssistant', () => {
   describe('handleScheduleRequest', () => {
     it('returns scheduling understanding message', async () => {
       const assistant = new PersonalAssistant(makeConfig());
-      const response = await assistant.process(
-        makeRequest({ message: 'remind me every day' })
-      );
+      const response = await assistant.process(makeRequest({ message: 'remind me every day' }));
       expect(response.message).toBe(
         'I understand your scheduling request. You can use these tools:'
       );
@@ -1174,33 +1142,25 @@ describe('PersonalAssistant', () => {
 
     it('returns three scheduling suggestions', async () => {
       const assistant = new PersonalAssistant(makeConfig());
-      const response = await assistant.process(
-        makeRequest({ message: 'remind me every day' })
-      );
+      const response = await assistant.process(makeRequest({ message: 'remind me every day' }));
       expect(response.suggestions).toHaveLength(3);
     });
 
     it('suggestions mention create_scheduled_task', async () => {
       const assistant = new PersonalAssistant(makeConfig());
-      const response = await assistant.process(
-        makeRequest({ message: 'remind me every week' })
-      );
-      expect(response.suggestions?.some(s => s.includes('create_scheduled_task'))).toBe(true);
+      const response = await assistant.process(makeRequest({ message: 'remind me every week' }));
+      expect(response.suggestions?.some((s) => s.includes('create_scheduled_task'))).toBe(true);
     });
 
     it('suggestions mention list_scheduled_tasks', async () => {
       const assistant = new PersonalAssistant(makeConfig());
-      const response = await assistant.process(
-        makeRequest({ message: 'set an alarm at 7am' })
-      );
-      expect(response.suggestions?.some(s => s.includes('list_scheduled_tasks'))).toBe(true);
+      const response = await assistant.process(makeRequest({ message: 'set an alarm at 7am' }));
+      expect(response.suggestions?.some((s) => s.includes('list_scheduled_tasks'))).toBe(true);
     });
 
     it('includes intent in metadata', async () => {
       const assistant = new PersonalAssistant(makeConfig());
-      const response = await assistant.process(
-        makeRequest({ message: 'remind me every day' })
-      );
+      const response = await assistant.process(makeRequest({ message: 'remind me every day' }));
       expect(response.metadata?.intent).toBe('schedule');
     });
 
@@ -1230,25 +1190,19 @@ describe('PersonalAssistant', () => {
 
     it('returns three memory suggestions', async () => {
       const assistant = new PersonalAssistant(makeConfig());
-      const response = await assistant.process(
-        makeRequest({ message: 'save this note for me' })
-      );
+      const response = await assistant.process(makeRequest({ message: 'save this note for me' }));
       expect(response.suggestions).toHaveLength(3);
     });
 
     it('does not include toolCalls in memory response', async () => {
       const assistant = new PersonalAssistant(makeConfig());
-      const response = await assistant.process(
-        makeRequest({ message: 'remember my name' })
-      );
+      const response = await assistant.process(makeRequest({ message: 'remember my name' }));
       expect(response.toolCalls).toBeUndefined();
     });
 
     it('does not include code in memory response', async () => {
       const assistant = new PersonalAssistant(makeConfig());
-      const response = await assistant.process(
-        makeRequest({ message: "don't forget my address" })
-      );
+      const response = await assistant.process(makeRequest({ message: "don't forget my address" }));
       expect(response.code).toBeUndefined();
     });
   });
@@ -1260,9 +1214,7 @@ describe('PersonalAssistant', () => {
   describe('handleHelpRequest', () => {
     it('includes the assistant name in the response', async () => {
       const assistant = new PersonalAssistant(makeConfig({ name: 'HelpBot' }));
-      const response = await assistant.process(
-        makeRequest({ message: 'help me' })
-      );
+      const response = await assistant.process(makeRequest({ message: 'help me' }));
       expect(response.message).toContain("I'm HelpBot");
     });
 
@@ -1320,33 +1272,25 @@ describe('PersonalAssistant', () => {
 
     it('includes intent in metadata', async () => {
       const assistant = new PersonalAssistant(makeConfig());
-      const response = await assistant.process(
-        makeRequest({ message: 'I love sunny days' })
-      );
+      const response = await assistant.process(makeRequest({ message: 'I love sunny days' }));
       expect(response.metadata?.intent).toBe('general_chat');
     });
 
     it('includes confidence in metadata', async () => {
       const assistant = new PersonalAssistant(makeConfig());
-      const response = await assistant.process(
-        makeRequest({ message: 'I love sunny days' })
-      );
-      expect(response.metadata?.confidence).toBe(0.50);
+      const response = await assistant.process(makeRequest({ message: 'I love sunny days' }));
+      expect(response.metadata?.confidence).toBe(0.5);
     });
 
     it('does not include code in general response', async () => {
       const assistant = new PersonalAssistant(makeConfig());
-      const response = await assistant.process(
-        makeRequest({ message: 'the sky is blue' })
-      );
+      const response = await assistant.process(makeRequest({ message: 'the sky is blue' }));
       expect(response.code).toBeUndefined();
     });
 
     it('does not include suggestions in general response', async () => {
       const assistant = new PersonalAssistant(makeConfig());
-      const response = await assistant.process(
-        makeRequest({ message: 'tell me a story' })
-      );
+      const response = await assistant.process(makeRequest({ message: 'tell me a story' }));
       expect(response.suggestions).toBeUndefined();
     });
 
@@ -1503,10 +1447,7 @@ describe('PersonalAssistant', () => {
       const assistant = new PersonalAssistant(makeConfig());
       assistant.initialize({ pluginRegistry: registry as never });
       await assistant.process(makeRequest({ message: 'run tool' }));
-      expect(mockExecutor).toHaveBeenCalledWith(
-        { x: 1, y: 'hello' },
-        expect.any(Object)
-      );
+      expect(mockExecutor).toHaveBeenCalledWith({ x: 1, y: 'hello' }, expect.any(Object));
     });
 
     it('handles multiple tool calls sequentially', async () => {
@@ -1523,7 +1464,10 @@ describe('PersonalAssistant', () => {
         getTool: vi
           .fn()
           .mockImplementationOnce(() => ({ definition: { name: 'tool_one' }, executor: executor1 }))
-          .mockImplementationOnce(() => ({ definition: { name: 'tool_two' }, executor: executor2 })),
+          .mockImplementationOnce(() => ({
+            definition: { name: 'tool_two' },
+            executor: executor2,
+          })),
       });
       const assistant = new PersonalAssistant(makeConfig());
       assistant.initialize({ pluginRegistry: registry as never });

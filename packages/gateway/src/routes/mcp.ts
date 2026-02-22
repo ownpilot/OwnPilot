@@ -12,7 +12,14 @@ import { handleMcpRequest } from '../services/mcp-server-service.js';
 import { getSharedToolRegistry } from '../services/tool-executor.js';
 import { wsGateway } from '../ws/server.js';
 import { getLog } from '../services/log.js';
-import { apiResponse, apiError, ERROR_CODES, getErrorMessage, sanitizeId, getUserId } from './helpers.js';
+import {
+  apiResponse,
+  apiError,
+  ERROR_CODES,
+  getErrorMessage,
+  sanitizeId,
+  getUserId,
+} from './helpers.js';
 
 const log = getLog('McpRoutes');
 
@@ -39,13 +46,14 @@ mcpRoutes.get('/serve/info', async (c) => {
     const allTools = registry.getAllTools();
 
     // Build the server URL from the current request
-    const proto = c.req.header('x-forwarded-proto') ?? (c.req.url.startsWith('https') ? 'https' : 'http');
+    const proto =
+      c.req.header('x-forwarded-proto') ?? (c.req.url.startsWith('https') ? 'https' : 'http');
     const host = c.req.header('x-forwarded-host') ?? c.req.header('host') ?? 'localhost:8080';
     const baseUrl = `${proto}://${host}`;
     const endpoint = `${baseUrl}/api/v1/mcp/serve`;
 
     // Categorize tools by source/namespace
-    const tools = allTools.map(t => ({
+    const tools = allTools.map((t) => ({
       name: getBaseName(t.definition.name),
       qualifiedName: t.definition.name,
       description: t.definition.description,
@@ -131,7 +139,7 @@ mcpRoutes.get('/', async (c) => {
 
     // Enrich with live connection status
     const mcpService = getServiceRegistry().get(Services.McpClient);
-    const enriched = servers.map(s => ({
+    const enriched = servers.map((s) => ({
       ...s,
       connected: mcpService.isConnected(s.name),
     }));
@@ -166,18 +174,34 @@ mcpRoutes.post('/', async (c) => {
       return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: 'Name is required' }, 400);
     }
     if (!body.displayName?.trim()) {
-      return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: 'Display name is required' }, 400);
+      return apiError(
+        c,
+        { code: ERROR_CODES.VALIDATION_ERROR, message: 'Display name is required' },
+        400
+      );
     }
     if (!body.transport) {
-      return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: 'Transport type is required' }, 400);
+      return apiError(
+        c,
+        { code: ERROR_CODES.VALIDATION_ERROR, message: 'Transport type is required' },
+        400
+      );
     }
 
     // Validate transport-specific fields
     if (body.transport === 'stdio' && !body.command?.trim()) {
-      return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: 'Command is required for stdio transport' }, 400);
+      return apiError(
+        c,
+        { code: ERROR_CODES.VALIDATION_ERROR, message: 'Command is required for stdio transport' },
+        400
+      );
     }
     if ((body.transport === 'sse' || body.transport === 'streamable-http') && !body.url?.trim()) {
-      return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: 'URL is required for network transport' }, 400);
+      return apiError(
+        c,
+        { code: ERROR_CODES.VALIDATION_ERROR, message: 'URL is required for network transport' },
+        400
+      );
     }
 
     const repo = getMcpServersRepo();
@@ -185,7 +209,11 @@ mcpRoutes.post('/', async (c) => {
     // Check uniqueness scoped to user
     const existing = await repo.getByName(body.name.trim(), userId);
     if (existing) {
-      return apiError(c, { code: ERROR_CODES.ALREADY_EXISTS, message: `MCP server "${body.name}" already exists` }, 409);
+      return apiError(
+        c,
+        { code: ERROR_CODES.ALREADY_EXISTS, message: `MCP server "${body.name}" already exists` },
+        409
+      );
     }
 
     const server = await repo.create({
@@ -337,7 +365,11 @@ mcpRoutes.post('/:id/connect', async (c) => {
     return apiResponse(c, { connected: true, tools, toolCount: tools.length });
   } catch (err) {
     log.error('Failed to connect MCP server:', err);
-    return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(err, 'Failed to connect') }, 500);
+    return apiError(
+      c,
+      { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(err, 'Failed to connect') },
+      500
+    );
   }
 });
 
@@ -378,10 +410,18 @@ mcpRoutes.patch('/:id/tool-settings', async (c) => {
     }>();
 
     if (!body.toolName || typeof body.toolName !== 'string') {
-      return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: 'toolName is required' }, 400);
+      return apiError(
+        c,
+        { code: ERROR_CODES.VALIDATION_ERROR, message: 'toolName is required' },
+        400
+      );
     }
     if (typeof body.workflowUsable !== 'boolean') {
-      return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: 'workflowUsable (boolean) is required' }, 400);
+      return apiError(
+        c,
+        { code: ERROR_CODES.VALIDATION_ERROR, message: 'workflowUsable (boolean) is required' },
+        400
+      );
     }
 
     const repo = getMcpServersRepo();
@@ -390,9 +430,15 @@ mcpRoutes.patch('/:id/tool-settings', async (c) => {
       return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'MCP server not found' }, 404);
     }
 
-    const existingToolSettings = (server.metadata?.toolSettings ?? {}) as Record<string, Record<string, unknown>>;
+    const existingToolSettings = (server.metadata?.toolSettings ?? {}) as Record<
+      string,
+      Record<string, unknown>
+    >;
     const toolSettings = { ...existingToolSettings };
-    toolSettings[body.toolName] = { ...(toolSettings[body.toolName] ?? {}), workflowUsable: body.workflowUsable };
+    toolSettings[body.toolName] = {
+      ...(toolSettings[body.toolName] ?? {}),
+      workflowUsable: body.workflowUsable,
+    };
     const metadata = { ...server.metadata, toolSettings };
     await repo.update(id, { metadata });
 
@@ -426,7 +472,11 @@ mcpRoutes.get('/:id/tools', async (c) => {
 
     const mcpService = getServiceRegistry().get(Services.McpClient);
     if (!mcpService.isConnected(server.name)) {
-      return apiError(c, { code: ERROR_CODES.BAD_REQUEST, message: 'Server is not connected. Connect first.' }, 400);
+      return apiError(
+        c,
+        { code: ERROR_CODES.BAD_REQUEST, message: 'Server is not connected. Connect first.' },
+        400
+      );
     }
 
     const tools = mcpService.getServerTools(server.name);

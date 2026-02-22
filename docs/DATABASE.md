@@ -93,9 +93,7 @@ Contains all `CREATE INDEX IF NOT EXISTS` statements. Over 100 indexes are defin
 ### 2.4 initializeSchema()
 
 ```typescript
-export async function initializeSchema(
-  exec: (sql: string) => Promise<void>
-): Promise<void>;
+export async function initializeSchema(exec: (sql: string) => Promise<void>): Promise<void>;
 ```
 
 Runs all three SQL blocks in order:
@@ -122,144 +120,144 @@ These tables support the primary chat and agent functionality.
 
 Stores chat conversation sessions.
 
-| Column | Type | Constraints | Description |
-|--------|------|-------------|-------------|
-| `id` | TEXT | PRIMARY KEY | Conversation UUID |
-| `user_id` | TEXT | NOT NULL DEFAULT 'default' | Owner user |
-| `title` | TEXT | | Conversation title |
-| `agent_id` | TEXT | | Associated agent |
-| `agent_name` | TEXT | | Agent display name |
-| `provider` | TEXT | | AI provider used |
-| `model` | TEXT | | AI model used |
-| `system_prompt` | TEXT | | Custom system prompt |
-| `message_count` | INTEGER | NOT NULL DEFAULT 0 | Cached message count |
-| `is_archived` | BOOLEAN | NOT NULL DEFAULT FALSE | Archive flag |
-| `created_at` | TIMESTAMP | NOT NULL DEFAULT NOW() | Creation time |
-| `updated_at` | TIMESTAMP | NOT NULL DEFAULT NOW() | Last update time |
-| `metadata` | JSONB | DEFAULT '{}' | Arbitrary metadata |
+| Column          | Type      | Constraints                | Description          |
+| --------------- | --------- | -------------------------- | -------------------- |
+| `id`            | TEXT      | PRIMARY KEY                | Conversation UUID    |
+| `user_id`       | TEXT      | NOT NULL DEFAULT 'default' | Owner user           |
+| `title`         | TEXT      |                            | Conversation title   |
+| `agent_id`      | TEXT      |                            | Associated agent     |
+| `agent_name`    | TEXT      |                            | Agent display name   |
+| `provider`      | TEXT      |                            | AI provider used     |
+| `model`         | TEXT      |                            | AI model used        |
+| `system_prompt` | TEXT      |                            | Custom system prompt |
+| `message_count` | INTEGER   | NOT NULL DEFAULT 0         | Cached message count |
+| `is_archived`   | BOOLEAN   | NOT NULL DEFAULT FALSE     | Archive flag         |
+| `created_at`    | TIMESTAMP | NOT NULL DEFAULT NOW()     | Creation time        |
+| `updated_at`    | TIMESTAMP | NOT NULL DEFAULT NOW()     | Last update time     |
+| `metadata`      | JSONB     | DEFAULT '{}'               | Arbitrary metadata   |
 
 #### `messages`
 
 Individual messages within a conversation.
 
-| Column | Type | Constraints | Description |
-|--------|------|-------------|-------------|
-| `id` | TEXT | PRIMARY KEY | Message UUID |
-| `conversation_id` | TEXT | NOT NULL, FK -> conversations(id) ON DELETE CASCADE | Parent conversation |
-| `role` | TEXT | NOT NULL, CHECK IN ('system','user','assistant','tool') | Message role |
-| `content` | TEXT | NOT NULL | Message body |
-| `provider` | TEXT | | AI provider |
-| `model` | TEXT | | AI model |
-| `tool_calls` | JSONB | | Tool call definitions |
-| `tool_call_id` | TEXT | | Tool call response ID |
-| `trace` | TEXT | | Debug trace |
-| `is_error` | BOOLEAN | NOT NULL DEFAULT FALSE | Error indicator |
-| `input_tokens` | INTEGER | | Token usage (input) |
-| `output_tokens` | INTEGER | | Token usage (output) |
-| `created_at` | TIMESTAMP | NOT NULL DEFAULT NOW() | Creation time |
+| Column            | Type      | Constraints                                             | Description           |
+| ----------------- | --------- | ------------------------------------------------------- | --------------------- |
+| `id`              | TEXT      | PRIMARY KEY                                             | Message UUID          |
+| `conversation_id` | TEXT      | NOT NULL, FK -> conversations(id) ON DELETE CASCADE     | Parent conversation   |
+| `role`            | TEXT      | NOT NULL, CHECK IN ('system','user','assistant','tool') | Message role          |
+| `content`         | TEXT      | NOT NULL                                                | Message body          |
+| `provider`        | TEXT      |                                                         | AI provider           |
+| `model`           | TEXT      |                                                         | AI model              |
+| `tool_calls`      | JSONB     |                                                         | Tool call definitions |
+| `tool_call_id`    | TEXT      |                                                         | Tool call response ID |
+| `trace`           | TEXT      |                                                         | Debug trace           |
+| `is_error`        | BOOLEAN   | NOT NULL DEFAULT FALSE                                  | Error indicator       |
+| `input_tokens`    | INTEGER   |                                                         | Token usage (input)   |
+| `output_tokens`   | INTEGER   |                                                         | Token usage (output)  |
+| `created_at`      | TIMESTAMP | NOT NULL DEFAULT NOW()                                  | Creation time         |
 
 #### `request_logs`
 
 HTTP request and API call logging for debugging.
 
-| Column | Type | Constraints | Description |
-|--------|------|-------------|-------------|
-| `id` | TEXT | PRIMARY KEY | Log entry UUID |
-| `user_id` | TEXT | NOT NULL DEFAULT 'default' | User making request |
-| `conversation_id` | TEXT | FK -> conversations(id) ON DELETE SET NULL | Related conversation |
-| `type` | TEXT | NOT NULL, CHECK IN ('chat','completion','embedding','tool','agent','other') | Request type |
-| `provider` | TEXT | | AI provider |
-| `model` | TEXT | | AI model |
-| `endpoint` | TEXT | | Target endpoint |
-| `method` | TEXT | NOT NULL DEFAULT 'POST' | HTTP method |
-| `request_body` | JSONB | | Request payload |
-| `response_body` | JSONB | | Response payload |
-| `status_code` | INTEGER | | HTTP status code |
-| `input_tokens` | INTEGER | | Token usage (input) |
-| `output_tokens` | INTEGER | | Token usage (output) |
-| `total_tokens` | INTEGER | | Token usage (total) |
-| `duration_ms` | INTEGER | | Request duration |
-| `error` | TEXT | | Error message |
-| `error_stack` | TEXT | | Error stack trace |
-| `ip_address` | TEXT | | Client IP |
-| `user_agent` | TEXT | | Client user agent |
-| `created_at` | TIMESTAMP | NOT NULL DEFAULT NOW() | Log time |
+| Column            | Type      | Constraints                                                                 | Description          |
+| ----------------- | --------- | --------------------------------------------------------------------------- | -------------------- |
+| `id`              | TEXT      | PRIMARY KEY                                                                 | Log entry UUID       |
+| `user_id`         | TEXT      | NOT NULL DEFAULT 'default'                                                  | User making request  |
+| `conversation_id` | TEXT      | FK -> conversations(id) ON DELETE SET NULL                                  | Related conversation |
+| `type`            | TEXT      | NOT NULL, CHECK IN ('chat','completion','embedding','tool','agent','other') | Request type         |
+| `provider`        | TEXT      |                                                                             | AI provider          |
+| `model`           | TEXT      |                                                                             | AI model             |
+| `endpoint`        | TEXT      |                                                                             | Target endpoint      |
+| `method`          | TEXT      | NOT NULL DEFAULT 'POST'                                                     | HTTP method          |
+| `request_body`    | JSONB     |                                                                             | Request payload      |
+| `response_body`   | JSONB     |                                                                             | Response payload     |
+| `status_code`     | INTEGER   |                                                                             | HTTP status code     |
+| `input_tokens`    | INTEGER   |                                                                             | Token usage (input)  |
+| `output_tokens`   | INTEGER   |                                                                             | Token usage (output) |
+| `total_tokens`    | INTEGER   |                                                                             | Token usage (total)  |
+| `duration_ms`     | INTEGER   |                                                                             | Request duration     |
+| `error`           | TEXT      |                                                                             | Error message        |
+| `error_stack`     | TEXT      |                                                                             | Error stack trace    |
+| `ip_address`      | TEXT      |                                                                             | Client IP            |
+| `user_agent`      | TEXT      |                                                                             | Client user agent    |
+| `created_at`      | TIMESTAMP | NOT NULL DEFAULT NOW()                                                      | Log time             |
 
 #### `channels`
 
 External communication channel configurations (Telegram, Discord, Slack, etc.).
 
-| Column | Type | Constraints | Description |
-|--------|------|-------------|-------------|
-| `id` | TEXT | PRIMARY KEY | Channel UUID |
-| `type` | TEXT | NOT NULL | Channel type |
-| `name` | TEXT | NOT NULL | Display name |
-| `status` | TEXT | NOT NULL DEFAULT 'disconnected' | Connection status |
-| `config` | JSONB | NOT NULL DEFAULT '{}' | Channel configuration |
-| `created_at` | TIMESTAMP | NOT NULL DEFAULT NOW() | Creation time |
-| `connected_at` | TIMESTAMP | | Last connection time |
-| `last_activity_at` | TIMESTAMP | | Last activity time |
+| Column             | Type      | Constraints                     | Description           |
+| ------------------ | --------- | ------------------------------- | --------------------- |
+| `id`               | TEXT      | PRIMARY KEY                     | Channel UUID          |
+| `type`             | TEXT      | NOT NULL                        | Channel type          |
+| `name`             | TEXT      | NOT NULL                        | Display name          |
+| `status`           | TEXT      | NOT NULL DEFAULT 'disconnected' | Connection status     |
+| `config`           | JSONB     | NOT NULL DEFAULT '{}'           | Channel configuration |
+| `created_at`       | TIMESTAMP | NOT NULL DEFAULT NOW()          | Creation time         |
+| `connected_at`     | TIMESTAMP |                                 | Last connection time  |
+| `last_activity_at` | TIMESTAMP |                                 | Last activity time    |
 
 #### `channel_messages`
 
 Messages received from or sent to external channels.
 
-| Column | Type | Constraints | Description |
-|--------|------|-------------|-------------|
-| `id` | TEXT | PRIMARY KEY | Message UUID |
-| `channel_id` | TEXT | NOT NULL, FK -> channels(id) ON DELETE CASCADE | Parent channel |
-| `external_id` | TEXT | | Platform message ID |
-| `direction` | TEXT | NOT NULL, CHECK IN ('inbound','outbound') | Message direction |
-| `sender_id` | TEXT | | Sender identifier |
-| `sender_name` | TEXT | | Sender name |
-| `content` | TEXT | NOT NULL | Message body |
-| `content_type` | TEXT | NOT NULL DEFAULT 'text' | Content type |
-| `attachments` | JSONB | | File attachments |
-| `reply_to_id` | TEXT | | Reply target |
-| `metadata` | JSONB | DEFAULT '{}' | Extra metadata |
-| `created_at` | TIMESTAMP | NOT NULL DEFAULT NOW() | Creation time |
+| Column         | Type      | Constraints                                    | Description         |
+| -------------- | --------- | ---------------------------------------------- | ------------------- |
+| `id`           | TEXT      | PRIMARY KEY                                    | Message UUID        |
+| `channel_id`   | TEXT      | NOT NULL, FK -> channels(id) ON DELETE CASCADE | Parent channel      |
+| `external_id`  | TEXT      |                                                | Platform message ID |
+| `direction`    | TEXT      | NOT NULL, CHECK IN ('inbound','outbound')      | Message direction   |
+| `sender_id`    | TEXT      |                                                | Sender identifier   |
+| `sender_name`  | TEXT      |                                                | Sender name         |
+| `content`      | TEXT      | NOT NULL                                       | Message body        |
+| `content_type` | TEXT      | NOT NULL DEFAULT 'text'                        | Content type        |
+| `attachments`  | JSONB     |                                                | File attachments    |
+| `reply_to_id`  | TEXT      |                                                | Reply target        |
+| `metadata`     | JSONB     | DEFAULT '{}'                                   | Extra metadata      |
+| `created_at`   | TIMESTAMP | NOT NULL DEFAULT NOW()                         | Creation time       |
 
 #### `costs`
 
 AI API usage cost tracking.
 
-| Column | Type | Constraints | Description |
-|--------|------|-------------|-------------|
-| `id` | TEXT | PRIMARY KEY | Cost entry UUID |
-| `provider` | TEXT | NOT NULL | AI provider |
-| `model` | TEXT | NOT NULL | AI model |
-| `conversation_id` | TEXT | FK -> conversations(id) ON DELETE SET NULL | Related conversation |
-| `input_tokens` | INTEGER | NOT NULL DEFAULT 0 | Input tokens consumed |
-| `output_tokens` | INTEGER | NOT NULL DEFAULT 0 | Output tokens consumed |
-| `total_tokens` | INTEGER | NOT NULL DEFAULT 0 | Total tokens |
-| `input_cost` | REAL | NOT NULL DEFAULT 0 | Input cost in dollars |
-| `output_cost` | REAL | NOT NULL DEFAULT 0 | Output cost in dollars |
-| `total_cost` | REAL | NOT NULL DEFAULT 0 | Total cost |
-| `created_at` | TIMESTAMP | NOT NULL DEFAULT NOW() | Time of API call |
+| Column            | Type      | Constraints                                | Description            |
+| ----------------- | --------- | ------------------------------------------ | ---------------------- |
+| `id`              | TEXT      | PRIMARY KEY                                | Cost entry UUID        |
+| `provider`        | TEXT      | NOT NULL                                   | AI provider            |
+| `model`           | TEXT      | NOT NULL                                   | AI model               |
+| `conversation_id` | TEXT      | FK -> conversations(id) ON DELETE SET NULL | Related conversation   |
+| `input_tokens`    | INTEGER   | NOT NULL DEFAULT 0                         | Input tokens consumed  |
+| `output_tokens`   | INTEGER   | NOT NULL DEFAULT 0                         | Output tokens consumed |
+| `total_tokens`    | INTEGER   | NOT NULL DEFAULT 0                         | Total tokens           |
+| `input_cost`      | REAL      | NOT NULL DEFAULT 0                         | Input cost in dollars  |
+| `output_cost`     | REAL      | NOT NULL DEFAULT 0                         | Output cost in dollars |
+| `total_cost`      | REAL      | NOT NULL DEFAULT 0                         | Total cost             |
+| `created_at`      | TIMESTAMP | NOT NULL DEFAULT NOW()                     | Time of API call       |
 
 #### `agents`
 
 Pre-configured AI agent profiles with system prompts and tool access.
 
-| Column | Type | Constraints | Description |
-|--------|------|-------------|-------------|
-| `id` | TEXT | PRIMARY KEY | Agent identifier |
-| `name` | TEXT | NOT NULL UNIQUE | Display name |
-| `system_prompt` | TEXT | | System prompt template |
-| `provider` | TEXT | NOT NULL | Default AI provider |
-| `model` | TEXT | NOT NULL | Default AI model |
-| `config` | JSONB | NOT NULL DEFAULT '{}' | Agent configuration (maxTokens, temperature, tools, toolGroups) |
-| `created_at` | TIMESTAMP | NOT NULL DEFAULT NOW() | Creation time |
-| `updated_at` | TIMESTAMP | NOT NULL DEFAULT NOW() | Last update time |
+| Column          | Type      | Constraints            | Description                                                     |
+| --------------- | --------- | ---------------------- | --------------------------------------------------------------- |
+| `id`            | TEXT      | PRIMARY KEY            | Agent identifier                                                |
+| `name`          | TEXT      | NOT NULL UNIQUE        | Display name                                                    |
+| `system_prompt` | TEXT      |                        | System prompt template                                          |
+| `provider`      | TEXT      | NOT NULL               | Default AI provider                                             |
+| `model`         | TEXT      | NOT NULL               | Default AI model                                                |
+| `config`        | JSONB     | NOT NULL DEFAULT '{}'  | Agent configuration (maxTokens, temperature, tools, toolGroups) |
+| `created_at`    | TIMESTAMP | NOT NULL DEFAULT NOW() | Creation time                                                   |
+| `updated_at`    | TIMESTAMP | NOT NULL DEFAULT NOW() | Last update time                                                |
 
 #### `settings`
 
 Global key-value settings store.
 
-| Column | Type | Constraints | Description |
-|--------|------|-------------|-------------|
-| `key` | TEXT | PRIMARY KEY | Setting key |
-| `value` | TEXT | NOT NULL | Setting value |
+| Column       | Type      | Constraints            | Description      |
+| ------------ | --------- | ---------------------- | ---------------- |
+| `key`        | TEXT      | PRIMARY KEY            | Setting key      |
+| `value`      | TEXT      | NOT NULL               | Setting value    |
 | `updated_at` | TIMESTAMP | NOT NULL DEFAULT NOW() | Last update time |
 
 ---
@@ -272,173 +270,173 @@ User-facing data management for personal productivity.
 
 Web bookmark storage with categorization and visit tracking.
 
-| Column | Type | Constraints | Description |
-|--------|------|-------------|-------------|
-| `id` | TEXT | PRIMARY KEY | Bookmark UUID |
-| `user_id` | TEXT | NOT NULL DEFAULT 'default' | Owner user |
-| `url` | TEXT | NOT NULL | Bookmark URL |
-| `title` | TEXT | NOT NULL | Page title |
-| `description` | TEXT | | Description |
-| `favicon` | TEXT | | Favicon URL |
-| `category` | TEXT | | Category |
-| `tags` | JSONB | DEFAULT '[]' | Tag array |
-| `is_favorite` | BOOLEAN | NOT NULL DEFAULT FALSE | Favorite flag |
-| `visit_count` | INTEGER | NOT NULL DEFAULT 0 | Visit counter |
-| `last_visited_at` | TIMESTAMP | | Last visit |
-| `created_at` | TIMESTAMP | NOT NULL DEFAULT NOW() | Creation time |
-| `updated_at` | TIMESTAMP | NOT NULL DEFAULT NOW() | Last update |
+| Column            | Type      | Constraints                | Description   |
+| ----------------- | --------- | -------------------------- | ------------- |
+| `id`              | TEXT      | PRIMARY KEY                | Bookmark UUID |
+| `user_id`         | TEXT      | NOT NULL DEFAULT 'default' | Owner user    |
+| `url`             | TEXT      | NOT NULL                   | Bookmark URL  |
+| `title`           | TEXT      | NOT NULL                   | Page title    |
+| `description`     | TEXT      |                            | Description   |
+| `favicon`         | TEXT      |                            | Favicon URL   |
+| `category`        | TEXT      |                            | Category      |
+| `tags`            | JSONB     | DEFAULT '[]'               | Tag array     |
+| `is_favorite`     | BOOLEAN   | NOT NULL DEFAULT FALSE     | Favorite flag |
+| `visit_count`     | INTEGER   | NOT NULL DEFAULT 0         | Visit counter |
+| `last_visited_at` | TIMESTAMP |                            | Last visit    |
+| `created_at`      | TIMESTAMP | NOT NULL DEFAULT NOW()     | Creation time |
+| `updated_at`      | TIMESTAMP | NOT NULL DEFAULT NOW()     | Last update   |
 
 #### `notes`
 
 Rich-text notes with markdown support.
 
-| Column | Type | Constraints | Description |
-|--------|------|-------------|-------------|
-| `id` | TEXT | PRIMARY KEY | Note UUID |
-| `user_id` | TEXT | NOT NULL DEFAULT 'default' | Owner user |
-| `title` | TEXT | NOT NULL | Note title |
-| `content` | TEXT | NOT NULL | Note body |
-| `content_type` | TEXT | NOT NULL DEFAULT 'markdown' | Content format |
-| `category` | TEXT | | Category |
-| `tags` | JSONB | DEFAULT '[]' | Tag array |
-| `is_pinned` | BOOLEAN | NOT NULL DEFAULT FALSE | Pin flag |
-| `is_archived` | BOOLEAN | NOT NULL DEFAULT FALSE | Archive flag |
-| `color` | TEXT | | Display color |
-| `created_at` | TIMESTAMP | NOT NULL DEFAULT NOW() | Creation time |
-| `updated_at` | TIMESTAMP | NOT NULL DEFAULT NOW() | Last update |
+| Column         | Type      | Constraints                 | Description    |
+| -------------- | --------- | --------------------------- | -------------- |
+| `id`           | TEXT      | PRIMARY KEY                 | Note UUID      |
+| `user_id`      | TEXT      | NOT NULL DEFAULT 'default'  | Owner user     |
+| `title`        | TEXT      | NOT NULL                    | Note title     |
+| `content`      | TEXT      | NOT NULL                    | Note body      |
+| `content_type` | TEXT      | NOT NULL DEFAULT 'markdown' | Content format |
+| `category`     | TEXT      |                             | Category       |
+| `tags`         | JSONB     | DEFAULT '[]'                | Tag array      |
+| `is_pinned`    | BOOLEAN   | NOT NULL DEFAULT FALSE      | Pin flag       |
+| `is_archived`  | BOOLEAN   | NOT NULL DEFAULT FALSE      | Archive flag   |
+| `color`        | TEXT      |                             | Display color  |
+| `created_at`   | TIMESTAMP | NOT NULL DEFAULT NOW()      | Creation time  |
+| `updated_at`   | TIMESTAMP | NOT NULL DEFAULT NOW()      | Last update    |
 
 #### `tasks`
 
 Task management with subtask hierarchy and project grouping.
 
-| Column | Type | Constraints | Description |
-|--------|------|-------------|-------------|
-| `id` | TEXT | PRIMARY KEY | Task UUID |
-| `user_id` | TEXT | NOT NULL DEFAULT 'default' | Owner user |
-| `title` | TEXT | NOT NULL | Task title |
-| `description` | TEXT | | Task details |
-| `status` | TEXT | NOT NULL DEFAULT 'pending', CHECK IN ('pending','in_progress','completed','cancelled') | Current status |
-| `priority` | TEXT | NOT NULL DEFAULT 'normal', CHECK IN ('low','normal','high','urgent') | Priority level |
-| `due_date` | TIMESTAMP | | Due date |
-| `due_time` | TEXT | | Due time string |
-| `reminder_at` | TIMESTAMP | | Reminder time |
-| `category` | TEXT | | Category |
-| `tags` | JSONB | DEFAULT '[]' | Tag array |
-| `parent_id` | TEXT | FK -> tasks(id) ON DELETE SET NULL | Parent task (self-referencing) |
-| `project_id` | TEXT | | Associated project |
-| `recurrence` | TEXT | | Recurrence rule |
-| `completed_at` | TIMESTAMP | | Completion time |
-| `created_at` | TIMESTAMP | NOT NULL DEFAULT NOW() | Creation time |
-| `updated_at` | TIMESTAMP | NOT NULL DEFAULT NOW() | Last update |
+| Column         | Type      | Constraints                                                                            | Description                    |
+| -------------- | --------- | -------------------------------------------------------------------------------------- | ------------------------------ |
+| `id`           | TEXT      | PRIMARY KEY                                                                            | Task UUID                      |
+| `user_id`      | TEXT      | NOT NULL DEFAULT 'default'                                                             | Owner user                     |
+| `title`        | TEXT      | NOT NULL                                                                               | Task title                     |
+| `description`  | TEXT      |                                                                                        | Task details                   |
+| `status`       | TEXT      | NOT NULL DEFAULT 'pending', CHECK IN ('pending','in_progress','completed','cancelled') | Current status                 |
+| `priority`     | TEXT      | NOT NULL DEFAULT 'normal', CHECK IN ('low','normal','high','urgent')                   | Priority level                 |
+| `due_date`     | TIMESTAMP |                                                                                        | Due date                       |
+| `due_time`     | TEXT      |                                                                                        | Due time string                |
+| `reminder_at`  | TIMESTAMP |                                                                                        | Reminder time                  |
+| `category`     | TEXT      |                                                                                        | Category                       |
+| `tags`         | JSONB     | DEFAULT '[]'                                                                           | Tag array                      |
+| `parent_id`    | TEXT      | FK -> tasks(id) ON DELETE SET NULL                                                     | Parent task (self-referencing) |
+| `project_id`   | TEXT      |                                                                                        | Associated project             |
+| `recurrence`   | TEXT      |                                                                                        | Recurrence rule                |
+| `completed_at` | TIMESTAMP |                                                                                        | Completion time                |
+| `created_at`   | TIMESTAMP | NOT NULL DEFAULT NOW()                                                                 | Creation time                  |
+| `updated_at`   | TIMESTAMP | NOT NULL DEFAULT NOW()                                                                 | Last update                    |
 
 #### `calendar_events`
 
 Personal calendar event storage with recurrence and attendee support.
 
-| Column | Type | Constraints | Description |
-|--------|------|-------------|-------------|
-| `id` | TEXT | PRIMARY KEY | Event UUID |
-| `user_id` | TEXT | NOT NULL DEFAULT 'default' | Owner user |
-| `title` | TEXT | NOT NULL | Event title |
-| `description` | TEXT | | Event details |
-| `location` | TEXT | | Location |
-| `start_time` | TIMESTAMP | NOT NULL | Start time |
-| `end_time` | TIMESTAMP | | End time |
-| `all_day` | BOOLEAN | NOT NULL DEFAULT FALSE | All-day flag |
-| `timezone` | TEXT | DEFAULT 'UTC' | Timezone |
-| `recurrence` | TEXT | | Recurrence rule |
-| `reminder_minutes` | INTEGER | | Minutes before to remind |
-| `category` | TEXT | | Category |
-| `tags` | JSONB | DEFAULT '[]' | Tag array |
-| `color` | TEXT | | Display color |
-| `external_id` | TEXT | | External service ID |
-| `external_source` | TEXT | | External service name |
-| `attendees` | JSONB | DEFAULT '[]' | Attendee list |
-| `created_at` | TIMESTAMP | NOT NULL DEFAULT NOW() | Creation time |
-| `updated_at` | TIMESTAMP | NOT NULL DEFAULT NOW() | Last update |
+| Column             | Type      | Constraints                | Description              |
+| ------------------ | --------- | -------------------------- | ------------------------ |
+| `id`               | TEXT      | PRIMARY KEY                | Event UUID               |
+| `user_id`          | TEXT      | NOT NULL DEFAULT 'default' | Owner user               |
+| `title`            | TEXT      | NOT NULL                   | Event title              |
+| `description`      | TEXT      |                            | Event details            |
+| `location`         | TEXT      |                            | Location                 |
+| `start_time`       | TIMESTAMP | NOT NULL                   | Start time               |
+| `end_time`         | TIMESTAMP |                            | End time                 |
+| `all_day`          | BOOLEAN   | NOT NULL DEFAULT FALSE     | All-day flag             |
+| `timezone`         | TEXT      | DEFAULT 'UTC'              | Timezone                 |
+| `recurrence`       | TEXT      |                            | Recurrence rule          |
+| `reminder_minutes` | INTEGER   |                            | Minutes before to remind |
+| `category`         | TEXT      |                            | Category                 |
+| `tags`             | JSONB     | DEFAULT '[]'               | Tag array                |
+| `color`            | TEXT      |                            | Display color            |
+| `external_id`      | TEXT      |                            | External service ID      |
+| `external_source`  | TEXT      |                            | External service name    |
+| `attendees`        | JSONB     | DEFAULT '[]'               | Attendee list            |
+| `created_at`       | TIMESTAMP | NOT NULL DEFAULT NOW()     | Creation time            |
+| `updated_at`       | TIMESTAMP | NOT NULL DEFAULT NOW()     | Last update              |
 
 #### `contacts`
 
 Contact information with social links and custom fields.
 
-| Column | Type | Constraints | Description |
-|--------|------|-------------|-------------|
-| `id` | TEXT | PRIMARY KEY | Contact UUID |
-| `user_id` | TEXT | NOT NULL DEFAULT 'default' | Owner user |
-| `name` | TEXT | NOT NULL | Full name |
-| `nickname` | TEXT | | Nickname |
-| `email` | TEXT | | Email address |
-| `phone` | TEXT | | Phone number |
-| `company` | TEXT | | Company name |
-| `job_title` | TEXT | | Job title |
-| `avatar` | TEXT | | Avatar URL |
-| `birthday` | TEXT | | Birthday string |
-| `address` | TEXT | | Physical address |
-| `notes` | TEXT | | Contact notes |
-| `relationship` | TEXT | | Relationship type |
-| `tags` | JSONB | DEFAULT '[]' | Tag array |
-| `is_favorite` | BOOLEAN | NOT NULL DEFAULT FALSE | Favorite flag |
-| `external_id` | TEXT | | External service ID |
-| `external_source` | TEXT | | External service name |
-| `social_links` | JSONB | DEFAULT '{}' | Social media links |
-| `custom_fields` | JSONB | DEFAULT '{}' | User-defined fields |
-| `last_contacted_at` | TIMESTAMP | | Last contact time |
-| `created_at` | TIMESTAMP | NOT NULL DEFAULT NOW() | Creation time |
-| `updated_at` | TIMESTAMP | NOT NULL DEFAULT NOW() | Last update |
+| Column              | Type      | Constraints                | Description           |
+| ------------------- | --------- | -------------------------- | --------------------- |
+| `id`                | TEXT      | PRIMARY KEY                | Contact UUID          |
+| `user_id`           | TEXT      | NOT NULL DEFAULT 'default' | Owner user            |
+| `name`              | TEXT      | NOT NULL                   | Full name             |
+| `nickname`          | TEXT      |                            | Nickname              |
+| `email`             | TEXT      |                            | Email address         |
+| `phone`             | TEXT      |                            | Phone number          |
+| `company`           | TEXT      |                            | Company name          |
+| `job_title`         | TEXT      |                            | Job title             |
+| `avatar`            | TEXT      |                            | Avatar URL            |
+| `birthday`          | TEXT      |                            | Birthday string       |
+| `address`           | TEXT      |                            | Physical address      |
+| `notes`             | TEXT      |                            | Contact notes         |
+| `relationship`      | TEXT      |                            | Relationship type     |
+| `tags`              | JSONB     | DEFAULT '[]'               | Tag array             |
+| `is_favorite`       | BOOLEAN   | NOT NULL DEFAULT FALSE     | Favorite flag         |
+| `external_id`       | TEXT      |                            | External service ID   |
+| `external_source`   | TEXT      |                            | External service name |
+| `social_links`      | JSONB     | DEFAULT '{}'               | Social media links    |
+| `custom_fields`     | JSONB     | DEFAULT '{}'               | User-defined fields   |
+| `last_contacted_at` | TIMESTAMP |                            | Last contact time     |
+| `created_at`        | TIMESTAMP | NOT NULL DEFAULT NOW()     | Creation time         |
+| `updated_at`        | TIMESTAMP | NOT NULL DEFAULT NOW()     | Last update           |
 
 #### `projects`
 
 Project containers for grouping tasks.
 
-| Column | Type | Constraints | Description |
-|--------|------|-------------|-------------|
-| `id` | TEXT | PRIMARY KEY | Project UUID |
-| `user_id` | TEXT | NOT NULL DEFAULT 'default' | Owner user |
-| `name` | TEXT | NOT NULL | Project name |
-| `description` | TEXT | | Project details |
-| `color` | TEXT | | Display color |
-| `icon` | TEXT | | Display icon |
-| `status` | TEXT | NOT NULL DEFAULT 'active', CHECK IN ('active','completed','archived') | Project status |
-| `due_date` | TIMESTAMP | | Due date |
-| `created_at` | TIMESTAMP | NOT NULL DEFAULT NOW() | Creation time |
-| `updated_at` | TIMESTAMP | NOT NULL DEFAULT NOW() | Last update |
+| Column        | Type      | Constraints                                                           | Description     |
+| ------------- | --------- | --------------------------------------------------------------------- | --------------- |
+| `id`          | TEXT      | PRIMARY KEY                                                           | Project UUID    |
+| `user_id`     | TEXT      | NOT NULL DEFAULT 'default'                                            | Owner user      |
+| `name`        | TEXT      | NOT NULL                                                              | Project name    |
+| `description` | TEXT      |                                                                       | Project details |
+| `color`       | TEXT      |                                                                       | Display color   |
+| `icon`        | TEXT      |                                                                       | Display icon    |
+| `status`      | TEXT      | NOT NULL DEFAULT 'active', CHECK IN ('active','completed','archived') | Project status  |
+| `due_date`    | TIMESTAMP |                                                                       | Due date        |
+| `created_at`  | TIMESTAMP | NOT NULL DEFAULT NOW()                                                | Creation time   |
+| `updated_at`  | TIMESTAMP | NOT NULL DEFAULT NOW()                                                | Last update     |
 
 #### `reminders`
 
 Standalone reminders with optional entity linking.
 
-| Column | Type | Constraints | Description |
-|--------|------|-------------|-------------|
-| `id` | TEXT | PRIMARY KEY | Reminder UUID |
-| `user_id` | TEXT | NOT NULL DEFAULT 'default' | Owner user |
-| `title` | TEXT | NOT NULL | Reminder title |
-| `description` | TEXT | | Reminder details |
-| `remind_at` | TIMESTAMP | NOT NULL | Target time |
-| `recurrence` | TEXT | | Recurrence rule |
-| `is_completed` | BOOLEAN | NOT NULL DEFAULT FALSE | Completion flag |
-| `related_type` | TEXT | | Linked entity type |
-| `related_id` | TEXT | | Linked entity ID |
-| `created_at` | TIMESTAMP | NOT NULL DEFAULT NOW() | Creation time |
-| `updated_at` | TIMESTAMP | NOT NULL DEFAULT NOW() | Last update |
+| Column         | Type      | Constraints                | Description        |
+| -------------- | --------- | -------------------------- | ------------------ |
+| `id`           | TEXT      | PRIMARY KEY                | Reminder UUID      |
+| `user_id`      | TEXT      | NOT NULL DEFAULT 'default' | Owner user         |
+| `title`        | TEXT      | NOT NULL                   | Reminder title     |
+| `description`  | TEXT      |                            | Reminder details   |
+| `remind_at`    | TIMESTAMP | NOT NULL                   | Target time        |
+| `recurrence`   | TEXT      |                            | Recurrence rule    |
+| `is_completed` | BOOLEAN   | NOT NULL DEFAULT FALSE     | Completion flag    |
+| `related_type` | TEXT      |                            | Linked entity type |
+| `related_id`   | TEXT      |                            | Linked entity ID   |
+| `created_at`   | TIMESTAMP | NOT NULL DEFAULT NOW()     | Creation time      |
+| `updated_at`   | TIMESTAMP | NOT NULL DEFAULT NOW()     | Last update        |
 
 #### `captures`
 
 Quick-capture inbox for ideas, thoughts, and snippets.
 
-| Column | Type | Constraints | Description |
-|--------|------|-------------|-------------|
-| `id` | TEXT | PRIMARY KEY | Capture UUID |
-| `user_id` | TEXT | NOT NULL DEFAULT 'default' | Owner user |
-| `content` | TEXT | NOT NULL | Capture text |
-| `type` | TEXT | NOT NULL DEFAULT 'thought', CHECK IN ('idea','thought','todo','link','quote','snippet','question','other') | Capture type |
-| `tags` | JSONB | DEFAULT '[]' | Tag array |
-| `source` | TEXT | | Origin source |
-| `url` | TEXT | | Related URL |
-| `processed` | BOOLEAN | NOT NULL DEFAULT FALSE | Processing flag |
-| `processed_as_type` | TEXT | CHECK IN ('note','task','bookmark','discarded') OR NULL | What it became |
-| `processed_as_id` | TEXT | | ID of created entity |
-| `created_at` | TIMESTAMP | NOT NULL DEFAULT NOW() | Creation time |
-| `processed_at` | TIMESTAMP | | Processing time |
+| Column              | Type      | Constraints                                                                                                | Description          |
+| ------------------- | --------- | ---------------------------------------------------------------------------------------------------------- | -------------------- |
+| `id`                | TEXT      | PRIMARY KEY                                                                                                | Capture UUID         |
+| `user_id`           | TEXT      | NOT NULL DEFAULT 'default'                                                                                 | Owner user           |
+| `content`           | TEXT      | NOT NULL                                                                                                   | Capture text         |
+| `type`              | TEXT      | NOT NULL DEFAULT 'thought', CHECK IN ('idea','thought','todo','link','quote','snippet','question','other') | Capture type         |
+| `tags`              | JSONB     | DEFAULT '[]'                                                                                               | Tag array            |
+| `source`            | TEXT      |                                                                                                            | Origin source        |
+| `url`               | TEXT      |                                                                                                            | Related URL          |
+| `processed`         | BOOLEAN   | NOT NULL DEFAULT FALSE                                                                                     | Processing flag      |
+| `processed_as_type` | TEXT      | CHECK IN ('note','task','bookmark','discarded') OR NULL                                                    | What it became       |
+| `processed_as_id`   | TEXT      |                                                                                                            | ID of created entity |
+| `created_at`        | TIMESTAMP | NOT NULL DEFAULT NOW()                                                                                     | Creation time        |
+| `processed_at`      | TIMESTAMP |                                                                                                            | Processing time      |
 
 ---
 
@@ -450,47 +448,47 @@ Time tracking, focus sessions, and habit building.
 
 Individual Pomodoro timer sessions.
 
-| Column | Type | Constraints | Description |
-|--------|------|-------------|-------------|
-| `id` | TEXT | PRIMARY KEY | Session UUID |
-| `user_id` | TEXT | NOT NULL DEFAULT 'default' | Owner user |
-| `type` | TEXT | NOT NULL, CHECK IN ('work','short_break','long_break') | Session type |
-| `status` | TEXT | NOT NULL DEFAULT 'running', CHECK IN ('running','completed','interrupted') | Current status |
-| `task_description` | TEXT | | What the user is working on |
-| `duration_minutes` | INTEGER | NOT NULL | Planned duration |
-| `started_at` | TIMESTAMP | NOT NULL DEFAULT NOW() | Start time |
-| `completed_at` | TIMESTAMP | | Completion time |
-| `interrupted_at` | TIMESTAMP | | Interruption time |
-| `interruption_reason` | TEXT | | Why it was interrupted |
+| Column                | Type      | Constraints                                                                | Description                 |
+| --------------------- | --------- | -------------------------------------------------------------------------- | --------------------------- |
+| `id`                  | TEXT      | PRIMARY KEY                                                                | Session UUID                |
+| `user_id`             | TEXT      | NOT NULL DEFAULT 'default'                                                 | Owner user                  |
+| `type`                | TEXT      | NOT NULL, CHECK IN ('work','short_break','long_break')                     | Session type                |
+| `status`              | TEXT      | NOT NULL DEFAULT 'running', CHECK IN ('running','completed','interrupted') | Current status              |
+| `task_description`    | TEXT      |                                                                            | What the user is working on |
+| `duration_minutes`    | INTEGER   | NOT NULL                                                                   | Planned duration            |
+| `started_at`          | TIMESTAMP | NOT NULL DEFAULT NOW()                                                     | Start time                  |
+| `completed_at`        | TIMESTAMP |                                                                            | Completion time             |
+| `interrupted_at`      | TIMESTAMP |                                                                            | Interruption time           |
+| `interruption_reason` | TEXT      |                                                                            | Why it was interrupted      |
 
 #### `pomodoro_settings`
 
 Per-user Pomodoro configuration.
 
-| Column | Type | Constraints | Description |
-|--------|------|-------------|-------------|
-| `user_id` | TEXT | PRIMARY KEY DEFAULT 'default' | User ID (primary key) |
-| `work_duration` | INTEGER | NOT NULL DEFAULT 25 | Work session minutes |
-| `short_break_duration` | INTEGER | NOT NULL DEFAULT 5 | Short break minutes |
-| `long_break_duration` | INTEGER | NOT NULL DEFAULT 15 | Long break minutes |
-| `sessions_before_long_break` | INTEGER | NOT NULL DEFAULT 4 | Sessions before long break |
-| `auto_start_breaks` | BOOLEAN | NOT NULL DEFAULT FALSE | Auto-start breaks |
-| `auto_start_work` | BOOLEAN | NOT NULL DEFAULT FALSE | Auto-start work |
-| `updated_at` | TIMESTAMP | NOT NULL DEFAULT NOW() | Last update |
+| Column                       | Type      | Constraints                   | Description                |
+| ---------------------------- | --------- | ----------------------------- | -------------------------- |
+| `user_id`                    | TEXT      | PRIMARY KEY DEFAULT 'default' | User ID (primary key)      |
+| `work_duration`              | INTEGER   | NOT NULL DEFAULT 25           | Work session minutes       |
+| `short_break_duration`       | INTEGER   | NOT NULL DEFAULT 5            | Short break minutes        |
+| `long_break_duration`        | INTEGER   | NOT NULL DEFAULT 15           | Long break minutes         |
+| `sessions_before_long_break` | INTEGER   | NOT NULL DEFAULT 4            | Sessions before long break |
+| `auto_start_breaks`          | BOOLEAN   | NOT NULL DEFAULT FALSE        | Auto-start breaks          |
+| `auto_start_work`            | BOOLEAN   | NOT NULL DEFAULT FALSE        | Auto-start work            |
+| `updated_at`                 | TIMESTAMP | NOT NULL DEFAULT NOW()        | Last update                |
 
 #### `pomodoro_daily_stats`
 
 Aggregated daily Pomodoro statistics for streak tracking.
 
-| Column | Type | Constraints | Description |
-|--------|------|-------------|-------------|
-| `id` | TEXT | PRIMARY KEY | Stats entry UUID |
-| `user_id` | TEXT | NOT NULL DEFAULT 'default' | Owner user |
-| `date` | TEXT | NOT NULL | Date string (YYYY-MM-DD) |
-| `completed_sessions` | INTEGER | NOT NULL DEFAULT 0 | Sessions completed |
-| `total_work_minutes` | INTEGER | NOT NULL DEFAULT 0 | Work time |
-| `total_break_minutes` | INTEGER | NOT NULL DEFAULT 0 | Break time |
-| `interruptions` | INTEGER | NOT NULL DEFAULT 0 | Interruption count |
+| Column                | Type    | Constraints                | Description              |
+| --------------------- | ------- | -------------------------- | ------------------------ |
+| `id`                  | TEXT    | PRIMARY KEY                | Stats entry UUID         |
+| `user_id`             | TEXT    | NOT NULL DEFAULT 'default' | Owner user               |
+| `date`                | TEXT    | NOT NULL                   | Date string (YYYY-MM-DD) |
+| `completed_sessions`  | INTEGER | NOT NULL DEFAULT 0         | Sessions completed       |
+| `total_work_minutes`  | INTEGER | NOT NULL DEFAULT 0         | Work time                |
+| `total_break_minutes` | INTEGER | NOT NULL DEFAULT 0         | Break time               |
+| `interruptions`       | INTEGER | NOT NULL DEFAULT 0         | Interruption count       |
 
 UNIQUE constraint on `(user_id, date)`.
 
@@ -498,40 +496,40 @@ UNIQUE constraint on `(user_id, date)`.
 
 Habit definitions with streak tracking.
 
-| Column | Type | Constraints | Description |
-|--------|------|-------------|-------------|
-| `id` | TEXT | PRIMARY KEY | Habit UUID |
-| `user_id` | TEXT | NOT NULL DEFAULT 'default' | Owner user |
-| `name` | TEXT | NOT NULL | Habit name |
-| `description` | TEXT | | Habit details |
-| `frequency` | TEXT | NOT NULL DEFAULT 'daily', CHECK IN ('daily','weekly','weekdays','custom') | Recurrence pattern |
-| `target_days` | JSONB | DEFAULT '[]' | Days of week for custom |
-| `target_count` | INTEGER | NOT NULL DEFAULT 1 | Target per period |
-| `unit` | TEXT | | Measurement unit |
-| `category` | TEXT | | Category |
-| `color` | TEXT | | Display color |
-| `icon` | TEXT | | Display icon |
-| `reminder_time` | TEXT | | Daily reminder time |
-| `is_archived` | BOOLEAN | NOT NULL DEFAULT FALSE | Archive flag |
-| `streak_current` | INTEGER | NOT NULL DEFAULT 0 | Current streak |
-| `streak_longest` | INTEGER | NOT NULL DEFAULT 0 | Best streak |
-| `total_completions` | INTEGER | NOT NULL DEFAULT 0 | Lifetime completions |
-| `created_at` | TIMESTAMP | NOT NULL DEFAULT NOW() | Creation time |
-| `updated_at` | TIMESTAMP | NOT NULL DEFAULT NOW() | Last update |
+| Column              | Type      | Constraints                                                               | Description             |
+| ------------------- | --------- | ------------------------------------------------------------------------- | ----------------------- |
+| `id`                | TEXT      | PRIMARY KEY                                                               | Habit UUID              |
+| `user_id`           | TEXT      | NOT NULL DEFAULT 'default'                                                | Owner user              |
+| `name`              | TEXT      | NOT NULL                                                                  | Habit name              |
+| `description`       | TEXT      |                                                                           | Habit details           |
+| `frequency`         | TEXT      | NOT NULL DEFAULT 'daily', CHECK IN ('daily','weekly','weekdays','custom') | Recurrence pattern      |
+| `target_days`       | JSONB     | DEFAULT '[]'                                                              | Days of week for custom |
+| `target_count`      | INTEGER   | NOT NULL DEFAULT 1                                                        | Target per period       |
+| `unit`              | TEXT      |                                                                           | Measurement unit        |
+| `category`          | TEXT      |                                                                           | Category                |
+| `color`             | TEXT      |                                                                           | Display color           |
+| `icon`              | TEXT      |                                                                           | Display icon            |
+| `reminder_time`     | TEXT      |                                                                           | Daily reminder time     |
+| `is_archived`       | BOOLEAN   | NOT NULL DEFAULT FALSE                                                    | Archive flag            |
+| `streak_current`    | INTEGER   | NOT NULL DEFAULT 0                                                        | Current streak          |
+| `streak_longest`    | INTEGER   | NOT NULL DEFAULT 0                                                        | Best streak             |
+| `total_completions` | INTEGER   | NOT NULL DEFAULT 0                                                        | Lifetime completions    |
+| `created_at`        | TIMESTAMP | NOT NULL DEFAULT NOW()                                                    | Creation time           |
+| `updated_at`        | TIMESTAMP | NOT NULL DEFAULT NOW()                                                    | Last update             |
 
 #### `habit_logs`
 
 Daily habit completion records.
 
-| Column | Type | Constraints | Description |
-|--------|------|-------------|-------------|
-| `id` | TEXT | PRIMARY KEY | Log entry UUID |
-| `habit_id` | TEXT | NOT NULL, FK -> habits(id) ON DELETE CASCADE | Parent habit |
-| `user_id` | TEXT | NOT NULL DEFAULT 'default' | Owner user |
-| `date` | TEXT | NOT NULL | Date string (YYYY-MM-DD) |
-| `count` | INTEGER | NOT NULL DEFAULT 1 | Completion count |
-| `notes` | TEXT | | Optional notes |
-| `logged_at` | TIMESTAMP | NOT NULL DEFAULT NOW() | Log time |
+| Column      | Type      | Constraints                                  | Description              |
+| ----------- | --------- | -------------------------------------------- | ------------------------ |
+| `id`        | TEXT      | PRIMARY KEY                                  | Log entry UUID           |
+| `habit_id`  | TEXT      | NOT NULL, FK -> habits(id) ON DELETE CASCADE | Parent habit             |
+| `user_id`   | TEXT      | NOT NULL DEFAULT 'default'                   | Owner user               |
+| `date`      | TEXT      | NOT NULL                                     | Date string (YYYY-MM-DD) |
+| `count`     | INTEGER   | NOT NULL DEFAULT 1                           | Completion count         |
+| `notes`     | TEXT      |                                              | Optional notes           |
+| `logged_at` | TIMESTAMP | NOT NULL DEFAULT NOW()                       | Log time                 |
 
 UNIQUE constraint on `(habit_id, date)`.
 
@@ -545,166 +543,166 @@ Support for persistent AI memory, goal tracking, proactive triggers, and autonom
 
 Persistent AI memory store for facts, preferences, and context.
 
-| Column | Type | Constraints | Description |
-|--------|------|-------------|-------------|
-| `id` | TEXT | PRIMARY KEY | Memory UUID |
-| `user_id` | TEXT | NOT NULL DEFAULT 'default' | Owner user |
-| `type` | TEXT | NOT NULL, CHECK IN ('fact','preference','conversation','event','skill') | Memory type |
-| `content` | TEXT | NOT NULL | Memory content |
-| `embedding` | BYTEA | | Vector embedding (binary) |
-| `source` | TEXT | | Where memory originated |
-| `source_id` | TEXT | | Source entity ID |
-| `importance` | REAL | NOT NULL DEFAULT 0.5, CHECK >= 0 AND <= 1 | Importance score (0-1) |
-| `tags` | JSONB | DEFAULT '[]' | Tag array |
-| `accessed_count` | INTEGER | NOT NULL DEFAULT 0 | Access counter |
-| `created_at` | TIMESTAMP | NOT NULL DEFAULT NOW() | Creation time |
-| `updated_at` | TIMESTAMP | NOT NULL DEFAULT NOW() | Last update |
-| `accessed_at` | TIMESTAMP | | Last access time |
-| `metadata` | JSONB | DEFAULT '{}' | Extra metadata |
+| Column           | Type      | Constraints                                                             | Description               |
+| ---------------- | --------- | ----------------------------------------------------------------------- | ------------------------- |
+| `id`             | TEXT      | PRIMARY KEY                                                             | Memory UUID               |
+| `user_id`        | TEXT      | NOT NULL DEFAULT 'default'                                              | Owner user                |
+| `type`           | TEXT      | NOT NULL, CHECK IN ('fact','preference','conversation','event','skill') | Memory type               |
+| `content`        | TEXT      | NOT NULL                                                                | Memory content            |
+| `embedding`      | BYTEA     |                                                                         | Vector embedding (binary) |
+| `source`         | TEXT      |                                                                         | Where memory originated   |
+| `source_id`      | TEXT      |                                                                         | Source entity ID          |
+| `importance`     | REAL      | NOT NULL DEFAULT 0.5, CHECK >= 0 AND <= 1                               | Importance score (0-1)    |
+| `tags`           | JSONB     | DEFAULT '[]'                                                            | Tag array                 |
+| `accessed_count` | INTEGER   | NOT NULL DEFAULT 0                                                      | Access counter            |
+| `created_at`     | TIMESTAMP | NOT NULL DEFAULT NOW()                                                  | Creation time             |
+| `updated_at`     | TIMESTAMP | NOT NULL DEFAULT NOW()                                                  | Last update               |
+| `accessed_at`    | TIMESTAMP |                                                                         | Last access time          |
+| `metadata`       | JSONB     | DEFAULT '{}'                                                            | Extra metadata            |
 
 #### `goals`
 
 Long-term objectives with hierarchical sub-goal support.
 
-| Column | Type | Constraints | Description |
-|--------|------|-------------|-------------|
-| `id` | TEXT | PRIMARY KEY | Goal UUID |
-| `user_id` | TEXT | NOT NULL DEFAULT 'default' | Owner user |
-| `title` | TEXT | NOT NULL | Goal title |
-| `description` | TEXT | | Goal details |
-| `status` | TEXT | NOT NULL DEFAULT 'active', CHECK IN ('active','paused','completed','abandoned') | Goal status |
-| `priority` | INTEGER | NOT NULL DEFAULT 5, CHECK >= 1 AND <= 10 | Priority (1-10) |
-| `parent_id` | TEXT | FK -> goals(id) ON DELETE SET NULL | Parent goal (self-referencing) |
-| `due_date` | TIMESTAMP | | Due date |
-| `progress` | REAL | NOT NULL DEFAULT 0, CHECK >= 0 AND <= 100 | Completion percent |
-| `created_at` | TIMESTAMP | NOT NULL DEFAULT NOW() | Creation time |
-| `updated_at` | TIMESTAMP | NOT NULL DEFAULT NOW() | Last update |
-| `completed_at` | TIMESTAMP | | Completion time |
-| `metadata` | JSONB | DEFAULT '{}' | Extra metadata |
+| Column         | Type      | Constraints                                                                     | Description                    |
+| -------------- | --------- | ------------------------------------------------------------------------------- | ------------------------------ |
+| `id`           | TEXT      | PRIMARY KEY                                                                     | Goal UUID                      |
+| `user_id`      | TEXT      | NOT NULL DEFAULT 'default'                                                      | Owner user                     |
+| `title`        | TEXT      | NOT NULL                                                                        | Goal title                     |
+| `description`  | TEXT      |                                                                                 | Goal details                   |
+| `status`       | TEXT      | NOT NULL DEFAULT 'active', CHECK IN ('active','paused','completed','abandoned') | Goal status                    |
+| `priority`     | INTEGER   | NOT NULL DEFAULT 5, CHECK >= 1 AND <= 10                                        | Priority (1-10)                |
+| `parent_id`    | TEXT      | FK -> goals(id) ON DELETE SET NULL                                              | Parent goal (self-referencing) |
+| `due_date`     | TIMESTAMP |                                                                                 | Due date                       |
+| `progress`     | REAL      | NOT NULL DEFAULT 0, CHECK >= 0 AND <= 100                                       | Completion percent             |
+| `created_at`   | TIMESTAMP | NOT NULL DEFAULT NOW()                                                          | Creation time                  |
+| `updated_at`   | TIMESTAMP | NOT NULL DEFAULT NOW()                                                          | Last update                    |
+| `completed_at` | TIMESTAMP |                                                                                 | Completion time                |
+| `metadata`     | JSONB     | DEFAULT '{}'                                                                    | Extra metadata                 |
 
 #### `goal_steps`
 
 Actionable steps toward completing a goal.
 
-| Column | Type | Constraints | Description |
-|--------|------|-------------|-------------|
-| `id` | TEXT | PRIMARY KEY | Step UUID |
-| `goal_id` | TEXT | NOT NULL, FK -> goals(id) ON DELETE CASCADE | Parent goal |
-| `title` | TEXT | NOT NULL | Step title |
-| `description` | TEXT | | Step details |
-| `status` | TEXT | NOT NULL DEFAULT 'pending', CHECK IN ('pending','in_progress','completed','blocked','skipped') | Step status |
-| `order_num` | INTEGER | NOT NULL | Execution order |
-| `dependencies` | JSONB | DEFAULT '[]' | Dependent step IDs |
-| `result` | TEXT | | Execution result |
-| `created_at` | TIMESTAMP | NOT NULL DEFAULT NOW() | Creation time |
-| `completed_at` | TIMESTAMP | | Completion time |
+| Column         | Type      | Constraints                                                                                    | Description        |
+| -------------- | --------- | ---------------------------------------------------------------------------------------------- | ------------------ |
+| `id`           | TEXT      | PRIMARY KEY                                                                                    | Step UUID          |
+| `goal_id`      | TEXT      | NOT NULL, FK -> goals(id) ON DELETE CASCADE                                                    | Parent goal        |
+| `title`        | TEXT      | NOT NULL                                                                                       | Step title         |
+| `description`  | TEXT      |                                                                                                | Step details       |
+| `status`       | TEXT      | NOT NULL DEFAULT 'pending', CHECK IN ('pending','in_progress','completed','blocked','skipped') | Step status        |
+| `order_num`    | INTEGER   | NOT NULL                                                                                       | Execution order    |
+| `dependencies` | JSONB     | DEFAULT '[]'                                                                                   | Dependent step IDs |
+| `result`       | TEXT      |                                                                                                | Execution result   |
+| `created_at`   | TIMESTAMP | NOT NULL DEFAULT NOW()                                                                         | Creation time      |
+| `completed_at` | TIMESTAMP |                                                                                                | Completion time    |
 
 #### `triggers`
 
 Proactive automation triggers (scheduled, event-based, conditional, webhook).
 
-| Column | Type | Constraints | Description |
-|--------|------|-------------|-------------|
-| `id` | TEXT | PRIMARY KEY | Trigger UUID |
-| `user_id` | TEXT | NOT NULL DEFAULT 'default' | Owner user |
-| `name` | TEXT | NOT NULL | Trigger name |
-| `description` | TEXT | | Trigger details |
-| `type` | TEXT | NOT NULL, CHECK IN ('schedule','event','condition','webhook') | Trigger type |
-| `config` | JSONB | NOT NULL DEFAULT '{}' | Type-specific config (cron, eventType, condition, secret) |
-| `action` | JSONB | NOT NULL DEFAULT '{}' | Action to execute (type + payload) |
-| `enabled` | BOOLEAN | NOT NULL DEFAULT TRUE | Active flag |
-| `priority` | INTEGER | NOT NULL DEFAULT 5, CHECK >= 1 AND <= 10 | Priority (1-10) |
-| `last_fired` | TIMESTAMP | | Last execution time |
-| `next_fire` | TIMESTAMP | | Next scheduled execution |
-| `fire_count` | INTEGER | NOT NULL DEFAULT 0 | Total executions |
-| `created_at` | TIMESTAMP | NOT NULL DEFAULT NOW() | Creation time |
-| `updated_at` | TIMESTAMP | NOT NULL DEFAULT NOW() | Last update |
+| Column        | Type      | Constraints                                                   | Description                                               |
+| ------------- | --------- | ------------------------------------------------------------- | --------------------------------------------------------- |
+| `id`          | TEXT      | PRIMARY KEY                                                   | Trigger UUID                                              |
+| `user_id`     | TEXT      | NOT NULL DEFAULT 'default'                                    | Owner user                                                |
+| `name`        | TEXT      | NOT NULL                                                      | Trigger name                                              |
+| `description` | TEXT      |                                                               | Trigger details                                           |
+| `type`        | TEXT      | NOT NULL, CHECK IN ('schedule','event','condition','webhook') | Trigger type                                              |
+| `config`      | JSONB     | NOT NULL DEFAULT '{}'                                         | Type-specific config (cron, eventType, condition, secret) |
+| `action`      | JSONB     | NOT NULL DEFAULT '{}'                                         | Action to execute (type + payload)                        |
+| `enabled`     | BOOLEAN   | NOT NULL DEFAULT TRUE                                         | Active flag                                               |
+| `priority`    | INTEGER   | NOT NULL DEFAULT 5, CHECK >= 1 AND <= 10                      | Priority (1-10)                                           |
+| `last_fired`  | TIMESTAMP |                                                               | Last execution time                                       |
+| `next_fire`   | TIMESTAMP |                                                               | Next scheduled execution                                  |
+| `fire_count`  | INTEGER   | NOT NULL DEFAULT 0                                            | Total executions                                          |
+| `created_at`  | TIMESTAMP | NOT NULL DEFAULT NOW()                                        | Creation time                                             |
+| `updated_at`  | TIMESTAMP | NOT NULL DEFAULT NOW()                                        | Last update                                               |
 
 #### `trigger_history`
 
 Execution log for triggers.
 
-| Column | Type | Constraints | Description |
-|--------|------|-------------|-------------|
-| `id` | TEXT | PRIMARY KEY | History UUID |
-| `trigger_id` | TEXT | NOT NULL, FK -> triggers(id) ON DELETE CASCADE | Parent trigger |
-| `fired_at` | TIMESTAMP | NOT NULL DEFAULT NOW() | Execution time |
-| `status` | TEXT | NOT NULL, CHECK IN ('success','failure','skipped') | Result status |
-| `result` | TEXT | | Execution result |
-| `error` | TEXT | | Error message |
-| `duration_ms` | INTEGER | | Execution duration |
+| Column        | Type      | Constraints                                        | Description        |
+| ------------- | --------- | -------------------------------------------------- | ------------------ |
+| `id`          | TEXT      | PRIMARY KEY                                        | History UUID       |
+| `trigger_id`  | TEXT      | NOT NULL, FK -> triggers(id) ON DELETE CASCADE     | Parent trigger     |
+| `fired_at`    | TIMESTAMP | NOT NULL DEFAULT NOW()                             | Execution time     |
+| `status`      | TEXT      | NOT NULL, CHECK IN ('success','failure','skipped') | Result status      |
+| `result`      | TEXT      |                                                    | Execution result   |
+| `error`       | TEXT      |                                                    | Error message      |
+| `duration_ms` | INTEGER   |                                                    | Execution duration |
 
 #### `plans`
 
 Autonomous multi-step plan definitions and execution state.
 
-| Column | Type | Constraints | Description |
-|--------|------|-------------|-------------|
-| `id` | TEXT | PRIMARY KEY | Plan UUID |
-| `user_id` | TEXT | NOT NULL DEFAULT 'default' | Owner user |
-| `name` | TEXT | NOT NULL | Plan name |
-| `description` | TEXT | | Plan details |
-| `goal` | TEXT | NOT NULL | What the plan achieves |
-| `status` | TEXT | NOT NULL DEFAULT 'pending', CHECK IN ('pending','running','paused','completed','failed','cancelled') | Execution status |
-| `current_step` | INTEGER | NOT NULL DEFAULT 0 | Current step index |
-| `total_steps` | INTEGER | NOT NULL DEFAULT 0 | Total step count |
-| `progress` | REAL | NOT NULL DEFAULT 0, CHECK >= 0 AND <= 100 | Completion percent |
-| `priority` | INTEGER | NOT NULL DEFAULT 5, CHECK >= 1 AND <= 10 | Priority (1-10) |
-| `source` | TEXT | | Where plan originated |
-| `source_id` | TEXT | | Source entity ID |
-| `trigger_id` | TEXT | FK -> triggers(id) ON DELETE SET NULL | Associated trigger |
-| `goal_id` | TEXT | FK -> goals(id) ON DELETE SET NULL | Associated goal |
-| `autonomy_level` | INTEGER | NOT NULL DEFAULT 1, CHECK >= 0 AND <= 4 | AI autonomy (0=manual, 4=full auto) |
-| `max_retries` | INTEGER | NOT NULL DEFAULT 3 | Retry limit |
-| `retry_count` | INTEGER | NOT NULL DEFAULT 0 | Current retry count |
-| `timeout_ms` | INTEGER | | Execution timeout |
-| `checkpoint` | TEXT | | Serialized checkpoint |
-| `error` | TEXT | | Error message |
-| `created_at` | TIMESTAMP | NOT NULL DEFAULT NOW() | Creation time |
-| `updated_at` | TIMESTAMP | NOT NULL DEFAULT NOW() | Last update |
-| `started_at` | TIMESTAMP | | Execution start |
-| `completed_at` | TIMESTAMP | | Execution end |
-| `metadata` | JSONB | DEFAULT '{}' | Extra metadata |
+| Column           | Type      | Constraints                                                                                          | Description                         |
+| ---------------- | --------- | ---------------------------------------------------------------------------------------------------- | ----------------------------------- |
+| `id`             | TEXT      | PRIMARY KEY                                                                                          | Plan UUID                           |
+| `user_id`        | TEXT      | NOT NULL DEFAULT 'default'                                                                           | Owner user                          |
+| `name`           | TEXT      | NOT NULL                                                                                             | Plan name                           |
+| `description`    | TEXT      |                                                                                                      | Plan details                        |
+| `goal`           | TEXT      | NOT NULL                                                                                             | What the plan achieves              |
+| `status`         | TEXT      | NOT NULL DEFAULT 'pending', CHECK IN ('pending','running','paused','completed','failed','cancelled') | Execution status                    |
+| `current_step`   | INTEGER   | NOT NULL DEFAULT 0                                                                                   | Current step index                  |
+| `total_steps`    | INTEGER   | NOT NULL DEFAULT 0                                                                                   | Total step count                    |
+| `progress`       | REAL      | NOT NULL DEFAULT 0, CHECK >= 0 AND <= 100                                                            | Completion percent                  |
+| `priority`       | INTEGER   | NOT NULL DEFAULT 5, CHECK >= 1 AND <= 10                                                             | Priority (1-10)                     |
+| `source`         | TEXT      |                                                                                                      | Where plan originated               |
+| `source_id`      | TEXT      |                                                                                                      | Source entity ID                    |
+| `trigger_id`     | TEXT      | FK -> triggers(id) ON DELETE SET NULL                                                                | Associated trigger                  |
+| `goal_id`        | TEXT      | FK -> goals(id) ON DELETE SET NULL                                                                   | Associated goal                     |
+| `autonomy_level` | INTEGER   | NOT NULL DEFAULT 1, CHECK >= 0 AND <= 4                                                              | AI autonomy (0=manual, 4=full auto) |
+| `max_retries`    | INTEGER   | NOT NULL DEFAULT 3                                                                                   | Retry limit                         |
+| `retry_count`    | INTEGER   | NOT NULL DEFAULT 0                                                                                   | Current retry count                 |
+| `timeout_ms`     | INTEGER   |                                                                                                      | Execution timeout                   |
+| `checkpoint`     | TEXT      |                                                                                                      | Serialized checkpoint               |
+| `error`          | TEXT      |                                                                                                      | Error message                       |
+| `created_at`     | TIMESTAMP | NOT NULL DEFAULT NOW()                                                                               | Creation time                       |
+| `updated_at`     | TIMESTAMP | NOT NULL DEFAULT NOW()                                                                               | Last update                         |
+| `started_at`     | TIMESTAMP |                                                                                                      | Execution start                     |
+| `completed_at`   | TIMESTAMP |                                                                                                      | Execution end                       |
+| `metadata`       | JSONB     | DEFAULT '{}'                                                                                         | Extra metadata                      |
 
 #### `plan_steps`
 
 Individual steps within a plan.
 
-| Column | Type | Constraints | Description |
-|--------|------|-------------|-------------|
-| `id` | TEXT | PRIMARY KEY | Step UUID |
-| `plan_id` | TEXT | NOT NULL, FK -> plans(id) ON DELETE CASCADE | Parent plan |
-| `order_num` | INTEGER | NOT NULL | Execution order |
-| `type` | TEXT | NOT NULL, CHECK IN ('tool_call','llm_decision','user_input','condition','parallel','loop','sub_plan') | Step type |
-| `name` | TEXT | NOT NULL | Step name |
-| `description` | TEXT | | Step details |
-| `config` | JSONB | NOT NULL DEFAULT '{}' | Step configuration |
-| `status` | TEXT | NOT NULL DEFAULT 'pending', CHECK IN ('pending','running','completed','failed','skipped','blocked','waiting') | Execution status |
-| `dependencies` | JSONB | DEFAULT '[]' | Dependent step IDs |
-| `result` | TEXT | | Execution result |
-| `error` | TEXT | | Error message |
-| `retry_count` | INTEGER | NOT NULL DEFAULT 0 | Current retry count |
-| `max_retries` | INTEGER | NOT NULL DEFAULT 3 | Retry limit |
-| `timeout_ms` | INTEGER | | Step timeout |
-| `started_at` | TIMESTAMP | | Execution start |
-| `completed_at` | TIMESTAMP | | Execution end |
-| `duration_ms` | INTEGER | | Execution duration |
-| `on_success` | TEXT | | Success handler |
-| `on_failure` | TEXT | | Failure handler |
-| `metadata` | JSONB | DEFAULT '{}' | Extra metadata |
+| Column         | Type      | Constraints                                                                                                   | Description         |
+| -------------- | --------- | ------------------------------------------------------------------------------------------------------------- | ------------------- |
+| `id`           | TEXT      | PRIMARY KEY                                                                                                   | Step UUID           |
+| `plan_id`      | TEXT      | NOT NULL, FK -> plans(id) ON DELETE CASCADE                                                                   | Parent plan         |
+| `order_num`    | INTEGER   | NOT NULL                                                                                                      | Execution order     |
+| `type`         | TEXT      | NOT NULL, CHECK IN ('tool_call','llm_decision','user_input','condition','parallel','loop','sub_plan')         | Step type           |
+| `name`         | TEXT      | NOT NULL                                                                                                      | Step name           |
+| `description`  | TEXT      |                                                                                                               | Step details        |
+| `config`       | JSONB     | NOT NULL DEFAULT '{}'                                                                                         | Step configuration  |
+| `status`       | TEXT      | NOT NULL DEFAULT 'pending', CHECK IN ('pending','running','completed','failed','skipped','blocked','waiting') | Execution status    |
+| `dependencies` | JSONB     | DEFAULT '[]'                                                                                                  | Dependent step IDs  |
+| `result`       | TEXT      |                                                                                                               | Execution result    |
+| `error`        | TEXT      |                                                                                                               | Error message       |
+| `retry_count`  | INTEGER   | NOT NULL DEFAULT 0                                                                                            | Current retry count |
+| `max_retries`  | INTEGER   | NOT NULL DEFAULT 3                                                                                            | Retry limit         |
+| `timeout_ms`   | INTEGER   |                                                                                                               | Step timeout        |
+| `started_at`   | TIMESTAMP |                                                                                                               | Execution start     |
+| `completed_at` | TIMESTAMP |                                                                                                               | Execution end       |
+| `duration_ms`  | INTEGER   |                                                                                                               | Execution duration  |
+| `on_success`   | TEXT      |                                                                                                               | Success handler     |
+| `on_failure`   | TEXT      |                                                                                                               | Failure handler     |
+| `metadata`     | JSONB     | DEFAULT '{}'                                                                                                  | Extra metadata      |
 
 #### `plan_history`
 
 Event log for plan execution lifecycle.
 
-| Column | Type | Constraints | Description |
-|--------|------|-------------|-------------|
-| `id` | TEXT | PRIMARY KEY | History UUID |
-| `plan_id` | TEXT | NOT NULL, FK -> plans(id) ON DELETE CASCADE | Parent plan |
-| `step_id` | TEXT | FK -> plan_steps(id) ON DELETE SET NULL | Related step |
-| `event_type` | TEXT | NOT NULL, CHECK IN ('started','step_started','step_completed','step_failed','paused','resumed','completed','failed','cancelled','checkpoint') | Event type |
-| `details` | JSONB | DEFAULT '{}' | Event details |
-| `created_at` | TIMESTAMP | NOT NULL DEFAULT NOW() | Event time |
+| Column       | Type      | Constraints                                                                                                                                   | Description   |
+| ------------ | --------- | --------------------------------------------------------------------------------------------------------------------------------------------- | ------------- |
+| `id`         | TEXT      | PRIMARY KEY                                                                                                                                   | History UUID  |
+| `plan_id`    | TEXT      | NOT NULL, FK -> plans(id) ON DELETE CASCADE                                                                                                   | Parent plan   |
+| `step_id`    | TEXT      | FK -> plan_steps(id) ON DELETE SET NULL                                                                                                       | Related step  |
+| `event_type` | TEXT      | NOT NULL, CHECK IN ('started','step_started','step_completed','step_failed','paused','resumed','completed','failed','cancelled','checkpoint') | Event type    |
+| `details`    | JSONB     | DEFAULT '{}'                                                                                                                                  | Event details |
+| `created_at` | TIMESTAMP | NOT NULL DEFAULT NOW()                                                                                                                        | Event time    |
 
 ---
 
@@ -714,23 +712,23 @@ Event log for plan execution lifecycle.
 
 OAuth tokens for external service integrations (Gmail, Google Calendar, etc.).
 
-| Column | Type | Constraints | Description |
-|--------|------|-------------|-------------|
-| `id` | TEXT | PRIMARY KEY | Integration UUID |
-| `user_id` | TEXT | NOT NULL DEFAULT 'default' | Owner user |
-| `provider` | TEXT | NOT NULL | OAuth provider (google, microsoft) |
-| `service` | TEXT | NOT NULL | Service name (gmail, calendar, drive) |
-| `access_token_encrypted` | TEXT | NOT NULL | Encrypted access token |
-| `refresh_token_encrypted` | TEXT | | Encrypted refresh token |
-| `token_iv` | TEXT | NOT NULL | Initialization vector for decryption |
-| `expires_at` | TIMESTAMP | | Token expiration |
-| `scopes` | JSONB | NOT NULL DEFAULT '[]' | Granted scopes |
-| `email` | TEXT | | Associated email |
-| `status` | TEXT | NOT NULL DEFAULT 'active', CHECK IN ('active','expired','revoked','error') | Integration status |
-| `last_sync_at` | TIMESTAMP | | Last synchronization |
-| `error_message` | TEXT | | Error details |
-| `created_at` | TIMESTAMP | NOT NULL DEFAULT NOW() | Creation time |
-| `updated_at` | TIMESTAMP | NOT NULL DEFAULT NOW() | Last update |
+| Column                    | Type      | Constraints                                                                | Description                           |
+| ------------------------- | --------- | -------------------------------------------------------------------------- | ------------------------------------- |
+| `id`                      | TEXT      | PRIMARY KEY                                                                | Integration UUID                      |
+| `user_id`                 | TEXT      | NOT NULL DEFAULT 'default'                                                 | Owner user                            |
+| `provider`                | TEXT      | NOT NULL                                                                   | OAuth provider (google, microsoft)    |
+| `service`                 | TEXT      | NOT NULL                                                                   | Service name (gmail, calendar, drive) |
+| `access_token_encrypted`  | TEXT      | NOT NULL                                                                   | Encrypted access token                |
+| `refresh_token_encrypted` | TEXT      |                                                                            | Encrypted refresh token               |
+| `token_iv`                | TEXT      | NOT NULL                                                                   | Initialization vector for decryption  |
+| `expires_at`              | TIMESTAMP |                                                                            | Token expiration                      |
+| `scopes`                  | JSONB     | NOT NULL DEFAULT '[]'                                                      | Granted scopes                        |
+| `email`                   | TEXT      |                                                                            | Associated email                      |
+| `status`                  | TEXT      | NOT NULL DEFAULT 'active', CHECK IN ('active','expired','revoked','error') | Integration status                    |
+| `last_sync_at`            | TIMESTAMP |                                                                            | Last synchronization                  |
+| `error_message`           | TEXT      |                                                                            | Error details                         |
+| `created_at`              | TIMESTAMP | NOT NULL DEFAULT NOW()                                                     | Creation time                         |
+| `updated_at`              | TIMESTAMP | NOT NULL DEFAULT NOW()                                                     | Last update                           |
 
 UNIQUE constraint on `(user_id, provider, service)`.
 
@@ -738,16 +736,16 @@ UNIQUE constraint on `(user_id, provider, service)`.
 
 Per-capability media provider routing (which provider handles image generation, TTS, etc.).
 
-| Column | Type | Constraints | Description |
-|--------|------|-------------|-------------|
-| `id` | TEXT | PRIMARY KEY | Setting UUID |
-| `user_id` | TEXT | NOT NULL DEFAULT 'default' | Owner user |
-| `capability` | TEXT | NOT NULL, CHECK IN ('image_generation','vision','tts','stt','weather') | Media capability |
-| `provider` | TEXT | NOT NULL | Selected provider |
-| `model` | TEXT | | Model identifier |
-| `config` | JSONB | DEFAULT '{}' | Provider-specific config |
-| `created_at` | TIMESTAMP | NOT NULL DEFAULT NOW() | Creation time |
-| `updated_at` | TIMESTAMP | NOT NULL DEFAULT NOW() | Last update |
+| Column       | Type      | Constraints                                                            | Description              |
+| ------------ | --------- | ---------------------------------------------------------------------- | ------------------------ |
+| `id`         | TEXT      | PRIMARY KEY                                                            | Setting UUID             |
+| `user_id`    | TEXT      | NOT NULL DEFAULT 'default'                                             | Owner user               |
+| `capability` | TEXT      | NOT NULL, CHECK IN ('image_generation','vision','tts','stt','weather') | Media capability         |
+| `provider`   | TEXT      | NOT NULL                                                               | Selected provider        |
+| `model`      | TEXT      |                                                                        | Model identifier         |
+| `config`     | JSONB     | DEFAULT '{}'                                                           | Provider-specific config |
+| `created_at` | TIMESTAMP | NOT NULL DEFAULT NOW()                                                 | Creation time            |
+| `updated_at` | TIMESTAMP | NOT NULL DEFAULT NOW()                                                 | Last update              |
 
 UNIQUE constraint on `(user_id, capability)`.
 
@@ -759,23 +757,23 @@ UNIQUE constraint on `(user_id, capability)`.
 
 User overrides for AI model metadata (pricing, capabilities, display names).
 
-| Column | Type | Constraints | Description |
-|--------|------|-------------|-------------|
-| `id` | TEXT | PRIMARY KEY | Config UUID |
-| `user_id` | TEXT | NOT NULL DEFAULT 'default' | Owner user |
-| `provider_id` | TEXT | NOT NULL | Provider identifier |
-| `model_id` | TEXT | NOT NULL | Model identifier |
-| `display_name` | TEXT | | Custom display name |
-| `capabilities` | JSONB | NOT NULL DEFAULT '[]' | Model capabilities |
-| `pricing_input` | REAL | | Input price per token |
-| `pricing_output` | REAL | | Output price per token |
-| `context_window` | INTEGER | | Context window size |
-| `max_output` | INTEGER | | Max output tokens |
-| `is_enabled` | BOOLEAN | NOT NULL DEFAULT TRUE | Enabled flag |
-| `is_custom` | BOOLEAN | NOT NULL DEFAULT FALSE | Custom model flag |
-| `config` | JSONB | DEFAULT '{}' | Extra config |
-| `created_at` | TIMESTAMP | NOT NULL DEFAULT NOW() | Creation time |
-| `updated_at` | TIMESTAMP | NOT NULL DEFAULT NOW() | Last update |
+| Column           | Type      | Constraints                | Description            |
+| ---------------- | --------- | -------------------------- | ---------------------- |
+| `id`             | TEXT      | PRIMARY KEY                | Config UUID            |
+| `user_id`        | TEXT      | NOT NULL DEFAULT 'default' | Owner user             |
+| `provider_id`    | TEXT      | NOT NULL                   | Provider identifier    |
+| `model_id`       | TEXT      | NOT NULL                   | Model identifier       |
+| `display_name`   | TEXT      |                            | Custom display name    |
+| `capabilities`   | JSONB     | NOT NULL DEFAULT '[]'      | Model capabilities     |
+| `pricing_input`  | REAL      |                            | Input price per token  |
+| `pricing_output` | REAL      |                            | Output price per token |
+| `context_window` | INTEGER   |                            | Context window size    |
+| `max_output`     | INTEGER   |                            | Max output tokens      |
+| `is_enabled`     | BOOLEAN   | NOT NULL DEFAULT TRUE      | Enabled flag           |
+| `is_custom`      | BOOLEAN   | NOT NULL DEFAULT FALSE     | Custom model flag      |
+| `config`         | JSONB     | DEFAULT '{}'               | Extra config           |
+| `created_at`     | TIMESTAMP | NOT NULL DEFAULT NOW()     | Creation time          |
+| `updated_at`     | TIMESTAMP | NOT NULL DEFAULT NOW()     | Last update            |
 
 UNIQUE constraint on `(user_id, provider_id, model_id)`.
 
@@ -783,19 +781,19 @@ UNIQUE constraint on `(user_id, provider_id, model_id)`.
 
 User-defined AI provider aggregators (fal.ai, together.ai, etc.).
 
-| Column | Type | Constraints | Description |
-|--------|------|-------------|-------------|
-| `id` | TEXT | PRIMARY KEY | Provider UUID |
-| `user_id` | TEXT | NOT NULL DEFAULT 'default' | Owner user |
-| `provider_id` | TEXT | NOT NULL | Provider slug |
-| `display_name` | TEXT | NOT NULL | Display name |
-| `api_base_url` | TEXT | | API base URL |
-| `api_key_setting` | TEXT | | Settings key for API key |
-| `provider_type` | TEXT | NOT NULL DEFAULT 'openai_compatible', CHECK IN ('openai_compatible','custom') | Compatibility type |
-| `is_enabled` | BOOLEAN | NOT NULL DEFAULT TRUE | Enabled flag |
-| `config` | JSONB | DEFAULT '{}' | Extra config |
-| `created_at` | TIMESTAMP | NOT NULL DEFAULT NOW() | Creation time |
-| `updated_at` | TIMESTAMP | NOT NULL DEFAULT NOW() | Last update |
+| Column            | Type      | Constraints                                                                   | Description              |
+| ----------------- | --------- | ----------------------------------------------------------------------------- | ------------------------ |
+| `id`              | TEXT      | PRIMARY KEY                                                                   | Provider UUID            |
+| `user_id`         | TEXT      | NOT NULL DEFAULT 'default'                                                    | Owner user               |
+| `provider_id`     | TEXT      | NOT NULL                                                                      | Provider slug            |
+| `display_name`    | TEXT      | NOT NULL                                                                      | Display name             |
+| `api_base_url`    | TEXT      |                                                                               | API base URL             |
+| `api_key_setting` | TEXT      |                                                                               | Settings key for API key |
+| `provider_type`   | TEXT      | NOT NULL DEFAULT 'openai_compatible', CHECK IN ('openai_compatible','custom') | Compatibility type       |
+| `is_enabled`      | BOOLEAN   | NOT NULL DEFAULT TRUE                                                         | Enabled flag             |
+| `config`          | JSONB     | DEFAULT '{}'                                                                  | Extra config             |
+| `created_at`      | TIMESTAMP | NOT NULL DEFAULT NOW()                                                        | Creation time            |
+| `updated_at`      | TIMESTAMP | NOT NULL DEFAULT NOW()                                                        | Last update              |
 
 UNIQUE constraint on `(user_id, provider_id)`.
 
@@ -803,19 +801,19 @@ UNIQUE constraint on `(user_id, provider_id)`.
 
 User overrides for built-in AI providers (base URL, API key environment variable, enable/disable).
 
-| Column | Type | Constraints | Description |
-|--------|------|-------------|-------------|
-| `id` | TEXT | PRIMARY KEY | Config UUID |
-| `user_id` | TEXT | NOT NULL DEFAULT 'default' | Owner user |
-| `provider_id` | TEXT | NOT NULL | Provider slug |
-| `base_url` | TEXT | | Custom base URL |
-| `provider_type` | TEXT | | Provider type override |
-| `is_enabled` | BOOLEAN | NOT NULL DEFAULT TRUE | Enabled flag |
-| `api_key_env` | TEXT | | Environment variable name |
-| `notes` | TEXT | | Admin notes |
-| `config` | JSONB | DEFAULT '{}' | Extra config |
-| `created_at` | TIMESTAMP | NOT NULL DEFAULT NOW() | Creation time |
-| `updated_at` | TIMESTAMP | NOT NULL DEFAULT NOW() | Last update |
+| Column          | Type      | Constraints                | Description               |
+| --------------- | --------- | -------------------------- | ------------------------- |
+| `id`            | TEXT      | PRIMARY KEY                | Config UUID               |
+| `user_id`       | TEXT      | NOT NULL DEFAULT 'default' | Owner user                |
+| `provider_id`   | TEXT      | NOT NULL                   | Provider slug             |
+| `base_url`      | TEXT      |                            | Custom base URL           |
+| `provider_type` | TEXT      |                            | Provider type override    |
+| `is_enabled`    | BOOLEAN   | NOT NULL DEFAULT TRUE      | Enabled flag              |
+| `api_key_env`   | TEXT      |                            | Environment variable name |
+| `notes`         | TEXT      |                            | Admin notes               |
+| `config`        | JSONB     | DEFAULT '{}'               | Extra config              |
+| `created_at`    | TIMESTAMP | NOT NULL DEFAULT NOW()     | Creation time             |
+| `updated_at`    | TIMESTAMP | NOT NULL DEFAULT NOW()     | Last update               |
 
 UNIQUE constraint on `(user_id, provider_id)`.
 
@@ -829,15 +827,15 @@ AI-created and user-created dynamic data structures.
 
 Simple key-value store for AI-created dynamic data.
 
-| Column | Type | Constraints | Description |
-|--------|------|-------------|-------------|
-| `id` | TEXT | PRIMARY KEY | Entry UUID |
-| `user_id` | TEXT | NOT NULL DEFAULT 'default' | Owner user |
-| `key` | TEXT | NOT NULL | Data key |
-| `value` | JSONB | NOT NULL | Data value |
-| `metadata` | JSONB | DEFAULT '{}' | Extra metadata |
-| `created_at` | TIMESTAMP | NOT NULL DEFAULT NOW() | Creation time |
-| `updated_at` | TIMESTAMP | NOT NULL DEFAULT NOW() | Last update |
+| Column       | Type      | Constraints                | Description    |
+| ------------ | --------- | -------------------------- | -------------- |
+| `id`         | TEXT      | PRIMARY KEY                | Entry UUID     |
+| `user_id`    | TEXT      | NOT NULL DEFAULT 'default' | Owner user     |
+| `key`        | TEXT      | NOT NULL                   | Data key       |
+| `value`      | JSONB     | NOT NULL                   | Data value     |
+| `metadata`   | JSONB     | DEFAULT '{}'               | Extra metadata |
+| `created_at` | TIMESTAMP | NOT NULL DEFAULT NOW()     | Creation time  |
+| `updated_at` | TIMESTAMP | NOT NULL DEFAULT NOW()     | Last update    |
 
 UNIQUE constraint on `(user_id, key)`.
 
@@ -845,26 +843,26 @@ UNIQUE constraint on `(user_id, key)`.
 
 LLM-defined or user-defined tools with executable code.
 
-| Column | Type | Constraints | Description |
-|--------|------|-------------|-------------|
-| `id` | TEXT | PRIMARY KEY | Tool UUID |
-| `user_id` | TEXT | NOT NULL DEFAULT 'default' | Owner user |
-| `name` | TEXT | NOT NULL | Tool name |
-| `description` | TEXT | NOT NULL | Tool description |
-| `parameters` | JSONB | NOT NULL DEFAULT '{}' | JSON Schema parameters |
-| `code` | TEXT | NOT NULL | Executable code |
-| `category` | TEXT | | Tool category |
-| `status` | TEXT | NOT NULL DEFAULT 'active', CHECK IN ('active','disabled','pending_approval','rejected') | Tool status |
-| `permissions` | JSONB | NOT NULL DEFAULT '[]' | Required permissions |
-| `requires_approval` | BOOLEAN | NOT NULL DEFAULT FALSE | Approval required flag |
-| `created_by` | TEXT | NOT NULL DEFAULT 'user', CHECK IN ('user','llm') | Creator type |
-| `version` | INTEGER | NOT NULL DEFAULT 1 | Version number |
-| `metadata` | JSONB | DEFAULT '{}' | Extra metadata |
-| `usage_count` | INTEGER | NOT NULL DEFAULT 0 | Usage counter |
-| `last_used_at` | TIMESTAMP | | Last usage time |
-| `required_api_keys` | JSONB | DEFAULT '[]' | Required API key names |
-| `created_at` | TIMESTAMP | NOT NULL DEFAULT NOW() | Creation time |
-| `updated_at` | TIMESTAMP | NOT NULL DEFAULT NOW() | Last update |
+| Column              | Type      | Constraints                                                                             | Description            |
+| ------------------- | --------- | --------------------------------------------------------------------------------------- | ---------------------- |
+| `id`                | TEXT      | PRIMARY KEY                                                                             | Tool UUID              |
+| `user_id`           | TEXT      | NOT NULL DEFAULT 'default'                                                              | Owner user             |
+| `name`              | TEXT      | NOT NULL                                                                                | Tool name              |
+| `description`       | TEXT      | NOT NULL                                                                                | Tool description       |
+| `parameters`        | JSONB     | NOT NULL DEFAULT '{}'                                                                   | JSON Schema parameters |
+| `code`              | TEXT      | NOT NULL                                                                                | Executable code        |
+| `category`          | TEXT      |                                                                                         | Tool category          |
+| `status`            | TEXT      | NOT NULL DEFAULT 'active', CHECK IN ('active','disabled','pending_approval','rejected') | Tool status            |
+| `permissions`       | JSONB     | NOT NULL DEFAULT '[]'                                                                   | Required permissions   |
+| `requires_approval` | BOOLEAN   | NOT NULL DEFAULT FALSE                                                                  | Approval required flag |
+| `created_by`        | TEXT      | NOT NULL DEFAULT 'user', CHECK IN ('user','llm')                                        | Creator type           |
+| `version`           | INTEGER   | NOT NULL DEFAULT 1                                                                      | Version number         |
+| `metadata`          | JSONB     | DEFAULT '{}'                                                                            | Extra metadata         |
+| `usage_count`       | INTEGER   | NOT NULL DEFAULT 0                                                                      | Usage counter          |
+| `last_used_at`      | TIMESTAMP |                                                                                         | Last usage time        |
+| `required_api_keys` | JSONB     | DEFAULT '[]'                                                                            | Required API key names |
+| `created_at`        | TIMESTAMP | NOT NULL DEFAULT NOW()                                                                  | Creation time          |
+| `updated_at`        | TIMESTAMP | NOT NULL DEFAULT NOW()                                                                  | Last update            |
 
 UNIQUE constraint on `(user_id, name)`.
 
@@ -872,27 +870,27 @@ UNIQUE constraint on `(user_id, name)`.
 
 Metadata for AI-created dynamic tables.
 
-| Column | Type | Constraints | Description |
-|--------|------|-------------|-------------|
-| `id` | TEXT | PRIMARY KEY | Schema UUID |
-| `name` | TEXT | NOT NULL UNIQUE | Table name slug |
-| `display_name` | TEXT | NOT NULL | Display name |
-| `description` | TEXT | | Table description |
-| `columns` | JSONB | NOT NULL DEFAULT '[]' | Column definitions |
-| `created_at` | TIMESTAMP | NOT NULL DEFAULT NOW() | Creation time |
-| `updated_at` | TIMESTAMP | NOT NULL DEFAULT NOW() | Last update |
+| Column         | Type      | Constraints            | Description        |
+| -------------- | --------- | ---------------------- | ------------------ |
+| `id`           | TEXT      | PRIMARY KEY            | Schema UUID        |
+| `name`         | TEXT      | NOT NULL UNIQUE        | Table name slug    |
+| `display_name` | TEXT      | NOT NULL               | Display name       |
+| `description`  | TEXT      |                        | Table description  |
+| `columns`      | JSONB     | NOT NULL DEFAULT '[]'  | Column definitions |
+| `created_at`   | TIMESTAMP | NOT NULL DEFAULT NOW() | Creation time      |
+| `updated_at`   | TIMESTAMP | NOT NULL DEFAULT NOW() | Last update        |
 
 #### `custom_data_records`
 
 Records stored in AI-created dynamic tables.
 
-| Column | Type | Constraints | Description |
-|--------|------|-------------|-------------|
-| `id` | TEXT | PRIMARY KEY | Record UUID |
-| `table_id` | TEXT | NOT NULL, FK -> custom_table_schemas(id) ON DELETE CASCADE | Parent schema |
-| `data` | JSONB | NOT NULL DEFAULT '{}' | Record data |
-| `created_at` | TIMESTAMP | NOT NULL DEFAULT NOW() | Creation time |
-| `updated_at` | TIMESTAMP | NOT NULL DEFAULT NOW() | Last update |
+| Column       | Type      | Constraints                                                | Description   |
+| ------------ | --------- | ---------------------------------------------------------- | ------------- |
+| `id`         | TEXT      | PRIMARY KEY                                                | Record UUID   |
+| `table_id`   | TEXT      | NOT NULL, FK -> custom_table_schemas(id) ON DELETE CASCADE | Parent schema |
+| `data`       | JSONB     | NOT NULL DEFAULT '{}'                                      | Record data   |
+| `created_at` | TIMESTAMP | NOT NULL DEFAULT NOW()                                     | Creation time |
+| `updated_at` | TIMESTAMP | NOT NULL DEFAULT NOW()                                     | Last update   |
 
 ---
 
@@ -904,84 +902,84 @@ Isolated user environments for code execution with Docker containers.
 
 User workspace definitions.
 
-| Column | Type | Constraints | Description |
-|--------|------|-------------|-------------|
-| `id` | TEXT | PRIMARY KEY | Workspace UUID |
-| `user_id` | TEXT | NOT NULL | Owner user |
-| `name` | TEXT | NOT NULL | Workspace name |
-| `description` | TEXT | | Workspace details |
-| `status` | TEXT | NOT NULL DEFAULT 'active', CHECK IN ('active','suspended','deleted') | Workspace status |
-| `storage_path` | TEXT | NOT NULL | Filesystem path |
-| `container_config` | JSONB | NOT NULL DEFAULT '{}' | Docker config |
-| `container_id` | TEXT | | Active container ID |
-| `container_status` | TEXT | NOT NULL DEFAULT 'stopped', CHECK IN ('stopped','starting','running','stopping','error') | Container state |
-| `created_at` | TIMESTAMP | NOT NULL DEFAULT NOW() | Creation time |
-| `updated_at` | TIMESTAMP | NOT NULL DEFAULT NOW() | Last update |
-| `last_activity_at` | TIMESTAMP | | Last activity |
+| Column             | Type      | Constraints                                                                              | Description         |
+| ------------------ | --------- | ---------------------------------------------------------------------------------------- | ------------------- |
+| `id`               | TEXT      | PRIMARY KEY                                                                              | Workspace UUID      |
+| `user_id`          | TEXT      | NOT NULL                                                                                 | Owner user          |
+| `name`             | TEXT      | NOT NULL                                                                                 | Workspace name      |
+| `description`      | TEXT      |                                                                                          | Workspace details   |
+| `status`           | TEXT      | NOT NULL DEFAULT 'active', CHECK IN ('active','suspended','deleted')                     | Workspace status    |
+| `storage_path`     | TEXT      | NOT NULL                                                                                 | Filesystem path     |
+| `container_config` | JSONB     | NOT NULL DEFAULT '{}'                                                                    | Docker config       |
+| `container_id`     | TEXT      |                                                                                          | Active container ID |
+| `container_status` | TEXT      | NOT NULL DEFAULT 'stopped', CHECK IN ('stopped','starting','running','stopping','error') | Container state     |
+| `created_at`       | TIMESTAMP | NOT NULL DEFAULT NOW()                                                                   | Creation time       |
+| `updated_at`       | TIMESTAMP | NOT NULL DEFAULT NOW()                                                                   | Last update         |
+| `last_activity_at` | TIMESTAMP |                                                                                          | Last activity       |
 
 #### `user_containers`
 
 Active Docker containers associated with workspaces.
 
-| Column | Type | Constraints | Description |
-|--------|------|-------------|-------------|
-| `id` | TEXT | PRIMARY KEY | Record UUID |
-| `workspace_id` | TEXT | NOT NULL, FK -> user_workspaces(id) ON DELETE CASCADE | Parent workspace |
-| `user_id` | TEXT | NOT NULL | Owner user |
-| `container_id` | TEXT | NOT NULL UNIQUE | Docker container ID |
-| `image` | TEXT | NOT NULL | Docker image |
-| `status` | TEXT | NOT NULL DEFAULT 'starting', CHECK IN ('stopped','starting','running','stopping','error') | Container state |
-| `memory_mb` | INTEGER | NOT NULL DEFAULT 512 | Memory limit |
-| `cpu_cores` | REAL | NOT NULL DEFAULT 0.5 | CPU core limit |
-| `network_policy` | TEXT | NOT NULL DEFAULT 'none' | Network policy |
-| `started_at` | TIMESTAMP | NOT NULL DEFAULT NOW() | Start time |
-| `last_activity_at` | TIMESTAMP | | Last activity |
-| `stopped_at` | TIMESTAMP | | Stop time |
-| `memory_peak_mb` | INTEGER | DEFAULT 0 | Peak memory usage |
-| `cpu_time_ms` | INTEGER | DEFAULT 0 | Total CPU time |
-| `network_bytes_in` | INTEGER | DEFAULT 0 | Network inbound |
-| `network_bytes_out` | INTEGER | DEFAULT 0 | Network outbound |
+| Column              | Type      | Constraints                                                                               | Description         |
+| ------------------- | --------- | ----------------------------------------------------------------------------------------- | ------------------- |
+| `id`                | TEXT      | PRIMARY KEY                                                                               | Record UUID         |
+| `workspace_id`      | TEXT      | NOT NULL, FK -> user_workspaces(id) ON DELETE CASCADE                                     | Parent workspace    |
+| `user_id`           | TEXT      | NOT NULL                                                                                  | Owner user          |
+| `container_id`      | TEXT      | NOT NULL UNIQUE                                                                           | Docker container ID |
+| `image`             | TEXT      | NOT NULL                                                                                  | Docker image        |
+| `status`            | TEXT      | NOT NULL DEFAULT 'starting', CHECK IN ('stopped','starting','running','stopping','error') | Container state     |
+| `memory_mb`         | INTEGER   | NOT NULL DEFAULT 512                                                                      | Memory limit        |
+| `cpu_cores`         | REAL      | NOT NULL DEFAULT 0.5                                                                      | CPU core limit      |
+| `network_policy`    | TEXT      | NOT NULL DEFAULT 'none'                                                                   | Network policy      |
+| `started_at`        | TIMESTAMP | NOT NULL DEFAULT NOW()                                                                    | Start time          |
+| `last_activity_at`  | TIMESTAMP |                                                                                           | Last activity       |
+| `stopped_at`        | TIMESTAMP |                                                                                           | Stop time           |
+| `memory_peak_mb`    | INTEGER   | DEFAULT 0                                                                                 | Peak memory usage   |
+| `cpu_time_ms`       | INTEGER   | DEFAULT 0                                                                                 | Total CPU time      |
+| `network_bytes_in`  | INTEGER   | DEFAULT 0                                                                                 | Network inbound     |
+| `network_bytes_out` | INTEGER   | DEFAULT 0                                                                                 | Network outbound    |
 
 #### `code_executions`
 
 Code execution history within workspaces.
 
-| Column | Type | Constraints | Description |
-|--------|------|-------------|-------------|
-| `id` | TEXT | PRIMARY KEY | Execution UUID |
-| `workspace_id` | TEXT | NOT NULL, FK -> user_workspaces(id) ON DELETE CASCADE | Parent workspace |
-| `user_id` | TEXT | NOT NULL | Owner user |
-| `container_id` | TEXT | | Container used |
-| `language` | TEXT | NOT NULL, CHECK IN ('python','javascript','shell') | Code language |
-| `code_hash` | TEXT | | Code content hash |
-| `status` | TEXT | NOT NULL DEFAULT 'pending', CHECK IN ('pending','running','completed','failed','timeout','cancelled') | Execution status |
-| `stdout` | TEXT | | Standard output |
-| `stderr` | TEXT | | Standard error |
-| `exit_code` | INTEGER | | Process exit code |
-| `error` | TEXT | | Error message |
-| `execution_time_ms` | INTEGER | | Execution duration |
-| `memory_used_mb` | INTEGER | | Memory consumed |
-| `created_at` | TIMESTAMP | NOT NULL DEFAULT NOW() | Creation time |
-| `started_at` | TIMESTAMP | | Execution start |
-| `completed_at` | TIMESTAMP | | Execution end |
+| Column              | Type      | Constraints                                                                                           | Description        |
+| ------------------- | --------- | ----------------------------------------------------------------------------------------------------- | ------------------ |
+| `id`                | TEXT      | PRIMARY KEY                                                                                           | Execution UUID     |
+| `workspace_id`      | TEXT      | NOT NULL, FK -> user_workspaces(id) ON DELETE CASCADE                                                 | Parent workspace   |
+| `user_id`           | TEXT      | NOT NULL                                                                                              | Owner user         |
+| `container_id`      | TEXT      |                                                                                                       | Container used     |
+| `language`          | TEXT      | NOT NULL, CHECK IN ('python','javascript','shell')                                                    | Code language      |
+| `code_hash`         | TEXT      |                                                                                                       | Code content hash  |
+| `status`            | TEXT      | NOT NULL DEFAULT 'pending', CHECK IN ('pending','running','completed','failed','timeout','cancelled') | Execution status   |
+| `stdout`            | TEXT      |                                                                                                       | Standard output    |
+| `stderr`            | TEXT      |                                                                                                       | Standard error     |
+| `exit_code`         | INTEGER   |                                                                                                       | Process exit code  |
+| `error`             | TEXT      |                                                                                                       | Error message      |
+| `execution_time_ms` | INTEGER   |                                                                                                       | Execution duration |
+| `memory_used_mb`    | INTEGER   |                                                                                                       | Memory consumed    |
+| `created_at`        | TIMESTAMP | NOT NULL DEFAULT NOW()                                                                                | Creation time      |
+| `started_at`        | TIMESTAMP |                                                                                                       | Execution start    |
+| `completed_at`      | TIMESTAMP |                                                                                                       | Execution end      |
 
 #### `workspace_audit`
 
 Audit log for all workspace operations.
 
-| Column | Type | Constraints | Description |
-|--------|------|-------------|-------------|
-| `id` | TEXT | PRIMARY KEY | Audit UUID |
-| `user_id` | TEXT | NOT NULL | Acting user |
-| `workspace_id` | TEXT | | Target workspace |
-| `action` | TEXT | NOT NULL, CHECK IN ('create','read','write','delete','execute','start','stop') | Action type |
-| `resource_type` | TEXT | NOT NULL, CHECK IN ('workspace','file','container','execution') | Resource type |
-| `resource` | TEXT | | Resource identifier |
-| `success` | BOOLEAN | NOT NULL DEFAULT TRUE | Success flag |
-| `error` | TEXT | | Error message |
-| `ip_address` | TEXT | | Client IP |
-| `user_agent` | TEXT | | Client user agent |
-| `created_at` | TIMESTAMP | NOT NULL DEFAULT NOW() | Event time |
+| Column          | Type      | Constraints                                                                    | Description         |
+| --------------- | --------- | ------------------------------------------------------------------------------ | ------------------- |
+| `id`            | TEXT      | PRIMARY KEY                                                                    | Audit UUID          |
+| `user_id`       | TEXT      | NOT NULL                                                                       | Acting user         |
+| `workspace_id`  | TEXT      |                                                                                | Target workspace    |
+| `action`        | TEXT      | NOT NULL, CHECK IN ('create','read','write','delete','execute','start','stop') | Action type         |
+| `resource_type` | TEXT      | NOT NULL, CHECK IN ('workspace','file','container','execution')                | Resource type       |
+| `resource`      | TEXT      |                                                                                | Resource identifier |
+| `success`       | BOOLEAN   | NOT NULL DEFAULT TRUE                                                          | Success flag        |
+| `error`         | TEXT      |                                                                                | Error message       |
+| `ip_address`    | TEXT      |                                                                                | Client IP           |
+| `user_agent`    | TEXT      |                                                                                | Client user agent   |
+| `created_at`    | TIMESTAMP | NOT NULL DEFAULT NOW()                                                         | Event time          |
 
 ---
 
@@ -993,35 +991,35 @@ Schema-driven service configuration management, replacing the older `api_service
 
 Service definitions with typed configuration schemas.
 
-| Column | Type | Constraints | Description |
-|--------|------|-------------|-------------|
-| `id` | TEXT | PRIMARY KEY | Service UUID |
-| `name` | TEXT | NOT NULL UNIQUE | Service slug |
-| `display_name` | TEXT | NOT NULL | Display name |
-| `category` | TEXT | NOT NULL DEFAULT 'general' | Service category |
-| `description` | TEXT | | Service description |
-| `docs_url` | TEXT | | Documentation link |
-| `config_schema` | JSONB | NOT NULL DEFAULT '[]' | Field definitions array |
-| `multi_entry` | BOOLEAN | NOT NULL DEFAULT FALSE | Supports multiple entries |
-| `required_by` | JSONB | DEFAULT '[]' | Tools/features that need this service |
-| `is_active` | BOOLEAN | NOT NULL DEFAULT TRUE | Active flag |
-| `created_at` | TIMESTAMP | NOT NULL DEFAULT NOW() | Creation time |
-| `updated_at` | TIMESTAMP | NOT NULL DEFAULT NOW() | Last update |
+| Column          | Type      | Constraints                | Description                           |
+| --------------- | --------- | -------------------------- | ------------------------------------- |
+| `id`            | TEXT      | PRIMARY KEY                | Service UUID                          |
+| `name`          | TEXT      | NOT NULL UNIQUE            | Service slug                          |
+| `display_name`  | TEXT      | NOT NULL                   | Display name                          |
+| `category`      | TEXT      | NOT NULL DEFAULT 'general' | Service category                      |
+| `description`   | TEXT      |                            | Service description                   |
+| `docs_url`      | TEXT      |                            | Documentation link                    |
+| `config_schema` | JSONB     | NOT NULL DEFAULT '[]'      | Field definitions array               |
+| `multi_entry`   | BOOLEAN   | NOT NULL DEFAULT FALSE     | Supports multiple entries             |
+| `required_by`   | JSONB     | DEFAULT '[]'               | Tools/features that need this service |
+| `is_active`     | BOOLEAN   | NOT NULL DEFAULT TRUE      | Active flag                           |
+| `created_at`    | TIMESTAMP | NOT NULL DEFAULT NOW()     | Creation time                         |
+| `updated_at`    | TIMESTAMP | NOT NULL DEFAULT NOW()     | Last update                           |
 
 #### `config_entries`
 
 Actual configuration values for each service.
 
-| Column | Type | Constraints | Description |
-|--------|------|-------------|-------------|
-| `id` | TEXT | PRIMARY KEY | Entry UUID |
-| `service_name` | TEXT | NOT NULL | Parent service name |
-| `label` | TEXT | NOT NULL DEFAULT 'Default' | Entry label |
-| `data` | JSONB | NOT NULL DEFAULT '{}' | Configuration values |
-| `is_default` | BOOLEAN | NOT NULL DEFAULT FALSE | Default entry flag |
-| `is_active` | BOOLEAN | NOT NULL DEFAULT TRUE | Active flag |
-| `created_at` | TIMESTAMP | NOT NULL DEFAULT NOW() | Creation time |
-| `updated_at` | TIMESTAMP | NOT NULL DEFAULT NOW() | Last update |
+| Column         | Type      | Constraints                | Description          |
+| -------------- | --------- | -------------------------- | -------------------- |
+| `id`           | TEXT      | PRIMARY KEY                | Entry UUID           |
+| `service_name` | TEXT      | NOT NULL                   | Parent service name  |
+| `label`        | TEXT      | NOT NULL DEFAULT 'Default' | Entry label          |
+| `data`         | JSONB     | NOT NULL DEFAULT '{}'      | Configuration values |
+| `is_default`   | BOOLEAN   | NOT NULL DEFAULT FALSE     | Default entry flag   |
+| `is_active`    | BOOLEAN   | NOT NULL DEFAULT TRUE      | Active flag          |
+| `created_at`   | TIMESTAMP | NOT NULL DEFAULT NOW()     | Creation time        |
+| `updated_at`   | TIMESTAMP | NOT NULL DEFAULT NOW()     | Last update          |
 
 Has a partial unique index: only one entry per `service_name` where `is_default = TRUE`.
 
@@ -1033,17 +1031,17 @@ Has a partial unique index: only one entry per `service_name` where `is_default 
 
 Plugin state persistence.
 
-| Column | Type | Constraints | Description |
-|--------|------|-------------|-------------|
-| `id` | TEXT | PRIMARY KEY | Plugin identifier |
-| `name` | TEXT | NOT NULL | Plugin name |
-| `version` | TEXT | NOT NULL DEFAULT '1.0.0' | Plugin version |
-| `status` | TEXT | NOT NULL DEFAULT 'enabled', CHECK IN ('enabled','disabled','error') | Plugin state |
-| `settings` | JSONB | NOT NULL DEFAULT '{}' | Plugin settings |
-| `granted_permissions` | JSONB | NOT NULL DEFAULT '[]' | Granted permissions |
-| `error_message` | TEXT | | Error details |
-| `installed_at` | TIMESTAMP | NOT NULL DEFAULT NOW() | Install time |
-| `updated_at` | TIMESTAMP | NOT NULL DEFAULT NOW() | Last update |
+| Column                | Type      | Constraints                                                         | Description         |
+| --------------------- | --------- | ------------------------------------------------------------------- | ------------------- |
+| `id`                  | TEXT      | PRIMARY KEY                                                         | Plugin identifier   |
+| `name`                | TEXT      | NOT NULL                                                            | Plugin name         |
+| `version`             | TEXT      | NOT NULL DEFAULT '1.0.0'                                            | Plugin version      |
+| `status`              | TEXT      | NOT NULL DEFAULT 'enabled', CHECK IN ('enabled','disabled','error') | Plugin state        |
+| `settings`            | JSONB     | NOT NULL DEFAULT '{}'                                               | Plugin settings     |
+| `granted_permissions` | JSONB     | NOT NULL DEFAULT '[]'                                               | Granted permissions |
+| `error_message`       | TEXT      |                                                                     | Error details       |
+| `installed_at`        | TIMESTAMP | NOT NULL DEFAULT NOW()                                              | Install time        |
+| `updated_at`          | TIMESTAMP | NOT NULL DEFAULT NOW()                                              | Last update         |
 
 ---
 
@@ -1053,40 +1051,40 @@ Plugin state persistence.
 
 Local AI inference endpoints (LM Studio, Ollama, LocalAI, vLLM).
 
-| Column | Type | Constraints | Description |
-|--------|------|-------------|-------------|
-| `id` | TEXT | PRIMARY KEY | Provider UUID |
-| `user_id` | TEXT | NOT NULL DEFAULT 'default' | Owner user |
-| `name` | TEXT | NOT NULL | Provider name |
-| `provider_type` | TEXT | NOT NULL, CHECK IN ('lmstudio','ollama','localai','vllm','custom') | Provider type |
-| `base_url` | TEXT | NOT NULL | API endpoint URL |
-| `api_key` | TEXT | | Optional API key |
-| `is_enabled` | BOOLEAN | NOT NULL DEFAULT TRUE | Enabled flag |
-| `is_default` | BOOLEAN | NOT NULL DEFAULT FALSE | Default provider flag |
-| `discovery_endpoint` | TEXT | | Model list endpoint |
-| `last_discovered_at` | TIMESTAMP | | Last model discovery |
-| `metadata` | JSONB | DEFAULT '{}' | Extra metadata |
-| `created_at` | TIMESTAMP | NOT NULL DEFAULT NOW() | Creation time |
-| `updated_at` | TIMESTAMP | NOT NULL DEFAULT NOW() | Last update |
+| Column               | Type      | Constraints                                                        | Description           |
+| -------------------- | --------- | ------------------------------------------------------------------ | --------------------- |
+| `id`                 | TEXT      | PRIMARY KEY                                                        | Provider UUID         |
+| `user_id`            | TEXT      | NOT NULL DEFAULT 'default'                                         | Owner user            |
+| `name`               | TEXT      | NOT NULL                                                           | Provider name         |
+| `provider_type`      | TEXT      | NOT NULL, CHECK IN ('lmstudio','ollama','localai','vllm','custom') | Provider type         |
+| `base_url`           | TEXT      | NOT NULL                                                           | API endpoint URL      |
+| `api_key`            | TEXT      |                                                                    | Optional API key      |
+| `is_enabled`         | BOOLEAN   | NOT NULL DEFAULT TRUE                                              | Enabled flag          |
+| `is_default`         | BOOLEAN   | NOT NULL DEFAULT FALSE                                             | Default provider flag |
+| `discovery_endpoint` | TEXT      |                                                                    | Model list endpoint   |
+| `last_discovered_at` | TIMESTAMP |                                                                    | Last model discovery  |
+| `metadata`           | JSONB     | DEFAULT '{}'                                                       | Extra metadata        |
+| `created_at`         | TIMESTAMP | NOT NULL DEFAULT NOW()                                             | Creation time         |
+| `updated_at`         | TIMESTAMP | NOT NULL DEFAULT NOW()                                             | Last update           |
 
 #### `local_models`
 
 Models available through local providers.
 
-| Column | Type | Constraints | Description |
-|--------|------|-------------|-------------|
-| `id` | TEXT | PRIMARY KEY | Model UUID |
-| `user_id` | TEXT | NOT NULL DEFAULT 'default' | Owner user |
-| `local_provider_id` | TEXT | NOT NULL, FK -> local_providers(id) ON DELETE CASCADE | Parent provider |
-| `model_id` | TEXT | NOT NULL | Model identifier |
-| `display_name` | TEXT | NOT NULL | Display name |
-| `capabilities` | JSONB | NOT NULL DEFAULT '["chat","streaming"]' | Model capabilities |
-| `context_window` | INTEGER | DEFAULT 32768 | Context window size |
-| `max_output` | INTEGER | DEFAULT 4096 | Max output tokens |
-| `is_enabled` | BOOLEAN | NOT NULL DEFAULT TRUE | Enabled flag |
-| `metadata` | JSONB | DEFAULT '{}' | Extra metadata |
-| `created_at` | TIMESTAMP | NOT NULL DEFAULT NOW() | Creation time |
-| `updated_at` | TIMESTAMP | NOT NULL DEFAULT NOW() | Last update |
+| Column              | Type      | Constraints                                           | Description         |
+| ------------------- | --------- | ----------------------------------------------------- | ------------------- |
+| `id`                | TEXT      | PRIMARY KEY                                           | Model UUID          |
+| `user_id`           | TEXT      | NOT NULL DEFAULT 'default'                            | Owner user          |
+| `local_provider_id` | TEXT      | NOT NULL, FK -> local_providers(id) ON DELETE CASCADE | Parent provider     |
+| `model_id`          | TEXT      | NOT NULL                                              | Model identifier    |
+| `display_name`      | TEXT      | NOT NULL                                              | Display name        |
+| `capabilities`      | JSONB     | NOT NULL DEFAULT '["chat","streaming"]'               | Model capabilities  |
+| `context_window`    | INTEGER   | DEFAULT 32768                                         | Context window size |
+| `max_output`        | INTEGER   | DEFAULT 4096                                          | Max output tokens   |
+| `is_enabled`        | BOOLEAN   | NOT NULL DEFAULT TRUE                                 | Enabled flag        |
+| `metadata`          | JSONB     | DEFAULT '{}'                                          | Extra metadata      |
+| `created_at`        | TIMESTAMP | NOT NULL DEFAULT NOW()                                | Creation time       |
+| `updated_at`        | TIMESTAMP | NOT NULL DEFAULT NOW()                                | Last update         |
 
 UNIQUE constraint on `(user_id, local_provider_id, model_id)`.
 
@@ -1281,19 +1279,19 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_config_entries_default
 
 ### 5.7 Total Index Count by Group
 
-| Group | Index Count |
-|-------|-------------|
-| Core (conversations, messages, request_logs, channels, costs) | 17 |
-| Personal Data (bookmarks, notes, tasks, calendar, contacts, projects, reminders, captures) | 15 |
-| Productivity (pomodoro, habits) | 10 |
-| Autonomous AI (memories, goals, triggers, plans) | 22 |
-| Workspace | 9 |
-| OAuth and Media | 6 |
-| AI Models | 9 |
-| Custom Data and Tools | 7 |
-| Config Services | 3 (created inline in MIGRATIONS_SQL) |
-| Local AI | 4 |
-| **Total** | **102+** |
+| Group                                                                                      | Index Count                          |
+| ------------------------------------------------------------------------------------------ | ------------------------------------ |
+| Core (conversations, messages, request_logs, channels, costs)                              | 17                                   |
+| Personal Data (bookmarks, notes, tasks, calendar, contacts, projects, reminders, captures) | 15                                   |
+| Productivity (pomodoro, habits)                                                            | 10                                   |
+| Autonomous AI (memories, goals, triggers, plans)                                           | 22                                   |
+| Workspace                                                                                  | 9                                    |
+| OAuth and Media                                                                            | 6                                    |
+| AI Models                                                                                  | 9                                    |
+| Custom Data and Tools                                                                      | 7                                    |
+| Config Services                                                                            | 3 (created inline in MIGRATIONS_SQL) |
+| Local AI                                                                                   | 4                                    |
+| **Total**                                                                                  | **102+**                             |
 
 ---
 
@@ -1319,7 +1317,7 @@ export abstract class BaseRepository {
   protected async transaction<T>(fn: () => Promise<T>): Promise<T>;
 
   // SQL dialect helpers
-  protected now(): string;          // Returns 'NOW()'
+  protected now(): string; // Returns 'NOW()'
   protected boolean(value: boolean): unknown;
   protected parseBoolean(value: unknown): boolean;
 }
@@ -1374,44 +1372,45 @@ protected async paginatedQuery<T>(
 
 Each repository exports: the repository class, a factory function, TypeScript interfaces for row types and input types, and optionally a singleton instance.
 
-| Repository File | Class | Tables Managed |
-|-----------------|-------|----------------|
-| `conversations.ts` | `ConversationsRepository` | conversations |
-| `messages.ts` | `MessagesRepository` | messages |
-| `chat.ts` | `ChatRepository` | conversations + messages (combined) |
-| `logs.ts` | `LogsRepository` | request_logs |
-| `channels.ts` | `ChannelsRepository` | channels |
-| `channel-messages.ts` | `ChannelMessagesRepository` | channel_messages |
-| `costs.ts` | `CostsRepository` | costs |
-| `agents.ts` | `AgentsRepository` | agents |
-| `settings.ts` | `SettingsRepository` | settings |
-| `bookmarks.ts` | `BookmarksRepository` | bookmarks |
-| `notes.ts` | `NotesRepository` | notes |
-| `tasks.ts` | `TasksRepository` | tasks |
-| `calendar.ts` | `CalendarRepository` | calendar_events |
-| `contacts.ts` | `ContactsRepository` | contacts |
-| `captures.ts` | `CapturesRepository` | captures |
-| `pomodoro.ts` | `PomodoroRepository` | pomodoro_sessions, pomodoro_settings, pomodoro_daily_stats |
-| `habits.ts` | `HabitsRepository` | habits, habit_logs |
-| `memories.ts` | `MemoriesRepository` | memories |
-| `goals.ts` | `GoalsRepository` | goals, goal_steps |
-| `triggers.ts` | `TriggersRepository` | triggers, trigger_history |
-| `plans.ts` | `PlansRepository` | plans, plan_steps, plan_history |
-| `oauth-integrations.ts` | `OAuthIntegrationsRepository` | oauth_integrations |
-| `media-settings.ts` | `MediaSettingsRepository` | media_provider_settings |
-| `model-configs.ts` | `ModelConfigsRepository` | user_model_configs, custom_providers, user_provider_configs |
-| `custom-data.ts` | `CustomDataRepository` | custom_data, custom_table_schemas, custom_data_records |
-| `custom-tools.ts` | `CustomToolsRepository` | custom_tools |
-| `workspaces.ts` | `WorkspacesRepository` | user_workspaces, user_containers, code_executions, workspace_audit |
-| `plugins.ts` | `PluginsRepository` | plugins |
-| `config-services.ts` | `ConfigServicesRepository` | config_services, config_entries |
-| `local-providers.ts` | `LocalProvidersRepository` | local_providers, local_models |
+| Repository File         | Class                         | Tables Managed                                                     |
+| ----------------------- | ----------------------------- | ------------------------------------------------------------------ |
+| `conversations.ts`      | `ConversationsRepository`     | conversations                                                      |
+| `messages.ts`           | `MessagesRepository`          | messages                                                           |
+| `chat.ts`               | `ChatRepository`              | conversations + messages (combined)                                |
+| `logs.ts`               | `LogsRepository`              | request_logs                                                       |
+| `channels.ts`           | `ChannelsRepository`          | channels                                                           |
+| `channel-messages.ts`   | `ChannelMessagesRepository`   | channel_messages                                                   |
+| `costs.ts`              | `CostsRepository`             | costs                                                              |
+| `agents.ts`             | `AgentsRepository`            | agents                                                             |
+| `settings.ts`           | `SettingsRepository`          | settings                                                           |
+| `bookmarks.ts`          | `BookmarksRepository`         | bookmarks                                                          |
+| `notes.ts`              | `NotesRepository`             | notes                                                              |
+| `tasks.ts`              | `TasksRepository`             | tasks                                                              |
+| `calendar.ts`           | `CalendarRepository`          | calendar_events                                                    |
+| `contacts.ts`           | `ContactsRepository`          | contacts                                                           |
+| `captures.ts`           | `CapturesRepository`          | captures                                                           |
+| `pomodoro.ts`           | `PomodoroRepository`          | pomodoro_sessions, pomodoro_settings, pomodoro_daily_stats         |
+| `habits.ts`             | `HabitsRepository`            | habits, habit_logs                                                 |
+| `memories.ts`           | `MemoriesRepository`          | memories                                                           |
+| `goals.ts`              | `GoalsRepository`             | goals, goal_steps                                                  |
+| `triggers.ts`           | `TriggersRepository`          | triggers, trigger_history                                          |
+| `plans.ts`              | `PlansRepository`             | plans, plan_steps, plan_history                                    |
+| `oauth-integrations.ts` | `OAuthIntegrationsRepository` | oauth_integrations                                                 |
+| `media-settings.ts`     | `MediaSettingsRepository`     | media_provider_settings                                            |
+| `model-configs.ts`      | `ModelConfigsRepository`      | user_model_configs, custom_providers, user_provider_configs        |
+| `custom-data.ts`        | `CustomDataRepository`        | custom_data, custom_table_schemas, custom_data_records             |
+| `custom-tools.ts`       | `CustomToolsRepository`       | custom_tools                                                       |
+| `workspaces.ts`         | `WorkspacesRepository`        | user_workspaces, user_containers, code_executions, workspace_audit |
+| `plugins.ts`            | `PluginsRepository`           | plugins                                                            |
+| `config-services.ts`    | `ConfigServicesRepository`    | config_services, config_entries                                    |
+| `local-providers.ts`    | `LocalProvidersRepository`    | local_providers, local_models                                      |
 
 ### 6.4 Usage Pattern
 
 Repositories are consumed in two ways:
 
 **Factory function (for user-scoped data):**
+
 ```typescript
 import { createTasksRepository } from './repositories/index.js';
 
@@ -1420,6 +1419,7 @@ const tasks = await tasksRepo.list({ status: 'pending' });
 ```
 
 **Singleton instance (for global data):**
+
 ```typescript
 import { agentsRepo, settingsRepo } from './repositories/index.js';
 
@@ -1443,13 +1443,13 @@ Data stores implement the `DataStore<T>` interface from `@ownpilot/core`, provid
 
 ### 7.1 Available Stores
 
-| Store Class | Wraps Repository | Core Type |
-|-------------|------------------|-----------|
-| `BookmarkStore` | `BookmarksRepository` | `Bookmark` |
-| `NoteStore` | `NotesRepository` | `Note` |
-| `TaskStore` | `TasksRepository` | `Task` |
-| `CalendarStore` | `CalendarRepository` | `PersonalCalendarEvent` |
-| `ContactStore` | `ContactsRepository` | `Contact` |
+| Store Class     | Wraps Repository      | Core Type               |
+| --------------- | --------------------- | ----------------------- |
+| `BookmarkStore` | `BookmarksRepository` | `Bookmark`              |
+| `NoteStore`     | `NotesRepository`     | `Note`                  |
+| `TaskStore`     | `TasksRepository`     | `Task`                  |
+| `CalendarStore` | `CalendarRepository`  | `PersonalCalendarEvent` |
+| `ContactStore`  | `ContactsRepository`  | `Contact`               |
 
 ### 7.2 DataStore Interface
 
@@ -1480,12 +1480,12 @@ const stores = createDataStores('user-123');
 Legacy aliases are exported for migration from the older SQLite-based system:
 
 ```typescript
-export const SQLiteBookmarkStore = BookmarkStore;   // @deprecated
-export const SQLiteNoteStore = NoteStore;            // @deprecated
-export const SQLiteTaskStore = TaskStore;            // @deprecated
-export const SQLiteCalendarStore = CalendarStore;    // @deprecated
-export const SQLiteContactStore = ContactStore;      // @deprecated
-export const createSQLiteDataStores = createDataStores;  // @deprecated
+export const SQLiteBookmarkStore = BookmarkStore; // @deprecated
+export const SQLiteNoteStore = NoteStore; // @deprecated
+export const SQLiteTaskStore = TaskStore; // @deprecated
+export const SQLiteCalendarStore = CalendarStore; // @deprecated
+export const SQLiteContactStore = ContactStore; // @deprecated
+export const createSQLiteDataStores = createDataStores; // @deprecated
 ```
 
 ---
@@ -1511,11 +1511,11 @@ The `seedDefaultAgents()` function (in `seeds/index.ts`) only seeds when the `ag
 
 Creates three example plans with steps:
 
-| Plan Name | Steps | Purpose |
-|-----------|-------|---------|
-| Weekly Goal Review | 3 (tool_call, tool_call, llm_decision) | Review active goals and generate insights |
-| Daily Memory Digest | 2 (tool_call, llm_decision) | Summarize recent memories |
-| Task Cleanup | 2 (tool_call, llm_decision) | Find overdue or stale tasks |
+| Plan Name           | Steps                                  | Purpose                                   |
+| ------------------- | -------------------------------------- | ----------------------------------------- |
+| Weekly Goal Review  | 3 (tool_call, tool_call, llm_decision) | Review active goals and generate insights |
+| Daily Memory Digest | 2 (tool_call, llm_decision)            | Summarize recent memories                 |
+| Task Cleanup        | 2 (tool_call, llm_decision)            | Find overdue or stale tasks               |
 
 The `seedExamplePlans()` function checks existing plans by name and skips duplicates.
 
@@ -1579,21 +1579,26 @@ END $$;
 This pattern is safe to run any number of times. The migrations cover:
 
 **triggers table:**
+
 - Added `enabled` column (BOOLEAN DEFAULT TRUE)
 
 **custom_tools table (major migration):**
+
 - `implementation` -> `code` (column rename with data migration)
 - `enabled` -> `status` (boolean to enum migration)
 - `source` -> `created_by` (column rename with data migration)
 - Added: `category`, `permissions`, `requires_approval`, `version`, `metadata`, `usage_count`, `last_used_at`, `required_api_keys`
 
 **Model and provider config tables:**
+
 - Added `is_enabled` column to `user_model_configs`, `custom_providers`, `user_provider_configs`
 
 **conversations table:**
+
 - Added `agent_name` column
 
 **request_logs table:**
+
 - Added `error_stack` column
 
 ### 9.2 Table Migration (api_services -> config_services)
@@ -1652,17 +1657,17 @@ DatabaseAdapter (interface)
 
 The `DatabaseAdapter` interface defines:
 
-| Method | Description |
-|--------|-------------|
-| `query<T>(sql, params)` | Execute SELECT, return rows |
-| `queryOne<T>(sql, params)` | Execute SELECT, return first row or null |
-| `execute(sql, params)` | Execute INSERT/UPDATE/DELETE, return change count |
-| `transaction<T>(fn)` | Execute function in BEGIN/COMMIT/ROLLBACK |
-| `exec(sql)` | Execute raw SQL (schema changes) |
-| `close()` | Close connection pool |
-| `now()` | SQL timestamp expression (`NOW()`) |
-| `placeholder(index)` | Parameter placeholder (`$1`, `$2`, ...) |
-| `boolean(value)` | Convert boolean for storage |
+| Method                     | Description                                       |
+| -------------------------- | ------------------------------------------------- |
+| `query<T>(sql, params)`    | Execute SELECT, return rows                       |
+| `queryOne<T>(sql, params)` | Execute SELECT, return first row or null          |
+| `execute(sql, params)`     | Execute INSERT/UPDATE/DELETE, return change count |
+| `transaction<T>(fn)`       | Execute function in BEGIN/COMMIT/ROLLBACK         |
+| `exec(sql)`                | Execute raw SQL (schema changes)                  |
+| `close()`                  | Close connection pool                             |
+| `now()`                    | SQL timestamp expression (`NOW()`)                |
+| `placeholder(index)`       | Parameter placeholder (`$1`, `$2`, ...)           |
+| `boolean(value)`           | Convert boolean for storage                       |
 
 ### 10.2 PostgreSQL Connection Pool
 
@@ -1671,9 +1676,9 @@ The `PostgresAdapter` uses the `pg` library (node-postgres) with connection pool
 ```typescript
 this.pool = new Pool({
   connectionString: config.postgresUrl,
-  max: config.postgresPoolSize || 10,    // Maximum connections
-  idleTimeoutMillis: 30000,              // Close idle connections after 30s
-  connectionTimeoutMillis: 5000,         // Timeout on new connection attempts
+  max: config.postgresPoolSize || 10, // Maximum connections
+  idleTimeoutMillis: 30000, // Close idle connections after 30s
+  connectionTimeoutMillis: 5000, // Timeout on new connection attempts
 });
 ```
 
@@ -1741,15 +1746,15 @@ docker compose -f docker-compose.db.yml up -d
 
 Configuration:
 
-| Parameter | Default | Description |
-|-----------|---------|-------------|
-| Image | `postgres:16-alpine` | PostgreSQL 16 on Alpine |
-| Container name | `ownpilot-db` | Docker container name |
-| Host port | `25432` | Maps to container port 5432 |
-| Username | `ownpilot` | PostgreSQL user |
-| Password | `ownpilot_secret` | PostgreSQL password |
-| Database | `ownpilot` | PostgreSQL database name |
-| Volume | `ownpilot-postgres-data` | Persistent data |
+| Parameter      | Default                  | Description                 |
+| -------------- | ------------------------ | --------------------------- |
+| Image          | `postgres:16-alpine`     | PostgreSQL 16 on Alpine     |
+| Container name | `ownpilot-db`            | Docker container name       |
+| Host port      | `25432`                  | Maps to container port 5432 |
+| Username       | `ownpilot`               | PostgreSQL user             |
+| Password       | `ownpilot_secret`        | PostgreSQL password         |
+| Database       | `ownpilot`               | PostgreSQL database name    |
+| Volume         | `ownpilot-postgres-data` | Persistent data             |
 
 Health check: `pg_isready -U ownpilot -d ownpilot` (every 10s, 5 retries).
 
@@ -1775,16 +1780,16 @@ The gateway service depends on the PostgreSQL service with a health check condit
 
 ### 12.1 Database Connection
 
-| Variable | Required | Default | Description |
-|----------|----------|---------|-------------|
-| `DATABASE_URL` | No | (built from parts below) | Full PostgreSQL connection string |
-| `POSTGRES_HOST` | No | `localhost` | PostgreSQL hostname |
-| `POSTGRES_PORT` | No | `25432` | PostgreSQL port |
-| `POSTGRES_USER` | No | `ownpilot` | PostgreSQL username |
-| `POSTGRES_PASSWORD` | No | `ownpilot_secret` | PostgreSQL password |
-| `POSTGRES_DB` | No | `ownpilot` | PostgreSQL database name |
-| `POSTGRES_POOL_SIZE` | No | `10` | Maximum connection pool size |
-| `DB_VERBOSE` | No | `false` | Enable verbose SQL logging |
+| Variable             | Required | Default                  | Description                       |
+| -------------------- | -------- | ------------------------ | --------------------------------- |
+| `DATABASE_URL`       | No       | (built from parts below) | Full PostgreSQL connection string |
+| `POSTGRES_HOST`      | No       | `localhost`              | PostgreSQL hostname               |
+| `POSTGRES_PORT`      | No       | `25432`                  | PostgreSQL port                   |
+| `POSTGRES_USER`      | No       | `ownpilot`               | PostgreSQL username               |
+| `POSTGRES_PASSWORD`  | No       | `ownpilot_secret`        | PostgreSQL password               |
+| `POSTGRES_DB`        | No       | `ownpilot`               | PostgreSQL database name          |
+| `POSTGRES_POOL_SIZE` | No       | `10`                     | Maximum connection pool size      |
+| `DB_VERBOSE`         | No       | `false`                  | Enable verbose SQL logging        |
 
 If `DATABASE_URL` is not set, the connection string is built from the individual `POSTGRES_*` variables:
 

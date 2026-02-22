@@ -14,7 +14,14 @@ import {
   type IPluginService,
 } from '@ownpilot/core';
 import type { ConfigFieldDefinition } from '@ownpilot/core';
-import { apiResponse, apiError, ERROR_CODES, sanitizeId, notFoundError, validateQueryEnum } from './helpers.js';
+import {
+  apiResponse,
+  apiError,
+  ERROR_CODES,
+  sanitizeId,
+  notFoundError,
+  validateQueryEnum,
+} from './helpers.js';
 import { pluginsRepo } from '../db/repositories/plugins.js';
 import { configServicesRepo } from '../db/repositories/config-services.js';
 import { getLog } from '../services/log.js';
@@ -89,13 +96,13 @@ function toPluginInfo(plugin: Plugin): PluginInfo {
     pluginConfigSchema: plugin.manifest.pluginConfigSchema ?? [],
     settings: plugin.config.settings ?? {},
     hasSettings: (plugin.manifest.pluginConfigSchema ?? []).length > 0,
-    requiredServices: (plugin.manifest.requiredServices ?? []).map(svc => ({
+    requiredServices: (plugin.manifest.requiredServices ?? []).map((svc) => ({
       name: svc.name,
       displayName: svc.displayName ?? svc.name,
       isConfigured: configServicesRepo.getEntries(svc.name).length > 0,
     })),
     hasUnconfiguredServices: (plugin.manifest.requiredServices ?? []).some(
-      svc => configServicesRepo.getEntries(svc.name).length === 0
+      (svc) => configServicesRepo.getEntries(svc.name).length === 0
     ),
   };
 }
@@ -107,8 +114,22 @@ pluginsRoutes.get('/', async (c) => {
   const registry = getPluginService();
   const plugins = registry.getAll();
 
-  const status = validateQueryEnum(c.req.query('status'), ['installed', 'enabled', 'disabled', 'error', 'updating'] as const);
-  const capability = validateQueryEnum(c.req.query('capability'), ['tools', 'handlers', 'storage', 'scheduled', 'notifications', 'ui', 'integrations'] as const);
+  const status = validateQueryEnum(c.req.query('status'), [
+    'installed',
+    'enabled',
+    'disabled',
+    'error',
+    'updating',
+  ] as const);
+  const capability = validateQueryEnum(c.req.query('capability'), [
+    'tools',
+    'handlers',
+    'storage',
+    'scheduled',
+    'notifications',
+    'ui',
+    'integrations',
+  ] as const);
 
   let filtered = plugins;
 
@@ -163,12 +184,15 @@ pluginsRoutes.get('/tools', async (c) => {
   const registry = getPluginService();
   const tools = registry.getAllTools();
 
-  return apiResponse(c, tools.map((t) => ({
-    pluginId: t.pluginId,
-    name: t.definition.name,
-    description: t.definition.description,
-    parameters: t.definition.parameters,
-  })));
+  return apiResponse(
+    c,
+    tools.map((t) => ({
+      pluginId: t.pluginId,
+      name: t.definition.name,
+      description: t.definition.description,
+      parameters: t.definition.parameters,
+    }))
+  );
 });
 
 /**
@@ -304,7 +328,14 @@ pluginsRoutes.post('/:id/permissions', async (c) => {
   // Validate permissions
   for (const perm of body.permissions) {
     if (!plugin.manifest.permissions.includes(perm)) {
-      return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: `Plugin does not request permission: ${perm}` }, 400);
+      return apiError(
+        c,
+        {
+          code: ERROR_CODES.INVALID_REQUEST,
+          message: `Plugin does not request permission: ${perm}`,
+        },
+        400
+      );
     }
   }
 
@@ -355,7 +386,11 @@ pluginsRoutes.put('/:id/settings', async (c) => {
 
   const body = await c.req.json<{ settings: Record<string, unknown> }>();
   if (!body.settings || typeof body.settings !== 'object') {
-    return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'settings object required' }, 400);
+    return apiError(
+      c,
+      { code: ERROR_CODES.INVALID_INPUT, message: 'settings object required' },
+      400
+    );
   }
 
   // Merge with existing settings
@@ -394,7 +429,7 @@ pluginsRoutes.get('/:id/required-services', async (c) => {
     return notFoundError(c, 'Plugin', id);
   }
 
-  const requiredServices = (plugin.manifest.requiredServices ?? []).map(svc => {
+  const requiredServices = (plugin.manifest.requiredServices ?? []).map((svc) => {
     const serviceDef = configServicesRepo.getByName(svc.name);
     const entries = serviceDef ? configServicesRepo.getEntries(svc.name) : [];
     return {
@@ -413,7 +448,7 @@ pluginsRoutes.get('/:id/required-services', async (c) => {
     pluginId: id,
     pluginName: plugin.manifest.name,
     services: requiredServices,
-    allConfigured: requiredServices.every(s => s.isConfigured),
+    allConfigured: requiredServices.every((s) => s.isConfigured),
   });
 });
 

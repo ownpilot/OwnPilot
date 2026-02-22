@@ -210,7 +210,7 @@ describe('ExecutionPermissionsRepository', () => {
           execute_shell: 'prompt',
           compile_code: 'prompt',
           package_manager: 'allowed',
-        }),
+        })
       );
 
       const result = await executionPermissionsRepo.get('user-1');
@@ -250,7 +250,7 @@ describe('ExecutionPermissionsRepository', () => {
           execute_shell: 'blocked',
           compile_code: 'blocked',
           package_manager: 'blocked',
-        }),
+        })
       );
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
 
@@ -382,7 +382,7 @@ describe('ExecutionPermissionsRepository', () => {
 
     it('should apply valid category mode "blocked"', async () => {
       mockAdapter.queryOne.mockResolvedValueOnce(
-        makePermissionRow({ execute_javascript: 'allowed' }),
+        makePermissionRow({ execute_javascript: 'allowed' })
       );
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
 
@@ -394,9 +394,7 @@ describe('ExecutionPermissionsRepository', () => {
     });
 
     it('should ignore invalid category permission values', async () => {
-      mockAdapter.queryOne.mockResolvedValueOnce(
-        makePermissionRow({ execute_shell: 'blocked' }),
-      );
+      mockAdapter.queryOne.mockResolvedValueOnce(makePermissionRow({ execute_shell: 'blocked' }));
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
 
       const result = await executionPermissionsRepo.set('user-1', {
@@ -414,7 +412,7 @@ describe('ExecutionPermissionsRepository', () => {
           execute_shell: 'blocked',
           compile_code: 'blocked',
           package_manager: 'blocked',
-        }),
+        })
       );
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
 
@@ -485,7 +483,7 @@ describe('ExecutionPermissionsRepository', () => {
           execute_shell: 'blocked',
           compile_code: 'blocked',
           package_manager: 'blocked',
-        }),
+        })
       );
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
 

@@ -23,20 +23,17 @@ export const extensionsApi = {
   installFromPath: (path: string) =>
     apiClient.post<{ package: ExtensionInfo }>('/extensions/install', { path }),
   uninstall: (id: string) => apiClient.delete<void>(`/extensions/${id}`),
-  enable: (id: string) =>
-    apiClient.post<{ package: ExtensionInfo }>(`/extensions/${id}/enable`),
-  disable: (id: string) =>
-    apiClient.post<{ package: ExtensionInfo }>(`/extensions/${id}/disable`),
-  reload: (id: string) =>
-    apiClient.post<{ package: ExtensionInfo }>(`/extensions/${id}/reload`),
+  enable: (id: string) => apiClient.post<{ package: ExtensionInfo }>(`/extensions/${id}/enable`),
+  disable: (id: string) => apiClient.post<{ package: ExtensionInfo }>(`/extensions/${id}/disable`),
+  reload: (id: string) => apiClient.post<{ package: ExtensionInfo }>(`/extensions/${id}/reload`),
   scan: (directory?: string) =>
     apiClient.post<{ installed: number; updated: number; failed: number; errors: string[] }>(
       '/extensions/scan',
-      directory ? { directory } : {},
+      directory ? { directory } : {}
     ),
   generate: (description: string) =>
-    apiClient.post<{ manifest: Record<string, unknown>; validation: { valid: boolean; errors: string[] } }>(
-      '/extensions/generate',
-      { description },
-    ),
+    apiClient.post<{
+      manifest: Record<string, unknown>;
+      validation: { valid: boolean; errors: string[] };
+    }>('/extensions/generate', { description }),
 };

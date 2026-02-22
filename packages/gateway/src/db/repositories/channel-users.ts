@@ -113,10 +113,9 @@ export class ChannelUsersRepository extends BaseRepository {
    * Get by ID.
    */
   async getById(id: string): Promise<ChannelUserEntity | null> {
-    const row = await this.queryOne<ChannelUserRow>(
-      `SELECT * FROM channel_users WHERE id = $1`,
-      [id]
-    );
+    const row = await this.queryOne<ChannelUserRow>(`SELECT * FROM channel_users WHERE id = $1`, [
+      id,
+    ]);
     return row ? rowToEntity(row) : null;
   }
 
@@ -189,20 +188,14 @@ export class ChannelUsersRepository extends BaseRepository {
    * Block a channel user.
    */
   async block(id: string): Promise<void> {
-    await this.execute(
-      `UPDATE channel_users SET is_blocked = TRUE WHERE id = $1`,
-      [id]
-    );
+    await this.execute(`UPDATE channel_users SET is_blocked = TRUE WHERE id = $1`, [id]);
   }
 
   /**
    * Unblock a channel user.
    */
   async unblock(id: string): Promise<void> {
-    await this.execute(
-      `UPDATE channel_users SET is_blocked = FALSE WHERE id = $1`,
-      [id]
-    );
+    await this.execute(`UPDATE channel_users SET is_blocked = FALSE WHERE id = $1`, [id]);
   }
 
   /**
@@ -242,10 +235,7 @@ export class ChannelUsersRepository extends BaseRepository {
    * Delete a channel user.
    */
   async delete(id: string): Promise<boolean> {
-    const result = await this.execute(
-      `DELETE FROM channel_users WHERE id = $1`,
-      [id]
-    );
+    const result = await this.execute(`DELETE FROM channel_users WHERE id = $1`, [id]);
     return result.changes > 0;
   }
 }

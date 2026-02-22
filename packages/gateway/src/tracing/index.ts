@@ -162,10 +162,7 @@ export function createTraceContext(requestId: string, userId?: string): TraceCon
 /**
  * Run a function with trace context
  */
-export function withTraceContext<T>(
-  context: TraceContext,
-  fn: () => T
-): T {
+export function withTraceContext<T>(context: TraceContext, fn: () => T): T {
   return traceStorage.run(context, fn);
 }
 
@@ -280,11 +277,7 @@ export function traceMemoryOp(
 /**
  * Trace a file operation
  */
-export function traceFileOp(
-  type: 'read' | 'write' | 'delete',
-  path: string,
-  size?: number
-): void {
+export function traceFileOp(type: 'read' | 'write' | 'delete', path: string, size?: number): void {
   traceEvent({
     type: type === 'read' ? 'file_read' : 'file_write',
     name: `File ${type}: ${path}`,
@@ -317,11 +310,7 @@ export function traceModelCall(
 /**
  * Trace an autonomy check
  */
-export function traceAutonomyCheck(
-  toolName: string,
-  approved: boolean,
-  reason?: string
-): void {
+export function traceAutonomyCheck(toolName: string, approved: boolean, reason?: string): void {
   traceEvent({
     type: 'autonomy_check',
     name: `Autonomy check: ${toolName}`,
@@ -445,8 +434,8 @@ export function getTraceSummary(): TraceSummary | null {
       provider: e.details?.provider as string | undefined,
       model: e.details?.model as string | undefined,
       tokens: e.details?.tokens
-        ? ((e.details.tokens as { input: number; output: number }).input +
-            (e.details.tokens as { input: number; output: number }).output)
+        ? (e.details.tokens as { input: number; output: number }).input +
+          (e.details.tokens as { input: number; output: number }).output
         : undefined,
       duration: e.duration,
     }));
@@ -463,7 +452,7 @@ export function getTraceSummary(): TraceSummary | null {
   // Extract triggers
   const triggersFired = events
     .filter((e) => e.type === 'trigger_fire')
-    .map((e) => e.details?.triggerName as string ?? e.details?.triggerId as string);
+    .map((e) => (e.details?.triggerName as string) ?? (e.details?.triggerId as string));
 
   // Extract errors
   const errors = events.filter((e) => e.type === 'error').map((e) => e.error ?? e.name);

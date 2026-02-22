@@ -123,15 +123,13 @@ describe('Settings Routes', () => {
 
   describe('GET /settings', () => {
     it('returns settings overview', async () => {
-      mockSettingsRepo.getByPrefix.mockResolvedValue([
-        { key: 'api_key:openai', value: 'sk-xxx' },
-      ]);
+      mockSettingsRepo.getByPrefix.mockResolvedValue([{ key: 'api_key:openai', value: 'sk-xxx' }]);
       mockLocalProvidersRepo.listProviders.mockResolvedValue([
         { id: 'ollama', name: 'Ollama', isEnabled: true },
       ]);
       mockSettingsRepo.get
-        .mockResolvedValueOnce('openai')    // default provider
-        .mockResolvedValueOnce('gpt-4');    // default model
+        .mockResolvedValueOnce('openai') // default provider
+        .mockResolvedValueOnce('gpt-4'); // default model
 
       const res = await app.request('/settings');
 

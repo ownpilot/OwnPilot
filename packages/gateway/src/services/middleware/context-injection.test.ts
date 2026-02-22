@@ -3,11 +3,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import type {
-  NormalizedMessage,
-  MessageProcessingResult,
-  PipelineContext,
-} from '@ownpilot/core';
+import type { NormalizedMessage, MessageProcessingResult, PipelineContext } from '@ownpilot/core';
 
 // ---------------------------------------------------------------------------
 // Mocks — vi.hoisted() ensures these are available when vi.mock factories run
@@ -16,7 +12,7 @@ import type {
 const { mockBuildEnhancedSystemPrompt, mockGetErrorMessage, mockLog } = vi.hoisted(() => ({
   mockBuildEnhancedSystemPrompt: vi.fn(),
   mockGetErrorMessage: vi.fn((err: unknown, fallback?: string) =>
-    err instanceof Error ? err.message : (fallback ?? String(err)),
+    err instanceof Error ? err.message : (fallback ?? String(err))
   ),
   mockLog: { info: vi.fn(), error: vi.fn(), warn: vi.fn(), debug: vi.fn() },
 }));
@@ -60,7 +56,9 @@ function createContext(opts: MockContextOptions = {}): PipelineContext {
   const store = new Map<string, unknown>(Object.entries(opts.store ?? {}));
   return {
     get: vi.fn(<T = unknown>(key: string): T | undefined => store.get(key) as T | undefined),
-    set: vi.fn((key: string, value: unknown) => { store.set(key, value); }),
+    set: vi.fn((key: string, value: unknown) => {
+      store.set(key, value);
+    }),
     has: vi.fn((key: string) => store.has(key)),
     addStage: vi.fn(),
     addWarning: vi.fn(),
@@ -101,7 +99,8 @@ function createAgent(overrides?: Partial<MockAgent>): MockAgent {
 
 /** Standard enhanced prompt returned by buildEnhancedSystemPrompt */
 const BASE_PROMPT = 'You are a helpful assistant.';
-const INJECTED_SUFFIX = '\n---\n## User Context (from memory)\n- Memory 1\n---\n## Active Goals\n- Goal 1';
+const INJECTED_SUFFIX =
+  '\n---\n## User Context (from memory)\n- Memory 1\n---\n## Active Goals\n- Goal 1';
 const ENHANCED_PROMPT = BASE_PROMPT + INJECTED_SUFFIX;
 const DEFAULT_STATS = { memoriesUsed: 1, goalsUsed: 1 };
 
@@ -139,7 +138,9 @@ describe('createContextInjectionMiddleware', () => {
 
       const result = await middleware(msg, ctx, next);
 
-      expect(ctx.addWarning).toHaveBeenCalledWith('No agent in context, skipping context injection');
+      expect(ctx.addWarning).toHaveBeenCalledWith(
+        'No agent in context, skipping context injection'
+      );
       expect(next).toHaveBeenCalledOnce();
       expect(result).toBe(nextResult);
     });
@@ -169,17 +170,14 @@ describe('createContextInjectionMiddleware', () => {
       await middleware(msg, ctx, next);
 
       expect(mockBuildEnhancedSystemPrompt).toHaveBeenCalledOnce();
-      expect(mockBuildEnhancedSystemPrompt).toHaveBeenCalledWith(
-        'You are a helpful assistant.',
-        {
-          userId: 'user-1',
-          agentId: 'agent-1',
-          maxMemories: 10,
-          maxGoals: 5,
-          enableTriggers: true,
-          enableAutonomy: true,
-        },
-      );
+      expect(mockBuildEnhancedSystemPrompt).toHaveBeenCalledWith('You are a helpful assistant.', {
+        userId: 'user-1',
+        agentId: 'agent-1',
+        maxMemories: 10,
+        maxGoals: 5,
+        enableTriggers: true,
+        enableAutonomy: true,
+      });
     });
 
     it('should update the agent system prompt when enhanced prompt differs', async () => {
@@ -271,7 +269,7 @@ describe('createContextInjectionMiddleware', () => {
         expect.objectContaining({
           userId: 'default',
           agentId: 'chat',
-        }),
+        })
       );
     });
 
@@ -287,7 +285,7 @@ describe('createContextInjectionMiddleware', () => {
 
       expect(mockBuildEnhancedSystemPrompt).toHaveBeenCalledWith(
         'You are a helpful AI assistant.',
-        expect.any(Object),
+        expect.any(Object)
       );
     });
 
@@ -303,7 +301,7 @@ describe('createContextInjectionMiddleware', () => {
 
       expect(mockBuildEnhancedSystemPrompt).toHaveBeenCalledWith(
         'You are a helpful AI assistant.',
-        expect.any(Object),
+        expect.any(Object)
       );
     });
   });
@@ -413,7 +411,7 @@ describe('createContextInjectionMiddleware', () => {
       expect(mockBuildEnhancedSystemPrompt).toHaveBeenCalledOnce();
       expect(mockBuildEnhancedSystemPrompt).toHaveBeenCalledWith(
         expect.any(String),
-        expect.objectContaining({ userId: 'user-2' }),
+        expect.objectContaining({ userId: 'user-2' })
       );
     });
 
@@ -433,7 +431,7 @@ describe('createContextInjectionMiddleware', () => {
       expect(mockBuildEnhancedSystemPrompt).toHaveBeenCalledOnce();
       expect(mockBuildEnhancedSystemPrompt).toHaveBeenCalledWith(
         expect.any(String),
-        expect.objectContaining({ agentId: 'agent-2' }),
+        expect.objectContaining({ agentId: 'agent-2' })
       );
     });
   });
@@ -606,10 +604,9 @@ describe('createContextInjectionMiddleware', () => {
 
       await middleware(msg, ctx, next);
 
-      expect(mockLog.warn).toHaveBeenCalledWith(
-        'Failed to build enhanced prompt',
-        { error: 'DB connection failed' },
-      );
+      expect(mockLog.warn).toHaveBeenCalledWith('Failed to build enhanced prompt', {
+        error: 'DB connection failed',
+      });
     });
 
     it('should add warning to context', async () => {
@@ -621,9 +618,7 @@ describe('createContextInjectionMiddleware', () => {
 
       await middleware(msg, ctx, next);
 
-      expect(ctx.addWarning).toHaveBeenCalledWith(
-        'Context injection failed: DB connection failed',
-      );
+      expect(ctx.addWarning).toHaveBeenCalledWith('Context injection failed: DB connection failed');
     });
 
     it('should not update agent system prompt on error', async () => {
@@ -647,8 +642,9 @@ describe('createContextInjectionMiddleware', () => {
 
       await middleware(msg, ctx, next);
 
-      const statsCalls = (ctx.set as ReturnType<typeof vi.fn>).mock.calls
-        .filter((c: unknown[]) => c[0] === 'contextStats');
+      const statsCalls = (ctx.set as ReturnType<typeof vi.fn>).mock.calls.filter(
+        (c: unknown[]) => c[0] === 'contextStats'
+      );
       expect(statsCalls).toHaveLength(0);
     });
 
@@ -798,7 +794,7 @@ describe('createContextInjectionMiddleware', () => {
       // The stripping happens only for extracting the injectedSuffix and cache re-apply.
       expect(mockBuildEnhancedSystemPrompt).toHaveBeenCalledWith(
         goalsOnlyPrompt,
-        expect.any(Object),
+        expect.any(Object)
       );
     });
 
@@ -836,7 +832,8 @@ describe('createContextInjectionMiddleware', () => {
       const agent = createAgent();
 
       // Enhanced prompt includes autonomy section
-      const autonomySuffix = '\n---\n## Autonomy Level: balanced\nYou can act with moderate autonomy.';
+      const autonomySuffix =
+        '\n---\n## Autonomy Level: balanced\nYou can act with moderate autonomy.';
       mockBuildEnhancedSystemPrompt.mockResolvedValue({
         prompt: BASE_PROMPT + autonomySuffix,
         stats: { memoriesUsed: 0, goalsUsed: 0 },
@@ -877,7 +874,9 @@ describe('createContextInjectionMiddleware', () => {
 
       // On re-apply with a different old suffix
       agent.getConversation.mockReturnValue({
-        systemPrompt: BASE_PROMPT + '\n---\n## Active Goals\n- Old goal\n---\n## User Context (from memory)\n- Old mem',
+        systemPrompt:
+          BASE_PROMPT +
+          '\n---\n## Active Goals\n- Old goal\n---\n## User Context (from memory)\n- Old mem',
       });
 
       const ctx2 = createContext({ store: { agent, userId: 'user-1', agentId: 'agent-1' } });

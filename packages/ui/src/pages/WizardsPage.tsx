@@ -6,7 +6,19 @@
  */
 
 import { useNavigate } from 'react-router-dom';
-import { Key, Telegram, Wrench, Check, Sparkles, Bot, Code, GitBranch, Target, Zap, Link } from '../components/icons';
+import {
+  Key,
+  Telegram,
+  Wrench,
+  Check,
+  Sparkles,
+  Bot,
+  Code,
+  GitBranch,
+  Target,
+  Zap,
+  Link,
+} from '../components/icons';
 
 // ============================================================================
 // Wizard Definitions
@@ -117,7 +129,8 @@ export function WizardsPage() {
         </h1>
       </div>
       <p className="text-text-muted dark:text-dark-text-muted mb-8">
-        Step-by-step guides to get OwnPilot fully configured. Each wizard walks you through the setup process.
+        Step-by-step guides to get OwnPilot fully configured. Each wizard walks you through the
+        setup process.
       </p>
 
       {/* Wizard Cards */}
@@ -133,7 +146,9 @@ export function WizardsPage() {
             >
               {/* Icon + Badge */}
               <div className="flex items-start justify-between mb-4">
-                <div className={`p-3 rounded-lg bg-bg-tertiary dark:bg-dark-bg-tertiary ${w.color}`}>
+                <div
+                  className={`p-3 rounded-lg bg-bg-tertiary dark:bg-dark-bg-tertiary ${w.color}`}
+                >
                   <Icon className="w-6 h-6" />
                 </div>
                 {completed && (
@@ -156,11 +171,9 @@ export function WizardsPage() {
 
               {/* Footer */}
               <div className="flex items-center justify-between">
-                <span className="text-xs text-text-muted dark:text-dark-text-muted">
-                  {w.time}
-                </span>
+                <span className="text-xs text-text-muted dark:text-dark-text-muted">{w.time}</span>
                 <span className="text-xs font-medium text-primary opacity-0 group-hover:opacity-100 transition-opacity">
-                  {completed ? 'Run Again' : 'Start'}  &rarr;
+                  {completed ? 'Run Again' : 'Start'} &rarr;
                 </span>
               </div>
             </button>

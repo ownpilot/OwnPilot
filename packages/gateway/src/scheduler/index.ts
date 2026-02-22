@@ -77,7 +77,11 @@ async function executeScheduledTask(task: ScheduledTask, depth = 0): Promise<Tas
       }
     } else if (task.payload.type === 'tool') {
       // Execute tool directly
-      const toolPayload = task.payload as { type: 'tool'; toolName: string; args: Record<string, unknown> };
+      const toolPayload = task.payload as {
+        type: 'tool';
+        toolName: string;
+        args: Record<string, unknown>;
+      };
       const agent = await getOrCreateDefaultAgent();
       const tools = agent.getTools();
       const tool = tools.find((t) => t.name === toolPayload.toolName);

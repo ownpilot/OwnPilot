@@ -15,11 +15,19 @@ const mockDangerousPatterns = vi.hoisted(() => [
 
 const mockUtilityTools = vi.hoisted(() => [
   {
-    definition: { name: 'test_tool', description: 'A test tool', parameters: { type: 'object', properties: {} } },
+    definition: {
+      name: 'test_tool',
+      description: 'A test tool',
+      parameters: { type: 'object', properties: {} },
+    },
     executor: vi.fn(),
   },
   {
-    definition: { name: 'another_tool', description: 'Another tool', parameters: { type: 'object', properties: { q: { type: 'string' } } } },
+    definition: {
+      name: 'another_tool',
+      description: 'Another tool',
+      parameters: { type: 'object', properties: { q: { type: 'string' } } },
+    },
     executor: vi.fn(),
   },
 ]);
@@ -153,30 +161,22 @@ describe('createDynamicToolRegistry', () => {
 
     it('throws for a name starting with uppercase', () => {
       const registry = createDynamicToolRegistry();
-      expect(() =>
-        registry.register(makeTool({ name: 'MyTool' }))
-      ).toThrow('Invalid tool name');
+      expect(() => registry.register(makeTool({ name: 'MyTool' }))).toThrow('Invalid tool name');
     });
 
     it('throws for a name starting with a number', () => {
       const registry = createDynamicToolRegistry();
-      expect(() =>
-        registry.register(makeTool({ name: '1tool' }))
-      ).toThrow('Invalid tool name');
+      expect(() => registry.register(makeTool({ name: '1tool' }))).toThrow('Invalid tool name');
     });
 
     it('throws for a name with spaces', () => {
       const registry = createDynamicToolRegistry();
-      expect(() =>
-        registry.register(makeTool({ name: 'my tool' }))
-      ).toThrow('Invalid tool name');
+      expect(() => registry.register(makeTool({ name: 'my tool' }))).toThrow('Invalid tool name');
     });
 
     it('throws for a name with hyphens', () => {
       const registry = createDynamicToolRegistry();
-      expect(() =>
-        registry.register(makeTool({ name: 'my-tool' }))
-      ).toThrow('Invalid tool name');
+      expect(() => registry.register(makeTool({ name: 'my-tool' }))).toThrow('Invalid tool name');
     });
 
     it('allows names with underscores', () => {
@@ -193,30 +193,28 @@ describe('createDynamicToolRegistry', () => {
 
     it('throws for an empty name', () => {
       const registry = createDynamicToolRegistry();
-      expect(() =>
-        registry.register(makeTool({ name: '' }))
-      ).toThrow('Invalid tool name');
+      expect(() => registry.register(makeTool({ name: '' }))).toThrow('Invalid tool name');
     });
 
     it('throws for code containing require()', () => {
       const registry = createDynamicToolRegistry();
-      expect(() =>
-        registry.register(makeTool({ code: 'const fs = require("fs")' }))
-      ).toThrow('Tool code validation failed');
+      expect(() => registry.register(makeTool({ code: 'const fs = require("fs")' }))).toThrow(
+        'Tool code validation failed'
+      );
     });
 
     it('throws for code containing eval()', () => {
       const registry = createDynamicToolRegistry();
-      expect(() =>
-        registry.register(makeTool({ code: 'eval("alert(1)")' }))
-      ).toThrow('Tool code validation failed');
+      expect(() => registry.register(makeTool({ code: 'eval("alert(1)")' }))).toThrow(
+        'Tool code validation failed'
+      );
     });
 
     it('throws for code containing process access', () => {
       const registry = createDynamicToolRegistry();
-      expect(() =>
-        registry.register(makeTool({ code: 'console.log(process.env)' }))
-      ).toThrow('Tool code validation failed');
+      expect(() => registry.register(makeTool({ code: 'console.log(process.env)' }))).toThrow(
+        'Tool code validation failed'
+      );
     });
 
     it('allows safe code', () => {
@@ -557,7 +555,11 @@ describe('createDynamicToolRegistry', () => {
     it('passes callableTools to sandbox globals for callTool', async () => {
       const customTools = [
         {
-          definition: { name: 'custom_a', description: 'Custom A', parameters: { type: 'object' as const, properties: {} } },
+          definition: {
+            name: 'custom_a',
+            description: 'Custom A',
+            parameters: { type: 'object' as const, properties: {} },
+          },
           executor: vi.fn(),
         },
       ];
@@ -595,7 +597,12 @@ describe('createToolDefinition', () => {
   });
 
   it('has required parameters: name, description, parameters, code', () => {
-    expect(createToolDefinition.parameters.required).toEqual(['name', 'description', 'parameters', 'code']);
+    expect(createToolDefinition.parameters.required).toEqual([
+      'name',
+      'description',
+      'parameters',
+      'code',
+    ]);
   });
 
   it('defines all expected parameter properties', () => {

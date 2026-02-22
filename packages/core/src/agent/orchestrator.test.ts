@@ -87,7 +87,10 @@ function makeExecutor(result: unknown = 'ok', isError = false): ToolExecutor {
  * If the array is exhausted, returns a plain text response.
  */
 function makeMockProvider(
-  responses: Array<{ content?: string; toolCalls?: Array<{ id: string; name: string; arguments: string }> }>
+  responses: Array<{
+    content?: string;
+    toolCalls?: Array<{ id: string; name: string; arguments: string }>;
+  }>
 ): LLMProvider {
   let callIndex = 0;
   return {
@@ -380,7 +383,7 @@ describe('AgentOrchestrator', () => {
     it('should include the user message in messages', async () => {
       const orchestrator = new AgentOrchestrator(makeConfig());
       const result = await orchestrator.execute('What is the weather?');
-      const userMsg = result.messages.find(m => m.role === 'user');
+      const userMsg = result.messages.find((m) => m.role === 'user');
       expect(userMsg).toBeDefined();
       expect(userMsg!.content).toBe('What is the weather?');
     });
@@ -388,7 +391,7 @@ describe('AgentOrchestrator', () => {
     it('should include the assistant response in messages', async () => {
       const orchestrator = new AgentOrchestrator(makeConfig());
       const result = await orchestrator.execute('Hello');
-      const assistantMsg = result.messages.find(m => m.role === 'assistant');
+      const assistantMsg = result.messages.find((m) => m.role === 'assistant');
       expect(assistantMsg).toBeDefined();
       expect(assistantMsg!.content).toBe('Hello!');
     });
@@ -427,36 +430,28 @@ describe('AgentOrchestrator', () => {
       const provider = makeMockProvider([{ content: 'Reply' }]);
       const orchestrator = new AgentOrchestrator(makeConfig({ provider, model: 'gpt-4' }));
       await orchestrator.execute('Test');
-      expect(provider.complete).toHaveBeenCalledWith(
-        expect.objectContaining({ model: 'gpt-4' }),
-      );
+      expect(provider.complete).toHaveBeenCalledWith(expect.objectContaining({ model: 'gpt-4' }));
     });
 
     it('should call provider.complete with maxTokens', async () => {
       const provider = makeMockProvider([{ content: 'Reply' }]);
       const orchestrator = new AgentOrchestrator(makeConfig({ provider, maxTokens: 1000 }));
       await orchestrator.execute('Test');
-      expect(provider.complete).toHaveBeenCalledWith(
-        expect.objectContaining({ maxTokens: 1000 }),
-      );
+      expect(provider.complete).toHaveBeenCalledWith(expect.objectContaining({ maxTokens: 1000 }));
     });
 
     it('should call provider.complete with temperature', async () => {
       const provider = makeMockProvider([{ content: 'Reply' }]);
       const orchestrator = new AgentOrchestrator(makeConfig({ provider, temperature: 0.5 }));
       await orchestrator.execute('Test');
-      expect(provider.complete).toHaveBeenCalledWith(
-        expect.objectContaining({ temperature: 0.5 }),
-      );
+      expect(provider.complete).toHaveBeenCalledWith(expect.objectContaining({ temperature: 0.5 }));
     });
 
     it('should not pass tools to provider when tools array is empty', async () => {
       const provider = makeMockProvider([{ content: 'Reply' }]);
       const orchestrator = new AgentOrchestrator(makeConfig({ provider, tools: [] }));
       await orchestrator.execute('Test');
-      expect(provider.complete).toHaveBeenCalledWith(
-        expect.objectContaining({ tools: undefined }),
-      );
+      expect(provider.complete).toHaveBeenCalledWith(expect.objectContaining({ tools: undefined }));
     });
 
     it('should pass tools to provider when tools array is non-empty', async () => {
@@ -464,9 +459,7 @@ describe('AgentOrchestrator', () => {
       const provider = makeMockProvider([{ content: 'Reply' }]);
       const orchestrator = new AgentOrchestrator(makeConfig({ provider, tools }));
       await orchestrator.execute('Test');
-      expect(provider.complete).toHaveBeenCalledWith(
-        expect.objectContaining({ tools }),
-      );
+      expect(provider.complete).toHaveBeenCalledWith(expect.objectContaining({ tools }));
     });
 
     it('should handle provider returning empty content as empty string response', async () => {
@@ -498,7 +491,7 @@ describe('AgentOrchestrator', () => {
         expect.objectContaining({
           response: 'Hello!',
           iterationCount: 1,
-        }),
+        })
       );
     });
 
@@ -508,7 +501,7 @@ describe('AgentOrchestrator', () => {
       expect(mockEventSystem.emit).toHaveBeenCalledWith(
         'agent.iteration',
         expect.stringMatching(/^orchestrator:exec_/),
-        expect.objectContaining({ iteration: 1 }),
+        expect.objectContaining({ iteration: 1 })
       );
     });
 
@@ -522,7 +515,7 @@ describe('AgentOrchestrator', () => {
       expect(mockEventSystem.emit).toHaveBeenCalledWith(
         'agent.error',
         expect.stringMatching(/^orchestrator:exec_/),
-        expect.objectContaining({ error: 'LLM failure' }),
+        expect.objectContaining({ error: 'LLM failure' })
       );
     });
 
@@ -532,7 +525,7 @@ describe('AgentOrchestrator', () => {
       expect(mockEventSystem.emit).toHaveBeenCalledWith(
         'agent.complete',
         expect.any(String),
-        expect.objectContaining({ agentId: result.id }),
+        expect.objectContaining({ agentId: result.id })
       );
     });
 
@@ -542,7 +535,7 @@ describe('AgentOrchestrator', () => {
       expect(mockEventSystem.emit).toHaveBeenCalledWith(
         'agent.complete',
         expect.any(String),
-        expect.objectContaining({ duration: expect.any(Number) }),
+        expect.objectContaining({ duration: expect.any(Number) })
       );
     });
   });
@@ -562,11 +555,13 @@ describe('AgentOrchestrator', () => {
         { content: 'The weather in NYC is sunny.' },
       ]);
 
-      const orchestrator = new AgentOrchestrator(makeConfig({
-        provider,
-        tools: [makeTool('get_weather')],
-        toolExecutors: new Map([['get_weather', toolExecutor]]),
-      }));
+      const orchestrator = new AgentOrchestrator(
+        makeConfig({
+          provider,
+          tools: [makeTool('get_weather')],
+          toolExecutors: new Map([['get_weather', toolExecutor]]),
+        })
+      );
 
       const result = await orchestrator.execute('What is the weather?');
 
@@ -587,11 +582,13 @@ describe('AgentOrchestrator', () => {
         { content: 'Done' },
       ]);
 
-      const orchestrator = new AgentOrchestrator(makeConfig({
-        provider,
-        tools: [makeTool('search')],
-        toolExecutors: new Map([['search', toolExecutor]]),
-      }));
+      const orchestrator = new AgentOrchestrator(
+        makeConfig({
+          provider,
+          tools: [makeTool('search')],
+          toolExecutors: new Map([['search', toolExecutor]]),
+        })
+      );
 
       const result = await orchestrator.execute('Search for test');
       expect(result.toolCalls[0].arguments).toEqual({ query: 'test' });
@@ -607,11 +604,13 @@ describe('AgentOrchestrator', () => {
         { content: 'Done' },
       ]);
 
-      const orchestrator = new AgentOrchestrator(makeConfig({
-        provider,
-        tools: [makeTool('search')],
-        toolExecutors: new Map([['search', toolExecutor]]),
-      }));
+      const orchestrator = new AgentOrchestrator(
+        makeConfig({
+          provider,
+          tools: [makeTool('search')],
+          toolExecutors: new Map([['search', toolExecutor]]),
+        })
+      );
 
       const result = await orchestrator.execute('Search');
       expect(result.toolCalls[0].result).toEqual({ data: 'found it' });
@@ -627,11 +626,13 @@ describe('AgentOrchestrator', () => {
         { content: 'Done' },
       ]);
 
-      const orchestrator = new AgentOrchestrator(makeConfig({
-        provider,
-        tools: [makeTool('tool_a')],
-        toolExecutors: new Map([['tool_a', toolExecutor]]),
-      }));
+      const orchestrator = new AgentOrchestrator(
+        makeConfig({
+          provider,
+          tools: [makeTool('tool_a')],
+          toolExecutors: new Map([['tool_a', toolExecutor]]),
+        })
+      );
 
       const result = await orchestrator.execute('Do something');
       expect(typeof result.toolCalls[0].duration).toBe('number');
@@ -652,11 +653,16 @@ describe('AgentOrchestrator', () => {
         { content: 'Both done' },
       ]);
 
-      const orchestrator = new AgentOrchestrator(makeConfig({
-        provider,
-        tools: [makeTool('tool_a'), makeTool('tool_b')],
-        toolExecutors: new Map([['tool_a', execA], ['tool_b', execB]]),
-      }));
+      const orchestrator = new AgentOrchestrator(
+        makeConfig({
+          provider,
+          tools: [makeTool('tool_a'), makeTool('tool_b')],
+          toolExecutors: new Map([
+            ['tool_a', execA],
+            ['tool_b', execB],
+          ]),
+        })
+      );
 
       const result = await orchestrator.execute('Do both');
       expect(result.toolCalls).toHaveLength(2);
@@ -678,11 +684,16 @@ describe('AgentOrchestrator', () => {
         { content: 'All steps done' },
       ]);
 
-      const orchestrator = new AgentOrchestrator(makeConfig({
-        provider,
-        tools: [makeTool('step1'), makeTool('step2')],
-        toolExecutors: new Map([['step1', exec], ['step2', exec]]),
-      }));
+      const orchestrator = new AgentOrchestrator(
+        makeConfig({
+          provider,
+          tools: [makeTool('step1'), makeTool('step2')],
+          toolExecutors: new Map([
+            ['step1', exec],
+            ['step2', exec],
+          ]),
+        })
+      );
 
       const result = await orchestrator.execute('Multi-step');
       expect(result.iteration).toBe(3);
@@ -700,14 +711,16 @@ describe('AgentOrchestrator', () => {
         { content: 'Final' },
       ]);
 
-      const orchestrator = new AgentOrchestrator(makeConfig({
-        provider,
-        tools: [makeTool('my_tool')],
-        toolExecutors: new Map([['my_tool', toolExecutor]]),
-      }));
+      const orchestrator = new AgentOrchestrator(
+        makeConfig({
+          provider,
+          tools: [makeTool('my_tool')],
+          toolExecutors: new Map([['my_tool', toolExecutor]]),
+        })
+      );
 
       const result = await orchestrator.execute('Use tool');
-      const toolMsg = result.messages.find(m => m.role === 'tool');
+      const toolMsg = result.messages.find((m) => m.role === 'tool');
       expect(toolMsg).toBeDefined();
       expect(toolMsg!.content).toBe(JSON.stringify('tool_output'));
     });
@@ -722,16 +735,18 @@ describe('AgentOrchestrator', () => {
         { content: 'Done' },
       ]);
 
-      const orchestrator = new AgentOrchestrator(makeConfig({
-        provider,
-        tools: [makeTool('my_tool')],
-        toolExecutors: new Map([['my_tool', toolExecutor]]),
-      }));
+      const orchestrator = new AgentOrchestrator(
+        makeConfig({
+          provider,
+          tools: [makeTool('my_tool')],
+          toolExecutors: new Map([['my_tool', toolExecutor]]),
+        })
+      );
 
       const result = await orchestrator.execute('Test');
       // Find assistant message that has toolCalls
       const assistantWithTools = result.messages.find(
-        m => m.role === 'assistant' && m.toolCalls && m.toolCalls.length > 0,
+        (m) => m.role === 'assistant' && m.toolCalls && m.toolCalls.length > 0
       );
       expect(assistantWithTools).toBeDefined();
       expect(assistantWithTools!.content).toBe('Thinking...');
@@ -747,11 +762,13 @@ describe('AgentOrchestrator', () => {
         { content: 'Done' },
       ]);
 
-      const orchestrator = new AgentOrchestrator(makeConfig({
-        provider,
-        tools: [makeTool('my_tool')],
-        toolExecutors: new Map([['my_tool', toolExecutor]]),
-      }));
+      const orchestrator = new AgentOrchestrator(
+        makeConfig({
+          provider,
+          tools: [makeTool('my_tool')],
+          toolExecutors: new Map([['my_tool', toolExecutor]]),
+        })
+      );
 
       await orchestrator.execute('Test');
       expect(mockEventSystem.emit).toHaveBeenCalledWith(
@@ -760,7 +777,7 @@ describe('AgentOrchestrator', () => {
         expect.objectContaining({
           toolName: 'my_tool',
           success: true,
-        }),
+        })
       );
     });
 
@@ -774,11 +791,13 @@ describe('AgentOrchestrator', () => {
         { content: 'Done' },
       ]);
 
-      const orchestrator = new AgentOrchestrator(makeConfig({
-        provider,
-        tools: [makeTool('my_tool')],
-        toolExecutors: new Map([['my_tool', toolExecutor]]),
-      }));
+      const orchestrator = new AgentOrchestrator(
+        makeConfig({
+          provider,
+          tools: [makeTool('my_tool')],
+          toolExecutors: new Map([['my_tool', toolExecutor]]),
+        })
+      );
 
       await orchestrator.execute('Test');
       expect(toolExecutor).toHaveBeenCalledWith(
@@ -786,7 +805,7 @@ describe('AgentOrchestrator', () => {
         expect.objectContaining({
           callId: 'tc-123',
           conversationId: expect.stringMatching(/^exec_/),
-        }),
+        })
       );
     });
 
@@ -800,17 +819,16 @@ describe('AgentOrchestrator', () => {
         { content: 'Done' },
       ]);
 
-      const orchestrator = new AgentOrchestrator(makeConfig({
-        provider,
-        tools: [makeTool('my_tool')],
-        toolExecutors: new Map([['my_tool', toolExecutor]]),
-      }));
+      const orchestrator = new AgentOrchestrator(
+        makeConfig({
+          provider,
+          tools: [makeTool('my_tool')],
+          toolExecutors: new Map([['my_tool', toolExecutor]]),
+        })
+      );
 
       await orchestrator.execute('Test', [], { userId: 'user-42' });
-      expect(toolExecutor).toHaveBeenCalledWith(
-        {},
-        expect.objectContaining({ userId: 'user-42' }),
-      );
+      expect(toolExecutor).toHaveBeenCalledWith({}, expect.objectContaining({ userId: 'user-42' }));
     });
 
     it('should handle tool executor returning isError=true', async () => {
@@ -823,16 +841,18 @@ describe('AgentOrchestrator', () => {
         { content: 'Error occurred' },
       ]);
 
-      const orchestrator = new AgentOrchestrator(makeConfig({
-        provider,
-        tools: [makeTool('my_tool')],
-        toolExecutors: new Map([['my_tool', toolExecutor]]),
-      }));
+      const orchestrator = new AgentOrchestrator(
+        makeConfig({
+          provider,
+          tools: [makeTool('my_tool')],
+          toolExecutors: new Map([['my_tool', toolExecutor]]),
+        })
+      );
 
       const result = await orchestrator.execute('Test');
       expect(result.toolCalls[0].success).toBe(false);
       // The tool message should still be added
-      const toolMsg = result.messages.find(m => m.role === 'tool');
+      const toolMsg = result.messages.find((m) => m.role === 'tool');
       expect(toolMsg!.toolResults![0].isError).toBe(true);
     });
 
@@ -846,11 +866,13 @@ describe('AgentOrchestrator', () => {
         { content: 'Handling error' },
       ]);
 
-      const orchestrator = new AgentOrchestrator(makeConfig({
-        provider,
-        tools: [makeTool('my_tool')],
-        toolExecutors: new Map([['my_tool', toolExecutor]]),
-      }));
+      const orchestrator = new AgentOrchestrator(
+        makeConfig({
+          provider,
+          tools: [makeTool('my_tool')],
+          toolExecutors: new Map([['my_tool', toolExecutor]]),
+        })
+      );
 
       const result = await orchestrator.execute('Test');
       expect(result.toolCalls[0].success).toBe(false);
@@ -884,16 +906,18 @@ describe('AgentOrchestrator', () => {
         { content: 'Invalid args handled' },
       ]);
 
-      const orchestrator = new AgentOrchestrator(makeConfig({
-        provider,
-        tools: [makeTool('my_tool')],
-        toolExecutors: new Map([['my_tool', toolExecutor]]),
-      }));
+      const orchestrator = new AgentOrchestrator(
+        makeConfig({
+          provider,
+          tools: [makeTool('my_tool')],
+          toolExecutors: new Map([['my_tool', toolExecutor]]),
+        })
+      );
 
       const result = await orchestrator.execute('Test');
       // When JSON parsing fails, the early return skips context.toolCalls.push,
       // but the result is still added to messages as a tool message
-      const toolMsg = result.messages.find(m => m.role === 'tool');
+      const toolMsg = result.messages.find((m) => m.role === 'tool');
       expect(toolMsg).toBeDefined();
       expect(toolMsg!.content).toContain('Error: Invalid JSON');
       // The executor should not have been called
@@ -910,11 +934,13 @@ describe('AgentOrchestrator', () => {
         { content: 'Done' },
       ]);
 
-      const orchestrator = new AgentOrchestrator(makeConfig({
-        provider,
-        tools: [makeTool('my_tool')],
-        toolExecutors: new Map([['my_tool', toolExecutor]]),
-      }));
+      const orchestrator = new AgentOrchestrator(
+        makeConfig({
+          provider,
+          tools: [makeTool('my_tool')],
+          toolExecutors: new Map([['my_tool', toolExecutor]]),
+        })
+      );
 
       const result = await orchestrator.execute('Test');
       // When parsed to array, it should be treated as empty args {}
@@ -931,11 +957,13 @@ describe('AgentOrchestrator', () => {
         { content: 'Done' },
       ]);
 
-      const orchestrator = new AgentOrchestrator(makeConfig({
-        provider,
-        tools: [makeTool('my_tool')],
-        toolExecutors: new Map([['my_tool', toolExecutor]]),
-      }));
+      const orchestrator = new AgentOrchestrator(
+        makeConfig({
+          provider,
+          tools: [makeTool('my_tool')],
+          toolExecutors: new Map([['my_tool', toolExecutor]]),
+        })
+      );
 
       const result = await orchestrator.execute('Test');
       expect(result.toolCalls[0].arguments).toEqual({});
@@ -951,18 +979,22 @@ describe('AgentOrchestrator', () => {
         { content: 'Done' },
       ]);
 
-      const orchestrator = new AgentOrchestrator(makeConfig({
-        provider,
-        tools: [makeTool('my_tool')],
-        toolExecutors: new Map([['my_tool', toolExecutor]]),
-      }));
+      const orchestrator = new AgentOrchestrator(
+        makeConfig({
+          provider,
+          tools: [makeTool('my_tool')],
+          toolExecutors: new Map([['my_tool', toolExecutor]]),
+        })
+      );
 
       const result = await orchestrator.execute('Test');
       expect(result.toolCalls[0].arguments).toEqual({});
     });
 
     it('should look up tool executor from registry when not in config executors', async () => {
-      const registryExecutor = vi.fn().mockResolvedValue({ content: 'from_registry', isError: false });
+      const registryExecutor = vi
+        .fn()
+        .mockResolvedValue({ content: 'from_registry', isError: false });
       const provider = makeMockProvider([
         {
           content: '',
@@ -975,10 +1007,12 @@ describe('AgentOrchestrator', () => {
       const toolDef = makeTool('registry_tool');
       registry.register(toolDef, registryExecutor);
 
-      const orchestrator = new AgentOrchestrator(makeConfig({
-        provider,
-        tools: [toolDef],
-      }));
+      const orchestrator = new AgentOrchestrator(
+        makeConfig({
+          provider,
+          tools: [toolDef],
+        })
+      );
       orchestrator.setToolRegistry(registry);
 
       const result = await orchestrator.execute('Test');
@@ -988,7 +1022,9 @@ describe('AgentOrchestrator', () => {
 
     it('should prefer config executor over registry executor', async () => {
       const configExecutor = vi.fn().mockResolvedValue({ content: 'from_config', isError: false });
-      const registryExecutor = vi.fn().mockResolvedValue({ content: 'from_registry', isError: false });
+      const registryExecutor = vi
+        .fn()
+        .mockResolvedValue({ content: 'from_registry', isError: false });
       const provider = makeMockProvider([
         {
           content: '',
@@ -1001,11 +1037,13 @@ describe('AgentOrchestrator', () => {
       const toolDef = makeTool('my_tool');
       registry.register(toolDef, registryExecutor);
 
-      const orchestrator = new AgentOrchestrator(makeConfig({
-        provider,
-        tools: [toolDef],
-        toolExecutors: new Map([['my_tool', configExecutor]]),
-      }));
+      const orchestrator = new AgentOrchestrator(
+        makeConfig({
+          provider,
+          tools: [toolDef],
+          toolExecutors: new Map([['my_tool', configExecutor]]),
+        })
+      );
       orchestrator.setToolRegistry(registry);
 
       const result = await orchestrator.execute('Test');
@@ -1030,12 +1068,14 @@ describe('AgentOrchestrator', () => {
         }),
       };
 
-      const orchestrator = new AgentOrchestrator(makeConfig({
-        provider,
-        maxIterations: 3,
-        tools: [makeTool('loop_tool')],
-        toolExecutors: new Map([['loop_tool', toolExecutor]]),
-      }));
+      const orchestrator = new AgentOrchestrator(
+        makeConfig({
+          provider,
+          maxIterations: 3,
+          tools: [makeTool('loop_tool')],
+          toolExecutors: new Map([['loop_tool', toolExecutor]]),
+        })
+      );
 
       const result = await orchestrator.execute('Loop forever');
       expect(result.iteration).toBe(3);
@@ -1051,12 +1091,14 @@ describe('AgentOrchestrator', () => {
         }),
       };
 
-      const orchestrator = new AgentOrchestrator(makeConfig({
-        provider,
-        maxIterations: 2,
-        tools: [makeTool('loop_tool')],
-        toolExecutors: new Map([['loop_tool', toolExecutor]]),
-      }));
+      const orchestrator = new AgentOrchestrator(
+        makeConfig({
+          provider,
+          maxIterations: 2,
+          tools: [makeTool('loop_tool')],
+          toolExecutors: new Map([['loop_tool', toolExecutor]]),
+        })
+      );
 
       const result = await orchestrator.execute('Loop');
       // The last message role should be 'tool', so the code checks the last assistant message
@@ -1075,12 +1117,14 @@ describe('AgentOrchestrator', () => {
         }),
       };
 
-      const orchestrator = new AgentOrchestrator(makeConfig({
-        provider,
-        maxIterations: 1,
-        tools: [makeTool('loop_tool')],
-        toolExecutors: new Map([['loop_tool', toolExecutor]]),
-      }));
+      const orchestrator = new AgentOrchestrator(
+        makeConfig({
+          provider,
+          maxIterations: 1,
+          tools: [makeTool('loop_tool')],
+          toolExecutors: new Map([['loop_tool', toolExecutor]]),
+        })
+      );
 
       const result = await orchestrator.execute('Loop');
       // After 1 iteration: assistant msg (with toolCalls) -> tool msg
@@ -1096,19 +1140,21 @@ describe('AgentOrchestrator', () => {
         }),
       };
 
-      const orchestrator = new AgentOrchestrator(makeConfig({
-        provider,
-        maxIterations: 1,
-        tools: [makeTool('loop_tool')],
-        toolExecutors: new Map([['loop_tool', makeExecutor('ok')]]),
-      }));
+      const orchestrator = new AgentOrchestrator(
+        makeConfig({
+          provider,
+          maxIterations: 1,
+          tools: [makeTool('loop_tool')],
+          toolExecutors: new Map([['loop_tool', makeExecutor('ok')]]),
+        })
+      );
 
       const result = await orchestrator.execute('Loop');
       expect(result.status).toBe('completed');
       expect(mockEventSystem.emit).toHaveBeenCalledWith(
         'agent.complete',
         expect.any(String),
-        expect.any(Object),
+        expect.any(Object)
       );
     });
 
@@ -1120,12 +1166,14 @@ describe('AgentOrchestrator', () => {
         }),
       };
 
-      const orchestrator = new AgentOrchestrator(makeConfig({
-        provider,
-        maxIterations: 4,
-        tools: [makeTool('t')],
-        toolExecutors: new Map([['t', makeExecutor('ok')]]),
-      }));
+      const orchestrator = new AgentOrchestrator(
+        makeConfig({
+          provider,
+          maxIterations: 4,
+          tools: [makeTool('t')],
+          toolExecutors: new Map([['t', makeExecutor('ok')]]),
+        })
+      );
 
       await orchestrator.execute('Loop');
       expect(provider.complete).toHaveBeenCalledTimes(4);
@@ -1192,7 +1240,7 @@ describe('AgentOrchestrator', () => {
       expect(mockEventSystem.emit).toHaveBeenCalledWith(
         'agent.error',
         expect.any(String),
-        expect.objectContaining({ iteration: 1 }),
+        expect.objectContaining({ iteration: 1 })
       );
     });
 
@@ -1211,11 +1259,13 @@ describe('AgentOrchestrator', () => {
         }),
       };
 
-      const orchestrator = new AgentOrchestrator(makeConfig({
-        provider,
-        tools: [makeTool('my_tool')],
-        toolExecutors: new Map([['my_tool', makeExecutor('ok')]]),
-      }));
+      const orchestrator = new AgentOrchestrator(
+        makeConfig({
+          provider,
+          tools: [makeTool('my_tool')],
+          toolExecutors: new Map([['my_tool', makeExecutor('ok')]]),
+        })
+      );
 
       const result = await orchestrator.execute('Test');
       expect(result.status).toBe('failed');
@@ -1251,7 +1301,9 @@ describe('AgentOrchestrator', () => {
       const result = await executePromise;
       // The cancel might not take effect if complete() already resolved.
       // But the signal should be set.
-      expect(result.status === 'cancelled' || result.status === 'completed' || result.status === 'failed').toBe(true);
+      expect(
+        result.status === 'cancelled' || result.status === 'completed' || result.status === 'failed'
+      ).toBe(true);
     });
 
     it('should cancel via abort signal during tool calling loop', async () => {
@@ -1274,11 +1326,13 @@ describe('AgentOrchestrator', () => {
       };
 
       const toolExecutor = makeExecutor('done');
-      const orchestrator = new AgentOrchestrator(makeConfig({
-        provider,
-        tools: [makeTool('slow_tool')],
-        toolExecutors: new Map([['slow_tool', toolExecutor]]),
-      }));
+      const orchestrator = new AgentOrchestrator(
+        makeConfig({
+          provider,
+          tools: [makeTool('slow_tool')],
+          toolExecutors: new Map([['slow_tool', toolExecutor]]),
+        })
+      );
 
       const executePromise = orchestrator.execute('Test');
 
@@ -1304,20 +1358,22 @@ describe('AgentOrchestrator', () => {
 
     it('should fail with Execution cancelled when abort signal is set before loop', async () => {
       // We'll simulate by having the first provider call trigger cancel
-      const orchestrator = new AgentOrchestrator(makeConfig({
-        provider: {
-          complete: vi.fn().mockImplementation(async () => {
-            // Cancel from within provider call, so the next iteration check catches it
-            orchestrator.cancel();
-            return {
-              content: '',
-              toolCalls: [{ id: 'tc1', name: 'tool_a', arguments: '{}' }],
-            };
-          }),
-        },
-        tools: [makeTool('tool_a')],
-        toolExecutors: new Map([['tool_a', makeExecutor('ok')]]),
-      }));
+      const orchestrator = new AgentOrchestrator(
+        makeConfig({
+          provider: {
+            complete: vi.fn().mockImplementation(async () => {
+              // Cancel from within provider call, so the next iteration check catches it
+              orchestrator.cancel();
+              return {
+                content: '',
+                toolCalls: [{ id: 'tc1', name: 'tool_a', arguments: '{}' }],
+              };
+            }),
+          },
+          tools: [makeTool('tool_a')],
+          toolExecutors: new Map([['tool_a', makeExecutor('ok')]]),
+        })
+      );
 
       const result = await orchestrator.execute('Test');
       // After first iteration: tool calls are processed, then at the top of loop 2,
@@ -1333,11 +1389,13 @@ describe('AgentOrchestrator', () => {
 
   describe('execute - dynamic prompts / memory injection', () => {
     it('should use base systemPrompt when enableDynamicPrompts is false', async () => {
-      const orchestrator = new AgentOrchestrator(makeConfig({
-        systemPrompt: 'Base prompt',
-        enableDynamicPrompts: false,
-        userId: 'user-1',
-      }));
+      const orchestrator = new AgentOrchestrator(
+        makeConfig({
+          systemPrompt: 'Base prompt',
+          enableDynamicPrompts: false,
+          userId: 'user-1',
+        })
+      );
 
       const result = await orchestrator.execute('Hello');
       expect(result.messages[0].content).toBe('Base prompt');
@@ -1345,10 +1403,12 @@ describe('AgentOrchestrator', () => {
     });
 
     it('should use base systemPrompt when userId is not set', async () => {
-      const orchestrator = new AgentOrchestrator(makeConfig({
-        systemPrompt: 'Base prompt',
-        enableDynamicPrompts: true,
-      }));
+      const orchestrator = new AgentOrchestrator(
+        makeConfig({
+          systemPrompt: 'Base prompt',
+          enableDynamicPrompts: true,
+        })
+      );
 
       const result = await orchestrator.execute('Hello');
       expect(result.messages[0].content).toBe('Base prompt');
@@ -1356,25 +1416,29 @@ describe('AgentOrchestrator', () => {
     });
 
     it('should call injectMemoryIntoPrompt when enableDynamicPrompts and userId are set', async () => {
-      const orchestrator = new AgentOrchestrator(makeConfig({
-        systemPrompt: 'Base prompt',
-        enableDynamicPrompts: true,
-        userId: 'user-1',
-      }));
+      const orchestrator = new AgentOrchestrator(
+        makeConfig({
+          systemPrompt: 'Base prompt',
+          enableDynamicPrompts: true,
+          userId: 'user-1',
+        })
+      );
 
       await orchestrator.execute('Hello');
       expect(mockInjectMemoryIntoPrompt).toHaveBeenCalledWith(
         'Base prompt',
-        expect.objectContaining({ userId: 'user-1' }),
+        expect.objectContaining({ userId: 'user-1' })
       );
     });
 
     it('should use the injected system prompt in messages', async () => {
-      const orchestrator = new AgentOrchestrator(makeConfig({
-        systemPrompt: 'Base prompt',
-        enableDynamicPrompts: true,
-        userId: 'user-1',
-      }));
+      const orchestrator = new AgentOrchestrator(
+        makeConfig({
+          systemPrompt: 'Base prompt',
+          enableDynamicPrompts: true,
+          userId: 'user-1',
+        })
+      );
 
       const result = await orchestrator.execute('Hello');
       expect(result.messages[0].content).toBe('injected-system-prompt');
@@ -1383,126 +1447,144 @@ describe('AgentOrchestrator', () => {
     it('should fall back to base prompt when injectMemoryIntoPrompt throws', async () => {
       mockInjectMemoryIntoPrompt.mockRejectedValueOnce(new Error('injection failed'));
 
-      const orchestrator = new AgentOrchestrator(makeConfig({
-        systemPrompt: 'Fallback prompt',
-        enableDynamicPrompts: true,
-        userId: 'user-1',
-      }));
+      const orchestrator = new AgentOrchestrator(
+        makeConfig({
+          systemPrompt: 'Fallback prompt',
+          enableDynamicPrompts: true,
+          userId: 'user-1',
+        })
+      );
 
       const result = await orchestrator.execute('Hello');
       expect(result.messages[0].content).toBe('Fallback prompt');
     });
 
     it('should pass includeProfile option to injectMemoryIntoPrompt', async () => {
-      const orchestrator = new AgentOrchestrator(makeConfig({
-        enableDynamicPrompts: true,
-        userId: 'user-1',
-      }));
+      const orchestrator = new AgentOrchestrator(
+        makeConfig({
+          enableDynamicPrompts: true,
+          userId: 'user-1',
+        })
+      );
 
       await orchestrator.execute('Hello');
       expect(mockInjectMemoryIntoPrompt).toHaveBeenCalledWith(
         expect.any(String),
-        expect.objectContaining({ includeProfile: true }),
+        expect.objectContaining({ includeProfile: true })
       );
     });
 
     it('should pass includeInstructions option to injectMemoryIntoPrompt', async () => {
-      const orchestrator = new AgentOrchestrator(makeConfig({
-        enableDynamicPrompts: true,
-        userId: 'user-1',
-      }));
+      const orchestrator = new AgentOrchestrator(
+        makeConfig({
+          enableDynamicPrompts: true,
+          userId: 'user-1',
+        })
+      );
 
       await orchestrator.execute('Hello');
       expect(mockInjectMemoryIntoPrompt).toHaveBeenCalledWith(
         expect.any(String),
-        expect.objectContaining({ includeInstructions: true }),
+        expect.objectContaining({ includeInstructions: true })
       );
     });
 
     it('should pass includeTimeContext option to injectMemoryIntoPrompt', async () => {
-      const orchestrator = new AgentOrchestrator(makeConfig({
-        enableDynamicPrompts: true,
-        userId: 'user-1',
-      }));
+      const orchestrator = new AgentOrchestrator(
+        makeConfig({
+          enableDynamicPrompts: true,
+          userId: 'user-1',
+        })
+      );
 
       await orchestrator.execute('Hello');
       expect(mockInjectMemoryIntoPrompt).toHaveBeenCalledWith(
         expect.any(String),
-        expect.objectContaining({ includeTimeContext: true }),
+        expect.objectContaining({ includeTimeContext: true })
       );
     });
 
     it('should detect codeExecution capability from tool categories', async () => {
       const tools = [makeTool('run_code', 'code_execution')];
-      const orchestrator = new AgentOrchestrator(makeConfig({
-        enableDynamicPrompts: true,
-        userId: 'user-1',
-        tools,
-      }));
+      const orchestrator = new AgentOrchestrator(
+        makeConfig({
+          enableDynamicPrompts: true,
+          userId: 'user-1',
+          tools,
+        })
+      );
 
       await orchestrator.execute('Hello');
       expect(mockInjectMemoryIntoPrompt).toHaveBeenCalledWith(
         expect.any(String),
         expect.objectContaining({
           capabilities: expect.objectContaining({ codeExecution: true }),
-        }),
+        })
       );
     });
 
     it('should detect fileAccess capability from tool categories', async () => {
       const tools = [makeTool('read_file', 'file_system')];
-      const orchestrator = new AgentOrchestrator(makeConfig({
-        enableDynamicPrompts: true,
-        userId: 'user-1',
-        tools,
-      }));
+      const orchestrator = new AgentOrchestrator(
+        makeConfig({
+          enableDynamicPrompts: true,
+          userId: 'user-1',
+          tools,
+        })
+      );
 
       await orchestrator.execute('Hello');
       expect(mockInjectMemoryIntoPrompt).toHaveBeenCalledWith(
         expect.any(String),
         expect.objectContaining({
           capabilities: expect.objectContaining({ fileAccess: true }),
-        }),
+        })
       );
     });
 
     it('should detect webBrowsing capability from tool categories', async () => {
       const tools = [makeTool('fetch_url', 'web_fetch')];
-      const orchestrator = new AgentOrchestrator(makeConfig({
-        enableDynamicPrompts: true,
-        userId: 'user-1',
-        tools,
-      }));
+      const orchestrator = new AgentOrchestrator(
+        makeConfig({
+          enableDynamicPrompts: true,
+          userId: 'user-1',
+          tools,
+        })
+      );
 
       await orchestrator.execute('Hello');
       expect(mockInjectMemoryIntoPrompt).toHaveBeenCalledWith(
         expect.any(String),
         expect.objectContaining({
           capabilities: expect.objectContaining({ webBrowsing: true }),
-        }),
+        })
       );
     });
 
     it('should always set memory capability to true', async () => {
-      const orchestrator = new AgentOrchestrator(makeConfig({
-        enableDynamicPrompts: true,
-        userId: 'user-1',
-      }));
+      const orchestrator = new AgentOrchestrator(
+        makeConfig({
+          enableDynamicPrompts: true,
+          userId: 'user-1',
+        })
+      );
 
       await orchestrator.execute('Hello');
       expect(mockInjectMemoryIntoPrompt).toHaveBeenCalledWith(
         expect.any(String),
         expect.objectContaining({
           capabilities: expect.objectContaining({ memory: true }),
-        }),
+        })
       );
     });
 
     it('should pass conversation context with messageCount when history is provided', async () => {
-      const orchestrator = new AgentOrchestrator(makeConfig({
-        enableDynamicPrompts: true,
-        userId: 'user-1',
-      }));
+      const orchestrator = new AgentOrchestrator(
+        makeConfig({
+          enableDynamicPrompts: true,
+          userId: 'user-1',
+        })
+      );
 
       const history = [
         { role: 'user' as const, content: 'msg1' },
@@ -1514,37 +1596,41 @@ describe('AgentOrchestrator', () => {
         expect.any(String),
         expect.objectContaining({
           conversationContext: expect.objectContaining({ messageCount: 2 }),
-        }),
+        })
       );
     });
 
     it('should not pass conversation context when history is empty', async () => {
-      const orchestrator = new AgentOrchestrator(makeConfig({
-        enableDynamicPrompts: true,
-        userId: 'user-1',
-      }));
+      const orchestrator = new AgentOrchestrator(
+        makeConfig({
+          enableDynamicPrompts: true,
+          userId: 'user-1',
+        })
+      );
 
       await orchestrator.execute('Hello', []);
       expect(mockInjectMemoryIntoPrompt).toHaveBeenCalledWith(
         expect.any(String),
         expect.objectContaining({
           conversationContext: undefined,
-        }),
+        })
       );
     });
 
     it('should forward memoryOptions from config', async () => {
       const memoryOptions = { maxPromptLength: 5000 };
-      const orchestrator = new AgentOrchestrator(makeConfig({
-        enableDynamicPrompts: true,
-        userId: 'user-1',
-        memoryOptions,
-      }));
+      const orchestrator = new AgentOrchestrator(
+        makeConfig({
+          enableDynamicPrompts: true,
+          userId: 'user-1',
+          memoryOptions,
+        })
+      );
 
       await orchestrator.execute('Hello');
       expect(mockInjectMemoryIntoPrompt).toHaveBeenCalledWith(
         expect.any(String),
-        expect.objectContaining({ maxPromptLength: 5000 }),
+        expect.objectContaining({ maxPromptLength: 5000 })
       );
     });
   });
@@ -1566,7 +1652,7 @@ describe('AgentOrchestrator', () => {
         result = await gen.next();
       }
 
-      const thinkingSteps = steps.filter(s => s.type === 'thinking');
+      const thinkingSteps = steps.filter((s) => s.type === 'thinking');
       expect(thinkingSteps.length).toBeGreaterThanOrEqual(1);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       expect((thinkingSteps[0].content as any).iteration).toBe(1);
@@ -1584,7 +1670,7 @@ describe('AgentOrchestrator', () => {
         result = await gen.next();
       }
 
-      const responseSteps = steps.filter(s => s.type === 'response');
+      const responseSteps = steps.filter((s) => s.type === 'response');
       expect(responseSteps.length).toBeGreaterThanOrEqual(1);
     });
 
@@ -1613,11 +1699,13 @@ describe('AgentOrchestrator', () => {
         { content: 'After tool' },
       ]);
 
-      const orchestrator = new AgentOrchestrator(makeConfig({
-        provider,
-        tools: [makeTool('my_tool')],
-        toolExecutors: new Map([['my_tool', toolExecutor]]),
-      }));
+      const orchestrator = new AgentOrchestrator(
+        makeConfig({
+          provider,
+          tools: [makeTool('my_tool')],
+          toolExecutors: new Map([['my_tool', toolExecutor]]),
+        })
+      );
 
       const steps: AgentStep[] = [];
       const gen = orchestrator.stream('Use tool');
@@ -1627,8 +1715,8 @@ describe('AgentOrchestrator', () => {
         result = await gen.next();
       }
 
-      const toolCallSteps = steps.filter(s => s.type === 'tool_call');
-      const toolResultSteps = steps.filter(s => s.type === 'tool_result');
+      const toolCallSteps = steps.filter((s) => s.type === 'tool_call');
+      const toolResultSteps = steps.filter((s) => s.type === 'tool_result');
       expect(toolCallSteps).toHaveLength(1);
       expect(toolResultSteps).toHaveLength(1);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -1659,7 +1747,7 @@ describe('AgentOrchestrator', () => {
       expect(provider.stream).toHaveBeenCalled();
       expect(provider.complete).not.toHaveBeenCalled();
 
-      const responseSteps = steps.filter(s => s.type === 'response');
+      const responseSteps = steps.filter((s) => s.type === 'response');
       expect(responseSteps.length).toBe(2);
     });
 
@@ -1684,7 +1772,7 @@ describe('AgentOrchestrator', () => {
         result = await gen.next();
       }
 
-      const responseSteps = steps.filter(s => s.type === 'response');
+      const responseSteps = steps.filter((s) => s.type === 'response');
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       expect((responseSteps[1].content as any).accumulated).toBe('Hello World');
     });
@@ -1701,7 +1789,7 @@ describe('AgentOrchestrator', () => {
         result = await gen.next();
       }
 
-      const responseSteps = steps.filter(s => s.type === 'response');
+      const responseSteps = steps.filter((s) => s.type === 'response');
       expect(responseSteps.length).toBeGreaterThanOrEqual(1);
 
       const context = result.value as OrchestratorContext;
@@ -1729,11 +1817,13 @@ describe('AgentOrchestrator', () => {
         }),
       };
 
-      const orchestrator = new AgentOrchestrator(makeConfig({
-        provider,
-        tools: [makeTool('my_tool')],
-        toolExecutors: new Map([['my_tool', toolExecutor]]),
-      }));
+      const orchestrator = new AgentOrchestrator(
+        makeConfig({
+          provider,
+          tools: [makeTool('my_tool')],
+          toolExecutors: new Map([['my_tool', toolExecutor]]),
+        })
+      );
 
       const steps: AgentStep[] = [];
       const gen = orchestrator.stream('Test');
@@ -1743,7 +1833,7 @@ describe('AgentOrchestrator', () => {
         result = await gen.next();
       }
 
-      const toolCallSteps = steps.filter(s => s.type === 'tool_call');
+      const toolCallSteps = steps.filter((s) => s.type === 'tool_call');
       expect(toolCallSteps).toHaveLength(1);
     });
 
@@ -1826,19 +1916,21 @@ describe('AgentOrchestrator', () => {
         { content: 'Done' },
       ]);
 
-      const orchestrator = new AgentOrchestrator(makeConfig({
-        provider,
-        verbose: true,
-        tools: [makeTool('my_tool')],
-        toolExecutors: new Map([['my_tool', toolExecutor]]),
-      }));
+      const orchestrator = new AgentOrchestrator(
+        makeConfig({
+          provider,
+          verbose: true,
+          tools: [makeTool('my_tool')],
+          toolExecutors: new Map([['my_tool', toolExecutor]]),
+        })
+      );
 
       await orchestrator.execute('Test');
 
       expect(consoleSpy).toHaveBeenCalledWith(
         '[Orchestrator]',
         expect.stringContaining('Tool my_tool:'),
-        expect.anything(),
+        expect.anything()
       );
       consoleSpy.mockRestore();
     });
@@ -1854,17 +1946,19 @@ describe('AgentOrchestrator', () => {
         { content: 'Done' },
       ]);
 
-      const orchestrator = new AgentOrchestrator(makeConfig({
-        provider,
-        verbose: false,
-        tools: [makeTool('my_tool')],
-        toolExecutors: new Map([['my_tool', toolExecutor]]),
-      }));
+      const orchestrator = new AgentOrchestrator(
+        makeConfig({
+          provider,
+          verbose: false,
+          tools: [makeTool('my_tool')],
+          toolExecutors: new Map([['my_tool', toolExecutor]]),
+        })
+      );
 
       await orchestrator.execute('Test');
 
       const toolLogs = consoleSpy.mock.calls.filter(
-        args => typeof args[0] === 'string' && args[0].includes('[Orchestrator]'),
+        (args) => typeof args[0] === 'string' && args[0].includes('[Orchestrator]')
       );
       expect(toolLogs).toHaveLength(0);
       consoleSpy.mockRestore();
@@ -2145,19 +2239,13 @@ describe('AgentBuilder', () => {
   });
 
   it('should throw when systemPrompt is missing', () => {
-    const builder = new AgentBuilder()
-      .name('Bot')
-      .provider(makeMockProvider([]))
-      .model('model');
+    const builder = new AgentBuilder().name('Bot').provider(makeMockProvider([])).model('model');
 
     expect(() => builder.build()).toThrow('System prompt is required');
   });
 
   it('should throw when provider is missing', () => {
-    const builder = new AgentBuilder()
-      .name('Bot')
-      .systemPrompt('Prompt')
-      .model('model');
+    const builder = new AgentBuilder().name('Bot').systemPrompt('Prompt').model('model');
 
     expect(() => builder.build()).toThrow('LLM provider is required');
   });
@@ -2227,16 +2315,18 @@ describe('MultiAgentOrchestrator', () => {
   function makeTeam(
     name: string,
     agentNames: string[],
-    _router?: (msg: string) => string,
+    _router?: (msg: string) => string
   ): AgentTeam {
     const agents = new Map<string, AgentOrchestrator>();
     for (const agentName of agentNames) {
       agents.set(
         agentName,
-        new AgentOrchestrator(makeConfig({
-          name: agentName,
-          provider: makeMockProvider([{ content: `Response from ${agentName}` }]),
-        })),
+        new AgentOrchestrator(
+          makeConfig({
+            name: agentName,
+            provider: makeMockProvider([{ content: `Response from ${agentName}` }]),
+          })
+        )
       );
     }
 
@@ -2334,9 +2424,11 @@ describe('MultiAgentOrchestrator', () => {
 
   it('should use router to select the right agent', async () => {
     const mao = new MultiAgentOrchestrator();
-    mao.registerTeam(makeTeam('team1', ['coder', 'writer'], (msg) => {
-      return msg.includes('code') ? 'coder' : 'writer';
-    }));
+    mao.registerTeam(
+      makeTeam('team1', ['coder', 'writer'], (msg) => {
+        return msg.includes('code') ? 'coder' : 'writer';
+      })
+    );
 
     const codeResult = await mao.execute('Write some code');
     expect(codeResult.response).toBe('Response from coder');
@@ -2351,9 +2443,14 @@ describe('MultiAgentOrchestrator', () => {
     mao.registerTeam({
       name: 'team1',
       agents: new Map([
-        ['agent1', new AgentOrchestrator(makeConfig({
-          provider: makeMockProvider([{ content: 'ok' }]),
-        }))],
+        [
+          'agent1',
+          new AgentOrchestrator(
+            makeConfig({
+              provider: makeMockProvider([{ content: 'ok' }]),
+            })
+          ),
+        ],
       ]),
       router: routerSpy,
       sharedContext: { shared: 'value' },
@@ -2362,7 +2459,7 @@ describe('MultiAgentOrchestrator', () => {
     await mao.execute('Hello', undefined, { extra: 'data' });
     expect(routerSpy).toHaveBeenCalledWith(
       'Hello',
-      expect.objectContaining({ shared: 'value', extra: 'data' }),
+      expect.objectContaining({ shared: 'value', extra: 'data' })
     );
   });
 
@@ -2371,9 +2468,7 @@ describe('MultiAgentOrchestrator', () => {
     const mao = new MultiAgentOrchestrator();
     mao.registerTeam({
       name: 'team1',
-      agents: new Map([
-        ['agent1', new AgentOrchestrator(makeConfig({ provider }))],
-      ]),
+      agents: new Map([['agent1', new AgentOrchestrator(makeConfig({ provider }))]]),
       router: () => 'agent1',
       sharedContext: { shared: true },
     });
@@ -2446,7 +2541,7 @@ describe('createPlanningPrompt', () => {
   it('should list multiple tools on separate lines', () => {
     const tools = [makeTool('a'), makeTool('b'), makeTool('c')];
     const result = createPlanningPrompt('task', tools);
-    const toolLines = result.split('\n').filter(line => line.startsWith('- '));
+    const toolLines = result.split('\n').filter((line) => line.startsWith('- '));
     expect(toolLines).toHaveLength(3);
   });
 });
@@ -2509,10 +2604,7 @@ describe('parsePlan', () => {
   it('should auto-assign step id from index when id is missing', () => {
     const input = JSON.stringify({
       goal: 'Test',
-      steps: [
-        { description: 'First' },
-        { description: 'Second' },
-      ],
+      steps: [{ description: 'First' }, { description: 'Second' }],
     });
 
     const plan = parsePlan(input);
@@ -2566,12 +2658,14 @@ describe('parsePlan', () => {
   it('should preserve toolArgs when provided', () => {
     const input = JSON.stringify({
       goal: 'Test',
-      steps: [{
-        id: 1,
-        description: 'Search',
-        toolName: 'search',
-        toolArgs: { query: 'test' },
-      }],
+      steps: [
+        {
+          id: 1,
+          description: 'Search',
+          toolName: 'search',
+          toolArgs: { query: 'test' },
+        },
+      ],
     });
 
     const plan = parsePlan(input);

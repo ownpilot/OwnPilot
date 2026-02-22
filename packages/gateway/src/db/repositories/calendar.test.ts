@@ -183,8 +183,9 @@ describe('CalendarRepository', () => {
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
       mockAdapter.queryOne.mockResolvedValueOnce(null);
 
-      await expect(repo.create({ title: 'X', startTime: NOW }))
-        .rejects.toThrow('Failed to create calendar event');
+      await expect(repo.create({ title: 'X', startTime: NOW })).rejects.toThrow(
+        'Failed to create calendar event'
+      );
     });
 
     it('should default timezone to UTC', async () => {
@@ -257,7 +258,7 @@ describe('CalendarRepository', () => {
   describe('getByExternalId', () => {
     it('should query by external_id, external_source, and user_id', async () => {
       mockAdapter.queryOne.mockResolvedValueOnce(
-        makeEventRow({ external_id: 'ext-1', external_source: 'google' }),
+        makeEventRow({ external_id: 'ext-1', external_source: 'google' })
       );
 
       const result = await repo.getByExternalId('ext-1', 'google');
@@ -340,7 +341,7 @@ describe('CalendarRepository', () => {
       mockAdapter.queryOne.mockResolvedValueOnce(makeEventRow());
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
       mockAdapter.queryOne.mockResolvedValueOnce(
-        makeEventRow({ title: 'New Title', location: 'Room B', reminder_minutes: 30 }),
+        makeEventRow({ title: 'New Title', location: 'Room B', reminder_minutes: 30 })
       );
 
       const result = await repo.update('evt-1', {
@@ -569,9 +570,7 @@ describe('CalendarRepository', () => {
     it('should update recurrence rule', async () => {
       mockAdapter.queryOne.mockResolvedValueOnce(makeEventRow({ recurrence: 'RRULE:FREQ=DAILY' }));
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
-      mockAdapter.queryOne.mockResolvedValueOnce(
-        makeEventRow({ recurrence: 'RRULE:FREQ=WEEKLY' }),
-      );
+      mockAdapter.queryOne.mockResolvedValueOnce(makeEventRow({ recurrence: 'RRULE:FREQ=WEEKLY' }));
 
       const result = await repo.update('evt-1', { recurrence: 'RRULE:FREQ=WEEKLY' });
 
@@ -617,10 +616,7 @@ describe('CalendarRepository', () => {
 
   describe('getCategories', () => {
     it('should return distinct categories', async () => {
-      mockAdapter.query.mockResolvedValueOnce([
-        { category: 'personal' },
-        { category: 'work' },
-      ]);
+      mockAdapter.query.mockResolvedValueOnce([{ category: 'personal' }, { category: 'work' }]);
 
       expect(await repo.getCategories()).toEqual(['personal', 'work']);
     });

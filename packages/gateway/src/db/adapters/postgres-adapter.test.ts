@@ -14,13 +14,29 @@ const { mockPool, mockClient, mockLog } = vi.hoisted(() => {
     query: vi.fn().mockResolvedValue({ rows: [], rowCount: 0 }),
     end: vi.fn().mockResolvedValue(undefined),
   };
-  return { mockPool, mockClient, mockLog: { info: vi.fn(), error: vi.fn(), warn: vi.fn(), debug: vi.fn() } };
+  return {
+    mockPool,
+    mockClient,
+    mockLog: { info: vi.fn(), error: vi.fn(), warn: vi.fn(), debug: vi.fn() },
+  };
 });
 
-vi.mock('pg', () => ({ default: { Pool: vi.fn(function () { return mockPool; }) } }));
+vi.mock('pg', () => ({
+  default: {
+    Pool: vi.fn(function () {
+      return mockPool;
+    }),
+  },
+}));
 vi.mock('../../services/log.js', () => ({ getLog: vi.fn(() => mockLog) }));
-vi.mock('../../config/defaults.js', () => ({ DB_POOL_MAX: 10, DB_IDLE_TIMEOUT_MS: 10000, DB_CONNECT_TIMEOUT_MS: 5000 }));
-vi.mock('pgvector/pg', () => { throw new Error('pgvector not installed'); });
+vi.mock('../../config/defaults.js', () => ({
+  DB_POOL_MAX: 10,
+  DB_IDLE_TIMEOUT_MS: 10000,
+  DB_CONNECT_TIMEOUT_MS: 5000,
+}));
+vi.mock('pgvector/pg', () => {
+  throw new Error('pgvector not installed');
+});
 
 import { PostgresAdapter } from './postgres-adapter.js';
 
@@ -85,7 +101,7 @@ describe('PostgresAdapter', () => {
       const adapter = new PostgresAdapter(config);
       await adapter.initialize();
       expect(pg.Pool).toHaveBeenCalledWith(
-        expect.objectContaining({ connectionString: 'postgresql://a:b@c:5432/d' }),
+        expect.objectContaining({ connectionString: 'postgresql://a:b@c:5432/d' })
       );
     });
 
@@ -114,7 +130,9 @@ describe('PostgresAdapter', () => {
     it('passes connectionTimeoutMillis from DB_CONNECT_TIMEOUT_MS', async () => {
       const { default: pg } = await import('pg');
       await makeInitializedAdapter();
-      expect(pg.Pool).toHaveBeenCalledWith(expect.objectContaining({ connectionTimeoutMillis: 5000 }));
+      expect(pg.Pool).toHaveBeenCalledWith(
+        expect.objectContaining({ connectionTimeoutMillis: 5000 })
+      );
     });
 
     it('calls pool.connect() to obtain a test client', async () => {
@@ -196,10 +214,10 @@ describe('PostgresAdapter', () => {
       const adapter = await makeInitializedAdapter();
       mockPool.query.mockResolvedValueOnce({ rows: [], rowCount: 0 });
       await adapter.query('SELECT * FROM foo WHERE id = ? AND name = ?', [1, 'bar']);
-      expect(mockPool.query).toHaveBeenCalledWith(
-        'SELECT * FROM foo WHERE id = $1 AND name = $2',
-        [1, 'bar'],
-      );
+      expect(mockPool.query).toHaveBeenCalledWith('SELECT * FROM foo WHERE id = $1 AND name = $2', [
+        1,
+        'bar',
+      ]);
     });
     it('passes params to pool.query', async () => {
       const adapter = await makeInitializedAdapter();
@@ -210,7 +228,10 @@ describe('PostgresAdapter', () => {
     });
     it('returns the rows array from the result', async () => {
       const adapter = await makeInitializedAdapter();
-      const rows = [{ id: 1, name: 'Alice' }, { id: 2, name: 'Bob' }];
+      const rows = [
+        { id: 1, name: 'Alice' },
+        { id: 2, name: 'Bob' },
+      ];
       mockPool.query.mockResolvedValueOnce({ rows, rowCount: 2 });
       const result = await adapter.query('SELECT * FROM users');
       expect(result).toEqual(rows);
@@ -259,7 +280,10 @@ describe('PostgresAdapter', () => {
   describe('queryOne()', () => {
     it('returns first row when results exist', async () => {
       const adapter = await makeInitializedAdapter();
-      const rows = [{ id: 1, val: 'first' }, { id: 2, val: 'second' }];
+      const rows = [
+        { id: 1, val: 'first' },
+        { id: 2, val: 'second' },
+      ];
       mockPool.query.mockResolvedValueOnce({ rows, rowCount: 2 });
       const result = await adapter.queryOne('SELECT * FROM t');
       expect(result).toEqual({ id: 1, val: 'first' });
@@ -340,14 +364,18 @@ describe('PostgresAdapter', () => {
     it('propagates pool.query errors', async () => {
       const adapter = await makeInitializedAdapter();
       mockPool.query.mockRejectedValueOnce(new Error('constraint violation'));
-      await expect(adapter.execute('INSERT INTO foo VALUES (?)', [1])).rejects.toThrow('constraint violation');
+      await expect(adapter.execute('INSERT INTO foo VALUES (?)', [1])).rejects.toThrow(
+        'constraint violation'
+      );
     });
   });
   // transaction()
   describe('transaction()', () => {
     it('throws Database not initialized when pool is null', async () => {
       const adapter = new PostgresAdapter(makeConfig());
-      await expect(adapter.transaction(() => Promise.resolve('x'))).rejects.toThrow('Database not initialized');
+      await expect(adapter.transaction(() => Promise.resolve('x'))).rejects.toThrow(
+        'Database not initialized'
+      );
     });
     it('acquires a client via pool.connect()', async () => {
       const adapter = await makeInitializedAdapter();
@@ -394,7 +422,9 @@ describe('PostgresAdapter', () => {
         callOrder.push(sql);
         return Promise.resolve({ rows: [] });
       });
-      await expect(adapter.transaction(() => Promise.reject(new Error('tx error')))).rejects.toThrow('tx error');
+      await expect(
+        adapter.transaction(() => Promise.reject(new Error('tx error')))
+      ).rejects.toThrow('tx error');
       expect(callOrder).toContain('ROLLBACK');
     });
     it('does not execute COMMIT when user function throws', async () => {
@@ -404,13 +434,17 @@ describe('PostgresAdapter', () => {
         callOrder.push(sql);
         return Promise.resolve({ rows: [] });
       });
-      await expect(adapter.transaction(() => Promise.reject(new Error('boom')))).rejects.toThrow('boom');
+      await expect(adapter.transaction(() => Promise.reject(new Error('boom')))).rejects.toThrow(
+        'boom'
+      );
       expect(callOrder).not.toContain('COMMIT');
     });
     it('re-throws the original error after rollback', async () => {
       const adapter = await makeInitializedAdapter();
       const originalError = new Error('original failure');
-      await expect(adapter.transaction(() => Promise.reject(originalError))).rejects.toBe(originalError);
+      await expect(adapter.transaction(() => Promise.reject(originalError))).rejects.toBe(
+        originalError
+      );
     });
     it('releases the client in the finally block on success', async () => {
       const adapter = await makeInitializedAdapter();
@@ -421,7 +455,9 @@ describe('PostgresAdapter', () => {
     it('releases the client when user function throws', async () => {
       const adapter = await makeInitializedAdapter();
       mockClient.release.mockClear();
-      await expect(adapter.transaction(() => Promise.reject(new Error('fail')))).rejects.toThrow('fail');
+      await expect(adapter.transaction(() => Promise.reject(new Error('fail')))).rejects.toThrow(
+        'fail'
+      );
       expect(mockClient.release).toHaveBeenCalledOnce();
     });
     it('logs an error when ROLLBACK fails', async () => {
@@ -429,8 +465,13 @@ describe('PostgresAdapter', () => {
       mockClient.query
         .mockResolvedValueOnce({ rows: [] })
         .mockRejectedValueOnce(new Error('rollback failed'));
-      await expect(adapter.transaction(() => Promise.reject(new Error('tx fail')))).rejects.toThrow('tx fail');
-      expect(mockLog.error).toHaveBeenCalledWith(expect.stringContaining('Rollback failed'), expect.any(Error));
+      await expect(adapter.transaction(() => Promise.reject(new Error('tx fail')))).rejects.toThrow(
+        'tx fail'
+      );
+      expect(mockLog.error).toHaveBeenCalledWith(
+        expect.stringContaining('Rollback failed'),
+        expect.any(Error)
+      );
     });
     it('still re-throws original error when rollback itself fails', async () => {
       const adapter = await makeInitializedAdapter();
@@ -438,7 +479,9 @@ describe('PostgresAdapter', () => {
       mockClient.query
         .mockResolvedValueOnce({ rows: [] })
         .mockRejectedValueOnce(new Error('rollback boom'));
-      await expect(adapter.transaction(() => Promise.reject(originalError))).rejects.toBe(originalError);
+      await expect(adapter.transaction(() => Promise.reject(originalError))).rejects.toBe(
+        originalError
+      );
     });
     it('still releases client when both fn and ROLLBACK throw', async () => {
       const adapter = await makeInitializedAdapter();
@@ -446,7 +489,9 @@ describe('PostgresAdapter', () => {
       mockClient.query
         .mockResolvedValueOnce({ rows: [] })
         .mockRejectedValueOnce(new Error('rollback boom'));
-      await expect(adapter.transaction(() => Promise.reject(new Error('fn error')))).rejects.toThrow();
+      await expect(
+        adapter.transaction(() => Promise.reject(new Error('fn error')))
+      ).rejects.toThrow();
       expect(mockClient.release).toHaveBeenCalledOnce();
     });
   });
@@ -456,7 +501,9 @@ describe('PostgresAdapter', () => {
       const adapter = new PostgresAdapter(makeConfig());
       // Calling via the public interface method
       const execFn = adapter.exec.bind(adapter);
-      await expect(execFn('CREATE TABLE foo (id SERIAL)')).rejects.toThrow('Database not initialized');
+      await expect(execFn('CREATE TABLE foo (id SERIAL)')).rejects.toThrow(
+        'Database not initialized'
+      );
     });
     it('passes the raw SQL directly to pool.query', async () => {
       const adapter = await makeInitializedAdapter();
@@ -549,13 +596,17 @@ describe('PostgresAdapter', () => {
 
     describe('dateSubtract()', () => {
       it('generates correct INTERVAL expression for days', () => {
-        expect(adapter.dateSubtract('created_at', 7, 'days')).toBe("created_at - INTERVAL '7 days'");
+        expect(adapter.dateSubtract('created_at', 7, 'days')).toBe(
+          "created_at - INTERVAL '7 days'"
+        );
       });
       it('generates correct INTERVAL expression for hours', () => {
         expect(adapter.dateSubtract('ts', 24, 'hours')).toBe("ts - INTERVAL '24 hours'");
       });
       it('generates correct INTERVAL expression for minutes', () => {
-        expect(adapter.dateSubtract('updated_at', 30, 'minutes')).toBe("updated_at - INTERVAL '30 minutes'");
+        expect(adapter.dateSubtract('updated_at', 30, 'minutes')).toBe(
+          "updated_at - INTERVAL '30 minutes'"
+        );
       });
       it('floors fractional amounts', () => {
         expect(adapter.dateSubtract('col', 7.9, 'days')).toBe("col - INTERVAL '7 days'");
@@ -567,16 +618,24 @@ describe('PostgresAdapter', () => {
         expect(adapter.dateSubtract('col', 0, 'days')).toBe("col - INTERVAL '0 days'");
       });
       it('throws for negative amount', () => {
-        expect(() => adapter.dateSubtract('col', -1, 'days')).toThrow('Invalid interval amount: -1');
+        expect(() => adapter.dateSubtract('col', -1, 'days')).toThrow(
+          'Invalid interval amount: -1'
+        );
       });
       it('throws for NaN', () => {
-        expect(() => adapter.dateSubtract('col', NaN, 'days')).toThrow('Invalid interval amount: NaN');
+        expect(() => adapter.dateSubtract('col', NaN, 'days')).toThrow(
+          'Invalid interval amount: NaN'
+        );
       });
       it('throws for positive Infinity', () => {
-        expect(() => adapter.dateSubtract('col', Infinity, 'days')).toThrow('Invalid interval amount: Infinity');
+        expect(() => adapter.dateSubtract('col', Infinity, 'days')).toThrow(
+          'Invalid interval amount: Infinity'
+        );
       });
       it('throws for negative Infinity', () => {
-        expect(() => adapter.dateSubtract('col', -Infinity, 'days')).toThrow('Invalid interval amount: -Infinity');
+        expect(() => adapter.dateSubtract('col', -Infinity, 'days')).toThrow(
+          'Invalid interval amount: -Infinity'
+        );
       });
       it('includes the column name verbatim in the output', () => {
         const expr = adapter.dateSubtract('my_table.some_col', 5, 'days');
@@ -605,21 +664,51 @@ describe('PostgresAdapter', () => {
       });
     });
     describe('parseBoolean()', () => {
-      it('returns true for boolean true', () => { expect(adapter.parseBoolean(true)).toBe(true); });
-      it('returns true for string t', () => { expect(adapter.parseBoolean('t')).toBe(true); });
-      it('returns true for string true', () => { expect(adapter.parseBoolean('true')).toBe(true); });
-      it('returns true for number 1', () => { expect(adapter.parseBoolean(1)).toBe(true); });
-      it('returns false for boolean false', () => { expect(adapter.parseBoolean(false)).toBe(false); });
-      it('returns false for string f', () => { expect(adapter.parseBoolean('f')).toBe(false); });
-      it('returns false for string false', () => { expect(adapter.parseBoolean('false')).toBe(false); });
-      it('returns false for number 0', () => { expect(adapter.parseBoolean(0)).toBe(false); });
-      it('returns false for null', () => { expect(adapter.parseBoolean(null)).toBe(false); });
-      it('returns false for undefined', () => { expect(adapter.parseBoolean(undefined)).toBe(false); });
-      it('returns false for empty string', () => { expect(adapter.parseBoolean('')).toBe(false); });
-      it('returns false for string TRUE (case-sensitive)', () => { expect(adapter.parseBoolean('TRUE')).toBe(false); });
-      it('returns false for string T (case-sensitive)', () => { expect(adapter.parseBoolean('T')).toBe(false); });
-      it('returns false for number 2 (not exactly 1)', () => { expect(adapter.parseBoolean(2)).toBe(false); });
-      it('returns false for an object', () => { expect(adapter.parseBoolean({})).toBe(false); });
+      it('returns true for boolean true', () => {
+        expect(adapter.parseBoolean(true)).toBe(true);
+      });
+      it('returns true for string t', () => {
+        expect(adapter.parseBoolean('t')).toBe(true);
+      });
+      it('returns true for string true', () => {
+        expect(adapter.parseBoolean('true')).toBe(true);
+      });
+      it('returns true for number 1', () => {
+        expect(adapter.parseBoolean(1)).toBe(true);
+      });
+      it('returns false for boolean false', () => {
+        expect(adapter.parseBoolean(false)).toBe(false);
+      });
+      it('returns false for string f', () => {
+        expect(adapter.parseBoolean('f')).toBe(false);
+      });
+      it('returns false for string false', () => {
+        expect(adapter.parseBoolean('false')).toBe(false);
+      });
+      it('returns false for number 0', () => {
+        expect(adapter.parseBoolean(0)).toBe(false);
+      });
+      it('returns false for null', () => {
+        expect(adapter.parseBoolean(null)).toBe(false);
+      });
+      it('returns false for undefined', () => {
+        expect(adapter.parseBoolean(undefined)).toBe(false);
+      });
+      it('returns false for empty string', () => {
+        expect(adapter.parseBoolean('')).toBe(false);
+      });
+      it('returns false for string TRUE (case-sensitive)', () => {
+        expect(adapter.parseBoolean('TRUE')).toBe(false);
+      });
+      it('returns false for string T (case-sensitive)', () => {
+        expect(adapter.parseBoolean('T')).toBe(false);
+      });
+      it('returns false for number 2 (not exactly 1)', () => {
+        expect(adapter.parseBoolean(2)).toBe(false);
+      });
+      it('returns false for an object', () => {
+        expect(adapter.parseBoolean({})).toBe(false);
+      });
     });
   });
 
@@ -652,10 +741,17 @@ describe('PostgresAdapter', () => {
     });
     it('handles 10+ placeholders with correct numbering', async () => {
       const sql = 'SELECT ' + Array.from({ length: 12 }, () => '?').join(', ');
-      const params = Array.from({ length: 12 }, function(_, i) { return i + 1; });
+      const params = Array.from({ length: 12 }, function (_, i) {
+        return i + 1;
+      });
       await adapter.query(sql, params);
       const [convertedSql] = mockPool.query.mock.calls[0];
-      expect(convertedSql).toBe('SELECT ' + Array.from({ length: 12 }, function(_, i) { return '$' + (i + 1); }).join(', '));
+      expect(convertedSql).toBe(
+        'SELECT ' +
+          Array.from({ length: 12 }, function (_, i) {
+            return '$' + (i + 1);
+          }).join(', ')
+      );
     });
     it('applies conversion consistently in execute() as well', async () => {
       await adapter.execute('UPDATE t SET x = ? WHERE id = ?', ['v', 1]);

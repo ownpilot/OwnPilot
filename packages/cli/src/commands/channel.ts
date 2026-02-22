@@ -35,13 +35,9 @@ interface SetupResponse {
 // Gateway API Helper
 // ============================================================================
 
-const getBaseUrl = () =>
-  process.env.OWNPILOT_GATEWAY_URL ?? 'http://localhost:8080';
+const getBaseUrl = () => process.env.OWNPILOT_GATEWAY_URL ?? 'http://localhost:8080';
 
-async function apiFetch<T>(
-  path: string,
-  options?: RequestInit,
-): Promise<T> {
+async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
   const url = `${getBaseUrl()}/api/v1${path}`;
   const res = await fetch(url, {
     ...options,
@@ -49,12 +45,13 @@ async function apiFetch<T>(
   });
 
   if (!res.ok) {
-    const body = await res.json().catch(() => ({})) as Record<string, unknown>;
+    const body = (await res.json().catch(() => ({}))) as Record<string, unknown>;
     // Gateway returns { error: { code, message } } or { error: "string" }
     const errField = body.error;
-    const msg = typeof errField === 'object' && errField !== null
-      ? (errField as Record<string, string>).message ?? JSON.stringify(errField)
-      : (errField as string) ?? (body.message as string) ?? `HTTP ${res.status}`;
+    const msg =
+      typeof errField === 'object' && errField !== null
+        ? ((errField as Record<string, string>).message ?? JSON.stringify(errField))
+        : ((errField as string) ?? (body.message as string) ?? `HTTP ${res.status}`);
     throw new Error(msg);
   }
 
@@ -66,8 +63,10 @@ function ensureGatewayError(error: unknown): never {
   const msg = error instanceof Error ? error.message : String(error);
   if (msg.includes('ECONNREFUSED') || msg.includes('fetch failed')) {
     console.error(
-      '\nCould not reach gateway at ' + getBaseUrl() + '.\n' +
-      'Make sure the server is running: ownpilot start\n',
+      '\nCould not reach gateway at ' +
+        getBaseUrl() +
+        '.\n' +
+        'Make sure the server is running: ownpilot start\n'
     );
   } else {
     console.error(`\nError: ${msg}\n`);
@@ -80,10 +79,10 @@ function ensureGatewayError(error: unknown): never {
 // ============================================================================
 
 const STATUS_ICONS: Record<string, string> = {
-  connected: '\u2705',    // green check
-  connecting: '\u23F3',   // hourglass
+  connected: '\u2705', // green check
+  connecting: '\u23F3', // hourglass
   disconnected: '\u26AA', // white circle
-  error: '\u274C',        // red cross
+  error: '\u274C', // red cross
 };
 
 function statusIcon(status: string): string {
@@ -94,10 +93,7 @@ async function fetchChannels(): Promise<ChannelListResponse> {
   return apiFetch<ChannelListResponse>('/channels');
 }
 
-async function pickChannel(
-  channels: ChannelInfo[],
-  message: string,
-): Promise<string> {
+async function pickChannel(channels: ChannelInfo[], message: string): Promise<string> {
   if (channels.length === 1) return channels[0]!.id;
 
   return select({
@@ -123,7 +119,7 @@ export async function channelList(): Promise<void> {
     console.log('\nChannels:');
     console.log('\u2500'.repeat(74));
     console.log(
-      `${'ID'.padEnd(24)} ${'TYPE'.padEnd(12)} ${'NAME'.padEnd(18)} ${'STATUS'.padEnd(14)} BOT`,
+      `${'ID'.padEnd(24)} ${'TYPE'.padEnd(12)} ${'NAME'.padEnd(18)} ${'STATUS'.padEnd(14)} BOT`
     );
     console.log('\u2500'.repeat(74));
 
@@ -136,13 +132,13 @@ export async function channelList(): Promise<void> {
     for (const ch of data.channels) {
       const bot = ch.botInfo?.username ? `@${ch.botInfo.username}` : '';
       console.log(
-        `${ch.id.padEnd(24)} ${ch.type.padEnd(12)} ${ch.name.padEnd(18)} ${statusIcon(ch.status)} ${ch.status.padEnd(12)} ${bot}`,
+        `${ch.id.padEnd(24)} ${ch.type.padEnd(12)} ${ch.name.padEnd(18)} ${statusIcon(ch.status)} ${ch.status.padEnd(12)} ${bot}`
       );
     }
 
     console.log('\u2500'.repeat(74));
     console.log(
-      `  ${data.summary.total} total, ${data.summary.connected} connected, ${data.summary.disconnected} disconnected\n`,
+      `  ${data.summary.total} total, ${data.summary.connected} connected, ${data.summary.disconnected} disconnected\n`
     );
   } catch (error) {
     ensureGatewayError(error);
@@ -159,9 +155,7 @@ export async function channelAdd(): Promise<void> {
     // 1. Select channel type
     const type = await select({
       message: 'Select channel type:',
-      choices: [
-        { name: 'Telegram', value: 'telegram', description: 'Telegram bot via Bot API' },
-      ],
+      choices: [{ name: 'Telegram', value: 'telegram', description: 'Telegram bot via Bot API' }],
     });
 
     // 2. Collect token
@@ -170,7 +164,8 @@ export async function channelAdd(): Promise<void> {
     if (type === 'telegram') {
       config.bot_token = await input({
         message: 'Bot token (from @BotFather):',
-        validate: (v: string) => (v.includes(':') ? true : 'Invalid token format (expected number:string)'),
+        validate: (v: string) =>
+          v.includes(':') ? true : 'Invalid token format (expected number:string)',
       });
 
       const restrictUsers = await confirm({
@@ -228,13 +223,14 @@ export async function channelConnect(options: { id?: string }): Promise<void> {
       return;
     }
 
-    const channelId = options.id ?? await pickChannel(data.channels, 'Select channel to connect:');
+    const channelId =
+      options.id ?? (await pickChannel(data.channels, 'Select channel to connect:'));
 
     console.log(`\nConnecting ${channelId}...`);
 
     const result = await apiFetch<{ pluginId: string; status: string }>(
       `/channels/${channelId}/connect`,
-      { method: 'POST' },
+      { method: 'POST' }
     );
 
     console.log(`${statusIcon(result.status)} ${result.pluginId} — ${result.status}\n`);
@@ -261,13 +257,13 @@ export async function channelDisconnect(options: { id?: string }): Promise<void>
       return;
     }
 
-    const channelId = options.id ?? await pickChannel(connected, 'Select channel to disconnect:');
+    const channelId = options.id ?? (await pickChannel(connected, 'Select channel to disconnect:'));
 
     console.log(`\nDisconnecting ${channelId}...`);
 
     const result = await apiFetch<{ pluginId: string; status: string }>(
       `/channels/${channelId}/disconnect`,
-      { method: 'POST' },
+      { method: 'POST' }
     );
 
     console.log(`${statusIcon(result.status)} ${result.pluginId} — ${result.status}\n`);
@@ -282,7 +278,7 @@ export async function channelDisconnect(options: { id?: string }): Promise<void>
 export async function channelRemove(_options: { id?: string }): Promise<void> {
   console.log(
     '\nChannels are managed as plugins and cannot be removed individually.\n' +
-    'Use "ownpilot channel disconnect" to stop a channel.\n' +
-    'To remove the configuration, delete the entry in Config Center.\n',
+      'Use "ownpilot channel disconnect" to stop a channel.\n' +
+      'To remove the configuration, delete the entry in Config Center.\n'
   );
 }

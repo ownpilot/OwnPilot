@@ -128,10 +128,9 @@ describe('ChannelSessionsRepository', () => {
 
       expect(result).not.toBeNull();
       expect(result!.id).toBe('sess-1');
-      expect(mockAdapter.queryOne).toHaveBeenCalledWith(
-        expect.stringContaining('WHERE id = $1'),
-        ['sess-1'],
-      );
+      expect(mockAdapter.queryOne).toHaveBeenCalledWith(expect.stringContaining('WHERE id = $1'), [
+        'sess-1',
+      ]);
     });
 
     it('returns null when not found', async () => {
@@ -147,9 +146,7 @@ describe('ChannelSessionsRepository', () => {
 
   describe('findByConversation', () => {
     it('returns an active session by conversation ID', async () => {
-      mockAdapter.queryOne.mockResolvedValueOnce(
-        makeSessionRow({ conversation_id: 'conv-1' }),
-      );
+      mockAdapter.queryOne.mockResolvedValueOnce(makeSessionRow({ conversation_id: 'conv-1' }));
 
       const result = await repo.findByConversation('conv-1');
 
@@ -175,9 +172,7 @@ describe('ChannelSessionsRepository', () => {
   describe('create', () => {
     it('inserts a session and returns the mapped entity', async () => {
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
-      mockAdapter.queryOne.mockResolvedValueOnce(
-        makeSessionRow({ id: 'generated-uuid' }),
-      );
+      mockAdapter.queryOne.mockResolvedValueOnce(makeSessionRow({ id: 'generated-uuid' }));
 
       const result = await repo.create({
         channelUserId: 'cu-1',
@@ -187,14 +182,7 @@ describe('ChannelSessionsRepository', () => {
 
       expect(mockAdapter.execute).toHaveBeenCalledWith(
         expect.stringContaining('INSERT INTO channel_sessions'),
-        [
-          'generated-uuid',
-          'cu-1',
-          'cp-1',
-          'chat-1',
-          null,
-          '{}',
-        ],
+        ['generated-uuid', 'cu-1', 'cp-1', 'chat-1', null, '{}']
       );
       expect(result.id).toBe('generated-uuid');
       expect(result.channelUserId).toBe('cu-1');
@@ -207,7 +195,7 @@ describe('ChannelSessionsRepository', () => {
           id: 'generated-uuid',
           conversation_id: 'conv-1',
           context: '{"key":"value"}',
-        }),
+        })
       );
 
       const result = await repo.create({
@@ -220,14 +208,7 @@ describe('ChannelSessionsRepository', () => {
 
       expect(mockAdapter.execute).toHaveBeenCalledWith(
         expect.stringContaining('INSERT INTO channel_sessions'),
-        [
-          'generated-uuid',
-          'cu-1',
-          'cp-1',
-          'chat-1',
-          'conv-1',
-          '{"key":"value"}',
-        ],
+        ['generated-uuid', 'cu-1', 'cp-1', 'chat-1', 'conv-1', '{"key":"value"}']
       );
       expect(result.conversationId).toBe('conv-1');
       expect(result.context).toEqual({ key: 'value' });
@@ -242,7 +223,7 @@ describe('ChannelSessionsRepository', () => {
           channelUserId: 'cu-1',
           channelPluginId: 'cp-1',
           platformChatId: 'chat-1',
-        }),
+        })
       ).rejects.toThrow('Failed to create channel session');
     });
   });
@@ -270,9 +251,7 @@ describe('ChannelSessionsRepository', () => {
       mockAdapter.queryOne.mockResolvedValueOnce(null);
       // create: execute + getById
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
-      mockAdapter.queryOne.mockResolvedValueOnce(
-        makeSessionRow({ id: 'generated-uuid' }),
-      );
+      mockAdapter.queryOne.mockResolvedValueOnce(makeSessionRow({ id: 'generated-uuid' }));
 
       const result = await repo.findOrCreate({
         channelUserId: 'cu-1',
@@ -295,7 +274,7 @@ describe('ChannelSessionsRepository', () => {
 
       expect(mockAdapter.execute).toHaveBeenCalledWith(
         expect.stringContaining('SET conversation_id = $1'),
-        ['conv-42', 'sess-1'],
+        ['conv-42', 'sess-1']
       );
     });
   });
@@ -310,7 +289,7 @@ describe('ChannelSessionsRepository', () => {
 
       expect(mockAdapter.execute).toHaveBeenCalledWith(
         expect.stringContaining('SET last_message_at = NOW()'),
-        ['sess-1'],
+        ['sess-1']
       );
     });
   });
@@ -325,7 +304,7 @@ describe('ChannelSessionsRepository', () => {
 
       expect(mockAdapter.execute).toHaveBeenCalledWith(
         expect.stringContaining('SET is_active = FALSE'),
-        ['sess-1'],
+        ['sess-1']
       );
     });
   });
@@ -346,10 +325,7 @@ describe('ChannelSessionsRepository', () => {
       expect(sql).toContain('channel_user_id = $1');
       expect(sql).toContain('is_active = TRUE');
       expect(sql).toContain('ORDER BY last_message_at DESC');
-      expect(mockAdapter.query).toHaveBeenCalledWith(
-        expect.any(String),
-        ['cu-1'],
-      );
+      expect(mockAdapter.query).toHaveBeenCalledWith(expect.any(String), ['cu-1']);
     });
 
     it('returns empty array when no sessions', async () => {
@@ -372,7 +348,7 @@ describe('ChannelSessionsRepository', () => {
       expect(result).toBe(true);
       expect(mockAdapter.execute).toHaveBeenCalledWith(
         expect.stringContaining('DELETE FROM channel_sessions WHERE id = $1'),
-        ['sess-1'],
+        ['sess-1']
       );
     });
 
@@ -390,7 +366,7 @@ describe('ChannelSessionsRepository', () => {
   describe('row mapping', () => {
     it('parses context JSON string', async () => {
       mockAdapter.queryOne.mockResolvedValueOnce(
-        makeSessionRow({ context: '{"lang":"en","mode":"chat"}' }),
+        makeSessionRow({ context: '{"lang":"en","mode":"chat"}' })
       );
 
       const result = await repo.getById('sess-1');
@@ -400,7 +376,7 @@ describe('ChannelSessionsRepository', () => {
 
     it('handles already-parsed context object', async () => {
       mockAdapter.queryOne.mockResolvedValueOnce(
-        makeSessionRow({ context: { already: 'parsed' } }),
+        makeSessionRow({ context: { already: 'parsed' } })
       );
 
       const result = await repo.getById('sess-1');
@@ -409,9 +385,7 @@ describe('ChannelSessionsRepository', () => {
     });
 
     it('handles empty context string as empty object', async () => {
-      mockAdapter.queryOne.mockResolvedValueOnce(
-        makeSessionRow({ context: '' }),
-      );
+      mockAdapter.queryOne.mockResolvedValueOnce(makeSessionRow({ context: '' }));
 
       const result = await repo.getById('sess-1');
 
@@ -419,9 +393,7 @@ describe('ChannelSessionsRepository', () => {
     });
 
     it('sets conversationId to null when null', async () => {
-      mockAdapter.queryOne.mockResolvedValueOnce(
-        makeSessionRow({ conversation_id: null }),
-      );
+      mockAdapter.queryOne.mockResolvedValueOnce(makeSessionRow({ conversation_id: null }));
 
       const result = await repo.getById('sess-1');
 
@@ -429,9 +401,7 @@ describe('ChannelSessionsRepository', () => {
     });
 
     it('maps conversationId when present', async () => {
-      mockAdapter.queryOne.mockResolvedValueOnce(
-        makeSessionRow({ conversation_id: 'conv-123' }),
-      );
+      mockAdapter.queryOne.mockResolvedValueOnce(makeSessionRow({ conversation_id: 'conv-123' }));
 
       const result = await repo.getById('sess-1');
 
@@ -443,7 +413,7 @@ describe('ChannelSessionsRepository', () => {
         makeSessionRow({
           created_at: '2024-01-15T10:30:00Z',
           last_message_at: '2024-01-15T11:00:00Z',
-        }),
+        })
       );
 
       const result = await repo.getById('sess-1');
@@ -455,9 +425,7 @@ describe('ChannelSessionsRepository', () => {
     });
 
     it('sets lastMessageAt to null when null', async () => {
-      mockAdapter.queryOne.mockResolvedValueOnce(
-        makeSessionRow({ last_message_at: null }),
-      );
+      mockAdapter.queryOne.mockResolvedValueOnce(makeSessionRow({ last_message_at: null }));
 
       const result = await repo.getById('sess-1');
 
@@ -465,9 +433,7 @@ describe('ChannelSessionsRepository', () => {
     });
 
     it('maps isActive boolean correctly', async () => {
-      mockAdapter.queryOne.mockResolvedValueOnce(
-        makeSessionRow({ is_active: false }),
-      );
+      mockAdapter.queryOne.mockResolvedValueOnce(makeSessionRow({ is_active: false }));
 
       const result = await repo.getById('sess-1');
 

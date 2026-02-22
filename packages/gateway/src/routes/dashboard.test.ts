@@ -24,14 +24,26 @@ const sampleDailyData = {
   },
   tasks: {
     dueToday: [
-      { id: 'task-1', title: 'Review PR', dueDate: '2026-01-31', dueTime: '17:00', status: 'pending', priority: 'high' },
+      {
+        id: 'task-1',
+        title: 'Review PR',
+        dueDate: '2026-01-31',
+        dueTime: '17:00',
+        status: 'pending',
+        priority: 'high',
+      },
     ],
     overdue: [],
     totalTasks: 1,
   },
   triggers: {
     scheduledToday: [
-      { id: 'trigger-1', name: 'Daily report', description: 'Generate report', nextFire: '2026-01-31T18:00:00Z' },
+      {
+        id: 'trigger-1',
+        name: 'Daily report',
+        description: 'Generate report',
+        nextFire: '2026-01-31T18:00:00Z',
+      },
     ],
   },
   memories: { recent: [], total: 0 },
@@ -57,7 +69,9 @@ const mockBriefingCache = {
 };
 
 vi.mock('../services/dashboard.js', () => ({
-  DashboardService: vi.fn(function() { return mockDashboardService; }),
+  DashboardService: vi.fn(function () {
+    return mockDashboardService;
+  }),
   briefingCache: mockBriefingCache,
 }));
 

@@ -72,13 +72,7 @@ describe('Risk Assessment', () => {
     });
 
     it('should include a present flag on every factor', () => {
-      const result = assessRisk(
-        'notification',
-        'list_directory',
-        {},
-        emptyContext,
-        makeConfig()
-      );
+      const result = assessRisk('notification', 'list_directory', {}, emptyContext, makeConfig());
 
       for (const factor of result.factors) {
         expect(factor).toHaveProperty('present');
@@ -650,9 +644,22 @@ describe('Risk Assessment', () => {
       const result = assessRisk(
         'financial',
         'run_script',
-        { cost: 9999, force: true, global: true, sensitive: true, broadcast: true, bulk: true, tokens: 99999 },
+        {
+          cost: 9999,
+          force: true,
+          global: true,
+          sensitive: true,
+          broadcast: true,
+          bulk: true,
+          tokens: 99999,
+        },
         emptyContext,
-        makeConfig({ level: AutonomyLevel.FULL, blockedCategories: [], blockedTools: [], confirmationRequired: [] })
+        makeConfig({
+          level: AutonomyLevel.FULL,
+          blockedCategories: [],
+          blockedTools: [],
+          confirmationRequired: [],
+        })
       );
 
       // Verify score-to-level mapping is consistent regardless of exact score:
@@ -692,7 +699,11 @@ describe('Risk Assessment', () => {
         'list_directory',
         {},
         emptyContext,
-        makeConfig({ level: AutonomyLevel.ASSISTED, blockedCategories: [], confirmationRequired: [] })
+        makeConfig({
+          level: AutonomyLevel.ASSISTED,
+          blockedCategories: [],
+          confirmationRequired: [],
+        })
       );
       expect(result.requiresApproval).toBe(true);
     });
@@ -704,7 +715,11 @@ describe('Risk Assessment', () => {
         'list_directory',
         {},
         emptyContext,
-        makeConfig({ level: AutonomyLevel.SUPERVISED, blockedCategories: [], confirmationRequired: [] })
+        makeConfig({
+          level: AutonomyLevel.SUPERVISED,
+          blockedCategories: [],
+          confirmationRequired: [],
+        })
       );
       expect(low.level).toBe('low');
       expect(low.requiresApproval).toBe(false);
@@ -715,7 +730,11 @@ describe('Risk Assessment', () => {
         'send_email',
         { bulk: true, sensitive: true },
         emptyContext,
-        makeConfig({ level: AutonomyLevel.SUPERVISED, blockedCategories: [], confirmationRequired: [] })
+        makeConfig({
+          level: AutonomyLevel.SUPERVISED,
+          blockedCategories: [],
+          confirmationRequired: [],
+        })
       );
       expect(medium.level).toBe('medium');
       expect(medium.requiresApproval).toBe(true);
@@ -728,7 +747,11 @@ describe('Risk Assessment', () => {
         'run_script',
         { sensitive: true },
         emptyContext,
-        makeConfig({ level: AutonomyLevel.AUTONOMOUS, blockedCategories: [], confirmationRequired: [] })
+        makeConfig({
+          level: AutonomyLevel.AUTONOMOUS,
+          blockedCategories: [],
+          confirmationRequired: [],
+        })
       );
       expect(high.level).toBe('high');
       expect(high.requiresApproval).toBe(false);
@@ -741,7 +764,11 @@ describe('Risk Assessment', () => {
         'send_email',
         { bulk: true, sensitive: true },
         emptyContext,
-        makeConfig({ level: AutonomyLevel.AUTONOMOUS, blockedCategories: [], confirmationRequired: [] })
+        makeConfig({
+          level: AutonomyLevel.AUTONOMOUS,
+          blockedCategories: [],
+          confirmationRequired: [],
+        })
       );
       expect(medium.level).toBe('medium');
       expect(medium.requiresApproval).toBe(false);
@@ -753,7 +780,12 @@ describe('Risk Assessment', () => {
         'run_script',
         { cost: 9999, force: true, global: true, sensitive: true, broadcast: true },
         emptyContext,
-        makeConfig({ level: AutonomyLevel.FULL, blockedCategories: [], blockedTools: [], confirmationRequired: [] })
+        makeConfig({
+          level: AutonomyLevel.FULL,
+          blockedCategories: [],
+          blockedTools: [],
+          confirmationRequired: [],
+        })
       );
       expect(result.requiresApproval).toBe(false);
     });
@@ -1094,13 +1126,7 @@ describe('ApprovalManager', () => {
       // We will fill up 50 requests and verify the 51st throws.
       // Use a category that needs approval with default config (SUPERVISED + system_command blocked).
       for (let i = 0; i < 50; i++) {
-        await manager.requestApproval(
-          'user-1',
-          'system_command',
-          'run_script',
-          `action ${i}`,
-          {}
-        );
+        await manager.requestApproval('user-1', 'system_command', 'run_script', `action ${i}`, {});
       }
 
       await expect(
@@ -1319,13 +1345,7 @@ describe('ApprovalManager', () => {
       const listener = vi.fn();
       manager.on('action:pending', listener);
 
-      await manager.requestApproval(
-        'user-1',
-        'system_command',
-        'run_script',
-        'Run a script',
-        {}
-      );
+      await manager.requestApproval('user-1', 'system_command', 'run_script', 'Run a script', {});
 
       expect(listener).toHaveBeenCalledOnce();
       expect(listener.mock.calls[0][0].status).toBe('pending');
@@ -1335,13 +1355,7 @@ describe('ApprovalManager', () => {
       const listener = vi.fn();
       manager.on('notification', listener);
 
-      await manager.requestApproval(
-        'user-1',
-        'system_command',
-        'run_script',
-        'Run a script',
-        {}
-      );
+      await manager.requestApproval('user-1', 'system_command', 'run_script', 'Run a script', {});
 
       expect(listener).toHaveBeenCalledOnce();
       const notification = listener.mock.calls[0][0];
@@ -1865,13 +1879,7 @@ describe('ApprovalManager', () => {
       const listener = vi.fn();
       manager.on('action:expired', listener);
 
-      await manager.requestApproval(
-        'user-1',
-        'system_command',
-        'run_script',
-        'Run',
-        {}
-      );
+      await manager.requestApproval('user-1', 'system_command', 'run_script', 'Run', {});
 
       // Advance past the default timeout (5 min) + cleanup interval (1 min)
       vi.advanceTimersByTime(300000 + 60000);
@@ -1886,13 +1894,7 @@ describe('ApprovalManager', () => {
       const listener = vi.fn();
       manager.on('action:expired', listener);
 
-      await manager.requestApproval(
-        'user-1',
-        'system_command',
-        'run_script',
-        'Run',
-        {}
-      );
+      await manager.requestApproval('user-1', 'system_command', 'run_script', 'Run', {});
 
       // Advance just one cleanup tick (1 minute) -- action still valid
       vi.advanceTimersByTime(60000);
@@ -1970,13 +1972,7 @@ describe('ApprovalManager', () => {
       const listener = vi.fn();
       manager.on('action:expired', listener);
 
-      await manager.requestApproval(
-        'user-1',
-        'system_command',
-        'run_script',
-        'Run',
-        {}
-      );
+      await manager.requestApproval('user-1', 'system_command', 'run_script', 'Run', {});
 
       manager.stop();
 

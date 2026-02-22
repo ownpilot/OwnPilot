@@ -34,7 +34,8 @@ const SKIP_SCHEMA = args.includes('--skip-schema');
 
 // Configuration
 const SQLITE_PATH = process.env.SQLITE_PATH || join(process.cwd(), 'data', 'ownpilot.db');
-const PG_URL = process.env.DATABASE_URL ||
+const PG_URL =
+  process.env.DATABASE_URL ||
   `postgresql://${process.env.POSTGRES_USER || 'ownpilot'}:${process.env.POSTGRES_PASSWORD || 'ownpilot_secret'}@${process.env.POSTGRES_HOST || 'localhost'}:${process.env.POSTGRES_PORT || '25432'}/${process.env.POSTGRES_DB || 'ownpilot'}`;
 
 // Tables to migrate in order (respecting foreign key dependencies)
@@ -227,7 +228,15 @@ class Migrator {
   private async createSchema(): Promise<void> {
     console.log('\n📝 Creating PostgreSQL schema...');
 
-    const schemaPath = join(__dirname, '..', 'src', 'db', 'migrations', 'postgres', '001_initial_schema.sql');
+    const schemaPath = join(
+      __dirname,
+      '..',
+      'src',
+      'db',
+      'migrations',
+      'postgres',
+      '001_initial_schema.sql'
+    );
 
     if (!existsSync(schemaPath)) {
       console.log('   ⚠️ Schema file not found, skipping schema creation');
@@ -444,7 +453,9 @@ class Migrator {
     }
 
     console.log('-'.repeat(60));
-    console.log(` ${'TOTAL'.padEnd(30)} | ${totalRows.toString().padStart(7)} | ${totalSuccess.toString().padStart(7)} | ${totalFailed.toString().padStart(6)}`);
+    console.log(
+      ` ${'TOTAL'.padEnd(30)} | ${totalRows.toString().padStart(7)} | ${totalSuccess.toString().padStart(7)} | ${totalFailed.toString().padStart(6)}`
+    );
 
     // Print errors
     const tablesWithErrors = this.stats.filter((s) => s.errors.length > 0);

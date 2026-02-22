@@ -34,8 +34,12 @@ const mockLogsRepo = {
 // ─── Mock Dependencies ───────────────────────────────────────────
 
 vi.mock('../db/repositories/index.js', () => ({
-  ChatRepository: vi.fn(function() { return mockChatRepo; }),
-  LogsRepository: vi.fn(function() { return mockLogsRepo; }),
+  ChatRepository: vi.fn(function () {
+    return mockChatRepo;
+  }),
+  LogsRepository: vi.fn(function () {
+    return mockLogsRepo;
+  }),
 }));
 
 const mockAgent = {
@@ -189,12 +193,14 @@ vi.mock('@ownpilot/core', () => ({
     getDefinitions: vi.fn(() => []),
   })),
   getToolDefinitions: vi.fn(() => []),
-  ToolRegistry: vi.fn(function() { return {
-    register: vi.fn(),
-    has: vi.fn(),
-    getDefinitions: vi.fn(() => []),
-    setConfigCenter: vi.fn(),
-  }; }),
+  ToolRegistry: vi.fn(function () {
+    return {
+      register: vi.fn(),
+      has: vi.fn(),
+      getDefinitions: vi.fn(() => []),
+      setConfigCenter: vi.fn(),
+    };
+  }),
   registerAllTools: vi.fn(),
   registerCoreTools: vi.fn(),
   injectMemoryIntoPrompt: vi.fn(async (prompt: string) => ({ systemPrompt: prompt })),
@@ -251,22 +257,30 @@ vi.mock('../tracing/index.js', () => ({
 
 import { chatRoutes } from './chat.js';
 import { errorHandler } from '../middleware/error-handler.js';
-import { getAgent, isDemoMode, getDefaultModel, resetChatAgentContext, clearAllChatAgentCaches } from './agents.js';
+import {
+  getAgent,
+  isDemoMode,
+  getDefaultModel,
+  resetChatAgentContext,
+  clearAllChatAgentCaches,
+} from './agents.js';
 
 // ─── Helpers ─────────────────────────────────────────────────────
 
-function mockConversation(overrides: Partial<{
-  id: string;
-  title: string;
-  agentId: string;
-  agentName: string;
-  provider: string;
-  model: string;
-  messageCount: number;
-  isArchived: boolean;
-  createdAt: Date;
-  updatedAt: Date;
-}> = {}) {
+function mockConversation(
+  overrides: Partial<{
+    id: string;
+    title: string;
+    agentId: string;
+    agentName: string;
+    provider: string;
+    model: string;
+    messageCount: number;
+    isArchived: boolean;
+    createdAt: Date;
+    updatedAt: Date;
+  }> = {}
+) {
   return {
     id: overrides.id ?? 'conv-1',
     title: overrides.title ?? 'Test Conversation',
@@ -281,19 +295,21 @@ function mockConversation(overrides: Partial<{
   };
 }
 
-function mockLog(overrides: Partial<{
-  id: string;
-  type: string;
-  conversationId: string;
-  provider: string;
-  model: string;
-  statusCode: number;
-  durationMs: number;
-  inputTokens: number;
-  outputTokens: number;
-  error: string | null;
-  createdAt: Date;
-}> = {}) {
+function mockLog(
+  overrides: Partial<{
+    id: string;
+    type: string;
+    conversationId: string;
+    provider: string;
+    model: string;
+    statusCode: number;
+    durationMs: number;
+    inputTokens: number;
+    outputTokens: number;
+    error: string | null;
+    createdAt: Date;
+  }> = {}
+) {
   return {
     id: overrides.id ?? 'log-1',
     type: overrides.type ?? 'chat',
@@ -324,7 +340,10 @@ describe('Chat Routes', () => {
     vi.mocked(isDemoMode).mockResolvedValue(false);
     vi.mocked(getDefaultModel).mockResolvedValue('gpt-4');
     vi.mocked(getAgent).mockResolvedValue(undefined);
-    vi.mocked(resetChatAgentContext).mockReturnValue({ reset: true, newSessionId: 'new-session-1' });
+    vi.mocked(resetChatAgentContext).mockReturnValue({
+      reset: true,
+      newSessionId: 'new-session-1',
+    });
     vi.mocked(clearAllChatAgentCaches).mockReturnValue(3);
 
     // Reset repository mocks
@@ -680,7 +699,10 @@ describe('Chat Routes', () => {
 
   describe('PATCH /chat/history/:id/archive - Archive conversation', () => {
     it('should archive conversation', async () => {
-      mockChatRepo.updateConversation.mockResolvedValue({ ...mockConversation(), isArchived: true });
+      mockChatRepo.updateConversation.mockResolvedValue({
+        ...mockConversation(),
+        isArchived: true,
+      });
 
       const res = await app.request('/chat/history/conv-1/archive', {
         method: 'PATCH',
@@ -695,7 +717,10 @@ describe('Chat Routes', () => {
     });
 
     it('should unarchive conversation', async () => {
-      mockChatRepo.updateConversation.mockResolvedValue({ ...mockConversation(), isArchived: false });
+      mockChatRepo.updateConversation.mockResolvedValue({
+        ...mockConversation(),
+        isArchived: false,
+      });
 
       const res = await app.request('/chat/history/conv-1/archive', {
         method: 'PATCH',

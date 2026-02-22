@@ -14,7 +14,11 @@ import type { ExecutionPermissions, PermissionMode } from '@ownpilot/core';
 const VALID_PERM_MODES: ReadonlySet<string> = new Set(['blocked', 'prompt', 'allowed']);
 const VALID_EXEC_MODES: ReadonlySet<string> = new Set(['local', 'docker', 'auto']);
 const VALID_CATEGORIES: ReadonlySet<string> = new Set([
-  'execute_javascript', 'execute_python', 'execute_shell', 'compile_code', 'package_manager',
+  'execute_javascript',
+  'execute_python',
+  'execute_shell',
+  'compile_code',
+  'package_manager',
 ]);
 
 const app = new Hono();
@@ -53,7 +57,11 @@ app.put('/', async (c) => {
   }
 
   if (Object.keys(cleaned).length === 0) {
-    return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: 'No valid permission changes provided' }, 400);
+    return apiError(
+      c,
+      { code: ERROR_CODES.VALIDATION_ERROR, message: 'No valid permission changes provided' },
+      400
+    );
   }
 
   const updated = await executionPermissionsRepo.set(userId, cleaned);
@@ -77,7 +85,11 @@ app.post('/approvals/:id/resolve', async (c) => {
   const body = await c.req.json<{ approved: boolean }>();
 
   if (typeof body.approved !== 'boolean') {
-    return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: 'approved field must be a boolean' }, 400);
+    return apiError(
+      c,
+      { code: ERROR_CODES.VALIDATION_ERROR, message: 'approved field must be a boolean' },
+      400
+    );
   }
 
   const resolved = resolveApproval(approvalId, body.approved);
@@ -98,7 +110,11 @@ app.get('/test', async (c) => {
   const permissions = await executionPermissionsRepo.get(userId);
 
   const categories = [
-    'execute_javascript', 'execute_python', 'execute_shell', 'compile_code', 'package_manager',
+    'execute_javascript',
+    'execute_python',
+    'execute_shell',
+    'compile_code',
+    'package_manager',
   ] as const;
 
   const results: Record<string, { mode: string; wouldAllow: boolean; reason: string }> = {};
@@ -107,13 +123,25 @@ app.get('/test', async (c) => {
     const catMode = permissions[cat] ?? 'blocked';
 
     if (!permissions.enabled) {
-      results[cat] = { mode: catMode, wouldAllow: false, reason: 'Master switch is OFF (enabled=false)' };
+      results[cat] = {
+        mode: catMode,
+        wouldAllow: false,
+        reason: 'Master switch is OFF (enabled=false)',
+      };
     } else if (catMode === 'blocked') {
       results[cat] = { mode: catMode, wouldAllow: false, reason: 'Category is set to "blocked"' };
     } else if (catMode === 'prompt') {
-      results[cat] = { mode: catMode, wouldAllow: false, reason: 'Would show approval dialog (SSE required)' };
+      results[cat] = {
+        mode: catMode,
+        wouldAllow: false,
+        reason: 'Would show approval dialog (SSE required)',
+      };
     } else if (catMode === 'allowed') {
-      results[cat] = { mode: catMode, wouldAllow: true, reason: 'Category is set to "allowed" — execution permitted' };
+      results[cat] = {
+        mode: catMode,
+        wouldAllow: true,
+        reason: 'Category is set to "allowed" — execution permitted',
+      };
     } else {
       results[cat] = { mode: catMode, wouldAllow: false, reason: `Unknown mode: ${catMode}` };
     }
@@ -127,7 +155,7 @@ app.get('/test', async (c) => {
     categoryResults: results,
     diagnosis: !permissions.enabled
       ? 'Master switch is OFF. Enable it in the Execution Security panel.'
-      : Object.values(results).every(r => !r.wouldAllow && r.mode === 'blocked')
+      : Object.values(results).every((r) => !r.wouldAllow && r.mode === 'blocked')
         ? 'All categories are "blocked". Set at least one to "allowed" or "ask".'
         : 'Permissions look correct. If execution still fails, check server logs for [ExecSecurity] entries.',
   });

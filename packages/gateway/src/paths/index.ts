@@ -213,14 +213,9 @@ export function initializeDataDirectories(): DataPaths {
 export function areDataDirectoriesInitialized(): boolean {
   const paths = getDataPaths();
 
-  const requiredDirs = [
-    paths.root,
-    paths.config,
-    paths.data,
-    paths.workspace,
-  ];
+  const requiredDirs = [paths.root, paths.config, paths.data, paths.workspace];
 
-  return requiredDirs.every(dir => existsSync(dir));
+  return requiredDirs.every((dir) => existsSync(dir));
 }
 
 /**

@@ -12,12 +12,7 @@
  * - Notification preferences per user
  */
 
-import type {
-  ScheduledTask,
-  TaskExecutionResult,
-  TaskStatus,
-  TaskPriority,
-} from './index.js';
+import type { ScheduledTask, TaskExecutionResult, TaskStatus, TaskPriority } from './index.js';
 
 // Notification types (inlined — the full notifications module was removed as dead code)
 export type NotificationChannel = 'telegram' | 'email' | 'webhook' | 'push' | 'sms';
@@ -49,11 +44,11 @@ export interface UserNotificationPreferences {
  * When to send notifications for a task
  */
 export type TaskNotificationTrigger =
-  | 'on_start'       // When task starts
-  | 'on_complete'    // When task completes successfully
-  | 'on_failure'     // When task fails
-  | 'on_any_result'  // On any result (success or failure)
-  | 'reminder';      // Before task runs
+  | 'on_start' // When task starts
+  | 'on_complete' // When task completes successfully
+  | 'on_failure' // When task fails
+  | 'on_any_result' // On any result (success or failure)
+  | 'reminder'; // Before task runs
 
 /**
  * Task notification configuration
@@ -163,19 +158,13 @@ export const SCHEDULER_NOTIFICATION_TEMPLATES = {
  * Process template with variables
  * Simple mustache-like template engine
  */
-export function processTemplate(
-  template: string,
-  variables: Record<string, unknown>
-): string {
+export function processTemplate(template: string, variables: Record<string, unknown>): string {
   let result = template;
 
   // Handle conditionals: {{#if variable}}...{{/if}}
-  result = result.replace(
-    /\{\{#if\s+(\w+)\}\}([\s\S]*?)\{\{\/if\}\}/g,
-    (_, variable, content) => {
-      return variables[variable] ? content : '';
-    }
-  );
+  result = result.replace(/\{\{#if\s+(\w+)\}\}([\s\S]*?)\{\{\/if\}\}/g, (_, variable, content) => {
+    return variables[variable] ? content : '';
+  });
 
   // Handle simple variables: {{variable}}
   result = result.replace(/\{\{(\w+)\}\}/g, (_, variable) => {
@@ -421,9 +410,10 @@ export class SchedulerNotificationBridge {
 
     if (result) {
       if (config.includeResult && result.result) {
-        variables.result = typeof result.result === 'string'
-          ? result.result
-          : JSON.stringify(result.result, null, 2);
+        variables.result =
+          typeof result.result === 'string'
+            ? result.result
+            : JSON.stringify(result.result, null, 2);
       }
       if (config.includeDuration && result.duration) {
         variables.duration = result.duration;
@@ -616,9 +606,10 @@ export function buildDailySummaryNotification(
   stats: TaskExecutionStats,
   userId: string
 ): NotificationRequest {
-  const topIssues = stats.topIssues.length > 0
-    ? stats.topIssues.map(i => `• ${i.error} (${i.count}x)`).join('\n')
-    : '';
+  const topIssues =
+    stats.topIssues.length > 0
+      ? stats.topIssues.map((i) => `• ${i.error} (${i.count}x)`).join('\n')
+      : '';
 
   const variables = {
     completedCount: stats.completed,
@@ -651,9 +642,10 @@ export function buildWeeklySummaryNotification(
   stats: TaskExecutionStats,
   userId: string
 ): NotificationRequest {
-  const topTasks = stats.topTasks.length > 0
-    ? stats.topTasks.map(t => `• ${t.name}: ${t.executions} runs`).join('\n')
-    : 'No tasks executed';
+  const topTasks =
+    stats.topTasks.length > 0
+      ? stats.topTasks.map((t) => `• ${t.name}: ${t.executions} runs`).join('\n')
+      : 'No tasks executed';
 
   const variables = {
     completedCount: stats.completed,

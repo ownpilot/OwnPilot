@@ -35,7 +35,9 @@ export function setWeatherConfig(
 /**
  * Get weather service instance
  */
-function getWeatherService(context?: { getApiKey?: (name: string) => string | undefined }): WeatherDataService | null {
+function getWeatherService(context?: {
+  getApiKey?: (name: string) => string | undefined;
+}): WeatherDataService | null {
   // Try API Center first
   if (context?.getApiKey) {
     const owmKey = context.getApiKey('openweathermap');
@@ -67,7 +69,8 @@ export const getWeatherTool: ToolDefinition = {
     properties: {
       location: {
         type: 'string',
-        description: 'City name, address, or coordinates (e.g., "Istanbul", "New York, NY", "40.7,-74.0")',
+        description:
+          'City name, address, or coordinates (e.g., "Istanbul", "New York, NY", "40.7,-74.0")',
       },
     },
     required: ['location'],
@@ -80,7 +83,13 @@ export const getWeatherTool: ToolDefinition = {
       category: 'weather',
       docsUrl: 'https://openweathermap.org/api',
       configSchema: [
-        { name: 'api_key', label: 'API Key', type: 'secret', required: true, envVar: 'OPENWEATHERMAP_API_KEY' },
+        {
+          name: 'api_key',
+          label: 'API Key',
+          type: 'secret',
+          required: true,
+          envVar: 'OPENWEATHERMAP_API_KEY',
+        },
       ],
     },
     {
@@ -90,13 +99,22 @@ export const getWeatherTool: ToolDefinition = {
       category: 'weather',
       docsUrl: 'https://www.weatherapi.com/',
       configSchema: [
-        { name: 'api_key', label: 'API Key', type: 'secret', required: true, envVar: 'WEATHERAPI_KEY' },
+        {
+          name: 'api_key',
+          label: 'API Key',
+          type: 'secret',
+          required: true,
+          envVar: 'WEATHERAPI_KEY',
+        },
       ],
     },
   ],
-};;
+};
 
-export const getWeatherExecutor: ToolExecutor = async (params, context): Promise<ToolExecutionResult> => {
+export const getWeatherExecutor: ToolExecutor = async (
+  params,
+  context
+): Promise<ToolExecutionResult> => {
   const location = params.location as string;
 
   if (!location || location.trim().length === 0) {
@@ -112,7 +130,8 @@ export const getWeatherExecutor: ToolExecutor = async (params, context): Promise
     return {
       content: {
         error: 'Weather service not configured',
-        suggestion: 'Add a weather API key in Settings → API Center or Settings → API Keys (OpenWeatherMap or WeatherAPI)',
+        suggestion:
+          'Add a weather API key in Settings → API Center or Settings → API Keys (OpenWeatherMap or WeatherAPI)',
       },
       isError: true,
     };
@@ -183,7 +202,13 @@ export const getWeatherForecastTool: ToolDefinition = {
       category: 'weather',
       docsUrl: 'https://openweathermap.org/api',
       configSchema: [
-        { name: 'api_key', label: 'API Key', type: 'secret', required: true, envVar: 'OPENWEATHERMAP_API_KEY' },
+        {
+          name: 'api_key',
+          label: 'API Key',
+          type: 'secret',
+          required: true,
+          envVar: 'OPENWEATHERMAP_API_KEY',
+        },
       ],
     },
     {
@@ -193,11 +218,17 @@ export const getWeatherForecastTool: ToolDefinition = {
       category: 'weather',
       docsUrl: 'https://www.weatherapi.com/',
       configSchema: [
-        { name: 'api_key', label: 'API Key', type: 'secret', required: true, envVar: 'WEATHERAPI_KEY' },
+        {
+          name: 'api_key',
+          label: 'API Key',
+          type: 'secret',
+          required: true,
+          envVar: 'WEATHERAPI_KEY',
+        },
       ],
     },
   ],
-};;
+};
 
 export const getWeatherForecastExecutor: ToolExecutor = async (
   params,

@@ -135,7 +135,7 @@ describe('Database Routes', () => {
       }
     }
     // Flush microtask queue so async IIFEs (maintenance, import) complete
-    await new Promise(r => setTimeout(r, 0));
+    await new Promise((r) => setTimeout(r, 0));
 
     app = new Hono();
     app.onError(errorHandler);
@@ -157,9 +157,9 @@ describe('Database Routes', () => {
     mockReaddir.mockResolvedValue([]);
 
     // Reset spawn event maps
-    Object.keys(mockSpawnEvents).forEach(k => delete mockSpawnEvents[k]);
-    Object.keys(mockStdoutEvents).forEach(k => delete mockStdoutEvents[k]);
-    Object.keys(mockStderrEvents).forEach(k => delete mockStderrEvents[k]);
+    Object.keys(mockSpawnEvents).forEach((k) => delete mockSpawnEvents[k]);
+    Object.keys(mockStdoutEvents).forEach((k) => delete mockStdoutEvents[k]);
+    Object.keys(mockStderrEvents).forEach((k) => delete mockStderrEvents[k]);
   });
 
   afterEach(() => {
@@ -502,11 +502,10 @@ describe('Database Routes', () => {
     it('should export data as JSON', async () => {
       // Table exists check
       mockAdapter.queryOne
-        .mockResolvedValueOnce({ exists: true })  // first table check
+        .mockResolvedValueOnce({ exists: true }) // first table check
         .mockResolvedValueOnce({ version: 'PostgreSQL 16' }); // version query
       // Query returns rows for first table only (others won't exist)
-      mockAdapter.query
-        .mockResolvedValueOnce([{ id: '1', name: 'test' }]);
+      mockAdapter.query.mockResolvedValueOnce([{ id: '1', name: 'test' }]);
 
       const res = await app.request('/database/export?tables=settings', {
         headers: adminHeaders(),

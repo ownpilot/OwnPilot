@@ -129,10 +129,7 @@ export class ConversationMemory {
   /**
    * Add tool results message
    */
-  addToolResults(
-    conversationId: string,
-    results: readonly ToolResult[]
-  ): Conversation | undefined {
+  addToolResults(conversationId: string, results: readonly ToolResult[]): Conversation | undefined {
     return this.addMessage(conversationId, {
       role: 'tool',
       content: '',
@@ -185,10 +182,7 @@ export class ConversationMemory {
     const contextMessages = this.getContextMessages(conversationId);
 
     if (conversation.systemPrompt) {
-      return [
-        { role: 'system', content: conversation.systemPrompt },
-        ...contextMessages,
-      ];
+      return [{ role: 'system', content: conversation.systemPrompt }, ...contextMessages];
     }
 
     return contextMessages;
@@ -210,7 +204,7 @@ export class ConversationMemory {
       if (i >= cutoff) return msg; // recent — keep intact
       if (!msg.toolResults || msg.toolResults.length === 0) return msg;
 
-      const truncatedResults = msg.toolResults.map(tr => {
+      const truncatedResults = msg.toolResults.map((tr) => {
         if (tr.content.length <= TOOL_RESULT_LIMIT) return tr;
         return {
           ...tr,
@@ -335,11 +329,13 @@ export class ConversationMemory {
   /**
    * Get conversation statistics
    */
-  getStats(conversationId: string): {
-    messageCount: number;
-    estimatedTokens: number;
-    lastActivity: Date;
-  } | undefined {
+  getStats(conversationId: string):
+    | {
+        messageCount: number;
+        estimatedTokens: number;
+        lastActivity: Date;
+      }
+    | undefined {
     const conversation = this.conversations.get(conversationId);
     if (!conversation) return undefined;
 

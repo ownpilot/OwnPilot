@@ -87,14 +87,17 @@ All API responses follow a standardized format:
 The gateway provides utility functions in `routes/helpers.ts`:
 
 ### `getUserId(c: Context): string`
+
 Extracts authenticated user ID from request context.
 
 **Resolution order:**
+
 1. Auth middleware (`c.get('userId')`)
 2. Query parameter (`?userId=...`)
 3. Fallback: `'default'`
 
 ### `getPaginationParams(c, defaultLimit?, maxLimit?)`
+
 Parses pagination parameters with bounds validation.
 
 ```typescript
@@ -104,6 +107,7 @@ const { limit, offset } = getPaginationParams(c, 20, 100);
 ```
 
 ### `getIntParam(c, name, defaultValue, min?, max?)`
+
 Parses integer query parameter with optional bounds.
 
 ```typescript
@@ -112,6 +116,7 @@ const days = getIntParam(c, 'days', 30, 1, 365);
 ```
 
 ### `apiResponse<T>(c, data, status?)`
+
 Creates standardized success response.
 
 ```typescript
@@ -119,6 +124,7 @@ return apiResponse(c, { users }, 201);
 ```
 
 ### `apiError(c, error, status?)`
+
 Creates standardized error response.
 
 ```typescript
@@ -126,10 +132,14 @@ Creates standardized error response.
 return apiError(c, 'Invalid input', 400);
 
 // Structured error
-return apiError(c, {
-  code: ERROR_CODES.NOT_FOUND,
-  message: 'Resource not found'
-}, 404);
+return apiError(
+  c,
+  {
+    code: ERROR_CODES.NOT_FOUND,
+    message: 'Resource not found',
+  },
+  404
+);
 ```
 
 ## Error Codes
@@ -137,6 +147,7 @@ return apiError(c, {
 Centralized error codes in `routes/error-codes.ts`:
 
 ### Common Codes
+
 - `NOT_FOUND` - Resource not found (404)
 - `INVALID_REQUEST` - Invalid request payload (400)
 - `ACCESS_DENIED` - Insufficient permissions (403)
@@ -170,10 +181,14 @@ myFeatureRoutes.get('/', async (c) => {
     return apiResponse(c, { items: data });
   } catch (err) {
     log.error('Fetch failed', { userId, error: err.message });
-    return apiError(c, {
-      code: ERROR_CODES.ERROR,
-      message: 'Failed to fetch data'
-    }, 500);
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.ERROR,
+        message: 'Failed to fetch data',
+      },
+      500
+    );
   }
 });
 ```
@@ -253,19 +268,19 @@ const log = getLog('ModuleName');
 log.info('Operation completed', {
   userId,
   itemId,
-  count: results.length
+  count: results.length,
 });
 
 // Error logging
 log.error('Operation failed', {
   userId,
-  error: err.message
+  error: err.message,
 });
 
 // Warning logging
 log.warn('Validation failed', {
   userId,
-  field: 'email'
+  field: 'email',
 });
 ```
 
@@ -330,23 +345,26 @@ pnpm test --coverage
 ## API Documentation
 
 ### Base URL
+
 ```
 http://localhost:8080
 ```
 
 ### Authentication
+
 Include JWT token in Authorization header:
+
 ```
 Authorization: Bearer <token>
 ```
 
 ### Common Query Parameters
 
-| Parameter | Type | Description | Default |
-|-----------|------|-------------|---------|
-| `limit` | integer | Max items to return | 20 |
-| `offset` | integer | Skip N items | 0 |
-| `userId` | string | User identifier (testing) | 'default' |
+| Parameter | Type    | Description               | Default   |
+| --------- | ------- | ------------------------- | --------- |
+| `limit`   | integer | Max items to return       | 20        |
+| `offset`  | integer | Skip N items              | 0         |
+| `userId`  | string  | User identifier (testing) | 'default' |
 
 ### Key Endpoints
 
@@ -394,18 +412,21 @@ docs: Update gateway README
 ### Common Issues
 
 **Port already in use**
+
 ```bash
 # Change port in server.ts or set environment variable
 PORT=8081 pnpm dev
 ```
 
 **Database connection errors**
+
 ```bash
 # Check database configuration in environment
 DATABASE_URL=postgresql://...
 ```
 
 **TypeScript errors**
+
 ```bash
 # Rebuild and check types
 pnpm build

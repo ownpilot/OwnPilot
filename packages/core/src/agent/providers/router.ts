@@ -31,11 +31,11 @@ import { GoogleProvider } from './google.js';
  * Routing strategy
  */
 export type RoutingStrategy =
-  | 'cheapest'      // Minimize cost
-  | 'fastest'       // Minimize latency
-  | 'smartest'      // Best quality/reasoning
-  | 'balanced'      // Balance cost/quality
-  | 'fallback';     // Try providers in order until one works
+  | 'cheapest' // Minimize cost
+  | 'fastest' // Minimize latency
+  | 'smartest' // Best quality/reasoning
+  | 'balanced' // Balance cost/quality
+  | 'fallback'; // Try providers in order until one works
 
 /**
  * Router configuration
@@ -94,9 +94,7 @@ export class ProviderRouter {
    * Get available (configured) providers
    */
   getAvailableProviders(): ResolvedProviderConfig[] {
-    return getConfiguredProviders().filter(
-      p => !this.config.excludedProviders.includes(p.id)
-    );
+    return getConfiguredProviders().filter((p) => !this.config.excludedProviders.includes(p.id));
   }
 
   /**
@@ -108,19 +106,13 @@ export class ProviderRouter {
   ): Result<RoutingResult, ValidationError> {
     // Merge required capabilities
     const allCapabilities = [
-      ...new Set([
-        ...(this.config.requiredCapabilities),
-        ...(criteria.capabilities ?? []),
-      ]),
+      ...new Set([...this.config.requiredCapabilities, ...(criteria.capabilities ?? [])]),
     ];
 
     const mergedCriteria: ProviderSelectionCriteria = {
       ...criteria,
       capabilities: allCapabilities,
-      excludedProviders: [
-        ...(this.config.excludedProviders),
-        ...(criteria.excludedProviders ?? []),
-      ],
+      excludedProviders: [...this.config.excludedProviders, ...(criteria.excludedProviders ?? [])],
     };
 
     let selection: { provider: { id: string }; model: ModelConfig } | null = null;
@@ -143,9 +135,11 @@ export class ProviderRouter {
     }
 
     if (!selection) {
-      return err(new ValidationError(
-        'No suitable provider found. Check that you have API keys configured and the required capabilities are available.'
-      ));
+      return err(
+        new ValidationError(
+          'No suitable provider found. Check that you have API keys configured and the required capabilities are available.'
+        )
+      );
     }
 
     // Get or create provider instance
@@ -173,7 +167,12 @@ export class ProviderRouter {
     request: CompletionRequest,
     criteria?: ProviderSelectionCriteria,
     strategy?: RoutingStrategy
-  ): Promise<Result<CompletionResponse & { routingInfo: RoutingResult }, InternalError | ValidationError | TimeoutError>> {
+  ): Promise<
+    Result<
+      CompletionResponse & { routingInfo: RoutingResult },
+      InternalError | ValidationError | TimeoutError
+    >
+  > {
     const selectionResult = this.selectProvider(criteria, strategy);
     if (!selectionResult.ok) {
       return selectionResult;
@@ -208,7 +207,9 @@ export class ProviderRouter {
     request: CompletionRequest,
     criteria?: ProviderSelectionCriteria,
     strategy?: RoutingStrategy
-  ): AsyncGenerator<Result<StreamChunk & { routingInfo?: RoutingResult }, InternalError | ValidationError>> {
+  ): AsyncGenerator<
+    Result<StreamChunk & { routingInfo?: RoutingResult }, InternalError | ValidationError>
+  > {
     const selectionResult = this.selectProvider(criteria, strategy);
     if (!selectionResult.ok) {
       yield selectionResult;
@@ -252,16 +253,18 @@ export class ProviderRouter {
   async completeWithFallback(
     request: CompletionRequest,
     criteria?: ProviderSelectionCriteria
-  ): Promise<Result<CompletionResponse & { routingInfo: RoutingResult; attempts: string[] }, InternalError | ValidationError>> {
+  ): Promise<
+    Result<
+      CompletionResponse & { routingInfo: RoutingResult; attempts: string[] },
+      InternalError | ValidationError
+    >
+  > {
     const attempts: string[] = [];
     const errors: string[] = [];
 
     // Get all matching models sorted by preference
     const allCapabilities = [
-      ...new Set([
-        ...(this.config.requiredCapabilities),
-        ...(criteria?.capabilities ?? []),
-      ]),
+      ...new Set([...this.config.requiredCapabilities, ...(criteria?.capabilities ?? [])]),
     ];
 
     const candidates = findModels({
@@ -310,9 +313,11 @@ export class ProviderRouter {
       errors.push(`${providerId}: ${result.error.message}`);
     }
 
-    return err(new InternalError(
-      `All providers failed after ${attempts.length} attempts:\n${errors.join('\n')}`
-    ));
+    return err(
+      new InternalError(
+        `All providers failed after ${attempts.length} attempts:\n${errors.join('\n')}`
+      )
+    );
   }
 
   /**
@@ -344,7 +349,9 @@ export class ProviderRouter {
   /**
    * Get or create a provider instance
    */
-  private getOrCreateProvider(providerId: string): OpenAICompatibleProvider | GoogleProvider | null {
+  private getOrCreateProvider(
+    providerId: string
+  ): OpenAICompatibleProvider | GoogleProvider | null {
     // Check cache
     if (this.providerCache.has(providerId)) {
       return this.providerCache.get(providerId)!;

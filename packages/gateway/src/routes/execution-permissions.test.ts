@@ -410,8 +410,8 @@ describe('Execution Permissions Routes', () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           enabled: true,
-          mode: 'sandbox',          // invalid mode, silently ignored
-          execute_rust: 'allowed',   // unknown category, ignored
+          mode: 'sandbox', // invalid mode, silently ignored
+          execute_rust: 'allowed', // unknown category, ignored
           execute_javascript: 'yolo', // invalid perm mode, ignored
         }),
       });
@@ -587,7 +587,13 @@ describe('Execution Permissions Routes', () => {
       expect(json.data.masterSwitch).toBe(false);
 
       // All categories should report master switch OFF
-      for (const cat of ['execute_javascript', 'execute_python', 'execute_shell', 'compile_code', 'package_manager']) {
+      for (const cat of [
+        'execute_javascript',
+        'execute_python',
+        'execute_shell',
+        'compile_code',
+        'package_manager',
+      ]) {
         expect(json.data.categoryResults[cat].wouldAllow).toBe(false);
         expect(json.data.categoryResults[cat].reason).toContain('Master switch is OFF');
       }
@@ -614,11 +620,15 @@ describe('Execution Permissions Routes', () => {
 
       expect(json.data.categoryResults.execute_javascript.mode).toBe('prompt');
       expect(json.data.categoryResults.execute_javascript.wouldAllow).toBe(false);
-      expect(json.data.categoryResults.execute_javascript.reason).toContain('Would show approval dialog');
+      expect(json.data.categoryResults.execute_javascript.reason).toContain(
+        'Would show approval dialog'
+      );
 
       expect(json.data.categoryResults.execute_python.mode).toBe('prompt');
       expect(json.data.categoryResults.execute_python.wouldAllow).toBe(false);
-      expect(json.data.categoryResults.execute_python.reason).toContain('Would show approval dialog');
+      expect(json.data.categoryResults.execute_python.reason).toContain(
+        'Would show approval dialog'
+      );
     });
 
     it('shows "execution permitted" for allowed mode categories', async () => {
@@ -662,7 +672,13 @@ describe('Execution Permissions Routes', () => {
       expect(res.status).toBe(200);
       const json = await res.json();
 
-      for (const cat of ['execute_javascript', 'execute_python', 'execute_shell', 'compile_code', 'package_manager']) {
+      for (const cat of [
+        'execute_javascript',
+        'execute_python',
+        'execute_shell',
+        'compile_code',
+        'package_manager',
+      ]) {
         expect(json.data.categoryResults[cat].mode).toBe('blocked');
         expect(json.data.categoryResults[cat].wouldAllow).toBe(false);
         expect(json.data.categoryResults[cat].reason).toContain('blocked');

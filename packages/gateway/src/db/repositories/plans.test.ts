@@ -178,9 +178,7 @@ describe('PlansRepository', () => {
       mockAdapter.execute.mockResolvedValue({ changes: 1 });
       mockAdapter.queryOne.mockResolvedValue(null);
 
-      await expect(repo.create({ name: 'X', goal: 'Y' })).rejects.toThrow(
-        'Failed to create plan',
-      );
+      await expect(repo.create({ name: 'X', goal: 'Y' })).rejects.toThrow('Failed to create plan');
     });
   });
 
@@ -443,7 +441,7 @@ describe('PlansRepository', () => {
           type: 'tool_call',
           name: 'X',
           config: {},
-        }),
+        })
       ).rejects.toThrow('Plan not found');
     });
 
@@ -461,7 +459,7 @@ describe('PlansRepository', () => {
           name: 'Step B',
           config: {},
           dependencies: ['step_A'],
-        }),
+        })
       ).rejects.toThrow('Circular dependency detected');
     });
 
@@ -476,7 +474,9 @@ describe('PlansRepository', () => {
       // update total_steps
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
       // getStep
-      mockAdapter.queryOne.mockResolvedValueOnce(stepRow({ id: 'step_B', dependencies: '["step_A"]' }));
+      mockAdapter.queryOne.mockResolvedValueOnce(
+        stepRow({ id: 'step_B', dependencies: '["step_A"]' })
+      );
 
       const step = await repo.addStep('plan_1', {
         orderNum: 2,
@@ -503,7 +503,7 @@ describe('PlansRepository', () => {
           type: 'tool_call',
           name: 'X',
           config: {},
-        }),
+        })
       ).rejects.toThrow('Failed to create plan step');
     });
   });
@@ -662,7 +662,7 @@ describe('PlansRepository', () => {
     it('returns true when all dependencies are completed', async () => {
       // getStep
       mockAdapter.queryOne.mockResolvedValueOnce(
-        stepRow({ id: 'step_2', plan_id: 'plan_1', dependencies: '["step_1"]' }),
+        stepRow({ id: 'step_2', plan_id: 'plan_1', dependencies: '["step_1"]' })
       );
       // getStepsByStatus('completed')
       mockAdapter.query.mockResolvedValueOnce([stepRow({ id: 'step_1', status: 'completed' })]);
@@ -674,7 +674,7 @@ describe('PlansRepository', () => {
     it('returns false when some dependencies are not completed', async () => {
       // getStep
       mockAdapter.queryOne.mockResolvedValueOnce(
-        stepRow({ id: 'step_3', plan_id: 'plan_1', dependencies: '["step_1","step_2"]' }),
+        stepRow({ id: 'step_3', plan_id: 'plan_1', dependencies: '["step_1","step_2"]' })
       );
       // getStepsByStatus('completed') - only step_1 is complete
       mockAdapter.query.mockResolvedValueOnce([stepRow({ id: 'step_1', status: 'completed' })]);
@@ -811,7 +811,12 @@ describe('PlansRepository', () => {
 
     it('computes stats from plan data', async () => {
       mockAdapter.query.mockResolvedValue([
-        planRow({ status: 'completed', total_steps: 3, started_at: '2025-01-01T00:00:00Z', completed_at: '2025-01-01T01:00:00Z' }),
+        planRow({
+          status: 'completed',
+          total_steps: 3,
+          started_at: '2025-01-01T00:00:00Z',
+          completed_at: '2025-01-01T01:00:00Z',
+        }),
         planRow({ id: 'plan_2', status: 'pending', total_steps: 2 }),
         planRow({ id: 'plan_3', status: 'running', total_steps: 4 }),
       ]);
@@ -932,10 +937,7 @@ describe('detectDependencyCycle', () => {
   }
 
   it('returns null when no cycle exists', () => {
-    const steps = [
-      makeStep('A', 'Step A', []),
-      makeStep('B', 'Step B', ['A']),
-    ];
+    const steps = [makeStep('A', 'Step A', []), makeStep('B', 'Step B', ['A'])];
 
     const result = detectDependencyCycle(steps, ['B'], 'C');
     expect(result).toBeNull();
@@ -950,10 +952,7 @@ describe('detectDependencyCycle', () => {
   });
 
   it('detects indirect circular dependency', () => {
-    const steps = [
-      makeStep('A', 'Step A', ['B']),
-      makeStep('B', 'Step B', ['__new__']),
-    ];
+    const steps = [makeStep('A', 'Step A', ['B']), makeStep('B', 'Step B', ['__new__'])];
 
     const result = detectDependencyCycle(steps, ['A']);
     expect(result).not.toBeNull();
@@ -988,10 +987,7 @@ describe('detectDependencyCycle', () => {
 
   it('detects cycle in complex graph', () => {
     // E depends on D, D depends on C, C depends on E (via __new__)
-    const steps = [
-      makeStep('C', 'C', ['__new__']),
-      makeStep('D', 'D', ['C']),
-    ];
+    const steps = [makeStep('C', 'C', ['__new__']), makeStep('D', 'D', ['C'])];
 
     const result = detectDependencyCycle(steps, ['D'], '__new__');
     expect(result).not.toBeNull();

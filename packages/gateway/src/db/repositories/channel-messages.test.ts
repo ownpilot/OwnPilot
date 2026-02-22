@@ -98,19 +98,7 @@ describe('ChannelMessagesRepository', () => {
 
       expect(mockAdapter.execute).toHaveBeenCalledWith(
         expect.stringContaining('INSERT INTO channel_messages'),
-        [
-          'msg-1',
-          'ch-1',
-          null,
-          'inbound',
-          null,
-          null,
-          'Hello world',
-          'text',
-          null,
-          null,
-          '{}',
-        ],
+        ['msg-1', 'ch-1', null, 'inbound', null, null, 'Hello world', 'text', null, null, '{}']
       );
 
       expect(result.id).toBe('msg-1');
@@ -134,7 +122,7 @@ describe('ChannelMessagesRepository', () => {
           attachments: JSON.stringify(attachments),
           reply_to_id: 'msg-0',
           metadata: '{"source":"api"}',
-        }),
+        })
       );
 
       const result = await repo.create({
@@ -165,7 +153,7 @@ describe('ChannelMessagesRepository', () => {
           JSON.stringify(attachments),
           'msg-0',
           '{"source":"api"}',
-        ],
+        ]
       );
 
       expect(result.externalId).toBe('ext-1');
@@ -186,7 +174,7 @@ describe('ChannelMessagesRepository', () => {
           channelId: 'ch-1',
           direction: 'inbound',
           content: 'Test',
-        }),
+        })
       ).rejects.toThrow('Failed to create channel message');
     });
   });
@@ -201,10 +189,9 @@ describe('ChannelMessagesRepository', () => {
 
       expect(result).not.toBeNull();
       expect(result!.id).toBe('msg-1');
-      expect(mockAdapter.queryOne).toHaveBeenCalledWith(
-        expect.stringContaining('WHERE id = $1'),
-        ['msg-1'],
-      );
+      expect(mockAdapter.queryOne).toHaveBeenCalledWith(expect.stringContaining('WHERE id = $1'), [
+        'msg-1',
+      ]);
     });
 
     it('returns null when not found', async () => {
@@ -240,10 +227,7 @@ describe('ChannelMessagesRepository', () => {
 
       await repo.getByChannel('ch-1');
 
-      expect(mockAdapter.query).toHaveBeenCalledWith(
-        expect.any(String),
-        ['ch-1', 100, 0],
-      );
+      expect(mockAdapter.query).toHaveBeenCalledWith(expect.any(String), ['ch-1', 100, 0]);
     });
 
     it('applies custom limit and offset', async () => {
@@ -251,10 +235,7 @@ describe('ChannelMessagesRepository', () => {
 
       await repo.getByChannel('ch-1', 25, 50);
 
-      expect(mockAdapter.query).toHaveBeenCalledWith(
-        expect.any(String),
-        ['ch-1', 25, 50],
-      );
+      expect(mockAdapter.query).toHaveBeenCalledWith(expect.any(String), ['ch-1', 25, 50]);
     });
 
     it('returns empty array when no messages exist', async () => {
@@ -270,9 +251,7 @@ describe('ChannelMessagesRepository', () => {
 
   describe('getInbox', () => {
     it('returns inbound messages', async () => {
-      mockAdapter.query.mockResolvedValueOnce([
-        makeMessageRow({ direction: 'inbound' }),
-      ]);
+      mockAdapter.query.mockResolvedValueOnce([makeMessageRow({ direction: 'inbound' })]);
 
       const result = await repo.getInbox();
 
@@ -287,10 +266,7 @@ describe('ChannelMessagesRepository', () => {
 
       await repo.getInbox();
 
-      expect(mockAdapter.query).toHaveBeenCalledWith(
-        expect.any(String),
-        [100, 0],
-      );
+      expect(mockAdapter.query).toHaveBeenCalledWith(expect.any(String), [100, 0]);
     });
 
     it('applies custom limit and offset', async () => {
@@ -298,10 +274,7 @@ describe('ChannelMessagesRepository', () => {
 
       await repo.getInbox(10, 20);
 
-      expect(mockAdapter.query).toHaveBeenCalledWith(
-        expect.any(String),
-        [10, 20],
-      );
+      expect(mockAdapter.query).toHaveBeenCalledWith(expect.any(String), [10, 20]);
     });
   });
 
@@ -309,9 +282,7 @@ describe('ChannelMessagesRepository', () => {
 
   describe('getOutbox', () => {
     it('returns outbound messages', async () => {
-      mockAdapter.query.mockResolvedValueOnce([
-        makeMessageRow({ direction: 'outbound' }),
-      ]);
+      mockAdapter.query.mockResolvedValueOnce([makeMessageRow({ direction: 'outbound' })]);
 
       const result = await repo.getOutbox();
 
@@ -325,10 +296,7 @@ describe('ChannelMessagesRepository', () => {
 
       await repo.getOutbox(5, 10);
 
-      expect(mockAdapter.query).toHaveBeenCalledWith(
-        expect.any(String),
-        [5, 10],
-      );
+      expect(mockAdapter.query).toHaveBeenCalledWith(expect.any(String), [5, 10]);
     });
   });
 
@@ -347,10 +315,7 @@ describe('ChannelMessagesRepository', () => {
       const sql = mockAdapter.query.mock.calls[0][0] as string;
       expect(sql).toContain('WHERE channel_id = $1');
       expect(sql).toContain('ORDER BY created_at ASC');
-      expect(mockAdapter.query).toHaveBeenCalledWith(
-        expect.any(String),
-        ['ch-1', 10],
-      );
+      expect(mockAdapter.query).toHaveBeenCalledWith(expect.any(String), ['ch-1', 10]);
     });
 
     it('returns empty array when no messages', async () => {
@@ -366,9 +331,7 @@ describe('ChannelMessagesRepository', () => {
 
   describe('search', () => {
     it('searches messages by content ILIKE', async () => {
-      mockAdapter.query.mockResolvedValueOnce([
-        makeMessageRow({ content: 'Hello world' }),
-      ]);
+      mockAdapter.query.mockResolvedValueOnce([makeMessageRow({ content: 'Hello world' })]);
 
       const result = await repo.search('hello');
 
@@ -383,10 +346,7 @@ describe('ChannelMessagesRepository', () => {
 
       await repo.search('test');
 
-      expect(mockAdapter.query).toHaveBeenCalledWith(
-        expect.any(String),
-        ['%test%', 50],
-      );
+      expect(mockAdapter.query).toHaveBeenCalledWith(expect.any(String), ['%test%', 50]);
     });
 
     it('applies custom limit', async () => {
@@ -394,10 +354,7 @@ describe('ChannelMessagesRepository', () => {
 
       await repo.search('test', 10);
 
-      expect(mockAdapter.query).toHaveBeenCalledWith(
-        expect.any(String),
-        ['%test%', 10],
-      );
+      expect(mockAdapter.query).toHaveBeenCalledWith(expect.any(String), ['%test%', 10]);
     });
 
     it('escapes LIKE wildcards in search query', async () => {
@@ -429,7 +386,7 @@ describe('ChannelMessagesRepository', () => {
       expect(result).toBe(true);
       expect(mockAdapter.execute).toHaveBeenCalledWith(
         expect.stringContaining('DELETE FROM channel_messages WHERE id = $1'),
-        ['msg-1'],
+        ['msg-1']
       );
     });
 
@@ -453,7 +410,7 @@ describe('ChannelMessagesRepository', () => {
       expect(result).toBe(5);
       expect(mockAdapter.execute).toHaveBeenCalledWith(
         expect.stringContaining('DELETE FROM channel_messages WHERE channel_id = $1'),
-        ['ch-1'],
+        ['ch-1']
       );
     });
 
@@ -487,7 +444,7 @@ describe('ChannelMessagesRepository', () => {
       expect(result).toBe(10);
       expect(mockAdapter.queryOne).toHaveBeenCalledWith(
         expect.stringContaining('WHERE channel_id = $1'),
-        ['ch-1'],
+        ['ch-1']
       );
     });
 
@@ -551,7 +508,7 @@ describe('ChannelMessagesRepository', () => {
     it('parses attachments JSON string', async () => {
       const attachments = [{ type: 'file', url: 'https://f.com/a.pdf' }];
       mockAdapter.queryOne.mockResolvedValueOnce(
-        makeMessageRow({ attachments: JSON.stringify(attachments) }),
+        makeMessageRow({ attachments: JSON.stringify(attachments) })
       );
 
       const result = await repo.getById('msg-1');
@@ -561,9 +518,7 @@ describe('ChannelMessagesRepository', () => {
 
     it('handles already-parsed attachments object', async () => {
       const attachments = [{ type: 'image', url: 'https://img.png' }];
-      mockAdapter.queryOne.mockResolvedValueOnce(
-        makeMessageRow({ attachments }),
-      );
+      mockAdapter.queryOne.mockResolvedValueOnce(makeMessageRow({ attachments }));
 
       const result = await repo.getById('msg-1');
 
@@ -571,9 +526,7 @@ describe('ChannelMessagesRepository', () => {
     });
 
     it('sets attachments to undefined when null', async () => {
-      mockAdapter.queryOne.mockResolvedValueOnce(
-        makeMessageRow({ attachments: null }),
-      );
+      mockAdapter.queryOne.mockResolvedValueOnce(makeMessageRow({ attachments: null }));
 
       const result = await repo.getById('msg-1');
 
@@ -581,9 +534,7 @@ describe('ChannelMessagesRepository', () => {
     });
 
     it('parses metadata JSON string', async () => {
-      mockAdapter.queryOne.mockResolvedValueOnce(
-        makeMessageRow({ metadata: '{"key":"value"}' }),
-      );
+      mockAdapter.queryOne.mockResolvedValueOnce(makeMessageRow({ metadata: '{"key":"value"}' }));
 
       const result = await repo.getById('msg-1');
 
@@ -592,7 +543,7 @@ describe('ChannelMessagesRepository', () => {
 
     it('handles already-parsed metadata object', async () => {
       mockAdapter.queryOne.mockResolvedValueOnce(
-        makeMessageRow({ metadata: { already: 'parsed' } }),
+        makeMessageRow({ metadata: { already: 'parsed' } })
       );
 
       const result = await repo.getById('msg-1');
@@ -601,9 +552,7 @@ describe('ChannelMessagesRepository', () => {
     });
 
     it('handles empty metadata string as empty object', async () => {
-      mockAdapter.queryOne.mockResolvedValueOnce(
-        makeMessageRow({ metadata: '' }),
-      );
+      mockAdapter.queryOne.mockResolvedValueOnce(makeMessageRow({ metadata: '' }));
 
       const result = await repo.getById('msg-1');
 
@@ -628,7 +577,7 @@ describe('ChannelMessagesRepository', () => {
           sender_id: 'user-1',
           sender_name: 'Alice',
           reply_to_id: 'msg-0',
-        }),
+        })
       );
 
       const result = await repo.getById('msg-1');
@@ -641,9 +590,7 @@ describe('ChannelMessagesRepository', () => {
 
     it('maps direction correctly for both values', async () => {
       for (const direction of ['inbound', 'outbound'] as const) {
-        mockAdapter.queryOne.mockResolvedValueOnce(
-          makeMessageRow({ direction }),
-        );
+        mockAdapter.queryOne.mockResolvedValueOnce(makeMessageRow({ direction }));
 
         const result = await repo.getById('msg-1');
 
@@ -653,7 +600,7 @@ describe('ChannelMessagesRepository', () => {
 
     it('creates a Date from created_at string', async () => {
       mockAdapter.queryOne.mockResolvedValueOnce(
-        makeMessageRow({ created_at: '2024-01-15T10:30:00Z' }),
+        makeMessageRow({ created_at: '2024-01-15T10:30:00Z' })
       );
 
       const result = await repo.getById('msg-1');

@@ -111,7 +111,7 @@ export class MemoryInjector {
    */
   private async getCachedProfile(userId: string): Promise<CachedProfile | null> {
     const cached = this.profileCache.get(userId);
-    if (cached && (Date.now() - cached.cachedAt) < PROFILE_CACHE_TTL_MS) {
+    if (cached && Date.now() - cached.cachedAt < PROFILE_CACHE_TTL_MS) {
       return cached;
     }
 
@@ -233,10 +233,7 @@ export class MemoryInjector {
   /**
    * Get relevant memories for a query
    */
-  async getRelevantContext(
-    userId: string,
-    query: string
-  ): Promise<string | null> {
+  async getRelevantContext(userId: string, query: string): Promise<string | null> {
     try {
       const memoryStore = await getPersonalMemoryStore(userId);
       const results = await memoryStore.search(query);
@@ -245,7 +242,7 @@ export class MemoryInjector {
 
       const relevantInfo = results
         .slice(0, 5)
-        .map(r => `- ${r.key}: ${r.value}`)
+        .map((r) => `- ${r.key}: ${r.value}`)
         .join('\n');
 
       return `Relevant information from memory:\n${relevantInfo}`;
@@ -283,7 +280,7 @@ export class MemoryInjector {
     // Special instructions
     if (options.specialInstructions?.length) {
       sections.push(
-        `## Special Instructions\n\n${options.specialInstructions.map(i => `- ${i}`).join('\n')}`
+        `## Special Instructions\n\n${options.specialInstructions.map((i) => `- ${i}`).join('\n')}`
       );
     }
 
@@ -355,11 +352,8 @@ export class MemoryInjector {
       },
       interests,
       topicsOfInterest: interests,
-      goals: [
-        ...(profile.goals.shortTerm ?? []),
-        ...(profile.goals.mediumTerm ?? []),
-      ],
-      relationships: profile.social.family?.map(f => `${f.name} (${f.relation})`) ?? [],
+      goals: [...(profile.goals.shortTerm ?? []), ...(profile.goals.mediumTerm ?? [])],
+      relationships: profile.social.family?.map((f) => `${f.name} (${f.relation})`) ?? [],
       customInstructions: profile.aiPreferences.customInstructions ?? [],
       lastInteraction: profile.meta.lastUpdated,
       totalConversations: 0,

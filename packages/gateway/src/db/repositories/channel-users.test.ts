@@ -54,8 +54,7 @@ vi.mock('node:crypto', async (importOriginal) => {
   };
 });
 
-const { ChannelUsersRepository, createChannelUsersRepository } =
-  await import('./channel-users.js');
+const { ChannelUsersRepository, createChannelUsersRepository } = await import('./channel-users.js');
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -154,10 +153,9 @@ describe('ChannelUsersRepository', () => {
 
       expect(result).not.toBeNull();
       expect(result!.id).toBe('cu-1');
-      expect(mockAdapter.queryOne).toHaveBeenCalledWith(
-        expect.stringContaining('WHERE id = $1'),
-        ['cu-1'],
-      );
+      expect(mockAdapter.queryOne).toHaveBeenCalledWith(expect.stringContaining('WHERE id = $1'), [
+        'cu-1',
+      ]);
     });
 
     it('returns null when not found', async () => {
@@ -174,9 +172,7 @@ describe('ChannelUsersRepository', () => {
   describe('create', () => {
     it('inserts a user and returns the mapped entity', async () => {
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
-      mockAdapter.queryOne.mockResolvedValueOnce(
-        makeUserRow({ id: 'generated-uuid' }),
-      );
+      mockAdapter.queryOne.mockResolvedValueOnce(makeUserRow({ id: 'generated-uuid' }));
 
       const result = await repo.create({
         platform: 'telegram',
@@ -185,16 +181,7 @@ describe('ChannelUsersRepository', () => {
 
       expect(mockAdapter.execute).toHaveBeenCalledWith(
         expect.stringContaining('INSERT INTO channel_users'),
-        [
-          'generated-uuid',
-          'default',
-          'telegram',
-          '12345',
-          null,
-          null,
-          null,
-          '{}',
-        ],
+        ['generated-uuid', 'default', 'telegram', '12345', null, null, null, '{}']
       );
       expect(result.id).toBe('generated-uuid');
       expect(result.ownpilotUserId).toBe('default');
@@ -210,7 +197,7 @@ describe('ChannelUsersRepository', () => {
           display_name: 'Alice',
           avatar_url: 'https://avatar.png',
           metadata: '{"lang":"en"}',
-        }),
+        })
       );
 
       const result = await repo.create({
@@ -234,7 +221,7 @@ describe('ChannelUsersRepository', () => {
           'Alice',
           'https://avatar.png',
           '{"lang":"en"}',
-        ],
+        ]
       );
       expect(result.platformUsername).toBe('alice_tg');
       expect(result.displayName).toBe('Alice');
@@ -249,7 +236,7 @@ describe('ChannelUsersRepository', () => {
         repo.create({
           platform: 'telegram',
           platformUserId: '12345',
-        }),
+        })
       ).rejects.toThrow('Failed to create channel user');
     });
   });
@@ -274,7 +261,7 @@ describe('ChannelUsersRepository', () => {
       // Should update display info
       expect(mockAdapter.execute).toHaveBeenCalledWith(
         expect.stringContaining('SET last_seen_at = NOW()'),
-        expect.arrayContaining(['Updated Name']),
+        expect.arrayContaining(['Updated Name'])
       );
     });
 
@@ -283,9 +270,7 @@ describe('ChannelUsersRepository', () => {
       mockAdapter.queryOne.mockResolvedValueOnce(null);
       // create: execute + getById
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
-      mockAdapter.queryOne.mockResolvedValueOnce(
-        makeUserRow({ id: 'generated-uuid' }),
-      );
+      mockAdapter.queryOne.mockResolvedValueOnce(makeUserRow({ id: 'generated-uuid' }));
 
       const result = await repo.findOrCreate({
         platform: 'telegram',
@@ -295,7 +280,7 @@ describe('ChannelUsersRepository', () => {
       expect(result.id).toBe('generated-uuid');
       expect(mockAdapter.execute).toHaveBeenCalledWith(
         expect.stringContaining('INSERT INTO channel_users'),
-        expect.any(Array),
+        expect.any(Array)
       );
     });
 
@@ -308,10 +293,12 @@ describe('ChannelUsersRepository', () => {
         platformUserId: '12345',
       });
 
-      expect(mockAdapter.execute).toHaveBeenCalledWith(
-        expect.stringContaining('COALESCE'),
-        [null, null, null, 'cu-1'],
-      );
+      expect(mockAdapter.execute).toHaveBeenCalledWith(expect.stringContaining('COALESCE'), [
+        null,
+        null,
+        null,
+        'cu-1',
+      ]);
     });
   });
 
@@ -325,7 +312,7 @@ describe('ChannelUsersRepository', () => {
 
       expect(mockAdapter.execute).toHaveBeenCalledWith(
         expect.stringContaining('SET is_verified = TRUE'),
-        ['pin', 'user-1', 'cu-1'],
+        ['pin', 'user-1', 'cu-1']
       );
       const sql = mockAdapter.execute.mock.calls[0][0] as string;
       expect(sql).toContain('verified_at = NOW()');
@@ -344,7 +331,7 @@ describe('ChannelUsersRepository', () => {
 
       expect(mockAdapter.execute).toHaveBeenCalledWith(
         expect.stringContaining('SET is_blocked = TRUE'),
-        ['cu-1'],
+        ['cu-1']
       );
     });
   });
@@ -357,7 +344,7 @@ describe('ChannelUsersRepository', () => {
 
       expect(mockAdapter.execute).toHaveBeenCalledWith(
         expect.stringContaining('SET is_blocked = FALSE'),
-        ['cu-1'],
+        ['cu-1']
       );
     });
   });
@@ -455,7 +442,7 @@ describe('ChannelUsersRepository', () => {
       expect(result).toBe(true);
       expect(mockAdapter.execute).toHaveBeenCalledWith(
         expect.stringContaining('DELETE FROM channel_users WHERE id = $1'),
-        ['cu-1'],
+        ['cu-1']
       );
     });
 
@@ -473,7 +460,7 @@ describe('ChannelUsersRepository', () => {
   describe('row mapping', () => {
     it('parses metadata JSON string', async () => {
       mockAdapter.queryOne.mockResolvedValueOnce(
-        makeUserRow({ metadata: '{"lang":"en","source":"bot"}' }),
+        makeUserRow({ metadata: '{"lang":"en","source":"bot"}' })
       );
 
       const result = await repo.getById('cu-1');
@@ -482,9 +469,7 @@ describe('ChannelUsersRepository', () => {
     });
 
     it('handles already-parsed metadata object', async () => {
-      mockAdapter.queryOne.mockResolvedValueOnce(
-        makeUserRow({ metadata: { already: 'parsed' } }),
-      );
+      mockAdapter.queryOne.mockResolvedValueOnce(makeUserRow({ metadata: { already: 'parsed' } }));
 
       const result = await repo.getById('cu-1');
 
@@ -492,9 +477,7 @@ describe('ChannelUsersRepository', () => {
     });
 
     it('handles empty metadata string as empty object', async () => {
-      mockAdapter.queryOne.mockResolvedValueOnce(
-        makeUserRow({ metadata: '' }),
-      );
+      mockAdapter.queryOne.mockResolvedValueOnce(makeUserRow({ metadata: '' }));
 
       const result = await repo.getById('cu-1');
 
@@ -521,7 +504,7 @@ describe('ChannelUsersRepository', () => {
           is_verified: true,
           verified_at: '2024-06-01T14:00:00Z',
           verification_method: 'pin',
-        }),
+        })
       );
 
       const result = await repo.getById('cu-1');
@@ -537,9 +520,7 @@ describe('ChannelUsersRepository', () => {
 
     it('maps all verification methods', async () => {
       for (const method of ['pin', 'oauth', 'whitelist', 'admin'] as const) {
-        mockAdapter.queryOne.mockResolvedValueOnce(
-          makeUserRow({ verification_method: method }),
-        );
+        mockAdapter.queryOne.mockResolvedValueOnce(makeUserRow({ verification_method: method }));
 
         const result = await repo.getById('cu-1');
 
@@ -552,7 +533,7 @@ describe('ChannelUsersRepository', () => {
         makeUserRow({
           first_seen_at: '2024-01-15T10:30:00Z',
           last_seen_at: '2024-06-15T14:00:00Z',
-        }),
+        })
       );
 
       const result = await repo.getById('cu-1');
@@ -564,9 +545,7 @@ describe('ChannelUsersRepository', () => {
     });
 
     it('maps isBlocked boolean', async () => {
-      mockAdapter.queryOne.mockResolvedValueOnce(
-        makeUserRow({ is_blocked: true }),
-      );
+      mockAdapter.queryOne.mockResolvedValueOnce(makeUserRow({ is_blocked: true }));
 
       const result = await repo.getById('cu-1');
 

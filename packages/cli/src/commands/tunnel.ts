@@ -28,10 +28,7 @@ let activeTunnel: TunnelState | null = null;
 /**
  * Start an ngrok tunnel and register webhook.
  */
-export async function tunnelStartNgrok(options: {
-  token?: string;
-  port?: string;
-}): Promise<void> {
+export async function tunnelStartNgrok(options: { token?: string; port?: string }): Promise<void> {
   if (activeTunnel) {
     console.error('A tunnel is already running. Stop it first with: ownpilot tunnel stop');
     return void process.exit(1);
@@ -46,7 +43,7 @@ export async function tunnelStartNgrok(options: {
     ngrok = await import('@ngrok/ngrok');
   } catch {
     console.error(
-      'ngrok SDK not found. Install it with:\n  pnpm add @ngrok/ngrok\n\nOr use Cloudflare tunnel instead:\n  ownpilot tunnel start cloudflare',
+      'ngrok SDK not found. Install it with:\n  pnpm add @ngrok/ngrok\n\nOr use Cloudflare tunnel instead:\n  ownpilot tunnel start cloudflare'
     );
     process.exit(1);
   }
@@ -86,7 +83,7 @@ export async function tunnelStartNgrok(options: {
     console.error(`ngrok tunnel failed: ${msg}`);
     if (msg.includes('authtoken')) {
       console.error(
-        '\nYou may need to provide an ngrok auth token:\n  ownpilot tunnel start ngrok --token YOUR_TOKEN\n\nGet a free token at: https://dashboard.ngrok.com/get-started/your-authtoken',
+        '\nYou may need to provide an ngrok auth token:\n  ownpilot tunnel start ngrok --token YOUR_TOKEN\n\nGet a free token at: https://dashboard.ngrok.com/get-started/your-authtoken'
       );
     }
     process.exit(1);
@@ -123,7 +120,7 @@ export async function tunnelStartCloudflare(options: {
     const url = await new Promise<string>((resolve, reject) => {
       const timeout = setTimeout(
         () => reject(new Error('Cloudflare tunnel startup timed out (30s)')),
-        30_000,
+        30_000
       );
 
       const onData = (data: Buffer) => {
@@ -172,7 +169,7 @@ export async function tunnelStartCloudflare(options: {
     const msg = error instanceof Error ? error.message : String(error);
     if (msg.includes('ENOENT') || msg.includes('spawn cloudflared')) {
       console.error(
-        'cloudflared binary not found. Install it:\n  https://developers.cloudflare.com/cloudflare-one/connections/connect-apps/install-and-setup/installation/',
+        'cloudflared binary not found. Install it:\n  https://developers.cloudflare.com/cloudflare-one/connections/connect-apps/install-and-setup/installation/'
       );
     } else {
       console.error(`Cloudflare tunnel failed: ${msg}`);
@@ -218,7 +215,9 @@ async function doTunnelStop(): Promise<void> {
   if (tunnel.ngrokListener) {
     try {
       await tunnel.ngrokListener.close();
-    } catch { /* best effort */ }
+    } catch {
+      /* best effort */
+    }
   }
   if (tunnel.process) {
     tunnel.process.kill('SIGTERM');
@@ -239,7 +238,9 @@ async function registerWebhookUrl(tunnelUrl: string, port: number): Promise<void
     // 1. Get the telegram_bot service to find the default entry ID
     const svcRes = await fetch(`${baseUrl}/api/v1/config-services/telegram_bot`);
     if (!svcRes.ok) {
-      console.warn('Could not find telegram_bot service. Make sure the server is running and Telegram plugin is registered.');
+      console.warn(
+        'Could not find telegram_bot service. Make sure the server is running and Telegram plugin is registered.'
+      );
       return;
     }
     const svcData = (await svcRes.json()) as {
@@ -250,7 +251,9 @@ async function registerWebhookUrl(tunnelUrl: string, port: number): Promise<void
     const defaultEntry = entries.find((e) => e.isDefault) ?? entries[0];
 
     if (!defaultEntry) {
-      console.warn('No telegram_bot config entry found. Configure Telegram first via Config Center.');
+      console.warn(
+        'No telegram_bot config entry found. Configure Telegram first via Config Center.'
+      );
       return;
     }
 
@@ -267,11 +270,13 @@ async function registerWebhookUrl(tunnelUrl: string, port: number): Promise<void
             webhook_secret: secret,
           },
         }),
-      },
+      }
     );
 
     if (!updateRes.ok) {
-      console.warn('Failed to update webhook config. You may need to update it manually in Config Center.');
+      console.warn(
+        'Failed to update webhook config. You may need to update it manually in Config Center.'
+      );
       return;
     }
 
@@ -289,8 +294,10 @@ async function registerWebhookUrl(tunnelUrl: string, port: number): Promise<void
     }
   } catch {
     console.warn(
-      'Could not reach gateway at ' + baseUrl + '. Make sure the server is running.\n' +
-      'You can start the server first and then run the tunnel command.',
+      'Could not reach gateway at ' +
+        baseUrl +
+        '. Make sure the server is running.\n' +
+        'You can start the server first and then run the tunnel command.'
     );
   }
 }

@@ -85,11 +85,21 @@ const mockContactsRepo = {
 };
 
 vi.mock('../db/repositories/index.js', () => ({
-  TasksRepository: vi.fn(function() { return mockTasksRepo; }),
-  BookmarksRepository: vi.fn(function() { return mockBookmarksRepo; }),
-  NotesRepository: vi.fn(function() { return mockNotesRepo; }),
-  CalendarRepository: vi.fn(function() { return mockCalendarRepo; }),
-  ContactsRepository: vi.fn(function() { return mockContactsRepo; }),
+  TasksRepository: vi.fn(function () {
+    return mockTasksRepo;
+  }),
+  BookmarksRepository: vi.fn(function () {
+    return mockBookmarksRepo;
+  }),
+  NotesRepository: vi.fn(function () {
+    return mockNotesRepo;
+  }),
+  CalendarRepository: vi.fn(function () {
+    return mockCalendarRepo;
+  }),
+  ContactsRepository: vi.fn(function () {
+    return mockContactsRepo;
+  }),
 }));
 
 // Import after mocks
@@ -672,9 +682,9 @@ describe('Personal Data Routes', () => {
   describe('GET /summary', () => {
     it('returns aggregated summary across all data types', async () => {
       mockTasksRepo.count
-        .mockResolvedValueOnce(15)   // total
-        .mockResolvedValueOnce(8)    // pending
-        .mockResolvedValueOnce(5);   // completed
+        .mockResolvedValueOnce(15) // total
+        .mockResolvedValueOnce(8) // pending
+        .mockResolvedValueOnce(5); // completed
       mockTasksRepo.getOverdue.mockResolvedValue([{ id: 't1' }, { id: 't2' }]);
       mockTasksRepo.getDueToday.mockResolvedValue([{ id: 't3' }]);
       mockBookmarksRepo.count.mockResolvedValue(20);

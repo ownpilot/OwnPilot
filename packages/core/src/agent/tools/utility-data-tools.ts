@@ -18,7 +18,8 @@ import { getErrorMessage } from '../../services/error-utils.js';
 export const validateDataTool: ToolDefinition = {
   name: 'validate_data',
   brief: 'Check if email, URL, JSON, IBAN, UUID, IP is valid',
-  description: 'Validate data format correctness. Call this when the user wants to check if an email, URL, phone number, credit card, IBAN, TC Kimlik, JSON, UUID, or IP address is valid. Returns valid/invalid with details.',
+  description:
+    'Validate data format correctness. Call this when the user wants to check if an email, URL, phone number, credit card, IBAN, TC Kimlik, JSON, UUID, or IP address is valid. Returns valid/invalid with details.',
   category: 'Utilities',
   parameters: {
     type: 'object',
@@ -134,7 +135,7 @@ function validateTcKimlik(tcNo: string): { valid: boolean; reason?: string } {
   // Check digit 10
   const oddSum = digits[0]! + digits[2]! + digits[4]! + digits[6]! + digits[8]!;
   const evenSum = digits[1]! + digits[3]! + digits[5]! + digits[7]!;
-  const check10 = ((oddSum * 7) - evenSum) % 10;
+  const check10 = (oddSum * 7 - evenSum) % 10;
 
   if (check10 !== digits[9]) {
     return { valid: false, reason: 'TC Kimlik checksum (digit 10) is invalid' };
@@ -175,18 +176,21 @@ export const validateDataExecutor: ToolExecutor = async (args): Promise<ToolExec
       case 'phone':
         // Basic phone validation
         const cleanedPhone = value.replace(/\D/g, '');
-        result = cleanedPhone.length >= 10 && cleanedPhone.length <= 15
-          ? { valid: true, normalized: cleanedPhone }
-          : { valid: false, reason: 'Phone number should be 10-15 digits' };
+        result =
+          cleanedPhone.length >= 10 && cleanedPhone.length <= 15
+            ? { valid: true, normalized: cleanedPhone }
+            : { valid: false, reason: 'Phone number should be 10-15 digits' };
         break;
       case 'uuid':
-        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+        const uuidRegex =
+          /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
         result = uuidRegex.test(value)
           ? { valid: true }
           : { valid: false, reason: 'Invalid UUID format' };
         break;
       case 'ip':
-        const ipv4Regex = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
+        const ipv4Regex =
+          /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
         const ipv6Regex = /^(?:[A-Fa-f0-9]{1,4}:){7}[A-Fa-f0-9]{1,4}$/;
         if (ipv4Regex.test(value)) {
           result = { valid: true, version: 'IPv4' };
@@ -276,7 +280,10 @@ export const formatJsonExecutor: ToolExecutor = async (args): Promise<ToolExecut
         break;
       case 'get_path':
         if (!path) {
-          return { content: JSON.stringify({ error: 'Path is required for get_path operation' }), isError: true };
+          return {
+            content: JSON.stringify({ error: 'Path is required for get_path operation' }),
+            isError: true,
+          };
         }
         result = getJsonPath(data, path);
         break;
@@ -305,7 +312,10 @@ export const formatJsonExecutor: ToolExecutor = async (args): Promise<ToolExecut
         result = sortObjectKeys(data);
         break;
       default:
-        return { content: JSON.stringify({ error: `Unknown operation: ${operation}` }), isError: true };
+        return {
+          content: JSON.stringify({ error: `Unknown operation: ${operation}` }),
+          isError: true,
+        };
     }
 
     return {
@@ -403,7 +413,7 @@ export const parseCsvExecutor: ToolExecutor = async (args): Promise<ToolExecutio
     const hasHeader = args.hasHeader !== false;
     const trimValues = args.trimValues !== false;
 
-    const lines = csv.split('\n').filter(line => line.trim());
+    const lines = csv.split('\n').filter((line) => line.trim());
     if (lines.length === 0) {
       return { content: JSON.stringify({ error: 'Empty CSV' }), isError: true };
     }
@@ -437,7 +447,7 @@ export const parseCsvExecutor: ToolExecutor = async (args): Promise<ToolExecutio
 
     if (hasHeader && rows.length > 0) {
       const headers = rows[0]!;
-      const data = rows.slice(1).map(row => {
+      const data = rows.slice(1).map((row) => {
         const obj: Record<string, string> = {};
         headers.forEach((header, i) => {
           obj[header] = row[i] || '';
@@ -513,7 +523,10 @@ export const generateCsvExecutor: ToolExecutor = async (args): Promise<ToolExecu
     }
 
     if (!Array.isArray(data) || data.length === 0) {
-      return { content: JSON.stringify({ error: 'Data must be a non-empty array' }), isError: true };
+      return {
+        content: JSON.stringify({ error: 'Data must be a non-empty array' }),
+        isError: true,
+      };
     }
 
     const escapeValue = (val: unknown): string => {
@@ -534,7 +547,7 @@ export const generateCsvExecutor: ToolExecutor = async (args): Promise<ToolExecu
       }
       for (const row of data) {
         const obj = row as Record<string, unknown>;
-        lines.push(headers.map(h => escapeValue(obj[h])).join(delimiter));
+        lines.push(headers.map((h) => escapeValue(obj[h])).join(delimiter));
       }
     } else if (Array.isArray(data[0])) {
       // Array of arrays
@@ -578,14 +591,33 @@ export const arrayOperationsTool: ToolDefinition = {
       },
       operation: {
         type: 'string',
-        enum: ['sort', 'reverse', 'unique', 'shuffle', 'chunk', 'flatten', 'sample', 'first', 'last', 'sum', 'avg', 'min', 'max', 'count'],
+        enum: [
+          'sort',
+          'reverse',
+          'unique',
+          'shuffle',
+          'chunk',
+          'flatten',
+          'sample',
+          'first',
+          'last',
+          'sum',
+          'avg',
+          'min',
+          'max',
+          'count',
+        ],
         description: 'Operation to perform',
       },
       options: {
         type: 'object',
         properties: {
           sortKey: { type: 'string', description: 'Key to sort by (for object arrays)' },
-          sortOrder: { type: 'string', enum: ['asc', 'desc'], description: 'Sort order (default: asc)' },
+          sortOrder: {
+            type: 'string',
+            enum: ['asc', 'desc'],
+            description: 'Sort order (default: asc)',
+          },
           chunkSize: { type: 'number', description: 'Size of chunks for chunk operation' },
           sampleSize: { type: 'number', description: 'Number of items for sample operation' },
           count: { type: 'number', description: 'Number of items for first/last operations' },
@@ -624,9 +656,8 @@ export const arrayOperationsExecutor: ToolExecutor = async (args): Promise<ToolE
           const valB = String(key ? (b as Record<string, unknown>)[key] : b);
           const numA = Number(valA);
           const numB = Number(valB);
-          const cmp = (!isNaN(numA) && !isNaN(numB))
-            ? numA - numB
-            : valA < valB ? -1 : valA > valB ? 1 : 0;
+          const cmp =
+            !isNaN(numA) && !isNaN(numB) ? numA - numB : valA < valB ? -1 : valA > valB ? 1 : 0;
           return order === 'desc' ? -cmp : cmp;
         });
         result = sorted;
@@ -636,7 +667,7 @@ export const arrayOperationsExecutor: ToolExecutor = async (args): Promise<ToolE
         result = [...array].reverse();
         break;
       case 'unique':
-        result = [...new Set(array.map(x => JSON.stringify(x)))].map(x => JSON.parse(x));
+        result = [...new Set(array.map((x) => JSON.stringify(x)))].map((x) => JSON.parse(x));
         break;
       case 'shuffle': {
         const shuffled = [...array];
@@ -699,7 +730,10 @@ export const arrayOperationsExecutor: ToolExecutor = async (args): Promise<ToolE
         result = array.length;
         break;
       default:
-        return { content: JSON.stringify({ error: `Unknown operation: ${operation}` }), isError: true };
+        return {
+          content: JSON.stringify({ error: `Unknown operation: ${operation}` }),
+          isError: true,
+        };
     }
 
     return {

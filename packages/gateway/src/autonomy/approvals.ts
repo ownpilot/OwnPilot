@@ -38,14 +38,15 @@ export interface ApprovalManagerEvents {
   'action:rejected': (action: PendingAction, decision: ApprovalDecision) => void;
   'action:expired': (action: PendingAction) => void;
   'action:auto_approved': (action: PendingAction) => void;
-  'notification': (notification: AutonomyNotification) => void;
+  notification: (notification: AutonomyNotification) => void;
 }
 
 export class ApprovalManager extends EventEmitter {
   private config: Required<ApprovalManagerConfig>;
   private pendingActions: Map<string, PendingAction> = new Map();
   private userConfigs: Map<string, AutonomyConfig> = new Map();
-  private rememberedDecisions: Map<string, { decision: 'approve' | 'reject'; createdAt: Date }> = new Map();
+  private rememberedDecisions: Map<string, { decision: 'approve' | 'reject'; createdAt: Date }> =
+    new Map();
   private cleanupInterval: NodeJS.Timeout | null = null;
 
   constructor(config: ApprovalManagerConfig = {}) {
@@ -139,7 +140,13 @@ export class ApprovalManager extends EventEmitter {
     if (remembered?.decision === 'reject') {
       // Return a rejected request
       const action = this.createPendingAction(
-        userId, category, actionType, description, params, context, risk
+        userId,
+        category,
+        actionType,
+        description,
+        params,
+        context,
+        risk
       );
       action.status = 'rejected';
       action.reason = 'Previously rejected (remembered)';
@@ -158,7 +165,13 @@ export class ApprovalManager extends EventEmitter {
 
     // Create pending action
     const action = this.createPendingAction(
-      userId, category, actionType, description, params, context, risk
+      userId,
+      category,
+      actionType,
+      description,
+      params,
+      context,
+      risk
     );
 
     // Store pending action
@@ -166,8 +179,14 @@ export class ApprovalManager extends EventEmitter {
     this.emit('action:pending', action);
 
     // Send notification
-    this.sendNotification(userId, 'approval_required', 'Approval Required',
-      `Action "${description}" requires your approval.`, action.id, 'warning');
+    this.sendNotification(
+      userId,
+      'approval_required',
+      'Approval Required',
+      `Action "${description}" requires your approval.`,
+      action.id,
+      'warning'
+    );
 
     // Return approval request
     return {
@@ -239,9 +258,7 @@ export class ApprovalManager extends EventEmitter {
         actions.push(action);
       }
     }
-    return actions.sort((a, b) =>
-      b.requestedAt.getTime() - a.requestedAt.getTime()
-    );
+    return actions.sort((a, b) => b.requestedAt.getTime() - a.requestedAt.getTime());
   }
 
   /**
@@ -332,11 +349,16 @@ export class ApprovalManager extends EventEmitter {
 
   private getSuggestion(riskLevel: string): 'approve' | 'reject' | 'review' {
     switch (riskLevel) {
-      case 'low': return 'approve';
-      case 'medium': return 'review';
-      case 'high': return 'review';
-      case 'critical': return 'reject';
-      default: return 'review';
+      case 'low':
+        return 'approve';
+      case 'medium':
+        return 'review';
+      case 'high':
+        return 'review';
+      case 'critical':
+        return 'reject';
+      default:
+        return 'review';
     }
   }
 
@@ -344,8 +366,16 @@ export class ApprovalManager extends EventEmitter {
     category: ActionCategory,
     actionType: string,
     params: Record<string, unknown>
-  ): Array<{ description: string; params: Record<string, unknown>; risk: 'low' | 'medium' | 'high' | 'critical' }> {
-    const alternatives: Array<{ description: string; params: Record<string, unknown>; risk: 'low' | 'medium' | 'high' | 'critical' }> = [];
+  ): Array<{
+    description: string;
+    params: Record<string, unknown>;
+    risk: 'low' | 'medium' | 'high' | 'critical';
+  }> {
+    const alternatives: Array<{
+      description: string;
+      params: Record<string, unknown>;
+      risk: 'low' | 'medium' | 'high' | 'critical';
+    }> = [];
 
     // Generate alternatives based on action type
     if (params.bulk === true || params.all === true) {
@@ -376,7 +406,13 @@ export class ApprovalManager extends EventEmitter {
     risk: ReturnType<typeof assessRisk>
   ): void {
     const action = this.createPendingAction(
-      userId, category, actionType, description, params, {}, risk
+      userId,
+      category,
+      actionType,
+      description,
+      params,
+      {},
+      risk
     );
     action.status = 'auto_approved';
     this.emit('action:auto_approved', action);
@@ -384,8 +420,14 @@ export class ApprovalManager extends EventEmitter {
     // Notify if above notification threshold
     const config = this.getUserConfig(userId);
     if (config.level >= config.notificationThreshold) {
-      this.sendNotification(userId, 'action_executed', 'Action Executed',
-        `"${description}" was automatically executed.`, action.id, 'info');
+      this.sendNotification(
+        userId,
+        'action_executed',
+        'Action Executed',
+        `"${description}" was automatically executed.`,
+        action.id,
+        'info'
+      );
     }
   }
 

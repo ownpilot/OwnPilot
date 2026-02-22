@@ -62,9 +62,7 @@ export class ErrorBoundary extends Component<Props, State> {
 
             {this.state.error && (
               <div className="mb-6 p-4 bg-bg-tertiary dark:bg-dark-bg-tertiary rounded-lg text-left">
-                <p className="text-sm font-mono text-error mb-2">
-                  {this.state.error.message}
-                </p>
+                <p className="text-sm font-mono text-error mb-2">{this.state.error.message}</p>
                 {this.state.errorInfo && (
                   <details className="text-xs text-text-muted dark:text-dark-text-muted">
                     <summary className="cursor-pointer hover:text-text-primary dark:hover:text-dark-text-primary">

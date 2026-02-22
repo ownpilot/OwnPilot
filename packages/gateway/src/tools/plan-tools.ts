@@ -18,7 +18,8 @@ const log = getLog('PlanTools');
 const createPlanDef: ToolDefinition = {
   name: 'create_plan',
   workflowUsable: false,
-  description: 'Create a new execution plan with a goal. After creating, add steps with add_plan_step.',
+  description:
+    'Create a new execution plan with a goal. After creating, add steps with add_plan_step.',
   parameters: {
     type: 'object',
     properties: {
@@ -69,12 +70,21 @@ Failed steps retry automatically with exponential backoff (up to max_retries).`,
       },
       order: {
         type: 'number',
-        description: 'Step order number (1, 2, 3...). Steps execute in this order unless dependencies override.',
+        description:
+          'Step order number (1, 2, 3...). Steps execute in this order unless dependencies override.',
       },
       type: {
         type: 'string',
         description: 'Step type',
-        enum: ['tool_call', 'llm_decision', 'user_input', 'condition', 'parallel', 'loop', 'sub_plan'],
+        enum: [
+          'tool_call',
+          'llm_decision',
+          'user_input',
+          'condition',
+          'parallel',
+          'loop',
+          'sub_plan',
+        ],
       },
       name: {
         type: 'string',
@@ -107,7 +117,8 @@ Failed steps retry automatically with exponential backoff (up to max_retries).`,
       },
       dependencies: {
         type: 'array',
-        description: 'Step IDs that must complete before this step runs. Use to create execution dependencies between steps.',
+        description:
+          'Step IDs that must complete before this step runs. Use to create execution dependencies between steps.',
         items: { type: 'string' },
       },
       max_retries: {
@@ -157,7 +168,8 @@ const getPlanDetailsDef: ToolDefinition = {
 const executePlanDef: ToolDefinition = {
   name: 'execute_plan',
   workflowUsable: false,
-  description: 'Start executing a plan. The plan must have steps and be in pending status. Steps run in order, respecting dependencies. Failed steps retry with exponential backoff. Circular dependencies are detected and rejected. Use get_plan_details to check progress.',
+  description:
+    'Start executing a plan. The plan must have steps and be in pending status. Steps run in order, respecting dependencies. Failed steps retry with exponential backoff. Circular dependencies are detected and rejected. Use get_plan_details to check progress.',
   parameters: {
     type: 'object',
     properties: {
@@ -362,7 +374,10 @@ export async function executePlanTool(
         return { success: false, error: `Plan not found: ${planId}` };
       }
       if (plan.status !== 'pending') {
-        return { success: false, error: `Plan status is "${plan.status}", must be "pending" to execute.` };
+        return {
+          success: false,
+          error: `Plan status is "${plan.status}", must be "pending" to execute.`,
+        };
       }
 
       const steps = await service.getSteps(userId, planId);

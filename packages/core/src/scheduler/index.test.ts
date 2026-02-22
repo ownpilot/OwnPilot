@@ -25,9 +25,7 @@ vi.mock('../services/get-log.js', () => ({
 }));
 
 vi.mock('../services/error-utils.js', () => ({
-  getErrorMessage: vi.fn((err: unknown) =>
-    err instanceof Error ? err.message : String(err)
-  ),
+  getErrorMessage: vi.fn((err: unknown) => (err instanceof Error ? err.message : String(err))),
 }));
 
 let idCounter = 0;
@@ -681,7 +679,11 @@ describe('Scheduler constructor', () => {
 // =============================================================================
 
 describe('Scheduler.initialize()', () => {
-  let fsMock: { readFile: ReturnType<typeof vi.fn>; writeFile: ReturnType<typeof vi.fn>; mkdir: ReturnType<typeof vi.fn> };
+  let fsMock: {
+    readFile: ReturnType<typeof vi.fn>;
+    writeFile: ReturnType<typeof vi.fn>;
+    mkdir: ReturnType<typeof vi.fn>;
+  };
 
   beforeEach(() => {
     idCounter = 0;
@@ -924,11 +926,13 @@ describe('Scheduler.addTask()', () => {
   it('uses runAt directly for one-time tasks', async () => {
     const scheduler = makeScheduler();
     const runAt = new Date(Date.now() + 3600_000).toISOString();
-    const task = await scheduler.addTask(makeMinimalAddTask({
-      cron: '* * * * *',
-      runAt,
-      oneTime: true,
-    }));
+    const task = await scheduler.addTask(
+      makeMinimalAddTask({
+        cron: '* * * * *',
+        runAt,
+        oneTime: true,
+      })
+    );
     // For one-time tasks with runAt, nextRun equals runAt
     expect(task.nextRun).toBe(runAt);
   });
@@ -995,9 +999,7 @@ describe('Scheduler.addTask()', () => {
   it('does not schedule reminder when no bridge is configured', async () => {
     const scheduler = makeScheduler();
     // No bridge set — should not throw
-    await expect(
-      scheduler.addTask(makeMinimalAddTask({ enabled: true }))
-    ).resolves.toBeDefined();
+    await expect(scheduler.addTask(makeMinimalAddTask({ enabled: true }))).resolves.toBeDefined();
   });
 
   it('preserves all input fields on returned task', async () => {
@@ -1057,7 +1059,9 @@ describe('Scheduler.updateTask()', () => {
     const scheduler = makeScheduler();
     const task = await scheduler.addTask(makeMinimalAddTask());
     // Attempt to change ID via updates (should be ignored)
-    const updated = await scheduler.updateTask(task.id, { id: 'hacked-id' } as Partial<ScheduledTask>);
+    const updated = await scheduler.updateTask(task.id, {
+      id: 'hacked-id',
+    } as Partial<ScheduledTask>);
     expect(updated!.id).toBe(task.id);
   });
 
@@ -1248,7 +1252,7 @@ describe('Scheduler.getUserTasks()', () => {
 
     const user1Tasks = scheduler.getUserTasks('user-1');
     expect(user1Tasks).toHaveLength(2);
-    expect(user1Tasks.every(t => t.userId === 'user-1')).toBe(true);
+    expect(user1Tasks.every((t) => t.userId === 'user-1')).toBe(true);
   });
 
   it('returns empty array for unknown userId', async () => {
@@ -1276,7 +1280,7 @@ describe('Scheduler.getTaskHistory()', () => {
   it('returns history after task execution', async () => {
     const scheduler = makeScheduler();
     const task = await scheduler.addTask(makeMinimalAddTask());
-    scheduler.setTaskExecutor(async t => makeSuccessResult(t.id));
+    scheduler.setTaskExecutor(async (t) => makeSuccessResult(t.id));
 
     await scheduler.triggerTask(task.id);
 
@@ -1286,9 +1290,13 @@ describe('Scheduler.getTaskHistory()', () => {
   });
 
   it('limit parameter returns only the last N entries', async () => {
-    const scheduler = makeScheduler({ maxHistoryPerTask: 100, tasksFilePath: '/tmp/t.json', historyFilePath: '/tmp/h.json' });
+    const scheduler = makeScheduler({
+      maxHistoryPerTask: 100,
+      tasksFilePath: '/tmp/t.json',
+      historyFilePath: '/tmp/h.json',
+    });
     const task = await scheduler.addTask(makeMinimalAddTask());
-    scheduler.setTaskExecutor(async t => makeSuccessResult(t.id));
+    scheduler.setTaskExecutor(async (t) => makeSuccessResult(t.id));
 
     // Execute 5 times
     for (let i = 0; i < 5; i++) {
@@ -1303,9 +1311,13 @@ describe('Scheduler.getTaskHistory()', () => {
   });
 
   it('returns all entries when limit is undefined', async () => {
-    const scheduler = makeScheduler({ maxHistoryPerTask: 100, tasksFilePath: '/tmp/t.json', historyFilePath: '/tmp/h.json' });
+    const scheduler = makeScheduler({
+      maxHistoryPerTask: 100,
+      tasksFilePath: '/tmp/t.json',
+      historyFilePath: '/tmp/h.json',
+    });
     const task = await scheduler.addTask(makeMinimalAddTask());
-    scheduler.setTaskExecutor(async t => makeSuccessResult(t.id));
+    scheduler.setTaskExecutor(async (t) => makeSuccessResult(t.id));
 
     for (let i = 0; i < 3; i++) {
       await scheduler.triggerTask(task.id);
@@ -1323,7 +1335,7 @@ describe('Scheduler.getTaskHistory()', () => {
       historyFilePath: '/tmp/h.json',
     });
     const task = await scheduler.addTask(makeMinimalAddTask());
-    scheduler.setTaskExecutor(async t => makeSuccessResult(t.id));
+    scheduler.setTaskExecutor(async (t) => makeSuccessResult(t.id));
 
     // Execute 5 times — only last 3 should remain
     for (let i = 0; i < 5; i++) {
@@ -1337,7 +1349,7 @@ describe('Scheduler.getTaskHistory()', () => {
   it('history entries have executionId', async () => {
     const scheduler = makeScheduler();
     const task = await scheduler.addTask(makeMinimalAddTask());
-    scheduler.setTaskExecutor(async t => makeSuccessResult(t.id));
+    scheduler.setTaskExecutor(async (t) => makeSuccessResult(t.id));
 
     await scheduler.triggerTask(task.id);
 
@@ -1366,7 +1378,7 @@ describe('Scheduler.triggerTask()', () => {
   it('returns execution result on success', async () => {
     const scheduler = makeScheduler();
     const task = await scheduler.addTask(makeMinimalAddTask());
-    scheduler.setTaskExecutor(async t => makeSuccessResult(t.id));
+    scheduler.setTaskExecutor(async (t) => makeSuccessResult(t.id));
 
     const result = await scheduler.triggerTask(task.id);
     expect(result).not.toBeNull();
@@ -1414,9 +1426,12 @@ describe('Scheduler.triggerTask()', () => {
       const scheduler = makeScheduler({ defaultTimeout: 500 });
       const task = await scheduler.addTask(makeMinimalAddTask());
 
-      scheduler.setTaskExecutor(() => new Promise(resolve => {
-        setTimeout(() => resolve(makeSuccessResult(task.id)), 10_000);
-      }));
+      scheduler.setTaskExecutor(
+        () =>
+          new Promise((resolve) => {
+            setTimeout(() => resolve(makeSuccessResult(task.id)), 10_000);
+          })
+      );
 
       const resultPromise = scheduler.triggerTask(task.id);
       // Advance past the 500ms timeout
@@ -1433,7 +1448,7 @@ describe('Scheduler.triggerTask()', () => {
   it('sets lastRun on the task after execution', async () => {
     const scheduler = makeScheduler();
     const task = await scheduler.addTask(makeMinimalAddTask());
-    scheduler.setTaskExecutor(async t => makeSuccessResult(t.id));
+    scheduler.setTaskExecutor(async (t) => makeSuccessResult(t.id));
 
     await scheduler.triggerTask(task.id);
     const loaded = scheduler.getTask(task.id);
@@ -1444,7 +1459,7 @@ describe('Scheduler.triggerTask()', () => {
   it('sets lastStatus to "completed" on success', async () => {
     const scheduler = makeScheduler();
     const task = await scheduler.addTask(makeMinimalAddTask());
-    scheduler.setTaskExecutor(async t => makeSuccessResult(t.id));
+    scheduler.setTaskExecutor(async (t) => makeSuccessResult(t.id));
 
     await scheduler.triggerTask(task.id);
     expect(scheduler.getTask(task.id)!.lastStatus).toBe('completed');
@@ -1453,7 +1468,9 @@ describe('Scheduler.triggerTask()', () => {
   it('sets lastStatus to "failed" on executor error', async () => {
     const scheduler = makeScheduler();
     const task = await scheduler.addTask(makeMinimalAddTask());
-    scheduler.setTaskExecutor(async () => { throw new Error('fail'); });
+    scheduler.setTaskExecutor(async () => {
+      throw new Error('fail');
+    });
 
     await scheduler.triggerTask(task.id);
     expect(scheduler.getTask(task.id)!.lastStatus).toBe('failed');
@@ -1462,7 +1479,7 @@ describe('Scheduler.triggerTask()', () => {
   it('stores result in history', async () => {
     const scheduler = makeScheduler();
     const task = await scheduler.addTask(makeMinimalAddTask());
-    scheduler.setTaskExecutor(async t => makeSuccessResult(t.id));
+    scheduler.setTaskExecutor(async (t) => makeSuccessResult(t.id));
 
     await scheduler.triggerTask(task.id);
 
@@ -1474,7 +1491,7 @@ describe('Scheduler.triggerTask()', () => {
   it('saves tasks to file after execution', async () => {
     const scheduler = makeScheduler();
     const task = await scheduler.addTask(makeMinimalAddTask());
-    scheduler.setTaskExecutor(async t => makeSuccessResult(t.id));
+    scheduler.setTaskExecutor(async (t) => makeSuccessResult(t.id));
     vi.clearAllMocks();
 
     await scheduler.triggerTask(task.id);
@@ -1484,7 +1501,7 @@ describe('Scheduler.triggerTask()', () => {
   it('result includes startedAt and completedAt timestamps', async () => {
     const scheduler = makeScheduler();
     const task = await scheduler.addTask(makeMinimalAddTask());
-    scheduler.setTaskExecutor(async t => makeSuccessResult(t.id));
+    scheduler.setTaskExecutor(async (t) => makeSuccessResult(t.id));
 
     const result = await scheduler.triggerTask(task.id);
     expect(result!.startedAt).toBeDefined();
@@ -1496,7 +1513,7 @@ describe('Scheduler.triggerTask()', () => {
   it('result includes duration in milliseconds', async () => {
     const scheduler = makeScheduler();
     const task = await scheduler.addTask(makeMinimalAddTask());
-    scheduler.setTaskExecutor(async t => makeSuccessResult(t.id));
+    scheduler.setTaskExecutor(async (t) => makeSuccessResult(t.id));
 
     const result = await scheduler.triggerTask(task.id);
     expect(result!.duration).toBeDefined();
@@ -1507,7 +1524,7 @@ describe('Scheduler.triggerTask()', () => {
   it('calls notificationBridge.onTaskStart when bridge is set', async () => {
     const scheduler = makeScheduler();
     const task = await scheduler.addTask(makeMinimalAddTask());
-    scheduler.setTaskExecutor(async t => makeSuccessResult(t.id));
+    scheduler.setTaskExecutor(async (t) => makeSuccessResult(t.id));
 
     const bridge = {
       onTaskStart: vi.fn().mockResolvedValue(undefined),
@@ -1525,7 +1542,7 @@ describe('Scheduler.triggerTask()', () => {
   it('calls notificationBridge.onTaskComplete when bridge is set', async () => {
     const scheduler = makeScheduler();
     const task = await scheduler.addTask(makeMinimalAddTask());
-    scheduler.setTaskExecutor(async t => makeSuccessResult(t.id));
+    scheduler.setTaskExecutor(async (t) => makeSuccessResult(t.id));
 
     const bridge = {
       onTaskStart: vi.fn().mockResolvedValue(undefined),
@@ -1545,7 +1562,7 @@ describe('Scheduler.triggerTask()', () => {
   it('continues after notification bridge start error', async () => {
     const scheduler = makeScheduler();
     const task = await scheduler.addTask(makeMinimalAddTask());
-    scheduler.setTaskExecutor(async t => makeSuccessResult(t.id));
+    scheduler.setTaskExecutor(async (t) => makeSuccessResult(t.id));
 
     const bridge = {
       onTaskStart: vi.fn().mockRejectedValue(new Error('bridge start error')),
@@ -1563,7 +1580,7 @@ describe('Scheduler.triggerTask()', () => {
   it('continues after notification bridge complete error', async () => {
     const scheduler = makeScheduler();
     const task = await scheduler.addTask(makeMinimalAddTask());
-    scheduler.setTaskExecutor(async t => makeSuccessResult(t.id));
+    scheduler.setTaskExecutor(async (t) => makeSuccessResult(t.id));
 
     const bridge = {
       onTaskStart: vi.fn().mockResolvedValue(undefined),
@@ -1583,9 +1600,12 @@ describe('Scheduler.triggerTask()', () => {
       const scheduler = makeScheduler({ defaultTimeout: 60_000 });
       const task = await scheduler.addTask(makeMinimalAddTask({ timeout: 300 }));
 
-      scheduler.setTaskExecutor(() => new Promise(resolve => {
-        setTimeout(() => resolve(makeSuccessResult(task.id)), 10_000);
-      }));
+      scheduler.setTaskExecutor(
+        () =>
+          new Promise((resolve) => {
+            setTimeout(() => resolve(makeSuccessResult(task.id)), 10_000);
+          })
+      );
 
       const resultPromise = scheduler.triggerTask(task.id);
       await vi.advanceTimersByTimeAsync(500);
@@ -1645,7 +1665,9 @@ describe('Scheduler.configureTaskNotifications()', () => {
     const scheduler = makeScheduler();
     // Should not throw
     expect(() =>
-      scheduler.configureTaskNotifications('task-1', { triggers: ['on_complete' as const] } as never)
+      scheduler.configureTaskNotifications('task-1', {
+        triggers: ['on_complete' as const],
+      } as never)
     ).not.toThrow();
   });
 });
@@ -1694,9 +1716,11 @@ describe('checkAndRunTasks (via start + fake timers)', () => {
     scheduler.setTaskExecutor(executor);
 
     // Set nextRun to past
-    const task = await scheduler.addTask(makeMinimalAddTask({
-      cron: '* * * * *',
-    }));
+    const task = await scheduler.addTask(
+      makeMinimalAddTask({
+        cron: '* * * * *',
+      })
+    );
     // Manually backdate nextRun to ensure it's due
     const updated = await scheduler.updateTask(task.id, {
       nextRun: new Date(Date.now() - 1000).toISOString(),
@@ -1748,13 +1772,15 @@ describe('checkAndRunTasks (via start + fake timers)', () => {
 
   it('disables one-time task after execution', async () => {
     const scheduler = makeScheduler({ checkInterval: 1000 });
-    scheduler.setTaskExecutor(async t => makeSuccessResult(t.id));
+    scheduler.setTaskExecutor(async (t) => makeSuccessResult(t.id));
 
-    const task = await scheduler.addTask(makeMinimalAddTask({
-      cron: '* * * * *',
-      oneTime: true,
-      enabled: true,
-    }));
+    const task = await scheduler.addTask(
+      makeMinimalAddTask({
+        cron: '* * * * *',
+        oneTime: true,
+        enabled: true,
+      })
+    );
     await scheduler.updateTask(task.id, {
       nextRun: new Date(Date.now() - 1000).toISOString(),
     });
@@ -1770,13 +1796,15 @@ describe('checkAndRunTasks (via start + fake timers)', () => {
 
   it('recalculates nextRun for recurring tasks after execution', async () => {
     const scheduler = makeScheduler({ checkInterval: 1000 });
-    scheduler.setTaskExecutor(async t => makeSuccessResult(t.id));
+    scheduler.setTaskExecutor(async (t) => makeSuccessResult(t.id));
 
-    const task = await scheduler.addTask(makeMinimalAddTask({
-      cron: '* * * * *',
-      oneTime: false,
-      enabled: true,
-    }));
+    const task = await scheduler.addTask(
+      makeMinimalAddTask({
+        cron: '* * * * *',
+        oneTime: false,
+        enabled: true,
+      })
+    );
     const oldNextRun = new Date(Date.now() - 1000).toISOString();
     await scheduler.updateTask(task.id, { nextRun: oldNextRun });
 
@@ -1817,13 +1845,15 @@ describe('checkAndRunTasks (via start + fake timers)', () => {
     };
 
     const scheduler = makeScheduler({ checkInterval: 1000 });
-    scheduler.setTaskExecutor(async t => makeSuccessResult(t.id));
+    scheduler.setTaskExecutor(async (t) => makeSuccessResult(t.id));
     scheduler.setNotificationBridge(bridge as never);
 
-    const task = await scheduler.addTask(makeMinimalAddTask({
-      cron: '* * * * *',
-      enabled: true,
-    }));
+    const task = await scheduler.addTask(
+      makeMinimalAddTask({
+        cron: '* * * * *',
+        enabled: true,
+      })
+    );
     await scheduler.updateTask(task.id, {
       nextRun: new Date(Date.now() - 1000).toISOString(),
     });
@@ -1850,7 +1880,7 @@ describe('History management', () => {
   it('history entry has executionId prefixed with "exec"', async () => {
     const scheduler = makeScheduler();
     const task = await scheduler.addTask(makeMinimalAddTask());
-    scheduler.setTaskExecutor(async t => makeSuccessResult(t.id));
+    scheduler.setTaskExecutor(async (t) => makeSuccessResult(t.id));
 
     await scheduler.triggerTask(task.id);
 
@@ -1859,9 +1889,13 @@ describe('History management', () => {
   });
 
   it('accumulates multiple history entries', async () => {
-    const scheduler = makeScheduler({ maxHistoryPerTask: 10, tasksFilePath: '/tmp/t.json', historyFilePath: '/tmp/h.json' });
+    const scheduler = makeScheduler({
+      maxHistoryPerTask: 10,
+      tasksFilePath: '/tmp/t.json',
+      historyFilePath: '/tmp/h.json',
+    });
     const task = await scheduler.addTask(makeMinimalAddTask());
-    scheduler.setTaskExecutor(async t => makeSuccessResult(t.id));
+    scheduler.setTaskExecutor(async (t) => makeSuccessResult(t.id));
 
     await scheduler.triggerTask(task.id);
     await scheduler.triggerTask(task.id);
@@ -1877,7 +1911,7 @@ describe('History management', () => {
       historyFilePath: '/tmp/h.json',
     });
     const task = await scheduler.addTask(makeMinimalAddTask());
-    scheduler.setTaskExecutor(async t => makeSuccessResult(t.id));
+    scheduler.setTaskExecutor(async (t) => makeSuccessResult(t.id));
 
     await scheduler.triggerTask(task.id);
     await scheduler.triggerTask(task.id);
@@ -1889,7 +1923,7 @@ describe('History management', () => {
   it('history is saved to file after each execution', async () => {
     const scheduler = makeScheduler();
     const task = await scheduler.addTask(makeMinimalAddTask());
-    scheduler.setTaskExecutor(async t => makeSuccessResult(t.id));
+    scheduler.setTaskExecutor(async (t) => makeSuccessResult(t.id));
     vi.clearAllMocks();
 
     await scheduler.triggerTask(task.id);
@@ -1899,10 +1933,14 @@ describe('History management', () => {
   });
 
   it('history is separate per task', async () => {
-    const scheduler = makeScheduler({ maxHistoryPerTask: 10, tasksFilePath: '/tmp/t.json', historyFilePath: '/tmp/h.json' });
+    const scheduler = makeScheduler({
+      maxHistoryPerTask: 10,
+      tasksFilePath: '/tmp/t.json',
+      historyFilePath: '/tmp/h.json',
+    });
     const t1 = await scheduler.addTask(makeMinimalAddTask({ name: 'T1' }));
     const t2 = await scheduler.addTask(makeMinimalAddTask({ name: 'T2' }));
-    scheduler.setTaskExecutor(async t => makeSuccessResult(t.id));
+    scheduler.setTaskExecutor(async (t) => makeSuccessResult(t.id));
 
     await scheduler.triggerTask(t1.id);
     await scheduler.triggerTask(t1.id);
@@ -1967,7 +2005,7 @@ describe('createPromptTask()', () => {
     const modelPreferences = {
       capabilities: ['reasoning'],
       preferredProviders: ['openai'],
-      maxCost: 0.50,
+      maxCost: 0.5,
     };
     const payload = createPromptTask('test', { modelPreferences });
     expect(payload.modelPreferences).toEqual(modelPreferences);
@@ -2019,7 +2057,11 @@ describe('EXAMPLE_TASKS', () => {
   });
 
   it('morningBriefing payload has prompt string', () => {
-    const payload = EXAMPLE_TASKS.morningBriefing.payload as { type: string; prompt: string; outputFormat: string };
+    const payload = EXAMPLE_TASKS.morningBriefing.payload as {
+      type: string;
+      prompt: string;
+      outputFormat: string;
+    };
     expect(typeof payload.prompt).toBe('string');
     expect(payload.prompt.length).toBeGreaterThan(10);
     expect(payload.outputFormat).toBe('markdown');
@@ -2035,7 +2077,11 @@ describe('EXAMPLE_TASKS', () => {
   });
 
   it('weeklyExpenseReport payload has toolName and args', () => {
-    const payload = EXAMPLE_TASKS.weeklyExpenseReport.payload as { type: string; toolName: string; args: Record<string, unknown> };
+    const payload = EXAMPLE_TASKS.weeklyExpenseReport.payload as {
+      type: string;
+      toolName: string;
+      args: Record<string, unknown>;
+    };
     expect(payload.toolName).toBe('expense_summary');
     expect(payload.args).toEqual({ period: 'last_week' });
   });
@@ -2058,7 +2104,7 @@ describe('EXAMPLE_TASKS', () => {
     };
     expect(payload.modelPreferences).toBeDefined();
     expect(payload.modelPreferences!.capabilities).toContain('reasoning');
-    expect(payload.modelPreferences!.maxCost).toBe(0.50);
+    expect(payload.modelPreferences!.maxCost).toBe(0.5);
   });
 
   it('all example tasks have valid cron expressions', () => {
@@ -2104,18 +2150,22 @@ describe('Scheduler.setTaskExecutor()', () => {
     const scheduler = makeScheduler();
     const task = await scheduler.addTask(makeMinimalAddTask());
 
-    const executor1 = vi.fn(async (t: ScheduledTask): Promise<TaskExecutionResult> => ({
-      taskId: t.id,
-      status: 'completed',
-      startedAt: new Date().toISOString(),
-      result: 'from executor1',
-    }));
-    const executor2 = vi.fn(async (t: ScheduledTask): Promise<TaskExecutionResult> => ({
-      taskId: t.id,
-      status: 'completed',
-      startedAt: new Date().toISOString(),
-      result: 'from executor2',
-    }));
+    const executor1 = vi.fn(
+      async (t: ScheduledTask): Promise<TaskExecutionResult> => ({
+        taskId: t.id,
+        status: 'completed',
+        startedAt: new Date().toISOString(),
+        result: 'from executor1',
+      })
+    );
+    const executor2 = vi.fn(
+      async (t: ScheduledTask): Promise<TaskExecutionResult> => ({
+        taskId: t.id,
+        status: 'completed',
+        startedAt: new Date().toISOString(),
+        result: 'from executor2',
+      })
+    );
 
     scheduler.setTaskExecutor(executor1);
     await scheduler.triggerTask(task.id);
@@ -2180,7 +2230,7 @@ describe('Edge cases', () => {
   it('getTaskHistory with limit 0 returns empty slice', async () => {
     const scheduler = makeScheduler();
     const task = await scheduler.addTask(makeMinimalAddTask());
-    scheduler.setTaskExecutor(async t => makeSuccessResult(t.id));
+    scheduler.setTaskExecutor(async (t) => makeSuccessResult(t.id));
 
     await scheduler.triggerTask(task.id);
 
@@ -2193,7 +2243,9 @@ describe('Edge cases', () => {
   it('failed result includes both startedAt and completedAt', async () => {
     const scheduler = makeScheduler();
     const task = await scheduler.addTask(makeMinimalAddTask());
-    scheduler.setTaskExecutor(async () => { throw new Error('fail'); });
+    scheduler.setTaskExecutor(async () => {
+      throw new Error('fail');
+    });
 
     const result = await scheduler.triggerTask(task.id);
     expect(result!.startedAt).toBeDefined();
@@ -2202,7 +2254,11 @@ describe('Edge cases', () => {
   });
 
   it('multiple triggers on same task accumulate distinct history entries', async () => {
-    const scheduler = makeScheduler({ maxHistoryPerTask: 100, tasksFilePath: '/tmp/t.json', historyFilePath: '/tmp/h.json' });
+    const scheduler = makeScheduler({
+      maxHistoryPerTask: 100,
+      tasksFilePath: '/tmp/t.json',
+      historyFilePath: '/tmp/h.json',
+    });
     const task = await scheduler.addTask(makeMinimalAddTask());
     let callCount = 0;
     scheduler.setTaskExecutor(async (t): Promise<TaskExecutionResult> => {
@@ -2227,15 +2283,21 @@ describe('Edge cases', () => {
   });
 
   it('getTaskHistory limit returns the LAST N entries (slice from end)', async () => {
-    const scheduler = makeScheduler({ maxHistoryPerTask: 100, tasksFilePath: '/tmp/t.json', historyFilePath: '/tmp/h.json' });
+    const scheduler = makeScheduler({
+      maxHistoryPerTask: 100,
+      tasksFilePath: '/tmp/t.json',
+      historyFilePath: '/tmp/h.json',
+    });
     const task = await scheduler.addTask(makeMinimalAddTask());
     let callCount = 0;
-    scheduler.setTaskExecutor(async (t): Promise<TaskExecutionResult> => ({
-      taskId: t.id,
-      status: 'completed',
-      startedAt: new Date().toISOString(),
-      result: `call-${++callCount}`,
-    }));
+    scheduler.setTaskExecutor(
+      async (t): Promise<TaskExecutionResult> => ({
+        taskId: t.id,
+        status: 'completed',
+        startedAt: new Date().toISOString(),
+        result: `call-${++callCount}`,
+      })
+    );
 
     for (let i = 0; i < 5; i++) {
       await scheduler.triggerTask(task.id);
@@ -2244,7 +2306,7 @@ describe('Edge cases', () => {
     const last2 = scheduler.getTaskHistory(task.id, 2);
     expect(last2).toHaveLength(2);
     // slice(-2) returns the last two
-    expect((last2[0]!.result as string)).toBe('call-4');
-    expect((last2[1]!.result as string)).toBe('call-5');
+    expect(last2[0]!.result as string).toBe('call-4');
+    expect(last2[1]!.result as string).toBe('call-5');
   });
 });

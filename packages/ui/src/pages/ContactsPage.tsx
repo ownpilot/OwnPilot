@@ -10,7 +10,6 @@ import { useAnimatedList } from '../hooks/useAnimatedList';
 import { contactsApi } from '../api';
 import type { Contact } from '../api';
 
-
 export function ContactsPage() {
   const { confirm } = useDialog();
   const toast = useToast();
@@ -49,45 +48,69 @@ export function ContactsPage() {
     const unsub = subscribe<{ entity: string }>('data:changed', (data) => {
       if (data.entity === 'contact') debouncedRefresh();
     });
-    return () => { unsub(); };
+    return () => {
+      unsub();
+    };
   }, [subscribe, debouncedRefresh]);
 
-  const handleDelete = useCallback(async (contactId: string) => {
-    if (!await confirm({ message: 'Are you sure you want to delete this contact?', variant: 'danger' })) return;
+  const handleDelete = useCallback(
+    async (contactId: string) => {
+      if (
+        !(await confirm({
+          message: 'Are you sure you want to delete this contact?',
+          variant: 'danger',
+        }))
+      )
+        return;
 
-    try {
-      await animatedDelete(contactId, async () => {
-        await contactsApi.delete(contactId);
-      });
-      toast.success('Contact deleted');
-      fetchContacts();
-    } catch {
-      // API client handles error reporting
-    }
-  }, [confirm, toast, fetchContacts]);
+      try {
+        await animatedDelete(contactId, async () => {
+          await contactsApi.delete(contactId);
+        });
+        toast.success('Contact deleted');
+        fetchContacts();
+      } catch {
+        // API client handles error reporting
+      }
+    },
+    [confirm, toast, fetchContacts]
+  );
 
-  const handleToggleFavorite = useCallback(async (contact: Contact) => {
-    try {
-      await contactsApi.favorite(contact.id);
-      toast.success(contact.isFavorite ? 'Removed from favorites' : 'Added to favorites');
-      fetchContacts();
-    } catch {
-      // API client handles error reporting
-    }
-  }, [toast, fetchContacts]);
+  const handleToggleFavorite = useCallback(
+    async (contact: Contact) => {
+      try {
+        await contactsApi.favorite(contact.id);
+        toast.success(contact.isFavorite ? 'Removed from favorites' : 'Added to favorites');
+        fetchContacts();
+      } catch {
+        // API client handles error reporting
+      }
+    },
+    [toast, fetchContacts]
+  );
 
   const favoriteCount = useMemo(() => contacts.filter((c) => c.isFavorite).length, [contacts]);
 
   // Group contacts alphabetically
-  const groupedContacts = useMemo(() => contacts.reduce((acc, contact) => {
-    const letter = (contact.name?.[0] ?? '#').toUpperCase();
-    if (!acc[letter]) acc[letter] = [];
-    acc[letter].push(contact);
-    return acc;
-  }, {} as Record<string, Contact[]>), [contacts]);
+  const groupedContacts = useMemo(
+    () =>
+      contacts.reduce(
+        (acc, contact) => {
+          const letter = (contact.name?.[0] ?? '#').toUpperCase();
+          if (!acc[letter]) acc[letter] = [];
+          acc[letter].push(contact);
+          return acc;
+        },
+        {} as Record<string, Contact[]>
+      ),
+    [contacts]
+  );
 
-  const sortedGroups = useMemo(() => Object.entries(groupedContacts).sort(([a], [b]) => a.localeCompare(b)), [groupedContacts]);
-  const animClassMap = new Map(animatedItems.map(a => [a.item.id, a.animClass]));
+  const sortedGroups = useMemo(
+    () => Object.entries(groupedContacts).sort(([a], [b]) => a.localeCompare(b)),
+    [groupedContacts]
+  );
+  const animClassMap = new Map(animatedItems.map((a) => [a.item.id, a.animClass]));
 
   return (
     <div className="flex flex-col h-full">
@@ -98,7 +121,8 @@ export function ContactsPage() {
             Contacts
           </h2>
           <p className="text-sm text-text-muted dark:text-dark-text-muted">
-            {contacts.length} contact{contacts.length !== 1 ? 's' : ''}, {favoriteCount} favorite{favoriteCount !== 1 ? 's' : ''}
+            {contacts.length} contact{contacts.length !== 1 ? 's' : ''}, {favoriteCount} favorite
+            {favoriteCount !== 1 ? 's' : ''}
           </p>
         </div>
         <button
@@ -147,8 +171,16 @@ export function ContactsPage() {
           <EmptyState
             icon={Users}
             title={searchQuery ? 'No contacts found' : 'No contacts yet'}
-            description={searchQuery ? 'Try a different search term.' : 'Add your first contact to get started.'}
-            action={!searchQuery ? { label: 'Add Contact', onClick: () => setShowCreateModal(true), icon: Plus } : undefined}
+            description={
+              searchQuery
+                ? 'Try a different search term.'
+                : 'Add your first contact to get started.'
+            }
+            action={
+              !searchQuery
+                ? { label: 'Add Contact', onClick: () => setShowCreateModal(true), icon: Plus }
+                : undefined
+            }
           />
         ) : (
           <div className="space-y-6">
@@ -206,9 +238,10 @@ function ContactItem({ contact, onEdit, onDelete, onToggleFavorite }: ContactIte
   const displayName = contact.name || contact.nickname || 'Unknown';
   // Get initials from name (first letter of first and last word)
   const nameParts = (contact.name || '').trim().split(/\s+/);
-  const initials = nameParts.length > 1
-    ? `${nameParts[0]?.[0] ?? ''}${nameParts[nameParts.length - 1]?.[0] ?? ''}`.toUpperCase()
-    : (nameParts[0]?.[0] ?? '?').toUpperCase();
+  const initials =
+    nameParts.length > 1
+      ? `${nameParts[0]?.[0] ?? ''}${nameParts[nameParts.length - 1]?.[0] ?? ''}`.toUpperCase()
+      : (nameParts[0]?.[0] ?? '?').toUpperCase();
 
   return (
     <div className="card-elevated card-hover flex items-center gap-3 p-4 bg-bg-secondary dark:bg-dark-bg-secondary border border-border dark:border-dark-border rounded-lg">
@@ -218,7 +251,18 @@ function ContactItem({ contact, onEdit, onDelete, onToggleFavorite }: ContactIte
       </div>
 
       {/* Info */}
-      <div className="flex-1 min-w-0 cursor-pointer" role="button" tabIndex={0} onClick={onEdit} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onEdit(); } }}>
+      <div
+        className="flex-1 min-w-0 cursor-pointer"
+        role="button"
+        tabIndex={0}
+        onClick={onEdit}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            onEdit();
+          }
+        }}
+      >
         <div className="flex items-center gap-2">
           <span className="font-medium text-text-primary dark:text-dark-text-primary">
             {displayName}
@@ -325,7 +369,10 @@ function ContactModal({ contact, onClose, onSave }: ContactModalProps) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onBackdropClick}>
+    <div
+      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+      onClick={onBackdropClick}
+    >
       <div className="w-full max-w-lg bg-bg-primary dark:bg-dark-bg-primary border border-border dark:border-dark-border rounded-xl shadow-xl">
         <form onSubmit={handleSubmit}>
           <div className="p-6 border-b border-border dark:border-dark-border">
@@ -450,7 +497,10 @@ function ContactModal({ contact, onClose, onSave }: ContactModalProps) {
                 onChange={(e) => setIsFavorite(e.target.checked)}
                 className="w-4 h-4 rounded border-border dark:border-dark-border"
               />
-              <label htmlFor="isFavorite" className="text-sm text-text-secondary dark:text-dark-text-secondary">
+              <label
+                htmlFor="isFavorite"
+                className="text-sm text-text-secondary dark:text-dark-text-secondary"
+              >
                 Mark as favorite
               </label>
             </div>

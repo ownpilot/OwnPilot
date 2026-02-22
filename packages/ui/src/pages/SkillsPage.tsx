@@ -7,7 +7,19 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { BookOpen, Power, FolderOpen, X, Globe, FileText, Code, ChevronDown, ChevronRight, Trash2, RefreshCw } from '../components/icons';
+import {
+  BookOpen,
+  Power,
+  FolderOpen,
+  X,
+  Globe,
+  FileText,
+  Code,
+  ChevronDown,
+  ChevronRight,
+  Trash2,
+  RefreshCw,
+} from '../components/icons';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { EmptyState } from '../components/EmptyState';
 import { useToast } from '../components/ToastProvider';
@@ -43,7 +55,9 @@ export function SkillsPage() {
     }
   }, []);
 
-  useEffect(() => { fetchSkills(); }, [fetchSkills]);
+  useEffect(() => {
+    fetchSkills();
+  }, [fetchSkills]);
 
   const handleToggle = async (skill: ExtensionInfo) => {
     try {
@@ -93,8 +107,8 @@ export function SkillsPage() {
 
   const stats = {
     total: skills.length,
-    enabled: skills.filter(s => s.status === 'enabled').length,
-    disabled: skills.filter(s => s.status === 'disabled').length,
+    enabled: skills.filter((s) => s.status === 'enabled').length,
+    disabled: skills.filter((s) => s.status === 'disabled').length,
   };
 
   return (
@@ -119,7 +133,10 @@ export function SkillsPage() {
             Scan
           </button>
           <button
-            onClick={() => { setIsLoading(true); fetchSkills(); }}
+            onClick={() => {
+              setIsLoading(true);
+              fetchSkills();
+            }}
             className="p-2 text-text-secondary dark:text-dark-text-secondary hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary rounded-lg transition-colors"
           >
             <RefreshCw className="w-5 h-5" />
@@ -133,7 +150,9 @@ export function SkillsPage() {
           <div className="flex items-center gap-6 text-sm">
             <div className="flex items-center gap-2">
               <span className="text-text-muted dark:text-dark-text-muted">Total:</span>
-              <span className="font-medium text-text-primary dark:text-dark-text-primary">{stats.total}</span>
+              <span className="font-medium text-text-primary dark:text-dark-text-primary">
+                {stats.total}
+              </span>
             </div>
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-success" />
@@ -143,7 +162,9 @@ export function SkillsPage() {
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-text-muted" />
               <span className="text-text-muted dark:text-dark-text-muted">Inactive:</span>
-              <span className="font-medium text-text-secondary dark:text-dark-text-secondary">{stats.disabled}</span>
+              <span className="font-medium text-text-secondary dark:text-dark-text-secondary">
+                {stats.disabled}
+              </span>
             </div>
           </div>
         </div>
@@ -176,9 +197,11 @@ export function SkillsPage() {
           <EmptyState
             icon={BookOpen}
             title={`No skills ${filter !== 'all' ? filter : 'installed'}`}
-            description={filter === 'all'
-              ? 'Place SKILL.md folders in the skills directory, then click "Scan" to discover them. Skills follow the AgentSkills.io open standard.'
-              : `No ${filter} skills found.`}
+            description={
+              filter === 'all'
+                ? 'Place SKILL.md folders in the skills directory, then click "Scan" to discover them. Skills follow the AgentSkills.io open standard.'
+                : `No ${filter} skills found.`
+            }
           />
         ) : (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -211,7 +234,11 @@ export function SkillsPage() {
 // Skill Card
 // ---------------------------------------------------------------------------
 
-function SkillCard({ skill, onToggle, onClick }: {
+function SkillCard({
+  skill,
+  onToggle,
+  onClick,
+}: {
   skill: ExtensionInfo;
   onToggle: () => void;
   onClick: () => void;
@@ -241,7 +268,10 @@ function SkillCard({ skill, onToggle, onClick }: {
           </div>
         </button>
         <button
-          onClick={(e) => { e.stopPropagation(); onToggle(); }}
+          onClick={(e) => {
+            e.stopPropagation();
+            onToggle();
+          }}
           className={`p-2 rounded-lg transition-colors shrink-0 ${
             isEnabled
               ? 'bg-success/10 text-success hover:bg-success/20'
@@ -265,7 +295,10 @@ function SkillCard({ skill, onToggle, onClick }: {
           </span>
         )}
         {skill.manifest.tags?.slice(0, 2).map((tag) => (
-          <span key={tag} className="px-2 py-0.5 text-xs rounded-full bg-gray-500/20 text-gray-600 dark:text-gray-400">
+          <span
+            key={tag}
+            className="px-2 py-0.5 text-xs rounded-full bg-gray-500/20 text-gray-600 dark:text-gray-400"
+          >
             {tag}
           </span>
         ))}
@@ -273,9 +306,13 @@ function SkillCard({ skill, onToggle, onClick }: {
 
       {/* Status & Info */}
       <div className="flex items-center justify-between text-xs">
-        <span className={`px-2 py-0.5 rounded-full ${
-          isEnabled ? 'bg-success/20 text-success' : 'bg-text-muted/20 text-text-muted dark:text-dark-text-muted'
-        }`}>
+        <span
+          className={`px-2 py-0.5 rounded-full ${
+            isEnabled
+              ? 'bg-success/20 text-success'
+              : 'bg-text-muted/20 text-text-muted dark:text-dark-text-muted'
+          }`}
+        >
           {skill.status}
         </span>
         <div className="flex items-center gap-3 text-text-muted dark:text-dark-text-muted">
@@ -287,8 +324,8 @@ function SkillCard({ skill, onToggle, onClick }: {
           )}
           {skill.manifest.instructions && (
             <span className="flex items-center gap-1">
-              <FileText className="w-3 h-3" />
-              ~{Math.ceil(skill.manifest.instructions.length / 4)} tok
+              <FileText className="w-3 h-3" />~{Math.ceil(skill.manifest.instructions.length / 4)}{' '}
+              tok
             </span>
           )}
         </div>
@@ -301,7 +338,12 @@ function SkillCard({ skill, onToggle, onClick }: {
 // Skill Detail Modal
 // ---------------------------------------------------------------------------
 
-function SkillDetailModal({ skill, onClose, onToggle, onUninstall }: {
+function SkillDetailModal({
+  skill,
+  onClose,
+  onToggle,
+  onUninstall,
+}: {
   skill: ExtensionInfo;
   onClose: () => void;
   onToggle: () => void;
@@ -311,7 +353,10 @@ function SkillDetailModal({ skill, onClose, onToggle, onUninstall }: {
   const instructions = skill.manifest.instructions || skill.manifest.system_prompt || '';
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onClose}>
+    <div
+      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+      onClick={onClose}
+    >
       <div
         className="w-full max-w-2xl bg-bg-primary dark:bg-dark-bg-primary border border-border dark:border-dark-border rounded-xl shadow-xl max-h-[85vh] overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}
@@ -338,7 +383,10 @@ function SkillDetailModal({ skill, onClose, onToggle, onUninstall }: {
                 </p>
               </div>
             </div>
-            <button onClick={onClose} className="p-1 text-text-muted hover:text-text-primary dark:hover:text-dark-text-primary rounded">
+            <button
+              onClick={onClose}
+              className="p-1 text-text-muted hover:text-text-primary dark:hover:text-dark-text-primary rounded"
+            >
               <X className="w-5 h-5" />
             </button>
           </div>
@@ -365,7 +413,11 @@ function SkillDetailModal({ skill, onClose, onToggle, onUninstall }: {
                 onClick={() => setShowInstructions(!showInstructions)}
                 className="flex items-center gap-2 text-sm font-medium text-text-secondary dark:text-dark-text-secondary mb-2"
               >
-                {showInstructions ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                {showInstructions ? (
+                  <ChevronDown className="w-4 h-4" />
+                ) : (
+                  <ChevronRight className="w-4 h-4" />
+                )}
                 <FileText className="w-4 h-4" />
                 Instructions (~{Math.ceil(instructions.length / 4)} tokens)
               </button>
@@ -388,7 +440,10 @@ function SkillDetailModal({ skill, onClose, onToggle, onUninstall }: {
               </h4>
               <div className="space-y-1">
                 {skill.manifest.script_paths.map((path) => (
-                  <div key={path} className="px-3 py-1.5 bg-bg-secondary dark:bg-dark-bg-secondary rounded text-xs font-mono text-text-secondary dark:text-dark-text-secondary">
+                  <div
+                    key={path}
+                    className="px-3 py-1.5 bg-bg-secondary dark:bg-dark-bg-secondary rounded text-xs font-mono text-text-secondary dark:text-dark-text-secondary"
+                  >
                     {path}
                   </div>
                 ))}
@@ -405,7 +460,10 @@ function SkillDetailModal({ skill, onClose, onToggle, onUninstall }: {
               </h4>
               <div className="space-y-1">
                 {skill.manifest.reference_paths.map((path) => (
-                  <div key={path} className="px-3 py-1.5 bg-bg-secondary dark:bg-dark-bg-secondary rounded text-xs font-mono text-text-secondary dark:text-dark-text-secondary">
+                  <div
+                    key={path}
+                    className="px-3 py-1.5 bg-bg-secondary dark:bg-dark-bg-secondary rounded text-xs font-mono text-text-secondary dark:text-dark-text-secondary"
+                  >
                     {path}
                   </div>
                 ))}
@@ -421,7 +479,10 @@ function SkillDetailModal({ skill, onClose, onToggle, onUninstall }: {
               </h4>
               <div className="flex flex-wrap gap-1.5">
                 {skill.manifest.allowed_tools.map((tool) => (
-                  <span key={tool} className="px-2 py-0.5 text-xs rounded-full bg-success/15 text-success font-mono">
+                  <span
+                    key={tool}
+                    className="px-2 py-0.5 text-xs rounded-full bg-success/15 text-success font-mono"
+                  >
                     {tool}
                   </span>
                 ))}

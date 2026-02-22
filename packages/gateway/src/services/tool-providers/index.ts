@@ -5,18 +5,27 @@
  * Used by getSharedToolRegistry() via ToolRegistry.registerProvider().
  */
 
-import type { ToolDefinition, ToolExecutionResult, ToolProvider, ToolContext } from '@ownpilot/core';
-import {
-  MEMORY_TOOLS,
-  GOAL_TOOLS,
-  CUSTOM_DATA_TOOLS,
-  PERSONAL_DATA_TOOLS,
+import type {
+  ToolDefinition,
+  ToolExecutionResult,
+  ToolProvider,
+  ToolContext,
 } from '@ownpilot/core';
+import { MEMORY_TOOLS, GOAL_TOOLS, CUSTOM_DATA_TOOLS, PERSONAL_DATA_TOOLS } from '@ownpilot/core';
 import { executeMemoryTool } from '../../routes/memories.js';
 import { executeGoalTool } from '../../routes/goals.js';
 import { executeCustomDataTool } from '../../routes/custom-data.js';
 import { executePersonalDataTool } from '../../routes/personal-data-tools.js';
-import { TRIGGER_TOOLS, executeTriggerTool, PLAN_TOOLS, executePlanTool, HEARTBEAT_TOOLS, executeHeartbeatTool, EXTENSION_TOOLS, executeExtensionTool } from '../../tools/index.js';
+import {
+  TRIGGER_TOOLS,
+  executeTriggerTool,
+  PLAN_TOOLS,
+  executePlanTool,
+  HEARTBEAT_TOOLS,
+  executeHeartbeatTool,
+  EXTENSION_TOOLS,
+  executeExtensionTool,
+} from '../../tools/index.js';
 import { CONFIG_TOOLS, executeConfigTool } from '../config-tools.js';
 import { getErrorMessage } from '../../routes/helpers.js';
 
@@ -37,13 +46,13 @@ interface GatewayToolResult {
 type GatewayExecutor = (
   toolName: string,
   args: Record<string, unknown>,
-  userId?: string,
+  userId?: string
 ) => Promise<GatewayToolResult>;
 
 function wrapGatewayExecutor(
   toolDef: ToolDefinition,
   execute: GatewayExecutor,
-  fallbackUserId?: string,
+  fallbackUserId?: string
 ): (args: Record<string, unknown>, context: ToolContext) => Promise<ToolExecutionResult> {
   return async (args, context): Promise<ToolExecutionResult> => {
     try {
@@ -54,9 +63,10 @@ function wrapGatewayExecutor(
       if (result.success) {
         let content: string;
         try {
-          content = typeof result.result === 'string'
-            ? result.result
-            : JSON.stringify(result.result, null, 2);
+          content =
+            typeof result.result === 'string'
+              ? result.result
+              : JSON.stringify(result.result, null, 2);
         } catch {
           content = String(result.result);
         }
@@ -79,10 +89,11 @@ function wrapGatewayExecutor(
 export function createMemoryToolProvider(userId: string): ToolProvider {
   return {
     name: 'memory',
-    getTools: () => MEMORY_TOOLS.map((def) => ({
-      definition: def,
-      executor: wrapGatewayExecutor(def, executeMemoryTool, userId),
-    })),
+    getTools: () =>
+      MEMORY_TOOLS.map((def) => ({
+        definition: def,
+        executor: wrapGatewayExecutor(def, executeMemoryTool, userId),
+      })),
   };
 }
 
@@ -92,10 +103,11 @@ export function createMemoryToolProvider(userId: string): ToolProvider {
 export function createGoalToolProvider(userId: string): ToolProvider {
   return {
     name: 'goal',
-    getTools: () => GOAL_TOOLS.map((def) => ({
-      definition: def,
-      executor: wrapGatewayExecutor(def, executeGoalTool, userId),
-    })),
+    getTools: () =>
+      GOAL_TOOLS.map((def) => ({
+        definition: def,
+        executor: wrapGatewayExecutor(def, executeGoalTool, userId),
+      })),
   };
 }
 
@@ -105,10 +117,11 @@ export function createGoalToolProvider(userId: string): ToolProvider {
 export function createCustomDataToolProvider(): ToolProvider {
   return {
     name: 'custom-data',
-    getTools: () => CUSTOM_DATA_TOOLS.map((def) => ({
-      definition: def,
-      executor: wrapGatewayExecutor(def, executeCustomDataTool),
-    })),
+    getTools: () =>
+      CUSTOM_DATA_TOOLS.map((def) => ({
+        definition: def,
+        executor: wrapGatewayExecutor(def, executeCustomDataTool),
+      })),
   };
 }
 
@@ -118,10 +131,11 @@ export function createCustomDataToolProvider(): ToolProvider {
 export function createPersonalDataToolProvider(): ToolProvider {
   return {
     name: 'personal-data',
-    getTools: () => PERSONAL_DATA_TOOLS.map((def) => ({
-      definition: def,
-      executor: wrapGatewayExecutor(def, executePersonalDataTool),
-    })),
+    getTools: () =>
+      PERSONAL_DATA_TOOLS.map((def) => ({
+        definition: def,
+        executor: wrapGatewayExecutor(def, executePersonalDataTool),
+      })),
   };
 }
 
@@ -131,10 +145,11 @@ export function createPersonalDataToolProvider(): ToolProvider {
 export function createTriggerToolProvider(): ToolProvider {
   return {
     name: 'trigger',
-    getTools: () => TRIGGER_TOOLS.map((def) => ({
-      definition: def,
-      executor: wrapGatewayExecutor(def, executeTriggerTool),
-    })),
+    getTools: () =>
+      TRIGGER_TOOLS.map((def) => ({
+        definition: def,
+        executor: wrapGatewayExecutor(def, executeTriggerTool),
+      })),
   };
 }
 
@@ -144,10 +159,11 @@ export function createTriggerToolProvider(): ToolProvider {
 export function createPlanToolProvider(): ToolProvider {
   return {
     name: 'plan',
-    getTools: () => PLAN_TOOLS.map((def) => ({
-      definition: def,
-      executor: wrapGatewayExecutor(def, executePlanTool),
-    })),
+    getTools: () =>
+      PLAN_TOOLS.map((def) => ({
+        definition: def,
+        executor: wrapGatewayExecutor(def, executePlanTool),
+      })),
   };
 }
 
@@ -157,10 +173,11 @@ export function createPlanToolProvider(): ToolProvider {
 export function createConfigToolProvider(): ToolProvider {
   return {
     name: 'config',
-    getTools: () => CONFIG_TOOLS.map((def) => ({
-      definition: def,
-      executor: wrapGatewayExecutor(def, executeConfigTool as GatewayExecutor),
-    })),
+    getTools: () =>
+      CONFIG_TOOLS.map((def) => ({
+        definition: def,
+        executor: wrapGatewayExecutor(def, executeConfigTool as GatewayExecutor),
+      })),
   };
 }
 
@@ -170,10 +187,11 @@ export function createConfigToolProvider(): ToolProvider {
 export function createHeartbeatToolProvider(userId: string): ToolProvider {
   return {
     name: 'heartbeat',
-    getTools: () => HEARTBEAT_TOOLS.map((def) => ({
-      definition: def,
-      executor: wrapGatewayExecutor(def, executeHeartbeatTool, userId),
-    })),
+    getTools: () =>
+      HEARTBEAT_TOOLS.map((def) => ({
+        definition: def,
+        executor: wrapGatewayExecutor(def, executeHeartbeatTool, userId),
+      })),
   };
 }
 
@@ -183,9 +201,10 @@ export function createHeartbeatToolProvider(userId: string): ToolProvider {
 export function createExtensionToolProvider(userId: string): ToolProvider {
   return {
     name: 'extension',
-    getTools: () => EXTENSION_TOOLS.map((def) => ({
-      definition: def,
-      executor: wrapGatewayExecutor(def, executeExtensionTool, userId),
-    })),
+    getTools: () =>
+      EXTENSION_TOOLS.map((def) => ({
+        definition: def,
+        executor: wrapGatewayExecutor(def, executeExtensionTool, userId),
+      })),
   };
 }

@@ -101,7 +101,7 @@ export function buildPaginatedResult<T>(
   items: T[],
   total: number,
   limit: number,
-  offset: number,
+  offset: number
 ): PaginatedResult<T> {
   return {
     items,

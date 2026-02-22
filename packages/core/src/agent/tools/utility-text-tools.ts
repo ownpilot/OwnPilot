@@ -18,7 +18,8 @@ import { getErrorMessage } from '../../services/error-utils.js';
 export const countTextTool: ToolDefinition = {
   name: 'count_text',
   brief: 'Count words, characters, sentences, lines in text',
-  description: 'Count characters, words, sentences, lines, and paragraphs in text. Call this when the user asks "how many words", "character count", word count, or needs text length stats. Also estimates reading time.',
+  description:
+    'Count characters, words, sentences, lines, and paragraphs in text. Call this when the user asks "how many words", "character count", word count, or needs text length stats. Also estimates reading time.',
   category: 'Utilities',
   parameters: {
     type: 'object',
@@ -38,9 +39,12 @@ export const countTextExecutor: ToolExecutor = async (args): Promise<ToolExecuti
 
     const chars = text.length;
     const charsNoSpaces = text.replace(/\s/g, '').length;
-    const words = text.trim().split(/\s+/).filter(w => w.length > 0).length;
-    const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 0).length;
-    const paragraphs = text.split(/\n\s*\n/).filter(p => p.trim().length > 0).length;
+    const words = text
+      .trim()
+      .split(/\s+/)
+      .filter((w) => w.length > 0).length;
+    const sentences = text.split(/[.!?]+/).filter((s) => s.trim().length > 0).length;
+    const paragraphs = text.split(/\n\s*\n/).filter((p) => p.trim().length > 0).length;
     const lines = text.split('\n').length;
 
     // Estimate reading time (average 200 words per minute)
@@ -72,7 +76,8 @@ export const countTextExecutor: ToolExecutor = async (args): Promise<ToolExecuti
 export const extractFromTextTool: ToolDefinition = {
   name: 'extract_from_text',
   brief: 'Extract URLs, emails, phones, dates from text',
-  description: 'Extract structured data from text: URLs, email addresses, phone numbers, dates, numbers, hashtags, or @mentions. Call this when the user pastes text and wants to pull out specific data points.',
+  description:
+    'Extract structured data from text: URLs, email addresses, phone numbers, dates, numbers, hashtags, or @mentions. Call this when the user pastes text and wants to pull out specific data points.',
   category: 'Utilities',
   parameters: {
     type: 'object',
@@ -100,7 +105,8 @@ export const extractFromTextExecutor: ToolExecutor = async (args): Promise<ToolE
       urls: /https?:\/\/[^\s<>"{}|\\^`[\]]+/gi,
       emails: /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/gi,
       phones: /[\+]?[(]?[0-9]{1,4}[)]?[-\s\./0-9]{7,}/g,
-      dates: /\b\d{1,4}[-/.\s]\d{1,2}[-/.\s]\d{1,4}\b|\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{1,2},?\s+\d{2,4}\b/gi,
+      dates:
+        /\b\d{1,4}[-/.\s]\d{1,2}[-/.\s]\d{1,4}\b|\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{1,2},?\s+\d{2,4}\b/gi,
       numbers: /-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?/g,
       hashtags: /#[a-zA-Z0-9_]+/g,
       mentions: /@[a-zA-Z0-9_]+/g,
@@ -152,11 +158,23 @@ export const transformTextTool: ToolDefinition = {
       operation: {
         type: 'string',
         enum: [
-          'uppercase', 'lowercase', 'capitalize', 'title_case',
-          'trim', 'trim_start', 'trim_end',
-          'slugify', 'camel_case', 'snake_case', 'kebab_case', 'pascal_case',
-          'reverse', 'remove_whitespace', 'normalize_whitespace',
-          'remove_diacritics', 'truncate'
+          'uppercase',
+          'lowercase',
+          'capitalize',
+          'title_case',
+          'trim',
+          'trim_start',
+          'trim_end',
+          'slugify',
+          'camel_case',
+          'snake_case',
+          'kebab_case',
+          'pascal_case',
+          'reverse',
+          'remove_whitespace',
+          'normalize_whitespace',
+          'remove_diacritics',
+          'truncate',
         ],
         description: 'The transformation to apply',
       },
@@ -192,8 +210,9 @@ export const transformTextExecutor: ToolExecutor = async (args): Promise<ToolExe
         result = text.charAt(0).toUpperCase() + text.slice(1).toLowerCase();
         break;
       case 'title_case':
-        result = text.replace(/\w\S*/g, (txt) =>
-          txt.charAt(0).toUpperCase() + txt.slice(1).toLowerCase()
+        result = text.replace(
+          /\w\S*/g,
+          (txt) => txt.charAt(0).toUpperCase() + txt.slice(1).toLowerCase()
         );
         break;
       case 'trim':
@@ -216,9 +235,7 @@ export const transformTextExecutor: ToolExecutor = async (args): Promise<ToolExe
           .replace(/^-|-$/g, '');
         break;
       case 'camel_case':
-        result = text
-          .toLowerCase()
-          .replace(/[^a-zA-Z0-9]+(.)/g, (_, chr) => chr.toUpperCase());
+        result = text.toLowerCase().replace(/[^a-zA-Z0-9]+(.)/g, (_, chr) => chr.toUpperCase());
         break;
       case 'snake_case':
         result = text
@@ -252,9 +269,7 @@ export const transformTextExecutor: ToolExecutor = async (args): Promise<ToolExe
       case 'truncate':
         const maxLength = (options.maxLength as number) || 100;
         const suffix = (options.suffix as string) ?? '...';
-        result = text.length > maxLength
-          ? text.slice(0, maxLength - suffix.length) + suffix
-          : text;
+        result = text.length > maxLength ? text.slice(0, maxLength - suffix.length) + suffix : text;
         break;
       default:
         return {
@@ -318,10 +333,14 @@ export const compareTextExecutor: ToolExecutor = async (args): Promise<ToolExecu
 
     const split = (text: string): string[] => {
       switch (mode) {
-        case 'lines': return text.split('\n');
-        case 'words': return text.split(/\s+/);
-        case 'chars': return text.split('');
-        default: return text.split('\n');
+        case 'lines':
+          return text.split('\n');
+        case 'words':
+          return text.split(/\s+/);
+        case 'chars':
+          return text.split('');
+        default:
+          return text.split('\n');
       }
     };
 
@@ -332,13 +351,14 @@ export const compareTextExecutor: ToolExecutor = async (args): Promise<ToolExecu
     const set1 = new Set(units1);
     const set2 = new Set(units2);
 
-    const added = units2.filter(u => !set1.has(u));
-    const removed = units1.filter(u => !set2.has(u));
-    const common = units1.filter(u => set2.has(u));
+    const added = units2.filter((u) => !set1.has(u));
+    const removed = units1.filter((u) => !set2.has(u));
+    const common = units1.filter((u) => set2.has(u));
 
     const identical = text1 === text2;
-    const similarity = identical ? 100 :
-      (common.length / Math.max(units1.length, units2.length)) * 100;
+    const similarity = identical
+      ? 100
+      : (common.length / Math.max(units1.length, units2.length)) * 100;
 
     return {
       content: JSON.stringify({
@@ -440,7 +460,7 @@ export const runRegexExecutor: ToolExecutor = async (args): Promise<ToolExecutio
       case 'match_all': {
         const globalRegex = new RegExp(pattern, flags.includes('g') ? flags : flags + 'g');
         const matches = [...text.matchAll(globalRegex)];
-        result = matches.map(m => ({ match: m[0], groups: m.slice(1), index: m.index }));
+        result = matches.map((m) => ({ match: m[0], groups: m.slice(1), index: m.index }));
         break;
       }
       case 'replace':
@@ -450,7 +470,10 @@ export const runRegexExecutor: ToolExecutor = async (args): Promise<ToolExecutio
         result = text.split(regex);
         break;
       default:
-        return { content: JSON.stringify({ error: `Unknown operation: ${operation}` }), isError: true };
+        return {
+          content: JSON.stringify({ error: `Unknown operation: ${operation}` }),
+          isError: true,
+        };
     }
 
     return {

@@ -55,14 +55,7 @@ export const TOOL_GROUPS: Record<string, ToolGroupConfig> = {
     description: 'Read, write, and manage files in workspace',
     defaultEnabled: true,
     alwaysOn: true,
-    tools: [
-      'create_folder',
-      'write_file',
-      'read_file',
-      'list_files',
-      'delete_file',
-      'move_file',
-    ],
+    tools: ['create_folder', 'write_file', 'read_file', 'list_files', 'delete_file', 'move_file'],
   },
 
   personalData: {
@@ -73,15 +66,29 @@ export const TOOL_GROUPS: Record<string, ToolGroupConfig> = {
     alwaysOn: true,
     tools: [
       // Tasks
-      'add_task', 'list_tasks', 'complete_task', 'update_task', 'delete_task',
+      'add_task',
+      'list_tasks',
+      'complete_task',
+      'update_task',
+      'delete_task',
       // Notes
-      'add_note', 'list_notes', 'update_note', 'delete_note',
+      'add_note',
+      'list_notes',
+      'update_note',
+      'delete_note',
       // Bookmarks
-      'add_bookmark', 'list_bookmarks', 'delete_bookmark',
+      'add_bookmark',
+      'list_bookmarks',
+      'delete_bookmark',
       // Calendar
-      'add_calendar_event', 'list_calendar_events', 'delete_calendar_event',
+      'add_calendar_event',
+      'list_calendar_events',
+      'delete_calendar_event',
       // Contacts
-      'add_contact', 'list_contacts', 'update_contact', 'delete_contact',
+      'add_contact',
+      'list_contacts',
+      'update_contact',
+      'delete_contact',
     ],
   },
 
@@ -136,19 +143,31 @@ export const TOOL_GROUPS: Record<string, ToolGroupConfig> = {
     defaultEnabled: true,
     tools: [
       // Date/time
-      'date_diff', 'date_add',
+      'date_diff',
+      'date_add',
       // Text processing
-      'format_json', 'count_text', 'transform_text', 'run_regex', 'compare_text',
+      'format_json',
+      'count_text',
+      'transform_text',
+      'run_regex',
+      'compare_text',
       // Conversion & encoding
-      'convert_units', 'encode_decode', 'hash_text',
+      'convert_units',
+      'encode_decode',
+      'hash_text',
       // CSV/data
-      'parse_csv', 'generate_csv', 'array_operations',
+      'parse_csv',
+      'generate_csv',
+      'array_operations',
       // Generation
-      'random_number', 'generate_password',
+      'random_number',
+      'generate_password',
       // Extraction & validation
-      'extract_from_text', 'validate_data',
+      'extract_from_text',
+      'validate_data',
       // Data extraction (regex-based NER + table parser)
-      'extract_entities', 'extract_table_data',
+      'extract_entities',
+      'extract_table_data',
     ],
   },
 
@@ -199,11 +218,19 @@ export const TOOL_GROUPS: Record<string, ToolGroupConfig> = {
     defaultEnabled: false,
     tools: [
       // Image
-      'analyze_image', 'generate_image', 'resize_image',
+      'analyze_image',
+      'generate_image',
+      'resize_image',
       // Audio
-      'text_to_speech', 'speech_to_text', 'translate_audio', 'get_audio_info', 'split_audio',
+      'text_to_speech',
+      'speech_to_text',
+      'translate_audio',
+      'get_audio_info',
+      'split_audio',
       // PDF
-      'read_pdf', 'create_pdf', 'get_pdf_info',
+      'read_pdf',
+      'create_pdf',
+      'get_pdf_info',
     ],
   },
 
@@ -214,9 +241,15 @@ export const TOOL_GROUPS: Record<string, ToolGroupConfig> = {
     defaultEnabled: false,
     tools: [
       // Email
-      'send_email', 'list_emails', 'read_email', 'delete_email', 'search_emails', 'reply_email',
+      'send_email',
+      'list_emails',
+      'read_email',
+      'delete_email',
+      'search_emails',
+      'reply_email',
       // Weather
-      'get_weather', 'get_weather_forecast',
+      'get_weather',
+      'get_weather_forecast',
     ],
   },
 
@@ -225,7 +258,15 @@ export const TOOL_GROUPS: Record<string, ToolGroupConfig> = {
     name: 'Developer Tools',
     description: 'Git version control operations',
     defaultEnabled: false,
-    tools: ['git_status', 'git_diff', 'git_log', 'git_commit', 'git_add', 'git_branch', 'git_checkout'],
+    tools: [
+      'git_status',
+      'git_diff',
+      'git_log',
+      'git_commit',
+      'git_add',
+      'git_branch',
+      'git_checkout',
+    ],
   },
 
   finance: {
@@ -234,8 +275,13 @@ export const TOOL_GROUPS: Record<string, ToolGroupConfig> = {
     description: 'Expense tracking, receipt parsing, budget reports',
     defaultEnabled: false,
     tools: [
-      'add_expense', 'batch_add_expenses', 'parse_receipt',
-      'query_expenses', 'export_expenses', 'expense_summary', 'delete_expense',
+      'add_expense',
+      'batch_add_expenses',
+      'parse_receipt',
+      'query_expenses',
+      'export_expenses',
+      'expense_summary',
+      'delete_expense',
     ],
   },
 };
@@ -365,11 +411,13 @@ export const TOOL_CATEGORY_CAPABILITIES: Record<string, string> = {
   customData: 'Create custom database tables with any schema; CRUD records; search and query',
   memory: 'Persistently remember facts about the user; search and manage memories',
   goals: 'Track long-term objectives, decompose into steps, monitor progress',
-  utilities: 'Date math, text transform/compare/regex, JSON format, CSV parse/generate, encoding, hashing, validation, data extraction',
+  utilities:
+    'Date math, text transform/compare/regex, JSON format, CSV parse/generate, encoding, hashing, validation, data extraction',
   customTools: 'Create, list, enable/disable, delete, inspect, and update user-created tools',
   codeExecution: 'Execute JavaScript, Python, or shell commands (sandboxed)',
   webFetch: 'HTTP requests, web page fetching, web search, JSON API calls',
-  media: 'Analyze images (vision/OCR), generate images, resize, TTS, STT, audio processing, PDF read/create',
+  media:
+    'Analyze images (vision/OCR), generate images, resize, TTS, STT, audio processing, PDF read/create',
   communication: 'Send/receive/search/read/reply emails, weather conditions and forecasts',
   devTools: 'Git operations: status, diff, log, commit, branch, checkout',
   finance: 'Track expenses, parse receipts, budget summaries, export reports',

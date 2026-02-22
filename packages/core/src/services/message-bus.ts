@@ -77,7 +77,7 @@ export interface PipelineContext {
 export type MessageMiddleware = (
   message: NormalizedMessage,
   ctx: PipelineContext,
-  next: () => Promise<MessageProcessingResult>,
+  next: () => Promise<MessageProcessingResult>
 ) => Promise<MessageProcessingResult>;
 
 // ============================================================================

@@ -168,7 +168,8 @@ The data object should match the table's column schema.`,
       },
       data: {
         type: 'object',
-        description: 'The record data as key-value pairs matching table columns (e.g., {"title": "Book Name", "author": "John Doe"})',
+        description:
+          'The record data as key-value pairs matching table columns (e.g., {"title": "Book Name", "author": "John Doe"})',
       },
     },
     required: ['table', 'data'],
@@ -229,7 +230,8 @@ Use this to show the user their data or to find specific records.`,
       },
       filter: {
         type: 'object',
-        description: 'Filter criteria as column-value pairs (e.g., {"status": "active", "category": "books"})',
+        description:
+          'Filter criteria as column-value pairs (e.g., {"status": "active", "category": "books"})',
       },
     },
     required: ['table'],
@@ -301,7 +303,8 @@ Only the provided fields will be updated, others remain unchanged.`,
       },
       data: {
         type: 'object',
-        description: 'The fields to update as key-value pairs (e.g., {"status": "returned", "return_date": "2024-01-15"})',
+        description:
+          'The fields to update as key-value pairs (e.g., {"status": "returned", "return_date": "2024-01-15"})',
       },
     },
     required: ['recordId', 'data'],

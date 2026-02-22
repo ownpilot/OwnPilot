@@ -28,20 +28,13 @@ export type {
   SandboxSettings,
 } from './types.js';
 
-export {
-  DEFAULT_CONTAINER_CONFIG,
-  DEFAULT_SANDBOX_SETTINGS,
-} from './types.js';
+export { DEFAULT_CONTAINER_CONFIG, DEFAULT_SANDBOX_SETTINGS } from './types.js';
 
 // Rename ExecutionResult to avoid conflict with sandbox module
 export type { ExecutionResult as WorkspaceExecutionResult } from './types.js';
 
 // Container orchestration
-export {
-  UserContainerOrchestrator,
-  getOrchestrator,
-  getImageForLanguage,
-} from './orchestrator.js';
+export { UserContainerOrchestrator, getOrchestrator, getImageForLanguage } from './orchestrator.js';
 
 // Re-export Docker availability check from orchestrator with different name
 export {

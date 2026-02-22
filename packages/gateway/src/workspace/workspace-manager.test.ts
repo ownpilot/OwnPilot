@@ -315,9 +315,7 @@ describe('WorkspaceManager', () => {
     });
 
     it('should throw when workspace is not found', () => {
-      expect(() => manager.setDefault('non-existent')).toThrow(
-        'Workspace not found: non-existent',
-      );
+      expect(() => manager.setDefault('non-existent')).toThrow('Workspace not found: non-existent');
     });
   });
 
@@ -390,10 +388,7 @@ describe('WorkspaceManager', () => {
 
       manager.delete('non-existent');
 
-      expect(gatewayEvents.emit).not.toHaveBeenCalledWith(
-        'workspace:deleted',
-        expect.anything(),
-      );
+      expect(gatewayEvents.emit).not.toHaveBeenCalledWith('workspace:deleted', expect.anything());
     });
   });
 
@@ -413,9 +408,7 @@ describe('WorkspaceManager', () => {
       const all = manager.getAll();
 
       expect(all).toHaveLength(3);
-      expect(all.map((w) => w.config.id)).toEqual(
-        expect.arrayContaining(['ws-1', 'ws-2', 'ws-3']),
-      );
+      expect(all.map((w) => w.config.id)).toEqual(expect.arrayContaining(['ws-1', 'ws-2', 'ws-3']));
     });
   });
 
@@ -444,7 +437,7 @@ describe('WorkspaceManager', () => {
 
     it('should throw when workspace is not found', () => {
       expect(() => manager.associateChannel('non-existent', 'ch-1')).toThrow(
-        'Workspace not found: non-existent',
+        'Workspace not found: non-existent'
       );
     });
   });
@@ -504,9 +497,9 @@ describe('WorkspaceManager', () => {
     });
 
     it('should throw when workspace is not found', () => {
-      expect(() =>
-        manager.updateAgentConfig('non-existent', { model: 'gpt-5' }),
-      ).toThrow('Workspace not found: non-existent');
+      expect(() => manager.updateAgentConfig('non-existent', { model: 'gpt-5' })).toThrow(
+        'Workspace not found: non-existent'
+      );
     });
   });
 
@@ -622,7 +615,10 @@ describe('WorkspaceManager', () => {
 
       it('should emit stateChange event', () => {
         const ws = manager.create({ name: 'WS' });
-        const on = bindMethod<(event: string, handler: (...args: unknown[]) => void) => void>(ws, 'on');
+        const on = bindMethod<(event: string, handler: (...args: unknown[]) => void) => void>(
+          ws,
+          'on'
+        );
         const setState = bindMethod<(s: WorkspaceState, e?: string) => void>(ws, 'setState');
         const handler = vi.fn();
 
@@ -662,7 +658,10 @@ describe('WorkspaceManager', () => {
 
       it('should emit message event', () => {
         const ws = manager.create({ name: 'WS' });
-        const on = bindMethod<(event: string, handler: (...args: unknown[]) => void) => void>(ws, 'on');
+        const on = bindMethod<(event: string, handler: (...args: unknown[]) => void) => void>(
+          ws,
+          'on'
+        );
         const addMessage = bindMethod<(m: WorkspaceMessage) => void>(ws, 'addMessage');
         const handler = vi.fn();
         const msg = makeMessage();
@@ -766,7 +765,7 @@ describe('WorkspaceManager', () => {
         const addMessage = bindMethod<(m: WorkspaceMessage) => void>(ws, 'addMessage');
         const getContextMessages = bindMethod<(limit?: number) => WorkspaceMessage[]>(
           ws,
-          'getContextMessages',
+          'getContextMessages'
         );
 
         for (let i = 0; i < 5; i++) {
@@ -788,7 +787,7 @@ describe('WorkspaceManager', () => {
         const addMessage = bindMethod<(m: WorkspaceMessage) => void>(ws, 'addMessage');
         const getContextMessages = bindMethod<(limit?: number) => WorkspaceMessage[]>(
           ws,
-          'getContextMessages',
+          'getContextMessages'
         );
 
         for (let i = 0; i < 10; i++) {
@@ -807,7 +806,7 @@ describe('WorkspaceManager', () => {
         const addMessage = bindMethod<(m: WorkspaceMessage) => void>(ws, 'addMessage');
         const getContextMessages = bindMethod<(limit?: number) => WorkspaceMessage[]>(
           ws,
-          'getContextMessages',
+          'getContextMessages'
         );
 
         for (let i = 0; i < 30; i++) {
@@ -825,7 +824,7 @@ describe('WorkspaceManager', () => {
         const addMessage = bindMethod<(m: WorkspaceMessage) => void>(ws, 'addMessage');
         const getContextMessages = bindMethod<(limit?: number) => WorkspaceMessage[]>(
           ws,
-          'getContextMessages',
+          'getContextMessages'
         );
 
         addMessage(makeMessage({ content: 'only' }));
@@ -874,7 +873,10 @@ describe('WorkspaceManager', () => {
     describe('event handlers', () => {
       it('should call multiple handlers for the same event', () => {
         const ws = manager.create({ name: 'WS' });
-        const on = bindMethod<(event: string, handler: (...args: unknown[]) => void) => void>(ws, 'on');
+        const on = bindMethod<(event: string, handler: (...args: unknown[]) => void) => void>(
+          ws,
+          'on'
+        );
         const setState = bindMethod<(s: WorkspaceState, e?: string) => void>(ws, 'setState');
 
         const handler1 = vi.fn();
@@ -890,8 +892,14 @@ describe('WorkspaceManager', () => {
 
       it('should stop calling a handler after off()', () => {
         const ws = manager.create({ name: 'WS' });
-        const on = bindMethod<(event: string, handler: (...args: unknown[]) => void) => void>(ws, 'on');
-        const off = bindMethod<(event: string, handler: (...args: unknown[]) => void) => void>(ws, 'off');
+        const on = bindMethod<(event: string, handler: (...args: unknown[]) => void) => void>(
+          ws,
+          'on'
+        );
+        const off = bindMethod<(event: string, handler: (...args: unknown[]) => void) => void>(
+          ws,
+          'off'
+        );
         const setState = bindMethod<(s: WorkspaceState, e?: string) => void>(ws, 'setState');
 
         const handler = vi.fn();
@@ -915,7 +923,10 @@ describe('WorkspaceManager', () => {
 
       it('should catch and log handler errors without crashing', () => {
         const ws = manager.create({ name: 'WS' });
-        const on = bindMethod<(event: string, handler: (...args: unknown[]) => void) => void>(ws, 'on');
+        const on = bindMethod<(event: string, handler: (...args: unknown[]) => void) => void>(
+          ws,
+          'on'
+        );
         const setState = bindMethod<(s: WorkspaceState, e?: string) => void>(ws, 'setState');
 
         const errorHandler = vi.fn(() => {
@@ -934,7 +945,10 @@ describe('WorkspaceManager', () => {
 
       it('should off() be safe to call for events that have no handlers', () => {
         const ws = manager.create({ name: 'WS' });
-        const off = bindMethod<(event: string, handler: (...args: unknown[]) => void) => void>(ws, 'off');
+        const off = bindMethod<(event: string, handler: (...args: unknown[]) => void) => void>(
+          ws,
+          'off'
+        );
 
         expect(() => off('stateChange', vi.fn())).not.toThrow();
       });
@@ -946,10 +960,7 @@ describe('WorkspaceManager', () => {
   // =========================================================================
   describe('channel forwarding', () => {
     it('should register a channel:message handler on construction', () => {
-      expect(gatewayEvents.on).toHaveBeenCalledWith(
-        'channel:message',
-        expect.any(Function),
-      );
+      expect(gatewayEvents.on).toHaveBeenCalledWith('channel:message', expect.any(Function));
     });
   });
 

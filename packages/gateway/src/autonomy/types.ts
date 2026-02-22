@@ -209,8 +209,11 @@ export interface TimeRestriction {
 /**
  * Default autonomy configuration
  */
-export const DEFAULT_AUTONOMY_CONFIG: Omit<AutonomyConfig, 'userId' | 'budgetResetAt' | 'updatedAt'> = {
-  level: AutonomyLevel.SUPERVISED,  // Auto-approve low/medium risk tools, ask for high risk
+export const DEFAULT_AUTONOMY_CONFIG: Omit<
+  AutonomyConfig,
+  'userId' | 'budgetResetAt' | 'updatedAt'
+> = {
+  level: AutonomyLevel.SUPERVISED, // Auto-approve low/medium risk tools, ask for high risk
   allowedTools: [],
   blockedTools: [],
   allowedCategories: [],
@@ -219,12 +222,7 @@ export const DEFAULT_AUTONOMY_CONFIG: Omit<AutonomyConfig, 'userId' | 'budgetRes
   dailyBudget: 10000, // tokens
   dailySpend: 0,
   notificationThreshold: AutonomyLevel.SUPERVISED,
-  confirmationRequired: [
-    'delete_data',
-    'send_email',
-    'make_payment',
-    'modify_system',
-  ],
+  confirmationRequired: ['delete_data', 'send_email', 'make_payment', 'modify_system'],
   auditEnabled: true,
   timeRestrictions: [],
 };
@@ -288,7 +286,12 @@ export interface AutonomyNotification {
   /** User ID */
   userId: string;
   /** Notification type */
-  type: 'action_executed' | 'action_blocked' | 'approval_required' | 'budget_warning' | 'budget_exceeded';
+  type:
+    | 'action_executed'
+    | 'action_blocked'
+    | 'approval_required'
+    | 'budget_warning'
+    | 'budget_exceeded';
   /** Notification title */
   title: string;
   /** Notification message */

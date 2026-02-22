@@ -19,7 +19,8 @@ import { getErrorMessage } from '../../services/error-utils.js';
 export const generateUuidTool: ToolDefinition = {
   name: 'generate_uuid',
   brief: 'Generate one or more unique UUIDs',
-  description: 'Generate a unique ID (UUID v4). Call this when the user needs a unique identifier, reference code, or tracking ID. Can generate multiple UUIDs at once.',
+  description:
+    'Generate a unique ID (UUID v4). Call this when the user needs a unique identifier, reference code, or tracking ID. Can generate multiple UUIDs at once.',
   category: 'Utilities',
   parameters: {
     type: 'object',
@@ -72,7 +73,8 @@ export const generateUuidExecutor: ToolExecutor = async (args): Promise<ToolExec
 export const generatePasswordTool: ToolDefinition = {
   name: 'generate_password',
   brief: 'Generate secure random passwords with strength rating',
-  description: 'Generate a secure random password. Call this when the user asks for a password, passphrase, or secure random string. Configurable length, character types, and strength indicator.',
+  description:
+    'Generate a secure random password. Call this when the user asks for a password, passphrase, or secure random string. Configurable length, character types, and strength indicator.',
   category: 'Utilities',
   parameters: {
     type: 'object',
@@ -110,7 +112,9 @@ export const generatePasswordTool: ToolDefinition = {
   },
 };
 
-export const generatePasswordExecutor: ToolExecutor = async (args): Promise<ToolExecutionResult> => {
+export const generatePasswordExecutor: ToolExecutor = async (
+  args
+): Promise<ToolExecutionResult> => {
   try {
     const length = Math.max(8, Math.min((args.length as number) || 16, 128));
     const includeUppercase = args.includeUppercase !== false;
@@ -121,8 +125,10 @@ export const generatePasswordExecutor: ToolExecutor = async (args): Promise<Tool
     const count = Math.min((args.count as number) || 1, 5);
 
     let chars = '';
-    if (includeUppercase) chars += excludeAmbiguous ? 'ABCDEFGHJKLMNPQRSTUVWXYZ' : 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-    if (includeLowercase) chars += excludeAmbiguous ? 'abcdefghjkmnpqrstuvwxyz' : 'abcdefghijklmnopqrstuvwxyz';
+    if (includeUppercase)
+      chars += excludeAmbiguous ? 'ABCDEFGHJKLMNPQRSTUVWXYZ' : 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    if (includeLowercase)
+      chars += excludeAmbiguous ? 'abcdefghjkmnpqrstuvwxyz' : 'abcdefghijklmnopqrstuvwxyz';
     if (includeNumbers) chars += excludeAmbiguous ? '23456789' : '0123456789';
     if (includeSymbols) chars += '!@#$%^&*()_+-=[]{}|;:,.<>?';
 
@@ -146,10 +152,16 @@ export const generatePasswordExecutor: ToolExecutor = async (args): Promise<Tool
     // Calculate password strength
     const entropyPerChar = Math.log2(chars.length);
     const totalEntropy = entropyPerChar * length;
-    const strength = totalEntropy >= 128 ? 'very strong' :
-                     totalEntropy >= 80 ? 'strong' :
-                     totalEntropy >= 60 ? 'moderate' :
-                     totalEntropy >= 40 ? 'weak' : 'very weak';
+    const strength =
+      totalEntropy >= 128
+        ? 'very strong'
+        : totalEntropy >= 80
+          ? 'strong'
+          : totalEntropy >= 60
+            ? 'moderate'
+            : totalEntropy >= 40
+              ? 'weak'
+              : 'very weak';
 
     return {
       content: JSON.stringify(
@@ -173,7 +185,8 @@ export const generatePasswordExecutor: ToolExecutor = async (args): Promise<Tool
 export const generateRandomNumberTool: ToolDefinition = {
   name: 'random_number',
   brief: 'Generate random numbers in a range',
-  description: 'Generate random numbers. Call this when the user wants a random number, dice roll, coin flip, lottery numbers, or random selection from a range. Supports integer and decimal output.',
+  description:
+    'Generate random numbers. Call this when the user wants a random number, dice roll, coin flip, lottery numbers, or random selection from a range. Supports integer and decimal output.',
   category: 'Utilities',
   parameters: {
     type: 'object',
@@ -199,7 +212,9 @@ export const generateRandomNumberTool: ToolDefinition = {
   },
 };
 
-export const generateRandomNumberExecutor: ToolExecutor = async (args): Promise<ToolExecutionResult> => {
+export const generateRandomNumberExecutor: ToolExecutor = async (
+  args
+): Promise<ToolExecutionResult> => {
   try {
     const min = (args.min as number) ?? 0;
     const max = (args.max as number) ?? 100;
@@ -221,9 +236,7 @@ export const generateRandomNumberExecutor: ToolExecutor = async (args): Promise<
 
     return {
       content: JSON.stringify(
-        count === 1
-          ? { number: numbers[0], min, max }
-          : { numbers, count, min, max }
+        count === 1 ? { number: numbers[0], min, max } : { numbers, count, min, max }
       ),
     };
   } catch (error) {
@@ -241,7 +254,8 @@ export const generateRandomNumberExecutor: ToolExecutor = async (args): Promise<
 export const hashTextTool: ToolDefinition = {
   name: 'hash_text',
   brief: 'Hash text with MD5, SHA-1, SHA-256, or SHA-512',
-  description: 'Generate a cryptographic hash of text. Call this when the user wants to hash a string, verify integrity, or create a checksum. Supports MD5, SHA-1, SHA-256, SHA-512.',
+  description:
+    'Generate a cryptographic hash of text. Call this when the user wants to hash a string, verify integrity, or create a checksum. Supports MD5, SHA-1, SHA-256, SHA-512.',
   category: 'Utilities',
   parameters: {
     type: 'object',
@@ -290,7 +304,8 @@ export const hashTextExecutor: ToolExecutor = async (args): Promise<ToolExecutio
 export const encodeDecodeTool: ToolDefinition = {
   name: 'encode_decode',
   brief: 'Encode/decode text: Base64, URL, HTML, or Hex',
-  description: 'Encode or decode text. Call this when the user wants to convert text to/from Base64, URL-encode, HTML-encode, or Hex. Useful for encoding data for APIs, URLs, or debugging encoded strings.',
+  description:
+    'Encode or decode text. Call this when the user wants to convert text to/from Base64, URL-encode, HTML-encode, or Hex. Useful for encoding data for APIs, URLs, or debugging encoded strings.',
   category: 'Utilities',
   parameters: {
     type: 'object',
@@ -324,14 +339,13 @@ export const encodeDecodeExecutor: ToolExecutor = async (args): Promise<ToolExec
 
     switch (method) {
       case 'base64':
-        result = operation === 'encode'
-          ? Buffer.from(text).toString('base64')
-          : Buffer.from(text, 'base64').toString('utf-8');
+        result =
+          operation === 'encode'
+            ? Buffer.from(text).toString('base64')
+            : Buffer.from(text, 'base64').toString('utf-8');
         break;
       case 'url':
-        result = operation === 'encode'
-          ? encodeURIComponent(text)
-          : decodeURIComponent(text);
+        result = operation === 'encode' ? encodeURIComponent(text) : decodeURIComponent(text);
         break;
       case 'html':
         if (operation === 'encode') {
@@ -351,9 +365,10 @@ export const encodeDecodeExecutor: ToolExecutor = async (args): Promise<ToolExec
         }
         break;
       case 'hex':
-        result = operation === 'encode'
-          ? Buffer.from(text).toString('hex')
-          : Buffer.from(text, 'hex').toString('utf-8');
+        result =
+          operation === 'encode'
+            ? Buffer.from(text).toString('hex')
+            : Buffer.from(text, 'hex').toString('utf-8');
         break;
       default:
         return {

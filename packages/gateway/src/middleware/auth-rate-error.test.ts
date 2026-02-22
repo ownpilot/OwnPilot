@@ -57,7 +57,7 @@ const JWT_SECRET = 'test-secret-key-that-is-long-enough-32+';
 async function signToken(
   claims: Record<string, unknown>,
   secret: string = JWT_SECRET,
-  expiresIn: string = '1h',
+  expiresIn: string = '1h'
 ) {
   const key = createSecretKey(Buffer.from(secret, 'utf-8'));
   let builder = new SignJWT(claims as Record<string, unknown>).setProtectedHeader({ alg: 'HS256' });
@@ -198,9 +198,7 @@ describe('createAuthMiddleware', () => {
     function createApp(secret: string = JWT_SECRET) {
       const app = new Hono();
       app.use('*', createAuthMiddleware({ type: 'jwt', jwtSecret: secret }));
-      app.get('/test', (c) =>
-        c.json({ userId: c.get('userId'), payload: c.get('jwtPayload') }),
-      );
+      app.get('/test', (c) => c.json({ userId: c.get('userId'), payload: c.get('jwtPayload') }));
       return app;
     }
 
@@ -315,10 +313,7 @@ describe('createAuthMiddleware', () => {
 describe('createOptionalAuthMiddleware', () => {
   it('should pass through when no auth is provided (api-key mode)', async () => {
     const app = new Hono();
-    app.use(
-      '*',
-      createOptionalAuthMiddleware({ type: 'api-key', apiKeys: ['key-123456789'] }),
-    );
+    app.use('*', createOptionalAuthMiddleware({ type: 'api-key', apiKeys: ['key-123456789'] }));
     app.get('/test', (c) => c.json({ userId: c.get('userId') ?? null }));
 
     const res = await app.request('/test');
@@ -344,10 +339,7 @@ describe('createOptionalAuthMiddleware', () => {
 
   it('should not set userId for an invalid api-key', async () => {
     const app = new Hono();
-    app.use(
-      '*',
-      createOptionalAuthMiddleware({ type: 'api-key', apiKeys: ['real-key-long'] }),
-    );
+    app.use('*', createOptionalAuthMiddleware({ type: 'api-key', apiKeys: ['real-key-long'] }));
     app.get('/test', (c) => c.json({ userId: c.get('userId') ?? null }));
 
     const res = await app.request('/test', {
@@ -370,12 +362,9 @@ describe('createOptionalAuthMiddleware', () => {
 
   it('should set userId and jwtPayload with a valid JWT', async () => {
     const app = new Hono();
-    app.use(
-      '*',
-      createOptionalAuthMiddleware({ type: 'jwt', jwtSecret: JWT_SECRET }),
-    );
+    app.use('*', createOptionalAuthMiddleware({ type: 'jwt', jwtSecret: JWT_SECRET }));
     app.get('/test', (c) =>
-      c.json({ userId: c.get('userId') ?? null, payload: c.get('jwtPayload') ?? null }),
+      c.json({ userId: c.get('userId') ?? null, payload: c.get('jwtPayload') ?? null })
     );
 
     const token = await signToken({ sub: 'user-opt-1' });
@@ -391,10 +380,7 @@ describe('createOptionalAuthMiddleware', () => {
 
   it('should pass through with an invalid JWT without blocking', async () => {
     const app = new Hono();
-    app.use(
-      '*',
-      createOptionalAuthMiddleware({ type: 'jwt', jwtSecret: JWT_SECRET }),
-    );
+    app.use('*', createOptionalAuthMiddleware({ type: 'jwt', jwtSecret: JWT_SECRET }));
     app.get('/test', (c) => c.json({ userId: c.get('userId') ?? null }));
 
     const res = await app.request('/test', {
@@ -408,10 +394,7 @@ describe('createOptionalAuthMiddleware', () => {
 
   it('should pass through without auth header in JWT mode', async () => {
     const app = new Hono();
-    app.use(
-      '*',
-      createOptionalAuthMiddleware({ type: 'jwt', jwtSecret: JWT_SECRET }),
-    );
+    app.use('*', createOptionalAuthMiddleware({ type: 'jwt', jwtSecret: JWT_SECRET }));
     app.get('/test', (c) => c.json({ userId: c.get('userId') ?? null }));
 
     const res = await app.request('/test');
@@ -542,7 +525,7 @@ describe('createRateLimitMiddleware', () => {
         windowMs: 60_000,
         maxRequests: 1,
         excludePaths: ['/skip'],
-      }),
+      })
     );
     app.get('/skip', (c) => c.json({ skipped: true }));
     app.get('/test', (c) => c.json({ ok: true }));

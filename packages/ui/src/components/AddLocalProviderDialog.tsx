@@ -1,9 +1,5 @@
 import { useState } from 'react';
-import {
-  Plus,
-  Server,
-  X,
-} from './icons';
+import { Plus, Server, X } from './icons';
 import type { LocalProviderTemplate } from '../api';
 
 // ============================================================================
@@ -20,11 +16,7 @@ export interface AddLocalProviderDialogProps {
 // Component
 // ============================================================================
 
-export function AddLocalProviderDialog({
-  templates,
-  onAdd,
-  onClose,
-}: AddLocalProviderDialogProps) {
+export function AddLocalProviderDialog({ templates, onAdd, onClose }: AddLocalProviderDialogProps) {
   const [selectedTemplate, setSelectedTemplate] = useState<LocalProviderTemplate | null>(null);
   const [customUrl, setCustomUrl] = useState('');
   const [customApiKey, setCustomApiKey] = useState('');
@@ -47,7 +39,10 @@ export function AddLocalProviderDialog({
               Select a provider template or add a custom one
             </p>
           </div>
-          <button onClick={onClose} className="p-1.5 rounded hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary text-text-muted">
+          <button
+            onClick={onClose}
+            className="p-1.5 rounded hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary text-text-muted"
+          >
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -64,9 +59,13 @@ export function AddLocalProviderDialog({
                 >
                   <div className="flex items-center gap-2 mb-1">
                     <Server className="w-4 h-4 text-success" />
-                    <h5 className="font-medium text-text-primary dark:text-dark-text-primary">{t.name}</h5>
+                    <h5 className="font-medium text-text-primary dark:text-dark-text-primary">
+                      {t.name}
+                    </h5>
                   </div>
-                  <p className="text-xs text-text-muted dark:text-dark-text-muted mb-2">{t.description}</p>
+                  <p className="text-xs text-text-muted dark:text-dark-text-muted mb-2">
+                    {t.description}
+                  </p>
                   <code className="text-xs px-1.5 py-0.5 rounded bg-bg-tertiary dark:bg-dark-bg-tertiary text-text-muted font-mono">
                     {t.baseUrl}
                   </code>
@@ -78,7 +77,9 @@ export function AddLocalProviderDialog({
               {/* Selected template config */}
               <div className="flex items-center gap-2 p-3 rounded-lg bg-success/5 border border-success/30">
                 <Server className="w-4 h-4 text-success" />
-                <span className="font-medium text-text-primary dark:text-dark-text-primary">{selectedTemplate.name}</span>
+                <span className="font-medium text-text-primary dark:text-dark-text-primary">
+                  {selectedTemplate.name}
+                </span>
                 <button
                   onClick={() => setSelectedTemplate(null)}
                   className="ml-auto text-xs text-text-muted hover:text-text-primary"

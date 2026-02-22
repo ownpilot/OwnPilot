@@ -68,10 +68,12 @@ export class GoalService implements IGoalService {
     }
     const repo = this.getRepo(userId);
     const goal = await repo.create(input);
-    getEventBus().emit(createEvent<ResourceCreatedData>(
-      EventTypes.RESOURCE_CREATED, 'resource', 'goal-service',
-      { resourceType: 'goal', id: goal.id },
-    ));
+    getEventBus().emit(
+      createEvent<ResourceCreatedData>(EventTypes.RESOURCE_CREATED, 'resource', 'goal-service', {
+        resourceType: 'goal',
+        id: goal.id,
+      })
+    );
     return goal;
   }
 
@@ -98,10 +100,13 @@ export class GoalService implements IGoalService {
     const repo = this.getRepo(userId);
     const updated = await repo.update(goalId, input);
     if (updated) {
-      getEventBus().emit(createEvent<ResourceUpdatedData>(
-        EventTypes.RESOURCE_UPDATED, 'resource', 'goal-service',
-        { resourceType: 'goal', id: goalId, changes: input },
-      ));
+      getEventBus().emit(
+        createEvent<ResourceUpdatedData>(EventTypes.RESOURCE_UPDATED, 'resource', 'goal-service', {
+          resourceType: 'goal',
+          id: goalId,
+          changes: input,
+        })
+      );
     }
     return updated;
   }
@@ -110,10 +115,12 @@ export class GoalService implements IGoalService {
     const repo = this.getRepo(userId);
     const deleted = await repo.delete(goalId);
     if (deleted) {
-      getEventBus().emit(createEvent<ResourceDeletedData>(
-        EventTypes.RESOURCE_DELETED, 'resource', 'goal-service',
-        { resourceType: 'goal', id: goalId },
-      ));
+      getEventBus().emit(
+        createEvent<ResourceDeletedData>(EventTypes.RESOURCE_DELETED, 'resource', 'goal-service', {
+          resourceType: 'goal',
+          id: goalId,
+        })
+      );
     }
     return deleted;
   }
@@ -127,7 +134,10 @@ export class GoalService implements IGoalService {
     return repo.getStats();
   }
 
-  async getNextActions(userId: string, limit = 5): Promise<Array<GoalStep & { goalTitle: string }>> {
+  async getNextActions(
+    userId: string,
+    limit = 5
+  ): Promise<Array<GoalStep & { goalTitle: string }>> {
     const repo = this.getRepo(userId);
     return repo.getNextActions(limit);
   }
@@ -171,7 +181,7 @@ export class GoalService implements IGoalService {
   async decomposeGoal(
     userId: string,
     goalId: string,
-    steps: DecomposeStepInput[],
+    steps: DecomposeStepInput[]
   ): Promise<GoalStep[]> {
     if (!steps.length) {
       throw new GoalServiceError('At least one step is required', 'VALIDATION_ERROR');
@@ -211,7 +221,7 @@ export class GoalService implements IGoalService {
   async updateStep(
     userId: string,
     stepId: string,
-    input: UpdateStepInput,
+    input: UpdateStepInput
   ): Promise<GoalStep | null> {
     const repo = this.getRepo(userId);
     const step = await repo.getStep(stepId);
@@ -227,11 +237,7 @@ export class GoalService implements IGoalService {
     return updated;
   }
 
-  async completeStep(
-    userId: string,
-    stepId: string,
-    result?: string,
-  ): Promise<GoalStep | null> {
+  async completeStep(userId: string, stepId: string, result?: string): Promise<GoalStep | null> {
     const repo = this.getRepo(userId);
     const step = await repo.getStep(stepId);
     if (!step) return null;
@@ -272,7 +278,7 @@ export type GoalServiceErrorCode = 'VALIDATION_ERROR' | 'NOT_FOUND' | 'INTERNAL_
 export class GoalServiceError extends Error {
   constructor(
     message: string,
-    public readonly code: GoalServiceErrorCode,
+    public readonly code: GoalServiceErrorCode
   ) {
     super(message);
     this.name = 'GoalServiceError';

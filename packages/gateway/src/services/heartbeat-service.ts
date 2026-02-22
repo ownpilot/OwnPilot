@@ -101,12 +101,19 @@ export class HeartbeatService {
       tags: input.tags,
     });
 
-    getEventBus().emit(createEvent<ResourceCreatedData>(
-      EventTypes.RESOURCE_CREATED, 'resource', 'heartbeat-service',
-      { resourceType: 'heartbeat', id: heartbeat.id },
-    ));
+    getEventBus().emit(
+      createEvent<ResourceCreatedData>(
+        EventTypes.RESOURCE_CREATED,
+        'resource',
+        'heartbeat-service',
+        { resourceType: 'heartbeat', id: heartbeat.id }
+      )
+    );
 
-    log.info(`Created heartbeat "${name}" with cron ${cron}`, { id: heartbeat.id, triggerId: trigger.id });
+    log.info(`Created heartbeat "${name}" with cron ${cron}`, {
+      id: heartbeat.id,
+      triggerId: trigger.id,
+    });
     return heartbeat;
   }
 
@@ -128,7 +135,11 @@ export class HeartbeatService {
   // Update
   // --------------------------------------------------------------------------
 
-  async updateHeartbeat(userId: string, id: string, input: UpdateHeartbeatServiceInput): Promise<Heartbeat | null> {
+  async updateHeartbeat(
+    userId: string,
+    id: string,
+    input: UpdateHeartbeatServiceInput
+  ): Promise<Heartbeat | null> {
     const repo = createHeartbeatsRepository(userId);
     const existing = await repo.get(id);
     if (!existing) return null;
@@ -188,10 +199,14 @@ export class HeartbeatService {
     });
 
     if (updated) {
-      getEventBus().emit(createEvent<ResourceUpdatedData>(
-        EventTypes.RESOURCE_UPDATED, 'resource', 'heartbeat-service',
-        { resourceType: 'heartbeat', id, changes: input },
-      ));
+      getEventBus().emit(
+        createEvent<ResourceUpdatedData>(
+          EventTypes.RESOURCE_UPDATED,
+          'resource',
+          'heartbeat-service',
+          { resourceType: 'heartbeat', id, changes: input }
+        )
+      );
     }
 
     return updated;
@@ -214,10 +229,14 @@ export class HeartbeatService {
 
     const deleted = await repo.delete(id);
     if (deleted) {
-      getEventBus().emit(createEvent<ResourceDeletedData>(
-        EventTypes.RESOURCE_DELETED, 'resource', 'heartbeat-service',
-        { resourceType: 'heartbeat', id },
-      ));
+      getEventBus().emit(
+        createEvent<ResourceDeletedData>(
+          EventTypes.RESOURCE_DELETED,
+          'resource',
+          'heartbeat-service',
+          { resourceType: 'heartbeat', id }
+        )
+      );
     }
 
     return deleted;
@@ -239,7 +258,10 @@ export class HeartbeatService {
   // Import / Export
   // --------------------------------------------------------------------------
 
-  async importMarkdown(userId: string, markdown: string): Promise<{
+  async importMarkdown(
+    userId: string,
+    markdown: string
+  ): Promise<{
     created: number;
     errors: Array<{ scheduleText: string; error: string }>;
     heartbeats: Heartbeat[];
@@ -274,9 +296,7 @@ export class HeartbeatService {
 
     if (heartbeats.length === 0) return '';
 
-    return heartbeats
-      .map((hb) => `## ${hb.scheduleText}\n${hb.taskDescription}`)
-      .join('\n\n');
+    return heartbeats.map((hb) => `## ${hb.scheduleText}\n${hb.taskDescription}`).join('\n\n');
   }
 
   // --------------------------------------------------------------------------
@@ -298,7 +318,7 @@ export type HeartbeatServiceErrorCode = 'VALIDATION_ERROR' | 'PARSE_ERROR' | 'NO
 export class HeartbeatServiceError extends Error {
   constructor(
     message: string,
-    public readonly code: HeartbeatServiceErrorCode,
+    public readonly code: HeartbeatServiceErrorCode
   ) {
     super(message);
     this.name = 'HeartbeatServiceError';

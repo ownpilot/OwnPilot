@@ -11,7 +11,6 @@ interface ProviderCategory {
   providers: ProviderConfig[];
 }
 
-
 // Empty fallback - API should always provide providers
 const FALLBACK_PROVIDERS: ProviderConfig[] = [];
 
@@ -181,7 +180,12 @@ export function ApiKeysPage() {
   };
 
   const handleDeleteKey = async (providerId: string) => {
-    if (!await confirm({ message: `Are you sure you want to remove the ${providerId} API key?`, variant: 'danger' })) {
+    if (
+      !(await confirm({
+        message: `Are you sure you want to remove the ${providerId} API key?`,
+        variant: 'danger',
+      }))
+    ) {
       return;
     }
 
@@ -254,9 +258,9 @@ export function ApiKeysPage() {
     const query = searchQuery.toLowerCase();
     return providerIds.filter((id) => {
       const provider = getProviderById(id);
-      return provider && (
-        provider.id.toLowerCase().includes(query) ||
-        provider.name.toLowerCase().includes(query)
+      return (
+        provider &&
+        (provider.id.toLowerCase().includes(query) || provider.name.toLowerCase().includes(query))
       );
     });
   };
@@ -268,11 +272,13 @@ export function ApiKeysPage() {
     // If no categories loaded, show all providers as "All Providers"
     if (!categories || Object.keys(categories).length === 0) {
       if (providers.length > 0) {
-        const filtered = filterProviders(providers.map(p => p.id));
+        const filtered = filterProviders(providers.map((p) => p.id));
         if (filtered.length > 0) {
           result.push({
             name: 'All Providers',
-            providers: filtered.map((id) => getProviderById(id)).filter(Boolean) as ProviderConfig[],
+            providers: filtered
+              .map((id) => getProviderById(id))
+              .filter(Boolean) as ProviderConfig[],
           });
         }
       }
@@ -300,7 +306,9 @@ export function ApiKeysPage() {
         if (filtered.length > 0) {
           result.push({
             name: categoryName,
-            providers: filtered.map((id) => getProviderById(id)).filter(Boolean) as ProviderConfig[],
+            providers: filtered
+              .map((id) => getProviderById(id))
+              .filter(Boolean) as ProviderConfig[],
           });
         }
       }
@@ -328,9 +336,7 @@ export function ApiKeysPage() {
       <div
         key={provider.id}
         className={`p-4 rounded-lg border ${
-          isConfigured
-            ? 'border-success/30 bg-success/5'
-            : 'border-border dark:border-dark-border'
+          isConfigured ? 'border-success/30 bg-success/5' : 'border-border dark:border-dark-border'
         }`}
       >
         <div className="flex items-center justify-between mb-2">
@@ -391,7 +397,9 @@ export function ApiKeysPage() {
           <Key className="w-5 h-5" />
           API Keys
         </h2>
-        <p className="text-sm text-text-muted dark:text-dark-text-muted">Configure API keys for 80+ AI providers</p>
+        <p className="text-sm text-text-muted dark:text-dark-text-muted">
+          Configure API keys for 80+ AI providers
+        </p>
       </header>
       <div className="flex-1 overflow-y-auto p-6">
         {isLoading ? (
@@ -410,7 +418,8 @@ export function ApiKeysPage() {
             {configuredProviders.length === 0 && (
               <div className="p-4 bg-warning/10 border border-warning/20 rounded-lg">
                 <p className="text-sm text-warning">
-                  <strong>Demo Mode:</strong> No API keys configured. Add at least one API key to use AI features.
+                  <strong>Demo Mode:</strong> No API keys configured. Add at least one API key to
+                  use AI features.
                 </p>
               </div>
             )}
@@ -419,7 +428,10 @@ export function ApiKeysPage() {
             {configuredProviders.length > 0 && (
               <div className="p-4 bg-success/10 border border-success/20 rounded-lg">
                 <p className="text-sm text-success">
-                  <strong>{configuredProviders.length} provider{configuredProviders.length > 1 ? 's' : ''} configured:</strong>{' '}
+                  <strong>
+                    {configuredProviders.length} provider{configuredProviders.length > 1 ? 's' : ''}{' '}
+                    configured:
+                  </strong>{' '}
                   {configuredProviders.slice(0, 5).join(', ')}
                   {configuredProviders.length > 5 && ` and ${configuredProviders.length - 5} more`}
                 </p>
@@ -488,7 +500,8 @@ export function ApiKeysPage() {
                 API Keys ({providers.length} providers available)
               </h3>
               <p className="text-sm text-text-muted dark:text-dark-text-muted mb-4">
-                Configure API keys for your preferred AI providers. Keys are stored locally and encrypted.
+                Configure API keys for your preferred AI providers. Keys are stored locally and
+                encrypted.
               </p>
 
               {/* Search */}
@@ -505,7 +518,10 @@ export function ApiKeysPage() {
               {/* Categorized providers */}
               <div className="space-y-4">
                 {categorizedProviders.map((category) => (
-                  <div key={category.name} className="border border-border dark:border-dark-border rounded-lg overflow-hidden">
+                  <div
+                    key={category.name}
+                    className="border border-border dark:border-dark-border rounded-lg overflow-hidden"
+                  >
                     <button
                       onClick={() => toggleCategory(category.name)}
                       className="w-full px-4 py-3 bg-bg-secondary dark:bg-dark-bg-secondary flex items-center justify-between text-left hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary transition-colors"
@@ -522,7 +538,11 @@ export function ApiKeysPage() {
                         </span>
                       </span>
                       <span className="text-xs text-success">
-                        {category.providers.filter((p) => configuredProviders.includes(p.id)).length} configured
+                        {
+                          category.providers.filter((p) => configuredProviders.includes(p.id))
+                            .length
+                        }{' '}
+                        configured
                       </span>
                     </button>
                     {expandedCategories.has(category.name) && (
@@ -541,8 +561,8 @@ export function ApiKeysPage() {
                 Privacy First
               </h3>
               <p className="text-sm text-text-muted dark:text-dark-text-muted">
-                OwnPilot is designed with privacy at its core. Your API keys are stored locally
-                and encrypted with AES-256-GCM. All conversations can be encrypted and stored locally.
+                OwnPilot is designed with privacy at its core. Your API keys are stored locally and
+                encrypted with AES-256-GCM. All conversations can be encrypted and stored locally.
                 You maintain full control over your data.
               </p>
             </section>

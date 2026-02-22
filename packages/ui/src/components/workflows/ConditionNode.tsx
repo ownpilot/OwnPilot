@@ -74,12 +74,17 @@ function ConditionNodeComponent({ data, selected }: NodeProps<ConditionNodeType>
             {(data.label as string) || 'Condition'}
           </span>
           {StatusIcon && (
-            <StatusIcon className={`w-4 h-4 shrink-0 ${
-              status === 'success' ? 'text-success' :
-              status === 'error' ? 'text-error' :
-              status === 'running' ? 'text-warning' :
-              'text-text-muted'
-            }`} />
+            <StatusIcon
+              className={`w-4 h-4 shrink-0 ${
+                status === 'success'
+                  ? 'text-success'
+                  : status === 'error'
+                    ? 'text-error'
+                    : status === 'running'
+                      ? 'text-warning'
+                      : 'text-text-muted'
+              }`}
+            />
           )}
         </div>
 
@@ -93,11 +98,13 @@ function ConditionNodeComponent({ data, selected }: NodeProps<ConditionNodeType>
         {/* Branch taken indicator */}
         {branchTaken && status === 'success' && (
           <div className="mt-1">
-            <span className={`inline-block px-1.5 py-0.5 text-[9px] font-medium rounded ${
-              branchTaken === 'true'
-                ? 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300'
-                : 'bg-red-500/20 text-red-700 dark:text-red-300'
-            }`}>
+            <span
+              className={`inline-block px-1.5 py-0.5 text-[9px] font-medium rounded ${
+                branchTaken === 'true'
+                  ? 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300'
+                  : 'bg-red-500/20 text-red-700 dark:text-red-300'
+              }`}
+            >
               {branchTaken === 'true' ? 'True' : 'False'}
             </span>
           </div>

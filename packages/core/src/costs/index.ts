@@ -273,7 +273,7 @@ export const MODEL_PRICING: ModelPricing[] = [
     modelId: 'gpt-5',
     displayName: 'GPT-5',
     inputPricePerMillion: 1.25,
-    outputPricePerMillion: 10.00,
+    outputPricePerMillion: 10.0,
     contextWindow: 400000,
     maxOutput: 128000,
     supportsVision: true,
@@ -284,8 +284,8 @@ export const MODEL_PRICING: ModelPricing[] = [
     provider: 'openai',
     modelId: 'gpt-5-mini',
     displayName: 'GPT-5 Mini',
-    inputPricePerMillion: 0.30,
-    outputPricePerMillion: 1.20,
+    inputPricePerMillion: 0.3,
+    outputPricePerMillion: 1.2,
     contextWindow: 400000,
     maxOutput: 128000,
     supportsVision: true,
@@ -298,8 +298,8 @@ export const MODEL_PRICING: ModelPricing[] = [
     provider: 'openai',
     modelId: 'gpt-4.1',
     displayName: 'GPT-4.1',
-    inputPricePerMillion: 2.00,
-    outputPricePerMillion: 8.00,
+    inputPricePerMillion: 2.0,
+    outputPricePerMillion: 8.0,
     contextWindow: 1050000,
     maxOutput: 32768,
     supportsVision: true,
@@ -310,8 +310,8 @@ export const MODEL_PRICING: ModelPricing[] = [
     provider: 'openai',
     modelId: 'gpt-4.1-mini',
     displayName: 'GPT-4.1 Mini',
-    inputPricePerMillion: 0.40,
-    outputPricePerMillion: 1.60,
+    inputPricePerMillion: 0.4,
+    outputPricePerMillion: 1.6,
     contextWindow: 1000000,
     maxOutput: 32768,
     supportsVision: true,
@@ -322,8 +322,8 @@ export const MODEL_PRICING: ModelPricing[] = [
     provider: 'openai',
     modelId: 'gpt-4.1-nano',
     displayName: 'GPT-4.1 Nano',
-    inputPricePerMillion: 0.10,
-    outputPricePerMillion: 0.40,
+    inputPricePerMillion: 0.1,
+    outputPricePerMillion: 0.4,
     contextWindow: 1000000,
     maxOutput: 32768,
     supportsVision: true,
@@ -336,8 +336,8 @@ export const MODEL_PRICING: ModelPricing[] = [
     provider: 'openai',
     modelId: 'gpt-4o',
     displayName: 'GPT-4o',
-    inputPricePerMillion: 2.50,
-    outputPricePerMillion: 10.00,
+    inputPricePerMillion: 2.5,
+    outputPricePerMillion: 10.0,
     contextWindow: 128000,
     maxOutput: 16384,
     supportsVision: true,
@@ -349,7 +349,7 @@ export const MODEL_PRICING: ModelPricing[] = [
     modelId: 'gpt-4o-mini',
     displayName: 'GPT-4o Mini',
     inputPricePerMillion: 0.15,
-    outputPricePerMillion: 0.60,
+    outputPricePerMillion: 0.6,
     contextWindow: 128000,
     maxOutput: 16384,
     supportsVision: true,
@@ -362,8 +362,8 @@ export const MODEL_PRICING: ModelPricing[] = [
     provider: 'openai',
     modelId: 'o3',
     displayName: 'O3',
-    inputPricePerMillion: 2.00,
-    outputPricePerMillion: 8.00,
+    inputPricePerMillion: 2.0,
+    outputPricePerMillion: 8.0,
     contextWindow: 200000,
     maxOutput: 100000,
     supportsFunctions: true,
@@ -373,8 +373,8 @@ export const MODEL_PRICING: ModelPricing[] = [
     provider: 'openai',
     modelId: 'o3-mini',
     displayName: 'O3 Mini',
-    inputPricePerMillion: 1.10,
-    outputPricePerMillion: 4.40,
+    inputPricePerMillion: 1.1,
+    outputPricePerMillion: 4.4,
     contextWindow: 200000,
     maxOutput: 100000,
     supportsFunctions: true,
@@ -384,8 +384,8 @@ export const MODEL_PRICING: ModelPricing[] = [
     provider: 'openai',
     modelId: 'o1',
     displayName: 'O1',
-    inputPricePerMillion: 15.00,
-    outputPricePerMillion: 60.00,
+    inputPricePerMillion: 15.0,
+    outputPricePerMillion: 60.0,
     contextWindow: 200000,
     maxOutput: 100000,
     supportsFunctions: false,
@@ -395,8 +395,8 @@ export const MODEL_PRICING: ModelPricing[] = [
     provider: 'openai',
     modelId: 'o1-mini',
     displayName: 'O1 Mini',
-    inputPricePerMillion: 3.00,
-    outputPricePerMillion: 12.00,
+    inputPricePerMillion: 3.0,
+    outputPricePerMillion: 12.0,
     contextWindow: 128000,
     maxOutput: 65536,
     supportsFunctions: false,
@@ -408,8 +408,8 @@ export const MODEL_PRICING: ModelPricing[] = [
     provider: 'openai',
     modelId: 'gpt-4-turbo',
     displayName: 'GPT-4 Turbo (Legacy)',
-    inputPricePerMillion: 10.00,
-    outputPricePerMillion: 30.00,
+    inputPricePerMillion: 10.0,
+    outputPricePerMillion: 30.0,
     contextWindow: 128000,
     maxOutput: 4096,
     supportsVision: true,
@@ -426,8 +426,8 @@ export const MODEL_PRICING: ModelPricing[] = [
     provider: 'anthropic',
     modelId: 'claude-4.5-opus',
     displayName: 'Claude 4.5 Opus',
-    inputPricePerMillion: 5.00,
-    outputPricePerMillion: 25.00,
+    inputPricePerMillion: 5.0,
+    outputPricePerMillion: 25.0,
     contextWindow: 200000,
     maxOutput: 16384,
     supportsVision: true,
@@ -438,8 +438,8 @@ export const MODEL_PRICING: ModelPricing[] = [
     provider: 'anthropic',
     modelId: 'claude-4.5-sonnet',
     displayName: 'Claude 4.5 Sonnet',
-    inputPricePerMillion: 3.00,
-    outputPricePerMillion: 15.00,
+    inputPricePerMillion: 3.0,
+    outputPricePerMillion: 15.0,
     contextWindow: 200000,
     maxOutput: 16384,
     supportsVision: true,
@@ -450,8 +450,8 @@ export const MODEL_PRICING: ModelPricing[] = [
     provider: 'anthropic',
     modelId: 'claude-4.5-haiku',
     displayName: 'Claude 4.5 Haiku',
-    inputPricePerMillion: 1.00,
-    outputPricePerMillion: 5.00,
+    inputPricePerMillion: 1.0,
+    outputPricePerMillion: 5.0,
     contextWindow: 200000,
     maxOutput: 16384,
     supportsVision: true,
@@ -464,8 +464,8 @@ export const MODEL_PRICING: ModelPricing[] = [
     provider: 'anthropic',
     modelId: 'claude-4-opus',
     displayName: 'Claude 4 Opus',
-    inputPricePerMillion: 15.00,
-    outputPricePerMillion: 75.00,
+    inputPricePerMillion: 15.0,
+    outputPricePerMillion: 75.0,
     contextWindow: 200000,
     maxOutput: 8192,
     supportsVision: true,
@@ -476,8 +476,8 @@ export const MODEL_PRICING: ModelPricing[] = [
     provider: 'anthropic',
     modelId: 'claude-4-sonnet',
     displayName: 'Claude 4 Sonnet',
-    inputPricePerMillion: 3.00,
-    outputPricePerMillion: 15.00,
+    inputPricePerMillion: 3.0,
+    outputPricePerMillion: 15.0,
     contextWindow: 200000,
     maxOutput: 8192,
     supportsVision: true,
@@ -490,8 +490,8 @@ export const MODEL_PRICING: ModelPricing[] = [
     provider: 'anthropic',
     modelId: 'claude-3-5-sonnet',
     displayName: 'Claude 3.5 Sonnet',
-    inputPricePerMillion: 6.00,
-    outputPricePerMillion: 30.00,
+    inputPricePerMillion: 6.0,
+    outputPricePerMillion: 30.0,
     contextWindow: 200000,
     maxOutput: 8192,
     supportsVision: true,
@@ -502,8 +502,8 @@ export const MODEL_PRICING: ModelPricing[] = [
     provider: 'anthropic',
     modelId: 'claude-3-5-haiku',
     displayName: 'Claude 3.5 Haiku',
-    inputPricePerMillion: 0.80,
-    outputPricePerMillion: 4.00,
+    inputPricePerMillion: 0.8,
+    outputPricePerMillion: 4.0,
     contextWindow: 200000,
     maxOutput: 8192,
     supportsVision: true,
@@ -534,8 +534,8 @@ export const MODEL_PRICING: ModelPricing[] = [
     provider: 'google',
     modelId: 'gemini-3-pro-preview',
     displayName: 'Gemini 3 Pro Preview',
-    inputPricePerMillion: 2.00,
-    outputPricePerMillion: 12.00,
+    inputPricePerMillion: 2.0,
+    outputPricePerMillion: 12.0,
     contextWindow: 200000,
     maxOutput: 8192,
     supportsVision: true,
@@ -549,7 +549,7 @@ export const MODEL_PRICING: ModelPricing[] = [
     modelId: 'gemini-2.5-pro',
     displayName: 'Gemini 2.5 Pro',
     inputPricePerMillion: 1.25,
-    outputPricePerMillion: 10.00,
+    outputPricePerMillion: 10.0,
     contextWindow: 1000000,
     maxOutput: 8192,
     supportsVision: true,
@@ -561,7 +561,7 @@ export const MODEL_PRICING: ModelPricing[] = [
     modelId: 'gemini-2.5-flash',
     displayName: 'Gemini 2.5 Flash',
     inputPricePerMillion: 0.15,
-    outputPricePerMillion: 0.60,
+    outputPricePerMillion: 0.6,
     contextWindow: 1000000,
     maxOutput: 8192,
     supportsVision: true,
@@ -572,8 +572,8 @@ export const MODEL_PRICING: ModelPricing[] = [
     provider: 'google',
     modelId: 'gemini-2.5-flash-lite',
     displayName: 'Gemini 2.5 Flash Lite',
-    inputPricePerMillion: 0.10,
-    outputPricePerMillion: 0.40,
+    inputPricePerMillion: 0.1,
+    outputPricePerMillion: 0.4,
     contextWindow: 1000000,
     maxOutput: 8192,
     supportsVision: true,
@@ -587,7 +587,7 @@ export const MODEL_PRICING: ModelPricing[] = [
     modelId: 'gemini-2.0-flash',
     displayName: 'Gemini 2.0 Flash (Deprecating)',
     inputPricePerMillion: 0.075,
-    outputPricePerMillion: 0.30,
+    outputPricePerMillion: 0.3,
     contextWindow: 1000000,
     maxOutput: 8192,
     supportsVision: true,
@@ -602,8 +602,8 @@ export const MODEL_PRICING: ModelPricing[] = [
     provider: 'deepseek',
     modelId: 'deepseek-r1',
     displayName: 'DeepSeek R1 (Reasoner)',
-    inputPricePerMillion: 3.00,
-    outputPricePerMillion: 7.00,
+    inputPricePerMillion: 3.0,
+    outputPricePerMillion: 7.0,
     contextWindow: 128000,
     maxOutput: 65536,
     supportsFunctions: true,
@@ -614,7 +614,7 @@ export const MODEL_PRICING: ModelPricing[] = [
     modelId: 'deepseek-v3.2',
     displayName: 'DeepSeek V3.2',
     inputPricePerMillion: 0.27,
-    outputPricePerMillion: 0.40,
+    outputPricePerMillion: 0.4,
     contextWindow: 163840,
     maxOutput: 65536,
     supportsFunctions: true,
@@ -683,7 +683,7 @@ export const MODEL_PRICING: ModelPricing[] = [
     modelId: 'gpt-oss-120b',
     displayName: 'GPT OSS 120B',
     inputPricePerMillion: 0.15,
-    outputPricePerMillion: 0.60,
+    outputPricePerMillion: 0.6,
     contextWindow: 131072,
     maxOutput: 65536,
     supportsFunctions: true,
@@ -697,8 +697,8 @@ export const MODEL_PRICING: ModelPricing[] = [
     provider: 'mistral',
     modelId: 'mistral-large-3',
     displayName: 'Mistral Large 3 (675B)',
-    inputPricePerMillion: 2.00,
-    outputPricePerMillion: 6.00,
+    inputPricePerMillion: 2.0,
+    outputPricePerMillion: 6.0,
     contextWindow: 262144,
     maxOutput: 262144,
     supportsFunctions: true,
@@ -708,8 +708,8 @@ export const MODEL_PRICING: ModelPricing[] = [
     provider: 'mistral',
     modelId: 'devstral-2',
     displayName: 'Devstral 2 (123B)',
-    inputPricePerMillion: 0.30,
-    outputPricePerMillion: 0.90,
+    inputPricePerMillion: 0.3,
+    outputPricePerMillion: 0.9,
     contextWindow: 262144,
     maxOutput: 262144,
     supportsFunctions: true,
@@ -719,8 +719,8 @@ export const MODEL_PRICING: ModelPricing[] = [
     provider: 'mistral',
     modelId: 'ministral-3-14b',
     displayName: 'Ministral 3 (14B)',
-    inputPricePerMillion: 0.10,
-    outputPricePerMillion: 0.30,
+    inputPricePerMillion: 0.1,
+    outputPricePerMillion: 0.3,
     contextWindow: 262144,
     maxOutput: 262144,
     supportsFunctions: true,
@@ -730,8 +730,8 @@ export const MODEL_PRICING: ModelPricing[] = [
     provider: 'mistral',
     modelId: 'codestral-latest',
     displayName: 'Codestral',
-    inputPricePerMillion: 0.20,
-    outputPricePerMillion: 0.60,
+    inputPricePerMillion: 0.2,
+    outputPricePerMillion: 0.6,
     contextWindow: 32000,
     maxOutput: 8192,
     supportsFunctions: true,
@@ -745,8 +745,8 @@ export const MODEL_PRICING: ModelPricing[] = [
     provider: 'xai',
     modelId: 'grok-4',
     displayName: 'Grok 4',
-    inputPricePerMillion: 3.00,
-    outputPricePerMillion: 15.00,
+    inputPricePerMillion: 3.0,
+    outputPricePerMillion: 15.0,
     contextWindow: 256000,
     maxOutput: 64000,
     supportsVision: true,
@@ -757,8 +757,8 @@ export const MODEL_PRICING: ModelPricing[] = [
     provider: 'xai',
     modelId: 'grok-4-fast',
     displayName: 'Grok 4 Fast',
-    inputPricePerMillion: 0.20,
-    outputPricePerMillion: 0.50,
+    inputPricePerMillion: 0.2,
+    outputPricePerMillion: 0.5,
     contextWindow: 2000000,
     maxOutput: 30000,
     supportsVision: true,
@@ -769,8 +769,8 @@ export const MODEL_PRICING: ModelPricing[] = [
     provider: 'xai',
     modelId: 'grok-3',
     displayName: 'Grok 3',
-    inputPricePerMillion: 3.00,
-    outputPricePerMillion: 15.00,
+    inputPricePerMillion: 3.0,
+    outputPricePerMillion: 15.0,
     contextWindow: 131072,
     maxOutput: 8192,
     supportsVision: true,
@@ -817,7 +817,7 @@ export function getModelPricing(provider: AIProvider, modelId: string): ModelPri
 
   // Partial match for versioned models (e.g. claude-3-5-sonnet-20241022)
   const partial = MODEL_PRICING.find(
-    p => p.provider === provider && modelId.includes(p.modelId.split('-').slice(0, 3).join('-'))
+    (p) => p.provider === provider && modelId.includes(p.modelId.split('-').slice(0, 3).join('-'))
   );
   if (partial) return partial;
 
@@ -859,7 +859,12 @@ export function estimateCost(
 
   // Rough token estimation (1 token ≈ 4 characters for English)
   const estimatedInputTokens = Math.ceil(promptText.length / 4);
-  const estimatedCost = calculateCost(provider, modelId, estimatedInputTokens, estimatedOutputTokens);
+  const estimatedCost = calculateCost(
+    provider,
+    modelId,
+    estimatedInputTokens,
+    estimatedOutputTokens
+  );
 
   return {
     provider,
@@ -895,12 +900,7 @@ export class UsageTracker extends EventEmitter {
   async record(usage: Omit<UsageRecord, 'id' | 'timestamp' | 'cost'>): Promise<UsageRecord> {
     await this.ensureInitialized();
 
-    const cost = calculateCost(
-      usage.provider,
-      usage.model,
-      usage.inputTokens,
-      usage.outputTokens
-    );
+    const cost = calculateCost(usage.provider, usage.model, usage.inputTokens, usage.outputTokens);
 
     const record: UsageRecord = {
       ...usage,
@@ -936,7 +936,7 @@ export class UsageTracker extends EventEmitter {
   ): Promise<UsageRecord[]> {
     await this.ensureInitialized();
 
-    return this.records.filter(r => {
+    return this.records.filter((r) => {
       const timestamp = new Date(r.timestamp);
       if (timestamp < startDate || timestamp > endDate) return false;
       if (filters?.userId && r.userId !== filters.userId) return false;
@@ -960,8 +960,8 @@ export class UsageTracker extends EventEmitter {
       periodStart: startDate.toISOString(),
       periodEnd: endDate.toISOString(),
       totalRequests: records.length,
-      successfulRequests: records.filter(r => !r.error).length,
-      failedRequests: records.filter(r => r.error).length,
+      successfulRequests: records.filter((r) => !r.error).length,
+      failedRequests: records.filter((r) => r.error).length,
       totalInputTokens: 0,
       totalOutputTokens: 0,
       totalCost: 0,
@@ -1092,20 +1092,15 @@ export class UsageTracker extends EventEmitter {
   /**
    * Get most expensive requests
    */
-  async getMostExpensiveRequests(
-    limit: number = 10,
-    startDate?: Date
-  ): Promise<UsageRecord[]> {
+  async getMostExpensiveRequests(limit: number = 10, startDate?: Date): Promise<UsageRecord[]> {
     await this.ensureInitialized();
 
     let records = this.records;
     if (startDate) {
-      records = records.filter(r => new Date(r.timestamp) >= startDate);
+      records = records.filter((r) => new Date(r.timestamp) >= startDate);
     }
 
-    return records
-      .sort((a, b) => b.cost - a.cost)
-      .slice(0, limit);
+    return records.sort((a, b) => b.cost - a.cost).slice(0, limit);
   }
 
   /**
@@ -1120,22 +1115,32 @@ export class UsageTracker extends EventEmitter {
 
     if (format === 'csv') {
       const headers = [
-        'id', 'timestamp', 'userId', 'provider', 'model',
-        'inputTokens', 'outputTokens', 'cost', 'latencyMs', 'requestType'
+        'id',
+        'timestamp',
+        'userId',
+        'provider',
+        'model',
+        'inputTokens',
+        'outputTokens',
+        'cost',
+        'latencyMs',
+        'requestType',
       ].join(',');
 
-      const rows = records.map(r => [
-        r.id,
-        r.timestamp,
-        r.userId,
-        r.provider,
-        r.model,
-        r.inputTokens,
-        r.outputTokens,
-        r.cost.toFixed(6),
-        r.latencyMs,
-        r.requestType,
-      ].join(','));
+      const rows = records.map((r) =>
+        [
+          r.id,
+          r.timestamp,
+          r.userId,
+          r.provider,
+          r.model,
+          r.inputTokens,
+          r.outputTokens,
+          r.cost.toFixed(6),
+          r.latencyMs,
+          r.requestType,
+        ].join(',')
+      );
 
       return [headers, ...rows].join('\n');
     }
@@ -1150,7 +1155,6 @@ export class UsageTracker extends EventEmitter {
       await this.initialize();
     }
   }
-
 }
 
 // =============================================================================
@@ -1176,7 +1180,7 @@ export class BudgetManager extends EventEmitter {
 
     // Listen for usage events
     this.tracker.on('usage', (record: UsageRecord) => {
-      this.checkBudget(record).catch(e => costLog.error('Budget check failed:', e));
+      this.checkBudget(record).catch((e) => costLog.error('Budget check failed:', e));
     });
   }
 
@@ -1199,9 +1203,7 @@ export class BudgetManager extends EventEmitter {
       daily: {
         spent: daily.totalCost,
         limit: this.config.dailyLimit,
-        percentage: this.config.dailyLimit
-          ? (daily.totalCost / this.config.dailyLimit) * 100
-          : 0,
+        percentage: this.config.dailyLimit ? (daily.totalCost / this.config.dailyLimit) * 100 : 0,
         remaining: this.config.dailyLimit
           ? Math.max(0, this.config.dailyLimit - daily.totalCost)
           : undefined,
@@ -1375,24 +1377,29 @@ export async function generateRecommendations(
 
   // Check for expensive model usage
   for (const [model, stats] of Object.entries(summary.byModel)) {
-    const pricing = MODEL_PRICING.find(p => p.modelId === model);
+    const pricing = MODEL_PRICING.find((p) => p.modelId === model);
     if (!pricing) continue;
 
     // Find cheaper alternatives
     const cheaper = MODEL_PRICING.filter(
-      p => p.provider !== 'local' &&
+      (p) =>
+        p.provider !== 'local' &&
         p.inputPricePerMillion < pricing.inputPricePerMillion * 0.5 &&
         p.contextWindow >= pricing.contextWindow * 0.5
     );
 
     if (cheaper.length > 0 && stats.cost > 1) {
-      const cheapestAlt = cheaper.sort((a, b) => a.inputPricePerMillion - b.inputPricePerMillion)[0]!;
-      const potentialCost = stats.cost * (cheapestAlt.inputPricePerMillion / pricing.inputPricePerMillion);
+      const cheapestAlt = cheaper.sort(
+        (a, b) => a.inputPricePerMillion - b.inputPricePerMillion
+      )[0]!;
+      const potentialCost =
+        stats.cost * (cheapestAlt.inputPricePerMillion / pricing.inputPricePerMillion);
 
       recommendations.push({
         type: 'model_switch',
         title: `Switch from ${pricing.displayName} to ${cheapestAlt.displayName}`,
-        description: `You've spent $${stats.cost.toFixed(2)} on ${pricing.displayName}. ` +
+        description:
+          `You've spent $${stats.cost.toFixed(2)} on ${pricing.displayName}. ` +
           `Consider ${cheapestAlt.displayName} for simpler tasks.`,
         currentCost: stats.cost,
         potentialCost,
@@ -1408,7 +1415,8 @@ export async function generateRecommendations(
     recommendations.push({
       type: 'prompt_optimization',
       title: 'Optimize prompt length',
-      description: `Your average prompt is ${Math.round(avgInputPerRequest)} tokens. ` +
+      description:
+        `Your average prompt is ${Math.round(avgInputPerRequest)} tokens. ` +
         `Consider shorter system prompts or using summarization.`,
       currentCost: summary.totalCost,
       potentialCost: optimizedCost,

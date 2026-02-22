@@ -26,7 +26,11 @@ const sampleManifest = {
     {
       name: 'test_tool',
       description: 'A test tool',
-      parameters: { type: 'object', properties: { input: { type: 'string' } }, required: ['input'] },
+      parameters: {
+        type: 'object',
+        properties: { input: { type: 'string' } },
+        required: ['input'],
+      },
       code: 'return { content: { result: args.input } };',
     },
   ],
@@ -62,8 +66,12 @@ const mockService = {
   installFromManifest: vi.fn(async () => sampleRecord),
   install: vi.fn(async () => sampleRecord),
   uninstall: vi.fn(async (id: string) => id === 'test-ext'),
-  enable: vi.fn(async (id: string) => (id === 'test-ext' ? { ...sampleRecord, status: 'enabled' } : null)),
-  disable: vi.fn(async (id: string) => (id === 'test-ext' ? { ...sampleRecord, status: 'disabled' } : null)),
+  enable: vi.fn(async (id: string) =>
+    id === 'test-ext' ? { ...sampleRecord, status: 'enabled' } : null
+  ),
+  disable: vi.fn(async (id: string) =>
+    id === 'test-ext' ? { ...sampleRecord, status: 'disabled' } : null
+  ),
   reload: vi.fn(async (id: string) => (id === 'test-ext' ? sampleRecord : null)),
   scanDirectory: vi.fn(async () => ({ installed: 2, errors: [] })),
 };
@@ -141,13 +149,21 @@ describe('Extensions Routes', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockService.getAll.mockReturnValue([sampleRecord]);
-    mockService.getById.mockImplementation((id: string) => (id === 'test-ext' ? sampleRecord : null));
+    mockService.getById.mockImplementation((id: string) =>
+      id === 'test-ext' ? sampleRecord : null
+    );
     mockService.installFromManifest.mockResolvedValue(sampleRecord);
     mockService.install.mockResolvedValue(sampleRecord);
     mockService.uninstall.mockImplementation(async (id: string) => id === 'test-ext');
-    mockService.enable.mockImplementation(async (id: string) => (id === 'test-ext' ? { ...sampleRecord, status: 'enabled' } : null));
-    mockService.disable.mockImplementation(async (id: string) => (id === 'test-ext' ? { ...sampleRecord, status: 'disabled' } : null));
-    mockService.reload.mockImplementation(async (id: string) => (id === 'test-ext' ? sampleRecord : null));
+    mockService.enable.mockImplementation(async (id: string) =>
+      id === 'test-ext' ? { ...sampleRecord, status: 'enabled' } : null
+    );
+    mockService.disable.mockImplementation(async (id: string) =>
+      id === 'test-ext' ? { ...sampleRecord, status: 'disabled' } : null
+    );
+    mockService.reload.mockImplementation(async (id: string) =>
+      id === 'test-ext' ? sampleRecord : null
+    );
     mockService.scanDirectory.mockResolvedValue({ installed: 2, errors: [] });
     app = createApp();
   });
@@ -235,7 +251,9 @@ describe('Extensions Routes', () => {
 
     it('returns 400 when service throws ExtensionError', async () => {
       const { ExtensionError } = await import('../services/extension-service.js');
-      mockService.installFromManifest.mockRejectedValue(new ExtensionError('Invalid', 'VALIDATION_ERROR'));
+      mockService.installFromManifest.mockRejectedValue(
+        new ExtensionError('Invalid', 'VALIDATION_ERROR')
+      );
 
       const res = await app.request('/extensions', {
         method: 'POST',
@@ -649,7 +667,7 @@ describe('Extensions Routes', () => {
       expect(json.data.packages[0].id).toBe('other-ext');
     });
 
-    it('GET /:id returns 404 for another user\'s extension', async () => {
+    it("GET /:id returns 404 for another user's extension", async () => {
       const user2App = createApp('user-2');
       const res = await user2App.request('/extensions/test-ext');
       expect(res.status).toBe(404);

@@ -87,12 +87,47 @@ export const KNOWN_CONFIG_SERVICES: CreateConfigServiceInput[] = [
     docsUrl: 'https://nodemailer.com/smtp/',
     multiEntry: true,
     configSchema: [
-      { name: 'host', label: 'SMTP Host', type: 'string', required: true, placeholder: 'smtp.gmail.com', order: 0 },
+      {
+        name: 'host',
+        label: 'SMTP Host',
+        type: 'string',
+        required: true,
+        placeholder: 'smtp.gmail.com',
+        order: 0,
+      },
       { name: 'port', label: 'Port', type: 'number', required: true, defaultValue: 587, order: 1 },
-      { name: 'secure', label: 'Use TLS/SSL', type: 'boolean', defaultValue: false, description: 'Enable TLS (port 465) or STARTTLS (port 587)', order: 2 },
-      { name: 'user', label: 'Username / Email', type: 'string', required: true, placeholder: 'you@gmail.com', order: 3 },
-      { name: 'password', label: 'Password / App Password', type: 'secret', required: true, description: 'For Gmail, use an App Password', order: 4 },
-      { name: 'from_name', label: 'From Name', type: 'string', required: false, placeholder: 'My Assistant', order: 5 },
+      {
+        name: 'secure',
+        label: 'Use TLS/SSL',
+        type: 'boolean',
+        defaultValue: false,
+        description: 'Enable TLS (port 465) or STARTTLS (port 587)',
+        order: 2,
+      },
+      {
+        name: 'user',
+        label: 'Username / Email',
+        type: 'string',
+        required: true,
+        placeholder: 'you@gmail.com',
+        order: 3,
+      },
+      {
+        name: 'password',
+        label: 'Password / App Password',
+        type: 'secret',
+        required: true,
+        description: 'For Gmail, use an App Password',
+        order: 4,
+      },
+      {
+        name: 'from_name',
+        label: 'From Name',
+        type: 'string',
+        required: false,
+        placeholder: 'My Assistant',
+        order: 5,
+      },
     ],
   },
   {
@@ -102,12 +137,40 @@ export const KNOWN_CONFIG_SERVICES: CreateConfigServiceInput[] = [
     description: 'Read emails via IMAP. Configure host, port, user, and password.',
     multiEntry: true,
     configSchema: [
-      { name: 'host', label: 'IMAP Host', type: 'string', required: true, placeholder: 'imap.gmail.com', order: 0 },
+      {
+        name: 'host',
+        label: 'IMAP Host',
+        type: 'string',
+        required: true,
+        placeholder: 'imap.gmail.com',
+        order: 0,
+      },
       { name: 'port', label: 'Port', type: 'number', required: true, defaultValue: 993, order: 1 },
       { name: 'secure', label: 'Use TLS', type: 'boolean', defaultValue: true, order: 2 },
-      { name: 'user', label: 'Username / Email', type: 'string', required: true, placeholder: 'you@gmail.com', order: 3 },
-      { name: 'password', label: 'Password / App Password', type: 'secret', required: true, description: 'For Gmail, use an App Password', order: 4 },
-      { name: 'mailbox', label: 'Mailbox', type: 'string', defaultValue: 'INBOX', placeholder: 'INBOX', order: 5 },
+      {
+        name: 'user',
+        label: 'Username / Email',
+        type: 'string',
+        required: true,
+        placeholder: 'you@gmail.com',
+        order: 3,
+      },
+      {
+        name: 'password',
+        label: 'Password / App Password',
+        type: 'secret',
+        required: true,
+        description: 'For Gmail, use an App Password',
+        order: 4,
+      },
+      {
+        name: 'mailbox',
+        label: 'Mailbox',
+        type: 'string',
+        defaultValue: 'INBOX',
+        placeholder: 'INBOX',
+        order: 5,
+      },
     ],
   },
 
@@ -121,14 +184,44 @@ export const KNOWN_CONFIG_SERVICES: CreateConfigServiceInput[] = [
     description: 'Text-to-speech with natural, expressive voices.',
     docsUrl: 'https://elevenlabs.io/docs',
     configSchema: [
-      { name: 'api_key', label: 'API Key', type: 'secret', required: true, envVar: 'ELEVENLABS_API_KEY', order: 0 },
-      { name: 'base_url', label: 'Base URL', type: 'url', defaultValue: 'https://api.elevenlabs.io/v1', placeholder: 'https://api.elevenlabs.io/v1', order: 1 },
-      { name: 'voice_id', label: 'Default Voice ID', type: 'string', required: false, placeholder: 'e.g. 21m00Tcm4TlvDq8ikWAM', description: 'Default voice for TTS requests', order: 2 },
-      { name: 'model_id', label: 'Model', type: 'select', required: false, defaultValue: 'eleven_multilingual_v2', options: [
-        { value: 'eleven_multilingual_v2', label: 'Multilingual v2' },
-        { value: 'eleven_turbo_v2_5', label: 'Turbo v2.5' },
-        { value: 'eleven_monolingual_v1', label: 'Monolingual v1' },
-      ], order: 3 },
+      {
+        name: 'api_key',
+        label: 'API Key',
+        type: 'secret',
+        required: true,
+        envVar: 'ELEVENLABS_API_KEY',
+        order: 0,
+      },
+      {
+        name: 'base_url',
+        label: 'Base URL',
+        type: 'url',
+        defaultValue: 'https://api.elevenlabs.io/v1',
+        placeholder: 'https://api.elevenlabs.io/v1',
+        order: 1,
+      },
+      {
+        name: 'voice_id',
+        label: 'Default Voice ID',
+        type: 'string',
+        required: false,
+        placeholder: 'e.g. 21m00Tcm4TlvDq8ikWAM',
+        description: 'Default voice for TTS requests',
+        order: 2,
+      },
+      {
+        name: 'model_id',
+        label: 'Model',
+        type: 'select',
+        required: false,
+        defaultValue: 'eleven_multilingual_v2',
+        options: [
+          { value: 'eleven_multilingual_v2', label: 'Multilingual v2' },
+          { value: 'eleven_turbo_v2_5', label: 'Turbo v2.5' },
+          { value: 'eleven_monolingual_v1', label: 'Monolingual v1' },
+        ],
+        order: 3,
+      },
     ],
   },
   {
@@ -138,15 +231,45 @@ export const KNOWN_CONFIG_SERVICES: CreateConfigServiceInput[] = [
     description: 'Speech-to-text transcription with high accuracy.',
     docsUrl: 'https://developers.deepgram.com/',
     configSchema: [
-      { name: 'api_key', label: 'API Key', type: 'secret', required: true, envVar: 'DEEPGRAM_API_KEY', order: 0 },
-      { name: 'base_url', label: 'Base URL', type: 'url', defaultValue: 'https://api.deepgram.com/v1', placeholder: 'https://api.deepgram.com/v1', order: 1 },
-      { name: 'model', label: 'Default Model', type: 'select', required: false, defaultValue: 'nova-2', options: [
-        { value: 'nova-2', label: 'Nova 2 (Best)' },
-        { value: 'nova', label: 'Nova' },
-        { value: 'enhanced', label: 'Enhanced' },
-        { value: 'base', label: 'Base' },
-      ], order: 2 },
-      { name: 'language', label: 'Default Language', type: 'string', required: false, defaultValue: 'en', placeholder: 'en', order: 3 },
+      {
+        name: 'api_key',
+        label: 'API Key',
+        type: 'secret',
+        required: true,
+        envVar: 'DEEPGRAM_API_KEY',
+        order: 0,
+      },
+      {
+        name: 'base_url',
+        label: 'Base URL',
+        type: 'url',
+        defaultValue: 'https://api.deepgram.com/v1',
+        placeholder: 'https://api.deepgram.com/v1',
+        order: 1,
+      },
+      {
+        name: 'model',
+        label: 'Default Model',
+        type: 'select',
+        required: false,
+        defaultValue: 'nova-2',
+        options: [
+          { value: 'nova-2', label: 'Nova 2 (Best)' },
+          { value: 'nova', label: 'Nova' },
+          { value: 'enhanced', label: 'Enhanced' },
+          { value: 'base', label: 'Base' },
+        ],
+        order: 2,
+      },
+      {
+        name: 'language',
+        label: 'Default Language',
+        type: 'string',
+        required: false,
+        defaultValue: 'en',
+        placeholder: 'en',
+        order: 3,
+      },
     ],
   },
   // ---------------------------------------------------------------------------
@@ -159,12 +282,34 @@ export const KNOWN_CONFIG_SERVICES: CreateConfigServiceInput[] = [
     description: 'High-quality machine translation API.',
     docsUrl: 'https://www.deepl.com/docs-api',
     configSchema: [
-      { name: 'api_key', label: 'Auth Key', type: 'secret', required: true, envVar: 'DEEPL_API_KEY', order: 0 },
-      { name: 'base_url', label: 'Base URL', type: 'url', defaultValue: 'https://api-free.deepl.com/v2', placeholder: 'https://api-free.deepl.com/v2', description: 'Use api-free.deepl.com for free plan, api.deepl.com for pro', order: 1 },
-      { name: 'plan', label: 'Plan', type: 'select', defaultValue: 'free', options: [
-        { value: 'free', label: 'Free' },
-        { value: 'pro', label: 'Pro' },
-      ], order: 2 },
+      {
+        name: 'api_key',
+        label: 'Auth Key',
+        type: 'secret',
+        required: true,
+        envVar: 'DEEPL_API_KEY',
+        order: 0,
+      },
+      {
+        name: 'base_url',
+        label: 'Base URL',
+        type: 'url',
+        defaultValue: 'https://api-free.deepl.com/v2',
+        placeholder: 'https://api-free.deepl.com/v2',
+        description: 'Use api-free.deepl.com for free plan, api.deepl.com for pro',
+        order: 1,
+      },
+      {
+        name: 'plan',
+        label: 'Plan',
+        type: 'select',
+        defaultValue: 'free',
+        options: [
+          { value: 'free', label: 'Free' },
+          { value: 'pro', label: 'Pro' },
+        ],
+        order: 2,
+      },
     ],
   },
 
@@ -178,11 +323,25 @@ export const KNOWN_CONFIG_SERVICES: CreateConfigServiceInput[] = [
     description: 'AI-optimized search API for RAG applications.',
     docsUrl: 'https://docs.tavily.com/',
     configSchema: [
-      { name: 'api_key', label: 'API Key', type: 'secret', required: true, envVar: 'TAVILY_API_KEY', order: 0 },
-      { name: 'search_depth', label: 'Default Search Depth', type: 'select', defaultValue: 'basic', options: [
-        { value: 'basic', label: 'Basic (faster)' },
-        { value: 'advanced', label: 'Advanced (better)' },
-      ], order: 1 },
+      {
+        name: 'api_key',
+        label: 'API Key',
+        type: 'secret',
+        required: true,
+        envVar: 'TAVILY_API_KEY',
+        order: 0,
+      },
+      {
+        name: 'search_depth',
+        label: 'Default Search Depth',
+        type: 'select',
+        defaultValue: 'basic',
+        options: [
+          { value: 'basic', label: 'Basic (faster)' },
+          { value: 'advanced', label: 'Advanced (better)' },
+        ],
+        order: 1,
+      },
     ],
   },
   {
@@ -228,7 +387,7 @@ export async function seedConfigServices(): Promise<number> {
   log.info(`[Seed] Seeded ${seeded} config services`);
 
   // Clean up stale services that are no longer in the seed and have no dependents
-  const knownNames = new Set(KNOWN_CONFIG_SERVICES.map(s => s.name));
+  const knownNames = new Set(KNOWN_CONFIG_SERVICES.map((s) => s.name));
   const allServices = configServicesRepo.list();
   let removed = 0;
   for (const service of allServices) {

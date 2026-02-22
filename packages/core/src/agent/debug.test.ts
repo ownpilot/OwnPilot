@@ -78,7 +78,9 @@ function makeToolResultInfo(overrides: Partial<ToolResultDebugInfo> = {}): ToolR
 }
 
 /** Minimal SandboxExecutionDebugInfo */
-function makeSandboxInfo(overrides: Partial<SandboxExecutionDebugInfo> = {}): SandboxExecutionDebugInfo {
+function makeSandboxInfo(
+  overrides: Partial<SandboxExecutionDebugInfo> = {}
+): SandboxExecutionDebugInfo {
   return {
     tool: 'execute_code',
     language: 'javascript',
@@ -143,7 +145,12 @@ describe('DebugLogStorage', () => {
   });
 
   it('should preserve type and data fields', () => {
-    debugLog.add({ type: 'tool_call', data: { name: 'test' }, provider: 'anthropic', model: 'claude' });
+    debugLog.add({
+      type: 'tool_call',
+      data: { name: 'test' },
+      provider: 'anthropic',
+      model: 'claude',
+    });
     const [entry] = debugLog.getAll();
     expect(entry!.type).toBe('tool_call');
     expect(entry!.data).toEqual({ name: 'test' });
@@ -175,8 +182,8 @@ describe('DebugLogStorage', () => {
     }
     const recent = debugLog.getRecent(2);
     expect(recent).toHaveLength(2);
-    expect((recent[0]!.data as number)).toBe(3);
-    expect((recent[1]!.data as number)).toBe(4);
+    expect(recent[0]!.data as number).toBe(3);
+    expect(recent[1]!.data as number).toBe(4);
   });
 
   it('should return all entries when count exceeds stored', () => {
@@ -210,8 +217,8 @@ describe('DebugLogStorage', () => {
     }
     const all = debugLog.getAll();
     expect(all).toHaveLength(3);
-    expect((all[0]!.data as number)).toBe(2); // oldest 0, 1 evicted
-    expect((all[2]!.data as number)).toBe(4);
+    expect(all[0]!.data as number).toBe(2); // oldest 0, 1 evicted
+    expect(all[2]!.data as number).toBe(4);
   });
 
   it('should trim existing entries when maxEntries is reduced', () => {
@@ -329,7 +336,9 @@ describe('logToolCall', () => {
   });
 
   it('should store tool call data', () => {
-    logToolCall(makeToolCallInfo({ name: 'write_file', approved: false, rejectionReason: 'unsafe' }));
+    logToolCall(
+      makeToolCallInfo({ name: 'write_file', approved: false, rejectionReason: 'unsafe' })
+    );
     const [entry] = debugLog.getAll();
     const data = entry!.data as ToolCallDebugInfo;
     expect(data.name).toBe('write_file');
@@ -395,7 +404,12 @@ describe('logRetry', () => {
   it('should store attempt, maxRetries, error message, delayMs', () => {
     logRetry(2, 5, new Error('ECONNRESET'), 2000);
     const [entry] = debugLog.getAll();
-    const data = entry!.data as { attempt: number; maxRetries: number; error: string; delayMs: number };
+    const data = entry!.data as {
+      attempt: number;
+      maxRetries: number;
+      error: string;
+      delayMs: number;
+    };
     expect(data.attempt).toBe(2);
     expect(data.maxRetries).toBe(5);
     expect(data.error).toBe('ECONNRESET');
@@ -440,7 +454,11 @@ describe('logError', () => {
     const error = new Error('fail');
     logError('openai', error);
     const [entry] = debugLog.getAll();
-    const data = entry!.data as { error: string; stack: string | undefined; context: string | undefined };
+    const data = entry!.data as {
+      error: string;
+      stack: string | undefined;
+      context: string | undefined;
+    };
     expect(data.error).toBe('fail');
     expect(data.stack).toBeDefined();
   });
@@ -538,15 +556,32 @@ describe('buildRequestDebugInfo', () => {
 
   it('should map tool names', () => {
     const tools: ToolDefinition[] = [
-      { name: 'read_file', description: 'Read a file', parameters: { type: 'object', properties: {} } },
-      { name: 'web_search', description: 'Search web', parameters: { type: 'object', properties: {} } },
+      {
+        name: 'read_file',
+        description: 'Read a file',
+        parameters: { type: 'object', properties: {} },
+      },
+      {
+        name: 'web_search',
+        description: 'Search web',
+        parameters: { type: 'object', properties: {} },
+      },
     ];
     const info = buildRequestDebugInfo('openai', 'gpt-4o', '/v1/chat', [], tools);
     expect(info.tools).toEqual(['read_file', 'web_search']);
   });
 
   it('should include maxTokens, temperature, and stream', () => {
-    const info = buildRequestDebugInfo('openai', 'gpt-4o', '/v1/chat', [], undefined, 4096, 0.5, true);
+    const info = buildRequestDebugInfo(
+      'openai',
+      'gpt-4o',
+      '/v1/chat',
+      [],
+      undefined,
+      4096,
+      0.5,
+      true
+    );
     expect(info.maxTokens).toBe(4096);
     expect(info.temperature).toBe(0.5);
     expect(info.stream).toBe(true);
@@ -590,9 +625,7 @@ describe('buildResponseDebugInfo', () => {
 
   it('should map tool calls', () => {
     const info = buildResponseDebugInfo('openai', 'gpt-4o', 100, {
-      toolCalls: [
-        { id: 'call_123', name: 'read_file', arguments: '{"path":"/tmp"}' },
-      ],
+      toolCalls: [{ id: 'call_123', name: 'read_file', arguments: '{"path":"/tmp"}' }],
     });
     expect(info.toolCalls).toHaveLength(1);
     expect(info.toolCalls![0]!.id).toBe('call_123');

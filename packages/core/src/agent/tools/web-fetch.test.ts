@@ -20,15 +20,17 @@ import {
 const ctx = {} as any;
 
 /** Build a mock Response from overrides. */
-function mockResponse(overrides: {
-  ok?: boolean;
-  status?: number;
-  statusText?: string;
-  url?: string;
-  headers?: Record<string, string>;
-  body?: string;
-  json?: unknown;
-} = {}): Response {
+function mockResponse(
+  overrides: {
+    ok?: boolean;
+    status?: number;
+    statusText?: string;
+    url?: string;
+    headers?: Record<string, string>;
+    body?: string;
+    json?: unknown;
+  } = {}
+): Response {
   const {
     ok = true,
     status = 200,
@@ -55,9 +57,10 @@ function mockResponse(overrides: {
       },
     },
     text: vi.fn().mockResolvedValue(body),
-    json: json !== undefined
-      ? vi.fn().mockResolvedValue(json)
-      : vi.fn().mockImplementation(() => Promise.resolve(JSON.parse(body || '{}'))),
+    json:
+      json !== undefined
+        ? vi.fn().mockResolvedValue(json)
+        : vi.fn().mockImplementation(() => Promise.resolve(JSON.parse(body || '{}'))),
   } as unknown as Response;
 }
 
@@ -114,7 +117,9 @@ describe('httpRequestTool definition', () => {
 
   it('defines url, method, headers, body, json, timeout properties', () => {
     const props = Object.keys(httpRequestTool.parameters.properties);
-    expect(props).toEqual(expect.arrayContaining(['url', 'method', 'headers', 'body', 'json', 'timeout']));
+    expect(props).toEqual(
+      expect.arrayContaining(['url', 'method', 'headers', 'body', 'json', 'timeout'])
+    );
   });
 
   it('lists all valid HTTP methods in enum', () => {
@@ -134,9 +139,15 @@ describe('fetchWebPageTool definition', () => {
 
   it('defines extraction options', () => {
     const props = Object.keys(fetchWebPageTool.parameters.properties);
-    expect(props).toEqual(expect.arrayContaining([
-      'url', 'extractText', 'extractLinks', 'extractMetadata', 'includeRawHtml',
-    ]));
+    expect(props).toEqual(
+      expect.arrayContaining([
+        'url',
+        'extractText',
+        'extractLinks',
+        'extractMetadata',
+        'includeRawHtml',
+      ])
+    );
   });
 });
 
@@ -282,9 +293,7 @@ describe('URL blocking (isBlockedUrl via httpRequestExecutor)', () => {
 
 describe('SSRF redirect protection', () => {
   it('blocks redirect to localhost', async () => {
-    fetchMock.mockResolvedValue(
-      mockResponse({ url: 'http://127.0.0.1/secret', body: 'leaked' }),
-    );
+    fetchMock.mockResolvedValue(mockResponse({ url: 'http://127.0.0.1/secret', body: 'leaked' }));
     const result = await httpRequestExecutor({ url: 'https://example.com/redirect' }, ctx);
     expect(result.isError).toBe(true);
     expect((result.content as any).error).toContain('redirected to a blocked internal address');
@@ -292,7 +301,7 @@ describe('SSRF redirect protection', () => {
 
   it('blocks redirect to private network in fetchWebPageExecutor', async () => {
     fetchMock.mockResolvedValue(
-      mockResponse({ url: 'http://192.168.1.1/', ok: true, body: '<html></html>' }),
+      mockResponse({ url: 'http://192.168.1.1/', ok: true, body: '<html></html>' })
     );
     const result = await fetchWebPageExecutor({ url: 'https://example.com' }, ctx);
     expect(result.isError).toBe(true);
@@ -306,7 +315,7 @@ describe('SSRF redirect protection', () => {
         ok: true,
         headers: { 'content-type': 'application/json' },
         json: { secret: true },
-      }),
+      })
     );
     const result = await jsonApiExecutor({ url: 'https://example.com/api' }, ctx);
     expect(result.isError).toBe(true);
@@ -314,9 +323,7 @@ describe('SSRF redirect protection', () => {
   });
 
   it('allows redirect to another public URL', async () => {
-    fetchMock.mockResolvedValue(
-      mockResponse({ url: 'https://cdn.example.com/page', body: 'ok' }),
-    );
+    fetchMock.mockResolvedValue(mockResponse({ url: 'https://cdn.example.com/page', body: 'ok' }));
     const result = await httpRequestExecutor({ url: 'https://example.com' }, ctx);
     expect(result.isError).toBe(false);
   });
@@ -332,27 +339,33 @@ describe('httpRequestExecutor', () => {
     await httpRequestExecutor({ url: 'https://example.com' }, ctx);
     expect(fetchMock).toHaveBeenCalledWith(
       'https://example.com',
-      expect.objectContaining({ method: 'GET' }),
+      expect.objectContaining({ method: 'GET' })
     );
   });
 
   it('sends custom headers', async () => {
     fetchMock.mockResolvedValue(mockResponse({ body: 'ok' }));
-    await httpRequestExecutor({
-      url: 'https://example.com',
-      headers: { 'X-Custom': 'value' },
-    }, ctx);
+    await httpRequestExecutor(
+      {
+        url: 'https://example.com',
+        headers: { 'X-Custom': 'value' },
+      },
+      ctx
+    );
     const callArgs = fetchMock.mock.calls[0][1] as RequestInit;
     expect((callArgs.headers as Record<string, string>)['X-Custom']).toBe('value');
   });
 
   it('sends JSON body when json param provided', async () => {
     fetchMock.mockResolvedValue(mockResponse({ body: '{}' }));
-    await httpRequestExecutor({
-      url: 'https://api.example.com',
-      method: 'POST',
-      json: { key: 'value' },
-    }, ctx);
+    await httpRequestExecutor(
+      {
+        url: 'https://api.example.com',
+        method: 'POST',
+        json: { key: 'value' },
+      },
+      ctx
+    );
     const callArgs = fetchMock.mock.calls[0][1] as RequestInit;
     expect(callArgs.body).toBe(JSON.stringify({ key: 'value' }));
     expect((callArgs.headers as Record<string, string>)['Content-Type']).toBe('application/json');
@@ -360,23 +373,29 @@ describe('httpRequestExecutor', () => {
 
   it('sends raw string body when body param provided', async () => {
     fetchMock.mockResolvedValue(mockResponse({ body: 'ok' }));
-    await httpRequestExecutor({
-      url: 'https://api.example.com',
-      method: 'POST',
-      body: 'raw data',
-    }, ctx);
+    await httpRequestExecutor(
+      {
+        url: 'https://api.example.com',
+        method: 'POST',
+        body: 'raw data',
+      },
+      ctx
+    );
     const callArgs = fetchMock.mock.calls[0][1] as RequestInit;
     expect(callArgs.body).toBe('raw data');
   });
 
   it('json param takes precedence over body param', async () => {
     fetchMock.mockResolvedValue(mockResponse({ body: '{}' }));
-    await httpRequestExecutor({
-      url: 'https://api.example.com',
-      method: 'POST',
-      body: 'should be ignored',
-      json: { data: 1 },
-    }, ctx);
+    await httpRequestExecutor(
+      {
+        url: 'https://api.example.com',
+        method: 'POST',
+        body: 'should be ignored',
+        json: { data: 1 },
+      },
+      ctx
+    );
     const callArgs = fetchMock.mock.calls[0][1] as RequestInit;
     expect(callArgs.body).toBe(JSON.stringify({ data: 1 }));
   });
@@ -387,7 +406,7 @@ describe('httpRequestExecutor', () => {
       mockResponse({
         headers: { 'content-type': 'application/json' },
         json: payload,
-      }),
+      })
     );
     const result = await httpRequestExecutor({ url: 'https://api.example.com' }, ctx);
     expect((result.content as any).body).toEqual(payload);
@@ -395,7 +414,7 @@ describe('httpRequestExecutor', () => {
 
   it('returns text body for non-JSON content-type', async () => {
     fetchMock.mockResolvedValue(
-      mockResponse({ headers: { 'content-type': 'text/plain' }, body: 'hello world' }),
+      mockResponse({ headers: { 'content-type': 'text/plain' }, body: 'hello world' })
     );
     const result = await httpRequestExecutor({ url: 'https://example.com' }, ctx);
     expect((result.content as any).body).toBe('hello world');
@@ -406,16 +425,14 @@ describe('httpRequestExecutor', () => {
       mockResponse({
         headers: { 'x-request-id': 'abc123', 'content-type': 'text/plain' },
         body: 'ok',
-      }),
+      })
     );
     const result = await httpRequestExecutor({ url: 'https://example.com' }, ctx);
     expect((result.content as any).headers['x-request-id']).toBe('abc123');
   });
 
   it('returns status and statusText', async () => {
-    fetchMock.mockResolvedValue(
-      mockResponse({ status: 201, statusText: 'Created', body: '' }),
-    );
+    fetchMock.mockResolvedValue(mockResponse({ status: 201, statusText: 'Created', body: '' }));
     const result = await httpRequestExecutor({ url: 'https://example.com', method: 'POST' }, ctx);
     expect((result.content as any).status).toBe(201);
     expect((result.content as any).statusText).toBe('Created');
@@ -423,7 +440,7 @@ describe('httpRequestExecutor', () => {
 
   it('sets isError=true for non-ok responses (4xx/5xx)', async () => {
     fetchMock.mockResolvedValue(
-      mockResponse({ ok: false, status: 404, statusText: 'Not Found', body: 'not found' }),
+      mockResponse({ ok: false, status: 404, statusText: 'Not Found', body: 'not found' })
     );
     const result = await httpRequestExecutor({ url: 'https://example.com/missing' }, ctx);
     expect(result.isError).toBe(true);
@@ -435,7 +452,7 @@ describe('httpRequestExecutor', () => {
       mockResponse({
         headers: { 'content-length': String(10 * 1024 * 1024) },
         body: '',
-      }),
+      })
     );
     const result = await httpRequestExecutor({ url: 'https://example.com/big' }, ctx);
     expect(result.isError).toBe(true);
@@ -526,7 +543,7 @@ describe('fetchWebPageExecutor', () => {
 
   it('returns error for non-ok responses', async () => {
     fetchMock.mockResolvedValue(
-      mockResponse({ ok: false, status: 503, statusText: 'Service Unavailable', body: '' }),
+      mockResponse({ ok: false, status: 503, statusText: 'Service Unavailable', body: '' })
     );
     const result = await fetchWebPageExecutor({ url: 'https://example.com' }, ctx);
     expect(result.isError).toBe(true);
@@ -552,7 +569,10 @@ describe('fetchWebPageExecutor', () => {
 
   it('skips text extraction when extractText is false', async () => {
     fetchMock.mockResolvedValue(mockResponse({ body: simpleHtml }));
-    const result = await fetchWebPageExecutor({ url: 'https://example.com', extractText: false }, ctx);
+    const result = await fetchWebPageExecutor(
+      { url: 'https://example.com', extractText: false },
+      ctx
+    );
     expect((result.content as any).text).toBeUndefined();
   });
 
@@ -567,19 +587,25 @@ describe('fetchWebPageExecutor', () => {
 
   it('skips metadata when extractMetadata is false', async () => {
     fetchMock.mockResolvedValue(mockResponse({ body: simpleHtml }));
-    const result = await fetchWebPageExecutor({
-      url: 'https://example.com',
-      extractMetadata: false,
-    }, ctx);
+    const result = await fetchWebPageExecutor(
+      {
+        url: 'https://example.com',
+        extractMetadata: false,
+      },
+      ctx
+    );
     expect((result.content as any).metadata).toBeUndefined();
   });
 
   it('extracts links when extractLinks is true', async () => {
     fetchMock.mockResolvedValue(mockResponse({ body: simpleHtml }));
-    const result = await fetchWebPageExecutor({
-      url: 'https://example.com',
-      extractLinks: true,
-    }, ctx);
+    const result = await fetchWebPageExecutor(
+      {
+        url: 'https://example.com',
+        extractLinks: true,
+      },
+      ctx
+    );
     const links = (result.content as any).links as Array<{ text: string; href: string }>;
     expect(links.length).toBeGreaterThanOrEqual(2);
     const aboutLink = links.find((l) => l.text === 'About Us');
@@ -597,10 +623,13 @@ describe('fetchWebPageExecutor', () => {
 
   it('includes raw HTML when includeRawHtml is true', async () => {
     fetchMock.mockResolvedValue(mockResponse({ body: simpleHtml }));
-    const result = await fetchWebPageExecutor({
-      url: 'https://example.com',
-      includeRawHtml: true,
-    }, ctx);
+    const result = await fetchWebPageExecutor(
+      {
+        url: 'https://example.com',
+        includeRawHtml: true,
+      },
+      ctx
+    );
     expect((result.content as any).html).toContain('<h1>Hello World</h1>');
   });
 
@@ -623,17 +652,20 @@ describe('fetchWebPageExecutor', () => {
   it('truncates raw HTML exceeding 5MB', async () => {
     const hugeHtml = 'x'.repeat(6 * 1024 * 1024);
     fetchMock.mockResolvedValue(mockResponse({ body: hugeHtml }));
-    const result = await fetchWebPageExecutor({
-      url: 'https://example.com',
-      includeRawHtml: true,
-    }, ctx);
+    const result = await fetchWebPageExecutor(
+      {
+        url: 'https://example.com',
+        includeRawHtml: true,
+      },
+      ctx
+    );
     const html = (result.content as any).html as string;
     expect(html).toContain('[HTML truncated]');
   });
 
   it('returns final URL after redirects', async () => {
     fetchMock.mockResolvedValue(
-      mockResponse({ url: 'https://www.example.com/final', body: '<html></html>' }),
+      mockResponse({ url: 'https://www.example.com/final', body: '<html></html>' })
     );
     const result = await fetchWebPageExecutor({ url: 'https://example.com' }, ctx);
     expect((result.content as any).url).toBe('https://www.example.com/final');
@@ -662,31 +694,27 @@ describe('fetchWebPageExecutor', () => {
 describe('htmlToText (via fetchWebPageExecutor)', () => {
   it('decodes &nbsp; entities', async () => {
     fetchMock.mockResolvedValue(
-      mockResponse({ body: '<html><body>hello&nbsp;world</body></html>' }),
+      mockResponse({ body: '<html><body>hello&nbsp;world</body></html>' })
     );
     const result = await fetchWebPageExecutor({ url: 'https://example.com' }, ctx);
     expect((result.content as any).text).toContain('hello world');
   });
 
   it('decodes &amp; entities', async () => {
-    fetchMock.mockResolvedValue(
-      mockResponse({ body: '<html><body>a &amp; b</body></html>' }),
-    );
+    fetchMock.mockResolvedValue(mockResponse({ body: '<html><body>a &amp; b</body></html>' }));
     const result = await fetchWebPageExecutor({ url: 'https://example.com' }, ctx);
     expect((result.content as any).text).toContain('a & b');
   });
 
   it('decodes &lt; and &gt; entities', async () => {
-    fetchMock.mockResolvedValue(
-      mockResponse({ body: '<html><body>&lt;tag&gt;</body></html>' }),
-    );
+    fetchMock.mockResolvedValue(mockResponse({ body: '<html><body>&lt;tag&gt;</body></html>' }));
     const result = await fetchWebPageExecutor({ url: 'https://example.com' }, ctx);
     expect((result.content as any).text).toContain('<tag>');
   });
 
   it('decodes &quot; and &#39; entities', async () => {
     fetchMock.mockResolvedValue(
-      mockResponse({ body: '<html><body>&quot;quoted&quot; and &#39;apos&#39;</body></html>' }),
+      mockResponse({ body: '<html><body>&quot;quoted&quot; and &#39;apos&#39;</body></html>' })
     );
     const result = await fetchWebPageExecutor({ url: 'https://example.com' }, ctx);
     const text = (result.content as any).text as string;
@@ -696,7 +724,7 @@ describe('htmlToText (via fetchWebPageExecutor)', () => {
 
   it('collapses excess whitespace', async () => {
     fetchMock.mockResolvedValue(
-      mockResponse({ body: '<html><body>   lots   of   spaces   </body></html>' }),
+      mockResponse({ body: '<html><body>   lots   of   spaces   </body></html>' })
     );
     const result = await fetchWebPageExecutor({ url: 'https://example.com' }, ctx);
     expect((result.content as any).text).toBe('lots of spaces');
@@ -711,10 +739,13 @@ describe('extractLinks (via fetchWebPageExecutor)', () => {
   it('resolves relative URLs against base', async () => {
     const html = '<html><body><a href="/page">Page</a></body></html>';
     fetchMock.mockResolvedValue(mockResponse({ body: html }));
-    const result = await fetchWebPageExecutor({
-      url: 'https://example.com',
-      extractLinks: true,
-    }, ctx);
+    const result = await fetchWebPageExecutor(
+      {
+        url: 'https://example.com',
+        extractLinks: true,
+      },
+      ctx
+    );
     const links = (result.content as any).links as Array<{ text: string; href: string }>;
     expect(links[0].href).toBe('https://example.com/page');
   });
@@ -722,21 +753,28 @@ describe('extractLinks (via fetchWebPageExecutor)', () => {
   it('handles link text with inner HTML tags', async () => {
     const html = '<html><body><a href="/x"><b>Bold Link</b></a></body></html>';
     fetchMock.mockResolvedValue(mockResponse({ body: html }));
-    const result = await fetchWebPageExecutor({
-      url: 'https://example.com',
-      extractLinks: true,
-    }, ctx);
+    const result = await fetchWebPageExecutor(
+      {
+        url: 'https://example.com',
+        extractLinks: true,
+      },
+      ctx
+    );
     const links = (result.content as any).links as Array<{ text: string; href: string }>;
     expect(links[0].text).toBe('Bold Link');
   });
 
   it('skips links with invalid href', async () => {
-    const html = '<html><body><a href="">Empty</a><a href="https://valid.com">Valid</a></body></html>';
+    const html =
+      '<html><body><a href="">Empty</a><a href="https://valid.com">Valid</a></body></html>';
     fetchMock.mockResolvedValue(mockResponse({ body: html }));
-    const result = await fetchWebPageExecutor({
-      url: 'https://example.com',
-      extractLinks: true,
-    }, ctx);
+    const result = await fetchWebPageExecutor(
+      {
+        url: 'https://example.com',
+        extractLinks: true,
+      },
+      ctx
+    );
     const links = (result.content as any).links as Array<{ text: string; href: string }>;
     // The empty href should be skipped (falsy check on href before attempting new URL)
     const validLinks = links.filter((l) => l.href.includes('valid.com'));
@@ -764,7 +802,8 @@ describe('extractMetadata (via fetchWebPageExecutor)', () => {
   });
 
   it('extracts meta property tags (og:*)', async () => {
-    const html = '<html><head><meta property="og:image" content="https://img.com/a.jpg"></head><body></body></html>';
+    const html =
+      '<html><head><meta property="og:image" content="https://img.com/a.jpg"></head><body></body></html>';
     fetchMock.mockResolvedValue(mockResponse({ body: html }));
     const result = await fetchWebPageExecutor({ url: 'https://example.com' }, ctx);
     expect((result.content as any).metadata['og:image']).toBe('https://img.com/a.jpg');
@@ -880,7 +919,7 @@ describe('searchWebExecutor', () => {
 
   it('returns error for non-ok response', async () => {
     fetchMock.mockResolvedValue(
-      mockResponse({ ok: false, status: 429, statusText: 'Too Many Requests', body: '' }),
+      mockResponse({ ok: false, status: 429, statusText: 'Too Many Requests', body: '' })
     );
     const result = await searchWebExecutor({ query: 'test' }, ctx);
     expect(result.isError).toBe(true);
@@ -928,18 +967,18 @@ describe('jsonApiExecutor', () => {
 
   it('defaults method to GET', async () => {
     fetchMock.mockResolvedValue(
-      mockResponse({ headers: { 'content-type': 'application/json' }, json: {} }),
+      mockResponse({ headers: { 'content-type': 'application/json' }, json: {} })
     );
     await jsonApiExecutor({ url: 'https://api.example.com' }, ctx);
     expect(fetchMock).toHaveBeenCalledWith(
       'https://api.example.com',
-      expect.objectContaining({ method: 'GET' }),
+      expect.objectContaining({ method: 'GET' })
     );
   });
 
   it('sets Accept and Content-Type to application/json by default', async () => {
     fetchMock.mockResolvedValue(
-      mockResponse({ headers: { 'content-type': 'application/json' }, json: {} }),
+      mockResponse({ headers: { 'content-type': 'application/json' }, json: {} })
     );
     await jsonApiExecutor({ url: 'https://api.example.com' }, ctx);
     const callArgs = fetchMock.mock.calls[0][1] as RequestInit;
@@ -950,12 +989,15 @@ describe('jsonApiExecutor', () => {
 
   it('sets Authorization header from bearerToken', async () => {
     fetchMock.mockResolvedValue(
-      mockResponse({ headers: { 'content-type': 'application/json' }, json: {} }),
+      mockResponse({ headers: { 'content-type': 'application/json' }, json: {} })
     );
-    await jsonApiExecutor({
-      url: 'https://api.example.com',
-      bearerToken: 'my-secret-token',
-    }, ctx);
+    await jsonApiExecutor(
+      {
+        url: 'https://api.example.com',
+        bearerToken: 'my-secret-token',
+      },
+      ctx
+    );
     const callArgs = fetchMock.mock.calls[0][1] as RequestInit;
     const headers = callArgs.headers as Record<string, string>;
     expect(headers['Authorization']).toBe('Bearer my-secret-token');
@@ -963,7 +1005,7 @@ describe('jsonApiExecutor', () => {
 
   it('does not set Authorization when bearerToken is absent', async () => {
     fetchMock.mockResolvedValue(
-      mockResponse({ headers: { 'content-type': 'application/json' }, json: {} }),
+      mockResponse({ headers: { 'content-type': 'application/json' }, json: {} })
     );
     await jsonApiExecutor({ url: 'https://api.example.com' }, ctx);
     const callArgs = fetchMock.mock.calls[0][1] as RequestInit;
@@ -973,20 +1015,23 @@ describe('jsonApiExecutor', () => {
 
   it('serializes data as JSON body', async () => {
     fetchMock.mockResolvedValue(
-      mockResponse({ headers: { 'content-type': 'application/json' }, json: { ok: true } }),
+      mockResponse({ headers: { 'content-type': 'application/json' }, json: { ok: true } })
     );
-    await jsonApiExecutor({
-      url: 'https://api.example.com',
-      method: 'POST',
-      data: { name: 'test', value: 42 },
-    }, ctx);
+    await jsonApiExecutor(
+      {
+        url: 'https://api.example.com',
+        method: 'POST',
+        data: { name: 'test', value: 42 },
+      },
+      ctx
+    );
     const callArgs = fetchMock.mock.calls[0][1] as RequestInit;
     expect(callArgs.body).toBe(JSON.stringify({ name: 'test', value: 42 }));
   });
 
   it('does not set body when data is absent', async () => {
     fetchMock.mockResolvedValue(
-      mockResponse({ headers: { 'content-type': 'application/json' }, json: {} }),
+      mockResponse({ headers: { 'content-type': 'application/json' }, json: {} })
     );
     await jsonApiExecutor({ url: 'https://api.example.com' }, ctx);
     const callArgs = fetchMock.mock.calls[0][1] as RequestInit;
@@ -996,7 +1041,7 @@ describe('jsonApiExecutor', () => {
   it('parses JSON response', async () => {
     const payload = { users: ['alice', 'bob'] };
     fetchMock.mockResolvedValue(
-      mockResponse({ headers: { 'content-type': 'application/json' }, json: payload }),
+      mockResponse({ headers: { 'content-type': 'application/json' }, json: payload })
     );
     const result = await jsonApiExecutor({ url: 'https://api.example.com/users' }, ctx);
     expect((result.content as any).data).toEqual(payload);
@@ -1005,7 +1050,7 @@ describe('jsonApiExecutor', () => {
 
   it('returns text data when content-type is not JSON', async () => {
     fetchMock.mockResolvedValue(
-      mockResponse({ headers: { 'content-type': 'text/plain' }, body: 'plain text' }),
+      mockResponse({ headers: { 'content-type': 'text/plain' }, body: 'plain text' })
     );
     const result = await jsonApiExecutor({ url: 'https://api.example.com' }, ctx);
     expect((result.content as any).data).toBe('plain text');
@@ -1013,12 +1058,15 @@ describe('jsonApiExecutor', () => {
 
   it('merges custom headers with defaults', async () => {
     fetchMock.mockResolvedValue(
-      mockResponse({ headers: { 'content-type': 'application/json' }, json: {} }),
+      mockResponse({ headers: { 'content-type': 'application/json' }, json: {} })
     );
-    await jsonApiExecutor({
-      url: 'https://api.example.com',
-      headers: { 'X-Custom': 'hello' },
-    }, ctx);
+    await jsonApiExecutor(
+      {
+        url: 'https://api.example.com',
+        headers: { 'X-Custom': 'hello' },
+      },
+      ctx
+    );
     const callArgs = fetchMock.mock.calls[0][1] as RequestInit;
     const headers = callArgs.headers as Record<string, string>;
     expect(headers['X-Custom']).toBe('hello');
@@ -1027,12 +1075,15 @@ describe('jsonApiExecutor', () => {
 
   it('allows custom headers to override defaults', async () => {
     fetchMock.mockResolvedValue(
-      mockResponse({ headers: { 'content-type': 'application/json' }, json: {} }),
+      mockResponse({ headers: { 'content-type': 'application/json' }, json: {} })
     );
-    await jsonApiExecutor({
-      url: 'https://api.example.com',
-      headers: { 'Accept': 'text/xml' },
-    }, ctx);
+    await jsonApiExecutor(
+      {
+        url: 'https://api.example.com',
+        headers: { Accept: 'text/xml' },
+      },
+      ctx
+    );
     const callArgs = fetchMock.mock.calls[0][1] as RequestInit;
     const headers = callArgs.headers as Record<string, string>;
     expect(headers['Accept']).toBe('text/xml');
@@ -1046,12 +1097,15 @@ describe('jsonApiExecutor', () => {
         statusText: 'Unauthorized',
         headers: { 'content-type': 'application/json' },
         json: { error: 'invalid token' },
-      }),
+      })
     );
-    const result = await jsonApiExecutor({
-      url: 'https://api.example.com',
-      bearerToken: 'bad-token',
-    }, ctx);
+    const result = await jsonApiExecutor(
+      {
+        url: 'https://api.example.com',
+        bearerToken: 'bad-token',
+      },
+      ctx
+    );
     expect(result.isError).toBe(true);
     expect((result.content as any).status).toBe(401);
   });
@@ -1077,7 +1131,7 @@ describe('jsonApiExecutor', () => {
         ok: true,
         headers: { 'content-type': 'application/json' },
         json: { secret: 'aws-credentials' },
-      }),
+      })
     );
     const result = await jsonApiExecutor({ url: 'https://evil.com/redirect' }, ctx);
     expect(result.isError).toBe(true);
@@ -1128,9 +1182,7 @@ describe('edge cases', () => {
   });
 
   it('httpRequestExecutor handles content-length header of 0', async () => {
-    fetchMock.mockResolvedValue(
-      mockResponse({ headers: { 'content-length': '0' }, body: '' }),
-    );
+    fetchMock.mockResolvedValue(mockResponse({ headers: { 'content-length': '0' }, body: '' }));
     const result = await httpRequestExecutor({ url: 'https://example.com' }, ctx);
     expect(result.isError).toBe(false);
   });
@@ -1149,13 +1201,14 @@ describe('edge cases', () => {
   });
 
   it('fetchWebPageExecutor handles HTML with no links when extractLinks is true', async () => {
-    fetchMock.mockResolvedValue(
-      mockResponse({ body: '<html><body>No links here</body></html>' }),
+    fetchMock.mockResolvedValue(mockResponse({ body: '<html><body>No links here</body></html>' }));
+    const result = await fetchWebPageExecutor(
+      {
+        url: 'https://example.com',
+        extractLinks: true,
+      },
+      ctx
     );
-    const result = await fetchWebPageExecutor({
-      url: 'https://example.com',
-      extractLinks: true,
-    }, ctx);
     expect((result.content as any).links).toEqual([]);
   });
 
@@ -1171,7 +1224,7 @@ describe('edge cases', () => {
   it('jsonApiExecutor passes all HTTP methods through', async () => {
     for (const method of ['GET', 'POST', 'PUT', 'PATCH', 'DELETE']) {
       fetchMock.mockResolvedValue(
-        mockResponse({ headers: { 'content-type': 'application/json' }, json: {} }),
+        mockResponse({ headers: { 'content-type': 'application/json' }, json: {} })
       );
       await jsonApiExecutor({ url: 'https://api.example.com', method }, ctx);
       const callArgs = fetchMock.mock.calls[fetchMock.mock.calls.length - 1][1] as RequestInit;

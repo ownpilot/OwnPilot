@@ -415,9 +415,7 @@ export class DataGateway {
     return this.access(agentId, 'bookmarks', 'list', async () => {
       let bookmarks = await this.bookmarks.list();
       if (filter?.tags) {
-        bookmarks = bookmarks.filter((b) =>
-          filter.tags!.some((t) => b.tags.includes(t))
-        );
+        bookmarks = bookmarks.filter((b) => filter.tags!.some((t) => b.tags.includes(t)));
       }
       if (filter?.category) {
         bookmarks = bookmarks.filter((b) => b.category === filter.category);
@@ -466,9 +464,7 @@ export class DataGateway {
     return this.access(agentId, 'notes', 'list', async () => {
       let notes = await this.notes.list();
       if (filter?.tags) {
-        notes = notes.filter((n) =>
-          filter.tags!.some((t) => n.tags.includes(t))
-        );
+        notes = notes.filter((n) => filter.tags!.some((t) => n.tags.includes(t)));
       }
       return notes;
     });
@@ -736,9 +732,7 @@ export class DataGateway {
     return this.access(agentId, 'memory', 'search', async () => {
       const results = await this.memory.search(query);
       // Sort by relevance (access count * importance)
-      results.sort(
-        (a, b) => b.accessCount * b.importance - a.accessCount * a.importance
-      );
+      results.sort((a, b) => b.accessCount * b.importance - a.accessCount * a.importance);
       return results.slice(0, limit);
     });
   }

@@ -60,7 +60,9 @@ vi.mock('@ownpilot/core', () => ({
     reset: vi.fn(() => ({ id: 'new-conversation-id' })),
     getTools: vi.fn(() => []),
   })),
-  ToolRegistry: vi.fn(function() { return mockToolRegistry; }),
+  ToolRegistry: vi.fn(function () {
+    return mockToolRegistry;
+  }),
   registerCoreTools: vi.fn(),
   registerAllTools: vi.fn(),
   getToolDefinitions: vi.fn(() => []),
@@ -220,16 +222,18 @@ import { errorHandler } from '../middleware/error-handler.js';
 
 // ─── Helpers ─────────────────────────────────────────────────────
 
-function mockAgentRecord(overrides: Partial<{
-  id: string;
-  name: string;
-  provider: string;
-  model: string;
-  systemPrompt: string;
-  config: Record<string, unknown>;
-  createdAt: Date;
-  updatedAt: Date;
-}> = {}) {
+function mockAgentRecord(
+  overrides: Partial<{
+    id: string;
+    name: string;
+    provider: string;
+    model: string;
+    systemPrompt: string;
+    config: Record<string, unknown>;
+    createdAt: Date;
+    updatedAt: Date;
+  }> = {}
+) {
   return {
     id: overrides.id ?? 'agent-1',
     name: overrides.name ?? 'Test Agent',
@@ -653,9 +657,12 @@ describe('Agent Routes', () => {
       const data = await res.json();
       expect(data.success).toBe(true);
       expect(data.data.name).toBe('Updated Agent');
-      expect(agentsRepo.update).toHaveBeenCalledWith('agent-1', expect.objectContaining({
-        name: 'Updated Agent',
-      }));
+      expect(agentsRepo.update).toHaveBeenCalledWith(
+        'agent-1',
+        expect.objectContaining({
+          name: 'Updated Agent',
+        })
+      );
     });
 
     it('should update agent config fields', async () => {
@@ -676,14 +683,17 @@ describe('Agent Routes', () => {
       });
 
       expect(res.status).toBe(200);
-      expect(agentsRepo.update).toHaveBeenCalledWith('agent-1', expect.objectContaining({
-        config: expect.objectContaining({
-          maxTokens: 8192,
-          temperature: 0.3,
-          maxTurns: 50,
-          maxToolCalls: 300,
-        }),
-      }));
+      expect(agentsRepo.update).toHaveBeenCalledWith(
+        'agent-1',
+        expect.objectContaining({
+          config: expect.objectContaining({
+            maxTokens: 8192,
+            temperature: 0.3,
+            maxTurns: 50,
+            maxToolCalls: 300,
+          }),
+        })
+      );
     });
 
     it('should update tools and toolGroups', async () => {
@@ -822,15 +832,18 @@ describe('Agent Routes', () => {
       });
 
       // Existing config fields should be preserved
-      expect(agentsRepo.update).toHaveBeenCalledWith('agent-1', expect.objectContaining({
-        config: expect.objectContaining({
-          maxTokens: 8192,
-          temperature: 0.7,
-          maxTurns: 25,
-          maxToolCalls: 200,
-          tools: ['existing_tool'],
-        }),
-      }));
+      expect(agentsRepo.update).toHaveBeenCalledWith(
+        'agent-1',
+        expect.objectContaining({
+          config: expect.objectContaining({
+            maxTokens: 8192,
+            temperature: 0.7,
+            maxTurns: 25,
+            maxToolCalls: 200,
+            tools: ['existing_tool'],
+          }),
+        })
+      );
     });
   });
 
@@ -949,11 +962,13 @@ describe('Agent Routes', () => {
       const data = await res.json();
       expect(data.data.synced).toBe(1);
       expect(data.data.total).toBe(1);
-      expect(agentsRepo.upsertForResync).toHaveBeenCalledWith(expect.objectContaining({
-        id: 'default',
-        name: 'Default Agent',
-        config: { toolGroups: ['core', 'memory'] },
-      }));
+      expect(agentsRepo.upsertForResync).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: 'default',
+          name: 'Default Agent',
+          config: { toolGroups: ['core', 'memory'] },
+        })
+      );
     });
 
     it('should sync new agents from defaults', async () => {
@@ -978,10 +993,12 @@ describe('Agent Routes', () => {
       expect(res.status).toBe(200);
       const data = await res.json();
       expect(data.data.synced).toBe(1);
-      expect(agentsRepo.upsertForResync).toHaveBeenCalledWith(expect.objectContaining({
-        id: 'new-agent',
-        name: 'New Default',
-      }));
+      expect(agentsRepo.upsertForResync).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: 'new-agent',
+          name: 'New Default',
+        })
+      );
     });
 
     it('should handle errors for individual agents', async () => {

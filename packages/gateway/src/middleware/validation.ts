@@ -41,12 +41,17 @@ export const chatMessageSchema = z.object({
   stream: z.boolean().optional(),
   streamingMode: z.enum(['auto', 'always', 'never']).optional(),
   maxToolCalls: z.number().int().min(0).max(1000).optional(),
-  attachments: z.array(z.object({
-    type: z.enum(['image', 'file']),
-    data: z.string().max(20_000_000),
-    mimeType: z.string().max(100),
-    filename: z.string().max(255).optional(),
-  })).max(5).optional(),
+  attachments: z
+    .array(
+      z.object({
+        type: z.enum(['image', 'file']),
+        data: z.string().max(20_000_000),
+        mimeType: z.string().max(100),
+        filename: z.string().max(255).optional(),
+      })
+    )
+    .max(5)
+    .optional(),
 });
 
 // ─── Trigger Schemas ─────────────────────────────────────────────
@@ -82,7 +87,15 @@ export const updatePlanSchema = z.object({
 
 export const createPlanStepSchema = z.object({
   name: z.string().min(1).max(500),
-  type: z.enum(['tool_call', 'llm_decision', 'user_input', 'condition', 'parallel', 'loop', 'sub_plan']),
+  type: z.enum([
+    'tool_call',
+    'llm_decision',
+    'user_input',
+    'condition',
+    'parallel',
+    'loop',
+    'sub_plan',
+  ]),
   orderNum: z.number().int().min(0).max(1000),
   description: z.string().max(5000).optional(),
   config: z.record(z.string(), z.unknown()).optional(),
@@ -92,8 +105,12 @@ export const createPlanStepSchema = z.object({
 export const updatePlanStepSchema = z.object({
   title: z.string().min(1).max(500).optional(),
   description: z.string().max(5000).optional(),
-  type: z.enum(['tool_call', 'llm_decision', 'user_input', 'condition', 'parallel', 'loop', 'sub_plan']).optional(),
-  status: z.enum(['pending', 'running', 'completed', 'failed', 'skipped', 'blocked', 'waiting']).optional(),
+  type: z
+    .enum(['tool_call', 'llm_decision', 'user_input', 'condition', 'parallel', 'loop', 'sub_plan'])
+    .optional(),
+  status: z
+    .enum(['pending', 'running', 'completed', 'failed', 'skipped', 'blocked', 'waiting'])
+    .optional(),
   orderNum: z.number().int().min(0).max(1000).optional(),
   config: z.record(z.string(), z.unknown()).optional(),
   action: z.record(z.string(), z.unknown()).optional(),
@@ -121,10 +138,22 @@ export const autonomyBudgetSchema = z.object({
 
 // ─── Custom Tool Schemas ─────────────────────────────────────────
 
-const toolPermissionValues = ['network', 'filesystem', 'database', 'shell', 'email', 'scheduling', 'local'] as const;
+const toolPermissionValues = [
+  'network',
+  'filesystem',
+  'database',
+  'shell',
+  'email',
+  'scheduling',
+  'local',
+] as const;
 
 export const createCustomToolSchema = z.object({
-  name: z.string().min(1).max(100).regex(/^[a-z][a-z0-9_]*$/, 'Tool name must be lowercase with underscores'),
+  name: z
+    .string()
+    .min(1)
+    .max(100)
+    .regex(/^[a-z][a-z0-9_]*$/, 'Tool name must be lowercase with underscores'),
   description: z.string().min(1).max(2000),
   code: z.string().min(1).max(50000),
   parameters: z.record(z.string(), z.unknown()).optional(),
@@ -133,17 +162,27 @@ export const createCustomToolSchema = z.object({
   requiresApproval: z.boolean().optional(),
   createdBy: z.enum(['user', 'llm']).optional(),
   metadata: z.record(z.string(), z.unknown()).optional(),
-  requiredApiKeys: z.array(z.object({
-    name: z.string().min(1).max(100),
-    displayName: z.string().max(200).optional(),
-    description: z.string().max(500).optional(),
-    category: z.string().max(50).optional(),
-    docsUrl: z.string().url().max(2000).optional(),
-  })).max(10).optional(),
+  requiredApiKeys: z
+    .array(
+      z.object({
+        name: z.string().min(1).max(100),
+        displayName: z.string().max(200).optional(),
+        description: z.string().max(500).optional(),
+        category: z.string().max(50).optional(),
+        docsUrl: z.string().url().max(2000).optional(),
+      })
+    )
+    .max(10)
+    .optional(),
 });
 
 export const updateCustomToolSchema = z.object({
-  name: z.string().min(1).max(100).regex(/^[a-z][a-z0-9_]*$/, 'Tool name must be lowercase with underscores').optional(),
+  name: z
+    .string()
+    .min(1)
+    .max(100)
+    .regex(/^[a-z][a-z0-9_]*$/, 'Tool name must be lowercase with underscores')
+    .optional(),
   description: z.string().min(1).max(2000).optional(),
   code: z.string().min(1).max(50000).optional(),
   parameters: z.record(z.string(), z.unknown()).optional(),
@@ -151,13 +190,18 @@ export const updateCustomToolSchema = z.object({
   permissions: z.array(z.enum(toolPermissionValues)).max(7).optional(),
   requiresApproval: z.boolean().optional(),
   metadata: z.record(z.string(), z.unknown()).optional(),
-  requiredApiKeys: z.array(z.object({
-    name: z.string().min(1).max(100),
-    displayName: z.string().max(200).optional(),
-    description: z.string().max(500).optional(),
-    category: z.string().max(50).optional(),
-    docsUrl: z.string().url().max(2000).optional(),
-  })).max(10).optional(),
+  requiredApiKeys: z
+    .array(
+      z.object({
+        name: z.string().min(1).max(100),
+        displayName: z.string().max(200).optional(),
+        description: z.string().max(500).optional(),
+        category: z.string().max(50).optional(),
+        docsUrl: z.string().url().max(2000).optional(),
+      })
+    )
+    .max(10)
+    .optional(),
 });
 
 // ─── Autonomy Decision Schemas ───────────────────────────────────
@@ -224,12 +268,17 @@ export const createGoalStepSchema = z.object({
 
 export const createGoalStepsSchema = z.union([
   z.object({
-    steps: z.array(z.object({
-      title: z.string().min(1).max(500),
-      description: z.string().max(5000).optional(),
-      orderNum: z.number().int().min(0).max(10000).optional(),
-      dependencies: z.array(z.string().max(200)).max(50).optional(),
-    })).min(1).max(100),
+    steps: z
+      .array(
+        z.object({
+          title: z.string().min(1).max(500),
+          description: z.string().max(5000).optional(),
+          orderNum: z.number().int().min(0).max(10000).optional(),
+          dependencies: z.array(z.string().max(200)).max(50).optional(),
+        })
+      )
+      .min(1)
+      .max(100),
   }),
   z.object({
     title: z.string().min(1).max(500),
@@ -285,8 +334,17 @@ export const cleanupMemoriesSchema = z.object({
 // ─── Expense Schemas ────────────────────────────────────────────
 
 const expenseCategoryEnum = z.enum([
-  'food', 'transport', 'utilities', 'entertainment', 'shopping',
-  'health', 'education', 'travel', 'subscription', 'housing', 'other',
+  'food',
+  'transport',
+  'utilities',
+  'entertainment',
+  'shopping',
+  'health',
+  'education',
+  'travel',
+  'subscription',
+  'housing',
+  'other',
 ]);
 
 export const createExpenseSchema = z.object({
@@ -447,10 +505,15 @@ export const workspaceExecuteCodeSchema = z.object({
   code: z.string().min(1).max(100000),
   language: z.enum(['python', 'javascript', 'shell']),
   timeout: z.number().int().min(1000).max(120000).optional(),
-  files: z.array(z.object({
-    path: z.string().min(1).max(500),
-    content: z.string().max(1000000),
-  })).max(50).optional(),
+  files: z
+    .array(
+      z.object({
+        path: z.string().min(1).max(500),
+        content: z.string().max(1000000),
+      })
+    )
+    .max(50)
+    .optional(),
 });
 
 // ─── Workflow Schemas ──────────────────────────────────────────
@@ -521,7 +584,11 @@ const transformerNodeDataSchema = z.object({
 const forEachNodeDataSchema = z.object({
   label: z.string().min(1).max(200),
   arrayExpression: z.string().max(10000),
-  itemVariable: z.string().max(100).regex(/^[a-zA-Z_]\w*$/).optional(),
+  itemVariable: z
+    .string()
+    .max(100)
+    .regex(/^[a-zA-Z_]\w*$/)
+    .optional(),
   maxIterations: z.number().int().min(1).max(1000).optional(),
   onError: z.enum(['stop', 'continue']).optional(),
   description: z.string().max(2000).optional(),
@@ -530,8 +597,12 @@ const forEachNodeDataSchema = z.object({
 });
 
 const workflowNodeDataSchema = z.union([
-  toolNodeDataSchema, triggerNodeDataSchema, llmNodeDataSchema,
-  conditionNodeDataSchema, codeNodeDataSchema, transformerNodeDataSchema,
+  toolNodeDataSchema,
+  triggerNodeDataSchema,
+  llmNodeDataSchema,
+  conditionNodeDataSchema,
+  codeNodeDataSchema,
+  transformerNodeDataSchema,
   forEachNodeDataSchema,
 ]);
 
@@ -569,16 +640,23 @@ export const updateWorkflowSchema = z.object({
 });
 
 export const workflowCopilotSchema = z.object({
-  messages: z.array(z.object({
-    role: z.enum(['user', 'assistant']),
-    content: z.string().min(1).max(50000),
-  })).min(1).max(30),
-  currentWorkflow: z.object({
-    name: z.string(),
-    nodes: z.array(z.unknown()),
-    edges: z.array(z.unknown()),
-    variables: z.record(z.string(), z.unknown()).optional(),
-  }).optional(),
+  messages: z
+    .array(
+      z.object({
+        role: z.enum(['user', 'assistant']),
+        content: z.string().min(1).max(50000),
+      })
+    )
+    .min(1)
+    .max(30),
+  currentWorkflow: z
+    .object({
+      name: z.string(),
+      nodes: z.array(z.unknown()),
+      edges: z.array(z.unknown()),
+      variables: z.record(z.string(), z.unknown()).optional(),
+    })
+    .optional(),
   availableTools: z.array(z.string()).max(500).optional(),
   provider: z.string().max(100).optional(),
   model: z.string().max(200).optional(),
@@ -593,7 +671,7 @@ export const workflowCopilotSchema = z.object({
 export function validateBody<T>(schema: z.ZodType<T>, body: unknown): T {
   const result = schema.safeParse(body);
   if (!result.success) {
-    const issues = result.error.issues.map(i => `${i.path.join('.')}: ${i.message}`).join('; ');
+    const issues = result.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join('; ');
     throw new Error(`Validation failed: ${issues}`);
   }
   return result.data;

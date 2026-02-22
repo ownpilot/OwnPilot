@@ -147,9 +147,7 @@ describe('SettingsRepository', () => {
 
     it('should handle numeric values', async () => {
       mockAdapter.queryOne.mockResolvedValueOnce({ exists: true });
-      mockAdapter.query.mockResolvedValueOnce([
-        makeSettingRow({ key: 'app.port', value: '3000' }),
-      ]);
+      mockAdapter.query.mockResolvedValueOnce([makeSettingRow({ key: 'app.port', value: '3000' })]);
 
       await repo.initialize();
 
@@ -189,7 +187,7 @@ describe('SettingsRepository', () => {
 
     it('should parse complex JSON values', async () => {
       mockAdapter.queryOne.mockResolvedValueOnce(
-        makeSettingRow({ value: '{"nested":{"key":"value"}}' }),
+        makeSettingRow({ value: '{"nested":{"key":"value"}}' })
       );
 
       const result = await repo.getAsync<{ nested: { key: string } }>('complex');
@@ -209,9 +207,7 @@ describe('SettingsRepository', () => {
     });
 
     it('should return null for corrupt JSON', async () => {
-      mockAdapter.queryOne.mockResolvedValueOnce(
-        makeSettingRow({ value: '{not valid json' }),
-      );
+      mockAdapter.queryOne.mockResolvedValueOnce(makeSettingRow({ value: '{not valid json' }));
 
       const result = await repo.getAsync('corrupt');
 
@@ -403,9 +399,7 @@ describe('SettingsRepository', () => {
     it('should remove key from cache', async () => {
       // Initialize cache with a key
       mockAdapter.queryOne.mockResolvedValueOnce({ exists: true });
-      mockAdapter.query.mockResolvedValueOnce([
-        makeSettingRow({ key: 'to.delete', value: '"x"' }),
-      ]);
+      mockAdapter.query.mockResolvedValueOnce([makeSettingRow({ key: 'to.delete', value: '"x"' })]);
       await repo.initialize();
 
       expect(repo.get('to.delete')).toBe('x');

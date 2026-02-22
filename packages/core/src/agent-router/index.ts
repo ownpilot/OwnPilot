@@ -139,10 +139,7 @@ export class AgentRouter {
   /**
    * Route a message to the best agent
    */
-  async route(
-    message: string,
-    context: RoutingContext = {}
-  ): Promise<AgentRoutingResult> {
+  async route(message: string, context: RoutingContext = {}): Promise<AgentRoutingResult> {
     // If no LLM provider, use rule-based fallback
     if (!this.llmProvider) {
       return this.routeWithRules(message, context);
@@ -228,10 +225,7 @@ Select the best agent to handle this request.`;
   /**
    * Rule-based routing fallback (when LLM not available)
    */
-  private routeWithRules(
-    message: string,
-    context: RoutingContext
-  ): AgentRoutingResult {
+  private routeWithRules(message: string, context: RoutingContext): AgentRoutingResult {
     const lower = message.toLowerCase();
     const scores: Array<{ agentId: string; score: number }> = [];
 

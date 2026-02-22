@@ -133,9 +133,12 @@ describe('Triggers Routes', () => {
 
       await app.request('/triggers?enabled=false');
 
-      expect(mockTriggerService.listTriggers).toHaveBeenCalledWith('u1', expect.objectContaining({
-        enabled: false,
-      }));
+      expect(mockTriggerService.listTriggers).toHaveBeenCalledWith(
+        'u1',
+        expect.objectContaining({
+          enabled: false,
+        })
+      );
     });
   });
 

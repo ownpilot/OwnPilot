@@ -20,9 +20,10 @@ const mockEventBus = vi.hoisted(() => ({
 
 const mockGetEventBus = vi.hoisted(() => vi.fn().mockReturnValue(mockEventBus));
 const mockCreateEvent = vi.hoisted(() =>
-  vi.fn().mockImplementation(
-    (type: string, _cat: string, _src: string, data: unknown) => ({ type, data }),
-  ),
+  vi.fn().mockImplementation((type: string, _cat: string, _src: string, data: unknown) => ({
+    type,
+    data,
+  }))
 );
 const mockHasServiceRegistry = vi.hoisted(() => vi.fn().mockReturnValue(false));
 const mockGetServiceRegistry = vi.hoisted(() => vi.fn());
@@ -63,7 +64,7 @@ const mockConversationsRepo = vi.hoisted(() => ({
 const mockGetOrCreateDefaultAgent = vi.hoisted(() => vi.fn());
 const mockIsDemoMode = vi.hoisted(() => vi.fn().mockResolvedValue(false));
 const mockResolveProviderAndModel = vi.hoisted(() =>
-  vi.fn().mockResolvedValue({ provider: 'openai', model: 'gpt-4' }),
+  vi.fn().mockResolvedValue({ provider: 'openai', model: 'gpt-4' })
 );
 
 // ============================================================================
@@ -112,8 +113,7 @@ vi.mock('../ws/server.js', () => ({
 vi.mock('../routes/helpers.js', () => ({
   truncate: (text: string, len: number) =>
     text.length > len ? text.substring(0, len) + '...' : text,
-  getErrorMessage: (err: unknown) =>
-    err instanceof Error ? err.message : String(err),
+  getErrorMessage: (err: unknown) => (err instanceof Error ? err.message : String(err)),
 }));
 
 vi.mock('../services/log.js', () => ({
@@ -142,15 +142,17 @@ vi.mock('../db/repositories/conversations.js', () => ({
 // Helpers
 // ============================================================================
 
-function createChannelPlugin(overrides?: Partial<{
-  id: string;
-  name: string;
-  status: string;
-  platform: string;
-  connectionStatus: string;
-  sendMessageResult: string;
-  requiredServices: Array<{ name: string }>;
-}>) {
+function createChannelPlugin(
+  overrides?: Partial<{
+    id: string;
+    name: string;
+    status: string;
+    platform: string;
+    connectionStatus: string;
+    sendMessageResult: string;
+    requiredServices: Array<{ name: string }>;
+  }>
+) {
   const opts = {
     id: 'test-plugin',
     name: 'Test Channel',
@@ -191,22 +193,26 @@ function createNonChannelPlugin(id = 'non-channel') {
   };
 }
 
-function createMockPluginRegistry(plugins: Array<ReturnType<typeof createChannelPlugin> | ReturnType<typeof createNonChannelPlugin>>) {
+function createMockPluginRegistry(
+  plugins: Array<ReturnType<typeof createChannelPlugin> | ReturnType<typeof createNonChannelPlugin>>
+) {
   return {
     get: vi.fn((id: string) => plugins.find((p) => p.manifest.id === id) ?? undefined),
     getAll: vi.fn(() => plugins),
   };
 }
 
-function createIncomingMessage(overrides?: Partial<{
-  id: string;
-  channelPluginId: string;
-  platform: string;
-  platformChatId: string;
-  text: string;
-  sender: Record<string, unknown>;
-  metadata: Record<string, unknown>;
-}>) {
+function createIncomingMessage(
+  overrides?: Partial<{
+    id: string;
+    channelPluginId: string;
+    platform: string;
+    platformChatId: string;
+    text: string;
+    sender: Record<string, unknown>;
+    metadata: Record<string, unknown>;
+  }>
+) {
   return {
     id: 'msg-1',
     channelPluginId: 'test-plugin',
@@ -225,17 +231,32 @@ function createIncomingMessage(overrides?: Partial<{
     metadata: { platformMessageId: 'ext-msg-1', ...(overrides?.metadata ?? {}) },
     ...overrides,
     // Restore sender/metadata after spread so nested overrides work
-    ...(overrides?.sender ? { sender: { platformUserId: 'user-456', platform: 'telegram', displayName: 'Test User', username: 'testuser', avatarUrl: 'https://example.com/avatar.jpg', ...overrides.sender } } : {}),
-    ...(overrides?.metadata ? { metadata: { platformMessageId: 'ext-msg-1', ...overrides.metadata } } : {}),
+    ...(overrides?.sender
+      ? {
+          sender: {
+            platformUserId: 'user-456',
+            platform: 'telegram',
+            displayName: 'Test User',
+            username: 'testuser',
+            avatarUrl: 'https://example.com/avatar.jpg',
+            ...overrides.sender,
+          },
+        }
+      : {}),
+    ...(overrides?.metadata
+      ? { metadata: { platformMessageId: 'ext-msg-1', ...overrides.metadata } }
+      : {}),
   };
 }
 
-function createChannelUser(overrides?: Partial<{
-  id: string;
-  isBlocked: boolean;
-  isVerified: boolean;
-  ownpilotUserId: string;
-}>) {
+function createChannelUser(
+  overrides?: Partial<{
+    id: string;
+    isBlocked: boolean;
+    isVerified: boolean;
+    ownpilotUserId: string;
+  }>
+) {
   return {
     id: 'cu-1',
     ownpilotUserId: 'op-user-1',
@@ -296,7 +317,7 @@ describe('ChannelServiceImpl', () => {
     it('should subscribe to events on construction when EventBus is available', () => {
       expect(mockEventBus.on).toHaveBeenCalledWith(
         'channel.message.received',
-        expect.any(Function),
+        expect.any(Function)
       );
     });
 
@@ -463,7 +484,7 @@ describe('ChannelServiceImpl', () => {
           platform: 'telegram',
           platformMessageId: 'msg-123',
           platformChatId: 'chat-1',
-        }),
+        })
       );
       expect(mockEventBus.emit).toHaveBeenCalled();
     });
@@ -481,13 +502,13 @@ describe('ChannelServiceImpl', () => {
         expect.objectContaining({
           channelPluginId: 'test-plugin',
           error: 'Send failed',
-        }),
+        })
       );
     });
 
     it('should throw if channel plugin not found', async () => {
       await expect(service.send('unknown', outgoing)).rejects.toThrow(
-        'Channel plugin not found: unknown',
+        'Channel plugin not found: unknown'
       );
     });
 
@@ -608,7 +629,11 @@ describe('ChannelServiceImpl', () => {
 
     it('should log errors for individual failures and continue', async () => {
       const first = createChannelPlugin({ id: 'ch-1', connectionStatus: 'connected' });
-      const second = createChannelPlugin({ id: 'ch-2', connectionStatus: 'connected', sendMessageResult: 'msg-2' });
+      const second = createChannelPlugin({
+        id: 'ch-2',
+        connectionStatus: 'connected',
+        sendMessageResult: 'msg-2',
+      });
       first.api.sendMessage.mockRejectedValueOnce(new Error('boom'));
       const reg = createMockPluginRegistry([first, second]);
       const svc = new ChannelServiceImpl(reg as never, {
@@ -639,7 +664,7 @@ describe('ChannelServiceImpl', () => {
         'channel.connecting',
         'channel',
         'channel-service',
-        expect.objectContaining({ status: 'connecting', channelPluginId: 'test-plugin' }),
+        expect.objectContaining({ status: 'connecting', channelPluginId: 'test-plugin' })
       );
 
       // CONNECTED emitted after connect
@@ -647,7 +672,7 @@ describe('ChannelServiceImpl', () => {
         'channel.connected',
         'channel',
         'channel-service',
-        expect.objectContaining({ status: 'connected', channelPluginId: 'test-plugin' }),
+        expect.objectContaining({ status: 'connected', channelPluginId: 'test-plugin' })
       );
     });
 
@@ -660,9 +685,7 @@ describe('ChannelServiceImpl', () => {
     });
 
     it('should throw if plugin not found', async () => {
-      await expect(service.connect('unknown')).rejects.toThrow(
-        'Channel plugin not found: unknown',
-      );
+      await expect(service.connect('unknown')).rejects.toThrow('Channel plugin not found: unknown');
     });
 
     it('should handle EventBus unavailable for events but still connect', async () => {
@@ -701,7 +724,7 @@ describe('ChannelServiceImpl', () => {
         expect.objectContaining({
           status: 'disconnected',
           channelPluginId: 'test-plugin',
-        }),
+        })
       );
     });
 
@@ -715,7 +738,7 @@ describe('ChannelServiceImpl', () => {
 
     it('should throw if plugin not found', async () => {
       await expect(service.disconnect('unknown')).rejects.toThrow(
-        'Channel plugin not found: unknown',
+        'Channel plugin not found: unknown'
       );
     });
 
@@ -837,7 +860,9 @@ describe('ChannelServiceImpl', () => {
     describe('user resolution', () => {
       it('should find or create channel user from message sender', async () => {
         // Set up MessageBus path
-        const mockBus = { process: vi.fn().mockResolvedValue({ response: { content: 'AI response' } }) };
+        const mockBus = {
+          process: vi.fn().mockResolvedValue({ response: { content: 'AI response' } }),
+        };
         mockHasServiceRegistry.mockReturnValue(true);
         mockGetServiceRegistry.mockReturnValue({
           get: vi.fn().mockImplementation((token: unknown) => {
@@ -861,9 +886,7 @@ describe('ChannelServiceImpl', () => {
       });
 
       it('should return early if user is blocked', async () => {
-        mockUsersRepo.findOrCreate.mockResolvedValue(
-          createChannelUser({ isBlocked: true }),
-        );
+        mockUsersRepo.findOrCreate.mockResolvedValue(createChannelUser({ isBlocked: true }));
 
         await service.processIncomingMessage(message);
 
@@ -885,11 +908,11 @@ describe('ChannelServiceImpl', () => {
           'telegram',
           'user-456',
           'Test User',
-          'testuser',
+          'testuser'
         );
         // Should send success message
         expect(channelPlugin.api.sendMessage).toHaveBeenCalledWith(
-          expect.objectContaining({ text: expect.stringContaining('Verified!') }),
+          expect.objectContaining({ text: expect.stringContaining('Verified!') })
         );
       });
 
@@ -902,7 +925,7 @@ describe('ChannelServiceImpl', () => {
         expect(channelPlugin.api.sendMessage).toHaveBeenCalledWith(
           expect.objectContaining({
             text: expect.stringContaining('Verification failed'),
-          }),
+          })
         );
       });
 
@@ -919,9 +942,7 @@ describe('ChannelServiceImpl', () => {
 
     describe('verification', () => {
       it('should reject unverified user not in whitelist', async () => {
-        mockUsersRepo.findOrCreate.mockResolvedValue(
-          createChannelUser({ isVerified: false }),
-        );
+        mockUsersRepo.findOrCreate.mockResolvedValue(createChannelUser({ isVerified: false }));
         // allowed_users has entries, but NOT our test user (user-456)
         mockConfigServicesRepo.getDefaultEntry.mockReturnValue({
           data: { allowed_users: 'other-user-999' },
@@ -932,7 +953,7 @@ describe('ChannelServiceImpl', () => {
         expect(channelPlugin.api.sendMessage).toHaveBeenCalledWith(
           expect.objectContaining({
             text: expect.stringContaining('not authorized'),
-          }),
+          })
         );
         // Should NOT proceed to message processing
         expect(mockSessionsRepo.findActive).not.toHaveBeenCalled();
@@ -946,7 +967,9 @@ describe('ChannelServiceImpl', () => {
         });
 
         // Set up MessageBus for continued processing
-        const mockBus = { process: vi.fn().mockResolvedValue({ response: { content: 'Verified response' } }) };
+        const mockBus = {
+          process: vi.fn().mockResolvedValue({ response: { content: 'Verified response' } }),
+        };
         mockHasServiceRegistry.mockReturnValue(true);
         mockGetServiceRegistry.mockReturnValue({
           get: vi.fn().mockImplementation((token: unknown) => {
@@ -963,7 +986,7 @@ describe('ChannelServiceImpl', () => {
         expect(mockVerificationService.verifyViaWhitelist).toHaveBeenCalledWith(
           'telegram',
           'user-456',
-          'Test User',
+          'Test User'
         );
         // Should proceed to message processing (save message)
         expect(mockMessagesRepo.create).toHaveBeenCalled();
@@ -977,7 +1000,9 @@ describe('ChannelServiceImpl', () => {
         });
 
         // Set up MessageBus for continued processing
-        const mockBus = { process: vi.fn().mockResolvedValue({ response: { content: 'Auto-verified response' } }) };
+        const mockBus = {
+          process: vi.fn().mockResolvedValue({ response: { content: 'Auto-verified response' } }),
+        };
         mockHasServiceRegistry.mockReturnValue(true);
         mockGetServiceRegistry.mockReturnValue({
           get: vi.fn().mockImplementation((token: unknown) => {
@@ -994,7 +1019,7 @@ describe('ChannelServiceImpl', () => {
         expect(mockVerificationService.verifyViaWhitelist).toHaveBeenCalledWith(
           'telegram',
           'user-456',
-          'Test User',
+          'Test User'
         );
         // Should proceed to message processing
         expect(mockMessagesRepo.create).toHaveBeenCalled();
@@ -1021,7 +1046,7 @@ describe('ChannelServiceImpl', () => {
             senderId: 'user-456',
             senderName: 'Test User',
             content: 'Hello!',
-          }),
+          })
         );
       });
 
@@ -1034,7 +1059,7 @@ describe('ChannelServiceImpl', () => {
         // Still broadcasts and processes
         expect(mockWsGateway.broadcast).toHaveBeenCalledWith(
           'channel:message',
-          expect.objectContaining({ direction: 'incoming' }),
+          expect.objectContaining({ direction: 'incoming' })
         );
       });
 
@@ -1047,7 +1072,7 @@ describe('ChannelServiceImpl', () => {
             id: 'msg-1',
             channelId: 'test-plugin',
             direction: 'incoming',
-          }),
+          })
         );
       });
 
@@ -1059,7 +1084,7 @@ describe('ChannelServiceImpl', () => {
           expect.objectContaining({
             type: 'info',
             message: expect.stringContaining('Test User'),
-          }),
+          })
         );
       });
     });
@@ -1078,11 +1103,7 @@ describe('ChannelServiceImpl', () => {
 
         await service.processIncomingMessage(message);
 
-        expect(mockSessionsRepo.findActive).toHaveBeenCalledWith(
-          'cu-1',
-          'test-plugin',
-          'chat-123',
-        );
+        expect(mockSessionsRepo.findActive).toHaveBeenCalledWith('cu-1', 'test-plugin', 'chat-123');
         // Should NOT create a new conversation
         expect(mockConversationsRepo.create).not.toHaveBeenCalled();
       });
@@ -1103,14 +1124,14 @@ describe('ChannelServiceImpl', () => {
               source: 'channel',
               platform: 'telegram',
             }),
-          }),
+          })
         );
         expect(mockSessionsRepo.create).toHaveBeenCalledWith(
           expect.objectContaining({
             channelUserId: 'cu-1',
             channelPluginId: 'test-plugin',
             platformChatId: 'chat-123',
-          }),
+          })
         );
       });
 
@@ -1139,7 +1160,7 @@ describe('ChannelServiceImpl', () => {
           expect.objectContaining({
             userId: 'op-user-1',
             source: 'channel',
-          }),
+          })
         );
         expect(mockSessionService.linkConversation).toHaveBeenCalledWith('unified-1', 'conv-1');
       });
@@ -1183,7 +1204,10 @@ describe('ChannelServiceImpl', () => {
             throw new Error('Not found');
           }),
         });
-        mockGetOrCreateDefaultAgent.mockResolvedValue({ id: 'default', setRequestApproval: vi.fn() });
+        mockGetOrCreateDefaultAgent.mockResolvedValue({
+          id: 'default',
+          setRequestApproval: vi.fn(),
+        });
       });
 
       it('should route through MessageBus when available', async () => {
@@ -1205,7 +1229,7 @@ describe('ChannelServiceImpl', () => {
               provider: 'openai',
               model: 'gpt-4',
             }),
-          }),
+          })
         );
       });
 
@@ -1217,7 +1241,7 @@ describe('ChannelServiceImpl', () => {
             platformChatId: 'chat-123',
             text: 'AI bus response',
             replyToId: 'msg-1',
-          }),
+          })
         );
       });
 
@@ -1229,7 +1253,7 @@ describe('ChannelServiceImpl', () => {
         expect(channelPlugin.api.sendMessage).toHaveBeenCalledWith(
           expect.objectContaining({
             text: '(No response generated)',
-          }),
+          })
         );
       });
 
@@ -1241,7 +1265,7 @@ describe('ChannelServiceImpl', () => {
         expect(channelPlugin.api.sendMessage).toHaveBeenCalledWith(
           expect.objectContaining({
             text: '(No response generated)',
-          }),
+          })
         );
       });
 
@@ -1268,7 +1292,7 @@ describe('ChannelServiceImpl', () => {
             direction: 'outgoing',
             sender: 'Assistant',
             content: 'AI bus response',
-          }),
+          })
         );
       });
 
@@ -1280,7 +1304,7 @@ describe('ChannelServiceImpl', () => {
         expect(channelPlugin.api.sendMessage).toHaveBeenCalledWith(
           expect.objectContaining({
             text: expect.stringContaining('[Demo Mode]'),
-          }),
+          })
         );
         expect(mockBus.process).not.toHaveBeenCalled();
       });
@@ -1314,7 +1338,7 @@ describe('ChannelServiceImpl', () => {
         expect(channelPlugin.api.sendMessage).toHaveBeenCalledWith(
           expect.objectContaining({
             text: 'Direct agent response',
-          }),
+          })
         );
       });
 
@@ -1329,7 +1353,7 @@ describe('ChannelServiceImpl', () => {
         expect(channelPlugin.api.sendMessage).toHaveBeenCalledWith(
           expect.objectContaining({
             text: expect.stringContaining('Agent failed'),
-          }),
+          })
         );
       });
 
@@ -1341,7 +1365,7 @@ describe('ChannelServiceImpl', () => {
         expect(channelPlugin.api.sendMessage).toHaveBeenCalledWith(
           expect.objectContaining({
             text: expect.stringContaining('[Demo Mode]'),
-          }),
+          })
         );
         expect(mockAgent.chat).not.toHaveBeenCalled();
       });
@@ -1350,9 +1374,7 @@ describe('ChannelServiceImpl', () => {
     describe('error handling', () => {
       it('should send provider-error message for provider-related failures', async () => {
         mockHasServiceRegistry.mockReturnValue(false);
-        mockGetOrCreateDefaultAgent.mockRejectedValue(
-          new Error('No provider configured'),
-        );
+        mockGetOrCreateDefaultAgent.mockRejectedValue(new Error('No provider configured'));
 
         await service.processIncomingMessage(message);
 
@@ -1360,22 +1382,20 @@ describe('ChannelServiceImpl', () => {
         expect(channelPlugin.api.sendMessage).toHaveBeenCalledWith(
           expect.objectContaining({
             text: expect.stringContaining('API key'),
-          }),
+          })
         );
       });
 
       it('should send generic error message for non-provider failures', async () => {
         mockHasServiceRegistry.mockReturnValue(false);
-        mockGetOrCreateDefaultAgent.mockRejectedValue(
-          new Error('Something unexpected'),
-        );
+        mockGetOrCreateDefaultAgent.mockRejectedValue(new Error('Something unexpected'));
 
         await service.processIncomingMessage(message);
 
         expect(channelPlugin.api.sendMessage).toHaveBeenCalledWith(
           expect.objectContaining({
             text: expect.stringContaining('Something unexpected'),
-          }),
+          })
         );
       });
 
@@ -1410,8 +1430,17 @@ describe('ChannelServiceImpl', () => {
 
   describe('withSessionLock()', () => {
     // Access private method via any-cast for testing
-    function callWithSessionLock<T>(svc: ChannelServiceImpl, key: string, fn: () => Promise<T>): Promise<T> {
-      return (svc as unknown as { withSessionLock: typeof svc['getChannel'] & ((key: string, fn: () => Promise<T>) => Promise<T>) }).withSessionLock(key, fn);
+    function callWithSessionLock<T>(
+      svc: ChannelServiceImpl,
+      key: string,
+      fn: () => Promise<T>
+    ): Promise<T> {
+      return (
+        svc as unknown as {
+          withSessionLock: (typeof svc)['getChannel'] &
+            ((key: string, fn: () => Promise<T>) => Promise<T>);
+        }
+      ).withSessionLock(key, fn);
     }
 
     it('should serialize operations for the same key', async () => {
@@ -1455,16 +1484,20 @@ describe('ChannelServiceImpl', () => {
       await callWithSessionLock(service, 'key-x', async () => 'done');
 
       // Lock map should be empty after completion
-      const locks = (service as unknown as { sessionLocks: Map<string, Promise<void>> }).sessionLocks;
+      const locks = (service as unknown as { sessionLocks: Map<string, Promise<void>> })
+        .sessionLocks;
       expect(locks.has('key-x')).toBe(false);
     });
 
     it('should clean up lock even if fn throws', async () => {
       await callWithSessionLock(service, 'key-err', async () => {
         throw new Error('fn error');
-      }).catch(() => { /* expected */ });
+      }).catch(() => {
+        /* expected */
+      });
 
-      const locks = (service as unknown as { sessionLocks: Map<string, Promise<void>> }).sessionLocks;
+      const locks = (service as unknown as { sessionLocks: Map<string, Promise<void>> })
+        .sessionLocks;
       expect(locks.has('key-err')).toBe(false);
     });
 
@@ -1472,7 +1505,7 @@ describe('ChannelServiceImpl', () => {
       await expect(
         callWithSessionLock(service, 'key-e', async () => {
           throw new Error('Test error');
-        }),
+        })
       ).rejects.toThrow('Test error');
     });
   });

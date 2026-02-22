@@ -56,7 +56,7 @@ export function WorkflowToolSettingsPage() {
             }
           }
           return { ...server, liveTools };
-        }),
+        })
       );
       setMcpServers(serversWithTools);
     } catch {
@@ -75,7 +75,10 @@ export function WorkflowToolSettingsPage() {
   };
 
   const getMcpToolWorkflowUsable = (server: McpServer, toolName: string): boolean => {
-    const toolSettings = (server.metadata?.toolSettings ?? {}) as Record<string, { workflowUsable?: boolean }>;
+    const toolSettings = (server.metadata?.toolSettings ?? {}) as Record<
+      string,
+      { workflowUsable?: boolean }
+    >;
     return toolSettings[toolName]?.workflowUsable !== false;
   };
 
@@ -92,10 +95,10 @@ export function WorkflowToolSettingsPage() {
     setToggling(id);
     try {
       await customToolsApi.setWorkflowUsable(id, enabled);
-      setCustomTools(prev =>
-        prev.map(t =>
-          t.id === id ? { ...t, metadata: { ...t.metadata, workflowUsable: enabled } } : t,
-        ),
+      setCustomTools((prev) =>
+        prev.map((t) =>
+          t.id === id ? { ...t, metadata: { ...t.metadata, workflowUsable: enabled } } : t
+        )
       );
     } finally {
       setToggling(null);
@@ -116,13 +119,15 @@ export function WorkflowToolSettingsPage() {
     setToggling(key);
     try {
       await mcpApi.setToolSettings(serverId, toolName, enabled);
-      setMcpServers(prev =>
-        prev.map(s => {
+      setMcpServers((prev) =>
+        prev.map((s) => {
           if (s.id !== serverId) return s;
-          const toolSettings = { ...((s.metadata?.toolSettings ?? {}) as Record<string, Record<string, unknown>>) };
+          const toolSettings = {
+            ...((s.metadata?.toolSettings ?? {}) as Record<string, Record<string, unknown>>),
+          };
           toolSettings[toolName] = { ...(toolSettings[toolName] ?? {}), workflowUsable: enabled };
           return { ...s, metadata: { ...s.metadata, toolSettings } };
-        }),
+        })
       );
     } finally {
       setToggling(null);
@@ -154,8 +159,8 @@ export function WorkflowToolSettingsPage() {
     <div className="mx-auto max-w-4xl p-6">
       <h1 className="text-2xl font-bold mb-2">Workflow Tool Settings</h1>
       <p className="text-sm text-muted-foreground mb-6">
-        Control which tools are available as workflow nodes. Disabling a tool here
-        hides it from the workflow editor and copilot.
+        Control which tools are available as workflow nodes. Disabling a tool here hides it from the
+        workflow editor and copilot.
       </p>
 
       {/* Tab bar */}
@@ -190,7 +195,7 @@ export function WorkflowToolSettingsPage() {
               No active custom tools found.
             </p>
           ) : (
-            customTools.map(tool => {
+            customTools.map((tool) => {
               const enabled = getWorkflowUsable(tool);
               const inActiveWf = activeToolNames.has(tool.name);
               return (
@@ -234,7 +239,7 @@ export function WorkflowToolSettingsPage() {
               No MCP servers configured.
             </p>
           ) : (
-            mcpServers.map(server => (
+            mcpServers.map((server) => (
               <div key={server.id}>
                 <div className="flex items-center gap-2 mb-2">
                   <h3 className="text-sm font-semibold">{server.displayName}</h3>
@@ -253,7 +258,7 @@ export function WorkflowToolSettingsPage() {
                   </p>
                 ) : (
                   <div className="space-y-1">
-                    {server.liveTools.map(tool => {
+                    {server.liveTools.map((tool) => {
                       const enabled = getMcpToolWorkflowUsable(server, tool.name);
                       const qualifiedName = `mcp.${server.name}.${tool.name}`;
                       const inActiveWf = activeToolNames.has(qualifiedName);

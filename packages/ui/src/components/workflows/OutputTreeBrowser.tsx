@@ -31,7 +31,13 @@ export function OutputTreeBrowser({ upstreamNodes, onInsert }: OutputTreeBrowser
   );
 }
 
-function UpstreamNodeSection({ node, onInsert }: { node: ToolNodeType; onInsert: (t: string) => void }) {
+function UpstreamNodeSection({
+  node,
+  onInsert,
+}: {
+  node: ToolNodeType;
+  onInsert: (t: string) => void;
+}) {
   const [isOpen, setIsOpen] = useState(true);
   const data = node.data as ToolNodeData;
   const output = data.executionOutput;
@@ -43,10 +49,16 @@ function UpstreamNodeSection({ node, onInsert }: { node: ToolNodeType; onInsert:
         onClick={() => setIsOpen(!isOpen)}
         className="w-full flex items-center gap-1.5 px-2 py-1.5 text-xs font-medium text-text-primary dark:text-dark-text-primary bg-bg-tertiary dark:bg-dark-bg-tertiary hover:bg-bg-primary dark:hover:bg-dark-bg-primary transition-colors"
       >
-        {isOpen ? <ChevronDown className="w-3 h-3 shrink-0" /> : <ChevronRight className="w-3 h-3 shrink-0" />}
+        {isOpen ? (
+          <ChevronDown className="w-3 h-3 shrink-0" />
+        ) : (
+          <ChevronRight className="w-3 h-3 shrink-0" />
+        )}
         <span className="truncate">{data.label || data.toolName}</span>
         {hasOutput && (
-          <span className={`ml-auto px-1 py-0.5 text-[9px] font-medium rounded ${typeColors[detectType(output)]}`}>
+          <span
+            className={`ml-auto px-1 py-0.5 text-[9px] font-medium rounded ${typeColors[detectType(output)]}`}
+          >
             {detectType(output)}
           </span>
         )}
@@ -59,11 +71,7 @@ function UpstreamNodeSection({ node, onInsert }: { node: ToolNodeType; onInsert:
               Run workflow to see output fields
             </p>
           ) : (
-            <JsonTreeView
-              data={output}
-              pathPrefix={`${node.id}.output`}
-              onClickPath={onInsert}
-            />
+            <JsonTreeView data={output} pathPrefix={`${node.id}.output`} onClickPath={onInsert} />
           )}
         </div>
       )}

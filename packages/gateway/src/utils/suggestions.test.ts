@@ -5,7 +5,8 @@ describe('extractSuggestions', () => {
   // --- Object format (primary) ---
 
   it('extracts valid object suggestions from end of content', () => {
-    const raw = 'Here is my response.\n\n<suggestions>[{"title":"Ask about X","detail":"Can you explain X in more detail?"},{"title":"Tell me more","detail":"Tell me more about this topic"}]</suggestions>';
+    const raw =
+      'Here is my response.\n\n<suggestions>[{"title":"Ask about X","detail":"Can you explain X in more detail?"},{"title":"Tell me more","detail":"Tell me more about this topic"}]</suggestions>';
     const result = extractSuggestions(raw);
     expect(result.content).toBe('Here is my response.');
     expect(result.suggestions).toEqual([
@@ -22,7 +23,8 @@ describe('extractSuggestions', () => {
   });
 
   it('handles whitespace around the tag', () => {
-    const raw = 'Response text.\n\n<suggestions>  [{"title":"A","detail":"Detail A"}]  </suggestions>  \n';
+    const raw =
+      'Response text.\n\n<suggestions>  [{"title":"A","detail":"Detail A"}]  </suggestions>  \n';
     const result = extractSuggestions(raw);
     expect(result.content).toBe('Response text.');
     expect(result.suggestions).toEqual([{ title: 'A', detail: 'Detail A' }]);
@@ -64,25 +66,29 @@ describe('extractSuggestions', () => {
   });
 
   it('filters out items with missing title', () => {
-    const raw = 'Response.\n<suggestions>[{"title":"","detail":"has detail"},{"title":"ok","detail":"fine"}]</suggestions>';
+    const raw =
+      'Response.\n<suggestions>[{"title":"","detail":"has detail"},{"title":"ok","detail":"fine"}]</suggestions>';
     const result = extractSuggestions(raw);
     expect(result.suggestions).toEqual([{ title: 'ok', detail: 'fine' }]);
   });
 
   it('filters out items with missing detail', () => {
-    const raw = 'Response.\n<suggestions>[{"title":"no detail","detail":""},{"title":"ok","detail":"fine"}]</suggestions>';
+    const raw =
+      'Response.\n<suggestions>[{"title":"no detail","detail":""},{"title":"ok","detail":"fine"}]</suggestions>';
     const result = extractSuggestions(raw);
     expect(result.suggestions).toEqual([{ title: 'ok', detail: 'fine' }]);
   });
 
   it('filters out non-object/non-string items', () => {
-    const raw = 'Response.\n<suggestions>[42, null, true, {"title":"valid","detail":"item"}]</suggestions>';
+    const raw =
+      'Response.\n<suggestions>[42, null, true, {"title":"valid","detail":"item"}]</suggestions>';
     const result = extractSuggestions(raw);
     expect(result.suggestions).toEqual([{ title: 'valid', detail: 'item' }]);
   });
 
   it('does NOT match tag in the middle of content', () => {
-    const raw = 'Start <suggestions>[{"title":"mid","detail":"test"}]</suggestions> end of response.';
+    const raw =
+      'Start <suggestions>[{"title":"mid","detail":"test"}]</suggestions> end of response.';
     const result = extractSuggestions(raw);
     expect(result.content).toBe(raw);
     expect(result.suggestions).toEqual([]);
@@ -96,7 +102,8 @@ describe('extractSuggestions', () => {
   });
 
   it('trims title and detail text', () => {
-    const raw = 'Response.\n<suggestions>[{"title":"  padded  ","detail":"  spaced  "}]</suggestions>';
+    const raw =
+      'Response.\n<suggestions>[{"title":"  padded  ","detail":"  spaced  "}]</suggestions>';
     const result = extractSuggestions(raw);
     expect(result.suggestions).toEqual([{ title: 'padded', detail: 'spaced' }]);
   });
@@ -138,7 +145,8 @@ Here is a detailed response.
   });
 
   it('handles mixed array of objects and strings', () => {
-    const raw = 'Response.\n<suggestions>[{"title":"Obj","detail":"Object detail"},"Plain string"]</suggestions>';
+    const raw =
+      'Response.\n<suggestions>[{"title":"Obj","detail":"Object detail"},"Plain string"]</suggestions>';
     const result = extractSuggestions(raw);
     expect(result.suggestions).toEqual([
       { title: 'Obj', detail: 'Object detail' },

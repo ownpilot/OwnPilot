@@ -53,7 +53,12 @@ function makeIsolationConfig(overrides: Partial<IsolationConfig> = {}): Isolatio
 }
 
 function createMockRegistry(
-  plugins: Array<{ id: string; name: string; version: string; publicAPI?: Record<string, unknown> }> = [],
+  plugins: Array<{
+    id: string;
+    name: string;
+    version: string;
+    publicAPI?: Record<string, unknown>;
+  }> = []
 ): PluginRegistryInterface {
   return {
     getPlugin: vi.fn((id: string) => {
@@ -188,7 +193,7 @@ describe('IsolationEnforcer', () => {
       expect(enforcer.isBlocked(pluginA)).toBe(true);
       expect(spy).toHaveBeenCalledWith(
         '[Security]',
-        expect.stringContaining('Plugin plugin-a blocked after 3 violations'),
+        expect.stringContaining('Plugin plugin-a blocked after 3 violations')
       );
 
       spy.mockRestore();
@@ -425,7 +430,14 @@ describe('PluginIsolatedStorage', () => {
     });
 
     it('should accept keys with allowed characters', async () => {
-      const validKeys = ['simple', 'with-dash', 'with_underscore', 'with.dot', 'with:colon', 'MiXeD123'];
+      const validKeys = [
+        'simple',
+        'with-dash',
+        'with_underscore',
+        'with.dot',
+        'with:colon',
+        'MiXeD123',
+      ];
 
       for (const key of validKeys) {
         const result = await storage.set(key, 'value');
@@ -968,7 +980,7 @@ describe('PluginIsolatedEvents', () => {
 
       expect(spy).toHaveBeenCalledWith(
         expect.stringContaining('[Plugin:'),
-        expect.stringContaining('Attempted to subscribe to disallowed event'),
+        expect.stringContaining('Attempted to subscribe to disallowed event')
       );
       expect(typeof unsub).toBe('function');
 
@@ -1004,7 +1016,9 @@ describe('PluginIsolatedEvents', () => {
       // We need to use a listener on the scoped name
       // Access internal emitter indirectly: emit produces `plugin:plugin-a:custom`
       // We listen on the events object (EventEmitter under the hood)
-      const internalEmitter = (events as unknown as { emitter: { on: (e: string, h: (d: unknown) => void) => void } }).emitter;
+      const internalEmitter = (
+        events as unknown as { emitter: { on: (e: string, h: (d: unknown) => void) => void } }
+      ).emitter;
       internalEmitter.on('plugin:plugin-a:test-event', handler);
 
       events.emit('test-event', { data: 'hello' });
@@ -1014,7 +1028,9 @@ describe('PluginIsolatedEvents', () => {
 
     it('should sanitize sensitive data from emitted payloads', () => {
       const handler = vi.fn();
-      const internalEmitter = (events as unknown as { emitter: { on: (e: string, h: (d: unknown) => void) => void } }).emitter;
+      const internalEmitter = (
+        events as unknown as { emitter: { on: (e: string, h: (d: unknown) => void) => void } }
+      ).emitter;
       internalEmitter.on('plugin:plugin-a:action', handler);
 
       events.emit('action', {
@@ -1124,34 +1140,22 @@ describe('PluginIsolatedLogger', () => {
   describe('log levels', () => {
     it('should log debug messages', () => {
       logger.debug('debug message');
-      expect(console.debug).toHaveBeenCalledWith(
-        '[Plugin:plugin-a]',
-        'debug message',
-      );
+      expect(console.debug).toHaveBeenCalledWith('[Plugin:plugin-a]', 'debug message');
     });
 
     it('should log info messages', () => {
       logger.info('info message');
-      expect(console.log).toHaveBeenCalledWith(
-        '[Plugin:plugin-a]',
-        'info message',
-      );
+      expect(console.log).toHaveBeenCalledWith('[Plugin:plugin-a]', 'info message');
     });
 
     it('should log warn messages', () => {
       logger.warn('warning message');
-      expect(console.warn).toHaveBeenCalledWith(
-        '[Plugin:plugin-a]',
-        'warning message',
-      );
+      expect(console.warn).toHaveBeenCalledWith('[Plugin:plugin-a]', 'warning message');
     });
 
     it('should log error messages', () => {
       logger.error('error message');
-      expect(console.error).toHaveBeenCalledWith(
-        '[Plugin:plugin-a]',
-        'error message',
-      );
+      expect(console.error).toHaveBeenCalledWith('[Plugin:plugin-a]', 'error message');
     });
 
     it('should pass data to console output', () => {
@@ -1159,7 +1163,7 @@ describe('PluginIsolatedLogger', () => {
       expect(console.log).toHaveBeenCalledWith(
         '[Plugin:plugin-a]',
         'with data',
-        expect.objectContaining({ count: 42 }),
+        expect.objectContaining({ count: 42 })
       );
     });
   });
@@ -1318,7 +1322,7 @@ describe('PluginIsolatedLogger', () => {
           message: 'test message',
           data: { name: 'value' },
           timestamp: expect.any(Date),
-        }),
+        })
       );
     });
 
@@ -1437,9 +1441,7 @@ describe('PluginIsolationManager', () => {
 
   describe('createContext', () => {
     it('should create an isolated context with all components', () => {
-      const ctx = manager.createContext(
-        makeIsolationConfig({ pluginId: pluginA }),
-      );
+      const ctx = manager.createContext(makeIsolationConfig({ pluginId: pluginA }));
 
       expect(ctx.pluginId).toBe('plugin-a');
       expect(ctx.version).toBe('1.0.0');
@@ -1461,7 +1463,7 @@ describe('PluginIsolationManager', () => {
         makeIsolationConfig({
           capabilities: ['network:fetch'],
           allowedDomains: ['api.example.com'],
-        }),
+        })
       );
 
       expect(ctx.network).not.toBeNull();
@@ -1469,7 +1471,7 @@ describe('PluginIsolationManager', () => {
 
     it('should create network for network:domains:* capability', () => {
       const ctx = manager.createContext(
-        makeIsolationConfig({ capabilities: ['network:domains:*'] }),
+        makeIsolationConfig({ capabilities: ['network:domains:*'] })
       );
 
       expect(ctx.network).not.toBeNull();
@@ -1480,24 +1482,20 @@ describe('PluginIsolationManager', () => {
         makeIsolationConfig({
           capabilities: ['network:domains:specific'],
           allowedDomains: ['example.com'],
-        }),
+        })
       );
 
       expect(ctx.network).not.toBeNull();
     });
 
     it('should not create network component when no network capability', () => {
-      const ctx = manager.createContext(
-        makeIsolationConfig({ capabilities: ['storage:read'] }),
-      );
+      const ctx = manager.createContext(makeIsolationConfig({ capabilities: ['storage:read'] }));
 
       expect(ctx.network).toBeNull();
     });
 
     it('should use registry for plugin API when registry is set', () => {
-      const registry = createMockRegistry([
-        { id: 'plugin-x', name: 'X', version: '1.0.0' },
-      ]);
+      const registry = createMockRegistry([{ id: 'plugin-x', name: 'X', version: '1.0.0' }]);
       manager.setRegistry(registry);
 
       const ctx = manager.createContext(makeIsolationConfig());
@@ -1566,7 +1564,7 @@ describe('PluginIsolationManager', () => {
         makeIsolationConfig({
           pluginId: pluginA,
           capabilities: ['storage:read', 'network:fetch'],
-        }),
+        })
       );
 
       expect(manager.hasCapability('plugin-a', 'storage:read')).toBe(true);
@@ -1578,7 +1576,7 @@ describe('PluginIsolationManager', () => {
         makeIsolationConfig({
           pluginId: pluginA,
           capabilities: ['storage:read'],
-        }),
+        })
       );
 
       expect(manager.hasCapability('plugin-a', 'network:fetch')).toBe(false);

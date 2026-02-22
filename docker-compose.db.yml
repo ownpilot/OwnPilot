@@ -18,7 +18,7 @@ services:
     container_name: ownpilot-db
     restart: unless-stopped
     ports:
-      - "${POSTGRES_PORT:-25432}:5432"
+      - '${POSTGRES_PORT:-25432}:5432'
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-ownpilot}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ownpilot_secret}
@@ -28,7 +28,7 @@ services:
       # Auto-run initial schema on first start
       - ./packages/gateway/src/db/migrations/postgres:/docker-entrypoint-initdb.d:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-ownpilot} -d ${POSTGRES_DB:-ownpilot}"]
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-ownpilot} -d ${POSTGRES_DB:-ownpilot}']
       interval: 10s
       timeout: 5s
       retries: 5

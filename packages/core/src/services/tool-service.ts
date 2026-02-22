@@ -32,7 +32,7 @@ export interface IToolService {
   execute(
     name: string,
     args: Record<string, unknown>,
-    context?: { conversationId?: string; userId?: string },
+    context?: { conversationId?: string; userId?: string }
   ): Promise<ToolServiceResult>;
 
   /**

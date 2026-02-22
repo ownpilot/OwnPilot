@@ -89,7 +89,11 @@ export interface DynamicToolRegistry {
   /** Get all tool definitions */
   getAllDefinitions(): ToolDefinition[];
   /** Execute a dynamic tool */
-  execute(name: string, args: Record<string, unknown>, context: ToolContext): Promise<ToolExecutionResult>;
+  execute(
+    name: string,
+    args: Record<string, unknown>,
+    context: ToolContext
+  ): Promise<ToolExecutionResult>;
   /** Register a new tool */
   register(tool: DynamicToolDefinition): void;
   /** Unregister a tool */
@@ -238,11 +242,16 @@ export function isPrivateUrl(urlString: string): boolean {
  */
 function createSafeFetch(toolName: string): typeof globalThis.fetch {
   return async (input: string | URL | Request, init?: RequestInit): Promise<Response> => {
-    const url = typeof input === 'string' ? input : input instanceof URL ? input.href : (input as Request).url;
+    const url =
+      typeof input === 'string'
+        ? input
+        : input instanceof URL
+          ? input.href
+          : (input as Request).url;
     if (isPrivateUrl(url)) {
       throw new Error(
         `[SSRF blocked] Tool '${toolName}' attempted to access a private/internal URL: ${new URL(url).hostname}. ` +
-        `Only public URLs are allowed.`
+          `Only public URLs are allowed.`
       );
     }
     return globalThis.fetch(input, init);
@@ -383,34 +392,56 @@ function createSandboxUtils() {
       const d2 = new Date(date2);
       const diffMs = d2.getTime() - d1.getTime();
       const units: Record<string, number> = {
-        seconds: 1000, minutes: 60000, hours: 3600000,
-        days: 86400000, weeks: 604800000,
+        seconds: 1000,
+        minutes: 60000,
+        hours: 3600000,
+        days: 86400000,
+        weeks: 604800000,
       };
       return diffMs / (units[unit] || units.days!);
     },
     dateAdd(date: string, amount: number, unit: string = 'days'): string {
       const d = date === 'now' ? new Date() : new Date(date);
       switch (unit) {
-        case 'seconds': d.setSeconds(d.getSeconds() + amount); break;
-        case 'minutes': d.setMinutes(d.getMinutes() + amount); break;
-        case 'hours': d.setHours(d.getHours() + amount); break;
-        case 'days': d.setDate(d.getDate() + amount); break;
-        case 'weeks': d.setDate(d.getDate() + (amount * 7)); break;
-        case 'months': d.setMonth(d.getMonth() + amount); break;
-        case 'years': d.setFullYear(d.getFullYear() + amount); break;
+        case 'seconds':
+          d.setSeconds(d.getSeconds() + amount);
+          break;
+        case 'minutes':
+          d.setMinutes(d.getMinutes() + amount);
+          break;
+        case 'hours':
+          d.setHours(d.getHours() + amount);
+          break;
+        case 'days':
+          d.setDate(d.getDate() + amount);
+          break;
+        case 'weeks':
+          d.setDate(d.getDate() + amount * 7);
+          break;
+        case 'months':
+          d.setMonth(d.getMonth() + amount);
+          break;
+        case 'years':
+          d.setFullYear(d.getFullYear() + amount);
+          break;
       }
       return d.toISOString();
     },
     formatDate(date: string, locale: string = 'en-US'): string {
       return new Date(date).toLocaleDateString(locale, {
-        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
       });
     },
 
     // --- Text ---
     slugify(text: string): string {
       assertInputSize(text, 'slugify');
-      return text.toLowerCase().normalize('NFD')
+      return text
+        .toLowerCase()
+        .normalize('NFD')
         .replace(/[\u0300-\u036f]/g, '')
         .replace(/[^a-z0-9\s-]/g, '')
         .replace(/\s+/g, '-')
@@ -421,19 +452,31 @@ function createSandboxUtils() {
       return text.toLowerCase().replace(/[^a-zA-Z0-9]+(.)/g, (_, chr) => chr.toUpperCase());
     },
     snakeCase(text: string): string {
-      return text.replace(/([a-z])([A-Z])/g, '$1_$2').replace(/[\s-]+/g, '_').toLowerCase();
+      return text
+        .replace(/([a-z])([A-Z])/g, '$1_$2')
+        .replace(/[\s-]+/g, '_')
+        .toLowerCase();
     },
     kebabCase(text: string): string {
-      return text.replace(/([a-z])([A-Z])/g, '$1-$2').replace(/[\s_]+/g, '-').toLowerCase();
+      return text
+        .replace(/([a-z])([A-Z])/g, '$1-$2')
+        .replace(/[\s_]+/g, '-')
+        .toLowerCase();
     },
     titleCase(text: string): string {
-      return text.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.slice(1).toLowerCase());
+      return text.replace(
+        /\w\S*/g,
+        (txt) => txt.charAt(0).toUpperCase() + txt.slice(1).toLowerCase()
+      );
     },
     truncate(text: string, maxLength: number = 100, suffix: string = '...'): string {
       return text.length > maxLength ? text.slice(0, maxLength - suffix.length) + suffix : text;
     },
     countWords(text: string): number {
-      return text.trim().split(/\s+/).filter(w => w.length > 0).length;
+      return text
+        .trim()
+        .split(/\s+/)
+        .filter((w) => w.length > 0).length;
     },
     removeDiacritics(text: string): string {
       return text.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
@@ -444,13 +487,25 @@ function createSandboxUtils() {
       return /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(value);
     },
     isUrl(value: string): boolean {
-      try { new URL(value); return true; } catch { return false; }
+      try {
+        new URL(value);
+        return true;
+      } catch {
+        return false;
+      }
     },
     isJson(value: string): boolean {
-      try { JSON.parse(value); return true; } catch { return false; }
+      try {
+        JSON.parse(value);
+        return true;
+      } catch {
+        return false;
+      }
     },
     isUuid(value: string): boolean {
-      return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+      return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+        value
+      );
     },
 
     // --- Math ---
@@ -486,13 +541,15 @@ function createSandboxUtils() {
     },
     parseCsv(csv: string, delimiter: string = ','): Record<string, string>[] {
       assertInputSize(csv, 'parseCsv');
-      const lines = csv.split('\n').filter(l => l.trim());
+      const lines = csv.split('\n').filter((l) => l.trim());
       if (lines.length < 2) return [];
-      const headers = lines[0]!.split(delimiter).map(h => h.trim());
-      return lines.slice(1).map(line => {
+      const headers = lines[0]!.split(delimiter).map((h) => h.trim());
+      return lines.slice(1).map((line) => {
         const values = line.split(delimiter);
         const obj: Record<string, string> = {};
-        headers.forEach((h, i) => { obj[h] = (values[i] || '').trim(); });
+        headers.forEach((h, i) => {
+          obj[h] = (values[i] || '').trim();
+        });
         return obj;
       });
     },
@@ -552,12 +609,15 @@ function createSandboxUtils() {
     },
     groupBy<T>(arr: T[], key: keyof T): Record<string, T[]> {
       assertArraySize(arr, 'groupBy');
-      return arr.reduce((groups, item) => {
-        const groupKey = String(item[key]);
-        if (!groups[groupKey]) groups[groupKey] = [];
-        groups[groupKey].push(item);
-        return groups;
-      }, {} as Record<string, T[]>);
+      return arr.reduce(
+        (groups, item) => {
+          const groupKey = String(item[key]);
+          if (!groups[groupKey]) groups[groupKey] = [];
+          groups[groupKey].push(item);
+          return groups;
+        },
+        {} as Record<string, T[]>
+      );
     },
 
     // --- Password ---
@@ -595,7 +655,7 @@ async function executeDynamicTool(
     permissions: mapPermissions(toolPermissions),
     limits: {
       maxExecutionTime: 30000, // 30 seconds max
-      maxCpuTime: 5000,        // 5 seconds CPU time
+      maxCpuTime: 5000, // 5 seconds CPU time
       maxMemory: 50 * 1024 * 1024, // 50MB memory
     },
     globals: {
@@ -682,13 +742,14 @@ async function executeDynamicTool(
           // Search callable tools first (all built-in tools), then fall back to utility tools
           // Match by exact name first, then by base name (for qualified name resolution)
           const allTools = callableTools ?? UTILITY_TOOLS;
-          const foundTool = allTools.find(t => t.definition.name === toolName)
-            ?? allTools.find(t => getBaseName(t.definition.name) === getBaseName(toolName));
+          const foundTool =
+            allTools.find((t) => t.definition.name === toolName) ??
+            allTools.find((t) => getBaseName(t.definition.name) === getBaseName(toolName));
           if (!foundTool) {
             // Only show allowed tools in the error message (show base names for readability)
             const available = allTools
-              .filter(t => isToolCallAllowed(t.definition.name, toolPermissions).allowed)
-              .map(t => getBaseName(t.definition.name))
+              .filter((t) => isToolCallAllowed(t.definition.name, toolPermissions).allowed)
+              .map((t) => getBaseName(t.definition.name))
               .join(', ');
             throw new Error(`Tool '${toolName}' not found. Available tools: ${available}`);
           }
@@ -713,8 +774,8 @@ async function executeDynamicTool(
         listTools: () => {
           const allTools = callableTools ?? UTILITY_TOOLS;
           return allTools
-            .filter(t => isToolCallAllowed(t.definition.name, toolPermissions).allowed)
-            .map(t => ({
+            .filter((t) => isToolCallAllowed(t.definition.name, toolPermissions).allowed)
+            .map((t) => ({
               name: getBaseName(t.definition.name),
               description: t.definition.description,
               parameters: Object.keys(t.definition.parameters.properties || {}),
@@ -743,13 +804,15 @@ async function executeDynamicTool(
       decodeURI,
       setTimeout: undefined, // explicitly blocked in sandbox
       // Scoped filesystem API (requires 'local' + 'filesystem' permissions)
-      fs: toolPermissions.includes('local') && toolPermissions.includes('filesystem')
-        ? createScopedFs(context.workspaceDir ?? process.cwd())
-        : undefined,
+      fs:
+        toolPermissions.includes('local') && toolPermissions.includes('filesystem')
+          ? createScopedFs(context.workspaceDir ?? process.cwd())
+          : undefined,
       // Scoped shell execution API (requires 'local' + 'shell' permissions)
-      exec: toolPermissions.includes('local') && toolPermissions.includes('shell')
-        ? createScopedExec(context.workspaceDir ?? process.cwd()).exec
-        : undefined,
+      exec:
+        toolPermissions.includes('local') && toolPermissions.includes('shell')
+          ? createScopedExec(context.workspaceDir ?? process.cwd()).exec
+          : undefined,
     },
     debug: false,
   });
@@ -884,7 +947,9 @@ export function createDynamicToolRegistry(
       return tools.has(name);
     },
 
-    setCallableTools(newTools: Array<{ definition: ToolDefinition; executor: ToolExecutor }>): void {
+    setCallableTools(
+      newTools: Array<{ definition: ToolDefinition; executor: ToolExecutor }>
+    ): void {
       callableTools = newTools;
     },
   };
@@ -923,11 +988,13 @@ The tool will be saved and available for use. Write JavaScript code that:
       },
       parameters: {
         type: 'string',
-        description: 'JSON Schema for tool parameters as a JSON string (e.g., {"type":"object","properties":{"query":{"type":"string","description":"Search query"}}})',
+        description:
+          'JSON Schema for tool parameters as a JSON string (e.g., {"type":"object","properties":{"query":{"type":"string","description":"Search query"}}})',
       },
       code: {
         type: 'string',
-        description: 'JavaScript code implementing the tool. Access args via "args" variable. Return the result.',
+        description:
+          'JavaScript code implementing the tool. Access args via "args" variable. Return the result.',
       },
       category: {
         type: 'string',
@@ -935,7 +1002,8 @@ The tool will be saved and available for use. Write JavaScript code that:
       },
       permissions: {
         type: 'array',
-        description: 'Required permissions. Use "local" with "filesystem" or "shell" to access workspace files or run commands on the host machine.',
+        description:
+          'Required permissions. Use "local" with "filesystem" or "shell" to access workspace files or run commands on the host machine.',
         items: {
           type: 'string',
           enum: ['network', 'filesystem', 'database', 'shell', 'email', 'scheduling', 'local'],
@@ -1068,13 +1136,15 @@ export const searchToolsDefinition: ToolDefinition = {
   name: 'search_tools',
   brief: 'Find tools by keyword and get their parameter docs',
   workflowUsable: false,
-  description: 'Search for tools by keyword or intent. AND matching: "email send" finds send_email. Use "all" to list every tool. Returns parameter docs by default.',
+  description:
+    'Search for tools by keyword or intent. AND matching: "email send" finds send_email. Use "all" to list every tool. Returns parameter docs by default.',
   parameters: {
     type: 'object',
     properties: {
       query: {
         type: 'string',
-        description: 'Search keywords (e.g. "email", "send email", "task add"). Multiple words use AND logic. Use "all" to list everything.',
+        description:
+          'Search keywords (e.g. "email", "send email", "task add"). Multiple words use AND logic. Use "all" to list everything.',
       },
       category: {
         type: 'string',
@@ -1098,7 +1168,8 @@ export const getToolHelpDefinition: ToolDefinition = {
   name: 'get_tool_help',
   brief: 'Get parameter docs for one or more tools by name',
   workflowUsable: false,
-  description: 'Get parameter info for one or more tools. Accepts tool_name (single) or tool_names (array).',
+  description:
+    'Get parameter info for one or more tools. Accepts tool_name (single) or tool_names (array).',
   parameters: {
     type: 'object',
     properties: {
@@ -1125,13 +1196,15 @@ export const useToolDefinition: ToolDefinition = {
   name: 'use_tool',
   brief: 'Execute any tool by name with arguments',
   workflowUsable: false,
-  description: 'Execute a tool by its qualified name (namespace.tool_name). Core tools: "core.*", custom: "custom.*". Check params via search_tools first. Errors show correct params — read and retry.',
+  description:
+    'Execute a tool by its qualified name (namespace.tool_name). Core tools: "core.*", custom: "custom.*". Check params via search_tools first. Errors show correct params — read and retry.',
   parameters: {
     type: 'object',
     properties: {
       tool_name: {
         type: 'string',
-        description: 'Qualified tool name with namespace prefix (e.g., "core.add_task", "custom.fetch_weather"). Use search_tools to discover names.',
+        description:
+          'Qualified tool name with namespace prefix (e.g., "core.add_task", "custom.fetch_weather"). Use search_tools to discover names.',
       },
       arguments: {
         type: 'object',
@@ -1187,7 +1260,8 @@ export const inspectToolSourceDefinition: ToolDefinition = {
   name: 'inspect_tool_source',
   brief: 'View source code of any tool (built-in or custom)',
   workflowUsable: false,
-  description: 'Get the implementation source code of a tool. For built-in tools, returns TypeScript source. For custom tools, returns JavaScript code, parameters, and metadata. Use this to understand how a tool works before improving or replacing it.',
+  description:
+    'Get the implementation source code of a tool. For built-in tools, returns TypeScript source. For custom tools, returns JavaScript code, parameters, and metadata. Use this to understand how a tool works before improving or replacing it.',
   parameters: {
     type: 'object',
     properties: {
@@ -1209,19 +1283,26 @@ export const updateCustomToolDefinition: ToolDefinition = {
   name: 'update_custom_tool',
   brief: 'Update code or config of an existing custom tool',
   workflowUsable: false,
-  description: 'Update an existing custom tool. Can change code, description, parameters, category, or permissions. Use this after inspect_tool_source to improve a custom tool.',
+  description:
+    'Update an existing custom tool. Can change code, description, parameters, category, or permissions. Use this after inspect_tool_source to improve a custom tool.',
   parameters: {
     type: 'object',
     properties: {
       name: { type: 'string', description: 'Name of the custom tool to update' },
       description: { type: 'string', description: 'New description (optional)' },
-      parameters: { type: 'string', description: 'New JSON Schema parameters as JSON string (optional)' },
+      parameters: {
+        type: 'string',
+        description: 'New JSON Schema parameters as JSON string (optional)',
+      },
       code: { type: 'string', description: 'New JavaScript code (optional)' },
       category: { type: 'string', description: 'New category (optional)' },
       permissions: {
         type: 'array',
         description: 'New permissions array (optional)',
-        items: { type: 'string', enum: ['network', 'filesystem', 'database', 'shell', 'email', 'scheduling', 'local'] },
+        items: {
+          type: 'string',
+          enum: ['network', 'filesystem', 'database', 'shell', 'email', 'scheduling', 'local'],
+        },
       },
     },
     required: ['name'],

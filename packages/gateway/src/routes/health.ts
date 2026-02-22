@@ -3,7 +3,13 @@
  */
 
 import { Hono } from 'hono';
-import { VERSION, getSandboxStatus, resetSandboxCache, ensureImage, getExecutionMode } from '@ownpilot/core';
+import {
+  VERSION,
+  getSandboxStatus,
+  resetSandboxCache,
+  ensureImage,
+  getExecutionMode,
+} from '@ownpilot/core';
 import type { HealthCheck } from '../types/index.js';
 import { getAdapterSync } from '../db/adapters/index.js';
 import { getDatabaseConfig } from '../db/adapters/types.js';
@@ -58,7 +64,11 @@ healthRoutes.get('/', async (c) => {
     },
     {
       name: 'docker',
-      status: sandboxStatus?.dockerAvailable ? 'pass' : executionMode !== 'docker' ? 'warn' : 'fail',
+      status: sandboxStatus?.dockerAvailable
+        ? 'pass'
+        : executionMode !== 'docker'
+          ? 'warn'
+          : 'fail',
       message: sandboxStatus?.dockerAvailable
         ? `Docker available (v${sandboxStatus.dockerVersion ?? 'unknown'})`
         : executionMode !== 'docker'
@@ -83,8 +93,12 @@ healthRoutes.get('/', async (c) => {
       codeExecutionEnabled: (sandboxStatus?.dockerAvailable ?? false) || executionMode !== 'docker',
       executionMode,
       securityMode: sandboxStatus?.dockerAvailable
-        ? (sandboxStatus?.relaxedSecurityRequired ? 'relaxed' : 'strict')
-        : executionMode !== 'docker' ? 'local' : 'disabled',
+        ? sandboxStatus?.relaxedSecurityRequired
+          ? 'relaxed'
+          : 'strict'
+        : executionMode !== 'docker'
+          ? 'local'
+          : 'disabled',
     },
   });
 });
@@ -116,7 +130,14 @@ healthRoutes.get('/sandbox', async (c) => {
 
     return apiResponse(c, status);
   } catch (error) {
-    return apiError(c, { code: ERROR_CODES.SANDBOX_CHECK_FAILED, message: getErrorMessage(error, 'Failed to check sandbox status') }, 500);
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.SANDBOX_CHECK_FAILED,
+        message: getErrorMessage(error, 'Failed to check sandbox status'),
+      },
+      500
+    );
   }
 });
 

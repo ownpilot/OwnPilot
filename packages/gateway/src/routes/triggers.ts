@@ -5,13 +5,19 @@
  */
 
 import { Hono } from 'hono';
-import {
-  type CreateTriggerInput,
-  type UpdateTriggerInput,
-} from '../db/repositories/triggers.js';
+import { type CreateTriggerInput, type UpdateTriggerInput } from '../db/repositories/triggers.js';
 import { getTriggerEngine } from '../triggers/index.js';
 import { validateCronExpression, getServiceRegistry, Services } from '@ownpilot/core';
-import { getUserId, apiResponse, apiError, getIntParam, ERROR_CODES, notFoundError, getErrorMessage, validateQueryEnum } from './helpers.js';
+import {
+  getUserId,
+  apiResponse,
+  apiError,
+  getIntParam,
+  ERROR_CODES,
+  notFoundError,
+  getErrorMessage,
+  validateQueryEnum,
+} from './helpers.js';
 import { MAX_DAYS_LOOKBACK, MAX_PAGINATION_OFFSET } from '../config/defaults.js';
 import { wsGateway } from '../ws/server.js';
 
@@ -26,7 +32,12 @@ export const triggersRoutes = new Hono();
  */
 triggersRoutes.get('/', async (c) => {
   const userId = getUserId(c);
-  const type = validateQueryEnum(c.req.query('type'), ['schedule', 'event', 'condition', 'webhook'] as const);
+  const type = validateQueryEnum(c.req.query('type'), [
+    'schedule',
+    'event',
+    'condition',
+    'webhook',
+  ] as const);
   const enabled = c.req.query('enabled');
   const limit = getIntParam(c, 'limit', 20, 1, 100);
 
@@ -38,9 +49,9 @@ triggersRoutes.get('/', async (c) => {
   });
 
   return apiResponse(c, {
-      triggers,
-      total: triggers.length,
-    });
+    triggers,
+    total: triggers.length,
+  });
 });
 
 /**
@@ -56,7 +67,14 @@ triggersRoutes.post('/', async (c) => {
   if (body.type === 'schedule') {
     const cron = (body.config as Record<string, unknown>).cron;
     if (typeof cron !== 'string' || !cron) {
-      return apiError(c, { code: ERROR_CODES.INVALID_CRON, message: 'Schedule triggers require a cron expression string in config.cron' }, 400);
+      return apiError(
+        c,
+        {
+          code: ERROR_CODES.INVALID_CRON,
+          message: 'Schedule triggers require a cron expression string in config.cron',
+        },
+        400
+      );
     }
     const validation = validateCronExpression(cron);
     if (!validation.valid) {
@@ -76,10 +94,14 @@ triggersRoutes.post('/', async (c) => {
 
   wsGateway.broadcast('data:changed', { entity: 'trigger', action: 'created', id: trigger.id });
 
-  return apiResponse(c, {
+  return apiResponse(
+    c,
+    {
       trigger,
       message: 'Trigger created successfully.',
-    }, 201);
+    },
+    201
+  );
 });
 
 /**
@@ -100,20 +122,31 @@ triggersRoutes.get('/history', async (c) => {
   const userId = getUserId(c);
   const limit = getIntParam(c, 'limit', 25, 1, 200);
   const offset = getIntParam(c, 'offset', 0, 0, MAX_PAGINATION_OFFSET);
-  const status = validateQueryEnum(c.req.query('status'), ['success', 'failure', 'skipped'] as const);
+  const status = validateQueryEnum(c.req.query('status'), [
+    'success',
+    'failure',
+    'skipped',
+  ] as const);
   const triggerId = c.req.query('triggerId') || undefined;
   const from = c.req.query('from') || undefined;
   const to = c.req.query('to') || undefined;
 
   const service = getServiceRegistry().get(Services.Trigger);
-  const { history, total } = await service.getRecentHistory(userId, { status, triggerId, from, to, limit, offset });
+  const { history, total } = await service.getRecentHistory(userId, {
+    status,
+    triggerId,
+    from,
+    to,
+    limit,
+    offset,
+  });
 
   return apiResponse(c, {
-      history,
-      total,
-      limit,
-      offset,
-    });
+    history,
+    total,
+    limit,
+    offset,
+  });
 });
 
 /**
@@ -126,9 +159,9 @@ triggersRoutes.get('/due', async (c) => {
   const triggers = await service.getDueTriggers(userId);
 
   return apiResponse(c, {
-      triggers,
-      count: triggers.length,
-    });
+    triggers,
+    count: triggers.length,
+  });
 });
 
 /**
@@ -149,9 +182,9 @@ triggersRoutes.get('/:id', async (c) => {
   const { history } = await service.getHistoryForTrigger(userId, id, { limit: 10 });
 
   return apiResponse(c, {
-      ...trigger,
-      recentHistory: history,
-    });
+    ...trigger,
+    recentHistory: history,
+  });
 });
 
 /**
@@ -160,7 +193,7 @@ triggersRoutes.get('/:id', async (c) => {
 triggersRoutes.patch('/:id', async (c) => {
   const userId = getUserId(c);
   const id = c.req.param('id');
-  const body = await c.req.json().catch(() => null) as UpdateTriggerInput | null;
+  const body = (await c.req.json().catch(() => null)) as UpdateTriggerInput | null;
   if (!body) {
     return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'Invalid JSON body' }, 400);
   }
@@ -174,7 +207,11 @@ triggersRoutes.patch('/:id', async (c) => {
       const cron = (body.config as Record<string, unknown>).cron;
       if (cron !== undefined) {
         if (typeof cron !== 'string' || !cron) {
-          return apiError(c, { code: ERROR_CODES.INVALID_CRON, message: 'config.cron must be a non-empty string' }, 400);
+          return apiError(
+            c,
+            { code: ERROR_CODES.INVALID_CRON, message: 'config.cron must be a non-empty string' },
+            400
+          );
         }
         const validation = validateCronExpression(cron);
         if (!validation.valid) {
@@ -212,9 +249,9 @@ triggersRoutes.post('/:id/enable', async (c) => {
   wsGateway.broadcast('data:changed', { entity: 'trigger', action: 'updated', id });
 
   return apiResponse(c, {
-      trigger: updated,
-      message: 'Trigger enabled.',
-    });
+    trigger: updated,
+    message: 'Trigger enabled.',
+  });
 });
 
 /**
@@ -234,9 +271,9 @@ triggersRoutes.post('/:id/disable', async (c) => {
   wsGateway.broadcast('data:changed', { entity: 'trigger', action: 'updated', id });
 
   return apiResponse(c, {
-      trigger: updated,
-      message: 'Trigger disabled.',
-    });
+    trigger: updated,
+    message: 'Trigger disabled.',
+  });
 });
 
 /**
@@ -265,7 +302,11 @@ triggersRoutes.post('/:id/fire', async (c) => {
   }
 
   if (!result.success) {
-    return apiError(c, { code: ERROR_CODES.EXECUTION_ERROR, message: result.error || 'Trigger execution failed.' }, 500);
+    return apiError(
+      c,
+      { code: ERROR_CODES.EXECUTION_ERROR, message: result.error || 'Trigger execution failed.' },
+      500
+    );
   }
 
   wsGateway.broadcast('data:changed', { entity: 'trigger', action: 'updated', id });
@@ -290,8 +331,8 @@ triggersRoutes.delete('/:id', async (c) => {
   wsGateway.broadcast('data:changed', { entity: 'trigger', action: 'deleted', id });
 
   return apiResponse(c, {
-      message: 'Trigger deleted successfully.',
-    });
+    message: 'Trigger deleted successfully.',
+  });
 });
 
 /**
@@ -302,7 +343,11 @@ triggersRoutes.get('/:id/history', async (c) => {
   const id = c.req.param('id');
   const limit = getIntParam(c, 'limit', 25, 1, 200);
   const offset = getIntParam(c, 'offset', 0, 0, MAX_PAGINATION_OFFSET);
-  const status = validateQueryEnum(c.req.query('status'), ['success', 'failure', 'skipped'] as const);
+  const status = validateQueryEnum(c.req.query('status'), [
+    'success',
+    'failure',
+    'skipped',
+  ] as const);
   const from = c.req.query('from') || undefined;
   const to = c.req.query('to') || undefined;
 
@@ -313,16 +358,22 @@ triggersRoutes.get('/:id/history', async (c) => {
     return notFoundError(c, 'Trigger', id);
   }
 
-  const { history, total } = await service.getHistoryForTrigger(userId, id, { status, from, to, limit, offset });
+  const { history, total } = await service.getHistoryForTrigger(userId, id, {
+    status,
+    from,
+    to,
+    limit,
+    offset,
+  });
 
   return apiResponse(c, {
-      triggerId: id,
-      triggerName: trigger.name,
-      history,
-      total,
-      limit,
-      offset,
-    });
+    triggerId: id,
+    triggerName: trigger.name,
+    history,
+    total,
+    limit,
+    offset,
+  });
 });
 
 /**
@@ -330,7 +381,9 @@ triggersRoutes.get('/:id/history', async (c) => {
  */
 triggersRoutes.post('/cleanup', async (c) => {
   const userId = getUserId(c);
-  const body = await c.req.json<{ maxAgeDays?: number }>().catch((): { maxAgeDays?: number } => ({}));
+  const body = await c.req
+    .json<{ maxAgeDays?: number }>()
+    .catch((): { maxAgeDays?: number } => ({}));
 
   const service = getServiceRegistry().get(Services.Trigger);
   let raw = body.maxAgeDays != null ? Number(body.maxAgeDays) : 30;
@@ -339,9 +392,9 @@ triggersRoutes.post('/cleanup', async (c) => {
   const deleted = await service.cleanupHistory(userId, maxAgeDays);
 
   return apiResponse(c, {
-      deletedCount: deleted,
-      message: `Cleaned up ${deleted} old history entries.`,
-    });
+    deletedCount: deleted,
+    message: `Cleaned up ${deleted} old history entries.`,
+  });
 });
 
 // ============================================================================
@@ -355,8 +408,8 @@ triggersRoutes.get('/engine/status', (c) => {
   const engine = getTriggerEngine();
 
   return apiResponse(c, {
-      running: engine.isRunning(),
-    });
+    running: engine.isRunning(),
+  });
 });
 
 /**
@@ -367,9 +420,9 @@ triggersRoutes.post('/engine/start', (c) => {
   engine.start();
 
   return apiResponse(c, {
-      running: engine.isRunning(),
-      message: 'Trigger engine started.',
-    });
+    running: engine.isRunning(),
+    message: 'Trigger engine started.',
+  });
 });
 
 /**
@@ -380,7 +433,7 @@ triggersRoutes.post('/engine/stop', (c) => {
   engine.stop();
 
   return apiResponse(c, {
-      running: engine.isRunning(),
-      message: 'Trigger engine stopped.',
-    });
+    running: engine.isRunning(),
+    message: 'Trigger engine stopped.',
+  });
 });

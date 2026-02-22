@@ -82,10 +82,7 @@ export class MessagesRepository extends BaseRepository {
   }
 
   async getById(id: string): Promise<Message | null> {
-    const row = await this.queryOne<MessageRow>(
-      `SELECT * FROM messages WHERE id = $1`,
-      [id]
-    );
+    const row = await this.queryOne<MessageRow>(`SELECT * FROM messages WHERE id = $1`, [id]);
     return row ? rowToMessage(row) : null;
   }
 
@@ -115,18 +112,14 @@ export class MessagesRepository extends BaseRepository {
   }
 
   async delete(id: string): Promise<boolean> {
-    const result = await this.execute(
-      `DELETE FROM messages WHERE id = $1`,
-      [id]
-    );
+    const result = await this.execute(`DELETE FROM messages WHERE id = $1`, [id]);
     return result.changes > 0;
   }
 
   async deleteByConversation(conversationId: string): Promise<number> {
-    const result = await this.execute(
-      `DELETE FROM messages WHERE conversation_id = $1`,
-      [conversationId]
-    );
+    const result = await this.execute(`DELETE FROM messages WHERE conversation_id = $1`, [
+      conversationId,
+    ]);
     return result.changes;
   }
 
@@ -139,9 +132,7 @@ export class MessagesRepository extends BaseRepository {
       return parseInt(row?.count ?? '0', 10);
     }
 
-    const row = await this.queryOne<{ count: string }>(
-      `SELECT COUNT(*) as count FROM messages`
-    );
+    const row = await this.queryOne<{ count: string }>(`SELECT COUNT(*) as count FROM messages`);
     return parseInt(row?.count ?? '0', 10);
   }
 }

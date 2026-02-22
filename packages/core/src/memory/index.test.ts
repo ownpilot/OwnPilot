@@ -52,7 +52,9 @@ const FAST_ITERATIONS = 1;
 // Factory helper — creates a ready-to-use store with low iterations
 // ---------------------------------------------------------------------------
 
-function makeStore(overrides: Partial<ConstructorParameters<typeof SecureMemoryStore>[0]> = {}): SecureMemoryStore {
+function makeStore(
+  overrides: Partial<ConstructorParameters<typeof SecureMemoryStore>[0]> = {}
+): SecureMemoryStore {
   return new SecureMemoryStore({
     storageDir: '/tmp/test-memory',
     installationSalt: INSTALLATION_SALT,
@@ -71,7 +73,7 @@ async function storeEntry(
   userId = USER_ID,
   content: unknown = { value: 'hello world' },
   type: MemoryType = 'fact',
-  options: Parameters<SecureMemoryStore['store']>[4] = {},
+  options: Parameters<SecureMemoryStore['store']>[4] = {}
 ): Promise<string> {
   return store.store(userId, MASTER_KEY, type, content, options);
 }
@@ -136,7 +138,10 @@ describe('SecureMemoryStore', () => {
 
     it('defaults maxEntriesPerUser to 10000', async () => {
       // Just verify the store is created without error and entries can be stored up to the limit
-      const s = new SecureMemoryStore({ installationSalt: INSTALLATION_SALT, pbkdf2Iterations: FAST_ITERATIONS });
+      const s = new SecureMemoryStore({
+        installationSalt: INSTALLATION_SALT,
+        pbkdf2Iterations: FAST_ITERATIONS,
+      });
       await s.initialize();
       const id = await s.store(USER_ID, MASTER_KEY, 'fact', { v: 1 });
       expect(id).toMatch(/^mem_/);
@@ -287,47 +292,39 @@ describe('SecureMemoryStore', () => {
 
   describe('ensureInitialized()', () => {
     it('throws when store() called before initialize()', async () => {
-      await expect(
-        store.store(USER_ID, MASTER_KEY, 'fact', { v: 1 })
-      ).rejects.toThrow('not initialized');
+      await expect(store.store(USER_ID, MASTER_KEY, 'fact', { v: 1 })).rejects.toThrow(
+        'not initialized'
+      );
     });
 
     it('throws when retrieve() called before initialize()', async () => {
-      await expect(
-        store.retrieve(USER_ID, MASTER_KEY, 'mem_fake')
-      ).rejects.toThrow('not initialized');
+      await expect(store.retrieve(USER_ID, MASTER_KEY, 'mem_fake')).rejects.toThrow(
+        'not initialized'
+      );
     });
 
     it('throws when query() called before initialize()', async () => {
-      await expect(
-        store.query(USER_ID, MASTER_KEY, {})
-      ).rejects.toThrow('not initialized');
+      await expect(store.query(USER_ID, MASTER_KEY, {})).rejects.toThrow('not initialized');
     });
 
     it('throws when delete() called before initialize()', async () => {
-      await expect(
-        store.delete(USER_ID, 'mem_fake')
-      ).rejects.toThrow('not initialized');
+      await expect(store.delete(USER_ID, 'mem_fake')).rejects.toThrow('not initialized');
     });
 
     it('throws when deleteAll() called before initialize()', async () => {
-      await expect(
-        store.deleteAll(USER_ID)
-      ).rejects.toThrow('not initialized');
+      await expect(store.deleteAll(USER_ID)).rejects.toThrow('not initialized');
     });
 
     it('throws when getStats() called before initialize()', async () => {
-      await expect(
-        store.getStats(USER_ID)
-      ).rejects.toThrow('not initialized');
+      await expect(store.getStats(USER_ID)).rejects.toThrow('not initialized');
     });
 
     it('throws when update() called before initialize()', async () => {
       // update() delegates directly to updateInternal() without an ensureInitialized() guard,
       // so the empty entries map causes 'not found' rather than 'not initialized'.
-      await expect(
-        store.update(USER_ID, MASTER_KEY, 'mem_fake', { v: 1 })
-      ).rejects.toThrow('not found');
+      await expect(store.update(USER_ID, MASTER_KEY, 'mem_fake', { v: 1 })).rejects.toThrow(
+        'not found'
+      );
     });
 
     it('does not throw after initialize()', async () => {
@@ -355,7 +352,7 @@ describe('SecureMemoryStore', () => {
       expect(fs.writeFile).toHaveBeenCalledWith(
         expect.stringContaining('entries.encrypted.json'),
         expect.any(String),
-        'utf-8',
+        'utf-8'
       );
     });
 
@@ -397,7 +394,10 @@ describe('SecureMemoryStore', () => {
     });
 
     it('stores a relationship type entry', async () => {
-      const id = await store.store(USER_ID, MASTER_KEY, 'relationship', { name: 'Bob', role: 'friend' });
+      const id = await store.store(USER_ID, MASTER_KEY, 'relationship', {
+        name: 'Bob',
+        role: 'friend',
+      });
       const entry = await store.retrieve(USER_ID, MASTER_KEY, id);
       expect(entry!.type).toBe('relationship');
     });
@@ -421,7 +421,13 @@ describe('SecureMemoryStore', () => {
     });
 
     it('respects custom accessLevel', async () => {
-      const id = await store.store(USER_ID, MASTER_KEY, 'fact', { v: 1 }, { accessLevel: 'assistant' });
+      const id = await store.store(
+        USER_ID,
+        MASTER_KEY,
+        'fact',
+        { v: 1 },
+        { accessLevel: 'assistant' }
+      );
       const entry = await store.retrieve(USER_ID, MASTER_KEY, id);
       expect(entry!.accessLevel).toBe('assistant');
     });
@@ -433,13 +439,25 @@ describe('SecureMemoryStore', () => {
     });
 
     it('respects custom source', async () => {
-      const id = await store.store(USER_ID, MASTER_KEY, 'fact', { v: 1 }, { source: 'conversation' });
+      const id = await store.store(
+        USER_ID,
+        MASTER_KEY,
+        'fact',
+        { v: 1 },
+        { source: 'conversation' }
+      );
       const entry = await store.retrieve(USER_ID, MASTER_KEY, id);
       expect(entry!.metadata.source).toBe('conversation');
     });
 
     it('stores tags in metadata', async () => {
-      const id = await store.store(USER_ID, MASTER_KEY, 'fact', { v: 1 }, { tags: ['tagA', 'tagB'] });
+      const id = await store.store(
+        USER_ID,
+        MASTER_KEY,
+        'fact',
+        { v: 1 },
+        { tags: ['tagA', 'tagB'] }
+      );
       const entry = await store.retrieve(USER_ID, MASTER_KEY, id);
       expect(entry!.metadata.tags).toEqual(['tagA', 'tagB']);
     });
@@ -451,13 +469,25 @@ describe('SecureMemoryStore', () => {
     });
 
     it('stores relatedIds in metadata', async () => {
-      const id = await store.store(USER_ID, MASTER_KEY, 'fact', { v: 1 }, { relatedIds: ['mem_a', 'mem_b'] });
+      const id = await store.store(
+        USER_ID,
+        MASTER_KEY,
+        'fact',
+        { v: 1 },
+        { relatedIds: ['mem_a', 'mem_b'] }
+      );
       const entry = await store.retrieve(USER_ID, MASTER_KEY, id);
       expect(entry!.metadata.relatedIds).toEqual(['mem_a', 'mem_b']);
     });
 
     it('stores custom metadata', async () => {
-      const id = await store.store(USER_ID, MASTER_KEY, 'fact', { v: 1 }, { custom: { myField: 'hello' } });
+      const id = await store.store(
+        USER_ID,
+        MASTER_KEY,
+        'fact',
+        { v: 1 },
+        { custom: { myField: 'hello' } }
+      );
       const entry = await store.retrieve(USER_ID, MASTER_KEY, id);
       expect(entry!.metadata.custom).toEqual({ myField: 'hello' });
     });
@@ -488,7 +518,9 @@ describe('SecureMemoryStore', () => {
     it('initialises accessCount to 0', async () => {
       const id = await storeEntry(store);
       // Directly inspect the internal map for accessCount before retrieve
-      const raw = (store as unknown as { entries: Map<string, { metadata: { accessCount: number } }> }).entries.get(id);
+      const raw = (
+        store as unknown as { entries: Map<string, { metadata: { accessCount: number } }> }
+      ).entries.get(id);
       expect(raw!.metadata.accessCount).toBe(0);
     });
 
@@ -507,17 +539,25 @@ describe('SecureMemoryStore', () => {
     });
 
     it('enforces maxEntriesPerUser limit', async () => {
-      const small = makeStore({ maxEntriesPerUser: 2, pbkdf2Iterations: FAST_ITERATIONS, purgeInterval: 0 });
+      const small = makeStore({
+        maxEntriesPerUser: 2,
+        pbkdf2Iterations: FAST_ITERATIONS,
+        purgeInterval: 0,
+      });
       await small.initialize();
       await small.store(USER_ID, MASTER_KEY, 'fact', { v: 1 });
       await small.store(USER_ID, MASTER_KEY, 'fact', { v: 2 });
-      await expect(
-        small.store(USER_ID, MASTER_KEY, 'fact', { v: 3 })
-      ).rejects.toThrow('Memory entry limit exceeded');
+      await expect(small.store(USER_ID, MASTER_KEY, 'fact', { v: 3 })).rejects.toThrow(
+        'Memory entry limit exceeded'
+      );
     });
 
     it('unlimited entries when maxEntriesPerUser is 0', async () => {
-      const unlimited = makeStore({ maxEntriesPerUser: 0, pbkdf2Iterations: FAST_ITERATIONS, purgeInterval: 0 });
+      const unlimited = makeStore({
+        maxEntriesPerUser: 0,
+        pbkdf2Iterations: FAST_ITERATIONS,
+        purgeInterval: 0,
+      });
       await unlimited.initialize();
       for (let i = 0; i < 5; i++) {
         await unlimited.store(USER_ID, MASTER_KEY, 'fact', { v: i });
@@ -527,7 +567,11 @@ describe('SecureMemoryStore', () => {
     });
 
     it('limit applies per-user (other user not counted)', async () => {
-      const small = makeStore({ maxEntriesPerUser: 2, pbkdf2Iterations: FAST_ITERATIONS, purgeInterval: 0 });
+      const small = makeStore({
+        maxEntriesPerUser: 2,
+        pbkdf2Iterations: FAST_ITERATIONS,
+        purgeInterval: 0,
+      });
       await small.initialize();
       await small.store(USER_ID, MASTER_KEY, 'fact', { v: 1 });
       await small.store(USER_ID, MASTER_KEY, 'fact', { v: 2 });
@@ -546,7 +590,9 @@ describe('SecureMemoryStore', () => {
     it('encrypts content (stored content not equal to plaintext)', async () => {
       const plainContent = { secret: 'my-value' };
       const id = await store.store(USER_ID, MASTER_KEY, 'fact', plainContent);
-      const raw = (store as unknown as { entries: Map<string, { encryptedContent: string }> }).entries.get(id);
+      const raw = (
+        store as unknown as { entries: Map<string, { encryptedContent: string }> }
+      ).entries.get(id);
       expect(raw!.encryptedContent).not.toContain('my-value');
     });
   });
@@ -569,7 +615,13 @@ describe('SecureMemoryStore', () => {
     });
 
     it('returns correct type and accessLevel', async () => {
-      const id = await store.store(USER_ID, MASTER_KEY, 'preference', { v: 1 }, { accessLevel: 'system' });
+      const id = await store.store(
+        USER_ID,
+        MASTER_KEY,
+        'preference',
+        { v: 1 },
+        { accessLevel: 'system' }
+      );
       const entry = await store.retrieve(USER_ID, MASTER_KEY, id);
       expect(entry!.type).toBe('preference');
       expect(entry!.accessLevel).toBe('system');
@@ -597,7 +649,9 @@ describe('SecureMemoryStore', () => {
       const id = await storeEntry(store);
       await store.retrieve(USER_ID, MASTER_KEY, id);
       await store.retrieve(USER_ID, MASTER_KEY, id);
-      const raw = (store as unknown as { entries: Map<string, { metadata: { accessCount: number } }> }).entries.get(id);
+      const raw = (
+        store as unknown as { entries: Map<string, { metadata: { accessCount: number } }> }
+      ).entries.get(id);
       expect(raw!.metadata.accessCount).toBe(2);
     });
 
@@ -605,7 +659,9 @@ describe('SecureMemoryStore', () => {
       const id = await storeEntry(store);
       const before = Date.now();
       await store.retrieve(USER_ID, MASTER_KEY, id);
-      const raw = (store as unknown as { entries: Map<string, { metadata: { lastAccessedAt?: string } }> }).entries.get(id);
+      const raw = (
+        store as unknown as { entries: Map<string, { metadata: { lastAccessedAt?: string } }> }
+      ).entries.get(id);
       const ts = new Date(raw!.metadata.lastAccessedAt!).getTime();
       expect(ts).toBeGreaterThanOrEqual(before);
     });
@@ -615,7 +671,9 @@ describe('SecureMemoryStore', () => {
       const id = await store.store(USER_ID, MASTER_KEY, 'fact', { v: 1 }, { ttl });
       const before = Date.now();
       await store.retrieve(USER_ID, MASTER_KEY, id);
-      const raw = (store as unknown as { entries: Map<string, { metadata: { expiresAt?: string } }> }).entries.get(id);
+      const raw = (
+        store as unknown as { entries: Map<string, { metadata: { expiresAt?: string } }> }
+      ).entries.get(id);
       const newExpiry = new Date(raw!.metadata.expiresAt!).getTime();
       expect(newExpiry).toBeGreaterThanOrEqual(before + (ttl - 1) * 1000);
     });
@@ -627,11 +685,17 @@ describe('SecureMemoryStore', () => {
     });
 
     it('includes metadata in retrieved entry', async () => {
-      const id = await store.store(USER_ID, MASTER_KEY, 'fact', { v: 1 }, {
-        tags: ['t1'],
-        confidence: 0.9,
-        source: 'inferred',
-      });
+      const id = await store.store(
+        USER_ID,
+        MASTER_KEY,
+        'fact',
+        { v: 1 },
+        {
+          tags: ['t1'],
+          confidence: 0.9,
+          source: 'inferred',
+        }
+      );
       const entry = await store.retrieve(USER_ID, MASTER_KEY, id);
       expect(entry!.metadata.tags).toEqual(['t1']);
       expect(entry!.metadata.confidence).toBe(0.9);
@@ -645,7 +709,7 @@ describe('SecureMemoryStore', () => {
       expect(fs.writeFile).toHaveBeenCalledWith(
         expect.stringContaining('entries.encrypted.json'),
         expect.any(String),
-        'utf-8',
+        'utf-8'
       );
     });
   });
@@ -692,7 +756,7 @@ describe('SecureMemoryStore', () => {
       await store.store(USER_ID, MASTER_KEY, 'secret', { c: 3 });
       const results = await store.query(USER_ID, MASTER_KEY, { type: ['fact', 'secret'] });
       expect(results).toHaveLength(2);
-      const types = results.map(r => r.type);
+      const types = results.map((r) => r.type);
       expect(types).toContain('fact');
       expect(types).toContain('secret');
     });
@@ -817,7 +881,7 @@ describe('SecureMemoryStore', () => {
     it('sorts results by creation date descending (newest first)', async () => {
       const id1 = await store.store(USER_ID, MASTER_KEY, 'fact', { seq: 1 });
       // Ensure a measurable time gap
-      await new Promise(r => setTimeout(r, 5));
+      await new Promise((r) => setTimeout(r, 5));
       const id2 = await store.store(USER_ID, MASTER_KEY, 'fact', { seq: 2 });
 
       const results = await store.query(USER_ID, MASTER_KEY, {});
@@ -829,9 +893,17 @@ describe('SecureMemoryStore', () => {
       await store.store(USER_ID, MASTER_KEY, 'fact', { a: 1 });
       // Corrupt one entry in the map
       const firstId = Array.from(
-        (store as unknown as { entries: Map<string, { encryptedContent: string; iv: string; authTag: string }> }).entries.keys()
+        (
+          store as unknown as {
+            entries: Map<string, { encryptedContent: string; iv: string; authTag: string }>;
+          }
+        ).entries.keys()
       )[0]!;
-      const raw = (store as unknown as { entries: Map<string, { encryptedContent: string; iv: string; authTag: string }> }).entries.get(firstId)!;
+      const raw = (
+        store as unknown as {
+          entries: Map<string, { encryptedContent: string; iv: string; authTag: string }>;
+        }
+      ).entries.get(firstId)!;
       raw.encryptedContent = 'corrupted!!!';
       raw.iv = 'AAAAAAAAAAAAAAAAAAAAAA=='; // valid base64 but wrong
       raw.authTag = 'AAAAAAAAAAAAAAAAAAAAAA==';
@@ -841,9 +913,27 @@ describe('SecureMemoryStore', () => {
     });
 
     it('combines multiple filters', async () => {
-      await store.store(USER_ID, MASTER_KEY, 'fact', { v: 'keep' }, { tags: ['keep'], accessLevel: 'private' });
-      await store.store(USER_ID, MASTER_KEY, 'preference', { v: 'skip' }, { tags: ['keep'], accessLevel: 'private' });
-      await store.store(USER_ID, MASTER_KEY, 'fact', { v: 'skip2' }, { tags: ['other'], accessLevel: 'private' });
+      await store.store(
+        USER_ID,
+        MASTER_KEY,
+        'fact',
+        { v: 'keep' },
+        { tags: ['keep'], accessLevel: 'private' }
+      );
+      await store.store(
+        USER_ID,
+        MASTER_KEY,
+        'preference',
+        { v: 'skip' },
+        { tags: ['keep'], accessLevel: 'private' }
+      );
+      await store.store(
+        USER_ID,
+        MASTER_KEY,
+        'fact',
+        { v: 'skip2' },
+        { tags: ['other'], accessLevel: 'private' }
+      );
       const results = await store.query(USER_ID, MASTER_KEY, { type: 'fact', tags: ['keep'] });
       expect(results).toHaveLength(1);
       expect((results[0]!.content as { v: string }).v).toBe('keep');
@@ -880,7 +970,13 @@ describe('SecureMemoryStore', () => {
     });
 
     it('updates accessLevel', async () => {
-      const id = await store.store(USER_ID, MASTER_KEY, 'fact', { v: 1 }, { accessLevel: 'private' });
+      const id = await store.store(
+        USER_ID,
+        MASTER_KEY,
+        'fact',
+        { v: 1 },
+        { accessLevel: 'private' }
+      );
       await store.update(USER_ID, MASTER_KEY, id, { v: 1 }, { accessLevel: 'shared' });
       const entry = await store.retrieve(USER_ID, MASTER_KEY, id);
       expect(entry!.accessLevel).toBe('shared');
@@ -911,16 +1007,16 @@ describe('SecureMemoryStore', () => {
     });
 
     it('throws for non-existent entry', async () => {
-      await expect(
-        store.update(USER_ID, MASTER_KEY, 'mem_nonexistent', { v: 1 })
-      ).rejects.toThrow('not found');
+      await expect(store.update(USER_ID, MASTER_KEY, 'mem_nonexistent', { v: 1 })).rejects.toThrow(
+        'not found'
+      );
     });
 
     it('throws for wrong user (access denied)', async () => {
       const id = await storeEntry(store, USER_ID);
-      await expect(
-        store.update(OTHER_USER_ID, MASTER_KEY, id, { v: 1 })
-      ).rejects.toThrow('Access denied');
+      await expect(store.update(OTHER_USER_ID, MASTER_KEY, id, { v: 1 })).rejects.toThrow(
+        'Access denied'
+      );
     });
   });
 
@@ -948,7 +1044,7 @@ describe('SecureMemoryStore', () => {
       expect(fs.writeFile).toHaveBeenCalledWith(
         expect.stringContaining('entries.encrypted.json'),
         expect.any(String),
-        'utf-8',
+        'utf-8'
       );
     });
 
@@ -1014,7 +1110,7 @@ describe('SecureMemoryStore', () => {
       expect(fs.writeFile).toHaveBeenCalledWith(
         expect.stringContaining('entries.encrypted.json'),
         expect.any(String),
-        'utf-8',
+        'utf-8'
       );
     });
 
@@ -1022,9 +1118,9 @@ describe('SecureMemoryStore', () => {
       vi.mocked(fs.writeFile).mockClear();
       await store.deleteAll(USER_ID);
       // No writeFile for entries (but audit log may still be written)
-      const entryWriteCalls = vi.mocked(fs.writeFile).mock.calls.filter(
-        ([p]) => String(p).includes('entries.encrypted.json')
-      );
+      const entryWriteCalls = vi
+        .mocked(fs.writeFile)
+        .mock.calls.filter(([p]) => String(p).includes('entries.encrypted.json'));
       expect(entryWriteCalls).toHaveLength(0);
     });
   });
@@ -1090,7 +1186,7 @@ describe('SecureMemoryStore', () => {
 
     it('tracks oldest and newest entries', async () => {
       const id1 = await store.store(USER_ID, MASTER_KEY, 'fact', { seq: 1 });
-      await new Promise(r => setTimeout(r, 5));
+      await new Promise((r) => setTimeout(r, 5));
       const id2 = await store.store(USER_ID, MASTER_KEY, 'fact', { seq: 2 });
 
       const raw = store as unknown as { entries: Map<string, { metadata: { createdAt: string } }> };
@@ -1218,7 +1314,11 @@ describe('SecureMemoryStore', () => {
     });
 
     it('skips entries that fail (e.g., limit exceeded)', async () => {
-      const small = makeStore({ maxEntriesPerUser: 1, pbkdf2Iterations: FAST_ITERATIONS, purgeInterval: 0 });
+      const small = makeStore({
+        maxEntriesPerUser: 1,
+        pbkdf2Iterations: FAST_ITERATIONS,
+        purgeInterval: 0,
+      });
       await small.initialize();
       // Fill up the limit
       await small.store(USER_ID, MASTER_KEY, 'fact', { pre: true });
@@ -1230,14 +1330,22 @@ describe('SecureMemoryStore', () => {
             type: 'fact' as MemoryType,
             accessLevel: 'private' as AccessLevel,
             content: { v: 1 },
-            metadata: { createdAt: new Date().toISOString(), accessCount: 0, source: 'manual' as const },
+            metadata: {
+              createdAt: new Date().toISOString(),
+              accessCount: 0,
+              source: 'manual' as const,
+            },
           },
           {
             id: 'x2',
             type: 'fact' as MemoryType,
             accessLevel: 'private' as AccessLevel,
             content: { v: 2 },
-            metadata: { createdAt: new Date().toISOString(), accessCount: 0, source: 'manual' as const },
+            metadata: {
+              createdAt: new Date().toISOString(),
+              accessCount: 0,
+              source: 'manual' as const,
+            },
           },
         ],
       };
@@ -1292,7 +1400,7 @@ describe('SecureMemoryStore', () => {
       expect(fs.writeFile).toHaveBeenCalledWith(
         expect.stringContaining('entries.encrypted.json'),
         expect.any(String),
-        'utf-8',
+        'utf-8'
       );
     });
 
@@ -1303,7 +1411,7 @@ describe('SecureMemoryStore', () => {
       expect(fs.writeFile).toHaveBeenCalledWith(
         expect.stringContaining('audit.log.json'),
         expect.any(String),
-        'utf-8',
+        'utf-8'
       );
     });
 
@@ -1392,16 +1500,22 @@ describe('SecureMemoryStore', () => {
       const s = makeStore({ purgeInterval: 1000 });
       await s.initialize();
 
-      await s.store(USER_ID, MASTER_KEY, 'fact', { v: 1 }, {
-        expiresAt: new Date(Date.now() - 100).toISOString(),
-      });
+      await s.store(
+        USER_ID,
+        MASTER_KEY,
+        'fact',
+        { v: 1 },
+        {
+          expiresAt: new Date(Date.now() - 100).toISOString(),
+        }
+      );
 
       vi.mocked(fs.writeFile).mockClear();
       await vi.advanceTimersByTimeAsync(1001);
 
-      const entryWrites = vi.mocked(fs.writeFile).mock.calls.filter(
-        ([p]) => String(p).includes('entries.encrypted.json')
-      );
+      const entryWrites = vi
+        .mocked(fs.writeFile)
+        .mock.calls.filter(([p]) => String(p).includes('entries.encrypted.json'));
       expect(entryWrites.length).toBeGreaterThan(0);
     });
   });
@@ -1421,9 +1535,9 @@ describe('SecureMemoryStore', () => {
       await noAudit.store(USER_ID, MASTER_KEY, 'fact', { v: 1 });
       vi.mocked(fs.writeFile).mockClear();
       await noAudit.shutdown();
-      const auditWrites = vi.mocked(fs.writeFile).mock.calls.filter(
-        ([p]) => String(p).includes('audit.log.json')
-      );
+      const auditWrites = vi
+        .mocked(fs.writeFile)
+        .mock.calls.filter(([p]) => String(p).includes('audit.log.json'));
       expect(auditWrites).toHaveLength(0);
     });
 
@@ -1457,9 +1571,9 @@ describe('SecureMemoryStore', () => {
       for (let i = 0; i < 100; i++) {
         await store.store(USER_ID, MASTER_KEY, 'fact', { i });
       }
-      const auditWrites = vi.mocked(fs.writeFile).mock.calls.filter(
-        ([p]) => String(p).includes('audit.log.json')
-      );
+      const auditWrites = vi
+        .mocked(fs.writeFile)
+        .mock.calls.filter(([p]) => String(p).includes('audit.log.json'));
       // At 100 entries, auditLog.length % 100 === 0 → saveAuditLog triggered
       expect(auditWrites.length).toBeGreaterThan(0);
     });
@@ -1522,7 +1636,10 @@ describe('SecureMemoryStore', () => {
     });
 
     it('passes config to the store', async () => {
-      const s = createSecureMemoryStore({ storageDir: '/custom/dir', pbkdf2Iterations: FAST_ITERATIONS });
+      const s = createSecureMemoryStore({
+        storageDir: '/custom/dir',
+        pbkdf2Iterations: FAST_ITERATIONS,
+      });
       await s.initialize();
       expect(fs.mkdir).toHaveBeenCalledWith('/custom/dir', { recursive: true });
     });

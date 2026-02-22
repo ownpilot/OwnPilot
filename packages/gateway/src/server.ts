@@ -17,9 +17,9 @@ const __dirname = dirname(__filename);
 
 // Try multiple locations for .env file
 const envPaths = [
-  resolve(__dirname, '..', '..', '..', '.env'),  // monorepo root from src/
-  resolve(__dirname, '..', '..', '.env'),         // packages/gateway/.env
-  resolve(process.cwd(), '.env'),                 // current working directory
+  resolve(__dirname, '..', '..', '..', '.env'), // monorepo root from src/
+  resolve(__dirname, '..', '..', '.env'), // packages/gateway/.env
+  resolve(process.cwd(), '.env'), // current working directory
 ];
 
 for (const envPath of envPaths) {
@@ -47,11 +47,21 @@ import { initializePluginsRepo } from './db/repositories/plugins.js';
 import { initializeLocalProvidersRepo } from './db/repositories/local-providers.js';
 import { seedConfigServices } from './db/seeds/config-services-seed.js';
 import { gatewayConfigCenter } from './services/config-center-impl.js';
-import { startTriggerEngine, stopTriggerEngine, initializeDefaultTriggers } from './triggers/index.js';
+import {
+  startTriggerEngine,
+  stopTriggerEngine,
+  initializeDefaultTriggers,
+} from './triggers/index.js';
 import { seedExamplePlans } from './db/seeds/plans-seed.js';
 import { createChannelServiceImpl } from './channels/service-impl.js';
 import { randomUUID } from 'node:crypto';
-import { initServiceRegistry, Services, getEventSystem, setChannelService, setModuleResolver } from '@ownpilot/core';
+import {
+  initServiceRegistry,
+  Services,
+  getEventSystem,
+  setChannelService,
+  setModuleResolver,
+} from '@ownpilot/core';
 import type { NormalizedMessage, IMessageBus } from '@ownpilot/core';
 import { createLogService } from './services/log-service-impl.js';
 import { RATE_LIMIT_WINDOW_MS, RATE_LIMIT_MAX_REQUESTS } from './config/defaults.js';
@@ -104,19 +114,26 @@ function loadConfig(): Partial<GatewayConfig> {
   const dbRateLimitWindow = settingsRepo.get<number>(GATEWAY_RATE_LIMIT_WINDOW_KEY);
   const dbRateLimitMax = settingsRepo.get<number>(GATEWAY_RATE_LIMIT_MAX_KEY);
 
-  const rateLimitWindowMs = dbRateLimitWindow ?? (parseInt(process.env.RATE_LIMIT_WINDOW_MS ?? String(RATE_LIMIT_WINDOW_MS), 10) || RATE_LIMIT_WINDOW_MS);
-  const rateLimitMax = dbRateLimitMax ?? (parseInt(process.env.RATE_LIMIT_MAX ?? String(RATE_LIMIT_MAX_REQUESTS), 10) || RATE_LIMIT_MAX_REQUESTS);
+  const rateLimitWindowMs =
+    dbRateLimitWindow ??
+    (parseInt(process.env.RATE_LIMIT_WINDOW_MS ?? String(RATE_LIMIT_WINDOW_MS), 10) ||
+      RATE_LIMIT_WINDOW_MS);
+  const rateLimitMax =
+    dbRateLimitMax ??
+    (parseInt(process.env.RATE_LIMIT_MAX ?? String(RATE_LIMIT_MAX_REQUESTS), 10) ||
+      RATE_LIMIT_MAX_REQUESTS);
 
   return {
     port: parseInt(process.env.PORT ?? '8080', 10) || 8080,
     host: process.env.HOST ?? '127.0.0.1',
     corsOrigins: process.env.CORS_ORIGINS?.split(',').filter(Boolean),
-    rateLimit: process.env.RATE_LIMIT_DISABLED !== 'true'
-      ? {
-          windowMs: rateLimitWindowMs,
-          maxRequests: rateLimitMax,
-        }
-      : undefined,
+    rateLimit:
+      process.env.RATE_LIMIT_DISABLED !== 'true'
+        ? {
+            windowMs: rateLimitWindowMs,
+            maxRequests: rateLimitMax,
+          }
+        : undefined,
     auth: {
       type: authType,
       apiKeys,
@@ -248,7 +265,9 @@ async function main() {
     const { smartCleanupSessionWorkspaces } = await import('./workspace/file-workspace.js');
     const cleanup = smartCleanupSessionWorkspaces('both', 30);
     if (cleanup.deleted > 0) {
-      log.info(`Boot cleanup: removed ${cleanup.deleted} workspaces (${cleanup.deletedEmpty} empty, ${cleanup.deletedOld} old)`);
+      log.info(
+        `Boot cleanup: removed ${cleanup.deleted} workspaces (${cleanup.deletedEmpty} empty, ${cleanup.deletedOld} old)`
+      );
     }
   } catch (err) {
     log.warn('Workspace auto-cleanup failed', { error: String(err) });
@@ -262,7 +281,9 @@ async function main() {
 
   // Security: warn if binding to all interfaces without authentication
   if (host === '0.0.0.0' && config.auth?.type === 'none') {
-    log.warn('⚠ WARNING: Server bound to 0.0.0.0 with AUTH_TYPE=none — API is exposed without authentication!');
+    log.warn(
+      '⚠ WARNING: Server bound to 0.0.0.0 with AUTH_TYPE=none — API is exposed without authentication!'
+    );
     log.warn('Set AUTH_TYPE=api-key or AUTH_TYPE=jwt, or bind to 127.0.0.1 for local-only access.');
   }
 
@@ -335,7 +356,10 @@ async function main() {
 
     // Wire up the broadcaster for real-time WS events
     triggerEngine.setBroadcaster((_event, data) =>
-      wsGateway.broadcast('trigger:executed', data as import('./ws/types.js').ServerEvents['trigger:executed']),
+      wsGateway.broadcast(
+        'trigger:executed',
+        data as import('./ws/types.js').ServerEvents['trigger:executed']
+      )
     );
 
     // Wire up the chat handler once agent system is available.
@@ -383,7 +407,8 @@ async function main() {
       const workflowId = payload.workflowId as string;
       if (!workflowId) return { success: false, error: 'Missing workflowId in payload' };
       const service = getWorkflowService();
-      if (service.isRunning(workflowId)) return { success: false, error: 'Workflow already running' };
+      if (service.isRunning(workflowId))
+        return { success: false, error: 'Workflow already running' };
       try {
         const wfLog = await service.executeWorkflow(workflowId, 'default');
         return {
@@ -443,20 +468,25 @@ async function main() {
     port,
     host,
     auth: config.auth?.type ?? 'none',
-    rateLimit: config.rateLimit ? `${config.rateLimit.maxRequests} req/${config.rateLimit.windowMs}ms` : 'disabled',
+    rateLimit: config.rateLimit
+      ? `${config.rateLimit.maxRequests} req/${config.rateLimit.windowMs}ms`
+      : 'disabled',
     workspace: workspace.workspaceDir,
     registeredServices: registry.list(),
   });
 
-  const server = serve({
-    fetch: app.fetch,
-    port,
-    hostname: host,
-  }, (info) => {
-    log.info(`Server running at http://${info.address}:${info.port}`);
-    log.info(`API docs: http://${info.address}:${info.port}/api/v1`);
-    log.info(`Health: http://${info.address}:${info.port}/health`);
-  });
+  const server = serve(
+    {
+      fetch: app.fetch,
+      port,
+      hostname: host,
+    },
+    (info) => {
+      log.info(`Server running at http://${info.address}:${info.port}`);
+      log.info(`API docs: http://${info.address}:${info.port}/api/v1`);
+      log.info(`Health: http://${info.address}:${info.port}/health`);
+    }
+  );
 
   // Attach WebSocket gateway to HTTP server
   wsGateway.attachToServer(server as Server);
@@ -475,48 +505,71 @@ async function main() {
     (server as Server).close();
 
     // 2. Stop WebSocket gateway
-    try { await wsGateway.stop(); } catch (e) { log.warn('WS shutdown error', { error: String(e) }); }
+    try {
+      await wsGateway.stop();
+    } catch (e) {
+      log.warn('WS shutdown error', { error: String(e) });
+    }
 
     // 2.5. Disconnect MCP clients
     try {
       const { mcpClientService } = await import('./services/mcp-client-service.js');
       await mcpClientService.disconnectAll();
-    } catch (e) { log.warn('MCP disconnect error', { error: String(e) }); }
+    } catch (e) {
+      log.warn('MCP disconnect error', { error: String(e) });
+    }
 
     // 3. Stop trigger engine
-    try { stopTriggerEngine(); } catch (e) { log.warn('Trigger engine stop error', { error: String(e) }); }
+    try {
+      stopTriggerEngine();
+    } catch (e) {
+      log.warn('Trigger engine stop error', { error: String(e) });
+    }
 
     // 4. Stop rate limiter cleanup intervals
     stopAllRateLimiters();
 
     // 5. Stop approval manager cleanup
-    try { getApprovalManager().stop(); } catch (e) { log.warn('ApprovalManager stop error', { error: String(e) }); }
+    try {
+      getApprovalManager().stop();
+    } catch (e) {
+      log.warn('ApprovalManager stop error', { error: String(e) });
+    }
 
     // 6. Cleanup webhook handler (if Telegram is in webhook mode)
     try {
-      const { getWebhookHandler, unregisterWebhookHandler } = await import('./channels/plugins/telegram/webhook.js');
+      const { getWebhookHandler, unregisterWebhookHandler } =
+        await import('./channels/plugins/telegram/webhook.js');
       if (getWebhookHandler()) {
         unregisterWebhookHandler();
       }
-    } catch { /* webhook module not loaded */ }
+    } catch {
+      /* webhook module not loaded */
+    }
 
     // 7. Dispose session service (cleanup intervals)
     try {
       const sessionSvc = registry.tryGet(Services.Session);
       if (sessionSvc && 'dispose' in sessionSvc) (sessionSvc as { dispose(): void }).dispose();
-    } catch (e) { log.warn('Session service dispose error', { error: String(e) }); }
+    } catch (e) {
+      log.warn('Session service dispose error', { error: String(e) });
+    }
 
     // 8. Invalidate MCP server (close sessions, stop cleanup timer)
     try {
       const { invalidateMcpServer } = await import('./services/mcp-server-service.js');
       invalidateMcpServer();
-    } catch (e) { log.warn('MCP server cleanup error', { error: String(e) }); }
+    } catch (e) {
+      log.warn('MCP server cleanup error', { error: String(e) });
+    }
 
     // 9. Close DB connection pool
     try {
       const adapter = getAdapterSync();
       await adapter.close();
-    } catch (e) { log.warn('DB close error', { error: String(e) }); }
+    } catch (e) {
+      log.warn('DB close error', { error: String(e) });
+    }
 
     log.info('Cleanup complete, exiting.');
 
@@ -540,6 +593,9 @@ async function main() {
 
 // Run server
 main().catch((err) => {
-  log.error('Fatal: server startup failed', { error: getErrorMessage(err), stack: err instanceof Error ? err.stack : undefined });
+  log.error('Fatal: server startup failed', {
+    error: getErrorMessage(err),
+    stack: err instanceof Error ? err.stack : undefined,
+  });
   process.exit(1);
 });

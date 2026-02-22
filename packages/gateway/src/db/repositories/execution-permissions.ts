@@ -9,7 +9,13 @@ import { BaseRepository } from './base.js';
 import type { ExecutionPermissions, PermissionMode } from '@ownpilot/core';
 import { DEFAULT_EXECUTION_PERMISSIONS } from '@ownpilot/core';
 
-const CATEGORIES = ['execute_javascript', 'execute_python', 'execute_shell', 'compile_code', 'package_manager'] as const;
+const CATEGORIES = [
+  'execute_javascript',
+  'execute_python',
+  'execute_shell',
+  'compile_code',
+  'package_manager',
+] as const;
 const VALID_MODES: ReadonlySet<string> = new Set(['local', 'docker', 'auto']);
 
 interface PermissionRow {
@@ -43,7 +49,7 @@ class ExecutionPermissionsRepository extends BaseRepository {
   async get(userId: string): Promise<ExecutionPermissions> {
     const row = await this.queryOne<PermissionRow>(
       'SELECT * FROM execution_permissions WHERE user_id = ?',
-      [userId],
+      [userId]
     );
     if (!row) return { ...DEFAULT_EXECUTION_PERMISSIONS };
     return rowToPermissions(row);
@@ -91,7 +97,16 @@ class ExecutionPermissionsRepository extends BaseRepository {
          compile_code = excluded.compile_code,
          package_manager = excluded.package_manager,
          updated_at = excluded.updated_at`,
-      [userId, result.enabled, result.mode, result.execute_javascript, result.execute_python, result.execute_shell, result.compile_code, result.package_manager],
+      [
+        userId,
+        result.enabled,
+        result.mode,
+        result.execute_javascript,
+        result.execute_python,
+        result.execute_shell,
+        result.compile_code,
+        result.package_manager,
+      ]
     );
 
     return result;

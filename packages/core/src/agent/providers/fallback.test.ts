@@ -17,9 +17,8 @@ vi.mock('../provider.js', () => ({
 }));
 
 // Import after mocks
-const { FallbackProvider, createFallbackProvider, createProviderWithFallbacks } = await import(
-  './fallback.js'
-);
+const { FallbackProvider, createFallbackProvider, createProviderWithFallbacks } =
+  await import('./fallback.js');
 const { InternalError, TimeoutError, ValidationError } = await import('../../types/errors.js');
 const { ok, err } = await import('../../types/result.js');
 
@@ -36,7 +35,7 @@ function makeMockProvider(type: string, overrides: Record<string, unknown> = {})
       (async function* () {
         yield ok({ content: `chunk-${type}`, done: false });
         yield ok({ content: '', done: true });
-      })(),
+      })()
     ),
     countTokens: vi.fn().mockReturnValue(100),
     getModels: vi.fn().mockResolvedValue(ok([`${type}-model-1`, `${type}-model-2`])),
@@ -70,9 +69,7 @@ function createTestProvider(configOverrides: Record<string, unknown> = {}) {
   const primary = makeMockProvider('openai');
   const fallback = makeMockProvider('anthropic');
 
-  mockCreateProvider
-    .mockImplementationOnce(() => primary)
-    .mockImplementationOnce(() => fallback);
+  mockCreateProvider.mockImplementationOnce(() => primary).mockImplementationOnce(() => fallback);
 
   const provider = new FallbackProvider({
     primary: primaryConfig,
@@ -150,11 +147,7 @@ describe('FallbackProvider', () => {
       const { provider, primary } = createTestProvider({ onFallback });
       primary.complete.mockResolvedValue(err(new InternalError('boom')));
       await provider.complete(dummyRequest);
-      expect(onFallback).toHaveBeenCalledWith(
-        'openai',
-        expect.any(InternalError),
-        'anthropic',
-      );
+      expect(onFallback).toHaveBeenCalledWith('openai', expect.any(InternalError), 'anthropic');
     });
 
     it('returns fallback result on success', async () => {
@@ -434,13 +427,13 @@ describe('FallbackProvider', () => {
       primary.stream.mockImplementation(() =>
         (async function* () {
           yield err(new InternalError('stream fail'));
-        })(),
+        })()
       );
       fallback.stream.mockImplementation(() =>
         (async function* () {
           yield ok({ content: 'fallback-chunk', done: false });
           yield ok({ content: '', done: true });
-        })(),
+        })()
       );
       const chunks: unknown[] = [];
       for await (const chunk of provider.stream(dummyRequest)) {
@@ -457,7 +450,7 @@ describe('FallbackProvider', () => {
         (async function* () {
           yield ok({ content: 'partial', done: false });
           yield err(new InternalError('mid-stream fail'));
-        })(),
+        })()
       );
       const results: unknown[] = [];
       for await (const chunk of provider.stream(dummyRequest)) {
@@ -466,7 +459,13 @@ describe('FallbackProvider', () => {
       // Fallback should NOT have been called since data was already yielded
       expect(fallback.stream).not.toHaveBeenCalled();
       // Should have partial data + error
-      expect(results.some((r: unknown) => (r as { ok: boolean; value: { content: string } }).ok && (r as { ok: boolean; value: { content: string } }).value.content === 'partial')).toBe(true);
+      expect(
+        results.some(
+          (r: unknown) =>
+            (r as { ok: boolean; value: { content: string } }).ok &&
+            (r as { ok: boolean; value: { content: string } }).value.content === 'partial'
+        )
+      ).toBe(true);
       expect(results.some((r: unknown) => !(r as { ok: boolean }).ok)).toBe(true);
     });
 
@@ -515,7 +514,7 @@ describe('FallbackProvider', () => {
     it('deduplicates models', async () => {
       const { provider, fallback } = createTestProvider();
       fallback.getModels.mockResolvedValue(
-        ok(['openai-model-1', 'anthropic-model-1', 'anthropic-model-2']),
+        ok(['openai-model-1', 'anthropic-model-1', 'anthropic-model-2'])
       );
       const result = await provider.getModels();
       expect(result.ok).toBe(true);

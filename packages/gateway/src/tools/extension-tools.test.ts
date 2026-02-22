@@ -23,7 +23,7 @@ vi.mock('../services/extension-service.js', () => ({
 }));
 
 vi.mock('@ownpilot/core', () => ({
-  getErrorMessage: (e: unknown) => e instanceof Error ? e.message : String(e),
+  getErrorMessage: (e: unknown) => (e instanceof Error ? e.message : String(e)),
 }));
 
 // ---------------------------------------------------------------------------
@@ -51,15 +51,30 @@ const samplePackage = {
     version: '1.0.0',
     description: 'GitHub integration tools',
     tools: [
-      { name: 'github_list_issues', description: 'List issues', parameters: { type: 'object', properties: {} }, code: 'return {}', permissions: ['network'] },
-      { name: 'github_create_issue', description: 'Create issue', parameters: { type: 'object', properties: {} }, code: 'return {}' },
+      {
+        name: 'github_list_issues',
+        description: 'List issues',
+        parameters: { type: 'object', properties: {} },
+        code: 'return {}',
+        permissions: ['network'],
+      },
+      {
+        name: 'github_create_issue',
+        description: 'Create issue',
+        parameters: { type: 'object', properties: {} },
+        code: 'return {}',
+      },
     ],
     triggers: [
-      { name: 'Daily digest', type: 'schedule', config: { cron: '0 9 * * *' }, action: { type: 'chat', payload: { prompt: 'Check issues' } }, enabled: false },
+      {
+        name: 'Daily digest',
+        type: 'schedule',
+        config: { cron: '0 9 * * *' },
+        action: { type: 'chat', payload: { prompt: 'Check issues' } },
+        enabled: false,
+      },
     ],
-    required_services: [
-      { name: 'github', display_name: 'GitHub' },
-    ],
+    required_services: [{ name: 'github', display_name: 'GitHub' }],
     system_prompt: 'Use GitHub tools when asked about repos.',
   },
 };

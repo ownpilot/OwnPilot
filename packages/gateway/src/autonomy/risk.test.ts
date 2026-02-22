@@ -187,24 +187,12 @@ describe('assessRisk', () => {
     });
 
     it('factors array has 16 entries (all predefined risk factors)', () => {
-      const result = assessRisk(
-        'tool_execution',
-        'list_directory',
-        {},
-        emptyContext,
-        makeConfig()
-      );
+      const result = assessRisk('tool_execution', 'list_directory', {}, emptyContext, makeConfig());
       expect(result.factors).toHaveLength(16);
     });
 
     it('each factor has name, description, weight, present fields', () => {
-      const result = assessRisk(
-        'tool_execution',
-        'list_directory',
-        {},
-        emptyContext,
-        makeConfig()
-      );
+      const result = assessRisk('tool_execution', 'list_directory', {}, emptyContext, makeConfig());
       for (const f of result.factors) {
         expect(f).toHaveProperty('name');
         expect(f).toHaveProperty('description');
@@ -222,13 +210,7 @@ describe('assessRisk', () => {
 
   describe('read-only tools', () => {
     it('list_directory has no present factors and low score', () => {
-      const result = assessRisk(
-        'tool_execution',
-        'list_directory',
-        {},
-        emptyContext,
-        makeConfig()
-      );
+      const result = assessRisk('tool_execution', 'list_directory', {}, emptyContext, makeConfig());
       const presentFactors = result.factors.filter((f) => f.present);
       expect(presentFactors).toHaveLength(0);
       // baseRisk=20, factorScore=0 → score=round((20+0)/2)=10
@@ -237,13 +219,7 @@ describe('assessRisk', () => {
     });
 
     it('read_file has no present factors', () => {
-      const result = assessRisk(
-        'file_operation',
-        'read_file',
-        {},
-        emptyContext,
-        makeConfig()
-      );
+      const result = assessRisk('file_operation', 'read_file', {}, emptyContext, makeConfig());
       const presentFactors = result.factors.filter((f) => f.present);
       expect(presentFactors).toHaveLength(0);
       // baseRisk=25, factorScore=0 → score=round((25+0)/2)=13
@@ -252,13 +228,7 @@ describe('assessRisk', () => {
     });
 
     it('list_tasks has no present factors', () => {
-      const result = assessRisk(
-        'tool_execution',
-        'list_tasks',
-        {},
-        emptyContext,
-        makeConfig()
-      );
+      const result = assessRisk('tool_execution', 'list_tasks', {}, emptyContext, makeConfig());
       const presentFactors = result.factors.filter((f) => f.present);
       expect(presentFactors).toHaveLength(0);
     });
@@ -270,16 +240,8 @@ describe('assessRisk', () => {
 
   describe('destructive tools', () => {
     it('delete_file has file_delete, data_deletion, irreversible factors', () => {
-      const result = assessRisk(
-        'file_operation',
-        'delete_file',
-        {},
-        emptyContext,
-        makeConfig()
-      );
-      const presentNames = result.factors
-        .filter((f) => f.present)
-        .map((f) => f.name);
+      const result = assessRisk('file_operation', 'delete_file', {}, emptyContext, makeConfig());
+      const presentNames = result.factors.filter((f) => f.present).map((f) => f.name);
       expect(presentNames).toContain('File Delete');
       expect(presentNames).toContain('Data Deletion');
       expect(presentNames).toContain('Irreversible');
@@ -293,42 +255,20 @@ describe('assessRisk', () => {
         emptyContext,
         makeConfig()
       );
-      const readResult = assessRisk(
-        'file_operation',
-        'read_file',
-        {},
-        emptyContext,
-        makeConfig()
-      );
+      const readResult = assessRisk('file_operation', 'read_file', {}, emptyContext, makeConfig());
       expect(deleteResult.score).toBeGreaterThan(readResult.score);
     });
 
     it('execute_code has code_execution and irreversible factors', () => {
-      const result = assessRisk(
-        'code_execution',
-        'execute_code',
-        {},
-        emptyContext,
-        makeConfig()
-      );
-      const presentNames = result.factors
-        .filter((f) => f.present)
-        .map((f) => f.name);
+      const result = assessRisk('code_execution', 'execute_code', {}, emptyContext, makeConfig());
+      const presentNames = result.factors.filter((f) => f.present).map((f) => f.name);
       expect(presentNames).toContain('Code Execution');
       expect(presentNames).toContain('Irreversible');
     });
 
     it('run_script has code_execution and system_command factors', () => {
-      const result = assessRisk(
-        'system_command',
-        'run_script',
-        {},
-        emptyContext,
-        makeConfig()
-      );
-      const presentNames = result.factors
-        .filter((f) => f.present)
-        .map((f) => f.name);
+      const result = assessRisk('system_command', 'run_script', {}, emptyContext, makeConfig());
+      const presentNames = result.factors.filter((f) => f.present).map((f) => f.name);
       expect(presentNames).toContain('Code Execution');
       expect(presentNames).toContain('System Command');
     });
@@ -347,9 +287,7 @@ describe('assessRisk', () => {
         emptyContext,
         makeConfig()
       );
-      const presentNames = result.factors
-        .filter((f) => f.present)
-        .map((f) => f.name);
+      const presentNames = result.factors.filter((f) => f.present).map((f) => f.name);
       expect(presentNames).toContain('Email Send');
       expect(presentNames).toContain('External API');
       expect(presentNames).toContain('Affects Others');
@@ -363,9 +301,7 @@ describe('assessRisk', () => {
         emptyContext,
         makeConfig()
       );
-      const presentNames = result.factors
-        .filter((f) => f.present)
-        .map((f) => f.name);
+      const presentNames = result.factors.filter((f) => f.present).map((f) => f.name);
       expect(presentNames).toContain('Notification Send');
       expect(presentNames).toHaveLength(1);
     });
@@ -377,39 +313,21 @@ describe('assessRisk', () => {
 
   describe('category base risk', () => {
     it('notification category has lowest base risk', () => {
-      const result = assessRisk(
-        'notification',
-        'unknown_tool',
-        {},
-        emptyContext,
-        makeConfig()
-      );
+      const result = assessRisk('notification', 'unknown_tool', {}, emptyContext, makeConfig());
       // baseRisk=15, factorScore=0 → score=round((15+0)/2)=8
       expect(result.score).toBe(8);
       expect(result.level).toBe('low');
     });
 
     it('financial category has highest base risk', () => {
-      const result = assessRisk(
-        'financial',
-        'unknown_tool',
-        {},
-        emptyContext,
-        makeConfig()
-      );
+      const result = assessRisk('financial', 'unknown_tool', {}, emptyContext, makeConfig());
       // baseRisk=90, factorScore=0 → score=round((90+0)/2)=45
       expect(result.score).toBe(45);
       expect(result.level).toBe('medium');
     });
 
     it('system_command category has second-highest base risk', () => {
-      const result = assessRisk(
-        'system_command',
-        'unknown_tool',
-        {},
-        emptyContext,
-        makeConfig()
-      );
+      const result = assessRisk('system_command', 'unknown_tool', {}, emptyContext, makeConfig());
       // baseRisk=80, factorScore=0 → score=round((80+0)/2)=40
       expect(result.score).toBe(40);
       expect(result.level).toBe('medium');
@@ -439,13 +357,7 @@ describe('assessRisk', () => {
 
     it('score < 25 is low', () => {
       // notification (15) + no factors → 8 → low
-      const result = assessRisk(
-        'notification',
-        'list_directory',
-        {},
-        emptyContext,
-        makeConfig()
-      );
+      const result = assessRisk('notification', 'list_directory', {}, emptyContext, makeConfig());
       expect(result.score).toBeLessThan(25);
       expect(result.level).toBe('low');
     });
@@ -455,25 +367,13 @@ describe('assessRisk', () => {
       // presentWeight = 1.85, totalWeight = 10.35
       // factorScore = (1.85/10.35)*100 ≈ 17.87
       // score = round((80+17.87)/2) = round(48.94) = 49 → medium
-      const result = assessRisk(
-        'system_command',
-        'run_script',
-        {},
-        emptyContext,
-        makeConfig()
-      );
+      const result = assessRisk('system_command', 'run_script', {}, emptyContext, makeConfig());
       expect(result.score).toBeGreaterThanOrEqual(25);
       expect(isRiskAtOrAbove(result.level, 'medium')).toBe(true);
     });
 
     it('code_execution category with execute_code produces medium', () => {
-      const result = assessRisk(
-        'code_execution',
-        'execute_code',
-        {},
-        emptyContext,
-        makeConfig()
-      );
+      const result = assessRisk('code_execution', 'execute_code', {}, emptyContext, makeConfig());
       // baseRisk=70, factors: code_execution(0.9)+irreversible(0.7) present
       // presentWeight=1.6, totalWeight=10.35
       // factorScore = (1.6/10.35)*100 ≈ 15.46
@@ -490,11 +390,11 @@ describe('assessRisk', () => {
         'financial',
         'delete_file', // file_delete(0.8) + data_deletion(0.8) + irreversible(0.7)
         {
-          cost: 5000,        // high_cost(0.6)
-          global: true,      // system_wide(0.8)
+          cost: 5000, // high_cost(0.6)
+          global: true, // system_wide(0.8)
           recipients: ['u'], // affects_others(0.5)
-          bulk: true,        // bulk_operation(0.4)
-          sensitive: true,   // sensitive_data(0.7)
+          bulk: true, // bulk_operation(0.4)
+          sensitive: true, // sensitive_data(0.7)
         },
         emptyContext,
         makeConfig()
@@ -523,9 +423,7 @@ describe('assessRisk', () => {
           emptyContext,
           makeConfig()
         );
-        const bulkFactor = result.factors.find(
-          (f) => f.name === 'Bulk Operation'
-        );
+        const bulkFactor = result.factors.find((f) => f.name === 'Bulk Operation');
         expect(bulkFactor?.present).toBe(true);
       });
 
@@ -538,9 +436,7 @@ describe('assessRisk', () => {
           emptyContext,
           makeConfig()
         );
-        const bulkFactor = result.factors.find(
-          (f) => f.name === 'Bulk Operation'
-        );
+        const bulkFactor = result.factors.find((f) => f.name === 'Bulk Operation');
         expect(bulkFactor?.present).toBe(false);
       });
 
@@ -552,9 +448,7 @@ describe('assessRisk', () => {
           emptyContext,
           makeConfig()
         );
-        const bulkFactor = result.factors.find(
-          (f) => f.name === 'Bulk Operation'
-        );
+        const bulkFactor = result.factors.find((f) => f.name === 'Bulk Operation');
         expect(bulkFactor?.present).toBe(true);
       });
 
@@ -566,9 +460,7 @@ describe('assessRisk', () => {
           emptyContext,
           makeConfig()
         );
-        const bulkFactor = result.factors.find(
-          (f) => f.name === 'Bulk Operation'
-        );
+        const bulkFactor = result.factors.find((f) => f.name === 'Bulk Operation');
         expect(bulkFactor?.present).toBe(true);
       });
 
@@ -580,9 +472,7 @@ describe('assessRisk', () => {
           emptyContext,
           makeConfig()
         );
-        const bulkFactor = result.factors.find(
-          (f) => f.name === 'Bulk Operation'
-        );
+        const bulkFactor = result.factors.find((f) => f.name === 'Bulk Operation');
         expect(bulkFactor?.present).toBe(false);
       });
     });
@@ -1131,49 +1021,25 @@ describe('assessRisk', () => {
 
   describe('mitigations', () => {
     it('includes backup/soft-delete suggestions for data deletion', () => {
-      const result = assessRisk(
-        'file_operation',
-        'delete_file',
-        {},
-        emptyContext,
-        makeConfig()
-      );
+      const result = assessRisk('file_operation', 'delete_file', {}, emptyContext, makeConfig());
       expect(result.mitigations).toContain('Create a backup before deletion');
       expect(result.mitigations).toContain('Use soft-delete if available');
     });
 
     it('includes review/sandbox suggestions for code execution', () => {
-      const result = assessRisk(
-        'code_execution',
-        'execute_code',
-        {},
-        emptyContext,
-        makeConfig()
-      );
+      const result = assessRisk('code_execution', 'execute_code', {}, emptyContext, makeConfig());
       expect(result.mitigations).toContain('Review code before execution');
       expect(result.mitigations).toContain('Run in sandboxed environment');
     });
 
     it('includes command safety suggestions for system commands', () => {
-      const result = assessRisk(
-        'system_command',
-        'run_script',
-        {},
-        emptyContext,
-        makeConfig()
-      );
+      const result = assessRisk('system_command', 'run_script', {}, emptyContext, makeConfig());
       expect(result.mitigations).toContain('Verify command safety');
       expect(result.mitigations).toContain('Limit permissions');
     });
 
     it('includes API verification for external API tools', () => {
-      const result = assessRisk(
-        'api_call',
-        'web_fetch',
-        {},
-        emptyContext,
-        makeConfig()
-      );
+      const result = assessRisk('api_call', 'web_fetch', {}, emptyContext, makeConfig());
       expect(result.mitigations).toContain('Verify API endpoint');
       expect(result.mitigations).toContain('Limit data sent');
     });
@@ -1187,9 +1053,7 @@ describe('assessRisk', () => {
         makeConfig()
       );
       expect(result.mitigations).toContain('Process in smaller batches');
-      expect(result.mitigations).toContain(
-        'Add confirmation for each batch'
-      );
+      expect(result.mitigations).toContain('Add confirmation for each batch');
     });
 
     it('includes encryption/masking suggestions for sensitive data', () => {
@@ -1200,20 +1064,12 @@ describe('assessRisk', () => {
         emptyContext,
         makeConfig()
       );
-      expect(result.mitigations).toContain(
-        'Mask or redact sensitive fields'
-      );
+      expect(result.mitigations).toContain('Mask or redact sensitive fields');
       expect(result.mitigations).toContain('Use encryption');
     });
 
     it('returns empty mitigations for read-only tools', () => {
-      const result = assessRisk(
-        'tool_execution',
-        'read_file',
-        {},
-        emptyContext,
-        makeConfig()
-      );
+      const result = assessRisk('tool_execution', 'read_file', {}, emptyContext, makeConfig());
       expect(result.mitigations).toHaveLength(0);
     });
 
@@ -1250,13 +1106,7 @@ describe('assessRisk', () => {
     });
 
     it('handles empty params', () => {
-      const result = assessRisk(
-        'tool_execution',
-        'delete_file',
-        {},
-        emptyContext,
-        makeConfig()
-      );
+      const result = assessRisk('tool_execution', 'delete_file', {}, emptyContext, makeConfig());
       expect(result).toBeDefined();
       expect(result.factors).toHaveLength(16);
     });
@@ -1270,13 +1120,7 @@ describe('assessRisk', () => {
         previousActions: ['action-1', 'action-2'],
         metadata: { key: 'value' },
       };
-      const result = assessRisk(
-        'tool_execution',
-        'read_file',
-        {},
-        context,
-        makeConfig()
-      );
+      const result = assessRisk('tool_execution', 'read_file', {}, context, makeConfig());
       expect(result).toBeDefined();
       expect(result.level).toBe('low');
     });
@@ -1330,9 +1174,7 @@ describe('assessRisk', () => {
         emptyContext,
         makeConfig()
       );
-      const presentNames = result.factors
-        .filter((f) => f.present)
-        .map((f) => f.name);
+      const presentNames = result.factors.filter((f) => f.present).map((f) => f.name);
       expect(presentNames).toContain('File Delete'); // from tool
       expect(presentNames).toContain('Data Deletion'); // from tool
       expect(presentNames).toContain('Irreversible'); // from tool
@@ -1346,13 +1188,7 @@ describe('assessRisk', () => {
 
   describe('score calculation', () => {
     it('calculates correctly for notification category with no factors', () => {
-      const result = assessRisk(
-        'notification',
-        'list_directory',
-        {},
-        emptyContext,
-        makeConfig()
-      );
+      const result = assessRisk('notification', 'list_directory', {}, emptyContext, makeConfig());
       // baseRisk=15, presentWeight=0, totalWeight>0, factorScore=0
       // score = round((15+0)/2) = 8
       expect(result.score).toBe(8);
@@ -1371,24 +1207,30 @@ describe('assessRisk', () => {
       // factorScore = (0.3 / totalWeight) * 100
       // score = round((15 + factorScore) / 2)
       const totalWeight =
-        0.8 + 0.5 + 0.7 + 0.4 + 0.5 + 0.6 + 0.3 + 0.9 + 0.95 + 0.6 + 0.8 +
-        1.0 + 0.6 + 0.7 + 0.5 + 0.8;
+        0.8 +
+        0.5 +
+        0.7 +
+        0.4 +
+        0.5 +
+        0.6 +
+        0.3 +
+        0.9 +
+        0.95 +
+        0.6 +
+        0.8 +
+        1.0 +
+        0.6 +
+        0.7 +
+        0.5 +
+        0.8;
       const factorScore = (0.3 / totalWeight) * 100;
       const expected = Math.min(100, Math.round((15 + factorScore) / 2));
       expect(result.score).toBe(expected);
     });
 
     it('write_file has file_write and data_modification factors', () => {
-      const result = assessRisk(
-        'file_operation',
-        'write_file',
-        {},
-        emptyContext,
-        makeConfig()
-      );
-      const presentNames = result.factors
-        .filter((f) => f.present)
-        .map((f) => f.name);
+      const result = assessRisk('file_operation', 'write_file', {}, emptyContext, makeConfig());
+      const presentNames = result.factors.filter((f) => f.present).map((f) => f.name);
       expect(presentNames).toContain('File Write');
       expect(presentNames).toContain('Data Modification');
       expect(presentNames).toHaveLength(2);
@@ -1420,23 +1262,13 @@ describe('assessRisk', () => {
         emptyContext,
         makeConfig()
       );
-      const presentNames = result.factors
-        .filter((f) => f.present)
-        .map((f) => f.name);
+      const presentNames = result.factors.filter((f) => f.present).map((f) => f.name);
       expect(presentNames).toContain('Data Deletion');
     });
 
     it('add_contact has data_modification and sensitive_data factors', () => {
-      const result = assessRisk(
-        'data_modification',
-        'add_contact',
-        {},
-        emptyContext,
-        makeConfig()
-      );
-      const presentNames = result.factors
-        .filter((f) => f.present)
-        .map((f) => f.name);
+      const result = assessRisk('data_modification', 'add_contact', {}, emptyContext, makeConfig());
+      const presentNames = result.factors.filter((f) => f.present).map((f) => f.name);
       expect(presentNames).toContain('Data Modification');
       expect(presentNames).toContain('Sensitive Data');
     });

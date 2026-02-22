@@ -54,15 +54,23 @@ export function CustomToolWizard({ onComplete, onCancel }: Props) {
   const [toolName, setToolName] = useState('');
   const [toolDescription, setToolDescription] = useState('');
   const [category, setCategory] = useState('utility');
-  const [paramsJson, setParamsJson] = useState('{\n  "type": "object",\n  "properties": {\n    "input": {\n      "type": "string",\n      "description": "The input to process"\n    }\n  },\n  "required": ["input"]\n}');
+  const [paramsJson, setParamsJson] = useState(
+    '{\n  "type": "object",\n  "properties": {\n    "input": {\n      "type": "string",\n      "description": "The input to process"\n    }\n  },\n  "required": ["input"]\n}'
+  );
   const [code, setCode] = useState(CODE_TEMPLATE);
   const [permissions, setPermissions] = useState<Set<string>>(new Set());
   const [requiresApproval, setRequiresApproval] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [aiGenerating, setAiGenerating] = useState(false);
   const aiAbortRef = useRef<AbortController | null>(null);
-  const [testResult, setTestResult] = useState<{ ok: boolean; output?: string; error?: string } | null>(null);
-  const [result, setResult] = useState<{ ok: boolean; toolId?: string; error?: string } | null>(null);
+  const [testResult, setTestResult] = useState<{
+    ok: boolean;
+    output?: string;
+    error?: string;
+  } | null>(null);
+  const [result, setResult] = useState<{ ok: boolean; toolId?: string; error?: string } | null>(
+    null
+  );
 
   const paramsValid = useMemo(() => {
     try {
@@ -75,12 +83,18 @@ export function CustomToolWizard({ onComplete, onCancel }: Props) {
 
   const canGoNext = useMemo(() => {
     switch (step) {
-      case 0: return TOOL_NAME_PATTERN.test(toolName) && toolDescription.trim().length >= 5;
-      case 1: return paramsValid;
-      case 2: return code.trim().length >= 10;
-      case 3: return true; // test is optional
-      case 4: return true; // permissions optional
-      default: return false;
+      case 0:
+        return TOOL_NAME_PATTERN.test(toolName) && toolDescription.trim().length >= 5;
+      case 1:
+        return paramsValid;
+      case 2:
+        return code.trim().length >= 10;
+      case 3:
+        return true; // test is optional
+      case 4:
+        return true; // permissions optional
+      default:
+        return false;
     }
   }, [step, toolName, toolDescription, paramsValid, code]);
 
@@ -108,7 +122,10 @@ Return ONLY the JavaScript code, no explanations, no markdown fences.`;
       const result = await aiGenerate(prompt, ctrl.signal);
       if (result) {
         // Strip any accidental markdown fences
-        const cleaned = result.replace(/```(?:javascript|js)?\s*/gi, '').replace(/```/g, '').trim();
+        const cleaned = result
+          .replace(/```(?:javascript|js)?\s*/gi, '')
+          .replace(/```/g, '')
+          .trim();
         setCode(cleaned);
       }
     } catch {
@@ -137,12 +154,18 @@ Return ONLY the JavaScript code, no explanations, no markdown fences.`;
         const res = await customToolsApi.execute(tool.id, testArgs);
         setTestResult({ ok: true, output: JSON.stringify(res, null, 2) });
       } catch (err) {
-        setTestResult({ ok: false, error: err instanceof Error ? err.message : 'Execution failed' });
+        setTestResult({
+          ok: false,
+          error: err instanceof Error ? err.message : 'Execution failed',
+        });
       }
       // Clean up test tool — we'll create the final one at step 4
       await customToolsApi.delete(tool.id).catch(() => {});
     } catch (err) {
-      setTestResult({ ok: false, error: err instanceof Error ? err.message : 'Failed to create tool for testing' });
+      setTestResult({
+        ok: false,
+        error: err instanceof Error ? err.message : 'Failed to create tool for testing',
+      });
     } finally {
       setIsProcessing(false);
     }
@@ -166,7 +189,10 @@ Return ONLY the JavaScript code, no explanations, no markdown fences.`;
         setResult({ ok: true, toolId: tool.id });
         setStep(5);
       } catch (err) {
-        setResult({ ok: false, error: err instanceof Error ? err.message : 'Failed to create tool' });
+        setResult({
+          ok: false,
+          error: err instanceof Error ? err.message : 'Failed to create tool',
+        });
         setStep(5);
       } finally {
         setIsProcessing(false);
@@ -203,18 +229,26 @@ Return ONLY the JavaScript code, no explanations, no markdown fences.`;
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-text-primary dark:text-dark-text-primary mb-2">
-                Tool Name <span className="text-text-muted dark:text-dark-text-muted font-normal">(snake_case)</span>
+                Tool Name{' '}
+                <span className="text-text-muted dark:text-dark-text-muted font-normal">
+                  (snake_case)
+                </span>
               </label>
               <input
                 type="text"
                 value={toolName}
-                onChange={(e) => setToolName(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '_'))}
+                onChange={(e) =>
+                  setToolName(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '_'))
+                }
                 placeholder="my_tool_name"
                 className="w-full px-3 py-2.5 rounded-lg border border-border dark:border-dark-border bg-bg-primary dark:bg-dark-bg-primary text-text-primary dark:text-dark-text-primary text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 font-mono"
                 autoFocus
               />
               {toolName && !TOOL_NAME_PATTERN.test(toolName) && (
-                <p className="text-xs text-warning mt-1">Must start with a letter and contain only lowercase letters, numbers, and underscores.</p>
+                <p className="text-xs text-warning mt-1">
+                  Must start with a letter and contain only lowercase letters, numbers, and
+                  underscores.
+                </p>
               )}
             </div>
 
@@ -241,7 +275,9 @@ Return ONLY the JavaScript code, no explanations, no markdown fences.`;
                 className="w-full px-3 py-2.5 rounded-lg border border-border dark:border-dark-border bg-bg-primary dark:bg-dark-bg-primary text-text-primary dark:text-dark-text-primary text-sm"
               >
                 {CATEGORIES.map((c) => (
-                  <option key={c} value={c}>{c.charAt(0).toUpperCase() + c.slice(1)}</option>
+                  <option key={c} value={c}>
+                    {c.charAt(0).toUpperCase() + c.slice(1)}
+                  </option>
                 ))}
               </select>
             </div>
@@ -256,7 +292,8 @@ Return ONLY the JavaScript code, no explanations, no markdown fences.`;
             Input Parameters
           </h2>
           <p className="text-sm text-text-muted dark:text-dark-text-muted mb-4">
-            Define the JSON Schema for your tool's input. The AI uses this to call your tool correctly.
+            Define the JSON Schema for your tool's input. The AI uses this to call your tool
+            correctly.
           </p>
 
           <textarea
@@ -266,7 +303,9 @@ Return ONLY the JavaScript code, no explanations, no markdown fences.`;
             className="w-full px-3 py-2.5 rounded-lg border border-border dark:border-dark-border bg-bg-primary dark:bg-dark-bg-primary text-text-primary dark:text-dark-text-primary text-xs focus:outline-none focus:ring-2 focus:ring-primary/30 resize-y font-mono"
           />
           {!paramsValid && paramsJson.trim() && (
-            <p className="text-xs text-warning mt-1">Must be valid JSON Schema with "type": "object"</p>
+            <p className="text-xs text-warning mt-1">
+              Must be valid JSON Schema with "type": "object"
+            </p>
           )}
         </div>
       )}
@@ -278,7 +317,11 @@ Return ONLY the JavaScript code, no explanations, no markdown fences.`;
             Implementation
           </h2>
           <p className="text-sm text-text-muted dark:text-dark-text-muted mb-4">
-            Write the JavaScript code or let AI generate it. Access parameters via <code className="bg-bg-tertiary dark:bg-dark-bg-tertiary px-1 rounded text-xs">args</code>.
+            Write the JavaScript code or let AI generate it. Access parameters via{' '}
+            <code className="bg-bg-tertiary dark:bg-dark-bg-tertiary px-1 rounded text-xs">
+              args
+            </code>
+            .
           </p>
 
           <button
@@ -319,12 +362,14 @@ Return ONLY the JavaScript code, no explanations, no markdown fences.`;
           </button>
 
           {testResult && (
-            <div className={`mt-4 p-4 rounded-lg border ${
-              testResult.ok
-                ? 'border-success/30 bg-success/5'
-                : 'border-error/30 bg-error/5'
-            }`}>
-              <p className={`text-sm font-medium mb-2 ${testResult.ok ? 'text-success' : 'text-error'}`}>
+            <div
+              className={`mt-4 p-4 rounded-lg border ${
+                testResult.ok ? 'border-success/30 bg-success/5' : 'border-error/30 bg-error/5'
+              }`}
+            >
+              <p
+                className={`text-sm font-medium mb-2 ${testResult.ok ? 'text-success' : 'text-error'}`}
+              >
                 {testResult.ok ? 'Test Passed' : 'Test Failed'}
               </p>
               <pre className="text-xs font-mono text-text-secondary dark:text-dark-text-secondary overflow-auto max-h-32">
@@ -365,7 +410,9 @@ Return ONLY the JavaScript code, no explanations, no markdown fences.`;
                   className="w-4 h-4 rounded border-border text-primary focus:ring-primary"
                 />
                 <div>
-                  <span className="text-sm font-medium text-text-primary dark:text-dark-text-primary">{p.label}</span>
+                  <span className="text-sm font-medium text-text-primary dark:text-dark-text-primary">
+                    {p.label}
+                  </span>
                   <p className="text-xs text-text-muted dark:text-dark-text-muted">{p.desc}</p>
                 </div>
               </label>
@@ -380,8 +427,12 @@ Return ONLY the JavaScript code, no explanations, no markdown fences.`;
               className="w-4 h-4 rounded border-border text-primary focus:ring-primary"
             />
             <div>
-              <span className="text-sm font-medium text-text-primary dark:text-dark-text-primary">Require Approval</span>
-              <p className="text-xs text-text-muted dark:text-dark-text-muted">Ask for user confirmation before each execution</p>
+              <span className="text-sm font-medium text-text-primary dark:text-dark-text-primary">
+                Require Approval
+              </span>
+              <p className="text-xs text-text-muted dark:text-dark-text-muted">
+                Ask for user confirmation before each execution
+              </p>
             </div>
           </label>
         </div>
@@ -418,7 +469,10 @@ Return ONLY the JavaScript code, no explanations, no markdown fences.`;
               </h3>
               <p className="text-sm text-error max-w-md mx-auto">{result?.error}</p>
               <button
-                onClick={() => { setStep(4); setResult(null); }}
+                onClick={() => {
+                  setStep(4);
+                  setResult(null);
+                }}
                 className="mt-3 text-sm text-primary hover:underline"
               >
                 Go back and try again

@@ -123,20 +123,20 @@ CREATE TABLE IF NOT EXISTS memories (
 
 **Key columns:**
 
-| Column | Type | Description |
-|--------|------|-------------|
-| `id` | TEXT | UUID primary key |
-| `user_id` | TEXT | Owner of the memory; defaults to `'default'` |
-| `type` | TEXT | One of the five memory types (see below) |
-| `content` | TEXT | The textual information being remembered |
-| `embedding` | BYTEA | Reserved for future vector-based semantic search |
-| `source` | TEXT | Where the memory originated (e.g., `'conversation'`) |
-| `source_id` | TEXT | ID of the source entity (e.g., conversation ID) |
-| `importance` | DOUBLE PRECISION | Floating-point score from 0.0 to 1.0 |
-| `tags` | JSONB | Array of string tags for categorization |
-| `accessed_count` | INTEGER | How many times this memory has been retrieved |
-| `accessed_at` | TIMESTAMP | When the memory was last accessed |
-| `metadata` | JSONB | Arbitrary key-value metadata |
+| Column           | Type             | Description                                          |
+| ---------------- | ---------------- | ---------------------------------------------------- |
+| `id`             | TEXT             | UUID primary key                                     |
+| `user_id`        | TEXT             | Owner of the memory; defaults to `'default'`         |
+| `type`           | TEXT             | One of the five memory types (see below)             |
+| `content`        | TEXT             | The textual information being remembered             |
+| `embedding`      | BYTEA            | Reserved for future vector-based semantic search     |
+| `source`         | TEXT             | Where the memory originated (e.g., `'conversation'`) |
+| `source_id`      | TEXT             | ID of the source entity (e.g., conversation ID)      |
+| `importance`     | DOUBLE PRECISION | Floating-point score from 0.0 to 1.0                 |
+| `tags`           | JSONB            | Array of string tags for categorization              |
+| `accessed_count` | INTEGER          | How many times this memory has been retrieved        |
+| `accessed_at`    | TIMESTAMP        | When the memory was last accessed                    |
+| `metadata`       | JSONB            | Arbitrary key-value metadata                         |
 
 **Indexes (for performance):**
 
@@ -152,13 +152,13 @@ CREATE INDEX idx_memories_accessed    ON memories(accessed_at DESC);
 
 Each memory must have exactly one type. The type constrains what kind of information the memory represents.
 
-| Type | Description | Example |
-|------|-------------|---------|
-| `fact` | Factual information about the user or the world | "User's name is Alex" |
-| `preference` | User preferences, likes, and dislikes | "User prefers dark mode in all applications" |
-| `conversation` | Key conversation highlights worth preserving | "Discussed project architecture on 2025-06-15" |
-| `event` | Important events, milestones, deadlines | "User's birthday is March 12" |
-| `skill` | Skills and expertise the user possesses | "User is proficient in TypeScript and Rust" |
+| Type           | Description                                     | Example                                        |
+| -------------- | ----------------------------------------------- | ---------------------------------------------- |
+| `fact`         | Factual information about the user or the world | "User's name is Alex"                          |
+| `preference`   | User preferences, likes, and dislikes           | "User prefers dark mode in all applications"   |
+| `conversation` | Key conversation highlights worth preserving    | "Discussed project architecture on 2025-06-15" |
+| `event`        | Important events, milestones, deadlines         | "User's birthday is March 12"                  |
+| `skill`        | Skills and expertise the user possesses         | "User is proficient in TypeScript and Rust"    |
 
 The `conversation` type is available in the database schema but is intentionally omitted from the tool-facing enum in `memory-tools.ts`. The `remember` and `batch_remember` tools expose only `fact`, `preference`, `event`, and `skill` to the AI, keeping conversation-type memories reserved for programmatic use.
 
@@ -209,22 +209,26 @@ A memory goes through the following stages:
 Importance is a floating-point value between 0.0 and 1.0 that determines how prominently a memory surfaces during recall and injection.
 
 **Initial assignment:**
+
 - When the AI creates a memory via `remember`, it may specify an `importance` parameter.
 - If not specified, the default is **0.5**.
 - The AI's tool description instructs it to set higher values for truly important information.
 
 **Boosting:**
+
 - The `boost_memory` tool increases importance by a specified amount (default: +0.1, maximum per call: +0.5).
 - Importance is capped at 1.0: `newImportance = Math.min(1, existing.importance + amount)`.
 - Deduplication also triggers a boost: when the AI tries to remember something that already exists, the existing memory's importance increases by +0.1.
 
 **Decay:**
+
 - The `POST /memories/decay` endpoint reduces importance for stale memories.
 - Default behavior: memories not accessed in the last 30 days have their importance multiplied by 0.9.
 - Decay only affects memories with importance above 0.1 (preventing memories from decaying to effectively zero).
 - This endpoint is designed to be called periodically by a scheduled trigger.
 
 **Ordering by importance:**
+
 - `list_memories` orders by `importance DESC, updated_at DESC`.
 - `recall` (relevance mode) orders by `importance DESC, accessed_at DESC NULLS LAST`.
 
@@ -246,6 +250,7 @@ async findSimilar(content: string, type?: MemoryType): Promise<Memory | null> {
 ```
 
 When a duplicate is found:
+
 1. The existing memory's importance is boosted by +0.1.
 2. The tool returns a result indicating deduplication occurred.
 3. No new row is inserted.
@@ -268,6 +273,7 @@ async decay(options: {
 ```
 
 SQL logic:
+
 ```sql
 UPDATE memories SET
   importance = importance * $decayFactor,
@@ -290,6 +296,7 @@ async cleanup(options: {
 ```
 
 SQL logic:
+
 ```sql
 DELETE FROM memories
 WHERE user_id = $userId
@@ -312,6 +319,7 @@ WHERE id = $id AND user_id = $userId
 ```
 
 This tracking serves two purposes:
+
 1. **Decay protection** -- Recently accessed memories are excluded from importance decay.
 2. **Relevance ranking** -- The `getFrequentlyAccessed()` method orders by `accessed_count DESC`, allowing the system to surface the most-referenced memories.
 
@@ -321,15 +329,15 @@ Reads via `get(id, false)` (e.g., during update or delete operations) skip acces
 
 Tool definitions live in `packages/core/src/agent/tools/memory-tools.ts`. These are pure schema definitions (no execution logic) that are registered with the agent runtime.
 
-| Tool | Parameters | Description |
-|------|-----------|-------------|
-| `remember` | `content` (required), `type` (required: fact/preference/event/skill), `importance` (0-1), `tags` (string[]) | Store a single memory. Deduplicates automatically. |
-| `batch_remember` | `memories` (required: array of {content, type, importance?, tags?}) | Store multiple memories in one call. Each entry is individually deduplicated. |
-| `recall` | `query` (required), `type` (optional filter), `tags` (optional filter), `limit` (default: 10) | Search memories by natural language query. Returns sorted by relevance and importance. |
-| `forget` | `memoryId` (required) | Delete a specific memory by ID. Used only when user explicitly requests it or information is outdated. |
-| `list_memories` | `type` (optional filter), `limit` (default: 20), `minImportance` (0-1 threshold) | List memories ordered by importance. |
-| `boost_memory` | `memoryId` (required), `amount` (default: 0.1, max: 0.5) | Increase a memory's importance score. Used when information is reinforced or becomes more relevant. |
-| `memory_stats` | (none) | Returns total count, breakdown by type, average importance, and count of memories added in the last 7 days. |
+| Tool             | Parameters                                                                                                  | Description                                                                                                 |
+| ---------------- | ----------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `remember`       | `content` (required), `type` (required: fact/preference/event/skill), `importance` (0-1), `tags` (string[]) | Store a single memory. Deduplicates automatically.                                                          |
+| `batch_remember` | `memories` (required: array of {content, type, importance?, tags?})                                         | Store multiple memories in one call. Each entry is individually deduplicated.                               |
+| `recall`         | `query` (required), `type` (optional filter), `tags` (optional filter), `limit` (default: 10)               | Search memories by natural language query. Returns sorted by relevance and importance.                      |
+| `forget`         | `memoryId` (required)                                                                                       | Delete a specific memory by ID. Used only when user explicitly requests it or information is outdated.      |
+| `list_memories`  | `type` (optional filter), `limit` (default: 20), `minImportance` (0-1 threshold)                            | List memories ordered by importance.                                                                        |
+| `boost_memory`   | `memoryId` (required), `amount` (default: 0.1, max: 0.5)                                                    | Increase a memory's importance score. Used when information is reinforced or becomes more relevant.         |
+| `memory_stats`   | (none)                                                                                                      | Returns total count, breakdown by type, average importance, and count of memories added in the last 7 days. |
 
 All tools are exported as `MEMORY_TOOLS: ToolDefinition[]` and tool names as `MEMORY_TOOL_NAMES: string[]`.
 
@@ -342,10 +350,11 @@ export async function executeMemoryTool(
   toolId: string,
   params: Record<string, unknown>,
   userId = 'default'
-): Promise<ToolExecutionResult>
+): Promise<ToolExecutionResult>;
 ```
 
 Each tool name maps to a case in a switch statement. The executor:
+
 1. Instantiates `MemoriesRepository` with the user ID.
 2. Validates required parameters.
 3. Performs deduplication where applicable.
@@ -381,38 +390,35 @@ export class MemoryInjector {
     }
   ): Promise<string>;
 
-  async getRelevantContext(
-    userId: string,
-    query: string
-  ): Promise<string | null>;
+  async getRelevantContext(userId: string, query: string): Promise<string | null>;
 }
 ```
 
 **MemoryInjectionOptions:**
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `userId` | string | - | User ID for memory retrieval |
-| `tools` | ToolDefinition[] | - | Available tools to list in the prompt |
-| `capabilities` | AgentCapabilities | - | Agent capability flags |
-| `conversationContext` | PromptConversationContext | - | Current conversation metadata |
-| `workspaceContext` | WorkspaceContext | - | File system paths |
-| `includeProfile` | boolean | true | Whether to include user profile |
-| `includeInstructions` | boolean | true | Whether to include custom instructions |
-| `includeTimeContext` | boolean | true | Whether to include current time |
-| `includeToolDescriptions` | boolean | true | Whether to describe tools |
-| `maxPromptLength` | number | 16000 | Maximum prompt character length |
+| Option                    | Type                      | Default | Description                            |
+| ------------------------- | ------------------------- | ------- | -------------------------------------- |
+| `userId`                  | string                    | -       | User ID for memory retrieval           |
+| `tools`                   | ToolDefinition[]          | -       | Available tools to list in the prompt  |
+| `capabilities`            | AgentCapabilities         | -       | Agent capability flags                 |
+| `conversationContext`     | PromptConversationContext | -       | Current conversation metadata          |
+| `workspaceContext`        | WorkspaceContext          | -       | File system paths                      |
+| `includeProfile`          | boolean                   | true    | Whether to include user profile        |
+| `includeInstructions`     | boolean                   | true    | Whether to include custom instructions |
+| `includeTimeContext`      | boolean                   | true    | Whether to include current time        |
+| `includeToolDescriptions` | boolean                   | true    | Whether to describe tools              |
+| `maxPromptLength`         | number                    | 16000   | Maximum prompt character length        |
 
 **InjectedPromptResult:**
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `systemPrompt` | string | The fully composed system prompt |
-| `userProfile` | UserProfile | The user profile object (if loaded) |
-| `toolCount` | number | Number of tools included |
-| `instructionCount` | number | Number of custom instructions included |
-| `hasTimeContext` | boolean | Whether time context was added |
-| `promptLength` | number | Length of the final prompt in characters |
+| Field              | Type        | Description                              |
+| ------------------ | ----------- | ---------------------------------------- |
+| `systemPrompt`     | string      | The fully composed system prompt         |
+| `userProfile`      | UserProfile | The user profile object (if loaded)      |
+| `toolCount`        | number      | Number of tools included                 |
+| `instructionCount` | number      | Number of custom instructions included   |
+| `hasTimeContext`   | boolean     | Whether time context was added           |
+| `promptLength`     | number      | Length of the final prompt in characters |
 
 A global singleton instance is available via `getMemoryInjector()`. Convenience functions `injectMemoryIntoPrompt()` and `createEnhancedAgentPrompt()` wrap the singleton.
 
@@ -425,6 +431,7 @@ The `PersonalMemoryStore` is a file-based key-value store that maintains a compr
 The `MemoryInjector` loads the personal profile via `getPersonalMemoryStore(userId)` and converts it to a `UserProfile` object that the `PromptComposer` can format.
 
 Key profile sections used during injection:
+
 - **Identity** -- name, nickname, age, nationality
 - **Location** -- city, country, timezone
 - **Work** -- occupation, company, skills
@@ -460,13 +467,13 @@ Sections are separated by `\n\n---\n\n` dividers.
 
 **Autonomy levels** directly affect the guidelines injected into the prompt:
 
-| Level | Guideline |
-|-------|-----------|
-| `none` | Ask for explicit permission before taking any action. |
-| `low` | Perform read-only operations freely. Ask permission for modifications. |
+| Level    | Guideline                                                                               |
+| -------- | --------------------------------------------------------------------------------------- |
+| `none`   | Ask for explicit permission before taking any action.                                   |
+| `low`    | Perform read-only operations freely. Ask permission for modifications.                  |
 | `medium` | Perform most operations freely. Ask permission for destructive or irreversible actions. |
-| `high` | Perform almost all operations autonomously. Only ask for truly destructive actions. |
-| `full` | Full autonomy. Take action immediately. The user trusts your judgment. |
+| `high`   | Perform almost all operations autonomously. Only ask for truly destructive actions.     |
+| `full`   | Full autonomy. Take action immediately. The user trusts your judgment.                  |
 
 ### Injection Flow Diagram
 
@@ -524,7 +531,11 @@ export class ConversationMemory {
   get(id: string): Conversation | undefined;
   addMessage(conversationId: string, message: Message): Conversation | undefined;
   addUserMessage(conversationId: string, content: string | ContentPart[]): Conversation | undefined;
-  addAssistantMessage(conversationId: string, content: string, toolCalls?: ToolCall[]): Conversation | undefined;
+  addAssistantMessage(
+    conversationId: string,
+    content: string,
+    toolCalls?: ToolCall[]
+  ): Conversation | undefined;
   addToolResults(conversationId: string, results: ToolResult[]): Conversation | undefined;
   getContextMessages(conversationId: string): readonly Message[];
   getFullContext(conversationId: string): readonly Message[];
@@ -533,7 +544,7 @@ export class ConversationMemory {
   fork(conversationId: string): Conversation | undefined;
   export(conversationId: string): string | undefined;
   import(json: string): Conversation | undefined;
-  getStats(conversationId: string): { messageCount, estimatedTokens, lastActivity } | undefined;
+  getStats(conversationId: string): { messageCount; estimatedTokens; lastActivity } | undefined;
 }
 ```
 
@@ -541,10 +552,10 @@ export class ConversationMemory {
 
 The `MemoryConfig` type accepts a `persistence` field:
 
-| Strategy | Behavior |
-|----------|----------|
-| `none` | Messages exist only in memory; lost on restart |
-| `session` | Messages persist for the duration of the session (default) |
+| Strategy     | Behavior                                                                                                                         |
+| ------------ | -------------------------------------------------------------------------------------------------------------------------------- |
+| `none`       | Messages exist only in memory; lost on restart                                                                                   |
+| `session`    | Messages persist for the duration of the session (default)                                                                       |
 | `persistent` | Messages survive across sessions (not yet fully implemented at this layer; persistent conversations are handled by the database) |
 
 ### Token Estimation and Trimming
@@ -563,6 +574,7 @@ private estimateTokens(message: Message): number {
 When `maxTokens` is configured (default: 100,000), the method scans messages from most recent to oldest, accumulating estimated token counts. Once the budget is exceeded, older messages are dropped.
 
 Default configuration:
+
 - `maxMessages`: 100
 - `maxTokens`: 100,000
 - `summarize`: false
@@ -633,12 +645,12 @@ The `ON DELETE CASCADE` on `goal_id` means deleting a goal automatically removes
 
 ### Goal Statuses
 
-| Status | Description |
-|--------|-------------|
-| `active` | Goal is being actively pursued |
-| `paused` | Goal is temporarily on hold |
+| Status      | Description                                                 |
+| ----------- | ----------------------------------------------------------- |
+| `active`    | Goal is being actively pursued                              |
+| `paused`    | Goal is temporarily on hold                                 |
 | `completed` | Goal has been achieved; `completed_at` is set automatically |
-| `abandoned` | Goal was intentionally dropped |
+| `abandoned` | Goal was intentionally dropped                              |
 
 ### Goal Priority
 
@@ -730,6 +742,7 @@ async recalculateProgress(goalId: string): Promise<number> {
 ```
 
 This means:
+
 - A goal with 5 steps where 3 are completed has progress = 60%.
 - Adding new steps reduces the percentage (denominator increases).
 - Deleting a step also triggers recalculation.
@@ -757,6 +770,7 @@ LIMIT $2
 ```
 
 This query:
+
 1. Only considers steps belonging to **active** goals.
 2. Only considers **pending** or **in_progress** steps.
 3. Excludes steps that have **uncompleted dependencies**.
@@ -767,16 +781,16 @@ This query:
 
 Tool definitions live in `packages/core/src/agent/tools/goal-tools.ts`.
 
-| Tool | Parameters | Description |
-|------|-----------|-------------|
-| `create_goal` | `title` (required), `description`, `priority` (1-10, default: 5), `dueDate` (ISO), `parentId` | Create a new goal. Can be a sub-goal if parentId is provided. |
-| `list_goals` | `status` (default: active), `limit` (default: 10) | List goals filtered by status, ordered by priority. |
-| `update_goal` | `goalId` (required), `status`, `progress` (0-100), `title`, `description`, `priority`, `dueDate` | Update any field of an existing goal. Setting status to `completed` auto-sets `completed_at`. |
-| `decompose_goal` | `goalId` (required), `steps` (required: array of {title, description?}) | Break a goal into ordered, actionable steps. |
-| `get_next_actions` | `limit` (default: 5) | Get next pending steps across all active goals, respecting dependencies. |
-| `complete_step` | `stepId` (required), `result` (optional notes) | Mark a step as completed. Auto-recalculates parent goal progress. |
-| `get_goal_details` | `goalId` (required) | Get full goal details including all steps, completion count, and step count. |
-| `goal_stats` | (none) | Returns total goals, breakdown by status, completed this week, average progress, overdue count. |
+| Tool               | Parameters                                                                                       | Description                                                                                     |
+| ------------------ | ------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------- |
+| `create_goal`      | `title` (required), `description`, `priority` (1-10, default: 5), `dueDate` (ISO), `parentId`    | Create a new goal. Can be a sub-goal if parentId is provided.                                   |
+| `list_goals`       | `status` (default: active), `limit` (default: 10)                                                | List goals filtered by status, ordered by priority.                                             |
+| `update_goal`      | `goalId` (required), `status`, `progress` (0-100), `title`, `description`, `priority`, `dueDate` | Update any field of an existing goal. Setting status to `completed` auto-sets `completed_at`.   |
+| `decompose_goal`   | `goalId` (required), `steps` (required: array of {title, description?})                          | Break a goal into ordered, actionable steps.                                                    |
+| `get_next_actions` | `limit` (default: 5)                                                                             | Get next pending steps across all active goals, respecting dependencies.                        |
+| `complete_step`    | `stepId` (required), `result` (optional notes)                                                   | Mark a step as completed. Auto-recalculates parent goal progress.                               |
+| `get_goal_details` | `goalId` (required)                                                                              | Get full goal details including all steps, completion count, and step count.                    |
+| `goal_stats`       | (none)                                                                                           | Returns total goals, breakdown by status, completed this week, average progress, overdue count. |
 
 All tools are exported as `GOAL_TOOLS: ToolDefinition[]` and tool names as `GOAL_TOOL_NAMES: string[]`.
 
@@ -789,7 +803,7 @@ export async function executeGoalTool(
   toolId: string,
   params: Record<string, unknown>,
   userId = 'default'
-): Promise<ToolExecutionResult>
+): Promise<ToolExecutionResult>;
 ```
 
 Each tool ID maps to a case that validates inputs, interacts with `GoalsRepository`, and returns a structured result.
@@ -800,16 +814,16 @@ The `goal_stats` tool and `GET /goals/stats` endpoint return:
 
 ```typescript
 {
-  total: number;              // Total goals across all statuses
+  total: number; // Total goals across all statuses
   byStatus: {
     active: number;
     paused: number;
     completed: number;
     abandoned: number;
-  };
-  completedThisWeek: number;  // Goals completed in the last 7 days
-  averageProgress: number;    // Average progress of active goals (0-100)
-  overdueCount: number;       // Active goals past their due date
+  }
+  completedThisWeek: number; // Goals completed in the last 7 days
+  averageProgress: number; // Average progress of active goals (0-100)
+  overdueCount: number; // Active goals past their due date
 }
 ```
 
@@ -821,41 +835,41 @@ The gateway exposes REST endpoints for both memories and goals. All endpoints ac
 
 ### Memory Endpoints
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `GET` | `/memories` | List memories. Query: `type`, `limit`, `minImportance` |
-| `POST` | `/memories` | Create a memory. Body: `{ content, type, importance?, tags? }`. Deduplicates. |
-| `GET` | `/memories/search` | Search memories. Query: `q` (required), `type`, `limit` |
-| `GET` | `/memories/stats` | Get memory statistics |
-| `GET` | `/memories/:id` | Get a specific memory |
-| `PATCH` | `/memories/:id` | Update a memory. Body: `{ content?, importance?, tags? }` |
-| `POST` | `/memories/:id/boost` | Boost importance. Body: `{ amount? }` (default: 0.1) |
-| `DELETE` | `/memories/:id` | Delete a memory |
-| `POST` | `/memories/decay` | Run decay. Body: `{ daysThreshold?, decayFactor? }` |
-| `POST` | `/memories/cleanup` | Clean up low-importance memories. Body: `{ maxAge?, minImportance? }` |
+| Method   | Endpoint              | Description                                                                   |
+| -------- | --------------------- | ----------------------------------------------------------------------------- |
+| `GET`    | `/memories`           | List memories. Query: `type`, `limit`, `minImportance`                        |
+| `POST`   | `/memories`           | Create a memory. Body: `{ content, type, importance?, tags? }`. Deduplicates. |
+| `GET`    | `/memories/search`    | Search memories. Query: `q` (required), `type`, `limit`                       |
+| `GET`    | `/memories/stats`     | Get memory statistics                                                         |
+| `GET`    | `/memories/:id`       | Get a specific memory                                                         |
+| `PATCH`  | `/memories/:id`       | Update a memory. Body: `{ content?, importance?, tags? }`                     |
+| `POST`   | `/memories/:id/boost` | Boost importance. Body: `{ amount? }` (default: 0.1)                          |
+| `DELETE` | `/memories/:id`       | Delete a memory                                                               |
+| `POST`   | `/memories/decay`     | Run decay. Body: `{ daysThreshold?, decayFactor? }`                           |
+| `POST`   | `/memories/cleanup`   | Clean up low-importance memories. Body: `{ maxAge?, minImportance? }`         |
 
 ### Goal Endpoints
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `GET` | `/goals` | List goals. Query: `status`, `limit`, `parentId` |
-| `POST` | `/goals` | Create a goal. Body: `{ title, description?, priority?, dueDate?, parentId? }` |
-| `GET` | `/goals/stats` | Get goal statistics |
-| `GET` | `/goals/next-actions` | Get next actionable steps. Query: `limit` |
-| `GET` | `/goals/upcoming` | Get goals with upcoming due dates. Query: `days` (default: 7) |
-| `GET` | `/goals/:id` | Get a goal with its steps |
-| `PATCH` | `/goals/:id` | Update a goal |
-| `DELETE` | `/goals/:id` | Delete a goal (cascades to steps) |
+| Method   | Endpoint              | Description                                                                    |
+| -------- | --------------------- | ------------------------------------------------------------------------------ |
+| `GET`    | `/goals`              | List goals. Query: `status`, `limit`, `parentId`                               |
+| `POST`   | `/goals`              | Create a goal. Body: `{ title, description?, priority?, dueDate?, parentId? }` |
+| `GET`    | `/goals/stats`        | Get goal statistics                                                            |
+| `GET`    | `/goals/next-actions` | Get next actionable steps. Query: `limit`                                      |
+| `GET`    | `/goals/upcoming`     | Get goals with upcoming due dates. Query: `days` (default: 7)                  |
+| `GET`    | `/goals/:id`          | Get a goal with its steps                                                      |
+| `PATCH`  | `/goals/:id`          | Update a goal                                                                  |
+| `DELETE` | `/goals/:id`          | Delete a goal (cascades to steps)                                              |
 
 ### Goal Step Endpoints
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `POST` | `/goals/:id/steps` | Add steps to a goal. Body: `{ steps: [{title, description?}] }` or single step |
-| `GET` | `/goals/:id/steps` | List steps for a goal, ordered by `order_num` |
-| `PATCH` | `/goals/:goalId/steps/:stepId` | Update a step |
-| `POST` | `/goals/:goalId/steps/:stepId/complete` | Mark step completed. Body: `{ result? }` |
-| `DELETE` | `/goals/:goalId/steps/:stepId` | Delete a step |
+| Method   | Endpoint                                | Description                                                                    |
+| -------- | --------------------------------------- | ------------------------------------------------------------------------------ |
+| `POST`   | `/goals/:id/steps`                      | Add steps to a goal. Body: `{ steps: [{title, description?}] }` or single step |
+| `GET`    | `/goals/:id/steps`                      | List steps for a goal, ordered by `order_num`                                  |
+| `PATCH`  | `/goals/:goalId/steps/:stepId`          | Update a step                                                                  |
+| `POST`   | `/goals/:goalId/steps/:stepId/complete` | Mark step completed. Body: `{ result? }`                                       |
+| `DELETE` | `/goals/:goalId/steps/:stepId`          | Delete a step                                                                  |
 
 ---
 
@@ -874,11 +888,13 @@ CREATE TABLE plans (
 ```
 
 This allows plans (autonomous multi-step workflows) to be linked to goals. When a plan is created to achieve a specific goal:
+
 1. The AI sets `goal_id` on the plan.
 2. As plan steps complete, the AI can update the corresponding goal's progress.
 3. When the plan completes successfully, the AI can mark the goal as completed.
 
 Plans and goals share a similar decomposition pattern (goals have `goal_steps`, plans have `plan_steps`), but they serve different purposes:
+
 - **Goal steps** represent what needs to be done (declarative).
 - **Plan steps** represent how to do it (imperative -- tool calls, LLM decisions, conditions).
 
@@ -886,15 +902,16 @@ Plans and goals share a similar decomposition pattern (goals have `goal_steps`, 
 
 Triggers can automate goal-related behavior:
 
-| Trigger Type | Goal Use Case |
-|-------------|--------------|
-| `schedule` | Periodic goal review ("Every Monday at 9 AM, review active goals") |
-| `condition: stale_goals` | Alert when goals have not progressed in N days |
-| `condition: upcoming_deadline` | Notify about approaching due dates |
-| `condition: low_progress` | Flag goals with low progress relative to their deadline |
-| `event: goal_completed` | Fire when a goal is marked completed (e.g., create a celebration memory) |
+| Trigger Type                   | Goal Use Case                                                            |
+| ------------------------------ | ------------------------------------------------------------------------ |
+| `schedule`                     | Periodic goal review ("Every Monday at 9 AM, review active goals")       |
+| `condition: stale_goals`       | Alert when goals have not progressed in N days                           |
+| `condition: upcoming_deadline` | Notify about approaching due dates                                       |
+| `condition: low_progress`      | Flag goals with low progress relative to their deadline                  |
+| `event: goal_completed`        | Fire when a goal is marked completed (e.g., create a celebration memory) |
 
 A trigger's action can invoke goal tools:
+
 ```json
 {
   "type": "schedule",
@@ -963,19 +980,19 @@ The frontend provides a `GoalsPage` component at `packages/ui/src/pages/GoalsPag
 
 ## Source File Reference
 
-| File | Package | Purpose |
-|------|---------|---------|
-| `packages/core/src/agent/tools/memory-tools.ts` | @ownpilot/core | Memory tool definitions (7 tools) |
-| `packages/core/src/agent/tools/goal-tools.ts` | @ownpilot/core | Goal tool definitions (8 tools) |
-| `packages/core/src/agent/memory-injector.ts` | @ownpilot/core | MemoryInjector class, prompt enrichment |
-| `packages/core/src/agent/prompt-composer.ts` | @ownpilot/core | PromptComposer, section assembly, autonomy guidelines |
-| `packages/core/src/agent/memory.ts` | @ownpilot/core | ConversationMemory class (in-session) |
-| `packages/core/src/memory/personal.ts` | @ownpilot/core | PersonalMemoryStore (file-based profile) |
-| `packages/gateway/src/services/memory-service.ts` | @ownpilot/gateway | MemoryService -- business logic layer for memory operations, EventBus emission |
-| `packages/gateway/src/services/goal-service.ts` | @ownpilot/gateway | GoalService -- business logic layer for goal operations, EventBus emission |
-| `packages/gateway/src/routes/memories.ts` | @ownpilot/gateway | Memory REST API (thin HTTP handler, delegates to MemoryService) |
-| `packages/gateway/src/routes/goals.ts` | @ownpilot/gateway | Goals REST API (thin HTTP handler, delegates to GoalService) |
-| `packages/gateway/src/db/repositories/memories.ts` | @ownpilot/gateway | MemoriesRepository (PostgreSQL) |
-| `packages/gateway/src/db/repositories/goals.ts` | @ownpilot/gateway | GoalsRepository (PostgreSQL) |
-| `packages/gateway/src/db/schema.ts` | @ownpilot/gateway | Full database schema DDL |
-| `packages/ui/src/pages/GoalsPage.tsx` | @ownpilot/ui | Goal management UI |
+| File                                               | Package           | Purpose                                                                        |
+| -------------------------------------------------- | ----------------- | ------------------------------------------------------------------------------ |
+| `packages/core/src/agent/tools/memory-tools.ts`    | @ownpilot/core    | Memory tool definitions (7 tools)                                              |
+| `packages/core/src/agent/tools/goal-tools.ts`      | @ownpilot/core    | Goal tool definitions (8 tools)                                                |
+| `packages/core/src/agent/memory-injector.ts`       | @ownpilot/core    | MemoryInjector class, prompt enrichment                                        |
+| `packages/core/src/agent/prompt-composer.ts`       | @ownpilot/core    | PromptComposer, section assembly, autonomy guidelines                          |
+| `packages/core/src/agent/memory.ts`                | @ownpilot/core    | ConversationMemory class (in-session)                                          |
+| `packages/core/src/memory/personal.ts`             | @ownpilot/core    | PersonalMemoryStore (file-based profile)                                       |
+| `packages/gateway/src/services/memory-service.ts`  | @ownpilot/gateway | MemoryService -- business logic layer for memory operations, EventBus emission |
+| `packages/gateway/src/services/goal-service.ts`    | @ownpilot/gateway | GoalService -- business logic layer for goal operations, EventBus emission     |
+| `packages/gateway/src/routes/memories.ts`          | @ownpilot/gateway | Memory REST API (thin HTTP handler, delegates to MemoryService)                |
+| `packages/gateway/src/routes/goals.ts`             | @ownpilot/gateway | Goals REST API (thin HTTP handler, delegates to GoalService)                   |
+| `packages/gateway/src/db/repositories/memories.ts` | @ownpilot/gateway | MemoriesRepository (PostgreSQL)                                                |
+| `packages/gateway/src/db/repositories/goals.ts`    | @ownpilot/gateway | GoalsRepository (PostgreSQL)                                                   |
+| `packages/gateway/src/db/schema.ts`                | @ownpilot/gateway | Full database schema DDL                                                       |
+| `packages/ui/src/pages/GoalsPage.tsx`              | @ownpilot/ui      | Goal management UI                                                             |

@@ -147,8 +147,7 @@ describe('ContactsRepository', () => {
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
       mockAdapter.queryOne.mockResolvedValueOnce(null);
 
-      await expect(repo.create({ name: 'Test' }))
-        .rejects.toThrow('Failed to create contact');
+      await expect(repo.create({ name: 'Test' })).rejects.toThrow('Failed to create contact');
     });
 
     it('should serialize tags, socialLinks, and customFields as JSON', async () => {
@@ -191,9 +190,7 @@ describe('ContactsRepository', () => {
     });
 
     it('should parse dates', async () => {
-      mockAdapter.queryOne.mockResolvedValueOnce(
-        makeContactRow({ last_contacted_at: NOW }),
-      );
+      mockAdapter.queryOne.mockResolvedValueOnce(makeContactRow({ last_contacted_at: NOW }));
 
       const result = await repo.get('ct-1');
 
@@ -220,9 +217,7 @@ describe('ContactsRepository', () => {
 
   describe('getByEmail', () => {
     it('should query by email and user_id', async () => {
-      mockAdapter.queryOne.mockResolvedValueOnce(
-        makeContactRow({ email: 'alice@example.com' }),
-      );
+      mockAdapter.queryOne.mockResolvedValueOnce(makeContactRow({ email: 'alice@example.com' }));
 
       const result = await repo.getByEmail('alice@example.com');
 
@@ -241,9 +236,7 @@ describe('ContactsRepository', () => {
 
   describe('getByPhone', () => {
     it('should query by phone and user_id', async () => {
-      mockAdapter.queryOne.mockResolvedValueOnce(
-        makeContactRow({ phone: '+1234567890' }),
-      );
+      mockAdapter.queryOne.mockResolvedValueOnce(makeContactRow({ phone: '+1234567890' }));
 
       const result = await repo.getByPhone('+1234567890');
 
@@ -306,7 +299,7 @@ describe('ContactsRepository', () => {
       mockAdapter.queryOne.mockResolvedValueOnce(makeContactRow());
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
       mockAdapter.queryOne.mockResolvedValueOnce(
-        makeContactRow({ name: 'Bob', email: 'bob@example.com', company: 'NewCo' }),
+        makeContactRow({ name: 'Bob', email: 'bob@example.com', company: 'NewCo' })
       );
 
       const result = await repo.update('ct-1', {
@@ -355,9 +348,7 @@ describe('ContactsRepository', () => {
   describe('recordContact', () => {
     it('should update last_contacted_at and return the contact', async () => {
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
-      mockAdapter.queryOne.mockResolvedValueOnce(
-        makeContactRow({ last_contacted_at: NOW }),
-      );
+      mockAdapter.queryOne.mockResolvedValueOnce(makeContactRow({ last_contacted_at: NOW }));
 
       const result = await repo.recordContact('ct-1');
 
@@ -441,7 +432,7 @@ describe('ContactsRepository', () => {
       await repo.list({ tags: ['vip', 'client'] });
 
       const sql = mockAdapter.query.mock.calls[0]![0] as string;
-      expect(sql).toContain("tags::text LIKE");
+      expect(sql).toContain('tags::text LIKE');
       const params = mockAdapter.query.mock.calls[0]![1] as unknown[];
       expect(params).toContain('%"vip"%');
       expect(params).toContain('%"client"%');
@@ -545,9 +536,7 @@ describe('ContactsRepository', () => {
       const upcoming = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 5);
       const birthdayStr = `1990-${String(upcoming.getMonth() + 1).padStart(2, '0')}-${String(upcoming.getDate()).padStart(2, '0')}`;
 
-      mockAdapter.query.mockResolvedValueOnce([
-        makeContactRow({ birthday: birthdayStr }),
-      ]);
+      mockAdapter.query.mockResolvedValueOnce([makeContactRow({ birthday: birthdayStr })]);
 
       const result = await repo.getUpcomingBirthdays(30);
 
@@ -555,9 +544,7 @@ describe('ContactsRepository', () => {
     });
 
     it('should exclude contacts without birthdays', async () => {
-      mockAdapter.query.mockResolvedValueOnce([
-        makeContactRow({ birthday: null }),
-      ]);
+      mockAdapter.query.mockResolvedValueOnce([makeContactRow({ birthday: null })]);
 
       const result = await repo.getUpcomingBirthdays(30);
 
@@ -586,10 +573,7 @@ describe('ContactsRepository', () => {
 
   describe('getCompanies', () => {
     it('should return distinct companies', async () => {
-      mockAdapter.query.mockResolvedValueOnce([
-        { company: 'ACME' },
-        { company: 'Globex' },
-      ]);
+      mockAdapter.query.mockResolvedValueOnce([{ company: 'ACME' }, { company: 'Globex' }]);
 
       expect(await repo.getCompanies()).toEqual(['ACME', 'Globex']);
     });

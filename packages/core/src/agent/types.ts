@@ -3,7 +3,11 @@
  */
 
 import type { PluginId, ToolId } from '../types/branded.js';
-import type { ApiServiceConfig, ConfigEntry, ConfigFieldDefinition } from '../services/config-center.js';
+import type {
+  ApiServiceConfig,
+  ConfigEntry,
+  ConfigFieldDefinition,
+} from '../services/config-center.js';
 
 /**
  * Permission mode for execution categories
@@ -13,7 +17,12 @@ export type PermissionMode = 'blocked' | 'prompt' | 'allowed';
 /**
  * Execution category for granular permission control
  */
-export type ExecutionCategory = 'execute_javascript' | 'execute_python' | 'execute_shell' | 'compile_code' | 'package_manager';
+export type ExecutionCategory =
+  | 'execute_javascript'
+  | 'execute_python'
+  | 'execute_shell'
+  | 'compile_code'
+  | 'package_manager';
 
 /**
  * Per-category execution permissions (persistent in DB)
@@ -299,7 +308,7 @@ export interface ToolContext {
     category: string,
     actionType: string,
     description: string,
-    params: Record<string, unknown>,
+    params: Record<string, unknown>
   ) => Promise<boolean>;
 }
 
@@ -321,7 +330,7 @@ export interface ToolExecutionResult {
 export interface RegisteredTool {
   readonly id: ToolId;
   readonly definition: ToolDefinition;
-  executor: ToolExecutor;  // Mutable to allow executor overrides
+  executor: ToolExecutor; // Mutable to allow executor overrides
   readonly pluginId?: PluginId;
   /** Where this tool originated from */
   readonly source: ToolSource;
@@ -520,7 +529,7 @@ export interface AgentConfig {
     category: string,
     actionType: string,
     description: string,
-    params: Record<string, unknown>,
+    params: Record<string, unknown>
   ) => Promise<boolean>;
 }
 

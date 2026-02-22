@@ -35,13 +35,23 @@ import { DEFAULT_RETENTION_POLICY } from '../memory/conversation.js';
  */
 export const LIST_MEMORIES_TOOL: ToolDefinition = {
   name: 'list_memories',
-  description: 'View your stored memories. Filter by category, importance, date range, or search text.',
+  description:
+    'View your stored memories. Filter by category, importance, date range, or search text.',
   parameters: {
     type: 'object',
     properties: {
       category: {
         type: 'string',
-        enum: ['fact', 'preference', 'episode', 'skill', 'instruction', 'relationship', 'goal', 'context'],
+        enum: [
+          'fact',
+          'preference',
+          'episode',
+          'skill',
+          'instruction',
+          'relationship',
+          'goal',
+          'context',
+        ],
         description: 'Filter by memory category',
       },
       importance: {
@@ -94,7 +104,16 @@ export const BULK_DELETE_MEMORIES_TOOL: ToolDefinition = {
     properties: {
       category: {
         type: 'string',
-        enum: ['fact', 'preference', 'episode', 'skill', 'instruction', 'relationship', 'goal', 'context'],
+        enum: [
+          'fact',
+          'preference',
+          'episode',
+          'skill',
+          'instruction',
+          'relationship',
+          'goal',
+          'context',
+        ],
         description: 'Delete all memories in this category',
       },
       olderThan: {
@@ -156,7 +175,7 @@ export const RESTORE_MEMORY_TOOL: ToolDefinition = {
  */
 export const VIEW_PROFILE_TOOL: ToolDefinition = {
   name: 'view_my_profile',
-  description: 'View the AI\'s understanding of you based on stored memories',
+  description: "View the AI's understanding of you based on stored memories",
   parameters: {
     type: 'object',
     properties: {},
@@ -197,7 +216,16 @@ export const EXPORT_MEMORIES_TOOL: ToolDefinition = {
     properties: {
       category: {
         type: 'string',
-        enum: ['fact', 'preference', 'episode', 'skill', 'instruction', 'relationship', 'goal', 'context'],
+        enum: [
+          'fact',
+          'preference',
+          'episode',
+          'skill',
+          'instruction',
+          'relationship',
+          'goal',
+          'context',
+        ],
         description: 'Export only this category (optional)',
       },
       includeArchived: {
@@ -283,10 +311,7 @@ export function createMemoryOversightExecutors(
   getStore: () => ConversationMemoryStore
 ): Record<string, ToolExecutor> {
   return {
-    list_memories: async (
-      rawArgs: Record<string, unknown>,
-      _context: ToolContext
-    ) => {
+    list_memories: async (rawArgs: Record<string, unknown>, _context: ToolContext) => {
       const store = getStore();
       const args = rawArgs as {
         category?: MemoryCategory;
@@ -329,10 +354,7 @@ export function createMemoryOversightExecutors(
       };
     },
 
-    delete_memory: async (
-      rawArgs: Record<string, unknown>,
-      _context: ToolContext
-    ) => {
+    delete_memory: async (rawArgs: Record<string, unknown>, _context: ToolContext) => {
       const store = getStore();
       const args = rawArgs as { memoryId: string };
       const { memoryId } = args;
@@ -359,10 +381,7 @@ export function createMemoryOversightExecutors(
       };
     },
 
-    bulk_delete_memories: async (
-      rawArgs: Record<string, unknown>,
-      _context: ToolContext
-    ) => {
+    bulk_delete_memories: async (rawArgs: Record<string, unknown>, _context: ToolContext) => {
       const args = rawArgs as {
         category?: MemoryCategory;
         olderThan?: string;
@@ -397,14 +416,14 @@ export function createMemoryOversightExecutors(
       // Filter by date if specified
       if (olderThan) {
         const cutoffDate = new Date(olderThan);
-        toDelete = memories.filter(m => new Date(m.createdAt) < cutoffDate);
+        toDelete = memories.filter((m) => new Date(m.createdAt) < cutoffDate);
       }
 
       // Filter by importance (at or below specified level)
       if (importance) {
         const importanceLevels: MemoryImportance[] = ['low', 'medium', 'high', 'critical'];
         const maxIndex = importanceLevels.indexOf(importance);
-        toDelete = toDelete.filter(m => importanceLevels.indexOf(m.importance) <= maxIndex);
+        toDelete = toDelete.filter((m) => importanceLevels.indexOf(m.importance) <= maxIndex);
       }
 
       // Delete all matching memories
@@ -423,10 +442,7 @@ export function createMemoryOversightExecutors(
       };
     },
 
-    archive_memory: async (
-      rawArgs: Record<string, unknown>,
-      _context: ToolContext
-    ) => {
+    archive_memory: async (rawArgs: Record<string, unknown>, _context: ToolContext) => {
       const store = getStore();
       const args = rawArgs as { memoryId: string };
       const { memoryId } = args;
@@ -460,10 +476,7 @@ export function createMemoryOversightExecutors(
       };
     },
 
-    restore_memory: async (
-      rawArgs: Record<string, unknown>,
-      _context: ToolContext
-    ) => {
+    restore_memory: async (rawArgs: Record<string, unknown>, _context: ToolContext) => {
       const store = getStore();
       const args = rawArgs as { memoryId: string };
       const { memoryId } = args;
@@ -497,10 +510,7 @@ export function createMemoryOversightExecutors(
       };
     },
 
-    view_my_profile: async (
-      _rawArgs: Record<string, unknown>,
-      _context: ToolContext
-    ) => {
+    view_my_profile: async (_rawArgs: Record<string, unknown>, _context: ToolContext) => {
       const store = getStore();
       const profile = await store.getUserProfile();
 
@@ -515,10 +525,7 @@ export function createMemoryOversightExecutors(
       };
     },
 
-    update_memory_importance: async (
-      rawArgs: Record<string, unknown>,
-      _context: ToolContext
-    ) => {
+    update_memory_importance: async (rawArgs: Record<string, unknown>, _context: ToolContext) => {
       const store = getStore();
       const args = rawArgs as { memoryId: string; importance: MemoryImportance };
       const { memoryId, importance } = args;
@@ -543,10 +550,7 @@ export function createMemoryOversightExecutors(
       };
     },
 
-    export_memories: async (
-      rawArgs: Record<string, unknown>,
-      _context: ToolContext
-    ) => {
+    export_memories: async (rawArgs: Record<string, unknown>, _context: ToolContext) => {
       const store = getStore();
       const args = rawArgs as { category?: MemoryCategory; includeArchived?: boolean };
       const { category, includeArchived = false } = args;
@@ -566,7 +570,7 @@ export function createMemoryOversightExecutors(
         userId: store.getUserId(),
         memoryCount: memories.length,
         profile,
-        memories: memories.map(m => ({
+        memories: memories.map((m) => ({
           id: m.id,
           content: m.content,
           category: m.category,
@@ -587,10 +591,7 @@ export function createMemoryOversightExecutors(
       };
     },
 
-    memory_stats: async (
-      _rawArgs: Record<string, unknown>,
-      _context: ToolContext
-    ) => {
+    memory_stats: async (_rawArgs: Record<string, unknown>, _context: ToolContext) => {
       const store = getStore();
 
       // Get all memories for stats
@@ -599,8 +600,8 @@ export function createMemoryOversightExecutors(
       // Calculate statistics
       const stats = {
         total: allMemories.length,
-        active: allMemories.filter(m => !m.archived).length,
-        archived: allMemories.filter(m => m.archived).length,
+        active: allMemories.filter((m) => !m.archived).length,
+        archived: allMemories.filter((m) => m.archived).length,
         byCategory: {} as Record<string, number>,
         byImportance: {} as Record<string, number>,
         oldestMemory: null as string | null,
@@ -636,10 +637,7 @@ export function createMemoryOversightExecutors(
       };
     },
 
-    clear_all_memories: async (
-      rawArgs: Record<string, unknown>,
-      _context: ToolContext
-    ) => {
+    clear_all_memories: async (rawArgs: Record<string, unknown>, _context: ToolContext) => {
       const args = rawArgs as { confirm: boolean; confirmPhrase: string };
       const { confirm, confirmPhrase } = args;
 
@@ -679,10 +677,7 @@ export function createMemoryOversightExecutors(
       };
     },
 
-    configure_retention: async (
-      rawArgs: Record<string, unknown>,
-      _context: ToolContext
-    ) => {
+    configure_retention: async (rawArgs: Record<string, unknown>, _context: ToolContext) => {
       const store = getStore();
       const args = rawArgs as {
         autoArchiveDays?: number;
@@ -734,9 +729,8 @@ function formatMemoryForDisplay(memory: MemoryEntry): Record<string, unknown> {
     createdAt: memory.createdAt,
     accessCount: memory.accessCount,
     archived: memory.archived,
-    preview: memory.content.length > 100
-      ? memory.content.substring(0, 100) + '...'
-      : memory.content,
+    preview:
+      memory.content.length > 100 ? memory.content.substring(0, 100) + '...' : memory.content,
   };
 }
 
@@ -820,7 +814,7 @@ export function createMemoryOversightTools(
 ): Array<{ definition: ToolDefinition; executor: ToolExecutor }> {
   const executors = createMemoryOversightExecutors(getStore);
 
-  return MEMORY_OVERSIGHT_TOOLS.map(definition => ({
+  return MEMORY_OVERSIGHT_TOOLS.map((definition) => ({
     definition,
     executor: executors[definition.name]!,
   }));
@@ -850,11 +844,11 @@ export class MemoryCleaner {
     }
 
     // Run immediately
-    this.runCleanup().catch(e => log.error('Cleanup failed:', e));
+    this.runCleanup().catch((e) => log.error('Cleanup failed:', e));
 
     // Then run periodically
     this.cleanupInterval = setInterval(() => {
-      this.runCleanup().catch(e => log.error('Cleanup failed:', e));
+      this.runCleanup().catch((e) => log.error('Cleanup failed:', e));
     }, intervalMs);
   }
 
@@ -897,7 +891,8 @@ export class MemoryCleaner {
         // Keep the one with highest importance or most recent
         const sorted = memories.sort((a, b) => {
           const importanceOrder: MemoryImportance[] = ['critical', 'high', 'medium', 'low'];
-          const importanceDiff = importanceOrder.indexOf(a.importance) - importanceOrder.indexOf(b.importance);
+          const importanceDiff =
+            importanceOrder.indexOf(a.importance) - importanceOrder.indexOf(b.importance);
           if (importanceDiff !== 0) return importanceDiff;
           return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
         });
@@ -929,7 +924,7 @@ export class MemoryCleaner {
       if (processed.has(memory.id)) continue;
 
       const similar = allMemories.filter(
-        m =>
+        (m) =>
           !processed.has(m.id) &&
           m.id !== memory.id &&
           m.category === memory.category &&

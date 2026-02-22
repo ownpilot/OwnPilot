@@ -1,9 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import {
-  SEVERITY_ORDER,
-  EVENT_SEVERITY,
-  SYSTEM_ACTOR,
-} from './events.js';
+import { SEVERITY_ORDER, EVENT_SEVERITY, SYSTEM_ACTOR } from './events.js';
 import type { AuditSeverity, AuditEventType, AuditActor } from './events.js';
 
 // ---------------------------------------------------------------------------
@@ -172,12 +168,22 @@ describe('EVENT_SEVERITY', () => {
 
     it('all keys have a recognised category prefix', () => {
       const validCategories = new Set([
-        'auth', 'session', 'message', 'pii', 'plugin',
-        'tool', 'config', 'channel', 'security', 'system',
+        'auth',
+        'session',
+        'message',
+        'pii',
+        'plugin',
+        'tool',
+        'config',
+        'channel',
+        'security',
+        'system',
       ]);
       for (const key of Object.keys(EVENT_SEVERITY)) {
         const category = key.split('.')[0];
-        expect(validCategories.has(category), `"${key}" has unknown category "${category}"`).toBe(true);
+        expect(validCategories.has(category), `"${key}" has unknown category "${category}"`).toBe(
+          true
+        );
       }
     });
 
@@ -494,9 +500,13 @@ describe('EVENT_SEVERITY', () => {
 
     it('no unexpected event has error severity', () => {
       const errorKeys = keysBySeverity('error').sort();
-      expect(errorKeys).toEqual(
-        ['channel.error', 'pii.logged', 'plugin.error', 'system.error', 'tool.error'],
-      );
+      expect(errorKeys).toEqual([
+        'channel.error',
+        'pii.logged',
+        'plugin.error',
+        'system.error',
+        'tool.error',
+      ]);
     });
 
     it('there are exactly 7 warn-severity events', () => {
@@ -585,7 +595,7 @@ describe('EVENT_SEVERITY', () => {
       for (const [key, sev] of eventSeverityEntries()) {
         expect(
           Object.prototype.hasOwnProperty.call(SEVERITY_ORDER, sev),
-          `severity "${sev}" for event "${key}" is not in SEVERITY_ORDER`,
+          `severity "${sev}" for event "${key}" is not in SEVERITY_ORDER`
         ).toBe(true);
       }
     });
@@ -596,7 +606,18 @@ describe('EVENT_SEVERITY', () => {
     });
 
     it('total entries across all category buckets equals total EVENT_SEVERITY entries', () => {
-      const categories = ['auth', 'session', 'message', 'pii', 'plugin', 'tool', 'config', 'channel', 'security', 'system'];
+      const categories = [
+        'auth',
+        'session',
+        'message',
+        'pii',
+        'plugin',
+        'tool',
+        'config',
+        'channel',
+        'security',
+        'system',
+      ];
       const total = categories.reduce((acc, cat) => acc + eventsByCategory(cat).length, 0);
       expect(total).toBe(Object.keys(EVENT_SEVERITY).length);
     });
@@ -625,10 +646,8 @@ describe('EVENT_SEVERITY', () => {
     it('severity ordering: every error event has higher order than every warn event', () => {
       for (const errKey of keysBySeverity('error')) {
         for (const warnKey of keysBySeverity('warn')) {
-          expect(
-            SEVERITY_ORDER[EVENT_SEVERITY[errKey as AuditEventType]],
-          ).toBeGreaterThan(
-            SEVERITY_ORDER[EVENT_SEVERITY[warnKey as AuditEventType]],
+          expect(SEVERITY_ORDER[EVENT_SEVERITY[errKey as AuditEventType]]).toBeGreaterThan(
+            SEVERITY_ORDER[EVENT_SEVERITY[warnKey as AuditEventType]]
           );
         }
       }
@@ -637,10 +656,8 @@ describe('EVENT_SEVERITY', () => {
     it('severity ordering: every critical event has higher order than every error event', () => {
       for (const critKey of keysBySeverity('critical')) {
         for (const errKey of keysBySeverity('error')) {
-          expect(
-            SEVERITY_ORDER[EVENT_SEVERITY[critKey as AuditEventType]],
-          ).toBeGreaterThan(
-            SEVERITY_ORDER[EVENT_SEVERITY[errKey as AuditEventType]],
+          expect(SEVERITY_ORDER[EVENT_SEVERITY[critKey as AuditEventType]]).toBeGreaterThan(
+            SEVERITY_ORDER[EVENT_SEVERITY[errKey as AuditEventType]]
           );
         }
       }
@@ -695,7 +712,11 @@ describe('SYSTEM_ACTOR', () => {
 
     it('type field is a valid AuditActor type literal', () => {
       const validTypes: ReadonlyArray<AuditActor['type']> = [
-        'user', 'system', 'plugin', 'channel', 'agent',
+        'user',
+        'system',
+        'plugin',
+        'channel',
+        'agent',
       ];
       expect(validTypes).toContain(SYSTEM_ACTOR.type);
     });

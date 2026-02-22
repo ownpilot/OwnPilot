@@ -62,19 +62,23 @@ function makeStdinEnd() {
 
 function setupExecSuccess(stdout = '', stderr = '') {
   const stdin = makeStdinEnd();
-  mockExec.mockImplementation((_cmd: string, _opts: unknown, callback: (...args: unknown[]) => void) => {
-    callback(null, stdout, stderr);
-    return { stdin };
-  });
+  mockExec.mockImplementation(
+    (_cmd: string, _opts: unknown, callback: (...args: unknown[]) => void) => {
+      callback(null, stdout, stderr);
+      return { stdin };
+    }
+  );
   return stdin;
 }
 
 function setupExecError(error: { killed?: boolean; code?: number }, stdout = '', stderr = '') {
   const stdin = makeStdinEnd();
-  mockExec.mockImplementation((_cmd: string, _opts: unknown, callback: (...args: unknown[]) => void) => {
-    callback(error, stdout, stderr);
-    return { stdin };
-  });
+  mockExec.mockImplementation(
+    (_cmd: string, _opts: unknown, callback: (...args: unknown[]) => void) => {
+      callback(error, stdout, stderr);
+      return { stdin };
+    }
+  );
   return stdin;
 }
 
@@ -109,7 +113,9 @@ describe('scoped-apis', () => {
 
     it('blocks deeply nested traversal', async () => {
       const fs = createScopedFs(WORKSPACE);
-      await expect(fs.readFile('a/b/c/../../../../../etc/shadow')).rejects.toThrow('Path traversal blocked');
+      await expect(fs.readFile('a/b/c/../../../../../etc/shadow')).rejects.toThrow(
+        'Path traversal blocked'
+      );
     });
 
     it('blocks .. alone', async () => {
@@ -255,10 +261,9 @@ describe('scoped-apis', () => {
       const result = await fs.readFile('test.txt');
 
       expect(result).toBe('file content');
-      expect(mockReadFile).toHaveBeenCalledWith(
-        path.join(WORKSPACE, 'test.txt'),
-        { encoding: 'utf-8' },
-      );
+      expect(mockReadFile).toHaveBeenCalledWith(path.join(WORKSPACE, 'test.txt'), {
+        encoding: 'utf-8',
+      });
     });
 
     it('reads file with custom encoding', async () => {
@@ -268,10 +273,9 @@ describe('scoped-apis', () => {
       const result = await fs.readFile('data.bin', 'ascii');
 
       expect(result).toBe('ascii content');
-      expect(mockReadFile).toHaveBeenCalledWith(
-        path.join(WORKSPACE, 'data.bin'),
-        { encoding: 'ascii' },
-      );
+      expect(mockReadFile).toHaveBeenCalledWith(path.join(WORKSPACE, 'data.bin'), {
+        encoding: 'ascii',
+      });
     });
 
     it('reads file with base64 encoding', async () => {
@@ -281,10 +285,9 @@ describe('scoped-apis', () => {
       const result = await fs.readFile('image.png', 'base64');
 
       expect(result).toBe('aGVsbG8=');
-      expect(mockReadFile).toHaveBeenCalledWith(
-        path.join(WORKSPACE, 'image.png'),
-        { encoding: 'base64' },
-      );
+      expect(mockReadFile).toHaveBeenCalledWith(path.join(WORKSPACE, 'image.png'), {
+        encoding: 'base64',
+      });
     });
 
     it('uses utf-8 when encoding is empty string', async () => {
@@ -294,10 +297,9 @@ describe('scoped-apis', () => {
       await fs.readFile('file.txt', '');
 
       // encoding || 'utf-8' — '' is falsy so falls back to 'utf-8'
-      expect(mockReadFile).toHaveBeenCalledWith(
-        path.join(WORKSPACE, 'file.txt'),
-        { encoding: 'utf-8' },
-      );
+      expect(mockReadFile).toHaveBeenCalledWith(path.join(WORKSPACE, 'file.txt'), {
+        encoding: 'utf-8',
+      });
     });
 
     it('blocks path traversal', async () => {
@@ -326,10 +328,9 @@ describe('scoped-apis', () => {
 
       await fs.readFile('a/b/c.txt');
 
-      expect(mockReadFile).toHaveBeenCalledWith(
-        path.join(WORKSPACE, 'a', 'b', 'c.txt'),
-        { encoding: 'utf-8' },
-      );
+      expect(mockReadFile).toHaveBeenCalledWith(path.join(WORKSPACE, 'a', 'b', 'c.txt'), {
+        encoding: 'utf-8',
+      });
     });
   });
 
@@ -348,7 +349,7 @@ describe('scoped-apis', () => {
       expect(mockWriteFile).toHaveBeenCalledWith(
         path.join(WORKSPACE, 'output.txt'),
         'hello world',
-        'utf-8',
+        'utf-8'
       );
     });
 
@@ -383,7 +384,9 @@ describe('scoped-apis', () => {
 
     it('blocks path traversal', async () => {
       const fs = createScopedFs(WORKSPACE);
-      await expect(fs.writeFile('../../etc/cron', 'malicious')).rejects.toThrow('Path traversal blocked');
+      await expect(fs.writeFile('../../etc/cron', 'malicious')).rejects.toThrow(
+        'Path traversal blocked'
+      );
       expect(mockMkdir).not.toHaveBeenCalled();
       expect(mockWriteFile).not.toHaveBeenCalled();
     });
@@ -410,11 +413,7 @@ describe('scoped-apis', () => {
 
       await fs.writeFile('empty.txt', '');
 
-      expect(mockWriteFile).toHaveBeenCalledWith(
-        path.join(WORKSPACE, 'empty.txt'),
-        '',
-        'utf-8',
-      );
+      expect(mockWriteFile).toHaveBeenCalledWith(path.join(WORKSPACE, 'empty.txt'), '', 'utf-8');
     });
 
     it('writes large content', async () => {
@@ -428,7 +427,7 @@ describe('scoped-apis', () => {
       expect(mockWriteFile).toHaveBeenCalledWith(
         path.join(WORKSPACE, 'big.txt'),
         largeContent,
-        'utf-8',
+        'utf-8'
       );
     });
   });
@@ -592,10 +591,9 @@ describe('scoped-apis', () => {
 
       await fs.mkdir('new-dir/sub-dir');
 
-      expect(mockMkdir).toHaveBeenCalledWith(
-        path.join(WORKSPACE, 'new-dir', 'sub-dir'),
-        { recursive: true },
-      );
+      expect(mockMkdir).toHaveBeenCalledWith(path.join(WORKSPACE, 'new-dir', 'sub-dir'), {
+        recursive: true,
+      });
     });
 
     it('creates directory with explicit recursive=true', async () => {
@@ -604,10 +602,9 @@ describe('scoped-apis', () => {
 
       await fs.mkdir('deep/path', true);
 
-      expect(mockMkdir).toHaveBeenCalledWith(
-        path.join(WORKSPACE, 'deep', 'path'),
-        { recursive: true },
-      );
+      expect(mockMkdir).toHaveBeenCalledWith(path.join(WORKSPACE, 'deep', 'path'), {
+        recursive: true,
+      });
     });
 
     it('creates directory with recursive=false', async () => {
@@ -616,10 +613,9 @@ describe('scoped-apis', () => {
 
       await fs.mkdir('single-dir', false);
 
-      expect(mockMkdir).toHaveBeenCalledWith(
-        path.join(WORKSPACE, 'single-dir'),
-        { recursive: false },
-      );
+      expect(mockMkdir).toHaveBeenCalledWith(path.join(WORKSPACE, 'single-dir'), {
+        recursive: false,
+      });
     });
 
     it('blocks path traversal', async () => {
@@ -807,10 +803,12 @@ describe('scoped-apis', () => {
       it('returns empty strings for null stdout/stderr', async () => {
         const scopedExec = createScopedExec(WORKSPACE);
         const stdin = makeStdinEnd();
-        mockExec.mockImplementation((_cmd: string, _opts: unknown, callback: (...args: unknown[]) => void) => {
-          callback(null, null, null);
-          return { stdin };
-        });
+        mockExec.mockImplementation(
+          (_cmd: string, _opts: unknown, callback: (...args: unknown[]) => void) => {
+            callback(null, null, null);
+            return { stdin };
+          }
+        );
 
         const result = await scopedExec.exec('silent-cmd');
 
@@ -821,10 +819,12 @@ describe('scoped-apis', () => {
       it('returns empty strings for undefined stdout/stderr', async () => {
         const scopedExec = createScopedExec(WORKSPACE);
         const stdin = makeStdinEnd();
-        mockExec.mockImplementation((_cmd: string, _opts: unknown, callback: (...args: unknown[]) => void) => {
-          callback(null, undefined, undefined);
-          return { stdin };
-        });
+        mockExec.mockImplementation(
+          (_cmd: string, _opts: unknown, callback: (...args: unknown[]) => void) => {
+            callback(null, undefined, undefined);
+            return { stdin };
+          }
+        );
 
         const result = await scopedExec.exec('quiet-cmd');
 
@@ -867,10 +867,12 @@ describe('scoped-apis', () => {
       it('handles null stdout/stderr on error', async () => {
         const scopedExec = createScopedExec(WORKSPACE);
         const stdin = makeStdinEnd();
-        mockExec.mockImplementation((_cmd: string, _opts: unknown, callback: (...args: unknown[]) => void) => {
-          callback({ killed: false, code: 2 }, null, null);
-          return { stdin };
-        });
+        mockExec.mockImplementation(
+          (_cmd: string, _opts: unknown, callback: (...args: unknown[]) => void) => {
+            callback({ killed: false, code: 2 }, null, null);
+            return { stdin };
+          }
+        );
 
         const result = await scopedExec.exec('err-cmd');
 
@@ -884,12 +886,16 @@ describe('scoped-apis', () => {
       it('rejects with timeout error when command is killed', async () => {
         const scopedExec = createScopedExec(WORKSPACE);
         const stdin = makeStdinEnd();
-        mockExec.mockImplementation((_cmd: string, _opts: unknown, callback: (...args: unknown[]) => void) => {
-          callback({ killed: true }, '', '');
-          return { stdin };
-        });
+        mockExec.mockImplementation(
+          (_cmd: string, _opts: unknown, callback: (...args: unknown[]) => void) => {
+            callback({ killed: true }, '', '');
+            return { stdin };
+          }
+        );
 
-        await expect(scopedExec.exec('hang-cmd')).rejects.toThrow('Command timed out after 30000ms');
+        await expect(scopedExec.exec('hang-cmd')).rejects.toThrow(
+          'Command timed out after 30000ms'
+        );
       });
 
       it('uses default timeout of 30000ms', async () => {
@@ -915,12 +921,16 @@ describe('scoped-apis', () => {
       it('includes custom timeout in error message', async () => {
         const scopedExec = createScopedExec(WORKSPACE);
         const stdin = makeStdinEnd();
-        mockExec.mockImplementation((_cmd: string, _opts: unknown, callback: (...args: unknown[]) => void) => {
-          callback({ killed: true }, '', '');
-          return { stdin };
-        });
+        mockExec.mockImplementation(
+          (_cmd: string, _opts: unknown, callback: (...args: unknown[]) => void) => {
+            callback({ killed: true }, '', '');
+            return { stdin };
+          }
+        );
 
-        await expect(scopedExec.exec('slow-cmd', 10000)).rejects.toThrow('Command timed out after 10000ms');
+        await expect(scopedExec.exec('slow-cmd', 10000)).rejects.toThrow(
+          'Command timed out after 10000ms'
+        );
       });
 
       it('sets maxBuffer to MAX_OUTPUT_SIZE (512KB)', async () => {
@@ -939,7 +949,9 @@ describe('scoped-apis', () => {
         const scopedExec = createScopedExec(WORKSPACE);
         mockIsCommandBlocked.mockReturnValue(true);
 
-        await expect(scopedExec.exec('rm -rf /')).rejects.toThrow('Command blocked for security reasons.');
+        await expect(scopedExec.exec('rm -rf /')).rejects.toThrow(
+          'Command blocked for security reasons.'
+        );
         expect(mockExec).not.toHaveBeenCalled();
       });
 
@@ -1065,11 +1077,34 @@ describe('scoped-apis', () => {
         const passedEnvKeys = Object.keys(opts.env);
 
         // All passed keys must be in the safe list
-        const SAFE_ENV_KEYS = ['PATH', 'HOME', 'USER', 'LANG', 'TERM', 'NODE_ENV', 'TZ',
-          'SHELL', 'TEMP', 'TMP', 'TMPDIR', 'USERPROFILE', 'APPDATA', 'LOCALAPPDATA',
-          'SystemRoot', 'SYSTEMROOT', 'windir', 'WINDIR', 'ComSpec', 'COMSPEC',
-          'ProgramFiles', 'ProgramFiles(x86)', 'CommonProgramFiles',
-          'NUMBER_OF_PROCESSORS', 'PROCESSOR_ARCHITECTURE', 'OS'];
+        const SAFE_ENV_KEYS = [
+          'PATH',
+          'HOME',
+          'USER',
+          'LANG',
+          'TERM',
+          'NODE_ENV',
+          'TZ',
+          'SHELL',
+          'TEMP',
+          'TMP',
+          'TMPDIR',
+          'USERPROFILE',
+          'APPDATA',
+          'LOCALAPPDATA',
+          'SystemRoot',
+          'SYSTEMROOT',
+          'windir',
+          'WINDIR',
+          'ComSpec',
+          'COMSPEC',
+          'ProgramFiles',
+          'ProgramFiles(x86)',
+          'CommonProgramFiles',
+          'NUMBER_OF_PROCESSORS',
+          'PROCESSOR_ARCHITECTURE',
+          'OS',
+        ];
         for (const key of passedEnvKeys) {
           expect(SAFE_ENV_KEYS).toContain(key);
         }
@@ -1221,10 +1256,12 @@ describe('scoped-apis', () => {
 
       it('handles missing stdin gracefully (optional chaining)', async () => {
         const scopedExec = createScopedExec(WORKSPACE);
-        mockExec.mockImplementation((_cmd: string, _opts: unknown, callback: (...args: unknown[]) => void) => {
-          callback(null, 'output', '');
-          return { stdin: null };
-        });
+        mockExec.mockImplementation(
+          (_cmd: string, _opts: unknown, callback: (...args: unknown[]) => void) => {
+            callback(null, 'output', '');
+            return { stdin: null };
+          }
+        );
 
         // Should not throw even when stdin is null (optional chaining: child.stdin?.end())
         const result = await scopedExec.exec('cmd');
@@ -1233,10 +1270,12 @@ describe('scoped-apis', () => {
 
       it('handles undefined stdin gracefully', async () => {
         const scopedExec = createScopedExec(WORKSPACE);
-        mockExec.mockImplementation((_cmd: string, _opts: unknown, callback: (...args: unknown[]) => void) => {
-          callback(null, 'output', '');
-          return { stdin: undefined };
-        });
+        mockExec.mockImplementation(
+          (_cmd: string, _opts: unknown, callback: (...args: unknown[]) => void) => {
+            callback(null, 'output', '');
+            return { stdin: undefined };
+          }
+        );
 
         const result = await scopedExec.exec('cmd');
         expect(result.exitCode).toBe(0);

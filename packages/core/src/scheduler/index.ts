@@ -83,10 +83,7 @@ export interface ScheduledTask {
 /**
  * Task payload types
  */
-export type TaskPayload =
-  | PromptTaskPayload
-  | ToolTaskPayload
-  | WorkflowTaskPayload;
+export type TaskPayload = PromptTaskPayload | ToolTaskPayload | WorkflowTaskPayload;
 
 /**
  * Prompt-based task (AI will execute the prompt)
@@ -234,13 +231,13 @@ function matchesCronPart(part: string, value: number, _max: number): boolean {
 
   // Range (n-m)
   if (part.includes('-')) {
-    const [start, end] = part.split('-').map(n => parseInt(n, 10));
+    const [start, end] = part.split('-').map((n) => parseInt(n, 10));
     return start !== undefined && end !== undefined && value >= start && value <= end;
   }
 
   // List (n,m,...)
   if (part.includes(',')) {
-    const values = part.split(',').map(n => parseInt(n, 10));
+    const values = part.split(',').map((n) => parseInt(n, 10));
     return values.includes(value);
   }
 
@@ -489,7 +486,7 @@ export class Scheduler {
     this.isRunning = true;
     this.checkTimer = setInterval(() => {
       try {
-        this.checkAndRunTasks().catch(e => log.error('checkAndRunTasks failed:', e));
+        this.checkAndRunTasks().catch((e) => log.error('checkAndRunTasks failed:', e));
       } catch (err) {
         log.error('checkAndRunTasks threw synchronously:', err);
       }
@@ -552,7 +549,9 @@ export class Scheduler {
       this.notificationBridge.scheduleReminder(newTask, nextRunDate);
     }
 
-    log.info(`Added task: ${newTask.name} Next run: ${newTask.nextRun} ${task.oneTime ? '(one-time)' : ''}`);
+    log.info(
+      `Added task: ${newTask.name} Next run: ${newTask.nextRun} ${task.oneTime ? '(one-time)' : ''}`
+    );
     return newTask;
   }
 
@@ -612,7 +611,7 @@ export class Scheduler {
    * Get tasks for a user
    */
   getUserTasks(userId: string): ScheduledTask[] {
-    return Array.from(this.tasks.values()).filter(t => t.userId === userId);
+    return Array.from(this.tasks.values()).filter((t) => t.userId === userId);
   }
 
   /**
@@ -806,7 +805,7 @@ export class Scheduler {
     try {
       const content = await fs.readFile(this.config.tasksFilePath, 'utf-8');
       const tasks = JSON.parse(content) as ScheduledTask[];
-      this.tasks = new Map(tasks.map(t => [t.id, t]));
+      this.tasks = new Map(tasks.map((t) => [t.id, t]));
       log.info(`Loaded ${this.tasks.size} tasks`);
     } catch {
       // File doesn't exist or is invalid
@@ -874,10 +873,7 @@ export function createPromptTask(
 /**
  * Create a tool task payload
  */
-export function createToolTask(
-  toolName: string,
-  args: Record<string, unknown>
-): ToolTaskPayload {
+export function createToolTask(toolName: string, args: Record<string, unknown>): ToolTaskPayload {
   return {
     type: 'tool',
     toolName,
@@ -928,7 +924,7 @@ export const EXAMPLE_TASKS = {
       {
         modelPreferences: {
           capabilities: ['reasoning'],
-          maxCost: 0.50,
+          maxCost: 0.5,
         },
         outputFormat: 'markdown',
       }

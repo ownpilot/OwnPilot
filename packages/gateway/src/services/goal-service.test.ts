@@ -16,15 +16,13 @@ import type { Goal, GoalStep } from '../db/repositories/goals.js';
 const mockEmit = vi.fn();
 vi.mock('@ownpilot/core', () => ({
   getEventBus: () => ({ emit: mockEmit }),
-  createEvent: vi.fn(
-    (type: string, category: string, source: string, data: unknown) => ({
-      type,
-      category,
-      source,
-      data,
-      timestamp: new Date().toISOString(),
-    }),
-  ),
+  createEvent: vi.fn((type: string, category: string, source: string, data: unknown) => ({
+    type,
+    category,
+    source,
+    data,
+    timestamp: new Date().toISOString(),
+  })),
   EventTypes: {
     RESOURCE_CREATED: 'resource.created',
     RESOURCE_UPDATED: 'resource.updated',
@@ -124,21 +122,21 @@ describe('GoalService', () => {
         expect.objectContaining({
           type: 'resource.created',
           data: { resourceType: 'goal', id: 'goal-1' },
-        }),
+        })
       );
     });
 
     it('throws VALIDATION_ERROR when title is empty', async () => {
       await expect(service.createGoal('user-1', { title: '' })).rejects.toThrow(GoalServiceError);
       await expect(service.createGoal('user-1', { title: '   ' })).rejects.toThrow(
-        /Title is required/,
+        /Title is required/
       );
       expect(mockRepo.create).not.toHaveBeenCalled();
     });
 
     it('throws VALIDATION_ERROR when title is undefined', async () => {
       await expect(
-        service.createGoal('user-1', { title: undefined as unknown as string }),
+        service.createGoal('user-1', { title: undefined as unknown as string })
       ).rejects.toThrow(/Title is required/);
     });
   });
@@ -199,7 +197,7 @@ describe('GoalService', () => {
         expect.objectContaining({
           type: 'resource.updated',
           data: expect.objectContaining({ resourceType: 'goal', id: 'goal-1' }),
-        }),
+        })
       );
     });
 
@@ -227,7 +225,7 @@ describe('GoalService', () => {
         expect.objectContaining({
           type: 'resource.deleted',
           data: { resourceType: 'goal', id: 'goal-1' },
-        }),
+        })
       );
     });
 
@@ -259,7 +257,7 @@ describe('GoalService', () => {
       mockRepo.get.mockResolvedValue(null);
 
       await expect(service.addStep('user-1', 'missing', { title: 'x' })).rejects.toThrow(
-        /Goal not found/,
+        /Goal not found/
       );
     });
 
@@ -268,7 +266,7 @@ describe('GoalService', () => {
       mockRepo.addStep.mockResolvedValue(null);
 
       await expect(service.addStep('user-1', 'goal-1', { title: 'x' })).rejects.toThrow(
-        /Failed to create step/,
+        /Failed to create step/
       );
     });
   });
@@ -292,16 +290,16 @@ describe('GoalService', () => {
 
     it('throws VALIDATION_ERROR when steps array is empty', async () => {
       await expect(service.decomposeGoal('user-1', 'goal-1', [])).rejects.toThrow(
-        /At least one step/,
+        /At least one step/
       );
     });
 
     it('throws NOT_FOUND when goal does not exist', async () => {
       mockRepo.get.mockResolvedValue(null);
 
-      await expect(
-        service.decomposeGoal('user-1', 'missing', [{ title: 'x' }]),
-      ).rejects.toThrow(/Goal not found/);
+      await expect(service.decomposeGoal('user-1', 'missing', [{ title: 'x' }])).rejects.toThrow(
+        /Goal not found/
+      );
     });
   });
 
@@ -365,7 +363,13 @@ describe('GoalService', () => {
     });
 
     it('getStats delegates to repo', async () => {
-      const stats = { total: 5, byStatus: {}, completedThisWeek: 1, averageProgress: 50, overdueCount: 0 };
+      const stats = {
+        total: 5,
+        byStatus: {},
+        completedThisWeek: 1,
+        averageProgress: 50,
+        overdueCount: 0,
+      };
       mockRepo.getStats.mockResolvedValue(stats);
       const result = await service.getStats('user-1');
       expect(result).toBe(stats);

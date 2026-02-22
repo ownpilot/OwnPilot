@@ -22,11 +22,20 @@ export function validateCron(cron: string): { valid: boolean; error?: string } {
 
   const parts = trimmed.split(/\s+/);
   if (parts.length !== 5) {
-    return { valid: false, error: `Expected 5 fields (minute hour day month weekday), got ${parts.length}` };
+    return {
+      valid: false,
+      error: `Expected 5 fields (minute hour day month weekday), got ${parts.length}`,
+    };
   }
 
   const fieldNames = ['Minute', 'Hour', 'Day', 'Month', 'Weekday'];
-  const fieldRanges = [[0, 59], [0, 23], [1, 31], [1, 12], [0, 6]];
+  const fieldRanges = [
+    [0, 59],
+    [0, 23],
+    [1, 31],
+    [1, 12],
+    [0, 6],
+  ];
 
   for (let i = 0; i < 5; i++) {
     const part = parts[i]!;
@@ -36,7 +45,8 @@ export function validateCron(cron: string): { valid: boolean; error?: string } {
     if (part === '*') continue;
     if (part.startsWith('*/')) {
       const step = parseInt(part.slice(2), 10);
-      if (isNaN(step) || step <= 0) return { valid: false, error: `${name}: invalid step "/${part.slice(2)}"` };
+      if (isNaN(step) || step <= 0)
+        return { valid: false, error: `${name}: invalid step "/${part.slice(2)}"` };
       continue;
     }
     // Split on comma for lists, then check each element
@@ -44,12 +54,15 @@ export function validateCron(cron: string): { valid: boolean; error?: string } {
     for (const el of elements) {
       if (el.includes('-')) {
         const [a, b] = el.split('-').map(Number);
-        if (isNaN(a!) || isNaN(b!)) return { valid: false, error: `${name}: invalid range "${el}"` };
-        if (a! < min! || a! > max! || b! < min! || b! > max!) return { valid: false, error: `${name}: ${el} out of range ${min}-${max}` };
+        if (isNaN(a!) || isNaN(b!))
+          return { valid: false, error: `${name}: invalid range "${el}"` };
+        if (a! < min! || a! > max! || b! < min! || b! > max!)
+          return { valid: false, error: `${name}: ${el} out of range ${min}-${max}` };
       } else {
         const n = parseInt(el, 10);
         if (isNaN(n)) return { valid: false, error: `${name}: "${el}" is not a number` };
-        if (n < min! || n > max!) return { valid: false, error: `${name}: ${n} out of range ${min}-${max}` };
+        if (n < min! || n > max!)
+          return { valid: false, error: `${name}: ${n} out of range ${min}-${max}` };
       }
     }
   }
@@ -86,7 +99,10 @@ export function TriggerModal({ trigger, onClose, onSave }: TriggerModalProps) {
   // Fetch workflows when action type is 'workflow'
   useEffect(() => {
     if (actionType === 'workflow') {
-      workflowsApi.list({ limit: '100' }).then((res) => setWorkflows(res.workflows)).catch(() => {});
+      workflowsApi
+        .list({ limit: '100' })
+        .then((res) => setWorkflows(res.workflows))
+        .catch(() => {});
     }
   }, [actionType]);
 
@@ -154,7 +170,10 @@ export function TriggerModal({ trigger, onClose, onSave }: TriggerModalProps) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onBackdropClick}>
+    <div
+      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+      onClick={onBackdropClick}
+    >
       <div className="w-full max-w-lg bg-bg-primary dark:bg-dark-bg-primary border border-border dark:border-dark-border rounded-xl shadow-xl max-h-[90vh] overflow-y-auto">
         <form onSubmit={handleSubmit}>
           <div className="p-6 border-b border-border dark:border-dark-border">
@@ -215,7 +234,10 @@ export function TriggerModal({ trigger, onClose, onSave }: TriggerModalProps) {
                 <input
                   type="text"
                   value={cron}
-                  onChange={(e) => { setCron(e.target.value); setSaveError(null); }}
+                  onChange={(e) => {
+                    setCron(e.target.value);
+                    setSaveError(null);
+                  }}
                   placeholder="0 8 * * *"
                   className={`w-full px-3 py-2 bg-bg-tertiary dark:bg-dark-bg-tertiary border rounded-lg text-text-primary dark:text-dark-text-primary focus:outline-none focus:ring-2 ${
                     cron.trim() && !cronValidation.valid
@@ -235,7 +257,10 @@ export function TriggerModal({ trigger, onClose, onSave }: TriggerModalProps) {
                     <button
                       key={preset.cron}
                       type="button"
-                      onClick={() => { setCron(preset.cron); setSaveError(null); }}
+                      onClick={() => {
+                        setCron(preset.cron);
+                        setSaveError(null);
+                      }}
                       className={`px-2 py-0.5 text-xs rounded border transition-colors ${
                         cron === preset.cron
                           ? 'bg-primary/20 border-primary text-primary'
@@ -346,8 +371,19 @@ export function TriggerModal({ trigger, onClose, onSave }: TriggerModalProps) {
                   Workflow
                 </label>
                 <select
-                  value={(() => { try { return (JSON.parse(actionPayload) as Record<string, unknown>).workflowId as string ?? ''; } catch { return ''; } })()}
-                  onChange={(e) => setActionPayload(JSON.stringify({ workflowId: e.target.value }, null, 2))}
+                  value={(() => {
+                    try {
+                      return (
+                        ((JSON.parse(actionPayload) as Record<string, unknown>)
+                          .workflowId as string) ?? ''
+                      );
+                    } catch {
+                      return '';
+                    }
+                  })()}
+                  onChange={(e) =>
+                    setActionPayload(JSON.stringify({ workflowId: e.target.value }, null, 2))
+                  }
                   className="w-full px-3 py-2 bg-bg-tertiary dark:bg-dark-bg-tertiary border border-border dark:border-dark-border rounded-lg text-text-primary dark:text-dark-text-primary focus:outline-none focus:ring-2 focus:ring-primary/50"
                 >
                   <option value="">Select a workflow...</option>
@@ -399,7 +435,9 @@ export function TriggerModal({ trigger, onClose, onSave }: TriggerModalProps) {
               </button>
               <button
                 type="submit"
-                disabled={!name.trim() || isSaving || (type === 'schedule' && !cronValidation.valid)}
+                disabled={
+                  !name.trim() || isSaving || (type === 'schedule' && !cronValidation.valid)
+                }
                 className="px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 {isSaving ? 'Saving...' : trigger ? 'Save' : 'Create'}

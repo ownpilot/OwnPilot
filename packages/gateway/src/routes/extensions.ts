@@ -5,11 +5,22 @@
  */
 
 import { Hono } from 'hono';
-import { createProvider, getProviderConfig as coreGetProviderConfig, type AIProvider } from '@ownpilot/core';
+import {
+  createProvider,
+  getProviderConfig as coreGetProviderConfig,
+  type AIProvider,
+} from '@ownpilot/core';
 import { getExtensionService, ExtensionError } from '../services/extension-service.js';
 import { validateManifest, type ExtensionManifest } from '../services/extension-types.js';
 import { serializeExtensionMarkdown } from '../services/extension-markdown.js';
-import { getUserId, apiResponse, apiError, ERROR_CODES, notFoundError, getErrorMessage } from './helpers.js';
+import {
+  getUserId,
+  apiResponse,
+  apiError,
+  ERROR_CODES,
+  notFoundError,
+  getErrorMessage,
+} from './helpers.js';
 import { resolveProviderAndModel, getApiKey } from './settings.js';
 import { localProvidersRepo } from '../db/repositories/index.js';
 import { wsGateway } from '../ws/server.js';
@@ -18,8 +29,16 @@ export const extensionsRoutes = new Hono();
 
 /** Providers with native SDK support (others use OpenAI-compatible) */
 const NATIVE_PROVIDERS = new Set([
-  'openai', 'anthropic', 'google', 'deepseek', 'groq',
-  'mistral', 'xai', 'together', 'fireworks', 'perplexity',
+  'openai',
+  'anthropic',
+  'google',
+  'deepseek',
+  'groq',
+  'mistral',
+  'xai',
+  'together',
+  'fireworks',
+  'perplexity',
 ]);
 
 // ============================================================================
@@ -193,16 +212,16 @@ extensionsRoutes.get('/', async (c) => {
   const format = c.req.query('format'); // 'ownpilot' | 'agentskills'
 
   const service = getExtensionService();
-  let packages = service.getAll().filter(p => p.userId === userId);
+  let packages = service.getAll().filter((p) => p.userId === userId);
 
   if (format) {
-    packages = packages.filter(p => (p.manifest.format ?? 'ownpilot') === format);
+    packages = packages.filter((p) => (p.manifest.format ?? 'ownpilot') === format);
   }
   if (status) {
-    packages = packages.filter(p => p.status === status);
+    packages = packages.filter((p) => p.status === status);
   }
   if (category) {
-    packages = packages.filter(p => p.category === category);
+    packages = packages.filter((p) => p.category === category);
   }
 
   return apiResponse(c, { packages, total: packages.length });
@@ -216,19 +235,33 @@ extensionsRoutes.post('/', async (c) => {
   const body = await c.req.json().catch(() => null);
 
   if (!body || !(body as { manifest?: unknown }).manifest) {
-    return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: 'manifest field is required' }, 400);
+    return apiError(
+      c,
+      { code: ERROR_CODES.VALIDATION_ERROR, message: 'manifest field is required' },
+      400
+    );
   }
 
   try {
     const service = getExtensionService();
-    const record = await service.installFromManifest((body as { manifest: unknown }).manifest as never, userId);
+    const record = await service.installFromManifest(
+      (body as { manifest: unknown }).manifest as never,
+      userId
+    );
     wsGateway.broadcast('data:changed', { entity: 'extension', action: 'created', id: record.id });
     return apiResponse(c, { package: record, message: 'Extension installed successfully.' }, 201);
   } catch (error) {
     if (error instanceof ExtensionError) {
       return apiError(c, { code: error.code, message: error.message }, 400);
     }
-    return apiError(c, { code: ERROR_CODES.CREATE_FAILED, message: getErrorMessage(error, 'Failed to install extension') }, 500);
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.CREATE_FAILED,
+        message: getErrorMessage(error, 'Failed to install extension'),
+      },
+      500
+    );
   }
 });
 
@@ -240,7 +273,11 @@ extensionsRoutes.post('/install', async (c) => {
   const body = await c.req.json().catch(() => null);
 
   if (!body || typeof (body as { path?: string }).path !== 'string') {
-    return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: 'path field is required (string)' }, 400);
+    return apiError(
+      c,
+      { code: ERROR_CODES.VALIDATION_ERROR, message: 'path field is required (string)' },
+      400
+    );
   }
 
   try {
@@ -252,7 +289,14 @@ extensionsRoutes.post('/install', async (c) => {
     if (error instanceof ExtensionError) {
       return apiError(c, { code: error.code, message: error.message }, 400);
     }
-    return apiError(c, { code: ERROR_CODES.CREATE_FAILED, message: getErrorMessage(error, 'Failed to install extension') }, 500);
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.CREATE_FAILED,
+        message: getErrorMessage(error, 'Failed to install extension'),
+      },
+      500
+    );
   }
 });
 
@@ -261,14 +305,21 @@ extensionsRoutes.post('/install', async (c) => {
  */
 extensionsRoutes.post('/scan', async (c) => {
   const userId = getUserId(c);
-  const body = await c.req.json().catch(() => ({})) as { directory?: string };
+  const body = (await c.req.json().catch(() => ({}))) as { directory?: string };
 
   try {
     const service = getExtensionService();
     const result = await service.scanDirectory(body.directory, userId);
     return apiResponse(c, result);
   } catch (error) {
-    return apiError(c, { code: ERROR_CODES.EXECUTION_ERROR, message: getErrorMessage(error, 'Failed to scan directory') }, 500);
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.EXECUTION_ERROR,
+        message: getErrorMessage(error, 'Failed to scan directory'),
+      },
+      500
+    );
   }
 });
 
@@ -276,23 +327,48 @@ extensionsRoutes.post('/scan', async (c) => {
  * POST /generate - Generate extension manifest from description using AI
  */
 extensionsRoutes.post('/generate', async (c) => {
-  const body = await c.req.json().catch(() => null) as { description?: string; format?: 'json' | 'markdown' } | null;
+  const body = (await c.req.json().catch(() => null)) as {
+    description?: string;
+    format?: 'json' | 'markdown';
+  } | null;
 
-  if (!body?.description || typeof body.description !== 'string' || body.description.trim().length === 0) {
-    return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: 'description field is required' }, 400);
+  if (
+    !body?.description ||
+    typeof body.description !== 'string' ||
+    body.description.trim().length === 0
+  ) {
+    return apiError(
+      c,
+      { code: ERROR_CODES.VALIDATION_ERROR, message: 'description field is required' },
+      400
+    );
   }
 
   // 1. Resolve default provider/model
   const { provider, model } = await resolveProviderAndModel('default', 'default');
   if (!provider || !model) {
-    return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'No AI provider configured. Please set up a provider in Settings.' }, 400);
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.INVALID_REQUEST,
+        message: 'No AI provider configured. Please set up a provider in Settings.',
+      },
+      400
+    );
   }
 
   // 2. Get API key
   const localProv = await localProvidersRepo.getProvider(provider);
-  const apiKey = localProv ? (localProv.apiKey || 'local-no-key') : await getApiKey(provider);
+  const apiKey = localProv ? localProv.apiKey || 'local-no-key' : await getApiKey(provider);
   if (!apiKey) {
-    return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: `API key not configured for provider: ${provider}` }, 400);
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.INVALID_REQUEST,
+        message: `API key not configured for provider: ${provider}`,
+      },
+      400
+    );
   }
 
   // 3. Create provider
@@ -316,13 +392,24 @@ extensionsRoutes.post('/generate', async (c) => {
     });
 
     if (!result.ok) {
-      return apiError(c, { code: ERROR_CODES.EXECUTION_ERROR, message: 'AI generation failed: ' + (result.error?.message || 'unknown error') }, 500);
+      return apiError(
+        c,
+        {
+          code: ERROR_CODES.EXECUTION_ERROR,
+          message: 'AI generation failed: ' + (result.error?.message || 'unknown error'),
+        },
+        500
+      );
     }
 
     // 5. Parse JSON from response (handle markdown code blocks)
     const text = result.value.content;
     if (!text) {
-      return apiError(c, { code: ERROR_CODES.EXECUTION_ERROR, message: 'AI returned empty response' }, 500);
+      return apiError(
+        c,
+        { code: ERROR_CODES.EXECUTION_ERROR, message: 'AI returned empty response' },
+        500
+      );
     }
 
     let jsonText = text;
@@ -335,7 +422,14 @@ extensionsRoutes.post('/generate', async (c) => {
     try {
       manifest = JSON.parse(jsonText.trim());
     } catch {
-      return apiError(c, { code: ERROR_CODES.EXECUTION_ERROR, message: 'AI returned invalid JSON. Try rephrasing your description.' }, 500);
+      return apiError(
+        c,
+        {
+          code: ERROR_CODES.EXECUTION_ERROR,
+          message: 'AI returned invalid JSON. Try rephrasing your description.',
+        },
+        500
+      );
     }
 
     // 6. Validate
@@ -349,7 +443,14 @@ extensionsRoutes.post('/generate', async (c) => {
 
     return apiResponse(c, { manifest, validation });
   } catch (error) {
-    return apiError(c, { code: ERROR_CODES.EXECUTION_ERROR, message: getErrorMessage(error, 'AI generation failed') }, 500);
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.EXECUTION_ERROR,
+        message: getErrorMessage(error, 'AI generation failed'),
+      },
+      500
+    );
   }
 });
 
@@ -406,7 +507,14 @@ extensionsRoutes.post('/:id/enable', async (c) => {
     wsGateway.broadcast('data:changed', { entity: 'extension', action: 'updated', id });
     return apiResponse(c, { package: pkg, message: 'Extension enabled.' });
   } catch (error) {
-    return apiError(c, { code: ERROR_CODES.UPDATE_FAILED, message: getErrorMessage(error, 'Failed to enable extension') }, 500);
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.UPDATE_FAILED,
+        message: getErrorMessage(error, 'Failed to enable extension'),
+      },
+      500
+    );
   }
 });
 
@@ -428,7 +536,14 @@ extensionsRoutes.post('/:id/disable', async (c) => {
     wsGateway.broadcast('data:changed', { entity: 'extension', action: 'updated', id });
     return apiResponse(c, { package: pkg, message: 'Extension disabled.' });
   } catch (error) {
-    return apiError(c, { code: ERROR_CODES.UPDATE_FAILED, message: getErrorMessage(error, 'Failed to disable extension') }, 500);
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.UPDATE_FAILED,
+        message: getErrorMessage(error, 'Failed to disable extension'),
+      },
+      500
+    );
   }
 });
 
@@ -452,6 +567,13 @@ extensionsRoutes.post('/:id/reload', async (c) => {
     if (error instanceof ExtensionError) {
       return apiError(c, { code: error.code, message: error.message }, 400);
     }
-    return apiError(c, { code: ERROR_CODES.UPDATE_FAILED, message: getErrorMessage(error, 'Failed to reload extension') }, 500);
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.UPDATE_FAILED,
+        message: getErrorMessage(error, 'Failed to reload extension'),
+      },
+      500
+    );
   }
 });

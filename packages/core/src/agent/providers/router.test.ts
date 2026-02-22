@@ -226,14 +226,11 @@ describe('ProviderRouter', () => {
 
   describe('getAvailableProviders', () => {
     it('returns all configured providers when none excluded', () => {
-      mockGetConfiguredProviders.mockReturnValue([
-        mockProviderConfig,
-        mockGoogleProviderConfig,
-      ]);
+      mockGetConfiguredProviders.mockReturnValue([mockProviderConfig, mockGoogleProviderConfig]);
       const router = new ProviderRouter();
       const providers = router.getAvailableProviders();
       expect(providers).toHaveLength(2);
-      expect(providers.map(p => p.id)).toEqual(['openai', 'google']);
+      expect(providers.map((p) => p.id)).toEqual(['openai', 'google']);
     });
 
     it('filters out excluded providers', () => {
@@ -245,7 +242,7 @@ describe('ProviderRouter', () => {
       const router = new ProviderRouter({ excludedProviders: ['deepseek'] });
       const providers = router.getAvailableProviders();
       expect(providers).toHaveLength(2);
-      expect(providers.map(p => p.id)).toEqual(['openai', 'google']);
+      expect(providers.map((p) => p.id)).toEqual(['openai', 'google']);
     });
   });
 
@@ -293,9 +290,7 @@ describe('ProviderRouter', () => {
       const router = new ProviderRouter({ requiredCapabilities: ['chat'] });
       router.selectProvider({ capabilities: ['vision'] }, 'cheapest');
       // getCheapestModel receives deduplicated capabilities
-      expect(mockGetCheapestModel).toHaveBeenCalledWith(
-        expect.arrayContaining(['chat', 'vision'])
-      );
+      expect(mockGetCheapestModel).toHaveBeenCalledWith(expect.arrayContaining(['chat', 'vision']));
     });
 
     it('returns error when no provider found (selection returns null)', () => {
@@ -403,9 +398,7 @@ describe('ProviderRouter', () => {
     });
 
     it('propagates provider error', async () => {
-      mockComplete.mockResolvedValue(
-        err(new InternalError('Provider timeout'))
-      );
+      mockComplete.mockResolvedValue(err(new InternalError('Provider timeout')));
 
       const router = new ProviderRouter();
       const result = await router.complete(makeRequest());
@@ -434,7 +427,9 @@ describe('ProviderRouter', () => {
       mockStream.mockReturnValue(fakeStream());
 
       const router = new ProviderRouter();
-      const chunks: Array<Result<StreamChunk & { routingInfo?: unknown }, InternalError | ValidationError>> = [];
+      const chunks: Array<
+        Result<StreamChunk & { routingInfo?: unknown }, InternalError | ValidationError>
+      > = [];
       for await (const chunk of router.stream(makeRequest())) {
         chunks.push(chunk);
       }
@@ -455,7 +450,9 @@ describe('ProviderRouter', () => {
       mockSelectBestModel.mockReturnValue(null);
 
       const router = new ProviderRouter();
-      const chunks: Array<Result<StreamChunk & { routingInfo?: unknown }, InternalError | ValidationError>> = [];
+      const chunks: Array<
+        Result<StreamChunk & { routingInfo?: unknown }, InternalError | ValidationError>
+      > = [];
       for await (const chunk of router.stream(makeRequest())) {
         chunks.push(chunk);
       }
@@ -472,7 +469,9 @@ describe('ProviderRouter', () => {
       mockStream.mockReturnValue(fakeStream());
 
       const router = new ProviderRouter();
-      const chunks: Array<Result<StreamChunk & { routingInfo?: unknown }, InternalError | ValidationError>> = [];
+      const chunks: Array<
+        Result<StreamChunk & { routingInfo?: unknown }, InternalError | ValidationError>
+      > = [];
       for await (const chunk of router.stream(makeRequest())) {
         chunks.push(chunk);
       }
@@ -491,9 +490,7 @@ describe('ProviderRouter', () => {
     it('succeeds on first try', async () => {
       const mockResponse = makeCompletionResponse();
       mockComplete.mockResolvedValue(ok(mockResponse));
-      mockFindModels.mockReturnValue([
-        { provider: mockProviderConfig, model: mockModel },
-      ]);
+      mockFindModels.mockReturnValue([{ provider: mockProviderConfig, model: mockModel }]);
 
       const router = new ProviderRouter();
       const result = await router.completeWithFallback(makeRequest());
@@ -523,12 +520,10 @@ describe('ProviderRouter', () => {
         { provider: secondProviderConfig, model: secondModel },
       ]);
 
-      const failComplete = vi.fn().mockResolvedValue(
-        err(new InternalError('Rate limited'))
-      );
-      const successComplete = vi.fn().mockResolvedValue(
-        ok(makeCompletionResponse({ model: 'backup-model' }))
-      );
+      const failComplete = vi.fn().mockResolvedValue(err(new InternalError('Rate limited')));
+      const successComplete = vi
+        .fn()
+        .mockResolvedValue(ok(makeCompletionResponse({ model: 'backup-model' })));
 
       mockFromProviderId
         .mockReturnValueOnce({ complete: failComplete, stream: mockStream })

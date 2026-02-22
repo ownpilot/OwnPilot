@@ -15,9 +15,9 @@ import {
 // =============================================================================
 
 function createMockRegistry(
-  tools: Array<{ name: string; description: string; parameters?: Record<string, unknown> }>,
+  tools: Array<{ name: string; description: string; parameters?: Record<string, unknown> }>
 ) {
-  const defs = tools.map(t => ({
+  const defs = tools.map((t) => ({
     name: t.name,
     description: t.description,
     parameters: t.parameters ?? { type: 'object', properties: {} },
@@ -26,9 +26,9 @@ function createMockRegistry(
   }));
 
   return {
-    getDefinition: (name: string) => defs.find(d => d.name === name),
+    getDefinition: (name: string) => defs.find((d) => d.name === name),
     getDefinitions: () => defs,
-    getAllTools: () => defs.map(d => ({ definition: d, executor: async () => ({}) })),
+    getAllTools: () => defs.map((d) => ({ definition: d, executor: async () => ({}) })),
   } as unknown as Parameters<typeof validateToolCall>[0];
 }
 
@@ -322,7 +322,7 @@ describe('validateAgainstSchema', () => {
     const errors = validateAgainstSchema({ settings: { fontSize: 'big' } }, schema);
     // Missing required 'theme' + fontSize type mismatch
     expect(errors).toHaveLength(2);
-    const paths = errors.map(e => e.path);
+    const paths = errors.map((e) => e.path);
     expect(paths).toContain('params.settings.theme');
     expect(paths).toContain('params.settings.fontSize');
   });
@@ -350,12 +350,14 @@ describe('validateAgainstSchema', () => {
     };
 
     // Valid
-    expect(validateAgainstSchema({ name: 'test', items: [{ key: 'a', value: 1 }] }, schema)).toEqual([]);
+    expect(
+      validateAgainstSchema({ name: 'test', items: [{ key: 'a', value: 1 }] }, schema)
+    ).toEqual([]);
 
     // Invalid: missing name, bad item
     const errors = validateAgainstSchema({ items: [{ value: 'not-a-number' }] }, schema);
     expect(errors.length).toBeGreaterThanOrEqual(2);
-    const paths = errors.map(e => e.path);
+    const paths = errors.map((e) => e.path);
     expect(paths).toContain('params.name');
     expect(paths).toContain('params.items[0].key');
   });
@@ -418,9 +420,9 @@ describe('validateToolCall', () => {
     });
     expect(result.valid).toBe(false);
     expect(result.errors.length).toBe(2);
-    const messages = result.errors.map(e => e.message);
-    expect(messages.some(m => m.includes('subject'))).toBe(true);
-    expect(messages.some(m => m.includes('body'))).toBe(true);
+    const messages = result.errors.map((e) => e.message);
+    expect(messages.some((m) => m.includes('subject'))).toBe(true);
+    expect(messages.some((m) => m.includes('body'))).toBe(true);
   });
 
   it('unknown tool returns valid: false with "not found" error', () => {
@@ -495,7 +497,7 @@ describe('validateToolCall', () => {
       status: 'invalid_status',
     });
     expect(result.valid).toBe(false);
-    expect(result.errors.some(e => e.message.includes('must be one of'))).toBe(true);
+    expect(result.errors.some((e) => e.message.includes('must be one of'))).toBe(true);
   });
 });
 
@@ -557,7 +559,7 @@ describe('findSimilarToolNames', () => {
       Array.from({ length: 20 }, (_, i) => ({
         name: `test_tool_${i}`,
         description: `Test tool number ${i}`,
-      })),
+      }))
     );
     const results = findSimilarToolNames(manyToolsRegistry, 'test');
     expect(results.length).toBeLessThanOrEqual(5);
@@ -584,7 +586,7 @@ describe('formatParamSchema', () => {
     const lines = formatParamSchema(
       'name',
       { type: 'string', description: 'The user name' },
-      new Set(['name']),
+      new Set(['name'])
     );
     expect(lines).toHaveLength(1);
     expect(lines[0]).toContain('name');
@@ -597,7 +599,7 @@ describe('formatParamSchema', () => {
     const lines = formatParamSchema(
       'limit',
       { type: 'integer', description: 'Max results', default: 20 },
-      new Set([]),
+      new Set([])
     );
     expect(lines).toHaveLength(1);
     expect(lines[0]).toContain('(optional)');
@@ -609,7 +611,7 @@ describe('formatParamSchema', () => {
     const lines = formatParamSchema(
       'status',
       { type: 'string', enum: ['active', 'inactive', 'pending'] },
-      new Set(['status']),
+      new Set(['status'])
     );
     expect(lines).toHaveLength(1);
     expect(lines[0]).toContain('"active"');
@@ -636,8 +638,8 @@ describe('formatParamSchema', () => {
     expect(lines[0]).toContain('(REQUIRED)');
     // Nested props should be indented further
     const nestedLines = lines.slice(1);
-    expect(nestedLines.some(l => l.includes('key'))).toBe(true);
-    expect(nestedLines.some(l => l.includes('value'))).toBe(true);
+    expect(nestedLines.some((l) => l.includes('key'))).toBe(true);
+    expect(nestedLines.some((l) => l.includes('value'))).toBe(true);
   });
 
   it('formats nested object parameter', () => {
@@ -657,15 +659,15 @@ describe('formatParamSchema', () => {
     expect(lines[0]).toContain('Config settings');
     // Nested properties
     const nested = lines.slice(1);
-    expect(nested.some(l => l.includes('theme') && l.includes('(REQUIRED)'))).toBe(true);
-    expect(nested.some(l => l.includes('fontSize') && l.includes('(optional)'))).toBe(true);
+    expect(nested.some((l) => l.includes('theme') && l.includes('(REQUIRED)'))).toBe(true);
+    expect(nested.some((l) => l.includes('fontSize') && l.includes('(optional)'))).toBe(true);
   });
 
   it('formats simple array of primitives', () => {
     const lines = formatParamSchema(
       'tags',
       { type: 'array', items: { type: 'string' }, description: 'Tag list' },
-      new Set([]),
+      new Set([])
     );
     expect(lines).toHaveLength(1);
     expect(lines[0]).toContain('array of string');
@@ -674,12 +676,7 @@ describe('formatParamSchema', () => {
   });
 
   it('uses custom indent', () => {
-    const lines = formatParamSchema(
-      'name',
-      { type: 'string' },
-      new Set([]),
-      '    ',
-    );
+    const lines = formatParamSchema('name', { type: 'string' }, new Set([]), '    ');
     expect(lines[0]).toMatch(/^ {4}/);
   });
 
@@ -699,7 +696,10 @@ describe('formatParamSchema', () => {
 
 describe('buildExampleValue', () => {
   it('returns first enum value', () => {
-    const result = buildExampleValue({ type: 'string', enum: ['high', 'medium', 'low'] }, 'priority');
+    const result = buildExampleValue(
+      { type: 'string', enum: ['high', 'medium', 'low'] },
+      'priority'
+    );
     expect(result).toBe('high');
   });
 
@@ -849,11 +849,13 @@ describe('buildToolHelpText', () => {
   });
 
   it('returns empty string for tool without parameters properties', () => {
-    const emptyParamsRegistry = createMockRegistry([{
-      name: 'no_props',
-      description: 'No properties tool',
-      parameters: { type: 'object' }, // no properties key
-    }]);
+    const emptyParamsRegistry = createMockRegistry([
+      {
+        name: 'no_props',
+        description: 'No properties tool',
+        parameters: { type: 'object' }, // no properties key
+      },
+    ]);
     const result = buildToolHelpText(emptyParamsRegistry, 'no_props');
     expect(result).toBe('');
   });
@@ -885,7 +887,7 @@ describe('buildToolHelpText', () => {
     expect(result).toContain('"subject"');
     expect(result).toContain('"body"');
     // Extract the example line
-    const exampleLine = result.split('\n').find(l => l.startsWith('Example:'));
+    const exampleLine = result.split('\n').find((l) => l.startsWith('Example:'));
     expect(exampleLine).toBeDefined();
     // cc is optional, should not be in the example args
     expect(exampleLine).not.toContain('"cc"');
@@ -1030,28 +1032,26 @@ describe('validateRequiredParams', () => {
 
 describe('edge cases', () => {
   it('validateToolCall with tool that has no properties key', () => {
-    const registry = createMockRegistry([{
-      name: 'raw_tool',
-      description: 'Tool with parameters but no properties',
-      parameters: { type: 'object' },
-    }]);
+    const registry = createMockRegistry([
+      {
+        name: 'raw_tool',
+        description: 'Tool with parameters but no properties',
+        parameters: { type: 'object' },
+      },
+    ]);
     const result = validateToolCall(registry, 'raw_tool', { anything: 'goes' });
     expect(result.valid).toBe(true);
   });
 
   it('findSimilarToolNames handles empty query', () => {
-    const registry = createMockRegistry([
-      { name: 'send_email', description: 'Send email' },
-    ]);
+    const registry = createMockRegistry([{ name: 'send_email', description: 'Send email' }]);
     const results = findSimilarToolNames(registry, '');
     // Empty query → no word matches, but potentially zero-length prefix bonus
     expect(Array.isArray(results)).toBe(true);
   });
 
   it('findSimilarToolNames handles query with special characters', () => {
-    const registry = createMockRegistry([
-      { name: 'send_email', description: 'Send email' },
-    ]);
+    const registry = createMockRegistry([{ name: 'send_email', description: 'Send email' }]);
     const results = findSimilarToolNames(registry, 'send-email');
     // Hyphens are normalized to spaces, so 'send email' should match 'send_email'
     expect(results).toContain('send_email');

@@ -242,7 +242,7 @@ export function createEvent<T>(
   type: string,
   category: EventCategory,
   source: string,
-  data: T,
+  data: T
 ): TypedEvent<T> {
   return {
     type,

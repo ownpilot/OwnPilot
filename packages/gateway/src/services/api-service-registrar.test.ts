@@ -25,10 +25,7 @@ vi.mock('../db/repositories/config-services.js', () => ({
   },
 }));
 
-import {
-  registerToolConfigRequirements,
-  unregisterDependencies,
-} from './api-service-registrar.js';
+import { registerToolConfigRequirements, unregisterDependencies } from './api-service-registrar.js';
 
 // ---------------------------------------------------------------------------
 // Tests
@@ -77,22 +74,18 @@ describe('Config Service Registrar', () => {
     });
 
     it('defaults displayName to name', async () => {
-      await registerToolConfigRequirements('my_tool', 'tool-1', 'custom', [
-        { name: 'custom_api' },
-      ]);
+      await registerToolConfigRequirements('my_tool', 'tool-1', 'custom', [{ name: 'custom_api' }]);
 
       expect(mockConfigServicesRepo.upsert).toHaveBeenCalledWith(
-        expect.objectContaining({ name: 'custom_api', displayName: 'custom_api' }),
+        expect.objectContaining({ name: 'custom_api', displayName: 'custom_api' })
       );
     });
 
     it('defaults category to "general"', async () => {
-      await registerToolConfigRequirements('my_tool', 'tool-1', 'custom', [
-        { name: 'some_api' },
-      ]);
+      await registerToolConfigRequirements('my_tool', 'tool-1', 'custom', [{ name: 'some_api' }]);
 
       expect(mockConfigServicesRepo.upsert).toHaveBeenCalledWith(
-        expect.objectContaining({ category: 'general' }),
+        expect.objectContaining({ category: 'general' })
       );
     });
 
@@ -109,7 +102,7 @@ describe('Config Service Registrar', () => {
         expect.objectContaining({
           multiEntry: true,
           configSchema: schema,
-        }),
+        })
       );
     });
   });
@@ -129,7 +122,7 @@ describe('Config Service Registrar', () => {
           name: 'openweathermap',
           category: 'weather',
           docsUrl: 'https://openweathermap.org/api',
-        }),
+        })
       );
 
       expect(mockConfigServicesRepo.addRequiredBy).toHaveBeenCalledWith('openweathermap', {

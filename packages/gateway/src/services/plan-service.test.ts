@@ -16,15 +16,13 @@ import type { Plan, PlanStep, PlanHistory } from '../db/repositories/plans.js';
 const mockEmit = vi.fn();
 vi.mock('@ownpilot/core', () => ({
   getEventBus: () => ({ emit: mockEmit }),
-  createEvent: vi.fn(
-    (type: string, category: string, source: string, data: unknown) => ({
-      type,
-      category,
-      source,
-      data,
-      timestamp: new Date().toISOString(),
-    }),
-  ),
+  createEvent: vi.fn((type: string, category: string, source: string, data: unknown) => ({
+    type,
+    category,
+    source,
+    data,
+    timestamp: new Date().toISOString(),
+  })),
   EventTypes: {
     RESOURCE_CREATED: 'resource.created',
     RESOURCE_UPDATED: 'resource.updated',
@@ -137,33 +135,33 @@ describe('PlanService', () => {
         expect.objectContaining({
           type: 'resource.created',
           data: { resourceType: 'plan', id: 'plan-1' },
-        }),
+        })
       );
     });
 
     it('throws VALIDATION_ERROR when name is empty', async () => {
-      await expect(
-        service.createPlan('user-1', { name: '', goal: 'Something' }),
-      ).rejects.toThrow(/Name is required/);
+      await expect(service.createPlan('user-1', { name: '', goal: 'Something' })).rejects.toThrow(
+        /Name is required/
+      );
       expect(mockRepo.create).not.toHaveBeenCalled();
     });
 
     it('throws VALIDATION_ERROR when name is whitespace only', async () => {
       await expect(
-        service.createPlan('user-1', { name: '   ', goal: 'Something' }),
+        service.createPlan('user-1', { name: '   ', goal: 'Something' })
       ).rejects.toThrow(PlanServiceError);
     });
 
     it('throws VALIDATION_ERROR when goal is empty', async () => {
-      await expect(
-        service.createPlan('user-1', { name: 'Valid', goal: '' }),
-      ).rejects.toThrow(/Goal is required/);
+      await expect(service.createPlan('user-1', { name: 'Valid', goal: '' })).rejects.toThrow(
+        /Goal is required/
+      );
     });
 
     it('throws VALIDATION_ERROR when goal is whitespace only', async () => {
-      await expect(
-        service.createPlan('user-1', { name: 'Valid', goal: '   ' }),
-      ).rejects.toThrow(PlanServiceError);
+      await expect(service.createPlan('user-1', { name: 'Valid', goal: '   ' })).rejects.toThrow(
+        PlanServiceError
+      );
     });
   });
 
@@ -238,7 +236,7 @@ describe('PlanService', () => {
         expect.objectContaining({
           type: 'resource.updated',
           data: expect.objectContaining({ resourceType: 'plan', id: 'plan-1' }),
-        }),
+        })
       );
     });
 
@@ -261,7 +259,7 @@ describe('PlanService', () => {
         expect.objectContaining({
           type: 'resource.deleted',
           data: { resourceType: 'plan', id: 'plan-1' },
-        }),
+        })
       );
     });
 
@@ -323,11 +321,21 @@ describe('PlanService', () => {
       mockRepo.get.mockResolvedValue(null);
 
       await expect(
-        service.addStep('user-1', 'missing', { name: 'Step', orderNum: 1, type: 'tool', config: {} } as never),
+        service.addStep('user-1', 'missing', {
+          name: 'Step',
+          orderNum: 1,
+          type: 'tool',
+          config: {},
+        } as never)
       ).rejects.toThrow(/Plan not found/);
 
       const error = await service
-        .addStep('user-1', 'missing', { name: 'Step', orderNum: 1, type: 'tool', config: {} } as never)
+        .addStep('user-1', 'missing', {
+          name: 'Step',
+          orderNum: 1,
+          type: 'tool',
+          config: {},
+        } as never)
         .catch((e) => e);
       expect(error).toBeInstanceOf(PlanServiceError);
       expect(error.code).toBe('NOT_FOUND');
@@ -397,7 +405,10 @@ describe('PlanService', () => {
 
   describe('getStepsByStatus', () => {
     it('delegates to repo with planId and status', async () => {
-      const steps = [fakeStep({ status: 'completed' }), fakeStep({ id: 'step-2', status: 'completed' })];
+      const steps = [
+        fakeStep({ status: 'completed' }),
+        fakeStep({ id: 'step-2', status: 'completed' }),
+      ];
       mockRepo.getStepsByStatus.mockResolvedValue(steps);
 
       const result = await service.getStepsByStatus('user-1', 'plan-1', 'completed');
@@ -440,12 +451,9 @@ describe('PlanService', () => {
 
       await service.logEvent('user-1', 'plan-1', 'step_completed', 'step-1', { note: 'done' });
 
-      expect(mockRepo.logEvent).toHaveBeenCalledWith(
-        'plan-1',
-        'step_completed',
-        'step-1',
-        { note: 'done' },
-      );
+      expect(mockRepo.logEvent).toHaveBeenCalledWith('plan-1', 'step_completed', 'step-1', {
+        note: 'done',
+      });
     });
 
     it('delegates without optional params', async () => {
@@ -455,7 +463,7 @@ describe('PlanService', () => {
         'plan-1',
         'plan_started',
         undefined,
-        undefined,
+        undefined
       );
     });
   });

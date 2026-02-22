@@ -121,8 +121,9 @@ describe('NotesRepository', () => {
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
       mockAdapter.queryOne.mockResolvedValueOnce(null);
 
-      await expect(repo.create({ title: 'Test', content: 'x' }))
-        .rejects.toThrow('Failed to create note');
+      await expect(repo.create({ title: 'Test', content: 'x' })).rejects.toThrow(
+        'Failed to create note'
+      );
     });
 
     it('should store tags and optional fields', async () => {
@@ -227,7 +228,7 @@ describe('NotesRepository', () => {
       mockAdapter.queryOne.mockResolvedValueOnce(makeNoteRow());
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
       mockAdapter.queryOne.mockResolvedValueOnce(
-        makeNoteRow({ title: 'New', content: 'New content', content_type: 'text' }),
+        makeNoteRow({ title: 'New', content: 'New content', content_type: 'text' })
       );
 
       const result = await repo.update('note-1', {
@@ -387,7 +388,7 @@ describe('NotesRepository', () => {
       await repo.list({ tags: ['journal'] });
 
       const sql = mockAdapter.query.mock.calls[0]![0] as string;
-      expect(sql).toContain("tags::text LIKE");
+      expect(sql).toContain('tags::text LIKE');
       const params = mockAdapter.query.mock.calls[0]![1] as unknown[];
       expect(params).toContain('%"journal"%');
     });
@@ -470,10 +471,7 @@ describe('NotesRepository', () => {
 
   describe('getCategories', () => {
     it('should return distinct non-archived categories', async () => {
-      mockAdapter.query.mockResolvedValueOnce([
-        { category: 'personal' },
-        { category: 'work' },
-      ]);
+      mockAdapter.query.mockResolvedValueOnce([{ category: 'personal' }, { category: 'work' }]);
 
       const result = await repo.getCategories();
 
@@ -485,10 +483,7 @@ describe('NotesRepository', () => {
 
   describe('getTags', () => {
     it('should aggregate unique tags from non-archived notes', async () => {
-      mockAdapter.query.mockResolvedValueOnce([
-        { tags: '["a","b"]' },
-        { tags: '["b","c"]' },
-      ]);
+      mockAdapter.query.mockResolvedValueOnce([{ tags: '["a","b"]' }, { tags: '["b","c"]' }]);
 
       const result = await repo.getTags();
 

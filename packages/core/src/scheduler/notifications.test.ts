@@ -18,11 +18,7 @@ import {
   type UserNotificationPreferences,
 } from './notifications.js';
 
-import type {
-  ScheduledTask,
-  TaskExecutionResult,
-  TaskStatus,
-} from './index.js';
+import type { ScheduledTask, TaskExecutionResult, TaskStatus } from './index.js';
 
 // =============================================================================
 // Helpers
@@ -78,9 +74,7 @@ function makeStats(overrides: Partial<TaskExecutionStats> = {}): TaskExecutionSt
       { name: 'Task A', executions: 5 },
       { name: 'Task B', executions: 3 },
     ],
-    topIssues: [
-      { error: 'Timeout', count: 2 },
-    ],
+    topIssues: [{ error: 'Timeout', count: 2 }],
     ...overrides,
   };
 }
@@ -177,18 +171,14 @@ describe('processTemplate', () => {
   });
 
   it('handles conditional containing variable replacements', () => {
-    const result = processTemplate(
-      '{{#if duration}}Duration: {{duration}}ms{{/if}}',
-      { duration: 500 }
-    );
+    const result = processTemplate('{{#if duration}}Duration: {{duration}}ms{{/if}}', {
+      duration: 500,
+    });
     expect(result).toBe('Duration: 500ms');
   });
 
   it('handles multiple conditionals in same template', () => {
-    const result = processTemplate(
-      '{{#if a}}A{{/if}} {{#if b}}B{{/if}}',
-      { a: true, b: false }
-    );
+    const result = processTemplate('{{#if a}}A{{/if}} {{#if b}}B{{/if}}', { a: true, b: false });
     expect(result).toBe('A');
   });
 
@@ -209,7 +199,8 @@ describe('processTemplate', () => {
   });
 
   it('handles complex template with mixed conditionals and variables', () => {
-    const template = 'Task "{{name}}" done.\n{{#if error}}Error: {{error}}\n{{/if}}{{#if duration}}Took {{duration}}ms{{/if}}';
+    const template =
+      'Task "{{name}}" done.\n{{#if error}}Error: {{error}}\n{{/if}}{{#if duration}}Took {{duration}}ms{{/if}}';
     const result = processTemplate(template, {
       name: 'Backup',
       error: 'disk full',
@@ -589,10 +580,13 @@ describe('SchedulerNotificationBridge', () => {
     it('includes result in body when includeResult is true and result is a string', async () => {
       const task = makeTask();
       const result = makeResult({ status: 'completed', result: 'Success output' });
-      bridge.setTaskNotificationConfig('task-1', makeConfig({
-        triggers: ['on_complete'],
-        includeResult: true,
-      }));
+      bridge.setTaskNotificationConfig(
+        'task-1',
+        makeConfig({
+          triggers: ['on_complete'],
+          includeResult: true,
+        })
+      );
 
       await bridge.onTaskComplete(task, result);
 
@@ -604,10 +598,13 @@ describe('SchedulerNotificationBridge', () => {
       const task = makeTask();
       const resultData = { key: 'value' };
       const result = makeResult({ status: 'completed', result: resultData });
-      bridge.setTaskNotificationConfig('task-1', makeConfig({
-        triggers: ['on_complete'],
-        includeResult: true,
-      }));
+      bridge.setTaskNotificationConfig(
+        'task-1',
+        makeConfig({
+          triggers: ['on_complete'],
+          includeResult: true,
+        })
+      );
 
       await bridge.onTaskComplete(task, result);
 
@@ -619,10 +616,13 @@ describe('SchedulerNotificationBridge', () => {
     it('does NOT include result when includeResult is false', async () => {
       const task = makeTask();
       const result = makeResult({ status: 'completed', result: 'secret output' });
-      bridge.setTaskNotificationConfig('task-1', makeConfig({
-        triggers: ['on_complete'],
-        includeResult: false,
-      }));
+      bridge.setTaskNotificationConfig(
+        'task-1',
+        makeConfig({
+          triggers: ['on_complete'],
+          includeResult: false,
+        })
+      );
 
       await bridge.onTaskComplete(task, result);
 
@@ -633,10 +633,13 @@ describe('SchedulerNotificationBridge', () => {
     it('includes duration in body when includeDuration is true', async () => {
       const task = makeTask();
       const result = makeResult({ status: 'completed', duration: 1234 });
-      bridge.setTaskNotificationConfig('task-1', makeConfig({
-        triggers: ['on_complete'],
-        includeDuration: true,
-      }));
+      bridge.setTaskNotificationConfig(
+        'task-1',
+        makeConfig({
+          triggers: ['on_complete'],
+          includeDuration: true,
+        })
+      );
 
       await bridge.onTaskComplete(task, result);
 
@@ -647,10 +650,13 @@ describe('SchedulerNotificationBridge', () => {
     it('does NOT include duration when includeDuration is false', async () => {
       const task = makeTask();
       const result = makeResult({ status: 'completed', duration: 9999 });
-      bridge.setTaskNotificationConfig('task-1', makeConfig({
-        triggers: ['on_complete'],
-        includeDuration: false,
-      }));
+      bridge.setTaskNotificationConfig(
+        'task-1',
+        makeConfig({
+          triggers: ['on_complete'],
+          includeDuration: false,
+        })
+      );
 
       await bridge.onTaskComplete(task, result);
 
@@ -738,10 +744,13 @@ describe('SchedulerNotificationBridge', () => {
 
     it('uses config channels when specified', async () => {
       const task = makeTask();
-      bridge.setTaskNotificationConfig('task-1', makeConfig({
-        triggers: ['on_start'],
-        channels: ['email', 'webhook'],
-      }));
+      bridge.setTaskNotificationConfig(
+        'task-1',
+        makeConfig({
+          triggers: ['on_start'],
+          channels: ['email', 'webhook'],
+        })
+      );
       await bridge.onTaskStart(task);
 
       const [, notification] = (handler as ReturnType<typeof vi.fn>).mock.calls[0]!;
@@ -808,10 +817,13 @@ describe('SchedulerNotificationBridge', () => {
 
     it('uses custom titleTemplate when provided', async () => {
       const task = makeTask({ name: 'Custom' });
-      bridge.setTaskNotificationConfig('task-1', makeConfig({
-        triggers: ['on_start'],
-        titleTemplate: 'Custom title for {{taskName}}',
-      }));
+      bridge.setTaskNotificationConfig(
+        'task-1',
+        makeConfig({
+          triggers: ['on_start'],
+          titleTemplate: 'Custom title for {{taskName}}',
+        })
+      );
 
       await bridge.onTaskStart(task);
 
@@ -821,15 +833,21 @@ describe('SchedulerNotificationBridge', () => {
 
     it('uses custom bodyTemplate when provided', async () => {
       const _task = makeTask({ name: 'Custom' });
-      bridge.setTaskNotificationConfig('task-1', makeConfig({
-        triggers: ['on_start'],
-        bodyTemplate: 'Body for {{taskName}} at {{scheduledTime}}',
-      }));
+      bridge.setTaskNotificationConfig(
+        'task-1',
+        makeConfig({
+          triggers: ['on_start'],
+          bodyTemplate: 'Body for {{taskName}} at {{scheduledTime}}',
+        })
+      );
       const taskWithNextRun = makeTask({ name: 'Custom', nextRun: '2026-02-01T09:00:00Z' });
-      bridge.setTaskNotificationConfig('task-1', makeConfig({
-        triggers: ['on_start'],
-        bodyTemplate: 'Body for {{taskName}} at {{scheduledTime}}',
-      }));
+      bridge.setTaskNotificationConfig(
+        'task-1',
+        makeConfig({
+          triggers: ['on_start'],
+          bodyTemplate: 'Body for {{taskName}} at {{scheduledTime}}',
+        })
+      );
 
       await bridge.onTaskStart(taskWithNextRun);
 
@@ -839,11 +857,14 @@ describe('SchedulerNotificationBridge', () => {
 
     it('uses custom title but default body when only titleTemplate is given', async () => {
       const task = makeTask({ name: 'Mixed' });
-      bridge.setTaskNotificationConfig('task-1', makeConfig({
-        triggers: ['on_start'],
-        titleTemplate: 'CUSTOM: {{taskName}}',
-        // no bodyTemplate → uses default taskStarted body
-      }));
+      bridge.setTaskNotificationConfig(
+        'task-1',
+        makeConfig({
+          triggers: ['on_start'],
+          titleTemplate: 'CUSTOM: {{taskName}}',
+          // no bodyTemplate → uses default taskStarted body
+        })
+      );
 
       await bridge.onTaskStart(task);
 
@@ -865,10 +886,13 @@ describe('SchedulerNotificationBridge', () => {
 
     it('includes task description in variables', async () => {
       const task = makeTask({ description: 'Daily backup job' });
-      bridge.setTaskNotificationConfig('task-1', makeConfig({
-        triggers: ['on_start'],
-        bodyTemplate: 'Desc: {{taskDescription}}',
-      }));
+      bridge.setTaskNotificationConfig(
+        'task-1',
+        makeConfig({
+          triggers: ['on_start'],
+          bodyTemplate: 'Desc: {{taskDescription}}',
+        })
+      );
 
       await bridge.onTaskStart(task);
 
@@ -990,10 +1014,13 @@ describe('SchedulerNotificationBridge', () => {
     });
 
     it('skips if reminderMinutes is not set', () => {
-      bridge.setTaskNotificationConfig('task-1', makeConfig({
-        triggers: ['reminder'],
-        reminderMinutes: undefined,
-      }));
+      bridge.setTaskNotificationConfig(
+        'task-1',
+        makeConfig({
+          triggers: ['reminder'],
+          reminderMinutes: undefined,
+        })
+      );
       const task = makeTask();
       const nextRun = new Date(Date.now() + 30 * 60 * 1000);
       bridge.scheduleReminder(task, nextRun);
@@ -1003,10 +1030,13 @@ describe('SchedulerNotificationBridge', () => {
     });
 
     it('skips if reminderMinutes is 0 (falsy)', () => {
-      bridge.setTaskNotificationConfig('task-1', makeConfig({
-        triggers: ['reminder'],
-        reminderMinutes: 0,
-      }));
+      bridge.setTaskNotificationConfig(
+        'task-1',
+        makeConfig({
+          triggers: ['reminder'],
+          reminderMinutes: 0,
+        })
+      );
       const task = makeTask();
       const nextRun = new Date(Date.now() + 30 * 60 * 1000);
       bridge.scheduleReminder(task, nextRun);
@@ -1149,15 +1179,18 @@ describe('SchedulerNotificationBridge', () => {
 
 describe('calculateExecutionStats', () => {
   it('counts completed/failed/pending correctly', () => {
-    const history = new Map<string, Array<{ status: TaskStatus; duration?: number; error?: string }>>([
-      ['t1', [
-        { status: 'completed', duration: 100 },
-        { status: 'completed', duration: 200 },
-      ]],
-      ['t2', [
-        { status: 'failed', error: 'timeout' },
-        { status: 'pending' },
-      ]],
+    const history = new Map<
+      string,
+      Array<{ status: TaskStatus; duration?: number; error?: string }>
+    >([
+      [
+        't1',
+        [
+          { status: 'completed', duration: 100 },
+          { status: 'completed', duration: 200 },
+        ],
+      ],
+      ['t2', [{ status: 'failed', error: 'timeout' }, { status: 'pending' }]],
     ]);
     const tasks = new Map([
       ['t1', { name: 'Task 1' }],
@@ -1172,13 +1205,19 @@ describe('calculateExecutionStats', () => {
   });
 
   it('calculates successRate correctly', () => {
-    const history = new Map<string, Array<{ status: TaskStatus; duration?: number; error?: string }>>([
-      ['t1', [
-        { status: 'completed' },
-        { status: 'completed' },
-        { status: 'failed', error: 'err' },
-        { status: 'completed' },
-      ]],
+    const history = new Map<
+      string,
+      Array<{ status: TaskStatus; duration?: number; error?: string }>
+    >([
+      [
+        't1',
+        [
+          { status: 'completed' },
+          { status: 'completed' },
+          { status: 'failed', error: 'err' },
+          { status: 'completed' },
+        ],
+      ],
     ]);
     const tasks = new Map([['t1', { name: 'T1' }]]);
 
@@ -1193,9 +1232,10 @@ describe('calculateExecutionStats', () => {
   });
 
   it('returns 100% successRate when all completed', () => {
-    const history = new Map<string, Array<{ status: TaskStatus; duration?: number; error?: string }>>([
-      ['t1', [{ status: 'completed' }, { status: 'completed' }]],
-    ]);
+    const history = new Map<
+      string,
+      Array<{ status: TaskStatus; duration?: number; error?: string }>
+    >([['t1', [{ status: 'completed' }, { status: 'completed' }]]]);
     const tasks = new Map([['t1', { name: 'T1' }]]);
 
     const stats = calculateExecutionStats(history, tasks);
@@ -1203,11 +1243,17 @@ describe('calculateExecutionStats', () => {
   });
 
   it('calculates averageDuration correctly', () => {
-    const history = new Map<string, Array<{ status: TaskStatus; duration?: number; error?: string }>>([
-      ['t1', [
-        { status: 'completed', duration: 100 },
-        { status: 'completed', duration: 300 },
-      ]],
+    const history = new Map<
+      string,
+      Array<{ status: TaskStatus; duration?: number; error?: string }>
+    >([
+      [
+        't1',
+        [
+          { status: 'completed', duration: 100 },
+          { status: 'completed', duration: 300 },
+        ],
+      ],
     ]);
     const tasks = new Map([['t1', { name: 'T1' }]]);
 
@@ -1216,9 +1262,10 @@ describe('calculateExecutionStats', () => {
   });
 
   it('returns 0 averageDuration when no entries have duration', () => {
-    const history = new Map<string, Array<{ status: TaskStatus; duration?: number; error?: string }>>([
-      ['t1', [{ status: 'completed' }]],
-    ]);
+    const history = new Map<
+      string,
+      Array<{ status: TaskStatus; duration?: number; error?: string }>
+    >([['t1', [{ status: 'completed' }]]]);
     const tasks = new Map([['t1', { name: 'T1' }]]);
 
     const stats = calculateExecutionStats(history, tasks);
@@ -1226,12 +1273,18 @@ describe('calculateExecutionStats', () => {
   });
 
   it('rounds averageDuration', () => {
-    const history = new Map<string, Array<{ status: TaskStatus; duration?: number; error?: string }>>([
-      ['t1', [
-        { status: 'completed', duration: 100 },
-        { status: 'completed', duration: 101 },
-        { status: 'completed', duration: 102 },
-      ]],
+    const history = new Map<
+      string,
+      Array<{ status: TaskStatus; duration?: number; error?: string }>
+    >([
+      [
+        't1',
+        [
+          { status: 'completed', duration: 100 },
+          { status: 'completed', duration: 101 },
+          { status: 'completed', duration: 102 },
+        ],
+      ],
     ]);
     const tasks = new Map([['t1', { name: 'T1' }]]);
 
@@ -1240,7 +1293,10 @@ describe('calculateExecutionStats', () => {
   });
 
   it('returns top 5 tasks sorted by execution count', () => {
-    const history = new Map<string, Array<{ status: TaskStatus; duration?: number; error?: string }>>();
+    const history = new Map<
+      string,
+      Array<{ status: TaskStatus; duration?: number; error?: string }>
+    >();
     const tasks = new Map<string, { name: string }>();
 
     for (let i = 1; i <= 7; i++) {
@@ -1263,9 +1319,10 @@ describe('calculateExecutionStats', () => {
   });
 
   it('uses taskId as name fallback when task not in tasks map', () => {
-    const history = new Map<string, Array<{ status: TaskStatus; duration?: number; error?: string }>>([
-      ['unknown-task', [{ status: 'completed' }]],
-    ]);
+    const history = new Map<
+      string,
+      Array<{ status: TaskStatus; duration?: number; error?: string }>
+    >([['unknown-task', [{ status: 'completed' }]]]);
     const tasks = new Map<string, { name: string }>();
 
     const stats = calculateExecutionStats(history, tasks);
@@ -1273,16 +1330,22 @@ describe('calculateExecutionStats', () => {
   });
 
   it('returns top 3 issues sorted by error count', () => {
-    const history = new Map<string, Array<{ status: TaskStatus; duration?: number; error?: string }>>([
-      ['t1', [
-        { status: 'failed', error: 'Timeout' },
-        { status: 'failed', error: 'Timeout' },
-        { status: 'failed', error: 'Timeout' },
-        { status: 'failed', error: 'Auth error' },
-        { status: 'failed', error: 'Auth error' },
-        { status: 'failed', error: 'Disk full' },
-        { status: 'failed', error: 'Network down' },
-      ]],
+    const history = new Map<
+      string,
+      Array<{ status: TaskStatus; duration?: number; error?: string }>
+    >([
+      [
+        't1',
+        [
+          { status: 'failed', error: 'Timeout' },
+          { status: 'failed', error: 'Timeout' },
+          { status: 'failed', error: 'Timeout' },
+          { status: 'failed', error: 'Auth error' },
+          { status: 'failed', error: 'Auth error' },
+          { status: 'failed', error: 'Disk full' },
+          { status: 'failed', error: 'Network down' },
+        ],
+      ],
     ]);
     const tasks = new Map([['t1', { name: 'T1' }]]);
 
@@ -1295,10 +1358,16 @@ describe('calculateExecutionStats', () => {
   });
 
   it('does not count errors from non-failed entries', () => {
-    const history = new Map<string, Array<{ status: TaskStatus; duration?: number; error?: string }>>([
-      ['t1', [
-        { status: 'completed' }, // no error field
-      ]],
+    const history = new Map<
+      string,
+      Array<{ status: TaskStatus; duration?: number; error?: string }>
+    >([
+      [
+        't1',
+        [
+          { status: 'completed' }, // no error field
+        ],
+      ],
     ]);
     const tasks = new Map([['t1', { name: 'T1' }]]);
 
@@ -1307,10 +1376,16 @@ describe('calculateExecutionStats', () => {
   });
 
   it('ignores failed entries without error string', () => {
-    const history = new Map<string, Array<{ status: TaskStatus; duration?: number; error?: string }>>([
-      ['t1', [
-        { status: 'failed' }, // no error field
-      ]],
+    const history = new Map<
+      string,
+      Array<{ status: TaskStatus; duration?: number; error?: string }>
+    >([
+      [
+        't1',
+        [
+          { status: 'failed' }, // no error field
+        ],
+      ],
     ]);
     const tasks = new Map([['t1', { name: 'T1' }]]);
 
@@ -1332,12 +1407,10 @@ describe('calculateExecutionStats', () => {
   });
 
   it('ignores statuses other than completed/failed/pending in counts', () => {
-    const history = new Map<string, Array<{ status: TaskStatus; duration?: number; error?: string }>>([
-      ['t1', [
-        { status: 'running' },
-        { status: 'cancelled' as TaskStatus },
-      ]],
-    ]);
+    const history = new Map<
+      string,
+      Array<{ status: TaskStatus; duration?: number; error?: string }>
+    >([['t1', [{ status: 'running' }, { status: 'cancelled' as TaskStatus }]]]);
     const tasks = new Map([['t1', { name: 'T1' }]]);
 
     const stats = calculateExecutionStats(history, tasks);
@@ -1349,11 +1422,10 @@ describe('calculateExecutionStats', () => {
   });
 
   it('still counts duration from non-matched statuses', () => {
-    const history = new Map<string, Array<{ status: TaskStatus; duration?: number; error?: string }>>([
-      ['t1', [
-        { status: 'running', duration: 500 },
-      ]],
-    ]);
+    const history = new Map<
+      string,
+      Array<{ status: TaskStatus; duration?: number; error?: string }>
+    >([['t1', [{ status: 'running', duration: 500 }]]]);
     const tasks = new Map([['t1', { name: 'T1' }]]);
 
     const stats = calculateExecutionStats(history, tasks);
@@ -1361,13 +1433,10 @@ describe('calculateExecutionStats', () => {
   });
 
   it('counts task executions regardless of status', () => {
-    const history = new Map<string, Array<{ status: TaskStatus; duration?: number; error?: string }>>([
-      ['t1', [
-        { status: 'completed' },
-        { status: 'running' },
-        { status: 'failed', error: 'x' },
-      ]],
-    ]);
+    const history = new Map<
+      string,
+      Array<{ status: TaskStatus; duration?: number; error?: string }>
+    >([['t1', [{ status: 'completed' }, { status: 'running' }, { status: 'failed', error: 'x' }]]]);
     const tasks = new Map([['t1', { name: 'T1' }]]);
 
     const stats = calculateExecutionStats(history, tasks);
@@ -1375,7 +1444,10 @@ describe('calculateExecutionStats', () => {
   });
 
   it('aggregates errors across multiple tasks', () => {
-    const history = new Map<string, Array<{ status: TaskStatus; duration?: number; error?: string }>>([
+    const history = new Map<
+      string,
+      Array<{ status: TaskStatus; duration?: number; error?: string }>
+    >([
       ['t1', [{ status: 'failed', error: 'Timeout' }]],
       ['t2', [{ status: 'failed', error: 'Timeout' }]],
     ]);
@@ -1724,10 +1796,13 @@ describe('integration scenarios', () => {
 
   it('notification for task with nextRun includes scheduledTime variable', async () => {
     const task = makeTask({ nextRun: '2026-03-01T09:00:00Z' });
-    bridge.setTaskNotificationConfig('task-1', makeConfig({
-      triggers: ['on_start'],
-      bodyTemplate: 'Scheduled: {{scheduledTime}}',
-    }));
+    bridge.setTaskNotificationConfig(
+      'task-1',
+      makeConfig({
+        triggers: ['on_start'],
+        bodyTemplate: 'Scheduled: {{scheduledTime}}',
+      })
+    );
 
     await bridge.onTaskStart(task);
 
@@ -1737,10 +1812,13 @@ describe('integration scenarios', () => {
 
   it('notification for task without nextRun has empty scheduledTime', async () => {
     const task = makeTask({ nextRun: undefined });
-    bridge.setTaskNotificationConfig('task-1', makeConfig({
-      triggers: ['on_start'],
-      bodyTemplate: 'Scheduled: [{{scheduledTime}}]',
-    }));
+    bridge.setTaskNotificationConfig(
+      'task-1',
+      makeConfig({
+        triggers: ['on_start'],
+        bodyTemplate: 'Scheduled: [{{scheduledTime}}]',
+      })
+    );
 
     await bridge.onTaskStart(task);
 

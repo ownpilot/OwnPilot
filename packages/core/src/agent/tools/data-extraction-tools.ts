@@ -50,7 +50,10 @@ export const extractEntitiesTool: ToolDefinition = {
   },
 };
 
-export const extractEntitiesExecutor: ToolExecutor = async (params, _context): Promise<ToolExecutionResult> => {
+export const extractEntitiesExecutor: ToolExecutor = async (
+  params,
+  _context
+): Promise<ToolExecutionResult> => {
   const text = params.text as string;
   const entityTypes = params.entityTypes as string[] | undefined;
   const includeConfidence = params.includeConfidence === true;
@@ -78,7 +81,9 @@ export const extractEntitiesExecutor: ToolExecutor = async (params, _context): P
   if (phones) basicEntities.phone = [...new Set(phones)];
 
   // Money extraction
-  const money = text.match(/[$€£¥]\s?\d+(?:[.,]\d{2})?(?:\s?(?:million|billion|k|M|B))?|\d+(?:[.,]\d{2})?\s?(?:USD|EUR|GBP|TRY)/gi);
+  const money = text.match(
+    /[$€£¥]\s?\d+(?:[.,]\d{2})?(?:\s?(?:million|billion|k|M|B))?|\d+(?:[.,]\d{2})?\s?(?:USD|EUR|GBP|TRY)/gi
+  );
   if (money) basicEntities.money = [...new Set(money)];
 
   // Percentage extraction
@@ -86,7 +91,9 @@ export const extractEntitiesExecutor: ToolExecutor = async (params, _context): P
   if (percentages) basicEntities.percentage = [...new Set(percentages)];
 
   // Date extraction (basic patterns)
-  const dates = text.match(/\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4}|\d{4}[\/\-\.]\d{1,2}[\/\-\.]\d{1,2}|(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]* \d{1,2},? \d{4}/gi);
+  const dates = text.match(
+    /\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4}|\d{4}[\/\-\.]\d{1,2}[\/\-\.]\d{1,2}|(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]* \d{1,2},? \d{4}/gi
+  );
   if (dates) basicEntities.date = [...new Set(dates)];
 
   return {
@@ -135,7 +142,10 @@ export const extractTableDataTool: ToolDefinition = {
   },
 };
 
-export const extractTableDataExecutor: ToolExecutor = async (params, _context): Promise<ToolExecutionResult> => {
+export const extractTableDataExecutor: ToolExecutor = async (
+  params,
+  _context
+): Promise<ToolExecutionResult> => {
   const content = params.content as string;
   const format = (params.format as string) || 'auto';
   const hasHeader = params.hasHeader !== false;
@@ -192,11 +202,19 @@ export const extractTableDataExecutor: ToolExecutor = async (params, _context): 
 /**
  * Parse CSV content
  */
-function parseCSV(content: string, delimiter: string, hasHeader: boolean): Array<{ headers?: string[]; rows: string[][] }> {
-  const lines = content.trim().split('\n').map(l => l.trim()).filter(l => l);
+function parseCSV(
+  content: string,
+  delimiter: string,
+  hasHeader: boolean
+): Array<{ headers?: string[]; rows: string[][] }> {
+  const lines = content
+    .trim()
+    .split('\n')
+    .map((l) => l.trim())
+    .filter((l) => l);
   if (lines.length === 0) return [];
 
-  const rows = lines.map(line => {
+  const rows = lines.map((line) => {
     const cells: string[] = [];
     let current = '';
     let inQuotes = false;
@@ -235,10 +253,13 @@ function parseMarkdownTable(content: string): Array<{ headers?: string[]; rows: 
 
   for (const line of lines) {
     if (line.includes('|')) {
-      const cells = line.split('|').map(c => c.trim()).filter(c => c);
+      const cells = line
+        .split('|')
+        .map((c) => c.trim())
+        .filter((c) => c);
 
       // Skip separator line
-      if (cells.every(c => /^[-:]+$/.test(c))) {
+      if (cells.every((c) => /^[-:]+$/.test(c))) {
         headerParsed = true;
         continue;
       }
@@ -280,9 +301,7 @@ function parseHTMLTable(content: string): Array<{ headers?: string[]; rows: stri
     const headerMatch = tableContent.match(/<thead[^>]*>([\s\S]*?)<\/thead>/i);
     if (headerMatch) {
       const headerCells = headerMatch[1]?.match(/<th[^>]*>([\s\S]*?)<\/th>/gi) || [];
-      table.headers = headerCells.map(cell =>
-        cell.replace(/<[^>]+>/g, '').trim()
-      );
+      table.headers = headerCells.map((cell) => cell.replace(/<[^>]+>/g, '').trim());
     }
 
     // Extract rows
@@ -291,9 +310,7 @@ function parseHTMLTable(content: string): Array<{ headers?: string[]; rows: stri
     while ((rowMatch = rowRegex.exec(tableContent)) !== null) {
       const rowContent = rowMatch[1] || '';
       const cells = rowContent.match(/<t[dh][^>]*>([\s\S]*?)<\/t[dh]>/gi) || [];
-      const rowData = cells.map(cell =>
-        cell.replace(/<[^>]+>/g, '').trim()
-      );
+      const rowData = cells.map((cell) => cell.replace(/<[^>]+>/g, '').trim());
 
       if (rowData.length > 0) {
         // If no headers and this is first row with th tags, use as headers
@@ -316,8 +333,15 @@ function parseHTMLTable(content: string): Array<{ headers?: string[]; rows: stri
 /**
  * Parse text table using whitespace or delimiter
  */
-function parseTextTable(content: string, delimiter: string | undefined, hasHeader: boolean): Array<{ headers?: string[]; rows: string[][] }> {
-  const lines = content.trim().split('\n').filter(l => l.trim());
+function parseTextTable(
+  content: string,
+  delimiter: string | undefined,
+  hasHeader: boolean
+): Array<{ headers?: string[]; rows: string[][] }> {
+  const lines = content
+    .trim()
+    .split('\n')
+    .filter((l) => l.trim());
   if (lines.length === 0) return [];
 
   // Auto-detect delimiter
@@ -332,8 +356,11 @@ function parseTextTable(content: string, delimiter: string | undefined, hasHeade
     effectiveDelimiter = /\s{2,}/; // Multiple spaces
   }
 
-  const rows = lines.map(line => {
-    return line.split(effectiveDelimiter).map(c => c.trim()).filter(c => c);
+  const rows = lines.map((line) => {
+    return line
+      .split(effectiveDelimiter)
+      .map((c) => c.trim())
+      .filter((c) => c);
   });
 
   if (hasHeader && rows.length > 0) {
@@ -347,9 +374,10 @@ function parseTextTable(content: string, delimiter: string | undefined, hasHeade
 // EXPORT ALL DATA EXTRACTION TOOLS
 // ============================================================================
 
-export const DATA_EXTRACTION_TOOLS: Array<{ definition: ToolDefinition; executor: ToolExecutor }> = [
-  { definition: extractEntitiesTool, executor: extractEntitiesExecutor },
-  { definition: extractTableDataTool, executor: extractTableDataExecutor },
-];
+export const DATA_EXTRACTION_TOOLS: Array<{ definition: ToolDefinition; executor: ToolExecutor }> =
+  [
+    { definition: extractEntitiesTool, executor: extractEntitiesExecutor },
+    { definition: extractTableDataTool, executor: extractTableDataExecutor },
+  ];
 
 export const DATA_EXTRACTION_TOOL_NAMES = DATA_EXTRACTION_TOOLS.map((t) => t.definition.name);

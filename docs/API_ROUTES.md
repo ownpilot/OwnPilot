@@ -83,14 +83,14 @@ Health checks for server status, Docker sandbox availability, and database conne
 
 ### Endpoints
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/health` | Full health check with subsystem statuses |
-| `GET` | `/health/live` | Kubernetes liveness probe |
-| `GET` | `/health/ready` | Kubernetes readiness probe |
-| `GET` | `/health/sandbox` | Docker sandbox diagnostics |
-| `POST` | `/health/sandbox/reset` | Reset sandbox detection cache |
-| `POST` | `/health/sandbox/pull-images` | Pull Docker images for code execution |
+| Method | Path                          | Description                               |
+| ------ | ----------------------------- | ----------------------------------------- |
+| `GET`  | `/health`                     | Full health check with subsystem statuses |
+| `GET`  | `/health/live`                | Kubernetes liveness probe                 |
+| `GET`  | `/health/ready`               | Kubernetes readiness probe                |
+| `GET`  | `/health/sandbox`             | Docker sandbox diagnostics                |
+| `POST` | `/health/sandbox/reset`       | Reset sandbox detection cache             |
+| `POST` | `/health/sandbox/pull-images` | Pull Docker images for code execution     |
 
 ### GET /health
 
@@ -129,8 +129,8 @@ Returns overall system health including core module, database connection, and Do
 
 **Query Parameters:**
 
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
+| Parameter | Type    | Default | Description                         |
+| --------- | ------- | ------- | ----------------------------------- |
 | `refresh` | boolean | `false` | Force re-detect Docker capabilities |
 
 ### POST /health/sandbox/pull-images
@@ -150,20 +150,20 @@ Core chat endpoint for sending messages to the AI, managing conversations, and r
 
 ### Endpoints
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `POST` | `/chat` | Send a chat message |
-| `GET` | `/chat/conversations/:id` | Get in-memory conversation |
-| `DELETE` | `/chat/conversations/:id` | Delete in-memory conversation |
-| `GET` | `/chat/history` | List all DB-persisted conversations |
-| `GET` | `/chat/history/:id` | Get conversation with all messages |
-| `DELETE` | `/chat/history/:id` | Delete conversation from DB |
-| `PATCH` | `/chat/history/:id/archive` | Archive/unarchive conversation |
-| `GET` | `/chat/logs` | Get request/response logs |
-| `GET` | `/chat/logs/stats` | Get log statistics |
-| `GET` | `/chat/logs/:id` | Get single log detail |
-| `DELETE` | `/chat/logs` | Clear logs |
-| `POST` | `/chat/reset-context` | Reset chat agent context |
+| Method   | Path                        | Description                         |
+| -------- | --------------------------- | ----------------------------------- |
+| `POST`   | `/chat`                     | Send a chat message                 |
+| `GET`    | `/chat/conversations/:id`   | Get in-memory conversation          |
+| `DELETE` | `/chat/conversations/:id`   | Delete in-memory conversation       |
+| `GET`    | `/chat/history`             | List all DB-persisted conversations |
+| `GET`    | `/chat/history/:id`         | Get conversation with all messages  |
+| `DELETE` | `/chat/history/:id`         | Delete conversation from DB         |
+| `PATCH`  | `/chat/history/:id/archive` | Archive/unarchive conversation      |
+| `GET`    | `/chat/logs`                | Get request/response logs           |
+| `GET`    | `/chat/logs/stats`          | Get log statistics                  |
+| `GET`    | `/chat/logs/:id`            | Get single log detail               |
+| `DELETE` | `/chat/logs`                | Clear logs                          |
+| `POST`   | `/chat/reset-context`       | Reset chat agent context            |
 
 ### POST /chat
 
@@ -197,9 +197,7 @@ Send a message and receive an AI response. Supports streaming via SSE.
     "message": "AI response text...",
     "response": "AI response text...",
     "model": "gpt-4o",
-    "toolCalls": [
-      { "id": "tc_1", "name": "get_current_time", "arguments": {} }
-    ],
+    "toolCalls": [{ "id": "tc_1", "name": "get_current_time", "arguments": {} }],
     "usage": {
       "promptTokens": 150,
       "completionTokens": 80,
@@ -225,13 +223,13 @@ Send a message and receive an AI response. Supports streaming via SSE.
 
 When `stream: true`, the response uses `text/event-stream` content type.
 
-| Event | Description |
-|-------|-------------|
-| `chunk` | Text delta from the model |
-| `done` | Final chunk with usage, trace, and finish reason |
-| `progress` | Tool start/end and status updates |
-| `autonomy` | Tool call blocked by autonomy system |
-| `error` | Error during streaming |
+| Event      | Description                                      |
+| ---------- | ------------------------------------------------ |
+| `chunk`    | Text delta from the model                        |
+| `done`     | Final chunk with usage, trace, and finish reason |
+| `progress` | Tool start/end and status updates                |
+| `autonomy` | Tool call blocked by autonomy system             |
+| `error`    | Error during streaming                           |
 
 Each `chunk` event data:
 
@@ -251,34 +249,34 @@ Each `chunk` event data:
 
 **Query Parameters:**
 
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `limit` | number | `50` | Max conversations to return |
-| `offset` | number | `0` | Pagination offset |
-| `search` | string | -- | Search in conversation titles |
-| `agentId` | string | -- | Filter by agent |
-| `archived` | boolean | `false` | Show archived conversations |
+| Parameter  | Type    | Default | Description                   |
+| ---------- | ------- | ------- | ----------------------------- |
+| `limit`    | number  | `50`    | Max conversations to return   |
+| `offset`   | number  | `0`     | Pagination offset             |
+| `search`   | string  | --      | Search in conversation titles |
+| `agentId`  | string  | --      | Filter by agent               |
+| `archived` | boolean | `false` | Show archived conversations   |
 
 ### GET /chat/logs
 
 **Query Parameters:**
 
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `limit` | number | `100` | Max logs to return |
-| `offset` | number | `0` | Pagination offset |
-| `type` | string | -- | Filter: `chat`, `completion`, `embedding`, `tool`, `agent`, `other` |
-| `errors` | boolean | -- | `true` for errors only, `false` for non-errors |
-| `conversationId` | string | -- | Filter by conversation |
+| Parameter        | Type    | Default | Description                                                         |
+| ---------------- | ------- | ------- | ------------------------------------------------------------------- |
+| `limit`          | number  | `100`   | Max logs to return                                                  |
+| `offset`         | number  | `0`     | Pagination offset                                                   |
+| `type`           | string  | --      | Filter: `chat`, `completion`, `embedding`, `tool`, `agent`, `other` |
+| `errors`         | boolean | --      | `true` for errors only, `false` for non-errors                      |
+| `conversationId` | string  | --      | Filter by conversation                                              |
 
 ### DELETE /chat/logs
 
 **Query Parameters:**
 
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `all` | boolean | `false` | Clear ALL logs |
-| `olderThanDays` | number | `30` | Clear logs older than N days |
+| Parameter       | Type    | Default | Description                  |
+| --------------- | ------- | ------- | ---------------------------- |
+| `all`           | boolean | `false` | Clear ALL logs               |
+| `olderThanDays` | number  | `30`    | Clear logs older than N days |
 
 ### POST /chat/reset-context
 
@@ -305,15 +303,15 @@ Full CRUD for AI agent configurations. Agents are persisted in PostgreSQL and ca
 
 ### Endpoints
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/agents` | List all agents |
-| `POST` | `/agents` | Create a new agent |
-| `GET` | `/agents/:id` | Get agent details |
-| `PATCH` | `/agents/:id` | Update agent |
-| `DELETE` | `/agents/:id` | Delete agent |
-| `POST` | `/agents/:id/reset` | Reset agent conversation |
-| `POST` | `/agents/resync` | Resync agents from default templates |
+| Method   | Path                | Description                          |
+| -------- | ------------------- | ------------------------------------ |
+| `GET`    | `/agents`           | List all agents                      |
+| `POST`   | `/agents`           | Create a new agent                   |
+| `GET`    | `/agents/:id`       | Get agent details                    |
+| `PATCH`  | `/agents/:id`       | Update agent                         |
+| `DELETE` | `/agents/:id`       | Delete agent                         |
+| `POST`   | `/agents/:id/reset` | Reset agent conversation             |
+| `POST`   | `/agents/resync`    | Resync agents from default templates |
 
 ### POST /agents
 
@@ -410,25 +408,25 @@ List, inspect, and execute tools. Tools are grouped by category (core, filesyste
 
 ### Endpoints
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/tools` | List available tools |
-| `GET` | `/tools/meta/categories` | Get tool categories with counts |
-| `GET` | `/tools/meta/grouped` | Get all tools grouped by category |
-| `GET` | `/tools/:name` | Get tool details |
-| `GET` | `/tools/:name/source` | Get tool executor source code |
-| `POST` | `/tools/:name/execute` | Execute a tool directly |
-| `POST` | `/tools/:name/stream` | Execute tool with SSE streaming output |
-| `POST` | `/tools/batch` | Batch execute multiple tools |
+| Method | Path                     | Description                            |
+| ------ | ------------------------ | -------------------------------------- |
+| `GET`  | `/tools`                 | List available tools                   |
+| `GET`  | `/tools/meta/categories` | Get tool categories with counts        |
+| `GET`  | `/tools/meta/grouped`    | Get all tools grouped by category      |
+| `GET`  | `/tools/:name`           | Get tool details                       |
+| `GET`  | `/tools/:name/source`    | Get tool executor source code          |
+| `POST` | `/tools/:name/execute`   | Execute a tool directly                |
+| `POST` | `/tools/:name/stream`    | Execute tool with SSE streaming output |
+| `POST` | `/tools/batch`           | Batch execute multiple tools           |
 
 ### GET /tools
 
 **Query Parameters:**
 
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `agentId` | string | -- | Filter to tools available for this agent |
-| `grouped` | boolean | `false` | Return grouped by category |
+| Parameter | Type    | Default | Description                              |
+| --------- | ------- | ------- | ---------------------------------------- |
+| `agentId` | string  | --      | Filter to tools available for this agent |
+| `grouped` | boolean | `false` | Return grouped by category               |
 
 **Response:**
 
@@ -500,22 +498,22 @@ CRUD for user-defined and LLM-created dynamic tools. Supports an approval workfl
 
 ### Endpoints
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/custom-tools` | List custom tools |
-| `GET` | `/custom-tools/stats` | Get statistics |
-| `GET` | `/custom-tools/pending` | Get tools pending approval |
-| `GET` | `/custom-tools/active/definitions` | Get active tool definitions for LLM |
-| `GET` | `/custom-tools/:id` | Get a specific custom tool |
-| `POST` | `/custom-tools` | Create a new custom tool |
-| `PATCH` | `/custom-tools/:id` | Update a custom tool |
-| `DELETE` | `/custom-tools/:id` | Delete a custom tool |
-| `POST` | `/custom-tools/:id/enable` | Enable a tool |
-| `POST` | `/custom-tools/:id/disable` | Disable a tool |
-| `POST` | `/custom-tools/:id/approve` | Approve a pending tool |
-| `POST` | `/custom-tools/:id/reject` | Reject a pending tool |
-| `POST` | `/custom-tools/:id/execute` | Execute a custom tool |
-| `POST` | `/custom-tools/test` | Test a tool without saving (dry run) |
+| Method   | Path                               | Description                          |
+| -------- | ---------------------------------- | ------------------------------------ |
+| `GET`    | `/custom-tools`                    | List custom tools                    |
+| `GET`    | `/custom-tools/stats`              | Get statistics                       |
+| `GET`    | `/custom-tools/pending`            | Get tools pending approval           |
+| `GET`    | `/custom-tools/active/definitions` | Get active tool definitions for LLM  |
+| `GET`    | `/custom-tools/:id`                | Get a specific custom tool           |
+| `POST`   | `/custom-tools`                    | Create a new custom tool             |
+| `PATCH`  | `/custom-tools/:id`                | Update a custom tool                 |
+| `DELETE` | `/custom-tools/:id`                | Delete a custom tool                 |
+| `POST`   | `/custom-tools/:id/enable`         | Enable a tool                        |
+| `POST`   | `/custom-tools/:id/disable`        | Disable a tool                       |
+| `POST`   | `/custom-tools/:id/approve`        | Approve a pending tool               |
+| `POST`   | `/custom-tools/:id/reject`         | Reject a pending tool                |
+| `POST`   | `/custom-tools/:id/execute`        | Execute a custom tool                |
+| `POST`   | `/custom-tools/test`               | Test a tool without saving (dry run) |
 
 ### POST /custom-tools
 
@@ -543,6 +541,7 @@ CRUD for user-defined and LLM-created dynamic tools. Supports an approval workfl
 ```
 
 **Validation rules:**
+
 - Tool name must match `^[a-z][a-z0-9_]*$`
 - Code is scanned for dangerous patterns (`process.exit`, `require()`, `import()`, `__dirname`, `global.`, `globalThis.`)
 - LLM-created tools default to `requiresApproval: true`
@@ -554,13 +553,13 @@ CRUD for user-defined and LLM-created dynamic tools. Supports an approval workfl
 
 **Query Parameters:**
 
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `status` | string | `active`, `disabled`, `pending_approval` |
-| `category` | string | Filter by category |
-| `createdBy` | string | `user` or `llm` |
-| `limit` | number | Pagination limit |
-| `offset` | number | Pagination offset |
+| Parameter   | Type   | Description                              |
+| ----------- | ------ | ---------------------------------------- |
+| `status`    | string | `active`, `disabled`, `pending_approval` |
+| `category`  | string | Filter by category                       |
+| `createdBy` | string | `user` or `llm`                          |
+| `limit`     | number | Pagination limit                         |
+| `offset`    | number | Pagination offset                        |
 
 ---
 
@@ -573,21 +572,21 @@ List AI models from configured providers. Model data is loaded from JSON config 
 
 ### Endpoints
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/models` | List all available models |
-| `GET` | `/models/catalog/all` | Full catalog without API key check |
-| `GET` | `/models/sync/providers` | List providers from models.dev |
-| `POST` | `/models/sync` | Sync provider configs from models.dev |
-| `GET` | `/models/:provider` | Get models for a specific provider |
+| Method | Path                     | Description                           |
+| ------ | ------------------------ | ------------------------------------- |
+| `GET`  | `/models`                | List all available models             |
+| `GET`  | `/models/catalog/all`    | Full catalog without API key check    |
+| `GET`  | `/models/sync/providers` | List providers from models.dev        |
+| `POST` | `/models/sync`           | Sync provider configs from models.dev |
+| `GET`  | `/models/:provider`      | Get models for a specific provider    |
 
 ### GET /models
 
 **Query Parameters:**
 
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `enabledOnly` | boolean | `true` | Filter to enabled models only |
+| Parameter     | Type    | Default | Description                   |
+| ------------- | ------- | ------- | ----------------------------- |
+| `enabledOnly` | boolean | `true`  | Filter to enabled models only |
 
 **Response:**
 
@@ -637,39 +636,39 @@ Manages user model configuration overrides, custom providers, and model enable/d
 
 ### Endpoints
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/model-configs` | List all models (merged view) |
-| `POST` | `/model-configs` | Create custom model |
-| `GET` | `/model-configs/providers/list` | List all providers (merged) |
-| `GET` | `/model-configs/providers/available` | List available providers to add |
-| `GET` | `/model-configs/providers/:id` | Get single provider with models |
-| `POST` | `/model-configs/providers` | Create/enable custom provider |
-| `PUT` | `/model-configs/providers/:id` | Update provider |
-| `DELETE` | `/model-configs/providers/:id` | Delete custom provider |
-| `PATCH` | `/model-configs/providers/:id/toggle` | Toggle provider enabled |
-| `POST` | `/model-configs/providers/:id/discover-models` | Discover models from provider API |
-| `GET` | `/model-configs/capabilities/list` | List capability types |
-| `GET` | `/model-configs/:provider` | List models for a provider |
-| `GET` | `/model-configs/:provider/:model` | Get single model |
-| `PUT` | `/model-configs/:provider/:model` | Update model config |
-| `DELETE` | `/model-configs/:provider/:model` | Delete custom model or override |
-| `PATCH` | `/model-configs/:provider/:model/toggle` | Toggle model enabled |
-| `POST` | `/model-configs/sync` | Check sync status with models.dev |
-| `POST` | `/model-configs/sync/apply` | Apply sync from models.dev |
-| `POST` | `/model-configs/sync/reset` | Full reset and resync |
-| `DELETE` | `/model-configs/sync/provider/:id` | Delete specific provider config |
+| Method   | Path                                           | Description                       |
+| -------- | ---------------------------------------------- | --------------------------------- |
+| `GET`    | `/model-configs`                               | List all models (merged view)     |
+| `POST`   | `/model-configs`                               | Create custom model               |
+| `GET`    | `/model-configs/providers/list`                | List all providers (merged)       |
+| `GET`    | `/model-configs/providers/available`           | List available providers to add   |
+| `GET`    | `/model-configs/providers/:id`                 | Get single provider with models   |
+| `POST`   | `/model-configs/providers`                     | Create/enable custom provider     |
+| `PUT`    | `/model-configs/providers/:id`                 | Update provider                   |
+| `DELETE` | `/model-configs/providers/:id`                 | Delete custom provider            |
+| `PATCH`  | `/model-configs/providers/:id/toggle`          | Toggle provider enabled           |
+| `POST`   | `/model-configs/providers/:id/discover-models` | Discover models from provider API |
+| `GET`    | `/model-configs/capabilities/list`             | List capability types             |
+| `GET`    | `/model-configs/:provider`                     | List models for a provider        |
+| `GET`    | `/model-configs/:provider/:model`              | Get single model                  |
+| `PUT`    | `/model-configs/:provider/:model`              | Update model config               |
+| `DELETE` | `/model-configs/:provider/:model`              | Delete custom model or override   |
+| `PATCH`  | `/model-configs/:provider/:model/toggle`       | Toggle model enabled              |
+| `POST`   | `/model-configs/sync`                          | Check sync status with models.dev |
+| `POST`   | `/model-configs/sync/apply`                    | Apply sync from models.dev        |
+| `POST`   | `/model-configs/sync/reset`                    | Full reset and resync             |
+| `DELETE` | `/model-configs/sync/provider/:id`             | Delete specific provider config   |
 
 ### GET /model-configs
 
 **Query Parameters:**
 
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `provider` | string | Filter by provider ID |
-| `capability` | string | Filter by capability (`chat`, `vision`, `code`, etc.) |
-| `enabled` | boolean | Filter to enabled models only |
-| `userId` | string | User ID (default: `"default"`) |
+| Parameter    | Type    | Description                                           |
+| ------------ | ------- | ----------------------------------------------------- |
+| `provider`   | string  | Filter by provider ID                                 |
+| `capability` | string  | Filter by capability (`chat`, `vision`, `code`, etc.) |
+| `enabled`    | boolean | Filter to enabled models only                         |
+| `userId`     | string  | User ID (default: `"default"`)                        |
 
 **Response:** Array of `MergedModel` objects with `source` field (`builtin`, `aggregator`, `custom`, `local`).
 
@@ -688,17 +687,17 @@ AI provider listing and configuration. Provider configs are loaded from JSON fil
 
 ### Endpoints
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/providers` | List all providers |
-| `GET` | `/providers/categories` | Get provider categories |
-| `GET` | `/providers/overrides/all` | Get all user config overrides |
-| `GET` | `/providers/:id` | Get full provider config |
-| `GET` | `/providers/:id/models` | Get models for a provider |
-| `GET` | `/providers/:id/config` | Get user config overrides |
-| `PUT` | `/providers/:id/config` | Update user config override |
-| `DELETE` | `/providers/:id/config` | Delete user config override |
-| `PATCH` | `/providers/:id/toggle` | Toggle provider enabled/disabled |
+| Method   | Path                       | Description                      |
+| -------- | -------------------------- | -------------------------------- |
+| `GET`    | `/providers`               | List all providers               |
+| `GET`    | `/providers/categories`    | Get provider categories          |
+| `GET`    | `/providers/overrides/all` | Get all user config overrides    |
+| `GET`    | `/providers/:id`           | Get full provider config         |
+| `GET`    | `/providers/:id/models`    | Get models for a provider        |
+| `GET`    | `/providers/:id/config`    | Get user config overrides        |
+| `PUT`    | `/providers/:id/config`    | Update user config override      |
+| `DELETE` | `/providers/:id/config`    | Delete user config override      |
+| `PATCH`  | `/providers/:id/toggle`    | Toggle provider enabled/disabled |
 
 ### GET /providers
 
@@ -767,20 +766,20 @@ Management for local AI providers (LM Studio, Ollama, LocalAI, vLLM, custom Open
 
 ### Endpoints
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/local-providers/templates` | Get provider templates |
-| `GET` | `/local-providers` | List all local providers |
-| `POST` | `/local-providers` | Add a local provider |
-| `GET` | `/local-providers/:id` | Get provider details |
-| `PUT` | `/local-providers/:id` | Update provider |
-| `DELETE` | `/local-providers/:id` | Delete provider |
-| `PATCH` | `/local-providers/:id/toggle` | Toggle provider enabled |
-| `POST` | `/local-providers/:id/discover` | Discover models from provider |
-| `GET` | `/local-providers/:id/models` | List models for provider |
-| `POST` | `/local-providers/:id/models` | Add model manually |
-| `PATCH` | `/local-providers/:id/models/:modelId/toggle` | Toggle model enabled |
-| `DELETE` | `/local-providers/:id/models/:modelId` | Delete model |
+| Method   | Path                                          | Description                   |
+| -------- | --------------------------------------------- | ----------------------------- |
+| `GET`    | `/local-providers/templates`                  | Get provider templates        |
+| `GET`    | `/local-providers`                            | List all local providers      |
+| `POST`   | `/local-providers`                            | Add a local provider          |
+| `GET`    | `/local-providers/:id`                        | Get provider details          |
+| `PUT`    | `/local-providers/:id`                        | Update provider               |
+| `DELETE` | `/local-providers/:id`                        | Delete provider               |
+| `PATCH`  | `/local-providers/:id/toggle`                 | Toggle provider enabled       |
+| `POST`   | `/local-providers/:id/discover`               | Discover models from provider |
+| `GET`    | `/local-providers/:id/models`                 | List models for provider      |
+| `POST`   | `/local-providers/:id/models`                 | Add model manually            |
+| `PATCH`  | `/local-providers/:id/models/:modelId/toggle` | Toggle model enabled          |
+| `DELETE` | `/local-providers/:id/models/:modelId`        | Delete model                  |
 
 ### GET /local-providers/templates
 
@@ -790,11 +789,31 @@ Returns predefined templates:
 {
   "success": true,
   "data": [
-    { "id": "lmstudio", "name": "LM Studio", "providerType": "lmstudio", "baseUrl": "http://localhost:1234" },
-    { "id": "ollama", "name": "Ollama", "providerType": "ollama", "baseUrl": "http://localhost:11434" },
-    { "id": "localai", "name": "LocalAI", "providerType": "localai", "baseUrl": "http://localhost:8080" },
+    {
+      "id": "lmstudio",
+      "name": "LM Studio",
+      "providerType": "lmstudio",
+      "baseUrl": "http://localhost:1234"
+    },
+    {
+      "id": "ollama",
+      "name": "Ollama",
+      "providerType": "ollama",
+      "baseUrl": "http://localhost:11434"
+    },
+    {
+      "id": "localai",
+      "name": "LocalAI",
+      "providerType": "localai",
+      "baseUrl": "http://localhost:8080"
+    },
     { "id": "vllm", "name": "vLLM", "providerType": "vllm", "baseUrl": "http://localhost:8000" },
-    { "id": "custom", "name": "Custom Local Server", "providerType": "custom", "baseUrl": "http://localhost:8080" }
+    {
+      "id": "custom",
+      "name": "Custom Local Server",
+      "providerType": "custom",
+      "baseUrl": "http://localhost:8080"
+    }
   ]
 }
 ```
@@ -810,20 +829,20 @@ Application settings key-value store. Manages API keys, default provider/model s
 
 ### Endpoints
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/settings` | Get current settings overview |
-| `GET` | `/settings/data-info` | Get data directory information |
-| `GET` | `/settings/api-key/:provider` | Check if API key is configured |
-| `POST` | `/settings/api-key/:provider` | Set API key for a provider |
-| `DELETE` | `/settings/api-key/:provider` | Remove API key for a provider |
-| `GET` | `/settings/defaults` | Get default provider/model |
-| `POST` | `/settings/defaults` | Set default provider/model |
-| `GET` | `/settings/sandbox` | Get sandbox settings |
-| `POST` | `/settings/sandbox` | Update sandbox settings |
-| `GET` | `/settings/:key` | Get a setting value |
-| `POST` | `/settings/:key` | Set a setting value |
-| `DELETE` | `/settings/:key` | Delete a setting |
+| Method   | Path                          | Description                    |
+| -------- | ----------------------------- | ------------------------------ |
+| `GET`    | `/settings`                   | Get current settings overview  |
+| `GET`    | `/settings/data-info`         | Get data directory information |
+| `GET`    | `/settings/api-key/:provider` | Check if API key is configured |
+| `POST`   | `/settings/api-key/:provider` | Set API key for a provider     |
+| `DELETE` | `/settings/api-key/:provider` | Remove API key for a provider  |
+| `GET`    | `/settings/defaults`          | Get default provider/model     |
+| `POST`   | `/settings/defaults`          | Set default provider/model     |
+| `GET`    | `/settings/sandbox`           | Get sandbox settings           |
+| `POST`   | `/settings/sandbox`           | Update sandbox settings        |
+| `GET`    | `/settings/:key`              | Get a setting value            |
+| `POST`   | `/settings/:key`              | Set a setting value            |
+| `DELETE` | `/settings/:key`              | Delete a setting               |
 
 ### GET /settings
 
@@ -834,9 +853,7 @@ Application settings key-value store. Manages API keys, default provider/model s
   "success": true,
   "data": {
     "configuredProviders": ["openai", "anthropic", "lmstudio"],
-    "localProviders": [
-      { "id": "lmstudio", "name": "LM Studio", "type": "local" }
-    ],
+    "localProviders": [{ "id": "lmstudio", "name": "LM Studio", "type": "local" }],
     "demoMode": false,
     "defaultProvider": "openai",
     "defaultModel": "gpt-4o",
@@ -868,26 +885,26 @@ LLM usage cost tracking and budget management. Tracks tokens, costs, latency, an
 
 ### Endpoints
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/costs` | Get cost summary |
-| `GET` | `/costs/usage` | Get usage records |
-| `GET` | `/costs/by-provider` | Breakdown by provider |
-| `GET` | `/costs/by-model` | Breakdown by model |
-| `GET` | `/costs/timeline` | Cost timeline |
-| `POST` | `/costs/estimate` | Estimate cost for a request |
-| `GET` | `/costs/budget` | Get budget status |
-| `POST` | `/costs/budget` | Set budget config |
-| `GET` | `/costs/pricing` | Get model pricing table |
+| Method | Path                 | Description                 |
+| ------ | -------------------- | --------------------------- |
+| `GET`  | `/costs`             | Get cost summary            |
+| `GET`  | `/costs/usage`       | Get usage records           |
+| `GET`  | `/costs/by-provider` | Breakdown by provider       |
+| `GET`  | `/costs/by-model`    | Breakdown by model          |
+| `GET`  | `/costs/timeline`    | Cost timeline               |
+| `POST` | `/costs/estimate`    | Estimate cost for a request |
+| `GET`  | `/costs/budget`      | Get budget status           |
+| `POST` | `/costs/budget`      | Set budget config           |
+| `GET`  | `/costs/pricing`     | Get model pricing table     |
 
 ### GET /costs
 
 **Query Parameters:**
 
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `period` | string | `month` | `day`, `week`, `month`, `year` |
-| `userId` | string | -- | Filter by user |
+| Parameter | Type   | Default | Description                    |
+| --------- | ------ | ------- | ------------------------------ |
+| `period`  | string | `month` | `day`, `week`, `month`, `year` |
+| `userId`  | string | --      | Filter by user                 |
 
 **Response:**
 
@@ -907,7 +924,7 @@ LLM usage cost tracking and budget management. Tracks tokens, costs, latency, an
       "averageLatencyMs": 850
     },
     "budget": {
-      "daily": { "limit": 5.0, "used": 0.50, "remaining": 4.50 },
+      "daily": { "limit": 5.0, "used": 0.5, "remaining": 4.5 },
       "monthly": { "limit": 100.0, "used": 1.25, "remaining": 98.75 },
       "alerts": []
     }
@@ -926,28 +943,28 @@ Communication channel management for Telegram, Discord, Slack, and other messagi
 
 ### Endpoints
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/channels` | List configured channels |
-| `POST` | `/channels` | Add a new channel |
-| `GET` | `/channels/messages/inbox` | Get all messages from all channels |
-| `POST` | `/channels/messages/:messageId/read` | Mark message as read |
-| `POST` | `/channels/messages/:messageId/reply` | Reply to a message |
-| `GET` | `/channels/:id` | Get channel details |
-| `PATCH` | `/channels/:id` | Update channel config |
-| `DELETE` | `/channels/:id` | Delete channel |
-| `POST` | `/channels/:id/test` | Test channel connection |
-| `POST` | `/channels/:id/webhook` | Webhook endpoint for incoming messages |
+| Method   | Path                                  | Description                            |
+| -------- | ------------------------------------- | -------------------------------------- |
+| `GET`    | `/channels`                           | List configured channels               |
+| `POST`   | `/channels`                           | Add a new channel                      |
+| `GET`    | `/channels/messages/inbox`            | Get all messages from all channels     |
+| `POST`   | `/channels/messages/:messageId/read`  | Mark message as read                   |
+| `POST`   | `/channels/messages/:messageId/reply` | Reply to a message                     |
+| `GET`    | `/channels/:id`                       | Get channel details                    |
+| `PATCH`  | `/channels/:id`                       | Update channel config                  |
+| `DELETE` | `/channels/:id`                       | Delete channel                         |
+| `POST`   | `/channels/:id/test`                  | Test channel connection                |
+| `POST`   | `/channels/:id/webhook`               | Webhook endpoint for incoming messages |
 
 ### GET /channels/messages/inbox
 
 **Query Parameters:**
 
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `filter` | string | `all` | `all`, `unread`, `unanswered` |
-| `channelType` | string | -- | Filter by channel type |
-| `limit` | number | `50` | Max messages to return |
+| Parameter     | Type   | Default | Description                   |
+| ------------- | ------ | ------- | ----------------------------- |
+| `filter`      | string | `all`   | `all`, `unread`, `unanswered` |
+| `channelType` | string | --      | Filter by channel type        |
+| `limit`       | number | `50`    | Max messages to return        |
 
 ---
 
@@ -960,67 +977,67 @@ CRUD APIs for personal data management: tasks, bookmarks, notes, calendar events
 
 ### Tasks `/api/v1/tasks`
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/tasks` | List tasks (with query filters) |
-| `GET` | `/tasks/today` | Get tasks due today |
-| `GET` | `/tasks/overdue` | Get overdue tasks |
-| `GET` | `/tasks/upcoming` | Get upcoming tasks |
-| `POST` | `/tasks` | Create task |
-| `GET` | `/tasks/:id` | Get task |
-| `PATCH` | `/tasks/:id` | Update task |
-| `DELETE` | `/tasks/:id` | Delete task |
+| Method   | Path              | Description                     |
+| -------- | ----------------- | ------------------------------- |
+| `GET`    | `/tasks`          | List tasks (with query filters) |
+| `GET`    | `/tasks/today`    | Get tasks due today             |
+| `GET`    | `/tasks/overdue`  | Get overdue tasks               |
+| `GET`    | `/tasks/upcoming` | Get upcoming tasks              |
+| `POST`   | `/tasks`          | Create task                     |
+| `GET`    | `/tasks/:id`      | Get task                        |
+| `PATCH`  | `/tasks/:id`      | Update task                     |
+| `DELETE` | `/tasks/:id`      | Delete task                     |
 
 **Query Parameters for GET /tasks:**
 
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `status` | string | `pending`, `in_progress`, `completed`, `cancelled` |
-| `priority` | string | `low`, `medium`, `high`, `urgent` |
-| `category` | string | Category filter |
-| `projectId` | string | Project filter |
-| `search` | string | Full-text search |
-| `limit` | number | Pagination limit |
-| `offset` | number | Pagination offset |
+| Parameter   | Type   | Description                                        |
+| ----------- | ------ | -------------------------------------------------- |
+| `status`    | string | `pending`, `in_progress`, `completed`, `cancelled` |
+| `priority`  | string | `low`, `medium`, `high`, `urgent`                  |
+| `category`  | string | Category filter                                    |
+| `projectId` | string | Project filter                                     |
+| `search`    | string | Full-text search                                   |
+| `limit`     | number | Pagination limit                                   |
+| `offset`    | number | Pagination offset                                  |
 
 ### Bookmarks `/api/v1/bookmarks`
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/bookmarks` | List bookmarks |
-| `POST` | `/bookmarks` | Create bookmark |
-| `GET` | `/bookmarks/:id` | Get bookmark |
-| `PATCH` | `/bookmarks/:id` | Update bookmark |
+| Method   | Path             | Description     |
+| -------- | ---------------- | --------------- |
+| `GET`    | `/bookmarks`     | List bookmarks  |
+| `POST`   | `/bookmarks`     | Create bookmark |
+| `GET`    | `/bookmarks/:id` | Get bookmark    |
+| `PATCH`  | `/bookmarks/:id` | Update bookmark |
 | `DELETE` | `/bookmarks/:id` | Delete bookmark |
 
 ### Notes `/api/v1/notes`
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/notes` | List notes |
-| `POST` | `/notes` | Create note |
-| `GET` | `/notes/:id` | Get note |
-| `PATCH` | `/notes/:id` | Update note |
+| Method   | Path         | Description |
+| -------- | ------------ | ----------- |
+| `GET`    | `/notes`     | List notes  |
+| `POST`   | `/notes`     | Create note |
+| `GET`    | `/notes/:id` | Get note    |
+| `PATCH`  | `/notes/:id` | Update note |
 | `DELETE` | `/notes/:id` | Delete note |
 
 ### Calendar `/api/v1/calendar`
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/calendar` | List events |
-| `POST` | `/calendar` | Create event |
-| `GET` | `/calendar/:id` | Get event |
-| `PATCH` | `/calendar/:id` | Update event |
+| Method   | Path            | Description  |
+| -------- | --------------- | ------------ |
+| `GET`    | `/calendar`     | List events  |
+| `POST`   | `/calendar`     | Create event |
+| `GET`    | `/calendar/:id` | Get event    |
+| `PATCH`  | `/calendar/:id` | Update event |
 | `DELETE` | `/calendar/:id` | Delete event |
 
 ### Contacts `/api/v1/contacts`
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/contacts` | List contacts |
-| `POST` | `/contacts` | Create contact |
-| `GET` | `/contacts/:id` | Get contact |
-| `PATCH` | `/contacts/:id` | Update contact |
+| Method   | Path            | Description    |
+| -------- | --------------- | -------------- |
+| `GET`    | `/contacts`     | List contacts  |
+| `POST`   | `/contacts`     | Create contact |
+| `GET`    | `/contacts/:id` | Get contact    |
+| `PATCH`  | `/contacts/:id` | Update contact |
 | `DELETE` | `/contacts/:id` | Delete contact |
 
 ---
@@ -1034,18 +1051,18 @@ Dynamic custom table schemas and record management. Users and the AI can create 
 
 ### Endpoints
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/custom-data/tables` | List all custom tables |
-| `POST` | `/custom-data/tables` | Create a new table |
-| `GET` | `/custom-data/tables/:table` | Get table details |
-| `DELETE` | `/custom-data/tables/:table` | Delete table |
-| `GET` | `/custom-data/tables/:table/records` | List records |
-| `POST` | `/custom-data/tables/:table/records` | Add record |
-| `GET` | `/custom-data/tables/:table/records/:id` | Get record |
-| `PATCH` | `/custom-data/tables/:table/records/:id` | Update record |
-| `DELETE` | `/custom-data/tables/:table/records/:id` | Delete record |
-| `POST` | `/custom-data/tables/:table/search` | Search records |
+| Method   | Path                                     | Description            |
+| -------- | ---------------------------------------- | ---------------------- |
+| `GET`    | `/custom-data/tables`                    | List all custom tables |
+| `POST`   | `/custom-data/tables`                    | Create a new table     |
+| `GET`    | `/custom-data/tables/:table`             | Get table details      |
+| `DELETE` | `/custom-data/tables/:table`             | Delete table           |
+| `GET`    | `/custom-data/tables/:table/records`     | List records           |
+| `POST`   | `/custom-data/tables/:table/records`     | Add record             |
+| `GET`    | `/custom-data/tables/:table/records/:id` | Get record             |
+| `PATCH`  | `/custom-data/tables/:table/records/:id` | Update record          |
+| `DELETE` | `/custom-data/tables/:table/records/:id` | Delete record          |
+| `POST`   | `/custom-data/tables/:table/search`      | Search records         |
 
 ### POST /custom-data/tables
 
@@ -1076,26 +1093,26 @@ Persistent AI memory system. Memories have types (fact, preference, event, skill
 
 ### Endpoints
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/memories` | List memories |
-| `POST` | `/memories` | Create a memory |
-| `GET` | `/memories/:id` | Get a memory |
-| `PATCH` | `/memories/:id` | Update a memory |
-| `DELETE` | `/memories/:id` | Delete a memory |
-| `POST` | `/memories/search` | Search memories |
-| `POST` | `/memories/:id/boost` | Boost memory importance |
+| Method   | Path                  | Description             |
+| -------- | --------------------- | ----------------------- |
+| `GET`    | `/memories`           | List memories           |
+| `POST`   | `/memories`           | Create a memory         |
+| `GET`    | `/memories/:id`       | Get a memory            |
+| `PATCH`  | `/memories/:id`       | Update a memory         |
+| `DELETE` | `/memories/:id`       | Delete a memory         |
+| `POST`   | `/memories/search`    | Search memories         |
+| `POST`   | `/memories/:id/boost` | Boost memory importance |
 
 ### GET /memories
 
 **Query Parameters:**
 
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `userId` | string | `default` | User ID |
-| `type` | string | -- | `fact`, `preference`, `event`, `skill` |
-| `limit` | number | `20` | Max memories to return |
-| `minImportance` | number | -- | Minimum importance score (0-1) |
+| Parameter       | Type   | Default   | Description                            |
+| --------------- | ------ | --------- | -------------------------------------- |
+| `userId`        | string | `default` | User ID                                |
+| `type`          | string | --        | `fact`, `preference`, `event`, `skill` |
+| `limit`         | number | `20`      | Max memories to return                 |
+| `minImportance` | number | --        | Minimum importance score (0-1)         |
 
 ### POST /memories
 
@@ -1123,30 +1140,30 @@ Goal and goal-step management. Goals have progress tracking, priority, due dates
 
 ### Endpoints
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/goals` | List goals |
-| `POST` | `/goals` | Create a goal |
-| `GET` | `/goals/:id` | Get goal details |
-| `PATCH` | `/goals/:id` | Update goal |
-| `DELETE` | `/goals/:id` | Delete goal |
-| `GET` | `/goals/:id/steps` | List goal steps |
-| `POST` | `/goals/:id/steps` | Add goal step |
-| `PATCH` | `/goals/:id/steps/:stepId` | Update step |
-| `DELETE` | `/goals/:id/steps/:stepId` | Delete step |
-| `GET` | `/goals/active` | Get active goals |
-| `GET` | `/goals/next-actions` | Get suggested next actions |
+| Method   | Path                       | Description                |
+| -------- | -------------------------- | -------------------------- |
+| `GET`    | `/goals`                   | List goals                 |
+| `POST`   | `/goals`                   | Create a goal              |
+| `GET`    | `/goals/:id`               | Get goal details           |
+| `PATCH`  | `/goals/:id`               | Update goal                |
+| `DELETE` | `/goals/:id`               | Delete goal                |
+| `GET`    | `/goals/:id/steps`         | List goal steps            |
+| `POST`   | `/goals/:id/steps`         | Add goal step              |
+| `PATCH`  | `/goals/:id/steps/:stepId` | Update step                |
+| `DELETE` | `/goals/:id/steps/:stepId` | Delete step                |
+| `GET`    | `/goals/active`            | Get active goals           |
+| `GET`    | `/goals/next-actions`      | Get suggested next actions |
 
 ### GET /goals
 
 **Query Parameters:**
 
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `userId` | string | `default` | User ID |
-| `status` | string | -- | `active`, `completed`, `paused`, `abandoned` |
-| `limit` | number | `20` | Max goals to return |
-| `parentId` | string | -- | Filter by parent goal |
+| Parameter  | Type   | Default   | Description                                  |
+| ---------- | ------ | --------- | -------------------------------------------- |
+| `userId`   | string | `default` | User ID                                      |
+| `status`   | string | --        | `active`, `completed`, `paused`, `abandoned` |
+| `limit`    | number | `20`      | Max goals to return                          |
+| `parentId` | string | --        | Filter by parent goal                        |
 
 ---
 
@@ -1159,16 +1176,16 @@ Proactive trigger management. Triggers fire based on schedules (cron), events, o
 
 ### Endpoints
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/triggers` | List triggers |
-| `POST` | `/triggers` | Create a trigger |
-| `GET` | `/triggers/:id` | Get trigger details |
-| `PATCH` | `/triggers/:id` | Update trigger |
-| `DELETE` | `/triggers/:id` | Delete trigger |
-| `POST` | `/triggers/:id/fire` | Manually fire a trigger |
-| `GET` | `/triggers/:id/history` | Get trigger fire history |
-| `PATCH` | `/triggers/:id/toggle` | Enable/disable trigger |
+| Method   | Path                    | Description              |
+| -------- | ----------------------- | ------------------------ |
+| `GET`    | `/triggers`             | List triggers            |
+| `POST`   | `/triggers`             | Create a trigger         |
+| `GET`    | `/triggers/:id`         | Get trigger details      |
+| `PATCH`  | `/triggers/:id`         | Update trigger           |
+| `DELETE` | `/triggers/:id`         | Delete trigger           |
+| `POST`   | `/triggers/:id/fire`    | Manually fire a trigger  |
+| `GET`    | `/triggers/:id/history` | Get trigger fire history |
+| `PATCH`  | `/triggers/:id/toggle`  | Enable/disable trigger   |
 
 ### POST /triggers
 
@@ -1191,11 +1208,11 @@ Proactive trigger management. Triggers fire based on schedules (cron), events, o
 
 **Query Parameters for GET /triggers:**
 
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `type` | string | Trigger type filter |
+| Parameter | Type    | Description              |
+| --------- | ------- | ------------------------ |
+| `type`    | string  | Trigger type filter      |
 | `enabled` | boolean | Filter by enabled status |
-| `limit` | number | Pagination limit |
+| `limit`   | number  | Pagination limit         |
 
 ---
 
@@ -1208,33 +1225,33 @@ Autonomous plan management. Plans consist of ordered steps that can be executed,
 
 ### Endpoints
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/plans` | List plans |
-| `POST` | `/plans` | Create a plan |
-| `GET` | `/plans/:id` | Get plan details |
-| `PATCH` | `/plans/:id` | Update plan |
-| `DELETE` | `/plans/:id` | Delete plan |
-| `POST` | `/plans/:id/execute` | Execute plan |
-| `POST` | `/plans/:id/pause` | Pause plan execution |
-| `POST` | `/plans/:id/resume` | Resume plan execution |
-| `GET` | `/plans/:id/history` | Get execution history |
-| `GET` | `/plans/:id/steps` | List plan steps |
-| `POST` | `/plans/:id/steps` | Add plan step |
-| `PATCH` | `/plans/:id/steps/:stepId` | Update step |
-| `DELETE` | `/plans/:id/steps/:stepId` | Delete step |
+| Method   | Path                       | Description           |
+| -------- | -------------------------- | --------------------- |
+| `GET`    | `/plans`                   | List plans            |
+| `POST`   | `/plans`                   | Create a plan         |
+| `GET`    | `/plans/:id`               | Get plan details      |
+| `PATCH`  | `/plans/:id`               | Update plan           |
+| `DELETE` | `/plans/:id`               | Delete plan           |
+| `POST`   | `/plans/:id/execute`       | Execute plan          |
+| `POST`   | `/plans/:id/pause`         | Pause plan execution  |
+| `POST`   | `/plans/:id/resume`        | Resume plan execution |
+| `GET`    | `/plans/:id/history`       | Get execution history |
+| `GET`    | `/plans/:id/steps`         | List plan steps       |
+| `POST`   | `/plans/:id/steps`         | Add plan step         |
+| `PATCH`  | `/plans/:id/steps/:stepId` | Update step           |
+| `DELETE` | `/plans/:id/steps/:stepId` | Delete step           |
 
 ### GET /plans
 
 **Query Parameters:**
 
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `status` | string | -- | `draft`, `active`, `paused`, `completed`, `failed` |
-| `goalId` | string | -- | Filter by linked goal |
-| `triggerId` | string | -- | Filter by linked trigger |
-| `limit` | number | `20` | Pagination limit |
-| `offset` | number | `0` | Pagination offset |
+| Parameter   | Type   | Default | Description                                        |
+| ----------- | ------ | ------- | -------------------------------------------------- |
+| `status`    | string | --      | `draft`, `active`, `paused`, `completed`, `failed` |
+| `goalId`    | string | --      | Filter by linked goal                              |
+| `triggerId` | string | --      | Filter by linked trigger                           |
+| `limit`     | number | `20`    | Pagination limit                                   |
+| `offset`    | number | `0`     | Pagination offset                                  |
 
 ---
 
@@ -1247,15 +1264,15 @@ Autonomy level management, risk assessment, and approval workflows. Controls how
 
 ### Endpoints
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/autonomy/config` | Get autonomy configuration |
-| `PATCH` | `/autonomy/config` | Update autonomy configuration |
-| `POST` | `/autonomy/config/reset` | Reset to default configuration |
-| `POST` | `/autonomy/assess` | Assess risk of an action |
-| `GET` | `/autonomy/pending` | Get pending approvals |
-| `POST` | `/autonomy/approve/:id` | Approve a pending action |
-| `POST` | `/autonomy/reject/:id` | Reject a pending action |
+| Method  | Path                     | Description                    |
+| ------- | ------------------------ | ------------------------------ |
+| `GET`   | `/autonomy/config`       | Get autonomy configuration     |
+| `PATCH` | `/autonomy/config`       | Update autonomy configuration  |
+| `POST`  | `/autonomy/config/reset` | Reset to default configuration |
+| `POST`  | `/autonomy/assess`       | Assess risk of an action       |
+| `GET`   | `/autonomy/pending`      | Get pending approvals          |
+| `POST`  | `/autonomy/approve/:id`  | Approve a pending action       |
+| `POST`  | `/autonomy/reject/:id`   | Reject a pending action        |
 
 ### GET /autonomy/config
 
@@ -1287,16 +1304,16 @@ Expense tracking and management. Stores expenses with categories, payment method
 
 ### Endpoints
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/expenses` | List expenses |
-| `POST` | `/expenses` | Add expense |
-| `GET` | `/expenses/:id` | Get expense |
-| `PATCH` | `/expenses/:id` | Update expense |
-| `DELETE` | `/expenses/:id` | Delete expense |
-| `GET` | `/expenses/summary` | Get expense summary |
-| `GET` | `/expenses/categories` | Get category configs |
-| `POST` | `/expenses/categories` | Update category budget |
+| Method   | Path                   | Description            |
+| -------- | ---------------------- | ---------------------- |
+| `GET`    | `/expenses`            | List expenses          |
+| `POST`   | `/expenses`            | Add expense            |
+| `GET`    | `/expenses/:id`        | Get expense            |
+| `PATCH`  | `/expenses/:id`        | Update expense         |
+| `DELETE` | `/expenses/:id`        | Delete expense         |
+| `GET`    | `/expenses/summary`    | Get expense summary    |
+| `GET`    | `/expenses/categories` | Get category configs   |
+| `POST`   | `/expenses/categories` | Update category budget |
 
 **Expense Categories:** `food`, `transport`, `utilities`, `entertainment`, `shopping`, `health`, `education`, `travel`, `subscription`, `housing`, `other`
 
@@ -1311,15 +1328,15 @@ PostgreSQL database management endpoints for backup, restore, and maintenance op
 
 ### Endpoints
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/database/status` | Database status and stats |
-| `POST` | `/database/backup` | Create database backup |
-| `GET` | `/database/backups` | List available backups |
-| `POST` | `/database/restore` | Restore from backup |
-| `DELETE` | `/database/backups/:name` | Delete a backup file |
-| `GET` | `/database/operations` | Get current operation status |
-| `POST` | `/database/maintenance` | Run maintenance (VACUUM, ANALYZE) |
+| Method   | Path                      | Description                       |
+| -------- | ------------------------- | --------------------------------- |
+| `GET`    | `/database/status`        | Database status and stats         |
+| `POST`   | `/database/backup`        | Create database backup            |
+| `GET`    | `/database/backups`       | List available backups            |
+| `POST`   | `/database/restore`       | Restore from backup               |
+| `DELETE` | `/database/backups/:name` | Delete a backup file              |
+| `GET`    | `/database/operations`    | Get current operation status      |
+| `POST`   | `/database/maintenance`   | Run maintenance (VACUUM, ANALYZE) |
 
 ### GET /database/status
 
@@ -1335,9 +1352,7 @@ PostgreSQL database management endpoints for backup, restore, and maintenance op
     "databaseSize": "45 MB",
     "tableCount": 28,
     "hasLegacyData": false,
-    "backups": [
-      { "name": "backup_2025-01-30.sql", "size": 12345678, "created": "..." }
-    ],
+    "backups": [{ "name": "backup_2025-01-30.sql", "size": 12345678, "created": "..." }],
     "operationStatus": { "isRunning": false }
   }
 }
@@ -1354,12 +1369,12 @@ Manages OAuth integrations for external services (Gmail, Google Calendar, Google
 
 ### Endpoints
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/integrations/available` | List available integrations |
-| `GET` | `/integrations/connected` | List connected integrations |
-| `GET` | `/integrations/:id` | Get integration details |
-| `DELETE` | `/integrations/:id` | Disconnect an integration |
+| Method   | Path                      | Description                 |
+| -------- | ------------------------- | --------------------------- |
+| `GET`    | `/integrations/available` | List available integrations |
+| `GET`    | `/integrations/connected` | List connected integrations |
+| `GET`    | `/integrations/:id`       | Get integration details     |
+| `DELETE` | `/integrations/:id`       | Disconnect an integration   |
 
 ### GET /integrations/available
 
@@ -1393,12 +1408,12 @@ Configure media providers for image generation, vision/OCR, text-to-speech, spee
 
 ### Endpoints
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/media-settings` | Get all media settings |
-| `GET` | `/media-settings/:capability` | Get settings for a capability |
-| `POST` | `/media-settings/:capability` | Update settings for a capability |
-| `DELETE` | `/media-settings/:capability` | Reset settings for a capability |
+| Method   | Path                          | Description                      |
+| -------- | ----------------------------- | -------------------------------- |
+| `GET`    | `/media-settings`             | Get all media settings           |
+| `GET`    | `/media-settings/:capability` | Get settings for a capability    |
+| `POST`   | `/media-settings/:capability` | Update settings for a capability |
+| `DELETE` | `/media-settings/:capability` | Reset settings for a capability  |
 
 **Capabilities:** `image_generation`, `vision`, `tts`, `stt`, `weather`
 
@@ -1424,40 +1439,40 @@ Productivity tools: Pomodoro timer, habit tracking, and quick capture inbox.
 
 ### Pomodoro `/api/v1/pomodoro`
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/pomodoro/session` | Get active session |
-| `POST` | `/pomodoro/session/start` | Start a new session |
-| `POST` | `/pomodoro/session/stop` | Stop active session |
-| `POST` | `/pomodoro/session/complete` | Mark session as completed |
-| `GET` | `/pomodoro/history` | Get session history |
-| `GET` | `/pomodoro/stats` | Get productivity stats |
-| `GET` | `/pomodoro/settings` | Get Pomodoro settings |
-| `PATCH` | `/pomodoro/settings` | Update Pomodoro settings |
+| Method  | Path                         | Description               |
+| ------- | ---------------------------- | ------------------------- |
+| `GET`   | `/pomodoro/session`          | Get active session        |
+| `POST`  | `/pomodoro/session/start`    | Start a new session       |
+| `POST`  | `/pomodoro/session/stop`     | Stop active session       |
+| `POST`  | `/pomodoro/session/complete` | Mark session as completed |
+| `GET`   | `/pomodoro/history`          | Get session history       |
+| `GET`   | `/pomodoro/stats`            | Get productivity stats    |
+| `GET`   | `/pomodoro/settings`         | Get Pomodoro settings     |
+| `PATCH` | `/pomodoro/settings`         | Update Pomodoro settings  |
 
 ### Habits `/api/v1/habits`
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/habits` | List habits |
-| `POST` | `/habits` | Create habit |
-| `GET` | `/habits/:id` | Get habit |
-| `PATCH` | `/habits/:id` | Update habit |
-| `DELETE` | `/habits/:id` | Delete habit |
-| `POST` | `/habits/:id/complete` | Mark habit as completed today |
-| `GET` | `/habits/:id/history` | Get completion history |
-| `GET` | `/habits/stats` | Get habit statistics |
+| Method   | Path                   | Description                   |
+| -------- | ---------------------- | ----------------------------- |
+| `GET`    | `/habits`              | List habits                   |
+| `POST`   | `/habits`              | Create habit                  |
+| `GET`    | `/habits/:id`          | Get habit                     |
+| `PATCH`  | `/habits/:id`          | Update habit                  |
+| `DELETE` | `/habits/:id`          | Delete habit                  |
+| `POST`   | `/habits/:id/complete` | Mark habit as completed today |
+| `GET`    | `/habits/:id/history`  | Get completion history        |
+| `GET`    | `/habits/stats`        | Get habit statistics          |
 
 ### Captures `/api/v1/captures`
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/captures` | List captures |
-| `POST` | `/captures` | Create a quick capture |
-| `GET` | `/captures/:id` | Get capture |
-| `PATCH` | `/captures/:id` | Update capture |
-| `DELETE` | `/captures/:id` | Delete capture |
-| `POST` | `/captures/:id/process` | Process capture (convert to task/note/etc.) |
+| Method   | Path                    | Description                                 |
+| -------- | ----------------------- | ------------------------------------------- |
+| `GET`    | `/captures`             | List captures                               |
+| `POST`   | `/captures`             | Create a quick capture                      |
+| `GET`    | `/captures/:id`         | Get capture                                 |
+| `PATCH`  | `/captures/:id`         | Update capture                              |
+| `DELETE` | `/captures/:id`         | Delete capture                              |
+| `POST`   | `/captures/:id/process` | Process capture (convert to task/note/etc.) |
 
 ---
 
@@ -1470,22 +1485,22 @@ AI-powered daily briefing dashboard. Aggregates data from tasks, calendar, goals
 
 ### Endpoints
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/dashboard/briefing` | Get daily briefing with AI summary |
-| `GET` | `/dashboard/stats` | Get overview stats |
-| `DELETE` | `/dashboard/briefing/cache` | Clear briefing cache |
+| Method   | Path                        | Description                        |
+| -------- | --------------------------- | ---------------------------------- |
+| `GET`    | `/dashboard/briefing`       | Get daily briefing with AI summary |
+| `GET`    | `/dashboard/stats`          | Get overview stats                 |
+| `DELETE` | `/dashboard/briefing/cache` | Clear briefing cache               |
 
 ### GET /dashboard/briefing
 
 **Query Parameters:**
 
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `refresh` | boolean | `false` | Force regenerate AI briefing |
-| `aiOnly` | boolean | `false` | Only return AI briefing, not raw data |
-| `provider` | string | -- | Override AI provider |
-| `model` | string | -- | Override AI model |
+| Parameter  | Type    | Default | Description                           |
+| ---------- | ------- | ------- | ------------------------------------- |
+| `refresh`  | boolean | `false` | Force regenerate AI briefing          |
+| `aiOnly`   | boolean | `false` | Only return AI briefing, not raw data |
+| `provider` | string  | --      | Override AI provider                  |
+| `model`    | string  | --      | Override AI model                     |
 
 **Response:**
 
@@ -1520,14 +1535,14 @@ User profile management for AI personalization. Stores personal facts, preferenc
 
 ### Endpoints
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/profile` | Get full user profile |
-| `GET` | `/profile/summary` | Get profile summary for prompts |
-| `PUT` | `/profile` | Update profile |
-| `PATCH` | `/profile` | Partial update profile |
-| `GET` | `/profile/:category` | Get profile category data |
-| `PUT` | `/profile/:category` | Update profile category |
+| Method  | Path                 | Description                     |
+| ------- | -------------------- | ------------------------------- |
+| `GET`   | `/profile`           | Get full user profile           |
+| `GET`   | `/profile/summary`   | Get profile summary for prompts |
+| `PUT`   | `/profile`           | Update profile                  |
+| `PATCH` | `/profile`           | Partial update profile          |
+| `GET`   | `/profile/:category` | Get profile category data       |
+| `PUT`   | `/profile/:category` | Update profile category         |
 
 **Profile Categories:** `basicInfo`, `preferences`, `communication`, `work`, `interests`, `health`, `goals`
 
@@ -1542,25 +1557,25 @@ OAuth authentication flows for external service integrations. Currently supports
 
 ### Endpoints
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/auth/status` | Check OAuth configuration status |
-| `POST` | `/auth/config/google` | Save Google OAuth credentials |
-| `DELETE` | `/auth/config/google` | Remove Google OAuth credentials |
-| `GET` | `/auth/google/start` | Start Google OAuth flow (redirects to Google) |
-| `GET` | `/auth/google/callback` | Google OAuth callback handler |
-| `POST` | `/auth/google/revoke` | Revoke/disconnect a Google integration |
-| `POST` | `/auth/google/refresh` | Refresh an expired token |
+| Method   | Path                    | Description                                   |
+| -------- | ----------------------- | --------------------------------------------- |
+| `GET`    | `/auth/status`          | Check OAuth configuration status              |
+| `POST`   | `/auth/config/google`   | Save Google OAuth credentials                 |
+| `DELETE` | `/auth/config/google`   | Remove Google OAuth credentials               |
+| `GET`    | `/auth/google/start`    | Start Google OAuth flow (redirects to Google) |
+| `GET`    | `/auth/google/callback` | Google OAuth callback handler                 |
+| `POST`   | `/auth/google/revoke`   | Revoke/disconnect a Google integration        |
+| `POST`   | `/auth/google/refresh`  | Refresh an expired token                      |
 
 ### GET /auth/google/start
 
 **Query Parameters:**
 
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `service` | string | `gmail` | `gmail`, `calendar`, `drive` |
+| Parameter   | Type   | Default     | Description                        |
+| ----------- | ------ | ----------- | ---------------------------------- |
+| `service`   | string | `gmail`     | `gmail`, `calendar`, `drive`       |
 | `returnUrl` | string | `/settings` | URL to redirect back to after auth |
-| `userId` | string | `default` | User ID |
+| `userId`    | string | `default`   | User ID                            |
 
 Redirects the browser to Google's OAuth consent screen. On success, Google redirects back to `/auth/google/callback` which exchanges the code for tokens and stores them in the database.
 
@@ -1599,19 +1614,19 @@ Isolated user workspaces with Docker container execution. Provides workspace CRU
 
 ### Endpoints
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/workspaces` | List user's workspaces |
-| `POST` | `/workspaces` | Create workspace |
-| `GET` | `/workspaces/:id` | Get workspace details |
-| `PATCH` | `/workspaces/:id` | Update workspace |
-| `DELETE` | `/workspaces/:id` | Delete workspace |
-| `GET` | `/workspaces/:id/files` | List files in workspace |
-| `GET` | `/workspaces/:id/files/*` | Read a file |
-| `PUT` | `/workspaces/:id/files/*` | Write a file |
-| `DELETE` | `/workspaces/:id/files/*` | Delete a file |
-| `POST` | `/workspaces/:id/execute` | Execute code in workspace sandbox |
-| `GET` | `/workspaces/docker-status` | Check Docker availability |
+| Method   | Path                        | Description                       |
+| -------- | --------------------------- | --------------------------------- |
+| `GET`    | `/workspaces`               | List user's workspaces            |
+| `POST`   | `/workspaces`               | Create workspace                  |
+| `GET`    | `/workspaces/:id`           | Get workspace details             |
+| `PATCH`  | `/workspaces/:id`           | Update workspace                  |
+| `DELETE` | `/workspaces/:id`           | Delete workspace                  |
+| `GET`    | `/workspaces/:id/files`     | List files in workspace           |
+| `GET`    | `/workspaces/:id/files/*`   | Read a file                       |
+| `PUT`    | `/workspaces/:id/files/*`   | Write a file                      |
+| `DELETE` | `/workspaces/:id/files/*`   | Delete a file                     |
+| `POST`   | `/workspaces/:id/execute`   | Execute code in workspace sandbox |
+| `GET`    | `/workspaces/docker-status` | Check Docker availability         |
 
 ### POST /workspaces/:id/execute
 
@@ -1642,18 +1657,18 @@ Lightweight session-based file workspaces. Isolated directories for agent file o
 
 ### Endpoints
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/file-workspaces` | List all session workspaces |
-| `POST` | `/file-workspaces` | Create a session workspace |
-| `GET` | `/file-workspaces/:id` | Get workspace details |
-| `DELETE` | `/file-workspaces/:id` | Delete workspace |
-| `GET` | `/file-workspaces/:id/files` | List files |
-| `GET` | `/file-workspaces/:id/files/*` | Read file content |
-| `PUT` | `/file-workspaces/:id/files/*` | Write file |
-| `DELETE` | `/file-workspaces/:id/files/*` | Delete file |
-| `GET` | `/file-workspaces/:id/download` | Download workspace as ZIP |
-| `POST` | `/file-workspaces/cleanup` | Clean up old workspaces |
+| Method   | Path                            | Description                 |
+| -------- | ------------------------------- | --------------------------- |
+| `GET`    | `/file-workspaces`              | List all session workspaces |
+| `POST`   | `/file-workspaces`              | Create a session workspace  |
+| `GET`    | `/file-workspaces/:id`          | Get workspace details       |
+| `DELETE` | `/file-workspaces/:id`          | Delete workspace            |
+| `GET`    | `/file-workspaces/:id/files`    | List files                  |
+| `GET`    | `/file-workspaces/:id/files/*`  | Read file content           |
+| `PUT`    | `/file-workspaces/:id/files/*`  | Write file                  |
+| `DELETE` | `/file-workspaces/:id/files/*`  | Delete file                 |
+| `GET`    | `/file-workspaces/:id/download` | Download workspace as ZIP   |
+| `POST`   | `/file-workspaces/cleanup`      | Clean up old workspaces     |
 
 ### POST /file-workspaces
 
@@ -1680,18 +1695,18 @@ Centralized, schema-driven configuration management. Services define configurati
 
 ### Endpoints
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/config-services` | List all config services |
-| `POST` | `/config-services` | Create a config service |
-| `GET` | `/config-services/:name` | Get service with entries |
-| `PUT` | `/config-services/:name` | Update service definition |
-| `DELETE` | `/config-services/:name` | Delete service |
-| `GET` | `/config-services/:name/entries` | List entries for a service |
-| `POST` | `/config-services/:name/entries` | Create entry |
-| `GET` | `/config-services/:name/entries/:id` | Get entry |
-| `PUT` | `/config-services/:name/entries/:id` | Update entry |
-| `DELETE` | `/config-services/:name/entries/:id` | Delete entry |
+| Method   | Path                                 | Description                |
+| -------- | ------------------------------------ | -------------------------- |
+| `GET`    | `/config-services`                   | List all config services   |
+| `POST`   | `/config-services`                   | Create a config service    |
+| `GET`    | `/config-services/:name`             | Get service with entries   |
+| `PUT`    | `/config-services/:name`             | Update service definition  |
+| `DELETE` | `/config-services/:name`             | Delete service             |
+| `GET`    | `/config-services/:name/entries`     | List entries for a service |
+| `POST`   | `/config-services/:name/entries`     | Create entry               |
+| `GET`    | `/config-services/:name/entries/:id` | Get entry                  |
+| `PUT`    | `/config-services/:name/entries/:id` | Update entry               |
+| `DELETE` | `/config-services/:name/entries/:id` | Delete entry               |
 
 **Security:** Fields with `type: "secret"` in the schema are automatically masked in responses (e.g., `sk-a...b1c2`).
 
@@ -1706,16 +1721,16 @@ Plugin management system. Plugins provide additional tools, event handlers, and 
 
 ### Endpoints
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/plugins` | List all plugins |
-| `GET` | `/plugins/:id` | Get plugin details |
-| `POST` | `/plugins/:id/enable` | Enable plugin |
-| `POST` | `/plugins/:id/disable` | Disable plugin |
-| `POST` | `/plugins/:id/permissions` | Grant permissions |
-| `GET` | `/plugins/:id/settings` | Get plugin settings |
-| `PUT` | `/plugins/:id/settings` | Update plugin settings |
-| `POST` | `/plugins/reload` | Reload all plugins |
+| Method | Path                       | Description            |
+| ------ | -------------------------- | ---------------------- |
+| `GET`  | `/plugins`                 | List all plugins       |
+| `GET`  | `/plugins/:id`             | Get plugin details     |
+| `POST` | `/plugins/:id/enable`      | Enable plugin          |
+| `POST` | `/plugins/:id/disable`     | Disable plugin         |
+| `POST` | `/plugins/:id/permissions` | Grant permissions      |
+| `GET`  | `/plugins/:id/settings`    | Get plugin settings    |
+| `PUT`  | `/plugins/:id/settings`    | Update plugin settings |
+| `POST` | `/plugins/reload`          | Reload all plugins     |
 
 ### GET /plugins
 
@@ -1758,20 +1773,20 @@ Debug endpoints for viewing AI request/response logs and internal state.
 
 ### Endpoints
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/debug` | Get debug log entries |
-| `GET` | `/debug/recent` | Get recent entries only |
-| `DELETE` | `/debug` | Clear debug log |
-| `POST` | `/debug/toggle` | Enable/disable debug logging |
+| Method   | Path            | Description                  |
+| -------- | --------------- | ---------------------------- |
+| `GET`    | `/debug`        | Get debug log entries        |
+| `GET`    | `/debug/recent` | Get recent entries only      |
+| `DELETE` | `/debug`        | Clear debug log              |
+| `POST`   | `/debug/toggle` | Enable/disable debug logging |
 
 ### GET /debug
 
 **Query Parameters:**
 
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `count` | number | `50` | Number of entries to return |
+| Parameter | Type   | Default | Description                 |
+| --------- | ------ | ------- | --------------------------- |
+| `count`   | number | `50`    | Number of entries to return |
 
 **Response:**
 
@@ -1813,31 +1828,31 @@ Audit log system for all agent activities, tool executions, and system events.
 
 ### Endpoints
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/audit` | Query audit events with filters |
-| `GET` | `/audit/stats` | Get audit statistics |
-| `DELETE` | `/audit` | Clear audit logs |
+| Method   | Path           | Description                     |
+| -------- | -------------- | ------------------------------- |
+| `GET`    | `/audit`       | Query audit events with filters |
+| `GET`    | `/audit/stats` | Get audit statistics            |
+| `DELETE` | `/audit`       | Clear audit logs                |
 
 ### GET /audit
 
 **Query Parameters:**
 
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `types` | string | Comma-separated event types (e.g., `tool.success,tool.error`) |
-| `actorId` | string | Filter by actor ID |
-| `actorType` | string | `agent`, `user`, `system` |
-| `resourceId` | string | Filter by resource ID |
-| `resourceType` | string | `tool`, `session`, `agent` |
-| `minSeverity` | string | `debug`, `info`, `warn`, `error`, `critical` |
-| `outcome` | string | `success`, `failure` |
-| `from` | string | Start date (ISO 8601) |
-| `to` | string | End date (ISO 8601) |
-| `correlationId` | string | Filter by request/correlation ID |
-| `limit` | number | Max events (default: 100) |
-| `offset` | number | Pagination offset |
-| `order` | string | `asc` or `desc` (default: `desc`) |
+| Parameter       | Type   | Description                                                   |
+| --------------- | ------ | ------------------------------------------------------------- |
+| `types`         | string | Comma-separated event types (e.g., `tool.success,tool.error`) |
+| `actorId`       | string | Filter by actor ID                                            |
+| `actorType`     | string | `agent`, `user`, `system`                                     |
+| `resourceId`    | string | Filter by resource ID                                         |
+| `resourceType`  | string | `tool`, `session`, `agent`                                    |
+| `minSeverity`   | string | `debug`, `info`, `warn`, `error`, `critical`                  |
+| `outcome`       | string | `success`, `failure`                                          |
+| `from`          | string | Start date (ISO 8601)                                         |
+| `to`            | string | End date (ISO 8601)                                           |
+| `correlationId` | string | Filter by request/correlation ID                              |
+| `limit`         | number | Max events (default: 100)                                     |
+| `offset`        | number | Pagination offset                                             |
+| `order`         | string | `asc` or `desc` (default: `desc`)                             |
 
 **Response:**
 

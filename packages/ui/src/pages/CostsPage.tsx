@@ -82,7 +82,9 @@ export function CostsPage() {
       <div className="flex items-center justify-between p-4 border-b border-border dark:border-dark-border">
         <div className="flex items-center gap-3">
           <DollarSign className="w-6 h-6 text-success" />
-          <h1 className="text-xl font-semibold text-text-primary dark:text-dark-text-primary">Cost Dashboard</h1>
+          <h1 className="text-xl font-semibold text-text-primary dark:text-dark-text-primary">
+            Cost Dashboard
+          </h1>
         </div>
 
         {/* Period Selector */}
@@ -122,11 +124,7 @@ export function CostsPage() {
 
       {/* Content */}
       <div className="flex-1 overflow-auto p-4 animate-fade-in-up">
-        {error && (
-          <div className="mb-4 p-3 bg-error/10 text-error rounded-lg">
-            {error}
-          </div>
-        )}
+        {error && <div className="mb-4 p-3 bg-error/10 text-error rounded-lg">{error}</div>}
 
         {activeTab === 'overview' && summary && (
           <div className="space-y-6">
@@ -134,9 +132,7 @@ export function CostsPage() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="card-elevated p-4 bg-bg-secondary dark:bg-dark-bg-secondary rounded-lg border border-border dark:border-dark-border">
                 <div className="text-sm text-text-muted dark:text-dark-text-muted">Total Cost</div>
-                <div className="text-2xl font-bold text-success">
-                  {summary.totalCostFormatted}
-                </div>
+                <div className="text-2xl font-bold text-success">{summary.totalCostFormatted}</div>
               </div>
               <div className="card-elevated p-4 bg-bg-secondary dark:bg-dark-bg-secondary rounded-lg border border-border dark:border-dark-border">
                 <div className="text-sm text-text-muted dark:text-dark-text-muted">Requests</div>
@@ -150,13 +146,17 @@ export function CostsPage() {
                 </div>
               </div>
               <div className="card-elevated p-4 bg-bg-secondary dark:bg-dark-bg-secondary rounded-lg border border-border dark:border-dark-border">
-                <div className="text-sm text-text-muted dark:text-dark-text-muted">Input Tokens</div>
+                <div className="text-sm text-text-muted dark:text-dark-text-muted">
+                  Input Tokens
+                </div>
                 <div className="text-2xl font-bold text-text-primary dark:text-dark-text-primary">
                   {formatNumber(summary.totalInputTokens)}
                 </div>
               </div>
               <div className="card-elevated p-4 bg-bg-secondary dark:bg-dark-bg-secondary rounded-lg border border-border dark:border-dark-border">
-                <div className="text-sm text-text-muted dark:text-dark-text-muted">Output Tokens</div>
+                <div className="text-sm text-text-muted dark:text-dark-text-muted">
+                  Output Tokens
+                </div>
                 <div className="text-2xl font-bold text-text-primary dark:text-dark-text-primary">
                   {formatNumber(summary.totalOutputTokens)}
                 </div>
@@ -166,14 +166,18 @@ export function CostsPage() {
             {/* Budget Status */}
             {budget && (
               <div className="card-elevated bg-bg-secondary dark:bg-dark-bg-secondary rounded-lg border border-border dark:border-dark-border p-4">
-                <h3 className="text-lg font-medium text-text-primary dark:text-dark-text-primary mb-4">Budget Status</h3>
+                <h3 className="text-lg font-medium text-text-primary dark:text-dark-text-primary mb-4">
+                  Budget Status
+                </h3>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   {(['daily', 'weekly', 'monthly'] as const).map((p) => {
                     const b = budget[p];
                     return (
                       <div key={p} className="space-y-2">
                         <div className="flex justify-between text-sm">
-                          <span className="text-text-secondary dark:text-dark-text-secondary capitalize">{p}</span>
+                          <span className="text-text-secondary dark:text-dark-text-secondary capitalize">
+                            {p}
+                          </span>
                           <span className="text-text-primary dark:text-dark-text-primary">
                             ${b.spent.toFixed(2)} {b.limit ? `/ $${b.limit.toFixed(2)}` : ''}
                           </span>
@@ -185,8 +189,8 @@ export function CostsPage() {
                                 b.percentage > 90
                                   ? 'bg-error'
                                   : b.percentage > 75
-                                  ? 'bg-warning'
-                                  : 'bg-success'
+                                    ? 'bg-warning'
+                                    : 'bg-success'
                               }`}
                               style={{ width: `${Math.min(b.percentage, 100)}%` }}
                             />
@@ -200,11 +204,9 @@ export function CostsPage() {
                 {budget.alerts.length > 0 && (
                   <div className="mt-4 space-y-2">
                     {budget.alerts.map((alert, i) => (
-                      <div
-                        key={i}
-                        className="p-2 bg-warning/5 text-warning rounded text-sm"
-                      >
-                        {alert.type} budget at {alert.threshold}% - ${alert.currentSpend.toFixed(2)} / ${alert.limit.toFixed(2)}
+                      <div key={i} className="p-2 bg-warning/5 text-warning rounded text-sm">
+                        {alert.type} budget at {alert.threshold}% - ${alert.currentSpend.toFixed(2)}{' '}
+                        / ${alert.limit.toFixed(2)}
                       </div>
                     ))}
                   </div>
@@ -215,7 +217,9 @@ export function CostsPage() {
             {/* Daily Chart */}
             {breakdown && breakdown.daily.length > 0 && (
               <div className="card-elevated bg-bg-secondary dark:bg-dark-bg-secondary rounded-lg border border-border dark:border-dark-border p-4">
-                <h3 className="text-lg font-medium text-text-primary dark:text-dark-text-primary mb-4">Daily Usage</h3>
+                <h3 className="text-lg font-medium text-text-primary dark:text-dark-text-primary mb-4">
+                  Daily Usage
+                </h3>
                 <div className="flex gap-1 items-end h-32">
                   {breakdown.daily.slice(-14).map((day) => {
                     const maxCost = Math.max(...breakdown.daily.map((d) => d.cost));
@@ -251,7 +255,9 @@ export function CostsPage() {
             {/* Provider Breakdown */}
             <div className="card-elevated bg-bg-secondary dark:bg-dark-bg-secondary rounded-lg border border-border dark:border-dark-border">
               <div className="p-4 border-b border-border dark:border-dark-border">
-                <h3 className="text-lg font-medium text-text-primary dark:text-dark-text-primary">By Provider</h3>
+                <h3 className="text-lg font-medium text-text-primary dark:text-dark-text-primary">
+                  By Provider
+                </h3>
               </div>
               <div className="divide-y divide-border dark:divide-dark-border">
                 {breakdown.byProvider.map((provider) => (
@@ -290,7 +296,9 @@ export function CostsPage() {
         {activeTab === 'budget' && (
           <div className="space-y-6">
             <div className="card-elevated bg-bg-secondary dark:bg-dark-bg-secondary rounded-lg border border-border dark:border-dark-border p-6">
-              <h3 className="text-lg font-medium text-text-primary dark:text-dark-text-primary mb-4">Configure Budget Limits</h3>
+              <h3 className="text-lg font-medium text-text-primary dark:text-dark-text-primary mb-4">
+                Configure Budget Limits
+              </h3>
 
               <div className="space-y-4">
                 <div>

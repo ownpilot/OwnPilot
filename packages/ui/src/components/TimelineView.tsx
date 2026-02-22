@@ -1,11 +1,5 @@
 import { useState, useEffect } from 'react';
-import {
-  Calendar,
-  CheckCircle2,
-  Zap,
-  Clock,
-  AlertTriangle,
-} from './icons';
+import { Calendar, CheckCircle2, Zap, Clock, AlertTriangle } from './icons';
 import { dashboardApi } from '../api';
 import type { DailyBriefingData } from '../api';
 
@@ -173,7 +167,9 @@ export function TimelineView() {
     };
 
     return (
-      <span className={`px-1.5 py-0.5 text-xs rounded ${colors[priority as keyof typeof colors] || colors.low}`}>
+      <span
+        className={`px-1.5 py-0.5 text-xs rounded ${colors[priority as keyof typeof colors] || colors.low}`}
+      >
         {priority}
       </span>
     );
@@ -253,7 +249,9 @@ export function TimelineView() {
           return (
             <div key={item.id} className="flex gap-3">
               {/* Time column */}
-              <div className={`w-14 text-right text-xs font-medium pt-2 ${item.isPast ? 'text-text-muted/60 dark:text-dark-text-muted/60' : 'text-text-muted dark:text-dark-text-muted'}`}>
+              <div
+                className={`w-14 text-right text-xs font-medium pt-2 ${item.isPast ? 'text-text-muted/60 dark:text-dark-text-muted/60' : 'text-text-muted dark:text-dark-text-muted'}`}
+              >
                 {item.status === 'overdue' ? (
                   <span className="text-error">Overdue</span>
                 ) : (
@@ -263,20 +261,24 @@ export function TimelineView() {
 
               {/* Timeline line and dot */}
               <div className="flex flex-col items-center">
-                <div className={`w-3 h-3 rounded-full ${colors.bg} border-2 ${colors.border} mt-2`} />
-                {!isLast && (
-                  <div className="w-px flex-1 bg-border dark:bg-dark-border my-1" />
-                )}
+                <div
+                  className={`w-3 h-3 rounded-full ${colors.bg} border-2 ${colors.border} mt-2`}
+                />
+                {!isLast && <div className="w-px flex-1 bg-border dark:bg-dark-border my-1" />}
               </div>
 
               {/* Content */}
               <div className={`flex-1 pb-3 ${item.isPast ? 'opacity-60' : ''}`}>
-                <div className={`p-2 rounded-lg border ${colors.border} bg-bg-tertiary/50 dark:bg-dark-bg-tertiary/50`}>
+                <div
+                  className={`p-2 rounded-lg border ${colors.border} bg-bg-tertiary/50 dark:bg-dark-bg-tertiary/50`}
+                >
                   <div className="flex items-start gap-2">
                     <span className={colors.text}>{getTypeIcon(item.type)}</span>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className={`text-sm font-medium ${item.isPast ? 'text-text-muted dark:text-dark-text-muted' : 'text-text-primary dark:text-dark-text-primary'}`}>
+                        <span
+                          className={`text-sm font-medium ${item.isPast ? 'text-text-muted dark:text-dark-text-muted' : 'text-text-primary dark:text-dark-text-primary'}`}
+                        >
                           {item.title}
                         </span>
                         {getPriorityBadge(item.priority)}

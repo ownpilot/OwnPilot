@@ -30,15 +30,24 @@ export function TelegramWizard({ onComplete, onCancel }: Props) {
   const [allowedUsers, setAllowedUsers] = useState('');
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [result, setResult] = useState<{ ok: boolean; botUsername?: string; error?: string } | null>(null);
+  const [result, setResult] = useState<{
+    ok: boolean;
+    botUsername?: string;
+    error?: string;
+  } | null>(null);
 
   const canGoNext = useMemo(() => {
     switch (step) {
-      case 0: return true; // Intro
-      case 1: return true; // BotFather guide
-      case 2: return TOKEN_PATTERN.test(botToken.trim());
-      case 3: return result?.ok === true;
-      default: return false;
+      case 0:
+        return true; // Intro
+      case 1:
+        return true; // BotFather guide
+      case 2:
+        return TOKEN_PATTERN.test(botToken.trim());
+      case 3:
+        return result?.ok === true;
+      default:
+        return false;
     }
   }, [step, botToken, result]);
 
@@ -80,7 +89,10 @@ export function TelegramWizard({ onComplete, onCancel }: Props) {
       isProcessing={isProcessing}
       isLastStep={step === 4}
       onNext={handleNext}
-      onBack={() => { setStep(Math.max(0, step - 1)); if (step === 3) setResult(null); }}
+      onBack={() => {
+        setStep(Math.max(0, step - 1));
+        if (step === 3) setResult(null);
+      }}
       onCancel={onCancel}
       onComplete={onComplete}
     >
@@ -108,7 +120,10 @@ export function TelegramWizard({ onComplete, onCancel }: Props) {
               'Approve tool actions via inline buttons',
               'Switch AI models with /model command',
             ].map((item) => (
-              <div key={item} className="flex items-start gap-2 text-sm text-text-secondary dark:text-dark-text-secondary">
+              <div
+                key={item}
+                className="flex items-start gap-2 text-sm text-text-secondary dark:text-dark-text-secondary"
+              >
                 <Check className="w-4 h-4 text-success mt-0.5 flex-shrink-0" />
                 <span>{item}</span>
               </div>
@@ -117,7 +132,8 @@ export function TelegramWizard({ onComplete, onCancel }: Props) {
 
           <div className="mt-6 p-4 rounded-lg bg-bg-tertiary dark:bg-dark-bg-tertiary">
             <p className="text-xs text-text-muted dark:text-dark-text-muted">
-              <strong>What you'll need:</strong> A Telegram account and ~3 minutes to create a bot via @BotFather.
+              <strong>What you'll need:</strong> A Telegram account and ~3 minutes to create a bot
+              via @BotFather.
             </p>
           </div>
         </div>
@@ -139,7 +155,10 @@ export function TelegramWizard({ onComplete, onCancel }: Props) {
               { title: 'Create a new bot', desc: 'Send /newbot to BotFather.' },
               { title: 'Choose a name', desc: 'This is the display name (e.g., "My OwnPilot").' },
               { title: 'Choose a username', desc: 'Must end in "bot" (e.g., my_ownpilot_bot).' },
-              { title: 'Copy the token', desc: 'BotFather will send you a token like 123456:ABC-DEF... Copy it!' },
+              {
+                title: 'Copy the token',
+                desc: 'BotFather will send you a token like 123456:ABC-DEF... Copy it!',
+              },
             ].map((s, i) => (
               <li key={i} className="flex gap-3">
                 <span className="flex-shrink-0 w-7 h-7 rounded-full bg-primary text-white text-xs flex items-center justify-center font-medium">
@@ -218,11 +237,17 @@ export function TelegramWizard({ onComplete, onCancel }: Props) {
                   className="w-full px-3 py-2 rounded-lg border border-border dark:border-dark-border bg-bg-primary dark:bg-dark-bg-primary text-text-primary dark:text-dark-text-primary text-xs focus:outline-none focus:ring-2 focus:ring-primary/30"
                 />
                 <p className="text-[11px] text-text-muted dark:text-dark-text-muted mt-1">
-                  Comma-separated Telegram user IDs. Leave empty to allow anyone.
-                  Find your ID by messaging{' '}
-                  <a href="https://t.me/userinfobot" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                  Comma-separated Telegram user IDs. Leave empty to allow anyone. Find your ID by
+                  messaging{' '}
+                  <a
+                    href="https://t.me/userinfobot"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-primary hover:underline"
+                  >
                     @userinfobot
-                  </a>.
+                  </a>
+                  .
                 </p>
               </div>
             </div>
@@ -236,8 +261,19 @@ export function TelegramWizard({ onComplete, onCancel }: Props) {
           {!result && (
             <div className="flex flex-col items-center gap-3">
               <svg className="w-10 h-10 animate-spin text-sky-500" viewBox="0 0 24 24" fill="none">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                />
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                />
               </svg>
               <p className="text-text-muted dark:text-dark-text-muted">Connecting to Telegram...</p>
             </div>
@@ -269,7 +305,10 @@ export function TelegramWizard({ onComplete, onCancel }: Props) {
               </h3>
               <p className="text-sm text-error max-w-md">{result.error}</p>
               <button
-                onClick={() => { setStep(2); setResult(null); }}
+                onClick={() => {
+                  setStep(2);
+                  setResult(null);
+                }}
                 className="mt-2 text-sm text-primary hover:underline"
               >
                 Go back and try again
@@ -289,7 +328,11 @@ export function TelegramWizard({ onComplete, onCancel }: Props) {
             Telegram is Ready!
           </h2>
           <p className="text-sm text-text-muted dark:text-dark-text-muted mb-6 max-w-md mx-auto">
-            Open Telegram and send <code className="bg-bg-tertiary dark:bg-dark-bg-tertiary px-1.5 py-0.5 rounded text-xs">/start</code> to your bot to begin chatting.
+            Open Telegram and send{' '}
+            <code className="bg-bg-tertiary dark:bg-dark-bg-tertiary px-1.5 py-0.5 rounded text-xs">
+              /start
+            </code>{' '}
+            to your bot to begin chatting.
           </p>
 
           <div className="space-y-2">

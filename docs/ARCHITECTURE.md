@@ -140,7 +140,7 @@ The project uses **pnpm workspaces** with **Turborepo** for build orchestration.
 ### Requirements
 
 | Requirement | Minimum Version |
-|-------------|-----------------|
+| ----------- | --------------- |
 | Node.js     | >= 22.0.0       |
 | pnpm        | >= 9.0.0        |
 
@@ -267,39 +267,39 @@ Internal workspace dependencies flow strictly downward. No circular dependencies
 
 Detailed dependency table:
 
-| Package              | Depends On                                        |
-|----------------------|---------------------------------------------------|
-| `@ownpilot/core`     | (none -- zero external dependencies)              |
-| `@ownpilot/gateway`  | `@ownpilot/core`, hono, pg, ws, jose, dotenv, ... |
-| `@ownpilot/ui`       | `@ownpilot/gateway` (types only), react, vite     |
-| `@ownpilot/channels` | `@ownpilot/core`, grammy                          |
+| Package              | Depends On                                                                       |
+| -------------------- | -------------------------------------------------------------------------------- |
+| `@ownpilot/core`     | (none -- zero external dependencies)                                             |
+| `@ownpilot/gateway`  | `@ownpilot/core`, hono, pg, ws, jose, dotenv, ...                                |
+| `@ownpilot/ui`       | `@ownpilot/gateway` (types only), react, vite                                    |
+| `@ownpilot/channels` | `@ownpilot/core`, grammy                                                         |
 | `@ownpilot/cli`      | `@ownpilot/core`, `@ownpilot/gateway`, `@ownpilot/channels`, commander, inquirer |
 
 ### Key External Dependencies
 
-| Package           | Version | Used In  | Purpose                            |
-|-------------------|---------|----------|------------------------------------|
-| hono              | ^4.11   | gateway  | HTTP framework                     |
-| @hono/node-server | ^1.14   | gateway  | Node.js adapter for Hono           |
-| pg                | ^8.13   | gateway  | PostgreSQL client                  |
-| ws                | ^8.19   | gateway  | WebSocket server                   |
-| jose              | ^6.0    | gateway  | JWT authentication                 |
-| dotenv            | ^16.4   | gateway  | Environment variable loading       |
-| discord.js        | ^14.16  | gateway  | Discord channel adapter            |
-| @slack/bolt       | ^4.1    | gateway  | Slack channel adapter              |
-| nodemailer        | ^7.0    | gateway  | Email sending                      |
-| imapflow          | ^1.2    | gateway  | Email receiving (IMAP)             |
-| archiver          | ^7.0    | gateway  | File archival                      |
-| grammy            | ^1.36   | channels | Telegram bot framework             |
-| react             | ^19.0   | ui       | UI framework                       |
-| react-router-dom  | ^7.1    | ui       | Client-side routing                |
-| tailwindcss       | ^4.0    | ui       | Utility-first CSS                  |
-| vite              | ^6.0    | ui       | Build tool and dev server          |
-| commander         | ^13.1   | cli      | CLI framework                      |
-| @inquirer/prompts | ^7.0    | cli      | Interactive CLI prompts            |
-| vitest            | ^2.1    | all      | Test framework (dev)               |
-| typescript        | ^5.7    | all      | Type checking and compilation (dev)|
-| turbo             | ^2.7    | root     | Monorepo build orchestration (dev) |
+| Package           | Version | Used In  | Purpose                             |
+| ----------------- | ------- | -------- | ----------------------------------- |
+| hono              | ^4.11   | gateway  | HTTP framework                      |
+| @hono/node-server | ^1.14   | gateway  | Node.js adapter for Hono            |
+| pg                | ^8.13   | gateway  | PostgreSQL client                   |
+| ws                | ^8.19   | gateway  | WebSocket server                    |
+| jose              | ^6.0    | gateway  | JWT authentication                  |
+| dotenv            | ^16.4   | gateway  | Environment variable loading        |
+| discord.js        | ^14.16  | gateway  | Discord channel adapter             |
+| @slack/bolt       | ^4.1    | gateway  | Slack channel adapter               |
+| nodemailer        | ^7.0    | gateway  | Email sending                       |
+| imapflow          | ^1.2    | gateway  | Email receiving (IMAP)              |
+| archiver          | ^7.0    | gateway  | File archival                       |
+| grammy            | ^1.36   | channels | Telegram bot framework              |
+| react             | ^19.0   | ui       | UI framework                        |
+| react-router-dom  | ^7.1    | ui       | Client-side routing                 |
+| tailwindcss       | ^4.0    | ui       | Utility-first CSS                   |
+| vite              | ^6.0    | ui       | Build tool and dev server           |
+| commander         | ^13.1   | cli      | CLI framework                       |
+| @inquirer/prompts | ^7.0    | cli      | Interactive CLI prompts             |
+| vitest            | ^2.1    | all      | Test framework (dev)                |
+| typescript        | ^5.7    | all      | Type checking and compilation (dev) |
+| turbo             | ^2.7    | root     | Monorepo build orchestration (dev)  |
 
 ---
 
@@ -311,15 +311,15 @@ The core package is the foundation of the entire system. It is designed with **z
 
 The core package provides multiple entry points:
 
-| Export Path           | Purpose                             |
-|-----------------------|-------------------------------------|
-| `@ownpilot/core`      | Main entry -- all public APIs       |
-| `@ownpilot/core/types`| Type definitions only               |
-| `@ownpilot/core/crypto`| Cryptographic utilities            |
-| `@ownpilot/core/audit` | Audit logging                      |
-| `@ownpilot/core/privacy`| PII detection and redaction       |
-| `@ownpilot/core/plugin` | Plugin runtime                    |
-| `@ownpilot/core/gateway`| Gateway foundation                |
+| Export Path              | Purpose                       |
+| ------------------------ | ----------------------------- |
+| `@ownpilot/core`         | Main entry -- all public APIs |
+| `@ownpilot/core/types`   | Type definitions only         |
+| `@ownpilot/core/crypto`  | Cryptographic utilities       |
+| `@ownpilot/core/audit`   | Audit logging                 |
+| `@ownpilot/core/privacy` | PII detection and redaction   |
+| `@ownpilot/core/plugin`  | Plugin runtime                |
+| `@ownpilot/core/gateway` | Gateway foundation            |
 
 ---
 
@@ -363,32 +363,38 @@ The agent system orchestrates all AI interactions, from single-turn completions 
 #### Key Classes
 
 **`Agent`** (`packages/core/src/agent/agent.ts`)
+
 - The primary AI interaction orchestrator.
 - Manages conversation state, tool calls, and provider communication.
 - Defaults: `maxTurns: 50`, `maxToolCalls: 200`.
 - Registers core tools automatically unless a custom `ToolRegistry` is injected.
 
 **`AgentOrchestrator`** (`packages/core/src/agent/orchestrator.ts`)
+
 - Handles complex multi-step execution with planning and reasoning.
 - Emits events via `EventEmitter` for observability: `step:start`, `step:complete`, `tool:call`, `tool:result`, `error`.
 - Maintains `OrchestratorContext` tracking execution ID, iteration count, message history, and status (`running`, `completed`, `failed`, `cancelled`).
 
 **`PromptComposer`** (`packages/core/src/agent/prompt-composer.ts`)
+
 - Generates context-aware system prompts that include user profile, available tools, custom instructions, time context, and workspace context.
 - Input: `PromptContext` (base prompt, user profile, tools, time, capabilities).
 - Output: A fully composed system prompt string.
 
 **`MemoryInjector`** (`packages/core/src/agent/memory-injector.ts`)
+
 - Integrates personal memory and conversation context into agent prompts.
 - Retrieves user profile, preferences, and custom instructions from the personal memory store.
 - Options: `includeProfile`, `includeInstructions`, `includeTimeContext`, `includeToolDescriptions`, `maxPromptLength`.
 
 **`AgentBuilder`** (`packages/core/src/agent-builder/index.ts`)
+
 - LLM-guided agent creation through interactive question-and-answer sessions.
 - Manages a `BuilderSession` with phases: `gathering` -> `refining` -> `generating` -> `complete`.
 - Produces a `GeneratedAgentConfig` with name, emoji, category, system prompt, tools, triggers, and model parameters.
 
 **`MultiAgentOrchestrator`** (`packages/core/src/agent/orchestrator.ts`)
+
 - Coordinates multiple agents as a team (`AgentTeam`).
 - Supports planning with `createPlanningPrompt` and `parsePlan` for multi-step plan decomposition into `Plan` and `PlanStep` structures.
 
@@ -440,32 +446,32 @@ The tool system provides 148+ built-in tools organized into 20 categories, plus 
 
 #### Tool Categories and Counts
 
-| Category                   | Tool Count | Description                                    |
-|----------------------------|:----------:|------------------------------------------------|
-| Tasks                      | 6          | add, batch_add, list, complete, update, delete |
-| Bookmarks                  | 4          | add, batch_add, list, delete                   |
-| Notes                      | 5          | add, batch_add, list, update, delete           |
-| Calendar                   | 4          | add, batch_add, list, delete                   |
-| Contacts                   | 5          | add, batch_add, list, update, delete           |
-| Custom Data                | 11         | Table and record CRUD, search, describe        |
-| File System                | 8          | read, write, list, search, download, info, delete, copy |
-| PDF                        | 3          | read, create, info                             |
-| Code Execution (Sandbox)   | 5          | JavaScript, Python, Shell, compile, package mgr|
-| Git                        | 7          | status, diff, log, commit, add, branch, checkout|
-| Web & API                  | 4          | HTTP request, fetch page, search web, JSON API |
-| Email                      | 6          | send, list, read, delete, search, reply        |
-| Image                      | 5          | analyze, generate, edit, variation, resize     |
-| Audio                      | 5          | TTS, STT, translate, info, split               |
-| Translation                | 4          | translate, detect language, list languages, batch|
-| Data Extraction            | 4          | structured data, entities, tables, summarize   |
-| Vector Search              | 7          | embeddings, semantic search, upsert, delete, collections |
-| Finance                    | 7          | add, batch_add, parse receipt, query, export, summary, delete |
-| Scheduler                  | 6          | create, list, update, delete, history, trigger |
-| Weather                    | 2          | current, forecast                              |
-| Memory                     | 7          | remember, batch, recall, forget, list, boost, stats |
-| Goals                      | 8          | create, list, update, decompose, next actions, complete step, details, stats |
-| Dynamic Tools              | 4          | create, list, delete, toggle custom tools      |
-| Utilities                  | 21         | datetime, math, units, UUID, password, hash, encode, text ops, CSV, validation |
+| Category                 | Tool Count | Description                                                                    |
+| ------------------------ | :--------: | ------------------------------------------------------------------------------ |
+| Tasks                    |     6      | add, batch_add, list, complete, update, delete                                 |
+| Bookmarks                |     4      | add, batch_add, list, delete                                                   |
+| Notes                    |     5      | add, batch_add, list, update, delete                                           |
+| Calendar                 |     4      | add, batch_add, list, delete                                                   |
+| Contacts                 |     5      | add, batch_add, list, update, delete                                           |
+| Custom Data              |     11     | Table and record CRUD, search, describe                                        |
+| File System              |     8      | read, write, list, search, download, info, delete, copy                        |
+| PDF                      |     3      | read, create, info                                                             |
+| Code Execution (Sandbox) |     5      | JavaScript, Python, Shell, compile, package mgr                                |
+| Git                      |     7      | status, diff, log, commit, add, branch, checkout                               |
+| Web & API                |     4      | HTTP request, fetch page, search web, JSON API                                 |
+| Email                    |     6      | send, list, read, delete, search, reply                                        |
+| Image                    |     5      | analyze, generate, edit, variation, resize                                     |
+| Audio                    |     5      | TTS, STT, translate, info, split                                               |
+| Translation              |     4      | translate, detect language, list languages, batch                              |
+| Data Extraction          |     4      | structured data, entities, tables, summarize                                   |
+| Vector Search            |     7      | embeddings, semantic search, upsert, delete, collections                       |
+| Finance                  |     7      | add, batch_add, parse receipt, query, export, summary, delete                  |
+| Scheduler                |     6      | create, list, update, delete, history, trigger                                 |
+| Weather                  |     2      | current, forecast                                                              |
+| Memory                   |     7      | remember, batch, recall, forget, list, boost, stats                            |
+| Goals                    |     8      | create, list, update, decompose, next actions, complete step, details, stats   |
+| Dynamic Tools            |     4      | create, list, delete, toggle custom tools                                      |
+| Utilities                |     21     | datetime, math, units, UUID, password, hash, encode, text ops, CSV, validation |
 
 #### Tool Definition Structure
 
@@ -473,10 +479,10 @@ Every tool follows the OpenAI function-calling schema:
 
 ```typescript
 interface ToolDefinition {
-  name: string;                    // e.g., "read_file"
-  description: string;             // Human-readable description
+  name: string; // e.g., "read_file"
+  description: string; // Human-readable description
   parameters: {
-    type: "object";
+    type: 'object';
     properties: Record<string, JSONSchemaProperty>;
     required?: string[];
   };
@@ -591,10 +597,21 @@ The provider system is config-driven and supports 100+ AI providers through a co
 
 ```typescript
 type AIProvider =
-  | 'openai' | 'anthropic' | 'google' | 'deepseek'
-  | 'groq' | 'mistral' | 'zhipu' | 'cohere'
-  | 'together' | 'fireworks' | 'perplexity'
-  | 'openrouter' | 'xai' | 'local' | 'custom';
+  | 'openai'
+  | 'anthropic'
+  | 'google'
+  | 'deepseek'
+  | 'groq'
+  | 'mistral'
+  | 'zhipu'
+  | 'cohere'
+  | 'together'
+  | 'fireworks'
+  | 'perplexity'
+  | 'openrouter'
+  | 'xai'
+  | 'local'
+  | 'custom';
 ```
 
 #### JSON Config Files
@@ -608,13 +625,13 @@ Examples of configured providers:
 
 The router provides several selection strategies:
 
-| Function              | Behavior                                       |
-|-----------------------|------------------------------------------------|
-| `selectBestModel()`   | Overall best match for criteria                |
-| `getCheapestModel()`  | Lowest cost per token                          |
-| `getFastestModel()`   | Lowest latency                                 |
-| `getSmartestModel()`  | Highest quality/reasoning capability           |
-| `findModels()`        | Filter by capability requirements              |
+| Function             | Behavior                             |
+| -------------------- | ------------------------------------ |
+| `selectBestModel()`  | Overall best match for criteria      |
+| `getCheapestModel()` | Lowest cost per token                |
+| `getFastestModel()`  | Lowest latency                       |
+| `getSmartestModel()` | Highest quality/reasoning capability |
+| `findModels()`       | Filter by capability requirements    |
 
 #### Retry and Fallback
 
@@ -634,17 +651,18 @@ Branded types prevent accidental mixing of structurally identical types. You can
 ```typescript
 type Brand<T, B extends string> = T & { readonly [brand]: B };
 
-type UserId         = Brand<string, 'UserId'>;
-type SessionId      = Brand<string, 'SessionId'>;
-type PluginId       = Brand<string, 'PluginId'>;
-type ChannelId      = Brand<string, 'ChannelId'>;
-type MessageId      = Brand<string, 'MessageId'>;
-type AuditEventId   = Brand<string, 'AuditEventId'>;
-type ToolId         = Brand<string, 'ToolId'>;
+type UserId = Brand<string, 'UserId'>;
+type SessionId = Brand<string, 'SessionId'>;
+type PluginId = Brand<string, 'PluginId'>;
+type ChannelId = Brand<string, 'ChannelId'>;
+type MessageId = Brand<string, 'MessageId'>;
+type AuditEventId = Brand<string, 'AuditEventId'>;
+type ToolId = Brand<string, 'ToolId'>;
 type ConversationId = Brand<string, 'ConversationId'>;
 ```
 
 Each branded type has:
+
 - A **validated constructor** (`createUserId(id)`) that checks format (UUID, patterns, etc.) and throws on invalid input.
 - An **unsafe constructor** (`unsafeUserId(id)`) for internal use when the value is known to be valid.
 
@@ -660,24 +678,25 @@ type Result<T, E = Error> =
 
 Available combinators:
 
-| Function       | Signature                                       | Description                          |
-|----------------|-------------------------------------------------|--------------------------------------|
-| `ok(value)`    | `(T) => Result<T, never>`                       | Create a success result              |
-| `err(error)`   | `(E) => Result<never, E>`                       | Create a failure result              |
-| `unwrap(r)`    | `(Result<T,E>) => T`                            | Extract value or throw               |
-| `unwrapOr(r,d)`| `(Result<T,E>, T) => T`                         | Extract value or return default      |
-| `mapResult()`  | `(Result<T,E>, T=>U) => Result<U,E>`            | Transform success value              |
-| `mapError()`   | `(Result<T,E>, E=>F) => Result<T,F>`            | Transform error value                |
-| `andThen()`    | `(Result<T,E>, T=>Result<U,E>) => Result<U,E>`  | Chain (flatMap) results              |
-| `combine()`    | `(Result<T,E>[]) => Result<T[], E>`             | Combine multiple results             |
-| `fromPromise()`| `(Promise<T>) => Promise<Result<T,E>>`          | Convert throwing promise to Result   |
-| `fromThrowable()` | `(() => T) => Result<T,E>`                   | Convert throwing function to Result  |
-| `isOk(r)`      | Type guard for success                          |                                      |
-| `isErr(r)`     | Type guard for error                            |                                      |
+| Function          | Signature                                      | Description                         |
+| ----------------- | ---------------------------------------------- | ----------------------------------- |
+| `ok(value)`       | `(T) => Result<T, never>`                      | Create a success result             |
+| `err(error)`      | `(E) => Result<never, E>`                      | Create a failure result             |
+| `unwrap(r)`       | `(Result<T,E>) => T`                           | Extract value or throw              |
+| `unwrapOr(r,d)`   | `(Result<T,E>, T) => T`                        | Extract value or return default     |
+| `mapResult()`     | `(Result<T,E>, T=>U) => Result<U,E>`           | Transform success value             |
+| `mapError()`      | `(Result<T,E>, E=>F) => Result<T,F>`           | Transform error value               |
+| `andThen()`       | `(Result<T,E>, T=>Result<U,E>) => Result<U,E>` | Chain (flatMap) results             |
+| `combine()`       | `(Result<T,E>[]) => Result<T[], E>`            | Combine multiple results            |
+| `fromPromise()`   | `(Promise<T>) => Promise<Result<T,E>>`         | Convert throwing promise to Result  |
+| `fromThrowable()` | `(() => T) => Result<T,E>`                     | Convert throwing function to Result |
+| `isOk(r)`         | Type guard for success                         |                                     |
+| `isErr(r)`        | Type guard for error                           |                                     |
 
 #### Error Types (`packages/core/src/types/errors.ts`)
 
 Custom error classes extend `Error` for structured error handling:
+
 - `ValidationError` -- Invalid input
 - `NotFoundError` -- Resource not found
 - `InternalError` -- Internal system error
@@ -721,6 +740,7 @@ Code execution tools (`execute_javascript`, `execute_python`, `execute_shell`) r
 #### Audit Logging
 
 The audit system (`packages/core/src/audit/`) records all significant actions with tamper-evident logging:
+
 - Structured audit events with UUIDv7 IDs.
 - Event verification for integrity checking.
 - Persistent audit trail in the gateway database.
@@ -728,6 +748,7 @@ The audit system (`packages/core/src/audit/`) records all significant actions wi
 #### Cryptographic Utilities
 
 The crypto module (`packages/core/src/crypto/`) provides:
+
 - **Key derivation** -- PBKDF2 and HKDF via `node:crypto`.
 - **Vault** -- Encrypted credential storage.
 - **Keychain** -- Key management.
@@ -764,6 +785,7 @@ Plugins extend OwnPilot with custom functionality while running in complete isol
 **Capabilities:** Plugins declare required capabilities. The `IsolationEnforcer` grants or denies access based on `PluginCapability` declarations.
 
 **Example Plugins** (in `packages/core/src/plugins/examples/`):
+
 - Calculator, Clipboard, Code Assistant, Expense Tracker
 - Habit Tracker, News, Pomodoro, Quick Capture
 - Reminder, Weather
@@ -795,13 +817,13 @@ interface IEventBus {
 
 #### Event Categories
 
-| Category   | Events                                          | Description                     |
-|------------|------------------------------------------------|---------------------------------|
-| `tool`     | `tool:call`, `tool:result`, `tool:error`       | Tool execution lifecycle        |
-| `resource` | `resource:created`, `resource:updated`, `resource:deleted` | Data mutation events |
-| `agent`    | `agent:start`, `agent:complete`, `agent:error` | Agent execution events          |
-| `plugin`   | `plugin:loaded`, `plugin:error`                | Plugin lifecycle events         |
-| `system`   | `system:startup`, `system:shutdown`            | System lifecycle events         |
+| Category   | Events                                                     | Description              |
+| ---------- | ---------------------------------------------------------- | ------------------------ |
+| `tool`     | `tool:call`, `tool:result`, `tool:error`                   | Tool execution lifecycle |
+| `resource` | `resource:created`, `resource:updated`, `resource:deleted` | Data mutation events     |
+| `agent`    | `agent:start`, `agent:complete`, `agent:error`             | Agent execution events   |
+| `plugin`   | `plugin:loaded`, `plugin:error`                            | Plugin lifecycle events  |
+| `system`   | `system:startup`, `system:shutdown`                        | System lifecycle events  |
 
 #### Key Features
 
@@ -837,43 +859,43 @@ const app = createApp();
 
 The gateway has **35 route modules**, each responsible for a specific domain. All routes are exported from `packages/gateway/src/routes/index.ts`.
 
-| Route Module          | Base Path              | Purpose                              |
-|-----------------------|------------------------|--------------------------------------|
-| `health`              | `/health`              | Health checks and readiness probes   |
-| `auth`                | `/api/auth`            | Authentication (JWT, API key)        |
-| `chat`                | `/api/chat`            | Chat completions and streaming       |
-| `agents`              | `/api/agents`          | Agent CRUD and management            |
-| `tools`               | `/api/tools`           | Tool listing and execution           |
-| `custom-tools`        | `/api/custom-tools`    | User-created dynamic tools           |
-| `settings`            | `/api/settings`        | System settings and API keys         |
-| `models`              | `/api/models`          | AI model listing                     |
-| `model-configs`       | `/api/model-configs`   | User model configurations            |
-| `providers`           | `/api/providers`       | AI provider management               |
-| `local-providers`     | `/api/local-providers` | Local AI provider management         |
-| `config-services`     | `/api/config-services` | Configuration center                 |
-| `profile`             | `/api/profile`         | User profile management              |
-| `personal-data`       | `/api/personal-data`   | Tasks, notes, calendar, etc.         |
-| `personal-data-tools` | (internal)             | Tool executors for personal data     |
-| `custom-data`         | `/api/custom-data`     | Custom user-defined tables           |
-| `memories`            | `/api/memories`        | Persistent AI memory CRUD            |
-| `goals`               | `/api/goals`           | Goal and step management             |
-| `triggers`            | `/api/triggers`        | Proactive trigger configuration      |
-| `plans`               | `/api/plans`           | Multi-step plan management           |
-| `autonomy`            | `/api/autonomy`        | Autonomy level control               |
-| `costs`               | `/api/costs`           | Usage and cost tracking              |
-| `expenses`            | `/api/expenses`        | Personal expense management          |
-| `channels`            | `/api/channels`        | Communication channel management     |
-| `plugins`             | `/api/plugins`         | Plugin management                    |
-| `workspaces`          | `/api/workspaces`      | User workspace management            |
-| `file-workspaces`     | `/api/file-workspaces` | File workspace operations            |
-| `integrations`        | `/api/integrations`    | OAuth and external integrations      |
-| `media-settings`      | `/api/media-settings`  | Image/audio provider settings        |
-| `productivity`        | `/api/productivity`    | Pomodoro, habits, captures           |
-| `audit`               | `/api/audit`           | Audit log access                     |
-| `dashboard`           | `/api/dashboard`       | Dashboard aggregated data            |
-| `database`            | `/api/database`        | Database info and management         |
-| `debug`               | `/api/debug`           | Debug endpoints (dev only)           |
-| `logs`                | (via `debug`)          | Request log access                   |
+| Route Module          | Base Path              | Purpose                            |
+| --------------------- | ---------------------- | ---------------------------------- |
+| `health`              | `/health`              | Health checks and readiness probes |
+| `auth`                | `/api/auth`            | Authentication (JWT, API key)      |
+| `chat`                | `/api/chat`            | Chat completions and streaming     |
+| `agents`              | `/api/agents`          | Agent CRUD and management          |
+| `tools`               | `/api/tools`           | Tool listing and execution         |
+| `custom-tools`        | `/api/custom-tools`    | User-created dynamic tools         |
+| `settings`            | `/api/settings`        | System settings and API keys       |
+| `models`              | `/api/models`          | AI model listing                   |
+| `model-configs`       | `/api/model-configs`   | User model configurations          |
+| `providers`           | `/api/providers`       | AI provider management             |
+| `local-providers`     | `/api/local-providers` | Local AI provider management       |
+| `config-services`     | `/api/config-services` | Configuration center               |
+| `profile`             | `/api/profile`         | User profile management            |
+| `personal-data`       | `/api/personal-data`   | Tasks, notes, calendar, etc.       |
+| `personal-data-tools` | (internal)             | Tool executors for personal data   |
+| `custom-data`         | `/api/custom-data`     | Custom user-defined tables         |
+| `memories`            | `/api/memories`        | Persistent AI memory CRUD          |
+| `goals`               | `/api/goals`           | Goal and step management           |
+| `triggers`            | `/api/triggers`        | Proactive trigger configuration    |
+| `plans`               | `/api/plans`           | Multi-step plan management         |
+| `autonomy`            | `/api/autonomy`        | Autonomy level control             |
+| `costs`               | `/api/costs`           | Usage and cost tracking            |
+| `expenses`            | `/api/expenses`        | Personal expense management        |
+| `channels`            | `/api/channels`        | Communication channel management   |
+| `plugins`             | `/api/plugins`         | Plugin management                  |
+| `workspaces`          | `/api/workspaces`      | User workspace management          |
+| `file-workspaces`     | `/api/file-workspaces` | File workspace operations          |
+| `integrations`        | `/api/integrations`    | OAuth and external integrations    |
+| `media-settings`      | `/api/media-settings`  | Image/audio provider settings      |
+| `productivity`        | `/api/productivity`    | Pomodoro, habits, captures         |
+| `audit`               | `/api/audit`           | Audit log access                   |
+| `dashboard`           | `/api/dashboard`       | Dashboard aggregated data          |
+| `database`            | `/api/database`        | Database info and management       |
+| `debug`               | `/api/debug`           | Debug endpoints (dev only)         |
+| `logs`                | (via `debug`)          | Request log access                 |
 
 ---
 
@@ -921,11 +943,13 @@ Response
 ```
 
 **Authentication Modes** (configured via `AUTH_TYPE`):
+
 - `none` -- No authentication required.
 - `api-key` -- Requires `Authorization: Bearer <key>` header. Keys set via `API_KEYS` env var.
 - `jwt` -- JWT-based authentication using `jose`. Secret set via `JWT_SECRET`.
 
 **Rate Limiting:**
+
 - Sliding window algorithm.
 - Configurable: `RATE_LIMIT_WINDOW_MS` (default 60000ms), `RATE_LIMIT_MAX` (default 100).
 - Can be disabled: `RATE_LIMIT_DISABLED=true`.
@@ -979,38 +1003,38 @@ The database layer uses a **repository pattern** with a `DatabaseAdapter` interf
 
 The repositories are organized by domain:
 
-| Domain              | Repository                 | Data Managed                         |
-|---------------------|----------------------------|--------------------------------------|
-| **Core**            | `ConversationsRepository`  | Chat conversations                   |
-|                     | `MessagesRepository`       | Chat messages                        |
-|                     | `ChatRepository`           | Enhanced chat history                |
-|                     | `AgentsRepository`         | Agent configurations                 |
-|                     | `SettingsRepository`       | System settings, API keys            |
-|                     | `LogsRepository`           | Request logs for debugging           |
-| **Personal Data**   | `TasksRepository`          | To-do tasks                          |
-|                     | `BookmarksRepository`      | Web bookmarks                        |
-|                     | `NotesRepository`          | Notes and documents                  |
-|                     | `CalendarRepository`       | Calendar events                      |
-|                     | `ContactsRepository`       | Contact list                         |
-|                     | `CustomDataRepository`     | User-defined tables and records      |
-| **Autonomous AI**   | `MemoriesRepository`       | Persistent AI memories               |
-|                     | `GoalsRepository`          | Long-term goals and steps            |
-|                     | `TriggersRepository`       | Proactive automation triggers        |
-|                     | `PlansRepository`          | Multi-step execution plans           |
-| **Channels**        | `ChannelsRepository`       | Channel configurations               |
-|                     | `ChannelMessagesRepository`| Messages from external channels      |
-| **Finance**         | `CostsRepository`          | AI usage costs                       |
-| **Productivity**    | `PomodoroRepository`       | Pomodoro timer sessions              |
-|                     | `HabitsRepository`         | Habit tracking                       |
-|                     | `CapturesRepository`       | Quick captures                       |
-| **Integrations**    | `OAuthIntegrationsRepository`| OAuth tokens and connections       |
-|                     | `MediaSettingsRepository`  | Image/audio provider settings        |
-|                     | `ModelConfigsRepository`   | User AI model configurations         |
-| **Infrastructure**  | `WorkspacesRepository`     | User workspaces and code execution   |
-|                     | `CustomToolsRepository`    | User-created dynamic tools           |
-|                     | `PluginsRepository`        | Plugin state and configuration       |
-|                     | `LocalProvidersRepository` | Local AI providers (Ollama, etc.)    |
-|                     | `ConfigServicesRepository` | Service configuration center         |
+| Domain             | Repository                    | Data Managed                       |
+| ------------------ | ----------------------------- | ---------------------------------- |
+| **Core**           | `ConversationsRepository`     | Chat conversations                 |
+|                    | `MessagesRepository`          | Chat messages                      |
+|                    | `ChatRepository`              | Enhanced chat history              |
+|                    | `AgentsRepository`            | Agent configurations               |
+|                    | `SettingsRepository`          | System settings, API keys          |
+|                    | `LogsRepository`              | Request logs for debugging         |
+| **Personal Data**  | `TasksRepository`             | To-do tasks                        |
+|                    | `BookmarksRepository`         | Web bookmarks                      |
+|                    | `NotesRepository`             | Notes and documents                |
+|                    | `CalendarRepository`          | Calendar events                    |
+|                    | `ContactsRepository`          | Contact list                       |
+|                    | `CustomDataRepository`        | User-defined tables and records    |
+| **Autonomous AI**  | `MemoriesRepository`          | Persistent AI memories             |
+|                    | `GoalsRepository`             | Long-term goals and steps          |
+|                    | `TriggersRepository`          | Proactive automation triggers      |
+|                    | `PlansRepository`             | Multi-step execution plans         |
+| **Channels**       | `ChannelsRepository`          | Channel configurations             |
+|                    | `ChannelMessagesRepository`   | Messages from external channels    |
+| **Finance**        | `CostsRepository`             | AI usage costs                     |
+| **Productivity**   | `PomodoroRepository`          | Pomodoro timer sessions            |
+|                    | `HabitsRepository`            | Habit tracking                     |
+|                    | `CapturesRepository`          | Quick captures                     |
+| **Integrations**   | `OAuthIntegrationsRepository` | OAuth tokens and connections       |
+|                    | `MediaSettingsRepository`     | Image/audio provider settings      |
+|                    | `ModelConfigsRepository`      | User AI model configurations       |
+| **Infrastructure** | `WorkspacesRepository`        | User workspaces and code execution |
+|                    | `CustomToolsRepository`       | User-created dynamic tools         |
+|                    | `PluginsRepository`           | Plugin state and configuration     |
+|                    | `LocalProvidersRepository`    | Local AI providers (Ollama, etc.)  |
+|                    | `ConfigServicesRepository`    | Service configuration center       |
 
 #### Schema Migrations
 
@@ -1019,6 +1043,7 @@ SQL migration files are in `packages/gateway/src/db/migrations/postgres/`. The i
 #### Seed Data
 
 Seed scripts in `packages/gateway/scripts/`:
+
 - `seed-database.ts` -- Populates initial data.
 - `seed-triggers-plans.ts` -- Creates default automation triggers and plans.
 - `packages/gateway/src/db/seeds/default-agents.ts` -- Default agent configurations.
@@ -1031,23 +1056,26 @@ The WebSocket server (`packages/gateway/src/ws/server.ts`) provides real-time co
 
 ```typescript
 interface WSGatewayConfig {
-  port?: number;                // Default: 18789 (standalone) or /ws path
-  path?: string;                // Default: '/ws'
-  heartbeatInterval?: number;   // Default: 30000ms
-  sessionTimeout?: number;      // Default: 300000ms (5 minutes)
-  maxPayloadSize?: number;      // Default: 1MB
+  port?: number; // Default: 18789 (standalone) or /ws path
+  path?: string; // Default: '/ws'
+  heartbeatInterval?: number; // Default: 30000ms
+  sessionTimeout?: number; // Default: 300000ms (5 minutes)
+  maxPayloadSize?: number; // Default: 1MB
 }
 ```
 
 **Session Management:**
+
 - Each WebSocket connection creates a `Session` with unique ID, user ID, connection time, and subscribed channels.
 - `SessionManager` tracks all active sessions.
 
 **Event System:**
+
 - `gatewayEvents` (`EventEmitter`) bridges between HTTP routes, WebSocket, and channel adapters.
 - `ClientEventHandler` processes incoming client messages.
 
 **Message Flow:**
+
 ```
 Client WS Connect --> Session Created --> Subscribe to Channels
 Client WS Message --> ClientEventHandler --> gatewayEvents.emit()
@@ -1062,15 +1090,15 @@ The `ChannelManager` (`packages/gateway/src/channels/manager.ts`) provides a uni
 
 **Supported Channel Types:**
 
-| Channel   | Library      | Adapter Location                          |
-|-----------|-------------|-------------------------------------------|
-| Telegram  | grammy      | `packages/channels/src/telegram/bot.ts`   |
-| Discord   | discord.js  | `packages/gateway/src/channels/adapters/discord.ts` |
-| Slack     | @slack/bolt | `packages/gateway/src/channels/adapters/slack.ts`   |
-| WhatsApp  | (planned)   | --                                        |
-| Matrix    | (planned)   | --                                        |
-| Signal    | (planned)   | --                                        |
-| Webchat   | (built-in)  | Via WebSocket                             |
+| Channel  | Library     | Adapter Location                                    |
+| -------- | ----------- | --------------------------------------------------- |
+| Telegram | grammy      | `packages/channels/src/telegram/bot.ts`             |
+| Discord  | discord.js  | `packages/gateway/src/channels/adapters/discord.ts` |
+| Slack    | @slack/bolt | `packages/gateway/src/channels/adapters/slack.ts`   |
+| WhatsApp | (planned)   | --                                                  |
+| Matrix   | (planned)   | --                                                  |
+| Signal   | (planned)   | --                                                  |
+| Webchat  | (built-in)  | Via WebSocket                                       |
 
 **Architecture:**
 
@@ -1103,13 +1131,13 @@ The autonomy system (`packages/gateway/src/autonomy/`) controls how independentl
 
 **Autonomy Levels:**
 
-| Level | Name       | Value | Behavior                                           |
-|-------|------------|:-----:|----------------------------------------------------|
-| 0     | Manual     |   0   | Always ask before any action                       |
-| 1     | Assisted   |   1   | Suggest actions, ask for approval                  |
-| 2     | Supervised |   2   | Execute low-risk actions, ask for high-risk        |
-| 3     | Autonomous |   3   | Execute all actions, send notifications            |
-| 4     | Full       |   4   | Fully autonomous, minimal notifications            |
+| Level | Name       | Value | Behavior                                    |
+| ----- | ---------- | :---: | ------------------------------------------- |
+| 0     | Manual     |   0   | Always ask before any action                |
+| 1     | Assisted   |   1   | Suggest actions, ask for approval           |
+| 2     | Supervised |   2   | Execute low-risk actions, ask for high-risk |
+| 3     | Autonomous |   3   | Execute all actions, send notifications     |
+| 4     | Full       |   4   | Fully autonomous, minimal notifications     |
 
 **Risk Assessment:**
 
@@ -1141,24 +1169,24 @@ The service layer (`packages/gateway/src/services/`) encapsulates business logic
 
 #### Services (16 total)
 
-| Service                  | Responsibility                                      |
-|--------------------------|-----------------------------------------------------|
-| `GoalService`            | Goal CRUD, decomposition, progress tracking         |
-| `MemoryService`          | Memory CRUD, recall, boost, stats                   |
-| `CustomDataService`      | Dynamic table/record operations                     |
-| `TriggerService`         | Trigger CRUD, evaluation, history                   |
-| `PlanService`            | Plan CRUD, step execution, state transitions        |
-| `DashboardService`       | Aggregated dashboard data                           |
-| `GmailService`           | Gmail integration (send, list, read)                |
-| `MediaService`           | Image/audio provider management                     |
-| `PomodoroService`        | Pomodoro timer sessions and settings                |
-| `HabitsService`          | Habit tracking and logging                          |
-| `CaptureService`         | Quick capture inbox                                 |
-| `PluginService`          | Plugin state persistence                            |
-| `IntegrationService`     | OAuth token management                              |
-| `WorkspaceService`       | File workspace operations                           |
-| `ConfigService`          | Configuration center                                |
-| `AuditService`           | Audit trail queries                                 |
+| Service              | Responsibility                               |
+| -------------------- | -------------------------------------------- |
+| `GoalService`        | Goal CRUD, decomposition, progress tracking  |
+| `MemoryService`      | Memory CRUD, recall, boost, stats            |
+| `CustomDataService`  | Dynamic table/record operations              |
+| `TriggerService`     | Trigger CRUD, evaluation, history            |
+| `PlanService`        | Plan CRUD, step execution, state transitions |
+| `DashboardService`   | Aggregated dashboard data                    |
+| `GmailService`       | Gmail integration (send, list, read)         |
+| `MediaService`       | Image/audio provider management              |
+| `PomodoroService`    | Pomodoro timer sessions and settings         |
+| `HabitsService`      | Habit tracking and logging                   |
+| `CaptureService`     | Quick capture inbox                          |
+| `PluginService`      | Plugin state persistence                     |
+| `IntegrationService` | OAuth token management                       |
+| `WorkspaceService`   | File workspace operations                    |
+| `ConfigService`      | Configuration center                         |
+| `AuditService`       | Audit trail queries                          |
 
 #### Pattern
 
@@ -1183,15 +1211,15 @@ The frontend is a single-page application built with modern React.
 
 ### 7.1 Frontend Stack
 
-| Technology           | Version | Purpose                              |
-|----------------------|---------|--------------------------------------|
-| React                | 19.x   | UI framework                         |
-| React Router         | 7.x    | Client-side routing                  |
-| Vite                 | 6.x    | Build tool and dev server            |
-| Tailwind CSS         | 4.x    | Utility-first CSS framework          |
-| @tailwindcss/vite    | 4.x    | Vite integration for Tailwind        |
-| prism-react-renderer | 2.x    | Syntax highlighting for code blocks  |
-| TypeScript           | 5.7+   | Type safety                          |
+| Technology           | Version | Purpose                             |
+| -------------------- | ------- | ----------------------------------- |
+| React                | 19.x    | UI framework                        |
+| React Router         | 7.x     | Client-side routing                 |
+| Vite                 | 6.x     | Build tool and dev server           |
+| Tailwind CSS         | 4.x     | Utility-first CSS framework         |
+| @tailwindcss/vite    | 4.x     | Vite integration for Tailwind       |
+| prism-react-renderer | 2.x     | Syntax highlighting for code blocks |
+| TypeScript           | 5.7+    | Type safety                         |
 
 ---
 
@@ -1242,39 +1270,39 @@ The application has 35+ pages organized within a shared `Layout` component. Rout
 
 Key reusable components in `packages/ui/src/components/`:
 
-| Component              | Purpose                                           |
-|------------------------|---------------------------------------------------|
-| `Layout`               | Main page layout with sidebar navigation          |
-| `ChatInput`            | Chat message input with tool picker               |
-| `MessageList`          | Renders conversation messages                     |
-| `ToolPicker`           | Tool selection overlay for chat                   |
-| `ToolExecutionDisplay` | Shows tool call results inline                    |
-| `CodeBlock`            | Syntax-highlighted code rendering                 |
-| `FileBrowser`          | File system browser component                     |
-| `WorkspaceSelector`    | Workspace switching dropdown                      |
-| `StatsPanel`           | Statistics and metrics display                    |
-| `TimelineView`         | Timeline visualization                            |
-| `AIBriefingCard`       | AI-generated briefing cards                       |
-| `TraceDisplay`         | Request trace visualization                       |
-| `DebugInfoModal`       | Debug information overlay                         |
-| `ConfirmDialog`        | Async confirmation dialog (replaces native confirm)|
-| `DynamicConfigForm`    | Dynamic form generation from schemas              |
-| `ErrorBoundary`        | React error boundary                              |
-| `AIModelsTab`          | AI models configuration tab                       |
-| `ProvidersTab`         | Provider configuration tab                        |
-| `IntegrationsTab`      | Integration configuration tab                     |
-| `MediaSettingsTab`     | Media provider settings tab                       |
+| Component              | Purpose                                             |
+| ---------------------- | --------------------------------------------------- |
+| `Layout`               | Main page layout with sidebar navigation            |
+| `ChatInput`            | Chat message input with tool picker                 |
+| `MessageList`          | Renders conversation messages                       |
+| `ToolPicker`           | Tool selection overlay for chat                     |
+| `ToolExecutionDisplay` | Shows tool call results inline                      |
+| `CodeBlock`            | Syntax-highlighted code rendering                   |
+| `FileBrowser`          | File system browser component                       |
+| `WorkspaceSelector`    | Workspace switching dropdown                        |
+| `StatsPanel`           | Statistics and metrics display                      |
+| `TimelineView`         | Timeline visualization                              |
+| `AIBriefingCard`       | AI-generated briefing cards                         |
+| `TraceDisplay`         | Request trace visualization                         |
+| `DebugInfoModal`       | Debug information overlay                           |
+| `ConfirmDialog`        | Async confirmation dialog (replaces native confirm) |
+| `DynamicConfigForm`    | Dynamic form generation from schemas                |
+| `ErrorBoundary`        | React error boundary                                |
+| `AIModelsTab`          | AI models configuration tab                         |
+| `ProvidersTab`         | Provider configuration tab                          |
+| `IntegrationsTab`      | Integration configuration tab                       |
+| `MediaSettingsTab`     | Media provider settings tab                         |
 
 ---
 
 ### 7.4 Hooks and State
 
-| Hook            | File                    | Purpose                                          |
-|-----------------|-------------------------|--------------------------------------------------|
-| `useChat`       | `hooks/useChat.ts`      | Chat state management, message sending, streaming|
-| `useChatStore`  | `hooks/useChatStore.tsx` | Global chat store (conversations, active chat)  |
-| `useWebSocket`  | `hooks/useWebSocket.tsx`| WebSocket connection and message handling        |
-| `useTheme`      | `hooks/useTheme.tsx`    | Dark/light theme management                      |
+| Hook           | File                     | Purpose                                           |
+| -------------- | ------------------------ | ------------------------------------------------- |
+| `useChat`      | `hooks/useChat.ts`       | Chat state management, message sending, streaming |
+| `useChatStore` | `hooks/useChatStore.tsx` | Global chat store (conversations, active chat)    |
+| `useWebSocket` | `hooks/useWebSocket.tsx` | WebSocket connection and message handling         |
+| `useTheme`     | `hooks/useTheme.tsx`     | Dark/light theme management                       |
 
 ---
 
@@ -1297,6 +1325,7 @@ packages/channels/src/
 ```
 
 The Telegram bot:
+
 - Receives messages via long polling or webhook.
 - Forwards them to the gateway's agent system.
 - Streams back AI responses to the Telegram chat.
@@ -1311,19 +1340,20 @@ The CLI provides a terminal interface for managing OwnPilot. It uses **commander
 ### Binary Names
 
 The package exposes two binary names:
+
 - `ownpilot` -- Full name
 - `oag` -- Short alias
 
 ### Commands
 
-| Command      | File                     | Purpose                                |
-|--------------|--------------------------|----------------------------------------|
-| `start`      | `commands/start.ts`      | Start the gateway server               |
-| `server`     | `commands/server.ts`     | Server management (start, stop, status)|
-| `config`     | `commands/config.ts`     | View and modify configuration          |
-| `channel`    | `commands/channel.ts`    | Manage communication channels          |
-| `bot`        | `commands/bot.ts`        | Bot management (Telegram, etc.)        |
-| `workspace`  | `commands/workspace.ts`  | Workspace management                   |
+| Command     | File                    | Purpose                                 |
+| ----------- | ----------------------- | --------------------------------------- |
+| `start`     | `commands/start.ts`     | Start the gateway server                |
+| `server`    | `commands/server.ts`    | Server management (start, stop, status) |
+| `config`    | `commands/config.ts`    | View and modify configuration           |
+| `channel`   | `commands/channel.ts`   | Manage communication channels           |
+| `bot`       | `commands/bot.ts`       | Bot management (Telegram, etc.)         |
+| `workspace` | `commands/workspace.ts` | Workspace management                    |
 
 The Docker container starts via `node packages/cli/dist/index.js start`.
 
@@ -1543,7 +1573,7 @@ The `DatabaseAdapter` interface abstracts PostgreSQL specifics, making it possib
 
 ```typescript
 interface DatabaseAdapter {
-  readonly type: DatabaseType;    // 'postgres'
+  readonly type: DatabaseType; // 'postgres'
   query<T>(sql, params): Promise<T[]>;
   queryOne<T>(sql, params): Promise<T | null>;
   execute(sql, params): Promise<{ changes: number }>;
@@ -1603,7 +1633,10 @@ Services encapsulate business logic between route handlers and repositories:
 
 ```typescript
 class GoalService {
-  constructor(private repo: GoalsRepository, private bus: IEventBus) {}
+  constructor(
+    private repo: GoalsRepository,
+    private bus: IEventBus
+  ) {}
 
   async createGoal(input: CreateGoalInput): Promise<Goal> {
     const goal = await this.repo.create(input);
@@ -1673,6 +1706,7 @@ Stage 2: Production (node:22-alpine)
 ```
 
 **Database Only** (`docker-compose.db.yml`):
+
 - Runs PostgreSQL 16-alpine on port 25432.
 - Auto-applies schema migrations on first start.
 - Useful for local development with `pnpm dev`.
@@ -1759,42 +1793,42 @@ pnpm --filter @ownpilot/cli start
 
 ### Environment Variables
 
-| Variable                    | Required | Default               | Description                                    |
-|-----------------------------|----------|-----------------------|------------------------------------------------|
-| `NODE_ENV`                  | No       | `development`         | Environment mode                               |
-| `PORT`                      | No       | `8080`                | HTTP server port                               |
-| `HOST`                      | No       | `0.0.0.0`             | HTTP server bind address                       |
-| `DATA_DIR`                  | No       | `./data`              | Persistent data directory                      |
-| **Database**                |          |                       |                                                |
-| `DB_TYPE`                   | No       | `postgres`            | Database type (PostgreSQL only)                |
-| `DATABASE_URL`              | No       | --                    | PostgreSQL connection string                   |
-| `POSTGRES_HOST`             | No       | `postgres`            | PostgreSQL host                                |
-| `POSTGRES_PORT`             | No       | `5432`                | PostgreSQL port                                |
-| `POSTGRES_USER`             | No       | `ownpilot`            | PostgreSQL username                            |
-| `POSTGRES_PASSWORD`         | No       | `ownpilot_secret`     | PostgreSQL password                            |
-| `POSTGRES_DB`               | No       | `ownpilot`            | PostgreSQL database name                       |
-| **Authentication**          |          |                       |                                                |
-| `AUTH_TYPE`                 | No       | `none`                | Auth mode: `none`, `api-key`, `jwt`            |
-| `API_KEYS`                  | No       | --                    | Comma-separated API keys                       |
-| `JWT_SECRET`                | No       | --                    | JWT signing secret                             |
-| **AI Providers**            |          |                       |                                                |
-| `OPENAI_API_KEY`            | No       | --                    | OpenAI API key                                 |
-| `ANTHROPIC_API_KEY`         | No       | --                    | Anthropic API key                              |
-| `GOOGLE_API_KEY`            | No       | --                    | Google AI API key                              |
-| `DEEPSEEK_API_KEY`          | No       | --                    | DeepSeek API key                               |
-| **Channels**                |          |                       |                                                |
-| `TELEGRAM_BOT_TOKEN`        | No       | --                    | Telegram bot token                             |
-| `TELEGRAM_ALLOWED_USERS`    | No       | --                    | Allowed Telegram user IDs                      |
-| `TELEGRAM_ALLOWED_CHATS`    | No       | --                    | Allowed Telegram chat IDs                      |
-| **Rate Limiting**           |          |                       |                                                |
-| `RATE_LIMIT_DISABLED`       | No       | `false`               | Disable rate limiting                          |
-| `RATE_LIMIT_WINDOW_MS`      | No       | `60000`               | Rate limit window (ms)                         |
-| `RATE_LIMIT_MAX`            | No       | `100`                 | Max requests per window                        |
-| **System**                  |          |                       |                                                |
-| `SYSTEM_PROMPT`             | No       | `You are a helpful...`| Default system prompt                          |
-| `CORS_ORIGINS`              | No       | `*`                   | Allowed CORS origins                           |
-| `DEFAULT_AUTONOMY_LEVEL`    | No       | `1`                   | Default autonomy level (0-4)                   |
-| `ENABLE_PROACTIVE_TRIGGERS` | No       | `false`               | Enable proactive automation                    |
+| Variable                    | Required | Default                | Description                         |
+| --------------------------- | -------- | ---------------------- | ----------------------------------- |
+| `NODE_ENV`                  | No       | `development`          | Environment mode                    |
+| `PORT`                      | No       | `8080`                 | HTTP server port                    |
+| `HOST`                      | No       | `0.0.0.0`              | HTTP server bind address            |
+| `DATA_DIR`                  | No       | `./data`               | Persistent data directory           |
+| **Database**                |          |                        |                                     |
+| `DB_TYPE`                   | No       | `postgres`             | Database type (PostgreSQL only)     |
+| `DATABASE_URL`              | No       | --                     | PostgreSQL connection string        |
+| `POSTGRES_HOST`             | No       | `postgres`             | PostgreSQL host                     |
+| `POSTGRES_PORT`             | No       | `5432`                 | PostgreSQL port                     |
+| `POSTGRES_USER`             | No       | `ownpilot`             | PostgreSQL username                 |
+| `POSTGRES_PASSWORD`         | No       | `ownpilot_secret`      | PostgreSQL password                 |
+| `POSTGRES_DB`               | No       | `ownpilot`             | PostgreSQL database name            |
+| **Authentication**          |          |                        |                                     |
+| `AUTH_TYPE`                 | No       | `none`                 | Auth mode: `none`, `api-key`, `jwt` |
+| `API_KEYS`                  | No       | --                     | Comma-separated API keys            |
+| `JWT_SECRET`                | No       | --                     | JWT signing secret                  |
+| **AI Providers**            |          |                        |                                     |
+| `OPENAI_API_KEY`            | No       | --                     | OpenAI API key                      |
+| `ANTHROPIC_API_KEY`         | No       | --                     | Anthropic API key                   |
+| `GOOGLE_API_KEY`            | No       | --                     | Google AI API key                   |
+| `DEEPSEEK_API_KEY`          | No       | --                     | DeepSeek API key                    |
+| **Channels**                |          |                        |                                     |
+| `TELEGRAM_BOT_TOKEN`        | No       | --                     | Telegram bot token                  |
+| `TELEGRAM_ALLOWED_USERS`    | No       | --                     | Allowed Telegram user IDs           |
+| `TELEGRAM_ALLOWED_CHATS`    | No       | --                     | Allowed Telegram chat IDs           |
+| **Rate Limiting**           |          |                        |                                     |
+| `RATE_LIMIT_DISABLED`       | No       | `false`                | Disable rate limiting               |
+| `RATE_LIMIT_WINDOW_MS`      | No       | `60000`                | Rate limit window (ms)              |
+| `RATE_LIMIT_MAX`            | No       | `100`                  | Max requests per window             |
+| **System**                  |          |                        |                                     |
+| `SYSTEM_PROMPT`             | No       | `You are a helpful...` | Default system prompt               |
+| `CORS_ORIGINS`              | No       | `*`                    | Allowed CORS origins                |
+| `DEFAULT_AUTONOMY_LEVEL`    | No       | `1`                    | Default autonomy level (0-4)        |
+| `ENABLE_PROACTIVE_TRIGGERS` | No       | `false`                | Enable proactive automation         |
 
 ---
 
@@ -1820,19 +1854,19 @@ The `^build` dependency notation means "build all upstream workspace dependencie
 
 ### Build Commands
 
-| Command              | Scope     | Purpose                              |
-|----------------------|-----------|--------------------------------------|
-| `pnpm build`         | All       | Build all packages (via Turborepo)   |
-| `pnpm dev`           | All       | Start all packages in dev mode       |
-| `pnpm test`          | All       | Run all tests                        |
-| `pnpm test:watch`    | All       | Run tests in watch mode              |
-| `pnpm test:coverage` | All       | Run tests with coverage              |
-| `pnpm lint`          | All       | Lint all packages                    |
-| `pnpm lint:fix`      | All       | Auto-fix lint issues                 |
-| `pnpm typecheck`     | All       | Type-check all packages              |
-| `pnpm clean`         | All       | Clean all build outputs              |
-| `pnpm format`        | Root      | Format with Prettier                 |
-| `pnpm format:check`  | Root      | Check formatting                     |
+| Command              | Scope | Purpose                            |
+| -------------------- | ----- | ---------------------------------- |
+| `pnpm build`         | All   | Build all packages (via Turborepo) |
+| `pnpm dev`           | All   | Start all packages in dev mode     |
+| `pnpm test`          | All   | Run all tests                      |
+| `pnpm test:watch`    | All   | Run tests in watch mode            |
+| `pnpm test:coverage` | All   | Run tests with coverage            |
+| `pnpm lint`          | All   | Lint all packages                  |
+| `pnpm lint:fix`      | All   | Auto-fix lint issues               |
+| `pnpm typecheck`     | All   | Type-check all packages            |
+| `pnpm clean`         | All   | Clean all build outputs            |
+| `pnpm format`        | Root  | Format with Prettier               |
+| `pnpm format:check`  | Root  | Check formatting                   |
 
 ### TypeScript Configuration
 
@@ -1873,13 +1907,13 @@ packages/ui/src/App.test.tsx
 
 ### Test Coverage Summary
 
-| Package            | Test Files | Tests  | Description                              |
-|--------------------|:----------:|:------:|------------------------------------------|
-| `@ownpilot/gateway`| 50         | 1,075+ | Route integration, service, middleware   |
-| `@ownpilot/core`   | 11         | ~100   | Types, crypto, privacy, agent            |
-| `@ownpilot/channels`| 1         | ~10    | Telegram bot                             |
-| `@ownpilot/ui`     | 1          | ~5     | App rendering                            |
-| `@ownpilot/cli`    | 1          | ~5     | CLI commands                             |
+| Package              | Test Files | Tests  | Description                            |
+| -------------------- | :--------: | :----: | -------------------------------------- |
+| `@ownpilot/gateway`  |     50     | 1,075+ | Route integration, service, middleware |
+| `@ownpilot/core`     |     11     |  ~100  | Types, crypto, privacy, agent          |
+| `@ownpilot/channels` |     1      |  ~10   | Telegram bot                           |
+| `@ownpilot/ui`       |     1      |   ~5   | App rendering                          |
+| `@ownpilot/cli`      |     1      |   ~5   | CLI commands                           |
 
 ### Test Patterns
 

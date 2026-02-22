@@ -161,9 +161,7 @@ export function apiError(
   error: string | { code: ErrorCode | string; message: string },
   status: ContentfulStatusCode = 400
 ) {
-  const errorObj = typeof error === 'string'
-    ? { code: ERROR_CODES.ERROR, message: error }
-    : error;
+  const errorObj = typeof error === 'string' ? { code: ERROR_CODES.ERROR, message: error } : error;
   const response = {
     success: false,
     error: errorObj,
@@ -192,10 +190,14 @@ export function sanitizeId(id: string): string {
  */
 export function zodValidationError(
   c: Context,
-  issues: ReadonlyArray<{ path: PropertyKey[]; message: string }>,
+  issues: ReadonlyArray<{ path: PropertyKey[]; message: string }>
 ) {
-  const summary = issues.map(i => `${i.path.join('.')}: ${i.message}`).join('; ');
-  return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: `Validation failed: ${summary}` }, 400);
+  const summary = issues.map((i) => `${i.path.join('.')}: ${i.message}`).join('; ');
+  return apiError(
+    c,
+    { code: ERROR_CODES.INVALID_INPUT, message: `Validation failed: ${summary}` },
+    400
+  );
 }
 
 /**
@@ -205,7 +207,11 @@ export function zodValidationError(
  *   return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `X not found: ${sanitizeId(id)}` }, 404);
  */
 export function notFoundError(c: Context, resourceType: string, id: string) {
-  return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `${resourceType} not found: ${sanitizeId(id)}` }, 404);
+  return apiError(
+    c,
+    { code: ERROR_CODES.NOT_FOUND, message: `${resourceType} not found: ${sanitizeId(id)}` },
+    404
+  );
 }
 
 /**
@@ -252,7 +258,7 @@ export function sanitizeText(text: string): string {
  */
 export function validateQueryEnum<T extends string>(
   value: string | undefined,
-  allowed: readonly T[],
+  allowed: readonly T[]
 ): T | undefined {
   if (value === undefined) return undefined;
   return (allowed as readonly string[]).includes(value) ? (value as T) : undefined;

@@ -71,10 +71,7 @@ export interface IEventBus {
    * with the first matching event, or rejects on timeout.
    * Defaults to 30s timeout to prevent handler leaks.
    */
-  waitFor<K extends EventType>(
-    type: K,
-    timeoutMs?: number,
-  ): Promise<TypedEvent<EventPayload<K>>>;
+  waitFor<K extends EventType>(type: K, timeoutMs?: number): Promise<TypedEvent<EventPayload<K>>>;
 
   /**
    * Remove all handlers (for testing/cleanup).
@@ -146,7 +143,7 @@ export class EventBus implements IEventBus {
     if (set.size >= MAX_LISTENERS_PER_EVENT) {
       log.warn(
         `Max listeners (${MAX_LISTENERS_PER_EVENT}) reached for category "${category}". ` +
-        `Handler not added. Possible memory leak.`,
+          `Handler not added. Possible memory leak.`
       );
       return () => {};
     }
@@ -168,7 +165,7 @@ export class EventBus implements IEventBus {
     if (set.size >= MAX_LISTENERS_PER_EVENT) {
       log.warn(
         `Max listeners (${MAX_LISTENERS_PER_EVENT}) reached for pattern "${pattern}". ` +
-        `Handler not added. Possible memory leak.`,
+          `Handler not added. Possible memory leak.`
       );
       return () => {};
     }
@@ -184,7 +181,7 @@ export class EventBus implements IEventBus {
 
   waitFor<K extends EventType>(
     type: K,
-    timeoutMs: number = 30_000,
+    timeoutMs: number = 30_000
   ): Promise<TypedEvent<EventPayload<K>>> {
     return new Promise((resolve, reject) => {
       const unsub = this.once(type, ((event: TypedEvent<EventPayload<K>>) => {
@@ -215,7 +212,7 @@ export class EventBus implements IEventBus {
     if (set.size >= MAX_LISTENERS_PER_EVENT) {
       log.warn(
         `Max listeners (${MAX_LISTENERS_PER_EVENT}) reached for "${type}". ` +
-        `Handler not added. Possible memory leak.`,
+          `Handler not added. Possible memory leak.`
       );
       return () => {};
     }
@@ -286,10 +283,7 @@ export class EventBus implements IEventBus {
     return this.matchParts(patternParts, 0, typeParts, 0);
   }
 
-  private matchParts(
-    pattern: string[], pi: number,
-    type: string[], ti: number,
-  ): boolean {
+  private matchParts(pattern: string[], pi: number, type: string[], ti: number): boolean {
     while (pi < pattern.length && ti < type.length) {
       if (pattern[pi] === '**') {
         for (let i = ti; i <= type.length; i++) {

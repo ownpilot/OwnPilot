@@ -18,11 +18,18 @@ const MAX_FILE_SIZE = 20 * 1024 * 1024;
 /** MIME types we support for AI analysis. */
 const ANALYZABLE_MIME_TYPES = new Set([
   // Images
-  'image/jpeg', 'image/png', 'image/gif', 'image/webp',
+  'image/jpeg',
+  'image/png',
+  'image/gif',
+  'image/webp',
   // Documents
   'application/pdf',
   // Audio
-  'audio/ogg', 'audio/mpeg', 'audio/mp4', 'audio/wav', 'audio/webm',
+  'audio/ogg',
+  'audio/mpeg',
+  'audio/mp4',
+  'audio/wav',
+  'audio/webm',
 ]);
 
 /**
@@ -30,7 +37,7 @@ const ANALYZABLE_MIME_TYPES = new Set([
  */
 async function downloadTelegramFile(
   bot: Bot,
-  fileId: string,
+  fileId: string
 ): Promise<{ buffer: Buffer; filePath: string } | null> {
   try {
     const file = await bot.api.getFile(fileId);
@@ -41,7 +48,10 @@ async function downloadTelegramFile(
 
     // Pre-download size check (avoid buffering huge files)
     if (file.file_size && file.file_size > MAX_FILE_SIZE) {
-      log.warn('File exceeds size limit (pre-download)', { size: file.file_size, max: MAX_FILE_SIZE });
+      log.warn('File exceeds size limit (pre-download)', {
+        size: file.file_size,
+        max: MAX_FILE_SIZE,
+      });
       return null;
     }
 
@@ -76,7 +86,7 @@ async function downloadTelegramFile(
  */
 export async function downloadTelegramAttachments(
   bot: Bot,
-  message: Message,
+  message: Message
 ): Promise<ChannelAttachment[]> {
   const attachments: ChannelAttachment[] = [];
 

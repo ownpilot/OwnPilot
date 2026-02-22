@@ -17,13 +17,7 @@ import { getLog } from '../services/get-log.js';
 
 const log = getLog('SecureMemory');
 
-import {
-  createHash,
-  randomBytes,
-  createCipheriv,
-  createDecipheriv,
-  pbkdf2Sync,
-} from 'node:crypto';
+import { createHash, randomBytes, createCipheriv, createDecipheriv, pbkdf2Sync } from 'node:crypto';
 
 // =============================================================================
 // Types
@@ -214,14 +208,19 @@ function _generateSalt(): Buffer {
  * Hash user ID (for storage without revealing actual ID)
  */
 function hashUserId(userId: string, salt: string): string {
-  return createHash('sha256').update(userId + salt).digest('hex');
+  return createHash('sha256')
+    .update(userId + salt)
+    .digest('hex');
 }
 
 /**
  * Hash content for deduplication (without revealing content)
  */
 function hashContent(content: string, salt: string): string {
-  return createHash('sha256').update(content + salt).digest('hex').slice(0, 16);
+  return createHash('sha256')
+    .update(content + salt)
+    .digest('hex')
+    .slice(0, 16);
 }
 
 /**
@@ -247,17 +246,8 @@ function encryptContent(
 /**
  * Decrypt content
  */
-function decryptContent(
-  encrypted: string,
-  iv: string,
-  authTag: string,
-  key: Buffer
-): string {
-  const decipher = createDecipheriv(
-    ALGORITHM,
-    key,
-    Buffer.from(iv, 'base64')
-  );
+function decryptContent(encrypted: string, iv: string, authTag: string, key: Buffer): string {
+  const decipher = createDecipheriv(ALGORITHM, key, Buffer.from(iv, 'base64'));
   decipher.setAuthTag(Buffer.from(authTag, 'base64'));
 
   let decrypted = decipher.update(encrypted, 'base64', 'utf8');
@@ -303,9 +293,7 @@ export class SecureMemoryStore {
     };
 
     // Generate installation-specific salt
-    this.salt = createHash('sha256')
-      .update(this.config.installationSalt)
-      .digest();
+    this.salt = createHash('sha256').update(this.config.installationSalt).digest();
   }
 
   /**
@@ -321,7 +309,7 @@ export class SecureMemoryStore {
     // Start purge timer
     if (this.config.purgeInterval > 0) {
       this.purgeTimer = setInterval(() => {
-        this.purgeExpired().catch(e => log.error('Purge failed:', e));
+        this.purgeExpired().catch((e) => log.error('Purge failed:', e));
       }, this.config.purgeInterval);
       this.purgeTimer.unref();
     }
@@ -398,9 +386,9 @@ export class SecureMemoryStore {
           source: options.source ?? 'manual',
           confidence: options.confidence,
           ttl: options.ttl,
-          expiresAt: options.expiresAt ?? (options.ttl
-            ? new Date(Date.now() + options.ttl * 1000).toISOString()
-            : undefined),
+          expiresAt:
+            options.expiresAt ??
+            (options.ttl ? new Date(Date.now() + options.ttl * 1000).toISOString() : undefined),
           tags: options.tags,
           relatedIds: options.relatedIds,
           custom: options.custom,
@@ -420,11 +408,7 @@ export class SecureMemoryStore {
   /**
    * Retrieve a memory entry by ID
    */
-  async retrieve(
-    userId: string,
-    masterKey: string,
-    memoryId: string
-  ): Promise<MemoryEntry | null> {
+  async retrieve(userId: string, masterKey: string, memoryId: string): Promise<MemoryEntry | null> {
     this.ensureInitialized();
 
     const entry = this.entries.get(memoryId);
@@ -450,12 +434,7 @@ export class SecureMemoryStore {
     const key = deriveKey(masterKey, this.salt, this.config.pbkdf2Iterations);
 
     try {
-      const contentStr = decryptContent(
-        entry.encryptedContent,
-        entry.iv,
-        entry.authTag,
-        key
-      );
+      const contentStr = decryptContent(entry.encryptedContent, entry.iv, entry.authTag, key);
 
       // Update access metadata
       entry.metadata.lastAccessedAt = new Date().toISOString();
@@ -463,9 +442,7 @@ export class SecureMemoryStore {
 
       // Refresh TTL if configured
       if (entry.metadata.ttl) {
-        entry.metadata.expiresAt = new Date(
-          Date.now() + entry.metadata.ttl * 1000
-        ).toISOString();
+        entry.metadata.expiresAt = new Date(Date.now() + entry.metadata.ttl * 1000).toISOString();
       }
 
       await this.saveEntries();
@@ -500,45 +477,45 @@ export class SecureMemoryStore {
     const results: MemoryEntry[] = [];
 
     // Filter entries
-    let candidates = Array.from(this.entries.values())
-      .filter(e => e.userIdHash === userIdHash);
+    let candidates = Array.from(this.entries.values()).filter((e) => e.userIdHash === userIdHash);
 
     // Apply type filter
     if (criteria.type) {
       const types = Array.isArray(criteria.type) ? criteria.type : [criteria.type];
-      candidates = candidates.filter(e => types.includes(e.type));
+      candidates = candidates.filter((e) => types.includes(e.type));
     }
 
     // Apply access level filter
     if (criteria.accessLevel) {
-      candidates = candidates.filter(e => e.accessLevel === criteria.accessLevel);
+      candidates = candidates.filter((e) => e.accessLevel === criteria.accessLevel);
     }
 
     // Apply tag filter
     if (criteria.tags && criteria.tags.length > 0) {
-      candidates = candidates.filter(e =>
-        e.metadata.tags?.some(t => criteria.tags!.includes(t))
+      candidates = candidates.filter((e) =>
+        e.metadata.tags?.some((t) => criteria.tags!.includes(t))
       );
     }
 
     // Apply date filters
     if (criteria.createdAfter) {
-      candidates = candidates.filter(e => e.metadata.createdAt >= criteria.createdAfter!);
+      candidates = candidates.filter((e) => e.metadata.createdAt >= criteria.createdAfter!);
     }
     if (criteria.createdBefore) {
-      candidates = candidates.filter(e => e.metadata.createdAt <= criteria.createdBefore!);
+      candidates = candidates.filter((e) => e.metadata.createdAt <= criteria.createdBefore!);
     }
 
     // Apply confidence filter
     if (criteria.minConfidence !== undefined) {
-      candidates = candidates.filter(e =>
-        e.metadata.confidence === undefined || e.metadata.confidence >= criteria.minConfidence!
+      candidates = candidates.filter(
+        (e) =>
+          e.metadata.confidence === undefined || e.metadata.confidence >= criteria.minConfidence!
       );
     }
 
     // Filter expired unless requested
     if (!criteria.includeExpired) {
-      candidates = candidates.filter(e => !this.isExpired(e));
+      candidates = candidates.filter((e) => !this.isExpired(e));
     }
 
     // Derive key
@@ -548,12 +525,7 @@ export class SecureMemoryStore {
       // Decrypt and filter by search
       for (const entry of candidates) {
         try {
-          const contentStr = decryptContent(
-            entry.encryptedContent,
-            entry.iv,
-            entry.authTag,
-            key
-          );
+          const contentStr = decryptContent(entry.encryptedContent, entry.iv, entry.authTag, key);
 
           // Apply search filter
           if (criteria.search) {
@@ -576,9 +548,7 @@ export class SecureMemoryStore {
       }
 
       // Sort by creation date (newest first)
-      results.sort((a, b) =>
-        b.metadata.createdAt.localeCompare(a.metadata.createdAt)
-      );
+      results.sort((a, b) => b.metadata.createdAt.localeCompare(a.metadata.createdAt));
 
       // Apply pagination
       const offset = criteria.offset ?? 0;
@@ -683,8 +653,9 @@ export class SecureMemoryStore {
     this.ensureInitialized();
 
     const userIdHash = hashUserId(userId, this.config.installationSalt);
-    const userEntries = Array.from(this.entries.values())
-      .filter(e => e.userIdHash === userIdHash);
+    const userEntries = Array.from(this.entries.values()).filter(
+      (e) => e.userIdHash === userIdHash
+    );
 
     const byType: Record<string, number> = {};
     const byAccessLevel: Record<string, number> = {};
@@ -698,7 +669,7 @@ export class SecureMemoryStore {
       byAccessLevel[entry.accessLevel] = (byAccessLevel[entry.accessLevel] ?? 0) + 1;
 
       if (entry.metadata.tags) {
-        entry.metadata.tags.forEach(t => allTags.add(t));
+        entry.metadata.tags.forEach((t) => allTags.add(t));
       }
 
       if (this.isExpired(entry)) {
@@ -727,7 +698,10 @@ export class SecureMemoryStore {
   /**
    * Export all memories (encrypted backup)
    */
-  async export(userId: string, masterKey: string): Promise<{
+  async export(
+    userId: string,
+    masterKey: string
+  ): Promise<{
     version: string;
     exportedAt: string;
     entryCount: number;
@@ -836,13 +810,17 @@ export class SecureMemoryStore {
       if (options.accessLevel) entry.accessLevel = options.accessLevel as AccessLevel;
       if (options.ttl) {
         entry.metadata.ttl = options.ttl as number;
-        entry.metadata.expiresAt = new Date(Date.now() + (options.ttl as number) * 1000).toISOString();
+        entry.metadata.expiresAt = new Date(
+          Date.now() + (options.ttl as number) * 1000
+        ).toISOString();
       }
       if (options.expiresAt) entry.metadata.expiresAt = options.expiresAt as string;
 
       // Save synchronously in this context
-      this.saveEntries().catch(e => log.error('Save failed:', e));
-      this.logAudit('update', userId, memoryId, entry.type, true).catch(e => log.error('Audit log failed:', e));
+      this.saveEntries().catch((e) => log.error('Save failed:', e));
+      this.logAudit('update', userId, memoryId, entry.type, true).catch((e) =>
+        log.error('Audit log failed:', e)
+      );
 
       return memoryId;
     } finally {
@@ -897,7 +875,7 @@ export class SecureMemoryStore {
     try {
       const content = await fs.readFile(filePath, 'utf-8');
       const data = JSON.parse(content) as EncryptedMemoryEntry[];
-      this.entries = new Map(data.map(e => [e.id, e]));
+      this.entries = new Map(data.map((e) => [e.id, e]));
     } catch {
       this.entries = new Map();
     }
@@ -918,7 +896,7 @@ export class SecureMemoryStore {
       // Prune old entries
       const cutoff = new Date();
       cutoff.setDate(cutoff.getDate() - this.config.auditRetentionDays);
-      this.auditLog = this.auditLog.filter(e => new Date(e.timestamp) > cutoff);
+      this.auditLog = this.auditLog.filter((e) => new Date(e.timestamp) > cutoff);
     } catch {
       this.auditLog = [];
     }

@@ -65,7 +65,8 @@ const setConfigEntryTool: ToolDefinition = {
       },
       data: {
         type: 'object',
-        description: 'Field values keyed by field name from the service schema (e.g. { "api_key": "abc123", "base_url": "https://..." })',
+        description:
+          'Field values keyed by field name from the service schema (e.g. { "api_key": "abc123", "base_url": "https://..." })',
       },
       label: {
         type: 'string',
@@ -81,17 +82,19 @@ const setConfigEntryTool: ToolDefinition = {
 // =============================================================================
 
 async function executeListConfigServices(
-  params: Record<string, unknown>,
+  params: Record<string, unknown>
 ): Promise<ToolExecutionResult> {
   const category = params.category as string | undefined;
   const services = configServicesRepo.list(category);
 
   const result = services.map((svc) => {
     const entries = configServicesRepo.getEntries(svc.name);
-    const configured = entries.length > 0 && entries.some((e) => {
-      const vals = Object.values(e.data);
-      return vals.some((v) => v !== null && v !== undefined && v !== '');
-    });
+    const configured =
+      entries.length > 0 &&
+      entries.some((e) => {
+        const vals = Object.values(e.data);
+        return vals.some((v) => v !== null && v !== undefined && v !== '');
+      });
 
     return {
       name: svc.name,
@@ -115,13 +118,15 @@ async function executeListConfigServices(
 }
 
 async function executeGetConfigService(
-  params: Record<string, unknown>,
+  params: Record<string, unknown>
 ): Promise<ToolExecutionResult> {
   const serviceName = params.service as string;
   const svc = configServicesRepo.getByName(serviceName);
   if (!svc) {
     return {
-      content: { error: `Service not found: "${serviceName}". Use config_list_services to see available services.` },
+      content: {
+        error: `Service not found: "${serviceName}". Use config_list_services to see available services.`,
+      },
       isError: true,
     };
   }
@@ -177,7 +182,7 @@ async function executeGetConfigService(
 }
 
 async function executeSetConfigEntry(
-  params: Record<string, unknown>,
+  params: Record<string, unknown>
 ): Promise<ToolExecutionResult> {
   const serviceName = params.service as string;
   const data = params.data as Record<string, unknown> | undefined;
@@ -195,7 +200,9 @@ async function executeSetConfigEntry(
   const svc = configServicesRepo.getByName(serviceName);
   if (!svc) {
     return {
-      content: { error: `Service not found: "${serviceName}". Use config_list_services to see available services.` },
+      content: {
+        error: `Service not found: "${serviceName}". Use config_list_services to see available services.`,
+      },
       isError: true,
     };
   }
@@ -218,9 +225,7 @@ async function executeSetConfigEntry(
     if (existingEntry) {
       // Merge new data with existing data (don't wipe fields not provided)
       // Protect against masked secret values being merged in
-      const secretFieldNames = schema
-        .filter(f => f.type === 'secret')
-        .map(f => f.name);
+      const secretFieldNames = schema.filter((f) => f.type === 'secret').map((f) => f.name);
       const cleanData = { ...data };
       for (const field of secretFieldNames) {
         const val = cleanData[field];
@@ -280,7 +285,7 @@ async function executeSetConfigEntry(
 
 export async function executeConfigTool(
   toolName: string,
-  params: Record<string, unknown>,
+  params: Record<string, unknown>
 ): Promise<{ success: boolean; result?: unknown; error?: string }> {
   try {
     let result: ToolExecutionResult;

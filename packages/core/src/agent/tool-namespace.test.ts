@@ -21,7 +21,9 @@ describe('tool-namespace', () => {
     });
 
     it('prefixes plugin tools with plugin.{id}.', () => {
-      expect(qualifyToolName('send_message', 'plugin', 'telegram')).toBe('plugin.telegram.send_message');
+      expect(qualifyToolName('send_message', 'plugin', 'telegram')).toBe(
+        'plugin.telegram.send_message'
+      );
       expect(qualifyToolName('email_send', 'plugin', 'email')).toBe('plugin.email.email_send');
     });
 
@@ -104,7 +106,9 @@ describe('tool-namespace', () => {
   describe('sanitizeToolName', () => {
     it('replaces dots with double underscores', () => {
       expect(sanitizeToolName('core.add_task')).toBe('core__add_task');
-      expect(sanitizeToolName('plugin.telegram.send_message')).toBe('plugin__telegram__send_message');
+      expect(sanitizeToolName('plugin.telegram.send_message')).toBe(
+        'plugin__telegram__send_message'
+      );
       expect(sanitizeToolName('ext.web_search.search_web')).toBe('ext__web_search__search_web');
     });
 
@@ -122,7 +126,9 @@ describe('tool-namespace', () => {
   describe('desanitizeToolName', () => {
     it('replaces double underscores with dots', () => {
       expect(desanitizeToolName('core__add_task')).toBe('core.add_task');
-      expect(desanitizeToolName('plugin__telegram__send_message')).toBe('plugin.telegram.send_message');
+      expect(desanitizeToolName('plugin__telegram__send_message')).toBe(
+        'plugin.telegram.send_message'
+      );
       expect(desanitizeToolName('ext__web_search__search_web')).toBe('ext.web_search.search_web');
     });
 

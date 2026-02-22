@@ -23,10 +23,30 @@ const STEPS: WizardStep[] = [
 
 type Transport = 'stdio' | 'sse' | 'streamable-http';
 
-const TRANSPORTS: { id: Transport; label: string; icon: React.ComponentType<{ className?: string }>; desc: string }[] = [
-  { id: 'stdio', label: 'Stdio', icon: Terminal, desc: 'Local process — most common. Runs a command on your machine.' },
-  { id: 'sse', label: 'SSE', icon: Globe, desc: 'Server-Sent Events — connect to a remote HTTP server.' },
-  { id: 'streamable-http', label: 'Streamable HTTP', icon: Globe, desc: 'Bidirectional HTTP streaming — modern remote servers.' },
+const TRANSPORTS: {
+  id: Transport;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  desc: string;
+}[] = [
+  {
+    id: 'stdio',
+    label: 'Stdio',
+    icon: Terminal,
+    desc: 'Local process — most common. Runs a command on your machine.',
+  },
+  {
+    id: 'sse',
+    label: 'SSE',
+    icon: Globe,
+    desc: 'Server-Sent Events — connect to a remote HTTP server.',
+  },
+  {
+    id: 'streamable-http',
+    label: 'Streamable HTTP',
+    icon: Globe,
+    desc: 'Bidirectional HTTP streaming — modern remote servers.',
+  },
 ];
 
 export function McpServerWizard({ onComplete, onCancel }: Props) {
@@ -38,18 +58,26 @@ export function McpServerWizard({ onComplete, onCancel }: Props) {
   const [args, setArgs] = useState('');
   const [url, setUrl] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
-  const [result, setResult] = useState<{ ok: boolean; toolCount?: number; serverName?: string; error?: string } | null>(null);
+  const [result, setResult] = useState<{
+    ok: boolean;
+    toolCount?: number;
+    serverName?: string;
+    error?: string;
+  } | null>(null);
 
   const canGoNext = useMemo(() => {
     switch (step) {
-      case 0: return !!transport;
+      case 0:
+        return !!transport;
       case 1: {
         if (!name.trim()) return false;
         if (transport === 'stdio') return !!command.trim();
         return !!url.trim();
       }
-      case 2: return result?.ok === true;
-      default: return false;
+      case 2:
+        return result?.ok === true;
+      default:
+        return false;
     }
   }, [step, transport, name, command, url, result]);
 
@@ -68,7 +96,14 @@ export function McpServerWizard({ onComplete, onCancel }: Props) {
           ...(transport === 'stdio'
             ? {
                 command: command.trim(),
-                ...(args.trim() ? { args: args.split(',').map((a) => a.trim()).filter(Boolean) } : {}),
+                ...(args.trim()
+                  ? {
+                      args: args
+                        .split(',')
+                        .map((a) => a.trim())
+                        .filter(Boolean),
+                    }
+                  : {}),
               }
             : { url: url.trim() }),
         };
@@ -104,7 +139,10 @@ export function McpServerWizard({ onComplete, onCancel }: Props) {
       isProcessing={isProcessing}
       isLastStep={step === 3}
       onNext={handleNext}
-      onBack={() => { setStep(Math.max(0, step - 1)); if (step === 2) setResult(null); }}
+      onBack={() => {
+        setStep(Math.max(0, step - 1));
+        if (step === 2) setResult(null);
+      }}
       onCancel={onCancel}
       onComplete={onComplete}
     >
@@ -170,7 +208,9 @@ export function McpServerWizard({ onComplete, onCancel }: Props) {
               <input
                 type="text"
                 value={name}
-                onChange={(e) => setName(e.target.value.replace(/[^a-z0-9_-]/gi, '-').toLowerCase())}
+                onChange={(e) =>
+                  setName(e.target.value.replace(/[^a-z0-9_-]/gi, '-').toLowerCase())
+                }
                 placeholder="my-mcp-server"
                 className="w-full px-3 py-2 rounded-lg border border-border dark:border-dark-border bg-bg-primary dark:bg-dark-bg-primary text-text-primary dark:text-dark-text-primary text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 font-mono"
               />
@@ -233,7 +273,9 @@ export function McpServerWizard({ onComplete, onCancel }: Props) {
                   type="url"
                   value={url}
                   onChange={(e) => setUrl(e.target.value)}
-                  placeholder={transport === 'sse' ? 'http://localhost:3000/sse' : 'http://localhost:3000/mcp'}
+                  placeholder={
+                    transport === 'sse' ? 'http://localhost:3000/sse' : 'http://localhost:3000/mcp'
+                  }
                   className="w-full px-3 py-2 rounded-lg border border-border dark:border-dark-border bg-bg-primary dark:bg-dark-bg-primary text-text-primary dark:text-dark-text-primary text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 font-mono"
                 />
               </div>
@@ -247,11 +289,28 @@ export function McpServerWizard({ onComplete, onCancel }: Props) {
         <div className="text-center py-8">
           {!result && (
             <div className="flex flex-col items-center gap-3">
-              <svg className="w-10 h-10 animate-spin text-purple-500" viewBox="0 0 24 24" fill="none">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+              <svg
+                className="w-10 h-10 animate-spin text-purple-500"
+                viewBox="0 0 24 24"
+                fill="none"
+              >
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                />
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                />
               </svg>
-              <p className="text-text-muted dark:text-dark-text-muted">Creating and connecting server...</p>
+              <p className="text-text-muted dark:text-dark-text-muted">
+                Creating and connecting server...
+              </p>
             </div>
           )}
 
@@ -264,7 +323,8 @@ export function McpServerWizard({ onComplete, onCancel }: Props) {
                 Server Connected!
               </h3>
               <p className="text-sm text-text-muted dark:text-dark-text-muted">
-                {result.serverName} — {result.toolCount} tool{result.toolCount !== 1 ? 's' : ''} available.
+                {result.serverName} — {result.toolCount} tool{result.toolCount !== 1 ? 's' : ''}{' '}
+                available.
               </p>
             </div>
           )}
@@ -279,7 +339,10 @@ export function McpServerWizard({ onComplete, onCancel }: Props) {
               </h3>
               <p className="text-sm text-error max-w-md">{result.error}</p>
               <button
-                onClick={() => { setStep(1); setResult(null); }}
+                onClick={() => {
+                  setStep(1);
+                  setResult(null);
+                }}
                 className="mt-2 text-sm text-primary hover:underline"
               >
                 Go back and try again

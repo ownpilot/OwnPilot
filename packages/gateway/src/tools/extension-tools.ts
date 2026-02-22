@@ -35,7 +35,8 @@ const listExtensionsDef: ToolDefinition = {
 const toggleExtensionDef: ToolDefinition = {
   name: 'toggle_extension',
   workflowUsable: false,
-  description: 'Enable or disable a extension. Enabling activates its tools and triggers; disabling deactivates them.',
+  description:
+    'Enable or disable a extension. Enabling activates its tools and triggers; disabling deactivates them.',
   parameters: {
     type: 'object',
     properties: {
@@ -56,7 +57,8 @@ const toggleExtensionDef: ToolDefinition = {
 const getExtensionInfoDef: ToolDefinition = {
   name: 'get_extension_info',
   workflowUsable: false,
-  description: 'Get detailed information about a extension including its tools, triggers, and configuration.',
+  description:
+    'Get detailed information about a extension including its tools, triggers, and configuration.',
   parameters: {
     type: 'object',
     properties: {
@@ -83,7 +85,7 @@ export const EXTENSION_TOOLS: ToolDefinition[] = [
 export async function executeExtensionTool(
   toolName: string,
   args: Record<string, unknown>,
-  userId = 'default',
+  userId = 'default'
 ): Promise<{ success: boolean; result?: unknown; error?: string }> {
   const service = getExtensionService();
 
@@ -92,15 +94,15 @@ export async function executeExtensionTool(
       let packages = service.getAll();
 
       if (args.status) {
-        packages = packages.filter(p => p.status === args.status);
+        packages = packages.filter((p) => p.status === args.status);
       }
       if (args.category) {
-        packages = packages.filter(p => p.category === args.category);
+        packages = packages.filter((p) => p.category === args.category);
       }
 
       return {
         success: true,
-        result: packages.map(p => ({
+        result: packages.map((p) => ({
           id: p.id,
           name: p.name,
           version: p.version,
@@ -167,18 +169,18 @@ export async function executeExtensionTool(
           installedAt: pkg.installedAt,
           updatedAt: pkg.updatedAt,
           errorMessage: pkg.errorMessage,
-          tools: pkg.manifest.tools.map(t => ({
+          tools: pkg.manifest.tools.map((t) => ({
             name: t.name,
             description: t.description,
             permissions: t.permissions,
             requires_approval: t.requires_approval,
           })),
-          triggers: pkg.manifest.triggers?.map(t => ({
+          triggers: pkg.manifest.triggers?.map((t) => ({
             name: t.name,
             type: t.type,
             enabled: t.enabled !== false,
           })),
-          requiredServices: pkg.manifest.required_services?.map(s => ({
+          requiredServices: pkg.manifest.required_services?.map((s) => ({
             name: s.name,
             displayName: s.display_name,
           })),

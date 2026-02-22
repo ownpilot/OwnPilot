@@ -30,7 +30,7 @@ vi.mock('../services/heartbeat-service.js', () => ({
 }));
 
 vi.mock('@ownpilot/core', () => ({
-  getErrorMessage: (e: unknown) => e instanceof Error ? e.message : String(e),
+  getErrorMessage: (e: unknown) => (e instanceof Error ? e.message : String(e)),
 }));
 
 // ---------------------------------------------------------------------------
@@ -59,14 +59,19 @@ describe('executeHeartbeatTool', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(result.result).toEqual(expect.objectContaining({
-        id: 'hb-1',
-        cron: '0 8 * * *',
-      }));
-      expect(mockService.createHeartbeat).toHaveBeenCalledWith('default', expect.objectContaining({
-        scheduleText: 'Every Morning 8:00',
-        taskDescription: 'Summarize emails',
-      }));
+      expect(result.result).toEqual(
+        expect.objectContaining({
+          id: 'hb-1',
+          cron: '0 8 * * *',
+        })
+      );
+      expect(mockService.createHeartbeat).toHaveBeenCalledWith(
+        'default',
+        expect.objectContaining({
+          scheduleText: 'Every Morning 8:00',
+          taskDescription: 'Summarize emails',
+        })
+      );
     });
 
     it('returns error on failure', async () => {

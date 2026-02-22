@@ -8,13 +8,21 @@
  */
 
 import { Hono } from 'hono';
-import type {
-  MemoryType,
-  CreateMemoryInput,
-} from '../db/repositories/memories.js';
+import type { MemoryType, CreateMemoryInput } from '../db/repositories/memories.js';
 import { MemoryServiceError } from '../services/memory-service.js';
 import { getServiceRegistry, Services } from '@ownpilot/core';
-import { getUserId, apiResponse, apiError, getIntParam, ERROR_CODES, sanitizeId, notFoundError, truncate, validateQueryEnum, getErrorMessage } from './helpers.js';
+import {
+  getUserId,
+  apiResponse,
+  apiError,
+  getIntParam,
+  ERROR_CODES,
+  sanitizeId,
+  notFoundError,
+  truncate,
+  validateQueryEnum,
+  getErrorMessage,
+} from './helpers.js';
 import { wsGateway } from '../ws/server.js';
 import { getLog } from '../services/log.js';
 
@@ -31,12 +39,19 @@ export const memoriesRoutes = new Hono();
  */
 memoriesRoutes.get('/', async (c) => {
   const userId = getUserId(c);
-  const type = validateQueryEnum(c.req.query('type'), ['fact', 'preference', 'conversation', 'event', 'skill'] as const);
+  const type = validateQueryEnum(c.req.query('type'), [
+    'fact',
+    'preference',
+    'conversation',
+    'event',
+    'skill',
+  ] as const);
   const limit = getIntParam(c, 'limit', 20, 1, 100);
   const rawMinImportance = c.req.query('minImportance');
-  const minImportance = rawMinImportance !== undefined
-    ? Math.max(0, Math.min(1, parseFloat(rawMinImportance) || 0))
-    : undefined;
+  const minImportance =
+    rawMinImportance !== undefined
+      ? Math.max(0, Math.min(1, parseFloat(rawMinImportance) || 0))
+      : undefined;
 
   const service = getServiceRegistry().get(Services.Memory);
   const memories = await service.listMemories(userId, {
@@ -47,9 +62,9 @@ memoriesRoutes.get('/', async (c) => {
   });
 
   return apiResponse(c, {
-      memories,
-      total: await service.countMemories(userId, type),
-    });
+    memories,
+    total: await service.countMemories(userId, type),
+  });
 });
 
 /**
@@ -75,12 +90,21 @@ memoriesRoutes.post('/', async (c) => {
       });
     }
 
-    log.info('Memory created', { userId, memoryId: memory.id, type: memory.type, importance: memory.importance });
+    log.info('Memory created', {
+      userId,
+      memoryId: memory.id,
+      type: memory.type,
+      importance: memory.importance,
+    });
     wsGateway.broadcast('data:changed', { entity: 'memory', action: 'created', id: memory.id });
-    return apiResponse(c, {
+    return apiResponse(
+      c,
+      {
         memory,
         message: 'Memory created successfully.',
-      }, 201);
+      },
+      201
+    );
   } catch (err) {
     if (err instanceof MemoryServiceError && err.code === 'VALIDATION_ERROR') {
       log.warn('Memory validation error', { userId, error: err.message });
@@ -97,12 +121,22 @@ memoriesRoutes.post('/', async (c) => {
 memoriesRoutes.get('/search', async (c) => {
   const userId = getUserId(c);
   const query = c.req.query('q') ?? '';
-  const type = validateQueryEnum(c.req.query('type'), ['fact', 'preference', 'conversation', 'event', 'skill'] as const);
+  const type = validateQueryEnum(c.req.query('type'), [
+    'fact',
+    'preference',
+    'conversation',
+    'event',
+    'skill',
+  ] as const);
   const limit = getIntParam(c, 'limit', 20, 1, 100);
   const mode = c.req.query('mode') ?? 'hybrid';
 
   if (!query) {
-    return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'query (q) parameter is required' }, 400);
+    return apiError(
+      c,
+      { code: ERROR_CODES.INVALID_REQUEST, message: 'query (q) parameter is required' },
+      400
+    );
   }
 
   const service = getServiceRegistry().get(Services.Memory);
@@ -161,8 +195,21 @@ memoriesRoutes.patch('/:id', async (c) => {
     tags?: string[];
   };
 
-  if (body.importance !== undefined && (typeof body.importance !== 'number' || !Number.isFinite(body.importance) || body.importance < 0 || body.importance > 1)) {
-    return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'importance must be a finite number between 0 and 1' }, 400);
+  if (
+    body.importance !== undefined &&
+    (typeof body.importance !== 'number' ||
+      !Number.isFinite(body.importance) ||
+      body.importance < 0 ||
+      body.importance > 1)
+  ) {
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.INVALID_INPUT,
+        message: 'importance must be a finite number between 0 and 1',
+      },
+      400
+    );
   }
 
   const service = getServiceRegistry().get(Services.Memory);
@@ -189,7 +236,11 @@ memoriesRoutes.post('/:id/boost', async (c) => {
   const amount = body.amount ?? 0.1;
 
   if (typeof amount !== 'number' || amount <= 0 || amount > 1) {
-    return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'amount must be a number between 0 and 1' }, 400);
+    return apiError(
+      c,
+      { code: ERROR_CODES.INVALID_INPUT, message: 'amount must be a number between 0 and 1' },
+      400
+    );
   }
 
   const service = getServiceRegistry().get(Services.Memory);
@@ -202,9 +253,9 @@ memoriesRoutes.post('/:id/boost', async (c) => {
   wsGateway.broadcast('data:changed', { entity: 'memory', action: 'updated', id });
 
   return apiResponse(c, {
-      memory: boosted,
-      message: `Memory importance boosted by ${amount}`,
-    });
+    memory: boosted,
+    message: `Memory importance boosted by ${amount}`,
+  });
 });
 
 /**
@@ -225,8 +276,8 @@ memoriesRoutes.delete('/:id', async (c) => {
   log.info('Memory deleted', { userId, memoryId: id });
   wsGateway.broadcast('data:changed', { entity: 'memory', action: 'deleted', id });
   return apiResponse(c, {
-      message: 'Memory deleted successfully.',
-    });
+    message: 'Memory deleted successfully.',
+  });
 });
 
 /**
@@ -247,9 +298,9 @@ memoriesRoutes.post('/decay', async (c) => {
   if (affected > 0) wsGateway.broadcast('data:changed', { entity: 'memory', action: 'updated' });
 
   return apiResponse(c, {
-      affectedCount: affected,
-      message: `Decayed ${affected} memories.`,
-    });
+    affectedCount: affected,
+    message: `Decayed ${affected} memories.`,
+  });
 });
 
 /**
@@ -270,9 +321,9 @@ memoriesRoutes.post('/cleanup', async (c) => {
   if (deleted > 0) wsGateway.broadcast('data:changed', { entity: 'memory', action: 'deleted' });
 
   return apiResponse(c, {
-      deletedCount: deleted,
-      message: `Cleaned up ${deleted} low-importance memories.`,
-    });
+    deletedCount: deleted,
+    message: `Cleaned up ${deleted} low-importance memories.`,
+  });
 });
 
 /**
@@ -392,7 +443,7 @@ export async function executeMemoryTool(
             type: m.type,
             importance: m.importance ?? 0.5,
             tags: m.tags,
-          })),
+          }))
         );
 
         return {
@@ -411,7 +462,12 @@ export async function executeMemoryTool(
       }
 
       case 'search_memories': {
-        const { query, type, tags, limit: rawLimit = 10 } = params as {
+        const {
+          query,
+          type,
+          tags,
+          limit: rawLimit = 10,
+        } = params as {
           query: string;
           type?: MemoryType;
           tags?: string[];
@@ -428,9 +484,10 @@ export async function executeMemoryTool(
         const results = await service.hybridSearch(userId, query, { type, limit });
 
         // Post-filter by tags (tag filtering not in RRF CTE)
-        const filtered = tags && tags.length > 0
-          ? results.filter(m => tags.some(tag => m.tags.includes(tag)))
-          : results;
+        const filtered =
+          tags && tags.length > 0
+            ? results.filter((m) => tags.some((tag) => m.tags.includes(tag)))
+            : results;
 
         if (filtered.length === 0) {
           return {
@@ -482,7 +539,11 @@ export async function executeMemoryTool(
       }
 
       case 'list_memories': {
-        const { type, limit = 20, minImportance } = params as {
+        const {
+          type,
+          limit = 20,
+          minImportance,
+        } = params as {
           type?: MemoryType;
           limit?: number;
           minImportance?: number;

@@ -15,9 +15,34 @@
 // ============================================================================
 
 export type PlanStatus = 'pending' | 'running' | 'paused' | 'completed' | 'failed' | 'cancelled';
-export type StepType = 'tool_call' | 'llm_decision' | 'user_input' | 'condition' | 'parallel' | 'loop' | 'sub_plan';
-export type StepStatus = 'pending' | 'running' | 'completed' | 'failed' | 'skipped' | 'blocked' | 'waiting';
-export type PlanEventType = 'started' | 'step_started' | 'step_completed' | 'step_failed' | 'paused' | 'resumed' | 'completed' | 'failed' | 'cancelled' | 'checkpoint' | 'rollback';
+export type StepType =
+  | 'tool_call'
+  | 'llm_decision'
+  | 'user_input'
+  | 'condition'
+  | 'parallel'
+  | 'loop'
+  | 'sub_plan';
+export type StepStatus =
+  | 'pending'
+  | 'running'
+  | 'completed'
+  | 'failed'
+  | 'skipped'
+  | 'blocked'
+  | 'waiting';
+export type PlanEventType =
+  | 'started'
+  | 'step_started'
+  | 'step_completed'
+  | 'step_failed'
+  | 'paused'
+  | 'resumed'
+  | 'completed'
+  | 'failed'
+  | 'cancelled'
+  | 'checkpoint'
+  | 'rollback';
 
 export interface Plan {
   readonly id: string;
@@ -175,7 +200,7 @@ export interface IPlanService {
   getPlan(userId: string, id: string): Promise<Plan | null>;
   getPlanWithDetails(
     userId: string,
-    id: string,
+    id: string
   ): Promise<(PlanWithSteps & { history: PlanHistory[] }) | null>;
   listPlans(
     userId: string,
@@ -185,7 +210,7 @@ export interface IPlanService {
       triggerId?: string;
       limit?: number;
       offset?: number;
-    },
+    }
   ): Promise<Plan[]>;
   countPlans(
     userId: string,
@@ -193,7 +218,7 @@ export interface IPlanService {
       status?: PlanStatus;
       goalId?: string;
       triggerId?: string;
-    },
+    }
   ): Promise<number>;
   updatePlan(userId: string, id: string, input: UpdatePlanInput): Promise<Plan | null>;
   deletePlan(userId: string, id: string): Promise<boolean>;
@@ -217,7 +242,7 @@ export interface IPlanService {
     planId: string,
     eventType: PlanEventType,
     stepId?: string,
-    details?: Record<string, unknown>,
+    details?: Record<string, unknown>
   ): Promise<void>;
   getHistory(userId: string, planId: string, limit?: number): Promise<PlanHistory[]>;
   recalculateProgress(userId: string, planId: string): Promise<void>;

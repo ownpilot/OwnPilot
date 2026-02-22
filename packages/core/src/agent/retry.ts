@@ -55,22 +55,39 @@ export function isRetryableError(error: unknown): boolean {
   const message = getErrorMessage(error).toLowerCase();
 
   // Network errors
-  if (message.includes('network') || message.includes('econnreset') || message.includes('econnrefused')) {
+  if (
+    message.includes('network') ||
+    message.includes('econnreset') ||
+    message.includes('econnrefused')
+  ) {
     return true;
   }
 
   // Timeout patterns
-  if (message.includes('timeout') || message.includes('timed out') || message.includes('operation timed out')) {
+  if (
+    message.includes('timeout') ||
+    message.includes('timed out') ||
+    message.includes('operation timed out')
+  ) {
     return true;
   }
 
   // Rate limiting (should retry with backoff)
-  if (message.includes('rate limit') || message.includes('too many requests') || message.includes('429')) {
+  if (
+    message.includes('rate limit') ||
+    message.includes('too many requests') ||
+    message.includes('429')
+  ) {
     return true;
   }
 
   // Server errors (5xx)
-  if (message.includes('500') || message.includes('502') || message.includes('503') || message.includes('504')) {
+  if (
+    message.includes('500') ||
+    message.includes('502') ||
+    message.includes('503') ||
+    message.includes('504')
+  ) {
     return true;
   }
 
@@ -116,7 +133,7 @@ function calculateDelay(
  * Sleep for specified milliseconds
  */
 function sleep(ms: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, ms));
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 /**
@@ -145,7 +162,13 @@ export async function withRetry<T>(
       // Check if result is an error that should be retried
       if (!result.ok && attempt < maxRetries && retryableErrors(result.error)) {
         lastError = result.error;
-        const delayMs = calculateDelay(attempt, initialDelayMs, maxDelayMs, backoffMultiplier, addJitter);
+        const delayMs = calculateDelay(
+          attempt,
+          initialDelayMs,
+          maxDelayMs,
+          backoffMultiplier,
+          addJitter
+        );
 
         onRetry(attempt + 1, result.error, delayMs);
         log.info(`Attempt ${attempt + 1}/${maxRetries} failed, retrying in ${delayMs}ms...`);
@@ -162,10 +185,18 @@ export async function withRetry<T>(
 
       // Check if we should retry
       if (attempt < maxRetries && retryableErrors(error)) {
-        const delayMs = calculateDelay(attempt, initialDelayMs, maxDelayMs, backoffMultiplier, addJitter);
+        const delayMs = calculateDelay(
+          attempt,
+          initialDelayMs,
+          maxDelayMs,
+          backoffMultiplier,
+          addJitter
+        );
 
         onRetry(attempt + 1, error, delayMs);
-        log.info(`Attempt ${attempt + 1}/${maxRetries} threw exception, retrying in ${delayMs}ms...`);
+        log.info(
+          `Attempt ${attempt + 1}/${maxRetries} threw exception, retrying in ${delayMs}ms...`
+        );
         log.info(`Error: ${getErrorMessage(error)}`);
 
         await sleep(delayMs);
@@ -179,12 +210,15 @@ export async function withRetry<T>(
 
   // Max retries exceeded
   const errorMessage = getErrorMessage(lastError);
-  return err(new InternalError(`Max retries (${maxRetries}) exceeded. Last error: ${errorMessage}`));
+  return err(
+    new InternalError(`Max retries (${maxRetries}) exceeded. Last error: ${errorMessage}`)
+  );
 }
 
 /**
  * Create a retry wrapper for a provider method
  */
 export function createRetryWrapper(config?: RetryConfig) {
-  return <T, E extends Error>(operation: () => Promise<Result<T, E>>) => withRetry(operation, config);
+  return <T, E extends Error>(operation: () => Promise<Result<T, E>>) =>
+    withRetry(operation, config);
 }

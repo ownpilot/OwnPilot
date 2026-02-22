@@ -45,9 +45,7 @@ export class IsolatedStorage {
 
     // Ensure the resolved path starts with the user's base path
     if (!resolvedPath.startsWith(userBase)) {
-      throw new StorageSecurityError(
-        `Access denied: Path traversal detected for user ${userId}`
-      );
+      throw new StorageSecurityError(`Access denied: Path traversal detected for user ${userId}`);
     }
 
     return resolvedPath;
@@ -153,22 +151,15 @@ export class IsolatedStorage {
   /**
    * Write a file to user's workspace
    */
-  async writeFile(
-    userId: string,
-    filePath: string,
-    content: string | Buffer
-  ): Promise<void> {
+  async writeFile(userId: string, filePath: string, content: string | Buffer): Promise<void> {
     const resolvedPath = this.validatePath(userId, filePath);
 
     // Check storage quota before writing
     const usage = await this.getStorageUsage(userId);
-    const contentSize =
-      typeof content === 'string' ? Buffer.byteLength(content) : content.length;
+    const contentSize = typeof content === 'string' ? Buffer.byteLength(content) : content.length;
 
     if (usage.usedBytes + contentSize > this.maxStorageBytes) {
-      throw new StorageSecurityError(
-        `Storage quota exceeded for user ${userId}`
-      );
+      throw new StorageSecurityError(`Storage quota exceeded for user ${userId}`);
     }
 
     // Ensure parent directory exists
@@ -188,9 +179,7 @@ export class IsolatedStorage {
     const contentSize = Buffer.byteLength(content);
 
     if (usage.usedBytes + contentSize > this.maxStorageBytes) {
-      throw new StorageSecurityError(
-        `Storage quota exceeded for user ${userId}`
-      );
+      throw new StorageSecurityError(`Storage quota exceeded for user ${userId}`);
     }
 
     await fs.appendFile(resolvedPath, content);
@@ -213,11 +202,7 @@ export class IsolatedStorage {
   /**
    * Copy a file
    */
-  async copyFile(
-    userId: string,
-    sourcePath: string,
-    destPath: string
-  ): Promise<void> {
+  async copyFile(userId: string, sourcePath: string, destPath: string): Promise<void> {
     const resolvedSource = this.validatePath(userId, sourcePath);
     const resolvedDest = this.validatePath(userId, destPath);
 
@@ -226,9 +211,7 @@ export class IsolatedStorage {
     const usage = await this.getStorageUsage(userId);
 
     if (usage.usedBytes + sourceStats.size > this.maxStorageBytes) {
-      throw new StorageSecurityError(
-        `Storage quota exceeded for user ${userId}`
-      );
+      throw new StorageSecurityError(`Storage quota exceeded for user ${userId}`);
     }
 
     // Ensure parent directory exists
@@ -240,11 +223,7 @@ export class IsolatedStorage {
   /**
    * Move a file
    */
-  async moveFile(
-    userId: string,
-    sourcePath: string,
-    destPath: string
-  ): Promise<void> {
+  async moveFile(userId: string, sourcePath: string, destPath: string): Promise<void> {
     const resolvedSource = this.validatePath(userId, sourcePath);
     const resolvedDest = this.validatePath(userId, destPath);
 
@@ -441,14 +420,9 @@ export function getStorage(basePath?: string, maxStorageGB?: number): IsolatedSt
     // Default to /data/workspaces or environment variable
     const defaultPath =
       process.env.SANDBOX_BASE_PATH ||
-      (process.platform === 'win32'
-        ? 'C:\\data\\workspaces'
-        : '/data/workspaces');
+      (process.platform === 'win32' ? 'C:\\data\\workspaces' : '/data/workspaces');
 
-    storageInstance = new IsolatedStorage(
-      basePath || defaultPath,
-      maxStorageGB || 2
-    );
+    storageInstance = new IsolatedStorage(basePath || defaultPath, maxStorageGB || 2);
   }
   return storageInstance;
 }

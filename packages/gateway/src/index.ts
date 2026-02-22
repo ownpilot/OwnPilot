@@ -51,11 +51,7 @@ export {
 } from './routes/index.js';
 
 // Scheduler
-export {
-  initializeScheduler,
-  getScheduler,
-  stopScheduler,
-} from './scheduler/index.js';
+export { initializeScheduler, getScheduler, stopScheduler } from './scheduler/index.js';
 
 // Channels (plugin-based)
 export { createChannelServiceImpl, getChannelServiceImpl } from './channels/service-impl.js';

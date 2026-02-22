@@ -131,7 +131,13 @@ describe('getLog()', () => {
 
   describe('ServiceRegistry integration', () => {
     it('uses registry log service when available', () => {
-      const childLogger = { debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn(), child: vi.fn() };
+      const childLogger = {
+        debug: vi.fn(),
+        info: vi.fn(),
+        warn: vi.fn(),
+        error: vi.fn(),
+        child: vi.fn(),
+      };
       mockChild.mockReturnValue(childLogger);
       vi.mocked(hasServiceRegistry).mockReturnValue(true);
 

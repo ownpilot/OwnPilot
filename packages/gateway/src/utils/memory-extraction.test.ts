@@ -3,16 +3,16 @@ import { extractMemoriesFromResponse } from './memory-extraction.js';
 
 describe('extractMemoriesFromResponse', () => {
   it('extracts valid single memory', () => {
-    const raw = 'Here is my response.\n\n<memories>[{"type":"fact","content":"User lives in Istanbul"}]</memories>';
+    const raw =
+      'Here is my response.\n\n<memories>[{"type":"fact","content":"User lives in Istanbul"}]</memories>';
     const result = extractMemoriesFromResponse(raw);
     expect(result.content).toBe('Here is my response.');
-    expect(result.memories).toEqual([
-      { type: 'fact', content: 'User lives in Istanbul' },
-    ]);
+    expect(result.memories).toEqual([{ type: 'fact', content: 'User lives in Istanbul' }]);
   });
 
   it('extracts multiple memories', () => {
-    const raw = 'Response.\n<memories>[{"type":"fact","content":"Name is Alex"},{"type":"preference","content":"Likes dark mode"}]</memories>';
+    const raw =
+      'Response.\n<memories>[{"type":"fact","content":"Name is Alex"},{"type":"preference","content":"Likes dark mode"}]</memories>';
     const result = extractMemoriesFromResponse(raw);
     expect(result.content).toBe('Response.');
     expect(result.memories).toHaveLength(2);
@@ -21,7 +21,8 @@ describe('extractMemoriesFromResponse', () => {
   });
 
   it('preserves optional importance field', () => {
-    const raw = 'Response.\n<memories>[{"type":"fact","content":"Important fact","importance":0.9}]</memories>';
+    const raw =
+      'Response.\n<memories>[{"type":"fact","content":"Important fact","importance":0.9}]</memories>';
     const result = extractMemoriesFromResponse(raw);
     expect(result.memories[0]).toEqual({
       type: 'fact',
@@ -31,7 +32,8 @@ describe('extractMemoriesFromResponse', () => {
   });
 
   it('ignores importance outside 0-1 range', () => {
-    const raw = 'Response.\n<memories>[{"type":"fact","content":"Test","importance":1.5}]</memories>';
+    const raw =
+      'Response.\n<memories>[{"type":"fact","content":"Test","importance":1.5}]</memories>';
     const result = extractMemoriesFromResponse(raw);
     expect(result.memories[0]).toEqual({ type: 'fact', content: 'Test' });
   });
@@ -58,19 +60,22 @@ describe('extractMemoriesFromResponse', () => {
   });
 
   it('filters out items with missing content', () => {
-    const raw = 'Response.\n<memories>[{"type":"fact","content":""},{"type":"fact","content":"Valid"}]</memories>';
+    const raw =
+      'Response.\n<memories>[{"type":"fact","content":""},{"type":"fact","content":"Valid"}]</memories>';
     const result = extractMemoriesFromResponse(raw);
     expect(result.memories).toEqual([{ type: 'fact', content: 'Valid' }]);
   });
 
   it('filters out items with invalid type', () => {
-    const raw = 'Response.\n<memories>[{"type":"invalid","content":"Test"},{"type":"skill","content":"Python"}]</memories>';
+    const raw =
+      'Response.\n<memories>[{"type":"invalid","content":"Test"},{"type":"skill","content":"Python"}]</memories>';
     const result = extractMemoriesFromResponse(raw);
     expect(result.memories).toEqual([{ type: 'skill', content: 'Python' }]);
   });
 
   it('filters out non-object items', () => {
-    const raw = 'Response.\n<memories>[42, null, "string", {"type":"fact","content":"Valid"}]</memories>';
+    const raw =
+      'Response.\n<memories>[42, null, "string", {"type":"fact","content":"Valid"}]</memories>';
     const result = extractMemoriesFromResponse(raw);
     expect(result.memories).toEqual([{ type: 'fact', content: 'Valid' }]);
   });
@@ -97,14 +102,18 @@ describe('extractMemoriesFromResponse', () => {
   });
 
   it('handles tag in middle of content (before suggestions)', () => {
-    const raw = 'Response text.\n<memories>[{"type":"fact","content":"Name is Alex"}]</memories>\n<suggestions>[{"title":"Hi","detail":"Hello"}]</suggestions>';
+    const raw =
+      'Response text.\n<memories>[{"type":"fact","content":"Name is Alex"}]</memories>\n<suggestions>[{"title":"Hi","detail":"Hello"}]</suggestions>';
     const result = extractMemoriesFromResponse(raw);
-    expect(result.content).toBe('Response text.\n\n<suggestions>[{"title":"Hi","detail":"Hello"}]</suggestions>');
+    expect(result.content).toBe(
+      'Response text.\n\n<suggestions>[{"title":"Hi","detail":"Hello"}]</suggestions>'
+    );
     expect(result.memories).toEqual([{ type: 'fact', content: 'Name is Alex' }]);
   });
 
   it('handles whitespace around the tag', () => {
-    const raw = 'Response.\n\n<memories>  [{"type":"preference","content":"Likes coffee"}]  </memories>';
+    const raw =
+      'Response.\n\n<memories>  [{"type":"preference","content":"Likes coffee"}]  </memories>';
     const result = extractMemoriesFromResponse(raw);
     expect(result.content).toBe('Response.');
     expect(result.memories).toEqual([{ type: 'preference', content: 'Likes coffee' }]);
@@ -124,7 +133,7 @@ describe('extractMemoriesFromResponse', () => {
 
   it('handles all valid memory types', () => {
     const types = ['fact', 'preference', 'conversation', 'event', 'skill'];
-    const items = types.map(t => ({ type: t, content: `Type ${t}` }));
+    const items = types.map((t) => ({ type: t, content: `Type ${t}` }));
     const raw = `Response.\n<memories>${JSON.stringify(items)}</memories>`;
     const result = extractMemoriesFromResponse(raw);
     expect(result.memories).toHaveLength(5);
@@ -134,7 +143,8 @@ describe('extractMemoriesFromResponse', () => {
   });
 
   it('filters out items missing type', () => {
-    const raw = 'Response.\n<memories>[{"content":"No type"},{"type":"fact","content":"Has type"}]</memories>';
+    const raw =
+      'Response.\n<memories>[{"content":"No type"},{"type":"fact","content":"Has type"}]</memories>';
     const result = extractMemoriesFromResponse(raw);
     expect(result.memories).toEqual([{ type: 'fact', content: 'Has type' }]);
   });

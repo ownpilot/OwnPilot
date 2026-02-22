@@ -274,10 +274,10 @@ export class HabitsRepository extends BaseRepository {
   }
 
   async delete(id: string): Promise<boolean> {
-    const result = await this.execute(
-      `DELETE FROM habits WHERE id = $1 AND user_id = $2`,
-      [id, this.userId]
-    );
+    const result = await this.execute(`DELETE FROM habits WHERE id = $1 AND user_id = $2`, [
+      id,
+      this.userId,
+    ]);
     return result.changes > 0;
   }
 
@@ -315,12 +315,14 @@ export class HabitsRepository extends BaseRepository {
     return rows.map(rowToHabit);
   }
 
-
   // ---------------------------------------------------------------------------
   // Habit Logs
   // ---------------------------------------------------------------------------
 
-  async logHabit(habitId: string, options: { date?: string; count?: number; notes?: string } = {}): Promise<HabitLog | null> {
+  async logHabit(
+    habitId: string,
+    options: { date?: string; count?: number; notes?: string } = {}
+  ): Promise<HabitLog | null> {
     const habit = await this.get(habitId);
     if (!habit) return null;
 
@@ -363,7 +365,10 @@ export class HabitsRepository extends BaseRepository {
     return row ? rowToHabitLog(row) : null;
   }
 
-  async getLogs(habitId: string, options: { startDate?: string; endDate?: string; limit?: number } = {}): Promise<HabitLog[]> {
+  async getLogs(
+    habitId: string,
+    options: { startDate?: string; endDate?: string; limit?: number } = {}
+  ): Promise<HabitLog[]> {
     let sql = `SELECT * FROM habit_logs WHERE habit_id = $1`;
     const params: unknown[] = [habitId];
     let paramIndex = 2;
@@ -390,10 +395,10 @@ export class HabitsRepository extends BaseRepository {
   }
 
   async deleteLog(habitId: string, date: string): Promise<boolean> {
-    const result = await this.execute(
-      `DELETE FROM habit_logs WHERE habit_id = $1 AND date = $2`,
-      [habitId, date]
-    );
+    const result = await this.execute(`DELETE FROM habit_logs WHERE habit_id = $1 AND date = $2`, [
+      habitId,
+      date,
+    ]);
 
     if (result.changes > 0) {
       await this.updateHabitStats(habitId);
@@ -401,7 +406,6 @@ export class HabitsRepository extends BaseRepository {
 
     return result.changes > 0;
   }
-
 
   // ---------------------------------------------------------------------------
   // Stats & Streaks
@@ -432,7 +436,9 @@ export class HabitsRepository extends BaseRepository {
     );
   }
 
-  private async calculateStreak(habit: Habit): Promise<{ currentStreak: number; longestStreak: number }> {
+  private async calculateStreak(
+    habit: Habit
+  ): Promise<{ currentStreak: number; longestStreak: number }> {
     const logs = await this.getLogs(habit.id, { limit: MAX_DAYS_LOOKBACK }); // Last year
 
     if (logs.length === 0) {
@@ -509,7 +515,6 @@ export class HabitsRepository extends BaseRepository {
     return { currentStreak, longestStreak };
   }
 
-
   async getHabitStats(habitId: string): Promise<{
     habit: Habit;
     weeklyCompletions: number;
@@ -526,8 +531,12 @@ export class HabitsRepository extends BaseRepository {
     const monthAgo = new Date(today);
     monthAgo.setDate(today.getDate() - 30);
 
-    const weeklyLogs = await this.getLogs(habitId, { startDate: weekAgo.toISOString().split('T')[0] });
-    const monthlyLogs = await this.getLogs(habitId, { startDate: monthAgo.toISOString().split('T')[0] });
+    const weeklyLogs = await this.getLogs(habitId, {
+      startDate: weekAgo.toISOString().split('T')[0],
+    });
+    const monthlyLogs = await this.getLogs(habitId, {
+      startDate: monthAgo.toISOString().split('T')[0],
+    });
 
     const weeklyCompletions = weeklyLogs.reduce((sum, log) => sum + log.count, 0);
     const monthlyCompletions = monthlyLogs.reduce((sum, log) => sum + log.count, 0);
@@ -542,7 +551,7 @@ export class HabitsRepository extends BaseRepository {
       expectedMonthly = habit.targetDays.length * 4;
     }
 
-    const completionRate = monthlyCompletions / (expectedMonthly * habit.targetCount) * 100;
+    const completionRate = (monthlyCompletions / (expectedMonthly * habit.targetCount)) * 100;
 
     return {
       habit,
@@ -565,10 +574,9 @@ export class HabitsRepository extends BaseRepository {
     const habits = await this.list({ isArchived: false });
 
     // Batch-fetch all today's logs in one query instead of N+1
-    const todayLogs = await this.query<HabitLogRow>(
-      `SELECT * FROM habit_logs WHERE date = $1`,
-      [todayStr]
-    );
+    const todayLogs = await this.query<HabitLogRow>(`SELECT * FROM habit_logs WHERE date = $1`, [
+      todayStr,
+    ]);
     const logsByHabitId = new Map(todayLogs.map((row) => [row.habit_id, rowToHabitLog(row)]));
 
     const results: HabitWithTodayStatus[] = [];
@@ -603,7 +611,7 @@ export class HabitsRepository extends BaseRepository {
     habits: HabitWithTodayStatus[];
   }> {
     const habits = await this.getTodayHabits();
-    const completed = habits.filter(h => h.completedToday).length;
+    const completed = habits.filter((h) => h.completedToday).length;
 
     return {
       total: habits.length,
@@ -625,7 +633,7 @@ export class HabitsRepository extends BaseRepository {
       [this.userId]
     );
 
-    return rows.map(r => r.category);
+    return rows.map((r) => r.category);
   }
 }
 

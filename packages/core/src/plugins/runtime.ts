@@ -257,11 +257,14 @@ export class SecurePluginRuntime extends EventEmitter {
   private readonly isolationManager: PluginIsolationManager;
   private readonly verifier: PluginVerifier;
   private readonly barriers: Map<string, PluginSecurityBarrier> = new Map();
-  private readonly pendingCalls: Map<string, {
-    resolve: (value: unknown) => void;
-    reject: (error: Error) => void;
-    timeout: ReturnType<typeof setTimeout>;
-  }> = new Map();
+  private readonly pendingCalls: Map<
+    string,
+    {
+      resolve: (value: unknown) => void;
+      reject: (error: Error) => void;
+      timeout: ReturnType<typeof setTimeout>;
+    }
+  > = new Map();
 
   constructor(config: Partial<RuntimeConfig> = {}) {
     super();
@@ -659,9 +662,9 @@ export class SecurePluginRuntime extends EventEmitter {
   async shutdown(): Promise<void> {
     const promises = [...this.plugins.keys()].map((id) => this.stop(id, 'shutdown'));
     const results = await Promise.allSettled(promises);
-    const failures = results.filter(r => r.status === 'rejected');
+    const failures = results.filter((r) => r.status === 'rejected');
     if (failures.length > 0) {
-      const log = await import('../services/get-log.js').then(m => m.getLog('PluginRuntime'));
+      const log = await import('../services/get-log.js').then((m) => m.getLog('PluginRuntime'));
       log.warn(`${failures.length} plugin(s) failed to shut down cleanly`);
     }
   }
@@ -746,9 +749,7 @@ export class SecurePluginRuntime extends EventEmitter {
       {
         eval: true,
         resourceLimits: {
-          maxOldGenerationSizeMb: Math.floor(
-            this.config.defaultLimits.memoryLimit / (1024 * 1024)
-          ),
+          maxOldGenerationSizeMb: Math.floor(this.config.defaultLimits.memoryLimit / (1024 * 1024)),
           maxYoungGenerationSizeMb: 16,
           codeRangeSizeMb: 16,
         },
@@ -896,9 +897,7 @@ export class SecurePluginRuntime extends EventEmitter {
 /**
  * Create a secure plugin runtime
  */
-export function createPluginRuntime(
-  config: Partial<RuntimeConfig> = {}
-): SecurePluginRuntime {
+export function createPluginRuntime(config: Partial<RuntimeConfig> = {}): SecurePluginRuntime {
   return new SecurePluginRuntime(config);
 }
 

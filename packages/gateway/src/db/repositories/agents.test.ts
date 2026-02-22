@@ -98,7 +98,7 @@ describe('AgentsRepository', () => {
     it('should store systemPrompt when provided', async () => {
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
       mockAdapter.queryOne.mockResolvedValueOnce(
-        makeAgentRow({ system_prompt: 'You are a helpful assistant.' }),
+        makeAgentRow({ system_prompt: 'You are a helpful assistant.' })
       );
 
       const result = await repo.create({
@@ -132,7 +132,7 @@ describe('AgentsRepository', () => {
     it('should serialize config as JSON', async () => {
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
       mockAdapter.queryOne.mockResolvedValueOnce(
-        makeAgentRow({ config: '{"temperature":0.7,"maxTokens":1000}' }),
+        makeAgentRow({ config: '{"temperature":0.7,"maxTokens":1000}' })
       );
 
       const result = await repo.create({
@@ -173,7 +173,7 @@ describe('AgentsRepository', () => {
           name: 'TestAgent',
           provider: 'openai',
           model: 'gpt-4',
-        }),
+        })
       ).rejects.toThrow('Failed to create agent');
     });
 
@@ -233,7 +233,7 @@ describe('AgentsRepository', () => {
 
     it('should convert non-null system_prompt to string', async () => {
       mockAdapter.queryOne.mockResolvedValueOnce(
-        makeAgentRow({ system_prompt: 'You are helpful.' }),
+        makeAgentRow({ system_prompt: 'You are helpful.' })
       );
 
       const result = await repo.getById('agent-1');
@@ -242,9 +242,7 @@ describe('AgentsRepository', () => {
     });
 
     it('should parse JSON config string', async () => {
-      mockAdapter.queryOne.mockResolvedValueOnce(
-        makeAgentRow({ config: '{"temperature":0.5}' }),
-      );
+      mockAdapter.queryOne.mockResolvedValueOnce(makeAgentRow({ config: '{"temperature":0.5}' }));
 
       const result = await repo.getById('agent-1');
 
@@ -260,9 +258,7 @@ describe('AgentsRepository', () => {
     });
 
     it('should handle config that is already an object', async () => {
-      mockAdapter.queryOne.mockResolvedValueOnce(
-        makeAgentRow({ config: { temperature: 0.5 } }),
-      );
+      mockAdapter.queryOne.mockResolvedValueOnce(makeAgentRow({ config: { temperature: 0.5 } }));
 
       const result = await repo.getById('agent-1');
 
@@ -384,9 +380,7 @@ describe('AgentsRepository', () => {
     it('should update systemPrompt', async () => {
       mockAdapter.queryOne.mockResolvedValueOnce(makeAgentRow());
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
-      mockAdapter.queryOne.mockResolvedValueOnce(
-        makeAgentRow({ system_prompt: 'New prompt' }),
-      );
+      mockAdapter.queryOne.mockResolvedValueOnce(makeAgentRow({ system_prompt: 'New prompt' }));
 
       const result = await repo.update('agent-1', { systemPrompt: 'New prompt' });
 
@@ -418,9 +412,7 @@ describe('AgentsRepository', () => {
     it('should serialize config on update', async () => {
       mockAdapter.queryOne.mockResolvedValueOnce(makeAgentRow());
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
-      mockAdapter.queryOne.mockResolvedValueOnce(
-        makeAgentRow({ config: '{"temperature":0.9}' }),
-      );
+      mockAdapter.queryOne.mockResolvedValueOnce(makeAgentRow({ config: '{"temperature":0.9}' }));
 
       await repo.update('agent-1', { config: { temperature: 0.9 } });
 
@@ -437,7 +429,7 @@ describe('AgentsRepository', () => {
           provider: 'anthropic',
           model: 'claude-3',
           system_prompt: 'New prompt',
-        }),
+        })
       );
 
       const result = await repo.update('agent-1', {

@@ -57,9 +57,7 @@ export function registerApprovalHandler(bot: Bot): void {
 
     // Edit the message to show the decision (best effort)
     try {
-      await ctx.editMessageText(
-        approved ? '\u2705 Approved' : '\u274c Denied',
-      );
+      await ctx.editMessageText(approved ? '\u2705 Approved' : '\u274c Denied');
     } catch (err) {
       log.debug('Failed to edit approval message', { error: err });
     }
@@ -85,7 +83,7 @@ export async function requestTelegramApproval(
     toolName: string;
     description: string;
     riskLevel?: string;
-  },
+  }
 ): Promise<boolean> {
   // Evict oldest if at capacity
   if (pending.size >= MAX_PENDING) {
@@ -107,7 +105,9 @@ export async function requestTelegramApproval(
     `<b>Tool:</b> <code>${escapeHtml(params.toolName)}</code>`,
     params.description ? `<b>Action:</b> ${escapeHtml(truncate(params.description, 500))}` : '',
     riskBadge ? `\n${riskBadge}` : '',
-  ].filter(Boolean).join('\n');
+  ]
+    .filter(Boolean)
+    .join('\n');
 
   const keyboard = new InlineKeyboard()
     .text('\u2705 Approve', `approve:${id}`)
@@ -129,7 +129,13 @@ export async function requestTelegramApproval(
       resolve(false);
 
       // Edit message to show timeout
-      bot.api.editMessageText(chatId, sent.message_id, '\u23f0 Approval timed out — denied automatically.').catch(() => {});
+      bot.api
+        .editMessageText(
+          chatId,
+          sent.message_id,
+          '\u23f0 Approval timed out — denied automatically.'
+        )
+        .catch(() => {});
     }, APPROVAL_TIMEOUT_MS);
 
     pending.set(id, {

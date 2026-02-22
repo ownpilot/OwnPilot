@@ -354,7 +354,7 @@ export class CalendarRepository extends BaseRepository {
       `SELECT DISTINCT category FROM calendar_events WHERE user_id = $1 AND category IS NOT NULL ORDER BY category`,
       [this.userId]
     );
-    return rows.map(r => r.category);
+    return rows.map((r) => r.category);
   }
 
   async count(): Promise<number> {

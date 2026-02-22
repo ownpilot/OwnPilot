@@ -203,7 +203,9 @@ describe('EventBus (new API)', () => {
       bus.onPattern('channel.**', handler);
 
       bus.emit('channel.connected', 'test', {
-        channelPluginId: 'c1', platform: 'telegram', status: 'connected',
+        channelPluginId: 'c1',
+        platform: 'telegram',
+        status: 'connected',
       });
       bus.emit('channel.message.received', 'test', { message: {} as Record<string, unknown> });
 
@@ -234,7 +236,9 @@ describe('EventBus (new API)', () => {
     it('catches sync errors without propagation', () => {
       const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
-      bus.onAny('test.event', () => { throw new Error('sync fail'); });
+      bus.onAny('test.event', () => {
+        throw new Error('sync fail');
+      });
 
       expect(() => {
         bus.emitRaw({
@@ -253,7 +257,9 @@ describe('EventBus (new API)', () => {
     it('catches async errors without propagation', async () => {
       const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
-      bus.onAny('test.event', async () => { throw new Error('async fail'); });
+      bus.onAny('test.event', async () => {
+        throw new Error('async fail');
+      });
 
       bus.emitRaw({
         type: 'test.event',
@@ -272,7 +278,9 @@ describe('EventBus (new API)', () => {
       const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
       const goodHandler = vi.fn();
 
-      bus.onAny('test.event', () => { throw new Error('bad'); });
+      bus.onAny('test.event', () => {
+        throw new Error('bad');
+      });
       bus.onAny('test.event', goodHandler);
 
       bus.emitRaw({

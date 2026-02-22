@@ -19,14 +19,19 @@ export interface ScopedFs {
   readFile: (filePath: string, encoding?: string) => Promise<string>;
   writeFile: (filePath: string, content: string) => Promise<void>;
   readdir: (dirPath?: string) => Promise<string[]>;
-  stat: (filePath: string) => Promise<{ size: number; isFile: boolean; isDirectory: boolean; modified: string }>;
+  stat: (
+    filePath: string
+  ) => Promise<{ size: number; isFile: boolean; isDirectory: boolean; modified: string }>;
   mkdir: (dirPath: string, recursive?: boolean) => Promise<void>;
   unlink: (filePath: string) => Promise<void>;
   exists: (filePath: string) => Promise<boolean>;
 }
 
 export interface ScopedExec {
-  exec: (command: string, timeout?: number) => Promise<{ stdout: string; stderr: string; exitCode: number | null }>;
+  exec: (
+    command: string,
+    timeout?: number
+  ) => Promise<{ stdout: string; stderr: string; exitCode: number | null }>;
 }
 
 // =============================================================================
@@ -137,43 +142,72 @@ export function createScopedExec(workspaceDir: string): ScopedExec {
 
       // Security: only pass safe env vars to sandboxed commands (no API keys/secrets)
       const safeEnv: Record<string, string> = {};
-      const SAFE_ENV_KEYS = ['PATH', 'HOME', 'USER', 'LANG', 'TERM', 'NODE_ENV', 'TZ',
-        'SHELL', 'TEMP', 'TMP', 'TMPDIR', 'USERPROFILE', 'APPDATA', 'LOCALAPPDATA',
-        'SystemRoot', 'SYSTEMROOT', 'windir', 'WINDIR', 'ComSpec', 'COMSPEC',
-        'ProgramFiles', 'ProgramFiles(x86)', 'CommonProgramFiles',
-        'NUMBER_OF_PROCESSORS', 'PROCESSOR_ARCHITECTURE', 'OS'];
+      const SAFE_ENV_KEYS = [
+        'PATH',
+        'HOME',
+        'USER',
+        'LANG',
+        'TERM',
+        'NODE_ENV',
+        'TZ',
+        'SHELL',
+        'TEMP',
+        'TMP',
+        'TMPDIR',
+        'USERPROFILE',
+        'APPDATA',
+        'LOCALAPPDATA',
+        'SystemRoot',
+        'SYSTEMROOT',
+        'windir',
+        'WINDIR',
+        'ComSpec',
+        'COMSPEC',
+        'ProgramFiles',
+        'ProgramFiles(x86)',
+        'CommonProgramFiles',
+        'NUMBER_OF_PROCESSORS',
+        'PROCESSOR_ARCHITECTURE',
+        'OS',
+      ];
       for (const key of SAFE_ENV_KEYS) {
         if (process.env[key]) safeEnv[key] = process.env[key]!;
       }
 
-      return new Promise<{ stdout: string; stderr: string; exitCode: number | null }>((resolve, reject) => {
-        const child = exec(command, {
-          cwd: workspaceDir,
-          timeout: execTimeout,
-          maxBuffer: MAX_OUTPUT_SIZE,
-          env: safeEnv,
-        }, (error, stdout, stderr) => {
-          if (error && !error.killed) {
-            // Execution error but not timeout-killed
-            resolve({
-              stdout: stdout?.slice(0, MAX_OUTPUT_SIZE) ?? '',
-              stderr: stderr?.slice(0, MAX_OUTPUT_SIZE) ?? '',
-              exitCode: error.code ?? 1,
-            });
-          } else if (error?.killed) {
-            reject(new Error(`Command timed out after ${execTimeout}ms`));
-          } else {
-            resolve({
-              stdout: stdout?.slice(0, MAX_OUTPUT_SIZE) ?? '',
-              stderr: stderr?.slice(0, MAX_OUTPUT_SIZE) ?? '',
-              exitCode: 0,
-            });
-          }
-        });
+      return new Promise<{ stdout: string; stderr: string; exitCode: number | null }>(
+        (resolve, reject) => {
+          const child = exec(
+            command,
+            {
+              cwd: workspaceDir,
+              timeout: execTimeout,
+              maxBuffer: MAX_OUTPUT_SIZE,
+              env: safeEnv,
+            },
+            (error, stdout, stderr) => {
+              if (error && !error.killed) {
+                // Execution error but not timeout-killed
+                resolve({
+                  stdout: stdout?.slice(0, MAX_OUTPUT_SIZE) ?? '',
+                  stderr: stderr?.slice(0, MAX_OUTPUT_SIZE) ?? '',
+                  exitCode: error.code ?? 1,
+                });
+              } else if (error?.killed) {
+                reject(new Error(`Command timed out after ${execTimeout}ms`));
+              } else {
+                resolve({
+                  stdout: stdout?.slice(0, MAX_OUTPUT_SIZE) ?? '',
+                  stderr: stderr?.slice(0, MAX_OUTPUT_SIZE) ?? '',
+                  exitCode: 0,
+                });
+              }
+            }
+          );
 
-        // Close stdin
-        child.stdin?.end();
-      });
+          // Close stdin
+          child.stdin?.end();
+        }
+      );
     },
   };
 }

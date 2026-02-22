@@ -356,10 +356,7 @@ describe('Route Helpers', () => {
 
       apiResponse(c, { created: true }, 201);
 
-      expect(c.json).toHaveBeenCalledWith(
-        expect.objectContaining({ success: true }),
-        201
-      );
+      expect(c.json).toHaveBeenCalledWith(expect.objectContaining({ success: true }), 201);
     });
 
     it('should use default status when not provided', () => {

@@ -80,7 +80,12 @@ interface MarkdownContentProps {
   workspaceId?: string | null;
 }
 
-export const MarkdownContent = memo(function MarkdownContent({ content, className, compact, workspaceId }: MarkdownContentProps) {
+export const MarkdownContent = memo(function MarkdownContent({
+  content,
+  className,
+  compact,
+  workspaceId,
+}: MarkdownContentProps) {
   const maxHeight = compact ? '200px' : '300px';
 
   // Render inline elements (bold, italic, inline code, links, images)
@@ -94,7 +99,10 @@ export const MarkdownContent = memo(function MarkdownContent({ content, classNam
       const inlineCodeMatch = remaining.match(/^`([^`]+)`/);
       if (inlineCodeMatch) {
         elements.push(
-          <code key={key++} className="px-1.5 py-0.5 bg-bg-tertiary dark:bg-dark-bg-tertiary text-primary rounded font-mono text-sm">
+          <code
+            key={key++}
+            className="px-1.5 py-0.5 bg-bg-tertiary dark:bg-dark-bg-tertiary text-primary rounded font-mono text-sm"
+          >
             {inlineCodeMatch[1]}
           </code>
         );
@@ -215,14 +223,14 @@ export const MarkdownContent = memo(function MarkdownContent({ content, classNam
       );
     }
 
-    return parts.length > 0 ? parts : <span className="whitespace-pre-wrap break-words">{text}</span>;
+    return parts.length > 0 ? (
+      parts
+    ) : (
+      <span className="whitespace-pre-wrap break-words">{text}</span>
+    );
   };
 
   const rendered = useMemo(() => renderContent(content), [content, compact, workspaceId]);
 
-  return (
-    <div className={className}>
-      {rendered}
-    </div>
-  );
+  return <div className={className}>{rendered}</div>;
 });

@@ -42,11 +42,13 @@ let capturedTools: Array<{
 
 vi.mock('@ownpilot/core', () => {
   const mockBuilder = {
-    meta: vi.fn(function (this: unknown) { return mockBuilder; }),
+    meta: vi.fn(function (this: unknown) {
+      return mockBuilder;
+    }),
     tool: vi.fn(function (
       this: unknown,
       def: Record<string, unknown>,
-      fn: (args: Record<string, unknown>) => Promise<unknown>,
+      fn: (args: Record<string, unknown>) => Promise<unknown>
     ) {
       capturedTools.push({ definition: def, executor: fn });
       return mockBuilder;
@@ -58,7 +60,12 @@ vi.mock('@ownpilot/core', () => {
         version: '1.0.0',
         description: '1000+ OAuth app integrations via Composio',
         pluginConfigSchema: [
-          { name: 'auto_suggest', label: 'Auto-suggest Composio tools', type: 'boolean', defaultValue: true },
+          {
+            name: 'auto_suggest',
+            label: 'Auto-suggest Composio tools',
+            type: 'boolean',
+            defaultValue: true,
+          },
         ],
         requiredServices: [
           {
@@ -100,10 +107,13 @@ import { buildComposioPlugin } from './composio.js';
 // ---------------------------------------------------------------------------
 
 function getToolExecutor(name: string) {
-  const entry = capturedTools.find(t => t.definition.name === name);
+  const entry = capturedTools.find((t) => t.definition.name === name);
   if (!entry) {
     throw new Error(
-      'Tool "' + name + '" not found. Available: ' + capturedTools.map(t => t.definition.name).join(', '),
+      'Tool "' +
+        name +
+        '" not found. Available: ' +
+        capturedTools.map((t) => t.definition.name).join(', ')
     );
   }
   return entry.executor;
@@ -160,31 +170,31 @@ describe('buildComposioPlugin', () => {
     });
 
     it('registers composio_search tool', () => {
-      expect(capturedTools.map(t => t.definition.name)).toContain('composio_search');
+      expect(capturedTools.map((t) => t.definition.name)).toContain('composio_search');
     });
 
     it('registers composio_execute tool', () => {
-      expect(capturedTools.map(t => t.definition.name)).toContain('composio_execute');
+      expect(capturedTools.map((t) => t.definition.name)).toContain('composio_execute');
     });
 
     it('registers composio_connect tool', () => {
-      expect(capturedTools.map(t => t.definition.name)).toContain('composio_connect');
+      expect(capturedTools.map((t) => t.definition.name)).toContain('composio_connect');
     });
 
     it('registers composio_status tool', () => {
-      expect(capturedTools.map(t => t.definition.name)).toContain('composio_status');
+      expect(capturedTools.map((t) => t.definition.name)).toContain('composio_status');
     });
 
     it('plugin config schema has auto_suggest field', () => {
       const { manifest } = buildComposioPlugin();
       const schema = manifest.pluginConfigSchema as Array<{ name: string }>;
-      expect(schema.some(f => f.name === 'auto_suggest')).toBe(true);
+      expect(schema.some((f) => f.name === 'auto_suggest')).toBe(true);
     });
 
     it('requiredServices includes composio service', () => {
       const { manifest } = buildComposioPlugin();
       const services = manifest.requiredServices as Array<{ name: string }>;
-      expect(services.some(s => s.name === 'composio')).toBe(true);
+      expect(services.some((s) => s.name === 'composio')).toBe(true);
     });
 
     it('composio service config schema has api_key field', () => {
@@ -193,8 +203,8 @@ describe('buildComposioPlugin', () => {
         name: string;
         configSchema: Array<{ name: string }>;
       }>;
-      const svc = services.find(s => s.name === 'composio');
-      expect(svc?.configSchema.some(f => f.name === 'api_key')).toBe(true);
+      const svc = services.find((s) => s.name === 'composio');
+      expect(svc?.configSchema.some((f) => f.name === 'api_key')).toBe(true);
     });
   });
 
@@ -206,7 +216,7 @@ describe('buildComposioPlugin', () => {
     it('returns not-configured error when isConfigured() is false', async () => {
       mockComposioService.isConfigured.mockReturnValue(false);
       const fn = getToolExecutor('composio_search');
-      const result = await fn({ query: 'send email' }) as { content: string; isError: boolean };
+      const result = (await fn({ query: 'send email' })) as { content: string; isError: boolean };
       expect(result.isError).toBe(true);
       expect(result.content).toContain('Composio API key not configured');
     });
@@ -214,7 +224,12 @@ describe('buildComposioPlugin', () => {
     it('searches with query only (no app filter)', async () => {
       mockComposioService.isConfigured.mockReturnValue(true);
       mockComposioService.searchActions.mockResolvedValue([
-        { slug: 'GMAIL_SEND_EMAIL', name: 'Send Email', appName: 'gmail', description: 'Send an email' },
+        {
+          slug: 'GMAIL_SEND_EMAIL',
+          name: 'Send Email',
+          appName: 'gmail',
+          description: 'Send an email',
+        },
       ]);
       const fn = getToolExecutor('composio_search');
       await fn({ query: 'send email' });
@@ -249,7 +264,7 @@ describe('buildComposioPlugin', () => {
       mockComposioService.isConfigured.mockReturnValue(true);
       mockComposioService.searchActions.mockResolvedValue([]);
       const fn = getToolExecutor('composio_search');
-      const result = await fn({ query: 'nonexistent action' }) as { content: string };
+      const result = (await fn({ query: 'nonexistent action' })) as { content: string };
       expect(result.content).toContain('No Composio actions found for "nonexistent action"');
       expect(result.content).not.toContain('in app');
     });
@@ -258,7 +273,7 @@ describe('buildComposioPlugin', () => {
       mockComposioService.isConfigured.mockReturnValue(true);
       mockComposioService.searchActions.mockResolvedValue([]);
       const fn = getToolExecutor('composio_search');
-      const result = await fn({ query: 'nonexistent', app: 'github' }) as { content: string };
+      const result = (await fn({ query: 'nonexistent', app: 'github' })) as { content: string };
       expect(result.content).toContain('No Composio actions found for "nonexistent"');
       expect(result.content).toContain('in app "github"');
     });
@@ -266,7 +281,12 @@ describe('buildComposioPlugin', () => {
     it('formats results correctly with action slug mapped to action key', async () => {
       mockComposioService.isConfigured.mockReturnValue(true);
       mockComposioService.searchActions.mockResolvedValue([
-        { slug: 'GITHUB_CREATE_ISSUE', name: 'Create Issue', appName: 'github', description: 'Creates a GitHub issue' },
+        {
+          slug: 'GITHUB_CREATE_ISSUE',
+          name: 'Create Issue',
+          appName: 'github',
+          description: 'Creates a GitHub issue',
+        },
       ]);
       const fn = getToolExecutor('composio_search');
       const result = await fn({ query: 'create issue' });
@@ -282,7 +302,12 @@ describe('buildComposioPlugin', () => {
     it('includes hint about composio_execute in results payload', async () => {
       mockComposioService.isConfigured.mockReturnValue(true);
       mockComposioService.searchActions.mockResolvedValue([
-        { slug: 'SLACK_SEND_MESSAGE', name: 'Send Message', appName: 'slack', description: 'Send a Slack message' },
+        {
+          slug: 'SLACK_SEND_MESSAGE',
+          name: 'Send Message',
+          appName: 'slack',
+          description: 'Send a Slack message',
+        },
       ]);
       const fn = getToolExecutor('composio_search');
       const result = await fn({ query: 'send message' });
@@ -293,8 +318,18 @@ describe('buildComposioPlugin', () => {
     it('includes query and result count in response', async () => {
       mockComposioService.isConfigured.mockReturnValue(true);
       mockComposioService.searchActions.mockResolvedValue([
-        { slug: 'GITHUB_CREATE_ISSUE', name: 'Create Issue', appName: 'github', description: 'desc' },
-        { slug: 'GITHUB_LIST_ISSUES', name: 'List Issues', appName: 'github', description: 'desc2' },
+        {
+          slug: 'GITHUB_CREATE_ISSUE',
+          name: 'Create Issue',
+          appName: 'github',
+          description: 'desc',
+        },
+        {
+          slug: 'GITHUB_LIST_ISSUES',
+          name: 'List Issues',
+          appName: 'github',
+          description: 'desc2',
+        },
       ]);
       const fn = getToolExecutor('composio_search');
       const result = await fn({ query: 'issues', app: 'github' });
@@ -319,7 +354,7 @@ describe('buildComposioPlugin', () => {
       mockComposioService.isConfigured.mockReturnValue(true);
       mockComposioService.searchActions.mockRejectedValue(new Error('Network timeout'));
       const fn = getToolExecutor('composio_search');
-      const result = await fn({ query: 'test' }) as { content: string; isError: boolean };
+      const result = (await fn({ query: 'test' })) as { content: string; isError: boolean };
       expect(result.isError).toBe(true);
       expect(result.content).toContain('Composio search failed');
       expect(result.content).toContain('Network timeout');
@@ -346,7 +381,7 @@ describe('buildComposioPlugin', () => {
       mockComposioService.isConfigured.mockReturnValue(true);
       mockComposioService.searchActions.mockRejectedValue('plain string error');
       const fn = getToolExecutor('composio_search');
-      const result = await fn({ query: 'test' }) as { content: string; isError: boolean };
+      const result = (await fn({ query: 'test' })) as { content: string; isError: boolean };
       expect(result.isError).toBe(true);
       expect(result.content).toContain('plain string error');
     });
@@ -355,7 +390,7 @@ describe('buildComposioPlugin', () => {
       mockComposioService.isConfigured.mockReturnValue(true);
       mockComposioService.searchActions.mockResolvedValue([]);
       const fn = getToolExecutor('composio_search');
-      const result = await fn({}) as { content: string };
+      const result = (await fn({})) as { content: string };
       expect(result.content).toBeTruthy();
     });
   });
@@ -368,7 +403,10 @@ describe('buildComposioPlugin', () => {
     it('returns not-configured error when isConfigured() is false', async () => {
       mockComposioService.isConfigured.mockReturnValue(false);
       const fn = getToolExecutor('composio_execute');
-      const result = await fn({ action: 'GITHUB_CREATE_ISSUE' }) as { content: string; isError: boolean };
+      const result = (await fn({ action: 'GITHUB_CREATE_ISSUE' })) as {
+        content: string;
+        isError: boolean;
+      };
       expect(result.isError).toBe(true);
       expect(result.content).toContain('Composio API key not configured');
     });
@@ -376,7 +414,7 @@ describe('buildComposioPlugin', () => {
     it('returns error when action parameter is absent', async () => {
       mockComposioService.isConfigured.mockReturnValue(true);
       const fn = getToolExecutor('composio_execute');
-      const result = await fn({}) as { content: string; isError: boolean };
+      const result = (await fn({})) as { content: string; isError: boolean };
       expect(result.isError).toBe(true);
       expect(result.content).toContain('Missing required parameter: action');
     });
@@ -384,7 +422,7 @@ describe('buildComposioPlugin', () => {
     it('returns error when action is an empty string', async () => {
       mockComposioService.isConfigured.mockReturnValue(true);
       const fn = getToolExecutor('composio_execute');
-      const result = await fn({ action: '' }) as { content: string; isError: boolean };
+      const result = (await fn({ action: '' })) as { content: string; isError: boolean };
       expect(result.isError).toBe(true);
       expect(result.content).toContain('Missing required parameter: action');
     });
@@ -393,11 +431,14 @@ describe('buildComposioPlugin', () => {
       mockComposioService.isConfigured.mockReturnValue(true);
       mockComposioService.executeAction.mockResolvedValue({ issueNumber: 42 });
       const fn = getToolExecutor('composio_execute');
-      await fn({ action: 'GITHUB_CREATE_ISSUE', arguments: { title: 'Bug report', body: 'Something broke' } });
+      await fn({
+        action: 'GITHUB_CREATE_ISSUE',
+        arguments: { title: 'Bug report', body: 'Something broke' },
+      });
       expect(mockComposioService.executeAction).toHaveBeenCalledWith(
         'default',
         'GITHUB_CREATE_ISSUE',
-        { title: 'Bug report', body: 'Something broke' },
+        { title: 'Bug report', body: 'Something broke' }
       );
     });
 
@@ -406,7 +447,11 @@ describe('buildComposioPlugin', () => {
       mockComposioService.executeAction.mockResolvedValue({ ok: true });
       const fn = getToolExecutor('composio_execute');
       await fn({ action: 'GITHUB_LIST_REPOS' });
-      expect(mockComposioService.executeAction).toHaveBeenCalledWith('default', 'GITHUB_LIST_REPOS', {});
+      expect(mockComposioService.executeAction).toHaveBeenCalledWith(
+        'default',
+        'GITHUB_LIST_REPOS',
+        {}
+      );
     });
 
     it('uses DEFAULT_USER_ID "default" as first argument to executeAction', async () => {
@@ -434,9 +479,14 @@ describe('buildComposioPlugin', () => {
 
     it('handles generic execution error with isError flag', async () => {
       mockComposioService.isConfigured.mockReturnValue(true);
-      mockComposioService.executeAction.mockRejectedValue(new Error('Request failed with status 500'));
+      mockComposioService.executeAction.mockRejectedValue(
+        new Error('Request failed with status 500')
+      );
       const fn = getToolExecutor('composio_execute');
-      const result = await fn({ action: 'GITHUB_CREATE_ISSUE' }) as { content: string; isError: boolean };
+      const result = (await fn({ action: 'GITHUB_CREATE_ISSUE' })) as {
+        content: string;
+        isError: boolean;
+      };
       expect(result.isError).toBe(true);
       expect(result.content).toContain('Composio action execution failed');
       expect(result.content).toContain('Request failed with status 500');
@@ -444,18 +494,28 @@ describe('buildComposioPlugin', () => {
 
     it('detects connected account error phrase and suggests composio_connect', async () => {
       mockComposioService.isConfigured.mockReturnValue(true);
-      mockComposioService.executeAction.mockRejectedValue(new Error('No connected account found for this user'));
+      mockComposioService.executeAction.mockRejectedValue(
+        new Error('No connected account found for this user')
+      );
       const fn = getToolExecutor('composio_execute');
-      const result = await fn({ action: 'GITHUB_CREATE_ISSUE' }) as { content: string; isError: boolean };
+      const result = (await fn({ action: 'GITHUB_CREATE_ISSUE' })) as {
+        content: string;
+        isError: boolean;
+      };
       expect(result.isError).toBe(true);
       expect(result.content).toContain('composio_connect');
     });
 
     it('detects ConnectedAccountNotFound error phrase and suggests composio_connect', async () => {
       mockComposioService.isConfigured.mockReturnValue(true);
-      mockComposioService.executeAction.mockRejectedValue(new Error('ConnectedAccountNotFound for toolkit github'));
+      mockComposioService.executeAction.mockRejectedValue(
+        new Error('ConnectedAccountNotFound for toolkit github')
+      );
       const fn = getToolExecutor('composio_execute');
-      const result = await fn({ action: 'GITHUB_CREATE_ISSUE' }) as { content: string; isError: boolean };
+      const result = (await fn({ action: 'GITHUB_CREATE_ISSUE' })) as {
+        content: string;
+        isError: boolean;
+      };
       expect(result.isError).toBe(true);
       expect(result.content).toContain('composio_connect');
     });
@@ -464,7 +524,7 @@ describe('buildComposioPlugin', () => {
       mockComposioService.isConfigured.mockReturnValue(true);
       mockComposioService.executeAction.mockRejectedValue(new Error('connected account not found'));
       const fn = getToolExecutor('composio_execute');
-      const result = await fn({ action: 'GITHUB_CREATE_ISSUE' }) as { content: string };
+      const result = (await fn({ action: 'GITHUB_CREATE_ISSUE' })) as { content: string };
       expect(result.content).toContain('"github"');
     });
 
@@ -472,7 +532,7 @@ describe('buildComposioPlugin', () => {
       mockComposioService.isConfigured.mockReturnValue(true);
       mockComposioService.executeAction.mockRejectedValue(new Error('ConnectedAccountNotFound'));
       const fn = getToolExecutor('composio_execute');
-      const result = await fn({ action: 'GMAIL_SEND_EMAIL' }) as { content: string };
+      const result = (await fn({ action: 'GMAIL_SEND_EMAIL' })) as { content: string };
       expect(result.content).toContain('"gmail"');
     });
 
@@ -480,7 +540,7 @@ describe('buildComposioPlugin', () => {
       mockComposioService.isConfigured.mockReturnValue(true);
       mockComposioService.executeAction.mockRejectedValue(new Error('connected account not found'));
       const fn = getToolExecutor('composio_execute');
-      const result = await fn({ action: 'ACTION' }) as { content: string };
+      const result = (await fn({ action: 'ACTION' })) as { content: string };
       expect(result.content).toContain('"action"');
     });
 
@@ -497,7 +557,10 @@ describe('buildComposioPlugin', () => {
       mockComposioService.isConfigured.mockReturnValue(true);
       mockComposioService.executeAction.mockRejectedValue('plain string error');
       const fn = getToolExecutor('composio_execute');
-      const result = await fn({ action: 'GITHUB_CREATE_ISSUE' }) as { content: string; isError: boolean };
+      const result = (await fn({ action: 'GITHUB_CREATE_ISSUE' })) as {
+        content: string;
+        isError: boolean;
+      };
       expect(result.isError).toBe(true);
       expect(result.content).toContain('plain string error');
     });
@@ -507,7 +570,11 @@ describe('buildComposioPlugin', () => {
       mockComposioService.executeAction.mockResolvedValue({});
       const fn = getToolExecutor('composio_execute');
       await fn({ action: 'GITHUB_LIST_REPOS', arguments: 'not-an-object' });
-      expect(mockComposioService.executeAction).toHaveBeenCalledWith('default', 'GITHUB_LIST_REPOS', {});
+      expect(mockComposioService.executeAction).toHaveBeenCalledWith(
+        'default',
+        'GITHUB_LIST_REPOS',
+        {}
+      );
     });
 
     it('passes through valid arguments object to executeAction', async () => {
@@ -518,7 +585,7 @@ describe('buildComposioPlugin', () => {
       expect(mockComposioService.executeAction).toHaveBeenCalledWith(
         'default',
         'SLACK_SEND_MESSAGE',
-        { channel: '#general', text: 'Hello' },
+        { channel: '#general', text: 'Hello' }
       );
     });
   });
@@ -531,7 +598,7 @@ describe('buildComposioPlugin', () => {
     it('returns not-configured error when isConfigured() is false', async () => {
       mockComposioService.isConfigured.mockReturnValue(false);
       const fn = getToolExecutor('composio_connect');
-      const result = await fn({ app: 'github' }) as { content: string; isError: boolean };
+      const result = (await fn({ app: 'github' })) as { content: string; isError: boolean };
       expect(result.isError).toBe(true);
       expect(result.content).toContain('Composio API key not configured');
     });
@@ -539,7 +606,7 @@ describe('buildComposioPlugin', () => {
     it('returns error when app parameter is absent', async () => {
       mockComposioService.isConfigured.mockReturnValue(true);
       const fn = getToolExecutor('composio_connect');
-      const result = await fn({}) as { content: string; isError: boolean };
+      const result = (await fn({})) as { content: string; isError: boolean };
       expect(result.isError).toBe(true);
       expect(result.content).toContain('Missing required parameter: app');
     });
@@ -547,14 +614,18 @@ describe('buildComposioPlugin', () => {
     it('returns error when app is an empty string', async () => {
       mockComposioService.isConfigured.mockReturnValue(true);
       const fn = getToolExecutor('composio_connect');
-      const result = await fn({ app: '' }) as { content: string; isError: boolean };
+      const result = (await fn({ app: '' })) as { content: string; isError: boolean };
       expect(result.isError).toBe(true);
       expect(result.content).toContain('Missing required parameter: app');
     });
 
     it('returns already_connected status when existing connection is ACTIVE', async () => {
       mockComposioService.isConfigured.mockReturnValue(true);
-      mockComposioService.getConnectionStatus.mockResolvedValue({ id: 'conn-123', appName: 'github', status: 'ACTIVE' });
+      mockComposioService.getConnectionStatus.mockResolvedValue({
+        id: 'conn-123',
+        appName: 'github',
+        status: 'ACTIVE',
+      });
       const fn = getToolExecutor('composio_connect');
       const result = await fn({ app: 'github' });
       const parsed = parseContent(result) as { status: string; app: string };
@@ -564,7 +635,11 @@ describe('buildComposioPlugin', () => {
 
     it('message mentions composio_execute when already connected', async () => {
       mockComposioService.isConfigured.mockReturnValue(true);
-      mockComposioService.getConnectionStatus.mockResolvedValue({ id: 'conn-123', appName: 'github', status: 'ACTIVE' });
+      mockComposioService.getConnectionStatus.mockResolvedValue({
+        id: 'conn-123',
+        appName: 'github',
+        status: 'ACTIVE',
+      });
       const fn = getToolExecutor('composio_connect');
       const result = await fn({ app: 'github' });
       const parsed = parseContent(result) as { message: string };
@@ -573,7 +648,11 @@ describe('buildComposioPlugin', () => {
 
     it('does not call initiateConnection when already connected', async () => {
       mockComposioService.isConfigured.mockReturnValue(true);
-      mockComposioService.getConnectionStatus.mockResolvedValue({ id: 'conn-123', appName: 'github', status: 'ACTIVE' });
+      mockComposioService.getConnectionStatus.mockResolvedValue({
+        id: 'conn-123',
+        appName: 'github',
+        status: 'ACTIVE',
+      });
       const fn = getToolExecutor('composio_connect');
       await fn({ app: 'github' });
       expect(mockComposioService.initiateConnection).not.toHaveBeenCalled();
@@ -589,7 +668,11 @@ describe('buildComposioPlugin', () => {
       });
       const fn = getToolExecutor('composio_connect');
       const result = await fn({ app: 'github' });
-      const parsed = parseContent(result) as { status: string; redirectUrl: string; connectionId: string };
+      const parsed = parseContent(result) as {
+        status: string;
+        redirectUrl: string;
+        connectionId: string;
+      };
       expect(parsed.status).toBe('authorization_required');
       expect(parsed.redirectUrl).toBe('https://oauth.github.com/authorize?client_id=xyz');
       expect(parsed.connectionId).toBe('acc-456');
@@ -654,7 +737,7 @@ describe('buildComposioPlugin', () => {
       mockComposioService.isConfigured.mockReturnValue(true);
       mockComposioService.getConnectionStatus.mockRejectedValue(new Error('Service unavailable'));
       const fn = getToolExecutor('composio_connect');
-      const result = await fn({ app: 'github' }) as { content: string; isError: boolean };
+      const result = (await fn({ app: 'github' })) as { content: string; isError: boolean };
       expect(result.isError).toBe(true);
       expect(result.content).toContain('Failed to connect app');
       expect(result.content).toContain('Service unavailable');
@@ -673,7 +756,7 @@ describe('buildComposioPlugin', () => {
       mockComposioService.isConfigured.mockReturnValue(true);
       mockComposioService.getConnectionStatus.mockRejectedValue('connection refused');
       const fn = getToolExecutor('composio_connect');
-      const result = await fn({ app: 'github' }) as { content: string; isError: boolean };
+      const result = (await fn({ app: 'github' })) as { content: string; isError: boolean };
       expect(result.isError).toBe(true);
       expect(result.content).toContain('connection refused');
     });
@@ -706,7 +789,7 @@ describe('buildComposioPlugin', () => {
     it('returns not-configured error when isConfigured() is false', async () => {
       mockComposioService.isConfigured.mockReturnValue(false);
       const fn = getToolExecutor('composio_status');
-      const result = await fn({ app: 'github' }) as { content: string; isError: boolean };
+      const result = (await fn({ app: 'github' })) as { content: string; isError: boolean };
       expect(result.isError).toBe(true);
       expect(result.content).toContain('Composio API key not configured');
     });
@@ -734,7 +817,11 @@ describe('buildComposioPlugin', () => {
 
     it('calls getConnectionStatus with DEFAULT_USER_ID when app is provided', async () => {
       mockComposioService.isConfigured.mockReturnValue(true);
-      mockComposioService.getConnectionStatus.mockResolvedValue({ id: 'c-1', appName: 'slack', status: 'ACTIVE' });
+      mockComposioService.getConnectionStatus.mockResolvedValue({
+        id: 'c-1',
+        appName: 'slack',
+        status: 'ACTIVE',
+      });
       const fn = getToolExecutor('composio_status');
       await fn({ app: 'slack' });
       expect(mockComposioService.getConnectionStatus).toHaveBeenCalledWith('default', 'slack');
@@ -768,7 +855,11 @@ describe('buildComposioPlugin', () => {
       mockComposioService.getConnections.mockResolvedValue([]);
       const fn = getToolExecutor('composio_status');
       const result = await fn({});
-      const parsed = parseContent(result) as { connections: unknown[]; count: number; message: string };
+      const parsed = parseContent(result) as {
+        connections: unknown[];
+        count: number;
+        message: string;
+      };
       expect(parsed.connections).toHaveLength(0);
       expect(parsed.count).toBe(0);
       expect(parsed.message).toContain('composio_search');
@@ -788,8 +879,16 @@ describe('buildComposioPlugin', () => {
         count: number;
       };
       expect(parsed.count).toBe(2);
-      expect(parsed.connections[0]).toEqual({ app: 'github', status: 'ACTIVE', connectionId: 'conn-1' });
-      expect(parsed.connections[1]).toEqual({ app: 'gmail', status: 'ACTIVE', connectionId: 'conn-2' });
+      expect(parsed.connections[0]).toEqual({
+        app: 'github',
+        status: 'ACTIVE',
+        connectionId: 'conn-1',
+      });
+      expect(parsed.connections[1]).toEqual({
+        app: 'gmail',
+        status: 'ACTIVE',
+        connectionId: 'conn-2',
+      });
     });
 
     it('returns correct count for multiple connections', async () => {
@@ -809,7 +908,7 @@ describe('buildComposioPlugin', () => {
       mockComposioService.isConfigured.mockReturnValue(true);
       mockComposioService.getConnectionStatus.mockRejectedValue(new Error('Service down'));
       const fn = getToolExecutor('composio_status');
-      const result = await fn({ app: 'github' }) as { content: string; isError: boolean };
+      const result = (await fn({ app: 'github' })) as { content: string; isError: boolean };
       expect(result.isError).toBe(true);
       expect(result.content).toContain('Failed to check status');
       expect(result.content).toContain('Service down');
@@ -819,7 +918,7 @@ describe('buildComposioPlugin', () => {
       mockComposioService.isConfigured.mockReturnValue(true);
       mockComposioService.getConnections.mockRejectedValue(new Error('DB connection lost'));
       const fn = getToolExecutor('composio_status');
-      const result = await fn({}) as { content: string; isError: boolean };
+      const result = (await fn({})) as { content: string; isError: boolean };
       expect(result.isError).toBe(true);
       expect(result.content).toContain('Failed to check status');
       expect(result.content).toContain('DB connection lost');
@@ -838,7 +937,7 @@ describe('buildComposioPlugin', () => {
       mockComposioService.isConfigured.mockReturnValue(true);
       mockComposioService.getConnections.mockRejectedValue('unexpected failure');
       const fn = getToolExecutor('composio_status');
-      const result = await fn({}) as { content: string; isError: boolean };
+      const result = (await fn({})) as { content: string; isError: boolean };
       expect(result.isError).toBe(true);
       expect(result.content).toContain('unexpected failure');
     });
@@ -859,17 +958,17 @@ describe('buildComposioPlugin', () => {
 
   describe('isConfigured guard (all executors)', () => {
     const scenarios: Array<{ toolName: string; args: Record<string, unknown> }> = [
-      { toolName: 'composio_search',  args: { query: 'test' } },
+      { toolName: 'composio_search', args: { query: 'test' } },
       { toolName: 'composio_execute', args: { action: 'GITHUB_LIST_REPOS' } },
       { toolName: 'composio_connect', args: { app: 'github' } },
-      { toolName: 'composio_status',  args: { app: 'github' } },
+      { toolName: 'composio_status', args: { app: 'github' } },
     ];
 
     for (const { toolName, args } of scenarios) {
       it(`${toolName} returns isError:true when not configured`, async () => {
         mockComposioService.isConfigured.mockReturnValue(false);
         const fn = getToolExecutor(toolName);
-        const result = await fn(args) as { isError: boolean };
+        const result = (await fn(args)) as { isError: boolean };
         expect(result.isError).toBe(true);
       });
 

@@ -37,7 +37,13 @@ export function TasksPage() {
 
   const fetchTasks = useCallback(async () => {
     try {
-      const data = await tasksApi.list(filter === 'pending' ? { status: ['pending', 'in_progress'] } : filter === 'completed' ? { status: ['completed'] } : undefined);
+      const data = await tasksApi.list(
+        filter === 'pending'
+          ? { status: ['pending', 'in_progress'] }
+          : filter === 'completed'
+            ? { status: ['completed'] }
+            : undefined
+      );
       setTasks(data);
     } catch {
       // API client handles error reporting
@@ -56,35 +62,55 @@ export function TasksPage() {
     const unsub = subscribe<{ entity: string }>('data:changed', (data) => {
       if (data.entity === 'task') debouncedRefresh();
     });
-    return () => { unsub(); };
+    return () => {
+      unsub();
+    };
   }, [subscribe, debouncedRefresh]);
 
-  const handleComplete = useCallback(async (taskId: string) => {
-    try {
-      await tasksApi.complete(taskId);
-      toast.success('Task completed');
-      fetchTasks();
-    } catch {
-      // API client handles error reporting
-    }
-  }, [toast, fetchTasks]);
+  const handleComplete = useCallback(
+    async (taskId: string) => {
+      try {
+        await tasksApi.complete(taskId);
+        toast.success('Task completed');
+        fetchTasks();
+      } catch {
+        // API client handles error reporting
+      }
+    },
+    [toast, fetchTasks]
+  );
 
-  const handleDelete = useCallback(async (taskId: string) => {
-    if (!await confirm({ message: 'Are you sure you want to delete this task?', variant: 'danger' })) return;
+  const handleDelete = useCallback(
+    async (taskId: string) => {
+      if (
+        !(await confirm({
+          message: 'Are you sure you want to delete this task?',
+          variant: 'danger',
+        }))
+      )
+        return;
 
-    try {
-      await animatedDelete(taskId, async () => {
-        await tasksApi.delete(taskId);
-      });
-      toast.success('Task deleted');
-      fetchTasks();
-    } catch {
-      // API client handles error reporting
-    }
-  }, [confirm, toast, fetchTasks]);
+      try {
+        await animatedDelete(taskId, async () => {
+          await tasksApi.delete(taskId);
+        });
+        toast.success('Task deleted');
+        fetchTasks();
+      } catch {
+        // API client handles error reporting
+      }
+    },
+    [confirm, toast, fetchTasks]
+  );
 
-  const pendingCount = useMemo(() => tasks.filter((t) => t.status === 'pending' || t.status === 'in_progress').length, [tasks]);
-  const completedCount = useMemo(() => tasks.filter((t) => t.status === 'completed').length, [tasks]);
+  const pendingCount = useMemo(
+    () => tasks.filter((t) => t.status === 'pending' || t.status === 'in_progress').length,
+    [tasks]
+  );
+  const completedCount = useMemo(
+    () => tasks.filter((t) => t.status === 'completed').length,
+    [tasks]
+  );
 
   return (
     <div className="flex flex-col h-full">
@@ -132,8 +158,18 @@ export function TasksPage() {
           <EmptyState
             icon={CheckCircle2}
             title={filter === 'all' ? 'No tasks yet' : `No ${filter} tasks`}
-            description={filter === 'all' ? 'Create your first task to get started.' : filter === 'pending' ? "You're all caught up!" : 'Complete some tasks to see them here.'}
-            action={filter === 'all' ? { label: 'Create Task', onClick: () => setShowCreateModal(true), icon: Plus } : undefined}
+            description={
+              filter === 'all'
+                ? 'Create your first task to get started.'
+                : filter === 'pending'
+                  ? "You're all caught up!"
+                  : 'Complete some tasks to see them here.'
+            }
+            action={
+              filter === 'all'
+                ? { label: 'Create Task', onClick: () => setShowCreateModal(true), icon: Plus }
+                : undefined
+            }
           />
         ) : (
           <div className="space-y-2">
@@ -204,7 +240,18 @@ function TaskItem({ task, onComplete, onEdit, onDelete }: TaskItemProps) {
         )}
       </button>
 
-      <div className="flex-1 min-w-0 cursor-pointer" role="button" tabIndex={0} onClick={onEdit} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onEdit(); } }}>
+      <div
+        className="flex-1 min-w-0 cursor-pointer"
+        role="button"
+        tabIndex={0}
+        onClick={onEdit}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            onEdit();
+          }
+        }}
+      >
         <div className="flex items-center gap-2">
           <span
             className={`font-medium text-text-primary dark:text-dark-text-primary ${
@@ -229,11 +276,7 @@ function TaskItem({ task, onComplete, onEdit, onDelete }: TaskItemProps) {
         <div className="flex items-center gap-3 mt-2 text-xs text-text-muted dark:text-dark-text-muted">
           {task.dueDate && (
             <span className={`flex items-center gap-1 ${isOverdue ? 'text-error' : ''}`}>
-              {isOverdue ? (
-                <AlertTriangle className="w-3 h-3" />
-              ) : (
-                <Calendar className="w-3 h-3" />
-              )}
+              {isOverdue ? <AlertTriangle className="w-3 h-3" /> : <Calendar className="w-3 h-3" />}
               {task.dueDate}
               {task.dueTime && ` ${task.dueTime}`}
             </span>
@@ -302,7 +345,10 @@ function TaskModal({ task, onClose, onSave }: TaskModalProps) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onBackdropClick}>
+    <div
+      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+      onClick={onBackdropClick}
+    >
       <div className="w-full max-w-lg bg-bg-primary dark:bg-dark-bg-primary border border-border dark:border-dark-border rounded-xl shadow-xl">
         <form onSubmit={handleSubmit}>
           <div className="p-6 border-b border-border dark:border-dark-border">

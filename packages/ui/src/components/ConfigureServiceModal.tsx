@@ -1,12 +1,4 @@
-import {
-  X,
-  CheckCircle2,
-  AlertCircle,
-  Save,
-  Trash2,
-  Plus,
-  Star,
-} from './icons';
+import { X, CheckCircle2, AlertCircle, Save, Trash2, Plus, Star } from './icons';
 import { DynamicConfigForm } from './DynamicConfigForm';
 import type { ConfigEntryView, ConfigServiceView } from '../api';
 
@@ -83,9 +75,8 @@ export function ConfigureServiceModal({
   const isCreating = activeEntryId === null;
   const activeEntry = isCreating
     ? null
-    : service.entries.find((e) => e.id === activeEntryId) ?? null;
-  const canDelete =
-    !isCreating && service.entries.length > 1;
+    : (service.entries.find((e) => e.id === activeEntryId) ?? null);
+  const canDelete = !isCreating && service.entries.length > 1;
   const isDefault = activeEntry?.isDefault ?? false;
 
   return (
@@ -155,9 +146,7 @@ export function ConfigureServiceModal({
                       : 'text-text-muted dark:text-dark-text-muted hover:text-text-primary dark:hover:text-dark-text-primary hover:bg-bg-tertiary/50 dark:hover:bg-dark-bg-tertiary/50'
                   }`}
                 >
-                  {entry.isDefault && (
-                    <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />
-                  )}
+                  {entry.isDefault && <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />}
                   {entry.label || 'Untitled'}
                 </button>
               ))}

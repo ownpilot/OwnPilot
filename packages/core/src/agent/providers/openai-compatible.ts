@@ -109,7 +109,10 @@ export class OpenAICompatibleProvider {
   /**
    * Create provider with explicit API key
    */
-  static fromProviderIdWithKey(providerId: string, apiKey: string): OpenAICompatibleProvider | null {
+  static fromProviderIdWithKey(
+    providerId: string,
+    apiKey: string
+  ): OpenAICompatibleProvider | null {
     const config = loadProviderConfig(providerId);
     if (!config) {
       return null;
@@ -131,7 +134,7 @@ export class OpenAICompatibleProvider {
    * Get default model for this provider
    */
   getDefaultModel(): string | undefined {
-    return this.config.models.find(m => m.default)?.id ?? this.config.models[0]?.id;
+    return this.config.models.find((m) => m.default)?.id ?? this.config.models[0]?.id;
   }
 
   isReady(): boolean {
@@ -161,7 +164,9 @@ export class OpenAICompatibleProvider {
 
       if (!response.ok) {
         const errorText = await response.text();
-        return err(new InternalError(`${this.providerId} API error: ${response.status} - ${errorText}`));
+        return err(
+          new InternalError(`${this.providerId} API error: ${response.status} - ${errorText}`)
+        );
       }
 
       const data = (await response.json()) as OpenAIResponse;
@@ -190,9 +195,7 @@ export class OpenAICompatibleProvider {
       if (error instanceof Error && error.name === 'AbortError') {
         return err(new TimeoutError(`${this.providerId} request`, this.config.timeout ?? 300000));
       }
-      return err(
-        new InternalError(`${this.providerId} request failed: ${getErrorMessage(error)}`)
-      );
+      return err(new InternalError(`${this.providerId} request failed: ${getErrorMessage(error)}`));
     }
   }
 
@@ -294,12 +297,14 @@ export class OpenAICompatibleProvider {
           }
         }
       } finally {
-        try { await reader.cancel(); } catch { /* already released */ }
+        try {
+          await reader.cancel();
+        } catch {
+          /* already released */
+        }
       }
     } catch (error) {
-      yield err(
-        new InternalError(`${this.providerId} stream failed: ${getErrorMessage(error)}`)
-      );
+      yield err(new InternalError(`${this.providerId} stream failed: ${getErrorMessage(error)}`));
     }
   }
 
@@ -307,7 +312,7 @@ export class OpenAICompatibleProvider {
    * Get models from JSON config (no API call needed)
    */
   async getModels(): Promise<Result<string[], InternalError>> {
-    const models = this.config.models.map(m => m.id);
+    const models = this.config.models.map((m) => m.id);
     return ok(models);
   }
 
@@ -439,18 +444,18 @@ export class OpenAICompatibleProvider {
     return body;
   }
 
-  private buildMessages(
-    messages: readonly Message[]
-  ): Array<Record<string, unknown>> {
+  private buildMessages(messages: readonly Message[]): Array<Record<string, unknown>> {
     type Msg = Record<string, unknown>;
     return messages.flatMap<Msg>((msg): Msg | Msg[] => {
       // Tool result messages: expand each result into a separate message (OpenAI requires one per tool_call_id)
       if (msg.role === 'tool' && msg.toolResults?.length) {
-        return msg.toolResults.map((result): Msg => ({
-          role: 'tool',
-          content: result.content,
-          tool_call_id: result.toolCallId,
-        }));
+        return msg.toolResults.map(
+          (result): Msg => ({
+            role: 'tool',
+            content: result.content,
+            tool_call_id: result.toolCallId,
+          })
+        );
       }
 
       const base: Msg = {
@@ -493,9 +498,7 @@ export class OpenAICompatibleProvider {
     });
   }
 
-  private buildTools(
-    request: CompletionRequest
-  ): Array<Record<string, unknown>> | undefined {
+  private buildTools(request: CompletionRequest): Array<Record<string, unknown>> | undefined {
     if (!request.tools?.length) return undefined;
 
     return request.tools.map((tool) => ({
@@ -576,14 +579,18 @@ export class OpenAICompatibleProvider {
 /**
  * Create provider from provider ID
  */
-export function createOpenAICompatibleProvider(providerId: string): OpenAICompatibleProvider | null {
+export function createOpenAICompatibleProvider(
+  providerId: string
+): OpenAICompatibleProvider | null {
   return OpenAICompatibleProvider.fromProviderId(providerId);
 }
 
 /**
  * Create DeepSeek provider
  */
-export function createDeepSeekProvider(config?: LegacyProviderConfig): OpenAICompatibleProvider | null {
+export function createDeepSeekProvider(
+  config?: LegacyProviderConfig
+): OpenAICompatibleProvider | null {
   if (config?.apiKey) {
     return OpenAICompatibleProvider.fromProviderIdWithKey('deepseek', config.apiKey);
   }
@@ -603,7 +610,9 @@ export function createGroqProvider(config?: LegacyProviderConfig): OpenAICompati
 /**
  * Create Together AI provider
  */
-export function createTogetherProvider(config?: LegacyProviderConfig): OpenAICompatibleProvider | null {
+export function createTogetherProvider(
+  config?: LegacyProviderConfig
+): OpenAICompatibleProvider | null {
   if (config?.apiKey) {
     return OpenAICompatibleProvider.fromProviderIdWithKey('together', config.apiKey);
   }
@@ -613,7 +622,9 @@ export function createTogetherProvider(config?: LegacyProviderConfig): OpenAICom
 /**
  * Create Fireworks AI provider
  */
-export function createFireworksProvider(config?: LegacyProviderConfig): OpenAICompatibleProvider | null {
+export function createFireworksProvider(
+  config?: LegacyProviderConfig
+): OpenAICompatibleProvider | null {
   if (config?.apiKey) {
     return OpenAICompatibleProvider.fromProviderIdWithKey('fireworks', config.apiKey);
   }
@@ -623,7 +634,9 @@ export function createFireworksProvider(config?: LegacyProviderConfig): OpenAICo
 /**
  * Create Mistral AI provider
  */
-export function createMistralProvider(config?: LegacyProviderConfig): OpenAICompatibleProvider | null {
+export function createMistralProvider(
+  config?: LegacyProviderConfig
+): OpenAICompatibleProvider | null {
   if (config?.apiKey) {
     return OpenAICompatibleProvider.fromProviderIdWithKey('mistral', config.apiKey);
   }
@@ -643,7 +656,9 @@ export function createXAIProvider(config?: LegacyProviderConfig): OpenAICompatib
 /**
  * Create Perplexity provider
  */
-export function createPerplexityProvider(config?: LegacyProviderConfig): OpenAICompatibleProvider | null {
+export function createPerplexityProvider(
+  config?: LegacyProviderConfig
+): OpenAICompatibleProvider | null {
   if (config?.apiKey) {
     return OpenAICompatibleProvider.fromProviderIdWithKey('perplexity', config.apiKey);
   }

@@ -3,7 +3,16 @@ import { useGateway } from '../hooks/useWebSocket';
 import { useDebouncedCallback } from '../hooks';
 import { goalsApi } from '../api';
 import type { Goal, GoalStep } from '../api';
-import { Target, Plus, Trash2, ChevronRight, CheckCircle2, Circle, AlertTriangle, Pause } from '../components/icons';
+import {
+  Target,
+  Plus,
+  Trash2,
+  ChevronRight,
+  CheckCircle2,
+  Circle,
+  AlertTriangle,
+  Pause,
+} from '../components/icons';
 import { useDialog } from '../components/ConfirmDialog';
 import { useToast } from '../components/ToastProvider';
 import { LoadingSpinner } from '../components/LoadingSpinner';
@@ -66,33 +75,50 @@ export function GoalsPage() {
     const unsub = subscribe<{ entity: string }>('data:changed', (data) => {
       if (data.entity === 'goal') debouncedRefresh();
     });
-    return () => { unsub(); };
+    return () => {
+      unsub();
+    };
   }, [subscribe, debouncedRefresh]);
 
-  const handleDelete = useCallback(async (goalId: string) => {
-    if (!await confirm({ message: 'Are you sure you want to delete this goal?', variant: 'danger' })) return;
+  const handleDelete = useCallback(
+    async (goalId: string) => {
+      if (
+        !(await confirm({
+          message: 'Are you sure you want to delete this goal?',
+          variant: 'danger',
+        }))
+      )
+        return;
 
-    try {
-      await goalsApi.delete(goalId);
-      toast.success('Goal deleted');
-      fetchGoals();
-    } catch {
-      // API client handles error reporting
-    }
-  }, [confirm, toast, fetchGoals]);
+      try {
+        await goalsApi.delete(goalId);
+        toast.success('Goal deleted');
+        fetchGoals();
+      } catch {
+        // API client handles error reporting
+      }
+    },
+    [confirm, toast, fetchGoals]
+  );
 
-  const handleStatusChange = useCallback(async (goalId: string, status: Goal['status']) => {
-    try {
-      await goalsApi.update(goalId, { status });
-      toast.success(`Goal ${status}`);
-      fetchGoals();
-    } catch {
-      // API client handles error reporting
-    }
-  }, [toast, fetchGoals]);
+  const handleStatusChange = useCallback(
+    async (goalId: string, status: Goal['status']) => {
+      try {
+        await goalsApi.update(goalId, { status });
+        toast.success(`Goal ${status}`);
+        fetchGoals();
+      } catch {
+        // API client handles error reporting
+      }
+    },
+    [toast, fetchGoals]
+  );
 
   const activeCount = useMemo(() => goals.filter((g) => g.status === 'active').length, [goals]);
-  const completedCount = useMemo(() => goals.filter((g) => g.status === 'completed').length, [goals]);
+  const completedCount = useMemo(
+    () => goals.filter((g) => g.status === 'completed').length,
+    [goals]
+  );
 
   return (
     <div className="flex flex-col h-full">
@@ -197,26 +223,34 @@ function GoalItem({ goal, isExpanded, onToggle, onEdit, onDelete, onStatusChange
     let cancelled = false;
     if (isExpanded && steps.length === 0) {
       setLoadingSteps(true);
-      goalsApi.steps(goal.id)
+      goalsApi
+        .steps(goal.id)
         .then((data) => {
           if (!cancelled) setSteps(data.steps);
         })
-        .catch(() => { /* API client handles error */ })
-        .finally(() => { if (!cancelled) setLoadingSteps(false); });
+        .catch(() => {
+          /* API client handles error */
+        })
+        .finally(() => {
+          if (!cancelled) setLoadingSteps(false);
+        });
     }
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [isExpanded, goal.id, steps.length]);
 
-  const handleStepStatusChange = useCallback(async (stepId: string, status: GoalStep['status']) => {
-    try {
-      await goalsApi.updateStep(goal.id, stepId, { status });
-      setSteps((prev) =>
-        prev.map((s) => (s.id === stepId ? { ...s, status } : s))
-      );
-    } catch {
-      // API client handles error reporting
-    }
-  }, [goal.id]);
+  const handleStepStatusChange = useCallback(
+    async (stepId: string, status: GoalStep['status']) => {
+      try {
+        await goalsApi.updateStep(goal.id, stepId, { status });
+        setSteps((prev) => prev.map((s) => (s.id === stepId ? { ...s, status } : s)));
+      } catch {
+        // API client handles error reporting
+      }
+    },
+    [goal.id]
+  );
 
   return (
     <div className="card-elevated card-hover bg-bg-secondary dark:bg-dark-bg-secondary border border-border dark:border-dark-border rounded-lg overflow-hidden">
@@ -231,7 +265,18 @@ function GoalItem({ goal, isExpanded, onToggle, onEdit, onDelete, onStatusChange
           />
         </button>
 
-        <div className="flex-1 min-w-0 cursor-pointer" role="button" tabIndex={0} onClick={onEdit} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onEdit(); } }}>
+        <div
+          className="flex-1 min-w-0 cursor-pointer"
+          role="button"
+          tabIndex={0}
+          onClick={onEdit}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              onEdit();
+            }
+          }}
+        >
           <div className="flex items-center gap-2 mb-1">
             <span className="font-medium text-text-primary dark:text-dark-text-primary">
               {goal.title}
@@ -333,7 +378,9 @@ function GoalItem({ goal, isExpanded, onToggle, onEdit, onDelete, onStatusChange
                       )
                     }
                     className="flex-shrink-0"
-                    aria-label={step.status === 'completed' ? 'Mark step as pending' : 'Mark step as complete'}
+                    aria-label={
+                      step.status === 'completed' ? 'Mark step as pending' : 'Mark step as complete'
+                    }
                   >
                     {step.status === 'completed' ? (
                       <CheckCircle2 className="w-4 h-4 text-success" />
@@ -376,34 +423,40 @@ function GoalModal({ goal, onClose, onSave }: GoalModalProps) {
   const [dueDate, setDueDate] = useState(goal?.dueDate ?? '');
   const [isSaving, setIsSaving] = useState(false);
 
-  const handleSubmit = useCallback(async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!title.trim()) return;
+  const handleSubmit = useCallback(
+    async (e: React.FormEvent) => {
+      e.preventDefault();
+      if (!title.trim()) return;
 
-    setIsSaving(true);
-    try {
-      const body = {
-        title: title.trim(),
-        description: description.trim() || undefined,
-        priority,
-        dueDate: dueDate || undefined,
-      };
+      setIsSaving(true);
+      try {
+        const body = {
+          title: title.trim(),
+          description: description.trim() || undefined,
+          priority,
+          dueDate: dueDate || undefined,
+        };
 
-      if (goal) {
-        await goalsApi.update(goal.id, body);
-      } else {
-        await goalsApi.create(body);
+        if (goal) {
+          await goalsApi.update(goal.id, body);
+        } else {
+          await goalsApi.create(body);
+        }
+        onSave();
+      } catch {
+        // API client handles error reporting
+      } finally {
+        setIsSaving(false);
       }
-      onSave();
-    } catch {
-      // API client handles error reporting
-    } finally {
-      setIsSaving(false);
-    }
-  }, [title, description, priority, dueDate, goal, onSave]);
+    },
+    [title, description, priority, dueDate, goal, onSave]
+  );
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onBackdropClick}>
+    <div
+      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+      onClick={onBackdropClick}
+    >
       <div className="w-full max-w-lg bg-bg-primary dark:bg-dark-bg-primary border border-border dark:border-dark-border rounded-xl shadow-xl">
         <form onSubmit={handleSubmit}>
           <div className="p-6 border-b border-border dark:border-dark-border">

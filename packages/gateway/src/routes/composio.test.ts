@@ -79,7 +79,7 @@ describe('Composio Routes', () => {
     it('returns configured: true when API key set', async () => {
       const res = await app.request('/composio/status');
       expect(res.status).toBe(200);
-      const body = await res.json() as { data: { configured: boolean } };
+      const body = (await res.json()) as { data: { configured: boolean } };
       expect(body.data.configured).toBe(true);
     });
 
@@ -87,7 +87,7 @@ describe('Composio Routes', () => {
       mockComposioService.isConfigured.mockReturnValue(false);
       const res = await app.request('/composio/status');
       expect(res.status).toBe(200);
-      const body = await res.json() as { data: { configured: boolean } };
+      const body = (await res.json()) as { data: { configured: boolean } };
       expect(body.data.configured).toBe(false);
     });
   });
@@ -102,7 +102,7 @@ describe('Composio Routes', () => {
 
       const res = await app.request('/composio/apps');
       expect(res.status).toBe(200);
-      const body = await res.json() as { data: { apps: unknown[]; count: number } };
+      const body = (await res.json()) as { data: { apps: unknown[]; count: number } };
       expect(body.data.apps).toHaveLength(2);
       expect(body.data.count).toBe(2);
     });
@@ -130,7 +130,7 @@ describe('Composio Routes', () => {
 
       const res = await app.request('/composio/connections');
       expect(res.status).toBe(200);
-      const body = await res.json() as { data: { connections: unknown[]; count: number } };
+      const body = (await res.json()) as { data: { connections: unknown[]; count: number } };
       expect(body.data.connections).toHaveLength(2);
     });
   });
@@ -154,7 +154,7 @@ describe('Composio Routes', () => {
       });
 
       expect(res.status).toBe(200);
-      const body = await res.json() as { data: { redirectUrl: string; connectionId: string } };
+      const body = (await res.json()) as { data: { redirectUrl: string; connectionId: string } };
       expect(body.data.redirectUrl).toBe('https://composio.dev/auth/github');
       expect(body.data.connectionId).toBe('ca_123');
     });
@@ -179,7 +179,7 @@ describe('Composio Routes', () => {
 
       const res = await app.request('/composio/connections/ca_123', { method: 'DELETE' });
       expect(res.status).toBe(200);
-      const body = await res.json() as { data: { disconnected: boolean } };
+      const body = (await res.json()) as { data: { disconnected: boolean } };
       expect(body.data.disconnected).toBe(true);
       expect(mockComposioService.disconnect).toHaveBeenCalledWith('ca_123');
     });
@@ -199,7 +199,7 @@ describe('Composio Routes', () => {
 
       const res = await app.request('/composio/connections/c2/refresh', { method: 'POST' });
       expect(res.status).toBe(200);
-      const body = await res.json() as { data: { status: string } };
+      const body = (await res.json()) as { data: { status: string } };
       expect(body.data.status).toBe('ACTIVE');
     });
   });
@@ -225,12 +225,17 @@ describe('Composio Routes', () => {
   describe('GET /composio/actions/search', () => {
     it('returns search results', async () => {
       mockComposioService.searchActions.mockResolvedValue([
-        { slug: 'GMAIL_SEND_EMAIL', name: 'Send Email', description: 'Send email', appName: 'gmail' },
+        {
+          slug: 'GMAIL_SEND_EMAIL',
+          name: 'Send Email',
+          description: 'Send email',
+          appName: 'gmail',
+        },
       ]);
 
       const res = await app.request('/composio/actions/search?q=send+email');
       expect(res.status).toBe(200);
-      const body = await res.json() as { data: { actions: unknown[]; count: number } };
+      const body = (await res.json()) as { data: { actions: unknown[]; count: number } };
       expect(body.data.actions).toHaveLength(1);
       expect(body.data.count).toBe(1);
     });

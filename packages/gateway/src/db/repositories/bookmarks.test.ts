@@ -115,8 +115,9 @@ describe('BookmarksRepository', () => {
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
       mockAdapter.queryOne.mockResolvedValueOnce(null);
 
-      await expect(repo.create({ url: 'https://example.com', title: 'Example' }))
-        .rejects.toThrow('Failed to create bookmark');
+      await expect(repo.create({ url: 'https://example.com', title: 'Example' })).rejects.toThrow(
+        'Failed to create bookmark'
+      );
     });
 
     it('should pass optional fields correctly', async () => {
@@ -170,7 +171,7 @@ describe('BookmarksRepository', () => {
 
     it('should parse dates correctly', async () => {
       mockAdapter.queryOne.mockResolvedValueOnce(
-        makeBookmarkRow({ last_visited_at: '2025-01-10T08:00:00.000Z' }),
+        makeBookmarkRow({ last_visited_at: '2025-01-10T08:00:00.000Z' })
       );
 
       const result = await repo.get('bk-1');
@@ -257,9 +258,7 @@ describe('BookmarksRepository', () => {
     it('should serialize tags as JSON on update', async () => {
       mockAdapter.queryOne.mockResolvedValueOnce(makeBookmarkRow());
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
-      mockAdapter.queryOne.mockResolvedValueOnce(
-        makeBookmarkRow({ tags: '["a","b"]' }),
-      );
+      mockAdapter.queryOne.mockResolvedValueOnce(makeBookmarkRow({ tags: '["a","b"]' }));
 
       await repo.update('bk-1', { tags: ['a', 'b'] });
 
@@ -271,7 +270,7 @@ describe('BookmarksRepository', () => {
       mockAdapter.queryOne.mockResolvedValueOnce(makeBookmarkRow());
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
       mockAdapter.queryOne.mockResolvedValueOnce(
-        makeBookmarkRow({ title: 'New', url: 'https://new.com', category: 'dev' }),
+        makeBookmarkRow({ title: 'New', url: 'https://new.com', category: 'dev' })
       );
 
       const result = await repo.update('bk-1', {
@@ -367,7 +366,7 @@ describe('BookmarksRepository', () => {
       await repo.list({ tags: ['typescript', 'testing'] });
 
       const sql = mockAdapter.query.mock.calls[0]![0] as string;
-      expect(sql).toContain("tags::text LIKE");
+      expect(sql).toContain('tags::text LIKE');
       const params = mockAdapter.query.mock.calls[0]![1] as unknown[];
       expect(params).toContain('%"typescript"%');
       expect(params).toContain('%"testing"%');
@@ -425,7 +424,7 @@ describe('BookmarksRepository', () => {
     it('should increment visit_count and set last_visited_at', async () => {
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
       mockAdapter.queryOne.mockResolvedValueOnce(
-        makeBookmarkRow({ visit_count: 5, last_visited_at: NOW }),
+        makeBookmarkRow({ visit_count: 5, last_visited_at: NOW })
       );
 
       const result = await repo.recordVisit('bk-1');
@@ -503,10 +502,7 @@ describe('BookmarksRepository', () => {
 
   describe('getCategories', () => {
     it('should return distinct categories', async () => {
-      mockAdapter.query.mockResolvedValueOnce([
-        { category: 'dev' },
-        { category: 'news' },
-      ]);
+      mockAdapter.query.mockResolvedValueOnce([{ category: 'dev' }, { category: 'news' }]);
 
       const result = await repo.getCategories();
 
@@ -516,10 +512,7 @@ describe('BookmarksRepository', () => {
 
   describe('getTags', () => {
     it('should aggregate unique tags from all bookmarks', async () => {
-      mockAdapter.query.mockResolvedValueOnce([
-        { tags: '["a","b"]' },
-        { tags: '["b","c"]' },
-      ]);
+      mockAdapter.query.mockResolvedValueOnce([{ tags: '["a","b"]' }, { tags: '["b","c"]' }]);
 
       const result = await repo.getTags();
 

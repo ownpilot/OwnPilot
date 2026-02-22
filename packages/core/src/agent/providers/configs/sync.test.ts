@@ -50,9 +50,9 @@ import {
 // ---------------------------------------------------------------------------
 
 const mockWriteFileSync = vi.mocked(fs.writeFileSync);
-const mockReadFileSync  = vi.mocked(fs.readFileSync);
-const mockExistsSync    = vi.mocked(fs.existsSync);
-const mockMkdirSync     = vi.mocked(fs.mkdirSync);
+const mockReadFileSync = vi.mocked(fs.readFileSync);
+const mockExistsSync = vi.mocked(fs.existsSync);
+const mockMkdirSync = vi.mocked(fs.mkdirSync);
 
 // ---------------------------------------------------------------------------
 // Global fetch mock
@@ -66,17 +66,19 @@ vi.stubGlobal('fetch', mockFetch);
 // ---------------------------------------------------------------------------
 
 /** Build a minimal models.dev model object. */
-function makeDevModel(overrides: {
-  id?: string;
-  name?: string;
-  reasoning?: boolean;
-  tool_call?: boolean;
-  structured_output?: boolean;
-  modalities?: { input?: string[]; output?: string[] };
-  cost?: { input?: number; output?: number };
-  limit?: { context?: number; output?: number };
-  release_date?: string;
-} = {}) {
+function makeDevModel(
+  overrides: {
+    id?: string;
+    name?: string;
+    reasoning?: boolean;
+    tool_call?: boolean;
+    structured_output?: boolean;
+    modalities?: { input?: string[]; output?: string[] };
+    cost?: { input?: number; output?: number };
+    limit?: { context?: number; output?: number };
+    release_date?: string;
+  } = {}
+) {
   return {
     id: overrides.id,
     name: overrides.name,
@@ -91,14 +93,16 @@ function makeDevModel(overrides: {
 }
 
 /** Build a minimal models.dev provider object. */
-function makeDevProvider(overrides: {
-  id?: string;
-  name?: string;
-  api?: string;
-  env?: string[];
-  doc?: string;
-  models?: Record<string, ReturnType<typeof makeDevModel>>;
-} = {}) {
+function makeDevProvider(
+  overrides: {
+    id?: string;
+    name?: string;
+    api?: string;
+    env?: string[];
+    doc?: string;
+    models?: Record<string, ReturnType<typeof makeDevModel>>;
+  } = {}
+) {
   return {
     id: overrides.id,
     name: overrides.name,
@@ -132,7 +136,9 @@ beforeEach(() => {
   // Default: directory does NOT exist → mkdirSync will be called
   mockExistsSync.mockReturnValue(false);
   // Default: readFileSync throws (file not found) → loadExistingConfig returns null
-  mockReadFileSync.mockImplementation(() => { throw new Error('ENOENT'); });
+  mockReadFileSync.mockImplementation(() => {
+    throw new Error('ENOENT');
+  });
 });
 
 afterEach(() => {
@@ -150,9 +156,15 @@ describe('mapCapabilities', () => {
    * Helper: sync a single-model provider and return the first model's capabilities.
    */
   function capsFor(model: ReturnType<typeof makeDevModel>): string[] {
-    mockExistsSync.mockReturnValue(true);  // dir exists
-    mockReadFileSync.mockImplementation(() => { throw new Error('ENOENT'); }); // no existing config
-    const result = syncProvider('test-provider', makeDevProvider({ models: { 'model-a': model } }), '/tmp/test');
+    mockExistsSync.mockReturnValue(true); // dir exists
+    mockReadFileSync.mockImplementation(() => {
+      throw new Error('ENOENT');
+    }); // no existing config
+    const result = syncProvider(
+      'test-provider',
+      makeDevProvider({ models: { 'model-a': model } }),
+      '/tmp/test'
+    );
     return result.models[0]?.capabilities ?? [];
   }
 
@@ -179,7 +191,7 @@ describe('mapCapabilities', () => {
 
   it('adds vision when input modalities include both image and video', () => {
     const caps = capsFor(makeDevModel({ modalities: { input: ['image', 'video'] } }));
-    expect(caps.filter(c => c === 'vision').length).toBe(1); // deduplicated
+    expect(caps.filter((c) => c === 'vision').length).toBe(1); // deduplicated
   });
 
   it('adds audio when input modalities include audio', () => {
@@ -224,12 +236,14 @@ describe('mapCapabilities', () => {
   });
 
   it('combines all capabilities correctly for a fully-featured model', () => {
-    const caps = capsFor(makeDevModel({
-      modalities: { input: ['image', 'audio'] },
-      tool_call: true,
-      structured_output: true,
-      reasoning: true,
-    }));
+    const caps = capsFor(
+      makeDevModel({
+        modalities: { input: ['image', 'audio'] },
+        tool_call: true,
+        structured_output: true,
+        reasoning: true,
+      })
+    );
     expect(caps).toContain('chat');
     expect(caps).toContain('streaming');
     expect(caps).toContain('vision');
@@ -247,7 +261,7 @@ describe('mapCapabilities', () => {
 
   it('does not duplicate chat when modalities are empty object', () => {
     const caps = capsFor(makeDevModel({ modalities: {} }));
-    expect(caps.filter(c => c === 'chat').length).toBe(1);
+    expect(caps.filter((c) => c === 'chat').length).toBe(1);
   });
 });
 
@@ -259,35 +273,61 @@ describe('mapCapabilities', () => {
 describe('getProviderType', () => {
   function typeFor(providerId: string): string {
     mockExistsSync.mockReturnValue(true);
-    mockReadFileSync.mockImplementation(() => { throw new Error('ENOENT'); });
+    mockReadFileSync.mockImplementation(() => {
+      throw new Error('ENOENT');
+    });
     // Use a provider id that has no CANONICAL_CONFIGS entry so we see raw type
-    const result = syncProvider(providerId, makeDevProvider({ models: { m: makeDevModel() } }), '/tmp/test');
+    const result = syncProvider(
+      providerId,
+      makeDevProvider({ models: { m: makeDevModel() } }),
+      '/tmp/test'
+    );
     return result.type;
   }
 
   it('maps openai to openai', () => {
     // openai has a canonical override that also sets type='openai'
-    const result = syncProvider('openai', makeDevProvider({ models: { m: makeDevModel() } }), '/tmp/test');
+    const result = syncProvider(
+      'openai',
+      makeDevProvider({ models: { m: makeDevModel() } }),
+      '/tmp/test'
+    );
     expect(result.type).toBe('openai');
   });
 
   it('maps anthropic to anthropic', () => {
-    const result = syncProvider('anthropic', makeDevProvider({ models: { m: makeDevModel() } }), '/tmp/test');
+    const result = syncProvider(
+      'anthropic',
+      makeDevProvider({ models: { m: makeDevModel() } }),
+      '/tmp/test'
+    );
     expect(result.type).toBe('anthropic');
   });
 
   it('maps google to google', () => {
-    const result = syncProvider('google', makeDevProvider({ models: { m: makeDevModel() } }), '/tmp/test');
+    const result = syncProvider(
+      'google',
+      makeDevProvider({ models: { m: makeDevModel() } }),
+      '/tmp/test'
+    );
     expect(result.type).toBe('google');
   });
 
   it('maps google-vertex to google (canonical has no baseUrl override)', () => {
-    const result = syncProvider('google-vertex', makeDevProvider({ models: { m: makeDevModel() } }), '/tmp/test');
+    const result = syncProvider(
+      'google-vertex',
+      makeDevProvider({ models: { m: makeDevModel() } }),
+      '/tmp/test'
+    );
     expect(result.type).toBe('google');
   });
 
   it('maps google-vertex-anthropic to anthropic', () => {
-    const result = syncProvider('google-vertex-anthropic', makeDevProvider({ models: { m: makeDevModel() } }), '/tmp/test');
+    const result = syncProvider(
+      'google-vertex-anthropic',
+      makeDevProvider({ models: { m: makeDevModel() } }),
+      '/tmp/test'
+    );
     expect(result.type).toBe('anthropic');
   });
 
@@ -307,8 +347,14 @@ describe('getProviderType', () => {
 describe('convertModel field mapping', () => {
   function syncSingle(modelKey: string, model: ReturnType<typeof makeDevModel>) {
     mockExistsSync.mockReturnValue(true);
-    mockReadFileSync.mockImplementation(() => { throw new Error('ENOENT'); });
-    const result = syncProvider('unknown-provider', makeDevProvider({ models: { [modelKey]: model } }), '/tmp/test');
+    mockReadFileSync.mockImplementation(() => {
+      throw new Error('ENOENT');
+    });
+    const result = syncProvider(
+      'unknown-provider',
+      makeDevProvider({ models: { [modelKey]: model } }),
+      '/tmp/test'
+    );
     return result.models[0]!;
   }
 
@@ -390,7 +436,9 @@ describe('convertModel field mapping', () => {
 describe('convertProvider sorting and default assignment', () => {
   function sync(models: Record<string, ReturnType<typeof makeDevModel>>) {
     mockExistsSync.mockReturnValue(true);
-    mockReadFileSync.mockImplementation(() => { throw new Error('ENOENT'); });
+    mockReadFileSync.mockImplementation(() => {
+      throw new Error('ENOENT');
+    });
     return syncProvider('unknown-provider', makeDevProvider({ models }), '/tmp/test');
   }
 
@@ -399,26 +447,26 @@ describe('convertProvider sorting and default assignment', () => {
       'old-model': makeDevModel({ name: 'Old Model', release_date: '2023-01-01' }),
       'new-model': makeDevModel({ name: 'New Model', release_date: '2024-06-01' }),
     });
-    const defaultModel = result.models.find(m => m.default === true);
+    const defaultModel = result.models.find((m) => m.default === true);
     expect(defaultModel?.name).toBe('New Model');
   });
 
   it('marks all other models as default=false', () => {
     const result = sync({
-      'a': makeDevModel({ name: 'A', release_date: '2024-01-01' }),
-      'b': makeDevModel({ name: 'B', release_date: '2023-01-01' }),
-      'c': makeDevModel({ name: 'C', release_date: '2022-01-01' }),
+      a: makeDevModel({ name: 'A', release_date: '2024-01-01' }),
+      b: makeDevModel({ name: 'B', release_date: '2023-01-01' }),
+      c: makeDevModel({ name: 'C', release_date: '2022-01-01' }),
     });
-    const nonDefaults = result.models.filter(m => m.default !== true);
+    const nonDefaults = result.models.filter((m) => m.default !== true);
     expect(nonDefaults.length).toBe(2);
-    nonDefaults.forEach(m => expect(m.default).toBe(false));
+    nonDefaults.forEach((m) => expect(m.default).toBe(false));
   });
 
   it('sorts models newest release_date first', () => {
     const result = sync({
-      'z': makeDevModel({ name: 'Z Model', release_date: '2022-01-01' }),
-      'a': makeDevModel({ name: 'A Model', release_date: '2025-01-01' }),
-      'm': makeDevModel({ name: 'M Model', release_date: '2023-06-15' }),
+      z: makeDevModel({ name: 'Z Model', release_date: '2022-01-01' }),
+      a: makeDevModel({ name: 'A Model', release_date: '2025-01-01' }),
+      m: makeDevModel({ name: 'M Model', release_date: '2023-06-15' }),
     });
     expect(result.models[0]!.name).toBe('A Model');
     expect(result.models[1]!.name).toBe('M Model');
@@ -427,8 +475,8 @@ describe('convertProvider sorting and default assignment', () => {
 
   it('models without release_date sort after models with release_date', () => {
     const result = sync({
-      'dated': makeDevModel({ name: 'Dated', release_date: '2024-01-01' }),
-      'undated': makeDevModel({ name: 'Undated' }),
+      dated: makeDevModel({ name: 'Dated', release_date: '2024-01-01' }),
+      undated: makeDevModel({ name: 'Undated' }),
     });
     expect(result.models[0]!.name).toBe('Dated');
     expect(result.models[1]!.name).toBe('Undated');
@@ -447,18 +495,22 @@ describe('convertProvider sorting and default assignment', () => {
 
   it('returns empty models array when provider has no models', () => {
     mockExistsSync.mockReturnValue(true);
-    mockReadFileSync.mockImplementation(() => { throw new Error('ENOENT'); });
+    mockReadFileSync.mockImplementation(() => {
+      throw new Error('ENOENT');
+    });
     const result = syncProvider('unknown-provider', makeDevProvider({ models: {} }), '/tmp/test');
     expect(result.models).toEqual([]);
   });
 
   it('uses provider.env[0] as apiKeyEnv when present', () => {
     mockExistsSync.mockReturnValue(true);
-    mockReadFileSync.mockImplementation(() => { throw new Error('ENOENT'); });
+    mockReadFileSync.mockImplementation(() => {
+      throw new Error('ENOENT');
+    });
     const result = syncProvider(
       'my-provider',
       makeDevProvider({ env: ['MY_CUSTOM_KEY'], models: { m: makeDevModel() } }),
-      '/tmp/test',
+      '/tmp/test'
     );
     // canonical override won't affect this unknown provider
     expect(result.apiKeyEnv).toBe('MY_CUSTOM_KEY');
@@ -466,81 +518,105 @@ describe('convertProvider sorting and default assignment', () => {
 
   it('generates apiKeyEnv from provider ID when env not provided', () => {
     mockExistsSync.mockReturnValue(true);
-    mockReadFileSync.mockImplementation(() => { throw new Error('ENOENT'); });
+    mockReadFileSync.mockImplementation(() => {
+      throw new Error('ENOENT');
+    });
     const result = syncProvider(
       'my-cool-provider',
       makeDevProvider({ models: { m: makeDevModel() } }),
-      '/tmp/test',
+      '/tmp/test'
     );
     expect(result.apiKeyEnv).toBe('MY_COOL_PROVIDER_API_KEY');
   });
 
   it('uses provider.api as baseUrl when present', () => {
     mockExistsSync.mockReturnValue(true);
-    mockReadFileSync.mockImplementation(() => { throw new Error('ENOENT'); });
+    mockReadFileSync.mockImplementation(() => {
+      throw new Error('ENOENT');
+    });
     const result = syncProvider(
       'my-provider',
       makeDevProvider({ api: 'https://custom.endpoint/v2', models: { m: makeDevModel() } }),
-      '/tmp/test',
+      '/tmp/test'
     );
     expect(result.baseUrl).toBe('https://custom.endpoint/v2');
   });
 
   it('generates a default baseUrl from provider ID when api not provided', () => {
     mockExistsSync.mockReturnValue(true);
-    mockReadFileSync.mockImplementation(() => { throw new Error('ENOENT'); });
+    mockReadFileSync.mockImplementation(() => {
+      throw new Error('ENOENT');
+    });
     const result = syncProvider(
       'my-cool-provider',
       makeDevProvider({ models: { m: makeDevModel() } }),
-      '/tmp/test',
+      '/tmp/test'
     );
     expect(result.baseUrl).toBe('https://api.mycoolprovider.com/v1');
   });
 
   it('uses provider.name as name when present', () => {
     mockExistsSync.mockReturnValue(true);
-    mockReadFileSync.mockImplementation(() => { throw new Error('ENOENT'); });
+    mockReadFileSync.mockImplementation(() => {
+      throw new Error('ENOENT');
+    });
     const result = syncProvider(
       'my-provider',
       makeDevProvider({ name: 'My Provider Name', models: { m: makeDevModel() } }),
-      '/tmp/test',
+      '/tmp/test'
     );
     expect(result.name).toBe('My Provider Name');
   });
 
   it('falls back to providerId as name when provider.name absent', () => {
     mockExistsSync.mockReturnValue(true);
-    mockReadFileSync.mockImplementation(() => { throw new Error('ENOENT'); });
+    mockReadFileSync.mockImplementation(() => {
+      throw new Error('ENOENT');
+    });
     const result = syncProvider(
       'fallback-name',
       makeDevProvider({ models: { m: makeDevModel() } }),
-      '/tmp/test',
+      '/tmp/test'
     );
     expect(result.name).toBe('fallback-name');
   });
 
   it('preserves docsUrl from provider.doc', () => {
     mockExistsSync.mockReturnValue(true);
-    mockReadFileSync.mockImplementation(() => { throw new Error('ENOENT'); });
+    mockReadFileSync.mockImplementation(() => {
+      throw new Error('ENOENT');
+    });
     const result = syncProvider(
       'my-provider',
       makeDevProvider({ doc: 'https://docs.myprovider.com', models: { m: makeDevModel() } }),
-      '/tmp/test',
+      '/tmp/test'
     );
     expect(result.docsUrl).toBe('https://docs.myprovider.com');
   });
 
   it('features.streaming is always true', () => {
     mockExistsSync.mockReturnValue(true);
-    mockReadFileSync.mockImplementation(() => { throw new Error('ENOENT'); });
-    const result = syncProvider('unknown', makeDevProvider({ models: { m: makeDevModel() } }), '/tmp/test');
+    mockReadFileSync.mockImplementation(() => {
+      throw new Error('ENOENT');
+    });
+    const result = syncProvider(
+      'unknown',
+      makeDevProvider({ models: { m: makeDevModel() } }),
+      '/tmp/test'
+    );
     expect(result.features.streaming).toBe(true);
   });
 
   it('features.systemMessage is always true', () => {
     mockExistsSync.mockReturnValue(true);
-    mockReadFileSync.mockImplementation(() => { throw new Error('ENOENT'); });
-    const result = syncProvider('unknown', makeDevProvider({ models: { m: makeDevModel() } }), '/tmp/test');
+    mockReadFileSync.mockImplementation(() => {
+      throw new Error('ENOENT');
+    });
+    const result = syncProvider(
+      'unknown',
+      makeDevProvider({ models: { m: makeDevModel() } }),
+      '/tmp/test'
+    );
     expect(result.features.systemMessage).toBe(true);
   });
 
@@ -589,7 +665,11 @@ describe('loadExistingConfig', () => {
   it('returns null when file does not exist (existsSync=false) → no protected-field merging', () => {
     mockExistsSync.mockReturnValue(false);
     // Dir doesn't exist, file doesn't exist
-    const result = syncProvider('unknown-provider', makeDevProvider({ models: { m: makeDevModel() } }), '/tmp/test');
+    const result = syncProvider(
+      'unknown-provider',
+      makeDevProvider({ models: { m: makeDevModel() } }),
+      '/tmp/test'
+    );
     // Without existing config the converted type is used (getProviderType fallback)
     expect(result.type).toBe('openai-compatible');
   });
@@ -599,9 +679,15 @@ describe('loadExistingConfig', () => {
       // dir exists, file also "exists"
       return true;
     });
-    mockReadFileSync.mockImplementation(() => { throw new Error('Disk error'); });
+    mockReadFileSync.mockImplementation(() => {
+      throw new Error('Disk error');
+    });
 
-    const result = syncProvider('unknown-provider', makeDevProvider({ models: { m: makeDevModel() } }), '/tmp/test');
+    const result = syncProvider(
+      'unknown-provider',
+      makeDevProvider({ models: { m: makeDevModel() } }),
+      '/tmp/test'
+    );
     // Should succeed without merging
     expect(result).toBeDefined();
     expect(result.models.length).toBe(1);
@@ -611,7 +697,11 @@ describe('loadExistingConfig', () => {
     mockExistsSync.mockReturnValue(true);
     mockReadFileSync.mockReturnValue('NOT_VALID_JSON');
 
-    const result = syncProvider('unknown-provider', makeDevProvider({ models: { m: makeDevModel() } }), '/tmp/test');
+    const result = syncProvider(
+      'unknown-provider',
+      makeDevProvider({ models: { m: makeDevModel() } }),
+      '/tmp/test'
+    );
     expect(result).toBeDefined();
   });
 
@@ -623,12 +713,22 @@ describe('loadExistingConfig', () => {
       apiKeyEnv: 'MY_CUSTOM_KEY',
       name: 'Unknown Provider',
       models: [],
-      features: { streaming: true, toolUse: false, vision: false, jsonMode: false, systemMessage: true },
+      features: {
+        streaming: true,
+        toolUse: false,
+        vision: false,
+        jsonMode: false,
+        systemMessage: true,
+      },
     };
     mockExistsSync.mockReturnValue(true);
     mockReadFileSync.mockReturnValue(JSON.stringify(existingConfig));
 
-    const result = syncProvider('unknown-provider', makeDevProvider({ models: { m: makeDevModel() } }), '/tmp/test');
+    const result = syncProvider(
+      'unknown-provider',
+      makeDevProvider({ models: { m: makeDevModel() } }),
+      '/tmp/test'
+    );
     // Protected field baseUrl preserved from existing
     expect(result.baseUrl).toBe('https://my.custom.url/v1');
   });
@@ -645,7 +745,7 @@ describe('mergeConfigs', () => {
     return syncProvider(
       providerId,
       makeDevProvider({ models: { m: makeDevModel() }, api: 'https://api.newurl.com' }),
-      '/tmp/test',
+      '/tmp/test'
     );
   }
 
@@ -653,7 +753,11 @@ describe('mergeConfigs', () => {
 
   it('returns newConfig as-is (with canonical) when no existing config', () => {
     mockExistsSync.mockReturnValue(false);
-    const result = syncProvider('unknown-provider', makeDevProvider({ models: { m: makeDevModel() } }), '/tmp/test');
+    const result = syncProvider(
+      'unknown-provider',
+      makeDevProvider({ models: { m: makeDevModel() } }),
+      '/tmp/test'
+    );
     expect(result.id).toBe('unknown-provider');
   });
 
@@ -687,8 +791,12 @@ describe('mergeConfigs', () => {
     mockReadFileSync.mockReturnValue(JSON.stringify({ name: 'Old Name' })); // no protected fields
     const result = syncProvider(
       'unknown-provider',
-      makeDevProvider({ env: ['NEW_KEY'], api: 'https://new.url/v1', models: { m: makeDevModel() } }),
-      '/tmp/test',
+      makeDevProvider({
+        env: ['NEW_KEY'],
+        api: 'https://new.url/v1',
+        models: { m: makeDevModel() },
+      }),
+      '/tmp/test'
     );
     expect(result.apiKeyEnv).toBe('NEW_KEY');
     expect(result.baseUrl).toBe('https://new.url/v1');
@@ -699,8 +807,8 @@ describe('mergeConfigs', () => {
   it('merges features: new features are base, existing features overlay', () => {
     const result = syncWithExisting('unknown-provider', {
       features: {
-        streaming: false,   // existing overrides
-        toolUse: true,      // existing overrides
+        streaming: false, // existing overrides
+        toolUse: true, // existing overrides
         vision: false,
         jsonMode: true,
         systemMessage: false,
@@ -718,7 +826,7 @@ describe('mergeConfigs', () => {
     const result = syncProvider(
       'unknown-provider',
       makeDevProvider({ models: { m: makeDevModel({ tool_call: true }) } }),
-      '/tmp/test',
+      '/tmp/test'
     );
     expect(result.features.toolUse).toBe(true);
     expect(result.features.streaming).toBe(true);
@@ -728,7 +836,7 @@ describe('mergeConfigs', () => {
 
   it('canonical type always overrides even when existing config has different type', () => {
     const result = syncWithExisting('openai', {
-      type: 'openai-compatible',  // wrong — canonical should override
+      type: 'openai-compatible', // wrong — canonical should override
       baseUrl: 'https://wrong.url',
       apiKeyEnv: 'WRONG_KEY',
     });
@@ -768,7 +876,9 @@ describe('mergeConfigs', () => {
       baseUrl: 'https://us-central1-aiplatform.googleapis.com/v1/projects/my-project',
     });
     // canonical for google-vertex has no baseUrl → preserved from existing
-    expect(result.baseUrl).toBe('https://us-central1-aiplatform.googleapis.com/v1/projects/my-project');
+    expect(result.baseUrl).toBe(
+      'https://us-central1-aiplatform.googleapis.com/v1/projects/my-project'
+    );
     // but type and apiKeyEnv still overridden
     expect(result.type).toBe('google');
     expect(result.apiKeyEnv).toBe('GOOGLE_VERTEX_API_KEY');
@@ -933,25 +1043,31 @@ describe('syncProvider', () => {
 
   it('does NOT call mkdirSync when directory already exists', () => {
     mockExistsSync.mockReturnValue(true);
-    mockReadFileSync.mockImplementation(() => { throw new Error('ENOENT'); });
+    mockReadFileSync.mockImplementation(() => {
+      throw new Error('ENOENT');
+    });
     syncProvider('my-prov', makeDevProvider({ models: { m: makeDevModel() } }), '/tmp/outdir');
     expect(mockMkdirSync).not.toHaveBeenCalled();
   });
 
   it('writes JSON file to correct path', () => {
     mockExistsSync.mockReturnValue(true);
-    mockReadFileSync.mockImplementation(() => { throw new Error('ENOENT'); });
+    mockReadFileSync.mockImplementation(() => {
+      throw new Error('ENOENT');
+    });
     syncProvider('my-prov', makeDevProvider({ models: { m: makeDevModel() } }), '/tmp/outdir');
     expect(mockWriteFileSync).toHaveBeenCalledWith(
       expect.stringContaining('my-prov.json'),
       expect.any(String),
-      'utf-8',
+      'utf-8'
     );
   });
 
   it('writes valid JSON to the file', () => {
     mockExistsSync.mockReturnValue(true);
-    mockReadFileSync.mockImplementation(() => { throw new Error('ENOENT'); });
+    mockReadFileSync.mockImplementation(() => {
+      throw new Error('ENOENT');
+    });
     syncProvider('my-prov', makeDevProvider({ models: { m: makeDevModel() } }), '/tmp/outdir');
     const writtenContent = mockWriteFileSync.mock.calls[0]?.[1] as string;
     expect(() => JSON.parse(writtenContent)).not.toThrow();
@@ -959,7 +1075,9 @@ describe('syncProvider', () => {
 
   it('writes pretty-printed JSON (2-space indent)', () => {
     mockExistsSync.mockReturnValue(true);
-    mockReadFileSync.mockImplementation(() => { throw new Error('ENOENT'); });
+    mockReadFileSync.mockImplementation(() => {
+      throw new Error('ENOENT');
+    });
     syncProvider('my-prov', makeDevProvider({ models: { m: makeDevModel() } }), '/tmp/outdir');
     const writtenContent = mockWriteFileSync.mock.calls[0]?.[1] as string;
     expect(writtenContent).toContain('\n  '); // indented
@@ -967,8 +1085,14 @@ describe('syncProvider', () => {
 
   it('returns the merged ProviderConfig', () => {
     mockExistsSync.mockReturnValue(true);
-    mockReadFileSync.mockImplementation(() => { throw new Error('ENOENT'); });
-    const result = syncProvider('my-prov', makeDevProvider({ name: 'My Provider', models: { m: makeDevModel() } }), '/tmp/outdir');
+    mockReadFileSync.mockImplementation(() => {
+      throw new Error('ENOENT');
+    });
+    const result = syncProvider(
+      'my-prov',
+      makeDevProvider({ name: 'My Provider', models: { m: makeDevModel() } }),
+      '/tmp/outdir'
+    );
     expect(result.id).toBe('my-prov');
     expect(result.name).toBe('My Provider');
     expect(result.models.length).toBe(1);
@@ -977,25 +1101,41 @@ describe('syncProvider', () => {
   it('calls readFileSync when existsSync returns true for the file path', () => {
     // Both dir and file exist
     mockExistsSync.mockReturnValue(true);
-    mockReadFileSync.mockReturnValue(JSON.stringify({
-      id: 'my-prov',
-      type: 'openai-compatible',
-      baseUrl: 'https://existing.url',
-      apiKeyEnv: 'EXISTING_KEY',
-      name: 'My Provider',
-      models: [],
-      features: { streaming: true, toolUse: false, vision: false, jsonMode: false, systemMessage: true },
-    }));
-    const result = syncProvider('my-prov', makeDevProvider({ models: { m: makeDevModel() } }), '/tmp/outdir');
+    mockReadFileSync.mockReturnValue(
+      JSON.stringify({
+        id: 'my-prov',
+        type: 'openai-compatible',
+        baseUrl: 'https://existing.url',
+        apiKeyEnv: 'EXISTING_KEY',
+        name: 'My Provider',
+        models: [],
+        features: {
+          streaming: true,
+          toolUse: false,
+          vision: false,
+          jsonMode: false,
+          systemMessage: true,
+        },
+      })
+    );
+    const result = syncProvider(
+      'my-prov',
+      makeDevProvider({ models: { m: makeDevModel() } }),
+      '/tmp/outdir'
+    );
     // Protected baseUrl preserved from existing
     expect(result.baseUrl).toBe('https://existing.url');
   });
 
   it('uses getProviderDataDir() when outputDir is not provided', () => {
     mockExistsSync.mockReturnValue(true);
-    mockReadFileSync.mockImplementation(() => { throw new Error('ENOENT'); });
+    mockReadFileSync.mockImplementation(() => {
+      throw new Error('ENOENT');
+    });
     // Should not throw — it calls getProviderDataDir() internally
-    expect(() => syncProvider('my-prov', makeDevProvider({ models: { m: makeDevModel() } }))).not.toThrow();
+    expect(() =>
+      syncProvider('my-prov', makeDevProvider({ models: { m: makeDevModel() } }))
+    ).not.toThrow();
     expect(mockWriteFileSync).toHaveBeenCalled();
   });
 });
@@ -1045,7 +1185,9 @@ describe('syncAllProviders', () => {
 
   beforeEach(() => {
     mockExistsSync.mockReturnValue(true);
-    mockReadFileSync.mockImplementation(() => { throw new Error('ENOENT'); });
+    mockReadFileSync.mockImplementation(() => {
+      throw new Error('ENOENT');
+    });
   });
 
   it('returns synced array with ids of successfully synced providers', async () => {
@@ -1062,7 +1204,9 @@ describe('syncAllProviders', () => {
   });
 
   it('skips providers with no models (empty models object)', async () => {
-    mockFetch.mockResolvedValueOnce(okFetchResponse({ 'empty-prov': emptyProvider, 'real-prov': providerA }));
+    mockFetch.mockResolvedValueOnce(
+      okFetchResponse({ 'empty-prov': emptyProvider, 'real-prov': providerA })
+    );
     const result = await syncAllProviders('/tmp/out');
     expect(result.synced).not.toContain('empty-prov');
     expect(result.synced).toContain('real-prov');
@@ -1070,18 +1214,22 @@ describe('syncAllProviders', () => {
 
   it('skips providers where models field is missing', async () => {
     const noModelsProv = { name: 'No Models' }; // no models key
-    mockFetch.mockResolvedValueOnce(okFetchResponse({ 'no-models': noModelsProv, 'real': providerA }));
+    mockFetch.mockResolvedValueOnce(
+      okFetchResponse({ 'no-models': noModelsProv, real: providerA })
+    );
     const result = await syncAllProviders('/tmp/out');
     expect(result.synced).not.toContain('no-models');
     expect(result.synced).toContain('real');
   });
 
   it('returns total count including skipped providers', async () => {
-    mockFetch.mockResolvedValueOnce(okFetchResponse({
-      'prov-a': providerA,
-      'prov-b': providerB,
-      'empty': emptyProvider,
-    }));
+    mockFetch.mockResolvedValueOnce(
+      okFetchResponse({
+        'prov-a': providerA,
+        'prov-b': providerB,
+        empty: emptyProvider,
+      })
+    );
     const result = await syncAllProviders('/tmp/out');
     expect(result.total).toBe(3);
   });
@@ -1089,17 +1237,23 @@ describe('syncAllProviders', () => {
   it('pushes to failed array when syncProvider throws', async () => {
     mockFetch.mockResolvedValueOnce(okFetchResponse({ 'prov-a': providerA }));
     // Make writeFileSync throw to simulate a sync failure
-    mockWriteFileSync.mockImplementationOnce(() => { throw new Error('Write failed'); });
+    mockWriteFileSync.mockImplementationOnce(() => {
+      throw new Error('Write failed');
+    });
     const result = await syncAllProviders('/tmp/out');
     expect(result.failed).toContain('prov-a');
     expect(result.synced).not.toContain('prov-a');
   });
 
   it('continues syncing other providers after one fails', async () => {
-    mockFetch.mockResolvedValueOnce(okFetchResponse({ 'fail-prov': providerA, 'ok-prov': providerB }));
+    mockFetch.mockResolvedValueOnce(
+      okFetchResponse({ 'fail-prov': providerA, 'ok-prov': providerB })
+    );
     // First writeFileSync call throws, second succeeds
     mockWriteFileSync
-      .mockImplementationOnce(() => { throw new Error('Write failed'); })
+      .mockImplementationOnce(() => {
+        throw new Error('Write failed');
+      })
       .mockImplementationOnce(() => {});
     const result = await syncAllProviders('/tmp/out');
     expect(result.synced).toContain('ok-prov');
@@ -1123,7 +1277,7 @@ describe('syncAllProviders', () => {
   });
 
   it('returns empty synced and failed arrays when all providers have no models', async () => {
-    mockFetch.mockResolvedValueOnce(okFetchResponse({ 'e1': emptyProvider, 'e2': emptyProvider }));
+    mockFetch.mockResolvedValueOnce(okFetchResponse({ e1: emptyProvider, e2: emptyProvider }));
     const result = await syncAllProviders('/tmp/out');
     expect(result.synced).toEqual([]);
     expect(result.failed).toEqual([]);
@@ -1141,7 +1295,9 @@ describe('syncProviders', () => {
 
   beforeEach(() => {
     mockExistsSync.mockReturnValue(true);
-    mockReadFileSync.mockImplementation(() => { throw new Error('ENOENT'); });
+    mockReadFileSync.mockImplementation(() => {
+      throw new Error('ENOENT');
+    });
   });
 
   it('syncs requested providers that are found in the API response', async () => {
@@ -1161,20 +1317,26 @@ describe('syncProviders', () => {
 
   it('pushes to failed when syncProvider throws for a found provider', async () => {
     mockFetch.mockResolvedValueOnce(okFetchResponse({ 'prov-a': providerA }));
-    mockWriteFileSync.mockImplementationOnce(() => { throw new Error('Write failed'); });
+    mockWriteFileSync.mockImplementationOnce(() => {
+      throw new Error('Write failed');
+    });
     const result = await syncProviders(['prov-a'], '/tmp/out');
     expect(result.failed).toContain('prov-a');
     expect(result.synced).not.toContain('prov-a');
   });
 
   it('handles multiple providers with mixed outcomes', async () => {
-    mockFetch.mockResolvedValueOnce(okFetchResponse({
-      'prov-a': providerA,
-      'prov-b': providerB,
-    }));
+    mockFetch.mockResolvedValueOnce(
+      okFetchResponse({
+        'prov-a': providerA,
+        'prov-b': providerB,
+      })
+    );
     mockWriteFileSync
-      .mockImplementationOnce(() => {})                                    // prov-a ok
-      .mockImplementationOnce(() => { throw new Error('Disk full'); });    // prov-b fail
+      .mockImplementationOnce(() => {}) // prov-a ok
+      .mockImplementationOnce(() => {
+        throw new Error('Disk full');
+      }); // prov-b fail
     const result = await syncProviders(['prov-a', 'prov-b', 'missing'], '/tmp/out');
     expect(result.synced).toContain('prov-a');
     expect(result.failed).toContain('prov-b');
@@ -1228,38 +1390,55 @@ describe('syncProviders', () => {
 
 describe('listModelsDevProviders', () => {
   it('returns providers with id, name, modelCount fields', async () => {
-    mockFetch.mockResolvedValueOnce(okFetchResponse({
-      'prov-a': makeDevProvider({ name: 'Provider A', models: { m1: makeDevModel(), m2: makeDevModel() } }),
-    }));
+    mockFetch.mockResolvedValueOnce(
+      okFetchResponse({
+        'prov-a': makeDevProvider({
+          name: 'Provider A',
+          models: { m1: makeDevModel(), m2: makeDevModel() },
+        }),
+      })
+    );
     const result = await listModelsDevProviders();
     expect(result[0]).toMatchObject({ id: 'prov-a', name: 'Provider A', modelCount: 2 });
   });
 
   it('filters out providers with zero models (empty models object)', async () => {
-    mockFetch.mockResolvedValueOnce(okFetchResponse({
-      'empty': makeDevProvider({ name: 'Empty', models: {} }),
-      'real': makeDevProvider({ name: 'Real', models: { m: makeDevModel() } }),
-    }));
+    mockFetch.mockResolvedValueOnce(
+      okFetchResponse({
+        empty: makeDevProvider({ name: 'Empty', models: {} }),
+        real: makeDevProvider({ name: 'Real', models: { m: makeDevModel() } }),
+      })
+    );
     const result = await listModelsDevProviders();
-    expect(result.map(p => p.id)).not.toContain('empty');
-    expect(result.map(p => p.id)).toContain('real');
+    expect(result.map((p) => p.id)).not.toContain('empty');
+    expect(result.map((p) => p.id)).toContain('real');
   });
 
   it('filters out providers with missing models field', async () => {
-    mockFetch.mockResolvedValueOnce(okFetchResponse({
-      'no-models': { name: 'No Models' },
-      'has-models': makeDevProvider({ name: 'Has Models', models: { m: makeDevModel() } }),
-    }));
+    mockFetch.mockResolvedValueOnce(
+      okFetchResponse({
+        'no-models': { name: 'No Models' },
+        'has-models': makeDevProvider({ name: 'Has Models', models: { m: makeDevModel() } }),
+      })
+    );
     const result = await listModelsDevProviders();
-    expect(result.map(p => p.id)).not.toContain('no-models');
+    expect(result.map((p) => p.id)).not.toContain('no-models');
   });
 
   it('sorts by modelCount descending', async () => {
-    mockFetch.mockResolvedValueOnce(okFetchResponse({
-      'small':  makeDevProvider({ name: 'Small',  models: { m: makeDevModel() } }),
-      'large':  makeDevProvider({ name: 'Large',  models: { m1: makeDevModel(), m2: makeDevModel(), m3: makeDevModel() } }),
-      'medium': makeDevProvider({ name: 'Medium', models: { m1: makeDevModel(), m2: makeDevModel() } }),
-    }));
+    mockFetch.mockResolvedValueOnce(
+      okFetchResponse({
+        small: makeDevProvider({ name: 'Small', models: { m: makeDevModel() } }),
+        large: makeDevProvider({
+          name: 'Large',
+          models: { m1: makeDevModel(), m2: makeDevModel(), m3: makeDevModel() },
+        }),
+        medium: makeDevProvider({
+          name: 'Medium',
+          models: { m1: makeDevModel(), m2: makeDevModel() },
+        }),
+      })
+    );
     const result = await listModelsDevProviders();
     expect(result[0]!.id).toBe('large');
     expect(result[1]!.id).toBe('medium');
@@ -1267,18 +1446,22 @@ describe('listModelsDevProviders', () => {
   });
 
   it('falls back to provider id as name when provider.name absent', async () => {
-    mockFetch.mockResolvedValueOnce(okFetchResponse({
-      'my-prov': { models: { m: makeDevModel() } }, // no name field
-    }));
+    mockFetch.mockResolvedValueOnce(
+      okFetchResponse({
+        'my-prov': { models: { m: makeDevModel() } }, // no name field
+      })
+    );
     const result = await listModelsDevProviders();
     expect(result[0]!.name).toBe('my-prov');
   });
 
   it('returns empty array when all providers have no models', async () => {
-    mockFetch.mockResolvedValueOnce(okFetchResponse({
-      'e1': makeDevProvider({ models: {} }),
-      'e2': makeDevProvider({ models: {} }),
-    }));
+    mockFetch.mockResolvedValueOnce(
+      okFetchResponse({
+        e1: makeDevProvider({ models: {} }),
+        e2: makeDevProvider({ models: {} }),
+      })
+    );
     const result = await listModelsDevProviders();
     expect(result).toEqual([]);
   });
@@ -1290,9 +1473,14 @@ describe('listModelsDevProviders', () => {
   });
 
   it('returns correct modelCount for each provider', async () => {
-    mockFetch.mockResolvedValueOnce(okFetchResponse({
-      'three': makeDevProvider({ name: 'Three', models: { a: makeDevModel(), b: makeDevModel(), c: makeDevModel() } }),
-    }));
+    mockFetch.mockResolvedValueOnce(
+      okFetchResponse({
+        three: makeDevProvider({
+          name: 'Three',
+          models: { a: makeDevModel(), b: makeDevModel(), c: makeDevModel() },
+        }),
+      })
+    );
     const result = await listModelsDevProviders();
     expect(result[0]!.modelCount).toBe(3);
   });
@@ -1303,9 +1491,11 @@ describe('listModelsDevProviders', () => {
   });
 
   it('includes id field equal to the API key', async () => {
-    mockFetch.mockResolvedValueOnce(okFetchResponse({
-      'exact-id': makeDevProvider({ name: 'X', models: { m: makeDevModel() } }),
-    }));
+    mockFetch.mockResolvedValueOnce(
+      okFetchResponse({
+        'exact-id': makeDevProvider({ name: 'X', models: { m: makeDevModel() } }),
+      })
+    );
     const result = await listModelsDevProviders();
     expect(result[0]!.id).toBe('exact-id');
   });
@@ -1318,13 +1508,22 @@ describe('listModelsDevProviders', () => {
 describe('syncProvider integration', () => {
   it('written JSON contains all required ProviderConfig fields', () => {
     mockExistsSync.mockReturnValue(true);
-    mockReadFileSync.mockImplementation(() => { throw new Error('ENOENT'); });
+    mockReadFileSync.mockImplementation(() => {
+      throw new Error('ENOENT');
+    });
     syncProvider(
       'openai',
-      makeDevProvider({ name: 'OpenAI', api: 'https://api.openai.com/v1', models: { 'gpt-4': makeDevModel({ name: 'GPT-4' }) } }),
-      '/tmp/test',
+      makeDevProvider({
+        name: 'OpenAI',
+        api: 'https://api.openai.com/v1',
+        models: { 'gpt-4': makeDevModel({ name: 'GPT-4' }) },
+      }),
+      '/tmp/test'
     );
-    const written = JSON.parse(mockWriteFileSync.mock.calls[0]?.[1] as string) as Record<string, unknown>;
+    const written = JSON.parse(mockWriteFileSync.mock.calls[0]?.[1] as string) as Record<
+      string,
+      unknown
+    >;
     expect(written).toHaveProperty('id');
     expect(written).toHaveProperty('name');
     expect(written).toHaveProperty('type');
@@ -1336,13 +1535,22 @@ describe('syncProvider integration', () => {
 
   it('written JSON has canonical openai values regardless of provider data', () => {
     mockExistsSync.mockReturnValue(true);
-    mockReadFileSync.mockImplementation(() => { throw new Error('ENOENT'); });
+    mockReadFileSync.mockImplementation(() => {
+      throw new Error('ENOENT');
+    });
     syncProvider(
       'openai',
-      makeDevProvider({ api: 'https://wrong.url', env: ['WRONG_KEY'], models: { m: makeDevModel() } }),
-      '/tmp/test',
+      makeDevProvider({
+        api: 'https://wrong.url',
+        env: ['WRONG_KEY'],
+        models: { m: makeDevModel() },
+      }),
+      '/tmp/test'
     );
-    const written = JSON.parse(mockWriteFileSync.mock.calls[0]?.[1] as string) as Record<string, unknown>;
+    const written = JSON.parse(mockWriteFileSync.mock.calls[0]?.[1] as string) as Record<
+      string,
+      unknown
+    >;
     expect(written['type']).toBe('openai');
     expect(written['baseUrl']).toBe('https://api.openai.com/v1');
     expect(written['apiKeyEnv']).toBe('OPENAI_API_KEY');
@@ -1350,19 +1558,27 @@ describe('syncProvider integration', () => {
 
   it('single-model provider has that model marked as default', () => {
     mockExistsSync.mockReturnValue(true);
-    mockReadFileSync.mockImplementation(() => { throw new Error('ENOENT'); });
+    mockReadFileSync.mockImplementation(() => {
+      throw new Error('ENOENT');
+    });
     const result = syncProvider(
       'unknown-provider',
       makeDevProvider({ models: { 'the-model': makeDevModel({ name: 'The Model' }) } }),
-      '/tmp/test',
+      '/tmp/test'
     );
     expect(result.models[0]?.default).toBe(true);
   });
 
   it('writes file exactly once per syncProvider call', () => {
     mockExistsSync.mockReturnValue(true);
-    mockReadFileSync.mockImplementation(() => { throw new Error('ENOENT'); });
-    syncProvider('unknown-provider', makeDevProvider({ models: { m: makeDevModel() } }), '/tmp/test');
+    mockReadFileSync.mockImplementation(() => {
+      throw new Error('ENOENT');
+    });
+    syncProvider(
+      'unknown-provider',
+      makeDevProvider({ models: { m: makeDevModel() } }),
+      '/tmp/test'
+    );
     expect(mockWriteFileSync).toHaveBeenCalledTimes(1);
   });
 });

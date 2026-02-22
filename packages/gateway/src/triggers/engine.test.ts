@@ -139,7 +139,11 @@ describe('TriggerEngine', () => {
 
   describe('lifecycle', () => {
     it('starts and reports running', () => {
-      const e = new TriggerEngine({ enabled: true, pollIntervalMs: 999999, conditionCheckIntervalMs: 999999 });
+      const e = new TriggerEngine({
+        enabled: true,
+        pollIntervalMs: 999999,
+        conditionCheckIntervalMs: 999999,
+      });
       expect(e.isRunning()).toBe(false);
       e.start();
       expect(e.isRunning()).toBe(true);
@@ -147,7 +151,11 @@ describe('TriggerEngine', () => {
     });
 
     it('stops and reports not running', () => {
-      const e = new TriggerEngine({ enabled: true, pollIntervalMs: 999999, conditionCheckIntervalMs: 999999 });
+      const e = new TriggerEngine({
+        enabled: true,
+        pollIntervalMs: 999999,
+        conditionCheckIntervalMs: 999999,
+      });
       e.start();
       e.stop();
       expect(e.isRunning()).toBe(false);
@@ -159,7 +167,11 @@ describe('TriggerEngine', () => {
     });
 
     it('does not start twice', () => {
-      const e = new TriggerEngine({ enabled: true, pollIntervalMs: 999999, conditionCheckIntervalMs: 999999 });
+      const e = new TriggerEngine({
+        enabled: true,
+        pollIntervalMs: 999999,
+        conditionCheckIntervalMs: 999999,
+      });
       e.start();
       e.start(); // second start should be no-op
       expect(e.isRunning()).toBe(true);
@@ -270,7 +282,9 @@ describe('TriggerEngine', () => {
     });
 
     it('handles chat handler throwing', async () => {
-      engine.setChatHandler(async () => { throw new Error('AI broke'); });
+      engine.setChatHandler(async () => {
+        throw new Error('AI broke');
+      });
 
       const trigger = makeTrigger({
         action: { type: 'chat', payload: { prompt: 'Test' } },
@@ -304,7 +318,7 @@ describe('TriggerEngine', () => {
         'my_tool',
         expect.objectContaining({ param1: 'a' }),
         'default',
-        expect.any(Object),
+        expect.any(Object)
       );
     });
 
@@ -381,7 +395,9 @@ describe('TriggerEngine', () => {
     });
 
     it('logs execution on failure', async () => {
-      engine.setChatHandler(async () => { throw new Error('Boom'); });
+      engine.setChatHandler(async () => {
+        throw new Error('Boom');
+      });
 
       const trigger = makeTrigger({
         action: { type: 'chat', payload: { prompt: 'test' } },
@@ -451,7 +467,9 @@ describe('TriggerEngine', () => {
     });
 
     it('swallows errors from local event handlers', async () => {
-      const badHandler = vi.fn(() => { throw new Error('Handler crash'); });
+      const badHandler = vi.fn(() => {
+        throw new Error('Handler crash');
+      });
       engine.on('test', badHandler);
       mockTriggerService.getByEventType.mockResolvedValue([]);
 

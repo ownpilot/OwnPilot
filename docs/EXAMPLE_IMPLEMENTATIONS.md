@@ -14,9 +14,9 @@ This document provides **concrete code examples** for the isolated service archi
 // packages/gateway/src/services/database-acl/types.ts
 
 export enum TableAccessLevel {
-  LOCKED = 'locked',      // System tables, read-only via API
+  LOCKED = 'locked', // System tables, read-only via API
   PROTECTED = 'protected', // Plugin tables, only plugin can write
-  USER = 'user',          // User custom tables, full access
+  USER = 'user', // User custom tables, full access
 }
 
 export interface TableMetadata {
@@ -48,14 +48,30 @@ export interface IDatabaseACL {
   dropPluginTable(pluginId: string, tableName: string): Promise<void>;
   getTableMetadata(tableName: string): Promise<TableMetadata | null>;
   listTables(accessLevel?: TableAccessLevel): Promise<TableMetadata[]>;
-  
+
   // Access control
-  canRead(tableName: string, requesterId: string, requesterType: 'user' | 'plugin' | 'system'): Promise<boolean>;
-  canWrite(tableName: string, requesterId: string, requesterType: 'user' | 'plugin' | 'system'): Promise<boolean>;
-  canDelete(tableName: string, requesterId: string, requesterType: 'user' | 'plugin' | 'system'): Promise<boolean>;
-  
+  canRead(
+    tableName: string,
+    requesterId: string,
+    requesterType: 'user' | 'plugin' | 'system'
+  ): Promise<boolean>;
+  canWrite(
+    tableName: string,
+    requesterId: string,
+    requesterType: 'user' | 'plugin' | 'system'
+  ): Promise<boolean>;
+  canDelete(
+    tableName: string,
+    requesterId: string,
+    requesterType: 'user' | 'plugin' | 'system'
+  ): Promise<boolean>;
+
   // Query validation
-  validateQuery(query: string, requesterId: string, requesterType: 'user' | 'plugin' | 'system'): Promise<ValidationResult>;
+  validateQuery(
+    query: string,
+    requesterId: string,
+    requesterType: 'user' | 'plugin' | 'system'
+  ): Promise<ValidationResult>;
 }
 ```
 
@@ -74,7 +90,7 @@ export class DatabaseACLService implements IDatabaseACL {
   private lastCacheUpdate = 0;
 
   constructor(
-    private db: any, // Your database connection
+    private db: any // Your database connection
   ) {}
 
   async initialize(): Promise<void> {
@@ -103,16 +119,48 @@ export class DatabaseACLService implements IDatabaseACL {
 
   private async populateSystemTables(): Promise<void> {
     const systemTables = [
-      'conversations', 'messages', 'agents', 'settings', 'request_logs',
-      'channels', 'channel_messages', 'costs', 'tasks', 'notes', 'bookmarks',
-      'calendar_events', 'contacts', 'expenses', 'memories', 'goals',
-      'goal_steps', 'triggers', 'trigger_history', 'plans', 'plan_steps',
-      'plan_history', 'plugins', 'custom_tools', 'pomodoro_sessions',
-      'pomodoro_settings', 'habits', 'habit_logs', 'captures', 'projects',
-      'reminders', 'oauth_integrations', 'media_provider_settings',
-      'user_model_configs', 'local_providers', 'local_models',
-      'config_services', 'config_service_entries', 'custom_data_tables',
-      'custom_data_records', 'workspaces', 'file_workspaces',
+      'conversations',
+      'messages',
+      'agents',
+      'settings',
+      'request_logs',
+      'channels',
+      'channel_messages',
+      'costs',
+      'tasks',
+      'notes',
+      'bookmarks',
+      'calendar_events',
+      'contacts',
+      'expenses',
+      'memories',
+      'goals',
+      'goal_steps',
+      'triggers',
+      'trigger_history',
+      'plans',
+      'plan_steps',
+      'plan_history',
+      'plugins',
+      'custom_tools',
+      'pomodoro_sessions',
+      'pomodoro_settings',
+      'habits',
+      'habit_logs',
+      'captures',
+      'projects',
+      'reminders',
+      'oauth_integrations',
+      'media_provider_settings',
+      'user_model_configs',
+      'local_providers',
+      'local_models',
+      'config_services',
+      'config_service_entries',
+      'custom_data_tables',
+      'custom_data_records',
+      'workspaces',
+      'file_workspaces',
     ];
 
     for (const tableName of systemTables) {
@@ -128,12 +176,15 @@ export class DatabaseACLService implements IDatabaseACL {
 
   private async getTableSchema(tableName: string): Promise<ColumnDefinition[]> {
     // Query PostgreSQL information_schema to get table structure
-    const columns = await this.db.query(`
+    const columns = await this.db.query(
+      `
       SELECT column_name, data_type, is_nullable, column_default
       FROM information_schema.columns
       WHERE table_name = $1
       ORDER BY ordinal_position
-    `, [tableName]);
+    `,
+      [tableName]
+    );
 
     return columns.map((col: any) => ({
       name: col.column_name,
@@ -172,7 +223,7 @@ export class DatabaseACLService implements IDatabaseACL {
     await this.refreshCache();
     const tables = Array.from(this.tableCache.values());
     if (accessLevel) {
-      return tables.filter(t => t.accessLevel === accessLevel);
+      return tables.filter((t) => t.accessLevel === accessLevel);
     }
     return tables;
   }
@@ -185,14 +236,16 @@ export class DatabaseACLService implements IDatabaseACL {
     }
 
     // Create the table
-    const columnDefs = tableDef.columns.map(col => {
-      let def = `${col.name} ${this.mapColumnType(col.type)}`;
-      if (col.required) def += ' NOT NULL';
-      if (col.defaultValue !== undefined) {
-        def += ` DEFAULT ${this.formatDefaultValue(col.defaultValue)}`;
-      }
-      return def;
-    }).join(', ');
+    const columnDefs = tableDef.columns
+      .map((col) => {
+        let def = `${col.name} ${this.mapColumnType(col.type)}`;
+        if (col.required) def += ' NOT NULL';
+        if (col.defaultValue !== undefined) {
+          def += ` DEFAULT ${this.formatDefaultValue(col.defaultValue)}`;
+        }
+        return def;
+      })
+      .join(', ');
 
     await this.db.execute(`CREATE TABLE ${tableDef.name} (${columnDefs})`);
 
@@ -208,12 +261,13 @@ export class DatabaseACLService implements IDatabaseACL {
     await this.refreshCache();
 
     // Emit event
-    getEventBus().emit(createEvent(
-      'database.table_created',
-      'system',
-      'database-acl',
-      { tableName: tableDef.name, pluginId, schema }
-    ));
+    getEventBus().emit(
+      createEvent('database.table_created', 'system', 'database-acl', {
+        tableName: tableDef.name,
+        pluginId,
+        schema,
+      })
+    );
   }
 
   async dropPluginTable(pluginId: string, tableName: string): Promise<void> {
@@ -240,15 +294,16 @@ export class DatabaseACLService implements IDatabaseACL {
     await this.refreshCache();
 
     // Emit event
-    getEventBus().emit(createEvent(
-      'database.table_dropped',
-      'system',
-      'database-acl',
-      { tableName, pluginId }
-    ));
+    getEventBus().emit(
+      createEvent('database.table_dropped', 'system', 'database-acl', { tableName, pluginId })
+    );
   }
 
-  async canRead(tableName: string, requesterId: string, requesterType: 'user' | 'plugin' | 'system'): Promise<boolean> {
+  async canRead(
+    tableName: string,
+    requesterId: string,
+    requesterType: 'user' | 'plugin' | 'system'
+  ): Promise<boolean> {
     const metadata = await this.getTableMetadata(tableName);
     if (!metadata) return false;
 
@@ -271,7 +326,11 @@ export class DatabaseACLService implements IDatabaseACL {
     return false;
   }
 
-  async canWrite(tableName: string, requesterId: string, requesterType: 'user' | 'plugin' | 'system'): Promise<boolean> {
+  async canWrite(
+    tableName: string,
+    requesterId: string,
+    requesterType: 'user' | 'plugin' | 'system'
+  ): Promise<boolean> {
     const metadata = await this.getTableMetadata(tableName);
     if (!metadata) return false;
 
@@ -281,12 +340,15 @@ export class DatabaseACLService implements IDatabaseACL {
     // Locked tables cannot be written by anyone except system
     if (metadata.accessLevel === 'locked') {
       // Emit access denied event
-      getEventBus().emit(createEvent(
-        'database.access_denied',
-        'system',
-        'database-acl',
-        { tableName, requesterId, requesterType, operation: 'write', reason: 'table is locked' }
-      ));
+      getEventBus().emit(
+        createEvent('database.access_denied', 'system', 'database-acl', {
+          tableName,
+          requesterId,
+          requesterType,
+          operation: 'write',
+          reason: 'table is locked',
+        })
+      );
       return false;
     }
 
@@ -294,12 +356,15 @@ export class DatabaseACLService implements IDatabaseACL {
     if (metadata.accessLevel === 'protected') {
       const allowed = metadata.ownerId === requesterId;
       if (!allowed) {
-        getEventBus().emit(createEvent(
-          'database.access_denied',
-          'system',
-          'database-acl',
-          { tableName, requesterId, requesterType, operation: 'write', reason: 'not table owner' }
-        ));
+        getEventBus().emit(
+          createEvent('database.access_denied', 'system', 'database-acl', {
+            tableName,
+            requesterId,
+            requesterType,
+            operation: 'write',
+            reason: 'not table owner',
+          })
+        );
       }
       return allowed;
     }
@@ -308,12 +373,20 @@ export class DatabaseACLService implements IDatabaseACL {
     return true;
   }
 
-  async canDelete(tableName: string, requesterId: string, requesterType: 'user' | 'plugin' | 'system'): Promise<boolean> {
+  async canDelete(
+    tableName: string,
+    requesterId: string,
+    requesterType: 'user' | 'plugin' | 'system'
+  ): Promise<boolean> {
     // Same logic as canWrite
     return this.canWrite(tableName, requesterId, requesterType);
   }
 
-  async validateQuery(query: string, requesterId: string, requesterType: 'user' | 'plugin' | 'system'): Promise<ValidationResult> {
+  async validateQuery(
+    query: string,
+    requesterId: string,
+    requesterType: 'user' | 'plugin' | 'system'
+  ): Promise<ValidationResult> {
     // Parse query to extract table names (simplified)
     const tables = this.extractTableNames(query);
     const operation = this.detectOperation(query);
@@ -342,7 +415,7 @@ export class DatabaseACLService implements IDatabaseACL {
     // Simplified table name extraction (use a proper SQL parser in production)
     const tablePattern = /(?:FROM|JOIN|INTO|UPDATE)\s+([a-z_][a-z0-9_]*)/gi;
     const matches = [...query.matchAll(tablePattern)];
-    return matches.map(m => m[1].toLowerCase());
+    return matches.map((m) => m[1].toLowerCase());
   }
 
   private detectOperation(query: string): string {
@@ -356,12 +429,12 @@ export class DatabaseACLService implements IDatabaseACL {
 
   private mapColumnType(type: string): string {
     const typeMap: Record<string, string> = {
-      'text': 'TEXT',
-      'number': 'NUMERIC',
-      'boolean': 'BOOLEAN',
-      'date': 'DATE',
-      'datetime': 'TIMESTAMP',
-      'json': 'JSONB',
+      text: 'TEXT',
+      number: 'NUMERIC',
+      boolean: 'BOOLEAN',
+      date: 'DATE',
+      datetime: 'TIMESTAMP',
+      json: 'JSONB',
     };
     return typeMap[type] || 'TEXT';
   }
@@ -383,18 +456,18 @@ import { getDatabaseACL } from './services/database-acl';
 
 async function updateTask(taskId: string, updates: Partial<Task>) {
   const acl = getDatabaseACL();
-  
+
   // Validate access before query
   const validation = await acl.validateQuery(
     `UPDATE tasks SET title = '${updates.title}' WHERE id = '${taskId}'`,
     'user-123',
     'user'
   );
-  
+
   if (!validation.allowed) {
     throw new Error(`Access denied: ${validation.reason}`);
   }
-  
+
   // Execute query
   await db.execute('UPDATE tasks SET title = $1 WHERE id = $2', [updates.title, taskId]);
 }
@@ -436,16 +509,20 @@ export interface IToolRegistry {
   // Registration
   registerBuiltinTool(definition: ToolDefinition, executor: ToolExecutor): Promise<void>;
   registerCustomTool(userId: string, tool: CustomToolDefinition): Promise<string>;
-  registerPluginTool(pluginId: string, definition: ToolDefinition, executor: ToolExecutor): Promise<void>;
-  
+  registerPluginTool(
+    pluginId: string,
+    definition: ToolDefinition,
+    executor: ToolExecutor
+  ): Promise<void>;
+
   // Discovery
   searchTools(query: string, filters?: ToolFilters): Promise<ToolDefinition[]>;
   getTool(name: string): Promise<ToolInfo | null>;
   listTools(filters?: ToolFilters): Promise<ToolInfo[]>;
-  
+
   // Execution
   executeTool(name: string, args: unknown, context: ToolContext): Promise<ToolExecutionResult>;
-  
+
   // Management
   enableTool(name: string): Promise<void>;
   disableTool(name: string): Promise<void>;
@@ -461,7 +538,12 @@ export interface IToolRegistry {
 
 import { getEventBus, createEvent, EventTypes } from '@ownpilot/core/events';
 import type { IToolRegistry, ToolInfo, ToolFilters, ToolSource } from './types.js';
-import type { ToolDefinition, ToolExecutor, ToolContext, ToolExecutionResult } from '../../agent/types.js';
+import type {
+  ToolDefinition,
+  ToolExecutor,
+  ToolContext,
+  ToolExecutionResult,
+} from '../../agent/types.js';
 
 export class ToolRegistryService implements IToolRegistry {
   private toolCache = new Map<string, ToolInfo>();
@@ -487,9 +569,13 @@ export class ToolRegistryService implements IToolRegistry {
     `);
 
     // Create indexes
-    await this.db.execute('CREATE INDEX IF NOT EXISTS idx_tool_registry_source ON tool_registry(source)');
-    await this.db.execute('CREATE INDEX IF NOT EXISTS idx_tool_registry_category ON tool_registry(category)');
-    
+    await this.db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_tool_registry_source ON tool_registry(source)'
+    );
+    await this.db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_tool_registry_category ON tool_registry(category)'
+    );
+
     // Load cache
     await this.refreshCache();
   }
@@ -516,14 +602,22 @@ export class ToolRegistryService implements IToolRegistry {
 
   async registerBuiltinTool(definition: ToolDefinition, executor: ToolExecutor): Promise<void> {
     const id = `builtin-${definition.name}`;
-    
+
     await this.db.execute(
       `INSERT INTO tool_registry (id, name, source, category, definition, is_enabled, is_locked)
        VALUES ($1, $2, $3, $4, $5, $6, $7)
        ON CONFLICT (name) DO UPDATE SET
          definition = EXCLUDED.definition,
          updated_at = NOW()`,
-      [id, definition.name, 'builtin', definition.category || 'utilities', JSON.stringify(definition), true, true]
+      [
+        id,
+        definition.name,
+        'builtin',
+        definition.category || 'utilities',
+        JSON.stringify(definition),
+        true,
+        true,
+      ]
     );
 
     // Cache executor in memory
@@ -531,56 +625,80 @@ export class ToolRegistryService implements IToolRegistry {
     await this.refreshCache();
 
     // Emit event
-    getEventBus().emit(createEvent(
-      EventTypes.TOOL_REGISTERED,
-      'tool',
-      'tool-registry',
-      { name: definition.name, source: 'builtin' }
-    ));
+    getEventBus().emit(
+      createEvent(EventTypes.TOOL_REGISTERED, 'tool', 'tool-registry', {
+        name: definition.name,
+        source: 'builtin',
+      })
+    );
   }
 
   async registerCustomTool(userId: string, tool: CustomToolDefinition): Promise<string> {
     const id = `custom-${userId}-${tool.name}`;
-    
+
     await this.db.execute(
       `INSERT INTO tool_registry (id, name, source, source_id, category, definition, is_enabled, is_locked)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-      [id, tool.name, 'custom', userId, tool.category || 'custom', JSON.stringify(tool), true, false]
+      [
+        id,
+        tool.name,
+        'custom',
+        userId,
+        tool.category || 'custom',
+        JSON.stringify(tool),
+        true,
+        false,
+      ]
     );
 
     await this.refreshCache();
 
-    getEventBus().emit(createEvent(
-      EventTypes.TOOL_REGISTERED,
-      'tool',
-      'tool-registry',
-      { name: tool.name, source: 'custom', userId }
-    ));
+    getEventBus().emit(
+      createEvent(EventTypes.TOOL_REGISTERED, 'tool', 'tool-registry', {
+        name: tool.name,
+        source: 'custom',
+        userId,
+      })
+    );
 
     return id;
   }
 
-  async registerPluginTool(pluginId: string, definition: ToolDefinition, executor: ToolExecutor): Promise<void> {
+  async registerPluginTool(
+    pluginId: string,
+    definition: ToolDefinition,
+    executor: ToolExecutor
+  ): Promise<void> {
     const id = `plugin-${pluginId}-${definition.name}`;
-    
+
     await this.db.execute(
       `INSERT INTO tool_registry (id, name, source, source_id, category, definition, is_enabled, is_locked)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
        ON CONFLICT (name) DO UPDATE SET
          definition = EXCLUDED.definition,
          updated_at = NOW()`,
-      [id, definition.name, 'plugin', pluginId, definition.category || 'plugin', JSON.stringify(definition), true, false]
+      [
+        id,
+        definition.name,
+        'plugin',
+        pluginId,
+        definition.category || 'plugin',
+        JSON.stringify(definition),
+        true,
+        false,
+      ]
     );
 
     this.executorCache.set(definition.name, executor);
     await this.refreshCache();
 
-    getEventBus().emit(createEvent(
-      EventTypes.TOOL_REGISTERED,
-      'tool',
-      'tool-registry',
-      { name: definition.name, source: 'plugin', pluginId }
-    ));
+    getEventBus().emit(
+      createEvent(EventTypes.TOOL_REGISTERED, 'tool', 'tool-registry', {
+        name: definition.name,
+        source: 'plugin',
+        pluginId,
+      })
+    );
   }
 
   async searchTools(query: string, filters?: ToolFilters): Promise<ToolDefinition[]> {
@@ -617,21 +735,25 @@ export class ToolRegistryService implements IToolRegistry {
     let tools = Array.from(this.toolCache.values());
 
     if (filters?.source) {
-      tools = tools.filter(t => t.source === filters.source);
+      tools = tools.filter((t) => t.source === filters.source);
     }
 
     if (filters?.category) {
-      tools = tools.filter(t => t.category === filters.category);
+      tools = tools.filter((t) => t.category === filters.category);
     }
 
     if (filters?.enabled !== undefined) {
-      tools = tools.filter(t => t.isEnabled === filters.enabled);
+      tools = tools.filter((t) => t.isEnabled === filters.enabled);
     }
 
     return tools;
   }
 
-  async executeTool(name: string, args: unknown, context: ToolContext): Promise<ToolExecutionResult> {
+  async executeTool(
+    name: string,
+    args: unknown,
+    context: ToolContext
+  ): Promise<ToolExecutionResult> {
     const tool = await this.getTool(name);
     if (!tool) {
       throw new Error(`Tool not found: ${name}`);
@@ -664,18 +786,15 @@ export class ToolRegistryService implements IToolRegistry {
     const duration = Date.now() - startTime;
 
     // Emit event
-    getEventBus().emit(createEvent(
-      EventTypes.TOOL_EXECUTED,
-      'tool',
-      'tool-registry',
-      {
+    getEventBus().emit(
+      createEvent(EventTypes.TOOL_EXECUTED, 'tool', 'tool-registry', {
         name,
         duration,
         success: result.success,
         error,
         conversationId: context.conversationId,
-      }
-    ));
+      })
+    );
 
     return result;
   }
@@ -711,12 +830,9 @@ export class ToolRegistryService implements IToolRegistry {
     this.executorCache.delete(name);
     await this.refreshCache();
 
-    getEventBus().emit(createEvent(
-      EventTypes.TOOL_UNREGISTERED,
-      'tool',
-      'tool-registry',
-      { name }
-    ));
+    getEventBus().emit(
+      createEvent(EventTypes.TOOL_UNREGISTERED, 'tool', 'tool-registry', { name })
+    );
   }
 
   async unregisterPluginTools(pluginId: string): Promise<void> {
@@ -729,10 +845,10 @@ export class ToolRegistryService implements IToolRegistry {
       this.executorCache.delete(tool.name);
     }
 
-    await this.db.execute(
-      'DELETE FROM tool_registry WHERE source = $1 AND source_id = $2',
-      ['plugin', pluginId]
-    );
+    await this.db.execute('DELETE FROM tool_registry WHERE source = $1 AND source_id = $2', [
+      'plugin',
+      pluginId,
+    ]);
 
     await this.refreshCache();
   }
@@ -748,38 +864,44 @@ import { allBuiltinTools } from './agent/tools';
 
 async function registerBuiltinTools() {
   const registry = await getToolRegistry();
-  
+
   for (const { definition, executor } of allBuiltinTools) {
     await registry.registerBuiltinTool(definition, executor);
   }
-  
+
   console.log('Registered 148+ built-in tools');
 }
 
 // Plugin registers its tools
 async function pluginOnLoad(pluginId: string, context: PluginContext) {
   const registry = await getToolRegistry();
-  
-  await registry.registerPluginTool(pluginId, {
-    name: 'weather_current',
-    description: 'Get current weather',
-    category: 'weather',
-    parameters: { /* ... */ },
-  }, async (args, ctx) => {
-    // Tool implementation
-    return { success: true, output: weatherData };
-  });
+
+  await registry.registerPluginTool(
+    pluginId,
+    {
+      name: 'weather_current',
+      description: 'Get current weather',
+      category: 'weather',
+      parameters: {
+        /* ... */
+      },
+    },
+    async (args, ctx) => {
+      // Tool implementation
+      return { success: true, output: weatherData };
+    }
+  );
 }
 
 // Execute a tool
 async function executeToolByName(toolName: string, args: unknown) {
   const registry = await getToolRegistry();
-  
+
   const result = await registry.executeTool(toolName, args, {
     conversationId: 'conv-123',
     userId: 'user-456',
   });
-  
+
   return result;
 }
 ```
@@ -808,7 +930,12 @@ export class PluginService implements IPluginService {
     await this.db.execute(
       `INSERT INTO plugins (id, manifest, status, config, installed_at, updated_at)
        VALUES ($1, $2, $3, $4, NOW(), NOW())`,
-      [pluginId, JSON.stringify(manifest), 'installed', JSON.stringify(manifest.defaultConfig || {})]
+      [
+        pluginId,
+        JSON.stringify(manifest),
+        'installed',
+        JSON.stringify(manifest.defaultConfig || {}),
+      ]
     );
 
     // 2. Create plugin database tables (via Database ACL)
@@ -826,12 +953,9 @@ export class PluginService implements IPluginService {
     // Event subscriptions are set up when plugin is enabled
 
     // 5. Emit event
-    getEventBus().emit(createEvent(
-      'plugin.installed',
-      'plugin',
-      'plugin-service',
-      { pluginId, manifest }
-    ));
+    getEventBus().emit(
+      createEvent('plugin.installed', 'plugin', 'plugin-service', { pluginId, manifest })
+    );
 
     return pluginId;
   }
@@ -841,10 +965,10 @@ export class PluginService implements IPluginService {
     if (!plugin) throw new Error(`Plugin not found: ${pluginId}`);
 
     // 1. Update status
-    await this.db.execute(
-      'UPDATE plugins SET status = $1, updated_at = NOW() WHERE id = $2',
-      ['enabled', pluginId]
-    );
+    await this.db.execute('UPDATE plugins SET status = $1, updated_at = NOW() WHERE id = $2', [
+      'enabled',
+      pluginId,
+    ]);
 
     // 2. Register tools
     const toolRegistry = await getToolRegistry();
@@ -854,12 +978,10 @@ export class PluginService implements IPluginService {
 
     // 3. Subscribe to events
     for (const pattern of plugin.manifest.eventSubscriptions || []) {
-      const subscriptionId = await getEventBus().subscribe(
-        pluginId,
-        pattern,
-        (event) => plugin.eventHandler?.(event)
+      const subscriptionId = await getEventBus().subscribe(pluginId, pattern, (event) =>
+        plugin.eventHandler?.(event)
       );
-      
+
       await this.db.execute(
         'INSERT INTO plugin_event_subscriptions (id, plugin_id, event_pattern) VALUES ($1, $2, $3)',
         [subscriptionId, pluginId, pattern]
@@ -872,12 +994,7 @@ export class PluginService implements IPluginService {
     }
 
     // 5. Emit event
-    getEventBus().emit(createEvent(
-      'plugin.enabled',
-      'plugin',
-      'plugin-service',
-      { pluginId }
-    ));
+    getEventBus().emit(createEvent('plugin.enabled', 'plugin', 'plugin-service', { pluginId }));
   }
 
   async disable(pluginId: string): Promise<void> {
@@ -901,21 +1018,18 @@ export class PluginService implements IPluginService {
     for (const sub of subscriptions) {
       getEventBus().unsubscribe(sub.id);
     }
-    await this.db.execute('DELETE FROM plugin_event_subscriptions WHERE plugin_id = $1', [pluginId]);
+    await this.db.execute('DELETE FROM plugin_event_subscriptions WHERE plugin_id = $1', [
+      pluginId,
+    ]);
 
     // 4. Update status
-    await this.db.execute(
-      'UPDATE plugins SET status = $1, updated_at = NOW() WHERE id = $2',
-      ['disabled', pluginId]
-    );
+    await this.db.execute('UPDATE plugins SET status = $1, updated_at = NOW() WHERE id = $2', [
+      'disabled',
+      pluginId,
+    ]);
 
     // 5. Emit event
-    getEventBus().emit(createEvent(
-      'plugin.disabled',
-      'plugin',
-      'plugin-service',
-      { pluginId }
-    ));
+    getEventBus().emit(createEvent('plugin.disabled', 'plugin', 'plugin-service', { pluginId }));
   }
 
   async uninstall(pluginId: string): Promise<void> {
@@ -943,12 +1057,7 @@ export class PluginService implements IPluginService {
     await this.db.execute('DELETE FROM plugins WHERE id = $1', [pluginId]);
 
     // 5. Emit event
-    getEventBus().emit(createEvent(
-      'plugin.uninstalled',
-      'plugin',
-      'plugin-service',
-      { pluginId }
-    ));
+    getEventBus().emit(createEvent('plugin.uninstalled', 'plugin', 'plugin-service', { pluginId }));
   }
 
   // ... other methods
@@ -976,7 +1085,7 @@ const manifest = {
   capabilities: ['tools', 'storage', 'scheduled'],
   permissions: ['network', 'storage'],
   category: 'lifestyle',
-  
+
   // Plugin's own settings
   pluginConfigSchema: [
     {
@@ -987,7 +1096,7 @@ const manifest = {
       required: true,
     },
   ],
-  
+
   // External services needed
   requiredServices: [
     {
@@ -1016,7 +1125,7 @@ const manifest = {
       ],
     },
   ],
-  
+
   // Database tables
   databaseTables: [
     {
@@ -1036,11 +1145,11 @@ const manifest = {
 // Plugin implementation
 export const weatherPlugin = createPlugin()
   .meta(manifest)
-  
+
   // Lifecycle hooks
   .onLoad(async (context: PluginContext) => {
     context.log.info('Weather plugin loading...');
-    
+
     // Initialize cache
     const cacheExists = await context.storage.get('cache_initialized');
     if (!cacheExists) {
@@ -1048,21 +1157,21 @@ export const weatherPlugin = createPlugin()
       context.log.info('Cache initialized');
     }
   })
-  
+
   .onEnable(async (context: PluginContext) => {
     context.log.info('Weather plugin enabled');
-    
+
     // Subscribe to location change events
     context.events.on('user.location_changed', async (data: any) => {
       context.log.info('Location changed, updating weather', data);
       // Fetch new weather data
     });
   })
-  
+
   .onDisable(async (context: PluginContext) => {
     context.log.info('Weather plugin disabled');
   })
-  
+
   // Tools
   .tool(
     {
@@ -1086,23 +1195,23 @@ export const weatherPlugin = createPlugin()
       if (cached && Date.now() - cached.timestamp < 30 * 60 * 1000) {
         return { success: true, output: cached.data };
       }
-      
+
       // Fetch from API
       const apiKey = await context.getServiceConfig('openweathermap', 'apiKey');
       const units = await context.getServiceConfig('openweathermap', 'units');
-      
+
       const response = await fetch(
         `https://api.openweathermap.org/data/2.5/weather?q=${args.location}&appid=${apiKey}&units=${units}`
       );
-      
+
       const data = await response.json();
-      
+
       // Cache result
       await context.storage.set(`weather:${args.location}`, {
         data,
         timestamp: Date.now(),
       });
-      
+
       return {
         success: true,
         output: {
@@ -1115,7 +1224,7 @@ export const weatherPlugin = createPlugin()
       };
     }
   )
-  
+
   .build();
 ```
 
@@ -1130,6 +1239,6 @@ This architecture provides:
 ✅ **Event-Driven**: Services communicate via Event Bus  
 ✅ **Access Control**: Database ACL protects all data  
 ✅ **Centralized Tools**: Tool Registry manages all tools  
-✅ **Plugin Isolation**: Plugins are sandboxed and controlled  
+✅ **Plugin Isolation**: Plugins are sandboxed and controlled
 
 The migration can be done **incrementally** without breaking existing functionality!

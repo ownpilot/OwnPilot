@@ -18,12 +18,49 @@ const SMTP_CONFIG_REQUIREMENT = {
   description: 'SMTP server configuration for sending emails',
   multiEntry: true,
   configSchema: [
-    { name: 'host', label: 'SMTP Host', type: 'string' as const, required: true, envVar: 'SMTP_HOST' },
-    { name: 'port', label: 'SMTP Port', type: 'string' as const, required: true, envVar: 'SMTP_PORT', defaultValue: '587' },
-    { name: 'user', label: 'Username', type: 'string' as const, required: true, envVar: 'SMTP_USER' },
-    { name: 'pass', label: 'Password', type: 'secret' as const, required: true, envVar: 'SMTP_PASS' },
-    { name: 'from', label: 'From Address', type: 'string' as const, required: false, envVar: 'SMTP_FROM' },
-    { name: 'secure', label: 'Use TLS', type: 'string' as const, required: false, defaultValue: 'true' },
+    {
+      name: 'host',
+      label: 'SMTP Host',
+      type: 'string' as const,
+      required: true,
+      envVar: 'SMTP_HOST',
+    },
+    {
+      name: 'port',
+      label: 'SMTP Port',
+      type: 'string' as const,
+      required: true,
+      envVar: 'SMTP_PORT',
+      defaultValue: '587',
+    },
+    {
+      name: 'user',
+      label: 'Username',
+      type: 'string' as const,
+      required: true,
+      envVar: 'SMTP_USER',
+    },
+    {
+      name: 'pass',
+      label: 'Password',
+      type: 'secret' as const,
+      required: true,
+      envVar: 'SMTP_PASS',
+    },
+    {
+      name: 'from',
+      label: 'From Address',
+      type: 'string' as const,
+      required: false,
+      envVar: 'SMTP_FROM',
+    },
+    {
+      name: 'secure',
+      label: 'Use TLS',
+      type: 'string' as const,
+      required: false,
+      defaultValue: 'true',
+    },
   ],
 } as const;
 
@@ -34,18 +71,50 @@ const IMAP_CONFIG_REQUIREMENT = {
   description: 'IMAP server configuration for reading emails',
   multiEntry: true,
   configSchema: [
-    { name: 'host', label: 'IMAP Host', type: 'string' as const, required: true, envVar: 'IMAP_HOST' },
-    { name: 'port', label: 'IMAP Port', type: 'string' as const, required: true, envVar: 'IMAP_PORT', defaultValue: '993' },
-    { name: 'user', label: 'Username', type: 'string' as const, required: true, envVar: 'IMAP_USER' },
-    { name: 'pass', label: 'Password', type: 'secret' as const, required: true, envVar: 'IMAP_PASS' },
-    { name: 'tls', label: 'Use TLS', type: 'string' as const, required: false, defaultValue: 'true' },
+    {
+      name: 'host',
+      label: 'IMAP Host',
+      type: 'string' as const,
+      required: true,
+      envVar: 'IMAP_HOST',
+    },
+    {
+      name: 'port',
+      label: 'IMAP Port',
+      type: 'string' as const,
+      required: true,
+      envVar: 'IMAP_PORT',
+      defaultValue: '993',
+    },
+    {
+      name: 'user',
+      label: 'Username',
+      type: 'string' as const,
+      required: true,
+      envVar: 'IMAP_USER',
+    },
+    {
+      name: 'pass',
+      label: 'Password',
+      type: 'secret' as const,
+      required: true,
+      envVar: 'IMAP_PASS',
+    },
+    {
+      name: 'tls',
+      label: 'Use TLS',
+      type: 'string' as const,
+      required: false,
+      defaultValue: 'true',
+    },
   ],
 } as const;
 
 export const sendEmailTool: ToolDefinition = {
   name: 'send_email',
   brief: 'Send email via SMTP with HTML and attachments',
-  description: 'Send an email using configured SMTP server. Supports HTML content, attachments, and CC/BCC.',
+  description:
+    'Send an email using configured SMTP server. Supports HTML content, attachments, and CC/BCC.',
   parameters: {
     type: 'object',
     properties: {
@@ -96,7 +165,10 @@ export const sendEmailTool: ToolDefinition = {
   configRequirements: [SMTP_CONFIG_REQUIREMENT],
 };
 
-export const sendEmailExecutor: ToolExecutor = async (params, _context): Promise<ToolExecutionResult> => {
+export const sendEmailExecutor: ToolExecutor = async (
+  params,
+  _context
+): Promise<ToolExecutionResult> => {
   const to = params.to as string[];
   const subject = params.subject as string;
   const body = params.body as string;
@@ -241,7 +313,8 @@ export const sendEmailExecutor: ToolExecutor = async (params, _context): Promise
 export const listEmailsTool: ToolDefinition = {
   name: 'list_emails',
   brief: 'List inbox emails via IMAP with filters',
-  description: 'List emails from inbox using IMAP. All parameters are optional filters. Returns emails sorted by date.',
+  description:
+    'List emails from inbox using IMAP. All parameters are optional filters. Returns emails sorted by date.',
   parameters: {
     type: 'object',
     properties: {
@@ -279,7 +352,10 @@ export const listEmailsTool: ToolDefinition = {
   configRequirements: [IMAP_CONFIG_REQUIREMENT],
 };
 
-export const listEmailsExecutor: ToolExecutor = async (params, _context): Promise<ToolExecutionResult> => {
+export const listEmailsExecutor: ToolExecutor = async (
+  params,
+  _context
+): Promise<ToolExecutionResult> => {
   const folder = (params.folder as string) || 'INBOX';
   const limit = Math.min((params.limit as number) || 20, 100);
   const unreadOnly = params.unreadOnly === true;
@@ -368,7 +444,10 @@ export const readEmailTool: ToolDefinition = {
   configRequirements: [IMAP_CONFIG_REQUIREMENT],
 };
 
-export const readEmailExecutor: ToolExecutor = async (params, _context): Promise<ToolExecutionResult> => {
+export const readEmailExecutor: ToolExecutor = async (
+  params,
+  _context
+): Promise<ToolExecutionResult> => {
   const emailId = params.id as string;
   const folder = (params.folder as string) || 'INBOX';
   const downloadAttachments = params.downloadAttachments === true;
@@ -421,7 +500,10 @@ export const deleteEmailTool: ToolDefinition = {
   configRequirements: [IMAP_CONFIG_REQUIREMENT],
 };
 
-export const deleteEmailExecutor: ToolExecutor = async (params, _context): Promise<ToolExecutionResult> => {
+export const deleteEmailExecutor: ToolExecutor = async (
+  params,
+  _context
+): Promise<ToolExecutionResult> => {
   const emailId = params.id as string;
   const folder = (params.folder as string) || 'INBOX';
   const permanent = params.permanent === true;
@@ -479,7 +561,10 @@ export const searchEmailsTool: ToolDefinition = {
   configRequirements: [IMAP_CONFIG_REQUIREMENT],
 };
 
-export const searchEmailsExecutor: ToolExecutor = async (params, _context): Promise<ToolExecutionResult> => {
+export const searchEmailsExecutor: ToolExecutor = async (
+  params,
+  _context
+): Promise<ToolExecutionResult> => {
   const query = params.query as string;
   const folder = params.folder as string | undefined;
   const hasAttachment = params.hasAttachment as boolean | undefined;
@@ -541,7 +626,10 @@ export const replyEmailTool: ToolDefinition = {
   configRequirements: [SMTP_CONFIG_REQUIREMENT, IMAP_CONFIG_REQUIREMENT],
 };
 
-export const replyEmailExecutor: ToolExecutor = async (params, _context): Promise<ToolExecutionResult> => {
+export const replyEmailExecutor: ToolExecutor = async (
+  params,
+  _context
+): Promise<ToolExecutionResult> => {
   const emailId = params.id as string;
   const body = params.body as string;
   const isHtml = params.html === true;

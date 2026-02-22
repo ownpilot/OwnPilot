@@ -43,10 +43,14 @@ export function RealtimeBridge({ onBadgeUpdate }: RealtimeBridgeProps) {
   useEffect(() => {
     return subscribe<{ message: string; level?: string }>('system:notification', (data) => {
       const level = data.level ?? 'info';
-      const method = level === 'error' ? 'error'
-        : level === 'warning' ? 'warning'
-        : level === 'success' ? 'success'
-        : 'info';
+      const method =
+        level === 'error'
+          ? 'error'
+          : level === 'warning'
+            ? 'warning'
+            : level === 'success'
+              ? 'success'
+              : 'info';
       toast[method](data.message);
     });
   }, [subscribe, toast]);
@@ -72,7 +76,9 @@ export function RealtimeBridge({ onBadgeUpdate }: RealtimeBridgeProps) {
     return subscribe<{ sender?: string; content?: string }>('channel:message', (data) => {
       const sender = data.sender || 'New message';
       const body = data.content
-        ? data.content.length > 120 ? data.content.slice(0, 120) + '...' : data.content
+        ? data.content.length > 120
+          ? data.content.slice(0, 120) + '...'
+          : data.content
         : 'You have a new message';
       notify(sender, { body, tag: 'channel-message' });
     });
@@ -80,14 +86,17 @@ export function RealtimeBridge({ onBadgeUpdate }: RealtimeBridgeProps) {
 
   // Desktop notification: trigger execution failures
   useEffect(() => {
-    return subscribe<{ triggerName?: string; status?: string; error?: string }>('trigger:executed', (data) => {
-      if (data.status === 'failure') {
-        notify(`Trigger failed: ${data.triggerName || 'Unknown'}`, {
-          body: data.error || 'Trigger execution failed',
-          tag: 'trigger-failure',
-        });
+    return subscribe<{ triggerName?: string; status?: string; error?: string }>(
+      'trigger:executed',
+      (data) => {
+        if (data.status === 'failure') {
+          notify(`Trigger failed: ${data.triggerName || 'Unknown'}`, {
+            body: data.error || 'Trigger execution failed',
+            tag: 'trigger-failure',
+          });
+        }
       }
-    });
+    );
   }, [subscribe, notify]);
 
   return null;

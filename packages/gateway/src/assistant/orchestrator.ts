@@ -133,7 +133,7 @@ export async function buildEnhancedSystemPrompt(
 
     // Fetch all goal steps in parallel (avoids N+1 sequential queries)
     const allSteps = await Promise.all(
-      goals.map(g => goalService.getSteps(options.userId, g.id).catch(() => []))
+      goals.map((g) => goalService.getSteps(options.userId, g.id).catch(() => []))
     );
 
     for (let i = 0; i < goals.length; i++) {
@@ -146,7 +146,9 @@ export async function buildEnhancedSystemPrompt(
       }
 
       // Include pending steps (already fetched in parallel)
-      const pendingSteps = allSteps[i]!.filter((s) => s.status === 'pending' || s.status === 'in_progress');
+      const pendingSteps = allSteps[i]!.filter(
+        (s) => s.status === 'pending' || s.status === 'in_progress'
+      );
       if (pendingSteps.length > 0) {
         goalLines.push('  Next steps:');
         pendingSteps.slice(0, 3).forEach((s) => {
@@ -403,12 +405,12 @@ export async function extractMemories(
   const memoryService = getServiceRegistry().get(Services.Memory);
   const result = await memoryService.batchRemember(
     userId,
-    memories.map(m => ({
+    memories.map((m) => ({
       type: m.type,
       content: m.content,
       source: 'conversation',
       importance: m.importance ?? 0.7,
-    })),
+    }))
   );
 
   return result.created;

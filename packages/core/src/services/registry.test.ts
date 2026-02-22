@@ -125,8 +125,16 @@ describe('ServiceRegistry', () => {
       const tokenA = new ServiceToken<{ dispose(): void }>('a');
       const tokenB = new ServiceToken<{ dispose(): void }>('b');
 
-      registry.register(tokenA, { dispose: () => { order.push('a'); } });
-      registry.register(tokenB, { dispose: () => { order.push('b'); } });
+      registry.register(tokenA, {
+        dispose: () => {
+          order.push('a');
+        },
+      });
+      registry.register(tokenB, {
+        dispose: () => {
+          order.push('b');
+        },
+      });
 
       await registry.dispose();
       expect(order).toEqual(['b', 'a']);
@@ -143,7 +151,9 @@ describe('ServiceRegistry', () => {
     it('handles dispose errors gracefully', async () => {
       const token = new ServiceToken<{ dispose(): void }>('broken');
       registry.register(token, {
-        dispose: () => { throw new Error('cleanup failed'); },
+        dispose: () => {
+          throw new Error('cleanup failed');
+        },
       });
 
       // Should not throw

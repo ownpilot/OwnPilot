@@ -6,7 +6,15 @@
 
 import { Hono } from 'hono';
 import { getHeartbeatService, HeartbeatServiceError } from '../services/heartbeat-service.js';
-import { getUserId, apiResponse, apiError, getIntParam, ERROR_CODES, notFoundError, getErrorMessage } from './helpers.js';
+import {
+  getUserId,
+  apiResponse,
+  apiError,
+  getIntParam,
+  ERROR_CODES,
+  notFoundError,
+  getErrorMessage,
+} from './helpers.js';
 import { wsGateway } from '../ws/server.js';
 
 export const heartbeatsRoutes = new Hono();
@@ -52,10 +60,18 @@ heartbeatsRoutes.post('/', async (c) => {
   };
 
   if (!scheduleText?.trim()) {
-    return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: 'scheduleText is required' }, 400);
+    return apiError(
+      c,
+      { code: ERROR_CODES.VALIDATION_ERROR, message: 'scheduleText is required' },
+      400
+    );
   }
   if (!taskDescription?.trim()) {
-    return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: 'taskDescription is required' }, 400);
+    return apiError(
+      c,
+      { code: ERROR_CODES.VALIDATION_ERROR, message: 'taskDescription is required' },
+      400
+    );
   }
 
   try {
@@ -67,13 +83,24 @@ heartbeatsRoutes.post('/', async (c) => {
       enabled,
       tags,
     });
-    wsGateway.broadcast('data:changed', { entity: 'heartbeat', action: 'created', id: heartbeat.id });
+    wsGateway.broadcast('data:changed', {
+      entity: 'heartbeat',
+      action: 'created',
+      id: heartbeat.id,
+    });
     return apiResponse(c, { heartbeat, message: 'Heartbeat created successfully.' }, 201);
   } catch (error) {
     if (error instanceof HeartbeatServiceError) {
       return apiError(c, { code: error.code, message: error.message }, 400);
     }
-    return apiError(c, { code: ERROR_CODES.CREATE_FAILED, message: getErrorMessage(error, 'Failed to create heartbeat') }, 500);
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.CREATE_FAILED,
+        message: getErrorMessage(error, 'Failed to create heartbeat'),
+      },
+      500
+    );
   }
 });
 
@@ -86,7 +113,11 @@ heartbeatsRoutes.post('/import', async (c) => {
   const body = await c.req.json().catch(() => null);
 
   if (!body || typeof (body as { markdown?: string }).markdown !== 'string') {
-    return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: 'markdown field is required (string)' }, 400);
+    return apiError(
+      c,
+      { code: ERROR_CODES.VALIDATION_ERROR, message: 'markdown field is required (string)' },
+      400
+    );
   }
 
   const service = getHeartbeatService();
@@ -151,7 +182,14 @@ heartbeatsRoutes.patch('/:id', async (c) => {
     if (error instanceof HeartbeatServiceError) {
       return apiError(c, { code: error.code, message: error.message }, 400);
     }
-    return apiError(c, { code: ERROR_CODES.UPDATE_FAILED, message: getErrorMessage(error, 'Failed to update heartbeat') }, 500);
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.UPDATE_FAILED,
+        message: getErrorMessage(error, 'Failed to update heartbeat'),
+      },
+      500
+    );
   }
 });
 

@@ -24,10 +24,8 @@ import type {
 // ---- Notes ----
 
 export const notesApi = {
-  list: (params?: Record<string, string>) =>
-    apiClient.get<Note[]>('/notes', { params }),
-  create: (body: Record<string, unknown>) =>
-    apiClient.post<Note>('/notes', body),
+  list: (params?: Record<string, string>) => apiClient.get<Note[]>('/notes', { params }),
+  create: (body: Record<string, unknown>) => apiClient.post<Note>('/notes', body),
   update: (id: string, body: Record<string, unknown>) =>
     apiClient.patch<Note>(`/notes/${id}`, body),
   delete: (id: string) => apiClient.delete<void>(`/notes/${id}`),
@@ -39,8 +37,7 @@ export const notesApi = {
 export const bookmarksApi = {
   list: (params?: Record<string, string>) =>
     apiClient.get<BookmarkItem[]>('/bookmarks', { params }),
-  create: (body: Record<string, unknown>) =>
-    apiClient.post<BookmarkItem>('/bookmarks', body),
+  create: (body: Record<string, unknown>) => apiClient.post<BookmarkItem>('/bookmarks', body),
   update: (id: string, body: Record<string, unknown>) =>
     apiClient.patch<BookmarkItem>(`/bookmarks/${id}`, body),
   delete: (id: string) => apiClient.delete<void>(`/bookmarks/${id}`),
@@ -50,10 +47,8 @@ export const bookmarksApi = {
 // ---- Contacts ----
 
 export const contactsApi = {
-  list: (params?: Record<string, string>) =>
-    apiClient.get<Contact[]>('/contacts', { params }),
-  create: (body: Record<string, unknown>) =>
-    apiClient.post<Contact>('/contacts', body),
+  list: (params?: Record<string, string>) => apiClient.get<Contact[]>('/contacts', { params }),
+  create: (body: Record<string, unknown>) => apiClient.post<Contact>('/contacts', body),
   update: (id: string, body: Record<string, unknown>) =>
     apiClient.patch<Contact>(`/contacts/${id}`, body),
   delete: (id: string) => apiClient.delete<void>(`/contacts/${id}`),
@@ -65,8 +60,7 @@ export const contactsApi = {
 export const calendarApi = {
   list: (params?: Record<string, string>) =>
     apiClient.get<CalendarEvent[]>('/calendar', { params }),
-  create: (body: Record<string, unknown>) =>
-    apiClient.post<CalendarEvent>('/calendar', body),
+  create: (body: Record<string, unknown>) => apiClient.post<CalendarEvent>('/calendar', body),
   update: (id: string, body: Record<string, unknown>) =>
     apiClient.patch<CalendarEvent>(`/calendar/${id}`, body),
   delete: (id: string) => apiClient.delete<void>(`/calendar/${id}`),
@@ -75,15 +69,12 @@ export const calendarApi = {
 // ---- Goals ----
 
 export const goalsApi = {
-  list: (params?: Record<string, string>) =>
-    apiClient.get<{ goals: Goal[] }>('/goals', { params }),
-  create: (data: Record<string, unknown>) =>
-    apiClient.post<Goal>('/goals', data),
+  list: (params?: Record<string, string>) => apiClient.get<{ goals: Goal[] }>('/goals', { params }),
+  create: (data: Record<string, unknown>) => apiClient.post<Goal>('/goals', data),
   delete: (id: string) => apiClient.delete<void>(`/goals/${id}`),
   update: (id: string, data: Record<string, unknown>) =>
     apiClient.patch<Goal>(`/goals/${id}`, data),
-  steps: (id: string) =>
-    apiClient.get<{ steps: GoalStep[] }>(`/goals/${id}/steps`),
+  steps: (id: string) => apiClient.get<{ steps: GoalStep[] }>(`/goals/${id}/steps`),
   updateStep: (goalId: string, stepId: string, data: Record<string, unknown>) =>
     apiClient.patch<GoalStep>(`/goals/${goalId}/steps/${stepId}`, data),
 };
@@ -93,8 +84,7 @@ export const goalsApi = {
 export const memoriesApi = {
   list: (params?: Record<string, string>) =>
     apiClient.get<{ memories: Memory[] }>('/memories', { params }),
-  create: (data: Record<string, unknown>) =>
-    apiClient.post<Memory>('/memories', data),
+  create: (data: Record<string, unknown>) => apiClient.post<Memory>('/memories', data),
   update: (id: string, data: Record<string, unknown>) =>
     apiClient.patch<Memory>(`/memories/${id}`, data),
   delete: (id: string) => apiClient.delete<void>(`/memories/${id}`),
@@ -103,21 +93,15 @@ export const memoriesApi = {
 // ---- Plans ----
 
 export const plansApi = {
-  list: (params?: Record<string, string>) =>
-    apiClient.get<{ plans: Plan[] }>('/plans', { params }),
-  create: (data: Record<string, unknown>) =>
-    apiClient.post<Plan>('/plans', data),
+  list: (params?: Record<string, string>) => apiClient.get<{ plans: Plan[] }>('/plans', { params }),
+  create: (data: Record<string, unknown>) => apiClient.post<Plan>('/plans', data),
   update: (id: string, data: Record<string, unknown>) =>
     apiClient.patch<Plan>(`/plans/${id}`, data),
   delete: (id: string) => apiClient.delete<void>(`/plans/${id}`),
-  action: (id: string, endpoint: string) =>
-    apiClient.post<Plan>(`/plans/${id}/${endpoint}`),
-  rollback: (id: string) =>
-    apiClient.post<Plan>(`/plans/${id}/rollback`),
-  history: (id: string) =>
-    apiClient.get<{ history: PlanHistoryEntry[] }>(`/plans/${id}/history`),
-  steps: (id: string) =>
-    apiClient.get<{ steps: PlanStep[] }>(`/plans/${id}/steps`),
+  action: (id: string, endpoint: string) => apiClient.post<Plan>(`/plans/${id}/${endpoint}`),
+  rollback: (id: string) => apiClient.post<Plan>(`/plans/${id}/rollback`),
+  history: (id: string) => apiClient.get<{ history: PlanHistoryEntry[] }>(`/plans/${id}/history`),
+  steps: (id: string) => apiClient.get<{ steps: PlanStep[] }>(`/plans/${id}/steps`),
   addStep: (id: string, data: Record<string, unknown>) =>
     apiClient.post<PlanStep>(`/plans/${id}/steps`, data),
 };
@@ -148,10 +132,8 @@ export const triggersApi = {
   delete: (id: string) => apiClient.delete<void>(`/triggers/${id}`),
   update: (id: string, data: Record<string, unknown>) =>
     apiClient.patch<Trigger>(`/triggers/${id}`, data),
-  fire: (id: string) =>
-    apiClient.post<Record<string, unknown>>(`/triggers/${id}/fire`),
-  stats: () =>
-    apiClient.get<Record<string, unknown>>('/triggers/stats'),
+  fire: (id: string) => apiClient.post<Record<string, unknown>>(`/triggers/${id}/fire`),
+  stats: () => apiClient.get<Record<string, unknown>>('/triggers/stats'),
   globalHistory: (params?: TriggerHistoryParams) => {
     const p: Record<string, string> = {};
     if (params?.status) p.status = params.status;
@@ -164,12 +146,9 @@ export const triggersApi = {
       params: Object.keys(p).length ? p : undefined,
     });
   },
-  due: () =>
-    apiClient.get<{ triggers: Trigger[]; count: number }>('/triggers/due'),
-  engineStatus: () =>
-    apiClient.get<{ running: boolean }>('/triggers/engine/status'),
+  due: () => apiClient.get<{ triggers: Trigger[]; count: number }>('/triggers/due'),
+  engineStatus: () => apiClient.get<{ running: boolean }>('/triggers/engine/status'),
   engineStart: () =>
     apiClient.post<{ running: boolean; message: string }>('/triggers/engine/start'),
-  engineStop: () =>
-    apiClient.post<{ running: boolean; message: string }>('/triggers/engine/stop'),
+  engineStop: () => apiClient.post<{ running: boolean; message: string }>('/triggers/engine/stop'),
 };

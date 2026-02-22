@@ -26,7 +26,9 @@ export function ProvidersTab() {
   const [providers, setProviders] = useState<ProviderInfo[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [filterConfigured, setFilterConfigured] = useState<'all' | 'configured' | 'unconfigured'>('all');
+  const [filterConfigured, setFilterConfigured] = useState<'all' | 'configured' | 'unconfigured'>(
+    'all'
+  );
 
   // Edit modal state
   const [editingProvider, setEditingProvider] = useState<string | null>(null);
@@ -112,7 +114,7 @@ export function ProvidersTab() {
   };
 
   const handleResetOverride = async (providerId: string) => {
-    if (!await confirm({ message: 'Reset this provider to default settings?' })) return;
+    if (!(await confirm({ message: 'Reset this provider to default settings?' }))) return;
     try {
       await providersApi.resetConfig(providerId);
       await fetchProviders();
@@ -152,8 +154,8 @@ export function ProvidersTab() {
           isDisabled
             ? 'border-gray-300 dark:border-gray-700 bg-gray-100 dark:bg-gray-800/50 opacity-60'
             : provider.isConfigured
-            ? 'border-green-500/30 bg-green-50 dark:bg-green-900/10'
-            : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800'
+              ? 'border-green-500/30 bg-green-50 dark:bg-green-900/10'
+              : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800'
         }`}
       >
         <div className="flex items-start justify-between gap-4">
@@ -204,7 +206,9 @@ export function ProvidersTab() {
               className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
                 provider.isEnabled ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-600'
               }`}
-              title={provider.isEnabled ? 'Enabled - Click to disable' : 'Disabled - Click to enable'}
+              title={
+                provider.isEnabled ? 'Enabled - Click to disable' : 'Disabled - Click to enable'
+              }
             >
               <span
                 className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
@@ -252,11 +256,10 @@ export function ProvidersTab() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-          AI Providers
-        </h3>
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">AI Providers</h3>
         <p className="text-sm text-gray-500 dark:text-gray-400">
-          Configure provider settings like endpoint URLs and types. These settings survive models.dev sync.
+          Configure provider settings like endpoint URLs and types. These settings survive
+          models.dev sync.
         </p>
       </div>
 
@@ -334,9 +337,7 @@ export function ProvidersTab() {
       )}
 
       {filteredProviders.length === 0 && (
-        <div className="text-center py-12 text-gray-500">
-          No providers match your search.
-        </div>
+        <div className="text-center py-12 text-gray-500">No providers match your search.</div>
       )}
 
       {/* Edit Modal */}

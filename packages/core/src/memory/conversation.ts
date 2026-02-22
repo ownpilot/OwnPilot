@@ -30,14 +30,14 @@ import * as path from 'node:path';
  * Memory categories
  */
 export type MemoryCategory =
-  | 'fact'           // Specific facts about user (name, job, family)
-  | 'preference'     // User preferences and tastes
-  | 'episode'        // Conversation summaries
-  | 'skill'          // Learned skills/capabilities
-  | 'instruction'    // Custom instructions from user
-  | 'relationship'   // How user relates to people/things
-  | 'goal'           // User's goals and aspirations
-  | 'context';       // Contextual information
+  | 'fact' // Specific facts about user (name, job, family)
+  | 'preference' // User preferences and tastes
+  | 'episode' // Conversation summaries
+  | 'skill' // Learned skills/capabilities
+  | 'instruction' // Custom instructions from user
+  | 'relationship' // How user relates to people/things
+  | 'goal' // User's goals and aspirations
+  | 'context'; // Contextual information
 
 /**
  * Memory importance level
@@ -48,11 +48,11 @@ export type MemoryImportance = 'critical' | 'high' | 'medium' | 'low';
  * Memory source
  */
 export type MemorySource =
-  | 'user_stated'      // User explicitly said this
-  | 'user_confirmed'   // AI inferred and user confirmed
-  | 'ai_inferred'      // AI inferred from conversation
+  | 'user_stated' // User explicitly said this
+  | 'user_confirmed' // AI inferred and user confirmed
+  | 'ai_inferred' // AI inferred from conversation
   | 'system_generated' // System generated (e.g., summaries)
-  | 'imported';        // Imported from external source
+  | 'imported'; // Imported from external source
 
 /**
  * Memory entry
@@ -328,7 +328,10 @@ export class ConversationMemoryStore {
    * Add a new memory
    */
   async addMemory(
-    memory: Omit<MemoryEntry, 'id' | 'userId' | 'createdAt' | 'updatedAt' | 'accessCount' | 'archived'>
+    memory: Omit<
+      MemoryEntry,
+      'id' | 'userId' | 'createdAt' | 'updatedAt' | 'accessCount' | 'archived'
+    >
   ): Promise<MemoryEntry> {
     await this.ensureInitialized();
 
@@ -448,44 +451,43 @@ export class ConversationMemoryStore {
 
     // Filter by archived status
     if (!options.includeArchived) {
-      results = results.filter(m => !m.archived);
+      results = results.filter((m) => !m.archived);
     }
 
     // Filter by single category
     if (options.category) {
-      results = results.filter(m => m.category === options.category);
+      results = results.filter((m) => m.category === options.category);
     }
 
     // Filter by categories
     if (options.categories?.length) {
-      results = results.filter(m => options.categories!.includes(m.category));
+      results = results.filter((m) => options.categories!.includes(m.category));
     }
 
     // Filter by importance
     if (options.minImportance) {
       const minWeight = IMPORTANCE_WEIGHTS[options.minImportance];
-      results = results.filter(m => IMPORTANCE_WEIGHTS[m.importance] >= minWeight);
+      results = results.filter((m) => IMPORTANCE_WEIGHTS[m.importance] >= minWeight);
     }
 
     // Filter by confidence
     if (options.minConfidence !== undefined) {
-      results = results.filter(m => m.confidence >= options.minConfidence!);
+      results = results.filter((m) => m.confidence >= options.minConfidence!);
     }
 
     // Filter by tags
     if (options.tags?.length) {
-      results = results.filter(m =>
-        options.tags!.some(tag => m.tags.includes(tag))
-      );
+      results = results.filter((m) => options.tags!.some((tag) => m.tags.includes(tag)));
     }
 
     // Search query (supports both query and searchText)
     const searchQuery = options.query ?? options.searchText;
     if (searchQuery) {
       const queryLower = searchQuery.toLowerCase();
-      results = results.filter(m =>
-        m.content.toLowerCase().includes(queryLower) ||
-        m.tags.some(t => t.toLowerCase().includes(queryLower))
+      results = results.filter(
+        (m) =>
+          m.content.toLowerCase().includes(queryLower) ||
+          m.tags.some((t) => t.toLowerCase().includes(queryLower))
       );
     }
 
@@ -649,8 +651,8 @@ export class ConversationMemoryStore {
     const relationships = await this.queryMemories({ categories: ['relationship'] });
 
     // Extract name if available
-    const nameFact = facts.find(f =>
-      f.tags.includes('name') || f.content.toLowerCase().includes('name')
+    const nameFact = facts.find(
+      (f) => f.tags.includes('name') || f.content.toLowerCase().includes('name')
     );
 
     // Extract topics of interest
@@ -660,22 +662,22 @@ export class ConversationMemoryStore {
     const profile: UserProfile = {
       userId: this.userId,
       name: nameFact?.data?.name as string | undefined,
-      facts: facts.map(f => ({
+      facts: facts.map((f) => ({
         key: f.tags[0] ?? 'unknown',
         value: f.content,
         confidence: f.confidence,
       })),
-      preferences: preferences.map(p => p.content),
-      preferencesDetailed: preferences.map(p => ({
+      preferences: preferences.map((p) => p.content),
+      preferencesDetailed: preferences.map((p) => ({
         category: p.tags[0] ?? 'general',
         preference: p.content,
         strength: p.confidence,
       })),
       interests: topics,
       topicsOfInterest: topics,
-      goals: goals.map(g => g.content),
-      relationships: relationships.map(r => r.content),
-      customInstructions: instructions.map(i => i.content),
+      goals: goals.map((g) => g.content),
+      relationships: relationships.map((r) => r.content),
+      customInstructions: instructions.map((i) => i.content),
       lastInteraction: this.getLastInteractionDate(),
       totalConversations: this.summaries.size,
       completeness: this.calculateProfileCompleteness(facts, preferences),
@@ -697,15 +699,27 @@ export class ConversationMemoryStore {
     const memories = Array.from(this.memories.values());
 
     const byCategory: Record<MemoryCategory, number> = {
-      fact: 0, preference: 0, episode: 0, skill: 0,
-      instruction: 0, relationship: 0, goal: 0, context: 0,
+      fact: 0,
+      preference: 0,
+      episode: 0,
+      skill: 0,
+      instruction: 0,
+      relationship: 0,
+      goal: 0,
+      context: 0,
     };
     const byImportance: Record<MemoryImportance, number> = {
-      critical: 0, high: 0, medium: 0, low: 0,
+      critical: 0,
+      high: 0,
+      medium: 0,
+      low: 0,
     };
     const bySource: Record<MemorySource, number> = {
-      user_stated: 0, user_confirmed: 0, ai_inferred: 0,
-      system_generated: 0, imported: 0,
+      user_stated: 0,
+      user_confirmed: 0,
+      ai_inferred: 0,
+      system_generated: 0,
+      imported: 0,
     };
 
     let archivedCount = 0;
@@ -724,7 +738,8 @@ export class ConversationMemoryStore {
     }
 
     // Estimate storage size
-    const storageBytes = JSON.stringify(memories).length + JSON.stringify(Array.from(this.summaries.values())).length;
+    const storageBytes =
+      JSON.stringify(memories).length + JSON.stringify(Array.from(this.summaries.values())).length;
 
     return {
       totalMemories: memories.length,
@@ -785,7 +800,10 @@ export class ConversationMemoryStore {
       }
 
       // Delete old medium-importance memories
-      if (memory.importance === 'medium' && ageInDays > this.retentionPolicy.mediumImportanceMaxAgeDays) {
+      if (
+        memory.importance === 'medium' &&
+        ageInDays > this.retentionPolicy.mediumImportanceMaxAgeDays
+      ) {
         this.memories.delete(id);
         deleted++;
       }
@@ -793,8 +811,9 @@ export class ConversationMemoryStore {
 
     // Enforce max memories limit
     if (this.memories.size > this.retentionPolicy.maxMemories) {
-      const sortedMemories = Array.from(this.memories.entries())
-        .sort((a, b) => this.calculateRelevanceScore(b[1]) - this.calculateRelevanceScore(a[1]));
+      const sortedMemories = Array.from(this.memories.entries()).sort(
+        (a, b) => this.calculateRelevanceScore(b[1]) - this.calculateRelevanceScore(a[1])
+      );
 
       while (sortedMemories.length > this.retentionPolicy.maxMemories) {
         const entry = sortedMemories.pop();
@@ -884,7 +903,8 @@ export class ConversationMemoryStore {
   private calculateRelevanceScore(memory: MemoryEntry): number {
     const importanceWeight = IMPORTANCE_WEIGHTS[memory.importance];
     const confidence = memory.confidence;
-    const recency = 1 / (1 + (Date.now() - new Date(memory.updatedAt).getTime()) / (1000 * 60 * 60 * 24 * 30));
+    const recency =
+      1 / (1 + (Date.now() - new Date(memory.updatedAt).getTime()) / (1000 * 60 * 60 * 24 * 30));
     const accessBonus = Math.min(memory.accessCount / 10, 1);
 
     return importanceWeight * confidence * recency * (1 + accessBonus);
@@ -915,13 +935,10 @@ export class ConversationMemoryStore {
     return latest || new Date().toISOString();
   }
 
-  private calculateProfileCompleteness(
-    facts: MemoryEntry[],
-    preferences: MemoryEntry[]
-  ): number {
-    const hasName = facts.some(f => f.tags.includes('name'));
-    const hasJob = facts.some(f => f.tags.includes('job') || f.tags.includes('occupation'));
-    const hasLocation = facts.some(f => f.tags.includes('location') || f.tags.includes('city'));
+  private calculateProfileCompleteness(facts: MemoryEntry[], preferences: MemoryEntry[]): number {
+    const hasName = facts.some((f) => f.tags.includes('name'));
+    const hasJob = facts.some((f) => f.tags.includes('job') || f.tags.includes('occupation'));
+    const hasLocation = facts.some((f) => f.tags.includes('location') || f.tags.includes('city'));
     const hasPreferences = preferences.length > 0;
     const hasFacts = facts.length >= 3;
 
@@ -934,7 +951,7 @@ export class ConversationMemoryStore {
     try {
       const content = await fs.readFile(filePath, 'utf-8');
       const memories = JSON.parse(content) as MemoryEntry[];
-      this.memories = new Map(memories.map(m => [m.id, m]));
+      this.memories = new Map(memories.map((m) => [m.id, m]));
     } catch {
       this.memories = new Map();
     }
@@ -951,7 +968,7 @@ export class ConversationMemoryStore {
     try {
       const content = await fs.readFile(filePath, 'utf-8');
       const summaries = JSON.parse(content) as ConversationSummary[];
-      this.summaries = new Map(summaries.map(s => [s.conversationId, s]));
+      this.summaries = new Map(summaries.map((s) => [s.conversationId, s]));
     } catch {
       this.summaries = new Map();
     }

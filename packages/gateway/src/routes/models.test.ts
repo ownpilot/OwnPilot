@@ -166,9 +166,7 @@ describe('Models Routes', () => {
     });
 
     it('filters out disabled models when enabledOnly is true (default)', async () => {
-      mockModelConfigsRepo.getDisabledModelIds.mockResolvedValue(
-        new Set(['openai/gpt-4o-mini'])
-      );
+      mockModelConfigsRepo.getDisabledModelIds.mockResolvedValue(new Set(['openai/gpt-4o-mini']));
 
       const res = await app.request('/models');
       const json = await res.json();
@@ -178,9 +176,7 @@ describe('Models Routes', () => {
     });
 
     it('includes all models when enabledOnly=false', async () => {
-      mockModelConfigsRepo.getDisabledModelIds.mockResolvedValue(
-        new Set(['openai/gpt-4o-mini'])
-      );
+      mockModelConfigsRepo.getDisabledModelIds.mockResolvedValue(new Set(['openai/gpt-4o-mini']));
 
       const res = await app.request('/models?enabledOnly=false');
       const json = await res.json();
@@ -190,9 +186,7 @@ describe('Models Routes', () => {
     });
 
     it('includes models from local providers', async () => {
-      mockLocalProvidersRepo.listProviders.mockResolvedValue([
-        { id: 'lmstudio', isEnabled: true },
-      ]);
+      mockLocalProvidersRepo.listProviders.mockResolvedValue([{ id: 'lmstudio', isEnabled: true }]);
       mockLocalProvidersRepo.listModels.mockResolvedValue([
         {
           modelId: 'llama-3',
@@ -216,9 +210,7 @@ describe('Models Routes', () => {
     });
 
     it('skips disabled local providers', async () => {
-      mockLocalProvidersRepo.listProviders.mockResolvedValue([
-        { id: 'ollama', isEnabled: false },
-      ]);
+      mockLocalProvidersRepo.listProviders.mockResolvedValue([{ id: 'ollama', isEnabled: false }]);
 
       const res = await app.request('/models');
       const json = await res.json();

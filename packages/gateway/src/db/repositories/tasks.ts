@@ -159,19 +159,23 @@ export class TasksRepository extends BaseRepository {
     const task = await this.get(id);
     if (!task) throw new Error('Failed to create task');
 
-    getEventBus().emit(createEvent<ResourceCreatedData>(
-      EventTypes.RESOURCE_CREATED, 'resource', 'tasks-repository',
-      { resourceType: 'task', id },
-    ));
+    getEventBus().emit(
+      createEvent<ResourceCreatedData>(
+        EventTypes.RESOURCE_CREATED,
+        'resource',
+        'tasks-repository',
+        { resourceType: 'task', id }
+      )
+    );
 
     return task;
   }
 
   async get(id: string): Promise<Task | null> {
-    const row = await this.queryOne<TaskRow>(
-      `SELECT * FROM tasks WHERE id = $1 AND user_id = $2`,
-      [id, this.userId]
-    );
+    const row = await this.queryOne<TaskRow>(`SELECT * FROM tasks WHERE id = $1 AND user_id = $2`, [
+      id,
+      this.userId,
+    ]);
     return row ? rowToTask(row) : null;
   }
 
@@ -252,27 +256,35 @@ export class TasksRepository extends BaseRepository {
     const updated = await this.get(id);
 
     if (updated) {
-      getEventBus().emit(createEvent<ResourceUpdatedData>(
-        EventTypes.RESOURCE_UPDATED, 'resource', 'tasks-repository',
-        { resourceType: 'task', id, changes: input },
-      ));
+      getEventBus().emit(
+        createEvent<ResourceUpdatedData>(
+          EventTypes.RESOURCE_UPDATED,
+          'resource',
+          'tasks-repository',
+          { resourceType: 'task', id, changes: input }
+        )
+      );
     }
 
     return updated;
   }
 
   async delete(id: string): Promise<boolean> {
-    const result = await this.execute(
-      `DELETE FROM tasks WHERE id = $1 AND user_id = $2`,
-      [id, this.userId]
-    );
+    const result = await this.execute(`DELETE FROM tasks WHERE id = $1 AND user_id = $2`, [
+      id,
+      this.userId,
+    ]);
     const deleted = result.changes > 0;
 
     if (deleted) {
-      getEventBus().emit(createEvent<ResourceDeletedData>(
-        EventTypes.RESOURCE_DELETED, 'resource', 'tasks-repository',
-        { resourceType: 'task', id },
-      ));
+      getEventBus().emit(
+        createEvent<ResourceDeletedData>(
+          EventTypes.RESOURCE_DELETED,
+          'resource',
+          'tasks-repository',
+          { resourceType: 'task', id }
+        )
+      );
     }
 
     return deleted;
@@ -409,7 +421,7 @@ export class TasksRepository extends BaseRepository {
       `SELECT DISTINCT category FROM tasks WHERE user_id = $1 AND category IS NOT NULL ORDER BY category`,
       [this.userId]
     );
-    return rows.map(r => r.category);
+    return rows.map((r) => r.category);
   }
 
   async search(searchQuery: string, limit = 20): Promise<Task[]> {

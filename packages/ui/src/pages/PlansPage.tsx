@@ -109,45 +109,74 @@ export function PlansPage() {
     return unsub;
   }, [subscribe, hasRunningPlans, fetchPlans]);
 
-  const handleDelete = useCallback(async (planId: string) => {
-    if (!await confirm({ message: 'Are you sure you want to delete this plan?', variant: 'danger' })) return;
+  const handleDelete = useCallback(
+    async (planId: string) => {
+      if (
+        !(await confirm({
+          message: 'Are you sure you want to delete this plan?',
+          variant: 'danger',
+        }))
+      )
+        return;
 
-    try {
-      await plansApi.delete(planId);
-      toast.success('Plan deleted');
-      fetchPlans();
-    } catch {
-      // API client handles error reporting
-    }
-  }, [confirm, toast, fetchPlans]);
+      try {
+        await plansApi.delete(planId);
+        toast.success('Plan deleted');
+        fetchPlans();
+      } catch {
+        // API client handles error reporting
+      }
+    },
+    [confirm, toast, fetchPlans]
+  );
 
-  const handleAction = useCallback(async (planId: string, action: 'start' | 'pause' | 'resume' | 'abort') => {
-    const actionLabels = { start: 'Plan started', pause: 'Plan paused', resume: 'Plan resumed', abort: 'Plan aborted' };
-    try {
-      // Backend uses /execute endpoint instead of /start
-      const endpoint = action === 'start' ? 'execute' : action;
-      await plansApi.action(planId, endpoint);
-      toast.success(actionLabels[action]);
-      fetchPlans();
-    } catch {
-      // API client handles error reporting
-    }
-  }, [toast, fetchPlans]);
+  const handleAction = useCallback(
+    async (planId: string, action: 'start' | 'pause' | 'resume' | 'abort') => {
+      const actionLabels = {
+        start: 'Plan started',
+        pause: 'Plan paused',
+        resume: 'Plan resumed',
+        abort: 'Plan aborted',
+      };
+      try {
+        // Backend uses /execute endpoint instead of /start
+        const endpoint = action === 'start' ? 'execute' : action;
+        await plansApi.action(planId, endpoint);
+        toast.success(actionLabels[action]);
+        fetchPlans();
+      } catch {
+        // API client handles error reporting
+      }
+    },
+    [toast, fetchPlans]
+  );
 
-  const handleRollback = useCallback(async (planId: string) => {
-    if (!await confirm({ message: 'Are you sure you want to rollback to the last checkpoint?', variant: 'danger' })) return;
+  const handleRollback = useCallback(
+    async (planId: string) => {
+      if (
+        !(await confirm({
+          message: 'Are you sure you want to rollback to the last checkpoint?',
+          variant: 'danger',
+        }))
+      )
+        return;
 
-    try {
-      await plansApi.rollback(planId);
-      toast.success('Rolled back to checkpoint');
-      fetchPlans();
-    } catch {
-      // API client handles error reporting
-    }
-  }, [confirm, toast, fetchPlans]);
+      try {
+        await plansApi.rollback(planId);
+        toast.success('Rolled back to checkpoint');
+        fetchPlans();
+      } catch {
+        // API client handles error reporting
+      }
+    },
+    [confirm, toast, fetchPlans]
+  );
 
   const runningCount = useMemo(() => plans.filter((p) => p.status === 'running').length, [plans]);
-  const completedCount = useMemo(() => plans.filter((p) => p.status === 'completed').length, [plans]);
+  const completedCount = useMemo(
+    () => plans.filter((p) => p.status === 'completed').length,
+    [plans]
+  );
 
   return (
     <div className="flex flex-col h-full">
@@ -246,10 +275,7 @@ export function PlansPage() {
 
       {/* History Modal */}
       {historyPlanId && (
-        <PlanHistoryModal
-          history={planHistory}
-          onClose={() => setHistoryPlanId(null)}
-        />
+        <PlanHistoryModal history={planHistory} onClose={() => setHistoryPlanId(null)} />
       )}
     </div>
   );
@@ -292,14 +318,21 @@ function PlanItem({
     let cancelled = false;
     if (isExpanded && steps.length === 0) {
       setLoadingSteps(true);
-      plansApi.steps(plan.id)
+      plansApi
+        .steps(plan.id)
         .then((data) => {
           if (!cancelled) setSteps(data.steps);
         })
-        .catch(() => { /* API client handles error */ })
-        .finally(() => { if (!cancelled) setLoadingSteps(false); });
+        .catch(() => {
+          /* API client handles error */
+        })
+        .finally(() => {
+          if (!cancelled) setLoadingSteps(false);
+        });
     }
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [isExpanded, plan.id, steps.length]);
 
   // Refresh steps when plan is running
@@ -307,13 +340,19 @@ function PlanItem({
     if (plan.status === 'running' && isExpanded) {
       let cancelled = false;
       const interval = setInterval(() => {
-        plansApi.steps(plan.id)
+        plansApi
+          .steps(plan.id)
           .then((data) => {
             if (!cancelled) setSteps(data.steps);
           })
-          .catch(() => { /* API client handles error */ });
+          .catch(() => {
+            /* API client handles error */
+          });
       }, 2000);
-      return () => { cancelled = true; clearInterval(interval); };
+      return () => {
+        cancelled = true;
+        clearInterval(interval);
+      };
     }
   }, [plan.status, plan.id, isExpanded]);
 
@@ -341,9 +380,7 @@ function PlanItem({
           </div>
 
           {plan.goal && (
-            <p className="text-sm text-text-secondary dark:text-dark-text-secondary">
-              {plan.goal}
-            </p>
+            <p className="text-sm text-text-secondary dark:text-dark-text-secondary">{plan.goal}</p>
           )}
 
           <div className="mt-2">
@@ -357,8 +394,7 @@ function PlanItem({
                 />
               </div>
               <span className="text-xs text-text-muted dark:text-dark-text-muted">
-                {Math.round(plan.progress)}%
-                {plan.totalSteps > 0 && ` (${plan.totalSteps} steps)`}
+                {Math.round(plan.progress)}%{plan.totalSteps > 0 && ` (${plan.totalSteps} steps)`}
               </span>
             </div>
           </div>
@@ -368,9 +404,7 @@ function PlanItem({
           )}
 
           <div className="flex items-center gap-3 mt-2 text-xs text-text-muted dark:text-dark-text-muted">
-            {plan.startedAt && (
-              <span>Started: {new Date(plan.startedAt).toLocaleString()}</span>
-            )}
+            {plan.startedAt && <span>Started: {new Date(plan.startedAt).toLocaleString()}</span>}
             {plan.completedAt && (
               <span>Completed: {new Date(plan.completedAt).toLocaleString()}</span>
             )}
@@ -460,7 +494,11 @@ function PlanItem({
               {steps
                 .sort((a, b) => a.orderNum - b.orderNum)
                 .map((step) => (
-                  <StepDebugItem key={step.id} step={step} isActive={plan.currentStep === step.orderNum || step.status === 'running'} />
+                  <StepDebugItem
+                    key={step.id}
+                    step={step}
+                    isActive={plan.currentStep === step.orderNum || step.status === 'running'}
+                  />
                 ))}
             </div>
           )}
@@ -512,19 +550,27 @@ function StepDebugItem({ step, isActive }: StepDebugItemProps) {
   const StatusIcon = stepStatusIcons[step.status] || Circle;
 
   const statusColor =
-    step.status === 'completed' ? 'text-success' :
-    step.status === 'failed' ? 'text-error' :
-    step.status === 'running' ? 'text-primary' :
-    step.status === 'skipped' ? 'text-text-muted dark:text-dark-text-muted' :
-    step.status === 'blocked' ? 'text-warning' :
-    step.status === 'waiting' ? 'text-warning' :
-    'text-text-muted dark:text-dark-text-muted';
+    step.status === 'completed'
+      ? 'text-success'
+      : step.status === 'failed'
+        ? 'text-error'
+        : step.status === 'running'
+          ? 'text-primary'
+          : step.status === 'skipped'
+            ? 'text-text-muted dark:text-dark-text-muted'
+            : step.status === 'blocked'
+              ? 'text-warning'
+              : step.status === 'waiting'
+                ? 'text-warning'
+                : 'text-text-muted dark:text-dark-text-muted';
 
-  const borderColor =
-    isActive ? 'border-primary/50' :
-    step.status === 'failed' ? 'border-error/30' :
-    step.status === 'completed' ? 'border-success/30' :
-    'border-border dark:border-dark-border';
+  const borderColor = isActive
+    ? 'border-primary/50'
+    : step.status === 'failed'
+      ? 'border-error/30'
+      : step.status === 'completed'
+        ? 'border-success/30'
+        : 'border-border dark:border-dark-border';
 
   const copyToClipboard = (text: string, field: string) => {
     navigator.clipboard.writeText(text);
@@ -545,7 +591,9 @@ function StepDebugItem({ step, isActive }: StepDebugItemProps) {
   const hasError = !!step.error;
 
   return (
-    <div className={`border ${borderColor} rounded-lg overflow-hidden bg-bg-secondary dark:bg-dark-bg-secondary`}>
+    <div
+      className={`border ${borderColor} rounded-lg overflow-hidden bg-bg-secondary dark:bg-dark-bg-secondary`}
+    >
       {/* Step Header */}
       <button
         onClick={() => setIsExpanded(!isExpanded)}
@@ -586,7 +634,9 @@ function StepDebugItem({ step, isActive }: StepDebugItemProps) {
         {/* Duration */}
         {step.durationMs !== undefined && (
           <span className="flex-shrink-0 text-xs text-text-muted dark:text-dark-text-muted font-mono">
-            {step.durationMs < 1000 ? `${step.durationMs}ms` : `${(step.durationMs / 1000).toFixed(1)}s`}
+            {step.durationMs < 1000
+              ? `${step.durationMs}ms`
+              : `${(step.durationMs / 1000).toFixed(1)}s`}
           </span>
         )}
 
@@ -601,12 +651,20 @@ function StepDebugItem({ step, isActive }: StepDebugItemProps) {
         <div className="border-t border-border dark:border-dark-border">
           {/* Timestamps */}
           <div className="px-3 py-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-text-muted dark:text-dark-text-muted border-b border-border dark:border-dark-border bg-bg-tertiary/30 dark:bg-dark-bg-tertiary/30">
-            <span>Status: <span className={`font-medium ${statusColor}`}>{step.status}</span></span>
-            <span>Type: <span className="font-medium">{stepTypeLabels[step.type] || step.type}</span></span>
+            <span>
+              Status: <span className={`font-medium ${statusColor}`}>{step.status}</span>
+            </span>
+            <span>
+              Type: <span className="font-medium">{stepTypeLabels[step.type] || step.type}</span>
+            </span>
             {step.startedAt && <span>Started: {new Date(step.startedAt).toLocaleString()}</span>}
-            {step.completedAt && <span>Completed: {new Date(step.completedAt).toLocaleString()}</span>}
+            {step.completedAt && (
+              <span>Completed: {new Date(step.completedAt).toLocaleString()}</span>
+            )}
             {step.durationMs !== undefined && <span>Duration: {step.durationMs}ms</span>}
-            <span>Retries: {step.retryCount}/{step.maxRetries}</span>
+            <span>
+              Retries: {step.retryCount}/{step.maxRetries}
+            </span>
             {step.dependencies.length > 0 && <span>Deps: {step.dependencies.join(', ')}</span>}
           </div>
 
@@ -619,7 +677,10 @@ function StepDebugItem({ step, isActive }: StepDebugItemProps) {
                   Configuration
                 </span>
                 <button
-                  onClick={(e) => { e.stopPropagation(); copyToClipboard(formatJson(step.config), 'config'); }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    copyToClipboard(formatJson(step.config), 'config');
+                  }}
                   className="flex items-center gap-1 px-1.5 py-0.5 text-[10px] text-text-muted dark:text-dark-text-muted hover:text-primary rounded transition-colors"
                 >
                   <Copy className="w-3 h-3" />
@@ -641,7 +702,10 @@ function StepDebugItem({ step, isActive }: StepDebugItemProps) {
                   Error
                 </span>
                 <button
-                  onClick={(e) => { e.stopPropagation(); copyToClipboard(step.error!, 'error'); }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    copyToClipboard(step.error!, 'error');
+                  }}
                   className="flex items-center gap-1 px-1.5 py-0.5 text-[10px] text-text-muted dark:text-dark-text-muted hover:text-primary rounded transition-colors"
                 >
                   <Copy className="w-3 h-3" />
@@ -663,7 +727,10 @@ function StepDebugItem({ step, isActive }: StepDebugItemProps) {
                   Result
                 </span>
                 <button
-                  onClick={(e) => { e.stopPropagation(); copyToClipboard(formatJson(step.result), 'result'); }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    copyToClipboard(formatJson(step.result), 'result');
+                  }}
                   className="flex items-center gap-1 px-1.5 py-0.5 text-[10px] text-text-muted dark:text-dark-text-muted hover:text-primary rounded transition-colors"
                 >
                   <Copy className="w-3 h-3" />
@@ -724,13 +791,13 @@ function AddStepForm({ planId, nextOrder, onAdded, onCancel }: AddStepFormProps)
         config.question = prompt.trim();
       }
 
-await plansApi.addStep(planId, {
-          type: stepType,
-          name: stepName.trim(),
-          description: stepDescription.trim() || undefined,
-          orderNum: nextOrder,
-          config,
-        });
+      await plansApi.addStep(planId, {
+        type: stepType,
+        name: stepName.trim(),
+        description: stepDescription.trim() || undefined,
+        orderNum: nextOrder,
+        config,
+      });
       toast.success('Step added');
       onAdded();
     } catch {
@@ -813,4 +880,3 @@ await plansApi.addStep(planId, {
     </div>
   );
 }
-

@@ -117,10 +117,10 @@ export class NotesRepository extends BaseRepository {
   }
 
   async get(id: string): Promise<Note | null> {
-    const row = await this.queryOne<NoteRow>(
-      `SELECT * FROM notes WHERE id = $1 AND user_id = $2`,
-      [id, this.userId]
-    );
+    const row = await this.queryOne<NoteRow>(`SELECT * FROM notes WHERE id = $1 AND user_id = $2`, [
+      id,
+      this.userId,
+    ]);
     return row ? rowToNote(row) : null;
   }
 
@@ -179,10 +179,10 @@ export class NotesRepository extends BaseRepository {
   }
 
   async delete(id: string): Promise<boolean> {
-    const result = await this.execute(
-      `DELETE FROM notes WHERE id = $1 AND user_id = $2`,
-      [id, this.userId]
-    );
+    const result = await this.execute(`DELETE FROM notes WHERE id = $1 AND user_id = $2`, [
+      id,
+      this.userId,
+    ]);
     return result.changes > 0;
   }
 
@@ -269,7 +269,7 @@ export class NotesRepository extends BaseRepository {
       `SELECT DISTINCT category FROM notes WHERE user_id = $1 AND category IS NOT NULL AND is_archived = FALSE ORDER BY category`,
       [this.userId]
     );
-    return rows.map(r => r.category);
+    return rows.map((r) => r.category);
   }
 
   async getTags(): Promise<string[]> {

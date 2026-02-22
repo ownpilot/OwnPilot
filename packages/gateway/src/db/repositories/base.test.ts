@@ -83,7 +83,7 @@ class TestRepository extends BaseRepository {
     countSql: string,
     query?: Parameters<BaseRepository['paginatedQuery']>[2],
     params?: unknown[],
-    defaultOrderBy?: string,
+    defaultOrderBy?: string
   ) {
     return this.paginatedQuery<T>(baseSql, countSql, query, params, defaultOrderBy);
   }
@@ -258,7 +258,7 @@ describe('BaseRepository', () => {
 
       const result = await repo.testPaginatedQuery(
         'SELECT * FROM t',
-        'SELECT COUNT(*) as count FROM t',
+        'SELECT COUNT(*) as count FROM t'
       );
 
       expect(result.limit).toBe(50);
@@ -280,7 +280,7 @@ describe('BaseRepository', () => {
       const result = await repo.testPaginatedQuery(
         'SELECT * FROM t',
         'SELECT COUNT(*) as count FROM t',
-        { limit: 10, offset: 20 },
+        { limit: 10, offset: 20 }
       );
 
       expect(result.limit).toBe(10);
@@ -292,11 +292,10 @@ describe('BaseRepository', () => {
       mockAdapter.queryOne.mockResolvedValueOnce({ count: '1' });
       mockAdapter.query.mockResolvedValueOnce([]);
 
-      await repo.testPaginatedQuery(
-        'SELECT * FROM t',
-        'SELECT COUNT(*) as count FROM t',
-        { orderBy: 'name', orderDir: 'asc' },
-      );
+      await repo.testPaginatedQuery('SELECT * FROM t', 'SELECT COUNT(*) as count FROM t', {
+        orderBy: 'name',
+        orderDir: 'asc',
+      });
 
       const dataCall = mockAdapter.query.mock.calls[0];
       expect(dataCall[0]).toContain('ORDER BY name ASC');
@@ -306,11 +305,9 @@ describe('BaseRepository', () => {
       mockAdapter.queryOne.mockResolvedValueOnce({ count: '1' });
       mockAdapter.query.mockResolvedValueOnce([]);
 
-      await repo.testPaginatedQuery(
-        'SELECT * FROM t',
-        'SELECT COUNT(*) as count FROM t',
-        { orderBy: 'name; DROP TABLE t--' },
-      );
+      await repo.testPaginatedQuery('SELECT * FROM t', 'SELECT COUNT(*) as count FROM t', {
+        orderBy: 'name; DROP TABLE t--',
+      });
 
       // Should fall back to default, not use the injection string
       const dataCall = mockAdapter.query.mock.calls[0];
@@ -325,13 +322,13 @@ describe('BaseRepository', () => {
         'SELECT * FROM t WHERE status = $1',
         'SELECT COUNT(*) as count FROM t WHERE status = $1',
         { limit: 25, offset: 0 },
-        ['active'],
+        ['active']
       );
 
       // Count query gets base params
       expect(mockAdapter.queryOne).toHaveBeenCalledWith(
         'SELECT COUNT(*) as count FROM t WHERE status = $1',
-        ['active'],
+        ['active']
       );
 
       // Data query appends limit/offset after base params
@@ -346,7 +343,7 @@ describe('BaseRepository', () => {
 
       const result = await repo.testPaginatedQuery(
         'SELECT * FROM t',
-        'SELECT COUNT(*) as count FROM t',
+        'SELECT COUNT(*) as count FROM t'
       );
 
       expect(result.total).toBe(0);
@@ -361,7 +358,7 @@ describe('BaseRepository', () => {
         'SELECT COUNT(*) as count FROM t',
         {},
         [],
-        'updated_at ASC',
+        'updated_at ASC'
       );
 
       const dataCall = mockAdapter.query.mock.calls[0];
@@ -418,9 +415,9 @@ describe('BaseRepository', () => {
     it('propagates adapter execute errors', async () => {
       mockAdapter.execute.mockRejectedValueOnce(new Error('constraint violation'));
 
-      await expect(
-        repo.testExecute('INSERT INTO t VALUES ($1)', ['dup']),
-      ).rejects.toThrow('constraint violation');
+      await expect(repo.testExecute('INSERT INTO t VALUES ($1)', ['dup'])).rejects.toThrow(
+        'constraint violation'
+      );
     });
 
     it('propagates adapter exec errors', async () => {
@@ -447,7 +444,7 @@ describe('ensureTable', () => {
 
     expect(mockAdapter.queryOne).toHaveBeenCalledWith(
       expect.stringContaining('information_schema.tables'),
-      ['my_table'],
+      ['my_table']
     );
     expect(mockAdapter.exec).toHaveBeenCalledWith('CREATE TABLE my_table (id TEXT)');
   });

@@ -6,11 +6,7 @@
  * exposes ChannelPluginAPI for unified channel management.
  */
 
-import {
-  createChannelPlugin,
-  type PluginCapability,
-  type PluginPermission,
-} from '@ownpilot/core';
+import { createChannelPlugin, type PluginCapability, type PluginPermission } from '@ownpilot/core';
 import { TelegramChannelAPI } from './telegram-api.js';
 import { configServicesRepo } from '../../../db/repositories/config-services.js';
 

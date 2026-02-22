@@ -71,7 +71,18 @@ beforeEach(() => {
 // ---------------------------------------------------------------------------
 describe('NATIVE_PROVIDERS', () => {
   it('contains all expected providers', () => {
-    const expected = ['openai', 'anthropic', 'google', 'deepseek', 'groq', 'mistral', 'xai', 'together', 'fireworks', 'perplexity'];
+    const expected = [
+      'openai',
+      'anthropic',
+      'google',
+      'deepseek',
+      'groq',
+      'mistral',
+      'xai',
+      'together',
+      'fireworks',
+      'perplexity',
+    ];
     for (const p of expected) {
       expect(mod.NATIVE_PROVIDERS.has(p)).toBe(true);
     }
@@ -264,7 +275,7 @@ describe('createApprovalCallback', () => {
       'filesystem',
       'read_file',
       'Read sensitive file',
-      params,
+      params
     );
   });
 });
@@ -478,10 +489,15 @@ describe('resolveToolGroups', () => {
 
   it('combines multiple groups', () => {
     const result = mod.resolveToolGroups(['email', 'memory'], undefined);
-    expect(result).toEqual(expect.arrayContaining([
-      'send_email', 'list_emails', 'read_email',
-      'create_memory', 'search_memories',
-    ]));
+    expect(result).toEqual(
+      expect.arrayContaining([
+        'send_email',
+        'list_emails',
+        'read_email',
+        'create_memory',
+        'search_memories',
+      ])
+    );
     expect(result).toHaveLength(5);
   });
 });
@@ -515,9 +531,9 @@ describe('resolveRecordTools', () => {
     });
     expect(result.configuredTools).toEqual(['custom_tool']);
     expect(result.configuredToolGroups).toEqual(['memory']);
-    expect(result.tools).toEqual(expect.arrayContaining([
-      'custom_tool', 'create_memory', 'search_memories',
-    ]));
+    expect(result.tools).toEqual(
+      expect.arrayContaining(['custom_tool', 'create_memory', 'search_memories'])
+    );
   });
 });
 
@@ -541,7 +557,7 @@ describe('buildAgentConfigResponse', () => {
     const result = mod.buildAgentConfigResponse(
       { maxTokens: 2048, temperature: 0.5, maxTurns: 10, maxToolCalls: 50 },
       ['tool_a'],
-      ['email'],
+      ['email']
     );
     expect(result).toEqual({
       maxTokens: 2048,
@@ -565,7 +581,7 @@ describe('buildAgentConfigResponse', () => {
     const result = mod.buildAgentConfigResponse(
       { maxTokens: 1024, temperature: 0.3 },
       undefined,
-      undefined,
+      undefined
     );
     expect(result).toEqual({
       maxTokens: 1024,
@@ -581,7 +597,7 @@ describe('buildAgentConfigResponse', () => {
     const result = mod.buildAgentConfigResponse(
       { maxTokens: null, temperature: undefined, maxTurns: null, maxToolCalls: undefined },
       undefined,
-      undefined,
+      undefined
     );
     expect(result).toEqual({
       maxTokens: 4096,

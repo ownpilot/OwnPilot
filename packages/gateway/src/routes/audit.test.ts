@@ -92,7 +92,9 @@ describe('Audit Routes', () => {
     });
 
     it('passes query filters to logger', async () => {
-      await app.request('/audit?types=tool.success,tool.error&actorType=agent&minSeverity=warn&limit=10&offset=5');
+      await app.request(
+        '/audit?types=tool.success,tool.error&actorType=agent&minSeverity=warn&limit=10&offset=5'
+      );
 
       expect(mockAuditLogger.query).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -183,7 +185,13 @@ describe('Audit Routes', () => {
       expect(res.status).toBe(200);
       expect(mockAuditLogger.query).toHaveBeenCalledWith(
         expect.objectContaining({
-          types: ['session.create', 'session.destroy', 'message.receive', 'message.send', 'system.error'],
+          types: [
+            'session.create',
+            'session.destroy',
+            'message.receive',
+            'message.send',
+            'system.error',
+          ],
         })
       );
     });

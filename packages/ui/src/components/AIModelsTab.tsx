@@ -24,7 +24,14 @@ import {
   Star,
 } from './icons';
 import { apiClient, modelConfigsApi, localProvidersApi } from '../api';
-import type { ModelCapability, MergedModel, AvailableProvider, CapabilityDef, LocalProvider, LocalProviderTemplate } from '../api';
+import type {
+  ModelCapability,
+  MergedModel,
+  AvailableProvider,
+  CapabilityDef,
+  LocalProvider,
+  LocalProviderTemplate,
+} from '../api';
 import { EditModelModal } from './EditModelModal';
 import { AddLocalProviderDialog } from './AddLocalProviderDialog';
 
@@ -307,14 +314,25 @@ export function AIModelsTab() {
 
       return true;
     });
-  }, [models, searchQuery, selectedProvider, selectedCapability, showConfiguredOnly, showEnabledOnly]);
+  }, [
+    models,
+    searchQuery,
+    selectedProvider,
+    selectedCapability,
+    showConfiguredOnly,
+    showEnabledOnly,
+  ]);
 
   // Get unique providers from models for filter dropdown
   const uniqueProviders = useMemo(() => {
     const providerMap = new Map<string, { id: string; name: string; isConfigured: boolean }>();
     models.forEach((m) => {
       if (!providerMap.has(m.providerId)) {
-        providerMap.set(m.providerId, { id: m.providerId, name: m.providerName, isConfigured: m.isConfigured });
+        providerMap.set(m.providerId, {
+          id: m.providerId,
+          name: m.providerName,
+          isConfigured: m.isConfigured,
+        });
       }
     });
     // Sort: configured first, then by name
@@ -340,7 +358,7 @@ export function AIModelsTab() {
     try {
       await apiClient.patch(
         `/model-configs/${model.providerId}/${encodeURIComponent(model.modelId)}/toggle`,
-        { enabled },
+        { enabled }
       );
 
       // Update local state
@@ -383,7 +401,7 @@ export function AIModelsTab() {
     try {
       await apiClient.put(
         `/model-configs/${model.providerId}/${encodeURIComponent(model.modelId)}`,
-        updates,
+        updates
       );
 
       await loadData(); // Reload to get fresh data
@@ -402,7 +420,9 @@ export function AIModelsTab() {
 
     try {
       const data = await modelConfigsApi.syncApply();
-      setSuccess(`Synced ${data.stats?.providers ?? 0} providers with ${data.stats?.totalModels ?? 0} models`);
+      setSuccess(
+        `Synced ${data.stats?.providers ?? 0} providers with ${data.stats?.totalModels ?? 0} models`
+      );
       setTimeout(() => setSuccess(null), 3000);
       // Reload data after sync
       await loadData();
@@ -415,7 +435,13 @@ export function AIModelsTab() {
 
   // Handle reset and resync (delete all + fresh sync)
   const handleResetSync = async () => {
-    if (!await confirm({ message: 'This will delete all synced provider configs and resync fresh from models.dev. Protected providers (OpenAI, Anthropic, Google, etc.) will be preserved. Continue?', variant: 'danger' })) {
+    if (
+      !(await confirm({
+        message:
+          'This will delete all synced provider configs and resync fresh from models.dev. Protected providers (OpenAI, Anthropic, Google, etc.) will be preserved. Continue?',
+        variant: 'danger',
+      }))
+    ) {
       return;
     }
 
@@ -424,7 +450,9 @@ export function AIModelsTab() {
 
     try {
       const data = await modelConfigsApi.syncReset();
-      setSuccess(`Reset complete! Deleted ${data.stats?.deleted ?? 0}, synced ${data.stats?.synced ?? 0} providers`);
+      setSuccess(
+        `Reset complete! Deleted ${data.stats?.deleted ?? 0}, synced ${data.stats?.synced ?? 0} providers`
+      );
       setTimeout(() => setSuccess(null), 5000);
       await loadData();
     } catch {
@@ -440,13 +468,17 @@ export function AIModelsTab() {
     setIsDiscovering(true);
     setError(null);
     try {
-      const data = await apiClient.post<{ newModels?: number; models?: unknown[]; providerName?: string }>(
-        `/model-configs/providers/${providerId}/discover-models`,
-      );
+      const data = await apiClient.post<{
+        newModels?: number;
+        models?: unknown[];
+        providerName?: string;
+      }>(`/model-configs/providers/${providerId}/discover-models`);
       const newCount = data.newModels ?? 0;
       const models = data.models ?? [];
       const providerName = data.providerName ?? providerId;
-      setSuccess(`Discovered ${models.length} models from ${providerName}${newCount > 0 ? ` (${newCount} new)` : ''}`);
+      setSuccess(
+        `Discovered ${models.length} models from ${providerName}${newCount > 0 ? ` (${newCount} new)` : ''}`
+      );
       await loadData();
     } catch {
       setError('Failed to discover models. Is the provider running?');
@@ -456,7 +488,11 @@ export function AIModelsTab() {
   };
 
   // Handle add local provider from template
-  const handleAddLocalProvider = async (template: LocalProviderTemplate, customUrl?: string, customApiKey?: string) => {
+  const handleAddLocalProvider = async (
+    template: LocalProviderTemplate,
+    customUrl?: string,
+    customApiKey?: string
+  ) => {
     setError(null);
     try {
       const data = await localProvidersApi.create({
@@ -484,7 +520,7 @@ export function AIModelsTab() {
     setError(null);
     try {
       const data = await apiClient.post<Record<string, unknown>>(
-        `/local-providers/${providerId}/discover`,
+        `/local-providers/${providerId}/discover`
       );
       const total = (data.totalModels as number) || 0;
       const newCount = (data.newModels as number) || 0;
@@ -500,7 +536,13 @@ export function AIModelsTab() {
 
   // Handle delete local provider
   const handleDeleteLocalProvider = async (providerId: string, name: string) => {
-    if (!await confirm({ message: `Delete local provider "${name}" and all its models?`, variant: 'danger' })) return;
+    if (
+      !(await confirm({
+        message: `Delete local provider "${name}" and all its models?`,
+        variant: 'danger',
+      }))
+    )
+      return;
     try {
       await apiClient.delete(`/local-providers/${providerId}`);
       setSuccess(`Deleted ${name}`);
@@ -570,19 +612,26 @@ export function AIModelsTab() {
         >
           <div className="flex items-center gap-2">
             <Server className="w-5 h-5 text-success" />
-            <h3 className="font-semibold text-text-primary dark:text-dark-text-primary">Local AI Providers</h3>
+            <h3 className="font-semibold text-text-primary dark:text-dark-text-primary">
+              Local AI Providers
+            </h3>
             <span className="text-xs text-text-muted dark:text-dark-text-muted">
               {localProviders.length} provider{localProviders.length !== 1 ? 's' : ''}
             </span>
           </div>
           <div className="flex items-center gap-2">
             <button
-              onClick={(e) => { e.stopPropagation(); setShowAddLocalDialog(true); }}
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowAddLocalDialog(true);
+              }}
               className="px-2.5 py-1 text-xs rounded-lg bg-success text-white hover:bg-success/90 transition-colors flex items-center gap-1"
             >
               <Plus className="w-3.5 h-3.5" /> Add
             </button>
-            <ChevronDown className={`w-4 h-4 text-text-muted transition-transform ${showLocalSection ? 'rotate-180' : ''}`} />
+            <ChevronDown
+              className={`w-4 h-4 text-text-muted transition-transform ${showLocalSection ? 'rotate-180' : ''}`}
+            />
           </div>
         </button>
 
@@ -615,7 +664,9 @@ export function AIModelsTab() {
                     <div className="flex items-start justify-between mb-2">
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2">
-                          <h5 className="font-medium text-text-primary dark:text-dark-text-primary truncate">{lp.name}</h5>
+                          <h5 className="font-medium text-text-primary dark:text-dark-text-primary truncate">
+                            {lp.name}
+                          </h5>
                           <span className="px-1.5 py-0.5 text-xs rounded bg-success/10 text-success flex-shrink-0">
                             {lp.providerType}
                           </span>
@@ -625,7 +676,10 @@ export function AIModelsTab() {
                             </span>
                           )}
                         </div>
-                        <p className="text-xs text-text-muted dark:text-dark-text-muted mt-0.5 truncate" title={lp.baseUrl}>
+                        <p
+                          className="text-xs text-text-muted dark:text-dark-text-muted mt-0.5 truncate"
+                          title={lp.baseUrl}
+                        >
                           {lp.baseUrl}
                         </p>
                       </div>
@@ -646,7 +700,9 @@ export function AIModelsTab() {
                           className="p-1 rounded hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary text-text-muted hover:text-success transition-colors disabled:opacity-50"
                           title="Discover models"
                         >
-                          <Search className={`w-3.5 h-3.5 ${discoveringLocal === lp.id ? 'animate-pulse' : ''}`} />
+                          <Search
+                            className={`w-3.5 h-3.5 ${discoveringLocal === lp.id ? 'animate-pulse' : ''}`}
+                          />
                         </button>
                         {!lp.isDefault && (
                           <button
@@ -701,7 +757,8 @@ export function AIModelsTab() {
             AI Models
           </h3>
           <p className="text-sm text-text-muted dark:text-dark-text-muted">
-            Showing {filteredModels.length} models &bull; {modelCounts.configured} configured &bull; {modelCounts.total} total
+            Showing {filteredModels.length} models &bull; {modelCounts.configured} configured &bull;{' '}
+            {modelCounts.total} total
           </p>
         </div>
 
@@ -727,7 +784,8 @@ export function AIModelsTab() {
             <option value="all">All Providers</option>
             {uniqueProviders.map((p) => (
               <option key={p.id} value={p.id}>
-                {p.isConfigured ? '✓ ' : ''}{p.name}
+                {p.isConfigured ? '✓ ' : ''}
+                {p.name}
               </option>
             ))}
           </select>
@@ -818,7 +876,9 @@ export function AIModelsTab() {
             >
               <option value="">Select provider...</option>
               {uniqueProviders.map((p) => (
-                <option key={p.id} value={p.id}>{p.name}</option>
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
               ))}
             </select>
             <button
@@ -842,7 +902,8 @@ export function AIModelsTab() {
               Available Providers
             </h4>
             <p className="text-xs text-text-muted dark:text-dark-text-muted">
-              {availableProviders.filter((p) => p.isConfigured).length} configured &bull; {availableProviders.length} total
+              {availableProviders.filter((p) => p.isConfigured).length} configured &bull;{' '}
+              {availableProviders.length} total
             </p>
           </div>
 
@@ -862,11 +923,13 @@ export function AIModelsTab() {
                       <h5 className="font-medium text-text-primary dark:text-dark-text-primary truncate">
                         {provider.name}
                       </h5>
-                      <span className={`flex-shrink-0 px-1.5 py-0.5 text-xs rounded ${
-                        provider.type === 'aggregator'
-                          ? 'bg-purple-500/10 text-purple-500'
-                          : 'bg-primary/10 text-primary'
-                      }`}>
+                      <span
+                        className={`flex-shrink-0 px-1.5 py-0.5 text-xs rounded ${
+                          provider.type === 'aggregator'
+                            ? 'bg-purple-500/10 text-purple-500'
+                            : 'bg-primary/10 text-primary'
+                        }`}
+                      >
                         {provider.type}
                       </span>
                     </div>

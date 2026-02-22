@@ -1,5 +1,21 @@
 import { useState, useEffect } from 'react';
-import { Container, RefreshCw, ShieldCheck, Shield, XCircle, CheckCircle2, Database, Upload, Download, Trash2, Wrench, Server, AlertCircle, Settings, Terminal } from '../components/icons';
+import {
+  Container,
+  RefreshCw,
+  ShieldCheck,
+  Shield,
+  XCircle,
+  CheckCircle2,
+  Database,
+  Upload,
+  Download,
+  Trash2,
+  Wrench,
+  Server,
+  AlertCircle,
+  Settings,
+  Terminal,
+} from '../components/icons';
 import { useDialog } from '../components/ConfirmDialog';
 import { useToast } from '../components/ToastProvider';
 import { LoadingSpinner } from '../components/LoadingSpinner';
@@ -7,11 +23,6 @@ import { useTheme } from '../hooks/useTheme';
 import { useDesktopNotifications } from '../hooks/useDesktopNotifications';
 import { systemApi } from '../api';
 import type { SandboxStatus, DatabaseStatus, BackupInfo, DatabaseStats } from '../api';
-
-
-
-
-
 
 // Helper to format uptime
 function formatUptime(seconds: number): string {
@@ -42,7 +53,13 @@ export function SystemPage() {
   const toast = useToast();
   // Theme
   const { theme, setTheme } = useTheme();
-  const { supported: notifSupported, permission: notifPermission, enabled: notifEnabled, setEnabled: setNotifEnabled, requestPermission } = useDesktopNotifications();
+  const {
+    supported: notifSupported,
+    permission: notifPermission,
+    enabled: notifEnabled,
+    setEnabled: setNotifEnabled,
+    requestPermission,
+  } = useDesktopNotifications();
 
   // System status
   const [sandboxStatus, setSandboxStatus] = useState<SandboxStatus | null>(null);
@@ -134,7 +151,9 @@ export function SystemPage() {
       // Start polling, stop on unmount
       setTimeout(pollStatus, 1000);
       // Note: cancelled flag set if component unmounts during operation
-      return () => { cancelled = true; };
+      return () => {
+        cancelled = true;
+      };
     } catch {
       setDbOperationOutput([`Failed to start ${operationType.toLowerCase()}`]);
       setDbOperationResult('failure');
@@ -143,11 +162,12 @@ export function SystemPage() {
   };
 
   const createBackup = () => runDbOperation('backup', 'Backup', { format: 'sql' });
-  const runMaintenance = (type: string) => runDbOperation('maintenance', `Maintenance (${type})`, { type });
+  const runMaintenance = (type: string) =>
+    runDbOperation('maintenance', `Maintenance (${type})`, { type });
   const restoreBackup = (filename: string) => runDbOperation('restore', 'Restore', { filename });
 
   const deleteBackup = async (filename: string) => {
-    if (!await confirm({ message: `Delete backup "${filename}"?`, variant: 'danger' })) return;
+    if (!(await confirm({ message: `Delete backup "${filename}"?`, variant: 'danger' }))) return;
 
     try {
       await systemApi.deleteBackup(filename);
@@ -161,8 +181,12 @@ export function SystemPage() {
   return (
     <div className="flex flex-col h-full">
       <header className="px-6 pt-4 pb-4 border-b border-border dark:border-dark-border">
-        <h2 className="text-lg font-semibold text-text-primary dark:text-dark-text-primary">System</h2>
-        <p className="text-sm text-text-muted dark:text-dark-text-muted">Appearance, Docker sandbox, database management, and system info</p>
+        <h2 className="text-lg font-semibold text-text-primary dark:text-dark-text-primary">
+          System
+        </h2>
+        <p className="text-sm text-text-muted dark:text-dark-text-muted">
+          Appearance, Docker sandbox, database management, and system info
+        </p>
       </header>
       <div className="flex-1 overflow-y-auto p-6">
         <div className="space-y-6">
@@ -279,7 +303,9 @@ export function SystemPage() {
                       </p>
                     </div>
                   </div>
-                  <span className={`text-sm font-medium ${sandboxStatus.dockerAvailable ? 'text-success' : 'text-error'}`}>
+                  <span
+                    className={`text-sm font-medium ${sandboxStatus.dockerAvailable ? 'text-success' : 'text-error'}`}
+                  >
                     {sandboxStatus.dockerAvailable ? 'Available' : 'Not Available'}
                   </span>
                 </div>
@@ -325,7 +351,9 @@ export function SystemPage() {
                       </p>
                     </div>
                   </div>
-                  <span className={`text-sm font-medium ${sandboxStatus.codeExecutionEnabled ? 'text-success' : 'text-error'}`}>
+                  <span
+                    className={`text-sm font-medium ${sandboxStatus.codeExecutionEnabled ? 'text-success' : 'text-error'}`}
+                  >
                     {sandboxStatus.codeExecutionEnabled ? 'Enabled' : 'Disabled'}
                   </span>
                 </div>
@@ -379,16 +407,24 @@ export function SystemPage() {
                       </p>
                     </div>
                   </div>
-                  <span className={`text-sm font-medium ${
-                    sandboxStatus.securityMode === 'strict' ? 'text-success'
-                    : sandboxStatus.securityMode === 'local' ? 'text-info'
-                    : sandboxStatus.securityMode === 'disabled' ? 'text-error'
-                    : 'text-warning'
-                  }`}>
-                    {sandboxStatus.securityMode === 'strict' ? 'Strict'
-                      : sandboxStatus.securityMode === 'local' ? 'Local'
-                      : sandboxStatus.securityMode === 'disabled' ? 'Disabled'
-                      : 'Relaxed'}
+                  <span
+                    className={`text-sm font-medium ${
+                      sandboxStatus.securityMode === 'strict'
+                        ? 'text-success'
+                        : sandboxStatus.securityMode === 'local'
+                          ? 'text-info'
+                          : sandboxStatus.securityMode === 'disabled'
+                            ? 'text-error'
+                            : 'text-warning'
+                    }`}
+                  >
+                    {sandboxStatus.securityMode === 'strict'
+                      ? 'Strict'
+                      : sandboxStatus.securityMode === 'local'
+                        ? 'Local'
+                        : sandboxStatus.securityMode === 'disabled'
+                          ? 'Disabled'
+                          : 'Relaxed'}
                   </span>
                 </div>
               </div>
@@ -400,31 +436,36 @@ export function SystemPage() {
 
             {/* Docker Not Available — info message depending on execution mode */}
             {sandboxStatus && !sandboxStatus.dockerAvailable && (
-              <div className={`mt-4 p-4 rounded-lg ${
-                sandboxStatus.codeExecutionEnabled
-                  ? 'bg-info/10 border border-info/20'
-                  : 'bg-error/10 border border-error/20'
-              }`}>
+              <div
+                className={`mt-4 p-4 rounded-lg ${
+                  sandboxStatus.codeExecutionEnabled
+                    ? 'bg-info/10 border border-info/20'
+                    : 'bg-error/10 border border-error/20'
+                }`}
+              >
                 <div className="flex items-start gap-3">
-                  <AlertCircle className={`w-5 h-5 shrink-0 mt-0.5 ${
-                    sandboxStatus.codeExecutionEnabled ? 'text-info' : 'text-error'
-                  }`} />
+                  <AlertCircle
+                    className={`w-5 h-5 shrink-0 mt-0.5 ${
+                      sandboxStatus.codeExecutionEnabled ? 'text-info' : 'text-error'
+                    }`}
+                  />
                   <div>
                     {sandboxStatus.codeExecutionEnabled ? (
                       <>
                         <p className="font-medium text-info">Running Without Docker</p>
                         <p className="text-sm text-text-muted dark:text-dark-text-muted mt-1">
-                          Code execution is running locally on the host machine. Security measures include
-                          timeout enforcement, output limits, command blocking, and environment sanitization.
-                          For full isolation, install Docker.
+                          Code execution is running locally on the host machine. Security measures
+                          include timeout enforcement, output limits, command blocking, and
+                          environment sanitization. For full isolation, install Docker.
                         </p>
                       </>
                     ) : (
                       <>
                         <p className="font-medium text-error">Docker Required for Code Execution</p>
                         <p className="text-sm text-text-muted dark:text-dark-text-muted mt-1">
-                          Code execution is disabled because EXECUTION_MODE=docker but Docker is not available.
-                          Set EXECUTION_MODE=auto or EXECUTION_MODE=local to enable local execution without Docker.
+                          Code execution is disabled because EXECUTION_MODE=docker but Docker is not
+                          available. Set EXECUTION_MODE=auto or EXECUTION_MODE=local to enable local
+                          execution without Docker.
                         </p>
                       </>
                     )}
@@ -435,8 +476,18 @@ export function SystemPage() {
                       className="inline-flex items-center gap-1 text-sm text-primary hover:underline mt-2"
                     >
                       Install Docker
-                      <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                      <svg
+                        className="w-3 h-3"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                        />
                       </svg>
                     </a>
                   </div>
@@ -463,7 +514,9 @@ export function SystemPage() {
                         PostgreSQL Database
                       </p>
                       <p className="text-sm text-text-muted dark:text-dark-text-muted">
-                        {dbStats ? `${dbStats.database.size} • ${dbStats.tables.length} tables` : 'Production-ready relational database'}
+                        {dbStats
+                          ? `${dbStats.database.size} • ${dbStats.tables.length} tables`
+                          : 'Production-ready relational database'}
                       </p>
                     </div>
                   </div>
@@ -486,11 +539,14 @@ export function SystemPage() {
                       </p>
                       <p className="text-sm text-text-muted dark:text-dark-text-muted">
                         {databaseStatus.host ? `Host: ${databaseStatus.host}` : 'Connecting...'}
-                        {dbStats && ` • ${dbStats.connections.active}/${dbStats.connections.max} connections`}
+                        {dbStats &&
+                          ` • ${dbStats.connections.active}/${dbStats.connections.max} connections`}
                       </p>
                     </div>
                   </div>
-                  <span className={`text-sm font-medium ${databaseStatus.connected ? 'text-success' : 'text-error'}`}>
+                  <span
+                    className={`text-sm font-medium ${databaseStatus.connected ? 'text-success' : 'text-error'}`}
+                  >
                     {databaseStatus.connected ? 'Connected' : 'Disconnected'}
                   </span>
                 </div>
@@ -506,7 +562,10 @@ export function SystemPage() {
                           Make sure PostgreSQL is running and configured correctly.
                         </p>
                         <p className="text-sm text-text-muted dark:text-dark-text-muted mt-2">
-                          Start PostgreSQL with: <code className="bg-bg-tertiary dark:bg-dark-bg-tertiary px-1 rounded">docker compose -f docker-compose.db.yml up -d</code>
+                          Start PostgreSQL with:{' '}
+                          <code className="bg-bg-tertiary dark:bg-dark-bg-tertiary px-1 rounded">
+                            docker compose -f docker-compose.db.yml up -d
+                          </code>
                         </p>
                       </div>
                     </div>
@@ -520,8 +579,12 @@ export function SystemPage() {
                       <div className="flex items-center gap-3">
                         <Download className="w-5 h-5 text-primary" />
                         <div>
-                          <p className="font-medium text-text-primary dark:text-dark-text-primary">Backup & Maintenance</p>
-                          <p className="text-sm text-text-muted dark:text-dark-text-muted">Create backups and optimize database</p>
+                          <p className="font-medium text-text-primary dark:text-dark-text-primary">
+                            Backup & Maintenance
+                          </p>
+                          <p className="text-sm text-text-muted dark:text-dark-text-muted">
+                            Create backups and optimize database
+                          </p>
                         </div>
                       </div>
                       <div className="flex gap-2">
@@ -561,11 +624,17 @@ export function SystemPage() {
                         </p>
                         <div className="space-y-2 max-h-48 overflow-y-auto">
                           {backups.map((backup) => (
-                            <div key={backup.name} className="flex items-center justify-between p-2 bg-bg-primary dark:bg-dark-bg-primary rounded-lg">
+                            <div
+                              key={backup.name}
+                              className="flex items-center justify-between p-2 bg-bg-primary dark:bg-dark-bg-primary rounded-lg"
+                            >
                               <div className="flex-1 min-w-0">
-                                <p className="text-sm font-mono text-text-primary dark:text-dark-text-primary truncate">{backup.name}</p>
+                                <p className="text-sm font-mono text-text-primary dark:text-dark-text-primary truncate">
+                                  {backup.name}
+                                </p>
                                 <p className="text-xs text-text-muted dark:text-dark-text-muted">
-                                  {formatSize(backup.size)} • {new Date(backup.created).toLocaleString()}
+                                  {formatSize(backup.size)} •{' '}
+                                  {new Date(backup.created).toLocaleString()}
                                 </p>
                               </div>
                               <div className="flex gap-1 ml-2">
@@ -605,20 +674,26 @@ export function SystemPage() {
 
                     {/* Operation Result */}
                     {dbOperationResult && (
-                      <div className={`flex items-center gap-2 p-3 rounded-lg ${
-                        dbOperationResult === 'success'
-                          ? 'bg-success/10 text-success'
-                          : 'bg-error/10 text-error'
-                      }`}>
+                      <div
+                        className={`flex items-center gap-2 p-3 rounded-lg ${
+                          dbOperationResult === 'success'
+                            ? 'bg-success/10 text-success'
+                            : 'bg-error/10 text-error'
+                        }`}
+                      >
                         {dbOperationResult === 'success' ? (
                           <>
                             <CheckCircle2 className="w-4 h-4" />
-                            <span className="text-sm font-medium">{dbOperationType} completed successfully!</span>
+                            <span className="text-sm font-medium">
+                              {dbOperationType} completed successfully!
+                            </span>
                           </>
                         ) : (
                           <>
                             <XCircle className="w-4 h-4" />
-                            <span className="text-sm font-medium">{dbOperationType} failed. Check output above.</span>
+                            <span className="text-sm font-medium">
+                              {dbOperationType} failed. Check output above.
+                            </span>
                           </>
                         )}
                       </div>
@@ -662,23 +737,41 @@ export function SystemPage() {
             </h3>
             <div className="space-y-3 text-sm text-text-muted dark:text-dark-text-muted">
               <p>
-                <strong className="text-text-secondary dark:text-dark-text-secondary">Network Isolation:</strong>{' '}
-                Code runs with <code className="bg-bg-tertiary dark:bg-dark-bg-tertiary px-1 rounded">--network=none</code>, preventing all network access
+                <strong className="text-text-secondary dark:text-dark-text-secondary">
+                  Network Isolation:
+                </strong>{' '}
+                Code runs with{' '}
+                <code className="bg-bg-tertiary dark:bg-dark-bg-tertiary px-1 rounded">
+                  --network=none
+                </code>
+                , preventing all network access
               </p>
               <p>
-                <strong className="text-text-secondary dark:text-dark-text-secondary">Resource Limits:</strong>{' '}
+                <strong className="text-text-secondary dark:text-dark-text-secondary">
+                  Resource Limits:
+                </strong>{' '}
                 Memory (256MB), CPU (1 core), processes (100 max), execution time (30s)
               </p>
               <p>
-                <strong className="text-text-secondary dark:text-dark-text-secondary">Filesystem:</strong>{' '}
-                Read-only root filesystem with isolated <code className="bg-bg-tertiary dark:bg-dark-bg-tertiary px-1 rounded">/sandbox</code> directory
+                <strong className="text-text-secondary dark:text-dark-text-secondary">
+                  Filesystem:
+                </strong>{' '}
+                Read-only root filesystem with isolated{' '}
+                <code className="bg-bg-tertiary dark:bg-dark-bg-tertiary px-1 rounded">
+                  /sandbox
+                </code>{' '}
+                directory
               </p>
               <p>
-                <strong className="text-text-secondary dark:text-dark-text-secondary">User Isolation:</strong>{' '}
+                <strong className="text-text-secondary dark:text-dark-text-secondary">
+                  User Isolation:
+                </strong>{' '}
                 Runs as nobody user (UID 65534) with no host information leakage
               </p>
               <p>
-                <strong className="text-text-secondary dark:text-dark-text-secondary">Capabilities:</strong>{' '}
+                <strong className="text-text-secondary dark:text-dark-text-secondary">
+                  Capabilities:
+                </strong>{' '}
                 All Linux capabilities dropped, privilege escalation blocked
               </p>
             </div>

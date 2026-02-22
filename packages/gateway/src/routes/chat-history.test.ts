@@ -140,7 +140,10 @@ const mockGetContextBreakdown = vi.fn(() => ({
   maxContextTokens: 128000,
   modelName: 'gpt-4o',
   providerName: 'openai',
-  sections: [{ name: 'Base Prompt', tokens: 400 }, { name: 'User Context', tokens: 800 }],
+  sections: [
+    { name: 'Base Prompt', tokens: 400 },
+    { name: 'User Context', tokens: 800 },
+  ],
 }));
 const mockCompactContext = vi.fn(async () => ({
   compacted: true,
@@ -230,12 +233,15 @@ describe('Chat History & Logs Routes', () => {
     mockChatRepo.deleteConversations.mockImplementation(async (ids: string[]) => ids.length);
     mockChatRepo.deleteOldConversations.mockResolvedValue(5);
     mockChatRepo.archiveConversations.mockImplementation(async (ids: string[]) => ids.length);
-    mockChatRepo.updateConversation.mockImplementation(async (id: string, data: { isArchived: boolean }) =>
-      id === 'conv-1' ? { ...sampleConversation, isArchived: data.isArchived } : null
+    mockChatRepo.updateConversation.mockImplementation(
+      async (id: string, data: { isArchived: boolean }) =>
+        id === 'conv-1' ? { ...sampleConversation, isArchived: data.isArchived } : null
     );
     mockLogsRepo.list.mockResolvedValue([sampleLog]);
     mockLogsRepo.getStats.mockResolvedValue(sampleLogStats);
-    mockLogsRepo.getLog.mockImplementation(async (id: string) => (id === 'log-1' ? sampleLog : null));
+    mockLogsRepo.getLog.mockImplementation(async (id: string) =>
+      id === 'log-1' ? sampleLog : null
+    );
     mockLogsRepo.clearAll.mockResolvedValue(42);
     mockLogsRepo.deleteOldLogs.mockResolvedValue(10);
     mockResetChatAgentContext.mockReturnValue({ reset: true, newSessionId: 'new-session-1' });
@@ -772,41 +778,31 @@ describe('Chat History & Logs Routes', () => {
     it('passes type filter to repository', async () => {
       await app.request('/api/logs?type=chat');
 
-      expect(mockLogsRepo.list).toHaveBeenCalledWith(
-        expect.objectContaining({ type: 'chat' })
-      );
+      expect(mockLogsRepo.list).toHaveBeenCalledWith(expect.objectContaining({ type: 'chat' }));
     });
 
     it('passes agent type filter', async () => {
       await app.request('/api/logs?type=agent');
 
-      expect(mockLogsRepo.list).toHaveBeenCalledWith(
-        expect.objectContaining({ type: 'agent' })
-      );
+      expect(mockLogsRepo.list).toHaveBeenCalledWith(expect.objectContaining({ type: 'agent' }));
     });
 
     it('ignores invalid type values', async () => {
       await app.request('/api/logs?type=invalid');
 
-      expect(mockLogsRepo.list).toHaveBeenCalledWith(
-        expect.objectContaining({ type: undefined })
-      );
+      expect(mockLogsRepo.list).toHaveBeenCalledWith(expect.objectContaining({ type: undefined }));
     });
 
     it('passes errors=true filter', async () => {
       await app.request('/api/logs?errors=true');
 
-      expect(mockLogsRepo.list).toHaveBeenCalledWith(
-        expect.objectContaining({ hasError: true })
-      );
+      expect(mockLogsRepo.list).toHaveBeenCalledWith(expect.objectContaining({ hasError: true }));
     });
 
     it('passes errors=false filter', async () => {
       await app.request('/api/logs?errors=false');
 
-      expect(mockLogsRepo.list).toHaveBeenCalledWith(
-        expect.objectContaining({ hasError: false })
-      );
+      expect(mockLogsRepo.list).toHaveBeenCalledWith(expect.objectContaining({ hasError: false }));
     });
 
     it('treats unset errors param as undefined', async () => {

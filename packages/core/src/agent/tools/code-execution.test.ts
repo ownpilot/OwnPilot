@@ -184,7 +184,9 @@ describe('executeJavaScriptExecutor', () => {
 
     await executeJavaScriptExecutor({ code: 'console.log("hi")' }, createContext());
 
-    expect(mocks.executeJavaScriptLocal).toHaveBeenCalledWith('console.log("hi")', { timeout: 10000 });
+    expect(mocks.executeJavaScriptLocal).toHaveBeenCalledWith('console.log("hi")', {
+      timeout: 10000,
+    });
     expect(mocks.isDockerAvailable).toHaveBeenCalled();
   });
 
@@ -210,7 +212,10 @@ describe('executeJavaScriptExecutor', () => {
 
     await executeJavaScriptExecutor({ code: '1+1' }, createContext());
 
-    expect(mocks.executeJavaScriptSandbox).toHaveBeenCalledWith('1+1', expect.objectContaining({ timeout: 10000 }));
+    expect(mocks.executeJavaScriptSandbox).toHaveBeenCalledWith(
+      '1+1',
+      expect.objectContaining({ timeout: 10000 })
+    );
     expect(mocks.executeJavaScriptLocal).not.toHaveBeenCalled();
   });
 
@@ -328,7 +333,10 @@ describe('executePythonExecutor', () => {
 
     const result = await executePythonExecutor({ code: 'print("hi")' }, createContext());
 
-    expect(mocks.executePythonSandbox).toHaveBeenCalledWith('print("hi")', expect.objectContaining({ timeout: 10000 }));
+    expect(mocks.executePythonSandbox).toHaveBeenCalledWith(
+      'print("hi")',
+      expect.objectContaining({ timeout: 10000 })
+    );
     expect(result.isError).toBe(false);
     expect(result.content).toMatchObject({
       stdout: 'docker output',
@@ -396,7 +404,10 @@ describe('executeShellExecutor', () => {
 
     const result = await executeShellExecutor({ command: 'ls -la' }, createContext());
 
-    expect(mocks.executeShellSandbox).toHaveBeenCalledWith('ls -la', expect.objectContaining({ timeout: 10000 }));
+    expect(mocks.executeShellSandbox).toHaveBeenCalledWith(
+      'ls -la',
+      expect.objectContaining({ timeout: 10000 })
+    );
     expect(result.isError).toBe(false);
     expect(result.content).toMatchObject({
       stdout: 'docker output',
@@ -433,7 +444,7 @@ describe('compileCodeExecutor', () => {
   it('rejects unknown compiler', async () => {
     const result = await compileCodeExecutor(
       { filePath: 'main.xyz', compiler: 'unknown-compiler' },
-      createContext(),
+      createContext()
     );
 
     expect(result.isError).toBe(true);
@@ -456,10 +467,7 @@ describe('compileCodeExecutor', () => {
       },
     });
 
-    const result = await compileCodeExecutor(
-      { filePath: 'main.go', compiler: 'go' },
-      ctx,
-    );
+    const result = await compileCodeExecutor({ filePath: 'main.go', compiler: 'go' }, ctx);
 
     expect(result.isError).toBe(true);
     expect(result.content).toMatchObject({
@@ -472,12 +480,12 @@ describe('compileCodeExecutor', () => {
 
     const result = await compileCodeExecutor(
       { filePath: 'main.go', compiler: 'go', args: '-o output' },
-      createContext(),
+      createContext()
     );
 
     expect(mocks.executeShellLocal).toHaveBeenCalledWith(
       'go build -o output main.go',
-      expect.objectContaining({ timeout: 30000 }),
+      expect.objectContaining({ timeout: 30000 })
     );
     expect(result.isError).toBe(false);
     expect(result.content).toMatchObject({
@@ -493,12 +501,12 @@ describe('compileCodeExecutor', () => {
 
     const result = await compileCodeExecutor(
       { filePath: 'index.ts', compiler: 'tsc', args: '--outDir dist' },
-      createContext(),
+      createContext()
     );
 
     expect(mocks.executeShellLocal).toHaveBeenCalledWith(
       'tsc --outDir dist index.ts',
-      expect.objectContaining({ timeout: 30000 }),
+      expect.objectContaining({ timeout: 30000 })
     );
     expect(result.isError).toBe(false);
     expect(result.content).toMatchObject({
@@ -516,7 +524,7 @@ describe('packageManagerExecutor', () => {
   it('rejects unknown package manager', async () => {
     const result = await packageManagerExecutor(
       { manager: 'bun', command: 'install' },
-      createContext(),
+      createContext()
     );
 
     expect(result.isError).toBe(true);
@@ -530,14 +538,14 @@ describe('packageManagerExecutor', () => {
     async (sub) => {
       const result = await packageManagerExecutor(
         { manager: 'npm', command: sub },
-        createContext(),
+        createContext()
       );
 
       expect(result.isError).toBe(true);
       expect(result.content).toMatchObject({
         error: expect.stringContaining(`Subcommand '${sub}' is blocked for safety`),
       });
-    },
+    }
   );
 
   it('rejects docker mode (requires local access)', async () => {
@@ -553,10 +561,7 @@ describe('packageManagerExecutor', () => {
       },
     });
 
-    const result = await packageManagerExecutor(
-      { manager: 'npm', command: 'install lodash' },
-      ctx,
-    );
+    const result = await packageManagerExecutor({ manager: 'npm', command: 'install lodash' }, ctx);
 
     expect(result.isError).toBe(true);
     expect(result.content).toMatchObject({
@@ -569,12 +574,12 @@ describe('packageManagerExecutor', () => {
 
     const result = await packageManagerExecutor(
       { manager: 'pnpm', command: 'install lodash' },
-      createContext(),
+      createContext()
     );
 
     expect(mocks.executeShellLocal).toHaveBeenCalledWith(
       'pnpm install lodash',
-      expect.objectContaining({ timeout: 60000 }),
+      expect.objectContaining({ timeout: 60000 })
     );
     expect(result.isError).toBe(false);
     expect(result.content).toMatchObject({
@@ -654,7 +659,7 @@ describe('Permission checks', () => {
       'code_execution',
       'execute_javascript',
       expect.stringContaining('Execute javascript code'),
-      expect.objectContaining({ code: expect.any(String) }),
+      expect.objectContaining({ code: expect.any(String) })
     );
     expect(result.isError).toBe(false);
     expect(mocks.executeJavaScriptLocal).toHaveBeenCalled();

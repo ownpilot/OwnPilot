@@ -226,10 +226,7 @@ describe('readFileExecutor', () => {
 
   it('returns error for path outside allowed directories', async () => {
     fsMock.realpath.mockImplementation(async (p: string) => p);
-    const result = await readFileExecutor(
-      { path: '/etc/shadow' },
-      ctx(),
-    );
+    const result = await readFileExecutor({ path: '/etc/shadow' }, ctx());
     expect(result.isError).toBe(true);
     expect(result.content).toContain('Access denied');
   });
@@ -246,10 +243,7 @@ describe('readFileExecutor', () => {
     fsMock.stat.mockResolvedValue(makeStat({ size: 50 }));
     fsMock.readFile.mockResolvedValue('line1\nline2\nline3\nline4\nline5');
 
-    const result = await readFileExecutor(
-      { path: 'file.txt', startLine: 2, endLine: 4 },
-      ctx(),
-    );
+    const result = await readFileExecutor({ path: 'file.txt', startLine: 2, endLine: 4 }, ctx());
     const data = parse(result);
     expect(data.content).toBe('line2\nline3\nline4');
     expect(data.lines.start).toBe(2);
@@ -260,10 +254,7 @@ describe('readFileExecutor', () => {
     fsMock.stat.mockResolvedValue(makeStat({ size: 50 }));
     fsMock.readFile.mockResolvedValue('a\nb\nc\nd');
 
-    const result = await readFileExecutor(
-      { path: 'file.txt', startLine: 3 },
-      ctx(),
-    );
+    const result = await readFileExecutor({ path: 'file.txt', startLine: 3 }, ctx());
     const data = parse(result);
     expect(data.content).toBe('c\nd');
     expect(data.lines.total).toBe(4);
@@ -273,10 +264,7 @@ describe('readFileExecutor', () => {
     fsMock.stat.mockResolvedValue(makeStat({ size: 50 }));
     fsMock.readFile.mockResolvedValue('a\nb\nc\nd');
 
-    const result = await readFileExecutor(
-      { path: 'file.txt', endLine: 2 },
-      ctx(),
-    );
+    const result = await readFileExecutor({ path: 'file.txt', endLine: 2 }, ctx());
     const data = parse(result);
     expect(data.content).toBe('a\nb');
     expect(data.lines.start).toBe(1);
@@ -287,10 +275,7 @@ describe('readFileExecutor', () => {
     fsMock.readFile.mockResolvedValue('YWJj');
 
     await readFileExecutor({ path: 'file.txt', encoding: 'base64' }, ctx());
-    expect(fsMock.readFile).toHaveBeenCalledWith(
-      expect.any(String),
-      { encoding: 'base64' },
-    );
+    expect(fsMock.readFile).toHaveBeenCalledWith(expect.any(String), { encoding: 'base64' });
   });
 
   it('returns error when fs.stat throws', async () => {
@@ -321,10 +306,7 @@ describe('writeFileExecutor', () => {
     fsMock.writeFile.mockResolvedValue(undefined);
     fsMock.stat.mockResolvedValue(makeStat({ size: 5 }));
 
-    const result = await writeFileExecutor(
-      { path: 'out.txt', content: 'hello' },
-      ctx(),
-    );
+    const result = await writeFileExecutor({ path: 'out.txt', content: 'hello' }, ctx());
     const data = parse(result);
     expect(data.success).toBe(true);
     expect(data.action).toBe('written');
@@ -338,7 +320,7 @@ describe('writeFileExecutor', () => {
 
     const result = await writeFileExecutor(
       { path: 'out.txt', content: 'more', append: true },
-      ctx(),
+      ctx()
     );
     const data = parse(result);
     expect(data.action).toBe('appended');
@@ -351,31 +333,19 @@ describe('writeFileExecutor', () => {
     fsMock.writeFile.mockResolvedValue(undefined);
     fsMock.stat.mockResolvedValue(makeStat({ size: 3 }));
 
-    await writeFileExecutor(
-      { path: 'deep/nested/file.txt', content: 'hi' },
-      ctx(),
-    );
-    expect(fsMock.mkdir).toHaveBeenCalledWith(
-      expect.stringContaining('deep'),
-      { recursive: true },
-    );
+    await writeFileExecutor({ path: 'deep/nested/file.txt', content: 'hi' }, ctx());
+    expect(fsMock.mkdir).toHaveBeenCalledWith(expect.stringContaining('deep'), { recursive: true });
   });
 
   it('returns error for path outside allowed directories', async () => {
-    const result = await writeFileExecutor(
-      { path: '/etc/passwd', content: 'hack' },
-      ctx(),
-    );
+    const result = await writeFileExecutor({ path: '/etc/passwd', content: 'hack' }, ctx());
     expect(result.isError).toBe(true);
     expect(result.content).toContain('Access denied');
   });
 
   it('returns error when content exceeds max size', async () => {
     const largeContent = 'x'.repeat(11 * 1024 * 1024);
-    const result = await writeFileExecutor(
-      { path: 'big.txt', content: largeContent },
-      ctx(),
-    );
+    const result = await writeFileExecutor({ path: 'big.txt', content: largeContent }, ctx());
     expect(result.isError).toBe(true);
     expect(result.content).toContain('Content too large');
   });
@@ -384,10 +354,7 @@ describe('writeFileExecutor', () => {
     fsMock.mkdir.mockResolvedValue(undefined);
     fsMock.writeFile.mockRejectedValue(new Error('disk full'));
 
-    const result = await writeFileExecutor(
-      { path: 'out.txt', content: 'data' },
-      ctx(),
-    );
+    const result = await writeFileExecutor({ path: 'out.txt', content: 'data' }, ctx());
     expect(result.isError).toBe(true);
     expect(result.content).toContain('disk full');
   });
@@ -420,10 +387,7 @@ describe('listDirectoryExecutor', () => {
     ]);
     fsMock.stat.mockResolvedValue(makeStat({ size: 100 }));
 
-    const result = await listDirectoryExecutor(
-      { path: '.', pattern: '*.ts' },
-      ctx(),
-    );
+    const result = await listDirectoryExecutor({ path: '.', pattern: '*.ts' }, ctx());
     const data = parse(result);
     expect(data.count).toBe(2);
     expect(data.entries.every((e: any) => e.name.endsWith('.ts'))).toBe(true);
@@ -449,37 +413,25 @@ describe('listDirectoryExecutor', () => {
     ]);
     fsMock.stat.mockResolvedValue(makeStat({ size: 10 }));
 
-    const result = await listDirectoryExecutor(
-      { path: '.', includeHidden: true },
-      ctx(),
-    );
+    const result = await listDirectoryExecutor({ path: '.', includeHidden: true }, ctx());
     const data = parse(result);
     expect(data.count).toBe(2);
   });
 
   it('lists recursively up to depth 5', async () => {
     // Root level
-    fsMock.readdir.mockResolvedValueOnce([
-      makeDirent('child', 'directory'),
-    ]);
+    fsMock.readdir.mockResolvedValueOnce([makeDirent('child', 'directory')]);
     // Child level
-    fsMock.readdir.mockResolvedValueOnce([
-      makeDirent('nested.txt', 'file'),
-    ]);
+    fsMock.readdir.mockResolvedValueOnce([makeDirent('nested.txt', 'file')]);
     fsMock.stat.mockResolvedValue(makeStat({ size: 50 }));
 
-    const result = await listDirectoryExecutor(
-      { path: '.', recursive: true },
-      ctx(),
-    );
+    const result = await listDirectoryExecutor({ path: '.', recursive: true }, ctx());
     const data = parse(result);
     expect(data.entries.length).toBeGreaterThanOrEqual(2);
   });
 
   it('includes symlink entries', async () => {
-    fsMock.readdir.mockResolvedValue([
-      makeDirent('link', 'symlink'),
-    ]);
+    fsMock.readdir.mockResolvedValue([makeDirent('link', 'symlink')]);
 
     const result = await listDirectoryExecutor({ path: '.' }, ctx());
     const data = parse(result);
@@ -511,10 +463,7 @@ describe('searchFilesExecutor', () => {
     fsMock.realpath.mockImplementation(async (p: string) => p);
     fsMock.readFile.mockResolvedValue('line1\nimport foo\nline3');
 
-    const result = await searchFilesExecutor(
-      { path: '.', query: 'import' },
-      ctx(),
-    );
+    const result = await searchFilesExecutor({ path: '.', query: 'import' }, ctx());
     const data = parse(result);
     expect(data.count).toBe(1);
     expect(data.results[0].line).toBe(2);
@@ -531,7 +480,7 @@ describe('searchFilesExecutor', () => {
 
     const result = await searchFilesExecutor(
       { path: '.', query: 'hello', filePattern: '*.ts' },
-      ctx(),
+      ctx()
     );
     const data = parse(result);
     // Only app.ts matches the pattern
@@ -544,10 +493,7 @@ describe('searchFilesExecutor', () => {
     fsMock.realpath.mockImplementation(async (p: string) => p);
     fsMock.readFile.mockResolvedValue('Hello World');
 
-    const result = await searchFilesExecutor(
-      { path: '.', query: 'hello' },
-      ctx(),
-    );
+    const result = await searchFilesExecutor({ path: '.', query: 'hello' }, ctx());
     const data = parse(result);
     expect(data.count).toBe(1);
   });
@@ -559,7 +505,7 @@ describe('searchFilesExecutor', () => {
 
     const result = await searchFilesExecutor(
       { path: '.', query: 'hello', caseSensitive: true },
-      ctx(),
+      ctx()
     );
     const data = parse(result);
     expect(data.count).toBe(0);
@@ -570,19 +516,13 @@ describe('searchFilesExecutor', () => {
     fsMock.realpath.mockImplementation(async (p: string) => p);
     fsMock.readFile.mockResolvedValue('match\nmatch\nmatch\nmatch\nmatch');
 
-    const result = await searchFilesExecutor(
-      { path: '.', query: 'match', maxResults: 2 },
-      ctx(),
-    );
+    const result = await searchFilesExecutor({ path: '.', query: 'match', maxResults: 2 }, ctx());
     const data = parse(result);
     expect(data.count).toBe(2);
   });
 
   it('returns error for invalid regex pattern', async () => {
-    const result = await searchFilesExecutor(
-      { path: '.', query: '[invalid' },
-      ctx(),
-    );
+    const result = await searchFilesExecutor({ path: '.', query: '[invalid' }, ctx());
     expect(result.isError).toBe(true);
     const data = parse(result);
     expect(data.error).toContain('Invalid search pattern');
@@ -596,10 +536,7 @@ describe('searchFilesExecutor', () => {
     fsMock.realpath.mockImplementation(async (p: string) => p);
     fsMock.readFile.mockResolvedValue('match');
 
-    const result = await searchFilesExecutor(
-      { path: '.', query: 'match' },
-      ctx(),
-    );
+    const result = await searchFilesExecutor({ path: '.', query: 'match' }, ctx());
     const data = parse(result);
     expect(data.count).toBe(1);
     expect(data.results[0].file).toContain('public.txt');
@@ -607,20 +544,13 @@ describe('searchFilesExecutor', () => {
 
   it('recurses into subdirectories', async () => {
     // Root level
-    fsMock.readdir.mockResolvedValueOnce([
-      makeDirent('subdir', 'directory'),
-    ]);
+    fsMock.readdir.mockResolvedValueOnce([makeDirent('subdir', 'directory')]);
     // Subdir level
-    fsMock.readdir.mockResolvedValueOnce([
-      makeDirent('nested.txt', 'file'),
-    ]);
+    fsMock.readdir.mockResolvedValueOnce([makeDirent('nested.txt', 'file')]);
     fsMock.realpath.mockImplementation(async (p: string) => p);
     fsMock.readFile.mockResolvedValue('found it');
 
-    const result = await searchFilesExecutor(
-      { path: '.', query: 'found' },
-      ctx(),
-    );
+    const result = await searchFilesExecutor({ path: '.', query: 'found' }, ctx());
     const data = parse(result);
     expect(data.count).toBe(1);
   });
@@ -629,27 +559,17 @@ describe('searchFilesExecutor', () => {
     // realpath resolves all dirs to the same real path (simulating a loop)
     fsMock.realpath.mockResolvedValue(WORKSPACE);
     // readdir returns a subdir on first call, then nothing
-    fsMock.readdir.mockResolvedValueOnce([
-      makeDirent('subdir', 'directory'),
-    ]);
-    fsMock.readdir.mockResolvedValueOnce([
-      makeDirent('subdir', 'directory'),
-    ]);
+    fsMock.readdir.mockResolvedValueOnce([makeDirent('subdir', 'directory')]);
+    fsMock.readdir.mockResolvedValueOnce([makeDirent('subdir', 'directory')]);
 
-    const result = await searchFilesExecutor(
-      { path: '.', query: 'test' },
-      ctx(),
-    );
+    const result = await searchFilesExecutor({ path: '.', query: 'test' }, ctx());
     // Should not loop forever; second visit to the same realpath is skipped
     const data = parse(result);
     expect(data.count).toBe(0);
   });
 
   it('returns error for path outside allowed directories', async () => {
-    const result = await searchFilesExecutor(
-      { path: '/etc', query: 'test' },
-      ctx(),
-    );
+    const result = await searchFilesExecutor({ path: '/etc', query: 'test' }, ctx());
     expect(result.isError).toBe(true);
     expect(result.content).toContain('Access denied');
   });
@@ -660,10 +580,7 @@ describe('searchFilesExecutor', () => {
     const longLine = 'x'.repeat(300);
     fsMock.readFile.mockResolvedValue(longLine);
 
-    const result = await searchFilesExecutor(
-      { path: '.', query: 'x' },
-      ctx(),
-    );
+    const result = await searchFilesExecutor({ path: '.', query: 'x' }, ctx());
     const data = parse(result);
     expect(data.results[0].content.length).toBe(200);
   });
@@ -673,10 +590,7 @@ describe('searchFilesExecutor', () => {
     fsMock.realpath.mockImplementation(async (p: string) => p);
     fsMock.readFile.mockRejectedValue(new Error('EACCES'));
 
-    const result = await searchFilesExecutor(
-      { path: '.', query: 'test' },
-      ctx(),
-    );
+    const result = await searchFilesExecutor({ path: '.', query: 'test' }, ctx());
     expect(result.isError).toBeUndefined();
     const data = parse(result);
     expect(data.count).toBe(0);
@@ -713,7 +627,7 @@ describe('downloadFileExecutor', () => {
 
     const result = await downloadFileExecutor(
       { url: 'https://example.com/file.zip', path: 'downloads/file.zip' },
-      ctx(),
+      ctx()
     );
     const data = parse(result);
     expect(data.success).toBe(true);
@@ -728,7 +642,7 @@ describe('downloadFileExecutor', () => {
 
     const result = await downloadFileExecutor(
       { url: 'https://example.com/f.txt', path: 'f.txt' },
-      ctx(),
+      ctx()
     );
     expect(result.isError).toBe(true);
     expect(result.content).toContain('File already exists');
@@ -748,7 +662,7 @@ describe('downloadFileExecutor', () => {
 
     const result = await downloadFileExecutor(
       { url: 'https://example.com/f.txt', path: 'f.txt', overwrite: true },
-      ctx(),
+      ctx()
     );
     const data = parse(result);
     expect(data.success).toBe(true);
@@ -765,7 +679,7 @@ describe('downloadFileExecutor', () => {
 
     const result = await downloadFileExecutor(
       { url: 'https://example.com/missing', path: 'out.txt' },
-      ctx(),
+      ctx()
     );
     expect(result.isError).toBe(true);
     expect(result.content).toContain('404');
@@ -774,7 +688,7 @@ describe('downloadFileExecutor', () => {
   it('returns error for path outside allowed directories', async () => {
     const result = await downloadFileExecutor(
       { url: 'https://example.com/f', path: '/etc/download' },
-      ctx(),
+      ctx()
     );
     expect(result.isError).toBe(true);
     expect(result.content).toContain('Access denied');
@@ -787,7 +701,7 @@ describe('downloadFileExecutor', () => {
 
     const result = await downloadFileExecutor(
       { url: 'https://example.com/f', path: 'out.txt' },
-      ctx(),
+      ctx()
     );
     expect(result.isError).toBe(true);
     expect(result.content).toContain('Network error');
@@ -811,7 +725,7 @@ describe('fileInfoExecutor', () => {
         atime,
         birthtime,
         mode: 0o755,
-      }),
+      })
     );
 
     const result = await fileInfoExecutor({ path: 'test.txt' }, ctx());
@@ -825,9 +739,7 @@ describe('fileInfoExecutor', () => {
   });
 
   it('returns directory info', async () => {
-    fsMock.stat.mockResolvedValue(
-      makeStat({ isFile: false, isDirectory: true }),
-    );
+    fsMock.stat.mockResolvedValue(makeStat({ isFile: false, isDirectory: true }));
 
     const result = await fileInfoExecutor({ path: '.' }, ctx());
     const data = parse(result);
@@ -835,9 +747,7 @@ describe('fileInfoExecutor', () => {
   });
 
   it('returns other type for non-file non-directory', async () => {
-    fsMock.stat.mockResolvedValue(
-      makeStat({ isFile: false, isDirectory: false }),
-    );
+    fsMock.stat.mockResolvedValue(makeStat({ isFile: false, isDirectory: false }));
 
     const result = await fileInfoExecutor({ path: 'dev-null' }, ctx());
     const data = parse(result);
@@ -878,10 +788,7 @@ describe('deleteFileExecutor', () => {
     fsMock.stat.mockResolvedValue(makeStat({ isFile: false, isDirectory: true }));
     fsMock.rm.mockResolvedValue(undefined);
 
-    const result = await deleteFileExecutor(
-      { path: 'old-dir', recursive: true },
-      ctx(),
-    );
+    const result = await deleteFileExecutor({ path: 'old-dir', recursive: true }, ctx());
     const data = parse(result);
     expect(data.success).toBe(true);
     expect(fsMock.rm).toHaveBeenCalledWith(expect.any(String), { recursive: true });
@@ -928,10 +835,7 @@ describe('copyFileExecutor', () => {
     fsMock.mkdir.mockResolvedValue(undefined);
     fsMock.copyFile.mockResolvedValue(undefined);
 
-    const result = await copyFileExecutor(
-      { source: 'a.txt', destination: 'b.txt' },
-      ctx(),
-    );
+    const result = await copyFileExecutor({ source: 'a.txt', destination: 'b.txt' }, ctx());
     const data = parse(result);
     expect(data.success).toBe(true);
     expect(data.action).toBe('copied');
@@ -945,7 +849,7 @@ describe('copyFileExecutor', () => {
 
     const result = await copyFileExecutor(
       { source: 'a.txt', destination: 'b.txt', move: true },
-      ctx(),
+      ctx()
     );
     const data = parse(result);
     expect(data.action).toBe('moved');
@@ -956,10 +860,7 @@ describe('copyFileExecutor', () => {
     fsMock.access.mockResolvedValue(undefined); // dest exists
     fsMock.mkdir.mockResolvedValue(undefined);
 
-    const result = await copyFileExecutor(
-      { source: 'a.txt', destination: 'b.txt' },
-      ctx(),
-    );
+    const result = await copyFileExecutor({ source: 'a.txt', destination: 'b.txt' }, ctx());
     expect(result.isError).toBe(true);
     expect(result.content).toContain('Destination exists');
   });
@@ -971,7 +872,7 @@ describe('copyFileExecutor', () => {
 
     const result = await copyFileExecutor(
       { source: 'a.txt', destination: 'b.txt', overwrite: true },
-      ctx(),
+      ctx()
     );
     const data = parse(result);
     expect(data.success).toBe(true);
@@ -980,17 +881,14 @@ describe('copyFileExecutor', () => {
   it('returns error when source is outside allowed directories', async () => {
     const result = await copyFileExecutor(
       { source: '/etc/shadow', destination: 'copy.txt' },
-      ctx(),
+      ctx()
     );
     expect(result.isError).toBe(true);
     expect(result.content).toContain('Access denied');
   });
 
   it('returns error when destination is outside allowed directories', async () => {
-    const result = await copyFileExecutor(
-      { source: 'file.txt', destination: '/etc/evil' },
-      ctx(),
-    );
+    const result = await copyFileExecutor({ source: 'file.txt', destination: '/etc/evil' }, ctx());
     expect(result.isError).toBe(true);
     expect(result.content).toContain('Access denied');
   });
@@ -1000,14 +898,8 @@ describe('copyFileExecutor', () => {
     fsMock.mkdir.mockResolvedValue(undefined);
     fsMock.copyFile.mockResolvedValue(undefined);
 
-    await copyFileExecutor(
-      { source: 'a.txt', destination: 'deep/nested/b.txt' },
-      ctx(),
-    );
-    expect(fsMock.mkdir).toHaveBeenCalledWith(
-      expect.stringContaining('deep'),
-      { recursive: true },
-    );
+    await copyFileExecutor({ source: 'a.txt', destination: 'deep/nested/b.txt' }, ctx());
+    expect(fsMock.mkdir).toHaveBeenCalledWith(expect.stringContaining('deep'), { recursive: true });
   });
 
   it('returns error when copyFile throws', async () => {
@@ -1015,10 +907,7 @@ describe('copyFileExecutor', () => {
     fsMock.mkdir.mockResolvedValue(undefined);
     fsMock.copyFile.mockRejectedValue(new Error('EACCES'));
 
-    const result = await copyFileExecutor(
-      { source: 'a.txt', destination: 'b.txt' },
-      ctx(),
-    );
+    const result = await copyFileExecutor({ source: 'a.txt', destination: 'b.txt' }, ctx());
     expect(result.isError).toBe(true);
     expect(result.content).toContain('EACCES');
   });
@@ -1029,10 +918,7 @@ describe('copyFileExecutor', () => {
 // ===========================================================================
 describe('Security - path traversal protection', () => {
   it('denies access to paths with .. traversal', async () => {
-    const result = await readFileExecutor(
-      { path: '../../../etc/passwd' },
-      ctx(),
-    );
+    const result = await readFileExecutor({ path: '../../../etc/passwd' }, ctx());
     expect(result.isError).toBe(true);
     expect(result.content).toContain('Access denied');
   });
@@ -1042,18 +928,12 @@ describe('Security - path traversal protection', () => {
     fsMock.readFile.mockResolvedValue('tmp data');
     fsMock.realpath.mockImplementation(async (p: string) => p);
 
-    const result = await readFileExecutor(
-      { path: '/tmp/safe.txt' },
-      ctx(),
-    );
+    const result = await readFileExecutor({ path: '/tmp/safe.txt' }, ctx());
     expect(result.isError).toBeUndefined();
   });
 
   it('denies access to random absolute paths', async () => {
-    const result = await readFileExecutor(
-      { path: '/var/log/syslog' },
-      ctx(),
-    );
+    const result = await readFileExecutor({ path: '/var/log/syslog' }, ctx());
     expect(result.isError).toBe(true);
     expect(result.content).toContain('Access denied');
   });
@@ -1080,10 +960,7 @@ describe('Security - path traversal protection', () => {
   it('handles symlink resolution for security', async () => {
     // realpath resolves the symlink to a path outside workspace
     fsMock.realpath.mockResolvedValue('/etc/passwd');
-    const result = await readFileExecutor(
-      { path: 'symlink-to-etc' },
-      ctx(),
-    );
+    const result = await readFileExecutor({ path: 'symlink-to-etc' }, ctx());
     expect(result.isError).toBe(true);
     expect(result.content).toContain('Access denied');
   });
@@ -1122,10 +999,7 @@ describe('Security - ALLOW_HOME_DIR_ACCESS', () => {
     if (!homePath) return; // skip if no home dir
 
     fsMock.realpath.mockImplementation(async (p: string) => p);
-    const result = await readFileExecutor(
-      { path: path.join(homePath, 'secret.txt') },
-      ctx(),
-    );
+    const result = await readFileExecutor({ path: path.join(homePath, 'secret.txt') }, ctx());
     // Should be denied unless home dir is within workspace or /tmp
     if (!homePath.startsWith(WORKSPACE) && !homePath.startsWith('/tmp')) {
       expect(result.isError).toBe(true);
@@ -1141,10 +1015,7 @@ describe('Security - ALLOW_HOME_DIR_ACCESS', () => {
     fsMock.readFile.mockResolvedValue('home data');
     fsMock.realpath.mockImplementation(async (p: string) => p);
 
-    const result = await readFileExecutor(
-      { path: path.join(homePath, 'file.txt') },
-      ctx(),
-    );
+    const result = await readFileExecutor({ path: path.join(homePath, 'file.txt') }, ctx());
     expect(result.isError).toBeUndefined();
   });
 });
@@ -1161,7 +1032,7 @@ describe('Security - workspace directory resolution', () => {
     const customWorkspace = path.resolve('/custom/workspace');
     const result = await readFileExecutor(
       { path: 'file.txt' },
-      ctx({ workspaceDir: customWorkspace }),
+      ctx({ workspaceDir: customWorkspace })
     );
     const data = parse(result);
     expect(data.path).toBe(path.resolve(customWorkspace, 'file.txt'));
@@ -1175,10 +1046,7 @@ describe('Security - workspace directory resolution', () => {
     fsMock.readFile.mockResolvedValue('env');
     fsMock.realpath.mockImplementation(async (p: string) => p);
 
-    const result = await readFileExecutor(
-      { path: 'file.txt' },
-      ctx({ workspaceDir: undefined }),
-    );
+    const result = await readFileExecutor({ path: 'file.txt' }, ctx({ workspaceDir: undefined }));
     const data = parse(result);
     expect(data.path).toBe(path.resolve(envWorkspace, 'file.txt'));
   });
@@ -1199,39 +1067,25 @@ describe('safeGlobToRegex (via listDirectoryExecutor)', () => {
       makeDirent('readme.md', 'file'),
     ]);
 
-    const result = await listDirectoryExecutor(
-      { path: '.', pattern: '*.ts' },
-      ctx(),
-    );
+    const result = await listDirectoryExecutor({ path: '.', pattern: '*.ts' }, ctx());
     const data = parse(result);
     expect(data.count).toBe(1);
     expect(data.entries[0].name).toBe('app.ts');
   });
 
   it('matches single-char wildcard pattern ?.ts', async () => {
-    fsMock.readdir.mockResolvedValue([
-      makeDirent('a.ts', 'file'),
-      makeDirent('ab.ts', 'file'),
-    ]);
+    fsMock.readdir.mockResolvedValue([makeDirent('a.ts', 'file'), makeDirent('ab.ts', 'file')]);
 
-    const result = await listDirectoryExecutor(
-      { path: '.', pattern: '?.ts' },
-      ctx(),
-    );
+    const result = await listDirectoryExecutor({ path: '.', pattern: '?.ts' }, ctx());
     const data = parse(result);
     expect(data.count).toBe(1);
     expect(data.entries[0].name).toBe('a.ts');
   });
 
   it('case-insensitive matching', async () => {
-    fsMock.readdir.mockResolvedValue([
-      makeDirent('README.MD', 'file'),
-    ]);
+    fsMock.readdir.mockResolvedValue([makeDirent('README.MD', 'file')]);
 
-    const result = await listDirectoryExecutor(
-      { path: '.', pattern: '*.md' },
-      ctx(),
-    );
+    const result = await listDirectoryExecutor({ path: '.', pattern: '*.md' }, ctx());
     const data = parse(result);
     expect(data.count).toBe(1);
   });
@@ -1242,10 +1096,7 @@ describe('safeGlobToRegex (via listDirectoryExecutor)', () => {
       makeDirent('file2.txt', 'file'),
     ]);
 
-    const result = await listDirectoryExecutor(
-      { path: '.', pattern: 'file[1].txt' },
-      ctx(),
-    );
+    const result = await listDirectoryExecutor({ path: '.', pattern: 'file[1].txt' }, ctx());
     const data = parse(result);
     // The glob treats [ and ] as literal characters after escaping
     expect(data.count).toBe(1);
@@ -1258,10 +1109,7 @@ describe('safeGlobToRegex (via listDirectoryExecutor)', () => {
       makeDirent('appXconfigXts', 'file'),
     ]);
 
-    const result = await listDirectoryExecutor(
-      { path: '.', pattern: 'app.config.ts' },
-      ctx(),
-    );
+    const result = await listDirectoryExecutor({ path: '.', pattern: 'app.config.ts' }, ctx());
     const data = parse(result);
     // Dots are escaped, so only exact match
     expect(data.count).toBe(1);
@@ -1285,10 +1133,7 @@ describe('Edge cases', () => {
     fsMock.mkdir.mockResolvedValue(undefined);
     fsMock.writeFile.mockRejectedValue(42);
 
-    const result = await writeFileExecutor(
-      { path: 'file.txt', content: 'x' },
-      ctx(),
-    );
+    const result = await writeFileExecutor({ path: 'file.txt', content: 'x' }, ctx());
     expect(result.isError).toBe(true);
     expect(result.content).toContain('42');
   });
@@ -1306,10 +1151,7 @@ describe('Edge cases', () => {
     // readdir at the root search dir throws
     fsMock.readdir.mockRejectedValue(new Error('readdir fail'));
 
-    const result = await searchFilesExecutor(
-      { path: '.', query: 'test' },
-      ctx(),
-    );
+    const result = await searchFilesExecutor({ path: '.', query: 'test' }, ctx());
     expect(result.isError).toBe(true);
     expect(result.content).toContain('Error searching files');
   });
@@ -1326,10 +1168,7 @@ describe('Edge cases', () => {
     fsMock.mkdir.mockResolvedValue(undefined);
     fsMock.copyFile.mockRejectedValue('copy failed');
 
-    const result = await copyFileExecutor(
-      { source: 'a.txt', destination: 'b.txt' },
-      ctx(),
-    );
+    const result = await copyFileExecutor({ source: 'a.txt', destination: 'b.txt' }, ctx());
     expect(result.isError).toBe(true);
     expect(result.content).toContain('copy failed');
   });
@@ -1342,7 +1181,7 @@ describe('Edge cases', () => {
 
     const result = await downloadFileExecutor(
       { url: 'https://example.com/x', path: 'x.txt' },
-      ctx(),
+      ctx()
     );
     expect(result.isError).toBe(true);
     expect(result.content).toContain('fetch boom');
@@ -1378,10 +1217,7 @@ describe('Path resolution', () => {
     fsMock.writeFile.mockResolvedValue(undefined);
     fsMock.stat.mockResolvedValue(makeStat({ size: 5 }));
 
-    const result = await writeFileExecutor(
-      { path: 'rel/file.txt', content: 'hi' },
-      ctx(),
-    );
+    const result = await writeFileExecutor({ path: 'rel/file.txt', content: 'hi' }, ctx());
     const data = parse(result);
     expect(data.path).toBe(path.resolve(WORKSPACE, 'rel/file.txt'));
   });
@@ -1391,10 +1227,7 @@ describe('Path resolution', () => {
     fsMock.mkdir.mockResolvedValue(undefined);
     fsMock.copyFile.mockResolvedValue(undefined);
 
-    const result = await copyFileExecutor(
-      { source: 'src.txt', destination: 'dst.txt' },
-      ctx(),
-    );
+    const result = await copyFileExecutor({ source: 'src.txt', destination: 'dst.txt' }, ctx());
     const data = parse(result);
     expect(data.source).toBe(path.resolve(WORKSPACE, 'src.txt'));
     expect(data.destination).toBe(path.resolve(WORKSPACE, 'dst.txt'));

@@ -42,13 +42,33 @@ vi.mock('../../routes/personal-data-tools.js', () => ({
 
 vi.mock('../../tools/index.js', () => ({
   TRIGGER_TOOLS: [
-    { name: 'create_trigger', description: 'Create trigger', parameters: { type: 'object', properties: {} }, category: 'Automation' },
-    { name: 'list_triggers', description: 'List triggers', parameters: { type: 'object', properties: {} }, category: 'Automation' },
+    {
+      name: 'create_trigger',
+      description: 'Create trigger',
+      parameters: { type: 'object', properties: {} },
+      category: 'Automation',
+    },
+    {
+      name: 'list_triggers',
+      description: 'List triggers',
+      parameters: { type: 'object', properties: {} },
+      category: 'Automation',
+    },
   ],
   executeTriggerTool: vi.fn(async () => ({ success: true, result: {} })),
   PLAN_TOOLS: [
-    { name: 'create_plan', description: 'Create plan', parameters: { type: 'object', properties: {} }, category: 'Automation' },
-    { name: 'execute_plan', description: 'Execute plan', parameters: { type: 'object', properties: {} }, category: 'Automation' },
+    {
+      name: 'create_plan',
+      description: 'Create plan',
+      parameters: { type: 'object', properties: {} },
+      category: 'Automation',
+    },
+    {
+      name: 'execute_plan',
+      description: 'Execute plan',
+      parameters: { type: 'object', properties: {} },
+      category: 'Automation',
+    },
   ],
   executePlanTool: vi.fn(async () => ({ success: true, result: {} })),
 }));
@@ -59,18 +79,42 @@ vi.mock('@ownpilot/core', async () => {
   return {
     ...actual,
     MEMORY_TOOLS: [
-      { name: 'add_memory', description: 'Add memory', parameters: { type: 'object', properties: {} } },
-      { name: 'search_memories', description: 'Search', parameters: { type: 'object', properties: {} } },
+      {
+        name: 'add_memory',
+        description: 'Add memory',
+        parameters: { type: 'object', properties: {} },
+      },
+      {
+        name: 'search_memories',
+        description: 'Search',
+        parameters: { type: 'object', properties: {} },
+      },
     ],
     GOAL_TOOLS: [
-      { name: 'create_goal', description: 'Create goal', parameters: { type: 'object', properties: {} } },
-      { name: 'list_goals', description: 'List goals', parameters: { type: 'object', properties: {} } },
+      {
+        name: 'create_goal',
+        description: 'Create goal',
+        parameters: { type: 'object', properties: {} },
+      },
+      {
+        name: 'list_goals',
+        description: 'List goals',
+        parameters: { type: 'object', properties: {} },
+      },
     ],
     CUSTOM_DATA_TOOLS: [
-      { name: 'create_table', description: 'Create table', parameters: { type: 'object', properties: {} } },
+      {
+        name: 'create_table',
+        description: 'Create table',
+        parameters: { type: 'object', properties: {} },
+      },
     ],
     PERSONAL_DATA_TOOLS: [
-      { name: 'set_personal_info', description: 'Set info', parameters: { type: 'object', properties: {} } },
+      {
+        name: 'set_personal_info',
+        description: 'Set info',
+        parameters: { type: 'object', properties: {} },
+      },
     ],
   };
 });

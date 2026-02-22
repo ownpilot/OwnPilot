@@ -157,7 +157,9 @@ export function validateManifest(manifest: unknown): ValidationResult {
   if (!m.id || typeof m.id !== 'string') {
     errors.push('Missing or invalid "id" (must be a string)');
   } else if (!EXTENSION_ID_PATTERN.test(m.id)) {
-    errors.push(`Invalid "id" format: "${m.id}" (must be lowercase alphanumeric + hyphens, start with letter/digit)`);
+    errors.push(
+      `Invalid "id" format: "${m.id}" (must be lowercase alphanumeric + hyphens, start with letter/digit)`
+    );
   }
 
   if (!m.name || typeof m.name !== 'string') {
@@ -184,7 +186,9 @@ export function validateManifest(manifest: unknown): ValidationResult {
       if (!tool.name || typeof tool.name !== 'string') {
         errors.push(`${prefix}: missing or invalid "name"`);
       } else if (!TOOL_NAME_PATTERN.test(tool.name)) {
-        errors.push(`${prefix}: invalid tool name "${tool.name}" (must be lowercase alphanumeric + underscores)`);
+        errors.push(
+          `${prefix}: invalid tool name "${tool.name}" (must be lowercase alphanumeric + underscores)`
+        );
       } else if (toolNames.has(tool.name)) {
         errors.push(`${prefix}: duplicate tool name "${tool.name}"`);
       } else {
@@ -264,7 +268,9 @@ export function validateAgentSkillsFrontmatter(fm: unknown): ValidationResult {
   } else if (f.name.length > 64) {
     errors.push(`"name" exceeds 64 characters: ${f.name.length}`);
   } else if (!AGENTSKILLS_NAME_PATTERN.test(f.name)) {
-    errors.push(`Invalid "name" format: "${f.name}" (lowercase alphanumeric + hyphens, no consecutive hyphens, cannot start/end with hyphen)`);
+    errors.push(
+      `Invalid "name" format: "${f.name}" (lowercase alphanumeric + hyphens, no consecutive hyphens, cannot start/end with hyphen)`
+    );
   }
 
   if (!f.description || typeof f.description !== 'string') {

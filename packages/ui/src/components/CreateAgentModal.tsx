@@ -80,21 +80,26 @@ export function CreateAgentModal({ onClose, onCreated }: CreateAgentModalProps) 
 
   const toggleTool = (toolName: string) => {
     setSelectedTools((prev) =>
-      prev.includes(toolName)
-        ? prev.filter((t) => t !== toolName)
-        : [...prev, toolName]
+      prev.includes(toolName) ? prev.filter((t) => t !== toolName) : [...prev, toolName]
     );
   };
 
   // Group models by provider
-  const modelsByProvider = useMemo(() => models.reduce<Record<string, ModelInfo[]>>((acc, model) => {
-    if (!acc[model.provider]) acc[model.provider] = [];
-    acc[model.provider]!.push(model);
-    return acc;
-  }, {}), [models]);
+  const modelsByProvider = useMemo(
+    () =>
+      models.reduce<Record<string, ModelInfo[]>>((acc, model) => {
+        if (!acc[model.provider]) acc[model.provider] = [];
+        acc[model.provider]!.push(model);
+        return acc;
+      }, {}),
+    [models]
+  );
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onBackdropClick}>
+    <div
+      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+      onClick={onBackdropClick}
+    >
       <div className="w-full max-w-2xl bg-bg-primary dark:bg-dark-bg-primary border border-border dark:border-dark-border rounded-xl shadow-xl max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
         <div className="p-4 border-b border-border dark:border-dark-border">
@@ -160,10 +165,7 @@ export function CreateAgentModal({ onClose, onCreated }: CreateAgentModalProps) 
                   <p className="text-text-muted dark:text-dark-text-muted mb-4">
                     No providers configured. Add API keys in Settings first.
                   </p>
-                  <a
-                    href="/settings"
-                    className="text-primary hover:underline"
-                  >
+                  <a href="/settings" className="text-primary hover:underline">
                     Go to Settings
                   </a>
                 </div>
@@ -252,9 +254,7 @@ export function CreateAgentModal({ onClose, onCreated }: CreateAgentModalProps) 
             </div>
           )}
 
-          {error && (
-            <p className="text-sm text-error mt-4">{error}</p>
-          )}
+          {error && <p className="text-sm text-error mt-4">{error}</p>}
         </div>
 
         {/* Footer */}

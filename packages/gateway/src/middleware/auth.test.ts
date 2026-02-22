@@ -95,9 +95,7 @@ function makeApiKeyApp(apiKeys: string[] | undefined, extraConfig: Partial<AuthC
   const app = new Hono();
   const config: AuthConfig = { type: 'api-key', apiKeys, ...extraConfig };
   app.use('*', createAuthMiddleware(config));
-  app.get('/test', (c) =>
-    c.json({ ok: true, userId: c.get('userId') ?? null })
-  );
+  app.get('/test', (c) => c.json({ ok: true, userId: c.get('userId') ?? null }));
   return app;
 }
 
@@ -118,9 +116,7 @@ function makeJwtApp(jwtSecret: string | undefined, extraConfig: Partial<AuthConf
 function makeOptionalApiKeyApp(apiKeys: string[] | undefined) {
   const app = new Hono();
   app.use('*', createOptionalAuthMiddleware({ type: 'api-key', apiKeys }));
-  app.get('/test', (c) =>
-    c.json({ ok: true, userId: c.get('userId') ?? null })
-  );
+  app.get('/test', (c) => c.json({ ok: true, userId: c.get('userId') ?? null }));
   return app;
 }
 
@@ -752,9 +748,7 @@ describe('createOptionalAuthMiddleware — type: none', () => {
   function makeApp() {
     const app = new Hono();
     app.use('*', createOptionalAuthMiddleware({ type: 'none' }));
-    app.get('/test', (c) =>
-      c.json({ ok: true, userId: c.get('userId') ?? null })
-    );
+    app.get('/test', (c) => c.json({ ok: true, userId: c.get('userId') ?? null }));
     return app;
   }
 

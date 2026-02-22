@@ -59,7 +59,7 @@ export function useDesktopNotifications() {
         clearTimeout(timer);
       };
     },
-    [supported, enabled, permission],
+    [supported, enabled, permission]
   );
 
   return {

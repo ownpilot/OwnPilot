@@ -10,10 +10,7 @@
  */
 
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
-import {
-  ListToolsRequestSchema,
-  CallToolRequestSchema,
-} from '@modelcontextprotocol/sdk/types.js';
+import { ListToolsRequestSchema, CallToolRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 import { WebStandardStreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js';
 import { getBaseName } from '@ownpilot/core';
 import { getSharedToolRegistry } from './tool-executor.js';
@@ -68,10 +65,7 @@ let mcpServer: Server | null = null;
 function getOrCreateMcpServer(): Server {
   if (mcpServer) return mcpServer;
 
-  mcpServer = new Server(
-    { name: 'OwnPilot', version: '1.0.0' },
-    { capabilities: { tools: {} } },
-  );
+  mcpServer = new Server({ name: 'OwnPilot', version: '1.0.0' }, { capabilities: { tools: {} } });
 
   const registry = getSharedToolRegistry();
 
@@ -79,7 +73,7 @@ function getOrCreateMcpServer(): Server {
   mcpServer.setRequestHandler(ListToolsRequestSchema, async () => {
     const allTools = registry.getAllTools();
     return {
-      tools: allTools.map(tool => ({
+      tools: allTools.map((tool) => ({
         name: getBaseName(tool.definition.name),
         description: tool.definition.description,
         inputSchema: {
@@ -99,7 +93,7 @@ function getOrCreateMcpServer(): Server {
 
     // Resolve base name to qualified name
     const allTools = registry.getAllTools();
-    const match = allTools.find(t => getBaseName(t.definition.name) === name);
+    const match = allTools.find((t) => getBaseName(t.definition.name) === name);
 
     if (!match) {
       return {
@@ -112,19 +106,25 @@ function getOrCreateMcpServer(): Server {
       const result = await registry.execute(
         match.definition.name,
         (args ?? {}) as Record<string, unknown>,
-        { userId: 'default', conversationId: 'mcp-session' },
+        { userId: 'default', conversationId: 'mcp-session' }
       );
 
-      const text = typeof result === 'string'
-        ? result
-        : (result && typeof result === 'object' && 'content' in result)
-          ? String((result as { content: unknown }).content)
-          : JSON.stringify(result, null, 2);
+      const text =
+        typeof result === 'string'
+          ? result
+          : result && typeof result === 'object' && 'content' in result
+            ? String((result as { content: unknown }).content)
+            : JSON.stringify(result, null, 2);
 
       return { content: [{ type: 'text' as const, text }] };
     } catch (err) {
       return {
-        content: [{ type: 'text' as const, text: `Error: ${err instanceof Error ? err.message : String(err)}` }],
+        content: [
+          {
+            type: 'text' as const,
+            text: `Error: ${err instanceof Error ? err.message : String(err)}`,
+          },
+        ],
         isError: true,
       };
     }
@@ -201,7 +201,7 @@ export async function handleMcpRequest(request: Request): Promise<Response> {
   // Unsupported method
   return new Response(JSON.stringify({ error: 'Method not allowed' }), {
     status: 405,
-    headers: { 'Content-Type': 'application/json', 'Allow': 'GET, POST, DELETE' },
+    headers: { 'Content-Type': 'application/json', Allow: 'GET, POST, DELETE' },
   });
 }
 

@@ -50,9 +50,9 @@ export interface ModelConfig {
  * Provider type
  */
 export type ProviderType =
-  | 'openai'           // Native OpenAI
-  | 'anthropic'        // Native Anthropic
-  | 'google'           // Google AI (Gemini)
+  | 'openai' // Native OpenAI
+  | 'anthropic' // Native Anthropic
+  | 'google' // Google AI (Gemini)
   | 'openai-compatible'; // OpenAI-compatible API
 
 /**

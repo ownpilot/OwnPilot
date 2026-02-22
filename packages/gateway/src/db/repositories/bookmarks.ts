@@ -184,10 +184,10 @@ export class BookmarksRepository extends BaseRepository {
   }
 
   async delete(id: string): Promise<boolean> {
-    const result = await this.execute(
-      `DELETE FROM bookmarks WHERE id = $1 AND user_id = $2`,
-      [id, this.userId]
-    );
+    const result = await this.execute(`DELETE FROM bookmarks WHERE id = $1 AND user_id = $2`, [
+      id,
+      this.userId,
+    ]);
     return result.changes > 0;
   }
 
@@ -274,7 +274,7 @@ export class BookmarksRepository extends BaseRepository {
       `SELECT DISTINCT category FROM bookmarks WHERE user_id = $1 AND category IS NOT NULL ORDER BY category`,
       [this.userId]
     );
-    return rows.map(r => r.category);
+    return rows.map((r) => r.category);
   }
 
   async getTags(): Promise<string[]> {

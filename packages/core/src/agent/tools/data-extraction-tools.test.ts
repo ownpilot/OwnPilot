@@ -58,7 +58,9 @@ describe('extractEntitiesExecutor', () => {
   it('should return error for empty text', async () => {
     const result = await extractEntitiesExecutor({ text: '' }, ctx);
     expect(result.isError).toBe(true);
-    expect((result.content as Record<string, unknown>).error).toBe('Text is required for entity extraction');
+    expect((result.content as Record<string, unknown>).error).toBe(
+      'Text is required for entity extraction'
+    );
   });
 
   it('should return error for whitespace-only text', async () => {
@@ -82,19 +84,31 @@ describe('extractEntitiesExecutor', () => {
 
   it('should extract multiple emails', async () => {
     const result = await extractEntitiesExecutor({ text: 'Email a@b.com or c@d.org' }, ctx);
-    const entities = (result.content as Record<string, unknown>).basicEntities as Record<string, string[]>;
+    const entities = (result.content as Record<string, unknown>).basicEntities as Record<
+      string,
+      string[]
+    >;
     expect(entities.email).toEqual(['a@b.com', 'c@d.org']);
   });
 
   it('should deduplicate emails', async () => {
-    const result = await extractEntitiesExecutor({ text: 'user@ex.com and user@ex.com again' }, ctx);
-    const entities = (result.content as Record<string, unknown>).basicEntities as Record<string, string[]>;
+    const result = await extractEntitiesExecutor(
+      { text: 'user@ex.com and user@ex.com again' },
+      ctx
+    );
+    const entities = (result.content as Record<string, unknown>).basicEntities as Record<
+      string,
+      string[]
+    >;
     expect(entities.email).toEqual(['user@ex.com']);
   });
 
   it('should extract email with plus addressing', async () => {
     const result = await extractEntitiesExecutor({ text: 'test+tag@example.co.uk' }, ctx);
-    const entities = (result.content as Record<string, unknown>).basicEntities as Record<string, string[]>;
+    const entities = (result.content as Record<string, unknown>).basicEntities as Record<
+      string,
+      string[]
+    >;
     expect(entities.email).toEqual(['test+tag@example.co.uk']);
   });
 
@@ -102,21 +116,36 @@ describe('extractEntitiesExecutor', () => {
 
   it('should extract http URL', async () => {
     const result = await extractEntitiesExecutor({ text: 'Visit http://example.com' }, ctx);
-    const entities = (result.content as Record<string, unknown>).basicEntities as Record<string, string[]>;
+    const entities = (result.content as Record<string, unknown>).basicEntities as Record<
+      string,
+      string[]
+    >;
     expect(entities.url).toEqual(['http://example.com']);
   });
 
   it('should extract https URL', async () => {
-    const result = await extractEntitiesExecutor({ text: 'Visit https://example.com/page?q=1' }, ctx);
-    const entities = (result.content as Record<string, unknown>).basicEntities as Record<string, string[]>;
+    const result = await extractEntitiesExecutor(
+      { text: 'Visit https://example.com/page?q=1' },
+      ctx
+    );
+    const entities = (result.content as Record<string, unknown>).basicEntities as Record<
+      string,
+      string[]
+    >;
     expect(entities.url).toEqual(['https://example.com/page?q=1']);
   });
 
   it('should extract multiple URLs and deduplicate', async () => {
-    const result = await extractEntitiesExecutor({
-      text: 'See https://a.com and https://b.com and https://a.com',
-    }, ctx);
-    const entities = (result.content as Record<string, unknown>).basicEntities as Record<string, string[]>;
+    const result = await extractEntitiesExecutor(
+      {
+        text: 'See https://a.com and https://b.com and https://a.com',
+      },
+      ctx
+    );
+    const entities = (result.content as Record<string, unknown>).basicEntities as Record<
+      string,
+      string[]
+    >;
     expect(entities.url).toEqual(['https://a.com', 'https://b.com']);
   });
 
@@ -124,20 +153,29 @@ describe('extractEntitiesExecutor', () => {
 
   it('should extract phone number with country code and parens', async () => {
     const result = await extractEntitiesExecutor({ text: 'Call +1 (555) 123-4567' }, ctx);
-    const entities = (result.content as Record<string, unknown>).basicEntities as Record<string, string[]>;
+    const entities = (result.content as Record<string, unknown>).basicEntities as Record<
+      string,
+      string[]
+    >;
     expect(entities.phone).toBeDefined();
     expect(entities.phone!.length).toBeGreaterThanOrEqual(1);
   });
 
   it('should extract simple phone number', async () => {
     const result = await extractEntitiesExecutor({ text: 'Call 555-123-4567 now' }, ctx);
-    const entities = (result.content as Record<string, unknown>).basicEntities as Record<string, string[]>;
+    const entities = (result.content as Record<string, unknown>).basicEntities as Record<
+      string,
+      string[]
+    >;
     expect(entities.phone).toContain('555-123-4567');
   });
 
   it('should extract phone with dots', async () => {
     const result = await extractEntitiesExecutor({ text: 'Call 555.123.4567' }, ctx);
-    const entities = (result.content as Record<string, unknown>).basicEntities as Record<string, string[]>;
+    const entities = (result.content as Record<string, unknown>).basicEntities as Record<
+      string,
+      string[]
+    >;
     expect(entities.phone).toBeDefined();
     expect(entities.phone!.length).toBe(1);
   });
@@ -146,56 +184,80 @@ describe('extractEntitiesExecutor', () => {
 
   it('should extract dollar amount', async () => {
     const result = await extractEntitiesExecutor({ text: 'The price is $100' }, ctx);
-    const entities = (result.content as Record<string, unknown>).basicEntities as Record<string, string[]>;
+    const entities = (result.content as Record<string, unknown>).basicEntities as Record<
+      string,
+      string[]
+    >;
     expect(entities.money).toBeDefined();
-    expect(entities.money!.some(m => m.includes('$100'))).toBe(true);
+    expect(entities.money!.some((m) => m.includes('$100'))).toBe(true);
   });
 
   it('should extract euro amount with decimals', async () => {
     const result = await extractEntitiesExecutor({ text: 'Cost is \u20AC50.00 total' }, ctx);
-    const entities = (result.content as Record<string, unknown>).basicEntities as Record<string, string[]>;
+    const entities = (result.content as Record<string, unknown>).basicEntities as Record<
+      string,
+      string[]
+    >;
     expect(entities.money).toBeDefined();
-    expect(entities.money!.some(m => m.includes('\u20AC50.00'))).toBe(true);
+    expect(entities.money!.some((m) => m.includes('\u20AC50.00'))).toBe(true);
   });
 
   it('should extract USD suffix notation', async () => {
     const result = await extractEntitiesExecutor({ text: 'Total: 100 USD' }, ctx);
-    const entities = (result.content as Record<string, unknown>).basicEntities as Record<string, string[]>;
+    const entities = (result.content as Record<string, unknown>).basicEntities as Record<
+      string,
+      string[]
+    >;
     expect(entities.money).toBeDefined();
-    expect(entities.money!.some(m => m.includes('USD'))).toBe(true);
+    expect(entities.money!.some((m) => m.includes('USD'))).toBe(true);
   });
 
   it('should extract money with magnitude suffix', async () => {
     const result = await extractEntitiesExecutor({ text: 'Revenue was $5 million' }, ctx);
-    const entities = (result.content as Record<string, unknown>).basicEntities as Record<string, string[]>;
+    const entities = (result.content as Record<string, unknown>).basicEntities as Record<
+      string,
+      string[]
+    >;
     expect(entities.money).toBeDefined();
-    expect(entities.money!.some(m => m.includes('million'))).toBe(true);
+    expect(entities.money!.some((m) => m.includes('million'))).toBe(true);
   });
 
   it('should extract TRY currency', async () => {
     const result = await extractEntitiesExecutor({ text: 'Price: 250 TRY' }, ctx);
-    const entities = (result.content as Record<string, unknown>).basicEntities as Record<string, string[]>;
+    const entities = (result.content as Record<string, unknown>).basicEntities as Record<
+      string,
+      string[]
+    >;
     expect(entities.money).toBeDefined();
-    expect(entities.money!.some(m => m.includes('TRY'))).toBe(true);
+    expect(entities.money!.some((m) => m.includes('TRY'))).toBe(true);
   });
 
   // -- Percentage extraction --
 
   it('should extract integer percentage', async () => {
     const result = await extractEntitiesExecutor({ text: 'Success rate: 50%' }, ctx);
-    const entities = (result.content as Record<string, unknown>).basicEntities as Record<string, string[]>;
+    const entities = (result.content as Record<string, unknown>).basicEntities as Record<
+      string,
+      string[]
+    >;
     expect(entities.percentage).toEqual(['50%']);
   });
 
   it('should extract decimal percentage', async () => {
     const result = await extractEntitiesExecutor({ text: 'Growth: 3.5% year over year' }, ctx);
-    const entities = (result.content as Record<string, unknown>).basicEntities as Record<string, string[]>;
+    const entities = (result.content as Record<string, unknown>).basicEntities as Record<
+      string,
+      string[]
+    >;
     expect(entities.percentage).toEqual(['3.5%']);
   });
 
   it('should extract multiple percentages', async () => {
     const result = await extractEntitiesExecutor({ text: '10% off, 20% cashback' }, ctx);
-    const entities = (result.content as Record<string, unknown>).basicEntities as Record<string, string[]>;
+    const entities = (result.content as Record<string, unknown>).basicEntities as Record<
+      string,
+      string[]
+    >;
     expect(entities.percentage).toEqual(['10%', '20%']);
   });
 
@@ -203,28 +265,43 @@ describe('extractEntitiesExecutor', () => {
 
   it('should extract MM/DD/YYYY date', async () => {
     const result = await extractEntitiesExecutor({ text: 'Due: 01/15/2024' }, ctx);
-    const entities = (result.content as Record<string, unknown>).basicEntities as Record<string, string[]>;
+    const entities = (result.content as Record<string, unknown>).basicEntities as Record<
+      string,
+      string[]
+    >;
     expect(entities.date).toBeDefined();
-    expect(entities.date!.some(d => d.includes('01/15/2024'))).toBe(true);
+    expect(entities.date!.some((d) => d.includes('01/15/2024'))).toBe(true);
   });
 
   it('should extract YYYY-MM-DD date', async () => {
     const result = await extractEntitiesExecutor({ text: 'Date: 2024-01-15' }, ctx);
-    const entities = (result.content as Record<string, unknown>).basicEntities as Record<string, string[]>;
+    const entities = (result.content as Record<string, unknown>).basicEntities as Record<
+      string,
+      string[]
+    >;
     expect(entities.date).toBeDefined();
-    expect(entities.date!.some(d => d.includes('2024-01-15'))).toBe(true);
+    expect(entities.date!.some((d) => d.includes('2024-01-15'))).toBe(true);
   });
 
   it('should extract named month date', async () => {
-    const result = await extractEntitiesExecutor({ text: 'January 15, 2024 was the deadline' }, ctx);
-    const entities = (result.content as Record<string, unknown>).basicEntities as Record<string, string[]>;
+    const result = await extractEntitiesExecutor(
+      { text: 'January 15, 2024 was the deadline' },
+      ctx
+    );
+    const entities = (result.content as Record<string, unknown>).basicEntities as Record<
+      string,
+      string[]
+    >;
     expect(entities.date).toBeDefined();
-    expect(entities.date!.some(d => d.includes('January 15, 2024'))).toBe(true);
+    expect(entities.date!.some((d) => d.includes('January 15, 2024'))).toBe(true);
   });
 
   it('should extract abbreviated month date', async () => {
     const result = await extractEntitiesExecutor({ text: 'Mar 5, 2024 meeting' }, ctx);
-    const entities = (result.content as Record<string, unknown>).basicEntities as Record<string, string[]>;
+    const entities = (result.content as Record<string, unknown>).basicEntities as Record<
+      string,
+      string[]
+    >;
     expect(entities.date).toBeDefined();
     expect(entities.date!.length).toBeGreaterThanOrEqual(1);
   });
@@ -232,9 +309,13 @@ describe('extractEntitiesExecutor', () => {
   // -- Mixed entity types --
 
   it('should extract multiple entity types from mixed text', async () => {
-    const text = 'Email user@test.com, call 555-123-4567, visit https://example.com, pay $99.99, 50% off, due 01/01/2025';
+    const text =
+      'Email user@test.com, call 555-123-4567, visit https://example.com, pay $99.99, 50% off, due 01/01/2025';
     const result = await extractEntitiesExecutor({ text }, ctx);
-    const entities = (result.content as Record<string, unknown>).basicEntities as Record<string, string[]>;
+    const entities = (result.content as Record<string, unknown>).basicEntities as Record<
+      string,
+      string[]
+    >;
     expect(entities.email).toBeDefined();
     expect(entities.phone).toBeDefined();
     expect(entities.url).toBeDefined();
@@ -283,7 +364,10 @@ describe('extractEntitiesExecutor', () => {
   // -- entityTypes parameter --
 
   it('should pass entityTypes through as entityTypesRequested', async () => {
-    const result = await extractEntitiesExecutor({ text: 'Hello', entityTypes: ['email', 'phone'] }, ctx);
+    const result = await extractEntitiesExecutor(
+      { text: 'Hello', entityTypes: ['email', 'phone'] },
+      ctx
+    );
     const content = result.content as Record<string, unknown>;
     expect(content.entityTypesRequested).toEqual(['email', 'phone']);
   });
@@ -337,7 +421,9 @@ describe('extractTableDataExecutor', () => {
   it('should return error for empty content', async () => {
     const result = await extractTableDataExecutor({ content: '' }, ctx);
     expect(result.isError).toBe(true);
-    expect((result.content as Record<string, unknown>).error).toBe('Content is required for table extraction');
+    expect((result.content as Record<string, unknown>).error).toBe(
+      'Content is required for table extraction'
+    );
   });
 
   it('should return error for whitespace-only content', async () => {
@@ -364,16 +450,25 @@ describe('extractTableDataExecutor', () => {
       expect(content.tableCount).toBe(1);
       const tables = content.tables as Array<{ headers?: string[]; rows: string[][] }>;
       expect(tables[0]!.headers).toEqual(['Name', 'Age', 'City']);
-      expect(tables[0]!.rows).toEqual([['Alice', '30', 'NYC'], ['Bob', '25', 'LA']]);
+      expect(tables[0]!.rows).toEqual([
+        ['Alice', '30', 'NYC'],
+        ['Bob', '25', 'LA'],
+      ]);
     });
 
     it('should parse CSV without header when hasHeader is false', async () => {
       const csv = 'Alice,30,NYC\nBob,25,LA';
-      const result = await extractTableDataExecutor({ content: csv, format: 'csv', hasHeader: false }, ctx);
+      const result = await extractTableDataExecutor(
+        { content: csv, format: 'csv', hasHeader: false },
+        ctx
+      );
       const content = result.content as Record<string, unknown>;
       const tables = content.tables as Array<{ headers?: string[]; rows: string[][] }>;
       expect(tables[0]!.headers).toBeUndefined();
-      expect(tables[0]!.rows).toEqual([['Alice', '30', 'NYC'], ['Bob', '25', 'LA']]);
+      expect(tables[0]!.rows).toEqual([
+        ['Alice', '30', 'NYC'],
+        ['Bob', '25', 'LA'],
+      ]);
     });
 
     it('should handle quoted fields with commas inside', async () => {
@@ -387,16 +482,25 @@ describe('extractTableDataExecutor', () => {
 
     it('should parse CSV with tab delimiter', async () => {
       const csv = 'Name\tAge\nAlice\t30\nBob\t25';
-      const result = await extractTableDataExecutor({ content: csv, format: 'csv', delimiter: '\t' }, ctx);
+      const result = await extractTableDataExecutor(
+        { content: csv, format: 'csv', delimiter: '\t' },
+        ctx
+      );
       const content = result.content as Record<string, unknown>;
       const tables = content.tables as Array<{ headers?: string[]; rows: string[][] }>;
       expect(tables[0]!.headers).toEqual(['Name', 'Age']);
-      expect(tables[0]!.rows).toEqual([['Alice', '30'], ['Bob', '25']]);
+      expect(tables[0]!.rows).toEqual([
+        ['Alice', '30'],
+        ['Bob', '25'],
+      ]);
     });
 
     it('should parse CSV with semicolon delimiter', async () => {
       const csv = 'Name;Age;City\nAlice;30;NYC';
-      const result = await extractTableDataExecutor({ content: csv, format: 'csv', delimiter: ';' }, ctx);
+      const result = await extractTableDataExecutor(
+        { content: csv, format: 'csv', delimiter: ';' },
+        ctx
+      );
       const content = result.content as Record<string, unknown>;
       const tables = content.tables as Array<{ headers?: string[]; rows: string[][] }>;
       expect(tables[0]!.headers).toEqual(['Name', 'Age', 'City']);
@@ -438,7 +542,10 @@ describe('extractTableDataExecutor', () => {
       expect(content.tableCount).toBe(1);
       const tables = content.tables as Array<{ headers?: string[]; rows: string[][] }>;
       expect(tables[0]!.headers).toEqual(['Name', 'Age']);
-      expect(tables[0]!.rows).toEqual([['Alice', '30'], ['Bob', '25']]);
+      expect(tables[0]!.rows).toEqual([
+        ['Alice', '30'],
+        ['Bob', '25'],
+      ]);
     });
 
     it('should skip separator lines correctly', async () => {
@@ -451,7 +558,8 @@ describe('extractTableDataExecutor', () => {
     });
 
     it('should parse multiple markdown tables separated by non-table lines', async () => {
-      const md = '| A | B |\n| --- | --- |\n| 1 | 2 |\n\nSome text\n\n| C | D |\n| --- | --- |\n| 3 | 4 |';
+      const md =
+        '| A | B |\n| --- | --- |\n| 1 | 2 |\n\nSome text\n\n| C | D |\n| --- | --- |\n| 3 | 4 |';
       const result = await extractTableDataExecutor({ content: md, format: 'markdown' }, ctx);
       const content = result.content as Record<string, unknown>;
       expect(content.tableCount).toBe(2);
@@ -485,7 +593,8 @@ describe('extractTableDataExecutor', () => {
 
   describe('HTML format', () => {
     it('should parse simple HTML table with thead/tbody', async () => {
-      const html = '<table><thead><tr><th>Name</th><th>Age</th></tr></thead><tbody><tr><td>Alice</td><td>30</td></tr></tbody></table>';
+      const html =
+        '<table><thead><tr><th>Name</th><th>Age</th></tr></thead><tbody><tr><td>Alice</td><td>30</td></tr></tbody></table>';
       const result = await extractTableDataExecutor({ content: html, format: 'html' }, ctx);
       const content = result.content as Record<string, unknown>;
       expect(result.isError).toBe(false);
@@ -494,11 +603,15 @@ describe('extractTableDataExecutor', () => {
       const tables = content.tables as Array<{ headers?: string[]; rows: string[][] }>;
       expect(tables[0]!.headers).toEqual(['Name', 'Age']);
       // The rowRegex also matches the <tr> inside <thead>, so headers appear as a data row too
-      expect(tables[0]!.rows).toEqual([['Name', 'Age'], ['Alice', '30']]);
+      expect(tables[0]!.rows).toEqual([
+        ['Name', 'Age'],
+        ['Alice', '30'],
+      ]);
     });
 
     it('should parse HTML table with th in tr (no thead)', async () => {
-      const html = '<table><tr><th>Name</th><th>Age</th></tr><tr><td>Bob</td><td>25</td></tr></table>';
+      const html =
+        '<table><tr><th>Name</th><th>Age</th></tr><tr><td>Bob</td><td>25</td></tr></table>';
       const result = await extractTableDataExecutor({ content: html, format: 'html' }, ctx);
       const content = result.content as Record<string, unknown>;
       const tables = content.tables as Array<{ headers?: string[]; rows: string[][] }>;
@@ -507,7 +620,8 @@ describe('extractTableDataExecutor', () => {
     });
 
     it('should parse multiple HTML tables', async () => {
-      const html = '<table><tr><td>A</td><td>B</td></tr></table><p>gap</p><table><tr><td>C</td><td>D</td></tr></table>';
+      const html =
+        '<table><tr><td>A</td><td>B</td></tr></table><p>gap</p><table><tr><td>C</td><td>D</td></tr></table>';
       const result = await extractTableDataExecutor({ content: html, format: 'html' }, ctx);
       const content = result.content as Record<string, unknown>;
       expect(content.tableCount).toBe(2);
@@ -517,7 +631,8 @@ describe('extractTableDataExecutor', () => {
     });
 
     it('should strip nested HTML tags from cell content', async () => {
-      const html = '<table><tr><td><strong>Bold</strong> text</td><td><a href="#">Link</a></td></tr></table>';
+      const html =
+        '<table><tr><td><strong>Bold</strong> text</td><td><a href="#">Link</a></td></tr></table>';
       const result = await extractTableDataExecutor({ content: html, format: 'html' }, ctx);
       const content = result.content as Record<string, unknown>;
       const tables = content.tables as Array<{ headers?: string[]; rows: string[][] }>;
@@ -525,7 +640,8 @@ describe('extractTableDataExecutor', () => {
     });
 
     it('should strip HTML tags from header cells', async () => {
-      const html = '<table><thead><tr><th><em>Italic</em> Header</th></tr></thead><tbody><tr><td>data</td></tr></tbody></table>';
+      const html =
+        '<table><thead><tr><th><em>Italic</em> Header</th></tr></thead><tbody><tr><td>data</td></tr></tbody></table>';
       const result = await extractTableDataExecutor({ content: html, format: 'html' }, ctx);
       const content = result.content as Record<string, unknown>;
       const tables = content.tables as Array<{ headers?: string[]; rows: string[][] }>;
@@ -563,7 +679,10 @@ describe('extractTableDataExecutor', () => {
       expect(content.format).toBe('text');
       const tables = content.tables as Array<{ headers?: string[]; rows: string[][] }>;
       expect(tables[0]!.headers).toEqual(['Name', 'Age', 'City']);
-      expect(tables[0]!.rows).toEqual([['Alice', '30', 'NYC'], ['Bob', '25', 'LA']]);
+      expect(tables[0]!.rows).toEqual([
+        ['Alice', '30', 'NYC'],
+        ['Bob', '25', 'LA'],
+      ]);
     });
 
     it('should parse pipe-delimited text', async () => {
@@ -586,16 +705,25 @@ describe('extractTableDataExecutor', () => {
 
     it('should parse text without header when hasHeader is false', async () => {
       const text = 'Alice\t30\nBob\t25';
-      const result = await extractTableDataExecutor({ content: text, format: 'text', hasHeader: false }, ctx);
+      const result = await extractTableDataExecutor(
+        { content: text, format: 'text', hasHeader: false },
+        ctx
+      );
       const content = result.content as Record<string, unknown>;
       const tables = content.tables as Array<{ headers?: string[]; rows: string[][] }>;
       expect(tables[0]!.headers).toBeUndefined();
-      expect(tables[0]!.rows).toEqual([['Alice', '30'], ['Bob', '25']]);
+      expect(tables[0]!.rows).toEqual([
+        ['Alice', '30'],
+        ['Bob', '25'],
+      ]);
     });
 
     it('should use provided delimiter for text format', async () => {
       const text = 'Name;Age\nAlice;30';
-      const result = await extractTableDataExecutor({ content: text, format: 'text', delimiter: ';' }, ctx);
+      const result = await extractTableDataExecutor(
+        { content: text, format: 'text', delimiter: ';' },
+        ctx
+      );
       const content = result.content as Record<string, unknown>;
       const tables = content.tables as Array<{ headers?: string[]; rows: string[][] }>;
       expect(tables[0]!.headers).toEqual(['Name', 'Age']);

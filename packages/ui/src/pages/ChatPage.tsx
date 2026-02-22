@@ -12,8 +12,14 @@ import { ExecutionSecurityPanel } from '../components/ExecutionSecurityPanel';
 import { ToolCallLimitPanel } from '../components/ToolCallLimitPanel';
 
 // Lazy-load rarely-used components
-const SetupWizard = lazy(() => import('../components/SetupWizard').then(m => ({ default: m.SetupWizard })));
-const ExecutionApprovalDialog = lazy(() => import('../components/ExecutionApprovalDialog').then(m => ({ default: m.ExecutionApprovalDialog })));
+const SetupWizard = lazy(() =>
+  import('../components/SetupWizard').then((m) => ({ default: m.SetupWizard }))
+);
+const ExecutionApprovalDialog = lazy(() =>
+  import('../components/ExecutionApprovalDialog').then((m) => ({
+    default: m.ExecutionApprovalDialog,
+  }))
+);
 import { AlertCircle, AlertTriangle, Settings, Bot, Shield } from '../components/icons';
 import { modelsApi, providersApi, settingsApi, agentsApi, chatApi } from '../api';
 import type { ModelInfo, AgentDetail } from '../types';
@@ -63,7 +69,9 @@ export function ChatPage() {
   // Close dropdowns on Escape key
   useEffect(() => {
     if (!showProviderMenu) return;
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setShowProviderMenu(false); };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setShowProviderMenu(false);
+    };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
   }, [showProviderMenu]);
@@ -137,8 +145,10 @@ export function ChatPage() {
 
           // If provider is "default", use settings default or first configured
           if (agentProvider === 'default') {
-            if (settingsData.defaultProvider &&
-                modelsData.configuredProviders.includes(settingsData.defaultProvider)) {
+            if (
+              settingsData.defaultProvider &&
+              modelsData.configuredProviders.includes(settingsData.defaultProvider)
+            ) {
               agentProvider = settingsData.defaultProvider;
             } else if (modelsData.configuredProviders.length > 0) {
               agentProvider = modelsData.configuredProviders[0]!;
@@ -177,12 +187,17 @@ export function ChatPage() {
       }
 
       // Use settings default if available
-      if (settingsData.defaultProvider && modelsData.configuredProviders.includes(settingsData.defaultProvider)) {
+      if (
+        settingsData.defaultProvider &&
+        modelsData.configuredProviders.includes(settingsData.defaultProvider)
+      ) {
         setProvider(settingsData.defaultProvider);
         if (settingsData.defaultModel) {
           setModel(settingsData.defaultModel);
         } else {
-          const firstModel = modelsData.models.find((m) => m.provider === settingsData.defaultProvider);
+          const firstModel = modelsData.models.find(
+            (m) => m.provider === settingsData.defaultProvider
+          );
           if (firstModel) setModel(firstModel.id);
         }
         return;
@@ -254,7 +269,8 @@ export function ChatPage() {
   const isProviderConfigured = configuredProviders.includes(provider);
 
   // Extract agent display name (remove emoji if present)
-  const agentDisplayName = currentAgent?.name?.match(/^(\p{Emoji})\s*(.+)$/u)?.[2] ?? currentAgent?.name;
+  const agentDisplayName =
+    currentAgent?.name?.match(/^(\p{Emoji})\s*(.+)$/u)?.[2] ?? currentAgent?.name;
 
   return (
     <div className="flex flex-col h-full">
@@ -284,10 +300,7 @@ export function ChatPage() {
           </div>
 
           {/* Workspace Selector */}
-          <WorkspaceSelector
-            selectedWorkspaceId={workspaceId}
-            onWorkspaceChange={setWorkspaceId}
-          />
+          <WorkspaceSelector selectedWorkspaceId={workspaceId} onWorkspaceChange={setWorkspaceId} />
 
           {/* Provider/Model Selector */}
           <div className="relative">
@@ -297,15 +310,15 @@ export function ChatPage() {
               className="flex items-center gap-2 px-3 py-1.5 text-sm bg-bg-tertiary dark:bg-dark-bg-tertiary border border-border dark:border-dark-border rounded-lg hover:bg-bg-secondary dark:hover:bg-dark-bg-secondary transition-colors disabled:opacity-50"
             >
               {isLoadingModels ? (
-                <span className="text-text-muted dark:text-dark-text-muted animate-pulse">Loading...</span>
+                <span className="text-text-muted dark:text-dark-text-muted animate-pulse">
+                  Loading...
+                </span>
               ) : (
                 <>
                   <span className="font-medium text-text-primary dark:text-dark-text-primary">
                     {currentProviderName}
                   </span>
-                  <span className="text-text-muted dark:text-dark-text-muted">
-                    / {model}
-                  </span>
+                  <span className="text-text-muted dark:text-dark-text-muted">/ {model}</span>
                 </>
               )}
               <svg
@@ -314,7 +327,12 @@ export function ChatPage() {
                 stroke="currentColor"
                 viewBox="0 0 24 24"
               >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M19 9l-7 7-7-7"
+                />
               </svg>
             </button>
 
@@ -335,10 +353,15 @@ export function ChatPage() {
                   </div>
                 ) : (
                   Object.entries(modelsByProvider).map(([providerId, providerModels]) => (
-                    <div key={providerId} className="border-b border-border dark:border-dark-border last:border-b-0">
+                    <div
+                      key={providerId}
+                      className="border-b border-border dark:border-dark-border last:border-b-0"
+                    >
                       <div
                         className={`px-3 py-2 text-sm font-medium cursor-pointer hover:bg-bg-secondary dark:hover:bg-dark-bg-secondary ${
-                          provider === providerId ? 'bg-primary/10 text-primary' : 'text-text-primary dark:text-dark-text-primary'
+                          provider === providerId
+                            ? 'bg-primary/10 text-primary'
+                            : 'text-text-primary dark:text-dark-text-primary'
                         }`}
                         onClick={() => handleProviderChange(providerId)}
                       >
@@ -394,7 +417,9 @@ export function ChatPage() {
       {/* Session context bar — visible immediately, even before first message */}
       <ContextBar
         sessionInfo={sessionInfo}
-        defaultMaxTokens={models.find(m => m.id === model && m.provider === provider)?.contextWindow}
+        defaultMaxTokens={
+          models.find((m) => m.id === model && m.provider === provider)?.contextWindow
+        }
         onNewSession={handleNewChat}
         onShowDetail={() => setShowContextDetail(true)}
       />
@@ -402,7 +427,17 @@ export function ChatPage() {
       {/* Context detail modal */}
       {showContextDetail && (
         <ContextDetailModal
-          sessionInfo={sessionInfo ?? { sessionId: '', messageCount: 0, estimatedTokens: 0, maxContextTokens: models.find(m => m.id === model && m.provider === provider)?.contextWindow ?? 128_000, contextFillPercent: 0 }}
+          sessionInfo={
+            sessionInfo ?? {
+              sessionId: '',
+              messageCount: 0,
+              estimatedTokens: 0,
+              maxContextTokens:
+                models.find((m) => m.id === model && m.provider === provider)?.contextWindow ??
+                128_000,
+              contextFillPercent: 0,
+            }
+          }
           provider={provider}
           model={model}
           onClose={() => setShowContextDetail(false)}
@@ -413,10 +448,7 @@ export function ChatPage() {
 
       {/* Click outside to close menu */}
       {showProviderMenu && (
-        <div
-          className="fixed inset-0 z-40"
-          onClick={() => setShowProviderMenu(false)}
-        />
+        <div className="fixed inset-0 z-40" onClick={() => setShowProviderMenu(false)} />
       )}
 
       {/* Messages */}
@@ -428,8 +460,12 @@ export function ChatPage() {
                 {currentAgent ? `Chat with ${agentDisplayName}` : 'Welcome to OwnPilot'}
               </h3>
 
-              {!isLoadingModels && configuredProviders.length === 0 && localStorage.getItem(STORAGE_KEYS.SETUP_COMPLETE) !== 'true' ? (
-                <Suspense fallback={null}><SetupWizard onComplete={() => window.location.reload()} /></Suspense>
+              {!isLoadingModels &&
+              configuredProviders.length === 0 &&
+              localStorage.getItem(STORAGE_KEYS.SETUP_COMPLETE) !== 'true' ? (
+                <Suspense fallback={null}>
+                  <SetupWizard onComplete={() => window.location.reload()} />
+                </Suspense>
               ) : !isLoadingModels && configuredProviders.length === 0 ? (
                 <>
                   <div className="p-4 bg-warning/10 border border-warning/20 rounded-lg mb-4">
@@ -455,7 +491,9 @@ export function ChatPage() {
                     Start a conversation by typing a message below.
                   </p>
                   <p className="text-sm text-text-muted dark:text-dark-text-muted mb-4">
-                    Currently using: <span className="font-medium text-primary">{currentProviderName}</span> / <span className="font-mono">{model}</span>
+                    Currently using:{' '}
+                    <span className="font-medium text-primary">{currentProviderName}</span> /{' '}
+                    <span className="font-mono">{model}</span>
                   </p>
                 </>
               )}
@@ -463,14 +501,54 @@ export function ChatPage() {
               {/* Suggestion cards grid */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-w-lg mx-auto">
                 {[
-                  { icon: '🚀', label: 'What can you do?', prompt: 'What are all the things you can help me with? Give me a quick overview of your capabilities, tools, and what makes you different from a regular chatbot.' },
-                  { icon: '🧠', label: 'My setup & limits', prompt: 'Tell me about my current setup — which model am I using, what tools are available, and what are the context window limits? How much can you remember in a single conversation?' },
-                  { icon: '✅', label: 'Manage my tasks', prompt: 'Show me all my current tasks and help me prioritize them. If I have none yet, help me create a task list for today.' },
-                  { icon: '📝', label: 'Take a note', prompt: 'I want to save a quick note. Help me organize it with tags so I can find it later.' },
-                  { icon: '💡', label: 'Brainstorm with me', prompt: 'I need fresh ideas. Let\'s brainstorm — ask me what topic I\'m working on and then generate creative angles I haven\'t considered.' },
-                  { icon: '🔍', label: 'Search the web', prompt: 'Search the web for the most interesting tech news from this week and give me a brief summary of the top 3 stories.' },
-                  { icon: '💻', label: 'Write & run code', prompt: 'Show me what you can do with code execution. Write a quick Python script that does something fun and run it.' },
-                  { icon: '📊', label: 'Track something', prompt: 'I want to start tracking something — maybe expenses, habits, books I\'ve read, or workouts. Help me set up a custom data table for it.' },
+                  {
+                    icon: '🚀',
+                    label: 'What can you do?',
+                    prompt:
+                      'What are all the things you can help me with? Give me a quick overview of your capabilities, tools, and what makes you different from a regular chatbot.',
+                  },
+                  {
+                    icon: '🧠',
+                    label: 'My setup & limits',
+                    prompt:
+                      'Tell me about my current setup — which model am I using, what tools are available, and what are the context window limits? How much can you remember in a single conversation?',
+                  },
+                  {
+                    icon: '✅',
+                    label: 'Manage my tasks',
+                    prompt:
+                      'Show me all my current tasks and help me prioritize them. If I have none yet, help me create a task list for today.',
+                  },
+                  {
+                    icon: '📝',
+                    label: 'Take a note',
+                    prompt:
+                      'I want to save a quick note. Help me organize it with tags so I can find it later.',
+                  },
+                  {
+                    icon: '💡',
+                    label: 'Brainstorm with me',
+                    prompt:
+                      "I need fresh ideas. Let's brainstorm — ask me what topic I'm working on and then generate creative angles I haven't considered.",
+                  },
+                  {
+                    icon: '🔍',
+                    label: 'Search the web',
+                    prompt:
+                      'Search the web for the most interesting tech news from this week and give me a brief summary of the top 3 stories.',
+                  },
+                  {
+                    icon: '💻',
+                    label: 'Write & run code',
+                    prompt:
+                      'Show me what you can do with code execution. Write a quick Python script that does something fun and run it.',
+                  },
+                  {
+                    icon: '📊',
+                    label: 'Track something',
+                    prompt:
+                      "I want to start tracking something — maybe expenses, habits, books I've read, or workouts. Help me set up a custom data table for it.",
+                  },
                 ].map((item) => (
                   <button
                     key={item.label}
@@ -478,7 +556,9 @@ export function ChatPage() {
                     className="flex items-center gap-2.5 px-3 py-2.5 text-left rounded-xl border border-border dark:border-dark-border hover:border-primary/40 dark:hover:border-primary/40 hover:bg-bg-secondary dark:hover:bg-dark-bg-secondary transition-all group"
                   >
                     <span className="text-base shrink-0">{item.icon}</span>
-                    <span className="text-sm text-text-secondary dark:text-dark-text-secondary group-hover:text-text-primary dark:group-hover:text-dark-text-primary transition-colors">{item.label}</span>
+                    <span className="text-sm text-text-secondary dark:text-dark-text-secondary group-hover:text-text-primary dark:group-hover:text-dark-text-primary transition-colors">
+                      {item.label}
+                    </span>
                   </button>
                 ))}
               </div>
@@ -487,12 +567,26 @@ export function ChatPage() {
               <div className="space-y-3 mt-5 max-w-lg mx-auto">
                 {/* Code Execution */}
                 <div>
-                  <p className="text-xs text-text-muted dark:text-dark-text-muted mb-2 text-center">Code Execution</p>
+                  <p className="text-xs text-text-muted dark:text-dark-text-muted mb-2 text-center">
+                    Code Execution
+                  </p>
                   <div className="flex flex-wrap gap-2 justify-center">
                     {[
-                      { label: 'Run JavaScript', prompt: 'Run this JavaScript code:\n\nconsole.log("Hello from Node.js!");\nconst arr = [1, 2, 3, 4, 5];\nconsole.log("Sum:", arr.reduce((a, b) => a + b, 0));\nconsole.log("Reversed:", arr.reverse());' },
-                      { label: 'Run Python', prompt: 'Run this Python code:\n\nimport sys, os, datetime\nprint(f"Python {sys.version}")\nprint(f"Platform: {sys.platform}")\nprint(f"Current time: {datetime.datetime.now()}")\nprint(f"Fibonacci:", [0,1,1,2,3,5,8,13,21,34])' },
-                      { label: 'Run Shell', prompt: 'Run this shell command: echo "=== System Info ===" && uname -a && echo "\\n=== Disk Usage ===" && df -h / && echo "\\n=== Memory ===" && free -h 2>/dev/null || echo "(memory info not available)"' },
+                      {
+                        label: 'Run JavaScript',
+                        prompt:
+                          'Run this JavaScript code:\n\nconsole.log("Hello from Node.js!");\nconst arr = [1, 2, 3, 4, 5];\nconsole.log("Sum:", arr.reduce((a, b) => a + b, 0));\nconsole.log("Reversed:", arr.reverse());',
+                      },
+                      {
+                        label: 'Run Python',
+                        prompt:
+                          'Run this Python code:\n\nimport sys, os, datetime\nprint(f"Python {sys.version}")\nprint(f"Platform: {sys.platform}")\nprint(f"Current time: {datetime.datetime.now()}")\nprint(f"Fibonacci:", [0,1,1,2,3,5,8,13,21,34])',
+                      },
+                      {
+                        label: 'Run Shell',
+                        prompt:
+                          'Run this shell command: echo "=== System Info ===" && uname -a && echo "\\n=== Disk Usage ===" && df -h / && echo "\\n=== Memory ===" && free -h 2>/dev/null || echo "(memory info not available)"',
+                      },
                     ].map((item) => (
                       <button
                         key={item.label}
@@ -507,12 +601,25 @@ export function ChatPage() {
 
                 {/* Tools & Productivity */}
                 <div>
-                  <p className="text-xs text-text-muted dark:text-dark-text-muted mb-2 text-center">Tools & Productivity</p>
+                  <p className="text-xs text-text-muted dark:text-dark-text-muted mb-2 text-center">
+                    Tools & Productivity
+                  </p>
                   <div className="flex flex-wrap gap-2 justify-center">
                     {[
-                      { label: 'Web Search', prompt: 'Search the web for the most interesting tech news this week and summarize the top 3 stories.' },
-                      { label: 'Calculator', prompt: 'Calculate: (15 * 27) + (sqrt(144) / 3) - 18^2' },
-                      { label: 'Plan my day', prompt: 'Help me plan my day. Ask me what I need to get done and create a structured schedule with time blocks.' },
+                      {
+                        label: 'Web Search',
+                        prompt:
+                          'Search the web for the most interesting tech news this week and summarize the top 3 stories.',
+                      },
+                      {
+                        label: 'Calculator',
+                        prompt: 'Calculate: (15 * 27) + (sqrt(144) / 3) - 18^2',
+                      },
+                      {
+                        label: 'Plan my day',
+                        prompt:
+                          'Help me plan my day. Ask me what I need to get done and create a structured schedule with time blocks.',
+                      },
                     ].map((item) => (
                       <button
                         key={item.label}
@@ -540,17 +647,24 @@ export function ChatPage() {
             {isLoading && (streamingContent || progressEvents.length > 0) && (
               <div className="mt-4 p-4 bg-bg-secondary dark:bg-dark-bg-secondary rounded-lg border border-border dark:border-dark-border">
                 {/* Security block banner */}
-                {progressEvents.some(e => e.type === 'tool_end' && e.result?.preview?.includes('blocked in Execution Security')) && (
+                {progressEvents.some(
+                  (e) =>
+                    e.type === 'tool_end' &&
+                    e.result?.preview?.includes('blocked in Execution Security')
+                ) && (
                   <div className="mb-3 flex items-center gap-2 px-3 py-2 bg-red-500/10 border border-red-500/20 rounded-lg">
                     <Shield className="w-4 h-4 text-red-500 flex-shrink-0" />
                     <span className="text-xs text-red-600 dark:text-red-400">
-                      Tool execution was blocked by Execution Security settings. Adjust permissions in the security panel above.
+                      Tool execution was blocked by Execution Security settings. Adjust permissions
+                      in the security panel above.
                     </span>
                   </div>
                 )}
 
                 {/* Local execution warning banner */}
-                {progressEvents.some(e => e.type === 'tool_end' && e.result?.sandboxed === false) && (
+                {progressEvents.some(
+                  (e) => e.type === 'tool_end' && e.result?.sandboxed === false
+                ) && (
                   <div className="mb-3 flex items-center gap-2 px-3 py-2 bg-amber-500/10 border border-amber-500/20 rounded-lg">
                     <AlertTriangle className="w-4 h-4 text-amber-500 flex-shrink-0" />
                     <span className="text-xs text-amber-600 dark:text-amber-400">
@@ -563,7 +677,10 @@ export function ChatPage() {
                 {progressEvents.length > 0 && (
                   <div className="mb-3 space-y-1">
                     {progressEvents.slice(-5).map((event, idx) => (
-                      <div key={`progress-${event.type}-${idx}`} className="flex items-center gap-2 text-xs text-text-muted dark:text-dark-text-muted">
+                      <div
+                        key={`progress-${event.type}-${idx}`}
+                        className="flex items-center gap-2 text-xs text-text-muted dark:text-dark-text-muted"
+                      >
                         {event.type === 'status' && (
                           <>
                             <span className="w-2 h-2 bg-primary rounded-full animate-pulse" />
@@ -573,25 +690,33 @@ export function ChatPage() {
                         {event.type === 'tool_start' && (
                           <>
                             <span className="w-2 h-2 bg-warning rounded-full animate-pulse" />
-                            <span>🔧 Running <strong>{event.tool?.name}</strong>...</span>
+                            <span>
+                              🔧 Running <strong>{event.tool?.name}</strong>...
+                            </span>
                           </>
                         )}
                         {event.type === 'tool_end' && (
                           <>
-                            <span className={`w-2 h-2 ${event.result?.success ? 'bg-success' : 'bg-error'} rounded-full`} />
+                            <span
+                              className={`w-2 h-2 ${event.result?.success ? 'bg-success' : 'bg-error'} rounded-full`}
+                            />
                             <span>
                               {event.result?.success ? '✓' : '✗'} {event.tool?.name}
-                              <span className="opacity-60 ml-1">({event.result?.durationMs}ms)</span>
+                              <span className="opacity-60 ml-1">
+                                ({event.result?.durationMs}ms)
+                              </span>
                             </span>
                             {event.result?.preview?.includes('blocked in Execution Security') ? (
                               <span className="inline-flex items-center gap-0.5 px-1.5 py-0 text-[10px] bg-red-500/15 text-red-600 dark:text-red-400 rounded font-semibold leading-4">
                                 <Shield className="w-3 h-3" />
                                 BLOCKED
                               </span>
-                            ) : event.result?.sandboxed === false && (
-                              <span className="inline-flex items-center gap-0.5 px-1.5 py-0 text-[10px] bg-amber-500/15 text-amber-600 dark:text-amber-400 rounded font-semibold leading-4">
-                                LOCAL
-                              </span>
+                            ) : (
+                              event.result?.sandboxed === false && (
+                                <span className="inline-flex items-center gap-0.5 px-1.5 py-0 text-[10px] bg-amber-500/15 text-amber-600 dark:text-amber-400 rounded font-semibold leading-4">
+                                  LOCAL
+                                </span>
+                              )
                             )}
                           </>
                         )}
@@ -603,7 +728,9 @@ export function ChatPage() {
                 {/* Streaming text */}
                 {streamingContent && (
                   <div className="prose prose-sm dark:prose-invert max-w-none">
-                    <div className="whitespace-pre-wrap">{streamingContent.replace(/<memories>[\s\S]*$/, '').trimEnd()}</div>
+                    <div className="whitespace-pre-wrap">
+                      {streamingContent.replace(/<memories>[\s\S]*$/, '').trimEnd()}
+                    </div>
                     <span className="inline-block w-2 h-4 bg-primary animate-pulse ml-0.5" />
                   </div>
                 )}
@@ -612,9 +739,18 @@ export function ChatPage() {
                 {!streamingContent && progressEvents.length === 0 && (
                   <div className="flex items-center gap-2 text-sm text-text-muted dark:text-dark-text-muted">
                     <div className="flex gap-1">
-                      <span className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                      <span className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                      <span className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                      <span
+                        className="w-2 h-2 bg-primary rounded-full animate-bounce"
+                        style={{ animationDelay: '0ms' }}
+                      />
+                      <span
+                        className="w-2 h-2 bg-primary rounded-full animate-bounce"
+                        style={{ animationDelay: '150ms' }}
+                      />
+                      <span
+                        className="w-2 h-2 bg-primary rounded-full animate-bounce"
+                        style={{ animationDelay: '300ms' }}
+                      />
                     </div>
                     <span>Thinking...</span>
                   </div>
@@ -636,7 +772,10 @@ export function ChatPage() {
               <div className="px-4">
                 <SuggestionChips
                   suggestions={suggestions}
-                  onSelect={(s) => { clearSuggestions(); chatInputRef.current?.setValue(s.detail); }}
+                  onSelect={(s) => {
+                    clearSuggestions();
+                    chatInputRef.current?.setValue(s.detail);
+                  }}
                 />
               </div>
             )}
@@ -657,16 +796,18 @@ export function ChatPage() {
       <div className="px-6 py-4 border-t border-border dark:border-dark-border">
         <ExecutionSecurityPanel />
         <ToolCallLimitPanel />
-        <ChatInput ref={chatInputRef} onSend={sendMessage} onStop={cancelRequest} isLoading={isLoading} />
+        <ChatInput
+          ref={chatInputRef}
+          onSend={sendMessage}
+          onStop={cancelRequest}
+          isLoading={isLoading}
+        />
       </div>
 
       {/* Execution Approval Dialog */}
       {pendingApproval && (
         <Suspense fallback={null}>
-          <ExecutionApprovalDialog
-            approval={pendingApproval}
-            onResolve={resolveApproval}
-          />
+          <ExecutionApprovalDialog approval={pendingApproval} onResolve={resolveApproval} />
         </Suspense>
       )}
     </div>

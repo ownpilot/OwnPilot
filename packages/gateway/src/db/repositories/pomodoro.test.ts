@@ -124,7 +124,7 @@ describe('PomodoroRepository', () => {
     it('should accept optional taskDescription', async () => {
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
       mockAdapter.queryOne.mockResolvedValueOnce(
-        makeSessionRow({ task_description: 'Write tests' }),
+        makeSessionRow({ task_description: 'Write tests' })
       );
 
       const result = await repo.startSession({
@@ -140,9 +140,9 @@ describe('PomodoroRepository', () => {
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
       mockAdapter.queryOne.mockResolvedValueOnce(null);
 
-      await expect(
-        repo.startSession({ type: 'work', durationMinutes: 25 }),
-      ).rejects.toThrow('Failed to create pomodoro session');
+      await expect(repo.startSession({ type: 'work', durationMinutes: 25 })).rejects.toThrow(
+        'Failed to create pomodoro session'
+      );
     });
 
     it('should set status to running in the INSERT', async () => {
@@ -193,7 +193,7 @@ describe('PomodoroRepository', () => {
         makeSessionRow({
           completed_at: NOW,
           interrupted_at: NOW,
-        }),
+        })
       );
 
       const result = await repo.getSession('pom_1');
@@ -269,9 +269,7 @@ describe('PomodoroRepository', () => {
     });
 
     it('should return null when session is not running', async () => {
-      mockAdapter.queryOne.mockResolvedValueOnce(
-        makeSessionRow({ status: 'completed' }),
-      );
+      mockAdapter.queryOne.mockResolvedValueOnce(makeSessionRow({ status: 'completed' }));
 
       expect(await repo.completeSession('pom_1')).toBeNull();
     });
@@ -287,7 +285,7 @@ describe('PomodoroRepository', () => {
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
       // getSession (return)
       mockAdapter.queryOne.mockResolvedValueOnce(
-        makeSessionRow({ status: 'completed', completed_at: NOW }),
+        makeSessionRow({ status: 'completed', completed_at: NOW })
       );
 
       const result = await repo.completeSession('pom_1');
@@ -308,7 +306,7 @@ describe('PomodoroRepository', () => {
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
       // getSession (return)
       mockAdapter.queryOne.mockResolvedValueOnce(
-        makeSessionRow({ status: 'completed', completed_at: NOW }),
+        makeSessionRow({ status: 'completed', completed_at: NOW })
       );
 
       const result = await repo.completeSession('pom_1');
@@ -331,9 +329,7 @@ describe('PomodoroRepository', () => {
     });
 
     it('should return null when session is not running', async () => {
-      mockAdapter.queryOne.mockResolvedValueOnce(
-        makeSessionRow({ status: 'completed' }),
-      );
+      mockAdapter.queryOne.mockResolvedValueOnce(makeSessionRow({ status: 'completed' }));
 
       expect(await repo.interruptSession('pom_1')).toBeNull();
     });
@@ -353,7 +349,7 @@ describe('PomodoroRepository', () => {
           status: 'interrupted',
           interrupted_at: NOW,
           interruption_reason: 'Meeting',
-        }),
+        })
       );
 
       const result = await repo.interruptSession('pom_1', 'Meeting');
@@ -373,7 +369,7 @@ describe('PomodoroRepository', () => {
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
       // getSession (return)
       mockAdapter.queryOne.mockResolvedValueOnce(
-        makeSessionRow({ status: 'interrupted', interrupted_at: NOW }),
+        makeSessionRow({ status: 'interrupted', interrupted_at: NOW })
       );
 
       await repo.interruptSession('pom_1');
@@ -543,7 +539,7 @@ describe('PomodoroRepository', () => {
           work_duration: 30,
           short_break_duration: 10,
           auto_start_breaks: true,
-        }),
+        })
       );
 
       const result = await repo.updateSettings({

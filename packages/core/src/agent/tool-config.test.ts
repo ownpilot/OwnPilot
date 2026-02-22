@@ -16,13 +16,29 @@ describe('TOOL_GROUPS', () => {
   const groupIds = Object.keys(TOOL_GROUPS);
 
   it('contains always-on groups', () => {
-    for (const id of ['core', 'filesystem', 'personalData', 'customData', 'memory', 'goals', 'utilities', 'customTools']) {
+    for (const id of [
+      'core',
+      'filesystem',
+      'personalData',
+      'customData',
+      'memory',
+      'goals',
+      'utilities',
+      'customTools',
+    ]) {
       expect(TOOL_GROUPS[id]).toBeDefined();
     }
   });
 
   it('contains toggleable groups', () => {
-    for (const id of ['codeExecution', 'webFetch', 'media', 'communication', 'devTools', 'finance']) {
+    for (const id of [
+      'codeExecution',
+      'webFetch',
+      'media',
+      'communication',
+      'devTools',
+      'finance',
+    ]) {
       expect(TOOL_GROUPS[id]).toBeDefined();
     }
   });
@@ -38,7 +54,14 @@ describe('TOOL_GROUPS', () => {
   });
 
   it('toggleable groups do not have alwaysOn flag', () => {
-    for (const id of ['codeExecution', 'webFetch', 'media', 'communication', 'devTools', 'finance']) {
+    for (const id of [
+      'codeExecution',
+      'webFetch',
+      'media',
+      'communication',
+      'devTools',
+      'finance',
+    ]) {
       expect(TOOL_GROUPS[id].alwaysOn).toBeFalsy();
     }
   });
@@ -259,7 +282,9 @@ describe('getEnabledTools', () => {
 
   it('returns only tools for specified groups', () => {
     const tools = getEnabledTools(['core']);
-    expect(tools).toEqual(expect.arrayContaining(['get_current_time', 'calculate', 'generate_uuid']));
+    expect(tools).toEqual(
+      expect.arrayContaining(['get_current_time', 'calculate', 'generate_uuid'])
+    );
     expect(tools).not.toContain('read_file');
     expect(tools).not.toContain('add_task');
   });

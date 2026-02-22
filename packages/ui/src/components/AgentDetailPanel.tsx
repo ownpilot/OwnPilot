@@ -74,9 +74,7 @@ export function AgentDetailPanel({ agent, onClose, onChat }: AgentDetailPanelPro
               ))}
             </div>
           ) : (
-            <p className="text-sm text-text-muted dark:text-dark-text-muted">
-              No tools configured
-            </p>
+            <p className="text-sm text-text-muted dark:text-dark-text-muted">No tools configured</p>
           )}
         </div>
       </div>

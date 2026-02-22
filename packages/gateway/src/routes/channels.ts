@@ -9,7 +9,14 @@ import { Hono } from 'hono';
 import { getChannelService, getDefaultPluginRegistry } from '@ownpilot/core';
 import { ChannelMessagesRepository } from '../db/repositories/channel-messages.js';
 import { configServicesRepo } from '../db/repositories/config-services.js';
-import { apiResponse, apiError, getIntParam, ERROR_CODES, notFoundError, getErrorMessage } from './helpers.js';
+import {
+  apiResponse,
+  apiError,
+  getIntParam,
+  ERROR_CODES,
+  notFoundError,
+  getErrorMessage,
+} from './helpers.js';
 import { MAX_PAGINATION_OFFSET } from '../config/defaults.js';
 import { refreshChannelApi } from '../plugins/init.js';
 import { wsGateway } from '../ws/server.js';
@@ -35,8 +42,12 @@ interface ChannelAPIWithBotInfo {
 }
 
 function hasBotInfo(api: unknown): api is ChannelAPIWithBotInfo {
-  return typeof api === 'object' && api !== null &&
-    'getBotInfo' in api && typeof (api as Record<string, unknown>).getBotInfo === 'function';
+  return (
+    typeof api === 'object' &&
+    api !== null &&
+    'getBotInfo' in api &&
+    typeof (api as Record<string, unknown>).getBotInfo === 'function'
+  );
 }
 
 /** Extract bot info from a channel API if available. */
@@ -72,7 +83,7 @@ channelRoutes.get('/messages/inbox', async (c) => {
       timestamp: m.createdAt.toISOString(),
       read: m.direction === 'outbound' || readMessageIds.has(m.id),
       replied: false,
-      direction: m.direction === 'inbound' ? 'incoming' as const : 'outgoing' as const,
+      direction: m.direction === 'inbound' ? ('incoming' as const) : ('outgoing' as const),
       replyTo: m.replyToId,
       metadata: m.metadata,
     }));
@@ -85,10 +96,14 @@ channelRoutes.get('/messages/inbox', async (c) => {
       unreadCount,
     });
   } catch (error) {
-    return apiError(c, {
-      code: ERROR_CODES.FETCH_FAILED,
-      message: getErrorMessage(error, 'Failed to fetch inbox'),
-    }, 500);
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.FETCH_FAILED,
+        message: getErrorMessage(error, 'Failed to fetch inbox'),
+      },
+      500
+    );
   }
 });
 
@@ -124,10 +139,14 @@ channelRoutes.delete('/messages', async (c) => {
     return apiResponse(c, { deleted });
   } catch (error) {
     log.error('Failed to clear messages:', error);
-    return apiError(c, {
-      code: ERROR_CODES.INTERNAL_ERROR,
-      message: getErrorMessage(error, 'Failed to clear messages'),
-    }, 500);
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.INTERNAL_ERROR,
+        message: getErrorMessage(error, 'Failed to clear messages'),
+      },
+      500
+    );
   }
 });
 
@@ -192,7 +211,14 @@ channelRoutes.post('/:id/connect', async (c) => {
     wsGateway.broadcast('data:changed', { entity: 'channel', action: 'updated', id: pluginId });
     return apiResponse(c, { pluginId, status: 'connected' });
   } catch (error) {
-    return apiError(c, { code: ERROR_CODES.CONNECTION_FAILED, message: getErrorMessage(error, 'Failed to connect channel') }, 500);
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.CONNECTION_FAILED,
+        message: getErrorMessage(error, 'Failed to connect channel'),
+      },
+      500
+    );
   }
 });
 
@@ -207,7 +233,14 @@ channelRoutes.post('/:id/disconnect', async (c) => {
     wsGateway.broadcast('data:changed', { entity: 'channel', action: 'updated', id: pluginId });
     return apiResponse(c, { pluginId, status: 'disconnected' });
   } catch (error) {
-    return apiError(c, { code: ERROR_CODES.DISCONNECT_FAILED, message: getErrorMessage(error, 'Failed to disconnect channel') }, 500);
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.DISCONNECT_FAILED,
+        message: getErrorMessage(error, 'Failed to disconnect channel'),
+      },
+      500
+    );
   }
 });
 
@@ -221,12 +254,23 @@ channelRoutes.post('/:id/reconnect', async (c) => {
   try {
     await refreshChannelApi(pluginId);
     const service = getChannelService();
-    try { await service.disconnect(pluginId); } catch { /* may already be disconnected */ }
+    try {
+      await service.disconnect(pluginId);
+    } catch {
+      /* may already be disconnected */
+    }
     await service.connect(pluginId);
     wsGateway.broadcast('data:changed', { entity: 'channel', action: 'updated', id: pluginId });
     return apiResponse(c, { pluginId, status: 'reconnected' });
   } catch (error) {
-    return apiError(c, { code: ERROR_CODES.CONNECTION_FAILED, message: getErrorMessage(error, 'Failed to reconnect channel') }, 500);
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.CONNECTION_FAILED,
+        message: getErrorMessage(error, 'Failed to reconnect channel'),
+      },
+      500
+    );
   }
 });
 
@@ -246,7 +290,11 @@ channelRoutes.post('/:id/setup', async (c) => {
 
   try {
     if (!body.config || typeof body.config !== 'object') {
-      return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'config object is required' }, 400);
+      return apiError(
+        c,
+        { code: ERROR_CODES.INVALID_REQUEST, message: 'config object is required' },
+        400
+      );
     }
 
     // 1. Find the plugin and its required service
@@ -256,9 +304,15 @@ channelRoutes.post('/:id/setup', async (c) => {
       return notFoundError(c, 'Channel', pluginId);
     }
 
-    const requiredServices = plugin.manifest.requiredServices as Array<{ name: string }> | undefined;
+    const requiredServices = plugin.manifest.requiredServices as
+      | Array<{ name: string }>
+      | undefined;
     if (!requiredServices?.length) {
-      return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'Channel has no required services' }, 400);
+      return apiError(
+        c,
+        { code: ERROR_CODES.INVALID_REQUEST, message: 'Channel has no required services' },
+        400
+      );
     }
 
     const serviceName = requiredServices[0]!.name;
@@ -288,7 +342,11 @@ channelRoutes.post('/:id/setup', async (c) => {
 
     // 5. (Re)connect the channel
     const service = getChannelService();
-    try { await service.disconnect(pluginId); } catch { /* may already be disconnected */ }
+    try {
+      await service.disconnect(pluginId);
+    } catch {
+      /* may already be disconnected */
+    }
     await service.connect(pluginId);
 
     // 6. Get bot info for response
@@ -301,7 +359,14 @@ channelRoutes.post('/:id/setup', async (c) => {
       ...(botInfo && { botInfo: { username: botInfo.username, firstName: botInfo.firstName } }),
     });
   } catch (error) {
-    return apiError(c, { code: ERROR_CODES.CONNECTION_FAILED, message: getErrorMessage(error, 'Channel setup failed') }, 500);
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.CONNECTION_FAILED,
+        message: getErrorMessage(error, 'Channel setup failed'),
+      },
+      500
+    );
   }
 });
 
@@ -354,7 +419,11 @@ channelRoutes.post('/:id/send', async (c) => {
     let chatId = body.chatId;
 
     if (!text) {
-      return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'text (or content) is required' }, 400);
+      return apiError(
+        c,
+        { code: ERROR_CODES.INVALID_REQUEST, message: 'text (or content) is required' },
+        400
+      );
     }
 
     // If chatId not provided, try to use the first allowed_user from Config Center
@@ -362,7 +431,9 @@ channelRoutes.post('/:id/send', async (c) => {
     if (!chatId) {
       const registry = await getDefaultPluginRegistry();
       const plugin = registry.get(pluginId);
-      const requiredServices = plugin?.manifest.requiredServices as Array<{ name: string }> | undefined;
+      const requiredServices = plugin?.manifest.requiredServices as
+        | Array<{ name: string }>
+        | undefined;
       if (requiredServices?.length) {
         const raw = configServicesRepo.getFieldValue(requiredServices[0]!.name, 'allowed_users');
         if (typeof raw === 'string' && raw.trim()) {
@@ -372,7 +443,14 @@ channelRoutes.post('/:id/send', async (c) => {
     }
 
     if (!chatId) {
-      return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'chatId is required (configure allowed_users in Config Center for auto-resolve)' }, 400);
+      return apiError(
+        c,
+        {
+          code: ERROR_CODES.INVALID_REQUEST,
+          message: 'chatId is required (configure allowed_users in Config Center for auto-resolve)',
+        },
+        400
+      );
     }
 
     const messageId = await service.send(pluginId, {
@@ -383,7 +461,11 @@ channelRoutes.post('/:id/send', async (c) => {
 
     return apiResponse(c, { messageId, pluginId, chatId });
   } catch (error) {
-    return apiError(c, { code: ERROR_CODES.SEND_FAILED, message: getErrorMessage(error, 'Failed to send message') }, 500);
+    return apiError(
+      c,
+      { code: ERROR_CODES.SEND_FAILED, message: getErrorMessage(error, 'Failed to send message') },
+      500
+    );
   }
 });
 
@@ -402,7 +484,11 @@ channelRoutes.post('/:id/reply', async (c) => {
   }
 
   if (api.getStatus() !== 'connected') {
-    return apiError(c, { code: ERROR_CODES.CONNECTION_FAILED, message: 'Channel is not connected' }, 400);
+    return apiError(
+      c,
+      { code: ERROR_CODES.CONNECTION_FAILED, message: 'Channel is not connected' },
+      400
+    );
   }
 
   try {
@@ -417,7 +503,11 @@ channelRoutes.post('/:id/reply', async (c) => {
       return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'text is required' }, 400);
     }
     if (text.length > 4096) {
-      return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'text must be 4096 characters or less' }, 400);
+      return apiError(
+        c,
+        { code: ERROR_CODES.INVALID_REQUEST, message: 'text must be 4096 characters or less' },
+        400
+      );
     }
 
     let chatId = body.platformChatId;
@@ -426,7 +516,9 @@ channelRoutes.post('/:id/reply', async (c) => {
     if (!chatId) {
       const registry = await getDefaultPluginRegistry();
       const plugin = registry.get(pluginId);
-      const requiredServices = plugin?.manifest.requiredServices as Array<{ name: string }> | undefined;
+      const requiredServices = plugin?.manifest.requiredServices as
+        | Array<{ name: string }>
+        | undefined;
       if (requiredServices?.length) {
         const raw = configServicesRepo.getFieldValue(requiredServices[0]!.name, 'allowed_users');
         if (typeof raw === 'string' && raw.trim()) {
@@ -436,7 +528,11 @@ channelRoutes.post('/:id/reply', async (c) => {
     }
 
     if (!chatId) {
-      return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'platformChatId is required' }, 400);
+      return apiError(
+        c,
+        { code: ERROR_CODES.INVALID_REQUEST, message: 'platformChatId is required' },
+        400
+      );
     }
 
     // Send the message via channel API
@@ -480,7 +576,11 @@ channelRoutes.post('/:id/reply', async (c) => {
 
     return apiResponse(c, { messageId, platformMessageId });
   } catch (error) {
-    return apiError(c, { code: ERROR_CODES.SEND_FAILED, message: getErrorMessage(error, 'Failed to send reply') }, 500);
+    return apiError(
+      c,
+      { code: ERROR_CODES.SEND_FAILED, message: getErrorMessage(error, 'Failed to send reply') },
+      500
+    );
   }
 });
 
@@ -498,7 +598,13 @@ channelRoutes.get('/:id/messages', async (c) => {
 
     return apiResponse(c, { messages, count: messages.length, limit, offset });
   } catch (error) {
-    return apiError(c, { code: ERROR_CODES.FETCH_FAILED, message: getErrorMessage(error, 'Failed to fetch messages') }, 500);
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.FETCH_FAILED,
+        message: getErrorMessage(error, 'Failed to fetch messages'),
+      },
+      500
+    );
   }
 });
-

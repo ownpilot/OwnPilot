@@ -162,10 +162,14 @@ export class MemoriesRepository extends BaseRepository {
     const memory = await this.get(id);
     if (!memory) throw new Error('Failed to create memory');
 
-    getEventBus().emit(createEvent<ResourceCreatedData>(
-      EventTypes.RESOURCE_CREATED, 'resource', 'memories-repository',
-      { resourceType: 'memory', id },
-    ));
+    getEventBus().emit(
+      createEvent<ResourceCreatedData>(
+        EventTypes.RESOURCE_CREATED,
+        'resource',
+        'memories-repository',
+        { resourceType: 'memory', id }
+      )
+    );
 
     return memory;
   }
@@ -221,10 +225,14 @@ export class MemoriesRepository extends BaseRepository {
     const updated = await this.get(id, false);
 
     if (updated) {
-      getEventBus().emit(createEvent<ResourceUpdatedData>(
-        EventTypes.RESOURCE_UPDATED, 'resource', 'memories-repository',
-        { resourceType: 'memory', id, changes: input },
-      ));
+      getEventBus().emit(
+        createEvent<ResourceUpdatedData>(
+          EventTypes.RESOURCE_UPDATED,
+          'resource',
+          'memories-repository',
+          { resourceType: 'memory', id, changes: input }
+        )
+      );
     }
 
     return updated;
@@ -234,17 +242,21 @@ export class MemoriesRepository extends BaseRepository {
    * Delete a memory
    */
   async delete(id: string): Promise<boolean> {
-    const result = await this.execute(
-      `DELETE FROM memories WHERE id = $1 AND user_id = $2`,
-      [id, this.userId]
-    );
+    const result = await this.execute(`DELETE FROM memories WHERE id = $1 AND user_id = $2`, [
+      id,
+      this.userId,
+    ]);
     const deleted = result.changes > 0;
 
     if (deleted) {
-      getEventBus().emit(createEvent<ResourceDeletedData>(
-        EventTypes.RESOURCE_DELETED, 'resource', 'memories-repository',
-        { resourceType: 'memory', id },
-      ));
+      getEventBus().emit(
+        createEvent<ResourceDeletedData>(
+          EventTypes.RESOURCE_DELETED,
+          'resource',
+          'memories-repository',
+          { resourceType: 'memory', id }
+        )
+      );
     }
 
     return deleted;
@@ -563,7 +575,7 @@ export class MemoriesRepository extends BaseRepository {
     params.push(limit);
 
     const rows = await this.query<MemoryRow & { similarity: number }>(sql, params);
-    return rows.map(row => ({
+    return rows.map((row) => ({
       ...rowToMemory(row),
       similarity: Number(row.similarity),
     }));
@@ -648,7 +660,7 @@ export class MemoriesRepository extends BaseRepository {
       type?: MemoryType;
       limit?: number;
       minImportance?: number;
-    } = {},
+    } = {}
   ): Promise<Array<Memory & { ftsRank: number }>> {
     const limit = options.limit ?? 20;
     const conditions: string[] = ['user_id = $1', 'search_vector IS NOT NULL'];
@@ -682,7 +694,7 @@ export class MemoriesRepository extends BaseRepository {
     params.push(limit);
 
     const rows = await this.query<MemoryRow & { fts_rank: number }>(sql, params);
-    return rows.map(row => ({
+    return rows.map((row) => ({
       ...rowToMemory(row),
       ftsRank: Number(row.fts_rank),
     }));
@@ -704,7 +716,7 @@ export class MemoriesRepository extends BaseRepository {
       type?: MemoryType;
       limit?: number;
       minImportance?: number;
-    } = {},
+    } = {}
   ): Promise<Array<Memory & { score: number; matchType: MatchType }>> {
     const limit = options.limit ?? 20;
     const k = RRF_K;
@@ -727,7 +739,7 @@ export class MemoriesRepository extends BaseRepository {
     });
 
     if (ftsResults.length > 0) {
-      return ftsResults.map(m => ({
+      return ftsResults.map((m) => ({
         ...m,
         score: m.ftsRank,
         matchType: 'fts' as const,
@@ -758,7 +770,7 @@ export class MemoriesRepository extends BaseRepository {
       limit: number;
       minImportance?: number;
       k: number;
-    },
+    }
   ): Promise<Array<Memory & { score: number; matchType: MatchType }>> {
     const { limit, k } = options;
 
@@ -841,20 +853,16 @@ export class MemoriesRepository extends BaseRepository {
       LIMIT $${nextParam}
     `;
 
-    const params = [
-      this.userId,
-      JSON.stringify(embedding),
-      query,
-      ...extraParams,
-      limit,
-    ];
+    const params = [this.userId, JSON.stringify(embedding), query, ...extraParams, limit];
 
-    const rows = await this.query<MemoryRow & {
-      rrf_score: number;
-      match_type: string;
-    }>(sql, params);
+    const rows = await this.query<
+      MemoryRow & {
+        rrf_score: number;
+        match_type: string;
+      }
+    >(sql, params);
 
-    return rows.map(row => ({
+    return rows.map((row) => ({
       ...rowToMemory(row),
       score: Number(row.rrf_score),
       matchType: row.match_type as MatchType,
@@ -870,7 +878,7 @@ export class MemoriesRepository extends BaseRepository {
        WHERE user_id = $1 AND embedding IS NULL
        ORDER BY importance DESC, created_at DESC
        LIMIT $2`,
-      [this.userId, limit],
+      [this.userId, limit]
     );
     return rows.map(rowToMemory);
   }

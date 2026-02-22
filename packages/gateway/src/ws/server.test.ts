@@ -74,9 +74,7 @@ vi.mock('../routes/agents.js', () => ({
 }));
 
 vi.mock('../routes/helpers.js', () => ({
-  getErrorMessage: vi.fn((e: unknown) =>
-    e instanceof Error ? e.message : 'Unknown error'
-  ),
+  getErrorMessage: vi.fn((e: unknown) => (e instanceof Error ? e.message : 'Unknown error')),
 }));
 
 vi.mock('../services/log.js', () => ({
@@ -132,9 +130,7 @@ function createMockRequest(
  * handler registered on mockWss.
  */
 function getConnectionHandler(): (socket: WebSocket, request: unknown) => void {
-  const call = mockWss.on.mock.calls.find(
-    (c: unknown[]) => c[0] === 'connection'
-  );
+  const call = mockWss.on.mock.calls.find((c: unknown[]) => c[0] === 'connection');
   if (!call) throw new Error('connection handler not registered');
   return call[1] as (socket: WebSocket, request: unknown) => void;
 }
@@ -143,10 +139,7 @@ function getConnectionHandler(): (socket: WebSocket, request: unknown) => void {
  * Given a mock socket that went through handleConnection, extract the
  * handler registered for the given event name.
  */
-function getSocketHandler(
-  socket: WebSocket,
-  event: string
-): (...args: unknown[]) => void {
+function getSocketHandler(socket: WebSocket, event: string): (...args: unknown[]) => void {
   const onCalls = (socket.on as ReturnType<typeof vi.fn>).mock.calls;
   const call = onCalls.find((c: unknown[]) => c[0] === event);
   if (!call) throw new Error(`${event} handler not registered on socket`);
@@ -174,9 +167,7 @@ describe('WSGateway', () => {
     mockClientHandler.process.mockReturnValue(Promise.resolve());
     mockWss.on.mockClear();
     mockWss.clients.clear();
-    mockWss.close.mockImplementation(
-      (cb?: (err?: Error) => void) => cb?.()
-    );
+    mockWss.close.mockImplementation((cb?: (err?: Error) => void) => cb?.());
     delete process.env.API_KEYS;
 
     // Re-import to get a fresh module
@@ -210,10 +201,7 @@ describe('WSGateway', () => {
       const socket = createMockSocket();
       handler(socket, createMockRequest('/'));
 
-      expect(socket.close).toHaveBeenCalledWith(
-        1013,
-        'Maximum connections reached'
-      );
+      expect(socket.close).toHaveBeenCalledWith(1013, 'Maximum connections reached');
     });
   });
 
@@ -247,10 +235,7 @@ describe('WSGateway', () => {
 
       handler(socket, request);
 
-      expect(socket.close).toHaveBeenCalledWith(
-        1008,
-        'Authentication required'
-      );
+      expect(socket.close).toHaveBeenCalledWith(1008, 'Authentication required');
       expect(mockSessionManager.create).not.toHaveBeenCalled();
     });
 
@@ -280,10 +265,7 @@ describe('WSGateway', () => {
 
       handler(socket, request);
 
-      expect(socket.close).toHaveBeenCalledWith(
-        1008,
-        'Authentication required'
-      );
+      expect(socket.close).toHaveBeenCalledWith(1008, 'Authentication required');
       expect(mockSessionManager.create).not.toHaveBeenCalled();
     });
   });
@@ -376,10 +358,7 @@ describe('WSGateway', () => {
 
       handler(socket, request);
 
-      expect(socket.close).toHaveBeenCalledWith(
-        1013,
-        'Maximum connections reached'
-      );
+      expect(socket.close).toHaveBeenCalledWith(1013, 'Maximum connections reached');
       expect(mockSessionManager.create).not.toHaveBeenCalled();
     });
 
@@ -394,11 +373,9 @@ describe('WSGateway', () => {
       handler(socket, request);
 
       expect(mockSessionManager.create).toHaveBeenCalledWith(socket);
-      expect(mockSessionManager.send).toHaveBeenCalledWith(
-        'session-1',
-        'connection:ready',
-        { sessionId: 'session-1' }
-      );
+      expect(mockSessionManager.send).toHaveBeenCalledWith('session-1', 'connection:ready', {
+        sessionId: 'session-1',
+      });
     });
 
     it('sets up message, close, error, pong handlers on socket', () => {
@@ -472,16 +449,13 @@ describe('WSGateway', () => {
       const messageHandler = setupAndGetMessageHandler();
 
       messageHandler(
-        Buffer.from(
-          JSON.stringify({ type: 'chat:send', payload: { content: 'hi' } })
-        )
+        Buffer.from(JSON.stringify({ type: 'chat:send', payload: { content: 'hi' } }))
       );
 
-      expect(mockSessionManager.send).toHaveBeenCalledWith(
-        'session-1',
-        'connection:error',
-        { code: 'RATE_LIMITED', message: 'Too many messages, slow down' }
-      );
+      expect(mockSessionManager.send).toHaveBeenCalledWith('session-1', 'connection:error', {
+        code: 'RATE_LIMITED',
+        message: 'Too many messages, slow down',
+      });
     });
 
     it('sends PARSE_ERROR on invalid JSON', () => {
@@ -489,39 +463,32 @@ describe('WSGateway', () => {
 
       messageHandler(Buffer.from('not valid json!!!'));
 
-      expect(mockSessionManager.send).toHaveBeenCalledWith(
-        'session-1',
-        'connection:error',
-        { code: 'PARSE_ERROR', message: 'Invalid JSON message' }
-      );
+      expect(mockSessionManager.send).toHaveBeenCalledWith('session-1', 'connection:error', {
+        code: 'PARSE_ERROR',
+        message: 'Invalid JSON message',
+      });
     });
 
     it('sends INVALID_MESSAGE when type is missing', () => {
       const messageHandler = setupAndGetMessageHandler();
 
-      messageHandler(
-        Buffer.from(JSON.stringify({ payload: { content: 'hi' } }))
-      );
+      messageHandler(Buffer.from(JSON.stringify({ payload: { content: 'hi' } })));
 
-      expect(mockSessionManager.send).toHaveBeenCalledWith(
-        'session-1',
-        'connection:error',
-        { code: 'INVALID_MESSAGE', message: 'Message must have a type' }
-      );
+      expect(mockSessionManager.send).toHaveBeenCalledWith('session-1', 'connection:error', {
+        code: 'INVALID_MESSAGE',
+        message: 'Message must have a type',
+      });
     });
 
     it('sends INVALID_MESSAGE when type is not a string', () => {
       const messageHandler = setupAndGetMessageHandler();
 
-      messageHandler(
-        Buffer.from(JSON.stringify({ type: 123, payload: {} }))
-      );
+      messageHandler(Buffer.from(JSON.stringify({ type: 123, payload: {} })));
 
-      expect(mockSessionManager.send).toHaveBeenCalledWith(
-        'session-1',
-        'connection:error',
-        { code: 'INVALID_MESSAGE', message: 'Message must have a type' }
-      );
+      expect(mockSessionManager.send).toHaveBeenCalledWith('session-1', 'connection:error', {
+        code: 'INVALID_MESSAGE',
+        message: 'Message must have a type',
+      });
     });
 
     it('sends UNKNOWN_EVENT for invalid event types', () => {
@@ -536,29 +503,20 @@ describe('WSGateway', () => {
         )
       );
 
-      expect(mockSessionManager.send).toHaveBeenCalledWith(
-        'session-1',
-        'connection:error',
-        { code: 'UNKNOWN_EVENT', message: 'Unknown event type' }
-      );
+      expect(mockSessionManager.send).toHaveBeenCalledWith('session-1', 'connection:error', {
+        code: 'UNKNOWN_EVENT',
+        message: 'Unknown event type',
+      });
     });
 
     it('processes valid events through clientHandler', () => {
       const messageHandler = setupAndGetMessageHandler();
 
       const payload = { content: 'hello' };
-      messageHandler(
-        Buffer.from(
-          JSON.stringify({ type: 'chat:send', payload })
-        )
-      );
+      messageHandler(Buffer.from(JSON.stringify({ type: 'chat:send', payload })));
 
       expect(mockClientHandler.has).toHaveBeenCalledWith('chat:send');
-      expect(mockClientHandler.process).toHaveBeenCalledWith(
-        'chat:send',
-        payload,
-        'session-1'
-      );
+      expect(mockClientHandler.process).toHaveBeenCalledWith('chat:send', payload, 'session-1');
     });
 
     it('touches session on valid message', () => {
@@ -568,9 +526,7 @@ describe('WSGateway', () => {
       mockSessionManager.touch.mockClear();
 
       messageHandler(
-        Buffer.from(
-          JSON.stringify({ type: 'chat:send', payload: { content: 'hi' } })
-        )
+        Buffer.from(JSON.stringify({ type: 'chat:send', payload: { content: 'hi' } }))
       );
 
       expect(mockSessionManager.touch).toHaveBeenCalledWith('session-1');
@@ -581,9 +537,7 @@ describe('WSGateway', () => {
       const messageHandler = setupAndGetMessageHandler();
 
       messageHandler(
-        Buffer.from(
-          JSON.stringify({ type: 'chat:send', payload: { content: 'hi' } })
-        )
+        Buffer.from(JSON.stringify({ type: 'chat:send', payload: { content: 'hi' } }))
       );
 
       expect(mockClientHandler.process).not.toHaveBeenCalled();
@@ -599,9 +553,7 @@ describe('WSGateway', () => {
       gw.start();
 
       // Verify setupServer was called (connection + error handlers registered)
-      const registeredEvents = mockWss.on.mock.calls.map(
-        (c: unknown[]) => c[0]
-      );
+      const registeredEvents = mockWss.on.mock.calls.map((c: unknown[]) => c[0]);
       expect(registeredEvents).toContain('connection');
       expect(registeredEvents).toContain('error');
     });
@@ -617,9 +569,7 @@ describe('WSGateway', () => {
       const gw = new WSGateway();
       gw.start();
 
-      const registeredEvents = mockWss.on.mock.calls.map(
-        (c: unknown[]) => c[0]
-      );
+      const registeredEvents = mockWss.on.mock.calls.map((c: unknown[]) => c[0]);
       expect(registeredEvents).toContain('connection');
       expect(registeredEvents).toContain('error');
     });
@@ -675,14 +625,8 @@ describe('WSGateway', () => {
 
       await gw.stop();
 
-      expect(socket1.close).toHaveBeenCalledWith(
-        1001,
-        'Server shutting down'
-      );
-      expect(socket2.close).toHaveBeenCalledWith(
-        1001,
-        'Server shutting down'
-      );
+      expect(socket1.close).toHaveBeenCalledWith(1001, 'Server shutting down');
+      expect(socket2.close).toHaveBeenCalledWith(1001, 'Server shutting down');
 
       mockWss.clients.clear();
     });
@@ -692,16 +636,12 @@ describe('WSGateway', () => {
       gw.start();
 
       const closeError = new Error('close failed');
-      mockWss.close.mockImplementation(
-        (cb?: (err?: Error) => void) => cb?.(closeError)
-      );
+      mockWss.close.mockImplementation((cb?: (err?: Error) => void) => cb?.(closeError));
 
       await expect(gw.stop()).rejects.toThrow('close failed');
 
       // Reset for other tests
-      mockWss.close.mockImplementation(
-        (cb?: (err?: Error) => void) => cb?.()
-      );
+      mockWss.close.mockImplementation((cb?: (err?: Error) => void) => cb?.());
     });
 
     it('does not fire heartbeat after stop', async () => {
@@ -738,14 +678,9 @@ describe('WSGateway', () => {
 
       gw.attachToServer(mockHttpServer as unknown as import('node:http').Server);
 
-      expect(mockHttpServer.on).toHaveBeenCalledWith(
-        'upgrade',
-        expect.any(Function)
-      );
+      expect(mockHttpServer.on).toHaveBeenCalledWith('upgrade', expect.any(Function));
       // Also sets up connection/error handlers on wss
-      const registeredEvents = mockWss.on.mock.calls.map(
-        (c: unknown[]) => c[0]
-      );
+      const registeredEvents = mockWss.on.mock.calls.map((c: unknown[]) => c[0]);
       expect(registeredEvents).toContain('connection');
     });
 
@@ -755,9 +690,7 @@ describe('WSGateway', () => {
 
       const mockHttpServer = { on: vi.fn(), removeListener: vi.fn() };
       expect(() =>
-        gw.attachToServer(
-          mockHttpServer as unknown as import('node:http').Server
-        )
+        gw.attachToServer(mockHttpServer as unknown as import('node:http').Server)
       ).toThrow('WebSocket server already running');
     });
 
@@ -768,16 +701,11 @@ describe('WSGateway', () => {
         removeListener: vi.fn(),
       };
 
-      gw.attachToServer(
-        mockHttpServer as unknown as import('node:http').Server
-      );
+      gw.attachToServer(mockHttpServer as unknown as import('node:http').Server);
 
       await gw.stop();
 
-      expect(mockHttpServer.removeListener).toHaveBeenCalledWith(
-        'upgrade',
-        expect.any(Function)
-      );
+      expect(mockHttpServer.removeListener).toHaveBeenCalledWith('upgrade', expect.any(Function));
     });
   });
 
@@ -791,10 +719,7 @@ describe('WSGateway', () => {
 
       const count = gw.broadcast('connection:ready', payload);
 
-      expect(mockSessionManager.broadcast).toHaveBeenCalledWith(
-        'connection:ready',
-        payload
-      );
+      expect(mockSessionManager.broadcast).toHaveBeenCalledWith('connection:ready', payload);
       expect(count).toBe(3);
     });
   });
@@ -806,11 +731,7 @@ describe('WSGateway', () => {
 
       const result = gw.send('sess-1', 'connection:ready', payload);
 
-      expect(mockSessionManager.send).toHaveBeenCalledWith(
-        'sess-1',
-        'connection:ready',
-        payload
-      );
+      expect(mockSessionManager.send).toHaveBeenCalledWith('sess-1', 'connection:ready', payload);
       expect(result).toBe(true);
     });
   });
@@ -883,28 +804,20 @@ describe('WSGateway', () => {
       'session:pong',
     ];
 
-    it.each(validEvents)(
-      'accepts %s as a valid event type',
-      (eventType) => {
-        const messageHandler = setupAndGetMessageHandler();
+    it.each(validEvents)('accepts %s as a valid event type', (eventType) => {
+      const messageHandler = setupAndGetMessageHandler();
 
-        // Clear prior send calls from connection:ready
-        mockSessionManager.send.mockClear();
+      // Clear prior send calls from connection:ready
+      mockSessionManager.send.mockClear();
 
-        messageHandler(
-          Buffer.from(
-            JSON.stringify({ type: eventType, payload: {} })
-          )
-        );
+      messageHandler(Buffer.from(JSON.stringify({ type: eventType, payload: {} })));
 
-        // Should not get an UNKNOWN_EVENT error
-        const errorCalls = mockSessionManager.send.mock.calls.filter(
-          (c: unknown[]) =>
-            c[1] === 'connection:error' &&
-            (c[2] as { code: string }).code === 'UNKNOWN_EVENT'
-        );
-        expect(errorCalls).toHaveLength(0);
-      }
-    );
+      // Should not get an UNKNOWN_EVENT error
+      const errorCalls = mockSessionManager.send.mock.calls.filter(
+        (c: unknown[]) =>
+          c[1] === 'connection:error' && (c[2] as { code: string }).code === 'UNKNOWN_EVENT'
+      );
+      expect(errorCalls).toHaveLength(0);
+    });
   });
 });

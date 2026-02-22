@@ -27,7 +27,6 @@ export class PostgresAdapter implements DatabaseAdapter {
    * Initialize the database connection pool
    */
   async initialize(): Promise<void> {
-
     this.pool = new Pool({
       connectionString: this.config.postgresUrl,
       max: this.config.postgresPoolSize || DB_POOL_MAX,
@@ -44,9 +43,13 @@ export class PostgresAdapter implements DatabaseAdapter {
       try {
         const pgvectorModule = await import('pgvector/pg');
         await pgvectorModule.registerTypes(client);
-        log.info(`[PostgreSQL] Connected to ${this.config.postgresHost || 'database'} (pgvector enabled)`);
+        log.info(
+          `[PostgreSQL] Connected to ${this.config.postgresHost || 'database'} (pgvector enabled)`
+        );
       } catch {
-        log.info(`[PostgreSQL] Connected to ${this.config.postgresHost || 'database'} (pgvector not available)`);
+        log.info(
+          `[PostgreSQL] Connected to ${this.config.postgresHost || 'database'} (pgvector not available)`
+        );
       }
     } finally {
       client.release();
@@ -69,7 +72,10 @@ export class PostgresAdapter implements DatabaseAdapter {
     return rows[0] ?? null;
   }
 
-  async execute(sql: string, params: QueryParams = []): Promise<{ changes: number; lastInsertRowid?: number | bigint }> {
+  async execute(
+    sql: string,
+    params: QueryParams = []
+  ): Promise<{ changes: number; lastInsertRowid?: number | bigint }> {
     if (!this.pool) throw new Error('Database not initialized');
     const convertedSql = this.convertPlaceholders(sql);
     const result = await this.pool.query(convertedSql, params);

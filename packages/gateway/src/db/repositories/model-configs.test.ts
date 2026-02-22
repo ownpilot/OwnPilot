@@ -280,7 +280,9 @@ describe('ModelConfigsRepository', () => {
       // execute update
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
       // getModel after update
-      mockAdapter.queryOne.mockResolvedValueOnce(makeModelConfigRow({ display_name: 'Updated GPT-4' }));
+      mockAdapter.queryOne.mockResolvedValueOnce(
+        makeModelConfigRow({ display_name: 'Updated GPT-4' })
+      );
 
       const result = await repo.upsertModel({
         providerId: 'openai',
@@ -309,9 +311,9 @@ describe('ModelConfigsRepository', () => {
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 }); // insert
       mockAdapter.queryOne.mockResolvedValueOnce(null); // getModel fails
 
-      await expect(
-        repo.upsertModel({ providerId: 'openai', modelId: 'gpt-4' })
-      ).rejects.toThrow('Failed to upsert model config');
+      await expect(repo.upsertModel({ providerId: 'openai', modelId: 'gpt-4' })).rejects.toThrow(
+        'Failed to upsert model config'
+      );
     });
 
     it('should throw when getModel returns null after update', async () => {
@@ -319,9 +321,9 @@ describe('ModelConfigsRepository', () => {
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 }); // update
       mockAdapter.queryOne.mockResolvedValueOnce(null); // getModel fails
 
-      await expect(
-        repo.upsertModel({ providerId: 'openai', modelId: 'gpt-4' })
-      ).rejects.toThrow('Failed to upsert model config');
+      await expect(repo.upsertModel({ providerId: 'openai', modelId: 'gpt-4' })).rejects.toThrow(
+        'Failed to upsert model config'
+      );
     });
 
     it('should serialize capabilities and config as JSON', async () => {
@@ -344,7 +346,9 @@ describe('ModelConfigsRepository', () => {
     it('should default capabilities to empty array and config to empty object', async () => {
       mockAdapter.queryOne.mockResolvedValueOnce(null);
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
-      mockAdapter.queryOne.mockResolvedValueOnce(makeModelConfigRow({ capabilities: '[]', config: '{}' }));
+      mockAdapter.queryOne.mockResolvedValueOnce(
+        makeModelConfigRow({ capabilities: '[]', config: '{}' })
+      );
 
       await repo.upsertModel({ providerId: 'openai', modelId: 'gpt-4' });
 
@@ -526,9 +530,7 @@ describe('ModelConfigsRepository', () => {
 
   describe('getDisabledModelIds', () => {
     it('should return a Set of disabled model IDs', async () => {
-      mockAdapter.query.mockResolvedValueOnce([
-        { provider_id: 'openai', model_id: 'gpt-3.5' },
-      ]);
+      mockAdapter.query.mockResolvedValueOnce([{ provider_id: 'openai', model_id: 'gpt-3.5' }]);
 
       const result = await repo.getDisabledModelIds();
 
@@ -675,7 +677,9 @@ describe('ModelConfigsRepository', () => {
       // execute update
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
       // getProvider after update
-      mockAdapter.queryOne.mockResolvedValueOnce(makeCustomProviderRow({ display_name: 'Updated' }));
+      mockAdapter.queryOne.mockResolvedValueOnce(
+        makeCustomProviderRow({ display_name: 'Updated' })
+      );
 
       const result = await repo.upsertProvider({
         providerId: 'together-ai',
@@ -692,9 +696,9 @@ describe('ModelConfigsRepository', () => {
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 }); // insert
       mockAdapter.queryOne.mockResolvedValueOnce(null); // getProvider fails
 
-      await expect(
-        repo.upsertProvider({ providerId: 'x', displayName: 'X' })
-      ).rejects.toThrow('Failed to upsert provider');
+      await expect(repo.upsertProvider({ providerId: 'x', displayName: 'X' })).rejects.toThrow(
+        'Failed to upsert provider'
+      );
     });
 
     it('should default providerType to openai_compatible', async () => {
@@ -915,7 +919,9 @@ describe('ModelConfigsRepository', () => {
     it('should update when existing config found', async () => {
       mockAdapter.queryOne.mockResolvedValueOnce(makeUserProviderConfigRow());
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
-      mockAdapter.queryOne.mockResolvedValueOnce(makeUserProviderConfigRow({ base_url: 'https://new.url' }));
+      mockAdapter.queryOne.mockResolvedValueOnce(
+        makeUserProviderConfigRow({ base_url: 'https://new.url' })
+      );
 
       const result = await repo.upsertUserProviderConfig({
         providerId: 'openai',
@@ -932,9 +938,9 @@ describe('ModelConfigsRepository', () => {
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
       mockAdapter.queryOne.mockResolvedValueOnce(null);
 
-      await expect(
-        repo.upsertUserProviderConfig({ providerId: 'openai' })
-      ).rejects.toThrow('Failed to upsert user provider config');
+      await expect(repo.upsertUserProviderConfig({ providerId: 'openai' })).rejects.toThrow(
+        'Failed to upsert user provider config'
+      );
     });
 
     it('should default isEnabled to true', async () => {

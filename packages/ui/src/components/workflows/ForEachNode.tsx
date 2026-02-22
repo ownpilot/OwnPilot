@@ -79,12 +79,17 @@ function ForEachNodeComponent({ data, selected }: NodeProps<ForEachNodeType>) {
             {(data.label as string) || 'ForEach'}
           </span>
           {StatusIcon && (
-            <StatusIcon className={`w-4 h-4 shrink-0 ${
-              status === 'success' ? 'text-success' :
-              status === 'error' ? 'text-error' :
-              status === 'running' ? 'text-warning' :
-              'text-text-muted'
-            }`} />
+            <StatusIcon
+              className={`w-4 h-4 shrink-0 ${
+                status === 'success'
+                  ? 'text-success'
+                  : status === 'error'
+                    ? 'text-error'
+                    : status === 'running'
+                      ? 'text-warning'
+                      : 'text-text-muted'
+              }`}
+            />
           )}
         </div>
 
@@ -106,12 +111,16 @@ function ForEachNodeComponent({ data, selected }: NodeProps<ForEachNodeType>) {
         {status === 'running' && currentIter != null && totalIter != null && totalIter > 0 && (
           <div className="mt-1.5">
             <div className="flex items-center justify-between text-[9px] text-sky-700 dark:text-sky-300 mb-0.5">
-              <span>{(currentIter as number) + 1}/{totalIter}</span>
+              <span>
+                {(currentIter as number) + 1}/{totalIter}
+              </span>
             </div>
             <div className="w-full h-1 bg-sky-200 dark:bg-sky-800 rounded-full overflow-hidden">
               <div
                 className="h-full bg-sky-500 rounded-full transition-all duration-300"
-                style={{ width: `${(((currentIter as number) + 1) / (totalIter as number)) * 100}%` }}
+                style={{
+                  width: `${(((currentIter as number) + 1) / (totalIter as number)) * 100}%`,
+                }}
               />
             </div>
           </div>

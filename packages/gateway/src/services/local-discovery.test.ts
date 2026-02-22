@@ -83,9 +83,7 @@ describe('local-discovery', () => {
   describe('buildDisplayName (via model displayName)', () => {
     it('strips org prefix', async () => {
       const { discoverModels } = await loadModule();
-      mockFetch.mockResolvedValueOnce(
-        jsonResponse({ data: [{ id: 'meta-llama/Llama-3' }] }),
-      );
+      mockFetch.mockResolvedValueOnce(jsonResponse({ data: [{ id: 'meta-llama/Llama-3' }] }));
       const result = await discoverModels(makeProvider());
       expect(result.models[0]!.displayName).toBe('Llama 3');
     });
@@ -95,37 +93,29 @@ describe('local-discovery', () => {
       mockFetch.mockResolvedValueOnce(
         jsonResponse({
           models: [{ name: 'llama3:latest', model: 'llama3:latest' }],
-        }),
+        })
       );
-      const result = await discoverModels(
-        makeProvider({ providerType: 'ollama' }),
-      );
+      const result = await discoverModels(makeProvider({ providerType: 'ollama' }));
       expect(result.models[0]!.displayName).toBe('Llama3');
     });
 
     it('replaces dashes with spaces and title-cases', async () => {
       const { discoverModels } = await loadModule();
-      mockFetch.mockResolvedValueOnce(
-        jsonResponse({ data: [{ id: 'gpt-4-turbo' }] }),
-      );
+      mockFetch.mockResolvedValueOnce(jsonResponse({ data: [{ id: 'gpt-4-turbo' }] }));
       const result = await discoverModels(makeProvider());
       expect(result.models[0]!.displayName).toBe('Gpt 4 Turbo');
     });
 
     it('replaces underscores with spaces and title-cases', async () => {
       const { discoverModels } = await loadModule();
-      mockFetch.mockResolvedValueOnce(
-        jsonResponse({ data: [{ id: 'code_llama' }] }),
-      );
+      mockFetch.mockResolvedValueOnce(jsonResponse({ data: [{ id: 'code_llama' }] }));
       const result = await discoverModels(makeProvider());
       expect(result.models[0]!.displayName).toBe('Code Llama');
     });
 
     it('title-cases a simple name', async () => {
       const { discoverModels } = await loadModule();
-      mockFetch.mockResolvedValueOnce(
-        jsonResponse({ data: [{ id: 'mistral' }] }),
-      );
+      mockFetch.mockResolvedValueOnce(jsonResponse({ data: [{ id: 'mistral' }] }));
       const result = await discoverModels(makeProvider());
       expect(result.models[0]!.displayName).toBe('Mistral');
     });
@@ -140,28 +130,22 @@ describe('local-discovery', () => {
               model: 'TheBloke/Mistral-7B-v0.1:Q4_K_M',
             },
           ],
-        }),
+        })
       );
-      const result = await discoverModels(
-        makeProvider({ providerType: 'ollama' }),
-      );
+      const result = await discoverModels(makeProvider({ providerType: 'ollama' }));
       expect(result.models[0]!.displayName).toBe('Mistral 7B V0.1');
     });
 
     it('keeps already-clean name with title case', async () => {
       const { discoverModels } = await loadModule();
-      mockFetch.mockResolvedValueOnce(
-        jsonResponse({ data: [{ id: 'gpt-4' }] }),
-      );
+      mockFetch.mockResolvedValueOnce(jsonResponse({ data: [{ id: 'gpt-4' }] }));
       const result = await discoverModels(makeProvider());
       expect(result.models[0]!.displayName).toBe('Gpt 4');
     });
 
     it('handles id with multiple slashes (uses last segment)', async () => {
       const { discoverModels } = await loadModule();
-      mockFetch.mockResolvedValueOnce(
-        jsonResponse({ data: [{ id: 'org/sub/model-name' }] }),
-      );
+      mockFetch.mockResolvedValueOnce(jsonResponse({ data: [{ id: 'org/sub/model-name' }] }));
       const result = await discoverModels(makeProvider());
       expect(result.models[0]!.displayName).toBe('Model Name');
     });
@@ -172,19 +156,15 @@ describe('local-discovery', () => {
       mockFetch.mockResolvedValueOnce(
         jsonResponse({
           models: [{ name: 'model:', model: 'model:' }],
-        }),
+        })
       );
-      const result = await discoverModels(
-        makeProvider({ providerType: 'ollama' }),
-      );
+      const result = await discoverModels(makeProvider({ providerType: 'ollama' }));
       expect(result.models[0]!.modelId).toBe('model:');
     });
 
     it('preserves numeric segments', async () => {
       const { discoverModels } = await loadModule();
-      mockFetch.mockResolvedValueOnce(
-        jsonResponse({ data: [{ id: 'llama-3.1-70b' }] }),
-      );
+      mockFetch.mockResolvedValueOnce(jsonResponse({ data: [{ id: 'llama-3.1-70b' }] }));
       const result = await discoverModels(makeProvider());
       expect(result.models[0]!.displayName).toBe('Llama 3.1 70b');
     });
@@ -239,9 +219,7 @@ describe('local-discovery', () => {
   describe('timedFetch (via discoverModels behavior)', () => {
     it('returns response on successful fetch', async () => {
       const { discoverModels } = await loadModule();
-      mockFetch.mockResolvedValueOnce(
-        jsonResponse({ data: [{ id: 'model-1' }] }),
-      );
+      mockFetch.mockResolvedValueOnce(jsonResponse({ data: [{ id: 'model-1' }] }));
       const result = await discoverModels(makeProvider());
       expect(result.models).toHaveLength(1);
       expect(result.error).toBeUndefined();
@@ -291,9 +269,7 @@ describe('local-discovery', () => {
     it('constructs /v1/models URL when baseUrl ends with /v1', async () => {
       const { discoverModels } = await loadModule();
       mockFetch.mockResolvedValueOnce(jsonResponse({ data: [] }));
-      await discoverModels(
-        makeProvider({ baseUrl: 'http://localhost:1234/v1' }),
-      );
+      await discoverModels(makeProvider({ baseUrl: 'http://localhost:1234/v1' }));
 
       const url = mockFetch.mock.calls[0]![0] as string;
       expect(url).toBe('http://localhost:1234/v1/models');
@@ -302,9 +278,7 @@ describe('local-discovery', () => {
     it('appends /v1/models when baseUrl does not end with /v1', async () => {
       const { discoverModels } = await loadModule();
       mockFetch.mockResolvedValueOnce(jsonResponse({ data: [] }));
-      await discoverModels(
-        makeProvider({ baseUrl: 'http://localhost:1234' }),
-      );
+      await discoverModels(makeProvider({ baseUrl: 'http://localhost:1234' }));
 
       const url = mockFetch.mock.calls[0]![0] as string;
       expect(url).toBe('http://localhost:1234/v1/models');
@@ -313,9 +287,7 @@ describe('local-discovery', () => {
     it('strips trailing slashes from baseUrl', async () => {
       const { discoverModels } = await loadModule();
       mockFetch.mockResolvedValueOnce(jsonResponse({ data: [] }));
-      await discoverModels(
-        makeProvider({ baseUrl: 'http://localhost:1234///' }),
-      );
+      await discoverModels(makeProvider({ baseUrl: 'http://localhost:1234///' }));
 
       const url = mockFetch.mock.calls[0]![0] as string;
       expect(url).toBe('http://localhost:1234/v1/models');
@@ -324,9 +296,7 @@ describe('local-discovery', () => {
     it('strips trailing slashes after /v1 path', async () => {
       const { discoverModels } = await loadModule();
       mockFetch.mockResolvedValueOnce(jsonResponse({ data: [] }));
-      await discoverModels(
-        makeProvider({ baseUrl: 'http://localhost:1234/v1/' }),
-      );
+      await discoverModels(makeProvider({ baseUrl: 'http://localhost:1234/v1/' }));
 
       const url = mockFetch.mock.calls[0]![0] as string;
       expect(url).toBe('http://localhost:1234/v1/models');
@@ -340,7 +310,7 @@ describe('local-discovery', () => {
             { id: 'meta-llama/Llama-3-8B', object: 'model', owned_by: 'meta' },
             { id: 'mistral-7b-instruct', object: 'model', owned_by: 'mistral' },
           ],
-        }),
+        })
       );
       const result = await discoverModels(makeProvider());
 
@@ -356,7 +326,7 @@ describe('local-discovery', () => {
       mockFetch.mockResolvedValueOnce(
         jsonResponse({
           data: [{ id: 'model-x', object: 'model', owned_by: 'org-x' }],
-        }),
+        })
       );
       const result = await discoverModels(makeProvider());
 
@@ -371,7 +341,7 @@ describe('local-discovery', () => {
       mockFetch.mockResolvedValueOnce(
         jsonResponse({
           data: [{ id: 'model-x' }],
-        }),
+        })
       );
       const result = await discoverModels(makeProvider());
 
@@ -507,9 +477,7 @@ describe('local-discovery', () => {
     it('strips trailing slashes before appending /api/tags', async () => {
       const { discoverModels } = await loadModule();
       mockFetch.mockResolvedValueOnce(jsonResponse({ models: [] }));
-      await discoverModels(
-        ollamaProvider({ baseUrl: 'http://localhost:11434/' }),
-      );
+      await discoverModels(ollamaProvider({ baseUrl: 'http://localhost:11434/' }));
 
       const url = mockFetch.mock.calls[0]![0] as string;
       expect(url).toBe('http://localhost:11434/api/tags');
@@ -523,7 +491,7 @@ describe('local-discovery', () => {
             { name: 'llama3:latest', model: 'llama3:latest', size: 4700000000 },
             { name: 'codellama:7b', model: 'codellama:7b', size: 3800000000 },
           ],
-        }),
+        })
       );
       const result = await discoverModels(ollamaProvider());
 
@@ -537,7 +505,7 @@ describe('local-discovery', () => {
       mockFetch.mockResolvedValueOnce(
         jsonResponse({
           models: [{ name: 'llama3:latest', model: 'llama3:latest' }],
-        }),
+        })
       );
       const result = await discoverModels(ollamaProvider());
 
@@ -556,7 +524,7 @@ describe('local-discovery', () => {
               size: 1234567890,
             },
           ],
-        }),
+        })
       );
       const result = await discoverModels(ollamaProvider());
 
@@ -571,7 +539,7 @@ describe('local-discovery', () => {
       mockFetch.mockResolvedValueOnce(
         jsonResponse({
           models: [{ name: 'model-a', model: 'model-a' }],
-        }),
+        })
       );
       const result = await discoverModels(ollamaProvider());
 
@@ -674,9 +642,7 @@ describe('local-discovery', () => {
 
     it('tries /v1/models first when no discoveryEndpoint', async () => {
       const { discoverModels } = await loadModule();
-      mockFetch.mockResolvedValueOnce(
-        jsonResponse({ data: [{ id: 'model-1' }] }),
-      );
+      mockFetch.mockResolvedValueOnce(jsonResponse({ data: [{ id: 'model-1' }] }));
       const result = await discoverModels(genericProvider());
 
       const url = mockFetch.mock.calls[0]![0] as string;
@@ -689,9 +655,7 @@ describe('local-discovery', () => {
       // First two fail, third succeeds
       mockFetch.mockRejectedValueOnce(new Error('fail'));
       mockFetch.mockRejectedValueOnce(new Error('fail'));
-      mockFetch.mockResolvedValueOnce(
-        jsonResponse({ data: [{ id: 'model-1' }] }),
-      );
+      mockFetch.mockResolvedValueOnce(jsonResponse({ data: [{ id: 'model-1' }] }));
       const result = await discoverModels(genericProvider());
 
       expect(mockFetch).toHaveBeenCalledTimes(3);
@@ -701,9 +665,7 @@ describe('local-discovery', () => {
 
     it('returns the first successful result (parallel probing)', async () => {
       const { discoverModels } = await loadModule();
-      mockFetch.mockResolvedValueOnce(
-        jsonResponse({ data: [{ id: 'model-1' }] }),
-      );
+      mockFetch.mockResolvedValueOnce(jsonResponse({ data: [{ id: 'model-1' }] }));
       const result = await discoverModels(genericProvider());
 
       // All 3 candidate URLs are probed in parallel
@@ -713,12 +675,8 @@ describe('local-discovery', () => {
 
     it('uses discoveryEndpoint first when set', async () => {
       const { discoverModels } = await loadModule();
-      mockFetch.mockResolvedValueOnce(
-        jsonResponse({ data: [{ id: 'model-1' }] }),
-      );
-      const result = await discoverModels(
-        genericProvider({ discoveryEndpoint: '/custom/list' }),
-      );
+      mockFetch.mockResolvedValueOnce(jsonResponse({ data: [{ id: 'model-1' }] }));
+      const result = await discoverModels(genericProvider({ discoveryEndpoint: '/custom/list' }));
 
       const url = mockFetch.mock.calls[0]![0] as string;
       expect(url).toBe('http://localhost:1234/custom/list');
@@ -727,14 +685,12 @@ describe('local-discovery', () => {
 
     it('resolves discoveryEndpoint as absolute URL against baseUrl', async () => {
       const { discoverModels } = await loadModule();
-      mockFetch.mockResolvedValueOnce(
-        jsonResponse({ data: [{ id: 'model-1' }] }),
-      );
+      mockFetch.mockResolvedValueOnce(jsonResponse({ data: [{ id: 'model-1' }] }));
       await discoverModels(
         genericProvider({
           baseUrl: 'http://localhost:8080',
           discoveryEndpoint: '/api/custom/models',
-        }),
+        })
       );
 
       const url = mockFetch.mock.calls[0]![0] as string;
@@ -743,13 +699,11 @@ describe('local-discovery', () => {
 
     it('uses discoveryEndpoint as full URL when it is absolute', async () => {
       const { discoverModels } = await loadModule();
-      mockFetch.mockResolvedValueOnce(
-        jsonResponse({ data: [{ id: 'model-1' }] }),
-      );
+      mockFetch.mockResolvedValueOnce(jsonResponse({ data: [{ id: 'model-1' }] }));
       await discoverModels(
         genericProvider({
           discoveryEndpoint: 'http://other-host:9090/models',
-        }),
+        })
       );
 
       const url = mockFetch.mock.calls[0]![0] as string;
@@ -761,12 +715,8 @@ describe('local-discovery', () => {
       // discoveryEndpoint fails
       mockFetch.mockRejectedValueOnce(new Error('fail'));
       // /v1/models succeeds
-      mockFetch.mockResolvedValueOnce(
-        jsonResponse({ data: [{ id: 'model-1' }] }),
-      );
-      const result = await discoverModels(
-        genericProvider({ discoveryEndpoint: '/custom/list' }),
-      );
+      mockFetch.mockResolvedValueOnce(jsonResponse({ data: [{ id: 'model-1' }] }));
+      const result = await discoverModels(genericProvider({ discoveryEndpoint: '/custom/list' }));
 
       // All 4 candidate URLs probed in parallel (discoveryEndpoint + 3 standard)
       expect(mockFetch).toHaveBeenCalledTimes(4);
@@ -780,7 +730,7 @@ describe('local-discovery', () => {
         genericProvider({
           baseUrl: 'http://localhost:1234',
           discoveryEndpoint: '/v1/models',
-        }),
+        })
       );
 
       // Should try: /v1/models (deduped), /api/v1/models, /models = 3 calls
@@ -796,7 +746,7 @@ describe('local-discovery', () => {
             { id: 'gpt-4', object: 'model' },
             { id: 'gpt-3.5-turbo', object: 'model' },
           ],
-        }),
+        })
       );
       const result = await discoverModels(genericProvider());
 
@@ -807,9 +757,7 @@ describe('local-discovery', () => {
 
     it('handles flat array format: [...]', async () => {
       const { discoverModels } = await loadModule();
-      mockFetch.mockResolvedValueOnce(
-        jsonResponse([{ id: 'model-a' }, { id: 'model-b' }]),
-      );
+      mockFetch.mockResolvedValueOnce(jsonResponse([{ id: 'model-a' }, { id: 'model-b' }]));
       const result = await discoverModels(genericProvider());
 
       expect(result.models).toHaveLength(2);
@@ -819,9 +767,7 @@ describe('local-discovery', () => {
     it('skips non-OK responses and uses successful URL', async () => {
       const { discoverModels } = await loadModule();
       mockFetch.mockResolvedValueOnce(jsonResponse({}, 404));
-      mockFetch.mockResolvedValueOnce(
-        jsonResponse({ data: [{ id: 'model-1' }] }),
-      );
+      mockFetch.mockResolvedValueOnce(jsonResponse({ data: [{ id: 'model-1' }] }));
       const result = await discoverModels(genericProvider());
 
       // All 3 URLs probed in parallel
@@ -832,9 +778,7 @@ describe('local-discovery', () => {
     it('skips non-JSON responses and uses successful URL', async () => {
       const { discoverModels } = await loadModule();
       mockFetch.mockResolvedValueOnce(textResponse('<html>Not Found</html>'));
-      mockFetch.mockResolvedValueOnce(
-        jsonResponse({ data: [{ id: 'model-1' }] }),
-      );
+      mockFetch.mockResolvedValueOnce(jsonResponse({ data: [{ id: 'model-1' }] }));
       const result = await discoverModels(genericProvider());
 
       // All 3 URLs probed in parallel
@@ -845,9 +789,7 @@ describe('local-discovery', () => {
     it('skips empty model lists and uses successful URL', async () => {
       const { discoverModels } = await loadModule();
       mockFetch.mockResolvedValueOnce(jsonResponse({ data: [] }));
-      mockFetch.mockResolvedValueOnce(
-        jsonResponse({ data: [{ id: 'model-1' }] }),
-      );
+      mockFetch.mockResolvedValueOnce(jsonResponse({ data: [{ id: 'model-1' }] }));
       const result = await discoverModels(genericProvider());
 
       // All 3 URLs probed in parallel
@@ -865,7 +807,7 @@ describe('local-discovery', () => {
             { id: null },
             { id: 'another-valid' },
           ],
-        }),
+        })
       );
       const result = await discoverModels(genericProvider());
 
@@ -879,7 +821,7 @@ describe('local-discovery', () => {
       mockFetch.mockResolvedValueOnce(
         jsonResponse({
           data: [{ id: 'model-id', name: 'model-name' }],
-        }),
+        })
       );
       const result = await discoverModels(genericProvider());
 
@@ -891,7 +833,7 @@ describe('local-discovery', () => {
       mockFetch.mockResolvedValueOnce(
         jsonResponse({
           data: [{ name: 'model-name-only' }],
-        }),
+        })
       );
       const result = await discoverModels(genericProvider());
 
@@ -919,7 +861,7 @@ describe('local-discovery', () => {
       const { discoverModels } = await loadModule();
       mockFetch.mockRejectedValue(new Error('fail'));
       const result = await discoverModels(
-        genericProvider({ discoveryEndpoint: '/custom/endpoint' }),
+        genericProvider({ discoveryEndpoint: '/custom/endpoint' })
       );
 
       expect(result.error).toContain('tried 4 URL(s)');
@@ -936,9 +878,7 @@ describe('local-discovery', () => {
     it('sets sourceUrl to discoveryEndpoint on total failure when set', async () => {
       const { discoverModels } = await loadModule();
       mockFetch.mockRejectedValue(new Error('fail'));
-      const result = await discoverModels(
-        genericProvider({ discoveryEndpoint: '/custom/list' }),
-      );
+      const result = await discoverModels(genericProvider({ discoveryEndpoint: '/custom/list' }));
 
       expect(result.sourceUrl).toBe('http://localhost:1234/custom/list');
     });
@@ -947,10 +887,8 @@ describe('local-discovery', () => {
       const { discoverModels } = await loadModule();
       mockFetch.mockResolvedValueOnce(
         jsonResponse({
-          data: [
-            { id: 'model-x', object: 'model', owned_by: 'local', extra_field: 42 },
-          ],
-        }),
+          data: [{ id: 'model-x', object: 'model', owned_by: 'local', extra_field: 42 }],
+        })
       );
       const result = await discoverModels(genericProvider());
 
@@ -969,9 +907,7 @@ describe('local-discovery', () => {
         status: 200,
         text: () => Promise.reject(new Error('read error')),
       });
-      mockFetch.mockResolvedValueOnce(
-        jsonResponse({ data: [{ id: 'model-1' }] }),
-      );
+      mockFetch.mockResolvedValueOnce(jsonResponse({ data: [{ id: 'model-1' }] }));
       const result = await discoverModels(genericProvider());
 
       // All 3 URLs probed in parallel
@@ -983,11 +919,8 @@ describe('local-discovery', () => {
       const { discoverModels } = await loadModule();
       mockFetch.mockResolvedValueOnce(
         jsonResponse({
-          data: [
-            { id: 123 },
-            { id: 'valid-model' },
-          ],
-        }),
+          data: [{ id: 123 }, { id: 'valid-model' }],
+        })
       );
       const result = await discoverModels(genericProvider());
 
@@ -999,11 +932,8 @@ describe('local-discovery', () => {
       const { discoverModels } = await loadModule();
       mockFetch.mockResolvedValueOnce(
         jsonResponse({
-          data: [
-            { id: '' },
-            { id: 'valid-model' },
-          ],
-        }),
+          data: [{ id: '' }, { id: 'valid-model' }],
+        })
       );
       const result = await discoverModels(genericProvider());
 
@@ -1021,9 +951,7 @@ describe('local-discovery', () => {
 
     it('parses { data: [...] } wrapped format', async () => {
       const { discoverModels } = await loadModule();
-      mockFetch.mockResolvedValueOnce(
-        jsonResponse({ data: [{ id: 'wrapped-model' }] }),
-      );
+      mockFetch.mockResolvedValueOnce(jsonResponse({ data: [{ id: 'wrapped-model' }] }));
       const result = await discoverModels(genericProvider());
 
       expect(result.models).toHaveLength(1);
@@ -1032,9 +960,7 @@ describe('local-discovery', () => {
 
     it('parses flat array', async () => {
       const { discoverModels } = await loadModule();
-      mockFetch.mockResolvedValueOnce(
-        jsonResponse([{ id: 'flat-model' }]),
-      );
+      mockFetch.mockResolvedValueOnce(jsonResponse([{ id: 'flat-model' }]));
       const result = await discoverModels(genericProvider());
 
       expect(result.models).toHaveLength(1);
@@ -1043,9 +969,7 @@ describe('local-discovery', () => {
 
     it('returns empty for { data: "not array" } (skips to next URL)', async () => {
       const { discoverModels } = await loadModule();
-      mockFetch.mockResolvedValueOnce(
-        jsonResponse({ data: 'not an array' }),
-      );
+      mockFetch.mockResolvedValueOnce(jsonResponse({ data: 'not an array' }));
       mockFetch.mockRejectedValueOnce(new Error('fail'));
       mockFetch.mockRejectedValueOnce(new Error('fail'));
       const result = await discoverModels(genericProvider());
@@ -1099,9 +1023,7 @@ describe('local-discovery', () => {
     it('generates 4 candidate URLs with discoveryEndpoint', async () => {
       const { discoverModels } = await loadModule();
       mockFetch.mockRejectedValue(new Error('fail'));
-      await discoverModels(
-        genericProvider({ discoveryEndpoint: '/custom/models' }),
-      );
+      await discoverModels(genericProvider({ discoveryEndpoint: '/custom/models' }));
 
       expect(mockFetch).toHaveBeenCalledTimes(4);
       const urls = mockFetch.mock.calls.map((c: unknown[]) => c[0] as string);
@@ -1111,9 +1033,7 @@ describe('local-discovery', () => {
     it('uses origin from baseUrl for standard paths', async () => {
       const { discoverModels } = await loadModule();
       mockFetch.mockRejectedValue(new Error('fail'));
-      await discoverModels(
-        genericProvider({ baseUrl: 'http://myhost:9090/some/path' }),
-      );
+      await discoverModels(genericProvider({ baseUrl: 'http://myhost:9090/some/path' }));
 
       const urls = mockFetch.mock.calls.map((c: unknown[]) => c[0] as string);
       expect(urls).toEqual([
@@ -1130,7 +1050,7 @@ describe('local-discovery', () => {
         genericProvider({
           baseUrl: 'http://localhost:1234',
           discoveryEndpoint: 'http://localhost:1234/v1/models',
-        }),
+        })
       );
 
       // discoveryEndpoint = /v1/models = first standard path -> deduped
@@ -1145,12 +1065,8 @@ describe('local-discovery', () => {
   describe('discoverModels (dispatch)', () => {
     it('dispatches to LM Studio for providerType=lmstudio', async () => {
       const { discoverModels } = await loadModule();
-      mockFetch.mockResolvedValueOnce(
-        jsonResponse({ data: [{ id: 'lm-model' }] }),
-      );
-      const result = await discoverModels(
-        makeProvider({ providerType: 'lmstudio' }),
-      );
+      mockFetch.mockResolvedValueOnce(jsonResponse({ data: [{ id: 'lm-model' }] }));
+      const result = await discoverModels(makeProvider({ providerType: 'lmstudio' }));
 
       expect(result.models[0]!.modelId).toBe('lm-model');
       const url = mockFetch.mock.calls[0]![0] as string;
@@ -1162,11 +1078,9 @@ describe('local-discovery', () => {
       mockFetch.mockResolvedValueOnce(
         jsonResponse({
           models: [{ name: 'ollama-model', model: 'ollama-model' }],
-        }),
+        })
       );
-      const result = await discoverModels(
-        makeProvider({ providerType: 'ollama' }),
-      );
+      const result = await discoverModels(makeProvider({ providerType: 'ollama' }));
 
       expect(result.models[0]!.modelId).toBe('ollama-model');
       const url = mockFetch.mock.calls[0]![0] as string;
@@ -1175,45 +1089,31 @@ describe('local-discovery', () => {
 
     it('dispatches to generic for providerType=localai', async () => {
       const { discoverModels } = await loadModule();
-      mockFetch.mockResolvedValueOnce(
-        jsonResponse({ data: [{ id: 'localai-model' }] }),
-      );
-      const result = await discoverModels(
-        makeProvider({ providerType: 'localai' }),
-      );
+      mockFetch.mockResolvedValueOnce(jsonResponse({ data: [{ id: 'localai-model' }] }));
+      const result = await discoverModels(makeProvider({ providerType: 'localai' }));
 
       expect(result.models[0]!.modelId).toBe('localai-model');
     });
 
     it('dispatches to generic for providerType=vllm', async () => {
       const { discoverModels } = await loadModule();
-      mockFetch.mockResolvedValueOnce(
-        jsonResponse({ data: [{ id: 'vllm-model' }] }),
-      );
-      const result = await discoverModels(
-        makeProvider({ providerType: 'vllm' }),
-      );
+      mockFetch.mockResolvedValueOnce(jsonResponse({ data: [{ id: 'vllm-model' }] }));
+      const result = await discoverModels(makeProvider({ providerType: 'vllm' }));
 
       expect(result.models[0]!.modelId).toBe('vllm-model');
     });
 
     it('dispatches to generic for providerType=custom', async () => {
       const { discoverModels } = await loadModule();
-      mockFetch.mockResolvedValueOnce(
-        jsonResponse({ data: [{ id: 'custom-model' }] }),
-      );
-      const result = await discoverModels(
-        makeProvider({ providerType: 'custom' }),
-      );
+      mockFetch.mockResolvedValueOnce(jsonResponse({ data: [{ id: 'custom-model' }] }));
+      const result = await discoverModels(makeProvider({ providerType: 'custom' }));
 
       expect(result.models[0]!.modelId).toBe('custom-model');
     });
 
     it('returns error for unknown provider type', async () => {
       const { discoverModels } = await loadModule();
-      const result = await discoverModels(
-        makeProvider({ providerType: 'unknown' as 'lmstudio' }),
-      );
+      const result = await discoverModels(makeProvider({ providerType: 'unknown' as 'lmstudio' }));
 
       expect(result.models).toHaveLength(0);
       expect(result.error).toBe('Unsupported provider type: unknown');
@@ -1259,7 +1159,7 @@ describe('local-discovery', () => {
         makeProvider({
           providerType: 'unknown' as 'lmstudio',
           baseUrl: 'http://myserver:5000',
-        }),
+        })
       );
 
       expect(result.sourceUrl).toBe('http://myserver:5000');
@@ -1288,9 +1188,7 @@ describe('local-discovery', () => {
     it('handles baseUrl with port and path for LM Studio', async () => {
       const { discoverModels } = await loadModule();
       mockFetch.mockResolvedValueOnce(jsonResponse({ data: [{ id: 'm1' }] }));
-      await discoverModels(
-        makeProvider({ baseUrl: 'http://192.168.1.100:8080/api' }),
-      );
+      await discoverModels(makeProvider({ baseUrl: 'http://192.168.1.100:8080/api' }));
 
       const url = mockFetch.mock.calls[0]![0] as string;
       expect(url).toBe('http://192.168.1.100:8080/api/v1/models');
@@ -1303,7 +1201,7 @@ describe('local-discovery', () => {
         makeProvider({
           providerType: 'ollama',
           baseUrl: 'http://localhost:11434/v1',
-        }),
+        })
       );
 
       const url = mockFetch.mock.calls[0]![0] as string;
@@ -1316,7 +1214,7 @@ describe('local-discovery', () => {
       mockFetch.mockResolvedValueOnce(
         jsonResponse({
           data: [{ id: 'user/model+v2@latest' }],
-        }),
+        })
       );
       const result = await discoverModels(makeProvider());
 
@@ -1354,7 +1252,7 @@ describe('local-discovery', () => {
         makeProvider({
           providerType: 'localai',
           baseUrl: 'http://localhost:8080',
-        }),
+        })
       );
 
       const urls = mockFetch.mock.calls.map((c: unknown[]) => c[0] as string);
@@ -1367,22 +1265,12 @@ describe('local-discovery', () => {
       const { discoverModels } = await loadModule();
       mockFetch.mockResolvedValueOnce(
         jsonResponse({
-          data: [
-            { id: 'alpha' },
-            { id: 'beta' },
-            { id: 'gamma' },
-          ],
-        }),
+          data: [{ id: 'alpha' }, { id: 'beta' }, { id: 'gamma' }],
+        })
       );
-      const result = await discoverModels(
-        makeProvider({ providerType: 'custom' }),
-      );
+      const result = await discoverModels(makeProvider({ providerType: 'custom' }));
 
-      expect(result.models.map((m) => m.modelId)).toEqual([
-        'alpha',
-        'beta',
-        'gamma',
-      ]);
+      expect(result.models.map((m) => m.modelId)).toEqual(['alpha', 'beta', 'gamma']);
     });
 
     it('generic discovery metadata includes all original entry fields', async () => {
@@ -1398,11 +1286,9 @@ describe('local-discovery', () => {
               permission: [],
             },
           ],
-        }),
+        })
       );
-      const result = await discoverModels(
-        makeProvider({ providerType: 'custom' }),
-      );
+      const result = await discoverModels(makeProvider({ providerType: 'custom' }));
 
       const meta = result.models[0]!.metadata!;
       expect(meta['id']).toBe('model-x');

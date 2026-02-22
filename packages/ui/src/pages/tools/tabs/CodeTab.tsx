@@ -35,7 +35,9 @@ export function CodeTab({ tool }: CodeTabProps) {
     };
 
     fetchSource();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [tool.name]);
 
   if (isLoading) {

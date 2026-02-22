@@ -236,12 +236,7 @@ export const PROVIDER_PRESETS: Record<string, ProviderPreset> = {
     id: 'google',
     baseUrl: 'https://generativelanguage.googleapis.com/v1beta',
     defaultModel: 'gemini-2.0-pro',
-    models: [
-      'gemini-2.0-pro',
-      'gemini-2.0-flash',
-      'gemini-1.5-pro',
-      'gemini-1.5-flash',
-    ],
+    models: ['gemini-2.0-pro', 'gemini-2.0-flash', 'gemini-1.5-pro', 'gemini-1.5-flash'],
     openaiCompatible: false,
     envVar: 'GOOGLE_API_KEY',
     docsUrl: 'https://ai.google.dev/docs',

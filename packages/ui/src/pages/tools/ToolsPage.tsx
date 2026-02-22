@@ -12,7 +12,9 @@ export function ToolsPage() {
   const [groupedTools, setGroupedTools] = useState<GroupedTools | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedTool, setSelectedTool] = useState<ToolItem | null>(null);
-  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set(CATEGORY_ORDER));
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(
+    new Set(CATEGORY_ORDER)
+  );
   const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
@@ -30,7 +32,7 @@ export function ToolsPage() {
   }, []);
 
   const toggleCategory = (category: string) => {
-    setExpandedCategories(prev => {
+    setExpandedCategories((prev) => {
       const next = new Set(prev);
       if (next.has(category)) next.delete(category);
       else next.add(category);
@@ -44,23 +46,27 @@ export function ToolsPage() {
   const filterTools = (tools: ToolItem[]) => {
     if (!searchQuery) return tools;
     const query = searchQuery.toLowerCase();
-    return tools.filter(t =>
-      t.name.toLowerCase().includes(query) ||
-      t.description.toLowerCase().includes(query)
+    return tools.filter(
+      (t) => t.name.toLowerCase().includes(query) || t.description.toLowerCase().includes(query)
     );
   };
 
-  const sortedCategories = useMemo(() => groupedTools
-    ? Object.entries(groupedTools.categories).sort(([a], [b]) => {
-        const aIndex = CATEGORY_ORDER.indexOf(a);
-        const bIndex = CATEGORY_ORDER.indexOf(b);
-        return (aIndex === -1 ? 999 : aIndex) - (bIndex === -1 ? 999 : bIndex);
-      })
-    : [], [groupedTools, searchQuery]);
+  const sortedCategories = useMemo(
+    () =>
+      groupedTools
+        ? Object.entries(groupedTools.categories).sort(([a], [b]) => {
+            const aIndex = CATEGORY_ORDER.indexOf(a);
+            const bIndex = CATEGORY_ORDER.indexOf(b);
+            return (aIndex === -1 ? 999 : aIndex) - (bIndex === -1 ? 999 : bIndex);
+          })
+        : [],
+    [groupedTools, searchQuery]
+  );
 
-  const filteredTotal = useMemo(() => sortedCategories.reduce((sum, [, cat]) =>
-    sum + filterTools(cat.tools).length, 0
-  ), [sortedCategories]);
+  const filteredTotal = useMemo(
+    () => sortedCategories.reduce((sum, [, cat]) => sum + filterTools(cat.tools).length, 0),
+    [sortedCategories]
+  );
 
   return (
     <div className="flex flex-col h-full">
@@ -71,7 +77,9 @@ export function ToolsPage() {
             Tools
           </h2>
           <p className="text-sm text-text-muted dark:text-dark-text-muted">
-            {groupedTools ? `${groupedTools.totalTools} tools in ${Object.keys(groupedTools.categories).length} categories` : 'Loading...'}
+            {groupedTools
+              ? `${groupedTools.totalTools} tools in ${Object.keys(groupedTools.categories).length} categories`
+              : 'Loading...'}
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -105,7 +113,11 @@ export function ToolsPage() {
           <EmptyState
             icon={Wrench}
             title={searchQuery ? 'No tools match your search' : 'No tools available'}
-            description={searchQuery ? 'Try a different search term.' : 'Tools will appear here when configured.'}
+            description={
+              searchQuery
+                ? 'Try a different search term.'
+                : 'Tools will appear here when configured.'
+            }
           />
         ) : (
           <div className="space-y-4">
@@ -145,7 +157,12 @@ export function ToolsPage() {
                         viewBox="0 0 24 24"
                         aria-hidden="true"
                       >
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M19 9l-7 7-7-7"
+                        />
                       </svg>
                     </div>
                   </button>

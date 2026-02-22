@@ -259,33 +259,53 @@ describe('hashTextExecutor', () => {
 
 describe('encodeDecodeExecutor', () => {
   it('should base64 encode', async () => {
-    const result = await encodeDecodeExecutor({ text: 'hello world', method: 'base64', operation: 'encode' });
+    const result = await encodeDecodeExecutor({
+      text: 'hello world',
+      method: 'base64',
+      operation: 'encode',
+    });
     const data = parse(result);
     expect(data.output).toBe(Buffer.from('hello world').toString('base64'));
   });
 
   it('should base64 decode', async () => {
     const encoded = Buffer.from('hello world').toString('base64');
-    const result = await encodeDecodeExecutor({ text: encoded, method: 'base64', operation: 'decode' });
+    const result = await encodeDecodeExecutor({
+      text: encoded,
+      method: 'base64',
+      operation: 'decode',
+    });
     const data = parse(result);
     expect(data.output).toBe('hello world');
   });
 
   it('should URL encode', async () => {
-    const result = await encodeDecodeExecutor({ text: 'hello world&foo=bar', method: 'url', operation: 'encode' });
+    const result = await encodeDecodeExecutor({
+      text: 'hello world&foo=bar',
+      method: 'url',
+      operation: 'encode',
+    });
     const data = parse(result);
     expect(data.output).toBe(encodeURIComponent('hello world&foo=bar'));
   });
 
   it('should URL decode', async () => {
     const encoded = encodeURIComponent('hello world&foo=bar');
-    const result = await encodeDecodeExecutor({ text: encoded, method: 'url', operation: 'decode' });
+    const result = await encodeDecodeExecutor({
+      text: encoded,
+      method: 'url',
+      operation: 'decode',
+    });
     const data = parse(result);
     expect(data.output).toBe('hello world&foo=bar');
   });
 
   it('should HTML encode', async () => {
-    const result = await encodeDecodeExecutor({ text: '<div class="test">&</div>', method: 'html', operation: 'encode' });
+    const result = await encodeDecodeExecutor({
+      text: '<div class="test">&</div>',
+      method: 'html',
+      operation: 'encode',
+    });
     const data = parse(result);
     expect(data.output).toContain('&lt;');
     expect(data.output).toContain('&gt;');
@@ -304,20 +324,32 @@ describe('encodeDecodeExecutor', () => {
   });
 
   it('should hex encode', async () => {
-    const result = await encodeDecodeExecutor({ text: 'hello', method: 'hex', operation: 'encode' });
+    const result = await encodeDecodeExecutor({
+      text: 'hello',
+      method: 'hex',
+      operation: 'encode',
+    });
     const data = parse(result);
     expect(data.output).toBe(Buffer.from('hello').toString('hex'));
   });
 
   it('should hex decode', async () => {
     const encoded = Buffer.from('hello').toString('hex');
-    const result = await encodeDecodeExecutor({ text: encoded, method: 'hex', operation: 'decode' });
+    const result = await encodeDecodeExecutor({
+      text: encoded,
+      method: 'hex',
+      operation: 'decode',
+    });
     const data = parse(result);
     expect(data.output).toBe('hello');
   });
 
   it('should include metadata in response', async () => {
-    const result = await encodeDecodeExecutor({ text: 'test', method: 'base64', operation: 'encode' });
+    const result = await encodeDecodeExecutor({
+      text: 'test',
+      method: 'base64',
+      operation: 'encode',
+    });
     const data = parse(result);
     expect(data.method).toBe('base64');
     expect(data.operation).toBe('encode');
@@ -329,10 +361,10 @@ describe('encodeDecodeExecutor', () => {
 
     for (const method of ['base64', 'url', 'html', 'hex'] as const) {
       const encoded = parse(
-        await encodeDecodeExecutor({ text: original, method, operation: 'encode' }),
+        await encodeDecodeExecutor({ text: original, method, operation: 'encode' })
       );
       const decoded = parse(
-        await encodeDecodeExecutor({ text: encoded.output, method, operation: 'decode' }),
+        await encodeDecodeExecutor({ text: encoded.output, method, operation: 'decode' })
       );
       expect(decoded.output).toBe(original);
     }

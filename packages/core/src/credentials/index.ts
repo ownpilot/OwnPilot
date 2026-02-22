@@ -352,7 +352,12 @@ export class UserCredentialStore {
     }
 
     // Decrypt
-    const value = decryptValue(entry.encryptedValue, entry.iv, this.config.encryptionKey, entry.salt);
+    const value = decryptValue(
+      entry.encryptedValue,
+      entry.iv,
+      this.config.encryptionKey,
+      entry.salt
+    );
 
     // Update usage
     await this.updateUsage(entry);
@@ -382,7 +387,12 @@ export class UserCredentialStore {
     }
 
     // Decrypt
-    const value = decryptValue(entry.encryptedValue, entry.iv, this.config.encryptionKey, entry.salt);
+    const value = decryptValue(
+      entry.encryptedValue,
+      entry.iv,
+      this.config.encryptionKey,
+      entry.salt
+    );
 
     // Update usage
     await this.updateUsage(entry);
@@ -587,10 +597,9 @@ export class CredentialContext {
 /**
  * Create a credential store with in-memory backend (development only)
  */
-export function createInMemoryCredentialStore(
-  encryptionKey?: string
-): UserCredentialStore {
-  const key = encryptionKey ?? process.env.CREDENTIAL_ENCRYPTION_KEY ?? randomBytes(32).toString('hex');
+export function createInMemoryCredentialStore(encryptionKey?: string): UserCredentialStore {
+  const key =
+    encryptionKey ?? process.env.CREDENTIAL_ENCRYPTION_KEY ?? randomBytes(32).toString('hex');
 
   return new UserCredentialStore({
     encryptionKey: key,

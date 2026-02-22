@@ -589,9 +589,7 @@ export class PermissionChecker {
 /**
  * Create a new permission checker with default policy
  */
-export function createPermissionChecker(
-  policy: Partial<PermissionPolicy> = {}
-): PermissionChecker {
+export function createPermissionChecker(policy: Partial<PermissionPolicy> = {}): PermissionChecker {
   const mergedPolicy: PermissionPolicy = {
     ...DEFAULT_PERMISSION_POLICY,
     ...policy,

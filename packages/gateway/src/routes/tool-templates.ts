@@ -18,7 +18,13 @@ export interface ToolTemplate {
   permissions: string[];
   parameters: { type: 'object'; properties: Record<string, unknown>; required?: string[] };
   code: string;
-  requiredApiKeys?: Array<{ name: string; displayName?: string; description?: string; category?: string; docsUrl?: string }>;
+  requiredApiKeys?: Array<{
+    name: string;
+    displayName?: string;
+    description?: string;
+    category?: string;
+    docsUrl?: string;
+  }>;
 }
 
 // =============================================================================
@@ -37,7 +43,11 @@ export const TOOL_TEMPLATES: ToolTemplate[] = [
       type: 'object',
       properties: {
         url: { type: 'string', description: 'API endpoint URL' },
-        method: { type: 'string', description: 'HTTP method', enum: ['GET', 'POST', 'PUT', 'DELETE'] },
+        method: {
+          type: 'string',
+          description: 'HTTP method',
+          enum: ['GET', 'POST', 'PUT', 'DELETE'],
+        },
         headers: { type: 'object', description: 'Optional request headers' },
         body: { type: 'object', description: 'Optional request body (for POST/PUT)' },
       },
@@ -90,7 +100,10 @@ try {
             properties: {
               from: { type: 'string', description: 'Source path (dot notation)' },
               to: { type: 'string', description: 'Target path' },
-              transform: { type: 'string', description: 'Optional: uppercase, lowercase, trim, number, boolean' },
+              transform: {
+                type: 'string',
+                description: 'Optional: uppercase, lowercase, trim, number, boolean',
+              },
             },
           },
         },
@@ -139,7 +152,8 @@ return result;`,
         text: { type: 'string', description: 'Input text' },
         operations: {
           type: 'array',
-          description: 'Operations to apply in order: trim, uppercase, lowercase, slugify, camelCase, snakeCase, truncate:N, replace:old:new, prefix:text, suffix:text, lines, words, sentences',
+          description:
+            'Operations to apply in order: trim, uppercase, lowercase, slugify, camelCase, snakeCase, truncate:N, replace:old:new, prefix:text, suffix:text, lines, words, sentences',
           items: { type: 'string' },
         },
       },
@@ -187,10 +201,29 @@ return result;`,
       properties: {
         operation: {
           type: 'string',
-          description: 'Operation: add, subtract, multiply, divide, power, sqrt, percentage, average, sum, min, max, median, round',
-          enum: ['add', 'subtract', 'multiply', 'divide', 'power', 'sqrt', 'percentage', 'average', 'sum', 'min', 'max', 'median', 'round'],
+          description:
+            'Operation: add, subtract, multiply, divide, power, sqrt, percentage, average, sum, min, max, median, round',
+          enum: [
+            'add',
+            'subtract',
+            'multiply',
+            'divide',
+            'power',
+            'sqrt',
+            'percentage',
+            'average',
+            'sum',
+            'min',
+            'max',
+            'median',
+            'round',
+          ],
         },
-        values: { type: 'array', description: 'Array of numbers to operate on', items: { type: 'number' } },
+        values: {
+          type: 'array',
+          description: 'Array of numbers to operate on',
+          items: { type: 'number' },
+        },
         decimals: { type: 'number', description: 'Decimal places for rounding (default: 2)' },
       },
       required: ['operation', 'values'],
@@ -247,7 +280,13 @@ switch (operation) {
       },
       required: ['service', 'url'],
     },
-    requiredApiKeys: [{ name: 'custom_api', displayName: 'Custom API', description: 'API key for the target service' }],
+    requiredApiKeys: [
+      {
+        name: 'custom_api',
+        displayName: 'Custom API',
+        description: 'API key for the target service',
+      },
+    ],
     code: `// API Fetcher with Config Center key
 const { service, url, queryParams = {}, authHeader = 'Authorization', authPrefix = 'Bearer' } = args;
 
@@ -295,7 +334,8 @@ try {
         data: { type: 'object', description: 'Data to validate' },
         schema: {
           type: 'object',
-          description: 'Schema: { fieldName: { type: "string|number|boolean|array|object", required?: true, min?: N, max?: N, pattern?: "regex", enum?: [] } }',
+          description:
+            'Schema: { fieldName: { type: "string|number|boolean|array|object", required?: true, min?: N, max?: N, pattern?: "regex", enum?: [] } }',
         },
       },
       required: ['data', 'schema'],
@@ -349,7 +389,10 @@ return { valid: errors.length === 0, errors, fieldCount: Object.keys(schema).len
     parameters: {
       type: 'object',
       properties: {
-        expression: { type: 'string', description: 'Cron expression (5 fields: min hour dom month dow)' },
+        expression: {
+          type: 'string',
+          description: 'Cron expression (5 fields: min hour dom month dow)',
+        },
       },
       required: ['expression'],
     },
@@ -441,7 +484,11 @@ return { html, charCount: html.length };`,
       properties: {
         url: { type: 'string', description: 'URL to parse (for parse mode)' },
         mode: { type: 'string', description: 'parse or build', enum: ['parse', 'build'] },
-        parts: { type: 'object', description: 'URL parts for build mode: {protocol, hostname, port, pathname, search, hash}' },
+        parts: {
+          type: 'object',
+          description:
+            'URL parts for build mode: {protocol, hostname, port, pathname, search, hash}',
+        },
       },
       required: ['mode'],
     },
@@ -527,11 +574,19 @@ return { rendered: result, usedKeys: used, missingKeys: missing };`,
     parameters: {
       type: 'object',
       properties: {
-        data: { type: 'array', description: 'Array of objects to aggregate', items: { type: 'object' } },
+        data: {
+          type: 'array',
+          description: 'Array of objects to aggregate',
+          items: { type: 'object' },
+        },
         groupBy: { type: 'string', description: 'Field to group by' },
         operations: {
-          type: 'array', description: 'Operations: [{field: "amount", op: "sum|avg|min|max|count"}]',
-          items: { type: 'object', properties: { field: { type: 'string' }, op: { type: 'string' } } },
+          type: 'array',
+          description: 'Operations: [{field: "amount", op: "sum|avg|min|max|count"}]',
+          items: {
+            type: 'object',
+            properties: { field: { type: 'string' }, op: { type: 'string' } },
+          },
         },
       },
       required: ['data', 'operations'],
@@ -641,9 +696,17 @@ try {
       properties: {
         start: { type: 'string', description: 'Start date (ISO string or "now")' },
         end: { type: 'string', description: 'End date (ISO string)' },
-        step: { type: 'string', description: 'Step unit: days, weeks, months', enum: ['days', 'weeks', 'months'] },
+        step: {
+          type: 'string',
+          description: 'Step unit: days, weeks, months',
+          enum: ['days', 'weeks', 'months'],
+        },
         stepSize: { type: 'number', description: 'Step size (default: 1)' },
-        format: { type: 'string', description: 'Output format: iso, date, unix', enum: ['iso', 'date', 'unix'] },
+        format: {
+          type: 'string',
+          description: 'Output format: iso, date, unix',
+          enum: ['iso', 'date', 'unix'],
+        },
       },
       required: ['start', 'end'],
     },
@@ -687,7 +750,9 @@ return { dates, count: dates.length, start: startDate.toISOString(), end: endDat
       properties: {
         data: { type: 'string', description: 'Data to hash' },
         algorithms: {
-          type: 'array', description: 'Hash algorithms (default: all)', items: { type: 'string' },
+          type: 'array',
+          description: 'Hash algorithms (default: all)',
+          items: { type: 'string' },
         },
       },
       required: ['data'],
@@ -723,11 +788,21 @@ return {
       properties: {
         service: { type: 'string', description: 'Config Center service name' },
         field: { type: 'string', description: 'Specific field to retrieve (optional)' },
-        action: { type: 'string', description: 'Action: get_key, get_config, list_entries', enum: ['get_key', 'get_config', 'list_entries'] },
+        action: {
+          type: 'string',
+          description: 'Action: get_key, get_config, list_entries',
+          enum: ['get_key', 'get_config', 'list_entries'],
+        },
       },
       required: ['service', 'action'],
     },
-    requiredApiKeys: [{ name: 'custom_service', displayName: 'Custom Service', description: 'API key for the target service' }],
+    requiredApiKeys: [
+      {
+        name: 'custom_service',
+        displayName: 'Custom Service',
+        description: 'API key for the target service',
+      },
+    ],
     code: `// Environment-Aware Config - Config Center integration
 const { service, field, action } = args;
 
@@ -766,10 +841,17 @@ switch (action) {
       properties: {
         csv: { type: 'string', description: 'CSV string data' },
         delimiter: { type: 'string', description: 'Column delimiter (default: comma)' },
-        filter: { type: 'object', description: 'Filter: {column: "name", operator: "eq|neq|gt|lt|contains", value: "..."}' },
+        filter: {
+          type: 'object',
+          description: 'Filter: {column: "name", operator: "eq|neq|gt|lt|contains", value: "..."}',
+        },
         sortBy: { type: 'string', description: 'Column name to sort by' },
         sortOrder: { type: 'string', description: 'asc or desc', enum: ['asc', 'desc'] },
-        columns: { type: 'array', description: 'Columns to include in output', items: { type: 'string' } },
+        columns: {
+          type: 'array',
+          description: 'Columns to include in output',
+          items: { type: 'string' },
+        },
         limit: { type: 'number', description: 'Max rows to return' },
       },
       required: ['csv'],

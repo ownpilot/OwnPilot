@@ -44,9 +44,8 @@ vi.mock('../workspace/manager.js', () => ({
 // SUT — must be imported after vi.mock declarations
 // ---------------------------------------------------------------------------
 
-const { WorkspaceServiceImpl, createWorkspaceServiceImpl } = await import(
-  './workspace-service-impl.js'
-);
+const { WorkspaceServiceImpl, createWorkspaceServiceImpl } =
+  await import('./workspace-service-impl.js');
 
 // ---------------------------------------------------------------------------
 // Helper factory
@@ -117,9 +116,7 @@ describe('WorkspaceServiceImpl', () => {
       const info = service.get('ws-1');
 
       expect(info!.channels).toEqual(['ch-1', 'ch-2']);
-      expect(info!.channels).not.toBe(
-        (ws as { config: { channels: string[] } }).config.channels,
-      );
+      expect(info!.channels).not.toBe((ws as { config: { channels: string[] } }).config.channels);
     });
 
     it('handles empty channels array', () => {
@@ -224,7 +221,7 @@ describe('WorkspaceServiceImpl', () => {
             systemPrompt: 'Hello',
             temperature: 0.3,
           }),
-        }),
+        })
       );
     });
 
@@ -277,7 +274,7 @@ describe('WorkspaceServiceImpl', () => {
             maxTokens: 4096,
             tools: ['tool1', 'tool2'],
           },
-        }),
+        })
       );
     });
 
@@ -287,7 +284,7 @@ describe('WorkspaceServiceImpl', () => {
       service.create({ name: 'Bare Workspace' });
 
       expect(mockCreate).toHaveBeenCalledWith(
-        expect.objectContaining({ name: 'Bare Workspace', agent: undefined }),
+        expect.objectContaining({ name: 'Bare Workspace', agent: undefined })
       );
     });
 
@@ -347,7 +344,7 @@ describe('WorkspaceServiceImpl', () => {
             userId: 'u-99',
             channels: ['ch-x'],
           },
-        }),
+        })
       );
 
       service.create({
@@ -367,7 +364,7 @@ describe('WorkspaceServiceImpl', () => {
           userId: 'u-99',
           channels: ['ch-x'],
           settings: { autoReply: false },
-        }),
+        })
       );
     });
 
@@ -433,9 +430,7 @@ describe('WorkspaceServiceImpl', () => {
 
   describe('getByChannel', () => {
     it('delegates to manager and returns mapped WorkspaceInfo', () => {
-      mockGetByChannel.mockReturnValue(
-        makeWorkspace({ config: { channels: ['ch-1', 'ch-2'] } }),
-      );
+      mockGetByChannel.mockReturnValue(makeWorkspace({ config: { channels: ['ch-1', 'ch-2'] } }));
 
       const result = service.getByChannel('ch-1');
 
@@ -487,9 +482,7 @@ describe('WorkspaceServiceImpl', () => {
 
   describe('getOrCreateDefault', () => {
     it('always returns mapped WorkspaceInfo (never undefined)', () => {
-      mockGetOrCreateDefault.mockReturnValue(
-        makeWorkspace({ config: { name: 'Auto Default' } }),
-      );
+      mockGetOrCreateDefault.mockReturnValue(makeWorkspace({ config: { name: 'Auto Default' } }));
 
       const result = service.getOrCreateDefault();
 
@@ -616,7 +609,7 @@ describe('WorkspaceServiceImpl', () => {
 
       const result = service.getAll();
 
-      expect(result.map(r => r.id)).toEqual(['z-last', 'a-first', 'm-middle']);
+      expect(result.map((r) => r.id)).toEqual(['z-last', 'a-first', 'm-middle']);
     });
   });
 

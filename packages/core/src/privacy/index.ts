@@ -18,19 +18,10 @@ export type {
 } from './types.js';
 
 // Patterns
-export {
-  BUILT_IN_PATTERNS,
-  getPatternsForCategories,
-  getAllCategories,
-} from './patterns.js';
+export { BUILT_IN_PATTERNS, getPatternsForCategories, getAllCategories } from './patterns.js';
 
 // Detector
-export {
-  PIIDetector,
-  createDetector,
-  detectPII,
-  hasPII,
-} from './detector.js';
+export { PIIDetector, createDetector, detectPII, hasPII } from './detector.js';
 
 // Redactor
 export {

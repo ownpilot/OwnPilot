@@ -7,10 +7,7 @@
  * Split hierarchy: heading → paragraph → sentence → hard split
  */
 
-import {
-  EMBEDDING_MAX_CHUNK_CHARS,
-  EMBEDDING_MIN_CHUNK_CHARS,
-} from '../config/defaults.js';
+import { EMBEDDING_MAX_CHUNK_CHARS, EMBEDDING_MIN_CHUNK_CHARS } from '../config/defaults.js';
 
 // ============================================================================
 // Types
@@ -37,7 +34,7 @@ export interface TextChunk {
  */
 export function chunkMarkdown(
   text: string,
-  maxChunkChars: number = EMBEDDING_MAX_CHUNK_CHARS,
+  maxChunkChars: number = EMBEDDING_MAX_CHUNK_CHARS
 ): TextChunk[] {
   const trimmed = text.trim();
 
@@ -59,9 +56,7 @@ export function chunkMarkdown(
     const content = currentChunk.trim();
     if (content.length >= EMBEDDING_MIN_CHUNK_CHARS) {
       const headingContext = currentHeadings.filter(Boolean).join(' > ');
-      const fullText = headingContext
-        ? `${headingContext}\n\n${content}`
-        : content;
+      const fullText = headingContext ? `${headingContext}\n\n${content}` : content;
       chunks.push({
         text: fullText,
         index: chunkIndex++,
@@ -138,7 +133,7 @@ export function chunkMarkdown(
  */
 export function shouldChunk(
   text: string,
-  maxChunkChars: number = EMBEDDING_MAX_CHUNK_CHARS,
+  maxChunkChars: number = EMBEDDING_MAX_CHUNK_CHARS
 ): boolean {
   return text.trim().length > maxChunkChars;
 }

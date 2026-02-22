@@ -36,9 +36,7 @@ const DEFAULT_MODEL_KEY = 'default_ai_model';
 settingsRoutes.get('/', async (c) => {
   // Get all API key settings from database only
   const apiKeySettings = await settingsRepo.getByPrefix(API_KEY_PREFIX);
-  const configuredProviders = apiKeySettings.map((s) =>
-    s.key.replace(API_KEY_PREFIX, '')
-  );
+  const configuredProviders = apiKeySettings.map((s) => s.key.replace(API_KEY_PREFIX, ''));
 
   // Include enabled local providers as configured (they don't need API keys)
   const localProviders = await localProvidersRepo.listProviders();
@@ -58,13 +56,13 @@ settingsRoutes.get('/', async (c) => {
   const availableProviders = getAvailableProviders();
 
   return apiResponse(c, {
-      configuredProviders: allConfiguredProviders,
-      localProviders: enabledLocalProviders,
-      demoMode: allConfiguredProviders.length === 0,
-      defaultProvider: defaultProvider ?? null,
-      defaultModel: defaultModel ?? null,
-      availableProviders,
-    });
+    configuredProviders: allConfiguredProviders,
+    localProviders: enabledLocalProviders,
+    demoMode: allConfiguredProviders.length === 0,
+    defaultProvider: defaultProvider ?? null,
+    defaultModel: defaultModel ?? null,
+    availableProviders,
+  });
 });
 
 /**
@@ -75,18 +73,18 @@ settingsRoutes.get('/data-info', async (c) => {
   const migrationStatus = getMigrationStatus();
 
   return apiResponse(c, {
-      dataDirectory: dataInfo.root,
-      database: dataInfo.database,
-      workspace: dataInfo.workspace,
-      credentials: dataInfo.credentials,
-      platform: dataInfo.platform,
-      isDefaultLocation: dataInfo.isDefaultLocation,
-      migration: {
-        needsMigration: migrationStatus.needsMigration,
-        legacyPath: migrationStatus.legacyPath,
-        legacyFiles: migrationStatus.legacyFiles,
-      },
-    });
+    dataDirectory: dataInfo.root,
+    database: dataInfo.database,
+    workspace: dataInfo.workspace,
+    credentials: dataInfo.credentials,
+    platform: dataInfo.platform,
+    isDefaultLocation: dataInfo.isDefaultLocation,
+    migration: {
+      needsMigration: migrationStatus.needsMigration,
+      legacyPath: migrationStatus.legacyPath,
+      legacyFiles: migrationStatus.legacyFiles,
+    },
+  });
 });
 
 /**
@@ -100,14 +98,18 @@ settingsRoutes.post('/default-provider', async (c) => {
   }
 
   if (body.provider.length > 64) {
-    return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'Provider name too long (max 64 characters)' }, 400);
+    return apiError(
+      c,
+      { code: ERROR_CODES.INVALID_INPUT, message: 'Provider name too long (max 64 characters)' },
+      400
+    );
   }
 
   await settingsRepo.set(DEFAULT_PROVIDER_KEY, body.provider);
 
   return apiResponse(c, {
-      defaultProvider: body.provider,
-    });
+    defaultProvider: body.provider,
+  });
 });
 
 /**
@@ -121,14 +123,18 @@ settingsRoutes.post('/default-model', async (c) => {
   }
 
   if (body.model.length > 128) {
-    return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'Model name too long (max 128 characters)' }, 400);
+    return apiError(
+      c,
+      { code: ERROR_CODES.INVALID_INPUT, message: 'Model name too long (max 128 characters)' },
+      400
+    );
   }
 
   await settingsRepo.set(DEFAULT_MODEL_KEY, body.model);
 
   return apiResponse(c, {
-      defaultModel: body.model,
-    });
+    defaultModel: body.model,
+  });
 });
 
 /**
@@ -138,11 +144,19 @@ settingsRoutes.post('/api-keys', async (c) => {
   const body = await c.req.json<{ provider: string; apiKey: string }>();
 
   if (!body.provider || !body.apiKey) {
-    return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'Provider and apiKey are required' }, 400);
+    return apiError(
+      c,
+      { code: ERROR_CODES.INVALID_REQUEST, message: 'Provider and apiKey are required' },
+      400
+    );
   }
 
   if (body.provider.length > 64) {
-    return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'Provider name too long (max 64 characters)' }, 400);
+    return apiError(
+      c,
+      { code: ERROR_CODES.INVALID_INPUT, message: 'Provider name too long (max 64 characters)' },
+      400
+    );
   }
 
   // Store API key in database
@@ -158,9 +172,9 @@ settingsRoutes.post('/api-keys', async (c) => {
   }
 
   return apiResponse(c, {
-      provider: body.provider,
-      configured: true,
-    });
+    provider: body.provider,
+    configured: true,
+  });
 });
 
 /**
@@ -181,9 +195,9 @@ settingsRoutes.delete('/api-keys/:provider', async (c) => {
   }
 
   return apiResponse(c, {
-      provider,
-      configured: false,
-    });
+    provider,
+    configured: false,
+  });
 });
 
 /**
@@ -208,7 +222,7 @@ export async function getApiKey(provider: string): Promise<string | undefined> {
  */
 export async function getConfiguredProviderIds(): Promise<Set<string>> {
   const apiKeySettings = await settingsRepo.getByPrefix(API_KEY_PREFIX);
-  return new Set(apiKeySettings.map(s => s.key.replace(API_KEY_PREFIX, '')));
+  return new Set(apiKeySettings.map((s) => s.key.replace(API_KEY_PREFIX, '')));
 }
 
 /**
@@ -297,9 +311,13 @@ export async function setDefaultModel(model: string): Promise<void> {
  * Resolve "default" provider/model to actual values
  * Returns null values if no defaults are configured
  */
-export async function resolveProviderAndModel(provider: string, model: string): Promise<{ provider: string | null; model: string | null }> {
+export async function resolveProviderAndModel(
+  provider: string,
+  model: string
+): Promise<{ provider: string | null; model: string | null }> {
   const resolvedProvider = provider === 'default' ? await getDefaultProvider() : provider;
-  const resolvedModel = model === 'default' ? await getDefaultModel(resolvedProvider ?? undefined) : model;
+  const resolvedModel =
+    model === 'default' ? await getDefaultModel(resolvedProvider ?? undefined) : model;
   return { provider: resolvedProvider, model: resolvedModel };
 }
 
@@ -330,7 +348,9 @@ const SANDBOX_SETTINGS_PREFIX = 'sandbox:';
  * Get sandbox settings
  */
 export async function getSandboxSettings(): Promise<SandboxSettings> {
-  const settings = { ...DEFAULT_SANDBOX_SETTINGS } as { [K in keyof SandboxSettings]: SandboxSettings[K] };
+  const settings = { ...DEFAULT_SANDBOX_SETTINGS } as {
+    [K in keyof SandboxSettings]: SandboxSettings[K];
+  };
 
   // Override with saved settings
   const savedSettings = await settingsRepo.getByPrefix(SANDBOX_SETTINGS_PREFIX);
@@ -394,20 +414,27 @@ settingsRoutes.get('/sandbox', async (c) => {
     const dockerAvailable = await isDockerAvailable();
 
     return apiResponse(c, {
-        settings,
-        dockerAvailable,
-        status: {
-          enabled: settings.enabled,
-          ready: settings.enabled && dockerAvailable,
-          message: !dockerAvailable
-            ? 'Docker is not available. Please install and start Docker to use sandboxed execution.'
-            : settings.enabled
-              ? 'Sandbox is enabled and ready.'
-              : 'Sandbox is disabled. Enable it to use isolated user workspaces.',
-        },
-      });
+      settings,
+      dockerAvailable,
+      status: {
+        enabled: settings.enabled,
+        ready: settings.enabled && dockerAvailable,
+        message: !dockerAvailable
+          ? 'Docker is not available. Please install and start Docker to use sandboxed execution.'
+          : settings.enabled
+            ? 'Sandbox is enabled and ready.'
+            : 'Sandbox is disabled. Enable it to use isolated user workspaces.',
+      },
+    });
   } catch (error) {
-    return apiError(c, { code: ERROR_CODES.SANDBOX_SETTINGS_ERROR, message: getErrorMessage(error, 'Failed to get sandbox settings') }, 500);
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.SANDBOX_SETTINGS_ERROR,
+        message: getErrorMessage(error, 'Failed to get sandbox settings'),
+      },
+      500
+    );
   }
 });
 
@@ -442,22 +469,50 @@ settingsRoutes.post('/sandbox', async (c) => {
 
         // Validation
         if (key === 'enabled' && typeof value !== 'boolean') {
-          return apiError(c, { code: ERROR_CODES.INVALID_VALUE, message: `${key} must be a boolean` }, 400);
+          return apiError(
+            c,
+            { code: ERROR_CODES.INVALID_VALUE, message: `${key} must be a boolean` },
+            400
+          );
         }
 
         if (
-          ['defaultMemoryMB', 'defaultCpuCores', 'defaultTimeoutMs', 'maxWorkspacesPerUser', 'maxStoragePerUserGB'].includes(key) &&
+          [
+            'defaultMemoryMB',
+            'defaultCpuCores',
+            'defaultTimeoutMs',
+            'maxWorkspacesPerUser',
+            'maxStoragePerUserGB',
+          ].includes(key) &&
           typeof value !== 'number'
         ) {
-          return apiError(c, { code: ERROR_CODES.INVALID_VALUE, message: `${key} must be a number` }, 400);
+          return apiError(
+            c,
+            { code: ERROR_CODES.INVALID_VALUE, message: `${key} must be a number` },
+            400
+          );
         }
 
-        if (key === 'defaultNetwork' && !['none', 'restricted', 'egress', 'full'].includes(value as string)) {
-          return apiError(c, { code: ERROR_CODES.INVALID_VALUE, message: `${key} must be one of: none, restricted, egress, full` }, 400);
+        if (
+          key === 'defaultNetwork' &&
+          !['none', 'restricted', 'egress', 'full'].includes(value as string)
+        ) {
+          return apiError(
+            c,
+            {
+              code: ERROR_CODES.INVALID_VALUE,
+              message: `${key} must be one of: none, restricted, egress, full`,
+            },
+            400
+          );
         }
 
         if (key === 'allowedImages' && !Array.isArray(value)) {
-          return apiError(c, { code: ERROR_CODES.INVALID_VALUE, message: `${key} must be an array of strings` }, 400);
+          return apiError(
+            c,
+            { code: ERROR_CODES.INVALID_VALUE, message: `${key} must be an array of strings` },
+            400
+          );
         }
 
         await setSandboxSetting(key, value as SandboxSettings[typeof key]);
@@ -468,11 +523,18 @@ settingsRoutes.post('/sandbox', async (c) => {
     const newSettings = await getSandboxSettings();
 
     return apiResponse(c, {
-        updated,
-        settings: newSettings,
-      });
+      updated,
+      settings: newSettings,
+    });
   } catch (error) {
-    return apiError(c, { code: ERROR_CODES.SANDBOX_SETTINGS_ERROR, message: getErrorMessage(error, 'Failed to update sandbox settings') }, 500);
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.SANDBOX_SETTINGS_ERROR,
+        message: getErrorMessage(error, 'Failed to update sandbox settings'),
+      },
+      500
+    );
   }
 });
 
@@ -484,17 +546,32 @@ settingsRoutes.post('/sandbox/enable', async (c) => {
     const dockerAvailable = await isDockerAvailable();
 
     if (!dockerAvailable) {
-      return apiError(c, { code: ERROR_CODES.DOCKER_UNAVAILABLE, message: 'Cannot enable sandbox: Docker is not available. Please install and start Docker first.' }, 400);
+      return apiError(
+        c,
+        {
+          code: ERROR_CODES.DOCKER_UNAVAILABLE,
+          message:
+            'Cannot enable sandbox: Docker is not available. Please install and start Docker first.',
+        },
+        400
+      );
     }
 
     await setSandboxSetting('enabled', true);
 
     return apiResponse(c, {
-        enabled: true,
-        message: 'Sandbox has been enabled.',
-      });
+      enabled: true,
+      message: 'Sandbox has been enabled.',
+    });
   } catch (error) {
-    return apiError(c, { code: ERROR_CODES.SANDBOX_ENABLE_ERROR, message: getErrorMessage(error, 'Failed to enable sandbox') }, 500);
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.SANDBOX_ENABLE_ERROR,
+        message: getErrorMessage(error, 'Failed to enable sandbox'),
+      },
+      500
+    );
   }
 });
 
@@ -506,11 +583,18 @@ settingsRoutes.post('/sandbox/disable', async (c) => {
     await setSandboxSetting('enabled', false);
 
     return apiResponse(c, {
-        enabled: false,
-        message: 'Sandbox has been disabled.',
-      });
+      enabled: false,
+      message: 'Sandbox has been disabled.',
+    });
   } catch (error) {
-    return apiError(c, { code: ERROR_CODES.SANDBOX_DISABLE_ERROR, message: getErrorMessage(error, 'Failed to disable sandbox') }, 500);
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.SANDBOX_DISABLE_ERROR,
+        message: getErrorMessage(error, 'Failed to disable sandbox'),
+      },
+      500
+    );
   }
 });
 
@@ -548,16 +632,24 @@ settingsRoutes.put('/tool-groups', async (c) => {
   const body = await c.req.json<{ enabledGroupIds: string[] }>();
 
   if (!Array.isArray(body.enabledGroupIds)) {
-    return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'enabledGroupIds must be an array' }, 400);
+    return apiError(
+      c,
+      { code: ERROR_CODES.INVALID_REQUEST, message: 'enabledGroupIds must be an array' },
+      400
+    );
   }
 
   // Validate all IDs reference real groups
   const invalidIds = body.enabledGroupIds.filter((id) => !TOOL_GROUPS[id]);
   if (invalidIds.length > 0) {
-    return apiError(c, {
-      code: ERROR_CODES.INVALID_INPUT,
-      message: `Unknown tool group IDs: ${invalidIds.join(', ')}`,
-    }, 400);
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.INVALID_INPUT,
+        message: `Unknown tool group IDs: ${invalidIds.join(', ')}`,
+      },
+      400
+    );
   }
 
   // Ensure always-on groups are included

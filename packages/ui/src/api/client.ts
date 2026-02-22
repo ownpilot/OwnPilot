@@ -28,7 +28,7 @@ export class ApiError extends Error {
     /** Optional details from gateway */
     public readonly details?: unknown,
     /** Gateway request ID (for debugging) */
-    public readonly requestId?: string,
+    public readonly requestId?: string
   ) {
     super(message);
   }
@@ -71,7 +71,7 @@ interface ApiEnvelope<T = unknown> {
 // ============================================================================
 
 function buildQueryString(
-  params?: Record<string, string | number | boolean | string[] | undefined>,
+  params?: Record<string, string | number | boolean | string[] | undefined>
 ): string {
   if (!params) return '';
 
@@ -111,7 +111,11 @@ function createApiClient(config: ApiClientConfig) {
       body = await response.json();
     } catch {
       // Non-JSON response (e.g. 502 from proxy)
-      throw createError(response.status, 'PARSE_ERROR', `HTTP ${response.status}: Non-JSON response`);
+      throw createError(
+        response.status,
+        'PARSE_ERROR',
+        `HTTP ${response.status}: Non-JSON response`
+      );
     }
 
     if (body.success && response.ok) {
@@ -126,7 +130,7 @@ function createApiClient(config: ApiClientConfig) {
       errorInfo.code,
       errorInfo.message,
       errorInfo.details,
-      body.meta?.requestId,
+      body.meta?.requestId
     );
   }
 
@@ -151,7 +155,7 @@ function createApiClient(config: ApiClientConfig) {
     code: string,
     message: string,
     details?: unknown,
-    requestId?: string,
+    requestId?: string
   ): ApiError {
     const err = new ApiError(status, code, message, details, requestId);
     config.onError?.(err);
@@ -163,7 +167,7 @@ function createApiClient(config: ApiClientConfig) {
     method: string,
     path: string,
     body?: unknown,
-    options?: RequestOptions,
+    options?: RequestOptions
   ): Promise<T> {
     const url = buildUrl(path, options?.params);
     const headers: Record<string, string> = { ...options?.headers };
@@ -221,11 +225,7 @@ function createApiClient(config: ApiClientConfig) {
      * POST request that returns the raw Response for SSE streaming.
      * Does NOT unwrap the envelope — caller handles the stream directly.
      */
-    async stream(
-      path: string,
-      body: unknown,
-      options?: StreamOptions,
-    ): Promise<Response> {
+    async stream(path: string, body: unknown, options?: StreamOptions): Promise<Response> {
       const url = buildUrl(path, options?.params);
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
@@ -257,7 +257,7 @@ function createApiClient(config: ApiClientConfig) {
             errorInfo.code,
             errorInfo.message,
             errorInfo.details,
-            errorBody.meta?.requestId,
+            errorBody.meta?.requestId
           );
         } catch (parseErr) {
           if (parseErr instanceof ApiError) throw parseErr;

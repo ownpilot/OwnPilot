@@ -44,7 +44,7 @@ vi.mock('../services/workflow-service.js', () => ({
 }));
 
 vi.mock('@ownpilot/core', async (importOriginal) => ({
-  ...await importOriginal<typeof import('@ownpilot/core')>(),
+  ...(await importOriginal<typeof import('@ownpilot/core')>()),
   getServiceRegistry: () => ({
     get: (token: { name: string }) => {
       if (token.name === 'workflow') return mockService;
@@ -576,8 +576,18 @@ describe('Workflow Routes', () => {
           id: 'wf-active',
           status: 'active',
           nodes: [
-            { id: 'n1', type: 'tool', position: { x: 0, y: 0 }, data: { toolName: 'core.read_file', toolArgs: {}, label: 'Read' } },
-            { id: 'n2', type: 'tool', position: { x: 0, y: 0 }, data: { toolName: 'custom.my_tool', toolArgs: {}, label: 'My Tool' } },
+            {
+              id: 'n1',
+              type: 'tool',
+              position: { x: 0, y: 0 },
+              data: { toolName: 'core.read_file', toolArgs: {}, label: 'Read' },
+            },
+            {
+              id: 'n2',
+              type: 'tool',
+              position: { x: 0, y: 0 },
+              data: { toolName: 'custom.my_tool', toolArgs: {}, label: 'My Tool' },
+            },
           ],
         },
         {
@@ -585,7 +595,12 @@ describe('Workflow Routes', () => {
           id: 'wf-inactive',
           status: 'inactive',
           nodes: [
-            { id: 'n3', type: 'tool', position: { x: 0, y: 0 }, data: { toolName: 'should_not_appear', toolArgs: {}, label: 'Skip' } },
+            {
+              id: 'n3',
+              type: 'tool',
+              position: { x: 0, y: 0 },
+              data: { toolName: 'should_not_appear', toolArgs: {}, label: 'Skip' },
+            },
           ],
         },
       ]);
@@ -593,7 +608,7 @@ describe('Workflow Routes', () => {
       const res = await app.request('/workflows/active-tool-names');
 
       expect(res.status).toBe(200);
-      const json = await res.json() as { data: string[] };
+      const json = (await res.json()) as { data: string[] };
       expect(json.data).toContain('core.read_file');
       expect(json.data).toContain('custom.my_tool');
       expect(json.data).not.toContain('should_not_appear');
@@ -605,7 +620,7 @@ describe('Workflow Routes', () => {
       const res = await app.request('/workflows/active-tool-names');
 
       expect(res.status).toBe(200);
-      const json = await res.json() as { data: string[] };
+      const json = (await res.json()) as { data: string[] };
       expect(json.data).toEqual([]);
     });
 
@@ -616,7 +631,12 @@ describe('Workflow Routes', () => {
           id: 'wf-a',
           status: 'active',
           nodes: [
-            { id: 'n1', type: 'tool', position: { x: 0, y: 0 }, data: { toolName: 'shared_tool', toolArgs: {}, label: 'T' } },
+            {
+              id: 'n1',
+              type: 'tool',
+              position: { x: 0, y: 0 },
+              data: { toolName: 'shared_tool', toolArgs: {}, label: 'T' },
+            },
           ],
         },
         {
@@ -624,14 +644,19 @@ describe('Workflow Routes', () => {
           id: 'wf-b',
           status: 'active',
           nodes: [
-            { id: 'n2', type: 'tool', position: { x: 0, y: 0 }, data: { toolName: 'shared_tool', toolArgs: {}, label: 'T' } },
+            {
+              id: 'n2',
+              type: 'tool',
+              position: { x: 0, y: 0 },
+              data: { toolName: 'shared_tool', toolArgs: {}, label: 'T' },
+            },
           ],
         },
       ]);
 
       const res = await app.request('/workflows/active-tool-names');
 
-      const json = await res.json() as { data: string[] };
+      const json = (await res.json()) as { data: string[] };
       expect(json.data).toHaveLength(1);
       expect(json.data[0]).toBe('shared_tool');
     });
@@ -643,16 +668,31 @@ describe('Workflow Routes', () => {
           id: 'wf-mix',
           status: 'active',
           nodes: [
-            { id: 'n1', type: 'trigger', position: { x: 0, y: 0 }, data: { triggerType: 'manual', label: 'Start' } },
-            { id: 'n2', type: 'tool', position: { x: 0, y: 0 }, data: { toolName: 'real_tool', toolArgs: {}, label: 'Tool' } },
-            { id: 'n3', type: 'condition', position: { x: 0, y: 0 }, data: { expression: 'true', label: 'Check' } },
+            {
+              id: 'n1',
+              type: 'trigger',
+              position: { x: 0, y: 0 },
+              data: { triggerType: 'manual', label: 'Start' },
+            },
+            {
+              id: 'n2',
+              type: 'tool',
+              position: { x: 0, y: 0 },
+              data: { toolName: 'real_tool', toolArgs: {}, label: 'Tool' },
+            },
+            {
+              id: 'n3',
+              type: 'condition',
+              position: { x: 0, y: 0 },
+              data: { expression: 'true', label: 'Check' },
+            },
           ],
         },
       ]);
 
       const res = await app.request('/workflows/active-tool-names');
 
-      const json = await res.json() as { data: string[] };
+      const json = (await res.json()) as { data: string[] };
       expect(json.data).toEqual(['real_tool']);
     });
   });
@@ -664,9 +704,11 @@ describe('Workflow Routes', () => {
   describe('retryCount / timeoutMs validation', () => {
     beforeEach(async () => {
       // Use real validation for these tests
-      const actual = await vi.importActual<typeof import('../middleware/validation.js')>('../middleware/validation.js');
-      vi.mocked(mockValidateBody).mockImplementation(
-        (_schema, body) => actual.validateBody(actual.createWorkflowSchema, body),
+      const actual = await vi.importActual<typeof import('../middleware/validation.js')>(
+        '../middleware/validation.js'
+      );
+      vi.mocked(mockValidateBody).mockImplementation((_schema, body) =>
+        actual.validateBody(actual.createWorkflowSchema, body)
       );
     });
 
@@ -679,11 +721,14 @@ describe('Workflow Routes', () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: 'Retry Test',
-          nodes: [{
-            id: 'n1', type: 'toolNode',
-            position: { x: 0, y: 0 },
-            data: { toolName: 'test', toolArgs: {}, label: 'T', retryCount: 3, timeoutMs: 60000 },
-          }],
+          nodes: [
+            {
+              id: 'n1',
+              type: 'toolNode',
+              position: { x: 0, y: 0 },
+              data: { toolName: 'test', toolArgs: {}, label: 'T', retryCount: 3, timeoutMs: 60000 },
+            },
+          ],
           edges: [],
         }),
       });
@@ -697,11 +742,14 @@ describe('Workflow Routes', () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: 'Bad Retry',
-          nodes: [{
-            id: 'n1', type: 'toolNode',
-            position: { x: 0, y: 0 },
-            data: { toolName: 'test', toolArgs: {}, label: 'T', retryCount: 6 },
-          }],
+          nodes: [
+            {
+              id: 'n1',
+              type: 'toolNode',
+              position: { x: 0, y: 0 },
+              data: { toolName: 'test', toolArgs: {}, label: 'T', retryCount: 6 },
+            },
+          ],
           edges: [],
         }),
       });
@@ -715,11 +763,14 @@ describe('Workflow Routes', () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: 'Negative Retry',
-          nodes: [{
-            id: 'n1', type: 'toolNode',
-            position: { x: 0, y: 0 },
-            data: { toolName: 'test', toolArgs: {}, label: 'T', retryCount: -1 },
-          }],
+          nodes: [
+            {
+              id: 'n1',
+              type: 'toolNode',
+              position: { x: 0, y: 0 },
+              data: { toolName: 'test', toolArgs: {}, label: 'T', retryCount: -1 },
+            },
+          ],
           edges: [],
         }),
       });
@@ -733,11 +784,14 @@ describe('Workflow Routes', () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: 'Bad Timeout',
-          nodes: [{
-            id: 'n1', type: 'toolNode',
-            position: { x: 0, y: 0 },
-            data: { toolName: 'test', toolArgs: {}, label: 'T', timeoutMs: 400000 },
-          }],
+          nodes: [
+            {
+              id: 'n1',
+              type: 'toolNode',
+              position: { x: 0, y: 0 },
+              data: { toolName: 'test', toolArgs: {}, label: 'T', timeoutMs: 400000 },
+            },
+          ],
           edges: [],
         }),
       });
@@ -751,11 +805,14 @@ describe('Workflow Routes', () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: 'Negative Timeout',
-          nodes: [{
-            id: 'n1', type: 'toolNode',
-            position: { x: 0, y: 0 },
-            data: { toolName: 'test', toolArgs: {}, label: 'T', timeoutMs: -1 },
-          }],
+          nodes: [
+            {
+              id: 'n1',
+              type: 'toolNode',
+              position: { x: 0, y: 0 },
+              data: { toolName: 'test', toolArgs: {}, label: 'T', timeoutMs: -1 },
+            },
+          ],
           edges: [],
         }),
       });
@@ -772,11 +829,21 @@ describe('Workflow Routes', () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: 'LLM Retry',
-          nodes: [{
-            id: 'n1', type: 'llmNode',
-            position: { x: 0, y: 0 },
-            data: { label: 'AI', provider: 'openai', model: 'gpt-4', userMessage: 'Hi', retryCount: 2, timeoutMs: 30000 },
-          }],
+          nodes: [
+            {
+              id: 'n1',
+              type: 'llmNode',
+              position: { x: 0, y: 0 },
+              data: {
+                label: 'AI',
+                provider: 'openai',
+                model: 'gpt-4',
+                userMessage: 'Hi',
+                retryCount: 2,
+                timeoutMs: 30000,
+              },
+            },
+          ],
           edges: [],
         }),
       });

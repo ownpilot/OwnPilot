@@ -245,12 +245,7 @@ export function assessRisk(
   const level = scoreToLevel(score);
 
   // Determine if approval is required
-  const requiresApproval = checkApprovalRequired(
-    category,
-    actionType,
-    level,
-    config
-  );
+  const requiresApproval = checkApprovalRequired(category, actionType, level, config);
 
   // Generate mitigations
   const mitigations = generateMitigations(factors.filter((f) => f.present));
@@ -282,29 +277,22 @@ function evaluateFactor(
   switch (factorId) {
     case 'bulk_operation':
       return (
-        Array.isArray(params.items) && params.items.length > 10 ||
+        (Array.isArray(params.items) && params.items.length > 10) ||
         params.bulk === true ||
         params.all === true
       );
 
     case 'sensitive_data':
-      return (
-        params.sensitive === true ||
-        containsSensitiveKeywords(params)
-      );
+      return params.sensitive === true || containsSensitiveKeywords(params);
 
     case 'high_cost':
       return (
-        typeof params.cost === 'number' && params.cost > 1000 ||
-        typeof params.tokens === 'number' && params.tokens > 5000
+        (typeof params.cost === 'number' && params.cost > 1000) ||
+        (typeof params.tokens === 'number' && params.tokens > 5000)
       );
 
     case 'irreversible':
-      return (
-        params.force === true ||
-        params.permanent === true ||
-        params.noUndo === true
-      );
+      return params.force === true || params.permanent === true || params.noUndo === true;
 
     case 'affects_others':
       return (
@@ -314,10 +302,7 @@ function evaluateFactor(
       );
 
     case 'system_wide':
-      return (
-        params.global === true ||
-        params.systemWide === true
-      );
+      return params.global === true || params.systemWide === true;
 
     default:
       return false;
@@ -329,8 +314,16 @@ function evaluateFactor(
  */
 function containsSensitiveKeywords(params: Record<string, unknown>): boolean {
   const sensitiveKeywords = [
-    'password', 'secret', 'token', 'api_key', 'apikey',
-    'credential', 'private', 'ssn', 'credit_card', 'bank',
+    'password',
+    'secret',
+    'token',
+    'api_key',
+    'apikey',
+    'credential',
+    'private',
+    'ssn',
+    'credit_card',
+    'bank',
   ];
 
   const paramsStr = JSON.stringify(params).toLowerCase();
@@ -451,10 +444,14 @@ function generateMitigations(presentFactors: RiskFactor[]): string[] {
  */
 export function riskLevelToNumber(level: RiskLevel): number {
   switch (level) {
-    case 'low': return 1;
-    case 'medium': return 2;
-    case 'high': return 3;
-    case 'critical': return 4;
+    case 'low':
+      return 1;
+    case 'medium':
+      return 2;
+    case 'high':
+      return 3;
+    case 'critical':
+      return 4;
   }
 }
 
@@ -477,9 +474,13 @@ export function isRiskAtOrAbove(level: RiskLevel, threshold: RiskLevel): boolean
  */
 export function getRiskLevelColor(level: RiskLevel): string {
   switch (level) {
-    case 'low': return '#22c55e'; // green
-    case 'medium': return '#f59e0b'; // amber
-    case 'high': return '#ef4444'; // red
-    case 'critical': return '#7c2d12'; // dark red
+    case 'low':
+      return '#22c55e'; // green
+    case 'medium':
+      return '#f59e0b'; // amber
+    case 'high':
+      return '#ef4444'; // red
+    case 'critical':
+      return '#7c2d12'; // dark red
   }
 }

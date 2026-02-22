@@ -29,9 +29,7 @@ vi.mock('../services/get-log.js', () => ({
 }));
 
 vi.mock('../services/error-utils.js', () => ({
-  getErrorMessage: vi.fn((e: unknown) =>
-    e instanceof Error ? e.message : String(e)
-  ),
+  getErrorMessage: vi.fn((e: unknown) => (e instanceof Error ? e.message : String(e))),
 }));
 
 // ---------------------------------------------------------------------------
@@ -62,18 +60,14 @@ function createMockChildProcess(
   const child: MockChildProcess = {
     stdin: { end: vi.fn() },
     stdout: {
-      on: vi.fn(
-        (event: string, handler: (data: Buffer) => void) => {
-          if (event === 'data') stdoutHandlers.push(handler);
-        }
-      ),
+      on: vi.fn((event: string, handler: (data: Buffer) => void) => {
+        if (event === 'data') stdoutHandlers.push(handler);
+      }),
     },
     stderr: {
-      on: vi.fn(
-        (event: string, handler: (data: Buffer) => void) => {
-          if (event === 'data') stderrHandlers.push(handler);
-        }
-      ),
+      on: vi.fn((event: string, handler: (data: Buffer) => void) => {
+        if (event === 'data') stderrHandlers.push(handler);
+      }),
     },
     on: vi.fn((event: string, handler: (...args: unknown[]) => void) => {
       if (!handlers[event]) handlers[event] = [];
@@ -182,17 +176,23 @@ describe('orchestrator', () => {
     it('calls execSync with "docker info"', async () => {
       mockExecSync.mockReturnValue(undefined);
       await isDockerAvailable();
-      expect(mockExecSync).toHaveBeenCalledWith('docker info', expect.objectContaining({
-        stdio: 'ignore',
-      }));
+      expect(mockExecSync).toHaveBeenCalledWith(
+        'docker info',
+        expect.objectContaining({
+          stdio: 'ignore',
+        })
+      );
     });
 
     it('passes timeout option of 5000ms', async () => {
       mockExecSync.mockReturnValue(undefined);
       await isDockerAvailable();
-      expect(mockExecSync).toHaveBeenCalledWith('docker info', expect.objectContaining({
-        timeout: 5000,
-      }));
+      expect(mockExecSync).toHaveBeenCalledWith(
+        'docker info',
+        expect.objectContaining({
+          timeout: 5000,
+        })
+      );
     });
 
     it('catches any thrown error and returns false', async () => {
@@ -226,7 +226,9 @@ describe('orchestrator', () => {
 
     it('pulls image when not local and returns true on success', async () => {
       mockExecFileSync
-        .mockImplementationOnce(() => { throw new Error('not found'); }) // inspect fails
+        .mockImplementationOnce(() => {
+          throw new Error('not found');
+        }) // inspect fails
         .mockReturnValueOnce(undefined); // pull succeeds
       const result = await ensureImage('alpine:latest');
       expect(result).toBe(true);
@@ -239,8 +241,12 @@ describe('orchestrator', () => {
 
     it('returns false when both inspect and pull fail', async () => {
       mockExecFileSync
-        .mockImplementationOnce(() => { throw new Error('not found'); })
-        .mockImplementationOnce(() => { throw new Error('pull failed'); });
+        .mockImplementationOnce(() => {
+          throw new Error('not found');
+        })
+        .mockImplementationOnce(() => {
+          throw new Error('pull failed');
+        });
       const result = await ensureImage('nonexistent:image');
       expect(result).toBe(false);
     });
@@ -334,15 +340,21 @@ describe('orchestrator', () => {
     });
 
     it('rejects non-hex characters', async () => {
-      await expect(orch.stopContainer('abcdef01234g')).rejects.toThrow('Invalid container ID format');
+      await expect(orch.stopContainer('abcdef01234g')).rejects.toThrow(
+        'Invalid container ID format'
+      );
     });
 
     it('rejects too short (11 chars)', async () => {
-      await expect(orch.stopContainer('abcdef01234')).rejects.toThrow('Invalid container ID format');
+      await expect(orch.stopContainer('abcdef01234')).rejects.toThrow(
+        'Invalid container ID format'
+      );
     });
 
     it('rejects too long (65 chars)', async () => {
-      await expect(orch.stopContainer('a'.repeat(65))).rejects.toThrow('Invalid container ID format');
+      await expect(orch.stopContainer('a'.repeat(65))).rejects.toThrow(
+        'Invalid container ID format'
+      );
     });
 
     it('rejects empty string', async () => {
@@ -350,11 +362,15 @@ describe('orchestrator', () => {
     });
 
     it('rejects uppercase hex', async () => {
-      await expect(orch.stopContainer('ABCDEF012345')).rejects.toThrow('Invalid container ID format');
+      await expect(orch.stopContainer('ABCDEF012345')).rejects.toThrow(
+        'Invalid container ID format'
+      );
     });
 
     it('rejects mixed case hex', async () => {
-      await expect(orch.stopContainer('abcDEF012345')).rejects.toThrow('Invalid container ID format');
+      await expect(orch.stopContainer('abcDEF012345')).rejects.toThrow(
+        'Invalid container ID format'
+      );
     });
   });
 
@@ -406,7 +422,9 @@ describe('orchestrator', () => {
     });
 
     it('returns false when Docker is not available', async () => {
-      mockExecSync.mockImplementation(() => { throw new Error('no docker'); });
+      mockExecSync.mockImplementation(() => {
+        throw new Error('no docker');
+      });
       expect(await orch.checkDocker()).toBe(false);
     });
 
@@ -423,12 +441,16 @@ describe('orchestrator', () => {
       mockExecSync.mockReturnValue(undefined);
       expect(await orch.checkDocker()).toBe(true);
       // Change mock to fail — should still return cached true
-      mockExecSync.mockImplementation(() => { throw new Error('fail'); });
+      mockExecSync.mockImplementation(() => {
+        throw new Error('fail');
+      });
       expect(await orch.checkDocker()).toBe(true);
     });
 
     it('returns cached false on subsequent calls', async () => {
-      mockExecSync.mockImplementation(() => { throw new Error('fail'); });
+      mockExecSync.mockImplementation(() => {
+        throw new Error('fail');
+      });
       expect(await orch.checkDocker()).toBe(false);
       // Change mock to succeed — should still return cached false
       mockExecSync.mockReturnValue(undefined);
@@ -447,7 +469,9 @@ describe('orchestrator', () => {
     });
 
     it('throws when Docker is not available', async () => {
-      mockExecSync.mockImplementation(() => { throw new Error('no docker'); });
+      mockExecSync.mockImplementation(() => {
+        throw new Error('no docker');
+      });
       await expect(
         orch.createContainer('user1', 'ws1', '/workspace', makeConfig())
       ).rejects.toThrow('Docker is not available');
@@ -457,8 +481,12 @@ describe('orchestrator', () => {
       mockExecSync.mockReturnValue(undefined); // docker available
       // Both inspect and pull fail
       mockExecFileSync
-        .mockImplementationOnce(() => { throw new Error('not found'); })
-        .mockImplementationOnce(() => { throw new Error('pull fail'); });
+        .mockImplementationOnce(() => {
+          throw new Error('not found');
+        })
+        .mockImplementationOnce(() => {
+          throw new Error('pull fail');
+        });
       await expect(
         orch.createContainer('user1', 'ws1', '/workspace', makeConfig())
       ).rejects.toThrow('Failed to get Docker image');
@@ -497,7 +525,12 @@ describe('orchestrator', () => {
 
     it('includes memory and CPU limits from config', async () => {
       mockDockerRunSuccess();
-      await orch.createContainer('user1', 'ws1', '/workspace', makeConfig({ memoryMB: 256, cpuCores: 1.5 }));
+      await orch.createContainer(
+        'user1',
+        'ws1',
+        '/workspace',
+        makeConfig({ memoryMB: 256, cpuCores: 1.5 })
+      );
       const args = mockExecFileSync.mock.calls[1][1] as string[];
       expect(args).toContain('--memory=256m');
       expect(args).toContain('--cpus=1.5');
@@ -529,33 +562,53 @@ describe('orchestrator', () => {
 
     it('adds --network=none for networkPolicy "none"', async () => {
       mockDockerRunSuccess();
-      await orch.createContainer('user1', 'ws1', '/workspace', makeConfig({ networkPolicy: 'none' }));
+      await orch.createContainer(
+        'user1',
+        'ws1',
+        '/workspace',
+        makeConfig({ networkPolicy: 'none' })
+      );
       const args = mockExecFileSync.mock.calls[1][1] as string[];
       expect(args).toContain('--network=none');
     });
 
     it('adds --network=none for networkPolicy "restricted" with allowedHosts', async () => {
       mockDockerRunSuccess();
-      await orch.createContainer('user1', 'ws1', '/workspace', makeConfig({
-        networkPolicy: 'restricted',
-        allowedHosts: ['api.example.com'],
-      }));
+      await orch.createContainer(
+        'user1',
+        'ws1',
+        '/workspace',
+        makeConfig({
+          networkPolicy: 'restricted',
+          allowedHosts: ['api.example.com'],
+        })
+      );
       const args = mockExecFileSync.mock.calls[1][1] as string[];
       expect(args).toContain('--network=none');
     });
 
     it('does not add --network=none for networkPolicy "egress"', async () => {
       mockDockerRunSuccess();
-      await orch.createContainer('user1', 'ws1', '/workspace', makeConfig({ networkPolicy: 'egress' }));
+      await orch.createContainer(
+        'user1',
+        'ws1',
+        '/workspace',
+        makeConfig({ networkPolicy: 'egress' })
+      );
       const args = mockExecFileSync.mock.calls[1][1] as string[];
       expect(args).not.toContain('--network=none');
     });
 
     it('adds environment variables from config', async () => {
       mockDockerRunSuccess();
-      await orch.createContainer('user1', 'ws1', '/workspace', makeConfig({
-        env: { NODE_ENV: 'production', FOO: 'bar' },
-      }));
+      await orch.createContainer(
+        'user1',
+        'ws1',
+        '/workspace',
+        makeConfig({
+          env: { NODE_ENV: 'production', FOO: 'bar' },
+        })
+      );
       const args = mockExecFileSync.mock.calls[1][1] as string[];
       expect(args).toContain('-e');
       expect(args).toContain('NODE_ENV=production');
@@ -595,7 +648,13 @@ describe('orchestrator', () => {
 
     it('uses custom image from config over language default', async () => {
       mockDockerRunSuccess();
-      await orch.createContainer('user1', 'ws1', '/workspace', makeConfig({ image: 'my-custom:1.0' }), 'python');
+      await orch.createContainer(
+        'user1',
+        'ws1',
+        '/workspace',
+        makeConfig({ image: 'my-custom:1.0' }),
+        'python'
+      );
       const args = mockExecFileSync.mock.calls[1][1] as string[];
       expect(args).toContain('my-custom:1.0');
       expect(args).not.toContain('python:3.11-slim');
@@ -611,7 +670,9 @@ describe('orchestrator', () => {
     it('throws on docker run failure', async () => {
       mockExecSync.mockReturnValue(undefined); // docker available
       mockExecFileSync.mockReturnValueOnce(undefined); // image inspect OK
-      mockExecFileSync.mockImplementationOnce(() => { throw new Error('run failed'); });
+      mockExecFileSync.mockImplementationOnce(() => {
+        throw new Error('run failed');
+      });
       await expect(
         orch.createContainer('user1', 'ws1', '/workspace', makeConfig())
       ).rejects.toThrow('Failed to create container');
@@ -706,7 +767,9 @@ describe('orchestrator', () => {
 
     it('returns failed status for unsupported language', async () => {
       const result = await orch.executeInContainer(
-        VALID_CONTAINER_ID, 'code', 'rust' as ExecutionLanguage
+        VALID_CONTAINER_ID,
+        'code',
+        'rust' as ExecutionLanguage
       );
       expect(result.status).toBe('failed');
       expect(result.error).toContain('Unsupported language');
@@ -714,9 +777,9 @@ describe('orchestrator', () => {
     });
 
     it('validates container ID', async () => {
-      await expect(
-        orch.executeInContainer('INVALID', 'code', 'python')
-      ).rejects.toThrow('Invalid container ID format');
+      await expect(orch.executeInContainer('INVALID', 'code', 'python')).rejects.toThrow(
+        'Invalid container ID format'
+      );
     });
 
     it('returns ExecutionResult with stdout and stderr', async () => {
@@ -1044,7 +1107,9 @@ describe('orchestrator', () => {
     });
 
     it('handles already-stopped container without throwing', async () => {
-      mockExecFileSync.mockImplementation(() => { throw new Error('already stopped'); });
+      mockExecFileSync.mockImplementation(() => {
+        throw new Error('already stopped');
+      });
       // Should not throw
       await expect(orch.stopContainer(VALID_CONTAINER_ID)).resolves.toBeUndefined();
     });
@@ -1053,7 +1118,9 @@ describe('orchestrator', () => {
       mockDockerRunSuccess();
       const id = await orch.createContainer('user1', 'ws1', '/workspace', makeConfig());
 
-      mockExecFileSync.mockImplementation(() => { throw new Error('fail'); });
+      mockExecFileSync.mockImplementation(() => {
+        throw new Error('fail');
+      });
       await orch.stopContainer(id);
       expect(orch.getActiveContainers()).toHaveLength(0);
     });
@@ -1090,11 +1157,15 @@ describe('orchestrator', () => {
     });
 
     it('validates container ID', async () => {
-      await expect(orch.removeContainer('NOT-VALID')).rejects.toThrow('Invalid container ID format');
+      await expect(orch.removeContainer('NOT-VALID')).rejects.toThrow(
+        'Invalid container ID format'
+      );
     });
 
     it('handles missing container without throwing', async () => {
-      mockExecFileSync.mockImplementation(() => { throw new Error('no such container'); });
+      mockExecFileSync.mockImplementation(() => {
+        throw new Error('no such container');
+      });
       await expect(orch.removeContainer(VALID_CONTAINER_ID)).resolves.toBeUndefined();
     });
 
@@ -1102,7 +1173,9 @@ describe('orchestrator', () => {
       mockDockerRunSuccess();
       const id = await orch.createContainer('user1', 'ws1', '/workspace', makeConfig());
 
-      mockExecFileSync.mockImplementation(() => { throw new Error('fail'); });
+      mockExecFileSync.mockImplementation(() => {
+        throw new Error('fail');
+      });
       await orch.removeContainer(id);
       expect(orch.getActiveContainers()).toHaveLength(0);
     });
@@ -1161,13 +1234,17 @@ describe('orchestrator', () => {
     });
 
     it('returns "stopped" when docker inspect fails', async () => {
-      mockExecFileSync.mockImplementation(() => { throw new Error('inspect failed'); });
+      mockExecFileSync.mockImplementation(() => {
+        throw new Error('inspect failed');
+      });
       const status = await orch.getContainerStatus(VALID_CONTAINER_ID);
       expect(status).toBe('stopped');
     });
 
     it('validates container ID', async () => {
-      await expect(orch.getContainerStatus('INVALID!')).rejects.toThrow('Invalid container ID format');
+      await expect(orch.getContainerStatus('INVALID!')).rejects.toThrow(
+        'Invalid container ID format'
+      );
     });
 
     it('calls docker inspect with correct format flag', async () => {
@@ -1231,7 +1308,9 @@ describe('orchestrator', () => {
     });
 
     it('returns null on error', async () => {
-      mockExecFileSync.mockImplementation(() => { throw new Error('stats failed'); });
+      mockExecFileSync.mockImplementation(() => {
+        throw new Error('stats failed');
+      });
       const usage = await orch.getResourceUsage(VALID_CONTAINER_ID);
       expect(usage).toBeNull();
     });
@@ -1259,7 +1338,13 @@ describe('orchestrator', () => {
       await orch.getResourceUsage(VALID_CONTAINER_ID);
       expect(mockExecFileSync).toHaveBeenCalledWith(
         'docker',
-        ['stats', VALID_CONTAINER_ID, '--no-stream', '--format', '{{.MemUsage}},{{.CPUPerc}},{{.NetIO}}'],
+        [
+          'stats',
+          VALID_CONTAINER_ID,
+          '--no-stream',
+          '--format',
+          '{{.MemUsage}},{{.CPUPerc}},{{.NetIO}}',
+        ],
         expect.objectContaining({ encoding: 'utf-8', timeout: 5000 })
       );
     });
@@ -1302,13 +1387,17 @@ describe('orchestrator', () => {
     });
 
     it('returns empty string on error', async () => {
-      mockExecFileSync.mockImplementation(() => { throw new Error('logs failed'); });
+      mockExecFileSync.mockImplementation(() => {
+        throw new Error('logs failed');
+      });
       const logs = await orch.getContainerLogs(VALID_CONTAINER_ID);
       expect(logs).toBe('');
     });
 
     it('validates container ID', async () => {
-      await expect(orch.getContainerLogs('NOT_HEX!')).rejects.toThrow('Invalid container ID format');
+      await expect(orch.getContainerLogs('NOT_HEX!')).rejects.toThrow(
+        'Invalid container ID format'
+      );
     });
   });
 
@@ -1580,10 +1669,15 @@ describe('orchestrator', () => {
       mockDockerRunSuccess();
       // restricted without allowedHosts — the code only adds --network=none
       // when networkPolicy === 'restricted' AND allowedHosts is truthy
-      await orch.createContainer('user1', 'ws1', '/workspace', makeConfig({
-        networkPolicy: 'restricted',
-        // no allowedHosts
-      }));
+      await orch.createContainer(
+        'user1',
+        'ws1',
+        '/workspace',
+        makeConfig({
+          networkPolicy: 'restricted',
+          // no allowedHosts
+        })
+      );
       const args = mockExecFileSync.mock.calls[1][1] as string[];
       // Without allowedHosts, the `config.allowedHosts` is undefined/falsy,
       // so the second condition fails, --network=none is NOT added
@@ -1592,9 +1686,14 @@ describe('orchestrator', () => {
 
     it('networkPolicy full does not add --network=none', async () => {
       mockDockerRunSuccess();
-      await orch.createContainer('user1', 'ws1', '/workspace', makeConfig({
-        networkPolicy: 'full',
-      }));
+      await orch.createContainer(
+        'user1',
+        'ws1',
+        '/workspace',
+        makeConfig({
+          networkPolicy: 'full',
+        })
+      );
       const args = mockExecFileSync.mock.calls[1][1] as string[];
       expect(args).not.toContain('--network=none');
     });

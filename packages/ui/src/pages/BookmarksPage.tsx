@@ -10,7 +10,6 @@ import { useAnimatedList } from '../hooks/useAnimatedList';
 import { bookmarksApi } from '../api';
 import type { BookmarkItem } from '../api';
 
-
 export function BookmarksPage() {
   const { confirm } = useDialog();
   const toast = useToast();
@@ -51,35 +50,52 @@ export function BookmarksPage() {
     const unsub = subscribe<{ entity: string }>('data:changed', (data) => {
       if (data.entity === 'bookmark') debouncedRefresh();
     });
-    return () => { unsub(); };
+    return () => {
+      unsub();
+    };
   }, [subscribe, debouncedRefresh]);
 
-  const handleDelete = useCallback(async (bookmarkId: string) => {
-    if (!await confirm({ message: 'Are you sure you want to delete this bookmark?', variant: 'danger' })) return;
+  const handleDelete = useCallback(
+    async (bookmarkId: string) => {
+      if (
+        !(await confirm({
+          message: 'Are you sure you want to delete this bookmark?',
+          variant: 'danger',
+        }))
+      )
+        return;
 
-    try {
-      await animatedDelete(bookmarkId, async () => {
-        await bookmarksApi.delete(bookmarkId);
-      });
-      toast.success('Bookmark deleted');
-      fetchBookmarks();
-    } catch {
-      // API client handles error reporting
-    }
-  }, [confirm, toast, fetchBookmarks]);
+      try {
+        await animatedDelete(bookmarkId, async () => {
+          await bookmarksApi.delete(bookmarkId);
+        });
+        toast.success('Bookmark deleted');
+        fetchBookmarks();
+      } catch {
+        // API client handles error reporting
+      }
+    },
+    [confirm, toast, fetchBookmarks]
+  );
 
-  const handleToggleFavorite = useCallback(async (bookmark: BookmarkItem) => {
-    try {
-      await bookmarksApi.favorite(bookmark.id);
-      toast.success(bookmark.isFavorite ? 'Removed from favorites' : 'Added to favorites');
-      fetchBookmarks();
-    } catch {
-      // API client handles error reporting
-    }
-  }, [toast, fetchBookmarks]);
+  const handleToggleFavorite = useCallback(
+    async (bookmark: BookmarkItem) => {
+      try {
+        await bookmarksApi.favorite(bookmark.id);
+        toast.success(bookmark.isFavorite ? 'Removed from favorites' : 'Added to favorites');
+        fetchBookmarks();
+      } catch {
+        // API client handles error reporting
+      }
+    },
+    [toast, fetchBookmarks]
+  );
 
   // Get unique folders
-  const folders = useMemo(() => Array.from(new Set(bookmarks.map((b) => b.folder).filter(Boolean))) as string[], [bookmarks]);
+  const folders = useMemo(
+    () => Array.from(new Set(bookmarks.map((b) => b.folder).filter(Boolean))) as string[],
+    [bookmarks]
+  );
   const favoriteCount = useMemo(() => bookmarks.filter((b) => b.isFavorite).length, [bookmarks]);
 
   return (
@@ -91,7 +107,8 @@ export function BookmarksPage() {
             Bookmarks
           </h2>
           <p className="text-sm text-text-muted dark:text-dark-text-muted">
-            {bookmarks.length} bookmark{bookmarks.length !== 1 ? 's' : ''}, {favoriteCount} favorite{favoriteCount !== 1 ? 's' : ''}
+            {bookmarks.length} bookmark{bookmarks.length !== 1 ? 's' : ''}, {favoriteCount} favorite
+            {favoriteCount !== 1 ? 's' : ''}
           </p>
         </div>
         <button
@@ -165,8 +182,16 @@ export function BookmarksPage() {
           <EmptyState
             icon={Bookmark}
             title={searchQuery ? 'No bookmarks found' : 'No bookmarks yet'}
-            description={searchQuery ? 'Try a different search term.' : 'Save your favorite links to access them later.'}
-            action={!searchQuery ? { label: 'Add Bookmark', onClick: () => setShowCreateModal(true), icon: Plus } : undefined}
+            description={
+              searchQuery
+                ? 'Try a different search term.'
+                : 'Save your favorite links to access them later.'
+            }
+            action={
+              !searchQuery
+                ? { label: 'Add Bookmark', onClick: () => setShowCreateModal(true), icon: Plus }
+                : undefined
+            }
           />
         ) : (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -234,7 +259,18 @@ function BookmarkCard({ bookmark, onEdit, onDelete, onToggleFavorite }: Bookmark
         </div>
 
         {/* Content */}
-        <div className="flex-1 min-w-0 cursor-pointer" role="button" tabIndex={0} onClick={onEdit} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onEdit(); } }}>
+        <div
+          className="flex-1 min-w-0 cursor-pointer"
+          role="button"
+          tabIndex={0}
+          onClick={onEdit}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              onEdit();
+            }
+          }}
+        >
           <h4 className="font-medium text-text-primary dark:text-dark-text-primary line-clamp-1">
             {bookmark.title}
           </h4>
@@ -259,10 +295,7 @@ function BookmarkCard({ bookmark, onEdit, onDelete, onToggleFavorite }: Bookmark
             </span>
           )}
           {bookmark.tags.slice(0, 2).map((tag) => (
-            <span
-              key={tag}
-              className="px-2 py-0.5 text-xs bg-primary/10 text-primary rounded"
-            >
+            <span key={tag} className="px-2 py-0.5 text-xs bg-primary/10 text-primary rounded">
               {tag}
             </span>
           ))}
@@ -336,8 +369,11 @@ function BookmarkModal({ bookmark, folders, onClose, onSave }: BookmarkModalProp
         url: url.trim(),
         title: title.trim(),
         description: description.trim() || undefined,
-        folder: (newFolder.trim() || folder) || undefined,
-        tags: tags.split(',').map((t) => t.trim()).filter(Boolean),
+        folder: newFolder.trim() || folder || undefined,
+        tags: tags
+          .split(',')
+          .map((t) => t.trim())
+          .filter(Boolean),
         isFavorite,
       };
 
@@ -355,7 +391,10 @@ function BookmarkModal({ bookmark, folders, onClose, onSave }: BookmarkModalProp
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onBackdropClick}>
+    <div
+      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+      onClick={onBackdropClick}
+    >
       <div className="w-full max-w-lg bg-bg-primary dark:bg-dark-bg-primary border border-border dark:border-dark-border rounded-xl shadow-xl">
         <form onSubmit={handleSubmit}>
           <div className="p-6 border-b border-border dark:border-dark-border">
@@ -461,7 +500,10 @@ function BookmarkModal({ bookmark, folders, onClose, onSave }: BookmarkModalProp
                 onChange={(e) => setIsFavorite(e.target.checked)}
                 className="w-4 h-4 rounded border-border dark:border-dark-border"
               />
-              <label htmlFor="isFavorite" className="text-sm text-text-secondary dark:text-dark-text-secondary">
+              <label
+                htmlFor="isFavorite"
+                className="text-sm text-text-secondary dark:text-dark-text-secondary"
+              >
                 Mark as favorite
               </label>
             </div>

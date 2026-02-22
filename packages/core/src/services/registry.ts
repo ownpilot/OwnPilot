@@ -94,7 +94,7 @@ export class ServiceRegistry {
 
     throw new Error(
       `Service '${token.name}' not registered. ` +
-      `Make sure it is registered during startup before use.`
+        `Make sure it is registered during startup before use.`
     );
   }
 
@@ -120,10 +120,7 @@ export class ServiceRegistry {
    * List all registered service names.
    */
   list(): string[] {
-    const names = new Set([
-      ...this.instances.keys(),
-      ...this.factories.keys(),
-    ]);
+    const names = new Set([...this.instances.keys(), ...this.factories.keys()]);
     return [...names];
   }
 
@@ -171,9 +168,7 @@ export function initServiceRegistry(): ServiceRegistry {
  */
 export function getServiceRegistry(): ServiceRegistry {
   if (!_registry) {
-    throw new Error(
-      'ServiceRegistry not initialized. Call initServiceRegistry() during startup.'
-    );
+    throw new Error('ServiceRegistry not initialized. Call initServiceRegistry() during startup.');
   }
   return _registry;
 }

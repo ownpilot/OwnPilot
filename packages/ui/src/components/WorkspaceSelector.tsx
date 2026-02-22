@@ -9,7 +9,10 @@ interface WorkspaceSelectorProps {
   onWorkspaceChange: (workspaceId: string | null) => void;
 }
 
-export function WorkspaceSelector({ selectedWorkspaceId, onWorkspaceChange }: WorkspaceSelectorProps) {
+export function WorkspaceSelector({
+  selectedWorkspaceId,
+  onWorkspaceChange,
+}: WorkspaceSelectorProps) {
   const [workspaces, setWorkspaces] = useState<WorkspaceSelectorInfo[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showMenu, setShowMenu] = useState(false);
@@ -59,7 +62,7 @@ export function WorkspaceSelector({ selectedWorkspaceId, onWorkspaceChange }: Wo
   const handleDeleteWorkspace = async (id: string) => {
     try {
       await apiClient.delete(`/workspaces/${id}`);
-      const remaining = workspaces.filter(w => w.id !== id);
+      const remaining = workspaces.filter((w) => w.id !== id);
       setWorkspaces(remaining);
       if (selectedWorkspaceId === id) {
         onWorkspaceChange(remaining.length > 0 ? remaining[0]!.id : null);
@@ -75,7 +78,7 @@ export function WorkspaceSelector({ selectedWorkspaceId, onWorkspaceChange }: Wo
     window.open(`/api/v1/workspaces/${id}/download`, '_blank');
   };
 
-  const selectedWorkspace = workspaces.find(w => w.id === selectedWorkspaceId);
+  const selectedWorkspace = workspaces.find((w) => w.id === selectedWorkspaceId);
 
   return (
     <div className="relative">
@@ -86,7 +89,9 @@ export function WorkspaceSelector({ selectedWorkspaceId, onWorkspaceChange }: Wo
         className="flex items-center gap-2 px-3 py-1.5 text-sm bg-bg-tertiary dark:bg-dark-bg-tertiary border border-border dark:border-dark-border rounded-lg hover:bg-bg-secondary dark:hover:bg-dark-bg-secondary transition-colors disabled:opacity-50"
       >
         {isLoading ? (
-          <span className="text-text-muted dark:text-dark-text-muted animate-pulse">Loading...</span>
+          <span className="text-text-muted dark:text-dark-text-muted animate-pulse">
+            Loading...
+          </span>
         ) : (
           <>
             <HardDrive className="w-4 h-4 text-text-muted dark:text-dark-text-muted" />
@@ -113,14 +118,13 @@ export function WorkspaceSelector({ selectedWorkspaceId, onWorkspaceChange }: Wo
       {/* Dropdown Menu */}
       {showMenu && (
         <>
-          <div
-            className="fixed inset-0 z-40"
-            onClick={() => setShowMenu(false)}
-          />
+          <div className="fixed inset-0 z-40" onClick={() => setShowMenu(false)} />
           <div className="absolute top-full left-0 mt-1 w-80 bg-bg-primary dark:bg-dark-bg-primary border border-border dark:border-dark-border rounded-lg shadow-lg z-50 max-h-96 overflow-y-auto">
             {/* Header */}
             <div className="flex items-center justify-between px-3 py-2 border-b border-border dark:border-dark-border">
-              <span className="text-sm font-medium text-text-primary dark:text-dark-text-primary">Workspaces</span>
+              <span className="text-sm font-medium text-text-primary dark:text-dark-text-primary">
+                Workspaces
+              </span>
               <div className="flex items-center gap-1">
                 <button
                   onClick={() => {
@@ -194,7 +198,8 @@ export function WorkspaceSelector({ selectedWorkspaceId, onWorkspaceChange }: Wo
                           )}
                           {ws.storageUsage && (
                             <div className="text-xs text-text-muted dark:text-dark-text-muted mt-0.5">
-                              {ws.storageUsage.fileCount} files &middot; {formatBytes(ws.storageUsage.usedBytes)}
+                              {ws.storageUsage.fileCount} files &middot;{' '}
+                              {formatBytes(ws.storageUsage.usedBytes)}
                             </div>
                           )}
                         </div>

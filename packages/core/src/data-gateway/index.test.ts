@@ -1,9 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import {
-  DataGateway,
-  getDataGateway,
-  createDataGateway,
-} from './index.js';
+import { DataGateway, getDataGateway, createDataGateway } from './index.js';
 import type {
   DataStore,
   Bookmark,
@@ -26,9 +22,7 @@ vi.mock('node:crypto', () => ({
 }));
 
 vi.mock('../services/error-utils.js', () => ({
-  getErrorMessage: vi.fn((err: unknown) =>
-    err instanceof Error ? err.message : String(err)
-  ),
+  getErrorMessage: vi.fn((err: unknown) => (err instanceof Error ? err.message : String(err))),
 }));
 
 // =============================================================================
@@ -202,8 +196,14 @@ describe('Permission Management', () => {
 
     it('handles all DataStoreType values', () => {
       const allStores: DataStoreType[] = [
-        'bookmarks', 'notes', 'finances', 'memory',
-        'preferences', 'files', 'calendar', 'contacts',
+        'bookmarks',
+        'notes',
+        'finances',
+        'memory',
+        'preferences',
+        'files',
+        'calendar',
+        'contacts',
       ];
       gw.grantAccess('agent-all', allStores);
       for (const store of allStores) {
@@ -311,22 +311,24 @@ describe('access() method', () => {
   });
 
   it('throws when agent does not have permission', async () => {
-    await expect(
-      gw.access('agent-1', 'bookmarks', 'read', async () => 'value')
-    ).rejects.toThrow('Agent agent-1 does not have access to bookmarks');
+    await expect(gw.access('agent-1', 'bookmarks', 'read', async () => 'value')).rejects.toThrow(
+      'Agent agent-1 does not have access to bookmarks'
+    );
   });
 
   it('throws error message with correct agentId and dataStore', async () => {
-    await expect(
-      gw.access('my-agent', 'contacts', 'write', async () => null)
-    ).rejects.toThrow('Agent my-agent does not have access to contacts');
+    await expect(gw.access('my-agent', 'contacts', 'write', async () => null)).rejects.toThrow(
+      'Agent my-agent does not have access to contacts'
+    );
   });
 
   it('re-throws executor errors', async () => {
     gw.grantAccess('agent-1', ['notes']);
     const boom = new Error('executor failed');
     await expect(
-      gw.access('agent-1', 'notes', 'read', async () => { throw boom; })
+      gw.access('agent-1', 'notes', 'read', async () => {
+        throw boom;
+      })
     ).rejects.toThrow('executor failed');
   });
 
@@ -356,7 +358,9 @@ describe('access() method', () => {
   it('logs a failure entry in the audit log when executor throws', async () => {
     gw.grantAccess('agent-1', ['notes']);
     try {
-      await gw.access('agent-1', 'notes', 'write', async () => { throw new Error('oops'); });
+      await gw.access('agent-1', 'notes', 'write', async () => {
+        throw new Error('oops');
+      });
     } catch {
       // Expected
     }
@@ -411,9 +415,9 @@ describe('Bookmark Operations', () => {
     });
 
     it('throws when agent lacks bookmarks permission', async () => {
-      await expect(
-        gw.saveBookmark('agent-x', { url: 'https://example.com' })
-      ).rejects.toThrow('does not have access to bookmarks');
+      await expect(gw.saveBookmark('agent-x', { url: 'https://example.com' })).rejects.toThrow(
+        'does not have access to bookmarks'
+      );
     });
   });
 
@@ -439,9 +443,9 @@ describe('Bookmark Operations', () => {
     });
 
     it('throws when agent lacks bookmarks permission', async () => {
-      await expect(
-        gw.searchBookmarks('agent-x', 'query')
-      ).rejects.toThrow('does not have access to bookmarks');
+      await expect(gw.searchBookmarks('agent-x', 'query')).rejects.toThrow(
+        'does not have access to bookmarks'
+      );
     });
   });
 
@@ -491,7 +495,9 @@ describe('Bookmark Operations', () => {
     });
 
     it('throws when agent lacks bookmarks permission', async () => {
-      await expect(gw.listBookmarks('agent-x')).rejects.toThrow('does not have access to bookmarks');
+      await expect(gw.listBookmarks('agent-x')).rejects.toThrow(
+        'does not have access to bookmarks'
+      );
     });
   });
 
@@ -565,9 +571,9 @@ describe('Note Operations', () => {
     });
 
     it('throws when agent lacks notes permission', async () => {
-      await expect(
-        gw.saveNote('agent-x', { content: 'secret' })
-      ).rejects.toThrow('does not have access to notes');
+      await expect(gw.saveNote('agent-x', { content: 'secret' })).rejects.toThrow(
+        'does not have access to notes'
+      );
     });
   });
 
@@ -690,9 +696,9 @@ describe('Task Operations', () => {
     });
 
     it('throws when agent lacks calendar permission', async () => {
-      await expect(
-        gw.createTask('agent-x', { title: 'Task' })
-      ).rejects.toThrow('does not have access to calendar');
+      await expect(gw.createTask('agent-x', { title: 'Task' })).rejects.toThrow(
+        'does not have access to calendar'
+      );
     });
   });
 
@@ -716,9 +722,9 @@ describe('Task Operations', () => {
     });
 
     it('throws when agent lacks calendar permission', async () => {
-      await expect(
-        gw.completeTask('agent-x', 'some-id')
-      ).rejects.toThrow('does not have access to calendar');
+      await expect(gw.completeTask('agent-x', 'some-id')).rejects.toThrow(
+        'does not have access to calendar'
+      );
     });
   });
 
@@ -936,8 +942,16 @@ describe('Calendar Operations', () => {
     });
 
     it('filters by category', async () => {
-      await gw.createEvent('agent-1', { title: 'Work', startTime: '2026-03-01T09:00:00Z', category: 'work' });
-      await gw.createEvent('agent-1', { title: 'Personal', startTime: '2026-03-02T09:00:00Z', category: 'personal' });
+      await gw.createEvent('agent-1', {
+        title: 'Work',
+        startTime: '2026-03-01T09:00:00Z',
+        category: 'work',
+      });
+      await gw.createEvent('agent-1', {
+        title: 'Personal',
+        startTime: '2026-03-02T09:00:00Z',
+        category: 'personal',
+      });
       const results = await gw.listEvents('agent-1', { category: 'work' });
       expect(results).toHaveLength(1);
       expect(results[0]!.title).toBe('Work');
@@ -977,7 +991,10 @@ describe('Calendar Operations', () => {
 
   describe('searchEvents', () => {
     it('returns events matching the query', async () => {
-      await gw.createEvent('agent-1', { title: 'Conference Call', startTime: '2026-03-01T09:00:00Z' });
+      await gw.createEvent('agent-1', {
+        title: 'Conference Call',
+        startTime: '2026-03-01T09:00:00Z',
+      });
       await gw.createEvent('agent-1', { title: 'Dentist', startTime: '2026-03-02T09:00:00Z' });
       const results = await gw.searchEvents('agent-1', 'conference');
       expect(results).toHaveLength(1);
@@ -1088,9 +1105,9 @@ describe('Contact Operations', () => {
     });
 
     it('throws when agent lacks contacts permission', async () => {
-      await expect(
-        gw.createContact('agent-x', { name: 'Alice' })
-      ).rejects.toThrow('does not have access to contacts');
+      await expect(gw.createContact('agent-x', { name: 'Alice' })).rejects.toThrow(
+        'does not have access to contacts'
+      );
     });
   });
 
@@ -1154,7 +1171,11 @@ describe('Contact Operations', () => {
     it('applies multiple filters simultaneously', async () => {
       await gw.createContact('agent-1', { name: 'Alice', relationship: 'friend', company: 'Acme' });
       await gw.createContact('agent-1', { name: 'Bob', relationship: 'friend', company: 'Globex' });
-      await gw.createContact('agent-1', { name: 'Carol', relationship: 'colleague', company: 'Acme' });
+      await gw.createContact('agent-1', {
+        name: 'Carol',
+        relationship: 'colleague',
+        company: 'Acme',
+      });
       const results = await gw.listContacts('agent-1', { relationship: 'friend', company: 'Acme' });
       expect(results).toHaveLength(1);
       expect(results[0]!.name).toBe('Alice');
@@ -1312,9 +1333,9 @@ describe('Memory Operations', () => {
     });
 
     it('throws when agent lacks memory permission', async () => {
-      await expect(
-        gw.remember('agent-x', 'key', 'value')
-      ).rejects.toThrow('does not have access to memory');
+      await expect(gw.remember('agent-x', 'key', 'value')).rejects.toThrow(
+        'does not have access to memory'
+      );
     });
   });
 
@@ -1365,9 +1386,7 @@ describe('Memory Operations', () => {
     });
 
     it('throws when agent lacks memory permission', async () => {
-      await expect(gw.recall('agent-x', 'query')).rejects.toThrow(
-        'does not have access to memory'
-      );
+      await expect(gw.recall('agent-x', 'query')).rejects.toThrow('does not have access to memory');
     });
   });
 });
@@ -1420,9 +1439,9 @@ describe('Preference Operations', () => {
     });
 
     it('throws when agent lacks preferences permission', async () => {
-      await expect(
-        gw.setPreference('agent-x', 'theme', 'dark')
-      ).rejects.toThrow('does not have access to preferences');
+      await expect(gw.setPreference('agent-x', 'theme', 'dark')).rejects.toThrow(
+        'does not have access to preferences'
+      );
     });
   });
 
@@ -1445,9 +1464,9 @@ describe('Preference Operations', () => {
     });
 
     it('throws when agent lacks preferences permission', async () => {
-      await expect(
-        gw.getPreference('agent-x', 'theme')
-      ).rejects.toThrow('does not have access to preferences');
+      await expect(gw.getPreference('agent-x', 'theme')).rejects.toThrow(
+        'does not have access to preferences'
+      );
     });
   });
 });
@@ -1727,7 +1746,10 @@ describe('InMemoryStore', () => {
 
     it('updates the specified fields only', async () => {
       gw.grantAccess('agent-1', ['bookmarks']);
-      const bm = await gw.saveBookmark('agent-1', { url: 'https://example.com', title: 'Original' });
+      const bm = await gw.saveBookmark('agent-1', {
+        url: 'https://example.com',
+        title: 'Original',
+      });
       const updated = await gw.bookmarks.update(bm.id, { title: 'New Title' });
       expect(updated!.title).toBe('New Title');
       expect(updated!.url).toBe('https://example.com');

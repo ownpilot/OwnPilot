@@ -9,8 +9,13 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 // ─── Mock Repositories ──────────────────────────────────────────
 
 const {
-  mockTasksRepo, mockBookmarksRepo, mockNotesRepo, mockCalendarRepo, mockContactsRepo,
-  MockTasksRepository, MockNotesRepository,
+  mockTasksRepo,
+  mockBookmarksRepo,
+  mockNotesRepo,
+  mockCalendarRepo,
+  mockContactsRepo,
+  MockTasksRepository,
+  MockNotesRepository,
 } = vi.hoisted(() => {
   const mockTasksRepo = {
     create: vi.fn(),
@@ -41,20 +46,35 @@ const {
     update: vi.fn(),
     delete: vi.fn(),
   };
-  const MockTasksRepository = vi.fn(function () { return mockTasksRepo; });
-  const MockNotesRepository = vi.fn(function () { return mockNotesRepo; });
+  const MockTasksRepository = vi.fn(function () {
+    return mockTasksRepo;
+  });
+  const MockNotesRepository = vi.fn(function () {
+    return mockNotesRepo;
+  });
   return {
-    mockTasksRepo, mockBookmarksRepo, mockNotesRepo, mockCalendarRepo, mockContactsRepo,
-    MockTasksRepository, MockNotesRepository,
+    mockTasksRepo,
+    mockBookmarksRepo,
+    mockNotesRepo,
+    mockCalendarRepo,
+    mockContactsRepo,
+    MockTasksRepository,
+    MockNotesRepository,
   };
 });
 
 vi.mock('../db/repositories/index.js', () => ({
   TasksRepository: MockTasksRepository,
-  BookmarksRepository: vi.fn(function () { return mockBookmarksRepo; }),
+  BookmarksRepository: vi.fn(function () {
+    return mockBookmarksRepo;
+  }),
   NotesRepository: MockNotesRepository,
-  CalendarRepository: vi.fn(function () { return mockCalendarRepo; }),
-  ContactsRepository: vi.fn(function () { return mockContactsRepo; }),
+  CalendarRepository: vi.fn(function () {
+    return mockCalendarRepo;
+  }),
+  ContactsRepository: vi.fn(function () {
+    return mockContactsRepo;
+  }),
 }));
 
 // ─── Import ─────────────────────────────────────────────────────
@@ -74,7 +94,10 @@ describe('executePersonalDataTool', () => {
     it('add_task: should create a task', async () => {
       mockTasksRepo.create.mockResolvedValue({ id: 't-1', title: 'Buy milk' });
 
-      const result = await executePersonalDataTool('add_task', { title: 'Buy milk', priority: 'high' });
+      const result = await executePersonalDataTool('add_task', {
+        title: 'Buy milk',
+        priority: 'high',
+      });
 
       expect(result.success).toBe(true);
       expect((result.result as Record<string, unknown>).message).toContain('Buy milk');
@@ -123,7 +146,10 @@ describe('executePersonalDataTool', () => {
     it('update_task: should update task', async () => {
       mockTasksRepo.update.mockResolvedValue({ id: 't-1', title: 'Updated' });
 
-      const result = await executePersonalDataTool('update_task', { taskId: 't-1', title: 'Updated' });
+      const result = await executePersonalDataTool('update_task', {
+        taskId: 't-1',
+        title: 'Updated',
+      });
 
       expect(result.success).toBe(true);
     });
@@ -180,16 +206,27 @@ describe('executePersonalDataTool', () => {
 
   describe('Bookmark tools', () => {
     it('add_bookmark: should create a bookmark', async () => {
-      mockBookmarksRepo.create.mockResolvedValue({ id: 'b-1', title: 'Example', url: 'https://example.com' });
+      mockBookmarksRepo.create.mockResolvedValue({
+        id: 'b-1',
+        title: 'Example',
+        url: 'https://example.com',
+      });
 
-      const result = await executePersonalDataTool('add_bookmark', { url: 'https://example.com', title: 'Example' });
+      const result = await executePersonalDataTool('add_bookmark', {
+        url: 'https://example.com',
+        title: 'Example',
+      });
 
       expect(result.success).toBe(true);
       expect((result.result as Record<string, unknown>).message).toContain('Example');
     });
 
     it('add_bookmark: should use URL as fallback title', async () => {
-      mockBookmarksRepo.create.mockResolvedValue({ id: 'b-1', title: 'https://example.com', url: 'https://example.com' });
+      mockBookmarksRepo.create.mockResolvedValue({
+        id: 'b-1',
+        title: 'https://example.com',
+        url: 'https://example.com',
+      });
 
       await executePersonalDataTool('add_bookmark', { url: 'https://example.com' });
 
@@ -248,7 +285,10 @@ describe('executePersonalDataTool', () => {
     it('add_note: should create a note', async () => {
       mockNotesRepo.create.mockResolvedValue({ id: 'n-1', title: 'Ideas' });
 
-      const result = await executePersonalDataTool('add_note', { title: 'Ideas', content: 'Some thoughts' });
+      const result = await executePersonalDataTool('add_note', {
+        title: 'Ideas',
+        content: 'Some thoughts',
+      });
 
       expect(result.success).toBe(true);
       expect((result.result as Record<string, unknown>).message).toContain('Ideas');
@@ -266,7 +306,10 @@ describe('executePersonalDataTool', () => {
     it('update_note: should update note', async () => {
       mockNotesRepo.update.mockResolvedValue({ id: 'n-1', title: 'Updated' });
 
-      const result = await executePersonalDataTool('update_note', { noteId: 'n-1', title: 'Updated' });
+      const result = await executePersonalDataTool('update_note', {
+        noteId: 'n-1',
+        title: 'Updated',
+      });
 
       expect(result.success).toBe(true);
     });
@@ -291,7 +334,10 @@ describe('executePersonalDataTool', () => {
       mockNotesRepo.create.mockResolvedValue({ id: 'n-1' });
 
       const result = await executePersonalDataTool('batch_add_notes', {
-        notes: [{ title: 'A', content: 'a' }, { title: 'B', content: 'b' }],
+        notes: [
+          { title: 'A', content: 'a' },
+          { title: 'B', content: 'b' },
+        ],
       });
 
       expect(result.success).toBe(true);
@@ -304,11 +350,14 @@ describe('executePersonalDataTool', () => {
   describe('Calendar tools', () => {
     it('add_calendar_event: should create an event', async () => {
       mockCalendarRepo.create.mockResolvedValue({
-        id: 'e-1', title: 'Meeting', startTime: '2024-06-01T10:00:00Z',
+        id: 'e-1',
+        title: 'Meeting',
+        startTime: '2024-06-01T10:00:00Z',
       });
 
       const result = await executePersonalDataTool('add_calendar_event', {
-        title: 'Meeting', startTime: '2024-06-01T10:00:00Z',
+        title: 'Meeting',
+        startTime: '2024-06-01T10:00:00Z',
       });
 
       expect(result.success).toBe(true);
@@ -371,7 +420,8 @@ describe('executePersonalDataTool', () => {
       mockContactsRepo.create.mockResolvedValue({ id: 'c-1', name: 'John Doe' });
 
       const result = await executePersonalDataTool('add_contact', {
-        name: 'John Doe', email: 'john@example.com',
+        name: 'John Doe',
+        email: 'john@example.com',
       });
 
       expect(result.success).toBe(true);
@@ -391,7 +441,8 @@ describe('executePersonalDataTool', () => {
       mockContactsRepo.update.mockResolvedValue({ id: 'c-1', name: 'Jane Doe' });
 
       const result = await executePersonalDataTool('update_contact', {
-        contactId: 'c-1', name: 'Jane Doe',
+        contactId: 'c-1',
+        name: 'Jane Doe',
       });
 
       expect(result.success).toBe(true);

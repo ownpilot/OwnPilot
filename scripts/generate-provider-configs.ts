@@ -96,91 +96,92 @@ interface ProviderConfig {
 
 // Provider type mapping (non-openai-compatible providers)
 const providerTypes: Record<string, string> = {
-  'openai': 'openai',
-  'anthropic': 'anthropic',
-  'google': 'google-genai',  // Google uses its own API format
-  'azure': 'azure',
+  openai: 'openai',
+  anthropic: 'anthropic',
+  google: 'google-genai', // Google uses its own API format
+  azure: 'azure',
   'amazon-bedrock': 'bedrock',
   'google-vertex': 'vertex',
   'google-vertex-anthropic': 'vertex-anthropic',
-  'cohere': 'cohere',  // Cohere has its own API format
+  cohere: 'cohere', // Cohere has its own API format
 };
 
 // Default API URLs
 const apiUrls: Record<string, string> = {
   // Major providers
-  'openai': 'https://api.openai.com/v1',
-  'anthropic': 'https://api.anthropic.com/v1',
-  'google': 'https://generativelanguage.googleapis.com/v1beta',
-  'deepseek': 'https://api.deepseek.com/v1',
-  'groq': 'https://api.groq.com/openai/v1',
-  'mistral': 'https://api.mistral.ai/v1',
-  'xai': 'https://api.x.ai/v1',
-  'cohere': 'https://api.cohere.ai/v1',
-  'perplexity': 'https://api.perplexity.ai',
+  openai: 'https://api.openai.com/v1',
+  anthropic: 'https://api.anthropic.com/v1',
+  google: 'https://generativelanguage.googleapis.com/v1beta',
+  deepseek: 'https://api.deepseek.com/v1',
+  groq: 'https://api.groq.com/openai/v1',
+  mistral: 'https://api.mistral.ai/v1',
+  xai: 'https://api.x.ai/v1',
+  cohere: 'https://api.cohere.ai/v1',
+  perplexity: 'https://api.perplexity.ai',
 
   // Cloud providers
-  'azure': 'https://{resource}.openai.azure.com/openai/deployments/{deployment}',
-  'azure-cognitive-services': 'https://{resource}.cognitiveservices.azure.com/openai/deployments/{deployment}',
+  azure: 'https://{resource}.openai.azure.com/openai/deployments/{deployment}',
+  'azure-cognitive-services':
+    'https://{resource}.cognitiveservices.azure.com/openai/deployments/{deployment}',
   'amazon-bedrock': 'https://bedrock-runtime.{region}.amazonaws.com',
   'google-vertex': 'https://{region}-aiplatform.googleapis.com/v1',
   'google-vertex-anthropic': 'https://{region}-aiplatform.googleapis.com/v1',
   'sap-ai-core': 'https://api.ai.{landscape}.hana.ondemand.com/v2',
 
   // Inference providers
-  'togetherai': 'https://api.together.xyz/v1',
+  togetherai: 'https://api.together.xyz/v1',
   'fireworks-ai': 'https://api.fireworks.ai/inference/v1',
-  'deepinfra': 'https://api.deepinfra.com/v1/openai',
-  'cerebras': 'https://api.cerebras.ai/v1',
+  deepinfra: 'https://api.deepinfra.com/v1/openai',
+  cerebras: 'https://api.cerebras.ai/v1',
   'novita-ai': 'https://api.novita.ai/v3/openai',
-  'friendli': 'https://api.friendli.ai/v1',
-  'inference': 'https://api.inference.net/v1',
-  'scaleway': 'https://api.scaleway.ai/v1',
-  'vultr': 'https://api.vultrinference.com/v1',
-  'nvidia': 'https://integrate.api.nvidia.com/v1',
-  'venice': 'https://api.venice.ai/api/v1',
+  friendli: 'https://api.friendli.ai/v1',
+  inference: 'https://api.inference.net/v1',
+  scaleway: 'https://api.scaleway.ai/v1',
+  vultr: 'https://api.vultrinference.com/v1',
+  nvidia: 'https://integrate.api.nvidia.com/v1',
+  venice: 'https://api.venice.ai/api/v1',
 
   // Chinese providers
-  'zhipuai': 'https://open.bigmodel.cn/api/paas/v4',
-  'alibaba': 'https://dashscope-intl.aliyuncs.com/compatible-mode/v1',
+  zhipuai: 'https://open.bigmodel.cn/api/paas/v4',
+  alibaba: 'https://dashscope-intl.aliyuncs.com/compatible-mode/v1',
   'alibaba-cn': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
-  'moonshotai': 'https://api.moonshot.ai/v1',
+  moonshotai: 'https://api.moonshot.ai/v1',
   'moonshotai-cn': 'https://api.moonshot.cn/v1',
-  'siliconflow': 'https://api.siliconflow.cn/v1',
+  siliconflow: 'https://api.siliconflow.cn/v1',
   'siliconflow-cn': 'https://api.siliconflow.cn/v1',
-  'minimax': 'https://api.minimax.chat/v1',
+  minimax: 'https://api.minimax.chat/v1',
   'minimax-cn': 'https://api.minimaxi.com/v1',
-  'xiaomi': 'https://api.xiaomimimo.com/v1',
-  'upstage': 'https://api.upstage.ai/v1/solar',
+  xiaomi: 'https://api.xiaomimimo.com/v1',
+  upstage: 'https://api.upstage.ai/v1/solar',
 
   // Platform providers
-  'huggingface': 'https://api-inference.huggingface.co/models',
+  huggingface: 'https://api-inference.huggingface.co/models',
   'github-models': 'https://models.inference.ai.azure.com',
-  'gitlab': 'https://gitlab.com/api/v4/ai',
-  'openrouter': 'https://openrouter.ai/api/v1',
+  gitlab: 'https://gitlab.com/api/v4/ai',
+  openrouter: 'https://openrouter.ai/api/v1',
   'ollama-cloud': 'https://ollama.com/v1',
 
   // Edge / CDN providers
   'cloudflare-workers-ai': 'https://api.cloudflare.com/client/v4/accounts/{account_id}/ai/run',
-  'vercel': 'https://api.vercel.ai/v1',
-  'v0': 'https://api.v0.dev/v1',
+  vercel: 'https://api.vercel.ai/v1',
+  v0: 'https://api.v0.dev/v1',
 };
 
 // Environment variable names
 const envVars: Record<string, string> = {
   // Major providers
-  'openai': 'OPENAI_API_KEY',
-  'anthropic': 'ANTHROPIC_API_KEY',
-  'google': 'GOOGLE_GENERATIVE_AI_API_KEY',  // Gemini API key
-  'deepseek': 'DEEPSEEK_API_KEY',
-  'groq': 'GROQ_API_KEY',
-  'mistral': 'MISTRAL_API_KEY',
-  'xai': 'XAI_API_KEY',
-  'cohere': 'COHERE_API_KEY',
-  'perplexity': 'PERPLEXITY_API_KEY',
+  openai: 'OPENAI_API_KEY',
+  anthropic: 'ANTHROPIC_API_KEY',
+  google: 'GOOGLE_GENERATIVE_AI_API_KEY', // Gemini API key
+  deepseek: 'DEEPSEEK_API_KEY',
+  groq: 'GROQ_API_KEY',
+  mistral: 'MISTRAL_API_KEY',
+  xai: 'XAI_API_KEY',
+  cohere: 'COHERE_API_KEY',
+  perplexity: 'PERPLEXITY_API_KEY',
 
   // Cloud providers
-  'azure': 'AZURE_OPENAI_API_KEY',
+  azure: 'AZURE_OPENAI_API_KEY',
   'azure-cognitive-services': 'AZURE_COGNITIVE_SERVICES_KEY',
   'amazon-bedrock': 'AWS_ACCESS_KEY_ID',
   'google-vertex': 'GOOGLE_APPLICATION_CREDENTIALS',
@@ -188,42 +189,42 @@ const envVars: Record<string, string> = {
   'sap-ai-core': 'SAP_AI_CORE_API_KEY',
 
   // Inference providers
-  'togetherai': 'TOGETHER_API_KEY',
+  togetherai: 'TOGETHER_API_KEY',
   'fireworks-ai': 'FIREWORKS_API_KEY',
-  'deepinfra': 'DEEPINFRA_API_KEY',
-  'cerebras': 'CEREBRAS_API_KEY',
+  deepinfra: 'DEEPINFRA_API_KEY',
+  cerebras: 'CEREBRAS_API_KEY',
   'novita-ai': 'NOVITA_API_KEY',
-  'friendli': 'FRIENDLI_API_KEY',
-  'inference': 'INFERENCE_API_KEY',
-  'scaleway': 'SCALEWAY_API_KEY',
-  'vultr': 'VULTR_API_KEY',
-  'nvidia': 'NVIDIA_API_KEY',
-  'venice': 'VENICE_API_KEY',
+  friendli: 'FRIENDLI_API_KEY',
+  inference: 'INFERENCE_API_KEY',
+  scaleway: 'SCALEWAY_API_KEY',
+  vultr: 'VULTR_API_KEY',
+  nvidia: 'NVIDIA_API_KEY',
+  venice: 'VENICE_API_KEY',
 
   // Chinese providers
-  'zhipuai': 'ZHIPU_API_KEY',
-  'alibaba': 'DASHSCOPE_API_KEY',
+  zhipuai: 'ZHIPU_API_KEY',
+  alibaba: 'DASHSCOPE_API_KEY',
   'alibaba-cn': 'DASHSCOPE_API_KEY',
-  'moonshotai': 'MOONSHOT_API_KEY',
+  moonshotai: 'MOONSHOT_API_KEY',
   'moonshotai-cn': 'MOONSHOT_API_KEY',
-  'siliconflow': 'SILICONFLOW_API_KEY',
+  siliconflow: 'SILICONFLOW_API_KEY',
   'siliconflow-cn': 'SILICONFLOW_API_KEY',
-  'minimax': 'MINIMAX_API_KEY',
+  minimax: 'MINIMAX_API_KEY',
   'minimax-cn': 'MINIMAX_API_KEY',
-  'xiaomi': 'XIAOMI_API_KEY',
-  'upstage': 'UPSTAGE_API_KEY',
+  xiaomi: 'XIAOMI_API_KEY',
+  upstage: 'UPSTAGE_API_KEY',
 
   // Platform providers
-  'huggingface': 'HUGGINGFACE_API_KEY',
+  huggingface: 'HUGGINGFACE_API_KEY',
   'github-models': 'GITHUB_TOKEN',
-  'gitlab': 'GITLAB_TOKEN',
-  'openrouter': 'OPENROUTER_API_KEY',
+  gitlab: 'GITLAB_TOKEN',
+  openrouter: 'OPENROUTER_API_KEY',
   'ollama-cloud': 'OLLAMA_API_KEY',
 
   // Edge / CDN providers
   'cloudflare-workers-ai': 'CLOUDFLARE_API_TOKEN',
-  'vercel': 'VERCEL_API_KEY',
-  'v0': 'V0_API_KEY',
+  vercel: 'VERCEL_API_KEY',
+  v0: 'V0_API_KEY',
 };
 
 function transformModel(model: ModelsDevModel, isFirst: boolean): ProviderModel {
@@ -251,8 +252,12 @@ function transformModel(model: ModelsDevModel, isFirst: boolean): ProviderModel 
   capabilities.push('streaming');
 
   // Check if it's a code model
-  if (model.family?.includes('coder') || model.family?.includes('codestral') ||
-      model.family?.includes('devstral') || model.id.includes('code')) {
+  if (
+    model.family?.includes('coder') ||
+    model.family?.includes('codestral') ||
+    model.family?.includes('devstral') ||
+    model.id.includes('code')
+  ) {
     capabilities.push('code');
   }
 
@@ -315,12 +320,13 @@ function transformProvider(id: string, provider: ModelsDevProvider): ProviderCon
   let baseUrl = provider.api || apiUrls[id] || '';
 
   // Get API key env var
-  let apiKeyEnv = provider.env?.[0] || envVars[id] || `${id.toUpperCase().replace(/-/g, '_')}_API_KEY`;
+  let apiKeyEnv =
+    provider.env?.[0] || envVars[id] || `${id.toUpperCase().replace(/-/g, '_')}_API_KEY`;
 
   // Determine features based on models
-  const hasVision = models.some(m => m.attachment || m.modalities?.input?.includes('image'));
-  const hasToolUse = models.some(m => m.tool_call);
-  const hasJsonMode = models.some(m => m.structured_output);
+  const hasVision = models.some((m) => m.attachment || m.modalities?.input?.includes('image'));
+  const hasToolUse = models.some((m) => m.tool_call);
+  const hasJsonMode = models.some((m) => m.structured_output);
 
   const config: ProviderConfig = {
     id,
@@ -364,7 +370,7 @@ async function main() {
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     }
-    data = await response.json() as Record<string, ModelsDevProvider>;
+    data = (await response.json()) as Record<string, ModelsDevProvider>;
 
     // Cache the data locally
     fs.writeFileSync(cachePath, JSON.stringify(data, null, 2));
@@ -408,13 +414,25 @@ async function main() {
   console.log(`\nDone! Generated ${generated} configs, skipped ${skipped}`);
 
   // Generate provider IDs file (separate from main index.ts to avoid overwriting)
-  const providerIds = Object.keys(data).filter(id => {
-    const provider = data[id];
-    return provider.models && Object.keys(provider.models).length > 0;
-  }).sort();
+  const providerIds = Object.keys(data)
+    .filter((id) => {
+      const provider = data[id];
+      return provider.models && Object.keys(provider.models).length > 0;
+    })
+    .sort();
 
   // Update PROVIDER_IDS in the existing index.ts (stays in src/, not in data/)
-  const indexPath = path.join(__dirname, '..', 'packages', 'core', 'src', 'agent', 'providers', 'configs', 'index.ts');
+  const indexPath = path.join(
+    __dirname,
+    '..',
+    'packages',
+    'core',
+    'src',
+    'agent',
+    'providers',
+    'configs',
+    'index.ts'
+  );
   if (fs.existsSync(indexPath)) {
     let indexContent = fs.readFileSync(indexPath, 'utf-8');
     // Replace the PROVIDER_IDS array

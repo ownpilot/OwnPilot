@@ -19,9 +19,7 @@ export function EmptyState({ icon: Icon, title, description, action }: EmptyStat
         {title}
       </h3>
       {description && (
-        <p className="text-text-muted dark:text-dark-text-muted mb-4">
-          {description}
-        </p>
+        <p className="text-text-muted dark:text-dark-text-muted mb-4">{description}</p>
       )}
       {action && (
         <button

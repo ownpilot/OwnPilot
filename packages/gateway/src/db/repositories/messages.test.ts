@@ -65,9 +65,7 @@ function makeMessageRow(overrides: Record<string, unknown> = {}) {
   };
 }
 
-const sampleToolCalls = [
-  { id: 'tc-1', name: 'search', arguments: '{"q":"test"}' },
-];
+const sampleToolCalls = [{ id: 'tc-1', name: 'search', arguments: '{"q":"test"}' }];
 
 // ---------------------------------------------------------------------------
 // Tests
@@ -97,7 +95,7 @@ describe('MessagesRepository', () => {
 
       expect(mockAdapter.execute).toHaveBeenCalledWith(
         expect.stringContaining('INSERT INTO messages'),
-        ['msg-1', 'conv-1', 'user', 'Hello world', null, null, null],
+        ['msg-1', 'conv-1', 'user', 'Hello world', null, null, null]
       );
 
       expect(result.id).toBe('msg-1');
@@ -115,7 +113,7 @@ describe('MessagesRepository', () => {
         makeMessageRow({
           role: 'assistant',
           tool_calls: JSON.stringify(sampleToolCalls),
-        }),
+        })
       );
 
       const result = await repo.create({
@@ -128,7 +126,7 @@ describe('MessagesRepository', () => {
 
       expect(mockAdapter.execute).toHaveBeenCalledWith(
         expect.stringContaining('INSERT INTO messages'),
-        ['msg-2', 'conv-1', 'assistant', '', JSON.stringify(sampleToolCalls), null, null],
+        ['msg-2', 'conv-1', 'assistant', '', JSON.stringify(sampleToolCalls), null, null]
       );
 
       expect(result.toolCalls).toEqual(sampleToolCalls);
@@ -141,7 +139,7 @@ describe('MessagesRepository', () => {
           role: 'tool',
           content: '{"result": 42}',
           tool_call_id: 'tc-1',
-        }),
+        })
       );
 
       const result = await repo.create({
@@ -154,7 +152,7 @@ describe('MessagesRepository', () => {
 
       expect(mockAdapter.execute).toHaveBeenCalledWith(
         expect.stringContaining('INSERT INTO messages'),
-        ['msg-3', 'conv-1', 'tool', '{"result": 42}', null, 'tc-1', null],
+        ['msg-3', 'conv-1', 'tool', '{"result": 42}', null, 'tc-1', null]
       );
 
       expect(result.toolCallId).toBe('tc-1');
@@ -170,7 +168,7 @@ describe('MessagesRepository', () => {
           conversationId: 'conv-1',
           role: 'user',
           content: 'test',
-        }),
+        })
       ).rejects.toThrow('Failed to create message');
     });
   });
@@ -185,10 +183,9 @@ describe('MessagesRepository', () => {
 
       expect(result).not.toBeNull();
       expect(result!.id).toBe('msg-1');
-      expect(mockAdapter.queryOne).toHaveBeenCalledWith(
-        expect.stringContaining('WHERE id = $1'),
-        ['msg-1'],
-      );
+      expect(mockAdapter.queryOne).toHaveBeenCalledWith(expect.stringContaining('WHERE id = $1'), [
+        'msg-1',
+      ]);
     });
 
     it('returns null when not found', async () => {
@@ -214,7 +211,7 @@ describe('MessagesRepository', () => {
       expect(result).toHaveLength(2);
       expect(mockAdapter.query).toHaveBeenCalledWith(
         expect.stringContaining('ORDER BY created_at ASC'),
-        ['conv-1'],
+        ['conv-1']
       );
     });
 
@@ -223,10 +220,10 @@ describe('MessagesRepository', () => {
 
       await repo.getByConversation('conv-1', 10);
 
-      expect(mockAdapter.query).toHaveBeenCalledWith(
-        expect.stringContaining('LIMIT $2'),
-        ['conv-1', 10],
-      );
+      expect(mockAdapter.query).toHaveBeenCalledWith(expect.stringContaining('LIMIT $2'), [
+        'conv-1',
+        10,
+      ]);
     });
 
     it('does not include LIMIT clause when no limit given', async () => {
@@ -259,10 +256,10 @@ describe('MessagesRepository', () => {
       const result = await repo.getRecent('conv-1', 5);
 
       expect(result).toHaveLength(2);
-      expect(mockAdapter.query).toHaveBeenCalledWith(
-        expect.stringContaining('LIMIT $2'),
-        ['conv-1', 5],
-      );
+      expect(mockAdapter.query).toHaveBeenCalledWith(expect.stringContaining('LIMIT $2'), [
+        'conv-1',
+        5,
+      ]);
       // The outer query orders ASC for chronological display
       const sql = mockAdapter.query.mock.calls[0][0] as string;
       expect(sql).toContain('ORDER BY created_at ASC');
@@ -280,7 +277,7 @@ describe('MessagesRepository', () => {
       expect(result).toBe(true);
       expect(mockAdapter.execute).toHaveBeenCalledWith(
         expect.stringContaining('DELETE FROM messages WHERE id = $1'),
-        ['msg-1'],
+        ['msg-1']
       );
     });
 
@@ -304,7 +301,7 @@ describe('MessagesRepository', () => {
       expect(result).toBe(15);
       expect(mockAdapter.execute).toHaveBeenCalledWith(
         expect.stringContaining('DELETE FROM messages WHERE conversation_id = $1'),
-        ['conv-1'],
+        ['conv-1']
       );
     });
 
@@ -338,7 +335,7 @@ describe('MessagesRepository', () => {
       expect(result).toBe(5);
       expect(mockAdapter.queryOne).toHaveBeenCalledWith(
         expect.stringContaining('WHERE conversation_id = $1'),
-        ['conv-1'],
+        ['conv-1']
       );
     });
 
@@ -356,7 +353,7 @@ describe('MessagesRepository', () => {
   describe('row mapping', () => {
     it('parses tool_calls JSON string', async () => {
       mockAdapter.queryOne.mockResolvedValueOnce(
-        makeMessageRow({ tool_calls: JSON.stringify(sampleToolCalls) }),
+        makeMessageRow({ tool_calls: JSON.stringify(sampleToolCalls) })
       );
 
       const result = await repo.getById('msg-1');
@@ -365,9 +362,7 @@ describe('MessagesRepository', () => {
     });
 
     it('handles already-parsed tool_calls object', async () => {
-      mockAdapter.queryOne.mockResolvedValueOnce(
-        makeMessageRow({ tool_calls: sampleToolCalls }),
-      );
+      mockAdapter.queryOne.mockResolvedValueOnce(makeMessageRow({ tool_calls: sampleToolCalls }));
 
       const result = await repo.getById('msg-1');
 
@@ -375,9 +370,7 @@ describe('MessagesRepository', () => {
     });
 
     it('sets toolCalls to undefined for invalid JSON', async () => {
-      mockAdapter.queryOne.mockResolvedValueOnce(
-        makeMessageRow({ tool_calls: '{broken json' }),
-      );
+      mockAdapter.queryOne.mockResolvedValueOnce(makeMessageRow({ tool_calls: '{broken json' }));
 
       const result = await repo.getById('msg-1');
 

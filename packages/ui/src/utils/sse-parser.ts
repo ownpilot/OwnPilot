@@ -7,8 +7,32 @@
 
 export type SSEEventType =
   | { kind: 'progress'; data: { type: string; [key: string]: unknown } }
-  | { kind: 'approval'; data: { approvalId: string; category: string; description: string; code?: string; riskAnalysis?: unknown } }
-  | { kind: 'delta'; data: { delta?: string; done?: boolean; id?: string; conversationId?: string; toolCalls?: unknown; usage?: unknown; finishReason?: string; trace?: unknown; session?: unknown; suggestions?: unknown; memories?: unknown } }
+  | {
+      kind: 'approval';
+      data: {
+        approvalId: string;
+        category: string;
+        description: string;
+        code?: string;
+        riskAnalysis?: unknown;
+      };
+    }
+  | {
+      kind: 'delta';
+      data: {
+        delta?: string;
+        done?: boolean;
+        id?: string;
+        conversationId?: string;
+        toolCalls?: unknown;
+        usage?: unknown;
+        finishReason?: string;
+        trace?: unknown;
+        session?: unknown;
+        suggestions?: unknown;
+        memories?: unknown;
+      };
+    }
   | { kind: 'error'; message: string }
   | { kind: 'skip' };
 
@@ -46,7 +70,10 @@ export function parseSSELine(line: string): SSEEventType {
   }
 
   if (data.delta !== undefined || data.done) {
-    return { kind: 'delta', data: data as SSEEventType extends { kind: 'delta'; data: infer D } ? D : never };
+    return {
+      kind: 'delta',
+      data: data as SSEEventType extends { kind: 'delta'; data: infer D } ? D : never,
+    };
   }
 
   if (data.error) {

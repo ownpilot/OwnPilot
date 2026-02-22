@@ -5,7 +5,7 @@
 import { Hono } from 'hono';
 import { createMiddleware } from 'hono/factory';
 import { getDebugInfo, debugLog } from '@ownpilot/core';
-import { apiResponse, apiError, ERROR_CODES, getIntParam, safeKeyCompare } from './helpers.js'
+import { apiResponse, apiError, ERROR_CODES, getIntParam, safeKeyCompare } from './helpers.js';
 
 export const debugRoutes = new Hono();
 
@@ -15,11 +15,25 @@ const requireDebugAccess = createMiddleware(async (c, next) => {
   if (process.env.NODE_ENV === 'production') {
     const adminKey = process.env.ADMIN_API_KEY;
     if (!adminKey) {
-      return apiError(c, { code: ERROR_CODES.SERVICE_UNAVAILABLE, message: 'Debug endpoints require ADMIN_API_KEY in production' }, 503);
+      return apiError(
+        c,
+        {
+          code: ERROR_CODES.SERVICE_UNAVAILABLE,
+          message: 'Debug endpoints require ADMIN_API_KEY in production',
+        },
+        503
+      );
     }
     const providedKey = c.req.header('X-Admin-Key') ?? '';
     if (!safeKeyCompare(providedKey, adminKey)) {
-      return apiError(c, { code: ERROR_CODES.ACCESS_DENIED, message: 'Valid X-Admin-Key header required for debug endpoints' }, 403);
+      return apiError(
+        c,
+        {
+          code: ERROR_CODES.ACCESS_DENIED,
+          message: 'Valid X-Admin-Key header required for debug endpoints',
+        },
+        403
+      );
     }
   }
   return next();
@@ -86,9 +100,7 @@ debugRoutes.post('/toggle', async (c) => {
 debugRoutes.get('/errors', async (c) => {
   const count = getIntParam(c, 'count', 20, 1, 500);
   const allEntries = debugLog.getAll();
-  const errors = allEntries
-    .filter(e => e.type === 'error' || e.type === 'retry')
-    .slice(-count);
+  const errors = allEntries.filter((e) => e.type === 'error' || e.type === 'retry').slice(-count);
 
   return apiResponse(c, {
     count: errors.length,
@@ -103,7 +115,7 @@ debugRoutes.get('/requests', async (c) => {
   const count = getIntParam(c, 'count', 20, 1, 500);
   const allEntries = debugLog.getAll();
   const requests = allEntries
-    .filter(e => e.type === 'request' || e.type === 'response')
+    .filter((e) => e.type === 'request' || e.type === 'response')
     .slice(-count);
 
   return apiResponse(c, {
@@ -119,7 +131,7 @@ debugRoutes.get('/tools', async (c) => {
   const count = getIntParam(c, 'count', 20, 1, 500);
   const allEntries = debugLog.getAll();
   const toolCalls = allEntries
-    .filter(e => e.type === 'tool_call' || e.type === 'tool_result')
+    .filter((e) => e.type === 'tool_call' || e.type === 'tool_result')
     .slice(-count);
 
   return apiResponse(c, {
@@ -134,23 +146,36 @@ debugRoutes.get('/tools', async (c) => {
 debugRoutes.get('/sandbox', async (c) => {
   const count = getIntParam(c, 'count', 20, 1, 500);
   const allEntries = debugLog.getAll();
-  const sandboxExecutions = allEntries
-    .filter(e => e.type === 'sandbox_execution')
-    .slice(-count);
+  const sandboxExecutions = allEntries.filter((e) => e.type === 'sandbox_execution').slice(-count);
 
   // Calculate summary statistics
   const stats = {
     total: sandboxExecutions.length,
     byLanguage: {
-      javascript: sandboxExecutions.filter(e => (e.data as Record<string, unknown>)?.language === 'javascript').length,
-      python: sandboxExecutions.filter(e => (e.data as Record<string, unknown>)?.language === 'python').length,
-      shell: sandboxExecutions.filter(e => (e.data as Record<string, unknown>)?.language === 'shell').length,
+      javascript: sandboxExecutions.filter(
+        (e) => (e.data as Record<string, unknown>)?.language === 'javascript'
+      ).length,
+      python: sandboxExecutions.filter(
+        (e) => (e.data as Record<string, unknown>)?.language === 'python'
+      ).length,
+      shell: sandboxExecutions.filter(
+        (e) => (e.data as Record<string, unknown>)?.language === 'shell'
+      ).length,
     },
-    sandboxed: sandboxExecutions.filter(e => (e.data as Record<string, unknown>)?.sandboxed === true).length,
-    unsandboxed: sandboxExecutions.filter(e => (e.data as Record<string, unknown>)?.sandboxed === false).length,
-    successful: sandboxExecutions.filter(e => (e.data as Record<string, unknown>)?.success === true).length,
-    failed: sandboxExecutions.filter(e => (e.data as Record<string, unknown>)?.success === false).length,
-    timedOut: sandboxExecutions.filter(e => (e.data as Record<string, unknown>)?.timedOut === true).length,
+    sandboxed: sandboxExecutions.filter(
+      (e) => (e.data as Record<string, unknown>)?.sandboxed === true
+    ).length,
+    unsandboxed: sandboxExecutions.filter(
+      (e) => (e.data as Record<string, unknown>)?.sandboxed === false
+    ).length,
+    successful: sandboxExecutions.filter(
+      (e) => (e.data as Record<string, unknown>)?.success === true
+    ).length,
+    failed: sandboxExecutions.filter((e) => (e.data as Record<string, unknown>)?.success === false)
+      .length,
+    timedOut: sandboxExecutions.filter(
+      (e) => (e.data as Record<string, unknown>)?.timedOut === true
+    ).length,
   };
 
   return apiResponse(c, {

@@ -202,7 +202,13 @@ describe('GoogleProvider', () => {
         baseUrl: 'https://generativelanguage.googleapis.com/v1beta',
         apiKeyEnv: 'GOOGLE_API_KEY',
         models: [],
-        features: { streaming: true, toolUse: true, vision: true, jsonMode: true, systemMessage: true },
+        features: {
+          streaming: true,
+          toolUse: true,
+          vision: true,
+          jsonMode: true,
+          systemMessage: true,
+        },
       };
       mockLoadProviderConfig.mockReturnValue(rawConfig);
 
@@ -313,8 +319,8 @@ describe('GoogleProvider', () => {
         {
           role: 'user',
           content: [
-            { type: 'text', text: 'Hello' },      // 5 chars
-            { type: 'text', text: 'World' },       // 5 chars
+            { type: 'text', text: 'Hello' }, // 5 chars
+            { type: 'text', text: 'World' }, // 5 chars
           ],
         },
       ];
@@ -465,7 +471,7 @@ describe('GoogleProvider', () => {
             'Content-Type': 'application/json',
             'x-goog-api-key': 'test-google-key',
           }),
-        }),
+        })
       );
     });
 
@@ -483,7 +489,7 @@ describe('GoogleProvider', () => {
       expect(result.ok).toBe(true);
       expect(mockFetch).toHaveBeenCalledWith(
         expect.stringContaining('gemini-2.0-flash:generateContent'),
-        expect.anything(),
+        expect.anything()
       );
     });
 
@@ -518,7 +524,7 @@ describe('GoogleProvider', () => {
       expect(result.ok).toBe(true);
       if (result.ok) {
         expect(result.value.content).toBe(
-          '<thinking>\nLet me think about this...\n</thinking>\n\nThe answer is 42.',
+          '<thinking>\nLet me think about this...\n</thinking>\n\nThe answer is 42.'
         );
         // completionTokens = candidatesTokenCount + thoughtsTokenCount = 20 + 5
         expect(result.value.usage?.completionTokens).toBe(25);
@@ -832,7 +838,7 @@ describe('GoogleProvider', () => {
             { role: 'system', content: 'You are a helpful assistant' },
             { role: 'user', content: 'Hi' },
           ],
-        }),
+        })
       );
 
       const body = JSON.parse(mockFetch.mock.calls[0][1].body);
@@ -867,7 +873,7 @@ describe('GoogleProvider', () => {
               },
             },
           ],
-        }),
+        })
       );
 
       const body = JSON.parse(mockFetch.mock.calls[0][1].body);
@@ -1047,9 +1053,7 @@ describe('GoogleProvider', () => {
       // Should have function call chunk and done chunk
       expect(chunks.length).toBeGreaterThanOrEqual(2);
 
-      const fnChunk = chunks.find(
-        (c) => c.ok && c.value.toolCalls?.length,
-      );
+      const fnChunk = chunks.find((c) => c.ok && c.value.toolCalls?.length);
       expect(fnChunk).toBeDefined();
       if (fnChunk?.ok) {
         expect(fnChunk.value.toolCalls![0].name).toBe('search');
@@ -1057,9 +1061,7 @@ describe('GoogleProvider', () => {
         expect(fnChunk.value.toolCalls![0].metadata).toEqual({ thoughtSignature: 'sig_xyz' });
       }
 
-      const doneChunk = chunks.find(
-        (c) => c.ok && c.value.done === true,
-      );
+      const doneChunk = chunks.find((c) => c.ok && c.value.done === true);
       expect(doneChunk).toBeDefined();
       if (doneChunk?.ok) {
         expect(doneChunk.value.finishReason).toBe('tool_calls');
@@ -1112,18 +1114,14 @@ describe('GoogleProvider', () => {
       }
 
       // Thinking chunk should have metadata.type = 'thinking'
-      const thinkingChunk = chunks.find(
-        (c) => c.ok && c.value.metadata?.type === 'thinking',
-      );
+      const thinkingChunk = chunks.find((c) => c.ok && c.value.metadata?.type === 'thinking');
       expect(thinkingChunk).toBeDefined();
       if (thinkingChunk?.ok) {
         expect(thinkingChunk.value.content).toBe('Thinking about this...');
       }
 
       // Regular text chunk
-      const textChunk = chunks.find(
-        (c) => c.ok && c.value.content === 'Final answer.',
-      );
+      const textChunk = chunks.find((c) => c.ok && c.value.content === 'Final answer.');
       expect(textChunk).toBeDefined();
       if (textChunk?.ok) {
         expect(textChunk.value.metadata).toBeUndefined();
@@ -1193,7 +1191,7 @@ describe('GoogleProvider', () => {
           headers: expect.objectContaining({
             'x-goog-api-key': 'test-google-key',
           }),
-        }),
+        })
       );
     });
 

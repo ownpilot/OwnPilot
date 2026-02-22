@@ -17,11 +17,7 @@ import { getLog } from '../services/get-log.js';
 
 const log = getLog('PluginRegistry');
 import type { ConfigFieldDefinition } from '../services/config-center.js';
-import {
-  getEventSystem,
-  type PluginCustomData,
-  type PluginStatusData,
-} from '../events/index.js';
+import { getEventSystem, type PluginCustomData, type PluginStatusData } from '../events/index.js';
 
 // =============================================================================
 // Types
@@ -331,7 +327,9 @@ export class PluginRegistry {
   /** Run an async function under the registry lock to prevent concurrent mutations */
   private async withLock<T>(fn: () => Promise<T>): Promise<T> {
     let release!: () => void;
-    const acquire = new Promise<void>(resolve => { release = resolve; });
+    const acquire = new Promise<void>((resolve) => {
+      release = resolve;
+    });
     const prev = this.registryLock;
     this.registryLock = acquire;
     await prev;
@@ -358,70 +356,72 @@ export class PluginRegistry {
    */
   async register(manifest: PluginManifest, implementation: Partial<Plugin>): Promise<Plugin> {
     return this.withLock(async () => {
-    // Check dependencies
-    for (const [depId, depVersion] of Object.entries(manifest.dependencies ?? {})) {
-      const dep = this.plugins.get(depId);
-      if (!dep) {
-        throw new Error(`Missing dependency: ${depId}`);
+      // Check dependencies
+      for (const [depId, depVersion] of Object.entries(manifest.dependencies ?? {})) {
+        const dep = this.plugins.get(depId);
+        if (!dep) {
+          throw new Error(`Missing dependency: ${depId}`);
+        }
+        // Basic version check (in production, use semver)
+        if (dep.manifest.version !== depVersion && depVersion !== '*') {
+          log.warn(
+            `Dependency version mismatch: ${depId} (want ${depVersion}, have ${dep.manifest.version})`
+          );
+        }
       }
-      // Basic version check (in production, use semver)
-      if (dep.manifest.version !== depVersion && depVersion !== '*') {
-        log.warn(`Dependency version mismatch: ${depId} (want ${depVersion}, have ${dep.manifest.version})`);
+
+      // Load existing config or create default
+      const config = (await this.loadPluginConfig(manifest.id)) ?? {
+        enabled: true,
+        settings: manifest.defaultConfig ?? {},
+        grantedPermissions: [],
+        installedAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+
+      // Create plugin instance
+      const plugin: Plugin = {
+        manifest,
+        status: config.enabled ? 'enabled' : 'disabled',
+        config,
+        tools: new Map(implementation.tools ?? []),
+        handlers: implementation.handlers ?? [],
+        api: implementation.api,
+        lifecycle: implementation.lifecycle ?? {},
+      };
+
+      this.plugins.set(manifest.id, plugin);
+
+      // Register handlers
+      for (const handler of plugin.handlers) {
+        this.handlers.push(handler);
       }
-    }
+      this.handlers.sort((a, b) => b.priority - a.priority);
 
-    // Load existing config or create default
-    const config = await this.loadPluginConfig(manifest.id) ?? {
-      enabled: true,
-      settings: manifest.defaultConfig ?? {},
-      grantedPermissions: [],
-      installedAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-
-    // Create plugin instance
-    const plugin: Plugin = {
-      manifest,
-      status: config.enabled ? 'enabled' : 'disabled',
-      config,
-      tools: new Map(implementation.tools ?? []),
-      handlers: implementation.handlers ?? [],
-      api: implementation.api,
-      lifecycle: implementation.lifecycle ?? {},
-    };
-
-    this.plugins.set(manifest.id, plugin);
-
-    // Register handlers
-    for (const handler of plugin.handlers) {
-      this.handlers.push(handler);
-    }
-    this.handlers.sort((a, b) => b.priority - a.priority);
-
-    // Call onLoad
-    if (plugin.lifecycle.onLoad) {
-      try {
-        await plugin.lifecycle.onLoad();
-      } catch (err) {
-        log.error(`onLoad failed for ${manifest.id}:`, err);
-        this.plugins.delete(manifest.id);
-        this.handlers = this.handlers.filter(h => !plugin.handlers.includes(h));
-        throw err;
+      // Call onLoad
+      if (plugin.lifecycle.onLoad) {
+        try {
+          await plugin.lifecycle.onLoad();
+        } catch (err) {
+          log.error(`onLoad failed for ${manifest.id}:`, err);
+          this.plugins.delete(manifest.id);
+          this.handlers = this.handlers.filter((h) => !plugin.handlers.includes(h));
+          throw err;
+        }
       }
-    }
 
-    // Call onEnable if enabled
-    if (config.enabled && plugin.lifecycle.onEnable) {
-      try {
-        await plugin.lifecycle.onEnable();
-      } catch (err) {
-        log.error(`onEnable failed for ${manifest.id}:`, err);
-        plugin.status = 'error';
+      // Call onEnable if enabled
+      if (config.enabled && plugin.lifecycle.onEnable) {
+        try {
+          await plugin.lifecycle.onEnable();
+        } catch (err) {
+          log.error(`onEnable failed for ${manifest.id}:`, err);
+          plugin.status = 'error';
+        }
       }
-    }
 
-    log.info(`Registered plugin: ${manifest.name} v${manifest.version}`);
-    return plugin;
+      log.info(`Registered plugin: ${manifest.name} v${manifest.version}`);
+      return plugin;
     }); // end withLock
   }
 
@@ -443,7 +443,7 @@ export class PluginRegistry {
    * Get all enabled plugins
    */
   getEnabled(): Plugin[] {
-    return Array.from(this.plugins.values()).filter(p => p.status === 'enabled');
+    return Array.from(this.plugins.values()).filter((p) => p.status === 'enabled');
   }
 
   /**
@@ -515,32 +515,36 @@ export class PluginRegistry {
    */
   async unregister(id: string): Promise<boolean> {
     return this.withLock(async () => {
-    const plugin = this.plugins.get(id);
-    if (!plugin) return false;
+      const plugin = this.plugins.get(id);
+      if (!plugin) return false;
 
-    // Call onUnload
-    if (plugin.lifecycle.onUnload) {
-      try {
-        await plugin.lifecycle.onUnload();
-      } catch (err) {
-        log.error(`onUnload failed for ${id}:`, err);
+      // Call onUnload
+      if (plugin.lifecycle.onUnload) {
+        try {
+          await plugin.lifecycle.onUnload();
+        } catch (err) {
+          log.error(`onUnload failed for ${id}:`, err);
+        }
       }
-    }
 
-    // Clean up event subscriptions
-    const cleanups = this.pluginEventCleanups.get(id);
-    if (cleanups) {
-      for (const unsub of cleanups) {
-        try { unsub(); } catch { /* already cleaned */ }
+      // Clean up event subscriptions
+      const cleanups = this.pluginEventCleanups.get(id);
+      if (cleanups) {
+        for (const unsub of cleanups) {
+          try {
+            unsub();
+          } catch {
+            /* already cleaned */
+          }
+        }
+        this.pluginEventCleanups.delete(id);
       }
-      this.pluginEventCleanups.delete(id);
-    }
 
-    // Remove handlers
-    this.handlers = this.handlers.filter(h => !plugin.handlers.includes(h));
+      // Remove handlers
+      this.handlers = this.handlers.filter((h) => !plugin.handlers.includes(h));
 
-    this.plugins.delete(id);
-    return true;
+      this.plugins.delete(id);
+      return true;
     }); // end withLock
   }
 
@@ -548,7 +552,8 @@ export class PluginRegistry {
    * Get all tools from enabled plugins
    */
   getAllTools(): Array<{ pluginId: string; definition: ToolDefinition; executor: ToolExecutor }> {
-    const tools: Array<{ pluginId: string; definition: ToolDefinition; executor: ToolExecutor }> = [];
+    const tools: Array<{ pluginId: string; definition: ToolDefinition; executor: ToolExecutor }> =
+      [];
 
     for (const plugin of this.getEnabled()) {
       for (const [, tool] of plugin.tools) {
@@ -565,7 +570,9 @@ export class PluginRegistry {
   /**
    * Get tool by name
    */
-  getTool(name: string): { plugin: Plugin; definition: ToolDefinition; executor: ToolExecutor } | undefined {
+  getTool(
+    name: string
+  ): { plugin: Plugin; definition: ToolDefinition; executor: ToolExecutor } | undefined {
     for (const plugin of this.getEnabled()) {
       const tool = plugin.tools.get(name);
       if (tool) {

@@ -47,7 +47,13 @@ app.get('/', async (c) => {
     actorType: validateQueryEnum(c.req.query('actorType'), ['user', 'agent', 'system'] as const),
     resourceId: c.req.query('resourceId'),
     resourceType: c.req.query('resourceType'),
-    minSeverity: validateQueryEnum(c.req.query('minSeverity'), ['debug', 'info', 'warn', 'error', 'critical'] as const),
+    minSeverity: validateQueryEnum(c.req.query('minSeverity'), [
+      'debug',
+      'info',
+      'warn',
+      'error',
+      'critical',
+    ] as const),
     outcome: validateQueryEnum(c.req.query('outcome'), ['success', 'failure', 'unknown'] as const),
     from: from ? new Date(from) : undefined,
     to: to ? new Date(to) : undefined,
@@ -64,10 +70,10 @@ app.get('/', async (c) => {
   const stats = logger.getStats();
 
   return apiResponse(c, {
-      events: result.value,
-      count: result.value.length,
-      total: stats.eventCount,
-    });
+    events: result.value,
+    count: result.value.length,
+    total: stats.eventCount,
+  });
 });
 
 /**
@@ -81,9 +87,9 @@ app.get('/stats', async (c) => {
   const eventCount = await logger.countEvents();
 
   return apiResponse(c, {
-      eventCount,
-      lastChecksum: stats.lastChecksum,
-    });
+    eventCount,
+    lastChecksum: stats.lastChecksum,
+  });
 });
 
 /**
@@ -105,9 +111,9 @@ app.get('/tools', async (c) => {
   }
 
   return apiResponse(c, {
-      events: result.value,
-      count: result.value.length,
-    });
+    events: result.value,
+    count: result.value.length,
+  });
 });
 
 /**
@@ -129,9 +135,9 @@ app.get('/sessions', async (c) => {
   }
 
   return apiResponse(c, {
-      events: result.value,
-      count: result.value.length,
-    });
+    events: result.value,
+    count: result.value.length,
+  });
 });
 
 /**
@@ -153,9 +159,9 @@ app.get('/errors', async (c) => {
   }
 
   return apiResponse(c, {
-      events: result.value,
-      count: result.value.length,
-    });
+    events: result.value,
+    count: result.value.length,
+  });
 });
 
 /**
@@ -176,10 +182,10 @@ app.get('/request/:requestId', async (c) => {
   }
 
   return apiResponse(c, {
-      requestId,
-      events: result.value,
-      count: result.value.length,
-    });
+    requestId,
+    events: result.value,
+    count: result.value.length,
+  });
 });
 
 export const auditRoutes = app;

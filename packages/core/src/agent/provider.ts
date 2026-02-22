@@ -244,9 +244,7 @@ export abstract class BaseProvider implements IProvider {
       headers: {
         'Content-Type': 'application/json',
         ...(this.config.apiKey ? { Authorization: `Bearer ${this.config.apiKey}` } : {}),
-        ...(this.config.organization
-          ? { 'OpenAI-Organization': this.config.organization }
-          : {}),
+        ...(this.config.organization ? { 'OpenAI-Organization': this.config.organization } : {}),
       },
       body: JSON.stringify(body),
       signal: this.abortController.signal,
@@ -269,21 +267,36 @@ export abstract class BaseProvider implements IProvider {
   /**
    * Build messages for API request
    */
-  protected buildMessages(
-    messages: readonly Message[]
-  ): Array<{ role: string; content: string | unknown[]; tool_calls?: unknown[]; tool_call_id?: string }> {
-    type OpenAIMsg = { role: string; content: string | unknown[]; tool_calls?: unknown[]; tool_call_id?: string };
+  protected buildMessages(messages: readonly Message[]): Array<{
+    role: string;
+    content: string | unknown[];
+    tool_calls?: unknown[];
+    tool_call_id?: string;
+  }> {
+    type OpenAIMsg = {
+      role: string;
+      content: string | unknown[];
+      tool_calls?: unknown[];
+      tool_call_id?: string;
+    };
     return messages.flatMap((msg): OpenAIMsg | OpenAIMsg[] => {
       // Tool result messages: expand each result into a separate message (OpenAI requires one per tool_call_id)
       if (msg.role === 'tool' && msg.toolResults?.length) {
-        return msg.toolResults.map((result): OpenAIMsg => ({
-          role: 'tool',
-          content: result.content,
-          tool_call_id: result.toolCallId,
-        }));
+        return msg.toolResults.map(
+          (result): OpenAIMsg => ({
+            role: 'tool',
+            content: result.content,
+            tool_call_id: result.toolCallId,
+          })
+        );
       }
 
-      const base: { role: string; content: string | unknown[]; tool_calls?: unknown[]; tool_call_id?: string } = {
+      const base: {
+        role: string;
+        content: string | unknown[];
+        tool_calls?: unknown[];
+        tool_call_id?: string;
+      } = {
         role: msg.role,
         content:
           typeof msg.content === 'string'
@@ -324,7 +337,9 @@ export abstract class BaseProvider implements IProvider {
    */
   protected buildTools(
     request: CompletionRequest
-  ): Array<{ type: string; function: { name: string; description: string; parameters: unknown } }> | undefined {
+  ):
+    | Array<{ type: string; function: { name: string; description: string; parameters: unknown } }>
+    | undefined {
     if (!request.tools?.length) return undefined;
 
     return request.tools.map((tool) => ({
@@ -431,18 +446,15 @@ export class OpenAIProvider extends BaseProvider {
         };
 
         // Log response
-        logResponse(buildResponseDebugInfo(
-          'openai',
-          completionResponse.model,
-          Date.now() - startTime,
-          {
+        logResponse(
+          buildResponseDebugInfo('openai', completionResponse.model, Date.now() - startTime, {
             content: completionResponse.content,
             toolCalls: completionResponse.toolCalls,
             finishReason: completionResponse.finishReason,
             usage: completionResponse.usage,
             rawResponse: data,
-          }
-        ));
+          })
+        );
 
         return ok(completionResponse);
       } catch (error) {
@@ -553,12 +565,14 @@ export class OpenAIProvider extends BaseProvider {
           }
         }
       } finally {
-        try { await reader.cancel(); } catch { /* already released */ }
+        try {
+          await reader.cancel();
+        } catch {
+          /* already released */
+        }
       }
     } catch (error) {
-      yield err(
-        new InternalError(`OpenAI stream failed: ${getErrorMessage(error)}`)
-      );
+      yield err(new InternalError(`OpenAI stream failed: ${getErrorMessage(error)}`));
     }
   }
 
@@ -583,9 +597,7 @@ export class OpenAIProvider extends BaseProvider {
 
       return ok(models);
     } catch (error) {
-      return err(
-        new InternalError(`Failed to fetch models: ${getErrorMessage(error)}`)
-      );
+      return err(new InternalError(`Failed to fetch models: ${getErrorMessage(error)}`));
     }
   }
 
@@ -606,7 +618,11 @@ export class OpenAIProvider extends BaseProvider {
     }
   }
 
-  private mapUsage(usage: { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number }): TokenUsage | undefined {
+  private mapUsage(usage: {
+    prompt_tokens?: number;
+    completion_tokens?: number;
+    total_tokens?: number;
+  }): TokenUsage | undefined {
     if (!usage) return undefined;
     return {
       promptTokens: usage.prompt_tokens ?? 0,
@@ -732,25 +748,23 @@ export class AnthropicProvider extends BaseProvider {
             promptTokens: data.usage?.input_tokens ?? 0,
             completionTokens: data.usage?.output_tokens ?? 0,
             totalTokens: (data.usage?.input_tokens ?? 0) + (data.usage?.output_tokens ?? 0),
-            cachedTokens: (data.usage as Record<string, number> | undefined)?.cache_read_input_tokens,
+            cachedTokens: (data.usage as Record<string, number> | undefined)
+              ?.cache_read_input_tokens,
           },
           model: data.model ?? request.model.model,
           createdAt: new Date(),
         };
 
         // Log response
-        logResponse(buildResponseDebugInfo(
-          'anthropic',
-          completionResponse.model,
-          Date.now() - startTime,
-          {
+        logResponse(
+          buildResponseDebugInfo('anthropic', completionResponse.model, Date.now() - startTime, {
             content: completionResponse.content,
             toolCalls: completionResponse.toolCalls,
             finishReason: completionResponse.finishReason,
             usage: completionResponse.usage,
             rawResponse: data,
-          }
-        ));
+          })
+        );
 
         return ok(completionResponse);
       } catch (error) {
@@ -759,7 +773,9 @@ export class AnthropicProvider extends BaseProvider {
           logError('anthropic', timeoutError, 'Request timeout');
           return err(timeoutError);
         }
-        const internalError = new InternalError(`Anthropic request failed: ${getErrorMessage(error)}`);
+        const internalError = new InternalError(
+          `Anthropic request failed: ${getErrorMessage(error)}`
+        );
         logError('anthropic', internalError, 'Request exception');
         return err(internalError);
       }
@@ -867,12 +883,17 @@ export class AnthropicProvider extends BaseProvider {
                   currentToolBlockIndex = parsed.index ?? toolCallBlocks.length;
                   toolCallBlocks[currentToolBlockIndex] = {
                     id: parsed.content_block.id ?? '',
-                    name: parsed.content_block.name ? desanitizeToolName(parsed.content_block.name) : '',
+                    name: parsed.content_block.name
+                      ? desanitizeToolName(parsed.content_block.name)
+                      : '',
                     arguments: '',
                   };
                 }
               } else if (parsed.type === 'content_block_delta') {
-                if (parsed.delta?.type === 'input_json_delta' && parsed.delta.partial_json != null) {
+                if (
+                  parsed.delta?.type === 'input_json_delta' &&
+                  parsed.delta.partial_json != null
+                ) {
                   // Accumulate tool call arguments
                   const blockIdx = parsed.index ?? currentToolBlockIndex;
                   if (blockIdx >= 0 && toolCallBlocks[blockIdx]) {
@@ -901,7 +922,9 @@ export class AnthropicProvider extends BaseProvider {
                 yield ok({
                   id: '',
                   done: false,
-                  finishReason: this.mapAnthropicStopReason(parsed.delta?.stop_reason ?? 'end_turn'),
+                  finishReason: this.mapAnthropicStopReason(
+                    parsed.delta?.stop_reason ?? 'end_turn'
+                  ),
                   usage: {
                     promptTokens: inputTokens,
                     completionTokens: outputTokens,
@@ -915,12 +938,14 @@ export class AnthropicProvider extends BaseProvider {
           }
         }
       } finally {
-        try { await reader.cancel(); } catch { /* already released */ }
+        try {
+          await reader.cancel();
+        } catch {
+          /* already released */
+        }
       }
     } catch (error) {
-      yield err(
-        new InternalError(`Anthropic stream failed: ${getErrorMessage(error)}`)
-      );
+      yield err(new InternalError(`Anthropic stream failed: ${getErrorMessage(error)}`));
     }
   }
 
@@ -944,12 +969,13 @@ export class AnthropicProvider extends BaseProvider {
   private buildSystemBlocks(
     systemMessage: Message
   ): Array<{ type: 'text'; text: string; cache_control?: { type: 'ephemeral' } }> {
-    const text = typeof systemMessage.content === 'string'
-      ? systemMessage.content
-      : systemMessage.content
-          .filter((c) => c.type === 'text')
-          .map((c) => (c as { text: string }).text)
-          .join('\n');
+    const text =
+      typeof systemMessage.content === 'string'
+        ? systemMessage.content
+        : systemMessage.content
+            .filter((c) => c.type === 'text')
+            .map((c) => (c as { text: string }).text)
+            .join('\n');
 
     // Dynamic sections that change per-request — everything from here on is NOT cached
     const dynamicMarkers = ['## Current Context', '## Code Execution', '## File Operations'];
@@ -1010,7 +1036,11 @@ export class AnthropicProvider extends BaseProvider {
       if (msg.role === 'assistant' && msg.toolCalls?.length) {
         for (const tc of msg.toolCalls) {
           let input: unknown = {};
-          try { input = JSON.parse(tc.arguments); } catch { /* keep empty */ }
+          try {
+            input = JSON.parse(tc.arguments);
+          } catch {
+            /* keep empty */
+          }
           contentParts.push({
             type: 'tool_use',
             id: tc.id,
@@ -1021,9 +1051,10 @@ export class AnthropicProvider extends BaseProvider {
       }
 
       // Use string content for simple text-only messages, array for multi-block
-      const content = contentParts.length === 1 && typeof msg.content === 'string' && !msg.toolCalls?.length
-        ? msg.content
-        : contentParts;
+      const content =
+        contentParts.length === 1 && typeof msg.content === 'string' && !msg.toolCalls?.length
+          ? msg.content
+          : contentParts;
 
       return {
         role: msg.role === 'assistant' ? 'assistant' : 'user',

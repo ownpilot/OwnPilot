@@ -176,7 +176,8 @@ const sampleTriggers: TriggerInput[] = [
     action: {
       type: 'chat',
       payload: {
-        message: 'I noticed some of your goals have not been updated recently. Would you like to review them?',
+        message:
+          'I noticed some of your goals have not been updated recently. Would you like to review them?',
         includeContext: true,
       },
     },
@@ -289,7 +290,7 @@ const samplePlans: PlanWithSteps[] = [
         orderNum: 1,
         type: 'tool_call',
         name: 'Fetch Calendar Events',
-        description: 'Get today\'s calendar events',
+        description: "Get today's calendar events",
         config: {
           toolName: 'calendar_list',
           toolArgs: {
@@ -317,7 +318,8 @@ const samplePlans: PlanWithSteps[] = [
         name: 'Prioritize',
         description: 'Analyze and prioritize the day',
         config: {
-          prompt: 'Based on the calendar events and tasks, create a prioritized plan for the day. Consider deadlines, importance, and time blocks.',
+          prompt:
+            'Based on the calendar events and tasks, create a prioritized plan for the day. Consider deadlines, importance, and time blocks.',
           choices: ['high_priority', 'normal_priority', 'can_defer'],
         },
       },
@@ -380,7 +382,8 @@ const samplePlans: PlanWithSteps[] = [
         name: 'Analyze Progress',
         description: 'Analyze goal progress and identify blockers',
         config: {
-          prompt: 'Analyze the progress on each goal. Identify goals that are behind schedule, goals that are on track, and any blockers that need attention.',
+          prompt:
+            'Analyze the progress on each goal. Identify goals that are behind schedule, goals that are on track, and any blockers that need attention.',
         },
       },
       {
@@ -389,7 +392,8 @@ const samplePlans: PlanWithSteps[] = [
         name: 'User Feedback',
         description: 'Ask user for feedback on goals',
         config: {
-          question: 'Would you like to adjust any goal priorities or deadlines based on this review?',
+          question:
+            'Would you like to adjust any goal priorities or deadlines based on this review?',
           inputType: 'choice',
           options: ['Adjust priorities', 'Extend deadlines', 'Mark some complete', 'Keep as is'],
           timeout: 86400000, // 24 hours
@@ -440,7 +444,8 @@ const samplePlans: PlanWithSteps[] = [
         name: 'Categorize Emails',
         description: 'Categorize emails by urgency and type',
         config: {
-          prompt: 'Categorize each email into: urgent, important, newsletter, spam, personal. For urgent and important emails, suggest a brief response.',
+          prompt:
+            'Categorize each email into: urgent, important, newsletter, spam, personal. For urgent and important emails, suggest a brief response.',
           choices: ['urgent', 'important', 'newsletter', 'spam', 'personal'],
         },
       },
@@ -521,7 +526,8 @@ const samplePlans: PlanWithSteps[] = [
         name: 'Review Code',
         description: 'Analyze code and provide review',
         config: {
-          prompt: 'Review the code changes. Look for: bugs, security issues, performance problems, code style, and best practices. Provide specific line-by-line feedback where needed.',
+          prompt:
+            'Review the code changes. Look for: bugs, security issues, performance problems, code style, and best practices. Provide specific line-by-line feedback where needed.',
         },
       },
       {
@@ -621,7 +627,8 @@ const samplePlans: PlanWithSteps[] = [
         name: 'Synthesize',
         description: 'Synthesize information into a summary',
         config: {
-          prompt: 'Synthesize all gathered information into a comprehensive summary. Include: key facts, different perspectives, sources, and areas that need more research.',
+          prompt:
+            'Synthesize all gathered information into a comprehensive summary. Include: key facts, different perspectives, sources, and areas that need more research.',
         },
       },
       {

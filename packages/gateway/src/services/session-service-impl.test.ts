@@ -177,12 +177,17 @@ describe('SessionService', () => {
   describe('getByUser', () => {
     it('returns active sessions for a user', () => {
       service.create({ userId: 'user-1', source: 'web' });
-      service.create({ userId: 'user-1', source: 'channel', channelPluginId: 'ch', platformChatId: '1' });
+      service.create({
+        userId: 'user-1',
+        source: 'channel',
+        channelPluginId: 'ch',
+        platformChatId: '1',
+      });
       service.create({ userId: 'user-2', source: 'web' });
 
       const sessions = service.getByUser('user-1');
       expect(sessions).toHaveLength(2);
-      expect(sessions.every(s => s.userId === 'user-1')).toBe(true);
+      expect(sessions.every((s) => s.userId === 'user-1')).toBe(true);
     });
 
     it('excludes closed sessions', () => {
@@ -215,7 +220,12 @@ describe('SessionService', () => {
     it('returns all active sessions', () => {
       service.create({ userId: 'user-1', source: 'web' });
       const closed = service.create({ userId: 'user-2', source: 'api' });
-      service.create({ userId: 'user-3', source: 'channel', channelPluginId: 'ch', platformChatId: '1' });
+      service.create({
+        userId: 'user-3',
+        source: 'channel',
+        channelPluginId: 'ch',
+        platformChatId: '1',
+      });
       service.close(closed.id);
 
       expect(service.getActiveSessions()).toHaveLength(2);
@@ -226,7 +236,12 @@ describe('SessionService', () => {
     it('returns session count by source', () => {
       service.create({ userId: 'u1', source: 'web' });
       service.create({ userId: 'u2', source: 'web' });
-      service.create({ userId: 'u3', source: 'channel', channelPluginId: 'ch', platformChatId: '1' });
+      service.create({
+        userId: 'u3',
+        source: 'channel',
+        channelPluginId: 'ch',
+        platformChatId: '1',
+      });
       service.create({ userId: 'u4', source: 'api' });
 
       const stats = service.getStats();

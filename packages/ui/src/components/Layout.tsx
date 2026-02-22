@@ -35,7 +35,6 @@ import {
   Key,
   Globe,
   Server,
-
   Container,
   Info,
   Sparkles,
@@ -153,7 +152,15 @@ const bottomItems: NavItem[] = [
   { to: '/profile', icon: UserCircle, label: 'Profile' },
 ];
 
-function NavItemLink({ item, compact = false, badge }: { item: NavItem; compact?: boolean; badge?: number }) {
+function NavItemLink({
+  item,
+  compact = false,
+  badge,
+}: {
+  item: NavItem;
+  compact?: boolean;
+  badge?: number;
+}) {
   const Icon = item.icon;
   return (
     <NavLink
@@ -178,10 +185,20 @@ function NavItemLink({ item, compact = false, badge }: { item: NavItem; compact?
   );
 }
 
-function CollapsibleGroup({ group, isOpen, onToggle }: { group: NavGroup; isOpen: boolean; onToggle: () => void }) {
+function CollapsibleGroup({
+  group,
+  isOpen,
+  onToggle,
+}: {
+  group: NavGroup;
+  isOpen: boolean;
+  onToggle: () => void;
+}) {
   const location = useLocation();
   const Icon = group.icon;
-  const isActive = group.items.some(item => location.pathname === item.to || location.pathname.startsWith(item.to + '/'));
+  const isActive = group.items.some(
+    (item) => location.pathname === item.to || location.pathname.startsWith(item.to + '/')
+  );
 
   return (
     <div className="space-y-0.5">
@@ -220,9 +237,7 @@ function ModeToggle({ isAdvanced, onToggle }: { isAdvanced: boolean; onToggle: (
       title={isAdvanced ? 'Switch to Simple Mode' : 'Switch to Advanced Mode'}
     >
       <Settings className="w-3.5 h-3.5 shrink-0" />
-      <span className="flex-1 text-left">
-        {isAdvanced ? 'Advanced Mode' : 'Simple Mode'}
-      </span>
+      <span className="flex-1 text-left">{isAdvanced ? 'Advanced Mode' : 'Simple Mode'}</span>
       <div
         className={`w-7 h-4 rounded-full transition-colors relative ${
           isAdvanced ? 'bg-primary' : 'bg-border dark:bg-dark-border'
@@ -238,7 +253,10 @@ function ModeToggle({ isAdvanced, onToggle }: { isAdvanced: boolean; onToggle: (
   );
 }
 
-const CONNECTION_STYLES: Record<ConnectionStatus, { color: string; pulse: boolean; label: string }> = {
+const CONNECTION_STYLES: Record<
+  ConnectionStatus,
+  { color: string; pulse: boolean; label: string }
+> = {
   connected: { color: 'bg-success', pulse: false, label: 'Connected' },
   connecting: { color: 'bg-warning', pulse: true, label: 'Connecting...' },
   disconnected: { color: 'bg-error', pulse: false, label: 'Disconnected' },
@@ -249,7 +267,10 @@ function ConnectionIndicator({ status }: { status: ConnectionStatus }) {
   const style = CONNECTION_STYLES[status];
   return (
     <div className="flex items-center gap-2 px-3 py-1 text-xs text-text-muted dark:text-dark-text-muted">
-      <span className={`w-1.5 h-1.5 rounded-full ${style.color} ${style.pulse ? 'animate-pulse' : ''}`} aria-hidden="true" />
+      <span
+        className={`w-1.5 h-1.5 rounded-full ${style.color} ${style.pulse ? 'animate-pulse' : ''}`}
+        aria-hidden="true"
+      />
       <span>{style.label}</span>
     </div>
   );
@@ -266,7 +287,7 @@ export function Layout() {
   const [badgeCounts, setBadgeCounts] = useState<BadgeCounts>({ inbox: 0, tasks: 0 });
   const handleBadgeUpdate = useCallback(
     (updater: (prev: BadgeCounts) => BadgeCounts) => setBadgeCounts(updater),
-    [],
+    []
   );
   const location = useLocation();
 
@@ -278,10 +299,10 @@ export function Layout() {
   // Reset badges when navigating to their respective pages
   useEffect(() => {
     if (location.pathname === '/inbox' || location.pathname.startsWith('/inbox/')) {
-      setBadgeCounts(prev => prev.inbox === 0 ? prev : { ...prev, inbox: 0 });
+      setBadgeCounts((prev) => (prev.inbox === 0 ? prev : { ...prev, inbox: 0 }));
     }
     if (location.pathname === '/tasks' || location.pathname.startsWith('/tasks/')) {
-      setBadgeCounts(prev => prev.tasks === 0 ? prev : { ...prev, tasks: 0 });
+      setBadgeCounts((prev) => (prev.tasks === 0 ? prev : { ...prev, tasks: 0 }));
     }
   }, [location.pathname]);
 
@@ -294,8 +315,8 @@ export function Layout() {
   const visibleGroups = isAdvancedMode
     ? navGroups
     : navGroups
-        .filter(g => !g.advancedOnly)
-        .map(g => {
+        .filter((g) => !g.advancedOnly)
+        .map((g) => {
           // In simple mode, show fewer settings items
           if (g.id === 'settings') {
             return { ...g, items: simpleSettingsItems };
@@ -306,8 +327,10 @@ export function Layout() {
   // Initialize open groups based on current path
   const getInitialOpenGroups = () => {
     const openGroups: Record<string, boolean> = {};
-    navGroups.forEach(group => {
-      const isActive = group.items.some(item => location.pathname === item.to || location.pathname.startsWith(item.to + '/'));
+    navGroups.forEach((group) => {
+      const isActive = group.items.some(
+        (item) => location.pathname === item.to || location.pathname.startsWith(item.to + '/')
+      );
       openGroups[group.id] = isActive || group.defaultOpen || false;
     });
     return openGroups;
@@ -318,14 +341,20 @@ export function Layout() {
     try {
       const saved = localStorage.getItem('ownpilot_nav_groups');
       if (saved) return { ...getInitialOpenGroups(), ...JSON.parse(saved) };
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
     return getInitialOpenGroups();
   });
 
   const toggleGroup = (groupId: string) => {
-    setOpenGroups(prev => {
+    setOpenGroups((prev) => {
       const next = { ...prev, [groupId]: !prev[groupId] };
-      try { localStorage.setItem('ownpilot_nav_groups', JSON.stringify(next)); } catch { /* ignore */ }
+      try {
+        localStorage.setItem('ownpilot_nav_groups', JSON.stringify(next));
+      } catch {
+        /* ignore */
+      }
       return next;
     });
   };
@@ -400,7 +429,13 @@ export function Layout() {
               <NavItemLink
                 key={item.to}
                 item={item}
-                badge={item.to === '/inbox' ? badgeCounts.inbox : item.to === '/tasks' ? badgeCounts.tasks : undefined}
+                badge={
+                  item.to === '/inbox'
+                    ? badgeCounts.inbox
+                    : item.to === '/tasks'
+                      ? badgeCounts.tasks
+                      : undefined
+                }
               />
             ))}
           </div>

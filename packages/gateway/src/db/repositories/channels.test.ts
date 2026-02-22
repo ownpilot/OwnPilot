@@ -133,7 +133,7 @@ describe('ChannelsRepository', () => {
       });
 
       const sql = mockAdapter.execute.mock.calls[0]![0] as string;
-      expect(sql).toContain('connected_at = CASE WHEN EXCLUDED.status = \'connected\'');
+      expect(sql).toContain("connected_at = CASE WHEN EXCLUDED.status = 'connected'");
       expect(sql).toContain('channels.connected_at END');
     });
 
@@ -251,7 +251,7 @@ describe('ChannelsRepository', () => {
     it('handles upsert with special characters in name', async () => {
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
 
-      const specialName = "Bot's \"Official\" Channel";
+      const specialName = 'Bot\'s "Official" Channel';
       await repo.upsert({
         id: 'ch-1',
         type: 'telegram',

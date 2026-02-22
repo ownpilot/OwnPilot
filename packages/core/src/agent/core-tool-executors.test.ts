@@ -744,7 +744,10 @@ describe('deduplicate', () => {
 // ───────────────────────────────────────────────────────
 describe('create_table', () => {
   const headers = ['Name', 'Age'];
-  const rows = [['Alice', '30'], ['Bob', '25']];
+  const rows = [
+    ['Alice', '30'],
+    ['Bob', '25'],
+  ];
 
   it('creates a markdown table by default', async () => {
     const result = await exec('create_table', { headers, rows });

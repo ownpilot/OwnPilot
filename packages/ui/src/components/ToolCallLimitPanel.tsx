@@ -32,14 +32,18 @@ function loadLimit(): number {
       const n = parseInt(raw, 10);
       if (!isNaN(n) && n >= 0) return n;
     }
-  } catch { /* localStorage unavailable */ }
+  } catch {
+    /* localStorage unavailable */
+  }
   return DEFAULT_LIMIT;
 }
 
 function saveLimit(n: number): void {
   try {
     localStorage.setItem(STORAGE_KEY, String(n));
-  } catch { /* localStorage unavailable */ }
+  } catch {
+    /* localStorage unavailable */
+  }
 }
 
 interface ToolCallLimitPanelProps {
@@ -50,11 +54,14 @@ export function ToolCallLimitPanel({ onChange }: ToolCallLimitPanelProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [limit, setLimit] = useState(loadLimit);
 
-  const handleChange = useCallback((value: number) => {
-    setLimit(value);
-    saveLimit(value);
-    onChange?.(value);
-  }, [onChange]);
+  const handleChange = useCallback(
+    (value: number) => {
+      setLimit(value);
+      saveLimit(value);
+      onChange?.(value);
+    },
+    [onChange]
+  );
 
   const displayLabel = limit === 0 ? 'Unlimited' : String(limit);
 
@@ -66,26 +73,36 @@ export function ToolCallLimitPanel({ onChange }: ToolCallLimitPanelProps) {
         onClick={() => setIsExpanded(!isExpanded)}
         className="flex items-center gap-2 w-full text-left px-2 py-1.5 rounded-lg hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary transition-colors group"
       >
-        <svg className="w-3.5 h-3.5 text-text-muted dark:text-dark-text-muted group-hover:text-primary transition-colors" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <svg
+          className="w-3.5 h-3.5 text-text-muted dark:text-dark-text-muted group-hover:text-primary transition-colors"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
           <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
         </svg>
-        <span className="text-xs text-text-muted dark:text-dark-text-muted">
-          Tool Calls
-        </span>
+        <span className="text-xs text-text-muted dark:text-dark-text-muted">Tool Calls</span>
 
-        <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
-          limit === 0
-            ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
-            : limit <= 50
-              ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400'
-              : 'bg-blue-500/15 text-blue-600 dark:text-blue-400'
-        }`}>
+        <span
+          className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
+            limit === 0
+              ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
+              : limit <= 50
+                ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400'
+                : 'bg-blue-500/15 text-blue-600 dark:text-blue-400'
+          }`}
+        >
           {displayLabel}
         </span>
 
-        {isExpanded
-          ? <ChevronUp className="w-3 h-3 text-text-muted dark:text-dark-text-muted ml-auto" />
-          : <ChevronDown className="w-3 h-3 text-text-muted dark:text-dark-text-muted ml-auto" />}
+        {isExpanded ? (
+          <ChevronUp className="w-3 h-3 text-text-muted dark:text-dark-text-muted ml-auto" />
+        ) : (
+          <ChevronDown className="w-3 h-3 text-text-muted dark:text-dark-text-muted ml-auto" />
+        )}
       </button>
 
       {/* Expanded panel */}
@@ -115,7 +132,9 @@ export function ToolCallLimitPanel({ onChange }: ToolCallLimitPanelProps) {
 
           {/* Custom input */}
           <div className="flex items-center gap-2">
-            <span className="text-[10px] text-text-muted dark:text-dark-text-muted uppercase w-12 shrink-0">Custom</span>
+            <span className="text-[10px] text-text-muted dark:text-dark-text-muted uppercase w-12 shrink-0">
+              Custom
+            </span>
             <input
               type="number"
               min={0}

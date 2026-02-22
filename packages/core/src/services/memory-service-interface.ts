@@ -76,7 +76,7 @@ export interface IMemoryService {
    */
   rememberMemory(
     userId: string,
-    input: CreateMemoryInput,
+    input: CreateMemoryInput
   ): Promise<{ memory: ServiceMemoryEntry; deduplicated: boolean }>;
 
   /**
@@ -84,19 +84,27 @@ export interface IMemoryService {
    */
   batchRemember(
     userId: string,
-    memories: CreateMemoryInput[],
+    memories: CreateMemoryInput[]
   ): Promise<{ created: number; deduplicated: number; memories: ServiceMemoryEntry[] }>;
 
   /**
    * Get a memory by ID.
    * @param incrementAccess - Whether to track access (default true).
    */
-  getMemory(userId: string, id: string, incrementAccess?: boolean): Promise<ServiceMemoryEntry | null>;
+  getMemory(
+    userId: string,
+    id: string,
+    incrementAccess?: boolean
+  ): Promise<ServiceMemoryEntry | null>;
 
   /**
    * Update a memory.
    */
-  updateMemory(userId: string, id: string, input: UpdateMemoryInput): Promise<ServiceMemoryEntry | null>;
+  updateMemory(
+    userId: string,
+    id: string,
+    input: UpdateMemoryInput
+  ): Promise<ServiceMemoryEntry | null>;
 
   /**
    * Delete a memory.
@@ -111,14 +119,18 @@ export interface IMemoryService {
   /**
    * Search memories by text query.
    */
-  searchMemories(userId: string, query: string, options?: MemorySearchOptions): Promise<ServiceMemoryEntry[]>;
+  searchMemories(
+    userId: string,
+    query: string,
+    options?: MemorySearchOptions
+  ): Promise<ServiceMemoryEntry[]>;
 
   /**
    * Get important memories above threshold.
    */
   getImportantMemories(
     userId: string,
-    options?: { threshold?: number; limit?: number },
+    options?: { threshold?: number; limit?: number }
   ): Promise<ServiceMemoryEntry[]>;
 
   /**
@@ -141,7 +153,7 @@ export interface IMemoryService {
    */
   decayMemories(
     userId: string,
-    options?: { daysThreshold?: number; decayFactor?: number },
+    options?: { daysThreshold?: number; decayFactor?: number }
   ): Promise<number>;
 
   /**
@@ -149,7 +161,7 @@ export interface IMemoryService {
    */
   cleanupMemories(
     userId: string,
-    options?: { maxAge?: number; minImportance?: number },
+    options?: { maxAge?: number; minImportance?: number }
   ): Promise<number>;
 
   /**
@@ -164,6 +176,6 @@ export interface IMemoryService {
   hybridSearch(
     userId: string,
     query: string,
-    options?: MemorySearchOptions & { minImportance?: number },
+    options?: MemorySearchOptions & { minImportance?: number }
   ): Promise<Array<ServiceMemoryEntry & { score: number; matchType: string }>>;
 }

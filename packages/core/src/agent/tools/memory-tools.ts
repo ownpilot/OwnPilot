@@ -36,11 +36,13 @@ Memory persists across conversations. Be selective - only remember truly importa
       type: {
         type: 'string',
         enum: ['fact', 'preference', 'event', 'skill'],
-        description: 'Type of memory: fact (user info), preference (likes/dislikes), event (important dates), skill (learned capabilities)',
+        description:
+          'Type of memory: fact (user info), preference (likes/dislikes), event (important dates), skill (learned capabilities)',
       },
       importance: {
         type: 'number',
-        description: 'Importance score from 0 to 1. Higher = more important, less likely to be forgotten. Default: 0.5',
+        description:
+          'Importance score from 0 to 1. Higher = more important, less likely to be forgotten. Default: 0.5',
       },
       tags: {
         type: 'array',

@@ -4,7 +4,15 @@
  * Real-time communication with the gateway
  */
 
-import { useState, useEffect, useCallback, useRef, createContext, useContext, type ReactNode } from 'react';
+import {
+  useState,
+  useEffect,
+  useCallback,
+  useRef,
+  createContext,
+  useContext,
+  type ReactNode,
+} from 'react';
 
 export type ConnectionStatus = 'connecting' | 'connected' | 'disconnected' | 'error';
 

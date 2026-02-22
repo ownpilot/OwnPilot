@@ -46,12 +46,15 @@ export interface PluginAllowedAPI {
   /** HTTP client (domain-restricted, rate-limited) */
   network: {
     /** Make HTTP request to allowed domains only */
-    fetch(url: string, options?: {
-      method?: string;
-      headers?: Record<string, string>;
-      body?: string;
-      timeout?: number;
-    }): Promise<{
+    fetch(
+      url: string,
+      options?: {
+        method?: string;
+        headers?: Record<string, string>;
+        body?: string;
+        timeout?: number;
+      }
+    ): Promise<{
       status: number;
       body: string;
       headers: Record<string, string>;
@@ -64,11 +67,14 @@ export interface PluginAllowedAPI {
   /** Tool registration and invocation */
   tools: {
     /** Register a new tool */
-    register(definition: {
-      name: string;
-      description: string;
-      parameters: Record<string, unknown>;
-    }, handler: (args: Record<string, unknown>) => Promise<unknown>): void;
+    register(
+      definition: {
+        name: string;
+        description: string;
+        parameters: Record<string, unknown>;
+      },
+      handler: (args: Record<string, unknown>) => Promise<unknown>
+    ): void;
     /** List available tools (own and shared) */
     list(): Array<{ name: string; description: string }>;
   };
@@ -106,16 +112,16 @@ export interface PluginAllowedAPI {
   /** UI capabilities (if granted) */
   ui: {
     /** Show notification */
-    notify(title: string, body: string, options?: {
-      type?: 'info' | 'success' | 'warning' | 'error';
-      duration?: number;
-    }): void;
+    notify(
+      title: string,
+      body: string,
+      options?: {
+        type?: 'info' | 'success' | 'warning' | 'error';
+        duration?: number;
+      }
+    ): void;
     /** Show dialog */
-    showDialog(options: {
-      title: string;
-      body: string;
-      buttons: string[];
-    }): Promise<number>;
+    showDialog(options: { title: string; body: string; buttons: string[] }): Promise<number>;
   };
 
   // ===== UTILITIES =====

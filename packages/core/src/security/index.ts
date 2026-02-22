@@ -5,7 +5,11 @@
  * CRITICAL: This module ensures code execution only happens in sandboxed environments.
  */
 
-import { isDockerAvailable, checkSandboxHealth, type SandboxHealthStatus } from '../sandbox/docker.js';
+import {
+  isDockerAvailable,
+  checkSandboxHealth,
+  type SandboxHealthStatus,
+} from '../sandbox/docker.js';
 import { getExecutionMode, type ExecutionMode } from '../sandbox/execution-mode.js';
 import { getLog } from '../services/get-log.js';
 
@@ -50,10 +54,7 @@ export interface SecurityStatus {
  * NOTE: ALLOW_UNSAFE_CODE_EXECUTION has been completely removed from the codebase.
  * Code execution now REQUIRES Docker - no bypass is possible.
  */
-const DANGEROUS_ENV_VARS = [
-  'ALLOW_HOME_DIR_ACCESS',
-  'DOCKER_SANDBOX_RELAXED_SECURITY',
-];
+const DANGEROUS_ENV_VARS = ['ALLOW_HOME_DIR_ACCESS', 'DOCKER_SANDBOX_RELAXED_SECURITY'];
 
 /**
  * Check if running in production mode
@@ -88,7 +89,7 @@ export async function validateSecurityConfig(): Promise<SecurityStatus> {
       if (process.env[envVar] === 'true') {
         status.errors.push(
           `SECURITY ERROR: ${envVar}=true is NOT ALLOWED in production! ` +
-          `This would allow code execution on the host system.`
+            `This would allow code execution on the host system.`
         );
         status.isSecure = false;
       }
@@ -98,7 +99,7 @@ export async function validateSecurityConfig(): Promise<SecurityStatus> {
     if (!status.dockerAvailable) {
       status.errors.push(
         'SECURITY ERROR: Docker is required for production but not available. ' +
-        'Code execution tools will be disabled.'
+          'Code execution tools will be disabled.'
       );
       status.isSecure = false;
     }
@@ -113,9 +114,7 @@ export async function validateSecurityConfig(): Promise<SecurityStatus> {
     }
 
     if (!status.dockerAvailable && executionMode === 'docker') {
-      status.warnings.push(
-        'WARNING: Docker not available. Code execution tools will be DISABLED.'
-      );
+      status.warnings.push('WARNING: Docker not available. Code execution tools will be DISABLED.');
     }
 
     if (!status.dockerAvailable && executionMode === 'auto') {
@@ -166,13 +165,18 @@ export async function enforceSecurityConfig(): Promise<void> {
 
   // Log security status
   const execMode = getExecutionMode();
-  const modeDesc = execMode === 'auto' ? 'auto (Docker preferred, local fallback with approval)'
-    : execMode === 'local' ? 'local (direct execution with approval)'
-    : 'docker (sandbox only)';
+  const modeDesc =
+    execMode === 'auto'
+      ? 'auto (Docker preferred, local fallback with approval)'
+      : execMode === 'local'
+        ? 'local (direct execution with approval)'
+        : 'docker (sandbox only)';
 
   const dockerInfo = `${status.dockerAvailable ? 'Yes' : 'No'}${execMode === 'docker' && !status.dockerAvailable ? ' (code execution DISABLED)' : ''}`;
 
-  log.info(`Status: ${status.isSecure ? 'SECURE' : 'INSECURE'} | Env: ${isProduction() ? 'PRODUCTION' : 'DEVELOPMENT'} | Mode: ${modeDesc} | Docker: ${dockerInfo} | Home Access: ${status.homeAccessEnabled ? 'ENABLED' : 'Disabled'}`);
+  log.info(
+    `Status: ${status.isSecure ? 'SECURE' : 'INSECURE'} | Env: ${isProduction() ? 'PRODUCTION' : 'DEVELOPMENT'} | Mode: ${modeDesc} | Docker: ${dockerInfo} | Home Access: ${status.homeAccessEnabled ? 'ENABLED' : 'Disabled'}`
+  );
 
   for (const warning of status.warnings) {
     log.warn(warning);
@@ -186,7 +190,7 @@ export async function enforceSecurityConfig(): Promise<void> {
   if (isProduction() && status.errors.length > 0) {
     throw new Error(
       'SECURITY: Application cannot start due to insecure configuration. ' +
-      'Please fix the errors above.'
+        'Please fix the errors above.'
     );
   }
 }
@@ -226,7 +230,8 @@ export async function isCodeExecutionAllowed(): Promise<{
   return {
     allowed: false,
     sandboxed: false,
-    reason: 'Docker is required for code execution in docker mode. Install Docker or set EXECUTION_MODE=auto.',
+    reason:
+      'Docker is required for code execution in docker mode. Install Docker or set EXECUTION_MODE=auto.',
   };
 }
 
@@ -259,7 +264,10 @@ export interface CriticalPattern {
  */
 export const CRITICAL_PATTERNS: readonly CriticalPattern[] = [
   // Filesystem destruction
-  { pattern: /\brm\s+(-\w*r\w*\s+)?(-\w*f\w*\s+)?\/(\s|$|\*)/i, description: 'Recursive delete from root' },
+  {
+    pattern: /\brm\s+(-\w*r\w*\s+)?(-\w*f\w*\s+)?\/(\s|$|\*)/i,
+    description: 'Recursive delete from root',
+  },
   { pattern: /\brm\s+-\w*rf\w*\s+\//i, description: 'Force recursive delete' },
   { pattern: /\bmkfs\b/i, description: 'Filesystem format' },
   { pattern: /\bdd\s+if=\/dev\/(zero|random|urandom)/i, description: 'Raw disk overwrite' },

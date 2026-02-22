@@ -83,7 +83,7 @@ export class ScopedEventBus implements IScopedBus {
     private readonly eventBus: IEventBus,
     private readonly hookBus: IHookBus,
     prefix: string,
-    source: string,
+    source: string
   ) {
     this.prefix = prefix;
     this.source = source;
@@ -126,7 +126,7 @@ export class ScopedEventBus implements IScopedBus {
       this.eventBus,
       this.hookBus,
       `${this.prefix}.${subPrefix}`,
-      source ?? this.source,
+      source ?? this.source
     );
   }
 }
@@ -134,7 +134,7 @@ export class ScopedEventBus implements IScopedBus {
 class ScopedHookBusImpl implements IScopedHookBus {
   constructor(
     private readonly hookBus: IHookBus,
-    private readonly prefix: string,
+    private readonly prefix: string
   ) {}
 
   tap(hook: string, handler: HookHandler, priority?: number): Unsubscribe {

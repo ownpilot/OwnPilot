@@ -10,7 +10,6 @@ interface ContextBarProps {
   onShowDetail?: () => void;
 }
 
-
 function getFillColor(percent: number): string {
   if (percent >= 80) return 'bg-red-500';
   if (percent >= 50) return 'bg-yellow-500';
@@ -23,7 +22,12 @@ function getFillTextColor(percent: number): string {
   return 'text-emerald-600 dark:text-emerald-400';
 }
 
-export function ContextBar({ sessionInfo, defaultMaxTokens, onNewSession, onShowDetail }: ContextBarProps) {
+export function ContextBar({
+  sessionInfo,
+  defaultMaxTokens,
+  onNewSession,
+  onShowDetail,
+}: ContextBarProps) {
   // Show immediately with defaults — don't wait for first message
   const messageCount = sessionInfo?.messageCount ?? 0;
   const estimatedTokens = sessionInfo?.estimatedTokens ?? 0;
@@ -60,7 +64,10 @@ export function ContextBar({ sessionInfo, defaultMaxTokens, onNewSession, onShow
         {contextFillPercent}%
       </span>
       {cachedTokens != null && cachedTokens > 0 && (
-        <span className="text-text-tertiary dark:text-dark-text-tertiary whitespace-nowrap" title={`${formatNumber(cachedTokens)} tokens served from prompt cache`}>
+        <span
+          className="text-text-tertiary dark:text-dark-text-tertiary whitespace-nowrap"
+          title={`${formatNumber(cachedTokens)} tokens served from prompt cache`}
+        >
           {formatNumber(cachedTokens)} cached
         </span>
       )}

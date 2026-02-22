@@ -64,7 +64,7 @@ function makeStore(overrides?: CredentialStoreConfig): CredentialStore {
 /** Initialize + unlock a store so it's ready for CRUD operations */
 async function initAndUnlock(
   store?: CredentialStore,
-  password = PASSWORD,
+  password = PASSWORD
 ): Promise<CredentialStore> {
   const s = store ?? makeStore();
   const initRes = await s.initialize(password);
@@ -175,9 +175,7 @@ describe('CredentialStore', () => {
       await store.initialize(PASSWORD);
 
       const writeCall = mockWriteFile.mock.calls[0];
-      expect(writeCall[2]).toEqual(
-        expect.objectContaining({ mode: 0o600 }),
-      );
+      expect(writeCall[2]).toEqual(expect.objectContaining({ mode: 0o600 }));
     });
 
     it('should create parent directory if it does not exist', async () => {
@@ -526,20 +524,17 @@ describe('CredentialStore', () => {
       ['encryptionKey', 'enc-key'],
     ];
 
-    it.each(providerKeys)(
-      'should store and retrieve %s',
-      async (key, value) => {
-        const store = await initAndUnlock();
-        const partial: Partial<StoredCredentials> = { [key]: value };
-        await store.setCredentials(partial);
+    it.each(providerKeys)('should store and retrieve %s', async (key, value) => {
+      const store = await initAndUnlock();
+      const partial: Partial<StoredCredentials> = { [key]: value };
+      await store.setCredentials(partial);
 
-        const creds = store.getCredentials();
-        expect(creds.ok).toBe(true);
-        if (creds.ok) {
-          expect(creds.value[key]).toBe(value);
-        }
-      },
-    );
+      const creds = store.getCredentials();
+      expect(creds.ok).toBe(true);
+      if (creds.ok) {
+        expect(creds.value[key]).toBe(value);
+      }
+    });
   });
 
   // =========================================================================

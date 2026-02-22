@@ -230,7 +230,9 @@ export class PomodoroRepository extends BaseRepository {
     return this.getSession(id);
   }
 
-  async listSessions(options: { limit?: number; type?: SessionType; status?: SessionStatus } = {}): Promise<PomodoroSession[]> {
+  async listSessions(
+    options: { limit?: number; type?: SessionType; status?: SessionStatus } = {}
+  ): Promise<PomodoroSession[]> {
     let sql = `SELECT * FROM pomodoro_sessions WHERE user_id = $1`;
     const params: unknown[] = [this.userId];
     let paramIndex = 2;
@@ -306,7 +308,7 @@ export class PomodoroRepository extends BaseRepository {
         input.sessionsBeforeLongBreak ?? null,
         input.autoStartBreaks ?? null,
         input.autoStartWork ?? null,
-        this.userId
+        this.userId,
       ]
     );
 
@@ -317,7 +319,11 @@ export class PomodoroRepository extends BaseRepository {
   // Daily Stats
   // ---------------------------------------------------------------------------
 
-  private async updateDailyStats(sessionType: SessionType, minutes: number, isInterruption: boolean): Promise<void> {
+  private async updateDailyStats(
+    sessionType: SessionType,
+    minutes: number,
+    isInterruption: boolean
+  ): Promise<void> {
     const today: string = new Date().toISOString().split('T')[0]!;
     const id = `pds_${this.userId}_${today}`;
 
@@ -360,7 +366,7 @@ export class PomodoroRepository extends BaseRepository {
           !isInterruption && sessionType === 'work' ? 1 : 0,
           sessionType === 'work' ? minutes : 0,
           sessionType !== 'work' ? minutes : 0,
-          isInterruption ? 1 : 0
+          isInterruption ? 1 : 0,
         ]
       );
     }

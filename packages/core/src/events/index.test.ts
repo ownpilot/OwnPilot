@@ -436,7 +436,7 @@ describe('createEvent', () => {
     it('has exactly the expected keys', () => {
       const event = createEvent('agent.complete', 'agent', 'src', {});
       expect(Object.keys(event).sort()).toEqual(
-        ['category', 'data', 'source', 'timestamp', 'type'].sort(),
+        ['category', 'data', 'source', 'timestamp', 'type'].sort()
       );
     });
 
@@ -450,7 +450,7 @@ describe('createEvent', () => {
       const e1 = createEvent('agent.complete', 'agent', 'src', {});
       const e2 = createEvent('agent.complete', 'agent', 'src', {});
       expect(new Date(e2.timestamp).getTime()).toBeGreaterThanOrEqual(
-        new Date(e1.timestamp).getTime(),
+        new Date(e1.timestamp).getTime()
       );
     });
   });
@@ -603,7 +603,15 @@ describe('LegacyEventBusWrapper', () => {
     });
 
     it('works with all valid categories', () => {
-      const categories = ['agent', 'tool', 'resource', 'plugin', 'system', 'channel', 'gateway'] as const;
+      const categories = [
+        'agent',
+        'tool',
+        'resource',
+        'plugin',
+        'system',
+        'channel',
+        'gateway',
+      ] as const;
       const handler = vi.fn();
       for (const cat of categories) {
         bus.onCategory(cat, handler);

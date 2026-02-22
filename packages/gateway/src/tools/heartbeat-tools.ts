@@ -32,11 +32,13 @@ The task description is what the AI should do when the heartbeat fires.`,
     properties: {
       schedule: {
         type: 'string',
-        description: 'Natural language schedule (e.g., "Every Morning 8:00", "Every Friday 17:00", "Every Hour")',
+        description:
+          'Natural language schedule (e.g., "Every Morning 8:00", "Every Friday 17:00", "Every Hour")',
       },
       task: {
         type: 'string',
-        description: 'What the AI should do when this fires (e.g., "Summarize my unread emails and pending tasks")',
+        description:
+          'What the AI should do when this fires (e.g., "Summarize my unread emails and pending tasks")',
       },
       name: {
         type: 'string',
@@ -55,7 +57,8 @@ The task description is what the AI should do when the heartbeat fires.`,
 const listHeartbeatsDef: ToolDefinition = {
   name: 'list_heartbeats',
   workflowUsable: false,
-  description: 'List all heartbeat periodic tasks with their schedules, status, and linked triggers.',
+  description:
+    'List all heartbeat periodic tasks with their schedules, status, and linked triggers.',
   parameters: {
     type: 'object',
     properties: {
@@ -71,7 +74,8 @@ const listHeartbeatsDef: ToolDefinition = {
 const updateHeartbeatDef: ToolDefinition = {
   name: 'update_heartbeat',
   workflowUsable: false,
-  description: 'Update an existing heartbeat. Can change the schedule, task description, name, or enabled status.',
+  description:
+    'Update an existing heartbeat. Can change the schedule, task description, name, or enabled status.',
   parameters: {
     type: 'object',
     properties: {
@@ -132,7 +136,7 @@ export const HEARTBEAT_TOOLS: ToolDefinition[] = [
 export async function executeHeartbeatTool(
   toolName: string,
   args: Record<string, unknown>,
-  userId = 'default',
+  userId = 'default'
 ): Promise<{ success: boolean; result?: unknown; error?: string }> {
   const service = getHeartbeatService();
 
