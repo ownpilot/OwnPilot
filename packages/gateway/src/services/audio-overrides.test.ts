@@ -1682,7 +1682,10 @@ describe('edge cases', () => {
 
   it('should handle concurrent calls independently', async () => {
     setupDedicatedAudioConfig();
-    mockFetch.mockResolvedValue(makeFetchResponse({ body: Buffer.from('audio').buffer }));
+    // Each call must get its own response (shared ArrayBuffer from Buffer pool causes races)
+    mockFetch.mockImplementation(() =>
+      Promise.resolve(makeFetchResponse({ body: new ArrayBuffer(5) })),
+    );
     mockFsStat.mockResolvedValue({ size: 1024 });
 
     const [r1, r2] = await Promise.all([
