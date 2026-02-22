@@ -2,6 +2,11 @@
  * Hono application setup
  */
 
+import { existsSync, readFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+import { serveStatic } from '@hono/node-server/serve-static';
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { bodyLimit } from 'hono/body-limit';
@@ -59,6 +64,12 @@ import {
   composioRoutes,
 } from './routes/index.js';
 import { RATE_LIMIT_WINDOW_MS, RATE_LIMIT_MAX_REQUESTS, RATE_LIMIT_BURST, SECONDS_PER_DAY } from './config/defaults.js';
+
+// Resolve UI dist path relative to this file (works in both dev and Docker)
+const __appDirname = dirname(fileURLToPath(import.meta.url));
+const UI_DIST_PATH = resolve(__appDirname, '../../ui/dist');
+const UI_AVAILABLE = existsSync(resolve(UI_DIST_PATH, 'index.html'));
+const INDEX_HTML = UI_AVAILABLE ? readFileSync(resolve(UI_DIST_PATH, 'index.html'), 'utf-8') : '';
 
 /**
  * Default configuration
@@ -241,14 +252,16 @@ export function createApp(config: Partial<GatewayConfig> = {}): Hono {
   // Composio (OAuth app integrations — Gmail, GitHub, Slack, etc.)
   app.route('/api/v1/composio', composioRoutes);
 
-  // Root route
-  app.get('/', (c) => {
-    return c.json({
-      name: 'OwnPilot',
-      version: '0.1.0',
-      documentation: '/api/v1',
+  // Root route (API-only mode, when UI is not bundled)
+  if (!UI_AVAILABLE) {
+    app.get('/', (c) => {
+      return c.json({
+        name: 'OwnPilot',
+        version: '0.1.0',
+        documentation: '/api/v1',
+      });
     });
-  });
+  }
 
   // API info
   app.get('/api/v1', (c) => {
@@ -320,6 +333,38 @@ export function createApp(config: Partial<GatewayConfig> = {}): Hono {
       },
     });
   });
+
+  // Serve bundled UI static files (SPA)
+  if (UI_AVAILABLE) {
+    // Vite hashed assets — immutable, 1-year cache
+    app.use(
+      '/assets/*',
+      serveStatic({
+        root: UI_DIST_PATH,
+        onFound: (_path, c) => {
+          c.header('Cache-Control', 'public, immutable, max-age=31536000');
+        },
+      })
+    );
+
+    // Other static files (favicon, logos) — falls through on miss
+    app.use('*', serveStatic({ root: UI_DIST_PATH }));
+
+    // SPA fallback — serve index.html for non-API GET requests
+    app.get('*', (c) => {
+      const path = c.req.path;
+      if (
+        path.startsWith('/api/') ||
+        path.startsWith('/health') ||
+        path.startsWith('/webhooks/') ||
+        path.startsWith('/ws') ||
+        path.startsWith('/mcp')
+      ) {
+        return c.notFound();
+      }
+      return c.html(INDEX_HTML);
+    });
+  }
 
   // Error handling
   app.onError(errorHandler);

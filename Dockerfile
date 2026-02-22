@@ -6,8 +6,8 @@
 # ============================================
 FROM node:22-alpine AS builder
 
-# Install pnpm
-RUN corepack enable && corepack prepare pnpm@latest --activate
+# Install pnpm (pinned to match packageManager field)
+RUN corepack enable && corepack prepare pnpm@10.29.3 --activate
 
 WORKDIR /app
 
@@ -17,6 +17,7 @@ COPY packages/core/package.json ./packages/core/
 COPY packages/gateway/package.json ./packages/gateway/
 COPY packages/channels/package.json ./packages/channels/
 COPY packages/cli/package.json ./packages/cli/
+COPY packages/ui/package.json ./packages/ui/
 
 # Install dependencies
 RUN pnpm install --frozen-lockfile
@@ -27,8 +28,9 @@ COPY packages/core/ ./packages/core/
 COPY packages/gateway/ ./packages/gateway/
 COPY packages/channels/ ./packages/channels/
 COPY packages/cli/ ./packages/cli/
+COPY packages/ui/ ./packages/ui/
 
-# Build all packages
+# Build all packages (Turbo builds dependencies in order, including UI)
 RUN pnpm build
 
 # ============================================
@@ -36,8 +38,8 @@ RUN pnpm build
 # ============================================
 FROM node:22-alpine AS production
 
-# Install pnpm
-RUN corepack enable && corepack prepare pnpm@latest --activate
+# Install pnpm (pinned to match packageManager field)
+RUN corepack enable && corepack prepare pnpm@10.29.3 --activate
 
 WORKDIR /app
 
@@ -57,6 +59,9 @@ COPY --from=builder /app/packages/gateway/dist ./packages/gateway/dist
 COPY --from=builder /app/packages/channels/dist ./packages/channels/dist
 COPY --from=builder /app/packages/cli/dist ./packages/cli/dist
 
+# Copy UI static assets (no node_modules needed — pre-built by Vite)
+COPY --from=builder /app/packages/ui/dist ./packages/ui/dist
+
 # Set environment variables
 ENV NODE_ENV=production
 ENV PORT=8080
@@ -68,6 +73,11 @@ EXPOSE 8080
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
   CMD wget --no-verbose --tries=1 --spider http://localhost:8080/health || exit 1
+
+# OCI labels for GHCR
+LABEL org.opencontainers.image.source="https://github.com/ownpilot/ownpilot"
+LABEL org.opencontainers.image.description="OwnPilot — Privacy-first personal AI assistant"
+LABEL org.opencontainers.image.licenses="MIT"
 
 # Start the application
 CMD ["node", "packages/cli/dist/index.js", "start"]

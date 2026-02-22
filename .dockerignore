@@ -37,7 +37,3 @@ Thumbs.db
 *.log
 npm-debug.log*
 pnpm-debug.log*
-
-# UI dev files (if building separately)
-packages/ui/node_modules
-packages/ui/dist

@@ -26,7 +26,9 @@ services:
     profiles:
       - postgres
 
-  # OwnPilot API Server
+  # OwnPilot (API + UI in a single container)
+  # To use pre-built image instead of local build:
+  # image: ghcr.io/ownpilot/ownpilot:latest
   gateway:
     build:
       context: .
@@ -75,25 +77,6 @@ services:
       postgres:
         condition: service_healthy
         required: false
-
-  # Web UI (development)
-  ui:
-    build:
-      context: ./packages/ui
-      dockerfile: Dockerfile.dev
-    container_name: ownpilot-ui
-    restart: unless-stopped
-    ports:
-      - "${UI_PORT:-5173}:${UI_PORT:-5173}"
-    environment:
-      - UI_PORT=${UI_PORT:-5173}
-      - VITE_API_URL=http://gateway:${PORT:-8080}
-    depends_on:
-      - gateway
-    networks:
-      - ownpilot-network
-    profiles:
-      - ui
 
 volumes:
   gateway-data:
