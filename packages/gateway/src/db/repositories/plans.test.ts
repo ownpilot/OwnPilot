@@ -827,6 +827,78 @@ describe('PlansRepository', () => {
       expect(stats.avgDurationMs).toBe(3600000); // 1 hour
     });
   });
+
+  // ========================================================================
+  // count()
+  // ========================================================================
+
+  describe('count()', () => {
+    it('returns total count with no filters', async () => {
+      mockAdapter.queryOne.mockResolvedValue({ count: '5' });
+
+      const result = await repo.count();
+
+      expect(result).toBe(5);
+      const [sql, params] = mockAdapter.queryOne.mock.calls[0]!;
+      expect(sql).toContain('SELECT COUNT(*)');
+      expect(sql).toContain('user_id = $1');
+      expect(params).toEqual(['user-1']);
+    });
+
+    it('filters by status', async () => {
+      mockAdapter.queryOne.mockResolvedValue({ count: '2' });
+
+      const result = await repo.count({ status: 'running' });
+
+      expect(result).toBe(2);
+      const [sql, params] = mockAdapter.queryOne.mock.calls[0]!;
+      expect(sql).toContain('status =');
+      expect(params).toContain('running');
+    });
+
+    it('filters by goalId', async () => {
+      mockAdapter.queryOne.mockResolvedValue({ count: '1' });
+
+      const result = await repo.count({ goalId: 'goal-1' });
+
+      expect(result).toBe(1);
+      const [sql, params] = mockAdapter.queryOne.mock.calls[0]!;
+      expect(sql).toContain('goal_id =');
+      expect(params).toContain('goal-1');
+    });
+
+    it('filters by triggerId', async () => {
+      mockAdapter.queryOne.mockResolvedValue({ count: '3' });
+
+      const result = await repo.count({ triggerId: 'trig-1' });
+
+      expect(result).toBe(3);
+      const [sql, params] = mockAdapter.queryOne.mock.calls[0]!;
+      expect(sql).toContain('trigger_id =');
+      expect(params).toContain('trig-1');
+    });
+
+    it('combines multiple filters', async () => {
+      mockAdapter.queryOne.mockResolvedValue({ count: '1' });
+
+      const result = await repo.count({ status: 'completed', goalId: 'g-2' });
+
+      expect(result).toBe(1);
+      const [sql, params] = mockAdapter.queryOne.mock.calls[0]!;
+      expect(sql).toContain('status =');
+      expect(sql).toContain('goal_id =');
+      expect(params).toContain('completed');
+      expect(params).toContain('g-2');
+    });
+
+    it('returns 0 when queryOne returns null', async () => {
+      mockAdapter.queryOne.mockResolvedValue(null);
+
+      const result = await repo.count();
+
+      expect(result).toBe(0);
+    });
+  });
 });
 
 // ==========================================================================

@@ -73,8 +73,12 @@ const { mcpRoutes } = await import('./mcp.js');
 // App setup
 // ---------------------------------------------------------------------------
 
-function createApp() {
+function createApp(userId = 'default') {
   const app = new Hono();
+  app.use('*', async (c, next) => {
+    c.set('userId', userId);
+    return next();
+  });
   app.use('*', requestId);
   app.route('/mcp', mcpRoutes);
   app.onError(errorHandler);
@@ -965,6 +969,18 @@ describe('MCP Routes', () => {
       expect(res.status).toBe(500);
       const json = await res.json() as { error: { code: string } };
       expect(json.error.code).toBe('INTERNAL_ERROR');
+    });
+
+    it('returns 404 when userId does not match server owner', async () => {
+      mockRepo.getById.mockResolvedValue(sampleServer);
+
+      const user2App = createApp('user-2');
+      const res = await user2App.request('/mcp/mcp-1/tools');
+
+      expect(res.status).toBe(404);
+      const json = await res.json() as { error: { code: string; message: string } };
+      expect(json.error.code).toBe('NOT_FOUND');
+      expect(json.error.message).toContain('MCP server not found');
     });
   });
 });
