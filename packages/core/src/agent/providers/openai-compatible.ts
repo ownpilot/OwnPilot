@@ -442,8 +442,18 @@ export class OpenAICompatibleProvider {
   private buildMessages(
     messages: readonly Message[]
   ): Array<Record<string, unknown>> {
-    return messages.map((msg) => {
-      const base: Record<string, unknown> = {
+    type Msg = Record<string, unknown>;
+    return messages.flatMap<Msg>((msg): Msg | Msg[] => {
+      // Tool result messages: expand each result into a separate message (OpenAI requires one per tool_call_id)
+      if (msg.role === 'tool' && msg.toolResults?.length) {
+        return msg.toolResults.map((result): Msg => ({
+          role: 'tool',
+          content: result.content,
+          tool_call_id: result.toolCallId,
+        }));
+      }
+
+      const base: Msg = {
         role: msg.role,
         content:
           typeof msg.content === 'string'
@@ -477,15 +487,6 @@ export class OpenAICompatibleProvider {
             arguments: tc.arguments,
           },
         }));
-      }
-
-      // Add tool result for tool messages
-      if (msg.role === 'tool' && msg.toolResults?.length) {
-        const result = msg.toolResults[0];
-        if (result) {
-          base.tool_call_id = result.toolCallId;
-          base.content = result.content;
-        }
       }
 
       return base;

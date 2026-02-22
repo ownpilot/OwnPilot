@@ -104,11 +104,11 @@ function loadConfig(): Partial<GatewayConfig> {
   const dbRateLimitWindow = settingsRepo.get<number>(GATEWAY_RATE_LIMIT_WINDOW_KEY);
   const dbRateLimitMax = settingsRepo.get<number>(GATEWAY_RATE_LIMIT_MAX_KEY);
 
-  const rateLimitWindowMs = dbRateLimitWindow ?? parseInt(process.env.RATE_LIMIT_WINDOW_MS ?? String(RATE_LIMIT_WINDOW_MS), 10);
-  const rateLimitMax = dbRateLimitMax ?? parseInt(process.env.RATE_LIMIT_MAX ?? String(RATE_LIMIT_MAX_REQUESTS), 10);
+  const rateLimitWindowMs = dbRateLimitWindow ?? (parseInt(process.env.RATE_LIMIT_WINDOW_MS ?? String(RATE_LIMIT_WINDOW_MS), 10) || RATE_LIMIT_WINDOW_MS);
+  const rateLimitMax = dbRateLimitMax ?? (parseInt(process.env.RATE_LIMIT_MAX ?? String(RATE_LIMIT_MAX_REQUESTS), 10) || RATE_LIMIT_MAX_REQUESTS);
 
   return {
-    port: parseInt(process.env.PORT ?? '8080', 10),
+    port: parseInt(process.env.PORT ?? '8080', 10) || 8080,
     host: process.env.HOST ?? '127.0.0.1',
     corsOrigins: process.env.CORS_ORIGINS?.split(',').filter(Boolean),
     rateLimit: process.env.RATE_LIMIT_DISABLED !== 'true'

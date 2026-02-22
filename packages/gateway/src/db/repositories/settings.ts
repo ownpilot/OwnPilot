@@ -25,8 +25,8 @@ function safeParseJSON(raw: string): unknown {
   try {
     return JSON.parse(raw);
   } catch {
-    log.warn('[Settings] Corrupt JSON value, returning raw string');
-    return raw;
+    log.warn('[Settings] Corrupt JSON value, returning null');
+    return null;
   }
 }
 

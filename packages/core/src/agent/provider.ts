@@ -888,9 +888,11 @@ export class AnthropicProvider extends BaseProvider {
                 }
               } else if (parsed.type === 'message_stop') {
                 // Emit accumulated tool calls if any, then signal done
+                // Filter out sparse array holes (indices may skip non-tool content blocks)
+                const completedToolCalls = toolCallBlocks.filter(Boolean);
                 yield ok({
                   id: '',
-                  toolCalls: toolCallBlocks.length > 0 ? toolCallBlocks : undefined,
+                  toolCalls: completedToolCalls.length > 0 ? completedToolCalls : undefined,
                   done: true,
                 });
                 return;

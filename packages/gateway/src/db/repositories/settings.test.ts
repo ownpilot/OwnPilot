@@ -208,14 +208,14 @@ describe('SettingsRepository', () => {
       expect(params).toEqual(['some.key']);
     });
 
-    it('should return raw string for corrupt JSON', async () => {
+    it('should return null for corrupt JSON', async () => {
       mockAdapter.queryOne.mockResolvedValueOnce(
         makeSettingRow({ value: '{not valid json' }),
       );
 
       const result = await repo.getAsync('corrupt');
 
-      expect(result).toBe('{not valid json');
+      expect(result).toBeNull();
     });
   });
 
