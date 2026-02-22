@@ -23,7 +23,7 @@
     "clean": "turbo clean && rimraf node_modules",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "prepare": "husky"
+    "prepare": "husky || true"
   },
   "devDependencies": {
     "@types/node": "^22.19.11",
