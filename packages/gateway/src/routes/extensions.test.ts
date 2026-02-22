@@ -119,8 +119,13 @@ const { extensionsRoutes } = await import('./extensions.js');
 // App setup
 // ---------------------------------------------------------------------------
 
-function createApp() {
+function createApp(userId = 'default') {
   const app = new Hono();
+  // Set userId in context before routes (simulates auth middleware)
+  app.use('*', async (c, next) => {
+    c.set('userId', userId);
+    return next();
+  });
   app.route('/extensions', extensionsRoutes);
   app.onError(errorHandler);
   return app;
@@ -613,6 +618,48 @@ describe('Extensions Routes', () => {
       const res = await app.request('/extensions/test-ext/reload', { method: 'POST' });
 
       expect(res.status).toBe(500);
+    });
+  });
+
+  // ========================================================================
+  // Multi-tenant isolation
+  // ========================================================================
+
+  describe('Multi-tenant isolation', () => {
+    it('GET / only returns extensions belonging to the requesting user', async () => {
+      const otherUserRecord = { ...sampleRecord, id: 'other-ext', userId: 'user-2' };
+      mockService.getAll.mockReturnValue([sampleRecord, otherUserRecord]);
+
+      // Default user should only see their own extension
+      const res = await app.request('/extensions');
+      const json = await res.json();
+      expect(json.data.packages).toHaveLength(1);
+      expect(json.data.packages[0].id).toBe('test-ext');
+      expect(json.data.total).toBe(1);
+    });
+
+    it('GET / as different user sees only their extensions', async () => {
+      const otherUserRecord = { ...sampleRecord, id: 'other-ext', userId: 'user-2' };
+      mockService.getAll.mockReturnValue([sampleRecord, otherUserRecord]);
+
+      const user2App = createApp('user-2');
+      const res = await user2App.request('/extensions');
+      const json = await res.json();
+      expect(json.data.packages).toHaveLength(1);
+      expect(json.data.packages[0].id).toBe('other-ext');
+    });
+
+    it('GET /:id returns 404 for another user\'s extension', async () => {
+      const user2App = createApp('user-2');
+      const res = await user2App.request('/extensions/test-ext');
+      expect(res.status).toBe(404);
+    });
+
+    it('GET /:id returns 200 for own extension', async () => {
+      const res = await app.request('/extensions/test-ext');
+      expect(res.status).toBe(200);
+      const json = await res.json();
+      expect(json.data.package.id).toBe('test-ext');
     });
   });
 });
