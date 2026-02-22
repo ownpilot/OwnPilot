@@ -42,6 +42,7 @@ const mockRepo = {
   ensurePluginTable: vi.fn(),
   deletePluginTables: vi.fn(),
   addRecord: vi.fn(),
+  insertRecord: vi.fn(),
   getRecord: vi.fn(),
   listRecords: vi.fn(),
   updateRecord: vi.fn(),
@@ -242,9 +243,10 @@ describe('CustomDataService', () => {
   });
 
   describe('batchAddRecords', () => {
-    it('adds multiple records', async () => {
-      mockRepo.getTable.mockResolvedValue(fakeTable());
-      mockRepo.addRecord
+    it('adds multiple records using insertRecord with pre-resolved table', async () => {
+      const table = fakeTable();
+      mockRepo.getTable.mockResolvedValue(table);
+      mockRepo.insertRecord
         .mockResolvedValueOnce(fakeRecord({ id: 'r1' }))
         .mockResolvedValueOnce(fakeRecord({ id: 'r2' }));
 
@@ -254,7 +256,11 @@ describe('CustomDataService', () => {
       ]);
 
       expect(result).toHaveLength(2);
-      expect(mockRepo.addRecord).toHaveBeenCalledTimes(2);
+      expect(mockRepo.insertRecord).toHaveBeenCalledTimes(2);
+      // Verify table is resolved once and passed to each insertRecord call
+      expect(mockRepo.getTable).toHaveBeenCalledTimes(1);
+      expect(mockRepo.insertRecord).toHaveBeenCalledWith(table, { name: 'Alice' });
+      expect(mockRepo.insertRecord).toHaveBeenCalledWith(table, { name: 'Bob' });
     });
 
     it('throws NOT_FOUND when table does not exist', async () => {

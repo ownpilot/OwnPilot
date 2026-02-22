@@ -134,7 +134,8 @@ export class EmbeddingQueue {
       // Generate embeddings in batch
       const results = await embeddingService.generateBatchEmbeddings(texts);
 
-      // Update each memory with its embedding
+      // Update each memory with its embedding (reuse repos per userId)
+      const repoCache = new Map<string, ReturnType<typeof createMemoriesRepository>>();
       for (let i = 0; i < batch.length; i++) {
         const item = batch[i]!;
         const result = results[i]!;
@@ -142,7 +143,11 @@ export class EmbeddingQueue {
         if (result.embedding.length === 0) continue;
 
         try {
-          const repo = createMemoriesRepository(item.userId);
+          let repo = repoCache.get(item.userId);
+          if (!repo) {
+            repo = createMemoriesRepository(item.userId);
+            repoCache.set(item.userId, repo);
+          }
           await repo.updateEmbedding(item.memoryId, result.embedding);
 
           log.debug('Embedding generated', {
