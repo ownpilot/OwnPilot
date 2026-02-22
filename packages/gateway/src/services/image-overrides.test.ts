@@ -269,14 +269,14 @@ describe('image-overrides', () => {
     });
 
     it('maps jpg to image/jpeg', async () => {
-      const result = await analyze({ source: 'https://example.com/photo.jpg' }, defaultContext);
+      const _result = await analyze({ source: 'https://example.com/photo.jpg' }, defaultContext);
       const provider = mockCreateProvider.mock.results[0]!.value;
       const message = provider.complete.mock.calls[0]![0].messages[0];
       expect(message.content[1].mediaType).toBe('image/jpeg');
     });
 
     it('maps jpeg to image/jpeg', async () => {
-      const result = await analyze({ source: 'https://example.com/photo.jpeg' }, defaultContext);
+      const _result = await analyze({ source: 'https://example.com/photo.jpeg' }, defaultContext);
       const provider = mockCreateProvider.mock.results[0]!.value;
       const message = provider.complete.mock.calls[0]![0].messages[0];
       expect(message.content[1].mediaType).toBe('image/jpeg');

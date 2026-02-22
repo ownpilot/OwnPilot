@@ -104,7 +104,7 @@ vi.mock('node:child_process', () => ({
 }));
 
 vi.mock('node:util', () => ({
-  promisify: (fn: Function) => {
+  promisify: (fn: (...args: unknown[]) => unknown) => {
     // Return a wrapper that calls fn with a callback
     return (...args: unknown[]) => {
       return new Promise((resolve, reject) => {
@@ -1318,7 +1318,7 @@ describe('splitAudioOverride', () => {
     mockFsMkdir.mockResolvedValue(undefined);
     mockExecFile.mockImplementation((...args: unknown[]) => {
       // execFile(command, args, opts, callback)
-      const cb = args[args.length - 1] as Function;
+      const cb = args[args.length - 1] as (...cbArgs: unknown[]) => unknown;
       cb(null, { stdout: '', stderr: '' });
     });
     mockFsReaddir.mockResolvedValue([
@@ -1355,7 +1355,7 @@ describe('splitAudioOverride', () => {
   it('should use default segment duration of 600 seconds', async () => {
     mockFsAccess.mockResolvedValue(undefined);
     mockExecFile.mockImplementation((...args: unknown[]) => {
-      const cb = args[args.length - 1] as Function;
+      const cb = args[args.length - 1] as (...cbArgs: unknown[]) => unknown;
       cb(null, { stdout: '', stderr: '' });
     });
     mockFsReaddir.mockResolvedValue([]);
@@ -1369,7 +1369,7 @@ describe('splitAudioOverride', () => {
   it('should use custom segment duration', async () => {
     mockFsAccess.mockResolvedValue(undefined);
     mockExecFile.mockImplementation((...args: unknown[]) => {
-      const cb = args[args.length - 1] as Function;
+      const cb = args[args.length - 1] as (...cbArgs: unknown[]) => unknown;
       cb(null, { stdout: '', stderr: '' });
     });
     mockFsReaddir.mockResolvedValue([]);
@@ -1386,7 +1386,7 @@ describe('splitAudioOverride', () => {
   it('should use default output dir based on workspace', async () => {
     mockFsAccess.mockResolvedValue(undefined);
     mockExecFile.mockImplementation((...args: unknown[]) => {
-      const cb = args[args.length - 1] as Function;
+      const cb = args[args.length - 1] as (...cbArgs: unknown[]) => unknown;
       cb(null, { stdout: '', stderr: '' });
     });
     mockFsReaddir.mockResolvedValue([]);
@@ -1401,7 +1401,7 @@ describe('splitAudioOverride', () => {
   it('should use custom output dir when provided', async () => {
     mockFsAccess.mockResolvedValue(undefined);
     mockExecFile.mockImplementation((...args: unknown[]) => {
-      const cb = args[args.length - 1] as Function;
+      const cb = args[args.length - 1] as (...cbArgs: unknown[]) => unknown;
       cb(null, { stdout: '', stderr: '' });
     });
     mockFsReaddir.mockResolvedValue([]);
@@ -1418,7 +1418,7 @@ describe('splitAudioOverride', () => {
   it('should fall back to source dirname when no workspaceDir', async () => {
     mockFsAccess.mockResolvedValue(undefined);
     mockExecFile.mockImplementation((...args: unknown[]) => {
-      const cb = args[args.length - 1] as Function;
+      const cb = args[args.length - 1] as (...cbArgs: unknown[]) => unknown;
       cb(null, { stdout: '', stderr: '' });
     });
     mockFsReaddir.mockResolvedValue([]);
@@ -1434,7 +1434,7 @@ describe('splitAudioOverride', () => {
   it('should list generated segments correctly', async () => {
     mockFsAccess.mockResolvedValue(undefined);
     mockExecFile.mockImplementation((...args: unknown[]) => {
-      const cb = args[args.length - 1] as Function;
+      const cb = args[args.length - 1] as (...cbArgs: unknown[]) => unknown;
       cb(null, { stdout: '', stderr: '' });
     });
     mockFsReaddir.mockResolvedValue([
@@ -1459,7 +1459,7 @@ describe('splitAudioOverride', () => {
   it('should return segments sorted', async () => {
     mockFsAccess.mockResolvedValue(undefined);
     mockExecFile.mockImplementation((...args: unknown[]) => {
-      const cb = args[args.length - 1] as Function;
+      const cb = args[args.length - 1] as (...cbArgs: unknown[]) => unknown;
       cb(null, { stdout: '', stderr: '' });
     });
     mockFsReaddir.mockResolvedValue([
@@ -1480,7 +1480,7 @@ describe('splitAudioOverride', () => {
   it('should return segmentDuration as formatted string', async () => {
     mockFsAccess.mockResolvedValue(undefined);
     mockExecFile.mockImplementation((...args: unknown[]) => {
-      const cb = args[args.length - 1] as Function;
+      const cb = args[args.length - 1] as (...cbArgs: unknown[]) => unknown;
       cb(null, { stdout: '', stderr: '' });
     });
     mockFsReaddir.mockResolvedValue([]);
@@ -1496,7 +1496,7 @@ describe('splitAudioOverride', () => {
   it('should use custom format', async () => {
     mockFsAccess.mockResolvedValue(undefined);
     mockExecFile.mockImplementation((...args: unknown[]) => {
-      const cb = args[args.length - 1] as Function;
+      const cb = args[args.length - 1] as (...cbArgs: unknown[]) => unknown;
       cb(null, { stdout: '', stderr: '' });
     });
     mockFsReaddir.mockResolvedValue([
@@ -1518,7 +1518,7 @@ describe('splitAudioOverride', () => {
   it('should set 5 minute timeout on FFmpeg', async () => {
     mockFsAccess.mockResolvedValue(undefined);
     mockExecFile.mockImplementation((...args: unknown[]) => {
-      const cb = args[args.length - 1] as Function;
+      const cb = args[args.length - 1] as (...cbArgs: unknown[]) => unknown;
       cb(null, { stdout: '', stderr: '' });
     });
     mockFsReaddir.mockResolvedValue([]);
@@ -1534,7 +1534,7 @@ describe('splitAudioOverride', () => {
   it('should handle FFmpeg not installed (ENOENT)', async () => {
     mockFsAccess.mockResolvedValue(undefined);
     mockExecFile.mockImplementation((...args: unknown[]) => {
-      const cb = args[args.length - 1] as Function;
+      const cb = args[args.length - 1] as (...cbArgs: unknown[]) => unknown;
       cb(new Error('ENOENT: ffmpeg not found'));
     });
 
@@ -1550,7 +1550,7 @@ describe('splitAudioOverride', () => {
   it('should handle FFmpeg not recognized error', async () => {
     mockFsAccess.mockResolvedValue(undefined);
     mockExecFile.mockImplementation((...args: unknown[]) => {
-      const cb = args[args.length - 1] as Function;
+      const cb = args[args.length - 1] as (...cbArgs: unknown[]) => unknown;
       cb(new Error('ffmpeg is not recognized as an internal or external command'));
     });
 
@@ -1565,7 +1565,7 @@ describe('splitAudioOverride', () => {
   it('should handle FFmpeg not found error', async () => {
     mockFsAccess.mockResolvedValue(undefined);
     mockExecFile.mockImplementation((...args: unknown[]) => {
-      const cb = args[args.length - 1] as Function;
+      const cb = args[args.length - 1] as (...cbArgs: unknown[]) => unknown;
       cb(new Error('command not found: ffmpeg'));
     });
 
@@ -1580,7 +1580,7 @@ describe('splitAudioOverride', () => {
   it('should rethrow non-ENOENT FFmpeg errors', async () => {
     mockFsAccess.mockResolvedValue(undefined);
     mockExecFile.mockImplementation((...args: unknown[]) => {
-      const cb = args[args.length - 1] as Function;
+      const cb = args[args.length - 1] as (...cbArgs: unknown[]) => unknown;
       cb(new Error('Invalid codec'));
     });
 
@@ -1598,7 +1598,7 @@ describe('splitAudioOverride', () => {
   it('should handle empty segment list', async () => {
     mockFsAccess.mockResolvedValue(undefined);
     mockExecFile.mockImplementation((...args: unknown[]) => {
-      const cb = args[args.length - 1] as Function;
+      const cb = args[args.length - 1] as (...cbArgs: unknown[]) => unknown;
       cb(null, { stdout: '', stderr: '' });
     });
     mockFsReaddir.mockResolvedValue([]);
@@ -1616,7 +1616,7 @@ describe('splitAudioOverride', () => {
     mockLogInfo.mockClear();
     mockFsAccess.mockResolvedValue(undefined);
     mockExecFile.mockImplementation((...args: unknown[]) => {
-      const cb = args[args.length - 1] as Function;
+      const cb = args[args.length - 1] as (...cbArgs: unknown[]) => unknown;
       cb(null, { stdout: '', stderr: '' });
     });
     mockFsReaddir.mockResolvedValue([
@@ -1668,7 +1668,7 @@ describe('edge cases', () => {
   it('should pass context.workspaceDir to split_audio when available', async () => {
     mockFsAccess.mockResolvedValue(undefined);
     mockExecFile.mockImplementation((...args: unknown[]) => {
-      const cb = args[args.length - 1] as Function;
+      const cb = args[args.length - 1] as (...cbArgs: unknown[]) => unknown;
       cb(null, { stdout: '', stderr: '' });
     });
     mockFsReaddir.mockResolvedValue([]);

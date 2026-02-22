@@ -624,8 +624,8 @@ describe('MessageBus.process() — basic chain', () => {
   });
 
   it('each call to process() creates a fresh context', async () => {
-    let firstVal: unknown;
-    let secondVal: unknown;
+    let _firstVal: unknown;
+    let _secondVal: unknown;
 
     bus.use(async (_msg, ctx, next) => {
       if (!ctx.has('seen')) {
@@ -796,7 +796,7 @@ describe('MessageBus.process() — context management', () => {
     let callCount = 0;
     bus.use(async (_msg, ctx, next) => {
       callCount++;
-      const prev = ctx.get<number>('count');
+      const _prev = ctx.get<number>('count');
       ctx.set('count', callCount);
       return next();
     });

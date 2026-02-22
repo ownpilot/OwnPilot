@@ -29,7 +29,7 @@ function createMockRegistry(
     getDefinition: (name: string) => defs.find(d => d.name === name),
     getDefinitions: () => defs,
     getAllTools: () => defs.map(d => ({ definition: d, executor: async () => ({}) })),
-  } as any;
+  } as unknown as Parameters<typeof validateToolCall>[0];
 }
 
 // =============================================================================

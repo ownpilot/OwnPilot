@@ -32,7 +32,7 @@ const {
   createMemoryCleaner,
 } = await import('./memory-oversight.js');
 
-function makeMemoryEntry(overrides: Partial<any> = {}): any {
+function makeMemoryEntry(overrides: Record<string, unknown> = {}): Record<string, unknown> {
   return {
     id: 'mem_1',
     content: 'User prefers dark mode for all applications',
@@ -70,7 +70,7 @@ function makeMockStore() {
   };
 }
 
-const mockCtx = {} as any;
+const mockCtx = {} as unknown;
 
 // ---------------------------------------------------------------------------
 // 1. Tool definitions
@@ -159,7 +159,7 @@ describe('Tool definitions', () => {
 // ---------------------------------------------------------------------------
 describe('list_memories executor', () => {
   let store: ReturnType<typeof makeMockStore>;
-  let executors: Record<string, Function>;
+  let executors: Record<string, (...args: unknown[]) => unknown>;
 
   beforeEach(() => {
     store = makeMockStore();
@@ -219,7 +219,7 @@ describe('list_memories executor', () => {
 // ---------------------------------------------------------------------------
 describe('delete_memory executor', () => {
   let store: ReturnType<typeof makeMockStore>;
-  let executors: Record<string, Function>;
+  let executors: Record<string, (...args: unknown[]) => unknown>;
 
   beforeEach(() => {
     store = makeMockStore();
@@ -262,7 +262,7 @@ describe('delete_memory executor', () => {
 // ---------------------------------------------------------------------------
 describe('bulk_delete_memories executor', () => {
   let store: ReturnType<typeof makeMockStore>;
-  let executors: Record<string, Function>;
+  let executors: Record<string, (...args: unknown[]) => unknown>;
 
   beforeEach(() => {
     store = makeMockStore();
@@ -321,7 +321,7 @@ describe('bulk_delete_memories executor', () => {
 // ---------------------------------------------------------------------------
 describe('archive_memory executor', () => {
   let store: ReturnType<typeof makeMockStore>;
-  let executors: Record<string, Function>;
+  let executors: Record<string, (...args: unknown[]) => unknown>;
 
   beforeEach(() => {
     store = makeMockStore();
@@ -358,7 +358,7 @@ describe('archive_memory executor', () => {
 // ---------------------------------------------------------------------------
 describe('restore_memory executor', () => {
   let store: ReturnType<typeof makeMockStore>;
-  let executors: Record<string, Function>;
+  let executors: Record<string, (...args: unknown[]) => unknown>;
 
   beforeEach(() => {
     store = makeMockStore();
@@ -395,7 +395,7 @@ describe('restore_memory executor', () => {
 // ---------------------------------------------------------------------------
 describe('view_my_profile executor', () => {
   let store: ReturnType<typeof makeMockStore>;
-  let executors: Record<string, Function>;
+  let executors: Record<string, (...args: unknown[]) => unknown>;
 
   beforeEach(() => {
     store = makeMockStore();
@@ -433,7 +433,7 @@ describe('view_my_profile executor', () => {
 // ---------------------------------------------------------------------------
 describe('update_memory_importance executor', () => {
   let store: ReturnType<typeof makeMockStore>;
-  let executors: Record<string, Function>;
+  let executors: Record<string, (...args: unknown[]) => unknown>;
 
   beforeEach(() => {
     store = makeMockStore();
@@ -477,7 +477,7 @@ describe('update_memory_importance executor', () => {
 // ---------------------------------------------------------------------------
 describe('export_memories executor', () => {
   let store: ReturnType<typeof makeMockStore>;
-  let executors: Record<string, Function>;
+  let executors: Record<string, (...args: unknown[]) => unknown>;
 
   beforeEach(() => {
     store = makeMockStore();
@@ -515,7 +515,7 @@ describe('export_memories executor', () => {
 // ---------------------------------------------------------------------------
 describe('memory_stats executor', () => {
   let store: ReturnType<typeof makeMockStore>;
-  let executors: Record<string, Function>;
+  let executors: Record<string, (...args: unknown[]) => unknown>;
 
   beforeEach(() => {
     store = makeMockStore();
@@ -578,7 +578,7 @@ describe('memory_stats executor', () => {
 // ---------------------------------------------------------------------------
 describe('clear_all_memories executor', () => {
   let store: ReturnType<typeof makeMockStore>;
-  let executors: Record<string, Function>;
+  let executors: Record<string, (...args: unknown[]) => unknown>;
 
   beforeEach(() => {
     store = makeMockStore();
@@ -622,7 +622,7 @@ describe('clear_all_memories executor', () => {
 // ---------------------------------------------------------------------------
 describe('configure_retention executor', () => {
   let store: ReturnType<typeof makeMockStore>;
-  let executors: Record<string, Function>;
+  let executors: Record<string, (...args: unknown[]) => unknown>;
 
   beforeEach(() => {
     store = makeMockStore();
@@ -670,7 +670,7 @@ describe('createMemoryOversightTools', () => {
       expect(tool.definition).toHaveProperty('name');
     }
     // Executors whose definition.name matches executor key should be functions
-    const toolsWithExecutors = tools.filter((t: any) => t.executor !== undefined);
+    const toolsWithExecutors = tools.filter((t: { executor?: unknown }) => t.executor !== undefined);
     for (const tool of toolsWithExecutors) {
       expect(typeof tool.executor).toBe('function');
     }

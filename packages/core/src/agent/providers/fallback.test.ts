@@ -45,10 +45,10 @@ function makeMockProvider(type: string, overrides: Record<string, unknown> = {})
   };
 }
 
-const primaryConfig = { provider: 'openai', apiKey: 'pk' } as any;
-const fallbackConfig1 = { provider: 'anthropic', apiKey: 'fk1' } as any;
+const primaryConfig = { provider: 'openai', apiKey: 'pk' } as Record<string, unknown>;
+const fallbackConfig1 = { provider: 'anthropic', apiKey: 'fk1' } as Record<string, unknown>;
 
-const dummyRequest = { messages: [{ role: 'user', content: 'hi' }] } as any;
+const dummyRequest = { messages: [{ role: 'user', content: 'hi' }] } as Record<string, unknown>;
 
 // Saved Date.now for restoration
 let savedDateNow: typeof Date.now;
@@ -405,7 +405,7 @@ describe('FallbackProvider', () => {
     });
 
     it('handles thrown exceptions and records failure toward threshold', async () => {
-      const { provider, primary, fallback } = createTestProvider();
+      const { provider, primary, fallback: _fallback } = createTestProvider();
       primary.complete.mockRejectedValue(new Error('unexpected crash'));
       const result = await provider.complete(dummyRequest);
       expect(result.ok).toBe(true);
@@ -442,12 +442,12 @@ describe('FallbackProvider', () => {
           yield ok({ content: '', done: true });
         })(),
       );
-      const chunks: any[] = [];
+      const chunks: unknown[] = [];
       for await (const chunk of provider.stream(dummyRequest)) {
         chunks.push(chunk);
       }
       expect(fallback.stream).toHaveBeenCalled();
-      const okChunks = chunks.filter((c) => c.ok);
+      const okChunks = chunks.filter((c) => (c as { ok: boolean }).ok);
       expect(okChunks.length).toBeGreaterThan(0);
     });
 
@@ -459,27 +459,27 @@ describe('FallbackProvider', () => {
           yield err(new InternalError('mid-stream fail'));
         })(),
       );
-      const results: any[] = [];
+      const results: unknown[] = [];
       for await (const chunk of provider.stream(dummyRequest)) {
         results.push(chunk);
       }
       // Fallback should NOT have been called since data was already yielded
       expect(fallback.stream).not.toHaveBeenCalled();
       // Should have partial data + error
-      expect(results.some((r: any) => r.ok && r.value.content === 'partial')).toBe(true);
-      expect(results.some((r: any) => !r.ok)).toBe(true);
+      expect(results.some((r: unknown) => (r as { ok: boolean; value: { content: string } }).ok && (r as { ok: boolean; value: { content: string } }).value.content === 'partial')).toBe(true);
+      expect(results.some((r: unknown) => !(r as { ok: boolean }).ok)).toBe(true);
     });
 
     it('yields error when no providers are ready', async () => {
       const { provider, primary, fallback } = createTestProvider();
       primary.isReady.mockReturnValue(false);
       fallback.isReady.mockReturnValue(false);
-      const chunks: any[] = [];
+      const chunks: unknown[] = [];
       for await (const chunk of provider.stream(dummyRequest)) {
         chunks.push(chunk);
       }
       expect(chunks.length).toBeGreaterThanOrEqual(1);
-      expect(chunks[0].ok).toBe(false);
+      expect((chunks[0] as { ok: boolean }).ok).toBe(false);
     });
   });
 
@@ -489,7 +489,7 @@ describe('FallbackProvider', () => {
   describe('countTokens', () => {
     it('delegates to primary provider', () => {
       const { provider, primary } = createTestProvider();
-      const messages = [{ role: 'user', content: 'hello' }] as any;
+      const messages = [{ role: 'user', content: 'hello' }] as Record<string, unknown>[];
       const result = provider.countTokens(messages);
       expect(result).toBe(100);
       expect(primary.countTokens).toHaveBeenCalledWith(messages);

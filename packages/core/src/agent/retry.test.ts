@@ -5,7 +5,7 @@ vi.mock('../services/get-log.js', () => ({
 }));
 
 const { isRetryableError, withRetry, createRetryWrapper } = await import('./retry.js');
-const { TimeoutError, InternalError, ValidationError } = await import('../types/errors.js');
+const { TimeoutError, InternalError: _InternalError, ValidationError: _ValidationError } = await import('../types/errors.js');
 const { ok, err } = await import('../types/result.js');
 
 // ---------------------------------------------------------------------------
