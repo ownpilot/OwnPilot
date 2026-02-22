@@ -20,6 +20,8 @@ import {
   ChannelVerificationService,
   getChannelVerificationService,
 } from './verification.js';
+import type { ChannelVerificationRepository } from '../../db/repositories/channel-verification.js';
+import type { ChannelUsersRepository } from '../../db/repositories/channel-users.js';
 
 // ---------------------------------------------------------------------------
 // Mock repos
@@ -88,8 +90,8 @@ describe('ChannelVerificationService', () => {
     mockVerificationRepo = createMockVerificationRepo();
     mockUsersRepo = createMockUsersRepo();
     service = new ChannelVerificationService(
-      mockVerificationRepo as any,
-      mockUsersRepo as any
+      mockVerificationRepo as unknown as ChannelVerificationRepository,
+      mockUsersRepo as unknown as ChannelUsersRepository
     );
   });
 
@@ -155,7 +157,7 @@ describe('ChannelVerificationService', () => {
       mockUsersRepo.findOrCreate.mockResolvedValue(channelUser);
       mockUsersRepo.markVerified.mockResolvedValue(undefined);
       mockVerificationRepo.consumeToken.mockResolvedValue(undefined);
-      vi.mocked(getEventBus).mockReturnValue({ emit: vi.fn() } as any);
+      vi.mocked(getEventBus).mockReturnValue({ emit: vi.fn() } as unknown as ReturnType<typeof getEventBus>);
 
       const result = await service.verifyToken(
         token,
@@ -191,7 +193,7 @@ describe('ChannelVerificationService', () => {
       const tokenEntity = makeTokenEntity();
       mockVerificationRepo.findValidToken.mockResolvedValue(tokenEntity);
       mockUsersRepo.findOrCreate.mockResolvedValue(makeChannelUser());
-      vi.mocked(getEventBus).mockReturnValue({ emit: vi.fn() } as any);
+      vi.mocked(getEventBus).mockReturnValue({ emit: vi.fn() } as unknown as ReturnType<typeof getEventBus>);
 
       await service.verifyToken(
         token,
@@ -215,7 +217,7 @@ describe('ChannelVerificationService', () => {
       const channelUser = makeChannelUser({ id: 'cu-42' });
       mockVerificationRepo.findValidToken.mockResolvedValue(tokenEntity);
       mockUsersRepo.findOrCreate.mockResolvedValue(channelUser);
-      vi.mocked(getEventBus).mockReturnValue({ emit: vi.fn() } as any);
+      vi.mocked(getEventBus).mockReturnValue({ emit: vi.fn() } as unknown as ReturnType<typeof getEventBus>);
 
       await service.verifyToken(token, platform, platformUserId, displayName);
 
@@ -231,7 +233,7 @@ describe('ChannelVerificationService', () => {
       const channelUser = makeChannelUser({ id: 'cu-42' });
       mockVerificationRepo.findValidToken.mockResolvedValue(tokenEntity);
       mockUsersRepo.findOrCreate.mockResolvedValue(channelUser);
-      vi.mocked(getEventBus).mockReturnValue({ emit: vi.fn() } as any);
+      vi.mocked(getEventBus).mockReturnValue({ emit: vi.fn() } as unknown as ReturnType<typeof getEventBus>);
 
       await service.verifyToken(token, platform, platformUserId, displayName);
 
@@ -246,7 +248,7 @@ describe('ChannelVerificationService', () => {
       mockVerificationRepo.findValidToken.mockResolvedValue(tokenEntity);
       mockUsersRepo.findOrCreate.mockResolvedValue(makeChannelUser());
       const mockEmit = vi.fn();
-      vi.mocked(getEventBus).mockReturnValue({ emit: mockEmit } as any);
+      vi.mocked(getEventBus).mockReturnValue({ emit: mockEmit } as unknown as ReturnType<typeof getEventBus>);
 
       await service.verifyToken(token, platform, platformUserId, displayName);
 
@@ -278,7 +280,7 @@ describe('ChannelVerificationService', () => {
       const tokenEntity = makeTokenEntity();
       mockVerificationRepo.findValidToken.mockResolvedValue(tokenEntity);
       mockUsersRepo.findOrCreate.mockResolvedValue(makeChannelUser());
-      vi.mocked(getEventBus).mockReturnValue({ emit: vi.fn() } as any);
+      vi.mocked(getEventBus).mockReturnValue({ emit: vi.fn() } as unknown as ReturnType<typeof getEventBus>);
 
       await service.verifyToken(token, platform, platformUserId, displayName);
 

@@ -12,7 +12,7 @@ import {
   secureCompare,
   secureClear,
 } from './derive.js';
-import { CryptoError } from '../types/errors.js';
+
 
 // ---------------------------------------------------------------------------
 // Shared helpers — low iterations for fast tests

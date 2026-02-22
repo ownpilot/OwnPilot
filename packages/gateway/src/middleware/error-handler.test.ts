@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { HTTPException } from 'hono/http-exception';
+import type { Context } from 'hono';
 
 vi.mock('../services/log.js', () => ({
   getLog: () => ({
@@ -39,13 +40,14 @@ function mockContext(overrides: Record<string, unknown> = {}) {
       method: (overrides.method as string) ?? 'GET',
       path: (overrides.path as string) ?? '/api/v1/test',
     },
-  } as any;
+  } as unknown as Context;
 }
 
 /** Extract the response body and status from c.json mock */
-function getJsonCall(c: any): { body: any; status: number } {
-  const call = c.json.mock.calls[0]!;
-  return { body: call[0], status: call[1] ?? 200 };
+function getJsonCall(c: Context): { body: Record<string, unknown>; status: number } {
+  const jsonMock = c.json as unknown as ReturnType<typeof vi.fn>;
+  const call = jsonMock.mock.calls[0]!;
+  return { body: call[0] as Record<string, unknown>, status: (call[1] as number) ?? 200 };
 }
 
 describe('errorHandler', () => {

@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest';
 import { TOOL_TEMPLATES } from './tool-templates.js';
-import type { ToolTemplate } from './tool-templates.js';
 
 const KNOWN_CATEGORIES = ['Network', 'Data', 'Text', 'Math', 'Utilities', 'Config'];
 

@@ -199,7 +199,7 @@ describe('McpClientService', () => {
 
       await mcpClientService.connect(server);
 
-      const toolsMap = mockRegistry.registerMcpTools.mock.calls[0]![1] as Map<string, any>;
+      const toolsMap = mockRegistry.registerMcpTools.mock.calls[0]![1] as Map<string, Record<string, unknown>>;
       const entry = toolsMap.get('no_desc');
       expect(entry.definition.description).toBe('Tool from MCP server "test-server"');
     });
@@ -211,7 +211,7 @@ describe('McpClientService', () => {
 
       await mcpClientService.connect(server);
 
-      const toolsMap = mockRegistry.registerMcpTools.mock.calls[0]![1] as Map<string, any>;
+      const toolsMap = mockRegistry.registerMcpTools.mock.calls[0]![1] as Map<string, Record<string, unknown>>;
       const entry = toolsMap.get('no_schema');
       expect(entry.definition.parameters).toEqual({ type: 'object', properties: {} });
     });
@@ -679,7 +679,7 @@ describe('McpClientService', () => {
         }),
       );
       // Verify env includes both process.env and server.env
-      const callArgs = (StdioClientTransport as any).mock.calls[0]![0];
+      const callArgs = vi.mocked(StdioClientTransport).mock.calls[0]![0] as { env: Record<string, string> };
       expect(callArgs.env.API_KEY).toBe('test123');
     });
 
@@ -702,7 +702,7 @@ describe('McpClientService', () => {
           requestInit: { headers: { Authorization: 'Bearer token' } },
         }),
       );
-      const urlArg = (SSEClientTransport as any).mock.calls[0]![0] as URL;
+      const urlArg = vi.mocked(SSEClientTransport).mock.calls[0]![0] as URL;
       expect(urlArg.href).toBe('https://example.com/sse');
     });
 
@@ -725,7 +725,7 @@ describe('McpClientService', () => {
           requestInit: { headers: { 'X-Api-Key': 'secret' } },
         }),
       );
-      const urlArg = (StreamableHTTPClientTransport as any).mock.calls[0]![0] as URL;
+      const urlArg = vi.mocked(StreamableHTTPClientTransport).mock.calls[0]![0] as URL;
       expect(urlArg.href).toBe('https://example.com/mcp');
     });
 
@@ -754,7 +754,7 @@ describe('McpClientService', () => {
     });
 
     it('unsupported transport type throws', async () => {
-      const server = makeServer({ transport: 'grpc' as any });
+      const server = makeServer({ transport: 'grpc' as unknown as McpServerRecord['transport'] });
 
       await expect(mcpClientService.connect(server)).rejects.toThrow(
         'Unsupported transport: grpc',
@@ -773,7 +773,7 @@ describe('McpClientService', () => {
       const server = makeServer();
       await mcpClientService.connect(server);
 
-      const toolsMap = mockRegistry.registerMcpTools.mock.calls[0]![1] as Map<string, any>;
+      const toolsMap = mockRegistry.registerMcpTools.mock.calls[0]![1] as Map<string, Record<string, unknown>>;
       const executor = toolsMap.get('echo').executor;
 
       mockClient.callTool.mockResolvedValue({
@@ -791,7 +791,7 @@ describe('McpClientService', () => {
       const server = makeServer();
       await mcpClientService.connect(server);
 
-      const toolsMap = mockRegistry.registerMcpTools.mock.calls[0]![1] as Map<string, any>;
+      const toolsMap = mockRegistry.registerMcpTools.mock.calls[0]![1] as Map<string, Record<string, unknown>>;
       const executor = toolsMap.get('data').executor;
 
       mockClient.callTool.mockResolvedValue({ someField: 42 });
@@ -807,7 +807,7 @@ describe('McpClientService', () => {
       const server = makeServer();
       await mcpClientService.connect(server);
 
-      const toolsMap = mockRegistry.registerMcpTools.mock.calls[0]![1] as Map<string, any>;
+      const toolsMap = mockRegistry.registerMcpTools.mock.calls[0]![1] as Map<string, Record<string, unknown>>;
       const executor = toolsMap.get('fail').executor;
 
       // callTool will throw because server is disconnected after we manipulate
@@ -826,7 +826,7 @@ describe('McpClientService', () => {
       const server = makeServer();
       await mcpClientService.connect(server);
 
-      const toolsMap = mockRegistry.registerMcpTools.mock.calls[0]![1] as Map<string, any>;
+      const toolsMap = mockRegistry.registerMcpTools.mock.calls[0]![1] as Map<string, Record<string, unknown>>;
       const executor = toolsMap.get('fail2').executor;
 
       mockClient.callTool.mockRejectedValue('string error');
