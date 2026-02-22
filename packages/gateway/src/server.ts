@@ -24,7 +24,7 @@ const envPaths = [
 
 for (const envPath of envPaths) {
   if (existsSync(envPath)) {
-    config({ path: envPath });
+    config({ path: envPath, quiet: true });
     console.log(`[Config] Loaded .env from: ${envPath}`);
     break;
   }

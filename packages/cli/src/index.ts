@@ -40,7 +40,7 @@ import {
 } from './commands/tunnel.js';
 
 // Load environment variables from .env (fallback)
-loadEnv();
+loadEnv({ quiet: true });
 
 const program = new Command();
 

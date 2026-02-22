@@ -27,7 +27,7 @@
   },
   "devDependencies": {
     "@types/node": "^22.19.11",
-    "eslint": "^9.39.2",
+    "eslint": "^9.39.3",
     "husky": "^9.1.7",
     "prettier": "^3.8.1",
     "turbo": "^2.8.10",

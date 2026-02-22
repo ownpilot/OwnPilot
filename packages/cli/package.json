@@ -24,12 +24,12 @@
   },
   "dependencies": {
     "@hono/node-server": "^1.14.1",
-    "@inquirer/prompts": "^7.0.0",
+    "@inquirer/prompts": "^7.10.1",
     "@ownpilot/channels": "workspace:*",
     "@ownpilot/core": "workspace:*",
     "@ownpilot/gateway": "workspace:*",
     "commander": "^13.1.0",
-    "dotenv": "^16.4.7"
+    "dotenv": "^16.6.1"
   },
   "optionalDependencies": {
     "@ngrok/ngrok": "^1.4.0"
