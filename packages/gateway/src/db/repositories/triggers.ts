@@ -283,10 +283,10 @@ export class TriggersRepository extends BaseRepository {
       );
     }
 
-    const result = await this.execute(
-      'DELETE FROM triggers WHERE id = $1 AND user_id = $2',
-      [id, this.userId]
-    );
+    const result = await this.execute('DELETE FROM triggers WHERE id = $1 AND user_id = $2', [
+      id,
+      this.userId,
+    ]);
     return result.changes > 0;
   }
 
@@ -445,7 +445,10 @@ export class TriggersRepository extends BaseRepository {
   /**
    * Get history for a trigger (with optional filters + pagination)
    */
-  async getHistoryForTrigger(triggerId: string, query: HistoryQuery = {}): Promise<{ rows: TriggerHistory[]; total: number }> {
+  async getHistoryForTrigger(
+    triggerId: string,
+    query: HistoryQuery = {}
+  ): Promise<{ rows: TriggerHistory[]; total: number }> {
     const limit = query.limit ?? 20;
     const offset = query.offset ?? 0;
 
@@ -488,7 +491,9 @@ export class TriggersRepository extends BaseRepository {
   /**
    * Get recent history across all triggers (with optional filters + pagination)
    */
-  async getRecentHistory(query: HistoryQuery = {}): Promise<{ rows: TriggerHistory[]; total: number }> {
+  async getRecentHistory(
+    query: HistoryQuery = {}
+  ): Promise<{ rows: TriggerHistory[]; total: number }> {
     const limit = query.limit ?? 25;
     const offset = query.offset ?? 0;
 
@@ -638,9 +643,8 @@ export class TriggersRepository extends BaseRepository {
       byType: typeMap,
       totalFires: parseInt(totalFires?.total ?? '0', 10),
       firesThisWeek: parseInt(firesThisWeek?.count ?? '0', 10),
-      successRate: totalHistoryCount > 0
-        ? Math.round((successCountNum / totalHistoryCount) * 100)
-        : 100,
+      successRate:
+        totalHistoryCount > 0 ? Math.round((successCountNum / totalHistoryCount) * 100) : 100,
     };
   }
 
@@ -659,7 +663,9 @@ export class TriggersRepository extends BaseRepository {
     }
     const nextRun = getNextRunTime(config.cron);
     if (!nextRun) {
-      log.warn(`[TriggersRepo] No next fire time found for cron "${config.cron}" — trigger will not auto-fire`);
+      log.warn(
+        `[TriggersRepo] No next fire time found for cron "${config.cron}" — trigger will not auto-fire`
+      );
     }
     return nextRun ? nextRun.toISOString() : null;
   }

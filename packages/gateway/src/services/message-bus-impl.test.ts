@@ -30,10 +30,7 @@ function makeMessage(overrides: Partial<NormalizedMessage> = {}): NormalizedMess
   };
 }
 
-function makeResult(
-  message: NormalizedMessage,
-  content = 'Response',
-): MessageProcessingResult {
+function makeResult(message: NormalizedMessage, content = 'Response'): MessageProcessingResult {
   return {
     response: {
       id: randomUUID(),
@@ -128,7 +125,7 @@ describe('PipelineContextImpl (via process)', () => {
           ctx.get('bool'),
           ctx.get('arr'),
           ctx.get('obj'),
-          ctx.get('nil'),
+          ctx.get('nil')
         );
         return next();
       });
@@ -447,11 +444,7 @@ describe('MessageBus registration', () => {
     bus.use(async (_msg, _ctx, next) => next());
     bus.use(async (_msg, _ctx, next) => next());
     bus.use(async (_msg, _ctx, next) => next());
-    expect(bus.getMiddlewareNames()).toEqual([
-      'middleware-0',
-      'middleware-1',
-      'middleware-2',
-    ]);
+    expect(bus.getMiddlewareNames()).toEqual(['middleware-0', 'middleware-1', 'middleware-2']);
   });
 
   it('useNamed() adds middleware with custom name', () => {
@@ -487,11 +480,7 @@ describe('MessageBus registration', () => {
     bus.use(async (_msg, _ctx, next) => next()); // middleware-0
     bus.useNamed('custom', async (_msg, _ctx, next) => next());
     bus.use(async (_msg, _ctx, next) => next()); // middleware-2 (index=2 because array has 2 items)
-    expect(bus.getMiddlewareNames()).toEqual([
-      'middleware-0',
-      'custom',
-      'middleware-2',
-    ]);
+    expect(bus.getMiddlewareNames()).toEqual(['middleware-0', 'custom', 'middleware-2']);
   });
 
   it('allows duplicate middleware names via useNamed', () => {
@@ -986,8 +975,8 @@ describe('MessageBus.process() — error handling', () => {
     });
     const result = await bus.process(makeMessage());
     expect(result.warnings).toBeDefined();
-    expect(result.warnings!.some(w => w.includes("Pipeline error in 'fail-stage'"))).toBe(true);
-    expect(result.warnings!.some(w => w.includes('Bad things'))).toBe(true);
+    expect(result.warnings!.some((w) => w.includes("Pipeline error in 'fail-stage'"))).toBe(true);
+    expect(result.warnings!.some((w) => w.includes('Bad things'))).toBe(true);
   });
 
   it('stream.onError called when middleware throws', async () => {
@@ -997,9 +986,7 @@ describe('MessageBus.process() — error handling', () => {
     });
     await bus.process(makeMessage(), { stream: { onError } });
     expect(onError).toHaveBeenCalledTimes(1);
-    expect(onError).toHaveBeenCalledWith(
-      expect.objectContaining({ message: 'Stream error test' }),
-    );
+    expect(onError).toHaveBeenCalledWith(expect.objectContaining({ message: 'Stream error test' }));
   });
 
   it('non-Error thrown is converted to Error', async () => {
@@ -1039,7 +1026,7 @@ describe('MessageBus.process() — error handling', () => {
     });
     const result = await bus.process(makeMessage());
     expect(result.warnings).toContain('heads up');
-    expect(result.warnings!.some(w => w.includes('kaboom'))).toBe(true);
+    expect(result.warnings!.some((w) => w.includes('kaboom'))).toBe(true);
   });
 
   it('error result has role assistant', async () => {
@@ -1260,9 +1247,7 @@ describe('MessageBus integration', () => {
 
     const result = await bus.process(makeMessage());
     expect(events).toEqual(['audit-start', 'inject', 'execute', 'audit-end']);
-    expect(result.response.content).toBe(
-      'Processed with prompt: You are a helpful assistant.',
-    );
+    expect(result.response.content).toBe('Processed with prompt: You are a helpful assistant.');
     expect(result.stages).toEqual(['audit', 'context-injection', 'agent-execution']);
   });
 
@@ -1305,10 +1290,7 @@ describe('MessageBus integration', () => {
     });
 
     const result = await bus.process(makeMessage());
-    expect(result.warnings).toEqual([
-      'No user profile found',
-      'Memory service degraded',
-    ]);
+    expect(result.warnings).toEqual(['No user profile found', 'Memory service degraded']);
   });
 
   it('early return (guard middleware)', async () => {

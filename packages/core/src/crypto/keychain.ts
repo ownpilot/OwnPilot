@@ -15,13 +15,21 @@ const execAsync = promisify(exec);
 const execFileAsync = promisify(execFile);
 
 /** Run a command with arguments as array — no shell interpolation */
-function spawnAsync(cmd: string, args: string[], options?: { input?: string }): Promise<{ stdout: string; stderr: string }> {
+function spawnAsync(
+  cmd: string,
+  args: string[],
+  options?: { input?: string }
+): Promise<{ stdout: string; stderr: string }> {
   return new Promise((resolve, reject) => {
     const proc = spawn(cmd, args, { stdio: ['pipe', 'pipe', 'pipe'] });
     let stdout = '';
     let stderr = '';
-    proc.stdout.on('data', (d: Buffer) => { stdout += d.toString(); });
-    proc.stderr.on('data', (d: Buffer) => { stderr += d.toString(); });
+    proc.stdout.on('data', (d: Buffer) => {
+      stdout += d.toString();
+    });
+    proc.stderr.on('data', (d: Buffer) => {
+      stderr += d.toString();
+    });
     proc.on('error', reject);
     proc.on('close', (code) => {
       if (code === 0) resolve({ stdout, stderr });
@@ -112,23 +120,35 @@ export async function storeSecret(
         // macOS: Use security CLI with array args (no shell interpolation)
         try {
           await execFileAsync('security', [
-            'delete-generic-password', '-s', cfg.service, '-a', cfg.account,
+            'delete-generic-password',
+            '-s',
+            cfg.service,
+            '-a',
+            cfg.account,
           ]);
         } catch {
           // Ignore - may not exist
         }
 
         await execFileAsync('security', [
-          'add-generic-password', '-s', cfg.service, '-a', cfg.account, '-w', base64Secret,
+          'add-generic-password',
+          '-s',
+          cfg.service,
+          '-a',
+          cfg.account,
+          '-w',
+          base64Secret,
         ]);
         return ok(undefined);
       }
 
       case 'linux': {
         // Linux: Use secret-tool with stdin for the secret value
-        await spawnAsync('secret-tool', [
-          'store', '--label', cfg.service, 'service', cfg.service, 'account', cfg.account,
-        ], { input: base64Secret });
+        await spawnAsync(
+          'secret-tool',
+          ['store', '--label', cfg.service, 'service', cfg.service, 'account', cfg.account],
+          { input: base64Secret }
+        );
         return ok(undefined);
       }
 
@@ -141,7 +161,9 @@ export async function storeSecret(
         // Use PowerShell DPAPI to encrypt before writing — pass value via stdin to avoid shell injection
         try {
           const script = `$input = [Console]::In.ReadToEnd(); [Convert]::ToBase64String([System.Security.Cryptography.ProtectedData]::Protect([System.Text.Encoding]::UTF8.GetBytes($input),[byte[]]@(),'CurrentUser'))`;
-          const { stdout } = await spawnAsync('powershell', ['-NoProfile', '-Command', script], { input: base64Secret });
+          const { stdout } = await spawnAsync('powershell', ['-NoProfile', '-Command', script], {
+            input: base64Secret,
+          });
           writeFileSync(credPath, stdout.trim(), { mode: 0o600 });
         } catch {
           // Fallback: write base64 directly if DPAPI unavailable
@@ -179,7 +201,12 @@ export async function retrieveSecret(
       case 'darwin': {
         // macOS: Use security CLI with array args (no shell interpolation)
         const { stdout } = await execFileAsync('security', [
-          'find-generic-password', '-s', cfg.service, '-a', cfg.account, '-w',
+          'find-generic-password',
+          '-s',
+          cfg.service,
+          '-a',
+          cfg.account,
+          '-w',
         ]);
         const base64Secret = stdout.trim();
         if (!base64Secret) {
@@ -191,7 +218,11 @@ export async function retrieveSecret(
       case 'linux': {
         // Linux: Use secret-tool with array args
         const { stdout } = await execFileAsync('secret-tool', [
-          'lookup', 'service', cfg.service, 'account', cfg.account,
+          'lookup',
+          'service',
+          cfg.service,
+          'account',
+          cfg.account,
         ]);
         const base64Secret = stdout.trim();
         if (!base64Secret) {
@@ -210,7 +241,9 @@ export async function retrieveSecret(
           // Try DPAPI decryption first — pass value via stdin to avoid shell injection
           try {
             const script = `$input = [Console]::In.ReadToEnd(); [System.Text.Encoding]::UTF8.GetString([System.Security.Cryptography.ProtectedData]::Unprotect([Convert]::FromBase64String($input),[byte[]]@(),'CurrentUser'))`;
-            const { stdout } = await spawnAsync('powershell', ['-NoProfile', '-Command', script], { input: content });
+            const { stdout } = await spawnAsync('powershell', ['-NoProfile', '-Command', script], {
+              input: content,
+            });
             const base64Secret = stdout.trim();
             if (!base64Secret) return ok(null);
             return ok(fromBase64(base64Secret));
@@ -254,14 +287,22 @@ export async function deleteSecret(
     switch (os) {
       case 'darwin': {
         await execFileAsync('security', [
-          'delete-generic-password', '-s', cfg.service, '-a', cfg.account,
+          'delete-generic-password',
+          '-s',
+          cfg.service,
+          '-a',
+          cfg.account,
         ]);
         return ok(undefined);
       }
 
       case 'linux': {
         await execFileAsync('secret-tool', [
-          'clear', 'service', cfg.service, 'account', cfg.account,
+          'clear',
+          'service',
+          cfg.service,
+          'account',
+          cfg.account,
         ]);
         return ok(undefined);
       }

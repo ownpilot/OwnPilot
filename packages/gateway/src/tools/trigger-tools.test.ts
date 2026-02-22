@@ -98,20 +98,27 @@ describe('Trigger Tools', () => {
         nextFire: new Date('2025-01-02T08:00:00Z'),
       });
 
-      const result = await executeTriggerTool('create_trigger', {
-        name: 'Daily Report',
-        type: 'schedule',
-        cron: '0 8 * * *',
-        action_type: 'chat',
-        action_payload: { prompt: 'Generate report' },
-      }, 'user-1');
+      const result = await executeTriggerTool(
+        'create_trigger',
+        {
+          name: 'Daily Report',
+          type: 'schedule',
+          cron: '0 8 * * *',
+          action_type: 'chat',
+          action_payload: { prompt: 'Generate report' },
+        },
+        'user-1'
+      );
 
       expect(result.success).toBe(true);
-      expect(mockTriggerService.createTrigger).toHaveBeenCalledWith('user-1', expect.objectContaining({
-        name: 'Daily Report',
-        type: 'schedule',
-        config: { cron: '0 8 * * *', timezone: 'local' },
-      }));
+      expect(mockTriggerService.createTrigger).toHaveBeenCalledWith(
+        'user-1',
+        expect.objectContaining({
+          name: 'Daily Report',
+          type: 'schedule',
+          config: { cron: '0 8 * * *', timezone: 'local' },
+        })
+      );
     });
 
     it('rejects schedule trigger without cron', async () => {
@@ -144,9 +151,12 @@ describe('Trigger Tools', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(mockTriggerService.createTrigger).toHaveBeenCalledWith('default', expect.objectContaining({
-        config: { eventType: 'goal_completed' },
-      }));
+      expect(mockTriggerService.createTrigger).toHaveBeenCalledWith(
+        'default',
+        expect.objectContaining({
+          config: { eventType: 'goal_completed' },
+        })
+      );
     });
 
     it('rejects event trigger without event_type', async () => {
@@ -180,9 +190,12 @@ describe('Trigger Tools', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(mockTriggerService.createTrigger).toHaveBeenCalledWith('default', expect.objectContaining({
-        config: { condition: 'stale_goals', threshold: 5, checkInterval: 60 },
-      }));
+      expect(mockTriggerService.createTrigger).toHaveBeenCalledWith(
+        'default',
+        expect.objectContaining({
+          config: { condition: 'stale_goals', threshold: 5, checkInterval: 60 },
+        })
+      );
     });
 
     it('rejects condition trigger without condition', async () => {
@@ -261,7 +274,9 @@ describe('Trigger Tools', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(mockTriggerService.updateTrigger).toHaveBeenCalledWith('default', 't1', { enabled: true });
+      expect(mockTriggerService.updateTrigger).toHaveBeenCalledWith('default', 't1', {
+        enabled: true,
+      });
     });
 
     it('returns error when trigger not found', async () => {

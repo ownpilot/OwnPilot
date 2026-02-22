@@ -145,7 +145,9 @@ describe('ChatRepository', () => {
 
     it('should serialize metadata as JSON', async () => {
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
-      mockAdapter.queryOne.mockResolvedValueOnce(makeConversationRow({ metadata: '{"foo":"bar"}' }));
+      mockAdapter.queryOne.mockResolvedValueOnce(
+        makeConversationRow({ metadata: '{"foo":"bar"}' })
+      );
 
       await repo.createConversation({ title: 'Test', metadata: { foo: 'bar' } });
 
@@ -167,8 +169,9 @@ describe('ChatRepository', () => {
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
       mockAdapter.queryOne.mockResolvedValueOnce(null);
 
-      await expect(repo.createConversation({ title: 'Test' }))
-        .rejects.toThrow('Failed to create conversation');
+      await expect(repo.createConversation({ title: 'Test' })).rejects.toThrow(
+        'Failed to create conversation'
+      );
     });
 
     it('should set null for undefined optional fields', async () => {
@@ -220,7 +223,7 @@ describe('ChatRepository', () => {
 
     it('should parse metadata JSON', async () => {
       mockAdapter.queryOne.mockResolvedValueOnce(
-        makeConversationRow({ metadata: '{"theme":"dark"}' }),
+        makeConversationRow({ metadata: '{"theme":"dark"}' })
       );
 
       const result = await repo.getConversation('conv-1');
@@ -229,9 +232,7 @@ describe('ChatRepository', () => {
     });
 
     it('should handle empty metadata string', async () => {
-      mockAdapter.queryOne.mockResolvedValueOnce(
-        makeConversationRow({ metadata: '' }),
-      );
+      mockAdapter.queryOne.mockResolvedValueOnce(makeConversationRow({ metadata: '' }));
 
       const result = await repo.getConversation('conv-1');
 
@@ -409,7 +410,7 @@ describe('ChatRepository', () => {
     it('should update multiple fields at once', async () => {
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
       mockAdapter.queryOne.mockResolvedValueOnce(
-        makeConversationRow({ title: 'X', provider: 'anthropic', model: 'claude-3' }),
+        makeConversationRow({ title: 'X', provider: 'anthropic', model: 'claude-3' })
       );
 
       const result = await repo.updateConversation('conv-1', {
@@ -483,7 +484,9 @@ describe('ChatRepository', () => {
       const longContent = 'A'.repeat(60);
       mockAdapter.query.mockResolvedValueOnce([makeMessageRow({ content: longContent })]);
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
-      mockAdapter.queryOne.mockResolvedValueOnce(makeConversationRow({ title: longContent.slice(0, 50) + '...' }));
+      mockAdapter.queryOne.mockResolvedValueOnce(
+        makeConversationRow({ title: longContent.slice(0, 50) + '...' })
+      );
 
       const title = await repo.generateTitle('conv-1');
 
@@ -537,11 +540,13 @@ describe('ChatRepository', () => {
     });
 
     it('should serialize toolCalls as JSON', async () => {
-      const toolCalls = [{ id: 'tc-1', type: 'function', function: { name: 'test', arguments: '{}' } }];
+      const toolCalls = [
+        { id: 'tc-1', type: 'function', function: { name: 'test', arguments: '{}' } },
+      ];
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
       mockAdapter.queryOne.mockResolvedValueOnce(
-        makeMessageRow({ tool_calls: JSON.stringify(toolCalls) }),
+        makeMessageRow({ tool_calls: JSON.stringify(toolCalls) })
       );
 
       await repo.addMessage({
@@ -559,9 +564,7 @@ describe('ChatRepository', () => {
       const trace = { step: 1, action: 'search' };
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
-      mockAdapter.queryOne.mockResolvedValueOnce(
-        makeMessageRow({ trace: JSON.stringify(trace) }),
-      );
+      mockAdapter.queryOne.mockResolvedValueOnce(makeMessageRow({ trace: JSON.stringify(trace) }));
 
       await repo.addMessage({
         conversationId: 'conv-1',
@@ -618,7 +621,7 @@ describe('ChatRepository', () => {
       mockAdapter.queryOne.mockResolvedValueOnce(null);
 
       await expect(
-        repo.addMessage({ conversationId: 'conv-1', role: 'user', content: 'Hello' }),
+        repo.addMessage({ conversationId: 'conv-1', role: 'user', content: 'Hello' })
       ).rejects.toThrow('Failed to create message');
     });
 
@@ -626,7 +629,7 @@ describe('ChatRepository', () => {
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
       mockAdapter.queryOne.mockResolvedValueOnce(
-        makeMessageRow({ input_tokens: 50, output_tokens: 100 }),
+        makeMessageRow({ input_tokens: 50, output_tokens: 100 })
       );
 
       await repo.addMessage({
@@ -676,7 +679,7 @@ describe('ChatRepository', () => {
     it('should parse toolCalls JSON', async () => {
       const toolCalls = [{ id: 'tc-1', type: 'function' }];
       mockAdapter.queryOne.mockResolvedValueOnce(
-        makeMessageRow({ tool_calls: JSON.stringify(toolCalls) }),
+        makeMessageRow({ tool_calls: JSON.stringify(toolCalls) })
       );
 
       const result = await repo.getMessage('msg-1');
@@ -686,9 +689,7 @@ describe('ChatRepository', () => {
 
     it('should parse trace JSON', async () => {
       const trace = { step: 1 };
-      mockAdapter.queryOne.mockResolvedValueOnce(
-        makeMessageRow({ trace: JSON.stringify(trace) }),
-      );
+      mockAdapter.queryOne.mockResolvedValueOnce(makeMessageRow({ trace: JSON.stringify(trace) }));
 
       const result = await repo.getMessage('msg-1');
 

@@ -6,7 +6,23 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { History, Search, Archive, Trash2, ChevronLeft, ChevronDown, Telegram, Globe, Bot, User, Clock, MessageSquare, RefreshCw, Check, X } from '../components/icons';
+import {
+  History,
+  Search,
+  Archive,
+  Trash2,
+  ChevronLeft,
+  ChevronDown,
+  Telegram,
+  Globe,
+  Bot,
+  User,
+  Clock,
+  MessageSquare,
+  RefreshCw,
+  Check,
+  X,
+} from '../components/icons';
 import { chatApi } from '../api';
 import type { Conversation, HistoryMessage } from '../api';
 import { useGateway } from '../hooks/useWebSocket';
@@ -99,18 +115,21 @@ export function ChatHistoryPage() {
   }, [showCleanupMenu]);
 
   // Fetch conversations
-  const fetchConversations = useCallback(async (searchQuery?: string) => {
-    try {
-      const data = await chatApi.listHistory({
-        limit: 100,
-        search: searchQuery || undefined,
-        archived: showArchived,
-      });
-      setConversations(data.conversations);
-    } catch {
-      toast.error('Failed to load conversations');
-    }
-  }, [showArchived, toast]);
+  const fetchConversations = useCallback(
+    async (searchQuery?: string) => {
+      try {
+        const data = await chatApi.listHistory({
+          limit: 100,
+          search: searchQuery || undefined,
+          archived: showArchived,
+        });
+        setConversations(data.conversations);
+      } catch {
+        toast.error('Failed to load conversations');
+      }
+    },
+    [showArchived, toast]
+  );
 
   // Reload currently selected conversation messages
   const refreshSelectedMessages = useCallback(async (convId: string) => {
@@ -195,44 +214,50 @@ export function ChatHistoryPage() {
   }, [messages]);
 
   // Archive/unarchive
-  const handleArchive = useCallback(async (id: string, archived: boolean) => {
-    try {
-      await chatApi.archiveHistory(id, archived);
-      setConversations(prev => prev.filter(c => c.id !== id));
-      if (selectedId === id) {
-        setSelectedId(null);
-        setSelectedConv(null);
-        setMessages([]);
+  const handleArchive = useCallback(
+    async (id: string, archived: boolean) => {
+      try {
+        await chatApi.archiveHistory(id, archived);
+        setConversations((prev) => prev.filter((c) => c.id !== id));
+        if (selectedId === id) {
+          setSelectedId(null);
+          setSelectedConv(null);
+          setMessages([]);
+        }
+        toast.success(archived ? 'Conversation archived' : 'Conversation unarchived');
+      } catch {
+        toast.error('Failed to update conversation');
       }
-      toast.success(archived ? 'Conversation archived' : 'Conversation unarchived');
-    } catch {
-      toast.error('Failed to update conversation');
-    }
-  }, [selectedId, toast]);
+    },
+    [selectedId, toast]
+  );
 
   // Delete
-  const handleDelete = useCallback(async (id: string) => {
-    const ok = await confirm({
-      title: 'Delete Conversation',
-      message: 'This conversation will be permanently deleted. This action cannot be undone.',
-      confirmText: 'Delete',
-      variant: 'danger',
-    });
-    if (!ok) return;
+  const handleDelete = useCallback(
+    async (id: string) => {
+      const ok = await confirm({
+        title: 'Delete Conversation',
+        message: 'This conversation will be permanently deleted. This action cannot be undone.',
+        confirmText: 'Delete',
+        variant: 'danger',
+      });
+      if (!ok) return;
 
-    try {
-      await chatApi.deleteHistory(id);
-      setConversations(prev => prev.filter(c => c.id !== id));
-      if (selectedId === id) {
-        setSelectedId(null);
-        setSelectedConv(null);
-        setMessages([]);
+      try {
+        await chatApi.deleteHistory(id);
+        setConversations((prev) => prev.filter((c) => c.id !== id));
+        if (selectedId === id) {
+          setSelectedId(null);
+          setSelectedConv(null);
+          setMessages([]);
+        }
+        toast.success('Conversation deleted');
+      } catch {
+        toast.error('Failed to delete conversation');
       }
-      toast.success('Conversation deleted');
-    } catch {
-      toast.error('Failed to delete conversation');
-    }
-  }, [selectedId, confirm, toast]);
+    },
+    [selectedId, confirm, toast]
+  );
 
   // ---- Bulk operations ----
 
@@ -242,7 +267,7 @@ export function ChatHistoryPage() {
   }, []);
 
   const toggleSelection = useCallback((id: string) => {
-    setSelectedIds(prev => {
+    setSelectedIds((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
       else next.add(id);
@@ -251,7 +276,7 @@ export function ChatHistoryPage() {
   }, []);
 
   const selectAll = useCallback(() => {
-    setSelectedIds(new Set(conversations.map(c => c.id)));
+    setSelectedIds(new Set(conversations.map((c) => c.id)));
   }, [conversations]);
 
   const deselectAll = useCallback(() => {
@@ -271,7 +296,7 @@ export function ChatHistoryPage() {
     try {
       const ids = [...selectedIds];
       await chatApi.bulkDeleteHistory(ids);
-      setConversations(prev => prev.filter(c => !selectedIds.has(c.id)));
+      setConversations((prev) => prev.filter((c) => !selectedIds.has(c.id)));
       if (selectedId && selectedIds.has(selectedId)) {
         setSelectedId(null);
         setSelectedConv(null);
@@ -284,50 +309,60 @@ export function ChatHistoryPage() {
     }
   }, [selectedIds, selectedId, confirm, toast, exitSelectMode]);
 
-  const handleBulkArchive = useCallback(async (archived: boolean) => {
-    if (selectedIds.size === 0) return;
-    const action = archived ? 'Archive' : 'Unarchive';
-    const ok = await confirm({
-      title: `${action} Conversations`,
-      message: `${action} ${selectedIds.size} conversation${selectedIds.size !== 1 ? 's' : ''}?`,
-      confirmText: action,
-    });
-    if (!ok) return;
+  const handleBulkArchive = useCallback(
+    async (archived: boolean) => {
+      if (selectedIds.size === 0) return;
+      const action = archived ? 'Archive' : 'Unarchive';
+      const ok = await confirm({
+        title: `${action} Conversations`,
+        message: `${action} ${selectedIds.size} conversation${selectedIds.size !== 1 ? 's' : ''}?`,
+        confirmText: action,
+      });
+      if (!ok) return;
 
-    try {
-      const ids = [...selectedIds];
-      await chatApi.bulkArchiveHistory(ids, archived);
-      setConversations(prev => prev.filter(c => !selectedIds.has(c.id)));
-      if (selectedId && selectedIds.has(selectedId)) {
-        setSelectedId(null);
-        setSelectedConv(null);
-        setMessages([]);
+      try {
+        const ids = [...selectedIds];
+        await chatApi.bulkArchiveHistory(ids, archived);
+        setConversations((prev) => prev.filter((c) => !selectedIds.has(c.id)));
+        if (selectedId && selectedIds.has(selectedId)) {
+          setSelectedId(null);
+          setSelectedConv(null);
+          setMessages([]);
+        }
+        toast.success(
+          `${archived ? 'Archived' : 'Unarchived'} ${ids.length} conversation${ids.length !== 1 ? 's' : ''}`
+        );
+        exitSelectMode();
+      } catch {
+        toast.error(`Failed to ${action.toLowerCase()} conversations`);
       }
-      toast.success(`${archived ? 'Archived' : 'Unarchived'} ${ids.length} conversation${ids.length !== 1 ? 's' : ''}`);
-      exitSelectMode();
-    } catch {
-      toast.error(`Failed to ${action.toLowerCase()} conversations`);
-    }
-  }, [selectedIds, selectedId, confirm, toast, exitSelectMode]);
+    },
+    [selectedIds, selectedId, confirm, toast, exitSelectMode]
+  );
 
-  const handleDeleteOld = useCallback(async (days: number) => {
-    setShowCleanupMenu(false);
-    const ok = await confirm({
-      title: 'Delete Old Conversations',
-      message: `Delete all conversations older than ${days} day${days !== 1 ? 's' : ''}? This cannot be undone.`,
-      confirmText: 'Delete',
-      variant: 'danger',
-    });
-    if (!ok) return;
+  const handleDeleteOld = useCallback(
+    async (days: number) => {
+      setShowCleanupMenu(false);
+      const ok = await confirm({
+        title: 'Delete Old Conversations',
+        message: `Delete all conversations older than ${days} day${days !== 1 ? 's' : ''}? This cannot be undone.`,
+        confirmText: 'Delete',
+        variant: 'danger',
+      });
+      if (!ok) return;
 
-    try {
-      const result = await chatApi.deleteOldHistory(days);
-      toast.success(`Deleted ${result.deleted} old conversation${result.deleted !== 1 ? 's' : ''}`);
-      fetchConversations(search || undefined);
-    } catch {
-      toast.error('Failed to delete old conversations');
-    }
-  }, [confirm, toast, fetchConversations, search]);
+      try {
+        const result = await chatApi.deleteOldHistory(days);
+        toast.success(
+          `Deleted ${result.deleted} old conversation${result.deleted !== 1 ? 's' : ''}`
+        );
+        fetchConversations(search || undefined);
+      } catch {
+        toast.error('Failed to delete old conversations');
+      }
+    },
+    [confirm, toast, fetchConversations, search]
+  );
 
   const handleDeleteAll = useCallback(async () => {
     setShowCleanupMenu(false);
@@ -375,7 +410,9 @@ export function ChatHistoryPage() {
 
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-1.5 text-xs text-text-muted dark:text-dark-text-muted">
-            <span className={`w-2 h-2 rounded-full ${wsStatus === 'connected' ? 'bg-success' : 'bg-text-muted'}`} />
+            <span
+              className={`w-2 h-2 rounded-full ${wsStatus === 'connected' ? 'bg-success' : 'bg-text-muted'}`}
+            />
             {wsStatus === 'connected' ? 'Live' : 'Offline'}
           </div>
 
@@ -427,7 +464,7 @@ export function ChatHistoryPage() {
           </button>
 
           <button
-            onClick={() => selectMode ? exitSelectMode() : setSelectMode(true)}
+            onClick={() => (selectMode ? exitSelectMode() : setSelectMode(true))}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-colors ${
               selectMode
                 ? 'bg-primary text-white'
@@ -443,7 +480,9 @@ export function ChatHistoryPage() {
             className="p-2 rounded-lg hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary transition-colors"
             disabled={isRefreshing}
           >
-            <RefreshCw className={`w-5 h-5 text-text-secondary dark:text-dark-text-secondary ${isRefreshing ? 'animate-spin' : ''}`} />
+            <RefreshCw
+              className={`w-5 h-5 text-text-secondary dark:text-dark-text-secondary ${isRefreshing ? 'animate-spin' : ''}`}
+            />
           </button>
         </div>
       </header>
@@ -504,7 +543,9 @@ export function ChatHistoryPage() {
                   return (
                     <button
                       key={conv.id}
-                      onClick={() => selectMode ? toggleSelection(conv.id) : selectConversation(conv.id)}
+                      onClick={() =>
+                        selectMode ? toggleSelection(conv.id) : selectConversation(conv.id)
+                      }
                       className={`w-full text-left px-4 py-3 transition-colors ${
                         selectMode && isChecked
                           ? 'bg-primary/10'
@@ -515,21 +556,25 @@ export function ChatHistoryPage() {
                     >
                       <div className="flex items-start gap-2">
                         {selectMode && (
-                          <div className={`mt-0.5 w-4 h-4 rounded border flex-shrink-0 flex items-center justify-center ${
-                            isChecked
-                              ? 'bg-primary border-primary text-white'
-                              : 'border-border dark:border-dark-border'
-                          }`}>
+                          <div
+                            className={`mt-0.5 w-4 h-4 rounded border flex-shrink-0 flex items-center justify-center ${
+                              isChecked
+                                ? 'bg-primary border-primary text-white'
+                                : 'border-border dark:border-dark-border'
+                            }`}
+                          >
                             {isChecked && <Check className="w-3 h-3" />}
                           </div>
                         )}
                         <div className="flex-1 min-w-0">
                           <div className="flex items-start justify-between gap-2">
-                            <h4 className={`text-sm font-medium truncate flex-1 ${
-                              (selectMode ? isChecked : isSelected)
-                                ? 'text-primary'
-                                : 'text-text-primary dark:text-dark-text-primary'
-                            }`}>
+                            <h4
+                              className={`text-sm font-medium truncate flex-1 ${
+                                (selectMode ? isChecked : isSelected)
+                                  ? 'text-primary'
+                                  : 'text-text-primary dark:text-dark-text-primary'
+                              }`}
+                            >
                               {conv.title || 'Untitled'}
                             </h4>
                             <span className="text-[10px] text-text-muted dark:text-dark-text-muted whitespace-nowrap flex-shrink-0">
@@ -630,7 +675,9 @@ export function ChatHistoryPage() {
                         {formatFullDate(selectedConv.createdAt)}
                       </span>
                       {selectedConv.model && (
-                        <span>{selectedConv.provider}/{selectedConv.model}</span>
+                        <span>
+                          {selectedConv.provider}/{selectedConv.model}
+                        </span>
                       )}
                       <span>{selectedConv.messageCount} messages</span>
                     </div>
@@ -666,7 +713,9 @@ export function ChatHistoryPage() {
                       return (
                         <div key={msg.id} className="flex justify-center">
                           <div className="px-3 py-1.5 rounded-full bg-bg-tertiary dark:bg-dark-bg-tertiary text-[11px] text-text-muted dark:text-dark-text-muted max-w-[80%] truncate">
-                            {msg.role === 'tool' ? `Tool: ${msg.content.slice(0, 100)}` : msg.content.slice(0, 100)}
+                            {msg.role === 'tool'
+                              ? `Tool: ${msg.content.slice(0, 100)}`
+                              : msg.content.slice(0, 100)}
                           </div>
                         </div>
                       );
@@ -677,17 +726,22 @@ export function ChatHistoryPage() {
                         key={msg.id}
                         className={`flex ${isAssistant ? 'justify-start' : 'justify-end'}`}
                       >
-                        <div className={`flex gap-2 max-w-[80%] ${isAssistant ? 'flex-row' : 'flex-row-reverse'}`}>
+                        <div
+                          className={`flex gap-2 max-w-[80%] ${isAssistant ? 'flex-row' : 'flex-row-reverse'}`}
+                        >
                           {/* Avatar */}
-                          <div className={`flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center ${
-                            isAssistant
-                              ? 'bg-primary/10 text-primary'
-                              : 'bg-bg-tertiary dark:bg-dark-bg-tertiary text-text-muted dark:text-dark-text-muted'
-                          }`}>
-                            {isAssistant
-                              ? <Bot className="w-4 h-4" />
-                              : <User className="w-4 h-4" />
-                            }
+                          <div
+                            className={`flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center ${
+                              isAssistant
+                                ? 'bg-primary/10 text-primary'
+                                : 'bg-bg-tertiary dark:bg-dark-bg-tertiary text-text-muted dark:text-dark-text-muted'
+                            }`}
+                          >
+                            {isAssistant ? (
+                              <Bot className="w-4 h-4" />
+                            ) : (
+                              <User className="w-4 h-4" />
+                            )}
                           </div>
 
                           {/* Bubble */}
@@ -702,24 +756,33 @@ export function ChatHistoryPage() {
 
                             {/* Tool calls indicator */}
                             {msg.toolCalls && msg.toolCalls.length > 0 && (
-                              <div className={`mt-2 pt-2 border-t ${
-                                isAssistant ? 'border-border/50 dark:border-dark-border/50' : 'border-white/20'
-                              }`}>
-                                <p className={`text-[10px] ${isAssistant ? 'text-text-muted dark:text-dark-text-muted' : 'text-white/60'}`}>
-                                  Used {msg.toolCalls.length} tool{msg.toolCalls.length !== 1 ? 's' : ''}:
-                                  {' '}{msg.toolCalls.map(tc => tc.name).join(', ')}
+                              <div
+                                className={`mt-2 pt-2 border-t ${
+                                  isAssistant
+                                    ? 'border-border/50 dark:border-dark-border/50'
+                                    : 'border-white/20'
+                                }`}
+                              >
+                                <p
+                                  className={`text-[10px] ${isAssistant ? 'text-text-muted dark:text-dark-text-muted' : 'text-white/60'}`}
+                                >
+                                  Used {msg.toolCalls.length} tool
+                                  {msg.toolCalls.length !== 1 ? 's' : ''}:{' '}
+                                  {msg.toolCalls.map((tc) => tc.name).join(', ')}
                                 </p>
                               </div>
                             )}
 
                             {/* Timestamp */}
-                            <div className={`mt-1 text-[10px] ${
-                              isAssistant ? 'text-text-muted dark:text-dark-text-muted' : 'text-white/50'
-                            }`}>
+                            <div
+                              className={`mt-1 text-[10px] ${
+                                isAssistant
+                                  ? 'text-text-muted dark:text-dark-text-muted'
+                                  : 'text-white/50'
+                              }`}
+                            >
                               {formatDate(msg.createdAt)}
-                              {msg.model && (
-                                <span className="ml-2">{msg.model}</span>
-                              )}
+                              {msg.model && <span className="ml-2">{msg.model}</span>}
                             </div>
                           </div>
                         </div>

@@ -38,11 +38,30 @@ async function ensureAudioService(): Promise<void> {
       name: AUDIO_SERVICE,
       displayName: 'Audio Service',
       category: 'ai',
-      description: 'Audio service for text-to-speech and speech-to-text (OpenAI, ElevenLabs). Falls back to default AI provider if not configured.',
+      description:
+        'Audio service for text-to-speech and speech-to-text (OpenAI, ElevenLabs). Falls back to default AI provider if not configured.',
       configSchema: [
-        { name: 'provider_type', label: 'Provider', type: 'string' as const, required: false, description: 'openai (default) or elevenlabs' },
-        { name: 'api_key', label: 'API Key', type: 'secret' as const, required: false, description: 'Leave empty to use default AI provider key' },
-        { name: 'base_url', label: 'Base URL', type: 'string' as const, required: false, description: 'Custom API endpoint' },
+        {
+          name: 'provider_type',
+          label: 'Provider',
+          type: 'string' as const,
+          required: false,
+          description: 'openai (default) or elevenlabs',
+        },
+        {
+          name: 'api_key',
+          label: 'API Key',
+          type: 'secret' as const,
+          required: false,
+          description: 'Leave empty to use default AI provider key',
+        },
+        {
+          name: 'base_url',
+          label: 'Base URL',
+          type: 'string' as const,
+          required: false,
+          description: 'Custom API endpoint',
+        },
       ],
     });
   } catch (error) {
@@ -64,8 +83,11 @@ async function resolveAudioConfig(): Promise<AudioApiConfig | null> {
   // Check dedicated audio service first
   const audioKey = configServicesRepo.getFieldValue(AUDIO_SERVICE, 'api_key') as string | undefined;
   if (audioKey) {
-    const providerType = (configServicesRepo.getFieldValue(AUDIO_SERVICE, 'provider_type') as string) || 'openai';
-    const baseUrl = (configServicesRepo.getFieldValue(AUDIO_SERVICE, 'base_url') as string) || getDefaultAudioBaseUrl(providerType);
+    const providerType =
+      (configServicesRepo.getFieldValue(AUDIO_SERVICE, 'provider_type') as string) || 'openai';
+    const baseUrl =
+      (configServicesRepo.getFieldValue(AUDIO_SERVICE, 'base_url') as string) ||
+      getDefaultAudioBaseUrl(providerType);
     return { apiKey: audioKey, baseUrl, providerType };
   }
 
@@ -84,18 +106,24 @@ async function resolveAudioConfig(): Promise<AudioApiConfig | null> {
 
 function getDefaultAudioBaseUrl(providerType: string): string {
   switch (providerType) {
-    case 'elevenlabs': return 'https://api.elevenlabs.io';
-    default: return 'https://api.openai.com';
+    case 'elevenlabs':
+      return 'https://api.elevenlabs.io';
+    default:
+      return 'https://api.openai.com';
   }
 }
 
-const AUDIO_NOT_CONFIGURED = 'Audio service not configured. Either configure an AI provider in Settings, or set up a dedicated Audio Service in Config Center.';
+const AUDIO_NOT_CONFIGURED =
+  'Audio service not configured. Either configure an AI provider in Settings, or set up a dedicated Audio Service in Config Center.';
 
 // ============================================================================
 // text_to_speech Override
 // ============================================================================
 
-const textToSpeechOverride: ToolExecutor = async (params, context): Promise<ToolExecutionResult> => {
+const textToSpeechOverride: ToolExecutor = async (
+  params,
+  context
+): Promise<ToolExecutionResult> => {
   const text = params.text as string;
   const voice = (params.voice as string) || 'alloy';
   const model = (params.model as string) || 'tts-1';
@@ -107,10 +135,19 @@ const textToSpeechOverride: ToolExecutor = async (params, context): Promise<Tool
     return { content: { error: 'Text is required for speech synthesis' }, isError: true };
   }
   if (text.length > 4096) {
-    return { content: { error: `Text too long: ${text.length} characters (max 4096)` }, isError: true };
+    return {
+      content: { error: `Text too long: ${text.length} characters (max 4096)` },
+      isError: true,
+    };
   }
   if (!SUPPORTED_OUTPUT_FORMATS.includes(format)) {
-    return { content: { error: `Unsupported format: ${format}`, supportedFormats: SUPPORTED_OUTPUT_FORMATS }, isError: true };
+    return {
+      content: {
+        error: `Unsupported format: ${format}`,
+        supportedFormats: SUPPORTED_OUTPUT_FORMATS,
+      },
+      isError: true,
+    };
   }
 
   const config = await resolveAudioConfig();
@@ -124,7 +161,15 @@ const textToSpeechOverride: ToolExecutor = async (params, context): Promise<Tool
     if (config.providerType === 'elevenlabs') {
       audioBuffer = await callElevenLabsTTS(config.apiKey, config.baseUrl, text, voice);
     } else {
-      audioBuffer = await callOpenAITTS(config.apiKey, config.baseUrl, text, voice, model, speed, format);
+      audioBuffer = await callOpenAITTS(
+        config.apiKey,
+        config.baseUrl,
+        text,
+        voice,
+        model,
+        speed,
+        format
+      );
     }
 
     // Save to file
@@ -153,17 +198,26 @@ const textToSpeechOverride: ToolExecutor = async (params, context): Promise<Tool
       isError: false,
     };
   } catch (error) {
-    return { content: { error: `Failed to generate speech: ${getErrorMessage(error)}` }, isError: true };
+    return {
+      content: { error: `Failed to generate speech: ${getErrorMessage(error)}` },
+      isError: true,
+    };
   }
 };
 
 async function callOpenAITTS(
-  apiKey: string, baseUrl: string, text: string, voice: string, model: string, speed: number, format: string,
+  apiKey: string,
+  baseUrl: string,
+  text: string,
+  voice: string,
+  model: string,
+  speed: number,
+  format: string
 ): Promise<Buffer> {
   const url = `${baseUrl}/v1/audio/speech`;
   const response = await fetch(url, {
     method: 'POST',
-    headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+    headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({ model, input: text, voice, speed, response_format: format }),
   });
   if (!response.ok) {
@@ -174,14 +228,17 @@ async function callOpenAITTS(
 }
 
 async function callElevenLabsTTS(
-  apiKey: string, baseUrl: string, text: string, voiceId: string,
+  apiKey: string,
+  baseUrl: string,
+  text: string,
+  voiceId: string
 ): Promise<Buffer> {
   // ElevenLabs uses voice IDs, default to a well-known voice
   const id = voiceId === 'alloy' ? '21m00Tcm4TlvDq8ikWAM' : voiceId;
   const url = `${baseUrl}/v1/text-to-speech/${id}`;
   const response = await fetch(url, {
     method: 'POST',
-    headers: { 'xi-api-key': apiKey, 'Content-Type': 'application/json', 'Accept': 'audio/mpeg' },
+    headers: { 'xi-api-key': apiKey, 'Content-Type': 'application/json', Accept: 'audio/mpeg' },
     body: JSON.stringify({ text, model_id: 'eleven_monolingual_v1' }),
   });
   if (!response.ok) {
@@ -195,7 +252,10 @@ async function callElevenLabsTTS(
 // speech_to_text Override (Whisper)
 // ============================================================================
 
-const speechToTextOverride: ToolExecutor = async (params, _context): Promise<ToolExecutionResult> => {
+const speechToTextOverride: ToolExecutor = async (
+  params,
+  _context
+): Promise<ToolExecutionResult> => {
   const source = params.source as string;
   const language = params.language as string | undefined;
   const prompt = params.prompt as string | undefined;
@@ -227,12 +287,23 @@ const speechToTextOverride: ToolExecutor = async (params, _context): Promise<Too
       // Local file
       const ext = path.extname(source).slice(1).toLowerCase();
       if (!SUPPORTED_INPUT_FORMATS.includes(ext)) {
-        return { content: { error: `Unsupported format: ${ext}`, supportedFormats: SUPPORTED_INPUT_FORMATS }, isError: true };
+        return {
+          content: {
+            error: `Unsupported format: ${ext}`,
+            supportedFormats: SUPPORTED_INPUT_FORMATS,
+          },
+          isError: true,
+        };
       }
 
       const stats = await fs.stat(source);
       if (stats.size > MAX_AUDIO_SIZE) {
-        return { content: { error: `File too large: ${Math.round(stats.size / 1024 / 1024)}MB (max 25MB). Use split_audio to split it first.` }, isError: true };
+        return {
+          content: {
+            error: `File too large: ${Math.round(stats.size / 1024 / 1024)}MB (max 25MB). Use split_audio to split it first.`,
+          },
+          isError: true,
+        };
       }
 
       audioBuffer = await fs.readFile(source);
@@ -240,11 +311,17 @@ const speechToTextOverride: ToolExecutor = async (params, _context): Promise<Too
     }
 
     // Call Whisper API
-    const result = await callWhisperTranscribe(config.apiKey, config.baseUrl, audioBuffer, filename, {
-      language,
-      prompt,
-      responseFormat,
-    });
+    const result = await callWhisperTranscribe(
+      config.apiKey,
+      config.baseUrl,
+      audioBuffer,
+      filename,
+      {
+        language,
+        prompt,
+        responseFormat,
+      }
+    );
 
     return {
       content: {
@@ -270,8 +347,11 @@ interface WhisperResult {
 }
 
 async function callWhisperTranscribe(
-  apiKey: string, baseUrl: string, audioBuffer: Buffer, filename: string,
-  opts: { language?: string; prompt?: string; responseFormat?: string },
+  apiKey: string,
+  baseUrl: string,
+  audioBuffer: Buffer,
+  filename: string,
+  opts: { language?: string; prompt?: string; responseFormat?: string }
 ): Promise<WhisperResult> {
   const url = `${baseUrl}/v1/audio/transcriptions`;
 
@@ -287,7 +367,7 @@ async function callWhisperTranscribe(
 
   const response = await fetch(url, {
     method: 'POST',
-    headers: { 'Authorization': `Bearer ${apiKey}` },
+    headers: { Authorization: `Bearer ${apiKey}` },
     body: formData,
   });
 
@@ -300,7 +380,7 @@ async function callWhisperTranscribe(
     return { text: await response.text() };
   }
 
-  const data = await response.json() as {
+  const data = (await response.json()) as {
     text: string;
     language?: string;
     duration?: number;
@@ -311,7 +391,7 @@ async function callWhisperTranscribe(
     text: data.text,
     language: data.language,
     duration: data.duration,
-    segments: data.segments?.map(s => ({ start: s.start, end: s.end, text: s.text })),
+    segments: data.segments?.map((s) => ({ start: s.start, end: s.end, text: s.text })),
   };
 }
 
@@ -319,7 +399,10 @@ async function callWhisperTranscribe(
 // translate_audio Override
 // ============================================================================
 
-const translateAudioOverride: ToolExecutor = async (params, _context): Promise<ToolExecutionResult> => {
+const translateAudioOverride: ToolExecutor = async (
+  params,
+  _context
+): Promise<ToolExecutionResult> => {
   const source = params.source as string;
   const prompt = params.prompt as string | undefined;
   const responseFormat = (params.responseFormat as string) || 'json';
@@ -339,12 +422,18 @@ const translateAudioOverride: ToolExecutor = async (params, _context): Promise<T
 
     const ext = path.extname(source).slice(1).toLowerCase();
     if (!SUPPORTED_INPUT_FORMATS.includes(ext)) {
-      return { content: { error: `Unsupported format: ${ext}`, supportedFormats: SUPPORTED_INPUT_FORMATS }, isError: true };
+      return {
+        content: { error: `Unsupported format: ${ext}`, supportedFormats: SUPPORTED_INPUT_FORMATS },
+        isError: true,
+      };
     }
 
     const stats = await fs.stat(source);
     if (stats.size > MAX_AUDIO_SIZE) {
-      return { content: { error: `File too large: ${Math.round(stats.size / 1024 / 1024)}MB (max 25MB)` }, isError: true };
+      return {
+        content: { error: `File too large: ${Math.round(stats.size / 1024 / 1024)}MB (max 25MB)` },
+        isError: true,
+      };
     }
 
     const audioBuffer = await fs.readFile(source);
@@ -363,7 +452,7 @@ const translateAudioOverride: ToolExecutor = async (params, _context): Promise<T
 
     const response = await fetch(url, {
       method: 'POST',
-      headers: { 'Authorization': `Bearer ${config.apiKey}` },
+      headers: { Authorization: `Bearer ${config.apiKey}` },
       body: formData,
     });
 
@@ -379,7 +468,7 @@ const translateAudioOverride: ToolExecutor = async (params, _context): Promise<T
       };
     }
 
-    const data = await response.json() as { text: string; duration?: number };
+    const data = (await response.json()) as { text: string; duration?: number };
     return {
       content: {
         success: true,
@@ -391,7 +480,10 @@ const translateAudioOverride: ToolExecutor = async (params, _context): Promise<T
       isError: false,
     };
   } catch (error) {
-    return { content: { error: `Failed to translate audio: ${getErrorMessage(error)}` }, isError: true };
+    return {
+      content: { error: `Failed to translate audio: ${getErrorMessage(error)}` },
+      isError: true,
+    };
   }
 };
 
@@ -420,7 +512,8 @@ const splitAudioOverride: ToolExecutor = async (params, context): Promise<ToolEx
     await fs.access(source);
 
     // Determine output directory
-    const outDir = outputDir || path.join(context.workspaceDir || path.dirname(source), 'audio_segments');
+    const outDir =
+      outputDir || path.join(context.workspaceDir || path.dirname(source), 'audio_segments');
     await fs.mkdir(outDir, { recursive: true });
 
     const baseName = path.basename(source, path.extname(source));
@@ -428,14 +521,22 @@ const splitAudioOverride: ToolExecutor = async (params, context): Promise<ToolEx
 
     // Run ffmpeg
     try {
-      await execFileAsync('ffmpeg', [
-        '-i', source,
-        '-f', 'segment',
-        '-segment_time', segmentDuration.toString(),
-        '-c', 'copy',
-        '-y',
-        outputPattern,
-      ], { timeout: 300000 }); // 5 min timeout
+      await execFileAsync(
+        'ffmpeg',
+        [
+          '-i',
+          source,
+          '-f',
+          'segment',
+          '-segment_time',
+          segmentDuration.toString(),
+          '-c',
+          'copy',
+          '-y',
+          outputPattern,
+        ],
+        { timeout: 300000 }
+      ); // 5 min timeout
     } catch (ffmpegError) {
       const msg = getErrorMessage(ffmpegError);
       if (msg.includes('ENOENT') || msg.includes('not found') || msg.includes('not recognized')) {
@@ -453,16 +554,16 @@ const splitAudioOverride: ToolExecutor = async (params, context): Promise<ToolEx
     // List generated segments
     const files = await fs.readdir(outDir);
     const segments = files
-      .filter(f => f.startsWith(`${baseName}_segment_`) && f.endsWith(`.${format}`))
+      .filter((f) => f.startsWith(`${baseName}_segment_`) && f.endsWith(`.${format}`))
       .sort()
-      .map(f => path.join(outDir, f));
+      .map((f) => path.join(outDir, f));
 
     log.info(`Audio split: ${segments.length} segments from ${source}`);
 
     return {
       content: {
         success: true,
-        segments: segments.map(s => ({ path: s })),
+        segments: segments.map((s) => ({ path: s })),
         segmentCount: segments.length,
         segmentDuration: `${segmentDuration} seconds`,
         format,
@@ -471,7 +572,10 @@ const splitAudioOverride: ToolExecutor = async (params, context): Promise<ToolEx
       isError: false,
     };
   } catch (error) {
-    return { content: { error: `Failed to split audio: ${getErrorMessage(error)}` }, isError: true };
+    return {
+      content: { error: `Failed to split audio: ${getErrorMessage(error)}` },
+      isError: true,
+    };
   }
 };
 

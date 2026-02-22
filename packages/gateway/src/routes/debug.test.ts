@@ -197,7 +197,9 @@ describe('Debug Routes', () => {
       const json = await res.json();
       // sampleEntries has 1 error + 1 retry = 2
       expect(json.data.count).toBe(2);
-      expect(json.data.entries.every((e: { type: string }) => e.type === 'error' || e.type === 'retry')).toBe(true);
+      expect(
+        json.data.entries.every((e: { type: string }) => e.type === 'error' || e.type === 'retry')
+      ).toBe(true);
     });
   });
 
@@ -212,7 +214,11 @@ describe('Debug Routes', () => {
       expect(res.status).toBe(200);
       const json = await res.json();
       expect(json.data.count).toBe(2);
-      expect(json.data.entries.every((e: { type: string }) => e.type === 'request' || e.type === 'response')).toBe(true);
+      expect(
+        json.data.entries.every(
+          (e: { type: string }) => e.type === 'request' || e.type === 'response'
+        )
+      ).toBe(true);
     });
   });
 
@@ -227,7 +233,11 @@ describe('Debug Routes', () => {
       expect(res.status).toBe(200);
       const json = await res.json();
       expect(json.data.count).toBe(2);
-      expect(json.data.entries.every((e: { type: string }) => e.type === 'tool_call' || e.type === 'tool_result')).toBe(true);
+      expect(
+        json.data.entries.every(
+          (e: { type: string }) => e.type === 'tool_call' || e.type === 'tool_result'
+        )
+      ).toBe(true);
     });
   });
 

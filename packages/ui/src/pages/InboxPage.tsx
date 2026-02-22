@@ -7,13 +7,22 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useGateway } from '../hooks/useWebSocket';
-import { Inbox, Telegram, Discord, Globe, RefreshCw, Check, Plus, Send, Trash2 } from '../components/icons';
+import {
+  Inbox,
+  Telegram,
+  Discord,
+  Globe,
+  RefreshCw,
+  Check,
+  Plus,
+  Send,
+  Trash2,
+} from '../components/icons';
 import { channelsApi } from '../api';
 import type { Channel, ChannelMessage } from '../api';
 import { SkeletonCard, SkeletonMessage } from '../components/Skeleton';
 import { MarkdownContent } from '../components/MarkdownContent';
 import { ChannelSetupModal } from '../components/ChannelSetupModal';
-
 
 // Helper to get channel icon
 function ChannelIcon({ type, className }: { type: string; className?: string }) {
@@ -90,8 +99,7 @@ export function InboxPage() {
   // Initial load
   useEffect(() => {
     setIsLoading(true);
-    Promise.all([fetchChannels(), fetchInbox()])
-      .finally(() => setIsLoading(false));
+    Promise.all([fetchChannels(), fetchInbox()]).finally(() => setIsLoading(false));
   }, [fetchChannels, fetchInbox]);
 
   // WS-triggered refresh when new channel messages arrive
@@ -103,7 +111,10 @@ export function InboxPage() {
         fetchInbox(selectedChannel ?? undefined);
       }, 1000);
     });
-    return () => { unsub(); if (wsDebounceRef.current) clearTimeout(wsDebounceRef.current); };
+    return () => {
+      unsub();
+      if (wsDebounceRef.current) clearTimeout(wsDebounceRef.current);
+    };
   }, [subscribe, fetchInbox, selectedChannel]);
 
   // WS-triggered refresh when channel status changes (connect/disconnect/error)
@@ -158,10 +169,8 @@ export function InboxPage() {
   const markAsRead = useCallback(async (messageId: string) => {
     try {
       await channelsApi.markRead(messageId);
-      setMessages(prev => prev.map(m =>
-        m.id === messageId ? { ...m, read: true } : m
-      ));
-      setUnreadCount(prev => Math.max(0, prev - 1));
+      setMessages((prev) => prev.map((m) => (m.id === messageId ? { ...m, read: true } : m)));
+      setUnreadCount((prev) => Math.max(0, prev - 1));
     } catch {
       // Non-critical
     }
@@ -169,7 +178,7 @@ export function InboxPage() {
 
   // Mark all visible unread messages as read
   useEffect(() => {
-    const unread = filteredMessages.filter(m => !m.read && m.direction === 'incoming');
+    const unread = filteredMessages.filter((m) => !m.read && m.direction === 'incoming');
     for (const m of unread) {
       markAsRead(m.id);
     }
@@ -177,7 +186,7 @@ export function InboxPage() {
 
   // Calculate unread per channel
   const getChannelUnread = (channelId: string) => {
-    return messages.filter(m => m.channelId === channelId && !m.read).length;
+    return messages.filter((m) => m.channelId === channelId && !m.read).length;
   };
 
   // Loading state — show page shell with skeleton placeholders
@@ -188,7 +197,9 @@ export function InboxPage() {
           <div className="flex items-center gap-3">
             <Inbox className="w-6 h-6 text-primary" />
             <div>
-              <h2 className="text-lg font-semibold text-text-primary dark:text-dark-text-primary">Inbox</h2>
+              <h2 className="text-lg font-semibold text-text-primary dark:text-dark-text-primary">
+                Inbox
+              </h2>
               <p className="text-sm text-text-muted dark:text-dark-text-muted">Loading...</p>
             </div>
           </div>
@@ -222,14 +233,14 @@ export function InboxPage() {
         </div>
 
         <div className="flex items-center gap-4">
-          {error && (
-            <span className="text-sm text-error">{error}</span>
-          )}
+          {error && <span className="text-sm text-error">{error}</span>}
 
           <div className="flex items-center gap-2 text-sm">
-            <span className={`w-2 h-2 rounded-full ${channels.some(c => c.status === 'connected') ? 'bg-success' : 'bg-text-muted'}`} />
+            <span
+              className={`w-2 h-2 rounded-full ${channels.some((c) => c.status === 'connected') ? 'bg-success' : 'bg-text-muted'}`}
+            />
             <span className="text-text-muted dark:text-dark-text-muted">
-              {channels.filter(c => c.status === 'connected').length} connected
+              {channels.filter((c) => c.status === 'connected').length} connected
             </span>
           </div>
 
@@ -248,7 +259,9 @@ export function InboxPage() {
             className="p-2 rounded-lg hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary transition-colors"
             disabled={isRefreshing}
           >
-            <RefreshCw className={`w-5 h-5 text-text-secondary dark:text-dark-text-secondary ${isRefreshing ? 'animate-spin' : ''}`} />
+            <RefreshCw
+              className={`w-5 h-5 text-text-secondary dark:text-dark-text-secondary ${isRefreshing ? 'animate-spin' : ''}`}
+            />
           </button>
         </div>
       </header>
@@ -287,7 +300,9 @@ export function InboxPage() {
               {unreadCount > 0 && (
                 <span
                   className={`px-2 py-0.5 rounded-full text-xs ${
-                    selectedChannel === null ? 'bg-white/20 text-white' : 'bg-primary/10 text-primary'
+                    selectedChannel === null
+                      ? 'bg-white/20 text-white'
+                      : 'bg-primary/10 text-primary'
                   }`}
                 >
                   {unreadCount}
@@ -328,9 +343,13 @@ export function InboxPage() {
                       <div className="flex-1 text-left min-w-0">
                         <span className="block truncate">{channel.name}</span>
                         {channel.botInfo?.username && (
-                          <span className={`text-xs truncate block ${
-                            selectedChannel === channel.id ? 'text-white/70' : 'text-text-muted dark:text-dark-text-muted'
-                          }`}>
+                          <span
+                            className={`text-xs truncate block ${
+                              selectedChannel === channel.id
+                                ? 'text-white/70'
+                                : 'text-text-muted dark:text-dark-text-muted'
+                            }`}
+                          >
                             @{channel.botInfo.username}
                           </span>
                         )}
@@ -338,7 +357,9 @@ export function InboxPage() {
                       {channelUnread > 0 && (
                         <span
                           className={`px-2 py-0.5 rounded-full text-xs ${
-                            selectedChannel === channel.id ? 'bg-white/20 text-white' : 'bg-primary/10 text-primary'
+                            selectedChannel === channel.id
+                              ? 'bg-white/20 text-white'
+                              : 'bg-primary/10 text-primary'
                           }`}
                         >
                           {channelUnread}
@@ -392,18 +413,20 @@ export function InboxPage() {
                         {/* Sender name for incoming */}
                         {!isOutgoing && (
                           <div className="flex items-center gap-2 mb-1">
-                            <span className={`text-xs font-medium ${
-                              isOutgoing ? 'text-white/70' : 'text-text-muted dark:text-dark-text-muted'
-                            }`}>
+                            <span
+                              className={`text-xs font-medium ${
+                                isOutgoing
+                                  ? 'text-white/70'
+                                  : 'text-text-muted dark:text-dark-text-muted'
+                              }`}
+                            >
                               {message.sender.name}
                             </span>
                           </div>
                         )}
                         {isOutgoing && (
                           <div className="flex items-center gap-2 mb-1">
-                            <span className="text-xs font-medium text-white/70">
-                              Assistant
-                            </span>
+                            <span className="text-xs font-medium text-white/70">Assistant</span>
                           </div>
                         )}
 
@@ -411,17 +434,21 @@ export function InboxPage() {
                         <MarkdownContent content={message.content} compact className="text-sm" />
 
                         {/* Timestamp + status */}
-                        <div className={`flex items-center gap-1.5 mt-1 ${
-                          isOutgoing ? 'justify-end' : 'justify-start'
-                        }`}>
-                          <span className={`text-[10px] ${
-                            isOutgoing ? 'text-white/50' : 'text-text-muted dark:text-dark-text-muted'
-                          }`}>
+                        <div
+                          className={`flex items-center gap-1.5 mt-1 ${
+                            isOutgoing ? 'justify-end' : 'justify-start'
+                          }`}
+                        >
+                          <span
+                            className={`text-[10px] ${
+                              isOutgoing
+                                ? 'text-white/50'
+                                : 'text-text-muted dark:text-dark-text-muted'
+                            }`}
+                          >
                             {formatTimestamp(message.timestamp)}
                           </span>
-                          {isOutgoing && (
-                            <Check className="w-3 h-3 text-white/50" />
-                          )}
+                          {isOutgoing && <Check className="w-3 h-3 text-white/50" />}
                         </div>
                       </div>
                     </div>
@@ -434,7 +461,8 @@ export function InboxPage() {
 
           {/* Reply form */}
           <div className="px-6 py-3 border-t border-border dark:border-dark-border bg-bg-secondary dark:bg-dark-bg-secondary">
-            {selectedChannel && channels.find(c => c.id === selectedChannel)?.status === 'connected' ? (
+            {selectedChannel &&
+            channels.find((c) => c.id === selectedChannel)?.status === 'connected' ? (
               <form
                 onSubmit={async (e) => {
                   e.preventDefault();

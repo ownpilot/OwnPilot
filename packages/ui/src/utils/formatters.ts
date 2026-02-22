@@ -9,7 +9,7 @@
  */
 export function formatNumber(
   num: number,
-  options?: { kDecimals?: number; mDecimals?: number },
+  options?: { kDecimals?: number; mDecimals?: number }
 ): string {
   const { kDecimals = 1, mDecimals = 1 } = options ?? {};
   if (num >= 1000000) return `${(num / 1000000).toFixed(mDecimals)}M`;
@@ -25,9 +25,7 @@ export function formatNumber(
  */
 export function formatToolName(name: string): string {
   const base = name.includes('.') ? name.split('.').pop()! : name;
-  return base
-    .replace(/_/g, ' ')
-    .replace(/\b\w/g, (c) => c.toUpperCase());
+  return base.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 export function formatBytes(bytes: number, decimals = 1): string {

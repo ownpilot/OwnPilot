@@ -131,33 +131,33 @@ CREATE TABLE IF NOT EXISTS plans (
 );
 ```
 
-| Column | Type | Default | Constraints | Description |
-|--------|------|---------|-------------|-------------|
-| `id` | TEXT | -- | PRIMARY KEY | Unique identifier (format: `plan_{timestamp}_{random}`) |
-| `user_id` | TEXT | `'default'` | NOT NULL | Owner user ID |
-| `name` | TEXT | -- | NOT NULL | Human-readable plan name |
-| `description` | TEXT | NULL | -- | Detailed description |
-| `goal` | TEXT | -- | NOT NULL | What this plan aims to achieve |
-| `status` | TEXT | `'pending'` | NOT NULL, CHECK | Current plan state |
-| `current_step` | INTEGER | 0 | NOT NULL | Index of the current or last completed step |
-| `total_steps` | INTEGER | 0 | NOT NULL | Total number of steps (auto-updated on addStep) |
-| `progress` | REAL | 0 | NOT NULL, 0-100 | Percentage complete (auto-calculated) |
-| `priority` | INTEGER | 5 | NOT NULL, 1-10 | Execution priority (10 = highest) |
-| `source` | TEXT | NULL | -- | What created this plan (e.g. "agent", "trigger", "user") |
-| `source_id` | TEXT | NULL | -- | ID of the creating entity |
-| `trigger_id` | TEXT | NULL | FK -> triggers(id), ON DELETE SET NULL | Associated trigger |
-| `goal_id` | TEXT | NULL | FK -> goals(id), ON DELETE SET NULL | Associated goal |
-| `autonomy_level` | INTEGER | 1 | NOT NULL, 0-4 | How autonomously the plan runs |
-| `max_retries` | INTEGER | 3 | NOT NULL | Maximum plan-level retry attempts |
-| `retry_count` | INTEGER | 0 | NOT NULL | Current plan-level retry count |
-| `timeout_ms` | INTEGER | NULL | -- | Overall plan timeout in milliseconds |
-| `checkpoint` | TEXT | NULL | -- | Serialized checkpoint state (JSON string) |
-| `error` | TEXT | NULL | -- | Error message if the plan failed |
-| `created_at` | TIMESTAMP | NOW() | NOT NULL | Creation timestamp |
-| `updated_at` | TIMESTAMP | NOW() | NOT NULL | Last update timestamp |
-| `started_at` | TIMESTAMP | NULL | -- | Set when status first transitions to `running` |
-| `completed_at` | TIMESTAMP | NULL | -- | Set when status becomes `completed`, `failed`, or `cancelled` |
-| `metadata` | JSONB | `'{}'` | -- | Arbitrary JSON metadata |
+| Column           | Type      | Default     | Constraints                            | Description                                                   |
+| ---------------- | --------- | ----------- | -------------------------------------- | ------------------------------------------------------------- |
+| `id`             | TEXT      | --          | PRIMARY KEY                            | Unique identifier (format: `plan_{timestamp}_{random}`)       |
+| `user_id`        | TEXT      | `'default'` | NOT NULL                               | Owner user ID                                                 |
+| `name`           | TEXT      | --          | NOT NULL                               | Human-readable plan name                                      |
+| `description`    | TEXT      | NULL        | --                                     | Detailed description                                          |
+| `goal`           | TEXT      | --          | NOT NULL                               | What this plan aims to achieve                                |
+| `status`         | TEXT      | `'pending'` | NOT NULL, CHECK                        | Current plan state                                            |
+| `current_step`   | INTEGER   | 0           | NOT NULL                               | Index of the current or last completed step                   |
+| `total_steps`    | INTEGER   | 0           | NOT NULL                               | Total number of steps (auto-updated on addStep)               |
+| `progress`       | REAL      | 0           | NOT NULL, 0-100                        | Percentage complete (auto-calculated)                         |
+| `priority`       | INTEGER   | 5           | NOT NULL, 1-10                         | Execution priority (10 = highest)                             |
+| `source`         | TEXT      | NULL        | --                                     | What created this plan (e.g. "agent", "trigger", "user")      |
+| `source_id`      | TEXT      | NULL        | --                                     | ID of the creating entity                                     |
+| `trigger_id`     | TEXT      | NULL        | FK -> triggers(id), ON DELETE SET NULL | Associated trigger                                            |
+| `goal_id`        | TEXT      | NULL        | FK -> goals(id), ON DELETE SET NULL    | Associated goal                                               |
+| `autonomy_level` | INTEGER   | 1           | NOT NULL, 0-4                          | How autonomously the plan runs                                |
+| `max_retries`    | INTEGER   | 3           | NOT NULL                               | Maximum plan-level retry attempts                             |
+| `retry_count`    | INTEGER   | 0           | NOT NULL                               | Current plan-level retry count                                |
+| `timeout_ms`     | INTEGER   | NULL        | --                                     | Overall plan timeout in milliseconds                          |
+| `checkpoint`     | TEXT      | NULL        | --                                     | Serialized checkpoint state (JSON string)                     |
+| `error`          | TEXT      | NULL        | --                                     | Error message if the plan failed                              |
+| `created_at`     | TIMESTAMP | NOW()       | NOT NULL                               | Creation timestamp                                            |
+| `updated_at`     | TIMESTAMP | NOW()       | NOT NULL                               | Last update timestamp                                         |
+| `started_at`     | TIMESTAMP | NULL        | --                                     | Set when status first transitions to `running`                |
+| `completed_at`   | TIMESTAMP | NULL        | --                                     | Set when status becomes `completed`, `failed`, or `cancelled` |
+| `metadata`       | JSONB     | `'{}'`      | --                                     | Arbitrary JSON metadata                                       |
 
 ### plan_steps table
 
@@ -190,28 +190,28 @@ CREATE TABLE IF NOT EXISTS plan_steps (
 );
 ```
 
-| Column | Type | Default | Constraints | Description |
-|--------|------|---------|-------------|-------------|
-| `id` | TEXT | -- | PRIMARY KEY | Unique identifier (format: `step_{timestamp}_{random}`) |
-| `plan_id` | TEXT | -- | NOT NULL, FK -> plans(id), CASCADE | Parent plan |
-| `order_num` | INTEGER | -- | NOT NULL | Execution order (1-based) |
-| `type` | TEXT | -- | NOT NULL, CHECK | Step type (see [Plan Step Types](#plan-step-types)) |
-| `name` | TEXT | -- | NOT NULL | Human-readable step name |
-| `description` | TEXT | NULL | -- | What this step does |
-| `config` | JSONB | `'{}'` | NOT NULL | Type-specific configuration (see [StepConfig](#stepconfig)) |
-| `status` | TEXT | `'pending'` | NOT NULL, CHECK | Current step state |
-| `dependencies` | JSONB | `'[]'` | -- | Array of step IDs that must complete first |
-| `result` | TEXT | NULL | -- | JSON-serialized execution result |
-| `error` | TEXT | NULL | -- | Error message if the step failed |
-| `retry_count` | INTEGER | 0 | NOT NULL | Number of retries attempted |
-| `max_retries` | INTEGER | 3 | NOT NULL | Maximum retry attempts |
-| `timeout_ms` | INTEGER | NULL | -- | Step-level timeout in milliseconds |
-| `started_at` | TIMESTAMP | NULL | -- | Set when status transitions to `running` |
-| `completed_at` | TIMESTAMP | NULL | -- | Set when status reaches a terminal state |
-| `duration_ms` | INTEGER | NULL | -- | Computed: `completed_at - started_at` |
-| `on_success` | TEXT | NULL | -- | Step ID or action on success (branching) |
-| `on_failure` | TEXT | NULL | -- | Step ID or action on failure (`'abort'`, `'skip'`, or step ID) |
-| `metadata` | JSONB | `'{}'` | -- | Arbitrary JSON metadata |
+| Column         | Type      | Default     | Constraints                        | Description                                                    |
+| -------------- | --------- | ----------- | ---------------------------------- | -------------------------------------------------------------- |
+| `id`           | TEXT      | --          | PRIMARY KEY                        | Unique identifier (format: `step_{timestamp}_{random}`)        |
+| `plan_id`      | TEXT      | --          | NOT NULL, FK -> plans(id), CASCADE | Parent plan                                                    |
+| `order_num`    | INTEGER   | --          | NOT NULL                           | Execution order (1-based)                                      |
+| `type`         | TEXT      | --          | NOT NULL, CHECK                    | Step type (see [Plan Step Types](#plan-step-types))            |
+| `name`         | TEXT      | --          | NOT NULL                           | Human-readable step name                                       |
+| `description`  | TEXT      | NULL        | --                                 | What this step does                                            |
+| `config`       | JSONB     | `'{}'`      | NOT NULL                           | Type-specific configuration (see [StepConfig](#stepconfig))    |
+| `status`       | TEXT      | `'pending'` | NOT NULL, CHECK                    | Current step state                                             |
+| `dependencies` | JSONB     | `'[]'`      | --                                 | Array of step IDs that must complete first                     |
+| `result`       | TEXT      | NULL        | --                                 | JSON-serialized execution result                               |
+| `error`        | TEXT      | NULL        | --                                 | Error message if the step failed                               |
+| `retry_count`  | INTEGER   | 0           | NOT NULL                           | Number of retries attempted                                    |
+| `max_retries`  | INTEGER   | 3           | NOT NULL                           | Maximum retry attempts                                         |
+| `timeout_ms`   | INTEGER   | NULL        | --                                 | Step-level timeout in milliseconds                             |
+| `started_at`   | TIMESTAMP | NULL        | --                                 | Set when status transitions to `running`                       |
+| `completed_at` | TIMESTAMP | NULL        | --                                 | Set when status reaches a terminal state                       |
+| `duration_ms`  | INTEGER   | NULL        | --                                 | Computed: `completed_at - started_at`                          |
+| `on_success`   | TEXT      | NULL        | --                                 | Step ID or action on success (branching)                       |
+| `on_failure`   | TEXT      | NULL        | --                                 | Step ID or action on failure (`'abort'`, `'skip'`, or step ID) |
+| `metadata`     | JSONB     | `'{}'`      | --                                 | Arbitrary JSON metadata                                        |
 
 ### plan_history table
 
@@ -231,14 +231,14 @@ CREATE TABLE IF NOT EXISTS plan_history (
 );
 ```
 
-| Column | Type | Description |
-|--------|------|-------------|
-| `id` | TEXT | Unique identifier (format: `evt_{timestamp}_{random}`) |
-| `plan_id` | TEXT | Parent plan |
-| `step_id` | TEXT or NULL | Related step (if event is step-level) |
-| `event_type` | TEXT | One of: `started`, `step_started`, `step_completed`, `step_failed`, `paused`, `resumed`, `completed`, `failed`, `cancelled`, `checkpoint` |
-| `details` | JSONB | Event-specific data (results, errors, checkpoint data, duration) |
-| `created_at` | TIMESTAMP | When the event occurred |
+| Column       | Type         | Description                                                                                                                               |
+| ------------ | ------------ | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`         | TEXT         | Unique identifier (format: `evt_{timestamp}_{random}`)                                                                                    |
+| `plan_id`    | TEXT         | Parent plan                                                                                                                               |
+| `step_id`    | TEXT or NULL | Related step (if event is step-level)                                                                                                     |
+| `event_type` | TEXT         | One of: `started`, `step_started`, `step_completed`, `step_failed`, `paused`, `resumed`, `completed`, `failed`, `cancelled`, `checkpoint` |
+| `details`    | JSONB        | Event-specific data (results, errors, checkpoint data, duration)                                                                          |
+| `created_at` | TIMESTAMP    | When the event occurred                                                                                                                   |
 
 ### Indexes
 
@@ -268,20 +268,20 @@ interface Plan {
   name: string;
   description: string | null;
   goal: string;
-  status: PlanStatus;           // 'pending' | 'running' | 'paused' | 'completed' | 'failed' | 'cancelled'
+  status: PlanStatus; // 'pending' | 'running' | 'paused' | 'completed' | 'failed' | 'cancelled'
   currentStep: number;
   totalSteps: number;
-  progress: number;             // 0-100
-  priority: number;             // 1-10
+  progress: number; // 0-100
+  priority: number; // 1-10
   source: string | null;
   sourceId: string | null;
   triggerId: string | null;
   goalId: string | null;
-  autonomyLevel: number;        // 0-4
+  autonomyLevel: number; // 0-4
   maxRetries: number;
   retryCount: number;
   timeoutMs: number | null;
-  checkpoint: string | null;    // JSON string
+  checkpoint: string | null; // JSON string
   error: string | null;
   createdAt: Date;
   updatedAt: Date;
@@ -298,12 +298,12 @@ interface PlanStep {
   id: string;
   planId: string;
   orderNum: number;
-  type: StepType;               // 'tool_call' | 'llm_decision' | 'user_input' | 'condition' | 'parallel' | 'loop' | 'sub_plan'
+  type: StepType; // 'tool_call' | 'llm_decision' | 'user_input' | 'condition' | 'parallel' | 'loop' | 'sub_plan'
   name: string;
   description: string | null;
   config: StepConfig;
-  status: StepStatus;           // 'pending' | 'running' | 'completed' | 'failed' | 'skipped' | 'blocked' | 'waiting'
-  dependencies: string[];       // Array of step IDs
+  status: StepStatus; // 'pending' | 'running' | 'completed' | 'failed' | 'skipped' | 'blocked' | 'waiting'
+  dependencies: string[]; // Array of step IDs
   result: unknown;
   error: string | null;
   retryCount: number;
@@ -325,7 +325,7 @@ interface PlanHistory {
   id: string;
   planId: string;
   stepId: string | null;
-  eventType: PlanEventType;     // 'started' | 'step_started' | 'step_completed' | 'step_failed' | 'paused' | 'resumed' | 'completed' | 'failed' | 'cancelled' | 'checkpoint' | 'rollback'
+  eventType: PlanEventType; // 'started' | 'step_started' | 'step_completed' | 'step_failed' | 'paused' | 'resumed' | 'completed' | 'failed' | 'cancelled' | 'checkpoint' | 'rollback'
   details: Record<string, unknown>;
   createdAt: Date;
 }
@@ -353,11 +353,11 @@ interface StepConfig {
 
   // For condition
   condition?: string;
-  trueStep?: string;           // Step ID to jump to if true
-  falseStep?: string;          // Step ID to jump to if false
+  trueStep?: string; // Step ID to jump to if true
+  falseStep?: string; // Step ID to jump to if false
 
   // For parallel
-  steps?: string[];            // Array of tool definitions to run concurrently
+  steps?: string[]; // Array of tool definitions to run concurrently
   waitAll?: boolean;
 
   // For loop
@@ -386,16 +386,17 @@ A plan transitions through the following states:
                   +--------+  (resume)
 ```
 
-| Status | Description | Entered When |
-|--------|-------------|--------------|
-| `pending` | Created but not yet started. | Plan is first created, or after a rollback resets it. |
-| `running` | Currently executing steps. | `execute()` or `resume()` is called; `started_at` is recorded on first transition. |
-| `paused` | Execution is temporarily halted. | A `user_input` step is reached, manual pause via API, or `shouldPause` is returned by a step handler. |
-| `completed` | All steps finished successfully. | Every step has reached `completed` or `skipped` status and no pending steps remain. `completed_at` is recorded. |
-| `failed` | A step exhausted its retries and the failure policy is `abort`, or a dependency deadlock was detected. | `completed_at` is recorded along with the `error` field. |
-| `cancelled` | Manually aborted by the user or system. | `abort()` is called. The `AbortController` signals all in-flight operations. `completed_at` is recorded. |
+| Status      | Description                                                                                            | Entered When                                                                                                    |
+| ----------- | ------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------- |
+| `pending`   | Created but not yet started.                                                                           | Plan is first created, or after a rollback resets it.                                                           |
+| `running`   | Currently executing steps.                                                                             | `execute()` or `resume()` is called; `started_at` is recorded on first transition.                              |
+| `paused`    | Execution is temporarily halted.                                                                       | A `user_input` step is reached, manual pause via API, or `shouldPause` is returned by a step handler.           |
+| `completed` | All steps finished successfully.                                                                       | Every step has reached `completed` or `skipped` status and no pending steps remain. `completed_at` is recorded. |
+| `failed`    | A step exhausted its retries and the failure policy is `abort`, or a dependency deadlock was detected. | `completed_at` is recorded along with the `error` field.                                                        |
+| `cancelled` | Manually aborted by the user or system.                                                                | `abort()` is called. The `AbortController` signals all in-flight operations. `completed_at` is recorded.        |
 
 Key implementation details from `PlansRepository.update()`:
+
 - `started_at` is set only on the first transition to `running` (not on subsequent resumes).
 - `completed_at` is set whenever status becomes `completed`, `failed`, or `cancelled`.
 
@@ -416,15 +417,15 @@ Individual steps transition through these states:
                 +--> waiting
 ```
 
-| Status | Description |
-|--------|-------------|
-| `pending` | Not started yet. This is the initial state and the state a step returns to when scheduled for retry. |
-| `running` | Currently executing. `started_at` is recorded. |
-| `completed` | Finished successfully. `completed_at` and `duration_ms` are recorded. Result is stored. |
-| `failed` | An error occurred and either retries were exhausted or the step was marked as permanently failed. |
-| `skipped` | Skipped due to a condition branch (steps between the current step and the branch target are skipped). |
-| `blocked` | Waiting for dependencies that can never be met (deadlock detected). |
-| `waiting` | Waiting for external input (e.g., user approval). |
+| Status      | Description                                                                                           |
+| ----------- | ----------------------------------------------------------------------------------------------------- |
+| `pending`   | Not started yet. This is the initial state and the state a step returns to when scheduled for retry.  |
+| `running`   | Currently executing. `started_at` is recorded.                                                        |
+| `completed` | Finished successfully. `completed_at` and `duration_ms` are recorded. Result is stored.               |
+| `failed`    | An error occurred and either retries were exhausted or the step was marked as permanently failed.     |
+| `skipped`   | Skipped due to a condition branch (steps between the current step and the branch target are skipped). |
+| `blocked`   | Waiting for dependencies that can never be met (deadlock detected).                                   |
+| `waiting`   | Waiting for external input (e.g., user approval).                                                     |
 
 When a step's status transitions to `completed`, `failed`, or `skipped`, the repository automatically sets `completed_at` and computes `duration_ms` from `started_at`.
 
@@ -439,6 +440,7 @@ Each step type has a dedicated handler registered in `PlanExecutor.registerDefau
 Executes a registered tool with the given arguments.
 
 **Config:**
+
 ```json
 {
   "toolName": "list_goals",
@@ -447,6 +449,7 @@ Executes a registered tool with the given arguments.
 ```
 
 **Behavior:**
+
 1. Validates that the tool exists via `hasTool()`.
 2. Calls `executeTool(toolName, toolArgs, userId)`.
 3. Wraps the result as `{ type: 'tool_call', toolName, result }`.
@@ -457,6 +460,7 @@ Executes a registered tool with the given arguments.
 Delegates a decision to the AI agent. The LLM receives the prompt, optional choices, and context from all previous step results.
 
 **Config:**
+
 ```json
 {
   "prompt": "Based on the goal data, identify goals that need attention.",
@@ -465,6 +469,7 @@ Delegates a decision to the AI agent. The LLM receives the prompt, optional choi
 ```
 
 **Behavior:**
+
 1. Dynamically imports the chat agent and resolves the current provider/model.
 2. Constructs a full prompt by appending:
    - The choice list (if provided).
@@ -477,6 +482,7 @@ Delegates a decision to the AI agent. The LLM receives the prompt, optional choi
 Pauses the plan and waits for user input. The plan enters `paused` status until resumed.
 
 **Config:**
+
 ```json
 {
   "question": "Would you like to adjust goal priorities?",
@@ -487,6 +493,7 @@ Pauses the plan and waits for user input. The plan enters `paused` status until 
 ```
 
 **Behavior:**
+
 1. Returns `shouldPause: true` immediately.
 2. The executor sets the plan status to `paused`.
 3. The plan remains paused until the user calls the resume API endpoint.
@@ -497,6 +504,7 @@ Pauses the plan and waits for user input. The plan enters `paused` status until 
 Branches execution based on a condition evaluation.
 
 **Config:**
+
 ```json
 {
   "condition": "result:step_123",
@@ -506,6 +514,7 @@ Branches execution based on a condition evaluation.
 ```
 
 **Behavior:**
+
 1. Evaluates the condition:
    - `"result:{stepId}"` -- checks if the referenced step has a truthy result in `previousResults`.
    - `"true"` -- always true.
@@ -518,6 +527,7 @@ Branches execution based on a condition evaluation.
 Executes multiple tool calls concurrently, respecting the `maxConcurrent` configuration.
 
 **Config:**
+
 ```json
 {
   "steps": [
@@ -528,6 +538,7 @@ Executes multiple tool calls concurrently, respecting the `maxConcurrent` config
 ```
 
 **Behavior:**
+
 1. Parses the steps array into `{ toolName, toolArgs }` pairs.
 2. Splits into batches of `maxConcurrent` size (default: 5).
 3. Each batch is executed with `Promise.allSettled()`.
@@ -539,6 +550,7 @@ Executes multiple tool calls concurrently, respecting the `maxConcurrent` config
 Repeats a tool call until either the maximum iterations are reached or the abort signal fires.
 
 **Config:**
+
 ```json
 {
   "toolName": "check_status",
@@ -548,6 +560,7 @@ Repeats a tool call until either the maximum iterations are reached or the abort
 ```
 
 **Behavior:**
+
 1. Validates the tool exists.
 2. Iterates up to `maxIterations` (default: 10).
 3. Each iteration calls `executeTool()` with an additional `{ iteration: i }` argument.
@@ -559,6 +572,7 @@ Repeats a tool call until either the maximum iterations are reached or the abort
 Executes another plan as a nested sub-plan. This enables hierarchical plan composition.
 
 **Config:**
+
 ```json
 {
   "subPlanId": "plan_1706000000_abc123"
@@ -566,6 +580,7 @@ Executes another plan as a nested sub-plan. This enables hierarchical plan compo
 ```
 
 **Behavior:**
+
 1. Calls `this.execute(config.subPlanId)` recursively.
 2. The sub-plan runs through the same executor pipeline (dependency resolution, retries, checkpointing).
 3. The parent step succeeds if and only if the sub-plan completes successfully.
@@ -576,13 +591,13 @@ Executes another plan as a nested sub-plan. This enables hierarchical plan compo
 
 Plans have an `autonomy_level` field (0-4) that determines how much independent action the executor takes.
 
-| Level | Name | Behavior |
-|-------|------|----------|
-| 0 | No autonomy | Requires explicit user approval for every step before execution. |
-| 1 | Suggest and confirm | Suggests actions and waits for user approval before executing. This is the default. |
-| 2 | Safe auto-execute | Executes routine and safe tasks automatically. Pauses and asks for approval on unusual or potentially destructive operations. |
-| 3 | Full with safety checks | Full autonomy with safety guardrails. Executes all steps but applies safety checks before dangerous operations. |
-| 4 | Complete autonomy | Unrestricted execution without any approval gates. |
+| Level | Name                    | Behavior                                                                                                                      |
+| ----- | ----------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| 0     | No autonomy             | Requires explicit user approval for every step before execution.                                                              |
+| 1     | Suggest and confirm     | Suggests actions and waits for user approval before executing. This is the default.                                           |
+| 2     | Safe auto-execute       | Executes routine and safe tasks automatically. Pauses and asks for approval on unusual or potentially destructive operations. |
+| 3     | Full with safety checks | Full autonomy with safety guardrails. Executes all steps but applies safety checks before dangerous operations.               |
+| 4     | Complete autonomy       | Unrestricted execution without any approval gates.                                                                            |
 
 The autonomy level is stored per-plan and can be set at creation time or updated later. It is also configurable at the executor level via `ExecutorConfig.autonomyLevel`.
 
@@ -596,11 +611,11 @@ The `PlanExecutor` class in `packages/gateway/src/plans/executor.ts` is the runt
 
 ```typescript
 interface ExecutorConfig {
-  userId?: string;          // Default: 'default'
-  maxConcurrent?: number;   // Default: 5 (for parallel step batches)
-  defaultTimeout?: number;  // Default: 60000 (60 seconds per step)
-  verbose?: boolean;        // Default: false
-  autonomyLevel?: number;   // Default: 1
+  userId?: string; // Default: 'default'
+  maxConcurrent?: number; // Default: 5 (for parallel step batches)
+  defaultTimeout?: number; // Default: 60000 (60 seconds per step)
+  verbose?: boolean; // Default: false
+  autonomyLevel?: number; // Default: 1
 }
 ```
 
@@ -690,6 +705,7 @@ private async executeWithTimeout<T>(fn: () => Promise<T>, timeout: number): Prom
 ```
 
 Timeout resolution order:
+
 1. `step.timeoutMs` if set on the individual step.
 2. `config.defaultTimeout` from executor config (default: 60000 ms).
 
@@ -712,9 +728,9 @@ When a step fails:
 
 **Backoff schedule (default max_retries = 3):**
 
-| Attempt | Backoff |
-|---------|---------|
-| 1st retry | 1 second |
+| Attempt   | Backoff   |
+| --------- | --------- |
+| 1st retry | 1 second  |
 | 2nd retry | 2 seconds |
 | 3rd retry | 4 seconds |
 
@@ -724,11 +740,11 @@ The cap is 30 seconds per backoff interval.
 
 Each step has an `on_failure` field that determines what happens after all retries are exhausted:
 
-| `on_failure` value | Behavior |
-|--------------------|----------|
-| `null` or `'abort'` | **Default.** The error propagates and the plan fails. |
-| `'skip'` | The executor logs a warning and continues to the next step. |
-| A step ID (e.g., `'step_789'`) | The executor jumps to the specified step. |
+| `on_failure` value             | Behavior                                                    |
+| ------------------------------ | ----------------------------------------------------------- |
+| `null` or `'abort'`            | **Default.** The error propagates and the plan fails.       |
+| `'skip'`                       | The executor logs a warning and continues to the next step. |
+| A step ID (e.g., `'step_789'`) | The executor jumps to the specified step.                   |
 
 ### Branching and Step Skipping
 
@@ -744,12 +760,14 @@ When a step (typically a `condition` step) returns `nextStep` in its result:
 Checkpoints capture the plan's state at a point in time for recovery purposes.
 
 **Creating a checkpoint:**
+
 ```
 POST /plans/:id/checkpoint
 Body: { "data": { ... arbitrary state ... } }
 ```
 
 The executor serializes the checkpoint as:
+
 ```json
 {
   "timestamp": "2025-01-30T12:00:00.000Z",
@@ -781,12 +799,14 @@ After rollback, the plan can be re-executed from the beginning.
 ### Pause and Resume
 
 **Pause** (`POST /plans/:id/pause`):
+
 1. Adds the plan ID to the in-memory `pausedPlans` set.
 2. Updates plan status to `paused` in the database.
 3. Logs a `paused` event.
 4. The execution loop checks `pausedPlans` at the start of each iteration and returns early.
 
 **Resume** (`POST /plans/:id/resume`):
+
 1. Validates the plan status is `paused`.
 2. Removes the plan ID from `pausedPlans`.
 3. Updates plan status to `running`.
@@ -796,6 +816,7 @@ After rollback, the plan can be re-executed from the beginning.
 ### Abort
 
 **Abort** (`POST /plans/:id/abort`):
+
 1. Retrieves the `AbortController` from the `runningPlans` map.
 2. Calls `controller.abort()`, signaling all in-flight operations.
 3. Updates plan status to `cancelled`.
@@ -807,18 +828,18 @@ After rollback, the plan can be re-executed from the beginning.
 
 The `PlanExecutor` extends `EventEmitter` and fires the following events:
 
-| Event | Signature | When |
-|-------|-----------|------|
-| `plan:started` | `(plan: Plan)` | Plan execution begins |
-| `plan:completed` | `(plan: Plan, result: ExecutionResult)` | All steps completed successfully |
-| `plan:failed` | `(plan: Plan, error: string)` | Plan execution failed |
-| `plan:paused` | `(plan: Plan)` | Plan was paused |
-| `plan:resumed` | `(plan: Plan)` | Plan resumed after pause |
-| `step:started` | `(plan: Plan, step: PlanStep)` | A step begins execution |
-| `step:completed` | `(plan: Plan, step: PlanStep, result: StepResult)` | A step completed successfully |
-| `step:failed` | `(plan: Plan, step: PlanStep, error: string)` | A step failed after all retries |
-| `step:skipped` | `(plan: Plan, step: PlanStep, reason: string)` | A step was skipped due to branching |
-| `approval:required` | `(plan: Plan, step: PlanStep, context: unknown)` | A step requires user approval |
+| Event               | Signature                                          | When                                |
+| ------------------- | -------------------------------------------------- | ----------------------------------- |
+| `plan:started`      | `(plan: Plan)`                                     | Plan execution begins               |
+| `plan:completed`    | `(plan: Plan, result: ExecutionResult)`            | All steps completed successfully    |
+| `plan:failed`       | `(plan: Plan, error: string)`                      | Plan execution failed               |
+| `plan:paused`       | `(plan: Plan)`                                     | Plan was paused                     |
+| `plan:resumed`      | `(plan: Plan)`                                     | Plan resumed after pause            |
+| `step:started`      | `(plan: Plan, step: PlanStep)`                     | A step begins execution             |
+| `step:completed`    | `(plan: Plan, step: PlanStep, result: StepResult)` | A step completed successfully       |
+| `step:failed`       | `(plan: Plan, step: PlanStep, error: string)`      | A step failed after all retries     |
+| `step:skipped`      | `(plan: Plan, step: PlanStep, reason: string)`     | A step was skipped due to branching |
+| `approval:required` | `(plan: Plan, step: PlanStep, context: unknown)`   | A step requires user approval       |
 
 Additionally, `plan_history` database events provide a persistent audit trail with the event types: `started`, `step_started`, `step_completed`, `step_failed`, `paused`, `resumed`, `completed`, `failed`, `cancelled`, `checkpoint`, `rollback`.
 
@@ -829,6 +850,7 @@ Additionally, `plan_history` database events provide a persistent audit trail wi
 The `packages/core/src/agent/orchestrator.ts` file provides a separate but complementary planning layer:
 
 **Plan and PlanStep interfaces (core):**
+
 ```typescript
 interface Plan {
   goal: string;
@@ -849,15 +871,18 @@ interface PlanStep {
 ```
 
 **Key functions:**
+
 - `createPlanningPrompt(goal, availableTools)` -- Generates a structured prompt that asks the LLM to decompose a goal into steps with tool assignments and dependencies.
 - `parsePlan(response)` -- Extracts a `Plan` JSON object from an LLM response.
 
 **AgentOrchestrator** handles the LLM conversation loop:
+
 - `execute(userMessage, conversationHistory, metadata)` -- Runs a tool-calling loop up to `maxIterations`.
 - `stream(...)` -- Streaming variant with `AsyncGenerator<AgentStep>`.
 - `cancel()` -- Aborts the current execution via `AbortController`.
 
 **MultiAgentOrchestrator** manages teams of agents:
+
 - `registerTeam(team)` -- Registers a named team with a router function.
 - `execute(message, teamName, context)` -- Routes a message to the appropriate agent.
 
@@ -877,16 +902,17 @@ List plans with optional filters.
 
 **Query Parameters:**
 
-| Parameter | Type | Required | Default | Description |
-|-----------|------|----------|---------|-------------|
-| `userId` | string | No | `'default'` | Filter by user |
-| `status` | string | No | -- | Filter by status |
-| `goalId` | string | No | -- | Filter by associated goal |
-| `triggerId` | string | No | -- | Filter by associated trigger |
-| `limit` | number | No | 20 | Maximum results |
-| `offset` | number | No | 0 | Pagination offset |
+| Parameter   | Type   | Required | Default     | Description                  |
+| ----------- | ------ | -------- | ----------- | ---------------------------- |
+| `userId`    | string | No       | `'default'` | Filter by user               |
+| `status`    | string | No       | --          | Filter by status             |
+| `goalId`    | string | No       | --          | Filter by associated goal    |
+| `triggerId` | string | No       | --          | Filter by associated trigger |
+| `limit`     | number | No       | 20          | Maximum results              |
+| `offset`    | number | No       | 0           | Pagination offset            |
 
 **Response:** `200`
+
 ```json
 {
   "success": true,
@@ -908,6 +934,7 @@ Plans are sorted by `priority DESC, created_at DESC`.
 Create a new plan.
 
 **Request Body:**
+
 ```json
 {
   "name": "Weekly Report Generation",
@@ -928,6 +955,7 @@ Create a new plan.
 Required fields: `name`, `goal`.
 
 **Response:** `201 Created`
+
 ```json
 {
   "success": true,
@@ -940,9 +968,9 @@ Required fields: `name`, `goal`.
 
 **Errors:**
 
-| Status | Code | Condition |
-|--------|------|-----------|
-| 400 | `INVALID_REQUEST` | Missing `name` or `goal` |
+| Status | Code              | Condition                |
+| ------ | ----------------- | ------------------------ |
+| 400    | `INVALID_REQUEST` | Missing `name` or `goal` |
 
 ---
 
@@ -951,6 +979,7 @@ Required fields: `name`, `goal`.
 Get aggregate statistics.
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -978,6 +1007,7 @@ Get aggregate statistics.
 Get all running or paused plans.
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -1001,6 +1031,7 @@ Get all pending plans, sorted by `priority DESC, created_at ASC`.
 Get a specific plan with its steps and recent history (last 20 events).
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -1039,21 +1070,30 @@ Delete a plan and all its steps and history (cascade).
 Start executing a plan. Also aliased as `POST /plans/:id/start`.
 
 **Preconditions:**
+
 - Plan must exist.
 - Plan must not already be running (returns `400 ALREADY_RUNNING`).
 
 **Response (success):**
+
 ```json
 {
   "success": true,
   "data": {
-    "result": { "planId": "...", "status": "completed", "completedSteps": 3, "totalSteps": 3, "duration": 5000 },
+    "result": {
+      "planId": "...",
+      "status": "completed",
+      "completedSteps": 3,
+      "totalSteps": 3,
+      "duration": 5000
+    },
     "message": "Plan executed successfully."
   }
 }
 ```
 
 **Response (failure):**
+
 ```json
 {
   "success": false,
@@ -1090,6 +1130,7 @@ Abort a running plan. Triggers the `AbortController`.
 Create a checkpoint for a plan.
 
 **Request Body (optional):**
+
 ```json
 {
   "data": { "custom": "state" }
@@ -1117,6 +1158,7 @@ Get all steps for a plan, ordered by `order_num ASC`.
 Add a step to a plan.
 
 **Request Body:**
+
 ```json
 {
   "orderNum": 1,
@@ -1162,9 +1204,9 @@ Update step fields: `status`, `result`, `error`, `retryCount`, `metadata`.
 
 Get the audit trail for a plan.
 
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `limit` | number | 50 | Maximum events to return |
+| Parameter | Type   | Default | Description              |
+| --------- | ------ | ------- | ------------------------ |
+| `limit`   | number | 50      | Maximum events to return |
 
 Events are sorted by `created_at DESC` (most recent first).
 
@@ -1177,6 +1219,7 @@ Events are sorted by `created_at DESC` (most recent first).
 Get the current executor state.
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -1192,21 +1235,22 @@ Get the current executor state.
 
 The AI agent interacts with the plan system through seven tools defined in `packages/gateway/src/tools/plan-tools.ts`. All tools are in the `Automation` category.
 
-| Tool | Description | Required Parameters |
-|------|-------------|---------------------|
-| `create_plan` | Create a new execution plan with a goal. | `name`, `goal` |
-| `add_plan_step` | Add a step to an existing plan. | `plan_id`, `order`, `type`, `name` |
-| `list_plans` | List all plans with status and progress. | -- |
-| `get_plan_details` | Get detailed plan info with steps and history. | `plan_id` |
-| `execute_plan` | Start executing a plan (non-blocking). | `plan_id` |
-| `pause_plan` | Pause a running plan. | `plan_id` |
-| `delete_plan` | Delete a plan permanently. | `plan_id` |
+| Tool               | Description                                    | Required Parameters                |
+| ------------------ | ---------------------------------------------- | ---------------------------------- |
+| `create_plan`      | Create a new execution plan with a goal.       | `name`, `goal`                     |
+| `add_plan_step`    | Add a step to an existing plan.                | `plan_id`, `order`, `type`, `name` |
+| `list_plans`       | List all plans with status and progress.       | --                                 |
+| `get_plan_details` | Get detailed plan info with steps and history. | `plan_id`                          |
+| `execute_plan`     | Start executing a plan (non-blocking).         | `plan_id`                          |
+| `pause_plan`       | Pause a running plan.                          | `plan_id`                          |
+| `delete_plan`      | Delete a plan permanently.                     | `plan_id`                          |
 
 **Tool execution flow for `execute_plan`:**
 The tool handler starts execution in the background (non-blocking) via `executor.execute(planId).catch(...)` and immediately returns a response indicating the plan is running. The agent can poll `get_plan_details` to check progress.
 
 **Step creation via `add_plan_step`:**
 The tool maps its flat parameters into the polymorphic `StepConfig`:
+
 - `tool_name` and `tool_args` -> `config.toolName` and `config.toolArgs`
 - `prompt` and `choices` -> `config.prompt` and `config.choices`
 - `question` -> `config.question`
@@ -1225,12 +1269,12 @@ Plans can be associated with triggers via the `trigger_id` foreign key. This ena
 
 Trigger types that can initiate plans:
 
-| Trigger Type | Description | Example |
-|--------------|-------------|---------|
-| `schedule` | Cron-based scheduling | Run "Weekly Goal Review" plan every Sunday at 6 PM |
-| `event` | Fires on system events | Start "Email Processing Pipeline" when new emails arrive |
-| `condition` | Fires when conditions are met | Start "Task Cleanup" when stale tasks exceed threshold |
-| `webhook` | Fires on external HTTP calls | Start "Code Review Assistant" from a GitHub webhook |
+| Trigger Type | Description                   | Example                                                  |
+| ------------ | ----------------------------- | -------------------------------------------------------- |
+| `schedule`   | Cron-based scheduling         | Run "Weekly Goal Review" plan every Sunday at 6 PM       |
+| `event`      | Fires on system events        | Start "Email Processing Pipeline" when new emails arrive |
+| `condition`  | Fires when conditions are met | Start "Task Cleanup" when stale tasks exceed threshold   |
+| `webhook`    | Fires on external HTTP calls  | Start "Code Review Assistant" from a GitHub webhook      |
 
 ### Goal-Plan Connection
 
@@ -1251,41 +1295,41 @@ The `PlansRepository` class in `packages/gateway/src/db/repositories/plans.ts` e
 
 ### Plan CRUD Methods
 
-| Method | Signature | Description |
-|--------|-----------|-------------|
-| `create` | `(input: CreatePlanInput) -> Promise<Plan>` | Creates a plan with a generated ID. Defaults: priority 5, autonomy 1, maxRetries 3. |
-| `get` | `(id: string) -> Promise<Plan \| null>` | Fetches a plan by ID, scoped to the repository's userId. |
-| `update` | `(id: string, input: UpdatePlanInput) -> Promise<Plan \| null>` | Partial update. Automatically sets `started_at` and `completed_at` based on status transitions. |
-| `delete` | `(id: string) -> Promise<boolean>` | Deletes a plan (cascades to steps and history). |
-| `list` | `(options) -> Promise<Plan[]>` | Lists plans with optional filters for status, goalId, triggerId. Sorted by priority DESC, created_at DESC. |
-| `getActive` | `() -> Promise<Plan[]>` | Returns plans with status `running` or `paused`. |
-| `getPending` | `() -> Promise<Plan[]>` | Returns plans with status `pending`, sorted by priority DESC, created_at ASC. |
+| Method       | Signature                                                       | Description                                                                                                |
+| ------------ | --------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `create`     | `(input: CreatePlanInput) -> Promise<Plan>`                     | Creates a plan with a generated ID. Defaults: priority 5, autonomy 1, maxRetries 3.                        |
+| `get`        | `(id: string) -> Promise<Plan \| null>`                         | Fetches a plan by ID, scoped to the repository's userId.                                                   |
+| `update`     | `(id: string, input: UpdatePlanInput) -> Promise<Plan \| null>` | Partial update. Automatically sets `started_at` and `completed_at` based on status transitions.            |
+| `delete`     | `(id: string) -> Promise<boolean>`                              | Deletes a plan (cascades to steps and history).                                                            |
+| `list`       | `(options) -> Promise<Plan[]>`                                  | Lists plans with optional filters for status, goalId, triggerId. Sorted by priority DESC, created_at DESC. |
+| `getActive`  | `() -> Promise<Plan[]>`                                         | Returns plans with status `running` or `paused`.                                                           |
+| `getPending` | `() -> Promise<Plan[]>`                                         | Returns plans with status `pending`, sorted by priority DESC, created_at ASC.                              |
 
 ### Step Methods
 
-| Method | Signature | Description |
-|--------|-----------|-------------|
-| `addStep` | `(planId, input: CreateStepInput) -> Promise<PlanStep>` | Adds a step, checks for circular dependencies, and updates the plan's `total_steps`. |
-| `getStep` | `(id: string) -> Promise<PlanStep \| null>` | Fetches a step by ID (joined with plan for user scoping). |
-| `updateStep` | `(id, input: UpdateStepInput) -> Promise<PlanStep \| null>` | Partial update. Auto-computes `started_at`, `completed_at`, `duration_ms`. |
-| `getSteps` | `(planId: string) -> Promise<PlanStep[]>` | All steps for a plan, ordered by `order_num ASC`. |
-| `getNextStep` | `(planId: string) -> Promise<PlanStep \| null>` | First step with status `pending`. |
-| `getStepsByStatus` | `(planId, status) -> Promise<PlanStep[]>` | Steps filtered by status. |
-| `areDependenciesMet` | `(stepId: string) -> Promise<boolean>` | Checks if all dependency step IDs have `completed` status. |
+| Method               | Signature                                                   | Description                                                                          |
+| -------------------- | ----------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| `addStep`            | `(planId, input: CreateStepInput) -> Promise<PlanStep>`     | Adds a step, checks for circular dependencies, and updates the plan's `total_steps`. |
+| `getStep`            | `(id: string) -> Promise<PlanStep \| null>`                 | Fetches a step by ID (joined with plan for user scoping).                            |
+| `updateStep`         | `(id, input: UpdateStepInput) -> Promise<PlanStep \| null>` | Partial update. Auto-computes `started_at`, `completed_at`, `duration_ms`.           |
+| `getSteps`           | `(planId: string) -> Promise<PlanStep[]>`                   | All steps for a plan, ordered by `order_num ASC`.                                    |
+| `getNextStep`        | `(planId: string) -> Promise<PlanStep \| null>`             | First step with status `pending`.                                                    |
+| `getStepsByStatus`   | `(planId, status) -> Promise<PlanStep[]>`                   | Steps filtered by status.                                                            |
+| `areDependenciesMet` | `(stepId: string) -> Promise<boolean>`                      | Checks if all dependency step IDs have `completed` status.                           |
 
 ### History Methods
 
-| Method | Signature | Description |
-|--------|-----------|-------------|
-| `logEvent` | `(planId, eventType, stepId?, details?) -> Promise<void>` | Appends an event to `plan_history`. |
-| `getHistory` | `(planId, limit?) -> Promise<PlanHistory[]>` | Fetches history events, most recent first. Default limit: 50. |
+| Method       | Signature                                                 | Description                                                   |
+| ------------ | --------------------------------------------------------- | ------------------------------------------------------------- |
+| `logEvent`   | `(planId, eventType, stepId?, details?) -> Promise<void>` | Appends an event to `plan_history`.                           |
+| `getHistory` | `(planId, limit?) -> Promise<PlanHistory[]>`              | Fetches history events, most recent first. Default limit: 50. |
 
 ### Progress and Statistics
 
-| Method | Signature | Description |
-|--------|-----------|-------------|
-| `recalculateProgress` | `(planId) -> Promise<number>` | Computes `(completed / total) * 100` and updates the plan. |
-| `getStats` | `() -> Promise<{total, byStatus, completionRate, avgStepsPerPlan, avgDurationMs}>` | Aggregate statistics across all plans for the user. |
+| Method                | Signature                                                                          | Description                                                |
+| --------------------- | ---------------------------------------------------------------------------------- | ---------------------------------------------------------- |
+| `recalculateProgress` | `(planId) -> Promise<number>`                                                      | Computes `(completed / total) * 100` and updates the plan. |
+| `getStats`            | `() -> Promise<{total, byStatus, completionRate, avgStepsPerPlan, avgDurationMs}>` | Aggregate statistics across all plans for the user.        |
 
 ### Dependency Cycle Detection
 
@@ -1296,7 +1340,7 @@ function detectDependencyCycle(
   existingSteps: PlanStep[],
   newDependencies: string[],
   newStepId: string = '__new__'
-): string | null
+): string | null;
 ```
 
 It builds an adjacency list from all existing steps plus the proposed new step, then runs DFS from the new step. If a back-edge is found, it returns the cycle path as a human-readable string using step names.
@@ -1309,11 +1353,11 @@ It builds an adjacency list from all existing steps plus the proposed new step, 
 
 Located at `packages/gateway/src/db/seeds/plans-seed.ts`. Creates three example plans if they do not already exist:
 
-| Plan | Steps | Description |
-|------|-------|-------------|
-| Weekly Goal Review | 3 | Fetches active goals, gets next actions, then LLM analyzes progress. |
-| Daily Memory Digest | 2 | Lists recent memories, then LLM generates a daily digest. |
-| Task Cleanup | 2 | Lists pending tasks, then LLM identifies stale ones. |
+| Plan                | Steps | Description                                                          |
+| ------------------- | ----- | -------------------------------------------------------------------- |
+| Weekly Goal Review  | 3     | Fetches active goals, gets next actions, then LLM analyzes progress. |
+| Daily Memory Digest | 2     | Lists recent memories, then LLM generates a daily digest.            |
+| Task Cleanup        | 2     | Lists pending tasks, then LLM identifies stale ones.                 |
 
 ### Script Seed (seed-triggers-plans.ts)
 
@@ -1325,13 +1369,13 @@ npx tsx scripts/seed-triggers-plans.ts
 
 Creates five comprehensive example plans via the API:
 
-| Plan | Steps | Autonomy | Description |
-|------|-------|----------|-------------|
-| Morning Routine Analysis | 4 | 3 | Calendar + tasks + LLM prioritization + notification |
-| Weekly Goal Review | 5 | 2 | Goals + progress + LLM analysis + user input + condition |
-| Email Processing Pipeline | 5 | 4 | Fetch emails + categorize + condition + alert + archive |
-| Code Review Assistant | 6 | 2 | User input + fetch PR + LLM review + confirm + condition + post |
-| Research Topic Deep Dive | 7 | 3 | User input + web search + fetch + memory + LLM synthesis + save |
+| Plan                      | Steps | Autonomy | Description                                                     |
+| ------------------------- | ----- | -------- | --------------------------------------------------------------- |
+| Morning Routine Analysis  | 4     | 3        | Calendar + tasks + LLM prioritization + notification            |
+| Weekly Goal Review        | 5     | 2        | Goals + progress + LLM analysis + user input + condition        |
+| Email Processing Pipeline | 5     | 4        | Fetch emails + categorize + condition + alert + archive         |
+| Code Review Assistant     | 6     | 2        | User input + fetch PR + LLM review + confirm + condition + post |
+| Research Topic Deep Dive  | 7     | 3        | User input + web search + fetch + memory + LLM synthesis + save |
 
 Also creates 10 sample triggers (schedule, event, condition, webhook) that can be linked to plans.
 
@@ -1339,15 +1383,15 @@ Also creates 10 sample triggers (schedule, event, condition, webhook) that can b
 
 ## Source File Map
 
-| File | Purpose |
-|------|---------|
-| `packages/gateway/src/services/plan-service.ts` | PlanService -- business logic layer for plan operations, EventBus emission |
-| `packages/gateway/src/plans/executor.ts` | PlanExecutor class: runtime engine with execute/pause/resume/abort/checkpoint |
-| `packages/gateway/src/plans/index.ts` | Module exports for the plans package |
-| `packages/gateway/src/db/repositories/plans.ts` | PlansRepository: all SQL operations, types, cycle detection |
-| `packages/gateway/src/routes/plans.ts` | Hono REST API routes (thin HTTP handler, delegates to PlanService) |
-| `packages/gateway/src/tools/plan-tools.ts` | AI agent tool definitions and execution handlers |
-| `packages/gateway/src/db/seeds/plans-seed.ts` | Database seed with example plans |
-| `packages/gateway/scripts/seed-triggers-plans.ts` | API-based seed script for triggers and plans |
-| `packages/gateway/src/db/schema.ts` | SQL schema definitions (lines 442-503) |
-| `packages/core/src/agent/orchestrator.ts` | Core Plan/PlanStep interfaces, planning prompts, AgentOrchestrator, MultiAgentOrchestrator |
+| File                                              | Purpose                                                                                    |
+| ------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| `packages/gateway/src/services/plan-service.ts`   | PlanService -- business logic layer for plan operations, EventBus emission                 |
+| `packages/gateway/src/plans/executor.ts`          | PlanExecutor class: runtime engine with execute/pause/resume/abort/checkpoint              |
+| `packages/gateway/src/plans/index.ts`             | Module exports for the plans package                                                       |
+| `packages/gateway/src/db/repositories/plans.ts`   | PlansRepository: all SQL operations, types, cycle detection                                |
+| `packages/gateway/src/routes/plans.ts`            | Hono REST API routes (thin HTTP handler, delegates to PlanService)                         |
+| `packages/gateway/src/tools/plan-tools.ts`        | AI agent tool definitions and execution handlers                                           |
+| `packages/gateway/src/db/seeds/plans-seed.ts`     | Database seed with example plans                                                           |
+| `packages/gateway/scripts/seed-triggers-plans.ts` | API-based seed script for triggers and plans                                               |
+| `packages/gateway/src/db/schema.ts`               | SQL schema definitions (lines 442-503)                                                     |
+| `packages/core/src/agent/orchestrator.ts`         | Core Plan/PlanStep interfaces, planning prompts, AgentOrchestrator, MultiAgentOrchestrator |

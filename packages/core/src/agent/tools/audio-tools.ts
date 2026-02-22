@@ -21,7 +21,13 @@ const OPENAI_AUDIO_CONFIG = {
   description: 'OpenAI API for TTS and Whisper speech-to-text',
   docsUrl: 'https://platform.openai.com/docs/api-reference/audio',
   configSchema: [
-    { name: 'api_key', label: 'API Key', type: 'secret' as const, required: true, envVar: 'OPENAI_API_KEY' },
+    {
+      name: 'api_key',
+      label: 'API Key',
+      type: 'secret' as const,
+      required: true,
+      envVar: 'OPENAI_API_KEY',
+    },
   ],
 } as const;
 
@@ -32,7 +38,13 @@ const ELEVENLABS_CONFIG = {
   description: 'ElevenLabs API for high-quality text-to-speech',
   docsUrl: 'https://elevenlabs.io/docs/api-reference',
   configSchema: [
-    { name: 'api_key', label: 'API Key', type: 'secret' as const, required: true, envVar: 'ELEVENLABS_API_KEY' },
+    {
+      name: 'api_key',
+      label: 'API Key',
+      type: 'secret' as const,
+      required: true,
+      envVar: 'ELEVENLABS_API_KEY',
+    },
   ],
 } as const;
 
@@ -43,7 +55,8 @@ const ELEVENLABS_CONFIG = {
 export const textToSpeechTool: ToolDefinition = {
   name: 'text_to_speech',
   brief: 'Convert text to spoken audio',
-  description: 'Convert text to spoken audio using AI voices. Supports multiple languages and voice styles.',
+  description:
+    'Convert text to spoken audio using AI voices. Supports multiple languages and voice styles.',
   parameters: {
     type: 'object',
     properties: {
@@ -80,7 +93,10 @@ export const textToSpeechTool: ToolDefinition = {
   configRequirements: [OPENAI_AUDIO_CONFIG, ELEVENLABS_CONFIG],
 };
 
-export const textToSpeechExecutor: ToolExecutor = async (params, _context): Promise<ToolExecutionResult> => {
+export const textToSpeechExecutor: ToolExecutor = async (
+  params,
+  _context
+): Promise<ToolExecutionResult> => {
   const text = params.text as string;
   const voice = (params.voice as string) || 'alloy';
   const model = (params.model as string) || 'tts-1';
@@ -159,7 +175,8 @@ function estimateDuration(text: string, speed: number): string {
 export const speechToTextTool: ToolDefinition = {
   name: 'speech_to_text',
   brief: 'Transcribe audio to text (Whisper)',
-  description: 'Transcribe audio to text using AI (Whisper). Supports multiple languages and audio formats.',
+  description:
+    'Transcribe audio to text using AI (Whisper). Supports multiple languages and audio formats.',
   parameters: {
     type: 'object',
     properties: {
@@ -169,7 +186,8 @@ export const speechToTextTool: ToolDefinition = {
       },
       language: {
         type: 'string',
-        description: 'Language code (e.g., "en", "es", "tr") for better accuracy. Omit for auto-detection.',
+        description:
+          'Language code (e.g., "en", "es", "tr") for better accuracy. Omit for auto-detection.',
       },
       prompt: {
         type: 'string',
@@ -195,7 +213,10 @@ export const speechToTextTool: ToolDefinition = {
   configRequirements: [OPENAI_AUDIO_CONFIG],
 };
 
-export const speechToTextExecutor: ToolExecutor = async (params, _context): Promise<ToolExecutionResult> => {
+export const speechToTextExecutor: ToolExecutor = async (
+  params,
+  _context
+): Promise<ToolExecutionResult> => {
   const source = params.source as string;
   const language = params.language as string | undefined;
   const prompt = params.prompt as string | undefined;
@@ -276,7 +297,7 @@ export const speechToTextExecutor: ToolExecutor = async (params, _context): Prom
         sourceType: 'file',
         format: audioFormat,
         fileSize,
-        fileSizeMB: Math.round(fileSize / 1024 / 1024 * 100) / 100,
+        fileSizeMB: Math.round((fileSize / 1024 / 1024) * 100) / 100,
         language: language || 'auto-detect',
         prompt,
         model,
@@ -331,7 +352,10 @@ export const translateAudioTool: ToolDefinition = {
   configRequirements: [OPENAI_AUDIO_CONFIG],
 };
 
-export const translateAudioExecutor: ToolExecutor = async (params, _context): Promise<ToolExecutionResult> => {
+export const translateAudioExecutor: ToolExecutor = async (
+  params,
+  _context
+): Promise<ToolExecutionResult> => {
   const source = params.source as string;
   const prompt = params.prompt as string | undefined;
   const model = (params.model as string) || 'whisper-1';
@@ -406,7 +430,10 @@ export const audioInfoTool: ToolDefinition = {
   },
 };
 
-export const audioInfoExecutor: ToolExecutor = async (params, _context): Promise<ToolExecutionResult> => {
+export const audioInfoExecutor: ToolExecutor = async (
+  params,
+  _context
+): Promise<ToolExecutionResult> => {
   const audioPath = params.path as string;
 
   try {
@@ -422,7 +449,7 @@ export const audioInfoExecutor: ToolExecutor = async (params, _context): Promise
       path: audioPath,
       format,
       size: stats.size,
-      sizeMB: Math.round(stats.size / 1024 / 1024 * 100) / 100,
+      sizeMB: Math.round((stats.size / 1024 / 1024) * 100) / 100,
       modified: stats.mtime.toISOString(),
       supported: SUPPORTED_INPUT_FORMATS.includes(format),
     };
@@ -504,7 +531,10 @@ export const splitAudioTool: ToolDefinition = {
   },
 };
 
-export const splitAudioExecutor: ToolExecutor = async (params, _context): Promise<ToolExecutionResult> => {
+export const splitAudioExecutor: ToolExecutor = async (
+  params,
+  _context
+): Promise<ToolExecutionResult> => {
   const source = params.source as string;
   const segmentDuration = (params.segmentDuration as number) || 600;
   const outputDir = params.outputDir as string | undefined;

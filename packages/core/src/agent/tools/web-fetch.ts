@@ -17,17 +17,29 @@ const BLOCKED_DOMAINS = [
   '127.0.0.1',
   '0.0.0.0',
   '::1',
-  '169.254.',  // Link-local IPv4
-  '10.',       // Private Class A
-  '172.16.', '172.17.', '172.18.', '172.19.',
-  '172.20.', '172.21.', '172.22.', '172.23.',
-  '172.24.', '172.25.', '172.26.', '172.27.',
-  '172.28.', '172.29.', '172.30.', '172.31.', // Private Class B
+  '169.254.', // Link-local IPv4
+  '10.', // Private Class A
+  '172.16.',
+  '172.17.',
+  '172.18.',
+  '172.19.',
+  '172.20.',
+  '172.21.',
+  '172.22.',
+  '172.23.',
+  '172.24.',
+  '172.25.',
+  '172.26.',
+  '172.27.',
+  '172.28.',
+  '172.29.',
+  '172.30.',
+  '172.31.', // Private Class B
   '192.168.', // Private Class C
-  '[::1]',    // IPv6 loopback (bracketed in URLs)
-  '[fc',      // IPv6 unique local (fc00::/7)
-  '[fd',      // IPv6 unique local (fd00::/8)
-  '[fe80',    // IPv6 link-local (fe80::/10)
+  '[::1]', // IPv6 loopback (bracketed in URLs)
+  '[fc', // IPv6 unique local (fc00::/7)
+  '[fd', // IPv6 unique local (fd00::/8)
+  '[fe80', // IPv6 link-local (fe80::/10)
 ];
 
 /**
@@ -146,7 +158,8 @@ function extractMetadata(html: string): Record<string, string> {
   }
 
   // Meta tags
-  const metaRegex = /<meta\s+(?:[^>]*?\s+)?(?:name|property)=(["'])(.*?)\1\s+content=(["'])(.*?)\3[^>]*>/gi;
+  const metaRegex =
+    /<meta\s+(?:[^>]*?\s+)?(?:name|property)=(["'])(.*?)\1\s+content=(["'])(.*?)\3[^>]*>/gi;
   let match;
   while ((match = metaRegex.exec(html)) !== null) {
     const name = match[2]?.toLowerCase();
@@ -166,7 +179,8 @@ function extractMetadata(html: string): Record<string, string> {
 export const httpRequestTool: ToolDefinition = {
   name: 'http_request',
   brief: 'Make HTTP requests (GET, POST, PUT, DELETE)',
-  description: 'Make HTTP requests to external APIs and websites. Supports GET, POST, PUT, PATCH, DELETE methods.',
+  description:
+    'Make HTTP requests to external APIs and websites. Supports GET, POST, PUT, PATCH, DELETE methods.',
   parameters: {
     type: 'object',
     properties: {
@@ -181,15 +195,18 @@ export const httpRequestTool: ToolDefinition = {
       },
       headers: {
         type: 'object',
-        description: 'Request headers as key-value pairs, e.g. {"Authorization": "Bearer xxx", "Accept": "application/json"}',
+        description:
+          'Request headers as key-value pairs, e.g. {"Authorization": "Bearer xxx", "Accept": "application/json"}',
       },
       body: {
         type: 'string',
-        description: 'Request body as raw string (for POST, PUT, PATCH). Use "json" instead for JSON payloads.',
+        description:
+          'Request body as raw string (for POST, PUT, PATCH). Use "json" instead for JSON payloads.',
       },
       json: {
         type: 'object',
-        description: 'JSON body object (automatically sets Content-Type to application/json). Use this OR "body", not both.',
+        description:
+          'JSON body object (automatically sets Content-Type to application/json). Use this OR "body", not both.',
       },
       timeout: {
         type: 'number',
@@ -200,7 +217,10 @@ export const httpRequestTool: ToolDefinition = {
   },
 };
 
-export const httpRequestExecutor: ToolExecutor = async (params, _context): Promise<ToolExecutionResult> => {
+export const httpRequestExecutor: ToolExecutor = async (
+  params,
+  _context
+): Promise<ToolExecutionResult> => {
   const url = params.url as string;
   const method = (params.method as string) || 'GET';
   const headers = (params.headers as Record<string, string>) || {};
@@ -338,7 +358,10 @@ export const fetchWebPageTool: ToolDefinition = {
   },
 };
 
-export const fetchWebPageExecutor: ToolExecutor = async (params, _context): Promise<ToolExecutionResult> => {
+export const fetchWebPageExecutor: ToolExecutor = async (
+  params,
+  _context
+): Promise<ToolExecutionResult> => {
   const url = params.url as string;
   const shouldExtractText = params.extractText !== false;
   const shouldExtractLinks = params.extractLinks === true;
@@ -360,7 +383,7 @@ export const fetchWebPageExecutor: ToolExecutor = async (params, _context): Prom
     const response = await fetch(url, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (compatible; OwnPilot/1.0; +https://github.com/ownpilot)',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
         'Accept-Language': 'en-US,en;q=0.5',
       },
       signal: controller.signal,
@@ -409,9 +432,10 @@ export const fetchWebPageExecutor: ToolExecutor = async (params, _context): Prom
     }
 
     if (includeRawHtml) {
-      result.html = html.length > MAX_RESPONSE_SIZE
-        ? html.slice(0, MAX_RESPONSE_SIZE) + '\n\n... [HTML truncated]'
-        : html;
+      result.html =
+        html.length > MAX_RESPONSE_SIZE
+          ? html.slice(0, MAX_RESPONSE_SIZE) + '\n\n... [HTML truncated]'
+          : html;
     }
 
     return { content: result, isError: false };
@@ -437,7 +461,8 @@ export const fetchWebPageExecutor: ToolExecutor = async (params, _context): Prom
 export const searchWebTool: ToolDefinition = {
   name: 'search_web',
   brief: 'Search the web via DuckDuckGo',
-  description: 'Search the web using DuckDuckGo. Returns search results with titles, URLs, and snippets.',
+  description:
+    'Search the web using DuckDuckGo. Returns search results with titles, URLs, and snippets.',
   parameters: {
     type: 'object',
     properties: {
@@ -458,7 +483,10 @@ export const searchWebTool: ToolDefinition = {
   },
 };
 
-export const searchWebExecutor: ToolExecutor = async (params, _context): Promise<ToolExecutionResult> => {
+export const searchWebExecutor: ToolExecutor = async (
+  params,
+  _context
+): Promise<ToolExecutionResult> => {
   const query = params.query as string;
   const maxResults = (params.maxResults as number) || 10;
   const region = (params.region as string) || 'wt-wt';
@@ -473,7 +501,7 @@ export const searchWebExecutor: ToolExecutor = async (params, _context): Promise
     const response = await fetch(searchUrl, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-        'Accept': 'text/html',
+        Accept: 'text/html',
       },
       signal: controller.signal,
     });
@@ -493,7 +521,8 @@ export const searchWebExecutor: ToolExecutor = async (params, _context): Promise
     const results: Array<{ title: string; url: string; snippet: string }> = [];
 
     // Match result blocks
-    const resultRegex = /<a[^>]+class="result__a"[^>]+href="([^"]+)"[^>]*>([^<]+)<\/a>[\s\S]*?<a[^>]+class="result__snippet"[^>]*>([\s\S]*?)<\/a>/gi;
+    const resultRegex =
+      /<a[^>]+class="result__a"[^>]+href="([^"]+)"[^>]*>([^<]+)<\/a>[\s\S]*?<a[^>]+class="result__snippet"[^>]*>([\s\S]*?)<\/a>/gi;
 
     let match;
     while ((match = resultRegex.exec(html)) !== null && results.length < maxResults) {
@@ -504,7 +533,9 @@ export const searchWebExecutor: ToolExecutor = async (params, _context): Promise
       if (matchedUrl) {
         // Extract actual URL from DuckDuckGo redirect
         const actualUrlMatch = matchedUrl.match(/uddg=([^&]+)/);
-        const actualUrl = actualUrlMatch ? decodeURIComponent(actualUrlMatch[1] || matchedUrl) : matchedUrl;
+        const actualUrl = actualUrlMatch
+          ? decodeURIComponent(actualUrlMatch[1] || matchedUrl)
+          : matchedUrl;
 
         results.push({ title, url: actualUrl, snippet });
       }
@@ -540,7 +571,8 @@ export const searchWebExecutor: ToolExecutor = async (params, _context): Promise
 export const jsonApiTool: ToolDefinition = {
   name: 'call_json_api',
   brief: 'Make a JSON API request with auto-serialization',
-  description: 'Simplified tool for making JSON API requests. Automatically handles JSON serialization.',
+  description:
+    'Simplified tool for making JSON API requests. Automatically handles JSON serialization.',
   parameters: {
     type: 'object',
     properties: {
@@ -570,7 +602,10 @@ export const jsonApiTool: ToolDefinition = {
   },
 };
 
-export const jsonApiExecutor: ToolExecutor = async (params, _context): Promise<ToolExecutionResult> => {
+export const jsonApiExecutor: ToolExecutor = async (
+  params,
+  _context
+): Promise<ToolExecutionResult> => {
   const url = params.url as string;
   const method = (params.method as string) || 'GET';
   const data = params.data as Record<string, unknown> | undefined;
@@ -587,7 +622,7 @@ export const jsonApiExecutor: ToolExecutor = async (params, _context): Promise<T
 
   try {
     const requestHeaders: Record<string, string> = {
-      'Accept': 'application/json',
+      Accept: 'application/json',
       'Content-Type': 'application/json',
       ...headers,
     };

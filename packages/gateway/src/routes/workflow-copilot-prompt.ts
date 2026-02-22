@@ -209,17 +209,21 @@ Use double-brace templates in tool args, LLM messages, and expressions:
  */
 export function buildCopilotSystemPrompt(
   currentWorkflow?: WorkflowState,
-  availableTools?: string[],
+  availableTools?: string[]
 ): string {
   const parts = [STATIC_PROMPT];
 
   if (availableTools && availableTools.length > 0) {
-    parts.push(`\n\n## Available Tools\nThese tools can be used as tool nodes in the workflow. Use the EXACT name (including dots) as the \`tool\` field value:\n${availableTools.join(', ')}`);
+    parts.push(
+      `\n\n## Available Tools\nThese tools can be used as tool nodes in the workflow. Use the EXACT name (including dots) as the \`tool\` field value:\n${availableTools.join(', ')}`
+    );
   }
 
   if (currentWorkflow) {
     const json = JSON.stringify(currentWorkflow, null, 2);
-    parts.push(`\n\n## Current Workflow\nThe user has an existing workflow. Modify it based on their request. Preserve existing node IDs where possible.\n\`\`\`json\n${json}\n\`\`\``);
+    parts.push(
+      `\n\n## Current Workflow\nThe user has an existing workflow. Modify it based on their request. Preserve existing node IDs where possible.\n\`\`\`json\n${json}\n\`\`\``
+    );
   }
 
   return parts.join('');

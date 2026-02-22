@@ -24,13 +24,15 @@ webhookRoutes.post('/telegram/:secret', async (c) => {
   const secret = c.req.param('secret');
 
   // Dynamic import to avoid circular dependencies
-  const { getWebhookHandler } = await import(
-    '../channels/plugins/telegram/webhook.js'
-  );
+  const { getWebhookHandler } = await import('../channels/plugins/telegram/webhook.js');
   const handler = getWebhookHandler();
 
   if (!handler) {
-    return apiError(c, { code: ERROR_CODES.SERVICE_UNAVAILABLE, message: 'Webhook not configured' }, 503);
+    return apiError(
+      c,
+      { code: ERROR_CODES.SERVICE_UNAVAILABLE, message: 'Webhook not configured' },
+      503
+    );
   }
 
   // Timing-safe secret validation
@@ -42,6 +44,10 @@ webhookRoutes.post('/telegram/:secret', async (c) => {
     return await handler.callback(c.req.raw);
   } catch (error) {
     log.error('Telegram webhook callback error:', error);
-    return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: 'Webhook processing failed' }, 500);
+    return apiError(
+      c,
+      { code: ERROR_CODES.INTERNAL_ERROR, message: 'Webhook processing failed' },
+      500
+    );
   }
 });

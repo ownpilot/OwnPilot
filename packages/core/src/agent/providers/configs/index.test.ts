@@ -443,7 +443,7 @@ describe('getDefaultModelForProvider', () => {
       ],
     });
     // Remove default field from both models
-    config.models.forEach(m => delete m.default);
+    config.models.forEach((m) => delete m.default);
     setupReadFileMock({ p3: config });
 
     const result = getDefaultModelForProvider('p3');
@@ -521,7 +521,7 @@ describe('loadAllProviderConfigs', () => {
     setupReadFileMock({ openai: openaiConfig, anthropic: anthropicConfig });
 
     const result = loadAllProviderConfigs();
-    const ids = result.map(c => c.id);
+    const ids = result.map((c) => c.id);
     expect(ids).toContain('openai');
     expect(ids).toContain('anthropic');
   });
@@ -543,7 +543,7 @@ describe('loadAllProviderConfigs', () => {
     setupReadFileMock({ openai: config });
 
     const result = loadAllProviderConfigs();
-    const found = result.find(c => c.id === 'openai');
+    const found = result.find((c) => c.id === 'openai');
     expect(found).toBeDefined();
     expect(found).toHaveProperty('id');
     expect(found).toHaveProperty('name');
@@ -566,7 +566,7 @@ describe('getAllProviderConfigs', () => {
     clearConfigCache();
 
     const fromGet = getAllProviderConfigs();
-    expect(fromGet.map(c => c.id)).toEqual(fromLoad.map(c => c.id));
+    expect(fromGet.map((c) => c.id)).toEqual(fromLoad.map((c) => c.id));
   });
 
   it('returns an array', () => {
@@ -620,8 +620,8 @@ describe('getAvailableProviders', () => {
   it('successive calls return independent copies', () => {
     const a = getAvailableProviders();
     const b = getAvailableProviders();
-    expect(a).not.toBe(b);   // different array references
-    expect(a).toEqual(b);    // same content
+    expect(a).not.toBe(b); // different array references
+    expect(a).toEqual(b); // same content
   });
 });
 
@@ -743,7 +743,11 @@ describe('resolveProviderConfig', () => {
   });
 
   it('includes the provider id, name, models, and features in the result', () => {
-    const config = makeProviderConfig({ id: 'cohere', name: 'Cohere', apiKeyEnv: 'COHERE_API_KEY' });
+    const config = makeProviderConfig({
+      id: 'cohere',
+      name: 'Cohere',
+      apiKeyEnv: 'COHERE_API_KEY',
+    });
     setupReadFileMock({ cohere: config });
     setEnv('COHERE_API_KEY', 'cohere-key-abc');
 
@@ -794,7 +798,7 @@ describe('getConfiguredProviders', () => {
     setEnv('ANTHROPIC_API_KEY', 'sk-anthropic-key');
 
     const result = getConfiguredProviders();
-    const ids = result.map(p => p.id);
+    const ids = result.map((p) => p.id);
     expect(ids).toContain('openai');
     expect(ids).toContain('anthropic');
   });
@@ -805,7 +809,7 @@ describe('getConfiguredProviders', () => {
     delete process.env['OPENAI_API_KEY'];
 
     const result = getConfiguredProviders();
-    const ids = result.map(p => p.id);
+    const ids = result.map((p) => p.id);
     expect(ids).not.toContain('openai');
   });
 
@@ -831,7 +835,7 @@ describe('getConfiguredProviders', () => {
     setEnv('GROQ_API_KEY', 'groq-key-xyz');
 
     const result = getConfiguredProviders();
-    const groq = result.find(p => p.id === 'groq');
+    const groq = result.find((p) => p.id === 'groq');
     expect(groq?.apiKey).toBe('groq-key-xyz');
     expect(groq).not.toHaveProperty('apiKeyEnv');
   });
@@ -869,8 +873,16 @@ describe('findModels', () => {
 
   /** Configure openai + anthropic with the given model lists and set their API keys. */
   function setupOpenaiAndAnthropic(modelsOpenai: ModelConfig[], modelsAnthropic: ModelConfig[]) {
-    const openaiConfig = makeProviderConfig({ id: 'openai', apiKeyEnv: 'OPENAI_API_KEY', models: modelsOpenai });
-    const anthropicConfig = makeProviderConfig({ id: 'anthropic', apiKeyEnv: 'ANTHROPIC_API_KEY', models: modelsAnthropic });
+    const openaiConfig = makeProviderConfig({
+      id: 'openai',
+      apiKeyEnv: 'OPENAI_API_KEY',
+      models: modelsOpenai,
+    });
+    const anthropicConfig = makeProviderConfig({
+      id: 'anthropic',
+      apiKeyEnv: 'ANTHROPIC_API_KEY',
+      models: modelsAnthropic,
+    });
     setupReadFileMock({ openai: openaiConfig, anthropic: anthropicConfig });
     setEnv('OPENAI_API_KEY', 'sk-openai-key');
     setEnv('ANTHROPIC_API_KEY', 'sk-anthropic-key');
@@ -896,10 +908,10 @@ describe('findModels', () => {
   it('returns models matching the required capabilities', () => {
     setupOpenaiAndAnthropic(
       [makeModelConfig({ id: 'vision-model', capabilities: ['chat', 'vision', 'streaming'] })],
-      [makeModelConfig({ id: 'plain-model', capabilities: ['chat', 'streaming'] })],
+      [makeModelConfig({ id: 'plain-model', capabilities: ['chat', 'streaming'] })]
     );
     const results = findModels({ capabilities: ['vision'] });
-    const modelIds = results.map(r => r.model.id);
+    const modelIds = results.map((r) => r.model.id);
     expect(modelIds).toContain('vision-model');
     expect(modelIds).not.toContain('plain-model');
   });
@@ -907,7 +919,7 @@ describe('findModels', () => {
   it('returns empty array when no models match required capabilities', () => {
     setupOpenaiAndAnthropic(
       [makeModelConfig({ id: 'm1', capabilities: ['chat', 'streaming'] })],
-      [makeModelConfig({ id: 'm2', capabilities: ['chat', 'streaming'] })],
+      [makeModelConfig({ id: 'm2', capabilities: ['chat', 'streaming'] })]
     );
     const results = findModels({ capabilities: ['embeddings'] });
     expect(results).toEqual([]);
@@ -915,69 +927,125 @@ describe('findModels', () => {
 
   it('requires ALL specified capabilities (AND logic)', () => {
     setupOpenaiOnly([
-      makeModelConfig({ id: 'full', capabilities: ['chat', 'vision', 'function_calling', 'streaming'] }),
+      makeModelConfig({
+        id: 'full',
+        capabilities: ['chat', 'vision', 'function_calling', 'streaming'],
+      }),
       makeModelConfig({ id: 'partial', capabilities: ['chat', 'vision', 'streaming'] }),
     ]);
     const results = findModels({ capabilities: ['vision', 'function_calling'] });
-    const modelIds = results.map(r => r.model.id);
+    const modelIds = results.map((r) => r.model.id);
     expect(modelIds).toContain('full');
     expect(modelIds).not.toContain('partial');
   });
 
   it('filters by maxInputPrice (excludes models above the threshold)', () => {
     setupOpenaiAndAnthropic(
-      [makeModelConfig({ id: 'cheap', inputPrice: 1.0, outputPrice: 5.0, capabilities: ['chat', 'streaming'] })],
-      [makeModelConfig({ id: 'expensive', inputPrice: 10.0, outputPrice: 30.0, capabilities: ['chat', 'streaming'] })],
+      [
+        makeModelConfig({
+          id: 'cheap',
+          inputPrice: 1.0,
+          outputPrice: 5.0,
+          capabilities: ['chat', 'streaming'],
+        }),
+      ],
+      [
+        makeModelConfig({
+          id: 'expensive',
+          inputPrice: 10.0,
+          outputPrice: 30.0,
+          capabilities: ['chat', 'streaming'],
+        }),
+      ]
     );
     const results = findModels({ maxInputPrice: 5.0 });
-    const modelIds = results.map(r => r.model.id);
+    const modelIds = results.map((r) => r.model.id);
     expect(modelIds).toContain('cheap');
     expect(modelIds).not.toContain('expensive');
   });
 
   it('includes model when inputPrice exactly equals maxInputPrice', () => {
-    setupOpenaiOnly([makeModelConfig({ id: 'exact', inputPrice: 5.0, outputPrice: 10.0, capabilities: ['chat', 'streaming'] })]);
+    setupOpenaiOnly([
+      makeModelConfig({
+        id: 'exact',
+        inputPrice: 5.0,
+        outputPrice: 10.0,
+        capabilities: ['chat', 'streaming'],
+      }),
+    ]);
     const results = findModels({ maxInputPrice: 5.0 });
-    const modelIds = results.map(r => r.model.id);
+    const modelIds = results.map((r) => r.model.id);
     expect(modelIds).toContain('exact');
   });
 
   it('filters by maxOutputPrice (excludes models above the threshold)', () => {
     setupOpenaiAndAnthropic(
-      [makeModelConfig({ id: 'cheap-out', inputPrice: 1.0, outputPrice: 5.0, capabilities: ['chat', 'streaming'] })],
-      [makeModelConfig({ id: 'expensive-out', inputPrice: 1.0, outputPrice: 50.0, capabilities: ['chat', 'streaming'] })],
+      [
+        makeModelConfig({
+          id: 'cheap-out',
+          inputPrice: 1.0,
+          outputPrice: 5.0,
+          capabilities: ['chat', 'streaming'],
+        }),
+      ],
+      [
+        makeModelConfig({
+          id: 'expensive-out',
+          inputPrice: 1.0,
+          outputPrice: 50.0,
+          capabilities: ['chat', 'streaming'],
+        }),
+      ]
     );
     const results = findModels({ maxOutputPrice: 10.0 });
-    const modelIds = results.map(r => r.model.id);
+    const modelIds = results.map((r) => r.model.id);
     expect(modelIds).toContain('cheap-out');
     expect(modelIds).not.toContain('expensive-out');
   });
 
   it('filters by minContextWindow (excludes models with smaller context)', () => {
     setupOpenaiAndAnthropic(
-      [makeModelConfig({ id: 'small-ctx', contextWindow: 8_000, capabilities: ['chat', 'streaming'] })],
-      [makeModelConfig({ id: 'large-ctx', contextWindow: 200_000, capabilities: ['chat', 'streaming'] })],
+      [
+        makeModelConfig({
+          id: 'small-ctx',
+          contextWindow: 8_000,
+          capabilities: ['chat', 'streaming'],
+        }),
+      ],
+      [
+        makeModelConfig({
+          id: 'large-ctx',
+          contextWindow: 200_000,
+          capabilities: ['chat', 'streaming'],
+        }),
+      ]
     );
     const results = findModels({ minContextWindow: 100_000 });
-    const modelIds = results.map(r => r.model.id);
+    const modelIds = results.map((r) => r.model.id);
     expect(modelIds).not.toContain('small-ctx');
     expect(modelIds).toContain('large-ctx');
   });
 
   it('includes model when contextWindow exactly equals minContextWindow', () => {
-    setupOpenaiOnly([makeModelConfig({ id: 'exact-ctx', contextWindow: 128_000, capabilities: ['chat', 'streaming'] })]);
+    setupOpenaiOnly([
+      makeModelConfig({
+        id: 'exact-ctx',
+        contextWindow: 128_000,
+        capabilities: ['chat', 'streaming'],
+      }),
+    ]);
     const results = findModels({ minContextWindow: 128_000 });
-    const modelIds = results.map(r => r.model.id);
+    const modelIds = results.map((r) => r.model.id);
     expect(modelIds).toContain('exact-ctx');
   });
 
   it('excludes providers listed in excludedProviders', () => {
     setupOpenaiAndAnthropic(
       [makeModelConfig({ id: 'm-openai', capabilities: ['chat', 'streaming'] })],
-      [makeModelConfig({ id: 'm-anthropic', capabilities: ['chat', 'streaming'] })],
+      [makeModelConfig({ id: 'm-anthropic', capabilities: ['chat', 'streaming'] })]
     );
     const results = findModels({ excludedProviders: ['openai'] });
-    const providerIds = results.map(r => r.provider.id);
+    const providerIds = results.map((r) => r.provider.id);
     expect(providerIds).not.toContain('openai');
     expect(providerIds).toContain('anthropic');
   });
@@ -985,7 +1053,7 @@ describe('findModels', () => {
   it('excludes multiple providers listed in excludedProviders', () => {
     setupOpenaiAndAnthropic(
       [makeModelConfig({ id: 'm-openai', capabilities: ['chat', 'streaming'] })],
-      [makeModelConfig({ id: 'm-anthropic', capabilities: ['chat', 'streaming'] })],
+      [makeModelConfig({ id: 'm-anthropic', capabilities: ['chat', 'streaming'] })]
     );
     const results = findModels({ excludedProviders: ['openai', 'anthropic'] });
     expect(results).toEqual([]);
@@ -994,7 +1062,7 @@ describe('findModels', () => {
   it('sorts results so preferred providers appear first', () => {
     setupOpenaiAndAnthropic(
       [makeModelConfig({ id: 'm-openai', capabilities: ['chat', 'streaming'] })],
-      [makeModelConfig({ id: 'm-anthropic', capabilities: ['chat', 'streaming'] })],
+      [makeModelConfig({ id: 'm-anthropic', capabilities: ['chat', 'streaming'] })]
     );
     const results = findModels({ preferredProviders: ['anthropic', 'openai'] });
     expect(results[0]?.provider.id).toBe('anthropic');
@@ -1003,9 +1071,21 @@ describe('findModels', () => {
 
   it('puts non-preferred providers after preferred ones', () => {
     // Use openai, anthropic, and groq — all are in PROVIDER_IDS
-    const openaiConfig = makeProviderConfig({ id: 'openai', apiKeyEnv: 'OPENAI_API_KEY', models: [makeModelConfig({ id: 'm-openai', capabilities: ['chat', 'streaming'] })] });
-    const anthropicConfig = makeProviderConfig({ id: 'anthropic', apiKeyEnv: 'ANTHROPIC_API_KEY', models: [makeModelConfig({ id: 'm-anthropic', capabilities: ['chat', 'streaming'] })] });
-    const groqConfig = makeProviderConfig({ id: 'groq', apiKeyEnv: 'GROQ_API_KEY', models: [makeModelConfig({ id: 'm-groq', capabilities: ['chat', 'streaming'] })] });
+    const openaiConfig = makeProviderConfig({
+      id: 'openai',
+      apiKeyEnv: 'OPENAI_API_KEY',
+      models: [makeModelConfig({ id: 'm-openai', capabilities: ['chat', 'streaming'] })],
+    });
+    const anthropicConfig = makeProviderConfig({
+      id: 'anthropic',
+      apiKeyEnv: 'ANTHROPIC_API_KEY',
+      models: [makeModelConfig({ id: 'm-anthropic', capabilities: ['chat', 'streaming'] })],
+    });
+    const groqConfig = makeProviderConfig({
+      id: 'groq',
+      apiKeyEnv: 'GROQ_API_KEY',
+      models: [makeModelConfig({ id: 'm-groq', capabilities: ['chat', 'streaming'] })],
+    });
     setupReadFileMock({ openai: openaiConfig, anthropic: anthropicConfig, groq: groqConfig });
     setEnv('OPENAI_API_KEY', 'sk-openai-key');
     setEnv('ANTHROPIC_API_KEY', 'sk-anthropic-key');
@@ -1015,17 +1095,41 @@ describe('findModels', () => {
     // groq should be first
     expect(results[0]?.provider.id).toBe('groq');
     // Others follow in any order
-    const rest = results.slice(1).map(r => r.provider.id);
+    const rest = results.slice(1).map((r) => r.provider.id);
     expect(rest).toContain('openai');
     expect(rest).toContain('anthropic');
   });
 
   it('applies multiple filters combined (AND logic)', () => {
     setupOpenaiOnly([
-      makeModelConfig({ id: 'all-match', capabilities: ['chat', 'vision', 'streaming'], inputPrice: 2.0, outputPrice: 8.0, contextWindow: 150_000 }),
-      makeModelConfig({ id: 'no-vision', capabilities: ['chat', 'streaming'], inputPrice: 1.0, outputPrice: 5.0, contextWindow: 200_000 }),
-      makeModelConfig({ id: 'too-expensive', capabilities: ['chat', 'vision', 'streaming'], inputPrice: 20.0, outputPrice: 80.0, contextWindow: 200_000 }),
-      makeModelConfig({ id: 'small-context', capabilities: ['chat', 'vision', 'streaming'], inputPrice: 2.0, outputPrice: 8.0, contextWindow: 4_000 }),
+      makeModelConfig({
+        id: 'all-match',
+        capabilities: ['chat', 'vision', 'streaming'],
+        inputPrice: 2.0,
+        outputPrice: 8.0,
+        contextWindow: 150_000,
+      }),
+      makeModelConfig({
+        id: 'no-vision',
+        capabilities: ['chat', 'streaming'],
+        inputPrice: 1.0,
+        outputPrice: 5.0,
+        contextWindow: 200_000,
+      }),
+      makeModelConfig({
+        id: 'too-expensive',
+        capabilities: ['chat', 'vision', 'streaming'],
+        inputPrice: 20.0,
+        outputPrice: 80.0,
+        contextWindow: 200_000,
+      }),
+      makeModelConfig({
+        id: 'small-context',
+        capabilities: ['chat', 'vision', 'streaming'],
+        inputPrice: 2.0,
+        outputPrice: 8.0,
+        contextWindow: 4_000,
+      }),
     ]);
     const results = findModels({
       capabilities: ['vision'],
@@ -1033,7 +1137,7 @@ describe('findModels', () => {
       maxOutputPrice: 20.0,
       minContextWindow: 100_000,
     });
-    const modelIds = results.map(r => r.model.id);
+    const modelIds = results.map((r) => r.model.id);
     expect(modelIds).toContain('all-match');
     expect(modelIds).not.toContain('no-vision');
     expect(modelIds).not.toContain('too-expensive');
@@ -1060,11 +1164,21 @@ describe('findModels', () => {
 
   it('returns multiple models from the same provider when all pass the filters', () => {
     setupOpenaiOnly([
-      makeModelConfig({ id: 'm1', capabilities: ['chat', 'streaming'], inputPrice: 1.0, outputPrice: 3.0 }),
-      makeModelConfig({ id: 'm2', capabilities: ['chat', 'streaming'], inputPrice: 2.0, outputPrice: 6.0 }),
+      makeModelConfig({
+        id: 'm1',
+        capabilities: ['chat', 'streaming'],
+        inputPrice: 1.0,
+        outputPrice: 3.0,
+      }),
+      makeModelConfig({
+        id: 'm2',
+        capabilities: ['chat', 'streaming'],
+        inputPrice: 2.0,
+        outputPrice: 6.0,
+      }),
     ]);
     const results = findModels({ capabilities: ['chat'] });
-    const modelIds = results.map(r => r.model.id);
+    const modelIds = results.map((r) => r.model.id);
     expect(modelIds).toContain('m1');
     expect(modelIds).toContain('m2');
   });
@@ -1169,9 +1283,24 @@ describe('getCheapestModel', () => {
       id: 'openai',
       apiKeyEnv: 'OPENAI_API_KEY',
       models: [
-        makeModelConfig({ id: 'expensive', inputPrice: 10.0, outputPrice: 30.0, capabilities: ['chat', 'streaming'] }),
-        makeModelConfig({ id: 'moderate', inputPrice: 3.0, outputPrice: 15.0, capabilities: ['chat', 'streaming'] }),
-        makeModelConfig({ id: 'cheapest', inputPrice: 0.5, outputPrice: 1.5, capabilities: ['chat', 'streaming'] }),
+        makeModelConfig({
+          id: 'expensive',
+          inputPrice: 10.0,
+          outputPrice: 30.0,
+          capabilities: ['chat', 'streaming'],
+        }),
+        makeModelConfig({
+          id: 'moderate',
+          inputPrice: 3.0,
+          outputPrice: 15.0,
+          capabilities: ['chat', 'streaming'],
+        }),
+        makeModelConfig({
+          id: 'cheapest',
+          inputPrice: 0.5,
+          outputPrice: 1.5,
+          capabilities: ['chat', 'streaming'],
+        }),
       ],
     });
     setupReadFileMock({ openai: config });
@@ -1217,8 +1346,18 @@ describe('getCheapestModel', () => {
       id: 'anthropic',
       apiKeyEnv: 'ANTHROPIC_API_KEY',
       models: [
-        makeModelConfig({ id: 'vision-cheap', inputPrice: 1.0, outputPrice: 2.0, capabilities: ['chat', 'vision', 'streaming'] }),
-        makeModelConfig({ id: 'ultra-cheap-no-vision', inputPrice: 0.1, outputPrice: 0.2, capabilities: ['chat', 'streaming'] }),
+        makeModelConfig({
+          id: 'vision-cheap',
+          inputPrice: 1.0,
+          outputPrice: 2.0,
+          capabilities: ['chat', 'vision', 'streaming'],
+        }),
+        makeModelConfig({
+          id: 'ultra-cheap-no-vision',
+          inputPrice: 0.1,
+          outputPrice: 0.2,
+          capabilities: ['chat', 'streaming'],
+        }),
       ],
     });
     setupReadFileMock({ anthropic: config });
@@ -1248,11 +1387,26 @@ describe('getCheapestModel', () => {
       apiKeyEnv: 'OPENAI_API_KEY',
       models: [
         // low input, high output: combined = 1 + 20 = 21
-        makeModelConfig({ id: 'low-in-high-out', inputPrice: 1.0, outputPrice: 20.0, capabilities: ['chat', 'streaming'] }),
+        makeModelConfig({
+          id: 'low-in-high-out',
+          inputPrice: 1.0,
+          outputPrice: 20.0,
+          capabilities: ['chat', 'streaming'],
+        }),
         // high input, low output: combined = 15 + 2 = 17
-        makeModelConfig({ id: 'high-in-low-out', inputPrice: 15.0, outputPrice: 2.0, capabilities: ['chat', 'streaming'] }),
+        makeModelConfig({
+          id: 'high-in-low-out',
+          inputPrice: 15.0,
+          outputPrice: 2.0,
+          capabilities: ['chat', 'streaming'],
+        }),
         // mid combined: combined = 8 + 8 = 16 — cheapest
-        makeModelConfig({ id: 'mid-both', inputPrice: 8.0, outputPrice: 8.0, capabilities: ['chat', 'streaming'] }),
+        makeModelConfig({
+          id: 'mid-both',
+          inputPrice: 8.0,
+          outputPrice: 8.0,
+          capabilities: ['chat', 'streaming'],
+        }),
       ],
     });
     setupReadFileMock({ openai: config });
@@ -1280,11 +1434,26 @@ describe('getFastestModel', () => {
       apiKeyEnv: 'GROQ_API_KEY',
       models: [
         // score = contextWindow + inputPrice * 1000 = 200_000 + 10_000 = 210_000
-        makeModelConfig({ id: 'slow-large', contextWindow: 200_000, inputPrice: 10.0, capabilities: ['chat', 'streaming'] }),
+        makeModelConfig({
+          id: 'slow-large',
+          contextWindow: 200_000,
+          inputPrice: 10.0,
+          capabilities: ['chat', 'streaming'],
+        }),
         // score = 8_000 + 100 = 8_100
-        makeModelConfig({ id: 'fast-small', contextWindow: 8_000, inputPrice: 0.1, capabilities: ['chat', 'streaming'] }),
+        makeModelConfig({
+          id: 'fast-small',
+          contextWindow: 8_000,
+          inputPrice: 0.1,
+          capabilities: ['chat', 'streaming'],
+        }),
         // score = 32_000 + 1_000 = 33_000
-        makeModelConfig({ id: 'medium', contextWindow: 32_000, inputPrice: 1.0, capabilities: ['chat', 'streaming'] }),
+        makeModelConfig({
+          id: 'medium',
+          contextWindow: 32_000,
+          inputPrice: 1.0,
+          capabilities: ['chat', 'streaming'],
+        }),
       ],
     });
     setupReadFileMock({ groq: config });
@@ -1330,8 +1499,18 @@ describe('getFastestModel', () => {
       id: 'mistral',
       apiKeyEnv: 'MISTRAL_API_KEY',
       models: [
-        makeModelConfig({ id: 'vision-fast', contextWindow: 16_000, inputPrice: 0.5, capabilities: ['chat', 'vision', 'streaming'] }),
-        makeModelConfig({ id: 'non-vision-fastest', contextWindow: 4_000, inputPrice: 0.1, capabilities: ['chat', 'streaming'] }),
+        makeModelConfig({
+          id: 'vision-fast',
+          contextWindow: 16_000,
+          inputPrice: 0.5,
+          capabilities: ['chat', 'vision', 'streaming'],
+        }),
+        makeModelConfig({
+          id: 'non-vision-fastest',
+          contextWindow: 4_000,
+          inputPrice: 0.1,
+          capabilities: ['chat', 'streaming'],
+        }),
       ],
     });
     setupReadFileMock({ mistral: config });
@@ -1359,9 +1538,19 @@ describe('getFastestModel', () => {
       apiKeyEnv: 'OPENAI_API_KEY',
       models: [
         // score = 1_000 + 5.0 * 1000 = 6_000
-        makeModelConfig({ id: 'cheap-small', contextWindow: 1_000, inputPrice: 5.0, capabilities: ['chat', 'streaming'] }),
+        makeModelConfig({
+          id: 'cheap-small',
+          contextWindow: 1_000,
+          inputPrice: 5.0,
+          capabilities: ['chat', 'streaming'],
+        }),
         // score = 100 + 0.1 * 1000 = 200  → fastest
-        makeModelConfig({ id: 'cheaper-tiny', contextWindow: 100, inputPrice: 0.1, capabilities: ['chat', 'streaming'] }),
+        makeModelConfig({
+          id: 'cheaper-tiny',
+          contextWindow: 100,
+          inputPrice: 0.1,
+          capabilities: ['chat', 'streaming'],
+        }),
       ],
     });
     setupReadFileMock({ openai: config });
@@ -1388,11 +1577,26 @@ describe('getSmartestModel', () => {
       apiKeyEnv: 'ANTHROPIC_API_KEY',
       models: [
         // score = contextWindow + outputPrice * 10000 = 128_000 + 150_000 = 278_000
-        makeModelConfig({ id: 'standard', contextWindow: 128_000, outputPrice: 15.0, capabilities: ['chat', 'streaming'] }),
+        makeModelConfig({
+          id: 'standard',
+          contextWindow: 128_000,
+          outputPrice: 15.0,
+          capabilities: ['chat', 'streaming'],
+        }),
         // score = 8_000 + 10_000 = 18_000
-        makeModelConfig({ id: 'basic', contextWindow: 8_000, outputPrice: 1.0, capabilities: ['chat', 'streaming'] }),
+        makeModelConfig({
+          id: 'basic',
+          contextWindow: 8_000,
+          outputPrice: 1.0,
+          capabilities: ['chat', 'streaming'],
+        }),
         // score = 200_000 + 300_000 = 500_000  → smartest
-        makeModelConfig({ id: 'smartest', contextWindow: 200_000, outputPrice: 30.0, capabilities: ['chat', 'streaming'] }),
+        makeModelConfig({
+          id: 'smartest',
+          contextWindow: 200_000,
+          outputPrice: 30.0,
+          capabilities: ['chat', 'streaming'],
+        }),
       ],
     });
     setupReadFileMock({ anthropic: config });
@@ -1438,8 +1642,18 @@ describe('getSmartestModel', () => {
       id: 'openai',
       apiKeyEnv: 'OPENAI_API_KEY',
       models: [
-        makeModelConfig({ id: 'reasoning-smart', contextWindow: 64_000, outputPrice: 20.0, capabilities: ['chat', 'reasoning', 'streaming'] }),
-        makeModelConfig({ id: 'non-reasoning-smarter', contextWindow: 500_000, outputPrice: 50.0, capabilities: ['chat', 'streaming'] }),
+        makeModelConfig({
+          id: 'reasoning-smart',
+          contextWindow: 64_000,
+          outputPrice: 20.0,
+          capabilities: ['chat', 'reasoning', 'streaming'],
+        }),
+        makeModelConfig({
+          id: 'non-reasoning-smarter',
+          contextWindow: 500_000,
+          outputPrice: 50.0,
+          capabilities: ['chat', 'streaming'],
+        }),
       ],
     });
     setupReadFileMock({ openai: config });
@@ -1467,9 +1681,19 @@ describe('getSmartestModel', () => {
       apiKeyEnv: 'OPENAI_API_KEY',
       models: [
         // score = 4_000 + 0.1 * 10000 = 5_000
-        makeModelConfig({ id: 'tiny-cheap', contextWindow: 4_000, outputPrice: 0.1, capabilities: ['chat', 'streaming'] }),
+        makeModelConfig({
+          id: 'tiny-cheap',
+          contextWindow: 4_000,
+          outputPrice: 0.1,
+          capabilities: ['chat', 'streaming'],
+        }),
         // score = 4_000 + 60.0 * 10000 = 604_000  → smartest by output price
-        makeModelConfig({ id: 'tiny-expensive', contextWindow: 4_000, outputPrice: 60.0, capabilities: ['chat', 'streaming'] }),
+        makeModelConfig({
+          id: 'tiny-expensive',
+          contextWindow: 4_000,
+          outputPrice: 60.0,
+          capabilities: ['chat', 'streaming'],
+        }),
       ],
     });
     setupReadFileMock({ openai: config });

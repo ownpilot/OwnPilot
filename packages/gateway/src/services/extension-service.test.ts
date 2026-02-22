@@ -34,12 +34,13 @@ const { mockEmit, mockTriggerService, mockRepo } = vi.hoisted(() => ({
 
 vi.mock('@ownpilot/core', () => ({
   getEventBus: () => ({ emit: mockEmit }),
-  createEvent: vi.fn(
-    (type: string, category: string, source: string, data: unknown) => ({
-      type, category, source, data,
-      timestamp: new Date().toISOString(),
-    }),
-  ),
+  createEvent: vi.fn((type: string, category: string, source: string, data: unknown) => ({
+    type,
+    category,
+    source,
+    data,
+    timestamp: new Date().toISOString(),
+  })),
   EventTypes: {
     RESOURCE_CREATED: 'resource.created',
     RESOURCE_UPDATED: 'resource.updated',
@@ -149,26 +150,41 @@ describe('ExtensionService', () => {
       const result = await service.installFromManifest(validManifest());
 
       expect(result).toBe(record);
-      expect(mockRepo.upsert).toHaveBeenCalledWith(expect.objectContaining({
-        id: 'test-ext',
-        name: 'Test Extension',
-        toolCount: 1,
-      }));
-      expect(mockEmit).toHaveBeenCalledWith(expect.objectContaining({
-        type: 'resource.created',
-      }));
+      expect(mockRepo.upsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: 'test-ext',
+          name: 'Test Extension',
+          toolCount: 1,
+        })
+      );
+      expect(mockEmit).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'resource.created',
+        })
+      );
     });
 
     it('throws VALIDATION_ERROR for invalid manifest', async () => {
       await expect(
-        service.installFromManifest({ id: '', name: '', version: '', description: '', tools: [] } as unknown as ExtensionManifest),
+        service.installFromManifest({
+          id: '',
+          name: '',
+          version: '',
+          description: '',
+          tools: [],
+        } as unknown as ExtensionManifest)
       ).rejects.toThrow(ExtensionError);
     });
 
     it('activates triggers when extension is enabled', async () => {
       const manifest = validManifest({
         triggers: [
-          { name: 'Daily check', type: 'schedule', config: { cron: '0 9 * * *' }, action: { type: 'chat', payload: { prompt: 'Check status' } } },
+          {
+            name: 'Daily check',
+            type: 'schedule',
+            config: { cron: '0 9 * * *' },
+            action: { type: 'chat', payload: { prompt: 'Check status' } },
+          },
         ],
       });
       const record = fakeRecord({ status: 'enabled' });
@@ -176,17 +192,25 @@ describe('ExtensionService', () => {
 
       await service.installFromManifest(manifest);
 
-      expect(mockTriggerService.createTrigger).toHaveBeenCalledWith('default', expect.objectContaining({
-        name: expect.stringContaining('[Ext:test-ext]'),
-        type: 'schedule',
-        config: { cron: '0 9 * * *' },
-      }));
+      expect(mockTriggerService.createTrigger).toHaveBeenCalledWith(
+        'default',
+        expect.objectContaining({
+          name: expect.stringContaining('[Ext:test-ext]'),
+          type: 'schedule',
+          config: { cron: '0 9 * * *' },
+        })
+      );
     });
 
     it('does not activate triggers when extension is disabled', async () => {
       const manifest = validManifest({
         triggers: [
-          { name: 'Daily check', type: 'schedule', config: { cron: '0 9 * * *' }, action: { type: 'chat', payload: { prompt: 'Check' } } },
+          {
+            name: 'Daily check',
+            type: 'schedule',
+            config: { cron: '0 9 * * *' },
+            action: { type: 'chat', payload: { prompt: 'Check' } },
+          },
         ],
       });
       const record = fakeRecord({ status: 'disabled' });
@@ -212,9 +236,11 @@ describe('ExtensionService', () => {
 
       expect(result).toBe(true);
       expect(mockRepo.delete).toHaveBeenCalledWith('test-ext');
-      expect(mockEmit).toHaveBeenCalledWith(expect.objectContaining({
-        type: 'resource.deleted',
-      }));
+      expect(mockEmit).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'resource.deleted',
+        })
+      );
     });
 
     it('returns false when extension not found', async () => {
@@ -248,7 +274,12 @@ describe('ExtensionService', () => {
     it('enables a disabled extension and activates triggers', async () => {
       const manifest = validManifest({
         triggers: [
-          { name: 'Check', type: 'schedule', config: { cron: '0 9 * * *' }, action: { type: 'chat', payload: { prompt: 'Check' } } },
+          {
+            name: 'Check',
+            type: 'schedule',
+            config: { cron: '0 9 * * *' },
+            action: { type: 'chat', payload: { prompt: 'Check' } },
+          },
         ],
       });
       const record = fakeRecord({ status: 'disabled', manifest });
@@ -261,9 +292,11 @@ describe('ExtensionService', () => {
 
       expect(result?.status).toBe('enabled');
       expect(mockTriggerService.createTrigger).toHaveBeenCalled();
-      expect(mockEmit).toHaveBeenCalledWith(expect.objectContaining({
-        type: 'resource.updated',
-      }));
+      expect(mockEmit).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'resource.updated',
+        })
+      );
     });
 
     it('returns null when extension not found', async () => {
@@ -319,8 +352,18 @@ describe('ExtensionService', () => {
           manifest: validManifest({
             id: 'pkg-2',
             tools: [
-              { name: 'tool_a', description: 'Tool A', parameters: { type: 'object', properties: {} }, code: 'return {}' },
-              { name: 'tool_b', description: 'Tool B', parameters: { type: 'object', properties: {} }, code: 'return {}' },
+              {
+                name: 'tool_a',
+                description: 'Tool A',
+                parameters: { type: 'object', properties: {} },
+                code: 'return {}',
+              },
+              {
+                name: 'tool_b',
+                description: 'Tool B',
+                parameters: { type: 'object', properties: {} },
+                code: 'return {}',
+              },
             ],
           }),
         }),
@@ -328,7 +371,7 @@ describe('ExtensionService', () => {
 
       const defs = service.getToolDefinitions();
       expect(defs).toHaveLength(3); // 1 from first + 2 from second
-      expect(defs.map(d => d.name)).toEqual(['test_tool', 'tool_a', 'tool_b']);
+      expect(defs.map((d) => d.name)).toEqual(['test_tool', 'tool_a', 'tool_b']);
     });
 
     it('returns empty when no enabled extensions', () => {
@@ -423,10 +466,12 @@ return { content: { ok: true } };
       const result = await service.install('/path/to/extension.md');
 
       expect(result.id).toBe('md-ext');
-      expect(mockRepo.upsert).toHaveBeenCalledWith(expect.objectContaining({
-        id: 'md-ext',
-        name: 'MD Extension',
-      }));
+      expect(mockRepo.upsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: 'md-ext',
+          name: 'MD Extension',
+        })
+      );
     });
 
     it('throws VALIDATION_ERROR for invalid .md file', async () => {
@@ -437,9 +482,13 @@ return { content: { ok: true } };
     });
 
     it('throws IO_ERROR when file cannot be read', async () => {
-      mockReadFileSync.mockImplementation(() => { throw new Error('ENOENT'); });
+      mockReadFileSync.mockImplementation(() => {
+        throw new Error('ENOENT');
+      });
 
-      await expect(service.install('/missing/extension.json')).rejects.toThrow('Cannot read manifest');
+      await expect(service.install('/missing/extension.json')).rejects.toThrow(
+        'Cannot read manifest'
+      );
     });
   });
 
@@ -484,9 +533,7 @@ return { content: {} };
         if (n.endsWith('my-pkg/extension.md')) return true;
         return false;
       });
-      mockReaddirSync.mockReturnValue([
-        { name: 'my-pkg', isDirectory: () => true },
-      ]);
+      mockReaddirSync.mockReturnValue([{ name: 'my-pkg', isDirectory: () => true }]);
       mockReadFileSync.mockReturnValue(mdContent);
       mockRepo.upsert.mockResolvedValue(fakeRecord({ id: 'md-pkg' }));
 
@@ -505,9 +552,7 @@ return { content: {} };
         if (n.endsWith('dual-pkg/extension.md')) return true;
         return false;
       });
-      mockReaddirSync.mockReturnValue([
-        { name: 'dual-pkg', isDirectory: () => true },
-      ]);
+      mockReaddirSync.mockReturnValue([{ name: 'dual-pkg', isDirectory: () => true }]);
       mockReadFileSync.mockReturnValue(JSON.stringify(manifest));
       mockRepo.upsert.mockResolvedValue(fakeRecord({ id: 'dual-pkg' }));
 
@@ -517,7 +562,7 @@ return { content: {} };
       // readFileSync should have been called with .json path, not .md
       expect(mockReadFileSync).toHaveBeenCalledWith(
         expect.stringContaining('extension.json'),
-        'utf-8',
+        'utf-8'
       );
     });
   });

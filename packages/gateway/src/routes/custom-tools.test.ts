@@ -44,15 +44,31 @@ const mockRepo = {
   getStats: vi.fn(async () => ({ total: 2, active: 1, disabled: 0, pendingApproval: 1 })),
   list: vi.fn(async () => [sampleTool]),
   getPendingApproval: vi.fn(async () => [pendingTool]),
-  get: vi.fn(async (id: string) => (id === 'ct_001' ? sampleTool : id === 'ct_002' ? pendingTool : null)),
+  get: vi.fn(async (id: string) =>
+    id === 'ct_001' ? sampleTool : id === 'ct_002' ? pendingTool : null
+  ),
   getByName: vi.fn(async () => null),
-  create: vi.fn(async (input: Record<string, unknown>) => ({ ...sampleTool, ...input, id: 'ct_new' })),
-  update: vi.fn(async (id: string, input: Record<string, unknown>) => (id === 'ct_001' ? { ...sampleTool, ...input } : null)),
+  create: vi.fn(async (input: Record<string, unknown>) => ({
+    ...sampleTool,
+    ...input,
+    id: 'ct_new',
+  })),
+  update: vi.fn(async (id: string, input: Record<string, unknown>) =>
+    id === 'ct_001' ? { ...sampleTool, ...input } : null
+  ),
   delete: vi.fn(async (id: string) => id === 'ct_001'),
-  enable: vi.fn(async (id: string) => (id === 'ct_001' ? { ...sampleTool, status: 'active' } : null)),
-  disable: vi.fn(async (id: string) => (id === 'ct_001' ? { ...sampleTool, status: 'disabled' } : null)),
-  approve: vi.fn(async (id: string) => (id === 'ct_002' ? { ...pendingTool, status: 'active' } : null)),
-  reject: vi.fn(async (id: string) => (id === 'ct_002' ? { ...pendingTool, status: 'rejected' } : null)),
+  enable: vi.fn(async (id: string) =>
+    id === 'ct_001' ? { ...sampleTool, status: 'active' } : null
+  ),
+  disable: vi.fn(async (id: string) =>
+    id === 'ct_001' ? { ...sampleTool, status: 'disabled' } : null
+  ),
+  approve: vi.fn(async (id: string) =>
+    id === 'ct_002' ? { ...pendingTool, status: 'active' } : null
+  ),
+  reject: vi.fn(async (id: string) =>
+    id === 'ct_002' ? { ...pendingTool, status: 'rejected' } : null
+  ),
   recordUsage: vi.fn(async () => undefined),
   getActiveTools: vi.fn(async () => [sampleTool]),
 };
@@ -64,7 +80,11 @@ const mockDynamicRegistry = {
 };
 
 const mockSyncToolToRegistry = vi.fn();
-const mockExecuteCustomToolUnified = vi.fn(async () => ({ content: 'result data', isError: false, metadata: {} }));
+const mockExecuteCustomToolUnified = vi.fn(async () => ({
+  content: 'result data',
+  isError: false,
+  metadata: {},
+}));
 const mockUnregisterToolFromRegistries = vi.fn();
 
 vi.mock('../db/repositories/custom-tools.js', () => ({
@@ -134,7 +154,11 @@ vi.mock('@ownpilot/core', async (importOriginal) => {
         valid: errors.length === 0,
         errors,
         warnings: [] as string[],
-        securityScore: { score: errors.length === 0 ? 90 : 30, category: errors.length === 0 ? 'safe' : 'dangerous', factors: {} },
+        securityScore: {
+          score: errors.length === 0 ? 90 : 30,
+          category: errors.length === 0 ? 'safe' : 'dangerous',
+          factors: {},
+        },
         dataFlowRisks: [] as string[],
         bestPractices: { followed: [] as string[], violated: [] as string[] },
         suggestedPermissions: [] as string[],
@@ -224,8 +248,16 @@ describe('Custom Tools Routes', () => {
     mockRepo.reject.mockImplementation(async (id: string) =>
       id === 'ct_002' ? { ...pendingTool, status: 'rejected' } : null
     );
-    mockDynamicRegistry.execute.mockResolvedValue({ content: 'result data', isError: false, metadata: {} });
-    mockExecuteCustomToolUnified.mockResolvedValue({ content: 'result data', isError: false, metadata: {} });
+    mockDynamicRegistry.execute.mockResolvedValue({
+      content: 'result data',
+      isError: false,
+      metadata: {},
+    });
+    mockExecuteCustomToolUnified.mockResolvedValue({
+      content: 'result data',
+      isError: false,
+      metadata: {},
+    });
     app = createApp();
   });
 
@@ -262,7 +294,9 @@ describe('Custom Tools Routes', () => {
     });
 
     it('passes filter params to repo', async () => {
-      const res = await app.request('/custom-tools?status=active&category=utility&createdBy=user&limit=10&offset=5');
+      const res = await app.request(
+        '/custom-tools?status=active&category=utility&createdBy=user&limit=10&offset=5'
+      );
 
       expect(res.status).toBe(200);
       expect(mockRepo.list).toHaveBeenCalledWith({
@@ -708,7 +742,9 @@ describe('Custom Tools Routes', () => {
       const res = await app.request('/custom-tools/validate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code: 'const data = await fetch("https://example.com");\nreturn data;' }),
+        body: JSON.stringify({
+          code: 'const data = await fetch("https://example.com");\nreturn data;',
+        }),
       });
 
       expect(res.status).toBe(200);
@@ -1052,7 +1088,7 @@ describe('Custom Tools Routes', () => {
       });
 
       expect(res.status).toBe(200);
-      const json = await res.json() as { data: { workflowUsable: boolean } };
+      const json = (await res.json()) as { data: { workflowUsable: boolean } };
       expect(json.data.workflowUsable).toBe(false);
       expect(mockRepo.update).toHaveBeenCalledWith('ct_001', {
         metadata: expect.objectContaining({ workflowUsable: false }),
@@ -1071,7 +1107,7 @@ describe('Custom Tools Routes', () => {
       });
 
       expect(res.status).toBe(200);
-      const json = await res.json() as { data: { workflowUsable: boolean } };
+      const json = (await res.json()) as { data: { workflowUsable: boolean } };
       expect(json.data.workflowUsable).toBe(true);
     });
 
@@ -1083,7 +1119,7 @@ describe('Custom Tools Routes', () => {
       });
 
       expect(res.status).toBe(400);
-      const json = await res.json() as { error: { code: string } };
+      const json = (await res.json()) as { error: { code: string } };
       expect(json.error.code).toBe('INVALID_INPUT');
     });
 
@@ -1107,14 +1143,17 @@ describe('Custom Tools Routes', () => {
       });
 
       expect(res.status).toBe(404);
-      const json = await res.json() as { error: { code: string } };
+      const json = (await res.json()) as { error: { code: string } };
       expect(json.error.code).toBe('NOT_FOUND');
     });
 
     it('preserves existing metadata fields', async () => {
       const toolWithMeta = { ...sampleTool, metadata: { someKey: 'value', other: 42 } };
       mockRepo.get.mockResolvedValue(toolWithMeta);
-      mockRepo.update.mockResolvedValue({ ...toolWithMeta, metadata: { someKey: 'value', other: 42, workflowUsable: false } });
+      mockRepo.update.mockResolvedValue({
+        ...toolWithMeta,
+        metadata: { someKey: 'value', other: 42, workflowUsable: false },
+      });
 
       await app.request('/custom-tools/ct_001/workflow-usable', {
         method: 'PATCH',

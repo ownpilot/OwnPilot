@@ -22,53 +22,64 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 // Hoisted mock state — must live outside vi.mock() factories
 // ---------------------------------------------------------------------------
 
-const { mockPgAdapterInstance, MockPostgresAdapter, mockInitializeSchema, mockGetDatabaseConfig, mockLog } =
-  vi.hoisted(() => {
-    const mockPgAdapterInstance = {
-      initialize: vi.fn().mockResolvedValue(undefined),
-      exec: vi.fn().mockResolvedValue(undefined),
-      close: vi.fn().mockResolvedValue(undefined),
-      query: vi.fn().mockResolvedValue([]),
-      type: 'postgres' as const,
-      isConnected: vi.fn().mockReturnValue(true),
-      queryOne: vi.fn().mockResolvedValue(null),
-      execute: vi.fn().mockResolvedValue({ changes: 0 }),
-      transaction: vi.fn().mockImplementation((fn: () => Promise<unknown>) => fn()),
-      now: vi.fn().mockReturnValue('NOW()'),
-      date: vi.fn().mockImplementation((col: string) => `DATE(${col})`),
-      dateSubtract: vi.fn(),
-      placeholder: vi.fn().mockImplementation((i: number) => `$${i}`),
-      boolean: vi.fn().mockImplementation((v: boolean) => v),
-      parseBoolean: vi.fn().mockImplementation((v: unknown) => Boolean(v)),
-    };
+const {
+  mockPgAdapterInstance,
+  MockPostgresAdapter,
+  mockInitializeSchema,
+  mockGetDatabaseConfig,
+  mockLog,
+} = vi.hoisted(() => {
+  const mockPgAdapterInstance = {
+    initialize: vi.fn().mockResolvedValue(undefined),
+    exec: vi.fn().mockResolvedValue(undefined),
+    close: vi.fn().mockResolvedValue(undefined),
+    query: vi.fn().mockResolvedValue([]),
+    type: 'postgres' as const,
+    isConnected: vi.fn().mockReturnValue(true),
+    queryOne: vi.fn().mockResolvedValue(null),
+    execute: vi.fn().mockResolvedValue({ changes: 0 }),
+    transaction: vi.fn().mockImplementation((fn: () => Promise<unknown>) => fn()),
+    now: vi.fn().mockReturnValue('NOW()'),
+    date: vi.fn().mockImplementation((col: string) => `DATE(${col})`),
+    dateSubtract: vi.fn(),
+    placeholder: vi.fn().mockImplementation((i: number) => `$${i}`),
+    boolean: vi.fn().mockImplementation((v: boolean) => v),
+    parseBoolean: vi.fn().mockImplementation((v: unknown) => Boolean(v)),
+  };
 
-    // Must use regular function (not arrow) — arrow functions cannot be constructors
-    const MockPostgresAdapter = vi.fn(function () {
-      return mockPgAdapterInstance;
-    });
-
-    const mockInitializeSchema = vi.fn().mockResolvedValue(undefined);
-
-    const mockGetDatabaseConfig = vi.fn(() => ({
-      type: 'postgres' as const,
-      postgresUrl: 'postgresql://ownpilot:secret@localhost:25432/ownpilot',
-      postgresHost: 'localhost',
-      postgresPort: 25432,
-      postgresUser: 'ownpilot',
-      postgresPassword: 'secret',
-      postgresDatabase: 'ownpilot',
-      postgresPoolSize: 10,
-    }));
-
-    const mockLog = {
-      info: vi.fn(),
-      error: vi.fn(),
-      warn: vi.fn(),
-      debug: vi.fn(),
-    };
-
-    return { mockPgAdapterInstance, MockPostgresAdapter, mockInitializeSchema, mockGetDatabaseConfig, mockLog };
+  // Must use regular function (not arrow) — arrow functions cannot be constructors
+  const MockPostgresAdapter = vi.fn(function () {
+    return mockPgAdapterInstance;
   });
+
+  const mockInitializeSchema = vi.fn().mockResolvedValue(undefined);
+
+  const mockGetDatabaseConfig = vi.fn(() => ({
+    type: 'postgres' as const,
+    postgresUrl: 'postgresql://ownpilot:secret@localhost:25432/ownpilot',
+    postgresHost: 'localhost',
+    postgresPort: 25432,
+    postgresUser: 'ownpilot',
+    postgresPassword: 'secret',
+    postgresDatabase: 'ownpilot',
+    postgresPoolSize: 10,
+  }));
+
+  const mockLog = {
+    info: vi.fn(),
+    error: vi.fn(),
+    warn: vi.fn(),
+    debug: vi.fn(),
+  };
+
+  return {
+    mockPgAdapterInstance,
+    MockPostgresAdapter,
+    mockInitializeSchema,
+    mockGetDatabaseConfig,
+    mockLog,
+  };
+});
 
 // ---------------------------------------------------------------------------
 // Module-level mocks (hoisted automatically by Vitest)
@@ -479,7 +490,7 @@ describe('initializeAdapter()', () => {
     await initializeAdapter();
     // The "already initialized" log should not appear on the first call
     const alreadyInitLog = mockLog.info.mock.calls.find((c) =>
-      String(c[0]).includes('already initialized'),
+      String(c[0]).includes('already initialized')
     );
     expect(alreadyInitLog).toBeUndefined();
   });

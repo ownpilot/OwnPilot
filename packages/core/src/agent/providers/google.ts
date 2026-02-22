@@ -29,7 +29,14 @@ import {
   type ProviderConfig,
   type ResolvedProviderConfig,
 } from './configs/index.js';
-import { logRequest, logResponse, logRetry, buildRequestDebugInfo, buildResponseDebugInfo, calculatePayloadBreakdown } from '../debug.js';
+import {
+  logRequest,
+  logResponse,
+  logRetry,
+  buildRequestDebugInfo,
+  buildResponseDebugInfo,
+  calculatePayloadBreakdown,
+} from '../debug.js';
 
 /**
  * Retry configuration
@@ -46,7 +53,11 @@ const RETRY_CONFIG = {
 /** Safely parse tool call arguments JSON, returning {} on failure */
 function safeParseToolArgs(args: string | undefined): Record<string, unknown> {
   if (!args) return {};
-  try { return JSON.parse(args); } catch { return {}; }
+  try {
+    return JSON.parse(args);
+  } catch {
+    return {};
+  }
 }
 
 /**
@@ -55,12 +66,27 @@ function safeParseToolArgs(args: string | undefined): Record<string, unknown> {
  * Conservative list — only strip what actually causes 400 errors.
  */
 const UNSUPPORTED_GEMINI_SCHEMA_KEYWORDS = new Set([
-  '$schema', '$ref', '$id', '$comment', '$defs',
-  'additionalProperties', 'patternProperties', 'unevaluatedProperties', 'unevaluatedItems',
-  'anyOf', 'oneOf', 'allOf', 'not',
-  'if', 'then', 'else',
-  'definitions', 'dependentSchemas', 'dependentRequired',
-  'contentMediaType', 'contentEncoding',
+  '$schema',
+  '$ref',
+  '$id',
+  '$comment',
+  '$defs',
+  'additionalProperties',
+  'patternProperties',
+  'unevaluatedProperties',
+  'unevaluatedItems',
+  'anyOf',
+  'oneOf',
+  'allOf',
+  'not',
+  'if',
+  'then',
+  'else',
+  'definitions',
+  'dependentSchemas',
+  'dependentRequired',
+  'contentMediaType',
+  'contentEncoding',
 ]);
 
 /**
@@ -77,7 +103,7 @@ const UNSUPPORTED_GEMINI_SCHEMA_KEYWORDS = new Set([
 function sanitizeGeminiSchema(schema: unknown, insidePropertiesMap = false): unknown {
   if (schema === null || schema === undefined) return schema;
   if (typeof schema !== 'object') return schema;
-  if (Array.isArray(schema)) return schema.map(item => sanitizeGeminiSchema(item));
+  if (Array.isArray(schema)) return schema.map((item) => sanitizeGeminiSchema(item));
 
   const obj = schema as Record<string, unknown>;
   const result: Record<string, unknown> = {};
@@ -87,9 +113,10 @@ function sanitizeGeminiSchema(schema: unknown, insidePropertiesMap = false): unk
     if (!insidePropertiesMap && UNSUPPORTED_GEMINI_SCHEMA_KEYWORDS.has(key)) continue;
 
     // When entering `properties`, mark children as property-name keys
-    result[key] = key === 'properties' && typeof value === 'object' && value !== null && !Array.isArray(value)
-      ? sanitizeGeminiSchema(value, true)
-      : sanitizeGeminiSchema(value);
+    result[key] =
+      key === 'properties' && typeof value === 'object' && value !== null && !Array.isArray(value)
+        ? sanitizeGeminiSchema(value, true)
+        : sanitizeGeminiSchema(value);
   }
 
   return result;
@@ -99,7 +126,7 @@ function sanitizeGeminiSchema(schema: unknown, insidePropertiesMap = false): unk
  * Sleep helper
  */
 function sleep(ms: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, ms));
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 /**
@@ -188,7 +215,7 @@ export class GoogleProvider {
    * Get default model for this provider
    */
   getDefaultModel(): string | undefined {
-    return this.config.models.find(m => m.default)?.id ?? this.config.models[0]?.id;
+    return this.config.models.find((m) => m.default)?.id ?? this.config.models[0]?.id;
   }
 
   isReady(): boolean {
@@ -237,7 +264,11 @@ export class GoogleProvider {
     }
 
     // Should not reach here, but just in case
-    return err(new InternalError(`Google request failed after ${RETRY_CONFIG.maxRetries} retries: ${lastError?.message}`));
+    return err(
+      new InternalError(
+        `Google request failed after ${RETRY_CONFIG.maxRetries} retries: ${lastError?.message}`
+      )
+    );
   }
 
   /**
@@ -314,9 +345,11 @@ export class GoogleProvider {
 
       if (!response.ok) {
         const errorText = await response.text();
-        logResponse(buildResponseDebugInfo('google', model, durationMs, {
-          error: `${response.status} - ${errorText}`,
-        }));
+        logResponse(
+          buildResponseDebugInfo('google', model, durationMs, {
+            error: `${response.status} - ${errorText}`,
+          })
+        );
 
         // Create appropriate error for retry logic
         const error = new InternalError(`Google API error: ${response.status} - ${errorText}`);
@@ -349,7 +382,9 @@ export class GoogleProvider {
             name: desanitizeToolName(part.functionCall.name),
             arguments: JSON.stringify(part.functionCall.args),
             // Capture thoughtSignature for Gemini 3+ thinking models
-            metadata: part.thoughtSignature ? { thoughtSignature: part.thoughtSignature } : undefined,
+            metadata: part.thoughtSignature
+              ? { thoughtSignature: part.thoughtSignature }
+              : undefined,
           });
         }
       }
@@ -363,19 +398,22 @@ export class GoogleProvider {
       const usage = data.usageMetadata
         ? {
             promptTokens: data.usageMetadata.promptTokenCount ?? 0,
-            completionTokens: (data.usageMetadata.candidatesTokenCount ?? 0) +
-                             (data.usageMetadata.thoughtsTokenCount ?? 0),
+            completionTokens:
+              (data.usageMetadata.candidatesTokenCount ?? 0) +
+              (data.usageMetadata.thoughtsTokenCount ?? 0),
             totalTokens: data.usageMetadata.totalTokenCount ?? 0,
           }
         : undefined;
 
       // Log successful response
-      logResponse(buildResponseDebugInfo('google', model, durationMs, {
-        content: finalContent,
-        toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
-        finishReason,
-        usage,
-      }));
+      logResponse(
+        buildResponseDebugInfo('google', model, durationMs, {
+          content: finalContent,
+          toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
+          finishReason,
+          usage,
+        })
+      );
 
       return ok({
         id: `gemini_${Date.now()}`,
@@ -393,9 +431,11 @@ export class GoogleProvider {
         // Clear the timeout since we're handling the abort
         this.clearAbortTimeout();
         const timeout = this.config.timeout ?? 30000;
-        logResponse(buildResponseDebugInfo('google', model, elapsed, {
-          error: `TIMEOUT: Request aborted after ${elapsed}ms (timeout: ${timeout}ms, attempt ${attempt})`,
-        }));
+        logResponse(
+          buildResponseDebugInfo('google', model, elapsed, {
+            error: `TIMEOUT: Request aborted after ${elapsed}ms (timeout: ${timeout}ms, attempt ${attempt})`,
+          })
+        );
         return err(new TimeoutError('Google request', timeout));
       }
 
@@ -403,9 +443,11 @@ export class GoogleProvider {
       this.clearAbortTimeout();
 
       const errorMessage = getErrorMessage(error);
-      logResponse(buildResponseDebugInfo('google', model, elapsed, {
-        error: `${errorMessage} (attempt ${attempt})`,
-      }));
+      logResponse(
+        buildResponseDebugInfo('google', model, elapsed, {
+          error: `${errorMessage} (attempt ${attempt})`,
+        })
+      );
 
       return err(new InternalError(`Google request failed: ${errorMessage}`));
     }
@@ -496,13 +538,17 @@ export class GoogleProvider {
                   if (part.functionCall) {
                     yield ok({
                       id: `gemini_${Date.now()}`,
-                      toolCalls: [{
-                        id: `call_${Date.now()}`,
-                        name: desanitizeToolName(part.functionCall.name),
-                        arguments: JSON.stringify(part.functionCall.args),
-                        // Capture thoughtSignature for Gemini 3+ thinking models
-                        metadata: part.thoughtSignature ? { thoughtSignature: part.thoughtSignature } : undefined,
-                      }],
+                      toolCalls: [
+                        {
+                          id: `call_${Date.now()}`,
+                          name: desanitizeToolName(part.functionCall.name),
+                          arguments: JSON.stringify(part.functionCall.args),
+                          // Capture thoughtSignature for Gemini 3+ thinking models
+                          metadata: part.thoughtSignature
+                            ? { thoughtSignature: part.thoughtSignature }
+                            : undefined,
+                        },
+                      ],
                       done: false,
                     });
                   }
@@ -517,8 +563,9 @@ export class GoogleProvider {
                   usage: parsed.usageMetadata
                     ? {
                         promptTokens: parsed.usageMetadata.promptTokenCount ?? 0,
-                        completionTokens: (parsed.usageMetadata.candidatesTokenCount ?? 0) +
-                                         (parsed.usageMetadata.thoughtsTokenCount ?? 0),
+                        completionTokens:
+                          (parsed.usageMetadata.candidatesTokenCount ?? 0) +
+                          (parsed.usageMetadata.thoughtsTokenCount ?? 0),
                         totalTokens: parsed.usageMetadata.totalTokenCount ?? 0,
                       }
                     : undefined,
@@ -530,13 +577,15 @@ export class GoogleProvider {
           }
         }
       } finally {
-        try { await reader.cancel(); } catch { /* already released */ }
+        try {
+          await reader.cancel();
+        } catch {
+          /* already released */
+        }
       }
     } catch (error) {
       this.clearAbortTimeout();
-      yield err(
-        new InternalError(`Google stream failed: ${getErrorMessage(error)}`)
-      );
+      yield err(new InternalError(`Google stream failed: ${getErrorMessage(error)}`));
     }
   }
 
@@ -544,7 +593,7 @@ export class GoogleProvider {
    * Get models from JSON config
    */
   async getModels(): Promise<Result<string[], InternalError>> {
-    const models = this.config.models.map(m => m.id);
+    const models = this.config.models.map((m) => m.id);
     return ok(models);
   }
 

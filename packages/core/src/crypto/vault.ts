@@ -239,7 +239,9 @@ export class SecureVault {
    * @param key - The key to retrieve
    * @returns The decrypted value, or null if not found
    */
-  async get<T extends JsonValue>(key: string): Promise<Result<T | null, CryptoError | ValidationError>> {
+  async get<T extends JsonValue>(
+    key: string
+  ): Promise<Result<T | null, CryptoError | ValidationError>> {
     if (!this.isUnlocked || !this.derivedKey || !this.vaultData) {
       return err(new ValidationError('Vault is locked'));
     }
@@ -362,7 +364,9 @@ export class SecureVault {
 
     const readResult = await fromPromise(readFile(this.config.path, 'utf-8'));
     if (!readResult.ok) {
-      return err(new CryptoError('decrypt', 'Failed to read vault file', { cause: readResult.error }));
+      return err(
+        new CryptoError('decrypt', 'Failed to read vault file', { cause: readResult.error })
+      );
     }
 
     try {

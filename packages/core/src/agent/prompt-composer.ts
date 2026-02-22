@@ -171,7 +171,15 @@ export function getTimeContext(timezone?: string): TimeContext {
   else if (hour >= 17 && hour < 21) timeOfDay = 'evening';
   else timeOfDay = 'night';
 
-  const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'] as const;
+  const days = [
+    'Sunday',
+    'Monday',
+    'Tuesday',
+    'Wednesday',
+    'Thursday',
+    'Friday',
+    'Saturday',
+  ] as const;
 
   return {
     currentTime: now,
@@ -193,9 +201,7 @@ function formatUserProfile(profile: UserProfile): string {
 
   // Add facts
   if (profile.facts.length > 0) {
-    const highConfidenceFacts = profile.facts
-      .filter(f => f.confidence >= 0.7)
-      .slice(0, 10);
+    const highConfidenceFacts = profile.facts.filter((f) => f.confidence >= 0.7).slice(0, 10);
 
     for (const fact of highConfidenceFacts) {
       lines.push(`- ${fact.key}: ${fact.value}`);
@@ -322,7 +328,7 @@ export class PromptComposer {
 
     // 3. Custom instructions
     if (context.customInstructions && context.customInstructions.length > 0) {
-      const instructions = context.customInstructions.map(i => `- ${i}`).join('\n');
+      const instructions = context.customInstructions.map((i) => `- ${i}`).join('\n');
       sections.push(PROMPT_SECTIONS.customInstructions.replace('{{instructions}}', instructions));
     }
 
@@ -332,12 +338,14 @@ export class PromptComposer {
       sections.push(PROMPT_SECTIONS.tools.replace('{{toolList}}', toolList));
 
       // 4a. Automation context (only if automation tools are registered)
-      const hasAutomationTools = context.tools.some(
-        (t) => {
-          const baseName = getBaseName(t.name);
-          return t.category === 'Automation' || baseName.startsWith('create_trigger') || baseName.startsWith('create_plan');
-        }
-      );
+      const hasAutomationTools = context.tools.some((t) => {
+        const baseName = getBaseName(t.name);
+        return (
+          t.category === 'Automation' ||
+          baseName.startsWith('create_trigger') ||
+          baseName.startsWith('create_plan')
+        );
+      });
       if (hasAutomationTools) {
         sections.push(PROMPT_SECTIONS.automation);
       }
@@ -365,7 +373,6 @@ export class PromptComposer {
       if (capsList) {
         sections.push(PROMPT_SECTIONS.capabilities.replace('{{capabilitiesList}}', capsList));
       }
-
     }
 
     // 6. Time context
@@ -398,7 +405,9 @@ export class PromptComposer {
       }
 
       if (contextLines.length > 0) {
-        sections.push(PROMPT_SECTIONS.conversationContext.replace('{{contextInfo}}', contextLines.join('\n')));
+        sections.push(
+          PROMPT_SECTIONS.conversationContext.replace('{{contextInfo}}', contextLines.join('\n'))
+        );
       }
     }
 
@@ -449,9 +458,7 @@ export class PromptComposer {
 /**
  * Create a prompt composer with default options
  */
-export function createPromptComposer(
-  options?: PromptComposerOptions
-): PromptComposer {
+export function createPromptComposer(options?: PromptComposerOptions): PromptComposer {
   return new PromptComposer(options);
 }
 

@@ -29,7 +29,8 @@ const DOCKER_SECURITY_ARGS = [
   '--cap-drop=ALL', // Drop all capabilities
   '--security-opt=no-new-privileges:true',
   '--pids-limit=100', // Limit processes
-  '-u', '1000:1000', // Non-root user
+  '-u',
+  '1000:1000', // Non-root user
 ];
 
 /**
@@ -103,10 +104,7 @@ export async function ensureImage(image: string): Promise<boolean> {
 /**
  * Get image for language
  */
-export function getImageForLanguage(
-  language: ExecutionLanguage,
-  customImage?: string
-): string {
+export function getImageForLanguage(language: ExecutionLanguage, customImage?: string): string {
   if (customImage) return customImage;
 
   switch (language) {
@@ -227,9 +225,7 @@ export class UserContainerOrchestrator {
       return containerId;
     } catch (err) {
       log.error('Failed to create container:', err);
-      throw new Error(
-        `Failed to create container: ${getErrorMessage(err)}`
-      );
+      throw new Error(`Failed to create container: ${getErrorMessage(err)}`);
     }
   }
 
@@ -402,10 +398,10 @@ export class UserContainerOrchestrator {
   async getContainerStatus(containerId: string): Promise<ContainerStatus> {
     const validId = validateContainerId(containerId);
     try {
-      const result = execFileSync(
-        'docker', ['inspect', '--format={{.State.Status}}', validId],
-        { encoding: 'utf-8', timeout: 5000 }
-      );
+      const result = execFileSync('docker', ['inspect', '--format={{.State.Status}}', validId], {
+        encoding: 'utf-8',
+        timeout: 5000,
+      });
       const status = result.trim();
 
       switch (status) {
@@ -433,7 +429,8 @@ export class UserContainerOrchestrator {
     const validId = validateContainerId(containerId);
     try {
       const result = execFileSync(
-        'docker', ['stats', validId, '--no-stream', '--format', '{{.MemUsage}},{{.CPUPerc}},{{.NetIO}}'],
+        'docker',
+        ['stats', validId, '--no-stream', '--format', '{{.MemUsage}},{{.CPUPerc}},{{.NetIO}}'],
         { encoding: 'utf-8', timeout: 5000 }
       );
 
@@ -483,10 +480,7 @@ export class UserContainerOrchestrator {
   /**
    * Get container logs
    */
-  async getContainerLogs(
-    containerId: string,
-    tail: number = 100
-  ): Promise<string> {
+  async getContainerLogs(containerId: string, tail: number = 100): Promise<string> {
     const validId = validateContainerId(containerId);
     try {
       const result = execFileSync('docker', ['logs', '--tail', String(tail), validId], {
@@ -536,9 +530,7 @@ export class UserContainerOrchestrator {
    * Get container by workspace ID
    */
   getContainerByWorkspaceId(workspaceId: string): ContainerInfo | undefined {
-    return Array.from(this.containers.values()).find(
-      (c) => c.workspaceId === workspaceId
-    );
+    return Array.from(this.containers.values()).find((c) => c.workspaceId === workspaceId);
   }
 }
 

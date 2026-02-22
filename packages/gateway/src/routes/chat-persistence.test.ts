@@ -20,8 +20,12 @@ const mockEvaluateTriggers = vi.fn().mockResolvedValue(undefined);
 const mockLog = { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() };
 
 vi.mock('../db/repositories/index.js', () => ({
-  ChatRepository: vi.fn(function () { return mockChatRepo; }),
-  LogsRepository: vi.fn(function () { return mockLogsRepo; }),
+  ChatRepository: vi.fn(function () {
+    return mockChatRepo;
+  }),
+  LogsRepository: vi.fn(function () {
+    return mockLogsRepo;
+  }),
 }));
 
 vi.mock('../ws/server.js', () => ({
@@ -34,7 +38,7 @@ vi.mock('../services/log.js', () => ({
 
 vi.mock('./helpers.js', () => ({
   truncate: vi.fn((text: string) => text?.slice(0, 50)),
-  getErrorMessage: vi.fn((err: unknown) => err instanceof Error ? err.message : String(err)),
+  getErrorMessage: vi.fn((err: unknown) => (err instanceof Error ? err.message : String(err))),
 }));
 
 vi.mock('../assistant/index.js', () => ({
@@ -58,7 +62,7 @@ const { broadcastChatUpdate, saveChatToDatabase, saveStreamingChat, runPostChatP
 /** Flush the micro-task / macro-task queue several times. */
 async function flushPromises(): Promise<void> {
   for (let i = 0; i < 5; i++) {
-    await new Promise(resolve => setImmediate(resolve));
+    await new Promise((resolve) => setImmediate(resolve));
   }
 }
 
@@ -74,7 +78,12 @@ function makeStreamState(overrides: Record<string, unknown> = {}) {
       duration?: number;
       startTime?: number;
     }>,
-    lastUsage: null as null | { promptTokens: number; completionTokens: number; totalTokens: number; cachedTokens?: number },
+    lastUsage: null as null | {
+      promptTokens: number;
+      completionTokens: number;
+      totalTokens: number;
+      cachedTokens?: number;
+    },
     streamedContent: '',
     ...overrides,
   };
@@ -179,28 +188,32 @@ describe('saveChatToDatabase', () => {
   });
 
   it('calls getOrCreateConversation with conversationId and metadata', async () => {
-    await saveChatToDatabase(makeParams({
-      conversationId: 'conv-99',
-      provider: 'anthropic',
-      model: 'claude-3',
-      userMessage: 'Hello from test',
-    }));
+    await saveChatToDatabase(
+      makeParams({
+        conversationId: 'conv-99',
+        provider: 'anthropic',
+        model: 'claude-3',
+        userMessage: 'Hello from test',
+      })
+    );
 
     expect(mockChatRepo.getOrCreateConversation).toHaveBeenCalledWith(
       'conv-99',
       expect.objectContaining({
         provider: 'anthropic',
         model: 'claude-3',
-      }),
+      })
     );
   });
 
   it('adds a user message with correct fields', async () => {
-    await saveChatToDatabase(makeParams({
-      userMessage: 'User input',
-      provider: 'openai',
-      model: 'gpt-4o',
-    }));
+    await saveChatToDatabase(
+      makeParams({
+        userMessage: 'User input',
+        provider: 'openai',
+        model: 'gpt-4o',
+      })
+    );
 
     const calls = mockChatRepo.addMessage.mock.calls as Array<[Record<string, unknown>]>;
     const userCall = calls.find(([args]) => args.role === 'user');
@@ -215,11 +228,13 @@ describe('saveChatToDatabase', () => {
   });
 
   it('adds an assistant message with correct fields', async () => {
-    await saveChatToDatabase(makeParams({
-      assistantContent: 'Assistant reply',
-      provider: 'openai',
-      model: 'gpt-4o',
-    }));
+    await saveChatToDatabase(
+      makeParams({
+        assistantContent: 'Assistant reply',
+        provider: 'openai',
+        model: 'gpt-4o',
+      })
+    );
 
     const calls = mockChatRepo.addMessage.mock.calls as Array<[Record<string, unknown>]>;
     const assistantCall = calls.find(([args]) => args.role === 'assistant');
@@ -254,9 +269,11 @@ describe('saveChatToDatabase', () => {
   });
 
   it('adds inputTokens and outputTokens from usage', async () => {
-    await saveChatToDatabase(makeParams({
-      usage: { promptTokens: 100, completionTokens: 200, totalTokens: 300 },
-    }));
+    await saveChatToDatabase(
+      makeParams({
+        usage: { promptTokens: 100, completionTokens: 200, totalTokens: 300 },
+      })
+    );
 
     const calls = mockChatRepo.addMessage.mock.calls as Array<[Record<string, unknown>]>;
     const assistantCall = calls.find(([args]) => args.role === 'assistant')!;
@@ -265,16 +282,18 @@ describe('saveChatToDatabase', () => {
   });
 
   it('calls LogsRepository.log with the full parameters', async () => {
-    await saveChatToDatabase(makeParams({
-      provider: 'openai',
-      model: 'gpt-4o',
-      userMessage: 'Hello',
-      assistantContent: 'World',
-      historyLength: 5,
-      ipAddress: '127.0.0.1',
-      userAgent: 'TestAgent/1.0',
-      usage: { promptTokens: 10, completionTokens: 20, totalTokens: 30 },
-    }));
+    await saveChatToDatabase(
+      makeParams({
+        provider: 'openai',
+        model: 'gpt-4o',
+        userMessage: 'Hello',
+        assistantContent: 'World',
+        historyLength: 5,
+        ipAddress: '127.0.0.1',
+        userAgent: 'TestAgent/1.0',
+        usage: { promptTokens: 10, completionTokens: 20, totalTokens: 30 },
+      })
+    );
 
     expect(mockLogsRepo.log).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -290,7 +309,7 @@ describe('saveChatToDatabase', () => {
         totalTokens: 30,
         ipAddress: '127.0.0.1',
         userAgent: 'TestAgent/1.0',
-      }),
+      })
     );
   });
 
@@ -313,12 +332,14 @@ describe('saveChatToDatabase', () => {
 
     expect(mockLog.warn).toHaveBeenCalledWith(
       expect.stringContaining('Failed to save'),
-      expect.any(Error),
+      expect.any(Error)
     );
   });
 
   it('passes attachments to the user message when present', async () => {
-    const attachments = [{ type: 'image' as const, mimeType: 'image/png', filename: 'photo.png', size: 1024 }];
+    const attachments = [
+      { type: 'image' as const, mimeType: 'image/png', filename: 'photo.png', size: 1024 },
+    ];
     await saveChatToDatabase(makeParams({ attachments }));
 
     const calls = mockChatRepo.addMessage.mock.calls as Array<[Record<string, unknown>]>;
@@ -335,11 +356,11 @@ describe('saveChatToDatabase', () => {
   });
 
   it('uses agentName "Chat" when no agentId is provided', async () => {
-    await saveChatToDatabase(makeParams());  // no agentId
+    await saveChatToDatabase(makeParams()); // no agentId
 
     expect(mockChatRepo.getOrCreateConversation).toHaveBeenCalledWith(
       expect.any(String),
-      expect.objectContaining({ agentName: 'Chat' }),
+      expect.objectContaining({ agentName: 'Chat' })
     );
   });
 
@@ -348,7 +369,7 @@ describe('saveChatToDatabase', () => {
 
     expect(mockChatRepo.getOrCreateConversation).toHaveBeenCalledWith(
       expect.any(String),
-      expect.objectContaining({ agentName: undefined, agentId: 'agent-42' }),
+      expect.objectContaining({ agentName: undefined, agentId: 'agent-42' })
     );
   });
 
@@ -361,7 +382,7 @@ describe('saveChatToDatabase', () => {
   });
 
   it('omits streaming flag from log requestBody when streaming is not set', async () => {
-    await saveChatToDatabase(makeParams());  // no streaming
+    await saveChatToDatabase(makeParams()); // no streaming
 
     const logCall = mockLogsRepo.log.mock.calls[0]![0] as Record<string, unknown>;
     const requestBody = logCall.requestBody as Record<string, unknown>;
@@ -415,9 +436,7 @@ describe('saveStreamingChat', () => {
     });
 
     // Verified via the log message that includes "streaming"
-    expect(mockLog.info).toHaveBeenCalledWith(
-      expect.stringContaining('streaming'),
-    );
+    expect(mockLog.info).toHaveBeenCalledWith(expect.stringContaining('streaming'));
   });
 
   it('populates usage from state.lastUsage when present', async () => {
@@ -501,7 +520,13 @@ describe('saveStreamingChat', () => {
   it('maps traceToolCalls into the trace', async () => {
     const state = makeStreamState({
       traceToolCalls: [
-        { name: 'search', arguments: { q: 'test' }, result: 'results', success: true, duration: 120 },
+        {
+          name: 'search',
+          arguments: { q: 'test' },
+          result: 'results',
+          success: true,
+          duration: 120,
+        },
       ],
     });
     await saveStreamingChat(state as Parameters<typeof saveStreamingChat>[0], {
@@ -548,7 +573,9 @@ describe('runPostChatProcessing', () => {
   });
 
   it('passes toolCalls to updateGoalProgress', async () => {
-    const toolCalls = [{ id: 'tc-1', name: 'search', arguments: '{}' }] as Parameters<typeof runPostChatProcessing>[3];
+    const toolCalls = [{ id: 'tc-1', name: 'search', arguments: '{}' }] as Parameters<
+      typeof runPostChatProcessing
+    >[3];
     runPostChatProcessing('user-1', 'Hello', 'Hi', toolCalls);
     await flushPromises();
 
@@ -563,7 +590,7 @@ describe('runPostChatProcessing', () => {
 
     expect(mockLog.warn).toHaveBeenCalledWith(
       expect.stringContaining('Memory extraction failed'),
-      expect.any(Error),
+      expect.any(Error)
     );
   });
 
@@ -584,9 +611,7 @@ describe('runPostChatProcessing', () => {
     runPostChatProcessing('user-1', 'Hello', 'Hi');
     await flushPromises();
 
-    expect(mockLog.info).toHaveBeenCalledWith(
-      expect.stringContaining('3'),
-    );
+    expect(mockLog.info).toHaveBeenCalledWith(expect.stringContaining('3'));
   });
 
   it('does not log when extractMemories returns 0', async () => {
@@ -595,8 +620,8 @@ describe('runPostChatProcessing', () => {
     runPostChatProcessing('user-1', 'Hello', 'Hi');
     await flushPromises();
 
-    const infoCalls = (mockLog.info.mock.calls as Array<[string]>).filter(
-      ([msg]) => msg.includes('memor'),
+    const infoCalls = (mockLog.info.mock.calls as Array<[string]>).filter(([msg]) =>
+      msg.includes('memor')
     );
     expect(infoCalls).toHaveLength(0);
   });
@@ -616,9 +641,7 @@ describe('runPostChatProcessing', () => {
     runPostChatProcessing('user-1', 'Hello', 'Hi');
     await flushPromises();
 
-    expect(mockLog.info).toHaveBeenCalledWith(
-      expect.stringContaining('2 triggers evaluated'),
-    );
+    expect(mockLog.info).toHaveBeenCalledWith(expect.stringContaining('2 triggers evaluated'));
   });
 
   it('logs executed count when evaluateTriggers returns executed array', async () => {
@@ -631,9 +654,7 @@ describe('runPostChatProcessing', () => {
     runPostChatProcessing('user-1', 'Hello', 'Hi');
     await flushPromises();
 
-    expect(mockLog.info).toHaveBeenCalledWith(
-      expect.stringContaining('1 triggers executed'),
-    );
+    expect(mockLog.info).toHaveBeenCalledWith(expect.stringContaining('1 triggers executed'));
   });
 
   it('logs pending count when evaluateTriggers returns pending array', async () => {
@@ -646,9 +667,7 @@ describe('runPostChatProcessing', () => {
     runPostChatProcessing('user-1', 'Hello', 'Hi');
     await flushPromises();
 
-    expect(mockLog.info).toHaveBeenCalledWith(
-      expect.stringContaining('1 triggers pending'),
-    );
+    expect(mockLog.info).toHaveBeenCalledWith(expect.stringContaining('1 triggers pending'));
   });
 
   it('does not log trigger info when evaluateTriggers returns undefined', async () => {
@@ -657,8 +676,8 @@ describe('runPostChatProcessing', () => {
     runPostChatProcessing('user-1', 'Hello', 'Hi');
     await flushPromises();
 
-    const infoCalls = (mockLog.info.mock.calls as Array<[string]>).filter(
-      ([msg]) => msg.includes('trigger'),
+    const infoCalls = (mockLog.info.mock.calls as Array<[string]>).filter(([msg]) =>
+      msg.includes('trigger')
     );
     expect(infoCalls).toHaveLength(0);
   });

@@ -36,7 +36,9 @@ vi.mock('node:util', () => ({
 
 vi.mock('./derive.js', () => ({
   toBase64: vi.fn().mockImplementation((data: Uint8Array) => Buffer.from(data).toString('base64')),
-  fromBase64: vi.fn().mockImplementation((b64: string) => new Uint8Array(Buffer.from(b64, 'base64'))),
+  fromBase64: vi
+    .fn()
+    .mockImplementation((b64: string) => new Uint8Array(Buffer.from(b64, 'base64'))),
 }));
 
 // ---------------------------------------------------------------------------

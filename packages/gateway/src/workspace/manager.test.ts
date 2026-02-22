@@ -21,9 +21,7 @@ import type { IncomingMessage } from '../ws/types.js';
 // inside the factory closure without TDZ errors.
 // ---------------------------------------------------------------------------
 
-const channelMessageHandlers = vi.hoisted(
-  () => new Map<string, Set<(data: unknown) => void>>(),
-);
+const channelMessageHandlers = vi.hoisted(() => new Map<string, Set<(data: unknown) => void>>());
 
 // ---------------------------------------------------------------------------
 // Mocks – declared BEFORE any import that transitively loads the mocked module
@@ -73,9 +71,7 @@ vi.mock('../routes/settings.js', () => ({
 }));
 
 vi.mock('../routes/helpers.js', () => ({
-  getErrorMessage: vi.fn((e: unknown) =>
-    e instanceof Error ? e.message : String(e),
-  ),
+  getErrorMessage: vi.fn((e: unknown) => (e instanceof Error ? e.message : String(e))),
 }));
 
 vi.mock('../services/log.js', () => ({
@@ -132,9 +128,7 @@ function makeIncoming(overrides: Partial<IncomingMessage> = {}): IncomingMessage
 }
 
 /** Fire the channel:message event on the gatewayEvents mock. */
-async function fireChannelMessage(
-  data: Record<string, unknown>,
-): Promise<void> {
+async function fireChannelMessage(data: Record<string, unknown>): Promise<void> {
   const handlers = channelMessageHandlers.get('channel:message');
   if (handlers) {
     for (const handler of handlers) {
@@ -468,9 +462,7 @@ describe('WorkspaceManager', () => {
     });
 
     it('throws when the workspace id does not exist', () => {
-      expect(() => manager.setDefault('non-existent')).toThrow(
-        'Workspace not found: non-existent',
-      );
+      expect(() => manager.setDefault('non-existent')).toThrow('Workspace not found: non-existent');
     });
   });
 
@@ -527,10 +519,7 @@ describe('WorkspaceManager', () => {
     it('does not emit workspace:deleted when workspace does not exist', () => {
       vi.mocked(gatewayEvents.emit).mockClear();
       manager.delete('non-existent');
-      expect(gatewayEvents.emit).not.toHaveBeenCalledWith(
-        'workspace:deleted',
-        expect.anything(),
-      );
+      expect(gatewayEvents.emit).not.toHaveBeenCalledWith('workspace:deleted', expect.anything());
     });
 
     it('decrements the count', () => {
@@ -613,7 +602,7 @@ describe('WorkspaceManager', () => {
 
     it('throws when the workspace is not found', () => {
       expect(() => manager.associateChannel('non-existent', 'ch-1')).toThrow(
-        'Workspace not found: non-existent',
+        'Workspace not found: non-existent'
       );
     });
 
@@ -698,9 +687,9 @@ describe('WorkspaceManager', () => {
     });
 
     it('throws when workspace is not found', () => {
-      expect(() =>
-        manager.updateAgentConfig('non-existent', { model: 'gpt-5' }),
-      ).toThrow('Workspace not found: non-existent');
+      expect(() => manager.updateAgentConfig('non-existent', { model: 'gpt-5' })).toThrow(
+        'Workspace not found: non-existent'
+      );
     });
 
     it('updates tools list in agent config', () => {
@@ -819,7 +808,7 @@ describe('WorkspaceManager', () => {
       const handler = vi.fn();
       bindMethod<(e: string, h: (...args: unknown[]) => void) => void>(ws, 'on')(
         'stateChange',
-        handler,
+        handler
       );
       getSetState(ws)('error', 'timeout');
       expect(handler).toHaveBeenCalledWith('error', 'timeout');
@@ -830,7 +819,7 @@ describe('WorkspaceManager', () => {
       const handler = vi.fn();
       bindMethod<(e: string, h: (...args: unknown[]) => void) => void>(ws, 'on')(
         'stateChange',
-        handler,
+        handler
       );
       getSetState(ws)('processing');
       expect(handler).toHaveBeenCalledWith('processing', undefined);
@@ -895,7 +884,7 @@ describe('WorkspaceManager', () => {
       const handler = vi.fn();
       bindMethod<(e: string, h: (m: WorkspaceMessage) => void) => void>(ws, 'on')(
         'message',
-        handler,
+        handler
       );
       const msg = makeMessage();
       getAdder(ws)(msg);
@@ -1127,19 +1116,21 @@ describe('WorkspaceManager', () => {
     it('does not throw when there are no handlers for an event', () => {
       const ws = manager.create({ name: 'WS' });
       expect(() =>
-        bindMethod<(s: WorkspaceState) => void>(ws, 'setState')('processing'),
+        bindMethod<(s: WorkspaceState) => void>(ws, 'setState')('processing')
       ).not.toThrow();
     });
 
     it('catches handler errors and continues calling remaining handlers', () => {
       const ws = manager.create({ name: 'WS' });
-      const badHandler = vi.fn(() => { throw new Error('handler crash'); });
+      const badHandler = vi.fn(() => {
+        throw new Error('handler crash');
+      });
       const goodHandler = vi.fn();
       getOn(ws)('stateChange', badHandler);
       getOn(ws)('stateChange', goodHandler);
 
       expect(() =>
-        bindMethod<(s: WorkspaceState) => void>(ws, 'setState')('processing'),
+        bindMethod<(s: WorkspaceState) => void>(ws, 'setState')('processing')
       ).not.toThrow();
       expect(goodHandler).toHaveBeenCalled();
     });
@@ -1172,10 +1163,17 @@ describe('WorkspaceManager', () => {
   describe('WorkspaceInstance.processIncomingMessage', () => {
     it('converts an IncomingMessage into a WorkspaceMessage and adds it', async () => {
       const ws = manager.create({ name: 'WS', settings: { autoReply: false } });
-      const process = bindMethod<(m: IncomingMessage) => Promise<void>>(ws, 'processIncomingMessage');
+      const process = bindMethod<(m: IncomingMessage) => Promise<void>>(
+        ws,
+        'processIncomingMessage'
+      );
       const getMessages = bindMethod<() => WorkspaceMessage[]>(ws, 'getMessages');
 
-      const incoming = makeIncoming({ content: 'Test content', senderId: 'user-99', senderName: 'Bob' });
+      const incoming = makeIncoming({
+        content: 'Test content',
+        senderId: 'user-99',
+        senderName: 'Bob',
+      });
       await process(incoming);
 
       const msgs = getMessages();
@@ -1191,7 +1189,10 @@ describe('WorkspaceManager', () => {
 
     it('converts a string timestamp into a Date object', async () => {
       const ws = manager.create({ name: 'WS', settings: { autoReply: false } });
-      const process = bindMethod<(m: IncomingMessage) => Promise<void>>(ws, 'processIncomingMessage');
+      const process = bindMethod<(m: IncomingMessage) => Promise<void>>(
+        ws,
+        'processIncomingMessage'
+      );
       const getMessages = bindMethod<() => WorkspaceMessage[]>(ws, 'getMessages');
 
       const incoming = makeIncoming({ timestamp: '2025-01-01T10:00:00.000Z' });
@@ -1204,7 +1205,10 @@ describe('WorkspaceManager', () => {
     it('preserves a Date timestamp as-is', async () => {
       const ts = new Date('2025-06-15T12:00:00.000Z');
       const ws = manager.create({ name: 'WS', settings: { autoReply: false } });
-      const process = bindMethod<(m: IncomingMessage) => Promise<void>>(ws, 'processIncomingMessage');
+      const process = bindMethod<(m: IncomingMessage) => Promise<void>>(
+        ws,
+        'processIncomingMessage'
+      );
       const getMessages = bindMethod<() => WorkspaceMessage[]>(ws, 'getMessages');
 
       await process(makeIncoming({ timestamp: ts }));
@@ -1215,7 +1219,10 @@ describe('WorkspaceManager', () => {
 
     it('maps attachments and assigns each a new UUID id', async () => {
       const ws = manager.create({ name: 'WS', settings: { autoReply: false } });
-      const process = bindMethod<(m: IncomingMessage) => Promise<void>>(ws, 'processIncomingMessage');
+      const process = bindMethod<(m: IncomingMessage) => Promise<void>>(
+        ws,
+        'processIncomingMessage'
+      );
       const getMessages = bindMethod<() => WorkspaceMessage[]>(ws, 'getMessages');
 
       const incoming = makeIncoming({
@@ -1234,7 +1241,10 @@ describe('WorkspaceManager', () => {
 
     it('produces no attachments array when incoming has no attachments', async () => {
       const ws = manager.create({ name: 'WS', settings: { autoReply: false } });
-      const process = bindMethod<(m: IncomingMessage) => Promise<void>>(ws, 'processIncomingMessage');
+      const process = bindMethod<(m: IncomingMessage) => Promise<void>>(
+        ws,
+        'processIncomingMessage'
+      );
       const getMessages = bindMethod<() => WorkspaceMessage[]>(ws, 'getMessages');
 
       await process(makeIncoming({ attachments: undefined }));
@@ -1244,7 +1254,10 @@ describe('WorkspaceManager', () => {
 
     it('calls generateResponse when autoReply is true (default)', async () => {
       const ws = manager.create({ name: 'WS', settings: { autoReply: true } });
-      const process = bindMethod<(m: IncomingMessage) => Promise<void>>(ws, 'processIncomingMessage');
+      const process = bindMethod<(m: IncomingMessage) => Promise<void>>(
+        ws,
+        'processIncomingMessage'
+      );
 
       await process(makeIncoming());
 
@@ -1253,7 +1266,10 @@ describe('WorkspaceManager', () => {
 
     it('does not call generateResponse when autoReply is false', async () => {
       const ws = manager.create({ name: 'WS', settings: { autoReply: false } });
-      const process = bindMethod<(m: IncomingMessage) => Promise<void>>(ws, 'processIncomingMessage');
+      const process = bindMethod<(m: IncomingMessage) => Promise<void>>(
+        ws,
+        'processIncomingMessage'
+      );
 
       await process(makeIncoming());
 
@@ -1273,7 +1289,7 @@ describe('WorkspaceManager', () => {
       const states: WorkspaceState[] = [];
       bindMethod<(e: string, h: (s: WorkspaceState) => void) => void>(ws, 'on')(
         'stateChange',
-        (s: WorkspaceState) => states.push(s),
+        (s: WorkspaceState) => states.push(s)
       );
 
       add(makeMessage({ role: 'user', content: 'Hello' }));
@@ -1292,11 +1308,11 @@ describe('WorkspaceManager', () => {
       const streamEndIds: string[] = [];
       bindMethod<(e: string, h: (...a: unknown[]) => void) => void>(ws, 'on')(
         'streamStart',
-        (id: unknown) => streamStartIds.push(id as string),
+        (id: unknown) => streamStartIds.push(id as string)
       );
       bindMethod<(e: string, h: (...a: unknown[]) => void) => void>(ws, 'on')(
         'streamEnd',
-        (id: unknown) => streamEndIds.push(id as string),
+        (id: unknown) => streamEndIds.push(id as string)
       );
 
       add(makeMessage({ role: 'user', content: 'Hi' }));
@@ -1356,7 +1372,10 @@ describe('WorkspaceManager', () => {
     });
 
     it('calls getOrCreateChatAgent with resolved provider and model', async () => {
-      mockResolveProviderAndModel.mockReturnValue({ provider: 'anthropic', model: 'claude-opus-4' });
+      mockResolveProviderAndModel.mockReturnValue({
+        provider: 'anthropic',
+        model: 'claude-opus-4',
+      });
 
       const ws = manager.create({ name: 'WS', settings: { autoReply: false } });
       const add = bindMethod<(m: WorkspaceMessage) => void>(ws, 'addMessage');
@@ -1580,7 +1599,7 @@ describe('WorkspaceManager', () => {
       bindMethod<(e: string, h: (...a: unknown[]) => void) => void>(ws, 'on')(
         'stateChange',
         (s: unknown, e: unknown) =>
-          stateChanges.push([s as WorkspaceState, e as string | undefined]),
+          stateChanges.push([s as WorkspaceState, e as string | undefined])
       );
 
       add(makeMessage({ role: 'user', content: 'Hello' }));
@@ -1597,10 +1616,7 @@ describe('WorkspaceManager', () => {
   // =========================================================================
   describe('channel forwarding', () => {
     it('registers a channel:message handler on construction', () => {
-      expect(gatewayEvents.on).toHaveBeenCalledWith(
-        'channel:message',
-        expect.any(Function),
-      );
+      expect(gatewayEvents.on).toHaveBeenCalledWith('channel:message', expect.any(Function));
     });
 
     it('routes a channel:message to the workspace associated with that channel', async () => {
@@ -1683,7 +1699,7 @@ describe('WorkspaceManager', () => {
           content: 'Cause error',
           timestamp: new Date().toISOString(),
           direction: 'incoming',
-        }),
+        })
       ).resolves.not.toThrow();
 
       // Workspace should be in error state
@@ -1850,7 +1866,10 @@ describe('WorkspaceManager', () => {
 
       const ws = manager.create({ name: 'WS', settings: { autoReply: true } });
       const getMessages = bindMethod<() => WorkspaceMessage[]>(ws, 'getMessages');
-      const process = bindMethod<(m: IncomingMessage) => Promise<void>>(ws, 'processIncomingMessage');
+      const process = bindMethod<(m: IncomingMessage) => Promise<void>>(
+        ws,
+        'processIncomingMessage'
+      );
 
       await process(makeIncoming({ content: 'Hello bot' }));
 
@@ -1863,7 +1882,10 @@ describe('WorkspaceManager', () => {
       mockAgentChat.mockReturnValue({ ok: true, value: { content: 'Done' } });
 
       const ws = manager.create({ name: 'WS', settings: { autoReply: true } });
-      const process = bindMethod<(m: IncomingMessage) => Promise<void>>(ws, 'processIncomingMessage');
+      const process = bindMethod<(m: IncomingMessage) => Promise<void>>(
+        ws,
+        'processIncomingMessage'
+      );
 
       await process(makeIncoming());
 
@@ -1877,7 +1899,10 @@ describe('WorkspaceManager', () => {
 
       const ws = manager.create({ name: 'WS', settings: { autoReply: true } });
       const getMessages = bindMethod<() => WorkspaceMessage[]>(ws, 'getMessages');
-      const process = bindMethod<(m: IncomingMessage) => Promise<void>>(ws, 'processIncomingMessage');
+      const process = bindMethod<(m: IncomingMessage) => Promise<void>>(
+        ws,
+        'processIncomingMessage'
+      );
 
       await process(makeIncoming({ content: 'First' }));
       await process(makeIncoming({ content: 'Second' }));

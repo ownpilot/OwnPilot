@@ -101,8 +101,8 @@ describe('ProviderService', () => {
       const svc = new ProviderService();
       const providers = svc.listProviders();
       expect(providers.length).toBeGreaterThan(0);
-      expect(providers.find(p => p.id === 'openai')).toBeDefined();
-      expect(providers.find(p => p.id === 'anthropic')).toBeDefined();
+      expect(providers.find((p) => p.id === 'openai')).toBeDefined();
+      expect(providers.find((p) => p.id === 'anthropic')).toBeDefined();
     });
 
     it('all providers have id, name, isAvailable', () => {

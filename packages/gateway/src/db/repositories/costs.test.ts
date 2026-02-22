@@ -127,9 +127,7 @@ describe('CostsRepository', () => {
 
     it('should store conversationId when provided', async () => {
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
-      mockAdapter.queryOne.mockResolvedValueOnce(
-        makeCostRow({ conversation_id: 'conv-1' }),
-      );
+      mockAdapter.queryOne.mockResolvedValueOnce(makeCostRow({ conversation_id: 'conv-1' }));
 
       const result = await repo.create({
         id: 'cost-1',
@@ -178,7 +176,7 @@ describe('CostsRepository', () => {
           outputTokens: 50,
           inputCost: 0.003,
           outputCost: 0.006,
-        }),
+        })
       ).rejects.toThrow('Failed to create cost');
     });
 
@@ -252,7 +250,7 @@ describe('CostsRepository', () => {
           input_tokens: '200',
           output_tokens: '100',
           total_tokens: '300',
-        }),
+        })
       );
 
       const result = await repo.getById('cost-1');
@@ -342,9 +340,7 @@ describe('CostsRepository', () => {
 
   describe('getByProvider', () => {
     it('should return costs filtered by provider', async () => {
-      mockAdapter.query.mockResolvedValueOnce([
-        makeCostRow({ provider: 'anthropic' }),
-      ]);
+      mockAdapter.query.mockResolvedValueOnce([makeCostRow({ provider: 'anthropic' })]);
 
       const result = await repo.getByProvider('anthropic');
 

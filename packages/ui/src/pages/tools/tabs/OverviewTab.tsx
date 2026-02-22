@@ -74,9 +74,7 @@ export function OverviewTab({ tool }: OverviewTabProps) {
                   }`}
                 >
                   {name}
-                  <span className="ml-1 opacity-60">
-                    {prop.type || 'any'}
-                  </span>
+                  <span className="ml-1 opacity-60">{prop.type || 'any'}</span>
                 </span>
               );
             })}

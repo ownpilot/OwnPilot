@@ -44,10 +44,10 @@ function MessageBubble({ message, onRetry, showRetry, workspaceId }: MessageBubb
   const isError = message.isError;
 
   // Strip hidden context blocks from display (attached context + tool catalog)
-  const hasAttachedContext = isUser && (
-    message.content.includes('\n---\n[ATTACHED CONTEXT') ||
-    message.content.includes('\n---\n[TOOL CATALOG')
-  );
+  const hasAttachedContext =
+    isUser &&
+    (message.content.includes('\n---\n[ATTACHED CONTEXT') ||
+      message.content.includes('\n---\n[TOOL CATALOG'));
   const displayContent = hasAttachedContext
     ? message.content
         .replace(/\n---\n\[ATTACHED CONTEXT[\s\S]*$/, '')
@@ -83,23 +83,25 @@ function MessageBubble({ message, onRetry, showRetry, workspaceId }: MessageBubb
         {/* User image attachments */}
         {isUser && message.attachments && message.attachments.length > 0 && (
           <div className={`flex gap-2 mb-2 ${isUser ? 'justify-end' : ''} flex-wrap`}>
-            {message.attachments.filter(a => a.type === 'image').map((att, i) => {
-              const src = att.data
-                ? `data:${att.mimeType || 'image/png'};base64,${att.data}`
-                : att.path
-                  ? `/api/v1/files/workspace/${att.path}`
-                  : undefined;
-              if (!src) return null;
-              return (
-                <a key={i} href={src} target="_blank" rel="noopener noreferrer" className="block">
-                  <img
-                    src={src}
-                    alt={att.filename || 'Attached image'}
-                    className="max-w-[200px] max-h-[200px] rounded-xl border border-border dark:border-dark-border object-cover hover:opacity-90 transition-opacity"
-                  />
-                </a>
-              );
-            })}
+            {message.attachments
+              .filter((a) => a.type === 'image')
+              .map((att, i) => {
+                const src = att.data
+                  ? `data:${att.mimeType || 'image/png'};base64,${att.data}`
+                  : att.path
+                    ? `/api/v1/files/workspace/${att.path}`
+                    : undefined;
+                if (!src) return null;
+                return (
+                  <a key={i} href={src} target="_blank" rel="noopener noreferrer" className="block">
+                    <img
+                      src={src}
+                      alt={att.filename || 'Attached image'}
+                      className="max-w-[200px] max-h-[200px] rounded-xl border border-border dark:border-dark-border object-cover hover:opacity-90 transition-opacity"
+                    />
+                  </a>
+                );
+              })}
           </div>
         )}
 
@@ -112,8 +114,8 @@ function MessageBubble({ message, onRetry, showRetry, workspaceId }: MessageBubb
                 isUser
                   ? 'bg-primary text-white rounded-tr-md'
                   : isError
-                  ? 'bg-error/10 text-error border border-error/30 rounded-tl-md'
-                  : 'bg-bg-secondary dark:bg-dark-bg-secondary text-text-primary dark:text-dark-text-primary rounded-tl-md border border-border dark:border-dark-border'
+                    ? 'bg-error/10 text-error border border-error/30 rounded-tl-md'
+                    : 'bg-bg-secondary dark:bg-dark-bg-secondary text-text-primary dark:text-dark-text-primary rounded-tl-md border border-border dark:border-dark-border'
               }`}
             >
               <MarkdownContent content={displayContent} workspaceId={workspaceId} />
@@ -123,7 +125,9 @@ function MessageBubble({ message, onRetry, showRetry, workspaceId }: MessageBubb
 
         {/* Attached context indicator */}
         {hasAttachedContext && (
-          <div className={`mt-1 text-[11px] text-text-muted/60 dark:text-dark-text-muted/60 ${isUser ? 'text-right' : ''}`}>
+          <div
+            className={`mt-1 text-[11px] text-text-muted/60 dark:text-dark-text-muted/60 ${isUser ? 'text-right' : ''}`}
+          >
             + context attached
           </div>
         )}
@@ -173,7 +177,10 @@ function MessageBubble({ message, onRetry, showRetry, workspaceId }: MessageBubb
             )}
           </button>
           <span className="text-xs text-text-muted dark:text-dark-text-muted">
-            {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            {new Date(message.timestamp).toLocaleTimeString([], {
+              hour: '2-digit',
+              minute: '2-digit',
+            })}
           </span>
         </div>
 
@@ -182,10 +189,13 @@ function MessageBubble({ message, onRetry, showRetry, workspaceId }: MessageBubb
           // Merge tool calls from message.toolCalls and trace
           const toolCallItems = message.toolCalls?.length
             ? message.toolCalls.map((call) => {
-                const traceInfo = message.trace?.toolCalls?.find(tc => tc.name === call.name);
+                const traceInfo = message.trace?.toolCalls?.find((tc) => tc.name === call.name);
                 let args: Record<string, unknown>;
                 try {
-                  args = typeof call.arguments === 'string' ? JSON.parse(call.arguments) : (call.arguments ?? {});
+                  args =
+                    typeof call.arguments === 'string'
+                      ? JSON.parse(call.arguments)
+                      : (call.arguments ?? {});
                 } catch {
                   args = {};
                 }
@@ -194,28 +204,35 @@ function MessageBubble({ message, onRetry, showRetry, workspaceId }: MessageBubb
                   name: call.name,
                   arguments: traceInfo?.arguments || args,
                   result: call.result || traceInfo?.result,
-                  status: (traceInfo?.success === false ? 'error' :
-                          (call.result !== undefined || traceInfo?.result !== undefined) ? 'success' : 'pending') as 'error' | 'success' | 'pending',
+                  status: (traceInfo?.success === false
+                    ? 'error'
+                    : call.result !== undefined || traceInfo?.result !== undefined
+                      ? 'success'
+                      : 'pending') as 'error' | 'success' | 'pending',
                   duration: traceInfo?.duration,
                   error: traceInfo?.error,
                 };
               })
             : message.trace?.toolCalls?.length
-            ? message.trace.toolCalls.map((tc, idx) => ({
-                id: `trace-${idx}`,
-                name: tc.name,
-                arguments: tc.arguments || {},
-                result: tc.result,
-                status: (tc.success === false ? 'error' : tc.result !== undefined ? 'success' : 'pending') as 'error' | 'success' | 'pending',
-                duration: tc.duration,
-                error: tc.error,
-              }))
-            : [];
+              ? message.trace.toolCalls.map((tc, idx) => ({
+                  id: `trace-${idx}`,
+                  name: tc.name,
+                  arguments: tc.arguments || {},
+                  result: tc.result,
+                  status: (tc.success === false
+                    ? 'error'
+                    : tc.result !== undefined
+                      ? 'success'
+                      : 'pending') as 'error' | 'success' | 'pending',
+                  duration: tc.duration,
+                  error: tc.error,
+                }))
+              : [];
 
           if (toolCallItems.length === 0) return null;
 
-          const successCount = toolCallItems.filter(t => t.status === 'success').length;
-          const errorCount = toolCallItems.filter(t => t.status === 'error').length;
+          const successCount = toolCallItems.filter((t) => t.status === 'success').length;
+          const errorCount = toolCallItems.filter((t) => t.status === 'error').length;
 
           return (
             <div className={`mt-3 ${isUser ? 'text-left' : ''}`}>
@@ -225,10 +242,11 @@ function MessageBubble({ message, onRetry, showRetry, workspaceId }: MessageBubb
                   className="w-full flex items-center gap-3 px-3 py-2 hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary transition-colors"
                 >
                   <div className="text-text-muted dark:text-dark-text-muted">
-                    {toolCallsExpanded
-                      ? <ChevronDown className="w-4 h-4" />
-                      : <ChevronRight className="w-4 h-4" />
-                    }
+                    {toolCallsExpanded ? (
+                      <ChevronDown className="w-4 h-4" />
+                    ) : (
+                      <ChevronRight className="w-4 h-4" />
+                    )}
                   </div>
                   <Wrench className="w-3.5 h-3.5 text-text-muted dark:text-dark-text-muted" />
                   <span className="font-medium text-text-secondary dark:text-dark-text-secondary">
@@ -238,9 +256,7 @@ function MessageBubble({ message, onRetry, showRetry, workspaceId }: MessageBubb
                     <span className={`${errorCount > 0 ? 'text-yellow-500' : 'text-green-500'}`}>
                       {successCount}/{toolCallItems.length}
                     </span>
-                    {errorCount > 0 && (
-                      <span className="text-red-500">{errorCount} failed</span>
-                    )}
+                    {errorCount > 0 && <span className="text-red-500">{errorCount} failed</span>}
                   </div>
                 </button>
 

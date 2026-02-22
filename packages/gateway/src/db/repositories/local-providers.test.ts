@@ -180,9 +180,7 @@ describe('LocalProvidersRepository', () => {
 
   describe('getProvider', () => {
     it('should return provider from cache', async () => {
-      mockAdapter.query
-        .mockResolvedValueOnce([makeProviderRow()])
-        .mockResolvedValueOnce([]);
+      mockAdapter.query.mockResolvedValueOnce([makeProviderRow()]).mockResolvedValueOnce([]);
       await repo.initialize();
 
       const result = await repo.getProvider('prov_1');
@@ -194,18 +192,14 @@ describe('LocalProvidersRepository', () => {
     });
 
     it('should return null when not found', async () => {
-      mockAdapter.query
-        .mockResolvedValueOnce([makeProviderRow()])
-        .mockResolvedValueOnce([]);
+      mockAdapter.query.mockResolvedValueOnce([makeProviderRow()]).mockResolvedValueOnce([]);
       await repo.initialize();
 
       expect(await repo.getProvider('missing')).toBeNull();
     });
 
     it('should return null from cache for unknown id (cache miss)', async () => {
-      mockAdapter.query
-        .mockResolvedValueOnce([makeProviderRow()])
-        .mockResolvedValueOnce([]);
+      mockAdapter.query.mockResolvedValueOnce([makeProviderRow()]).mockResolvedValueOnce([]);
       await repo.initialize();
 
       expect(await repo.getProvider('unknown-id')).toBeNull();
@@ -257,9 +251,7 @@ describe('LocalProvidersRepository', () => {
     });
 
     it('should convert null optional fields to undefined', async () => {
-      mockAdapter.query
-        .mockResolvedValueOnce([makeProviderRow()])
-        .mockResolvedValueOnce([]);
+      mockAdapter.query.mockResolvedValueOnce([makeProviderRow()]).mockResolvedValueOnce([]);
       await repo.initialize();
 
       const result = await repo.getProvider('prov_1');
@@ -276,9 +268,7 @@ describe('LocalProvidersRepository', () => {
 
   describe('getProviderSync', () => {
     it('should return provider synchronously from cache', async () => {
-      mockAdapter.query
-        .mockResolvedValueOnce([makeProviderRow()])
-        .mockResolvedValueOnce([]);
+      mockAdapter.query.mockResolvedValueOnce([makeProviderRow()]).mockResolvedValueOnce([]);
       await repo.initialize();
 
       const result = repo.getProviderSync('prov_1');
@@ -288,18 +278,14 @@ describe('LocalProvidersRepository', () => {
     });
 
     it('should return null for unknown id', async () => {
-      mockAdapter.query
-        .mockResolvedValueOnce([makeProviderRow()])
-        .mockResolvedValueOnce([]);
+      mockAdapter.query.mockResolvedValueOnce([makeProviderRow()]).mockResolvedValueOnce([]);
       await repo.initialize();
 
       expect(repo.getProviderSync('unknown-id')).toBeNull();
     });
 
     it('should return null when not found', async () => {
-      mockAdapter.query
-        .mockResolvedValueOnce([makeProviderRow()])
-        .mockResolvedValueOnce([]);
+      mockAdapter.query.mockResolvedValueOnce([makeProviderRow()]).mockResolvedValueOnce([]);
       await repo.initialize();
 
       expect(repo.getProviderSync('missing')).toBeNull();
@@ -393,14 +379,12 @@ describe('LocalProvidersRepository', () => {
     });
 
     it('should default userId to "default"', async () => {
-      mockAdapter.query
-        .mockResolvedValueOnce([])
-        .mockResolvedValueOnce([]);
+      mockAdapter.query.mockResolvedValueOnce([]).mockResolvedValueOnce([]);
       await repo.initialize();
 
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
       mockAdapter.queryOne.mockResolvedValueOnce(
-        makeProviderRow({ id: 'test-uuid-1234', user_id: 'default' }),
+        makeProviderRow({ id: 'test-uuid-1234', user_id: 'default' })
       );
       mockAdapter.query.mockResolvedValueOnce([]);
 
@@ -415,14 +399,12 @@ describe('LocalProvidersRepository', () => {
     });
 
     it('should use provided userId', async () => {
-      mockAdapter.query
-        .mockResolvedValueOnce([])
-        .mockResolvedValueOnce([]);
+      mockAdapter.query.mockResolvedValueOnce([]).mockResolvedValueOnce([]);
       await repo.initialize();
 
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
       mockAdapter.queryOne.mockResolvedValueOnce(
-        makeProviderRow({ id: 'test-uuid-1234', user_id: 'custom' }),
+        makeProviderRow({ id: 'test-uuid-1234', user_id: 'custom' })
       );
       mockAdapter.query.mockResolvedValueOnce([]);
 
@@ -438,15 +420,11 @@ describe('LocalProvidersRepository', () => {
     });
 
     it('should set is_enabled=true and is_default=false', async () => {
-      mockAdapter.query
-        .mockResolvedValueOnce([])
-        .mockResolvedValueOnce([]);
+      mockAdapter.query.mockResolvedValueOnce([]).mockResolvedValueOnce([]);
       await repo.initialize();
 
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
-      mockAdapter.queryOne.mockResolvedValueOnce(
-        makeProviderRow({ id: 'test-uuid-1234' }),
-      );
+      mockAdapter.queryOne.mockResolvedValueOnce(makeProviderRow({ id: 'test-uuid-1234' }));
       mockAdapter.query.mockResolvedValueOnce([]);
 
       await repo.createProvider({
@@ -461,9 +439,7 @@ describe('LocalProvidersRepository', () => {
     });
 
     it('should store optional apiKey and discoveryEndpoint', async () => {
-      mockAdapter.query
-        .mockResolvedValueOnce([])
-        .mockResolvedValueOnce([]);
+      mockAdapter.query.mockResolvedValueOnce([]).mockResolvedValueOnce([]);
       await repo.initialize();
 
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
@@ -472,7 +448,7 @@ describe('LocalProvidersRepository', () => {
           id: 'test-uuid-1234',
           api_key: 'secret',
           discovery_endpoint: '/v1/models',
-        }),
+        })
       );
       mockAdapter.query.mockResolvedValueOnce([]);
 
@@ -496,9 +472,7 @@ describe('LocalProvidersRepository', () => {
 
   describe('updateProvider', () => {
     beforeEach(async () => {
-      mockAdapter.query
-        .mockResolvedValueOnce([makeProviderRow()])
-        .mockResolvedValueOnce([]);
+      mockAdapter.query.mockResolvedValueOnce([makeProviderRow()]).mockResolvedValueOnce([]);
       await repo.initialize();
     });
 
@@ -529,9 +503,7 @@ describe('LocalProvidersRepository', () => {
 
     it('should update baseUrl', async () => {
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
-      mockAdapter.queryOne.mockResolvedValueOnce(
-        makeProviderRow({ base_url: 'http://new:1234' }),
-      );
+      mockAdapter.queryOne.mockResolvedValueOnce(makeProviderRow({ base_url: 'http://new:1234' }));
       mockAdapter.query.mockResolvedValueOnce([]);
 
       const result = await repo.updateProvider('prov_1', {
@@ -543,9 +515,7 @@ describe('LocalProvidersRepository', () => {
 
     it('should update isEnabled', async () => {
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
-      mockAdapter.queryOne.mockResolvedValueOnce(
-        makeProviderRow({ is_enabled: false }),
-      );
+      mockAdapter.queryOne.mockResolvedValueOnce(makeProviderRow({ is_enabled: false }));
       mockAdapter.query.mockResolvedValueOnce([]);
 
       const result = await repo.updateProvider('prov_1', { isEnabled: false });
@@ -560,7 +530,7 @@ describe('LocalProvidersRepository', () => {
           name: 'New Name',
           base_url: 'http://new:5000',
           api_key: 'new-key',
-        }),
+        })
       );
       mockAdapter.query.mockResolvedValueOnce([]);
 
@@ -645,9 +615,7 @@ describe('LocalProvidersRepository', () => {
 
   describe('setDefault', () => {
     it('should clear existing defaults and set new one', async () => {
-      mockAdapter.query
-        .mockResolvedValueOnce([makeProviderRow()])
-        .mockResolvedValueOnce([]);
+      mockAdapter.query.mockResolvedValueOnce([makeProviderRow()]).mockResolvedValueOnce([]);
       await repo.initialize();
 
       // clear existing defaults
@@ -687,8 +655,18 @@ describe('LocalProvidersRepository', () => {
         ])
         .mockResolvedValueOnce([
           makeModelRow({ id: 'model_1', local_provider_id: 'prov_1', user_id: 'user-1' }),
-          makeModelRow({ id: 'model_2', local_provider_id: 'prov_1', user_id: 'user-1', model_id: 'mistral' }),
-          makeModelRow({ id: 'model_3', local_provider_id: 'prov_2', user_id: 'user-2', model_id: 'phi' }),
+          makeModelRow({
+            id: 'model_2',
+            local_provider_id: 'prov_1',
+            user_id: 'user-1',
+            model_id: 'mistral',
+          }),
+          makeModelRow({
+            id: 'model_3',
+            local_provider_id: 'prov_2',
+            user_id: 'user-2',
+            model_id: 'phi',
+          }),
         ]);
       await repo.initialize();
     });
@@ -731,9 +709,7 @@ describe('LocalProvidersRepository', () => {
 
   describe('upsertModel', () => {
     beforeEach(async () => {
-      mockAdapter.query
-        .mockResolvedValueOnce([makeProviderRow()])
-        .mockResolvedValueOnce([]);
+      mockAdapter.query.mockResolvedValueOnce([makeProviderRow()]).mockResolvedValueOnce([]);
       await repo.initialize();
     });
 
@@ -756,9 +732,7 @@ describe('LocalProvidersRepository', () => {
     });
 
     it('should default capabilities to empty array', async () => {
-      mockAdapter.queryOne.mockResolvedValueOnce(
-        makeModelRow({ capabilities: '[]' }),
-      );
+      mockAdapter.queryOne.mockResolvedValueOnce(makeModelRow({ capabilities: '[]' }));
       mockAdapter.queryOne.mockResolvedValueOnce(makeProviderRow());
       mockAdapter.query.mockResolvedValueOnce([makeModelRow()]);
 
@@ -818,14 +792,12 @@ describe('LocalProvidersRepository', () => {
           localProviderId: 'prov_1',
           modelId: 'ghost-model',
           displayName: 'Ghost',
-        }),
+        })
       ).rejects.toThrow('Failed to upsert local model: ghost-model');
     });
 
     it('should use provided userId instead of default', async () => {
-      mockAdapter.queryOne.mockResolvedValueOnce(
-        makeModelRow({ user_id: 'custom-user' }),
-      );
+      mockAdapter.queryOne.mockResolvedValueOnce(makeModelRow({ user_id: 'custom-user' }));
       mockAdapter.queryOne.mockResolvedValueOnce(makeProviderRow());
       mockAdapter.query.mockResolvedValueOnce([makeModelRow()]);
 
@@ -895,9 +867,7 @@ describe('LocalProvidersRepository', () => {
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
       // refreshProviderCache
       mockAdapter.queryOne.mockResolvedValueOnce(makeProviderRow());
-      mockAdapter.query.mockResolvedValueOnce([
-        makeModelRow({ is_enabled: false }),
-      ]);
+      mockAdapter.query.mockResolvedValueOnce([makeModelRow({ is_enabled: false })]);
 
       await repo.toggleModel('model_1', false);
 
@@ -963,16 +933,12 @@ describe('LocalProvidersRepository', () => {
 
   describe('updateDiscoveredAt', () => {
     it('should update last_discovered_at and updated_at', async () => {
-      mockAdapter.query
-        .mockResolvedValueOnce([makeProviderRow()])
-        .mockResolvedValueOnce([]);
+      mockAdapter.query.mockResolvedValueOnce([makeProviderRow()]).mockResolvedValueOnce([]);
       await repo.initialize();
 
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
       // refreshProviderCache
-      mockAdapter.queryOne.mockResolvedValueOnce(
-        makeProviderRow({ last_discovered_at: NOW }),
-      );
+      mockAdapter.queryOne.mockResolvedValueOnce(makeProviderRow({ last_discovered_at: NOW }));
       mockAdapter.query.mockResolvedValueOnce([]);
 
       await repo.updateDiscoveredAt('prov_1');

@@ -12,17 +12,29 @@
 import { Hono } from 'hono';
 import { streamSSE } from 'hono/streaming';
 import type { ChatRequest } from '../types/index.js';
-import { apiResponse, apiError, ERROR_CODES, getUserId, notFoundError, getErrorMessage } from './helpers.js';
-import { getAgent, getOrCreateDefaultAgent, getOrCreateChatAgent, isDemoMode, getDefaultModel, getWorkspaceContext, getSessionInfo } from './agents.js';
+import {
+  apiResponse,
+  apiError,
+  ERROR_CODES,
+  getUserId,
+  notFoundError,
+  getErrorMessage,
+} from './helpers.js';
+import {
+  getAgent,
+  getOrCreateDefaultAgent,
+  getOrCreateChatAgent,
+  isDemoMode,
+  getDefaultModel,
+  getWorkspaceContext,
+  getSessionInfo,
+} from './agents.js';
 import { usageTracker } from './costs.js';
 import { logChatEvent } from '../audit/index.js';
 import { ChatRepository, LogsRepository } from '../db/repositories/index.js';
 import { modelConfigsRepo } from '../db/repositories/model-configs.js';
 import type { AIProvider } from '@ownpilot/core';
-import {
-  buildEnhancedSystemPrompt,
-  checkToolCallApproval,
-} from '../assistant/index.js';
+import { buildEnhancedSystemPrompt, checkToolCallApproval } from '../assistant/index.js';
 import {
   createTraceContext,
   withTraceContextAsync,
@@ -100,9 +112,10 @@ async function processNonStreamingViaBus(
     agentId: string;
     requestId: string;
     conversationId?: string;
-  },
+  }
 ): Promise<MessageProcessingResult> {
-  const { agent, chatMessage, body, provider, model, userId, agentId, requestId, conversationId } = params;
+  const { agent, chatMessage, body, provider, model, userId, agentId, requestId, conversationId } =
+    params;
 
   const message: NormalizedMessage = {
     id: crypto.randomUUID(),
@@ -110,12 +123,14 @@ async function processNonStreamingViaBus(
     role: 'user',
     content: chatMessage,
     ...(body.attachments?.length && {
-      attachments: body.attachments.map((a: { type: string; data: string; mimeType: string; filename?: string }) => ({
-        type: a.type as 'image' | 'file',
-        data: a.data,
-        mimeType: a.mimeType,
-        filename: a.filename,
-      })),
+      attachments: body.attachments.map(
+        (a: { type: string; data: string; mimeType: string; filename?: string }) => ({
+          type: a.type as 'image' | 'file',
+          data: a.data,
+          mimeType: a.mimeType,
+          filename: a.filename,
+        })
+      ),
     }),
     metadata: {
       source: 'web',
@@ -147,11 +162,15 @@ async function processNonStreamingViaBus(
 chatRoutes.post('/', async (c) => {
   const rawBody = await c.req.json().catch(() => null);
   const { validateBody, chatMessageSchema } = await import('../middleware/validation.js');
-  const body = validateBody(chatMessageSchema, rawBody) as ChatRequest & { provider?: string; model?: string; workspaceId?: string };
+  const body = validateBody(chatMessageSchema, rawBody) as ChatRequest & {
+    provider?: string;
+    model?: string;
+    workspaceId?: string;
+  };
 
   // Get provider and model from request
   const provider = body.provider ?? 'openai';
-  const requestedModel = body.model ?? await getDefaultModel(provider);
+  const requestedModel = body.model ?? (await getDefaultModel(provider));
   const model = requestedModel ?? 'gpt-4o';
 
   // Check for demo mode
@@ -172,7 +191,14 @@ chatRoutes.post('/', async (c) => {
 
   // Validate model is available for non-demo mode
   if (!requestedModel) {
-    return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: `No model available for provider: ${provider}. Configure a default model in Settings.` }, 400);
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.INVALID_REQUEST,
+        message: `No model available for provider: ${provider}. Configure a default model in Settings.`,
+      },
+      400
+    );
   }
 
   // Look up user-configured context window from AI Models settings
@@ -196,7 +222,14 @@ chatRoutes.post('/', async (c) => {
     try {
       agent = await getOrCreateChatAgent(provider, model);
     } catch (error) {
-      return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: getErrorMessage(error, 'Failed to create agent') }, 400);
+      return apiError(
+        c,
+        {
+          code: ERROR_CODES.INVALID_REQUEST,
+          message: getErrorMessage(error, 'Failed to create agent'),
+        },
+        400
+      );
     }
   }
 
@@ -226,7 +259,10 @@ chatRoutes.post('/', async (c) => {
       const wsContext = getWorkspaceContext(sessionWorkspace.path);
       const workspaceInfo = `\n\n## File Operations\nWorkspace: \`${wsContext.workspaceDir}\`. Use relative paths for new files.`;
       if (!currentPrompt.includes(workspaceInfo)) {
-        const promptWithoutOldWs = currentPrompt.replace(/\n\n## File Operations[\s\S]*?(?=\n\n## [^#]|$)/g, '');
+        const promptWithoutOldWs = currentPrompt.replace(
+          /\n\n## File Operations[\s\S]*?(?=\n\n## [^#]|$)/g,
+          ''
+        );
         agent.updateSystemPrompt(promptWithoutOldWs + workspaceInfo);
       }
     }
@@ -256,7 +292,10 @@ chatRoutes.post('/', async (c) => {
     const execSection = buildExecutionSystemPrompt(execPermissions);
     const currentPrompt = agent.getConversation().systemPrompt || '';
     if (!currentPrompt.includes(execSection)) {
-      const promptWithoutExec = currentPrompt.replace(/\n\n## Code Execution[\s\S]*?(?=\n\n## [^#]|$)/g, '');
+      const promptWithoutExec = currentPrompt.replace(
+        /\n\n## Code Execution[\s\S]*?(?=\n\n## [^#]|$)/g,
+        ''
+      );
       agent.updateSystemPrompt(promptWithoutExec + execSection);
       log.info(`[ExecSecurity] Updated execution context (enabled=${execPermissions.enabled})`);
     }
@@ -270,7 +309,10 @@ chatRoutes.post('/', async (c) => {
       const catalog = await buildToolCatalog(allToolDefs);
       if (catalog) {
         const currentPrompt = agent.getConversation().systemPrompt || '';
-        if (!currentPrompt.includes('## Active Custom Tools') && !currentPrompt.includes('## Custom Data Tables')) {
+        if (
+          !currentPrompt.includes('## Active Custom Tools') &&
+          !currentPrompt.includes('## Custom Data Tables')
+        ) {
           agent.updateSystemPrompt(currentPrompt + catalog);
           log.info('Tool catalog injected into system prompt');
         }
@@ -428,7 +470,14 @@ chatRoutes.post('/', async (c) => {
       agent.setExecutionPermissions(undefined);
       agent.setRequestApproval(undefined);
       agent.setMaxToolCalls(undefined);
-      return apiError(c, { code: ERROR_CODES.EXECUTION_ERROR, message: getErrorMessage(busError, 'MessageBus processing failed') }, 500);
+      return apiError(
+        c,
+        {
+          code: ERROR_CODES.EXECUTION_ERROR,
+          message: getErrorMessage(busError, 'MessageBus processing failed'),
+        },
+        500
+      );
     }
 
     // Reset per-request overrides
@@ -439,13 +488,22 @@ chatRoutes.post('/', async (c) => {
     const processingTime = Math.round(performance.now() - startTime);
 
     if (busResult.response.metadata.error) {
-      return apiError(c, { code: ERROR_CODES.EXECUTION_ERROR, message: busResult.response.metadata.error as string }, 500);
+      return apiError(
+        c,
+        { code: ERROR_CODES.EXECUTION_ERROR, message: busResult.response.metadata.error as string },
+        500
+      );
     }
 
     const conversation = agent.getConversation();
-    const busUsage = busResult.response.metadata.tokens as { input: number; output: number } | undefined;
-    const { content: busMemStripped, memories: busMemories } = extractMemoriesFromResponse(busResult.response.content);
-    const { content: busCleanContent, suggestions: busSuggestions } = extractSuggestions(busMemStripped);
+    const busUsage = busResult.response.metadata.tokens as
+      | { input: number; output: number }
+      | undefined;
+    const { content: busMemStripped, memories: busMemories } = extractMemoriesFromResponse(
+      busResult.response.content
+    );
+    const { content: busCleanContent, suggestions: busSuggestions } =
+      extractSuggestions(busMemStripped);
 
     const busToolCalls = busResult.response.metadata.toolCalls as unknown[] | undefined;
     const busTrace = {
@@ -457,7 +515,7 @@ chatRoutes.post('/', async (c) => {
       memoryOps: { adds: 0, recalls: 0 },
       triggersFired: [],
       errors: busResult.warnings ?? [],
-      events: busResult.stages.map(s => ({ type: 'stage', name: s })),
+      events: busResult.stages.map((s) => ({ type: 'stage', name: s })),
     };
 
     // Persistence middleware saves to ChatRepository but NOT LogsRepository.
@@ -472,15 +530,19 @@ chatRoutes.post('/', async (c) => {
       assistantContent: busCleanContent,
       toolCalls: busToolCalls,
       trace: busTrace as Record<string, unknown>,
-      usage: busUsage ? {
-        promptTokens: busUsage.input,
-        completionTokens: busUsage.output,
-        totalTokens: busUsage.input + busUsage.output,
-      } : undefined,
+      usage: busUsage
+        ? {
+            promptTokens: busUsage.input,
+            completionTokens: busUsage.output,
+            totalTokens: busUsage.input + busUsage.output,
+          }
+        : undefined,
       historyLength: body.historyLength,
       ipAddress: c.req.header('x-forwarded-for') || c.req.header('x-real-ip'),
       userAgent: c.req.header('user-agent'),
-    }).catch((err) => { log.warn('Failed to save chat history (MessageBus path):', err); });
+    }).catch((err) => {
+      log.warn('Failed to save chat history (MessageBus path):', err);
+    });
 
     // Post-processing middleware skips web UI memory extraction — run it here.
     runPostChatProcessing(userId, body.message, busCleanContent, busToolCalls as never);
@@ -493,7 +555,12 @@ chatRoutes.post('/', async (c) => {
         message: busCleanContent,
         response: busCleanContent,
         model,
-        toolCalls: (busToolCalls as Array<{ id: string; name: string; arguments: Record<string, unknown> }>) ?? undefined,
+        toolCalls:
+          (busToolCalls as Array<{
+            id: string;
+            name: string;
+            arguments: Record<string, unknown>;
+          }>) ?? undefined,
         usage: busUsage
           ? {
               promptTokens: busUsage.input,
@@ -566,9 +633,10 @@ chatRoutes.post('/', async (c) => {
       onBeforeToolCall: async (toolCall) => {
         let toolArgs: Record<string, unknown>;
         try {
-          toolArgs = typeof toolCall.arguments === 'string'
-            ? JSON.parse(toolCall.arguments) as Record<string, unknown>
-            : toolCall.arguments as Record<string, unknown>;
+          toolArgs =
+            typeof toolCall.arguments === 'string'
+              ? (JSON.parse(toolCall.arguments) as Record<string, unknown>)
+              : (toolCall.arguments as Record<string, unknown>);
         } catch {
           toolArgs = {};
         }
@@ -636,7 +704,9 @@ chatRoutes.post('/', async (c) => {
         requestType: 'chat',
         error: result.error.message,
       });
-    } catch { /* Ignore tracking errors */ }
+    } catch {
+      /* Ignore tracking errors */
+    }
 
     logChatEvent({
       type: 'error',
@@ -666,7 +736,9 @@ chatRoutes.post('/', async (c) => {
         ipAddress: c.req.header('x-forwarded-for') || c.req.header('x-real-ip'),
         userAgent: c.req.header('user-agent'),
       });
-    } catch { /* Ignore logging errors */ }
+    } catch {
+      /* Ignore logging errors */
+    }
 
     return apiError(c, { code: ERROR_CODES.EXECUTION_ERROR, message: result.error.message }, 500);
   }
@@ -687,7 +759,9 @@ chatRoutes.post('/', async (c) => {
         latencyMs: Math.round(processingTime),
         requestType: 'chat',
       });
-    } catch { /* Ignore tracking errors */ }
+    } catch {
+      /* Ignore tracking errors */
+    }
   }
 
   logChatEvent({
@@ -708,35 +782,40 @@ chatRoutes.post('/', async (c) => {
 
   // Build trace info
   const recentDebugEntries = debugLog.getRecent(20);
-  const requestEntry = recentDebugEntries.find(e => e.type === 'request');
-  const responseEntry = recentDebugEntries.find(e => e.type === 'response');
-  const retryEntries = recentDebugEntries.filter(e => e.type === 'retry');
-  const toolCallEntries = recentDebugEntries.filter(e => e.type === 'tool_call' || e.type === 'tool_result');
+  const requestEntry = recentDebugEntries.find((e) => e.type === 'request');
+  const responseEntry = recentDebugEntries.find((e) => e.type === 'response');
+  const retryEntries = recentDebugEntries.filter((e) => e.type === 'retry');
+  const toolCallEntries = recentDebugEntries.filter(
+    (e) => e.type === 'tool_call' || e.type === 'tool_result'
+  );
 
-  const enhancedToolCalls = traceSummary?.toolCalls.map((tc) => {
-    const callEntry = toolCallEntries.find(
-      e => e.type === 'tool_call' && (e.data as { name?: string })?.name === tc.name
-    );
-    const resultEntry = toolCallEntries.find(
-      e => e.type === 'tool_result' && (e.data as { name?: string })?.name === tc.name
-    );
+  const enhancedToolCalls =
+    traceSummary?.toolCalls.map((tc) => {
+      const callEntry = toolCallEntries.find(
+        (e) => e.type === 'tool_call' && (e.data as { name?: string })?.name === tc.name
+      );
+      const resultEntry = toolCallEntries.find(
+        (e) => e.type === 'tool_result' && (e.data as { name?: string })?.name === tc.name
+      );
 
-    return {
-      name: tc.name,
-      success: tc.success,
-      duration: tc.duration,
-      error: tc.error,
-      arguments: (callEntry?.data as { arguments?: Record<string, unknown> })?.arguments,
-      result: (resultEntry?.data as { resultPreview?: string })?.resultPreview,
-    };
-  }) ?? [];
+      return {
+        name: tc.name,
+        success: tc.success,
+        duration: tc.duration,
+        error: tc.error,
+        arguments: (callEntry?.data as { arguments?: Record<string, unknown> })?.arguments,
+        result: (resultEntry?.data as { resultPreview?: string })?.resultPreview,
+      };
+    }) ?? [];
 
   const traceInfo = traceSummary
     ? {
         duration: traceSummary.totalDuration,
         toolCalls: enhancedToolCalls,
         modelCalls: traceSummary.modelCalls.map((mc) => {
-          const respData = responseEntry?.data as { usage?: { promptTokens?: number; completionTokens?: number } } | undefined;
+          const respData = responseEntry?.data as
+            | { usage?: { promptTokens?: number; completionTokens?: number } }
+            | undefined;
           return {
             provider: mc.provider,
             model: mc.model,
@@ -763,27 +842,31 @@ chatRoutes.post('/', async (c) => {
           duration: e.duration,
           success: e.success,
         })),
-        request: requestEntry ? {
-          provider: (requestEntry.data as { provider?: string })?.provider ?? provider,
-          model: (requestEntry.data as { model?: string })?.model ?? model,
-          endpoint: (requestEntry.data as { endpoint?: string })?.endpoint ?? 'unknown',
-          messageCount: (requestEntry.data as { messages?: unknown[] })?.messages?.length ?? 1,
-          tools: (requestEntry.data as { tools?: string[] })?.tools,
-        } : {
-          provider,
-          model,
-          endpoint: 'chat/completions',
-          messageCount: 1,
-        },
-        response: responseEntry ? {
-          status: (responseEntry.data as { status?: 'success' | 'error' })?.status ?? 'success',
-          contentLength: (responseEntry.data as { contentLength?: number })?.contentLength,
-          finishReason: (responseEntry.data as { finishReason?: string })?.finishReason,
-        } : {
-          status: 'success' as const,
-          finishReason: result.value.finishReason,
-        },
-        retries: retryEntries.map(e => ({
+        request: requestEntry
+          ? {
+              provider: (requestEntry.data as { provider?: string })?.provider ?? provider,
+              model: (requestEntry.data as { model?: string })?.model ?? model,
+              endpoint: (requestEntry.data as { endpoint?: string })?.endpoint ?? 'unknown',
+              messageCount: (requestEntry.data as { messages?: unknown[] })?.messages?.length ?? 1,
+              tools: (requestEntry.data as { tools?: string[] })?.tools,
+            }
+          : {
+              provider,
+              model,
+              endpoint: 'chat/completions',
+              messageCount: 1,
+            },
+        response: responseEntry
+          ? {
+              status: (responseEntry.data as { status?: 'success' | 'error' })?.status ?? 'success',
+              contentLength: (responseEntry.data as { contentLength?: number })?.contentLength,
+              finishReason: (responseEntry.data as { finishReason?: string })?.finishReason,
+            }
+          : {
+              status: 'success' as const,
+              finishReason: result.value.finishReason,
+            },
+        retries: retryEntries.map((e) => ({
           attempt: (e.data as { attempt?: number })?.attempt ?? 0,
           error: (e.data as { error?: string })?.error ?? 'unknown',
           delayMs: (e.data as { delayMs?: number })?.delayMs ?? 0,
@@ -791,8 +874,11 @@ chatRoutes.post('/', async (c) => {
       }
     : undefined;
 
-  const { content: legacyMemStripped, memories: legacyMemories } = extractMemoriesFromResponse(result.value.content);
-  const { content: legacyCleanContent, suggestions: legacySuggestions } = extractSuggestions(legacyMemStripped);
+  const { content: legacyMemStripped, memories: legacyMemories } = extractMemoriesFromResponse(
+    result.value.content
+  );
+  const { content: legacyCleanContent, suggestions: legacySuggestions } =
+    extractSuggestions(legacyMemStripped);
 
   const response = {
     success: true,
@@ -804,7 +890,11 @@ chatRoutes.post('/', async (c) => {
       model,
       toolCalls: result.value.toolCalls?.map((tc) => {
         let args: unknown;
-        try { args = JSON.parse(tc.arguments); } catch { args = {}; }
+        try {
+          args = JSON.parse(tc.arguments);
+        } catch {
+          args = {};
+        }
         return { id: tc.id, name: tc.name, arguments: args };
       }),
       usage: result.value.usage
@@ -838,11 +928,13 @@ chatRoutes.post('/', async (c) => {
     assistantContent: legacyCleanContent,
     toolCalls: result.value.toolCalls ? [...result.value.toolCalls] : undefined,
     trace: traceInfo as Record<string, unknown>,
-    usage: result.value.usage ? {
-      promptTokens: result.value.usage.promptTokens,
-      completionTokens: result.value.usage.completionTokens,
-      totalTokens: result.value.usage.totalTokens,
-    } : undefined,
+    usage: result.value.usage
+      ? {
+          promptTokens: result.value.usage.promptTokens,
+          completionTokens: result.value.usage.completionTokens,
+          totalTokens: result.value.usage.totalTokens,
+        }
+      : undefined,
     historyLength: body.historyLength,
     ipAddress: c.req.header('x-forwarded-for') || c.req.header('x-real-ip'),
     userAgent: c.req.header('user-agent'),

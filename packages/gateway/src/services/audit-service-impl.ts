@@ -27,19 +27,21 @@ export class AuditService implements IAuditService {
 
   logRequest(entry: RequestLogEntry): void {
     // Fire-and-forget — don't block callers
-    this.logsRepo.log({
-      conversationId: entry.conversationId,
-      type: entry.type,
-      provider: entry.provider,
-      model: entry.model,
-      inputTokens: entry.inputTokens,
-      outputTokens: entry.outputTokens,
-      durationMs: entry.durationMs,
-      error: entry.error,
-      statusCode: entry.success === false ? 500 : entry.success === true ? 200 : undefined,
-    }).catch((err) => {
-      log.debug('Audit log write failed (non-critical)', { error: err });
-    });
+    this.logsRepo
+      .log({
+        conversationId: entry.conversationId,
+        type: entry.type,
+        provider: entry.provider,
+        model: entry.model,
+        inputTokens: entry.inputTokens,
+        outputTokens: entry.outputTokens,
+        durationMs: entry.durationMs,
+        error: entry.error,
+        statusCode: entry.success === false ? 500 : entry.success === true ? 200 : undefined,
+      })
+      .catch((err) => {
+        log.debug('Audit log write failed (non-critical)', { error: err });
+      });
   }
 
   logAudit(event: AuditLogEvent): void {

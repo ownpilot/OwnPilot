@@ -18,7 +18,10 @@ import { PERSONAL_DATA_TOOLS, PERSONAL_DATA_TOOL_NAMES } from './personal-data.j
 
 const validTypes = new Set(['string', 'number', 'integer', 'boolean', 'array', 'object']);
 
-function validateToolArray(name: string, tools: Array<{ name: string; description: string; parameters: Record<string, unknown> }>) {
+function validateToolArray(
+  name: string,
+  tools: Array<{ name: string; description: string; parameters: Record<string, unknown> }>
+) {
   describe(name, () => {
     it('exports a non-empty array', () => {
       expect(Array.isArray(tools)).toBe(true);
@@ -26,7 +29,7 @@ function validateToolArray(name: string, tools: Array<{ name: string; descriptio
     });
 
     it('all tools have unique names', () => {
-      const names = tools.map(t => t.name);
+      const names = tools.map((t) => t.name);
       expect(new Set(names).size).toBe(names.length);
     });
 
@@ -51,7 +54,10 @@ function validateToolArray(name: string, tools: Array<{ name: string; descriptio
 
     it('required fields reference existing properties', () => {
       for (const tool of tools) {
-        const params = tool.parameters as { required?: string[]; properties: Record<string, unknown> };
+        const params = tool.parameters as {
+          required?: string[];
+          properties: Record<string, unknown>;
+        };
         if (params.required) {
           for (const req of params.required) {
             expect(params.properties).toHaveProperty(req);
@@ -62,16 +68,21 @@ function validateToolArray(name: string, tools: Array<{ name: string; descriptio
 
     it('all properties have valid JSON Schema types', () => {
       for (const tool of tools) {
-        const props = (tool.parameters as { properties: Record<string, { type: string }> }).properties;
+        const props = (tool.parameters as { properties: Record<string, { type: string }> })
+          .properties;
         for (const [propName, prop] of Object.entries(props)) {
-          expect(validTypes.has(prop.type), `${tool.name}.${propName} has invalid type "${prop.type}"`).toBe(true);
+          expect(
+            validTypes.has(prop.type),
+            `${tool.name}.${propName} has invalid type "${prop.type}"`
+          ).toBe(true);
         }
       }
     });
 
     it('all properties have descriptions', () => {
       for (const tool of tools) {
-        const props = (tool.parameters as { properties: Record<string, { description?: string }> }).properties;
+        const props = (tool.parameters as { properties: Record<string, { description?: string }> })
+          .properties;
         for (const [propName, prop] of Object.entries(props)) {
           expect(prop.description, `${tool.name}.${propName} missing description`).toBeTruthy();
         }
@@ -80,10 +91,15 @@ function validateToolArray(name: string, tools: Array<{ name: string; descriptio
 
     it('array properties have items schema', () => {
       for (const tool of tools) {
-        const props = (tool.parameters as { properties: Record<string, { type: string; items?: unknown }> }).properties;
+        const props = (
+          tool.parameters as { properties: Record<string, { type: string; items?: unknown }> }
+        ).properties;
         for (const [propName, prop] of Object.entries(props)) {
           if (prop.type === 'array') {
-            expect(prop.items, `${tool.name}.${propName} is array but missing items schema`).toBeDefined();
+            expect(
+              prop.items,
+              `${tool.name}.${propName} is array but missing items schema`
+            ).toBeDefined();
           }
         }
       }
@@ -107,19 +123,19 @@ describe('Gateway Tool Definitions', () => {
 
   describe('tool name arrays', () => {
     it('MEMORY_TOOL_NAMES matches MEMORY_TOOLS', () => {
-      expect(MEMORY_TOOL_NAMES).toEqual(MEMORY_TOOLS.map(t => t.name));
+      expect(MEMORY_TOOL_NAMES).toEqual(MEMORY_TOOLS.map((t) => t.name));
     });
 
     it('GOAL_TOOL_NAMES matches GOAL_TOOLS', () => {
-      expect(GOAL_TOOL_NAMES).toEqual(GOAL_TOOLS.map(t => t.name));
+      expect(GOAL_TOOL_NAMES).toEqual(GOAL_TOOLS.map((t) => t.name));
     });
 
     it('CUSTOM_DATA_TOOL_NAMES matches CUSTOM_DATA_TOOLS', () => {
-      expect(CUSTOM_DATA_TOOL_NAMES).toEqual(CUSTOM_DATA_TOOLS.map(t => t.name));
+      expect(CUSTOM_DATA_TOOL_NAMES).toEqual(CUSTOM_DATA_TOOLS.map((t) => t.name));
     });
 
     it('PERSONAL_DATA_TOOL_NAMES matches PERSONAL_DATA_TOOLS', () => {
-      expect(PERSONAL_DATA_TOOL_NAMES).toEqual(PERSONAL_DATA_TOOLS.map(t => t.name));
+      expect(PERSONAL_DATA_TOOL_NAMES).toEqual(PERSONAL_DATA_TOOLS.map((t) => t.name));
     });
   });
 
@@ -152,30 +168,41 @@ describe('Gateway Tool Definitions', () => {
   describe('essential tools present', () => {
     const memoryEssentials = ['create_memory', 'search_memories', 'delete_memory'];
     const goalEssentials = ['create_goal', 'list_goals', 'update_goal', 'decompose_goal'];
-    const customDataEssentials = ['list_custom_tables', 'create_custom_table', 'add_custom_record', 'search_custom_records'];
-    const personalEssentials = ['add_task', 'list_tasks', 'add_note', 'add_calendar_event', 'add_contact'];
+    const customDataEssentials = [
+      'list_custom_tables',
+      'create_custom_table',
+      'add_custom_record',
+      'search_custom_records',
+    ];
+    const personalEssentials = [
+      'add_task',
+      'list_tasks',
+      'add_note',
+      'add_calendar_event',
+      'add_contact',
+    ];
 
     for (const name of memoryEssentials) {
       it(`MEMORY_TOOLS includes ${name}`, () => {
-        expect(MEMORY_TOOLS.find(t => t.name === name)).toBeDefined();
+        expect(MEMORY_TOOLS.find((t) => t.name === name)).toBeDefined();
       });
     }
 
     for (const name of goalEssentials) {
       it(`GOAL_TOOLS includes ${name}`, () => {
-        expect(GOAL_TOOLS.find(t => t.name === name)).toBeDefined();
+        expect(GOAL_TOOLS.find((t) => t.name === name)).toBeDefined();
       });
     }
 
     for (const name of customDataEssentials) {
       it(`CUSTOM_DATA_TOOLS includes ${name}`, () => {
-        expect(CUSTOM_DATA_TOOLS.find(t => t.name === name)).toBeDefined();
+        expect(CUSTOM_DATA_TOOLS.find((t) => t.name === name)).toBeDefined();
       });
     }
 
     for (const name of personalEssentials) {
       it(`PERSONAL_DATA_TOOLS includes ${name}`, () => {
-        expect(PERSONAL_DATA_TOOLS.find(t => t.name === name)).toBeDefined();
+        expect(PERSONAL_DATA_TOOLS.find((t) => t.name === name)).toBeDefined();
       });
     }
   });
@@ -186,44 +213,44 @@ describe('Gateway Tool Definitions', () => {
 
   describe('specific tool schemas', () => {
     it('create_memory requires content', () => {
-      const tool = MEMORY_TOOLS.find(t => t.name === 'create_memory')!;
+      const tool = MEMORY_TOOLS.find((t) => t.name === 'create_memory')!;
       const params = tool.parameters as { required: string[] };
       expect(params.required).toContain('content');
     });
 
     it('search_memories requires query', () => {
-      const tool = MEMORY_TOOLS.find(t => t.name === 'search_memories')!;
+      const tool = MEMORY_TOOLS.find((t) => t.name === 'search_memories')!;
       const params = tool.parameters as { required: string[] };
       expect(params.required).toContain('query');
     });
 
     it('create_goal requires title', () => {
-      const tool = GOAL_TOOLS.find(t => t.name === 'create_goal')!;
+      const tool = GOAL_TOOLS.find((t) => t.name === 'create_goal')!;
       const params = tool.parameters as { required: string[] };
       expect(params.required).toContain('title');
     });
 
     it('create_custom_table requires name and columns', () => {
-      const tool = CUSTOM_DATA_TOOLS.find(t => t.name === 'create_custom_table')!;
+      const tool = CUSTOM_DATA_TOOLS.find((t) => t.name === 'create_custom_table')!;
       const params = tool.parameters as { required: string[] };
       expect(params.required).toContain('name');
       expect(params.required).toContain('columns');
     });
 
     it('add_task requires title', () => {
-      const tool = PERSONAL_DATA_TOOLS.find(t => t.name === 'add_task')!;
+      const tool = PERSONAL_DATA_TOOLS.find((t) => t.name === 'add_task')!;
       const params = tool.parameters as { required: string[] };
       expect(params.required).toContain('title');
     });
 
     it('add_contact requires name', () => {
-      const tool = PERSONAL_DATA_TOOLS.find(t => t.name === 'add_contact')!;
+      const tool = PERSONAL_DATA_TOOLS.find((t) => t.name === 'add_contact')!;
       const params = tool.parameters as { required: string[] };
       expect(params.required).toContain('name');
     });
 
     it('add_calendar_event requires title and startTime', () => {
-      const tool = PERSONAL_DATA_TOOLS.find(t => t.name === 'add_calendar_event')!;
+      const tool = PERSONAL_DATA_TOOLS.find((t) => t.name === 'add_calendar_event')!;
       const params = tool.parameters as { required: string[] };
       expect(params.required).toContain('title');
       expect(params.required).toContain('startTime');
@@ -231,19 +258,23 @@ describe('Gateway Tool Definitions', () => {
 
     it('batch tools accept array parameters', () => {
       const batchTools = [
-        MEMORY_TOOLS.find(t => t.name === 'batch_create_memories'),
-        PERSONAL_DATA_TOOLS.find(t => t.name === 'batch_add_tasks'),
-        PERSONAL_DATA_TOOLS.find(t => t.name === 'batch_add_notes'),
-        PERSONAL_DATA_TOOLS.find(t => t.name === 'batch_add_calendar_events'),
-        PERSONAL_DATA_TOOLS.find(t => t.name === 'batch_add_contacts'),
-        PERSONAL_DATA_TOOLS.find(t => t.name === 'batch_add_bookmarks'),
+        MEMORY_TOOLS.find((t) => t.name === 'batch_create_memories'),
+        PERSONAL_DATA_TOOLS.find((t) => t.name === 'batch_add_tasks'),
+        PERSONAL_DATA_TOOLS.find((t) => t.name === 'batch_add_notes'),
+        PERSONAL_DATA_TOOLS.find((t) => t.name === 'batch_add_calendar_events'),
+        PERSONAL_DATA_TOOLS.find((t) => t.name === 'batch_add_contacts'),
+        PERSONAL_DATA_TOOLS.find((t) => t.name === 'batch_add_bookmarks'),
       ];
 
       for (const tool of batchTools) {
         expect(tool, 'batch tool missing').toBeDefined();
-        const props = (tool!.parameters as { properties: Record<string, { type: string }> }).properties;
+        const props = (tool!.parameters as { properties: Record<string, { type: string }> })
+          .properties;
         const arrayProps = Object.entries(props).filter(([_, p]) => p.type === 'array');
-        expect(arrayProps.length, `${tool!.name} should have at least 1 array param`).toBeGreaterThanOrEqual(1);
+        expect(
+          arrayProps.length,
+          `${tool!.name} should have at least 1 array param`
+        ).toBeGreaterThanOrEqual(1);
       }
     });
   });

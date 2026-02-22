@@ -20,7 +20,15 @@ import {
   type CreateCaptureInput,
   type ProcessCaptureInput,
 } from '../db/repositories/captures.js';
-import { apiResponse, apiError, getUserId, getIntParam, ERROR_CODES, validateQueryEnum, notFoundError } from './helpers.js';
+import {
+  apiResponse,
+  apiError,
+  getUserId,
+  getIntParam,
+  ERROR_CODES,
+  validateQueryEnum,
+  notFoundError,
+} from './helpers.js';
 import { MAX_PAGINATION_OFFSET } from '../config/defaults.js';
 import { wsGateway } from '../ws/server.js';
 
@@ -56,7 +64,11 @@ pomodoroRoutes.post('/session/start', async (c) => {
   const body = await c.req.json<CreateSessionInput>();
 
   if (!body.type || !body.durationMinutes) {
-    return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'type and durationMinutes are required' }, 400);
+    return apiError(
+      c,
+      { code: ERROR_CODES.INVALID_REQUEST, message: 'type and durationMinutes are required' },
+      400
+    );
   }
 
   const repo = getPomodoroRepo(userId);
@@ -64,7 +76,11 @@ pomodoroRoutes.post('/session/start', async (c) => {
   // Check for active session
   const active = await repo.getActiveSession();
   if (active) {
-    return apiError(c, { code: ERROR_CODES.SESSION_ACTIVE, message: 'A session is already running' }, 400);
+    return apiError(
+      c,
+      { code: ERROR_CODES.SESSION_ACTIVE, message: 'A session is already running' },
+      400
+    );
   }
 
   const session = await repo.startSession(body);
@@ -118,7 +134,11 @@ pomodoroRoutes.post('/session/:id/interrupt', async (c) => {
  */
 pomodoroRoutes.get('/sessions', async (c) => {
   const userId = getUserId(c);
-  const type = validateQueryEnum(c.req.query('type'), ['work', 'short_break', 'long_break'] as const);
+  const type = validateQueryEnum(c.req.query('type'), [
+    'work',
+    'short_break',
+    'long_break',
+  ] as const);
   const limit = getIntParam(c, 'limit', 20, 1, 100);
 
   const repo = getPomodoroRepo(userId);
@@ -175,7 +195,16 @@ pomodoroRoutes.get('/stats/daily/:date', async (c) => {
   const repo = getPomodoroRepo(userId);
   const stats = await repo.getDailyStats(date);
 
-  return apiResponse(c, stats ?? { date, completedSessions: 0, totalWorkMinutes: 0, totalBreakMinutes: 0, interruptions: 0 });
+  return apiResponse(
+    c,
+    stats ?? {
+      date,
+      completedSessions: 0,
+      totalWorkMinutes: 0,
+      totalBreakMinutes: 0,
+      interruptions: 0,
+    }
+  );
 });
 
 // =============================================================================
@@ -324,7 +353,9 @@ habitsRoutes.post('/:id/archive', async (c) => {
 habitsRoutes.post('/:id/log', async (c) => {
   const userId = getUserId(c);
   const id = c.req.param('id');
-  const body = await c.req.json<{ date?: string; count?: number; notes?: string }>().catch(() => ({}));
+  const body = await c.req
+    .json<{ date?: string; count?: number; notes?: string }>()
+    .catch(() => ({}));
 
   const repo = getHabitsRepo(userId);
   const log = await repo.logHabit(id, body);
@@ -352,7 +383,11 @@ habitsRoutes.get('/:id/logs', async (c) => {
   const limit = getIntParam(c, 'limit', 30, 1, 100);
 
   const repo = getHabitsRepo(userId);
-  const logs = await repo.getLogs(id, { startDate: startDate ?? undefined, endDate: endDate ?? undefined, limit });
+  const logs = await repo.getLogs(id, {
+    startDate: startDate ?? undefined,
+    endDate: endDate ?? undefined,
+    limit,
+  });
 
   return apiResponse(c, { logs, count: logs.length });
 });
@@ -372,7 +407,16 @@ function getCapturesRepo(userId = 'default'): CapturesRepository {
  */
 capturesRoutes.get('/', async (c) => {
   const userId = getUserId(c);
-  const type = validateQueryEnum(c.req.query('type'), ['idea', 'thought', 'todo', 'link', 'quote', 'snippet', 'question', 'other'] as const);
+  const type = validateQueryEnum(c.req.query('type'), [
+    'idea',
+    'thought',
+    'todo',
+    'link',
+    'quote',
+    'snippet',
+    'question',
+    'other',
+  ] as const);
   const tag = c.req.query('tag');
   const processed = c.req.query('processed');
   const limit = getIntParam(c, 'limit', 20, 1, 100);
@@ -407,11 +451,15 @@ capturesRoutes.post('/', async (c) => {
 
   wsGateway.broadcast('data:changed', { entity: 'capture', action: 'created', id: capture.id });
 
-  return apiResponse(c, {
+  return apiResponse(
+    c,
+    {
       capture,
       inboxCount,
       message: 'Captured!',
-    }, 201);
+    },
+    201
+  );
 });
 
 /**
@@ -427,19 +475,20 @@ capturesRoutes.get('/inbox', async (c) => {
 
   // Group by type
   const byType: Record<string, number> = {};
-  captures.forEach(cap => {
+  captures.forEach((cap) => {
     byType[cap.type] = (byType[cap.type] || 0) + 1;
   });
 
   return apiResponse(c, {
-      inbox: captures,
-      count: captures.length,
-      totalUnprocessed,
-      byType,
-      message: captures.length === 0
+    inbox: captures,
+    count: captures.length,
+    totalUnprocessed,
+    byType,
+    message:
+      captures.length === 0
         ? 'Inbox is empty! Great job processing your captures.'
         : `${totalUnprocessed} items need processing`,
-    });
+  });
 });
 
 /**
@@ -479,7 +528,11 @@ capturesRoutes.post('/:id/process', async (c) => {
   const body = await c.req.json<ProcessCaptureInput>();
 
   if (!body.processedAsType) {
-    return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'processedAsType is required' }, 400);
+    return apiError(
+      c,
+      { code: ERROR_CODES.INVALID_REQUEST, message: 'processedAsType is required' },
+      400
+    );
   }
 
   const repo = getCapturesRepo(userId);
@@ -492,11 +545,12 @@ capturesRoutes.post('/:id/process', async (c) => {
   wsGateway.broadcast('data:changed', { entity: 'capture', action: 'updated', id });
 
   return apiResponse(c, {
-      capture,
-      message: body.processedAsType === 'discarded'
+    capture,
+    message:
+      body.processedAsType === 'discarded'
         ? 'Capture discarded.'
         : `Capture marked as ${body.processedAsType}.`,
-    });
+  });
 });
 
 /**

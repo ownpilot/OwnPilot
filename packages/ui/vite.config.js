@@ -38,7 +38,10 @@ export default defineConfig(({ mode }) => {
                     manualChunks(id) {
                         // Vendor chunks (node_modules only)
                         if (id.includes('node_modules')) {
-                            if (id.includes('/react-dom/') || id.includes('/react/') || id.includes('/react-router') || id.includes('/scheduler/')) {
+                            if (id.includes('/react-dom/') ||
+                                id.includes('/react/') ||
+                                id.includes('/react-router') ||
+                                id.includes('/scheduler/')) {
                                 return 'vendor-react';
                             }
                             if (id.includes('/prism-react-renderer/')) {

@@ -69,25 +69,17 @@ export class AgentsRepository extends BaseRepository {
   }
 
   async getById(id: string): Promise<AgentRecord | null> {
-    const row = await this.queryOne<AgentRow>(
-      `SELECT * FROM agents WHERE id = $1`,
-      [id]
-    );
+    const row = await this.queryOne<AgentRow>(`SELECT * FROM agents WHERE id = $1`, [id]);
     return row ? rowToAgent(row) : null;
   }
 
   async getByName(name: string): Promise<AgentRecord | null> {
-    const row = await this.queryOne<AgentRow>(
-      `SELECT * FROM agents WHERE name = $1`,
-      [name]
-    );
+    const row = await this.queryOne<AgentRow>(`SELECT * FROM agents WHERE name = $1`, [name]);
     return row ? rowToAgent(row) : null;
   }
 
   async getAll(): Promise<AgentRecord[]> {
-    const rows = await this.query<AgentRow>(
-      `SELECT * FROM agents ORDER BY name ASC`
-    );
+    const rows = await this.query<AgentRow>(`SELECT * FROM agents ORDER BY name ASC`);
     return rows.map(rowToAgent);
   }
 
@@ -99,13 +91,16 @@ export class AgentsRepository extends BaseRepository {
     return rows.map(rowToAgent);
   }
 
-  async update(id: string, data: {
-    name?: string;
-    systemPrompt?: string;
-    provider?: string;
-    model?: string;
-    config?: Record<string, unknown>;
-  }): Promise<AgentRecord | null> {
+  async update(
+    id: string,
+    data: {
+      name?: string;
+      systemPrompt?: string;
+      provider?: string;
+      model?: string;
+      config?: Record<string, unknown>;
+    }
+  ): Promise<AgentRecord | null> {
     const existing = await this.getById(id);
     if (!existing) return null;
 
@@ -139,10 +134,7 @@ export class AgentsRepository extends BaseRepository {
     updates.push('updated_at = NOW()');
     values.push(id);
 
-    await this.execute(
-      `UPDATE agents SET ${updates.join(', ')} WHERE id = $${paramIndex}`,
-      values
-    );
+    await this.execute(`UPDATE agents SET ${updates.join(', ')} WHERE id = $${paramIndex}`, values);
 
     return this.getById(id);
   }
@@ -166,29 +158,17 @@ export class AgentsRepository extends BaseRepository {
        ON CONFLICT (id) DO UPDATE SET
          config = agents.config::jsonb || $6::jsonb,
          updated_at = NOW()`,
-      [
-        data.id,
-        data.name,
-        data.systemPrompt ?? null,
-        data.provider,
-        data.model,
-        configJson,
-      ]
+      [data.id, data.name, data.systemPrompt ?? null, data.provider, data.model, configJson]
     );
   }
 
   async delete(id: string): Promise<boolean> {
-    const result = await this.execute(
-      `DELETE FROM agents WHERE id = $1`,
-      [id]
-    );
+    const result = await this.execute(`DELETE FROM agents WHERE id = $1`, [id]);
     return result.changes > 0;
   }
 
   async count(): Promise<number> {
-    const row = await this.queryOne<{ count: string }>(
-      `SELECT COUNT(*) as count FROM agents`
-    );
+    const row = await this.queryOne<{ count: string }>(`SELECT COUNT(*) as count FROM agents`);
     return parseInt(row?.count ?? '0', 10);
   }
 }

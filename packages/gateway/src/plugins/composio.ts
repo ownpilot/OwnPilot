@@ -29,7 +29,8 @@ const DEFAULT_USER_ID = 'default';
 async function composioSearchExecutor(args: Record<string, unknown>) {
   if (!composioService.isConfigured()) {
     return {
-      content: 'Composio API key not configured. Set it in Config Center → Composio, or set COMPOSIO_API_KEY environment variable.',
+      content:
+        'Composio API key not configured. Set it in Config Center → Composio, or set COMPOSIO_API_KEY environment variable.',
       isError: true,
     };
   }
@@ -47,7 +48,7 @@ async function composioSearchExecutor(args: Record<string, unknown>) {
       };
     }
 
-    const results = actions.map(a => ({
+    const results = actions.map((a) => ({
       action: a.slug,
       name: a.name,
       app: a.appName,
@@ -55,13 +56,17 @@ async function composioSearchExecutor(args: Record<string, unknown>) {
     }));
 
     return {
-      content: JSON.stringify({
-        query,
-        app: app ?? null,
-        count: results.length,
-        actions: results,
-        hint: 'Use composio_execute with the action slug to run an action. The user must connect the app first via composio_connect.',
-      }, null, 2),
+      content: JSON.stringify(
+        {
+          query,
+          app: app ?? null,
+          count: results.length,
+          actions: results,
+          hint: 'Use composio_execute with the action slug to run an action. The user must connect the app first via composio_connect.',
+        },
+        null,
+        2
+      ),
     };
   } catch (err) {
     log.error('composio_search failed:', err);
@@ -75,7 +80,8 @@ async function composioSearchExecutor(args: Record<string, unknown>) {
 async function composioExecuteExecutor(args: Record<string, unknown>) {
   if (!composioService.isConfigured()) {
     return {
-      content: 'Composio API key not configured. Set it in Config Center → Composio, or set COMPOSIO_API_KEY environment variable.',
+      content:
+        'Composio API key not configured. Set it in Config Center → Composio, or set COMPOSIO_API_KEY environment variable.',
       isError: true,
     };
   }
@@ -83,21 +89,29 @@ async function composioExecuteExecutor(args: Record<string, unknown>) {
   try {
     const action = String(args.action ?? '');
     if (!action) {
-      return { content: 'Missing required parameter: action (e.g., "GITHUB_CREATE_ISSUE")', isError: true };
+      return {
+        content: 'Missing required parameter: action (e.g., "GITHUB_CREATE_ISSUE")',
+        isError: true,
+      };
     }
 
-    const actionArgs = (args.arguments && typeof args.arguments === 'object')
-      ? args.arguments as Record<string, unknown>
-      : {};
+    const actionArgs =
+      args.arguments && typeof args.arguments === 'object'
+        ? (args.arguments as Record<string, unknown>)
+        : {};
 
     const result = await composioService.executeAction(DEFAULT_USER_ID, action, actionArgs);
 
     return {
-      content: JSON.stringify({
-        action,
-        success: true,
-        result: result,
-      }, null, 2),
+      content: JSON.stringify(
+        {
+          action,
+          success: true,
+          result: result,
+        },
+        null,
+        2
+      ),
     };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
@@ -123,7 +137,8 @@ async function composioExecuteExecutor(args: Record<string, unknown>) {
 async function composioConnectExecutor(args: Record<string, unknown>) {
   if (!composioService.isConfigured()) {
     return {
-      content: 'Composio API key not configured. Set it in Config Center → Composio, or set COMPOSIO_API_KEY environment variable.',
+      content:
+        'Composio API key not configured. Set it in Config Center → Composio, or set COMPOSIO_API_KEY environment variable.',
       isError: true,
     };
   }
@@ -131,18 +146,25 @@ async function composioConnectExecutor(args: Record<string, unknown>) {
   try {
     const app = String(args.app ?? '');
     if (!app) {
-      return { content: 'Missing required parameter: app (e.g., "github", "gmail", "slack")', isError: true };
+      return {
+        content: 'Missing required parameter: app (e.g., "github", "gmail", "slack")',
+        isError: true,
+      };
     }
 
     // Check if already connected
     const existing = await composioService.getConnectionStatus(DEFAULT_USER_ID, app);
     if (existing && existing.status === 'ACTIVE') {
       return {
-        content: JSON.stringify({
-          app,
-          status: 'already_connected',
-          message: `${app} is already connected and active. You can use composio_execute to run actions.`,
-        }, null, 2),
+        content: JSON.stringify(
+          {
+            app,
+            status: 'already_connected',
+            message: `${app} is already connected and active. You can use composio_execute to run actions.`,
+          },
+          null,
+          2
+        ),
       };
     }
 
@@ -150,23 +172,31 @@ async function composioConnectExecutor(args: Record<string, unknown>) {
 
     if (connectionReq.redirectUrl) {
       return {
-        content: JSON.stringify({
-          app,
-          status: 'authorization_required',
-          redirectUrl: connectionReq.redirectUrl,
-          connectionId: connectionReq.connectedAccountId,
-          message: `Please open this URL to authorize ${app}: ${connectionReq.redirectUrl}`,
-        }, null, 2),
+        content: JSON.stringify(
+          {
+            app,
+            status: 'authorization_required',
+            redirectUrl: connectionReq.redirectUrl,
+            connectionId: connectionReq.connectedAccountId,
+            message: `Please open this URL to authorize ${app}: ${connectionReq.redirectUrl}`,
+          },
+          null,
+          2
+        ),
       };
     }
 
     return {
-      content: JSON.stringify({
-        app,
-        status: connectionReq.connectionStatus,
-        connectionId: connectionReq.connectedAccountId,
-        message: `Connection initiated for ${app}. Status: ${connectionReq.connectionStatus}`,
-      }, null, 2),
+      content: JSON.stringify(
+        {
+          app,
+          status: connectionReq.connectionStatus,
+          connectionId: connectionReq.connectedAccountId,
+          message: `Connection initiated for ${app}. Status: ${connectionReq.connectionStatus}`,
+        },
+        null,
+        2
+      ),
     };
   } catch (err) {
     log.error('composio_connect failed:', err);
@@ -180,7 +210,8 @@ async function composioConnectExecutor(args: Record<string, unknown>) {
 async function composioStatusExecutor(args: Record<string, unknown>) {
   if (!composioService.isConfigured()) {
     return {
-      content: 'Composio API key not configured. Set it in Config Center → Composio, or set COMPOSIO_API_KEY environment variable.',
+      content:
+        'Composio API key not configured. Set it in Config Center → Composio, or set COMPOSIO_API_KEY environment variable.',
       isError: true,
     };
   }
@@ -192,20 +223,28 @@ async function composioStatusExecutor(args: Record<string, unknown>) {
       const connection = await composioService.getConnectionStatus(DEFAULT_USER_ID, app);
       if (!connection) {
         return {
-          content: JSON.stringify({
-            app,
-            connected: false,
-            message: `${app} is not connected. Use composio_connect to authorize.`,
-          }, null, 2),
+          content: JSON.stringify(
+            {
+              app,
+              connected: false,
+              message: `${app} is not connected. Use composio_connect to authorize.`,
+            },
+            null,
+            2
+          ),
         };
       }
       return {
-        content: JSON.stringify({
-          app,
-          connected: true,
-          status: connection.status,
-          connectionId: connection.id,
-        }, null, 2),
+        content: JSON.stringify(
+          {
+            app,
+            connected: true,
+            status: connection.status,
+            connectionId: connection.id,
+          },
+          null,
+          2
+        ),
       };
     }
 
@@ -214,23 +253,32 @@ async function composioStatusExecutor(args: Record<string, unknown>) {
 
     if (connections.length === 0) {
       return {
-        content: JSON.stringify({
-          connections: [],
-          count: 0,
-          message: 'No apps connected yet. Use composio_search to find available apps and composio_connect to authorize them.',
-        }, null, 2),
+        content: JSON.stringify(
+          {
+            connections: [],
+            count: 0,
+            message:
+              'No apps connected yet. Use composio_search to find available apps and composio_connect to authorize them.',
+          },
+          null,
+          2
+        ),
       };
     }
 
     return {
-      content: JSON.stringify({
-        connections: connections.map(c => ({
-          app: c.appName,
-          status: c.status,
-          connectionId: c.id,
-        })),
-        count: connections.length,
-      }, null, 2),
+      content: JSON.stringify(
+        {
+          connections: connections.map((c) => ({
+            app: c.appName,
+            status: c.status,
+            connectionId: c.id,
+          })),
+          count: connections.length,
+        },
+        null,
+        2
+      ),
     };
   } catch (err) {
     log.error('composio_status failed:', err);
@@ -262,7 +310,8 @@ export function buildComposioPlugin() {
       id: 'composio',
       name: 'Composio Integration',
       version: '1.0.0',
-      description: '1000+ OAuth app integrations via Composio (Gmail, GitHub, Notion, Jira, Slack and more)',
+      description:
+        '1000+ OAuth app integrations via Composio (Gmail, GitHub, Notion, Jira, Slack and more)',
       author: { name: 'OwnPilot' },
       capabilities: ['tools'] as PluginCapability[],
       permissions: ['network'] as PluginPermission[],
@@ -294,64 +343,100 @@ export function buildComposioPlugin() {
     .tool(
       {
         name: 'composio_search',
-        description: "Search Composio's 1000+ app integrations for available actions. Use this to find tools for Gmail, GitHub, Slack, Notion, Jira, and 500+ other apps.",
+        description:
+          "Search Composio's 1000+ app integrations for available actions. Use this to find tools for Gmail, GitHub, Slack, Notion, Jira, and 500+ other apps.",
         brief: 'Search 1000+ Composio app actions',
         parameters: {
           type: 'object' as const,
           properties: {
-            query: { type: 'string', description: 'Search query (e.g., "send email", "create issue", "list repos")' },
-            app: { type: 'string', description: 'Filter by app name (e.g., "github", "gmail", "slack"). Optional.' },
+            query: {
+              type: 'string',
+              description: 'Search query (e.g., "send email", "create issue", "list repos")',
+            },
+            app: {
+              type: 'string',
+              description: 'Filter by app name (e.g., "github", "gmail", "slack"). Optional.',
+            },
             limit: { type: 'number', description: 'Max results (default 10, max 25)' },
           },
           required: ['query'],
         },
         tags: [
-          'composio', 'integration', 'oauth', 'gmail', 'github', 'slack', 'notion', 'jira',
-          'google', 'calendar', 'drive', 'sheets', 'trello', 'asana', 'linear', 'discord',
-          'twitter', 'linkedin', 'dropbox', 'salesforce', 'hubspot', 'stripe', 'shopify',
+          'composio',
+          'integration',
+          'oauth',
+          'gmail',
+          'github',
+          'slack',
+          'notion',
+          'jira',
+          'google',
+          'calendar',
+          'drive',
+          'sheets',
+          'trello',
+          'asana',
+          'linear',
+          'discord',
+          'twitter',
+          'linkedin',
+          'dropbox',
+          'salesforce',
+          'hubspot',
+          'stripe',
+          'shopify',
         ],
         category: 'Integration',
       },
-      composioSearchExecutor,
+      composioSearchExecutor
     )
     .tool(
       {
         name: 'composio_execute',
-        description: 'Execute a Composio action on a connected app. The user must have connected the app first. Use composio_search to find action names.',
+        description:
+          'Execute a Composio action on a connected app. The user must have connected the app first. Use composio_search to find action names.',
         brief: 'Execute Composio app action',
         parameters: {
           type: 'object' as const,
           properties: {
-            action: { type: 'string', description: 'Action name (e.g., "GITHUB_CREATE_ISSUE", "GMAIL_SEND_EMAIL")' },
+            action: {
+              type: 'string',
+              description: 'Action name (e.g., "GITHUB_CREATE_ISSUE", "GMAIL_SEND_EMAIL")',
+            },
             arguments: { type: 'object', description: 'Action arguments (varies per action)' },
           },
           required: ['action'],
         },
         category: 'Integration',
       },
-      composioExecuteExecutor,
+      composioExecuteExecutor
     )
     .tool(
       {
         name: 'composio_connect',
-        description: "Start connecting a new app via OAuth. Returns a URL the user must visit to authorize. Use composio_status to check current connections.",
+        description:
+          'Start connecting a new app via OAuth. Returns a URL the user must visit to authorize. Use composio_status to check current connections.',
         brief: 'Connect new app via OAuth',
         parameters: {
           type: 'object' as const,
           properties: {
-            app: { type: 'string', description: 'App to connect (e.g., "github", "gmail", "slack")' },
+            app: {
+              type: 'string',
+              description: 'App to connect (e.g., "github", "gmail", "slack")',
+            },
           },
           required: ['app'],
         },
         requiresConfirmation: true,
         category: 'Integration',
       },
-      composioConnectExecutor,
+      composioConnectExecutor
     )
     .tool(
       {
         name: 'composio_status',
-        description: "List all connected Composio apps and their status, or check a specific app's connection.",
+        description:
+          "List all connected Composio apps and their status, or check a specific app's connection.",
         brief: 'Check Composio connection status',
         parameters: {
           type: 'object' as const,
@@ -361,7 +446,7 @@ export function buildComposioPlugin() {
         },
         category: 'Integration',
       },
-      composioStatusExecutor,
+      composioStatusExecutor
     )
     .build();
 }

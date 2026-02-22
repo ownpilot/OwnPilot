@@ -8,7 +8,16 @@
  */
 
 import { Hono } from 'hono';
-import { apiResponse, apiError, getIntParam, ERROR_CODES, sanitizeId, sanitizeText, notFoundError, getErrorMessage } from './helpers.js';
+import {
+  apiResponse,
+  apiError,
+  getIntParam,
+  ERROR_CODES,
+  sanitizeId,
+  sanitizeText,
+  notFoundError,
+  getErrorMessage,
+} from './helpers.js';
 import { MAX_PAGINATION_OFFSET } from '../config/defaults.js';
 import type { ColumnDefinition } from '../db/repositories/custom-data.js';
 import { CustomDataServiceError } from '../services/custom-data-service.js';
@@ -61,17 +70,25 @@ customDataRoutes.post('/tables', async (c) => {
       body.name,
       body.displayName,
       body.columns,
-      body.description,
+      body.description
     );
 
-    wsGateway.broadcast('data:changed', { entity: 'custom_table', action: 'created', id: table.id });
+    wsGateway.broadcast('data:changed', {
+      entity: 'custom_table',
+      action: 'created',
+      id: table.id,
+    });
 
     return apiResponse(c, table, 201);
   } catch (err) {
     if (err instanceof CustomDataServiceError && err.code === 'VALIDATION_ERROR') {
       return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: err.message }, 400);
     }
-    return apiError(c, { code: ERROR_CODES.CREATE_FAILED, message: getErrorMessage(err, 'Failed to create table') }, 400);
+    return apiError(
+      c,
+      { code: ERROR_CODES.CREATE_FAILED, message: getErrorMessage(err, 'Failed to create table') },
+      400
+    );
   }
 });
 
@@ -90,9 +107,9 @@ customDataRoutes.get('/tables/:table', async (c) => {
   const stats = await service.getTableStats(tableId);
 
   return apiResponse(c, {
-      ...table,
-      stats,
-    });
+    ...table,
+    stats,
+  });
 });
 
 /**
@@ -164,7 +181,11 @@ customDataRoutes.get('/tables/:table/records', async (c) => {
     try {
       filter = JSON.parse(filterParam);
     } catch {
-      return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'Invalid JSON in filter parameter' }, 400);
+      return apiError(
+        c,
+        { code: ERROR_CODES.INVALID_INPUT, message: 'Invalid JSON in filter parameter' },
+        400
+      );
     }
   }
 
@@ -173,14 +194,18 @@ customDataRoutes.get('/tables/:table/records', async (c) => {
     const { records, total } = await service.listRecords(tableId, { limit, offset, filter });
 
     return apiResponse(c, {
-        records,
-        total,
-        limit,
-        offset,
-        hasMore: offset + records.length < total,
-      });
+      records,
+      total,
+      limit,
+      offset,
+      hasMore: offset + records.length < total,
+    });
   } catch (err) {
-    return apiError(c, { code: ERROR_CODES.LIST_FAILED, message: getErrorMessage(err, 'Failed to list records') }, 400);
+    return apiError(
+      c,
+      { code: ERROR_CODES.LIST_FAILED, message: getErrorMessage(err, 'Failed to list records') },
+      400
+    );
   }
 });
 
@@ -194,18 +219,30 @@ customDataRoutes.post('/tables/:table/records', async (c) => {
   const body = validateBody(createCustomRecordSchema, rawBody) as { data: Record<string, unknown> };
 
   if (!body.data || typeof body.data !== 'object' || Array.isArray(body.data)) {
-    return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'data must be a non-empty object' }, 400);
+    return apiError(
+      c,
+      { code: ERROR_CODES.INVALID_REQUEST, message: 'data must be a non-empty object' },
+      400
+    );
   }
 
   try {
     const service = getServiceRegistry().get(Services.Database);
     const record = await service.addRecord(tableId, body.data);
 
-    wsGateway.broadcast('data:changed', { entity: 'custom_record', action: 'created', id: record.id });
+    wsGateway.broadcast('data:changed', {
+      entity: 'custom_record',
+      action: 'created',
+      id: record.id,
+    });
 
     return apiResponse(c, record, 201);
   } catch (err) {
-    return apiError(c, { code: ERROR_CODES.ADD_FAILED, message: getErrorMessage(err, 'Failed to add record') }, 400);
+    return apiError(
+      c,
+      { code: ERROR_CODES.ADD_FAILED, message: getErrorMessage(err, 'Failed to add record') },
+      400
+    );
   }
 });
 
@@ -218,7 +255,11 @@ customDataRoutes.get('/tables/:table/search', async (c) => {
   const limit = getIntParam(c, 'limit', 20, 1, 100);
 
   if (!query) {
-    return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'Search query (q) is required' }, 400);
+    return apiError(
+      c,
+      { code: ERROR_CODES.INVALID_REQUEST, message: 'Search query (q) is required' },
+      400
+    );
   }
 
   try {
@@ -227,7 +268,14 @@ customDataRoutes.get('/tables/:table/search', async (c) => {
 
     return apiResponse(c, records);
   } catch (err) {
-    return apiError(c, { code: ERROR_CODES.SEARCH_FAILED, message: getErrorMessage(err, 'Failed to search records') }, 400);
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.SEARCH_FAILED,
+        message: getErrorMessage(err, 'Failed to search records'),
+      },
+      400
+    );
   }
 });
 
@@ -256,7 +304,11 @@ customDataRoutes.put('/records/:id', async (c) => {
   const body = validateBody(updateCustomRecordSchema, rawBody) as { data: Record<string, unknown> };
 
   if (!body.data || typeof body.data !== 'object' || Array.isArray(body.data)) {
-    return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'data must be a non-empty object' }, 400);
+    return apiError(
+      c,
+      { code: ERROR_CODES.INVALID_REQUEST, message: 'data must be a non-empty object' },
+      400
+    );
   }
 
   try {
@@ -267,11 +319,19 @@ customDataRoutes.put('/records/:id', async (c) => {
       return notFoundError(c, 'Record', recordId);
     }
 
-    wsGateway.broadcast('data:changed', { entity: 'custom_record', action: 'updated', id: recordId });
+    wsGateway.broadcast('data:changed', {
+      entity: 'custom_record',
+      action: 'updated',
+      id: recordId,
+    });
 
     return apiResponse(c, updated);
   } catch (err) {
-    return apiError(c, { code: ERROR_CODES.UPDATE_FAILED, message: getErrorMessage(err, 'Failed to update record') }, 400);
+    return apiError(
+      c,
+      { code: ERROR_CODES.UPDATE_FAILED, message: getErrorMessage(err, 'Failed to update record') },
+      400
+    );
   }
 });
 
@@ -436,7 +496,12 @@ export async function executeCustomDataTool(
       }
 
       case 'list_custom_records': {
-        const { table: tableId, limit = 20, offset = 0, filter } = params as {
+        const {
+          table: tableId,
+          limit = 20,
+          offset = 0,
+          filter,
+        } = params as {
           table: string;
           limit?: number;
           offset?: number;
@@ -456,7 +521,11 @@ export async function executeCustomDataTool(
       }
 
       case 'search_custom_records': {
-        const { table: tableId, query, limit = 20 } = params as {
+        const {
+          table: tableId,
+          query,
+          limit = 20,
+        } = params as {
           table: string;
           query: string;
           limit?: number;
@@ -482,7 +551,12 @@ export async function executeCustomDataTool(
           success: true,
           result: {
             message: 'Record found.',
-            record: { id: record.id, ...record.data, _createdAt: record.createdAt, _updatedAt: record.updatedAt },
+            record: {
+              id: record.id,
+              ...record.data,
+              _createdAt: record.createdAt,
+              _updatedAt: record.updatedAt,
+            },
           },
         };
       }

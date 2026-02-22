@@ -3,11 +3,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import {
-  registerWebhookHandler,
-  unregisterWebhookHandler,
-  getWebhookHandler,
-} from './webhook.js';
+import { registerWebhookHandler, unregisterWebhookHandler, getWebhookHandler } from './webhook.js';
 
 // Mock grammy's webhookCallback
 vi.mock('grammy', () => ({

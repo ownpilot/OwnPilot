@@ -67,7 +67,7 @@ export function AIBriefingCard() {
 
         // Filter to only configured and enabled providers
         const configuredProviders = (providersData.providers as ProviderInfo[]).filter(
-          p => p.isConfigured && p.isEnabled
+          (p) => p.isConfigured && p.isEnabled
         );
 
         if (configuredProviders.length === 0) {
@@ -106,7 +106,7 @@ export function AIBriefingCard() {
             try {
               const parsed = JSON.parse(savedModel) as ProviderModel;
               const found = models.find(
-                m => m.provider === parsed.provider && m.model === parsed.model
+                (m) => m.provider === parsed.provider && m.model === parsed.model
               );
               if (!found && models.length > 0) {
                 setSelectedModel(models[0]!);
@@ -131,98 +131,101 @@ export function AIBriefingCard() {
     fetchProvidersAndModels();
   }, []);
 
-  const fetchBriefing = useCallback(async (refresh = false, useStreaming = false, modelOverride?: ProviderModel) => {
-    const model = modelOverride ?? selectedModel;
+  const fetchBriefing = useCallback(
+    async (refresh = false, useStreaming = false, modelOverride?: ProviderModel) => {
+      const model = modelOverride ?? selectedModel;
 
-    // Cancel any ongoing request
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-    }
-    abortControllerRef.current = new AbortController();
+      // Cancel any ongoing request
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+      abortControllerRef.current = new AbortController();
 
-    if (refresh || useStreaming) {
-      setIsStreaming(true);
-      setStreamingText('');
-      setBriefing(null);
-    } else {
-      setIsLoading(true);
-    }
-    setError(null);
+      if (refresh || useStreaming) {
+        setIsStreaming(true);
+        setStreamingText('');
+        setBriefing(null);
+      } else {
+        setIsLoading(true);
+      }
+      setError(null);
 
-    try {
-      // If streaming, use the streaming endpoint
-      if (useStreaming || refresh) {
-        const response = await dashboardApi.briefingStream({
-          signal: abortControllerRef.current.signal,
-          params: { provider: model.provider, model: model.model },
-        });
+      try {
+        // If streaming, use the streaming endpoint
+        if (useStreaming || refresh) {
+          const response = await dashboardApi.briefingStream({
+            signal: abortControllerRef.current.signal,
+            params: { provider: model.provider, model: model.model },
+          });
 
-        const reader = response.body?.getReader();
-        if (!reader) {
-          throw new Error('No response body');
-        }
+          const reader = response.body?.getReader();
+          if (!reader) {
+            throw new Error('No response body');
+          }
 
-        const decoder = new TextDecoder();
-        let buffer = '';
+          const decoder = new TextDecoder();
+          let buffer = '';
 
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
 
-          buffer += decoder.decode(value, { stream: true });
-          const lines = buffer.split('\n');
-          buffer = lines.pop() || '';
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split('\n');
+            buffer = lines.pop() || '';
 
-          for (const line of lines) {
-            if (line.startsWith('data: ')) {
-              const data = line.slice(6);
-              if (data === '[DONE]') {
-                setIsStreaming(false);
-                continue;
-              }
-
-              try {
-                const parsed = JSON.parse(data);
-
-                if (parsed.type === 'chunk') {
-                  setStreamingText(prev => prev + parsed.content);
-                } else if (parsed.type === 'complete') {
-                  setBriefing(parsed.briefing);
+            for (const line of lines) {
+              if (line.startsWith('data: ')) {
+                const data = line.slice(6);
+                if (data === '[DONE]') {
                   setIsStreaming(false);
-                } else if (parsed.type === 'error') {
-                  setError(parsed.message);
-                  setIsStreaming(false);
+                  continue;
                 }
-              } catch {
-                // Not JSON, treat as text chunk
-                setStreamingText(prev => prev + data);
+
+                try {
+                  const parsed = JSON.parse(data);
+
+                  if (parsed.type === 'chunk') {
+                    setStreamingText((prev) => prev + parsed.content);
+                  } else if (parsed.type === 'complete') {
+                    setBriefing(parsed.briefing);
+                    setIsStreaming(false);
+                  } else if (parsed.type === 'error') {
+                    setError(parsed.message);
+                    setIsStreaming(false);
+                  }
+                } catch {
+                  // Not JSON, treat as text chunk
+                  setStreamingText((prev) => prev + data);
+                }
               }
             }
           }
-        }
-      } else {
-        // Non-streaming fetch for initial load (use cache)
-        const data = await dashboardApi.briefing({
-          signal: abortControllerRef.current.signal,
-          params: { provider: model.provider, model: model.model },
-        });
+        } else {
+          // Non-streaming fetch for initial load (use cache)
+          const data = await dashboardApi.briefing({
+            signal: abortControllerRef.current.signal,
+            params: { provider: model.provider, model: model.model },
+          });
 
-        if (data.aiBriefing) {
-          setBriefing(data.aiBriefing ?? null);
-        } else if (data.error) {
-          setError(data.error);
+          if (data.aiBriefing) {
+            setBriefing(data.aiBriefing ?? null);
+          } else if (data.error) {
+            setError(data.error);
+          }
         }
+      } catch (err) {
+        if (err instanceof Error && err.name === 'AbortError') {
+          return;
+        }
+        setError('Failed to load AI briefing');
+      } finally {
+        setIsLoading(false);
+        setIsStreaming(false);
       }
-    } catch (err) {
-      if (err instanceof Error && err.name === 'AbortError') {
-        return;
-      }
-      setError('Failed to load AI briefing');
-    } finally {
-      setIsLoading(false);
-      setIsStreaming(false);
-    }
-  }, [selectedModel]);
+    },
+    [selectedModel]
+  );
 
   useEffect(() => {
     fetchBriefing(false, false);
@@ -351,16 +354,19 @@ export function AIBriefingCard() {
   };
 
   // Group models by provider for the dropdown
-  const modelsByProvider = availableModels.reduce((acc, model) => {
-    if (!acc[model.provider]) {
-      acc[model.provider] = {
-        name: model.providerName,
-        models: [],
-      };
-    }
-    acc[model.provider]!.models.push(model);
-    return acc;
-  }, {} as Record<string, { name: string; models: ProviderModel[] }>);
+  const modelsByProvider = availableModels.reduce(
+    (acc, model) => {
+      if (!acc[model.provider]) {
+        acc[model.provider] = {
+          name: model.providerName,
+          models: [],
+        };
+      }
+      acc[model.provider]!.models.push(model);
+      return acc;
+    },
+    {} as Record<string, { name: string; models: ProviderModel[] }>
+  );
 
   return (
     <div className="mb-6 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border border-primary/20 rounded-xl overflow-visible">
@@ -425,7 +431,8 @@ export function AIBriefingCard() {
                         key={`${model.provider}-${model.model}`}
                         onClick={() => handleModelChange(model)}
                         className={`w-full text-left px-3 py-2 rounded-md transition-colors ${
-                          selectedModel.provider === model.provider && selectedModel.model === model.model
+                          selectedModel.provider === model.provider &&
+                          selectedModel.model === model.model
                             ? 'bg-primary/10 text-primary'
                             : 'hover:bg-bg-secondary dark:hover:bg-dark-bg-secondary text-text-primary dark:text-dark-text-primary'
                         }`}

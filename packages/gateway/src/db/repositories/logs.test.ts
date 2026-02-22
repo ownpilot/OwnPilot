@@ -239,7 +239,7 @@ describe('LogsRepository', () => {
     it('should pass error and errorStack fields', async () => {
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
       mockAdapter.queryOne.mockResolvedValueOnce(
-        makeLogRow({ error: 'Something went wrong', error_stack: 'Error: Something...' }),
+        makeLogRow({ error: 'Something went wrong', error_stack: 'Error: Something...' })
       );
 
       await repo.log({
@@ -262,7 +262,7 @@ describe('LogsRepository', () => {
     it('should log an error with statusCode 500', async () => {
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
       mockAdapter.queryOne.mockResolvedValueOnce(
-        makeLogRow({ error: 'Timeout', error_stack: 'Error: Timeout\n  at ...', status_code: 500 }),
+        makeLogRow({ error: 'Timeout', error_stack: 'Error: Timeout\n  at ...', status_code: 500 })
       );
 
       const error = new Error('Timeout');
@@ -287,7 +287,7 @@ describe('LogsRepository', () => {
     it('should merge context with error data', async () => {
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
       mockAdapter.queryOne.mockResolvedValueOnce(
-        makeLogRow({ provider: 'anthropic', error: 'Rate limited' }),
+        makeLogRow({ provider: 'anthropic', error: 'Rate limited' })
       );
 
       const error = new Error('Rate limited');
@@ -331,7 +331,7 @@ describe('LogsRepository', () => {
         makeLogRow({
           request_body: '{"prompt":"Hello"}',
           response_body: '{"text":"Hi"}',
-        }),
+        })
       );
 
       const result = await repo.getLog('log-1');

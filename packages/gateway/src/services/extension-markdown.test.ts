@@ -202,7 +202,9 @@ return { content: {} };
     });
 
     it('throws on missing frontmatter end', () => {
-      expect(() => parseExtensionMarkdown('---\nid: test\n')).toThrow('Missing closing frontmatter');
+      expect(() => parseExtensionMarkdown('---\nid: test\n')).toThrow(
+        'Missing closing frontmatter'
+      );
     });
 
     it('leaves optional fields undefined when not present', () => {
@@ -328,7 +330,7 @@ return { content: {} };
     it('extracts description as first paragraph', () => {
       const manifest = parseExtensionMarkdown(FULL_MD);
       expect(manifest.tools[0]!.description).toBe(
-        'Get current weather for a city. Returns temperature, conditions, humidity, and wind.',
+        'Get current weather for a city. Returns temperature, conditions, humidity, and wind.'
       );
     });
 
@@ -608,12 +610,14 @@ describe('serializeExtensionMarkdown', () => {
       name: 'Test',
       version: '1.0.0',
       description: 'A test',
-      tools: [{
-        name: 'my_tool',
-        description: 'Does things',
-        parameters: { type: 'object', properties: {} },
-        code: 'return { content: {} };',
-      }],
+      tools: [
+        {
+          name: 'my_tool',
+          description: 'Does things',
+          parameters: { type: 'object', properties: {} },
+          code: 'return { content: {} };',
+        },
+      ],
     };
 
     const md = serializeExtensionMarkdown(manifest);
@@ -637,41 +641,49 @@ describe('serializeExtensionMarkdown', () => {
       keywords: ['x', 'y'],
       docs: 'https://example.com',
       system_prompt: 'Use this extension wisely.',
-      tools: [{
-        name: 'tool_a',
-        description: 'Tool A',
-        parameters: {
-          type: 'object',
-          properties: {
-            input: { type: 'string', description: 'Input text' },
+      tools: [
+        {
+          name: 'tool_a',
+          description: 'Tool A',
+          parameters: {
+            type: 'object',
+            properties: {
+              input: { type: 'string', description: 'Input text' },
+            },
+            required: ['input'],
           },
-          required: ['input'],
+          code: 'return { content: { out: args.input } };',
+          permissions: ['network'],
+          requires_approval: true,
         },
-        code: 'return { content: { out: args.input } };',
-        permissions: ['network'],
-        requires_approval: true,
-      }],
-      required_services: [{
-        name: 'my-api',
-        display_name: 'My API',
-        description: 'An API',
-        category: 'api',
-        config_schema: [{
-          name: 'api_key',
-          label: 'API Key',
-          type: 'secret',
-          required: true,
-          description: 'The key',
-        }],
-      }],
-      triggers: [{
-        name: 'daily',
-        type: 'schedule',
-        description: 'Daily run',
-        enabled: true,
-        config: { cron: '0 9 * * *' },
-        action: { type: 'chat', payload: { prompt: 'Do it' } },
-      }],
+      ],
+      required_services: [
+        {
+          name: 'my-api',
+          display_name: 'My API',
+          description: 'An API',
+          category: 'api',
+          config_schema: [
+            {
+              name: 'api_key',
+              label: 'API Key',
+              type: 'secret',
+              required: true,
+              description: 'The key',
+            },
+          ],
+        },
+      ],
+      triggers: [
+        {
+          name: 'daily',
+          type: 'schedule',
+          description: 'Daily run',
+          enabled: true,
+          config: { cron: '0 9 * * *' },
+          action: { type: 'chat', payload: { prompt: 'Do it' } },
+        },
+      ],
     };
 
     const md = serializeExtensionMarkdown(manifest);
@@ -697,41 +709,49 @@ describe('serializeExtensionMarkdown', () => {
       category: 'developer',
       tags: ['test', 'roundtrip'],
       system_prompt: 'Use the tool.',
-      tools: [{
-        name: 'echo_tool',
-        description: 'Echoes input back',
-        parameters: {
-          type: 'object',
-          properties: {
-            text: { type: 'string', description: 'Text to echo' },
-            count: { type: 'number', description: 'Repeat count' },
+      tools: [
+        {
+          name: 'echo_tool',
+          description: 'Echoes input back',
+          parameters: {
+            type: 'object',
+            properties: {
+              text: { type: 'string', description: 'Text to echo' },
+              count: { type: 'number', description: 'Repeat count' },
+            },
+            required: ['text'],
           },
-          required: ['text'],
+          code: 'return { content: { result: args.text.repeat(args.count || 1) } };',
+          permissions: ['network'],
         },
-        code: 'return { content: { result: args.text.repeat(args.count || 1) } };',
-        permissions: ['network'],
-      }],
-      required_services: [{
-        name: 'echo-api',
-        display_name: 'Echo API',
-        description: 'API for echoing',
-        category: 'api',
-        config_schema: [{
-          name: 'url',
-          label: 'URL',
-          type: 'url',
-          required: true,
-          description: 'Echo endpoint',
-        }],
-      }],
-      triggers: [{
-        name: 'hourly',
-        type: 'schedule',
-        description: 'Every hour',
-        enabled: true,
-        config: { cron: '0 * * * *' },
-        action: { type: 'chat', payload: { prompt: 'Echo check' } },
-      }],
+      ],
+      required_services: [
+        {
+          name: 'echo-api',
+          display_name: 'Echo API',
+          description: 'API for echoing',
+          category: 'api',
+          config_schema: [
+            {
+              name: 'url',
+              label: 'URL',
+              type: 'url',
+              required: true,
+              description: 'Echo endpoint',
+            },
+          ],
+        },
+      ],
+      triggers: [
+        {
+          name: 'hourly',
+          type: 'schedule',
+          description: 'Every hour',
+          enabled: true,
+          config: { cron: '0 * * * *' },
+          action: { type: 'chat', payload: { prompt: 'Echo check' } },
+        },
+      ],
     };
 
     const md = serializeExtensionMarkdown(original);

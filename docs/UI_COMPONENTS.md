@@ -56,15 +56,15 @@ Comprehensive documentation of the OwnPilot frontend -- a React 19 single-page a
 
 ## Tech Stack
 
-| Technology | Version | Purpose |
-|---|---|---|
-| React | 19 | UI framework |
-| React DOM | 19 | DOM rendering |
-| React Router DOM | 7 | Client-side routing |
-| Vite | 6 | Build tool and dev server |
-| Tailwind CSS | 4 | Utility-first styling |
-| prism-react-renderer | latest | Syntax highlighting in code blocks |
-| TypeScript | 5.7 | Static type checking |
+| Technology           | Version | Purpose                            |
+| -------------------- | ------- | ---------------------------------- |
+| React                | 19      | UI framework                       |
+| React DOM            | 19      | DOM rendering                      |
+| React Router DOM     | 7       | Client-side routing                |
+| Vite                 | 6       | Build tool and dev server          |
+| Tailwind CSS         | 4       | Utility-first styling              |
+| prism-react-renderer | latest  | Syntax highlighting in code blocks |
+| TypeScript           | 5.7     | Static type checking               |
 
 ---
 
@@ -127,14 +127,14 @@ createRoot(document.getElementById('root')!).render(
 
 The application uses six layers of providers, each supplying a distinct concern:
 
-| Layer | Provider | Context Hook | Purpose |
-|---|---|---|---|
-| 1 | `ErrorBoundary` | n/a (class component) | Catches unhandled React errors globally |
-| 2 | `ThemeProvider` | `useTheme()` | Dark/light/system theme management |
-| 3 | `BrowserRouter` | `useNavigate()`, `useLocation()`, etc. | Client-side routing |
-| 4 | `WebSocketProvider` | `useGateway()` | Shared WebSocket connection to gateway |
-| 5 | `ChatProvider` | `useChatStore()` | Global chat state that persists across navigation |
-| 6 | `DialogProvider` | `useDialog()` | Async confirm/alert dialogs replacing `window.confirm()` |
+| Layer | Provider            | Context Hook                           | Purpose                                                  |
+| ----- | ------------------- | -------------------------------------- | -------------------------------------------------------- |
+| 1     | `ErrorBoundary`     | n/a (class component)                  | Catches unhandled React errors globally                  |
+| 2     | `ThemeProvider`     | `useTheme()`                           | Dark/light/system theme management                       |
+| 3     | `BrowserRouter`     | `useNavigate()`, `useLocation()`, etc. | Client-side routing                                      |
+| 4     | `WebSocketProvider` | `useGateway()`                         | Shared WebSocket connection to gateway                   |
+| 5     | `ChatProvider`      | `useChatStore()`                       | Global chat state that persists across navigation        |
+| 6     | `DialogProvider`    | `useDialog()`                          | Async confirm/alert dialogs replacing `window.confirm()` |
 
 ---
 
@@ -146,42 +146,42 @@ All routes are nested under a single `<Layout />` component that provides the si
 
 ### Route Map
 
-| Path | Page Component | Navigation Group |
-|---|---|---|
-| `/` | `ChatPage` | Main |
-| `/dashboard` | `DashboardPage` | Main |
-| `/inbox` | `InboxPage` | Main |
-| `/tasks` | `TasksPage` | Data |
-| `/notes` | `NotesPage` | Data |
-| `/calendar` | `CalendarPage` | Data |
-| `/contacts` | `ContactsPage` | Data |
-| `/bookmarks` | `BookmarksPage` | Data |
-| `/expenses` | `ExpensesPage` | Data |
-| `/custom-data` | `CustomDataPage` | Data |
-| `/data-browser` | `DataBrowserPage` | Data |
-| `/memories` | `MemoriesPage` | AI |
-| `/goals` | `GoalsPage` | AI |
-| `/triggers` | `TriggersPage` | AI |
-| `/plans` | `PlansPage` | AI |
-| `/autonomy` | `AutonomyPage` | AI |
-| `/agents` | `AgentsPage` | System |
-| `/tools` | `ToolsPage` | System |
-| `/custom-tools` | `CustomToolsPage` | System |
-| `/plugins` | `PluginsPage` | System |
-| `/workspaces` | `WorkspacesPage` | System |
-| `/models` | `ModelsPage` | System |
-| `/costs` | `CostsPage` | System |
-| `/logs` | `LogsPage` | System |
-| `/settings` | `SettingsPage` | Settings |
-| `/settings/config-center` | `ConfigCenterPage` | Settings |
-| `/settings/api-keys` | `ApiKeysPage` | Settings |
-| `/settings/providers` | `ProvidersPage` | Settings |
-| `/settings/ai-models` | `AIModelsPage` | Settings |
-| `/settings/integrations` | `IntegrationsPage` | Settings |
-| `/settings/media` | `MediaSettingsPage` | Settings |
-| `/settings/system` | `SystemPage` | Settings |
-| `/profile` | `ProfilePage` | Bottom |
-| `*` | `Navigate to="/"` | Catch-all redirect |
+| Path                      | Page Component      | Navigation Group   |
+| ------------------------- | ------------------- | ------------------ |
+| `/`                       | `ChatPage`          | Main               |
+| `/dashboard`              | `DashboardPage`     | Main               |
+| `/inbox`                  | `InboxPage`         | Main               |
+| `/tasks`                  | `TasksPage`         | Data               |
+| `/notes`                  | `NotesPage`         | Data               |
+| `/calendar`               | `CalendarPage`      | Data               |
+| `/contacts`               | `ContactsPage`      | Data               |
+| `/bookmarks`              | `BookmarksPage`     | Data               |
+| `/expenses`               | `ExpensesPage`      | Data               |
+| `/custom-data`            | `CustomDataPage`    | Data               |
+| `/data-browser`           | `DataBrowserPage`   | Data               |
+| `/memories`               | `MemoriesPage`      | AI                 |
+| `/goals`                  | `GoalsPage`         | AI                 |
+| `/triggers`               | `TriggersPage`      | AI                 |
+| `/plans`                  | `PlansPage`         | AI                 |
+| `/autonomy`               | `AutonomyPage`      | AI                 |
+| `/agents`                 | `AgentsPage`        | System             |
+| `/tools`                  | `ToolsPage`         | System             |
+| `/custom-tools`           | `CustomToolsPage`   | System             |
+| `/plugins`                | `PluginsPage`       | System             |
+| `/workspaces`             | `WorkspacesPage`    | System             |
+| `/models`                 | `ModelsPage`        | System             |
+| `/costs`                  | `CostsPage`         | System             |
+| `/logs`                   | `LogsPage`          | System             |
+| `/settings`               | `SettingsPage`      | Settings           |
+| `/settings/config-center` | `ConfigCenterPage`  | Settings           |
+| `/settings/api-keys`      | `ApiKeysPage`       | Settings           |
+| `/settings/providers`     | `ProvidersPage`     | Settings           |
+| `/settings/ai-models`     | `AIModelsPage`      | Settings           |
+| `/settings/integrations`  | `IntegrationsPage`  | Settings           |
+| `/settings/media`         | `MediaSettingsPage` | Settings           |
+| `/settings/system`        | `SystemPage`        | Settings           |
+| `/profile`                | `ProfilePage`       | Bottom             |
+| `*`                       | `Navigate to="/"`   | Catch-all redirect |
 
 ---
 
@@ -200,12 +200,12 @@ interface Message {
   id: string;
   role: 'user' | 'assistant' | 'system';
   content: string;
-  timestamp: string;              // ISO 8601
-  toolCalls?: ToolCall[];          // Tools invoked during this response
-  provider?: string;               // AI provider used (e.g., "openai")
-  model?: string;                  // Model used (e.g., "gpt-4o")
-  trace?: TraceInfo;               // Execution trace for debugging
-  isError?: boolean;               // Marks error messages for retry logic
+  timestamp: string; // ISO 8601
+  toolCalls?: ToolCall[]; // Tools invoked during this response
+  provider?: string; // AI provider used (e.g., "openai")
+  model?: string; // Model used (e.g., "gpt-4o")
+  trace?: TraceInfo; // Execution trace for debugging
+  isError?: boolean; // Marks error messages for retry logic
 }
 ```
 
@@ -228,8 +228,9 @@ Comprehensive execution trace data attached to assistant messages. Captures ever
 
 ```typescript
 interface TraceInfo {
-  duration: number;                             // Total processing time in ms
-  toolCalls: Array<{                            // Detailed tool call records
+  duration: number; // Total processing time in ms
+  toolCalls: Array<{
+    // Detailed tool call records
     name: string;
     success: boolean;
     duration?: number;
@@ -237,7 +238,8 @@ interface TraceInfo {
     arguments?: Record<string, unknown>;
     result?: string;
   }>;
-  modelCalls: Array<{                           // LLM API call records
+  modelCalls: Array<{
+    // LLM API call records
     provider?: string;
     model?: string;
     tokens?: number;
@@ -245,7 +247,8 @@ interface TraceInfo {
     outputTokens?: number;
     duration?: number;
   }>;
-  autonomyChecks: Array<{                       // Autonomy gate results
+  autonomyChecks: Array<{
+    // Autonomy gate results
     tool: string;
     approved: boolean;
     reason?: string;
@@ -254,26 +257,30 @@ interface TraceInfo {
   memoryOps: { adds: number; recalls: number };
   triggersFired: string[];
   errors: string[];
-  events: Array<{                               // Chronological event log
+  events: Array<{
+    // Chronological event log
     type: string;
     name: string;
     duration?: number;
     success?: boolean;
   }>;
-  request?: {                                   // Outbound LLM request info
+  request?: {
+    // Outbound LLM request info
     provider: string;
     model: string;
     endpoint: string;
     messageCount: number;
     tools?: string[];
   };
-  response?: {                                  // LLM response metadata
+  response?: {
+    // LLM response metadata
     status: 'success' | 'error';
     contentLength?: number;
     finishReason?: string;
     rawResponse?: unknown;
   };
-  retries?: Array<{                             // Retry attempts (if any)
+  retries?: Array<{
+    // Retry attempts (if any)
     attempt: number;
     error: string;
     delayMs: number;
@@ -337,20 +344,20 @@ Manages the WebSocket connection to the OwnPilot gateway for real-time communica
 
 #### Exports
 
-| Export | Type | Description |
-|---|---|---|
-| `useWebSocket(options?)` | Hook | Creates a new WebSocket connection (internal use) |
-| `WebSocketProvider` | Component | Context provider sharing one connection across the tree |
-| `useGateway()` | Hook | Accesses the shared WebSocket connection from context |
+| Export                   | Type      | Description                                             |
+| ------------------------ | --------- | ------------------------------------------------------- |
+| `useWebSocket(options?)` | Hook      | Creates a new WebSocket connection (internal use)       |
+| `WebSocketProvider`      | Component | Context provider sharing one connection across the tree |
+| `useGateway()`           | Hook      | Accesses the shared WebSocket connection from context   |
 
 #### `UseWebSocketOptions`
 
 ```typescript
 interface UseWebSocketOptions {
-  url?: string;                    // Default: auto-detected from current host
-  reconnect?: boolean;             // Default: true
-  reconnectDelay?: number;         // Default: 3000ms
-  maxReconnectAttempts?: number;   // Default: 5
+  url?: string; // Default: auto-detected from current host
+  reconnect?: boolean; // Default: true
+  reconnectDelay?: number; // Default: 3000ms
+  maxReconnectAttempts?: number; // Default: 5
 }
 ```
 
@@ -359,8 +366,8 @@ interface UseWebSocketOptions {
 ```typescript
 interface UseWebSocketResult {
   status: 'connecting' | 'connected' | 'disconnected' | 'error';
-  sessionId: string | null;                     // Set from connection:ready event
-  send: <T>(type: string, payload: T) => void;  // Send typed message
+  sessionId: string | null; // Set from connection:ready event
+  send: <T>(type: string, payload: T) => void; // Send typed message
   subscribe: <T>(event: string, handler: (data: T) => void) => () => void;
   connect: () => void;
   disconnect: () => void;
@@ -386,10 +393,10 @@ Manages dark/light/system theme preferences with persistence and system theme de
 
 #### Exports
 
-| Export | Type | Description |
-|---|---|---|
+| Export          | Type      | Description                        |
+| --------------- | --------- | ---------------------------------- |
 | `ThemeProvider` | Component | Wraps app to provide theme context |
-| `useTheme()` | Hook | Access and control theme |
+| `useTheme()`    | Hook      | Access and control theme           |
 
 #### Interface
 
@@ -397,7 +404,7 @@ Manages dark/light/system theme preferences with persistence and system theme de
 type Theme = 'system' | 'light' | 'dark';
 
 interface ThemeContextType {
-  theme: Theme;                    // User's selected preference
+  theme: Theme; // User's selected preference
   setTheme: (theme: Theme) => void;
   resolvedTheme: 'light' | 'dark'; // Actual applied theme after resolving "system"
 }
@@ -444,7 +451,7 @@ interface UseChatReturn {
   model: string;
   agentId: string | null;
   workspaceId: string | null;
-  streamingContent: string;        // Accumulated text during streaming
+  streamingContent: string; // Accumulated text during streaming
   progressEvents: ProgressEvent[]; // Tool execution progress updates
   setProvider: (provider: string) => void;
   setModel: (model: string) => void;
@@ -482,10 +489,10 @@ The global chat store providing persistent chat state across page navigation. Ch
 
 #### Exports
 
-| Export | Type | Description |
-|---|---|---|
-| `ChatProvider` | Component | Context provider wrapping the app |
-| `useChatStore()` | Hook | Accesses the global chat state |
+| Export           | Type      | Description                       |
+| ---------------- | --------- | --------------------------------- |
+| `ChatProvider`   | Component | Context provider wrapping the app |
+| `useChatStore()` | Hook      | Accesses the global chat state    |
 
 #### `ChatStore` interface (extends `ChatState`)
 
@@ -517,13 +524,13 @@ interface ChatStore {
 
 #### Key Differences from `useChat`
 
-| Feature | `useChat` | `useChatStore` |
-|---|---|---|
-| Scope | Local to component | Global across app |
-| Navigation | State lost on unmount | State persists |
-| Direct tools | Not supported | Supports `directTools` parameter |
-| Tool catalog | Not managed | Sends `includeToolList: true` on first message |
-| AbortController | Cleaned up on unmount | Persists across navigation |
+| Feature         | `useChat`             | `useChatStore`                                 |
+| --------------- | --------------------- | ---------------------------------------------- |
+| Scope           | Local to component    | Global across app                              |
+| Navigation      | State lost on unmount | State persists                                 |
+| Direct tools    | Not supported         | Supports `directTools` parameter               |
+| Tool catalog    | Not managed           | Sends `includeToolList: true` on first message |
+| AbortController | Cleaned up on unmount | Persists across navigation                     |
 
 #### Streaming Flow
 
@@ -574,20 +581,22 @@ None. Uses `<Outlet />` for child routing.
 The sidebar organizes navigation into main items and collapsible groups:
 
 **Main Items** (always visible):
+
 - Chat (`/`)
 - Dashboard (`/dashboard`)
 - Inbox (`/inbox`)
 
 **Collapsible Groups:**
 
-| Group | ID | Items |
-|---|---|---|
-| Data | `data` | Tasks, Notes, Calendar, Contacts, Bookmarks, Expenses, Custom Data, Data Browser |
-| AI | `ai` | Memories, Goals, Triggers, Plans, Autonomy |
-| System | `system` | Agents, Tools, Custom Tools, Plugins, Workspaces, Models, Costs, Logs |
-| Settings | `settings` | Config Center, API Keys, Providers, AI Models, Integrations, Media, System |
+| Group    | ID         | Items                                                                            |
+| -------- | ---------- | -------------------------------------------------------------------------------- |
+| Data     | `data`     | Tasks, Notes, Calendar, Contacts, Bookmarks, Expenses, Custom Data, Data Browser |
+| AI       | `ai`       | Memories, Goals, Triggers, Plans, Autonomy                                       |
+| System   | `system`   | Agents, Tools, Custom Tools, Plugins, Workspaces, Models, Costs, Logs            |
+| Settings | `settings` | Config Center, API Keys, Providers, AI Models, Integrations, Media, System       |
 
 **Bottom Items:**
+
 - Profile (`/profile`)
 
 #### Internal Components
@@ -619,7 +628,7 @@ interface ChatInputProps {
   onSend: (message: string, directTools?: string[]) => void;
   onStop?: () => void;
   isLoading?: boolean;
-  placeholder?: string;  // Default: 'Type a message...'
+  placeholder?: string; // Default: 'Type a message...'
 }
 ```
 
@@ -634,12 +643,12 @@ interface ChatInputProps {
 
 #### Chip Colors by Resource Type
 
-| Type | Color | Label |
-|---|---|---|
-| `tool` | Blue | "tool" |
-| `custom-tool` | Primary | "custom" |
-| `custom-data` | Emerald | "data" |
-| `builtin-data` | Amber | "built-in" |
+| Type           | Color   | Label      |
+| -------------- | ------- | ---------- |
+| `tool`         | Blue    | "tool"     |
+| `custom-tool`  | Primary | "custom"   |
+| `custom-data`  | Emerald | "data"     |
+| `builtin-data` | Amber   | "built-in" |
 
 ---
 
@@ -663,7 +672,7 @@ interface MessageListProps {
 
 - **Role differentiation** -- User messages appear right-aligned with primary color gradient avatar. Assistant messages appear left-aligned with purple-indigo gradient avatar.
 - **Markdown rendering** -- Parses and renders:
-  - Fenced code blocks (`` ```language ... ``` ``) via `CodeBlock`
+  - Fenced code blocks (` ```language ... ``` `) via `CodeBlock`
   - Inline code (`` `code` ``)
   - Bold (`**text**`)
   - Italic (`*text*`)
@@ -688,12 +697,12 @@ Renders syntax-highlighted code with Prism, including a header bar with language
 ```typescript
 interface CodeBlockProps {
   code: string;
-  language?: string;        // Default: 'plaintext'
-  filename?: string;        // Shown in header if provided
+  language?: string; // Default: 'plaintext'
+  filename?: string; // Shown in header if provided
   showLineNumbers?: boolean; // Default: true
-  maxHeight?: string;        // Default: '400px'
-  onExecute?: () => void;   // Shows Play button if provided
-  isExecuting?: boolean;     // Default: false
+  maxHeight?: string; // Default: '400px'
+  onExecute?: () => void; // Shows Play button if provided
+  isExecuting?: boolean; // Default: false
 }
 ```
 
@@ -709,16 +718,16 @@ interface CodeBlockProps {
 
 #### Supported Language Aliases
 
-| Alias | Mapped To |
-|---|---|
-| `js` | `javascript` |
-| `ts` | `typescript` |
-| `py` | `python` |
-| `rb` | `ruby` |
-| `sh`, `shell` | `bash` |
-| `yml` | `yaml` |
-| `md` | `markdown` |
-| `plaintext`, `text` | `plain` |
+| Alias               | Mapped To    |
+| ------------------- | ------------ |
+| `js`                | `javascript` |
+| `ts`                | `typescript` |
+| `py`                | `python`     |
+| `rb`                | `ruby`       |
+| `sh`, `shell`       | `bash`       |
+| `yml`               | `yaml`       |
+| `md`                | `markdown`   |
+| `plaintext`, `text` | `plain`      |
 
 ---
 
@@ -765,12 +774,12 @@ Each tool call is rendered as an expandable card:
 
 Tools are auto-categorized by name pattern:
 
-| Pattern | Category |
-|---|---|
-| `read_*`, `write_*`, `*file*`, `*directory*` | File System |
-| `execute_*`, `*compile*`, `*package*` | Code Execution |
-| `*http*`, `*web*`, `*fetch*`, `*api*` | Web & API |
-| Everything else | Other |
+| Pattern                                      | Category       |
+| -------------------------------------------- | -------------- |
+| `read_*`, `write_*`, `*file*`, `*directory*` | File System    |
+| `execute_*`, `*compile*`, `*package*`        | Code Execution |
+| `*http*`, `*web*`, `*fetch*`, `*api*`        | Web & API      |
+| Everything else                              | Other          |
 
 ---
 
@@ -799,17 +808,17 @@ interface ResourceAttachment {
   displayName?: string;
   internalName?: string;
   type: ResourceType;
-  toolInstructions: string;  // Pre-built context block for LLM injection
+  toolInstructions: string; // Pre-built context block for LLM injection
 }
 ```
 
 #### Tabs
 
-| Tab | Sources | Fetched From |
-|---|---|---|
-| Tools | Built-in tools + custom tools | `GET /api/v1/tools?grouped=true` + `GET /api/v1/custom-tools?status=active` |
-| Custom Data | User-created data tables | `GET /api/v1/custom-data/tables` |
-| Built-in Data | Hard-coded data sources | Static list (tasks, bookmarks, notes, calendar, contacts, memories, goals) |
+| Tab           | Sources                       | Fetched From                                                                |
+| ------------- | ----------------------------- | --------------------------------------------------------------------------- |
+| Tools         | Built-in tools + custom tools | `GET /api/v1/tools?grouped=true` + `GET /api/v1/custom-tools?status=active` |
+| Custom Data   | User-created data tables      | `GET /api/v1/custom-data/tables`                                            |
+| Built-in Data | Hard-coded data sources       | Static list (tasks, bookmarks, notes, calendar, contacts, memories, goals)  |
 
 #### Features
 
@@ -841,6 +850,7 @@ interface TraceDisplayProps {
 #### Summary Bar (always visible)
 
 Shows quick stats inline:
+
 - Duration (ms)
 - Tool calls (successful/total)
 - Token usage (input/output)
@@ -851,18 +861,18 @@ Shows quick stats inline:
 
 #### Expanded Sections
 
-| Section | Shows When | Content |
-|---|---|---|
-| Tool Calls | `toolCalls.length > 0` | Per-tool success/fail, name, duration, expandable args/result |
-| Model Calls | `modelCalls.length > 0` | Provider/model, token counts (in/out), duration |
-| Autonomy Checks | `autonomyChecks.length > 0` | Approved/blocked status per tool with reason |
-| Operations | DB or memory ops > 0 | DB reads/writes, memory adds/recalls badges |
-| Triggers Fired | `triggersFired.length > 0` | Trigger name badges |
-| Errors | `errors.length > 0` | Red error messages |
-| Request | `request` exists | Provider, model, endpoint, message count, tool list |
-| Response | `response` exists | Status, finish reason, content length |
-| Retries | `retries.length > 0` | Attempt number, delay, error |
-| All Events | `events.length > 0` | Chronological event timeline with status dots |
+| Section         | Shows When                  | Content                                                       |
+| --------------- | --------------------------- | ------------------------------------------------------------- |
+| Tool Calls      | `toolCalls.length > 0`      | Per-tool success/fail, name, duration, expandable args/result |
+| Model Calls     | `modelCalls.length > 0`     | Provider/model, token counts (in/out), duration               |
+| Autonomy Checks | `autonomyChecks.length > 0` | Approved/blocked status per tool with reason                  |
+| Operations      | DB or memory ops > 0        | DB reads/writes, memory adds/recalls badges                   |
+| Triggers Fired  | `triggersFired.length > 0`  | Trigger name badges                                           |
+| Errors          | `errors.length > 0`         | Red error messages                                            |
+| Request         | `request` exists            | Provider, model, endpoint, message count, tool list           |
+| Response        | `response` exists           | Status, finish reason, content length                         |
+| Retries         | `retries.length > 0`        | Attempt number, delay, error                                  |
+| All Events      | `events.length > 0`         | Chronological event timeline with status dots                 |
 
 ---
 
@@ -883,12 +893,12 @@ interface StatsPanelProps {
 
 #### Data Sources (fetched on mount, refreshed every 30 seconds)
 
-| API Endpoint | Data |
-|---|---|
-| `GET /api/v1/summary` | Personal data counts (tasks, notes, calendar, contacts, bookmarks) |
-| `GET /api/v1/costs/usage` | Token usage and costs (daily/monthly) |
-| `GET /api/v1/providers` | Configured provider count |
-| `GET /api/v1/models` | Available model count |
+| API Endpoint              | Data                                                               |
+| ------------------------- | ------------------------------------------------------------------ |
+| `GET /api/v1/summary`     | Personal data counts (tasks, notes, calendar, contacts, bookmarks) |
+| `GET /api/v1/costs/usage` | Token usage and costs (daily/monthly)                              |
+| `GET /api/v1/providers`   | Configured provider count                                          |
+| `GET /api/v1/models`      | Available model count                                              |
 
 #### Sections
 
@@ -915,6 +925,7 @@ None. Self-contained component that fetches its own data.
 #### Data Source
 
 `GET /api/v1/dashboard/data` -- Returns daily briefing data including:
+
 - `tasks.dueToday` and `tasks.overdue`
 - `calendar.todayEvents`
 - `triggers.scheduledToday`
@@ -923,11 +934,11 @@ None. Self-contained component that fetches its own data.
 
 Each item has a type (`event`, `task`, `trigger`), time, and visual treatment:
 
-| Type | Icon | Color (future) | Color (past) |
-|---|---|---|---|
-| Event | Calendar | Primary (blue) | Muted |
-| Task | CheckCircle2 | Success (green) | Muted |
-| Trigger | Zap | Warning (yellow) | Muted |
+| Type    | Icon         | Color (future)   | Color (past) |
+| ------- | ------------ | ---------------- | ------------ |
+| Event   | Calendar     | Primary (blue)   | Muted        |
+| Task    | CheckCircle2 | Success (green)  | Muted        |
+| Trigger | Zap          | Warning (yellow) | Muted        |
 
 Overdue tasks are styled with error (red) colors.
 
@@ -952,14 +963,14 @@ interface DebugInfoModalProps {
 
 #### Tabs
 
-| Tab | Content |
-|---|---|
-| Overview | Stats grid (duration, tokens, tool calls, model calls), error list, retry list, autonomy checks |
-| Tool Calls | Expandable list with arguments, results, errors. Expand All / Collapse All controls |
-| Model Calls | Per-model token breakdown (input/output/total) with duration |
-| Events | Chronological event list with expandable tool call details |
-| Request / Response | Provider, model, endpoint, message count, tools list, response status |
-| Raw JSON | Full trace JSON with copy button, character count |
+| Tab                | Content                                                                                         |
+| ------------------ | ----------------------------------------------------------------------------------------------- |
+| Overview           | Stats grid (duration, tokens, tool calls, model calls), error list, retry list, autonomy checks |
+| Tool Calls         | Expandable list with arguments, results, errors. Expand All / Collapse All controls             |
+| Model Calls        | Per-model token breakdown (input/output/total) with duration                                    |
+| Events             | Chronological event list with expandable tool call details                                      |
+| Request / Response | Provider, model, endpoint, message count, tools list, response status                           |
+| Raw JSON           | Full trace JSON with copy button, character count                                               |
 
 #### Features
 
@@ -981,13 +992,14 @@ A React class component that catches unhandled JavaScript errors in the componen
 ```typescript
 interface Props {
   children: ReactNode;
-  fallback?: ReactNode;  // Optional custom fallback
+  fallback?: ReactNode; // Optional custom fallback
 }
 ```
 
 #### Default Fallback
 
 Renders a centered error page with:
+
 - Warning triangle icon
 - "Something went wrong" heading
 - Error message display
@@ -1005,10 +1017,10 @@ An async dialog system that replaces native `window.confirm()` and `window.alert
 
 #### Exports
 
-| Export | Type | Description |
-|---|---|---|
-| `DialogProvider` | Component | Wraps app to manage dialog state |
-| `useDialog()` | Hook | Returns `{ confirm, alert }` functions |
+| Export           | Type      | Description                            |
+| ---------------- | --------- | -------------------------------------- |
+| `DialogProvider` | Component | Wraps app to manage dialog state       |
+| `useDialog()`    | Hook      | Returns `{ confirm, alert }` functions |
 
 #### Usage
 
@@ -1032,10 +1044,10 @@ await alert('Item deleted successfully');
 
 ```typescript
 interface DialogOptions {
-  title?: string;          // Default: 'Confirm' or 'Notice'
+  title?: string; // Default: 'Confirm' or 'Notice'
   message: string;
-  confirmText?: string;    // Default: 'Confirm', 'Delete' (danger), or 'OK' (alert)
-  cancelText?: string;     // Default: 'Cancel'
+  confirmText?: string; // Default: 'Confirm', 'Delete' (danger), or 'OK' (alert)
+  cancelText?: string; // Default: 'Cancel'
   variant?: 'default' | 'danger';
 }
 ```
@@ -1077,25 +1089,25 @@ interface ConfigFieldDefinition {
   type: 'string' | 'secret' | 'url' | 'number' | 'boolean' | 'select' | 'json';
   required?: boolean;
   defaultValue?: unknown;
-  envVar?: string;           // Shows env var name as helper text
+  envVar?: string; // Shows env var name as helper text
   placeholder?: string;
   description?: string;
-  options?: Array<{ value: string; label: string }>;  // For 'select' type
-  order?: number;            // Sort order
+  options?: Array<{ value: string; label: string }>; // For 'select' type
+  order?: number; // Sort order
 }
 ```
 
 #### Field Types
 
-| Type | Renders As | Special Behavior |
-|---|---|---|
-| `string` | `<input type="text">` | Standard text input |
-| `secret` | `<input type="password">` | Toggle show/hide button (Eye/EyeOff icons) |
-| `url` | `<input type="url">` | URL validation |
-| `number` | `<input type="number">` | Converts to `Number` on change |
-| `boolean` | Toggle switch | Styled as accessible switch with `role="switch"` |
-| `select` | `<select>` | Renders options from `options` array |
-| `json` | `<textarea>` | Monospace font, JSON validation on blur, error display |
+| Type      | Renders As                | Special Behavior                                       |
+| --------- | ------------------------- | ------------------------------------------------------ |
+| `string`  | `<input type="text">`     | Standard text input                                    |
+| `secret`  | `<input type="password">` | Toggle show/hide button (Eye/EyeOff icons)             |
+| `url`     | `<input type="url">`      | URL validation                                         |
+| `number`  | `<input type="number">`   | Converts to `Number` on change                         |
+| `boolean` | Toggle switch             | Styled as accessible switch with `role="switch"`       |
+| `select`  | `<select>`                | Renders options from `options` array                   |
+| `json`    | `<textarea>`              | Monospace font, JSON validation on blur, error display |
 
 ---
 
@@ -1109,7 +1121,7 @@ A dual-pane file browser with directory listing on the left and file preview on 
 
 ```typescript
 interface FileBrowserProps {
-  initialPath?: string;                               // Default: '~'
+  initialPath?: string; // Default: '~'
   onFileSelect?: (file: FileItem) => void;
   onFileOpen?: (file: FileItem, content: string) => void;
 }
@@ -1173,12 +1185,12 @@ None. Self-contained component.
 
 #### Briefing Content
 
-| Section | Description |
-|---|---|
-| Summary | Natural language overview of the day |
-| Priorities | Numbered list of today's top priorities |
-| Insights | Bullet points with analysis and observations |
-| Suggested Focus Areas | Recommended areas to concentrate on |
+| Section               | Description                                  |
+| --------------------- | -------------------------------------------- |
+| Summary               | Natural language overview of the day         |
+| Priorities            | Numbered list of today's top priorities      |
+| Insights              | Bullet points with analysis and observations |
+| Suggested Focus Areas | Recommended areas to concentrate on          |
 
 ---
 
@@ -1265,6 +1277,7 @@ On mount, ChatPage fetches three API endpoints in parallel:
 3. `GET /api/v1/settings` -- Default provider/model preferences.
 
 Provider/model selection priority:
+
 1. URL parameter `?agent=<id>` -- Fetches agent, uses agent's provider/model (resolves "default" to actual values).
 2. URL parameters `?provider=...&model=...` -- Direct selection.
 3. Settings defaults -- From `GET /api/v1/settings`.
@@ -1305,43 +1318,43 @@ Overview dashboard showing personal data stats, AI briefing, timeline, and quick
 
 All data pages follow a consistent pattern: fetch data from REST API, display in a table or card layout, and provide CRUD operations.
 
-| Page | Path | API Endpoint | Purpose |
-|---|---|---|---|
-| `TasksPage` | `/tasks` | `/api/v1/tasks` | Task management with status, priority, due dates |
-| `NotesPage` | `/notes` | `/api/v1/notes` | Note creation and editing |
-| `CalendarPage` | `/calendar` | `/api/v1/calendar` | Calendar event management |
-| `ContactsPage` | `/contacts` | `/api/v1/contacts` | Contact directory |
-| `BookmarksPage` | `/bookmarks` | `/api/v1/bookmarks` | URL bookmarks |
-| `ExpensesPage` | `/expenses` | `/api/v1/expenses` | Expense tracking |
-| `CustomDataPage` | `/custom-data` | `/api/v1/custom-data` | Custom data table management |
-| `DataBrowserPage` | `/data-browser` | Various | Unified data browser across all tables |
+| Page              | Path            | API Endpoint          | Purpose                                          |
+| ----------------- | --------------- | --------------------- | ------------------------------------------------ |
+| `TasksPage`       | `/tasks`        | `/api/v1/tasks`       | Task management with status, priority, due dates |
+| `NotesPage`       | `/notes`        | `/api/v1/notes`       | Note creation and editing                        |
+| `CalendarPage`    | `/calendar`     | `/api/v1/calendar`    | Calendar event management                        |
+| `ContactsPage`    | `/contacts`     | `/api/v1/contacts`    | Contact directory                                |
+| `BookmarksPage`   | `/bookmarks`    | `/api/v1/bookmarks`   | URL bookmarks                                    |
+| `ExpensesPage`    | `/expenses`     | `/api/v1/expenses`    | Expense tracking                                 |
+| `CustomDataPage`  | `/custom-data`  | `/api/v1/custom-data` | Custom data table management                     |
+| `DataBrowserPage` | `/data-browser` | Various               | Unified data browser across all tables           |
 
 ---
 
 ### AI Pages
 
-| Page | Path | Purpose |
-|---|---|---|
-| `MemoriesPage` | `/memories` | View and manage AI persistent memories |
-| `GoalsPage` | `/goals` | Long-term goal tracking and progress |
-| `TriggersPage` | `/triggers` | Event-based automation triggers |
-| `PlansPage` | `/plans` | Multi-step execution plans |
+| Page           | Path        | Purpose                                              |
+| -------------- | ----------- | ---------------------------------------------------- |
+| `MemoriesPage` | `/memories` | View and manage AI persistent memories               |
+| `GoalsPage`    | `/goals`    | Long-term goal tracking and progress                 |
+| `TriggersPage` | `/triggers` | Event-based automation triggers                      |
+| `PlansPage`    | `/plans`    | Multi-step execution plans                           |
 | `AutonomyPage` | `/autonomy` | Autonomy settings, trigger management, plan overview |
 
 ---
 
 ### System Pages
 
-| Page | Path | Purpose |
-|---|---|---|
-| `AgentsPage` | `/agents` | Agent configuration (name, provider, model, tools) |
-| `ToolsPage` | `/tools` | Built-in tool browser with schema, code, and test tabs |
-| `CustomToolsPage` | `/custom-tools` | User-created tools with JavaScript code |
-| `PluginsPage` | `/plugins` | Plugin management |
-| `WorkspacesPage` | `/workspaces` | Workspace management (create, delete, download) |
-| `ModelsPage` | `/models` | AI model browser |
-| `CostsPage` | `/costs` | AI cost analytics and token usage |
-| `LogsPage` | `/logs` | Request and debug log viewer |
+| Page              | Path            | Purpose                                                |
+| ----------------- | --------------- | ------------------------------------------------------ |
+| `AgentsPage`      | `/agents`       | Agent configuration (name, provider, model, tools)     |
+| `ToolsPage`       | `/tools`        | Built-in tool browser with schema, code, and test tabs |
+| `CustomToolsPage` | `/custom-tools` | User-created tools with JavaScript code                |
+| `PluginsPage`     | `/plugins`      | Plugin management                                      |
+| `WorkspacesPage`  | `/workspaces`   | Workspace management (create, delete, download)        |
+| `ModelsPage`      | `/models`       | AI model browser                                       |
+| `CostsPage`       | `/costs`        | AI cost analytics and token usage                      |
+| `LogsPage`        | `/logs`         | Request and debug log viewer                           |
 
 ---
 
@@ -1349,25 +1362,25 @@ All data pages follow a consistent pattern: fetch data from REST API, display in
 
 All settings pages are under `/settings/*` and provide configuration for the system:
 
-| Page | Path | Purpose |
-|---|---|---|
-| `SettingsPage` | `/settings` | Settings hub / overview |
-| `ConfigCenterPage` | `/settings/config-center` | Unified config management with `DynamicConfigForm` |
-| `ApiKeysPage` | `/settings/api-keys` | API key management |
-| `ProvidersPage` | `/settings/providers` | AI provider configuration |
-| `AIModelsPage` | `/settings/ai-models` | Model configuration |
-| `IntegrationsPage` | `/settings/integrations` | OAuth integrations |
-| `MediaSettingsPage` | `/settings/media` | Media provider settings |
-| `SystemPage` | `/settings/system` | System-level configuration |
+| Page                | Path                      | Purpose                                            |
+| ------------------- | ------------------------- | -------------------------------------------------- |
+| `SettingsPage`      | `/settings`               | Settings hub / overview                            |
+| `ConfigCenterPage`  | `/settings/config-center` | Unified config management with `DynamicConfigForm` |
+| `ApiKeysPage`       | `/settings/api-keys`      | API key management                                 |
+| `ProvidersPage`     | `/settings/providers`     | AI provider configuration                          |
+| `AIModelsPage`      | `/settings/ai-models`     | Model configuration                                |
+| `IntegrationsPage`  | `/settings/integrations`  | OAuth integrations                                 |
+| `MediaSettingsPage` | `/settings/media`         | Media provider settings                            |
+| `SystemPage`        | `/settings/system`        | System-level configuration                         |
 
 ---
 
 ### Additional Pages
 
-| Page | Path | Purpose |
-|---|---|---|
-| `InboxPage` | `/inbox` | Message inbox |
-| `ProfilePage` | `/profile` | User profile |
+| Page          | Path       | Purpose       |
+| ------------- | ---------- | ------------- |
+| `InboxPage`   | `/inbox`   | Message inbox |
+| `ProfilePage` | `/profile` | User profile  |
 
 ---
 
@@ -1427,9 +1440,9 @@ Browser  ----ws://{host}/ws---->  Gateway Server
 
 ```typescript
 interface WSMessage<T = unknown> {
-  type: string;       // Event type (e.g., "connection:ready", "chat:update")
-  payload: T;         // Event-specific data
-  timestamp: string;  // ISO 8601
+  type: string; // Event type (e.g., "connection:ready", "chat:update")
+  payload: T; // Event-specific data
+  timestamp: string; // ISO 8601
   correlationId?: string;
 }
 ```
@@ -1497,14 +1510,14 @@ Browser                                Gateway
 
 ### SSE Event Types
 
-| Event Data Field | Description |
-|---|---|
-| `data.type === 'status'` | Status message (e.g., "Processing...") |
-| `data.type === 'tool_start'` | Tool execution beginning (includes tool name and args) |
-| `data.type === 'tool_end'` | Tool execution complete (includes success, preview, duration) |
-| `data.delta` | Text content chunk to append |
-| `data.done === true` | Stream complete; includes final `toolCalls`, `usage`, `trace` |
-| `data.error` | Error occurred during processing |
+| Event Data Field             | Description                                                   |
+| ---------------------------- | ------------------------------------------------------------- |
+| `data.type === 'status'`     | Status message (e.g., "Processing...")                        |
+| `data.type === 'tool_start'` | Tool execution beginning (includes tool name and args)        |
+| `data.type === 'tool_end'`   | Tool execution complete (includes success, preview, duration) |
+| `data.delta`                 | Text content chunk to append                                  |
+| `data.done === true`         | Stream complete; includes final `toolCalls`, `usage`, `trace` |
+| `data.error`                 | Error occurred during processing                              |
 
 ### Cancellation
 
@@ -1527,20 +1540,20 @@ The application uses Tailwind CSS v4 with class-based dark mode. The `ThemeProvi
 
 All components use semantic color classes that resolve differently in light/dark mode:
 
-| Token Pattern | Example | Purpose |
-|---|---|---|
-| `bg-bg-primary` / `dark:bg-dark-bg-primary` | Main background | Primary background |
-| `bg-bg-secondary` / `dark:bg-dark-bg-secondary` | Cards, sidebar | Secondary background |
-| `bg-bg-tertiary` / `dark:bg-dark-bg-tertiary` | Input fields | Tertiary background |
-| `text-text-primary` / `dark:text-dark-text-primary` | Headings | Primary text |
-| `text-text-secondary` / `dark:text-dark-text-secondary` | Labels | Secondary text |
-| `text-text-muted` / `dark:text-dark-text-muted` | Timestamps | Muted text |
-| `border-border` / `dark:border-dark-border` | Dividers | Border color |
-| `text-primary` | Accent color | Brand primary |
-| `text-success` | Green | Success states |
-| `text-error` | Red | Error states |
-| `text-warning` | Yellow/amber | Warning states |
-| `text-info` | Blue | Info states |
+| Token Pattern                                           | Example         | Purpose              |
+| ------------------------------------------------------- | --------------- | -------------------- |
+| `bg-bg-primary` / `dark:bg-dark-bg-primary`             | Main background | Primary background   |
+| `bg-bg-secondary` / `dark:bg-dark-bg-secondary`         | Cards, sidebar  | Secondary background |
+| `bg-bg-tertiary` / `dark:bg-dark-bg-tertiary`           | Input fields    | Tertiary background  |
+| `text-text-primary` / `dark:text-dark-text-primary`     | Headings        | Primary text         |
+| `text-text-secondary` / `dark:text-dark-text-secondary` | Labels          | Secondary text       |
+| `text-text-muted` / `dark:text-dark-text-muted`         | Timestamps      | Muted text           |
+| `border-border` / `dark:border-dark-border`             | Dividers        | Border color         |
+| `text-primary`                                          | Accent color    | Brand primary        |
+| `text-success`                                          | Green           | Success states       |
+| `text-error`                                            | Red             | Error states         |
+| `text-warning`                                          | Yellow/amber    | Warning states       |
+| `text-info`                                             | Blue            | Info states          |
 
 ---
 

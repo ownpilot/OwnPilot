@@ -29,13 +29,21 @@ export function createPersistenceMiddleware(): MessageMiddleware {
     // Let the pipeline run first
     const result = await next();
 
-    const agentResult = ctx.get<{ ok: boolean; value?: { content: string; toolCalls?: unknown[]; usage?: { promptTokens: number; completionTokens: number } } }>('agentResult');
+    const agentResult = ctx.get<{
+      ok: boolean;
+      value?: {
+        content: string;
+        toolCalls?: unknown[];
+        usage?: { promptTokens: number; completionTokens: number };
+      };
+    }>('agentResult');
     if (!agentResult?.ok) return result;
 
     const userId = ctx.get<string>('userId') ?? 'default';
     const provider = ctx.get<string>('provider');
     const model = ctx.get<string>('model');
-    const conversationId = ctx.get<string>('conversationId') ?? result.response.metadata.conversationId as string;
+    const conversationId =
+      ctx.get<string>('conversationId') ?? (result.response.metadata.conversationId as string);
     const agentId = ctx.get<string>('agentId');
     const traceInfo = ctx.get<Record<string, unknown>>('traceInfo');
 
@@ -64,8 +72,11 @@ export function createPersistenceMiddleware(): MessageMiddleware {
         model,
         ...(message.attachments?.length && {
           attachments: message.attachments
-            .filter((a): a is typeof a & { type: 'image' | 'file' } => a.type === 'image' || a.type === 'file')
-            .map(a => ({
+            .filter(
+              (a): a is typeof a & { type: 'image' | 'file' } =>
+                a.type === 'image' || a.type === 'file'
+            )
+            .map((a) => ({
               type: a.type,
               mimeType: a.mimeType,
               filename: a.filename,
@@ -81,7 +92,9 @@ export function createPersistenceMiddleware(): MessageMiddleware {
         content: result.response.content,
         provider,
         model,
-        toolCalls: agentResult.value?.toolCalls ? [...agentResult.value.toolCalls] as unknown[] : undefined,
+        toolCalls: agentResult.value?.toolCalls
+          ? ([...agentResult.value.toolCalls] as unknown[])
+          : undefined,
         trace: traceInfo,
         inputTokens: agentResult.value?.usage?.promptTokens,
         outputTokens: agentResult.value?.usage?.completionTokens,

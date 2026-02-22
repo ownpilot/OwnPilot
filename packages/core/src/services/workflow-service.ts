@@ -27,8 +27,15 @@ export interface WorkflowLog {
 }
 
 export interface WorkflowProgressEvent {
-  type: 'node_start' | 'node_complete' | 'node_error' | 'node_retry' | 'done' | 'error'
-    | 'foreach_iteration_start' | 'foreach_iteration_complete';
+  type:
+    | 'node_start'
+    | 'node_complete'
+    | 'node_error'
+    | 'node_retry'
+    | 'done'
+    | 'error'
+    | 'foreach_iteration_start'
+    | 'foreach_iteration_complete';
   nodeId?: string;
   toolName?: string;
   status?: string;
@@ -55,7 +62,7 @@ export interface IWorkflowService {
   executeWorkflow(
     workflowId: string,
     userId: string,
-    onProgress?: (event: WorkflowProgressEvent) => void,
+    onProgress?: (event: WorkflowProgressEvent) => void
   ): Promise<WorkflowLog>;
 
   /**

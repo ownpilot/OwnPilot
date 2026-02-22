@@ -209,7 +209,9 @@ describe('Proactive Triggers', () => {
       const result = await enableProactiveFeature('Morning Briefing', 'user-1');
 
       expect(result).toBe(true);
-      expect(mockTriggerService.updateTrigger).toHaveBeenCalledWith('user-1', 't1', { enabled: true });
+      expect(mockTriggerService.updateTrigger).toHaveBeenCalledWith('user-1', 't1', {
+        enabled: true,
+      });
     });
 
     it('returns false when trigger not found', async () => {
@@ -231,7 +233,9 @@ describe('Proactive Triggers', () => {
       const result = await disableProactiveFeature('Morning Briefing', 'user-1');
 
       expect(result).toBe(true);
-      expect(mockTriggerService.updateTrigger).toHaveBeenCalledWith('user-1', 't1', { enabled: false });
+      expect(mockTriggerService.updateTrigger).toHaveBeenCalledWith('user-1', 't1', {
+        enabled: false,
+      });
     });
 
     it('returns false when trigger not found', async () => {

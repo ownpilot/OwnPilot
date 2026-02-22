@@ -34,7 +34,7 @@ interface ConfigServiceRow {
   docs_url: string | null;
   config_schema: string; // JSONB
   multi_entry: boolean;
-  required_by: string;   // JSONB
+  required_by: string; // JSONB
   is_active: boolean;
   created_at: string;
   updated_at: string;
@@ -44,7 +44,7 @@ interface ConfigEntryRow {
   id: string;
   service_name: string;
   label: string;
-  data: string;  // JSONB
+  data: string; // JSONB
   is_default: boolean;
   is_active: boolean;
   created_at: string;
@@ -102,7 +102,6 @@ let cacheInitialized = false;
 // ROW-TO-MODEL CONVERSION
 // =============================================================================
 
-
 function rowToService(row: ConfigServiceRow): ConfigServiceDefinition {
   return {
     name: row.name,
@@ -154,7 +153,7 @@ export class ConfigServicesRepository extends BaseRepository {
       this.query<ConfigEntryRow>('SELECT * FROM config_entries ORDER BY created_at ASC'),
     ]);
 
-    servicesCache = new Map(serviceRows.map(r => [r.name, rowToService(r)]));
+    servicesCache = new Map(serviceRows.map((r) => [r.name, rowToService(r)]));
 
     const grouped = new Map<string, ConfigEntry[]>();
     for (const row of entryRows) {
@@ -175,13 +174,12 @@ export class ConfigServicesRepository extends BaseRepository {
    */
   private async refreshServiceCache(serviceName: string): Promise<void> {
     const [serviceRow, entryRows] = await Promise.all([
-      this.queryOne<ConfigServiceRow>(
-        'SELECT * FROM config_services WHERE name = $1',
-        [serviceName],
-      ),
+      this.queryOne<ConfigServiceRow>('SELECT * FROM config_services WHERE name = $1', [
+        serviceName,
+      ]),
       this.query<ConfigEntryRow>(
         'SELECT * FROM config_entries WHERE service_name = $1 ORDER BY created_at ASC',
-        [serviceName],
+        [serviceName]
       ),
     ]);
 
@@ -218,7 +216,7 @@ export class ConfigServicesRepository extends BaseRepository {
    */
   list(category?: string): ConfigServiceDefinition[] {
     const all = Array.from(servicesCache.values());
-    return category ? all.filter(s => s.category === category) : all;
+    return category ? all.filter((s) => s.category === category) : all;
   }
 
   // ---------------------------------------------------------------------------
@@ -249,7 +247,7 @@ export class ConfigServicesRepository extends BaseRepository {
         input.isActive !== false,
         now,
         now,
-      ],
+      ]
     );
 
     await this.refreshServiceCache(input.name);
@@ -259,7 +257,10 @@ export class ConfigServicesRepository extends BaseRepository {
   /**
    * Update a service definition by name. Returns null if not found.
    */
-  async update(name: string, input: UpdateConfigServiceInput): Promise<ConfigServiceDefinition | null> {
+  async update(
+    name: string,
+    input: UpdateConfigServiceInput
+  ): Promise<ConfigServiceDefinition | null> {
     const existing = servicesCache.get(name);
     if (!existing) return null;
 
@@ -304,7 +305,7 @@ export class ConfigServicesRepository extends BaseRepository {
     values.push(name); // WHERE clause
     await this.execute(
       `UPDATE config_services SET ${updates.join(', ')} WHERE name = $${paramIndex}`,
-      values,
+      values
     );
 
     await this.refreshServiceCache(name);
@@ -368,7 +369,7 @@ export class ConfigServicesRepository extends BaseRepository {
         now,
         hasExplicitSchema,
         hasExplicitMultiEntry,
-      ],
+      ]
     );
 
     await this.refreshServiceCache(input.name);
@@ -392,7 +393,7 @@ export class ConfigServicesRepository extends BaseRepository {
   getDefaultEntry(serviceName: string): ConfigEntry | null {
     const entries = entriesCache.get(serviceName);
     if (!entries) return null;
-    return entries.find(e => e.isDefault) ?? null;
+    return entries.find((e) => e.isDefault) ?? null;
   }
 
   /**
@@ -401,7 +402,7 @@ export class ConfigServicesRepository extends BaseRepository {
   getEntryByLabel(serviceName: string, label: string): ConfigEntry | null {
     const entries = entriesCache.get(serviceName);
     if (!entries) return null;
-    return entries.find(e => e.label === label) ?? null;
+    return entries.find((e) => e.label === label) ?? null;
   }
 
   // ---------------------------------------------------------------------------
@@ -426,7 +427,7 @@ export class ConfigServicesRepository extends BaseRepository {
     if (isDefault && !isFirstEntry) {
       await this.execute(
         'UPDATE config_entries SET is_default = FALSE WHERE service_name = $1 AND is_default = TRUE',
-        [serviceName],
+        [serviceName]
       );
     }
 
@@ -443,14 +444,14 @@ export class ConfigServicesRepository extends BaseRepository {
         input.isActive !== false,
         now,
         now,
-      ],
+      ]
     );
 
     await this.refreshServiceCache(serviceName);
 
     // Return the newly created entry from cache
     const entries = entriesCache.get(serviceName) ?? [];
-    return entries.find(e => e.id === id)!;
+    return entries.find((e) => e.id === id)!;
   }
 
   /**
@@ -463,7 +464,7 @@ export class ConfigServicesRepository extends BaseRepository {
     // Find the entry in cache to get its service_name
     const entryRow = await this.queryOne<ConfigEntryRow>(
       'SELECT * FROM config_entries WHERE id = $1',
-      [id],
+      [id]
     );
     if (!entryRow) return null;
 
@@ -473,7 +474,7 @@ export class ConfigServicesRepository extends BaseRepository {
     if (input.isDefault === true) {
       await this.execute(
         'UPDATE config_entries SET is_default = FALSE WHERE service_name = $1 AND is_default = TRUE',
-        [serviceName],
+        [serviceName]
       );
     }
 
@@ -508,13 +509,13 @@ export class ConfigServicesRepository extends BaseRepository {
     values.push(id); // WHERE clause
     await this.execute(
       `UPDATE config_entries SET ${updates.join(', ')} WHERE id = $${paramIndex}`,
-      values,
+      values
     );
 
     await this.refreshServiceCache(serviceName);
 
     const entries = entriesCache.get(serviceName) ?? [];
-    return entries.find(e => e.id === id) ?? null;
+    return entries.find((e) => e.id === id) ?? null;
   }
 
   /**
@@ -524,7 +525,7 @@ export class ConfigServicesRepository extends BaseRepository {
     // Find the entry to get its service_name for cache refresh
     const entryRow = await this.queryOne<ConfigEntryRow>(
       'SELECT * FROM config_entries WHERE id = $1',
-      [id],
+      [id]
     );
     if (!entryRow) return false;
 
@@ -551,7 +552,7 @@ export class ConfigServicesRepository extends BaseRepository {
       )
       UPDATE config_entries SET is_default = TRUE, updated_at = $2
       WHERE id = $3`,
-      [serviceName, new Date().toISOString(), entryId],
+      [serviceName, new Date().toISOString(), entryId]
     );
 
     await this.refreshServiceCache(serviceName);
@@ -567,13 +568,13 @@ export class ConfigServicesRepository extends BaseRepository {
   async updateRequiredBy(name: string, requiredBy: ConfigServiceRequiredBy[]): Promise<void> {
     await this.execute(
       'UPDATE config_services SET required_by = $1, updated_at = $2 WHERE name = $3',
-      [JSON.stringify(requiredBy), new Date().toISOString(), name],
+      [JSON.stringify(requiredBy), new Date().toISOString(), name]
     );
 
     // Refresh only the service definition (entries are unaffected)
     const row = await this.queryOne<ConfigServiceRow>(
       'SELECT * FROM config_services WHERE name = $1',
-      [name],
+      [name]
     );
     if (row) {
       servicesCache.set(name, rowToService(row));
@@ -588,7 +589,7 @@ export class ConfigServicesRepository extends BaseRepository {
     const svc = servicesCache.get(serviceName);
     if (!svc) return;
 
-    const filtered = svc.requiredBy.filter(d => d.id !== dependent.id);
+    const filtered = svc.requiredBy.filter((d) => d.id !== dependent.id);
     filtered.push(dependent);
     await this.updateRequiredBy(serviceName, filtered);
   }
@@ -599,8 +600,8 @@ export class ConfigServicesRepository extends BaseRepository {
   async removeRequiredById(dependentId: string): Promise<void> {
     const all = Array.from(servicesCache.values());
     for (const svc of all) {
-      if (svc.requiredBy.some(d => d.id === dependentId)) {
-        const filtered = svc.requiredBy.filter(d => d.id !== dependentId);
+      if (svc.requiredBy.some((d) => d.id === dependentId)) {
+        const filtered = svc.requiredBy.filter((d) => d.id !== dependentId);
         await this.updateRequiredBy(svc.name, filtered);
       }
     }
@@ -630,7 +631,7 @@ export class ConfigServicesRepository extends BaseRepository {
     }
 
     // Fall back to environment variable from schema
-    const field = (svc.configSchema ?? []).find(f => f.name === 'api_key');
+    const field = (svc.configSchema ?? []).find((f) => f.name === 'api_key');
     if (field?.envVar) {
       const envVal = process.env[field.envVar];
       if (envVal) return envVal;
@@ -662,7 +663,7 @@ export class ConfigServicesRepository extends BaseRepository {
     }
 
     // Look up the schema field for fallbacks
-    const field = (svc.configSchema ?? []).find(f => f.name === fieldName);
+    const field = (svc.configSchema ?? []).find((f) => f.name === fieldName);
     if (!field) return undefined;
 
     // Fall back to environment variable
@@ -716,18 +717,18 @@ export class ConfigServicesRepository extends BaseRepository {
     neededButUnconfigured: number;
   }> {
     const all = Array.from(servicesCache.values());
-    const categories = [...new Set(all.map(s => s.category))];
-    const needed = all.filter(s => s.requiredBy.length > 0);
+    const categories = [...new Set(all.map((s) => s.category))];
+    const needed = all.filter((s) => s.requiredBy.length > 0);
 
     return {
       total: all.length,
-      active: all.filter(s => s.isActive).length,
-      configured: all.filter(s => {
+      active: all.filter((s) => s.isActive).length,
+      configured: all.filter((s) => {
         const entries = entriesCache.get(s.name);
         if (!entries || entries.length === 0) return false;
-        return entries.some(e => {
+        return entries.some((e) => {
           const data = e.data;
-          return Object.keys(data).some(k => {
+          return Object.keys(data).some((k) => {
             const v = data[k];
             return v !== null && v !== undefined && v !== '';
           });
@@ -735,7 +736,7 @@ export class ConfigServicesRepository extends BaseRepository {
       }).length,
       categories,
       neededByTools: needed.length,
-      neededButUnconfigured: needed.filter(s => !this.isAvailable(s.name)).length,
+      neededButUnconfigured: needed.filter((s) => !this.isAvailable(s.name)).length,
     };
   }
 }

@@ -128,9 +128,12 @@ describe('Goals Routes', () => {
 
       await app.request('/goals?parentId=null');
 
-      expect(mockGoalService.listGoals).toHaveBeenCalledWith('u1', expect.objectContaining({
-        parentId: null,
-      }));
+      expect(mockGoalService.listGoals).toHaveBeenCalledWith(
+        'u1',
+        expect.objectContaining({
+          parentId: null,
+        })
+      );
     });
   });
 

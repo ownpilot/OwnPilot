@@ -6,7 +6,16 @@
 
 import { useState, useEffect } from 'react';
 import { formatNumber as formatNumberBase } from '../utils/formatters';
-import { Cpu, Check, AlertCircle, ExternalLink, Zap, Eye, Code, MessageSquare } from '../components/icons';
+import {
+  Cpu,
+  Check,
+  AlertCircle,
+  ExternalLink,
+  Zap,
+  Eye,
+  Code,
+  MessageSquare,
+} from '../components/icons';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { modelsApi, providersApi } from '../api';
 
@@ -149,7 +158,8 @@ export function ModelsPage() {
               No Providers Configured
             </h3>
             <p className="text-text-muted dark:text-dark-text-muted mb-4 text-center max-w-md">
-              Add your API keys in Settings to enable AI models from providers like OpenAI, Anthropic, and more.
+              Add your API keys in Settings to enable AI models from providers like OpenAI,
+              Anthropic, and more.
             </p>
             <a
               href="/settings"
@@ -180,7 +190,10 @@ export function ModelsPage() {
                           {info?.name ?? provider}
                           {isConfigured ? (
                             info?.configSource === 'environment' ? (
-                              <span className="flex items-center gap-1 text-xs text-amber-500" title="API key set via environment variable">
+                              <span
+                                className="flex items-center gap-1 text-xs text-amber-500"
+                                title="API key set via environment variable"
+                              >
                                 <Check className="w-3 h-3" /> ENV
                               </span>
                             ) : (
@@ -249,9 +262,7 @@ function ModelCard({ model, isConfigured }: ModelCardProps) {
               </span>
             )}
           </h4>
-          <p className="text-xs text-text-muted dark:text-dark-text-muted font-mono">
-            {model.id}
-          </p>
+          <p className="text-xs text-text-muted dark:text-dark-text-muted font-mono">{model.id}</p>
         </div>
       </div>
 
@@ -280,10 +291,16 @@ function ModelCard({ model, isConfigured }: ModelCardProps) {
       {/* Pricing */}
       <div className="flex items-center gap-3 mb-3 text-xs">
         <span className="text-text-muted dark:text-dark-text-muted">
-          In: <span className="text-text-primary dark:text-dark-text-primary">{formatPrice(model.inputPrice)}/M</span>
+          In:{' '}
+          <span className="text-text-primary dark:text-dark-text-primary">
+            {formatPrice(model.inputPrice)}/M
+          </span>
         </span>
         <span className="text-text-muted dark:text-dark-text-muted">
-          Out: <span className="text-text-primary dark:text-dark-text-primary">{formatPrice(model.outputPrice)}/M</span>
+          Out:{' '}
+          <span className="text-text-primary dark:text-dark-text-primary">
+            {formatPrice(model.outputPrice)}/M
+          </span>
         </span>
       </div>
 

@@ -153,9 +153,11 @@ export class TelegramProgressManager {
         await this.bot.api.editMessageText(
           this.chatId,
           this.messageId,
-          '\u26a0\ufe0f Processing cancelled.',
+          '\u26a0\ufe0f Processing cancelled.'
         );
-      } catch { /* best effort */ }
+      } catch {
+        /* best effort */
+      }
     }
   }
 

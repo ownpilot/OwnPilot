@@ -59,7 +59,10 @@ import {
   injectMemoryIntoPrompt,
   createEnhancedAgentPrompt,
 } from './memory-injector.js';
-import type { MemoryInjectionOptions as _MemoryInjectionOptions, InjectedPromptResult as _InjectedPromptResult } from './memory-injector.js';
+import type {
+  MemoryInjectionOptions as _MemoryInjectionOptions,
+  InjectedPromptResult as _InjectedPromptResult,
+} from './memory-injector.js';
 import { getPersonalMemoryStore } from '../memory/personal.js';
 import { PromptComposer, getTimeContext } from './prompt-composer.js';
 
@@ -277,9 +280,7 @@ describe('MemoryInjector', () => {
       const result = await injector.injectMemory('base prompt', {
         userId: 'user-1',
       });
-      expect(result.userProfile!.topicsOfInterest).toEqual(
-        result.userProfile!.interests,
-      );
+      expect(result.userProfile!.topicsOfInterest).toEqual(result.userProfile!.interests);
     });
 
     it('should combine shortTerm and mediumTerm into goals', async () => {
@@ -382,9 +383,7 @@ describe('MemoryInjector', () => {
     // -----------------------------------------------------------------------
 
     it('should return no profile when getPersonalMemoryStore rejects', async () => {
-      vi.mocked(getPersonalMemoryStore).mockRejectedValueOnce(
-        new Error('DB failure'),
-      );
+      vi.mocked(getPersonalMemoryStore).mockRejectedValueOnce(new Error('DB failure'));
 
       const result = await injector.injectMemory('base prompt', {
         userId: 'user-error',
@@ -397,7 +396,7 @@ describe('MemoryInjector', () => {
       vi.mocked(getPersonalMemoryStore).mockResolvedValueOnce({
         ...mockMemoryStore,
         getProfile: vi.fn().mockRejectedValueOnce(new Error('corrupt')),
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } as any);
 
       const result = await injector.injectMemory('base prompt', {
@@ -640,9 +639,7 @@ describe('MemoryInjector', () => {
     });
 
     it('should return null on error', async () => {
-      vi.mocked(getPersonalMemoryStore).mockRejectedValueOnce(
-        new Error('store error'),
-      );
+      vi.mocked(getPersonalMemoryStore).mockRejectedValueOnce(new Error('store error'));
 
       const result = await injector.getRelevantContext('user-1', 'query');
       expect(result).toBeNull();

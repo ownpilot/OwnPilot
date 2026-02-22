@@ -21,7 +21,13 @@ import {
   type WorkflowLog,
   type WorkflowLogStatus,
 } from '../db/repositories/workflows.js';
-import { createProvider, type ProviderConfig, type IWorkflowService, sleep, withTimeout } from '@ownpilot/core';
+import {
+  createProvider,
+  type ProviderConfig,
+  type IWorkflowService,
+  sleep,
+  withTimeout,
+} from '@ownpilot/core';
 import { executeTool, getSharedToolRegistry, type ToolExecutionResult } from './tool-executor.js';
 import { getErrorMessage } from '../routes/helpers.js';
 import { getLog } from './log.js';
@@ -34,8 +40,15 @@ const _log = getLog('WorkflowService');
 // ============================================================================
 
 export interface WorkflowProgressEvent {
-  type: 'node_start' | 'node_complete' | 'node_error' | 'node_retry' | 'done' | 'error'
-    | 'foreach_iteration_start' | 'foreach_iteration_complete';
+  type:
+    | 'node_start'
+    | 'node_complete'
+    | 'node_error'
+    | 'node_retry'
+    | 'done'
+    | 'error'
+    | 'foreach_iteration_start'
+    | 'foreach_iteration_complete';
   nodeId?: string;
   toolName?: string;
   status?: NodeExecutionStatus;
@@ -64,7 +77,7 @@ export interface WorkflowProgressEvent {
  * Throws if a cycle is detected.
  */
 export function topologicalSort(nodes: WorkflowNode[], edges: WorkflowEdge[]): string[][] {
-  const nodeIds = new Set(nodes.map(n => n.id));
+  const nodeIds = new Set(nodes.map((n) => n.id));
   const inDegree = new Map<string, number>();
   const adjacency = new Map<string, string[]>();
 
@@ -80,7 +93,7 @@ export function topologicalSort(nodes: WorkflowNode[], edges: WorkflowEdge[]): s
   }
 
   const levels: string[][] = [];
-  let queue = [...nodeIds].filter(id => inDegree.get(id) === 0);
+  let queue = [...nodeIds].filter((id) => inDegree.get(id) === 0);
   let processed = 0;
 
   while (queue.length > 0) {
@@ -132,12 +145,12 @@ function getDownstreamNodes(nodeId: string, edges: WorkflowEdge[]): Set<string> 
 function getDownstreamNodesByHandle(
   nodeId: string,
   handle: string,
-  edges: WorkflowEdge[],
+  edges: WorkflowEdge[]
 ): Set<string> {
   const downstream = new Set<string>();
   const queue = edges
-    .filter(e => e.source === nodeId && e.sourceHandle === handle)
-    .map(e => e.target);
+    .filter((e) => e.source === nodeId && e.sourceHandle === handle)
+    .map((e) => e.target);
 
   while (queue.length > 0) {
     const current = queue.pop()!;
@@ -159,7 +172,7 @@ function getDownstreamNodesByHandle(
  */
 function getForEachBodyNodes(
   nodeId: string,
-  edges: WorkflowEdge[],
+  edges: WorkflowEdge[]
 ): { bodyNodes: Set<string>; doneNodes: Set<string> } {
   const eachDownstream = getDownstreamNodesByHandle(nodeId, 'each', edges);
   const doneDownstream = getDownstreamNodesByHandle(nodeId, 'done', edges);
@@ -180,7 +193,7 @@ function getForEachBodyNodes(
 export function resolveTemplates(
   args: Record<string, unknown>,
   nodeOutputs: Record<string, NodeResult>,
-  variables: Record<string, unknown>,
+  variables: Record<string, unknown>
 ): Record<string, unknown> {
   return deepResolve(args, nodeOutputs, variables) as Record<string, unknown>;
 }
@@ -188,13 +201,13 @@ export function resolveTemplates(
 function deepResolve(
   value: unknown,
   nodeOutputs: Record<string, NodeResult>,
-  variables: Record<string, unknown>,
+  variables: Record<string, unknown>
 ): unknown {
   if (typeof value === 'string') {
     return resolveStringTemplates(value, nodeOutputs, variables);
   }
   if (Array.isArray(value)) {
-    return value.map(item => deepResolve(item, nodeOutputs, variables));
+    return value.map((item) => deepResolve(item, nodeOutputs, variables));
   }
   if (value !== null && typeof value === 'object') {
     const resolved: Record<string, unknown> = {};
@@ -209,7 +222,7 @@ function deepResolve(
 function resolveStringTemplates(
   str: string,
   nodeOutputs: Record<string, NodeResult>,
-  variables: Record<string, unknown>,
+  variables: Record<string, unknown>
 ): unknown {
   // If the entire string is a single template, return the raw value (preserves types)
   const fullMatch = /^\{\{(.+?)\}\}$/.exec(str);
@@ -227,7 +240,7 @@ function resolveStringTemplates(
 function resolveTemplatePath(
   path: string,
   nodeOutputs: Record<string, NodeResult>,
-  variables: Record<string, unknown>,
+  variables: Record<string, unknown>
 ): unknown {
   const parts = path.split('.');
 
@@ -255,7 +268,7 @@ function resolveTemplatePath(
 function resolveTemplatePathWithFallback(
   path: string,
   nodeOutputs: Record<string, NodeResult>,
-  variables: Record<string, unknown>,
+  variables: Record<string, unknown>
 ): unknown {
   const result = resolveTemplatePath(path, nodeOutputs, variables);
   if (result !== undefined) return result;
@@ -277,9 +290,15 @@ function getNestedValue(obj: unknown, path: string[]): unknown {
     // Auto-parse JSON strings so {{node.output.field}} works when output is a JSON string
     if (typeof current === 'string') {
       const trimmed = current.trim();
-      if ((trimmed.startsWith('{') && trimmed.endsWith('}')) ||
-          (trimmed.startsWith('[') && trimmed.endsWith(']'))) {
-        try { current = JSON.parse(trimmed); } catch { return undefined; }
+      if (
+        (trimmed.startsWith('{') && trimmed.endsWith('}')) ||
+        (trimmed.startsWith('[') && trimmed.endsWith(']'))
+      ) {
+        try {
+          current = JSON.parse(trimmed);
+        } catch {
+          return undefined;
+        }
       } else {
         return undefined;
       }
@@ -290,9 +309,15 @@ function getNestedValue(obj: unknown, path: string[]): unknown {
   // Also auto-parse the final value if it's a JSON string (for whole-object references)
   if (typeof current === 'string') {
     const trimmed = current.trim();
-    if ((trimmed.startsWith('{') && trimmed.endsWith('}')) ||
-        (trimmed.startsWith('[') && trimmed.endsWith(']'))) {
-      try { return JSON.parse(trimmed); } catch { /* return as-is */ }
+    if (
+      (trimmed.startsWith('{') && trimmed.endsWith('}')) ||
+      (trimmed.startsWith('[') && trimmed.endsWith(']'))
+    ) {
+      try {
+        return JSON.parse(trimmed);
+      } catch {
+        /* return as-is */
+      }
     }
   }
   return current;
@@ -311,7 +336,7 @@ export class WorkflowService implements IWorkflowService {
   async executeWorkflow(
     workflowId: string,
     userId: string,
-    onProgress?: (event: WorkflowProgressEvent) => void,
+    onProgress?: (event: WorkflowProgressEvent) => void
   ): Promise<WorkflowLog> {
     const repo = createWorkflowsRepository(userId);
     const workflow = await repo.get(workflowId);
@@ -331,11 +356,11 @@ export class WorkflowService implements IWorkflowService {
 
     try {
       // Filter out trigger nodes (they define when the workflow starts, not what it does)
-      const executableNodes = workflow.nodes.filter(n => n.type !== 'triggerNode');
+      const executableNodes = workflow.nodes.filter((n) => n.type !== 'triggerNode');
 
       // Topological sort
       const levels = topologicalSort(executableNodes, workflow.edges);
-      const nodeMap = new Map(executableNodes.map(n => [n.id, n]));
+      const nodeMap = new Map(executableNodes.map((n) => [n.id, n]));
       const nodeOutputs: Record<string, NodeResult> = {};
 
       // Pre-compute ForEach body nodes — these are handled internally by executeForEachNode
@@ -365,54 +390,85 @@ export class WorkflowService implements IWorkflowService {
 
             // Skip ForEach body nodes — they're executed inside executeForEachNode
             if (forEachBodyNodes.has(nodeId) && !nodeOutputs[nodeId]) {
-              const skipped: NodeResult = { nodeId, status: 'skipped', completedAt: new Date().toISOString() };
+              const skipped: NodeResult = {
+                nodeId,
+                status: 'skipped',
+                completedAt: new Date().toISOString(),
+              };
               nodeOutputs[nodeId] = skipped;
               return skipped;
             }
 
             if (node.type === 'forEachNode') {
               onProgress?.({ type: 'node_start', nodeId, toolName: 'forEach' });
-              return await this.executeWithRetryAndTimeout(node,
-                () => this.executeForEachNode(node, nodeOutputs, workflow.variables, workflow.edges,
-                  nodeMap, userId, abortController.signal, onProgress, repo, wfLog.id),
-                onProgress);
+              return await this.executeWithRetryAndTimeout(
+                node,
+                () =>
+                  this.executeForEachNode(
+                    node,
+                    nodeOutputs,
+                    workflow.variables,
+                    workflow.edges,
+                    nodeMap,
+                    userId,
+                    abortController.signal,
+                    onProgress,
+                    repo,
+                    wfLog.id
+                  ),
+                onProgress
+              );
             }
 
             if (node.type === 'llmNode') {
-              onProgress?.({ type: 'node_start', nodeId, toolName: `llm:${(node.data as LlmNodeData).provider}` });
-              return await this.executeWithRetryAndTimeout(node,
+              onProgress?.({
+                type: 'node_start',
+                nodeId,
+                toolName: `llm:${(node.data as LlmNodeData).provider}`,
+              });
+              return await this.executeWithRetryAndTimeout(
+                node,
                 () => this.executeLlmNode(node, nodeOutputs, workflow.variables),
-                onProgress);
+                onProgress
+              );
             }
 
             if (node.type === 'conditionNode') {
               onProgress?.({ type: 'node_start', nodeId, toolName: 'condition' });
-              return await this.executeWithRetryAndTimeout(node,
+              return await this.executeWithRetryAndTimeout(
+                node,
                 async () => this.executeConditionNode(node, nodeOutputs, workflow.variables),
-                onProgress);
+                onProgress
+              );
             }
 
             if (node.type === 'codeNode') {
               const cd = node.data as CodeNodeData;
               onProgress?.({ type: 'node_start', nodeId, toolName: `code:${cd.language}` });
-              return await this.executeWithRetryAndTimeout(node,
+              return await this.executeWithRetryAndTimeout(
+                node,
                 () => this.executeCodeNode(node, nodeOutputs, workflow.variables, userId),
-                onProgress);
+                onProgress
+              );
             }
 
             if (node.type === 'transformerNode') {
               onProgress?.({ type: 'node_start', nodeId, toolName: 'transformer' });
-              return await this.executeWithRetryAndTimeout(node,
+              return await this.executeWithRetryAndTimeout(
+                node,
                 async () => this.executeTransformerNode(node, nodeOutputs, workflow.variables),
-                onProgress);
+                onProgress
+              );
             }
 
             const toolData = node.data as ToolNodeData;
             onProgress?.({ type: 'node_start', nodeId, toolName: toolData.toolName });
 
-            return await this.executeWithRetryAndTimeout(node,
+            return await this.executeWithRetryAndTimeout(
+              node,
               () => this.executeNode(node, nodeOutputs, workflow.variables, userId),
-              onProgress);
+              onProgress
+            );
           })
         );
 
@@ -468,7 +524,11 @@ export class WorkflowService implements IWorkflowService {
             const node = nodeMap.get(nodeId);
             if (node?.type === 'conditionNode' && nodeResult.branchTaken) {
               const skippedHandle = nodeResult.branchTaken === 'true' ? 'false' : 'true';
-              const skippedNodes = getDownstreamNodesByHandle(nodeId, skippedHandle, workflow.edges);
+              const skippedNodes = getDownstreamNodesByHandle(
+                nodeId,
+                skippedHandle,
+                workflow.edges
+              );
               for (const skipId of skippedNodes) {
                 if (!nodeOutputs[skipId]) {
                   nodeOutputs[skipId] = {
@@ -488,7 +548,7 @@ export class WorkflowService implements IWorkflowService {
       }
 
       // Finalize
-      const hasErrors = Object.values(nodeOutputs).some(r => r.status === 'error');
+      const hasErrors = Object.values(nodeOutputs).some((r) => r.status === 'error');
       const finalStatus: WorkflowLogStatus = hasErrors ? 'failed' : 'completed';
       const totalDuration = Date.now() - startTime;
 
@@ -556,11 +616,11 @@ export class WorkflowService implements IWorkflowService {
   private async executeWithRetryAndTimeout(
     node: WorkflowNode,
     executeFn: () => Promise<NodeResult>,
-    onProgress?: (event: WorkflowProgressEvent) => void,
+    onProgress?: (event: WorkflowProgressEvent) => void
   ): Promise<NodeResult> {
     const data = node.data as unknown as Record<string, unknown>;
-    const retryCount = (typeof data.retryCount === 'number' ? data.retryCount : 0);
-    const timeoutMs = (typeof data.timeoutMs === 'number' ? data.timeoutMs : 0);
+    const retryCount = typeof data.retryCount === 'number' ? data.retryCount : 0;
+    const timeoutMs = typeof data.timeoutMs === 'number' ? data.timeoutMs : 0;
     const isVmNode = node.type === 'conditionNode' || node.type === 'transformerNode';
 
     let lastResult!: NodeResult;
@@ -607,7 +667,7 @@ export class WorkflowService implements IWorkflowService {
     node: WorkflowNode,
     nodeOutputs: Record<string, NodeResult>,
     variables: Record<string, unknown>,
-    userId: string,
+    userId: string
   ): Promise<NodeResult> {
     const startTime = Date.now();
 
@@ -618,11 +678,7 @@ export class WorkflowService implements IWorkflowService {
       // Resolve tool name — handles cases where dots were stripped (e.g. copilot AI)
       const toolName = resolveWorkflowToolName(data.toolName);
 
-      const result: ToolExecutionResult = await executeTool(
-        toolName,
-        resolvedArgs,
-        userId,
-      );
+      const result: ToolExecutionResult = await executeTool(toolName, resolvedArgs, userId);
 
       return {
         nodeId: node.id,
@@ -653,7 +709,7 @@ export class WorkflowService implements IWorkflowService {
   private async executeLlmNode(
     node: WorkflowNode,
     nodeOutputs: Record<string, NodeResult>,
-    variables: Record<string, unknown>,
+    variables: Record<string, unknown>
   ): Promise<NodeResult> {
     const startTime = Date.now();
 
@@ -661,22 +717,20 @@ export class WorkflowService implements IWorkflowService {
       const data = node.data as LlmNodeData;
 
       // Resolve templates in user message (e.g., {{node_1.output}})
-      const resolvedMessage = resolveTemplates(
-        { _msg: data.userMessage },
-        nodeOutputs,
-        variables,
-      )._msg as string;
+      const resolvedMessage = resolveTemplates({ _msg: data.userMessage }, nodeOutputs, variables)
+        ._msg as string;
 
       // Resolve templates in system prompt too (if present)
       const resolvedSystemPrompt = data.systemPrompt
-        ? resolveTemplates({ _sp: data.systemPrompt }, nodeOutputs, variables)._sp as string
+        ? (resolveTemplates({ _sp: data.systemPrompt }, nodeOutputs, variables)._sp as string)
         : undefined;
 
       // Lazy import to avoid circular deps (agent-cache is in routes/)
-      const { getProviderApiKey, loadProviderConfig, NATIVE_PROVIDERS } = await import('../routes/agent-cache.js');
+      const { getProviderApiKey, loadProviderConfig, NATIVE_PROVIDERS } =
+        await import('../routes/agent-cache.js');
 
       // Resolve API key: use node-level override or stored key
-      const apiKey = data.apiKey || await getProviderApiKey(data.provider);
+      const apiKey = data.apiKey || (await getProviderApiKey(data.provider));
 
       // Resolve base URL: use node-level override or provider config
       let baseUrl = data.baseUrl;
@@ -747,16 +801,15 @@ export class WorkflowService implements IWorkflowService {
   private executeConditionNode(
     node: WorkflowNode,
     nodeOutputs: Record<string, NodeResult>,
-    variables: Record<string, unknown>,
+    variables: Record<string, unknown>
   ): NodeResult {
     const startTime = Date.now();
     try {
       const data = node.data as ConditionNodeData;
 
       // Resolve templates in the expression
-      const resolvedExpr = resolveTemplates(
-        { _expr: data.expression }, nodeOutputs, variables
-      )._expr as string;
+      const resolvedExpr = resolveTemplates({ _expr: data.expression }, nodeOutputs, variables)
+        ._expr as string;
 
       // Build evaluation context: upstream outputs accessible by node ID + variables
       const evalContext: Record<string, unknown> = { ...variables };
@@ -796,16 +849,15 @@ export class WorkflowService implements IWorkflowService {
     node: WorkflowNode,
     nodeOutputs: Record<string, NodeResult>,
     variables: Record<string, unknown>,
-    userId: string,
+    userId: string
   ): Promise<NodeResult> {
     const startTime = Date.now();
     try {
       const data = node.data as CodeNodeData;
 
       // Resolve templates in the code string
-      const resolvedCode = resolveTemplates(
-        { _code: data.code }, nodeOutputs, variables
-      )._code as string;
+      const resolvedCode = resolveTemplates({ _code: data.code }, nodeOutputs, variables)
+        ._code as string;
 
       // Map language to execution tool name
       const toolMap: Record<string, string> = {
@@ -818,7 +870,7 @@ export class WorkflowService implements IWorkflowService {
       const result: ToolExecutionResult = await executeTool(
         toolName,
         { code: resolvedCode },
-        userId,
+        userId
       );
 
       return {
@@ -849,16 +901,15 @@ export class WorkflowService implements IWorkflowService {
   private executeTransformerNode(
     node: WorkflowNode,
     nodeOutputs: Record<string, NodeResult>,
-    variables: Record<string, unknown>,
+    variables: Record<string, unknown>
   ): NodeResult {
     const startTime = Date.now();
     try {
       const data = node.data as TransformerNodeData;
 
       // Resolve templates in the expression
-      const resolvedExpr = resolveTemplates(
-        { _expr: data.expression }, nodeOutputs, variables
-      )._expr as string;
+      const resolvedExpr = resolveTemplates({ _expr: data.expression }, nodeOutputs, variables)
+        ._expr as string;
 
       // Build evaluation context: upstream outputs + variables + convenience `data` alias
       const evalContext: Record<string, unknown> = { ...variables };
@@ -906,7 +957,7 @@ export class WorkflowService implements IWorkflowService {
     abortSignal: AbortSignal,
     onProgress?: (event: WorkflowProgressEvent) => void,
     repo?: ReturnType<typeof createWorkflowsRepository>,
-    logId?: string,
+    logId?: string
   ): Promise<NodeResult> {
     const startTime = Date.now();
     const data = node.data as ForEachNodeData;
@@ -916,7 +967,9 @@ export class WorkflowService implements IWorkflowService {
     try {
       // 1. Resolve the array expression
       const resolvedArray = resolveTemplates(
-        { _arr: data.arrayExpression }, nodeOutputs, variables
+        { _arr: data.arrayExpression },
+        nodeOutputs,
+        variables
       )._arr;
 
       if (!Array.isArray(resolvedArray)) {
@@ -936,13 +989,19 @@ export class WorkflowService implements IWorkflowService {
       // Safety cap
       const items = resolvedArray.slice(0, maxIterations);
       if (resolvedArray.length > maxIterations) {
-        _log.warn(`ForEach ${node.id}: truncated ${resolvedArray.length} items to ${maxIterations}`);
+        _log.warn(
+          `ForEach ${node.id}: truncated ${resolvedArray.length} items to ${maxIterations}`
+        );
       }
 
       // 3. Handle empty array — skip body
       if (items.length === 0) {
         for (const bodyId of bodyNodes) {
-          nodeOutputs[bodyId] = { nodeId: bodyId, status: 'skipped', completedAt: new Date().toISOString() };
+          nodeOutputs[bodyId] = {
+            nodeId: bodyId,
+            status: 'skipped',
+            completedAt: new Date().toISOString(),
+          };
           onProgress?.({ type: 'node_complete', nodeId: bodyId, status: 'skipped' });
         }
         return {
@@ -958,8 +1017,10 @@ export class WorkflowService implements IWorkflowService {
       }
 
       // 4. Topological sort body subgraph
-      const bodyNodeList = [...bodyNodes].map(id => nodeMap.get(id)).filter(Boolean) as WorkflowNode[];
-      const bodyEdges = edges.filter(e => bodyNodes.has(e.source) && bodyNodes.has(e.target));
+      const bodyNodeList = [...bodyNodes]
+        .map((id) => nodeMap.get(id))
+        .filter(Boolean) as WorkflowNode[];
+      const bodyEdges = edges.filter((e) => bodyNodes.has(e.source) && bodyNodes.has(e.target));
       const bodyLevels = topologicalSort(bodyNodeList, bodyEdges);
 
       // 5. Iterate
@@ -1008,16 +1069,35 @@ export class WorkflowService implements IWorkflowService {
 
               const bodyNode = nodeMap.get(bodyNodeId);
               if (!bodyNode) {
-                return { nodeId: bodyNodeId, status: 'error' as const, output: `Node ${bodyNodeId} not found in workflow graph` };
+                return {
+                  nodeId: bodyNodeId,
+                  status: 'error' as const,
+                  output: `Node ${bodyNodeId} not found in workflow graph`,
+                };
               }
               onProgress?.({ type: 'node_start', nodeId: bodyNodeId });
 
-              if (bodyNode.type === 'llmNode') return this.executeLlmNode(bodyNode, nodeOutputs, iterationVars);
-              if (bodyNode.type === 'conditionNode') return this.executeConditionNode(bodyNode, nodeOutputs, iterationVars);
-              if (bodyNode.type === 'codeNode') return this.executeCodeNode(bodyNode, nodeOutputs, iterationVars, userId);
-              if (bodyNode.type === 'transformerNode') return this.executeTransformerNode(bodyNode, nodeOutputs, iterationVars);
+              if (bodyNode.type === 'llmNode')
+                return this.executeLlmNode(bodyNode, nodeOutputs, iterationVars);
+              if (bodyNode.type === 'conditionNode')
+                return this.executeConditionNode(bodyNode, nodeOutputs, iterationVars);
+              if (bodyNode.type === 'codeNode')
+                return this.executeCodeNode(bodyNode, nodeOutputs, iterationVars, userId);
+              if (bodyNode.type === 'transformerNode')
+                return this.executeTransformerNode(bodyNode, nodeOutputs, iterationVars);
               if (bodyNode.type === 'forEachNode') {
-                return this.executeForEachNode(bodyNode, nodeOutputs, iterationVars, edges, nodeMap, userId, abortSignal, onProgress, repo, logId);
+                return this.executeForEachNode(
+                  bodyNode,
+                  nodeOutputs,
+                  iterationVars,
+                  edges,
+                  nodeMap,
+                  userId,
+                  abortSignal,
+                  onProgress,
+                  repo,
+                  logId
+                );
               }
               return this.executeNode(bodyNode, nodeOutputs, iterationVars, userId);
             })
@@ -1059,10 +1139,18 @@ export class WorkflowService implements IWorkflowService {
             const bodyNode = nodeMap.get(bodyNodeId);
             if (bodyNode?.type === 'conditionNode' && bodyResult.branchTaken) {
               const skippedHandle = bodyResult.branchTaken === 'true' ? 'false' : 'true';
-              const skippedInBody = getDownstreamNodesByHandle(bodyNodeId, skippedHandle, bodyEdges);
+              const skippedInBody = getDownstreamNodesByHandle(
+                bodyNodeId,
+                skippedHandle,
+                bodyEdges
+              );
               for (const skipId of skippedInBody) {
                 if (!nodeOutputs[skipId] || nodeOutputs[skipId].status !== 'skipped') {
-                  nodeOutputs[skipId] = { nodeId: skipId, status: 'skipped', completedAt: new Date().toISOString() };
+                  nodeOutputs[skipId] = {
+                    nodeId: skipId,
+                    status: 'skipped',
+                    completedAt: new Date().toISOString(),
+                  };
                   onProgress?.({ type: 'node_complete', nodeId: skipId, status: 'skipped' });
                 }
               }

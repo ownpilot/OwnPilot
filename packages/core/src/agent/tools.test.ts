@@ -36,10 +36,7 @@ describe('ToolRegistry', () => {
 
       registry.register(definition, executor);
 
-      const result = registry.register(
-        { ...definition, description: 'Duplicate' },
-        executor
-      );
+      const result = registry.register({ ...definition, description: 'Duplicate' }, executor);
 
       expect(result.ok).toBe(false);
       if (!result.ok) {
@@ -125,7 +122,11 @@ describe('ToolRegistry', () => {
         async (args) => ({ content: { message: `Hello, ${args.name}!` } })
       );
 
-      const result = await registry.execute('greet', { name: 'World' }, { conversationId: 'conv-1' });
+      const result = await registry.execute(
+        'greet',
+        { name: 'World' },
+        { conversationId: 'conv-1' }
+      );
 
       expect(result.ok).toBe(true);
       if (result.ok) {

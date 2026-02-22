@@ -177,10 +177,14 @@ export class GoalsRepository extends BaseRepository {
     const goal = await this.get(id);
     if (!goal) throw new Error('Failed to create goal');
 
-    getEventBus().emit(createEvent<ResourceCreatedData>(
-      EventTypes.RESOURCE_CREATED, 'resource', 'goals-repository',
-      { resourceType: 'goal', id },
-    ));
+    getEventBus().emit(
+      createEvent<ResourceCreatedData>(
+        EventTypes.RESOURCE_CREATED,
+        'resource',
+        'goals-repository',
+        { resourceType: 'goal', id }
+      )
+    );
 
     return goal;
   }
@@ -189,10 +193,10 @@ export class GoalsRepository extends BaseRepository {
    * Get a goal by ID
    */
   async get(id: string): Promise<Goal | null> {
-    const row = await this.queryOne<GoalRow>(
-      'SELECT * FROM goals WHERE id = $1 AND user_id = $2',
-      [id, this.userId]
-    );
+    const row = await this.queryOne<GoalRow>('SELECT * FROM goals WHERE id = $1 AND user_id = $2', [
+      id,
+      this.userId,
+    ]);
     return row ? this.mapGoal(row) : null;
   }
 
@@ -250,10 +254,14 @@ export class GoalsRepository extends BaseRepository {
     const updated = await this.get(id);
 
     if (updated) {
-      getEventBus().emit(createEvent<ResourceUpdatedData>(
-        EventTypes.RESOURCE_UPDATED, 'resource', 'goals-repository',
-        { resourceType: 'goal', id, changes: input },
-      ));
+      getEventBus().emit(
+        createEvent<ResourceUpdatedData>(
+          EventTypes.RESOURCE_UPDATED,
+          'resource',
+          'goals-repository',
+          { resourceType: 'goal', id, changes: input }
+        )
+      );
     }
 
     return updated;
@@ -263,17 +271,21 @@ export class GoalsRepository extends BaseRepository {
    * Delete a goal
    */
   async delete(id: string): Promise<boolean> {
-    const result = await this.execute(
-      'DELETE FROM goals WHERE id = $1 AND user_id = $2',
-      [id, this.userId]
-    );
+    const result = await this.execute('DELETE FROM goals WHERE id = $1 AND user_id = $2', [
+      id,
+      this.userId,
+    ]);
     const deleted = result.changes > 0;
 
     if (deleted) {
-      getEventBus().emit(createEvent<ResourceDeletedData>(
-        EventTypes.RESOURCE_DELETED, 'resource', 'goals-repository',
-        { resourceType: 'goal', id },
-      ));
+      getEventBus().emit(
+        createEvent<ResourceDeletedData>(
+          EventTypes.RESOURCE_DELETED,
+          'resource',
+          'goals-repository',
+          { resourceType: 'goal', id }
+        )
+      );
     }
 
     return deleted;

@@ -28,26 +28,19 @@ export interface IHookBus {
   tap<K extends HookType>(
     hook: K,
     handler: HookHandler<HookPayload<K>>,
-    priority?: number,
+    priority?: number
   ): Unsubscribe;
 
   /**
    * Run all handlers for a hook sequentially in priority order.
    * Returns the (possibly modified) context after all handlers have run.
    */
-  call<K extends HookType>(
-    hook: K,
-    data: HookPayload<K>,
-  ): Promise<HookContext<HookPayload<K>>>;
+  call<K extends HookType>(hook: K, data: HookPayload<K>): Promise<HookContext<HookPayload<K>>>;
 
   /**
    * Register a handler for a dynamic/untyped hook name (escape hatch).
    */
-  tapAny(
-    hook: string,
-    handler: HookHandler,
-    priority?: number,
-  ): Unsubscribe;
+  tapAny(hook: string, handler: HookHandler, priority?: number): Unsubscribe;
 
   /**
    * Call a dynamic/untyped hook.
@@ -84,23 +77,19 @@ export class HookBus implements IHookBus {
   tap<K extends HookType>(
     hook: K,
     handler: HookHandler<HookPayload<K>>,
-    priority: number = DEFAULT_PRIORITY,
+    priority: number = DEFAULT_PRIORITY
   ): Unsubscribe {
     return this.addTap(hook, handler as HookHandler, priority);
   }
 
   async call<K extends HookType>(
     hook: K,
-    data: HookPayload<K>,
+    data: HookPayload<K>
   ): Promise<HookContext<HookPayload<K>>> {
     return this.execute(hook, data) as Promise<HookContext<HookPayload<K>>>;
   }
 
-  tapAny(
-    hook: string,
-    handler: HookHandler,
-    priority: number = DEFAULT_PRIORITY,
-  ): Unsubscribe {
+  tapAny(hook: string, handler: HookHandler, priority: number = DEFAULT_PRIORITY): Unsubscribe {
     return this.addTap(hook, handler, priority);
   }
 
@@ -123,7 +112,7 @@ export class HookBus implements IHookBus {
     if (entries.length >= MAX_TAPS_PER_HOOK) {
       log.warn(
         `Max taps (${MAX_TAPS_PER_HOOK}) reached for "${hook}". ` +
-        `Handler not added. Possible memory leak.`,
+          `Handler not added. Possible memory leak.`
       );
       return () => {};
     }

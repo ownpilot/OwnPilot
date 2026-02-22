@@ -192,7 +192,7 @@ describe('PromptComposer', () => {
           userProfile: makeProfile(),
           timeContext: getTimeContext(),
           capabilities: { codeExecution: true },
-        }),
+        })
       );
       expect(result).not.toContain('About the User');
       expect(result).not.toContain('Available Tools');
@@ -220,9 +220,7 @@ describe('PromptComposer', () => {
     // --- User profile ---
 
     it('should include user profile section with name', () => {
-      const result = composer.compose(
-        baseContext({ userProfile: makeProfile({ name: 'Bob' }) }),
-      );
+      const result = composer.compose(baseContext({ userProfile: makeProfile({ name: 'Bob' }) }));
       expect(result).toContain('## About the User');
       expect(result).toContain('Name: Bob');
     });
@@ -236,7 +234,7 @@ describe('PromptComposer', () => {
               { key: 'Pet', value: 'Cat', confidence: 0.5 }, // below 0.7 threshold
             ],
           }),
-        }),
+        })
       );
       expect(result).toContain('Job: Engineer');
       expect(result).not.toContain('Pet: Cat');
@@ -253,7 +251,7 @@ describe('PromptComposer', () => {
               timezone: 'UTC',
             },
           }),
-        }),
+        })
       );
       expect(result).toContain('Prefers casual communication');
       expect(result).toContain('Prefers concise responses');
@@ -270,7 +268,7 @@ describe('PromptComposer', () => {
               verbosity: 'mixed',
             },
           }),
-        }),
+        })
       );
       expect(result).not.toContain('Prefers mixed communication');
       expect(result).not.toContain('Prefers mixed responses');
@@ -280,7 +278,7 @@ describe('PromptComposer', () => {
       const result = composer.compose(
         baseContext({
           userProfile: makeProfile({ interests: ['Rust', 'TypeScript', 'Go'] }),
-        }),
+        })
       );
       expect(result).toContain('Interests: Rust, TypeScript, Go');
     });
@@ -289,7 +287,7 @@ describe('PromptComposer', () => {
       const result = composer.compose(
         baseContext({
           userProfile: makeProfile({ goals: ['Learn Rust', 'Ship v2'] }),
-        }),
+        })
       );
       expect(result).toContain('Current goals: Learn Rust; Ship v2');
     });
@@ -298,7 +296,7 @@ describe('PromptComposer', () => {
       const result = composer.compose(
         baseContext({
           userProfile: makeProfile({ name: undefined, facts: [], interests: [], goals: [] }),
-        }),
+        })
       );
       // No lines produced => section omitted
       expect(result).not.toContain('## About the User');
@@ -308,7 +306,7 @@ describe('PromptComposer', () => {
 
     it('should include custom instructions section', () => {
       const result = composer.compose(
-        baseContext({ customInstructions: ['Always use metric units', 'Be brief'] }),
+        baseContext({ customInstructions: ['Always use metric units', 'Be brief'] })
       );
       expect(result).toContain('## Custom Instructions');
       expect(result).toContain('- Always use metric units');
@@ -472,9 +470,7 @@ describe('PromptComposer', () => {
     // --- Section dividers ---
 
     it('should separate sections with --- divider', () => {
-      const result = composer.compose(
-        baseContext({ customInstructions: ['Do stuff'] }),
-      );
+      const result = composer.compose(baseContext({ customInstructions: ['Do stuff'] }));
       expect(result).toContain('\n\n---\n\n');
     });
   });
@@ -497,7 +493,7 @@ describe('PromptComposer', () => {
         baseContext({
           customInstructions: [longInstruction],
           conversationContext: { messageCount: 1 },
-        }),
+        })
       );
       // Base prompt (28 chars) is always kept; long section exceeds budget
       expect(result.length).toBeLessThanOrEqual(300);
@@ -509,7 +505,7 @@ describe('PromptComposer', () => {
       const result = composer.compose(
         baseContext({
           customInstructions: ['Some extra data'],
-        }),
+        })
       );
       // Even with a very small limit the base prompt is always present
       expect(result).toContain('You are a helpful assistant.');

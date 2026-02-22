@@ -9,7 +9,15 @@ import { Hono } from 'hono';
 import { localProvidersRepo } from '../db/repositories/local-providers.js';
 import { discoverModels } from '../services/local-discovery.js';
 import { getLog } from '../services/log.js';
-import { getUserId, apiResponse, apiError, ERROR_CODES, zodValidationError, getErrorMessage, notFoundError } from './helpers.js';
+import {
+  getUserId,
+  apiResponse,
+  apiError,
+  ERROR_CODES,
+  zodValidationError,
+  getErrorMessage,
+  notFoundError,
+} from './helpers.js';
 import { wsGateway } from '../ws/server.js';
 
 const log = getLog('LocalProviders');
@@ -41,11 +49,46 @@ export const localProvidersRoutes = new Hono();
 // =============================================================================
 
 const LOCAL_PROVIDER_TEMPLATES = [
-  { id: 'lmstudio', name: 'LM Studio', providerType: 'lmstudio' as const, baseUrl: 'http://localhost:1234', discoveryEndpoint: '/v1/models', description: 'Run models locally with LM Studio' },
-  { id: 'ollama', name: 'Ollama', providerType: 'ollama' as const, baseUrl: 'http://localhost:11434', discoveryEndpoint: '/api/tags', description: 'Run Llama, Gemma, Qwen and more locally' },
-  { id: 'localai', name: 'LocalAI', providerType: 'localai' as const, baseUrl: 'http://localhost:8080', discoveryEndpoint: '/v1/models', description: 'OpenAI-compatible local AI server' },
-  { id: 'vllm', name: 'vLLM', providerType: 'vllm' as const, baseUrl: 'http://localhost:8000', discoveryEndpoint: '/v1/models', description: 'High-throughput LLM serving engine' },
-  { id: 'custom', name: 'Custom Local Server', providerType: 'custom' as const, baseUrl: 'http://localhost:8080', discoveryEndpoint: '/v1/models', description: 'Any OpenAI-compatible local server' },
+  {
+    id: 'lmstudio',
+    name: 'LM Studio',
+    providerType: 'lmstudio' as const,
+    baseUrl: 'http://localhost:1234',
+    discoveryEndpoint: '/v1/models',
+    description: 'Run models locally with LM Studio',
+  },
+  {
+    id: 'ollama',
+    name: 'Ollama',
+    providerType: 'ollama' as const,
+    baseUrl: 'http://localhost:11434',
+    discoveryEndpoint: '/api/tags',
+    description: 'Run Llama, Gemma, Qwen and more locally',
+  },
+  {
+    id: 'localai',
+    name: 'LocalAI',
+    providerType: 'localai' as const,
+    baseUrl: 'http://localhost:8080',
+    discoveryEndpoint: '/v1/models',
+    description: 'OpenAI-compatible local AI server',
+  },
+  {
+    id: 'vllm',
+    name: 'vLLM',
+    providerType: 'vllm' as const,
+    baseUrl: 'http://localhost:8000',
+    discoveryEndpoint: '/v1/models',
+    description: 'High-throughput LLM serving engine',
+  },
+  {
+    id: 'custom',
+    name: 'Custom Local Server',
+    providerType: 'custom' as const,
+    baseUrl: 'http://localhost:8080',
+    discoveryEndpoint: '/v1/models',
+    description: 'Any OpenAI-compatible local server',
+  },
 ];
 
 // =============================================================================
@@ -81,7 +124,14 @@ localProvidersRoutes.get('/', async (c) => {
     return apiResponse(c, providersWithCounts);
   } catch (error) {
     log.error('Failed to list local providers:', error);
-    return apiError(c, { code: ERROR_CODES.LIST_FAILED, message: getErrorMessage(error, 'Failed to list local providers') }, 500);
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.LIST_FAILED,
+        message: getErrorMessage(error, 'Failed to list local providers'),
+      },
+      500
+    );
   }
 });
 
@@ -103,7 +153,11 @@ localProvidersRoutes.post('/', async (c) => {
     const { name, providerType, baseUrl, apiKey, discoveryEndpoint } = parsed.data;
 
     if (!isValidBaseUrl(baseUrl)) {
-      return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'baseUrl must be a valid http/https URL' }, 400);
+      return apiError(
+        c,
+        { code: ERROR_CODES.INVALID_INPUT, message: 'baseUrl must be a valid http/https URL' },
+        400
+      );
     }
 
     const provider = await localProvidersRepo.createProvider({
@@ -115,11 +169,22 @@ localProvidersRoutes.post('/', async (c) => {
       discoveryEndpoint,
     });
 
-    wsGateway.broadcast('data:changed', { entity: 'local_provider', action: 'created', id: provider.id });
+    wsGateway.broadcast('data:changed', {
+      entity: 'local_provider',
+      action: 'created',
+      id: provider.id,
+    });
     return apiResponse(c, provider, 201);
   } catch (error) {
     log.error('Failed to create local provider:', error);
-    return apiError(c, { code: ERROR_CODES.CREATE_FAILED, message: getErrorMessage(error, 'Failed to create local provider') }, 500);
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.CREATE_FAILED,
+        message: getErrorMessage(error, 'Failed to create local provider'),
+      },
+      500
+    );
   }
 });
 
@@ -149,7 +214,14 @@ localProvidersRoutes.get('/:id', async (c) => {
     });
   } catch (error) {
     log.error('Failed to get local provider:', error);
-    return apiError(c, { code: ERROR_CODES.FETCH_FAILED, message: getErrorMessage(error, 'Failed to get local provider') }, 500);
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.FETCH_FAILED,
+        message: getErrorMessage(error, 'Failed to get local provider'),
+      },
+      500
+    );
   }
 });
 
@@ -177,7 +249,11 @@ localProvidersRoutes.put('/:id', async (c) => {
     const { name, baseUrl, apiKey, discoveryEndpoint, isEnabled } = parsed.data;
 
     if (baseUrl !== undefined && !isValidBaseUrl(baseUrl)) {
-      return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'baseUrl must be a valid http/https URL' }, 400);
+      return apiError(
+        c,
+        { code: ERROR_CODES.INVALID_INPUT, message: 'baseUrl must be a valid http/https URL' },
+        400
+      );
     }
 
     const updated = await localProvidersRepo.updateProvider(id, {
@@ -196,7 +272,14 @@ localProvidersRoutes.put('/:id', async (c) => {
     return apiResponse(c, updated);
   } catch (error) {
     log.error('Failed to update local provider:', error);
-    return apiError(c, { code: ERROR_CODES.UPDATE_FAILED, message: getErrorMessage(error, 'Failed to update local provider') }, 500);
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.UPDATE_FAILED,
+        message: getErrorMessage(error, 'Failed to update local provider'),
+      },
+      500
+    );
   }
 });
 
@@ -220,10 +303,17 @@ localProvidersRoutes.delete('/:id', async (c) => {
     }
 
     wsGateway.broadcast('data:changed', { entity: 'local_provider', action: 'deleted', id });
-    return apiResponse(c, { message: 'Local provider deleted', });
+    return apiResponse(c, { message: 'Local provider deleted' });
   } catch (error) {
     log.error('Failed to delete local provider:', error);
-    return apiError(c, { code: ERROR_CODES.DELETE_FAILED, message: getErrorMessage(error, 'Failed to delete local provider') }, 500);
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.DELETE_FAILED,
+        message: getErrorMessage(error, 'Failed to delete local provider'),
+      },
+      500
+    );
   }
 });
 
@@ -260,7 +350,14 @@ localProvidersRoutes.patch('/:id/toggle', async (c) => {
     return apiResponse(c, updated);
   } catch (error) {
     log.error('Failed to toggle local provider:', error);
-    return apiError(c, { code: ERROR_CODES.TOGGLE_FAILED, message: getErrorMessage(error, 'Failed to toggle local provider') }, 500);
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.TOGGLE_FAILED,
+        message: getErrorMessage(error, 'Failed to toggle local provider'),
+      },
+      500
+    );
   }
 });
 
@@ -280,10 +377,17 @@ localProvidersRoutes.patch('/:id/set-default', async (c) => {
     await localProvidersRepo.setDefault(userId, id);
 
     wsGateway.broadcast('data:changed', { entity: 'local_provider', action: 'updated', id });
-    return apiResponse(c, { message: 'Default local provider updated', });
+    return apiResponse(c, { message: 'Default local provider updated' });
   } catch (error) {
     log.error('Failed to set default local provider:', error);
-    return apiError(c, { code: ERROR_CODES.UPDATE_FAILED, message: getErrorMessage(error, 'Failed to set default local provider') }, 500);
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.UPDATE_FAILED,
+        message: getErrorMessage(error, 'Failed to set default local provider'),
+      },
+      500
+    );
   }
 });
 
@@ -349,7 +453,14 @@ localProvidersRoutes.post('/:id/discover', async (c) => {
     });
   } catch (error) {
     log.error('Failed to discover models:', error);
-    return apiError(c, { code: ERROR_CODES.FETCH_FAILED, message: getErrorMessage(error, 'Failed to discover models') }, 500);
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.FETCH_FAILED,
+        message: getErrorMessage(error, 'Failed to discover models'),
+      },
+      500
+    );
   }
 });
 
@@ -366,7 +477,11 @@ localProvidersRoutes.get('/:id/models', async (c) => {
     return apiResponse(c, models);
   } catch (error) {
     log.error('Failed to list local provider models:', error);
-    return apiError(c, { code: ERROR_CODES.LIST_FAILED, message: getErrorMessage(error, 'Failed to list models') }, 500);
+    return apiError(
+      c,
+      { code: ERROR_CODES.LIST_FAILED, message: getErrorMessage(error, 'Failed to list models') },
+      500
+    );
   }
 });
 
@@ -404,10 +519,16 @@ localProvidersRoutes.patch('/:id/models/:modelId/toggle', async (c) => {
     await localProvidersRepo.toggleModel(model.id, enabled);
 
     wsGateway.broadcast('data:changed', { entity: 'local_provider', action: 'updated', id });
-    return apiResponse(c, { message: `Model ${enabled ? 'enabled' : 'disabled'}`,
-      enabled, });
+    return apiResponse(c, { message: `Model ${enabled ? 'enabled' : 'disabled'}`, enabled });
   } catch (error) {
     log.error('Failed to toggle model:', error);
-    return apiError(c, { code: ERROR_CODES.TOGGLE_FAILED, message: getErrorMessage(error, 'Failed to toggle model') }, 500);
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.TOGGLE_FAILED,
+        message: getErrorMessage(error, 'Failed to toggle model'),
+      },
+      500
+    );
   }
 });

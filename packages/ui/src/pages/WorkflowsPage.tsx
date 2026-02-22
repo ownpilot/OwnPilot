@@ -3,7 +3,17 @@ import { useNavigate } from 'react-router-dom';
 import { useGateway } from '../hooks/useWebSocket';
 import { workflowsApi } from '../api';
 import type { Workflow, WorkflowLog } from '../api';
-import { GitBranch, Plus, Trash2, Play, Clock, Activity, CheckCircle2, XCircle, AlertCircle } from '../components/icons';
+import {
+  GitBranch,
+  Plus,
+  Trash2,
+  Play,
+  Clock,
+  Activity,
+  CheckCircle2,
+  XCircle,
+  AlertCircle,
+} from '../components/icons';
 import { useDialog } from '../components/ConfirmDialog';
 import { useToast } from '../components/ToastProvider';
 import { SkeletonCard } from '../components/Skeleton';
@@ -87,33 +97,48 @@ export function WorkflowsPage() {
     }
   }, [navigate, toast]);
 
-  const handleDelete = useCallback(async (id: string, name: string) => {
-    if (!await confirm({ message: `Delete "${name}"? Execution logs will be preserved.`, variant: 'danger' })) return;
-    try {
-      await workflowsApi.delete(id);
-      toast.success('Workflow deleted');
-      fetchWorkflows();
-    } catch {
-      // API client handles errors
-    }
-  }, [confirm, toast, fetchWorkflows]);
+  const handleDelete = useCallback(
+    async (id: string, name: string) => {
+      if (
+        !(await confirm({
+          message: `Delete "${name}"? Execution logs will be preserved.`,
+          variant: 'danger',
+        }))
+      )
+        return;
+      try {
+        await workflowsApi.delete(id);
+        toast.success('Workflow deleted');
+        fetchWorkflows();
+      } catch {
+        // API client handles errors
+      }
+    },
+    [confirm, toast, fetchWorkflows]
+  );
 
-  const handleToggleStatus = useCallback(async (id: string, currentStatus: string) => {
-    const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
-    try {
-      await workflowsApi.update(id, { status: newStatus });
-      toast.success(newStatus === 'active' ? 'Workflow activated' : 'Workflow deactivated');
-      fetchWorkflows();
-    } catch {
-      // API client handles errors
-    }
-  }, [toast, fetchWorkflows]);
+  const handleToggleStatus = useCallback(
+    async (id: string, currentStatus: string) => {
+      const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
+      try {
+        await workflowsApi.update(id, { status: newStatus });
+        toast.success(newStatus === 'active' ? 'Workflow activated' : 'Workflow deactivated');
+        fetchWorkflows();
+      } catch {
+        // API client handles errors
+      }
+    },
+    [toast, fetchWorkflows]
+  );
 
-  const handleExecute = useCallback(async (id: string) => {
-    navigate(`/workflows/${id}?execute=true`);
-  }, [navigate]);
+  const handleExecute = useCallback(
+    async (id: string) => {
+      navigate(`/workflows/${id}?execute=true`);
+    },
+    [navigate]
+  );
 
-  const activeCount = workflows.filter(w => w.status === 'active').length;
+  const activeCount = workflows.filter((w) => w.status === 'active').length;
 
   return (
     <div className="flex flex-col h-full">
@@ -149,7 +174,10 @@ export function WorkflowsPage() {
           Workflows
         </button>
         <button
-          onClick={() => { setActiveTab('logs'); fetchRecentLogs(); }}
+          onClick={() => {
+            setActiveTab('logs');
+            fetchRecentLogs();
+          }}
           className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors flex items-center gap-1.5 ${
             activeTab === 'logs'
               ? 'border-primary text-primary'
@@ -187,21 +215,23 @@ export function WorkflowsPage() {
               ))}
             </div>
           )
+        ) : // Execution Logs tab
+        recentLogs.length === 0 ? (
+          <EmptyState
+            icon={Activity}
+            title="No execution logs"
+            description="Workflow execution history will appear here."
+          />
         ) : (
-          // Execution Logs tab
-          recentLogs.length === 0 ? (
-            <EmptyState
-              icon={Activity}
-              title="No execution logs"
-              description="Workflow execution history will appear here."
-            />
-          ) : (
-            <div className="space-y-2">
-              {recentLogs.map((log) => (
-                <LogEntry key={log.id} log={log} onNavigate={(wfId) => navigate(`/workflows/${wfId}`)} />
-              ))}
-            </div>
-          )
+          <div className="space-y-2">
+            {recentLogs.map((log) => (
+              <LogEntry
+                key={log.id}
+                log={log}
+                onNavigate={(wfId) => navigate(`/workflows/${wfId}`)}
+              />
+            ))}
+          </div>
         )}
       </div>
     </div>
@@ -239,7 +269,9 @@ function WorkflowCard({
             </p>
           )}
         </div>
-        <span className={`ml-2 px-2 py-0.5 text-xs rounded-full whitespace-nowrap ${statusColors[workflow.status]}`}>
+        <span
+          className={`ml-2 px-2 py-0.5 text-xs rounded-full whitespace-nowrap ${statusColors[workflow.status]}`}
+        >
           {workflow.status}
         </span>
       </div>
@@ -315,11 +347,11 @@ function LogEntry({ log, onNavigate }: { log: WorkflowLog; onNavigate: (id: stri
         >
           {log.workflowName ?? 'Deleted Workflow'}
         </span>
-        {log.error && (
-          <p className="text-xs text-error truncate mt-0.5">{log.error}</p>
-        )}
+        {log.error && <p className="text-xs text-error truncate mt-0.5">{log.error}</p>}
       </div>
-      <span className={`px-2 py-0.5 text-xs rounded-full whitespace-nowrap ${logStatusColors[log.status]}`}>
+      <span
+        className={`px-2 py-0.5 text-xs rounded-full whitespace-nowrap ${logStatusColors[log.status]}`}
+      >
         {log.status}
       </span>
       {log.durationMs != null && (

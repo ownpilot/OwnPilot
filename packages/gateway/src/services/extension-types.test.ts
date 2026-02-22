@@ -55,7 +55,7 @@ describe('validateManifest', () => {
   it('requires id field', () => {
     const result = validateManifest(validManifest({ id: '' }));
     expect(result.valid).toBe(false);
-    expect(result.errors.some(e => e.includes('id'))).toBe(true);
+    expect(result.errors.some((e) => e.includes('id'))).toBe(true);
   });
 
   it('validates id format (lowercase + hyphens)', () => {
@@ -87,7 +87,7 @@ describe('validateManifest', () => {
   it('requires at least one tool', () => {
     const result = validateManifest(validManifest({ tools: [] }));
     expect(result.valid).toBe(false);
-    expect(result.errors.some(e => e.includes('tools'))).toBe(true);
+    expect(result.errors.some((e) => e.includes('tools'))).toBe(true);
   });
 
   it('validates tool name format (lowercase + underscores)', () => {
@@ -111,7 +111,7 @@ describe('validateManifest', () => {
     });
     const result = validateManifest(manifest);
     expect(result.valid).toBe(false);
-    expect(result.errors.some(e => e.includes('duplicate'))).toBe(true);
+    expect(result.errors.some((e) => e.includes('duplicate'))).toBe(true);
   });
 
   it('requires tool description, parameters, and code', () => {
@@ -141,13 +141,11 @@ describe('validateManifest', () => {
 
   it('validates trigger type', () => {
     const manifest = validManifest({
-      triggers: [
-        { name: 'Bad', type: 'invalid', config: {}, action: {} },
-      ],
+      triggers: [{ name: 'Bad', type: 'invalid', config: {}, action: {} }],
     });
     const result = validateManifest(manifest);
     expect(result.valid).toBe(false);
-    expect(result.errors.some(e => e.includes('type'))).toBe(true);
+    expect(result.errors.some((e) => e.includes('type'))).toBe(true);
   });
 
   it('rejects triggers that are not arrays', () => {

@@ -56,7 +56,9 @@ export function ProfilePage() {
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'overview' | 'quick' | 'advanced' | 'instructions'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'quick' | 'advanced' | 'instructions'>(
+    'overview'
+  );
   const [quickSetup, setQuickSetup] = useState<QuickSetupData>(defaultQuickSetup);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -161,9 +163,7 @@ export function ProfilePage() {
   };
 
   if (isLoading) {
-    return (
-      <LoadingSpinner message="Loading profile..." />
-    );
+    return <LoadingSpinner message="Loading profile..." />;
   }
 
   return (
@@ -190,12 +190,7 @@ export function ProfilePage() {
           <label className="flex items-center gap-2 px-3 py-1.5 text-sm border border-border dark:border-dark-border rounded-lg hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary transition-colors cursor-pointer">
             <Upload className="w-4 h-4" />
             Import
-            <input
-              type="file"
-              accept=".json"
-              onChange={importProfile}
-              className="hidden"
-            />
+            <input type="file" accept=".json" onChange={importProfile} className="hidden" />
           </label>
         </div>
       </header>
@@ -204,10 +199,7 @@ export function ProfilePage() {
       {error && (
         <div className="mx-6 mt-4 p-3 bg-error/10 border border-error/20 rounded-lg text-error text-sm">
           {error}
-          <button
-            onClick={() => setError(null)}
-            className="ml-2 underline"
-          >
+          <button onClick={() => setError(null)} className="ml-2 underline">
             Dismiss
           </button>
         </div>
@@ -264,7 +256,9 @@ export function ProfilePage() {
               {/* Completeness */}
               <div className="mb-4">
                 <div className="flex justify-between text-sm mb-1">
-                  <span className="text-text-muted dark:text-dark-text-muted">Profile completeness</span>
+                  <span className="text-text-muted dark:text-dark-text-muted">
+                    Profile completeness
+                  </span>
                   <span className="text-text-primary dark:text-dark-text-primary font-medium">
                     {profile.meta?.completeness ?? 0}%
                   </span>
@@ -317,14 +311,20 @@ export function ProfilePage() {
             {/* Stats */}
             <div className="grid grid-cols-3 gap-4">
               <div className="p-4 bg-bg-secondary dark:bg-dark-bg-secondary rounded-xl border border-border dark:border-dark-border text-center">
-                <div className="text-2xl font-bold text-primary">{profile.meta?.totalEntries ?? 0}</div>
-                <div className="text-sm text-text-muted dark:text-dark-text-muted">Data entries</div>
+                <div className="text-2xl font-bold text-primary">
+                  {profile.meta?.totalEntries ?? 0}
+                </div>
+                <div className="text-sm text-text-muted dark:text-dark-text-muted">
+                  Data entries
+                </div>
               </div>
               <div className="p-4 bg-bg-secondary dark:bg-dark-bg-secondary rounded-xl border border-border dark:border-dark-border text-center">
                 <div className="text-2xl font-bold text-success">
                   {profile.aiPreferences?.customInstructions?.length ?? 0}
                 </div>
-                <div className="text-sm text-text-muted dark:text-dark-text-muted">Instructions</div>
+                <div className="text-sm text-text-muted dark:text-dark-text-muted">
+                  Instructions
+                </div>
               </div>
               <div className="p-4 bg-bg-secondary dark:bg-dark-bg-secondary rounded-xl border border-border dark:border-dark-border text-center">
                 <div className="text-2xl font-bold text-warning">
@@ -449,7 +449,12 @@ export function ProfilePage() {
                 </label>
                 <select
                   value={quickSetup.autonomyLevel}
-                  onChange={(e) => setQuickSetup({ ...quickSetup, autonomyLevel: e.target.value as typeof quickSetup.autonomyLevel })}
+                  onChange={(e) =>
+                    setQuickSetup({
+                      ...quickSetup,
+                      autonomyLevel: e.target.value as typeof quickSetup.autonomyLevel,
+                    })
+                  }
                   className="w-full px-3 py-2 bg-bg-tertiary dark:bg-dark-bg-tertiary border border-border dark:border-dark-border rounded-lg text-text-primary dark:text-dark-text-primary focus:outline-none focus:ring-2 focus:ring-primary/50"
                 >
                   {Object.entries(AUTONOMY_DESCRIPTIONS).map(([level, desc]) => (
@@ -499,7 +504,8 @@ export function ProfilePage() {
                     </span>
                   </div>
                 ))}
-                {(!profile.aiPreferences?.customInstructions || profile.aiPreferences.customInstructions.length === 0) && (
+                {(!profile.aiPreferences?.customInstructions ||
+                  profile.aiPreferences.customInstructions.length === 0) && (
                   <p className="text-sm text-text-muted dark:text-dark-text-muted italic">
                     No custom instructions yet
                   </p>
@@ -545,7 +551,8 @@ export function ProfilePage() {
                     </span>
                   </div>
                 ))}
-                {(!profile.aiPreferences?.boundaries || profile.aiPreferences.boundaries.length === 0) && (
+                {(!profile.aiPreferences?.boundaries ||
+                  profile.aiPreferences.boundaries.length === 0) && (
                   <p className="text-sm text-text-muted dark:text-dark-text-muted italic">
                     No boundaries set
                   </p>
@@ -654,11 +661,13 @@ export function ProfilePage() {
                     <span className="text-text-primary dark:text-dark-text-primary">{goal}</span>
                   </div>
                 ))}
-                {(!profile.goals?.shortTerm?.length && !profile.goals?.mediumTerm?.length && !profile.goals?.longTerm?.length) && (
-                  <span className="text-sm text-text-muted dark:text-dark-text-muted italic">
-                    No goals set
-                  </span>
-                )}
+                {!profile.goals?.shortTerm?.length &&
+                  !profile.goals?.mediumTerm?.length &&
+                  !profile.goals?.longTerm?.length && (
+                    <span className="text-sm text-text-muted dark:text-dark-text-muted italic">
+                      No goals set
+                    </span>
+                  )}
               </div>
             </div>
 
@@ -670,7 +679,9 @@ export function ProfilePage() {
               <div className="space-y-2">
                 {profile.lifestyle?.eatingHabits?.favoriteFoods?.length ? (
                   <div>
-                    <span className="text-xs text-text-muted dark:text-dark-text-muted">Favorites:</span>
+                    <span className="text-xs text-text-muted dark:text-dark-text-muted">
+                      Favorites:
+                    </span>
                     <span className="ml-2 text-sm text-text-primary dark:text-dark-text-primary">
                       {profile.lifestyle.eatingHabits.favoriteFoods.join(', ')}
                     </span>
@@ -678,7 +689,9 @@ export function ProfilePage() {
                 ) : null}
                 {profile.lifestyle?.eatingHabits?.dietaryRestrictions?.length ? (
                   <div>
-                    <span className="text-xs text-text-muted dark:text-dark-text-muted">Restrictions:</span>
+                    <span className="text-xs text-text-muted dark:text-dark-text-muted">
+                      Restrictions:
+                    </span>
                     <span className="ml-2 text-sm text-warning">
                       {profile.lifestyle.eatingHabits.dietaryRestrictions.join(', ')}
                     </span>
@@ -686,19 +699,21 @@ export function ProfilePage() {
                 ) : null}
                 {profile.lifestyle?.eatingHabits?.allergies?.length ? (
                   <div>
-                    <span className="text-xs text-text-muted dark:text-dark-text-muted">Allergies:</span>
+                    <span className="text-xs text-text-muted dark:text-dark-text-muted">
+                      Allergies:
+                    </span>
                     <span className="ml-2 text-sm text-error">
                       {profile.lifestyle.eatingHabits.allergies.join(', ')}
                     </span>
                   </div>
                 ) : null}
-                {(!profile.lifestyle?.eatingHabits?.favoriteFoods?.length &&
+                {!profile.lifestyle?.eatingHabits?.favoriteFoods?.length &&
                   !profile.lifestyle?.eatingHabits?.dietaryRestrictions?.length &&
-                  !profile.lifestyle?.eatingHabits?.allergies?.length) && (
-                  <span className="text-sm text-text-muted dark:text-dark-text-muted italic">
-                    No food preferences set
-                  </span>
-                )}
+                  !profile.lifestyle?.eatingHabits?.allergies?.length && (
+                    <span className="text-sm text-text-muted dark:text-dark-text-muted italic">
+                      No food preferences set
+                    </span>
+                  )}
               </div>
             </div>
           </div>

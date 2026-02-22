@@ -27,19 +27,27 @@ const mockRegistry = {
 };
 
 vi.mock('@modelcontextprotocol/sdk/client/index.js', () => ({
-  Client: vi.fn(function () { return mockClient; }),
+  Client: vi.fn(function () {
+    return mockClient;
+  }),
 }));
 
 vi.mock('@modelcontextprotocol/sdk/client/stdio.js', () => ({
-  StdioClientTransport: vi.fn(function () { return mockTransport; }),
+  StdioClientTransport: vi.fn(function () {
+    return mockTransport;
+  }),
 }));
 
 vi.mock('@modelcontextprotocol/sdk/client/sse.js', () => ({
-  SSEClientTransport: vi.fn(function () { return mockTransport; }),
+  SSEClientTransport: vi.fn(function () {
+    return mockTransport;
+  }),
 }));
 
 vi.mock('@modelcontextprotocol/sdk/client/streamableHttp.js', () => ({
-  StreamableHTTPClientTransport: vi.fn(function () { return mockTransport; }),
+  StreamableHTTPClientTransport: vi.fn(function () {
+    return mockTransport;
+  }),
 }));
 
 vi.mock('../db/repositories/mcp-servers.js', () => ({
@@ -91,7 +99,7 @@ function makeServer(overrides: Partial<McpServerRecord> = {}): McpServerRecord {
 }
 
 function makeMcpTools(names: string[]) {
-  return names.map(name => ({
+  return names.map((name) => ({
     name,
     description: `Tool ${name}`,
     inputSchema: { type: 'object', properties: {} },
@@ -199,7 +207,10 @@ describe('McpClientService', () => {
 
       await mcpClientService.connect(server);
 
-      const toolsMap = mockRegistry.registerMcpTools.mock.calls[0]![1] as Map<string, Record<string, unknown>>;
+      const toolsMap = mockRegistry.registerMcpTools.mock.calls[0]![1] as Map<
+        string,
+        Record<string, unknown>
+      >;
       const entry = toolsMap.get('no_desc');
       expect(entry.definition.description).toBe('Tool from MCP server "test-server"');
     });
@@ -211,7 +222,10 @@ describe('McpClientService', () => {
 
       await mcpClientService.connect(server);
 
-      const toolsMap = mockRegistry.registerMcpTools.mock.calls[0]![1] as Map<string, Record<string, unknown>>;
+      const toolsMap = mockRegistry.registerMcpTools.mock.calls[0]![1] as Map<
+        string,
+        Record<string, unknown>
+      >;
       const entry = toolsMap.get('no_schema');
       expect(entry.definition.parameters).toEqual({ type: 'object', properties: {} });
     });
@@ -353,7 +367,7 @@ describe('McpClientService', () => {
 
       // updateStatus called for connect (connecting + connected) but NOT for disconnect
       const disconnectCalls = mockRepo.updateStatus.mock.calls.filter(
-        (call: unknown[]) => call[1] === 'disconnected',
+        (call: unknown[]) => call[1] === 'disconnected'
       );
       expect(disconnectCalls).toHaveLength(0);
     });
@@ -451,9 +465,9 @@ describe('McpClientService', () => {
 
   describe('callTool()', () => {
     it('throws if server not connected', async () => {
-      await expect(
-        mcpClientService.callTool('nonexistent', 'some_tool', {}),
-      ).rejects.toThrow('MCP server "nonexistent" is not connected');
+      await expect(mcpClientService.callTool('nonexistent', 'some_tool', {})).rejects.toThrow(
+        'MCP server "nonexistent" is not connected'
+      );
     });
 
     it('calls client.callTool with correct arguments', async () => {
@@ -658,9 +672,7 @@ describe('McpClientService', () => {
 
   describe('createTransport (via connect)', () => {
     it('creates StdioClientTransport for stdio type', async () => {
-      const { StdioClientTransport } = await import(
-        '@modelcontextprotocol/sdk/client/stdio.js'
-      );
+      const { StdioClientTransport } = await import('@modelcontextprotocol/sdk/client/stdio.js');
       mockClient.listTools.mockResolvedValue({ tools: [] });
       const server = makeServer({
         transport: 'stdio',
@@ -676,17 +688,17 @@ describe('McpClientService', () => {
           command: 'npx',
           args: ['-y', 'mcp-server'],
           stderr: 'pipe',
-        }),
+        })
       );
       // Verify env includes both process.env and server.env
-      const callArgs = vi.mocked(StdioClientTransport).mock.calls[0]![0] as { env: Record<string, string> };
+      const callArgs = vi.mocked(StdioClientTransport).mock.calls[0]![0] as {
+        env: Record<string, string>;
+      };
       expect(callArgs.env.API_KEY).toBe('test123');
     });
 
     it('creates SSEClientTransport for sse type', async () => {
-      const { SSEClientTransport } = await import(
-        '@modelcontextprotocol/sdk/client/sse.js'
-      );
+      const { SSEClientTransport } = await import('@modelcontextprotocol/sdk/client/sse.js');
       mockClient.listTools.mockResolvedValue({ tools: [] });
       const server = makeServer({
         transport: 'sse',
@@ -700,16 +712,15 @@ describe('McpClientService', () => {
         expect.any(URL),
         expect.objectContaining({
           requestInit: { headers: { Authorization: 'Bearer token' } },
-        }),
+        })
       );
       const urlArg = vi.mocked(SSEClientTransport).mock.calls[0]![0] as URL;
       expect(urlArg.href).toBe('https://example.com/sse');
     });
 
     it('creates StreamableHTTPClientTransport for streamable-http type', async () => {
-      const { StreamableHTTPClientTransport } = await import(
-        '@modelcontextprotocol/sdk/client/streamableHttp.js'
-      );
+      const { StreamableHTTPClientTransport } =
+        await import('@modelcontextprotocol/sdk/client/streamableHttp.js');
       mockClient.listTools.mockResolvedValue({ tools: [] });
       const server = makeServer({
         transport: 'streamable-http',
@@ -723,7 +734,7 @@ describe('McpClientService', () => {
         expect.any(URL),
         expect.objectContaining({
           requestInit: { headers: { 'X-Api-Key': 'secret' } },
-        }),
+        })
       );
       const urlArg = vi.mocked(StreamableHTTPClientTransport).mock.calls[0]![0] as URL;
       expect(urlArg.href).toBe('https://example.com/mcp');
@@ -733,7 +744,7 @@ describe('McpClientService', () => {
       const server = makeServer({ transport: 'stdio', command: undefined });
 
       await expect(mcpClientService.connect(server)).rejects.toThrow(
-        'stdio transport requires a command',
+        'stdio transport requires a command'
       );
     });
 
@@ -741,7 +752,7 @@ describe('McpClientService', () => {
       const server = makeServer({ transport: 'sse', url: undefined });
 
       await expect(mcpClientService.connect(server)).rejects.toThrow(
-        'SSE transport requires a URL',
+        'SSE transport requires a URL'
       );
     });
 
@@ -749,16 +760,14 @@ describe('McpClientService', () => {
       const server = makeServer({ transport: 'streamable-http', url: undefined });
 
       await expect(mcpClientService.connect(server)).rejects.toThrow(
-        'Streamable HTTP transport requires a URL',
+        'Streamable HTTP transport requires a URL'
       );
     });
 
     it('unsupported transport type throws', async () => {
       const server = makeServer({ transport: 'grpc' as unknown as McpServerRecord['transport'] });
 
-      await expect(mcpClientService.connect(server)).rejects.toThrow(
-        'Unsupported transport: grpc',
-      );
+      await expect(mcpClientService.connect(server)).rejects.toThrow('Unsupported transport: grpc');
     });
   });
 
@@ -773,7 +782,10 @@ describe('McpClientService', () => {
       const server = makeServer();
       await mcpClientService.connect(server);
 
-      const toolsMap = mockRegistry.registerMcpTools.mock.calls[0]![1] as Map<string, Record<string, unknown>>;
+      const toolsMap = mockRegistry.registerMcpTools.mock.calls[0]![1] as Map<
+        string,
+        Record<string, unknown>
+      >;
       const executor = toolsMap.get('echo').executor;
 
       mockClient.callTool.mockResolvedValue({
@@ -791,7 +803,10 @@ describe('McpClientService', () => {
       const server = makeServer();
       await mcpClientService.connect(server);
 
-      const toolsMap = mockRegistry.registerMcpTools.mock.calls[0]![1] as Map<string, Record<string, unknown>>;
+      const toolsMap = mockRegistry.registerMcpTools.mock.calls[0]![1] as Map<
+        string,
+        Record<string, unknown>
+      >;
       const executor = toolsMap.get('data').executor;
 
       mockClient.callTool.mockResolvedValue({ someField: 42 });
@@ -807,7 +822,10 @@ describe('McpClientService', () => {
       const server = makeServer();
       await mcpClientService.connect(server);
 
-      const toolsMap = mockRegistry.registerMcpTools.mock.calls[0]![1] as Map<string, Record<string, unknown>>;
+      const toolsMap = mockRegistry.registerMcpTools.mock.calls[0]![1] as Map<
+        string,
+        Record<string, unknown>
+      >;
       const executor = toolsMap.get('fail').executor;
 
       // callTool will throw because server is disconnected after we manipulate
@@ -826,7 +844,10 @@ describe('McpClientService', () => {
       const server = makeServer();
       await mcpClientService.connect(server);
 
-      const toolsMap = mockRegistry.registerMcpTools.mock.calls[0]![1] as Map<string, Record<string, unknown>>;
+      const toolsMap = mockRegistry.registerMcpTools.mock.calls[0]![1] as Map<
+        string,
+        Record<string, unknown>
+      >;
       const executor = toolsMap.get('fail2').executor;
 
       mockClient.callTool.mockRejectedValue('string error');
@@ -857,7 +878,10 @@ describe('McpClientService', () => {
 
       await mcpClientService.connect(server);
 
-      const toolsMap = mockRegistry.registerMcpTools.mock.calls[0]![1] as Map<string, { definition: { workflowUsable?: boolean } }>;
+      const toolsMap = mockRegistry.registerMcpTools.mock.calls[0]![1] as Map<
+        string,
+        { definition: { workflowUsable?: boolean } }
+      >;
       expect(toolsMap.get('read_file')!.definition.workflowUsable).toBe(false);
       expect(toolsMap.get('write_file')!.definition.workflowUsable).toBeUndefined();
     });
@@ -876,7 +900,10 @@ describe('McpClientService', () => {
 
       await mcpClientService.connect(server);
 
-      const toolsMap = mockRegistry.registerMcpTools.mock.calls[0]![1] as Map<string, { definition: { workflowUsable?: boolean } }>;
+      const toolsMap = mockRegistry.registerMcpTools.mock.calls[0]![1] as Map<
+        string,
+        { definition: { workflowUsable?: boolean } }
+      >;
       expect(toolsMap.get('my_tool')!.definition.workflowUsable).toBe(true);
     });
 
@@ -888,7 +915,10 @@ describe('McpClientService', () => {
 
       await mcpClientService.connect(server);
 
-      const toolsMap = mockRegistry.registerMcpTools.mock.calls[0]![1] as Map<string, { definition: { workflowUsable?: boolean } }>;
+      const toolsMap = mockRegistry.registerMcpTools.mock.calls[0]![1] as Map<
+        string,
+        { definition: { workflowUsable?: boolean } }
+      >;
       expect(toolsMap.get('plain_tool')!.definition.workflowUsable).toBeUndefined();
     });
   });
@@ -922,7 +952,10 @@ describe('McpClientService', () => {
       expect(mockRegistry.registerMcpTools).toHaveBeenCalledTimes(2);
 
       // Verify the second call has updated workflowUsable
-      const secondCallToolsMap = mockRegistry.registerMcpTools.mock.calls[1]![1] as Map<string, { definition: { workflowUsable?: boolean } }>;
+      const secondCallToolsMap = mockRegistry.registerMcpTools.mock.calls[1]![1] as Map<
+        string,
+        { definition: { workflowUsable?: boolean } }
+      >;
       expect(secondCallToolsMap.get('tool_a')!.definition.workflowUsable).toBe(false);
     });
 

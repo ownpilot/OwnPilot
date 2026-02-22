@@ -24,7 +24,13 @@ import {
 } from '@ownpilot/core';
 import type { SessionInfo } from '../types/index.js';
 import { agentsRepo, type AgentRecord } from '../db/repositories/index.js';
-import { resolveProviderAndModel, getDefaultProvider, getDefaultModel, getConfiguredProviderIds, getEnabledToolGroupIds } from './settings.js';
+import {
+  resolveProviderAndModel,
+  getDefaultProvider,
+  getDefaultModel,
+  getConfiguredProviderIds,
+  getEnabledToolGroupIds,
+} from './settings.js';
 import { gatewayConfigCenter } from '../services/config-center-impl.js';
 import { getLog } from '../services/log.js';
 import { BASE_SYSTEM_PROMPT } from './agent-prompt.js';
@@ -84,9 +90,7 @@ const log = getLog('AgentService');
  */
 async function createAgentFromRecord(record: AgentRecord): Promise<Agent> {
   // Resolve "default" provider/model to actual values via IProviderService
-  const providerSvc = hasServiceRegistry()
-    ? getServiceRegistry().tryGet(Services.Provider)
-    : null;
+  const providerSvc = hasServiceRegistry() ? getServiceRegistry().tryGet(Services.Provider) : null;
 
   const { provider: resolvedProvider, model: resolvedModel } = providerSvc
     ? await providerSvc.resolve({ provider: record.provider, model: record.model })
@@ -143,26 +147,48 @@ async function createAgentFromRecord(record: AgentRecord): Promise<Agent> {
 
   // Separate standard tools (from TOOL_GROUPS) and special tools that bypass filtering
   // Filter getToolDefinitions() to exclude stubs that were unregistered above
-  const coreToolDefs = getToolDefinitions().filter(t => tools.has(t.name));
-  const standardToolDefs = [...coreToolDefs, ...MEMORY_TOOLS, ...GOAL_TOOLS, ...CUSTOM_DATA_TOOLS, ...PERSONAL_DATA_TOOLS, ...CONFIG_TOOLS, ...TRIGGER_TOOLS, ...PLAN_TOOLS, ...HEARTBEAT_TOOLS, ...EXTENSION_TOOLS];
+  const coreToolDefs = getToolDefinitions().filter((t) => tools.has(t.name));
+  const standardToolDefs = [
+    ...coreToolDefs,
+    ...MEMORY_TOOLS,
+    ...GOAL_TOOLS,
+    ...CUSTOM_DATA_TOOLS,
+    ...PERSONAL_DATA_TOOLS,
+    ...CONFIG_TOOLS,
+    ...TRIGGER_TOOLS,
+    ...PLAN_TOOLS,
+    ...HEARTBEAT_TOOLS,
+    ...EXTENSION_TOOLS,
+  ];
 
   // These tools ALWAYS bypass toolGroup filtering:
-  const alwaysIncludedToolDefs = [...DYNAMIC_TOOL_DEFINITIONS, ...activeCustomToolDefs, ...pluginToolDefs, ...extensionToolDefs, ...mcpToolDefs];
+  const alwaysIncludedToolDefs = [
+    ...DYNAMIC_TOOL_DEFINITIONS,
+    ...activeCustomToolDefs,
+    ...pluginToolDefs,
+    ...extensionToolDefs,
+    ...mcpToolDefs,
+  ];
 
   // Filter tools: per-agent toolGroups first, fall back to global settings
   const { tools: resolvedToolNames, configuredToolGroups } = resolveRecordTools(record.config);
-  const hasAgentConfig = (configuredToolGroups && configuredToolGroups.length > 0) || resolvedToolNames.length > 0;
+  const hasAgentConfig =
+    (configuredToolGroups && configuredToolGroups.length > 0) || resolvedToolNames.length > 0;
 
   let filteredStandardTools: typeof standardToolDefs;
   if (hasAgentConfig) {
     // Per-agent toolGroups override
     const agentAllowed = new Set(resolvedToolNames);
-    filteredStandardTools = standardToolDefs.filter(tool => agentAllowed.has(tool.name) || agentAllowed.has(getBaseName(tool.name)));
+    filteredStandardTools = standardToolDefs.filter(
+      (tool) => agentAllowed.has(tool.name) || agentAllowed.has(getBaseName(tool.name))
+    );
   } else {
     // Fall back to global tool-groups setting
     const globalGroupIds = getEnabledToolGroupIds();
     const globalAllowed = new Set(resolveToolGroups(globalGroupIds, undefined));
-    filteredStandardTools = standardToolDefs.filter(tool => globalAllowed.has(tool.name) || globalAllowed.has(getBaseName(tool.name)));
+    filteredStandardTools = standardToolDefs.filter(
+      (tool) => globalAllowed.has(tool.name) || globalAllowed.has(getBaseName(tool.name))
+    );
   }
 
   const toolDefs = [...filteredStandardTools, ...alwaysIncludedToolDefs];
@@ -180,7 +206,9 @@ async function createAgentFromRecord(record: AgentRecord): Promise<Agent> {
 
   // Inject extension system prompts
   try {
-    const extPromptSections = getServiceRegistry().get(Services.Extension).getSystemPromptSections();
+    const extPromptSections = getServiceRegistry()
+      .get(Services.Extension)
+      .getSystemPromptSections();
     if (extPromptSections.length > 0) {
       enhancedPrompt += '\n\n' + extPromptSections.join('\n\n');
     }
@@ -188,7 +216,7 @@ async function createAgentFromRecord(record: AgentRecord): Promise<Agent> {
     log.debug('Extension service not initialized, skipping system prompt injection');
   }
 
-  const metaToolFilter = AI_META_TOOL_NAMES.map(n => unsafeToolId(n));
+  const metaToolFilter = AI_META_TOOL_NAMES.map((n) => unsafeToolId(n));
 
   const config: AgentConfig = {
     name: record.name,
@@ -298,7 +326,9 @@ export async function getOrCreateDefaultAgent(): Promise<Agent> {
     if (!record) {
       const provider = await getDefaultProvider();
       if (!provider) {
-        throw new Error('No API key configured for any provider. Configure a provider in Settings.');
+        throw new Error(
+          'No API key configured for any provider. Configure a provider in Settings.'
+        );
       }
 
       const model = await getDefaultModel(provider);
@@ -353,7 +383,11 @@ export async function getOrCreateChatAgent(provider: string, model: string): Pro
 /**
  * Internal: Create a chat agent instance.
  */
-async function createChatAgentInstance(provider: string, model: string, cacheKey: string): Promise<Agent> {
+async function createChatAgentInstance(
+  provider: string,
+  model: string,
+  cacheKey: string
+): Promise<Agent> {
   const apiKey = await getProviderApiKey(provider);
   if (!apiKey) {
     throw new Error(`API key not configured for provider: ${provider}`);
@@ -370,20 +404,42 @@ async function createChatAgentInstance(provider: string, model: string, cacheKey
   const userId = 'default';
   registerGatewayTools(tools, userId, false);
 
-  const activeCustomToolDefs = await registerDynamicTools(tools, userId, `chat_${provider}_${model}`, false);
+  const activeCustomToolDefs = await registerDynamicTools(
+    tools,
+    userId,
+    `chat_${provider}_${model}`,
+    false
+  );
   const pluginToolDefs = registerPluginTools(tools, false);
   const extensionToolDefs = registerExtensionTools(tools, userId, false);
   const mcpToolDefs = registerMcpTools(tools, false);
 
-  const chatCoreToolDefs = getToolDefinitions().filter(t => tools.has(t.name));
-  const chatStandardToolDefs = [...chatCoreToolDefs, ...MEMORY_TOOLS, ...GOAL_TOOLS, ...CUSTOM_DATA_TOOLS, ...PERSONAL_DATA_TOOLS, ...CONFIG_TOOLS, ...TRIGGER_TOOLS, ...PLAN_TOOLS, ...HEARTBEAT_TOOLS, ...EXTENSION_TOOLS];
-  const chatAlwaysIncluded = [...DYNAMIC_TOOL_DEFINITIONS, ...activeCustomToolDefs, ...pluginToolDefs, ...extensionToolDefs, ...mcpToolDefs];
+  const chatCoreToolDefs = getToolDefinitions().filter((t) => tools.has(t.name));
+  const chatStandardToolDefs = [
+    ...chatCoreToolDefs,
+    ...MEMORY_TOOLS,
+    ...GOAL_TOOLS,
+    ...CUSTOM_DATA_TOOLS,
+    ...PERSONAL_DATA_TOOLS,
+    ...CONFIG_TOOLS,
+    ...TRIGGER_TOOLS,
+    ...PLAN_TOOLS,
+    ...HEARTBEAT_TOOLS,
+    ...EXTENSION_TOOLS,
+  ];
+  const chatAlwaysIncluded = [
+    ...DYNAMIC_TOOL_DEFINITIONS,
+    ...activeCustomToolDefs,
+    ...pluginToolDefs,
+    ...extensionToolDefs,
+    ...mcpToolDefs,
+  ];
 
   // Filter by global tool-groups setting
   const enabledGroupIds = getEnabledToolGroupIds();
   const allowedToolNames = new Set(resolveToolGroups(enabledGroupIds, undefined));
   const filteredChatTools = chatStandardToolDefs.filter(
-    tool => allowedToolNames.has(tool.name) || allowedToolNames.has(getBaseName(tool.name))
+    (tool) => allowedToolNames.has(tool.name) || allowedToolNames.has(getBaseName(tool.name))
   );
   const toolDefs = [...filteredChatTools, ...chatAlwaysIncluded];
 
@@ -398,7 +454,9 @@ async function createChatAgentInstance(provider: string, model: string, cacheKey
   });
 
   try {
-    const extPromptSections = getServiceRegistry().get(Services.Extension).getSystemPromptSections();
+    const extPromptSections = getServiceRegistry()
+      .get(Services.Extension)
+      .getSystemPromptSections();
     if (extPromptSections.length > 0) {
       enhancedPrompt += '\n\n' + extPromptSections.join('\n\n');
     }
@@ -406,7 +464,7 @@ async function createChatAgentInstance(provider: string, model: string, cacheKey
     log.debug('Extension service not initialized, skipping system prompt injection');
   }
 
-  const chatMetaToolFilter = AI_META_TOOL_NAMES.map(n => unsafeToolId(n));
+  const chatMetaToolFilter = AI_META_TOOL_NAMES.map((n) => unsafeToolId(n));
 
   const ctxWindow = resolveContextWindow(provider, model);
   const memoryMaxTokens = Math.floor(ctxWindow * 0.75);
@@ -445,7 +503,10 @@ async function createChatAgentInstance(provider: string, model: string, cacheKey
 /**
  * Reset chat agent context - clears conversation memory
  */
-export function resetChatAgentContext(provider: string, model: string): { reset: boolean; newSessionId?: string } {
+export function resetChatAgentContext(
+  provider: string,
+  model: string
+): { reset: boolean; newSessionId?: string } {
   const cacheKey = `chat|${provider.replace(/\|/g, '_')}|${model.replace(/\|/g, '_')}`;
   const agent = chatAgentCache.get(cacheKey);
 
@@ -466,7 +527,12 @@ export function resetChatAgentContext(provider: string, model: string): { reset:
 /**
  * Get session info (context usage) for an agent's current conversation.
  */
-export function getSessionInfo(agent: Agent, provider: string, model: string, contextWindowOverride?: number): SessionInfo {
+export function getSessionInfo(
+  agent: Agent,
+  provider: string,
+  model: string,
+  contextWindowOverride?: number
+): SessionInfo {
   const conversation = agent.getConversation();
   const memory = agent.getMemory();
   const stats = memory.getStats(conversation.id);
@@ -509,7 +575,11 @@ export interface ContextBreakdown {
 /**
  * Get detailed context breakdown for a cached chat agent.
  */
-export function getContextBreakdown(provider: string, model: string, contextWindowOverride?: number): ContextBreakdown | null {
+export function getContextBreakdown(
+  provider: string,
+  model: string,
+  contextWindowOverride?: number
+): ContextBreakdown | null {
   const cacheKey = `chat|${provider.replace(/\|/g, '_')}|${model.replace(/\|/g, '_')}`;
   const agent = chatAgentCache.get(cacheKey);
   if (!agent) return null;
@@ -565,8 +635,13 @@ export function getContextBreakdown(provider: string, model: string, contextWind
 export async function compactContext(
   provider: string,
   model: string,
-  keepRecentMessages: number = 6,
-): Promise<{ compacted: boolean; summary?: string; removedMessages: number; newTokenEstimate: number }> {
+  keepRecentMessages: number = 6
+): Promise<{
+  compacted: boolean;
+  summary?: string;
+  removedMessages: number;
+  newTokenEstimate: number;
+}> {
   const cacheKey = `chat|${provider.replace(/\|/g, '_')}|${model.replace(/\|/g, '_')}`;
   const agent = chatAgentCache.get(cacheKey);
   if (!agent) {
@@ -585,7 +660,7 @@ export async function compactContext(
   const recentMessages = messages.slice(messages.length - keepRecentMessages);
 
   const conversationText = olderMessages
-    .map(m => `${m.role}: ${typeof m.content === 'string' ? m.content : '[complex content]'}`)
+    .map((m) => `${m.role}: ${typeof m.content === 'string' ? m.content : '[complex content]'}`)
     .join('\n');
 
   const summaryPrompt = `Summarize the following conversation history into a concise summary (max 200 words). Focus on key topics discussed, decisions made, and important context needed to continue the conversation naturally:\n\n${conversationText}`;
@@ -634,7 +709,9 @@ export async function compactContext(
     const newStats = memory.getStats(conversation.id);
     const removedCount = olderMessages.length;
 
-    log.info(`Compacted context: removed ${removedCount} messages, kept ${recentMessages.length} recent`);
+    log.info(
+      `Compacted context: removed ${removedCount} messages, kept ${recentMessages.length} recent`
+    );
 
     return {
       compacted: true,
@@ -669,8 +746,17 @@ export function getWorkspaceContext(sessionWorkspaceDir?: string): WorkspaceCont
 export async function isDemoMode(): Promise<boolean> {
   const configured = await getConfiguredProviderIds();
   const providers = [
-    'openai', 'anthropic', 'zhipu', 'deepseek', 'groq',
-    'google', 'xai', 'mistral', 'together', 'fireworks', 'perplexity'
+    'openai',
+    'anthropic',
+    'zhipu',
+    'deepseek',
+    'groq',
+    'google',
+    'xai',
+    'mistral',
+    'together',
+    'fireworks',
+    'perplexity',
   ];
-  return !providers.some(p => configured.has(p));
+  return !providers.some((p) => configured.has(p));
 }

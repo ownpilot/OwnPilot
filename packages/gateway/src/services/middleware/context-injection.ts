@@ -46,7 +46,10 @@ export function clearInjectionCache(userId?: string): void {
  */
 export function createContextInjectionMiddleware(): MessageMiddleware {
   return async (message, ctx, next) => {
-    const agent = ctx.get<{ getConversation(): { systemPrompt?: string }; updateSystemPrompt(p: string): void }>('agent');
+    const agent = ctx.get<{
+      getConversation(): { systemPrompt?: string };
+      updateSystemPrompt(p: string): void;
+    }>('agent');
     if (!agent) {
       ctx.addWarning('No agent in context, skipping context injection');
       return next();
@@ -57,11 +60,12 @@ export function createContextInjectionMiddleware(): MessageMiddleware {
     const cacheKey = `${userId}|${agentId}`;
 
     try {
-      const currentSystemPrompt = agent.getConversation().systemPrompt || 'You are a helpful AI assistant.';
+      const currentSystemPrompt =
+        agent.getConversation().systemPrompt || 'You are a helpful AI assistant.';
 
       // Check cache — if we have a recent injection for this user+agent, reuse it
       const cached = injectionCache.get(cacheKey);
-      if (cached && (Date.now() - cached.cachedAt) < INJECTION_CACHE_TTL_MS) {
+      if (cached && Date.now() - cached.cachedAt < INJECTION_CACHE_TTL_MS) {
         // Re-apply cached suffix if not already present
         if (!currentSystemPrompt.includes(cached.injectedSuffix)) {
           // Strip old injected sections, append cached
@@ -82,7 +86,7 @@ export function createContextInjectionMiddleware(): MessageMiddleware {
           maxGoals: 5,
           enableTriggers: true,
           enableAutonomy: true,
-        },
+        }
       );
 
       // Extract the injected suffix (everything buildEnhancedSystemPrompt added)

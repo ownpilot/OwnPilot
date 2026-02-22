@@ -49,7 +49,10 @@ export function DebugInfoModal({ trace, onClose }: DebugInfoModalProps) {
   const failedTools = toolCallCount - successfulTools;
   const totalInputTokens = trace.modelCalls.reduce((sum, m) => sum + (m.inputTokens ?? 0), 0);
   const totalOutputTokens = trace.modelCalls.reduce((sum, m) => sum + (m.outputTokens ?? 0), 0);
-  const totalTokens = trace.modelCalls.reduce((sum, m) => sum + (m.tokens ?? (m.inputTokens ?? 0) + (m.outputTokens ?? 0)), 0);
+  const totalTokens = trace.modelCalls.reduce(
+    (sum, m) => sum + (m.tokens ?? (m.inputTokens ?? 0) + (m.outputTokens ?? 0)),
+    0
+  );
   const totalModelDuration = trace.modelCalls.reduce((sum, m) => sum + (m.duration ?? 0), 0);
 
   const tabs: { id: TabId; label: string; count?: number }[] = [
@@ -64,7 +67,9 @@ export function DebugInfoModal({ trace, onClose }: DebugInfoModalProps) {
   return (
     <div
       className="fixed inset-0 bg-black/60 flex items-center justify-center z-[100] animate-[fadeIn_150ms_ease-out]"
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
     >
       <div className="w-[95vw] h-[90vh] max-w-[1400px] bg-bg-primary dark:bg-dark-bg-primary border border-border dark:border-dark-border rounded-xl shadow-2xl flex flex-col overflow-hidden animate-[scaleIn_150ms_ease-out]">
         {/* Header */}
@@ -134,15 +139,11 @@ export function DebugInfoModal({ trace, onClose }: DebugInfoModalProps) {
           {activeTab === 'tool_calls' && (
             <ToolCallsTab trace={trace} copyToClipboard={copyToClipboard} copiedKey={copiedKey} />
           )}
-          {activeTab === 'model_calls' && (
-            <ModelCallsTab trace={trace} />
-          )}
+          {activeTab === 'model_calls' && <ModelCallsTab trace={trace} />}
           {activeTab === 'events' && (
             <EventsTab trace={trace} copyToClipboard={copyToClipboard} copiedKey={copiedKey} />
           )}
-          {activeTab === 'request' && (
-            <RequestResponseTab trace={trace} />
-          )}
+          {activeTab === 'request' && <RequestResponseTab trace={trace} />}
           {activeTab === 'raw' && (
             <RawJsonTab trace={trace} copyToClipboard={copyToClipboard} copiedKey={copiedKey} />
           )}
@@ -204,7 +205,9 @@ function OverviewTab({
           icon={<Send className="w-5 h-5" />}
           label="Model Calls"
           value={`${trace.modelCalls.length}`}
-          sublabel={trace.request?.provider ? `${trace.request.provider}/${trace.request.model}` : ''}
+          sublabel={
+            trace.request?.provider ? `${trace.request.provider}/${trace.request.model}` : ''
+          }
           color="text-purple-500"
         />
       </div>
@@ -261,7 +264,7 @@ function OverviewTab({
             icon={<AlertTriangle className="w-5 h-5" />}
             label="Autonomy Checks"
             value={`${trace.autonomyChecks.length}`}
-            sublabel={`${trace.autonomyChecks.filter(a => !a.approved).length} blocked`}
+            sublabel={`${trace.autonomyChecks.filter((a) => !a.approved).length} blocked`}
             color="text-orange-500"
           />
         )}
@@ -275,7 +278,10 @@ function OverviewTab({
           </h3>
           <div className="space-y-2">
             {trace.errors.map((error, i) => (
-              <div key={i} className="px-3 py-2 text-sm text-red-400 bg-red-500/10 rounded-lg border border-red-500/20 font-mono whitespace-pre-wrap break-all">
+              <div
+                key={i}
+                className="px-3 py-2 text-sm text-red-400 bg-red-500/10 rounded-lg border border-red-500/20 font-mono whitespace-pre-wrap break-all"
+              >
                 {error}
               </div>
             ))}
@@ -291,10 +297,17 @@ function OverviewTab({
           </h3>
           <div className="space-y-2">
             {trace.retries.map((retry, i) => (
-              <div key={i} className="px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/20 text-sm">
+              <div
+                key={i}
+                className="px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/20 text-sm"
+              >
                 <span className="text-amber-400 font-medium">Attempt {retry.attempt}</span>
-                <span className="text-text-muted dark:text-dark-text-muted mx-2">delayed {retry.delayMs}ms</span>
-                <div className="text-red-400 font-mono mt-1 whitespace-pre-wrap break-all">{retry.error}</div>
+                <span className="text-text-muted dark:text-dark-text-muted mx-2">
+                  delayed {retry.delayMs}ms
+                </span>
+                <div className="text-red-400 font-mono mt-1 whitespace-pre-wrap break-all">
+                  {retry.error}
+                </div>
               </div>
             ))}
           </div>
@@ -312,7 +325,9 @@ function OverviewTab({
               <div
                 key={i}
                 className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm ${
-                  check.approved ? 'bg-green-500/10 border border-green-500/20' : 'bg-red-500/10 border border-red-500/20'
+                  check.approved
+                    ? 'bg-green-500/10 border border-green-500/20'
+                    : 'bg-red-500/10 border border-red-500/20'
                 }`}
               >
                 {check.approved ? (
@@ -320,7 +335,9 @@ function OverviewTab({
                 ) : (
                   <XCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
                 )}
-                <span className="font-mono text-text-primary dark:text-dark-text-primary">{check.tool}</span>
+                <span className="font-mono text-text-primary dark:text-dark-text-primary">
+                  {check.tool}
+                </span>
                 {check.reason && (
                   <span className="text-text-muted dark:text-dark-text-muted whitespace-pre-wrap break-all">
                     {check.reason}
@@ -335,7 +352,13 @@ function OverviewTab({
   );
 }
 
-function StatCard({ icon, label, value, sublabel, color }: {
+function StatCard({
+  icon,
+  label,
+  value,
+  sublabel,
+  color,
+}: {
   icon: React.ReactNode;
   label: string;
   value: string;
@@ -346,11 +369,15 @@ function StatCard({ icon, label, value, sublabel, color }: {
     <div className="rounded-lg border border-border dark:border-dark-border bg-bg-secondary/50 dark:bg-dark-bg-secondary/50 p-4">
       <div className={`flex items-center gap-2 mb-1 ${color}`}>
         {icon}
-        <span className="text-xs font-medium text-text-muted dark:text-dark-text-muted">{label}</span>
+        <span className="text-xs font-medium text-text-muted dark:text-dark-text-muted">
+          {label}
+        </span>
       </div>
       <div className={`text-2xl font-bold ${color}`}>{value}</div>
       {sublabel && (
-        <div className="text-xs text-text-muted dark:text-dark-text-muted mt-0.5 break-all">{sublabel}</div>
+        <div className="text-xs text-text-muted dark:text-dark-text-muted mt-0.5 break-all">
+          {sublabel}
+        </div>
       )}
     </div>
   );
@@ -360,7 +387,11 @@ function StatCard({ icon, label, value, sublabel, color }: {
 // Tool Calls Tab
 // ─────────────────────────────────────────────
 
-function ToolCallsTab({ trace, copyToClipboard, copiedKey }: {
+function ToolCallsTab({
+  trace,
+  copyToClipboard,
+  copiedKey,
+}: {
   trace: TraceInfo;
   copyToClipboard: (text: string, key: string) => void;
   copiedKey: string | null;
@@ -385,15 +416,23 @@ function ToolCallsTab({ trace, copyToClipboard, copiedKey }: {
   };
 
   if (trace.toolCalls.length === 0) {
-    return <div className="text-text-muted dark:text-dark-text-muted text-sm">No tool calls in this trace.</div>;
+    return (
+      <div className="text-text-muted dark:text-dark-text-muted text-sm">
+        No tool calls in this trace.
+      </div>
+    );
   }
 
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-2 mb-3">
-        <button onClick={expandAll} className="text-xs text-primary hover:underline">Expand All</button>
+        <button onClick={expandAll} className="text-xs text-primary hover:underline">
+          Expand All
+        </button>
         <span className="text-text-muted dark:text-dark-text-muted text-xs">|</span>
-        <button onClick={collapseAll} className="text-xs text-primary hover:underline">Collapse All</button>
+        <button onClick={collapseAll} className="text-xs text-primary hover:underline">
+          Collapse All
+        </button>
       </div>
 
       {trace.toolCalls.map((tool, i) => {
@@ -422,12 +461,8 @@ function ToolCallsTab({ trace, copyToClipboard, copiedKey }: {
                 <ChevronRight className="w-4 h-4 text-text-muted dark:text-dark-text-muted" />
               )}
               <div className="ml-auto flex items-center gap-3 text-xs text-text-muted dark:text-dark-text-muted">
-                {tool.duration !== undefined && (
-                  <span>{tool.duration}ms</span>
-                )}
-                {tool.error && (
-                  <span className="text-red-500">Error</span>
-                )}
+                {tool.duration !== undefined && <span>{tool.duration}ms</span>}
+                {tool.error && <span className="text-red-500">Error</span>}
               </div>
             </button>
 
@@ -469,7 +504,9 @@ function ToolCallsTab({ trace, copyToClipboard, copiedKey }: {
                         onClick={(e) => {
                           e.stopPropagation();
                           copyToClipboard(
-                            typeof tool.result === 'string' ? tool.result : JSON.stringify(tool.result, null, 2),
+                            typeof tool.result === 'string'
+                              ? tool.result
+                              : JSON.stringify(tool.result, null, 2),
                             `result-${i}`
                           );
                         }}
@@ -480,7 +517,9 @@ function ToolCallsTab({ trace, copyToClipboard, copiedKey }: {
                       </button>
                     </div>
                     <pre className="text-xs bg-bg-tertiary dark:bg-dark-bg-tertiary p-3 rounded-lg overflow-x-auto text-text-primary dark:text-dark-text-primary whitespace-pre-wrap break-all font-mono">
-                      {typeof tool.result === 'string' ? tool.result : JSON.stringify(tool.result, null, 2)}
+                      {typeof tool.result === 'string'
+                        ? tool.result
+                        : JSON.stringify(tool.result, null, 2)}
                     </pre>
                   </div>
                 )}
@@ -511,7 +550,11 @@ function ToolCallsTab({ trace, copyToClipboard, copiedKey }: {
 
 function ModelCallsTab({ trace }: { trace: TraceInfo }) {
   if (trace.modelCalls.length === 0) {
-    return <div className="text-text-muted dark:text-dark-text-muted text-sm">No model calls in this trace.</div>;
+    return (
+      <div className="text-text-muted dark:text-dark-text-muted text-sm">
+        No model calls in this trace.
+      </div>
+    );
   }
 
   return (
@@ -519,7 +562,7 @@ function ModelCallsTab({ trace }: { trace: TraceInfo }) {
       {trace.modelCalls.map((model, i) => {
         const inputTokens = model.inputTokens ?? 0;
         const outputTokens = model.outputTokens ?? 0;
-        const totalTokens = model.tokens ?? (inputTokens + outputTokens);
+        const totalTokens = model.tokens ?? inputTokens + outputTokens;
 
         return (
           <div
@@ -541,16 +584,28 @@ function ModelCallsTab({ trace }: { trace: TraceInfo }) {
             {/* Token Breakdown */}
             <div className="grid grid-cols-3 gap-3">
               <div className="rounded-lg bg-bg-tertiary dark:bg-dark-bg-tertiary p-3">
-                <div className="text-[10px] uppercase text-text-muted dark:text-dark-text-muted tracking-wider mb-1">Input</div>
-                <div className="text-lg font-bold text-blue-400">{inputTokens.toLocaleString()}</div>
+                <div className="text-[10px] uppercase text-text-muted dark:text-dark-text-muted tracking-wider mb-1">
+                  Input
+                </div>
+                <div className="text-lg font-bold text-blue-400">
+                  {inputTokens.toLocaleString()}
+                </div>
               </div>
               <div className="rounded-lg bg-bg-tertiary dark:bg-dark-bg-tertiary p-3">
-                <div className="text-[10px] uppercase text-text-muted dark:text-dark-text-muted tracking-wider mb-1">Output</div>
-                <div className="text-lg font-bold text-green-400">{outputTokens.toLocaleString()}</div>
+                <div className="text-[10px] uppercase text-text-muted dark:text-dark-text-muted tracking-wider mb-1">
+                  Output
+                </div>
+                <div className="text-lg font-bold text-green-400">
+                  {outputTokens.toLocaleString()}
+                </div>
               </div>
               <div className="rounded-lg bg-bg-tertiary dark:bg-dark-bg-tertiary p-3">
-                <div className="text-[10px] uppercase text-text-muted dark:text-dark-text-muted tracking-wider mb-1">Total</div>
-                <div className="text-lg font-bold text-purple-400">{totalTokens.toLocaleString()}</div>
+                <div className="text-[10px] uppercase text-text-muted dark:text-dark-text-muted tracking-wider mb-1">
+                  Total
+                </div>
+                <div className="text-lg font-bold text-purple-400">
+                  {totalTokens.toLocaleString()}
+                </div>
               </div>
             </div>
           </div>
@@ -564,7 +619,11 @@ function ModelCallsTab({ trace }: { trace: TraceInfo }) {
 // Events Tab
 // ─────────────────────────────────────────────
 
-function EventsTab({ trace, copyToClipboard, copiedKey }: {
+function EventsTab({
+  trace,
+  copyToClipboard,
+  copiedKey,
+}: {
   trace: TraceInfo;
   copyToClipboard: (text: string, key: string) => void;
   copiedKey: string | null;
@@ -581,7 +640,11 @@ function EventsTab({ trace, copyToClipboard, copiedKey }: {
   };
 
   if (trace.events.length === 0) {
-    return <div className="text-text-muted dark:text-dark-text-muted text-sm">No events in this trace.</div>;
+    return (
+      <div className="text-text-muted dark:text-dark-text-muted text-sm">
+        No events in this trace.
+      </div>
+    );
   }
 
   const getToolCallDetails = (eventName: string) => {
@@ -604,7 +667,9 @@ function EventsTab({ trace, copyToClipboard, copiedKey }: {
             <div
               onClick={() => hasDetails && toggleEvent(i)}
               className={`flex items-center gap-3 px-4 py-2.5 text-sm ${
-                hasDetails ? 'cursor-pointer hover:bg-bg-tertiary/50 dark:hover:bg-dark-bg-tertiary/50' : ''
+                hasDetails
+                  ? 'cursor-pointer hover:bg-bg-tertiary/50 dark:hover:bg-dark-bg-tertiary/50'
+                  : ''
               }`}
             >
               <span
@@ -612,8 +677,8 @@ function EventsTab({ trace, copyToClipboard, copiedKey }: {
                   event.success === false
                     ? 'bg-red-500'
                     : event.success === true
-                    ? 'bg-green-500'
-                    : 'bg-gray-400'
+                      ? 'bg-green-500'
+                      : 'bg-gray-400'
                 }`}
               />
               <span className="px-2 py-0.5 bg-bg-tertiary dark:bg-dark-bg-tertiary rounded text-xs text-text-muted dark:text-dark-text-muted font-mono">
@@ -624,7 +689,11 @@ function EventsTab({ trace, copyToClipboard, copiedKey }: {
               </span>
               {hasDetails && (
                 <span className="text-text-muted dark:text-dark-text-muted">
-                  {isExpanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+                  {isExpanded ? (
+                    <ChevronDown className="w-3 h-3" />
+                  ) : (
+                    <ChevronRight className="w-3 h-3" />
+                  )}
                 </span>
               )}
               {event.duration !== undefined && (
@@ -645,7 +714,10 @@ function EventsTab({ trace, copyToClipboard, copiedKey }: {
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          copyToClipboard(JSON.stringify(toolCallData.arguments, null, 2), `ev-args-${i}`);
+                          copyToClipboard(
+                            JSON.stringify(toolCallData.arguments, null, 2),
+                            `ev-args-${i}`
+                          );
                         }}
                         className="text-xs text-text-muted dark:text-dark-text-muted hover:text-text-primary dark:hover:text-dark-text-primary flex items-center gap-1"
                       >
@@ -668,7 +740,9 @@ function EventsTab({ trace, copyToClipboard, copiedKey }: {
                         onClick={(e) => {
                           e.stopPropagation();
                           copyToClipboard(
-                            typeof toolCallData.result === 'string' ? toolCallData.result : JSON.stringify(toolCallData.result, null, 2),
+                            typeof toolCallData.result === 'string'
+                              ? toolCallData.result
+                              : JSON.stringify(toolCallData.result, null, 2),
                             `ev-result-${i}`
                           );
                         }}
@@ -687,7 +761,9 @@ function EventsTab({ trace, copyToClipboard, copiedKey }: {
                 )}
                 {toolCallData.error && (
                   <div className="p-4">
-                    <span className="text-xs font-semibold text-red-500 uppercase tracking-wider block mb-2">Error</span>
+                    <span className="text-xs font-semibold text-red-500 uppercase tracking-wider block mb-2">
+                      Error
+                    </span>
                     <div className="text-sm text-red-400 bg-red-500/10 p-3 rounded-lg font-mono whitespace-pre-wrap break-all">
                       {toolCallData.error}
                     </div>
@@ -722,7 +798,9 @@ function RequestResponseTab({ trace }: { trace: TraceInfo }) {
             <InfoRow label="Messages" value={String(trace.request.messageCount)} />
             {trace.request.tools && trace.request.tools.length > 0 && (
               <div className="px-4 py-3 border-t border-border dark:border-dark-border">
-                <span className="text-xs text-text-muted dark:text-dark-text-muted block mb-2">Tools ({trace.request.tools.length}):</span>
+                <span className="text-xs text-text-muted dark:text-dark-text-muted block mb-2">
+                  Tools ({trace.request.tools.length}):
+                </span>
                 <div className="flex flex-wrap gap-1.5">
                   {trace.request.tools.map((tool, i) => (
                     <span
@@ -747,8 +825,12 @@ function RequestResponseTab({ trace }: { trace: TraceInfo }) {
           </h3>
           <div className="rounded-lg border border-border dark:border-dark-border bg-bg-secondary/50 dark:bg-dark-bg-secondary/50 overflow-hidden">
             <div className="flex items-center gap-2 px-4 py-3 border-b border-border dark:border-dark-border">
-              <span className="text-xs text-text-muted dark:text-dark-text-muted w-28">Status:</span>
-              <span className={`text-sm font-medium ${trace.response.status === 'success' ? 'text-green-500' : 'text-red-500'}`}>
+              <span className="text-xs text-text-muted dark:text-dark-text-muted w-28">
+                Status:
+              </span>
+              <span
+                className={`text-sm font-medium ${trace.response.status === 'success' ? 'text-green-500' : 'text-red-500'}`}
+              >
                 {trace.response.status}
               </span>
             </div>
@@ -763,7 +845,9 @@ function RequestResponseTab({ trace }: { trace: TraceInfo }) {
       )}
 
       {!trace.request && !trace.response && (
-        <div className="text-text-muted dark:text-dark-text-muted text-sm">No request/response data available.</div>
+        <div className="text-text-muted dark:text-dark-text-muted text-sm">
+          No request/response data available.
+        </div>
       )}
     </div>
   );
@@ -772,8 +856,12 @@ function RequestResponseTab({ trace }: { trace: TraceInfo }) {
 function InfoRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center gap-2 px-4 py-3 border-b border-border dark:border-dark-border last:border-b-0">
-      <span className="text-xs text-text-muted dark:text-dark-text-muted w-28 flex-shrink-0">{label}:</span>
-      <span className="text-sm text-text-primary dark:text-dark-text-primary font-mono break-all">{value}</span>
+      <span className="text-xs text-text-muted dark:text-dark-text-muted w-28 flex-shrink-0">
+        {label}:
+      </span>
+      <span className="text-sm text-text-primary dark:text-dark-text-primary font-mono break-all">
+        {value}
+      </span>
     </div>
   );
 }
@@ -782,7 +870,11 @@ function InfoRow({ label, value }: { label: string; value: string }) {
 // Raw JSON Tab
 // ─────────────────────────────────────────────
 
-function RawJsonTab({ trace, copyToClipboard, copiedKey }: {
+function RawJsonTab({
+  trace,
+  copyToClipboard,
+  copiedKey,
+}: {
   trace: TraceInfo;
   copyToClipboard: (text: string, key: string) => void;
   copiedKey: string | null;

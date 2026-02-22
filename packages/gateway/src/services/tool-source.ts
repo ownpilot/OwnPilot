@@ -8,7 +8,10 @@
 import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, resolve } from 'path';
-import { MAX_TOOL_SOURCE_FILE_CACHE, MAX_TOOL_SOURCE_EXTRACTION_CACHE } from '../config/defaults.js';
+import {
+  MAX_TOOL_SOURCE_FILE_CACHE,
+  MAX_TOOL_SOURCE_EXTRACTION_CACHE,
+} from '../config/defaults.js';
 
 // =============================================================================
 // Path Resolution
@@ -55,10 +58,7 @@ function readSourceFile(absolutePath: string): string | null {
  */
 function extractSwitchCase(source: string, caseName: string): string | null {
   // Find case 'toolName': { or case 'toolName':
-  const casePatterns = [
-    `case '${caseName}':`,
-    `case "${caseName}":`,
-  ];
+  const casePatterns = [`case '${caseName}':`, `case "${caseName}":`];
 
   let caseIdx = -1;
   for (const p of casePatterns) {
@@ -94,10 +94,7 @@ function extractSwitchCase(source: string, caseName: string): string | null {
  * Handles: export const fooExecutor: Type = async (args) => { ... };
  */
 function extractConstFunction(source: string, constName: string): string | null {
-  const patterns = [
-    `export const ${constName}`,
-    `const ${constName}`,
-  ];
+  const patterns = [`export const ${constName}`, `const ${constName}`];
 
   let startIdx = -1;
   for (const pattern of patterns) {
@@ -180,51 +177,94 @@ function addGatewayTools(names: string[], file: string, func: string) {
 
 const CORE_FILE_TOOLS: Record<string, string[]> = {
   'utility-tools': [
-    'get_current_datetime', 'calculate', 'convert_units', 'generate_uuid',
-    'generate_password', 'random_number', 'hash_text', 'encode_decode',
-    'count_text', 'extract_from_text', 'validate_data', 'transform_text',
-    'date_diff', 'date_add', 'format_json', 'parse_csv', 'generate_csv',
-    'array_operations', 'calculate_statistics', 'compare_text', 'run_regex', 'get_system_info',
+    'get_current_datetime',
+    'calculate',
+    'convert_units',
+    'generate_uuid',
+    'generate_password',
+    'random_number',
+    'hash_text',
+    'encode_decode',
+    'count_text',
+    'extract_from_text',
+    'validate_data',
+    'transform_text',
+    'date_diff',
+    'date_add',
+    'format_json',
+    'parse_csv',
+    'generate_csv',
+    'array_operations',
+    'calculate_statistics',
+    'compare_text',
+    'run_regex',
+    'get_system_info',
   ],
   'file-system': [
-    'read_file', 'write_file', 'list_directory', 'search_files',
-    'download_file', 'get_file_info', 'delete_file', 'copy_file',
+    'read_file',
+    'write_file',
+    'list_directory',
+    'search_files',
+    'download_file',
+    'get_file_info',
+    'delete_file',
+    'copy_file',
   ],
   'code-execution': [
-    'execute_javascript', 'execute_python', 'execute_shell',
-    'compile_code', 'package_manager',
+    'execute_javascript',
+    'execute_python',
+    'execute_shell',
+    'compile_code',
+    'package_manager',
   ],
-  'web-fetch': [
-    'http_request', 'fetch_web_page', 'search_web', 'call_json_api',
-  ],
+  'web-fetch': ['http_request', 'fetch_web_page', 'search_web', 'call_json_api'],
   'expense-tracker': [
-    'add_expense', 'batch_add_expenses', 'parse_receipt',
-    'query_expenses', 'export_expenses', 'expense_summary', 'delete_expense',
+    'add_expense',
+    'batch_add_expenses',
+    'parse_receipt',
+    'query_expenses',
+    'export_expenses',
+    'expense_summary',
+    'delete_expense',
   ],
   'pdf-tools': ['read_pdf', 'create_pdf', 'get_pdf_info'],
-  'image-tools': [
-    'analyze_image', 'generate_image', 'resize_image',
-  ],
+  'image-tools': ['analyze_image', 'generate_image', 'resize_image'],
   'email-tools': [
-    'send_email', 'list_emails', 'read_email',
-    'delete_email', 'search_emails', 'reply_email',
+    'send_email',
+    'list_emails',
+    'read_email',
+    'delete_email',
+    'search_emails',
+    'reply_email',
   ],
   'git-tools': [
-    'git_status', 'git_diff', 'git_log', 'git_commit',
-    'git_add', 'git_branch', 'git_checkout',
+    'git_status',
+    'git_diff',
+    'git_log',
+    'git_commit',
+    'git_add',
+    'git_branch',
+    'git_checkout',
   ],
   'audio-tools': [
-    'text_to_speech', 'speech_to_text', 'translate_audio',
-    'get_audio_info', 'split_audio',
+    'text_to_speech',
+    'speech_to_text',
+    'translate_audio',
+    'get_audio_info',
+    'split_audio',
   ],
-  'data-extraction-tools': [
-    'extract_entities', 'extract_table_data',
-  ],
+  'data-extraction-tools': ['extract_entities', 'extract_table_data'],
   'weather-tools': ['get_weather', 'get_weather_forecast'],
   'dynamic-tools': [
-    'create_tool', 'list_custom_tools', 'delete_custom_tool',
-    'toggle_custom_tool', 'search_tools', 'get_tool_help', 'use_tool',
-    'inspect_tool_source', 'update_custom_tool',
+    'create_tool',
+    'list_custom_tools',
+    'delete_custom_tool',
+    'toggle_custom_tool',
+    'search_tools',
+    'get_tool_help',
+    'use_tool',
+    'inspect_tool_source',
+    'update_custom_tool',
   ],
 };
 
@@ -253,7 +293,11 @@ export function initToolSourceMappings(tools: {
   addGatewayTools(tools.memoryNames, 'routes/memories.ts', 'executeMemoryTool');
   addGatewayTools(tools.goalNames, 'routes/goals.ts', 'executeGoalTool');
   addGatewayTools(tools.customDataNames, 'routes/custom-data.ts', 'executeCustomDataTool');
-  addGatewayTools(tools.personalDataNames, 'routes/personal-data-tools.ts', 'executePersonalDataTool');
+  addGatewayTools(
+    tools.personalDataNames,
+    'routes/personal-data-tools.ts',
+    'executePersonalDataTool'
+  );
   addGatewayTools(tools.triggerNames, 'tools/trigger-tools.ts', 'executeTriggerTool');
   addGatewayTools(tools.planNames, 'tools/plan-tools.ts', 'executePlanTool');
   addGatewayTools(tools.heartbeatNames, 'tools/heartbeat-tools.ts', 'executeHeartbeatTool');
@@ -274,7 +318,9 @@ export function getToolSource(toolName: string, fallbackToString?: () => string)
   if (extractionCache.has(toolName)) return extractionCache.get(toolName)!;
 
   // Lookup tables use base names (no namespace prefix)
-  const baseName = toolName.includes('.') ? toolName.substring(toolName.lastIndexOf('.') + 1) : toolName;
+  const baseName = toolName.includes('.')
+    ? toolName.substring(toolName.lastIndexOf('.') + 1)
+    : toolName;
 
   let source: string | null = null;
 

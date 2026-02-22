@@ -109,9 +109,21 @@ interface SummaryOverrides {
   averageLatencyMs?: number;
   periodStart?: string;
   periodEnd?: string;
-  byProvider?: Record<string, { cost: number; requests: number; inputTokens: number; outputTokens: number }>;
-  byModel?: Record<string, { cost: number; requests: number; inputTokens: number; outputTokens: number }>;
-  daily?: Array<{ date: string; cost: number; requests: number; inputTokens: number; outputTokens: number }>;
+  byProvider?: Record<
+    string,
+    { cost: number; requests: number; inputTokens: number; outputTokens: number }
+  >;
+  byModel?: Record<
+    string,
+    { cost: number; requests: number; inputTokens: number; outputTokens: number }
+  >;
+  daily?: Array<{
+    date: string;
+    cost: number;
+    requests: number;
+    inputTokens: number;
+    outputTokens: number;
+  }>;
 }
 
 function makeSummary(overrides: SummaryOverrides = {}) {
@@ -246,7 +258,9 @@ describe('Tool definitions', () => {
     });
 
     it('groupBy enum has provider, model, day', () => {
-      const groupBy = GET_COST_BREAKDOWN_TOOL.parameters.properties!['groupBy'] as { enum: string[] };
+      const groupBy = GET_COST_BREAKDOWN_TOOL.parameters.properties!['groupBy'] as {
+        enum: string[];
+      };
       expect(groupBy.enum).toEqual(['provider', 'model', 'day']);
     });
 
@@ -267,7 +281,9 @@ describe('Tool definitions', () => {
     });
 
     it('period enum has today, week, month, all', () => {
-      const period = GET_EXPENSIVE_REQUESTS_TOOL.parameters.properties!['period'] as { enum: string[] };
+      const period = GET_EXPENSIVE_REQUESTS_TOOL.parameters.properties!['period'] as {
+        enum: string[];
+      };
       expect(period.enum).toEqual(['today', 'week', 'month', 'all']);
     });
   });
@@ -297,12 +313,16 @@ describe('Tool definitions', () => {
     });
 
     it('minContextWindow is type number', () => {
-      const ctx = COMPARE_MODEL_COSTS_TOOL.parameters.properties!['minContextWindow'] as { type: string };
+      const ctx = COMPARE_MODEL_COSTS_TOOL.parameters.properties!['minContextWindow'] as {
+        type: string;
+      };
       expect(ctx.type).toBe('number');
     });
 
     it('supportsFunctions is type boolean', () => {
-      const sf = COMPARE_MODEL_COSTS_TOOL.parameters.properties!['supportsFunctions'] as { type: string };
+      const sf = COMPARE_MODEL_COSTS_TOOL.parameters.properties!['supportsFunctions'] as {
+        type: string;
+      };
       expect(sf.type).toBe('boolean');
     });
   });
@@ -345,7 +365,7 @@ describe('COST_TRACKING_TOOLS', () => {
   });
 
   it('has unique names', () => {
-    const names = COST_TRACKING_TOOLS.map(t => t.name);
+    const names = COST_TRACKING_TOOLS.map((t) => t.name);
     expect(new Set(names).size).toBe(names.length);
   });
 });
@@ -360,7 +380,7 @@ describe('createCostToolExecutors', () => {
     const budget = makeBudgetMgr();
     const executorMap = createCostToolExecutors(
       () => tracker as never,
-      () => budget as never,
+      () => budget as never
     );
     expect(Object.keys(executorMap)).toHaveLength(8);
   });
@@ -370,7 +390,7 @@ describe('createCostToolExecutors', () => {
     const budget = makeBudgetMgr();
     const executorMap = createCostToolExecutors(
       () => tracker as never,
-      () => budget as never,
+      () => budget as never
     );
     for (const key of Object.keys(executorMap)) {
       expect(typeof executorMap[key]).toBe('function');
@@ -382,7 +402,7 @@ describe('createCostToolExecutors', () => {
     const budget = makeBudgetMgr();
     const executorMap = createCostToolExecutors(
       () => tracker as never,
-      () => budget as never,
+      () => budget as never
     );
     for (const tool of COST_TRACKING_TOOLS) {
       expect(executorMap[tool.name]).toBeDefined();
@@ -400,7 +420,7 @@ describe('createCostTools', () => {
     const budget = makeBudgetMgr();
     const tools = createCostTools(
       () => tracker as never,
-      () => budget as never,
+      () => budget as never
     );
     expect(tools).toHaveLength(8);
   });
@@ -410,7 +430,7 @@ describe('createCostTools', () => {
     const budget = makeBudgetMgr();
     const tools = createCostTools(
       () => tracker as never,
-      () => budget as never,
+      () => budget as never
     );
     for (const tool of tools) {
       expect(tool.definition).toBeDefined();
@@ -424,7 +444,7 @@ describe('createCostTools', () => {
     const budget = makeBudgetMgr();
     const tools = createCostTools(
       () => tracker as never,
-      () => budget as never,
+      () => budget as never
     );
     for (let i = 0; i < tools.length; i++) {
       expect(tools[i]!.definition).toBe(COST_TRACKING_TOOLS[i]);
@@ -442,7 +462,7 @@ describe('get_cost_summary', () => {
     const budget = makeBudgetMgr();
     const executorMap = createCostToolExecutors(
       () => tracker as never,
-      () => budget as never,
+      () => budget as never
     );
     return { tracker, executorMap, run: executorMap['get_cost_summary']! };
   }
@@ -481,10 +501,7 @@ describe('get_cost_summary', () => {
   it('passes endDate to getSummary when provided', async () => {
     const { tracker, run } = setup();
     tracker.getSummary.mockResolvedValue(makeSummary());
-    await run(
-      { period: 'custom', startDate: '2026-01-01', endDate: '2026-01-31' },
-      dummyContext,
-    );
+    await run({ period: 'custom', startDate: '2026-01-01', endDate: '2026-01-31' }, dummyContext);
     const [, end] = tracker.getSummary.mock.calls[0]!;
     expect(end).toBeInstanceOf(Date);
     expect((end as Date).toISOString()).toContain('2026-01-31');
@@ -536,7 +553,9 @@ describe('get_cost_summary', () => {
 
   it('returns N/A for successRate when 0 requests', async () => {
     const { tracker, run } = setup();
-    tracker.getTodayUsage.mockResolvedValue(makeSummary({ totalRequests: 0, successfulRequests: 0 }));
+    tracker.getTodayUsage.mockResolvedValue(
+      makeSummary({ totalRequests: 0, successfulRequests: 0 })
+    );
     const result = await run({ period: 'today' }, dummyContext);
     const s = (result.content as Record<string, unknown>)['summary'] as Record<string, unknown>;
     expect(s['successRate']).toBe('N/A');
@@ -544,7 +563,9 @@ describe('get_cost_summary', () => {
 
   it('calculates correct successRate for different ratios', async () => {
     const { tracker, run } = setup();
-    tracker.getTodayUsage.mockResolvedValue(makeSummary({ totalRequests: 200, successfulRequests: 150 }));
+    tracker.getTodayUsage.mockResolvedValue(
+      makeSummary({ totalRequests: 200, successfulRequests: 150 })
+    );
     const result = await run({ period: 'today' }, dummyContext);
     const s = (result.content as Record<string, unknown>)['summary'] as Record<string, unknown>;
     expect(s['successRate']).toBe('75.0%');
@@ -574,7 +595,11 @@ describe('get_cost_summary', () => {
     tracker.getTodayUsage.mockResolvedValue(makeSummary());
     const result = await run({ period: 'today' }, dummyContext);
     const c = result.content as Record<string, unknown>;
-    const providers = c['topProviders'] as Array<{ provider: string; cost: string; requests: number }>;
+    const providers = c['topProviders'] as Array<{
+      provider: string;
+      cost: string;
+      requests: number;
+    }>;
     expect(providers).toHaveLength(2);
     expect(providers[0]!.provider).toBe('openai');
     expect(providers[0]!.cost).toBe('$3.00');
@@ -616,7 +641,10 @@ describe('get_cost_summary', () => {
 
   it('limits topModels to 5', async () => {
     const { tracker, run } = setup();
-    const byModel: Record<string, { cost: number; requests: number; inputTokens: number; outputTokens: number }> = {};
+    const byModel: Record<
+      string,
+      { cost: number; requests: number; inputTokens: number; outputTokens: number }
+    > = {};
     for (let i = 0; i < 7; i++) {
       byModel[`model-${i}`] = { cost: 10 - i, requests: 10, inputTokens: 1000, outputTokens: 500 };
     }
@@ -638,7 +666,7 @@ describe('get_budget_status', () => {
     const budget = makeBudgetMgr();
     const executorMap = createCostToolExecutors(
       () => tracker as never,
-      () => budget as never,
+      () => budget as never
     );
     return { budget, executorMap, run: executorMap['get_budget_status']! };
   }
@@ -682,7 +710,10 @@ describe('get_budget_status', () => {
       alerts: [],
     });
     const result = await run({}, dummyContext);
-    const b = (result.content as Record<string, unknown>)['budget'] as Record<string, Record<string, unknown>>;
+    const b = (result.content as Record<string, unknown>)['budget'] as Record<
+      string,
+      Record<string, unknown>
+    >;
     expect(b['daily']!['limit']).toBe('No limit');
     expect(b['weekly']!['limit']).toBe('No limit');
     expect(b['monthly']!['limit']).toBe('No limit');
@@ -697,7 +728,10 @@ describe('get_budget_status', () => {
       alerts: [],
     });
     const result = await run({}, dummyContext);
-    const b = (result.content as Record<string, unknown>)['budget'] as Record<string, Record<string, unknown>>;
+    const b = (result.content as Record<string, unknown>)['budget'] as Record<
+      string,
+      Record<string, unknown>
+    >;
     expect(b['daily']!['remaining']).toBe('Unlimited');
     expect(b['weekly']!['remaining']).toBe('Unlimited');
     expect(b['monthly']!['remaining']).toBe('Unlimited');
@@ -710,7 +744,13 @@ describe('get_budget_status', () => {
       weekly: { spent: 10, limit: 50, percentage: 20, remaining: 40 },
       monthly: { spent: 30, limit: 200, percentage: 15, remaining: 170 },
       alerts: [
-        { type: 'daily', threshold: 90, currentSpend: 9, limit: 10, timestamp: '2026-02-21T12:00:00Z' },
+        {
+          type: 'daily',
+          threshold: 90,
+          currentSpend: 9,
+          limit: 10,
+          timestamp: '2026-02-21T12:00:00Z',
+        },
       ],
     });
     const result = await run({}, dummyContext);
@@ -741,8 +781,20 @@ describe('get_budget_status', () => {
       weekly: { spent: 45, limit: 50, percentage: 90, remaining: 5 },
       monthly: { spent: 30, limit: 200, percentage: 15, remaining: 170 },
       alerts: [
-        { type: 'daily', threshold: 90, currentSpend: 9, limit: 10, timestamp: '2026-02-21T12:00:00Z' },
-        { type: 'weekly', threshold: 90, currentSpend: 45, limit: 50, timestamp: '2026-02-21T12:00:00Z' },
+        {
+          type: 'daily',
+          threshold: 90,
+          currentSpend: 9,
+          limit: 10,
+          timestamp: '2026-02-21T12:00:00Z',
+        },
+        {
+          type: 'weekly',
+          threshold: 90,
+          currentSpend: 45,
+          limit: 50,
+          timestamp: '2026-02-21T12:00:00Z',
+        },
       ],
     });
     const result = await run({}, dummyContext);
@@ -761,7 +813,10 @@ describe('get_budget_status', () => {
       alerts: [],
     });
     const result = await run({}, dummyContext);
-    const b = (result.content as Record<string, unknown>)['budget'] as Record<string, Record<string, unknown>>;
+    const b = (result.content as Record<string, unknown>)['budget'] as Record<
+      string,
+      Record<string, unknown>
+    >;
     expect(b['daily']!['percentage']).toBe('33.3%');
   });
 });
@@ -776,7 +831,7 @@ describe('set_budget', () => {
     const budget = makeBudgetMgr();
     const executorMap = createCostToolExecutors(
       () => tracker as never,
-      () => budget as never,
+      () => budget as never
     );
     return { budget, executorMap, run: executorMap['set_budget']! };
   }
@@ -792,7 +847,7 @@ describe('set_budget', () => {
     const { run } = setup();
     const result = await run(
       { dailyLimit: 10, weeklyLimit: 50, monthlyLimit: 200, perRequestLimit: 1 },
-      dummyContext,
+      dummyContext
     );
     const c = result.content as Record<string, unknown>;
     expect(c['success']).toBe(true);
@@ -807,7 +862,10 @@ describe('set_budget', () => {
   it('shows "Not set" for unspecified limits', async () => {
     const { run } = setup();
     const result = await run({}, dummyContext);
-    const limits = (result.content as Record<string, unknown>)['newLimits'] as Record<string, string>;
+    const limits = (result.content as Record<string, unknown>)['newLimits'] as Record<
+      string,
+      string
+    >;
     expect(limits['daily']).toBe('Not set');
     expect(limits['weekly']).toBe('Not set');
     expect(limits['monthly']).toBe('Not set');
@@ -818,7 +876,10 @@ describe('set_budget', () => {
     const { budget, run } = setup();
     const result = await run({ dailyLimit: 5 }, dummyContext);
     expect(budget.configure).toHaveBeenCalledWith({ dailyLimit: 5 });
-    const limits = (result.content as Record<string, unknown>)['newLimits'] as Record<string, string>;
+    const limits = (result.content as Record<string, unknown>)['newLimits'] as Record<
+      string,
+      string
+    >;
     expect(limits['daily']).toBe('$5.00');
     expect(limits['weekly']).toBe('Not set');
     expect(limits['monthly']).toBe('Not set');
@@ -828,7 +889,10 @@ describe('set_budget', () => {
   it('handles partial args (only monthlyLimit and perRequestLimit)', async () => {
     const { run } = setup();
     const result = await run({ monthlyLimit: 100, perRequestLimit: 0.5 }, dummyContext);
-    const limits = (result.content as Record<string, unknown>)['newLimits'] as Record<string, string>;
+    const limits = (result.content as Record<string, unknown>)['newLimits'] as Record<
+      string,
+      string
+    >;
     expect(limits['daily']).toBe('Not set');
     expect(limits['weekly']).toBe('Not set');
     expect(limits['monthly']).toBe('$100.00');
@@ -838,7 +902,10 @@ describe('set_budget', () => {
   it('shows "Not set" when limit is 0 (falsy)', async () => {
     const { run } = setup();
     const result = await run({ dailyLimit: 0 }, dummyContext);
-    const limits = (result.content as Record<string, unknown>)['newLimits'] as Record<string, string>;
+    const limits = (result.content as Record<string, unknown>)['newLimits'] as Record<
+      string,
+      string
+    >;
     expect(limits['daily']).toBe('Not set');
   });
 
@@ -859,7 +926,7 @@ describe('get_cost_breakdown', () => {
     const budget = makeBudgetMgr();
     const executorMap = createCostToolExecutors(
       () => tracker as never,
-      () => budget as never,
+      () => budget as never
     );
     return { tracker, executorMap, run: executorMap['get_cost_breakdown']! };
   }
@@ -893,7 +960,13 @@ describe('get_cost_breakdown', () => {
     expect(c['success']).toBe(true);
     expect(c['period']).toBe('today');
     expect(c['groupBy']).toBe('provider');
-    const bd = c['breakdown'] as Array<{ name: string; cost: string; costRaw: number; requests: number; tokens: string }>;
+    const bd = c['breakdown'] as Array<{
+      name: string;
+      cost: string;
+      costRaw: number;
+      requests: number;
+      tokens: string;
+    }>;
     expect(bd).toHaveLength(2);
     // openai cost 3 > anthropic cost 2.5
     expect(bd[0]!.name).toBe('openai');
@@ -906,7 +979,10 @@ describe('get_cost_breakdown', () => {
     const { tracker, run } = setup();
     tracker.getTodayUsage.mockResolvedValue(makeSummary());
     const result = await run({ groupBy: 'model', period: 'today' }, dummyContext);
-    const bd = (result.content as Record<string, unknown>)['breakdown'] as Array<{ name: string; costRaw: number }>;
+    const bd = (result.content as Record<string, unknown>)['breakdown'] as Array<{
+      name: string;
+      costRaw: number;
+    }>;
     expect(bd).toHaveLength(2);
     expect(bd[0]!.name).toBe('gpt-4o');
     expect(bd[0]!.costRaw).toBe(3);
@@ -917,7 +993,10 @@ describe('get_cost_breakdown', () => {
     const { tracker, run } = setup();
     tracker.getTodayUsage.mockResolvedValue(makeSummary());
     const result = await run({ groupBy: 'day', period: 'today' }, dummyContext);
-    const bd = (result.content as Record<string, unknown>)['breakdown'] as Array<{ name: string; costRaw: number }>;
+    const bd = (result.content as Record<string, unknown>)['breakdown'] as Array<{
+      name: string;
+      costRaw: number;
+    }>;
     expect(bd).toHaveLength(2);
     expect(bd[0]!.name).toBe('2026-02-20');
     expect(bd[1]!.name).toBe('2026-02-21');
@@ -927,7 +1006,9 @@ describe('get_cost_breakdown', () => {
     const { tracker, run } = setup();
     tracker.getTodayUsage.mockResolvedValue(makeSummary());
     const result = await run({ groupBy: 'provider', period: 'today' }, dummyContext);
-    const bd = (result.content as Record<string, unknown>)['breakdown'] as Array<Record<string, unknown>>;
+    const bd = (result.content as Record<string, unknown>)['breakdown'] as Array<
+      Record<string, unknown>
+    >;
     const entry = bd[0]!;
     expect(entry['cost']).toBe('$3.00');
     expect(entry['costRaw']).toBe(3);
@@ -948,7 +1029,9 @@ describe('get_cost_breakdown', () => {
     const { tracker, run } = setup();
     tracker.getTodayUsage.mockResolvedValue(makeSummary());
     const result = await run({ groupBy: 'day', period: 'today' }, dummyContext);
-    const bd = (result.content as Record<string, unknown>)['breakdown'] as Array<{ tokens: string }>;
+    const bd = (result.content as Record<string, unknown>)['breakdown'] as Array<{
+      tokens: string;
+    }>;
     // First day: 30000 + 15000 = 45000
     expect(bd[0]!.tokens).toBe('45000');
     // Second day: 20000 + 10000 = 30000
@@ -990,7 +1073,7 @@ describe('get_expensive_requests', () => {
     const budget = makeBudgetMgr();
     const executorMap = createCostToolExecutors(
       () => tracker as never,
-      () => budget as never,
+      () => budget as never
     );
     return { tracker, executorMap, run: executorMap['get_expensive_requests']! };
   }
@@ -1122,7 +1205,7 @@ describe('get_cost_recommendations', () => {
     const budget = makeBudgetMgr();
     const executorMap = createCostToolExecutors(
       () => tracker as never,
-      () => budget as never,
+      () => budget as never
     );
     return { tracker, executorMap, run: executorMap['get_cost_recommendations']! };
   }
@@ -1191,7 +1274,9 @@ describe('get_cost_recommendations', () => {
       },
     ]);
     const result = await run({}, dummyContext);
-    const recs = (result.content as Record<string, unknown>)['recommendations'] as Array<Record<string, unknown>>;
+    const recs = (result.content as Record<string, unknown>)['recommendations'] as Array<
+      Record<string, unknown>
+    >;
     // (7/10)*100 = 70.0
     expect(recs[0]!['savingsPercent']).toBe('70.0%');
   });
@@ -1209,7 +1294,9 @@ describe('get_cost_recommendations', () => {
       },
     ]);
     const result = await run({}, dummyContext);
-    const recs = (result.content as Record<string, unknown>)['recommendations'] as Array<Record<string, unknown>>;
+    const recs = (result.content as Record<string, unknown>)['recommendations'] as Array<
+      Record<string, unknown>
+    >;
     // (1/3)*100 = 33.3%
     expect(recs[0]!['savingsPercent']).toBe('33.3%');
   });
@@ -1270,7 +1357,7 @@ describe('compare_model_costs', () => {
     const budget = makeBudgetMgr();
     const executorMap = createCostToolExecutors(
       () => tracker as never,
-      () => budget as never,
+      () => budget as never
     );
     return { executorMap, run: executorMap['compare_model_costs']! };
   }
@@ -1287,7 +1374,9 @@ describe('compare_model_costs', () => {
   it('sorts models by inputPricePerMillion ascending', async () => {
     const { run } = setup();
     const result = await run({}, dummyContext);
-    const models = (result.content as Record<string, unknown>)['models'] as Array<{ model: string }>;
+    const models = (result.content as Record<string, unknown>)['models'] as Array<{
+      model: string;
+    }>;
     // groq 0.24, google 0.5, anthropic 3, openai 5
     expect(models[0]!.model).toBe('mixtral-8x7b');
     expect(models[1]!.model).toBe('gemini-pro');
@@ -1298,7 +1387,9 @@ describe('compare_model_costs', () => {
   it('filters by providers', async () => {
     const { run } = setup();
     const result = await run({ providers: ['openai', 'anthropic'] }, dummyContext);
-    const models = (result.content as Record<string, unknown>)['models'] as Array<{ provider: string }>;
+    const models = (result.content as Record<string, unknown>)['models'] as Array<{
+      provider: string;
+    }>;
     expect(models).toHaveLength(2);
     for (const m of models) {
       expect(['openai', 'anthropic']).toContain(m.provider);
@@ -1308,7 +1399,9 @@ describe('compare_model_costs', () => {
   it('filters by single provider', async () => {
     const { run } = setup();
     const result = await run({ providers: ['google'] }, dummyContext);
-    const models = (result.content as Record<string, unknown>)['models'] as Array<{ provider: string }>;
+    const models = (result.content as Record<string, unknown>)['models'] as Array<{
+      provider: string;
+    }>;
     expect(models).toHaveLength(1);
     expect(models[0]!.provider).toBe('google');
   });
@@ -1330,10 +1423,12 @@ describe('compare_model_costs', () => {
   it('filters by minContextWindow', async () => {
     const { run } = setup();
     const result = await run({ minContextWindow: 100000 }, dummyContext);
-    const models = (result.content as Record<string, unknown>)['models'] as Array<{ model: string }>;
+    const models = (result.content as Record<string, unknown>)['models'] as Array<{
+      model: string;
+    }>;
     // openai 128000, anthropic 200000 qualify; google 32000 and groq 32000 do not
     expect(models).toHaveLength(2);
-    const modelNames = models.map(m => m.model);
+    const modelNames = models.map((m) => m.model);
     expect(modelNames).toContain('gpt-4o');
     expect(modelNames).toContain('claude-3-sonnet');
   });
@@ -1341,29 +1436,38 @@ describe('compare_model_costs', () => {
   it('filters by supportsFunctions true', async () => {
     const { run } = setup();
     const result = await run({ supportsFunctions: true }, dummyContext);
-    const models = (result.content as Record<string, unknown>)['models'] as Array<{ model: string }>;
+    const models = (result.content as Record<string, unknown>)['models'] as Array<{
+      model: string;
+    }>;
     // groq has supportsFunctions: false
     expect(models).toHaveLength(3);
-    const modelNames = models.map(m => m.model);
+    const modelNames = models.map((m) => m.model);
     expect(modelNames).not.toContain('mixtral-8x7b');
   });
 
   it('filters by supportsFunctions false', async () => {
     const { run } = setup();
     const result = await run({ supportsFunctions: false }, dummyContext);
-    const models = (result.content as Record<string, unknown>)['models'] as Array<{ model: string }>;
+    const models = (result.content as Record<string, unknown>)['models'] as Array<{
+      model: string;
+    }>;
     expect(models).toHaveLength(1);
     expect(models[0]!.model).toBe('mixtral-8x7b');
   });
 
   it('combines multiple filters', async () => {
     const { run } = setup();
-    const result = await run({
-      providers: ['openai', 'anthropic', 'google'],
-      minContextWindow: 100000,
-      supportsFunctions: true,
-    }, dummyContext);
-    const models = (result.content as Record<string, unknown>)['models'] as Array<{ model: string }>;
+    const result = await run(
+      {
+        providers: ['openai', 'anthropic', 'google'],
+        minContextWindow: 100000,
+        supportsFunctions: true,
+      },
+      dummyContext
+    );
+    const models = (result.content as Record<string, unknown>)['models'] as Array<{
+      model: string;
+    }>;
     // openai (128000, functions=true) and anthropic (200000, functions=true)
     // google (32000) excluded by context window
     expect(models).toHaveLength(2);
@@ -1372,7 +1476,9 @@ describe('compare_model_costs', () => {
   it('formats inputPrice and outputPrice correctly', async () => {
     const { run } = setup();
     const result = await run({ providers: ['openai'] }, dummyContext);
-    const models = (result.content as Record<string, unknown>)['models'] as Array<Record<string, unknown>>;
+    const models = (result.content as Record<string, unknown>)['models'] as Array<
+      Record<string, unknown>
+    >;
     expect(models[0]!['inputPrice']).toBe('$5.00/1M tokens');
     expect(models[0]!['outputPrice']).toBe('$15.00/1M tokens');
   });
@@ -1380,7 +1486,9 @@ describe('compare_model_costs', () => {
   it('includes correct model properties', async () => {
     const { run } = setup();
     const result = await run({ providers: ['openai'] }, dummyContext);
-    const models = (result.content as Record<string, unknown>)['models'] as Array<Record<string, unknown>>;
+    const models = (result.content as Record<string, unknown>)['models'] as Array<
+      Record<string, unknown>
+    >;
     const m = models[0]!;
     expect(m['provider']).toBe('openai');
     expect(m['model']).toBe('gpt-4o');
@@ -1394,7 +1502,9 @@ describe('compare_model_costs', () => {
   it('calculates costPer1000Requests correctly', async () => {
     const { run } = setup();
     const result = await run({ providers: ['openai'] }, dummyContext);
-    const models = (result.content as Record<string, unknown>)['models'] as Array<Record<string, unknown>>;
+    const models = (result.content as Record<string, unknown>)['models'] as Array<
+      Record<string, unknown>
+    >;
     // (1000 * 5 + 500 * 15) / 1_000_000 = (5000 + 7500) / 1_000_000 = 0.0125
     expect(models[0]!['costPer1000Requests']).toBe('$0.01');
   });
@@ -1402,7 +1512,9 @@ describe('compare_model_costs', () => {
   it('handles model without supportsVision (defaults to false)', async () => {
     const { run } = setup();
     const result = await run({ providers: ['groq'] }, dummyContext);
-    const models = (result.content as Record<string, unknown>)['models'] as Array<Record<string, unknown>>;
+    const models = (result.content as Record<string, unknown>)['models'] as Array<
+      Record<string, unknown>
+    >;
     expect(models[0]!['supportsVision']).toBe(false);
   });
 });
@@ -1417,7 +1529,7 @@ describe('export_usage', () => {
     const budget = makeBudgetMgr();
     const executorMap = createCostToolExecutors(
       () => tracker as never,
-      () => budget as never,
+      () => budget as never
     );
     return { tracker, executorMap, run: executorMap['export_usage']! };
   }

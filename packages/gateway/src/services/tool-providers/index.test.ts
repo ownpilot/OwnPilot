@@ -385,7 +385,7 @@ describe('wrapGatewayExecutor', () => {
       expect(mocks.executeMemoryTool).toHaveBeenCalledWith(
         mocks.memoryToolDef1.name,
         expect.anything(),
-        expect.anything(),
+        expect.anything()
       );
     });
 
@@ -396,7 +396,7 @@ describe('wrapGatewayExecutor', () => {
       expect(mocks.executeMemoryTool).toHaveBeenCalledWith(
         mocks.memoryToolDef2.name,
         expect.anything(),
-        expect.anything(),
+        expect.anything()
       );
     });
 
@@ -408,7 +408,7 @@ describe('wrapGatewayExecutor', () => {
       expect(mocks.executeMemoryTool).toHaveBeenCalledWith(
         expect.any(String),
         args,
-        expect.anything(),
+        expect.anything()
       );
     });
 
@@ -419,7 +419,7 @@ describe('wrapGatewayExecutor', () => {
       expect(mocks.executeMemoryTool).toHaveBeenCalledWith(
         expect.any(String),
         {},
-        expect.anything(),
+        expect.anything()
       );
     });
 
@@ -430,7 +430,7 @@ describe('wrapGatewayExecutor', () => {
       expect(mocks.executeMemoryTool).toHaveBeenCalledWith(
         expect.any(String),
         expect.anything(),
-        'user-42',
+        'user-42'
       );
     });
 
@@ -441,7 +441,7 @@ describe('wrapGatewayExecutor', () => {
       expect(mocks.executeCustomDataTool).toHaveBeenCalledWith(
         expect.any(String),
         expect.anything(),
-        undefined,
+        undefined
       );
     });
 
@@ -580,11 +580,7 @@ describe('createGoalToolProvider', () => {
   it('passes userId to executeGoalTool', async () => {
     const [tool] = createGoalToolProvider('goal-user').getTools();
     await tool!.executor({});
-    expect(mocks.executeGoalTool).toHaveBeenCalledWith(
-      mocks.goalToolDef1.name,
-      {},
-      'goal-user',
-    );
+    expect(mocks.executeGoalTool).toHaveBeenCalledWith(mocks.goalToolDef1.name, {}, 'goal-user');
   });
 
   it('does not call any other executor', async () => {
@@ -638,7 +634,7 @@ describe('createCustomDataToolProvider', () => {
     expect(mocks.executeCustomDataTool).toHaveBeenCalledWith(
       mocks.customDataToolDef.name,
       {},
-      undefined,
+      undefined
     );
   });
 
@@ -679,7 +675,9 @@ describe('createPersonalDataToolProvider', () => {
   });
 
   it('getTools returns the same number of entries as PERSONAL_DATA_TOOLS', () => {
-    expect(createPersonalDataToolProvider().getTools()).toHaveLength(mocks.PERSONAL_DATA_TOOLS.length);
+    expect(createPersonalDataToolProvider().getTools()).toHaveLength(
+      mocks.PERSONAL_DATA_TOOLS.length
+    );
   });
 
   it('tool definition matches the PERSONAL_DATA_TOOL definition', () => {
@@ -699,7 +697,7 @@ describe('createPersonalDataToolProvider', () => {
     expect(mocks.executePersonalDataTool).toHaveBeenCalledWith(
       mocks.personalDataToolDef.name,
       {},
-      undefined,
+      undefined
     );
   });
 
@@ -734,11 +732,7 @@ describe('createPersonalDataToolProvider', () => {
     const args = { name: 'Buy groceries', due: '2026-03-01' };
     const [tool] = createPersonalDataToolProvider().getTools();
     await tool!.executor(args);
-    expect(mocks.executePersonalDataTool).toHaveBeenCalledWith(
-      expect.any(String),
-      args,
-      undefined,
-    );
+    expect(mocks.executePersonalDataTool).toHaveBeenCalledWith(expect.any(String), args, undefined);
   });
 
   it('multiple calls to getTools() return fresh arrays', () => {
@@ -782,7 +776,7 @@ describe('createTriggerToolProvider', () => {
     expect(mocks.executeTriggerTool).toHaveBeenCalledWith(
       mocks.triggerToolDef1.name,
       {},
-      undefined,
+      undefined
     );
   });
 
@@ -859,11 +853,7 @@ describe('createPlanToolProvider', () => {
   it('passes undefined as userId since factory has no userId param', async () => {
     const [tool] = createPlanToolProvider().getTools();
     await tool!.executor({});
-    expect(mocks.executePlanTool).toHaveBeenCalledWith(
-      mocks.planToolDef1.name,
-      {},
-      undefined,
-    );
+    expect(mocks.executePlanTool).toHaveBeenCalledWith(mocks.planToolDef1.name, {}, undefined);
   });
 
   it('does not call executeMemoryTool, executeTriggerTool, etc.', async () => {
@@ -1058,7 +1048,10 @@ describe('async executor behaviour', () => {
   it('catches executor rejection and returns structured error', async () => {
     mocks.executeMemoryTool.mockRejectedValueOnce(new Error('network failure'));
     const [tool] = createMemoryToolProvider('u1').getTools();
-    await expect(tool!.executor({})).resolves.toMatchObject({ isError: true, content: 'network failure' });
+    await expect(tool!.executor({})).resolves.toMatchObject({
+      isError: true,
+      content: 'network failure',
+    });
   });
 
   it('handles concurrent executor calls without cross-contamination', async () => {

@@ -23,19 +23,23 @@ export const getCurrentDateTimeTool: ToolDefinition = {
     properties: {
       timezone: {
         type: 'string',
-        description: 'Timezone name (e.g., "Europe/Istanbul", "America/New_York", "UTC"). Defaults to local timezone.',
+        description:
+          'Timezone name (e.g., "Europe/Istanbul", "America/New_York", "UTC"). Defaults to local timezone.',
       },
       format: {
         type: 'string',
         enum: ['iso', 'locale', 'unix', 'all'],
-        description: 'Output format: iso (ISO 8601), locale (localized), unix (timestamp), all (everything). Default: all',
+        description:
+          'Output format: iso (ISO 8601), locale (localized), unix (timestamp), all (everything). Default: all',
       },
     },
     required: [],
   },
 };
 
-export const getCurrentDateTimeExecutor: ToolExecutor = async (args): Promise<ToolExecutionResult> => {
+export const getCurrentDateTimeExecutor: ToolExecutor = async (
+  args
+): Promise<ToolExecutionResult> => {
   try {
     const timezone = (args.timezone as string) || Intl.DateTimeFormat().resolvedOptions().timeZone;
     const format = (args.format as string) || 'all';
@@ -110,7 +114,7 @@ function getWeekNumber(date: Date): number {
   const dayNum = d.getUTCDay() || 7;
   d.setUTCDate(d.getUTCDate() + 4 - dayNum);
   const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-  return Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+  return Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
 }
 
 // =============================================================================
@@ -273,7 +277,7 @@ export const dateAddExecutor: ToolExecutor = async (args): Promise<ToolExecution
         result.setDate(result.getDate() + amount);
         break;
       case 'weeks':
-        result.setDate(result.getDate() + (amount * 7));
+        result.setDate(result.getDate() + amount * 7);
         break;
       case 'months':
         result.setMonth(result.getMonth() + amount);

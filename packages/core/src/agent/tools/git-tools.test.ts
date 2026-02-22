@@ -15,7 +15,8 @@ vi.mock('node:child_process', () => ({
 // promise.  We mock `node:util` so that `promisify` returns a wrapper around
 // our mock.
 vi.mock('node:util', () => ({
-  promisify: () =>
+  promisify:
+    () =>
     (...args: unknown[]) =>
       new Promise((resolve, reject) => {
         mockExecFile(...args, (err: Error | null, stdout: string, stderr: string) => {
@@ -52,25 +53,21 @@ import {
  * Make `mockExecFile` succeed with the given stdout for the next call.
  */
 function succeedWith(stdout: string): void {
-  mockExecFile.mockImplementationOnce(
-    (...args: unknown[]) => {
-      const cb = args[args.length - 1] as (err: Error | null, stdout: string, stderr: string) => void;
-      cb(null, stdout, '');
-    },
-  );
+  mockExecFile.mockImplementationOnce((...args: unknown[]) => {
+    const cb = args[args.length - 1] as (err: Error | null, stdout: string, stderr: string) => void;
+    cb(null, stdout, '');
+  });
 }
 
 /**
  * Make `mockExecFile` fail with the given error message.
  */
 function failWith(message: string, stderr = ''): void {
-  mockExecFile.mockImplementationOnce(
-    (...args: unknown[]) => {
-      const cb = args[args.length - 1] as (err: Error | null, stdout: string, stderr: string) => void;
-      const err = Object.assign(new Error(message), { stderr });
-      cb(err, '', stderr);
-    },
-  );
+  mockExecFile.mockImplementationOnce((...args: unknown[]) => {
+    const cb = args[args.length - 1] as (err: Error | null, stdout: string, stderr: string) => void;
+    const err = Object.assign(new Error(message), { stderr });
+    cb(err, '', stderr);
+  });
 }
 
 // ---------------------------------------------------------------------------

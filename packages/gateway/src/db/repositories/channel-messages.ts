@@ -190,18 +190,14 @@ export class ChannelMessagesRepository extends BaseRepository {
   }
 
   async delete(id: string): Promise<boolean> {
-    const result = await this.execute(
-      `DELETE FROM channel_messages WHERE id = $1`,
-      [id]
-    );
+    const result = await this.execute(`DELETE FROM channel_messages WHERE id = $1`, [id]);
     return result.changes > 0;
   }
 
   async deleteByChannel(channelId: string): Promise<number> {
-    const result = await this.execute(
-      `DELETE FROM channel_messages WHERE channel_id = $1`,
-      [channelId]
-    );
+    const result = await this.execute(`DELETE FROM channel_messages WHERE channel_id = $1`, [
+      channelId,
+    ]);
     return result.changes;
   }
 

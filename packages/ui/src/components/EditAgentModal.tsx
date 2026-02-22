@@ -36,7 +36,9 @@ export function EditAgentModal({ agentId, onClose, onUpdated }: EditAgentModalPr
   const [step, setStep] = useState<'info' | 'model' | 'tools' | 'config'>('info');
 
   useEffect(() => {
-    Promise.all([fetchAgentDetail(), fetchModels(), fetchTools()]).finally(() => setIsLoading(false));
+    Promise.all([fetchAgentDetail(), fetchModels(), fetchTools()]).finally(() =>
+      setIsLoading(false)
+    );
   }, [agentId]);
 
   const fetchAgentDetail = async () => {
@@ -115,23 +117,28 @@ export function EditAgentModal({ agentId, onClose, onUpdated }: EditAgentModalPr
 
   const toggleTool = (toolName: string) => {
     setSelectedTools((prev) =>
-      prev.includes(toolName)
-        ? prev.filter((t) => t !== toolName)
-        : [...prev, toolName]
+      prev.includes(toolName) ? prev.filter((t) => t !== toolName) : [...prev, toolName]
     );
   };
 
   // Group models by provider
-  const modelsByProvider = useMemo(() => models.reduce<Record<string, ModelInfo[]>>((acc, model) => {
-    if (!acc[model.provider]) acc[model.provider] = [];
-    acc[model.provider]!.push(model);
-    return acc;
-  }, {}), [models]);
+  const modelsByProvider = useMemo(
+    () =>
+      models.reduce<Record<string, ModelInfo[]>>((acc, model) => {
+        if (!acc[model.provider]) acc[model.provider] = [];
+        acc[model.provider]!.push(model);
+        return acc;
+      }, {}),
+    [models]
+  );
 
   const steps = ['info', 'model', 'tools', 'config'] as const;
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onBackdropClick}>
+    <div
+      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+      onClick={onBackdropClick}
+    >
       <div className="w-full max-w-2xl bg-bg-primary dark:bg-dark-bg-primary border border-border dark:border-dark-border rounded-xl shadow-xl max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
         <div className="p-4 border-b border-border dark:border-dark-border">
@@ -217,7 +224,8 @@ export function EditAgentModal({ agentId, onClose, onUpdated }: EditAgentModalPr
                           onClick={() => setSelectedModel(model)}
                           disabled={!configuredProviders.includes(provider)}
                           className={`p-3 rounded-lg border text-left transition-all ${
-                            selectedModel?.id === model.id && selectedModel?.provider === model.provider
+                            selectedModel?.id === model.id &&
+                            selectedModel?.provider === model.provider
                               ? 'border-primary bg-primary/5'
                               : 'border-border dark:border-dark-border hover:border-primary/50'
                           } ${!configuredProviders.includes(provider) ? 'opacity-50 cursor-not-allowed' : ''}`}
@@ -357,9 +365,7 @@ export function EditAgentModal({ agentId, onClose, onUpdated }: EditAgentModalPr
             </div>
           )}
 
-          {error && (
-            <p className="text-sm text-error mt-4">{error}</p>
-          )}
+          {error && <p className="text-sm text-error mt-4">{error}</p>}
         </div>
 
         {/* Footer */}

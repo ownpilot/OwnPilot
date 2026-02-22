@@ -99,10 +99,7 @@ export function errorHandler(err: Error, c: Context): Response {
       code: ERROR_CODES.INTERNAL_ERROR,
       message: 'An unexpected error occurred',
       // Only expose error message in development — never stack traces
-      details:
-        process.env.NODE_ENV === 'development'
-          ? { message: err.message }
-          : undefined,
+      details: process.env.NODE_ENV === 'development' ? { message: err.message } : undefined,
     },
     meta: {
       requestId,

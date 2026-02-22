@@ -76,10 +76,12 @@ export class MemoryService implements IMemoryService {
       getEmbeddingQueue().enqueue(memory.id, userId, memory.content);
     }
 
-    getEventBus().emit(createEvent<ResourceCreatedData>(
-      EventTypes.RESOURCE_CREATED, 'resource', 'memory-service',
-      { resourceType: 'memory', id: memory.id },
-    ));
+    getEventBus().emit(
+      createEvent<ResourceCreatedData>(EventTypes.RESOURCE_CREATED, 'resource', 'memory-service', {
+        resourceType: 'memory',
+        id: memory.id,
+      })
+    );
     return memory;
   }
 
@@ -136,10 +138,12 @@ export class MemoryService implements IMemoryService {
     // Also queue embedding for the parent (full content — truncated by API if too long)
     getEmbeddingQueue().enqueue(parentMemory.id, userId, input.content);
 
-    getEventBus().emit(createEvent<ResourceCreatedData>(
-      EventTypes.RESOURCE_CREATED, 'resource', 'memory-service',
-      { resourceType: 'memory', id: parentMemory.id },
-    ));
+    getEventBus().emit(
+      createEvent<ResourceCreatedData>(EventTypes.RESOURCE_CREATED, 'resource', 'memory-service', {
+        resourceType: 'memory',
+        id: parentMemory.id,
+      })
+    );
 
     log.info(`Created chunked memory: ${chunks.length} chunks`, { parentId: parentMemory.id });
     return parentMemory;
@@ -151,7 +155,7 @@ export class MemoryService implements IMemoryService {
    */
   async rememberMemory(
     userId: string,
-    input: CreateMemoryInput,
+    input: CreateMemoryInput
   ): Promise<{ memory: Memory; deduplicated: boolean }> {
     if (!input.content?.trim()) {
       throw new MemoryServiceError('Content is required', 'VALIDATION_ERROR');
@@ -185,7 +189,7 @@ export class MemoryService implements IMemoryService {
    */
   async batchRemember(
     userId: string,
-    memories: CreateMemoryInput[],
+    memories: CreateMemoryInput[]
   ): Promise<{ created: number; deduplicated: number; memories: Memory[] }> {
     const results = { created: 0, deduplicated: 0, memories: [] as Memory[] };
 
@@ -213,10 +217,14 @@ export class MemoryService implements IMemoryService {
     const repo = this.getRepo(userId);
     const updated = await repo.update(id, input);
     if (updated) {
-      getEventBus().emit(createEvent<ResourceUpdatedData>(
-        EventTypes.RESOURCE_UPDATED, 'resource', 'memory-service',
-        { resourceType: 'memory', id, changes: input },
-      ));
+      getEventBus().emit(
+        createEvent<ResourceUpdatedData>(
+          EventTypes.RESOURCE_UPDATED,
+          'resource',
+          'memory-service',
+          { resourceType: 'memory', id, changes: input }
+        )
+      );
     }
     return updated;
   }
@@ -225,10 +233,14 @@ export class MemoryService implements IMemoryService {
     const repo = this.getRepo(userId);
     const deleted = await repo.delete(id);
     if (deleted) {
-      getEventBus().emit(createEvent<ResourceDeletedData>(
-        EventTypes.RESOURCE_DELETED, 'resource', 'memory-service',
-        { resourceType: 'memory', id },
-      ));
+      getEventBus().emit(
+        createEvent<ResourceDeletedData>(
+          EventTypes.RESOURCE_DELETED,
+          'resource',
+          'memory-service',
+          { resourceType: 'memory', id }
+        )
+      );
     }
     return deleted;
   }
@@ -245,7 +257,7 @@ export class MemoryService implements IMemoryService {
   async searchMemories(
     userId: string,
     searchQuery: string,
-    options: { type?: MemoryType; limit?: number } = {},
+    options: { type?: MemoryType; limit?: number } = {}
   ): Promise<Memory[]> {
     const repo = this.getRepo(userId);
     return repo.search(searchQuery, options);
@@ -263,7 +275,7 @@ export class MemoryService implements IMemoryService {
       limit?: number;
       threshold?: number;
       minImportance?: number;
-    } = {},
+    } = {}
   ): Promise<Array<Memory & { similarity: number }>> {
     const repo = this.getRepo(userId);
     return repo.searchByEmbedding(embedding, options);
@@ -281,7 +293,7 @@ export class MemoryService implements IMemoryService {
       type?: MemoryType;
       limit?: number;
       minImportance?: number;
-    } = {},
+    } = {}
   ): Promise<Array<Memory & { score: number; matchType: string }>> {
     const repo = this.getRepo(userId);
 
@@ -324,7 +336,7 @@ export class MemoryService implements IMemoryService {
 
   async getImportantMemories(
     userId: string,
-    options?: { threshold?: number; limit?: number },
+    options?: { threshold?: number; limit?: number }
   ): Promise<Memory[]> {
     const repo = this.getRepo(userId);
     return repo.getImportant(options?.threshold ?? 0.7, options?.limit ?? 20);
@@ -372,7 +384,7 @@ export class MemoryService implements IMemoryService {
    */
   async decayMemories(
     userId: string,
-    options: { daysThreshold?: number; decayFactor?: number } = {},
+    options: { daysThreshold?: number; decayFactor?: number } = {}
   ): Promise<number> {
     const repo = this.getRepo(userId);
     return repo.decay(options);
@@ -384,19 +396,21 @@ export class MemoryService implements IMemoryService {
    */
   async cleanupMemories(
     userId: string,
-    options: { maxAge?: number; minImportance?: number } = {},
+    options: { maxAge?: number; minImportance?: number } = {}
   ): Promise<number> {
     const repo = this.getRepo(userId);
     const deleted = await repo.cleanup(options);
 
     // Also evict stale embedding cache entries (fire-and-forget)
-    import('../db/repositories/embedding-cache.js').then(({ embeddingCacheRepo }) => {
-      embeddingCacheRepo.evict().catch(err => {
-        log.warn('Failed to evict embedding cache', String(err));
+    import('../db/repositories/embedding-cache.js')
+      .then(({ embeddingCacheRepo }) => {
+        embeddingCacheRepo.evict().catch((err) => {
+          log.warn('Failed to evict embedding cache', String(err));
+        });
+      })
+      .catch((err) => {
+        log.warn('Failed to load embedding cache module', String(err));
       });
-    }).catch(err => {
-      log.warn('Failed to load embedding cache module', String(err));
-    });
 
     return deleted;
   }
@@ -411,7 +425,7 @@ export type MemoryServiceErrorCode = 'VALIDATION_ERROR' | 'NOT_FOUND' | 'INTERNA
 export class MemoryServiceError extends Error {
   constructor(
     message: string,
-    public readonly code: MemoryServiceErrorCode,
+    public readonly code: MemoryServiceErrorCode
   ) {
     super(message);
     this.name = 'MemoryServiceError';

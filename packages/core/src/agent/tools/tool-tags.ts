@@ -13,7 +13,17 @@ export const TOOL_SEARCH_TAGS: Record<string, readonly string[]> = {
   // ─────────────────────────────────────────────
   // EMAIL
   // ─────────────────────────────────────────────
-  send_email: ['mail', 'email', 'send', 'message', 'smtp', 'contact', 'notify', 'notification', 'letter'],
+  send_email: [
+    'mail',
+    'email',
+    'send',
+    'message',
+    'smtp',
+    'contact',
+    'notify',
+    'notification',
+    'letter',
+  ],
   list_emails: ['mail', 'email', 'inbox', 'read mail', 'check mail'],
   read_email: ['mail', 'email', 'open mail', 'message content', 'read message'],
   delete_email: ['mail', 'email', 'remove mail', 'trash', 'delete mail'],
@@ -64,8 +74,25 @@ export const TOOL_SEARCH_TAGS: Record<string, readonly string[]> = {
   // ─────────────────────────────────────────────
   // CALENDAR / EVENTS
   // ─────────────────────────────────────────────
-  add_calendar_event: ['calendar', 'event', 'appointment', 'meeting', 'plan', 'schedule', 'create', 'date'],
-  list_calendar_events: ['calendar', 'events', 'appointments', 'schedule', 'today', 'tomorrow', 'week'],
+  add_calendar_event: [
+    'calendar',
+    'event',
+    'appointment',
+    'meeting',
+    'plan',
+    'schedule',
+    'create',
+    'date',
+  ],
+  list_calendar_events: [
+    'calendar',
+    'events',
+    'appointments',
+    'schedule',
+    'today',
+    'tomorrow',
+    'week',
+  ],
   delete_calendar_event: ['cancel event', 'remove event', 'delete event'],
   batch_add_calendar_events: ['bulk events', 'batch calendar', 'multiple events'],
 
@@ -193,7 +220,18 @@ export const TOOL_SEARCH_TAGS: Record<string, readonly string[]> = {
   // ─────────────────────────────────────────────
   get_current_datetime: ['time', 'date', 'now', 'today', 'what time'],
   calculate: ['calculate', 'math', 'formula', 'operation', 'compute'],
-  convert_units: ['convert', 'unit', 'metre', 'kilo', 'fahrenheit', 'celsius', 'cm', 'inch', 'dollar', 'euro'],
+  convert_units: [
+    'convert',
+    'unit',
+    'metre',
+    'kilo',
+    'fahrenheit',
+    'celsius',
+    'cm',
+    'inch',
+    'dollar',
+    'euro',
+  ],
   generate_uuid: ['uuid', 'id', 'unique', 'identifier'],
   generate_password: ['password', 'secure', 'random'],
   random_number: ['random number', 'luck', 'dice'],
@@ -222,7 +260,16 @@ export const TOOL_SEARCH_TAGS: Record<string, readonly string[]> = {
   delete_custom_tool: ['tool delete', 'remove tool'],
   toggle_custom_tool: ['tool toggle', 'enable', 'disable'],
   search_tools: ['find tool', 'discover', 'search', 'which tool', 'available tools'],
-  get_tool_help: ['help', 'usage', 'parameters', 'how to use', 'docs', 'documentation', 'batch help', 'multiple tools'],
+  get_tool_help: [
+    'help',
+    'usage',
+    'parameters',
+    'how to use',
+    'docs',
+    'documentation',
+    'batch help',
+    'multiple tools',
+  ],
   use_tool: ['execute', 'run tool', 'call tool', 'invoke'],
   batch_use_tool: ['batch', 'parallel', 'multiple tools', 'concurrent', 'bulk execute', 'run many'],
 

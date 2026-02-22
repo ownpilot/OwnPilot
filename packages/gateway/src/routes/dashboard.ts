@@ -14,7 +14,6 @@ const log = getLog('Dashboard');
 
 export const dashboardRoutes = new Hono();
 
-
 /**
  * GET /briefing - Get the daily briefing with AI summary
  *
@@ -30,8 +29,9 @@ dashboardRoutes.get('/briefing', async (c) => {
   const aiOnly = c.req.query('aiOnly') === 'true';
   const queryProvider = c.req.query('provider');
   const queryModel = c.req.query('model');
-  const provider = queryProvider ?? await getDefaultProvider() ?? undefined;
-  const model = queryModel ?? (provider ? await getDefaultModel(provider) ?? undefined : undefined);
+  const provider = queryProvider ?? (await getDefaultProvider()) ?? undefined;
+  const model =
+    queryModel ?? (provider ? ((await getDefaultModel(provider)) ?? undefined) : undefined);
 
   const service = new DashboardService(userId);
 
@@ -54,13 +54,23 @@ dashboardRoutes.get('/briefing', async (c) => {
       aiError = getErrorMessage(error, 'AI briefing generation failed');
     }
 
-    return apiResponse(c, aiOnly
-      ? { aiBriefing, cached: aiBriefing?.cached ?? false, aiError }
-      : { data, aiBriefing, cached: aiBriefing?.cached ?? false, aiError });
+    return apiResponse(
+      c,
+      aiOnly
+        ? { aiBriefing, cached: aiBriefing?.cached ?? false, aiError }
+        : { data, aiBriefing, cached: aiBriefing?.cached ?? false, aiError }
+    );
   } catch (error) {
     log.error('Failed to generate briefing:', error);
 
-    return apiError(c, { code: ERROR_CODES.BRIEFING_FAILED, message: getErrorMessage(error, 'Failed to generate briefing') }, 500);
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.BRIEFING_FAILED,
+        message: getErrorMessage(error, 'Failed to generate briefing'),
+      },
+      500
+    );
   }
 });
 
@@ -78,7 +88,14 @@ dashboardRoutes.get('/data', async (c) => {
   } catch (error) {
     log.error('Failed to aggregate data:', error);
 
-    return apiError(c, { code: ERROR_CODES.DATA_AGGREGATION_FAILED, message: getErrorMessage(error, 'Failed to aggregate data') }, 500);
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.DATA_AGGREGATION_FAILED,
+        message: getErrorMessage(error, 'Failed to aggregate data'),
+      },
+      500
+    );
   }
 });
 
@@ -87,7 +104,9 @@ dashboardRoutes.get('/data', async (c) => {
  */
 dashboardRoutes.post('/briefing/refresh', async (c) => {
   const userId = getUserId(c);
-  const body = await c.req.json<{ provider?: string; model?: string }>().catch(() => ({ provider: undefined, model: undefined }));
+  const body = await c.req
+    .json<{ provider?: string; model?: string }>()
+    .catch(() => ({ provider: undefined, model: undefined }));
 
   const service = new DashboardService(userId);
 
@@ -109,7 +128,14 @@ dashboardRoutes.post('/briefing/refresh', async (c) => {
   } catch (error) {
     log.error('Failed to refresh briefing:', error);
 
-    return apiError(c, { code: ERROR_CODES.REFRESH_FAILED, message: getErrorMessage(error, 'Failed to refresh briefing') }, 500);
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.REFRESH_FAILED,
+        message: getErrorMessage(error, 'Failed to refresh briefing'),
+      },
+      500
+    );
   }
 });
 
@@ -182,7 +208,14 @@ dashboardRoutes.get('/timeline', async (c) => {
   } catch (error) {
     log.error('Failed to generate timeline:', error);
 
-    return apiError(c, { code: ERROR_CODES.TIMELINE_FAILED, message: getErrorMessage(error, 'Failed to generate timeline') }, 500);
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.TIMELINE_FAILED,
+        message: getErrorMessage(error, 'Failed to generate timeline'),
+      },
+      500
+    );
   }
 });
 
@@ -196,8 +229,8 @@ dashboardRoutes.get('/timeline', async (c) => {
 dashboardRoutes.post('/briefing/stream', async (c) => {
   const userId = getUserId(c);
   const body = await c.req.json().catch(() => ({}));
-  const provider = body.provider ?? await getDefaultProvider() ?? 'openai';
-  const model = body.model ?? await getDefaultModel(provider) ?? 'gpt-4o-mini';
+  const provider = body.provider ?? (await getDefaultProvider()) ?? 'openai';
+  const model = body.model ?? (await getDefaultModel(provider)) ?? 'gpt-4o-mini';
 
   const service = new DashboardService(userId);
 
@@ -251,7 +284,7 @@ dashboardRoutes.post('/briefing/stream', async (c) => {
     headers: {
       'Content-Type': 'text/event-stream',
       'Cache-Control': 'no-cache',
-      'Connection': 'keep-alive',
+      Connection: 'keep-alive',
     },
   });
 });

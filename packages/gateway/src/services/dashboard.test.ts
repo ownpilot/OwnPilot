@@ -19,7 +19,11 @@ import { type Plan, type CalendarEvent, type Goal } from '../db/repositories/ind
 interface PrivateDashboardService {
   generateFallbackBriefing(data: DailyBriefingData): AIBriefing;
   parseAIResponse(content: string, model: string): AIBriefing;
-  calculateGoalStats(goals: Goal[]): { activeCount: number; averageProgress: number; overdueCount: number };
+  calculateGoalStats(goals: Goal[]): {
+    activeCount: number;
+    averageProgress: number;
+    overdueCount: number;
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -61,7 +65,7 @@ function makeBriefingData(overrides: Partial<DailyBriefingData> = {}): DailyBrie
     notes: { pinned: [], recent: [] },
     costs: {
       daily: { totalTokens: 5000, totalCost: 0.15, totalCalls: 10 },
-      monthly: { totalTokens: 100000, totalCost: 3.50, totalCalls: 200 },
+      monthly: { totalTokens: 100000, totalCost: 3.5, totalCalls: 200 },
     },
     customData: { tables: [], totalRecords: 0 },
     plans: { running: [], pendingApproval: [] },
@@ -258,7 +262,9 @@ describe('Dashboard Service', () => {
       const data = makeBriefingData();
 
       // Access private method via prototype trick
-      const briefing = (service as unknown as PrivateDashboardService).generateFallbackBriefing(data);
+      const briefing = (service as unknown as PrivateDashboardService).generateFallbackBriefing(
+        data
+      );
 
       expect(briefing.id).toContain('briefing_fallback_');
       expect(briefing.summary).toContain('2 tasks due');
@@ -278,7 +284,9 @@ describe('Dashboard Service', () => {
         },
       });
 
-      const briefing = (new DashboardService() as unknown as PrivateDashboardService).generateFallbackBriefing(data);
+      const briefing = (
+        new DashboardService() as unknown as PrivateDashboardService
+      ).generateFallbackBriefing(data);
 
       expect(briefing.priorities).toContainEqual(expect.stringContaining('3 overdue'));
     });
@@ -293,7 +301,9 @@ describe('Dashboard Service', () => {
         },
       });
 
-      const briefing = (new DashboardService() as unknown as PrivateDashboardService).generateFallbackBriefing(data);
+      const briefing = (
+        new DashboardService() as unknown as PrivateDashboardService
+      ).generateFallbackBriefing(data);
 
       expect(briefing.priorities).toContainEqual(expect.stringContaining('1 habit streak'));
     });
@@ -307,7 +317,9 @@ describe('Dashboard Service', () => {
         },
       });
 
-      const briefing = (new DashboardService() as unknown as PrivateDashboardService).generateFallbackBriefing(data);
+      const briefing = (
+        new DashboardService() as unknown as PrivateDashboardService
+      ).generateFallbackBriefing(data);
 
       expect(briefing.priorities).toContainEqual(expect.stringContaining('1 scheduled event'));
     });
@@ -321,9 +333,13 @@ describe('Dashboard Service', () => {
     const service = new DashboardService('user-1');
 
     it('parses JSON from markdown code fence', () => {
-      const content = 'Here is the briefing:\n```json\n{"summary": "A good day", "priorities": ["Do X"], "insights": ["Y is up"], "suggestedFocusAreas": ["Focus Z"]}\n```';
+      const content =
+        'Here is the briefing:\n```json\n{"summary": "A good day", "priorities": ["Do X"], "insights": ["Y is up"], "suggestedFocusAreas": ["Focus Z"]}\n```';
 
-      const briefing = (service as unknown as PrivateDashboardService).parseAIResponse(content, 'gpt-4o-mini');
+      const briefing = (service as unknown as PrivateDashboardService).parseAIResponse(
+        content,
+        'gpt-4o-mini'
+      );
 
       expect(briefing.summary).toBe('A good day');
       expect(briefing.priorities).toEqual(['Do X']);
@@ -335,17 +351,25 @@ describe('Dashboard Service', () => {
     });
 
     it('parses bare JSON object', () => {
-      const content = '{"summary": "Plain JSON", "priorities": [], "insights": [], "suggestedFocusAreas": []}';
+      const content =
+        '{"summary": "Plain JSON", "priorities": [], "insights": [], "suggestedFocusAreas": []}';
 
-      const briefing = (service as unknown as PrivateDashboardService).parseAIResponse(content, 'test-model');
+      const briefing = (service as unknown as PrivateDashboardService).parseAIResponse(
+        content,
+        'test-model'
+      );
 
       expect(briefing.summary).toBe('Plain JSON');
     });
 
     it('parses JSON surrounded by text', () => {
-      const content = 'Here is your briefing:\n\n{"summary": "Surrounded", "priorities": ["A"]}\n\nHope this helps!';
+      const content =
+        'Here is your briefing:\n\n{"summary": "Surrounded", "priorities": ["A"]}\n\nHope this helps!';
 
-      const briefing = (service as unknown as PrivateDashboardService).parseAIResponse(content, 'test');
+      const briefing = (service as unknown as PrivateDashboardService).parseAIResponse(
+        content,
+        'test'
+      );
 
       expect(briefing.summary).toBe('Surrounded');
       expect(briefing.priorities).toEqual(['A']);
@@ -354,7 +378,10 @@ describe('Dashboard Service', () => {
     it('handles missing arrays gracefully', () => {
       const content = '{"summary": "Minimal"}';
 
-      const briefing = (service as unknown as PrivateDashboardService).parseAIResponse(content, 'test');
+      const briefing = (service as unknown as PrivateDashboardService).parseAIResponse(
+        content,
+        'test'
+      );
 
       expect(briefing.summary).toBe('Minimal');
       expect(briefing.priorities).toEqual([]);
@@ -364,14 +391,21 @@ describe('Dashboard Service', () => {
 
     it('throws when no JSON found', () => {
       expect(() => {
-        (service as unknown as PrivateDashboardService).parseAIResponse('Just plain text with no JSON', 'test');
+        (service as unknown as PrivateDashboardService).parseAIResponse(
+          'Just plain text with no JSON',
+          'test'
+        );
       }).toThrow('No JSON found');
     });
 
     it('handles nested braces in JSON', () => {
-      const content = '{"summary": "Test with {braces}", "priorities": ["Check {item}"], "insights": [], "suggestedFocusAreas": []}';
+      const content =
+        '{"summary": "Test with {braces}", "priorities": ["Check {item}"], "insights": [], "suggestedFocusAreas": []}';
 
-      const briefing = (service as unknown as PrivateDashboardService).parseAIResponse(content, 'test');
+      const briefing = (service as unknown as PrivateDashboardService).parseAIResponse(
+        content,
+        'test'
+      );
 
       expect(briefing.summary).toBe('Test with {braces}');
     });
@@ -436,17 +470,21 @@ describe('Dashboard Service', () => {
   describe('invalidateCache', () => {
     it('invalidates cache for the service user', () => {
       const service = new DashboardService('user-1');
-      briefingCache.set('user-1', {
-        id: 'b1',
-        summary: 'cached',
-        priorities: [],
-        insights: [],
-        suggestedFocusAreas: [],
-        generatedAt: '',
-        expiresAt: '',
-        modelUsed: '',
-        cached: false,
-      }, 'hash-1');
+      briefingCache.set(
+        'user-1',
+        {
+          id: 'b1',
+          summary: 'cached',
+          priorities: [],
+          insights: [],
+          suggestedFocusAreas: [],
+          generatedAt: '',
+          expiresAt: '',
+          modelUsed: '',
+          cached: false,
+        },
+        'hash-1'
+      );
 
       service.invalidateCache();
 

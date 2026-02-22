@@ -3,11 +3,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import type {
-  NormalizedMessage,
-  MessageProcessingResult,
-  PipelineContext,
-} from '@ownpilot/core';
+import type { NormalizedMessage, MessageProcessingResult, PipelineContext } from '@ownpilot/core';
 
 // ---------------------------------------------------------------------------
 // Mocks — vi.hoisted() ensures these are available when vi.mock factories run
@@ -67,7 +63,9 @@ function createContext(opts: MockContextOptions = {}): PipelineContext {
   const store = new Map<string, unknown>(Object.entries(opts.store ?? {}));
   return {
     get: vi.fn(<T = unknown>(key: string): T | undefined => store.get(key) as T | undefined),
-    set: vi.fn((key: string, value: unknown) => { store.set(key, value); }),
+    set: vi.fn((key: string, value: unknown) => {
+      store.set(key, value);
+    }),
     has: vi.fn((key: string) => store.has(key)),
     addStage: vi.fn(),
     addWarning: vi.fn(),
@@ -199,7 +197,7 @@ describe('createAuditMiddleware', () => {
       await middleware(msg, ctx, next);
 
       expect(mockUsageTracker.record).toHaveBeenCalledWith(
-        expect.objectContaining({ latencyMs: 789 }),
+        expect.objectContaining({ latencyMs: 789 })
       );
     });
   });
@@ -252,7 +250,7 @@ describe('createAuditMiddleware', () => {
       await middleware(msg, ctx, next);
 
       expect(mockUsageTracker.record).toHaveBeenCalledWith(
-        expect.objectContaining({ error: undefined }),
+        expect.objectContaining({ error: undefined })
       );
     });
   });
@@ -282,7 +280,7 @@ describe('createAuditMiddleware', () => {
           outputTokens: 0,
           totalTokens: 0,
           error: undefined,
-        }),
+        })
       );
     });
 
@@ -300,7 +298,7 @@ describe('createAuditMiddleware', () => {
 
       // It should NOT have been called with inputTokens > 0 (the success path)
       expect(mockUsageTracker.record).not.toHaveBeenCalledWith(
-        expect.objectContaining({ inputTokens: 10 }),
+        expect.objectContaining({ inputTokens: 10 })
       );
     });
   });
@@ -312,7 +310,10 @@ describe('createAuditMiddleware', () => {
   describe('logChatEvent', () => {
     it('should call logChatEvent with correct params on success', async () => {
       const usage = { promptTokens: 50, completionTokens: 150, totalTokens: 200 };
-      const toolCalls = [{ id: 'tc-1', name: 'search' }, { id: 'tc-2', name: 'read' }];
+      const toolCalls = [
+        { id: 'tc-1', name: 'search' },
+        { id: 'tc-2', name: 'read' },
+      ];
       const ctx = createContext({
         store: {
           agentId: 'agent-42',
@@ -372,7 +373,7 @@ describe('createAuditMiddleware', () => {
         expect.objectContaining({
           type: 'error',
           error: 'Server error',
-        }),
+        })
       );
     });
 
@@ -396,7 +397,7 @@ describe('createAuditMiddleware', () => {
           inputTokens: undefined,
           outputTokens: undefined,
           requestId: undefined,
-        }),
+        })
       );
     });
 
@@ -419,9 +420,7 @@ describe('createAuditMiddleware', () => {
 
       await middleware(msg, ctx, next);
 
-      expect(mockLogChatEvent).toHaveBeenCalledWith(
-        expect.objectContaining({ toolCallCount: 0 }),
-      );
+      expect(mockLogChatEvent).toHaveBeenCalledWith(expect.objectContaining({ toolCallCount: 0 }));
     });
   });
 
@@ -495,7 +494,7 @@ describe('createAuditMiddleware', () => {
         expect.objectContaining({
           statusCode: 500,
           error: 'Timeout',
-        }),
+        })
       );
     });
 
@@ -556,7 +555,7 @@ describe('createAuditMiddleware', () => {
       // The catch block is empty — no log.warn for usageTracker
       expect(mockLog.warn).not.toHaveBeenCalledWith(
         expect.stringContaining('tracking'),
-        expect.anything(),
+        expect.anything()
       );
     });
   });
@@ -608,7 +607,9 @@ describe('createAuditMiddleware', () => {
 
   describe('error handling in LogsRepository', () => {
     it('should swallow LogsRepository.log errors silently', async () => {
-      mockLogsRepoLog.mockImplementation(() => { throw new Error('DB write failed'); });
+      mockLogsRepoLog.mockImplementation(() => {
+        throw new Error('DB write failed');
+      });
       const ctx = createContext({
         store: {
           agentResult: { ok: true },
@@ -652,25 +653,23 @@ describe('createAuditMiddleware', () => {
           userId: 'default',
           provider: 'unknown',
           model: 'unknown',
-        }),
+        })
       );
 
       // durationMs falls back to result.durationMs
       expect(mockUsageTracker.record).toHaveBeenCalledWith(
-        expect.objectContaining({ latencyMs: 42 }),
+        expect.objectContaining({ latencyMs: 42 })
       );
 
       // agentId defaults to 'chat'
-      expect(mockLogChatEvent).toHaveBeenCalledWith(
-        expect.objectContaining({ agentId: 'chat' }),
-      );
+      expect(mockLogChatEvent).toHaveBeenCalledWith(expect.objectContaining({ agentId: 'chat' }));
 
       // conversationId defaults to undefined for usage, 'unknown' for logChatEvent
       expect(mockUsageTracker.record).toHaveBeenCalledWith(
-        expect.objectContaining({ sessionId: undefined }),
+        expect.objectContaining({ sessionId: undefined })
       );
       expect(mockLogChatEvent).toHaveBeenCalledWith(
-        expect.objectContaining({ sessionId: 'unknown' }),
+        expect.objectContaining({ sessionId: 'unknown' })
       );
     });
 
@@ -688,11 +687,9 @@ describe('createAuditMiddleware', () => {
       await middleware(msg, ctx, next);
 
       expect(mockUsageTracker.record).toHaveBeenCalledWith(
-        expect.objectContaining({ latencyMs: 124 }),
+        expect.objectContaining({ latencyMs: 124 })
       );
-      expect(mockLogChatEvent).toHaveBeenCalledWith(
-        expect.objectContaining({ durationMs: 124 }),
-      );
+      expect(mockLogChatEvent).toHaveBeenCalledWith(expect.objectContaining({ durationMs: 124 }));
     });
   });
 });

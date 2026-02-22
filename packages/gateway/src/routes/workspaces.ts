@@ -19,7 +19,15 @@ import {
   DEFAULT_CONTAINER_CONFIG,
   StorageSecurityError,
 } from '@ownpilot/core';
-import { apiResponse, apiError, ERROR_CODES, getIntParam, getUserId, zodValidationError, getErrorMessage } from './helpers.js';
+import {
+  apiResponse,
+  apiError,
+  ERROR_CODES,
+  getIntParam,
+  getUserId,
+  zodValidationError,
+  getErrorMessage,
+} from './helpers.js';
 import { wsGateway } from '../ws/server.js';
 
 const app = new Hono();
@@ -86,11 +94,17 @@ function sanitizeContainerConfig(
     cpuCores: clamp(userConfig.cpuCores, CONTAINER_LIMITS.cpuCores, base.cpuCores),
     storageGB: clamp(userConfig.storageGB, CONTAINER_LIMITS.storageGB, base.storageGB),
     timeoutMs: clamp(userConfig.timeoutMs, CONTAINER_LIMITS.timeoutMs, base.timeoutMs),
-    networkPolicy: VALID_NETWORK_POLICIES.includes(userConfig.networkPolicy as typeof VALID_NETWORK_POLICIES[number])
+    networkPolicy: VALID_NETWORK_POLICIES.includes(
+      userConfig.networkPolicy as (typeof VALID_NETWORK_POLICIES)[number]
+    )
       ? (userConfig.networkPolicy as ContainerConfig['networkPolicy'])
       : base.networkPolicy,
     ...(userConfig.allowedHosts && Array.isArray(userConfig.allowedHosts)
-      ? { allowedHosts: userConfig.allowedHosts.filter((h): h is string => typeof h === 'string').slice(0, 50) }
+      ? {
+          allowedHosts: userConfig.allowedHosts
+            .filter((h): h is string => typeof h === 'string')
+            .slice(0, 50),
+        }
       : {}),
   };
 }
@@ -110,23 +124,30 @@ app.get('/', async (c) => {
     const workspaces = await repo.list();
 
     return apiResponse(c, {
-        workspaces: workspaces.map((w) => ({
-          id: w.id,
-          userId: w.userId,
-          name: w.name,
-          description: w.description,
-          status: w.status,
-          storagePath: w.storagePath,
-          containerConfig: w.containerConfig,
-          containerId: w.containerId,
-          containerStatus: w.containerStatus,
-          createdAt: w.createdAt.toISOString(),
-          updatedAt: w.updatedAt.toISOString(),
-        })),
-        count: workspaces.length,
-      });
+      workspaces: workspaces.map((w) => ({
+        id: w.id,
+        userId: w.userId,
+        name: w.name,
+        description: w.description,
+        status: w.status,
+        storagePath: w.storagePath,
+        containerConfig: w.containerConfig,
+        containerId: w.containerId,
+        containerStatus: w.containerStatus,
+        createdAt: w.createdAt.toISOString(),
+        updatedAt: w.updatedAt.toISOString(),
+      })),
+      count: workspaces.length,
+    });
   } catch (error) {
-    return apiError(c, { code: ERROR_CODES.WORKSPACE_LIST_ERROR, message: getErrorMessage(error, 'Failed to list workspaces') }, 500);
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.WORKSPACE_LIST_ERROR,
+        message: getErrorMessage(error, 'Failed to list workspaces'),
+      },
+      500
+    );
   }
 });
 
@@ -141,7 +162,11 @@ app.post('/', async (c) => {
     const rawBody = await c.req.json().catch(() => null);
 
     if (!rawBody) {
-      return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'Request body is required' }, 400);
+      return apiError(
+        c,
+        { code: ERROR_CODES.INVALID_INPUT, message: 'Request body is required' },
+        400
+      );
     }
 
     const { validateBody, createWorkspaceSchema } = await import('../middleware/validation.js');
@@ -152,7 +177,14 @@ app.post('/', async (c) => {
 
     const maxWorkspaces = 5; // Could be from settings
     if (existingCount >= maxWorkspaces) {
-      return apiError(c, { code: ERROR_CODES.WORKSPACE_LIMIT_EXCEEDED, message: `Maximum ${maxWorkspaces} workspaces allowed` }, 400);
+      return apiError(
+        c,
+        {
+          code: ERROR_CODES.WORKSPACE_LIMIT_EXCEEDED,
+          message: `Maximum ${maxWorkspaces} workspaces allowed`,
+        },
+        400
+      );
     }
 
     // Create workspace storage
@@ -172,9 +204,15 @@ app.post('/', async (c) => {
 
     await repo.logAudit('create', 'workspace', workspace.id);
 
-    wsGateway.broadcast('data:changed', { entity: 'workspace', action: 'created', id: workspace.id });
+    wsGateway.broadcast('data:changed', {
+      entity: 'workspace',
+      action: 'created',
+      id: workspace.id,
+    });
 
-    return apiResponse(c, {
+    return apiResponse(
+      c,
+      {
         id: workspace.id,
         userId: workspace.userId,
         name: workspace.name,
@@ -184,7 +222,9 @@ app.post('/', async (c) => {
         containerConfig: workspace.containerConfig,
         containerStatus: workspace.containerStatus,
         createdAt: workspace.createdAt.toISOString(),
-      }, 201);
+      },
+      201
+    );
   } catch (error) {
     const msg = getErrorMessage(error, 'Failed to create workspace');
     if (msg.startsWith('Validation failed:')) {
@@ -207,7 +247,11 @@ app.get('/:id', async (c) => {
     const workspace = await repo.get(workspaceId);
 
     if (!workspace) {
-      return apiError(c, { code: ERROR_CODES.WORKSPACE_NOT_FOUND, message: 'Workspace not found' }, 404);
+      return apiError(
+        c,
+        { code: ERROR_CODES.WORKSPACE_NOT_FOUND, message: 'Workspace not found' },
+        404
+      );
     }
 
     // Get storage usage
@@ -215,21 +259,28 @@ app.get('/:id', async (c) => {
     const storageUsage = await storage.getStorageUsage(`${userId}/${workspaceId}`);
 
     return apiResponse(c, {
-        id: workspace.id,
-        userId: workspace.userId,
-        name: workspace.name,
-        description: workspace.description,
-        status: workspace.status,
-        storagePath: workspace.storagePath,
-        containerConfig: workspace.containerConfig,
-        containerId: workspace.containerId,
-        containerStatus: workspace.containerStatus,
-        createdAt: workspace.createdAt.toISOString(),
-        updatedAt: workspace.updatedAt.toISOString(),
-        storageUsage,
-      });
+      id: workspace.id,
+      userId: workspace.userId,
+      name: workspace.name,
+      description: workspace.description,
+      status: workspace.status,
+      storagePath: workspace.storagePath,
+      containerConfig: workspace.containerConfig,
+      containerId: workspace.containerId,
+      containerStatus: workspace.containerStatus,
+      createdAt: workspace.createdAt.toISOString(),
+      updatedAt: workspace.updatedAt.toISOString(),
+      storageUsage,
+    });
   } catch (error) {
-    return apiError(c, { code: ERROR_CODES.WORKSPACE_FETCH_ERROR, message: getErrorMessage(error, 'Failed to fetch workspace') }, 500);
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.WORKSPACE_FETCH_ERROR,
+        message: getErrorMessage(error, 'Failed to fetch workspace'),
+      },
+      500
+    );
   }
 });
 
@@ -245,7 +296,11 @@ app.patch('/:id', async (c) => {
     const rawBody = await c.req.json().catch(() => null);
 
     if (!rawBody) {
-      return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'Request body is required' }, 400);
+      return apiError(
+        c,
+        { code: ERROR_CODES.INVALID_INPUT, message: 'Request body is required' },
+        400
+      );
     }
 
     const { validateBody, updateWorkspaceSchema } = await import('../middleware/validation.js');
@@ -255,11 +310,16 @@ app.patch('/:id', async (c) => {
     const existing = await repo.get(workspaceId);
 
     if (!existing) {
-      return apiError(c, { code: ERROR_CODES.WORKSPACE_NOT_FOUND, message: 'Workspace not found' }, 404);
+      return apiError(
+        c,
+        { code: ERROR_CODES.WORKSPACE_NOT_FOUND, message: 'Workspace not found' },
+        404
+      );
     }
 
     // Build update input
-    const updateInput: { name?: string; description?: string; containerConfig?: ContainerConfig } = {};
+    const updateInput: { name?: string; description?: string; containerConfig?: ContainerConfig } =
+      {};
 
     if (body.name) {
       updateInput.name = body.name;
@@ -268,7 +328,10 @@ app.patch('/:id', async (c) => {
       updateInput.description = body.description;
     }
     if (body.containerConfig) {
-      updateInput.containerConfig = sanitizeContainerConfig(existing.containerConfig, body.containerConfig);
+      updateInput.containerConfig = sanitizeContainerConfig(
+        existing.containerConfig,
+        body.containerConfig
+      );
     }
 
     if (Object.keys(updateInput).length > 0) {
@@ -277,7 +340,11 @@ app.patch('/:id', async (c) => {
 
     await repo.logAudit('write', 'workspace', workspaceId);
 
-    wsGateway.broadcast('data:changed', { entity: 'workspace', action: 'updated', id: workspaceId });
+    wsGateway.broadcast('data:changed', {
+      entity: 'workspace',
+      action: 'updated',
+      id: workspaceId,
+    });
 
     return apiResponse(c, { updated: true });
   } catch (error) {
@@ -302,7 +369,11 @@ app.delete('/:id', async (c) => {
     const workspace = await repo.get(workspaceId);
 
     if (!workspace) {
-      return apiError(c, { code: ERROR_CODES.WORKSPACE_NOT_FOUND, message: 'Workspace not found' }, 404);
+      return apiError(
+        c,
+        { code: ERROR_CODES.WORKSPACE_NOT_FOUND, message: 'Workspace not found' },
+        404
+      );
     }
 
     // Stop container if running
@@ -320,11 +391,22 @@ app.delete('/:id', async (c) => {
 
     await repo.logAudit('delete', 'workspace', workspaceId);
 
-    wsGateway.broadcast('data:changed', { entity: 'workspace', action: 'deleted', id: workspaceId });
+    wsGateway.broadcast('data:changed', {
+      entity: 'workspace',
+      action: 'deleted',
+      id: workspaceId,
+    });
 
     return apiResponse(c, { deleted: true });
   } catch (error) {
-    return apiError(c, { code: ERROR_CODES.WORKSPACE_DELETE_ERROR, message: getErrorMessage(error, 'Failed to delete workspace') }, 500);
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.WORKSPACE_DELETE_ERROR,
+        message: getErrorMessage(error, 'Failed to delete workspace'),
+      },
+      500
+    );
   }
 });
 
@@ -353,22 +435,33 @@ app.get('/:id/files', async (c) => {
     const workspace = await repo.get(workspaceId);
 
     if (!workspace) {
-      return apiError(c, { code: ERROR_CODES.WORKSPACE_NOT_FOUND, message: 'Workspace not found' }, 404);
+      return apiError(
+        c,
+        { code: ERROR_CODES.WORKSPACE_NOT_FOUND, message: 'Workspace not found' },
+        404
+      );
     }
 
     const storage = getWorkspaceStorage();
     const files = await storage.listFiles(`${userId}/${workspaceId}`, safePath, recursive);
 
     return apiResponse(c, {
-        path: safePath,
-        files,
-        count: files.length,
-      });
+      path: safePath,
+      files,
+      count: files.length,
+    });
   } catch (error) {
     if (error instanceof StorageSecurityError) {
       return apiError(c, { code: ERROR_CODES.ACCESS_DENIED, message: error.message }, 403);
     }
-    return apiError(c, { code: ERROR_CODES.FILE_LIST_ERROR, message: getErrorMessage(error, 'Failed to list files') }, 500);
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.FILE_LIST_ERROR,
+        message: getErrorMessage(error, 'Failed to list files'),
+      },
+      500
+    );
   }
 });
 
@@ -392,7 +485,11 @@ app.get('/:id/files/*', async (c) => {
     const workspace = await repo.get(workspaceId);
 
     if (!workspace) {
-      return apiError(c, { code: ERROR_CODES.WORKSPACE_NOT_FOUND, message: 'Workspace not found' }, 404);
+      return apiError(
+        c,
+        { code: ERROR_CODES.WORKSPACE_NOT_FOUND, message: 'Workspace not found' },
+        404
+      );
     }
 
     const storage = getWorkspaceStorage();
@@ -402,16 +499,20 @@ app.get('/:id/files/*', async (c) => {
     await repo.logAudit('read', 'file', filePath);
 
     return apiResponse(c, {
-        path: filePath,
-        content,
-        size: fileInfo.size,
-        modifiedAt: fileInfo.modifiedAt,
-      });
+      path: filePath,
+      content,
+      size: fileInfo.size,
+      modifiedAt: fileInfo.modifiedAt,
+    });
   } catch (error) {
     if (error instanceof StorageSecurityError) {
       return apiError(c, { code: ERROR_CODES.ACCESS_DENIED, message: error.message }, 403);
     }
-    return apiError(c, { code: ERROR_CODES.FILE_READ_ERROR, message: getErrorMessage(error, 'Failed to read file') }, 500);
+    return apiError(
+      c,
+      { code: ERROR_CODES.FILE_READ_ERROR, message: getErrorMessage(error, 'Failed to read file') },
+      500
+    );
   }
 });
 
@@ -435,7 +536,11 @@ app.put('/:id/files/*', async (c) => {
     const workspace = await repo.get(workspaceId);
 
     if (!workspace) {
-      return apiError(c, { code: ERROR_CODES.WORKSPACE_NOT_FOUND, message: 'Workspace not found' }, 404);
+      return apiError(
+        c,
+        { code: ERROR_CODES.WORKSPACE_NOT_FOUND, message: 'Workspace not found' },
+        404
+      );
     }
 
     const body = await c.req.json().catch(() => null);
@@ -454,16 +559,23 @@ app.put('/:id/files/*', async (c) => {
     await repo.logAudit('write', 'file', filePath);
 
     return apiResponse(c, {
-        path: filePath,
-        written: true,
-      });
+      path: filePath,
+      written: true,
+    });
   } catch (error) {
     const repo = new WorkspacesRepository(userId);
     if (error instanceof StorageSecurityError) {
       await repo.logAudit('write', 'file', filePath, false, error.message);
       return apiError(c, { code: ERROR_CODES.ACCESS_DENIED, message: error.message }, 403);
     }
-    return apiError(c, { code: ERROR_CODES.FILE_WRITE_ERROR, message: getErrorMessage(error, 'Failed to write file') }, 500);
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.FILE_WRITE_ERROR,
+        message: getErrorMessage(error, 'Failed to write file'),
+      },
+      500
+    );
   }
 });
 
@@ -487,7 +599,11 @@ app.delete('/:id/files/*', async (c) => {
     const workspace = await repo.get(workspaceId);
 
     if (!workspace) {
-      return apiError(c, { code: ERROR_CODES.WORKSPACE_NOT_FOUND, message: 'Workspace not found' }, 404);
+      return apiError(
+        c,
+        { code: ERROR_CODES.WORKSPACE_NOT_FOUND, message: 'Workspace not found' },
+        404
+      );
     }
 
     const storage = getWorkspaceStorage();
@@ -496,14 +612,21 @@ app.delete('/:id/files/*', async (c) => {
     await repo.logAudit('delete', 'file', filePath);
 
     return apiResponse(c, {
-        path: filePath,
-        deleted: true,
-      });
+      path: filePath,
+      deleted: true,
+    });
   } catch (error) {
     if (error instanceof StorageSecurityError) {
       return apiError(c, { code: ERROR_CODES.ACCESS_DENIED, message: error.message }, 403);
     }
-    return apiError(c, { code: ERROR_CODES.FILE_DELETE_ERROR, message: getErrorMessage(error, 'Failed to delete file') }, 500);
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.FILE_DELETE_ERROR,
+        message: getErrorMessage(error, 'Failed to delete file'),
+      },
+      500
+    );
   }
 });
 
@@ -524,14 +647,22 @@ app.get('/:id/download', async (c) => {
     const workspace = await repo.get(workspaceId);
 
     if (!workspace) {
-      return apiError(c, { code: ERROR_CODES.WORKSPACE_NOT_FOUND, message: 'Workspace not found' }, 404);
+      return apiError(
+        c,
+        { code: ERROR_CODES.WORKSPACE_NOT_FOUND, message: 'Workspace not found' },
+        404
+      );
     }
 
     const storage = getWorkspaceStorage();
     const files = await storage.listFiles(`${userId}/${workspaceId}`, '.', true);
 
     if (files.length === 0) {
-      return apiError(c, { code: ERROR_CODES.WORKSPACE_EMPTY, message: 'Workspace has no files to download' }, 400);
+      return apiError(
+        c,
+        { code: ERROR_CODES.WORKSPACE_EMPTY, message: 'Workspace has no files to download' },
+        400
+      );
     }
 
     // Create a simple JSON manifest of files (since we can't create ZIP in pure Node without deps)
@@ -568,7 +699,14 @@ app.get('/:id/download', async (c) => {
       totalFiles: fileContents.length,
     });
   } catch (error) {
-    return apiError(c, { code: ERROR_CODES.DOWNLOAD_ERROR, message: getErrorMessage(error, 'Failed to download workspace') }, 500);
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.DOWNLOAD_ERROR,
+        message: getErrorMessage(error, 'Failed to download workspace'),
+      },
+      500
+    );
   }
 });
 
@@ -585,7 +723,11 @@ app.get('/:id/stats', async (c) => {
     const workspace = await repo.get(workspaceId);
 
     if (!workspace) {
-      return apiError(c, { code: ERROR_CODES.WORKSPACE_NOT_FOUND, message: 'Workspace not found' }, 404);
+      return apiError(
+        c,
+        { code: ERROR_CODES.WORKSPACE_NOT_FOUND, message: 'Workspace not found' },
+        404
+      );
     }
 
     const storage = getWorkspaceStorage();
@@ -611,14 +753,21 @@ app.get('/:id/stats', async (c) => {
     const executionCount = await repo.countExecutions(workspaceId);
 
     return apiResponse(c, {
-        fileCount: totalFiles,
-        directoryCount: totalDirectories,
-        storageUsage,
-        fileTypes,
-        executionCount,
-      });
+      fileCount: totalFiles,
+      directoryCount: totalDirectories,
+      storageUsage,
+      fileTypes,
+      executionCount,
+    });
   } catch (error) {
-    return apiError(c, { code: ERROR_CODES.STATS_ERROR, message: getErrorMessage(error, 'Failed to get workspace stats') }, 500);
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.STATS_ERROR,
+        message: getErrorMessage(error, 'Failed to get workspace stats'),
+      },
+      500
+    );
   }
 });
 
@@ -639,13 +788,24 @@ app.post('/:id/execute', async (c) => {
     const workspace = await repo.get(workspaceId);
 
     if (!workspace) {
-      return apiError(c, { code: ERROR_CODES.WORKSPACE_NOT_FOUND, message: 'Workspace not found' }, 404);
+      return apiError(
+        c,
+        { code: ERROR_CODES.WORKSPACE_NOT_FOUND, message: 'Workspace not found' },
+        404
+      );
     }
 
     // Check if Docker is available
     const dockerAvailable = await isDockerAvailable();
     if (!dockerAvailable) {
-      return apiError(c, { code: ERROR_CODES.DOCKER_UNAVAILABLE, message: 'Docker is not available. Please ensure Docker is installed and running.' }, 503);
+      return apiError(
+        c,
+        {
+          code: ERROR_CODES.DOCKER_UNAVAILABLE,
+          message: 'Docker is not available. Please ensure Docker is installed and running.',
+        },
+        503
+      );
     }
 
     const rawBody = await c.req.json().catch(() => null);
@@ -706,19 +866,30 @@ app.post('/:id/execute', async (c) => {
       result.executionTimeMs
     );
 
-    await repo.logAudit('execute', 'execution', `${body.language}:${execution.codeHash.substring(0, 8)}`);
+    await repo.logAudit(
+      'execute',
+      'execution',
+      `${body.language}:${execution.codeHash.substring(0, 8)}`
+    );
 
     return apiResponse(c, {
-        executionId: execution.id,
-        status: result.status,
-        stdout: result.stdout,
-        stderr: result.stderr,
-        exitCode: result.exitCode,
-        executionTimeMs: result.executionTimeMs,
-      });
+      executionId: execution.id,
+      status: result.status,
+      stdout: result.stdout,
+      stderr: result.stderr,
+      exitCode: result.exitCode,
+      executionTimeMs: result.executionTimeMs,
+    });
   } catch (error) {
     await repo.logAudit('execute', 'execution', undefined, false, getErrorMessage(error));
-    return apiError(c, { code: ERROR_CODES.EXECUTION_ERROR, message: getErrorMessage(error, 'Failed to execute code') }, 500);
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.EXECUTION_ERROR,
+        message: getErrorMessage(error, 'Failed to execute code'),
+      },
+      500
+    );
   }
 });
 
@@ -736,29 +907,40 @@ app.get('/:id/executions', async (c) => {
     const workspace = await repo.get(workspaceId);
 
     if (!workspace) {
-      return apiError(c, { code: ERROR_CODES.WORKSPACE_NOT_FOUND, message: 'Workspace not found' }, 404);
+      return apiError(
+        c,
+        { code: ERROR_CODES.WORKSPACE_NOT_FOUND, message: 'Workspace not found' },
+        404
+      );
     }
 
     const executions = await repo.listExecutions(workspaceId, limit);
 
     return apiResponse(c, {
-        executions: executions.map((e) => ({
-          id: e.id,
-          workspaceId: e.workspaceId,
-          userId: e.userId,
-          language: e.language,
-          codeHash: e.codeHash,
-          status: e.status,
-          stdout: e.stdout,
-          stderr: e.stderr,
-          exitCode: e.exitCode,
-          executionTimeMs: e.executionTimeMs,
-          createdAt: e.createdAt.toISOString(),
-        })),
-        count: executions.length,
-      });
+      executions: executions.map((e) => ({
+        id: e.id,
+        workspaceId: e.workspaceId,
+        userId: e.userId,
+        language: e.language,
+        codeHash: e.codeHash,
+        status: e.status,
+        stdout: e.stdout,
+        stderr: e.stderr,
+        exitCode: e.exitCode,
+        executionTimeMs: e.executionTimeMs,
+        createdAt: e.createdAt.toISOString(),
+      })),
+      count: executions.length,
+    });
   } catch (error) {
-    return apiError(c, { code: ERROR_CODES.EXECUTIONS_LIST_ERROR, message: getErrorMessage(error, 'Failed to list executions') }, 500);
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.EXECUTIONS_LIST_ERROR,
+        message: getErrorMessage(error, 'Failed to list executions'),
+      },
+      500
+    );
   }
 });
 
@@ -778,16 +960,20 @@ app.post('/:id/container/start', async (c) => {
     const workspace = await repo.get(workspaceId);
 
     if (!workspace) {
-      return apiError(c, { code: ERROR_CODES.WORKSPACE_NOT_FOUND, message: 'Workspace not found' }, 404);
+      return apiError(
+        c,
+        { code: ERROR_CODES.WORKSPACE_NOT_FOUND, message: 'Workspace not found' },
+        404
+      );
     }
 
     // Check if already running
     if (workspace.containerStatus === 'running' && workspace.containerId) {
       return apiResponse(c, {
-          containerId: workspace.containerId,
-          status: 'running',
-          message: 'Container already running',
-        });
+        containerId: workspace.containerId,
+        status: 'running',
+        message: 'Container already running',
+      });
     }
 
     const orchestrator = getOrchestrator();
@@ -806,11 +992,18 @@ app.post('/:id/container/start', async (c) => {
     await repo.logAudit('start', 'container', workspaceId);
 
     return apiResponse(c, {
-        containerId,
-        status: 'running',
-      });
+      containerId,
+      status: 'running',
+    });
   } catch (error) {
-    return apiError(c, { code: ERROR_CODES.CONTAINER_START_ERROR, message: getErrorMessage(error, 'Failed to start container') }, 500);
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.CONTAINER_START_ERROR,
+        message: getErrorMessage(error, 'Failed to start container'),
+      },
+      500
+    );
   }
 });
 
@@ -826,7 +1019,11 @@ app.post('/:id/container/stop', async (c) => {
     const workspace = await repo.get(workspaceId);
 
     if (!workspace) {
-      return apiError(c, { code: ERROR_CODES.WORKSPACE_NOT_FOUND, message: 'Workspace not found' }, 404);
+      return apiError(
+        c,
+        { code: ERROR_CODES.WORKSPACE_NOT_FOUND, message: 'Workspace not found' },
+        404
+      );
     }
 
     if (workspace.containerId) {
@@ -840,10 +1037,17 @@ app.post('/:id/container/stop', async (c) => {
     await repo.logAudit('stop', 'container', workspaceId);
 
     return apiResponse(c, {
-        status: 'stopped',
-      });
+      status: 'stopped',
+    });
   } catch (error) {
-    return apiError(c, { code: ERROR_CODES.CONTAINER_STOP_ERROR, message: getErrorMessage(error, 'Failed to stop container') }, 500);
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.CONTAINER_STOP_ERROR,
+        message: getErrorMessage(error, 'Failed to stop container'),
+      },
+      500
+    );
   }
 });
 
@@ -859,7 +1063,11 @@ app.get('/:id/container/status', async (c) => {
     const workspace = await repo.get(workspaceId);
 
     if (!workspace) {
-      return apiError(c, { code: ERROR_CODES.WORKSPACE_NOT_FOUND, message: 'Workspace not found' }, 404);
+      return apiError(
+        c,
+        { code: ERROR_CODES.WORKSPACE_NOT_FOUND, message: 'Workspace not found' },
+        404
+      );
     }
 
     let status = workspace.containerStatus;
@@ -872,17 +1080,28 @@ app.get('/:id/container/status', async (c) => {
 
       // Update status in DB if changed
       if (status !== workspace.containerStatus) {
-        await repo.updateContainerStatus(workspaceId, workspace.containerId, status as 'running' | 'stopped' | 'error');
+        await repo.updateContainerStatus(
+          workspaceId,
+          workspace.containerId,
+          status as 'running' | 'stopped' | 'error'
+        );
       }
     }
 
     return apiResponse(c, {
-        containerId: workspace.containerId,
-        status,
-        resourceUsage,
-      });
+      containerId: workspace.containerId,
+      status,
+      resourceUsage,
+    });
   } catch (error) {
-    return apiError(c, { code: ERROR_CODES.CONTAINER_STATUS_ERROR, message: getErrorMessage(error, 'Failed to get container status') }, 500);
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.CONTAINER_STATUS_ERROR,
+        message: getErrorMessage(error, 'Failed to get container status'),
+      },
+      500
+    );
   }
 });
 
@@ -899,7 +1118,11 @@ app.get('/:id/container/logs', async (c) => {
     const workspace = await repo.get(workspaceId);
 
     if (!workspace) {
-      return apiError(c, { code: ERROR_CODES.WORKSPACE_NOT_FOUND, message: 'Workspace not found' }, 404);
+      return apiError(
+        c,
+        { code: ERROR_CODES.WORKSPACE_NOT_FOUND, message: 'Workspace not found' },
+        404
+      );
     }
 
     let logs = '';
@@ -909,10 +1132,17 @@ app.get('/:id/container/logs', async (c) => {
     }
 
     return apiResponse(c, {
-        logs,
-      });
+      logs,
+    });
   } catch (error) {
-    return apiError(c, { code: ERROR_CODES.CONTAINER_LOGS_ERROR, message: getErrorMessage(error, 'Failed to get container logs') }, 500);
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.CONTAINER_LOGS_ERROR,
+        message: getErrorMessage(error, 'Failed to get container logs'),
+      },
+      500
+    );
   }
 });
 
@@ -930,18 +1160,25 @@ app.get('/system/status', async (c) => {
     const activeContainers = orchestrator.getActiveContainers();
 
     return apiResponse(c, {
-        dockerAvailable,
-        activeContainers: activeContainers.length,
-        containers: activeContainers.map((c) => ({
-          userId: c.userId,
-          workspaceId: c.workspaceId,
-          status: c.status,
-          startedAt: c.startedAt,
-          lastActivityAt: c.lastActivityAt,
-        })),
-      });
+      dockerAvailable,
+      activeContainers: activeContainers.length,
+      containers: activeContainers.map((c) => ({
+        userId: c.userId,
+        workspaceId: c.workspaceId,
+        status: c.status,
+        startedAt: c.startedAt,
+        lastActivityAt: c.lastActivityAt,
+      })),
+    });
   } catch (error) {
-    return apiError(c, { code: ERROR_CODES.SYSTEM_STATUS_ERROR, message: getErrorMessage(error, 'Failed to get system status') }, 500);
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.SYSTEM_STATUS_ERROR,
+        message: getErrorMessage(error, 'Failed to get system status'),
+      },
+      500
+    );
   }
 });
 

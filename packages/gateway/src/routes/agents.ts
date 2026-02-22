@@ -13,12 +13,15 @@
  */
 
 import { Hono } from 'hono';
-import type {
-  CreateAgentRequest,
-  UpdateAgentRequest,
-  AgentInfo,
-} from '../types/index.js';
-import { apiResponse, apiError, ERROR_CODES, sanitizeId, notFoundError, getErrorMessage } from './helpers.js';
+import type { CreateAgentRequest, UpdateAgentRequest, AgentInfo } from '../types/index.js';
+import {
+  apiResponse,
+  apiError,
+  ERROR_CODES,
+  sanitizeId,
+  notFoundError,
+  getErrorMessage,
+} from './helpers.js';
 import { agentsRepo } from '../db/repositories/index.js';
 import { wsGateway } from '../ws/server.js';
 import {
@@ -47,7 +50,18 @@ import { getOrCreateAgentInstance } from './agent-service.js';
 // These ensure that all existing imports from './agents.js' continue to work
 // without any changes to the consuming files.
 
-export { getAgent, getOrCreateDefaultAgent, getOrCreateChatAgent, isDemoMode, getWorkspaceContext, getSessionInfo, resetChatAgentContext, clearAllChatAgentCaches, getContextBreakdown, compactContext } from './agent-service.js';
+export {
+  getAgent,
+  getOrCreateDefaultAgent,
+  getOrCreateChatAgent,
+  isDemoMode,
+  getWorkspaceContext,
+  getSessionInfo,
+  resetChatAgentContext,
+  clearAllChatAgentCaches,
+  getContextBreakdown,
+  compactContext,
+} from './agent-service.js';
 export type { ContextBreakdown } from './agent-service.js';
 export { invalidateAgentCache } from './agent-cache.js';
 export { getDefaultModel } from './settings.js';
@@ -62,10 +76,7 @@ export const agentRoutes = new Hono();
  * List all agents (capped at 100)
  */
 agentRoutes.get('/', async (c) => {
-  const [total, records] = await Promise.all([
-    agentsRepo.count(),
-    agentsRepo.getPage(100, 0),
-  ]);
+  const [total, records] = await Promise.all([agentsRepo.count(), agentsRepo.getPage(100, 0)]);
 
   const agentList: AgentInfo[] = records.map((record) => {
     const { tools } = resolveRecordTools(record.config);
@@ -126,14 +137,18 @@ agentRoutes.post('/', async (c) => {
   const tools = resolveToolGroups(configuredToolGroups, configuredTools);
 
   wsGateway.broadcast('data:changed', { entity: 'agent', action: 'created', id: record.id });
-  return apiResponse(c, {
-    id: record.id,
-    name: record.name,
-    provider: record.provider,
-    model: record.model,
-    tools,
-    createdAt: record.createdAt.toISOString(),
-  }, 201);
+  return apiResponse(
+    c,
+    {
+      id: record.id,
+      name: record.name,
+      provider: record.provider,
+      model: record.model,
+      tools,
+      createdAt: record.createdAt.toISOString(),
+    },
+    201
+  );
 });
 
 /**
@@ -147,7 +162,11 @@ agentRoutes.get('/:id', async (c) => {
     return notFoundError(c, 'Agent', id);
   }
 
-  const { configuredTools, configuredToolGroups, tools: resolvedTools } = resolveRecordTools(record.config);
+  const {
+    configuredTools,
+    configuredToolGroups,
+    tools: resolvedTools,
+  } = resolveRecordTools(record.config);
   let tools = resolvedTools.length > 0 ? resolvedTools : ['get_current_time', 'calculate'];
 
   // Try to get actual tools from runtime instance (if agent was already created)
@@ -194,7 +213,14 @@ agentRoutes.patch('/:id', async (c) => {
   if (body.provider && body.provider !== 'default' && body.provider !== existing.provider) {
     const apiKey = await getProviderApiKey(body.provider);
     if (!apiKey) {
-      return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: `API key not configured for provider: ${sanitizeId(body.provider)}` }, 400);
+      return apiError(
+        c,
+        {
+          code: ERROR_CODES.INVALID_REQUEST,
+          message: `API key not configured for provider: ${sanitizeId(body.provider)}`,
+        },
+        400
+      );
     }
   }
 

@@ -64,7 +64,7 @@ describe('chunkMarkdown', () => {
     expect(chunks.length).toBeGreaterThanOrEqual(2);
 
     // First chunk should reference Section 1
-    const sec1Chunk = chunks.find(c => c.text.includes('Section 1'));
+    const sec1Chunk = chunks.find((c) => c.text.includes('Section 1'));
     expect(sec1Chunk).toBeDefined();
   });
 
@@ -78,7 +78,7 @@ describe('chunkMarkdown', () => {
 
     const chunks = chunkMarkdown(text, 300);
     // Chunks after the heading should have heading context
-    const hasContext = chunks.some(c => c.headingContext.includes('Main Title'));
+    const hasContext = chunks.some((c) => c.headingContext.includes('Main Title'));
     expect(hasContext).toBe(true);
   });
 
@@ -91,7 +91,9 @@ describe('chunkMarkdown', () => {
       'Third paragraph with even more text.',
       '',
       'Fourth paragraph continues.',
-    ].join('\n').repeat(10);
+    ]
+      .join('\n')
+      .repeat(10);
 
     const chunks = chunkMarkdown(text, 200);
     expect(chunks.length).toBeGreaterThan(1);
@@ -120,12 +122,9 @@ describe('chunkMarkdown', () => {
   });
 
   it('merges tiny chunks into previous', () => {
-    const text = [
-      '# Section 1',
-      'Long content here. '.repeat(20),
-      '# Section 2',
-      'Tiny',
-    ].join('\n');
+    const text = ['# Section 1', 'Long content here. '.repeat(20), '# Section 2', 'Tiny'].join(
+      '\n'
+    );
 
     const chunks = chunkMarkdown(text, 300);
     // The tiny "Section 2 / Tiny" chunk should be merged into previous

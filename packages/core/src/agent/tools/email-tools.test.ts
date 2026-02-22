@@ -65,13 +65,17 @@ describe('sendEmailExecutor', () => {
   it('returns error when to array is empty', async () => {
     const result = await sendEmailExecutor({ to: [], subject: 'Hi', body: 'Hello' }, ctx);
     expect(result.isError).toBe(true);
-    expect((result.content as Record<string, unknown>).error).toBe('At least one recipient is required');
+    expect((result.content as Record<string, unknown>).error).toBe(
+      'At least one recipient is required'
+    );
   });
 
   it('returns error when to is undefined', async () => {
     const result = await sendEmailExecutor({ to: undefined, subject: 'Hi', body: 'Hello' }, ctx);
     expect(result.isError).toBe(true);
-    expect((result.content as Record<string, unknown>).error).toBe('At least one recipient is required');
+    expect((result.content as Record<string, unknown>).error).toBe(
+      'At least one recipient is required'
+    );
   });
 
   // ---------- email format validation ----------
@@ -79,29 +83,43 @@ describe('sendEmailExecutor', () => {
   it('rejects email without @ sign', async () => {
     const result = await sendEmailExecutor({ to: ['invalidemail'], subject: 'S', body: 'B' }, ctx);
     expect(result.isError).toBe(true);
-    expect((result.content as Record<string, unknown>).error).toBe('Invalid email address: invalidemail');
+    expect((result.content as Record<string, unknown>).error).toBe(
+      'Invalid email address: invalidemail'
+    );
   });
 
   it('rejects email with spaces', async () => {
-    const result = await sendEmailExecutor({ to: ['user @example.com'], subject: 'S', body: 'B' }, ctx);
+    const result = await sendEmailExecutor(
+      { to: ['user @example.com'], subject: 'S', body: 'B' },
+      ctx
+    );
     expect(result.isError).toBe(true);
     expect((result.content as Record<string, unknown>).error).toContain('Invalid email address');
   });
 
   it('rejects email with CRLF injection', async () => {
-    const result = await sendEmailExecutor({ to: ['user@example.com\r\nBcc:evil@evil.com'], subject: 'S', body: 'B' }, ctx);
+    const result = await sendEmailExecutor(
+      { to: ['user@example.com\r\nBcc:evil@evil.com'], subject: 'S', body: 'B' },
+      ctx
+    );
     expect(result.isError).toBe(true);
     expect((result.content as Record<string, unknown>).error).toContain('Invalid email address');
   });
 
   it('rejects email with control characters (tab)', async () => {
-    const result = await sendEmailExecutor({ to: ['user\t@example.com'], subject: 'S', body: 'B' }, ctx);
+    const result = await sendEmailExecutor(
+      { to: ['user\t@example.com'], subject: 'S', body: 'B' },
+      ctx
+    );
     expect(result.isError).toBe(true);
     expect((result.content as Record<string, unknown>).error).toContain('Invalid email address');
   });
 
   it('rejects email with null byte', async () => {
-    const result = await sendEmailExecutor({ to: ['user\x00@example.com'], subject: 'S', body: 'B' }, ctx);
+    const result = await sendEmailExecutor(
+      { to: ['user\x00@example.com'], subject: 'S', body: 'B' },
+      ctx
+    );
     expect(result.isError).toBe(true);
     expect((result.content as Record<string, unknown>).error).toContain('Invalid email address');
   });
@@ -123,17 +141,26 @@ describe('sendEmailExecutor', () => {
   });
 
   it('accepts valid email addresses', async () => {
-    const result = await sendEmailExecutor({ to: ['user@example.com'], subject: 'S', body: 'B' }, ctx);
+    const result = await sendEmailExecutor(
+      { to: ['user@example.com'], subject: 'S', body: 'B' },
+      ctx
+    );
     expect(result.isError).toBe(false);
   });
 
   it('accepts email with subdomains', async () => {
-    const result = await sendEmailExecutor({ to: ['user@mail.example.co.uk'], subject: 'S', body: 'B' }, ctx);
+    const result = await sendEmailExecutor(
+      { to: ['user@mail.example.co.uk'], subject: 'S', body: 'B' },
+      ctx
+    );
     expect(result.isError).toBe(false);
   });
 
   it('accepts email with plus addressing', async () => {
-    const result = await sendEmailExecutor({ to: ['user+tag@example.com'], subject: 'S', body: 'B' }, ctx);
+    const result = await sendEmailExecutor(
+      { to: ['user+tag@example.com'], subject: 'S', body: 'B' },
+      ctx
+    );
     expect(result.isError).toBe(false);
   });
 
@@ -142,16 +169,18 @@ describe('sendEmailExecutor', () => {
   it('validates invalid email in CC list', async () => {
     const result = await sendEmailExecutor(
       { to: ['ok@example.com'], cc: ['bad email'], subject: 'S', body: 'B' },
-      ctx,
+      ctx
     );
     expect(result.isError).toBe(true);
-    expect((result.content as Record<string, unknown>).error).toBe('Invalid email address: bad email');
+    expect((result.content as Record<string, unknown>).error).toBe(
+      'Invalid email address: bad email'
+    );
   });
 
   it('validates invalid email in BCC list', async () => {
     const result = await sendEmailExecutor(
       { to: ['ok@example.com'], bcc: ['nope'], subject: 'S', body: 'B' },
-      ctx,
+      ctx
     );
     expect(result.isError).toBe(true);
     expect((result.content as Record<string, unknown>).error).toBe('Invalid email address: nope');
@@ -166,10 +195,12 @@ describe('sendEmailExecutor', () => {
         subject: 'S',
         body: 'B',
       },
-      ctx,
+      ctx
     );
     expect(result.isError).toBe(true);
-    expect((result.content as Record<string, unknown>).error).toBe('Invalid email address: INVALID');
+    expect((result.content as Record<string, unknown>).error).toBe(
+      'Invalid email address: INVALID'
+    );
   });
 
   // ---------- replyTo validation ----------
@@ -177,16 +208,18 @@ describe('sendEmailExecutor', () => {
   it('rejects invalid replyTo address', async () => {
     const result = await sendEmailExecutor(
       { to: ['a@b.com'], subject: 'S', body: 'B', replyTo: 'not-valid' },
-      ctx,
+      ctx
     );
     expect(result.isError).toBe(true);
-    expect((result.content as Record<string, unknown>).error).toBe('Invalid replyTo address: not-valid');
+    expect((result.content as Record<string, unknown>).error).toBe(
+      'Invalid replyTo address: not-valid'
+    );
   });
 
   it('rejects replyTo with CRLF injection', async () => {
     const result = await sendEmailExecutor(
       { to: ['a@b.com'], subject: 'S', body: 'B', replyTo: 'ok@example.com\r\nBcc:evil@evil.com' },
-      ctx,
+      ctx
     );
     expect(result.isError).toBe(true);
     expect((result.content as Record<string, unknown>).error).toContain('Invalid replyTo address');
@@ -195,7 +228,7 @@ describe('sendEmailExecutor', () => {
   it('accepts valid replyTo address', async () => {
     const result = await sendEmailExecutor(
       { to: ['a@b.com'], subject: 'S', body: 'B', replyTo: 'reply@example.com' },
-      ctx,
+      ctx
     );
     expect(result.isError).toBe(false);
     expect((result.content as Record<string, unknown>).status).toBe('prepared');
@@ -206,7 +239,10 @@ describe('sendEmailExecutor', () => {
   it('returns error when nodemailer is not installed', async () => {
     mockTryImport.mockRejectedValueOnce(new Error('not found'));
 
-    const result = await sendEmailExecutor({ to: ['user@example.com'], subject: 'Hi', body: 'Hello world' }, ctx);
+    const result = await sendEmailExecutor(
+      { to: ['user@example.com'], subject: 'Hi', body: 'Hello world' },
+      ctx
+    );
     expect(result.isError).toBe(true);
     const content = result.content as Record<string, unknown>;
     expect(content.error).toBe('nodemailer library not installed');
@@ -217,8 +253,15 @@ describe('sendEmailExecutor', () => {
     mockTryImport.mockRejectedValueOnce(new Error('missing'));
 
     const result = await sendEmailExecutor(
-      { to: ['a@b.com', 'c@d.com'], subject: 'Test', body: 'Body here', cc: ['e@f.com'], bcc: ['g@h.com'], attachments: ['/tmp/file.txt'] },
-      ctx,
+      {
+        to: ['a@b.com', 'c@d.com'],
+        subject: 'Test',
+        body: 'Body here',
+        cc: ['e@f.com'],
+        bcc: ['g@h.com'],
+        attachments: ['/tmp/file.txt'],
+      },
+      ctx
     );
     const content = result.content as Record<string, unknown>;
     const details = content.emailDetails as Record<string, unknown>;
@@ -244,7 +287,10 @@ describe('sendEmailExecutor', () => {
 
     const body = 'B'.repeat(100);
     const result = await sendEmailExecutor({ to: ['a@b.com'], subject: 'S', body }, ctx);
-    const details = (result.content as Record<string, unknown>).emailDetails as Record<string, unknown>;
+    const details = (result.content as Record<string, unknown>).emailDetails as Record<
+      string,
+      unknown
+    >;
     expect(details.body).toBe('B'.repeat(100));
   });
 
@@ -253,7 +299,7 @@ describe('sendEmailExecutor', () => {
   it('sets high priority headers', async () => {
     const result = await sendEmailExecutor(
       { to: ['a@b.com'], subject: 'Urgent', body: 'Now', priority: 'high' },
-      ctx,
+      ctx
     );
     const msg = (result.content as Record<string, unknown>).message as Record<string, unknown>;
     expect(msg.priority).toBe('high');
@@ -262,17 +308,14 @@ describe('sendEmailExecutor', () => {
   it('sets low priority headers', async () => {
     const result = await sendEmailExecutor(
       { to: ['a@b.com'], subject: 'Low', body: 'Later', priority: 'low' },
-      ctx,
+      ctx
     );
     const msg = (result.content as Record<string, unknown>).message as Record<string, unknown>;
     expect(msg.priority).toBe('low');
   });
 
   it('uses normal priority by default', async () => {
-    const result = await sendEmailExecutor(
-      { to: ['a@b.com'], subject: 'S', body: 'B' },
-      ctx,
-    );
+    const result = await sendEmailExecutor({ to: ['a@b.com'], subject: 'S', body: 'B' }, ctx);
     const msg = (result.content as Record<string, unknown>).message as Record<string, unknown>;
     expect(msg.priority).toBe('normal');
   });
@@ -282,7 +325,7 @@ describe('sendEmailExecutor', () => {
   it('marks body as HTML when html=true', async () => {
     const result = await sendEmailExecutor(
       { to: ['a@b.com'], subject: 'S', body: '<p>Hi</p>', html: true },
-      ctx,
+      ctx
     );
     const msg = (result.content as Record<string, unknown>).message as Record<string, unknown>;
     expect(msg.isHtml).toBe(true);
@@ -291,17 +334,14 @@ describe('sendEmailExecutor', () => {
   it('marks body as text when html is false', async () => {
     const result = await sendEmailExecutor(
       { to: ['a@b.com'], subject: 'S', body: 'Plain text', html: false },
-      ctx,
+      ctx
     );
     const msg = (result.content as Record<string, unknown>).message as Record<string, unknown>;
     expect(msg.isHtml).toBe(false);
   });
 
   it('defaults html to false when not specified', async () => {
-    const result = await sendEmailExecutor(
-      { to: ['a@b.com'], subject: 'S', body: 'Text' },
-      ctx,
-    );
+    const result = await sendEmailExecutor({ to: ['a@b.com'], subject: 'S', body: 'Text' }, ctx);
     const msg = (result.content as Record<string, unknown>).message as Record<string, unknown>;
     expect(msg.isHtml).toBe(false);
   });
@@ -313,10 +353,12 @@ describe('sendEmailExecutor', () => {
 
     const result = await sendEmailExecutor(
       { to: ['a@b.com'], subject: 'S', body: 'B', attachments: ['/tmp/missing.txt'] },
-      ctx,
+      ctx
     );
     expect(result.isError).toBe(true);
-    expect((result.content as Record<string, unknown>).error).toBe('Attachment not found: /tmp/missing.txt');
+    expect((result.content as Record<string, unknown>).error).toBe(
+      'Attachment not found: /tmp/missing.txt'
+    );
   });
 
   it('stops at first missing attachment in the list', async () => {
@@ -325,16 +367,18 @@ describe('sendEmailExecutor', () => {
 
     const result = await sendEmailExecutor(
       { to: ['a@b.com'], subject: 'S', body: 'B', attachments: ['/tmp/ok.txt', '/tmp/bad.txt'] },
-      ctx,
+      ctx
     );
     expect(result.isError).toBe(true);
-    expect((result.content as Record<string, unknown>).error).toBe('Attachment not found: /tmp/bad.txt');
+    expect((result.content as Record<string, unknown>).error).toBe(
+      'Attachment not found: /tmp/bad.txt'
+    );
   });
 
   it('includes attachment count in success result', async () => {
     const result = await sendEmailExecutor(
       { to: ['a@b.com'], subject: 'S', body: 'B', attachments: ['/tmp/a.pdf', '/tmp/b.pdf'] },
-      ctx,
+      ctx
     );
     expect(result.isError).toBe(false);
     const msg = (result.content as Record<string, unknown>).message as Record<string, unknown>;
@@ -342,10 +386,7 @@ describe('sendEmailExecutor', () => {
   });
 
   it('reports attachmentCount 0 when no attachments', async () => {
-    const result = await sendEmailExecutor(
-      { to: ['a@b.com'], subject: 'S', body: 'B' },
-      ctx,
-    );
+    const result = await sendEmailExecutor({ to: ['a@b.com'], subject: 'S', body: 'B' }, ctx);
     const msg = (result.content as Record<string, unknown>).message as Record<string, unknown>;
     expect(msg.attachmentCount).toBe(0);
   });
@@ -353,7 +394,7 @@ describe('sendEmailExecutor', () => {
   it('calls path.basename for each attachment filename', async () => {
     await sendEmailExecutor(
       { to: ['a@b.com'], subject: 'S', body: 'B', attachments: ['/home/user/doc.pdf'] },
-      ctx,
+      ctx
     );
     expect(mockBasename).toHaveBeenCalledWith('/home/user/doc.pdf');
   });
@@ -363,7 +404,7 @@ describe('sendEmailExecutor', () => {
   it('returns prepared status with requiresSMTPConfig on success', async () => {
     const result = await sendEmailExecutor(
       { to: ['a@b.com'], subject: 'Test subject', body: 'Test body' },
-      ctx,
+      ctx
     );
     expect(result.isError).toBe(false);
     const content = result.content as Record<string, unknown>;
@@ -374,19 +415,13 @@ describe('sendEmailExecutor', () => {
 
   it('truncates body preview at 100 characters in success response', async () => {
     const longBody = 'X'.repeat(200);
-    const result = await sendEmailExecutor(
-      { to: ['a@b.com'], subject: 'S', body: longBody },
-      ctx,
-    );
+    const result = await sendEmailExecutor({ to: ['a@b.com'], subject: 'S', body: longBody }, ctx);
     const msg = (result.content as Record<string, unknown>).message as Record<string, unknown>;
     expect(msg.bodyPreview).toBe('X'.repeat(100) + '...');
   });
 
   it('does not add ellipsis when body is short', async () => {
-    const result = await sendEmailExecutor(
-      { to: ['a@b.com'], subject: 'S', body: 'Short' },
-      ctx,
-    );
+    const result = await sendEmailExecutor({ to: ['a@b.com'], subject: 'S', body: 'Short' }, ctx);
     const msg = (result.content as Record<string, unknown>).message as Record<string, unknown>;
     expect(msg.bodyPreview).toBe('Short');
   });
@@ -394,7 +429,7 @@ describe('sendEmailExecutor', () => {
   it('includes CC and BCC in success message', async () => {
     const result = await sendEmailExecutor(
       { to: ['a@b.com'], cc: ['c@d.com', 'e@f.com'], bcc: ['g@h.com'], subject: 'S', body: 'B' },
-      ctx,
+      ctx
     );
     const msg = (result.content as Record<string, unknown>).message as Record<string, unknown>;
     expect(msg.cc).toEqual(['c@d.com', 'e@f.com']);
@@ -404,7 +439,7 @@ describe('sendEmailExecutor', () => {
   it('includes to list in success message', async () => {
     const result = await sendEmailExecutor(
       { to: ['a@b.com', 'x@y.com'], subject: 'S', body: 'B' },
-      ctx,
+      ctx
     );
     const msg = (result.content as Record<string, unknown>).message as Record<string, unknown>;
     expect(msg.to).toEqual(['a@b.com', 'x@y.com']);
@@ -476,12 +511,15 @@ describe('listEmailsExecutor', () => {
   });
 
   it('includes filter params in success response', async () => {
-    const result = await listEmailsExecutor({
-      from: 'alice@example.com',
-      subject: 'Invoice',
-      since: '2025-01-01',
-      before: '2025-12-31',
-    }, ctx);
+    const result = await listEmailsExecutor(
+      {
+        from: 'alice@example.com',
+        subject: 'Invoice',
+        since: '2025-01-01',
+        before: '2025-12-31',
+      },
+      ctx
+    );
     const query = (result.content as Record<string, unknown>).query as Record<string, unknown>;
     expect(query.from).toBe('alice@example.com');
     expect(query.subject).toBe('Invoice');
@@ -781,7 +819,7 @@ describe('replyEmailExecutor', () => {
   it('reports attachment count', async () => {
     const result = await replyEmailExecutor(
       { id: 'msg-1', body: 'Hi', attachments: ['/a.txt', '/b.txt', '/c.txt'] },
-      ctx,
+      ctx
     );
     const details = (result.content as Record<string, unknown>).details as Record<string, unknown>;
     expect(details.attachmentCount).toBe(3);

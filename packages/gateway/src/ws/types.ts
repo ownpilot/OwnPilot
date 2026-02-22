@@ -153,7 +153,12 @@ export interface ServerEvents {
   'chat:stream:chunk': { sessionId: string; messageId: string; chunk: string };
   'chat:stream:end': { sessionId: string; messageId: string; fullContent: string };
   'chat:error': { sessionId: string; error: string };
-  'chat:history:updated': { conversationId: string; title: string | null; source: string; messageCount: number };
+  'chat:history:updated': {
+    conversationId: string;
+    title: string | null;
+    source: string;
+    messageCount: number;
+  };
 
   // Agent events
   'agent:state': { agentId: string; state: AgentState; task?: string };
@@ -182,19 +187,46 @@ export interface ServerEvents {
 
   // Data change events (personal data CRUD)
   'data:changed': {
-    entity: 'task' | 'note' | 'bookmark' | 'contact' | 'calendar' | 'expense' | 'goal' | 'memory'
-      | 'plan' | 'trigger' | 'heartbeat' | 'custom_tool' | 'custom_table' | 'custom_record'
-      | 'config_service' | 'workspace' | 'plugin'
-      | 'pomodoro' | 'habit' | 'capture'
-      | 'agent' | 'extension' | 'local_provider' | 'model_config' | 'model_provider' | 'channel'
-      | 'mcp_server' | 'workflow';
+    entity:
+      | 'task'
+      | 'note'
+      | 'bookmark'
+      | 'contact'
+      | 'calendar'
+      | 'expense'
+      | 'goal'
+      | 'memory'
+      | 'plan'
+      | 'trigger'
+      | 'heartbeat'
+      | 'custom_tool'
+      | 'custom_table'
+      | 'custom_record'
+      | 'config_service'
+      | 'workspace'
+      | 'plugin'
+      | 'pomodoro'
+      | 'habit'
+      | 'capture'
+      | 'agent'
+      | 'extension'
+      | 'local_provider'
+      | 'model_config'
+      | 'model_provider'
+      | 'channel'
+      | 'mcp_server'
+      | 'workflow';
     action: 'created' | 'updated' | 'deleted';
     id?: string;
     count?: number;
   };
 
   // System events
-  'system:notification': { type: 'info' | 'warning' | 'error' | 'success'; message: string; action?: string };
+  'system:notification': {
+    type: 'info' | 'warning' | 'error' | 'success';
+    message: string;
+    action?: string;
+  };
   'system:status': { online: boolean; version: string; uptime: number };
 }
 

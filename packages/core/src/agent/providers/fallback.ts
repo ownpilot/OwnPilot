@@ -53,11 +53,7 @@ export interface FallbackProviderConfig {
   /** Cooldown in ms before retesting an open circuit (default: 60000) */
   circuitBreakerCooldown?: number;
   /** Callback when fallback is triggered */
-  onFallback?: (
-    failedProvider: AIProvider,
-    error: Error,
-    nextProvider: AIProvider
-  ) => void;
+  onFallback?: (failedProvider: AIProvider, error: Error, nextProvider: AIProvider) => void;
 }
 
 /**
@@ -135,7 +131,9 @@ export class FallbackProvider implements IProvider {
       log.warn(`CircuitBreaker ${provider.type}: half-open → open (test failed)`);
     } else if (circuit.failureCount >= this.failureThreshold) {
       circuit.state = 'open';
-      log.warn(`CircuitBreaker ${provider.type}: closed → open (${circuit.failureCount} consecutive failures)`);
+      log.warn(
+        `CircuitBreaker ${provider.type}: closed → open (${circuit.failureCount} consecutive failures)`
+      );
     }
   }
 
@@ -214,11 +212,7 @@ export class FallbackProvider implements IProvider {
             log.info(`Switching to next provider: ${nextProvider.type}`);
 
             if (this.config.onFallback) {
-              this.config.onFallback(
-                provider.type,
-                result.error,
-                nextProvider.type
-              );
+              this.config.onFallback(provider.type, result.error, nextProvider.type);
             }
 
             logRetry(i + 1, providers.length, result.error, 0);
@@ -310,7 +304,9 @@ export class FallbackProvider implements IProvider {
           // Instead, signal the error and stop.
           if (hasYielded) {
             log.warn('Stream: Partial data already sent — cannot retry. Yielding error.');
-            yield err(new InternalError(`Stream interrupted after partial data: ${lastError.message}`));
+            yield err(
+              new InternalError(`Stream interrupted after partial data: ${lastError.message}`)
+            );
             return;
           }
 

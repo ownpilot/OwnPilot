@@ -27,10 +27,11 @@ const mockGenerateBatch = vi.fn();
 vi.mock('@ownpilot/core', () => ({
   getServiceRegistry: () => ({
     get: (token: { key: string }) => {
-      if (token.key === 'embedding') return {
-        isAvailable: mockIsAvailable,
-        generateBatchEmbeddings: mockGenerateBatch,
-      };
+      if (token.key === 'embedding')
+        return {
+          isAvailable: mockIsAvailable,
+          generateBatchEmbeddings: mockGenerateBatch,
+        };
       throw new Error(`Unexpected token: ${token.key}`);
     },
   }),

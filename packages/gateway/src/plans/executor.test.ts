@@ -149,7 +149,9 @@ describe('PlanExecutor', () => {
       // Make getNextStep hang so the plan stays in the running state
       let resolveNextStep!: (value: null) => void;
       mockPlanService.getNextStep.mockReturnValue(
-        new Promise<null>((resolve) => { resolveNextStep = resolve; })
+        new Promise<null>((resolve) => {
+          resolveNextStep = resolve;
+        })
       );
       mockPlanService.getStepsByStatus.mockResolvedValue([]);
 
@@ -172,10 +174,12 @@ describe('PlanExecutor', () => {
       // After executeSteps sets status to 'completed', getPlan should reflect that
       let planStatus = 'pending';
       mockPlanService.getPlan.mockImplementation(async () => ({ ...plan, status: planStatus }));
-      mockPlanService.updatePlan.mockImplementation(async (_uid: string, _id: string, input: Record<string, unknown>) => {
-        if (input.status) planStatus = input.status;
-        return {};
-      });
+      mockPlanService.updatePlan.mockImplementation(
+        async (_uid: string, _id: string, input: Record<string, unknown>) => {
+          if (input.status) planStatus = input.status;
+          return {};
+        }
+      );
       mockPlanService.getSteps.mockResolvedValue([]);
       mockPlanService.getNextStep.mockResolvedValue(null);
       mockPlanService.getStepsByStatus.mockResolvedValue([]);
@@ -185,7 +189,9 @@ describe('PlanExecutor', () => {
       const result = await resultPromise;
 
       expect(result.status).toBe('completed');
-      expect(mockPlanService.updatePlan).toHaveBeenCalledWith('user-1', 'plan-1', { status: 'running' });
+      expect(mockPlanService.updatePlan).toHaveBeenCalledWith('user-1', 'plan-1', {
+        status: 'running',
+      });
     });
 
     it('executes a tool_call step successfully', async () => {
@@ -215,7 +221,9 @@ describe('PlanExecutor', () => {
       await vi.advanceTimersByTimeAsync(100);
       const _result = await resultPromise;
 
-      expect(mockPlanService.updateStep).toHaveBeenCalledWith('user-1', 'step-1', { status: 'running' });
+      expect(mockPlanService.updateStep).toHaveBeenCalledWith('user-1', 'step-1', {
+        status: 'running',
+      });
       expect(executeTool).toHaveBeenCalledWith('my_tool', { key: 'val' }, 'user-1');
     });
 
@@ -285,11 +293,9 @@ describe('PlanExecutor', () => {
     it('saves checkpoint data to plan', async () => {
       await executor.checkpoint('plan-1', { step: 3, state: 'partial' });
 
-      expect(mockPlanService.updatePlan).toHaveBeenCalledWith(
-        'user-1',
-        'plan-1',
-        { checkpoint: expect.stringContaining('"step":3') }
-      );
+      expect(mockPlanService.updatePlan).toHaveBeenCalledWith('user-1', 'plan-1', {
+        checkpoint: expect.stringContaining('"step":3'),
+      });
       expect(mockPlanService.logEvent).toHaveBeenCalledWith(
         'user-1',
         'plan-1',

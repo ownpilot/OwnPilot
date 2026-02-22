@@ -18,7 +18,9 @@ const { mockStream, mockComplete, mockLog } = vi.hoisted(() => ({
   mockComplete: vi.fn(),
   mockLog: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() },
 }));
-let capturedStreamCallback: ((stream: { writeSSE: ReturnType<typeof vi.fn> }) => Promise<void>) | null = null;
+let capturedStreamCallback:
+  | ((stream: { writeSSE: ReturnType<typeof vi.fn> }) => Promise<void>)
+  | null = null;
 
 // ---------------------------------------------------------------------------
 // vi.mock

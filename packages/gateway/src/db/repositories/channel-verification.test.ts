@@ -101,7 +101,7 @@ describe('ChannelVerificationRepository', () => {
       expect(result.expiresAt).toBeInstanceOf(Date);
       expect(mockAdapter.execute).toHaveBeenCalledWith(
         expect.stringContaining('INSERT INTO channel_verification_tokens'),
-        expect.arrayContaining(['generated-uuid', 'user-1']),
+        expect.arrayContaining(['generated-uuid', 'user-1'])
       );
     });
 
@@ -199,10 +199,7 @@ describe('ChannelVerificationRepository', () => {
 
       await repo.findValidToken('123456', 'telegram');
 
-      expect(mockAdapter.queryOne).toHaveBeenCalledWith(
-        expect.any(String),
-        ['123456', 'telegram'],
-      );
+      expect(mockAdapter.queryOne).toHaveBeenCalledWith(expect.any(String), ['123456', 'telegram']);
     });
 
     it('passes null platform when not provided', async () => {
@@ -210,10 +207,7 @@ describe('ChannelVerificationRepository', () => {
 
       await repo.findValidToken('123456');
 
-      expect(mockAdapter.queryOne).toHaveBeenCalledWith(
-        expect.any(String),
-        ['123456', null],
-      );
+      expect(mockAdapter.queryOne).toHaveBeenCalledWith(expect.any(String), ['123456', null]);
     });
   });
 
@@ -227,7 +221,7 @@ describe('ChannelVerificationRepository', () => {
 
       expect(mockAdapter.execute).toHaveBeenCalledWith(
         expect.stringContaining('SET is_used = TRUE'),
-        ['cu-1', 'tok-1'],
+        ['cu-1', 'tok-1']
       );
       const sql = mockAdapter.execute.mock.calls[0][0] as string;
       expect(sql).toContain('used_at = NOW()');
@@ -297,7 +291,7 @@ describe('ChannelVerificationRepository', () => {
       expect(result).toBe(4);
       expect(mockAdapter.execute).toHaveBeenCalledWith(
         expect.stringContaining('DELETE FROM channel_verification_tokens'),
-        ['user-1'],
+        ['user-1']
       );
       const sql = mockAdapter.execute.mock.calls[0][0] as string;
       expect(sql).toContain('ownpilot_user_id = $1');
@@ -321,7 +315,7 @@ describe('ChannelVerificationRepository', () => {
         makeTokenRow({
           expires_at: '2024-06-01T12:15:00Z',
           created_at: '2024-06-01T12:00:00Z',
-        }),
+        })
       );
 
       const result = await repo.findValidToken('123456');
@@ -338,7 +332,7 @@ describe('ChannelVerificationRepository', () => {
           is_used: true,
           used_at: '2024-06-01T12:05:00Z',
           used_by_channel_user_id: 'cu-1',
-        }),
+        })
       );
 
       const result = await repo.findValidToken('123456');
@@ -358,9 +352,7 @@ describe('ChannelVerificationRepository', () => {
     });
 
     it('maps platform when present', async () => {
-      mockAdapter.queryOne.mockResolvedValueOnce(
-        makeTokenRow({ platform: 'telegram' }),
-      );
+      mockAdapter.queryOne.mockResolvedValueOnce(makeTokenRow({ platform: 'telegram' }));
 
       const result = await repo.findValidToken('123456');
 
@@ -376,9 +368,7 @@ describe('ChannelVerificationRepository', () => {
     });
 
     it('maps isUsed boolean', async () => {
-      mockAdapter.queryOne.mockResolvedValueOnce(
-        makeTokenRow({ is_used: true }),
-      );
+      mockAdapter.queryOne.mockResolvedValueOnce(makeTokenRow({ is_used: true }));
 
       const result = await repo.findValidToken('123456');
 

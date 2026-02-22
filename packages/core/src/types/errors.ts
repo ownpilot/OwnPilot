@@ -158,7 +158,10 @@ export class RateLimitError extends AppError {
   readonly statusCode = 429;
   readonly retryAfterMs?: number;
 
-  constructor(message: string = 'Rate limit exceeded', options?: { retryAfterMs?: number; cause?: unknown }) {
+  constructor(
+    message: string = 'Rate limit exceeded',
+    options?: { retryAfterMs?: number; cause?: unknown }
+  ) {
     super(message, options);
     this.retryAfterMs = options?.retryAfterMs;
   }

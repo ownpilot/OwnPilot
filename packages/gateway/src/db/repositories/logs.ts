@@ -218,7 +218,11 @@ export class LogsRepository extends BaseRepository {
   /**
    * Quick error log helper
    */
-  async logError(type: RequestLog['type'], error: Error, context?: Partial<CreateLogInput>): Promise<RequestLog> {
+  async logError(
+    type: RequestLog['type'],
+    error: Error,
+    context?: Partial<CreateLogInput>
+  ): Promise<RequestLog> {
     return this.log({
       ...context,
       type,
@@ -400,10 +404,7 @@ export class LogsRepository extends BaseRepository {
    * Clear all logs for this user
    */
   async clearAll(): Promise<number> {
-    const result = await this.execute(
-      'DELETE FROM request_logs WHERE user_id = $1',
-      [this.userId]
-    );
+    const result = await this.execute('DELETE FROM request_logs WHERE user_id = $1', [this.userId]);
     return result.changes;
   }
 }

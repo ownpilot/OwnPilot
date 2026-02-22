@@ -20,7 +20,13 @@ const OPENAI_IMAGE_CONFIG = {
   description: 'OpenAI API for image analysis (Vision) and generation (DALL-E)',
   docsUrl: 'https://platform.openai.com/docs/api-reference',
   configSchema: [
-    { name: 'api_key', label: 'API Key', type: 'secret' as const, required: true, envVar: 'OPENAI_API_KEY' },
+    {
+      name: 'api_key',
+      label: 'API Key',
+      type: 'secret' as const,
+      required: true,
+      envVar: 'OPENAI_API_KEY',
+    },
   ],
 } as const;
 
@@ -31,7 +37,13 @@ const STABILITY_IMAGE_CONFIG = {
   description: 'Stability AI API for image generation (Stable Diffusion)',
   docsUrl: 'https://platform.stability.ai/docs/api-reference',
   configSchema: [
-    { name: 'api_key', label: 'API Key', type: 'secret' as const, required: true, envVar: 'STABILITY_API_KEY' },
+    {
+      name: 'api_key',
+      label: 'API Key',
+      type: 'secret' as const,
+      required: true,
+      envVar: 'STABILITY_API_KEY',
+    },
   ],
 } as const;
 
@@ -42,7 +54,8 @@ const STABILITY_IMAGE_CONFIG = {
 export const analyzeImageTool: ToolDefinition = {
   name: 'analyze_image',
   brief: 'Describe, OCR, or answer questions about an image',
-  description: 'Analyze an image using AI vision capabilities. Can describe content, extract text (OCR), detect objects, and answer questions about images.',
+  description:
+    'Analyze an image using AI vision capabilities. Can describe content, extract text (OCR), detect objects, and answer questions about images.',
   parameters: {
     type: 'object',
     properties: {
@@ -52,12 +65,14 @@ export const analyzeImageTool: ToolDefinition = {
       },
       task: {
         type: 'string',
-        description: 'Analysis task to perform (default: "describe"). Use "custom" with the "question" parameter to ask a specific question about the image.',
+        description:
+          'Analysis task to perform (default: "describe"). Use "custom" with the "question" parameter to ask a specific question about the image.',
         enum: ['describe', 'ocr', 'objects', 'faces', 'colors', 'custom'],
       },
       question: {
         type: 'string',
-        description: 'Specific question about the image. REQUIRED when task is "custom", ignored otherwise.',
+        description:
+          'Specific question about the image. REQUIRED when task is "custom", ignored otherwise.',
       },
       detailLevel: {
         type: 'string',
@@ -74,7 +89,10 @@ export const analyzeImageTool: ToolDefinition = {
   configRequirements: [OPENAI_IMAGE_CONFIG],
 };
 
-export const analyzeImageExecutor: ToolExecutor = async (params, _context): Promise<ToolExecutionResult> => {
+export const analyzeImageExecutor: ToolExecutor = async (
+  params,
+  _context
+): Promise<ToolExecutionResult> => {
   const source = params.source as string;
   const task = (params.task as string) || 'describe';
   const question = params.question as string | undefined;
@@ -154,23 +172,28 @@ export const analyzeImageExecutor: ToolExecutor = async (params, _context): Prom
     let prompt: string;
     switch (task) {
       case 'describe':
-        prompt = detailLevel === 'high'
-          ? 'Provide a very detailed description of this image, including all visible elements, their positions, colors, textures, and any notable details.'
-          : detailLevel === 'low'
-            ? 'Briefly describe the main subject of this image in one or two sentences.'
-            : 'Describe this image in detail, including the main subjects, setting, colors, and overall composition.';
+        prompt =
+          detailLevel === 'high'
+            ? 'Provide a very detailed description of this image, including all visible elements, their positions, colors, textures, and any notable details.'
+            : detailLevel === 'low'
+              ? 'Briefly describe the main subject of this image in one or two sentences.'
+              : 'Describe this image in detail, including the main subjects, setting, colors, and overall composition.';
         break;
       case 'ocr':
-        prompt = 'Extract and transcribe all text visible in this image. Format it clearly, preserving the original structure where possible.';
+        prompt =
+          'Extract and transcribe all text visible in this image. Format it clearly, preserving the original structure where possible.';
         break;
       case 'objects':
-        prompt = 'List all distinct objects visible in this image. For each object, provide its name, approximate position (e.g., top-left, center), and any notable characteristics.';
+        prompt =
+          'List all distinct objects visible in this image. For each object, provide its name, approximate position (e.g., top-left, center), and any notable characteristics.';
         break;
       case 'faces':
-        prompt = 'Describe any faces visible in this image, including expressions, approximate age range, and any distinguishing features. Do not attempt to identify specific individuals.';
+        prompt =
+          'Describe any faces visible in this image, including expressions, approximate age range, and any distinguishing features. Do not attempt to identify specific individuals.';
         break;
       case 'colors':
-        prompt = 'Analyze the color palette of this image. List the dominant colors, their approximate percentages, and describe the overall color mood/tone.';
+        prompt =
+          'Analyze the color palette of this image. List the dominant colors, their approximate percentages, and describe the overall color mood/tone.';
         break;
       case 'custom':
         if (!question) {
@@ -226,7 +249,16 @@ export const generateImageTool: ToolDefinition = {
       style: {
         type: 'string',
         description: 'Art style for the image',
-        enum: ['realistic', 'artistic', 'cartoon', 'sketch', 'digital-art', '3d-render', 'anime', 'photography'],
+        enum: [
+          'realistic',
+          'artistic',
+          'cartoon',
+          'sketch',
+          'digital-art',
+          '3d-render',
+          'anime',
+          'photography',
+        ],
       },
       size: {
         type: 'string',
@@ -252,7 +284,10 @@ export const generateImageTool: ToolDefinition = {
   configRequirements: [OPENAI_IMAGE_CONFIG, STABILITY_IMAGE_CONFIG],
 };
 
-export const generateImageExecutor: ToolExecutor = async (params, _context): Promise<ToolExecutionResult> => {
+export const generateImageExecutor: ToolExecutor = async (
+  params,
+  _context
+): Promise<ToolExecutionResult> => {
   const prompt = params.prompt as string;
   const style = (params.style as string) || 'realistic';
   const size = (params.size as string) || '1024x1024';
@@ -276,9 +311,8 @@ export const generateImageExecutor: ToolExecutor = async (params, _context): Pro
   }
 
   // Enhance prompt with style
-  const enhancedPrompt = style !== 'realistic'
-    ? `${prompt}, ${getStyleDescription(style)}`
-    : prompt;
+  const enhancedPrompt =
+    style !== 'realistic' ? `${prompt}, ${getStyleDescription(style)}` : prompt;
 
   // Return placeholder - actual generation requires DALL-E API integration
   return {
@@ -342,7 +376,8 @@ export const resizeImageTool: ToolDefinition = {
       },
       outputPath: {
         type: 'string',
-        description: 'Path to save resized image (optional, defaults to source with _resized suffix)',
+        description:
+          'Path to save resized image (optional, defaults to source with _resized suffix)',
       },
       quality: {
         type: 'number',
@@ -353,7 +388,10 @@ export const resizeImageTool: ToolDefinition = {
   },
 };
 
-export const resizeImageExecutor: ToolExecutor = async (params, _context): Promise<ToolExecutionResult> => {
+export const resizeImageExecutor: ToolExecutor = async (
+  params,
+  _context
+): Promise<ToolExecutionResult> => {
   const source = params.source as string;
   const width = params.width as number | undefined;
   const height = params.height as number | undefined;
@@ -379,7 +417,7 @@ export const resizeImageExecutor: ToolExecutor = async (params, _context): Promi
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let sharp: any = null; // Optional dependency - dynamically imported
     try {
-      sharp = (await tryImport('sharp') as Record<string, unknown>).default;
+      sharp = ((await tryImport('sharp')) as Record<string, unknown>).default;
     } catch {
       return {
         content: {

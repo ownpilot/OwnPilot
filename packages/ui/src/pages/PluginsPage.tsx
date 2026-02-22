@@ -1,14 +1,24 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Puzzle, Power, Wrench, Shield, Lock, Check, X, RefreshCw, Settings, Globe, AlertTriangle, Database } from '../components/icons';
+import {
+  Puzzle,
+  Power,
+  Wrench,
+  Shield,
+  Lock,
+  Check,
+  X,
+  RefreshCw,
+  Settings,
+  Globe,
+  AlertTriangle,
+  Database,
+} from '../components/icons';
 import { DynamicConfigForm } from '../components/DynamicConfigForm';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { EmptyState } from '../components/EmptyState';
 import { useToast } from '../components/ToastProvider';
 import { pluginsApi, apiClient } from '../api';
 import type { PluginInfo, PluginStats } from '../api';
-
-
-
 
 /** Returns true if icon looks like a URL rather than an emoji/text string */
 function isIconUrl(icon: string): boolean {
@@ -28,7 +38,11 @@ function PluginIcon({ icon, size = 'sm' }: { icon?: string; size?: 'sm' | 'lg' }
   }
 
   // Emoji or text icon
-  return <span className={textSize} role="img">{icon}</span>;
+  return (
+    <span className={textSize} role="img">
+      {icon}
+    </span>
+  );
 }
 
 const CAPABILITY_LABELS: Record<string, { label: string; color: string }> = {
@@ -36,9 +50,15 @@ const CAPABILITY_LABELS: Record<string, { label: string; color: string }> = {
   handlers: { label: 'Handlers', color: 'bg-purple-500/20 text-purple-600 dark:text-purple-400' },
   storage: { label: 'Storage', color: 'bg-amber-500/20 text-amber-600 dark:text-amber-400' },
   scheduled: { label: 'Scheduled', color: 'bg-green-500/20 text-green-600 dark:text-green-400' },
-  notifications: { label: 'Notifications', color: 'bg-pink-500/20 text-pink-600 dark:text-pink-400' },
+  notifications: {
+    label: 'Notifications',
+    color: 'bg-pink-500/20 text-pink-600 dark:text-pink-400',
+  },
   ui: { label: 'UI', color: 'bg-cyan-500/20 text-cyan-600 dark:text-cyan-400' },
-  integrations: { label: 'Integrations', color: 'bg-orange-500/20 text-orange-600 dark:text-orange-400' },
+  integrations: {
+    label: 'Integrations',
+    color: 'bg-orange-500/20 text-orange-600 dark:text-orange-400',
+  },
 };
 
 const STATUS_COLORS: Record<string, string> = {
@@ -144,7 +164,9 @@ export function PluginsPage() {
           <div className="flex items-center gap-6 text-sm">
             <div className="flex items-center gap-2">
               <span className="text-text-muted dark:text-dark-text-muted">Total:</span>
-              <span className="font-medium text-text-primary dark:text-dark-text-primary">{stats.total}</span>
+              <span className="font-medium text-text-primary dark:text-dark-text-primary">
+                {stats.total}
+              </span>
             </div>
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-success" />
@@ -154,7 +176,9 @@ export function PluginsPage() {
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-text-muted" />
               <span className="text-text-muted dark:text-dark-text-muted">Disabled:</span>
-              <span className="font-medium text-text-secondary dark:text-dark-text-secondary">{stats.disabled}</span>
+              <span className="font-medium text-text-secondary dark:text-dark-text-secondary">
+                {stats.disabled}
+              </span>
             </div>
             <div className="flex items-center gap-2">
               <Wrench className="w-4 h-4 text-primary" />
@@ -192,9 +216,11 @@ export function PluginsPage() {
           <EmptyState
             icon={Puzzle}
             title={`No plugins ${filter !== 'all' ? filter : 'installed'}`}
-            description={filter === 'all'
-              ? 'Install plugins to extend your AI assistant.'
-              : `No ${filter} plugins found.`}
+            description={
+              filter === 'all'
+                ? 'Install plugins to extend your AI assistant.'
+                : `No ${filter} plugins found.`
+            }
           />
         ) : (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -246,9 +272,7 @@ function PluginCard({ plugin, onToggle, onClick }: PluginCardProps) {
             <h3 className="font-medium text-text-primary dark:text-dark-text-primary truncate">
               {plugin.name}
             </h3>
-            <p className="text-xs text-text-muted dark:text-dark-text-muted">
-              v{plugin.version}
-            </p>
+            <p className="text-xs text-text-muted dark:text-dark-text-muted">v{plugin.version}</p>
           </div>
         </button>
         <div className="flex items-center gap-1.5 shrink-0">
@@ -258,7 +282,10 @@ function PluginCard({ plugin, onToggle, onClick }: PluginCardProps) {
             </span>
           )}
           {plugin.hasUnconfiguredServices && (
-            <span className="w-2 h-2 rounded-full bg-warning shrink-0" title="Has unconfigured services" />
+            <span
+              className="w-2 h-2 rounded-full bg-warning shrink-0"
+              title="Has unconfigured services"
+            />
           )}
           <button
             onClick={(e) => {
@@ -289,12 +316,12 @@ function PluginCard({ plugin, onToggle, onClick }: PluginCardProps) {
           </span>
         )}
         {plugin.capabilities.map((cap) => {
-          const capInfo = CAPABILITY_LABELS[cap] || { label: cap, color: 'bg-gray-500/20 text-gray-600' };
+          const capInfo = CAPABILITY_LABELS[cap] || {
+            label: cap,
+            color: 'bg-gray-500/20 text-gray-600',
+          };
           return (
-            <span
-              key={cap}
-              className={`px-2 py-0.5 text-xs rounded-full ${capInfo.color}`}
-            >
+            <span key={cap} className={`px-2 py-0.5 text-xs rounded-full ${capInfo.color}`}>
               {capInfo.label}
             </span>
           );
@@ -303,7 +330,9 @@ function PluginCard({ plugin, onToggle, onClick }: PluginCardProps) {
 
       {/* Status & Stats */}
       <div className="flex items-center justify-between text-xs">
-        <span className={`px-2 py-0.5 rounded-full ${STATUS_COLORS[plugin.status] || STATUS_COLORS.disabled}`}>
+        <span
+          className={`px-2 py-0.5 rounded-full ${STATUS_COLORS[plugin.status] || STATUS_COLORS.disabled}`}
+        >
           {plugin.status}
         </span>
         <div className="flex items-center gap-3 text-text-muted dark:text-dark-text-muted">
@@ -314,7 +343,7 @@ function PluginCard({ plugin, onToggle, onClick }: PluginCardProps) {
           {plugin.permissions.length > 0 && (
             <span className="flex items-center gap-1">
               <Lock className="w-3 h-3" />
-              {(plugin.grantedPermissions?.length ?? 0)}/{plugin.permissions.length}
+              {plugin.grantedPermissions?.length ?? 0}/{plugin.permissions.length}
             </span>
           )}
         </div>
@@ -337,18 +366,36 @@ function PluginDetailModal({ plugin, onClose, onToggle, onPluginUpdated }: Plugi
   // Settings state
   const [settingsValues, setSettingsValues] = useState<Record<string, unknown>>({});
   const [isSavingSettings, setIsSavingSettings] = useState(false);
-  const [settingsMessage, setSettingsMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [settingsMessage, setSettingsMessage] = useState<{
+    type: 'success' | 'error';
+    text: string;
+  } | null>(null);
 
   const showSettingsTab = plugin.hasSettings;
   const showServicesTab = (plugin.requiredServices?.length ?? 0) > 0;
 
   // Plugin-owned database tables
-  const [pluginTables, setPluginTables] = useState<Array<{ name: string; displayName: string; recordCount: number; columns: Array<{ name: string }> }>>([]);
+  const [pluginTables, setPluginTables] = useState<
+    Array<{
+      name: string;
+      displayName: string;
+      recordCount: number;
+      columns: Array<{ name: string }>;
+    }>
+  >([]);
 
   // Fetch plugin-owned tables
   useEffect(() => {
     if (plugin) {
-      apiClient.get<Array<{ name: string; displayName: string; recordCount: number; columns: Array<{ name: string }> }>>(`/custom-data/tables/by-plugin/${plugin.id}`)
+      apiClient
+        .get<
+          Array<{
+            name: string;
+            displayName: string;
+            recordCount: number;
+            columns: Array<{ name: string }>;
+          }>
+        >(`/custom-data/tables/by-plugin/${plugin.id}`)
         .then((data) => {
           setPluginTables(data);
         })
@@ -430,7 +477,9 @@ function PluginDetailModal({ plugin, onClose, onToggle, onPluginUpdated }: Plugi
                   <AlertTriangle className="w-4 h-4 text-warning" />
                 </span>
               )}
-              <span className={`px-3 py-1 rounded-full text-sm ${STATUS_COLORS[plugin.status] || STATUS_COLORS.disabled}`}>
+              <span
+                className={`px-3 py-1 rounded-full text-sm ${STATUS_COLORS[plugin.status] || STATUS_COLORS.disabled}`}
+              >
                 {plugin.status}
               </span>
             </div>
@@ -495,12 +544,12 @@ function PluginDetailModal({ plugin, onClose, onToggle, onPluginUpdated }: Plugi
                 </h4>
                 <div className="flex flex-wrap gap-2">
                   {plugin.capabilities.map((cap) => {
-                    const capInfo = CAPABILITY_LABELS[cap] || { label: cap, color: 'bg-gray-500/20 text-gray-600' };
+                    const capInfo = CAPABILITY_LABELS[cap] || {
+                      label: cap,
+                      color: 'bg-gray-500/20 text-gray-600',
+                    };
                     return (
-                      <span
-                        key={cap}
-                        className={`px-3 py-1 text-sm rounded-full ${capInfo.color}`}
-                      >
+                      <span key={cap} className={`px-3 py-1 text-sm rounded-full ${capInfo.color}`}>
                         {capInfo.label}
                       </span>
                     );
@@ -616,7 +665,9 @@ function PluginDetailModal({ plugin, onClose, onToggle, onPluginUpdated }: Plugi
                   </div>
                   {plugin.author?.email && (
                     <div className="p-3 bg-bg-tertiary dark:bg-dark-bg-tertiary rounded-lg">
-                      <span className="text-text-muted dark:text-dark-text-muted">Author Email</span>
+                      <span className="text-text-muted dark:text-dark-text-muted">
+                        Author Email
+                      </span>
                       <p className="text-text-primary dark:text-dark-text-primary truncate">
                         {plugin.author.email}
                       </p>
@@ -624,7 +675,9 @@ function PluginDetailModal({ plugin, onClose, onToggle, onPluginUpdated }: Plugi
                   )}
                   {plugin.docs && (
                     <div className="p-3 bg-bg-tertiary dark:bg-dark-bg-tertiary rounded-lg">
-                      <span className="text-text-muted dark:text-dark-text-muted">Documentation</span>
+                      <span className="text-text-muted dark:text-dark-text-muted">
+                        Documentation
+                      </span>
                       <a
                         href={plugin.docs}
                         target="_blank"
@@ -663,7 +716,9 @@ function PluginDetailModal({ plugin, onClose, onToggle, onPluginUpdated }: Plugi
                   Reset to Defaults
                 </button>
                 {settingsMessage && (
-                  <span className={`text-sm ${settingsMessage.type === 'success' ? 'text-success' : 'text-error'}`}>
+                  <span
+                    className={`text-sm ${settingsMessage.type === 'success' ? 'text-success' : 'text-error'}`}
+                  >
                     {settingsMessage.text}
                   </span>
                 )}

@@ -147,12 +147,28 @@ describe('PluginServiceImpl', () => {
   describe('getAll', () => {
     it('returns all plugins', async () => {
       await service.register(
-        { id: 'p1', name: 'P1', version: '1.0.0', description: '', capabilities: [], permissions: [], main: 'index.js' },
-        {},
+        {
+          id: 'p1',
+          name: 'P1',
+          version: '1.0.0',
+          description: '',
+          capabilities: [],
+          permissions: [],
+          main: 'index.js',
+        },
+        {}
       );
       await service.register(
-        { id: 'p2', name: 'P2', version: '1.0.0', description: '', capabilities: [], permissions: [], main: 'index.js' },
-        {},
+        {
+          id: 'p2',
+          name: 'P2',
+          version: '1.0.0',
+          description: '',
+          capabilities: [],
+          permissions: [],
+          main: 'index.js',
+        },
+        {}
       );
 
       expect(service.getAll()).toHaveLength(2);
@@ -162,12 +178,28 @@ describe('PluginServiceImpl', () => {
   describe('getEnabled', () => {
     it('returns only enabled plugins', async () => {
       await service.register(
-        { id: 'p1', name: 'P1', version: '1.0.0', description: '', capabilities: [], permissions: [], main: 'index.js' },
-        {},
+        {
+          id: 'p1',
+          name: 'P1',
+          version: '1.0.0',
+          description: '',
+          capabilities: [],
+          permissions: [],
+          main: 'index.js',
+        },
+        {}
       );
       await service.register(
-        { id: 'p2', name: 'P2', version: '1.0.0', description: '', capabilities: [], permissions: [], main: 'index.js' },
-        {},
+        {
+          id: 'p2',
+          name: 'P2',
+          version: '1.0.0',
+          description: '',
+          capabilities: [],
+          permissions: [],
+          main: 'index.js',
+        },
+        {}
       );
       await service.disable('p2');
 
@@ -179,8 +211,16 @@ describe('PluginServiceImpl', () => {
   describe('enable / disable', () => {
     it('enables a disabled plugin', async () => {
       await service.register(
-        { id: 'p1', name: 'P1', version: '1.0.0', description: '', capabilities: [], permissions: [], main: 'index.js' },
-        {},
+        {
+          id: 'p1',
+          name: 'P1',
+          version: '1.0.0',
+          description: '',
+          capabilities: [],
+          permissions: [],
+          main: 'index.js',
+        },
+        {}
       );
       await service.disable('p1');
       const result = await service.enable('p1');
@@ -189,8 +229,16 @@ describe('PluginServiceImpl', () => {
 
     it('disables an enabled plugin', async () => {
       await service.register(
-        { id: 'p1', name: 'P1', version: '1.0.0', description: '', capabilities: [], permissions: [], main: 'index.js' },
-        {},
+        {
+          id: 'p1',
+          name: 'P1',
+          version: '1.0.0',
+          description: '',
+          capabilities: [],
+          permissions: [],
+          main: 'index.js',
+        },
+        {}
       );
       const result = await service.disable('p1');
       expect(result).toBe(true);
@@ -201,7 +249,11 @@ describe('PluginServiceImpl', () => {
     it('delegates to registry.getAllTools', () => {
       const mockTool = {
         pluginId: 'p1',
-        definition: { name: 'tool1', description: 'test', parameters: { type: 'object' as const, properties: {} } },
+        definition: {
+          name: 'tool1',
+          description: 'test',
+          parameters: { type: 'object' as const, properties: {} },
+        },
         executor: vi.fn(),
       };
       vi.mocked(mockRegistry.getAllTools).mockReturnValue([mockTool]);
@@ -215,8 +267,22 @@ describe('PluginServiceImpl', () => {
 
   describe('getTool', () => {
     it('returns tool entry with pluginId', () => {
-      const plugin = createMockPlugin({ manifest: { id: 'p1', name: 'P1', version: '1.0.0', description: '', capabilities: [], permissions: [], main: 'index.js' } as PluginManifest });
-      const def = { name: 'tool1', description: 'test', parameters: { type: 'object' as const, properties: {} } };
+      const plugin = createMockPlugin({
+        manifest: {
+          id: 'p1',
+          name: 'P1',
+          version: '1.0.0',
+          description: '',
+          capabilities: [],
+          permissions: [],
+          main: 'index.js',
+        } as PluginManifest,
+      });
+      const def = {
+        name: 'tool1',
+        description: 'test',
+        parameters: { type: 'object' as const, properties: {} },
+      };
       const exec = vi.fn();
 
       vi.mocked(mockRegistry.getTool).mockReturnValue({ plugin, definition: def, executor: exec });
@@ -235,8 +301,17 @@ describe('PluginServiceImpl', () => {
   describe('list', () => {
     it('returns lightweight PluginInfo DTOs', async () => {
       await service.register(
-        { id: 'p1', name: 'Plugin One', version: '2.0.0', description: 'First', capabilities: ['tools'], permissions: [], main: 'index.js', category: 'utilities' },
-        {},
+        {
+          id: 'p1',
+          name: 'Plugin One',
+          version: '2.0.0',
+          description: 'First',
+          capabilities: ['tools'],
+          permissions: [],
+          main: 'index.js',
+          category: 'utilities',
+        },
+        {}
       );
 
       const list = service.list();
@@ -258,8 +333,16 @@ describe('PluginServiceImpl', () => {
       expect(service.getCount()).toBe(0);
 
       await service.register(
-        { id: 'p1', name: 'P1', version: '1.0.0', description: '', capabilities: [], permissions: [], main: 'index.js' },
-        {},
+        {
+          id: 'p1',
+          name: 'P1',
+          version: '1.0.0',
+          description: '',
+          capabilities: [],
+          permissions: [],
+          main: 'index.js',
+        },
+        {}
       );
       expect(service.getCount()).toBe(1);
     });

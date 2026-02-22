@@ -1,5 +1,24 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Sparkles, Power, Wrench, Zap, RefreshCw, Globe, Clock, AlertTriangle, Shield, X, Plus, FolderOpen, Trash2, ChevronDown, ChevronRight, Copy, Code, Check } from '../components/icons';
+import {
+  Sparkles,
+  Power,
+  Wrench,
+  Zap,
+  RefreshCw,
+  Globe,
+  Clock,
+  AlertTriangle,
+  Shield,
+  X,
+  Plus,
+  FolderOpen,
+  Trash2,
+  ChevronDown,
+  ChevronRight,
+  Copy,
+  Code,
+  Check,
+} from '../components/icons';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { EmptyState } from '../components/EmptyState';
 import { useToast } from '../components/ToastProvider';
@@ -158,7 +177,9 @@ export function ExtensionsPage() {
           <div className="flex items-center gap-6 text-sm">
             <div className="flex items-center gap-2">
               <span className="text-text-muted dark:text-dark-text-muted">Total:</span>
-              <span className="font-medium text-text-primary dark:text-dark-text-primary">{stats.total}</span>
+              <span className="font-medium text-text-primary dark:text-dark-text-primary">
+                {stats.total}
+              </span>
             </div>
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-success" />
@@ -168,7 +189,9 @@ export function ExtensionsPage() {
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-text-muted" />
               <span className="text-text-muted dark:text-dark-text-muted">Disabled:</span>
-              <span className="font-medium text-text-secondary dark:text-dark-text-secondary">{stats.disabled}</span>
+              <span className="font-medium text-text-secondary dark:text-dark-text-secondary">
+                {stats.disabled}
+              </span>
             </div>
             <div className="flex items-center gap-2">
               <Wrench className="w-4 h-4 text-primary" />
@@ -211,9 +234,11 @@ export function ExtensionsPage() {
           <EmptyState
             icon={Sparkles}
             title={`No extensions ${filter !== 'all' ? filter : 'installed'}`}
-            description={filter === 'all'
-              ? 'Click "Install" to add an extension from a JSON manifest, or "Scan" to discover packages from the extensions directory.'
-              : `No ${filter} extensions found.`}
+            description={
+              filter === 'all'
+                ? 'Click "Install" to add an extension from a JSON manifest, or "Scan" to discover packages from the extensions directory.'
+                : `No ${filter} extensions found.`
+            }
           />
         ) : (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -295,9 +320,7 @@ function ExtensionCard({ pkg, onToggle, onClick }: ExtensionCardProps) {
             <h3 className="font-medium text-text-primary dark:text-dark-text-primary truncate">
               {pkg.name}
             </h3>
-            <p className="text-xs text-text-muted dark:text-dark-text-muted">
-              v{pkg.version}
-            </p>
+            <p className="text-xs text-text-muted dark:text-dark-text-muted">v{pkg.version}</p>
           </div>
         </button>
         <button
@@ -339,7 +362,9 @@ function ExtensionCard({ pkg, onToggle, onClick }: ExtensionCardProps) {
 
       {/* Status & Stats */}
       <div className="flex items-center justify-between text-xs">
-        <span className={`px-2 py-0.5 rounded-full ${STATUS_COLORS[pkg.status] || STATUS_COLORS.disabled}`}>
+        <span
+          className={`px-2 py-0.5 rounded-full ${STATUS_COLORS[pkg.status] || STATUS_COLORS.disabled}`}
+        >
           {pkg.status}
         </span>
         <div className="flex items-center gap-3 text-text-muted dark:text-dark-text-muted">
@@ -471,7 +496,9 @@ function InstallModal({ onClose, onInstalled }: { onClose: () => void; onInstall
               <textarea
                 value={jsonText}
                 onChange={(e) => setJsonText(e.target.value)}
-                placeholder={'{\n  "id": "my-extension",\n  "name": "My Extension",\n  "version": "1.0.0",\n  "description": "...",\n  "tools": [...]\n}'}
+                placeholder={
+                  '{\n  "id": "my-extension",\n  "name": "My Extension",\n  "version": "1.0.0",\n  "description": "...",\n  "tools": [...]\n}'
+                }
                 className="w-full h-64 px-3 py-2 text-sm font-mono bg-bg-tertiary dark:bg-dark-bg-tertiary border border-border dark:border-dark-border rounded-lg text-text-primary dark:text-dark-text-primary placeholder:text-text-muted/50 focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none"
               />
             </div>
@@ -586,12 +613,15 @@ function ExtensionDetailModal({ pkg, onClose, onToggle, onUninstall }: Extension
                 </div>
                 <p className="text-sm text-text-muted dark:text-dark-text-muted">
                   v{pkg.version}
-                  {(manifest.author?.name || pkg.authorName) && ` by ${manifest.author?.name || pkg.authorName}`}
+                  {(manifest.author?.name || pkg.authorName) &&
+                    ` by ${manifest.author?.name || pkg.authorName}`}
                 </p>
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <span className={`px-3 py-1 rounded-full text-sm ${STATUS_COLORS[pkg.status] || STATUS_COLORS.disabled}`}>
+              <span
+                className={`px-3 py-1 rounded-full text-sm ${STATUS_COLORS[pkg.status] || STATUS_COLORS.disabled}`}
+              >
                 {pkg.status}
               </span>
             </div>
@@ -704,11 +734,13 @@ function ExtensionDetailModal({ pkg, onClose, onToggle, onUninstall }: Extension
                             )}
                           </div>
                         </div>
-                        <span className={`px-2 py-0.5 text-xs rounded-full ${
-                          trigger.enabled !== false
-                            ? 'bg-success/20 text-success'
-                            : 'bg-text-muted/20 text-text-muted dark:text-dark-text-muted'
-                        }`}>
+                        <span
+                          className={`px-2 py-0.5 text-xs rounded-full ${
+                            trigger.enabled !== false
+                              ? 'bg-success/20 text-success'
+                              : 'bg-text-muted/20 text-text-muted dark:text-dark-text-muted'
+                          }`}
+                        >
                           {trigger.enabled !== false ? 'On' : 'Off'}
                         </span>
                       </div>
@@ -787,7 +819,9 @@ function ExtensionDetailModal({ pkg, onClose, onToggle, onUninstall }: Extension
                   )}
                   {manifest.docs && (
                     <div className="p-3 bg-bg-tertiary dark:bg-dark-bg-tertiary rounded-lg">
-                      <span className="text-text-muted dark:text-dark-text-muted">Documentation</span>
+                      <span className="text-text-muted dark:text-dark-text-muted">
+                        Documentation
+                      </span>
                       <a
                         href={manifest.docs}
                         target="_blank"
@@ -800,7 +834,9 @@ function ExtensionDetailModal({ pkg, onClose, onToggle, onUninstall }: Extension
                   )}
                   {manifest.author?.email && (
                     <div className="p-3 bg-bg-tertiary dark:bg-dark-bg-tertiary rounded-lg">
-                      <span className="text-text-muted dark:text-dark-text-muted">Author Email</span>
+                      <span className="text-text-muted dark:text-dark-text-muted">
+                        Author Email
+                      </span>
                       <p className="text-text-primary dark:text-dark-text-primary truncate">
                         {manifest.author.email}
                       </p>
@@ -908,14 +944,22 @@ function ExtensionDetailModal({ pkg, onClose, onToggle, onUninstall }: Extension
 // ---------------------------------------------------------------------------
 
 const EXTENSION_CATEGORIES = [
-  'developer', 'productivity', 'communication', 'data',
-  'utilities', 'integrations', 'media', 'lifestyle', 'other',
+  'developer',
+  'productivity',
+  'communication',
+  'data',
+  'utilities',
+  'integrations',
+  'media',
+  'lifestyle',
+  'other',
 ] as const;
 
 const TOOL_PERMISSIONS = ['network', 'filesystem', 'database', 'system'] as const;
 
 const DEFAULT_PARAMS = '{\n  "type": "object",\n  "properties": {},\n  "required": []\n}';
-const DEFAULT_CODE = '// Access arguments via `args` object\n// Use `config.get(service, field)` for service config\n// Return { content: { ... } }\nreturn { content: { result: "ok" } };';
+const DEFAULT_CODE =
+  '// Access arguments via `args` object\n// Use `config.get(service, field)` for service config\n// Return { content: { ... } }\nreturn { content: { result: "ok" } };';
 
 interface ToolDraft {
   name: string;
@@ -927,11 +971,19 @@ interface ToolDraft {
   expanded: boolean;
 }
 
-function ExtensionCreatorModal({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
+function ExtensionCreatorModal({
+  onClose,
+  onCreated,
+}: {
+  onClose: () => void;
+  onCreated: () => void;
+}) {
   const toast = useToast();
 
   // Step
-  const [step, setStep] = useState<'describe' | 'metadata' | 'tools' | 'extras' | 'preview'>('describe');
+  const [step, setStep] = useState<'describe' | 'metadata' | 'tools' | 'extras' | 'preview'>(
+    'describe'
+  );
 
   // AI Describe
   const [aiDescription, setAiDescription] = useState('');
@@ -985,13 +1037,13 @@ function ExtensionCreatorModal({ onClose, onCreated }: { onClose: () => void; on
           parameters: JSON.stringify(
             t.parameters || { type: 'object', properties: {}, required: [] },
             null,
-            2,
+            2
           ),
           code: (t.code as string) || '',
           permissions: Array.isArray(t.permissions) ? (t.permissions as string[]) : [],
           requiresApproval: (t.requires_approval as boolean) || false,
           expanded: false,
-        })),
+        }))
       );
     }
 
@@ -1008,12 +1060,16 @@ function ExtensionCreatorModal({ onClose, onCreated }: { onClose: () => void; on
     try {
       const result = await extensionsApi.generate(aiDescription.trim());
       if (result.validation && !result.validation.valid) {
-        toast.warning(`Generated with ${result.validation.errors.length} warning(s). Review and fix in the next steps.`);
+        toast.warning(
+          `Generated with ${result.validation.errors.length} warning(s). Review and fix in the next steps.`
+        );
       }
       populateFromManifest(result.manifest);
       toast.success('Extension manifest generated! Review and edit below.');
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Generation failed. Try rephrasing your description.');
+      setError(
+        e instanceof Error ? e.message : 'Generation failed. Try rephrasing your description.'
+      );
     } finally {
       setIsGenerating(false);
     }
@@ -1023,7 +1079,12 @@ function ExtensionCreatorModal({ onClose, onCreated }: { onClose: () => void; on
   const handleNameChange = (val: string) => {
     setName(val);
     if (!idManuallyEdited) {
-      setExtensionId(val.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''));
+      setExtensionId(
+        val
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/^-|-$/g, '')
+      );
     }
   };
 
@@ -1036,7 +1097,15 @@ function ExtensionCreatorModal({ onClose, onCreated }: { onClose: () => void; on
   const addTool = () => {
     setTools((prev) => [
       ...prev.map((t) => ({ ...t, expanded: false })),
-      { name: '', description: '', parameters: DEFAULT_PARAMS, code: DEFAULT_CODE, permissions: [], requiresApproval: false, expanded: true },
+      {
+        name: '',
+        description: '',
+        parameters: DEFAULT_PARAMS,
+        code: DEFAULT_CODE,
+        permissions: [],
+        requiresApproval: false,
+        expanded: true,
+      },
     ]);
   };
 
@@ -1056,22 +1125,38 @@ function ExtensionCreatorModal({ onClose, onCreated }: { onClose: () => void; on
     setTools((prev) =>
       prev.map((t, i) =>
         i === index
-          ? { ...t, permissions: t.permissions.includes(perm) ? t.permissions.filter((p) => p !== perm) : [...t.permissions, perm] }
-          : t,
-      ),
+          ? {
+              ...t,
+              permissions: t.permissions.includes(perm)
+                ? t.permissions.filter((p) => p !== perm)
+                : [...t.permissions, perm],
+            }
+          : t
+      )
     );
   };
 
   // Validation
-  const metadataValid = extensionId.length > 0 && /^[a-z0-9][a-z0-9-]*$/.test(extensionId) && name.trim().length > 0 && version.trim().length > 0 && description.trim().length > 0;
+  const metadataValid =
+    extensionId.length > 0 &&
+    /^[a-z0-9][a-z0-9-]*$/.test(extensionId) &&
+    name.trim().length > 0 &&
+    version.trim().length > 0 &&
+    description.trim().length > 0;
 
-  const toolsValid = tools.length > 0 && tools.every((t) => {
-    if (!t.name || !/^[a-z0-9_]+$/.test(t.name)) return false;
-    if (!t.description.trim()) return false;
-    if (!t.code.trim()) return false;
-    try { JSON.parse(t.parameters); } catch { return false; }
-    return true;
-  });
+  const toolsValid =
+    tools.length > 0 &&
+    tools.every((t) => {
+      if (!t.name || !/^[a-z0-9_]+$/.test(t.name)) return false;
+      if (!t.description.trim()) return false;
+      if (!t.code.trim()) return false;
+      try {
+        JSON.parse(t.parameters);
+      } catch {
+        return false;
+      }
+      return true;
+    });
 
   // Build manifest
   const buildManifest = () => {
@@ -1092,9 +1177,17 @@ function ExtensionCreatorModal({ onClose, onCreated }: { onClose: () => void; on
     };
     if (icon) manifest.icon = icon;
     if (authorName) manifest.author = { name: authorName };
-    if (tags.trim()) manifest.tags = tags.split(',').map((t) => t.trim()).filter(Boolean);
+    if (tags.trim())
+      manifest.tags = tags
+        .split(',')
+        .map((t) => t.trim())
+        .filter(Boolean);
     if (systemPrompt.trim()) manifest.system_prompt = systemPrompt;
-    if (keywords.trim()) manifest.keywords = keywords.split(',').map((k) => k.trim()).filter(Boolean);
+    if (keywords.trim())
+      manifest.keywords = keywords
+        .split(',')
+        .map((k) => k.trim())
+        .filter(Boolean);
     if (docsUrl.trim()) manifest.docs = docsUrl;
     return manifest;
   };
@@ -1131,10 +1224,16 @@ function ExtensionCreatorModal({ onClose, onCreated }: { onClose: () => void; on
     if (step === 'describe') {
       setStep('metadata');
     } else if (step === 'metadata') {
-      if (!metadataValid) { setError('Please fill in all required fields (ID, Name, Version, Description).'); return; }
+      if (!metadataValid) {
+        setError('Please fill in all required fields (ID, Name, Version, Description).');
+        return;
+      }
       setStep('tools');
     } else if (step === 'tools') {
-      if (!toolsValid) { setError('Add at least one tool with valid name, description, parameters JSON, and code.'); return; }
+      if (!toolsValid) {
+        setError('Add at least one tool with valid name, description, parameters JSON, and code.');
+        return;
+      }
       setStep('extras');
     } else if (step === 'extras') {
       setStep('preview');
@@ -1150,7 +1249,13 @@ function ExtensionCreatorModal({ onClose, onCreated }: { onClose: () => void; on
   };
 
   const steps = ['describe', 'metadata', 'tools', 'extras', 'preview'] as const;
-  const stepLabels = { describe: 'Describe', metadata: 'Metadata', tools: 'Tools', extras: 'Extras', preview: 'Preview' };
+  const stepLabels = {
+    describe: 'Describe',
+    metadata: 'Metadata',
+    tools: 'Tools',
+    extras: 'Extras',
+    preview: 'Preview',
+  };
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
@@ -1162,7 +1267,10 @@ function ExtensionCreatorModal({ onClose, onCreated }: { onClose: () => void; on
               <Code className="w-5 h-5 text-primary" />
               Create Extension
             </h3>
-            <button onClick={onClose} className="p-1 text-text-muted hover:text-text-primary dark:hover:text-dark-text-primary rounded transition-colors">
+            <button
+              onClick={onClose}
+              className="p-1 text-text-muted hover:text-text-primary dark:hover:text-dark-text-primary rounded transition-colors"
+            >
               <X className="w-5 h-5" />
             </button>
           </div>
@@ -1173,7 +1281,10 @@ function ExtensionCreatorModal({ onClose, onCreated }: { onClose: () => void; on
                 key={s}
                 onClick={() => {
                   const currentIdx = steps.indexOf(step);
-                  if (i <= currentIdx) { setError(null); setStep(s); }
+                  if (i <= currentIdx) {
+                    setError(null);
+                    setStep(s);
+                  }
                 }}
                 className={`text-sm font-medium ${
                   step === s
@@ -1232,7 +1343,10 @@ function ExtensionCreatorModal({ onClose, onCreated }: { onClose: () => void; on
                   )}
                 </button>
                 <button
-                  onClick={() => { setError(null); setStep('metadata'); }}
+                  onClick={() => {
+                    setError(null);
+                    setStep('metadata');
+                  }}
                   className="text-sm text-text-muted dark:text-dark-text-muted hover:text-text-secondary dark:hover:text-dark-text-secondary transition-colors"
                   disabled={isGenerating}
                 >
@@ -1303,7 +1417,9 @@ function ExtensionCreatorModal({ onClose, onCreated }: { onClose: () => void; on
                     className="w-full px-3 py-2 bg-bg-tertiary dark:bg-dark-bg-tertiary border border-border dark:border-dark-border rounded-lg text-text-primary dark:text-dark-text-primary focus:outline-none focus:ring-2 focus:ring-primary/50"
                   >
                     {EXTENSION_CATEGORIES.map((c) => (
-                      <option key={c} value={c}>{c.charAt(0).toUpperCase() + c.slice(1)}</option>
+                      <option key={c} value={c}>
+                        {c.charAt(0).toUpperCase() + c.slice(1)}
+                      </option>
                     ))}
                   </select>
                 </div>
@@ -1360,7 +1476,9 @@ function ExtensionCreatorModal({ onClose, onCreated }: { onClose: () => void; on
                   placeholder="e.g. search, web, api"
                   className="w-full px-3 py-2 bg-bg-tertiary dark:bg-dark-bg-tertiary border border-border dark:border-dark-border rounded-lg text-text-primary dark:text-dark-text-primary focus:outline-none focus:ring-2 focus:ring-primary/50"
                 />
-                <p className="text-xs text-text-muted dark:text-dark-text-muted mt-1">Comma-separated</p>
+                <p className="text-xs text-text-muted dark:text-dark-text-muted mt-1">
+                  Comma-separated
+                </p>
               </div>
             </div>
           )}
@@ -1468,7 +1586,11 @@ function ExtensionCreatorModal({ onClose, onCreated }: { onClose: () => void; on
                   onClick={handleCopy}
                   className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-text-secondary dark:text-dark-text-secondary hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary rounded-lg transition-colors"
                 >
-                  {copied ? <Check className="w-4 h-4 text-success" /> : <Copy className="w-4 h-4" />}
+                  {copied ? (
+                    <Check className="w-4 h-4 text-success" />
+                  ) : (
+                    <Copy className="w-4 h-4" />
+                  )}
                   {copied ? 'Copied!' : 'Copy JSON'}
                 </button>
               </div>
@@ -1548,7 +1670,14 @@ interface ToolDraftCardProps {
   onTogglePermission: (perm: string) => void;
 }
 
-function ToolDraftCard({ tool, index, onUpdate, onRemove, onToggleExpanded, onTogglePermission }: ToolDraftCardProps) {
+function ToolDraftCard({
+  tool,
+  index,
+  onUpdate,
+  onRemove,
+  onToggleExpanded,
+  onTogglePermission,
+}: ToolDraftCardProps) {
   const [confirmRemove, setConfirmRemove] = useState(false);
 
   if (!tool.expanded) {
@@ -1578,7 +1707,10 @@ function ToolDraftCard({ tool, index, onUpdate, onRemove, onToggleExpanded, onTo
   return (
     <div className="p-4 bg-bg-tertiary dark:bg-dark-bg-tertiary border border-border dark:border-dark-border rounded-lg space-y-3">
       <div className="flex items-center justify-between">
-        <button onClick={onToggleExpanded} className="flex items-center gap-2 text-sm font-medium text-text-primary dark:text-dark-text-primary">
+        <button
+          onClick={onToggleExpanded}
+          className="flex items-center gap-2 text-sm font-medium text-text-primary dark:text-dark-text-primary"
+        >
           <ChevronDown className="w-4 h-4 text-text-muted" />
           Tool {index + 1}
         </button>
@@ -1592,7 +1724,10 @@ function ToolDraftCard({ tool, index, onUpdate, onRemove, onToggleExpanded, onTo
           </button>
         ) : (
           <button
-            onClick={() => { onRemove(); setConfirmRemove(false); }}
+            onClick={() => {
+              onRemove();
+              setConfirmRemove(false);
+            }}
             className="text-xs text-error font-medium flex items-center gap-1"
           >
             <Trash2 className="w-3.5 h-3.5" />
@@ -1608,7 +1743,9 @@ function ToolDraftCard({ tool, index, onUpdate, onRemove, onToggleExpanded, onTo
         <input
           type="text"
           value={tool.name}
-          onChange={(e) => onUpdate({ name: e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '_') })}
+          onChange={(e) =>
+            onUpdate({ name: e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '_') })
+          }
           placeholder="my_tool_name"
           className="w-full px-3 py-1.5 text-sm bg-bg-primary dark:bg-dark-bg-primary border border-border dark:border-dark-border rounded-lg text-text-primary dark:text-dark-text-primary font-mono focus:outline-none focus:ring-2 focus:ring-primary/50"
         />
@@ -1650,8 +1787,13 @@ function ToolDraftCard({ tool, index, onUpdate, onRemove, onToggleExpanded, onTo
           className="w-full px-3 py-1.5 text-sm bg-bg-primary dark:bg-dark-bg-primary border border-border dark:border-dark-border rounded-lg text-text-primary dark:text-dark-text-primary font-mono focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none"
         />
         <p className="text-xs text-text-muted dark:text-dark-text-muted mt-1">
-          Access arguments via <code className="px-1 bg-bg-secondary dark:bg-dark-bg-secondary rounded">args</code> object.
-          Return <code className="px-1 bg-bg-secondary dark:bg-dark-bg-secondary rounded">{'{ content: { ... } }'}</code>.
+          Access arguments via{' '}
+          <code className="px-1 bg-bg-secondary dark:bg-dark-bg-secondary rounded">args</code>{' '}
+          object. Return{' '}
+          <code className="px-1 bg-bg-secondary dark:bg-dark-bg-secondary rounded">
+            {'{ content: { ... } }'}
+          </code>
+          .
         </p>
       </div>
 
@@ -1685,7 +1827,10 @@ function ToolDraftCard({ tool, index, onUpdate, onRemove, onToggleExpanded, onTo
           onChange={(e) => onUpdate({ requiresApproval: e.target.checked })}
           className="w-4 h-4 rounded border-border dark:border-dark-border text-primary focus:ring-primary"
         />
-        <label htmlFor={`approval-${index}`} className="text-xs text-text-secondary dark:text-dark-text-secondary">
+        <label
+          htmlFor={`approval-${index}`}
+          className="text-xs text-text-secondary dark:text-dark-text-secondary"
+        >
           Require user approval before each execution
         </label>
       </div>

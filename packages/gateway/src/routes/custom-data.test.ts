@@ -113,7 +113,9 @@ describe('Custom Data Routes', () => {
       const res = await app.request('/custom-data/tables/by-plugin/plugin-1');
 
       expect(res.status).toBe(200);
-      expect(mockCustomDataService.listTablesWithStats).toHaveBeenCalledWith({ pluginId: 'plugin-1' });
+      expect(mockCustomDataService.listTablesWithStats).toHaveBeenCalledWith({
+        pluginId: 'plugin-1',
+      });
     });
   });
 
@@ -294,7 +296,9 @@ describe('Custom Data Routes', () => {
     it('parses filter parameter', async () => {
       mockCustomDataService.listRecords.mockResolvedValue({ records: [], total: 0 });
 
-      await app.request('/custom-data/tables/books/records?filter=' + encodeURIComponent('{"genre":"fiction"}'));
+      await app.request(
+        '/custom-data/tables/books/records?filter=' + encodeURIComponent('{"genre":"fiction"}')
+      );
 
       expect(mockCustomDataService.listRecords).toHaveBeenCalledWith('books', {
         limit: 50,

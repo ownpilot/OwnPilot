@@ -285,7 +285,10 @@ export class InteractiveAgentBuilder {
   /**
    * Submit an answer
    */
-  submitAnswer(sessionId: string, answer: string | string[] | boolean): {
+  submitAnswer(
+    sessionId: string,
+    answer: string | string[] | boolean
+  ): {
     success: boolean;
     nextQuestion?: BuilderQuestion;
     complete?: boolean;
@@ -434,9 +437,7 @@ Generate a clear, focused system prompt that:
 
 Return ONLY the system prompt, no explanations.`;
 
-        const response = await this.llmProvider.complete([
-          { role: 'user', content: prompt },
-        ]);
+        const response = await this.llmProvider.complete([{ role: 'user', content: prompt }]);
 
         if (response && response.length > 50) {
           return response;
@@ -447,12 +448,13 @@ Return ONLY the system prompt, no explanations.`;
     }
 
     // Template-based generation
-    const personalityText = {
-      professional: 'Communicate in a professional, business-like manner.',
-      friendly: 'Be warm, approachable, and conversational.',
-      concise: 'Keep responses brief and to the point.',
-      detailed: 'Provide thorough explanations and details.',
-    }[personality] ?? '';
+    const personalityText =
+      {
+        professional: 'Communicate in a professional, business-like manner.',
+        friendly: 'Be warm, approachable, and conversational.',
+        concise: 'Keep responses brief and to the point.',
+        detailed: 'Provide thorough explanations and details.',
+      }[personality] ?? '';
 
     const toolsText =
       tools.length > 0
@@ -460,9 +462,7 @@ Return ONLY the system prompt, no explanations.`;
         : '';
 
     const dataText =
-      dataAccess.length > 0
-        ? `\n\n## Data Access\nYou can access: ${dataAccess.join(', ')}`
-        : '';
+      dataAccess.length > 0 ? `\n\n## Data Access\nYou can access: ${dataAccess.join(', ')}` : '';
 
     return `You are ${name} - ${purpose}
 
@@ -490,7 +490,8 @@ ${personalityText}
     // Check purpose keywords first
     if (lower.includes('bookmark')) return '🔖';
     if (lower.includes('note')) return '📝';
-    if (lower.includes('finance') || lower.includes('money') || lower.includes('expense')) return '💰';
+    if (lower.includes('finance') || lower.includes('money') || lower.includes('expense'))
+      return '💰';
     if (lower.includes('code') || lower.includes('program')) return '💻';
     if (lower.includes('write') || lower.includes('writing')) return '✍️';
     if (lower.includes('research')) return '🔬';
@@ -525,18 +526,76 @@ ${personalityText}
   private extractKeywords(purpose: string): string[] {
     const words = purpose.toLowerCase().split(/\W+/);
     const stopWords = new Set([
-      'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for',
-      'of', 'with', 'by', 'from', 'as', 'is', 'was', 'are', 'were', 'been',
-      'be', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would',
-      'could', 'should', 'may', 'might', 'must', 'shall', 'can', 'this',
-      'that', 'these', 'those', 'i', 'you', 'he', 'she', 'it', 'we', 'they',
-      'my', 'your', 'his', 'her', 'its', 'our', 'their', 'me', 'him', 'us',
-      'them', 'what', 'which', 'who', 'whom', 'when', 'where', 'why', 'how',
+      'the',
+      'a',
+      'an',
+      'and',
+      'or',
+      'but',
+      'in',
+      'on',
+      'at',
+      'to',
+      'for',
+      'of',
+      'with',
+      'by',
+      'from',
+      'as',
+      'is',
+      'was',
+      'are',
+      'were',
+      'been',
+      'be',
+      'have',
+      'has',
+      'had',
+      'do',
+      'does',
+      'did',
+      'will',
+      'would',
+      'could',
+      'should',
+      'may',
+      'might',
+      'must',
+      'shall',
+      'can',
+      'this',
+      'that',
+      'these',
+      'those',
+      'i',
+      'you',
+      'he',
+      'she',
+      'it',
+      'we',
+      'they',
+      'my',
+      'your',
+      'his',
+      'her',
+      'its',
+      'our',
+      'their',
+      'me',
+      'him',
+      'us',
+      'them',
+      'what',
+      'which',
+      'who',
+      'whom',
+      'when',
+      'where',
+      'why',
+      'how',
     ]);
 
-    return words
-      .filter((w) => w.length > 3 && !stopWords.has(w))
-      .slice(0, 10);
+    return words.filter((w) => w.length > 3 && !stopWords.has(w)).slice(0, 10);
   }
 
   /**
@@ -582,7 +641,9 @@ ${personalityText}
    */
   private generateNameFromPurpose(purpose: string): string {
     const words = purpose.split(/\W+/).slice(0, 3);
-    return words.map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ') + ' Agent';
+    return (
+      words.map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ') + ' Agent'
+    );
   }
 
   /**
@@ -591,7 +652,12 @@ ${personalityText}
   private detectCategory(purpose: string): string {
     const lower = purpose.toLowerCase();
 
-    if (lower.includes('finance') || lower.includes('money') || lower.includes('expense') || lower.includes('budget')) {
+    if (
+      lower.includes('finance') ||
+      lower.includes('money') ||
+      lower.includes('expense') ||
+      lower.includes('budget')
+    ) {
       return 'finance';
     }
     if (lower.includes('code') || lower.includes('program') || lower.includes('develop')) {
@@ -649,11 +715,23 @@ ${personalityText}
 
     // Map keywords to tools
     const toolMappings: Array<{ keywords: string[]; tools: string[] }> = [
-      { keywords: ['bookmark', 'save url', 'link'], tools: ['save_bookmark', 'search_bookmarks', 'fetch_web_page'] },
+      {
+        keywords: ['bookmark', 'save url', 'link'],
+        tools: ['save_bookmark', 'search_bookmarks', 'fetch_web_page'],
+      },
       { keywords: ['note', 'write', 'document'], tools: ['save_note', 'search_notes'] },
-      { keywords: ['expense', 'finance', 'money', 'budget'], tools: ['add_expense', 'query_expenses', 'expense_summary'] },
-      { keywords: ['schedule', 'reminder', 'calendar'], tools: ['create_scheduled_task', 'list_scheduled_tasks'] },
-      { keywords: ['file', 'read', 'document'], tools: ['read_file', 'write_file', 'list_directory'] },
+      {
+        keywords: ['expense', 'finance', 'money', 'budget'],
+        tools: ['add_expense', 'query_expenses', 'expense_summary'],
+      },
+      {
+        keywords: ['schedule', 'reminder', 'calendar'],
+        tools: ['create_scheduled_task', 'list_scheduled_tasks'],
+      },
+      {
+        keywords: ['file', 'read', 'document'],
+        tools: ['read_file', 'write_file', 'list_directory'],
+      },
       { keywords: ['web', 'fetch', 'http', 'api'], tools: ['http_request', 'fetch_web_page'] },
       { keywords: ['code', 'program', 'script'], tools: ['execute_javascript'] },
       { keywords: ['remember', 'memory'], tools: ['create_memory', 'search_memories'] },
@@ -694,6 +772,8 @@ export function getInteractiveAgentBuilder(): InteractiveAgentBuilder {
   return _builder;
 }
 
-export function createInteractiveAgentBuilder(config?: InteractiveAgentBuilderConfig): InteractiveAgentBuilder {
+export function createInteractiveAgentBuilder(
+  config?: InteractiveAgentBuilderConfig
+): InteractiveAgentBuilder {
   return new InteractiveAgentBuilder(config);
 }

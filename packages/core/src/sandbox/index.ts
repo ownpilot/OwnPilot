@@ -20,10 +20,7 @@ export type {
   SandboxStats,
 } from './types.js';
 
-export {
-  DEFAULT_RESOURCE_LIMITS,
-  DEFAULT_PERMISSIONS,
-} from './types.js';
+export { DEFAULT_RESOURCE_LIMITS, DEFAULT_PERMISSIONS } from './types.js';
 
 // Context utilities
 export {
@@ -50,17 +47,10 @@ export {
 } from './code-validator.js';
 
 // VM-based sandbox (faster, less isolated)
-export {
-  SandboxExecutor,
-  createSandbox,
-  runInSandbox,
-} from './executor.js';
+export { SandboxExecutor, createSandbox, runInSandbox } from './executor.js';
 
 // Worker-based sandbox (slower, more isolated)
-export {
-  WorkerSandbox,
-  createWorkerSandbox,
-} from './worker-sandbox.js';
+export { WorkerSandbox, createWorkerSandbox } from './worker-sandbox.js';
 
 // Execution mode configuration
 export {
@@ -80,17 +70,10 @@ export {
 } from './local-executor.js';
 
 // Scoped APIs (workspace-jailed fs/exec for custom tools)
-export {
-  createScopedFs,
-  createScopedExec,
-  type ScopedFs,
-  type ScopedExec,
-} from './scoped-apis.js';
+export { createScopedFs, createScopedExec, type ScopedFs, type ScopedExec } from './scoped-apis.js';
 
 // Permission-aware code validation
-export {
-  validateToolCodeWithPermissions,
-} from './code-validator.js';
+export { validateToolCodeWithPermissions } from './code-validator.js';
 
 // Docker-based sandbox (real isolation for untrusted code)
 export {

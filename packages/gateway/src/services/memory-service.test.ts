@@ -16,15 +16,13 @@ import type { Memory } from '../db/repositories/memories.js';
 const mockEmit = vi.fn();
 vi.mock('@ownpilot/core', () => ({
   getEventBus: () => ({ emit: mockEmit }),
-  createEvent: vi.fn(
-    (type: string, category: string, source: string, data: unknown) => ({
-      type,
-      category,
-      source,
-      data,
-      timestamp: new Date().toISOString(),
-    }),
-  ),
+  createEvent: vi.fn((type: string, category: string, source: string, data: unknown) => ({
+    type,
+    category,
+    source,
+    data,
+    timestamp: new Date().toISOString(),
+  })),
   EventTypes: {
     RESOURCE_CREATED: 'resource.created',
     RESOURCE_UPDATED: 'resource.updated',
@@ -32,10 +30,11 @@ vi.mock('@ownpilot/core', () => ({
   },
   getServiceRegistry: () => ({
     get: (token: { key: string }) => {
-      if (token.key === 'embedding') return {
-        isAvailable: () => mockEmbeddingAvailable(),
-        generateEmbedding: (...args: unknown[]) => mockGenerateEmbedding(...args),
-      };
+      if (token.key === 'embedding')
+        return {
+          isAvailable: () => mockEmbeddingAvailable(),
+          generateEmbedding: (...args: unknown[]) => mockGenerateEmbedding(...args),
+        };
       throw new Error(`Unexpected token: ${token.key}`);
     },
   }),
@@ -156,26 +155,26 @@ describe('MemoryService', () => {
         expect.objectContaining({
           type: 'resource.created',
           data: { resourceType: 'memory', id: 'mem-1' },
-        }),
+        })
       );
     });
 
     it('throws VALIDATION_ERROR when content is empty', async () => {
-      await expect(
-        service.createMemory('user-1', { type: 'fact', content: '' }),
-      ).rejects.toThrow(/Content is required/);
+      await expect(service.createMemory('user-1', { type: 'fact', content: '' })).rejects.toThrow(
+        /Content is required/
+      );
       expect(mockRepo.create).not.toHaveBeenCalled();
     });
 
     it('throws VALIDATION_ERROR when content is whitespace only', async () => {
       await expect(
-        service.createMemory('user-1', { type: 'fact', content: '   ' }),
+        service.createMemory('user-1', { type: 'fact', content: '   ' })
       ).rejects.toThrow(MemoryServiceError);
     });
 
     it('throws VALIDATION_ERROR when type is missing', async () => {
       await expect(
-        service.createMemory('user-1', { type: undefined as unknown as string, content: 'x' }),
+        service.createMemory('user-1', { type: undefined as unknown as string, content: 'x' })
       ).rejects.toThrow(/Type is required/);
     });
   });
@@ -219,9 +218,9 @@ describe('MemoryService', () => {
     });
 
     it('validates content before dedup check', async () => {
-      await expect(
-        service.rememberMemory('user-1', { type: 'fact', content: '' }),
-      ).rejects.toThrow(/Content is required/);
+      await expect(service.rememberMemory('user-1', { type: 'fact', content: '' })).rejects.toThrow(
+        /Content is required/
+      );
       expect(mockRepo.findSimilar).not.toHaveBeenCalled();
     });
   });
@@ -282,7 +281,7 @@ describe('MemoryService', () => {
         expect.objectContaining({
           type: 'resource.updated',
           data: expect.objectContaining({ resourceType: 'memory', id: 'mem-1' }),
-        }),
+        })
       );
     });
 
@@ -305,7 +304,7 @@ describe('MemoryService', () => {
         expect.objectContaining({
           type: 'resource.deleted',
           data: { resourceType: 'memory', id: 'mem-1' },
-        }),
+        })
       );
     });
 

@@ -53,7 +53,13 @@ vi.mock('@ownpilot/core', async (importOriginal) => {
           baseUrl: 'https://api.openai.com/v1',
           apiKeyEnv: 'OPENAI_API_KEY',
           docsUrl: 'https://platform.openai.com/docs',
-          features: { streaming: true, toolUse: true, vision: true, jsonMode: true, systemMessage: true },
+          features: {
+            streaming: true,
+            toolUse: true,
+            vision: true,
+            jsonMode: true,
+            systemMessage: true,
+          },
           models: [
             { id: 'gpt-4', name: 'GPT-4', capabilities: ['chat'] },
             { id: 'gpt-3.5-turbo', name: 'GPT-3.5 Turbo', capabilities: ['chat'] },
@@ -68,7 +74,13 @@ vi.mock('@ownpilot/core', async (importOriginal) => {
           baseUrl: 'https://api.anthropic.com/v1',
           apiKeyEnv: 'ANTHROPIC_API_KEY',
           docsUrl: 'https://docs.anthropic.com',
-          features: { streaming: true, toolUse: true, vision: true, jsonMode: false, systemMessage: true },
+          features: {
+            streaming: true,
+            toolUse: true,
+            vision: true,
+            jsonMode: false,
+            systemMessage: true,
+          },
           models: [{ id: 'claude-3-opus', name: 'Claude 3 Opus', capabilities: ['chat'] }],
         };
       }
@@ -135,7 +147,13 @@ describe('Providers Routes', () => {
 
     it('includes local providers', async () => {
       mockLocalProvidersRepo.listProviders.mockResolvedValue([
-        { id: 'ollama-local', name: 'Ollama', isEnabled: true, baseUrl: 'http://localhost:11434', providerType: 'ollama' },
+        {
+          id: 'ollama-local',
+          name: 'Ollama',
+          isEnabled: true,
+          baseUrl: 'http://localhost:11434',
+          providerType: 'ollama',
+        },
       ]);
       mockLocalProvidersRepo.listModels.mockResolvedValue([
         { modelId: 'llama2', displayName: 'Llama 2', isEnabled: true },
@@ -152,7 +170,12 @@ describe('Providers Routes', () => {
 
     it('includes user override data', async () => {
       mockModelConfigsRepo.listUserProviderConfigs.mockResolvedValue([
-        { providerId: 'openai', baseUrl: 'https://custom.api/v1', isEnabled: true, providerType: 'openai' },
+        {
+          providerId: 'openai',
+          baseUrl: 'https://custom.api/v1',
+          isEnabled: true,
+          providerType: 'openai',
+        },
       ]);
 
       const res = await app.request('/providers');

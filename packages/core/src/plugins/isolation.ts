@@ -66,7 +66,7 @@ export type ForbiddenResource =
   | 'filesystem:system' // System files
   | 'process:spawn' // Spawn processes
   | 'process:env' // Environment variables
-  | 'crypto:keys' // Encryption keys;
+  | 'crypto:keys'; // Encryption keys;
 
 /**
  * Plugin isolation configuration
@@ -261,11 +261,7 @@ export class IsolationEnforcer {
   /**
    * Check if access is allowed
    */
-  checkAccess(
-    pluginId: PluginId,
-    resource: string,
-    action: string
-  ): Result<void, AccessViolation> {
+  checkAccess(pluginId: PluginId, resource: string, action: string): Result<void, AccessViolation> {
     // Check if plugin is blocked
     if (this.blockedPlugins.has(pluginId)) {
       return err({
@@ -322,7 +318,9 @@ export class IsolationEnforcer {
     // Block plugin if too many violations
     if (pluginViolations >= this.maxViolations) {
       this.blockedPlugins.add(violation.pluginId);
-      getLog('Security').error(`Plugin ${violation.pluginId} blocked after ${pluginViolations} violations`);
+      getLog('Security').error(
+        `Plugin ${violation.pluginId} blocked after ${pluginViolations} violations`
+      );
     }
   }
 
@@ -656,10 +654,7 @@ export class PluginIsolatedNetwork implements IsolatedNetwork {
       // Wildcard subdomain match (*.example.com)
       if (allowed.startsWith('*.')) {
         const baseDomain = allowed.substring(2).toLowerCase();
-        if (
-          normalizedDomain === baseDomain ||
-          normalizedDomain.endsWith('.' + baseDomain)
-        ) {
+        if (normalizedDomain === baseDomain || normalizedDomain.endsWith('.' + baseDomain)) {
           return true;
         }
       }
@@ -703,7 +698,9 @@ export class PluginIsolatedEvents implements IsolatedEvents {
 
   on(event: AllowedPluginEvent, handler: (data: unknown) => void): () => void {
     if (!this.allowedEvents.has(event)) {
-      getLog(`Plugin:${this.pluginId}`).warn(`Attempted to subscribe to disallowed event: ${event}`);
+      getLog(`Plugin:${this.pluginId}`).warn(
+        `Attempted to subscribe to disallowed event: ${event}`
+      );
       return () => {};
     }
 
@@ -732,7 +729,7 @@ export class PluginIsolatedEvents implements IsolatedEvents {
     // Remove potential PII or sensitive data
     if (typeof data !== 'object' || data === null) return data;
 
-    const sanitized = { ...data as Record<string, unknown> };
+    const sanitized = { ...(data as Record<string, unknown>) };
 
     // Remove sensitive fields
     const sensitiveFields = [
@@ -857,7 +854,7 @@ export class PluginIsolatedLogger implements IsolatedLogger {
             ? this.sanitize(item)
             : typeof item === 'object' && item !== null
               ? this.sanitizeObject(item as Record<string, unknown>)
-              : item,
+              : item
         );
       } else if (typeof value === 'object' && value !== null) {
         result[key] = this.sanitizeObject(value as Record<string, unknown>);
@@ -889,11 +886,7 @@ export class PluginIsolatedPluginAPI implements IsolatedPluginAPI {
   private readonly registry: PluginRegistryInterface;
   private readonly enforcer: IsolationEnforcer;
 
-  constructor(
-    pluginId: PluginId,
-    registry: PluginRegistryInterface,
-    enforcer: IsolationEnforcer
-  ) {
+  constructor(pluginId: PluginId, registry: PluginRegistryInterface, enforcer: IsolationEnforcer) {
     this.pluginId = pluginId;
     this.registry = registry;
     this.enforcer = enforcer;
@@ -905,11 +898,7 @@ export class PluginIsolatedPluginAPI implements IsolatedPluginAPI {
     if (!plugin) return null;
 
     // Check if this plugin is allowed to access target
-    const check = this.enforcer.checkAccess(
-      this.pluginId,
-      `plugin:${targetPluginId}:api`,
-      'read'
-    );
+    const check = this.enforcer.checkAccess(this.pluginId, `plugin:${targetPluginId}:api`, 'read');
 
     if (!check.ok) return null;
 
@@ -1006,7 +995,8 @@ export class PluginIsolationManager {
       ? new PluginIsolatedPluginAPI(pluginId, this.registry, this.enforcer)
       : ({
           getPublicAPI: async () => null,
-          sendMessage: async () => err({ type: 'plugin_not_found', pluginId: '' } as PluginCommError),
+          sendMessage: async () =>
+            err({ type: 'plugin_not_found', pluginId: '' } as PluginCommError),
           listPlugins: async () => [],
         } as IsolatedPluginAPI);
 

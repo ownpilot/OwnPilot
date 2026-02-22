@@ -147,10 +147,17 @@ export interface ITriggerService {
     status: TriggerStatus,
     result?: unknown,
     error?: string,
-    durationMs?: number,
+    durationMs?: number
   ): Promise<void>;
-  getRecentHistory(userId: string, query?: HistoryQuery): Promise<{ history: TriggerHistory[]; total: number }>;
-  getHistoryForTrigger(userId: string, triggerId: string, query?: HistoryQuery): Promise<{ history: TriggerHistory[]; total: number }>;
+  getRecentHistory(
+    userId: string,
+    query?: HistoryQuery
+  ): Promise<{ history: TriggerHistory[]; total: number }>;
+  getHistoryForTrigger(
+    userId: string,
+    triggerId: string,
+    query?: HistoryQuery
+  ): Promise<{ history: TriggerHistory[]; total: number }>;
   cleanupHistory(userId: string, maxAgeDays?: number): Promise<number>;
 
   // Stats

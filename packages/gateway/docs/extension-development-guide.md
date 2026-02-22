@@ -17,11 +17,11 @@ Extensions live in `extensions/` directory (default: `%LOCALAPPDATA%/OwnPilot/ex
 
 ```jsonc
 {
-  "id": "my-extension",         // REQUIRED. lowercase + hyphens
-  "name": "My Extension",       // REQUIRED. Human-readable
-  "version": "1.0.0",           // REQUIRED. Semver
+  "id": "my-extension", // REQUIRED. lowercase + hyphens
+  "name": "My Extension", // REQUIRED. Human-readable
+  "version": "1.0.0", // REQUIRED. Semver
   "description": "What it does", // REQUIRED.
-  "category": "utilities",       // developer|productivity|communication|data|utilities|integrations|media|lifestyle|other
+  "category": "utilities", // developer|productivity|communication|data|utilities|integrations|media|lifestyle|other
   "icon": "🔧",
   "tags": ["tag1", "tag2"],
   "system_prompt": "Instructions for the AI...",
@@ -32,34 +32,34 @@ Extensions live in `extensions/` directory (default: `%LOCALAPPDATA%/OwnPilot/ex
       "parameters": {
         "type": "object",
         "properties": { "input": { "type": "string" } },
-        "required": ["input"]
+        "required": ["input"],
       },
       "code": "return { content: { result: args.input.toUpperCase() } };",
       "permissions": ["network"],
-      "requires_approval": false
-    }
+      "requires_approval": false,
+    },
   ],
   "required_services": [
     {
       "name": "my_api",
       "display_name": "My API",
       "config_schema": [
-        { "name": "api_key", "label": "API Key", "type": "secret", "required": true }
-      ]
-    }
-  ]
+        { "name": "api_key", "label": "API Key", "type": "secret", "required": true },
+      ],
+    },
+  ],
 }
 ```
 
 ## Tool Code Environment
 
 ```javascript
-args                              // Arguments from caller
-config.get(serviceName, field)    // Read Config Center (async)
-fetch(url, options)               // HTTP (needs "network" permission)
-crypto.randomUUID()               // UUID
-utils.hash(text, algo)            // Hash helper
-console.log()                     // Debug logging
+args; // Arguments from caller
+config.get(serviceName, field); // Read Config Center (async)
+fetch(url, options); // HTTP (needs "network" permission)
+crypto.randomUUID(); // UUID
+utils.hash(text, algo); // Hash helper
+console.log(); // Debug logging
 // Return: { content: { ... } }
 // Error:  { content: { error: "message" } }
 ```
@@ -109,9 +109,9 @@ Skills use `SKILL.md` (uppercase) and are stored in `skills/` directory.
 
 ## Differences
 
-| | User Extensions | Skills (AgentSkills.io) |
-|---|---|---|
-| Format | extension.json | SKILL.md |
-| Content | Executable JS tools | Instructions + knowledge |
-| Execution | Sandbox JS code | Agent uses existing tools |
-| Standard | OwnPilot native | Open standard (25+ platforms) |
+|           | User Extensions     | Skills (AgentSkills.io)       |
+| --------- | ------------------- | ----------------------------- |
+| Format    | extension.json      | SKILL.md                      |
+| Content   | Executable JS tools | Instructions + knowledge      |
+| Execution | Sandbox JS code     | Agent uses existing tools     |
+| Standard  | OwnPilot native     | Open standard (25+ platforms) |

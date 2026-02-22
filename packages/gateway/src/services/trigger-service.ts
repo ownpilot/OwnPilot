@@ -58,10 +58,12 @@ export class TriggerService implements ITriggerService {
     }
     const repo = this.getRepo(userId);
     const trigger = await repo.create(input);
-    getEventBus().emit(createEvent<ResourceCreatedData>(
-      EventTypes.RESOURCE_CREATED, 'resource', 'trigger-service',
-      { resourceType: 'trigger', id: trigger.id },
-    ));
+    getEventBus().emit(
+      createEvent<ResourceCreatedData>(EventTypes.RESOURCE_CREATED, 'resource', 'trigger-service', {
+        resourceType: 'trigger',
+        id: trigger.id,
+      })
+    );
     return trigger;
   }
 
@@ -75,14 +77,22 @@ export class TriggerService implements ITriggerService {
     return repo.list(query);
   }
 
-  async updateTrigger(userId: string, id: string, input: UpdateTriggerInput): Promise<Trigger | null> {
+  async updateTrigger(
+    userId: string,
+    id: string,
+    input: UpdateTriggerInput
+  ): Promise<Trigger | null> {
     const repo = this.getRepo(userId);
     const updated = await repo.update(id, input);
     if (updated) {
-      getEventBus().emit(createEvent<ResourceUpdatedData>(
-        EventTypes.RESOURCE_UPDATED, 'resource', 'trigger-service',
-        { resourceType: 'trigger', id, changes: input },
-      ));
+      getEventBus().emit(
+        createEvent<ResourceUpdatedData>(
+          EventTypes.RESOURCE_UPDATED,
+          'resource',
+          'trigger-service',
+          { resourceType: 'trigger', id, changes: input }
+        )
+      );
     }
     return updated;
   }
@@ -91,10 +101,14 @@ export class TriggerService implements ITriggerService {
     const repo = this.getRepo(userId);
     const deleted = await repo.delete(id);
     if (deleted) {
-      getEventBus().emit(createEvent<ResourceDeletedData>(
-        EventTypes.RESOURCE_DELETED, 'resource', 'trigger-service',
-        { resourceType: 'trigger', id },
-      ));
+      getEventBus().emit(
+        createEvent<ResourceDeletedData>(
+          EventTypes.RESOURCE_DELETED,
+          'resource',
+          'trigger-service',
+          { resourceType: 'trigger', id }
+        )
+      );
     }
     return deleted;
   }
@@ -134,19 +148,26 @@ export class TriggerService implements ITriggerService {
     status: 'success' | 'failure' | 'skipped',
     result?: unknown,
     error?: string,
-    durationMs?: number,
+    durationMs?: number
   ): Promise<void> {
     const repo = this.getRepo(userId);
     await repo.logExecution(triggerId, triggerName, status, result, error, durationMs);
   }
 
-  async getRecentHistory(userId: string, query: HistoryQuery = {}): Promise<{ history: TriggerHistory[]; total: number }> {
+  async getRecentHistory(
+    userId: string,
+    query: HistoryQuery = {}
+  ): Promise<{ history: TriggerHistory[]; total: number }> {
     const repo = this.getRepo(userId);
     const result = await repo.getRecentHistory(query);
     return { history: result.rows, total: result.total };
   }
 
-  async getHistoryForTrigger(userId: string, triggerId: string, query: HistoryQuery = {}): Promise<{ history: TriggerHistory[]; total: number }> {
+  async getHistoryForTrigger(
+    userId: string,
+    triggerId: string,
+    query: HistoryQuery = {}
+  ): Promise<{ history: TriggerHistory[]; total: number }> {
     const repo = this.getRepo(userId);
     const result = await repo.getHistoryForTrigger(triggerId, query);
     return { history: result.rows, total: result.total };
@@ -179,7 +200,7 @@ export type TriggerServiceErrorCode = 'VALIDATION_ERROR' | 'NOT_FOUND' | 'INTERN
 export class TriggerServiceError extends Error {
   constructor(
     message: string,
-    public readonly code: TriggerServiceErrorCode,
+    public readonly code: TriggerServiceErrorCode
   ) {
     super(message);
     this.name = 'TriggerServiceError';

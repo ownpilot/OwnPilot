@@ -164,7 +164,14 @@ export function createRateLimitMiddleware(config: RateLimitConfig) {
       }
 
       // Hard limit: block
-      return apiError(c, { code: ERROR_CODES.RATE_LIMITED, message: `Rate limit exceeded. Please wait ${reset} seconds.` }, 429);
+      return apiError(
+        c,
+        {
+          code: ERROR_CODES.RATE_LIMITED,
+          message: `Rate limit exceeded. Please wait ${reset} seconds.`,
+        },
+        429
+      );
     }
 
     return next();
@@ -254,7 +261,14 @@ export function createSlidingWindowRateLimiter(config: RateLimitConfig) {
         return next();
       }
 
-      return apiError(c, { code: ERROR_CODES.RATE_LIMITED, message: `Rate limit exceeded. Please wait ${retryAfter} seconds.` }, 429);
+      return apiError(
+        c,
+        {
+          code: ERROR_CODES.RATE_LIMITED,
+          message: `Rate limit exceeded. Please wait ${retryAfter} seconds.`,
+        },
+        429
+      );
     }
 
     // Add current timestamp

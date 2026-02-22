@@ -37,43 +37,59 @@ export function ConnectedAppWizard({ onComplete, onCancel }: Props) {
     connectionId?: string;
     error?: string;
   } | null>(null);
-  const [verifyResult, setVerifyResult] = useState<{ ok: boolean; status?: string; error?: string } | null>(null);
+  const [verifyResult, setVerifyResult] = useState<{
+    ok: boolean;
+    status?: string;
+    error?: string;
+  } | null>(null);
 
   // Check Composio status on mount
   useEffect(() => {
-    composioApi.status().then((res) => {
-      setConfigured(res.configured);
-      setConfigMessage(res.message);
-    }).catch(() => {
-      setConfigured(false);
-      setConfigMessage('Unable to check Composio status');
-    });
+    composioApi
+      .status()
+      .then((res) => {
+        setConfigured(res.configured);
+        setConfigMessage(res.message);
+      })
+      .catch(() => {
+        setConfigured(false);
+        setConfigMessage('Unable to check Composio status');
+      });
   }, []);
 
   // Load apps when moving to browse step
   useEffect(() => {
     if (step === 1 && apps.length === 0) {
-      composioApi.apps().then((res) => setApps(res.apps)).catch(() => {});
+      composioApi
+        .apps()
+        .then((res) => setApps(res.apps))
+        .catch(() => {});
     }
   }, [step, apps.length]);
 
   const filteredApps = useMemo(() => {
     if (!searchQuery.trim()) return apps;
     const q = searchQuery.toLowerCase();
-    return apps.filter((a) =>
-      a.name.toLowerCase().includes(q) ||
-      a.slug.toLowerCase().includes(q) ||
-      a.description?.toLowerCase().includes(q),
+    return apps.filter(
+      (a) =>
+        a.name.toLowerCase().includes(q) ||
+        a.slug.toLowerCase().includes(q) ||
+        a.description?.toLowerCase().includes(q)
     );
   }, [apps, searchQuery]);
 
   const canGoNext = useMemo(() => {
     switch (step) {
-      case 0: return configured === true;
-      case 1: return !!selectedApp;
-      case 2: return connectionResult?.ok === true;
-      case 3: return verifyResult?.ok === true;
-      default: return false;
+      case 0:
+        return configured === true;
+      case 1:
+        return !!selectedApp;
+      case 2:
+        return connectionResult?.ok === true;
+      case 3:
+        return verifyResult?.ok === true;
+      default:
+        return false;
     }
   }, [step, configured, selectedApp, connectionResult, verifyResult]);
 
@@ -95,7 +111,10 @@ export function ConnectedAppWizard({ onComplete, onCancel }: Props) {
         }
         setStep(2);
       } catch (err) {
-        setConnectionResult({ ok: false, error: err instanceof Error ? err.message : 'Connection failed' });
+        setConnectionResult({
+          ok: false,
+          error: err instanceof Error ? err.message : 'Connection failed',
+        });
         setStep(2);
       } finally {
         setIsProcessing(false);
@@ -119,7 +138,10 @@ export function ConnectedAppWizard({ onComplete, onCancel }: Props) {
         }
         setStep(3);
       } catch (err) {
-        setVerifyResult({ ok: false, error: err instanceof Error ? err.message : 'Verification failed' });
+        setVerifyResult({
+          ok: false,
+          error: err instanceof Error ? err.message : 'Verification failed',
+        });
         setStep(3);
       } finally {
         setIsProcessing(false);
@@ -157,10 +179,23 @@ export function ConnectedAppWizard({ onComplete, onCancel }: Props) {
           {configured === null && (
             <div className="flex items-center gap-3 p-4 rounded-lg bg-bg-tertiary dark:bg-dark-bg-tertiary">
               <svg className="w-5 h-5 animate-spin text-primary" viewBox="0 0 24 24" fill="none">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                />
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                />
               </svg>
-              <span className="text-sm text-text-muted dark:text-dark-text-muted">Checking Composio status...</span>
+              <span className="text-sm text-text-muted dark:text-dark-text-muted">
+                Checking Composio status...
+              </span>
             </div>
           )}
 
@@ -168,8 +203,12 @@ export function ConnectedAppWizard({ onComplete, onCancel }: Props) {
             <div className="flex items-center gap-3 p-4 rounded-lg bg-success/5 border border-success/30">
               <Check className="w-5 h-5 text-success flex-shrink-0" />
               <div>
-                <span className="text-sm font-medium text-text-primary dark:text-dark-text-primary">Composio is configured</span>
-                <p className="text-xs text-text-muted dark:text-dark-text-muted mt-0.5">{configMessage}</p>
+                <span className="text-sm font-medium text-text-primary dark:text-dark-text-primary">
+                  Composio is configured
+                </span>
+                <p className="text-xs text-text-muted dark:text-dark-text-muted mt-0.5">
+                  {configMessage}
+                </p>
               </div>
             </div>
           )}
@@ -178,9 +217,12 @@ export function ConnectedAppWizard({ onComplete, onCancel }: Props) {
             <div className="flex items-start gap-3 p-4 rounded-lg bg-warning/5 border border-warning/30">
               <AlertTriangle className="w-5 h-5 text-warning flex-shrink-0 mt-0.5" />
               <div>
-                <span className="text-sm font-medium text-text-primary dark:text-dark-text-primary">Composio not configured</span>
+                <span className="text-sm font-medium text-text-primary dark:text-dark-text-primary">
+                  Composio not configured
+                </span>
                 <p className="text-xs text-text-muted dark:text-dark-text-muted mt-1">
-                  {configMessage || 'Set up your Composio API key in Settings > Config Center to enable connected apps.'}
+                  {configMessage ||
+                    'Set up your Composio API key in Settings > Config Center to enable connected apps.'}
                 </p>
                 <a
                   href="/settings/config-center"
@@ -235,9 +277,13 @@ export function ConnectedAppWizard({ onComplete, onCancel }: Props) {
                   </div>
                 )}
                 <div className="min-w-0">
-                  <span className="text-sm font-medium text-text-primary dark:text-dark-text-primary">{app.name}</span>
+                  <span className="text-sm font-medium text-text-primary dark:text-dark-text-primary">
+                    {app.name}
+                  </span>
                   {app.description && (
-                    <p className="text-xs text-text-muted dark:text-dark-text-muted truncate">{app.description}</p>
+                    <p className="text-xs text-text-muted dark:text-dark-text-muted truncate">
+                      {app.description}
+                    </p>
                   )}
                 </div>
               </button>
@@ -257,8 +303,19 @@ export function ConnectedAppWizard({ onComplete, onCancel }: Props) {
           {!connectionResult && (
             <div className="flex flex-col items-center gap-3">
               <svg className="w-10 h-10 animate-spin text-primary" viewBox="0 0 24 24" fill="none">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                />
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                />
               </svg>
               <p className="text-text-muted dark:text-dark-text-muted">Initiating connection...</p>
             </div>
@@ -300,7 +357,10 @@ export function ConnectedAppWizard({ onComplete, onCancel }: Props) {
               </h3>
               <p className="text-sm text-error max-w-md mx-auto">{connectionResult.error}</p>
               <button
-                onClick={() => { setStep(1); setConnectionResult(null); }}
+                onClick={() => {
+                  setStep(1);
+                  setConnectionResult(null);
+                }}
                 className="mt-3 text-sm text-primary hover:underline"
               >
                 Go back and try again
@@ -316,8 +376,19 @@ export function ConnectedAppWizard({ onComplete, onCancel }: Props) {
           {!verifyResult && (
             <div className="flex flex-col items-center gap-3">
               <svg className="w-10 h-10 animate-spin text-primary" viewBox="0 0 24 24" fill="none">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                />
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                />
               </svg>
               <p className="text-text-muted dark:text-dark-text-muted">Verifying connection...</p>
             </div>
@@ -351,7 +422,10 @@ export function ConnectedAppWizard({ onComplete, onCancel }: Props) {
                 The OAuth flow may not be complete. Complete sign-in and try again.
               </p>
               <button
-                onClick={() => { setStep(2); setVerifyResult(null); }}
+                onClick={() => {
+                  setStep(2);
+                  setVerifyResult(null);
+                }}
                 className="text-sm text-primary hover:underline"
               >
                 Go back to retry
@@ -371,7 +445,8 @@ export function ConnectedAppWizard({ onComplete, onCancel }: Props) {
             App Connected!
           </h2>
           <p className="text-sm text-text-muted dark:text-dark-text-muted mb-6 max-w-md mx-auto">
-            <strong>{selectedApp?.name}</strong> is now linked. Your AI can use its tools in conversations.
+            <strong>{selectedApp?.name}</strong> is now linked. Your AI can use its tools in
+            conversations.
           </p>
           <a
             href="/settings/connected-apps"

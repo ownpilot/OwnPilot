@@ -283,7 +283,7 @@ describe('docker sandbox', () => {
 
       expect(mocks.execAsyncMock).toHaveBeenCalledWith(
         'docker version --format "{{.Server.Version}}"',
-        { timeout: 5000 },
+        { timeout: 5000 }
       );
     });
 
@@ -324,7 +324,7 @@ describe('docker sandbox', () => {
     it('returns false when "no-new-privileges" error occurs', async () => {
       const mod = await importFreshModule();
       mocks.execAsyncMock.mockRejectedValueOnce(
-        new Error('Error: no-new-privileges not supported'),
+        new Error('Error: no-new-privileges not supported')
       );
 
       const result = await mod.testSecurityFlags();
@@ -393,7 +393,7 @@ describe('docker sandbox', () => {
 
       expect(mocks.execAsyncMock).toHaveBeenCalledWith(
         expect.stringContaining('--no-new-privileges'),
-        { timeout: 30000 },
+        { timeout: 30000 }
       );
     });
   });
@@ -728,7 +728,7 @@ describe('docker sandbox', () => {
       expect(mocks.writeFileMock).toHaveBeenCalledWith(
         expect.stringContaining('code.py'),
         'print("test")',
-        'utf-8',
+        'utf-8'
       );
     });
 
@@ -742,7 +742,7 @@ describe('docker sandbox', () => {
       expect(mocks.writeFileMock).toHaveBeenCalledWith(
         expect.stringContaining('code.js'),
         'console.log(1)',
-        'utf-8',
+        'utf-8'
       );
     });
 
@@ -756,7 +756,7 @@ describe('docker sandbox', () => {
       expect(mocks.writeFileMock).toHaveBeenCalledWith(
         expect.stringContaining('code.sh'),
         'echo hi',
-        'utf-8',
+        'utf-8'
       );
     });
 
@@ -867,7 +867,7 @@ describe('docker sandbox', () => {
         ]),
         expect.objectContaining({
           stdio: ['ignore', 'pipe', 'pipe'],
-        }),
+        })
       );
     });
 
@@ -1406,7 +1406,7 @@ describe('docker sandbox', () => {
           stderr: '',
           exitCode: 0,
           executionTimeMs: expect.any(Number),
-        }),
+        })
       );
       expect(result.timedOut).toBe(false);
       expect(result.memoryExceeded).toBe(false);

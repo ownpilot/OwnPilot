@@ -100,20 +100,29 @@ export const DANGEROUS_CODE_PATTERNS: ReadonlyArray<CodeValidationPattern> = [
   { pattern: /\barguments\.callee\b/, message: 'arguments.callee is not allowed' },
 
   // ── Dangerous Node.js module patterns ─────────────────────────
-  { pattern: /\bvm\b\s*\.\s*(?:createContext|runIn|compileFunction)/, message: 'vm module access is not allowed' },
+  {
+    pattern: /\bvm\b\s*\.\s*(?:createContext|runIn|compileFunction)/,
+    message: 'vm module access is not allowed',
+  },
 
   // ── Execution control ─────────────────────────────────────────
   { pattern: /\bdebugger\b/, message: 'debugger statement is not allowed' },
 
   // ── Scope escape vectors ──────────────────────────────────────
-  { pattern: /Symbol\s*\.\s*unscopables\b/, message: 'Symbol.unscopables access is not allowed (scope escape vector)' },
+  {
+    pattern: /Symbol\s*\.\s*unscopables\b/,
+    message: 'Symbol.unscopables access is not allowed (scope escape vector)',
+  },
 
   // ── Network/data exfiltration (use fetch through sandbox) ─────
   { pattern: /\bXMLHttpRequest\b/, message: 'XMLHttpRequest is not allowed (use fetch)' },
   { pattern: /\bnew\s+WebSocket\b/, message: 'WebSocket is not allowed' },
 
   // ── Prototype pollution via defineProperty on shared objects ───
-  { pattern: /Object\s*\.\s*defineProperty\b/, message: 'Object.defineProperty is not allowed (prototype pollution risk)' },
+  {
+    pattern: /Object\s*\.\s*defineProperty\b/,
+    message: 'Object.defineProperty is not allowed (prototype pollution risk)',
+  },
 
   // ── Binary/WASM execution ─────────────────────────────────────
   { pattern: /\bWebAssembly\b/, message: 'WebAssembly is not allowed' },
@@ -162,14 +171,14 @@ const LOCAL_RELAXED_PATTERNS: ReadonlyArray<{
     // local + filesystem: allow require('fs'), require('path')
     requires: ['filesystem'],
     allowedMessages: [
-      'require() is not allowed',  // needed for fs, path
+      'require() is not allowed', // needed for fs, path
     ],
   },
   {
     // local + shell: allow exec/spawn (used through scoped exec API)
     requires: ['shell'],
     allowedMessages: [
-      'require() is not allowed',        // needed for child_process
+      'require() is not allowed', // needed for child_process
       'child_process module is not allowed',
       'exec() is not allowed',
       'spawn() is not allowed',
@@ -189,7 +198,7 @@ const LOCAL_RELAXED_PATTERNS: ReadonlyArray<{
  */
 export function validateToolCodeWithPermissions(
   code: string,
-  permissions: string[] = [],
+  permissions: string[] = []
 ): CodeValidationResult {
   // If 'local' not in permissions, use standard validation
   if (!permissions.includes('local')) {
@@ -206,7 +215,7 @@ export function validateToolCodeWithPermissions(
   // Build the set of messages to allow based on permissions
   const allowedMessages = new Set<string>();
   for (const relaxation of LOCAL_RELAXED_PATTERNS) {
-    if (relaxation.requires.every(p => permissions.includes(p))) {
+    if (relaxation.requires.every((p) => permissions.includes(p))) {
       for (const msg of relaxation.allowedMessages) {
         allowedMessages.add(msg);
       }
@@ -258,10 +267,7 @@ export function findFirstDangerousPattern(code: string): string | null {
  * - Error handling (bonus)
  * - Return statements (bonus)
  */
-export function calculateSecurityScore(
-  code: string,
-  permissions: string[] = []
-): SecurityScore {
+export function calculateSecurityScore(code: string, permissions: string[] = []): SecurityScore {
   const factors: Record<string, number> = {};
   let score = 100;
 
@@ -359,7 +365,9 @@ function detectDataFlowRisks(code: string): string[] {
 
   // Fetch result piped to callTool (potential data exfiltration)
   if (/\bfetch\b/.test(code) && /utils\s*\.\s*callTool\b/.test(code)) {
-    risks.push('Network data flows into callTool — ensure fetched data is validated before passing to other tools');
+    risks.push(
+      'Network data flows into callTool — ensure fetched data is validated before passing to other tools'
+    );
   }
 
   // User input directly used in fetch URL
@@ -369,7 +377,9 @@ function detectDataFlowRisks(code: string): string[] {
 
   // Unvalidated args in string interpolation
   if (/`[^`]*\$\{args\.[^}]+\}[^`]*`/.test(code) && !code.includes('encodeURIComponent')) {
-    risks.push('User arguments used in template strings without encoding — consider encodeURIComponent for URLs');
+    risks.push(
+      'User arguments used in template strings without encoding — consider encodeURIComponent for URLs'
+    );
   }
 
   return risks;
@@ -378,7 +388,10 @@ function detectDataFlowRisks(code: string): string[] {
 /**
  * Check which best practices are followed.
  */
-function checkBestPractices(code: string, permissions: string[] = []): { followed: string[]; violated: string[] } {
+function checkBestPractices(
+  code: string,
+  permissions: string[] = []
+): { followed: string[]; violated: string[] } {
   const followed: string[] = [];
   const violated: string[] = [];
 
@@ -431,7 +444,11 @@ function detectSuggestedPermissions(code: string): string[] {
   if (/\bfetch\s*\(/.test(code)) {
     suggested.push('network');
   }
-  if (/utils\s*\.\s*callTool\s*\(\s*['"](?:read_file|write_file|list_directory|delete_file)/.test(code)) {
+  if (
+    /utils\s*\.\s*callTool\s*\(\s*['"](?:read_file|write_file|list_directory|delete_file)/.test(
+      code
+    )
+  ) {
     suggested.push('filesystem');
   }
   if (/utils\s*\.\s*callTool\s*\(\s*['"](?:execute_shell)/.test(code)) {
@@ -448,7 +465,10 @@ function detectSuggestedPermissions(code: string): string[] {
  * Deep code analysis for tool review.
  * Returns structured analysis with security score, data flow risks, and recommendations.
  */
-export function analyzeToolCode(code: string, permissions?: string[]): {
+export function analyzeToolCode(
+  code: string,
+  permissions?: string[]
+): {
   valid: boolean;
   errors: string[];
   warnings: string[];

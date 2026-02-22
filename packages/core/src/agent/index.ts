@@ -183,7 +183,6 @@ export {
   type OrchestratorContext,
   type ToolCallRecord,
   type AgentStep,
-
   type AgentTeam,
   type Plan,
   type PlanStep,
@@ -252,16 +251,10 @@ export {
 } from './providers/openai-compatible.js';
 
 // Zhipu Provider
-export {
-  createZhipuProvider,
-  type ZhipuProvider,
-} from './providers/zhipu.js';
+export { createZhipuProvider, type ZhipuProvider } from './providers/zhipu.js';
 
 // Google Provider
-export {
-  GoogleProvider,
-  createGoogleProvider,
-} from './providers/google.js';
+export { GoogleProvider, createGoogleProvider } from './providers/google.js';
 
 // Provider Router (smart selection)
 export {

@@ -20,9 +20,7 @@ interface WorkspaceConfig {
 const workspaces = new Map<string, WorkspaceConfig>();
 
 // Simulated channels (would come from channel store)
-const availableChannels = [
-  { id: 'tg-1', name: 'Personal Bot', type: 'telegram' },
-];
+const availableChannels = [{ id: 'tg-1', name: 'Personal Bot', type: 'telegram' }];
 
 // Available providers and models
 const providers = [

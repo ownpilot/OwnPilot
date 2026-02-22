@@ -13,7 +13,15 @@ import {
 } from '../db/repositories/plans.js';
 import { getPlanExecutor } from '../plans/index.js';
 import { getServiceRegistry, Services } from '@ownpilot/core';
-import { getUserId, apiResponse, apiError, getIntParam, ERROR_CODES, notFoundError, getErrorMessage } from './helpers.js';
+import {
+  getUserId,
+  apiResponse,
+  apiError,
+  getIntParam,
+  ERROR_CODES,
+  notFoundError,
+  getErrorMessage,
+} from './helpers.js';
 import { MAX_PAGINATION_OFFSET } from '../config/defaults.js';
 import { wsGateway } from '../ws/server.js';
 import { getLog } from '../services/log.js';
@@ -30,11 +38,19 @@ export const plansRoutes = new Hono();
  */
 plansRoutes.get('/', async (c) => {
   const userId = getUserId(c);
-  const VALID_PLAN_STATUSES: PlanStatus[] = ['pending', 'running', 'paused', 'completed', 'failed', 'cancelled'];
+  const VALID_PLAN_STATUSES: PlanStatus[] = [
+    'pending',
+    'running',
+    'paused',
+    'completed',
+    'failed',
+    'cancelled',
+  ];
   const rawStatus = c.req.query('status');
-  const status = rawStatus && VALID_PLAN_STATUSES.includes(rawStatus as PlanStatus)
-    ? (rawStatus as PlanStatus)
-    : undefined;
+  const status =
+    rawStatus && VALID_PLAN_STATUSES.includes(rawStatus as PlanStatus)
+      ? (rawStatus as PlanStatus)
+      : undefined;
   const goalId = c.req.query('goalId');
   const triggerId = c.req.query('triggerId');
   const limit = getIntParam(c, 'limit', 20, 1, 100);
@@ -47,12 +63,12 @@ plansRoutes.get('/', async (c) => {
   ]);
 
   return apiResponse(c, {
-      plans,
-      total,
-      limit,
-      offset,
-      hasMore: offset + limit < total,
-    });
+    plans,
+    total,
+    limit,
+    offset,
+    hasMore: offset + limit < total,
+  });
 });
 
 /**
@@ -69,10 +85,14 @@ plansRoutes.post('/', async (c) => {
 
   wsGateway.broadcast('data:changed', { entity: 'plan', action: 'created', id: plan.id });
 
-  return apiResponse(c, {
+  return apiResponse(
+    c,
+    {
       plan,
       message: 'Plan created successfully.',
-    }, 201);
+    },
+    201
+  );
 });
 
 /**
@@ -95,9 +115,9 @@ plansRoutes.get('/active', async (c) => {
   const plans = await service.getActive(userId);
 
   return apiResponse(c, {
-      plans,
-      count: plans.length,
-    });
+    plans,
+    count: plans.length,
+  });
 });
 
 /**
@@ -109,9 +129,9 @@ plansRoutes.get('/pending', async (c) => {
   const plans = await service.getPending(userId);
 
   return apiResponse(c, {
-      plans,
-      count: plans.length,
-    });
+    plans,
+    count: plans.length,
+  });
 });
 
 /**
@@ -133,10 +153,10 @@ plansRoutes.get('/:id', async (c) => {
   const history = await service.getHistory(userId, id, 20);
 
   return apiResponse(c, {
-      ...plan,
-      steps,
-      recentHistory: history,
-    });
+    ...plan,
+    steps,
+    recentHistory: history,
+  });
 });
 
 /**
@@ -178,8 +198,8 @@ plansRoutes.delete('/:id', async (c) => {
   wsGateway.broadcast('data:changed', { entity: 'plan', action: 'deleted', id });
 
   return apiResponse(c, {
-      message: 'Plan deleted successfully.',
-    });
+    message: 'Plan deleted successfully.',
+  });
 });
 
 // ============================================================================
@@ -201,7 +221,11 @@ plansRoutes.post('/:id/execute', async (c) => {
   }
 
   if (plan.status === 'running') {
-    return apiError(c, { code: ERROR_CODES.ALREADY_RUNNING, message: 'Plan is already running' }, 400);
+    return apiError(
+      c,
+      { code: ERROR_CODES.ALREADY_RUNNING, message: 'Plan is already running' },
+      400
+    );
   }
 
   try {
@@ -209,19 +233,31 @@ plansRoutes.post('/:id/execute', async (c) => {
     const executor = getPlanExecutor({ userId });
     const result = await executor.execute(id);
 
-    log.info('Plan execution completed', { userId, planId: id, status: result.status, completedSteps: result.completedSteps });
+    log.info('Plan execution completed', {
+      userId,
+      planId: id,
+      status: result.status,
+      completedSteps: result.completedSteps,
+    });
 
     if (result.status !== 'completed') {
       wsGateway.broadcast('data:changed', { entity: 'plan', action: 'updated', id });
-      return apiError(c, { code: ERROR_CODES.EXECUTION_ERROR, message: result.error ?? `Plan execution ended with status: ${result.status}` }, 500);
+      return apiError(
+        c,
+        {
+          code: ERROR_CODES.EXECUTION_ERROR,
+          message: result.error ?? `Plan execution ended with status: ${result.status}`,
+        },
+        500
+      );
     }
 
     wsGateway.broadcast('data:changed', { entity: 'plan', action: 'updated', id });
 
     return apiResponse(c, {
-        result,
-        message: 'Plan executed successfully.',
-      });
+      result,
+      message: 'Plan executed successfully.',
+    });
   } catch (error) {
     const errorMessage = getErrorMessage(error);
     return apiError(c, { code: ERROR_CODES.EXECUTION_ERROR, message: errorMessage }, 500);
@@ -249,9 +285,9 @@ plansRoutes.post('/:id/pause', async (c) => {
     if (paused) wsGateway.broadcast('data:changed', { entity: 'plan', action: 'updated', id });
 
     return apiResponse(c, {
-        paused,
-        message: paused ? 'Plan paused.' : 'Plan was not running.',
-      });
+      paused,
+      message: paused ? 'Plan paused.' : 'Plan was not running.',
+    });
   } catch (error) {
     const errorMessage = getErrorMessage(error);
     return apiError(c, { code: ERROR_CODES.PAUSE_ERROR, message: errorMessage }, 500);
@@ -283,13 +319,20 @@ plansRoutes.post('/:id/resume', async (c) => {
     wsGateway.broadcast('data:changed', { entity: 'plan', action: 'updated', id });
 
     if (result.status !== 'completed') {
-      return apiError(c, { code: ERROR_CODES.RESUME_ERROR, message: result.error ?? `Plan resume ended with status: ${result.status}` }, 500);
+      return apiError(
+        c,
+        {
+          code: ERROR_CODES.RESUME_ERROR,
+          message: result.error ?? `Plan resume ended with status: ${result.status}`,
+        },
+        500
+      );
     }
 
     return apiResponse(c, {
-        result,
-        message: 'Plan resumed.',
-      });
+      result,
+      message: 'Plan resumed.',
+    });
   } catch (error) {
     const errorMessage = getErrorMessage(error);
     return apiError(c, { code: ERROR_CODES.RESUME_ERROR, message: errorMessage }, 500);
@@ -317,9 +360,9 @@ plansRoutes.post('/:id/abort', async (c) => {
     if (aborted) wsGateway.broadcast('data:changed', { entity: 'plan', action: 'updated', id });
 
     return apiResponse(c, {
-        aborted,
-        message: aborted ? 'Plan aborted.' : 'Plan was not running.',
-      });
+      aborted,
+      message: aborted ? 'Plan aborted.' : 'Plan was not running.',
+    });
   } catch (error) {
     const errorMessage = getErrorMessage(error);
     return apiError(c, { code: ERROR_CODES.ABORT_ERROR, message: errorMessage }, 500);
@@ -343,7 +386,14 @@ plansRoutes.post('/:id/checkpoint', async (c) => {
 
   const dataStr = JSON.stringify(body.data ?? {});
   if (dataStr.length > 500000) {
-    return apiError(c, { code: ERROR_CODES.PAYLOAD_TOO_LARGE, message: 'Checkpoint data exceeds maximum size (500KB)' }, 400);
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.PAYLOAD_TOO_LARGE,
+        message: 'Checkpoint data exceeds maximum size (500KB)',
+      },
+      400
+    );
   }
 
   try {
@@ -353,8 +403,8 @@ plansRoutes.post('/:id/checkpoint', async (c) => {
     wsGateway.broadcast('data:changed', { entity: 'plan', action: 'updated', id });
 
     return apiResponse(c, {
-        message: 'Checkpoint created.',
-      });
+      message: 'Checkpoint created.',
+    });
   } catch (error) {
     const errorMessage = getErrorMessage(error);
     return apiError(c, { code: ERROR_CODES.CHECKPOINT_ERROR, message: errorMessage }, 500);
@@ -376,7 +426,11 @@ plansRoutes.post('/:id/start', async (c) => {
   }
 
   if (plan.status === 'running') {
-    return apiError(c, { code: ERROR_CODES.ALREADY_RUNNING, message: 'Plan is already running' }, 400);
+    return apiError(
+      c,
+      { code: ERROR_CODES.ALREADY_RUNNING, message: 'Plan is already running' },
+      400
+    );
   }
 
   try {
@@ -384,18 +438,30 @@ plansRoutes.post('/:id/start', async (c) => {
     const executor = getPlanExecutor({ userId });
     const result = await executor.execute(id);
 
-    log.info('Plan execution completed', { userId, planId: id, status: result.status, completedSteps: result.completedSteps });
+    log.info('Plan execution completed', {
+      userId,
+      planId: id,
+      status: result.status,
+      completedSteps: result.completedSteps,
+    });
 
     wsGateway.broadcast('data:changed', { entity: 'plan', action: 'updated', id });
 
     if (result.status !== 'completed') {
-      return apiError(c, { code: ERROR_CODES.EXECUTION_ERROR, message: result.error ?? `Plan execution ended with status: ${result.status}` }, 500);
+      return apiError(
+        c,
+        {
+          code: ERROR_CODES.EXECUTION_ERROR,
+          message: result.error ?? `Plan execution ended with status: ${result.status}`,
+        },
+        500
+      );
     }
 
     return apiResponse(c, {
-        result,
-        message: 'Plan executed successfully.',
-      });
+      result,
+      message: 'Plan executed successfully.',
+    });
   } catch (error) {
     const errorMessage = getErrorMessage(error);
     return apiError(c, { code: ERROR_CODES.EXECUTION_ERROR, message: errorMessage }, 500);
@@ -417,7 +483,11 @@ plansRoutes.post('/:id/rollback', async (c) => {
   }
 
   if (!plan.checkpoint) {
-    return apiError(c, { code: ERROR_CODES.NO_CHECKPOINT, message: 'No checkpoint available for rollback' }, 400);
+    return apiError(
+      c,
+      { code: ERROR_CODES.NO_CHECKPOINT, message: 'No checkpoint available for rollback' },
+      400
+    );
   }
 
   try {
@@ -427,11 +497,22 @@ plansRoutes.post('/:id/rollback', async (c) => {
     // Reset failed/completed steps back to pending
     const steps = await service.getSteps(userId, id);
     if (steps.length > 200) {
-      return apiError(c, { code: ERROR_CODES.BATCH_LIMIT_EXCEEDED, message: 'Too many steps in batch update (max 200)' }, 400);
+      return apiError(
+        c,
+        {
+          code: ERROR_CODES.BATCH_LIMIT_EXCEEDED,
+          message: 'Too many steps in batch update (max 200)',
+        },
+        400
+      );
     }
     for (const step of steps) {
       if (step.status === 'failed' || step.status === 'completed') {
-        await service.updateStep(userId, step.id, { status: 'pending', error: undefined, result: undefined });
+        await service.updateStep(userId, step.id, {
+          status: 'pending',
+          error: undefined,
+          result: undefined,
+        });
       }
     }
 
@@ -443,9 +524,9 @@ plansRoutes.post('/:id/rollback', async (c) => {
     wsGateway.broadcast('data:changed', { entity: 'plan', action: 'updated', id });
 
     return apiResponse(c, {
-        message: 'Plan rolled back to last checkpoint.',
-        checkpoint: checkpointData,
-      });
+      message: 'Plan rolled back to last checkpoint.',
+      checkpoint: checkpointData,
+    });
   } catch (error) {
     const errorMessage = getErrorMessage(error);
     return apiError(c, { code: ERROR_CODES.ROLLBACK_ERROR, message: errorMessage }, 500);
@@ -473,10 +554,10 @@ plansRoutes.get('/:id/steps', async (c) => {
   const steps = await service.getSteps(userId, id);
 
   return apiResponse(c, {
-      planId: id,
-      steps,
-      count: steps.length,
-    });
+    planId: id,
+    steps,
+    count: steps.length,
+  });
 });
 
 /**
@@ -495,10 +576,14 @@ plansRoutes.post('/:id/steps', async (c) => {
 
     wsGateway.broadcast('data:changed', { entity: 'plan', action: 'updated', id });
 
-    return apiResponse(c, {
+    return apiResponse(
+      c,
+      {
         step,
         message: 'Step added successfully.',
-      }, 201);
+      },
+      201
+    );
   } catch (error) {
     const errorMessage = getErrorMessage(error);
     return apiError(c, { code: ERROR_CODES.ADD_STEP_ERROR, message: errorMessage }, 500);
@@ -568,10 +653,10 @@ plansRoutes.get('/:id/history', async (c) => {
   const history = await service.getHistory(userId, id, limit);
 
   return apiResponse(c, {
-      planId: id,
-      history,
-      count: history.length,
-    });
+    planId: id,
+    history,
+    count: history.length,
+  });
 });
 
 // ============================================================================
@@ -586,6 +671,6 @@ plansRoutes.get('/executor/status', (c) => {
   const executor = getPlanExecutor({ userId });
 
   return apiResponse(c, {
-      runningPlans: executor.getRunningPlans(),
-    });
+    runningPlans: executor.getRunningPlans(),
+  });
 });

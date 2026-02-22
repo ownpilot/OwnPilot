@@ -58,7 +58,9 @@ describe('tryGetService', () => {
   it('returns null when registry throws (service not registered)', () => {
     mockHasServiceRegistry.mockReturnValue(true);
     mockGetServiceRegistry.mockReturnValue({
-      get: vi.fn(() => { throw new Error('Service not registered'); }),
+      get: vi.fn(() => {
+        throw new Error('Service not registered');
+      }),
       register: vi.fn(),
       has: vi.fn(),
     } as never);

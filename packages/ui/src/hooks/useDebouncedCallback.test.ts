@@ -52,7 +52,7 @@ describe('useDebouncedCallback', () => {
 
     debounced();
     vi.advanceTimersByTime(100); // halfway through
-    debounced();                  // reset timer
+    debounced(); // reset timer
     vi.advanceTimersByTime(100); // only 100ms since last call
     expect(callback).not.toHaveBeenCalled();
 

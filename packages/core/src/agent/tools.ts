@@ -42,9 +42,19 @@ import {
 
 // Re-export types for consumers
 export type {
-  ToolDefinition, ToolExecutor, RegisteredTool, ToolContext, ToolExecutionResult,
-  ToolCall, ToolResult, ToolProvider, ToolMiddleware, ToolMiddlewareContext,
-  ToolSource, ToolTrustLevel, ToolConfigRequirement,
+  ToolDefinition,
+  ToolExecutor,
+  RegisteredTool,
+  ToolContext,
+  ToolExecutionResult,
+  ToolCall,
+  ToolResult,
+  ToolProvider,
+  ToolMiddleware,
+  ToolMiddlewareContext,
+  ToolSource,
+  ToolTrustLevel,
+  ToolConfigRequirement,
 };
 
 /**
@@ -68,7 +78,7 @@ export type ConfigRegistrationHandler = (
   toolName: string,
   toolId: string,
   source: ToolSource,
-  requirements: readonly ToolConfigRequirement[],
+  requirements: readonly ToolConfigRequirement[]
 ) => Promise<void>;
 
 export class ToolRegistry {
@@ -91,9 +101,10 @@ export class ToolRegistry {
     metadataOrPluginId?: PluginId | ToolRegistrationMetadata
   ): Result<ToolId, ValidationError> {
     // Backward compat: string = old pluginId param
-    const metadata: ToolRegistrationMetadata = typeof metadataOrPluginId === 'string'
-      ? { source: 'plugin', pluginId: metadataOrPluginId, trustLevel: 'semi-trusted' }
-      : metadataOrPluginId ?? {};
+    const metadata: ToolRegistrationMetadata =
+      typeof metadataOrPluginId === 'string'
+        ? { source: 'plugin', pluginId: metadataOrPluginId, trustLevel: 'semi-trusted' }
+        : (metadataOrPluginId ?? {});
 
     // Validate tool name
     if (!definition.name || definition.name.length > 128) {
@@ -102,7 +113,9 @@ export class ToolRegistry {
 
     if (!/^[a-zA-Z][a-zA-Z0-9_.]*$/.test(definition.name)) {
       return err(
-        new ValidationError('Tool name must start with a letter and contain only alphanumeric characters, underscores, and dots')
+        new ValidationError(
+          'Tool name must start with a letter and contain only alphanumeric characters, underscores, and dots'
+        )
       );
     }
 
@@ -114,8 +127,9 @@ export class ToolRegistry {
     const toolId = createToolId(definition.name);
     const pluginId = metadata.pluginId;
     const source: ToolSource = metadata.source ?? (pluginId ? 'plugin' : 'core');
-    const trustLevel: ToolTrustLevel = metadata.trustLevel
-      ?? (source === 'plugin' ? 'semi-trusted' : source === 'custom' ? 'sandboxed' : 'trusted');
+    const trustLevel: ToolTrustLevel =
+      metadata.trustLevel ??
+      (source === 'plugin' ? 'semi-trusted' : source === 'custom' ? 'sandboxed' : 'trusted');
 
     const tool: RegisteredTool = {
       id: toolId,
@@ -150,15 +164,22 @@ export class ToolRegistry {
     }
 
     // Emit tool registered event
-    getEventBus().emit(createEvent<ToolRegisteredData>(
-      EventTypes.TOOL_REGISTERED, 'tool', 'tool-registry',
-      { name: definition.name, source, pluginId: pluginId ?? undefined },
-    ));
+    getEventBus().emit(
+      createEvent<ToolRegisteredData>(EventTypes.TOOL_REGISTERED, 'tool', 'tool-registry', {
+        name: definition.name,
+        source,
+        pluginId: pluginId ?? undefined,
+      })
+    );
 
     // Auto-register config requirements (fire-and-forget)
     if (definition.configRequirements?.length && this._onConfigRegistration) {
-      this._onConfigRegistration(definition.name, toolId, source, definition.configRequirements)
-        .catch(e => log.warn(`Config registration failed for ${definition.name}:`, e));
+      this._onConfigRegistration(
+        definition.name,
+        toolId,
+        source,
+        definition.configRequirements
+      ).catch((e) => log.warn(`Config registration failed for ${definition.name}:`, e));
     }
 
     return ok(toolId);
@@ -343,7 +364,7 @@ export class ToolRegistry {
     name = resolved;
 
     // Scoped config access for non-trusted tools
-    const allowedServices = tool.definition.configRequirements?.map(r => r.name);
+    const allowedServices = tool.definition.configRequirements?.map((r) => r.name);
     const isRestricted = tool.trustLevel !== 'trusted';
 
     const fullContext: ToolContext = {
@@ -413,10 +434,7 @@ export class ToolRegistry {
 
       // Check if hook cancelled the execution
       if (beforeCtx.cancelled) {
-        return err(new PluginError(
-          tool.pluginId ?? 'core',
-          `Tool execution cancelled by hook`,
-        ));
+        return err(new PluginError(tool.pluginId ?? 'core', `Tool execution cancelled by hook`));
       }
 
       // Use potentially modified args from hooks
@@ -436,20 +454,29 @@ export class ToolRegistry {
       result = afterCtx.data.result;
 
       // Emit tool executed event (success)
-      getEventBus().emit(createEvent<ToolExecutedData>(
-        EventTypes.TOOL_EXECUTED, 'tool', 'tool-registry',
-        { name, duration: Date.now() - startTime, success: true, conversationId: context.conversationId },
-      ));
+      getEventBus().emit(
+        createEvent<ToolExecutedData>(EventTypes.TOOL_EXECUTED, 'tool', 'tool-registry', {
+          name,
+          duration: Date.now() - startTime,
+          success: true,
+          conversationId: context.conversationId,
+        })
+      );
 
       return ok(result);
     } catch (error) {
       const message = getErrorMessage(error);
 
       // Emit tool executed event (failure)
-      getEventBus().emit(createEvent<ToolExecutedData>(
-        EventTypes.TOOL_EXECUTED, 'tool', 'tool-registry',
-        { name, duration: Date.now() - startTime, success: false, error: message, conversationId: context.conversationId },
-      ));
+      getEventBus().emit(
+        createEvent<ToolExecutedData>(EventTypes.TOOL_EXECUTED, 'tool', 'tool-registry', {
+          name,
+          duration: Date.now() - startTime,
+          success: false,
+          error: message,
+          conversationId: context.conversationId,
+        })
+      );
 
       return err(new PluginError(tool.pluginId ?? 'core', `Tool execution failed: ${message}`));
     }
@@ -560,15 +587,16 @@ export class ToolRegistry {
    * Get all tools from a specific source.
    */
   getToolsBySource(source: ToolSource): readonly RegisteredTool[] {
-    return Array.from(this.tools.values()).filter(t => t.source === source);
+    return Array.from(this.tools.values()).filter((t) => t.source === source);
   }
 
   /**
    * Get tools that require a specific Config Center service.
    */
   getToolsRequiringService(serviceName: string): readonly RegisteredTool[] {
-    return Array.from(this.tools.values())
-      .filter(t => t.definition.configRequirements?.some(r => r.name === serviceName));
+    return Array.from(this.tools.values()).filter((t) =>
+      t.definition.configRequirements?.some((r) => r.name === serviceName)
+    );
   }
 
   /**
@@ -594,7 +622,7 @@ export class ToolRegistry {
     toolCall: ToolCall,
     conversationId: string,
     userId?: string,
-    extraContext?: Partial<Pick<ToolContext, 'requestApproval' | 'executionPermissions'>>,
+    extraContext?: Partial<Pick<ToolContext, 'requestApproval' | 'executionPermissions'>>
   ): Promise<ToolResult> {
     const startTime = Date.now();
     let args: Record<string, unknown>;
@@ -629,7 +657,7 @@ export class ToolRegistry {
         effectiveName = validation.correctedName;
         const revalidation = validateToolCall(this, effectiveName, args);
         if (!revalidation.valid) {
-          const errorContent = `Error: Tool '${toolCall.name}' auto-corrected to '${effectiveName}', but parameter errors remain: ${revalidation.errors.map(e => e.message).join('; ')}${revalidation.helpText ?? ''}`;
+          const errorContent = `Error: Tool '${toolCall.name}' auto-corrected to '${effectiveName}', but parameter errors remain: ${revalidation.errors.map((e) => e.message).join('; ')}${revalidation.helpText ?? ''}`;
           logToolResult({
             toolCallId: toolCall.id,
             name: toolCall.name,
@@ -643,7 +671,7 @@ export class ToolRegistry {
         }
       } else {
         // Tool not found or param errors — return helpful error
-        const errorContent = `Error: ${validation.errors.map(e => e.message).join('; ')}${validation.helpText ?? ''}`;
+        const errorContent = `Error: ${validation.errors.map((e) => e.message).join('; ')}${validation.helpText ?? ''}`;
         logToolResult({
           toolCallId: toolCall.id,
           name: toolCall.name,
@@ -841,36 +869,44 @@ export class ToolRegistry {
     // Bridge to hook bus with tool name filter
     const hookBus = getEventSystem().hooks;
     if (middleware.before) {
-      const unsub = hookBus.tap('tool:before-execute', async (ctx) => {
-        if (ctx.data.toolName !== toolName) return;
-        const mwCtx: ToolMiddlewareContext = {
-          toolName: ctx.data.toolName,
-          args: ctx.data.args,
-          conversationId: ctx.data.conversationId,
-          userId: ctx.data.userId,
-          source: ctx.data.source,
-          trustLevel: ctx.data.trustLevel,
-          pluginId: ctx.data.pluginId,
-        };
-        await middleware.before!(mwCtx);
-        ctx.data.args = mwCtx.args;
-      }, 20); // per-tool runs after global (priority 20 > default 10)
+      const unsub = hookBus.tap(
+        'tool:before-execute',
+        async (ctx) => {
+          if (ctx.data.toolName !== toolName) return;
+          const mwCtx: ToolMiddlewareContext = {
+            toolName: ctx.data.toolName,
+            args: ctx.data.args,
+            conversationId: ctx.data.conversationId,
+            userId: ctx.data.userId,
+            source: ctx.data.source,
+            trustLevel: ctx.data.trustLevel,
+            pluginId: ctx.data.pluginId,
+          };
+          await middleware.before!(mwCtx);
+          ctx.data.args = mwCtx.args;
+        },
+        20
+      ); // per-tool runs after global (priority 20 > default 10)
       this.hookUnsubs.push(unsub);
     }
     if (middleware.after) {
-      const unsub = hookBus.tap('tool:after-execute', async (ctx) => {
-        if (ctx.data.toolName !== toolName) return;
-        const mwCtx: ToolMiddlewareContext = {
-          toolName: ctx.data.toolName,
-          args: ctx.data.args,
-          conversationId: ctx.data.conversationId,
-          userId: ctx.data.userId,
-          source: ctx.data.source,
-          trustLevel: ctx.data.trustLevel,
-          pluginId: ctx.data.pluginId,
-        };
-        ctx.data.result = await middleware.after!(mwCtx, ctx.data.result);
-      }, 20);
+      const unsub = hookBus.tap(
+        'tool:after-execute',
+        async (ctx) => {
+          if (ctx.data.toolName !== toolName) return;
+          const mwCtx: ToolMiddlewareContext = {
+            toolName: ctx.data.toolName,
+            args: ctx.data.args,
+            conversationId: ctx.data.conversationId,
+            userId: ctx.data.userId,
+            source: ctx.data.source,
+            trustLevel: ctx.data.trustLevel,
+            pluginId: ctx.data.pluginId,
+          };
+          ctx.data.result = await middleware.after!(mwCtx, ctx.data.result);
+        },
+        20
+      );
       this.hookUnsubs.push(unsub);
     }
   }
@@ -888,7 +924,7 @@ export class ToolRegistry {
    */
   private async runBeforeMiddleware(
     middleware: ToolMiddleware[],
-    ctx: ToolMiddlewareContext,
+    ctx: ToolMiddlewareContext
   ): Promise<void> {
     for (const mw of middleware) {
       if (mw.before) {
@@ -903,7 +939,7 @@ export class ToolRegistry {
   private async runAfterMiddleware(
     middleware: ToolMiddleware[],
     ctx: ToolMiddlewareContext,
-    result: ToolExecutionResult,
+    result: ToolExecutionResult
   ): Promise<ToolExecutionResult> {
     let current = result;
     for (const mw of middleware) {
@@ -937,7 +973,6 @@ export class ToolRegistry {
 export function createToolRegistry(): ToolRegistry {
   return new ToolRegistry();
 }
-
 
 // Core tool definitions (extracted for maintainability)
 export { CORE_TOOLS, CORE_EXECUTORS } from './core-tool-definitions.js';

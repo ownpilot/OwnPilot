@@ -100,7 +100,9 @@ Body.`;
   });
 
   it('throws when frontmatter is missing', () => {
-    expect(() => parseSkillMdFrontmatter('# No frontmatter')).toThrow('must start with YAML frontmatter');
+    expect(() => parseSkillMdFrontmatter('# No frontmatter')).toThrow(
+      'must start with YAML frontmatter'
+    );
   });
 
   it('throws when frontmatter is not closed', () => {

@@ -9,12 +9,7 @@
  * so they flow through the global bus as gateway.channel.connected.
  */
 
-import {
-  getEventSystem,
-  type IScopedBus,
-  type IHookBus,
-  type TypedEvent,
-} from '@ownpilot/core';
+import { getEventSystem, type IScopedBus, type IHookBus, type TypedEvent } from '@ownpilot/core';
 import type { ServerEvents, ClientEvents } from './types.js';
 import { getLog } from '../services/log.js';
 
@@ -41,10 +36,7 @@ export class GatewayEventEmitter {
   /**
    * Subscribe to a server event
    */
-  on<K extends keyof ServerEvents>(
-    event: K,
-    handler: EventHandler<ServerEvents[K]>
-  ): () => void {
+  on<K extends keyof ServerEvents>(event: K, handler: EventHandler<ServerEvents[K]>): () => void {
     return this.bus.on(toDot(event), (e: TypedEvent) => handler(e.data as ServerEvents[K]));
   }
 
@@ -58,13 +50,9 @@ export class GatewayEventEmitter {
   /**
    * Emit a server event
    */
-  async emit<K extends keyof ServerEvents>(
-    event: K,
-    data: ServerEvents[K]
-  ): Promise<void> {
+  async emit<K extends keyof ServerEvents>(event: K, data: ServerEvents[K]): Promise<void> {
     this.bus.emit(toDot(event), data);
   }
-
 }
 
 /**

@@ -15,7 +15,13 @@ export { toolsApi } from './tools';
 export { chatApi } from './chat';
 export type { ChatRequestBody } from './chat';
 export { executionPermissionsApi } from './execution-permissions';
-export type { ExecutionPermissions, ExecutionMode, PermissionMode, ApprovalRequest, CodeRiskAnalysis } from './execution-permissions';
+export type {
+  ExecutionPermissions,
+  ExecutionMode,
+  PermissionMode,
+  ApprovalRequest,
+  CodeRiskAnalysis,
+} from './execution-permissions';
 export { profileApi } from './profile';
 export {
   autonomyApi,
@@ -27,7 +33,6 @@ export {
   configServicesApi,
   channelsApi,
   dashboardApi,
-
   modelConfigsApi,
   localProvidersApi,
   fileWorkspacesApi,
@@ -36,9 +41,21 @@ export {
 export { extensionsApi } from './extensions';
 export { mcpApi } from './mcp';
 export { composioApi } from './composio';
-export type { ComposioApp, ComposioConnection, ComposioConnectionRequest, ComposioStatus, ComposioActionInfo } from './composio';
+export type {
+  ComposioApp,
+  ComposioConnection,
+  ComposioConnectionRequest,
+  ComposioStatus,
+  ComposioActionInfo,
+} from './composio';
 export { workflowsApi } from './workflows';
-export type { McpServer, McpServerTool, McpServerInfo, CreateMcpServerInput, UpdateMcpServerInput } from './mcp';
+export type {
+  McpServer,
+  McpServerTool,
+  McpServerInfo,
+  CreateMcpServerInput,
+  UpdateMcpServerInput,
+} from './mcp';
 export {
   notesApi,
   bookmarksApi,
@@ -102,7 +119,6 @@ export type {
   DailyUsage,
   AIBriefing,
   DailyBriefingData,
-
   ModelCapability,
   MergedModel,
   AvailableProvider,

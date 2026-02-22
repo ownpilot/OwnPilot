@@ -9,14 +9,20 @@ import { spawn } from 'child_process';
 import { existsSync, mkdirSync, unlinkSync } from 'fs';
 import { readdir, stat, writeFile } from 'fs/promises';
 import { join, basename } from 'path';
-import { apiResponse, apiError, ERROR_CODES, sanitizeId, getErrorMessage, safeKeyCompare } from './helpers.js';
+import {
+  apiResponse,
+  apiError,
+  ERROR_CODES,
+  sanitizeId,
+  getErrorMessage,
+  safeKeyCompare,
+} from './helpers.js';
 import { getDatabaseConfig } from '../db/adapters/types.js';
 import { getAdapterSync } from '../db/adapters/index.js';
 import { getDatabasePath, getDataPaths } from '../paths/index.js';
 import { getLog } from '../services/log.js';
 
 const log = getLog('Database');
-
 
 // Tables to export (in dependency order) — also serves as whitelist for SQL operations
 const EXPORT_TABLES = [
@@ -105,11 +111,25 @@ databaseRoutes.use('*', async (c, next) => {
   // Destructive operations (POST, DELETE) and export require admin key
   const adminKey = process.env.ADMIN_KEY;
   if (!adminKey) {
-    return apiError(c, { code: ERROR_CODES.UNAUTHORIZED, message: 'ADMIN_KEY environment variable must be set for database write operations.' }, 403);
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.UNAUTHORIZED,
+        message: 'ADMIN_KEY environment variable must be set for database write operations.',
+      },
+      403
+    );
   }
   const providedKey = c.req.header('X-Admin-Key');
   if (!safeKeyCompare(providedKey, adminKey)) {
-    return apiError(c, { code: ERROR_CODES.UNAUTHORIZED, message: 'Admin key required for this operation. Set X-Admin-Key header.' }, 403);
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.UNAUTHORIZED,
+        message: 'Admin key required for this operation. Set X-Admin-Key header.',
+      },
+      403
+    );
   }
   return next();
 });
@@ -176,16 +196,20 @@ databaseRoutes.get('/status', async (c) => {
   const backupDir = getBackupDir();
   let backups: { name: string; size: number; created: string }[] = [];
   try {
-    const files = (await readdir(backupDir)).filter(f => f.endsWith('.sql') || f.endsWith('.dump'));
-    backups = await Promise.all(files.map(async f => {
-      const filePath = join(backupDir, f);
-      const fileStat = await stat(filePath);
-      return {
-        name: f,
-        size: fileStat.size,
-        created: fileStat.mtime.toISOString(),
-      };
-    }));
+    const files = (await readdir(backupDir)).filter(
+      (f) => f.endsWith('.sql') || f.endsWith('.dump')
+    );
+    backups = await Promise.all(
+      files.map(async (f) => {
+        const filePath = join(backupDir, f);
+        const fileStat = await stat(filePath);
+        return {
+          name: f,
+          size: fileStat.size,
+          created: fileStat.mtime.toISOString(),
+        };
+      })
+    );
     backups.sort((a, b) => new Date(b.created).getTime() - new Date(a.created).getTime());
   } catch {
     // Backup directory doesn't exist or can't be read
@@ -199,10 +223,12 @@ databaseRoutes.get('/status', async (c) => {
     database: config.postgresDatabase,
     stats,
     backups,
-    legacyData: hasLegacyData ? {
-      path: sqlitePath,
-      migratable: true,
-    } : null,
+    legacyData: hasLegacyData
+      ? {
+          path: sqlitePath,
+          migratable: true,
+        }
+      : null,
     operation: operationStatus,
   });
 });
@@ -212,7 +238,14 @@ databaseRoutes.get('/status', async (c) => {
  */
 databaseRoutes.post('/backup', async (c) => {
   if (operationStatus.isRunning) {
-    return apiError(c, { code: ERROR_CODES.OPERATION_IN_PROGRESS, message: `A ${operationStatus.operation} operation is already in progress` }, 409);
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.OPERATION_IN_PROGRESS,
+        message: `A ${operationStatus.operation} operation is already in progress`,
+      },
+      409
+    );
   }
 
   // Set running flag immediately to prevent TOCTOU race
@@ -236,7 +269,11 @@ databaseRoutes.post('/backup', async (c) => {
 
   if (!connected) {
     operationStatus.isRunning = false;
-    return apiError(c, { code: ERROR_CODES.POSTGRES_NOT_CONNECTED, message: 'PostgreSQL is not connected.' }, 400);
+    return apiError(
+      c,
+      { code: ERROR_CODES.POSTGRES_NOT_CONNECTED, message: 'PostgreSQL is not connected.' },
+      400
+    );
   }
 
   const body: { format?: 'sql' | 'custom' } = await c.req.json().catch(() => ({}));
@@ -248,11 +285,16 @@ databaseRoutes.post('/backup', async (c) => {
 
   // Build pg_dump command
   const args = [
-    '-h', config.postgresHost || 'localhost',
-    '-p', String(config.postgresPort),
-    '-U', config.postgresUser || 'ownpilot',
-    '-d', config.postgresDatabase || 'ownpilot',
-    '-f', backupPath,
+    '-h',
+    config.postgresHost || 'localhost',
+    '-p',
+    String(config.postgresPort),
+    '-U',
+    config.postgresUser || 'ownpilot',
+    '-d',
+    config.postgresDatabase || 'ownpilot',
+    '-f',
+    backupPath,
   ];
 
   if (format === 'custom') {
@@ -302,11 +344,15 @@ databaseRoutes.post('/backup', async (c) => {
     log.error(`Error: ${err.message}`);
   });
 
-  return apiResponse(c, {
+  return apiResponse(
+    c,
+    {
       message: 'Backup started',
       filename,
       format,
-    }, 202);
+    },
+    202
+  );
 });
 
 /**
@@ -314,7 +360,14 @@ databaseRoutes.post('/backup', async (c) => {
  */
 databaseRoutes.post('/restore', async (c) => {
   if (operationStatus.isRunning) {
-    return apiError(c, { code: ERROR_CODES.OPERATION_IN_PROGRESS, message: `A ${operationStatus.operation} operation is already in progress` }, 409);
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.OPERATION_IN_PROGRESS,
+        message: `A ${operationStatus.operation} operation is already in progress`,
+      },
+      409
+    );
   }
 
   // Set running flag immediately to prevent TOCTOU race
@@ -329,7 +382,11 @@ databaseRoutes.post('/restore', async (c) => {
 
   if (!body.filename) {
     operationStatus.isRunning = false;
-    return apiError(c, { code: ERROR_CODES.MISSING_FILENAME, message: 'Backup filename is required' }, 400);
+    return apiError(
+      c,
+      { code: ERROR_CODES.MISSING_FILENAME, message: 'Backup filename is required' },
+      400
+    );
   }
 
   const config = getDatabaseConfig();
@@ -337,7 +394,14 @@ databaseRoutes.post('/restore', async (c) => {
 
   if (!existsSync(backupPath)) {
     operationStatus.isRunning = false;
-    return apiError(c, { code: ERROR_CODES.BACKUP_NOT_FOUND, message: `Backup file not found: ${sanitizeId(basename(body.filename))}` }, 404);
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.BACKUP_NOT_FOUND,
+        message: `Backup file not found: ${sanitizeId(basename(body.filename))}`,
+      },
+      404
+    );
   }
 
   const isCustomFormat = body.filename.endsWith('.dump');
@@ -345,20 +409,29 @@ databaseRoutes.post('/restore', async (c) => {
 
   const args = isCustomFormat
     ? [
-        '-h', config.postgresHost || 'localhost',
-        '-p', String(config.postgresPort),
-        '-U', config.postgresUser || 'ownpilot',
-        '-d', config.postgresDatabase || 'ownpilot',
+        '-h',
+        config.postgresHost || 'localhost',
+        '-p',
+        String(config.postgresPort),
+        '-U',
+        config.postgresUser || 'ownpilot',
+        '-d',
+        config.postgresDatabase || 'ownpilot',
         '--clean', // Drop objects before recreating
         '--if-exists',
         backupPath,
       ]
     : [
-        '-h', config.postgresHost || 'localhost',
-        '-p', String(config.postgresPort),
-        '-U', config.postgresUser || 'ownpilot',
-        '-d', config.postgresDatabase || 'ownpilot',
-        '-f', backupPath,
+        '-h',
+        config.postgresHost || 'localhost',
+        '-p',
+        String(config.postgresPort),
+        '-U',
+        config.postgresUser || 'ownpilot',
+        '-d',
+        config.postgresDatabase || 'ownpilot',
+        '-f',
+        backupPath,
       ];
 
   const env = {
@@ -400,10 +473,14 @@ databaseRoutes.post('/restore', async (c) => {
     log.error(`Error: ${err.message}`);
   });
 
-  return apiResponse(c, {
+  return apiResponse(
+    c,
+    {
       message: 'Restore started',
       filename: body.filename,
-    }, 202);
+    },
+    202
+  );
 });
 
 /**
@@ -414,14 +491,25 @@ databaseRoutes.delete('/backup/:filename', (c) => {
   const backupPath = join(getBackupDir(), basename(filename)); // Sanitize path
 
   if (!existsSync(backupPath)) {
-    return apiError(c, { code: ERROR_CODES.BACKUP_NOT_FOUND, message: `Backup file not found: ${sanitizeId(basename(filename))}` }, 404);
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.BACKUP_NOT_FOUND,
+        message: `Backup file not found: ${sanitizeId(basename(filename))}`,
+      },
+      404
+    );
   }
 
   try {
     unlinkSync(backupPath);
     return apiResponse(c, { message: `Deleted backup: ${sanitizeId(basename(filename))}` });
   } catch (err) {
-    return apiError(c, { code: ERROR_CODES.DELETE_FAILED, message: getErrorMessage(err, 'Failed to delete backup') }, 500);
+    return apiError(
+      c,
+      { code: ERROR_CODES.DELETE_FAILED, message: getErrorMessage(err, 'Failed to delete backup') },
+      500
+    );
   }
 });
 
@@ -430,16 +518,30 @@ databaseRoutes.delete('/backup/:filename', (c) => {
  */
 databaseRoutes.post('/maintenance', async (c) => {
   if (operationStatus.isRunning) {
-    return apiError(c, { code: ERROR_CODES.OPERATION_IN_PROGRESS, message: `A ${operationStatus.operation} operation is already in progress` }, 409);
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.OPERATION_IN_PROGRESS,
+        message: `A ${operationStatus.operation} operation is already in progress`,
+      },
+      409
+    );
   }
 
   const body: { type?: 'vacuum' | 'analyze' | 'full' } = await c.req.json().catch(() => ({}));
   const ALLOWED_MAINTENANCE_TYPES = ['vacuum', 'analyze', 'full'] as const;
   const rawType = body.type || 'vacuum';
-  if (!ALLOWED_MAINTENANCE_TYPES.includes(rawType as typeof ALLOWED_MAINTENANCE_TYPES[number])) {
-    return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: `Invalid maintenance type: "${rawType}". Allowed: ${ALLOWED_MAINTENANCE_TYPES.join(', ')}` }, 400);
+  if (!ALLOWED_MAINTENANCE_TYPES.includes(rawType as (typeof ALLOWED_MAINTENANCE_TYPES)[number])) {
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.INVALID_INPUT,
+        message: `Invalid maintenance type: "${rawType}". Allowed: ${ALLOWED_MAINTENANCE_TYPES.join(', ')}`,
+      },
+      400
+    );
   }
-  const maintenanceType = rawType as typeof ALLOWED_MAINTENANCE_TYPES[number];
+  const maintenanceType = rawType as (typeof ALLOWED_MAINTENANCE_TYPES)[number];
 
   let connected = false;
   try {
@@ -495,13 +597,20 @@ databaseRoutes.post('/maintenance', async (c) => {
       }
     })();
 
-    return apiResponse(c, {
+    return apiResponse(
+      c,
+      {
         message: `Maintenance started: ${maintenanceType}`,
         type: maintenanceType,
-      }, 202);
-
+      },
+      202
+    );
   } catch {
-    return apiError(c, { code: ERROR_CODES.POSTGRES_NOT_CONNECTED, message: 'PostgreSQL is not connected.' }, 400);
+    return apiError(
+      c,
+      { code: ERROR_CODES.POSTGRES_NOT_CONNECTED, message: 'PostgreSQL is not connected.' },
+      400
+    );
   }
 });
 
@@ -549,29 +658,33 @@ databaseRoutes.get('/stats', async (c) => {
     `);
 
     // Get PostgreSQL version
-    const versionResult = await adapter.queryOne<{ version: string }>(
-      'SELECT version()'
-    );
+    const versionResult = await adapter.queryOne<{ version: string }>('SELECT version()');
 
     return apiResponse(c, {
-        database: {
-          size: sizeResult?.size || 'unknown',
-          sizeBytes: parseInt(sizeResult?.raw_size || '0', 10),
-        },
-        tables: tableStats.map(t => ({
-          name: t.table_name,
-          rowCount: parseInt(t.row_count, 10),
-          size: t.size,
-        })),
-        connections: {
-          active: parseInt(connInfo?.active_connections || '0', 10),
-          max: parseInt(connInfo?.max_connections || '100', 10),
-        },
-        version: versionResult?.version || 'unknown',
-      });
-
+      database: {
+        size: sizeResult?.size || 'unknown',
+        sizeBytes: parseInt(sizeResult?.raw_size || '0', 10),
+      },
+      tables: tableStats.map((t) => ({
+        name: t.table_name,
+        rowCount: parseInt(t.row_count, 10),
+        size: t.size,
+      })),
+      connections: {
+        active: parseInt(connInfo?.active_connections || '0', 10),
+        max: parseInt(connInfo?.max_connections || '100', 10),
+      },
+      version: versionResult?.version || 'unknown',
+    });
   } catch {
-    return apiError(c, { code: ERROR_CODES.STATS_FAILED, message: 'Failed to get database statistics. Is PostgreSQL connected?' }, 500);
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.STATS_FAILED,
+        message: 'Failed to get database statistics. Is PostgreSQL connected?',
+      },
+      500
+    );
   }
 });
 
@@ -611,7 +724,14 @@ databaseRoutes.get('/export', async (c) => {
       }
     }
     if (tables.length === 0) {
-      return apiError(c, { code: ERROR_CODES.INVALID_TABLES, message: `No valid tables specified. Skipped: ${skippedTables.join(', ')}` }, 400);
+      return apiError(
+        c,
+        {
+          code: ERROR_CODES.INVALID_TABLES,
+          message: `No valid tables specified. Skipped: ${skippedTables.join(', ')}`,
+        },
+        400
+      );
     }
 
     const exportData: Record<string, unknown[]> = {};
@@ -663,9 +783,12 @@ databaseRoutes.get('/export', async (c) => {
     c.header('Content-Disposition', `attachment; filename="${filename}"`);
 
     return c.body(JSON.stringify(exportPayload, null, 2));
-
   } catch (err) {
-    return apiError(c, { code: ERROR_CODES.EXPORT_FAILED, message: getErrorMessage(err, 'Export failed') }, 500);
+    return apiError(
+      c,
+      { code: ERROR_CODES.EXPORT_FAILED, message: getErrorMessage(err, 'Export failed') },
+      500
+    );
   }
 });
 
@@ -674,7 +797,14 @@ databaseRoutes.get('/export', async (c) => {
  */
 databaseRoutes.post('/import', async (c) => {
   if (operationStatus.isRunning) {
-    return apiError(c, { code: ERROR_CODES.OPERATION_IN_PROGRESS, message: `A ${operationStatus.operation} operation is already in progress` }, 409);
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.OPERATION_IN_PROGRESS,
+        message: `A ${operationStatus.operation} operation is already in progress`,
+      },
+      409
+    );
   }
 
   try {
@@ -697,7 +827,14 @@ databaseRoutes.post('/import', async (c) => {
     }>();
 
     if (!body.data?.tables) {
-      return apiError(c, { code: ERROR_CODES.INVALID_IMPORT_DATA, message: 'Import data must contain a "tables" object' }, 400);
+      return apiError(
+        c,
+        {
+          code: ERROR_CODES.INVALID_IMPORT_DATA,
+          message: 'Import data must contain a "tables" object',
+        },
+        400
+      );
     }
 
     const options = body.options || {};
@@ -715,7 +852,14 @@ databaseRoutes.post('/import', async (c) => {
     }
 
     if (tablesToImport.length === 0) {
-      return apiError(c, { code: ERROR_CODES.INVALID_TABLES, message: `No valid tables to import. Skipped: ${skippedImportTables.join(', ')}` }, 400);
+      return apiError(
+        c,
+        {
+          code: ERROR_CODES.INVALID_TABLES,
+          message: `No valid tables to import. Skipped: ${skippedImportTables.join(', ')}`,
+        },
+        400
+      );
     }
 
     operationStatus = {
@@ -795,8 +939,8 @@ databaseRoutes.post('/import', async (c) => {
               } else {
                 // Use EXCLUDED to reference the proposed row values
                 const updateSet = validColumns
-                  .filter(col => col !== 'id')
-                  .map(col => `${quoteIdentifier(col)} = EXCLUDED.${quoteIdentifier(col)}`)
+                  .filter((col) => col !== 'id')
+                  .map((col) => `${quoteIdentifier(col)} = EXCLUDED.${quoteIdentifier(col)}`)
                   .join(', ');
                 // If all columns are 'id', just do nothing
                 sql = updateSet
@@ -812,18 +956,23 @@ databaseRoutes.post('/import', async (c) => {
               totalErrors++;
               // Log but continue
               if (results[table].errors <= 3) {
-                operationStatus.output?.push(`  Error in ${table}: ${getErrorMessage(err, 'Unknown')}`);
+                operationStatus.output?.push(
+                  `  Error in ${table}: ${getErrorMessage(err, 'Unknown')}`
+                );
               }
             }
           }
 
-          operationStatus.output?.push(`  ${table}: ${results[table].imported} imported, ${results[table].errors} errors`);
+          operationStatus.output?.push(
+            `  ${table}: ${results[table].imported} imported, ${results[table].errors} errors`
+          );
         }
 
-        operationStatus.output?.push(`Import completed: ${totalImported} rows imported, ${totalErrors} errors`);
+        operationStatus.output?.push(
+          `Import completed: ${totalImported} rows imported, ${totalErrors} errors`
+        );
         operationStatus.isRunning = false;
         operationStatus.lastResult = totalErrors === 0 ? 'success' : 'failure';
-
       } catch (err) {
         operationStatus.isRunning = false;
         operationStatus.lastResult = 'failure';
@@ -832,14 +981,21 @@ databaseRoutes.post('/import', async (c) => {
       }
     })();
 
-    return apiResponse(c, {
+    return apiResponse(
+      c,
+      {
         message: 'Import started',
         tables: tablesToImport,
         options,
-      }, 202);
-
+      },
+      202
+    );
   } catch (err) {
-    return apiError(c, { code: ERROR_CODES.IMPORT_FAILED, message: getErrorMessage(err, 'Import failed') }, 500);
+    return apiError(
+      c,
+      { code: ERROR_CODES.IMPORT_FAILED, message: getErrorMessage(err, 'Import failed') },
+      500
+    );
   }
 });
 
@@ -897,15 +1053,18 @@ databaseRoutes.post('/export/save', async (c) => {
     await writeFile(filepath, JSON.stringify(exportPayload, null, 2), 'utf-8');
 
     return apiResponse(c, {
-        message: 'Export saved successfully',
-        filename,
-        path: filepath,
-        tableCount: exportPayload.tableCount,
-        totalRows: exportPayload.totalRows,
-      });
-
+      message: 'Export saved successfully',
+      filename,
+      path: filepath,
+      tableCount: exportPayload.tableCount,
+      totalRows: exportPayload.totalRows,
+    });
   } catch (err) {
-    return apiError(c, { code: ERROR_CODES.EXPORT_SAVE_FAILED, message: getErrorMessage(err, 'Export save failed') }, 500);
+    return apiError(
+      c,
+      { code: ERROR_CODES.EXPORT_SAVE_FAILED, message: getErrorMessage(err, 'Export save failed') },
+      500
+    );
   }
 });
 
@@ -915,7 +1074,14 @@ databaseRoutes.post('/export/save', async (c) => {
  */
 databaseRoutes.post('/migrate-schema', async (c) => {
   if (operationStatus.isRunning) {
-    return apiError(c, { code: ERROR_CODES.OPERATION_IN_PROGRESS, message: `A ${operationStatus.operation} operation is already in progress` }, 409);
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.OPERATION_IN_PROGRESS,
+        message: `A ${operationStatus.operation} operation is already in progress`,
+      },
+      409
+    );
   }
 
   try {
@@ -944,17 +1110,23 @@ databaseRoutes.post('/migrate-schema', async (c) => {
     operationStatus.lastResult = 'success';
 
     return apiResponse(c, {
-        message: 'Schema migrations completed successfully',
-        output: operationStatus.output,
-      });
-
+      message: 'Schema migrations completed successfully',
+      output: operationStatus.output,
+    });
   } catch (err) {
     operationStatus.isRunning = false;
     operationStatus.lastResult = 'failure';
     operationStatus.lastError = getErrorMessage(err, 'Migration failed');
     operationStatus.output?.push(`Migration failed: ${operationStatus.lastError}`);
 
-    return apiError(c, { code: ERROR_CODES.MIGRATION_FAILED, message: getErrorMessage(err, 'Schema migration failed') }, 500);
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.MIGRATION_FAILED,
+        message: getErrorMessage(err, 'Schema migration failed'),
+      },
+      500
+    );
   }
 });
 
@@ -963,7 +1135,14 @@ databaseRoutes.post('/migrate-schema', async (c) => {
  */
 databaseRoutes.post('/migrate', async (c) => {
   if (operationStatus.isRunning) {
-    return apiError(c, { code: ERROR_CODES.OPERATION_IN_PROGRESS, message: `A ${operationStatus.operation} operation is already in progress` }, 409);
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.OPERATION_IN_PROGRESS,
+        message: `A ${operationStatus.operation} operation is already in progress`,
+      },
+      409
+    );
   }
 
   const body: {
@@ -982,13 +1161,24 @@ databaseRoutes.post('/migrate', async (c) => {
   }
 
   if (!connected) {
-    return apiError(c, { code: ERROR_CODES.POSTGRES_NOT_CONNECTED, message: 'PostgreSQL is not connected. Check your database configuration.' }, 400);
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.POSTGRES_NOT_CONNECTED,
+        message: 'PostgreSQL is not connected. Check your database configuration.',
+      },
+      400
+    );
   }
 
   // Check SQLite database exists
   const sqlitePath = getDatabasePath();
   if (!existsSync(sqlitePath)) {
-    return apiError(c, { code: ERROR_CODES.NO_LEGACY_DATA, message: 'No legacy SQLite data found to migrate.' }, 400);
+    return apiError(
+      c,
+      { code: ERROR_CODES.NO_LEGACY_DATA, message: 'No legacy SQLite data found to migrate.' },
+      400
+    );
   }
 
   operationStatus = {
@@ -1048,15 +1238,17 @@ databaseRoutes.post('/migrate', async (c) => {
     log.error(`Error: ${err.message}`);
   });
 
-  return apiResponse(c, {
-      message: body.dryRun
-        ? 'Migration dry-run started'
-        : 'Migration started',
+  return apiResponse(
+    c,
+    {
+      message: body.dryRun ? 'Migration dry-run started' : 'Migration started',
       status: 'running',
       options: {
         dryRun: body.dryRun ?? false,
         truncate: body.truncate ?? false,
         skipSchema: body.skipSchema ?? false,
       },
-    }, 202);
+    },
+    202
+  );
 });

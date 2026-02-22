@@ -99,9 +99,7 @@ describe('PluginsRepository', () => {
 
     it('clears cache and reloads on refreshCache', async () => {
       // First load
-      mockAdapter.query.mockResolvedValueOnce([
-        makePluginRow({ id: 'plugin-1' }),
-      ]);
+      mockAdapter.query.mockResolvedValueOnce([makePluginRow({ id: 'plugin-1' })]);
       await repo.initialize();
       expect(repo.getAll()).toHaveLength(1);
 
@@ -202,7 +200,7 @@ describe('PluginsRepository', () => {
       expect(result.id).toBe('new-plugin');
       expect(mockAdapter.execute).toHaveBeenCalledWith(
         expect.stringContaining('INSERT INTO plugins'),
-        expect.arrayContaining(['new-plugin', 'New Plugin', '2.0.0']),
+        expect.arrayContaining(['new-plugin', 'New Plugin', '2.0.0'])
       );
       const sql = mockAdapter.execute.mock.calls[0][0] as string;
       expect(sql).toContain('ON CONFLICT (id) DO UPDATE');
@@ -233,9 +231,7 @@ describe('PluginsRepository', () => {
       await repo.initialize();
 
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
-      mockAdapter.queryOne.mockResolvedValueOnce(
-        makePluginRow({ status: 'disabled' }),
-      );
+      mockAdapter.queryOne.mockResolvedValueOnce(makePluginRow({ status: 'disabled' }));
 
       await repo.upsert({
         id: 'plugin-1',
@@ -257,7 +253,7 @@ describe('PluginsRepository', () => {
         makePluginRow({
           settings: '{"key":"value"}',
           granted_permissions: '["read","write"]',
-        }),
+        })
       );
 
       await repo.upsert({
@@ -302,7 +298,7 @@ describe('PluginsRepository', () => {
 
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
       mockAdapter.queryOne.mockResolvedValueOnce(
-        makePluginRow({ settings: '{"newKey":"newValue"}' }),
+        makePluginRow({ settings: '{"newKey":"newValue"}' })
       );
 
       const result = await repo.updateSettings('plugin-1', { newKey: 'newValue' });
@@ -311,7 +307,7 @@ describe('PluginsRepository', () => {
       expect(result!.settings).toEqual({ newKey: 'newValue' });
       expect(mockAdapter.execute).toHaveBeenCalledWith(
         expect.stringContaining('UPDATE plugins SET settings = $1'),
-        ['{"newKey":"newValue"}', 'plugin-1'],
+        ['{"newKey":"newValue"}', 'plugin-1']
       );
     });
 
@@ -334,9 +330,7 @@ describe('PluginsRepository', () => {
       await repo.initialize();
 
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
-      mockAdapter.queryOne.mockResolvedValueOnce(
-        makePluginRow({ status: 'disabled' }),
-      );
+      mockAdapter.queryOne.mockResolvedValueOnce(makePluginRow({ status: 'disabled' }));
 
       const result = await repo.updateStatus('plugin-1', 'disabled');
 
@@ -344,7 +338,7 @@ describe('PluginsRepository', () => {
       expect(result!.status).toBe('disabled');
       expect(mockAdapter.execute).toHaveBeenCalledWith(
         expect.stringContaining('UPDATE plugins SET status = $1'),
-        ['disabled', null, 'plugin-1'],
+        ['disabled', null, 'plugin-1']
       );
     });
 
@@ -354,16 +348,17 @@ describe('PluginsRepository', () => {
 
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
       mockAdapter.queryOne.mockResolvedValueOnce(
-        makePluginRow({ status: 'error', error_message: 'Init failed' }),
+        makePluginRow({ status: 'error', error_message: 'Init failed' })
       );
 
       const result = await repo.updateStatus('plugin-1', 'error', 'Init failed');
 
       expect(result!.errorMessage).toBe('Init failed');
-      expect(mockAdapter.execute).toHaveBeenCalledWith(
-        expect.any(String),
-        ['error', 'Init failed', 'plugin-1'],
-      );
+      expect(mockAdapter.execute).toHaveBeenCalledWith(expect.any(String), [
+        'error',
+        'Init failed',
+        'plugin-1',
+      ]);
     });
 
     it('passes null error_message when not provided', async () => {
@@ -375,10 +370,11 @@ describe('PluginsRepository', () => {
 
       await repo.updateStatus('plugin-1', 'enabled');
 
-      expect(mockAdapter.execute).toHaveBeenCalledWith(
-        expect.any(String),
-        ['enabled', null, 'plugin-1'],
-      );
+      expect(mockAdapter.execute).toHaveBeenCalledWith(expect.any(String), [
+        'enabled',
+        null,
+        'plugin-1',
+      ]);
     });
 
     it('returns null when plugin not in cache', async () => {
@@ -401,7 +397,7 @@ describe('PluginsRepository', () => {
 
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
       mockAdapter.queryOne.mockResolvedValueOnce(
-        makePluginRow({ granted_permissions: '["read","write","admin"]' }),
+        makePluginRow({ granted_permissions: '["read","write","admin"]' })
       );
 
       const result = await repo.updatePermissions('plugin-1', ['read', 'write', 'admin']);
@@ -410,7 +406,7 @@ describe('PluginsRepository', () => {
       expect(result!.grantedPermissions).toEqual(['read', 'write', 'admin']);
       expect(mockAdapter.execute).toHaveBeenCalledWith(
         expect.stringContaining('UPDATE plugins SET granted_permissions = $1'),
-        ['["read","write","admin"]', 'plugin-1'],
+        ['["read","write","admin"]', 'plugin-1']
       );
     });
 
@@ -441,7 +437,7 @@ describe('PluginsRepository', () => {
       expect(repo.getById('plugin-1')).toBeNull();
       expect(mockAdapter.execute).toHaveBeenCalledWith(
         expect.stringContaining('DELETE FROM plugins WHERE id = $1'),
-        ['plugin-1'],
+        ['plugin-1']
       );
     });
 
@@ -472,9 +468,7 @@ describe('PluginsRepository', () => {
     });
 
     it('handles already-parsed settings object', async () => {
-      mockAdapter.query.mockResolvedValueOnce([
-        makePluginRow({ settings: { already: 'parsed' } }),
-      ]);
+      mockAdapter.query.mockResolvedValueOnce([makePluginRow({ settings: { already: 'parsed' } })]);
       await repo.initialize();
 
       const result = repo.getById('plugin-1');
@@ -483,9 +477,7 @@ describe('PluginsRepository', () => {
     });
 
     it('falls back to empty object for null settings', async () => {
-      mockAdapter.query.mockResolvedValueOnce([
-        makePluginRow({ settings: null }),
-      ]);
+      mockAdapter.query.mockResolvedValueOnce([makePluginRow({ settings: null })]);
       await repo.initialize();
 
       const result = repo.getById('plugin-1');
@@ -494,9 +486,7 @@ describe('PluginsRepository', () => {
     });
 
     it('falls back to empty object for invalid JSON settings', async () => {
-      mockAdapter.query.mockResolvedValueOnce([
-        makePluginRow({ settings: 'not-json' }),
-      ]);
+      mockAdapter.query.mockResolvedValueOnce([makePluginRow({ settings: 'not-json' })]);
       await repo.initialize();
 
       const result = repo.getById('plugin-1');
@@ -516,9 +506,7 @@ describe('PluginsRepository', () => {
     });
 
     it('handles already-parsed permissions array', async () => {
-      mockAdapter.query.mockResolvedValueOnce([
-        makePluginRow({ granted_permissions: ['read'] }),
-      ]);
+      mockAdapter.query.mockResolvedValueOnce([makePluginRow({ granted_permissions: ['read'] })]);
       await repo.initialize();
 
       const result = repo.getById('plugin-1');
@@ -527,9 +515,7 @@ describe('PluginsRepository', () => {
     });
 
     it('falls back to empty array for null permissions', async () => {
-      mockAdapter.query.mockResolvedValueOnce([
-        makePluginRow({ granted_permissions: null }),
-      ]);
+      mockAdapter.query.mockResolvedValueOnce([makePluginRow({ granted_permissions: null })]);
       await repo.initialize();
 
       const result = repo.getById('plugin-1');
@@ -538,9 +524,7 @@ describe('PluginsRepository', () => {
     });
 
     it('falls back to empty array for invalid JSON permissions', async () => {
-      mockAdapter.query.mockResolvedValueOnce([
-        makePluginRow({ granted_permissions: 'bad-json' }),
-      ]);
+      mockAdapter.query.mockResolvedValueOnce([makePluginRow({ granted_permissions: 'bad-json' })]);
       await repo.initialize();
 
       const result = repo.getById('plugin-1');

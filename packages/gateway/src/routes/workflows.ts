@@ -8,7 +8,15 @@
 import { Hono } from 'hono';
 import { streamSSE } from 'hono/streaming';
 import { getServiceRegistry, Services } from '@ownpilot/core';
-import { getUserId, apiResponse, apiError, getIntParam, notFoundError, getErrorMessage, sanitizeId } from './helpers.js';
+import {
+  getUserId,
+  apiResponse,
+  apiError,
+  getIntParam,
+  notFoundError,
+  getErrorMessage,
+  sanitizeId,
+} from './helpers.js';
 import { ERROR_CODES } from './error-codes.js';
 import { createWorkflowsRepository } from '../db/repositories/workflows.js';
 import { topologicalSort } from '../services/workflow-service.js';
@@ -33,10 +41,7 @@ workflowRoutes.get('/', async (c) => {
   const offset = getIntParam(c, 'offset', 0, 0, MAX_PAGINATION_OFFSET);
 
   const repo = createWorkflowsRepository(userId);
-  const [total, workflows] = await Promise.all([
-    repo.count(),
-    repo.getPage(limit, offset),
-  ]);
+  const [total, workflows] = await Promise.all([repo.count(), repo.getPage(limit, offset)]);
 
   return apiResponse(c, {
     workflows,
@@ -54,13 +59,18 @@ workflowRoutes.get('/', async (c) => {
 workflowRoutes.post('/', async (c) => {
   const userId = getUserId(c);
   const rawBody = await c.req.json().catch(() => null);
-  if (!rawBody) return apiError(c, { code: ERROR_CODES.BAD_REQUEST, message: 'Invalid JSON body' }, 400);
+  if (!rawBody)
+    return apiError(c, { code: ERROR_CODES.BAD_REQUEST, message: 'Invalid JSON body' }, 400);
 
   let body;
   try {
     body = validateBody(createWorkflowSchema, rawBody);
   } catch (error) {
-    return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: getErrorMessage(error) }, 400);
+    return apiError(
+      c,
+      { code: ERROR_CODES.VALIDATION_ERROR, message: getErrorMessage(error) },
+      400
+    );
   }
 
   // Validate DAG (no cycles) if nodes and edges are provided
@@ -68,7 +78,11 @@ workflowRoutes.post('/', async (c) => {
     try {
       topologicalSort(body.nodes, body.edges);
     } catch {
-      return apiError(c, { code: ERROR_CODES.WORKFLOW_CYCLE_DETECTED, message: 'Workflow graph contains a cycle' }, 400);
+      return apiError(
+        c,
+        { code: ERROR_CODES.WORKFLOW_CYCLE_DETECTED, message: 'Workflow graph contains a cycle' },
+        400
+      );
     }
   }
 
@@ -77,7 +91,14 @@ workflowRoutes.post('/', async (c) => {
   try {
     workflow = await repo.create(body);
   } catch (error) {
-    return apiError(c, { code: ERROR_CODES.CREATE_FAILED, message: getErrorMessage(error, 'Failed to create workflow') }, 500);
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.CREATE_FAILED,
+        message: getErrorMessage(error, 'Failed to create workflow'),
+      },
+      500
+    );
   }
 
   wsGateway.broadcast('data:changed', { entity: 'workflow', action: 'created', id: workflow.id });
@@ -94,10 +115,7 @@ workflowRoutes.get('/logs/recent', async (c) => {
   const offset = getIntParam(c, 'offset', 0, 0, MAX_PAGINATION_OFFSET);
 
   const repo = createWorkflowsRepository(userId);
-  const [total, logs] = await Promise.all([
-    repo.countLogs(),
-    repo.getRecentLogs(limit, offset),
-  ]);
+  const [total, logs] = await Promise.all([repo.countLogs(), repo.getRecentLogs(limit, offset)]);
 
   return apiResponse(c, {
     logs,
@@ -168,13 +186,18 @@ workflowRoutes.patch('/:id', async (c) => {
   const userId = getUserId(c);
   const id = sanitizeId(c.req.param('id'));
   const rawBody = await c.req.json().catch(() => null);
-  if (!rawBody) return apiError(c, { code: ERROR_CODES.BAD_REQUEST, message: 'Invalid JSON body' }, 400);
+  if (!rawBody)
+    return apiError(c, { code: ERROR_CODES.BAD_REQUEST, message: 'Invalid JSON body' }, 400);
 
   let body;
   try {
     body = validateBody(updateWorkflowSchema, rawBody);
   } catch (error) {
-    return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: getErrorMessage(error) }, 400);
+    return apiError(
+      c,
+      { code: ERROR_CODES.VALIDATION_ERROR, message: getErrorMessage(error) },
+      400
+    );
   }
 
   // Re-validate DAG if nodes or edges changed
@@ -190,7 +213,11 @@ workflowRoutes.patch('/:id', async (c) => {
       try {
         topologicalSort(nodes, edges);
       } catch {
-        return apiError(c, { code: ERROR_CODES.WORKFLOW_CYCLE_DETECTED, message: 'Workflow graph contains a cycle' }, 400);
+        return apiError(
+          c,
+          { code: ERROR_CODES.WORKFLOW_CYCLE_DETECTED, message: 'Workflow graph contains a cycle' },
+          400
+        );
       }
     }
   }
@@ -233,7 +260,11 @@ workflowRoutes.post('/:id/execute', async (c) => {
 
   const service = getServiceRegistry().get(Services.Workflow);
   if (service.isRunning(id)) {
-    return apiError(c, { code: ERROR_CODES.WORKFLOW_ALREADY_RUNNING, message: 'Workflow is already running' }, 409);
+    return apiError(
+      c,
+      { code: ERROR_CODES.WORKFLOW_ALREADY_RUNNING, message: 'Workflow is already running' },
+      409
+    );
   }
 
   return streamSSE(c, async (stream) => {
@@ -270,7 +301,11 @@ workflowRoutes.post('/:id/cancel', async (c) => {
   const cancelled = service.cancelExecution(id);
 
   if (!cancelled) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'No active execution found for this workflow' }, 404);
+    return apiError(
+      c,
+      { code: ERROR_CODES.NOT_FOUND, message: 'No active execution found for this workflow' },
+      404
+    );
   }
 
   return apiResponse(c, { message: 'Execution cancelled' });

@@ -63,7 +63,12 @@ import {
   workflowRoutes,
   composioRoutes,
 } from './routes/index.js';
-import { RATE_LIMIT_WINDOW_MS, RATE_LIMIT_MAX_REQUESTS, RATE_LIMIT_BURST, SECONDS_PER_DAY } from './config/defaults.js';
+import {
+  RATE_LIMIT_WINDOW_MS,
+  RATE_LIMIT_MAX_REQUESTS,
+  RATE_LIMIT_BURST,
+  SECONDS_PER_DAY,
+} from './config/defaults.js';
 
 // Resolve UI dist path relative to this file (works in both dev and Docker)
 const __appDirname = dirname(fileURLToPath(import.meta.url));
@@ -85,7 +90,11 @@ const DEFAULT_CONFIG: GatewayConfig = {
     return [
       `http://localhost:${uiPort}`,
       `http://127.0.0.1:${uiPort}`,
-      ...(process.env.CORS_ORIGINS ? process.env.CORS_ORIGINS.split(',').map(s => s.trim()).filter(Boolean) : []),
+      ...(process.env.CORS_ORIGINS
+        ? process.env.CORS_ORIGINS.split(',')
+            .map((s) => s.trim())
+            .filter(Boolean)
+        : []),
     ];
   })(),
   rateLimit: {
@@ -118,7 +127,12 @@ export function createApp(config: Partial<GatewayConfig> = {}): Hono {
       origin: fullConfig.corsOrigins ?? [],
       allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
       allowHeaders: ['Content-Type', 'Authorization', 'X-API-Key', 'X-Request-ID'],
-      exposeHeaders: ['X-Request-ID', 'X-Response-Time', 'X-RateLimit-Limit', 'X-RateLimit-Remaining'],
+      exposeHeaders: [
+        'X-Request-ID',
+        'X-Response-Time',
+        'X-RateLimit-Limit',
+        'X-RateLimit-Remaining',
+      ],
       maxAge: SECONDS_PER_DAY,
       credentials: true,
     })
@@ -126,10 +140,22 @@ export function createApp(config: Partial<GatewayConfig> = {}): Hono {
 
   // Body size limit (configurable via BODY_SIZE_LIMIT env var, default 1 MB)
   const maxBodySize = parseInt(process.env.BODY_SIZE_LIMIT ?? '1048576', 10) || 1048576;
-  app.use('/api/*', bodyLimit({
-    maxSize: maxBodySize,
-    onError: (c) => c.json({ error: { code: 'PAYLOAD_TOO_LARGE', message: `Request body exceeds ${Math.round(maxBodySize / 1024 / 1024)} MB limit` } }, 413),
-  }));
+  app.use(
+    '/api/*',
+    bodyLimit({
+      maxSize: maxBodySize,
+      onError: (c) =>
+        c.json(
+          {
+            error: {
+              code: 'PAYLOAD_TOO_LARGE',
+              message: `Request body exceeds ${Math.round(maxBodySize / 1024 / 1024)} MB limit`,
+            },
+          },
+          413
+        ),
+    })
+  );
 
   // Request ID
   app.use('*', requestId);

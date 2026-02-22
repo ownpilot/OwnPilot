@@ -22,7 +22,12 @@ import {
   type Plan,
 } from '../db/repositories/index.js';
 import { type CustomTableSchema } from '../db/repositories/custom-data.js';
-import { getServiceRegistry, Services, type IDatabaseService, type ServiceMemoryEntry } from '@ownpilot/core';
+import {
+  getServiceRegistry,
+  Services,
+  type IDatabaseService,
+  type ServiceMemoryEntry,
+} from '@ownpilot/core';
 import { getLog } from './log.js';
 
 const log = getLog('DashboardService');
@@ -294,7 +299,12 @@ export class DashboardService {
       const yesterday = new Date(Date.now() - MS_PER_DAY).toISOString().split('T')[0] ?? '';
       [pendingTasks, dueTodayTasks, overdueTasks] = await Promise.all([
         tasksRepo.list({ status: ['pending', 'in_progress'], limit: 50 }),
-        tasksRepo.list({ status: ['pending', 'in_progress'], dueAfter: today, dueBefore: today, limit: 50 }),
+        tasksRepo.list({
+          status: ['pending', 'in_progress'],
+          dueAfter: today,
+          dueBefore: today,
+          limit: 50,
+        }),
         tasksRepo.list({ status: ['pending', 'in_progress'], dueBefore: yesterday, limit: 50 }),
       ]);
       taskTotal = pendingTasks.length;
@@ -340,8 +350,8 @@ export class DashboardService {
     } catch (err) {
       log.error('[DashboardService] Failed to load triggers:', err);
     }
-    const enabledTriggers = allTriggers.filter(t => t.enabled);
-    const scheduledToday = enabledTriggers.filter(t => {
+    const enabledTriggers = allTriggers.filter((t) => t.enabled);
+    const scheduledToday = enabledTriggers.filter((t) => {
       if (!t.nextFire) return false;
       const fireDate = new Date(t.nextFire).toISOString().split('T')[0];
       return fireDate === today;
@@ -368,7 +378,9 @@ export class DashboardService {
     } catch (err) {
       log.error('[DashboardService] Failed to load habits:', err);
     }
-    const streaksAtRisk = todayHabits.habits.filter((h: HabitProgressItem) => !h.completedToday && h.streakCurrent > 0);
+    const streaksAtRisk = todayHabits.habits.filter(
+      (h: HabitProgressItem) => !h.completedToday && h.streakCurrent > 0
+    );
 
     // Notes
     let pinnedNotes: Note[] = [];
@@ -410,8 +422,8 @@ export class DashboardService {
     } catch (err) {
       log.error('[DashboardService] Failed to load plans:', err);
     }
-    const runningPlans = allPlans.filter(p => p.status === 'running');
-    const pendingApprovalPlans = allPlans.filter(p => p.status === 'pending');
+    const runningPlans = allPlans.filter((p) => p.status === 'running');
+    const pendingApprovalPlans = allPlans.filter((p) => p.status === 'pending');
 
     return {
       tasks: {
@@ -497,8 +509,8 @@ export class DashboardService {
 
     // Use a fast/cheap model for summaries — resolve from user settings
     const { getDefaultProvider, getDefaultModel } = await import('../routes/settings.js');
-    const provider = options?.provider ?? await getDefaultProvider() ?? 'openai';
-    const model = options?.model ?? await getDefaultModel(provider) ?? 'gpt-4o-mini';
+    const provider = options?.provider ?? (await getDefaultProvider()) ?? 'openai';
+    const model = options?.model ?? (await getDefaultModel(provider)) ?? 'gpt-4o-mini';
 
     try {
       // Dynamic import to avoid circular dependency
@@ -553,7 +565,7 @@ export class DashboardService {
           if (chunk.content) {
             fullContent += chunk.content;
             // Fire async callback but don't await (streaming shouldn't block)
-            onChunk(chunk.content).catch(err =>
+            onChunk(chunk.content).catch((err) =>
               log.error('[DashboardService] Chunk callback error:', err)
             );
           }
@@ -593,22 +605,37 @@ export class DashboardService {
       day: 'numeric',
     });
 
-    const tasksList = data.tasks.overdue.slice(0, 3).map(t => `  - [OVERDUE] ${t.title}`).join('\n') +
+    const tasksList =
+      data.tasks.overdue
+        .slice(0, 3)
+        .map((t) => `  - [OVERDUE] ${t.title}`)
+        .join('\n') +
       (data.tasks.overdue.length > 0 ? '\n' : '') +
-      data.tasks.dueToday.slice(0, 5).map(t => `  - ${t.title} (${t.priority} priority)`).join('\n');
+      data.tasks.dueToday
+        .slice(0, 5)
+        .map((t) => `  - ${t.title} (${t.priority} priority)`)
+        .join('\n');
 
-    const eventsList = data.calendar.todayEvents.slice(0, 5).map(e => {
-      const time = new Date(e.startTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-      return `  - ${time}: ${e.title}`;
-    }).join('\n');
+    const eventsList = data.calendar.todayEvents
+      .slice(0, 5)
+      .map((e) => {
+        const time = new Date(e.startTime).toLocaleTimeString('en-US', {
+          hour: '2-digit',
+          minute: '2-digit',
+        });
+        return `  - ${time}: ${e.title}`;
+      })
+      .join('\n');
 
-    const nextActionsList = data.goals.nextActions.slice(0, 3).map(a =>
-      `  - Next: ${a.title} (for goal)`
-    ).join('\n');
+    const nextActionsList = data.goals.nextActions
+      .slice(0, 3)
+      .map((a) => `  - Next: ${a.title} (for goal)`)
+      .join('\n');
 
-    const streaksAtRiskList = data.habits.streaksAtRisk.slice(0, 3).map(h =>
-      `  - ${h.name} (${h.streakCurrent} day streak)`
-    ).join('\n');
+    const streaksAtRiskList = data.habits.streaksAtRisk
+      .slice(0, 3)
+      .map((h) => `  - ${h.name} (${h.streakCurrent} day streak)`)
+      .join('\n');
 
     return `You are a personal AI assistant generating a daily briefing for ${today}.
 
@@ -678,9 +705,18 @@ Format your response as JSON:
           let escape = false;
           for (let i = startIdx; i < content.length; i++) {
             const ch = content[i];
-            if (escape) { escape = false; continue; }
-            if (ch === '\\' && inString) { escape = true; continue; }
-            if (ch === '"' && !escape) { inString = !inString; continue; }
+            if (escape) {
+              escape = false;
+              continue;
+            }
+            if (ch === '\\' && inString) {
+              escape = true;
+              continue;
+            }
+            if (ch === '"' && !escape) {
+              inString = !inString;
+              continue;
+            }
             if (inString) continue;
             if (ch === '{') depth++;
             else if (ch === '}') {
@@ -707,7 +743,9 @@ Format your response as JSON:
         summary: parsed.summary ?? 'No summary available.',
         priorities: Array.isArray(parsed.priorities) ? parsed.priorities : [],
         insights: Array.isArray(parsed.insights) ? parsed.insights : [],
-        suggestedFocusAreas: Array.isArray(parsed.suggestedFocusAreas) ? parsed.suggestedFocusAreas : [],
+        suggestedFocusAreas: Array.isArray(parsed.suggestedFocusAreas)
+          ? parsed.suggestedFocusAreas
+          : [],
         generatedAt: now.toISOString(),
         expiresAt: expiresAt.toISOString(),
         modelUsed: model,
@@ -754,9 +792,13 @@ Format your response as JSON:
   /**
    * Calculate goal statistics
    */
-  private calculateGoalStats(goals: Goal[]): { activeCount: number; averageProgress: number; overdueCount: number } {
+  private calculateGoalStats(goals: Goal[]): {
+    activeCount: number;
+    averageProgress: number;
+    overdueCount: number;
+  } {
     const today = new Date().toISOString().split('T')[0] ?? '';
-    const overdueCount = goals.filter(g => g.dueDate && g.dueDate < today).length;
+    const overdueCount = goals.filter((g) => g.dueDate && g.dueDate < today).length;
     const totalProgress = goals.reduce((sum, g) => sum + (g.progress ?? 0), 0);
     const averageProgress = goals.length > 0 ? totalProgress / goals.length : 0;
 
@@ -776,7 +818,7 @@ Format your response as JSON:
     return {
       completed: progress.completed,
       total: progress.total,
-      habits: progress.habits.map(h => ({
+      habits: progress.habits.map((h) => ({
         id: h.id,
         name: h.name,
         completedToday: h.completedToday,
@@ -820,9 +862,7 @@ Format your response as JSON:
     service: IDatabaseService,
     tables: CustomTableSchema[]
   ): Promise<CustomDataSummary> {
-    const allStats = await Promise.all(
-      tables.map((t) => service.getTableStats(t.id))
-    );
+    const allStats = await Promise.all(tables.map((t) => service.getTableStats(t.id)));
 
     let totalRecords = 0;
     const tableSummaries: CustomTableSummaryItem[] = tables.map((t, i) => {

@@ -27,12 +27,14 @@ describe('parseSSELine', () => {
   // ── approval ──────────────────────────────────────────────────────────────
 
   it('parses approval_required events', () => {
-    const line = 'data: ' + JSON.stringify({
-      type: 'approval_required',
-      approvalId: 'appr-1',
-      category: 'code_execution',
-      description: 'Run script',
-    });
+    const line =
+      'data: ' +
+      JSON.stringify({
+        type: 'approval_required',
+        approvalId: 'appr-1',
+        category: 'code_execution',
+        description: 'Run script',
+      });
     const result = parseSSELine(line);
     expect(result.kind).toBe('approval');
     if (result.kind === 'approval') {
@@ -58,7 +60,9 @@ describe('parseSSELine', () => {
   });
 
   it('parses tool_end progress events', () => {
-    const line = 'data: ' + JSON.stringify({ type: 'tool_end', tool: { name: 'search' }, result: { success: true } });
+    const line =
+      'data: ' +
+      JSON.stringify({ type: 'tool_end', tool: { name: 'search' }, result: { success: true } });
     expect(parseSSELine(line).kind).toBe('progress');
   });
 
@@ -75,11 +79,13 @@ describe('parseSSELine', () => {
   });
 
   it('parses done:true delta (final chunk)', () => {
-    const line = 'data: ' + JSON.stringify({
-      done: true,
-      finishReason: 'stop',
-      usage: { promptTokens: 100, completionTokens: 50, totalTokens: 150 },
-    });
+    const line =
+      'data: ' +
+      JSON.stringify({
+        done: true,
+        finishReason: 'stop',
+        usage: { promptTokens: 100, completionTokens: 50, totalTokens: 150 },
+      });
     const result = parseSSELine(line);
     expect(result.kind).toBe('delta');
     if (result.kind === 'delta') {

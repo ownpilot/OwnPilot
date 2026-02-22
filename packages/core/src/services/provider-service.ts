@@ -42,10 +42,7 @@ export interface IProviderService {
   /**
    * Resolve 'default' placeholders to actual provider/model names.
    */
-  resolve(options?: {
-    provider?: string;
-    model?: string;
-  }): Promise<ResolvedProvider>;
+  resolve(options?: { provider?: string; model?: string }): Promise<ResolvedProvider>;
 
   /**
    * Get the default provider name.

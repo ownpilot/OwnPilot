@@ -3,11 +3,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import type {
-  NormalizedMessage,
-  MessageProcessingResult,
-  PipelineContext,
-} from '@ownpilot/core';
+import type { NormalizedMessage, MessageProcessingResult, PipelineContext } from '@ownpilot/core';
 
 // ---------------------------------------------------------------------------
 // Mocks — vi.hoisted() ensures these are available when vi.mock factories run
@@ -24,7 +20,9 @@ const { mockChatRepo, mockTruncate, mockBroadcast, mockLog } = vi.hoisted(() => 
 }));
 
 vi.mock('../../db/repositories/index.js', () => ({
-  ChatRepository: vi.fn(function () { return mockChatRepo; }),
+  ChatRepository: vi.fn(function () {
+    return mockChatRepo;
+  }),
 }));
 
 vi.mock('../../routes/helpers.js', () => ({
@@ -67,7 +65,9 @@ function createContext(opts: MockContextOptions = {}): PipelineContext {
   const store = new Map<string, unknown>(Object.entries(opts.store ?? {}));
   return {
     get: vi.fn(<T = unknown>(key: string): T | undefined => store.get(key) as T | undefined),
-    set: vi.fn((key: string, value: unknown) => { store.set(key, value); }),
+    set: vi.fn((key: string, value: unknown) => {
+      store.set(key, value);
+    }),
     has: vi.fn((key: string) => store.has(key)),
     addStage: vi.fn(),
     addWarning: vi.fn(),
@@ -256,7 +256,7 @@ describe('createPersistenceMiddleware', () => {
       expect(ctx.addWarning).not.toHaveBeenCalledWith('No conversationId — skipping persistence');
       expect(mockChatRepo.getOrCreateConversation).toHaveBeenCalledWith(
         'conv-from-metadata',
-        expect.any(Object),
+        expect.any(Object)
       );
     });
   });
@@ -306,7 +306,7 @@ describe('createPersistenceMiddleware', () => {
       expect(mockTruncate).toHaveBeenCalledWith('A very long message content');
       expect(mockChatRepo.getOrCreateConversation).toHaveBeenCalledWith(
         'conv-1',
-        expect.objectContaining({ title: 'A very long...' }),
+        expect.objectContaining({ title: 'A very long...' })
       );
     });
 
@@ -324,7 +324,7 @@ describe('createPersistenceMiddleware', () => {
 
       expect(mockChatRepo.getOrCreateConversation).toHaveBeenCalledWith(
         'conv-1',
-        expect.objectContaining({ agentName: 'Chat' }),
+        expect.objectContaining({ agentName: 'Chat' })
       );
     });
 
@@ -343,7 +343,7 @@ describe('createPersistenceMiddleware', () => {
 
       expect(mockChatRepo.getOrCreateConversation).toHaveBeenCalledWith(
         'conv-1',
-        expect.objectContaining({ agentName: undefined, agentId: 'my-agent' }),
+        expect.objectContaining({ agentName: undefined, agentId: 'my-agent' })
       );
     });
   });
@@ -751,7 +751,7 @@ describe('createPersistenceMiddleware', () => {
 
       expect(mockBroadcast).toHaveBeenCalledWith(
         'chat:history:updated',
-        expect.objectContaining({ source: 'telegram' }),
+        expect.objectContaining({ source: 'telegram' })
       );
     });
 
@@ -771,7 +771,7 @@ describe('createPersistenceMiddleware', () => {
 
       expect(mockBroadcast).toHaveBeenCalledWith(
         'chat:history:updated',
-        expect.objectContaining({ source: 'web' }),
+        expect.objectContaining({ source: 'web' })
       );
     });
 

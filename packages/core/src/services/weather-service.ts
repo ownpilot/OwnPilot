@@ -114,7 +114,7 @@ async function openWeatherMapCurrent(apiKey: string, location: string): Promise<
     weather: Array<{ description: string; icon: string }>;
   }
 
-  const geoData = await geoResponse.json() as GeoLocation[];
+  const geoData = (await geoResponse.json()) as GeoLocation[];
   const geoLocation = geoData[0];
   if (!geoLocation) {
     throw new Error(`Location not found: ${location}`);
@@ -130,7 +130,7 @@ async function openWeatherMapCurrent(apiKey: string, location: string): Promise<
     throw new Error(`OpenWeatherMap weather error: ${await weatherResponse.text()}`);
   }
 
-  const data = await weatherResponse.json() as OWMWeatherResponse;
+  const data = (await weatherResponse.json()) as OWMWeatherResponse;
   const weatherInfo = data.weather[0] ?? { description: 'Unknown', icon: '01d' };
 
   return {
@@ -188,7 +188,7 @@ async function openWeatherMapForecast(
   // Geocode location
   const geoUrl = `https://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(location)}&limit=1&appid=${apiKey}`;
   const geoResponse = await fetch(geoUrl);
-  const geoData = await geoResponse.json() as GeoLocation[];
+  const geoData = (await geoResponse.json()) as GeoLocation[];
   const geoLocation = geoData[0];
 
   if (!geoLocation) {
@@ -205,7 +205,7 @@ async function openWeatherMapForecast(
     throw new Error(`OpenWeatherMap forecast error: ${await forecastResponse.text()}`);
   }
 
-  const data = await forecastResponse.json() as OWMForecastResponse;
+  const data = (await forecastResponse.json()) as OWMForecastResponse;
 
   // Group by day and aggregate
   const dailyData: Map<string, ForecastItem[]> = new Map();
@@ -298,11 +298,11 @@ async function weatherAPICurrent(apiKey: string, location: string): Promise<Weat
   const response = await fetch(url);
 
   if (!response.ok) {
-    const error = await response.json() as { error?: { message?: string } };
+    const error = (await response.json()) as { error?: { message?: string } };
     throw new Error(`WeatherAPI error: ${error.error?.message || 'Unknown error'}`);
   }
 
-  const data = await response.json() as WeatherAPICurrentResponse;
+  const data = (await response.json()) as WeatherAPICurrentResponse;
 
   return {
     location: {
@@ -376,11 +376,11 @@ async function weatherAPIForecast(
   const response = await fetch(url);
 
   if (!response.ok) {
-    const error = await response.json() as { error?: { message?: string } };
+    const error = (await response.json()) as { error?: { message?: string } };
     throw new Error(`WeatherAPI error: ${error.error?.message || 'Unknown error'}`);
   }
 
-  const data = await response.json() as WeatherAPIForecastResponse;
+  const data = (await response.json()) as WeatherAPIForecastResponse;
 
   const forecast: WeatherForecastDay[] = data.forecast.forecastday.map((day) => ({
     date: day.date,
@@ -416,7 +416,24 @@ async function weatherAPIForecast(
 // =============================================================================
 
 function getWindDirection(degrees: number): string {
-  const directions = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
+  const directions = [
+    'N',
+    'NNE',
+    'NE',
+    'ENE',
+    'E',
+    'ESE',
+    'SE',
+    'SSE',
+    'S',
+    'SSW',
+    'SW',
+    'WSW',
+    'W',
+    'WNW',
+    'NW',
+    'NNW',
+  ];
   const index = Math.round(degrees / 22.5) % 16;
   return directions[index] || 'N';
 }

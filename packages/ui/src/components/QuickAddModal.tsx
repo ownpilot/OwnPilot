@@ -6,16 +6,7 @@
  */
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import {
-  CheckCircle2,
-  FileText,
-  Bookmark,
-  Users,
-  Calendar,
-  Lightbulb,
-  Send,
-  X,
-} from './icons';
+import { CheckCircle2, FileText, Bookmark, Users, Calendar, Lightbulb, Send, X } from './icons';
 import { tasksApi, notesApi, bookmarksApi, contactsApi, calendarApi, capturesApi } from '../api';
 import { LoadingSpinner } from './LoadingSpinner';
 import { useToast } from './ToastProvider';
@@ -30,12 +21,12 @@ export const QUICK_ADD_ITEMS: {
   label: string;
   color: string;
 }[] = [
-  { type: 'task',     icon: CheckCircle2, label: 'Task',     color: 'text-primary' },
-  { type: 'note',     icon: FileText,     label: 'Note',     color: 'text-warning' },
-  { type: 'bookmark', icon: Bookmark,     label: 'Bookmark', color: 'text-blue-500' },
-  { type: 'contact',  icon: Users,        label: 'Contact',  color: 'text-purple-500' },
-  { type: 'event',    icon: Calendar,     label: 'Event',    color: 'text-success' },
-  { type: 'capture',  icon: Lightbulb,    label: 'Capture',  color: 'text-amber-500' },
+  { type: 'task', icon: CheckCircle2, label: 'Task', color: 'text-primary' },
+  { type: 'note', icon: FileText, label: 'Note', color: 'text-warning' },
+  { type: 'bookmark', icon: Bookmark, label: 'Bookmark', color: 'text-blue-500' },
+  { type: 'contact', icon: Users, label: 'Contact', color: 'text-purple-500' },
+  { type: 'event', icon: Calendar, label: 'Event', color: 'text-success' },
+  { type: 'capture', icon: Lightbulb, label: 'Capture', color: 'text-amber-500' },
 ];
 
 // ---- Modal ----
@@ -60,7 +51,7 @@ export function QuickAddModal({ type, onClose, onCreated }: QuickAddModalProps) 
   const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement>(null);
   const backdropRef = useRef<HTMLDivElement>(null);
 
-  const item = QUICK_ADD_ITEMS.find(i => i.type === type)!;
+  const item = QUICK_ADD_ITEMS.find((i) => i.type === type)!;
 
   // Auto-focus when modal opens
   useEffect(() => {
@@ -128,13 +119,16 @@ export function QuickAddModal({ type, onClose, onCreated }: QuickAddModalProps) 
     }
   };
 
-  const inputClass = 'w-full px-3 py-2 text-sm bg-bg-primary dark:bg-dark-bg-primary border border-border dark:border-dark-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary text-text-primary dark:text-dark-text-primary placeholder:text-text-muted dark:placeholder:text-dark-text-muted';
+  const inputClass =
+    'w-full px-3 py-2 text-sm bg-bg-primary dark:bg-dark-bg-primary border border-border dark:border-dark-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary text-text-primary dark:text-dark-text-primary placeholder:text-text-muted dark:placeholder:text-dark-text-muted';
 
   return (
     <div
       ref={backdropRef}
       className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100] animate-[fadeIn_150ms_ease-out]"
-      onClick={e => { if (e.target === backdropRef.current) onClose(); }}
+      onClick={(e) => {
+        if (e.target === backdropRef.current) onClose();
+      }}
     >
       <div className="w-full max-w-sm mx-4 bg-bg-primary dark:bg-dark-bg-primary border border-border dark:border-dark-border rounded-xl shadow-2xl animate-[scaleIn_150ms_ease-out]">
         {/* Header */}
@@ -160,19 +154,27 @@ export function QuickAddModal({ type, onClose, onCreated }: QuickAddModalProps) 
           {type === 'task' && (
             <>
               <div>
-                <label className="block text-xs font-medium text-text-secondary dark:text-dark-text-secondary mb-1">Title</label>
+                <label className="block text-xs font-medium text-text-secondary dark:text-dark-text-secondary mb-1">
+                  Title
+                </label>
                 <input
                   ref={inputRef as React.RefObject<HTMLInputElement>}
                   type="text"
                   placeholder="What needs to be done?"
                   value={title}
-                  onChange={e => setTitle(e.target.value)}
+                  onChange={(e) => setTitle(e.target.value)}
                   className={inputClass}
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-text-secondary dark:text-dark-text-secondary mb-1">Priority</label>
-                <select value={priority} onChange={e => setPriority(e.target.value)} className={inputClass}>
+                <label className="block text-xs font-medium text-text-secondary dark:text-dark-text-secondary mb-1">
+                  Priority
+                </label>
+                <select
+                  value={priority}
+                  onChange={(e) => setPriority(e.target.value)}
+                  className={inputClass}
+                >
                   <option value="low">Low</option>
                   <option value="normal">Normal</option>
                   <option value="high">High</option>
@@ -185,22 +187,26 @@ export function QuickAddModal({ type, onClose, onCreated }: QuickAddModalProps) 
           {type === 'note' && (
             <>
               <div>
-                <label className="block text-xs font-medium text-text-secondary dark:text-dark-text-secondary mb-1">Title</label>
+                <label className="block text-xs font-medium text-text-secondary dark:text-dark-text-secondary mb-1">
+                  Title
+                </label>
                 <input
                   ref={inputRef as React.RefObject<HTMLInputElement>}
                   type="text"
                   placeholder="Note title"
                   value={title}
-                  onChange={e => setTitle(e.target.value)}
+                  onChange={(e) => setTitle(e.target.value)}
                   className={inputClass}
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-text-secondary dark:text-dark-text-secondary mb-1">Content</label>
+                <label className="block text-xs font-medium text-text-secondary dark:text-dark-text-secondary mb-1">
+                  Content
+                </label>
                 <textarea
                   placeholder="Write something..."
                   value={content}
-                  onChange={e => setContent(e.target.value)}
+                  onChange={(e) => setContent(e.target.value)}
                   rows={3}
                   className={inputClass + ' resize-none'}
                 />
@@ -211,23 +217,27 @@ export function QuickAddModal({ type, onClose, onCreated }: QuickAddModalProps) 
           {type === 'bookmark' && (
             <>
               <div>
-                <label className="block text-xs font-medium text-text-secondary dark:text-dark-text-secondary mb-1">URL</label>
+                <label className="block text-xs font-medium text-text-secondary dark:text-dark-text-secondary mb-1">
+                  URL
+                </label>
                 <input
                   ref={inputRef as React.RefObject<HTMLInputElement>}
                   type="text"
                   placeholder="https://..."
                   value={url}
-                  onChange={e => setUrl(e.target.value)}
+                  onChange={(e) => setUrl(e.target.value)}
                   className={inputClass}
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-text-secondary dark:text-dark-text-secondary mb-1">Title</label>
+                <label className="block text-xs font-medium text-text-secondary dark:text-dark-text-secondary mb-1">
+                  Title
+                </label>
                 <input
                   type="text"
                   placeholder="Optional title"
                   value={title}
-                  onChange={e => setTitle(e.target.value)}
+                  onChange={(e) => setTitle(e.target.value)}
                   className={inputClass}
                 />
               </div>
@@ -237,23 +247,27 @@ export function QuickAddModal({ type, onClose, onCreated }: QuickAddModalProps) 
           {type === 'contact' && (
             <>
               <div>
-                <label className="block text-xs font-medium text-text-secondary dark:text-dark-text-secondary mb-1">Name</label>
+                <label className="block text-xs font-medium text-text-secondary dark:text-dark-text-secondary mb-1">
+                  Name
+                </label>
                 <input
                   ref={inputRef as React.RefObject<HTMLInputElement>}
                   type="text"
                   placeholder="Contact name"
                   value={title}
-                  onChange={e => setTitle(e.target.value)}
+                  onChange={(e) => setTitle(e.target.value)}
                   className={inputClass}
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-text-secondary dark:text-dark-text-secondary mb-1">Email</label>
+                <label className="block text-xs font-medium text-text-secondary dark:text-dark-text-secondary mb-1">
+                  Email
+                </label>
                 <input
                   type="email"
                   placeholder="email@example.com"
                   value={email}
-                  onChange={e => setEmail(e.target.value)}
+                  onChange={(e) => setEmail(e.target.value)}
                   className={inputClass}
                 />
               </div>
@@ -263,22 +277,26 @@ export function QuickAddModal({ type, onClose, onCreated }: QuickAddModalProps) 
           {type === 'event' && (
             <>
               <div>
-                <label className="block text-xs font-medium text-text-secondary dark:text-dark-text-secondary mb-1">Title</label>
+                <label className="block text-xs font-medium text-text-secondary dark:text-dark-text-secondary mb-1">
+                  Title
+                </label>
                 <input
                   ref={inputRef as React.RefObject<HTMLInputElement>}
                   type="text"
                   placeholder="Event title"
                   value={title}
-                  onChange={e => setTitle(e.target.value)}
+                  onChange={(e) => setTitle(e.target.value)}
                   className={inputClass}
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-text-secondary dark:text-dark-text-secondary mb-1">Date & Time</label>
+                <label className="block text-xs font-medium text-text-secondary dark:text-dark-text-secondary mb-1">
+                  Date & Time
+                </label>
                 <input
                   type="datetime-local"
                   value={date}
-                  onChange={e => setDate(e.target.value)}
+                  onChange={(e) => setDate(e.target.value)}
                   className={inputClass}
                 />
               </div>
@@ -287,12 +305,14 @@ export function QuickAddModal({ type, onClose, onCreated }: QuickAddModalProps) 
 
           {type === 'capture' && (
             <div>
-              <label className="block text-xs font-medium text-text-secondary dark:text-dark-text-secondary mb-1">Thought</label>
+              <label className="block text-xs font-medium text-text-secondary dark:text-dark-text-secondary mb-1">
+                Thought
+              </label>
               <textarea
                 ref={inputRef as React.RefObject<HTMLTextAreaElement>}
                 placeholder="Quick thought, idea, snippet..."
                 value={content}
-                onChange={e => setContent(e.target.value)}
+                onChange={(e) => setContent(e.target.value)}
                 rows={3}
                 className={inputClass + ' resize-none'}
               />

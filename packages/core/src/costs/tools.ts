@@ -5,17 +5,8 @@
  */
 
 import type { ToolDefinition, ToolExecutor, ToolContext } from '../agent/types.js';
-import type {
-  UsageTracker,
-  BudgetManager,
-  UsageSummary,
-} from './index.js';
-import {
-  formatCost,
-  formatTokens,
-  generateRecommendations,
-  MODEL_PRICING,
-} from './index.js';
+import type { UsageTracker, BudgetManager, UsageSummary } from './index.js';
+import { formatCost, formatTokens, generateRecommendations, MODEL_PRICING } from './index.js';
 
 // =============================================================================
 // Tool Definitions
@@ -209,10 +200,7 @@ export function createCostToolExecutors(
   getBudgetMgr: () => BudgetManager
 ): Record<string, ToolExecutor> {
   return {
-    get_cost_summary: async (
-      rawArgs: Record<string, unknown>,
-      _context: ToolContext
-    ) => {
+    get_cost_summary: async (rawArgs: Record<string, unknown>, _context: ToolContext) => {
       const args = rawArgs as {
         period: 'today' | 'week' | 'month' | 'custom';
         startDate?: string;
@@ -253,9 +241,10 @@ export function createCostToolExecutors(
             totalCost: formatCost(summary.totalCost),
             totalCostRaw: summary.totalCost,
             totalRequests: summary.totalRequests,
-            successRate: summary.totalRequests > 0
-              ? `${((summary.successfulRequests / summary.totalRequests) * 100).toFixed(1)}%`
-              : 'N/A',
+            successRate:
+              summary.totalRequests > 0
+                ? `${((summary.successfulRequests / summary.totalRequests) * 100).toFixed(1)}%`
+                : 'N/A',
             totalTokens: formatTokens(summary.totalInputTokens + summary.totalOutputTokens),
             inputTokens: formatTokens(summary.totalInputTokens),
             outputTokens: formatTokens(summary.totalOutputTokens),
@@ -283,10 +272,7 @@ export function createCostToolExecutors(
       };
     },
 
-    get_budget_status: async (
-      _rawArgs: Record<string, unknown>,
-      _context: ToolContext
-    ) => {
+    get_budget_status: async (_rawArgs: Record<string, unknown>, _context: ToolContext) => {
       const budgetMgr = getBudgetMgr();
       const status = await budgetMgr.getStatus();
 
@@ -298,28 +284,31 @@ export function createCostToolExecutors(
               spent: formatCost(status.daily.spent),
               limit: status.daily.limit ? formatCost(status.daily.limit) : 'No limit',
               percentage: `${status.daily.percentage.toFixed(1)}%`,
-              remaining: status.daily.remaining !== undefined
-                ? formatCost(status.daily.remaining)
-                : 'Unlimited',
+              remaining:
+                status.daily.remaining !== undefined
+                  ? formatCost(status.daily.remaining)
+                  : 'Unlimited',
             },
             weekly: {
               spent: formatCost(status.weekly.spent),
               limit: status.weekly.limit ? formatCost(status.weekly.limit) : 'No limit',
               percentage: `${status.weekly.percentage.toFixed(1)}%`,
-              remaining: status.weekly.remaining !== undefined
-                ? formatCost(status.weekly.remaining)
-                : 'Unlimited',
+              remaining:
+                status.weekly.remaining !== undefined
+                  ? formatCost(status.weekly.remaining)
+                  : 'Unlimited',
             },
             monthly: {
               spent: formatCost(status.monthly.spent),
               limit: status.monthly.limit ? formatCost(status.monthly.limit) : 'No limit',
               percentage: `${status.monthly.percentage.toFixed(1)}%`,
-              remaining: status.monthly.remaining !== undefined
-                ? formatCost(status.monthly.remaining)
-                : 'Unlimited',
+              remaining:
+                status.monthly.remaining !== undefined
+                  ? formatCost(status.monthly.remaining)
+                  : 'Unlimited',
             },
           },
-          alerts: status.alerts.map(a => ({
+          alerts: status.alerts.map((a) => ({
             type: a.type,
             message: `${a.type} budget at ${a.threshold}% (${formatCost(a.currentSpend)} / ${formatCost(a.limit)})`,
           })),
@@ -327,10 +316,7 @@ export function createCostToolExecutors(
       };
     },
 
-    set_budget: async (
-      rawArgs: Record<string, unknown>,
-      _context: ToolContext
-    ) => {
+    set_budget: async (rawArgs: Record<string, unknown>, _context: ToolContext) => {
       const args = rawArgs as {
         dailyLimit?: number;
         weeklyLimit?: number;
@@ -355,10 +341,7 @@ export function createCostToolExecutors(
       };
     },
 
-    get_cost_breakdown: async (
-      rawArgs: Record<string, unknown>,
-      _context: ToolContext
-    ) => {
+    get_cost_breakdown: async (rawArgs: Record<string, unknown>, _context: ToolContext) => {
       const args = rawArgs as {
         groupBy: 'provider' | 'model' | 'day';
         period: 'today' | 'week' | 'month';
@@ -379,7 +362,13 @@ export function createCostToolExecutors(
           break;
       }
 
-      let breakdown: Array<{ name: string; cost: string; costRaw: number; requests: number; tokens: string }>;
+      let breakdown: Array<{
+        name: string;
+        cost: string;
+        costRaw: number;
+        requests: number;
+        tokens: string;
+      }>;
 
       switch (args.groupBy) {
         case 'provider':
@@ -407,7 +396,7 @@ export function createCostToolExecutors(
           break;
 
         case 'day':
-          breakdown = summary.daily.map(d => ({
+          breakdown = summary.daily.map((d) => ({
             name: d.date,
             cost: formatCost(d.cost),
             costRaw: d.cost,
@@ -428,10 +417,7 @@ export function createCostToolExecutors(
       };
     },
 
-    get_expensive_requests: async (
-      rawArgs: Record<string, unknown>,
-      _context: ToolContext
-    ) => {
+    get_expensive_requests: async (rawArgs: Record<string, unknown>, _context: ToolContext) => {
       const args = rawArgs as {
         limit?: number;
         period?: 'today' | 'week' | 'month' | 'all';
@@ -461,7 +447,7 @@ export function createCostToolExecutors(
       return {
         content: {
           success: true,
-          requests: expensive.map(r => ({
+          requests: expensive.map((r) => ({
             timestamp: r.timestamp,
             provider: r.provider,
             model: r.model,
@@ -476,10 +462,7 @@ export function createCostToolExecutors(
       };
     },
 
-    get_cost_recommendations: async (
-      _rawArgs: Record<string, unknown>,
-      _context: ToolContext
-    ) => {
+    get_cost_recommendations: async (_rawArgs: Record<string, unknown>, _context: ToolContext) => {
       const tracker = getTracker();
       const recommendations = await generateRecommendations(tracker);
 
@@ -496,7 +479,7 @@ export function createCostToolExecutors(
       return {
         content: {
           success: true,
-          recommendations: recommendations.map(r => ({
+          recommendations: recommendations.map((r) => ({
             type: r.type,
             title: r.title,
             description: r.description,
@@ -512,10 +495,7 @@ export function createCostToolExecutors(
       };
     },
 
-    compare_model_costs: async (
-      rawArgs: Record<string, unknown>,
-      _context: ToolContext
-    ) => {
+    compare_model_costs: async (rawArgs: Record<string, unknown>, _context: ToolContext) => {
       const args = rawArgs as {
         providers?: string[];
         minContextWindow?: number;
@@ -526,17 +506,17 @@ export function createCostToolExecutors(
 
       // Filter by provider
       if (args.providers && args.providers.length > 0) {
-        models = models.filter(m => args.providers!.includes(m.provider));
+        models = models.filter((m) => args.providers!.includes(m.provider));
       }
 
       // Filter by context window
       if (args.minContextWindow) {
-        models = models.filter(m => m.contextWindow >= args.minContextWindow!);
+        models = models.filter((m) => m.contextWindow >= args.minContextWindow!);
       }
 
       // Filter by function support
       if (args.supportsFunctions !== undefined) {
-        models = models.filter(m => m.supportsFunctions === args.supportsFunctions);
+        models = models.filter((m) => m.supportsFunctions === args.supportsFunctions);
       }
 
       // Sort by cost (cheapest first)
@@ -545,7 +525,7 @@ export function createCostToolExecutors(
       return {
         content: {
           success: true,
-          models: models.map(m => ({
+          models: models.map((m) => ({
             provider: m.provider,
             model: m.modelId,
             displayName: m.displayName,
@@ -563,10 +543,7 @@ export function createCostToolExecutors(
       };
     },
 
-    export_usage: async (
-      rawArgs: Record<string, unknown>,
-      _context: ToolContext
-    ) => {
+    export_usage: async (rawArgs: Record<string, unknown>, _context: ToolContext) => {
       const args = rawArgs as {
         format: 'json' | 'csv';
         period: 'week' | 'month' | 'all';
@@ -629,7 +606,7 @@ export function createCostTools(
 ): Array<{ definition: ToolDefinition; executor: ToolExecutor }> {
   const executors = createCostToolExecutors(getTracker, getBudgetMgr);
 
-  return COST_TRACKING_TOOLS.map(definition => ({
+  return COST_TRACKING_TOOLS.map((definition) => ({
     definition,
     executor: executors[definition.name]!,
   }));

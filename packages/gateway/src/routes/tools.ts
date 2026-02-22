@@ -18,7 +18,7 @@ import {
   type ToolDefinition,
 } from '@ownpilot/core';
 import type { ToolInfo } from '../types/index.js';
-import { apiResponse, apiError, ERROR_CODES, notFoundError, getErrorMessage } from './helpers.js'
+import { apiResponse, apiError, ERROR_CODES, notFoundError, getErrorMessage } from './helpers.js';
 import { getAgent } from './agents.js';
 import { gatewayConfigCenter } from '../services/config-center-impl.js';
 import { getSharedToolRegistry } from '../services/tool-executor.js';
@@ -29,14 +29,14 @@ export const toolsRoutes = new Hono();
 
 // Initialize tool source mappings at module load
 initToolSourceMappings({
-  memoryNames: MEMORY_TOOLS.map(t => t.name),
-  goalNames: GOAL_TOOLS.map(t => t.name),
-  customDataNames: CUSTOM_DATA_TOOLS.map(t => t.name),
-  personalDataNames: PERSONAL_DATA_TOOLS.map(t => t.name),
-  triggerNames: TRIGGER_TOOLS.map(t => t.name),
-  planNames: PLAN_TOOLS.map(t => t.name),
-  heartbeatNames: HEARTBEAT_TOOLS.map(t => t.name),
-  extensionNames: EXTENSION_TOOLS.map(t => t.name),
+  memoryNames: MEMORY_TOOLS.map((t) => t.name),
+  goalNames: GOAL_TOOLS.map((t) => t.name),
+  customDataNames: CUSTOM_DATA_TOOLS.map((t) => t.name),
+  personalDataNames: PERSONAL_DATA_TOOLS.map((t) => t.name),
+  triggerNames: TRIGGER_TOOLS.map((t) => t.name),
+  planNames: PLAN_TOOLS.map((t) => t.name),
+  heartbeatNames: HEARTBEAT_TOOLS.map((t) => t.name),
+  extensionNames: EXTENSION_TOOLS.map((t) => t.name),
 });
 
 // Standalone tool registry for direct execution (no agent required)
@@ -86,7 +86,7 @@ const CATEGORY_INFO: Record<string, { icon: string; description: string }> = {
 async function resolveAndExecuteTool(
   name: string,
   args: Record<string, unknown>,
-  conversationId: string,
+  conversationId: string
 ): Promise<{ content: unknown; isError?: boolean }> {
   const registry = getSharedToolRegistry();
 
@@ -102,7 +102,9 @@ async function resolveAndExecuteTool(
 
 function getCategoryForTool(toolName: string): string {
   // Strip namespace prefix for category lookup (TOOL_GROUPS uses base names)
-  const baseName = toolName.includes('.') ? toolName.substring(toolName.lastIndexOf('.') + 1) : toolName;
+  const baseName = toolName.includes('.')
+    ? toolName.substring(toolName.lastIndexOf('.') + 1)
+    : toolName;
   for (const [groupId, group] of Object.entries(TOOL_GROUPS)) {
     if (group.tools.includes(baseName)) {
       return groupId;
@@ -112,7 +114,9 @@ function getCategoryForTool(toolName: string): string {
 }
 
 // Get all tools from all sources
-async function getAllTools(): Promise<Array<ToolDefinition & { category: string; source: string }>> {
+async function getAllTools(): Promise<
+  Array<ToolDefinition & { category: string; source: string }>
+> {
   const registry = getSharedToolRegistry();
   const allTools: Array<ToolDefinition & { category: string; source: string }> = [];
 
@@ -130,11 +134,13 @@ async function getAllTools(): Promise<Array<ToolDefinition & { category: string;
   try {
     const pluginService = getServiceRegistry().get(Services.Plugin);
     // Build seen sets for both qualified names and base names to prevent duplicates
-    const seenQualified = new Set(allTools.map(t => t.name));
-    const seenBase = new Set(allTools.map(t => {
-      const dot = t.name.lastIndexOf('.');
-      return dot >= 0 ? t.name.substring(dot + 1) : t.name;
-    }));
+    const seenQualified = new Set(allTools.map((t) => t.name));
+    const seenBase = new Set(
+      allTools.map((t) => {
+        const dot = t.name.lastIndexOf('.');
+        return dot >= 0 ? t.name.substring(dot + 1) : t.name;
+      })
+    );
     const pluginTools = pluginService.getAllTools();
     for (const { definition } of pluginTools) {
       if (!seenQualified.has(definition.name) && !seenBase.has(definition.name)) {
@@ -176,10 +182,13 @@ toolsRoutes.get('/meta/categories', async (c) => {
 toolsRoutes.get('/meta/grouped', async (c) => {
   const tools = await getAllTools();
 
-  const byCategory: Record<string, {
-    info: { icon: string; description: string };
-    tools: Array<{ name: string; description: string; parameters: unknown; source: string }>;
-  }> = {};
+  const byCategory: Record<
+    string,
+    {
+      info: { icon: string; description: string };
+      tools: Array<{ name: string; description: string; parameters: unknown; source: string }>;
+    }
+  > = {};
 
   for (const tool of tools) {
     if (!byCategory[tool.category]) {
@@ -247,10 +256,13 @@ toolsRoutes.get('/', async (c) => {
 
   // If grouped query param, return grouped by category
   if (grouped) {
-    const byCategory: Record<string, {
-      info: { icon: string; description: string };
-      tools: typeof tools;
-    }> = {};
+    const byCategory: Record<
+      string,
+      {
+        info: { icon: string; description: string };
+        tools: typeof tools;
+      }
+    > = {};
 
     for (const tool of tools) {
       const category = tool.category || 'other';
@@ -437,11 +449,19 @@ toolsRoutes.post('/batch', async (c) => {
   }>();
 
   if (!body.executions || !Array.isArray(body.executions)) {
-    return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'Missing required field: executions (array)' }, 400);
+    return apiError(
+      c,
+      { code: ERROR_CODES.INVALID_INPUT, message: 'Missing required field: executions (array)' },
+      400
+    );
   }
 
   if (body.executions.length > 20) {
-    return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'Batch size exceeds maximum of 20 executions' }, 400);
+    return apiError(
+      c,
+      { code: ERROR_CODES.INVALID_INPUT, message: 'Batch size exceeds maximum of 20 executions' },
+      400
+    );
   }
 
   const startTime = Date.now();
@@ -450,7 +470,11 @@ toolsRoutes.post('/batch', async (c) => {
     const toolStartTime = Date.now();
 
     try {
-      const result = await resolveAndExecuteTool(exec.tool, exec.arguments ?? {}, 'batch-execution');
+      const result = await resolveAndExecuteTool(
+        exec.tool,
+        exec.arguments ?? {},
+        'batch-execution'
+      );
       return {
         tool: exec.tool,
         success: true,

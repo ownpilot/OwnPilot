@@ -1,8 +1,32 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useGateway } from '../hooks/useWebSocket';
 import { triggersApi } from '../api';
-import type { Trigger, TriggerAction, TriggerHistoryEntry, TriggerHistoryStatus, TriggerHistoryParams } from '../api';
-import { Zap, Plus, Trash2, Play, Pause, Clock, History, Activity, Power, AlertCircle, CheckCircle2, BarChart, ChevronDown, ChevronRight, ChevronLeft, Filter, X } from '../components/icons';
+import type {
+  Trigger,
+  TriggerAction,
+  TriggerHistoryEntry,
+  TriggerHistoryStatus,
+  TriggerHistoryParams,
+} from '../api';
+import {
+  Zap,
+  Plus,
+  Trash2,
+  Play,
+  Pause,
+  Clock,
+  History,
+  Activity,
+  Power,
+  AlertCircle,
+  CheckCircle2,
+  BarChart,
+  ChevronDown,
+  ChevronRight,
+  ChevronLeft,
+  Filter,
+  X,
+} from '../components/icons';
 import { useDialog } from '../components/ConfirmDialog';
 import { useToast } from '../components/ToastProvider';
 import { LoadingSpinner } from '../components/LoadingSpinner';
@@ -95,7 +119,9 @@ export function TriggersPage() {
   const [globalHistory, setGlobalHistory] = useState<TriggerHistoryEntry[]>([]);
   const [globalHistoryTotal, setGlobalHistoryTotal] = useState(0);
   const [globalHistoryLoading, setGlobalHistoryLoading] = useState(false);
-  const [activityStatusFilter, setActivityStatusFilter] = useState<TriggerHistoryStatus | undefined>();
+  const [activityStatusFilter, setActivityStatusFilter] = useState<
+    TriggerHistoryStatus | undefined
+  >();
   const [activityTriggerFilter, setActivityTriggerFilter] = useState<string | undefined>();
   const [activityDateRange, setActivityDateRange] = useState<'today' | '7d' | '30d' | 'all'>('all');
   const [activityPage, setActivityPage] = useState(0);
@@ -232,42 +258,57 @@ export function TriggersPage() {
     }
   }, []);
 
-  const handleDelete = useCallback(async (triggerId: string) => {
-    if (!await confirm({ message: 'Are you sure you want to delete this trigger?', variant: 'danger' })) return;
+  const handleDelete = useCallback(
+    async (triggerId: string) => {
+      if (
+        !(await confirm({
+          message: 'Are you sure you want to delete this trigger?',
+          variant: 'danger',
+        }))
+      )
+        return;
 
-    try {
-      await animatedDelete(triggerId, async () => {
-        await triggersApi.delete(triggerId);
-      });
-      toast.success('Trigger deleted');
-      fetchTriggers();
-      fetchStats();
-    } catch {
-      // API client handles error reporting
-    }
-  }, [confirm, toast, fetchTriggers, fetchStats]);
+      try {
+        await animatedDelete(triggerId, async () => {
+          await triggersApi.delete(triggerId);
+        });
+        toast.success('Trigger deleted');
+        fetchTriggers();
+        fetchStats();
+      } catch {
+        // API client handles error reporting
+      }
+    },
+    [confirm, toast, fetchTriggers, fetchStats]
+  );
 
-  const handleToggle = useCallback(async (triggerId: string, enabled: boolean) => {
-    try {
-      await triggersApi.update(triggerId, { enabled });
-      toast.success(enabled ? 'Trigger enabled' : 'Trigger disabled');
-      fetchTriggers();
-      fetchStats();
-    } catch {
-      // API client handles error reporting
-    }
-  }, [toast, fetchTriggers, fetchStats]);
+  const handleToggle = useCallback(
+    async (triggerId: string, enabled: boolean) => {
+      try {
+        await triggersApi.update(triggerId, { enabled });
+        toast.success(enabled ? 'Trigger enabled' : 'Trigger disabled');
+        fetchTriggers();
+        fetchStats();
+      } catch {
+        // API client handles error reporting
+      }
+    },
+    [toast, fetchTriggers, fetchStats]
+  );
 
-  const handleFireNow = useCallback(async (triggerId: string) => {
-    try {
-      await triggersApi.fire(triggerId);
-      toast.success('Trigger fired');
-      fetchTriggers();
-      fetchStats();
-    } catch {
-      // API client handles error reporting
-    }
-  }, [toast, fetchTriggers, fetchStats]);
+  const handleFireNow = useCallback(
+    async (triggerId: string) => {
+      try {
+        await triggersApi.fire(triggerId);
+        toast.success('Trigger fired');
+        fetchTriggers();
+        fetchStats();
+      } catch {
+        // API client handles error reporting
+      }
+    },
+    [toast, fetchTriggers, fetchStats]
+  );
 
   const handleEngineToggle = useCallback(async () => {
     setEngineLoading(true);
@@ -289,7 +330,10 @@ export function TriggersPage() {
   }, [engineRunning, toast]);
 
   const enabledCount = useMemo(() => triggers.filter((t) => t.enabled).length, [triggers]);
-  const scheduleCount = useMemo(() => triggers.filter((t) => t.type === 'schedule').length, [triggers]);
+  const scheduleCount = useMemo(
+    () => triggers.filter((t) => t.type === 'schedule').length,
+    [triggers]
+  );
 
   const successRate = useMemo(() => {
     if (!stats) return null;
@@ -322,9 +366,13 @@ export function TriggersPage() {
                   ? 'bg-success/10 text-success hover:bg-success/20'
                   : 'bg-error/10 text-error hover:bg-error/20'
               } ${engineLoading ? 'opacity-50 cursor-wait' : ''}`}
-              title={engineRunning ? 'Engine running - click to stop' : 'Engine stopped - click to start'}
+              title={
+                engineRunning ? 'Engine running - click to stop' : 'Engine stopped - click to start'
+              }
             >
-              <span className={`w-2 h-2 rounded-full ${engineRunning ? 'bg-success animate-pulse' : 'bg-error'}`} />
+              <span
+                className={`w-2 h-2 rounded-full ${engineRunning ? 'bg-success animate-pulse' : 'bg-error'}`}
+              />
               <Power className="w-3 h-3" />
               {engineLoading ? 'Loading...' : engineRunning ? 'Engine Running' : 'Engine Stopped'}
             </button>
@@ -420,7 +468,11 @@ export function TriggersPage() {
               icon={Zap}
               title="No triggers yet"
               description="Triggers let the AI act proactively based on schedules, events, or conditions."
-              action={{ label: 'Create Trigger', onClick: () => setShowCreateModal(true), icon: Plus }}
+              action={{
+                label: 'Create Trigger',
+                onClick: () => setShowCreateModal(true),
+                icon: Plus,
+              }}
             />
           ) : (
             <div className="space-y-3">
@@ -453,7 +505,10 @@ export function TriggersPage() {
             pageSize={ACTIVITY_PAGE_SIZE}
             onStatusFilter={setActivityStatusFilter}
             onTriggerFilter={setActivityTriggerFilter}
-            onDateRange={(d) => { setActivityDateRange(d); setActivityPage(0); }}
+            onDateRange={(d) => {
+              setActivityDateRange(d);
+              setActivityPage(0);
+            }}
             onPageChange={setActivityPage}
             onResetFilters={() => {
               setActivityStatusFilter(undefined);
@@ -487,7 +542,7 @@ export function TriggersPage() {
       {showHistory && (
         <TriggerHistoryModal
           triggerId={showHistory}
-          triggerName={triggers.find(t => t.id === showHistory)?.name ?? 'Trigger'}
+          triggerName={triggers.find((t) => t.id === showHistory)?.name ?? 'Trigger'}
           history={history}
           onClose={() => setShowHistory(null)}
         />
@@ -500,14 +555,22 @@ export function TriggersPage() {
 // Stat Card
 // ============================================================================
 
-function StatCard({ icon, label, value }: { icon: React.ReactNode; label: string; value: string | number }) {
+function StatCard({
+  icon,
+  label,
+  value,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string | number;
+}) {
   return (
     <div className="flex items-center gap-3 p-3 bg-bg-secondary dark:bg-dark-bg-secondary border border-border dark:border-dark-border rounded-lg">
-      <div className="p-2 bg-bg-tertiary dark:bg-dark-bg-tertiary rounded-lg">
-        {icon}
-      </div>
+      <div className="p-2 bg-bg-tertiary dark:bg-dark-bg-tertiary rounded-lg">{icon}</div>
       <div>
-        <p className="text-lg font-semibold text-text-primary dark:text-dark-text-primary">{value}</p>
+        <p className="text-lg font-semibold text-text-primary dark:text-dark-text-primary">
+          {value}
+        </p>
         <p className="text-xs text-text-muted dark:text-dark-text-muted">{label}</p>
       </div>
     </div>
@@ -536,9 +599,20 @@ interface ActivityLogProps {
 }
 
 function ActivityLog({
-  history, total, loading, triggers,
-  statusFilter, triggerFilter, dateRange, page, pageSize,
-  onStatusFilter, onTriggerFilter, onDateRange, onPageChange, onResetFilters,
+  history,
+  total,
+  loading,
+  triggers,
+  statusFilter,
+  triggerFilter,
+  dateRange,
+  page,
+  pageSize,
+  onStatusFilter,
+  onTriggerFilter,
+  onDateRange,
+  onPageChange,
+  onResetFilters,
 }: ActivityLogProps) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const hasFilters = !!(statusFilter || triggerFilter || dateRange !== 'all');
@@ -559,7 +633,11 @@ function ActivityLog({
             onClick={() => onStatusFilter(statusFilter === s ? undefined : s)}
             className={`px-2.5 py-1 text-xs rounded-full transition-colors ${
               statusFilter === s
-                ? s === 'success' ? 'bg-success text-white' : s === 'failure' ? 'bg-error text-white' : 'bg-text-muted text-white'
+                ? s === 'success'
+                  ? 'bg-success text-white'
+                  : s === 'failure'
+                    ? 'bg-error text-white'
+                    : 'bg-text-muted text-white'
                 : 'bg-bg-tertiary dark:bg-dark-bg-tertiary text-text-secondary dark:text-dark-text-secondary hover:bg-bg-secondary dark:hover:bg-dark-bg-secondary'
             }`}
           >
@@ -577,7 +655,9 @@ function ActivityLog({
         >
           <option value="">All Triggers</option>
           {triggers.map((t) => (
-            <option key={t.id} value={t.id}>{t.name}</option>
+            <option key={t.id} value={t.id}>
+              {t.name}
+            </option>
           ))}
         </select>
 
@@ -610,7 +690,9 @@ function ActivityLog({
 
         <div className="flex-1" />
         {loading && (
-          <span className="text-xs text-text-muted dark:text-dark-text-muted animate-pulse">Refreshing...</span>
+          <span className="text-xs text-text-muted dark:text-dark-text-muted animate-pulse">
+            Refreshing...
+          </span>
         )}
       </div>
 
@@ -620,7 +702,11 @@ function ActivityLog({
         <EmptyState
           icon={Activity}
           title="No activity yet"
-          description={hasFilters ? 'No entries match current filters.' : 'Trigger execution history will appear here.'}
+          description={
+            hasFilters
+              ? 'No entries match current filters.'
+              : 'Trigger execution history will appear here.'
+          }
         />
       ) : (
         <>
@@ -634,11 +720,15 @@ function ActivityLog({
           </div>
 
           {history.map((entry) => {
-            const name = entry.triggerName ?? (entry.triggerId ? entry.triggerId.slice(0, 8) : 'Deleted');
+            const name =
+              entry.triggerName ?? (entry.triggerId ? entry.triggerId.slice(0, 8) : 'Deleted');
             const isExpanded = expandedId === entry.id;
 
             return (
-              <div key={entry.id} className="bg-bg-secondary dark:bg-dark-bg-secondary border border-border dark:border-dark-border rounded-lg">
+              <div
+                key={entry.id}
+                className="bg-bg-secondary dark:bg-dark-bg-secondary border border-border dark:border-dark-border rounded-lg"
+              >
                 <div
                   className="grid grid-cols-[1fr_140px_80px_80px_24px] gap-2 px-3 py-2.5 items-center text-sm cursor-pointer hover:bg-bg-tertiary/50 dark:hover:bg-dark-bg-tertiary/50 transition-colors"
                   onClick={() => setExpandedId(isExpanded ? null : entry.id)}
@@ -646,7 +736,9 @@ function ActivityLog({
                   <span className="text-text-primary dark:text-dark-text-primary font-medium truncate">
                     {name}
                     {!entry.triggerId && entry.triggerName && (
-                      <span className="ml-1.5 text-xs text-text-muted dark:text-dark-text-muted italic">(deleted)</span>
+                      <span className="ml-1.5 text-xs text-text-muted dark:text-dark-text-muted italic">
+                        (deleted)
+                      </span>
                     )}
                   </span>
                   <span className="text-text-muted dark:text-dark-text-muted text-xs">
@@ -657,8 +749,8 @@ function ActivityLog({
                       entry.status === 'success'
                         ? 'bg-success/10 text-success'
                         : entry.status === 'failure'
-                        ? 'bg-error/10 text-error'
-                        : 'bg-text-muted/10 text-text-muted'
+                          ? 'bg-error/10 text-error'
+                          : 'bg-text-muted/10 text-text-muted'
                     }`}
                   >
                     {entry.status}
@@ -667,7 +759,11 @@ function ActivityLog({
                     {entry.durationMs != null ? `${entry.durationMs}ms` : '-'}
                   </span>
                   <span className="text-text-muted dark:text-dark-text-muted">
-                    {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                    {isExpanded ? (
+                      <ChevronDown className="w-4 h-4" />
+                    ) : (
+                      <ChevronRight className="w-4 h-4" />
+                    )}
                   </span>
                 </div>
 
@@ -684,14 +780,20 @@ function ActivityLog({
                     )}
                     {entry.result != null && (
                       <div className="mt-2">
-                        <p className="text-xs font-medium text-text-muted dark:text-dark-text-muted mb-1">Result</p>
+                        <p className="text-xs font-medium text-text-muted dark:text-dark-text-muted mb-1">
+                          Result
+                        </p>
                         <pre className="text-xs text-text-secondary dark:text-dark-text-secondary bg-bg-tertiary dark:bg-dark-bg-tertiary p-2 rounded overflow-x-auto whitespace-pre-wrap max-h-48 overflow-y-auto">
-                          {typeof entry.result === 'string' ? entry.result : JSON.stringify(entry.result, null, 2)}
+                          {typeof entry.result === 'string'
+                            ? entry.result
+                            : JSON.stringify(entry.result, null, 2)}
                         </pre>
                       </div>
                     )}
                     {!entry.error && entry.result == null && (
-                      <p className="mt-2 text-xs text-text-muted dark:text-dark-text-muted italic">No additional details.</p>
+                      <p className="mt-2 text-xs text-text-muted dark:text-dark-text-muted italic">
+                        No additional details.
+                      </p>
                     )}
                   </div>
                 )}
@@ -744,7 +846,15 @@ interface TriggerItemProps {
   onViewHistory: () => void;
 }
 
-function TriggerItem({ trigger, isDue, onEdit, onDelete, onToggle, onFireNow, onViewHistory }: TriggerItemProps) {
+function TriggerItem({
+  trigger,
+  isDue,
+  onEdit,
+  onDelete,
+  onToggle,
+  onFireNow,
+  onViewHistory,
+}: TriggerItemProps) {
   const TypeIcon = typeIcons[trigger.type];
   const nextFireInfo = trigger.nextFire ? formatRelativeTime(trigger.nextFire) : null;
 
@@ -802,9 +912,7 @@ function TriggerItem({ trigger, isDue, onEdit, onDelete, onToggle, onFireNow, on
         </div>
 
         <div className="flex items-center gap-3 mt-2 text-xs text-text-muted dark:text-dark-text-muted">
-          {trigger.lastFired && (
-            <span>Last: {new Date(trigger.lastFired).toLocaleString()}</span>
-          )}
+          {trigger.lastFired && <span>Last: {new Date(trigger.lastFired).toLocaleString()}</span>}
           {trigger.nextFire && nextFireInfo && (
             <span className={nextFireInfo.isSoon ? 'text-warning font-medium' : ''}>
               Next: {nextFireInfo.text} ({new Date(trigger.nextFire).toLocaleTimeString()})
@@ -853,4 +961,3 @@ function TriggerItem({ trigger, isDue, onEdit, onDelete, onToggle, onFireNow, on
     </div>
   );
 }
-

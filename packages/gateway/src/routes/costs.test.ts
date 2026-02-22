@@ -25,11 +25,30 @@ const mockSummary = {
   periodStart: '2026-01-01',
   periodEnd: '2026-01-31',
   byProvider: {
-    openai: { requests: 60, inputTokens: 30000, outputTokens: 15000, cost: 0.75, averageLatencyMs: 400 },
-    anthropic: { requests: 40, inputTokens: 20000, outputTokens: 10000, cost: 0.50, averageLatencyMs: 500 },
+    openai: {
+      requests: 60,
+      inputTokens: 30000,
+      outputTokens: 15000,
+      cost: 0.75,
+      averageLatencyMs: 400,
+    },
+    anthropic: {
+      requests: 40,
+      inputTokens: 20000,
+      outputTokens: 10000,
+      cost: 0.5,
+      averageLatencyMs: 500,
+    },
   },
   byModel: {
-    'gpt-4': { provider: 'openai', requests: 60, inputTokens: 30000, outputTokens: 15000, cost: 0.75, averageLatencyMs: 400 },
+    'gpt-4': {
+      provider: 'openai',
+      requests: 60,
+      inputTokens: 30000,
+      outputTokens: 15000,
+      cost: 0.75,
+      averageLatencyMs: 400,
+    },
   },
   daily: [{ date: '2026-01-15', requests: 10, cost: 0.15, inputTokens: 5000, outputTokens: 2500 }],
 };
@@ -59,17 +78,23 @@ vi.mock('@ownpilot/core', async (importOriginal) => {
   const original = await importOriginal<Record<string, unknown>>();
   return {
     ...original,
-    UsageTracker: vi.fn(function () { return mockUsageTracker; }),
-    BudgetManager: vi.fn(function () { return mockBudgetManager; }),
+    UsageTracker: vi.fn(function () {
+      return mockUsageTracker;
+    }),
+    BudgetManager: vi.fn(function () {
+      return mockBudgetManager;
+    }),
     formatCost: vi.fn((cost: number) => `$${cost.toFixed(2)}`),
     formatTokens: vi.fn((tokens: number) => `${tokens}`),
-    estimateCost: vi.fn((_provider: string, _model: string, _text: string, _outputTokens: number) => ({
-      provider: 'openai',
-      model: 'gpt-4',
-      estimatedInputTokens: 100,
-      estimatedOutputTokens: 500,
-      estimatedCost: 0.02,
-    })),
+    estimateCost: vi.fn(
+      (_provider: string, _model: string, _text: string, _outputTokens: number) => ({
+        provider: 'openai',
+        model: 'gpt-4',
+        estimatedInputTokens: 100,
+        estimatedOutputTokens: 500,
+        estimatedCost: 0.02,
+      })
+    ),
     MODEL_PRICING: [
       {
         provider: 'openai',
@@ -278,7 +303,13 @@ describe('Cost Routes', () => {
   describe('GET /costs/history', () => {
     it('returns usage history records', async () => {
       mockUsageTracker.getUsage.mockResolvedValue([
-        { id: 'r1', provider: 'openai', model: 'gpt-4', cost: 0.05, timestamp: '2026-01-15T10:00:00Z' },
+        {
+          id: 'r1',
+          provider: 'openai',
+          model: 'gpt-4',
+          cost: 0.05,
+          timestamp: '2026-01-15T10:00:00Z',
+        },
       ]);
 
       const res = await app.request('/costs/history?limit=10&days=7');
@@ -298,7 +329,7 @@ describe('Cost Routes', () => {
   describe('GET /costs/expensive', () => {
     it('returns most expensive requests', async () => {
       mockUsageTracker.getMostExpensiveRequests.mockResolvedValue([
-        { id: 'r1', cost: 0.50, provider: 'openai', model: 'gpt-4' },
+        { id: 'r1', cost: 0.5, provider: 'openai', model: 'gpt-4' },
       ]);
 
       const res = await app.request('/costs/expensive');

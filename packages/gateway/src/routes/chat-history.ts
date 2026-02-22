@@ -6,9 +6,25 @@
  */
 
 import { Hono } from 'hono';
-import { apiResponse, apiError, ERROR_CODES, getUserId, getIntParam, getPaginationParams, notFoundError, getErrorMessage, validateQueryEnum } from './helpers.js';
+import {
+  apiResponse,
+  apiError,
+  ERROR_CODES,
+  getUserId,
+  getIntParam,
+  getPaginationParams,
+  notFoundError,
+  getErrorMessage,
+  validateQueryEnum,
+} from './helpers.js';
 import { MAX_DAYS_LOOKBACK } from '../config/defaults.js';
-import { resetChatAgentContext, clearAllChatAgentCaches, getDefaultModel, getContextBreakdown, compactContext } from './agents.js';
+import {
+  resetChatAgentContext,
+  clearAllChatAgentCaches,
+  getDefaultModel,
+  getContextBreakdown,
+  compactContext,
+} from './agents.js';
 import { promptInitializedConversations } from './chat-state.js';
 import { clearInjectionCache } from '../services/middleware/context-injection.js';
 import { getDefaultProvider } from './settings.js';
@@ -41,7 +57,7 @@ chatHistoryRoutes.get('/history', async (c) => {
   });
 
   return apiResponse(c, {
-    conversations: conversations.map(conv => ({
+    conversations: conversations.map((conv) => ({
       id: conv.id,
       title: conv.title,
       agentId: conv.agentId,
@@ -68,7 +84,11 @@ chatHistoryRoutes.post('/history/bulk-delete', async (c) => {
   const body = await c.req.json().catch(() => null);
 
   if (!body) {
-    return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'Request body is required' }, 400);
+    return apiError(
+      c,
+      { code: ERROR_CODES.INVALID_REQUEST, message: 'Request body is required' },
+      400
+    );
   }
 
   try {
@@ -78,22 +98,37 @@ chatHistoryRoutes.post('/history/bulk-delete', async (c) => {
     if (body.all === true) {
       // Delete all conversations for this user
       const conversations = await chatRepo.listConversations({ limit: 10000 });
-      const ids = conversations.map(c => c.id);
+      const ids = conversations.map((c) => c.id);
       deleted = await chatRepo.deleteConversations(ids);
     } else if (typeof body.olderThanDays === 'number' && body.olderThanDays > 0) {
       deleted = await chatRepo.deleteOldConversations(body.olderThanDays);
     } else if (Array.isArray(body.ids) && body.ids.length > 0) {
       if (body.ids.length > 500) {
-        return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'Maximum 500 IDs per request' }, 400);
+        return apiError(
+          c,
+          { code: ERROR_CODES.INVALID_REQUEST, message: 'Maximum 500 IDs per request' },
+          400
+        );
       }
       deleted = await chatRepo.deleteConversations(body.ids);
     } else {
-      return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'Provide ids array, all: true, or olderThanDays' }, 400);
+      return apiError(
+        c,
+        {
+          code: ERROR_CODES.INVALID_REQUEST,
+          message: 'Provide ids array, all: true, or olderThanDays',
+        },
+        400
+      );
     }
 
     return apiResponse(c, { deleted });
   } catch (error) {
-    return apiError(c, { code: ERROR_CODES.EXECUTION_ERROR, message: getErrorMessage(error, 'Bulk delete failed') }, 500);
+    return apiError(
+      c,
+      { code: ERROR_CODES.EXECUTION_ERROR, message: getErrorMessage(error, 'Bulk delete failed') },
+      500
+    );
   }
 });
 
@@ -106,11 +141,19 @@ chatHistoryRoutes.post('/history/bulk-archive', async (c) => {
   const body = await c.req.json().catch(() => null);
 
   if (!body || !Array.isArray(body.ids) || typeof body.archived !== 'boolean') {
-    return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'Provide ids array and archived boolean' }, 400);
+    return apiError(
+      c,
+      { code: ERROR_CODES.INVALID_REQUEST, message: 'Provide ids array and archived boolean' },
+      400
+    );
   }
 
   if (body.ids.length > 500) {
-    return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'Maximum 500 IDs per request' }, 400);
+    return apiError(
+      c,
+      { code: ERROR_CODES.INVALID_REQUEST, message: 'Maximum 500 IDs per request' },
+      400
+    );
   }
 
   try {
@@ -119,7 +162,11 @@ chatHistoryRoutes.post('/history/bulk-archive', async (c) => {
 
     return apiResponse(c, { updated, archived: body.archived });
   } catch (error) {
-    return apiError(c, { code: ERROR_CODES.EXECUTION_ERROR, message: getErrorMessage(error, 'Bulk archive failed') }, 500);
+    return apiError(
+      c,
+      { code: ERROR_CODES.EXECUTION_ERROR, message: getErrorMessage(error, 'Bulk archive failed') },
+      500
+    );
   }
 });
 
@@ -151,7 +198,7 @@ chatHistoryRoutes.get('/history/:id', async (c) => {
         createdAt: data.conversation.createdAt.toISOString(),
         updatedAt: data.conversation.updatedAt.toISOString(),
       },
-      messages: data.messages.map(msg => ({
+      messages: data.messages.map((msg) => ({
         id: msg.id,
         role: msg.role,
         content: msg.content,
@@ -164,7 +211,14 @@ chatHistoryRoutes.get('/history/:id', async (c) => {
       })),
     });
   } catch (error) {
-    return apiError(c, { code: ERROR_CODES.EXECUTION_ERROR, message: getErrorMessage(error, 'Failed to fetch conversation') }, 500);
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.EXECUTION_ERROR,
+        message: getErrorMessage(error, 'Failed to fetch conversation'),
+      },
+      500
+    );
   }
 });
 
@@ -185,7 +239,14 @@ chatHistoryRoutes.delete('/history/:id', async (c) => {
 
     return apiResponse(c, { deleted: true });
   } catch (error) {
-    return apiError(c, { code: ERROR_CODES.EXECUTION_ERROR, message: getErrorMessage(error, 'Failed to delete conversation') }, 500);
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.EXECUTION_ERROR,
+        message: getErrorMessage(error, 'Failed to delete conversation'),
+      },
+      500
+    );
   }
 });
 
@@ -195,7 +256,7 @@ chatHistoryRoutes.delete('/history/:id', async (c) => {
 chatHistoryRoutes.patch('/history/:id/archive', async (c) => {
   const id = c.req.param('id');
   const userId = getUserId(c);
-  const body = await c.req.json().catch(() => null) as { archived: boolean } | null;
+  const body = (await c.req.json().catch(() => null)) as { archived: boolean } | null;
   if (!body) {
     return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'Invalid JSON body' }, 400);
   }
@@ -210,7 +271,14 @@ chatHistoryRoutes.patch('/history/:id/archive', async (c) => {
 
     return apiResponse(c, { archived: updated.isArchived });
   } catch (error) {
-    return apiError(c, { code: ERROR_CODES.EXECUTION_ERROR, message: getErrorMessage(error, 'Failed to update conversation') }, 500);
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.EXECUTION_ERROR,
+        message: getErrorMessage(error, 'Failed to update conversation'),
+      },
+      500
+    );
   }
 });
 
@@ -224,8 +292,16 @@ chatHistoryRoutes.patch('/history/:id/archive', async (c) => {
 chatHistoryRoutes.get('/logs', async (c) => {
   const userId = getUserId(c);
   const { limit, offset } = getPaginationParams(c, 100);
-  const type = validateQueryEnum(c.req.query('type'), ['chat', 'completion', 'embedding', 'tool', 'agent', 'other'] as const);
-  const hasError = c.req.query('errors') === 'true' ? true : c.req.query('errors') === 'false' ? false : undefined;
+  const type = validateQueryEnum(c.req.query('type'), [
+    'chat',
+    'completion',
+    'embedding',
+    'tool',
+    'agent',
+    'other',
+  ] as const);
+  const hasError =
+    c.req.query('errors') === 'true' ? true : c.req.query('errors') === 'false' ? false : undefined;
   const conversationId = c.req.query('conversationId');
 
   const logsRepo = new LogsRepository(userId);
@@ -238,7 +314,7 @@ chatHistoryRoutes.get('/logs', async (c) => {
   });
 
   return apiResponse(c, {
-    logs: logs.map(log => ({
+    logs: logs.map((log) => ({
       id: log.id,
       type: log.type,
       conversationId: log.conversationId,
@@ -290,7 +366,11 @@ chatHistoryRoutes.get('/logs/:id', async (c) => {
 
     return apiResponse(c, log);
   } catch (error) {
-    return apiError(c, { code: ERROR_CODES.EXECUTION_ERROR, message: getErrorMessage(error, 'Failed to fetch log') }, 500);
+    return apiError(
+      c,
+      { code: ERROR_CODES.EXECUTION_ERROR, message: getErrorMessage(error, 'Failed to fetch log') },
+      500
+    );
   }
 });
 
@@ -306,9 +386,7 @@ chatHistoryRoutes.delete('/logs', async (c) => {
   const days = getIntParam(c, 'olderThanDays', 30, 1);
 
   const logsRepo = new LogsRepository(userId);
-  const deleted = clearAll
-    ? await logsRepo.clearAll()
-    : await logsRepo.deleteOldLogs(days);
+  const deleted = clearAll ? await logsRepo.clearAll() : await logsRepo.deleteOldLogs(days);
 
   return apiResponse(c, {
     deleted,
@@ -325,7 +403,11 @@ chatHistoryRoutes.delete('/logs', async (c) => {
  * Call this when starting a "New Chat" to clear conversation memory
  */
 chatHistoryRoutes.post('/reset-context', async (c) => {
-  const body = await c.req.json().catch(() => null) as { provider?: string; model?: string; clearAll?: boolean } | null;
+  const body = (await c.req.json().catch(() => null)) as {
+    provider?: string;
+    model?: string;
+    clearAll?: boolean;
+  } | null;
   if (!body) {
     return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'Invalid JSON body' }, 400);
   }
@@ -344,7 +426,7 @@ chatHistoryRoutes.post('/reset-context', async (c) => {
 
   // Reset specific provider/model context
   const provider = body.provider ?? 'openai';
-  const model = body.model ?? await getDefaultModel(provider) ?? 'gpt-4o';
+  const model = body.model ?? (await getDefaultModel(provider)) ?? 'gpt-4o';
 
   const result = resetChatAgentContext(provider, model);
   // Clear prompt tracking for the old conversation (new one will re-initialize)
@@ -371,8 +453,8 @@ chatHistoryRoutes.post('/reset-context', async (c) => {
  * Shows system prompt sections, message history tokens, and model limits.
  */
 chatHistoryRoutes.get('/context-detail', async (c) => {
-  const provider = c.req.query('provider') ?? await getDefaultProvider() ?? 'openai';
-  const model = c.req.query('model') ?? await getDefaultModel(provider) ?? 'gpt-4o';
+  const provider = c.req.query('provider') ?? (await getDefaultProvider()) ?? 'openai';
+  const model = c.req.query('model') ?? (await getDefaultModel(provider)) ?? 'gpt-4o';
 
   // Use user-configured context window from AI Models settings if available
   let userContextWindow: number | undefined;
@@ -392,14 +474,14 @@ chatHistoryRoutes.get('/context-detail', async (c) => {
  * Keeps recent messages and replaces older ones with a concise AI-generated summary.
  */
 chatHistoryRoutes.post('/compact', async (c) => {
-  const body = await c.req.json().catch(() => null) as {
+  const body = (await c.req.json().catch(() => null)) as {
     provider?: string;
     model?: string;
     keepRecentMessages?: number;
   } | null;
 
-  const provider = body?.provider ?? await getDefaultProvider() ?? 'openai';
-  const model = body?.model ?? await getDefaultModel(provider) ?? 'gpt-4o';
+  const provider = body?.provider ?? (await getDefaultProvider()) ?? 'openai';
+  const model = body?.model ?? (await getDefaultModel(provider)) ?? 'gpt-4o';
   const keepRecent = body?.keepRecentMessages ?? 6;
 
   try {

@@ -253,7 +253,10 @@ describe('createPluginAPIProxy', () => {
   };
 
   const mockTools = {
-    register: (_def: { name: string; description: string; parameters: Record<string, unknown> }, _handler: (args: Record<string, unknown>) => Promise<unknown>) => {},
+    register: (
+      _def: { name: string; description: string; parameters: Record<string, unknown> },
+      _handler: (args: Record<string, unknown>) => Promise<unknown>
+    ) => {},
     list: () => [] as Array<{ name: string; description: string }>,
   };
 

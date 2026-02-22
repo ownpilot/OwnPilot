@@ -47,13 +47,17 @@ async function getDefaults(): Promise<{ provider: string; model: string }> {
 export async function aiGenerate(prompt: string, signal?: AbortSignal): Promise<string> {
   const { provider, model } = await getDefaults();
 
-  const res = await apiClient.post<ChatResponse>('/chat', {
-    message: prompt,
-    provider,
-    model,
-    stream: false,
-    historyLength: 0,
-  }, { signal });
+  const res = await apiClient.post<ChatResponse>(
+    '/chat',
+    {
+      message: prompt,
+      provider,
+      model,
+      stream: false,
+      historyLength: 0,
+    },
+    { signal }
+  );
 
   return (res.message || res.response || '').trim();
 }
@@ -63,7 +67,10 @@ export async function aiGenerate(prompt: string, signal?: AbortSignal): Promise<
  */
 export function extractJsonArray<T>(text: string): T[] {
   // Strip markdown code fences
-  let cleaned = text.replace(/```(?:json)?\s*/gi, '').replace(/```/g, '').trim();
+  let cleaned = text
+    .replace(/```(?:json)?\s*/gi, '')
+    .replace(/```/g, '')
+    .trim();
 
   // Find the first [ ... ] block
   const start = cleaned.indexOf('[');

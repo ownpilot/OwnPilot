@@ -59,7 +59,9 @@ function createContext(opts: MockContextOptions = {}): PipelineContext {
   const store = new Map<string, unknown>(Object.entries(opts.store ?? {}));
   return {
     get: vi.fn(<T = unknown>(key: string): T | undefined => store.get(key) as T | undefined),
-    set: vi.fn((key: string, value: unknown) => { store.set(key, value); }),
+    set: vi.fn((key: string, value: unknown) => {
+      store.set(key, value);
+    }),
     has: vi.fn((key: string) => store.has(key)),
     addStage: vi.fn(),
     addWarning: vi.fn(),
@@ -169,8 +171,9 @@ describe('createAgentExecutionMiddleware', () => {
       const msg = createMessage({ sessionId: 'sess-42', metadata: { source: 'telegram' } });
       const next = vi.fn().mockImplementation(async () => {
         // Return the pipelineResult that was set in context so we can inspect it
-        const pipelineResult = (ctx.set as ReturnType<typeof vi.fn>).mock.calls
-          .find((c: unknown[]) => c[0] === 'pipelineResult')?.[1] as MessageProcessingResult;
+        const pipelineResult = (ctx.set as ReturnType<typeof vi.fn>).mock.calls.find(
+          (c: unknown[]) => c[0] === 'pipelineResult'
+        )?.[1] as MessageProcessingResult;
         return pipelineResult;
       });
 
@@ -196,10 +199,13 @@ describe('createAgentExecutionMiddleware', () => {
 
       const result = await middleware(msg, ctx, next);
 
-      expect(ctx.set).toHaveBeenCalledWith('pipelineResult', expect.objectContaining({
-        streamed: false,
-        stages: ['agent-execution'],
-      }));
+      expect(ctx.set).toHaveBeenCalledWith(
+        'pipelineResult',
+        expect.objectContaining({
+          streamed: false,
+          stages: ['agent-execution'],
+        })
+      );
       // Agent-execution is the innermost middleware; it returns its own result
       // instead of calling next() (which would return empty content)
       expect(next).not.toHaveBeenCalled();
@@ -215,8 +221,9 @@ describe('createAgentExecutionMiddleware', () => {
       const ctx = createContext({ store: { agent } });
       const msg = createMessage();
       const next = vi.fn().mockImplementation(async () => {
-        const pr = (ctx.set as ReturnType<typeof vi.fn>).mock.calls
-          .find((c: unknown[]) => c[0] === 'pipelineResult')?.[1] as MessageProcessingResult;
+        const pr = (ctx.set as ReturnType<typeof vi.fn>).mock.calls.find(
+          (c: unknown[]) => c[0] === 'pipelineResult'
+        )?.[1] as MessageProcessingResult;
         return pr;
       });
 
@@ -231,8 +238,9 @@ describe('createAgentExecutionMiddleware', () => {
       const ctx = createContext({ store: { agent, stream } });
       const msg = createMessage();
       const next = vi.fn().mockImplementation(async () => {
-        const pr = (ctx.set as ReturnType<typeof vi.fn>).mock.calls
-          .find((c: unknown[]) => c[0] === 'pipelineResult')?.[1] as MessageProcessingResult;
+        const pr = (ctx.set as ReturnType<typeof vi.fn>).mock.calls.find(
+          (c: unknown[]) => c[0] === 'pipelineResult'
+        )?.[1] as MessageProcessingResult;
         return pr;
       });
 
@@ -343,7 +351,7 @@ describe('createAgentExecutionMiddleware', () => {
 
       expect(mockLog.error).toHaveBeenCalledWith(
         'Agent execution failed',
-        expect.objectContaining({ error: 'Connection lost' }),
+        expect.objectContaining({ error: 'Connection lost' })
       );
     });
 
@@ -394,8 +402,9 @@ describe('createAgentExecutionMiddleware', () => {
 
       await middleware(msg, ctx, next);
 
-      const usageCalls = (ctx.set as ReturnType<typeof vi.fn>).mock.calls
-        .filter((c: unknown[]) => c[0] === 'usage');
+      const usageCalls = (ctx.set as ReturnType<typeof vi.fn>).mock.calls.filter(
+        (c: unknown[]) => c[0] === 'usage'
+      );
       expect(usageCalls).toHaveLength(0);
     });
 
@@ -409,8 +418,9 @@ describe('createAgentExecutionMiddleware', () => {
       const ctx = createContext({ store: { agent } });
       const msg = createMessage();
       const next = vi.fn().mockImplementation(async () => {
-        const pr = (ctx.set as ReturnType<typeof vi.fn>).mock.calls
-          .find((c: unknown[]) => c[0] === 'pipelineResult')?.[1] as MessageProcessingResult;
+        const pr = (ctx.set as ReturnType<typeof vi.fn>).mock.calls.find(
+          (c: unknown[]) => c[0] === 'pipelineResult'
+        )?.[1] as MessageProcessingResult;
         return pr;
       });
 
@@ -432,8 +442,9 @@ describe('createAgentExecutionMiddleware', () => {
       const ctx = createContext({ store: { agent } });
       const msg = createMessage();
       const next = vi.fn().mockImplementation(async () => {
-        const pr = (ctx.set as ReturnType<typeof vi.fn>).mock.calls
-          .find((c: unknown[]) => c[0] === 'pipelineResult')?.[1] as MessageProcessingResult;
+        const pr = (ctx.set as ReturnType<typeof vi.fn>).mock.calls.find(
+          (c: unknown[]) => c[0] === 'pipelineResult'
+        )?.[1] as MessageProcessingResult;
         return pr;
       });
 
@@ -459,8 +470,9 @@ describe('createAgentExecutionMiddleware', () => {
       });
       const msg = createMessage();
       const next = vi.fn().mockImplementation(async () => {
-        const pr = (ctx.set as ReturnType<typeof vi.fn>).mock.calls
-          .find((c: unknown[]) => c[0] === 'pipelineResult')?.[1] as MessageProcessingResult;
+        const pr = (ctx.set as ReturnType<typeof vi.fn>).mock.calls.find(
+          (c: unknown[]) => c[0] === 'pipelineResult'
+        )?.[1] as MessageProcessingResult;
         return pr;
       });
 
@@ -486,9 +498,16 @@ describe('createAgentExecutionMiddleware', () => {
       const next = vi.fn().mockResolvedValue(createNextResult());
 
       const callOrder: string[] = [];
-      agent.setAdditionalTools!.mockImplementation(() => { callOrder.push('set'); });
-      agent.chat.mockImplementation(async () => { callOrder.push('chat'); return { ok: true, value: { id: 'r', content: 'ok' } }; });
-      agent.clearAdditionalTools!.mockImplementation(() => { callOrder.push('clear'); });
+      agent.setAdditionalTools!.mockImplementation(() => {
+        callOrder.push('set');
+      });
+      agent.chat.mockImplementation(async () => {
+        callOrder.push('chat');
+        return { ok: true, value: { id: 'r', content: 'ok' } };
+      });
+      agent.clearAdditionalTools!.mockImplementation(() => {
+        callOrder.push('clear');
+      });
 
       await middleware(msg, ctx, next);
 
@@ -609,12 +628,14 @@ describe('createAgentExecutionMiddleware', () => {
 
       await middleware(msg, ctx, next);
 
-      expect(onDone).toHaveBeenCalledWith(expect.objectContaining({
-        response: expect.objectContaining({
-          content: 'Hello user',
-          role: 'assistant',
-        }),
-      }));
+      expect(onDone).toHaveBeenCalledWith(
+        expect.objectContaining({
+          response: expect.objectContaining({
+            content: 'Hello user',
+            role: 'assistant',
+          }),
+        })
+      );
     });
 
     it('should call stream.onError when agent throws', async () => {
@@ -681,9 +702,11 @@ describe('createAgentExecutionMiddleware', () => {
 
       // Extract the onBeforeToolCall from the chat options and invoke it
       const chatOptions = agent.chat.mock.calls[0][1] as Record<string, unknown>;
-      const onBeforeToolCall = chatOptions.onBeforeToolCall as (
-        tc: { id: string; name: string; arguments: string }
-      ) => Promise<{ approved: boolean; reason?: string }>;
+      const onBeforeToolCall = chatOptions.onBeforeToolCall as (tc: {
+        id: string;
+        name: string;
+        arguments: string;
+      }) => Promise<{ approved: boolean; reason?: string }>;
 
       const toolCall = { id: 'tc-1', name: 'search', arguments: '{}' };
       const result = await onBeforeToolCall(toolCall);
@@ -711,16 +734,18 @@ describe('createAgentExecutionMiddleware', () => {
       await middleware(msg, ctx, next);
 
       const chatOptions = agent.chat.mock.calls[0][1] as Record<string, unknown>;
-      const onBeforeToolCall = chatOptions.onBeforeToolCall as (
-        tc: { id: string; name: string; arguments: string }
-      ) => Promise<{ approved: boolean; reason?: string }>;
+      const onBeforeToolCall = chatOptions.onBeforeToolCall as (tc: {
+        id: string;
+        name: string;
+        arguments: string;
+      }) => Promise<{ approved: boolean; reason?: string }>;
 
       const result = await onBeforeToolCall({ id: 'tc-2', name: 'delete_file', arguments: '{}' });
 
       expect(result.approved).toBe(false);
       expect(result.reason).toBe('Dangerous operation');
       expect(mockLog.info).toHaveBeenCalledWith(
-        'Tool call blocked: delete_file - Dangerous operation',
+        'Tool call blocked: delete_file - Dangerous operation'
       );
     });
 
@@ -737,15 +762,15 @@ describe('createAgentExecutionMiddleware', () => {
       await middleware(msg, ctx, next);
 
       const chatOptions = agent.chat.mock.calls[0][1] as Record<string, unknown>;
-      const onBeforeToolCall = chatOptions.onBeforeToolCall as (
-        tc: { id: string; name: string; arguments: string }
-      ) => Promise<{ approved: boolean; reason?: string }>;
+      const onBeforeToolCall = chatOptions.onBeforeToolCall as (tc: {
+        id: string;
+        name: string;
+        arguments: string;
+      }) => Promise<{ approved: boolean; reason?: string }>;
 
       await onBeforeToolCall({ id: 'tc-3', name: 'rm_rf', arguments: '{}' });
 
-      expect(mockLog.info).toHaveBeenCalledWith(
-        'Tool call blocked: rm_rf - Requires approval',
-      );
+      expect(mockLog.info).toHaveBeenCalledWith('Tool call blocked: rm_rf - Requires approval');
     });
 
     it('should wire up default onBeforeToolCall even without stream', async () => {
@@ -783,8 +808,9 @@ describe('createAgentExecutionMiddleware', () => {
       const ctx = createContext({ store: { agent } });
       const msg = createMessage();
       const next = vi.fn().mockImplementation(async () => {
-        const pr = (ctx.set as ReturnType<typeof vi.fn>).mock.calls
-          .find((c: unknown[]) => c[0] === 'pipelineResult')?.[1] as MessageProcessingResult;
+        const pr = (ctx.set as ReturnType<typeof vi.fn>).mock.calls.find(
+          (c: unknown[]) => c[0] === 'pipelineResult'
+        )?.[1] as MessageProcessingResult;
         return pr;
       });
 
@@ -813,8 +839,9 @@ describe('createAgentExecutionMiddleware', () => {
       const ctx = createContext({ store: { agent } });
       const msg = createMessage();
       const next = vi.fn().mockImplementation(async () => {
-        const pr = (ctx.set as ReturnType<typeof vi.fn>).mock.calls
-          .find((c: unknown[]) => c[0] === 'pipelineResult')?.[1] as MessageProcessingResult;
+        const pr = (ctx.set as ReturnType<typeof vi.fn>).mock.calls.find(
+          (c: unknown[]) => c[0] === 'pipelineResult'
+        )?.[1] as MessageProcessingResult;
         return pr;
       });
 
@@ -837,8 +864,9 @@ describe('createAgentExecutionMiddleware', () => {
       const ctx = createContext({ store: { agent } });
       const msg = createMessage();
       const next = vi.fn().mockImplementation(async () => {
-        const pr = (ctx.set as ReturnType<typeof vi.fn>).mock.calls
-          .find((c: unknown[]) => c[0] === 'pipelineResult')?.[1] as MessageProcessingResult;
+        const pr = (ctx.set as ReturnType<typeof vi.fn>).mock.calls.find(
+          (c: unknown[]) => c[0] === 'pipelineResult'
+        )?.[1] as MessageProcessingResult;
         return pr;
       });
 
@@ -879,8 +907,9 @@ describe('createAgentExecutionMiddleware', () => {
       const ctx = createContext({ store: { agent } });
       const msg = createMessage();
       const next = vi.fn().mockImplementation(async () => {
-        const pr = (ctx.set as ReturnType<typeof vi.fn>).mock.calls
-          .find((c: unknown[]) => c[0] === 'pipelineResult')?.[1] as MessageProcessingResult;
+        const pr = (ctx.set as ReturnType<typeof vi.fn>).mock.calls.find(
+          (c: unknown[]) => c[0] === 'pipelineResult'
+        )?.[1] as MessageProcessingResult;
         return pr;
       });
 
@@ -904,8 +933,9 @@ describe('createAgentExecutionMiddleware', () => {
       const ctx = createContext({ store: { agent } });
       const msg = createMessage();
       const next = vi.fn().mockImplementation(async () => {
-        const pr = (ctx.set as ReturnType<typeof vi.fn>).mock.calls
-          .find((c: unknown[]) => c[0] === 'pipelineResult')?.[1] as MessageProcessingResult;
+        const pr = (ctx.set as ReturnType<typeof vi.fn>).mock.calls.find(
+          (c: unknown[]) => c[0] === 'pipelineResult'
+        )?.[1] as MessageProcessingResult;
         return pr;
       });
 

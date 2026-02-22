@@ -45,7 +45,7 @@ function triggerSummary(data: TriggerNodeData): string {
       return 'Click to run';
     case 'schedule': {
       const preset = CRON_PRESETS.find((p) => p.cron === data.cron);
-      return preset ? preset.label : data.cron ?? 'No schedule';
+      return preset ? preset.label : (data.cron ?? 'No schedule');
     }
     case 'event':
       return data.eventType ?? 'No event type';

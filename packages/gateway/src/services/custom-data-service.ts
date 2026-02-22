@@ -51,7 +51,7 @@ export class CustomDataService implements IDatabaseService {
     displayName: string,
     columns: ColumnDefinition[],
     description?: string,
-    options?: { ownerPluginId?: string; isProtected?: boolean },
+    options?: { ownerPluginId?: string; isProtected?: boolean }
   ): Promise<CustomTableSchema> {
     if (!name?.trim()) {
       throw new CustomDataServiceError('Table name is required', 'VALIDATION_ERROR');
@@ -61,10 +61,14 @@ export class CustomDataService implements IDatabaseService {
     }
     const repo = this.getRepo();
     const table = await repo.createTable(name, displayName, columns, description, options);
-    getEventBus().emit(createEvent<ResourceCreatedData>(
-      EventTypes.RESOURCE_CREATED, 'resource', 'custom-data-service',
-      { resourceType: 'custom_table', id: table.id },
-    ));
+    getEventBus().emit(
+      createEvent<ResourceCreatedData>(
+        EventTypes.RESOURCE_CREATED,
+        'resource',
+        'custom-data-service',
+        { resourceType: 'custom_table', id: table.id }
+      )
+    );
     return table;
   }
 
@@ -89,9 +93,9 @@ export class CustomDataService implements IDatabaseService {
   /**
    * List tables with record count stats attached.
    */
-  async listTablesWithStats(
-    filter?: { pluginId?: string },
-  ): Promise<Array<CustomTableSchema & { stats: DatabaseTableStats }>> {
+  async listTablesWithStats(filter?: {
+    pluginId?: string;
+  }): Promise<Array<CustomTableSchema & { stats: DatabaseTableStats }>> {
     const repo = this.getRepo();
 
     // For plugin-specific queries, fall back to per-table stats (rare path)
@@ -108,7 +112,7 @@ export class CustomDataService implements IDatabaseService {
               lastRecord: undefined,
             },
           };
-        }),
+        })
       );
     }
 
@@ -126,7 +130,7 @@ export class CustomDataService implements IDatabaseService {
 
   async updateTable(
     nameOrId: string,
-    updates: Partial<Pick<CustomTableSchema, 'displayName' | 'description' | 'columns'>>,
+    updates: Partial<Pick<CustomTableSchema, 'displayName' | 'description' | 'columns'>>
   ): Promise<CustomTableSchema | null> {
     const repo = this.getRepo();
     return repo.updateTable(nameOrId, updates);
@@ -144,16 +148,20 @@ export class CustomDataService implements IDatabaseService {
     if (table.isProtected && !options?.force) {
       throw new CustomDataServiceError(
         `Table "${table.displayName}" is protected by plugin "${table.ownerPluginId}". Cannot delete.`,
-        'PROTECTED',
+        'PROTECTED'
       );
     }
 
     const deleted = await repo.deleteTable(nameOrId, options);
     if (deleted) {
-      getEventBus().emit(createEvent<ResourceDeletedData>(
-        EventTypes.RESOURCE_DELETED, 'resource', 'custom-data-service',
-        { resourceType: 'custom_table', id: table.id },
-      ));
+      getEventBus().emit(
+        createEvent<ResourceDeletedData>(
+          EventTypes.RESOURCE_DELETED,
+          'resource',
+          'custom-data-service',
+          { resourceType: 'custom_table', id: table.id }
+        )
+      );
     }
     return deleted;
   }
@@ -166,7 +174,7 @@ export class CustomDataService implements IDatabaseService {
     name: string,
     displayName: string,
     columns: ColumnDefinition[],
-    description?: string,
+    description?: string
   ): Promise<CustomTableSchema> {
     const repo = this.getRepo();
     return repo.ensurePluginTable(pluginId, name, displayName, columns, description);
@@ -187,10 +195,14 @@ export class CustomDataService implements IDatabaseService {
   async addRecord(tableNameOrId: string, data: Record<string, unknown>): Promise<CustomDataRecord> {
     const repo = this.getRepo();
     const record = await repo.addRecord(tableNameOrId, data);
-    getEventBus().emit(createEvent<ResourceCreatedData>(
-      EventTypes.RESOURCE_CREATED, 'resource', 'custom-data-service',
-      { resourceType: 'custom_record', id: record.id },
-    ));
+    getEventBus().emit(
+      createEvent<ResourceCreatedData>(
+        EventTypes.RESOURCE_CREATED,
+        'resource',
+        'custom-data-service',
+        { resourceType: 'custom_record', id: record.id }
+      )
+    );
     return record;
   }
 
@@ -199,7 +211,7 @@ export class CustomDataService implements IDatabaseService {
    */
   async batchAddRecords(
     tableNameOrId: string,
-    records: Array<Record<string, unknown>>,
+    records: Array<Record<string, unknown>>
   ): Promise<CustomDataRecord[]> {
     if (!records.length) return [];
 
@@ -221,10 +233,14 @@ export class CustomDataService implements IDatabaseService {
 
     // Emit events after transaction commits (outside transaction to avoid event ordering issues)
     for (const record of created) {
-      getEventBus().emit(createEvent<ResourceCreatedData>(
-        EventTypes.RESOURCE_CREATED, 'resource', 'custom-data-service',
-        { resourceType: 'custom_record', id: record.id },
-      ));
+      getEventBus().emit(
+        createEvent<ResourceCreatedData>(
+          EventTypes.RESOURCE_CREATED,
+          'resource',
+          'custom-data-service',
+          { resourceType: 'custom_record', id: record.id }
+        )
+      );
     }
 
     return created;
@@ -243,20 +259,27 @@ export class CustomDataService implements IDatabaseService {
       orderBy?: string;
       orderDir?: 'asc' | 'desc';
       filter?: Record<string, unknown>;
-    },
+    }
   ): Promise<{ records: CustomDataRecord[]; total: number }> {
     const repo = this.getRepo();
     return repo.listRecords(tableNameOrId, options);
   }
 
-  async updateRecord(recordId: string, data: Record<string, unknown>): Promise<CustomDataRecord | null> {
+  async updateRecord(
+    recordId: string,
+    data: Record<string, unknown>
+  ): Promise<CustomDataRecord | null> {
     const repo = this.getRepo();
     const updated = await repo.updateRecord(recordId, data);
     if (updated) {
-      getEventBus().emit(createEvent<ResourceUpdatedData>(
-        EventTypes.RESOURCE_UPDATED, 'resource', 'custom-data-service',
-        { resourceType: 'custom_record', id: recordId, changes: data },
-      ));
+      getEventBus().emit(
+        createEvent<ResourceUpdatedData>(
+          EventTypes.RESOURCE_UPDATED,
+          'resource',
+          'custom-data-service',
+          { resourceType: 'custom_record', id: recordId, changes: data }
+        )
+      );
     }
     return updated;
   }
@@ -265,10 +288,14 @@ export class CustomDataService implements IDatabaseService {
     const repo = this.getRepo();
     const deleted = await repo.deleteRecord(recordId);
     if (deleted) {
-      getEventBus().emit(createEvent<ResourceDeletedData>(
-        EventTypes.RESOURCE_DELETED, 'resource', 'custom-data-service',
-        { resourceType: 'custom_record', id: recordId },
-      ));
+      getEventBus().emit(
+        createEvent<ResourceDeletedData>(
+          EventTypes.RESOURCE_DELETED,
+          'resource',
+          'custom-data-service',
+          { resourceType: 'custom_record', id: recordId }
+        )
+      );
     }
     return deleted;
   }
@@ -276,7 +303,7 @@ export class CustomDataService implements IDatabaseService {
   async searchRecords(
     tableNameOrId: string,
     query: string,
-    options?: { limit?: number },
+    options?: { limit?: number }
   ): Promise<CustomDataRecord[]> {
     if (!query?.trim()) {
       throw new CustomDataServiceError('Search query is required', 'VALIDATION_ERROR');
@@ -299,12 +326,16 @@ export class CustomDataService implements IDatabaseService {
 // Error Type
 // ============================================================================
 
-export type CustomDataServiceErrorCode = 'VALIDATION_ERROR' | 'NOT_FOUND' | 'PROTECTED' | 'INTERNAL_ERROR';
+export type CustomDataServiceErrorCode =
+  | 'VALIDATION_ERROR'
+  | 'NOT_FOUND'
+  | 'PROTECTED'
+  | 'INTERNAL_ERROR';
 
 export class CustomDataServiceError extends Error {
   constructor(
     message: string,
-    public readonly code: CustomDataServiceErrorCode,
+    public readonly code: CustomDataServiceErrorCode
   ) {
     super(message);
     this.name = 'CustomDataServiceError';

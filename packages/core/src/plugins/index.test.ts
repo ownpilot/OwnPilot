@@ -25,23 +25,27 @@ const mockEmit = vi.hoisted(() => vi.fn());
 const mockOnAny = vi.hoisted(() => vi.fn());
 const mockScopedEmit = vi.hoisted(() => vi.fn());
 const mockScopedOn = vi.hoisted(() => vi.fn(() => vi.fn())); // returns unsub
-const mockScoped = vi.hoisted(() => vi.fn(() => ({
-  emit: mockScopedEmit,
-  on: mockScopedOn,
-})));
+const mockScoped = vi.hoisted(() =>
+  vi.fn(() => ({
+    emit: mockScopedEmit,
+    on: mockScopedOn,
+  }))
+);
 
-const mockGetLog = vi.hoisted(() => vi.fn(() => ({
-  info: vi.fn(),
-  warn: vi.fn(),
-  error: vi.fn(),
-  debug: vi.fn(),
-  child: vi.fn(() => ({
+const mockGetLog = vi.hoisted(() =>
+  vi.fn(() => ({
     info: vi.fn(),
     warn: vi.fn(),
     error: vi.fn(),
     debug: vi.fn(),
-  })),
-})));
+    child: vi.fn(() => ({
+      info: vi.fn(),
+      warn: vi.fn(),
+      error: vi.fn(),
+      debug: vi.fn(),
+    })),
+  }))
+);
 
 // ---------------------------------------------------------------------------
 // Module mocks
@@ -79,18 +83,8 @@ vi.mock('../events/index.js', () => ({
 // Imports (after mocks are set up)
 // ---------------------------------------------------------------------------
 
-import {
-  PluginRegistry,
-  PluginBuilder,
-  createPlugin,
-  getDefaultPluginRegistry,
-} from './index.js';
-import type {
-  PluginManifest,
-  Plugin as _Plugin,
-  MessageHandler,
-  HandlerContext,
-} from './index.js';
+import { PluginRegistry, PluginBuilder, createPlugin, getDefaultPluginRegistry } from './index.js';
+import type { PluginManifest, Plugin as _Plugin, MessageHandler, HandlerContext } from './index.js';
 import type { ToolDefinition, ToolExecutor } from '../agent/types.js';
 
 // ---------------------------------------------------------------------------
@@ -246,9 +240,9 @@ describe('PluginBuilder', () => {
 
     it('returns this from database()', () => {
       const builder = new PluginBuilder();
-      expect(
-        builder.database('my_table', 'My Table', [{ name: 'col', type: 'text' }])
-      ).toBe(builder);
+      expect(builder.database('my_table', 'My Table', [{ name: 'col', type: 'text' }])).toBe(
+        builder
+      );
     });
 
     it('supports full chaining in sequence', () => {
@@ -283,38 +277,22 @@ describe('PluginBuilder', () => {
     });
 
     it('sets default description to empty string', () => {
-      const { manifest } = new PluginBuilder()
-        .id('p')
-        .name('P')
-        .version('1.0.0')
-        .build();
+      const { manifest } = new PluginBuilder().id('p').name('P').version('1.0.0').build();
       expect(manifest.description).toBe('');
     });
 
     it('sets default capabilities to empty array', () => {
-      const { manifest } = new PluginBuilder()
-        .id('p')
-        .name('P')
-        .version('1.0.0')
-        .build();
+      const { manifest } = new PluginBuilder().id('p').name('P').version('1.0.0').build();
       expect(manifest.capabilities).toEqual([]);
     });
 
     it('sets default permissions to empty array', () => {
-      const { manifest } = new PluginBuilder()
-        .id('p')
-        .name('P')
-        .version('1.0.0')
-        .build();
+      const { manifest } = new PluginBuilder().id('p').name('P').version('1.0.0').build();
       expect(manifest.permissions).toEqual([]);
     });
 
     it('sets default main to index.js', () => {
-      const { manifest } = new PluginBuilder()
-        .id('p')
-        .name('P')
-        .version('1.0.0')
-        .build();
+      const { manifest } = new PluginBuilder().id('p').name('P').version('1.0.0').build();
       expect(manifest.main).toBe('index.js');
     });
 
@@ -397,10 +375,18 @@ describe('PluginBuilder', () => {
         .id('p')
         .name('P')
         .version('1.0.0')
-        .onLoad(async () => { onLoad(); })
-        .onUnload(async () => { onUnload(); })
-        .onEnable(async () => { onEnable(); })
-        .onDisable(async () => { onDisable(); })
+        .onLoad(async () => {
+          onLoad();
+        })
+        .onUnload(async () => {
+          onUnload();
+        })
+        .onEnable(async () => {
+          onEnable();
+        })
+        .onDisable(async () => {
+          onDisable();
+        })
         .build();
 
       expect(implementation.lifecycle?.onLoad).toBeDefined();
@@ -425,7 +411,9 @@ describe('PluginBuilder', () => {
         .id('p')
         .name('P')
         .version('1.0.0')
-        .database('events', 'Events', [{ name: 'id', type: 'text', required: true }], { description: 'Event log' })
+        .database('events', 'Events', [{ name: 'id', type: 'text', required: true }], {
+          description: 'Event log',
+        })
         .build();
       expect(manifest.databaseTables).toHaveLength(1);
       expect(manifest.databaseTables![0]!.name).toBe('events');
@@ -445,11 +433,7 @@ describe('PluginBuilder', () => {
     });
 
     it('does not include databaseTables key when none declared', () => {
-      const { manifest } = new PluginBuilder()
-        .id('p')
-        .name('P')
-        .version('1.0.0')
-        .build();
+      const { manifest } = new PluginBuilder().id('p').name('P').version('1.0.0').build();
       expect(manifest.databaseTables).toBeUndefined();
     });
 
@@ -497,27 +481,25 @@ describe('PluginBuilder', () => {
 
   describe('build() — validation errors', () => {
     it('throws when id is missing', () => {
-      expect(() =>
-        new PluginBuilder().name('P').version('1.0.0').build()
-      ).toThrow('Plugin must have id, name, and version');
+      expect(() => new PluginBuilder().name('P').version('1.0.0').build()).toThrow(
+        'Plugin must have id, name, and version'
+      );
     });
 
     it('throws when name is missing', () => {
-      expect(() =>
-        new PluginBuilder().id('p').version('1.0.0').build()
-      ).toThrow('Plugin must have id, name, and version');
+      expect(() => new PluginBuilder().id('p').version('1.0.0').build()).toThrow(
+        'Plugin must have id, name, and version'
+      );
     });
 
     it('throws when version is missing', () => {
-      expect(() =>
-        new PluginBuilder().id('p').name('P').build()
-      ).toThrow('Plugin must have id, name, and version');
+      expect(() => new PluginBuilder().id('p').name('P').build()).toThrow(
+        'Plugin must have id, name, and version'
+      );
     });
 
     it('throws when all three are missing', () => {
-      expect(() => new PluginBuilder().build()).toThrow(
-        'Plugin must have id, name, and version'
-      );
+      expect(() => new PluginBuilder().build()).toThrow('Plugin must have id, name, and version');
     });
   });
 });
@@ -542,10 +524,9 @@ describe('PluginRegistry — constructor & initialize', () => {
     process.env.HOME = '/home/testuser';
     const registry = new PluginRegistry();
     await registry.initialize();
-    expect(mockMkdir).toHaveBeenCalledWith(
-      expect.stringContaining('.ownpilot/plugins'),
-      { recursive: true }
-    );
+    expect(mockMkdir).toHaveBeenCalledWith(expect.stringContaining('.ownpilot/plugins'), {
+      recursive: true,
+    });
     process.env.HOME = origHome;
   });
 
@@ -656,7 +637,9 @@ describe('PluginRegistry.register()', () => {
     const onLoad = vi.fn().mockRejectedValue(new Error('load failed'));
     const registry = makeRegistry();
 
-    await expect(registry.register(makeManifest({ id: 'bad-plugin' }), { lifecycle: { onLoad } })).rejects.toThrow('load failed');
+    await expect(
+      registry.register(makeManifest({ id: 'bad-plugin' }), { lifecycle: { onLoad } })
+    ).rejects.toThrow('load failed');
     expect(registry.get('bad-plugin')).toBeUndefined();
   });
 
@@ -700,7 +683,10 @@ describe('PluginRegistry.register()', () => {
     (h2.canHandle as ReturnType<typeof vi.fn>).mockResolvedValue(true);
     (h1.canHandle as ReturnType<typeof vi.fn>).mockResolvedValue(true);
     (h3.canHandle as ReturnType<typeof vi.fn>).mockResolvedValue(true);
-    (h2.handle as ReturnType<typeof vi.fn>).mockResolvedValue({ handled: true, response: 'from-high' });
+    (h2.handle as ReturnType<typeof vi.fn>).mockResolvedValue({
+      handled: true,
+      response: 'from-high',
+    });
 
     const result = await registry.routeMessage('test', makeHandlerContext());
     expect(result.response).toBe('from-high');
@@ -709,7 +695,9 @@ describe('PluginRegistry.register()', () => {
   it('throws when a required dependency is missing', async () => {
     const registry = makeRegistry();
     const manifest = makeManifest({ dependencies: { 'missing-dep': '1.0.0' } });
-    await expect(registry.register(manifest, {})).rejects.toThrow('Missing dependency: missing-dep');
+    await expect(registry.register(manifest, {})).rejects.toThrow(
+      'Missing dependency: missing-dep'
+    );
   });
 
   it('does not throw when dependency is present with matching version', async () => {
@@ -739,30 +727,24 @@ describe('PluginRegistry.register()', () => {
     const order: string[] = [];
     const registry = makeRegistry();
 
-    const p1 = registry.register(
-      makeManifest({ id: 'plugin-a' }),
-      {
-        lifecycle: {
-          onLoad: async () => {
-            order.push('a-start');
-            await new Promise(r => setTimeout(r, 10));
-            order.push('a-end');
-          },
+    const p1 = registry.register(makeManifest({ id: 'plugin-a' }), {
+      lifecycle: {
+        onLoad: async () => {
+          order.push('a-start');
+          await new Promise((r) => setTimeout(r, 10));
+          order.push('a-end');
         },
-      }
-    );
+      },
+    });
 
-    const p2 = registry.register(
-      makeManifest({ id: 'plugin-b' }),
-      {
-        lifecycle: {
-          onLoad: async () => {
-            order.push('b-start');
-            order.push('b-end');
-          },
+    const p2 = registry.register(makeManifest({ id: 'plugin-b' }), {
+      lifecycle: {
+        onLoad: async () => {
+          order.push('b-start');
+          order.push('b-end');
         },
-      }
-    );
+      },
+    });
 
     await Promise.all([p1, p2]);
     // With mutex: a must fully complete before b starts
@@ -770,7 +752,9 @@ describe('PluginRegistry.register()', () => {
   });
 
   it('register() initializes tools from implementation.tools Map', async () => {
-    const toolsMap = new Map([['my_tool', { definition: makeToolDef('my_tool'), executor: noopExecutor }]]);
+    const toolsMap = new Map([
+      ['my_tool', { definition: makeToolDef('my_tool'), executor: noopExecutor }],
+    ]);
     const registry = makeRegistry();
     const plugin = await registry.register(makeManifest(), { tools: toolsMap });
     expect(plugin.tools.has('my_tool')).toBe(true);
@@ -1106,10 +1090,7 @@ describe('PluginRegistry.unregister()', () => {
     await registry.register(makeManifest({ id: 'p1' }), {});
     await registry.register(makeManifest({ id: 'p2' }), {});
 
-    const [r1, r2] = await Promise.all([
-      registry.unregister('p1'),
-      registry.unregister('p2'),
-    ]);
+    const [r1, r2] = await Promise.all([registry.unregister('p1'), registry.unregister('p2')]);
     expect(r1).toBe(true);
     expect(r2).toBe(true);
     expect(registry.getAll()).toHaveLength(0);
@@ -1157,7 +1138,9 @@ describe('PluginRegistry.getAllTools()', () => {
   });
 
   it('aggregates tools from multiple enabled plugins', async () => {
-    const tools1 = new Map([['tool_a', { definition: makeToolDef('tool_a'), executor: noopExecutor }]]);
+    const tools1 = new Map([
+      ['tool_a', { definition: makeToolDef('tool_a'), executor: noopExecutor }],
+    ]);
     const tools2 = new Map([
       ['tool_b', { definition: makeToolDef('tool_b'), executor: noopExecutor }],
       ['tool_c', { definition: makeToolDef('tool_c'), executor: noopExecutor }],
@@ -1169,7 +1152,7 @@ describe('PluginRegistry.getAllTools()', () => {
 
     const all = registry.getAllTools();
     expect(all).toHaveLength(3);
-    const names = all.map(t => t.definition.name);
+    const names = all.map((t) => t.definition.name);
     expect(names).toContain('tool_a');
     expect(names).toContain('tool_b');
     expect(names).toContain('tool_c');
@@ -1198,14 +1181,18 @@ describe('PluginRegistry.getTool()', () => {
     };
     mockReadFile.mockResolvedValueOnce(JSON.stringify(disabledConfig));
 
-    const toolsMap = new Map([['my_tool', { definition: makeToolDef('my_tool'), executor: noopExecutor }]]);
+    const toolsMap = new Map([
+      ['my_tool', { definition: makeToolDef('my_tool'), executor: noopExecutor }],
+    ]);
     const registry = makeRegistry();
     await registry.register(makeManifest({ id: 'p' }), { tools: toolsMap });
     expect(registry.getTool('my_tool')).toBeUndefined();
   });
 
   it('finds tool by name from enabled plugin', async () => {
-    const toolsMap = new Map([['my_tool', { definition: makeToolDef('my_tool'), executor: noopExecutor }]]);
+    const toolsMap = new Map([
+      ['my_tool', { definition: makeToolDef('my_tool'), executor: noopExecutor }],
+    ]);
     const registry = makeRegistry();
     await registry.register(makeManifest({ id: 'p' }), { tools: toolsMap });
 
@@ -1253,7 +1240,10 @@ describe('PluginRegistry.routeMessage()', () => {
   it('routes message to matching handler', async () => {
     const handler = makeHandler();
     (handler.canHandle as ReturnType<typeof vi.fn>).mockResolvedValue(true);
-    (handler.handle as ReturnType<typeof vi.fn>).mockResolvedValue({ handled: true, response: 'done' });
+    (handler.handle as ReturnType<typeof vi.fn>).mockResolvedValue({
+      handled: true,
+      response: 'done',
+    });
 
     const registry = makeRegistry();
     await registry.register(makeManifest(), { handlers: [handler] });
@@ -1295,7 +1285,10 @@ describe('PluginRegistry.routeMessage()', () => {
     const h2 = makeHandler({ name: 'h2', priority: 10 });
     (h1.canHandle as ReturnType<typeof vi.fn>).mockResolvedValue(false);
     (h2.canHandle as ReturnType<typeof vi.fn>).mockResolvedValue(true);
-    (h2.handle as ReturnType<typeof vi.fn>).mockResolvedValue({ handled: true, response: 'second' });
+    (h2.handle as ReturnType<typeof vi.fn>).mockResolvedValue({
+      handled: true,
+      response: 'second',
+    });
 
     const registry = makeRegistry();
     await registry.register(makeManifest({ id: 'p1' }), { handlers: [h1] });

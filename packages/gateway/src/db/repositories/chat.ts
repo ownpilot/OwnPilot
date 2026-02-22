@@ -250,7 +250,10 @@ export class ChatRepository extends BaseRepository {
     return rows.map(rowToConversation);
   }
 
-  async updateConversation(id: string, updates: Partial<CreateConversationInput & { isArchived?: boolean }>): Promise<Conversation | null> {
+  async updateConversation(
+    id: string,
+    updates: Partial<CreateConversationInput & { isArchived?: boolean }>
+  ): Promise<Conversation | null> {
     const sets: string[] = ['updated_at = NOW()'];
     const params: unknown[] = [];
     let paramIndex = 1;
@@ -293,10 +296,10 @@ export class ChatRepository extends BaseRepository {
   }
 
   async deleteConversation(id: string): Promise<boolean> {
-    const result = await this.execute(
-      'DELETE FROM conversations WHERE id = $1 AND user_id = $2',
-      [id, this.userId]
-    );
+    const result = await this.execute('DELETE FROM conversations WHERE id = $1 AND user_id = $2', [
+      id,
+      this.userId,
+    ]);
     return result.changes > 0;
   }
 
@@ -334,7 +337,7 @@ export class ChatRepository extends BaseRepository {
       `SELECT id FROM conversations WHERE user_id = $1 AND updated_at < NOW() - MAKE_INTERVAL(days => $2)`,
       [this.userId, days]
     );
-    const ids = rows.map(r => r.id);
+    const ids = rows.map((r) => r.id);
     if (ids.length === 0) return 0;
     return this.deleteConversations(ids);
   }
@@ -406,14 +409,14 @@ export class ChatRepository extends BaseRepository {
   }
 
   async getMessage(id: string): Promise<Message | null> {
-    const row = await this.queryOne<MessageRow>(
-      'SELECT * FROM messages WHERE id = $1',
-      [id]
-    );
+    const row = await this.queryOne<MessageRow>('SELECT * FROM messages WHERE id = $1', [id]);
     return row ? rowToMessage(row) : null;
   }
 
-  async getMessages(conversationId: string, options: { limit?: number; offset?: number; beforeId?: string } = {}): Promise<Message[]> {
+  async getMessages(
+    conversationId: string,
+    options: { limit?: number; offset?: number; beforeId?: string } = {}
+  ): Promise<Message[]> {
     const conditions: string[] = ['conversation_id = $1'];
     const params: unknown[] = [conversationId];
     let paramIndex = 2;
@@ -460,7 +463,10 @@ export class ChatRepository extends BaseRepository {
   // UTILITIES
   // =====================================================
 
-  async getOrCreateConversation(conversationId: string | null, input: CreateConversationInput): Promise<Conversation> {
+  async getOrCreateConversation(
+    conversationId: string | null,
+    input: CreateConversationInput
+  ): Promise<Conversation> {
     if (conversationId) {
       const existing = await this.getConversation(conversationId);
       if (existing) return existing;
@@ -468,7 +474,9 @@ export class ChatRepository extends BaseRepository {
     return this.createConversation(input);
   }
 
-  async getConversationWithMessages(conversationId: string): Promise<{ conversation: Conversation; messages: Message[] } | null> {
+  async getConversationWithMessages(
+    conversationId: string
+  ): Promise<{ conversation: Conversation; messages: Message[] } | null> {
     const conversation = await this.getConversation(conversationId);
     if (!conversation) return null;
 
@@ -477,8 +485,12 @@ export class ChatRepository extends BaseRepository {
   }
 
   // Get recent conversations with preview (last message) — single query
-  async getRecentConversations(limit = 20): Promise<Array<Conversation & { lastMessage?: string; lastMessageAt?: Date }>> {
-    const rows = await this.query<ConversationRow & { last_message?: string; last_message_at?: string }>(
+  async getRecentConversations(
+    limit = 20
+  ): Promise<Array<Conversation & { lastMessage?: string; lastMessageAt?: Date }>> {
+    const rows = await this.query<
+      ConversationRow & { last_message?: string; last_message_at?: string }
+    >(
       `SELECT c.*,
               LEFT(lm.content, 100) AS last_message,
               lm.created_at AS last_message_at

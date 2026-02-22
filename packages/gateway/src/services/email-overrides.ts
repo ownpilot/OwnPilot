@@ -29,12 +29,48 @@ async function ensureEmailServices(): Promise<void> {
       category: 'email',
       description: 'SMTP server for sending emails (Gmail, Outlook, custom)',
       configSchema: [
-        { name: 'host', label: 'SMTP Host', type: 'string' as const, required: true, description: 'e.g. smtp.gmail.com, smtp.office365.com' },
-        { name: 'port', label: 'SMTP Port', type: 'string' as const, required: true, defaultValue: '587' },
-        { name: 'user', label: 'Username', type: 'string' as const, required: true, description: 'Email address or username' },
-        { name: 'pass', label: 'Password', type: 'secret' as const, required: true, description: 'App password (Gmail) or account password' },
-        { name: 'from', label: 'From Address', type: 'string' as const, required: false, description: 'Sender address (defaults to username)' },
-        { name: 'secure', label: 'Use TLS', type: 'string' as const, required: false, defaultValue: 'true' },
+        {
+          name: 'host',
+          label: 'SMTP Host',
+          type: 'string' as const,
+          required: true,
+          description: 'e.g. smtp.gmail.com, smtp.office365.com',
+        },
+        {
+          name: 'port',
+          label: 'SMTP Port',
+          type: 'string' as const,
+          required: true,
+          defaultValue: '587',
+        },
+        {
+          name: 'user',
+          label: 'Username',
+          type: 'string' as const,
+          required: true,
+          description: 'Email address or username',
+        },
+        {
+          name: 'pass',
+          label: 'Password',
+          type: 'secret' as const,
+          required: true,
+          description: 'App password (Gmail) or account password',
+        },
+        {
+          name: 'from',
+          label: 'From Address',
+          type: 'string' as const,
+          required: false,
+          description: 'Sender address (defaults to username)',
+        },
+        {
+          name: 'secure',
+          label: 'Use TLS',
+          type: 'string' as const,
+          required: false,
+          defaultValue: 'true',
+        },
       ],
     });
     await configServicesRepo.upsert({
@@ -43,11 +79,29 @@ async function ensureEmailServices(): Promise<void> {
       category: 'email',
       description: 'IMAP server for reading emails (Gmail, Outlook, custom)',
       configSchema: [
-        { name: 'host', label: 'IMAP Host', type: 'string' as const, required: true, description: 'e.g. imap.gmail.com, outlook.office365.com' },
-        { name: 'port', label: 'IMAP Port', type: 'string' as const, required: true, defaultValue: '993' },
+        {
+          name: 'host',
+          label: 'IMAP Host',
+          type: 'string' as const,
+          required: true,
+          description: 'e.g. imap.gmail.com, outlook.office365.com',
+        },
+        {
+          name: 'port',
+          label: 'IMAP Port',
+          type: 'string' as const,
+          required: true,
+          defaultValue: '993',
+        },
         { name: 'user', label: 'Username', type: 'string' as const, required: true },
         { name: 'pass', label: 'Password', type: 'secret' as const, required: true },
-        { name: 'tls', label: 'Use TLS', type: 'string' as const, required: false, defaultValue: 'true' },
+        {
+          name: 'tls',
+          label: 'Use TLS',
+          type: 'string' as const,
+          required: false,
+          defaultValue: 'true',
+        },
       ],
     });
   } catch (error) {
@@ -59,8 +113,21 @@ async function ensureEmailServices(): Promise<void> {
 // Config Helpers
 // ============================================================================
 
-interface SmtpConfig { host: string; port: number; user: string; pass: string; from: string; secure: boolean }
-interface ImapConfig { host: string; port: number; user: string; pass: string; tls: boolean }
+interface SmtpConfig {
+  host: string;
+  port: number;
+  user: string;
+  pass: string;
+  from: string;
+  secure: boolean;
+}
+interface ImapConfig {
+  host: string;
+  port: number;
+  user: string;
+  pass: string;
+  tls: boolean;
+}
 
 function getSmtpConfig(): SmtpConfig | null {
   const host = configServicesRepo.getFieldValue('smtp', 'host') as string | undefined;
@@ -87,8 +154,10 @@ function getImapConfig(): ImapConfig | null {
   return { host, port, user, pass, tls };
 }
 
-const SMTP_NOT_CONFIGURED = 'SMTP not configured. Go to Settings → Config Center → SMTP Server and enter host, username, and password.';
-const IMAP_NOT_CONFIGURED = 'IMAP not configured. Go to Settings → Config Center → IMAP Server and enter host, username, and password.';
+const SMTP_NOT_CONFIGURED =
+  'SMTP not configured. Go to Settings → Config Center → SMTP Server and enter host, username, and password.';
+const IMAP_NOT_CONFIGURED =
+  'IMAP not configured. Go to Settings → Config Center → IMAP Server and enter host, username, and password.';
 
 // ============================================================================
 // IMAP Client Helper
@@ -122,18 +191,21 @@ async function withImapClient<T>(folder: string, fn: (client: any) => Promise<T>
 // Email Address Helpers
 // ============================================================================
 
-interface EmailAddress { name?: string; address?: string }
+interface EmailAddress {
+  name?: string;
+  address?: string;
+}
 
 function formatAddress(addr: EmailAddress | EmailAddress[] | undefined): string {
   if (!addr) return '';
   const list = Array.isArray(addr) ? addr : [addr];
-  return list.map(a => a.name ? `${a.name} <${a.address}>` : a.address ?? '').join(', ');
+  return list.map((a) => (a.name ? `${a.name} <${a.address}>` : (a.address ?? ''))).join(', ');
 }
 
 function formatAddressList(addr: EmailAddress | EmailAddress[] | undefined): string[] {
   if (!addr) return [];
   const list = Array.isArray(addr) ? addr : [addr];
-  return list.map(a => a.address ?? '').filter(Boolean);
+  return list.map((a) => a.address ?? '').filter(Boolean);
 }
 
 // ============================================================================
@@ -160,9 +232,15 @@ function extractTextFromRaw(raw: string): { text: string; html?: string } {
 
       // Handle transfer encoding
       if (headers.includes('content-transfer-encoding: base64')) {
-        try { body = Buffer.from(body.replace(/\s/g, ''), 'base64').toString('utf-8'); } catch { /* keep as-is */ }
+        try {
+          body = Buffer.from(body.replace(/\s/g, ''), 'base64').toString('utf-8');
+        } catch {
+          /* keep as-is */
+        }
       } else if (headers.includes('content-transfer-encoding: quoted-printable')) {
-        body = body.replace(/=\r?\n/g, '').replace(/=([0-9A-F]{2})/gi, (_, hex) => String.fromCharCode(parseInt(hex, 16)));
+        body = body
+          .replace(/=\r?\n/g, '')
+          .replace(/=([0-9A-F]{2})/gi, (_, hex) => String.fromCharCode(parseInt(hex, 16)));
       }
 
       if (headers.includes('text/plain') && !text) {
@@ -173,7 +251,14 @@ function extractTextFromRaw(raw: string): { text: string; html?: string } {
     }
 
     if (text) return { text, html: html || undefined };
-    if (html) return { text: html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim(), html };
+    if (html)
+      return {
+        text: html
+          .replace(/<[^>]+>/g, ' ')
+          .replace(/\s+/g, ' ')
+          .trim(),
+        html,
+      };
   }
 
   // Simple message (no multipart)
@@ -329,7 +414,11 @@ const listEmailsOverride: ToolExecutor = async (params, _context): Promise<ToolE
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const emails: any[] = [];
-      for await (const msg of client.fetch(fetchRange, { envelope: true, flags: true, uid: true })) {
+      for await (const msg of client.fetch(fetchRange, {
+        envelope: true,
+        flags: true,
+        uid: true,
+      })) {
         emails.push({
           uid: msg.uid,
           from: formatAddress(msg.envelope?.from),
@@ -354,7 +443,10 @@ const listEmailsOverride: ToolExecutor = async (params, _context): Promise<ToolE
       };
     });
   } catch (error) {
-    return { content: { error: `Failed to list emails: ${getErrorMessage(error)}` }, isError: true };
+    return {
+      content: { error: `Failed to list emails: ${getErrorMessage(error)}` },
+      isError: true,
+    };
   }
 };
 
@@ -380,7 +472,12 @@ const readEmailOverride: ToolExecutor = async (params, _context): Promise<ToolEx
       // Fetch envelope and flags
       let envelope = null;
       let flags = null;
-      for await (const msg of client.fetch(uid.toString(), { envelope: true, flags: true, bodyStructure: true, uid: true })) {
+      for await (const msg of client.fetch(uid.toString(), {
+        envelope: true,
+        flags: true,
+        bodyStructure: true,
+        uid: true,
+      })) {
         envelope = msg.envelope;
         flags = msg.flags;
       }
@@ -434,7 +531,10 @@ const readEmailOverride: ToolExecutor = async (params, _context): Promise<ToolEx
 // search_emails Override
 // ============================================================================
 
-const searchEmailsOverride: ToolExecutor = async (params, _context): Promise<ToolExecutionResult> => {
+const searchEmailsOverride: ToolExecutor = async (
+  params,
+  _context
+): Promise<ToolExecutionResult> => {
   const query = params.query as string;
   const folder = params.folder as string | undefined;
   const isStarred = params.isStarred as boolean | undefined;
@@ -463,7 +563,11 @@ const searchEmailsOverride: ToolExecutor = async (params, _context): Promise<Too
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const results: any[] = [];
 
-      for await (const msg of client.fetch(recentUids.join(','), { envelope: true, flags: true, uid: true })) {
+      for await (const msg of client.fetch(recentUids.join(','), {
+        envelope: true,
+        flags: true,
+        uid: true,
+      })) {
         results.push({
           uid: msg.uid,
           from: formatAddress(msg.envelope?.from),
@@ -486,7 +590,10 @@ const searchEmailsOverride: ToolExecutor = async (params, _context): Promise<Too
       };
     });
   } catch (error) {
-    return { content: { error: `Failed to search emails: ${getErrorMessage(error)}` }, isError: true };
+    return {
+      content: { error: `Failed to search emails: ${getErrorMessage(error)}` },
+      isError: true,
+    };
   }
 };
 
@@ -533,8 +640,13 @@ const replyEmailOverride: ToolExecutor = async (params, _context): Promise<ToolE
 
     const replyTo = formatAddressList(original.from);
     const allRecipients = replyAll
-      ? [...new Set([...replyTo, ...formatAddressList(original.to), ...formatAddressList(original.cc)])]
-        .filter(a => a !== smtpConfig.from && a !== smtpConfig.user)
+      ? [
+          ...new Set([
+            ...replyTo,
+            ...formatAddressList(original.to),
+            ...formatAddressList(original.cc),
+          ]),
+        ].filter((a) => a !== smtpConfig.from && a !== smtpConfig.user)
       : replyTo;
 
     const replySubject = original.subject?.startsWith('Re:')
@@ -590,7 +702,10 @@ const replyEmailOverride: ToolExecutor = async (params, _context): Promise<ToolE
 // delete_email Override
 // ============================================================================
 
-const deleteEmailOverride: ToolExecutor = async (params, _context): Promise<ToolExecutionResult> => {
+const deleteEmailOverride: ToolExecutor = async (
+  params,
+  _context
+): Promise<ToolExecutionResult> => {
   const emailId = params.id as string;
   const folder = (params.folder as string) || 'INBOX';
   const permanent = params.permanent === true;
@@ -637,7 +752,10 @@ const deleteEmailOverride: ToolExecutor = async (params, _context): Promise<Tool
       };
     });
   } catch (error) {
-    return { content: { error: `Failed to delete email: ${getErrorMessage(error)}` }, isError: true };
+    return {
+      content: { error: `Failed to delete email: ${getErrorMessage(error)}` },
+      isError: true,
+    };
   }
 };
 

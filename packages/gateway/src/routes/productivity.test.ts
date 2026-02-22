@@ -29,7 +29,9 @@ const mockPomodoroMethods = {
   getActiveSession: vi.fn(async () => null),
   startSession: vi.fn(async (input: Record<string, unknown>) => ({ ...sampleSession, ...input })),
   completeSession: vi.fn(async (id: string) =>
-    id === 'ses_001' ? { ...sampleSession, status: 'completed', completedAt: '2026-01-31T10:25:00Z' } : null
+    id === 'ses_001'
+      ? { ...sampleSession, status: 'completed', completedAt: '2026-01-31T10:25:00Z' }
+      : null
   ),
   interruptSession: vi.fn(async (id: string) =>
     id === 'ses_001' ? { ...sampleSession, status: 'interrupted' } : null
@@ -76,7 +78,11 @@ const sampleHabit = {
 
 const mockHabitsMethods = {
   list: vi.fn(async () => [sampleHabit]),
-  create: vi.fn(async (input: Record<string, unknown>) => ({ ...sampleHabit, ...input, id: 'hab_new' })),
+  create: vi.fn(async (input: Record<string, unknown>) => ({
+    ...sampleHabit,
+    ...input,
+    id: 'hab_new',
+  })),
   getTodayProgress: vi.fn(async () => ({
     habits: [{ ...sampleHabit, completedToday: true }],
     completedCount: 1,
@@ -97,9 +103,7 @@ const mockHabitsMethods = {
   logHabit: vi.fn(async (id: string) =>
     id === 'hab_001' ? { id: 'log_001', habitId: id, date: '2026-01-31', count: 1 } : null
   ),
-  getLogs: vi.fn(async () => [
-    { id: 'log_001', habitId: 'hab_001', date: '2026-01-31', count: 1 },
-  ]),
+  getLogs: vi.fn(async () => [{ id: 'log_001', habitId: 'hab_001', date: '2026-01-31', count: 1 }]),
 };
 
 const sampleCapture = {
@@ -114,7 +118,11 @@ const sampleCapture = {
 
 const mockCapturesMethods = {
   list: vi.fn(async () => [sampleCapture]),
-  create: vi.fn(async (input: Record<string, unknown>) => ({ ...sampleCapture, ...input, id: 'cap_new' })),
+  create: vi.fn(async (input: Record<string, unknown>) => ({
+    ...sampleCapture,
+    ...input,
+    id: 'cap_new',
+  })),
   getInbox: vi.fn(async () => [sampleCapture]),
   getInboxCount: vi.fn(async () => 3),
   getStats: vi.fn(async () => ({ total: 10, processed: 7, unprocessed: 3 })),
@@ -130,15 +138,21 @@ const mockCapturesMethods = {
 // ---------------------------------------------------------------------------
 
 vi.mock('../db/repositories/pomodoro.js', () => ({
-  PomodoroRepository: vi.fn().mockImplementation(function() { return mockPomodoroMethods; }),
+  PomodoroRepository: vi.fn().mockImplementation(function () {
+    return mockPomodoroMethods;
+  }),
 }));
 
 vi.mock('../db/repositories/habits.js', () => ({
-  HabitsRepository: vi.fn().mockImplementation(function() { return mockHabitsMethods; }),
+  HabitsRepository: vi.fn().mockImplementation(function () {
+    return mockHabitsMethods;
+  }),
 }));
 
 vi.mock('../db/repositories/captures.js', () => ({
-  CapturesRepository: vi.fn().mockImplementation(function() { return mockCapturesMethods; }),
+  CapturesRepository: vi.fn().mockImplementation(function () {
+    return mockCapturesMethods;
+  }),
 }));
 
 // Import after mocks
@@ -176,8 +190,9 @@ describe('Productivity Routes', () => {
     mockHabitsMethods.getHabitStats.mockImplementation(async (id: string) =>
       id === 'hab_001' ? { ...sampleHabit, totalCompletions: 50 } : null
     );
-    mockHabitsMethods.update.mockImplementation(async (id: string, input: Record<string, unknown>) =>
-      id === 'hab_001' ? { ...sampleHabit, ...input } : null
+    mockHabitsMethods.update.mockImplementation(
+      async (id: string, input: Record<string, unknown>) =>
+        id === 'hab_001' ? { ...sampleHabit, ...input } : null
     );
     mockHabitsMethods.delete.mockImplementation(async (id: string) => id === 'hab_001');
     mockHabitsMethods.archive.mockImplementation(async (id: string) =>
@@ -266,7 +281,9 @@ describe('Productivity Routes', () => {
 
     describe('POST /productivity/pomodoro/session/:id/complete', () => {
       it('completes a session', async () => {
-        const res = await app.request('/productivity/pomodoro/session/ses_001/complete', { method: 'POST' });
+        const res = await app.request('/productivity/pomodoro/session/ses_001/complete', {
+          method: 'POST',
+        });
 
         expect(res.status).toBe(200);
         const json = await res.json();
@@ -274,7 +291,9 @@ describe('Productivity Routes', () => {
       });
 
       it('returns 404 when session not found', async () => {
-        const res = await app.request('/productivity/pomodoro/session/ses_nonexistent/complete', { method: 'POST' });
+        const res = await app.request('/productivity/pomodoro/session/ses_nonexistent/complete', {
+          method: 'POST',
+        });
 
         expect(res.status).toBe(404);
       });
@@ -490,7 +509,9 @@ describe('Productivity Routes', () => {
       });
 
       it('returns 404 for unknown habit', async () => {
-        const res = await app.request('/productivity/habits/hab_nonexistent/archive', { method: 'POST' });
+        const res = await app.request('/productivity/habits/hab_nonexistent/archive', {
+          method: 'POST',
+        });
 
         expect(res.status).toBe(404);
       });
@@ -659,7 +680,9 @@ describe('Productivity Routes', () => {
       });
 
       it('returns 404 for unknown capture', async () => {
-        const res = await app.request('/productivity/captures/cap_nonexistent', { method: 'DELETE' });
+        const res = await app.request('/productivity/captures/cap_nonexistent', {
+          method: 'DELETE',
+        });
 
         expect(res.status).toBe(404);
       });

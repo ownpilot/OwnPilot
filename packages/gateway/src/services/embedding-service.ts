@@ -8,7 +8,10 @@
 import type { IEmbeddingService } from '@ownpilot/core';
 import { getLog } from './log.js';
 import { configServicesRepo } from '../db/repositories/config-services.js';
-import { EmbeddingCacheRepository, embeddingCacheRepo } from '../db/repositories/embedding-cache.js';
+import {
+  EmbeddingCacheRepository,
+  embeddingCacheRepo,
+} from '../db/repositories/embedding-cache.js';
 import {
   EMBEDDING_MODEL,
   EMBEDDING_DIMENSIONS,
@@ -54,7 +57,9 @@ export class EmbeddingService implements IEmbeddingService {
     // Environment variable fallback
     if (process.env.OPENAI_API_KEY) return process.env.OPENAI_API_KEY;
 
-    throw new Error('OpenAI API key not configured. Set it via Config Center or OPENAI_API_KEY env var.');
+    throw new Error(
+      'OpenAI API key not configured. Set it via Config Center or OPENAI_API_KEY env var.'
+    );
   }
 
   /**
@@ -87,7 +92,7 @@ export class EmbeddingService implements IEmbeddingService {
     const embedding = embeddings[0]!;
 
     // Store in cache (fire-and-forget)
-    this.cache.store(hash, this.modelName, embedding).catch(err => {
+    this.cache.store(hash, this.modelName, embedding).catch((err) => {
       log.warn('Failed to cache embedding', String(err));
     });
 
@@ -138,7 +143,7 @@ export class EmbeddingService implements IEmbeddingService {
 
         // Cache (fire-and-forget)
         const hash = EmbeddingCacheRepository.contentHash(batch[j]!);
-        this.cache.store(hash, this.modelName, embedding).catch(err => {
+        this.cache.store(hash, this.modelName, embedding).catch((err) => {
           log.warn('Failed to cache batch embedding', String(err));
         });
       }
@@ -163,7 +168,7 @@ export class EmbeddingService implements IEmbeddingService {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`,
+        Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
         model: this.modelName,
@@ -199,18 +204,18 @@ export class EmbeddingService implements IEmbeddingService {
       throw new Error(`Embedding API error: ${response.status} - ${errorBody.substring(0, 200)}`);
     }
 
-    const data = await response.json() as {
+    const data = (await response.json()) as {
       data: Array<{ embedding: number[]; index: number }>;
     };
 
     if (!Array.isArray(data?.data)) {
-      throw new Error(`Invalid embedding API response: expected data array, got ${typeof data?.data}`);
+      throw new Error(
+        `Invalid embedding API response: expected data array, got ${typeof data?.data}`
+      );
     }
 
     // Sort by index to maintain order
-    return data.data
-      .sort((a, b) => a.index - b.index)
-      .map(d => d.embedding);
+    return data.data.sort((a, b) => a.index - b.index).map((d) => d.embedding);
   }
 
   /**
@@ -231,7 +236,7 @@ export class EmbeddingService implements IEmbeddingService {
 // ============================================================================
 
 function sleep(ms: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, ms));
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 // ============================================================================

@@ -129,7 +129,7 @@ describe('HabitsRepository', () => {
     it('should set weekday target days when frequency is weekdays', async () => {
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
       mockAdapter.queryOne.mockResolvedValueOnce(
-        makeHabitRow({ frequency: 'weekdays', target_days: '[1,2,3,4,5]' }),
+        makeHabitRow({ frequency: 'weekdays', target_days: '[1,2,3,4,5]' })
       );
 
       await repo.create({ name: 'Work habit', frequency: 'weekdays' });
@@ -141,7 +141,7 @@ describe('HabitsRepository', () => {
     it('should set Monday as default for weekly frequency', async () => {
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
       mockAdapter.queryOne.mockResolvedValueOnce(
-        makeHabitRow({ frequency: 'weekly', target_days: '[1]' }),
+        makeHabitRow({ frequency: 'weekly', target_days: '[1]' })
       );
 
       await repo.create({ name: 'Weekly review', frequency: 'weekly' });
@@ -153,7 +153,7 @@ describe('HabitsRepository', () => {
     it('should use custom target days when provided', async () => {
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
       mockAdapter.queryOne.mockResolvedValueOnce(
-        makeHabitRow({ frequency: 'custom', target_days: '[0,6]' }),
+        makeHabitRow({ frequency: 'custom', target_days: '[0,6]' })
       );
 
       await repo.create({ name: 'Weekend habit', frequency: 'custom', targetDays: [0, 6] });
@@ -254,9 +254,7 @@ describe('HabitsRepository', () => {
     });
 
     it('should parse target_days JSON string to number array', async () => {
-      mockAdapter.queryOne.mockResolvedValueOnce(
-        makeHabitRow({ target_days: '[1,3,5]' }),
-      );
+      mockAdapter.queryOne.mockResolvedValueOnce(makeHabitRow({ target_days: '[1,3,5]' }));
 
       const result = await repo.get('hab_1');
 
@@ -264,9 +262,7 @@ describe('HabitsRepository', () => {
     });
 
     it('should handle invalid target_days JSON gracefully', async () => {
-      mockAdapter.queryOne.mockResolvedValueOnce(
-        makeHabitRow({ target_days: 'invalid-json' }),
-      );
+      mockAdapter.queryOne.mockResolvedValueOnce(makeHabitRow({ target_days: 'invalid-json' }));
 
       const result = await repo.get('hab_1');
 
@@ -274,9 +270,7 @@ describe('HabitsRepository', () => {
     });
 
     it('should handle null target_days', async () => {
-      mockAdapter.queryOne.mockResolvedValueOnce(
-        makeHabitRow({ target_days: null }),
-      );
+      mockAdapter.queryOne.mockResolvedValueOnce(makeHabitRow({ target_days: null }));
 
       const result = await repo.get('hab_1');
 
@@ -581,7 +575,7 @@ describe('HabitsRepository', () => {
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
       // final getLog
       mockAdapter.queryOne.mockResolvedValueOnce(
-        makeHabitLogRow({ date: '2025-01-10', notes: 'Felt great' }),
+        makeHabitLogRow({ date: '2025-01-10', notes: 'Felt great' })
       );
 
       const result = await repo.logHabit('hab_1', {
@@ -763,7 +757,7 @@ describe('HabitsRepository', () => {
     it('should cap completionRate at 100', async () => {
       // get habit with targetCount=1, frequency=weekly (expectedMonthly=4)
       mockAdapter.queryOne.mockResolvedValueOnce(
-        makeHabitRow({ frequency: 'weekly', target_count: 1 }),
+        makeHabitRow({ frequency: 'weekly', target_count: 1 })
       );
       // weekly logs
       mockAdapter.query.mockResolvedValueOnce([]);
@@ -801,9 +795,7 @@ describe('HabitsRepository', () => {
       // list (non-archived habits)
       mockAdapter.query.mockResolvedValueOnce([makeHabitRow()]);
       // today logs
-      mockAdapter.query.mockResolvedValueOnce([
-        makeHabitLogRow({ date: todayStr, count: 1 }),
-      ]);
+      mockAdapter.query.mockResolvedValueOnce([makeHabitLogRow({ date: todayStr, count: 1 })]);
 
       const result = await repo.getTodayHabits();
 

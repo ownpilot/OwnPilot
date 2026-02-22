@@ -134,11 +134,7 @@ export interface CodeLLMProvider {
     model: string;
   }>;
 
-  improveCode(request: {
-    code: string;
-    language: CodeLanguage;
-    feedback: string;
-  }): Promise<{
+  improveCode(request: { code: string; language: CodeLanguage; feedback: string }): Promise<{
     code: string;
     changes: string[];
     tokensUsed: { prompt: number; completion: number };
@@ -419,7 +415,10 @@ export class CodeGenerator {
     const dangerousPatterns = [
       { pattern: /process\.exit/i, message: 'process.exit is not allowed' },
       { pattern: /require\s*\(\s*['"]child_process['"]/i, message: 'child_process is not allowed' },
-      { pattern: /require\s*\(\s*['"]fs['"]/i, message: 'fs module is not allowed (use provided APIs)' },
+      {
+        pattern: /require\s*\(\s*['"]fs['"]/i,
+        message: 'fs module is not allowed (use provided APIs)',
+      },
       { pattern: /eval\s*\(/i, message: 'eval is not allowed' },
       { pattern: /Function\s*\(/i, message: 'Function constructor is not allowed' },
       { pattern: /import\s*\(/i, message: 'dynamic import is not allowed' },
@@ -461,7 +460,12 @@ export class CodeGenerator {
     }
 
     // Check if it's an expression or statements
-    if (code.trim().startsWith('function ') || code.includes('const ') || code.includes('let ') || code.includes('var ')) {
+    if (
+      code.trim().startsWith('function ') ||
+      code.includes('const ') ||
+      code.includes('let ') ||
+      code.includes('var ')
+    ) {
       // Statement-based code - wrap in IIFE
       return `
         (function() {
@@ -497,7 +501,7 @@ export class CodeGenerator {
     // Try to match a template
     const prompt = request.prompt.toLowerCase();
     for (const template of templates) {
-      if (template.patterns.some(p => prompt.includes(p))) {
+      if (template.patterns.some((p) => prompt.includes(p))) {
         const code = template.generate(request.prompt, request.context);
         return {
           success: true,
@@ -515,7 +519,8 @@ export class CodeGenerator {
     return {
       success: false,
       language,
-      error: 'Could not generate code from prompt. Please provide more specific requirements or enable LLM provider.',
+      error:
+        'Could not generate code from prompt. Please provide more specific requirements or enable LLM provider.',
       metadata: {
         generatedAt: new Date().toISOString(),
         validationPassed: false,
@@ -526,7 +531,10 @@ export class CodeGenerator {
   /**
    * Save code snippet
    */
-  saveSnippet(userId: string, snippet: Omit<CodeSnippet, 'id' | 'createdAt' | 'updatedAt' | 'executionCount'>): CodeSnippet {
+  saveSnippet(
+    userId: string,
+    snippet: Omit<CodeSnippet, 'id' | 'createdAt' | 'updatedAt' | 'executionCount'>
+  ): CodeSnippet {
     const now = new Date().toISOString();
     const newSnippet: CodeSnippet = {
       ...snippet,
@@ -547,14 +555,17 @@ export class CodeGenerator {
   /**
    * Get user snippets
    */
-  getSnippets(userId: string, filter?: { language?: CodeLanguage; tags?: string[] }): CodeSnippet[] {
+  getSnippets(
+    userId: string,
+    filter?: { language?: CodeLanguage; tags?: string[] }
+  ): CodeSnippet[] {
     const snippets = this.snippetStorage.get(userId) ?? [];
 
     if (!filter) return snippets;
 
-    return snippets.filter(s => {
+    return snippets.filter((s) => {
       if (filter.language && s.language !== filter.language) return false;
-      if (filter.tags && !filter.tags.every(t => s.tags.includes(t))) return false;
+      if (filter.tags && !filter.tags.every((t) => s.tags.includes(t))) return false;
       return true;
     });
   }
@@ -569,7 +580,7 @@ export class CodeGenerator {
     byLanguage: Record<string, { count: number; successRate: number }>;
   } {
     const history = userId
-      ? this.executionHistory.filter(h => h.userId === userId)
+      ? this.executionHistory.filter((h) => h.userId === userId)
       : this.executionHistory;
 
     if (history.length === 0) {
@@ -581,7 +592,7 @@ export class CodeGenerator {
       };
     }
 
-    const successful = history.filter(h => h.success);
+    const successful = history.filter((h) => h.success);
     const totalDuration = history.reduce((sum, h) => sum + h.duration, 0);
 
     const byLanguage: Record<string, { count: number; successRate: number }> = {};
@@ -594,8 +605,8 @@ export class CodeGenerator {
 
     // Calculate success rates per language
     for (const lang of Object.keys(byLanguage)) {
-      const langHistory = history.filter(h => h.language === lang);
-      const langSuccess = langHistory.filter(h => h.success);
+      const langHistory = history.filter((h) => h.language === lang);
+      const langSuccess = langHistory.filter((h) => h.success);
       byLanguage[lang]!.successRate = langSuccess.length / langHistory.length;
     }
 
@@ -623,7 +634,8 @@ const CODE_TEMPLATES: Partial<Record<CodeLanguage, CodeTemplate[]>> = {
     {
       patterns: ['fibonacci', 'fib'],
       description: 'Generates Fibonacci sequence function',
-      generate: () => `
+      generate: () =>
+        `
 /**
  * Calculate Fibonacci number at position n
  * @param {number} n - Position in sequence
@@ -647,7 +659,8 @@ fibonacci(10);
     {
       patterns: ['factorial'],
       description: 'Generates factorial function',
-      generate: () => `
+      generate: () =>
+        `
 /**
  * Calculate factorial of n
  * @param {number} n - Input number
@@ -670,7 +683,8 @@ factorial(5);
     {
       patterns: ['prime'],
       description: 'Generates prime number checker',
-      generate: () => `
+      generate: () =>
+        `
 /**
  * Check if a number is prime
  * @param {number} n - Number to check
@@ -693,7 +707,8 @@ isPrime(17);
     {
       patterns: ['sort', 'quicksort'],
       description: 'Generates quicksort implementation',
-      generate: () => `
+      generate: () =>
+        `
 /**
  * QuickSort implementation
  * @param {number[]} arr - Array to sort
@@ -717,7 +732,8 @@ quickSort([3, 6, 8, 10, 1, 2, 1]);
     {
       patterns: ['date', 'format'],
       description: 'Generates date formatting function',
-      generate: () => `
+      generate: () =>
+        `
 /**
  * Format a date
  * @param {Date} date - Date to format
@@ -750,7 +766,8 @@ formatDate(new Date(), 'YYYY-MM-DD HH:mm:ss');
     {
       patterns: ['array', 'sum', 'average'],
       description: 'Generates array utility functions',
-      generate: () => `
+      generate: () =>
+        `
 /**
  * Array utility functions
  */
@@ -786,7 +803,8 @@ const numbers = [1, 2, 3, 4, 5, 5, 6];
     {
       patterns: ['fibonacci', 'fib'],
       description: 'Generates Fibonacci sequence function in Python',
-      generate: () => `
+      generate: () =>
+        `
 def fibonacci(n: int) -> int:
     """Calculate Fibonacci number at position n."""
     if n <= 1:

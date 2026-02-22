@@ -1,9 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import {
-  getExecutionMode,
-  getExecutionModeConfig,
-  isLanguageAllowed,
-} from './execution-mode.js';
+import { getExecutionMode, getExecutionModeConfig, isLanguageAllowed } from './execution-mode.js';
 
 describe('execution-mode', () => {
   const savedEnv: Record<string, string | undefined> = {};

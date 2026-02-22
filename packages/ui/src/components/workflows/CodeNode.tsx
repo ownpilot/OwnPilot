@@ -51,7 +51,7 @@ function CodeNodeComponent({ data, selected }: NodeProps<CodeNodeType>) {
   const lang = (data.language as string) ?? 'javascript';
 
   // First non-empty line of code for preview
-  const codePreview = ((data.code as string) ?? '').split('\n').find(l => l.trim()) ?? '';
+  const codePreview = ((data.code as string) ?? '').split('\n').find((l) => l.trim()) ?? '';
 
   return (
     <div
@@ -82,12 +82,17 @@ function CodeNodeComponent({ data, selected }: NodeProps<CodeNodeType>) {
             {(data.label as string) || 'Code'}
           </span>
           {StatusIcon && (
-            <StatusIcon className={`w-4 h-4 shrink-0 ${
-              status === 'success' ? 'text-success' :
-              status === 'error' ? 'text-error' :
-              status === 'running' ? 'text-warning' :
-              'text-text-muted'
-            }`} />
+            <StatusIcon
+              className={`w-4 h-4 shrink-0 ${
+                status === 'success'
+                  ? 'text-success'
+                  : status === 'error'
+                    ? 'text-error'
+                    : status === 'running'
+                      ? 'text-warning'
+                      : 'text-text-muted'
+              }`}
+            />
           )}
         </div>
 

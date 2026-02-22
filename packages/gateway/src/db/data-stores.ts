@@ -347,7 +347,9 @@ export class CalendarStore implements DataStore<PersonalCalendarEvent> {
     return events.map((e) => this.mapEvent(e));
   }
 
-  async create(data: Omit<PersonalCalendarEvent, 'id' | 'createdAt'>): Promise<PersonalCalendarEvent> {
+  async create(
+    data: Omit<PersonalCalendarEvent, 'id' | 'createdAt'>
+  ): Promise<PersonalCalendarEvent> {
     const event = await this.repo.create({
       title: data.title,
       description: data.description,
@@ -368,7 +370,10 @@ export class CalendarStore implements DataStore<PersonalCalendarEvent> {
     return this.mapEvent(event);
   }
 
-  async update(id: string, data: Partial<PersonalCalendarEvent>): Promise<PersonalCalendarEvent | null> {
+  async update(
+    id: string,
+    data: Partial<PersonalCalendarEvent>
+  ): Promise<PersonalCalendarEvent | null> {
     const event = await this.repo.update(id, {
       title: data.title,
       description: data.description,
@@ -392,7 +397,9 @@ export class CalendarStore implements DataStore<PersonalCalendarEvent> {
     return this.repo.delete(id);
   }
 
-  private mapEvent(event: Awaited<ReturnType<CalendarRepository['get']>> & object): PersonalCalendarEvent {
+  private mapEvent(
+    event: Awaited<ReturnType<CalendarRepository['get']>> & object
+  ): PersonalCalendarEvent {
     return {
       id: event.id,
       title: event.title,

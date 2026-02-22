@@ -18,7 +18,6 @@ import { configServicesApi } from '../api';
 import { useToast } from '../components/ToastProvider';
 import type { ConfigEntryView, ConfigServiceView, ConfigServiceStats } from '../api';
 
-
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
@@ -137,12 +136,9 @@ export function ConfigCenterPage() {
         !searchQuery ||
         service.displayName.toLowerCase().includes(searchQuery.toLowerCase()) ||
         service.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (service.description ?? '')
-          .toLowerCase()
-          .includes(searchQuery.toLowerCase());
+        (service.description ?? '').toLowerCase().includes(searchQuery.toLowerCase());
 
-      const matchesCategory =
-        selectedCategory === 'all' || service.category === selectedCategory;
+      const matchesCategory = selectedCategory === 'all' || service.category === selectedCategory;
 
       return matchesSearch && matchesCategory;
     })
@@ -159,25 +155,20 @@ export function ConfigCenterPage() {
       return a.displayName.localeCompare(b.displayName);
     });
 
-  const unconfiguredNeeded = services.filter(
-    (s) => s.requiredBy?.length > 0 && !s.isConfigured,
-  );
+  const unconfiguredNeeded = services.filter((s) => s.requiredBy?.length > 0 && !s.isConfigured);
 
   // ----------------------------------
   // Modal helpers
   // ----------------------------------
 
-  const loadEntryIntoForm = useCallback(
-    (entry: ConfigEntryView) => {
-      setActiveEntryId(entry.id);
-      setEntryFormValues({ ...entry.data });
-      setEntryLabel(entry.label);
-      setEntryIsActive(entry.isActive);
-      dirtyFieldsRef.current = new Set();
-      setSaveMessage(null);
-    },
-    [],
-  );
+  const loadEntryIntoForm = useCallback((entry: ConfigEntryView) => {
+    setActiveEntryId(entry.id);
+    setEntryFormValues({ ...entry.data });
+    setEntryLabel(entry.label);
+    setEntryIsActive(entry.isActive);
+    dirtyFieldsRef.current = new Set();
+    setSaveMessage(null);
+  }, []);
 
   const openConfigModal = useCallback(
     (service: ConfigServiceView) => {
@@ -187,8 +178,7 @@ export function ConfigCenterPage() {
 
       if (service.entries.length > 0) {
         // Load the default entry, or the first one
-        const defaultEntry =
-          service.entries.find((e) => e.isDefault) ?? service.entries[0]!;
+        const defaultEntry = service.entries.find((e) => e.isDefault) ?? service.entries[0]!;
         loadEntryIntoForm(defaultEntry);
       } else {
         // No entries yet -- prepare a blank "new entry" form
@@ -204,7 +194,7 @@ export function ConfigCenterPage() {
         setEntryFormValues(defaults);
       }
     },
-    [loadEntryIntoForm],
+    [loadEntryIntoForm]
   );
 
   const closeConfigModal = useCallback(() => {
@@ -240,7 +230,7 @@ export function ConfigCenterPage() {
       }
       setEntryFormValues(newValues);
     },
-    [entryFormValues],
+    [entryFormValues]
   );
 
   // ----------------------------------
@@ -262,9 +252,7 @@ export function ConfigCenterPage() {
         bodyData = { ...entryFormValues };
       } else {
         // PUT - only send dirty + non-secret fields
-        const activeEntry = editingService.entries.find(
-          (e) => e.id === activeEntryId,
-        );
+        const activeEntry = editingService.entries.find((e) => e.id === activeEntryId);
         const secretFieldNames = new Set(activeEntry?.secretFields ?? []);
 
         bodyData = {};
@@ -306,15 +294,11 @@ export function ConfigCenterPage() {
       // Re-fetch the service to get its updated entries
       try {
         const svcData = await configServicesApi.list();
-        const updatedService = svcData.services.find(
-          (s) => s.name === editingService.name,
-        );
+        const updatedService = svcData.services.find((s) => s.name === editingService.name);
         if (updatedService) {
           setEditingService(updatedService);
           const targetId = result.id ?? activeEntryId;
-          const targetEntry = updatedService.entries.find(
-            (e) => e.id === targetId,
-          );
+          const targetEntry = updatedService.entries.find((e) => e.id === targetId);
           if (targetEntry) {
             loadEntryIntoForm(targetEntry);
           }
@@ -349,9 +333,7 @@ export function ConfigCenterPage() {
   const handleDeleteEntry = useCallback(async () => {
     if (!editingService || !activeEntryId) return;
 
-    const activeEntry = editingService.entries.find(
-      (e) => e.id === activeEntryId,
-    );
+    const activeEntry = editingService.entries.find((e) => e.id === activeEntryId);
     const confirmed = await confirm({
       message: `Delete entry "${activeEntry?.label ?? 'this entry'}"? This action cannot be undone.`,
       variant: 'danger',
@@ -371,15 +353,12 @@ export function ConfigCenterPage() {
       // Refresh modal
       try {
         const svcData = await configServicesApi.list();
-        const updatedService = svcData.services.find(
-          (s) => s.name === editingService.name,
-        );
+        const updatedService = svcData.services.find((s) => s.name === editingService.name);
         if (updatedService) {
           setEditingService(updatedService);
           if (updatedService.entries.length > 0) {
             const next =
-              updatedService.entries.find((e) => e.isDefault) ??
-              updatedService.entries[0]!;
+              updatedService.entries.find((e) => e.isDefault) ?? updatedService.entries[0]!;
             loadEntryIntoForm(next);
           } else {
             startNewEntry();
@@ -426,14 +405,10 @@ export function ConfigCenterPage() {
 
       try {
         const svcData = await configServicesApi.list();
-        const updatedService = svcData.services.find(
-          (s) => s.name === editingService.name,
-        );
+        const updatedService = svcData.services.find((s) => s.name === editingService.name);
         if (updatedService) {
           setEditingService(updatedService);
-          const entry = updatedService.entries.find(
-            (e) => e.id === activeEntryId,
-          );
+          const entry = updatedService.entries.find((e) => e.id === activeEntryId);
           if (entry) {
             loadEntryIntoForm(entry);
           }
@@ -503,9 +478,8 @@ export function ConfigCenterPage() {
                 <div>
                   <p className="text-sm font-medium text-text-primary dark:text-dark-text-primary">
                     {unconfiguredNeeded.length} service
-                    {unconfiguredNeeded.length > 1 ? 's' : ''} needed by your
-                    tools {unconfiguredNeeded.length > 1 ? 'are' : 'is'} not
-                    configured
+                    {unconfiguredNeeded.length > 1 ? 's' : ''} needed by your tools{' '}
+                    {unconfiguredNeeded.length > 1 ? 'are' : 'is'} not configured
                   </p>
                   <p className="text-xs text-text-muted dark:text-dark-text-muted mt-1">
                     {unconfiguredNeeded.map((s) => s.displayName).join(', ')}
@@ -655,9 +629,7 @@ function StatsCard({
   return (
     <div className="p-4 bg-bg-secondary dark:bg-dark-bg-secondary border border-border dark:border-dark-border rounded-xl">
       <div className="flex items-center justify-between mb-2">
-        <span className="text-sm text-text-muted dark:text-dark-text-muted">
-          {label}
-        </span>
+        <span className="text-sm text-text-muted dark:text-dark-text-muted">{label}</span>
         {icon}
       </div>
       <p className="text-2xl font-semibold text-text-primary dark:text-dark-text-primary">
@@ -675,8 +647,7 @@ interface ServiceCardProps {
 }
 
 function ServiceCard({ service, onConfigure }: ServiceCardProps) {
-  const isNeededButMissing =
-    service.requiredBy?.length > 0 && !service.isConfigured;
+  const isNeededButMissing = service.requiredBy?.length > 0 && !service.isConfigured;
 
   const entryCountLabel = (() => {
     if (service.entryCount === 0) return 'Not configured';
@@ -702,10 +673,7 @@ function ServiceCard({ service, onConfigure }: ServiceCardProps) {
       };
     }
     // Partial check: configured but not all entries active
-    if (
-      service.entryCount > 0 &&
-      service.entries.some((e) => !e.isActive)
-    ) {
+    if (service.entryCount > 0 && service.entries.some((e) => !e.isActive)) {
       return {
         classes: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300',
         icon: <AlertCircle className="w-3 h-3" />,
@@ -799,4 +767,3 @@ function ServiceCard({ service, onConfigure }: ServiceCardProps) {
     </div>
   );
 }
-

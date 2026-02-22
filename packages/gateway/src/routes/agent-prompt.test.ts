@@ -345,9 +345,7 @@ describe('agent-prompt', () => {
     });
 
     it('instructs to search memories before answering personal questions', () => {
-      expect(BASE_SYSTEM_PROMPT).toContain(
-        'search_memories` before answering personal questions',
-      );
+      expect(BASE_SYSTEM_PROMPT).toContain('search_memories` before answering personal questions');
     });
   });
 

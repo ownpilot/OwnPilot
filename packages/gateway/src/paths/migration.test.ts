@@ -55,36 +55,20 @@ vi.mock('../services/log.js', () => ({
 }));
 
 vi.mock('../routes/helpers.js', () => ({
-  getErrorMessage: vi.fn((e: unknown) =>
-    e instanceof Error ? e.message : String(e),
-  ),
+  getErrorMessage: vi.fn((e: unknown) => (e instanceof Error ? e.message : String(e))),
 }));
 
 // ============================================================================
 // Dynamic imports — must come after vi.mock() calls
 // ============================================================================
 
-const {
-  needsMigration,
-  getMigrationStatus,
-  migrateData,
-  autoMigrateIfNeeded,
-} = await import('./migration.js');
+const { needsMigration, getMigrationStatus, migrateData, autoMigrateIfNeeded } =
+  await import('./migration.js');
 
-const {
-  existsSync,
-  copyFileSync,
-  mkdirSync,
-  readdirSync,
-  statSync,
-} = await import('node:fs');
+const { existsSync, copyFileSync, mkdirSync, readdirSync, statSync } = await import('node:fs');
 
-const {
-  getDataPaths,
-  getLegacyDataPath,
-  hasLegacyData,
-  initializeDataDirectories,
-} = await import('./index.js');
+const { getDataPaths, getLegacyDataPath, hasLegacyData, initializeDataDirectories } =
+  await import('./index.js');
 
 // Convenience aliases for mock casting
 const mockExistsSync = existsSync as Mock;
@@ -104,7 +88,7 @@ const mockInitializeDataDirectories = initializeDataDirectories as Mock;
 const LEGACY = '/old/data';
 const NEW_ROOT = '/new/data';
 const NEW_DB = '/new/data/db/gateway.db';
-const NEW_DB_DIR = dirname(NEW_DB);              // '/new/data/db' (or backslash on Win)
+const NEW_DB_DIR = dirname(NEW_DB); // '/new/data/db' (or backslash on Win)
 const NEW_WORKSPACE = '/new/data/workspace';
 const NEW_LOGS = '/new/data/logs';
 const NEW_PERSONAL = '/new/data/personal';
@@ -403,10 +387,10 @@ describe('migrateData()', () => {
   describe('file migration: gateway.db', () => {
     it('copies gateway.db to the database path', () => {
       mockExistsSync.mockImplementation((p: string) => {
-        if (p === LEGACY) return true;        // legacy path exists
-        if (p === SRC_DB) return true;        // source file exists
-        if (p === NEW_DB_DIR) return true;    // dest dir exists
-        return false;                          // dest file does not exist
+        if (p === LEGACY) return true; // legacy path exists
+        if (p === SRC_DB) return true; // source file exists
+        if (p === NEW_DB_DIR) return true; // dest dir exists
+        return false; // dest file does not exist
       });
       migrateData();
       expect(mockCopyFileSync).toHaveBeenCalledWith(SRC_DB, NEW_DB);
@@ -428,7 +412,7 @@ describe('migrateData()', () => {
       migrateData();
       expect(mockCopyFileSync).not.toHaveBeenCalledWith(
         expect.stringContaining('gateway.db'),
-        expect.any(String),
+        expect.any(String)
       );
     });
 
@@ -633,7 +617,7 @@ describe('migrateData()', () => {
         throw new Error('EACCES: cannot read dir');
       });
       const result = migrateData();
-      expect(result.errors.some(e => e.includes('workspace/'))).toBe(true);
+      expect(result.errors.some((e) => e.includes('workspace/'))).toBe(true);
     });
 
     it('sets success=false when directory migration errors', () => {
@@ -715,13 +699,7 @@ describe('migrateData()', () => {
 
   describe('multiple items', () => {
     it('migrates all files and dirs that exist', () => {
-      const existingPaths = new Set([
-        LEGACY,
-        SRC_DB,
-        SRC_SHM,
-        SRC_WORKSPACE,
-        NEW_DB_DIR,
-      ]);
+      const existingPaths = new Set([LEGACY, SRC_DB, SRC_SHM, SRC_WORKSPACE, NEW_DB_DIR]);
       mockExistsSync.mockImplementation((p: string) => existingPaths.has(p));
       mockStatSync.mockImplementation((p: string) => {
         if (p === SRC_WORKSPACE) return makeStat(true);
@@ -949,7 +927,7 @@ describe('copyDirectoryContents (via migrateData)', () => {
     migrateData();
     expect(mockCopyFileSync).toHaveBeenCalledWith(
       join(SRC_WORKSPACE, 'script.js'),
-      join(NEW_WORKSPACE, 'script.js'),
+      join(NEW_WORKSPACE, 'script.js')
     );
   });
 
@@ -970,7 +948,7 @@ describe('copyDirectoryContents (via migrateData)', () => {
     migrateData();
     expect(mockCopyFileSync).not.toHaveBeenCalledWith(
       expect.stringContaining('script.js'),
-      expect.any(String),
+      expect.any(String)
     );
   });
 
@@ -991,7 +969,7 @@ describe('copyDirectoryContents (via migrateData)', () => {
       return makeStat(false);
     });
     mockReaddirSync
-      .mockReturnValueOnce([makeDirent('subdir', true)])    // workspace listing
+      .mockReturnValueOnce([makeDirent('subdir', true)]) // workspace listing
       .mockReturnValueOnce([makeDirent('file.txt', false)]); // subdir listing
 
     migrateData();
@@ -1017,10 +995,7 @@ describe('copyDirectoryContents (via migrateData)', () => {
       return makeStat(false);
     });
     mockReaddirSync
-      .mockReturnValueOnce([
-        makeDirent('nested', true),
-        makeDirent('readme.txt', false),
-      ])
+      .mockReturnValueOnce([makeDirent('nested', true), makeDirent('readme.txt', false)])
       .mockReturnValueOnce([]); // nested dir is empty
 
     migrateData();
@@ -1122,9 +1097,9 @@ describe('autoMigrateIfNeeded()', () => {
   it('passes the full migration result from migrateData', () => {
     mockHasLegacyData.mockReturnValue(true);
     mockExistsSync.mockImplementation((p: string) => {
-      if (p === NEW_DB) return false;  // migration needed
-      if (p === LEGACY) return true;   // legacy path exists
-      if (p === SRC_DB) return true;   // source db file exists
+      if (p === NEW_DB) return false; // migration needed
+      if (p === LEGACY) return true; // legacy path exists
+      if (p === SRC_DB) return true; // source db file exists
       if (p === NEW_DB_DIR) return true;
       return false;
     });

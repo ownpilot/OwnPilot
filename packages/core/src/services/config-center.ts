@@ -15,13 +15,13 @@
 
 /** Supported field types for config schemas */
 export type ConfigFieldType =
-  | 'string'   // plain text
-  | 'secret'   // masked in UI and API responses
-  | 'url'      // validated URL
-  | 'number'   // numeric input
-  | 'boolean'  // toggle
-  | 'select'   // dropdown from options list
-  | 'json';    // freeform JSON (textarea + validation)
+  | 'string' // plain text
+  | 'secret' // masked in UI and API responses
+  | 'url' // validated URL
+  | 'number' // numeric input
+  | 'boolean' // toggle
+  | 'select' // dropdown from options list
+  | 'json'; // freeform JSON (textarea + validation)
 
 /** A single field definition within a service config schema */
 export interface ConfigFieldDefinition {
@@ -171,4 +171,3 @@ export interface ConfigCenter {
    */
   getServiceDefinition(serviceName: string): ConfigServiceDefinition | null;
 }
-

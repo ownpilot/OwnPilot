@@ -35,7 +35,10 @@ class WorkspaceInstance implements Workspace {
   private _error?: string;
 
   private messages: WorkspaceMessage[] = [];
-  private eventHandlers = new Map<keyof WorkspaceEvents, Set<EventHandler<keyof WorkspaceEvents>>>();
+  private eventHandlers = new Map<
+    keyof WorkspaceEvents,
+    Set<EventHandler<keyof WorkspaceEvents>>
+  >();
 
   constructor(config: WorkspaceConfig) {
     this.config = config;
@@ -122,7 +125,8 @@ class WorkspaceInstance implements Workspace {
         id: message.senderId,
         name: message.senderName,
       },
-      timestamp: message.timestamp instanceof Date ? message.timestamp : new Date(message.timestamp),
+      timestamp:
+        message.timestamp instanceof Date ? message.timestamp : new Date(message.timestamp),
       attachments: message.attachments?.map((a) => ({
         id: randomUUID(),
         type: a.type,
@@ -167,12 +171,12 @@ class WorkspaceInstance implements Workspace {
       const agentConfig = this.config.agent;
       const resolved = await resolveProviderAndModel(
         agentConfig?.provider ?? 'default',
-        agentConfig?.model ?? 'default',
+        agentConfig?.model ?? 'default'
       );
 
       const agent = await getOrCreateChatAgent(
         resolved.provider ?? 'openai',
-        resolved.model ?? 'gpt-4o-mini',
+        resolved.model ?? 'gpt-4o-mini'
       );
 
       const result = await agent.chat(lastUserMessage.content);

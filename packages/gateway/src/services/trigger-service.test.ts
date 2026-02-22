@@ -16,15 +16,13 @@ import type { Trigger, TriggerHistory } from '../db/repositories/triggers.js';
 const mockEmit = vi.fn();
 vi.mock('@ownpilot/core', () => ({
   getEventBus: () => ({ emit: mockEmit }),
-  createEvent: vi.fn(
-    (type: string, category: string, source: string, data: unknown) => ({
-      type,
-      category,
-      source,
-      data,
-      timestamp: new Date().toISOString(),
-    }),
-  ),
+  createEvent: vi.fn((type: string, category: string, source: string, data: unknown) => ({
+    type,
+    category,
+    source,
+    data,
+    timestamp: new Date().toISOString(),
+  })),
   EventTypes: {
     RESOURCE_CREATED: 'resource.created',
     RESOURCE_UPDATED: 'resource.updated',
@@ -126,7 +124,7 @@ describe('TriggerService', () => {
         expect.objectContaining({
           type: 'resource.created',
           data: { resourceType: 'trigger', id: 'trg-1' },
-        }),
+        })
       );
     });
 
@@ -136,7 +134,7 @@ describe('TriggerService', () => {
           name: '',
           type: 'schedule',
           config: {},
-        }),
+        })
       ).rejects.toThrow(/Name is required/);
       expect(mockRepo.create).not.toHaveBeenCalled();
     });
@@ -147,7 +145,7 @@ describe('TriggerService', () => {
           name: '   ',
           type: 'schedule',
           config: {},
-        }),
+        })
       ).rejects.toThrow(TriggerServiceError);
     });
   });
@@ -196,7 +194,7 @@ describe('TriggerService', () => {
         expect.objectContaining({
           type: 'resource.updated',
           data: expect.objectContaining({ resourceType: 'trigger', id: 'trg-1' }),
-        }),
+        })
       );
     });
 
@@ -219,7 +217,7 @@ describe('TriggerService', () => {
         expect.objectContaining({
           type: 'resource.deleted',
           data: { resourceType: 'trigger', id: 'trg-1' },
-        }),
+        })
       );
     });
 
@@ -276,14 +274,44 @@ describe('TriggerService', () => {
 
     it('logExecution delegates to repo with all params', async () => {
       mockRepo.logExecution.mockResolvedValue(undefined);
-      await service.logExecution('user-1', 'trg-1', 'Test Trigger', 'success', { ok: true }, undefined, 150);
-      expect(mockRepo.logExecution).toHaveBeenCalledWith('trg-1', 'Test Trigger', 'success', { ok: true }, undefined, 150);
+      await service.logExecution(
+        'user-1',
+        'trg-1',
+        'Test Trigger',
+        'success',
+        { ok: true },
+        undefined,
+        150
+      );
+      expect(mockRepo.logExecution).toHaveBeenCalledWith(
+        'trg-1',
+        'Test Trigger',
+        'success',
+        { ok: true },
+        undefined,
+        150
+      );
     });
 
     it('logExecution delegates failure with error', async () => {
       mockRepo.logExecution.mockResolvedValue(undefined);
-      await service.logExecution('user-1', 'trg-1', 'Test Trigger', 'failure', undefined, 'timeout', 5000);
-      expect(mockRepo.logExecution).toHaveBeenCalledWith('trg-1', 'Test Trigger', 'failure', undefined, 'timeout', 5000);
+      await service.logExecution(
+        'user-1',
+        'trg-1',
+        'Test Trigger',
+        'failure',
+        undefined,
+        'timeout',
+        5000
+      );
+      expect(mockRepo.logExecution).toHaveBeenCalledWith(
+        'trg-1',
+        'Test Trigger',
+        'failure',
+        undefined,
+        'timeout',
+        5000
+      );
     });
 
     it('getRecentHistory delegates with default query', async () => {

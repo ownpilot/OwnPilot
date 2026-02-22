@@ -66,7 +66,7 @@ export async function startBot(options: BotOptions): Promise<void> {
 
   // Validate provider is supported by createSimpleAgent
   const supportedProviders = ['openai', 'anthropic'] as const;
-  type SupportedProvider = typeof supportedProviders[number];
+  type SupportedProvider = (typeof supportedProviders)[number];
 
   if (!supportedProviders.includes(provider as SupportedProvider)) {
     console.error(`❌ Error: Provider "${provider}" is not supported for CLI bot`);
@@ -83,8 +83,14 @@ export async function startBot(options: BotOptions): Promise<void> {
   });
 
   // Parse allowed users/chats from CLI options
-  const allowedUserIds = options.users?.split(',').map(Number).filter((n) => Number.isFinite(n));
-  const allowedChatIds = options.chats?.split(',').map(Number).filter((n) => Number.isFinite(n));
+  const allowedUserIds = options.users
+    ?.split(',')
+    .map(Number)
+    .filter((n) => Number.isFinite(n));
+  const allowedChatIds = options.chats
+    ?.split(',')
+    .map(Number)
+    .filter((n) => Number.isFinite(n));
 
   // Create bot config
   const config: TelegramConfig = {
@@ -122,7 +128,10 @@ export async function startBot(options: BotOptions): Promise<void> {
             replyToMessageId: message.id,
           });
         } catch (sendErr) {
-          console.error('Failed to send error message:', sendErr instanceof Error ? sendErr.message : sendErr);
+          console.error(
+            'Failed to send error message:',
+            sendErr instanceof Error ? sendErr.message : sendErr
+          );
         }
       }
     } catch (err) {

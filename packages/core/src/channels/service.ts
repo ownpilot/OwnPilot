@@ -74,10 +74,7 @@ export interface IChannelService {
    * Resolve a channel user to an OwnPilot user ID (via verification mapping).
    * Returns null if the user is not verified.
    */
-  resolveUser(
-    platform: ChannelPlatform,
-    platformUserId: string
-  ): Promise<string | null>;
+  resolveUser(platform: ChannelPlatform, platformUserId: string): Promise<string | null>;
 }
 
 // ============================================================================

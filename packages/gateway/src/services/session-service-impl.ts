@@ -9,12 +9,7 @@
  */
 
 import { randomUUID } from 'node:crypto';
-import type {
-  ISessionService,
-  Session,
-  CreateSessionInput,
-  SessionSource,
-} from '@ownpilot/core';
+import type { ISessionService, Session, CreateSessionInput, SessionSource } from '@ownpilot/core';
 import { MS_PER_HOUR, MS_PER_MINUTE } from '../config/defaults.js';
 
 // ============================================================================

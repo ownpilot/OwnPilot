@@ -32,7 +32,18 @@ import { safeStringArray } from './agent-tools.js';
 const log = getLog('AgentCache');
 
 /** Providers with built-in SDK support (non-native fall back to OpenAI-compatible) */
-export const NATIVE_PROVIDERS = new Set(['openai', 'anthropic', 'google', 'deepseek', 'groq', 'mistral', 'xai', 'together', 'fireworks', 'perplexity']);
+export const NATIVE_PROVIDERS = new Set([
+  'openai',
+  'anthropic',
+  'google',
+  'deepseek',
+  'groq',
+  'mistral',
+  'xai',
+  'together',
+  'fireworks',
+  'perplexity',
+]);
 
 // Runtime agent cache (runtime instances, not serializable)
 export const agentCache = new Map<string, Agent>();
@@ -92,7 +103,7 @@ export function createApprovalCallback(): AgentConfig['requestApproval'] {
       category as ActionCategory,
       actionType,
       description,
-      params,
+      params
     );
     if (!result) return true;
     if (result.action.status === 'rejected') return false;
@@ -126,7 +137,9 @@ export async function getProviderApiKey(provider: string): Promise<string | unde
  * Load provider config from core module
  * Uses the core's getProviderConfig which properly resolves JSON paths
  */
-export function loadProviderConfig(providerId: string): { baseUrl?: string; apiKeyEnv?: string; type?: string } | null {
+export function loadProviderConfig(
+  providerId: string
+): { baseUrl?: string; apiKeyEnv?: string; type?: string } | null {
   // 1. Check builtin provider configs
   const config = coreGetProviderConfig(providerId);
   if (config) {
@@ -161,7 +174,11 @@ export function loadProviderConfig(providerId: string): { baseUrl?: string; apiK
  * 3. Static pricing database (may not have all models)
  * 4. Hardcoded fallback: 128K
  */
-export function resolveContextWindow(provider: string, model: string, userOverride?: number): number {
+export function resolveContextWindow(
+  provider: string,
+  model: string,
+  userOverride?: number
+): number {
   if (userOverride !== undefined) return userOverride;
 
   // Provider config has accurate context windows for all models (loaded from JSON)
@@ -177,7 +194,10 @@ export function resolveContextWindow(provider: string, model: string, userOverri
 /**
  * Resolve toolGroups to individual tool names
  */
-export function resolveToolGroups(toolGroups: string[] | undefined, explicitTools: string[] | undefined): string[] {
+export function resolveToolGroups(
+  toolGroups: string[] | undefined,
+  explicitTools: string[] | undefined
+): string[] {
   const tools = new Set<string>();
 
   // Add explicit tools first
@@ -215,7 +235,11 @@ export function resolveRecordTools(config: Record<string, unknown>): {
 }
 
 /** Build standardized agent config response object */
-export function buildAgentConfigResponse(config: Record<string, unknown>, configuredTools: string[] | undefined, configuredToolGroups: string[] | undefined) {
+export function buildAgentConfigResponse(
+  config: Record<string, unknown>,
+  configuredTools: string[] | undefined,
+  configuredToolGroups: string[] | undefined
+) {
   return {
     maxTokens: (config.maxTokens as number) ?? AGENT_CREATE_DEFAULT_MAX_TOKENS,
     temperature: (config.temperature as number) ?? AGENT_DEFAULT_TEMPERATURE,

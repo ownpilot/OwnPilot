@@ -23,8 +23,8 @@ interface PluginRow {
   name: string;
   version: string;
   status: string;
-  settings: string;              // JSONB string
-  granted_permissions: string;   // JSONB string
+  settings: string; // JSONB string
+  granted_permissions: string; // JSONB string
   error_message: string | null;
   installed_at: string;
   updated_at: string;
@@ -66,7 +66,6 @@ let cacheInitialized = false;
 // ROW-TO-MODEL CONVERSION
 // =============================================================================
 
-
 function rowToRecord(row: PluginRow): PluginRecord {
   return {
     id: row.id,
@@ -103,7 +102,7 @@ export class PluginsRepository extends BaseRepository {
    */
   async refreshCache(): Promise<void> {
     const rows = await this.query<PluginRow>('SELECT * FROM plugins');
-    pluginsCache = new Map(rows.map(r => [r.id, rowToRecord(r)]));
+    pluginsCache = new Map(rows.map((r) => [r.id, rowToRecord(r)]));
     cacheInitialized = true;
   }
 
@@ -111,10 +110,7 @@ export class PluginsRepository extends BaseRepository {
    * Refresh the cache for a single plugin by id.
    */
   private async refreshPluginCache(id: string): Promise<void> {
-    const row = await this.queryOne<PluginRow>(
-      'SELECT * FROM plugins WHERE id = $1',
-      [id],
-    );
+    const row = await this.queryOne<PluginRow>('SELECT * FROM plugins WHERE id = $1', [id]);
 
     if (row) {
       pluginsCache.set(id, rowToRecord(row));
@@ -175,7 +171,7 @@ export class PluginsRepository extends BaseRepository {
         input.status ?? 'enabled',
         JSON.stringify(input.settings ?? {}),
         JSON.stringify(input.grantedPermissions ?? []),
-      ],
+      ]
     );
 
     await this.refreshPluginCache(input.id);
@@ -185,14 +181,17 @@ export class PluginsRepository extends BaseRepository {
   /**
    * Update a plugin's settings. Returns null if not found.
    */
-  async updateSettings(id: string, settings: Record<string, unknown>): Promise<PluginRecord | null> {
+  async updateSettings(
+    id: string,
+    settings: Record<string, unknown>
+  ): Promise<PluginRecord | null> {
     const existing = pluginsCache.get(id);
     if (!existing) return null;
 
-    await this.execute(
-      'UPDATE plugins SET settings = $1, updated_at = NOW() WHERE id = $2',
-      [JSON.stringify(settings), id],
-    );
+    await this.execute('UPDATE plugins SET settings = $1, updated_at = NOW() WHERE id = $2', [
+      JSON.stringify(settings),
+      id,
+    ]);
 
     await this.refreshPluginCache(id);
     return pluginsCache.get(id) ?? null;
@@ -205,14 +204,14 @@ export class PluginsRepository extends BaseRepository {
   async updateStatus(
     id: string,
     status: PluginRecord['status'],
-    errorMessage?: string,
+    errorMessage?: string
   ): Promise<PluginRecord | null> {
     const existing = pluginsCache.get(id);
     if (!existing) return null;
 
     await this.execute(
       'UPDATE plugins SET status = $1, error_message = $2, updated_at = NOW() WHERE id = $3',
-      [status, errorMessage ?? null, id],
+      [status, errorMessage ?? null, id]
     );
 
     await this.refreshPluginCache(id);
@@ -228,7 +227,7 @@ export class PluginsRepository extends BaseRepository {
 
     await this.execute(
       'UPDATE plugins SET granted_permissions = $1, updated_at = NOW() WHERE id = $2',
-      [JSON.stringify(permissions), id],
+      [JSON.stringify(permissions), id]
     );
 
     await this.refreshPluginCache(id);

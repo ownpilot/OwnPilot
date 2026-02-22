@@ -66,8 +66,12 @@ describe('IsolatedStorage', () => {
     });
 
     it('blocks path traversal attempts', async () => {
-      await expect(storage.readFile('user1', '../../etc/passwd')).rejects.toThrow(StorageSecurityError);
-      await expect(storage.readFile('user1', '../other-user/file.txt')).rejects.toThrow(StorageSecurityError);
+      await expect(storage.readFile('user1', '../../etc/passwd')).rejects.toThrow(
+        StorageSecurityError
+      );
+      await expect(storage.readFile('user1', '../other-user/file.txt')).rejects.toThrow(
+        StorageSecurityError
+      );
     });
   });
 
@@ -154,9 +158,9 @@ describe('IsolatedStorage', () => {
         birthtime: new Date(),
       } as never);
 
-      await expect(
-        storage.writeFile('user1', 'test.txt', 'hello')
-      ).rejects.toThrow(StorageSecurityError);
+      await expect(storage.writeFile('user1', 'test.txt', 'hello')).rejects.toThrow(
+        StorageSecurityError
+      );
     });
   });
 

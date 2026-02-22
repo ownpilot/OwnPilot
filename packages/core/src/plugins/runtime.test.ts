@@ -86,11 +86,7 @@ import type {
   RuntimeConfig,
   RuntimeEvents as _RuntimeEvents,
 } from './runtime.js';
-import {
-  IsolationEnforcer,
-  PluginIsolationManager,
-  STORAGE_QUOTAS,
-} from './isolation.js';
+import { IsolationEnforcer, PluginIsolationManager, STORAGE_QUOTAS } from './isolation.js';
 import type { MarketplaceManifest } from './marketplace.js';
 import { createMinimalSecurityDeclaration } from './marketplace.js';
 import { unsafePluginId } from '../types/branded.js';
@@ -136,10 +132,7 @@ function makeRuntime(config: Partial<RuntimeConfig> = {}): SecurePluginRuntime {
 /**
  * Load a plugin (no start). Returns the loaded plugin instance.
  */
-async function loadPlugin(
-  rt: SecurePluginRuntime,
-  manifest: MarketplaceManifest,
-): Promise<void> {
+async function loadPlugin(rt: SecurePluginRuntime, manifest: MarketplaceManifest): Promise<void> {
   const result = await rt.load(manifest, { skipVerification: true });
   if (!result.ok) throw new Error(`Load failed: ${result.error}`);
 }
@@ -151,7 +144,7 @@ async function loadPlugin(
  */
 async function loadAndStartPlugin(
   rt: SecurePluginRuntime,
-  manifest: MarketplaceManifest,
+  manifest: MarketplaceManifest
 ): Promise<void> {
   await loadPlugin(rt, manifest);
 
@@ -443,7 +436,7 @@ describe('SecurePluginRuntime', () => {
         expect.objectContaining({
           pluginId: 'test-plugin',
           manifest,
-        }),
+        })
       );
     });
 
@@ -625,9 +618,7 @@ describe('SecurePluginRuntime', () => {
       const manifest = makeManifest();
       await loadAndStartPlugin(runtime, manifest);
 
-      expect(handler).toHaveBeenCalledWith(
-        expect.objectContaining({ pluginId: 'test-plugin' }),
-      );
+      expect(handler).toHaveBeenCalledWith(expect.objectContaining({ pluginId: 'test-plugin' }));
     });
 
     it('should set startedAt on success', async () => {
@@ -709,9 +700,7 @@ describe('SecurePluginRuntime', () => {
       await vi.advanceTimersByTimeAsync(11000);
       await startPromise;
 
-      expect(handler).toHaveBeenCalledWith(
-        expect.objectContaining({ pluginId: 'test-plugin' }),
-      );
+      expect(handler).toHaveBeenCalledWith(expect.objectContaining({ pluginId: 'test-plugin' }));
 
       vi.useRealTimers();
     });
@@ -733,7 +722,7 @@ describe('SecurePluginRuntime', () => {
         expect.objectContaining({
           pluginId: 'test-plugin',
           reason: expect.stringContaining('Too many errors'),
-        }),
+        })
       );
 
       vi.useRealTimers();
@@ -809,7 +798,7 @@ describe('SecurePluginRuntime', () => {
         expect.objectContaining({
           pluginId: 'test-plugin',
           reason: 'manual',
-        }),
+        })
       );
     });
 
@@ -1254,7 +1243,7 @@ describe('SecurePluginRuntime', () => {
         expect.objectContaining({
           pluginId: 'test-plugin',
           message: { key: 'value' },
-        }),
+        })
       );
     });
 
@@ -1274,7 +1263,7 @@ describe('SecurePluginRuntime', () => {
         expect.objectContaining({
           attemptedResource: 'memory:user',
           action: 'read',
-        }),
+        })
       );
     });
 
@@ -1292,10 +1281,7 @@ describe('SecurePluginRuntime', () => {
 
       // getLog('Plugin:test-plugin').info('info: hello from plugin', '') → console.log('[Plugin:test-plugin]', 'info: hello from plugin')
       // Note: empty string data is falsy, so fallback logger omits it
-      expect(debugSpy).toHaveBeenCalledWith(
-        '[Plugin:test-plugin]',
-        'info: hello from plugin',
-      );
+      expect(debugSpy).toHaveBeenCalledWith('[Plugin:test-plugin]', 'info: hello from plugin');
 
       debugSpy.mockRestore();
     });
@@ -1365,7 +1351,7 @@ describe('SecurePluginRuntime', () => {
         expect.objectContaining({
           pluginId: 'test-plugin',
           error: 'crash',
-        }),
+        })
       );
     });
 
@@ -1385,7 +1371,7 @@ describe('SecurePluginRuntime', () => {
         expect.objectContaining({
           pluginId: 'test-plugin',
           reason: expect.stringContaining('Too many errors'),
-        }),
+        })
       );
     });
 
@@ -1423,7 +1409,7 @@ describe('SecurePluginRuntime', () => {
         expect.objectContaining({
           pluginId: 'test-plugin',
           reason: 'Worker exited with code 42',
-        }),
+        })
       );
     });
 

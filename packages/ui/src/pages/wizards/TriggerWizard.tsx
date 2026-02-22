@@ -27,7 +27,12 @@ type TriggerType = 'schedule' | 'event' | 'condition' | 'webhook';
 type ActionType = 'chat' | 'tool' | 'notification' | 'goal_check' | 'memory_summary' | 'workflow';
 
 const TRIGGER_TYPES: Array<{ id: TriggerType; label: string; desc: string; icon: typeof Clock }> = [
-  { id: 'schedule', label: 'Schedule', desc: 'Run on a cron schedule (e.g., every morning)', icon: Clock },
+  {
+    id: 'schedule',
+    label: 'Schedule',
+    desc: 'Run on a cron schedule (e.g., every morning)',
+    icon: Clock,
+  },
   { id: 'event', label: 'Event', desc: 'Fire when a specific event occurs', icon: Zap },
   { id: 'webhook', label: 'Webhook', desc: 'Fire from an external HTTP request', icon: Globe },
 ];
@@ -48,22 +53,28 @@ export function TriggerWizard({ onComplete, onCancel }: Props) {
   const [actionType, setActionType] = useState<ActionType | null>(null);
   const [actionPayload, setActionPayload] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
-  const [result, setResult] = useState<{ ok: boolean; triggerId?: string; error?: string } | null>(null);
+  const [result, setResult] = useState<{ ok: boolean; triggerId?: string; error?: string } | null>(
+    null
+  );
 
   const cronValid = useMemo(() => validateCron(cronExpression), [cronExpression]);
 
   const canGoNext = useMemo(() => {
     switch (step) {
-      case 0: return !!triggerType && name.trim().length >= 2;
+      case 0:
+        return !!triggerType && name.trim().length >= 2;
       case 1: {
         if (triggerType === 'schedule') return cronValid.valid;
         if (triggerType === 'event') return eventType.trim().length > 0;
         if (triggerType === 'webhook') return true; // path is auto-generated
         return false;
       }
-      case 2: return !!actionType;
-      case 3: return result?.ok === true;
-      default: return false;
+      case 2:
+        return !!actionType;
+      case 3:
+        return result?.ok === true;
+      default:
+        return false;
     }
   }, [step, triggerType, name, cronValid, eventType, actionType, result]);
 
@@ -79,9 +90,7 @@ export function TriggerWizard({ onComplete, onCancel }: Props) {
 
         const action: Record<string, unknown> = {
           type: actionType,
-          payload: actionPayload.trim()
-            ? { message: actionPayload.trim() }
-            : {},
+          payload: actionPayload.trim() ? { message: actionPayload.trim() } : {},
         };
 
         const res = await apiClient.post<{ trigger: { id: string } }>('/triggers', {
@@ -95,7 +104,10 @@ export function TriggerWizard({ onComplete, onCancel }: Props) {
         setResult({ ok: true, triggerId: res.trigger.id });
         setStep(3);
       } catch (err) {
-        setResult({ ok: false, error: err instanceof Error ? err.message : 'Failed to create trigger' });
+        setResult({
+          ok: false,
+          error: err instanceof Error ? err.message : 'Failed to create trigger',
+        });
         setStep(3);
       } finally {
         setIsProcessing(false);
@@ -159,8 +171,12 @@ export function TriggerWizard({ onComplete, onCancel }: Props) {
                   >
                     <Icon className="w-5 h-5 text-primary flex-shrink-0" />
                     <div>
-                      <span className="text-sm font-medium text-text-primary dark:text-dark-text-primary">{t.label}</span>
-                      <p className="text-xs text-text-muted dark:text-dark-text-muted mt-0.5">{t.desc}</p>
+                      <span className="text-sm font-medium text-text-primary dark:text-dark-text-primary">
+                        {t.label}
+                      </span>
+                      <p className="text-xs text-text-muted dark:text-dark-text-muted mt-0.5">
+                        {t.desc}
+                      </p>
                     </div>
                   </button>
                 );
@@ -193,8 +209,12 @@ export function TriggerWizard({ onComplete, onCancel }: Props) {
                         : 'border-border dark:border-dark-border hover:border-primary/40'
                     }`}
                   >
-                    <span className="font-medium text-text-primary dark:text-dark-text-primary">{p.label}</span>
-                    <p className="text-xs text-text-muted dark:text-dark-text-muted mt-0.5">{p.desc}</p>
+                    <span className="font-medium text-text-primary dark:text-dark-text-primary">
+                      {p.label}
+                    </span>
+                    <p className="text-xs text-text-muted dark:text-dark-text-muted mt-0.5">
+                      {p.desc}
+                    </p>
                   </button>
                 ))}
               </div>
@@ -245,12 +265,13 @@ export function TriggerWizard({ onComplete, onCancel }: Props) {
                 Webhook Configuration
               </h2>
               <p className="text-sm text-text-muted dark:text-dark-text-muted mb-6">
-                A unique webhook URL will be generated when the trigger is created.
-                Send a POST request to it to fire the trigger.
+                A unique webhook URL will be generated when the trigger is created. Send a POST
+                request to it to fire the trigger.
               </p>
               <div className="p-4 rounded-lg bg-bg-tertiary dark:bg-dark-bg-tertiary">
                 <p className="text-xs text-text-muted dark:text-dark-text-muted">
-                  The webhook path will be available after creation. You can find it in the Triggers page.
+                  The webhook path will be available after creation. You can find it in the Triggers
+                  page.
                 </p>
               </div>
             </>
@@ -279,7 +300,9 @@ export function TriggerWizard({ onComplete, onCancel }: Props) {
                     : 'border-border dark:border-dark-border hover:border-primary/40'
                 }`}
               >
-                <span className="text-sm font-medium text-text-primary dark:text-dark-text-primary">{a.label}</span>
+                <span className="text-sm font-medium text-text-primary dark:text-dark-text-primary">
+                  {a.label}
+                </span>
                 <p className="text-xs text-text-muted dark:text-dark-text-muted mt-0.5">{a.desc}</p>
               </button>
             ))}
@@ -323,8 +346,19 @@ export function TriggerWizard({ onComplete, onCancel }: Props) {
           {!result && (
             <div className="flex flex-col items-center gap-3">
               <svg className="w-10 h-10 animate-spin text-primary" viewBox="0 0 24 24" fill="none">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                />
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                />
               </svg>
               <p className="text-text-muted dark:text-dark-text-muted">Creating trigger...</p>
             </div>
@@ -354,7 +388,10 @@ export function TriggerWizard({ onComplete, onCancel }: Props) {
               </h3>
               <p className="text-sm text-error max-w-md mx-auto">{result.error}</p>
               <button
-                onClick={() => { setStep(2); setResult(null); }}
+                onClick={() => {
+                  setStep(2);
+                  setResult(null);
+                }}
                 className="mt-3 text-sm text-primary hover:underline"
               >
                 Go back and try again

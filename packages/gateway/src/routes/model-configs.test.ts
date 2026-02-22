@@ -46,8 +46,24 @@ const builtinOpenai = {
   apiKeyEnv: 'OPENAI_API_KEY',
   docsUrl: 'https://platform.openai.com/docs',
   models: [
-    { id: 'gpt-4', name: 'GPT-4', capabilities: ['chat'], inputPrice: 30, outputPrice: 60, contextWindow: 8192, maxOutput: 4096 },
-    { id: 'gpt-3.5-turbo', name: 'GPT-3.5 Turbo', capabilities: ['chat'], inputPrice: 0.5, outputPrice: 1.5, contextWindow: 16384, maxOutput: 4096 },
+    {
+      id: 'gpt-4',
+      name: 'GPT-4',
+      capabilities: ['chat'],
+      inputPrice: 30,
+      outputPrice: 60,
+      contextWindow: 8192,
+      maxOutput: 4096,
+    },
+    {
+      id: 'gpt-3.5-turbo',
+      name: 'GPT-3.5 Turbo',
+      capabilities: ['chat'],
+      inputPrice: 0.5,
+      outputPrice: 1.5,
+      contextWindow: 16384,
+      maxOutput: 4096,
+    },
   ],
 };
 
@@ -58,7 +74,15 @@ const builtinAnthropic = {
   apiKeyEnv: 'ANTHROPIC_API_KEY',
   docsUrl: 'https://docs.anthropic.com',
   models: [
-    { id: 'claude-3-opus', name: 'Claude 3 Opus', capabilities: ['chat', 'vision'], inputPrice: 15, outputPrice: 75, contextWindow: 200000, maxOutput: 4096 },
+    {
+      id: 'claude-3-opus',
+      name: 'Claude 3 Opus',
+      capabilities: ['chat', 'vision'],
+      inputPrice: 15,
+      outputPrice: 75,
+      contextWindow: 200000,
+      maxOutput: 4096,
+    },
   ],
 };
 
@@ -71,7 +95,15 @@ const aggregatorOpenRouter = {
   description: 'AI model aggregator',
   docsUrl: 'https://openrouter.ai/docs',
   defaultModels: [
-    { id: 'meta-llama/llama-3', name: 'Llama 3', capabilities: ['chat'], pricingInput: 0.5, pricingOutput: 0.5, contextWindow: 8192, maxOutput: 4096 },
+    {
+      id: 'meta-llama/llama-3',
+      name: 'Llama 3',
+      capabilities: ['chat'],
+      pricingInput: 0.5,
+      pricingOutput: 0.5,
+      contextWindow: 8192,
+      maxOutput: 4096,
+    },
   ],
 };
 
@@ -159,9 +191,11 @@ describe('Model Configs Routes', () => {
       const json = await res.json();
 
       const openaiModel = json.data.find((m: { providerId: string }) => m.providerId === 'openai');
-      const anthropicModel = json.data.find((m: { providerId: string }) => m.providerId === 'anthropic');
+      const anthropicModel = json.data.find(
+        (m: { providerId: string }) => m.providerId === 'anthropic'
+      );
 
-      expect(openaiModel.isConfigured).toBe(true);   // hasApiKey returns true for openai
+      expect(openaiModel.isConfigured).toBe(true); // hasApiKey returns true for openai
       expect(anthropicModel.isConfigured).toBe(false); // hasApiKey returns false for anthropic
     });
 
@@ -177,12 +211,21 @@ describe('Model Configs Routes', () => {
       const res = await app.request('/models?capability=vision');
       const json = await res.json();
 
-      expect(json.data.every((m: { capabilities: string[] }) => m.capabilities.includes('vision'))).toBe(true);
+      expect(
+        json.data.every((m: { capabilities: string[] }) => m.capabilities.includes('vision'))
+      ).toBe(true);
     });
 
     it('includes user config overrides', async () => {
       mockModelConfigsRepo.listModels.mockResolvedValue([
-        { providerId: 'openai', modelId: 'gpt-4', displayName: 'Custom GPT-4', capabilities: ['chat', 'code'], pricingInput: 25, pricingOutput: 50 },
+        {
+          providerId: 'openai',
+          modelId: 'gpt-4',
+          displayName: 'Custom GPT-4',
+          capabilities: ['chat', 'code'],
+          pricingInput: 25,
+          pricingOutput: 50,
+        },
       ]);
 
       const res = await app.request('/models');
@@ -241,7 +284,14 @@ describe('Model Configs Routes', () => {
         { id: 'ollama', name: 'Ollama', isEnabled: true, baseUrl: 'http://localhost:11434' },
       ]);
       mockLocalProvidersRepo.listModels.mockResolvedValue([
-        { modelId: 'llama2', displayName: 'Llama 2', isEnabled: true, capabilities: ['chat'], contextWindow: 4096, maxOutput: 2048 },
+        {
+          modelId: 'llama2',
+          displayName: 'Llama 2',
+          isEnabled: true,
+          capabilities: ['chat'],
+          contextWindow: 4096,
+          maxOutput: 2048,
+        },
       ]);
 
       const res = await app.request('/models');
@@ -269,7 +319,11 @@ describe('Model Configs Routes', () => {
       const res = await app.request('/models', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ providerId: 'openai', modelId: 'custom-model', displayName: 'Custom' }),
+        body: JSON.stringify({
+          providerId: 'openai',
+          modelId: 'custom-model',
+          displayName: 'Custom',
+        }),
       });
 
       expect(res.status).toBe(200);
@@ -313,7 +367,12 @@ describe('Model Configs Routes', () => {
 
     it('includes custom providers', async () => {
       mockModelConfigsRepo.listProviders.mockResolvedValue([
-        { providerId: 'my-local', displayName: 'My Provider', isEnabled: true, apiBaseUrl: 'http://localhost:8080' },
+        {
+          providerId: 'my-local',
+          displayName: 'My Provider',
+          isEnabled: true,
+          apiBaseUrl: 'http://localhost:8080',
+        },
       ]);
 
       const res = await app.request('/models/providers/list');
@@ -328,9 +387,7 @@ describe('Model Configs Routes', () => {
       mockLocalProvidersRepo.listProviders.mockResolvedValue([
         { id: 'ollama', name: 'Ollama', isEnabled: true, baseUrl: 'http://localhost:11434' },
       ]);
-      mockLocalProvidersRepo.listModels.mockResolvedValue([
-        { modelId: 'llama2', isEnabled: true },
-      ]);
+      mockLocalProvidersRepo.listModels.mockResolvedValue([{ modelId: 'llama2', isEnabled: true }]);
 
       const res = await app.request('/models/providers/list');
       const json = await res.json();
@@ -542,7 +599,11 @@ describe('Model Configs Routes', () => {
       });
 
       expect(res.status).toBe(200);
-      expect(mockModelConfigsRepo.toggleProvider).toHaveBeenCalledWith('default', 'my-custom', false);
+      expect(mockModelConfigsRepo.toggleProvider).toHaveBeenCalledWith(
+        'default',
+        'my-custom',
+        false
+      );
     });
 
     it('returns 400 for non-boolean enabled', async () => {
@@ -670,7 +731,13 @@ describe('Model Configs Routes', () => {
   describe('DELETE /models/:provider/:model', () => {
     it('deletes a custom model', async () => {
       mockModelConfigsRepo.getCustomModels.mockResolvedValue([
-        { providerId: 'custom', modelId: 'my-model', isEnabled: true, isCustom: true, capabilities: ['chat'] },
+        {
+          providerId: 'custom',
+          modelId: 'my-model',
+          isEnabled: true,
+          isCustom: true,
+          capabilities: ['chat'],
+        },
       ]);
 
       // Need the model to be in custom source to avoid "cannot delete builtin" error

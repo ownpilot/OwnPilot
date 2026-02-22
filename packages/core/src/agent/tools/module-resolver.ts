@@ -51,6 +51,6 @@ export async function tryImport(moduleName: string): Promise<unknown> {
 
   throw new Error(
     `Module '${moduleName}' not found. Ensure it is installed in the gateway package ` +
-    `and setModuleResolver() was called during startup.`
+      `and setModuleResolver() was called during startup.`
   );
 }

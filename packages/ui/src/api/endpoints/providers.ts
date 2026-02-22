@@ -19,7 +19,7 @@ export const providersApi = {
   list: () => apiClient.get<ProvidersListData>('/providers'),
   categories: () =>
     apiClient.get<{ categories: Record<string, string[]>; uncategorized: string[] }>(
-      '/providers/categories',
+      '/providers/categories'
     ),
   getConfig: (id: string) => apiClient.get<ProviderConfigData>(`/providers/${id}/config`),
   updateConfig: (id: string, config: Record<string, unknown>) =>
@@ -29,6 +29,6 @@ export const providersApi = {
   resetConfig: (id: string) => apiClient.delete<void>(`/providers/${id}/config`),
   models: (id: string) =>
     apiClient.get<{ models: Array<{ id: string; name: string }>; providerName?: string }>(
-      `/providers/${id}/models`,
+      `/providers/${id}/models`
     ),
 };

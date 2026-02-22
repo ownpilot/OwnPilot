@@ -24,9 +24,7 @@ vi.mock('../services/get-log.js', () => ({
 }));
 
 vi.mock('../services/error-utils.js', () => ({
-  getErrorMessage: vi.fn((err: unknown) =>
-    err instanceof Error ? err.message : String(err)
-  ),
+  getErrorMessage: vi.fn((err: unknown) => (err instanceof Error ? err.message : String(err))),
 }));
 
 // Import after mocks
@@ -311,7 +309,8 @@ describe('AgentExecutor', () => {
 
       await executor.execute(makeAgent(), 'follow up', context);
 
-      const calledMessages = (llmProvider.complete as ReturnType<typeof vi.fn>).mock.calls[0][0].messages;
+      const calledMessages = (llmProvider.complete as ReturnType<typeof vi.fn>).mock.calls[0][0]
+        .messages;
       expect(calledMessages).toHaveLength(4); // system + 2 history + user
       expect(calledMessages[0].role).toBe('system');
       expect(calledMessages[1].role).toBe('user');
@@ -329,7 +328,8 @@ describe('AgentExecutor', () => {
 
       await executor.execute(makeAgent(), 'my question', makeContext());
 
-      const calledMessages = (llmProvider.complete as ReturnType<typeof vi.fn>).mock.calls[0][0].messages;
+      const calledMessages = (llmProvider.complete as ReturnType<typeof vi.fn>).mock.calls[0][0]
+        .messages;
       const lastMsg = calledMessages[calledMessages.length - 1];
       expect(lastMsg.role).toBe('user');
       expect(lastMsg.content).toBe('my question');
@@ -343,7 +343,8 @@ describe('AgentExecutor', () => {
       const agent = makeAgent({ systemPrompt: 'Custom prompt for testing' });
       await executor.execute(agent, 'test', makeContext());
 
-      const calledMessages = (llmProvider.complete as ReturnType<typeof vi.fn>).mock.calls[0][0].messages;
+      const calledMessages = (llmProvider.complete as ReturnType<typeof vi.fn>).mock.calls[0][0]
+        .messages;
       expect(calledMessages[0].role).toBe('system');
       expect(calledMessages[0].content).toContain('Custom prompt for testing');
     });
@@ -356,9 +357,7 @@ describe('AgentExecutor', () => {
       await executor.execute(makeAgent(), 'test', makeContext());
 
       // executionId is used in logging, verifiable through log calls
-      expect(mockLogInfo).toHaveBeenCalledWith(
-        expect.stringContaining('test-uuid-1234')
-      );
+      expect(mockLogInfo).toHaveBeenCalledWith(expect.stringContaining('test-uuid-1234'));
     });
 
     it('passes agent config maxTokens and temperature to LLM provider', async () => {
@@ -898,7 +897,10 @@ describe('AgentExecutor', () => {
       });
 
       toolRegistry.execute.mockImplementation(
-        () => new Promise((resolve) => setTimeout(() => resolve({ ok: true, value: { content: 'late' } }), 5000))
+        () =>
+          new Promise((resolve) =>
+            setTimeout(() => resolve({ ok: true, value: { content: 'late' } }), 5000)
+          )
       );
 
       const completeFn = llmProvider.complete as ReturnType<typeof vi.fn>;
@@ -933,7 +935,10 @@ describe('AgentExecutor', () => {
       });
 
       toolRegistry.execute.mockImplementation(
-        () => new Promise((resolve) => setTimeout(() => resolve({ ok: true, value: { content: 'fast result' } }), 100))
+        () =>
+          new Promise((resolve) =>
+            setTimeout(() => resolve({ ok: true, value: { content: 'fast result' } }), 100)
+          )
       );
 
       const completeFn = llmProvider.complete as ReturnType<typeof vi.fn>;
@@ -1085,7 +1090,8 @@ describe('AgentExecutor', () => {
 
       await executor.execute(makeAgent(), 'test', makeContext());
 
-      const systemMsg = (llmProvider.complete as ReturnType<typeof vi.fn>).mock.calls[0][0].messages[0];
+      const systemMsg = (llmProvider.complete as ReturnType<typeof vi.fn>).mock.calls[0][0]
+        .messages[0];
       expect(systemMsg.content).toContain('## Available Tools');
       expect(systemMsg.content).toContain('- search: Search the internet');
       expect(systemMsg.content).toContain('- calculate: Perform calculations');
@@ -1100,7 +1106,8 @@ describe('AgentExecutor', () => {
 
       await executor.execute(makeAgent(), 'test', makeContext());
 
-      const systemMsg = (llmProvider.complete as ReturnType<typeof vi.fn>).mock.calls[0][0].messages[0];
+      const systemMsg = (llmProvider.complete as ReturnType<typeof vi.fn>).mock.calls[0][0]
+        .messages[0];
       expect(systemMsg.content).not.toContain('## Available Tools');
     });
 
@@ -1112,7 +1119,8 @@ describe('AgentExecutor', () => {
       const agent = makeAgent({ dataAccess: ['notes', 'bookmarks'] });
       await executor.execute(agent, 'test', makeContext());
 
-      const systemMsg = (llmProvider.complete as ReturnType<typeof vi.fn>).mock.calls[0][0].messages[0];
+      const systemMsg = (llmProvider.complete as ReturnType<typeof vi.fn>).mock.calls[0][0]
+        .messages[0];
       expect(systemMsg.content).toContain('## Data Access');
       expect(systemMsg.content).toContain('- notes');
       expect(systemMsg.content).toContain('- bookmarks');
@@ -1126,7 +1134,8 @@ describe('AgentExecutor', () => {
       const agent = makeAgent({ dataAccess: [] });
       await executor.execute(agent, 'test', makeContext());
 
-      const systemMsg = (llmProvider.complete as ReturnType<typeof vi.fn>).mock.calls[0][0].messages[0];
+      const systemMsg = (llmProvider.complete as ReturnType<typeof vi.fn>).mock.calls[0][0]
+        .messages[0];
       expect(systemMsg.content).not.toContain('## Data Access');
     });
 
@@ -1137,9 +1146,10 @@ describe('AgentExecutor', () => {
 
       await executor.execute(makeAgent(), 'test', makeContext());
 
-      const systemMsg = (llmProvider.complete as ReturnType<typeof vi.fn>).mock.calls[0][0].messages[0];
+      const systemMsg = (llmProvider.complete as ReturnType<typeof vi.fn>).mock.calls[0][0]
+        .messages[0];
       expect(systemMsg.content).toContain('## Execution Rules');
-      expect(systemMsg.content).toContain('Analyze the user\'s request carefully');
+      expect(systemMsg.content).toContain("Analyze the user's request carefully");
       expect(systemMsg.content).toContain('Be concise but thorough');
     });
 
@@ -1153,7 +1163,8 @@ describe('AgentExecutor', () => {
       const agent = makeAgent({ dataAccess: ['notes'] });
       await executor.execute(agent, 'test', makeContext());
 
-      const systemMsg = (llmProvider.complete as ReturnType<typeof vi.fn>).mock.calls[0][0].messages[0];
+      const systemMsg = (llmProvider.complete as ReturnType<typeof vi.fn>).mock.calls[0][0]
+        .messages[0];
       expect(systemMsg.content).toContain('## Available Tools');
       expect(systemMsg.content).toContain('## Data Access');
       expect(systemMsg.content).toContain('## Execution Rules');
@@ -1167,7 +1178,8 @@ describe('AgentExecutor', () => {
       const agent = makeAgent({ systemPrompt: 'You are a helpful bot.' });
       await executor.execute(agent, 'test', makeContext());
 
-      const systemMsg = (llmProvider.complete as ReturnType<typeof vi.fn>).mock.calls[0][0].messages[0];
+      const systemMsg = (llmProvider.complete as ReturnType<typeof vi.fn>).mock.calls[0][0]
+        .messages[0];
       expect(systemMsg.content).toMatch(/^You are a helpful bot\./);
     });
   });
@@ -1245,9 +1257,7 @@ describe('AgentExecutor', () => {
     });
 
     it('error result includes turns count', async () => {
-      (llmProvider.complete as ReturnType<typeof vi.fn>).mockRejectedValue(
-        new Error('boom')
-      );
+      (llmProvider.complete as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('boom'));
 
       const result = await executor.execute(makeAgent(), 'test', makeContext());
 
@@ -1268,9 +1278,7 @@ describe('AgentExecutor', () => {
     });
 
     it('error result has metadata with agentId', async () => {
-      (llmProvider.complete as ReturnType<typeof vi.fn>).mockRejectedValue(
-        new Error('fail')
-      );
+      (llmProvider.complete as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('fail'));
 
       const result = await executor.execute(makeAgent({ id: 'my-agent' }), 'test', makeContext());
 
@@ -1460,9 +1468,7 @@ describe('AgentExecutor', () => {
     });
 
     it('error result also has timing data', async () => {
-      (llmProvider.complete as ReturnType<typeof vi.fn>).mockRejectedValue(
-        new Error('fail')
-      );
+      (llmProvider.complete as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('fail'));
 
       const result = await executor.execute(makeAgent(), 'test', makeContext());
 
@@ -1522,9 +1528,7 @@ describe('AgentExecutor', () => {
 
       await executor.execute(makeAgent(), 'test', makeContext());
 
-      expect(mockLogInfo).toHaveBeenCalledWith(
-        expect.stringContaining('Turn 1')
-      );
+      expect(mockLogInfo).toHaveBeenCalledWith(expect.stringContaining('Turn 1'));
     });
 
     it('logs completion when no tool calls', async () => {
@@ -1552,9 +1556,7 @@ describe('AgentExecutor', () => {
 
       await executor.execute(makeAgent(), 'test', makeContext());
 
-      expect(mockLogInfo).toHaveBeenCalledWith(
-        expect.stringContaining('Calling tool: search')
-      );
+      expect(mockLogInfo).toHaveBeenCalledWith(expect.stringContaining('Calling tool: search'));
     });
 
     it('logs max tool calls reached', async () => {
@@ -1573,15 +1575,11 @@ describe('AgentExecutor', () => {
 
       await executor.execute(agent, 'test', makeContext());
 
-      expect(mockLogInfo).toHaveBeenCalledWith(
-        expect.stringContaining('Max tool calls reached')
-      );
+      expect(mockLogInfo).toHaveBeenCalledWith(expect.stringContaining('Max tool calls reached'));
     });
 
     it('logs execution failure', async () => {
-      (llmProvider.complete as ReturnType<typeof vi.fn>).mockRejectedValue(
-        new Error('LLM died')
-      );
+      (llmProvider.complete as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('LLM died'));
 
       await executor.execute(makeAgent(), 'test', makeContext());
 
@@ -1719,7 +1717,8 @@ describe('AgentExecutor', () => {
       const result = await executor.execute(makeAgent(), longMessage, makeContext());
 
       expect(result.success).toBe(true);
-      const calledMessages = (llmProvider.complete as ReturnType<typeof vi.fn>).mock.calls[0][0].messages;
+      const calledMessages = (llmProvider.complete as ReturnType<typeof vi.fn>).mock.calls[0][0]
+        .messages;
       expect(calledMessages[calledMessages.length - 1].content).toBe(longMessage);
     });
 
@@ -1928,12 +1927,7 @@ describe('AgentExecutor', () => {
       await executor.execute(makeAgent(), 'test', makeContext());
 
       // Sequential: search starts and ends before calculate starts
-      expect(callOrder).toEqual([
-        'start:search',
-        'end:search',
-        'start:calculate',
-        'end:calculate',
-      ]);
+      expect(callOrder).toEqual(['start:search', 'end:search', 'start:calculate', 'end:calculate']);
     });
   });
 
@@ -2054,7 +2048,11 @@ describe('AgentExecutor', () => {
       const agent = makeAgent({ allowedTools: ['tool-a', 'tool-b', 'tool-c'] });
       await executor.execute(agent, 'test', makeContext());
 
-      expect(toolRegistry.getDefinitionsByNames).toHaveBeenCalledWith(['tool-a', 'tool-b', 'tool-c']);
+      expect(toolRegistry.getDefinitionsByNames).toHaveBeenCalledWith([
+        'tool-a',
+        'tool-b',
+        'tool-c',
+      ]);
     });
 
     it('returns empty array when toolRegistry returns no matches', async () => {
@@ -2082,7 +2080,8 @@ describe('AgentExecutor', () => {
 
       await executor.execute(makeAgent(), 'test', makeContext());
 
-      const systemMsg = (llmProvider.complete as ReturnType<typeof vi.fn>).mock.calls[0][0].messages[0];
+      const systemMsg = (llmProvider.complete as ReturnType<typeof vi.fn>).mock.calls[0][0]
+        .messages[0];
       expect(systemMsg.content).toContain('Use tools when they help accomplish');
       expect(systemMsg.content).toContain('You can call multiple tools if needed');
     });
@@ -2093,7 +2092,8 @@ describe('AgentExecutor', () => {
       const agent = makeAgent({ dataAccess: ['memory'] });
       await executor.execute(agent, 'test', makeContext());
 
-      const systemMsg = (llmProvider.complete as ReturnType<typeof vi.fn>).mock.calls[0][0].messages[0];
+      const systemMsg = (llmProvider.complete as ReturnType<typeof vi.fn>).mock.calls[0][0]
+        .messages[0];
       expect(systemMsg.content).toContain('Use appropriate tools to read/write this data');
     });
 
@@ -2102,7 +2102,8 @@ describe('AgentExecutor', () => {
 
       await executor.execute(makeAgent(), 'test', makeContext());
 
-      const systemMsg = (llmProvider.complete as ReturnType<typeof vi.fn>).mock.calls[0][0].messages[0];
+      const systemMsg = (llmProvider.complete as ReturnType<typeof vi.fn>).mock.calls[0][0]
+        .messages[0];
       expect(systemMsg.content).toContain('1. Analyze');
       expect(systemMsg.content).toContain('2. Use tools');
       expect(systemMsg.content).toContain('3. Process tool results');
@@ -2119,7 +2120,8 @@ describe('AgentExecutor', () => {
 
       await executor.execute(makeAgent(), 'test', makeContext());
 
-      const systemMsg = (llmProvider.complete as ReturnType<typeof vi.fn>).mock.calls[0][0].messages[0];
+      const systemMsg = (llmProvider.complete as ReturnType<typeof vi.fn>).mock.calls[0][0]
+        .messages[0];
       expect(systemMsg.content).toContain('- alpha: Alpha tool');
       expect(systemMsg.content).toContain('- beta: Beta tool');
     });
@@ -2130,7 +2132,8 @@ describe('AgentExecutor', () => {
       const agent = makeAgent({ dataAccess: ['bookmarks', 'contacts'] });
       await executor.execute(agent, 'test', makeContext());
 
-      const systemMsg = (llmProvider.complete as ReturnType<typeof vi.fn>).mock.calls[0][0].messages[0];
+      const systemMsg = (llmProvider.complete as ReturnType<typeof vi.fn>).mock.calls[0][0]
+        .messages[0];
       expect(systemMsg.content).toContain('- bookmarks');
       expect(systemMsg.content).toContain('- contacts');
     });
@@ -2154,10 +2157,7 @@ describe('AgentExecutor', () => {
       // Turn 1: 2 tool calls => totalToolCalls = 2
       completeFn.mockResolvedValueOnce({
         content: '',
-        toolCalls: [
-          makeToolCall({ id: 'tc-1' }),
-          makeToolCall({ id: 'tc-2' }),
-        ],
+        toolCalls: [makeToolCall({ id: 'tc-1' }), makeToolCall({ id: 'tc-2' })],
       });
       // Turn 2: maxToolCalls check at top: 2 < 3, so enters loop
       // 1 more tool call => totalToolCalls = 3
@@ -2225,9 +2225,7 @@ describe('AgentExecutor', () => {
     });
 
     it('error result has correct shape', async () => {
-      (llmProvider.complete as ReturnType<typeof vi.fn>).mockRejectedValue(
-        new Error('failed')
-      );
+      (llmProvider.complete as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('failed'));
 
       const result = await executor.execute(makeAgent(), 'test', makeContext());
 
@@ -2247,9 +2245,7 @@ describe('AgentExecutor', () => {
     });
 
     it('error result does not include tokensUsed in metadata', async () => {
-      (llmProvider.complete as ReturnType<typeof vi.fn>).mockRejectedValue(
-        new Error('boom')
-      );
+      (llmProvider.complete as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('boom'));
 
       const result = await executor.execute(makeAgent(), 'test', makeContext());
 

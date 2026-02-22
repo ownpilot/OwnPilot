@@ -455,7 +455,11 @@ describe('traceDbWrite', () => {
     const ctx = createTraceContext('req-db');
     withTraceContext(ctx, () => {
       traceDbWrite('notes', 'DELETE');
-      expect(ctx.events[0]!.details).toEqual({ table: 'notes', operation: 'DELETE', count: undefined });
+      expect(ctx.events[0]!.details).toEqual({
+        table: 'notes',
+        operation: 'DELETE',
+        count: undefined,
+      });
     });
   });
 });

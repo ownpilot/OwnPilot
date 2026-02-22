@@ -37,14 +37,18 @@ vi.mock('../db/repositories/index.js', () => ({
   agentsRepo: mockAgentsRepo,
 }));
 
-const mockResolveProviderAndModel = vi.fn(async (p: string, m: string) => ({ provider: p, model: m }));
+const mockResolveProviderAndModel = vi.fn(async (p: string, m: string) => ({
+  provider: p,
+  model: m,
+}));
 const mockGetDefaultProvider = vi.fn();
 const mockGetDefaultModel = vi.fn();
 const mockGetConfiguredProviderIds = vi.fn(async () => new Set<string>());
 const mockGetEnabledToolGroupIds = vi.fn(() => [] as string[]);
 
 vi.mock('./settings.js', () => ({
-  resolveProviderAndModel: (...args: unknown[]) => mockResolveProviderAndModel(...(args as [string, string])),
+  resolveProviderAndModel: (...args: unknown[]) =>
+    mockResolveProviderAndModel(...(args as [string, string])),
   getDefaultProvider: (...args: unknown[]) => mockGetDefaultProvider(...args),
   getDefaultModel: (...args: unknown[]) => mockGetDefaultModel(...args),
   getConfiguredProviderIds: (...args: unknown[]) => mockGetConfiguredProviderIds(...args),
@@ -102,7 +106,18 @@ const mockEvictAgentFromCache = vi.fn();
 const mockCreateApprovalCallback = vi.fn(() => vi.fn());
 
 vi.mock('./agent-cache.js', () => ({
-  NATIVE_PROVIDERS: new Set(['openai', 'anthropic', 'google', 'deepseek', 'groq', 'mistral', 'xai', 'together', 'fireworks', 'perplexity']),
+  NATIVE_PROVIDERS: new Set([
+    'openai',
+    'anthropic',
+    'google',
+    'deepseek',
+    'groq',
+    'mistral',
+    'xai',
+    'together',
+    'fireworks',
+    'perplexity',
+  ]),
   agentCache,
   agentConfigCache,
   chatAgentCache,
@@ -112,7 +127,8 @@ vi.mock('./agent-cache.js', () => ({
   createApprovalCallback: (...args: unknown[]) => mockCreateApprovalCallback(...args),
   getProviderApiKey: (...args: unknown[]) => mockGetProviderApiKey(...(args as [string])),
   loadProviderConfig: (...args: unknown[]) => mockLoadProviderConfig(...(args as [string])),
-  resolveContextWindow: (...args: unknown[]) => mockResolveContextWindow(...(args as [string, string, number?])),
+  resolveContextWindow: (...args: unknown[]) =>
+    mockResolveContextWindow(...(args as [string, string, number?])),
   resolveRecordTools: (...args: unknown[]) => mockResolveRecordTools(...args),
   resolveToolGroups: (...args: unknown[]) => mockResolveToolGroups(...args),
   evictAgentFromCache: (...args: unknown[]) => mockEvictAgentFromCache(...args),
@@ -142,14 +158,16 @@ const mod = await import('./agent-service.js');
 // Helpers
 // ---------------------------------------------------------------------------
 
-function makeAgentRecord(overrides?: Partial<{
-  id: string;
-  name: string;
-  systemPrompt: string;
-  provider: string;
-  model: string;
-  config: Record<string, unknown>;
-}>): {
+function makeAgentRecord(
+  overrides?: Partial<{
+    id: string;
+    name: string;
+    systemPrompt: string;
+    provider: string;
+    model: string;
+    config: Record<string, unknown>;
+  }>
+): {
   id: string;
   name: string;
   systemPrompt: string;
@@ -205,7 +223,10 @@ function makeMockAgent(opts?: {
   contextMessages?: Array<{ role: string; content: string }>;
 }) {
   const memory = makeMockMemory({ stats: opts?.stats, contextMessages: opts?.contextMessages });
-  const conversation = makeMockConversation(opts?.conversationId ?? 'conv-123', opts?.systemPrompt ?? 'Test prompt');
+  const conversation = makeMockConversation(
+    opts?.conversationId ?? 'conv-123',
+    opts?.systemPrompt ?? 'Test prompt'
+  );
 
   return {
     agent: {
@@ -239,8 +260,13 @@ beforeEach(() => {
   mockResolveContextWindow.mockReturnValue(128000);
   mockResolveRecordTools.mockReturnValue({ tools: [], configuredToolGroups: [] });
   mockResolveToolGroups.mockReturnValue([]);
-  mockResolveProviderAndModel.mockImplementation(async (p: string, m: string) => ({ provider: p, model: m }));
-  mockInjectMemoryIntoPrompt.mockImplementation(async (prompt: string) => ({ systemPrompt: prompt }));
+  mockResolveProviderAndModel.mockImplementation(async (p: string, m: string) => ({
+    provider: p,
+    model: m,
+  }));
+  mockInjectMemoryIntoPrompt.mockImplementation(async (prompt: string) => ({
+    systemPrompt: prompt,
+  }));
   mockHasServiceRegistry.mockReturnValue(false);
   mockGetConfiguredProviderIds.mockResolvedValue(new Set<string>());
 });
@@ -257,13 +283,17 @@ describe('getSessionInfo', () => {
   });
 
   it('returns correct messageCount from memory stats', () => {
-    const { agent } = makeMockAgent({ stats: { messageCount: 10, estimatedTokens: 5000, lastActivity: new Date() } });
+    const { agent } = makeMockAgent({
+      stats: { messageCount: 10, estimatedTokens: 5000, lastActivity: new Date() },
+    });
     const result = mod.getSessionInfo(agent as never, 'openai', 'gpt-4o');
     expect(result.messageCount).toBe(10);
   });
 
   it('returns correct estimatedTokens', () => {
-    const { agent } = makeMockAgent({ stats: { messageCount: 3, estimatedTokens: 7500, lastActivity: new Date() } });
+    const { agent } = makeMockAgent({
+      stats: { messageCount: 3, estimatedTokens: 7500, lastActivity: new Date() },
+    });
     const result = mod.getSessionInfo(agent as never, 'openai', 'gpt-4o');
     expect(result.estimatedTokens).toBe(7500);
   });
@@ -277,20 +307,26 @@ describe('getSessionInfo', () => {
 
   it('calculates contextFillPercent correctly', () => {
     mockResolveContextWindow.mockReturnValue(100000);
-    const { agent } = makeMockAgent({ stats: { messageCount: 5, estimatedTokens: 25000, lastActivity: new Date() } });
+    const { agent } = makeMockAgent({
+      stats: { messageCount: 5, estimatedTokens: 25000, lastActivity: new Date() },
+    });
     const result = mod.getSessionInfo(agent as never, 'openai', 'gpt-4o');
     expect(result.contextFillPercent).toBe(25);
   });
 
   it('caps contextFillPercent at 100', () => {
     mockResolveContextWindow.mockReturnValue(1000);
-    const { agent } = makeMockAgent({ stats: { messageCount: 50, estimatedTokens: 5000, lastActivity: new Date() } });
+    const { agent } = makeMockAgent({
+      stats: { messageCount: 50, estimatedTokens: 5000, lastActivity: new Date() },
+    });
     const result = mod.getSessionInfo(agent as never, 'openai', 'gpt-4o');
     expect(result.contextFillPercent).toBe(100);
   });
 
   it('handles zero estimatedTokens', () => {
-    const { agent } = makeMockAgent({ stats: { messageCount: 0, estimatedTokens: 0, lastActivity: new Date() } });
+    const { agent } = makeMockAgent({
+      stats: { messageCount: 0, estimatedTokens: 0, lastActivity: new Date() },
+    });
     const result = mod.getSessionInfo(agent as never, 'openai', 'gpt-4o');
     expect(result.estimatedTokens).toBe(0);
     expect(result.contextFillPercent).toBe(0);
@@ -312,7 +348,9 @@ describe('getSessionInfo', () => {
 
   it('rounds contextFillPercent correctly', () => {
     mockResolveContextWindow.mockReturnValue(30000);
-    const { agent } = makeMockAgent({ stats: { messageCount: 3, estimatedTokens: 10000, lastActivity: new Date() } });
+    const { agent } = makeMockAgent({
+      stats: { messageCount: 3, estimatedTokens: 10000, lastActivity: new Date() },
+    });
     const result = mod.getSessionInfo(agent as never, 'openai', 'gpt-4o');
     // 10000 / 30000 * 100 = 33.33... → 33
     expect(result.contextFillPercent).toBe(33);
@@ -332,7 +370,9 @@ describe('getSessionInfo', () => {
 
   it('handles large estimatedTokens exceeding maxContextTokens', () => {
     mockResolveContextWindow.mockReturnValue(4096);
-    const { agent } = makeMockAgent({ stats: { messageCount: 100, estimatedTokens: 50000, lastActivity: new Date() } });
+    const { agent } = makeMockAgent({
+      stats: { messageCount: 100, estimatedTokens: 50000, lastActivity: new Date() },
+    });
     const result = mod.getSessionInfo(agent as never, 'openai', 'gpt-4o');
     expect(result.contextFillPercent).toBe(100);
     expect(result.estimatedTokens).toBe(50000);
@@ -341,7 +381,9 @@ describe('getSessionInfo', () => {
 
   it('returns exact 100 when tokens equal max', () => {
     mockResolveContextWindow.mockReturnValue(10000);
-    const { agent } = makeMockAgent({ stats: { messageCount: 10, estimatedTokens: 10000, lastActivity: new Date() } });
+    const { agent } = makeMockAgent({
+      stats: { messageCount: 10, estimatedTokens: 10000, lastActivity: new Date() },
+    });
     const result = mod.getSessionInfo(agent as never, 'openai', 'gpt-4o');
     expect(result.contextFillPercent).toBe(100);
   });
@@ -376,7 +418,8 @@ describe('getContextBreakdown', () => {
 
   it('parses ## headings into sections', () => {
     const { agent, conversation } = makeMockAgent();
-    (conversation as { systemPrompt: string }).systemPrompt = '## Tools\nTool list here\n## Memory\nMemory data';
+    (conversation as { systemPrompt: string }).systemPrompt =
+      '## Tools\nTool list here\n## Memory\nMemory data';
     chatAgentCache.set('chat|openai|gpt-4o', agent);
     const result = mod.getContextBreakdown('openai', 'gpt-4o');
     expect(result!.sections).toHaveLength(2);
@@ -395,7 +438,8 @@ describe('getContextBreakdown', () => {
 
   it('handles prompt with no headings', () => {
     const { agent, conversation } = makeMockAgent();
-    (conversation as { systemPrompt: string }).systemPrompt = 'Just a plain prompt with no headings';
+    (conversation as { systemPrompt: string }).systemPrompt =
+      'Just a plain prompt with no headings';
     chatAgentCache.set('chat|openai|gpt-4o', agent);
     const result = mod.getContextBreakdown('openai', 'gpt-4o');
     expect(result!.sections).toHaveLength(1);
@@ -404,7 +448,8 @@ describe('getContextBreakdown', () => {
 
   it('handles text before first heading as Base Prompt', () => {
     const { agent, conversation } = makeMockAgent();
-    (conversation as { systemPrompt: string }).systemPrompt = 'Some preamble text\n\n## Tools\nTool info';
+    (conversation as { systemPrompt: string }).systemPrompt =
+      'Some preamble text\n\n## Tools\nTool info';
     chatAgentCache.set('chat|openai|gpt-4o', agent);
     const result = mod.getContextBreakdown('openai', 'gpt-4o');
     expect(result!.sections[0]!.name).toBe('Base Prompt');
@@ -413,11 +458,12 @@ describe('getContextBreakdown', () => {
 
   it('handles multiple headings correctly', () => {
     const { agent, conversation } = makeMockAgent();
-    (conversation as { systemPrompt: string }).systemPrompt = '## Alpha\nContent A\n## Beta\nContent B\n## Gamma\nContent C';
+    (conversation as { systemPrompt: string }).systemPrompt =
+      '## Alpha\nContent A\n## Beta\nContent B\n## Gamma\nContent C';
     chatAgentCache.set('chat|openai|gpt-4o', agent);
     const result = mod.getContextBreakdown('openai', 'gpt-4o');
     expect(result!.sections).toHaveLength(3);
-    expect(result!.sections.map(s => s.name)).toEqual(['Alpha', 'Beta', 'Gamma']);
+    expect(result!.sections.map((s) => s.name)).toEqual(['Alpha', 'Beta', 'Gamma']);
   });
 
   it('handles empty system prompt', () => {
@@ -480,7 +526,8 @@ describe('getContextBreakdown', () => {
 
   it('section tokens sum approximately to systemPromptTokens', () => {
     const { agent, conversation } = makeMockAgent();
-    (conversation as { systemPrompt: string }).systemPrompt = 'Preamble\n## Section1\nContent1\n## Section2\nContent2';
+    (conversation as { systemPrompt: string }).systemPrompt =
+      'Preamble\n## Section1\nContent1\n## Section2\nContent2';
     chatAgentCache.set('chat|openai|gpt-4o', agent);
     const result = mod.getContextBreakdown('openai', 'gpt-4o');
     const sectionSum = result!.sections.reduce((acc, s) => acc + s.tokens, 0);
@@ -490,7 +537,8 @@ describe('getContextBreakdown', () => {
 
   it('handles heading at the very start (no preamble)', () => {
     const { agent, conversation } = makeMockAgent();
-    (conversation as { systemPrompt: string }).systemPrompt = '## Only Section\nAll content is here';
+    (conversation as { systemPrompt: string }).systemPrompt =
+      '## Only Section\nAll content is here';
     chatAgentCache.set('chat|openai|gpt-4o', agent);
     const result = mod.getContextBreakdown('openai', 'gpt-4o');
     // No "Base Prompt" section since heading starts at 0
@@ -762,8 +810,17 @@ describe('isDemoMode', () => {
 
   it('returns false when any known provider is configured', async () => {
     const knownProviders = [
-      'openai', 'anthropic', 'zhipu', 'deepseek', 'groq',
-      'google', 'xai', 'mistral', 'together', 'fireworks', 'perplexity',
+      'openai',
+      'anthropic',
+      'zhipu',
+      'deepseek',
+      'groq',
+      'google',
+      'xai',
+      'mistral',
+      'together',
+      'fireworks',
+      'perplexity',
     ];
     for (const provider of knownProviders) {
       mockGetConfiguredProviderIds.mockResolvedValue(new Set([provider]));
@@ -849,7 +906,9 @@ describe('getAgent', () => {
     const record = makeAgentRecord({ id: 'agent-fail' });
     mockLruGet.mockReturnValueOnce(undefined);
     mockAgentsRepo.getById.mockResolvedValue(record);
-    mockCreateAgent.mockImplementation(() => { throw new Error('creation failed'); });
+    mockCreateAgent.mockImplementation(() => {
+      throw new Error('creation failed');
+    });
 
     const result = await mod.getAgent('agent-fail');
     expect(result).toBeUndefined();
@@ -942,13 +1001,15 @@ describe('getOrCreateDefaultAgent', () => {
 
     const result = await mod.getOrCreateDefaultAgent();
     expect(result).toBe(agent);
-    expect(mockAgentsRepo.create).toHaveBeenCalledWith(expect.objectContaining({
-      id: 'default',
-      name: 'Personal Assistant',
-      systemPrompt: 'Test system prompt',
-      provider: 'openai',
-      model: 'gpt-4o',
-    }));
+    expect(mockAgentsRepo.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: 'default',
+        name: 'Personal Assistant',
+        systemPrompt: 'Test system prompt',
+        provider: 'openai',
+        model: 'gpt-4o',
+      })
+    );
   });
 
   it('throws when no provider configured', async () => {
@@ -1219,7 +1280,9 @@ describe('getOrCreateAgentInstance', () => {
 
     let _resolveCreation!: (value: unknown) => void;
     mockCreateAgent.mockImplementation(() => {
-      return new Promise(resolve => { _resolveCreation = resolve; });
+      return new Promise((resolve) => {
+        _resolveCreation = resolve;
+      });
     });
 
     // For agent creation, createAgentFromRecord is not directly mockable since it's internal.
@@ -1324,7 +1387,10 @@ describe('getOrCreateAgentInstance', () => {
     mockCreateAgent.mockReturnValue(agent);
 
     await mod.getOrCreateAgentInstance(record);
-    expect(mockInjectMemoryIntoPrompt).toHaveBeenCalledWith('Custom prompt for agent', expect.anything());
+    expect(mockInjectMemoryIntoPrompt).toHaveBeenCalledWith(
+      'Custom prompt for agent',
+      expect.anything()
+    );
   });
 
   it('uses fallback prompt when record has no systemPrompt', async () => {
@@ -1390,7 +1456,11 @@ describe('compactContext', () => {
     }));
     const { agent, memory } = makeMockAgent();
     memory.getContextMessages.mockReturnValue(messages);
-    memory.getStats.mockReturnValue({ messageCount: 8, estimatedTokens: 1500, lastActivity: new Date() });
+    memory.getStats.mockReturnValue({
+      messageCount: 8,
+      estimatedTokens: 1500,
+      lastActivity: new Date(),
+    });
     chatAgentCache.set('chat|openai|gpt-4o', agent);
 
     const mockProvider = {
@@ -1449,7 +1519,9 @@ describe('compactContext', () => {
     memory.getContextMessages.mockReturnValue(messages);
     chatAgentCache.set('chat|openai|gpt-4o', agent);
 
-    mockCreateProvider.mockImplementation(() => { throw new Error('provider error'); });
+    mockCreateProvider.mockImplementation(() => {
+      throw new Error('provider error');
+    });
 
     const result = await mod.compactContext('openai', 'gpt-4o');
     expect(result.compacted).toBe(false);
@@ -1462,7 +1534,11 @@ describe('compactContext', () => {
     }));
     const { agent, memory } = makeMockAgent();
     memory.getContextMessages.mockReturnValue(messages);
-    memory.getStats.mockReturnValue({ messageCount: 8, estimatedTokens: 500, lastActivity: new Date() });
+    memory.getStats.mockReturnValue({
+      messageCount: 8,
+      estimatedTokens: 500,
+      lastActivity: new Date(),
+    });
     chatAgentCache.set('chat|openai|gpt-4o', agent);
 
     const mockProvider = {
@@ -1484,7 +1560,11 @@ describe('compactContext', () => {
     }));
     const { agent, memory } = makeMockAgent();
     memory.getContextMessages.mockReturnValue(messages);
-    memory.getStats.mockReturnValue({ messageCount: 4, estimatedTokens: 300, lastActivity: new Date() });
+    memory.getStats.mockReturnValue({
+      messageCount: 4,
+      estimatedTokens: 300,
+      lastActivity: new Date(),
+    });
     chatAgentCache.set('chat|openai|gpt-4o', agent);
 
     const mockProvider = {
@@ -1506,7 +1586,11 @@ describe('compactContext', () => {
     }));
     const { agent, memory } = makeMockAgent();
     memory.getContextMessages.mockReturnValue(messages);
-    memory.getStats.mockReturnValue({ messageCount: 8, estimatedTokens: 800, lastActivity: new Date() });
+    memory.getStats.mockReturnValue({
+      messageCount: 8,
+      estimatedTokens: 800,
+      lastActivity: new Date(),
+    });
     chatAgentCache.set('chat|openai|gpt-4o', agent);
 
     const mockProvider = {
@@ -1549,7 +1633,11 @@ describe('compactContext', () => {
     ];
     const { agent, memory } = makeMockAgent();
     memory.getContextMessages.mockReturnValue(messages);
-    memory.getStats.mockReturnValue({ messageCount: 4, estimatedTokens: 500, lastActivity: new Date() });
+    memory.getStats.mockReturnValue({
+      messageCount: 4,
+      estimatedTokens: 500,
+      lastActivity: new Date(),
+    });
     chatAgentCache.set('chat|openai|gpt-4o', agent);
 
     const mockProvider = {
@@ -1587,7 +1675,11 @@ describe('compactContext', () => {
     const { agent, memory } = makeMockAgent();
     memory.getContextMessages.mockReturnValue(messages);
     // getStats is called once in compactContext (after compaction, line 635)
-    memory.getStats.mockReturnValue({ messageCount: 8, estimatedTokens: 2500, lastActivity: new Date() });
+    memory.getStats.mockReturnValue({
+      messageCount: 8,
+      estimatedTokens: 2500,
+      lastActivity: new Date(),
+    });
     chatAgentCache.set('chat|openai|gpt-4o', agent);
 
     const mockProvider = {
@@ -1628,7 +1720,11 @@ describe('compactContext', () => {
     }));
     const { agent, memory } = makeMockAgent();
     memory.getContextMessages.mockReturnValue(messages);
-    memory.getStats.mockReturnValue({ messageCount: 8, estimatedTokens: 800, lastActivity: new Date() });
+    memory.getStats.mockReturnValue({
+      messageCount: 8,
+      estimatedTokens: 800,
+      lastActivity: new Date(),
+    });
     chatAgentCache.set('chat|openai|gpt-4o', agent);
 
     const mockProvider = {
@@ -1654,7 +1750,11 @@ describe('compactContext', () => {
     }));
     const { agent, memory } = makeMockAgent();
     memory.getContextMessages.mockReturnValue(messages);
-    memory.getStats.mockReturnValue({ messageCount: 8, estimatedTokens: 800, lastActivity: new Date() });
+    memory.getStats.mockReturnValue({
+      messageCount: 8,
+      estimatedTokens: 800,
+      lastActivity: new Date(),
+    });
     chatAgentCache.set('chat|openai|gpt-4o', agent);
 
     mockLoadProviderConfig.mockReturnValue({ baseUrl: 'https://custom.api.com' });
@@ -1784,7 +1884,8 @@ describe('edge cases', () => {
 
   it('getContextBreakdown handles heading with special characters', () => {
     const { agent, conversation } = makeMockAgent();
-    (conversation as { systemPrompt: string }).systemPrompt = '## Tools & Utilities (v2.0)\nContent here';
+    (conversation as { systemPrompt: string }).systemPrompt =
+      '## Tools & Utilities (v2.0)\nContent here';
     chatAgentCache.set('chat|openai|gpt-4o', agent);
     const result = mod.getContextBreakdown('openai', 'gpt-4o');
     expect(result!.sections[0]!.name).toBe('Tools & Utilities (v2.0)');

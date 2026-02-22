@@ -140,14 +140,14 @@ describe('TriggersRepository', () => {
           type: 'schedule',
           config: { cron: 'invalid' },
           action: { type: 'goal_check', payload: {} },
-        }),
+        })
       ).rejects.toThrow('Cannot create schedule trigger');
     });
 
     it('does not calculate next_fire for non-schedule triggers', async () => {
       mockAdapter.execute.mockResolvedValue({ changes: 1 });
       mockAdapter.queryOne.mockResolvedValue(
-        triggerRow({ type: 'event', next_fire: null, config: '{"eventType":"goal_completed"}' }),
+        triggerRow({ type: 'event', next_fire: null, config: '{"eventType":"goal_completed"}' })
       );
 
       await repo.create({
@@ -162,9 +162,7 @@ describe('TriggersRepository', () => {
 
     it('does not calculate next_fire when disabled', async () => {
       mockAdapter.execute.mockResolvedValue({ changes: 1 });
-      mockAdapter.queryOne.mockResolvedValue(
-        triggerRow({ enabled: false, next_fire: null }),
-      );
+      mockAdapter.queryOne.mockResolvedValue(triggerRow({ enabled: false, next_fire: null }));
 
       await repo.create({
         name: 'Disabled',
@@ -205,7 +203,7 @@ describe('TriggersRepository', () => {
           type: 'event',
           config: { eventType: 'x' },
           action: { type: 'chat', payload: {} },
-        }),
+        })
       ).rejects.toThrow('Failed to create trigger');
     });
   });
@@ -271,9 +269,9 @@ describe('TriggersRepository', () => {
 
       mockAdapter.queryOne.mockResolvedValueOnce(triggerRow());
 
-      await expect(
-        repo.update('trigger_1', { config: { cron: 'bad_cron' } }),
-      ).rejects.toThrow('Cannot update schedule trigger');
+      await expect(repo.update('trigger_1', { config: { cron: 'bad_cron' } })).rejects.toThrow(
+        'Cannot update schedule trigger'
+      );
     });
 
     it('recalculates next_fire when enabled changes', async () => {
@@ -467,7 +465,14 @@ describe('TriggersRepository', () => {
       mockAdapter.execute.mockResolvedValue({ changes: 1 });
       mockAdapter.queryOne.mockResolvedValue(historyRow());
 
-      const history = await repo.logExecution('trigger_1', 'Test Trigger', 'success', { ok: true }, undefined, 200);
+      const history = await repo.logExecution(
+        'trigger_1',
+        'Test Trigger',
+        'success',
+        { ok: true },
+        undefined,
+        200
+      );
 
       expect(history.id).toBe('hist_1');
       expect(history.status).toBe('success');
@@ -478,7 +483,13 @@ describe('TriggersRepository', () => {
       mockAdapter.execute.mockResolvedValue({ changes: 1 });
       mockAdapter.queryOne.mockResolvedValue(historyRow({ status: 'failure', error: 'Timeout' }));
 
-      const history = await repo.logExecution('trigger_1', 'Test Trigger', 'failure', undefined, 'Timeout');
+      const history = await repo.logExecution(
+        'trigger_1',
+        'Test Trigger',
+        'failure',
+        undefined,
+        'Timeout'
+      );
 
       expect(history.error).toBe('Timeout');
     });
@@ -488,7 +499,7 @@ describe('TriggersRepository', () => {
       mockAdapter.queryOne.mockResolvedValue(null);
 
       await expect(repo.logExecution('trigger_1', 'Test Trigger', 'success')).rejects.toThrow(
-        'Failed to create trigger history',
+        'Failed to create trigger history'
       );
     });
   });
@@ -533,9 +544,7 @@ describe('TriggersRepository', () => {
   describe('getRecentHistory', () => {
     it('includes trigger name in results', async () => {
       mockAdapter.queryOne.mockResolvedValueOnce({ count: '1' });
-      mockAdapter.query.mockResolvedValueOnce([
-        { ...historyRow(), trigger_name: 'Daily Check' },
-      ]);
+      mockAdapter.query.mockResolvedValueOnce([{ ...historyRow(), trigger_name: 'Daily Check' }]);
 
       const result = await repo.getRecentHistory();
 
@@ -548,8 +557,8 @@ describe('TriggersRepository', () => {
   describe('cleanupHistory', () => {
     it('deletes old history entries', async () => {
       mockAdapter.execute
-        .mockResolvedValueOnce({ changes: 15 })  // user's triggers
-        .mockResolvedValueOnce({ changes: 3 });   // orphaned rows
+        .mockResolvedValueOnce({ changes: 15 }) // user's triggers
+        .mockResolvedValueOnce({ changes: 3 }); // orphaned rows
 
       const count = await repo.cleanupHistory(30);
 

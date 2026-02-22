@@ -1,5 +1,17 @@
 import { useState, useEffect, useRef } from 'react';
-import { Plus, Wrench, Search, X, Database, Table, Bookmark, Calendar, Users, FileText, ListChecks } from './icons';
+import {
+  Plus,
+  Wrench,
+  Search,
+  X,
+  Database,
+  Table,
+  Bookmark,
+  Calendar,
+  Users,
+  FileText,
+  ListChecks,
+} from './icons';
 import { LoadingSpinner } from './LoadingSpinner';
 import { toolsApi, customToolsApi, customDataApi } from '../api';
 
@@ -112,13 +124,48 @@ const BUILTIN_DATA_TOOL_INSTRUCTIONS: Record<string, string> = {
 
 // Built-in data items shown in the picker
 const BUILTIN_DATA_ITEMS: ResourceItem[] = [
-  { name: 'tasks', description: 'Task management - todos, checklists, and task tracking', category: 'Personal Data', type: 'builtin-data' },
-  { name: 'bookmarks', description: 'Saved URL bookmarks and web links', category: 'Personal Data', type: 'builtin-data' },
-  { name: 'notes', description: 'Personal notes and text snippets', category: 'Personal Data', type: 'builtin-data' },
-  { name: 'calendar', description: 'Calendar events and scheduling', category: 'Personal Data', type: 'builtin-data' },
-  { name: 'contacts', description: 'Contact information and address book', category: 'Personal Data', type: 'builtin-data' },
-  { name: 'memories', description: 'AI memory and persistent knowledge', category: 'AI Data', type: 'builtin-data' },
-  { name: 'goals', description: 'Long-term goals and objectives tracking', category: 'AI Data', type: 'builtin-data' },
+  {
+    name: 'tasks',
+    description: 'Task management - todos, checklists, and task tracking',
+    category: 'Personal Data',
+    type: 'builtin-data',
+  },
+  {
+    name: 'bookmarks',
+    description: 'Saved URL bookmarks and web links',
+    category: 'Personal Data',
+    type: 'builtin-data',
+  },
+  {
+    name: 'notes',
+    description: 'Personal notes and text snippets',
+    category: 'Personal Data',
+    type: 'builtin-data',
+  },
+  {
+    name: 'calendar',
+    description: 'Calendar events and scheduling',
+    category: 'Personal Data',
+    type: 'builtin-data',
+  },
+  {
+    name: 'contacts',
+    description: 'Contact information and address book',
+    category: 'Personal Data',
+    type: 'builtin-data',
+  },
+  {
+    name: 'memories',
+    description: 'AI memory and persistent knowledge',
+    category: 'AI Data',
+    type: 'builtin-data',
+  },
+  {
+    name: 'goals',
+    description: 'Long-term goals and objectives tracking',
+    category: 'AI Data',
+    type: 'builtin-data',
+  },
 ];
 
 // --- Build tool instruction for a custom data table ---
@@ -141,7 +188,11 @@ function buildCustomDataInstructions(displayName: string, internalName: string):
 
 // --- Build tool instruction for a specific tool (with full parameter docs) ---
 
-function buildToolInstructions(toolName: string, description: string, parameters?: Record<string, unknown>): string {
+function buildToolInstructions(
+  toolName: string,
+  description: string,
+  parameters?: Record<string, unknown>
+): string {
   const lines: string[] = [
     `Tool: ${toolName}`,
     `Description: ${description}`,
@@ -157,12 +208,14 @@ function buildToolInstructions(toolName: string, description: string, parameters
     lines.push('Parameters:');
     for (const [paramName, paramDef] of propEntries) {
       const isRequired = requiredSet.has(paramName);
-      const typeStr = paramDef.enum && Array.isArray(paramDef.enum)
-        ? (paramDef.enum as string[]).map((v) => JSON.stringify(v)).join(' | ')
-        : String(paramDef.type || 'any');
+      const typeStr =
+        paramDef.enum && Array.isArray(paramDef.enum)
+          ? (paramDef.enum as string[]).map((v) => JSON.stringify(v)).join(' | ')
+          : String(paramDef.type || 'any');
       const reqStr = isRequired ? ' (REQUIRED)' : ' (optional)';
       const descStr = paramDef.description ? ` — ${paramDef.description}` : '';
-      const defaultStr = paramDef.default !== undefined ? ` [default: ${JSON.stringify(paramDef.default)}]` : '';
+      const defaultStr =
+        paramDef.default !== undefined ? ` [default: ${JSON.stringify(paramDef.default)}]` : '';
       lines.push(`  • ${paramName}: ${typeStr}${reqStr}${descStr}${defaultStr}`);
     }
     lines.push('');
@@ -171,13 +224,18 @@ function buildToolInstructions(toolName: string, description: string, parameters
     const exampleArgs: Record<string, unknown> = {};
     for (const [paramName, paramDef] of propEntries) {
       if (requiredSet.has(paramName)) {
-        exampleArgs[paramName] = paramDef.enum && Array.isArray(paramDef.enum)
-          ? paramDef.enum[0]
-          : paramDef.type === 'number' || paramDef.type === 'integer' ? 0
-          : paramDef.type === 'boolean' ? true
-          : paramDef.type === 'array' ? []
-          : paramDef.type === 'object' ? {}
-          : '...';
+        exampleArgs[paramName] =
+          paramDef.enum && Array.isArray(paramDef.enum)
+            ? paramDef.enum[0]
+            : paramDef.type === 'number' || paramDef.type === 'integer'
+              ? 0
+              : paramDef.type === 'boolean'
+                ? true
+                : paramDef.type === 'array'
+                  ? []
+                  : paramDef.type === 'object'
+                    ? {}
+                    : '...';
       }
     }
     lines.push(`Example: ${toolName}(${JSON.stringify(exampleArgs)})`);
@@ -193,13 +251,20 @@ function buildToolInstructions(toolName: string, description: string, parameters
 function getItemIcon(item: ResourceItem) {
   if (item.type === 'builtin-data') {
     switch (item.name) {
-      case 'tasks': return <ListChecks className="w-4 h-4" />;
-      case 'bookmarks': return <Bookmark className="w-4 h-4" />;
-      case 'notes': return <FileText className="w-4 h-4" />;
-      case 'calendar': return <Calendar className="w-4 h-4" />;
-      case 'contacts': return <Users className="w-4 h-4" />;
-      case 'memories': return <Database className="w-4 h-4" />;
-      case 'goals': return <Wrench className="w-4 h-4" />;
+      case 'tasks':
+        return <ListChecks className="w-4 h-4" />;
+      case 'bookmarks':
+        return <Bookmark className="w-4 h-4" />;
+      case 'notes':
+        return <FileText className="w-4 h-4" />;
+      case 'calendar':
+        return <Calendar className="w-4 h-4" />;
+      case 'contacts':
+        return <Users className="w-4 h-4" />;
+      case 'memories':
+        return <Database className="w-4 h-4" />;
+      case 'goals':
+        return <Wrench className="w-4 h-4" />;
     }
   }
   if (item.type === 'custom-data') {
@@ -210,19 +275,27 @@ function getItemIcon(item: ResourceItem) {
 
 function getIconColor(type: ResourceType): string {
   switch (type) {
-    case 'tool': return 'text-blue-500';
-    case 'custom-tool': return 'text-primary';
-    case 'custom-data': return 'text-emerald-500';
-    case 'builtin-data': return 'text-amber-500';
+    case 'tool':
+      return 'text-blue-500';
+    case 'custom-tool':
+      return 'text-primary';
+    case 'custom-data':
+      return 'text-emerald-500';
+    case 'builtin-data':
+      return 'text-amber-500';
   }
 }
 
 function getIconBg(type: ResourceType): string {
   switch (type) {
-    case 'tool': return 'bg-blue-500/10 group-hover:bg-blue-500/20';
-    case 'custom-tool': return 'bg-primary/10 group-hover:bg-primary/20';
-    case 'custom-data': return 'bg-emerald-500/10 group-hover:bg-emerald-500/20';
-    case 'builtin-data': return 'bg-amber-500/10 group-hover:bg-amber-500/20';
+    case 'tool':
+      return 'bg-blue-500/10 group-hover:bg-blue-500/20';
+    case 'custom-tool':
+      return 'bg-primary/10 group-hover:bg-primary/20';
+    case 'custom-data':
+      return 'bg-emerald-500/10 group-hover:bg-emerald-500/20';
+    case 'builtin-data':
+      return 'bg-amber-500/10 group-hover:bg-amber-500/20';
   }
 }
 
@@ -306,10 +379,12 @@ export function ToolPicker({ onSelect, disabled }: ToolPickerProps) {
           }
         }
         const customTools: ResourceItem[] = (customData.tools || []).map((t) => ({
-          name: t.name, description: t.description || '', category: t.category || 'Custom', type: 'custom-tool' as ResourceType,
+          name: t.name,
+          description: t.description || '',
+          category: t.category || 'Custom',
+          type: 'custom-tool' as ResourceType,
         }));
         setItems([...customTools, ...builtinTools]);
-
       } else if (tab === 'custom-data') {
         const tables = await customDataApi.tables();
         const tableItems: ResourceItem[] = (Array.isArray(tables) ? tables : []).map((t) => ({
@@ -322,7 +397,6 @@ export function ToolPicker({ onSelect, disabled }: ToolPickerProps) {
           recordCount: t.recordCount,
         }));
         setItems(tableItems);
-
       } else if (tab === 'builtin-data') {
         setItems(BUILTIN_DATA_ITEMS);
       }
@@ -345,7 +419,11 @@ export function ToolPicker({ onSelect, disabled }: ToolPickerProps) {
       toolInstructions = buildCustomDataInstructions(display, internal);
     } else {
       // tool or custom-tool — embed full parameter schema
-      toolInstructions = buildToolInstructions(item.name, item.description, item.parameters as Record<string, unknown> | undefined);
+      toolInstructions = buildToolInstructions(
+        item.name,
+        item.description,
+        item.parameters as Record<string, unknown> | undefined
+      );
     }
 
     onSelect({
@@ -361,12 +439,15 @@ export function ToolPicker({ onSelect, disabled }: ToolPickerProps) {
 
   const filteredItems = items.filter((item) => matchesSearch(item, searchQuery));
 
-  const groupedItems = filteredItems.reduce((acc, item) => {
-    const category = item.category || 'Other';
-    if (!acc[category]) acc[category] = [];
-    acc[category].push(item);
-    return acc;
-  }, {} as Record<string, ResourceItem[]>);
+  const groupedItems = filteredItems.reduce(
+    (acc, item) => {
+      const category = item.category || 'Other';
+      if (!acc[category]) acc[category] = [];
+      acc[category].push(item);
+      return acc;
+    },
+    {} as Record<string, ResourceItem[]>
+  );
 
   const sortedCategories = Object.keys(groupedItems).sort((a, b) => {
     if (a === 'Custom') return -1;
@@ -377,9 +458,12 @@ export function ToolPicker({ onSelect, disabled }: ToolPickerProps) {
   const emptyMessage = () => {
     if (items.length === 0) {
       switch (activeTab) {
-        case 'tools': return 'No tools available';
-        case 'custom-data': return 'No custom tables created yet';
-        case 'builtin-data': return 'No built-in data available';
+        case 'tools':
+          return 'No tools available';
+        case 'custom-data':
+          return 'No custom tables created yet';
+        case 'builtin-data':
+          return 'No built-in data available';
       }
     }
     return 'No results match your search';
@@ -389,9 +473,12 @@ export function ToolPicker({ onSelect, disabled }: ToolPickerProps) {
     const q = searchQuery.trim().toLowerCase();
     if (q === 'all' || q === '*') return `Showing all ${filteredItems.length} items`;
     switch (activeTab) {
-      case 'tools': return 'Search: "email send" finds send_email. Type "all" for everything.';
-      case 'custom-data': return 'Click to attach a custom data table to your message';
-      case 'builtin-data': return 'Click to attach built-in data with ready-to-use tool instructions';
+      case 'tools':
+        return 'Search: "email send" finds send_email. Type "all" for everything.';
+      case 'custom-data':
+        return 'Click to attach a custom data table to your message';
+      case 'builtin-data':
+        return 'Click to attach built-in data with ready-to-use tool instructions';
     }
   };
 
@@ -418,7 +505,10 @@ export function ToolPicker({ onSelect, disabled }: ToolPickerProps) {
                 <button
                   key={tab.id}
                   type="button"
-                  onClick={() => { setActiveTab(tab.id); setSearchQuery(''); }}
+                  onClick={() => {
+                    setActiveTab(tab.id);
+                    setSearchQuery('');
+                  }}
                   className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 text-xs font-medium transition-colors ${
                     isActive
                       ? 'text-primary border-b-2 border-primary bg-primary/5'
@@ -441,11 +531,19 @@ export function ToolPicker({ onSelect, disabled }: ToolPickerProps) {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder={activeTab === 'tools' ? 'Search tools... ("email send" or "all")' : `Search ${TABS.find(t => t.id === activeTab)?.label.toLowerCase()}...`}
+                placeholder={
+                  activeTab === 'tools'
+                    ? 'Search tools... ("email send" or "all")'
+                    : `Search ${TABS.find((t) => t.id === activeTab)?.label.toLowerCase()}...`
+                }
                 className="w-full pl-9 pr-8 py-2 bg-bg-secondary dark:bg-dark-bg-secondary text-text-primary dark:text-dark-text-primary placeholder:text-text-muted dark:placeholder:text-dark-text-muted border border-border dark:border-dark-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
               />
               {searchQuery && (
-                <button type="button" onClick={() => setSearchQuery('')} className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-text-muted hover:text-text-primary dark:hover:text-dark-text-primary">
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-text-muted hover:text-text-primary dark:hover:text-dark-text-primary"
+                >
                   <X className="w-3 h-3" />
                 </button>
               )}
@@ -459,7 +557,9 @@ export function ToolPicker({ onSelect, disabled }: ToolPickerProps) {
                 <LoadingSpinner size="sm" message="Loading..." />
               </div>
             ) : filteredItems.length === 0 ? (
-              <div className="p-4 text-center text-text-muted dark:text-dark-text-muted text-sm">{emptyMessage()}</div>
+              <div className="p-4 text-center text-text-muted dark:text-dark-text-muted text-sm">
+                {emptyMessage()}
+              </div>
             ) : (
               <div className="p-2">
                 {sortedCategories.map((category) => (
@@ -474,7 +574,9 @@ export function ToolPicker({ onSelect, disabled }: ToolPickerProps) {
                         onClick={() => handleSelect(item)}
                         className="w-full flex items-start gap-3 px-2 py-2 hover:bg-bg-secondary dark:hover:bg-dark-bg-secondary rounded-lg text-left transition-colors group"
                       >
-                        <div className={`mt-0.5 p-1.5 rounded-lg transition-colors ${getIconBg(item.type)}`}>
+                        <div
+                          className={`mt-0.5 p-1.5 rounded-lg transition-colors ${getIconBg(item.type)}`}
+                        >
                           <span className={getIconColor(item.type)}>{getItemIcon(item)}</span>
                         </div>
                         <div className="flex-1 min-w-0">
@@ -483,7 +585,9 @@ export function ToolPicker({ onSelect, disabled }: ToolPickerProps) {
                               {item.displayName || item.name}
                             </span>
                             {item.type === 'custom-tool' && (
-                              <span className="flex-shrink-0 text-[10px] px-1.5 py-0.5 bg-primary/10 text-primary rounded-full">custom</span>
+                              <span className="flex-shrink-0 text-[10px] px-1.5 py-0.5 bg-primary/10 text-primary rounded-full">
+                                custom
+                              </span>
                             )}
                             {item.recordCount !== undefined && (
                               <span className="flex-shrink-0 text-[10px] px-1.5 py-0.5 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-full">
@@ -491,10 +595,16 @@ export function ToolPicker({ onSelect, disabled }: ToolPickerProps) {
                               </span>
                             )}
                           </div>
-                          {item.type === 'custom-data' && item.internalName && item.internalName !== item.displayName && (
-                            <div className="text-[11px] text-text-muted/70 dark:text-dark-text-muted/70 font-mono">{item.internalName}</div>
-                          )}
-                          <div className="text-xs text-text-muted dark:text-dark-text-muted line-clamp-1">{item.description}</div>
+                          {item.type === 'custom-data' &&
+                            item.internalName &&
+                            item.internalName !== item.displayName && (
+                              <div className="text-[11px] text-text-muted/70 dark:text-dark-text-muted/70 font-mono">
+                                {item.internalName}
+                              </div>
+                            )}
+                          <div className="text-xs text-text-muted dark:text-dark-text-muted line-clamp-1">
+                            {item.description}
+                          </div>
                         </div>
                       </button>
                     ))}

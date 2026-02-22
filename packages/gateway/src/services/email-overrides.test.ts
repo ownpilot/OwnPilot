@@ -47,9 +47,11 @@ const mockImapClient = vi.hoisted(() => ({
 
 // Nodemailer mock
 const mockSendMail = vi.hoisted(() => vi.fn());
-const mockCreateTransport = vi.hoisted(() => vi.fn(() => ({
-  sendMail: mockSendMail,
-})));
+const mockCreateTransport = vi.hoisted(() =>
+  vi.fn(() => ({
+    sendMail: mockSendMail,
+  }))
+);
 
 // ImapFlow constructor args spy
 const mockImapFlowConstructorArgs = vi.hoisted(() => vi.fn());
@@ -69,7 +71,7 @@ vi.mock('../db/repositories/config-services.js', () => ({
 }));
 
 vi.mock('../routes/helpers.js', () => ({
-  getErrorMessage: (e: unknown) => e instanceof Error ? e.message : String(e),
+  getErrorMessage: (e: unknown) => (e instanceof Error ? e.message : String(e)),
 }));
 
 vi.mock('./log.js', () => ({
@@ -82,7 +84,10 @@ vi.mock('./log.js', () => ({
 }));
 
 vi.mock('imapflow', () => ({
-  ImapFlow: function (config: unknown) { mockImapFlowConstructorArgs(config); return mockImapClient; },
+  ImapFlow: function (config: unknown) {
+    mockImapFlowConstructorArgs(config);
+    return mockImapClient;
+  },
 }));
 
 vi.mock('nodemailer', () => ({
@@ -160,7 +165,7 @@ function setupImapConfig(overrides: Record<string, string | undefined> = {}): vo
 
 function setupBothConfigs(
   smtpOverrides: Record<string, string | undefined> = {},
-  imapOverrides: Record<string, string | undefined> = {},
+  imapOverrides: Record<string, string | undefined> = {}
 ): void {
   mockGetFieldValue.mockImplementation((service: string, field: string) => {
     if (service === 'smtp') {
@@ -243,7 +248,10 @@ describe('registerEmailOverrides', () => {
     await registerEmailOverrides(mockRegistry as never);
     // Each tool: first call returns false, second call (core.X) returns true = 12 calls
     expect(mockRegistry.updateExecutor).toHaveBeenCalledTimes(12);
-    expect(mockRegistry.updateExecutor).toHaveBeenCalledWith('core.send_email', expect.any(Function));
+    expect(mockRegistry.updateExecutor).toHaveBeenCalledWith(
+      'core.send_email',
+      expect.any(Function)
+    );
   });
 
   it('should call ensureEmailServices to upsert config center entries', async () => {
@@ -251,7 +259,7 @@ describe('registerEmailOverrides', () => {
     const mockRegistry = { updateExecutor: vi.fn(() => true) };
     await registerEmailOverrides(mockRegistry as never);
     // Wait for async ensureEmailServices fire-and-forget
-    await new Promise(r => setTimeout(r, 10));
+    await new Promise((r) => setTimeout(r, 10));
     expect(mockUpsert).toHaveBeenCalledTimes(2);
   });
 
@@ -259,7 +267,7 @@ describe('registerEmailOverrides', () => {
     mockUpsert.mockRejectedValue(new Error('DB down'));
     const mockRegistry = { updateExecutor: vi.fn(() => true) };
     await expect(registerEmailOverrides(mockRegistry as never)).resolves.not.toThrow();
-    await new Promise(r => setTimeout(r, 10));
+    await new Promise((r) => setTimeout(r, 10));
   });
 });
 
@@ -281,19 +289,31 @@ describe('sendEmailOverride', () => {
   });
 
   it('should reject invalid email format', async () => {
-    const result = await executors.send_email!({ to: ['not-an-email'], subject: 'Hi', body: 'test' });
+    const result = await executors.send_email!({
+      to: ['not-an-email'],
+      subject: 'Hi',
+      body: 'test',
+    });
     expect(result.isError).toBe(true);
     expect(result.content.error).toContain('Invalid email address');
   });
 
   it('should reject email with CRLF injection', async () => {
-    const result = await executors.send_email!({ to: ['evil@ex.com\r\nBcc:victim@ex.com'], subject: 'Hi', body: 'test' });
+    const result = await executors.send_email!({
+      to: ['evil@ex.com\r\nBcc:victim@ex.com'],
+      subject: 'Hi',
+      body: 'test',
+    });
     expect(result.isError).toBe(true);
     expect(result.content.error).toContain('Invalid email address');
   });
 
   it('should reject email with control characters', async () => {
-    const result = await executors.send_email!({ to: ['evil@ex.com\x00'], subject: 'Hi', body: 'test' });
+    const result = await executors.send_email!({
+      to: ['evil@ex.com\x00'],
+      subject: 'Hi',
+      body: 'test',
+    });
     expect(result.isError).toBe(true);
     expect(result.content.error).toContain('Invalid email address');
   });
@@ -594,19 +614,21 @@ describe('listEmailsOverride', () => {
     setupImapConfig();
     mockImapClient.mailbox = { exists: 50 };
     const date = new Date('2025-01-15T10:00:00Z');
-    mockImapFetch.mockReturnValue(asyncIterable([
-      {
-        uid: 42,
-        envelope: {
-          from: [{ name: 'Sender', address: 'sender@ex.com' }],
-          to: [{ address: 'me@ex.com' }],
-          subject: 'Hello',
-          date,
-          messageId: '<msg42@ex.com>',
+    mockImapFetch.mockReturnValue(
+      asyncIterable([
+        {
+          uid: 42,
+          envelope: {
+            from: [{ name: 'Sender', address: 'sender@ex.com' }],
+            to: [{ address: 'me@ex.com' }],
+            subject: 'Hello',
+            date,
+            messageId: '<msg42@ex.com>',
+          },
+          flags: new Set(['\\Seen']),
         },
-        flags: new Set(['\\Seen']),
-      },
-    ]));
+      ])
+    );
 
     const result = await executors.list_emails!({});
     expect(result.isError).toBe(false);
@@ -647,10 +669,9 @@ describe('listEmailsOverride', () => {
     mockImapFetch.mockReturnValue(asyncIterable([]));
 
     await executors.list_emails!({ unreadOnly: true });
-    expect(mockImapSearch).toHaveBeenCalledWith(
-      expect.objectContaining({ unseen: true }),
-      { uid: true },
-    );
+    expect(mockImapSearch).toHaveBeenCalledWith(expect.objectContaining({ unseen: true }), {
+      uid: true,
+    });
   });
 
   it('should return empty when search yields no results', async () => {
@@ -694,13 +715,21 @@ describe('listEmailsOverride', () => {
   it('should handle missing envelope fields gracefully', async () => {
     setupImapConfig();
     mockImapClient.mailbox = { exists: 5 };
-    mockImapFetch.mockReturnValue(asyncIterable([
-      {
-        uid: 1,
-        envelope: { from: undefined, to: undefined, subject: undefined, date: undefined, messageId: undefined },
-        flags: undefined,
-      },
-    ]));
+    mockImapFetch.mockReturnValue(
+      asyncIterable([
+        {
+          uid: 1,
+          envelope: {
+            from: undefined,
+            to: undefined,
+            subject: undefined,
+            date: undefined,
+            messageId: undefined,
+          },
+          flags: undefined,
+        },
+      ])
+    );
 
     const result = await executors.list_emails!({});
     expect(result.isError).toBe(false);
@@ -717,11 +746,13 @@ describe('listEmailsOverride', () => {
   it('should sort results by date descending', async () => {
     setupImapConfig();
     mockImapClient.mailbox = { exists: 5 };
-    mockImapFetch.mockReturnValue(asyncIterable([
-      { uid: 1, envelope: { date: new Date('2025-01-01') }, flags: new Set() },
-      { uid: 2, envelope: { date: new Date('2025-03-01') }, flags: new Set() },
-      { uid: 3, envelope: { date: new Date('2025-02-01') }, flags: new Set() },
-    ]));
+    mockImapFetch.mockReturnValue(
+      asyncIterable([
+        { uid: 1, envelope: { date: new Date('2025-01-01') }, flags: new Set() },
+        { uid: 2, envelope: { date: new Date('2025-03-01') }, flags: new Set() },
+        { uid: 3, envelope: { date: new Date('2025-02-01') }, flags: new Set() },
+      ])
+    );
 
     const result = await executors.list_emails!({});
     expect(result.content.emails[0].uid).toBe(2);
@@ -732,7 +763,9 @@ describe('listEmailsOverride', () => {
   it('should release lock and logout even on error', async () => {
     setupImapConfig();
     mockImapClient.mailbox = { exists: 5 };
-    mockImapFetch.mockImplementation(() => { throw new Error('Fetch failed'); });
+    mockImapFetch.mockImplementation(() => {
+      throw new Error('Fetch failed');
+    });
 
     const result = await executors.list_emails!({});
     expect(result.isError).toBe(true);
@@ -788,9 +821,9 @@ describe('readEmailOverride', () => {
     };
 
     // First fetch for envelope
-    mockImapFetch.mockReturnValue(asyncIterable([
-      { uid: 42, envelope, flags: new Set(['\\Seen']), bodyStructure: {} },
-    ]));
+    mockImapFetch.mockReturnValue(
+      asyncIterable([{ uid: 42, envelope, flags: new Set(['\\Seen']), bodyStructure: {} }])
+    );
 
     // Download returns raw simple text email
     const rawEmail = 'From: alice@ex.com\r\nSubject: Important\r\n\r\nHello Bob, this is a test.';
@@ -813,9 +846,9 @@ describe('readEmailOverride', () => {
 
   it('should mark email as read when markAsRead is not false', async () => {
     setupImapConfig();
-    mockImapFetch.mockReturnValue(asyncIterable([
-      { uid: 10, envelope: { subject: 'S' }, flags: new Set() },
-    ]));
+    mockImapFetch.mockReturnValue(
+      asyncIterable([{ uid: 10, envelope: { subject: 'S' }, flags: new Set() }])
+    );
     mockImapDownload.mockResolvedValue({
       content: asyncIterable([Buffer.from('H: V\r\n\r\nBody')]),
     });
@@ -826,9 +859,9 @@ describe('readEmailOverride', () => {
 
   it('should not mark as read when markAsRead is false', async () => {
     setupImapConfig();
-    mockImapFetch.mockReturnValue(asyncIterable([
-      { uid: 10, envelope: { subject: 'S' }, flags: new Set() },
-    ]));
+    mockImapFetch.mockReturnValue(
+      asyncIterable([{ uid: 10, envelope: { subject: 'S' }, flags: new Set() }])
+    );
     mockImapDownload.mockResolvedValue({
       content: asyncIterable([Buffer.from('H: V\r\n\r\nBody')]),
     });
@@ -839,9 +872,9 @@ describe('readEmailOverride', () => {
 
   it('should not mark as read when already seen', async () => {
     setupImapConfig();
-    mockImapFetch.mockReturnValue(asyncIterable([
-      { uid: 10, envelope: { subject: 'S' }, flags: new Set(['\\Seen']) },
-    ]));
+    mockImapFetch.mockReturnValue(
+      asyncIterable([{ uid: 10, envelope: { subject: 'S' }, flags: new Set(['\\Seen']) }])
+    );
     mockImapDownload.mockResolvedValue({
       content: asyncIterable([Buffer.from('H: V\r\n\r\nBody')]),
     });
@@ -852,9 +885,9 @@ describe('readEmailOverride', () => {
 
   it('should handle multipart email with text/plain and text/html', async () => {
     setupImapConfig();
-    mockImapFetch.mockReturnValue(asyncIterable([
-      { uid: 5, envelope: { subject: 'Multi' }, flags: new Set() },
-    ]));
+    mockImapFetch.mockReturnValue(
+      asyncIterable([{ uid: 5, envelope: { subject: 'Multi' }, flags: new Set() }])
+    );
 
     const rawMultipart = [
       'Content-Type: multipart/alternative; boundary="BOUND123"',
@@ -882,9 +915,9 @@ describe('readEmailOverride', () => {
 
   it('should decode base64 content-transfer-encoding', async () => {
     setupImapConfig();
-    mockImapFetch.mockReturnValue(asyncIterable([
-      { uid: 6, envelope: { subject: 'B64' }, flags: new Set() },
-    ]));
+    mockImapFetch.mockReturnValue(
+      asyncIterable([{ uid: 6, envelope: { subject: 'B64' }, flags: new Set() }])
+    );
 
     const b64Body = Buffer.from('Base64 decoded text').toString('base64');
     const rawMultipart = [
@@ -909,9 +942,9 @@ describe('readEmailOverride', () => {
 
   it('should decode quoted-printable encoding', async () => {
     setupImapConfig();
-    mockImapFetch.mockReturnValue(asyncIterable([
-      { uid: 7, envelope: { subject: 'QP' }, flags: new Set() },
-    ]));
+    mockImapFetch.mockReturnValue(
+      asyncIterable([{ uid: 7, envelope: { subject: 'QP' }, flags: new Set() }])
+    );
 
     const rawMultipart = [
       'Content-Type: multipart/mixed; boundary="QPBOUND"',
@@ -940,9 +973,9 @@ describe('readEmailOverride', () => {
 
   it('should fall back to HTML tag stripping when only html part exists', async () => {
     setupImapConfig();
-    mockImapFetch.mockReturnValue(asyncIterable([
-      { uid: 8, envelope: { subject: 'HtmlOnly' }, flags: new Set() },
-    ]));
+    mockImapFetch.mockReturnValue(
+      asyncIterable([{ uid: 8, envelope: { subject: 'HtmlOnly' }, flags: new Set() }])
+    );
 
     const rawMultipart = [
       'Content-Type: multipart/mixed; boundary="HTMLBOUND"',
@@ -967,9 +1000,9 @@ describe('readEmailOverride', () => {
 
   it('should handle simple non-multipart email', async () => {
     setupImapConfig();
-    mockImapFetch.mockReturnValue(asyncIterable([
-      { uid: 9, envelope: { subject: 'Simple' }, flags: new Set() },
-    ]));
+    mockImapFetch.mockReturnValue(
+      asyncIterable([{ uid: 9, envelope: { subject: 'Simple' }, flags: new Set() }])
+    );
 
     const rawSimple = 'Subject: Simple\r\nFrom: a@b.com\r\n\r\nJust a plain body.';
     mockImapDownload.mockResolvedValue({
@@ -983,9 +1016,9 @@ describe('readEmailOverride', () => {
 
   it('should use custom folder', async () => {
     setupImapConfig();
-    mockImapFetch.mockReturnValue(asyncIterable([
-      { uid: 1, envelope: { subject: 'S' }, flags: new Set() },
-    ]));
+    mockImapFetch.mockReturnValue(
+      asyncIterable([{ uid: 1, envelope: { subject: 'S' }, flags: new Set() }])
+    );
     mockImapDownload.mockResolvedValue({
       content: asyncIterable([Buffer.from('H: V\r\n\r\nBody')]),
     });
@@ -996,9 +1029,9 @@ describe('readEmailOverride', () => {
 
   it('should not throw when messageFlagsAdd fails (non-fatal)', async () => {
     setupImapConfig();
-    mockImapFetch.mockReturnValue(asyncIterable([
-      { uid: 10, envelope: { subject: 'S' }, flags: new Set() },
-    ]));
+    mockImapFetch.mockReturnValue(
+      asyncIterable([{ uid: 10, envelope: { subject: 'S' }, flags: new Set() }])
+    );
     mockImapDownload.mockResolvedValue({
       content: asyncIterable([Buffer.from('H: V\r\n\r\nBody')]),
     });
@@ -1055,18 +1088,20 @@ describe('searchEmailsOverride', () => {
   it('should search and return matching emails', async () => {
     setupImapConfig();
     mockImapSearch.mockResolvedValue([10, 20]);
-    mockImapFetch.mockReturnValue(asyncIterable([
-      {
-        uid: 20,
-        envelope: {
-          from: [{ address: 'alice@ex.com' }],
-          to: [{ address: 'me@ex.com' }],
-          subject: 'Invoice #123',
-          date: new Date('2025-02-01'),
+    mockImapFetch.mockReturnValue(
+      asyncIterable([
+        {
+          uid: 20,
+          envelope: {
+            from: [{ address: 'alice@ex.com' }],
+            to: [{ address: 'me@ex.com' }],
+            subject: 'Invoice #123',
+            date: new Date('2025-02-01'),
+          },
+          flags: new Set(['\\Flagged']),
         },
-        flags: new Set(['\\Flagged']),
-      },
-    ]));
+      ])
+    );
 
     const result = await executors.search_emails!({ query: 'invoice' });
     expect(result.isError).toBe(false);
@@ -1162,18 +1197,20 @@ describe('replyEmailOverride', () => {
 
   it('should reply to sender only by default', async () => {
     setupBothConfigs();
-    mockImapFetch.mockReturnValue(asyncIterable([
-      {
-        uid: 42,
-        envelope: {
-          from: [{ address: 'alice@ex.com' }],
-          to: [{ address: 'sender@example.com' }],
-          cc: [{ address: 'cc@ex.com' }],
-          subject: 'Original Subject',
-          messageId: '<orig42@ex.com>',
+    mockImapFetch.mockReturnValue(
+      asyncIterable([
+        {
+          uid: 42,
+          envelope: {
+            from: [{ address: 'alice@ex.com' }],
+            to: [{ address: 'sender@example.com' }],
+            cc: [{ address: 'cc@ex.com' }],
+            subject: 'Original Subject',
+            messageId: '<orig42@ex.com>',
+          },
         },
-      },
-    ]));
+      ])
+    );
     mockSendMail.mockResolvedValue({ messageId: '<reply42@ex.com>' });
 
     const result = await executors.reply_email!({ id: '42', body: 'Thanks!' });
@@ -1187,16 +1224,18 @@ describe('replyEmailOverride', () => {
 
   it('should add Re: prefix only when not already present', async () => {
     setupBothConfigs();
-    mockImapFetch.mockReturnValue(asyncIterable([
-      {
-        uid: 43,
-        envelope: {
-          from: [{ address: 'alice@ex.com' }],
-          subject: 'Re: Already replied',
-          messageId: '<orig43@ex.com>',
+    mockImapFetch.mockReturnValue(
+      asyncIterable([
+        {
+          uid: 43,
+          envelope: {
+            from: [{ address: 'alice@ex.com' }],
+            subject: 'Re: Already replied',
+            messageId: '<orig43@ex.com>',
+          },
         },
-      },
-    ]));
+      ])
+    );
     mockSendMail.mockResolvedValue({ messageId: '<reply43@ex.com>' });
 
     const result = await executors.reply_email!({ id: '43', body: 'Again!' });
@@ -1205,18 +1244,20 @@ describe('replyEmailOverride', () => {
 
   it('should reply all when replyAll is true', async () => {
     setupBothConfigs();
-    mockImapFetch.mockReturnValue(asyncIterable([
-      {
-        uid: 44,
-        envelope: {
-          from: [{ address: 'alice@ex.com' }],
-          to: [{ address: 'me@ex.com' }, { address: 'bob@ex.com' }],
-          cc: [{ address: 'charlie@ex.com' }],
-          subject: 'Group thread',
-          messageId: '<orig44@ex.com>',
+    mockImapFetch.mockReturnValue(
+      asyncIterable([
+        {
+          uid: 44,
+          envelope: {
+            from: [{ address: 'alice@ex.com' }],
+            to: [{ address: 'me@ex.com' }, { address: 'bob@ex.com' }],
+            cc: [{ address: 'charlie@ex.com' }],
+            subject: 'Group thread',
+            messageId: '<orig44@ex.com>',
+          },
         },
-      },
-    ]));
+      ])
+    );
     mockSendMail.mockResolvedValue({ messageId: '<reply44@ex.com>' });
 
     const result = await executors.reply_email!({ id: '44', body: 'Reply to all', replyAll: true });
@@ -1229,18 +1270,20 @@ describe('replyEmailOverride', () => {
 
   it('should exclude own address from replyAll recipients', async () => {
     setupBothConfigs();
-    mockImapFetch.mockReturnValue(asyncIterable([
-      {
-        uid: 45,
-        envelope: {
-          from: [{ address: 'alice@ex.com' }],
-          to: [{ address: 'sender@example.com' }, { address: 'user@example.com' }],
-          cc: [],
-          subject: 'Thread',
-          messageId: '<orig45@ex.com>',
+    mockImapFetch.mockReturnValue(
+      asyncIterable([
+        {
+          uid: 45,
+          envelope: {
+            from: [{ address: 'alice@ex.com' }],
+            to: [{ address: 'sender@example.com' }, { address: 'user@example.com' }],
+            cc: [],
+            subject: 'Thread',
+            messageId: '<orig45@ex.com>',
+          },
         },
-      },
-    ]));
+      ])
+    );
     mockSendMail.mockResolvedValue({ messageId: '<reply45@ex.com>' });
 
     const result = await executors.reply_email!({ id: '45', body: 'Reply', replyAll: true });
@@ -1252,16 +1295,18 @@ describe('replyEmailOverride', () => {
 
   it('should set inReplyTo and references headers', async () => {
     setupBothConfigs();
-    mockImapFetch.mockReturnValue(asyncIterable([
-      {
-        uid: 46,
-        envelope: {
-          from: [{ address: 'alice@ex.com' }],
-          subject: 'Thread',
-          messageId: '<orig46@ex.com>',
+    mockImapFetch.mockReturnValue(
+      asyncIterable([
+        {
+          uid: 46,
+          envelope: {
+            from: [{ address: 'alice@ex.com' }],
+            subject: 'Thread',
+            messageId: '<orig46@ex.com>',
+          },
         },
-      },
-    ]));
+      ])
+    );
     mockSendMail.mockResolvedValue({ messageId: '<reply46@ex.com>' });
 
     await executors.reply_email!({ id: '46', body: 'Reply' });
@@ -1272,16 +1317,18 @@ describe('replyEmailOverride', () => {
 
   it('should send html reply when html flag is true', async () => {
     setupBothConfigs();
-    mockImapFetch.mockReturnValue(asyncIterable([
-      {
-        uid: 47,
-        envelope: {
-          from: [{ address: 'alice@ex.com' }],
-          subject: 'Thread',
-          messageId: '<orig47@ex.com>',
+    mockImapFetch.mockReturnValue(
+      asyncIterable([
+        {
+          uid: 47,
+          envelope: {
+            from: [{ address: 'alice@ex.com' }],
+            subject: 'Thread',
+            messageId: '<orig47@ex.com>',
+          },
         },
-      },
-    ]));
+      ])
+    );
     mockSendMail.mockResolvedValue({ messageId: '<r@ex.com>' });
 
     await executors.reply_email!({ id: '47', body: '<b>Bold reply</b>', html: true });
@@ -1292,16 +1339,18 @@ describe('replyEmailOverride', () => {
 
   it('should return error when reply attachment not found', async () => {
     setupBothConfigs();
-    mockImapFetch.mockReturnValue(asyncIterable([
-      {
-        uid: 48,
-        envelope: {
-          from: [{ address: 'alice@ex.com' }],
-          subject: 'Thread',
-          messageId: '<orig48@ex.com>',
+    mockImapFetch.mockReturnValue(
+      asyncIterable([
+        {
+          uid: 48,
+          envelope: {
+            from: [{ address: 'alice@ex.com' }],
+            subject: 'Thread',
+            messageId: '<orig48@ex.com>',
+          },
         },
-      },
-    ]));
+      ])
+    );
     mockFsAccess.mockRejectedValue(new Error('ENOENT'));
 
     const result = await executors.reply_email!({
@@ -1315,16 +1364,18 @@ describe('replyEmailOverride', () => {
 
   it('should handle null original subject gracefully', async () => {
     setupBothConfigs();
-    mockImapFetch.mockReturnValue(asyncIterable([
-      {
-        uid: 49,
-        envelope: {
-          from: [{ address: 'alice@ex.com' }],
-          subject: null,
-          messageId: '<orig49@ex.com>',
+    mockImapFetch.mockReturnValue(
+      asyncIterable([
+        {
+          uid: 49,
+          envelope: {
+            from: [{ address: 'alice@ex.com' }],
+            subject: null,
+            messageId: '<orig49@ex.com>',
+          },
         },
-      },
-    ]));
+      ])
+    );
     mockSendMail.mockResolvedValue({ messageId: '<r@ex.com>' });
 
     const result = await executors.reply_email!({ id: '49', body: 'Reply' });
@@ -1501,18 +1552,20 @@ describe('formatAddress (via list/read results)', () => {
   it('should format name + address', async () => {
     setupImapConfig();
     mockImapClient.mailbox = { exists: 1 };
-    mockImapFetch.mockReturnValue(asyncIterable([
-      {
-        uid: 1,
-        envelope: {
-          from: [{ name: 'John Doe', address: 'john@ex.com' }],
-          to: [{ address: 'me@ex.com' }],
-          subject: 'Test',
-          date: new Date(),
+    mockImapFetch.mockReturnValue(
+      asyncIterable([
+        {
+          uid: 1,
+          envelope: {
+            from: [{ name: 'John Doe', address: 'john@ex.com' }],
+            to: [{ address: 'me@ex.com' }],
+            subject: 'Test',
+            date: new Date(),
+          },
+          flags: new Set(),
         },
-        flags: new Set(),
-      },
-    ]));
+      ])
+    );
 
     const result = await executors.list_emails!({});
     expect(result.content.emails[0].from).toBe('John Doe <john@ex.com>');
@@ -1521,18 +1574,20 @@ describe('formatAddress (via list/read results)', () => {
   it('should format address only (no name)', async () => {
     setupImapConfig();
     mockImapClient.mailbox = { exists: 1 };
-    mockImapFetch.mockReturnValue(asyncIterable([
-      {
-        uid: 1,
-        envelope: {
-          from: [{ address: 'john@ex.com' }],
-          to: [{ address: 'me@ex.com' }],
-          subject: 'Test',
-          date: new Date(),
+    mockImapFetch.mockReturnValue(
+      asyncIterable([
+        {
+          uid: 1,
+          envelope: {
+            from: [{ address: 'john@ex.com' }],
+            to: [{ address: 'me@ex.com' }],
+            subject: 'Test',
+            date: new Date(),
+          },
+          flags: new Set(),
         },
-        flags: new Set(),
-      },
-    ]));
+      ])
+    );
 
     const result = await executors.list_emails!({});
     expect(result.content.emails[0].from).toBe('john@ex.com');
@@ -1541,21 +1596,20 @@ describe('formatAddress (via list/read results)', () => {
   it('should format multiple addresses comma-separated', async () => {
     setupImapConfig();
     mockImapClient.mailbox = { exists: 1 };
-    mockImapFetch.mockReturnValue(asyncIterable([
-      {
-        uid: 1,
-        envelope: {
-          from: [{ address: 'a@ex.com' }],
-          to: [
-            { name: 'Alice', address: 'alice@ex.com' },
-            { address: 'bob@ex.com' },
-          ],
-          subject: 'Test',
-          date: new Date(),
+    mockImapFetch.mockReturnValue(
+      asyncIterable([
+        {
+          uid: 1,
+          envelope: {
+            from: [{ address: 'a@ex.com' }],
+            to: [{ name: 'Alice', address: 'alice@ex.com' }, { address: 'bob@ex.com' }],
+            subject: 'Test',
+            date: new Date(),
+          },
+          flags: new Set(),
         },
-        flags: new Set(),
-      },
-    ]));
+      ])
+    );
 
     const result = await executors.list_emails!({});
     expect(result.content.emails[0].to).toBe('Alice <alice@ex.com>, bob@ex.com');
@@ -1564,13 +1618,15 @@ describe('formatAddress (via list/read results)', () => {
   it('should handle undefined from/to as empty string', async () => {
     setupImapConfig();
     mockImapClient.mailbox = { exists: 1 };
-    mockImapFetch.mockReturnValue(asyncIterable([
-      {
-        uid: 1,
-        envelope: { from: undefined, to: undefined, subject: 'Test', date: new Date() },
-        flags: new Set(),
-      },
-    ]));
+    mockImapFetch.mockReturnValue(
+      asyncIterable([
+        {
+          uid: 1,
+          envelope: { from: undefined, to: undefined, subject: 'Test', date: new Date() },
+          flags: new Set(),
+        },
+      ])
+    );
 
     const result = await executors.list_emails!({});
     expect(result.content.emails[0].from).toBe('');
@@ -1580,18 +1636,20 @@ describe('formatAddress (via list/read results)', () => {
   it('should handle address with name but no address field', async () => {
     setupImapConfig();
     mockImapClient.mailbox = { exists: 1 };
-    mockImapFetch.mockReturnValue(asyncIterable([
-      {
-        uid: 1,
-        envelope: {
-          from: [{ name: 'NoAddr' }],
-          to: [{ address: 'me@ex.com' }],
-          subject: 'Test',
-          date: new Date(),
+    mockImapFetch.mockReturnValue(
+      asyncIterable([
+        {
+          uid: 1,
+          envelope: {
+            from: [{ name: 'NoAddr' }],
+            to: [{ address: 'me@ex.com' }],
+            subject: 'Test',
+            date: new Date(),
+          },
+          flags: new Set(),
         },
-        flags: new Set(),
-      },
-    ]));
+      ])
+    );
 
     const result = await executors.list_emails!({});
     // name is truthy so it formats as "NoAddr <undefined>" — the formatAddress logic
@@ -1607,17 +1665,19 @@ describe('formatAddress (via list/read results)', () => {
 describe('formatAddressList (via reply)', () => {
   it('should extract address strings for reply recipients', async () => {
     setupBothConfigs();
-    mockImapFetch.mockReturnValue(asyncIterable([
-      {
-        uid: 50,
-        envelope: {
-          from: [{ name: 'Alice', address: 'alice@ex.com' }],
-          to: [{ address: 'me@ex.com' }],
-          subject: 'Thread',
-          messageId: '<orig@ex.com>',
+    mockImapFetch.mockReturnValue(
+      asyncIterable([
+        {
+          uid: 50,
+          envelope: {
+            from: [{ name: 'Alice', address: 'alice@ex.com' }],
+            to: [{ address: 'me@ex.com' }],
+            subject: 'Thread',
+            messageId: '<orig@ex.com>',
+          },
         },
-      },
-    ]));
+      ])
+    );
     mockSendMail.mockResolvedValue({ messageId: '<r@ex.com>' });
 
     const result = await executors.reply_email!({ id: '50', body: 'Reply' });
@@ -1627,18 +1687,20 @@ describe('formatAddressList (via reply)', () => {
 
   it('should filter out empty addresses in replyAll', async () => {
     setupBothConfigs();
-    mockImapFetch.mockReturnValue(asyncIterable([
-      {
-        uid: 51,
-        envelope: {
-          from: [{ address: 'alice@ex.com' }],
-          to: [{ name: 'NoAddr' }, { address: 'bob@ex.com' }],
-          cc: undefined,
-          subject: 'Thread',
-          messageId: '<orig@ex.com>',
+    mockImapFetch.mockReturnValue(
+      asyncIterable([
+        {
+          uid: 51,
+          envelope: {
+            from: [{ address: 'alice@ex.com' }],
+            to: [{ name: 'NoAddr' }, { address: 'bob@ex.com' }],
+            cc: undefined,
+            subject: 'Thread',
+            messageId: '<orig@ex.com>',
+          },
         },
-      },
-    ]));
+      ])
+    );
     mockSendMail.mockResolvedValue({ messageId: '<r@ex.com>' });
 
     const result = await executors.reply_email!({ id: '51', body: 'Reply', replyAll: true });
@@ -1669,7 +1731,9 @@ describe('withImapClient lifecycle', () => {
   it('should release lock and logout even when fn throws', async () => {
     setupImapConfig();
     mockImapClient.mailbox = { exists: 5 };
-    mockImapFetch.mockImplementation(() => { throw new Error('inner error'); });
+    mockImapFetch.mockImplementation(() => {
+      throw new Error('inner error');
+    });
 
     await executors.list_emails!({});
 
@@ -1685,9 +1749,9 @@ describe('withImapClient lifecycle', () => {
 describe('extractTextFromRaw edge cases (via readEmailOverride)', () => {
   function setupReadWithRaw(rawContent: string) {
     setupImapConfig();
-    mockImapFetch.mockReturnValue(asyncIterable([
-      { uid: 100, envelope: { subject: 'Test' }, flags: new Set(['\\Seen']) },
-    ]));
+    mockImapFetch.mockReturnValue(
+      asyncIterable([{ uid: 100, envelope: { subject: 'Test' }, flags: new Set(['\\Seen']) }])
+    );
     mockImapDownload.mockResolvedValue({
       content: asyncIterable([Buffer.from(rawContent)]),
     });
@@ -1873,9 +1937,9 @@ describe('edge cases', () => {
 
   it('should default folder to INBOX for read_email', async () => {
     setupImapConfig();
-    mockImapFetch.mockReturnValue(asyncIterable([
-      { uid: 1, envelope: { subject: 'S' }, flags: new Set() },
-    ]));
+    mockImapFetch.mockReturnValue(
+      asyncIterable([{ uid: 1, envelope: { subject: 'S' }, flags: new Set() }])
+    );
     mockImapDownload.mockResolvedValue({
       content: asyncIterable([Buffer.from('H: V\r\n\r\nBody')]),
     });

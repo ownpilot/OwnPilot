@@ -31,10 +31,7 @@ import {
   type NormalizedAttachment,
 } from '@ownpilot/core';
 
-import {
-  channelUsersRepo,
-  type ChannelUsersRepository,
-} from '../db/repositories/channel-users.js';
+import { channelUsersRepo, type ChannelUsersRepository } from '../db/repositories/channel-users.js';
 import {
   channelSessionsRepo,
   type ChannelSessionsRepository,
@@ -117,8 +114,7 @@ export class ChannelServiceImpl implements IChannelService {
     this.usersRepo = options?.usersRepo ?? channelUsersRepo;
     this.sessionsRepo = options?.sessionsRepo ?? channelSessionsRepo;
     this.messagesRepo = new ChannelMessagesRepository();
-    this.verificationService =
-      options?.verificationService ?? getChannelVerificationService();
+    this.verificationService = options?.verificationService ?? getChannelVerificationService();
 
     // Subscribe to incoming messages from channel plugins
     this.subscribeToEvents();
@@ -128,10 +124,7 @@ export class ChannelServiceImpl implements IChannelService {
   // IChannelService Implementation
   // ==========================================================================
 
-  async send(
-    channelPluginId: string,
-    message: ChannelOutgoingMessage
-  ): Promise<string> {
+  async send(channelPluginId: string, message: ChannelOutgoingMessage): Promise<string> {
     const api = this.getChannel(channelPluginId);
     if (!api) {
       throw new Error(`Channel plugin not found: ${channelPluginId}`);
@@ -144,17 +137,12 @@ export class ChannelServiceImpl implements IChannelService {
       try {
         const eventBus = getEventBus();
         eventBus.emit(
-          createEvent(
-            ChannelEvents.MESSAGE_SENT,
-            'channel',
-            `channel-service`,
-            {
-              channelPluginId,
-              platform: api.getPlatform(),
-              platformMessageId: messageId,
-              platformChatId: message.platformChatId,
-            }
-          )
+          createEvent(ChannelEvents.MESSAGE_SENT, 'channel', `channel-service`, {
+            channelPluginId,
+            platform: api.getPlatform(),
+            platformMessageId: messageId,
+            platformChatId: message.platformChatId,
+          })
         );
       } catch (emitErr) {
         log.debug('EventBus not available for MESSAGE_SENT event', { error: emitErr });
@@ -166,17 +154,12 @@ export class ChannelServiceImpl implements IChannelService {
       try {
         const eventBus = getEventBus();
         eventBus.emit(
-          createEvent(
-            ChannelEvents.MESSAGE_SEND_ERROR,
-            'channel',
-            'channel-service',
-            {
-              channelPluginId,
-              platform: api.getPlatform(),
-              error: getErrorMessage(error),
-              platformChatId: message.platformChatId,
-            }
-          )
+          createEvent(ChannelEvents.MESSAGE_SEND_ERROR, 'channel', 'channel-service', {
+            channelPluginId,
+            platform: api.getPlatform(),
+            error: getErrorMessage(error),
+            platformChatId: message.platformChatId,
+          })
         );
       } catch (emitErr) {
         log.debug('EventBus not available for MESSAGE_SEND_ERROR event', { error: emitErr });
@@ -190,9 +173,7 @@ export class ChannelServiceImpl implements IChannelService {
     message: ChannelOutgoingMessage
   ): Promise<Map<string, string>> {
     const results = new Map<string, string>();
-    const channels = this.getChannelPlugins().filter(
-      (p) => getChannelPlatform(p) === platform
-    );
+    const channels = this.getChannelPlugins().filter((p) => getChannelPlatform(p) === platform);
 
     for (const plugin of channels) {
       try {
@@ -200,16 +181,17 @@ export class ChannelServiceImpl implements IChannelService {
         const messageId = await api.sendMessage(message);
         results.set(plugin.manifest.id, messageId);
       } catch (error) {
-        log.error(`Failed to send to ${plugin.manifest.id}`, { pluginId: plugin.manifest.id, error });
+        log.error(`Failed to send to ${plugin.manifest.id}`, {
+          pluginId: plugin.manifest.id,
+          error,
+        });
       }
     }
 
     return results;
   }
 
-  async broadcastAll(
-    message: ChannelOutgoingMessage
-  ): Promise<Map<string, string>> {
+  async broadcastAll(message: ChannelOutgoingMessage): Promise<Map<string, string>> {
     const results = new Map<string, string>();
     const channels = this.getChannelPlugins();
 
@@ -221,7 +203,10 @@ export class ChannelServiceImpl implements IChannelService {
           results.set(plugin.manifest.id, messageId);
         }
       } catch (error) {
-        log.error(`Failed to send to ${plugin.manifest.id}`, { pluginId: plugin.manifest.id, error });
+        log.error(`Failed to send to ${plugin.manifest.id}`, {
+          pluginId: plugin.manifest.id,
+          error,
+        });
       }
     }
 
@@ -359,10 +344,7 @@ export class ChannelServiceImpl implements IChannelService {
     });
   }
 
-  async resolveUser(
-    platform: ChannelPlatform,
-    platformUserId: string
-  ): Promise<string | null> {
+  async resolveUser(platform: ChannelPlatform, platformUserId: string): Promise<string | null> {
     return this.verificationService.resolveUser(platform, platformUserId);
   }
 
@@ -381,9 +363,7 @@ export class ChannelServiceImpl implements IChannelService {
       if (api.getStatus() === 'connected') continue;
 
       // Check if the required service has a configured API key
-      const requiredServices = manifest.requiredServices as
-        | Array<{ name: string }>
-        | undefined;
+      const requiredServices = manifest.requiredServices as Array<{ name: string }> | undefined;
       if (!requiredServices || requiredServices.length === 0) continue;
 
       const serviceName = requiredServices[0]!.name;
@@ -424,9 +404,7 @@ export class ChannelServiceImpl implements IChannelService {
    * Process an incoming channel message.
    * This is the main pipeline: auth check -> session lookup -> AI routing.
    */
-  async processIncomingMessage(
-    message: ChannelIncomingMessage
-  ): Promise<void> {
+  async processIncomingMessage(message: ChannelIncomingMessage): Promise<void> {
     try {
       // 1. Find or create channel user
       const channelUser = await this.usersRepo.findOrCreate({
@@ -439,7 +417,10 @@ export class ChannelServiceImpl implements IChannelService {
 
       // 2. Check if blocked
       if (channelUser.isBlocked) {
-        log.info('Blocked user message ignored', { displayName: message.sender.displayName, platform: message.platform });
+        log.info('Blocked user message ignored', {
+          displayName: message.sender.displayName,
+          platform: message.platform,
+        });
         return;
       }
 
@@ -453,23 +434,20 @@ export class ChannelServiceImpl implements IChannelService {
       // 4. Check verification (auto-verify whitelisted users, or all users when no restriction)
       if (!channelUser.isVerified) {
         const plugin = this.pluginRegistry.get(message.channelPluginId);
-        const allowedUsers = plugin
-          ? this.getPluginAllowedUsers(plugin)
-          : [];
+        const allowedUsers = plugin ? this.getPluginAllowedUsers(plugin) : [];
 
         // Auto-verify when:
         // - No allowed_users restriction set (personal assistant, owner didn't restrict access)
         // - OR user is explicitly whitelisted in Config Center
         const shouldAutoVerify =
-          allowedUsers.length === 0 ||
-          allowedUsers.includes(message.sender.platformUserId);
+          allowedUsers.length === 0 || allowedUsers.includes(message.sender.platformUserId);
 
         if (shouldAutoVerify) {
           const verificationSvc = getChannelVerificationService();
           await verificationSvc.verifyViaWhitelist(
             message.platform,
             message.sender.platformUserId,
-            message.sender.displayName,
+            message.sender.displayName
           );
           channelUser.isVerified = true;
           log.info('Auto-verified user', {
@@ -514,8 +492,6 @@ export class ChannelServiceImpl implements IChannelService {
         log.warn('Failed to save incoming message', { error });
       }
 
-
-
       // 5b. Broadcast incoming message to WebSocket clients
       // Flat shape — matches what RealtimeBridge expects ({ sender, content })
       wsGateway.broadcast('channel:message', {
@@ -546,9 +522,8 @@ export class ChannelServiceImpl implements IChannelService {
         if (existing) return existing;
 
         // Create a new conversation for this channel session
-        const { createConversationsRepository } = await import(
-          '../db/repositories/conversations.js'
-        );
+        const { createConversationsRepository } =
+          await import('../db/repositories/conversations.js');
         const conversationsRepo = createConversationsRepository();
         const conversationId = randomUUID();
         await conversationsRepo.create({
@@ -594,13 +569,20 @@ export class ChannelServiceImpl implements IChannelService {
 
       // Create progress manager if channel supports it
       type ProgressCapableAPI = typeof api & {
-        createProgressManager?(chatId: string): { start(text?: string): Promise<string>; update(text: string): void; finish(text: string): Promise<string>; cancel(): Promise<void>; getMessageId(): number | null } | null;
+        createProgressManager?(chatId: string): {
+          start(text?: string): Promise<string>;
+          update(text: string): void;
+          finish(text: string): Promise<string>;
+          cancel(): Promise<void>;
+          getMessageId(): number | null;
+        } | null;
         trackMessage?(platformMessageId: string, chatId: string): void;
       };
       const progressApi = api as ProgressCapableAPI;
-      const progress = typeof progressApi.createProgressManager === 'function'
-        ? progressApi.createProgressManager(message.platformChatId)
-        : null;
+      const progress =
+        typeof progressApi.createProgressManager === 'function'
+          ? progressApi.createProgressManager(message.platformChatId)
+          : null;
 
       if (progress) {
         // Send "Thinking..." progress message instead of typing indicator
@@ -617,7 +599,13 @@ export class ChannelServiceImpl implements IChannelService {
       // Try MessageBus pipeline first
       const bus = tryGetMessageBus();
       if (bus) {
-        responseText = await this.processViaBus(bus, message, { conversationId: session.conversationId, context: session.context }, channelUser, progress ?? undefined);
+        responseText = await this.processViaBus(
+          bus,
+          message,
+          { conversationId: session.conversationId, context: session.context },
+          channelUser,
+          progress ?? undefined
+        );
       } else {
         // Legacy fallback: direct agent.chat()
         responseText = await this.processDirectAgent(message);
@@ -674,13 +662,18 @@ export class ChannelServiceImpl implements IChannelService {
         direction: 'outgoing',
       });
 
-      log.info('Responded to user', { displayName: message.sender.displayName, platform: message.platform });
+      log.info('Responded to user', {
+        displayName: message.sender.displayName,
+        platform: message.platform,
+      });
     } catch (error) {
       log.error('Error processing message', { error });
 
       // Build a helpful error message
       const errMsg = getErrorMessage(error);
-      const isProviderError = /provider|model|api.?key|unauthorized|401|no.*configured/i.test(errMsg);
+      const isProviderError = /provider|model|api.?key|unauthorized|401|no.*configured/i.test(
+        errMsg
+      );
       const userMessage = isProviderError
         ? 'No AI provider configured. Please set up an API key (e.g. OpenAI, Anthropic) in OwnPilot Settings or Config Center.'
         : `Sorry, I encountered an error: ${errMsg.substring(0, 200)}`;
@@ -714,11 +707,9 @@ export class ChannelServiceImpl implements IChannelService {
     message: ChannelIncomingMessage,
     session: { conversationId: string | null; context?: Record<string, unknown> },
     channelUser: { ownpilotUserId: string },
-    progress?: { update(text: string): void },
+    progress?: { update(text: string): void }
   ): Promise<string> {
-    const { getOrCreateDefaultAgent, isDemoMode } = await import(
-      '../routes/agents.js'
-    );
+    const { getOrCreateDefaultAgent, isDemoMode } = await import('../routes/agents.js');
 
     // Demo mode short-circuit (bus isn't needed for demo)
     if (await isDemoMode()) {
@@ -730,7 +721,12 @@ export class ChannelServiceImpl implements IChannelService {
     // Wire tool approval via Telegram inline keyboard (if channel supports it)
     const api = this.getChannel(message.channelPluginId);
     if (api && typeof (api as unknown as Record<string, unknown>).requestApproval === 'function') {
-      const telegramApi = api as typeof api & { requestApproval(chatId: string, params: { toolName: string; description: string; riskLevel?: string }): Promise<boolean> };
+      const telegramApi = api as typeof api & {
+        requestApproval(
+          chatId: string,
+          params: { toolName: string; description: string; riskLevel?: string }
+        ): Promise<boolean>;
+      };
       agent.setRequestApproval(async (_category, _actionType, description, params) => {
         return telegramApi.requestApproval(message.platformChatId, {
           toolName: (params.toolName as string) ?? 'unknown',
@@ -741,15 +737,17 @@ export class ChannelServiceImpl implements IChannelService {
     }
 
     // Check session for preferred model override
-    const preferredModel = (session as { context?: Record<string, unknown> }).context?.preferredModel as string | undefined;
+    const preferredModel = (session as { context?: Record<string, unknown> }).context
+      ?.preferredModel as string | undefined;
 
     // Resolve provider/model from agent config (or session override)
     const { resolveProviderAndModel } = await import('../routes/settings.js');
     const resolved = await resolveProviderAndModel('default', preferredModel ?? 'default');
 
     // Convert channel attachments → normalized attachments (base64-encoded)
-    const normalizedAttachments: NormalizedAttachment[] | undefined =
-      message.attachments?.filter(a => a.data).map(a => ({
+    const normalizedAttachments: NormalizedAttachment[] | undefined = message.attachments
+      ?.filter((a) => a.data)
+      .map((a) => ({
         type: a.type,
         data: `data:${a.mimeType};base64,${Buffer.from(a.data!).toString('base64')}`,
         mimeType: a.mimeType,
@@ -778,11 +776,13 @@ export class ChannelServiceImpl implements IChannelService {
     };
 
     // Build stream callbacks for progress updates
-    const streamCallbacks: StreamCallbacks | undefined = progress ? {
-      onToolStart: (tc: ToolCall) => progress.update(`\ud83d\udd27 ${tc.name}...`),
-      onToolEnd: (tc: ToolCall, _result: unknown) => progress.update(`\u2705 ${tc.name} done`),
-      onProgress: (msg: string) => progress.update(`\u2699\ufe0f ${msg}`),
-    } : undefined;
+    const streamCallbacks: StreamCallbacks | undefined = progress
+      ? {
+          onToolStart: (tc: ToolCall) => progress.update(`\ud83d\udd27 ${tc.name}...`),
+          onToolEnd: (tc: ToolCall, _result: unknown) => progress.update(`\u2705 ${tc.name} done`),
+          onProgress: (msg: string) => progress.update(`\u2699\ufe0f ${msg}`),
+        }
+      : undefined;
 
     // Process through the pipeline with context
     // directToolMode: expose all tools directly to the LLM instead of meta-tool indirection
@@ -815,12 +815,8 @@ export class ChannelServiceImpl implements IChannelService {
   /**
    * Legacy fallback: process directly via agent.chat() without the bus.
    */
-  private async processDirectAgent(
-    message: ChannelIncomingMessage,
-  ): Promise<string> {
-    const { getOrCreateDefaultAgent, isDemoMode } = await import(
-      '../routes/agents.js'
-    );
+  private async processDirectAgent(message: ChannelIncomingMessage): Promise<string> {
+    const { getOrCreateDefaultAgent, isDemoMode } = await import('../routes/agents.js');
 
     if (await isDemoMode()) {
       return demoModeReply(message.text);
@@ -849,7 +845,9 @@ export class ChannelServiceImpl implements IChannelService {
   private async withSessionLock<T>(key: string, fn: () => Promise<T>): Promise<T> {
     const prev = this.sessionLocks.get(key);
     let resolve: () => void;
-    const gate = new Promise<void>(r => { resolve = r; });
+    const gate = new Promise<void>((r) => {
+      resolve = r;
+    });
     this.sessionLocks.set(key, gate);
     try {
       if (prev) await prev;
@@ -864,9 +862,7 @@ export class ChannelServiceImpl implements IChannelService {
   }
 
   private getChannelPlugins(): Plugin[] {
-    return this.pluginRegistry
-      .getAll()
-      .filter((p) => p.status === 'enabled' && isChannelPlugin(p));
+    return this.pluginRegistry.getAll().filter((p) => p.status === 'enabled' && isChannelPlugin(p));
   }
 
   /**
@@ -883,7 +879,10 @@ export class ChannelServiceImpl implements IChannelService {
     const raw = entry?.data?.allowed_users;
     if (typeof raw !== 'string' || !raw.trim()) return [];
 
-    return raw.split(',').map(s => s.trim()).filter(Boolean);
+    return raw
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
   }
 
   private async handleConnectCommand(
@@ -922,13 +921,16 @@ export class ChannelServiceImpl implements IChannelService {
       const eventBus = getEventBus();
 
       // Listen for incoming messages from all channel plugins
-      const unsub = eventBus.on<ChannelMessageReceivedData>(ChannelEvents.MESSAGE_RECEIVED, (event) => {
-        const data = event.data;
-        // Process asynchronously - don't block the event handler
-        this.processIncomingMessage(data.message).catch((error) => {
-          log.error('Failed to process incoming message', { error });
-        });
-      });
+      const unsub = eventBus.on<ChannelMessageReceivedData>(
+        ChannelEvents.MESSAGE_RECEIVED,
+        (event) => {
+          const data = event.data;
+          // Process asynchronously - don't block the event handler
+          this.processIncomingMessage(data.message).catch((error) => {
+            log.error('Failed to process incoming message', { error });
+          });
+        }
+      );
       this.unsubscribes.push(unsub);
 
       log.info('Subscribed to channel events');
@@ -956,9 +958,7 @@ export class ChannelServiceImpl implements IChannelService {
 
 let _instance: ChannelServiceImpl | null = null;
 
-export function createChannelServiceImpl(
-  pluginRegistry: PluginRegistry
-): ChannelServiceImpl {
+export function createChannelServiceImpl(pluginRegistry: PluginRegistry): ChannelServiceImpl {
   _instance = new ChannelServiceImpl(pluginRegistry);
   return _instance;
 }

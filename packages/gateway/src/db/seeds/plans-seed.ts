@@ -5,7 +5,11 @@
  * Only creates plans that don't already exist.
  */
 
-import { PlansRepository, type CreatePlanInput, type CreateStepInput } from '../repositories/plans.js';
+import {
+  PlansRepository,
+  type CreatePlanInput,
+  type CreateStepInput,
+} from '../repositories/plans.js';
 import { getLog } from '../../services/log.js';
 
 const log = getLog('PlanSeed');
@@ -47,7 +51,8 @@ const EXAMPLE_PLANS: ExamplePlan[] = [
         name: 'Analyze progress',
         description: 'AI reviews the goals and actions to generate insights',
         config: {
-          prompt: 'Based on the goal data from previous steps, identify: 1) Goals that are on track, 2) Goals that need attention, 3) Suggested priorities for the coming week. Provide a concise summary.',
+          prompt:
+            'Based on the goal data from previous steps, identify: 1) Goals that are on track, 2) Goals that need attention, 3) Suggested priorities for the coming week. Provide a concise summary.',
           choices: ['goals_healthy', 'needs_attention', 'critical_intervention'],
         },
       },
@@ -75,7 +80,8 @@ const EXAMPLE_PLANS: ExamplePlan[] = [
         name: 'Generate digest',
         description: 'AI summarizes the memories into a daily digest',
         config: {
-          prompt: 'Create a concise daily digest from the memories listed above. Group by type (facts, preferences, events) and highlight any important patterns or changes.',
+          prompt:
+            'Create a concise daily digest from the memories listed above. Group by type (facts, preferences, events) and highlight any important patterns or changes.',
         },
       },
     ],
@@ -102,7 +108,8 @@ const EXAMPLE_PLANS: ExamplePlan[] = [
         name: 'Identify stale tasks',
         description: 'AI identifies which tasks are overdue or stale',
         config: {
-          prompt: 'Review the task list. Identify tasks that appear overdue or stale. For each stale task, suggest whether to: keep (still relevant), reschedule, or close.',
+          prompt:
+            'Review the task list. Identify tasks that appear overdue or stale. For each stale task, suggest whether to: keep (still relevant), reschedule, or close.',
           choices: ['all_current', 'some_stale', 'many_stale'],
         },
       },

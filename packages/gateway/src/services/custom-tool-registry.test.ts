@@ -121,18 +121,26 @@ describe('Custom Tool Registry', () => {
       });
       setSharedRegistryForCustomTools(sharedRegistry);
 
-      const result = await executeCustomToolUnified('my_tool', { x: 1 }, {
-        conversationId: 'conv-1',
-        userId: 'user-1',
-      });
+      const result = await executeCustomToolUnified(
+        'my_tool',
+        { x: 1 },
+        {
+          conversationId: 'conv-1',
+          userId: 'user-1',
+        }
+      );
 
       expect(result.content).toEqual({ result: 'shared' });
       expect(result.isError).toBe(false);
       expect(result.metadata).toEqual({ src: 'shared' });
-      expect(sharedRegistry.execute).toHaveBeenCalledWith('my_tool', { x: 1 }, {
-        conversationId: 'conv-1',
-        userId: 'user-1',
-      });
+      expect(sharedRegistry.execute).toHaveBeenCalledWith(
+        'my_tool',
+        { x: 1 },
+        {
+          conversationId: 'conv-1',
+          userId: 'user-1',
+        }
+      );
     });
 
     it('returns error when shared registry execution fails', async () => {
@@ -156,18 +164,26 @@ describe('Custom Tool Registry', () => {
         isError: false,
       });
 
-      const result = await executeCustomToolUnified('my_tool', { x: 1 }, {
-        callId: 'call-1',
-        conversationId: 'conv-2',
-        userId: 'user-2',
-      });
+      const result = await executeCustomToolUnified(
+        'my_tool',
+        { x: 1 },
+        {
+          callId: 'call-1',
+          conversationId: 'conv-2',
+          userId: 'user-2',
+        }
+      );
 
       expect(result.content).toEqual({ result: 'dynamic' });
-      expect(mockDynamicRegistry.execute).toHaveBeenCalledWith('my_tool', { x: 1 }, {
-        callId: 'call-1',
-        conversationId: 'conv-2',
-        userId: 'user-2',
-      });
+      expect(mockDynamicRegistry.execute).toHaveBeenCalledWith(
+        'my_tool',
+        { x: 1 },
+        {
+          callId: 'call-1',
+          conversationId: 'conv-2',
+          userId: 'user-2',
+        }
+      );
     });
 
     it('falls back to dynamic registry when tool not in shared registry', async () => {
@@ -195,7 +211,7 @@ describe('Custom Tool Registry', () => {
       expect(mockDynamicRegistry.execute).toHaveBeenCalledWith(
         'my_tool',
         {},
-        expect.objectContaining({ conversationId: 'custom-tool-execution' }),
+        expect.objectContaining({ conversationId: 'custom-tool-execution' })
       );
     });
 
@@ -268,7 +284,7 @@ describe('Custom Tool Registry', () => {
           name: 'my_tool',
           description: 'A test tool',
           code: 'return "ok";',
-        }),
+        })
       );
     });
 
@@ -286,7 +302,7 @@ describe('Custom Tool Registry', () => {
           description: 'A test tool',
         }),
         expect.any(Function),
-        'tool-1',
+        'tool-1'
       );
     });
 
@@ -320,7 +336,13 @@ describe('Custom Tool Registry', () => {
 
       const tool = createMockTool({
         requiredApiKeys: [
-          { name: 'openai', displayName: 'OpenAI', description: 'API key', category: 'ai', docsUrl: 'https://openai.com' },
+          {
+            name: 'openai',
+            displayName: 'OpenAI',
+            description: 'API key',
+            category: 'ai',
+            docsUrl: 'https://openai.com',
+          },
         ],
       } as Partial<CustomToolRecord>);
 
@@ -328,12 +350,10 @@ describe('Custom Tool Registry', () => {
 
       expect(sharedRegistry.registerCustomTool).toHaveBeenCalledWith(
         expect.objectContaining({
-          configRequirements: [
-            expect.objectContaining({ name: 'openai', displayName: 'OpenAI' }),
-          ],
+          configRequirements: [expect.objectContaining({ name: 'openai', displayName: 'OpenAI' })],
         }),
         expect.any(Function),
-        'tool-1',
+        'tool-1'
       );
     });
 
@@ -351,7 +371,7 @@ describe('Custom Tool Registry', () => {
       expect(sharedRegistry.registerCustomTool).toHaveBeenCalledWith(
         expect.objectContaining({ workflowUsable: true }),
         expect.any(Function),
-        'tool-1',
+        'tool-1'
       );
     });
 
@@ -366,7 +386,7 @@ describe('Custom Tool Registry', () => {
       expect(sharedRegistry.registerCustomTool).toHaveBeenCalledWith(
         expect.objectContaining({ workflowUsable: undefined }),
         expect.any(Function),
-        'tool-1',
+        'tool-1'
       );
     });
 
@@ -391,9 +411,16 @@ describe('Custom Tool Registry', () => {
 
       // Execute it
       mockDynamicRegistry.execute.mockResolvedValue({ content: 'proxied' });
-      const result = await registeredExecutor({ arg: 1 }, { callId: 'c1', conversationId: 'conv', userId: 'u1' });
+      const result = await registeredExecutor(
+        { arg: 1 },
+        { callId: 'c1', conversationId: 'conv', userId: 'u1' }
+      );
 
-      expect(mockDynamicRegistry.execute).toHaveBeenCalledWith('my_tool', { arg: 1 }, { callId: 'c1', conversationId: 'conv', userId: 'u1' });
+      expect(mockDynamicRegistry.execute).toHaveBeenCalledWith(
+        'my_tool',
+        { arg: 1 },
+        { callId: 'c1', conversationId: 'conv', userId: 'u1' }
+      );
       expect(result).toEqual({ content: 'proxied' });
     });
 
@@ -408,7 +435,7 @@ describe('Custom Tool Registry', () => {
       expect(sharedRegistry.registerCustomTool).toHaveBeenCalledWith(
         expect.objectContaining({ category: 'Custom' }),
         expect.any(Function),
-        'tool-1',
+        'tool-1'
       );
     });
   });

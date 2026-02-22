@@ -7,11 +7,7 @@
  */
 
 import type { MessageMiddleware, ToolCall } from '@ownpilot/core';
-import {
-  extractMemories,
-  updateGoalProgress,
-  evaluateTriggers,
-} from '../../assistant/index.js';
+import { extractMemories, updateGoalProgress, evaluateTriggers } from '../../assistant/index.js';
 import { getLog } from '../log.js';
 
 const log = getLog('Middleware:PostProcess');
@@ -30,7 +26,10 @@ export function createPostProcessingMiddleware(): MessageMiddleware {
     const result = await next();
 
     // Don't post-process if there was an error
-    const agentResult = ctx.get<{ ok: boolean; value?: { content: string; toolCalls?: readonly ToolCall[] } }>('agentResult');
+    const agentResult = ctx.get<{
+      ok: boolean;
+      value?: { content: string; toolCalls?: readonly ToolCall[] };
+    }>('agentResult');
     if (!agentResult?.ok) return result;
 
     const userId = ctx.get<string>('userId') ?? 'default';
@@ -43,37 +42,42 @@ export function createPostProcessingMiddleware(): MessageMiddleware {
 
     if (isChannel) {
       tasks.push(
-        extractMemories(userId, message.content, content).catch(e =>
-          log.warn('Memory extraction failed', { error: e }),
-        ),
+        extractMemories(userId, message.content, content).catch((e) =>
+          log.warn('Memory extraction failed', { error: e })
+        )
       );
     }
     tasks.push(
-      updateGoalProgress(userId, message.content, content, agentResult.value?.toolCalls).catch(e =>
-        log.warn('Goal progress update failed', { error: e }),
+      updateGoalProgress(userId, message.content, content, agentResult.value?.toolCalls).catch(
+        (e) => log.warn('Goal progress update failed', { error: e })
       ),
-      evaluateTriggers(userId, message.content, content).catch(e =>
-        log.warn('Trigger evaluation failed', { error: e }),
-      ),
+      evaluateTriggers(userId, message.content, content).catch((e) =>
+        log.warn('Trigger evaluation failed', { error: e })
+      )
     );
 
-    Promise.all(tasks).then((results) => {
-      if (isChannel) {
-        const memoriesExtracted = results[0];
-        if (memoriesExtracted && (memoriesExtracted as number) > 0) {
-          log.info(`Extracted ${memoriesExtracted} new memories`);
+    Promise.all(tasks)
+      .then((results) => {
+        if (isChannel) {
+          const memoriesExtracted = results[0];
+          if (memoriesExtracted && (memoriesExtracted as number) > 0) {
+            log.info(`Extracted ${memoriesExtracted} new memories`);
+          }
         }
-      }
-      // Trigger result is always the last task
-      const triggerResult = results[results.length - 1];
-      if (triggerResult && typeof triggerResult === 'object') {
-        const { triggered, executed } = triggerResult as { triggered: string[]; executed: string[] };
-        if (triggered.length > 0) log.info(`${triggered.length} triggers evaluated`);
-        if (executed.length > 0) log.info(`${executed.length} triggers executed`);
-      }
-    }).catch(e => {
-      log.warn('Post-processing chain failed', { error: e });
-    });
+        // Trigger result is always the last task
+        const triggerResult = results[results.length - 1];
+        if (triggerResult && typeof triggerResult === 'object') {
+          const { triggered, executed } = triggerResult as {
+            triggered: string[];
+            executed: string[];
+          };
+          if (triggered.length > 0) log.info(`${triggered.length} triggers evaluated`);
+          if (executed.length > 0) log.info(`${executed.length} triggers executed`);
+        }
+      })
+      .catch((e) => {
+        log.warn('Post-processing chain failed', { error: e });
+      });
 
     return result;
   };

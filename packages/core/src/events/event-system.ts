@@ -93,22 +93,14 @@ export class EventSystem implements IEventSystem {
     return this.eventBus.onPattern(pattern, handler);
   }
 
-  waitFor<K extends EventType>(
-    type: K,
-    timeoutMs?: number,
-  ): Promise<TypedEvent<EventPayload<K>>> {
+  waitFor<K extends EventType>(type: K, timeoutMs?: number): Promise<TypedEvent<EventPayload<K>>> {
     return this.eventBus.waitFor(type, timeoutMs);
   }
 
   // --- Scoped bus ---
 
   scoped(prefix: string, source?: string): IScopedBus {
-    return new ScopedEventBus(
-      this.eventBus,
-      this.hooks as HookBus,
-      prefix,
-      source ?? prefix,
-    );
+    return new ScopedEventBus(this.eventBus, this.hooks as HookBus, prefix, source ?? prefix);
   }
 
   // --- Clear ---

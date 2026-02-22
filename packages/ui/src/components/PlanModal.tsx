@@ -30,7 +30,7 @@ export function PlanModal({ plan, onClose, onSave }: PlanModalProps) {
         description: description.trim() || undefined,
       };
 
-if (plan) {
+      if (plan) {
         await plansApi.update(plan.id, body);
         toast.success('Plan updated');
       } else {
@@ -46,7 +46,10 @@ if (plan) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onBackdropClick}>
+    <div
+      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+      onClick={onBackdropClick}
+    >
       <div className="w-full max-w-lg bg-bg-primary dark:bg-dark-bg-primary border border-border dark:border-dark-border rounded-xl shadow-xl">
         <form onSubmit={handleSubmit}>
           <div className="p-6 border-b border-border dark:border-dark-border">
@@ -97,7 +100,8 @@ if (plan) {
             </div>
 
             <p className="text-sm text-text-muted dark:text-dark-text-muted">
-              After creating the plan, you can add steps or ask the AI to decompose it automatically.
+              After creating the plan, you can add steps or ask the AI to decompose it
+              automatically.
             </p>
           </div>
 

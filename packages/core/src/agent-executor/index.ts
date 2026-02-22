@@ -253,11 +253,7 @@ export class AgentExecutor {
           this.log(`[${executionId}] Calling tool: ${toolCall.name}`);
 
           const toolStart = Date.now();
-          const result = await this.executeTool(
-            toolCall,
-            agent,
-            fullContext
-          );
+          const result = await this.executeTool(toolCall, agent, fullContext);
           const toolDuration = Date.now() - toolStart;
 
           let parsedArgs: Record<string, unknown> = {};
@@ -420,9 +416,14 @@ export class AgentExecutor {
     const result = await Promise.race([
       this.toolRegistry.execute(toolName, args, toolContext),
       new Promise<never>((_, reject) => {
-        timer = setTimeout(() => reject(new Error(`Tool '${toolName}' timed out after ${timeoutMs}ms`)), timeoutMs);
+        timer = setTimeout(
+          () => reject(new Error(`Tool '${toolName}' timed out after ${timeoutMs}ms`)),
+          timeoutMs
+        );
       }),
-    ]).finally(() => clearTimeout(timer)).catch((err: Error) => ({ ok: false as const, error: err }));
+    ])
+      .finally(() => clearTimeout(timer))
+      .catch((err: Error) => ({ ok: false as const, error: err }));
 
     if (result.ok) {
       return { content: result.value.content };

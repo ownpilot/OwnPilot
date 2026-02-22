@@ -41,11 +41,11 @@ The custom tools system bridges three layers of the OwnPilot stack:
 +---------------------+       +---------------------+       +---------------------+
 ```
 
-| Layer | Package | Responsibility |
-|-------|---------|----------------|
-| Core | `packages/core` | Type definitions, sandbox execution, registry, meta-tool schemas |
+| Layer   | Package            | Responsibility                                                                 |
+| ------- | ------------------ | ------------------------------------------------------------------------------ |
+| Core    | `packages/core`    | Type definitions, sandbox execution, registry, meta-tool schemas               |
 | Gateway | `packages/gateway` | Database persistence, REST API, meta-tool executors, Config Center integration |
-| UI | `packages/ui` | Visual management page for creating, testing, approving, and deleting tools |
+| UI      | `packages/ui`      | Visual management page for creating, testing, approving, and deleting tools    |
 
 ---
 
@@ -141,23 +141,23 @@ CREATE INDEX IF NOT EXISTS idx_custom_tools_status ON custom_tools(status);
 
 ### Column Reference
 
-| Column | Type | Description |
-|--------|------|-------------|
-| `id` | TEXT | Primary key. Format: `tool_<16-char-hex>` (e.g., `tool_a1b2c3d4e5f67890`) |
-| `user_id` | TEXT | Owner user ID. Defaults to `'default'`. All queries are scoped to this user. |
-| `name` | TEXT | Unique tool name within the user scope. Must match `^[a-z][a-z0-9_]*$`. |
-| `description` | TEXT | Human-readable description shown to the LLM and in the UI. |
-| `parameters` | JSONB | JSON Schema object describing the tool's input parameters. |
-| `code` | TEXT | JavaScript source code executed in the sandbox. |
-| `category` | TEXT | Optional category for UI grouping (e.g., `"Weather"`, `"Utilities"`). |
-| `permissions` | JSONB | Array of permission strings the tool requires. |
-| `status` | TEXT | One of: `active`, `disabled`, `pending_approval`, `rejected`. |
-| `requires_approval` | BOOLEAN | If true, each execution requires user confirmation. |
-| `created_by` | TEXT | Either `'user'` (created via UI/API) or `'llm'` (created by the agent). |
-| `execution_count` | INTEGER | Total number of times this tool has been executed. |
-| `last_executed_at` | TIMESTAMPTZ | Timestamp of the most recent execution. |
-| `created_at` | TIMESTAMPTZ | When the tool was created. |
-| `updated_at` | TIMESTAMPTZ | When the tool was last modified. |
+| Column              | Type        | Description                                                                  |
+| ------------------- | ----------- | ---------------------------------------------------------------------------- |
+| `id`                | TEXT        | Primary key. Format: `tool_<16-char-hex>` (e.g., `tool_a1b2c3d4e5f67890`)    |
+| `user_id`           | TEXT        | Owner user ID. Defaults to `'default'`. All queries are scoped to this user. |
+| `name`              | TEXT        | Unique tool name within the user scope. Must match `^[a-z][a-z0-9_]*$`.      |
+| `description`       | TEXT        | Human-readable description shown to the LLM and in the UI.                   |
+| `parameters`        | JSONB       | JSON Schema object describing the tool's input parameters.                   |
+| `code`              | TEXT        | JavaScript source code executed in the sandbox.                              |
+| `category`          | TEXT        | Optional category for UI grouping (e.g., `"Weather"`, `"Utilities"`).        |
+| `permissions`       | JSONB       | Array of permission strings the tool requires.                               |
+| `status`            | TEXT        | One of: `active`, `disabled`, `pending_approval`, `rejected`.                |
+| `requires_approval` | BOOLEAN     | If true, each execution requires user confirmation.                          |
+| `created_by`        | TEXT        | Either `'user'` (created via UI/API) or `'llm'` (created by the agent).      |
+| `execution_count`   | INTEGER     | Total number of times this tool has been executed.                           |
+| `last_executed_at`  | TIMESTAMPTZ | Timestamp of the most recent execution.                                      |
+| `created_at`        | TIMESTAMPTZ | When the tool was created.                                                   |
+| `updated_at`        | TIMESTAMPTZ | When the tool was last modified.                                             |
 
 **Note:** The repository layer (`CustomToolsRepository`) also handles `version`, `metadata`, and `requiredApiKeys` fields that are stored in extended columns managed through application-level logic. The `version` field is auto-incremented on code or parameter changes. The `requiredApiKeys` field stores API service dependencies as JSON.
 
@@ -171,12 +171,12 @@ All core types are defined in `packages/core/src/agent/tools/dynamic-tools.ts`.
 
 ```typescript
 type DynamicToolPermission =
-  | 'network'      // HTTP requests via fetch
-  | 'filesystem'   // File read/write access
-  | 'database'     // Custom data access (handled via injected APIs)
-  | 'shell'        // Shell command execution
-  | 'email'        // Send emails (handled via injected APIs)
-  | 'scheduling';  // Create scheduled tasks (handled via injected APIs)
+  | 'network' // HTTP requests via fetch
+  | 'filesystem' // File read/write access
+  | 'database' // Custom data access (handled via injected APIs)
+  | 'shell' // Shell command execution
+  | 'email' // Send emails (handled via injected APIs)
+  | 'scheduling'; // Create scheduled tasks (handled via injected APIs)
 ```
 
 ### DynamicToolDefinition
@@ -261,7 +261,7 @@ interface CustomToolRecord {
   parameters: { type: 'object'; properties: Record<string, unknown>; required?: string[] };
   code: string;
   category?: string;
-  status: ToolStatus;               // 'active' | 'disabled' | 'pending_approval' | 'rejected'
+  status: ToolStatus; // 'active' | 'disabled' | 'pending_approval' | 'rejected'
   permissions: ToolPermission[];
   requiresApproval: boolean;
   createdBy: 'user' | 'llm';
@@ -320,21 +320,23 @@ A custom tool moves through a well-defined lifecycle of states. The following di
 
 ### State Descriptions
 
-| Status | Meaning |
-|--------|---------|
-| `active` | Tool is live. It appears in the tool catalog and can be executed by the LLM or via the API. |
-| `disabled` | Tool exists but is hidden from the LLM and cannot be executed. Can be re-enabled at any time. |
-| `pending_approval` | Tool was created by the LLM with dangerous permissions. A human must approve or reject it before it becomes usable. |
-| `rejected` | A human reviewed a pending tool and rejected it. The tool remains in the database for audit purposes but cannot be used. |
+| Status             | Meaning                                                                                                                  |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------ |
+| `active`           | Tool is live. It appears in the tool catalog and can be executed by the LLM or via the API.                              |
+| `disabled`         | Tool exists but is hidden from the LLM and cannot be executed. Can be re-enabled at any time.                            |
+| `pending_approval` | Tool was created by the LLM with dangerous permissions. A human must approve or reject it before it becomes usable.      |
+| `rejected`         | A human reviewed a pending tool and rejected it. The tool remains in the database for audit purposes but cannot be used. |
 
 ### Automatic Status Assignment on Creation
 
 When a tool is created, its initial status is determined by two factors: who created it and what permissions it requests.
 
 **User-created tools** (via UI or API with `createdBy: 'user'`):
+
 - Always start as `active` regardless of permissions.
 
 **LLM-created tools** (via the `create_tool` meta-tool with `createdBy: 'llm'`):
+
 - If the tool requests any **dangerous permission** (`shell`, `filesystem`, or `email`), the status is set to `pending_approval`.
 - If the tool requests only safe permissions (e.g., `network`, `database`, `scheduling`) or no permissions at all, the status is set to `active`.
 
@@ -342,7 +344,7 @@ The logic is in `CustomToolsRepository.create()`:
 
 ```typescript
 const dangerousPermissions: ToolPermission[] = ['shell', 'filesystem', 'email'];
-const hasDangerous = input.permissions?.some(p => dangerousPermissions.includes(p));
+const hasDangerous = input.permissions?.some((p) => dangerousPermissions.includes(p));
 const status: ToolStatus =
   input.createdBy === 'llm' && hasDangerous ? 'pending_approval' : 'active';
 ```
@@ -367,19 +369,20 @@ All meta-tool definitions are in `packages/core/src/agent/tools/dynamic-tools.ts
 
 Creates a new custom tool and persists it in the database.
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `name` | string | Yes | Unique tool name. Must match `^[a-z][a-z0-9_]*$`. |
-| `description` | string | Yes | Clear description of what the tool does. |
-| `parameters` | string | Yes | JSON Schema for tool parameters, provided as a JSON string. Must have `type: "object"`. |
-| `code` | string | Yes | JavaScript code implementing the tool. Access arguments via the `args` object. Return the result. |
-| `category` | string | No | Category for organization (e.g., `"Weather"`, `"Utilities"`). |
-| `permissions` | string[] | No | Required permissions. Values: `"network"`, `"filesystem"`, `"database"`, `"shell"`, `"email"`, `"scheduling"`. |
-| `required_api_keys` | object[] | No | API key dependencies. Each entry is auto-registered in Config Center. |
+| Field               | Type     | Required | Description                                                                                                    |
+| ------------------- | -------- | -------- | -------------------------------------------------------------------------------------------------------------- |
+| `name`              | string   | Yes      | Unique tool name. Must match `^[a-z][a-z0-9_]*$`.                                                              |
+| `description`       | string   | Yes      | Clear description of what the tool does.                                                                       |
+| `parameters`        | string   | Yes      | JSON Schema for tool parameters, provided as a JSON string. Must have `type: "object"`.                        |
+| `code`              | string   | Yes      | JavaScript code implementing the tool. Access arguments via the `args` object. Return the result.              |
+| `category`          | string   | No       | Category for organization (e.g., `"Weather"`, `"Utilities"`).                                                  |
+| `permissions`       | string[] | No       | Required permissions. Values: `"network"`, `"filesystem"`, `"database"`, `"shell"`, `"email"`, `"scheduling"`. |
+| `required_api_keys` | object[] | No       | API key dependencies. Each entry is auto-registered in Config Center.                                          |
 
 **Requires user confirmation:** Yes (the `requiresConfirmation` flag is set).
 
 **Behavior:**
+
 1. Validates name format, uniqueness, and code safety.
 2. Parses the `parameters` JSON string into a schema object.
 3. Creates the database record with appropriate status (see [Automatic Status Assignment](#automatic-status-assignment-on-creation)).
@@ -391,10 +394,10 @@ Creates a new custom tool and persists it in the database.
 
 Lists all custom tools with optional filtering.
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `category` | string | No | Filter by category. |
-| `status` | string | No | Filter by status: `"active"`, `"disabled"`, `"pending_approval"`. |
+| Field      | Type   | Required | Description                                                       |
+| ---------- | ------ | -------- | ----------------------------------------------------------------- |
+| `category` | string | No       | Filter by category.                                               |
+| `status`   | string | No       | Filter by status: `"active"`, `"disabled"`, `"pending_approval"`. |
 
 **Returns:** Array of tool summaries (id, name, description, status, category, createdBy, usageCount) plus aggregate stats (total, active, pendingApproval).
 
@@ -402,18 +405,20 @@ Lists all custom tools with optional filtering.
 
 Deletes a custom tool by name.
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `name` | string | Yes | Name of the tool to delete. |
-| `confirm` | boolean | No | Must be `true` to confirm deletion. If omitted, a confirmation prompt is returned. |
+| Field     | Type    | Required | Description                                                                        |
+| --------- | ------- | -------- | ---------------------------------------------------------------------------------- |
+| `name`    | string  | Yes      | Name of the tool to delete.                                                        |
+| `confirm` | boolean | No       | Must be `true` to confirm deletion. If omitted, a confirmation prompt is returned. |
 
 **Requires user confirmation:** Yes.
 
 **Protection rules:**
+
 - The LLM **cannot** delete tools where `createdBy === 'user'`. Attempting to do so returns an explicit error instructing the user to delete it manually.
 - The LLM **can** delete tools it created (`createdBy === 'llm'`) but must pass `confirm: true`.
 
 **Behavior on deletion:**
+
 1. Unregisters the tool from the `DynamicToolRegistry`.
 2. Unregisters API dependencies from Config Center.
 3. Deletes the database record.
@@ -423,12 +428,13 @@ Deletes a custom tool by name.
 
 Enables or disables a custom tool.
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `name` | string | Yes | Name of the tool to toggle. |
-| `enabled` | boolean | Yes | `true` to enable, `false` to disable. |
+| Field     | Type    | Required | Description                           |
+| --------- | ------- | -------- | ------------------------------------- |
+| `name`    | string  | Yes      | Name of the tool to toggle.           |
+| `enabled` | boolean | Yes      | `true` to enable, `false` to disable. |
 
 **Behavior:**
+
 - Enabling sets status to `active` and syncs to the registry.
 - Disabling sets status to `disabled` and removes from the registry.
 - Invalidates the agent cache in both cases.
@@ -443,24 +449,24 @@ Custom tool code runs inside a multi-layered sandbox built on Node.js's `vm` mod
 
 The sandbox system lives in `packages/core/src/sandbox/` and consists of:
 
-| File | Purpose |
-|------|---------|
-| `executor.ts` | `SandboxExecutor` class -- creates a VM context and executes code with timeouts |
+| File                | Purpose                                                                                  |
+| ------------------- | ---------------------------------------------------------------------------------------- |
+| `executor.ts`       | `SandboxExecutor` class -- creates a VM context and executes code with timeouts          |
 | `worker-sandbox.ts` | `WorkerSandbox` class -- executes code in a separate Worker thread for maximum isolation |
-| `context.ts` | `buildSandboxContext()` -- assembles the restricted global scope |
-| `types.ts` | All type definitions (`SandboxConfig`, `ResourceLimits`, `SandboxPermissions`, etc.) |
+| `context.ts`        | `buildSandboxContext()` -- assembles the restricted global scope                         |
+| `types.ts`          | All type definitions (`SandboxConfig`, `ResourceLimits`, `SandboxPermissions`, etc.)     |
 
 ### Resource Limits
 
 Every custom tool execution is constrained by resource limits:
 
-| Limit | Default | Description |
-|-------|---------|-------------|
-| `maxMemory` | 128 MB | Maximum V8 heap memory (enforced via Worker `resourceLimits`) |
-| `maxCpuTime` | 5,000 ms | Maximum synchronous CPU time (enforced via `vm.Script` timeout) |
-| `maxExecutionTime` | 30,000 ms | Maximum wall-clock time including async operations |
-| `maxNetworkRequests` | 10 | Maximum number of HTTP requests per execution |
-| `maxFsOperations` | 100 | Maximum number of file system operations per execution |
+| Limit                | Default   | Description                                                     |
+| -------------------- | --------- | --------------------------------------------------------------- |
+| `maxMemory`          | 128 MB    | Maximum V8 heap memory (enforced via Worker `resourceLimits`)   |
+| `maxCpuTime`         | 5,000 ms  | Maximum synchronous CPU time (enforced via `vm.Script` timeout) |
+| `maxExecutionTime`   | 30,000 ms | Maximum wall-clock time including async operations              |
+| `maxNetworkRequests` | 10        | Maximum number of HTTP requests per execution                   |
+| `maxFsOperations`    | 100       | Maximum number of file system operations per execution          |
 
 For custom tools specifically, the dynamic tools module applies slightly tighter defaults:
 
@@ -469,11 +475,13 @@ const sandbox = createSandbox({
   pluginId,
   permissions: mapPermissions(tool.permissions ?? []),
   limits: {
-    maxExecutionTime: 30000,  // 30 seconds
-    maxCpuTime: 5000,         // 5 seconds CPU
-    maxMemory: 50 * 1024 * 1024,  // 50 MB (tighter than default)
+    maxExecutionTime: 30000, // 30 seconds
+    maxCpuTime: 5000, // 5 seconds CPU
+    maxMemory: 50 * 1024 * 1024, // 50 MB (tighter than default)
   },
-  globals: { /* ... */ },
+  globals: {
+    /* ... */
+  },
 });
 ```
 
@@ -481,24 +489,24 @@ const sandbox = createSandbox({
 
 The sandbox context explicitly blocks dangerous globals:
 
-| Blocked Global | Reason |
-|----------------|--------|
-| `process` | Prevents access to environment, signals, and exit |
-| `require` | Prevents loading arbitrary Node.js modules |
-| `module`, `exports` | Prevents CJS module manipulation |
-| `__dirname`, `__filename` | Prevents filesystem path discovery |
-| `global`, `globalThis` | Prevents sandbox escape via global object |
-| `eval` | Prevents dynamic code evaluation |
-| `Function` | Prevents constructor-based code evaluation |
-| `Atomics`, `SharedArrayBuffer` | Prevents shared memory attacks |
+| Blocked Global                 | Reason                                            |
+| ------------------------------ | ------------------------------------------------- |
+| `process`                      | Prevents access to environment, signals, and exit |
+| `require`                      | Prevents loading arbitrary Node.js modules        |
+| `module`, `exports`            | Prevents CJS module manipulation                  |
+| `__dirname`, `__filename`      | Prevents filesystem path discovery                |
+| `global`, `globalThis`         | Prevents sandbox escape via global object         |
+| `eval`                         | Prevents dynamic code evaluation                  |
+| `Function`                     | Prevents constructor-based code evaluation        |
+| `Atomics`, `SharedArrayBuffer` | Prevents shared memory attacks                    |
 
 Code generation from strings and WebAssembly are also disabled at the VM context level:
 
 ```typescript
 const vmContext = createContext(sandboxGlobals, {
   codeGeneration: {
-    strings: false,  // Disable eval-like functions
-    wasm: false,     // Disable WebAssembly
+    strings: false, // Disable eval-like functions
+    wasm: false, // Disable WebAssembly
   },
 });
 ```
@@ -507,18 +515,19 @@ const vmContext = createContext(sandboxGlobals, {
 
 Tool permissions are mapped to sandbox permissions before execution:
 
-| Tool Permission | Sandbox Effect |
-|-----------------|----------------|
-| `network` | `sandboxPermissions.network = true`; `fetch` is injected into globals |
-| `filesystem` | `sandboxPermissions.fsRead = true`, `fsWrite = true` |
-| `shell` | `sandboxPermissions.spawn = true` |
-| `database` | Handled through injected APIs, not raw permissions |
-| `email` | Handled through injected APIs, not raw permissions |
-| `scheduling` | Handled through injected APIs, not raw permissions |
+| Tool Permission | Sandbox Effect                                                        |
+| --------------- | --------------------------------------------------------------------- |
+| `network`       | `sandboxPermissions.network = true`; `fetch` is injected into globals |
+| `filesystem`    | `sandboxPermissions.fsRead = true`, `fsWrite = true`                  |
+| `shell`         | `sandboxPermissions.spawn = true`                                     |
+| `database`      | Handled through injected APIs, not raw permissions                    |
+| `email`         | Handled through injected APIs, not raw permissions                    |
+| `scheduling`    | Handled through injected APIs, not raw permissions                    |
 
 ### Code Execution Flow
 
 1. The tool's `code` string is wrapped:
+
    ```javascript
    const args = __args__;
    const context = __context__;
@@ -527,6 +536,7 @@ Tool permissions are mapped to sandbox permissions before execution:
    ```
 
 2. The wrapper is further wrapped in an async IIFE:
+
    ```javascript
    (async () => { <wrapped code> })()
    ```
@@ -546,34 +556,35 @@ The custom tools system implements defense in depth through multiple security la
 ### Layer 1: Static Code Validation
 
 Before a tool is stored or executed, the code is scanned for forbidden patterns. This validation occurs in three places:
+
 - `DynamicToolRegistry.register()` (in-memory registration)
 - `customToolsRoutes.post('/')` (REST API creation)
 - `validateCode()` in `context.ts` (sandbox executor)
 
 **Forbidden patterns (registration-time):**
 
-| Pattern | What it prevents |
-|---------|-----------------|
+| Pattern        | What it prevents          |
+| -------------- | ------------------------- |
 | `process.exit` | Crashing the host process |
-| `require(` | Loading Node.js modules |
-| `import(` | Dynamic ESM imports |
-| `__dirname` | File path discovery |
-| `__filename` | File path discovery |
-| `global.` | Global object access |
-| `globalThis.` | Global object access |
+| `require(`     | Loading Node.js modules   |
+| `import(`      | Dynamic ESM imports       |
+| `__dirname`    | File path discovery       |
+| `__filename`   | File path discovery       |
+| `global.`      | Global object access      |
+| `globalThis.`  | Global object access      |
 
 **Forbidden patterns (execution-time, `validateCode()`):**
 
-| Pattern | What it prevents |
-|---------|-----------------|
-| `eval(` | Dynamic code evaluation |
-| `Function(` | Constructor-based code generation |
-| `import(` | Dynamic imports |
-| `require(` | Module loading |
-| `process` | Process access |
-| `__proto__` | Prototype pollution |
+| Pattern        | What it prevents                  |
+| -------------- | --------------------------------- |
+| `eval(`        | Dynamic code evaluation           |
+| `Function(`    | Constructor-based code generation |
+| `import(`      | Dynamic imports                   |
+| `require(`     | Module loading                    |
+| `process`      | Process access                    |
+| `__proto__`    | Prototype pollution               |
 | `constructor[` | Constructor property exploitation |
-| `with(` | Scope manipulation |
+| `with(`        | Scope manipulation                |
 
 ### Layer 2: Permission System
 
@@ -584,6 +595,7 @@ Tools must declare what permissions they need upfront. If a tool tries to use `f
 ### Layer 3: Sandbox Isolation
 
 Code runs inside a `vm.createContext()` with a carefully constructed global scope. The sandbox provides:
+
 - No access to Node.js APIs (`require`, `process`, `fs`, etc.)
 - No code generation from strings (`eval`, `Function`, WebAssembly disabled)
 - No shared memory (`Atomics`, `SharedArrayBuffer` blocked)
@@ -592,6 +604,7 @@ Code runs inside a `vm.createContext()` with a carefully constructed global scop
 ### Layer 4: Worker Thread Isolation (Optional)
 
 The `WorkerSandbox` class runs code in a separate Worker thread with V8 resource limits:
+
 - `maxOldGenerationSizeMb`: Limits heap memory
 - `maxYoungGenerationSizeMb`: 32 MB
 - `codeRangeSizeMb`: 16 MB
@@ -609,6 +622,7 @@ The LLM cannot delete user-created tools. This prevents the agent from removing 
 ### Layer 7: Tool Name Validation
 
 Tool names must match `^[a-z][a-z0-9_]*$`:
+
 - Must start with a lowercase letter.
 - May contain only lowercase letters, digits, and underscores.
 - This prevents name collision attacks and ensures safe use as identifiers.
@@ -625,101 +639,101 @@ Custom tool code has access to a comprehensive `utils` object that provides safe
 
 ### Config Center Access
 
-| Function | Signature | Description |
-|----------|-----------|-------------|
-| `utils.getApiKey` | `(serviceName: string) => string \| undefined` | Get an API key by service name from Config Center. |
-| `utils.getServiceConfig` | `(serviceName: string) => object \| null` | Get full service configuration. |
-| `utils.getConfigEntry` | `(serviceName: string, entryLabel?: string) => object \| null` | Get a specific config entry's data. |
-| `utils.getConfigEntries` | `(serviceName: string) => object[]` | Get all config entries for a multi-entry service. |
-| `utils.getFieldValue` | `(serviceName: string, fieldName: string, entryLabel?: string) => any` | Get a resolved field value from a config entry. |
+| Function                 | Signature                                                              | Description                                        |
+| ------------------------ | ---------------------------------------------------------------------- | -------------------------------------------------- |
+| `utils.getApiKey`        | `(serviceName: string) => string \| undefined`                         | Get an API key by service name from Config Center. |
+| `utils.getServiceConfig` | `(serviceName: string) => object \| null`                              | Get full service configuration.                    |
+| `utils.getConfigEntry`   | `(serviceName: string, entryLabel?: string) => object \| null`         | Get a specific config entry's data.                |
+| `utils.getConfigEntries` | `(serviceName: string) => object[]`                                    | Get all config entries for a multi-entry service.  |
+| `utils.getFieldValue`    | `(serviceName: string, fieldName: string, entryLabel?: string) => any` | Get a resolved field value from a config entry.    |
 
 ### Tool Interoperability
 
-| Function | Signature | Description |
-|----------|-----------|-------------|
-| `utils.callTool` | `(toolName: string, args?: object) => Promise<any>` | Call any built-in tool by name. Returns the parsed result. |
-| `utils.listTools` | `() => Array<{name, description, parameters}>` | List all available built-in tools. |
+| Function          | Signature                                           | Description                                                |
+| ----------------- | --------------------------------------------------- | ---------------------------------------------------------- |
+| `utils.callTool`  | `(toolName: string, args?: object) => Promise<any>` | Call any built-in tool by name. Returns the parsed result. |
+| `utils.listTools` | `() => Array<{name, description, parameters}>`      | List all available built-in tools.                         |
 
 ### Hashing and Cryptography
 
-| Function | Signature | Description |
-|----------|-----------|-------------|
-| `utils.hash` | `(text: string, algorithm?: string) => string` | Hash a string (default: SHA-256). |
-| `utils.uuid` | `() => string` | Generate a random UUID v4. |
-| `utils.generatePassword` | `(length?: number) => string` | Generate a secure random password (default: 16 chars). |
+| Function                 | Signature                                      | Description                                            |
+| ------------------------ | ---------------------------------------------- | ------------------------------------------------------ |
+| `utils.hash`             | `(text: string, algorithm?: string) => string` | Hash a string (default: SHA-256).                      |
+| `utils.uuid`             | `() => string`                                 | Generate a random UUID v4.                             |
+| `utils.generatePassword` | `(length?: number) => string`                  | Generate a secure random password (default: 16 chars). |
 
 ### Encoding and Decoding
 
-| Function | Signature | Description |
-|----------|-----------|-------------|
-| `utils.base64Encode` | `(text: string) => string` | Encode to Base64. |
-| `utils.base64Decode` | `(text: string) => string` | Decode from Base64. |
-| `utils.urlEncode` | `(text: string) => string` | URL-encode a string. |
-| `utils.urlDecode` | `(text: string) => string` | URL-decode a string. |
-| `utils.hexEncode` | `(text: string) => string` | Encode to hexadecimal. |
-| `utils.hexDecode` | `(hex: string) => string` | Decode from hexadecimal. |
+| Function             | Signature                  | Description              |
+| -------------------- | -------------------------- | ------------------------ |
+| `utils.base64Encode` | `(text: string) => string` | Encode to Base64.        |
+| `utils.base64Decode` | `(text: string) => string` | Decode from Base64.      |
+| `utils.urlEncode`    | `(text: string) => string` | URL-encode a string.     |
+| `utils.urlDecode`    | `(text: string) => string` | URL-decode a string.     |
+| `utils.hexEncode`    | `(text: string) => string` | Encode to hexadecimal.   |
+| `utils.hexDecode`    | `(hex: string) => string`  | Decode from hexadecimal. |
 
 ### Date and Time
 
-| Function | Signature | Description |
-|----------|-----------|-------------|
-| `utils.now` | `() => string` | Current time as ISO 8601 string. |
-| `utils.timestamp` | `() => number` | Current time as Unix timestamp (milliseconds). |
-| `utils.dateDiff` | `(date1: string, date2: string, unit?: string) => number` | Difference between two dates. Units: `seconds`, `minutes`, `hours`, `days`, `weeks`. |
-| `utils.dateAdd` | `(date: string, amount: number, unit?: string) => string` | Add time to a date. Pass `"now"` for current time. Units: `seconds` through `years`. |
-| `utils.formatDate` | `(date: string, locale?: string) => string` | Format a date as human-readable string. |
+| Function           | Signature                                                 | Description                                                                          |
+| ------------------ | --------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| `utils.now`        | `() => string`                                            | Current time as ISO 8601 string.                                                     |
+| `utils.timestamp`  | `() => number`                                            | Current time as Unix timestamp (milliseconds).                                       |
+| `utils.dateDiff`   | `(date1: string, date2: string, unit?: string) => number` | Difference between two dates. Units: `seconds`, `minutes`, `hours`, `days`, `weeks`. |
+| `utils.dateAdd`    | `(date: string, amount: number, unit?: string) => string` | Add time to a date. Pass `"now"` for current time. Units: `seconds` through `years`. |
+| `utils.formatDate` | `(date: string, locale?: string) => string`               | Format a date as human-readable string.                                              |
 
 ### Text Transforms
 
-| Function | Signature | Description |
-|----------|-----------|-------------|
-| `utils.slugify` | `(text: string) => string` | Convert to URL-safe slug. |
-| `utils.camelCase` | `(text: string) => string` | Convert to camelCase. |
-| `utils.snakeCase` | `(text: string) => string` | Convert to snake_case. |
-| `utils.kebabCase` | `(text: string) => string` | Convert to kebab-case. |
-| `utils.titleCase` | `(text: string) => string` | Convert to Title Case. |
-| `utils.truncate` | `(text: string, maxLength?: number, suffix?: string) => string` | Truncate with ellipsis. |
-| `utils.countWords` | `(text: string) => number` | Count words in text. |
-| `utils.removeDiacritics` | `(text: string) => string` | Strip accent marks. |
+| Function                 | Signature                                                       | Description               |
+| ------------------------ | --------------------------------------------------------------- | ------------------------- |
+| `utils.slugify`          | `(text: string) => string`                                      | Convert to URL-safe slug. |
+| `utils.camelCase`        | `(text: string) => string`                                      | Convert to camelCase.     |
+| `utils.snakeCase`        | `(text: string) => string`                                      | Convert to snake_case.    |
+| `utils.kebabCase`        | `(text: string) => string`                                      | Convert to kebab-case.    |
+| `utils.titleCase`        | `(text: string) => string`                                      | Convert to Title Case.    |
+| `utils.truncate`         | `(text: string, maxLength?: number, suffix?: string) => string` | Truncate with ellipsis.   |
+| `utils.countWords`       | `(text: string) => number`                                      | Count words in text.      |
+| `utils.removeDiacritics` | `(text: string) => string`                                      | Strip accent marks.       |
 
 ### Validation
 
-| Function | Signature | Description |
-|----------|-----------|-------------|
-| `utils.isEmail` | `(value: string) => boolean` | Validate email format. |
-| `utils.isUrl` | `(value: string) => boolean` | Validate URL format. |
-| `utils.isJson` | `(value: string) => boolean` | Check if string is valid JSON. |
-| `utils.isUuid` | `(value: string) => boolean` | Validate UUID format. |
+| Function        | Signature                    | Description                    |
+| --------------- | ---------------------------- | ------------------------------ |
+| `utils.isEmail` | `(value: string) => boolean` | Validate email format.         |
+| `utils.isUrl`   | `(value: string) => boolean` | Validate URL format.           |
+| `utils.isJson`  | `(value: string) => boolean` | Check if string is valid JSON. |
+| `utils.isUuid`  | `(value: string) => boolean` | Validate UUID format.          |
 
 ### Math
 
-| Function | Signature | Description |
-|----------|-----------|-------------|
-| `utils.clamp` | `(value: number, min: number, max: number) => number` | Clamp a value to a range. |
-| `utils.round` | `(value: number, decimals?: number) => number` | Round to N decimal places. |
-| `utils.randomInt` | `(min?: number, max?: number) => number` | Random integer in range. |
-| `utils.sum` | `(numbers: number[]) => number` | Sum an array. |
-| `utils.avg` | `(numbers: number[]) => number` | Average an array. |
+| Function          | Signature                                             | Description                |
+| ----------------- | ----------------------------------------------------- | -------------------------- |
+| `utils.clamp`     | `(value: number, min: number, max: number) => number` | Clamp a value to a range.  |
+| `utils.round`     | `(value: number, decimals?: number) => number`        | Round to N decimal places. |
+| `utils.randomInt` | `(min?: number, max?: number) => number`              | Random integer in range.   |
+| `utils.sum`       | `(numbers: number[]) => number`                       | Sum an array.              |
+| `utils.avg`       | `(numbers: number[]) => number`                       | Average an array.          |
 
 ### Data Processing
 
-| Function | Signature | Description |
-|----------|-----------|-------------|
-| `utils.parseJson` | `(text: string) => unknown` | Parse JSON string. |
-| `utils.toJson` | `(data: unknown, indent?: number) => string` | Stringify to JSON. |
-| `utils.parseCsv` | `(csv: string, delimiter?: string) => Record<string, string>[]` | Parse CSV into array of objects. |
-| `utils.flatten` | `(obj: object, prefix?: string) => Record<string, unknown>` | Flatten nested object to dot-notation keys. |
-| `utils.getPath` | `(obj: unknown, path: string) => unknown` | Get nested value by dot path (supports `[0]` array syntax). |
+| Function          | Signature                                                       | Description                                                 |
+| ----------------- | --------------------------------------------------------------- | ----------------------------------------------------------- |
+| `utils.parseJson` | `(text: string) => unknown`                                     | Parse JSON string.                                          |
+| `utils.toJson`    | `(data: unknown, indent?: number) => string`                    | Stringify to JSON.                                          |
+| `utils.parseCsv`  | `(csv: string, delimiter?: string) => Record<string, string>[]` | Parse CSV into array of objects.                            |
+| `utils.flatten`   | `(obj: object, prefix?: string) => Record<string, unknown>`     | Flatten nested object to dot-notation keys.                 |
+| `utils.getPath`   | `(obj: unknown, path: string) => unknown`                       | Get nested value by dot path (supports `[0]` array syntax). |
 
 ### Array Utilities
 
-| Function | Signature | Description |
-|----------|-----------|-------------|
-| `utils.unique` | `(arr: T[]) => T[]` | Remove duplicates. |
-| `utils.chunk` | `(arr: T[], size: number) => T[][]` | Split into chunks. |
-| `utils.shuffle` | `(arr: T[]) => T[]` | Randomly shuffle. |
-| `utils.sample` | `(arr: T[], n?: number) => T[]` | Pick N random elements. |
-| `utils.groupBy` | `(arr: T[], key: keyof T) => Record<string, T[]>` | Group by a key. |
+| Function        | Signature                                         | Description             |
+| --------------- | ------------------------------------------------- | ----------------------- |
+| `utils.unique`  | `(arr: T[]) => T[]`                               | Remove duplicates.      |
+| `utils.chunk`   | `(arr: T[], size: number) => T[][]`               | Split into chunks.      |
+| `utils.shuffle` | `(arr: T[]) => T[]`                               | Randomly shuffle.       |
+| `utils.sample`  | `(arr: T[], n?: number) => T[]`                   | Pick N random elements. |
+| `utils.groupBy` | `(arr: T[], key: keyof T) => Record<string, T[]>` | Group by a key.         |
 
 ### Standard JavaScript Globals
 
@@ -788,13 +802,13 @@ List custom tools with optional filtering.
 
 **Query Parameters:**
 
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `status` | string | Filter by status: `active`, `disabled`, `pending_approval`, `rejected` |
-| `category` | string | Filter by category |
-| `createdBy` | string | Filter by creator: `user` or `llm` |
-| `limit` | number | Maximum results to return |
-| `offset` | number | Number of results to skip (pagination) |
+| Parameter   | Type   | Description                                                            |
+| ----------- | ------ | ---------------------------------------------------------------------- |
+| `status`    | string | Filter by status: `active`, `disabled`, `pending_approval`, `rejected` |
+| `category`  | string | Filter by category                                                     |
+| `createdBy` | string | Filter by creator: `user` or `llm`                                     |
+| `limit`     | number | Maximum results to return                                              |
+| `offset`    | number | Number of results to skip (pagination)                                 |
 
 **Response:**
 
@@ -802,7 +816,9 @@ List custom tools with optional filtering.
 {
   "success": true,
   "data": {
-    "tools": [ /* array of CustomToolRecord objects */ ],
+    "tools": [
+      /* array of CustomToolRecord objects */
+    ],
     "count": 5
   },
   "meta": { "requestId": "...", "timestamp": "..." }
@@ -850,7 +866,12 @@ Get active tools formatted as LLM tool definitions. Used internally to inject cu
       {
         "name": "fetch_weather",
         "description": "Fetch current weather for a city",
-        "parameters": { "type": "object", "properties": { /* ... */ } },
+        "parameters": {
+          "type": "object",
+          "properties": {
+            /* ... */
+          }
+        },
         "category": "Weather",
         "requiresConfirmation": true
       }
@@ -894,6 +915,7 @@ Create a new custom tool.
 ```
 
 **Validations:**
+
 - `name`, `description`, `parameters`, `code` are required.
 - `name` must match `^[a-z][a-z0-9_]*$`.
 - `code` must not contain forbidden patterns.
@@ -916,6 +938,7 @@ Update a custom tool. Only provided fields are updated.
 Delete a custom tool permanently.
 
 **Behavior:**
+
 1. Unregisters from `DynamicToolRegistry`.
 2. Unregisters API dependencies.
 3. Deletes the database record.
@@ -965,7 +988,9 @@ Execute a custom tool directly via the API (outside of the LLM agent flow).
   "success": true,
   "data": {
     "tool": "fetch_weather",
-    "result": { /* tool output */ },
+    "result": {
+      /* tool output */
+    },
     "isError": false,
     "duration": 245,
     "metadata": { "executionTime": 243, "dynamicTool": "fetch_weather" }
@@ -1002,37 +1027,37 @@ The UI component at `packages/ui/src/pages/CustomToolsPage.tsx` provides a full 
 
 ### Features
 
-| Feature | Description |
-|---------|-------------|
-| **Tool List** | Grid of tool cards showing name, status, description, creator, category, version, and usage count. |
-| **Status Filters** | Filter by All, Active, Disabled, Pending Approval, Rejected. |
-| **Search** | Text search across tool name, description, and category. |
-| **Stats Bar** | Shows active, disabled, and pending counts plus total usage. |
-| **Pending Badge** | Header badge showing the number of tools awaiting approval. |
-| **Quick Actions** | Approve/Reject buttons directly on pending tool cards. |
-| **Tool Detail Modal** | Three-tab view (Details, Code, Test) for any selected tool. |
-| **Details Tab** | Shows creator, version, usage count, last used time, permissions, and parameter schema. |
-| **Code Tab** | Displays the full JavaScript implementation. |
-| **Test Tab** | JSON input editor with a "Run Tool" button for live testing. |
+| Feature               | Description                                                                                                             |
+| --------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| **Tool List**         | Grid of tool cards showing name, status, description, creator, category, version, and usage count.                      |
+| **Status Filters**    | Filter by All, Active, Disabled, Pending Approval, Rejected.                                                            |
+| **Search**            | Text search across tool name, description, and category.                                                                |
+| **Stats Bar**         | Shows active, disabled, and pending counts plus total usage.                                                            |
+| **Pending Badge**     | Header badge showing the number of tools awaiting approval.                                                             |
+| **Quick Actions**     | Approve/Reject buttons directly on pending tool cards.                                                                  |
+| **Tool Detail Modal** | Three-tab view (Details, Code, Test) for any selected tool.                                                             |
+| **Details Tab**       | Shows creator, version, usage count, last used time, permissions, and parameter schema.                                 |
+| **Code Tab**          | Displays the full JavaScript implementation.                                                                            |
+| **Test Tab**          | JSON input editor with a "Run Tool" button for live testing.                                                            |
 | **Create Tool Modal** | Full form with name, description, category, JSON Schema editor, code editor, permission toggles, and approval checkbox. |
-| **Enable/Disable** | Toggle tool availability from the detail modal. |
-| **Delete** | Remove a tool from the detail modal. |
+| **Enable/Disable**    | Toggle tool availability from the detail modal.                                                                         |
+| **Delete**            | Remove a tool from the detail modal.                                                                                    |
 
 ### Status Colors
 
-| Status | Color |
-|--------|-------|
-| Active | Green |
-| Disabled | Gray |
+| Status           | Color  |
+| ---------------- | ------ |
+| Active           | Green  |
+| Disabled         | Gray   |
 | Pending Approval | Yellow |
-| Rejected | Red |
+| Rejected         | Red    |
 
 ### Creator Indicators
 
-| Creator | Color | Label |
-|---------|-------|-------|
-| LLM | Purple | "AI Created" |
-| User | Blue | "User Created" |
+| Creator | Color  | Label          |
+| ------- | ------ | -------------- |
+| LLM     | Purple | "AI Created"   |
+| User    | Blue   | "User Created" |
 
 ---
 
@@ -1117,13 +1142,13 @@ After any change to the custom tools state, `invalidateAgentCache()` is called. 
 
 Custom tool code executes inside an `async` function body. It has access to:
 
-| Variable | Type | Description |
-|----------|------|-------------|
-| `args` | object | The arguments passed by the LLM, matching the tool's parameter schema. |
-| `context` | object | Execution context with `toolName`, `callId`, `conversationId`, `userId`. |
-| `utils` | object | The full utility helpers object (see [Sandbox Utility Helpers](#sandbox-utility-helpers)). |
-| `fetch` | function | Global `fetch` (only if `network` permission is granted, otherwise `undefined`). |
-| `console` | object | Sandbox console with `log`, `warn`, `error` (prefixed with tool name). |
+| Variable  | Type     | Description                                                                                |
+| --------- | -------- | ------------------------------------------------------------------------------------------ |
+| `args`    | object   | The arguments passed by the LLM, matching the tool's parameter schema.                     |
+| `context` | object   | Execution context with `toolName`, `callId`, `conversationId`, `userId`.                   |
+| `utils`   | object   | The full utility helpers object (see [Sandbox Utility Helpers](#sandbox-utility-helpers)). |
+| `fetch`   | function | Global `fetch` (only if `network` permission is granted, otherwise `undefined`).           |
+| `console` | object   | Sandbox console with `log`, `warn`, `error` (prefixed with tool name).                     |
 
 ### Rules
 
@@ -1165,6 +1190,7 @@ Parameters must be a valid JSON Schema with `type: "object"`. Example:
 **Description:** Count word frequency in a text
 **Permissions:** None
 **Parameters:**
+
 ```json
 {
   "type": "object",
@@ -1174,7 +1200,9 @@ Parameters must be a valid JSON Schema with `type: "object"`. Example:
   "required": ["text"]
 }
 ```
+
 **Code:**
+
 ```javascript
 const words = args.text.toLowerCase().match(/\b\w+\b/g) || [];
 const freq = {};
@@ -1193,10 +1221,13 @@ return { totalWords: words.length, uniqueWords: Object.keys(freq).length, top20:
 **Description:** Get current weather for a location
 **Permissions:** `["network"]`
 **required_api_keys:**
+
 ```json
 [{ "name": "weatherapi", "displayName": "WeatherAPI", "docsUrl": "https://www.weatherapi.com" }]
 ```
+
 **Parameters:**
+
 ```json
 {
   "type": "object",
@@ -1206,7 +1237,9 @@ return { totalWords: words.length, uniqueWords: Object.keys(freq).length, top20:
   "required": ["city"]
 }
 ```
+
 **Code:**
+
 ```javascript
 const apiKey = utils.getApiKey('weatherapi');
 if (!apiKey) return { error: 'WeatherAPI key not configured. Please add it in Config Center.' };
@@ -1232,6 +1265,7 @@ return {
 **Description:** Fetch a URL and summarize the content
 **Permissions:** `["network"]`
 **Parameters:**
+
 ```json
 {
   "type": "object",
@@ -1241,7 +1275,9 @@ return {
   "required": ["url"]
 }
 ```
+
 **Code:**
+
 ```javascript
 // Use the built-in web_fetch tool to get the page
 const content = await utils.callTool('web_fetch', { url: args.url });
@@ -1264,6 +1300,7 @@ return {
 **Description:** Analyze a CSV string and return statistics
 **Permissions:** None
 **Parameters:**
+
 ```json
 {
   "type": "object",
@@ -1274,7 +1311,9 @@ return {
   "required": ["csv"]
 }
 ```
+
 **Code:**
+
 ```javascript
 const records = utils.parseCsv(args.csv);
 if (records.length === 0) return { error: 'No records found in CSV' };
@@ -1288,9 +1327,7 @@ const result = {
 };
 
 if (args.numeric_column && columns.includes(args.numeric_column)) {
-  const values = records
-    .map(r => parseFloat(r[args.numeric_column]))
-    .filter(v => !isNaN(v));
+  const values = records.map((r) => parseFloat(r[args.numeric_column])).filter((v) => !isNaN(v));
   result.stats = {
     count: values.length,
     sum: utils.sum(values),
@@ -1314,6 +1351,7 @@ The tool was created by the LLM with dangerous permissions (`shell`, `filesystem
 ### "Tool code contains forbidden pattern" error
 
 The code contains a pattern that is explicitly blocked for security. Check for:
+
 - `require()` or `import()` calls -- use `utils.callTool()` instead.
 - `process.exit` or `process.env` references -- use `utils.getApiKey()` for config.
 - `global.` or `globalThis.` references -- use local variables.
@@ -1343,17 +1381,17 @@ The tool needs the `"network"` permission. Add it to the `permissions` array whe
 
 ## Source File Reference
 
-| File | Description |
-|------|-------------|
-| `packages/core/src/agent/tools/dynamic-tools.ts` | Core types, registry, meta-tool definitions, sandbox execution |
-| `packages/core/src/sandbox/executor.ts` | `SandboxExecutor` class (vm-based execution) |
-| `packages/core/src/sandbox/worker-sandbox.ts` | `WorkerSandbox` class (Worker thread isolation) |
-| `packages/core/src/sandbox/context.ts` | Sandbox context builder, code validation |
-| `packages/core/src/sandbox/types.ts` | Sandbox type definitions, default limits |
-| `packages/core/src/agent/types.ts` | `ToolContext`, `ToolDefinition`, `ToolExecutionResult` types |
-| `packages/gateway/src/db/repositories/custom-tools.ts` | `CustomToolsRepository` database layer |
-| `packages/gateway/src/routes/custom-tools.ts` | REST routes, meta-tool executors |
-| `packages/gateway/src/services/api-service-registrar.ts` | Config Center dependency registration |
-| `packages/gateway/src/db/migrations/postgres/001_initial_schema.sql` | Database schema |
-| `packages/gateway/data/tools/custom-data-tools.json` | Built-in custom data management tools |
-| `packages/ui/src/pages/CustomToolsPage.tsx` | UI management page |
+| File                                                                 | Description                                                    |
+| -------------------------------------------------------------------- | -------------------------------------------------------------- |
+| `packages/core/src/agent/tools/dynamic-tools.ts`                     | Core types, registry, meta-tool definitions, sandbox execution |
+| `packages/core/src/sandbox/executor.ts`                              | `SandboxExecutor` class (vm-based execution)                   |
+| `packages/core/src/sandbox/worker-sandbox.ts`                        | `WorkerSandbox` class (Worker thread isolation)                |
+| `packages/core/src/sandbox/context.ts`                               | Sandbox context builder, code validation                       |
+| `packages/core/src/sandbox/types.ts`                                 | Sandbox type definitions, default limits                       |
+| `packages/core/src/agent/types.ts`                                   | `ToolContext`, `ToolDefinition`, `ToolExecutionResult` types   |
+| `packages/gateway/src/db/repositories/custom-tools.ts`               | `CustomToolsRepository` database layer                         |
+| `packages/gateway/src/routes/custom-tools.ts`                        | REST routes, meta-tool executors                               |
+| `packages/gateway/src/services/api-service-registrar.ts`             | Config Center dependency registration                          |
+| `packages/gateway/src/db/migrations/postgres/001_initial_schema.sql` | Database schema                                                |
+| `packages/gateway/data/tools/custom-data-tools.json`                 | Built-in custom data management tools                          |
+| `packages/ui/src/pages/CustomToolsPage.tsx`                          | UI management page                                             |

@@ -212,13 +212,15 @@ export class TelegramBot implements ChannelHandler {
       try {
         await this.bot.api.sendMessage(chatId, partText, {
           parse_mode: parseMode,
-          reply_to_message_id: i === 0 && message.replyToMessageId
-            ? Number(message.replyToMessageId)
-            : undefined,
+          reply_to_message_id:
+            i === 0 && message.replyToMessageId ? Number(message.replyToMessageId) : undefined,
         });
       } catch (err) {
         lastError = err instanceof Error ? err : new Error(String(err));
-        log.error(`Failed to send message part ${i + 1}/${parts.length}`, { chatId, error: lastError.message });
+        log.error(`Failed to send message part ${i + 1}/${parts.length}`, {
+          chatId,
+          error: lastError.message,
+        });
       }
 
       // Small delay between split messages

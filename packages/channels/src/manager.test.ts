@@ -1,6 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ChannelManager, createChannelManager } from './manager.js';
-import type { ChannelConfig, TelegramConfig, IncomingMessage, OutgoingMessage } from './types/index.js';
+import type {
+  ChannelConfig,
+  TelegramConfig,
+  IncomingMessage,
+  OutgoingMessage,
+} from './types/index.js';
 
 // ---------------------------------------------------------------------------
 // Hoisted mocks — must be declared before any imports that use them
@@ -168,10 +173,7 @@ describe('ChannelManager', () => {
     it('skips only disabled channels when mixed with enabled ones', () => {
       const manager = new ChannelManager({
         agent: makeAgent(),
-        channels: [
-          makeTelegramConfig({ enabled: false }),
-          makeTelegramConfig({ enabled: true }),
-        ],
+        channels: [makeTelegramConfig({ enabled: false }), makeTelegramConfig({ enabled: true })],
       });
       expect(manager.getActiveChannels()).toEqual(['telegram']);
     });
@@ -314,10 +316,7 @@ describe('ChannelManager', () => {
 
       await onMsg(makeMessage({ username: 'alice' }));
 
-      expect(mockLog.error).toHaveBeenCalledWith(
-        'Agent error for alice:',
-        'Timeout',
-      );
+      expect(mockLog.error).toHaveBeenCalledWith('Agent error for alice:', 'Timeout');
     });
 
     it('uses userId in error log when username is absent and result is ok: false', async () => {
@@ -388,7 +387,7 @@ describe('ChannelManager', () => {
       await onMsg(makeMessage({ text: longText, username: 'bob' }));
 
       const infoArgs = mockLog.info.mock.calls.find(
-        (c: unknown[]) => typeof c[0] === 'string' && (c[0] as string).includes('Message from'),
+        (c: unknown[]) => typeof c[0] === 'string' && (c[0] as string).includes('Message from')
       );
       expect(infoArgs).toBeDefined();
       const logLine = infoArgs![0] as string;
@@ -405,7 +404,7 @@ describe('ChannelManager', () => {
       await onMsg(makeMessage({ text }));
 
       const infoArgs = mockLog.info.mock.calls.find(
-        (c: unknown[]) => typeof c[0] === 'string' && (c[0] as string).includes('Message from'),
+        (c: unknown[]) => typeof c[0] === 'string' && (c[0] as string).includes('Message from')
       );
       const logLine = infoArgs![0] as string;
       expect(logLine).not.toContain('...');
@@ -421,7 +420,7 @@ describe('ChannelManager', () => {
       await onMsg(makeMessage({ text }));
 
       const infoArgs = mockLog.info.mock.calls.find(
-        (c: unknown[]) => typeof c[0] === 'string' && (c[0] as string).includes('Message from'),
+        (c: unknown[]) => typeof c[0] === 'string' && (c[0] as string).includes('Message from')
       );
       const logLine = infoArgs![0] as string;
       expect(logLine).not.toContain('...');
@@ -435,10 +434,10 @@ describe('ChannelManager', () => {
       await onMsg(makeMessage({ username: 'charlieUser', userId: 'uid-100' }));
 
       const infoArgs = mockLog.info.mock.calls.find(
-        (c: unknown[]) => typeof c[0] === 'string' && (c[0] as string).includes('Message from'),
+        (c: unknown[]) => typeof c[0] === 'string' && (c[0] as string).includes('Message from')
       );
-      expect((infoArgs![0] as string)).toContain('charlieUser');
-      expect((infoArgs![0] as string)).not.toContain('uid-100');
+      expect(infoArgs![0] as string).toContain('charlieUser');
+      expect(infoArgs![0] as string).not.toContain('uid-100');
     });
 
     it('falls back to userId in the info log when username is not provided', async () => {
@@ -449,9 +448,9 @@ describe('ChannelManager', () => {
       await onMsg(makeMessage({ username: undefined, userId: 'uid-55' }));
 
       const infoArgs = mockLog.info.mock.calls.find(
-        (c: unknown[]) => typeof c[0] === 'string' && (c[0] as string).includes('Message from'),
+        (c: unknown[]) => typeof c[0] === 'string' && (c[0] as string).includes('Message from')
       );
-      expect((infoArgs![0] as string)).toContain('uid-55');
+      expect(infoArgs![0] as string).toContain('uid-55');
     });
 
     it('includes the channel type in the info log', async () => {
@@ -462,7 +461,7 @@ describe('ChannelManager', () => {
       await onMsg(makeMessage());
 
       const infoArgs = mockLog.info.mock.calls.find(
-        (c: unknown[]) => typeof c[0] === 'string' && (c[0] as string).includes('[telegram]'),
+        (c: unknown[]) => typeof c[0] === 'string' && (c[0] as string).includes('[telegram]')
       );
       expect(infoArgs).toBeDefined();
     });
@@ -588,10 +587,7 @@ describe('ChannelManager', () => {
       const manager = new ChannelManager({ agent: makeAgent(), channels: [makeTelegramConfig()] });
 
       await expect(manager.start()).resolves.toBeUndefined();
-      expect(mockLog.error).toHaveBeenCalledWith(
-        'Failed to start channel telegram:',
-        startError,
-      );
+      expect(mockLog.error).toHaveBeenCalledWith('Failed to start channel telegram:', startError);
     });
 
     it('still logs startup complete after a channel start failure', async () => {
@@ -656,10 +652,7 @@ describe('ChannelManager', () => {
       const manager = new ChannelManager({ agent: makeAgent(), channels: [makeTelegramConfig()] });
 
       await expect(manager.stop()).resolves.toBeUndefined();
-      expect(mockLog.error).toHaveBeenCalledWith(
-        'Failed to stop channel telegram:',
-        stopError,
-      );
+      expect(mockLog.error).toHaveBeenCalledWith('Failed to stop channel telegram:', stopError);
     });
 
     it('still logs "All channels stopped" after a stop failure', async () => {
@@ -747,9 +740,7 @@ describe('ChannelManager', () => {
     it('does not include disabled channels', () => {
       const manager = new ChannelManager({
         agent: makeAgent(),
-        channels: [
-          makeTelegramConfig({ enabled: false }),
-        ],
+        channels: [makeTelegramConfig({ enabled: false })],
       });
 
       expect(manager.getActiveChannels()).toEqual([]);
@@ -789,7 +780,11 @@ describe('ChannelManager', () => {
 
     it('calls handler.sendMessage with the exact message object', async () => {
       const manager = new ChannelManager({ agent: makeAgent(), channels: [makeTelegramConfig()] });
-      const msg: OutgoingMessage = { chatId: 'chat-123', text: 'Test message', replyToMessageId: 'r-1' };
+      const msg: OutgoingMessage = {
+        chatId: 'chat-123',
+        text: 'Test message',
+        replyToMessageId: 'r-1',
+      };
 
       await manager.sendMessage('telegram', msg);
 
@@ -827,7 +822,9 @@ describe('ChannelManager', () => {
       mockTelegramHandler.sendMessage.mockRejectedValueOnce(sendError);
       const manager = new ChannelManager({ agent: makeAgent(), channels: [makeTelegramConfig()] });
 
-      await expect(manager.sendMessage('telegram', { chatId: 'c', text: 't' })).rejects.toThrow('Send failed');
+      await expect(manager.sendMessage('telegram', { chatId: 'c', text: 't' })).rejects.toThrow(
+        'Send failed'
+      );
     });
   });
 
@@ -867,7 +864,9 @@ describe('ChannelManager', () => {
     it('resolves without throwing when no channels are registered', async () => {
       const manager = new ChannelManager({ agent: makeAgent(), channels: [] });
 
-      await expect(manager.broadcast(new Map([['telegram', 'c']]), 'nothing')).resolves.toBeUndefined();
+      await expect(
+        manager.broadcast(new Map([['telegram', 'c']]), 'nothing')
+      ).resolves.toBeUndefined();
     });
 
     it('logs an error and does not throw when a broadcast sendMessage fails', async () => {
@@ -879,7 +878,7 @@ describe('ChannelManager', () => {
       await expect(manager.broadcast(chatIds, 'test')).resolves.toBeUndefined();
       expect(mockLog.error).toHaveBeenCalledWith(
         'Failed to broadcast to telegram:',
-        broadcastError,
+        broadcastError
       );
     });
 
@@ -1004,9 +1003,9 @@ describe('ChannelManager', () => {
       await onMsg(makeMessage({ text }));
 
       const infoArgs = mockLog.info.mock.calls.find(
-        (c: unknown[]) => typeof c[0] === 'string' && (c[0] as string).includes('Message from'),
+        (c: unknown[]) => typeof c[0] === 'string' && (c[0] as string).includes('Message from')
       );
-      expect((infoArgs![0] as string)).toContain('...');
+      expect(infoArgs![0] as string).toContain('...');
     });
 
     it('handles a message of exactly 32001 chars as "too long"', async () => {

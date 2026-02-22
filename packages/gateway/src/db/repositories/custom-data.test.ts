@@ -125,13 +125,13 @@ describe('CustomDataRepository', () => {
 
     it('should throw for invalid column names', async () => {
       await expect(
-        repo.createTable('test', 'Test', [{ name: 'bad-name', type: 'text' }]),
+        repo.createTable('test', 'Test', [{ name: 'bad-name', type: 'text' }])
       ).rejects.toThrow('Invalid column name: bad-name');
     });
 
     it('should throw for column names with spaces', async () => {
       await expect(
-        repo.createTable('test', 'Test', [{ name: 'bad name', type: 'text' }]),
+        repo.createTable('test', 'Test', [{ name: 'bad name', type: 'text' }])
       ).rejects.toThrow('Invalid column name: bad name');
     });
 
@@ -291,9 +291,7 @@ describe('CustomDataRepository', () => {
 
   describe('getTablesByPlugin', () => {
     it('should return tables owned by the plugin', async () => {
-      mockAdapter.query.mockResolvedValueOnce([
-        makeSchemaRow({ owner_plugin_id: 'plugin-1' }),
-      ]);
+      mockAdapter.query.mockResolvedValueOnce([makeSchemaRow({ owner_plugin_id: 'plugin-1' })]);
 
       const result = await repo.getTablesByPlugin('plugin-1');
 
@@ -396,7 +394,7 @@ describe('CustomDataRepository', () => {
 
     it('should throw for protected tables without force', async () => {
       mockAdapter.queryOne.mockResolvedValueOnce(
-        makeSchemaRow({ is_protected: true, owner_plugin_id: 'plugin-1' }),
+        makeSchemaRow({ is_protected: true, owner_plugin_id: 'plugin-1' })
       );
 
       await expect(repo.deleteTable('contacts')).rejects.toThrow('is protected');
@@ -404,7 +402,7 @@ describe('CustomDataRepository', () => {
 
     it('should allow deleting protected tables with force=true', async () => {
       mockAdapter.queryOne.mockResolvedValueOnce(
-        makeSchemaRow({ is_protected: true, owner_plugin_id: 'plugin-1' }),
+        makeSchemaRow({ is_protected: true, owner_plugin_id: 'plugin-1' })
       );
       mockAdapter.execute.mockResolvedValueOnce({ changes: 0 });
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
@@ -479,16 +477,11 @@ describe('CustomDataRepository', () => {
 
   describe('ensurePluginTable', () => {
     it('should return existing table if it exists', async () => {
-      mockAdapter.queryOne.mockResolvedValueOnce(
-        makeSchemaRow({ owner_plugin_id: 'plugin-1' }),
-      );
+      mockAdapter.queryOne.mockResolvedValueOnce(makeSchemaRow({ owner_plugin_id: 'plugin-1' }));
 
-      const result = await repo.ensurePluginTable(
-        'plugin-1',
-        'contacts',
-        'Contacts',
-        [{ name: 'email', type: 'text' }],
-      );
+      const result = await repo.ensurePluginTable('plugin-1', 'contacts', 'Contacts', [
+        { name: 'email', type: 'text' },
+      ]);
 
       expect(result.id).toBe('table_123_abc');
       expect(mockAdapter.execute).not.toHaveBeenCalled();
@@ -503,7 +496,7 @@ describe('CustomDataRepository', () => {
         'new_table',
         'New Table',
         [{ name: 'field1', type: 'text' }],
-        'Description',
+        'Description'
       );
 
       expect(result.name).toBe('new_table');
@@ -513,18 +506,16 @@ describe('CustomDataRepository', () => {
 
     it('should throw if table is owned by a different plugin', async () => {
       mockAdapter.queryOne.mockResolvedValueOnce(
-        makeSchemaRow({ owner_plugin_id: 'plugin-other' }),
+        makeSchemaRow({ owner_plugin_id: 'plugin-other' })
       );
 
-      await expect(
-        repo.ensurePluginTable('plugin-1', 'contacts', 'Contacts', []),
-      ).rejects.toThrow('is owned by plugin "plugin-other"');
+      await expect(repo.ensurePluginTable('plugin-1', 'contacts', 'Contacts', [])).rejects.toThrow(
+        'is owned by plugin "plugin-other"'
+      );
     });
 
     it('should return existing table when owned by same plugin', async () => {
-      mockAdapter.queryOne.mockResolvedValueOnce(
-        makeSchemaRow({ owner_plugin_id: 'plugin-1' }),
-      );
+      mockAdapter.queryOne.mockResolvedValueOnce(makeSchemaRow({ owner_plugin_id: 'plugin-1' }));
 
       const result = await repo.ensurePluginTable('plugin-1', 'contacts', 'Contacts', []);
 
@@ -560,25 +551,25 @@ describe('CustomDataRepository', () => {
     it('should throw when table not found', async () => {
       mockAdapter.queryOne.mockResolvedValueOnce(null);
 
-      await expect(
-        repo.addRecord('missing', { email: 'test@example.com' }),
-      ).rejects.toThrow('Table not found: missing');
+      await expect(repo.addRecord('missing', { email: 'test@example.com' })).rejects.toThrow(
+        'Table not found: missing'
+      );
     });
 
     it('should throw when required field is missing', async () => {
       mockAdapter.queryOne.mockResolvedValueOnce(makeSchemaRow());
 
       await expect(
-        repo.addRecord('contacts', { age: 25 }), // missing required 'email'
+        repo.addRecord('contacts', { age: 25 }) // missing required 'email'
       ).rejects.toThrow('Missing required field: email');
     });
 
     it('should throw when required field is null', async () => {
       mockAdapter.queryOne.mockResolvedValueOnce(makeSchemaRow());
 
-      await expect(
-        repo.addRecord('contacts', { email: null, age: 25 }),
-      ).rejects.toThrow('Missing required field: email');
+      await expect(repo.addRecord('contacts', { email: null, age: 25 })).rejects.toThrow(
+        'Missing required field: email'
+      );
     });
 
     it('should apply default values for missing fields', async () => {
@@ -645,7 +636,7 @@ describe('CustomDataRepository', () => {
 
     it('should parse data JSON', async () => {
       mockAdapter.queryOne.mockResolvedValueOnce(
-        makeRecordRow({ data: '{"name":"John","active":true}' }),
+        makeRecordRow({ data: '{"name":"John","active":true}' })
       );
 
       const result = await repo.getRecord('rec_123_abc');
@@ -803,9 +794,9 @@ describe('CustomDataRepository', () => {
       mockAdapter.queryOne.mockResolvedValueOnce(makeRecordRow());
       mockAdapter.queryOne.mockResolvedValueOnce(makeSchemaRow());
 
-      await expect(
-        repo.updateRecord('rec_123_abc', { email: null }),
-      ).rejects.toThrow('Missing required field: email');
+      await expect(repo.updateRecord('rec_123_abc', { email: null })).rejects.toThrow(
+        'Missing required field: email'
+      );
     });
 
     it('should serialize merged data as JSON', async () => {
@@ -857,7 +848,9 @@ describe('CustomDataRepository', () => {
     it('should throw when table not found', async () => {
       mockAdapter.queryOne.mockResolvedValueOnce(null);
 
-      await expect(repo.searchRecords('missing', 'query')).rejects.toThrow('Table not found: missing');
+      await expect(repo.searchRecords('missing', 'query')).rejects.toThrow(
+        'Table not found: missing'
+      );
     });
 
     it('should apply limit', async () => {
@@ -992,9 +985,7 @@ describe('CustomDataRepository', () => {
     });
 
     it('should return 0 count for tables with no records', async () => {
-      mockAdapter.query.mockResolvedValueOnce([
-        { ...makeSchemaRow(), record_count: '0' },
-      ]);
+      mockAdapter.query.mockResolvedValueOnce([{ ...makeSchemaRow(), record_count: '0' }]);
 
       const result = await repo.listTablesWithCounts();
 

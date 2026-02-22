@@ -94,7 +94,10 @@ describe('validateDataExecutor', () => {
     });
 
     it('should accept email with subdomains', async () => {
-      const result = await validateDataExecutor({ value: 'user@mail.sub.example.com', type: 'email' });
+      const result = await validateDataExecutor({
+        value: 'user@mail.sub.example.com',
+        type: 'email',
+      });
       const data = parse(result);
       expect(data.valid).toBe(true);
     });
@@ -116,7 +119,10 @@ describe('validateDataExecutor', () => {
     });
 
     it('should accept URL with path and query', async () => {
-      const result = await validateDataExecutor({ value: 'https://example.com/path?q=1&b=2', type: 'url' });
+      const result = await validateDataExecutor({
+        value: 'https://example.com/path?q=1&b=2',
+        type: 'url',
+      });
       const data = parse(result);
       expect(data.valid).toBe(true);
     });
@@ -187,7 +193,10 @@ describe('validateDataExecutor', () => {
     });
 
     it('should strip non-digit characters before validation', async () => {
-      const result = await validateDataExecutor({ value: '4111-1111-1111-1111', type: 'credit_card' });
+      const result = await validateDataExecutor({
+        value: '4111-1111-1111-1111',
+        type: 'credit_card',
+      });
       const data = parse(result);
       expect(data.valid).toBe(true);
       expect(data.type).toBe('Visa');
@@ -217,7 +226,10 @@ describe('validateDataExecutor', () => {
     });
 
     it('should validate IBAN with spaces (stripped)', async () => {
-      const result = await validateDataExecutor({ value: 'GB29 NWBK 6016 1331 9268 19', type: 'iban' });
+      const result = await validateDataExecutor({
+        value: 'GB29 NWBK 6016 1331 9268 19',
+        type: 'iban',
+      });
       const data = parse(result);
       expect(data.valid).toBe(true);
       expect(data.country).toBe('GB');
@@ -265,7 +277,10 @@ describe('validateDataExecutor', () => {
   // --- UUID ---
   describe('uuid validation', () => {
     it('should validate a correct UUID', async () => {
-      const result = await validateDataExecutor({ value: '550e8400-e29b-41d4-a716-446655440000', type: 'uuid' });
+      const result = await validateDataExecutor({
+        value: '550e8400-e29b-41d4-a716-446655440000',
+        type: 'uuid',
+      });
       const data = parse(result);
       expect(data.valid).toBe(true);
     });
@@ -278,14 +293,20 @@ describe('validateDataExecutor', () => {
     });
 
     it('should accept uppercase UUID', async () => {
-      const result = await validateDataExecutor({ value: '550E8400-E29B-41D4-A716-446655440000', type: 'uuid' });
+      const result = await validateDataExecutor({
+        value: '550E8400-E29B-41D4-A716-446655440000',
+        type: 'uuid',
+      });
       const data = parse(result);
       expect(data.valid).toBe(true);
     });
 
     it('should reject UUID with wrong version digit', async () => {
       // Version position (first digit of 3rd group) must be 1-5
-      const result = await validateDataExecutor({ value: '550e8400-e29b-91d4-a716-446655440000', type: 'uuid' });
+      const result = await validateDataExecutor({
+        value: '550e8400-e29b-91d4-a716-446655440000',
+        type: 'uuid',
+      });
       const data = parse(result);
       expect(data.valid).toBe(false);
     });
@@ -301,7 +322,10 @@ describe('validateDataExecutor', () => {
     });
 
     it('should validate a correct IPv6 address', async () => {
-      const result = await validateDataExecutor({ value: '2001:0db8:85a3:0000:0000:8a2e:0370:7334', type: 'ip' });
+      const result = await validateDataExecutor({
+        value: '2001:0db8:85a3:0000:0000:8a2e:0370:7334',
+        type: 'ip',
+      });
       const data = parse(result);
       expect(data.valid).toBe(true);
       expect(data.version).toBe('IPv6');
@@ -388,7 +412,11 @@ describe('formatJsonExecutor', () => {
     });
 
     it('should prettify JSON with custom indent', async () => {
-      const result = await formatJsonExecutor({ json: '{"a":1}', operation: 'prettify', indent: 4 });
+      const result = await formatJsonExecutor({
+        json: '{"a":1}',
+        operation: 'prettify',
+        indent: 4,
+      });
       const data = parse(result);
       expect(data.result).toContain('    "a"'); // 4-space indent
     });
@@ -448,7 +476,10 @@ describe('formatJsonExecutor', () => {
   // --- get_keys ---
   describe('get_keys', () => {
     it('should return keys of an object', async () => {
-      const result = await formatJsonExecutor({ json: '{"a":1,"b":2,"c":3}', operation: 'get_keys' });
+      const result = await formatJsonExecutor({
+        json: '{"a":1,"b":2,"c":3}',
+        operation: 'get_keys',
+      });
       const data = parse(result);
       const keys = JSON.parse(data.result);
       expect(keys).toEqual(['a', 'b', 'c']);
@@ -783,7 +814,10 @@ describe('arrayOperationsExecutor', () => {
     });
 
     it('should sort strings alphabetically', async () => {
-      const result = await arrayOperationsExecutor({ array: '["banana","apple","cherry"]', operation: 'sort' });
+      const result = await arrayOperationsExecutor({
+        array: '["banana","apple","cherry"]',
+        operation: 'sort',
+      });
       const data = parse(result);
       expect(data.result).toEqual(['apple', 'banana', 'cherry']);
     });
@@ -839,14 +873,20 @@ describe('arrayOperationsExecutor', () => {
     it('should default to chunk size 2', async () => {
       const result = await arrayOperationsExecutor({ array: '[1,2,3,4]', operation: 'chunk' });
       const data = parse(result);
-      expect(data.result).toEqual([[1, 2], [3, 4]]);
+      expect(data.result).toEqual([
+        [1, 2],
+        [3, 4],
+      ]);
     });
   });
 
   // --- flatten ---
   describe('flatten', () => {
     it('should flatten nested arrays', async () => {
-      const result = await arrayOperationsExecutor({ array: '[[1,2],[3,[4,5]]]', operation: 'flatten' });
+      const result = await arrayOperationsExecutor({
+        array: '[[1,2],[3,[4,5]]]',
+        operation: 'flatten',
+      });
       const data = parse(result);
       expect(data.result).toEqual([1, 2, 3, 4, 5]);
     });
@@ -959,7 +999,10 @@ describe('arrayOperationsExecutor', () => {
     });
 
     it('should filter non-numbers from sum', async () => {
-      const result = await arrayOperationsExecutor({ array: '[1,"two",3,null,5]', operation: 'sum' });
+      const result = await arrayOperationsExecutor({
+        array: '[1,"two",3,null,5]',
+        operation: 'sum',
+      });
       const data = parse(result);
       expect(data.result).toBe(9);
     });

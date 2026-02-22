@@ -205,9 +205,7 @@ describe('Plans Routes', () => {
 
   describe('GET /plans/active', () => {
     it('returns active plans', async () => {
-      mockPlanService.getActive.mockResolvedValue([
-        { id: 'p1', status: 'running' },
-      ]);
+      mockPlanService.getActive.mockResolvedValue([{ id: 'p1', status: 'running' }]);
 
       const res = await app.request('/plans/active');
 
@@ -220,9 +218,7 @@ describe('Plans Routes', () => {
 
   describe('GET /plans/pending', () => {
     it('returns pending plans', async () => {
-      mockPlanService.getPending.mockResolvedValue([
-        { id: 'p1', status: 'pending' },
-      ]);
+      mockPlanService.getPending.mockResolvedValue([{ id: 'p1', status: 'pending' }]);
 
       const res = await app.request('/plans/pending');
 
@@ -246,9 +242,7 @@ describe('Plans Routes', () => {
       mockPlanService.getSteps.mockResolvedValue([
         { id: 'st1', name: 'Step 1', status: 'completed' },
       ]);
-      mockPlanService.getHistory.mockResolvedValue([
-        { id: 'h1', event: 'started' },
-      ]);
+      mockPlanService.getHistory.mockResolvedValue([{ id: 'h1', event: 'started' }]);
 
       const res = await app.request('/plans/p1');
 
@@ -677,9 +671,7 @@ describe('Plans Routes', () => {
   describe('GET /plans/:id/history', () => {
     it('returns plan history', async () => {
       mockPlanService.getPlan.mockResolvedValue({ id: 'p1' });
-      mockPlanService.getHistory.mockResolvedValue([
-        { id: 'h1', event: 'started' },
-      ]);
+      mockPlanService.getHistory.mockResolvedValue([{ id: 'h1', event: 'started' }]);
 
       const res = await app.request('/plans/p1/history');
 

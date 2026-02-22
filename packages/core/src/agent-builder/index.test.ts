@@ -46,7 +46,9 @@ import {
 // Helpers
 // =============================================================================
 
-function makeLLMProvider(response = 'A well-crafted system prompt that is long enough to pass the 50 char check'): BuilderLLMProvider {
+function makeLLMProvider(
+  response = 'A well-crafted system prompt that is long enough to pass the 50 char check'
+): BuilderLLMProvider {
   return {
     complete: vi.fn().mockResolvedValue(response),
   };
@@ -199,7 +201,9 @@ describe('InteractiveAgentBuilder', () => {
 
     it('can replace LLM provider', async () => {
       const provider1 = makeLLMProvider('first');
-      const provider2 = makeLLMProvider('A much longer system prompt that exceeds fifty characters');
+      const provider2 = makeLLMProvider(
+        'A much longer system prompt that exceeds fifty characters'
+      );
       builder.setLLMProvider(provider1);
       builder.setLLMProvider(provider2);
 
@@ -688,9 +692,7 @@ describe('InteractiveAgentBuilder', () => {
     it('extracts purpose from answers', async () => {
       const sessionId = await completeSessions(builder);
       const result = await builder.generateConfig(sessionId);
-      expect(result.config!.triggers.description).toBe(
-        'Help me manage bookmarks and save notes',
-      );
+      expect(result.config!.triggers.description).toBe('Help me manage bookmarks and save notes');
     });
 
     it('extracts name from answers', async () => {
@@ -1015,7 +1017,7 @@ describe('InteractiveAgentBuilder', () => {
   describe('generateSystemPrompt (via generateConfig)', () => {
     function makeMinimalSession(
       builder: InteractiveAgentBuilder,
-      overrides: Record<string, string | string[] | boolean> = {},
+      overrides: Record<string, string | string[] | boolean> = {}
     ): BuilderSession {
       const session = builder.startSession();
       session.answers = [
@@ -1048,7 +1050,10 @@ describe('InteractiveAgentBuilder', () => {
       const provider = makeLLMProvider('Too short');
       builder.setLLMProvider(provider);
 
-      const session = makeMinimalSession(builder, { name: 'Template Agent', purpose: 'help users find data' });
+      const session = makeMinimalSession(builder, {
+        name: 'Template Agent',
+        purpose: 'help users find data',
+      });
       const result = await builder.generateConfig(session.id);
       // Template always starts with "You are <name>"
       expect(result.config!.systemPrompt).toContain('You are Template Agent');
@@ -1058,7 +1063,10 @@ describe('InteractiveAgentBuilder', () => {
       const provider = makeLLMProvider('x'.repeat(50)); // exactly 50, not > 50
       builder.setLLMProvider(provider);
 
-      const session = makeMinimalSession(builder, { name: 'Boundary Agent', purpose: 'testing boundaries' });
+      const session = makeMinimalSession(builder, {
+        name: 'Boundary Agent',
+        purpose: 'testing boundaries',
+      });
       const result = await builder.generateConfig(session.id);
       expect(result.config!.systemPrompt).toContain('You are Boundary Agent');
     });
@@ -1069,7 +1077,10 @@ describe('InteractiveAgentBuilder', () => {
       };
       builder.setLLMProvider(provider);
 
-      const session = makeMinimalSession(builder, { name: 'Fallback Agent', purpose: 'do fallback stuff' });
+      const session = makeMinimalSession(builder, {
+        name: 'Fallback Agent',
+        purpose: 'do fallback stuff',
+      });
       const result = await builder.generateConfig(session.id);
       // Should not throw and should use template
       expect(result.success).toBe(true);
@@ -1152,7 +1163,7 @@ describe('InteractiveAgentBuilder', () => {
 
     it('LLM is called with correct prompt structure', async () => {
       const provider = makeLLMProvider(
-        'A detailed system prompt that is long enough to be used directly by the builder',
+        'A detailed system prompt that is long enough to be used directly by the builder'
       );
       builder.setLLMProvider(provider);
 
@@ -1395,7 +1406,8 @@ describe('InteractiveAgentBuilder', () => {
     });
 
     it('returns max 10 keywords', async () => {
-      const longPurpose = 'alpha bravo charlie delta echo foxtrot golf hotel india juliet kilo lima';
+      const longPurpose =
+        'alpha bravo charlie delta echo foxtrot golf hotel india juliet kilo lima';
       const keywords = await getKeywords(longPurpose);
       expect(keywords.length).toBeLessThanOrEqual(10);
     });
@@ -1969,7 +1981,11 @@ describe('full session walkthrough', () => {
     vi.clearAllMocks();
     builder = new InteractiveAgentBuilder({
       availableTools: [
-        makeToolInfo({ id: 'save_bookmark', name: 'Save Bookmark', description: 'Saves a bookmark' }),
+        makeToolInfo({
+          id: 'save_bookmark',
+          name: 'Save Bookmark',
+          description: 'Saves a bookmark',
+        }),
         makeToolInfo({ id: 'get_current_time', name: 'Get Time', description: 'Get current time' }),
         makeToolInfo({ id: 'calculate', name: 'Calculate', description: 'Do math' }),
       ],
@@ -2000,7 +2016,13 @@ describe('full session walkthrough', () => {
     }
 
     expect(questions.map((q) => q.id)).toEqual([
-      'purpose', 'name', 'category', 'personality', 'dataAccess', 'autonomous', 'tools',
+      'purpose',
+      'name',
+      'category',
+      'personality',
+      'dataAccess',
+      'autonomous',
+      'tools',
     ]);
     expect(builder.getSession(session.id)!.phase).toBe('generating');
   });
@@ -2029,7 +2051,7 @@ describe('full session walkthrough', () => {
       config: {
         maxTokens: 4096,
         temperature: 0.3, // professional
-        maxTurns: 50,     // autonomous
+        maxTurns: 50, // autonomous
         maxToolCalls: 200, // autonomous
       },
     });
@@ -2064,7 +2086,8 @@ describe('full session walkthrough', () => {
   });
 
   it('quickCreate with LLM provider uses LLM for system prompt', async () => {
-    const llmResponse = 'You are an expert bookmark management assistant with years of experience organizing web content.';
+    const llmResponse =
+      'You are an expert bookmark management assistant with years of experience organizing web content.';
     const provider = makeLLMProvider(llmResponse);
     builder.setLLMProvider(provider);
 

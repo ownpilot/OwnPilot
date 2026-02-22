@@ -18,40 +18,62 @@ import type { ToolDefinition, ToolExecutor } from '../types.js';
 // =============================================================================
 
 import {
-  getCurrentDateTimeTool as _dt, getCurrentDateTimeExecutor as _dte,
-  dateDiffTool as _dd, dateDiffExecutor as _dde,
-  dateAddTool as _da, dateAddExecutor as _dae,
+  getCurrentDateTimeTool as _dt,
+  getCurrentDateTimeExecutor as _dte,
+  dateDiffTool as _dd,
+  dateDiffExecutor as _dde,
+  dateAddTool as _da,
+  dateAddExecutor as _dae,
 } from './utility-date-tools.js';
 
 import {
-  calculateTool as _calc, calculateExecutor as _calce,
-  convertUnitsTool as _cu, convertUnitsExecutor as _cue,
-  calculateStatisticsTool as _cs, calculateStatisticsExecutor as _cse,
+  calculateTool as _calc,
+  calculateExecutor as _calce,
+  convertUnitsTool as _cu,
+  convertUnitsExecutor as _cue,
+  calculateStatisticsTool as _cs,
+  calculateStatisticsExecutor as _cse,
 } from './utility-math-tools.js';
 
 import {
-  countTextTool as _ct, countTextExecutor as _cte,
-  extractFromTextTool as _ef, extractFromTextExecutor as _efe,
-  transformTextTool as _tt, transformTextExecutor as _tte,
-  compareTextTool as _cmp, compareTextExecutor as _cmpe,
-  runRegexTool as _rr, runRegexExecutor as _rre,
+  countTextTool as _ct,
+  countTextExecutor as _cte,
+  extractFromTextTool as _ef,
+  extractFromTextExecutor as _efe,
+  transformTextTool as _tt,
+  transformTextExecutor as _tte,
+  compareTextTool as _cmp,
+  compareTextExecutor as _cmpe,
+  runRegexTool as _rr,
+  runRegexExecutor as _rre,
 } from './utility-text-tools.js';
 
 import {
-  generateUuidTool as _gu, generateUuidExecutor as _gue,
-  generatePasswordTool as _gp, generatePasswordExecutor as _gpe,
-  generateRandomNumberTool as _gr, generateRandomNumberExecutor as _gre,
-  hashTextTool as _ht, hashTextExecutor as _hte,
-  encodeDecodeTool as _ed, encodeDecodeExecutor as _ede,
+  generateUuidTool as _gu,
+  generateUuidExecutor as _gue,
+  generatePasswordTool as _gp,
+  generatePasswordExecutor as _gpe,
+  generateRandomNumberTool as _gr,
+  generateRandomNumberExecutor as _gre,
+  hashTextTool as _ht,
+  hashTextExecutor as _hte,
+  encodeDecodeTool as _ed,
+  encodeDecodeExecutor as _ede,
 } from './utility-gen-tools.js';
 
 import {
-  validateDataTool as _vd, validateDataExecutor as _vde,
-  formatJsonTool as _fj, formatJsonExecutor as _fje,
-  parseCsvTool as _pc, parseCsvExecutor as _pce,
-  generateCsvTool as _gc, generateCsvExecutor as _gce,
-  arrayOperationsTool as _ao, arrayOperationsExecutor as _aoe,
-  getSystemInfoTool as _si, getSystemInfoExecutor as _sie,
+  validateDataTool as _vd,
+  validateDataExecutor as _vde,
+  formatJsonTool as _fj,
+  formatJsonExecutor as _fje,
+  parseCsvTool as _pc,
+  parseCsvExecutor as _pce,
+  generateCsvTool as _gc,
+  generateCsvExecutor as _gce,
+  arrayOperationsTool as _ao,
+  arrayOperationsExecutor as _aoe,
+  getSystemInfoTool as _si,
+  getSystemInfoExecutor as _sie,
 } from './utility-data-tools.js';
 
 export const UTILITY_TOOLS: Array<{ definition: ToolDefinition; executor: ToolExecutor }> = [

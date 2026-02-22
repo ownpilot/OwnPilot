@@ -54,7 +54,7 @@ export class EmbeddingQueue {
     if (this.running) return;
     this.running = true;
     this.timer = setInterval(() => {
-      this.processNextBatch().catch(err => {
+      this.processNextBatch().catch((err) => {
         log.error('Queue processing error', String(err));
       });
     }, EMBEDDING_QUEUE_INTERVAL_MS);
@@ -129,7 +129,7 @@ export class EmbeddingQueue {
 
       // Take a batch from the queue (keep in dedup Set until processed)
       const batch = this.queue.splice(0, EMBEDDING_QUEUE_BATCH_SIZE);
-      const texts = batch.map(item => item.content);
+      const texts = batch.map((item) => item.content);
 
       // Generate embeddings in batch
       let results: Awaited<ReturnType<typeof embeddingService.generateBatchEmbeddings>>;
@@ -137,7 +137,10 @@ export class EmbeddingQueue {
         results = await embeddingService.generateBatchEmbeddings(texts);
       } catch (err) {
         // Batch generation failed — re-enqueue all items with lower priority
-        log.warn('Batch embedding generation failed, re-enqueueing', { batchSize: batch.length, error: String(err) });
+        log.warn('Batch embedding generation failed, re-enqueueing', {
+          batchSize: batch.length,
+          error: String(err),
+        });
         for (const item of batch) {
           this.queuedIds.delete(this.queueKey(item.memoryId, item.userId));
           if (item.priority < MAX_PRIORITY) {

@@ -27,53 +27,69 @@ pnpm add @ownpilot/core
 Located in `src/agent/tools/`, provides tools that AI agents can execute:
 
 #### Email Tools
+
 ```typescript
 import { sendEmailExecutor, EMAIL_TOOLS } from '@ownpilot/core';
 
 // Send email (requires nodemailer)
-await sendEmailExecutor({
-  to: 'user@example.com',
-  subject: 'Hello',
-  body: 'Email content',
-  html: '<p>Email content</p>'
-}, context);
+await sendEmailExecutor(
+  {
+    to: 'user@example.com',
+    subject: 'Hello',
+    body: 'Email content',
+    html: '<p>Email content</p>',
+  },
+  context
+);
 ```
 
 #### Image Tools
+
 ```typescript
 import { resizeImageExecutor, IMAGE_TOOLS } from '@ownpilot/core';
 
 // Resize image (requires sharp)
-await resizeImageExecutor({
-  inputPath: '/path/to/image.jpg',
-  outputPath: '/path/to/output.jpg',
-  width: 800,
-  height: 600,
-  fit: 'cover'
-}, context);
+await resizeImageExecutor(
+  {
+    inputPath: '/path/to/image.jpg',
+    outputPath: '/path/to/output.jpg',
+    width: 800,
+    height: 600,
+    fit: 'cover',
+  },
+  context
+);
 ```
 
 #### PDF Tools
+
 ```typescript
 import { readPdfExecutor, createPdfExecutor, PDF_TOOLS } from '@ownpilot/core';
 
 // Read PDF (requires pdf-parse)
-await readPdfExecutor({
-  path: '/path/to/document.pdf',
-  pages: '1-5',
-  extractTables: true
-}, context);
+await readPdfExecutor(
+  {
+    path: '/path/to/document.pdf',
+    pages: '1-5',
+    extractTables: true,
+  },
+  context
+);
 
 // Create PDF (requires pdfkit)
-await createPdfExecutor({
-  path: '/path/to/output.pdf',
-  content: 'PDF content',
-  format: 'markdown',
-  title: 'Document Title'
-}, context);
+await createPdfExecutor(
+  {
+    path: '/path/to/output.pdf',
+    content: 'PDF content',
+    format: 'markdown',
+    title: 'Document Title',
+  },
+  context
+);
 ```
 
 **Note:** Image and PDF tools have optional dependencies:
+
 - Email tools: `pnpm add nodemailer @types/nodemailer`
 - Image tools: `pnpm add sharp`
 - PDF tools: `pnpm add pdf-parse pdfkit @types/pdfkit`
@@ -95,13 +111,13 @@ bus.on('user.created', (event) => {
 // Emit events
 await bus.emit('user.created', {
   userId: '123',
-  email: 'user@example.com'
+  email: 'user@example.com',
 });
 
 // Scoped event bus
 const userBus = bus.scoped('user');
 userBus.on('created', handler); // Listens to 'user.created'
-userBus.emit('created', data);  // Emits 'user.created'
+userBus.emit('created', data); // Emits 'user.created'
 ```
 
 ### Privacy & Security
@@ -109,12 +125,7 @@ userBus.emit('created', data);  // Emits 'user.created'
 PII detection and redaction for sensitive data:
 
 ```typescript
-import {
-  PIIDetector,
-  PIIRedactor,
-  validateEmail,
-  validateUrl
-} from '@ownpilot/core';
+import { PIIDetector, PIIRedactor, validateEmail, validateUrl } from '@ownpilot/core';
 
 // Detect PII
 const detector = new PIIDetector();
@@ -127,7 +138,7 @@ const safe = redactor.redact('My SSN is 123-45-6789');
 // safe: 'My SSN is [REDACTED:SSN]'
 
 // Validate inputs
-validateEmail('user@example.com');  // throws if invalid
+validateEmail('user@example.com'); // throws if invalid
 validateUrl('https://example.com'); // throws if invalid
 ```
 
@@ -136,11 +147,7 @@ validateUrl('https://example.com'); // throws if invalid
 Dependency injection container for services:
 
 ```typescript
-import {
-  createServiceRegistry,
-  Services,
-  type ILogService
-} from '@ownpilot/core';
+import { createServiceRegistry, Services, type ILogService } from '@ownpilot/core';
 
 // Create registry
 const registry = createServiceRegistry();
@@ -151,7 +158,7 @@ const logService: ILogService = {
   info: (msg, data) => console.log(msg, data),
   warn: (msg, data) => console.warn(msg, data),
   error: (msg, data) => console.error(msg, data),
-  child: (name) => createChildLogger(name)
+  child: (name) => createChildLogger(name),
 };
 
 registry.register(Services.Log, logService);
@@ -184,7 +191,7 @@ if (result.ok) {
 }
 
 // Transform results
-const doubled = result.map(n => n * 2);
+const doubled = result.map((n) => n * 2);
 
 // Handle errors
 const safe = result.unwrapOr(0);
@@ -200,7 +207,9 @@ import { brand, type Brand } from '@ownpilot/core';
 type UserId = Brand<string, 'UserId'>;
 type Email = Brand<string, 'Email'>;
 
-function getUser(id: UserId) { /* ... */ }
+function getUser(id: UserId) {
+  /* ... */
+}
 
 const id = brand<UserId>('user-123');
 getUser(id); // ✓ OK
@@ -213,12 +222,7 @@ getUser('user-123'); // ✗ TypeScript error
 Track LLM usage costs across providers:
 
 ```typescript
-import {
-  UsageTracker,
-  BudgetManager,
-  calculateCost,
-  MODEL_PRICING
-} from '@ownpilot/core';
+import { UsageTracker, BudgetManager, calculateCost, MODEL_PRICING } from '@ownpilot/core';
 
 // Track usage
 const tracker = new UsageTracker();
@@ -227,7 +231,7 @@ await tracker.recordUsage({
   model: 'gpt-4',
   inputTokens: 1000,
   outputTokens: 500,
-  userId: 'user-123'
+  userId: 'user-123',
 });
 
 // Calculate costs
@@ -236,8 +240,8 @@ console.log(`Cost: $${cost.toFixed(4)}`);
 
 // Budget management
 const budget = new BudgetManager();
-await budget.setLimit('user-123', { daily: 10.00 });
-const canUse = await budget.checkLimit('user-123', 2.50);
+await budget.setLimit('user-123', { daily: 10.0 });
+const canUse = await budget.checkLimit('user-123', 2.5);
 ```
 
 ### Workspace Management
@@ -245,17 +249,13 @@ const canUse = await budget.checkLimit('user-123', 2.50);
 Isolated containerized execution environments:
 
 ```typescript
-import {
-  WorkspaceOrchestrator,
-  getWorkspaceStorage,
-  isDockerAvailable
-} from '@ownpilot/core';
+import { WorkspaceOrchestrator, getWorkspaceStorage, isDockerAvailable } from '@ownpilot/core';
 
 // Check Docker availability
 if (await isDockerAvailable()) {
   // Create orchestrator
   const orchestrator = getOrchestrator({
-    userId: 'user-123'
+    userId: 'user-123',
   });
 
   // Execute code in container
@@ -283,7 +283,7 @@ import type {
   LogLevel,
   ToolDefinition,
   ToolExecutor,
-  ToolExecutionResult
+  ToolExecutionResult,
 } from '@ownpilot/core';
 
 // API Response
@@ -392,16 +392,19 @@ core/
 Some tools require additional packages:
 
 ### Email Tools
+
 ```bash
 pnpm add nodemailer @types/nodemailer
 ```
 
 ### Image Tools
+
 ```bash
 pnpm add sharp
 ```
 
 ### PDF Tools
+
 ```bash
 pnpm add pdf-parse pdfkit @types/pdfkit
 ```
@@ -435,11 +438,7 @@ Tools gracefully handle missing dependencies by returning error results.
 Always validate untrusted inputs:
 
 ```typescript
-import {
-  validateEmail,
-  validateUrl,
-  validateCronExpression
-} from '@ownpilot/core';
+import { validateEmail, validateUrl, validateCronExpression } from '@ownpilot/core';
 
 try {
   validateEmail(userInput);
@@ -468,16 +467,11 @@ Use workspace containers for untrusted code:
 
 ```typescript
 // Execute user code in isolated container
-const result = await orchestrator.executeInContainer(
-  workspaceId,
-  language,
-  userCode,
-  {
-    timeout: 30000,        // 30 second timeout
-    maxMemory: '512m',     // Memory limit
-    networkAccess: false   // Disable network
-  }
-);
+const result = await orchestrator.executeInContainer(workspaceId, language, userCode, {
+  timeout: 30000, // 30 second timeout
+  maxMemory: '512m', // Memory limit
+  networkAccess: false, // Disable network
+});
 ```
 
 ## Contributing

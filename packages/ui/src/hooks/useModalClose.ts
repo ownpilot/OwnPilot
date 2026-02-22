@@ -20,7 +20,7 @@ export function useModalClose(onClose: () => void) {
     (e: MouseEvent) => {
       if (e.target === e.currentTarget) onClose();
     },
-    [onClose],
+    [onClose]
   );
 
   return { onBackdropClick };

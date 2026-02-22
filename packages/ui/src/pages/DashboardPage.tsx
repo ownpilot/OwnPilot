@@ -58,7 +58,7 @@ export function DashboardPage() {
       subscribe('data:changed', debouncedRefresh),
       subscribe('trigger:executed', debouncedRefresh),
     ];
-    return () => unsubs.forEach(fn => fn());
+    return () => unsubs.forEach((fn) => fn());
   }, [subscribe, debouncedRefresh]);
 
   if (isLoading) {
@@ -88,7 +88,8 @@ export function DashboardPage() {
   }
 
   // Safely compute task completion (fallback prevents NaN)
-  const tasksCompleted = summary?.tasks.completed ?? (summary ? summary.tasks.total - summary.tasks.pending : 0);
+  const tasksCompleted =
+    summary?.tasks.completed ?? (summary ? summary.tasks.total - summary.tasks.pending : 0);
   const tasksTotal = summary?.tasks.total ?? 0;
   const completionPct = tasksTotal > 0 ? Math.round((tasksCompleted / tasksTotal) * 100) : 0;
 
@@ -117,7 +118,12 @@ export function DashboardPage() {
         {
           label: 'Events',
           value: summary.calendar.total,
-          sub: summary.calendar.upcoming > 0 ? `${summary.calendar.upcoming} upcoming` : (summary.calendar.today > 0 ? `${summary.calendar.today} today` : undefined),
+          sub:
+            summary.calendar.upcoming > 0
+              ? `${summary.calendar.upcoming} upcoming`
+              : summary.calendar.today > 0
+                ? `${summary.calendar.today} today`
+                : undefined,
           icon: Calendar,
           color: 'text-success',
           bgColor: 'bg-success/10',
@@ -127,7 +133,8 @@ export function DashboardPage() {
         {
           label: 'Contacts',
           value: summary.contacts.total,
-          sub: summary.contacts.favorites > 0 ? `${summary.contacts.favorites} favorites` : undefined,
+          sub:
+            summary.contacts.favorites > 0 ? `${summary.contacts.favorites} favorites` : undefined,
           icon: Users,
           color: 'text-purple-500',
           bgColor: 'bg-purple-500/10',
@@ -137,7 +144,10 @@ export function DashboardPage() {
         {
           label: 'Bookmarks',
           value: summary.bookmarks.total,
-          sub: summary.bookmarks.favorites > 0 ? `${summary.bookmarks.favorites} favorites` : undefined,
+          sub:
+            summary.bookmarks.favorites > 0
+              ? `${summary.bookmarks.favorites} favorites`
+              : undefined,
           icon: Bookmark,
           color: 'text-blue-500',
           bgColor: 'bg-blue-500/10',
@@ -184,7 +194,9 @@ export function DashboardPage() {
               }`}
             >
               <div className="flex items-center gap-3">
-                <div className={`w-10 h-10 rounded-lg ${stat.bgColor} flex items-center justify-center flex-shrink-0`}>
+                <div
+                  className={`w-10 h-10 rounded-lg ${stat.bgColor} flex items-center justify-center flex-shrink-0`}
+                >
                   <stat.icon className={`w-5 h-5 ${stat.color}`} />
                 </div>
                 <div className="min-w-0">
@@ -197,7 +209,9 @@ export function DashboardPage() {
                 </div>
               </div>
               {stat.sub && (
-                <p className={`mt-2 text-xs ${stat.alert ? 'text-error' : 'text-text-muted dark:text-dark-text-muted'}`}>
+                <p
+                  className={`mt-2 text-xs ${stat.alert ? 'text-error' : 'text-text-muted dark:text-dark-text-muted'}`}
+                >
                   {stat.sub}
                 </p>
               )}
@@ -280,7 +294,8 @@ export function DashboardPage() {
                   </Link>
                 </div>
                 <p className="text-sm text-text-muted dark:text-dark-text-muted">
-                  {summary.calendar.upcoming} event{summary.calendar.upcoming !== 1 ? 's' : ''} coming up this week
+                  {summary.calendar.upcoming} event{summary.calendar.upcoming !== 1 ? 's' : ''}{' '}
+                  coming up this week
                 </p>
               </div>
             )}

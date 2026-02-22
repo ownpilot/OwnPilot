@@ -102,7 +102,7 @@ export class HeartbeatsRepository extends BaseRepository {
         JSON.stringify(input.metadata ?? {}),
         now,
         now,
-      ],
+      ]
     );
 
     const heartbeat = await this.get(id);
@@ -113,7 +113,7 @@ export class HeartbeatsRepository extends BaseRepository {
   async get(id: string): Promise<Heartbeat | null> {
     const row = await this.queryOne<HeartbeatRow>(
       'SELECT * FROM heartbeats WHERE id = $1 AND user_id = $2',
-      [id, this.userId],
+      [id, this.userId]
     );
     return row ? this.mapRow(row) : null;
   }
@@ -163,17 +163,17 @@ export class HeartbeatsRepository extends BaseRepository {
 
     await this.execute(
       `UPDATE heartbeats SET ${updates.join(', ')} WHERE id = $${paramIndex++} AND user_id = $${paramIndex}`,
-      values,
+      values
     );
 
     return this.get(id);
   }
 
   async delete(id: string): Promise<boolean> {
-    const result = await this.execute(
-      'DELETE FROM heartbeats WHERE id = $1 AND user_id = $2',
-      [id, this.userId],
-    );
+    const result = await this.execute('DELETE FROM heartbeats WHERE id = $1 AND user_id = $2', [
+      id,
+      this.userId,
+    ]);
     return result.changes > 0;
   }
 
@@ -205,7 +205,7 @@ export class HeartbeatsRepository extends BaseRepository {
   async getByTriggerId(triggerId: string): Promise<Heartbeat | null> {
     const row = await this.queryOne<HeartbeatRow>(
       'SELECT * FROM heartbeats WHERE trigger_id = $1 AND user_id = $2',
-      [triggerId, this.userId],
+      [triggerId, this.userId]
     );
     return row ? this.mapRow(row) : null;
   }

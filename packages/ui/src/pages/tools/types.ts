@@ -8,10 +8,13 @@ export interface CategoryInfo {
 }
 
 export interface GroupedTools {
-  categories: Record<string, {
-    info: CategoryInfo;
-    tools: ToolItem[];
-  }>;
+  categories: Record<
+    string,
+    {
+      info: CategoryInfo;
+      tools: ToolItem[];
+    }
+  >;
   totalTools: number;
 }
 

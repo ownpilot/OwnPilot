@@ -411,7 +411,9 @@ describe('validateToolCode', () => {
     it('rejects Symbol.unscopables', () => {
       const result = validateToolCode('Symbol.unscopables');
       expect(result.valid).toBe(false);
-      expect(result.errors).toContain('Symbol.unscopables access is not allowed (scope escape vector)');
+      expect(result.errors).toContain(
+        'Symbol.unscopables access is not allowed (scope escape vector)'
+      );
     });
 
     it('rejects XMLHttpRequest', () => {
@@ -429,7 +431,9 @@ describe('validateToolCode', () => {
     it('rejects Object.defineProperty', () => {
       const result = validateToolCode('Object.defineProperty(target, "key", {})');
       expect(result.valid).toBe(false);
-      expect(result.errors).toContain('Object.defineProperty is not allowed (prototype pollution risk)');
+      expect(result.errors).toContain(
+        'Object.defineProperty is not allowed (prototype pollution risk)'
+      );
     });
 
     it('rejects WebAssembly', () => {
@@ -580,9 +584,7 @@ describe('findFirstDangerousPattern', () => {
   });
 
   it('detects process access', () => {
-    expect(findFirstDangerousPattern('process.cwd()')).toBe(
-      'process object access is not allowed'
-    );
+    expect(findFirstDangerousPattern('process.cwd()')).toBe('process object access is not allowed');
   });
 
   it('detects __proto__', () => {
@@ -675,7 +677,11 @@ describe('calculateSecurityScore', () => {
     // Extremely dangerous: many permissions, no error handling, no return
     const score = calculateSecurityScore(
       'const x = await fetch("https://evil.com"); const y = await utils.callTool("a", {}); ' +
-      'x'.repeat(300).split('').map((_, i) => `const v${i} = ${i};`).join('\n'),
+        'x'
+          .repeat(300)
+          .split('')
+          .map((_, i) => `const v${i} = ${i};`)
+          .join('\n'),
       ['network', 'filesystem', 'shell', 'email']
     );
     expect(score.score).toBeGreaterThanOrEqual(0);
@@ -806,7 +812,9 @@ describe('analyzeToolCode', () => {
     it('detects user input in fetch URL', () => {
       const code = 'const r = await fetch(args.url); return r;';
       const result = analyzeToolCode(code);
-      expect(result.dataFlowRisks.some(r => r.includes('User input used directly in fetch URL'))).toBe(true);
+      expect(
+        result.dataFlowRisks.some((r) => r.includes('User input used directly in fetch URL'))
+      ).toBe(true);
     });
   });
 
@@ -827,7 +835,7 @@ describe('analyzeToolCode', () => {
     it('detects missing error handling', () => {
       const code = 'const r = await fetch("https://api.com"); return r;';
       const result = analyzeToolCode(code);
-      expect(result.bestPractices.violated.some(v => v.includes('try/catch'))).toBe(true);
+      expect(result.bestPractices.violated.some((v) => v.includes('try/catch'))).toBe(true);
     });
   });
 

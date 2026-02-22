@@ -27,8 +27,20 @@ const telegram2Api = mockChannelApi('telegram');
 
 const mockService = {
   listChannels: vi.fn(() => [
-    { pluginId: 'channel.telegram', platform: 'telegram', name: 'Telegram', status: 'connected', icon: 'telegram' },
-    { pluginId: 'channel.telegram-2', platform: 'telegram', name: 'Telegram 2', status: 'connected', icon: 'telegram' },
+    {
+      pluginId: 'channel.telegram',
+      platform: 'telegram',
+      name: 'Telegram',
+      status: 'connected',
+      icon: 'telegram',
+    },
+    {
+      pluginId: 'channel.telegram-2',
+      platform: 'telegram',
+      name: 'Telegram 2',
+      status: 'connected',
+      icon: 'telegram',
+    },
   ]),
   getChannel: vi.fn((id: string) => {
     if (id === 'channel.telegram') return telegramApi;
@@ -78,7 +90,9 @@ const mockChannelMessagesRepo = {
 };
 
 vi.mock('../db/repositories/channel-messages.js', () => ({
-  ChannelMessagesRepository: vi.fn(function () { return mockChannelMessagesRepo; }),
+  ChannelMessagesRepository: vi.fn(function () {
+    return mockChannelMessagesRepo;
+  }),
 }));
 
 const mockConfigServicesRepo = {
@@ -129,8 +143,20 @@ describe('Channels Routes', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockService.listChannels.mockReturnValue([
-      { pluginId: 'channel.telegram', platform: 'telegram', name: 'Telegram', status: 'connected', icon: 'telegram' },
-      { pluginId: 'channel.telegram-2', platform: 'telegram', name: 'Telegram 2', status: 'connected', icon: 'telegram' },
+      {
+        pluginId: 'channel.telegram',
+        platform: 'telegram',
+        name: 'Telegram',
+        status: 'connected',
+        icon: 'telegram',
+      },
+      {
+        pluginId: 'channel.telegram-2',
+        platform: 'telegram',
+        name: 'Telegram 2',
+        status: 'connected',
+        icon: 'telegram',
+      },
     ]);
     mockService.getChannel.mockImplementation((id: string) => {
       if (id === 'channel.telegram') return telegramApi;
@@ -437,7 +463,7 @@ describe('Channels Routes', () => {
       await app.request('/channels/messages/inbox?channelId=channel.telegram');
 
       expect(mockChannelMessagesRepo.getAll).toHaveBeenCalledWith(
-        expect.objectContaining({ channelId: 'channel.telegram' }),
+        expect.objectContaining({ channelId: 'channel.telegram' })
       );
     });
 
@@ -520,11 +546,14 @@ describe('Channels Routes', () => {
       expect(mockService.connect).toHaveBeenCalledWith('channel.telegram');
 
       // Should broadcast config change
-      expect(mockWsGateway.broadcast).toHaveBeenCalledWith('data:changed', expect.objectContaining({
-        entity: 'config_service',
-        action: 'created',
-        id: 'telegram_bot',
-      }));
+      expect(mockWsGateway.broadcast).toHaveBeenCalledWith(
+        'data:changed',
+        expect.objectContaining({
+          entity: 'config_service',
+          action: 'created',
+          id: 'telegram_bot',
+        })
+      );
     });
 
     it('updates existing config entry', async () => {
@@ -545,9 +574,12 @@ describe('Channels Routes', () => {
       });
       expect(mockConfigServicesRepo.createEntry).not.toHaveBeenCalled();
 
-      expect(mockWsGateway.broadcast).toHaveBeenCalledWith('data:changed', expect.objectContaining({
-        action: 'updated',
-      }));
+      expect(mockWsGateway.broadcast).toHaveBeenCalledWith(
+        'data:changed',
+        expect.objectContaining({
+          action: 'updated',
+        })
+      );
     });
 
     it('returns 404 for unknown pluginId', async () => {
@@ -661,11 +693,7 @@ describe('Channels Routes', () => {
 
       await app.request('/channels/channel.telegram/messages?limit=10&offset=5');
 
-      expect(mockChannelMessagesRepo.getByChannel).toHaveBeenCalledWith(
-        'channel.telegram',
-        10,
-        5,
-      );
+      expect(mockChannelMessagesRepo.getByChannel).toHaveBeenCalledWith('channel.telegram', 10, 5);
     });
 
     it('returns 500 on fetch failure', async () => {
@@ -699,7 +727,9 @@ describe('Channels Routes', () => {
     it('clears messages for specific channel when channelId is given', async () => {
       mockChannelMessagesRepo.deleteByChannel.mockResolvedValue(3);
 
-      const res = await app.request('/channels/messages?channelId=channel.telegram', { method: 'DELETE' });
+      const res = await app.request('/channels/messages?channelId=channel.telegram', {
+        method: 'DELETE',
+      });
 
       expect(res.status).toBe(200);
       const json = await res.json();

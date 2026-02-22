@@ -14,9 +14,9 @@ import type { ProviderConfig, ModelConfig, ModelCapability, ProviderType } from 
  * These are preserved from existing config files
  */
 const PROTECTED_FIELDS: (keyof ProviderConfig)[] = [
-  'type',       // Provider type (google, anthropic, openai, openai-compatible)
-  'baseUrl',    // API endpoint URL
-  'apiKeyEnv',  // Environment variable name for API key
+  'type', // Provider type (google, anthropic, openai, openai-compatible)
+  'baseUrl', // API endpoint URL
+  'apiKeyEnv', // Environment variable name for API key
 ];
 
 /**
@@ -24,21 +24,24 @@ const PROTECTED_FIELDS: (keyof ProviderConfig)[] = [
  * These ALWAYS take precedence over both sync data and existing configs
  * This ensures providers use the correct API client regardless of sync/config errors
  */
-const CANONICAL_CONFIGS: Record<string, Partial<Pick<ProviderConfig, 'type' | 'baseUrl' | 'apiKeyEnv'>>> = {
+const CANONICAL_CONFIGS: Record<
+  string,
+  Partial<Pick<ProviderConfig, 'type' | 'baseUrl' | 'apiKeyEnv'>>
+> = {
   // Native OpenAI
-  'openai': {
+  openai: {
     type: 'openai',
     baseUrl: 'https://api.openai.com/v1',
     apiKeyEnv: 'OPENAI_API_KEY',
   },
   // Native Anthropic
-  'anthropic': {
+  anthropic: {
     type: 'anthropic',
     baseUrl: 'https://api.anthropic.com/v1',
     apiKeyEnv: 'ANTHROPIC_API_KEY',
   },
   // Google Gemini (NOT OpenAI-compatible, uses its own API format)
-  'google': {
+  google: {
     type: 'google',
     baseUrl: 'https://generativelanguage.googleapis.com/v1beta',
     apiKeyEnv: 'GOOGLE_GENERATIVE_AI_API_KEY',
@@ -55,37 +58,37 @@ const CANONICAL_CONFIGS: Record<string, Partial<Pick<ProviderConfig, 'type' | 'b
     apiKeyEnv: 'GOOGLE_VERTEX_API_KEY',
   },
   // xAI (Grok) - OpenAI compatible
-  'xai': {
+  xai: {
     type: 'openai-compatible',
     baseUrl: 'https://api.x.ai/v1',
     apiKeyEnv: 'XAI_API_KEY',
   },
   // Groq - OpenAI compatible
-  'groq': {
+  groq: {
     type: 'openai-compatible',
     baseUrl: 'https://api.groq.com/openai/v1',
     apiKeyEnv: 'GROQ_API_KEY',
   },
   // Mistral - OpenAI compatible
-  'mistral': {
+  mistral: {
     type: 'openai-compatible',
     baseUrl: 'https://api.mistral.ai/v1',
     apiKeyEnv: 'MISTRAL_API_KEY',
   },
   // Cohere - OpenAI compatible
-  'cohere': {
+  cohere: {
     type: 'openai-compatible',
     baseUrl: 'https://api.cohere.ai/v1',
     apiKeyEnv: 'COHERE_API_KEY',
   },
   // OpenRouter - OpenAI compatible aggregator
-  'openrouter': {
+  openrouter: {
     type: 'openai-compatible',
     baseUrl: 'https://openrouter.ai/api/v1',
     apiKeyEnv: 'OPENROUTER_API_KEY',
   },
   // Together AI - OpenAI compatible
-  'togetherai': {
+  togetherai: {
     type: 'openai-compatible',
     baseUrl: 'https://api.together.xyz/v1',
     apiKeyEnv: 'TOGETHER_API_KEY',
@@ -97,24 +100,24 @@ const CANONICAL_CONFIGS: Record<string, Partial<Pick<ProviderConfig, 'type' | 'b
     apiKeyEnv: 'FIREWORKS_API_KEY',
   },
   // Perplexity - OpenAI compatible
-  'perplexity': {
+  perplexity: {
     type: 'openai-compatible',
     baseUrl: 'https://api.perplexity.ai',
     apiKeyEnv: 'PERPLEXITY_API_KEY',
   },
   // DeepInfra - OpenAI compatible
-  'deepinfra': {
+  deepinfra: {
     type: 'openai-compatible',
     baseUrl: 'https://api.deepinfra.com/v1/openai',
     apiKeyEnv: 'DEEPINFRA_API_KEY',
   },
   // Azure OpenAI (needs custom baseUrl per deployment)
-  'azure': {
+  azure: {
     type: 'openai',
     apiKeyEnv: 'AZURE_OPENAI_API_KEY',
   },
   // Alibaba (DashScope) - from models.dev
-  'alibaba': {
+  alibaba: {
     type: 'openai-compatible',
     baseUrl: 'https://dashscope-intl.aliyuncs.com/compatible-mode/v1',
     apiKeyEnv: 'DASHSCOPE_API_KEY',
@@ -125,19 +128,19 @@ const CANONICAL_CONFIGS: Record<string, Partial<Pick<ProviderConfig, 'type' | 'b
     apiKeyEnv: 'DASHSCOPE_API_KEY',
   },
   // Nvidia - from models.dev
-  'nvidia': {
+  nvidia: {
     type: 'openai-compatible',
     baseUrl: 'https://integrate.api.nvidia.com/v1',
     apiKeyEnv: 'NVIDIA_API_KEY',
   },
   // Vultr - from models.dev
-  'vultr': {
+  vultr: {
     type: 'openai-compatible',
     baseUrl: 'https://api.vultrinference.com/v1',
     apiKeyEnv: 'VULTR_API_KEY',
   },
   // Moonshot AI
-  'moonshotai': {
+  moonshotai: {
     type: 'openai-compatible',
     baseUrl: 'https://api.moonshot.ai/v1',
     apiKeyEnv: 'MOONSHOT_API_KEY',
@@ -154,7 +157,7 @@ const CANONICAL_CONFIGS: Record<string, Partial<Pick<ProviderConfig, 'type' | 'b
     apiKeyEnv: 'GITHUB_TOKEN',
   },
   // Hugging Face
-  'huggingface': {
+  huggingface: {
     type: 'openai-compatible',
     baseUrl: 'https://api-inference.huggingface.co/v1',
     apiKeyEnv: 'HF_TOKEN',
@@ -309,9 +312,9 @@ function mapCapabilities(model: ModelsDevModel): ModelCapability[] {
  */
 function getProviderType(providerId: string): ProviderType {
   const typeMap: Record<string, ProviderType> = {
-    'openai': 'openai',
-    'anthropic': 'anthropic',
-    'google': 'google',
+    openai: 'openai',
+    anthropic: 'anthropic',
+    google: 'google',
     'google-vertex': 'google',
     'google-vertex-anthropic': 'anthropic',
   };
@@ -382,9 +385,9 @@ function convertProvider(providerId: string, provider: ModelsDevProvider): Provi
     apiKeyEnv,
     features: {
       streaming: true,
-      toolUse: models.some(m => m.capabilities.includes('function_calling')),
-      vision: models.some(m => m.capabilities.includes('vision')),
-      jsonMode: models.some(m => m.capabilities.includes('json_mode')),
+      toolUse: models.some((m) => m.capabilities.includes('function_calling')),
+      vision: models.some((m) => m.capabilities.includes('vision')),
+      jsonMode: models.some((m) => m.capabilities.includes('json_mode')),
       systemMessage: true,
     },
     models,
@@ -503,11 +506,13 @@ export async function syncProviders(
 /**
  * Get provider list from models.dev without syncing
  */
-export async function listModelsDevProviders(): Promise<{
-  id: string;
-  name: string;
-  modelCount: number;
-}[]> {
+export async function listModelsDevProviders(): Promise<
+  {
+    id: string;
+    name: string;
+    modelCount: number;
+  }[]
+> {
   const data = await fetchModelsDevApi();
 
   return Object.entries(data)
@@ -516,6 +521,6 @@ export async function listModelsDevProviders(): Promise<{
       name: provider.name ?? id,
       modelCount: provider.models ? Object.keys(provider.models).length : 0,
     }))
-    .filter(p => p.modelCount > 0)
+    .filter((p) => p.modelCount > 0)
     .sort((a, b) => b.modelCount - a.modelCount);
 }

@@ -141,7 +141,12 @@ describe('Memories Routes', () => {
   describe('POST /memories', () => {
     it('creates a new memory', async () => {
       mockMemoryService.rememberMemory.mockResolvedValue({
-        memory: { id: 'm1', content: 'User prefers dark mode', type: 'preference', importance: 0.6 },
+        memory: {
+          id: 'm1',
+          content: 'User prefers dark mode',
+          type: 'preference',
+          importance: 0.6,
+        },
         deduplicated: false,
       });
 
@@ -295,7 +300,14 @@ describe('Memories Routes', () => {
   describe('GET /memories/search', () => {
     it('searches memories by query (hybrid mode by default)', async () => {
       mockMemoryService.hybridSearch.mockResolvedValue([
-        { id: 'm1', content: 'Matching memory', type: 'fact', importance: 0.9, score: 0.85, matchType: 'fts' },
+        {
+          id: 'm1',
+          content: 'Matching memory',
+          type: 'fact',
+          importance: 0.9,
+          score: 0.85,
+          matchType: 'fts',
+        },
       ]);
 
       const res = await app.request('/memories/search?q=matching');

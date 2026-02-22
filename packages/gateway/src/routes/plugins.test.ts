@@ -26,13 +26,9 @@ const samplePlugin = {
     category: 'utility',
     icon: 'wrench',
     docs: 'https://example.com/docs',
-    pluginConfigSchema: [
-      { name: 'apiUrl', type: 'text', label: 'API URL' },
-    ],
+    pluginConfigSchema: [{ name: 'apiUrl', type: 'text', label: 'API URL' }],
     defaultConfig: { apiUrl: 'http://localhost' },
-    requiredServices: [
-      { name: 'gmail', displayName: 'Gmail', category: 'email' },
-    ],
+    requiredServices: [{ name: 'gmail', displayName: 'Gmail', category: 'email' }],
   },
   status: 'enabled' as const,
   config: {
@@ -45,9 +41,7 @@ const samplePlugin = {
     ['search', { definition: { name: 'search', description: 'Search things', parameters: {} } }],
     ['fetch', { definition: { name: 'fetch', description: 'Fetch data', parameters: {} } }],
   ]),
-  handlers: [
-    { name: 'onMessage', description: 'Handle messages', priority: 1 },
-  ],
+  handlers: [{ name: 'onMessage', description: 'Handle messages', priority: 1 }],
   lifecycle: {
     onConfigChange: vi.fn(),
   },
@@ -57,7 +51,10 @@ const mockPluginRegistry = {
   getAll: vi.fn(() => [samplePlugin]),
   get: vi.fn((id: string) => (id === 'plugin-test' ? samplePlugin : null)),
   getAllTools: vi.fn(() => [
-    { pluginId: 'plugin-test', definition: { name: 'search', description: 'Search things', parameters: {} } },
+    {
+      pluginId: 'plugin-test',
+      definition: { name: 'search', description: 'Search things', parameters: {} },
+    },
   ]),
   enable: vi.fn(async (id: string) => id === 'plugin-test'),
   disable: vi.fn(async (id: string) => id === 'plugin-test'),
@@ -125,7 +122,9 @@ describe('Plugins Routes', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockPluginRegistry.getAll.mockReturnValue([samplePlugin]);
-    mockPluginRegistry.get.mockImplementation((id: string) => (id === 'plugin-test' ? samplePlugin : null));
+    mockPluginRegistry.get.mockImplementation((id: string) =>
+      id === 'plugin-test' ? samplePlugin : null
+    );
     mockPluginRegistry.enable.mockImplementation(async (id: string) => id === 'plugin-test');
     mockPluginRegistry.disable.mockImplementation(async (id: string) => id === 'plugin-test');
     mockConfigServicesRepo.getEntries.mockReturnValue([]);

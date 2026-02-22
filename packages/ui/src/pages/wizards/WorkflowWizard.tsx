@@ -30,8 +30,18 @@ const WORKFLOW_TEMPLATES = [
     desc: 'Summarize recent activity and create a daily briefing',
     nodes: [
       { id: 'n1', type: 'start', label: 'Trigger', config: {} },
-      { id: 'n2', type: 'tool', label: 'Get Recent Activity', config: { toolName: 'get_recent_conversations' } },
-      { id: 'n3', type: 'ai', label: 'Summarize', config: { prompt: 'Summarize the recent activity into a brief daily summary' } },
+      {
+        id: 'n2',
+        type: 'tool',
+        label: 'Get Recent Activity',
+        config: { toolName: 'get_recent_conversations' },
+      },
+      {
+        id: 'n3',
+        type: 'ai',
+        label: 'Summarize',
+        config: { prompt: 'Summarize the recent activity into a brief daily summary' },
+      },
       { id: 'n4', type: 'end', label: 'Output', config: {} },
     ],
     edges: [
@@ -47,7 +57,12 @@ const WORKFLOW_TEMPLATES = [
     nodes: [
       { id: 'n1', type: 'start', label: 'Input Query', config: {} },
       { id: 'n2', type: 'tool', label: 'Web Search', config: { toolName: 'web_search' } },
-      { id: 'n3', type: 'ai', label: 'Analyze & Summarize', config: { prompt: 'Analyze the search results and create a comprehensive summary' } },
+      {
+        id: 'n3',
+        type: 'ai',
+        label: 'Analyze & Summarize',
+        config: { prompt: 'Analyze the search results and create a comprehensive summary' },
+      },
       { id: 'n4', type: 'end', label: 'Report', config: {} },
     ],
     edges: [
@@ -67,27 +82,45 @@ export function WorkflowWizard({ onComplete, onCancel }: Props) {
   const [method, setMethod] = useState<Method | null>(null);
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
   const [copilotPrompt, setCopilotPrompt] = useState('');
-  const [copilotGenerated, setCopilotGenerated] = useState<{ nodes: unknown[]; edges: unknown[] } | null>(null);
+  const [copilotGenerated, setCopilotGenerated] = useState<{
+    nodes: unknown[];
+    edges: unknown[];
+  } | null>(null);
   const [aiGenerating, setAiGenerating] = useState(false);
   const aiAbortRef = useRef<AbortController | null>(null);
   const [manualDefinition, setManualDefinition] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
-  const [result, setResult] = useState<{ ok: boolean; workflowId?: string; error?: string } | null>(null);
+  const [result, setResult] = useState<{ ok: boolean; workflowId?: string; error?: string } | null>(
+    null
+  );
 
   const canGoNext = useMemo(() => {
     switch (step) {
-      case 0: return name.trim().length >= 2;
-      case 1: return !!method;
+      case 0:
+        return name.trim().length >= 2;
+      case 1:
+        return !!method;
       case 2: {
         if (method === 'template') return !!selectedTemplate;
         if (method === 'copilot') return !!copilotGenerated || copilotPrompt.trim().length >= 10;
         if (method === 'manual') return manualDefinition.trim().length >= 10;
         return false;
       }
-      case 3: return result?.ok === true;
-      default: return false;
+      case 3:
+        return result?.ok === true;
+      default:
+        return false;
     }
-  }, [step, name, method, selectedTemplate, copilotPrompt, copilotGenerated, manualDefinition, result]);
+  }, [
+    step,
+    name,
+    method,
+    selectedTemplate,
+    copilotPrompt,
+    copilotGenerated,
+    manualDefinition,
+    result,
+  ]);
 
   const generateWorkflow = async () => {
     if (!copilotPrompt.trim()) return;
@@ -115,7 +148,10 @@ Return ONLY the JSON object, no explanations.`;
 
       const text = await aiGenerate(prompt, ctrl.signal);
       // Extract JSON object
-      let cleaned = text.replace(/```(?:json)?\s*/gi, '').replace(/```/g, '').trim();
+      let cleaned = text
+        .replace(/```(?:json)?\s*/gi, '')
+        .replace(/```/g, '')
+        .trim();
       const start = cleaned.indexOf('{');
       const end = cleaned.lastIndexOf('}');
       if (start !== -1 && end > start) {
@@ -147,7 +183,10 @@ Return ONLY the JSON object, no explanations.`;
 
         if (method === 'template') {
           const tmpl = WORKFLOW_TEMPLATES.find((t) => t.id === selectedTemplate);
-          if (tmpl) { nodes = tmpl.nodes; edges = tmpl.edges; }
+          if (tmpl) {
+            nodes = tmpl.nodes;
+            edges = tmpl.edges;
+          }
         } else if (method === 'copilot' && copilotGenerated) {
           nodes = copilotGenerated.nodes;
           edges = copilotGenerated.edges;
@@ -163,7 +202,10 @@ Return ONLY the JSON object, no explanations.`;
         setResult({ ok: true, workflowId: workflow.id });
         setStep(3);
       } catch (err) {
-        setResult({ ok: false, error: err instanceof Error ? err.message : 'Failed to create workflow' });
+        setResult({
+          ok: false,
+          error: err instanceof Error ? err.message : 'Failed to create workflow',
+        });
         setStep(3);
       } finally {
         setIsProcessing(false);
@@ -213,7 +255,10 @@ Return ONLY the JSON object, no explanations.`;
             </div>
             <div>
               <label className="block text-sm font-medium text-text-primary dark:text-dark-text-primary mb-2">
-                Description <span className="text-text-muted dark:text-dark-text-muted font-normal">(optional)</span>
+                Description{' '}
+                <span className="text-text-muted dark:text-dark-text-muted font-normal">
+                  (optional)
+                </span>
               </label>
               <input
                 type="text"
@@ -238,11 +283,26 @@ Return ONLY the JSON object, no explanations.`;
           </p>
 
           <div className="space-y-3">
-            {([
-              { id: 'template' as const, label: 'Start from Template', desc: 'Pick a pre-built workflow and customize it', icon: Check },
-              { id: 'copilot' as const, label: 'AI Copilot', desc: 'Describe what you want and let AI generate the workflow', icon: Sparkles },
-              { id: 'manual' as const, label: 'Manual JSON', desc: 'Write the workflow definition in JSON for full control', icon: GitBranch },
-            ]).map((m) => {
+            {[
+              {
+                id: 'template' as const,
+                label: 'Start from Template',
+                desc: 'Pick a pre-built workflow and customize it',
+                icon: Check,
+              },
+              {
+                id: 'copilot' as const,
+                label: 'AI Copilot',
+                desc: 'Describe what you want and let AI generate the workflow',
+                icon: Sparkles,
+              },
+              {
+                id: 'manual' as const,
+                label: 'Manual JSON',
+                desc: 'Write the workflow definition in JSON for full control',
+                icon: GitBranch,
+              },
+            ].map((m) => {
               const Icon = m.icon;
               return (
                 <button
@@ -256,8 +316,12 @@ Return ONLY the JSON object, no explanations.`;
                 >
                   <Icon className="w-5 h-5 text-primary flex-shrink-0" />
                   <div>
-                    <span className="text-sm font-medium text-text-primary dark:text-dark-text-primary">{m.label}</span>
-                    <p className="text-xs text-text-muted dark:text-dark-text-muted mt-0.5">{m.desc}</p>
+                    <span className="text-sm font-medium text-text-primary dark:text-dark-text-primary">
+                      {m.label}
+                    </span>
+                    <p className="text-xs text-text-muted dark:text-dark-text-muted mt-0.5">
+                      {m.desc}
+                    </p>
                   </div>
                 </button>
               );
@@ -288,8 +352,12 @@ Return ONLY the JSON object, no explanations.`;
                         : 'border-border dark:border-dark-border hover:border-primary/40'
                     }`}
                   >
-                    <span className="text-sm font-medium text-text-primary dark:text-dark-text-primary">{t.name}</span>
-                    <p className="text-xs text-text-muted dark:text-dark-text-muted mt-1">{t.desc}</p>
+                    <span className="text-sm font-medium text-text-primary dark:text-dark-text-primary">
+                      {t.name}
+                    </span>
+                    <p className="text-xs text-text-muted dark:text-dark-text-muted mt-1">
+                      {t.desc}
+                    </p>
                     <p className="text-xs text-primary mt-2">{t.nodes.length} nodes</p>
                   </button>
                 ))}
@@ -307,7 +375,10 @@ Return ONLY the JSON object, no explanations.`;
               </p>
               <textarea
                 value={copilotPrompt}
-                onChange={(e) => { setCopilotPrompt(e.target.value); setCopilotGenerated(null); }}
+                onChange={(e) => {
+                  setCopilotPrompt(e.target.value);
+                  setCopilotGenerated(null);
+                }}
                 placeholder="e.g., Every morning, check my calendar, summarize today's meetings, and send me a briefing message..."
                 rows={4}
                 className="w-full px-3 py-2.5 rounded-lg border border-border dark:border-dark-border bg-bg-primary dark:bg-dark-bg-primary text-text-primary dark:text-dark-text-primary text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 resize-y"
@@ -328,11 +399,16 @@ Return ONLY the JSON object, no explanations.`;
                     Workflow Generated — {copilotGenerated.nodes.length} nodes
                   </p>
                   <div className="flex flex-wrap gap-2">
-                    {(copilotGenerated.nodes as Array<{ label?: string; type?: string }>).map((n, i) => (
-                      <span key={i} className="px-2 py-1 text-xs rounded bg-bg-tertiary dark:bg-dark-bg-tertiary text-text-secondary dark:text-dark-text-secondary">
-                        {n.label || n.type || `Node ${i + 1}`}
-                      </span>
-                    ))}
+                    {(copilotGenerated.nodes as Array<{ label?: string; type?: string }>).map(
+                      (n, i) => (
+                        <span
+                          key={i}
+                          className="px-2 py-1 text-xs rounded bg-bg-tertiary dark:bg-dark-bg-tertiary text-text-secondary dark:text-dark-text-secondary"
+                        >
+                          {n.label || n.type || `Node ${i + 1}`}
+                        </span>
+                      )
+                    )}
                   </div>
                   <p className="text-xs text-text-muted dark:text-dark-text-muted mt-2">
                     Click Next to create. You can refine in the visual editor.
@@ -354,7 +430,8 @@ Return ONLY the JSON object, no explanations.`;
                 Manual Definition
               </h2>
               <p className="text-sm text-text-muted dark:text-dark-text-muted mb-4">
-                Define your workflow nodes and edges. The workflow editor provides a better visual experience.
+                Define your workflow nodes and edges. The workflow editor provides a better visual
+                experience.
               </p>
               <textarea
                 value={manualDefinition}
@@ -377,8 +454,19 @@ Return ONLY the JSON object, no explanations.`;
           {!result && (
             <div className="flex flex-col items-center gap-3">
               <svg className="w-10 h-10 animate-spin text-primary" viewBox="0 0 24 24" fill="none">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                />
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                />
               </svg>
               <p className="text-text-muted dark:text-dark-text-muted">Creating workflow...</p>
             </div>
@@ -408,7 +496,10 @@ Return ONLY the JSON object, no explanations.`;
               </h3>
               <p className="text-sm text-error max-w-md mx-auto">{result.error}</p>
               <button
-                onClick={() => { setStep(2); setResult(null); }}
+                onClick={() => {
+                  setStep(2);
+                  setResult(null);
+                }}
                 className="mt-3 text-sm text-primary hover:underline"
               >
                 Go back and try again
@@ -428,7 +519,8 @@ Return ONLY the JSON object, no explanations.`;
             Workflow Ready!
           </h2>
           <p className="text-sm text-text-muted dark:text-dark-text-muted mb-6 max-w-md mx-auto">
-            <strong>{name}</strong> has been created. Open it in the editor to add nodes and configure triggers.
+            <strong>{name}</strong> has been created. Open it in the editor to add nodes and
+            configure triggers.
           </p>
           <div className="flex justify-center gap-3">
             {result?.workflowId && (

@@ -11,7 +11,12 @@ import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
 import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
-import type { ToolDefinition, ToolExecutionResult, ToolExecutor, IMcpClientService } from '@ownpilot/core';
+import type {
+  ToolDefinition,
+  ToolExecutionResult,
+  ToolExecutor,
+  IMcpClientService,
+} from '@ownpilot/core';
 import { getMcpServersRepo, type McpServerRecord } from '../db/repositories/mcp-servers.js';
 import { getSharedToolRegistry } from './tool-executor.js';
 import { getLog } from './log.js';
@@ -61,17 +66,14 @@ class McpClientService implements IMcpClientService {
       transport = this.createTransport(server);
 
       // Create MCP client
-      const client = new Client(
-        { name: 'OwnPilot', version: '1.0.0' },
-        { capabilities: {} },
-      );
+      const client = new Client({ name: 'OwnPilot', version: '1.0.0' }, { capabilities: {} });
 
       // Connect
       await client.connect(transport);
 
       // List available tools
       const result = await client.listTools();
-      const mcpTools: McpToolInfo[] = (result.tools ?? []).map(t => ({
+      const mcpTools: McpToolInfo[] = (result.tools ?? []).map((t) => ({
         name: t.name,
         description: t.description,
         inputSchema: t.inputSchema as Record<string, unknown>,
@@ -96,7 +98,11 @@ class McpClientService implements IMcpClientService {
     } catch (err) {
       // Clean up transport if connection was established but subsequent steps failed
       if (transport) {
-        try { await transport.close?.(); } catch { /* ignore cleanup error */ }
+        try {
+          await transport.close?.();
+        } catch {
+          /* ignore cleanup error */
+        }
       }
       const message = err instanceof Error ? err.message : String(err);
       await repo.updateStatus(server.id, 'error', message);
@@ -140,7 +146,7 @@ class McpClientService implements IMcpClientService {
    */
   async disconnectAll(): Promise<void> {
     const names = Array.from(this.connections.keys());
-    await Promise.allSettled(names.map(name => this.disconnect(name)));
+    await Promise.allSettled(names.map((name) => this.disconnect(name)));
   }
 
   /**
@@ -160,7 +166,11 @@ class McpClientService implements IMcpClientService {
   /**
    * Call a tool on a connected MCP server.
    */
-  async callTool(serverName: string, toolName: string, args: Record<string, unknown>): Promise<unknown> {
+  async callTool(
+    serverName: string,
+    toolName: string,
+    args: Record<string, unknown>
+  ): Promise<unknown> {
     const conn = this.connections.get(serverName);
     if (!conn) {
       throw new Error(`MCP server "${serverName}" is not connected`);
@@ -190,9 +200,7 @@ class McpClientService implements IMcpClientService {
 
     log.info(`Auto-connecting ${servers.length} MCP server(s)...`);
 
-    const results = await Promise.allSettled(
-      servers.map(server => this.connect(server)),
-    );
+    const results = await Promise.allSettled(servers.map((server) => this.connect(server)));
 
     let connected = 0;
     let failed = 0;
@@ -231,7 +239,7 @@ class McpClientService implements IMcpClientService {
           command: server.command,
           args: server.args,
           env: {
-            ...process.env as Record<string, string>,
+            ...(process.env as Record<string, string>),
             ...server.env,
           },
           stderr: 'pipe',
@@ -280,7 +288,10 @@ class McpClientService implements IMcpClientService {
     const serverName = server.name;
 
     // Read per-tool settings from server metadata
-    const toolSettings = (server.metadata?.toolSettings ?? {}) as Record<string, { workflowUsable?: boolean }>;
+    const toolSettings = (server.metadata?.toolSettings ?? {}) as Record<
+      string,
+      { workflowUsable?: boolean }
+    >;
 
     for (const tool of mcpTools) {
       const overrides = toolSettings[tool.name];
@@ -293,7 +304,8 @@ class McpClientService implements IMcpClientService {
         },
         category: 'MCP',
         tags: ['mcp', serverName],
-        workflowUsable: overrides?.workflowUsable !== undefined ? overrides.workflowUsable : undefined,
+        workflowUsable:
+          overrides?.workflowUsable !== undefined ? overrides.workflowUsable : undefined,
       };
 
       const executor = async (args: Record<string, unknown>): Promise<ToolExecutionResult> => {
@@ -303,7 +315,11 @@ class McpClientService implements IMcpClientService {
           if (typeof result === 'string') {
             content = result;
           } else {
-            try { content = JSON.stringify(result, null, 2); } catch { content = String(result); }
+            try {
+              content = JSON.stringify(result, null, 2);
+            } catch {
+              content = String(result);
+            }
           }
           return { content };
         } catch (err) {

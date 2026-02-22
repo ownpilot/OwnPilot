@@ -48,7 +48,7 @@ function makeBackend(): InMemoryCredentialBackend {
 function makeStore(
   key = FIXED_KEY,
   backend?: InMemoryCredentialBackend,
-  auditLog = false,
+  auditLog = false
 ): UserCredentialStore {
   return new UserCredentialStore({
     encryptionKey: key,
@@ -1203,9 +1203,18 @@ describe('loadCredentialsFromEnv()', () => {
   it('resolves without error when no env vars are set', async () => {
     // Ensure all known env vars are absent
     const keysToRemove = [
-      'OPENAI_API_KEY', 'ANTHROPIC_API_KEY', 'GOOGLE_AI_API_KEY', 'DEEPSEEK_API_KEY',
-      'GROQ_API_KEY', 'TOGETHER_API_KEY', 'FIREWORKS_API_KEY', 'MISTRAL_API_KEY',
-      'XAI_API_KEY', 'PERPLEXITY_API_KEY', 'ZHIPU_API_KEY', 'TELEGRAM_BOT_TOKEN',
+      'OPENAI_API_KEY',
+      'ANTHROPIC_API_KEY',
+      'GOOGLE_AI_API_KEY',
+      'DEEPSEEK_API_KEY',
+      'GROQ_API_KEY',
+      'TOGETHER_API_KEY',
+      'FIREWORKS_API_KEY',
+      'MISTRAL_API_KEY',
+      'XAI_API_KEY',
+      'PERPLEXITY_API_KEY',
+      'ZHIPU_API_KEY',
+      'TELEGRAM_BOT_TOKEN',
     ];
     for (const key of keysToRemove) {
       delete process.env[key];
@@ -1240,9 +1249,19 @@ describe('Edge cases', () => {
   it('stores credentials for all supported CredentialProvider values', async () => {
     const store = makeStore();
     const providers: CredentialProvider[] = [
-      'openai', 'anthropic', 'google', 'deepseek', 'groq',
-      'together', 'fireworks', 'mistral', 'xai', 'perplexity',
-      'zhipu', 'telegram', 'custom',
+      'openai',
+      'anthropic',
+      'google',
+      'deepseek',
+      'groq',
+      'together',
+      'fireworks',
+      'mistral',
+      'xai',
+      'perplexity',
+      'zhipu',
+      'telegram',
+      'custom',
     ];
     for (const provider of providers) {
       await store.store(USER_A, provider, 'api_key', `key-for-${provider}`);
@@ -1254,8 +1273,13 @@ describe('Edge cases', () => {
   it('stores credentials for all supported CredentialType values', async () => {
     const store = makeStore();
     const types: CredentialType[] = [
-      'api_key', 'oauth_token', 'oauth_refresh', 'basic_auth',
-      'bearer_token', 'certificate', 'custom',
+      'api_key',
+      'oauth_token',
+      'oauth_refresh',
+      'basic_auth',
+      'bearer_token',
+      'certificate',
+      'custom',
     ];
     for (const [i, type] of types.entries()) {
       // Use unique providers to avoid key conflicts

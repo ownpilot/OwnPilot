@@ -165,9 +165,9 @@ describe('WorkflowsRepository', () => {
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
       mockAdapter.queryOne.mockResolvedValueOnce(null);
 
-      await expect(
-        repo.create({ name: 'Bad', nodes: [], edges: [] })
-      ).rejects.toThrow('Failed to create workflow');
+      await expect(repo.create({ name: 'Bad', nodes: [], edges: [] })).rejects.toThrow(
+        'Failed to create workflow'
+      );
     });
   });
 
@@ -188,11 +188,14 @@ describe('WorkflowsRepository', () => {
 
     it('should map workflow row correctly', async () => {
       const nodesJson = JSON.stringify([
-        { id: 'n1', type: 'tool', position: { x: 0, y: 0 }, data: { toolName: 'test', toolArgs: {}, label: 'Test' } },
+        {
+          id: 'n1',
+          type: 'tool',
+          position: { x: 0, y: 0 },
+          data: { toolName: 'test', toolArgs: {}, label: 'Test' },
+        },
       ]);
-      const edgesJson = JSON.stringify([
-        { id: 'e1', source: 'n1', target: 'n2' },
-      ]);
+      const edgesJson = JSON.stringify([{ id: 'e1', source: 'n1', target: 'n2' }]);
       const variablesJson = JSON.stringify({ apiKey: 'secret' });
 
       const row = makeWorkflowRow({
@@ -215,7 +218,12 @@ describe('WorkflowsRepository', () => {
 
       // JSON fields parsed
       expect(result!.nodes).toEqual([
-        { id: 'n1', type: 'tool', position: { x: 0, y: 0 }, data: { toolName: 'test', toolArgs: {}, label: 'Test' } },
+        {
+          id: 'n1',
+          type: 'tool',
+          position: { x: 0, y: 0 },
+          data: { toolName: 'test', toolArgs: {}, label: 'Test' },
+        },
       ]);
       expect(result!.edges).toEqual([{ id: 'e1', source: 'n1', target: 'n2' }]);
       expect(result!.variables).toEqual({ apiKey: 'secret' });
@@ -312,7 +320,14 @@ describe('WorkflowsRepository', () => {
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
       mockAdapter.queryOne.mockResolvedValueOnce(makeWorkflowRow());
 
-      const nodes = [{ id: 'n1', type: 'tool', position: { x: 10, y: 20 }, data: { toolName: 't', toolArgs: {}, label: 'L' } }];
+      const nodes = [
+        {
+          id: 'n1',
+          type: 'tool',
+          position: { x: 10, y: 20 },
+          data: { toolName: 't', toolArgs: {}, label: 'L' },
+        },
+      ];
       const edges = [{ id: 'e1', source: 'n1', target: 'n2' }];
       const variables = { envKey: 'envVal' };
 
@@ -439,9 +454,7 @@ describe('WorkflowsRepository', () => {
     });
 
     it('should map all rows through mapWorkflow', async () => {
-      const rows = [
-        makeWorkflowRow({ id: 'wf-a', nodes: '[{"id":"n1"}]', variables: '{"x":1}' }),
-      ];
+      const rows = [makeWorkflowRow({ id: 'wf-a', nodes: '[{"id":"n1"}]', variables: '{"x":1}' })];
       mockAdapter.query.mockResolvedValueOnce(rows);
 
       const result = await repo.getPage(5, 0);
@@ -536,9 +549,9 @@ describe('WorkflowsRepository', () => {
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
       mockAdapter.queryOne.mockResolvedValueOnce(null);
 
-      await expect(
-        repo.createLog('wf-1', 'Bad Workflow')
-      ).rejects.toThrow('Failed to create workflow log');
+      await expect(repo.createLog('wf-1', 'Bad Workflow')).rejects.toThrow(
+        'Failed to create workflow log'
+      );
     });
   });
 

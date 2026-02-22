@@ -18,7 +18,9 @@ export type ZhipuProvider = OpenAICompatibleProvider;
 /**
  * Create Zhipu provider
  */
-export function createZhipuProvider(config?: LegacyProviderConfig): OpenAICompatibleProvider | null {
+export function createZhipuProvider(
+  config?: LegacyProviderConfig
+): OpenAICompatibleProvider | null {
   if (config?.apiKey) {
     return OpenAICompatibleProvider.fromProviderIdWithKey('zhipu', config.apiKey);
   }

@@ -26,10 +26,10 @@ interface ExtensionRow {
   format: string;
   icon: string | null;
   author_name: string | null;
-  manifest: string;         // JSONB string
+  manifest: string; // JSONB string
   status: string;
   source_path: string | null;
-  settings: string;          // JSONB string
+  settings: string; // JSONB string
   error_message: string | null;
   tool_count: number;
   trigger_count: number;
@@ -103,7 +103,13 @@ function rowToRecord(row: ExtensionRow): ExtensionRecord {
     format: (row.format ?? 'ownpilot') as ExtensionRecord['format'],
     icon: row.icon ?? undefined,
     authorName: row.author_name ?? undefined,
-    manifest: parseJsonField<ExtensionManifest>(row.manifest, { id: '', name: '', version: '', description: '', tools: [] }),
+    manifest: parseJsonField<ExtensionManifest>(row.manifest, {
+      id: '',
+      name: '',
+      version: '',
+      description: '',
+      tools: [],
+    }),
     status: row.status as ExtensionRecord['status'],
     sourcePath: row.source_path ?? undefined,
     settings: parseJsonField<Record<string, unknown>>(row.settings, {}),
@@ -130,15 +136,14 @@ export class ExtensionsRepository extends BaseRepository {
 
   async refreshCache(): Promise<void> {
     const rows = await this.query<ExtensionRow>('SELECT * FROM user_extensions');
-    cache = new Map(rows.map(r => [r.id, rowToRecord(r)]));
+    cache = new Map(rows.map((r) => [r.id, rowToRecord(r)]));
     cacheInitialized = true;
   }
 
   private async refreshRecordCache(id: string): Promise<void> {
-    const row = await this.queryOne<ExtensionRow>(
-      'SELECT * FROM user_extensions WHERE id = $1',
-      [id],
-    );
+    const row = await this.queryOne<ExtensionRow>('SELECT * FROM user_extensions WHERE id = $1', [
+      id,
+    ]);
     if (row) {
       cache.set(id, rowToRecord(row));
     } else {
@@ -167,7 +172,7 @@ export class ExtensionsRepository extends BaseRepository {
   }
 
   getEnabled(): ExtensionRecord[] {
-    return this.getAll().filter(p => p.status === 'enabled');
+    return this.getAll().filter((p) => p.status === 'enabled');
   }
 
   // ---------------------------------------------------------------------------
@@ -206,8 +211,8 @@ export class ExtensionsRepository extends BaseRepository {
         input.sourcePath ?? null,
         JSON.stringify(input.settings ?? {}),
         input.toolCount ?? input.manifest.tools.length,
-        input.triggerCount ?? (input.manifest.triggers?.length ?? 0),
-      ],
+        input.triggerCount ?? input.manifest.triggers?.length ?? 0,
+      ]
     );
 
     await this.refreshRecordCache(input.id);
@@ -217,27 +222,30 @@ export class ExtensionsRepository extends BaseRepository {
   async updateStatus(
     id: string,
     status: ExtensionRecord['status'],
-    errorMessage?: string,
+    errorMessage?: string
   ): Promise<ExtensionRecord | null> {
     const existing = cache.get(id);
     if (!existing) return null;
 
     await this.execute(
       'UPDATE user_extensions SET status = $1, error_message = $2, updated_at = NOW() WHERE id = $3',
-      [status, errorMessage ?? null, id],
+      [status, errorMessage ?? null, id]
     );
 
     await this.refreshRecordCache(id);
     return cache.get(id) ?? null;
   }
 
-  async updateSettings(id: string, settings: Record<string, unknown>): Promise<ExtensionRecord | null> {
+  async updateSettings(
+    id: string,
+    settings: Record<string, unknown>
+  ): Promise<ExtensionRecord | null> {
     const existing = cache.get(id);
     if (!existing) return null;
 
     await this.execute(
       'UPDATE user_extensions SET settings = $1, updated_at = NOW() WHERE id = $2',
-      [JSON.stringify(settings), id],
+      [JSON.stringify(settings), id]
     );
 
     await this.refreshRecordCache(id);

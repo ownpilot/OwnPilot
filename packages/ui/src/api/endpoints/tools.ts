@@ -10,22 +10,23 @@ import type { Tool } from '../../types';
  * Matches the gateway's grouped tools response format
  */
 interface GroupedToolsResponse {
-  categories: Record<string, {
-    info: {
-      icon: string;
-      description: string;
-    };
-    tools: Tool[];
-  }>;
+  categories: Record<
+    string,
+    {
+      info: {
+        icon: string;
+        description: string;
+      };
+      tools: Tool[];
+    }
+  >;
   totalTools: number;
 }
 
 export const toolsApi = {
   list: () => apiClient.get<Tool[]>('/tools'),
-  listGrouped: () =>
-    apiClient.get<GroupedToolsResponse>('/tools', { params: { grouped: 'true' } }),
+  listGrouped: () => apiClient.get<GroupedToolsResponse>('/tools', { params: { grouped: 'true' } }),
   execute: (toolName: string, args: Record<string, unknown>) =>
     apiClient.post<unknown>(`/tools/${toolName}/execute`, { arguments: args }),
-  source: (toolName: string) =>
-    apiClient.get<{ source: string }>(`/tools/${toolName}/source`),
+  source: (toolName: string) => apiClient.get<{ source: string }>(`/tools/${toolName}/source`),
 };

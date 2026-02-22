@@ -58,11 +58,11 @@ This document provides a comprehensive reference for the OwnPilot agent system. 
 
 The OwnPilot agent system is a modular, multi-provider AI framework that supports tool-calling loops, dynamic prompt composition, persistent memory injection, fine-grained permissions, and multi-agent coordination. It is organized into three packages:
 
-| Package | Role |
-|---------|------|
-| `packages/core` | All agent abstractions, providers, tools, memory, permissions, prompt composition |
+| Package            | Role                                                                                    |
+| ------------------ | --------------------------------------------------------------------------------------- |
+| `packages/core`    | All agent abstractions, providers, tools, memory, permissions, prompt composition       |
 | `packages/gateway` | HTTP API (Hono), database persistence, tool executor wiring, agent lifecycle management |
-| `packages/ui` | React frontend for agent configuration and chat |
+| `packages/ui`      | React frontend for agent configuration and chat                                         |
 
 The system provides two parallel agent abstractions:
 
@@ -85,10 +85,13 @@ The `Agent` class is the primary runtime abstraction used in production. It owns
 class Agent {
   readonly name: string;
 
-  constructor(config: AgentConfig, options?: {
-    tools?: ToolRegistry;
-    memory?: ConversationMemory;
-  });
+  constructor(
+    config: AgentConfig,
+    options?: {
+      tools?: ToolRegistry;
+      memory?: ConversationMemory;
+    }
+  );
 
   // State
   isReady(): boolean;
@@ -132,10 +135,10 @@ class Agent {
 
 **Default limits:**
 
-| Parameter | Default |
-|-----------|---------|
-| `maxTurns` | 50 |
-| `maxToolCalls` | 200 |
+| Parameter      | Default |
+| -------------- | ------- |
+| `maxTurns`     | 50      |
+| `maxToolCalls` | 200     |
 
 ---
 
@@ -155,8 +158,16 @@ class AgentOrchestrator extends EventEmitter {
   setToolRegistry(registry: ToolRegistry): void;
 
   // Execution
-  execute(userMessage: string, history?: Message[], metadata?: Record<string, unknown>): Promise<OrchestratorContext>;
-  stream(userMessage: string, history?: Message[], metadata?: Record<string, unknown>): AsyncGenerator<AgentStep, OrchestratorContext>;
+  execute(
+    userMessage: string,
+    history?: Message[],
+    metadata?: Record<string, unknown>
+  ): Promise<OrchestratorContext>;
+  stream(
+    userMessage: string,
+    history?: Message[],
+    metadata?: Record<string, unknown>
+  ): AsyncGenerator<AgentStep, OrchestratorContext>;
 
   // Control
   cancel(): void;
@@ -166,22 +177,22 @@ class AgentOrchestrator extends EventEmitter {
 
 **Events emitted:**
 
-| Event | Payload | When |
-|-------|---------|------|
-| `step` | `(step: AgentStep, context)` | Each processing step (thinking, tool_call, tool_result, response) |
-| `tool_call` | `(record: ToolCallRecord, context)` | After each tool execution completes |
-| `iteration` | `(iteration: number, context)` | At the start of each loop iteration |
-| `complete` | `(context)` | When execution finishes successfully |
-| `error` | `(error: Error, context)` | When execution fails |
+| Event       | Payload                             | When                                                              |
+| ----------- | ----------------------------------- | ----------------------------------------------------------------- |
+| `step`      | `(step: AgentStep, context)`        | Each processing step (thinking, tool_call, tool_result, response) |
+| `tool_call` | `(record: ToolCallRecord, context)` | After each tool execution completes                               |
+| `iteration` | `(iteration: number, context)`      | At the start of each loop iteration                               |
+| `complete`  | `(context)`                         | When execution finishes successfully                              |
+| `error`     | `(error: Error, context)`           | When execution fails                                              |
 
 **Default parameters:**
 
-| Parameter | Default |
-|-----------|---------|
-| `maxIterations` | 10 |
-| `maxTokens` | 4096 |
-| `temperature` | 0.7 |
-| `verbose` | false |
+| Parameter       | Default |
+| --------------- | ------- |
+| `maxIterations` | 10      |
+| `maxTokens`     | 4096    |
+| `temperature`   | 0.7     |
+| `verbose`       | false   |
 
 ---
 
@@ -222,7 +233,11 @@ Coordinates multiple agents organized into teams. Each team has a router functio
 class MultiAgentOrchestrator extends EventEmitter {
   registerTeam(team: AgentTeam): void;
   setDefaultTeam(teamName: string): void;
-  execute(message: string, teamName?: string, context?: Record<string, unknown>): Promise<OrchestratorContext>;
+  execute(
+    message: string,
+    teamName?: string,
+    context?: Record<string, unknown>
+  ): Promise<OrchestratorContext>;
   getTeams(): string[];
   getAgents(teamName: string): string[];
 }
@@ -256,9 +271,9 @@ interface AgentConfig {
   systemPrompt: string;
   provider: ProviderConfig;
   model: ModelConfig;
-  tools?: readonly ToolId[];      // Filter: only expose these tools to the LLM
-  maxTurns?: number;              // Default: 50
-  maxToolCalls?: number;          // Default: 200
+  tools?: readonly ToolId[]; // Filter: only expose these tools to the LLM
+  maxTurns?: number; // Default: 50
+  maxToolCalls?: number; // Default: 200
   memory?: MemoryConfig;
 }
 ```
@@ -276,9 +291,9 @@ interface AgentConfig {
   model: string;
   tools: ToolDefinition[];
   toolExecutors: Map<string, ToolExecutor>;
-  maxIterations?: number;         // Default: 10
-  maxTokens?: number;             // Default: 4096
-  temperature?: number;           // Default: 0.7
+  maxIterations?: number; // Default: 10
+  maxTokens?: number; // Default: 4096
+  temperature?: number; // Default: 0.7
   verbose?: boolean;
   userId?: string;
   memoryOptions?: Omit<MemoryInjectionOptions, 'userId' | 'tools'>;
@@ -376,11 +391,13 @@ The `AgentOrchestrator.runExecutionLoop()` follows a similar pattern but operate
 Both abstractions support streaming:
 
 **Agent streaming:**
+
 - The `chat()` method accepts `stream: true` and an `onChunk` callback.
 - Tool calls are accumulated across stream chunks by matching tool call IDs.
 - Streaming and tool-calling are fully interleaved: the agent streams the LLM response, processes any tool calls, then streams the next iteration.
 
 **Orchestrator streaming:**
+
 - The `stream()` method returns an `AsyncGenerator<AgentStep>`.
 - Yields `AgentStep` objects with types: `thinking`, `tool_call`, `tool_result`, `response`.
 - Falls back to non-streaming `complete()` if the provider does not implement `stream()`.
@@ -411,26 +428,26 @@ class PromptComposer {
 
 **PromptComposerOptions:**
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `includeToolDescriptions` | boolean | true | Include tool availability section |
-| `includeUserProfile` | boolean | true | Include user facts, preferences, interests |
-| `includeTimeContext` | boolean | true | Include current date/time and timezone |
-| `includeCapabilities` | boolean | true | Include agent capability list |
-| `maxPromptLength` | number | 16000 | Maximum characters before truncation |
+| Option                    | Type    | Default | Description                                |
+| ------------------------- | ------- | ------- | ------------------------------------------ |
+| `includeToolDescriptions` | boolean | true    | Include tool availability section          |
+| `includeUserProfile`      | boolean | true    | Include user facts, preferences, interests |
+| `includeTimeContext`      | boolean | true    | Include current date/time and timezone     |
+| `includeCapabilities`     | boolean | true    | Include agent capability list              |
+| `maxPromptLength`         | number  | 16000   | Maximum characters before truncation       |
 
 **PromptContext fields:**
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `basePrompt` | string | The agent's core system prompt |
-| `userProfile` | UserProfile | Name, facts, preferences, communication style, interests, goals |
-| `tools` | ToolDefinition[] | Available tools for the tool workflow section |
-| `customInstructions` | string[] | User-defined instructions that must always be followed |
-| `timeContext` | TimeContext | Current time, timezone, day of week, time of day |
-| `capabilities` | AgentCapabilities | Code execution, file access, web, memory, scheduling, autonomy level |
-| `conversationContext` | PromptConversationContext | Message count, topics, current task, previous summary |
-| `workspaceContext` | WorkspaceContext | Workspace directory, home directory, temp directory |
+| Field                 | Type                      | Description                                                          |
+| --------------------- | ------------------------- | -------------------------------------------------------------------- |
+| `basePrompt`          | string                    | The agent's core system prompt                                       |
+| `userProfile`         | UserProfile               | Name, facts, preferences, communication style, interests, goals      |
+| `tools`               | ToolDefinition[]          | Available tools for the tool workflow section                        |
+| `customInstructions`  | string[]                  | User-defined instructions that must always be followed               |
+| `timeContext`         | TimeContext               | Current time, timezone, day of week, time of day                     |
+| `capabilities`        | AgentCapabilities         | Code execution, file access, web, memory, scheduling, autonomy level |
+| `conversationContext` | PromptConversationContext | Message count, topics, current task, previous summary                |
+| `workspaceContext`    | WorkspaceContext          | Workspace directory, home directory, temp directory                  |
 
 ### Prompt Sections
 
@@ -456,13 +473,13 @@ The composer assembles sections in this order:
 
 The autonomy level controls how aggressively the agent acts without user confirmation:
 
-| Level | Behavior |
-|-------|----------|
-| `none` | Ask for explicit permission before taking any action |
-| `low` | Read-only operations are free; ask for any modifications |
-| `medium` | Most operations are free; ask for destructive or irreversible actions |
-| `high` | Almost all operations are autonomous; ask only for truly destructive actions |
-| `full` | Full autonomy; take action immediately |
+| Level    | Behavior                                                                     |
+| -------- | ---------------------------------------------------------------------------- |
+| `none`   | Ask for explicit permission before taking any action                         |
+| `low`    | Read-only operations are free; ask for any modifications                     |
+| `medium` | Most operations are free; ask for destructive or irreversible actions        |
+| `high`   | Almost all operations are autonomous; ask only for truly destructive actions |
+| `full`   | Full autonomy; take action immediately                                       |
 
 The autonomy level is sourced from the user's AI preferences in their personal memory profile.
 
@@ -491,7 +508,11 @@ class ConversationMemory {
   // Messages
   addMessage(conversationId: string, message: Message): Conversation | undefined;
   addUserMessage(conversationId: string, content: string | ContentPart[]): Conversation | undefined;
-  addAssistantMessage(conversationId: string, content: string, toolCalls?: ToolCall[]): Conversation | undefined;
+  addAssistantMessage(
+    conversationId: string,
+    content: string,
+    toolCalls?: ToolCall[]
+  ): Conversation | undefined;
   addToolResults(conversationId: string, results: ToolResult[]): Conversation | undefined;
   clearMessages(conversationId: string): boolean;
 
@@ -501,8 +522,13 @@ class ConversationMemory {
 
   // Management
   updateSystemPrompt(conversationId: string, systemPrompt: string): Conversation | undefined;
-  updateMetadata(conversationId: string, metadata: Record<string, unknown>): Conversation | undefined;
-  getStats(conversationId: string): { messageCount: number; estimatedTokens: number; lastActivity: Date } | undefined;
+  updateMetadata(
+    conversationId: string,
+    metadata: Record<string, unknown>
+  ): Conversation | undefined;
+  getStats(
+    conversationId: string
+  ): { messageCount: number; estimatedTokens: number; lastActivity: Date } | undefined;
   export(conversationId: string): string | undefined;
   import(json: string): Conversation | undefined;
 }
@@ -510,12 +536,12 @@ class ConversationMemory {
 
 **MemoryConfig:**
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `maxMessages` | number | 100 | Maximum messages to retain |
-| `maxTokens` | number | 100000 | Token budget for context window |
-| `summarize` | boolean | false | Whether to summarize old messages |
-| `persistence` | string | 'session' | `'none'`, `'session'`, or `'persistent'` |
+| Option        | Type    | Default   | Description                              |
+| ------------- | ------- | --------- | ---------------------------------------- |
+| `maxMessages` | number  | 100       | Maximum messages to retain               |
+| `maxTokens`   | number  | 100000    | Token budget for context window          |
+| `summarize`   | boolean | false     | Whether to summarize old messages        |
+| `persistence` | string  | 'session' | `'none'`, `'session'`, or `'persistent'` |
 
 **Token estimation:** Characters are divided by 4 to approximate token count. Tool calls and tool results add their string length plus 50 characters overhead each.
 
@@ -539,29 +565,29 @@ class MemoryInjector {
 
 **MemoryInjectionOptions:**
 
-| Option | Type | Description |
-|--------|------|-------------|
-| `userId` | string | User ID for personal memory retrieval |
-| `tools` | ToolDefinition[] | Tools to include in prompt |
-| `capabilities` | AgentCapabilities | Agent capability flags |
-| `conversationContext` | PromptConversationContext | Current conversation metadata |
-| `workspaceContext` | WorkspaceContext | File operation directories |
-| `includeProfile` | boolean | Whether to include user profile (default: true) |
-| `includeInstructions` | boolean | Whether to include custom instructions (default: true) |
-| `includeTimeContext` | boolean | Whether to include time context (default: true) |
-| `includeToolDescriptions` | boolean | Whether to include tool section (default: true) |
-| `maxPromptLength` | number | Maximum prompt length |
+| Option                    | Type                      | Description                                            |
+| ------------------------- | ------------------------- | ------------------------------------------------------ |
+| `userId`                  | string                    | User ID for personal memory retrieval                  |
+| `tools`                   | ToolDefinition[]          | Tools to include in prompt                             |
+| `capabilities`            | AgentCapabilities         | Agent capability flags                                 |
+| `conversationContext`     | PromptConversationContext | Current conversation metadata                          |
+| `workspaceContext`        | WorkspaceContext          | File operation directories                             |
+| `includeProfile`          | boolean                   | Whether to include user profile (default: true)        |
+| `includeInstructions`     | boolean                   | Whether to include custom instructions (default: true) |
+| `includeTimeContext`      | boolean                   | Whether to include time context (default: true)        |
+| `includeToolDescriptions` | boolean                   | Whether to include tool section (default: true)        |
+| `maxPromptLength`         | number                    | Maximum prompt length                                  |
 
 **InjectedPromptResult:**
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `systemPrompt` | string | The fully composed system prompt |
-| `userProfile` | UserProfile | The user profile used (if any) |
-| `toolCount` | number | Number of tools included |
-| `instructionCount` | number | Number of custom instructions included |
-| `hasTimeContext` | boolean | Whether time context was included |
-| `promptLength` | number | Total character count of the prompt |
+| Field              | Type        | Description                            |
+| ------------------ | ----------- | -------------------------------------- |
+| `systemPrompt`     | string      | The fully composed system prompt       |
+| `userProfile`      | UserProfile | The user profile used (if any)         |
+| `toolCount`        | number      | Number of tools included               |
+| `instructionCount` | number      | Number of custom instructions included |
+| `hasTimeContext`   | boolean     | Whether time context was included      |
+| `promptLength`     | number      | Total character count of the prompt    |
 
 ### Memory Injection Flow
 
@@ -625,17 +651,17 @@ none -> read -> write -> execute -> admin
 
 **Tool categories:**
 
-| Category | Description | Example tools |
-|----------|-------------|---------------|
-| `file_read` | Read files and directories | `read_file`, `list_directory`, `search_files`, `file_info` |
-| `file_write` | Create or modify files | `write_file`, `download_file`, `copy_file` |
-| `file_delete` | Delete files or directories | `delete_file` |
-| `code_execute` | Run code in sandbox | `execute_javascript`, `execute_python`, `compile_code` |
-| `network_read` | HTTP GET, fetch pages | `http_request`, `fetch_web_page`, `search_web`, `json_api` |
-| `network_write` | HTTP POST/PUT/DELETE | (network write operations) |
-| `system` | System commands | `execute_shell`, `package_manager` |
-| `memory` | Memory management | `memory_store`, `memory_recall` |
-| `custom` | Plugin and custom tools | (user-defined tools) |
+| Category        | Description                 | Example tools                                              |
+| --------------- | --------------------------- | ---------------------------------------------------------- |
+| `file_read`     | Read files and directories  | `read_file`, `list_directory`, `search_files`, `file_info` |
+| `file_write`    | Create or modify files      | `write_file`, `download_file`, `copy_file`                 |
+| `file_delete`   | Delete files or directories | `delete_file`                                              |
+| `code_execute`  | Run code in sandbox         | `execute_javascript`, `execute_python`, `compile_code`     |
+| `network_read`  | HTTP GET, fetch pages       | `http_request`, `fetch_web_page`, `search_web`, `json_api` |
+| `network_write` | HTTP POST/PUT/DELETE        | (network write operations)                                 |
+| `system`        | System commands             | `execute_shell`, `package_manager`                         |
+| `memory`        | Memory management           | `memory_store`, `memory_recall`                            |
+| `custom`        | Plugin and custom tools     | (user-defined tools)                                       |
 
 ### PermissionChecker
 
@@ -643,8 +669,17 @@ none -> read -> write -> execute -> admin
 class PermissionChecker {
   constructor(policy?: PermissionPolicy);
 
-  check(toolName: string, context: ToolContext, args?: Record<string, unknown>): PermissionCheckResult;
-  recordUsage(toolName: string, context: ToolContext, result: PermissionCheckResult, args?: Record<string, unknown>): void;
+  check(
+    toolName: string,
+    context: ToolContext,
+    args?: Record<string, unknown>
+  ): PermissionCheckResult;
+  recordUsage(
+    toolName: string,
+    context: ToolContext,
+    result: PermissionCheckResult,
+    args?: Record<string, unknown>
+  ): void;
   getToolConfig(toolName: string): ToolPermissionConfig | undefined;
   updatePolicy(updates: Partial<PermissionPolicy>): PermissionPolicy;
   addUserPermissions(userId: string, permissions: Omit<UserPermissions, 'userId'>): void;
@@ -670,7 +705,7 @@ class PermissionChecker {
 ```typescript
 interface PermissionCheckResult {
   allowed: boolean;
-  reason?: string;               // Reason for denial
+  reason?: string; // Reason for denial
   requiresConfirmation?: boolean; // Whether user must confirm
   context?: Record<string, unknown>;
 }
@@ -682,14 +717,14 @@ Rate limits are enforced per `userId:toolName` key with a 60-second sliding wind
 
 Tool-specific rate limits from the default configuration:
 
-| Tool | Rate Limit (calls/min) |
-|------|----------------------|
-| `execute_javascript` | 10 |
-| `execute_python` | 10 |
-| `execute_shell` | 5 |
-| `compile_code` | 5 |
-| `package_manager` | 3 |
-| `search_web` | 20 |
+| Tool                 | Rate Limit (calls/min) |
+| -------------------- | ---------------------- |
+| `execute_javascript` | 10                     |
+| `execute_python`     | 10                     |
+| `execute_shell`      | 5                      |
+| `compile_code`       | 5                      |
+| `package_manager`    | 3                      |
+| `search_web`         | 20                     |
 
 **Factory functions:**
 
@@ -734,14 +769,15 @@ interface IProvider {
 
 ### Built-in Providers
 
-| Provider | Class | Base URL | Auth |
-|----------|-------|----------|------|
-| OpenAI | `OpenAIProvider` | `https://api.openai.com/v1` | Bearer token |
-| Anthropic | `AnthropicProvider` | `https://api.anthropic.com/v1` | `x-api-key` header |
-| Google | `GoogleProvider` | Native Gemini SDK | API key |
-| Others | `OpenAICompatibleProvider` | Provider-specific | Bearer token |
+| Provider  | Class                      | Base URL                       | Auth               |
+| --------- | -------------------------- | ------------------------------ | ------------------ |
+| OpenAI    | `OpenAIProvider`           | `https://api.openai.com/v1`    | Bearer token       |
+| Anthropic | `AnthropicProvider`        | `https://api.anthropic.com/v1` | `x-api-key` header |
+| Google    | `GoogleProvider`           | Native Gemini SDK              | API key            |
+| Others    | `OpenAICompatibleProvider` | Provider-specific              | Bearer token       |
 
 All providers inherit from `BaseProvider` which provides:
+
 - `cancel()` via `AbortController`
 - `createFetchOptions()` with configurable timeout (default: 5 minutes)
 - `parseToolCalls()` for normalizing tool call formats
@@ -752,13 +788,13 @@ All providers inherit from `BaseProvider` which provides:
 **Retry configuration:**
 All providers use exponential backoff with jitter:
 
-| Parameter | Value |
-|-----------|-------|
-| Max retries | 3 |
-| Initial delay | 1000ms |
-| Max delay | 10000ms |
-| Backoff multiplier | 2 |
-| Jitter | enabled |
+| Parameter          | Value   |
+| ------------------ | ------- |
+| Max retries        | 3       |
+| Initial delay      | 1000ms  |
+| Max delay          | 10000ms |
+| Backoff multiplier | 2       |
+| Jitter             | enabled |
 
 ### FallbackProvider
 
@@ -777,6 +813,7 @@ class FallbackProvider implements IProvider {
 ```
 
 **Fallback rules:**
+
 - Always fallback on `TimeoutError`.
 - Fallback on rate limits (429), server errors (500-504), network errors.
 - Do NOT fallback on API key errors or validation errors (they would fail everywhere).
@@ -802,13 +839,13 @@ class ProviderRouter {
 
 **Routing strategies:**
 
-| Strategy | Behavior |
-|----------|----------|
+| Strategy   | Behavior                                                |
+| ---------- | ------------------------------------------------------- |
 | `cheapest` | Select the lowest-cost model with required capabilities |
-| `fastest` | Select the lowest-latency model |
-| `smartest` | Select the highest-quality model for complex reasoning |
-| `balanced` | Balance cost and quality (default) |
-| `fallback` | Try providers in priority order until one succeeds |
+| `fastest`  | Select the lowest-latency model                         |
+| `smartest` | Select the highest-quality model for complex reasoning  |
+| `balanced` | Balance cost and quality (default)                      |
+| `fallback` | Try providers in priority order until one succeeds      |
 
 Default fallback order: `anthropic -> openai -> google -> deepseek -> groq`
 
@@ -841,6 +878,7 @@ class CodeGenerator {
 **Executable languages (sandbox):** `javascript`, `typescript` only
 
 **Code validation checks:**
+
 - Maximum code length (default: 50,000 characters)
 - Language-specific validation (JavaScript/TypeScript)
 - Dangerous pattern detection:
@@ -852,6 +890,7 @@ class CodeGenerator {
   - Dynamic `import()`
 
 **Sandbox defaults:**
+
 - Allowed: timers, crypto
 - Denied: network, env, spawn, fs read, fs write
 - Resource limits: 64MB memory, 30s CPU time, 30s execution timeout
@@ -866,22 +905,23 @@ When no LLM provider is configured, the generator falls back to built-in code te
 
 ```typescript
 interface ToolDefinition {
-  name: string;                    // Unique identifier (e.g., "read_file")
-  description: string;             // Human-readable description
+  name: string; // Unique identifier (e.g., "read_file")
+  description: string; // Human-readable description
   parameters: {
     type: 'object';
     properties: Record<string, JSONSchemaProperty>;
     required?: string[];
   };
-  requiresConfirmation?: boolean;  // Whether to ask the user first
-  category?: string;               // Grouping category
-  tags?: string[];                 // Hidden search tags for discovery
+  requiresConfirmation?: boolean; // Whether to ask the user first
+  category?: string; // Grouping category
+  tags?: string[]; // Hidden search tags for discovery
 }
 ```
 
 ### Tool Registry
 
 The `ToolRegistry` manages tool definitions and their executors. It supports:
+
 - Registration and unregistration
 - Executor updates (for plugin overrides)
 - Filtering by names
@@ -893,10 +933,10 @@ The `ToolRegistry` manages tool definitions and their executors. It supports:
 
 The system exposes three meta-tools to the LLM instead of 100+ individual tool schemas. This reduces token consumption from approximately 20K+ tokens per request to under 1K.
 
-| Meta-Tool | Purpose |
-|-----------|---------|
-| `search_tools(query, category?)` | Keyword search across all registered tools. Supports AND matching, category filtering, and "all" to list everything. |
-| `get_tool_help(tool_name)` | Returns detailed help for a specific tool: description, required/optional parameters with types, default values, examples, and rate limits. |
+| Meta-Tool                        | Purpose                                                                                                                                              |
+| -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `search_tools(query, category?)` | Keyword search across all registered tools. Supports AND matching, category filtering, and "all" to list everything.                                 |
+| `get_tool_help(tool_name)`       | Returns detailed help for a specific tool: description, required/optional parameters with types, default values, examples, and rate limits.          |
 | `use_tool(tool_name, arguments)` | Proxy executor that validates parameters, applies max limits, executes the tool, and auto-includes parameter help on errors for LLM self-correction. |
 
 **Error recovery:** When `use_tool` fails, the error response includes full parameter documentation so the LLM can fix its call and retry without needing a separate `get_tool_help` call.
@@ -907,31 +947,31 @@ The system exposes three meta-tools to the LLM instead of 100+ individual tool s
 
 The system organizes tools into these categories:
 
-| Category | Tools |
-|----------|-------|
-| Tasks | `add_task`, `batch_add_tasks`, `list_tasks`, `complete_task`, `update_task`, `delete_task` |
-| Bookmarks | `add_bookmark`, `batch_add_bookmarks`, `list_bookmarks`, `delete_bookmark` |
-| Notes | `add_note`, `batch_add_notes`, `list_notes`, `update_note`, `delete_note` |
-| Calendar | `add_calendar_event`, `batch_add_calendar_events`, `list_calendar_events`, `delete_calendar_event` |
-| Contacts | `add_contact`, `batch_add_contacts`, `list_contacts`, `update_contact`, `delete_contact` |
-| Custom Data | `create_custom_table`, `add_custom_record`, `list_custom_records`, `search_custom_records`, ... |
-| File System | `read_file`, `write_file`, `list_directory`, `search_files`, `download_file`, `file_info`, ... |
-| PDF | `read_pdf`, `create_pdf`, `pdf_info` |
-| Code Execution | `execute_javascript`, `execute_python`, `execute_shell`, `compile_code`, `package_manager` |
-| Git | `git_status`, `git_diff`, `git_log`, `git_commit`, `git_add`, `git_branch`, `git_checkout` |
-| Web and API | `http_request`, `fetch_web_page`, `search_web`, `json_api` |
-| Email | `send_email`, `list_emails`, `read_email`, `delete_email`, `search_emails`, `reply_email` |
-| Image | `analyze_image`, `generate_image`, `edit_image`, `image_variation`, `resize_image` |
-| Audio | `text_to_speech`, `speech_to_text`, `translate_audio`, `audio_info`, `split_audio` |
-| Translation | `translate_text`, `detect_language`, `list_languages`, `batch_translate` |
-| Data Extraction | `extract_structured_data`, `extract_entities`, `extract_table_data`, `summarize_text` |
-| Vector Search | `create_embedding`, `semantic_search`, `upsert_vectors`, `delete_vectors`, ... |
-| Finance | `add_expense`, `batch_add_expenses`, `parse_receipt`, `query_expenses`, `export_expenses`, ... |
-| Weather | `get_weather`, `get_weather_forecast` |
-| Memory | `remember`, `batch_remember`, `recall`, `forget`, `list_memories`, `boost_memory`, `memory_stats` |
-| Goals | `create_goal`, `list_goals`, `update_goal`, `decompose_goal`, `get_next_actions`, ... |
-| Dynamic Tools | `create_tool`, `list_custom_tools`, `delete_custom_tool`, `toggle_custom_tool` |
-| Utilities | `get_current_datetime`, `calculate`, `convert_units`, `generate_uuid`, `regex`, `format_json`, ... |
+| Category        | Tools                                                                                              |
+| --------------- | -------------------------------------------------------------------------------------------------- |
+| Tasks           | `add_task`, `batch_add_tasks`, `list_tasks`, `complete_task`, `update_task`, `delete_task`         |
+| Bookmarks       | `add_bookmark`, `batch_add_bookmarks`, `list_bookmarks`, `delete_bookmark`                         |
+| Notes           | `add_note`, `batch_add_notes`, `list_notes`, `update_note`, `delete_note`                          |
+| Calendar        | `add_calendar_event`, `batch_add_calendar_events`, `list_calendar_events`, `delete_calendar_event` |
+| Contacts        | `add_contact`, `batch_add_contacts`, `list_contacts`, `update_contact`, `delete_contact`           |
+| Custom Data     | `create_custom_table`, `add_custom_record`, `list_custom_records`, `search_custom_records`, ...    |
+| File System     | `read_file`, `write_file`, `list_directory`, `search_files`, `download_file`, `file_info`, ...     |
+| PDF             | `read_pdf`, `create_pdf`, `pdf_info`                                                               |
+| Code Execution  | `execute_javascript`, `execute_python`, `execute_shell`, `compile_code`, `package_manager`         |
+| Git             | `git_status`, `git_diff`, `git_log`, `git_commit`, `git_add`, `git_branch`, `git_checkout`         |
+| Web and API     | `http_request`, `fetch_web_page`, `search_web`, `json_api`                                         |
+| Email           | `send_email`, `list_emails`, `read_email`, `delete_email`, `search_emails`, `reply_email`          |
+| Image           | `analyze_image`, `generate_image`, `edit_image`, `image_variation`, `resize_image`                 |
+| Audio           | `text_to_speech`, `speech_to_text`, `translate_audio`, `audio_info`, `split_audio`                 |
+| Translation     | `translate_text`, `detect_language`, `list_languages`, `batch_translate`                           |
+| Data Extraction | `extract_structured_data`, `extract_entities`, `extract_table_data`, `summarize_text`              |
+| Vector Search   | `create_embedding`, `semantic_search`, `upsert_vectors`, `delete_vectors`, ...                     |
+| Finance         | `add_expense`, `batch_add_expenses`, `parse_receipt`, `query_expenses`, `export_expenses`, ...     |
+| Weather         | `get_weather`, `get_weather_forecast`                                                              |
+| Memory          | `remember`, `batch_remember`, `recall`, `forget`, `list_memories`, `boost_memory`, `memory_stats`  |
+| Goals           | `create_goal`, `list_goals`, `update_goal`, `decompose_goal`, `get_next_actions`, ...              |
+| Dynamic Tools   | `create_tool`, `list_custom_tools`, `delete_custom_tool`, `toggle_custom_tool`                     |
+| Utilities       | `get_current_datetime`, `calculate`, `convert_units`, `generate_uuid`, `regex`, `format_json`, ... |
 
 ---
 
@@ -965,6 +1005,7 @@ interface PlanStep {
 **`parsePlan(response)`** extracts the JSON plan from the LLM's response using regex matching.
 
 Additionally, the gateway provides plan management tools:
+
 - `create_plan(name, goal)` -- create a new plan
 - `add_plan_step(plan_id, order, type, name, ...)` -- add steps (types: `tool_call`, `llm_decision`, `user_input`, `condition`, `parallel`, `loop`)
 - `execute_plan(plan_id)` -- execute with dependency resolution, retry with exponential backoff, deadlock detection
@@ -1022,15 +1063,15 @@ class AgentsRepository extends BaseRepository {
 
 **Base path:** `/api/agents`
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/` | List all agents |
-| `POST` | `/` | Create a new agent |
-| `GET` | `/:id` | Get agent details |
-| `PATCH` | `/:id` | Update agent configuration |
-| `DELETE` | `/:id` | Delete an agent |
-| `POST` | `/:id/reset` | Reset agent conversation |
-| `POST` | `/resync` | Resync from default agents JSON |
+| Method   | Path         | Description                     |
+| -------- | ------------ | ------------------------------- |
+| `GET`    | `/`          | List all agents                 |
+| `POST`   | `/`          | Create a new agent              |
+| `GET`    | `/:id`       | Get agent details               |
+| `PATCH`  | `/:id`       | Update agent configuration      |
+| `DELETE` | `/:id`       | Delete an agent                 |
+| `POST`   | `/:id/reset` | Reset agent conversation        |
+| `POST`   | `/resync`    | Resync from default agents JSON |
 
 **Create agent request:**
 
@@ -1117,8 +1158,8 @@ interface AgentSeed {
   id: string;
   name: string;
   systemPrompt: string;
-  provider: string;         // Always "default"
-  model: string;            // Always "default"
+  provider: string; // Always "default"
+  model: string; // Always "default"
   config: {
     maxTokens: number;
     temperature: number;
@@ -1154,7 +1195,7 @@ interface Message {
 interface ToolCall {
   id: string;
   name: string;
-  arguments: string;      // JSON string
+  arguments: string; // JSON string
   metadata?: Record<string, unknown>;
 }
 
@@ -1250,32 +1291,32 @@ interface TokenUsage {
 
 ## File Map
 
-| File | Contents |
-|------|----------|
-| `packages/core/src/agent/agent.ts` | `Agent` class, `createAgent()`, `createSimpleAgent()` |
-| `packages/core/src/agent/orchestrator.ts` | `AgentOrchestrator`, `AgentBuilder`, `MultiAgentOrchestrator`, `Plan`, planning utilities |
-| `packages/core/src/agent/types.ts` | All TypeScript interfaces and type definitions |
-| `packages/core/src/agent/provider.ts` | `IProvider`, `BaseProvider`, `OpenAIProvider`, `AnthropicProvider`, `createProvider()` |
-| `packages/core/src/agent/providers/google.ts` | `GoogleProvider` (native Gemini SDK) |
-| `packages/core/src/agent/providers/openai-compatible.ts` | `OpenAICompatibleProvider` for third-party providers |
-| `packages/core/src/agent/providers/fallback.ts` | `FallbackProvider` with automatic provider failover |
-| `packages/core/src/agent/providers/router.ts` | `ProviderRouter` with strategy-based selection |
-| `packages/core/src/agent/providers/configs/` | Provider config loader and sync logic |
-| `data/providers/` | Provider JSON configuration files (100+), synced from models.dev |
-| `packages/core/src/events/` | EventBus -- typed event system with wildcard subscriptions for agent, tool, and system events |
-| `packages/core/src/agent/prompt-composer.ts` | `PromptComposer`, `WorkspaceContext`, `TimeContext`, `AgentCapabilities` |
-| `packages/core/src/agent/memory-injector.ts` | `MemoryInjector`, `injectMemoryIntoPrompt()`, `createEnhancedAgentPrompt()` |
-| `packages/core/src/agent/memory.ts` | `ConversationMemory`, `createMemory()` |
-| `packages/core/src/agent/permissions.ts` | `PermissionChecker`, permission levels, categories, policies |
-| `packages/core/src/agent/code-generator.ts` | `CodeGenerator`, sandbox execution, code validation |
-| `packages/core/src/agent/tools.ts` | `ToolRegistry`, `registerCoreTools()` |
-| `packages/core/src/agent/tools/index.ts` | All tool exports, `registerAllTools()`, `TOOL_CATEGORIES`, `TOOL_SETS` |
-| `packages/core/src/agent/tools/dynamic-tools.ts` | Meta-tools: `search_tools`, `get_tool_help`, `use_tool`, `create_tool` |
-| `packages/core/src/agent/tools/tool-tags.ts` | Hidden search tags for tool discovery |
-| `packages/core/src/agent/tools/tool-limits.ts` | Maximum parameter limits for list-returning tools |
-| `packages/core/src/agent/retry.ts` | `withRetry()` exponential backoff utility |
-| `packages/core/src/agent/debug.ts` | Request/response logging, payload breakdown |
-| `packages/core/src/agent/presets.ts` | Agent presets |
-| `packages/gateway/src/routes/agents.ts` | Agent CRUD routes, runtime agent creation, tool registration, caching |
-| `packages/gateway/src/db/repositories/agents.ts` | `AgentsRepository` database access |
-| `packages/gateway/src/db/seeds/default-agents.ts` | Default agent loader from JSON |
+| File                                                     | Contents                                                                                      |
+| -------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| `packages/core/src/agent/agent.ts`                       | `Agent` class, `createAgent()`, `createSimpleAgent()`                                         |
+| `packages/core/src/agent/orchestrator.ts`                | `AgentOrchestrator`, `AgentBuilder`, `MultiAgentOrchestrator`, `Plan`, planning utilities     |
+| `packages/core/src/agent/types.ts`                       | All TypeScript interfaces and type definitions                                                |
+| `packages/core/src/agent/provider.ts`                    | `IProvider`, `BaseProvider`, `OpenAIProvider`, `AnthropicProvider`, `createProvider()`        |
+| `packages/core/src/agent/providers/google.ts`            | `GoogleProvider` (native Gemini SDK)                                                          |
+| `packages/core/src/agent/providers/openai-compatible.ts` | `OpenAICompatibleProvider` for third-party providers                                          |
+| `packages/core/src/agent/providers/fallback.ts`          | `FallbackProvider` with automatic provider failover                                           |
+| `packages/core/src/agent/providers/router.ts`            | `ProviderRouter` with strategy-based selection                                                |
+| `packages/core/src/agent/providers/configs/`             | Provider config loader and sync logic                                                         |
+| `data/providers/`                                        | Provider JSON configuration files (100+), synced from models.dev                              |
+| `packages/core/src/events/`                              | EventBus -- typed event system with wildcard subscriptions for agent, tool, and system events |
+| `packages/core/src/agent/prompt-composer.ts`             | `PromptComposer`, `WorkspaceContext`, `TimeContext`, `AgentCapabilities`                      |
+| `packages/core/src/agent/memory-injector.ts`             | `MemoryInjector`, `injectMemoryIntoPrompt()`, `createEnhancedAgentPrompt()`                   |
+| `packages/core/src/agent/memory.ts`                      | `ConversationMemory`, `createMemory()`                                                        |
+| `packages/core/src/agent/permissions.ts`                 | `PermissionChecker`, permission levels, categories, policies                                  |
+| `packages/core/src/agent/code-generator.ts`              | `CodeGenerator`, sandbox execution, code validation                                           |
+| `packages/core/src/agent/tools.ts`                       | `ToolRegistry`, `registerCoreTools()`                                                         |
+| `packages/core/src/agent/tools/index.ts`                 | All tool exports, `registerAllTools()`, `TOOL_CATEGORIES`, `TOOL_SETS`                        |
+| `packages/core/src/agent/tools/dynamic-tools.ts`         | Meta-tools: `search_tools`, `get_tool_help`, `use_tool`, `create_tool`                        |
+| `packages/core/src/agent/tools/tool-tags.ts`             | Hidden search tags for tool discovery                                                         |
+| `packages/core/src/agent/tools/tool-limits.ts`           | Maximum parameter limits for list-returning tools                                             |
+| `packages/core/src/agent/retry.ts`                       | `withRetry()` exponential backoff utility                                                     |
+| `packages/core/src/agent/debug.ts`                       | Request/response logging, payload breakdown                                                   |
+| `packages/core/src/agent/presets.ts`                     | Agent presets                                                                                 |
+| `packages/gateway/src/routes/agents.ts`                  | Agent CRUD routes, runtime agent creation, tool registration, caching                         |
+| `packages/gateway/src/db/repositories/agents.ts`         | `AgentsRepository` database access                                                            |
+| `packages/gateway/src/db/seeds/default-agents.ts`        | Default agent loader from JSON                                                                |

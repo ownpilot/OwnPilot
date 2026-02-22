@@ -10,7 +10,6 @@ import { useAnimatedList } from '../hooks/useAnimatedList';
 import { notesApi } from '../api';
 import type { Note } from '../api';
 
-
 export function NotesPage() {
   const { confirm } = useDialog();
   const toast = useToast();
@@ -49,37 +48,51 @@ export function NotesPage() {
     const unsub = subscribe<{ entity: string }>('data:changed', (data) => {
       if (data.entity === 'note') debouncedRefresh();
     });
-    return () => { unsub(); };
+    return () => {
+      unsub();
+    };
   }, [subscribe, debouncedRefresh]);
 
-  const handleDelete = useCallback(async (noteId: string) => {
-    if (!await confirm({ message: 'Are you sure you want to delete this note?', variant: 'danger' })) return;
+  const handleDelete = useCallback(
+    async (noteId: string) => {
+      if (
+        !(await confirm({
+          message: 'Are you sure you want to delete this note?',
+          variant: 'danger',
+        }))
+      )
+        return;
 
-    try {
-      await animatedDelete(noteId, async () => {
-        await notesApi.delete(noteId);
-      });
-      toast.success('Note deleted');
-      fetchNotes();
-      setSelectedNote((prev) => prev?.id === noteId ? null : prev);
-    } catch {
-      // API client handles error reporting
-    }
-  }, [confirm, toast, fetchNotes]);
+      try {
+        await animatedDelete(noteId, async () => {
+          await notesApi.delete(noteId);
+        });
+        toast.success('Note deleted');
+        fetchNotes();
+        setSelectedNote((prev) => (prev?.id === noteId ? null : prev));
+      } catch {
+        // API client handles error reporting
+      }
+    },
+    [confirm, toast, fetchNotes]
+  );
 
-  const handleTogglePin = useCallback(async (note: Note) => {
-    try {
-      await notesApi.pin(note.id);
-      toast.success(note.isPinned ? 'Note unpinned' : 'Note pinned');
-      fetchNotes();
-    } catch {
-      // API client handles error reporting
-    }
-  }, [toast, fetchNotes]);
+  const handleTogglePin = useCallback(
+    async (note: Note) => {
+      try {
+        await notesApi.pin(note.id);
+        toast.success(note.isPinned ? 'Note unpinned' : 'Note pinned');
+        fetchNotes();
+      } catch {
+        // API client handles error reporting
+      }
+    },
+    [toast, fetchNotes]
+  );
 
   const pinnedNotes = useMemo(() => notes.filter((n) => n.isPinned), [notes]);
   const otherNotes = useMemo(() => notes.filter((n) => !n.isPinned), [notes]);
-  const animClassMap = new Map(animatedItems.map(a => [a.item.id, a.animClass]));
+  const animClassMap = new Map(animatedItems.map((a) => [a.item.id, a.animClass]));
 
   return (
     <div className="flex flex-col h-full">
@@ -124,8 +137,16 @@ export function NotesPage() {
           <EmptyState
             icon={FileText}
             title={searchQuery ? 'No notes found' : 'No notes yet'}
-            description={searchQuery ? 'Try a different search term.' : 'Create your first note to get started.'}
-            action={!searchQuery ? { label: 'Create Note', onClick: () => setShowCreateModal(true), icon: Plus } : undefined}
+            description={
+              searchQuery
+                ? 'Try a different search term.'
+                : 'Create your first note to get started.'
+            }
+            action={
+              !searchQuery
+                ? { label: 'Create Note', onClick: () => setShowCreateModal(true), icon: Plus }
+                : undefined
+            }
           />
         ) : (
           <div className="space-y-6">
@@ -205,9 +226,7 @@ interface NoteCardProps {
 }
 
 function NoteCard({ note, onClick, onTogglePin, onDelete }: NoteCardProps) {
-  const colorStyles = note.color
-    ? { borderLeftColor: note.color, borderLeftWidth: '4px' }
-    : {};
+  const colorStyles = note.color ? { borderLeftColor: note.color, borderLeftWidth: '4px' } : {};
 
   return (
     <div
@@ -216,7 +235,12 @@ function NoteCard({ note, onClick, onTogglePin, onDelete }: NoteCardProps) {
       role="button"
       tabIndex={0}
       onClick={onClick}
-      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick(); } }}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onClick();
+        }
+      }}
     >
       <div className="flex items-start justify-between gap-2">
         <h3 className="font-medium text-text-primary dark:text-dark-text-primary line-clamp-1">
@@ -260,9 +284,7 @@ function NoteCard({ note, onClick, onTogglePin, onDelete }: NoteCardProps) {
             {note.category}
           </span>
         )}
-        <span>
-          {new Date(note.updatedAt).toLocaleDateString()}
-        </span>
+        <span>{new Date(note.updatedAt).toLocaleDateString()}</span>
       </div>
     </div>
   );
@@ -307,7 +329,10 @@ function NoteModal({ note, onClose, onSave }: NoteModalProps) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onBackdropClick}>
+    <div
+      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+      onClick={onBackdropClick}
+    >
       <div className="w-full max-w-2xl bg-bg-primary dark:bg-dark-bg-primary border border-border dark:border-dark-border rounded-xl shadow-xl max-h-[90vh] overflow-hidden flex flex-col">
         <form onSubmit={handleSubmit} className="flex flex-col h-full">
           <div className="p-6 border-b border-border dark:border-dark-border">

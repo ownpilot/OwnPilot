@@ -30,7 +30,7 @@ interface LocalProviderRow {
   is_default: boolean;
   discovery_endpoint: string | null;
   last_discovered_at: string | null;
-  metadata: string;        // JSONB string
+  metadata: string; // JSONB string
   created_at: string;
   updated_at: string;
 }
@@ -41,11 +41,11 @@ interface LocalModelRow {
   local_provider_id: string;
   model_id: string;
   display_name: string;
-  capabilities: string;    // JSONB string
+  capabilities: string; // JSONB string
   context_window: number;
   max_output: number;
   is_enabled: boolean;
-  metadata: string;        // JSONB string
+  metadata: string; // JSONB string
   created_at: string;
   updated_at: string;
 }
@@ -111,15 +111,13 @@ export interface CreateLocalModelInput {
 // CACHE
 // =============================================================================
 
-let providersCache = new Map<string, LocalProvider>();        // keyed by provider id
-let modelsCache = new Map<string, LocalModel[]>();            // keyed by provider id
+let providersCache = new Map<string, LocalProvider>(); // keyed by provider id
+let modelsCache = new Map<string, LocalModel[]>(); // keyed by provider id
 let cacheInitialized = false;
 
 // =============================================================================
 // ROW-TO-MODEL CONVERSION
 // =============================================================================
-
-
 
 function rowToProvider(row: LocalProviderRow): LocalProvider {
   return {
@@ -182,7 +180,7 @@ export class LocalProvidersRepository extends BaseRepository {
       this.query<LocalModelRow>('SELECT * FROM local_models ORDER BY display_name ASC'),
     ]);
 
-    providersCache = new Map(providerRows.map(r => [r.id, rowToProvider(r)]));
+    providersCache = new Map(providerRows.map((r) => [r.id, rowToProvider(r)]));
 
     const grouped = new Map<string, LocalModel[]>();
     for (const row of modelRows) {
@@ -203,13 +201,10 @@ export class LocalProvidersRepository extends BaseRepository {
    */
   private async refreshProviderCache(providerId: string): Promise<void> {
     const [providerRow, modelRows] = await Promise.all([
-      this.queryOne<LocalProviderRow>(
-        'SELECT * FROM local_providers WHERE id = $1',
-        [providerId],
-      ),
+      this.queryOne<LocalProviderRow>('SELECT * FROM local_providers WHERE id = $1', [providerId]),
       this.query<LocalModelRow>(
         'SELECT * FROM local_models WHERE local_provider_id = $1 ORDER BY display_name ASC',
-        [providerId],
+        [providerId]
       ),
     ]);
 
@@ -236,7 +231,7 @@ export class LocalProvidersRepository extends BaseRepository {
   async listProviders(userId?: string): Promise<LocalProvider[]> {
     const all = Array.from(providersCache.values());
     if (userId) {
-      return all.filter(p => p.userId === userId);
+      return all.filter((p) => p.userId === userId);
     }
     return all;
   }
@@ -274,9 +269,9 @@ export class LocalProvidersRepository extends BaseRepository {
     }
     const all = Array.from(providersCache.values());
     if (userId) {
-      return all.find(p => p.isDefault && p.userId === userId) ?? null;
+      return all.find((p) => p.isDefault && p.userId === userId) ?? null;
     }
-    return all.find(p => p.isDefault) ?? null;
+    return all.find((p) => p.isDefault) ?? null;
   }
 
   // ---------------------------------------------------------------------------
@@ -303,14 +298,14 @@ export class LocalProvidersRepository extends BaseRepository {
         input.providerType,
         input.baseUrl,
         input.apiKey ?? null,
-        true,   // is_enabled
-        false,  // is_default
+        true, // is_enabled
+        false, // is_default
         input.discoveryEndpoint ?? null,
-        null,   // last_discovered_at
-        '{}',   // metadata
+        null, // last_discovered_at
+        '{}', // metadata
         now,
         now,
-      ],
+      ]
     );
 
     await this.refreshProviderCache(id);
@@ -328,7 +323,7 @@ export class LocalProvidersRepository extends BaseRepository {
       apiKey: string;
       discoveryEndpoint: string;
       isEnabled: boolean;
-    }>,
+    }>
   ): Promise<LocalProvider | null> {
     const existing = providersCache.get(providerId);
     if (!existing) return null;
@@ -366,7 +361,7 @@ export class LocalProvidersRepository extends BaseRepository {
     values.push(providerId); // WHERE clause
     await this.execute(
       `UPDATE local_providers SET ${setClauses.join(', ')} WHERE id = $${paramIndex}`,
-      values,
+      values
     );
 
     await this.refreshProviderCache(providerId);
@@ -378,14 +373,8 @@ export class LocalProvidersRepository extends BaseRepository {
    */
   async deleteProvider(providerId: string): Promise<boolean> {
     // Delete models first (manual cascade)
-    await this.execute(
-      'DELETE FROM local_models WHERE local_provider_id = $1',
-      [providerId],
-    );
-    const result = await this.execute(
-      'DELETE FROM local_providers WHERE id = $1',
-      [providerId],
-    );
+    await this.execute('DELETE FROM local_models WHERE local_provider_id = $1', [providerId]);
+    const result = await this.execute('DELETE FROM local_providers WHERE id = $1', [providerId]);
 
     providersCache.delete(providerId);
     modelsCache.delete(providerId);
@@ -399,11 +388,11 @@ export class LocalProvidersRepository extends BaseRepository {
   async setDefault(userId: string, providerId: string): Promise<void> {
     await this.execute(
       'UPDATE local_providers SET is_default = FALSE WHERE user_id = $1 AND is_default = TRUE',
-      [userId],
+      [userId]
     );
     await this.execute(
       'UPDATE local_providers SET is_default = TRUE, updated_at = $1 WHERE id = $2',
-      [new Date().toISOString(), providerId],
+      [new Date().toISOString(), providerId]
     );
 
     await this.refreshCache();
@@ -420,7 +409,7 @@ export class LocalProvidersRepository extends BaseRepository {
     if (providerId) {
       const models = modelsCache.get(providerId) ?? [];
       if (userId) {
-        return models.filter(m => m.userId === userId);
+        return models.filter((m) => m.userId === userId);
       }
       return models;
     }
@@ -472,11 +461,11 @@ export class LocalProvidersRepository extends BaseRepository {
         JSON.stringify(input.capabilities ?? []),
         input.contextWindow ?? 4096,
         input.maxOutput ?? 4096,
-        true,   // is_enabled
+        true, // is_enabled
         JSON.stringify(input.metadata ?? {}),
         now,
         now,
-      ],
+      ]
     );
 
     await this.refreshProviderCache(input.localProviderId);
@@ -487,9 +476,7 @@ export class LocalProvidersRepository extends BaseRepository {
 
     // Fallback: find from refreshed cache
     const models = modelsCache.get(input.localProviderId) ?? [];
-    const found = models.find(
-      m => m.userId === userId && m.modelId === input.modelId,
-    );
+    const found = models.find((m) => m.userId === userId && m.modelId === input.modelId);
     if (!found) {
       throw new Error(`Failed to upsert local model: ${input.modelId}`);
     }
@@ -500,16 +487,16 @@ export class LocalProvidersRepository extends BaseRepository {
    * Toggle a model's enabled state.
    */
   async toggleModel(modelId: string, enabled: boolean): Promise<void> {
-    const row = await this.queryOne<LocalModelRow>(
-      'SELECT * FROM local_models WHERE id = $1',
-      [modelId],
-    );
+    const row = await this.queryOne<LocalModelRow>('SELECT * FROM local_models WHERE id = $1', [
+      modelId,
+    ]);
     if (!row) return;
 
-    await this.execute(
-      'UPDATE local_models SET is_enabled = $1, updated_at = $2 WHERE id = $3',
-      [enabled, new Date().toISOString(), modelId],
-    );
+    await this.execute('UPDATE local_models SET is_enabled = $1, updated_at = $2 WHERE id = $3', [
+      enabled,
+      new Date().toISOString(),
+      modelId,
+    ]);
 
     await this.refreshProviderCache(row.local_provider_id);
   }
@@ -518,10 +505,9 @@ export class LocalProvidersRepository extends BaseRepository {
    * Delete all models for a provider. Returns the number of deleted rows.
    */
   async deleteModelsForProvider(providerId: string): Promise<number> {
-    const result = await this.execute(
-      'DELETE FROM local_models WHERE local_provider_id = $1',
-      [providerId],
-    );
+    const result = await this.execute('DELETE FROM local_models WHERE local_provider_id = $1', [
+      providerId,
+    ]);
 
     modelsCache.delete(providerId);
 
@@ -536,7 +522,7 @@ export class LocalProvidersRepository extends BaseRepository {
 
     await this.execute(
       'UPDATE local_providers SET last_discovered_at = $1, updated_at = $2 WHERE id = $3',
-      [now, now, providerId],
+      [now, now, providerId]
     );
 
     await this.refreshProviderCache(providerId);

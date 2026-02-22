@@ -32,38 +32,50 @@ export function AIProviderWizard({ onComplete, onCancel }: Props) {
   const [selectedProvider, setSelectedProvider] = useState<string | null>(null);
   const [apiKey, setApiKey] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
-  const [testResult, setTestResult] = useState<{ ok: boolean; models: { id: string; name: string }[]; error?: string } | null>(null);
+  const [testResult, setTestResult] = useState<{
+    ok: boolean;
+    models: { id: string; name: string }[];
+    error?: string;
+  } | null>(null);
   const [selectedModel, setSelectedModel] = useState<string>('');
   const [setAsDefault, setSetAsDefault] = useState(true);
 
   // Load providers on mount
   useEffect(() => {
-    providersApi.list().then((data) => {
-      // Sort: popular first, then alphabetical
-      const sorted = [...data.providers].sort((a, b) => {
-        const aIdx = POPULAR.indexOf(a.id);
-        const bIdx = POPULAR.indexOf(b.id);
-        if (aIdx !== -1 && bIdx !== -1) return aIdx - bIdx;
-        if (aIdx !== -1) return -1;
-        if (bIdx !== -1) return 1;
-        return a.name.localeCompare(b.name);
-      });
-      setProviders(sorted);
-    }).catch(() => {});
+    providersApi
+      .list()
+      .then((data) => {
+        // Sort: popular first, then alphabetical
+        const sorted = [...data.providers].sort((a, b) => {
+          const aIdx = POPULAR.indexOf(a.id);
+          const bIdx = POPULAR.indexOf(b.id);
+          if (aIdx !== -1 && bIdx !== -1) return aIdx - bIdx;
+          if (aIdx !== -1) return -1;
+          if (bIdx !== -1) return 1;
+          return a.name.localeCompare(b.name);
+        });
+        setProviders(sorted);
+      })
+      .catch(() => {});
   }, []);
 
   const selected = useMemo(
     () => providers.find((p) => p.id === selectedProvider),
-    [providers, selectedProvider],
+    [providers, selectedProvider]
   );
 
   const canGoNext = useMemo(() => {
     switch (step) {
-      case 0: return !!selectedProvider;
-      case 1: return apiKey.trim().length >= 8;
-      case 2: return testResult?.ok === true;
-      case 3: return true;
-      default: return false;
+      case 0:
+        return !!selectedProvider;
+      case 1:
+        return apiKey.trim().length >= 8;
+      case 2:
+        return testResult?.ok === true;
+      case 3:
+        return true;
+      default:
+        return false;
     }
   }, [step, selectedProvider, apiKey, testResult]);
 
@@ -81,7 +93,11 @@ export function AIProviderWizard({ onComplete, onCancel }: Props) {
         }
         setStep(2);
       } catch (err) {
-        setTestResult({ ok: false, models: [], error: err instanceof Error ? err.message : 'Connection failed' });
+        setTestResult({
+          ok: false,
+          models: [],
+          error: err instanceof Error ? err.message : 'Connection failed',
+        });
         setStep(2);
       } finally {
         setIsProcessing(false);
@@ -184,7 +200,9 @@ export function AIProviderWizard({ onComplete, onCancel }: Props) {
             type="password"
             value={apiKey}
             onChange={(e) => setApiKey(e.target.value)}
-            placeholder={'apiKeyPlaceholder' in selected ? (selected.apiKeyPlaceholder ?? 'sk-...') : 'sk-...'}
+            placeholder={
+              'apiKeyPlaceholder' in selected ? (selected.apiKeyPlaceholder ?? 'sk-...') : 'sk-...'
+            }
             className="w-full px-3 py-2.5 rounded-lg border border-border dark:border-dark-border bg-bg-primary dark:bg-dark-bg-primary text-text-primary dark:text-dark-text-primary text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 font-mono"
             autoFocus
           />
@@ -209,8 +227,19 @@ export function AIProviderWizard({ onComplete, onCancel }: Props) {
           {!testResult && (
             <div className="flex flex-col items-center gap-3">
               <svg className="w-10 h-10 animate-spin text-primary" viewBox="0 0 24 24" fill="none">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                />
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                />
               </svg>
               <p className="text-text-muted dark:text-dark-text-muted">Testing connection...</p>
             </div>
@@ -225,7 +254,8 @@ export function AIProviderWizard({ onComplete, onCancel }: Props) {
                 Connection Successful
               </h3>
               <p className="text-sm text-text-muted dark:text-dark-text-muted">
-                Found {testResult.models.length} available model{testResult.models.length !== 1 ? 's' : ''}.
+                Found {testResult.models.length} available model
+                {testResult.models.length !== 1 ? 's' : ''}.
               </p>
             </div>
           )}
@@ -240,7 +270,10 @@ export function AIProviderWizard({ onComplete, onCancel }: Props) {
               </h3>
               <p className="text-sm text-error max-w-md">{testResult.error}</p>
               <button
-                onClick={() => { setStep(1); setTestResult(null); }}
+                onClick={() => {
+                  setStep(1);
+                  setTestResult(null);
+                }}
                 className="mt-2 text-sm text-primary hover:underline"
               >
                 Go back and try again
@@ -288,7 +321,9 @@ export function AIProviderWizard({ onComplete, onCancel }: Props) {
                 className="w-full px-3 py-2.5 rounded-lg border border-border dark:border-dark-border bg-bg-primary dark:bg-dark-bg-primary text-text-primary dark:text-dark-text-primary text-sm"
               >
                 {testResult.models.map((m) => (
-                  <option key={m.id} value={m.id}>{m.name || m.id}</option>
+                  <option key={m.id} value={m.id}>
+                    {m.name || m.id}
+                  </option>
                 ))}
               </select>
             </div>

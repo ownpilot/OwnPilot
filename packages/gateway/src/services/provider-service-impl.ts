@@ -5,12 +5,7 @@
  * and provider config data into a unified service interface.
  */
 
-import type {
-  IProviderService,
-  ProviderInfo,
-  ModelInfo,
-  ResolvedProvider,
-} from '@ownpilot/core';
+import type { IProviderService, ProviderInfo, ModelInfo, ResolvedProvider } from '@ownpilot/core';
 import {
   resolveProviderAndModel,
   getDefaultProvider,
@@ -24,14 +19,8 @@ import {
 // ============================================================================
 
 export class ProviderService implements IProviderService {
-  async resolve(options?: {
-    provider?: string;
-    model?: string;
-  }): Promise<ResolvedProvider> {
-    return resolveProviderAndModel(
-      options?.provider ?? 'default',
-      options?.model ?? 'default',
-    );
+  async resolve(options?: { provider?: string; model?: string }): Promise<ResolvedProvider> {
+    return resolveProviderAndModel(options?.provider ?? 'default', options?.model ?? 'default');
   }
 
   async getDefaultProvider(): Promise<string | null> {
@@ -55,7 +44,7 @@ export class ProviderService implements IProviderService {
     // Provider configs are loaded from data/providers/*.json
     try {
       // Return a basic list of known popular providers
-      return Array.from(ProviderService.KNOWN_PROVIDERS).map(id => ({
+      return Array.from(ProviderService.KNOWN_PROVIDERS).map((id) => ({
         id,
         name: id,
         isAvailable: true, // Full availability check would need async API key check
@@ -67,9 +56,19 @@ export class ProviderService implements IProviderService {
 
   /** Known provider identifiers (must match provider JSON config filenames). */
   private static readonly KNOWN_PROVIDERS = new Set([
-    'openai', 'anthropic', 'google', 'azure', 'groq',
-    'deepseek', 'mistral', 'cohere', 'ollama-cloud',
-    'fireworks-ai', 'togetherai', 'openrouter', 'xai',
+    'openai',
+    'anthropic',
+    'google',
+    'azure',
+    'groq',
+    'deepseek',
+    'mistral',
+    'cohere',
+    'ollama-cloud',
+    'fireworks-ai',
+    'togetherai',
+    'openrouter',
+    'xai',
   ]);
 
   /** Validate provider name to prevent path traversal / env probing. */
@@ -87,13 +86,15 @@ export class ProviderService implements IProviderService {
       const { loadProviderConfig } = require('@ownpilot/core');
       const config = loadProviderConfig(provider);
       if (!config?.models) return [];
-      return config.models.map((m: { id: string; name?: string; contextWindow?: number; maxOutput?: number }) => ({
-        id: m.id,
-        name: m.name ?? m.id,
-        provider,
-        contextWindow: m.contextWindow,
-        maxOutput: m.maxOutput,
-      }));
+      return config.models.map(
+        (m: { id: string; name?: string; contextWindow?: number; maxOutput?: number }) => ({
+          id: m.id,
+          name: m.name ?? m.id,
+          provider,
+          contextWindow: m.contextWindow,
+          maxOutput: m.maxOutput,
+        })
+      );
     } catch {
       return [];
     }

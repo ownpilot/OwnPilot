@@ -52,11 +52,21 @@ const {
   const mockContactsRepo = makeMockRepo();
 
   // Must use regular functions (not arrows) so vi.fn() works with `new`
-  const MockBookmarksRepository = vi.fn(function () { return mockBookmarksRepo; });
-  const MockNotesRepository = vi.fn(function () { return mockNotesRepo; });
-  const MockTasksRepository = vi.fn(function () { return mockTasksRepo; });
-  const MockCalendarRepository = vi.fn(function () { return mockCalendarRepo; });
-  const MockContactsRepository = vi.fn(function () { return mockContactsRepo; });
+  const MockBookmarksRepository = vi.fn(function () {
+    return mockBookmarksRepo;
+  });
+  const MockNotesRepository = vi.fn(function () {
+    return mockNotesRepo;
+  });
+  const MockTasksRepository = vi.fn(function () {
+    return mockTasksRepo;
+  });
+  const MockCalendarRepository = vi.fn(function () {
+    return mockCalendarRepo;
+  });
+  const MockContactsRepository = vi.fn(function () {
+    return mockContactsRepo;
+  });
 
   return {
     mockBookmarksRepo,
@@ -263,7 +273,7 @@ describe('BookmarkStore', () => {
           tags: ['a', 'b'],
           category: 'tech',
           favicon: 'https://test.dev/fav.ico',
-        }),
+        })
       );
 
       const result = await store.get('bk-99');
@@ -312,7 +322,7 @@ describe('BookmarkStore', () => {
       await store.list({ category: 'tech' });
 
       expect(mockBookmarksRepo.list).toHaveBeenCalledWith(
-        expect.objectContaining({ category: 'tech' }),
+        expect.objectContaining({ category: 'tech' })
       );
     });
 
@@ -322,7 +332,7 @@ describe('BookmarkStore', () => {
       await store.list({ tags: ['ts', 'react'] });
 
       expect(mockBookmarksRepo.list).toHaveBeenCalledWith(
-        expect.objectContaining({ tags: ['ts', 'react'] }),
+        expect.objectContaining({ tags: ['ts', 'react'] })
       );
     });
 
@@ -332,7 +342,7 @@ describe('BookmarkStore', () => {
       await store.list({ isFavorite: true });
 
       expect(mockBookmarksRepo.list).toHaveBeenCalledWith(
-        expect.objectContaining({ isFavorite: true }),
+        expect.objectContaining({ isFavorite: true })
       );
     });
 
@@ -432,10 +442,14 @@ describe('BookmarkStore', () => {
 
     it('should map all returned fields', async () => {
       mockBookmarksRepo.create.mockResolvedValueOnce(
-        makeBookmarkRow({ id: 'bk-new', url: 'https://new.com', title: 'New' }),
+        makeBookmarkRow({ id: 'bk-new', url: 'https://new.com', title: 'New' })
       );
 
-      const result = await store.create({ url: 'https://new.com', title: 'New', updatedAt: ISO_NOW });
+      const result = await store.create({
+        url: 'https://new.com',
+        title: 'New',
+        updatedAt: ISO_NOW,
+      });
 
       expect(result.id).toBe('bk-new');
       expect(result.url).toBe('https://new.com');
@@ -472,7 +486,7 @@ describe('BookmarkStore', () => {
 
       expect(mockBookmarksRepo.update).toHaveBeenCalledWith(
         'bk-1',
-        expect.objectContaining({ url: 'https://new.com', category: 'dev' }),
+        expect.objectContaining({ url: 'https://new.com', category: 'dev' })
       );
     });
 
@@ -588,7 +602,7 @@ describe('NoteStore', () => {
           content: 'Some content',
           tags: ['note', 'test'],
           category: 'personal',
-        }),
+        })
       );
 
       const result = await store.get('note-42');
@@ -618,7 +632,7 @@ describe('NoteStore', () => {
       await store.list({ category: 'work' });
 
       expect(mockNotesRepo.list).toHaveBeenCalledWith(
-        expect.objectContaining({ category: 'work' }),
+        expect.objectContaining({ category: 'work' })
       );
     });
 
@@ -628,7 +642,7 @@ describe('NoteStore', () => {
       await store.list({ tags: ['important'] });
 
       expect(mockNotesRepo.list).toHaveBeenCalledWith(
-        expect.objectContaining({ tags: ['important'] }),
+        expect.objectContaining({ tags: ['important'] })
       );
     });
 
@@ -637,9 +651,7 @@ describe('NoteStore', () => {
 
       await store.list({ isPinned: true });
 
-      expect(mockNotesRepo.list).toHaveBeenCalledWith(
-        expect.objectContaining({ isPinned: true }),
-      );
+      expect(mockNotesRepo.list).toHaveBeenCalledWith(expect.objectContaining({ isPinned: true }));
     });
 
     it('should pass isArchived filter to repo', async () => {
@@ -648,7 +660,7 @@ describe('NoteStore', () => {
       await store.list({ isArchived: false });
 
       expect(mockNotesRepo.list).toHaveBeenCalledWith(
-        expect.objectContaining({ isArchived: false }),
+        expect.objectContaining({ isArchived: false })
       );
     });
 
@@ -707,11 +719,11 @@ describe('NoteStore', () => {
       mockNotesRepo.create.mockResolvedValueOnce(makeNoteRow());
 
       // Pass data without title (simulate undefined)
-      await store.create({ content: 'hello', updatedAt: ISO_NOW } as Parameters<NoteStore['create']>[0]);
+      await store.create({ content: 'hello', updatedAt: ISO_NOW } as Parameters<
+        NoteStore['create']
+      >[0]);
 
-      expect(mockNotesRepo.create).toHaveBeenCalledWith(
-        expect.objectContaining({ title: '' }),
-      );
+      expect(mockNotesRepo.create).toHaveBeenCalledWith(expect.objectContaining({ title: '' }));
     });
 
     it('should use provided title when present', async () => {
@@ -720,7 +732,7 @@ describe('NoteStore', () => {
       await store.create({ title: 'My Title', content: 'Content', updatedAt: ISO_NOW });
 
       expect(mockNotesRepo.create).toHaveBeenCalledWith(
-        expect.objectContaining({ title: 'My Title' }),
+        expect.objectContaining({ title: 'My Title' })
       );
     });
 
@@ -883,7 +895,7 @@ describe('TaskStore', () => {
           projectId: 'proj-1',
           recurrence: 'RRULE:FREQ=WEEKLY',
           completedAt: undefined,
-        }),
+        })
       );
 
       const result = await store.get('task-99');
@@ -905,9 +917,7 @@ describe('TaskStore', () => {
     });
 
     it('should include completedAt when set', async () => {
-      mockTasksRepo.get.mockResolvedValueOnce(
-        makeTaskRow({ completedAt: '2025-01-15T10:00:00Z' }),
-      );
+      mockTasksRepo.get.mockResolvedValueOnce(makeTaskRow({ completedAt: '2025-01-15T10:00:00Z' }));
 
       const result = await store.get('task-1');
 
@@ -930,7 +940,7 @@ describe('TaskStore', () => {
       await store.list({ status: 'completed' });
 
       expect(mockTasksRepo.list).toHaveBeenCalledWith(
-        expect.objectContaining({ status: 'completed' }),
+        expect.objectContaining({ status: 'completed' })
       );
     });
 
@@ -940,7 +950,7 @@ describe('TaskStore', () => {
       await store.list({ priority: 'urgent' });
 
       expect(mockTasksRepo.list).toHaveBeenCalledWith(
-        expect.objectContaining({ priority: 'urgent' }),
+        expect.objectContaining({ priority: 'urgent' })
       );
     });
 
@@ -950,7 +960,7 @@ describe('TaskStore', () => {
       await store.list({ projectId: 'proj-42' });
 
       expect(mockTasksRepo.list).toHaveBeenCalledWith(
-        expect.objectContaining({ projectId: 'proj-42' }),
+        expect.objectContaining({ projectId: 'proj-42' })
       );
     });
 
@@ -1043,7 +1053,13 @@ describe('TaskStore', () => {
     it('should return mapped task with ISO date strings', async () => {
       mockTasksRepo.create.mockResolvedValueOnce(makeTaskRow());
 
-      const result = await store.create({ title: 'T', updatedAt: ISO_NOW, status: 'pending', priority: 'normal', tags: [] });
+      const result = await store.create({
+        title: 'T',
+        updatedAt: ISO_NOW,
+        status: 'pending',
+        priority: 'normal',
+        tags: [],
+      });
 
       expect(result.createdAt).toBe(ISO_NOW);
       expect(result.updatedAt).toBe(ISO_NOW);
@@ -1092,7 +1108,7 @@ describe('TaskStore', () => {
           title: 'Updated',
           status: 'in_progress',
           priority: 'high',
-        }),
+        })
       );
     });
   });
@@ -1209,7 +1225,7 @@ describe('CalendarStore', () => {
           externalId: 'gcal-abc',
           externalSource: 'google',
           attendees: ['alice@example.com'],
-        }),
+        })
       );
 
       const result = await store.get('evt-99');
@@ -1246,7 +1262,7 @@ describe('CalendarStore', () => {
       await store.list({ category: 'work' });
 
       expect(mockCalendarRepo.list).toHaveBeenCalledWith(
-        expect.objectContaining({ category: 'work' }),
+        expect.objectContaining({ category: 'work' })
       );
     });
 
@@ -1400,13 +1416,13 @@ describe('CalendarStore', () => {
           location: 'Office',
           allDay: true,
           attendees: ['c@d.com'],
-        }),
+        })
       );
     });
 
     it('should handle optional endTime in update', async () => {
       mockCalendarRepo.update.mockResolvedValueOnce(
-        makeEventRow({ endTime: new Date('2025-01-15T16:00:00.000Z') }),
+        makeEventRow({ endTime: new Date('2025-01-15T16:00:00.000Z') })
       );
 
       const result = await store.update('evt-1', { endTime: '2025-01-15T16:00:00.000Z' });
@@ -1488,7 +1504,9 @@ describe('ContactStore', () => {
 
     it('should map lastContactedAt to ISO string when present', async () => {
       const lastContacted = new Date('2025-01-10T08:00:00.000Z');
-      mockContactsRepo.get.mockResolvedValueOnce(makeContactRow({ lastContactedAt: lastContacted }));
+      mockContactsRepo.get.mockResolvedValueOnce(
+        makeContactRow({ lastContactedAt: lastContacted })
+      );
 
       const result = await store.get('ct-1');
 
@@ -1522,7 +1540,7 @@ describe('ContactStore', () => {
           isFavorite: true,
           socialLinks: { twitter: '@bob' },
           customFields: { dept: 'eng' },
-        }),
+        })
       );
 
       const result = await store.get('ct-99');
@@ -1561,7 +1579,7 @@ describe('ContactStore', () => {
       await store.list({ relationship: 'friend' });
 
       expect(mockContactsRepo.list).toHaveBeenCalledWith(
-        expect.objectContaining({ relationship: 'friend' }),
+        expect.objectContaining({ relationship: 'friend' })
       );
     });
 
@@ -1571,7 +1589,7 @@ describe('ContactStore', () => {
       await store.list({ company: 'Acme Corp' });
 
       expect(mockContactsRepo.list).toHaveBeenCalledWith(
-        expect.objectContaining({ company: 'Acme Corp' }),
+        expect.objectContaining({ company: 'Acme Corp' })
       );
     });
 
@@ -1581,7 +1599,7 @@ describe('ContactStore', () => {
       await store.list({ isFavorite: true });
 
       expect(mockContactsRepo.list).toHaveBeenCalledWith(
-        expect.objectContaining({ isFavorite: true }),
+        expect.objectContaining({ isFavorite: true })
       );
     });
 
@@ -1696,7 +1714,14 @@ describe('ContactStore', () => {
     it('should return mapped contact with ISO date strings', async () => {
       mockContactsRepo.create.mockResolvedValueOnce(makeContactRow());
 
-      const result = await store.create({ name: 'X', updatedAt: ISO_NOW, tags: [], isFavorite: false, socialLinks: {}, customFields: {} });
+      const result = await store.create({
+        name: 'X',
+        updatedAt: ISO_NOW,
+        tags: [],
+        isFavorite: false,
+        socialLinks: {},
+        customFields: {},
+      });
 
       expect(result.createdAt).toBe(ISO_NOW);
       expect(result.updatedAt).toBe(ISO_NOW);
@@ -1705,7 +1730,14 @@ describe('ContactStore', () => {
     it('should handle lastContactedAt being absent after create', async () => {
       mockContactsRepo.create.mockResolvedValueOnce(makeContactRow({ lastContactedAt: undefined }));
 
-      const result = await store.create({ name: 'X', updatedAt: ISO_NOW, tags: [], isFavorite: false, socialLinks: {}, customFields: {} });
+      const result = await store.create({
+        name: 'X',
+        updatedAt: ISO_NOW,
+        tags: [],
+        isFavorite: false,
+        socialLinks: {},
+        customFields: {},
+      });
 
       expect(result.lastContactedAt).toBeUndefined();
     });
@@ -1750,7 +1782,7 @@ describe('ContactStore', () => {
           isFavorite: false,
           socialLinks: { github: 'dave' },
           customFields: { score: '5' },
-        }),
+        })
       );
     });
 
@@ -1893,7 +1925,7 @@ describe('BookmarkStore — additional edge cases', () => {
 
   it('get: undefined optional fields remain undefined in mapped result', async () => {
     mockBookmarksRepo.get.mockResolvedValueOnce(
-      makeBookmarkRow({ description: undefined, favicon: undefined, category: undefined }),
+      makeBookmarkRow({ description: undefined, favicon: undefined, category: undefined })
     );
 
     const result = await store.get('bk-1');
@@ -1936,7 +1968,7 @@ describe('BookmarkStore — additional edge cases', () => {
 
   it('create: favicon field is passed through correctly', async () => {
     mockBookmarksRepo.create.mockResolvedValueOnce(
-      makeBookmarkRow({ favicon: 'https://site.com/icon.png' }),
+      makeBookmarkRow({ favicon: 'https://site.com/icon.png' })
     );
 
     const result = await store.create({
@@ -1970,9 +2002,7 @@ describe('NoteStore — additional edge cases', () => {
     // Explicit null triggers the ?? '' path
     await store.create({ title: null as unknown as string, content: 'c', updatedAt: ISO_NOW });
 
-    expect(mockNotesRepo.create).toHaveBeenCalledWith(
-      expect.objectContaining({ title: '' }),
-    );
+    expect(mockNotesRepo.create).toHaveBeenCalledWith(expect.objectContaining({ title: '' }));
   });
 
   it('get: category undefined is preserved', async () => {
@@ -2050,7 +2080,9 @@ describe('TaskStore — additional edge cases', () => {
   });
 
   it('get: recurrence preserved when set', async () => {
-    mockTasksRepo.get.mockResolvedValueOnce(makeTaskRow({ recurrence: 'RRULE:FREQ=WEEKLY;BYDAY=MO' }));
+    mockTasksRepo.get.mockResolvedValueOnce(
+      makeTaskRow({ recurrence: 'RRULE:FREQ=WEEKLY;BYDAY=MO' })
+    );
 
     const result = await store.get('t-1');
 
@@ -2110,9 +2142,7 @@ describe('CalendarStore — additional edge cases', () => {
   });
 
   it('get: attendees array is preserved', async () => {
-    mockCalendarRepo.get.mockResolvedValueOnce(
-      makeEventRow({ attendees: ['a@b.com', 'c@d.com'] }),
-    );
+    mockCalendarRepo.get.mockResolvedValueOnce(makeEventRow({ attendees: ['a@b.com', 'c@d.com'] }));
 
     const result = await store.get('e-1');
 
@@ -2159,7 +2189,7 @@ describe('CalendarStore — additional edge cases', () => {
         timezone: 'Asia/Tokyo',
         reminderMinutes: 30,
         color: '#00ff00',
-      }),
+      })
     );
   });
 });
@@ -2190,7 +2220,7 @@ describe('ContactStore — additional edge cases', () => {
 
   it('get: socialLinks object is preserved', async () => {
     mockContactsRepo.get.mockResolvedValueOnce(
-      makeContactRow({ socialLinks: { twitter: '@alice', github: 'alice' } }),
+      makeContactRow({ socialLinks: { twitter: '@alice', github: 'alice' } })
     );
 
     const result = await store.get('ct-1');
@@ -2200,7 +2230,7 @@ describe('ContactStore — additional edge cases', () => {
 
   it('get: customFields object is preserved', async () => {
     mockContactsRepo.get.mockResolvedValueOnce(
-      makeContactRow({ customFields: { department: 'eng', level: 'senior' } }),
+      makeContactRow({ customFields: { department: 'eng', level: 'senior' } })
     );
 
     const result = await store.get('ct-1');
@@ -2214,7 +2244,7 @@ describe('ContactStore — additional edge cases', () => {
     await store.list({ isFavorite: false });
 
     expect(mockContactsRepo.list).toHaveBeenCalledWith(
-      expect.objectContaining({ isFavorite: false }),
+      expect.objectContaining({ isFavorite: false })
     );
   });
 
@@ -2249,7 +2279,7 @@ describe('ContactStore — additional edge cases', () => {
         address: 'Addr',
         notes: 'Notes',
         relationship: 'rel',
-      }),
+      })
     );
   });
 

@@ -42,93 +42,93 @@ import type {
 
 // Provider IDs (auto-generated from JSON files)
 export const PROVIDER_IDS = [
-  "302ai",
-  "abacus",
-  "aihubmix",
-  "alibaba",
-  "alibaba-cn",
-  "amazon-bedrock",
-  "anthropic",
-  "azure",
-  "azure-cognitive-services",
-  "bailing",
-  "baseten",
-  "cerebras",
-  "chutes",
-  "cloudflare-ai-gateway",
-  "cloudflare-workers-ai",
-  "cohere",
-  "cortecs",
-  "deepinfra",
-  "deepseek",
-  "fastrouter",
-  "fireworks-ai",
-  "firmware",
-  "friendli",
-  "github-copilot",
-  "github-models",
-  "gitlab",
-  "google",
-  "google-vertex",
-  "google-vertex-anthropic",
-  "groq",
-  "helicone",
-  "huggingface",
-  "iflowcn",
-  "inception",
-  "inference",
-  "io-net",
-  "kimi-for-coding",
-  "llama",
-  "lmstudio",
-  "lucidquery",
-  "minimax",
-  "minimax-cn",
-  "minimax-cn-coding-plan",
-  "minimax-coding-plan",
-  "mistral",
-  "moark",
-  "modelscope",
-  "moonshotai",
-  "moonshotai-cn",
-  "morph",
-  "nano-gpt",
-  "nebius",
-  "novita-ai",
-  "nvidia",
-  "ollama-cloud",
-  "openai",
-  "opencode",
-  "openrouter",
-  "ovhcloud",
-  "perplexity",
-  "poe",
-  "privatemode-ai",
-  "requesty",
-  "sap-ai-core",
-  "scaleway",
-  "siliconflow",
-  "siliconflow-cn",
-  "submodel",
-  "synthetic",
-  "togetherai",
-  "upstage",
-  "v0",
-  "venice",
-  "vercel",
-  "vivgrid",
-  "vultr",
-  "wandb",
-  "xai",
-  "xiaomi",
-  "zai",
-  "zai-coding-plan",
-  "zenmux",
-  "zhipuai",
-  "zhipuai-coding-plan"
+  '302ai',
+  'abacus',
+  'aihubmix',
+  'alibaba',
+  'alibaba-cn',
+  'amazon-bedrock',
+  'anthropic',
+  'azure',
+  'azure-cognitive-services',
+  'bailing',
+  'baseten',
+  'cerebras',
+  'chutes',
+  'cloudflare-ai-gateway',
+  'cloudflare-workers-ai',
+  'cohere',
+  'cortecs',
+  'deepinfra',
+  'deepseek',
+  'fastrouter',
+  'fireworks-ai',
+  'firmware',
+  'friendli',
+  'github-copilot',
+  'github-models',
+  'gitlab',
+  'google',
+  'google-vertex',
+  'google-vertex-anthropic',
+  'groq',
+  'helicone',
+  'huggingface',
+  'iflowcn',
+  'inception',
+  'inference',
+  'io-net',
+  'kimi-for-coding',
+  'llama',
+  'lmstudio',
+  'lucidquery',
+  'minimax',
+  'minimax-cn',
+  'minimax-cn-coding-plan',
+  'minimax-coding-plan',
+  'mistral',
+  'moark',
+  'modelscope',
+  'moonshotai',
+  'moonshotai-cn',
+  'morph',
+  'nano-gpt',
+  'nebius',
+  'novita-ai',
+  'nvidia',
+  'ollama-cloud',
+  'openai',
+  'opencode',
+  'openrouter',
+  'ovhcloud',
+  'perplexity',
+  'poe',
+  'privatemode-ai',
+  'requesty',
+  'sap-ai-core',
+  'scaleway',
+  'siliconflow',
+  'siliconflow-cn',
+  'submodel',
+  'synthetic',
+  'togetherai',
+  'upstage',
+  'v0',
+  'venice',
+  'vercel',
+  'vivgrid',
+  'vultr',
+  'wandb',
+  'xai',
+  'xiaomi',
+  'zai',
+  'zai-coding-plan',
+  'zenmux',
+  'zhipuai',
+  'zhipuai-coding-plan',
 ] as const;
 
-export type ProviderId = typeof PROVIDER_IDS[number];
+export type ProviderId = (typeof PROVIDER_IDS)[number];
 
 // Cache for loaded configs
 const configCache = new Map<string, ProviderConfig>();
@@ -172,7 +172,9 @@ export function getDefaultModelForProvider(providerId: string): ModelConfig | nu
  * Load all provider configs
  */
 export function loadAllProviderConfigs(): ProviderConfig[] {
-  return PROVIDER_IDS.map(id => loadProviderConfig(id)).filter((c): c is ProviderConfig => c !== null);
+  return PROVIDER_IDS.map((id) => loadProviderConfig(id)).filter(
+    (c): c is ProviderConfig => c !== null
+  );
 }
 
 /**
@@ -214,15 +216,17 @@ export function resolveProviderConfig(id: string): ResolvedProviderConfig | null
  * Get all providers that have API keys configured
  */
 export function getConfiguredProviders(): ResolvedProviderConfig[] {
-  return PROVIDER_IDS
-    .map(id => resolveProviderConfig(id))
-    .filter((c): c is ResolvedProviderConfig => c !== null);
+  return PROVIDER_IDS.map((id) => resolveProviderConfig(id)).filter(
+    (c): c is ResolvedProviderConfig => c !== null
+  );
 }
 
 /**
  * Find models matching criteria across all providers
  */
-export function findModels(criteria: ProviderSelectionCriteria): Array<{ provider: ProviderConfig; model: ModelConfig }> {
+export function findModels(
+  criteria: ProviderSelectionCriteria
+): Array<{ provider: ProviderConfig; model: ModelConfig }> {
   const results: Array<{ provider: ProviderConfig; model: ModelConfig }> = [];
   const providers = getConfiguredProviders();
 
@@ -236,7 +240,7 @@ export function findModels(criteria: ProviderSelectionCriteria): Array<{ provide
     for (const model of provider.models) {
       // Check capabilities
       if (criteria.capabilities) {
-        const hasAll = criteria.capabilities.every(cap =>
+        const hasAll = criteria.capabilities.every((cap) =>
           model.capabilities.includes(cap as ModelCapability)
         );
         if (!hasAll) continue;
@@ -271,7 +275,9 @@ export function findModels(criteria: ProviderSelectionCriteria): Array<{ provide
 /**
  * Select the best model based on criteria
  */
-export function selectBestModel(criteria: ProviderSelectionCriteria): { provider: ProviderConfig; model: ModelConfig } | null {
+export function selectBestModel(
+  criteria: ProviderSelectionCriteria
+): { provider: ProviderConfig; model: ModelConfig } | null {
   const results = findModels(criteria);
   return results[0] || null;
 }
@@ -279,7 +285,9 @@ export function selectBestModel(criteria: ProviderSelectionCriteria): { provider
 /**
  * Get the cheapest model matching criteria
  */
-export function getCheapestModel(criteriaOrCapabilities: ProviderSelectionCriteria | ModelCapability[] = {}): { provider: ProviderConfig; model: ModelConfig } | null {
+export function getCheapestModel(
+  criteriaOrCapabilities: ProviderSelectionCriteria | ModelCapability[] = {}
+): { provider: ProviderConfig; model: ModelConfig } | null {
   const criteria: ProviderSelectionCriteria = Array.isArray(criteriaOrCapabilities)
     ? { capabilities: criteriaOrCapabilities }
     : criteriaOrCapabilities;
@@ -296,7 +304,9 @@ export function getCheapestModel(criteriaOrCapabilities: ProviderSelectionCriter
 /**
  * Get the fastest model (smallest context = usually faster)
  */
-export function getFastestModel(criteriaOrCapabilities: ProviderSelectionCriteria | ModelCapability[] = {}): { provider: ProviderConfig; model: ModelConfig } | null {
+export function getFastestModel(
+  criteriaOrCapabilities: ProviderSelectionCriteria | ModelCapability[] = {}
+): { provider: ProviderConfig; model: ModelConfig } | null {
   const criteria: ProviderSelectionCriteria = Array.isArray(criteriaOrCapabilities)
     ? { capabilities: criteriaOrCapabilities }
     : criteriaOrCapabilities;
@@ -314,7 +324,9 @@ export function getFastestModel(criteriaOrCapabilities: ProviderSelectionCriteri
 /**
  * Get the smartest model (largest context, highest price = usually smarter)
  */
-export function getSmartestModel(criteriaOrCapabilities: ProviderSelectionCriteria | ModelCapability[] = {}): { provider: ProviderConfig; model: ModelConfig } | null {
+export function getSmartestModel(
+  criteriaOrCapabilities: ProviderSelectionCriteria | ModelCapability[] = {}
+): { provider: ProviderConfig; model: ModelConfig } | null {
   const criteria: ProviderSelectionCriteria = Array.isArray(criteriaOrCapabilities)
     ? { capabilities: criteriaOrCapabilities }
     : criteriaOrCapabilities;

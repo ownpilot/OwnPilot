@@ -60,10 +60,12 @@ export const composioApi = {
   getConnection: (id: string) => apiClient.get<ComposioConnection>(`/composio/connections/${id}`),
 
   /** Disconnect an app */
-  disconnect: (id: string) => apiClient.delete<{ disconnected: boolean }>(`/composio/connections/${id}`),
+  disconnect: (id: string) =>
+    apiClient.delete<{ disconnected: boolean }>(`/composio/connections/${id}`),
 
   /** Refresh connection tokens */
-  refresh: (id: string) => apiClient.post<ComposioConnection>(`/composio/connections/${id}/refresh`),
+  refresh: (id: string) =>
+    apiClient.post<ComposioConnection>(`/composio/connections/${id}/refresh`),
 
   /** Search Composio actions */
   searchActions: (query: string, app?: string) =>

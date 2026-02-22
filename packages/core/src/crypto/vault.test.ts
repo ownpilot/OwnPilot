@@ -69,23 +69,32 @@ async function setupMocks() {
 
   vi.mocked(keychain.hasSecret).mockResolvedValue(false);
   vi.mocked(keychain.storeSecret).mockResolvedValue({ ok: true, value: undefined });
-  vi.mocked(keychain.retrieveSecret).mockResolvedValue({ ok: true, value: new Uint8Array([10, 20, 30]) });
+  vi.mocked(keychain.retrieveSecret).mockResolvedValue({
+    ok: true,
+    value: new Uint8Array([10, 20, 30]),
+  });
   vi.mocked(keychain.deleteSecret).mockResolvedValue({ ok: true, value: undefined });
 
   vi.mocked(derive.deriveKey).mockResolvedValue({ ok: true, value: 'mock-derived-key' as never });
   vi.mocked(derive.generateSalt).mockReturnValue(new Uint8Array([1, 2, 3, 4]));
   vi.mocked(derive.generateIV).mockReturnValue(new Uint8Array(12));
   vi.mocked(derive.generateMasterKey).mockReturnValue(new Uint8Array([10, 20, 30]));
-  vi.mocked(derive.toBase64).mockImplementation((data: Uint8Array) => Buffer.from(data).toString('base64'));
-  vi.mocked(derive.fromBase64).mockImplementation((b64: string) => new Uint8Array(Buffer.from(b64, 'base64')));
+  vi.mocked(derive.toBase64).mockImplementation((data: Uint8Array) =>
+    Buffer.from(data).toString('base64')
+  );
+  vi.mocked(derive.fromBase64).mockImplementation(
+    (b64: string) => new Uint8Array(Buffer.from(b64, 'base64'))
+  );
   vi.mocked(derive.secureClear).mockImplementation(() => {});
 
   vi.mocked(fs.existsSync).mockReturnValue(true);
-  vi.mocked(fsp.readFile).mockResolvedValue(JSON.stringify({
-    version: 1,
-    salt: Buffer.from(new Uint8Array([1, 2, 3, 4])).toString('base64'),
-    entries: {},
-  }));
+  vi.mocked(fsp.readFile).mockResolvedValue(
+    JSON.stringify({
+      version: 1,
+      salt: Buffer.from(new Uint8Array([1, 2, 3, 4])).toString('base64'),
+      entries: {},
+    })
+  );
   vi.mocked(fsp.writeFile).mockResolvedValue(undefined);
   vi.mocked(fsp.mkdir).mockResolvedValue(undefined as never);
 

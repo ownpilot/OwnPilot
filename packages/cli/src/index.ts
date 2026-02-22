@@ -44,10 +44,7 @@ loadEnv({ quiet: true });
 
 const program = new Command();
 
-program
-  .name('ownpilot')
-  .description('Privacy-first AI Gateway CLI')
-  .version('0.1.0');
+program.name('ownpilot').description('Privacy-first AI Gateway CLI').version('0.1.0');
 
 // Setup command - first-time configuration
 program
@@ -100,7 +97,9 @@ const configCmd = program
 
 configCmd
   .command('set <key> [value]')
-  .description('Store a credential (openai-api-key, anthropic-api-key, telegram-bot-token, jwt-secret)')
+  .description(
+    'Store a credential (openai-api-key, anthropic-api-key, telegram-bot-token, jwt-secret)'
+  )
   .action((key, value) => configSet({ key, value }));
 
 configCmd
@@ -113,10 +112,7 @@ configCmd
   .description('Remove a credential')
   .action((key) => configDelete({ key }));
 
-configCmd
-  .command('list')
-  .description('List all stored credentials')
-  .action(configList);
+configCmd.command('list').description('List all stored credentials').action(configList);
 
 configCmd
   .command('change-password')
@@ -128,25 +124,16 @@ const channelCmd = program
   .command('channel')
   .description('Manage messaging channels (Telegram, Discord)');
 
-channelCmd
-  .command('list')
-  .description('List all configured channels')
-  .action(channelList);
+channelCmd.command('list').description('List all configured channels').action(channelList);
 
-channelCmd
-  .command('add')
-  .description('Add a new channel')
-  .action(channelAdd);
+channelCmd.command('add').description('Add a new channel').action(channelAdd);
 
 channelCmd
   .command('remove [id]')
   .description('Remove a channel')
   .action((id) => channelRemove({ id }));
 
-channelCmd
-  .command('status')
-  .description('Show channel status')
-  .action(channelStatus);
+channelCmd.command('status').description('Show channel status').action(channelStatus);
 
 channelCmd
   .command('connect [id]')
@@ -163,15 +150,9 @@ const workspaceCmd = program
   .command('workspace')
   .description('Manage workspaces (isolated agent sessions)');
 
-workspaceCmd
-  .command('list')
-  .description('List all workspaces')
-  .action(workspaceList);
+workspaceCmd.command('list').description('List all workspaces').action(workspaceList);
 
-workspaceCmd
-  .command('create')
-  .description('Create a new workspace')
-  .action(workspaceCreate);
+workspaceCmd.command('create').description('Create a new workspace').action(workspaceCreate);
 
 workspaceCmd
   .command('delete [id]')
@@ -211,15 +192,9 @@ tunnelStartCmd
   .option('-p, --port <port>', 'Local port to tunnel', '8080')
   .action(tunnelStartCloudflare);
 
-tunnelCmd
-  .command('stop')
-  .description('Stop the active tunnel')
-  .action(tunnelStop);
+tunnelCmd.command('stop').description('Stop the active tunnel').action(tunnelStop);
 
-tunnelCmd
-  .command('status')
-  .description('Show tunnel status')
-  .action(tunnelStatus);
+tunnelCmd.command('status').description('Show tunnel status').action(tunnelStatus);
 
 // Parse arguments
 program.parse();

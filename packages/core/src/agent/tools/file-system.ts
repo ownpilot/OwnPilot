@@ -33,11 +33,7 @@ function safeGlobToRegex(glob: string): RegExp {
  * @param workspaceDir Optional workspace directory override from context
  */
 function getAllowedPaths(workspaceDir?: string): string[] {
-  const paths = [
-    workspaceDir ?? process.env.WORKSPACE_DIR ?? process.cwd(),
-    '/tmp',
-    'C:\\Temp',
-  ];
+  const paths = [workspaceDir ?? process.env.WORKSPACE_DIR ?? process.cwd(), '/tmp', 'C:\\Temp'];
 
   // Only add home dir if explicitly enabled (security consideration)
   if (process.env.ALLOW_HOME_DIR_ACCESS === 'true') {
@@ -86,10 +82,7 @@ async function isPathAllowedAsync(filePath: string, workspaceDir?: string): Prom
       const resolvedAllowed = path.resolve(allowed);
 
       // Check exact match or proper subdirectory (with path separator)
-      if (
-        resolvedPath === resolvedAllowed ||
-        resolvedPath.startsWith(resolvedAllowed + path.sep)
-      ) {
+      if (resolvedPath === resolvedAllowed || resolvedPath.startsWith(resolvedAllowed + path.sep)) {
         return true;
       }
     }
@@ -115,8 +108,7 @@ function _isPathAllowed(filePath: string, workspaceDir?: string): boolean {
   return allowedPaths.some((allowed) => {
     const resolvedAllowed = path.resolve(allowed);
     return (
-      normalizedPath === resolvedAllowed ||
-      normalizedPath.startsWith(resolvedAllowed + path.sep)
+      normalizedPath === resolvedAllowed || normalizedPath.startsWith(resolvedAllowed + path.sep)
     );
   });
 }
@@ -165,7 +157,10 @@ export const readFileTool: ToolDefinition = {
   },
 };
 
-export const readFileExecutor: ToolExecutor = async (args, context): Promise<ToolExecutionResult> => {
+export const readFileExecutor: ToolExecutor = async (
+  args,
+  context
+): Promise<ToolExecutionResult> => {
   const rawPath = args.path as string;
   const encoding = (args.encoding as BufferEncoding) ?? 'utf-8';
   const startLine = args.startLine as number | undefined;
@@ -251,7 +246,10 @@ export const writeFileTool: ToolDefinition = {
   },
 };
 
-export const writeFileExecutor: ToolExecutor = async (args, context): Promise<ToolExecutionResult> => {
+export const writeFileExecutor: ToolExecutor = async (
+  args,
+  context
+): Promise<ToolExecutionResult> => {
   const rawPath = args.path as string;
   const content = args.content as string;
   const append = args.append as boolean | undefined;
@@ -331,7 +329,10 @@ export const listDirectoryTool: ToolDefinition = {
   },
 };
 
-export const listDirectoryExecutor: ToolExecutor = async (args, context): Promise<ToolExecutionResult> => {
+export const listDirectoryExecutor: ToolExecutor = async (
+  args,
+  context
+): Promise<ToolExecutionResult> => {
   const rawPath = args.path as string;
   const recursive = args.recursive as boolean | undefined;
   const pattern = args.pattern as string | undefined;
@@ -449,7 +450,10 @@ export const searchFilesTool: ToolDefinition = {
   },
 };
 
-export const searchFilesExecutor: ToolExecutor = async (args, context): Promise<ToolExecutionResult> => {
+export const searchFilesExecutor: ToolExecutor = async (
+  args,
+  context
+): Promise<ToolExecutionResult> => {
   const rawPath = args.path as string;
   const query = args.query as string;
   const filePattern = args.filePattern as string | undefined;
@@ -579,7 +583,10 @@ export const downloadFileTool: ToolDefinition = {
   },
 };
 
-export const downloadFileExecutor: ToolExecutor = async (args, context): Promise<ToolExecutionResult> => {
+export const downloadFileExecutor: ToolExecutor = async (
+  args,
+  context
+): Promise<ToolExecutionResult> => {
   const url = args.url as string;
   const rawPath = args.path as string;
   const overwrite = args.overwrite as boolean | undefined;
@@ -662,7 +669,10 @@ export const fileInfoTool: ToolDefinition = {
   },
 };
 
-export const fileInfoExecutor: ToolExecutor = async (args, context): Promise<ToolExecutionResult> => {
+export const fileInfoExecutor: ToolExecutor = async (
+  args,
+  context
+): Promise<ToolExecutionResult> => {
   const rawPath = args.path as string;
 
   // Resolve relative paths to workspace directory
@@ -717,7 +727,10 @@ export const deleteFileTool: ToolDefinition = {
   },
 };
 
-export const deleteFileExecutor: ToolExecutor = async (args, context): Promise<ToolExecutionResult> => {
+export const deleteFileExecutor: ToolExecutor = async (
+  args,
+  context
+): Promise<ToolExecutionResult> => {
   const rawPath = args.path as string;
   const recursive = args.recursive as boolean | undefined;
 
@@ -783,7 +796,10 @@ export const copyFileTool: ToolDefinition = {
   },
 };
 
-export const copyFileExecutor: ToolExecutor = async (args, context): Promise<ToolExecutionResult> => {
+export const copyFileExecutor: ToolExecutor = async (
+  args,
+  context
+): Promise<ToolExecutionResult> => {
   const rawSource = args.source as string;
   const rawDestination = args.destination as string;
   const move = args.move as boolean | undefined;

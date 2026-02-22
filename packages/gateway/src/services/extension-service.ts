@@ -19,10 +19,7 @@ import {
   type ResourceDeletedData,
   type IExtensionService,
 } from '@ownpilot/core';
-import {
-  extensionsRepo,
-  type ExtensionRecord,
-} from '../db/repositories/extensions.js';
+import { extensionsRepo, type ExtensionRecord } from '../db/repositories/extensions.js';
 import {
   validateManifest,
   type ExtensionManifest,
@@ -45,7 +42,7 @@ export type ExtensionErrorCode = 'VALIDATION_ERROR' | 'NOT_FOUND' | 'ALREADY_EXI
 export class ExtensionError extends Error {
   constructor(
     message: string,
-    public readonly code: ExtensionErrorCode,
+    public readonly code: ExtensionErrorCode
   ) {
     super(message);
     this.name = 'ExtensionError';
@@ -91,7 +88,7 @@ export class ExtensionService implements IExtensionService {
       } catch (e) {
         throw new ExtensionError(
           `Invalid AgentSkills.io SKILL.md: ${manifestPath} — ${e instanceof Error ? e.message : String(e)}`,
-          'VALIDATION_ERROR',
+          'VALIDATION_ERROR'
         );
       }
       // AgentSkills.io format skips tool validation (no tools required)
@@ -105,7 +102,7 @@ export class ExtensionService implements IExtensionService {
       } catch (e) {
         throw new ExtensionError(
           `Invalid markdown manifest: ${manifestPath} — ${e instanceof Error ? e.message : String(e)}`,
-          'VALIDATION_ERROR',
+          'VALIDATION_ERROR'
         );
       }
     } else {
@@ -125,7 +122,7 @@ export class ExtensionService implements IExtensionService {
   async installFromManifest(
     manifest: ExtensionManifest,
     userId = 'default',
-    sourcePath?: string,
+    sourcePath?: string
   ): Promise<ExtensionRecord> {
     // AgentSkills.io format doesn't require tools — skip tool validation
     if (manifest.format !== 'agentskills') {
@@ -133,7 +130,7 @@ export class ExtensionService implements IExtensionService {
       if (!validation.valid) {
         throw new ExtensionError(
           `Invalid manifest: ${validation.errors.join('; ')}`,
-          'VALIDATION_ERROR',
+          'VALIDATION_ERROR'
         );
       }
     }
@@ -145,20 +142,20 @@ export class ExtensionService implements IExtensionService {
           manifest.name,
           manifest.id,
           'custom',
-          manifest.required_services.map(s => ({
+          manifest.required_services.map((s) => ({
             name: s.name,
             displayName: s.display_name,
             description: s.description,
             category: s.category,
             docsUrl: s.docs_url,
-            configSchema: s.config_schema?.map(f => ({
+            configSchema: s.config_schema?.map((f) => ({
               name: f.name,
               label: f.label,
               type: f.type as 'string' | 'secret' | 'url' | 'number' | 'boolean',
               required: f.required,
               description: f.description,
             })),
-          })),
+          }))
         );
       } catch (e) {
         log.warn('Failed to register config requirements', { id: manifest.id, error: String(e) });
@@ -187,14 +184,21 @@ export class ExtensionService implements IExtensionService {
       try {
         await this.activateExtensionTriggers(manifest, userId);
       } catch (e) {
-        log.warn('Failed to activate triggers during install', { id: manifest.id, error: String(e) });
+        log.warn('Failed to activate triggers during install', {
+          id: manifest.id,
+          error: String(e),
+        });
       }
     }
 
-    getEventBus().emit(createEvent<ResourceCreatedData>(
-      EventTypes.RESOURCE_CREATED, 'resource', 'extension-service',
-      { resourceType: 'extension', id: manifest.id },
-    ));
+    getEventBus().emit(
+      createEvent<ResourceCreatedData>(
+        EventTypes.RESOURCE_CREATED,
+        'resource',
+        'extension-service',
+        { resourceType: 'extension', id: manifest.id }
+      )
+    );
 
     log.info(`Installed extension "${manifest.name}" v${manifest.version}`, {
       id: manifest.id,
@@ -226,10 +230,14 @@ export class ExtensionService implements IExtensionService {
     const deleted = await extensionsRepo.delete(id);
 
     if (deleted) {
-      getEventBus().emit(createEvent<ResourceDeletedData>(
-        EventTypes.RESOURCE_DELETED, 'resource', 'extension-service',
-        { resourceType: 'extension', id },
-      ));
+      getEventBus().emit(
+        createEvent<ResourceDeletedData>(
+          EventTypes.RESOURCE_DELETED,
+          'resource',
+          'extension-service',
+          { resourceType: 'extension', id }
+        )
+      );
       log.info(`Uninstalled extension "${record.name}"`, { id });
     }
 
@@ -250,10 +258,14 @@ export class ExtensionService implements IExtensionService {
     const updated = await extensionsRepo.updateStatus(id, 'enabled');
 
     if (updated) {
-      getEventBus().emit(createEvent<ResourceUpdatedData>(
-        EventTypes.RESOURCE_UPDATED, 'resource', 'extension-service',
-        { resourceType: 'extension', id, changes: { status: 'enabled' } },
-      ));
+      getEventBus().emit(
+        createEvent<ResourceUpdatedData>(
+          EventTypes.RESOURCE_UPDATED,
+          'resource',
+          'extension-service',
+          { resourceType: 'extension', id, changes: { status: 'enabled' } }
+        )
+      );
     }
 
     return updated;
@@ -269,10 +281,14 @@ export class ExtensionService implements IExtensionService {
     const updated = await extensionsRepo.updateStatus(id, 'disabled');
 
     if (updated) {
-      getEventBus().emit(createEvent<ResourceUpdatedData>(
-        EventTypes.RESOURCE_UPDATED, 'resource', 'extension-service',
-        { resourceType: 'extension', id, changes: { status: 'disabled' } },
-      ));
+      getEventBus().emit(
+        createEvent<ResourceUpdatedData>(
+          EventTypes.RESOURCE_UPDATED,
+          'resource',
+          'extension-service',
+          { resourceType: 'extension', id, changes: { status: 'disabled' } }
+        )
+      );
     }
 
     return updated;
@@ -316,10 +332,18 @@ export class ExtensionService implements IExtensionService {
       }
 
       // AgentSkills.io: bridge scripts/ to executable tools
-      if (pkg.manifest.format === 'agentskills' && pkg.manifest.script_paths?.length && pkg.sourcePath) {
+      if (
+        pkg.manifest.format === 'agentskills' &&
+        pkg.manifest.script_paths?.length &&
+        pkg.sourcePath
+      ) {
         const skillDir = pkg.sourcePath.replace(/[/\\]SKILL\.md$/, '');
         for (const scriptPath of pkg.manifest.script_paths) {
-          const scriptName = scriptPath.split('/').pop()?.replace(/\.[^.]+$/, '') ?? scriptPath;
+          const scriptName =
+            scriptPath
+              .split('/')
+              .pop()
+              ?.replace(/\.[^.]+$/, '') ?? scriptPath;
           const ext = scriptPath.split('.').pop()?.toLowerCase();
           const toolName = `${pkg.id}_${scriptName}`.replace(/[^a-z0-9_]/g, '_');
 
@@ -342,7 +366,12 @@ export class ExtensionService implements IExtensionService {
           defs.push({
             name: toolName,
             description: `Run script: ${scriptPath} (from skill "${pkg.manifest.name}"). Use ${execTool} to execute.`,
-            parameters: { type: 'object', properties: { args: { type: 'string', description: 'Arguments to pass to the script' } } },
+            parameters: {
+              type: 'object',
+              properties: {
+                args: { type: 'string', description: 'Arguments to pass to the script' },
+              },
+            },
             category: pkg.manifest.category ?? 'other',
             extensionId: pkg.id,
             extensionTool: {
@@ -393,8 +422,8 @@ export class ExtensionService implements IExtensionService {
   getAvailableSkillsMetadata(): Array<{ name: string; description: string; id: string }> {
     const enabled = extensionsRepo.getEnabled();
     return enabled
-      .filter(pkg => pkg.manifest.format === 'agentskills')
-      .map(pkg => ({
+      .filter((pkg) => pkg.manifest.format === 'agentskills')
+      .map((pkg) => ({
         name: pkg.manifest.name,
         description: pkg.manifest.description,
         id: pkg.id,
@@ -424,7 +453,10 @@ export class ExtensionService implements IExtensionService {
   // Scan directory for new extensions
   // --------------------------------------------------------------------------
 
-  async scanDirectory(directory?: string, userId = 'default'): Promise<{
+  async scanDirectory(
+    directory?: string,
+    userId = 'default'
+  ): Promise<{
     installed: number;
     errors: Array<{ path: string; error: string }>;
   }> {
@@ -449,7 +481,10 @@ export class ExtensionService implements IExtensionService {
     return this.scanSingleDirectory(directory, userId);
   }
 
-  private async scanSingleDirectory(scanDir: string, userId: string): Promise<{
+  private async scanSingleDirectory(
+    scanDir: string,
+    userId: string
+  ): Promise<{
     installed: number;
     errors: Array<{ path: string; error: string }>;
   }> {
@@ -464,8 +499,8 @@ export class ExtensionService implements IExtensionService {
     let entries: string[];
     try {
       entries = readdirSync(scanDir, { withFileTypes: true })
-        .filter(d => d.isDirectory())
-        .map(d => d.name);
+        .filter((d) => d.isDirectory())
+        .map((d) => d.name);
     } catch {
       return { installed: 0, errors: [{ path: scanDir, error: 'Cannot read directory' }] };
     }
@@ -517,7 +552,10 @@ export class ExtensionService implements IExtensionService {
   // Trigger management (private)
   // --------------------------------------------------------------------------
 
-  private async activateExtensionTriggers(manifest: ExtensionManifest, userId: string): Promise<void> {
+  private async activateExtensionTriggers(
+    manifest: ExtensionManifest,
+    userId: string
+  ): Promise<void> {
     if (!manifest.triggers?.length) return;
 
     const triggerService = getServiceRegistry().get(Services.Trigger);

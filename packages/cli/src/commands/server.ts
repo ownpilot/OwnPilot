@@ -52,7 +52,9 @@ export async function startServer(options: ServerOptions): Promise<void> {
   const config: Partial<GatewayConfig> = {
     port,
     host,
-    corsOrigins: process.env.CORS_ORIGINS?.split(',') ?? [`http://localhost:${process.env.UI_PORT || '5173'}`],
+    corsOrigins: process.env.CORS_ORIGINS?.split(',') ?? [
+      `http://localhost:${process.env.UI_PORT || '5173'}`,
+    ],
   };
 
   // Configure auth from database
@@ -61,7 +63,8 @@ export async function startServer(options: ServerOptions): Promise<void> {
     const dbApiKeys = await settingsRepo.get<string>(GATEWAY_API_KEYS_KEY);
     const dbJwtSecret = await settingsRepo.get<string>(GATEWAY_JWT_SECRET_KEY);
 
-    const apiKeys = dbApiKeys?.split(',').filter(Boolean) ?? process.env.API_KEYS?.split(',').filter(Boolean);
+    const apiKeys =
+      dbApiKeys?.split(',').filter(Boolean) ?? process.env.API_KEYS?.split(',').filter(Boolean);
     const jwtSecret = dbJwtSecret ?? process.env.JWT_SECRET;
 
     if (apiKeys && apiKeys.length > 0) {
@@ -80,11 +83,15 @@ export async function startServer(options: ServerOptions): Promise<void> {
     const dbRateLimitMax = await settingsRepo.get<number>(GATEWAY_RATE_LIMIT_MAX_KEY);
     const dbRateLimitWindow = await settingsRepo.get<number>(GATEWAY_RATE_LIMIT_WINDOW_KEY);
 
-    const windowMs = dbRateLimitWindow ?? parseInt(process.env.RATE_LIMIT_WINDOW_MS ?? String(RATE_LIMIT_WINDOW_MS), 10);
-    const maxRequests = dbRateLimitMax ?? parseInt(process.env.RATE_LIMIT_MAX ?? String(RATE_LIMIT_MAX_REQUESTS), 10);
+    const windowMs =
+      dbRateLimitWindow ??
+      parseInt(process.env.RATE_LIMIT_WINDOW_MS ?? String(RATE_LIMIT_WINDOW_MS), 10);
+    const maxRequests =
+      dbRateLimitMax ?? parseInt(process.env.RATE_LIMIT_MAX ?? String(RATE_LIMIT_MAX_REQUESTS), 10);
     config.rateLimit = {
       windowMs: Number.isFinite(windowMs) && windowMs > 0 ? windowMs : RATE_LIMIT_WINDOW_MS,
-      maxRequests: Number.isFinite(maxRequests) && maxRequests > 0 ? maxRequests : RATE_LIMIT_MAX_REQUESTS,
+      maxRequests:
+        Number.isFinite(maxRequests) && maxRequests > 0 ? maxRequests : RATE_LIMIT_MAX_REQUESTS,
     };
   }
 
@@ -110,7 +117,9 @@ export async function startServer(options: ServerOptions): Promise<void> {
   console.log(`   Port:       ${port}`);
   console.log(`   Host:       ${host}`);
   console.log(`   Auth:       ${config.auth?.type ?? 'none'}`);
-  console.log(`   Rate Limit: ${config.rateLimit ? `${config.rateLimit.maxRequests} req/min` : 'disabled'}`);
+  console.log(
+    `   Rate Limit: ${config.rateLimit ? `${config.rateLimit.maxRequests} req/min` : 'disabled'}`
+  );
   console.log('');
 
   const server = serve(

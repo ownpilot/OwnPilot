@@ -27,7 +27,7 @@ import { getErrorMessage } from '../services/error-utils.js';
  */
 const DEFAULT_CONFIG: Partial<AgentConfig> = {
   maxTurns: 50,
-  maxToolCalls: 200,  // Allow many tool calls for complex multi-step tasks
+  maxToolCalls: 200, // Allow many tool calls for complex multi-step tasks
 };
 
 /**
@@ -102,9 +102,9 @@ export class Agent {
   getTools(): readonly ToolDefinition[] {
     // Direct tool mode: expose ALL tools except use_tool/batch_use_tool (redundant)
     if (this.directToolMode) {
-      return this.tools.getDefinitions().filter(
-        (t) => t.name !== 'use_tool' && t.name !== 'batch_use_tool'
-      );
+      return this.tools
+        .getDefinitions()
+        .filter((t) => t.name !== 'use_tool' && t.name !== 'batch_use_tool');
     }
 
     if (this.config.tools?.length) {
@@ -178,7 +178,10 @@ export class Agent {
       /** Callback when a tool execution starts */
       onToolStart?: (toolCall: ToolCall) => void;
       /** Callback when a tool execution completes */
-      onToolEnd?: (toolCall: ToolCall, result: { content: string; isError: boolean; durationMs: number }) => void;
+      onToolEnd?: (
+        toolCall: ToolCall,
+        result: { content: string; isError: boolean; durationMs: number }
+      ) => void;
       /** Callback for progress updates */
       onProgress?: (message: string, data?: Record<string, unknown>) => void;
     }
@@ -223,7 +226,10 @@ export class Agent {
     onChunk?: (chunk: StreamChunk) => void;
     onBeforeToolCall?: (toolCall: ToolCall) => Promise<{ approved: boolean; reason?: string }>;
     onToolStart?: (toolCall: ToolCall) => void;
-    onToolEnd?: (toolCall: ToolCall, result: { content: string; isError: boolean; durationMs: number }) => void;
+    onToolEnd?: (
+      toolCall: ToolCall,
+      result: { content: string; isError: boolean; durationMs: number }
+    ) => void;
     onProgress?: (message: string, data?: Record<string, unknown>) => void;
   }): Promise<Result<CompletionResponse, InternalError | ValidationError | TimeoutError>> {
     let turnCount = 0;
@@ -285,9 +291,7 @@ export class Agent {
       if (response.toolCalls && response.toolCalls.length > 0) {
         // Check tool call limit (0 = unlimited)
         if (!isUnlimited && this.state.toolCallCount + response.toolCalls.length > maxToolCalls) {
-          return err(
-            new ValidationError(`Tool call limit exceeded (max ${maxToolCalls})`)
-          );
+          return err(new ValidationError(`Tool call limit exceeded (max ${maxToolCalls})`));
         }
 
         // Filter tool calls through approval callback if provided
@@ -329,7 +333,10 @@ export class Agent {
               toolCall,
               this.state.conversation.id,
               undefined,
-              { requestApproval: this.config.requestApproval, executionPermissions: this.config.executionPermissions },
+              {
+                requestApproval: this.config.requestApproval,
+                executionPermissions: this.config.executionPermissions,
+              }
             );
 
             const durationMs = Date.now() - startTime;
@@ -541,14 +548,27 @@ export class Agent {
    * Set per-category execution permissions (persistent from DB).
    * undefined = backward compat (non-chat contexts use default behavior).
    */
-  setExecutionPermissions(permissions: import('./types.js').ExecutionPermissions | undefined): void {
-    (this.config as { executionPermissions?: import('./types.js').ExecutionPermissions }).executionPermissions = permissions;
+  setExecutionPermissions(
+    permissions: import('./types.js').ExecutionPermissions | undefined
+  ): void {
+    (
+      this.config as { executionPermissions?: import('./types.js').ExecutionPermissions }
+    ).executionPermissions = permissions;
   }
 
   /**
    * Set the approval callback at runtime (used by chat route for SSE-based approval).
    */
-  setRequestApproval(fn: ((category: string, actionType: string, description: string, params: Record<string, unknown>) => Promise<boolean>) | undefined): void {
+  setRequestApproval(
+    fn:
+      | ((
+          category: string,
+          actionType: string,
+          description: string,
+          params: Record<string, unknown>
+        ) => Promise<boolean>)
+      | undefined
+  ): void {
     (this.config as { requestApproval?: typeof fn }).requestApproval = fn;
   }
 
@@ -598,16 +618,13 @@ export function createSimpleAgent(
 ): Agent {
   const config: AgentConfig = {
     name: options?.name ?? 'Assistant',
-    systemPrompt:
-      options?.systemPrompt ?? 'You are a helpful AI assistant.',
+    systemPrompt: options?.systemPrompt ?? 'You are a helpful AI assistant.',
     provider: {
       provider,
       apiKey,
     },
     model: {
-      model:
-        options?.model ??
-        (provider === 'openai' ? 'gpt-4o' : 'claude-3-5-sonnet-20241022'),
+      model: options?.model ?? (provider === 'openai' ? 'gpt-4o' : 'claude-3-5-sonnet-20241022'),
       maxTokens: 4096,
       temperature: 0.7,
     },

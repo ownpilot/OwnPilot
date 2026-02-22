@@ -56,7 +56,14 @@ export function createAuthMiddleware(config: AuthConfig) {
     } else if (config.type === 'jwt') {
       // JWT authentication
       if (!config.jwtSecret) {
-        return apiError(c, { code: ERROR_CODES.SERVICE_UNAVAILABLE, message: 'JWT authentication is not configured' }, 503);
+        return apiError(
+          c,
+          {
+            code: ERROR_CODES.SERVICE_UNAVAILABLE,
+            message: 'JWT authentication is not configured',
+          },
+          503
+        );
       }
 
       if (!authHeader?.startsWith('Bearer ')) {

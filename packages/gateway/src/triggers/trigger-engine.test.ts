@@ -189,13 +189,17 @@ describe('TriggerEngine', () => {
         'success',
         expect.anything(),
         undefined,
-        expect.any(Number),
+        expect.any(Number)
       );
       e.stop();
     });
 
     it('start() sets running to true and starts both intervals', () => {
-      const e = new TriggerEngine({ enabled: true, pollIntervalMs: 50000, conditionCheckIntervalMs: 100000 });
+      const e = new TriggerEngine({
+        enabled: true,
+        pollIntervalMs: 50000,
+        conditionCheckIntervalMs: 100000,
+      });
       expect(e.isRunning()).toBe(false);
       const spy = vi.spyOn(global, 'setInterval');
 
@@ -211,7 +215,11 @@ describe('TriggerEngine', () => {
     });
 
     it('start() runs initial schedule and condition checks', async () => {
-      const e = new TriggerEngine({ enabled: true, pollIntervalMs: 999999, conditionCheckIntervalMs: 999999 });
+      const e = new TriggerEngine({
+        enabled: true,
+        pollIntervalMs: 999999,
+        conditionCheckIntervalMs: 999999,
+      });
       e.start();
 
       // Initial checks now await waitForToolSync() — flush microtasks
@@ -224,7 +232,11 @@ describe('TriggerEngine', () => {
     });
 
     it('stop() sets running to false and clears intervals', () => {
-      const e = new TriggerEngine({ enabled: true, pollIntervalMs: 999999, conditionCheckIntervalMs: 999999 });
+      const e = new TriggerEngine({
+        enabled: true,
+        pollIntervalMs: 999999,
+        conditionCheckIntervalMs: 999999,
+      });
       const clearSpy = vi.spyOn(global, 'clearInterval');
 
       e.start();
@@ -244,14 +256,22 @@ describe('TriggerEngine', () => {
     });
 
     it('isRunning() returns true after start', () => {
-      const e = new TriggerEngine({ enabled: true, pollIntervalMs: 999999, conditionCheckIntervalMs: 999999 });
+      const e = new TriggerEngine({
+        enabled: true,
+        pollIntervalMs: 999999,
+        conditionCheckIntervalMs: 999999,
+      });
       e.start();
       expect(e.isRunning()).toBe(true);
       e.stop();
     });
 
     it('isRunning() returns false after stop', () => {
-      const e = new TriggerEngine({ enabled: true, pollIntervalMs: 999999, conditionCheckIntervalMs: 999999 });
+      const e = new TriggerEngine({
+        enabled: true,
+        pollIntervalMs: 999999,
+        conditionCheckIntervalMs: 999999,
+      });
       e.start();
       e.stop();
       expect(e.isRunning()).toBe(false);
@@ -265,7 +285,11 @@ describe('TriggerEngine', () => {
     });
 
     it('start() does nothing when already running', () => {
-      const e = new TriggerEngine({ enabled: true, pollIntervalMs: 999999, conditionCheckIntervalMs: 999999 });
+      const e = new TriggerEngine({
+        enabled: true,
+        pollIntervalMs: 999999,
+        conditionCheckIntervalMs: 999999,
+      });
       const spy = vi.spyOn(global, 'setInterval');
       e.start();
       const callCount = spy.calls?.length ?? spy.mock.calls.length;
@@ -436,7 +460,7 @@ describe('TriggerEngine', () => {
         expect(result.data).toBe('AI says hello');
         expect(chatFn).toHaveBeenCalledWith(
           'Tell me a joke',
-          expect.objectContaining({ prompt: 'Tell me a joke', triggerId: 'trigger-1' }),
+          expect.objectContaining({ prompt: 'Tell me a joke', triggerId: 'trigger-1' })
         );
       });
 
@@ -454,7 +478,7 @@ describe('TriggerEngine', () => {
         expect(result.success).toBe(true);
         expect(chatFn).toHaveBeenCalledWith(
           'Fallback msg',
-          expect.objectContaining({ message: 'Fallback msg' }),
+          expect.objectContaining({ message: 'Fallback msg' })
         );
       });
 
@@ -522,7 +546,7 @@ describe('TriggerEngine', () => {
           'web_search',
           expect.objectContaining({ query: 'vitest' }),
           'default',
-          expect.any(Object),
+          expect.any(Object)
         );
       });
 
@@ -603,7 +627,10 @@ describe('TriggerEngine', () => {
         engine.registerActionHandler('custom_action', customHandler);
 
         const trigger = makeTrigger({
-          action: { type: 'custom_action' as Trigger['action']['type'], payload: { input: 'hello' } },
+          action: {
+            type: 'custom_action' as Trigger['action']['type'],
+            payload: { input: 'hello' },
+          },
         });
         mockTriggerService.getTrigger.mockResolvedValueOnce(trigger);
 
@@ -612,7 +639,7 @@ describe('TriggerEngine', () => {
         expect(result.success).toBe(true);
         expect(result.message).toBe('Custom result: hello');
         expect(customHandler).toHaveBeenCalledWith(
-          expect.objectContaining({ input: 'hello', triggerId: 'trigger-1', manual: true }),
+          expect.objectContaining({ input: 'hello', triggerId: 'trigger-1', manual: true })
         );
       });
 
@@ -670,7 +697,7 @@ describe('TriggerEngine', () => {
           type: 'test_event',
           payload: { key: 'value' },
           timestamp: expect.any(Date),
-        }),
+        })
       );
     });
 
@@ -738,7 +765,11 @@ describe('TriggerEngine', () => {
       vi.mocked(getNextRunTime).mockReturnValue(new Date('2025-06-01T09:00:00Z'));
 
       // Start an enabled engine to trigger initial schedule processing
-      const e = new TriggerEngine({ enabled: true, pollIntervalMs: 999999, conditionCheckIntervalMs: 999999 });
+      const e = new TriggerEngine({
+        enabled: true,
+        pollIntervalMs: 999999,
+        conditionCheckIntervalMs: 999999,
+      });
       e.start();
 
       // Allow microtasks to settle
@@ -762,7 +793,11 @@ describe('TriggerEngine', () => {
       });
       mockTriggerService.getDueTriggers.mockResolvedValueOnce([trigger]);
 
-      const e = new TriggerEngine({ enabled: true, pollIntervalMs: 999999, conditionCheckIntervalMs: 999999 });
+      const e = new TriggerEngine({
+        enabled: true,
+        pollIntervalMs: 999999,
+        conditionCheckIntervalMs: 999999,
+      });
       e.start();
       await vi.advanceTimersByTimeAsync(0);
 
@@ -774,14 +809,14 @@ describe('TriggerEngine', () => {
         'success',
         expect.anything(),
         undefined,
-        expect.any(Number),
+        expect.any(Number)
       );
 
       // markFired called with calculated next fire time
       expect(mockTriggerService.markFired).toHaveBeenCalledWith(
         'default',
         'sched-1',
-        nextDate.toISOString(),
+        nextDate.toISOString()
       );
 
       e.stop();
@@ -798,14 +833,18 @@ describe('TriggerEngine', () => {
       });
       mockTriggerService.getDueTriggers.mockResolvedValueOnce([trigger]);
 
-      const e = new TriggerEngine({ enabled: true, pollIntervalMs: 999999, conditionCheckIntervalMs: 999999 });
+      const e = new TriggerEngine({
+        enabled: true,
+        pollIntervalMs: 999999,
+        conditionCheckIntervalMs: 999999,
+      });
       e.start();
       await vi.advanceTimersByTimeAsync(0);
 
       expect(mockTriggerService.markFired).toHaveBeenCalledWith(
         'default',
         'sched-no-next',
-        undefined,
+        undefined
       );
 
       e.stop();
@@ -814,7 +853,11 @@ describe('TriggerEngine', () => {
     it('polls on interval for schedule triggers', async () => {
       mockTriggerService.getDueTriggers.mockResolvedValue([]);
 
-      const e = new TriggerEngine({ enabled: true, pollIntervalMs: 10000, conditionCheckIntervalMs: 999999 });
+      const e = new TriggerEngine({
+        enabled: true,
+        pollIntervalMs: 10000,
+        conditionCheckIntervalMs: 999999,
+      });
       e.start();
 
       // Clear initial call count
@@ -836,7 +879,11 @@ describe('TriggerEngine', () => {
       });
       mockTriggerService.getDueTriggers.mockResolvedValueOnce([trigger]);
 
-      const e = new TriggerEngine({ enabled: true, pollIntervalMs: 999999, conditionCheckIntervalMs: 999999 });
+      const e = new TriggerEngine({
+        enabled: true,
+        pollIntervalMs: 999999,
+        conditionCheckIntervalMs: 999999,
+      });
       e.start();
       await vi.advanceTimersByTimeAsync(0);
 
@@ -848,7 +895,7 @@ describe('TriggerEngine', () => {
         'failure',
         undefined,
         expect.stringContaining('No handler for action type'),
-        expect.any(Number),
+        expect.any(Number)
       );
 
       e.stop();
@@ -929,7 +976,7 @@ describe('TriggerEngine', () => {
           field: 'name',
           triggerId: 'trigger-1',
           triggerName: 'Test Trigger',
-        }),
+        })
       );
     });
 
@@ -948,7 +995,7 @@ describe('TriggerEngine', () => {
 
       expect(chatFn).toHaveBeenCalledWith(
         'action-prompt',
-        expect.objectContaining({ source: 'event-override' }),
+        expect.objectContaining({ source: 'event-override' })
       );
     });
   });
@@ -961,7 +1008,11 @@ describe('TriggerEngine', () => {
     it('processConditionTriggers gets condition triggers and evaluates each', async () => {
       mockTriggerService.getConditionTriggers.mockResolvedValueOnce([]);
 
-      const e = new TriggerEngine({ enabled: true, pollIntervalMs: 999999, conditionCheckIntervalMs: 999999 });
+      const e = new TriggerEngine({
+        enabled: true,
+        pollIntervalMs: 999999,
+        conditionCheckIntervalMs: 999999,
+      });
       e.start();
       await vi.advanceTimersByTimeAsync(0);
 
@@ -979,7 +1030,11 @@ describe('TriggerEngine', () => {
       });
       mockTriggerService.getConditionTriggers.mockResolvedValueOnce([trigger]);
 
-      const e = new TriggerEngine({ enabled: true, pollIntervalMs: 999999, conditionCheckIntervalMs: 999999 });
+      const e = new TriggerEngine({
+        enabled: true,
+        pollIntervalMs: 999999,
+        conditionCheckIntervalMs: 999999,
+      });
       e.start();
       await vi.advanceTimersByTimeAsync(0);
 
@@ -1004,7 +1059,11 @@ describe('TriggerEngine', () => {
         { id: 'g1', title: 'Stale', updatedAt: twoDaysAgo },
       ]);
 
-      const e = new TriggerEngine({ enabled: true, pollIntervalMs: 999999, conditionCheckIntervalMs: 999999 });
+      const e = new TriggerEngine({
+        enabled: true,
+        pollIntervalMs: 999999,
+        conditionCheckIntervalMs: 999999,
+      });
       e.start();
       await vi.advanceTimersByTimeAsync(0);
 
@@ -1022,7 +1081,11 @@ describe('TriggerEngine', () => {
       mockTriggerService.getConditionTriggers.mockResolvedValueOnce([trigger]);
       mockGoalService.getUpcoming.mockResolvedValueOnce([{ id: 'g1', title: 'Due Soon' }]);
 
-      const e = new TriggerEngine({ enabled: true, pollIntervalMs: 999999, conditionCheckIntervalMs: 999999 });
+      const e = new TriggerEngine({
+        enabled: true,
+        pollIntervalMs: 999999,
+        conditionCheckIntervalMs: 999999,
+      });
       e.start();
       await vi.advanceTimersByTimeAsync(0);
 
@@ -1045,7 +1108,11 @@ describe('TriggerEngine', () => {
           { id: 'g1', title: 'Old Goal', updatedAt: sixDaysAgo },
         ]);
 
-        const e = new TriggerEngine({ enabled: true, pollIntervalMs: 999999, conditionCheckIntervalMs: 999999 });
+        const e = new TriggerEngine({
+          enabled: true,
+          pollIntervalMs: 999999,
+          conditionCheckIntervalMs: 999999,
+        });
         e.start();
         await vi.advanceTimersByTimeAsync(0);
 
@@ -1066,7 +1133,11 @@ describe('TriggerEngine', () => {
           { id: 'g1', title: 'Fresh Goal', updatedAt: new Date() },
         ]);
 
-        const e = new TriggerEngine({ enabled: true, pollIntervalMs: 999999, conditionCheckIntervalMs: 999999 });
+        const e = new TriggerEngine({
+          enabled: true,
+          pollIntervalMs: 999999,
+          conditionCheckIntervalMs: 999999,
+        });
         e.start();
         await vi.advanceTimersByTimeAsync(0);
 
@@ -1088,7 +1159,11 @@ describe('TriggerEngine', () => {
           { id: 'g1', title: 'Stale', updatedAt: fourDaysAgo },
         ]);
 
-        const e = new TriggerEngine({ enabled: true, pollIntervalMs: 999999, conditionCheckIntervalMs: 999999 });
+        const e = new TriggerEngine({
+          enabled: true,
+          pollIntervalMs: 999999,
+          conditionCheckIntervalMs: 999999,
+        });
         e.start();
         await vi.advanceTimersByTimeAsync(0);
 
@@ -1108,7 +1183,11 @@ describe('TriggerEngine', () => {
         mockTriggerService.getConditionTriggers.mockResolvedValueOnce([trigger]);
         mockGoalService.getUpcoming.mockResolvedValueOnce([{ id: 'g1', title: 'Due Friday' }]);
 
-        const e = new TriggerEngine({ enabled: true, pollIntervalMs: 999999, conditionCheckIntervalMs: 999999 });
+        const e = new TriggerEngine({
+          enabled: true,
+          pollIntervalMs: 999999,
+          conditionCheckIntervalMs: 999999,
+        });
         e.start();
         await vi.advanceTimersByTimeAsync(0);
 
@@ -1127,7 +1206,11 @@ describe('TriggerEngine', () => {
         mockTriggerService.getConditionTriggers.mockResolvedValueOnce([trigger]);
         mockGoalService.getUpcoming.mockResolvedValueOnce([]);
 
-        const e = new TriggerEngine({ enabled: true, pollIntervalMs: 999999, conditionCheckIntervalMs: 999999 });
+        const e = new TriggerEngine({
+          enabled: true,
+          pollIntervalMs: 999999,
+          conditionCheckIntervalMs: 999999,
+        });
         e.start();
         await vi.advanceTimersByTimeAsync(0);
 
@@ -1145,7 +1228,11 @@ describe('TriggerEngine', () => {
         mockTriggerService.getConditionTriggers.mockResolvedValueOnce([trigger]);
         mockGoalService.getUpcoming.mockResolvedValueOnce([]);
 
-        const e = new TriggerEngine({ enabled: true, pollIntervalMs: 999999, conditionCheckIntervalMs: 999999 });
+        const e = new TriggerEngine({
+          enabled: true,
+          pollIntervalMs: 999999,
+          conditionCheckIntervalMs: 999999,
+        });
         e.start();
         await vi.advanceTimersByTimeAsync(0);
 
@@ -1163,9 +1250,18 @@ describe('TriggerEngine', () => {
           action: { type: 'notification', payload: {} },
         });
         mockTriggerService.getConditionTriggers.mockResolvedValueOnce([trigger]);
-        mockMemoryService.getStats.mockResolvedValueOnce({ total: 75, recentCount: 5, byType: {}, avgImportance: 0 });
+        mockMemoryService.getStats.mockResolvedValueOnce({
+          total: 75,
+          recentCount: 5,
+          byType: {},
+          avgImportance: 0,
+        });
 
-        const e = new TriggerEngine({ enabled: true, pollIntervalMs: 999999, conditionCheckIntervalMs: 999999 });
+        const e = new TriggerEngine({
+          enabled: true,
+          pollIntervalMs: 999999,
+          conditionCheckIntervalMs: 999999,
+        });
         e.start();
         await vi.advanceTimersByTimeAsync(0);
 
@@ -1181,9 +1277,18 @@ describe('TriggerEngine', () => {
           action: { type: 'notification', payload: {} },
         });
         mockTriggerService.getConditionTriggers.mockResolvedValueOnce([trigger]);
-        mockMemoryService.getStats.mockResolvedValueOnce({ total: 50, recentCount: 5, byType: {}, avgImportance: 0 });
+        mockMemoryService.getStats.mockResolvedValueOnce({
+          total: 50,
+          recentCount: 5,
+          byType: {},
+          avgImportance: 0,
+        });
 
-        const e = new TriggerEngine({ enabled: true, pollIntervalMs: 999999, conditionCheckIntervalMs: 999999 });
+        const e = new TriggerEngine({
+          enabled: true,
+          pollIntervalMs: 999999,
+          conditionCheckIntervalMs: 999999,
+        });
         e.start();
         await vi.advanceTimersByTimeAsync(0);
 
@@ -1199,9 +1304,18 @@ describe('TriggerEngine', () => {
           action: { type: 'notification', payload: {} },
         });
         mockTriggerService.getConditionTriggers.mockResolvedValueOnce([trigger]);
-        mockMemoryService.getStats.mockResolvedValueOnce({ total: 100, recentCount: 0, byType: {}, avgImportance: 0 });
+        mockMemoryService.getStats.mockResolvedValueOnce({
+          total: 100,
+          recentCount: 0,
+          byType: {},
+          avgImportance: 0,
+        });
 
-        const e = new TriggerEngine({ enabled: true, pollIntervalMs: 999999, conditionCheckIntervalMs: 999999 });
+        const e = new TriggerEngine({
+          enabled: true,
+          pollIntervalMs: 999999,
+          conditionCheckIntervalMs: 999999,
+        });
         e.start();
         await vi.advanceTimersByTimeAsync(0);
 
@@ -1223,7 +1337,11 @@ describe('TriggerEngine', () => {
           { id: 'g1', title: 'Behind', progress: 10, updatedAt: new Date() },
         ]);
 
-        const e = new TriggerEngine({ enabled: true, pollIntervalMs: 999999, conditionCheckIntervalMs: 999999 });
+        const e = new TriggerEngine({
+          enabled: true,
+          pollIntervalMs: 999999,
+          conditionCheckIntervalMs: 999999,
+        });
         e.start();
         await vi.advanceTimersByTimeAsync(0);
 
@@ -1243,7 +1361,11 @@ describe('TriggerEngine', () => {
           { id: 'g1', title: 'On Track', progress: 50, updatedAt: new Date() },
         ]);
 
-        const e = new TriggerEngine({ enabled: true, pollIntervalMs: 999999, conditionCheckIntervalMs: 999999 });
+        const e = new TriggerEngine({
+          enabled: true,
+          pollIntervalMs: 999999,
+          conditionCheckIntervalMs: 999999,
+        });
         e.start();
         await vi.advanceTimersByTimeAsync(0);
 
@@ -1263,7 +1385,11 @@ describe('TriggerEngine', () => {
           { id: 'g1', title: 'Low', progress: 15, updatedAt: new Date() },
         ]);
 
-        const e = new TriggerEngine({ enabled: true, pollIntervalMs: 999999, conditionCheckIntervalMs: 999999 });
+        const e = new TriggerEngine({
+          enabled: true,
+          pollIntervalMs: 999999,
+          conditionCheckIntervalMs: 999999,
+        });
         e.start();
         await vi.advanceTimersByTimeAsync(0);
 
@@ -1281,9 +1407,18 @@ describe('TriggerEngine', () => {
           action: { type: 'notification', payload: {} },
         });
         mockTriggerService.getConditionTriggers.mockResolvedValueOnce([trigger]);
-        mockMemoryService.getStats.mockResolvedValueOnce({ total: 10, recentCount: 0, byType: {}, avgImportance: 0 });
+        mockMemoryService.getStats.mockResolvedValueOnce({
+          total: 10,
+          recentCount: 0,
+          byType: {},
+          avgImportance: 0,
+        });
 
-        const e = new TriggerEngine({ enabled: true, pollIntervalMs: 999999, conditionCheckIntervalMs: 999999 });
+        const e = new TriggerEngine({
+          enabled: true,
+          pollIntervalMs: 999999,
+          conditionCheckIntervalMs: 999999,
+        });
         e.start();
         await vi.advanceTimersByTimeAsync(0);
 
@@ -1299,9 +1434,18 @@ describe('TriggerEngine', () => {
           action: { type: 'notification', payload: {} },
         });
         mockTriggerService.getConditionTriggers.mockResolvedValueOnce([trigger]);
-        mockMemoryService.getStats.mockResolvedValueOnce({ total: 10, recentCount: 5, byType: {}, avgImportance: 0 });
+        mockMemoryService.getStats.mockResolvedValueOnce({
+          total: 10,
+          recentCount: 5,
+          byType: {},
+          avgImportance: 0,
+        });
 
-        const e = new TriggerEngine({ enabled: true, pollIntervalMs: 999999, conditionCheckIntervalMs: 999999 });
+        const e = new TriggerEngine({
+          enabled: true,
+          pollIntervalMs: 999999,
+          conditionCheckIntervalMs: 999999,
+        });
         e.start();
         await vi.advanceTimersByTimeAsync(0);
 
@@ -1320,7 +1464,11 @@ describe('TriggerEngine', () => {
         });
         mockTriggerService.getConditionTriggers.mockResolvedValueOnce([trigger]);
 
-        const e = new TriggerEngine({ enabled: true, pollIntervalMs: 999999, conditionCheckIntervalMs: 999999 });
+        const e = new TriggerEngine({
+          enabled: true,
+          pollIntervalMs: 999999,
+          conditionCheckIntervalMs: 999999,
+        });
         e.start();
         await vi.advanceTimersByTimeAsync(0);
 
@@ -1340,7 +1488,11 @@ describe('TriggerEngine', () => {
       });
       mockTriggerService.getConditionTriggers.mockResolvedValueOnce([trigger]);
 
-      const e = new TriggerEngine({ enabled: true, pollIntervalMs: 999999, conditionCheckIntervalMs: 999999 });
+      const e = new TriggerEngine({
+        enabled: true,
+        pollIntervalMs: 999999,
+        conditionCheckIntervalMs: 999999,
+      });
       e.start();
       await vi.advanceTimersByTimeAsync(0);
 
@@ -1407,7 +1559,7 @@ describe('TriggerEngine', () => {
           triggerId: 'trigger-1',
           triggerName: 'Test Trigger',
           manual: true,
-        }),
+        })
       );
     });
 
@@ -1427,7 +1579,7 @@ describe('TriggerEngine', () => {
         'success',
         expect.objectContaining({ message: 'test' }),
         undefined,
-        expect.any(Number),
+        expect.any(Number)
       );
     });
 
@@ -1453,7 +1605,7 @@ describe('TriggerEngine', () => {
         'failure',
         undefined,
         'Chat broke',
-        expect.any(Number),
+        expect.any(Number)
       );
     });
 
@@ -1513,7 +1665,7 @@ describe('TriggerEngine', () => {
         'success',
         expect.anything(),
         undefined,
-        expect.any(Number),
+        expect.any(Number)
       );
     });
 
@@ -1535,7 +1687,7 @@ describe('TriggerEngine', () => {
         'failure',
         undefined,
         expect.stringContaining('No handler for action type'),
-        expect.any(Number),
+        expect.any(Number)
       );
     });
 
@@ -1557,7 +1709,7 @@ describe('TriggerEngine', () => {
         'failure',
         undefined,
         'No handler for action type: completely_unknown',
-        expect.any(Number),
+        expect.any(Number)
       );
     });
 
@@ -1588,14 +1740,18 @@ describe('TriggerEngine', () => {
       });
       mockTriggerService.getDueTriggers.mockResolvedValueOnce([trigger]);
 
-      const e = new TriggerEngine({ enabled: true, pollIntervalMs: 999999, conditionCheckIntervalMs: 999999 });
+      const e = new TriggerEngine({
+        enabled: true,
+        pollIntervalMs: 999999,
+        conditionCheckIntervalMs: 999999,
+      });
       e.start();
       await vi.advanceTimersByTimeAsync(0);
 
       expect(mockTriggerService.markFired).toHaveBeenCalledWith(
         'default',
         'sched-mark',
-        nextDate.toISOString(),
+        nextDate.toISOString()
       );
       e.stop();
     });
@@ -1609,7 +1765,10 @@ describe('TriggerEngine', () => {
         name: 'Merge Trigger',
         type: 'event',
         config: { eventType: 'merge_event' },
-        action: { type: 'merge_test' as Trigger['action']['type'], payload: { actionKey: 'actionVal' } },
+        action: {
+          type: 'merge_test' as Trigger['action']['type'],
+          payload: { actionKey: 'actionVal' },
+        },
       });
       mockTriggerService.getByEventType.mockResolvedValueOnce([trigger]);
 
@@ -1621,7 +1780,7 @@ describe('TriggerEngine', () => {
           eventKey: 'eventVal',
           triggerId: 'merge-1',
           triggerName: 'Merge Trigger',
-        }),
+        })
       );
     });
   });
@@ -1650,7 +1809,7 @@ describe('TriggerEngine', () => {
         'success',
         expect.anything(),
         undefined,
-        expect.any(Number),
+        expect.any(Number)
       );
       e.stop();
     });
@@ -1674,16 +1833,16 @@ describe('TriggerEngine', () => {
       });
       mockTriggerService.getDueTriggers.mockResolvedValueOnce([trigger]);
 
-      const e = new TriggerEngine({ enabled: true, pollIntervalMs: 999999, conditionCheckIntervalMs: 999999 });
+      const e = new TriggerEngine({
+        enabled: true,
+        pollIntervalMs: 999999,
+        conditionCheckIntervalMs: 999999,
+      });
       e.start();
       await vi.advanceTimersByTimeAsync(0);
 
       // Should still call markFired with undefined (null -> undefined)
-      expect(mockTriggerService.markFired).toHaveBeenCalledWith(
-        'default',
-        'bad-cron',
-        undefined,
-      );
+      expect(mockTriggerService.markFired).toHaveBeenCalledWith('default', 'bad-cron', undefined);
       e.stop();
     });
 
@@ -1698,16 +1857,16 @@ describe('TriggerEngine', () => {
       });
       mockTriggerService.getDueTriggers.mockResolvedValueOnce([trigger]);
 
-      const e = new TriggerEngine({ enabled: true, pollIntervalMs: 999999, conditionCheckIntervalMs: 999999 });
+      const e = new TriggerEngine({
+        enabled: true,
+        pollIntervalMs: 999999,
+        conditionCheckIntervalMs: 999999,
+      });
       e.start();
       await vi.advanceTimersByTimeAsync(0);
 
       // Empty cron short-circuits, markFired called with undefined
-      expect(mockTriggerService.markFired).toHaveBeenCalledWith(
-        'default',
-        'empty-cron',
-        undefined,
-      );
+      expect(mockTriggerService.markFired).toHaveBeenCalledWith('default', 'empty-cron', undefined);
       e.stop();
     });
   });

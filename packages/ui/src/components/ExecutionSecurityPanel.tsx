@@ -18,9 +18,19 @@ import { executionPermissionsApi } from '../api';
 import type { ExecutionPermissions, ExecutionMode, PermissionMode } from '../api';
 
 /** Only the 5 category keys (not enabled/mode) */
-type CategoryKey = 'execute_javascript' | 'execute_python' | 'execute_shell' | 'compile_code' | 'package_manager';
+type CategoryKey =
+  | 'execute_javascript'
+  | 'execute_python'
+  | 'execute_shell'
+  | 'compile_code'
+  | 'package_manager';
 
-const CATEGORIES: { key: CategoryKey; label: string; icon: typeof Terminal; localOnly?: boolean }[] = [
+const CATEGORIES: {
+  key: CategoryKey;
+  label: string;
+  icon: typeof Terminal;
+  localOnly?: boolean;
+}[] = [
   { key: 'execute_javascript', label: 'JavaScript', icon: Code },
   { key: 'execute_python', label: 'Python', icon: Code },
   { key: 'execute_shell', label: 'Shell', icon: Terminal },
@@ -68,7 +78,8 @@ export function ExecutionSecurityPanel() {
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
-    executionPermissionsApi.get()
+    executionPermissionsApi
+      .get()
       .then((data) => {
         setPermissions({ ...DEFAULT_PERMISSIONS, ...data });
         setIsLoaded(true);
@@ -77,37 +88,41 @@ export function ExecutionSecurityPanel() {
   }, []);
 
   const handleToggle = useCallback(() => {
-    setPermissions(prev => {
+    setPermissions((prev) => {
       const updated = { ...prev, enabled: !prev.enabled };
-      executionPermissionsApi.update({ enabled: updated.enabled } as Partial<ExecutionPermissions>).catch(() => {
-        setPermissions(p => ({ ...p, enabled: !updated.enabled }));
-      });
+      executionPermissionsApi
+        .update({ enabled: updated.enabled } as Partial<ExecutionPermissions>)
+        .catch(() => {
+          setPermissions((p) => ({ ...p, enabled: !updated.enabled }));
+        });
       return updated;
     });
   }, []);
 
   const handleModeSwitch = useCallback((mode: ExecutionMode) => {
-    setPermissions(prev => {
+    setPermissions((prev) => {
       const oldMode = prev.mode;
       executionPermissionsApi.update({ mode } as Partial<ExecutionPermissions>).catch(() => {
-        setPermissions(p => ({ ...p, mode: oldMode }));
+        setPermissions((p) => ({ ...p, mode: oldMode }));
       });
       return { ...prev, mode };
     });
   }, []);
 
   const handleModeChange = useCallback((key: CategoryKey, mode: PermissionMode) => {
-    setPermissions(prev => {
+    setPermissions((prev) => {
       const oldMode = prev[key];
       executionPermissionsApi.update({ [key]: mode }).catch(() => {
-        setPermissions(p => ({ ...p, [key]: oldMode }));
+        setPermissions((p) => ({ ...p, [key]: oldMode }));
       });
       return { ...prev, [key]: mode };
     });
   }, []);
 
   const activeCount = permissions.enabled
-    ? Object.entries(permissions).filter(([k, v]) => k !== 'enabled' && k !== 'mode' && v !== 'blocked').length
+    ? Object.entries(permissions).filter(
+        ([k, v]) => k !== 'enabled' && k !== 'mode' && v !== 'blocked'
+      ).length
     : 0;
 
   if (!isLoaded) return null;
@@ -121,14 +136,15 @@ export function ExecutionSecurityPanel() {
         className="flex items-center gap-2 w-full text-left px-2 py-1.5 rounded-lg hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary transition-colors group"
       >
         <Shield className="w-3.5 h-3.5 text-text-muted dark:text-dark-text-muted group-hover:text-primary transition-colors" />
-        <span className="text-xs text-text-muted dark:text-dark-text-muted">
-          Code Execution
-        </span>
+        <span className="text-xs text-text-muted dark:text-dark-text-muted">Code Execution</span>
 
         {/* Master toggle */}
         <button
           type="button"
-          onClick={(e) => { e.stopPropagation(); handleToggle(); }}
+          onClick={(e) => {
+            e.stopPropagation();
+            handleToggle();
+          }}
           className={`ml-1 relative inline-flex h-4 w-7 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
             permissions.enabled ? 'bg-primary' : 'bg-gray-300 dark:bg-gray-600'
           }`}
@@ -141,14 +157,20 @@ export function ExecutionSecurityPanel() {
         </button>
 
         {permissions.enabled && (
-          <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
-            permissions.mode === 'docker'
-              ? 'bg-blue-500/15 text-blue-600 dark:text-blue-400'
+          <span
+            className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
+              permissions.mode === 'docker'
+                ? 'bg-blue-500/15 text-blue-600 dark:text-blue-400'
+                : permissions.mode === 'auto'
+                  ? 'bg-purple-500/15 text-purple-600 dark:text-purple-400'
+                  : 'bg-gray-500/15 text-gray-600 dark:text-gray-400'
+            }`}
+          >
+            {permissions.mode === 'docker'
+              ? 'Docker'
               : permissions.mode === 'auto'
-                ? 'bg-purple-500/15 text-purple-600 dark:text-purple-400'
-                : 'bg-gray-500/15 text-gray-600 dark:text-gray-400'
-          }`}>
-            {permissions.mode === 'docker' ? 'Docker' : permissions.mode === 'auto' ? 'Auto' : 'Local'}
+                ? 'Auto'
+                : 'Local'}
           </span>
         )}
         {permissions.enabled && activeCount > 0 && (
@@ -156,20 +178,25 @@ export function ExecutionSecurityPanel() {
             {activeCount}/5
           </span>
         )}
-        {isExpanded
-          ? <ChevronUp className="w-3 h-3 text-text-muted dark:text-dark-text-muted ml-auto" />
-          : <ChevronDown className="w-3 h-3 text-text-muted dark:text-dark-text-muted ml-auto" />
-        }
+        {isExpanded ? (
+          <ChevronUp className="w-3 h-3 text-text-muted dark:text-dark-text-muted ml-auto" />
+        ) : (
+          <ChevronDown className="w-3 h-3 text-text-muted dark:text-dark-text-muted ml-auto" />
+        )}
       </button>
 
       {/* Expanded content */}
       {isExpanded && (
-        <div className={`mt-1 px-2 py-2 bg-bg-secondary dark:bg-dark-bg-secondary rounded-lg border border-border dark:border-dark-border space-y-2 ${
-          !permissions.enabled ? 'opacity-50 pointer-events-none' : ''
-        }`}>
+        <div
+          className={`mt-1 px-2 py-2 bg-bg-secondary dark:bg-dark-bg-secondary rounded-lg border border-border dark:border-dark-border space-y-2 ${
+            !permissions.enabled ? 'opacity-50 pointer-events-none' : ''
+          }`}
+        >
           {/* Mode selector */}
           <div className="flex items-center gap-2">
-            <span className="text-[10px] text-text-muted dark:text-dark-text-muted uppercase tracking-wider font-medium w-[52px]">Mode</span>
+            <span className="text-[10px] text-text-muted dark:text-dark-text-muted uppercase tracking-wider font-medium w-[52px]">
+              Mode
+            </span>
             <div className="flex rounded-md overflow-hidden border border-border dark:border-dark-border">
               {EXEC_MODES.map(({ value, label }) => {
                 const isActive = permissions.mode === value;
@@ -199,15 +226,24 @@ export function ExecutionSecurityPanel() {
             {CATEGORIES.map(({ key, label, icon: Icon, localOnly }) => {
               const isDisabledByMode = localOnly && permissions.mode === 'docker';
               return (
-                <div key={key} className={`flex items-center justify-between gap-2 ${isDisabledByMode ? 'opacity-40' : ''}`}>
+                <div
+                  key={key}
+                  className={`flex items-center justify-between gap-2 ${isDisabledByMode ? 'opacity-40' : ''}`}
+                >
                   <div className="flex items-center gap-1.5 min-w-[90px]">
                     <Icon className="w-3 h-3 text-text-muted dark:text-dark-text-muted" />
                     <span className="text-xs text-text-secondary dark:text-dark-text-secondary">
                       {label}
-                      {isDisabledByMode && <span className="text-[9px] text-text-muted dark:text-dark-text-muted ml-1">(local only)</span>}
+                      {isDisabledByMode && (
+                        <span className="text-[9px] text-text-muted dark:text-dark-text-muted ml-1">
+                          (local only)
+                        </span>
+                      )}
                     </span>
                   </div>
-                  <div className={`flex rounded-md overflow-hidden border border-border dark:border-dark-border ${isDisabledByMode ? 'pointer-events-none' : ''}`}>
+                  <div
+                    className={`flex rounded-md overflow-hidden border border-border dark:border-dark-border ${isDisabledByMode ? 'pointer-events-none' : ''}`}
+                  >
                     {(['blocked', 'prompt', 'allowed'] as PermissionMode[]).map((mode) => {
                       const isActive = permissions[key] === mode;
                       const config = MODE_CONFIG[mode];

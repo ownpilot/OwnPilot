@@ -122,7 +122,7 @@ describe('Channel Service (singleton + registry)', () => {
 
       expect(mockRegistry.register).toHaveBeenCalledWith(
         expect.anything(), // Services.Channel token
-        service,
+        service
       );
     });
 

@@ -1,9 +1,36 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { getCurrentDateTimeExecutor, dateDiffExecutor, dateAddExecutor } from './utility-date-tools.js';
-import { calculateExecutor, convertUnitsExecutor, calculateStatisticsExecutor } from './utility-math-tools.js';
-import { countTextExecutor, extractFromTextExecutor, transformTextExecutor, compareTextExecutor, runRegexExecutor } from './utility-text-tools.js';
-import { generateUuidExecutor, generatePasswordExecutor, generateRandomNumberExecutor, hashTextExecutor, encodeDecodeExecutor } from './utility-gen-tools.js';
-import { validateDataExecutor, formatJsonExecutor, parseCsvExecutor, generateCsvExecutor, arrayOperationsExecutor, getSystemInfoExecutor } from './utility-data-tools.js';
+import {
+  getCurrentDateTimeExecutor,
+  dateDiffExecutor,
+  dateAddExecutor,
+} from './utility-date-tools.js';
+import {
+  calculateExecutor,
+  convertUnitsExecutor,
+  calculateStatisticsExecutor,
+} from './utility-math-tools.js';
+import {
+  countTextExecutor,
+  extractFromTextExecutor,
+  transformTextExecutor,
+  compareTextExecutor,
+  runRegexExecutor,
+} from './utility-text-tools.js';
+import {
+  generateUuidExecutor,
+  generatePasswordExecutor,
+  generateRandomNumberExecutor,
+  hashTextExecutor,
+  encodeDecodeExecutor,
+} from './utility-gen-tools.js';
+import {
+  validateDataExecutor,
+  formatJsonExecutor,
+  parseCsvExecutor,
+  generateCsvExecutor,
+  arrayOperationsExecutor,
+  getSystemInfoExecutor,
+} from './utility-data-tools.js';
 import { UTILITY_TOOLS, UTILITY_TOOL_NAMES } from './utility-tools.js';
 
 // Helper to parse the JSON content from a successful result
@@ -75,7 +102,10 @@ describe('getCurrentDateTimeExecutor', () => {
   });
 
   it('handles specific timezones', async () => {
-    const result = await getCurrentDateTimeExecutor({ timezone: 'America/New_York', format: 'all' });
+    const result = await getCurrentDateTimeExecutor({
+      timezone: 'America/New_York',
+      format: 'all',
+    });
     expect(result.isError).toBeUndefined();
     const data = parseContent(result.content);
     expect(data.timezone).toBe('America/New_York');
@@ -507,7 +537,7 @@ describe('generateUuidExecutor', () => {
     const result = await generateUuidExecutor({});
     const data = parseContent(result.content);
     expect(data.uuid).toBeTypeOf('string');
-    expect((data.uuid as string)).toMatch(
+    expect(data.uuid as string).toMatch(
       /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
     );
   });
@@ -528,8 +558,8 @@ describe('generateUuidExecutor', () => {
   it('generates UUID without dashes', async () => {
     const result = await generateUuidExecutor({ format: 'no-dashes' });
     const data = parseContent(result.content);
-    expect((data.uuid as string)).toMatch(/^[0-9a-f]{32}$/);
-    expect((data.uuid as string)).not.toContain('-');
+    expect(data.uuid as string).toMatch(/^[0-9a-f]{32}$/);
+    expect(data.uuid as string).not.toContain('-');
   });
 
   it('generates uppercase UUID', async () => {
@@ -587,7 +617,7 @@ describe('generatePasswordExecutor', () => {
       includeSymbols: false,
     });
     const data = parseContent(result.content);
-    expect((data.password as string)).toMatch(/^[a-z]+$/);
+    expect(data.password as string).toMatch(/^[a-z]+$/);
   });
 
   it('generates password with only uppercase', async () => {
@@ -598,7 +628,7 @@ describe('generatePasswordExecutor', () => {
       includeSymbols: false,
     });
     const data = parseContent(result.content);
-    expect((data.password as string)).toMatch(/^[A-Z]+$/);
+    expect(data.password as string).toMatch(/^[A-Z]+$/);
   });
 
   it('generates password with only numbers', async () => {
@@ -609,7 +639,7 @@ describe('generatePasswordExecutor', () => {
       includeSymbols: false,
     });
     const data = parseContent(result.content);
-    expect((data.password as string)).toMatch(/^[0-9]+$/);
+    expect(data.password as string).toMatch(/^[0-9]+$/);
   });
 
   it('excludes ambiguous characters when requested', async () => {
@@ -638,14 +668,14 @@ describe('generatePasswordExecutor', () => {
   it('generates multiple passwords', async () => {
     const result = await generatePasswordExecutor({ count: 3 });
     const data = parseContent(result.content);
-    expect((data.passwords as string[])).toHaveLength(3);
+    expect(data.passwords as string[]).toHaveLength(3);
     expect(data.count).toBe(3);
   });
 
   it('caps password count at 5', async () => {
     const result = await generatePasswordExecutor({ count: 20 });
     const data = parseContent(result.content);
-    expect((data.passwords as string[])).toHaveLength(5);
+    expect(data.passwords as string[]).toHaveLength(5);
   });
 
   it('includes strength assessment', async () => {
@@ -712,13 +742,13 @@ describe('generateRandomNumberExecutor', () => {
   it('generates multiple numbers', async () => {
     const result = await generateRandomNumberExecutor({ count: 5 });
     const data = parseContent(result.content);
-    expect((data.numbers as number[])).toHaveLength(5);
+    expect(data.numbers as number[]).toHaveLength(5);
   });
 
   it('caps count at 100', async () => {
     const result = await generateRandomNumberExecutor({ count: 200 });
     const data = parseContent(result.content);
-    expect((data.numbers as number[])).toHaveLength(100);
+    expect(data.numbers as number[]).toHaveLength(100);
   });
 
   it('returns error when min >= max', async () => {
@@ -743,9 +773,7 @@ describe('hashTextExecutor', () => {
     const result = await hashTextExecutor({ text: 'hello' });
     const data = parseContent(result.content);
     expect(data.algorithm).toBe('sha256');
-    expect(data.hash).toBe(
-      '2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824'
-    );
+    expect(data.hash).toBe('2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824');
   });
 
   it('hashes with md5', async () => {
@@ -791,13 +819,21 @@ describe('hashTextExecutor', () => {
 describe('encodeDecodeExecutor', () => {
   describe('base64', () => {
     it('encodes to base64', async () => {
-      const result = await encodeDecodeExecutor({ text: 'hello world', method: 'base64', operation: 'encode' });
+      const result = await encodeDecodeExecutor({
+        text: 'hello world',
+        method: 'base64',
+        operation: 'encode',
+      });
       const data = parseContent(result.content);
       expect(data.output).toBe('aGVsbG8gd29ybGQ=');
     });
 
     it('decodes from base64', async () => {
-      const result = await encodeDecodeExecutor({ text: 'aGVsbG8gd29ybGQ=', method: 'base64', operation: 'decode' });
+      const result = await encodeDecodeExecutor({
+        text: 'aGVsbG8gd29ybGQ=',
+        method: 'base64',
+        operation: 'decode',
+      });
       const data = parseContent(result.content);
       expect(data.output).toBe('hello world');
     });
@@ -805,13 +841,21 @@ describe('encodeDecodeExecutor', () => {
 
   describe('url', () => {
     it('encodes URL', async () => {
-      const result = await encodeDecodeExecutor({ text: 'hello world!', method: 'url', operation: 'encode' });
+      const result = await encodeDecodeExecutor({
+        text: 'hello world!',
+        method: 'url',
+        operation: 'encode',
+      });
       const data = parseContent(result.content);
       expect(data.output).toBe('hello%20world!');
     });
 
     it('decodes URL', async () => {
-      const result = await encodeDecodeExecutor({ text: 'hello%20world%21', method: 'url', operation: 'decode' });
+      const result = await encodeDecodeExecutor({
+        text: 'hello%20world%21',
+        method: 'url',
+        operation: 'decode',
+      });
       const data = parseContent(result.content);
       expect(data.output).toBe('hello world!');
     });
@@ -819,19 +863,31 @@ describe('encodeDecodeExecutor', () => {
 
   describe('html', () => {
     it('encodes HTML entities', async () => {
-      const result = await encodeDecodeExecutor({ text: '<div class="test">&</div>', method: 'html', operation: 'encode' });
+      const result = await encodeDecodeExecutor({
+        text: '<div class="test">&</div>',
+        method: 'html',
+        operation: 'encode',
+      });
       const data = parseContent(result.content);
       expect(data.output).toBe('&lt;div class=&quot;test&quot;&gt;&amp;&lt;/div&gt;');
     });
 
     it('decodes HTML entities', async () => {
-      const result = await encodeDecodeExecutor({ text: '&lt;p&gt;Hello &amp; World&lt;/p&gt;', method: 'html', operation: 'decode' });
+      const result = await encodeDecodeExecutor({
+        text: '&lt;p&gt;Hello &amp; World&lt;/p&gt;',
+        method: 'html',
+        operation: 'decode',
+      });
       const data = parseContent(result.content);
       expect(data.output).toBe('<p>Hello & World</p>');
     });
 
     it('encodes single quotes', async () => {
-      const result = await encodeDecodeExecutor({ text: "it's", method: 'html', operation: 'encode' });
+      const result = await encodeDecodeExecutor({
+        text: "it's",
+        method: 'html',
+        operation: 'encode',
+      });
       const data = parseContent(result.content);
       expect(data.output).toBe('it&#039;s');
     });
@@ -845,14 +901,22 @@ describe('encodeDecodeExecutor', () => {
     });
 
     it('decodes from hex', async () => {
-      const result = await encodeDecodeExecutor({ text: '4142', method: 'hex', operation: 'decode' });
+      const result = await encodeDecodeExecutor({
+        text: '4142',
+        method: 'hex',
+        operation: 'decode',
+      });
       const data = parseContent(result.content);
       expect(data.output).toBe('AB');
     });
   });
 
   it('returns error for unknown method', async () => {
-    const result = await encodeDecodeExecutor({ text: 'test', method: 'unknown', operation: 'encode' });
+    const result = await encodeDecodeExecutor({
+      text: 'test',
+      method: 'unknown',
+      operation: 'encode',
+    });
     expect(result.isError).toBe(true);
   });
 });
@@ -1046,7 +1110,10 @@ describe('validateDataExecutor', () => {
 
   describe('uuid validation', () => {
     it('validates a correct UUID v4', async () => {
-      const result = await validateDataExecutor({ value: '550e8400-e29b-41d4-a716-446655440000', type: 'uuid' });
+      const result = await validateDataExecutor({
+        value: '550e8400-e29b-41d4-a716-446655440000',
+        type: 'uuid',
+      });
       const data = parseContent(result.content);
       expect(data.valid).toBe(true);
     });
@@ -1067,7 +1134,10 @@ describe('validateDataExecutor', () => {
     });
 
     it('validates IPv6', async () => {
-      const result = await validateDataExecutor({ value: '2001:0db8:85a3:0000:0000:8a2e:0370:7334', type: 'ip' });
+      const result = await validateDataExecutor({
+        value: '2001:0db8:85a3:0000:0000:8a2e:0370:7334',
+        type: 'ip',
+      });
       const data = parseContent(result.content);
       expect(data.valid).toBe(true);
       expect(data.version).toBe('IPv6');
@@ -1123,7 +1193,10 @@ describe('validateDataExecutor', () => {
   describe('iban validation', () => {
     it('validates a correct IBAN', async () => {
       // GB82 WEST 1234 5698 7654 32 is a well-known test IBAN
-      const result = await validateDataExecutor({ value: 'GB82 WEST 1234 5698 7654 32', type: 'iban' });
+      const result = await validateDataExecutor({
+        value: 'GB82 WEST 1234 5698 7654 32',
+        type: 'iban',
+      });
       const data = parseContent(result.content);
       expect(data.valid).toBe(true);
       expect(data.country).toBe('GB');
@@ -1137,7 +1210,10 @@ describe('validateDataExecutor', () => {
     });
 
     it('rejects IBAN with invalid checksum', async () => {
-      const result = await validateDataExecutor({ value: 'GB00 WEST 1234 5698 7654 32', type: 'iban' });
+      const result = await validateDataExecutor({
+        value: 'GB00 WEST 1234 5698 7654 32',
+        type: 'iban',
+      });
       const data = parseContent(result.content);
       expect(data.valid).toBe(false);
       expect(data.reason).toContain('checksum');
@@ -1199,7 +1275,10 @@ describe('transformTextExecutor', () => {
   });
 
   it('transforms to title case', async () => {
-    const result = await transformTextExecutor({ text: 'hello beautiful world', operation: 'title_case' });
+    const result = await transformTextExecutor({
+      text: 'hello beautiful world',
+      operation: 'title_case',
+    });
     const data = parseContent(result.content);
     expect(data.output).toBe('Hello Beautiful World');
   });
@@ -1223,7 +1302,10 @@ describe('transformTextExecutor', () => {
   });
 
   it('slugifies text', async () => {
-    const result = await transformTextExecutor({ text: 'Hello World! This is a Test', operation: 'slugify' });
+    const result = await transformTextExecutor({
+      text: 'Hello World! This is a Test',
+      operation: 'slugify',
+    });
     const data = parseContent(result.content);
     expect(data.output).toBe('hello-world-this-is-a-test');
   });
@@ -1235,25 +1317,37 @@ describe('transformTextExecutor', () => {
   });
 
   it('converts to camelCase', async () => {
-    const result = await transformTextExecutor({ text: 'hello world test', operation: 'camel_case' });
+    const result = await transformTextExecutor({
+      text: 'hello world test',
+      operation: 'camel_case',
+    });
     const data = parseContent(result.content);
     expect(data.output).toBe('helloWorldTest');
   });
 
   it('converts to snake_case', async () => {
-    const result = await transformTextExecutor({ text: 'helloWorld test', operation: 'snake_case' });
+    const result = await transformTextExecutor({
+      text: 'helloWorld test',
+      operation: 'snake_case',
+    });
     const data = parseContent(result.content);
     expect(data.output).toBe('hello_world_test');
   });
 
   it('converts to kebab-case', async () => {
-    const result = await transformTextExecutor({ text: 'helloWorld test', operation: 'kebab_case' });
+    const result = await transformTextExecutor({
+      text: 'helloWorld test',
+      operation: 'kebab_case',
+    });
     const data = parseContent(result.content);
     expect(data.output).toBe('hello-world-test');
   });
 
   it('converts to PascalCase', async () => {
-    const result = await transformTextExecutor({ text: 'hello world test', operation: 'pascal_case' });
+    const result = await transformTextExecutor({
+      text: 'hello world test',
+      operation: 'pascal_case',
+    });
     const data = parseContent(result.content);
     expect(data.output).toBe('HelloWorldTest');
   });
@@ -1265,19 +1359,28 @@ describe('transformTextExecutor', () => {
   });
 
   it('removes whitespace', async () => {
-    const result = await transformTextExecutor({ text: 'h e l l o', operation: 'remove_whitespace' });
+    const result = await transformTextExecutor({
+      text: 'h e l l o',
+      operation: 'remove_whitespace',
+    });
     const data = parseContent(result.content);
     expect(data.output).toBe('hello');
   });
 
   it('normalizes whitespace', async () => {
-    const result = await transformTextExecutor({ text: '  hello   world  ', operation: 'normalize_whitespace' });
+    const result = await transformTextExecutor({
+      text: '  hello   world  ',
+      operation: 'normalize_whitespace',
+    });
     const data = parseContent(result.content);
     expect(data.output).toBe('hello world');
   });
 
   it('removes diacritics', async () => {
-    const result = await transformTextExecutor({ text: 'caf\u00e9 r\u00e9sum\u00e9', operation: 'remove_diacritics' });
+    const result = await transformTextExecutor({
+      text: 'caf\u00e9 r\u00e9sum\u00e9',
+      operation: 'remove_diacritics',
+    });
     const data = parseContent(result.content);
     expect(data.output).toBe('cafe resume');
   });
@@ -1290,7 +1393,7 @@ describe('transformTextExecutor', () => {
     });
     const data = parseContent(result.content);
     expect((data.output as string).length).toBeLessThanOrEqual(20);
-    expect((data.output as string)).toContain('...');
+    expect(data.output as string).toContain('...');
   });
 
   it('truncates text with custom suffix', async () => {
@@ -1341,7 +1444,11 @@ describe('dateDiffExecutor', () => {
   });
 
   it('calculates difference in specific unit', async () => {
-    const result = await dateDiffExecutor({ date1: '2024-01-01', date2: '2024-01-08', unit: 'weeks' });
+    const result = await dateDiffExecutor({
+      date1: '2024-01-01',
+      date2: '2024-01-08',
+      unit: 'weeks',
+    });
     const data = parseContent(result.content);
     expect(data.difference).toBe(1);
     expect(data.unit).toBe('weeks');
@@ -1361,7 +1468,11 @@ describe('dateDiffExecutor', () => {
   });
 
   it('calculates difference in days unit', async () => {
-    const result = await dateDiffExecutor({ date1: '2024-01-01', date2: '2024-01-11', unit: 'days' });
+    const result = await dateDiffExecutor({
+      date1: '2024-01-01',
+      date2: '2024-01-11',
+      unit: 'days',
+    });
     const data = parseContent(result.content);
     expect(data.difference).toBe(10);
   });
@@ -1373,37 +1484,61 @@ describe('dateDiffExecutor', () => {
 
 describe('dateAddExecutor', () => {
   it('adds days to a date', async () => {
-    const result = await dateAddExecutor({ date: '2024-01-01T00:00:00.000Z', amount: 10, unit: 'days' });
+    const result = await dateAddExecutor({
+      date: '2024-01-01T00:00:00.000Z',
+      amount: 10,
+      unit: 'days',
+    });
     const data = parseContent(result.content);
     expect(data.result).toContain('2024-01-11');
   });
 
   it('subtracts days with negative amount', async () => {
-    const result = await dateAddExecutor({ date: '2024-01-11T00:00:00.000Z', amount: -10, unit: 'days' });
+    const result = await dateAddExecutor({
+      date: '2024-01-11T00:00:00.000Z',
+      amount: -10,
+      unit: 'days',
+    });
     const data = parseContent(result.content);
     expect(data.result).toContain('2024-01-01');
   });
 
   it('adds months', async () => {
-    const result = await dateAddExecutor({ date: '2024-01-15T00:00:00.000Z', amount: 2, unit: 'months' });
+    const result = await dateAddExecutor({
+      date: '2024-01-15T00:00:00.000Z',
+      amount: 2,
+      unit: 'months',
+    });
     const data = parseContent(result.content);
     expect(data.result).toContain('2024-03-15');
   });
 
   it('adds years', async () => {
-    const result = await dateAddExecutor({ date: '2024-01-15T00:00:00.000Z', amount: 1, unit: 'years' });
+    const result = await dateAddExecutor({
+      date: '2024-01-15T00:00:00.000Z',
+      amount: 1,
+      unit: 'years',
+    });
     const data = parseContent(result.content);
     expect(data.result).toContain('2025-01-15');
   });
 
   it('adds hours', async () => {
-    const result = await dateAddExecutor({ date: '2024-01-01T00:00:00.000Z', amount: 5, unit: 'hours' });
+    const result = await dateAddExecutor({
+      date: '2024-01-01T00:00:00.000Z',
+      amount: 5,
+      unit: 'hours',
+    });
     const data = parseContent(result.content);
     expect(data.result).toContain('2024-01-01T05:00:00');
   });
 
   it('adds weeks', async () => {
-    const result = await dateAddExecutor({ date: '2024-01-01T00:00:00.000Z', amount: 2, unit: 'weeks' });
+    const result = await dateAddExecutor({
+      date: '2024-01-01T00:00:00.000Z',
+      amount: 2,
+      unit: 'weeks',
+    });
     const data = parseContent(result.content);
     expect(data.result).toContain('2024-01-15');
   });
@@ -1424,7 +1559,11 @@ describe('dateAddExecutor', () => {
   });
 
   it('includes formatted result', async () => {
-    const result = await dateAddExecutor({ date: '2024-06-15T12:00:00.000Z', amount: 0, unit: 'days' });
+    const result = await dateAddExecutor({
+      date: '2024-06-15T12:00:00.000Z',
+      amount: 0,
+      unit: 'days',
+    });
     const data = parseContent(result.content);
     expect(data.resultFormatted).toBeTypeOf('string');
   });
@@ -1494,7 +1633,10 @@ describe('formatJsonExecutor', () => {
   });
 
   it('sorts keys alphabetically', async () => {
-    const result = await formatJsonExecutor({ json: '{"c":3,"a":1,"b":2}', operation: 'sort_keys' });
+    const result = await formatJsonExecutor({
+      json: '{"c":3,"a":1,"b":2}',
+      operation: 'sort_keys',
+    });
     const data = parseContent(result.content);
     const parsed = JSON.parse(data.result as string);
     const keys = Object.keys(parsed);
@@ -1571,7 +1713,10 @@ describe('parseCsvExecutor', () => {
 
 describe('generateCsvExecutor', () => {
   it('generates CSV from object array', async () => {
-    const data = JSON.stringify([{ name: 'Alice', age: 30 }, { name: 'Bob', age: 25 }]);
+    const data = JSON.stringify([
+      { name: 'Alice', age: 30 },
+      { name: 'Bob', age: 25 },
+    ]);
     const result = await generateCsvExecutor({ data });
     const parsed = parseContent(result.content);
     const csv = parsed.csv as string;
@@ -1608,7 +1753,10 @@ describe('generateCsvExecutor', () => {
   });
 
   it('handles array of arrays', async () => {
-    const data = JSON.stringify([[1, 2], [3, 4]]);
+    const data = JSON.stringify([
+      [1, 2],
+      [3, 4],
+    ]);
     const result = await generateCsvExecutor({ data });
     const parsed = parseContent(result.content);
     const csv = parsed.csv as string;
@@ -1629,7 +1777,11 @@ describe('arrayOperationsExecutor', () => {
   });
 
   it('sorts numbers descending', async () => {
-    const result = await arrayOperationsExecutor({ array: '[3,1,2]', operation: 'sort', options: { sortOrder: 'desc' } });
+    const result = await arrayOperationsExecutor({
+      array: '[3,1,2]',
+      operation: 'sort',
+      options: { sortOrder: 'desc' },
+    });
     const data = parseContent(result.content);
     expect(data.result).toEqual([3, 2, 1]);
   });
@@ -1665,31 +1817,50 @@ describe('arrayOperationsExecutor', () => {
   });
 
   it('chunks an array', async () => {
-    const result = await arrayOperationsExecutor({ array: '[1,2,3,4,5]', operation: 'chunk', options: { chunkSize: 2 } });
+    const result = await arrayOperationsExecutor({
+      array: '[1,2,3,4,5]',
+      operation: 'chunk',
+      options: { chunkSize: 2 },
+    });
     const data = parseContent(result.content);
     expect(data.result).toEqual([[1, 2], [3, 4], [5]]);
   });
 
   it('flattens a nested array', async () => {
-    const result = await arrayOperationsExecutor({ array: '[[1,2],[3,[4,5]]]', operation: 'flatten' });
+    const result = await arrayOperationsExecutor({
+      array: '[[1,2],[3,[4,5]]]',
+      operation: 'flatten',
+    });
     const data = parseContent(result.content);
     expect(data.result).toEqual([1, 2, 3, 4, 5]);
   });
 
   it('samples from array', async () => {
-    const result = await arrayOperationsExecutor({ array: '[1,2,3,4,5]', operation: 'sample', options: { sampleSize: 2 } });
+    const result = await arrayOperationsExecutor({
+      array: '[1,2,3,4,5]',
+      operation: 'sample',
+      options: { sampleSize: 2 },
+    });
     const data = parseContent(result.content);
-    expect((data.result as number[])).toHaveLength(2);
+    expect(data.result as number[]).toHaveLength(2);
   });
 
   it('gets first N items', async () => {
-    const result = await arrayOperationsExecutor({ array: '[1,2,3,4,5]', operation: 'first', options: { count: 3 } });
+    const result = await arrayOperationsExecutor({
+      array: '[1,2,3,4,5]',
+      operation: 'first',
+      options: { count: 3 },
+    });
     const data = parseContent(result.content);
     expect(data.result).toEqual([1, 2, 3]);
   });
 
   it('gets last N items', async () => {
-    const result = await arrayOperationsExecutor({ array: '[1,2,3,4,5]', operation: 'last', options: { count: 2 } });
+    const result = await arrayOperationsExecutor({
+      array: '[1,2,3,4,5]',
+      operation: 'last',
+      options: { count: 2 },
+    });
     const data = parseContent(result.content);
     expect(data.result).toEqual([4, 5]);
   });
@@ -1780,7 +1951,10 @@ describe('calculateStatisticsExecutor', () => {
   });
 
   it('calculates requested percentile', async () => {
-    const result = await calculateStatisticsExecutor({ numbers: '[1,2,3,4,5,6,7,8,9,10]', percentile: 90 });
+    const result = await calculateStatisticsExecutor({
+      numbers: '[1,2,3,4,5,6,7,8,9,10]',
+      percentile: 90,
+    });
     const data = parseContent(result.content);
     expect(data.requestedPercentile).toBeDefined();
     const pct = data.requestedPercentile as Record<string, number>;
@@ -1870,19 +2044,31 @@ describe('compareTextExecutor', () => {
 
 describe('runRegexExecutor', () => {
   it('tests a pattern', async () => {
-    const result = await runRegexExecutor({ text: 'hello world', pattern: 'hello', operation: 'test' });
+    const result = await runRegexExecutor({
+      text: 'hello world',
+      pattern: 'hello',
+      operation: 'test',
+    });
     const data = parseContent(result.content);
     expect(data.result).toBe(true);
   });
 
   it('tests a non-matching pattern', async () => {
-    const result = await runRegexExecutor({ text: 'hello world', pattern: 'xyz', operation: 'test' });
+    const result = await runRegexExecutor({
+      text: 'hello world',
+      pattern: 'xyz',
+      operation: 'test',
+    });
     const data = parseContent(result.content);
     expect(data.result).toBe(false);
   });
 
   it('matches a pattern', async () => {
-    const result = await runRegexExecutor({ text: 'hello world', pattern: '(\\w+)\\s(\\w+)', operation: 'match' });
+    const result = await runRegexExecutor({
+      text: 'hello world',
+      pattern: '(\\w+)\\s(\\w+)',
+      operation: 'match',
+    });
     const data = parseContent(result.content);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const match = data.result as any;
@@ -1891,7 +2077,12 @@ describe('runRegexExecutor', () => {
   });
 
   it('matches all occurrences', async () => {
-    const result = await runRegexExecutor({ text: 'cat bat hat', pattern: '[a-z]at', operation: 'match_all', flags: 'g' });
+    const result = await runRegexExecutor({
+      text: 'cat bat hat',
+      pattern: '[a-z]at',
+      operation: 'match_all',
+      flags: 'g',
+    });
     const data = parseContent(result.content);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const matches = data.result as any[];
@@ -1899,7 +2090,13 @@ describe('runRegexExecutor', () => {
   });
 
   it('replaces text', async () => {
-    const result = await runRegexExecutor({ text: 'hello world', pattern: 'world', operation: 'replace', replacement: 'vitest', flags: 'g' });
+    const result = await runRegexExecutor({
+      text: 'hello world',
+      pattern: 'world',
+      operation: 'replace',
+      replacement: 'vitest',
+      flags: 'g',
+    });
     const data = parseContent(result.content);
     expect(data.result).toBe('hello vitest');
   });
@@ -1911,12 +2108,20 @@ describe('runRegexExecutor', () => {
   });
 
   it('returns error for too-long pattern', async () => {
-    const result = await runRegexExecutor({ text: 'test', pattern: 'a'.repeat(1001), operation: 'test' });
+    const result = await runRegexExecutor({
+      text: 'test',
+      pattern: 'a'.repeat(1001),
+      operation: 'test',
+    });
     expect(result.isError).toBe(true);
   });
 
   it('returns error for invalid regex', async () => {
-    const result = await runRegexExecutor({ text: 'test', pattern: '(unclosed', operation: 'test' });
+    const result = await runRegexExecutor({
+      text: 'test',
+      pattern: '(unclosed',
+      operation: 'test',
+    });
     expect(result.isError).toBe(true);
   });
 

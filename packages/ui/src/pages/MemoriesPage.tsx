@@ -63,28 +63,45 @@ export function MemoriesPage() {
     const unsub = subscribe<{ entity: string }>('data:changed', (data) => {
       if (data.entity === 'memory') debouncedRefresh();
     });
-    return () => { unsub(); };
+    return () => {
+      unsub();
+    };
   }, [subscribe, debouncedRefresh]);
 
-  const handleDelete = useCallback(async (memoryId: string) => {
-    if (!await confirm({ message: 'Are you sure you want to delete this memory?', variant: 'danger' })) return;
+  const handleDelete = useCallback(
+    async (memoryId: string) => {
+      if (
+        !(await confirm({
+          message: 'Are you sure you want to delete this memory?',
+          variant: 'danger',
+        }))
+      )
+        return;
 
-    try {
-      await memoriesApi.delete(memoryId);
-      toast.success('Memory deleted');
+      try {
+        await memoriesApi.delete(memoryId);
+        toast.success('Memory deleted');
+        fetchMemories();
+      } catch {
+        // API client handles error reporting
+      }
+    },
+    [confirm, toast, fetchMemories]
+  );
+
+  const handleSearch = useCallback(
+    (e: React.FormEvent) => {
+      e.preventDefault();
       fetchMemories();
-    } catch {
-      // API client handles error reporting
-    }
-  }, [confirm, toast, fetchMemories]);
-
-  const handleSearch = useCallback((e: React.FormEvent) => {
-    e.preventDefault();
-    fetchMemories();
-  }, [fetchMemories]);
+    },
+    [fetchMemories]
+  );
 
   const factCount = useMemo(() => memories.filter((m) => m.type === 'fact').length, [memories]);
-  const preferenceCount = useMemo(() => memories.filter((m) => m.type === 'preference').length, [memories]);
+  const preferenceCount = useMemo(
+    () => memories.filter((m) => m.type === 'preference').length,
+    [memories]
+  );
 
   return (
     <div className="flex flex-col h-full">
@@ -153,7 +170,11 @@ export function MemoriesPage() {
           <EmptyState
             icon={Brain}
             title={searchQuery ? 'No memories found' : 'No memories yet'}
-            description={searchQuery ? 'No memories match your search.' : 'The AI will automatically remember important information from conversations.'}
+            description={
+              searchQuery
+                ? 'No memories match your search.'
+                : 'The AI will automatically remember important information from conversations.'
+            }
             action={{ label: 'Add Memory', onClick: () => setShowCreateModal(true), icon: Plus }}
           />
         ) : (
@@ -284,7 +305,10 @@ function MemoryModal({ memory, onClose, onSave }: MemoryModalProps) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onBackdropClick}>
+    <div
+      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+      onClick={onBackdropClick}
+    >
       <div className="w-full max-w-lg bg-bg-primary dark:bg-dark-bg-primary border border-border dark:border-dark-border rounded-xl shadow-xl">
         <form onSubmit={handleSubmit}>
           <div className="p-6 border-b border-border dark:border-dark-border">

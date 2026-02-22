@@ -12,7 +12,7 @@ const mockExtname = vi.hoisted(() =>
   vi.fn((p: string) => {
     const m = p.match(/\.\w+$/);
     return m ? m[0] : '';
-  }),
+  })
 );
 
 vi.mock('./module-resolver.js', () => ({
@@ -73,9 +73,7 @@ function wordsOfCount(n: number): string {
 // Constants
 // ---------------------------------------------------------------------------
 
-const SUPPORTED_INPUT_FORMATS = [
-  'mp3', 'mp4', 'mpeg', 'mpga', 'm4a', 'wav', 'webm', 'ogg', 'flac',
-];
+const SUPPORTED_INPUT_FORMATS = ['mp3', 'mp4', 'mpeg', 'mpga', 'm4a', 'wav', 'webm', 'ogg', 'flac'];
 const SUPPORTED_OUTPUT_FORMATS = ['mp3', 'opus', 'aac', 'flac', 'wav', 'pcm'];
 const MAX_AUDIO_SIZE = 25 * 1024 * 1024;
 
@@ -254,10 +252,7 @@ describe('textToSpeechExecutor', () => {
   });
 
   it('passes outputPath through', async () => {
-    const result = await textToSpeechExecutor(
-      { text: 'hello', outputPath: '/tmp/out.mp3' },
-      ctx,
-    );
+    const result = await textToSpeechExecutor({ text: 'hello', outputPath: '/tmp/out.mp3' }, ctx);
     expect(content(result).outputPath).toBe('/tmp/out.mp3');
   });
 
@@ -440,10 +435,7 @@ describe('speechToTextExecutor', () => {
   // ---- URL sources ----
 
   it('detects http:// URL and returns sourceType url', async () => {
-    const result = await speechToTextExecutor(
-      { source: 'http://example.com/audio.mp3' },
-      ctx,
-    );
+    const result = await speechToTextExecutor({ source: 'http://example.com/audio.mp3' }, ctx);
     expect(result.isError).toBe(false);
     expect(content(result).sourceType).toBe('url');
     expect(content(result).requiresDownload).toBe(true);
@@ -453,7 +445,7 @@ describe('speechToTextExecutor', () => {
   it('detects https:// URL and returns sourceType url', async () => {
     const result = await speechToTextExecutor(
       { source: 'https://cdn.example.com/files/recording.wav' },
-      ctx,
+      ctx
     );
     expect(result.isError).toBe(false);
     expect(content(result).sourceType).toBe('url');
@@ -462,10 +454,7 @@ describe('speechToTextExecutor', () => {
 
   it('extracts format from URL pathname', async () => {
     mockExtname.mockReturnValue('.ogg');
-    const result = await speechToTextExecutor(
-      { source: 'https://example.com/path/file.ogg' },
-      ctx,
-    );
+    const result = await speechToTextExecutor({ source: 'https://example.com/path/file.ogg' }, ctx);
     expect(content(result).format).toBe('ogg');
   });
 
@@ -474,7 +463,7 @@ describe('speechToTextExecutor', () => {
     mockExtname.mockReturnValue('.mp3');
     const result = await speechToTextExecutor(
       { source: 'https://example.com/file.mp3?token=abc' },
-      ctx,
+      ctx
     );
     expect(content(result).format).toBe('mp3');
   });
@@ -482,7 +471,7 @@ describe('speechToTextExecutor', () => {
   it('passes language and prompt through for URL source', async () => {
     const result = await speechToTextExecutor(
       { source: 'https://example.com/a.mp3', language: 'en', prompt: 'tech talk' },
-      ctx,
+      ctx
     );
     expect(content(result).language).toBe('en');
     expect(content(result).prompt).toBe('tech talk');
@@ -491,7 +480,7 @@ describe('speechToTextExecutor', () => {
   it('passes timestamps through for URL source', async () => {
     const result = await speechToTextExecutor(
       { source: 'https://example.com/a.mp3', timestamps: true },
-      ctx,
+      ctx
     );
     expect(content(result).timestamps).toBe(true);
   });
@@ -590,10 +579,7 @@ describe('speechToTextExecutor', () => {
   it('passes custom language for file source', async () => {
     mockExtname.mockReturnValue('.mp3');
     mockStat.mockResolvedValue({ size: 1000 });
-    const result = await speechToTextExecutor(
-      { source: '/audio/file.mp3', language: 'tr' },
-      ctx,
-    );
+    const result = await speechToTextExecutor({ source: '/audio/file.mp3', language: 'tr' }, ctx);
     expect(content(result).language).toBe('tr');
   });
 
@@ -617,10 +603,7 @@ describe('speechToTextExecutor', () => {
     it(`accepts supported input format: ${fmt}`, async () => {
       mockExtname.mockReturnValue(`.${fmt}`);
       mockStat.mockResolvedValue({ size: 1000 });
-      const result = await speechToTextExecutor(
-        { source: `/audio/file.${fmt}` },
-        ctx,
-      );
+      const result = await speechToTextExecutor({ source: `/audio/file.${fmt}` }, ctx);
       expect(result.isError).toBe(false);
       expect(content(result).format).toBe(fmt);
     });
@@ -633,7 +616,7 @@ describe('speechToTextExecutor', () => {
     mockStat.mockResolvedValue({ size: 1000 });
     const result = await speechToTextExecutor(
       { source: '/audio/file.mp3', model: 'whisper-1' },
-      ctx,
+      ctx
     );
     expect(content(result).model).toBe('whisper-1');
   });
@@ -643,7 +626,7 @@ describe('speechToTextExecutor', () => {
     mockStat.mockResolvedValue({ size: 1000 });
     const result = await speechToTextExecutor(
       { source: '/audio/file.mp3', responseFormat: 'srt' },
-      ctx,
+      ctx
     );
     expect(content(result).responseFormat).toBe('srt');
   });
@@ -651,10 +634,7 @@ describe('speechToTextExecutor', () => {
   it('passes timestamps=true through', async () => {
     mockExtname.mockReturnValue('.mp3');
     mockStat.mockResolvedValue({ size: 1000 });
-    const result = await speechToTextExecutor(
-      { source: '/audio/file.mp3', timestamps: true },
-      ctx,
-    );
+    const result = await speechToTextExecutor({ source: '/audio/file.mp3', timestamps: true }, ctx);
     expect(content(result).timestamps).toBe(true);
   });
 
@@ -663,7 +643,7 @@ describe('speechToTextExecutor', () => {
     mockStat.mockResolvedValue({ size: 1000 });
     const result = await speechToTextExecutor(
       { source: '/audio/file.mp3', prompt: 'AI conference keynote' },
-      ctx,
+      ctx
     );
     expect(content(result).prompt).toBe('AI conference keynote');
   });
@@ -750,7 +730,7 @@ describe('translateAudioExecutor', () => {
     mockAccess.mockResolvedValue(undefined);
     const result = await translateAudioExecutor(
       { source: '/audio/file.ogg', model: 'whisper-1' },
-      ctx,
+      ctx
     );
     expect(content(result).model).toBe('whisper-1');
   });
@@ -760,7 +740,7 @@ describe('translateAudioExecutor', () => {
     mockAccess.mockResolvedValue(undefined);
     const result = await translateAudioExecutor(
       { source: '/audio/file.flac', responseFormat: 'vtt' },
-      ctx,
+      ctx
     );
     expect(content(result).responseFormat).toBe('vtt');
   });
@@ -770,7 +750,7 @@ describe('translateAudioExecutor', () => {
     mockAccess.mockResolvedValue(undefined);
     const result = await translateAudioExecutor(
       { source: '/audio/file.mp3', prompt: 'medical terminology' },
-      ctx,
+      ctx
     );
     expect(content(result).prompt).toBe('medical terminology');
   });
@@ -788,10 +768,7 @@ describe('translateAudioExecutor', () => {
     it(`accepts supported input format: ${fmt}`, async () => {
       mockExtname.mockReturnValue(`.${fmt}`);
       mockAccess.mockResolvedValue(undefined);
-      const result = await translateAudioExecutor(
-        { source: `/audio/file.${fmt}` },
-        ctx,
-      );
+      const result = await translateAudioExecutor({ source: `/audio/file.${fmt}` }, ctx);
       expect(result.isError).toBe(false);
       expect(content(result).format).toBe(fmt);
     });
@@ -843,7 +820,7 @@ describe('audioInfoExecutor', () => {
     expect(content(result).modified).toBe(mtime.toISOString());
     expect(content(result).supported).toBe(true);
     expect(content(result).note).toBe(
-      'Install music-metadata for detailed audio info: pnpm add music-metadata',
+      'Install music-metadata for detailed audio info: pnpm add music-metadata'
     );
   });
 
@@ -1135,7 +1112,7 @@ describe('splitAudioExecutor', () => {
     mockAccess.mockResolvedValue(undefined);
     const result = await splitAudioExecutor(
       { source: '/audio/file.mp3', segmentDuration: 300 },
-      ctx,
+      ctx
     );
     expect(content(result).segmentDuration).toBe('300 seconds');
   });
@@ -1148,10 +1125,7 @@ describe('splitAudioExecutor', () => {
 
   it('passes custom format', async () => {
     mockAccess.mockResolvedValue(undefined);
-    const result = await splitAudioExecutor(
-      { source: '/audio/file.mp3', format: 'wav' },
-      ctx,
-    );
+    const result = await splitAudioExecutor({ source: '/audio/file.mp3', format: 'wav' }, ctx);
     expect(content(result).format).toBe('wav');
   });
 
@@ -1165,7 +1139,7 @@ describe('splitAudioExecutor', () => {
     mockAccess.mockResolvedValue(undefined);
     const result = await splitAudioExecutor(
       { source: '/audio/file.mp3', outputDir: '/tmp/segments' },
-      ctx,
+      ctx
     );
     expect(content(result).outputDir).toBe('/tmp/segments');
   });
@@ -1174,7 +1148,7 @@ describe('splitAudioExecutor', () => {
     mockAccess.mockResolvedValue(undefined);
     const result = await splitAudioExecutor({ source: '/audio/file.mp3' }, ctx);
     expect(content(result).command).toBe(
-      'ffmpeg -i "/audio/file.mp3" -f segment -segment_time 600 -c copy "segment_%03d.mp3"',
+      'ffmpeg -i "/audio/file.mp3" -f segment -segment_time 600 -c copy "segment_%03d.mp3"'
     );
   });
 
@@ -1182,10 +1156,10 @@ describe('splitAudioExecutor', () => {
     mockAccess.mockResolvedValue(undefined);
     const result = await splitAudioExecutor(
       { source: '/audio/podcast.wav', segmentDuration: 120, format: 'ogg' },
-      ctx,
+      ctx
     );
     expect(content(result).command).toBe(
-      'ffmpeg -i "/audio/podcast.wav" -f segment -segment_time 120 -c copy "segment_%03d.ogg"',
+      'ffmpeg -i "/audio/podcast.wav" -f segment -segment_time 120 -c copy "segment_%03d.ogg"'
     );
   });
 
@@ -1204,19 +1178,13 @@ describe('splitAudioExecutor', () => {
   it('handles segmentDuration of 0 (falsy -> defaults to 600)', async () => {
     // segmentDuration=0 is falsy: `(params.segmentDuration as number) || 600` -> 600
     mockAccess.mockResolvedValue(undefined);
-    const result = await splitAudioExecutor(
-      { source: '/audio/file.mp3', segmentDuration: 0 },
-      ctx,
-    );
+    const result = await splitAudioExecutor({ source: '/audio/file.mp3', segmentDuration: 0 }, ctx);
     expect(content(result).segmentDuration).toBe('600 seconds');
   });
 
   it('handles empty format (falsy -> defaults to mp3)', async () => {
     mockAccess.mockResolvedValue(undefined);
-    const result = await splitAudioExecutor(
-      { source: '/audio/file.mp3', format: '' },
-      ctx,
-    );
+    const result = await splitAudioExecutor({ source: '/audio/file.mp3', format: '' }, ctx);
     expect(content(result).format).toBe('mp3');
   });
 });
@@ -1236,10 +1204,7 @@ describe('edge cases', () => {
 
   it('speechToText URL without extension returns empty format', async () => {
     mockExtname.mockReturnValue('');
-    const result = await speechToTextExecutor(
-      { source: 'https://example.com/audio' },
-      ctx,
-    );
+    const result = await speechToTextExecutor({ source: 'https://example.com/audio' }, ctx);
     expect(result.isError).toBe(false);
     expect(content(result).format).toBe('');
   });
@@ -1278,10 +1243,7 @@ describe('edge cases', () => {
     // This tests that the implementation is case-sensitive (lowercase only)
     mockExtname.mockReturnValue('.mp3');
     mockStat.mockRejectedValue(new Error('ENOENT'));
-    const result = await speechToTextExecutor(
-      { source: 'HTTP://example.com/file.mp3' },
-      ctx,
-    );
+    const result = await speechToTextExecutor({ source: 'HTTP://example.com/file.mp3' }, ctx);
     // Not detected as URL, treated as file path
     expect(result.isError).toBe(true);
   });

@@ -8,9 +8,21 @@
 
 import { Hono } from 'hono';
 import { configServicesRepo } from '../db/repositories/config-services.js';
-import type { CreateConfigServiceInput, UpdateConfigServiceInput, CreateConfigEntryInput, UpdateConfigEntryInput } from '../db/repositories/config-services.js';
+import type {
+  CreateConfigServiceInput,
+  UpdateConfigServiceInput,
+  CreateConfigEntryInput,
+  UpdateConfigEntryInput,
+} from '../db/repositories/config-services.js';
 import type { ConfigServiceDefinition, ConfigEntry, ConfigFieldDefinition } from '@ownpilot/core';
-import { apiResponse, apiError, ERROR_CODES, sanitizeId, notFoundError, maskSecret } from './helpers.js'
+import {
+  apiResponse,
+  apiError,
+  ERROR_CODES,
+  sanitizeId,
+  notFoundError,
+  maskSecret,
+} from './helpers.js';
 import { wsGateway } from '../ws/server.js';
 
 export const configServicesRoutes = new Hono();
@@ -34,13 +46,8 @@ function isMaskedValue(value: string): boolean {
  * Sanitize an entry's data by masking fields with type='secret' in the schema.
  * Returns a new object with masked values and metadata about secret fields.
  */
-function sanitizeEntry(
-  entry: ConfigEntry,
-  schema: ConfigFieldDefinition[],
-) {
-  const secretFields = schema
-    .filter(f => f.type === 'secret')
-    .map(f => f.name);
+function sanitizeEntry(entry: ConfigEntry, schema: ConfigFieldDefinition[]) {
+  const secretFields = schema.filter((f) => f.type === 'secret').map((f) => f.name);
 
   const maskedData: Record<string, unknown> = { ...entry.data };
   for (const field of secretFields) {
@@ -63,9 +70,9 @@ function sanitizeEntry(
  */
 function sanitizeService(service: ConfigServiceDefinition) {
   const entries = configServicesRepo.getEntries(service.name);
-  const isConfigured = entries.some(e => {
+  const isConfigured = entries.some((e) => {
     const data = e.data;
-    return Object.keys(data).some(k => {
+    return Object.keys(data).some((k) => {
       const v = data[k];
       return v !== null && v !== undefined && v !== '';
     });
@@ -75,7 +82,7 @@ function sanitizeService(service: ConfigServiceDefinition) {
     ...service,
     entryCount: entries.length,
     isConfigured,
-    entries: entries.map(e => sanitizeEntry(e, service.configSchema)),
+    entries: entries.map((e) => sanitizeEntry(e, service.configSchema)),
   };
 }
 
@@ -91,9 +98,9 @@ configServicesRoutes.get('/', async (c) => {
   const services = configServicesRepo.list(category ?? undefined);
 
   return apiResponse(c, {
-      services: services.map(sanitizeService),
-      count: services.length,
-    });
+    services: services.map(sanitizeService),
+    count: services.length,
+  });
 });
 
 /**
@@ -110,7 +117,7 @@ configServicesRoutes.get('/stats', async (c) => {
  */
 configServicesRoutes.get('/categories', async (c) => {
   const services = configServicesRepo.list();
-  const categories = [...new Set(services.map(s => s.category))].sort();
+  const categories = [...new Set(services.map((s) => s.category))].sort();
 
   return apiResponse(c, { categories });
 });
@@ -121,13 +128,13 @@ configServicesRoutes.get('/categories', async (c) => {
 configServicesRoutes.get('/needed', async (c) => {
   const services = configServicesRepo.list();
   const needed = services.filter(
-    s => s.requiredBy.length > 0 && !configServicesRepo.isAvailable(s.name),
+    (s) => s.requiredBy.length > 0 && !configServicesRepo.isAvailable(s.name)
   );
 
   return apiResponse(c, {
-      services: needed.map(sanitizeService),
-      count: needed.length,
-    });
+    services: needed.map(sanitizeService),
+    count: needed.length,
+  });
 });
 
 /**
@@ -150,23 +157,49 @@ configServicesRoutes.post('/', async (c) => {
   const body = await c.req.json<CreateConfigServiceInput>();
 
   if (!body.name || !body.displayName || !body.category) {
-    return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'Missing required fields: name, displayName, category' }, 400);
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.INVALID_INPUT,
+        message: 'Missing required fields: name, displayName, category',
+      },
+      400
+    );
   }
 
   // Validate name format
   if (!/^[a-z][a-z0-9_]*$/.test(body.name)) {
-    return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'Invalid service name. Must start with lowercase letter and contain only lowercase letters, numbers, and underscores.' }, 400);
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.INVALID_INPUT,
+        message:
+          'Invalid service name. Must start with lowercase letter and contain only lowercase letters, numbers, and underscores.',
+      },
+      400
+    );
   }
 
   // Check for duplicate
   const existing = configServicesRepo.getByName(body.name);
   if (existing) {
-    return apiError(c, { code: ERROR_CODES.ALREADY_EXISTS, message: `Config service '${sanitizeId(body.name)}' already exists` }, 409);
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.ALREADY_EXISTS,
+        message: `Config service '${sanitizeId(body.name)}' already exists`,
+      },
+      409
+    );
   }
 
   const service = await configServicesRepo.create(body);
 
-  wsGateway.broadcast('data:changed', { entity: 'config_service', action: 'created', id: service.name });
+  wsGateway.broadcast('data:changed', {
+    entity: 'config_service',
+    action: 'created',
+    id: service.name,
+  });
 
   return apiResponse(c, sanitizeService(service), 201);
 });
@@ -221,9 +254,9 @@ configServicesRoutes.get('/:name/entries', async (c) => {
   const entries = configServicesRepo.getEntries(name);
 
   return apiResponse(c, {
-      entries: entries.map(e => sanitizeEntry(e, service.configSchema)),
-      count: entries.length,
-    });
+    entries: entries.map((e) => sanitizeEntry(e, service.configSchema)),
+    count: entries.length,
+  });
 });
 
 /**
@@ -261,12 +294,10 @@ configServicesRoutes.put('/:name/entries/:entryId', async (c) => {
   // Protect against masked secret values being written back to DB.
   // If a secret field's value looks like a masked string, preserve the original.
   if (body.data) {
-    const secretFields = service.configSchema
-      .filter(f => f.type === 'secret')
-      .map(f => f.name);
+    const secretFields = service.configSchema.filter((f) => f.type === 'secret').map((f) => f.name);
 
     if (secretFields.length > 0) {
-      const existingEntry = configServicesRepo.getEntries(name).find(e => e.id === entryId);
+      const existingEntry = configServicesRepo.getEntries(name).find((e) => e.id === entryId);
       if (existingEntry) {
         for (const field of secretFields) {
           const incoming = body.data[field];
@@ -325,7 +356,7 @@ configServicesRoutes.put('/:name/entries/:entryId/default', async (c) => {
 
   // Verify the entry exists for this service
   const entries = configServicesRepo.getEntries(name);
-  const entry = entries.find(e => e.id === entryId);
+  const entry = entries.find((e) => e.id === entryId);
   if (!entry) {
     return notFoundError(c, 'Config entry', entryId);
   }
@@ -336,9 +367,12 @@ configServicesRoutes.put('/:name/entries/:entryId/default', async (c) => {
 
   // Fetch the updated entry from cache
   const updatedEntries = configServicesRepo.getEntries(name);
-  const updatedEntry = updatedEntries.find(e => e.id === entryId);
+  const updatedEntry = updatedEntries.find((e) => e.id === entryId);
 
-  return apiResponse(c, updatedEntry
+  return apiResponse(
+    c,
+    updatedEntry
       ? sanitizeEntry(updatedEntry, service.configSchema)
-      : { id: entryId, isDefault: true });
+      : { id: entryId, isDefault: true }
+  );
 });

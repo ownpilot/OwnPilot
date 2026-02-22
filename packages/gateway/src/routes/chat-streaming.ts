@@ -7,11 +7,16 @@
  */
 
 import { streamSSE } from 'hono/streaming';
+import type { StreamChunkResponse, SessionInfo } from '../types/index.js';
 import type {
-  StreamChunkResponse,
-  SessionInfo,
-} from '../types/index.js';
-import type { AIProvider, StreamCallbacks, StreamChunk, ToolCall, ToolEndResult, NormalizedMessage, IMessageBus } from '@ownpilot/core';
+  AIProvider,
+  StreamCallbacks,
+  StreamChunk,
+  ToolCall,
+  ToolEndResult,
+  NormalizedMessage,
+  IMessageBus,
+} from '@ownpilot/core';
 import { checkToolCallApproval } from '../assistant/index.js';
 import { getSessionInfo } from './agent-service.js';
 import { usageTracker } from './costs.js';
@@ -24,15 +29,24 @@ import { saveStreamingChat, runPostChatProcessing } from './chat-persistence.js'
  * Extract display-friendly tool name and args from a ToolCall.
  * For use_tool calls, unwraps the inner tool_name and arguments.
  */
-export function extractToolDisplay(toolCall: ToolCall): { displayName: string; displayArgs?: Record<string, unknown> } {
+export function extractToolDisplay(toolCall: ToolCall): {
+  displayName: string;
+  displayArgs?: Record<string, unknown>;
+} {
   let parsedArgs: Record<string, unknown> | undefined;
-  try { parsedArgs = toolCall.arguments ? JSON.parse(toolCall.arguments) : undefined; } catch { /* malformed */ }
-  const displayName = toolCall.name === 'use_tool' && parsedArgs?.tool_name
-    ? String(parsedArgs.tool_name)
-    : toolCall.name;
-  const displayArgs = toolCall.name === 'use_tool' && parsedArgs?.arguments
-    ? parsedArgs.arguments as Record<string, unknown>
-    : parsedArgs;
+  try {
+    parsedArgs = toolCall.arguments ? JSON.parse(toolCall.arguments) : undefined;
+  } catch {
+    /* malformed */
+  }
+  const displayName =
+    toolCall.name === 'use_tool' && parsedArgs?.tool_name
+      ? String(parsedArgs.tool_name)
+      : toolCall.name;
+  const displayArgs =
+    toolCall.name === 'use_tool' && parsedArgs?.arguments
+      ? (parsedArgs.arguments as Record<string, unknown>)
+      : parsedArgs;
   return { displayName, displayArgs };
 }
 
@@ -40,26 +54,40 @@ export function extractToolDisplay(toolCall: ToolCall): { displayName: string; d
  * Wire real-time execution approval via SSE stream.
  * Sends approval_required event and returns a pending ApprovalRequest.
  */
-type ApprovalFn = ((category: string, actionType: string, description: string, params: Record<string, unknown>) => Promise<boolean>) | undefined;
+type ApprovalFn =
+  | ((
+      category: string,
+      actionType: string,
+      description: string,
+      params: Record<string, unknown>
+    ) => Promise<boolean>)
+  | undefined;
 export function wireStreamApproval(
   agent: { setRequestApproval: (fn: ApprovalFn) => void },
-  stream: { writeSSE: (data: { data: string; event: string }) => Promise<void> },
+  stream: { writeSSE: (data: { data: string; event: string }) => Promise<void> }
 ) {
-  agent.setRequestApproval(async (_category: string, actionType: string, description: string, params: Record<string, unknown>) => {
-    const approvalId = generateApprovalId();
-    await stream.writeSSE({
-      data: JSON.stringify({
-        type: 'approval_required',
-        approvalId,
-        category: actionType,
-        description,
-        code: params.code,
-        riskAnalysis: params.riskAnalysis,
-      }),
-      event: 'approval',
-    });
-    return createApprovalRequest(approvalId);
-  });
+  agent.setRequestApproval(
+    async (
+      _category: string,
+      actionType: string,
+      description: string,
+      params: Record<string, unknown>
+    ) => {
+      const approvalId = generateApprovalId();
+      await stream.writeSSE({
+        data: JSON.stringify({
+          type: 'approval_required',
+          approvalId,
+          category: actionType,
+          description,
+          code: params.code,
+          riskAnalysis: params.riskAnalysis,
+        }),
+        event: 'approval',
+      });
+      return createApprovalRequest(approvalId);
+    }
+  );
 }
 
 /** Shared configuration for creating stream callbacks. */
@@ -78,7 +106,9 @@ export interface StreamingConfig {
 /** Accumulated state from streaming, available after stream completes. */
 export interface StreamState {
   streamedContent: string;
-  lastUsage: { promptTokens: number; completionTokens: number; totalTokens: number; cachedTokens?: number } | undefined;
+  lastUsage:
+    | { promptTokens: number; completionTokens: number; totalTokens: number; cachedTokens?: number }
+    | undefined;
   traceToolCalls: Array<{
     name: string;
     arguments?: Record<string, unknown>;
@@ -94,7 +124,10 @@ export interface StreamState {
  * Create shared StreamCallbacks for SSE streaming.
  * Used by both the MessageBus and Legacy streaming paths to eliminate duplication.
  */
-export function createStreamCallbacks(config: StreamingConfig): { callbacks: StreamCallbacks; state: StreamState } {
+export function createStreamCallbacks(config: StreamingConfig): {
+  callbacks: StreamCallbacks;
+  state: StreamState;
+} {
   const { sseStream, conversationId, userId, agentId, provider, model, historyLength } = config;
 
   const state: StreamState = {
@@ -108,56 +141,67 @@ export function createStreamCallbacks(config: StreamingConfig): { callbacks: Str
     onChunk(chunk: StreamChunk) {
       if (chunk.content) state.streamedContent += chunk.content;
 
-      const data: StreamChunkResponse & { trace?: Record<string, unknown>; session?: SessionInfo } = {
-        id: chunk.id,
-        conversationId,
-        delta: chunk.content,
-        toolCalls: chunk.toolCalls?.map((tc) => {
-          let args: Record<string, unknown> | undefined;
-          try { args = tc.arguments ? JSON.parse(tc.arguments) : undefined; } catch { args = undefined; }
-          return { id: tc.id!, name: tc.name!, arguments: args };
-        }),
-        done: chunk.done,
-        finishReason: chunk.finishReason,
-        usage: chunk.usage
-          ? {
-              promptTokens: chunk.usage.promptTokens,
-              completionTokens: chunk.usage.completionTokens,
-              totalTokens: chunk.usage.totalTokens,
-              ...(chunk.usage.cachedTokens != null && { cachedTokens: chunk.usage.cachedTokens }),
+      const data: StreamChunkResponse & { trace?: Record<string, unknown>; session?: SessionInfo } =
+        {
+          id: chunk.id,
+          conversationId,
+          delta: chunk.content,
+          toolCalls: chunk.toolCalls?.map((tc) => {
+            let args: Record<string, unknown> | undefined;
+            try {
+              args = tc.arguments ? JSON.parse(tc.arguments) : undefined;
+            } catch {
+              args = undefined;
             }
-          : undefined,
-      };
+            return { id: tc.id!, name: tc.name!, arguments: args };
+          }),
+          done: chunk.done,
+          finishReason: chunk.finishReason,
+          usage: chunk.usage
+            ? {
+                promptTokens: chunk.usage.promptTokens,
+                completionTokens: chunk.usage.completionTokens,
+                totalTokens: chunk.usage.totalTokens,
+                ...(chunk.usage.cachedTokens != null && { cachedTokens: chunk.usage.cachedTokens }),
+              }
+            : undefined,
+        };
 
       if (chunk.done) {
-        const { content: memStripped, memories } = extractMemoriesFromResponse(state.streamedContent);
+        const { content: memStripped, memories } = extractMemoriesFromResponse(
+          state.streamedContent
+        );
         const { suggestions } = extractSuggestions(memStripped);
         if (suggestions.length > 0) data.suggestions = suggestions;
         if (memories.length > 0) data.memories = memories;
         const streamDuration = Math.round(performance.now() - state.startTime);
         data.trace = {
           duration: streamDuration,
-          toolCalls: state.traceToolCalls.map(tc => ({
+          toolCalls: state.traceToolCalls.map((tc) => ({
             name: tc.name,
             arguments: tc.arguments,
             result: tc.result,
             success: tc.success,
             duration: tc.duration,
           })),
-          modelCalls: state.lastUsage ? [{
-            provider,
-            model,
-            inputTokens: state.lastUsage.promptTokens,
-            outputTokens: state.lastUsage.completionTokens,
-            tokens: state.lastUsage.totalTokens,
-            duration: streamDuration,
-          }] : [],
+          modelCalls: state.lastUsage
+            ? [
+                {
+                  provider,
+                  model,
+                  inputTokens: state.lastUsage.promptTokens,
+                  outputTokens: state.lastUsage.completionTokens,
+                  tokens: state.lastUsage.totalTokens,
+                  duration: streamDuration,
+                },
+              ]
+            : [],
           autonomyChecks: [],
           dbOperations: { reads: 0, writes: 0 },
           memoryOps: { adds: 0, recalls: 0 },
           triggersFired: [],
           errors: [],
-          events: state.traceToolCalls.map(tc => ({
+          events: state.traceToolCalls.map((tc) => ({
             type: 'tool_call',
             name: tc.name,
             duration: tc.duration,
@@ -175,7 +219,12 @@ export function createStreamCallbacks(config: StreamingConfig): { callbacks: Str
           },
         };
         data.session = {
-          ...getSessionInfo(config.agent, config.provider, config.model, config.contextWindowOverride),
+          ...getSessionInfo(
+            config.agent,
+            config.provider,
+            config.model,
+            config.contextWindowOverride
+          ),
           ...(chunk.usage?.cachedTokens != null && { cachedTokens: chunk.usage.cachedTokens }),
         };
       }
@@ -248,11 +297,15 @@ export function createStreamCallbacks(config: StreamingConfig): { callbacks: Str
     onToolEnd(toolCall: ToolCall, result: ToolEndResult) {
       const { displayName } = extractToolDisplay(toolCall);
 
-      const traceEntry = state.traceToolCalls.find(tc => tc.name === displayName && tc.result === undefined);
+      const traceEntry = state.traceToolCalls.find(
+        (tc) => tc.name === displayName && tc.result === undefined
+      );
       if (traceEntry) {
         traceEntry.result = result.content;
         traceEntry.success = !(result.isError ?? false);
-        traceEntry.duration = result.durationMs ?? (traceEntry.startTime ? Math.round(performance.now() - traceEntry.startTime) : undefined);
+        traceEntry.duration =
+          result.durationMs ??
+          (traceEntry.startTime ? Math.round(performance.now() - traceEntry.startTime) : undefined);
         delete traceEntry.startTime;
       }
 
@@ -264,7 +317,9 @@ export function createStreamCallbacks(config: StreamingConfig): { callbacks: Str
           sandboxed = parsed.sandboxed;
           executionMode = parsed.executionMode;
         }
-      } catch { /* not JSON or no sandbox info */ }
+      } catch {
+        /* not JSON or no sandbox info */
+      }
 
       sseStream.writeSSE({
         data: JSON.stringify({
@@ -314,7 +369,13 @@ export function createStreamCallbacks(config: StreamingConfig): { callbacks: Str
  */
 export async function recordStreamUsage(
   state: StreamState,
-  params: { userId: string; conversationId: string; provider: string; model: string; error?: string },
+  params: {
+    userId: string;
+    conversationId: string;
+    provider: string;
+    model: string;
+    error?: string;
+  }
 ): Promise<void> {
   const latencyMs = Math.round(performance.now() - state.startTime);
   if (state.lastUsage) {
@@ -330,7 +391,9 @@ export async function recordStreamUsage(
         latencyMs,
         requestType: 'chat',
       });
-    } catch { /* Ignore tracking errors */ }
+    } catch {
+      /* Ignore tracking errors */
+    }
   } else if (params.error) {
     try {
       await usageTracker.record({
@@ -344,7 +407,9 @@ export async function recordStreamUsage(
         requestType: 'chat',
         error: params.error,
       });
-    } catch { /* Ignore */ }
+    } catch {
+      /* Ignore */
+    }
   }
 }
 
@@ -357,16 +422,33 @@ export async function processStreamingViaBus(
   params: {
     agent: NonNullable<Awaited<ReturnType<typeof getAgent>>>;
     chatMessage: string;
-    body: { historyLength?: number; directTools?: string[]; provider?: string; model?: string; workspaceId?: string; attachments?: Array<{ type: string; data: string; mimeType: string; filename?: string }> };
+    body: {
+      historyLength?: number;
+      directTools?: string[];
+      provider?: string;
+      model?: string;
+      workspaceId?: string;
+      attachments?: Array<{ type: string; data: string; mimeType: string; filename?: string }>;
+    };
     provider: string;
     model: string;
     userId: string;
     agentId: string;
     conversationId: string;
     contextWindowOverride?: number;
-  },
+  }
 ): Promise<void> {
-  const { agent, chatMessage, body, provider, model, userId, agentId, conversationId, contextWindowOverride } = params;
+  const {
+    agent,
+    chatMessage,
+    body,
+    provider,
+    model,
+    userId,
+    agentId,
+    conversationId,
+    contextWindowOverride,
+  } = params;
 
   const { callbacks, state } = createStreamCallbacks({
     sseStream,

@@ -205,7 +205,10 @@ describe('transformTextExecutor', () => {
   });
 
   it('should convert to title case', async () => {
-    const result = await transformTextExecutor({ text: 'hello world test', operation: 'title_case' });
+    const result = await transformTextExecutor({
+      text: 'hello world test',
+      operation: 'title_case',
+    });
     const data = parse(result);
     expect(data.output).toBe('Hello World Test');
   });
@@ -235,7 +238,10 @@ describe('transformTextExecutor', () => {
   });
 
   it('should slugify text with diacritics', async () => {
-    const result = await transformTextExecutor({ text: 'Cafe\u0301 re\u0301sume\u0301', operation: 'slugify' });
+    const result = await transformTextExecutor({
+      text: 'Cafe\u0301 re\u0301sume\u0301',
+      operation: 'slugify',
+    });
     const data = parse(result);
     expect(data.output).toBe('cafe-resume');
   });
@@ -277,19 +283,28 @@ describe('transformTextExecutor', () => {
   });
 
   it('should remove whitespace', async () => {
-    const result = await transformTextExecutor({ text: 'h e l l o', operation: 'remove_whitespace' });
+    const result = await transformTextExecutor({
+      text: 'h e l l o',
+      operation: 'remove_whitespace',
+    });
     const data = parse(result);
     expect(data.output).toBe('hello');
   });
 
   it('should normalize whitespace', async () => {
-    const result = await transformTextExecutor({ text: 'hello   world  test', operation: 'normalize_whitespace' });
+    const result = await transformTextExecutor({
+      text: 'hello   world  test',
+      operation: 'normalize_whitespace',
+    });
     const data = parse(result);
     expect(data.output).toBe('hello world test');
   });
 
   it('should remove diacritics', async () => {
-    const result = await transformTextExecutor({ text: 'caf\u00e9 r\u00e9sum\u00e9 na\u00efve', operation: 'remove_diacritics' });
+    const result = await transformTextExecutor({
+      text: 'caf\u00e9 r\u00e9sum\u00e9 na\u00efve',
+      operation: 'remove_diacritics',
+    });
     const data = parse(result);
     expect(data.output).toBe('cafe resume naive');
   });
@@ -334,7 +349,11 @@ describe('compareTextExecutor', () => {
 
   it('should detect differences with word mode', async () => {
     // Use word mode so individual words are compared rather than whole lines
-    const result = await compareTextExecutor({ text1: 'hello world', text2: 'hello there', mode: 'words' });
+    const result = await compareTextExecutor({
+      text1: 'hello world',
+      text2: 'hello there',
+      mode: 'words',
+    });
     const data = parse(result);
     expect(data.identical).toBe(false);
     expect(data.similarity).toBeLessThan(100);

@@ -34,34 +34,47 @@ Examples: "0 8 * * *" (daily 8AM), "0 9 * * 1-5" (weekdays 9AM), "*/15 * * * *" 
       },
       type: {
         type: 'string',
-        description: 'Trigger type: schedule (cron-based), event (fires on system event), condition (checks periodically), webhook (external call)',
+        description:
+          'Trigger type: schedule (cron-based), event (fires on system event), condition (checks periodically), webhook (external call)',
         enum: ['schedule', 'event', 'condition', 'webhook'],
       },
       cron: {
         type: 'string',
-        description: 'REQUIRED for schedule type. 5-field cron: "minute hour day month weekday". Examples: "0 8 * * *" (daily 8AM), "0 9 * * 1-5" (weekdays 9AM), "*/30 * * * *" (every 30min)',
+        description:
+          'REQUIRED for schedule type. 5-field cron: "minute hour day month weekday". Examples: "0 8 * * *" (daily 8AM), "0 9 * * 1-5" (weekdays 9AM), "*/30 * * * *" (every 30min)',
       },
       event_type: {
         type: 'string',
-        description: 'For event type. Available events: goal_completed, memory_added, message_received',
+        description:
+          'For event type. Available events: goal_completed, memory_added, message_received',
       },
       condition: {
         type: 'string',
-        description: 'For condition type. Available: stale_goals (goals not updated in N days), upcoming_deadline (goals due within N days), memory_threshold (memory count >= N), low_progress (goals below N% progress), no_activity (no recent activity)',
-        enum: ['stale_goals', 'upcoming_deadline', 'memory_threshold', 'low_progress', 'no_activity'],
+        description:
+          'For condition type. Available: stale_goals (goals not updated in N days), upcoming_deadline (goals due within N days), memory_threshold (memory count >= N), low_progress (goals below N% progress), no_activity (no recent activity)',
+        enum: [
+          'stale_goals',
+          'upcoming_deadline',
+          'memory_threshold',
+          'low_progress',
+          'no_activity',
+        ],
       },
       threshold: {
         type: 'number',
-        description: 'For condition type. Meaning depends on condition: stale_goals=days (default 3), upcoming_deadline=days (default 7), memory_threshold=count (default 100), low_progress=percent (default 20)',
+        description:
+          'For condition type. Meaning depends on condition: stale_goals=days (default 3), upcoming_deadline=days (default 7), memory_threshold=count (default 100), low_progress=percent (default 20)',
       },
       action_type: {
         type: 'string',
-        description: 'What to do when triggered: chat (send AI prompt), tool (run a tool), notification (log message), goal_check (check stale goals), memory_summary (summarize memories)',
+        description:
+          'What to do when triggered: chat (send AI prompt), tool (run a tool), notification (log message), goal_check (check stale goals), memory_summary (summarize memories)',
         enum: ['chat', 'tool', 'notification', 'goal_check', 'memory_summary'],
       },
       action_payload: {
         type: 'object',
-        description: 'Action payload. For chat: {"prompt": "your instruction"}. For tool: {"tool": "tool_name", ...args}. For notification: {"message": "text"}. For goal_check: {"staleDays": 3}. For memory_summary: {}.',
+        description:
+          'Action payload. For chat: {"prompt": "your instruction"}. For tool: {"tool": "tool_name", ...args}. For notification: {"message": "text"}. For goal_check: {"staleDays": 3}. For memory_summary: {}.',
       },
       enabled: {
         type: 'boolean',
@@ -156,7 +169,8 @@ const deleteTriggerDef: ToolDefinition = {
 const triggerStatsDef: ToolDefinition = {
   name: 'trigger_stats',
   workflowUsable: false,
-  description: 'Get statistics about triggers: total count, enabled count, fires this week, success rate.',
+  description:
+    'Get statistics about triggers: total count, enabled count, fires this week, success rate.',
   parameters: {
     type: 'object',
     properties: {},
@@ -191,17 +205,29 @@ export async function executeTriggerTool(
 
       if (type === 'schedule') {
         if (!args.cron) {
-          return { success: false, error: 'Schedule triggers require a cron expression. Example: "0 8 * * *" for daily at 8 AM.' };
+          return {
+            success: false,
+            error:
+              'Schedule triggers require a cron expression. Example: "0 8 * * *" for daily at 8 AM.',
+          };
         }
         config = { cron: args.cron, timezone: 'local' };
       } else if (type === 'event') {
         if (!args.event_type) {
-          return { success: false, error: 'Event triggers require an event_type. Available: goal_completed, memory_added, message_received.' };
+          return {
+            success: false,
+            error:
+              'Event triggers require an event_type. Available: goal_completed, memory_added, message_received.',
+          };
         }
         config = { eventType: args.event_type };
       } else if (type === 'condition') {
         if (!args.condition) {
-          return { success: false, error: 'Condition triggers require a condition. Available: stale_goals, upcoming_deadline, memory_threshold, low_progress, no_activity.' };
+          return {
+            success: false,
+            error:
+              'Condition triggers require a condition. Available: stale_goals, upcoming_deadline, memory_threshold, low_progress, no_activity.',
+          };
         }
         config = {
           condition: args.condition,
@@ -219,7 +245,12 @@ export async function executeTriggerTool(
           type: type as 'schedule' | 'event' | 'condition' | 'webhook',
           config,
           action: {
-            type: args.action_type as 'chat' | 'tool' | 'notification' | 'goal_check' | 'memory_summary',
+            type: args.action_type as
+              | 'chat'
+              | 'tool'
+              | 'notification'
+              | 'goal_check'
+              | 'memory_summary',
             payload: (args.action_payload as Record<string, unknown>) ?? {},
           },
           enabled: args.enabled !== false,
@@ -234,7 +265,8 @@ export async function executeTriggerTool(
             type: trigger.type,
             enabled: trigger.enabled,
             nextFire: trigger.nextFire?.toISOString() ?? null,
-            message: `Trigger "${trigger.name}" created successfully.` +
+            message:
+              `Trigger "${trigger.name}" created successfully.` +
               (trigger.nextFire ? ` Next fire: ${trigger.nextFire.toISOString()}` : ''),
           },
         };
@@ -296,7 +328,11 @@ export async function executeTriggerTool(
         await engine.fireTrigger(triggerId);
         return {
           success: true,
-          result: { id: triggerId, name: trigger.name, message: `Trigger "${trigger.name}" fired manually.` },
+          result: {
+            id: triggerId,
+            name: trigger.name,
+            message: `Trigger "${trigger.name}" fired manually.`,
+          },
         };
       } catch (e) {
         return { success: false, error: `Failed to fire trigger: ${getErrorMessage(e)}` };

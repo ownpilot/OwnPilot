@@ -199,5 +199,4 @@ export const ERROR_CODES = {
 } as const;
 
 // Type for error codes
-export type ErrorCode = typeof ERROR_CODES[keyof typeof ERROR_CODES];
-
+export type ErrorCode = (typeof ERROR_CODES)[keyof typeof ERROR_CODES];

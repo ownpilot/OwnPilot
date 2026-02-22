@@ -36,7 +36,7 @@ describe('escapeHtml', () => {
 
   it('should handle HTML-like tags', () => {
     expect(escapeHtml('<script>alert("xss")</script>')).toBe(
-      '&lt;script&gt;alert("xss")&lt;/script&gt;',
+      '&lt;script&gt;alert("xss")&lt;/script&gt;'
     );
   });
 });
@@ -68,7 +68,7 @@ describe('markdownToTelegramHtml', () => {
     it('should convert code block with language tag', () => {
       const input = '```js\nconst x = 1;\n```';
       expect(markdownToTelegramHtml(input)).toBe(
-        '<pre><code class="language-js">const x = 1;</code></pre>',
+        '<pre><code class="language-js">const x = 1;</code></pre>'
       );
     });
 
@@ -80,19 +80,15 @@ describe('markdownToTelegramHtml', () => {
     it('should escape HTML entities inside code blocks', () => {
       const input = '```html\n<b>bold</b>\n```';
       expect(markdownToTelegramHtml(input)).toBe(
-        '<pre><code class="language-html">&lt;b&gt;bold&lt;/b&gt;</code></pre>',
+        '<pre><code class="language-html">&lt;b&gt;bold&lt;/b&gt;</code></pre>'
       );
     });
 
     it('should handle multiple code blocks', () => {
       const input = '```js\nfoo()\n```\n\n```py\nbar()\n```';
       const result = markdownToTelegramHtml(input);
-      expect(result).toContain(
-        '<pre><code class="language-js">foo()</code></pre>',
-      );
-      expect(result).toContain(
-        '<pre><code class="language-py">bar()</code></pre>',
-      );
+      expect(result).toContain('<pre><code class="language-js">foo()</code></pre>');
+      expect(result).toContain('<pre><code class="language-py">bar()</code></pre>');
     });
 
     it('should preserve trailing newline inside code block', () => {
@@ -104,7 +100,7 @@ describe('markdownToTelegramHtml', () => {
     it('should NOT convert markdown inside code blocks', () => {
       const input = '```\n**bold** *italic* [link](url)\n```';
       expect(markdownToTelegramHtml(input)).toBe(
-        '<pre><code>**bold** *italic* [link](url)</code></pre>',
+        '<pre><code>**bold** *italic* [link](url)</code></pre>'
       );
     });
   });
@@ -118,9 +114,7 @@ describe('markdownToTelegramHtml', () => {
     });
 
     it('should escape HTML entities inside inline code', () => {
-      expect(markdownToTelegramHtml('Use `<div>` tag')).toBe(
-        'Use <code>&lt;div&gt;</code> tag',
-      );
+      expect(markdownToTelegramHtml('Use `<div>` tag')).toBe('Use <code>&lt;div&gt;</code> tag');
     });
 
     it('should handle multiple inline codes in the same line', () => {
@@ -130,9 +124,7 @@ describe('markdownToTelegramHtml', () => {
     });
 
     it('should preserve markdown-like content inside inline code', () => {
-      expect(markdownToTelegramHtml('Run `**not bold**`')).toBe(
-        'Run <code>**not bold**</code>',
-      );
+      expect(markdownToTelegramHtml('Run `**not bold**`')).toBe('Run <code>**not bold**</code>');
     });
   });
 
@@ -140,38 +132,30 @@ describe('markdownToTelegramHtml', () => {
 
   describe('bold and italic', () => {
     it('should convert **bold** with asterisks', () => {
-      expect(markdownToTelegramHtml('This is **bold** text')).toBe(
-        'This is <b>bold</b> text',
-      );
+      expect(markdownToTelegramHtml('This is **bold** text')).toBe('This is <b>bold</b> text');
     });
 
     it('should convert __bold__ with underscores', () => {
-      expect(markdownToTelegramHtml('This is __bold__ text')).toBe(
-        'This is <b>bold</b> text',
-      );
+      expect(markdownToTelegramHtml('This is __bold__ text')).toBe('This is <b>bold</b> text');
     });
 
     it('should convert *italic* with asterisks', () => {
-      expect(markdownToTelegramHtml('This is *italic* text')).toBe(
-        'This is <i>italic</i> text',
-      );
+      expect(markdownToTelegramHtml('This is *italic* text')).toBe('This is <i>italic</i> text');
     });
 
     it('should convert _italic_ with underscores', () => {
-      expect(markdownToTelegramHtml('This is _italic_ text')).toBe(
-        'This is <i>italic</i> text',
-      );
+      expect(markdownToTelegramHtml('This is _italic_ text')).toBe('This is <i>italic</i> text');
     });
 
     it('should convert ***bold-italic*** with asterisks', () => {
       expect(markdownToTelegramHtml('This is ***bold italic*** text')).toBe(
-        'This is <b><i>bold italic</i></b> text',
+        'This is <b><i>bold italic</i></b> text'
       );
     });
 
     it('should convert ___bold-italic___ with underscores', () => {
       expect(markdownToTelegramHtml('This is ___bold italic___ text')).toBe(
-        'This is <b><i>bold italic</i></b> text',
+        'This is <b><i>bold italic</i></b> text'
       );
     });
   });
@@ -181,7 +165,7 @@ describe('markdownToTelegramHtml', () => {
   describe('strikethrough', () => {
     it('should convert ~~text~~ to strikethrough', () => {
       expect(markdownToTelegramHtml('This is ~~deleted~~ text')).toBe(
-        'This is <s>deleted</s> text',
+        'This is <s>deleted</s> text'
       );
     });
 
@@ -196,23 +180,19 @@ describe('markdownToTelegramHtml', () => {
 
   describe('links', () => {
     it('should convert markdown links to HTML anchors', () => {
-      expect(
-        markdownToTelegramHtml('Visit [Google](https://google.com) now'),
-      ).toBe('Visit <a href="https://google.com">Google</a> now');
+      expect(markdownToTelegramHtml('Visit [Google](https://google.com) now')).toBe(
+        'Visit <a href="https://google.com">Google</a> now'
+      );
     });
 
     it('should handle multiple links in the same line', () => {
-      const result = markdownToTelegramHtml(
-        '[A](https://a.com) and [B](https://b.com)',
-      );
+      const result = markdownToTelegramHtml('[A](https://a.com) and [B](https://b.com)');
       expect(result).toContain('<a href="https://a.com">A</a>');
       expect(result).toContain('<a href="https://b.com">B</a>');
     });
 
     it('should handle link with special characters in text', () => {
-      const result = markdownToTelegramHtml(
-        '[Click & go](https://example.com)',
-      );
+      const result = markdownToTelegramHtml('[Click & go](https://example.com)');
       expect(result).toContain('<a href="https://example.com">');
     });
   });
@@ -267,21 +247,17 @@ describe('markdownToTelegramHtml', () => {
   describe('blockquotes', () => {
     it('should convert single line blockquote', () => {
       expect(markdownToTelegramHtml('> This is a quote')).toBe(
-        '<blockquote>This is a quote</blockquote>',
+        '<blockquote>This is a quote</blockquote>'
       );
     });
 
     it('should merge consecutive blockquote lines', () => {
       const input = '> Line 1\n> Line 2\n> Line 3';
-      expect(markdownToTelegramHtml(input)).toBe(
-        '<blockquote>Line 1\nLine 2\nLine 3</blockquote>',
-      );
+      expect(markdownToTelegramHtml(input)).toBe('<blockquote>Line 1\nLine 2\nLine 3</blockquote>');
     });
 
     it('should escape HTML entities in blockquotes', () => {
-      expect(markdownToTelegramHtml('> a < b')).toBe(
-        '<blockquote>a &lt; b</blockquote>',
-      );
+      expect(markdownToTelegramHtml('> a < b')).toBe('<blockquote>a &lt; b</blockquote>');
     });
   });
 
@@ -311,18 +287,14 @@ describe('markdownToTelegramHtml', () => {
     });
 
     it('should handle link with bold text inside', () => {
-      const result = markdownToTelegramHtml(
-        '[**bold link**](https://example.com)',
-      );
+      const result = markdownToTelegramHtml('[**bold link**](https://example.com)');
       expect(result).toContain('<a href="https://example.com">');
     });
 
     it('should handle code block followed by formatted text', () => {
       const input = '```js\nfoo()\n```\n\nSome *italic* text';
       const result = markdownToTelegramHtml(input);
-      expect(result).toContain(
-        '<pre><code class="language-js">foo()</code></pre>',
-      );
+      expect(result).toContain('<pre><code class="language-js">foo()</code></pre>');
       expect(result).toContain('<i>italic</i>');
     });
 
@@ -348,9 +320,7 @@ describe('markdownToTelegramHtml', () => {
     });
 
     it('should handle mixed inline formatting in one line', () => {
-      const result = markdownToTelegramHtml(
-        '**bold** and *italic* and `code` and ~~strike~~',
-      );
+      const result = markdownToTelegramHtml('**bold** and *italic* and `code` and ~~strike~~');
       expect(result).toContain('<b>bold</b>');
       expect(result).toContain('<i>italic</i>');
       expect(result).toContain('<code>code</code>');
@@ -379,17 +349,13 @@ describe('markdownToTelegramHtml', () => {
 
       const result = markdownToTelegramHtml(input);
       expect(result).toContain('Hello <b>world</b>!');
-      expect(result).toContain(
-        '<pre><code class="language-ts">const x = 1;</code></pre>',
-      );
+      expect(result).toContain('<pre><code class="language-ts">const x = 1;</code></pre>');
       expect(result).toContain('\u2022 Item <i>one</i>');
       expect(result).toContain('\u2022 Item <b>two</b>');
     });
 
     it('should apply inline formatting inside headings', () => {
-      expect(markdownToTelegramHtml('## Hello **world**')).toBe(
-        '<b>Hello <b>world</b></b>',
-      );
+      expect(markdownToTelegramHtml('## Hello **world**')).toBe('<b>Hello <b>world</b></b>');
     });
   });
 
@@ -418,9 +384,7 @@ describe('markdownToTelegramHtml', () => {
     });
 
     it('should escape HTML in plain text', () => {
-      expect(markdownToTelegramHtml('a < b & c > d')).toBe(
-        'a &lt; b &amp; c &gt; d',
-      );
+      expect(markdownToTelegramHtml('a < b & c > d')).toBe('a &lt; b &amp; c &gt; d');
     });
 
     it('should double-escape already-escaped entities in source', () => {
@@ -433,27 +397,21 @@ describe('markdownToTelegramHtml', () => {
 
   describe('placeholder leak safety', () => {
     it('should not leak placeholders for inline code inside italic', () => {
-      const result = markdownToTelegramHtml(
-        'Check *this `tool_name` works* now',
-      );
+      const result = markdownToTelegramHtml('Check *this `tool_name` works* now');
       expect(result).toContain('<code>tool_name</code>');
       expect(result).toContain('<i>');
       expect(result).not.toMatch(/PH\d+/);
     });
 
     it('should not leak placeholders for inline code inside bold', () => {
-      const result = markdownToTelegramHtml(
-        'Use **the `core.add_task` tool** for tasks',
-      );
+      const result = markdownToTelegramHtml('Use **the `core.add_task` tool** for tasks');
       expect(result).toContain('<code>core.add_task</code>');
       expect(result).toContain('<b>');
       expect(result).not.toMatch(/PH\d+/);
     });
 
     it('should not leak placeholders for multiple inline codes inside formatting', () => {
-      const result = markdownToTelegramHtml(
-        '*Use `add_expense` and `send_email` tools*',
-      );
+      const result = markdownToTelegramHtml('*Use `add_expense` and `send_email` tools*');
       expect(result).toContain('<code>add_expense</code>');
       expect(result).toContain('<code>send_email</code>');
       expect(result).not.toMatch(/PH\d+/);

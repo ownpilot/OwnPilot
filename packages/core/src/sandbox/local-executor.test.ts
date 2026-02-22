@@ -5,11 +5,7 @@ vi.mock('../security/index.js', () => ({
 }));
 
 import { isCommandBlocked } from '../security/index.js';
-import {
-  executeJavaScriptLocal,
-  executePythonLocal,
-  executeShellLocal,
-} from './local-executor.js';
+import { executeJavaScriptLocal, executePythonLocal, executeShellLocal } from './local-executor.js';
 
 const isCommandBlockedMock = isCommandBlocked as unknown as Mock;
 
@@ -235,7 +231,7 @@ describe('local-executor', () => {
       const os = await import('os');
       const tmpDir = os.tmpdir();
 
-      const code = "console.log(process.cwd())";
+      const code = 'console.log(process.cwd())';
       const result = await executeJavaScriptLocal(code, { workspaceDir: tmpDir });
 
       expect(result.success).toBe(true);
@@ -246,7 +242,7 @@ describe('local-executor', () => {
     }, 10000);
 
     it('respects custom env variables', async () => {
-      const code = "console.log(process.env.MY_CUSTOM_VAR)";
+      const code = 'console.log(process.env.MY_CUSTOM_VAR)';
       const result = await executeJavaScriptLocal(code, {
         env: { MY_CUSTOM_VAR: 'custom_value_42' },
       });

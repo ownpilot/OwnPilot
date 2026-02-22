@@ -55,10 +55,7 @@ export class PIIDetector {
     } = config;
 
     // Combine built-in and custom patterns
-    this.patterns = [
-      ...(useBuiltInPatterns ? BUILT_IN_PATTERNS : []),
-      ...customPatterns,
-    ];
+    this.patterns = [...(useBuiltInPatterns ? BUILT_IN_PATTERNS : []), ...customPatterns];
 
     this.minConfidence = minConfidence;
     this.enabledCategories = categories ? new Set(categories) : null;
@@ -73,10 +70,7 @@ export class PIIDetector {
 
     for (const pattern of this.patterns) {
       // Skip if category not enabled
-      if (
-        this.enabledCategories &&
-        !this.enabledCategories.has(pattern.category)
-      ) {
+      if (this.enabledCategories && !this.enabledCategories.has(pattern.category)) {
         continue;
       }
 
@@ -152,16 +146,11 @@ export class PIIDetector {
   /**
    * Get matches for specific categories only
    */
-  detectCategories(
-    text: string,
-    categories: readonly PIICategory[]
-  ): DetectionResult {
+  detectCategories(text: string, categories: readonly PIICategory[]): DetectionResult {
     const result = this.detect(text);
     const categorySet = new Set(categories);
 
-    const filteredMatches = result.matches.filter((m) =>
-      categorySet.has(m.category)
-    );
+    const filteredMatches = result.matches.filter((m) => categorySet.has(m.category));
 
     let highest: PIISeverity | null = null;
     for (const m of filteredMatches) {
@@ -180,16 +169,11 @@ export class PIIDetector {
   /**
    * Get matches above a certain severity
    */
-  detectBySeverity(
-    text: string,
-    minSeverity: PIISeverity
-  ): DetectionResult {
+  detectBySeverity(text: string, minSeverity: PIISeverity): DetectionResult {
     const result = this.detect(text);
     const minOrder = SEVERITY_ORDER[minSeverity];
 
-    const filteredMatches = result.matches.filter(
-      (m) => SEVERITY_ORDER[m.severity] >= minOrder
-    );
+    const filteredMatches = result.matches.filter((m) => SEVERITY_ORDER[m.severity] >= minOrder);
 
     let highest: PIISeverity | null = null;
     for (const m of filteredMatches) {

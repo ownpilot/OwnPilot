@@ -51,10 +51,7 @@ import { GatewayEventEmitter, ClientEventHandler, gatewayEvents } from './events
 
 /** Capture the inner handler that was registered with bus.on or bus.onAll */
 function captureOnHandler(callIndex = 0): (e: { type: string; data: unknown }) => void {
-  return mockScopedBus.on.mock.calls[callIndex]![1] as (e: {
-    type: string;
-    data: unknown;
-  }) => void;
+  return mockScopedBus.on.mock.calls[callIndex]![1] as (e: { type: string; data: unknown }) => void;
 }
 
 function captureOnAllHandler(callIndex = 0): (e: { type: string; data: unknown }) => void {
@@ -112,10 +109,7 @@ describe('events.ts', () => {
       const emitter = new GatewayEventEmitter();
       void emitter.emit('channel:disconnected', { channelId: 'ch1', reason: 'test' });
 
-      expect(mockScopedBus.emit).toHaveBeenCalledWith(
-        'channel.disconnected',
-        expect.any(Object)
-      );
+      expect(mockScopedBus.emit).toHaveBeenCalledWith('channel.disconnected', expect.any(Object));
     });
 
     it('converts colons in ClientEventHandler handle hookName', () => {
@@ -192,7 +186,9 @@ describe('events.ts', () => {
         emitter.on('channel:connected', userHandler);
 
         const innerHandler = captureOnHandler();
-        const channelData = { channel: { id: 'c1', type: 'telegram', name: 'TG', status: 'connected', config: {} } };
+        const channelData = {
+          channel: { id: 'c1', type: 'telegram', name: 'TG', status: 'connected', config: {} },
+        };
         innerHandler({ type: 'gateway.channel.connected', data: channelData });
 
         expect(userHandler).toHaveBeenCalledWith(channelData);
@@ -240,9 +236,7 @@ describe('events.ts', () => {
       it('each subscription returns its own unsubscribe function', () => {
         const unsub1 = vi.fn();
         const unsub2 = vi.fn();
-        mockScopedBus.on
-          .mockReturnValueOnce(unsub1)
-          .mockReturnValueOnce(unsub2);
+        mockScopedBus.on.mockReturnValueOnce(unsub1).mockReturnValueOnce(unsub2);
 
         const emitter = new GatewayEventEmitter();
         const r1 = emitter.on('chat:message', vi.fn());
@@ -325,7 +319,10 @@ describe('events.ts', () => {
 
         const innerHandler = captureOnAllHandler();
         innerHandler({ type: 'gateway.chat.message', data: { sessionId: 's1', message: {} } });
-        innerHandler({ type: 'gateway.tool.end', data: { sessionId: 's1', toolId: 't1', result: null } });
+        innerHandler({
+          type: 'gateway.tool.end',
+          data: { sessionId: 's1', toolId: 't1', result: null },
+        });
 
         expect(userHandler).toHaveBeenCalledTimes(2);
         expect(userHandler.mock.calls[0]).toEqual([
@@ -421,7 +418,9 @@ describe('events.ts', () => {
         const { getEventSystem } = await import('@ownpilot/core');
         new ClientEventHandler();
 
-        const systemInstance = (getEventSystem as ReturnType<typeof vi.fn>).mock.results.at(-1)!.value;
+        const systemInstance = (getEventSystem as ReturnType<typeof vi.fn>).mock.results.at(
+          -1
+        )!.value;
         expect(systemInstance.hooks).toBe(mockHookBus);
       });
 
@@ -449,7 +448,10 @@ describe('events.ts', () => {
         // 'session:pong' has one colon
         handler.handle('session:pong', vi.fn());
 
-        expect(mockHookBus.tapAny).toHaveBeenCalledWith('client:session.pong', expect.any(Function));
+        expect(mockHookBus.tapAny).toHaveBeenCalledWith(
+          'client:session.pong',
+          expect.any(Function)
+        );
       });
 
       it('adds event to registeredEvents set', () => {
@@ -783,10 +785,12 @@ describe('events.ts', () => {
 
     it('full ClientEventHandler flow: handle() → process() → user handler called with correct args', async () => {
       let capturedTapCb: ((ctx: { data: Record<string, unknown> }) => Promise<void>) | null = null;
-      mockHookBus.tapAny.mockImplementationOnce((_hookName: string, cb: (ctx: { data: Record<string, unknown> }) => Promise<void>) => {
-        capturedTapCb = cb;
-        return mockUnsub;
-      });
+      mockHookBus.tapAny.mockImplementationOnce(
+        (_hookName: string, cb: (ctx: { data: Record<string, unknown> }) => Promise<void>) => {
+          capturedTapCb = cb;
+          return mockUnsub;
+        }
+      );
       mockHookBus.callAny.mockImplementationOnce(
         async (_hookName: string, payload: Record<string, unknown>) => {
           if (capturedTapCb) {

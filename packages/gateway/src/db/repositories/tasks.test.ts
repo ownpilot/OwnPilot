@@ -172,8 +172,7 @@ describe('TasksRepository', () => {
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
       mockAdapter.queryOne.mockResolvedValueOnce(null);
 
-      await expect(repo.create({ title: 'Test' }))
-        .rejects.toThrow('Failed to create task');
+      await expect(repo.create({ title: 'Test' })).rejects.toThrow('Failed to create task');
     });
   });
 
@@ -274,7 +273,7 @@ describe('TasksRepository', () => {
       mockAdapter.queryOne.mockResolvedValueOnce(makeTaskRow({ status: 'pending' }));
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
       mockAdapter.queryOne.mockResolvedValueOnce(
-        makeTaskRow({ status: 'completed', completed_at: NOW }),
+        makeTaskRow({ status: 'completed', completed_at: NOW })
       );
 
       await repo.update('task-1', { status: 'completed' });
@@ -285,11 +284,11 @@ describe('TasksRepository', () => {
 
     it('should clear completed_at when status changes away from completed', async () => {
       mockAdapter.queryOne.mockResolvedValueOnce(
-        makeTaskRow({ status: 'completed', completed_at: NOW }),
+        makeTaskRow({ status: 'completed', completed_at: NOW })
       );
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
       mockAdapter.queryOne.mockResolvedValueOnce(
-        makeTaskRow({ status: 'pending', completed_at: null }),
+        makeTaskRow({ status: 'pending', completed_at: null })
       );
 
       await repo.update('task-1', { status: 'pending' });
@@ -300,11 +299,11 @@ describe('TasksRepository', () => {
 
     it('should not reset completed_at when already completed and staying completed', async () => {
       mockAdapter.queryOne.mockResolvedValueOnce(
-        makeTaskRow({ status: 'completed', completed_at: NOW }),
+        makeTaskRow({ status: 'completed', completed_at: NOW })
       );
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
       mockAdapter.queryOne.mockResolvedValueOnce(
-        makeTaskRow({ status: 'completed', completed_at: NOW }),
+        makeTaskRow({ status: 'completed', completed_at: NOW })
       );
 
       await repo.update('task-1', { status: 'completed' });
@@ -371,7 +370,7 @@ describe('TasksRepository', () => {
       mockAdapter.queryOne.mockResolvedValueOnce(makeTaskRow({ status: 'pending' }));
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
       mockAdapter.queryOne.mockResolvedValueOnce(
-        makeTaskRow({ status: 'completed', completed_at: NOW }),
+        makeTaskRow({ status: 'completed', completed_at: NOW })
       );
 
       const result = await repo.complete('task-1');
@@ -397,7 +396,9 @@ describe('TasksRepository', () => {
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
       mockAdapter.queryOne.mockResolvedValueOnce(makeTaskRow({ status: to }));
 
-      const result = await repo.update('task-1', { status: to as 'pending' | 'in_progress' | 'completed' | 'cancelled' });
+      const result = await repo.update('task-1', {
+        status: to as 'pending' | 'in_progress' | 'completed' | 'cancelled',
+      });
 
       expect(result!.status).toBe(to);
     });
@@ -650,10 +651,7 @@ describe('TasksRepository', () => {
 
   describe('getCategories', () => {
     it('should return distinct categories', async () => {
-      mockAdapter.query.mockResolvedValueOnce([
-        { category: 'personal' },
-        { category: 'work' },
-      ]);
+      mockAdapter.query.mockResolvedValueOnce([{ category: 'personal' }, { category: 'work' }]);
 
       expect(await repo.getCategories()).toEqual(['personal', 'work']);
     });

@@ -23,9 +23,7 @@ export function SchemaTab({ tool }: SchemaTabProps) {
       {paramNames.map((name) => {
         const prop = properties[name]!;
         const isRequired = requiredFields.includes(name);
-        return (
-          <ParamRow key={name} name={name} prop={prop} isRequired={isRequired} />
-        );
+        return <ParamRow key={name} name={name} prop={prop} isRequired={isRequired} />;
       })}
 
       {/* Raw JSON toggle */}
@@ -41,7 +39,15 @@ export function SchemaTab({ tool }: SchemaTabProps) {
   );
 }
 
-function ParamRow({ name, prop, isRequired }: { name: string; prop: ToolParamProperty; isRequired: boolean }) {
+function ParamRow({
+  name,
+  prop,
+  isRequired,
+}: {
+  name: string;
+  prop: ToolParamProperty;
+  isRequired: boolean;
+}) {
   return (
     <div className="p-3 bg-bg-secondary dark:bg-dark-bg-secondary border border-border dark:border-dark-border rounded-lg">
       {/* Header: name + type + required badge */}

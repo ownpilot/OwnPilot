@@ -32,11 +32,26 @@ import { workflowsApi, triggersApi, apiClient } from '../api';
 import type { Workflow, WorkflowProgressEvent } from '../api';
 import { formatToolName } from '../utils/formatters';
 import {
-  ToolNode, ToolPalette, NodeConfigPanel, WorkflowSourceModal,
-  TriggerNode, LlmNode, ConditionNode, CodeNode, TransformerNode, ForEachNode,
-  WorkflowCopilotPanel, convertDefinitionToReactFlow,
-  type ToolNodeData, type ToolNodeType, type TriggerNodeData, type LlmNodeData,
-  type ConditionNodeData, type CodeNodeData, type TransformerNodeData, type ForEachNodeData,
+  ToolNode,
+  ToolPalette,
+  NodeConfigPanel,
+  WorkflowSourceModal,
+  TriggerNode,
+  LlmNode,
+  ConditionNode,
+  CodeNode,
+  TransformerNode,
+  ForEachNode,
+  WorkflowCopilotPanel,
+  convertDefinitionToReactFlow,
+  type ToolNodeData,
+  type ToolNodeType,
+  type TriggerNodeData,
+  type LlmNodeData,
+  type ConditionNodeData,
+  type CodeNodeData,
+  type TransformerNodeData,
+  type ForEachNodeData,
   type WorkflowDefinition,
 } from '../components/workflows';
 import { ChevronLeft, Save, Play, StopCircle, Code, Sparkles } from '../components/icons';
@@ -46,8 +61,12 @@ import { LoadingSpinner } from '../components/LoadingSpinner';
 
 // Register custom node types
 const nodeTypes = {
-  toolNode: ToolNode, triggerNode: TriggerNode, llmNode: LlmNode,
-  conditionNode: ConditionNode, codeNode: CodeNode, transformerNode: TransformerNode,
+  toolNode: ToolNode,
+  triggerNode: TriggerNode,
+  llmNode: LlmNode,
+  conditionNode: ConditionNode,
+  codeNode: CodeNode,
+  transformerNode: TransformerNode,
   forEachNode: ForEachNode,
 };
 
@@ -100,10 +119,20 @@ export function WorkflowEditorPage() {
 
         // Convert stored nodes to ReactFlow nodes
         const rfNodes: Node[] = wf.nodes.map((n) => {
-          if (n.type === 'triggerNode' || n.type === 'llmNode'
-            || n.type === 'conditionNode' || n.type === 'codeNode' || n.type === 'transformerNode'
-            || n.type === 'forEachNode') {
-            return { id: n.id, type: n.type, position: n.position, data: n.data as unknown as Record<string, unknown> };
+          if (
+            n.type === 'triggerNode' ||
+            n.type === 'llmNode' ||
+            n.type === 'conditionNode' ||
+            n.type === 'codeNode' ||
+            n.type === 'transformerNode' ||
+            n.type === 'forEachNode'
+          ) {
+            return {
+              id: n.id,
+              type: n.type,
+              position: n.position,
+              data: n.data as unknown as Record<string, unknown>,
+            };
           }
           const td = n.data as import('../api/types').WorkflowToolNodeData;
           return {
@@ -144,14 +173,19 @@ export function WorkflowEditorPage() {
         if (!cancelled) setIsLoading(false);
       }
     })();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [id]);
 
   // Fetch available tool names for the copilot (only workflow-usable tools)
   useEffect(() => {
-    toolsApi.list().then((tools) =>
-      setToolNames(tools.filter((t) => t.workflowUsable !== false).map((t) => t.name))
-    ).catch(() => {});
+    toolsApi
+      .list()
+      .then((tools) =>
+        setToolNames(tools.filter((t) => t.workflowUsable !== false).map((t) => t.name))
+      )
+      .catch(() => {});
   }, []);
 
   // Auto-execute if ?execute=true
@@ -171,7 +205,7 @@ export function WorkflowEditorPage() {
       setEdges((eds) => addEdge({ ...connection, ...edgeProps }, eds));
       setHasUnsavedChanges(true);
     },
-    [setEdges],
+    [setEdges]
   );
 
   const onNodesChangeWrapped = useCallback(
@@ -181,7 +215,7 @@ export function WorkflowEditorPage() {
         setHasUnsavedChanges(true);
       }
     },
-    [onNodesChange],
+    [onNodesChange]
   );
 
   const onEdgesChangeWrapped = useCallback(
@@ -191,7 +225,7 @@ export function WorkflowEditorPage() {
         setHasUnsavedChanges(true);
       }
     },
-    [onEdgesChange],
+    [onEdgesChange]
   );
 
   const onNodeClick = useCallback((_: React.MouseEvent, node: Node) => {
@@ -224,7 +258,9 @@ export function WorkflowEditorPage() {
         return;
       }
 
-      const reactFlowBounds = (e.target as HTMLElement).closest('.react-flow')?.getBoundingClientRect();
+      const reactFlowBounds = (e.target as HTMLElement)
+        .closest('.react-flow')
+        ?.getBoundingClientRect();
       if (!reactFlowBounds) return;
 
       const position = {
@@ -251,7 +287,7 @@ export function WorkflowEditorPage() {
       setSelectedNodeId(newNodeId);
       setHasUnsavedChanges(true);
     },
-    [setNodes],
+    [setNodes]
   );
 
   // ========================================================================
@@ -261,11 +297,11 @@ export function WorkflowEditorPage() {
   const updateNodeData = useCallback(
     (nodeId: string, data: Record<string, unknown>) => {
       setNodes((nds) =>
-        nds.map((n) => (n.id === nodeId ? { ...n, data: { ...n.data, ...data } } : n)),
+        nds.map((n) => (n.id === nodeId ? { ...n, data: { ...n.data, ...data } } : n))
       );
       setHasUnsavedChanges(true);
     },
-    [setNodes],
+    [setNodes]
   );
 
   const deleteNode = useCallback(
@@ -275,7 +311,7 @@ export function WorkflowEditorPage() {
       setSelectedNodeId(null);
       setHasUnsavedChanges(true);
     },
-    [setNodes, setEdges],
+    [setNodes, setEdges]
   );
 
   // ========================================================================
@@ -290,7 +326,9 @@ export function WorkflowEditorPage() {
         if (n.type === 'triggerNode') {
           const td = n.data as unknown as TriggerNodeData;
           return {
-            id: n.id, type: 'triggerNode', position: n.position,
+            id: n.id,
+            type: 'triggerNode',
+            position: n.position,
             data: {
               triggerType: td.triggerType,
               label: td.label,
@@ -331,9 +369,13 @@ export function WorkflowEditorPage() {
         if (n.type === 'conditionNode') {
           const cd = n.data as unknown as ConditionNodeData;
           return {
-            id: n.id, type: 'conditionNode', position: n.position,
+            id: n.id,
+            type: 'conditionNode',
+            position: n.position,
             data: {
-              label: cd.label, expression: cd.expression, description: cd.description,
+              label: cd.label,
+              expression: cd.expression,
+              description: cd.description,
               ...(cd.retryCount != null ? { retryCount: cd.retryCount } : {}),
               ...(cd.timeoutMs != null ? { timeoutMs: cd.timeoutMs } : {}),
             },
@@ -342,9 +384,14 @@ export function WorkflowEditorPage() {
         if (n.type === 'codeNode') {
           const cd = n.data as unknown as CodeNodeData;
           return {
-            id: n.id, type: 'codeNode', position: n.position,
+            id: n.id,
+            type: 'codeNode',
+            position: n.position,
             data: {
-              label: cd.label, language: cd.language, code: cd.code, description: cd.description,
+              label: cd.label,
+              language: cd.language,
+              code: cd.code,
+              description: cd.description,
               ...(cd.retryCount != null ? { retryCount: cd.retryCount } : {}),
               ...(cd.timeoutMs != null ? { timeoutMs: cd.timeoutMs } : {}),
             },
@@ -353,9 +400,13 @@ export function WorkflowEditorPage() {
         if (n.type === 'transformerNode') {
           const td = n.data as unknown as TransformerNodeData;
           return {
-            id: n.id, type: 'transformerNode', position: n.position,
+            id: n.id,
+            type: 'transformerNode',
+            position: n.position,
             data: {
-              label: td.label, expression: td.expression, description: td.description,
+              label: td.label,
+              expression: td.expression,
+              description: td.description,
               ...(td.retryCount != null ? { retryCount: td.retryCount } : {}),
               ...(td.timeoutMs != null ? { timeoutMs: td.timeoutMs } : {}),
             },
@@ -364,7 +415,9 @@ export function WorkflowEditorPage() {
         if (n.type === 'forEachNode') {
           const fd = n.data as unknown as ForEachNodeData;
           return {
-            id: n.id, type: 'forEachNode', position: n.position,
+            id: n.id,
+            type: 'forEachNode',
+            position: n.position,
             data: {
               label: fd.label,
               arrayExpression: fd.arrayExpression,
@@ -415,15 +468,25 @@ export function WorkflowEditorPage() {
           await syncTrigger(id, workflowName, td, triggerNode.id);
         } else if (td.triggerId) {
           // Manual mode — delete linked trigger
-          try { await triggersApi.delete(td.triggerId); } catch { /* may not exist */ }
+          try {
+            await triggersApi.delete(td.triggerId);
+          } catch {
+            /* may not exist */
+          }
           updateNodeData(triggerNode.id, { triggerId: undefined });
         }
       } else {
         // Trigger node removed — clean up linked trigger if it existed
         const oldTrigger = workflow.nodes.find((n) => n.type === 'triggerNode');
-        const oldTriggerId = (oldTrigger?.data as unknown as Record<string, unknown>)?.triggerId as string | undefined;
+        const oldTriggerId = (oldTrigger?.data as unknown as Record<string, unknown>)?.triggerId as
+          | string
+          | undefined;
         if (oldTriggerId) {
-          try { await triggersApi.delete(oldTriggerId); } catch { /* ignore */ }
+          try {
+            await triggersApi.delete(oldTriggerId);
+          } catch {
+            /* ignore */
+          }
         }
       }
 
@@ -453,8 +516,18 @@ export function WorkflowEditorPage() {
     setNodes((nds) =>
       nds.map((n) => ({
         ...n,
-        data: { ...n.data, executionStatus: 'pending', executionError: undefined, executionDuration: undefined, executionOutput: undefined, resolvedArgs: undefined, branchTaken: undefined, currentIteration: undefined, totalIterations: undefined },
-      })),
+        data: {
+          ...n.data,
+          executionStatus: 'pending',
+          executionError: undefined,
+          executionDuration: undefined,
+          executionOutput: undefined,
+          resolvedArgs: undefined,
+          branchTaken: undefined,
+          currentIteration: undefined,
+          totalIterations: undefined,
+        },
+      }))
     );
 
     // Animate edges during execution
@@ -511,10 +584,8 @@ export function WorkflowEditorPage() {
         case 'node_start':
           setNodes((nds) =>
             nds.map((n) =>
-              n.id === event.nodeId
-                ? { ...n, data: { ...n.data, executionStatus: 'running' } }
-                : n,
-            ),
+              n.id === event.nodeId ? { ...n, data: { ...n.data, executionStatus: 'running' } } : n
+            )
           );
           break;
 
@@ -533,8 +604,8 @@ export function WorkflowEditorPage() {
                       branchTaken: event.branchTaken,
                     },
                   }
-                : n,
-            ),
+                : n
+            )
           );
           break;
 
@@ -550,8 +621,8 @@ export function WorkflowEditorPage() {
                       executionError: event.error,
                     },
                   }
-                : n,
-            ),
+                : n
+            )
           );
           break;
 
@@ -567,8 +638,8 @@ export function WorkflowEditorPage() {
                       retryAttempt: event.retryAttempt,
                     },
                   }
-                : n,
-            ),
+                : n
+            )
           );
           break;
 
@@ -585,8 +656,8 @@ export function WorkflowEditorPage() {
                       totalIterations: event.iterationTotal,
                     },
                   }
-                : n,
-            ),
+                : n
+            )
           );
           break;
 
@@ -594,7 +665,7 @@ export function WorkflowEditorPage() {
           toast.success(
             event.logStatus === 'completed'
               ? `Workflow completed in ${event.durationMs ? `${(event.durationMs / 1000).toFixed(1)}s` : 'N/A'}`
-              : `Workflow ${event.logStatus ?? 'finished'}`,
+              : `Workflow ${event.logStatus ?? 'finished'}`
           );
           break;
 
@@ -603,7 +674,7 @@ export function WorkflowEditorPage() {
           break;
       }
     },
-    [setNodes, toast],
+    [setNodes, toast]
   );
 
   const handleCancel = useCallback(async () => {
@@ -642,37 +713,40 @@ export function WorkflowEditorPage() {
   }, [hasTriggerNode, setNodes, toast]);
 
   /** Add a tool node from the palette "+" button (auto-positioned) */
-  const addToolNode = useCallback((toolName: string, toolDescription?: string) => {
-    nodeIdCounter.current += 1;
-    const newNodeId = `node_${nodeIdCounter.current}`;
+  const addToolNode = useCallback(
+    (toolName: string, toolDescription?: string) => {
+      nodeIdCounter.current += 1;
+      const newNodeId = `node_${nodeIdCounter.current}`;
 
-    // Position: offset below the bottommost node, or default center
-    let y = 200;
-    let x = 400;
-    if (nodes.length > 0) {
-      const maxY = Math.max(...nodes.map((n) => n.position.y));
-      y = maxY + 120;
-      // Align to the average x of existing nodes
-      const avgX = nodes.reduce((sum, n) => sum + n.position.x, 0) / nodes.length;
-      x = Math.round(avgX / 16) * 16; // snap to grid
-    }
+      // Position: offset below the bottommost node, or default center
+      let y = 200;
+      let x = 400;
+      if (nodes.length > 0) {
+        const maxY = Math.max(...nodes.map((n) => n.position.y));
+        y = maxY + 120;
+        // Align to the average x of existing nodes
+        const avgX = nodes.reduce((sum, n) => sum + n.position.x, 0) / nodes.length;
+        x = Math.round(avgX / 16) * 16; // snap to grid
+      }
 
-    const newNode: Node = {
-      id: newNodeId,
-      type: 'toolNode',
-      position: { x, y },
-      data: {
-        toolName,
-        toolArgs: {},
-        label: formatToolName(toolName),
-        description: toolDescription,
-      },
-    };
+      const newNode: Node = {
+        id: newNodeId,
+        type: 'toolNode',
+        position: { x, y },
+        data: {
+          toolName,
+          toolArgs: {},
+          label: formatToolName(toolName),
+          description: toolDescription,
+        },
+      };
 
-    setNodes((nds) => [...nds, newNode]);
-    setSelectedNodeId(newNodeId);
-    setHasUnsavedChanges(true);
-  }, [nodes, setNodes]);
+      setNodes((nds) => [...nds, newNode]);
+      setSelectedNodeId(newNodeId);
+      setHasUnsavedChanges(true);
+    },
+    [nodes, setNodes]
+  );
 
   /** Add an LLM node from the toolbar button (auto-positioned) */
   const addLlmNode = useCallback(() => {
@@ -811,91 +885,116 @@ export function WorkflowEditorPage() {
     setHasUnsavedChanges(true);
   }, [nodes, setNodes]);
 
-  const syncTrigger = useCallback(async (workflowId: string, wfName: string, td: TriggerNodeData, nodeId: string) => {
-    const config: Record<string, unknown> = {};
-    if (td.triggerType === 'schedule') {
-      config.cron = td.cron ?? '0 8 * * *';
-      if (td.timezone) config.timezone = td.timezone;
-    } else if (td.triggerType === 'event') {
-      config.eventType = td.eventType ?? '';
-    } else if (td.triggerType === 'condition') {
-      config.condition = td.condition ?? '';
-      if (td.threshold) config.threshold = td.threshold;
-      if (td.checkInterval) config.checkInterval = td.checkInterval;
-    } else if (td.triggerType === 'webhook') {
-      if (td.webhookPath) config.webhookPath = td.webhookPath;
-    }
-
-    const body = {
-      name: `Workflow: ${wfName}`,
-      type: td.triggerType,
-      config,
-      action: { type: 'workflow' as const, payload: { workflowId } },
-      enabled: true,
-    };
-
-    try {
-      if (td.triggerId) {
-        await triggersApi.update(td.triggerId, body);
-      } else {
-        const created = await apiClient.post<{ id: string }>('/triggers', body);
-        updateNodeData(nodeId, { triggerId: created.id });
+  const syncTrigger = useCallback(
+    async (workflowId: string, wfName: string, td: TriggerNodeData, nodeId: string) => {
+      const config: Record<string, unknown> = {};
+      if (td.triggerType === 'schedule') {
+        config.cron = td.cron ?? '0 8 * * *';
+        if (td.timezone) config.timezone = td.timezone;
+      } else if (td.triggerType === 'event') {
+        config.eventType = td.eventType ?? '';
+      } else if (td.triggerType === 'condition') {
+        config.condition = td.condition ?? '';
+        if (td.threshold) config.threshold = td.threshold;
+        if (td.checkInterval) config.checkInterval = td.checkInterval;
+      } else if (td.triggerType === 'webhook') {
+        if (td.webhookPath) config.webhookPath = td.webhookPath;
       }
-    } catch {
-      // Non-critical — trigger sync failure shouldn't block save
-    }
-  }, [updateNodeData]);
+
+      const body = {
+        name: `Workflow: ${wfName}`,
+        type: td.triggerType,
+        config,
+        action: { type: 'workflow' as const, payload: { workflowId } },
+        enabled: true,
+      };
+
+      try {
+        if (td.triggerId) {
+          await triggersApi.update(td.triggerId, body);
+        } else {
+          const created = await apiClient.post<{ id: string }>('/triggers', body);
+          updateNodeData(nodeId, { triggerId: created.id });
+        }
+      } catch {
+        // Non-critical — trigger sync failure shouldn't block save
+      }
+    },
+    [updateNodeData]
+  );
 
   // ========================================================================
   // Derived state
   // ========================================================================
 
-  const handleAddNode = useCallback((nodeType: string) => {
-    switch (nodeType) {
-      case 'triggerNode': addTriggerNode(); break;
-      case 'llmNode': addLlmNode(); break;
-      case 'conditionNode': addConditionNode(); break;
-      case 'codeNode': addCodeNode(); break;
-      case 'transformerNode': addTransformerNode(); break;
-      case 'forEachNode': addForEachNode(); break;
-    }
-  }, [addTriggerNode, addLlmNode, addConditionNode, addCodeNode, addTransformerNode, addForEachNode]);
+  const handleAddNode = useCallback(
+    (nodeType: string) => {
+      switch (nodeType) {
+        case 'triggerNode':
+          addTriggerNode();
+          break;
+        case 'llmNode':
+          addLlmNode();
+          break;
+        case 'conditionNode':
+          addConditionNode();
+          break;
+        case 'codeNode':
+          addCodeNode();
+          break;
+        case 'transformerNode':
+          addTransformerNode();
+          break;
+        case 'forEachNode':
+          addForEachNode();
+          break;
+      }
+    },
+    [addTriggerNode, addLlmNode, addConditionNode, addCodeNode, addTransformerNode, addForEachNode]
+  );
 
-  const handleApplyWorkflow = useCallback((definition: WorkflowDefinition) => {
-    if (nodes.length > 0 && !confirm('This will replace all current nodes and edges. Continue?')) return;
+  const handleApplyWorkflow = useCallback(
+    (definition: WorkflowDefinition) => {
+      if (nodes.length > 0 && !confirm('This will replace all current nodes and edges. Continue?'))
+        return;
 
-    const { nodes: rfNodes, edges: rfEdges } = convertDefinitionToReactFlow(definition, toolNames);
+      const { nodes: rfNodes, edges: rfEdges } = convertDefinitionToReactFlow(
+        definition,
+        toolNames
+      );
 
-    // Apply edge label styling
-    const styledEdges = rfEdges.map((e) => ({
-      ...e,
-      ...getEdgeLabelProps(e.sourceHandle),
-    }));
+      // Apply edge label styling
+      const styledEdges = rfEdges.map((e) => ({
+        ...e,
+        ...getEdgeLabelProps(e.sourceHandle),
+      }));
 
-    // Update node ID counter to max
-    const maxId = rfNodes.reduce((max, n) => {
-      const num = parseInt(n.id.replace('node_', ''), 10);
-      return isNaN(num) ? max : Math.max(max, num);
-    }, 0);
-    nodeIdCounter.current = maxId;
+      // Update node ID counter to max
+      const maxId = rfNodes.reduce((max, n) => {
+        const num = parseInt(n.id.replace('node_', ''), 10);
+        return isNaN(num) ? max : Math.max(max, num);
+      }, 0);
+      nodeIdCounter.current = maxId;
 
-    setNodes(rfNodes);
-    setEdges(styledEdges);
-    if (definition.name) setWorkflowName(definition.name);
-    setHasUnsavedChanges(true);
-    setSelectedNodeId(null);
-    toast.success('Workflow applied from Copilot');
-  }, [nodes, toolNames, setNodes, setEdges, toast]);
+      setNodes(rfNodes);
+      setEdges(styledEdges);
+      if (definition.name) setWorkflowName(definition.name);
+      setHasUnsavedChanges(true);
+      setSelectedNodeId(null);
+      toast.success('Workflow applied from Copilot');
+    },
+    [nodes, toolNames, setNodes, setEdges, toast]
+  );
 
   const selectedNode = useMemo(
     () => nodes.find((n) => n.id === selectedNodeId) ?? null,
-    [nodes, selectedNodeId],
+    [nodes, selectedNodeId]
   );
 
   const upstreamNodes = useMemo(() => {
     if (!selectedNodeId) return [];
     const sourceIds = new Set(
-      edges.filter((e) => e.target === selectedNodeId).map((e) => e.source),
+      edges.filter((e) => e.target === selectedNodeId).map((e) => e.source)
     );
     return nodes.filter((n) => sourceIds.has(n.id)) as ToolNodeType[];
   }, [selectedNodeId, edges, nodes]);
@@ -935,9 +1034,7 @@ export function WorkflowEditorPage() {
           placeholder="Workflow name..."
         />
 
-        {hasUnsavedChanges && (
-          <span className="text-xs text-warning">Unsaved</span>
-        )}
+        {hasUnsavedChanges && <span className="text-xs text-warning">Unsaved</span>}
 
         <button
           onClick={handleSave}
@@ -964,7 +1061,9 @@ export function WorkflowEditorPage() {
               ? 'bg-primary text-white'
               : 'bg-bg-tertiary dark:bg-dark-bg-tertiary text-text-primary dark:text-dark-text-primary hover:bg-bg-primary dark:hover:bg-dark-bg-primary border border-border dark:border-dark-border'
           }`}
-          title={showCopilot ? 'Hide Copilot' : 'AI Copilot — build workflows with natural language'}
+          title={
+            showCopilot ? 'Hide Copilot' : 'AI Copilot — build workflows with natural language'
+          }
         >
           <Sparkles className="w-3.5 h-3.5" />
           Copilot
@@ -992,7 +1091,12 @@ export function WorkflowEditorPage() {
 
       {/* Three-panel layout */}
       <div className="flex-1 flex overflow-hidden">
-        <ToolPalette className="w-60 shrink-0" onAddTool={addToolNode} onAddNode={handleAddNode} hasTriggerNode={hasTriggerNode} />
+        <ToolPalette
+          className="w-60 shrink-0"
+          onAddTool={addToolNode}
+          onAddNode={handleAddNode}
+          hasTriggerNode={hasTriggerNode}
+        />
 
         <div className="flex-1 relative" onDragOver={onDragOver} onDrop={onDrop}>
           <ReactFlow
@@ -1068,13 +1172,12 @@ export function WorkflowEditorPage() {
   );
 }
 
-
 /** Edge label + color config for named source handles */
 const HANDLE_EDGE_PROPS: Record<string, { label: string; style: Record<string, string> }> = {
-  true:  { label: 'True',  style: { stroke: '#10b981' } },   // emerald
-  false: { label: 'False', style: { stroke: '#ef4444' } },   // red
-  each:  { label: 'Each',  style: { stroke: '#0ea5e9' } },   // sky
-  done:  { label: 'Done',  style: { stroke: '#8b5cf6' } },   // violet
+  true: { label: 'True', style: { stroke: '#10b981' } }, // emerald
+  false: { label: 'False', style: { stroke: '#ef4444' } }, // red
+  each: { label: 'Each', style: { stroke: '#0ea5e9' } }, // sky
+  done: { label: 'Done', style: { stroke: '#8b5cf6' } }, // violet
 };
 
 const EDGE_LABEL_STYLE = {

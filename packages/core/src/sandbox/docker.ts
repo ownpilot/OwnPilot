@@ -125,7 +125,9 @@ export async function isDockerAvailable(): Promise<boolean> {
  */
 export async function getDockerVersion(): Promise<string | null> {
   try {
-    const { stdout } = await execAsync('docker version --format "{{.Server.Version}}"', { timeout: 5000 });
+    const { stdout } = await execAsync('docker version --format "{{.Server.Version}}"', {
+      timeout: 5000,
+    });
     return stdout.trim();
   } catch {
     return null;
@@ -152,10 +154,12 @@ export async function testSecurityFlags(): Promise<boolean> {
   } catch (error) {
     const errorMsg = getErrorMessage(error);
     // Check for specific error messages indicating unsupported flags
-    if (errorMsg.includes('unknown flag') ||
-        errorMsg.includes('no-new-privileges') ||
-        errorMsg.includes('security-opt') ||
-        errorMsg.includes('invalid argument')) {
+    if (
+      errorMsg.includes('unknown flag') ||
+      errorMsg.includes('no-new-privileges') ||
+      errorMsg.includes('security-opt') ||
+      errorMsg.includes('invalid argument')
+    ) {
       log.info('Security flags not supported, using relaxed security mode');
       securityFlagsSupported = false;
       return false;

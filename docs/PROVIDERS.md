@@ -67,11 +67,11 @@ The provider system is organized into layers that separate concern cleanly:
 
 **Key packages:**
 
-| Package | Path | Purpose |
-|---------|------|---------|
-| `@ownpilot/core` | `packages/core/src/agent/` | Provider types, implementations, router, configs |
-| `@ownpilot/gateway` | `packages/gateway/src/routes/` | REST API routes for provider management |
-| `@ownpilot/ui` | `packages/ui/src/` | React UI for provider/model management |
+| Package             | Path                           | Purpose                                          |
+| ------------------- | ------------------------------ | ------------------------------------------------ |
+| `@ownpilot/core`    | `packages/core/src/agent/`     | Provider types, implementations, router, configs |
+| `@ownpilot/gateway` | `packages/gateway/src/routes/` | REST API routes for provider management          |
+| `@ownpilot/ui`      | `packages/ui/src/`             | React UI for provider/model management           |
 
 ---
 
@@ -104,14 +104,14 @@ Beyond this type union, the config-driven system (`providers/configs/index.ts`) 
 
 ### Provider Categories
 
-| Category | Providers | Notes |
-|----------|-----------|-------|
-| **Tier 1 (Native)** | OpenAI, Anthropic, Google | Dedicated provider classes with API-specific handling |
+| Category                       | Providers                                                             | Notes                                                         |
+| ------------------------------ | --------------------------------------------------------------------- | ------------------------------------------------------------- |
+| **Tier 1 (Native)**            | OpenAI, Anthropic, Google                                             | Dedicated provider classes with API-specific handling         |
 | **Tier 2 (OpenAI-Compatible)** | DeepSeek, Groq, Mistral, xAI, Together, Fireworks, Perplexity, Cohere | Use `OpenAICompatibleProvider` with per-provider JSON configs |
-| **Aggregators** | OpenRouter, fal.ai, DeepInfra, Cerebras | Route to multiple upstream providers through a single API |
-| **Chinese Providers** | Zhipu, Alibaba/DashScope, Moonshot, MiniMax, Xiaomi | OpenAI-compatible; some have China-specific endpoints |
-| **Cloud Platforms** | Azure OpenAI, Amazon Bedrock, Google Vertex, Cloudflare Workers AI | Require platform-specific configuration |
-| **Local** | Ollama, LM Studio, LocalAI, vLLM | Run on localhost; auto-discovery of models |
+| **Aggregators**                | OpenRouter, fal.ai, DeepInfra, Cerebras                               | Route to multiple upstream providers through a single API     |
+| **Chinese Providers**          | Zhipu, Alibaba/DashScope, Moonshot, MiniMax, Xiaomi                   | OpenAI-compatible; some have China-specific endpoints         |
+| **Cloud Platforms**            | Azure OpenAI, Amazon Bedrock, Google Vertex, Cloudflare Workers AI    | Require platform-specific configuration                       |
+| **Local**                      | Ollama, LM Studio, LocalAI, vLLM                                      | Run on localhost; auto-discovery of models                    |
 
 ---
 
@@ -243,6 +243,7 @@ export interface StreamChunk {
 Handles native OpenAI API calls (GPT-4o, GPT-5, o3, o4-mini, etc.).
 
 **Key characteristics:**
+
 - Extends `BaseProvider`.
 - Uses the `withRetry` wrapper with exponential backoff (max 3 retries, 1s initial delay, 10s max, 2x multiplier, jitter enabled).
 - Streaming uses Server-Sent Events (SSE) with `data: [DONE]` termination.
@@ -276,6 +277,7 @@ const result = await provider.complete({
 Handles Anthropic's Messages API (Claude Opus 4.5, Claude Sonnet 4.5, Claude 3.5 Sonnet, etc.).
 
 **Key characteristics:**
+
 - Uses `x-api-key` header instead of Bearer token.
 - Includes `anthropic-version: 2023-06-01` header.
 - Extracts system messages from the conversation and passes them via the top-level `system` field.
@@ -308,6 +310,7 @@ Handles Anthropic's Messages API (Claude Opus 4.5, Claude Sonnet 4.5, Claude 3.5
 Native implementation for Google's Gemini API, distinct from the OpenAI-compatible approach.
 
 **Key characteristics:**
+
 - API key passed as URL query parameter (`?key=...`), not in headers.
 - Uses the `generateContent` / `streamGenerateContent` endpoints.
 - System messages become `systemInstruction` in the request body.
@@ -335,13 +338,15 @@ const provider = GoogleProvider.withApiKey('AIza...');
 ```typescript
 // Gemini returns functionCall parts, not tool_calls
 {
-  parts: [{
-    functionCall: {
-      name: 'search_web',
-      args: { query: 'latest news' }
+  parts: [
+    {
+      functionCall: {
+        name: 'search_web',
+        args: { query: 'latest news' },
+      },
+      thoughtSignature: 'base64...', // Only for thinking models
     },
-    thoughtSignature: 'base64...' // Only for thinking models
-  }]
+  ];
 }
 ```
 
@@ -354,17 +359,18 @@ A generic provider implementation that works with any API following the OpenAI c
 
 **Supported providers via factory functions:**
 
-| Function | Provider | API Base |
-|----------|----------|----------|
-| `createDeepSeekProvider()` | DeepSeek | `https://api.deepseek.com/v1` |
-| `createGroqProvider()` | Groq | `https://api.groq.com/openai/v1` |
-| `createTogetherProvider()` | Together AI | `https://api.together.xyz/v1` |
-| `createFireworksProvider()` | Fireworks AI | `https://api.fireworks.ai/inference/v1` |
-| `createMistralProvider()` | Mistral AI | `https://api.mistral.ai/v1` |
-| `createXAIProvider()` | xAI (Grok) | `https://api.x.ai/v1` |
-| `createPerplexityProvider()` | Perplexity | `https://api.perplexity.ai` |
+| Function                     | Provider     | API Base                                |
+| ---------------------------- | ------------ | --------------------------------------- |
+| `createDeepSeekProvider()`   | DeepSeek     | `https://api.deepseek.com/v1`           |
+| `createGroqProvider()`       | Groq         | `https://api.groq.com/openai/v1`        |
+| `createTogetherProvider()`   | Together AI  | `https://api.together.xyz/v1`           |
+| `createFireworksProvider()`  | Fireworks AI | `https://api.fireworks.ai/inference/v1` |
+| `createMistralProvider()`    | Mistral AI   | `https://api.mistral.ai/v1`             |
+| `createXAIProvider()`        | xAI (Grok)   | `https://api.x.ai/v1`                   |
+| `createPerplexityProvider()` | Perplexity   | `https://api.perplexity.ai`             |
 
 **Key characteristics:**
+
 - All configuration (base URL, API key env var, models, features) loaded from JSON files.
 - Feature-gated: tools are only included in the request body if `config.features.toolUse` is true; vision content is only included if `config.features.vision` is true; JSON mode only if `config.features.jsonMode` is true.
 - Handles **reasoning content** from DeepSeek R1 and similar models (`reasoning_content` field in response/delta). Reasoning is prefixed with `<thinking>...</thinking>` tags.
@@ -395,7 +401,9 @@ Zhipu AI (GLM models) uses OpenAI-compatible API format. This module is a thin c
 ```typescript
 export type ZhipuProvider = OpenAICompatibleProvider;
 
-export function createZhipuProvider(config?: LegacyProviderConfig): OpenAICompatibleProvider | null {
+export function createZhipuProvider(
+  config?: LegacyProviderConfig
+): OpenAICompatibleProvider | null {
   if (config?.apiKey) {
     return OpenAICompatibleProvider.fromProviderIdWithKey('zhipu', config.apiKey);
   }
@@ -441,11 +449,11 @@ The `ProviderRouter` automatically selects the best provider and model for a giv
 
 ```typescript
 export type RoutingStrategy =
-  | 'cheapest'   // Minimize cost per token
-  | 'fastest'    // Minimize latency (prefers Groq, Fireworks, Together, DeepSeek)
-  | 'smartest'   // Best quality/reasoning (prefers reasoning models, Anthropic, OpenAI)
-  | 'balanced'   // Balance cost, quality, and speed (default)
-  | 'fallback';  // Try providers in order until one works
+  | 'cheapest' // Minimize cost per token
+  | 'fastest' // Minimize latency (prefers Groq, Fireworks, Together, DeepSeek)
+  | 'smartest' // Best quality/reasoning (prefers reasoning models, Anthropic, OpenAI)
+  | 'balanced' // Balance cost, quality, and speed (default)
+  | 'fallback'; // Try providers in order until one works
 ```
 
 ### RouterConfig
@@ -469,13 +477,13 @@ export interface RouterConfig {
 
 ```typescript
 export interface RoutingResult {
-  providerId: string;                                   // e.g. 'anthropic'
-  modelId: string;                                      // e.g. 'claude-3-5-sonnet-20241022'
-  provider: OpenAICompatibleProvider | GoogleProvider;   // Instantiated provider
-  modelConfig: ModelConfig;                             // Full model metadata
+  providerId: string; // e.g. 'anthropic'
+  modelId: string; // e.g. 'claude-3-5-sonnet-20241022'
+  provider: OpenAICompatibleProvider | GoogleProvider; // Instantiated provider
+  modelConfig: ModelConfig; // Full model metadata
   estimatedCost: {
-    inputPer1M: number;   // USD per 1M input tokens
-    outputPer1M: number;  // USD per 1M output tokens
+    inputPer1M: number; // USD per 1M input tokens
+    outputPer1M: number; // USD per 1M output tokens
   };
 }
 ```
@@ -530,13 +538,13 @@ class ProviderRouter {
 
 ### Strategy Selection Logic
 
-| Strategy | Selection Method | Description |
-|----------|-----------------|-------------|
-| `cheapest` | `getCheapestModel()` | Sorts all matching models by `inputPrice + outputPrice` ascending |
-| `fastest` | `getFastestModel()` | Prefers providers `groq > fireworks > together > deepseek`; within that, favors smaller context windows and lower prices |
+| Strategy   | Selection Method     | Description                                                                                                                            |
+| ---------- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `cheapest` | `getCheapestModel()` | Sorts all matching models by `inputPrice + outputPrice` ascending                                                                      |
+| `fastest`  | `getFastestModel()`  | Prefers providers `groq > fireworks > together > deepseek`; within that, favors smaller context windows and lower prices               |
 | `smartest` | `getSmartestModel()` | First tries models with `reasoning` capability preferring `anthropic > openai > deepseek`; falls back to `anthropic > openai > google` |
-| `balanced` | `selectBestModel()` | Scores models on capability match, price efficiency, default status, preferred provider order, and task type bonus |
-| `fallback` | Same as `balanced` | Falls through to `selectBestModel()` |
+| `balanced` | `selectBestModel()`  | Scores models on capability match, price efficiency, default status, preferred provider order, and task type bonus                     |
+| `fallback` | Same as `balanced`   | Falls through to `selectBestModel()`                                                                                                   |
 
 ### Quick Helpers
 
@@ -558,12 +566,12 @@ const smartest = getSmartestProvider(['chat', 'reasoning']);
 
 ```typescript
 export interface ProviderSelectionCriteria {
-  capabilities?: ModelCapability[];    // Required capabilities
-  maxInputPrice?: number;              // Max $/1M input tokens
-  maxOutputPrice?: number;             // Max $/1M output tokens
-  minContextWindow?: number;           // Minimum context window tokens
-  preferredProviders?: string[];       // Preferred providers (ordered)
-  excludedProviders?: string[];        // Blacklisted providers
+  capabilities?: ModelCapability[]; // Required capabilities
+  maxInputPrice?: number; // Max $/1M input tokens
+  maxOutputPrice?: number; // Max $/1M output tokens
+  minContextWindow?: number; // Minimum context window tokens
+  preferredProviders?: string[]; // Preferred providers (ordered)
+  excludedProviders?: string[]; // Blacklisted providers
   taskType?: 'chat' | 'code' | 'analysis' | 'creative' | 'reasoning';
 }
 ```
@@ -599,11 +607,7 @@ export interface FallbackProviderConfig {
   /** Enable/disable fallback behavior (default: true) */
   enableFallback?: boolean;
   /** Callback when a fallback is triggered */
-  onFallback?: (
-    failedProvider: AIProvider,
-    error: Error,
-    nextProvider: AIProvider
-  ) => void;
+  onFallback?: (failedProvider: AIProvider, error: Error, nextProvider: AIProvider) => void;
 }
 ```
 
@@ -611,15 +615,15 @@ export interface FallbackProviderConfig {
 
 The `shouldFallback()` method determines whether to try the next provider:
 
-| Error Type | Fallback? | Reasoning |
-|------------|-----------|-----------|
-| `TimeoutError` | Yes | Transient infrastructure issue |
-| Rate limit (429) | Yes | Provider-specific limit |
-| Server errors (500-504) | Yes | Provider outage |
-| Network errors (ECONNRESET, ECONNREFUSED, etc.) | Yes | Connectivity issue |
-| "Invalid API key" / "Not configured" | **No** | Would fail on all providers |
-| `ValidationError` | **No** | Client-side issue |
-| Unknown `InternalError` | Yes | Default to trying fallback |
+| Error Type                                      | Fallback? | Reasoning                      |
+| ----------------------------------------------- | --------- | ------------------------------ |
+| `TimeoutError`                                  | Yes       | Transient infrastructure issue |
+| Rate limit (429)                                | Yes       | Provider-specific limit        |
+| Server errors (500-504)                         | Yes       | Provider outage                |
+| Network errors (ECONNRESET, ECONNREFUSED, etc.) | Yes       | Connectivity issue             |
+| "Invalid API key" / "Not configured"            | **No**    | Would fail on all providers    |
+| `ValidationError`                               | **No**    | Client-side issue              |
+| Unknown `InternalError`                         | Yes       | Default to trying fallback     |
 
 ### Usage
 
@@ -665,53 +669,53 @@ Streaming fallback has a special constraint: if the primary provider has already
 
 ```typescript
 export type ProviderType =
-  | 'openai'            // Native OpenAI client
-  | 'anthropic'         // Native Anthropic client
-  | 'google'            // Native Google Gemini client
+  | 'openai' // Native OpenAI client
+  | 'anthropic' // Native Anthropic client
+  | 'google' // Native Google Gemini client
   | 'openai-compatible'; // Generic OpenAI-compatible client
 
 export interface ProviderFeatures {
-  streaming: boolean;      // Supports streaming responses
-  toolUse: boolean;        // Supports tool/function calling
-  vision: boolean;         // Supports image input
-  jsonMode: boolean;       // Supports JSON response format
-  systemMessage: boolean;  // Supports system messages
-  caching?: boolean;       // Supports prompt caching (Anthropic)
-  batch?: boolean;         // Supports batch API
+  streaming: boolean; // Supports streaming responses
+  toolUse: boolean; // Supports tool/function calling
+  vision: boolean; // Supports image input
+  jsonMode: boolean; // Supports JSON response format
+  systemMessage: boolean; // Supports system messages
+  caching?: boolean; // Supports prompt caching (Anthropic)
+  batch?: boolean; // Supports batch API
 }
 
 export interface ProviderConfig {
-  id: string;              // Unique provider ID (e.g., 'openai')
-  name: string;            // Display name (e.g., 'OpenAI')
-  type: ProviderType;      // Which client implementation to use
-  baseUrl: string;         // API endpoint
-  apiKeyEnv: string;       // Environment variable for API key
-  models: ModelConfig[];   // Available models
+  id: string; // Unique provider ID (e.g., 'openai')
+  name: string; // Display name (e.g., 'OpenAI')
+  type: ProviderType; // Which client implementation to use
+  baseUrl: string; // API endpoint
+  apiKeyEnv: string; // Environment variable for API key
+  models: ModelConfig[]; // Available models
   features: ProviderFeatures;
-  headers?: Record<string, string>;  // Custom request headers
-  timeout?: number;        // Default timeout in ms
-  apiVersion?: string;     // API version string
-  docsUrl?: string;        // Link to provider docs
-  statusUrl?: string;      // Link to provider status page
-  notes?: string;          // Freeform notes
+  headers?: Record<string, string>; // Custom request headers
+  timeout?: number; // Default timeout in ms
+  apiVersion?: string; // API version string
+  docsUrl?: string; // Link to provider docs
+  statusUrl?: string; // Link to provider status page
+  notes?: string; // Freeform notes
 }
 
 export interface ModelConfig {
-  id: string;              // Model ID for API calls
-  name: string;            // Human-readable name
-  contextWindow: number;   // Context window in tokens
-  maxOutput: number;       // Max output tokens
-  inputPrice: number;      // USD per 1M input tokens
-  outputPrice: number;     // USD per 1M output tokens
+  id: string; // Model ID for API calls
+  name: string; // Human-readable name
+  contextWindow: number; // Context window in tokens
+  maxOutput: number; // Max output tokens
+  inputPrice: number; // USD per 1M input tokens
+  outputPrice: number; // USD per 1M output tokens
   capabilities: ModelCapability[];
-  default?: boolean;       // Default model for this provider
-  aliases?: string[];      // Alternate model IDs
-  deprecated?: string;     // Deprecation notice
-  releaseDate?: string;    // ISO date string
+  default?: boolean; // Default model for this provider
+  aliases?: string[]; // Alternate model IDs
+  deprecated?: string; // Deprecation notice
+  releaseDate?: string; // ISO date string
 }
 
 export interface ResolvedProviderConfig extends Omit<ProviderConfig, 'apiKeyEnv'> {
-  apiKey: string;          // Actual API key value (resolved from env)
+  apiKey: string; // Actual API key value (resolved from env)
 }
 ```
 
@@ -817,31 +821,31 @@ getSmartestModel(capabilities): { provider, model } | null
 
 ```typescript
 export type ModelCapability =
-  | 'chat'             // Conversational text generation
-  | 'code'             // Code generation and understanding
-  | 'vision'           // Image/visual input processing
+  | 'chat' // Conversational text generation
+  | 'code' // Code generation and understanding
+  | 'vision' // Image/visual input processing
   | 'function_calling' // Tool/function calling support
-  | 'json_mode'        // Structured JSON output
-  | 'streaming'        // Server-sent events streaming
-  | 'embeddings'       // Text embedding generation
+  | 'json_mode' // Structured JSON output
+  | 'streaming' // Server-sent events streaming
+  | 'embeddings' // Text embedding generation
   | 'image_generation' // Image generation (DALL-E, FLUX, etc.)
-  | 'audio'            // Audio transcription/generation (Whisper, etc.)
-  | 'reasoning';       // Extended reasoning (o1, DeepSeek R1, etc.)
+  | 'audio' // Audio transcription/generation (Whisper, etc.)
+  | 'reasoning'; // Extended reasoning (o1, DeepSeek R1, etc.)
 ```
 
 ### Capability Matrix (Selected Providers)
 
-| Provider | chat | code | vision | function_calling | json_mode | streaming | reasoning |
-|----------|------|------|--------|-----------------|-----------|-----------|-----------|
-| OpenAI (GPT-4o) | Y | Y | Y | Y | Y | Y | - |
-| OpenAI (o3) | Y | Y | - | - | - | Y | Y |
-| Anthropic (Claude 3.5 Sonnet) | Y | Y | Y | Y | - | Y | - |
-| Google (Gemini 2.0 Flash) | Y | Y | Y | Y | - | Y | Y |
-| DeepSeek (V3) | Y | Y | - | Y | - | Y | - |
-| DeepSeek (R1) | Y | Y | - | - | - | Y | Y |
-| Groq (Llama 3.3 70B) | Y | Y | - | Y | Y | Y | - |
-| Mistral (Large) | Y | Y | - | Y | Y | Y | - |
-| xAI (Grok-3) | Y | Y | - | Y | - | Y | - |
+| Provider                      | chat | code | vision | function_calling | json_mode | streaming | reasoning |
+| ----------------------------- | ---- | ---- | ------ | ---------------- | --------- | --------- | --------- |
+| OpenAI (GPT-4o)               | Y    | Y    | Y      | Y                | Y         | Y         | -         |
+| OpenAI (o3)                   | Y    | Y    | -      | -                | -         | Y         | Y         |
+| Anthropic (Claude 3.5 Sonnet) | Y    | Y    | Y      | Y                | -         | Y         | -         |
+| Google (Gemini 2.0 Flash)     | Y    | Y    | Y      | Y                | -         | Y         | Y         |
+| DeepSeek (V3)                 | Y    | Y    | -      | Y                | -         | Y         | -         |
+| DeepSeek (R1)                 | Y    | Y    | -      | -                | -         | Y         | Y         |
+| Groq (Llama 3.3 70B)          | Y    | Y    | -      | Y                | Y         | Y         | -         |
+| Mistral (Large)               | Y    | Y    | -      | Y                | Y         | Y         | -         |
+| xAI (Grok-3)                  | Y    | Y    | -      | Y                | -         | Y         | -         |
 
 ### Capability-Gated Features
 
@@ -863,34 +867,34 @@ Presets provide a quick-setup configuration for well-known providers. They are s
 
 ```typescript
 export interface ProviderPreset {
-  readonly name: string;           // Display name
-  readonly id: string;             // Provider identifier
-  readonly baseUrl: string;        // API base URL
-  readonly defaultModel: string;   // Default model ID
+  readonly name: string; // Display name
+  readonly id: string; // Provider identifier
+  readonly baseUrl: string; // API base URL
+  readonly defaultModel: string; // Default model ID
   readonly models: readonly string[]; // Available model IDs
   readonly openaiCompatible: boolean; // Whether to use OpenAI client
-  readonly envVar: string;         // Environment variable name
-  readonly docsUrl?: string;       // Documentation link
+  readonly envVar: string; // Environment variable name
+  readonly docsUrl?: string; // Documentation link
 }
 ```
 
 ### Available Presets
 
-| Preset ID | Default Model | Base URL | OpenAI Compatible |
-|-----------|--------------|----------|-------------------|
-| `openai` | `gpt-5` | `https://api.openai.com/v1` | Yes |
-| `anthropic` | `claude-opus-4-5-20251101` | `https://api.anthropic.com/v1` | No |
-| `google` | `gemini-2.0-pro` | `https://generativelanguage.googleapis.com/v1beta` | No |
-| `deepseek` | `deepseek-v3.2` | `https://api.deepseek.com/v1` | Yes |
-| `groq` | `llama-4-maverick` | `https://api.groq.com/openai/v1` | Yes |
-| `together` | `meta-llama/Llama-4-Maverick-Instruct-Turbo` | `https://api.together.xyz/v1` | Yes |
-| `mistral` | `mistral-large-3` | `https://api.mistral.ai/v1` | Yes |
-| `fireworks` | `accounts/fireworks/models/llama-4-maverick-instruct` | `https://api.fireworks.ai/inference/v1` | Yes |
-| `perplexity` | `sonar-pro` | `https://api.perplexity.ai` | Yes |
-| `xai` | `grok-3` | `https://api.x.ai/v1` | Yes |
-| `zhipu` | `glm-4.7` | `https://open.bigmodel.cn/api/paas/v4` | Yes |
-| `ollama` | `llama4` | `http://localhost:11434/v1` | Yes |
-| `lmstudio` | `local-model` | `http://localhost:1234/v1` | Yes |
+| Preset ID    | Default Model                                         | Base URL                                           | OpenAI Compatible |
+| ------------ | ----------------------------------------------------- | -------------------------------------------------- | ----------------- |
+| `openai`     | `gpt-5`                                               | `https://api.openai.com/v1`                        | Yes               |
+| `anthropic`  | `claude-opus-4-5-20251101`                            | `https://api.anthropic.com/v1`                     | No                |
+| `google`     | `gemini-2.0-pro`                                      | `https://generativelanguage.googleapis.com/v1beta` | No                |
+| `deepseek`   | `deepseek-v3.2`                                       | `https://api.deepseek.com/v1`                      | Yes               |
+| `groq`       | `llama-4-maverick`                                    | `https://api.groq.com/openai/v1`                   | Yes               |
+| `together`   | `meta-llama/Llama-4-Maverick-Instruct-Turbo`          | `https://api.together.xyz/v1`                      | Yes               |
+| `mistral`    | `mistral-large-3`                                     | `https://api.mistral.ai/v1`                        | Yes               |
+| `fireworks`  | `accounts/fireworks/models/llama-4-maverick-instruct` | `https://api.fireworks.ai/inference/v1`            | Yes               |
+| `perplexity` | `sonar-pro`                                           | `https://api.perplexity.ai`                        | Yes               |
+| `xai`        | `grok-3`                                              | `https://api.x.ai/v1`                              | Yes               |
+| `zhipu`      | `glm-4.7`                                             | `https://open.bigmodel.cn/api/paas/v4`             | Yes               |
+| `ollama`     | `llama4`                                              | `http://localhost:11434/v1`                        | Yes               |
+| `lmstudio`   | `local-model`                                         | `http://localhost:1234/v1`                         | Yes               |
 
 ### Preset Usage
 
@@ -918,23 +922,23 @@ Aggregators are third-party platforms that host multiple models through a single
 
 ```typescript
 export interface AggregatorProvider {
-  id: string;                     // e.g. 'openrouter'
-  name: string;                   // e.g. 'OpenRouter'
-  description: string;            // Human-readable description
-  apiBase: string;                // API endpoint URL
+  id: string; // e.g. 'openrouter'
+  name: string; // e.g. 'OpenRouter'
+  description: string; // Human-readable description
+  apiBase: string; // API endpoint URL
   type: 'openai_compatible' | 'custom';
-  apiKeyEnv: string;              // Env var for API key
-  docsUrl?: string;               // Documentation link
+  apiKeyEnv: string; // Env var for API key
+  docsUrl?: string; // Documentation link
   defaultModels: AggregatorModel[];
 }
 
 export interface AggregatorModel {
-  id: string;                     // Model ID for API calls
-  name: string;                   // Display name
+  id: string; // Model ID for API calls
+  name: string; // Display name
   capabilities: ModelCapability[];
-  pricingInput?: number;          // USD per 1M input tokens
-  pricingOutput?: number;         // USD per 1M output tokens
-  pricingPerRequest?: number;     // USD per request (for image gen)
+  pricingInput?: number; // USD per 1M input tokens
+  pricingOutput?: number; // USD per 1M output tokens
+  pricingPerRequest?: number; // USD per request (for image gen)
   contextWindow?: number;
   maxOutput?: number;
 }
@@ -942,26 +946,26 @@ export interface AggregatorModel {
 
 ### Registered Aggregators
 
-| Aggregator | Type | API Key Env | Notable Models |
-|------------|------|-------------|----------------|
-| **fal.ai** | custom | `FAL_KEY` | FLUX Pro, FLUX Schnell, SDXL, Recraft v3 (image generation) |
-| **Together AI** | openai_compatible | `TOGETHER_API_KEY` | Llama 3.3 70B, Qwen 2.5 Coder, DeepSeek R1, DeepSeek V3, Mixtral 8x22B |
-| **Groq** | openai_compatible | `GROQ_API_KEY` | Llama 3.3 70B, Llama 3.1 8B, Mixtral 8x7B, Whisper (audio) |
-| **Fireworks AI** | openai_compatible | `FIREWORKS_API_KEY` | Llama 3.3 70B, Llama 3.2 Vision, Qwen 2.5 Coder, DeepSeek V3, FLUX.1 |
-| **DeepInfra** | openai_compatible | `DEEPINFRA_API_KEY` | Llama 3.3 70B, Llama 3.2 Vision, Qwen 2.5 Coder, DeepSeek R1 |
-| **OpenRouter** | openai_compatible | `OPENROUTER_API_KEY` | Claude 3.5 Sonnet, GPT-4o, Gemini 2.0 Flash (Free), DeepSeek R1, Llama 3.3 |
-| **Perplexity** | openai_compatible | `PERPLEXITY_API_KEY` | Sonar Pro, Sonar, Sonar Reasoning (search-augmented) |
-| **Cerebras** | openai_compatible | `CEREBRAS_API_KEY` | Llama 3.3 70B, Llama 3.1 8B (ultra-fast inference via Wafer-Scale Engine) |
+| Aggregator       | Type              | API Key Env          | Notable Models                                                             |
+| ---------------- | ----------------- | -------------------- | -------------------------------------------------------------------------- |
+| **fal.ai**       | custom            | `FAL_KEY`            | FLUX Pro, FLUX Schnell, SDXL, Recraft v3 (image generation)                |
+| **Together AI**  | openai_compatible | `TOGETHER_API_KEY`   | Llama 3.3 70B, Qwen 2.5 Coder, DeepSeek R1, DeepSeek V3, Mixtral 8x22B     |
+| **Groq**         | openai_compatible | `GROQ_API_KEY`       | Llama 3.3 70B, Llama 3.1 8B, Mixtral 8x7B, Whisper (audio)                 |
+| **Fireworks AI** | openai_compatible | `FIREWORKS_API_KEY`  | Llama 3.3 70B, Llama 3.2 Vision, Qwen 2.5 Coder, DeepSeek V3, FLUX.1       |
+| **DeepInfra**    | openai_compatible | `DEEPINFRA_API_KEY`  | Llama 3.3 70B, Llama 3.2 Vision, Qwen 2.5 Coder, DeepSeek R1               |
+| **OpenRouter**   | openai_compatible | `OPENROUTER_API_KEY` | Claude 3.5 Sonnet, GPT-4o, Gemini 2.0 Flash (Free), DeepSeek R1, Llama 3.3 |
+| **Perplexity**   | openai_compatible | `PERPLEXITY_API_KEY` | Sonar Pro, Sonar, Sonar Reasoning (search-augmented)                       |
+| **Cerebras**     | openai_compatible | `CEREBRAS_API_KEY`   | Llama 3.3 70B, Llama 3.1 8B (ultra-fast inference via Wafer-Scale Engine)  |
 
 ### Aggregator API
 
 ```typescript
 import {
-  getAggregatorIds,        // ['fal', 'together', 'groq', ...]
-  getAggregatorProvider,   // Get specific aggregator by ID
+  getAggregatorIds, // ['fal', 'together', 'groq', ...]
+  getAggregatorProvider, // Get specific aggregator by ID
   getAllAggregatorProviders, // Get all aggregator configs
-  isAggregatorProvider,    // Check if an ID is an aggregator
-  getAggregatorModels,     // Get models for a specific aggregator
+  isAggregatorProvider, // Check if an ID is an aggregator
+  getAggregatorModels, // Get models for a specific aggregator
 } from '@ownpilot/core';
 ```
 
@@ -973,13 +977,13 @@ Local providers run AI models on the user's own hardware or local network.
 
 ### Supported Local Provider Types
 
-| Type | Default Port | Discovery Endpoint | Description |
-|------|-------------|-------------------|-------------|
-| `lmstudio` | 1234 | `/v1/models` | LM Studio desktop application |
-| `ollama` | 11434 | `/api/tags` | Ollama CLI model runner |
-| `localai` | 8080 | `/v1/models` | LocalAI OpenAI-compatible server |
-| `vllm` | 8000 | `/v1/models` | vLLM high-throughput serving engine |
-| `custom` | 8080 | `/v1/models` | Any OpenAI-compatible local server |
+| Type       | Default Port | Discovery Endpoint | Description                         |
+| ---------- | ------------ | ------------------ | ----------------------------------- |
+| `lmstudio` | 1234         | `/v1/models`       | LM Studio desktop application       |
+| `ollama`   | 11434        | `/api/tags`        | Ollama CLI model runner             |
+| `localai`  | 8080         | `/v1/models`       | LocalAI OpenAI-compatible server    |
+| `vllm`     | 8000         | `/v1/models`       | vLLM high-throughput serving engine |
+| `custom`   | 8080         | `/v1/models`       | Any OpenAI-compatible local server  |
 
 ### Auto-Discovery
 
@@ -990,6 +994,7 @@ The gateway service includes a model discovery system (`packages/gateway/src/ser
 3. Stores discovered models in the `local_models` database table.
 
 Discovery is triggered:
+
 - When a local provider is first added.
 - Manually via the `POST /api/v1/local-providers/:id/discover` endpoint.
 - From the UI's provider management page.
@@ -1000,30 +1005,30 @@ Local providers and their models are persisted in PostgreSQL:
 
 **`local_providers` table:**
 
-| Column | Type | Description |
-|--------|------|-------------|
-| `id` | TEXT | Unique provider ID |
-| `user_id` | TEXT | User who added this provider |
-| `name` | TEXT | Display name |
-| `provider_type` | TEXT | `lmstudio`, `ollama`, `localai`, `vllm`, `custom` |
-| `base_url` | TEXT | HTTP endpoint (e.g., `http://localhost:11434`) |
-| `api_key` | TEXT | Optional API key |
-| `discovery_endpoint` | TEXT | Model list endpoint path |
-| `is_enabled` | BOOLEAN | Whether this provider is active |
-| `created_at` | DATETIME | Creation timestamp |
-| `updated_at` | DATETIME | Last update timestamp |
+| Column               | Type     | Description                                       |
+| -------------------- | -------- | ------------------------------------------------- |
+| `id`                 | TEXT     | Unique provider ID                                |
+| `user_id`            | TEXT     | User who added this provider                      |
+| `name`               | TEXT     | Display name                                      |
+| `provider_type`      | TEXT     | `lmstudio`, `ollama`, `localai`, `vllm`, `custom` |
+| `base_url`           | TEXT     | HTTP endpoint (e.g., `http://localhost:11434`)    |
+| `api_key`            | TEXT     | Optional API key                                  |
+| `discovery_endpoint` | TEXT     | Model list endpoint path                          |
+| `is_enabled`         | BOOLEAN  | Whether this provider is active                   |
+| `created_at`         | DATETIME | Creation timestamp                                |
+| `updated_at`         | DATETIME | Last update timestamp                             |
 
 **`local_models` table:**
 
-| Column | Type | Description |
-|--------|------|-------------|
-| `id` | TEXT | Unique model ID |
-| `provider_id` | TEXT | FK to local_providers |
-| `user_id` | TEXT | User who added this |
-| `model_id` | TEXT | Model identifier for API calls |
-| `display_name` | TEXT | Human-readable name |
-| `is_default` | BOOLEAN | Default model for this provider |
-| `created_at` | DATETIME | Creation timestamp |
+| Column         | Type     | Description                     |
+| -------------- | -------- | ------------------------------- |
+| `id`           | TEXT     | Unique model ID                 |
+| `provider_id`  | TEXT     | FK to local_providers           |
+| `user_id`      | TEXT     | User who added this             |
+| `model_id`     | TEXT     | Model identifier for API calls  |
+| `display_name` | TEXT     | Human-readable name             |
+| `is_default`   | BOOLEAN  | Default model for this provider |
+| `created_at`   | DATETIME | Creation timestamp              |
 
 ### Local Provider API
 
@@ -1051,53 +1056,53 @@ The gateway persists provider and model configurations in PostgreSQL, enabling p
 
 Per-user model overrides (enable/disable, display name, custom pricing).
 
-| Column | Type | Description |
-|--------|------|-------------|
-| `id` | INTEGER | Auto-increment PK |
-| `user_id` | TEXT | User identifier |
-| `provider_id` | TEXT | Provider ID |
-| `model_id` | TEXT | Model ID |
-| `display_name` | TEXT | Custom display name |
-| `is_enabled` | BOOLEAN | Enable/disable this model |
-| `custom_input_price` | REAL | Override input price |
-| `custom_output_price` | REAL | Override output price |
-| `notes` | TEXT | User notes |
-| `created_at` | DATETIME | Creation timestamp |
-| `updated_at` | DATETIME | Last update timestamp |
+| Column                | Type     | Description               |
+| --------------------- | -------- | ------------------------- |
+| `id`                  | INTEGER  | Auto-increment PK         |
+| `user_id`             | TEXT     | User identifier           |
+| `provider_id`         | TEXT     | Provider ID               |
+| `model_id`            | TEXT     | Model ID                  |
+| `display_name`        | TEXT     | Custom display name       |
+| `is_enabled`          | BOOLEAN  | Enable/disable this model |
+| `custom_input_price`  | REAL     | Override input price      |
+| `custom_output_price` | REAL     | Override output price     |
+| `notes`               | TEXT     | User notes                |
+| `created_at`          | DATETIME | Creation timestamp        |
+| `updated_at`          | DATETIME | Last update timestamp     |
 
 #### `custom_providers`
 
 User-defined providers not in the built-in list.
 
-| Column | Type | Description |
-|--------|------|-------------|
-| `id` | TEXT | Unique provider ID |
-| `user_id` | TEXT | User who created this |
-| `name` | TEXT | Display name |
-| `api_base` | TEXT | API endpoint URL |
-| `api_key_setting` | TEXT | Config Center key name |
-| `provider_type` | TEXT | `openai-compatible`, etc. |
-| `is_enabled` | BOOLEAN | Active status |
-| `description` | TEXT | Provider description |
-| `notes` | TEXT | User notes |
-| `created_at` | DATETIME | Creation timestamp |
-| `updated_at` | DATETIME | Last update timestamp |
+| Column            | Type     | Description               |
+| ----------------- | -------- | ------------------------- |
+| `id`              | TEXT     | Unique provider ID        |
+| `user_id`         | TEXT     | User who created this     |
+| `name`            | TEXT     | Display name              |
+| `api_base`        | TEXT     | API endpoint URL          |
+| `api_key_setting` | TEXT     | Config Center key name    |
+| `provider_type`   | TEXT     | `openai-compatible`, etc. |
+| `is_enabled`      | BOOLEAN  | Active status             |
+| `description`     | TEXT     | Provider description      |
+| `notes`           | TEXT     | User notes                |
+| `created_at`      | DATETIME | Creation timestamp        |
+| `updated_at`      | DATETIME | Last update timestamp     |
 
 #### `user_provider_configs`
 
 Per-user overrides for built-in providers (base URL, type, enabled status).
 
-| Column | Type | Description |
-|--------|------|-------------|
-| `id` | INTEGER | Auto-increment PK |
-| `user_id` | TEXT | User identifier |
-| `provider_id` | TEXT | Built-in provider ID |
-| `base_url` | TEXT | Override base URL |
-| `provider_type` | TEXT | Override provider type |
-| `is_enabled` | BOOLEAN | Enable/disable |
-| `notes` | TEXT | User notes |
-| `created_at` | DATETIME | Creation timestamp |
-| `updated_at` | DATETIME | Last update timestamp |
+| Column          | Type     | Description            |
+| --------------- | -------- | ---------------------- |
+| `id`            | INTEGER  | Auto-increment PK      |
+| `user_id`       | TEXT     | User identifier        |
+| `provider_id`   | TEXT     | Built-in provider ID   |
+| `base_url`      | TEXT     | Override base URL      |
+| `provider_type` | TEXT     | Override provider type |
+| `is_enabled`    | BOOLEAN  | Enable/disable         |
+| `notes`         | TEXT     | User notes             |
+| `created_at`    | DATETIME | Creation timestamp     |
+| `updated_at`    | DATETIME | Last update timestamp  |
 
 ### Merged View
 
@@ -1125,10 +1130,10 @@ interface MergedModel {
   pricingOutput?: number;
   contextWindow?: number;
   maxOutput?: number;
-  isEnabled: boolean;       // User override or default
-  isCustom: boolean;        // From custom_providers
-  hasOverride: boolean;     // Has user_model_configs entry
-  isConfigured: boolean;    // API key is set
+  isEnabled: boolean; // User override or default
+  isCustom: boolean; // From custom_providers
+  hasOverride: boolean; // Has user_model_configs entry
+  isConfigured: boolean; // API key is set
   source: 'builtin' | 'aggregator' | 'custom' | 'local';
 }
 ```
@@ -1141,14 +1146,14 @@ interface MergedModel {
 
 **Source:** `packages/gateway/src/routes/providers.ts`
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/` | List all providers with status (configured, enabled, model count) |
-| `GET` | `/:id` | Get specific provider details |
-| `GET` | `/:id/config` | Get provider config with user overrides |
-| `PUT` | `/:id/config` | Save user override (base URL, type, notes) |
-| `DELETE` | `/:id/config` | Reset provider to defaults |
-| `PATCH` | `/:id/toggle` | Enable/disable a provider |
+| Method   | Path          | Description                                                       |
+| -------- | ------------- | ----------------------------------------------------------------- |
+| `GET`    | `/`           | List all providers with status (configured, enabled, model count) |
+| `GET`    | `/:id`        | Get specific provider details                                     |
+| `GET`    | `/:id/config` | Get provider config with user overrides                           |
+| `PUT`    | `/:id/config` | Save user override (base URL, type, notes)                        |
+| `DELETE` | `/:id/config` | Reset provider to defaults                                        |
+| `PATCH`  | `/:id/toggle` | Enable/disable a provider                                         |
 
 Each provider in the list response includes:
 
@@ -1179,38 +1184,38 @@ Each provider in the list response includes:
 
 **Source:** `packages/gateway/src/routes/models.ts`
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/` | List all models from configured providers |
-| `GET` | `/providers` | List provider IDs with model counts |
-| `GET` | `/:provider/:model` | Get specific model info |
-| `POST` | `/sync` | Sync all providers from models.dev |
-| `POST` | `/sync/:providers` | Sync specific providers |
-| `GET` | `/modelsdev/providers` | List providers available on models.dev |
+| Method | Path                   | Description                               |
+| ------ | ---------------------- | ----------------------------------------- |
+| `GET`  | `/`                    | List all models from configured providers |
+| `GET`  | `/providers`           | List provider IDs with model counts       |
+| `GET`  | `/:provider/:model`    | Get specific model info                   |
+| `POST` | `/sync`                | Sync all providers from models.dev        |
+| `POST` | `/sync/:providers`     | Sync specific providers                   |
+| `GET`  | `/modelsdev/providers` | List providers available on models.dev    |
 
 **Query Parameters for `GET /`:**
 
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `enabledOnly` | boolean | `true` | Filter to only enabled models |
+| Parameter     | Type    | Default | Description                   |
+| ------------- | ------- | ------- | ----------------------------- |
+| `enabledOnly` | boolean | `true`  | Filter to only enabled models |
 
 ### Model Configs Route (`/api/v1/model-configs`)
 
 **Source:** `packages/gateway/src/routes/model-configs.ts`
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/models` | Get merged models from all sources |
-| `GET` | `/providers` | Get merged providers from all sources |
-| `POST` | `/models` | Create a custom model config |
-| `PUT` | `/models/:providerId/:modelId` | Update model config |
-| `DELETE` | `/models/:providerId/:modelId` | Delete model override |
-| `PATCH` | `/models/:providerId/:modelId/toggle` | Toggle model enabled |
-| `POST` | `/providers` | Create a custom provider |
-| `PUT` | `/providers/:id` | Update custom provider |
-| `DELETE` | `/providers/:id` | Delete custom provider |
-| `PATCH` | `/providers/:id/toggle` | Toggle provider enabled |
-| `GET` | `/aggregators` | List aggregator providers |
+| Method   | Path                                  | Description                           |
+| -------- | ------------------------------------- | ------------------------------------- |
+| `GET`    | `/models`                             | Get merged models from all sources    |
+| `GET`    | `/providers`                          | Get merged providers from all sources |
+| `POST`   | `/models`                             | Create a custom model config          |
+| `PUT`    | `/models/:providerId/:modelId`        | Update model config                   |
+| `DELETE` | `/models/:providerId/:modelId`        | Delete model override                 |
+| `PATCH`  | `/models/:providerId/:modelId/toggle` | Toggle model enabled                  |
+| `POST`   | `/providers`                          | Create a custom provider              |
+| `PUT`    | `/providers/:id`                      | Update custom provider                |
+| `DELETE` | `/providers/:id`                      | Delete custom provider                |
+| `PATCH`  | `/providers/:id/toggle`               | Toggle provider enabled               |
+| `GET`    | `/aggregators`                        | List aggregator providers             |
 
 ### Local Providers Route (`/api/v1/local-providers`)
 
@@ -1227,6 +1232,7 @@ See [Section 11: Local Providers](#11-local-providers) for full endpoint listing
 **Source:** `packages/ui/src/pages/AIModelsPage.tsx`
 
 Top-level page that embeds the `AIModelsTab` component. Provides:
+
 - Browsing all available models across all providers.
 - Filtering by provider, capability, price range.
 - Enabling/disabling individual models.
@@ -1248,12 +1254,12 @@ Provider management interface with:
 
 **Provider type dropdown options:**
 
-| Value | Label |
-|-------|-------|
+| Value               | Label                              |
+| ------------------- | ---------------------------------- |
 | `openai-compatible` | OpenAI Compatible (Most Providers) |
-| `openai` | OpenAI (Native) |
-| `anthropic` | Anthropic (Native) |
-| `google` | Google Gemini (Native) |
+| `openai`            | OpenAI (Native)                    |
+| `anthropic`         | Anthropic (Native)                 |
+| `google`            | Google Gemini (Native)             |
 
 User overrides set through this UI persist in the `user_provider_configs` database table and survive models.dev syncs.
 
@@ -1266,6 +1272,7 @@ API keys and service credentials are managed through the Config Center system.
 ### Storage
 
 API keys are stored in the `config_services` and `config_entries` database tables, which provide:
+
 - Named services (e.g., `openai`, `anthropic`, `google`).
 - Encrypted credential storage.
 - Multi-entry support (multiple API keys per service for rotation).
@@ -1328,11 +1335,11 @@ When the gateway checks if a provider is configured:
 
 ```typescript
 export interface RetryConfig {
-  maxRetries?: number;        // Default: 3
-  initialDelayMs?: number;    // Default: 1000
-  maxDelayMs?: number;        // Default: 10000
+  maxRetries?: number; // Default: 3
+  initialDelayMs?: number; // Default: 1000
+  maxDelayMs?: number; // Default: 10000
   backoffMultiplier?: number; // Default: 2
-  addJitter?: boolean;        // Default: true (+-25% jitter)
+  addJitter?: boolean; // Default: true (+-25% jitter)
   retryableErrors?: (error: unknown) => boolean;
   onRetry?: (attempt: number, error: unknown, delayMs: number) => void;
 }
@@ -1348,45 +1355,48 @@ delay = min(initialDelay * multiplier^attempt, maxDelay)
 For defaults (1000ms initial, 2x multiplier, 10000ms max):
 
 | Attempt | Base Delay | With Jitter Range |
-|---------|-----------|-------------------|
-| 1 | 1000ms | 750ms - 1250ms |
-| 2 | 2000ms | 1500ms - 2500ms |
-| 3 | 4000ms | 3000ms - 5000ms |
-| 4+ | 8000ms | 6000ms - 10000ms |
+| ------- | ---------- | ----------------- |
+| 1       | 1000ms     | 750ms - 1250ms    |
+| 2       | 2000ms     | 1500ms - 2500ms   |
+| 3       | 4000ms     | 3000ms - 5000ms   |
+| 4+      | 8000ms     | 6000ms - 10000ms  |
 
 ### Retryable Error Detection
 
 The `isRetryableError()` function checks for:
 
-| Error Pattern | Retryable | Example |
-|---------------|-----------|---------|
-| `TimeoutError` | Yes | Request exceeded timeout |
-| Network errors | Yes | `ECONNRESET`, `ECONNREFUSED`, `network` |
-| Rate limits | Yes | `429`, `rate limit`, `too many requests` |
-| Server errors | Yes | `500`, `502`, `503`, `504` |
-| Service unavailable | Yes | `temporarily unavailable`, `service unavailable` |
-| Google request failures | Yes | `google request ... failed` |
-| All other errors | No | Validation errors, auth errors |
+| Error Pattern           | Retryable | Example                                          |
+| ----------------------- | --------- | ------------------------------------------------ |
+| `TimeoutError`          | Yes       | Request exceeded timeout                         |
+| Network errors          | Yes       | `ECONNRESET`, `ECONNREFUSED`, `network`          |
+| Rate limits             | Yes       | `429`, `rate limit`, `too many requests`         |
+| Server errors           | Yes       | `500`, `502`, `503`, `504`                       |
+| Service unavailable     | Yes       | `temporarily unavailable`, `service unavailable` |
+| Google request failures | Yes       | `google request ... failed`                      |
+| All other errors        | No        | Validation errors, auth errors                   |
 
 ### withRetry Usage
 
 ```typescript
 import { withRetry } from '@ownpilot/core';
 
-const result = await withRetry(async () => {
-  // This function will be retried on transient failures
-  const response = await fetch(url, options);
-  if (!response.ok) {
-    return err(new InternalError(`HTTP ${response.status}`));
-  }
-  return ok(await response.json());
-}, {
-  maxRetries: 3,
-  initialDelayMs: 1000,
-  onRetry: (attempt, error, delayMs) => {
-    console.log(`Retry ${attempt}: ${error} (waiting ${delayMs}ms)`);
+const result = await withRetry(
+  async () => {
+    // This function will be retried on transient failures
+    const response = await fetch(url, options);
+    if (!response.ok) {
+      return err(new InternalError(`HTTP ${response.status}`));
+    }
+    return ok(await response.json());
   },
-});
+  {
+    maxRetries: 3,
+    initialDelayMs: 1000,
+    onRetry: (attempt, error, delayMs) => {
+      console.log(`Retry ${attempt}: ${error} (waiting ${delayMs}ms)`);
+    },
+  }
+);
 ```
 
 ### Debug Logging
@@ -1431,12 +1441,28 @@ For known providers, canonical configurations are **always enforced** regardless
 
 ```typescript
 const CANONICAL_CONFIGS = {
-  'openai':    { type: 'openai',            baseUrl: 'https://api.openai.com/v1',    apiKeyEnv: 'OPENAI_API_KEY' },
-  'anthropic': { type: 'anthropic',         baseUrl: 'https://api.anthropic.com/v1', apiKeyEnv: 'ANTHROPIC_API_KEY' },
-  'google':    { type: 'google',            baseUrl: 'https://generativelanguage.googleapis.com/v1beta', apiKeyEnv: 'GOOGLE_GENERATIVE_AI_API_KEY' },
-  'groq':      { type: 'openai-compatible', baseUrl: 'https://api.groq.com/openai/v1', apiKeyEnv: 'GROQ_API_KEY' },
-  'mistral':   { type: 'openai-compatible', baseUrl: 'https://api.mistral.ai/v1',   apiKeyEnv: 'MISTRAL_API_KEY' },
-  'xai':       { type: 'openai-compatible', baseUrl: 'https://api.x.ai/v1',         apiKeyEnv: 'XAI_API_KEY' },
+  openai: { type: 'openai', baseUrl: 'https://api.openai.com/v1', apiKeyEnv: 'OPENAI_API_KEY' },
+  anthropic: {
+    type: 'anthropic',
+    baseUrl: 'https://api.anthropic.com/v1',
+    apiKeyEnv: 'ANTHROPIC_API_KEY',
+  },
+  google: {
+    type: 'google',
+    baseUrl: 'https://generativelanguage.googleapis.com/v1beta',
+    apiKeyEnv: 'GOOGLE_GENERATIVE_AI_API_KEY',
+  },
+  groq: {
+    type: 'openai-compatible',
+    baseUrl: 'https://api.groq.com/openai/v1',
+    apiKeyEnv: 'GROQ_API_KEY',
+  },
+  mistral: {
+    type: 'openai-compatible',
+    baseUrl: 'https://api.mistral.ai/v1',
+    apiKeyEnv: 'MISTRAL_API_KEY',
+  },
+  xai: { type: 'openai-compatible', baseUrl: 'https://api.x.ai/v1', apiKeyEnv: 'XAI_API_KEY' },
   // ... and more
 };
 ```
@@ -1556,58 +1582,58 @@ POST /api/v1/local-providers
 
 All provider API keys as environment variables:
 
-| Variable | Provider |
-|----------|---------|
-| `OPENAI_API_KEY` | OpenAI |
-| `ANTHROPIC_API_KEY` | Anthropic |
+| Variable                       | Provider           |
+| ------------------------------ | ------------------ |
+| `OPENAI_API_KEY`               | OpenAI             |
+| `ANTHROPIC_API_KEY`            | Anthropic          |
 | `GOOGLE_GENERATIVE_AI_API_KEY` | Google AI (Gemini) |
-| `DEEPSEEK_API_KEY` | DeepSeek |
-| `GROQ_API_KEY` | Groq |
-| `MISTRAL_API_KEY` | Mistral AI |
-| `XAI_API_KEY` | xAI (Grok) |
-| `TOGETHER_API_KEY` | Together AI |
-| `FIREWORKS_API_KEY` | Fireworks AI |
-| `PERPLEXITY_API_KEY` | Perplexity |
-| `COHERE_API_KEY` | Cohere |
-| `OPENROUTER_API_KEY` | OpenRouter |
-| `ZHIPU_API_KEY` | Zhipu AI |
-| `AZURE_OPENAI_API_KEY` | Azure OpenAI |
-| `GOOGLE_VERTEX_API_KEY` | Google Vertex AI |
-| `DASHSCOPE_API_KEY` | Alibaba DashScope |
-| `DEEPINFRA_API_KEY` | DeepInfra |
-| `CEREBRAS_API_KEY` | Cerebras |
-| `FAL_KEY` | fal.ai |
-| `NVIDIA_API_KEY` | NVIDIA |
-| `MOONSHOT_API_KEY` | Moonshot AI |
-| `HF_TOKEN` | Hugging Face |
-| `GITHUB_TOKEN` | GitHub Models |
-| `VULTR_API_KEY` | Vultr |
+| `DEEPSEEK_API_KEY`             | DeepSeek           |
+| `GROQ_API_KEY`                 | Groq               |
+| `MISTRAL_API_KEY`              | Mistral AI         |
+| `XAI_API_KEY`                  | xAI (Grok)         |
+| `TOGETHER_API_KEY`             | Together AI        |
+| `FIREWORKS_API_KEY`            | Fireworks AI       |
+| `PERPLEXITY_API_KEY`           | Perplexity         |
+| `COHERE_API_KEY`               | Cohere             |
+| `OPENROUTER_API_KEY`           | OpenRouter         |
+| `ZHIPU_API_KEY`                | Zhipu AI           |
+| `AZURE_OPENAI_API_KEY`         | Azure OpenAI       |
+| `GOOGLE_VERTEX_API_KEY`        | Google Vertex AI   |
+| `DASHSCOPE_API_KEY`            | Alibaba DashScope  |
+| `DEEPINFRA_API_KEY`            | DeepInfra          |
+| `CEREBRAS_API_KEY`             | Cerebras           |
+| `FAL_KEY`                      | fal.ai             |
+| `NVIDIA_API_KEY`               | NVIDIA             |
+| `MOONSHOT_API_KEY`             | Moonshot AI        |
+| `HF_TOKEN`                     | Hugging Face       |
+| `GITHUB_TOKEN`                 | GitHub Models      |
+| `VULTR_API_KEY`                | Vultr              |
 
 ---
 
 ## Source File Index
 
-| File | Description |
-|------|-------------|
-| `packages/core/src/agent/types.ts` | AIProvider type, Message, CompletionRequest/Response, ToolContext |
-| `packages/core/src/agent/provider.ts` | IProvider interface, BaseProvider, OpenAIProvider, AnthropicProvider, createProvider() |
-| `packages/core/src/agent/providers/google.ts` | GoogleProvider (native Gemini API) |
-| `packages/core/src/agent/providers/openai-compatible.ts` | OpenAICompatibleProvider + factory functions |
-| `packages/core/src/agent/providers/zhipu.ts` | ZhipuProvider (alias for OpenAICompatible) |
-| `packages/core/src/agent/providers/router.ts` | ProviderRouter, RoutingStrategy, routing helpers |
-| `packages/core/src/agent/providers/fallback.ts` | FallbackProvider, FallbackProviderConfig |
-| `packages/core/src/agent/providers/aggregators.ts` | AggregatorProvider definitions |
-| `packages/core/src/agent/providers/configs/types.ts` | ModelCapability, ModelConfig, ProviderConfig, ProviderFeatures |
-| `packages/core/src/agent/providers/configs/index.ts` | Config loading, model search, PROVIDER_IDS |
-| `packages/core/src/agent/providers/configs/loader.ts` | JSON config loader, findModels, scoring |
-| `packages/core/src/agent/providers/configs/sync.ts` | Models.dev sync, canonical configs |
-| `packages/core/src/agent/providers/index.ts` | Module exports |
-| `packages/core/src/agent/presets.ts` | ProviderPreset definitions |
-| `packages/core/src/agent/retry.ts` | Retry with exponential backoff |
-| `packages/core/src/agent/debug.ts` | Debug logging for provider calls |
-| `packages/gateway/src/routes/providers.ts` | Provider management API |
-| `packages/gateway/src/routes/models.ts` | Model listing API |
-| `packages/gateway/src/routes/model-configs.ts` | Model config CRUD API |
-| `packages/gateway/src/routes/local-providers.ts` | Local provider management API |
-| `packages/ui/src/pages/AIModelsPage.tsx` | AI Models browsing page |
-| `packages/ui/src/components/ProvidersTab.tsx` | Provider management UI |
+| File                                                     | Description                                                                            |
+| -------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| `packages/core/src/agent/types.ts`                       | AIProvider type, Message, CompletionRequest/Response, ToolContext                      |
+| `packages/core/src/agent/provider.ts`                    | IProvider interface, BaseProvider, OpenAIProvider, AnthropicProvider, createProvider() |
+| `packages/core/src/agent/providers/google.ts`            | GoogleProvider (native Gemini API)                                                     |
+| `packages/core/src/agent/providers/openai-compatible.ts` | OpenAICompatibleProvider + factory functions                                           |
+| `packages/core/src/agent/providers/zhipu.ts`             | ZhipuProvider (alias for OpenAICompatible)                                             |
+| `packages/core/src/agent/providers/router.ts`            | ProviderRouter, RoutingStrategy, routing helpers                                       |
+| `packages/core/src/agent/providers/fallback.ts`          | FallbackProvider, FallbackProviderConfig                                               |
+| `packages/core/src/agent/providers/aggregators.ts`       | AggregatorProvider definitions                                                         |
+| `packages/core/src/agent/providers/configs/types.ts`     | ModelCapability, ModelConfig, ProviderConfig, ProviderFeatures                         |
+| `packages/core/src/agent/providers/configs/index.ts`     | Config loading, model search, PROVIDER_IDS                                             |
+| `packages/core/src/agent/providers/configs/loader.ts`    | JSON config loader, findModels, scoring                                                |
+| `packages/core/src/agent/providers/configs/sync.ts`      | Models.dev sync, canonical configs                                                     |
+| `packages/core/src/agent/providers/index.ts`             | Module exports                                                                         |
+| `packages/core/src/agent/presets.ts`                     | ProviderPreset definitions                                                             |
+| `packages/core/src/agent/retry.ts`                       | Retry with exponential backoff                                                         |
+| `packages/core/src/agent/debug.ts`                       | Debug logging for provider calls                                                       |
+| `packages/gateway/src/routes/providers.ts`               | Provider management API                                                                |
+| `packages/gateway/src/routes/models.ts`                  | Model listing API                                                                      |
+| `packages/gateway/src/routes/model-configs.ts`           | Model config CRUD API                                                                  |
+| `packages/gateway/src/routes/local-providers.ts`         | Local provider management API                                                          |
+| `packages/ui/src/pages/AIModelsPage.tsx`                 | AI Models browsing page                                                                |
+| `packages/ui/src/components/ProvidersTab.tsx`            | Provider management UI                                                                 |

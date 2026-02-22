@@ -107,10 +107,7 @@ export class CostsRepository extends BaseRepository {
   }
 
   async getById(id: string): Promise<Cost | null> {
-    const row = await this.queryOne<CostRow>(
-      `SELECT * FROM costs WHERE id = $1`,
-      [id]
-    );
+    const row = await this.queryOne<CostRow>(`SELECT * FROM costs WHERE id = $1`, [id]);
     return row ? rowToCost(row) : null;
   }
 
@@ -227,9 +224,7 @@ export class CostsRepository extends BaseRepository {
   }
 
   async count(): Promise<number> {
-    const row = await this.queryOne<{ count: string }>(
-      `SELECT COUNT(*) as count FROM costs`
-    );
+    const row = await this.queryOne<{ count: string }>(`SELECT COUNT(*) as count FROM costs`);
     return parseInt(row?.count ?? '0', 10);
   }
 }

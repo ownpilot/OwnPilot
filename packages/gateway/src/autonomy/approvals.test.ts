@@ -73,7 +73,7 @@ async function createPendingAction(
   actionType = 'some_tool',
   description = 'Do something',
   params: Record<string, unknown> = {},
-  risk: Partial<RiskAssessment> = {},
+  risk: Partial<RiskAssessment> = {}
 ) {
   mockedAssessRisk.mockReturnValueOnce(makeRisk({ requiresApproval: true, ...risk }));
   const request = await manager.requestApproval(userId, category, actionType, description, params);
@@ -138,7 +138,7 @@ describe('ApprovalManager', () => {
 
       mockedAssessRisk.mockReturnValueOnce(makeRisk({ requiresApproval: true }));
       await expect(
-        manager.requestApproval('user-1', 'tool_execution', 'x', 'overflow', {}),
+        manager.requestApproval('user-1', 'tool_execution', 'x', 'overflow', {})
       ).rejects.toThrow('Maximum pending actions reached');
     });
 
@@ -303,7 +303,13 @@ describe('ApprovalManager', () => {
 
     it('should return null when assessRisk says requiresApproval=false', async () => {
       mockedAssessRisk.mockReturnValueOnce(makeRisk({ requiresApproval: false }));
-      const result = await manager.requestApproval('user-1', 'notification', 'list', 'List items', {});
+      const result = await manager.requestApproval(
+        'user-1',
+        'notification',
+        'list',
+        'List items',
+        {}
+      );
       expect(result).toBeNull();
     });
 
@@ -343,7 +349,13 @@ describe('ApprovalManager', () => {
 
       // Second call for same userId:category:actionType
       mockedAssessRisk.mockReturnValueOnce(makeRisk({ requiresApproval: true }));
-      const result = await manager.requestApproval('user-1', 'tool_execution', 'some_tool', 'Again', {});
+      const result = await manager.requestApproval(
+        'user-1',
+        'tool_execution',
+        'some_tool',
+        'Again',
+        {}
+      );
       expect(result).toBeNull();
     });
 
@@ -373,7 +385,13 @@ describe('ApprovalManager', () => {
       });
 
       mockedAssessRisk.mockReturnValueOnce(makeRisk({ requiresApproval: true }));
-      const result = await manager.requestApproval('user-1', 'tool_execution', 'some_tool', 'Again', {});
+      const result = await manager.requestApproval(
+        'user-1',
+        'tool_execution',
+        'some_tool',
+        'Again',
+        {}
+      );
 
       expect(result).not.toBeNull();
       expect(result!.action.status).toBe('rejected');
@@ -394,7 +412,7 @@ describe('ApprovalManager', () => {
 
       mockedAssessRisk.mockReturnValueOnce(makeRisk({ requiresApproval: true }));
       await expect(
-        manager.requestApproval('user-1', 'tool_execution', 'x', 'overflow', {}),
+        manager.requestApproval('user-1', 'tool_execution', 'x', 'overflow', {})
       ).rejects.toThrow('Maximum pending actions reached for user: user-1');
     });
 
@@ -425,13 +443,15 @@ describe('ApprovalManager', () => {
     // ---------- Pending action creation ----------
 
     it('should create pending action with correct fields', async () => {
-      mockedAssessRisk.mockReturnValueOnce(makeRisk({
-        level: 'high',
-        score: 65,
-        requiresApproval: true,
-        factors: [{ name: 'Test', description: 'test', weight: 0.5, present: true }],
-        mitigations: ['Be careful'],
-      }));
+      mockedAssessRisk.mockReturnValueOnce(
+        makeRisk({
+          level: 'high',
+          score: 65,
+          requiresApproval: true,
+          factors: [{ name: 'Test', description: 'test', weight: 0.5, present: true }],
+          mitigations: ['Be careful'],
+        })
+      );
 
       const result = await manager.requestApproval(
         'user-1',
@@ -439,7 +459,7 @@ describe('ApprovalManager', () => {
         'execute_code',
         'Run some code',
         { script: 'console.log("hi")' },
-        { conversationId: 'conv-1' },
+        { conversationId: 'conv-1' }
       );
 
       expect(result).not.toBeNull();
@@ -478,9 +498,7 @@ describe('ApprovalManager', () => {
 
     it('should default context to empty object when omitted', async () => {
       mockedAssessRisk.mockReturnValueOnce(makeRisk({ requiresApproval: true }));
-      const result = await manager.requestApproval(
-        'user-1', 'tool_execution', 'x', 'Do', {},
-      );
+      const result = await manager.requestApproval('user-1', 'tool_execution', 'x', 'Do', {});
       expect(result!.action.context).toEqual({});
     });
 
@@ -502,7 +520,13 @@ describe('ApprovalManager', () => {
       const spy = vi.fn();
       manager.on('notification', spy);
 
-      await createPendingAction(manager, 'user-1', 'tool_execution', 'some_tool', 'Do important thing');
+      await createPendingAction(
+        manager,
+        'user-1',
+        'tool_execution',
+        'some_tool',
+        'Do important thing'
+      );
 
       expect(spy).toHaveBeenCalledOnce();
       const notification = spy.mock.calls[0][0];
@@ -533,36 +557,78 @@ describe('ApprovalManager', () => {
     // ---------- Suggestion mapping ----------
 
     it('should return suggestion "approve" for low risk level', async () => {
-      const req = await createPendingAction(manager, 'user-1', 'tool_execution', 'x', 'Do', {}, { level: 'low' });
+      const req = await createPendingAction(
+        manager,
+        'user-1',
+        'tool_execution',
+        'x',
+        'Do',
+        {},
+        { level: 'low' }
+      );
       expect(req.suggestion).toBe('approve');
     });
 
     it('should return suggestion "review" for medium risk level', async () => {
-      const req = await createPendingAction(manager, 'user-1', 'tool_execution', 'x', 'Do', {}, { level: 'medium' });
+      const req = await createPendingAction(
+        manager,
+        'user-1',
+        'tool_execution',
+        'x',
+        'Do',
+        {},
+        { level: 'medium' }
+      );
       expect(req.suggestion).toBe('review');
     });
 
     it('should return suggestion "review" for high risk level', async () => {
-      const req = await createPendingAction(manager, 'user-1', 'tool_execution', 'x', 'Do', {}, { level: 'high' });
+      const req = await createPendingAction(
+        manager,
+        'user-1',
+        'tool_execution',
+        'x',
+        'Do',
+        {},
+        { level: 'high' }
+      );
       expect(req.suggestion).toBe('review');
     });
 
     it('should return suggestion "reject" for critical risk level', async () => {
-      const req = await createPendingAction(manager, 'user-1', 'tool_execution', 'x', 'Do', {}, { level: 'critical' });
+      const req = await createPendingAction(
+        manager,
+        'user-1',
+        'tool_execution',
+        'x',
+        'Do',
+        {},
+        { level: 'critical' }
+      );
       expect(req.suggestion).toBe('reject');
     });
 
     it('should return suggestion "review" for unknown risk level', async () => {
-      const req = await createPendingAction(manager, 'user-1', 'tool_execution', 'x', 'Do', {}, { level: 'unknown' as unknown as 'low' });
+      const req = await createPendingAction(
+        manager,
+        'user-1',
+        'tool_execution',
+        'x',
+        'Do',
+        {},
+        { level: 'unknown' as unknown as 'low' }
+      );
       expect(req.suggestion).toBe('review');
     });
 
     // ---------- Alternatives generation ----------
 
     it('should generate batch alternative for bulk/all params', async () => {
-      const req = await createPendingAction(manager, 'user-1', 'tool_execution', 'x', 'Do', { bulk: true });
+      const req = await createPendingAction(manager, 'user-1', 'tool_execution', 'x', 'Do', {
+        bulk: true,
+      });
       expect(req.alternatives).toBeDefined();
-      const alt = req.alternatives!.find(a => a.description === 'Process items one at a time');
+      const alt = req.alternatives!.find((a) => a.description === 'Process items one at a time');
       expect(alt).toBeDefined();
       expect(alt!.params.bulk).toBe(false);
       expect(alt!.params.all).toBe(false);
@@ -571,9 +637,11 @@ describe('ApprovalManager', () => {
     });
 
     it('should generate soft-delete alternative for permanent/force params', async () => {
-      const req = await createPendingAction(manager, 'user-1', 'tool_execution', 'x', 'Do', { permanent: true });
+      const req = await createPendingAction(manager, 'user-1', 'tool_execution', 'x', 'Do', {
+        permanent: true,
+      });
       expect(req.alternatives).toBeDefined();
-      const alt = req.alternatives!.find(a => a.description === 'Use soft-delete instead');
+      const alt = req.alternatives!.find((a) => a.description === 'Use soft-delete instead');
       expect(alt).toBeDefined();
       expect(alt!.params.permanent).toBe(false);
       expect(alt!.params.force).toBe(false);
@@ -582,13 +650,18 @@ describe('ApprovalManager', () => {
     });
 
     it('should generate both alternatives when bulk and permanent', async () => {
-      const req = await createPendingAction(manager, 'user-1', 'tool_execution', 'x', 'Do', { bulk: true, permanent: true });
+      const req = await createPendingAction(manager, 'user-1', 'tool_execution', 'x', 'Do', {
+        bulk: true,
+        permanent: true,
+      });
       expect(req.alternatives).toBeDefined();
       expect(req.alternatives!.length).toBe(2);
     });
 
     it('should generate no alternatives for plain params', async () => {
-      const req = await createPendingAction(manager, 'user-1', 'tool_execution', 'x', 'Do', { name: 'test' });
+      const req = await createPendingAction(manager, 'user-1', 'tool_execution', 'x', 'Do', {
+        name: 'test',
+      });
       expect(req.alternatives).toBeDefined();
       expect(req.alternatives!.length).toBe(0);
     });
@@ -608,14 +681,21 @@ describe('ApprovalManager', () => {
 
       const params = { file: 'test.txt' };
       const context = { conversationId: 'conv-1' };
-      await manager.requestApproval('user-1', 'file_operation', 'write_file', 'Write file', params, context);
+      await manager.requestApproval(
+        'user-1',
+        'file_operation',
+        'write_file',
+        'Write file',
+        params,
+        context
+      );
 
       expect(mockedAssessRisk).toHaveBeenCalledWith(
         'file_operation',
         'write_file',
         params,
         context,
-        expect.objectContaining({ userId: 'user-1', level: AutonomyLevel.AUTONOMOUS }),
+        expect.objectContaining({ userId: 'user-1', level: AutonomyLevel.AUTONOMOUS })
       );
     });
   });
@@ -697,7 +777,15 @@ describe('ApprovalManager', () => {
 
       it('should increment dailySpend by risk score', async () => {
         const spendBefore = manager.getUserConfig('user-1').dailySpend;
-        const req = await createPendingAction(manager, 'user-1', 'tool_execution', 'x', 'Do', {}, { score: 42 });
+        const req = await createPendingAction(
+          manager,
+          'user-1',
+          'tool_execution',
+          'x',
+          'Do',
+          {},
+          { score: 42 }
+        );
 
         manager.processDecision({
           actionId: req.action.id,
@@ -709,8 +797,24 @@ describe('ApprovalManager', () => {
       });
 
       it('should accumulate dailySpend across multiple approvals', async () => {
-        const req1 = await createPendingAction(manager, 'user-1', 'tool_execution', 'a', 'D1', {}, { score: 10 });
-        const req2 = await createPendingAction(manager, 'user-1', 'tool_execution', 'b', 'D2', {}, { score: 20 });
+        const req1 = await createPendingAction(
+          manager,
+          'user-1',
+          'tool_execution',
+          'a',
+          'D1',
+          {},
+          { score: 10 }
+        );
+        const req2 = await createPendingAction(
+          manager,
+          'user-1',
+          'tool_execution',
+          'b',
+          'D2',
+          {},
+          { score: 20 }
+        );
 
         manager.processDecision({ actionId: req1.action.id, decision: 'approve' });
         manager.processDecision({ actionId: req2.action.id, decision: 'approve' });
@@ -757,7 +861,15 @@ describe('ApprovalManager', () => {
 
       it('should NOT increment dailySpend on reject', async () => {
         const spendBefore = manager.getUserConfig('user-1').dailySpend;
-        const req = await createPendingAction(manager, 'user-1', 'tool_execution', 'x', 'Do', {}, { score: 50 });
+        const req = await createPendingAction(
+          manager,
+          'user-1',
+          'tool_execution',
+          'x',
+          'Do',
+          {},
+          { score: 50 }
+        );
 
         manager.processDecision({
           actionId: req.action.id,
@@ -785,7 +897,10 @@ describe('ApprovalManager', () => {
 
     describe('modify', () => {
       it('should merge modifiedParams into action params', async () => {
-        const req = await createPendingAction(manager, 'user-1', 'tool_execution', 'x', 'Do', { force: true, name: 'test' });
+        const req = await createPendingAction(manager, 'user-1', 'tool_execution', 'x', 'Do', {
+          force: true,
+          name: 'test',
+        });
 
         // assessRisk will be called again on modify
         mockedAssessRisk.mockReturnValueOnce(makeRisk({ level: 'low', score: 10 }));
@@ -800,7 +915,9 @@ describe('ApprovalManager', () => {
       });
 
       it('should re-assess risk after param modification', async () => {
-        const req = await createPendingAction(manager, 'user-1', 'tool_execution', 'x', 'Do', { force: true });
+        const req = await createPendingAction(manager, 'user-1', 'tool_execution', 'x', 'Do', {
+          force: true,
+        });
 
         const newRisk = makeRisk({ level: 'low', score: 15 });
         mockedAssessRisk.mockReturnValueOnce(newRisk);
@@ -818,7 +935,7 @@ describe('ApprovalManager', () => {
           req.action.type,
           expect.objectContaining({ force: false }),
           req.action.context,
-          expect.objectContaining({ userId: 'user-1' }),
+          expect.objectContaining({ userId: 'user-1' })
         );
       });
 
@@ -1001,7 +1118,7 @@ describe('ApprovalManager', () => {
 
       expect(user1).toHaveLength(2);
       expect(user2).toHaveLength(1);
-      expect(user1.every(a => a.userId === 'user-1')).toBe(true);
+      expect(user1.every((a) => a.userId === 'user-1')).toBe(true);
     });
 
     it('should only return actions with status "pending"', async () => {
@@ -1176,7 +1293,13 @@ describe('ApprovalManager', () => {
 
       // Verify auto-approve is working
       mockedAssessRisk.mockReturnValueOnce(makeRisk({ requiresApproval: true }));
-      const autoResult = await manager.requestApproval('user-1', 'tool_execution', 'some_tool', 'Again', {});
+      const autoResult = await manager.requestApproval(
+        'user-1',
+        'tool_execution',
+        'some_tool',
+        'Again',
+        {}
+      );
       expect(autoResult).toBeNull();
 
       // Clear remembered decisions
@@ -1423,7 +1546,13 @@ describe('ApprovalManager', () => {
       const spy = vi.fn();
       manager.on('action:pending', spy);
 
-      const _req = await createPendingAction(manager, 'user-1', 'tool_execution', 'my_tool', 'My action');
+      const _req = await createPendingAction(
+        manager,
+        'user-1',
+        'tool_execution',
+        'my_tool',
+        'My action'
+      );
 
       expect(spy).toHaveBeenCalledOnce();
       const action: PendingAction = spy.mock.calls[0][0];
@@ -1651,8 +1780,11 @@ describe('ApprovalManager', () => {
       await manager.requestApproval('user-1', 'tool_execution', 'x', 'Do', {}, context);
 
       expect(mockedAssessRisk).toHaveBeenCalledWith(
-        'tool_execution', 'x', {}, context,
-        expect.objectContaining({ userId: 'user-1' }),
+        'tool_execution',
+        'x',
+        {},
+        context,
+        expect.objectContaining({ userId: 'user-1' })
       );
     });
   });

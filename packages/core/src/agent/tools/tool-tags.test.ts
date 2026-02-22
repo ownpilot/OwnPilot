@@ -47,14 +47,29 @@ describe('TOOL_SEARCH_TAGS — category presence', () => {
   const allKeys = Object.keys(TOOL_SEARCH_TAGS);
 
   it('contains all 6 email tools', () => {
-    const emailTools = ['send_email', 'list_emails', 'read_email', 'delete_email', 'search_emails', 'reply_email'];
+    const emailTools = [
+      'send_email',
+      'list_emails',
+      'read_email',
+      'delete_email',
+      'search_emails',
+      'reply_email',
+    ];
     for (const tool of emailTools) {
       expect(allKeys, `missing email tool: ${tool}`).toContain(tool);
     }
   });
 
   it('contains all 7 git tools', () => {
-    const gitTools = ['git_status', 'git_diff', 'git_log', 'git_commit', 'git_add', 'git_branch', 'git_checkout'];
+    const gitTools = [
+      'git_status',
+      'git_diff',
+      'git_log',
+      'git_commit',
+      'git_add',
+      'git_branch',
+      'git_checkout',
+    ];
     for (const tool of gitTools) {
       expect(allKeys, `missing git tool: ${tool}`).toContain(tool);
     }
@@ -62,8 +77,13 @@ describe('TOOL_SEARCH_TAGS — category presence', () => {
 
   it('contains all 7 memory tools', () => {
     const memoryTools = [
-      'create_memory', 'batch_create_memories', 'search_memories',
-      'delete_memory', 'list_memories', 'update_memory_importance', 'get_memory_stats',
+      'create_memory',
+      'batch_create_memories',
+      'search_memories',
+      'delete_memory',
+      'list_memories',
+      'update_memory_importance',
+      'get_memory_stats',
     ];
     for (const tool of memoryTools) {
       expect(allKeys, `missing memory tool: ${tool}`).toContain(tool);
@@ -71,7 +91,14 @@ describe('TOOL_SEARCH_TAGS — category presence', () => {
   });
 
   it('contains all 6 task tools', () => {
-    const taskTools = ['add_task', 'list_tasks', 'complete_task', 'update_task', 'delete_task', 'batch_add_tasks'];
+    const taskTools = [
+      'add_task',
+      'list_tasks',
+      'complete_task',
+      'update_task',
+      'delete_task',
+      'batch_add_tasks',
+    ];
     for (const tool of taskTools) {
       expect(allKeys, `missing task tool: ${tool}`).toContain(tool);
     }
@@ -85,21 +112,37 @@ describe('TOOL_SEARCH_TAGS — category presence', () => {
   });
 
   it('contains all 4 calendar tools', () => {
-    const calTools = ['add_calendar_event', 'list_calendar_events', 'delete_calendar_event', 'batch_add_calendar_events'];
+    const calTools = [
+      'add_calendar_event',
+      'list_calendar_events',
+      'delete_calendar_event',
+      'batch_add_calendar_events',
+    ];
     for (const tool of calTools) {
       expect(allKeys, `missing calendar tool: ${tool}`).toContain(tool);
     }
   });
 
   it('contains all 5 contact tools', () => {
-    const contactTools = ['add_contact', 'list_contacts', 'update_contact', 'delete_contact', 'batch_add_contacts'];
+    const contactTools = [
+      'add_contact',
+      'list_contacts',
+      'update_contact',
+      'delete_contact',
+      'batch_add_contacts',
+    ];
     for (const tool of contactTools) {
       expect(allKeys, `missing contact tool: ${tool}`).toContain(tool);
     }
   });
 
   it('contains all 4 bookmark tools', () => {
-    const bookmarkTools = ['add_bookmark', 'list_bookmarks', 'delete_bookmark', 'batch_add_bookmarks'];
+    const bookmarkTools = [
+      'add_bookmark',
+      'list_bookmarks',
+      'delete_bookmark',
+      'batch_add_bookmarks',
+    ];
     for (const tool of bookmarkTools) {
       expect(allKeys, `missing bookmark tool: ${tool}`).toContain(tool);
     }
@@ -107,8 +150,13 @@ describe('TOOL_SEARCH_TAGS — category presence', () => {
 
   it('contains all 7 expense tools', () => {
     const expenseTools = [
-      'add_expense', 'batch_add_expenses', 'parse_receipt',
-      'query_expenses', 'export_expenses', 'expense_summary', 'delete_expense',
+      'add_expense',
+      'batch_add_expenses',
+      'parse_receipt',
+      'query_expenses',
+      'export_expenses',
+      'expense_summary',
+      'delete_expense',
     ];
     for (const tool of expenseTools) {
       expect(allKeys, `missing expense tool: ${tool}`).toContain(tool);
@@ -117,8 +165,14 @@ describe('TOOL_SEARCH_TAGS — category presence', () => {
 
   it('contains all 8 file system tools', () => {
     const fileTools = [
-      'read_file', 'write_file', 'list_directory', 'search_files',
-      'download_file', 'get_file_info', 'delete_file', 'copy_file',
+      'read_file',
+      'write_file',
+      'list_directory',
+      'search_files',
+      'download_file',
+      'get_file_info',
+      'delete_file',
+      'copy_file',
     ];
     for (const tool of fileTools) {
       expect(allKeys, `missing file tool: ${tool}`).toContain(tool);
@@ -133,7 +187,13 @@ describe('TOOL_SEARCH_TAGS — category presence', () => {
   });
 
   it('contains all 5 code execution tools', () => {
-    const codeTools = ['execute_javascript', 'execute_python', 'execute_shell', 'compile_code', 'package_manager'];
+    const codeTools = [
+      'execute_javascript',
+      'execute_python',
+      'execute_shell',
+      'compile_code',
+      'package_manager',
+    ];
     for (const tool of codeTools) {
       expect(allKeys, `missing code tool: ${tool}`).toContain(tool);
     }
@@ -147,7 +207,13 @@ describe('TOOL_SEARCH_TAGS — category presence', () => {
   });
 
   it('contains all 5 audio tools', () => {
-    const audioTools = ['text_to_speech', 'speech_to_text', 'translate_audio', 'get_audio_info', 'split_audio'];
+    const audioTools = [
+      'text_to_speech',
+      'speech_to_text',
+      'translate_audio',
+      'get_audio_info',
+      'split_audio',
+    ];
     for (const tool of audioTools) {
       expect(allKeys, `missing audio tool: ${tool}`).toContain(tool);
     }
@@ -162,8 +228,14 @@ describe('TOOL_SEARCH_TAGS — category presence', () => {
 
   it('contains all 8 goal tools', () => {
     const goalTools = [
-      'create_goal', 'list_goals', 'update_goal', 'decompose_goal',
-      'get_next_actions', 'complete_step', 'get_goal_details', 'get_goal_stats',
+      'create_goal',
+      'list_goals',
+      'update_goal',
+      'decompose_goal',
+      'get_next_actions',
+      'complete_step',
+      'get_goal_details',
+      'get_goal_stats',
     ];
     for (const tool of goalTools) {
       expect(allKeys, `missing goal tool: ${tool}`).toContain(tool);
@@ -179,9 +251,17 @@ describe('TOOL_SEARCH_TAGS — category presence', () => {
 
   it('contains all 11 custom data tools', () => {
     const customDataTools = [
-      'list_custom_tables', 'describe_custom_table', 'create_custom_table', 'delete_custom_table',
-      'add_custom_record', 'batch_add_custom_records', 'list_custom_records',
-      'search_custom_records', 'get_custom_record', 'update_custom_record', 'delete_custom_record',
+      'list_custom_tables',
+      'describe_custom_table',
+      'create_custom_table',
+      'delete_custom_table',
+      'add_custom_record',
+      'batch_add_custom_records',
+      'list_custom_records',
+      'search_custom_records',
+      'get_custom_record',
+      'update_custom_record',
+      'delete_custom_record',
     ];
     for (const tool of customDataTools) {
       expect(allKeys, `missing custom data tool: ${tool}`).toContain(tool);
@@ -197,11 +277,27 @@ describe('TOOL_SEARCH_TAGS — category presence', () => {
 
   it('contains all 22 utility tools', () => {
     const utilityTools = [
-      'get_current_datetime', 'calculate', 'convert_units', 'generate_uuid',
-      'generate_password', 'random_number', 'hash_text', 'encode_decode',
-      'count_text', 'extract_from_text', 'validate_data', 'transform_text',
-      'date_diff', 'date_add', 'format_json', 'parse_csv', 'generate_csv',
-      'array_operations', 'calculate_statistics', 'compare_text', 'run_regex',
+      'get_current_datetime',
+      'calculate',
+      'convert_units',
+      'generate_uuid',
+      'generate_password',
+      'random_number',
+      'hash_text',
+      'encode_decode',
+      'count_text',
+      'extract_from_text',
+      'validate_data',
+      'transform_text',
+      'date_diff',
+      'date_add',
+      'format_json',
+      'parse_csv',
+      'generate_csv',
+      'array_operations',
+      'calculate_statistics',
+      'compare_text',
+      'run_regex',
       'get_system_info',
     ];
     for (const tool of utilityTools) {
@@ -211,8 +307,14 @@ describe('TOOL_SEARCH_TAGS — category presence', () => {
 
   it('contains all 8 dynamic/meta tools', () => {
     const dynamicTools = [
-      'create_tool', 'list_custom_tools', 'delete_custom_tool', 'toggle_custom_tool',
-      'search_tools', 'get_tool_help', 'use_tool', 'batch_use_tool',
+      'create_tool',
+      'list_custom_tools',
+      'delete_custom_tool',
+      'toggle_custom_tool',
+      'search_tools',
+      'get_tool_help',
+      'use_tool',
+      'batch_use_tool',
     ];
     for (const tool of dynamicTools) {
       expect(allKeys, `missing dynamic tool: ${tool}`).toContain(tool);
@@ -227,14 +329,29 @@ describe('TOOL_SEARCH_TAGS — category presence', () => {
   });
 
   it('contains all 6 trigger tools', () => {
-    const triggerTools = ['create_trigger', 'list_triggers', 'enable_trigger', 'fire_trigger', 'delete_trigger', 'trigger_stats'];
+    const triggerTools = [
+      'create_trigger',
+      'list_triggers',
+      'enable_trigger',
+      'fire_trigger',
+      'delete_trigger',
+      'trigger_stats',
+    ];
     for (const tool of triggerTools) {
       expect(allKeys, `missing trigger tool: ${tool}`).toContain(tool);
     }
   });
 
   it('contains all 7 plan tools', () => {
-    const planTools = ['create_plan', 'add_plan_step', 'list_plans', 'get_plan_details', 'execute_plan', 'pause_plan', 'delete_plan'];
+    const planTools = [
+      'create_plan',
+      'add_plan_step',
+      'list_plans',
+      'get_plan_details',
+      'execute_plan',
+      'pause_plan',
+      'delete_plan',
+    ];
     for (const tool of planTools) {
       expect(allKeys, `missing plan tool: ${tool}`).toContain(tool);
     }
@@ -248,7 +365,10 @@ describe('TOOL_SEARCH_TAGS — category presence', () => {
 describe('TOOL_SEARCH_TAGS — tag quality', () => {
   it('every tool has at least 2 tags', () => {
     for (const [key, tags] of Object.entries(TOOL_SEARCH_TAGS)) {
-      expect(tags.length, `${key} should have at least 2 tags but has ${tags.length}`).toBeGreaterThanOrEqual(2);
+      expect(
+        tags.length,
+        `${key} should have at least 2 tags but has ${tags.length}`
+      ).toBeGreaterThanOrEqual(2);
     }
   });
 
@@ -278,7 +398,10 @@ describe('TOOL_SEARCH_TAGS — tag quality', () => {
   it('no tag exceeds 40 characters', () => {
     for (const [key, tags] of Object.entries(TOOL_SEARCH_TAGS)) {
       for (const tag of tags) {
-        expect(tag.length, `${key} tag "${tag}" is too long (${tag.length} chars)`).toBeLessThanOrEqual(40);
+        expect(
+          tag.length,
+          `${key} tag "${tag}" is too long (${tag.length} chars)`
+        ).toBeLessThanOrEqual(40);
       }
     }
   });
@@ -323,18 +446,33 @@ describe('TOOL_SEARCH_TAGS — tag content / keyword coverage', () => {
   const hasAnyTag = (toolName: string, keywords: string[]): boolean => {
     const tags = TOOL_SEARCH_TAGS[toolName];
     if (!tags) return false;
-    return keywords.some(kw => tags.some(tag => tag.includes(kw)));
+    return keywords.some((kw) => tags.some((tag) => tag.includes(kw)));
   };
 
   it('email tools all contain "email" or "mail" tag', () => {
-    const emailTools = ['send_email', 'list_emails', 'read_email', 'delete_email', 'search_emails', 'reply_email'];
+    const emailTools = [
+      'send_email',
+      'list_emails',
+      'read_email',
+      'delete_email',
+      'search_emails',
+      'reply_email',
+    ];
     for (const tool of emailTools) {
       expect(hasAnyTag(tool, ['email', 'mail']), `${tool} should have email/mail tag`).toBe(true);
     }
   });
 
   it('git tools all contain "git" tag', () => {
-    const gitTools = ['git_status', 'git_diff', 'git_log', 'git_commit', 'git_add', 'git_branch', 'git_checkout'];
+    const gitTools = [
+      'git_status',
+      'git_diff',
+      'git_log',
+      'git_commit',
+      'git_add',
+      'git_branch',
+      'git_checkout',
+    ];
     for (const tool of gitTools) {
       expect(TOOL_SEARCH_TAGS[tool], `${tool} should exist`).toBeDefined();
       expect(TOOL_SEARCH_TAGS[tool]!.includes('git'), `${tool} should have "git" tag`).toBe(true);
@@ -342,14 +480,31 @@ describe('TOOL_SEARCH_TAGS — tag content / keyword coverage', () => {
   });
 
   it('task tools all contain "task" or "todo" or "done" tag', () => {
-    const taskTools = ['add_task', 'list_tasks', 'complete_task', 'update_task', 'delete_task', 'batch_add_tasks'];
+    const taskTools = [
+      'add_task',
+      'list_tasks',
+      'complete_task',
+      'update_task',
+      'delete_task',
+      'batch_add_tasks',
+    ];
     for (const tool of taskTools) {
-      expect(hasAnyTag(tool, ['task', 'todo', 'done', 'complete']), `${tool} should have task-related tag`).toBe(true);
+      expect(
+        hasAnyTag(tool, ['task', 'todo', 'done', 'complete']),
+        `${tool} should have task-related tag`
+      ).toBe(true);
     }
   });
 
   it('file tools contain "file" or related tag', () => {
-    const fileTools = ['read_file', 'write_file', 'search_files', 'delete_file', 'copy_file', 'get_file_info'];
+    const fileTools = [
+      'read_file',
+      'write_file',
+      'search_files',
+      'delete_file',
+      'copy_file',
+      'get_file_info',
+    ];
     for (const tool of fileTools) {
       expect(hasAnyTag(tool, ['file']), `${tool} should have "file" tag`).toBe(true);
     }
@@ -363,63 +518,127 @@ describe('TOOL_SEARCH_TAGS — tag content / keyword coverage', () => {
   });
 
   it('calendar tools all contain "calendar" or "event" tag', () => {
-    const calTools = ['add_calendar_event', 'list_calendar_events', 'delete_calendar_event', 'batch_add_calendar_events'];
+    const calTools = [
+      'add_calendar_event',
+      'list_calendar_events',
+      'delete_calendar_event',
+      'batch_add_calendar_events',
+    ];
     for (const tool of calTools) {
-      expect(hasAnyTag(tool, ['calendar', 'event']), `${tool} should have calendar/event tag`).toBe(true);
+      expect(hasAnyTag(tool, ['calendar', 'event']), `${tool} should have calendar/event tag`).toBe(
+        true
+      );
     }
   });
 
   it('contact tools all contain "contact" tag', () => {
-    const contactTools = ['add_contact', 'list_contacts', 'update_contact', 'delete_contact', 'batch_add_contacts'];
+    const contactTools = [
+      'add_contact',
+      'list_contacts',
+      'update_contact',
+      'delete_contact',
+      'batch_add_contacts',
+    ];
     for (const tool of contactTools) {
       expect(hasAnyTag(tool, ['contact']), `${tool} should have contact tag`).toBe(true);
     }
   });
 
   it('bookmark tools all contain "bookmark" tag', () => {
-    const bookmarkTools = ['add_bookmark', 'list_bookmarks', 'delete_bookmark', 'batch_add_bookmarks'];
+    const bookmarkTools = [
+      'add_bookmark',
+      'list_bookmarks',
+      'delete_bookmark',
+      'batch_add_bookmarks',
+    ];
     for (const tool of bookmarkTools) {
       expect(hasAnyTag(tool, ['bookmark']), `${tool} should have bookmark tag`).toBe(true);
     }
   });
 
   it('expense tools all contain "expense" or "money" or "budget" tag', () => {
-    const expenseTools = ['add_expense', 'batch_add_expenses', 'query_expenses', 'export_expenses', 'expense_summary', 'delete_expense'];
+    const expenseTools = [
+      'add_expense',
+      'batch_add_expenses',
+      'query_expenses',
+      'export_expenses',
+      'expense_summary',
+      'delete_expense',
+    ];
     for (const tool of expenseTools) {
-      expect(hasAnyTag(tool, ['expense', 'money', 'budget']), `${tool} should have expense-related tag`).toBe(true);
+      expect(
+        hasAnyTag(tool, ['expense', 'money', 'budget']),
+        `${tool} should have expense-related tag`
+      ).toBe(true);
     }
   });
 
   it('goal tools all contain "goal" or "objective" tag', () => {
-    const goalTools = ['create_goal', 'list_goals', 'update_goal', 'get_goal_details', 'get_goal_stats'];
+    const goalTools = [
+      'create_goal',
+      'list_goals',
+      'update_goal',
+      'get_goal_details',
+      'get_goal_stats',
+    ];
     for (const tool of goalTools) {
-      expect(hasAnyTag(tool, ['goal', 'objective']), `${tool} should have goal/objective tag`).toBe(true);
+      expect(hasAnyTag(tool, ['goal', 'objective']), `${tool} should have goal/objective tag`).toBe(
+        true
+      );
     }
   });
 
   it('trigger tools all contain "trigger" or "automation" tag', () => {
-    const triggerTools = ['create_trigger', 'list_triggers', 'enable_trigger', 'fire_trigger', 'delete_trigger', 'trigger_stats'];
+    const triggerTools = [
+      'create_trigger',
+      'list_triggers',
+      'enable_trigger',
+      'fire_trigger',
+      'delete_trigger',
+      'trigger_stats',
+    ];
     for (const tool of triggerTools) {
-      expect(hasAnyTag(tool, ['trigger', 'automation']), `${tool} should have trigger/automation tag`).toBe(true);
+      expect(
+        hasAnyTag(tool, ['trigger', 'automation']),
+        `${tool} should have trigger/automation tag`
+      ).toBe(true);
     }
   });
 
   it('plan tools all contain "plan" or "workflow" tag', () => {
-    const planTools = ['create_plan', 'add_plan_step', 'list_plans', 'get_plan_details', 'execute_plan', 'pause_plan', 'delete_plan'];
+    const planTools = [
+      'create_plan',
+      'add_plan_step',
+      'list_plans',
+      'get_plan_details',
+      'execute_plan',
+      'pause_plan',
+      'delete_plan',
+    ];
     for (const tool of planTools) {
-      expect(hasAnyTag(tool, ['plan', 'workflow']), `${tool} should have plan/workflow tag`).toBe(true);
+      expect(hasAnyTag(tool, ['plan', 'workflow']), `${tool} should have plan/workflow tag`).toBe(
+        true
+      );
     }
   });
 
   it('PDF tools all contain "pdf" or "document" tag', () => {
     const pdfTools = ['read_pdf', 'create_pdf', 'get_pdf_info'];
     for (const tool of pdfTools) {
-      expect(hasAnyTag(tool, ['pdf', 'document']), `${tool} should have pdf/document tag`).toBe(true);
+      expect(hasAnyTag(tool, ['pdf', 'document']), `${tool} should have pdf/document tag`).toBe(
+        true
+      );
     }
   });
 
   it('audio tools all contain "audio" tag', () => {
-    const audioTools = ['text_to_speech', 'speech_to_text', 'translate_audio', 'get_audio_info', 'split_audio'];
+    const audioTools = [
+      'text_to_speech',
+      'speech_to_text',
+      'translate_audio',
+      'get_audio_info',
+      'split_audio',
+    ];
     for (const tool of audioTools) {
       expect(hasAnyTag(tool, ['audio']), `${tool} should have audio tag`).toBe(true);
     }
@@ -428,7 +647,10 @@ describe('TOOL_SEARCH_TAGS — tag content / keyword coverage', () => {
   it('weather tools all contain "weather" or "forecast" tag', () => {
     const weatherTools = ['get_weather', 'get_weather_forecast'];
     for (const tool of weatherTools) {
-      expect(hasAnyTag(tool, ['weather', 'forecast']), `${tool} should have weather/forecast tag`).toBe(true);
+      expect(
+        hasAnyTag(tool, ['weather', 'forecast']),
+        `${tool} should have weather/forecast tag`
+      ).toBe(true);
     }
   });
 
@@ -440,27 +662,38 @@ describe('TOOL_SEARCH_TAGS — tag content / keyword coverage', () => {
 
   it('search_tools has "find tool" or "discover" tag', () => {
     const tags = TOOL_SEARCH_TAGS['search_tools']!;
-    const hasFindOrDiscover = tags.some(t => t.includes('find tool') || t.includes('discover'));
+    const hasFindOrDiscover = tags.some((t) => t.includes('find tool') || t.includes('discover'));
     expect(hasFindOrDiscover).toBe(true);
   });
 
   it('batch_use_tool has "batch" or "parallel" tag', () => {
     const tags = TOOL_SEARCH_TAGS['batch_use_tool']!;
-    const hasBatchOrParallel = tags.some(t => t.includes('batch') || t.includes('parallel'));
+    const hasBatchOrParallel = tags.some((t) => t.includes('batch') || t.includes('parallel'));
     expect(hasBatchOrParallel).toBe(true);
   });
 
   it('config tools contain "config" or "settings" tag', () => {
     const configTools = ['config_list_services', 'config_get_service', 'config_set_entry'];
     for (const tool of configTools) {
-      expect(hasAnyTag(tool, ['config', 'settings']), `${tool} should have config/settings tag`).toBe(true);
+      expect(
+        hasAnyTag(tool, ['config', 'settings']),
+        `${tool} should have config/settings tag`
+      ).toBe(true);
     }
   });
 
   it('custom data tools contain "table" or "record" or "database" tag', () => {
-    const dataTools = ['list_custom_tables', 'create_custom_table', 'add_custom_record', 'list_custom_records'];
+    const dataTools = [
+      'list_custom_tables',
+      'create_custom_table',
+      'add_custom_record',
+      'list_custom_records',
+    ];
     for (const tool of dataTools) {
-      expect(hasAnyTag(tool, ['table', 'record', 'database']), `${tool} should have table/record/database tag`).toBe(true);
+      expect(
+        hasAnyTag(tool, ['table', 'record', 'database']),
+        `${tool} should have table/record/database tag`
+      ).toBe(true);
     }
   });
 });
@@ -581,7 +814,7 @@ describe('TOOL_SEARCH_TAGS — cross-category consistency', () => {
   });
 
   it('most categories have a list_ tool', () => {
-    const listTools = allKeys.filter(k => k.startsWith('list_'));
+    const listTools = allKeys.filter((k) => k.startsWith('list_'));
     // tasks, notes, calendar, contacts, bookmarks, memories, goals, plans, triggers, custom_tables, custom_records, custom_tools, emails, bookmarks
     expect(listTools.length).toBeGreaterThanOrEqual(10);
   });

@@ -55,7 +55,9 @@ export function SkeletonMessage({ count = 5 }: { count?: number }) {
           <div key={i} className={`flex ${isOutgoing ? 'justify-end' : 'justify-start'}`}>
             <div
               className={`animate-pulse rounded-2xl px-4 py-3 ${
-                isOutgoing ? 'bg-primary/20 w-[60%]' : 'bg-bg-tertiary dark:bg-dark-bg-tertiary w-[70%]'
+                isOutgoing
+                  ? 'bg-primary/20 w-[60%]'
+                  : 'bg-bg-tertiary dark:bg-dark-bg-tertiary w-[70%]'
               }`}
             >
               <div className="h-3 bg-bg-tertiary dark:bg-dark-bg-tertiary rounded w-1/3 mb-2" />

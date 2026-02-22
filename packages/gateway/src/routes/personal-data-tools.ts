@@ -103,7 +103,11 @@ async function handleTaskTool(
       if (!deleted) {
         return { success: false, error: `Task not found: ${sanitizeId(String(params.taskId))}` };
       }
-      wsGateway.broadcast('data:changed', { entity: 'task', action: 'deleted', id: params.taskId as string });
+      wsGateway.broadcast('data:changed', {
+        entity: 'task',
+        action: 'deleted',
+        id: params.taskId as string,
+      });
       return { success: true, result: { message: 'Task deleted.' } };
     }
 
@@ -140,10 +144,18 @@ async function handleTaskTool(
         results.push(task);
       }
 
-      wsGateway.broadcast('data:changed', { entity: 'task', action: 'created', count: results.length });
+      wsGateway.broadcast('data:changed', {
+        entity: 'task',
+        action: 'created',
+        count: results.length,
+      });
       return {
         success: true,
-        result: { message: `Created ${results.length} task(s).`, tasks: results, count: results.length },
+        result: {
+          message: `Created ${results.length} task(s).`,
+          tasks: results,
+          count: results.length,
+        },
       };
     }
 
@@ -171,7 +183,11 @@ async function handleBookmarkTool(
         tags: params.tags as string[] | undefined,
         isFavorite: params.isFavorite as boolean | undefined,
       });
-      wsGateway.broadcast('data:changed', { entity: 'bookmark', action: 'created', id: bookmark.id });
+      wsGateway.broadcast('data:changed', {
+        entity: 'bookmark',
+        action: 'created',
+        id: bookmark.id,
+      });
       return {
         success: true,
         result: { message: `Bookmark "${bookmark.title}" saved.`, bookmark },
@@ -199,7 +215,11 @@ async function handleBookmarkTool(
           error: `Bookmark not found: ${sanitizeId(String(params.bookmarkId))}`,
         };
       }
-      wsGateway.broadcast('data:changed', { entity: 'bookmark', action: 'deleted', id: params.bookmarkId as string });
+      wsGateway.broadcast('data:changed', {
+        entity: 'bookmark',
+        action: 'deleted',
+        id: params.bookmarkId as string,
+      });
       return { success: true, result: { message: 'Bookmark deleted.' } };
     }
 
@@ -233,7 +253,11 @@ async function handleBookmarkTool(
         results.push(bookmark);
       }
 
-      wsGateway.broadcast('data:changed', { entity: 'bookmark', action: 'created', count: results.length });
+      wsGateway.broadcast('data:changed', {
+        entity: 'bookmark',
+        action: 'created',
+        count: results.length,
+      });
       return {
         success: true,
         result: {
@@ -303,7 +327,11 @@ async function handleNoteTool(
       if (!deleted) {
         return { success: false, error: `Note not found: ${sanitizeId(String(params.noteId))}` };
       }
-      wsGateway.broadcast('data:changed', { entity: 'note', action: 'deleted', id: params.noteId as string });
+      wsGateway.broadcast('data:changed', {
+        entity: 'note',
+        action: 'deleted',
+        id: params.noteId as string,
+      });
       return { success: true, result: { message: 'Note deleted.' } };
     }
 
@@ -335,10 +363,18 @@ async function handleNoteTool(
         results.push(note);
       }
 
-      wsGateway.broadcast('data:changed', { entity: 'note', action: 'created', count: results.length });
+      wsGateway.broadcast('data:changed', {
+        entity: 'note',
+        action: 'created',
+        count: results.length,
+      });
       return {
         success: true,
-        result: { message: `Created ${results.length} note(s).`, notes: results, count: results.length },
+        result: {
+          message: `Created ${results.length} note(s).`,
+          notes: results,
+          count: results.length,
+        },
       };
     }
 
@@ -398,7 +434,11 @@ async function handleCalendarTool(
           error: `Event not found: ${sanitizeId(String(params.eventId))}`,
         };
       }
-      wsGateway.broadcast('data:changed', { entity: 'calendar', action: 'deleted', id: params.eventId as string });
+      wsGateway.broadcast('data:changed', {
+        entity: 'calendar',
+        action: 'deleted',
+        id: params.eventId as string,
+      });
       return { success: true, result: { message: 'Event deleted.' } };
     }
 
@@ -436,10 +476,18 @@ async function handleCalendarTool(
         results.push(event);
       }
 
-      wsGateway.broadcast('data:changed', { entity: 'calendar', action: 'created', count: results.length });
+      wsGateway.broadcast('data:changed', {
+        entity: 'calendar',
+        action: 'created',
+        count: results.length,
+      });
       return {
         success: true,
-        result: { message: `Created ${results.length} event(s).`, events: results, count: results.length },
+        result: {
+          message: `Created ${results.length} event(s).`,
+          events: results,
+          count: results.length,
+        },
       };
     }
 
@@ -514,7 +562,11 @@ async function handleContactTool(
           error: `Contact not found: ${sanitizeId(String(params.contactId))}`,
         };
       }
-      wsGateway.broadcast('data:changed', { entity: 'contact', action: 'deleted', id: params.contactId as string });
+      wsGateway.broadcast('data:changed', {
+        entity: 'contact',
+        action: 'deleted',
+        id: params.contactId as string,
+      });
       return { success: true, result: { message: 'Contact deleted.' } };
     }
 
@@ -556,7 +608,11 @@ async function handleContactTool(
         results.push(contact);
       }
 
-      wsGateway.broadcast('data:changed', { entity: 'contact', action: 'created', count: results.length });
+      wsGateway.broadcast('data:changed', {
+        entity: 'contact',
+        action: 'created',
+        count: results.length,
+      });
       return {
         success: true,
         result: {

@@ -18,11 +18,25 @@ const fallbackLoggers = new Map<string, ILogService>();
 
 function createFallbackLogger(module: string): ILogService {
   return {
-    debug(msg, data) { if (data) console.debug(`[${module}]`, msg, data); else console.debug(`[${module}]`, msg); },
-    info(msg, data) { if (data) console.log(`[${module}]`, msg, data); else console.log(`[${module}]`, msg); },
-    warn(msg, data) { if (data) console.warn(`[${module}]`, msg, data); else console.warn(`[${module}]`, msg); },
-    error(msg, data) { if (data) console.error(`[${module}]`, msg, data); else console.error(`[${module}]`, msg); },
-    child(sub: string) { return getLog(`${module}:${sub}`); },
+    debug(msg, data) {
+      if (data) console.debug(`[${module}]`, msg, data);
+      else console.debug(`[${module}]`, msg);
+    },
+    info(msg, data) {
+      if (data) console.log(`[${module}]`, msg, data);
+      else console.log(`[${module}]`, msg);
+    },
+    warn(msg, data) {
+      if (data) console.warn(`[${module}]`, msg, data);
+      else console.warn(`[${module}]`, msg);
+    },
+    error(msg, data) {
+      if (data) console.error(`[${module}]`, msg, data);
+      else console.error(`[${module}]`, msg);
+    },
+    child(sub: string) {
+      return getLog(`${module}:${sub}`);
+    },
   };
 }
 

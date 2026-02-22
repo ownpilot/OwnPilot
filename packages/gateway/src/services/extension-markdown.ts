@@ -124,7 +124,9 @@ export function serializeExtensionMarkdown(manifest: ExtensionManifest): string 
         lines.push('|-------|-------|------|----------|-------------|');
         for (const field of service.config_schema) {
           const req = field.required ? 'yes' : 'no';
-          lines.push(`| ${field.name} | ${field.label} | ${field.type} | ${req} | ${field.description ?? ''} |`);
+          lines.push(
+            `| ${field.name} | ${field.label} | ${field.type} | ${req} | ${field.description ?? ''} |`
+          );
         }
       }
       lines.push('');
@@ -234,8 +236,10 @@ function parseFrontmatter(content: string): FrontmatterResult {
     let value = trimLine.substring(colonIdx + 1).trim();
 
     // Remove surrounding quotes
-    if ((value.startsWith('"') && value.endsWith('"')) ||
-        (value.startsWith("'") && value.endsWith("'"))) {
+    if (
+      (value.startsWith('"') && value.endsWith('"')) ||
+      (value.startsWith("'") && value.endsWith("'"))
+    ) {
       value = value.slice(1, -1);
     }
 
@@ -244,12 +248,11 @@ function parseFrontmatter(content: string): FrontmatterResult {
       const inner = value.slice(1, -1);
       metadata[key] = inner
         .split(',')
-        .map(s => s.trim())
-        .filter(s => s.length > 0)
-        .map(s => {
+        .map((s) => s.trim())
+        .filter((s) => s.length > 0)
+        .map((s) => {
           // Strip quotes from individual items
-          if ((s.startsWith('"') && s.endsWith('"')) ||
-              (s.startsWith("'") && s.endsWith("'"))) {
+          if ((s.startsWith('"') && s.endsWith('"')) || (s.startsWith("'") && s.endsWith("'"))) {
             return s.slice(1, -1);
           }
           return s;
@@ -344,25 +347,28 @@ function splitSubsections(content: string): Array<{ name: string; content: strin
  * Returns array of row objects keyed by lowercased header names.
  */
 function parseMarkdownTable(content: string): Array<Record<string, string>> {
-  const tableLines = content
-    .split('\n')
-    .filter(l => l.trim().startsWith('|'));
+  const tableLines = content.split('\n').filter((l) => l.trim().startsWith('|'));
 
   if (tableLines.length < 2) return [];
 
   const parseRow = (line: string): string[] =>
-    line.split('|').map(c => c.trim()).filter((_, i, arr) => i > 0 && i < arr.length - 1);
+    line
+      .split('|')
+      .map((c) => c.trim())
+      .filter((_, i, arr) => i > 0 && i < arr.length - 1);
 
-  const headers = parseRow(tableLines[0]!).map(h => h.toLowerCase());
+  const headers = parseRow(tableLines[0]!).map((h) => h.toLowerCase());
   const rows: Array<Record<string, string>> = [];
 
   for (let i = 1; i < tableLines.length; i++) {
     const cells = parseRow(tableLines[i]!);
     // Skip separator rows (|---|---|)
-    if (cells.every(c => /^[-:]+$/.test(c))) continue;
+    if (cells.every((c) => /^[-:]+$/.test(c))) continue;
 
     const row: Record<string, string> = {};
-    headers.forEach((h, idx) => { row[h] = cells[idx] ?? ''; });
+    headers.forEach((h, idx) => {
+      row[h] = cells[idx] ?? '';
+    });
     rows.push(row);
   }
 
@@ -451,7 +457,10 @@ function parseOneTool(sub: { name: string; content: string }): ExtensionToolDefi
   // Extract bold metadata
   const meta = parseBoldMetadata(content);
   const permissions = meta['permissions']
-    ? meta['permissions'].split(',').map(s => s.trim()).filter(Boolean)
+    ? meta['permissions']
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean)
     : undefined;
   const requiresApproval = meta['requires approval']
     ? ['yes', 'true'].includes(meta['requires approval'].toLowerCase())
@@ -462,10 +471,11 @@ function parseOneTool(sub: { name: string; content: string }): ExtensionToolDefi
   const parameters = buildParametersSchema(tableRows);
 
   // Extract code block (prefer javascript/js, fall back to any)
-  const code = extractCodeBlock(content, 'javascript')
-    ?? extractCodeBlock(content, 'js')
-    ?? extractCodeBlock(content)
-    ?? '';
+  const code =
+    extractCodeBlock(content, 'javascript') ??
+    extractCodeBlock(content, 'js') ??
+    extractCodeBlock(content) ??
+    '';
 
   const tool: ExtensionToolDefinition = {
     name: sub.name,
@@ -481,7 +491,7 @@ function parseOneTool(sub: { name: string; content: string }): ExtensionToolDefi
 }
 
 function buildParametersSchema(
-  tableRows: Array<Record<string, string>>,
+  tableRows: Array<Record<string, string>>
 ): ExtensionToolDefinition['parameters'] {
   const properties: Record<string, unknown> = {};
   const required: string[] = [];
@@ -534,13 +544,15 @@ function parseOneService(sub: { name: string; content: string }): ExtensionRequi
   // Config schema table
   const tableRows = parseMarkdownTable(sub.content);
   if (tableRows.length > 0) {
-    service.config_schema = tableRows.map((row): ExtensionConfigField => ({
-      name: row['field'] || row['name'] || '',
-      label: row['label'] || '',
-      type: row['type'] || 'string',
-      required: ['yes', 'true'].includes((row['required'] ?? '').toLowerCase()),
-      description: row['description'],
-    }));
+    service.config_schema = tableRows.map(
+      (row): ExtensionConfigField => ({
+        name: row['field'] || row['name'] || '',
+        label: row['label'] || '',
+        type: row['type'] || 'string',
+        required: ['yes', 'true'].includes((row['required'] ?? '').toLowerCase()),
+        description: row['description'],
+      })
+    );
   }
 
   return service;

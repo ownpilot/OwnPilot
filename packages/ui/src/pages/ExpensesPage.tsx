@@ -21,7 +21,6 @@ import type {
 } from '../api';
 import { useToast } from '../components/ToastProvider';
 
-
 const CATEGORY_LABELS: Record<string, string> = {
   food: 'Food',
   transport: 'Transport',
@@ -73,7 +72,11 @@ export function ExpensesPage() {
 
       // Fetch expense list
       const listParams: Record<string, string> = selectedMonth
-        ? { startDate: `${year}-${selectedMonth}-01`, endDate: `${year}-${selectedMonth}-31`, limit: '50' }
+        ? {
+            startDate: `${year}-${selectedMonth}-01`,
+            endDate: `${year}-${selectedMonth}-31`,
+            limit: '50',
+          }
         : { startDate: `${year}-01-01`, endDate: `${year}-12-31`, limit: '50' };
       const listJson = await expensesApi.list(listParams);
       setExpenses(listJson.expenses);
@@ -94,46 +97,58 @@ export function ExpensesPage() {
     const unsub = subscribe<{ entity: string }>('data:changed', (data) => {
       if (data.entity === 'expense') debouncedRefresh();
     });
-    return () => { unsub(); };
+    return () => {
+      unsub();
+    };
   }, [subscribe, debouncedRefresh]);
 
-  const handleAddExpense = useCallback(async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      await expensesApi.create({
-        ...newExpense,
-        amount: parseFloat(newExpense.amount),
-      });
-      toast.success('Expense added');
-      setShowAddForm(false);
-      setNewExpense({
-        date: new Date().toISOString().split('T')[0]!,
-        amount: '',
-        currency: 'TRY',
-        category: 'other',
-        description: '',
-        notes: '',
-      });
-      fetchData();
-    } catch {
-      // API client handles error reporting
-    }
-  }, [newExpense, toast, fetchData]);
+  const handleAddExpense = useCallback(
+    async (e: React.FormEvent) => {
+      e.preventDefault();
+      try {
+        await expensesApi.create({
+          ...newExpense,
+          amount: parseFloat(newExpense.amount),
+        });
+        toast.success('Expense added');
+        setShowAddForm(false);
+        setNewExpense({
+          date: new Date().toISOString().split('T')[0]!,
+          amount: '',
+          currency: 'TRY',
+          category: 'other',
+          description: '',
+          notes: '',
+        });
+        fetchData();
+      } catch {
+        // API client handles error reporting
+      }
+    },
+    [newExpense, toast, fetchData]
+  );
 
-  const handleDeleteExpense = useCallback(async (id: string) => {
-    if (!await confirm({ message: 'Are you sure you want to delete this expense?', variant: 'danger' })) return;
-    try {
-      await expensesApi.delete(id);
-      toast.success('Expense deleted');
-      fetchData();
-    } catch {
-      // API client handles error reporting
-    }
-  }, [confirm, toast, fetchData]);
+  const handleDeleteExpense = useCallback(
+    async (id: string) => {
+      if (
+        !(await confirm({
+          message: 'Are you sure you want to delete this expense?',
+          variant: 'danger',
+        }))
+      )
+        return;
+      try {
+        await expensesApi.delete(id);
+        toast.success('Expense deleted');
+        fetchData();
+      } catch {
+        // API client handles error reporting
+      }
+    },
+    [confirm, toast, fetchData]
+  );
 
-  const maxMonthTotal = monthlyData
-    ? Math.max(...monthlyData.months.map((m) => m.total), 1)
-    : 1;
+  const maxMonthTotal = monthlyData ? Math.max(...monthlyData.months.map((m) => m.total), 1) : 1;
 
   return (
     <div className="flex-1 overflow-auto">
@@ -210,12 +225,17 @@ export function ExpensesPage() {
               </div>
               <div className="space-y-1">
                 {Object.entries(summaryData.summary.totalByCurrency).map(([currency, amount]) => (
-                  <div key={currency} className="text-lg font-bold text-text-primary dark:text-dark-text-primary">
+                  <div
+                    key={currency}
+                    className="text-lg font-bold text-text-primary dark:text-dark-text-primary"
+                  >
                     {(amount as number).toLocaleString('en-US')} {currency}
                   </div>
                 ))}
                 {Object.keys(summaryData.summary.totalByCurrency).length === 0 && (
-                  <div className="text-lg font-bold text-text-primary dark:text-dark-text-primary">0</div>
+                  <div className="text-lg font-bold text-text-primary dark:text-dark-text-primary">
+                    0
+                  </div>
                 )}
               </div>
             </div>
@@ -263,12 +283,12 @@ export function ExpensesPage() {
                 <button
                   key={month.monthNum}
                   onClick={() =>
-                    setSelectedMonth(
-                      selectedMonth === month.monthNum ? null : month.monthNum
-                    )
+                    setSelectedMonth(selectedMonth === month.monthNum ? null : month.monthNum)
                   }
                   className={`flex-1 flex flex-col items-center gap-1 group ${
-                    selectedMonth === month.monthNum ? 'opacity-100' : 'opacity-80 hover:opacity-100'
+                    selectedMonth === month.monthNum
+                      ? 'opacity-100'
+                      : 'opacity-80 hover:opacity-100'
                   }`}
                 >
                   <div
@@ -311,10 +331,7 @@ export function ExpensesPage() {
             <div className="space-y-3">
               {summaryData.summary.topCategories.map((cat) => (
                 <div key={cat.category} className="flex items-center gap-3">
-                  <div
-                    className="w-3 h-3 rounded-full"
-                    style={{ backgroundColor: cat.color }}
-                  />
+                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: cat.color }} />
                   <span className="flex-1 text-sm text-text-primary dark:text-dark-text-primary">
                     {CATEGORY_LABELS[cat.category] || cat.category}
                   </span>
@@ -366,8 +383,9 @@ export function ExpensesPage() {
                     className="w-2 h-2 rounded-full"
                     style={{
                       backgroundColor:
-                        monthlyData?.categories[expense.category as keyof typeof monthlyData.categories]
-                          ?.color ?? '#AEB6BF',
+                        monthlyData?.categories[
+                          expense.category as keyof typeof monthlyData.categories
+                        ]?.color ?? '#AEB6BF',
                     }}
                   />
                   <div className="flex-1 min-w-0">

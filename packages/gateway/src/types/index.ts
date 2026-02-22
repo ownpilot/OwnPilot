@@ -328,4 +328,3 @@ export interface AuthConfig {
   apiKeys?: string[];
   jwtSecret?: string;
 }
-

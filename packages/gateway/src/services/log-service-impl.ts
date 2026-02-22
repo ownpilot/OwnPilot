@@ -37,7 +37,7 @@ export class LogService implements ILogService {
   constructor(options?: LogServiceOptions & { module?: string }) {
     this.level = LOG_LEVELS[options?.level ?? 'info'];
     this.module = options?.module ?? null;
-    this.json = options?.json ?? (process.env.NODE_ENV === 'production');
+    this.json = options?.json ?? process.env.NODE_ENV === 'production';
   }
 
   debug(message: string, data?: unknown): void {
@@ -58,7 +58,8 @@ export class LogService implements ILogService {
 
   child(module: string): ILogService {
     const childModule = this.module ? `${this.module}:${module}` : module;
-    const levelName = (Object.entries(LOG_LEVELS).find(([, v]) => v === this.level)?.[0] ?? 'info') as LogLevel;
+    const levelName = (Object.entries(LOG_LEVELS).find(([, v]) => v === this.level)?.[0] ??
+      'info') as LogLevel;
     return new LogService({
       level: levelName,
       json: this.json,
@@ -67,27 +68,33 @@ export class LogService implements ILogService {
   }
 
   private write(level: LogLevel, message: string, data?: unknown): void {
-    const fn = level === 'error'
-      ? console.error
-      : level === 'warn'
-        ? console.warn
-        : level === 'debug'
-          ? console.debug
-          : console.log;
+    const fn =
+      level === 'error'
+        ? console.error
+        : level === 'warn'
+          ? console.warn
+          : level === 'debug'
+            ? console.debug
+            : console.log;
 
     if (this.json) {
-      const record = data instanceof Error
-        ? { error: data.message, stack: data.stack }
-        : data && typeof data === 'object' && !Array.isArray(data)
-          ? data as Record<string, unknown>
-          : data !== undefined ? { data } : {};
-      fn(JSON.stringify({
-        level,
-        ts: new Date().toISOString(),
-        ...(this.module ? { module: this.module } : {}),
-        msg: message,
-        ...record,
-      }));
+      const record =
+        data instanceof Error
+          ? { error: data.message, stack: data.stack }
+          : data && typeof data === 'object' && !Array.isArray(data)
+            ? (data as Record<string, unknown>)
+            : data !== undefined
+              ? { data }
+              : {};
+      fn(
+        JSON.stringify({
+          level,
+          ts: new Date().toISOString(),
+          ...(this.module ? { module: this.module } : {}),
+          msg: message,
+          ...record,
+        })
+      );
     } else {
       const prefix = this.module ? `[${this.module}] ` : '';
       if (data !== undefined) {

@@ -30,7 +30,7 @@ function buildWorkflowDefinition(
   name: string,
   nodes: Node[],
   edges: Edge[],
-  variables?: Record<string, unknown>,
+  variables?: Record<string, unknown>
 ) {
   return {
     name,
@@ -156,12 +156,18 @@ function buildWorkflowDefinition(
   };
 }
 
-export function WorkflowSourceModal({ workflowName, nodes, edges, variables, onClose }: WorkflowSourceModalProps) {
+export function WorkflowSourceModal({
+  workflowName,
+  nodes,
+  edges,
+  variables,
+  onClose,
+}: WorkflowSourceModalProps) {
   const [copied, setCopied] = useState(false);
 
   const definition = useMemo(
     () => buildWorkflowDefinition(workflowName, nodes, edges, variables),
-    [workflowName, nodes, edges, variables],
+    [workflowName, nodes, edges, variables]
   );
   const json = useMemo(() => JSON.stringify(definition, null, 2), [definition]);
 
@@ -173,10 +179,11 @@ export function WorkflowSourceModal({ workflowName, nodes, edges, variables, onC
   }, [json]);
 
   const handleDownload = useCallback(() => {
-    const slug = workflowName
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-|-$/g, '') || 'workflow';
+    const slug =
+      workflowName
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-|-$/g, '') || 'workflow';
     const blob = new Blob([json], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -187,7 +194,10 @@ export function WorkflowSourceModal({ workflowName, nodes, edges, variables, onC
   }, [json, workflowName]);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={onClose}>
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+      onClick={onClose}
+    >
       <div
         className="relative w-full max-w-3xl max-h-[85vh] mx-4 flex flex-col bg-bg-secondary dark:bg-dark-bg-secondary rounded-lg border border-border dark:border-dark-border shadow-xl"
         onClick={(e) => e.stopPropagation()}
@@ -230,8 +240,12 @@ export function WorkflowSourceModal({ workflowName, nodes, edges, variables, onC
 
         {/* Footer stats */}
         <div className="flex items-center gap-4 px-4 py-2 border-t border-border dark:border-dark-border text-[10px] text-text-muted dark:text-dark-text-muted">
-          <span>{nodes.length} node{nodes.length !== 1 ? 's' : ''}</span>
-          <span>{edges.length} edge{edges.length !== 1 ? 's' : ''}</span>
+          <span>
+            {nodes.length} node{nodes.length !== 1 ? 's' : ''}
+          </span>
+          <span>
+            {edges.length} edge{edges.length !== 1 ? 's' : ''}
+          </span>
           <span>{json.length.toLocaleString()} chars</span>
         </div>
       </div>

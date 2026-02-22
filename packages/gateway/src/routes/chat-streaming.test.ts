@@ -111,7 +111,14 @@ function makeToolCall(overrides: Record<string, unknown> = {}) {
 function makeStreamState(overrides: Record<string, unknown> = {}) {
   return {
     streamedContent: '',
-    lastUsage: undefined as { promptTokens: number; completionTokens: number; totalTokens: number; cachedTokens?: number } | undefined,
+    lastUsage: undefined as
+      | {
+          promptTokens: number;
+          completionTokens: number;
+          totalTokens: number;
+          cachedTokens?: number;
+        }
+      | undefined,
     traceToolCalls: [] as Array<{
       name: string;
       arguments?: Record<string, unknown>;
@@ -203,7 +210,11 @@ describe('extractToolDisplay', () => {
   });
 
   it('handles undefined arguments', () => {
-    const result = extractToolDisplay({ id: 'tc-1', name: 'search', arguments: undefined as unknown as string });
+    const result = extractToolDisplay({
+      id: 'tc-1',
+      name: 'search',
+      arguments: undefined as unknown as string,
+    });
     expect(result.displayName).toBe('search');
     expect(result.displayArgs).toBeUndefined();
   });
@@ -300,8 +311,13 @@ describe('wireStreamApproval', () => {
     const agent = makeAgent();
     const stream = makeSSEStream();
     wireStreamApproval(agent, stream);
-    const callback = agent.setRequestApproval.mock.calls[0]![0] as (...args: unknown[]) => Promise<boolean>;
-    await callback('execution', 'run_code', 'Execute code', { code: 'console.log(1)', riskAnalysis: 'low' });
+    const callback = agent.setRequestApproval.mock.calls[0]![0] as (
+      ...args: unknown[]
+    ) => Promise<boolean>;
+    await callback('execution', 'run_code', 'Execute code', {
+      code: 'console.log(1)',
+      riskAnalysis: 'low',
+    });
     expect(mockGenerateApprovalId).toHaveBeenCalledOnce();
   });
 
@@ -309,7 +325,9 @@ describe('wireStreamApproval', () => {
     const agent = makeAgent();
     const stream = makeSSEStream();
     wireStreamApproval(agent, stream);
-    const callback = agent.setRequestApproval.mock.calls[0]![0] as (...args: unknown[]) => Promise<boolean>;
+    const callback = agent.setRequestApproval.mock.calls[0]![0] as (
+      ...args: unknown[]
+    ) => Promise<boolean>;
     await callback('execution', 'run_code', 'Execute JS', { code: 'x()', riskAnalysis: 'medium' });
 
     expect(stream.writeSSE).toHaveBeenCalledOnce();
@@ -327,7 +345,9 @@ describe('wireStreamApproval', () => {
     const agent = makeAgent();
     const stream = makeSSEStream();
     wireStreamApproval(agent, stream);
-    const callback = agent.setRequestApproval.mock.calls[0]![0] as (...args: unknown[]) => Promise<boolean>;
+    const callback = agent.setRequestApproval.mock.calls[0]![0] as (
+      ...args: unknown[]
+    ) => Promise<boolean>;
     await callback('exec', 'run', 'desc', {});
     expect(mockCreateApprovalRequest).toHaveBeenCalledWith('test-approval-id');
   });
@@ -337,7 +357,9 @@ describe('wireStreamApproval', () => {
     const agent = makeAgent();
     const stream = makeSSEStream();
     wireStreamApproval(agent, stream);
-    const callback = agent.setRequestApproval.mock.calls[0]![0] as (...args: unknown[]) => Promise<boolean>;
+    const callback = agent.setRequestApproval.mock.calls[0]![0] as (
+      ...args: unknown[]
+    ) => Promise<boolean>;
     const result = await callback('exec', 'run', 'desc', {});
     expect(result).toBe(false);
   });
@@ -346,7 +368,9 @@ describe('wireStreamApproval', () => {
     const agent = makeAgent();
     const stream = makeSSEStream();
     wireStreamApproval(agent, stream);
-    const callback = agent.setRequestApproval.mock.calls[0]![0] as (...args: unknown[]) => Promise<boolean>;
+    const callback = agent.setRequestApproval.mock.calls[0]![0] as (
+      ...args: unknown[]
+    ) => Promise<boolean>;
     await callback('exec', 'run', 'desc', {});
     const { data } = parseWrittenSSE(stream.writeSSE);
     expect(data.code).toBeUndefined();
@@ -357,7 +381,9 @@ describe('wireStreamApproval', () => {
     const agent = makeAgent();
     const stream = makeSSEStream();
     wireStreamApproval(agent, stream);
-    const callback = agent.setRequestApproval.mock.calls[0]![0] as (...args: unknown[]) => Promise<boolean>;
+    const callback = agent.setRequestApproval.mock.calls[0]![0] as (
+      ...args: unknown[]
+    ) => Promise<boolean>;
     await callback('myCategory', 'myAction', 'desc', {});
     // The SSE uses actionType (second arg) as `category`, not the first arg
     const { data } = parseWrittenSSE(stream.writeSSE);
@@ -369,7 +395,9 @@ describe('wireStreamApproval', () => {
     const agent = makeAgent();
     const stream = makeSSEStream();
     wireStreamApproval(agent, stream);
-    const callback = agent.setRequestApproval.mock.calls[0]![0] as (...args: unknown[]) => Promise<boolean>;
+    const callback = agent.setRequestApproval.mock.calls[0]![0] as (
+      ...args: unknown[]
+    ) => Promise<boolean>;
     await callback('exec', 'run', 'desc1', {});
     await callback('exec', 'run', 'desc2', {});
     const data1 = parseWrittenSSE(stream.writeSSE, 0).data;
@@ -382,11 +410,18 @@ describe('wireStreamApproval', () => {
     const callOrder: string[] = [];
     const agent = makeAgent();
     const stream = {
-      writeSSE: vi.fn().mockImplementation(async () => { callOrder.push('writeSSE'); }),
+      writeSSE: vi.fn().mockImplementation(async () => {
+        callOrder.push('writeSSE');
+      }),
     };
-    mockCreateApprovalRequest.mockImplementation(async () => { callOrder.push('createApproval'); return true; });
+    mockCreateApprovalRequest.mockImplementation(async () => {
+      callOrder.push('createApproval');
+      return true;
+    });
     wireStreamApproval(agent, stream);
-    const callback = agent.setRequestApproval.mock.calls[0]![0] as (...args: unknown[]) => Promise<boolean>;
+    const callback = agent.setRequestApproval.mock.calls[0]![0] as (
+      ...args: unknown[]
+    ) => Promise<boolean>;
     await callback('exec', 'run', 'desc', {});
     expect(callOrder).toEqual(['writeSSE', 'createApproval']);
   });
@@ -604,7 +639,9 @@ describe('createStreamCallbacks', () => {
 
     it('swallows writeSSE error (client disconnect)', () => {
       const config = makeStreamingConfig();
-      config.sseStream.writeSSE.mockImplementation(() => { throw new Error('stream closed'); });
+      config.sseStream.writeSSE.mockImplementation(() => {
+        throw new Error('stream closed');
+      });
       const { callbacks } = createStreamCallbacks(config as never);
       // Should not throw
       expect(() => callbacks.onChunk!({ id: 'c1', content: 'x', done: false })).not.toThrow();
@@ -639,7 +676,10 @@ describe('createStreamCallbacks', () => {
     });
 
     it('calls extractSuggestions with memory-stripped content', () => {
-      mockExtractMemoriesFromResponse.mockReturnValueOnce({ content: 'stripped content', memories: [] });
+      mockExtractMemoriesFromResponse.mockReturnValueOnce({
+        content: 'stripped content',
+        memories: [],
+      });
       const config = makeStreamingConfig();
       const { callbacks } = createStreamCallbacks(config as never);
       callbacks.onChunk!(makeDoneChunk());
@@ -677,7 +717,9 @@ describe('createStreamCallbacks', () => {
       const { callbacks } = createStreamCallbacks(config as never);
       callbacks.onChunk!(makeDoneChunk());
       const { data } = parseWrittenSSE(config.sseStream.writeSSE);
-      expect(data.memories).toEqual([{ type: 'preference', content: 'likes coffee', importance: 5 }]);
+      expect(data.memories).toEqual([
+        { type: 'preference', content: 'likes coffee', importance: 5 },
+      ]);
     });
 
     it('omits memories from SSE data when empty', () => {
@@ -793,7 +835,7 @@ describe('createStreamCallbacks', () => {
       const { callbacks, state } = createStreamCallbacks(config as never);
       state.traceToolCalls.push(
         { name: 'tool_a', success: true, duration: 100 },
-        { name: 'tool_b', success: false, duration: 200 },
+        { name: 'tool_b', success: false, duration: 200 }
       );
       callbacks.onChunk!(makeDoneChunk());
       const { data } = parseWrittenSSE(config.sseStream.writeSSE);
@@ -807,7 +849,12 @@ describe('createStreamCallbacks', () => {
 
     it('calls getSessionInfo with agent, provider, model, and contextWindowOverride', () => {
       const agent = makeAgent();
-      const config = makeStreamingConfig({ agent, provider: 'anthropic', model: 'claude-3', contextWindowOverride: 64000 });
+      const config = makeStreamingConfig({
+        agent,
+        provider: 'anthropic',
+        model: 'claude-3',
+        contextWindowOverride: 64000,
+      });
       const { callbacks } = createStreamCallbacks(config as never);
       callbacks.onChunk!(makeDoneChunk());
       expect(mockGetSessionInfo).toHaveBeenCalledWith(agent, 'anthropic', 'claude-3', 64000);
@@ -840,9 +887,11 @@ describe('createStreamCallbacks', () => {
       });
       const config = makeStreamingConfig();
       const { callbacks } = createStreamCallbacks(config as never);
-      callbacks.onChunk!(makeDoneChunk({
-        usage: { promptTokens: 100, completionTokens: 50, totalTokens: 150, cachedTokens: 80 },
-      }));
+      callbacks.onChunk!(
+        makeDoneChunk({
+          usage: { promptTokens: 100, completionTokens: 50, totalTokens: 150, cachedTokens: 80 },
+        })
+      );
       const { data } = parseWrittenSSE(config.sseStream.writeSSE);
       const session = data.session as Record<string, unknown>;
       expect(session.cachedTokens).toBe(80);
@@ -858,9 +907,11 @@ describe('createStreamCallbacks', () => {
       });
       const config = makeStreamingConfig();
       const { callbacks } = createStreamCallbacks(config as never);
-      callbacks.onChunk!(makeDoneChunk({
-        usage: { promptTokens: 100, completionTokens: 50, totalTokens: 150 },
-      }));
+      callbacks.onChunk!(
+        makeDoneChunk({
+          usage: { promptTokens: 100, completionTokens: 50, totalTokens: 150 },
+        })
+      );
       const { data } = parseWrittenSSE(config.sseStream.writeSSE);
       const session = data.session as Record<string, unknown>;
       expect('cachedTokens' in session).toBe(false);
@@ -869,9 +920,11 @@ describe('createStreamCallbacks', () => {
     it('updates lastUsage from done chunk usage (after session/trace)', () => {
       const config = makeStreamingConfig();
       const { callbacks, state } = createStreamCallbacks(config as never);
-      callbacks.onChunk!(makeDoneChunk({
-        usage: { promptTokens: 500, completionTokens: 200, totalTokens: 700 },
-      }));
+      callbacks.onChunk!(
+        makeDoneChunk({
+          usage: { promptTokens: 500, completionTokens: 200, totalTokens: 700 },
+        })
+      );
       expect(state.lastUsage).toEqual({
         promptTokens: 500,
         completionTokens: 200,
@@ -884,7 +937,13 @@ describe('createStreamCallbacks', () => {
   describe('onBeforeToolCall', () => {
     it('calls checkToolCallApproval with userId, toolCall, and context', async () => {
       mockCheckToolCallApproval.mockResolvedValueOnce({ approved: true });
-      const config = makeStreamingConfig({ userId: 'u1', agentId: 'a1', conversationId: 'c1', provider: 'openai', model: 'gpt-4' });
+      const config = makeStreamingConfig({
+        userId: 'u1',
+        agentId: 'a1',
+        conversationId: 'c1',
+        provider: 'openai',
+        model: 'gpt-4',
+      });
       const { callbacks } = createStreamCallbacks(config as never);
       const tc = makeToolCall();
       await callbacks.onBeforeToolCall!(tc);
@@ -921,7 +980,10 @@ describe('createStreamCallbacks', () => {
     });
 
     it('writes tool_blocked SSE when tool is blocked', async () => {
-      mockCheckToolCallApproval.mockResolvedValueOnce({ approved: false, reason: 'Blocked by policy' });
+      mockCheckToolCallApproval.mockResolvedValueOnce({
+        approved: false,
+        reason: 'Blocked by policy',
+      });
       const config = makeStreamingConfig();
       const { callbacks } = createStreamCallbacks(config as never);
       await callbacks.onBeforeToolCall!(makeToolCall({ id: 'tc-5', name: 'dangerous_tool' }));
@@ -1060,9 +1122,9 @@ describe('createStreamCallbacks', () => {
 
     it('computes duration from startTime when durationMs not provided', () => {
       vi.spyOn(performance, 'now')
-        .mockReturnValueOnce(100)  // createStreamCallbacks startTime
-        .mockReturnValueOnce(500)  // onToolStart startTime
-        .mockReturnValue(750);     // onToolEnd performance.now()
+        .mockReturnValueOnce(100) // createStreamCallbacks startTime
+        .mockReturnValueOnce(500) // onToolStart startTime
+        .mockReturnValue(750); // onToolEnd performance.now()
       const config = makeStreamingConfig();
       const { callbacks, state } = createStreamCallbacks(config as never);
       const tc = makeToolCall({ name: 'search' });
@@ -1381,24 +1443,28 @@ describe('recordStreamUsage', () => {
       lastUsage: { promptTokens: 1, completionTokens: 1, totalTokens: 2 },
     });
     // Should not throw
-    await expect(recordStreamUsage(state, {
-      userId: 'u1',
-      conversationId: 'c1',
-      provider: 'openai',
-      model: 'gpt-4',
-    })).resolves.toBeUndefined();
+    await expect(
+      recordStreamUsage(state, {
+        userId: 'u1',
+        conversationId: 'c1',
+        provider: 'openai',
+        model: 'gpt-4',
+      })
+    ).resolves.toBeUndefined();
   });
 
   it('swallows errors from usageTracker.record (error path)', async () => {
     mockUsageRecord.mockRejectedValueOnce(new Error('DB error'));
     const state = makeStreamState({ startTime: 100 });
-    await expect(recordStreamUsage(state, {
-      userId: 'u1',
-      conversationId: 'c1',
-      provider: 'openai',
-      model: 'gpt-4',
-      error: 'some error',
-    })).resolves.toBeUndefined();
+    await expect(
+      recordStreamUsage(state, {
+        userId: 'u1',
+        conversationId: 'c1',
+        provider: 'openai',
+        model: 'gpt-4',
+        error: 'some error',
+      })
+    ).resolves.toBeUndefined();
   });
 
   it('computes latencyMs correctly', async () => {
@@ -1507,14 +1573,16 @@ describe('processStreamingViaBus', () => {
     const sseStream = makeSSEStream();
     await processStreamingViaBus(bus as never, sseStream, makeParams() as never);
     const [normalized] = bus.process.mock.calls[0]!;
-    expect(normalized.metadata).toEqual(expect.objectContaining({
-      source: 'web',
-      provider: 'openai',
-      model: 'gpt-4',
-      conversationId: 'conv-1',
-      agentId: 'agent-1',
-      stream: true,
-    }));
+    expect(normalized.metadata).toEqual(
+      expect.objectContaining({
+        source: 'web',
+        provider: 'openai',
+        model: 'gpt-4',
+        conversationId: 'conv-1',
+        agentId: 'agent-1',
+        stream: true,
+      })
+    );
   });
 
   it('passes stream callbacks in options', async () => {
@@ -1603,7 +1671,7 @@ describe('processStreamingViaBus', () => {
       'user-1',
       'Hello AI',
       'AI response',
-      expect.anything(), // toolCalls
+      expect.anything() // toolCalls
     );
   });
 

@@ -101,7 +101,7 @@ describe('CapturesRepository', () => {
           content: 'Check this out https://example.com',
           type: 'link',
           url: 'https://example.com',
-        }),
+        })
       );
 
       await repo.create({ content: 'Check this out https://example.com' });
@@ -116,7 +116,7 @@ describe('CapturesRepository', () => {
     it('should auto-detect type as "question" for question marks', async () => {
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
       mockAdapter.queryOne.mockResolvedValueOnce(
-        makeCaptureRow({ content: 'Why is the sky blue?', type: 'question' }),
+        makeCaptureRow({ content: 'Why is the sky blue?', type: 'question' })
       );
 
       await repo.create({ content: 'Why is the sky blue?' });
@@ -128,7 +128,7 @@ describe('CapturesRepository', () => {
     it('should auto-detect type as "todo"', async () => {
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
       mockAdapter.queryOne.mockResolvedValueOnce(
-        makeCaptureRow({ content: 'todo: fix the bug', type: 'todo' }),
+        makeCaptureRow({ content: 'todo: fix the bug', type: 'todo' })
       );
 
       await repo.create({ content: 'todo: fix the bug' });
@@ -140,7 +140,7 @@ describe('CapturesRepository', () => {
     it('should auto-detect type as "snippet" for code', async () => {
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
       mockAdapter.queryOne.mockResolvedValueOnce(
-        makeCaptureRow({ content: 'const x = 42', type: 'snippet' }),
+        makeCaptureRow({ content: 'const x = 42', type: 'snippet' })
       );
 
       await repo.create({ content: 'const x = 42' });
@@ -152,7 +152,7 @@ describe('CapturesRepository', () => {
     it('should auto-detect type as "idea"', async () => {
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
       mockAdapter.queryOne.mockResolvedValueOnce(
-        makeCaptureRow({ content: 'idea: build a time machine', type: 'idea' }),
+        makeCaptureRow({ content: 'idea: build a time machine', type: 'idea' })
       );
 
       await repo.create({ content: 'idea: build a time machine' });
@@ -164,7 +164,7 @@ describe('CapturesRepository', () => {
     it('should auto-detect type as "quote"', async () => {
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
       mockAdapter.queryOne.mockResolvedValueOnce(
-        makeCaptureRow({ content: '"To be or not to be"', type: 'quote' }),
+        makeCaptureRow({ content: '"To be or not to be"', type: 'quote' })
       );
 
       await repo.create({ content: '"To be or not to be"' });
@@ -176,7 +176,7 @@ describe('CapturesRepository', () => {
     it('should use provided type instead of auto-detecting', async () => {
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
       mockAdapter.queryOne.mockResolvedValueOnce(
-        makeCaptureRow({ content: 'Some content', type: 'other' }),
+        makeCaptureRow({ content: 'Some content', type: 'other' })
       );
 
       await repo.create({ content: 'Some content', type: 'other' });
@@ -188,7 +188,7 @@ describe('CapturesRepository', () => {
     it('should extract hashtags as tags', async () => {
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
       mockAdapter.queryOne.mockResolvedValueOnce(
-        makeCaptureRow({ tags: '["typescript","testing"]' }),
+        makeCaptureRow({ tags: '["typescript","testing"]' })
       );
 
       await repo.create({ content: 'Learning #typescript and #testing' });
@@ -201,9 +201,7 @@ describe('CapturesRepository', () => {
 
     it('should extract mentions as person tags', async () => {
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
-      mockAdapter.queryOne.mockResolvedValueOnce(
-        makeCaptureRow({ tags: '["person:john"]' }),
-      );
+      mockAdapter.queryOne.mockResolvedValueOnce(makeCaptureRow({ tags: '["person:john"]' }));
 
       await repo.create({ content: 'Talk to @john about this' });
 
@@ -214,9 +212,7 @@ describe('CapturesRepository', () => {
 
     it('should merge auto-extracted and manual tags', async () => {
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
-      mockAdapter.queryOne.mockResolvedValueOnce(
-        makeCaptureRow({ tags: '["auto","manual"]' }),
-      );
+      mockAdapter.queryOne.mockResolvedValueOnce(makeCaptureRow({ tags: '["auto","manual"]' }));
 
       await repo.create({
         content: 'Test #auto content',
@@ -231,9 +227,7 @@ describe('CapturesRepository', () => {
 
     it('should deduplicate tags', async () => {
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
-      mockAdapter.queryOne.mockResolvedValueOnce(
-        makeCaptureRow({ tags: '["test"]' }),
-      );
+      mockAdapter.queryOne.mockResolvedValueOnce(makeCaptureRow({ tags: '["test"]' }));
 
       await repo.create({
         content: 'Hello #test world',
@@ -250,16 +244,12 @@ describe('CapturesRepository', () => {
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
       mockAdapter.queryOne.mockResolvedValueOnce(null);
 
-      await expect(repo.create({ content: 'Test' })).rejects.toThrow(
-        'Failed to create capture',
-      );
+      await expect(repo.create({ content: 'Test' })).rejects.toThrow('Failed to create capture');
     });
 
     it('should store source when provided', async () => {
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
-      mockAdapter.queryOne.mockResolvedValueOnce(
-        makeCaptureRow({ source: 'telegram' }),
-      );
+      mockAdapter.queryOne.mockResolvedValueOnce(makeCaptureRow({ source: 'telegram' }));
 
       await repo.create({ content: 'Test', source: 'telegram' });
 
@@ -299,7 +289,7 @@ describe('CapturesRepository', () => {
 
     it('should parse processedAt when present', async () => {
       mockAdapter.queryOne.mockResolvedValueOnce(
-        makeCaptureRow({ processed: true, processed_at: NOW }),
+        makeCaptureRow({ processed: true, processed_at: NOW })
       );
 
       const result = await repo.get('cap_1');
@@ -321,9 +311,7 @@ describe('CapturesRepository', () => {
     });
 
     it('should parse tags JSON string', async () => {
-      mockAdapter.queryOne.mockResolvedValueOnce(
-        makeCaptureRow({ tags: '["a","b","c"]' }),
-      );
+      mockAdapter.queryOne.mockResolvedValueOnce(makeCaptureRow({ tags: '["a","b","c"]' }));
 
       const result = await repo.get('cap_1');
 
@@ -364,7 +352,7 @@ describe('CapturesRepository', () => {
           processed_as_type: 'note',
           processed_as_id: 'note-1',
           processed_at: NOW,
-        }),
+        })
       );
 
       const result = await repo.process('cap_1', {
@@ -381,16 +369,14 @@ describe('CapturesRepository', () => {
     it('should return null when capture not found', async () => {
       mockAdapter.queryOne.mockResolvedValueOnce(null);
 
-      expect(
-        await repo.process('missing', { processedAsType: 'note' }),
-      ).toBeNull();
+      expect(await repo.process('missing', { processedAsType: 'note' })).toBeNull();
     });
 
     it('should handle processing without processedAsId', async () => {
       mockAdapter.queryOne.mockResolvedValueOnce(makeCaptureRow());
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
       mockAdapter.queryOne.mockResolvedValueOnce(
-        makeCaptureRow({ processed: true, processed_as_type: 'discarded' }),
+        makeCaptureRow({ processed: true, processed_as_type: 'discarded' })
       );
 
       await repo.process('cap_1', { processedAsType: 'discarded' });
@@ -413,7 +399,7 @@ describe('CapturesRepository', () => {
           processed_as_type: 'note',
           processed_as_id: 'note-1',
           processed_at: NOW,
-        }),
+        })
       );
       // execute
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
@@ -516,7 +502,7 @@ describe('CapturesRepository', () => {
       await repo.list({ tag: 'typescript' });
 
       const sql = mockAdapter.query.mock.calls[0]![0] as string;
-      expect(sql).toContain("tags::text LIKE");
+      expect(sql).toContain('tags::text LIKE');
     });
 
     it('should filter by processed status', async () => {

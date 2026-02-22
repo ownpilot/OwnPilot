@@ -32,7 +32,7 @@ const { mockGetFieldValue, MockTelegramChannelAPI, mockGetChannelService, mockCh
       MockTelegramChannelAPI: vi.fn(function (
         this: { config: Record<string, unknown>; pluginId: string },
         config: Record<string, unknown>,
-        pluginId: string,
+        pluginId: string
       ) {
         this.config = config;
         this.pluginId = pluginId;
@@ -93,7 +93,10 @@ function getToolEntry() {
   const plugin = build();
   const tools = plugin.implementation.tools as Map<
     string,
-    { definition: Record<string, unknown>; executor: (p: Record<string, unknown>) => Promise<{ content: string }> }
+    {
+      definition: Record<string, unknown>;
+      executor: (p: Record<string, unknown>) => Promise<{ content: string }>;
+    }
   >;
   expect(tools).toBeDefined();
   const entry = tools.get('channel_telegram_send');
@@ -525,7 +528,7 @@ describe('buildTelegramChannelPlugin() — channelApi factory', () => {
 
   it('falls back to configServicesRepo.getFieldValue for bot_token when config omits it', () => {
     mockGetFieldValue.mockImplementation((_svc: string, field: string) =>
-      field === 'bot_token' ? 'repo-token' : null,
+      field === 'bot_token' ? 'repo-token' : null
     );
     const factory = getFactory();
     factory({});
@@ -567,7 +570,7 @@ describe('buildTelegramChannelPlugin() — channelApi factory', () => {
 
   it('falls back to configServicesRepo.getFieldValue for webhook_url when config omits it', () => {
     mockGetFieldValue.mockImplementation((_svc: string, field: string) =>
-      field === 'webhook_url' ? 'https://repo.com' : null,
+      field === 'webhook_url' ? 'https://repo.com' : null
     );
     const factory = getFactory();
     factory({ bot_token: 'tok' });
@@ -602,7 +605,7 @@ describe('buildTelegramChannelPlugin() — channelApi factory', () => {
 
   it('falls back to configServicesRepo.getFieldValue for webhook_secret when config omits it', () => {
     mockGetFieldValue.mockImplementation((_svc: string, field: string) =>
-      field === 'webhook_secret' ? 'repo-secret' : null,
+      field === 'webhook_secret' ? 'repo-secret' : null
     );
     const factory = getFactory();
     factory({ bot_token: 'tok' });
@@ -671,7 +674,7 @@ describe('buildTelegramChannelPlugin() — channelApi factory', () => {
 
   it('resolves bot_token from config and webhook_url from repo simultaneously', () => {
     mockGetFieldValue.mockImplementation((_svc: string, field: string) =>
-      field === 'webhook_url' ? 'https://hook.io' : null,
+      field === 'webhook_url' ? 'https://hook.io' : null
     );
     const factory = getFactory();
     factory({ bot_token: 'my-cfg-token' });
@@ -801,7 +804,7 @@ describe('buildTelegramChannelPlugin() — tool executor (connected)', () => {
     mockGetChannelService.mockReturnValue(mockSvc);
     await runExecutor({ chat_id: 12345, text: 'numeric' });
     expect(mockChannelApi.sendMessage).toHaveBeenCalledWith(
-      expect.objectContaining({ platformChatId: '12345' }),
+      expect.objectContaining({ platformChatId: '12345' })
     );
   });
 
@@ -810,7 +813,7 @@ describe('buildTelegramChannelPlugin() — tool executor (connected)', () => {
     mockGetChannelService.mockReturnValue(mockSvc);
     await runExecutor({ chat_id: '1', text: 99 });
     expect(mockChannelApi.sendMessage).toHaveBeenCalledWith(
-      expect.objectContaining({ text: '99' }),
+      expect.objectContaining({ text: '99' })
     );
   });
 
@@ -819,7 +822,7 @@ describe('buildTelegramChannelPlugin() — tool executor (connected)', () => {
     mockGetChannelService.mockReturnValue(mockSvc);
     await runExecutor({ chat_id: 'chat-xyz', text: 'msg' });
     expect(mockChannelApi.sendMessage).toHaveBeenCalledWith(
-      expect.objectContaining({ platformChatId: 'chat-xyz' }),
+      expect.objectContaining({ platformChatId: 'chat-xyz' })
     );
   });
 

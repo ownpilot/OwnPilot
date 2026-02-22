@@ -203,7 +203,7 @@ describe('EmbeddingService', () => {
       expect(mockEmbeddingCacheRepo.store).toHaveBeenCalledWith(
         'hash_test text',
         'test-model',
-        vec,
+        vec
       );
     });
 
@@ -222,11 +222,15 @@ describe('EmbeddingService', () => {
     });
 
     it('throws on empty text', async () => {
-      await expect(service.generateEmbedding('')).rejects.toThrow('Cannot generate embedding for empty text');
+      await expect(service.generateEmbedding('')).rejects.toThrow(
+        'Cannot generate embedding for empty text'
+      );
     });
 
     it('throws on whitespace-only text', async () => {
-      await expect(service.generateEmbedding('   \t\n  ')).rejects.toThrow('Cannot generate embedding for empty text');
+      await expect(service.generateEmbedding('   \t\n  ')).rejects.toThrow(
+        'Cannot generate embedding for empty text'
+      );
     });
 
     it('throws with status and body on non-200 API error', async () => {
@@ -234,7 +238,7 @@ describe('EmbeddingService', () => {
       mockFetch.mockResolvedValue(mockErrorResponse(403, 'Forbidden'));
 
       await expect(service.generateEmbedding('test')).rejects.toThrow(
-        /Embedding API error: 403 - Forbidden/,
+        /Embedding API error: 403 - Forbidden/
       );
     });
 
@@ -270,7 +274,7 @@ describe('EmbeddingService', () => {
       const results = await service.generateBatchEmbeddings(['text1', 'text2', 'text3']);
 
       expect(results).toHaveLength(3);
-      expect(results.every(r => r.cached)).toBe(true);
+      expect(results.every((r) => r.cached)).toBe(true);
       expect(mockFetch).not.toHaveBeenCalled();
     });
 
@@ -279,9 +283,7 @@ describe('EmbeddingService', () => {
       const freshVec = [0.4, 0.5, 0.6];
 
       // First text cached, second uncached
-      mockEmbeddingCacheRepo.lookup
-        .mockResolvedValueOnce(cachedVec)
-        .mockResolvedValueOnce(null);
+      mockEmbeddingCacheRepo.lookup.mockResolvedValueOnce(cachedVec).mockResolvedValueOnce(null);
       mockFetch.mockResolvedValue(mockFetchResponse([freshVec]));
 
       const results = await service.generateBatchEmbeddings(['cached', 'fresh']);
@@ -315,7 +317,7 @@ describe('EmbeddingService', () => {
       const body = JSON.parse(mockFetch.mock.calls[0]![1].body);
       expect(body.input).toEqual(['a', 'b', 'c']);
       expect(results).toHaveLength(3);
-      expect(results.every(r => !r.cached)).toBe(true);
+      expect(results.every((r) => !r.cached)).toBe(true);
     });
 
     it('chunks API calls by EMBEDDING_MAX_BATCH_SIZE', async () => {
@@ -360,7 +362,11 @@ describe('EmbeddingService', () => {
       await service.generateBatchEmbeddings(['alpha', 'beta']);
 
       expect(mockEmbeddingCacheRepo.store).toHaveBeenCalledTimes(2);
-      expect(mockEmbeddingCacheRepo.store).toHaveBeenCalledWith('hash_alpha', 'test-model', vecs[0]);
+      expect(mockEmbeddingCacheRepo.store).toHaveBeenCalledWith(
+        'hash_alpha',
+        'test-model',
+        vecs[0]
+      );
       expect(mockEmbeddingCacheRepo.store).toHaveBeenCalledWith('hash_beta', 'test-model', vecs[1]);
     });
 
@@ -439,7 +445,7 @@ describe('EmbeddingService', () => {
       mockFetch.mockResolvedValue(mockErrorResponse(403, 'Forbidden'));
 
       await expect(service.generateEmbedding('test')).rejects.toThrow(
-        /Embedding API error: 403 - Forbidden/,
+        /Embedding API error: 403 - Forbidden/
       );
     });
 
@@ -574,7 +580,7 @@ describe('EmbeddingService', () => {
       mockEmbeddingCacheRepo.lookup.mockResolvedValue(null);
 
       await expect(service.generateEmbedding('test')).rejects.toThrow(
-        /OpenAI API key not configured/,
+        /OpenAI API key not configured/
       );
     });
   });
@@ -653,7 +659,7 @@ describe('EmbeddingService', () => {
       mockFetch.mockResolvedValue(brokenErrorResponse);
 
       await expect(service.generateEmbedding('test')).rejects.toThrow(
-        /Embedding API error: 400 - Unknown error/,
+        /Embedding API error: 400 - Unknown error/
       );
     });
 

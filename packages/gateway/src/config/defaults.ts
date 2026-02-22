@@ -182,7 +182,12 @@ export const MAX_BATCH_TOOL_CALLS = 20;
 // ============================================================================
 
 /** The 4 user-facing meta-tools exposed to the AI for tool discovery and execution */
-export const AI_META_TOOL_NAMES = ['search_tools', 'get_tool_help', 'use_tool', 'batch_use_tool'] as const;
+export const AI_META_TOOL_NAMES = [
+  'search_tools',
+  'get_tool_help',
+  'use_tool',
+  'batch_use_tool',
+] as const;
 
 // ============================================================================
 // Channel Plugins

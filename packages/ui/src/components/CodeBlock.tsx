@@ -65,12 +65,8 @@ export function CodeBlock({
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-2 bg-[#2d2d2d] border-b border-[#3d3d3d]">
         <div className="flex items-center gap-2">
-          {filename && (
-            <span className="text-sm text-gray-400 font-mono">{filename}</span>
-          )}
-          <span className="px-2 py-0.5 text-xs bg-[#3d3d3d] text-gray-400 rounded">
-            {language}
-          </span>
+          {filename && <span className="text-sm text-gray-400 font-mono">{filename}</span>}
+          <span className="px-2 py-0.5 text-xs bg-[#3d3d3d] text-gray-400 rounded">{language}</span>
         </div>
         <div className="flex items-center gap-1">
           {onExecute && (
@@ -95,25 +91,14 @@ export function CodeBlock({
             className="p-1.5 text-gray-400 hover:text-white hover:bg-[#3d3d3d] rounded transition-colors"
             title={copied ? 'Copied!' : 'Copy code'}
           >
-            {copied ? (
-              <Check className="w-4 h-4 text-green-400" />
-            ) : (
-              <Copy className="w-4 h-4" />
-            )}
+            {copied ? <Check className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4" />}
           </button>
         </div>
       </div>
 
       {/* Code Content */}
-      <div
-        className="overflow-auto"
-        style={{ maxHeight }}
-      >
-        <Highlight
-          theme={themes.vsDark}
-          code={code.trim()}
-          language={prismLanguage}
-        >
+      <div className="overflow-auto" style={{ maxHeight }}>
+        <Highlight theme={themes.vsDark} code={code.trim()} language={prismLanguage}>
           {({ className, style, tokens, getLineProps, getTokenProps }) => (
             <pre
               className={`${className} p-4 text-sm font-mono leading-relaxed m-0`}

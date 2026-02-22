@@ -14,7 +14,15 @@ import {
   type AIProvider,
   type BudgetConfig,
 } from '@ownpilot/core';
-import { apiResponse, apiError, getIntParam, getUserId, ERROR_CODES, getErrorMessage, validateQueryEnum } from './helpers.js';
+import {
+  apiResponse,
+  apiError,
+  getIntParam,
+  getUserId,
+  ERROR_CODES,
+  getErrorMessage,
+  validateQueryEnum,
+} from './helpers.js';
 import { MAX_DAYS_LOOKBACK } from '../config/defaults.js';
 
 export const costRoutes = new Hono();
@@ -24,7 +32,6 @@ const usageTracker = new UsageTracker();
 
 // Initialize budget manager with tracker
 const budgetManager = new BudgetManager(usageTracker);
-
 
 /**
  * Helper to get period start date
@@ -54,7 +61,8 @@ function getPeriodStart(period: 'day' | 'week' | 'month' | 'year'): Date {
  * GET /costs - Get cost summary
  */
 costRoutes.get('/', async (c) => {
-  const period = validateQueryEnum(c.req.query('period'), ['day', 'week', 'month', 'year'] as const) ?? 'month';
+  const period =
+    validateQueryEnum(c.req.query('period'), ['day', 'week', 'month', 'year'] as const) ?? 'month';
   const userId = getUserId(c); // Use authenticated user, not arbitrary query param
 
   const startDate = getPeriodStart(period);
@@ -64,27 +72,27 @@ costRoutes.get('/', async (c) => {
   const budgetStatus = await budgetManager.getStatus();
 
   return apiResponse(c, {
-      period,
-      userId: userId ?? 'all',
-      summary: {
-        totalRequests: summary.totalRequests,
-        successfulRequests: summary.successfulRequests,
-        failedRequests: summary.failedRequests,
-        totalInputTokens: summary.totalInputTokens,
-        totalOutputTokens: summary.totalOutputTokens,
-        totalCost: summary.totalCost,
-        totalCostFormatted: formatCost(summary.totalCost),
-        averageLatencyMs: summary.averageLatencyMs,
-        periodStart: summary.periodStart,
-        periodEnd: summary.periodEnd,
-      },
-      budget: {
-        daily: budgetStatus.daily,
-        weekly: budgetStatus.weekly,
-        monthly: budgetStatus.monthly,
-        alerts: budgetStatus.alerts,
-      },
-    });
+    period,
+    userId: userId ?? 'all',
+    summary: {
+      totalRequests: summary.totalRequests,
+      successfulRequests: summary.successfulRequests,
+      failedRequests: summary.failedRequests,
+      totalInputTokens: summary.totalInputTokens,
+      totalOutputTokens: summary.totalOutputTokens,
+      totalCost: summary.totalCost,
+      totalCostFormatted: formatCost(summary.totalCost),
+      averageLatencyMs: summary.averageLatencyMs,
+      periodStart: summary.periodStart,
+      periodEnd: summary.periodEnd,
+    },
+    budget: {
+      daily: budgetStatus.daily,
+      weekly: budgetStatus.weekly,
+      monthly: budgetStatus.monthly,
+      alerts: budgetStatus.alerts,
+    },
+  });
 });
 
 /**
@@ -105,30 +113,31 @@ costRoutes.get('/usage', async (c) => {
   const monthlySummary = await usageTracker.getSummary(monthlyStart, new Date(), userId);
 
   return apiResponse(c, {
-      daily: {
-        totalTokens: dailySummary.totalInputTokens + dailySummary.totalOutputTokens,
-        totalInputTokens: dailySummary.totalInputTokens,
-        totalOutputTokens: dailySummary.totalOutputTokens,
-        totalCost: dailySummary.totalCost,
-        totalCostFormatted: formatCost(dailySummary.totalCost),
-        totalRequests: dailySummary.totalRequests,
-      },
-      monthly: {
-        totalTokens: monthlySummary.totalInputTokens + monthlySummary.totalOutputTokens,
-        totalInputTokens: monthlySummary.totalInputTokens,
-        totalOutputTokens: monthlySummary.totalOutputTokens,
-        totalCost: monthlySummary.totalCost,
-        totalCostFormatted: formatCost(monthlySummary.totalCost),
-        totalRequests: monthlySummary.totalRequests,
-      },
-    });
+    daily: {
+      totalTokens: dailySummary.totalInputTokens + dailySummary.totalOutputTokens,
+      totalInputTokens: dailySummary.totalInputTokens,
+      totalOutputTokens: dailySummary.totalOutputTokens,
+      totalCost: dailySummary.totalCost,
+      totalCostFormatted: formatCost(dailySummary.totalCost),
+      totalRequests: dailySummary.totalRequests,
+    },
+    monthly: {
+      totalTokens: monthlySummary.totalInputTokens + monthlySummary.totalOutputTokens,
+      totalInputTokens: monthlySummary.totalInputTokens,
+      totalOutputTokens: monthlySummary.totalOutputTokens,
+      totalCost: monthlySummary.totalCost,
+      totalCostFormatted: formatCost(monthlySummary.totalCost),
+      totalRequests: monthlySummary.totalRequests,
+    },
+  });
 });
 
 /**
  * GET /costs/breakdown - Get detailed cost breakdown
  */
 costRoutes.get('/breakdown', async (c) => {
-  const period = validateQueryEnum(c.req.query('period'), ['day', 'week', 'month', 'year'] as const) ?? 'month';
+  const period =
+    validateQueryEnum(c.req.query('period'), ['day', 'week', 'month', 'year'] as const) ?? 'month';
   const userId = getUserId(c);
 
   const startDate = getPeriodStart(period);
@@ -166,28 +175,44 @@ costRoutes.get('/breakdown', async (c) => {
   byModel.sort((a, b) => b.cost - a.cost);
 
   return apiResponse(c, {
-      period,
-      userId: userId ?? 'all',
-      totalCost: summary.totalCost,
-      totalCostFormatted: formatCost(summary.totalCost),
-      byProvider,
-      byModel,
-      daily: summary.daily.map((d) => ({
-        date: d.date,
-        requests: d.requests,
-        cost: d.cost,
-        costFormatted: formatCost(d.cost),
-        inputTokens: d.inputTokens,
-        outputTokens: d.outputTokens,
-      })),
-    });
+    period,
+    userId: userId ?? 'all',
+    totalCost: summary.totalCost,
+    totalCostFormatted: formatCost(summary.totalCost),
+    byProvider,
+    byModel,
+    daily: summary.daily.map((d) => ({
+      date: d.date,
+      requests: d.requests,
+      cost: d.cost,
+      costFormatted: formatCost(d.cost),
+      inputTokens: d.inputTokens,
+      outputTokens: d.outputTokens,
+    })),
+  });
 });
 
 /**
  * GET /costs/models - Get model pricing information
  */
 costRoutes.get('/models', (c) => {
-  const provider = validateQueryEnum(c.req.query('provider'), ['openai', 'anthropic', 'google', 'deepseek', 'groq', 'mistral', 'zhipu', 'cohere', 'together', 'fireworks', 'perplexity', 'openrouter', 'xai', 'local', 'custom'] as const);
+  const provider = validateQueryEnum(c.req.query('provider'), [
+    'openai',
+    'anthropic',
+    'google',
+    'deepseek',
+    'groq',
+    'mistral',
+    'zhipu',
+    'cohere',
+    'together',
+    'fireworks',
+    'perplexity',
+    'openrouter',
+    'xai',
+    'local',
+    'custom',
+  ] as const);
 
   let models = MODEL_PRICING;
 
@@ -196,33 +221,35 @@ costRoutes.get('/models', (c) => {
   }
 
   return apiResponse(c, {
-      models: models.map((m) => ({
-        provider: m.provider,
-        modelId: m.modelId,
-        displayName: m.displayName,
-        inputPrice: m.inputPricePerMillion,
-        outputPrice: m.outputPricePerMillion,
-        contextWindow: m.contextWindow,
-        maxOutput: m.maxOutput,
-        supportsVision: m.supportsVision ?? false,
-        supportsFunctions: m.supportsFunctions ?? false,
-        updatedAt: m.updatedAt,
-      })),
-      providers: [...new Set(MODEL_PRICING.map((m) => m.provider))],
-    });
+    models: models.map((m) => ({
+      provider: m.provider,
+      modelId: m.modelId,
+      displayName: m.displayName,
+      inputPrice: m.inputPricePerMillion,
+      outputPrice: m.outputPricePerMillion,
+      contextWindow: m.contextWindow,
+      maxOutput: m.maxOutput,
+      supportsVision: m.supportsVision ?? false,
+      supportsFunctions: m.supportsFunctions ?? false,
+      updatedAt: m.updatedAt,
+    })),
+    providers: [...new Set(MODEL_PRICING.map((m) => m.provider))],
+  });
 });
 
 /**
  * POST /costs/estimate - Estimate cost for a request
  */
 costRoutes.post('/estimate', async (c) => {
-  const body = await c.req.json<{
-    provider: AIProvider;
-    model: string;
-    inputTokens?: number;
-    outputTokens?: number;
-    text?: string;
-  }>().catch(() => null);
+  const body = await c.req
+    .json<{
+      provider: AIProvider;
+      model: string;
+      inputTokens?: number;
+      outputTokens?: number;
+      text?: string;
+    }>()
+    .catch(() => null);
 
   if (!body) {
     return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'Invalid JSON body' }, 400);
@@ -230,30 +257,36 @@ costRoutes.post('/estimate', async (c) => {
 
   try {
     if (!body.provider || !body.model) {
-      return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'provider and model are required' }, 400);
+      return apiError(
+        c,
+        { code: ERROR_CODES.INVALID_REQUEST, message: 'provider and model are required' },
+        400
+      );
     }
 
     // Estimate tokens from text if provided
     const inputText = body.text ?? '';
 
-    const estimate = estimateCost(
-      body.provider,
-      body.model,
-      inputText,
-      body.outputTokens ?? 500
-    );
+    const estimate = estimateCost(body.provider, body.model, inputText, body.outputTokens ?? 500);
 
     return apiResponse(c, {
-        provider: estimate.provider,
-        model: estimate.model,
-        estimatedInputTokens: estimate.estimatedInputTokens,
-        estimatedOutputTokens: estimate.estimatedOutputTokens,
-        estimatedCost: estimate.estimatedCost,
-        estimatedCostFormatted: formatCost(estimate.estimatedCost),
-        note: 'This is an estimate. Actual costs may vary.',
-      });
+      provider: estimate.provider,
+      model: estimate.model,
+      estimatedInputTokens: estimate.estimatedInputTokens,
+      estimatedOutputTokens: estimate.estimatedOutputTokens,
+      estimatedCost: estimate.estimatedCost,
+      estimatedCostFormatted: formatCost(estimate.estimatedCost),
+      note: 'This is an estimate. Actual costs may vary.',
+    });
   } catch (error) {
-    return apiError(c, { code: ERROR_CODES.ESTIMATION_FAILED, message: getErrorMessage(error, 'Failed to estimate cost') }, 500);
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.ESTIMATION_FAILED,
+        message: getErrorMessage(error, 'Failed to estimate cost'),
+      },
+      500
+    );
   }
 });
 
@@ -264,21 +297,23 @@ costRoutes.get('/budget', async (c) => {
   const status = await budgetManager.getStatus();
 
   return apiResponse(c, {
-      status,
-    });
+    status,
+  });
 });
 
 /**
  * POST /costs/budget - Set budget configuration
  */
 costRoutes.post('/budget', async (c) => {
-  const body = await c.req.json<{
-    dailyLimit?: number;
-    weeklyLimit?: number;
-    monthlyLimit?: number;
-    alertThresholds?: number[];
-    limitAction?: 'warn' | 'block';
-  }>().catch(() => null);
+  const body = await c.req
+    .json<{
+      dailyLimit?: number;
+      weeklyLimit?: number;
+      monthlyLimit?: number;
+      alertThresholds?: number[];
+      limitAction?: 'warn' | 'block';
+    }>()
+    .catch(() => null);
 
   if (!body) {
     return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'Invalid JSON body' }, 400);
@@ -298,18 +333,23 @@ costRoutes.post('/budget', async (c) => {
         .filter((v): v is number => typeof v === 'number' && v >= 0 && v <= 100)
         .slice(0, 10);
     }
-    if (body.limitAction === 'warn' || body.limitAction === 'block') config.limitAction = body.limitAction;
+    if (body.limitAction === 'warn' || body.limitAction === 'block')
+      config.limitAction = body.limitAction;
 
     budgetManager.configure(config);
 
     const status = await budgetManager.getStatus();
 
     return apiResponse(c, {
-        message: 'Budget configured successfully',
-        status,
-      });
+      message: 'Budget configured successfully',
+      status,
+    });
   } catch (error) {
-    return apiError(c, { code: ERROR_CODES.BUDGET_FAILED, message: getErrorMessage(error, 'Failed to set budget') }, 500);
+    return apiError(
+      c,
+      { code: ERROR_CODES.BUDGET_FAILED, message: getErrorMessage(error, 'Failed to set budget') },
+      500
+    );
   }
 });
 
@@ -320,7 +360,23 @@ costRoutes.get('/history', async (c) => {
   const limit = getIntParam(c, 'limit', 100, 1, 1000);
   const days = getIntParam(c, 'days', 30, 1, MAX_DAYS_LOOKBACK);
   const userId = getUserId(c);
-  const provider = validateQueryEnum(c.req.query('provider'), ['openai', 'anthropic', 'google', 'deepseek', 'groq', 'mistral', 'zhipu', 'cohere', 'together', 'fireworks', 'perplexity', 'openrouter', 'xai', 'local', 'custom'] as const);
+  const provider = validateQueryEnum(c.req.query('provider'), [
+    'openai',
+    'anthropic',
+    'google',
+    'deepseek',
+    'groq',
+    'mistral',
+    'zhipu',
+    'cohere',
+    'together',
+    'fireworks',
+    'perplexity',
+    'openrouter',
+    'xai',
+    'local',
+    'custom',
+  ] as const);
   const model = c.req.query('model');
 
   const startDate = new Date();
@@ -338,14 +394,14 @@ costRoutes.get('/history', async (c) => {
     .slice(0, limit);
 
   return apiResponse(c, {
-      records: limitedRecords.map((r) => ({
-        ...r,
-        costFormatted: formatCost(r.cost),
-      })),
-      total: records.length,
-      limit,
-      days,
-    });
+    records: limitedRecords.map((r) => ({
+      ...r,
+      costFormatted: formatCost(r.cost),
+    })),
+    total: records.length,
+    limit,
+    days,
+  });
 });
 
 /**
@@ -361,31 +417,33 @@ costRoutes.get('/expensive', async (c) => {
   const records = await usageTracker.getMostExpensiveRequests(limit, startDate);
 
   return apiResponse(c, {
-      records: records.map((r) => ({
-        ...r,
-        costFormatted: formatCost(r.cost),
-      })),
-    });
+    records: records.map((r) => ({
+      ...r,
+      costFormatted: formatCost(r.cost),
+    })),
+  });
 });
 
 /**
  * POST /costs/record - Record a usage (called internally after each API call)
  */
 costRoutes.post('/record', async (c) => {
-  const body = await c.req.json<{
-    userId: string;
-    sessionId?: string;
-    provider: AIProvider;
-    model: string;
-    inputTokens: number;
-    outputTokens: number;
-    totalTokens?: number;
-    latencyMs: number;
-    requestType?: 'chat' | 'completion' | 'embedding' | 'image' | 'audio' | 'tool';
-    cached?: boolean;
-    error?: string;
-    metadata?: Record<string, unknown>;
-  }>().catch(() => null);
+  const body = await c.req
+    .json<{
+      userId: string;
+      sessionId?: string;
+      provider: AIProvider;
+      model: string;
+      inputTokens: number;
+      outputTokens: number;
+      totalTokens?: number;
+      latencyMs: number;
+      requestType?: 'chat' | 'completion' | 'embedding' | 'image' | 'audio' | 'tool';
+      cached?: boolean;
+      error?: string;
+      metadata?: Record<string, unknown>;
+    }>()
+    .catch(() => null);
 
   if (!body) {
     return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'Invalid JSON body' }, 400);
@@ -393,7 +451,11 @@ costRoutes.post('/record', async (c) => {
 
   try {
     if (!body.provider || !body.model) {
-      return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'provider and model are required' }, 400);
+      return apiError(
+        c,
+        { code: ERROR_CODES.INVALID_REQUEST, message: 'provider and model are required' },
+        400
+      );
     }
 
     const userId = getUserId(c);
@@ -418,16 +480,23 @@ costRoutes.post('/record', async (c) => {
     const budgetStatus = await budgetManager.getStatus();
 
     return apiResponse(c, {
-        recordId: record.id,
-        cost: record.cost,
-        costFormatted: formatCost(record.cost),
-        budgetStatus: {
-          daily: budgetStatus.daily,
-          alerts: budgetStatus.alerts,
-        },
-      });
+      recordId: record.id,
+      cost: record.cost,
+      costFormatted: formatCost(record.cost),
+      budgetStatus: {
+        daily: budgetStatus.daily,
+        alerts: budgetStatus.alerts,
+      },
+    });
   } catch (error) {
-    return apiError(c, { code: ERROR_CODES.RECORD_FAILED, message: getErrorMessage(error, 'Failed to record usage') }, 500);
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.RECORD_FAILED,
+        message: getErrorMessage(error, 'Failed to record usage'),
+      },
+      500
+    );
   }
 });
 
@@ -445,12 +514,19 @@ costRoutes.get('/export', async (c) => {
 
   if (format === 'csv') {
     c.header('Content-Type', 'text/csv');
-    c.header('Content-Disposition', `attachment; filename="usage-${new Date().toISOString().split('T')[0]}.csv"`);
+    c.header(
+      'Content-Disposition',
+      `attachment; filename="usage-${new Date().toISOString().split('T')[0]}.csv"`
+    );
     return c.body(exportData);
   }
 
   let parsed: unknown;
-  try { parsed = JSON.parse(exportData); } catch { return apiError(c, { code: ERROR_CODES.ERROR, message: 'Failed to format export data' }, 500); }
+  try {
+    parsed = JSON.parse(exportData);
+  } catch {
+    return apiError(c, { code: ERROR_CODES.ERROR, message: 'Failed to format export data' }, 500);
+  }
   return apiResponse(c, parsed);
 });
 

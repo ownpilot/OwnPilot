@@ -9,9 +9,21 @@ import { toolsApi } from '../../api';
 import type { Tool } from '../../types';
 import { formatToolName } from '../../utils/formatters';
 import {
-  Search, ChevronDown, ChevronRight, Wrench, Plus,
-  Server, Sparkles, Puzzle, X,
-  Zap, Brain, GitBranch, Terminal, RefreshCw, Repeat,
+  Search,
+  ChevronDown,
+  ChevronRight,
+  Wrench,
+  Plus,
+  Server,
+  Sparkles,
+  Puzzle,
+  X,
+  Zap,
+  Brain,
+  GitBranch,
+  Terminal,
+  RefreshCw,
+  Repeat,
 } from '../icons';
 
 // ============================================================================
@@ -24,8 +36,8 @@ interface SourceSection {
   source: ToolSource;
   label: string;
   icon: React.ComponentType<{ className?: string }>;
-  accent: string;       // Tailwind color classes for the section header
-  badgeClass: string;   // Tailwind classes for the count badge
+  accent: string; // Tailwind color classes for the section header
+  badgeClass: string; // Tailwind classes for the count badge
   categories: Map<string, Tool[]>; // category → tools
   totalCount: number;
 }
@@ -54,12 +66,54 @@ const NODE_TYPES: Array<{
   text: string;
   border: string;
 }> = [
-  { type: 'triggerNode',     label: 'Trigger',   icon: Zap,       bg: 'bg-violet-100 dark:bg-violet-900/30', text: 'text-violet-700 dark:text-violet-300',   border: 'border-violet-300 dark:border-violet-700' },
-  { type: 'llmNode',         label: 'LLM',       icon: Brain,     bg: 'bg-indigo-100 dark:bg-indigo-900/30', text: 'text-indigo-700 dark:text-indigo-300',   border: 'border-indigo-300 dark:border-indigo-700' },
-  { type: 'conditionNode',   label: 'If/Else',   icon: GitBranch, bg: 'bg-emerald-100 dark:bg-emerald-900/30', text: 'text-emerald-700 dark:text-emerald-300', border: 'border-emerald-300 dark:border-emerald-700' },
-  { type: 'codeNode',        label: 'Code',      icon: Terminal,  bg: 'bg-teal-100 dark:bg-teal-900/30',    text: 'text-teal-700 dark:text-teal-300',       border: 'border-teal-300 dark:border-teal-700' },
-  { type: 'transformerNode', label: 'Transform',  icon: RefreshCw, bg: 'bg-amber-100 dark:bg-amber-900/30',  text: 'text-amber-700 dark:text-amber-300',     border: 'border-amber-300 dark:border-amber-700' },
-  { type: 'forEachNode',     label: 'ForEach',   icon: Repeat,    bg: 'bg-sky-100 dark:bg-sky-900/30',      text: 'text-sky-700 dark:text-sky-300',         border: 'border-sky-300 dark:border-sky-700' },
+  {
+    type: 'triggerNode',
+    label: 'Trigger',
+    icon: Zap,
+    bg: 'bg-violet-100 dark:bg-violet-900/30',
+    text: 'text-violet-700 dark:text-violet-300',
+    border: 'border-violet-300 dark:border-violet-700',
+  },
+  {
+    type: 'llmNode',
+    label: 'LLM',
+    icon: Brain,
+    bg: 'bg-indigo-100 dark:bg-indigo-900/30',
+    text: 'text-indigo-700 dark:text-indigo-300',
+    border: 'border-indigo-300 dark:border-indigo-700',
+  },
+  {
+    type: 'conditionNode',
+    label: 'If/Else',
+    icon: GitBranch,
+    bg: 'bg-emerald-100 dark:bg-emerald-900/30',
+    text: 'text-emerald-700 dark:text-emerald-300',
+    border: 'border-emerald-300 dark:border-emerald-700',
+  },
+  {
+    type: 'codeNode',
+    label: 'Code',
+    icon: Terminal,
+    bg: 'bg-teal-100 dark:bg-teal-900/30',
+    text: 'text-teal-700 dark:text-teal-300',
+    border: 'border-teal-300 dark:border-teal-700',
+  },
+  {
+    type: 'transformerNode',
+    label: 'Transform',
+    icon: RefreshCw,
+    bg: 'bg-amber-100 dark:bg-amber-900/30',
+    text: 'text-amber-700 dark:text-amber-300',
+    border: 'border-amber-300 dark:border-amber-700',
+  },
+  {
+    type: 'forEachNode',
+    label: 'ForEach',
+    icon: Repeat,
+    bg: 'bg-sky-100 dark:bg-sky-900/30',
+    text: 'text-sky-700 dark:text-sky-300',
+    border: 'border-sky-300 dark:border-sky-700',
+  },
 ];
 
 // ============================================================================
@@ -81,12 +135,15 @@ function getNamespaceMiddle(name: string): string | undefined {
 
 const SOURCE_ORDER: ToolSource[] = ['core', 'mcp', 'custom', 'plugin'];
 
-const SOURCE_CONFIG: Record<ToolSource, {
-  label: string;
-  icon: React.ComponentType<{ className?: string }>;
-  accent: string;
-  badgeClass: string;
-}> = {
+const SOURCE_CONFIG: Record<
+  ToolSource,
+  {
+    label: string;
+    icon: React.ComponentType<{ className?: string }>;
+    accent: string;
+    badgeClass: string;
+  }
+> = {
   core: {
     label: 'Built-in',
     icon: Wrench,
@@ -165,16 +222,19 @@ function getSubGroupLabel(subKey: string, source: ToolSource): string {
     return getCategoryLabel(subKey);
   }
   // MCP server name or plugin ID — title-case it
-  return subKey
-    .replace(/[-_]/g, ' ')
-    .replace(/\b\w/g, (c) => c.toUpperCase());
+  return subKey.replace(/[-_]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 // ============================================================================
 // Component
 // ============================================================================
 
-export function ToolPalette({ className = '', onAddTool, onAddNode, hasTriggerNode }: ToolPaletteProps) {
+export function ToolPalette({
+  className = '',
+  onAddTool,
+  onAddNode,
+  hasTriggerNode,
+}: ToolPaletteProps) {
   const [groupedData, setGroupedData] = useState<Record<string, ToolCategory>>({});
   const [search, setSearch] = useState('');
   const [openSources, setOpenSources] = useState<Set<ToolSource>>(new Set(['core']));
@@ -190,7 +250,9 @@ export function ToolPalette({ className = '', onAddTool, onAddNode, hasTriggerNo
         if (!cancelled) {
           setGroupedData(data.categories);
           // Auto-open first few core categories
-          const keys = Object.keys(data.categories).slice(0, 3).map((k) => `core:${k}`);
+          const keys = Object.keys(data.categories)
+            .slice(0, 3)
+            .map((k) => `core:${k}`);
           setOpenCategories(new Set(keys));
         }
       } catch {
@@ -199,7 +261,9 @@ export function ToolPalette({ className = '', onAddTool, onAddNode, hasTriggerNo
         if (!cancelled) setIsLoading(false);
       }
     })();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   // Build source-based sections from category-grouped data
@@ -276,7 +340,7 @@ export function ToolPalette({ className = '', onAddTool, onAddNode, hasTriggerNo
           (t) =>
             formatToolName(t.name).toLowerCase().includes(lowerSearch) ||
             t.name.toLowerCase().includes(lowerSearch) ||
-            t.description?.toLowerCase().includes(lowerSearch),
+            t.description?.toLowerCase().includes(lowerSearch)
         );
         if (filtered.length > 0) {
           filteredCategories.set(catKey, filtered);
@@ -311,16 +375,24 @@ export function ToolPalette({ className = '', onAddTool, onAddNode, hasTriggerNo
   }, []);
 
   // Drag start handler
-  const onDragStart = useCallback((e: React.DragEvent, toolName: string, toolDescription?: string) => {
-    e.dataTransfer.setData('application/reactflow', JSON.stringify({ toolName, toolDescription }));
-    e.dataTransfer.effectAllowed = 'move';
-  }, []);
+  const onDragStart = useCallback(
+    (e: React.DragEvent, toolName: string, toolDescription?: string) => {
+      e.dataTransfer.setData(
+        'application/reactflow',
+        JSON.stringify({ toolName, toolDescription })
+      );
+      e.dataTransfer.effectAllowed = 'move';
+    },
+    []
+  );
 
   // Total tool count
   const totalTools = sections.reduce((sum, s) => sum + s.totalCount, 0);
 
   return (
-    <div className={`flex flex-col border-r border-border dark:border-dark-border bg-bg-secondary dark:bg-dark-bg-secondary ${className}`}>
+    <div
+      className={`flex flex-col border-r border-border dark:border-dark-border bg-bg-secondary dark:bg-dark-bg-secondary ${className}`}
+    >
       {/* Header */}
       <div className="p-3 border-b border-border dark:border-dark-border">
         <div className="flex items-center justify-between mb-2">
@@ -383,7 +455,10 @@ export function ToolPalette({ className = '', onAddTool, onAddNode, hasTriggerNo
         {isLoading ? (
           <div className="space-y-2 p-3">
             {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="h-8 bg-bg-tertiary dark:bg-dark-bg-tertiary rounded animate-pulse" />
+              <div
+                key={i}
+                className="h-8 bg-bg-tertiary dark:bg-dark-bg-tertiary rounded animate-pulse"
+              />
             ))}
           </div>
         ) : filteredSections.length === 0 ? (
@@ -410,7 +485,9 @@ export function ToolPalette({ className = '', onAddTool, onAddNode, hasTriggerNo
                     )}
                     <SrcIcon className={`w-3.5 h-3.5 shrink-0 ${section.accent}`} />
                     <span className={section.accent}>{section.label}</span>
-                    <span className={`ml-auto text-[10px] px-1.5 py-0.5 rounded-full font-medium ${section.badgeClass}`}>
+                    <span
+                      className={`ml-auto text-[10px] px-1.5 py-0.5 rounded-full font-medium ${section.badgeClass}`}
+                    >
                       {section.totalCount}
                     </span>
                   </button>
@@ -418,12 +495,18 @@ export function ToolPalette({ className = '', onAddTool, onAddNode, hasTriggerNo
                   {/* Categories within source */}
                   {isSourceOpen && (
                     <div className="pb-1">
-                      {section.categories.size > 1 || (section.categories.size === 1 && section.source === 'core') ? (
+                      {section.categories.size > 1 ||
+                      (section.categories.size === 1 && section.source === 'core') ? (
                         /* Show collapsible sub-groups */
                         [...section.categories.entries()]
-                          .sort(([a], [b]) => getSubGroupLabel(a, section.source).localeCompare(getSubGroupLabel(b, section.source)))
+                          .sort(([a], [b]) =>
+                            getSubGroupLabel(a, section.source).localeCompare(
+                              getSubGroupLabel(b, section.source)
+                            )
+                          )
                           .map(([subKey, tools]) => {
-                            const isCatOpen = openCategories.has(`${section.source}:${subKey}`) || !!search;
+                            const isCatOpen =
+                              openCategories.has(`${section.source}:${subKey}`) || !!search;
                             const subLabel = getSubGroupLabel(subKey, section.source);
                             return (
                               <div key={subKey}>
@@ -437,7 +520,9 @@ export function ToolPalette({ className = '', onAddTool, onAddNode, hasTriggerNo
                                     <ChevronRight className="w-2.5 h-2.5 shrink-0" />
                                   )}
                                   <span className="truncate">{subLabel}</span>
-                                  <span className="ml-auto text-text-muted text-[10px]">{tools.length}</span>
+                                  <span className="ml-auto text-text-muted text-[10px]">
+                                    {tools.length}
+                                  </span>
                                 </button>
                                 {isCatOpen && (
                                   <div className="ml-6">
@@ -459,7 +544,9 @@ export function ToolPalette({ className = '', onAddTool, onAddNode, hasTriggerNo
                         <div className="ml-4">
                           {[...section.categories.values()]
                             .flat()
-                            .sort((a, b) => formatToolName(a.name).localeCompare(formatToolName(b.name)))
+                            .sort((a, b) =>
+                              formatToolName(a.name).localeCompare(formatToolName(b.name))
+                            )
                             .map((tool) => (
                               <ToolItem
                                 key={tool.name}
@@ -537,5 +624,3 @@ function ToolItem({
 // ============================================================================
 // Helpers
 // ============================================================================
-
-

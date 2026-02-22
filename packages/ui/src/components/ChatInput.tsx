@@ -1,4 +1,12 @@
-import { useState, useRef, useEffect, useImperativeHandle, forwardRef, type KeyboardEvent, type FormEvent } from 'react';
+import {
+  useState,
+  useRef,
+  useEffect,
+  useImperativeHandle,
+  forwardRef,
+  type KeyboardEvent,
+  type FormEvent,
+} from 'react';
 import { Send, StopCircle, X, Image } from './icons';
 import { ToolPicker, type ResourceAttachment, type ResourceType } from './ToolPicker';
 import type { MessageAttachment } from '../types';
@@ -26,19 +34,27 @@ export interface ChatInputHandle {
 
 function getChipStyle(type: ResourceType): string {
   switch (type) {
-    case 'tool': return 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20';
-    case 'custom-tool': return 'bg-primary/10 text-primary border-primary/20';
-    case 'custom-data': return 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20';
-    case 'builtin-data': return 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20';
+    case 'tool':
+      return 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20';
+    case 'custom-tool':
+      return 'bg-primary/10 text-primary border-primary/20';
+    case 'custom-data':
+      return 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20';
+    case 'builtin-data':
+      return 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20';
   }
 }
 
 function getChipLabel(type: ResourceType): string {
   switch (type) {
-    case 'tool': return 'tool';
-    case 'custom-tool': return 'custom';
-    case 'custom-data': return 'data';
-    case 'builtin-data': return 'built-in';
+    case 'tool':
+      return 'tool';
+    case 'custom-tool':
+      return 'custom';
+    case 'custom-data':
+      return 'data';
+    case 'builtin-data':
+      return 'built-in';
   }
 }
 
@@ -62,7 +78,10 @@ function buildContextBlock(attachments: ResourceAttachment[]): string {
   return lines.join('\n');
 }
 
-export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(function ChatInput({ onSend, onStop, isLoading, placeholder = 'Type a message...' }, ref) {
+export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(function ChatInput(
+  { onSend, onStop, isLoading, placeholder = 'Type a message...' },
+  ref
+) {
   const [value, setValue] = useState('');
   const [attachments, setAttachments] = useState<ResourceAttachment[]>([]);
   const [imagePreviews, setImagePreviews] = useState<ImagePreview[]>([]);
@@ -124,14 +143,14 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(function Ch
       });
     }
 
-    setImagePreviews(prev => [...prev, ...newPreviews]);
+    setImagePreviews((prev) => [...prev, ...newPreviews]);
     // Reset input so the same file can be re-selected
     e.target.value = '';
     setTimeout(() => textareaRef.current?.focus(), 0);
   };
 
   const removeImage = (index: number) => {
-    setImagePreviews(prev => {
+    setImagePreviews((prev) => {
       URL.revokeObjectURL(prev[index]!.previewUrl);
       return prev.filter((_, i) => i !== index);
     });
@@ -148,11 +167,11 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(function Ch
 
       // Extract tool names for direct LLM registration (tools selected via picker)
       const directToolNames = attachments
-        .filter(a => a.type === 'tool' || a.type === 'custom-tool')
-        .map(a => a.name);
+        .filter((a) => a.type === 'tool' || a.type === 'custom-tool')
+        .map((a) => a.name);
 
       // Convert image previews to MessageAttachment[]
-      const imageAttachments: MessageAttachment[] = imagePreviews.map(p => ({
+      const imageAttachments: MessageAttachment[] = imagePreviews.map((p) => ({
         type: 'image' as const,
         data: p.data,
         mimeType: p.mimeType,
@@ -162,7 +181,7 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(function Ch
       onSend(
         finalMessage,
         directToolNames.length > 0 ? directToolNames : undefined,
-        imageAttachments.length > 0 ? imageAttachments : undefined,
+        imageAttachments.length > 0 ? imageAttachments : undefined
       );
       setValue('');
       setAttachments([]);
@@ -181,7 +200,7 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(function Ch
 
   const handleResourceSelect = (attachment: ResourceAttachment) => {
     // Prevent duplicates
-    if (attachments.some(a => a.name === attachment.name && a.type === attachment.type)) return;
+    if (attachments.some((a) => a.name === attachment.name && a.type === attachment.type)) return;
     setAttachments((prev) => [...prev, attachment]);
     // Focus back on textarea
     setTimeout(() => textareaRef.current?.focus(), 0);
@@ -213,7 +232,10 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(function Ch
         {imagePreviews.length > 0 && (
           <div className="flex gap-2 mb-2 px-1">
             {imagePreviews.map((preview, index) => (
-              <div key={preview.previewUrl} className="relative group/img w-16 h-16 rounded-lg overflow-hidden border border-border dark:border-dark-border">
+              <div
+                key={preview.previewUrl}
+                className="relative group/img w-16 h-16 rounded-lg overflow-hidden border border-border dark:border-dark-border"
+              >
                 <img
                   src={preview.previewUrl}
                   alt={preview.file.name}
@@ -278,7 +300,13 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(function Ch
               value={value}
               onChange={(e) => setValue(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder={imagePreviews.length > 0 ? 'Describe what you want to know about the image...' : attachments.length > 0 ? 'Ask about the attached context...' : placeholder}
+              placeholder={
+                imagePreviews.length > 0
+                  ? 'Describe what you want to know about the image...'
+                  : attachments.length > 0
+                    ? 'Ask about the attached context...'
+                    : placeholder
+              }
               disabled={isLoading}
               rows={1}
               className="w-full px-4 py-3 bg-bg-tertiary dark:bg-dark-bg-tertiary text-text-primary dark:text-dark-text-primary placeholder:text-text-muted dark:placeholder:text-dark-text-muted border border-border dark:border-dark-border rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary disabled:opacity-50 disabled:cursor-not-allowed transition-all"

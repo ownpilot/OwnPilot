@@ -28,10 +28,7 @@ import type {
   PipelineContext,
   StreamCallbacks,
 } from '@ownpilot/core';
-import type {
-  NormalizedMessage,
-  MessageProcessingResult,
-} from '@ownpilot/core';
+import type { NormalizedMessage, MessageProcessingResult } from '@ownpilot/core';
 
 // ============================================================================
 // Pipeline Context Implementation
@@ -106,12 +103,12 @@ export class MessageBus implements IMessageBus {
   }
 
   getMiddlewareNames(): string[] {
-    return this.middlewares.map(m => m.name);
+    return this.middlewares.map((m) => m.name);
   }
 
   async process(
     message: NormalizedMessage,
-    options?: ProcessOptions,
+    options?: ProcessOptions
   ): Promise<MessageProcessingResult> {
     const startTime = Date.now();
     const ctx = new PipelineContextImpl(options?.context);
@@ -148,7 +145,9 @@ export class MessageBus implements IMessageBus {
         try {
           const stream = ctx.get<StreamCallbacks>('stream');
           stream?.onError?.(err);
-        } catch { /* stream callback error should not override pipeline error */ }
+        } catch {
+          /* stream callback error should not override pipeline error */
+        }
 
         return {
           response: {
@@ -166,10 +165,7 @@ export class MessageBus implements IMessageBus {
           streamed: false,
           durationMs: Date.now() - startTime,
           stages: ctx.getStages(),
-          warnings: [
-            ...ctx.getWarnings(),
-            `Pipeline error in '${stageName}': ${err.message}`,
-          ],
+          warnings: [...ctx.getWarnings(), `Pipeline error in '${stageName}': ${err.message}`],
         };
       }
     };
@@ -180,7 +176,7 @@ export class MessageBus implements IMessageBus {
   private createEmptyResult(
     message: NormalizedMessage,
     ctx: PipelineContextImpl,
-    startTime: number,
+    startTime: number
   ): MessageProcessingResult {
     return {
       response: {
@@ -201,7 +197,7 @@ export class MessageBus implements IMessageBus {
   private createAbortedResult(
     message: NormalizedMessage,
     ctx: PipelineContextImpl,
-    startTime: number,
+    startTime: number
   ): MessageProcessingResult {
     return {
       response: {

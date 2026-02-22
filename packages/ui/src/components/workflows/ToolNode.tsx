@@ -71,12 +71,17 @@ function ToolNodeComponent({ data, selected }: NodeProps<ToolNodeType>) {
             {(data.label as string) || (data.toolName as string)}
           </span>
           {StatusIcon && (
-            <StatusIcon className={`w-4 h-4 shrink-0 ${
-              status === 'success' ? 'text-success' :
-              status === 'error' ? 'text-error' :
-              status === 'running' ? 'text-warning' :
-              'text-text-muted'
-            }`} />
+            <StatusIcon
+              className={`w-4 h-4 shrink-0 ${
+                status === 'success'
+                  ? 'text-success'
+                  : status === 'error'
+                    ? 'text-error'
+                    : status === 'running'
+                      ? 'text-warning'
+                      : 'text-text-muted'
+              }`}
+            />
           )}
         </div>
 

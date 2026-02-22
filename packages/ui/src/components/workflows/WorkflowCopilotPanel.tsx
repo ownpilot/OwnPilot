@@ -77,25 +77,73 @@ function buildCurrentWorkflow(name: string, nodes: Node[], edges: Edge[]) {
       const d = n.data as Record<string, unknown>;
 
       if (n.type === 'triggerNode') {
-        return { ...base, type: 'trigger', triggerType: d.triggerType ?? 'manual', label: d.label ?? 'Trigger', ...pickDefined(d, ['cron', 'eventType', 'condition', 'threshold', 'webhookPath']) };
+        return {
+          ...base,
+          type: 'trigger',
+          triggerType: d.triggerType ?? 'manual',
+          label: d.label ?? 'Trigger',
+          ...pickDefined(d, ['cron', 'eventType', 'condition', 'threshold', 'webhookPath']),
+        };
       }
       if (n.type === 'llmNode') {
-        return { ...base, type: 'llm', label: d.label, provider: d.provider, model: d.model, ...pickDefined(d, ['systemPrompt', 'userMessage', 'temperature', 'maxTokens']) };
+        return {
+          ...base,
+          type: 'llm',
+          label: d.label,
+          provider: d.provider,
+          model: d.model,
+          ...pickDefined(d, ['systemPrompt', 'userMessage', 'temperature', 'maxTokens']),
+        };
       }
       if (n.type === 'conditionNode') {
-        return { ...base, type: 'condition', label: d.label, expression: d.expression, ...pickDefined(d, ['description']) };
+        return {
+          ...base,
+          type: 'condition',
+          label: d.label,
+          expression: d.expression,
+          ...pickDefined(d, ['description']),
+        };
       }
       if (n.type === 'codeNode') {
-        return { ...base, type: 'code', label: d.label, language: d.language, code: d.code, ...pickDefined(d, ['description']) };
+        return {
+          ...base,
+          type: 'code',
+          label: d.label,
+          language: d.language,
+          code: d.code,
+          ...pickDefined(d, ['description']),
+        };
       }
       if (n.type === 'transformerNode') {
-        return { ...base, type: 'transformer', label: d.label, expression: d.expression, ...pickDefined(d, ['description']) };
+        return {
+          ...base,
+          type: 'transformer',
+          label: d.label,
+          expression: d.expression,
+          ...pickDefined(d, ['description']),
+        };
       }
       if (n.type === 'forEachNode') {
-        return { ...base, type: 'forEach', label: d.label, arrayExpression: d.arrayExpression, ...pickDefined(d, ['itemVariable', 'maxIterations', 'onError', 'description']) };
+        return {
+          ...base,
+          type: 'forEach',
+          label: d.label,
+          arrayExpression: d.arrayExpression,
+          ...pickDefined(d, ['itemVariable', 'maxIterations', 'onError', 'description']),
+        };
       }
       // Tool node
-      return { ...base, tool: d.toolName, label: d.label, ...pickDefined(d, ['description']), ...(d.toolArgs && typeof d.toolArgs === 'object' && Object.keys(d.toolArgs as object).length > 0 ? { args: d.toolArgs } : {}) };
+      return {
+        ...base,
+        tool: d.toolName,
+        label: d.label,
+        ...pickDefined(d, ['description']),
+        ...(d.toolArgs &&
+        typeof d.toolArgs === 'object' &&
+        Object.keys(d.toolArgs as object).length > 0
+          ? { args: d.toolArgs }
+          : {}),
+      };
     }),
     edges: edges.map((e) => {
       const edge: Record<string, string> = { source: e.source, target: e.target };
@@ -143,7 +191,7 @@ export function WorkflowCopilotPanel({
   // Build serialized conversation for the API (exclude workflowJson, errors)
   const apiMessages = useMemo(
     () => messages.filter((m) => !m.isError).map((m) => ({ role: m.role, content: m.content })),
-    [messages],
+    [messages]
   );
 
   const handleSend = useCallback(async () => {
@@ -173,7 +221,7 @@ export function WorkflowCopilotPanel({
           currentWorkflow,
           availableTools: availableToolNames.length > 0 ? availableToolNames : undefined,
         },
-        { signal: abort.signal },
+        { signal: abort.signal }
       );
 
       const reader = response.body?.getReader();
@@ -235,12 +283,15 @@ export function WorkflowCopilotPanel({
             // Only add if we haven't already added via done event
             const lastMsg = prev[prev.length - 1];
             if (lastMsg?.role === 'assistant' && lastMsg.content === accumulated) return prev;
-            return [...prev, {
-              id: `msg_${Date.now()}_a`,
-              role: 'assistant',
-              content: accumulated,
-              workflowJson,
-            }];
+            return [
+              ...prev,
+              {
+                id: `msg_${Date.now()}_a`,
+                role: 'assistant',
+                content: accumulated,
+                workflowJson,
+              },
+            ];
           });
           setStreamingContent('');
         }
@@ -249,12 +300,15 @@ export function WorkflowCopilotPanel({
       }
     } catch (err) {
       if ((err as Error).name !== 'AbortError') {
-        setMessages((prev) => [...prev, {
-          id: `msg_${Date.now()}_e`,
-          role: 'assistant',
-          content: err instanceof Error ? err.message : 'An error occurred',
-          isError: true,
-        }]);
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: `msg_${Date.now()}_e`,
+            role: 'assistant',
+            content: err instanceof Error ? err.message : 'An error occurred',
+            isError: true,
+          },
+        ]);
         setStreamingContent('');
       }
     } finally {
@@ -274,7 +328,7 @@ export function WorkflowCopilotPanel({
         handleSend();
       }
     },
-    [handleSend],
+    [handleSend]
   );
 
   // Cleanup abort on unmount
@@ -314,7 +368,10 @@ export function WorkflowCopilotPanel({
               {SUGGESTIONS.map((s) => (
                 <button
                   key={s}
-                  onClick={() => { setInput(s); inputRef.current?.focus(); }}
+                  onClick={() => {
+                    setInput(s);
+                    inputRef.current?.focus();
+                  }}
                   className="block w-full text-left px-3 py-1.5 text-xs text-text-secondary dark:text-dark-text-secondary bg-bg-tertiary dark:bg-dark-bg-tertiary hover:bg-bg-primary dark:hover:bg-dark-bg-primary rounded-md transition-colors"
                 >
                   {s}
@@ -432,7 +489,7 @@ const SUGGESTIONS = [
  */
 export function convertDefinitionToReactFlow(
   definition: WorkflowDefinition,
-  availableToolNames?: string[],
+  availableToolNames?: string[]
 ): { nodes: Node[]; edges: Edge[] } {
   // Build lookup for resolving AI-generated tool names that may be missing dots
   const resolveToolName = buildToolNameResolver(availableToolNames);
@@ -568,14 +625,11 @@ export function convertDefinitionToReactFlow(
   return { nodes, edges: rfEdges };
 }
 
-
 /**
  * Build a tool name resolver that fixes AI-generated names with missing dots.
  * e.g. "mcpgithublist_repositories" → "mcp.github.list_repositories"
  */
-function buildToolNameResolver(
-  availableToolNames?: string[],
-): (name: string) => string {
+function buildToolNameResolver(availableToolNames?: string[]): (name: string) => string {
   if (!availableToolNames || availableToolNames.length === 0) {
     return (name) => name;
   }

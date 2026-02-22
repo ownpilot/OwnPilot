@@ -75,7 +75,9 @@ function buildNewsRssPlugin(): BuiltinPluginEntry {
   ];
 
   /** Minimal RSS/Atom parser - extracts items from XML text */
-  function parseRssItems(xml: string): Array<{ title: string; link: string; content: string; published: string }> {
+  function parseRssItems(
+    xml: string
+  ): Array<{ title: string; link: string; content: string; published: string }> {
     const items: Array<{ title: string; link: string; content: string; published: string }> = [];
 
     // RSS 2.0 <item> elements
@@ -84,7 +86,10 @@ function buildNewsRssPlugin(): BuiltinPluginEntry {
     const atomEntryRegex = /<entry[\s>]([\s\S]*?)<\/entry>/gi;
 
     const extract = (block: string, tag: string): string => {
-      const m = new RegExp(`<${tag}[^>]*><!\\[CDATA\\[([\\s\\S]*?)\\]\\]><\\/${tag}>|<${tag}[^>]*>([\\s\\S]*?)<\\/${tag}>`, 'i').exec(block);
+      const m = new RegExp(
+        `<${tag}[^>]*><!\\[CDATA\\[([\\s\\S]*?)\\]\\]><\\/${tag}>|<${tag}[^>]*>([\\s\\S]*?)<\\/${tag}>`,
+        'i'
+      ).exec(block);
       return (m?.[1] ?? m?.[2] ?? '').trim();
     };
     const extractLink = (block: string): string => {
@@ -141,21 +146,31 @@ function buildNewsRssPlugin(): BuiltinPluginEntry {
         default_category: '',
       },
     })
-    .database('plugin_rss_feeds', 'RSS Feeds', [
-      { name: 'url', type: 'text', required: true, description: 'Feed URL' },
-      { name: 'title', type: 'text', description: 'Feed title' },
-      { name: 'category', type: 'text', description: 'Feed category' },
-      { name: 'last_fetched', type: 'datetime', description: 'Last fetch timestamp' },
-      { name: 'status', type: 'text', defaultValue: 'active', description: 'active | error' },
-    ], { description: 'Stores subscribed RSS/Atom feed URLs and metadata' })
-    .database('plugin_rss_items', 'RSS Items', [
-      { name: 'feed_id', type: 'text', required: true, description: 'Parent feed record ID' },
-      { name: 'title', type: 'text', description: 'Item title' },
-      { name: 'link', type: 'text', description: 'Item link' },
-      { name: 'content', type: 'text', description: 'Item content/summary' },
-      { name: 'published_at', type: 'datetime', description: 'Publish date' },
-      { name: 'is_read', type: 'boolean', defaultValue: false, description: 'Read status' },
-    ], { description: 'Stores individual RSS/Atom feed items' })
+    .database(
+      'plugin_rss_feeds',
+      'RSS Feeds',
+      [
+        { name: 'url', type: 'text', required: true, description: 'Feed URL' },
+        { name: 'title', type: 'text', description: 'Feed title' },
+        { name: 'category', type: 'text', description: 'Feed category' },
+        { name: 'last_fetched', type: 'datetime', description: 'Last fetch timestamp' },
+        { name: 'status', type: 'text', defaultValue: 'active', description: 'active | error' },
+      ],
+      { description: 'Stores subscribed RSS/Atom feed URLs and metadata' }
+    )
+    .database(
+      'plugin_rss_items',
+      'RSS Items',
+      [
+        { name: 'feed_id', type: 'text', required: true, description: 'Parent feed record ID' },
+        { name: 'title', type: 'text', description: 'Item title' },
+        { name: 'link', type: 'text', description: 'Item link' },
+        { name: 'content', type: 'text', description: 'Item content/summary' },
+        { name: 'published_at', type: 'datetime', description: 'Publish date' },
+        { name: 'is_read', type: 'boolean', defaultValue: false, description: 'Read status' },
+      ],
+      { description: 'Stores individual RSS/Atom feed items' }
+    )
     .tool(
       {
         name: 'news_add_feed',
@@ -228,7 +243,7 @@ function buildNewsRssPlugin(): BuiltinPluginEntry {
             itemsFetched: itemCount,
           },
         };
-      },
+      }
     )
     .tool(
       {
@@ -252,7 +267,7 @@ function buildNewsRssPlugin(): BuiltinPluginEntry {
             })),
           },
         };
-      },
+      }
     )
     .tool(
       {
@@ -263,7 +278,10 @@ function buildNewsRssPlugin(): BuiltinPluginEntry {
           properties: {
             feed_id: { type: 'string', description: 'Filter by specific feed ID (optional)' },
             limit: { type: 'number', description: 'Maximum items to return (default 20)' },
-            unread_only: { type: 'boolean', description: 'Only return unread items (default false)' },
+            unread_only: {
+              type: 'boolean',
+              description: 'Only return unread items (default false)',
+            },
           },
         },
       },
@@ -273,7 +291,10 @@ function buildNewsRssPlugin(): BuiltinPluginEntry {
         const filter: Record<string, unknown> = {};
         if (params.feed_id) filter.feed_id = params.feed_id;
         if (params.unread_only) filter.is_read = false;
-        const { records } = await repo.listRecords('plugin_rss_items', { limit, filter: Object.keys(filter).length ? filter : undefined });
+        const { records } = await repo.listRecords('plugin_rss_items', {
+          limit,
+          filter: Object.keys(filter).length ? filter : undefined,
+        });
         return {
           content: {
             success: true,
@@ -288,7 +309,7 @@ function buildNewsRssPlugin(): BuiltinPluginEntry {
             })),
           },
         };
-      },
+      }
     )
     .tool(
       {
@@ -306,7 +327,10 @@ function buildNewsRssPlugin(): BuiltinPluginEntry {
         const repo = getServiceRegistry().get(Services.Database);
         const feedId = String(params.feed_id);
         // Delete items for this feed
-        const { records: items } = await repo.listRecords('plugin_rss_items', { limit: 1000, filter: { feed_id: feedId } });
+        const { records: items } = await repo.listRecords('plugin_rss_items', {
+          limit: 1000,
+          filter: { feed_id: feedId },
+        });
         for (const item of items) {
           await repo.deleteRecord(item.id);
         }
@@ -318,7 +342,7 @@ function buildNewsRssPlugin(): BuiltinPluginEntry {
             message: `Feed removed along with ${items.length} item(s).`,
           },
         };
-      },
+      }
     )
     .tool(
       {
@@ -350,8 +374,11 @@ function buildNewsRssPlugin(): BuiltinPluginEntry {
           const items = parseRssItems(xml);
 
           // Get existing links to avoid duplicates
-          const { records: existing } = await repo.listRecords('plugin_rss_items', { limit: 1000, filter: { feed_id: feedId } });
-          const existingLinks = new Set(existing.map(r => r.data.link));
+          const { records: existing } = await repo.listRecords('plugin_rss_items', {
+            limit: 1000,
+            filter: { feed_id: feedId },
+          });
+          const existingLinks = new Set(existing.map((r) => r.data.link));
 
           for (const item of items.slice(0, 20)) {
             if (existingLinks.has(item.link)) continue;
@@ -382,7 +409,7 @@ function buildNewsRssPlugin(): BuiltinPluginEntry {
             newItems: itemCount,
           },
         };
-      },
+      }
     )
     .build();
 }
@@ -481,7 +508,7 @@ function buildPomodoroPlugin(): BuiltinPluginEntry {
             session,
           },
         };
-      },
+      }
     )
     .tool(
       {
@@ -521,7 +548,7 @@ function buildPomodoroPlugin(): BuiltinPluginEntry {
             total: totalStats,
           },
         };
-      },
+      }
     )
     .tool(
       {
@@ -564,7 +591,7 @@ function buildPomodoroPlugin(): BuiltinPluginEntry {
             session,
           },
         };
-      },
+      }
     )
     .build();
 }
@@ -663,7 +690,7 @@ export async function initializePlugins(): Promise<void> {
           manifest.name,
           manifest.id,
           'plugin',
-          manifest.requiredServices,
+          manifest.requiredServices
         );
       }
 
@@ -677,10 +704,13 @@ export async function initializePlugins(): Promise<void> {
               table.name,
               table.displayName,
               table.columns,
-              table.description,
+              table.description
             );
           } catch (tableErr) {
-            log.error(`[Plugins] Failed to create table "${table.name}" for ${manifest.id}:`, tableErr);
+            log.error(
+              `[Plugins] Failed to create table "${table.name}" for ${manifest.id}:`,
+              tableErr
+            );
           }
         }
       }

@@ -213,7 +213,12 @@ describe('Channel Auth Routes', () => {
     it('should return users with details', async () => {
       mockChannelUsersRepo.list.mockResolvedValue([
         mockUser(),
-        mockUser({ id: 'user-2', platformUserId: 'tg-67890', displayName: 'User Two', isBlocked: true }),
+        mockUser({
+          id: 'user-2',
+          platformUserId: 'tg-67890',
+          displayName: 'User Two',
+          isBlocked: true,
+        }),
       ]);
 
       const res = await app.request('/auth/users');

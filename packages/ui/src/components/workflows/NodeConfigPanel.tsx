@@ -6,7 +6,20 @@
  */
 
 import { useState, useCallback, useEffect, useMemo } from 'react';
-import { X, Trash2, Code, Play, CheckCircle2, XCircle, Activity, AlertCircle, Brain, GitBranch, Terminal, RefreshCw } from '../icons';
+import {
+  X,
+  Trash2,
+  Code,
+  Play,
+  CheckCircle2,
+  XCircle,
+  Activity,
+  AlertCircle,
+  Brain,
+  GitBranch,
+  Terminal,
+  RefreshCw,
+} from '../icons';
 import { toolsApi, providersApi } from '../../api';
 import type { ToolParams } from '../../pages/tools/types';
 import type { ToolNodeData, ToolNodeType } from './ToolNode';
@@ -40,7 +53,9 @@ const statusBadgeStyles: Record<NodeExecutionStatus, string> = {
   skipped: 'bg-text-muted/10 text-text-muted',
 };
 
-const statusIcons: Partial<Record<NodeExecutionStatus, React.ComponentType<{ className?: string }>>> = {
+const statusIcons: Partial<
+  Record<NodeExecutionStatus, React.ComponentType<{ className?: string }>>
+> = {
   running: Activity,
   success: CheckCircle2,
   error: XCircle,
@@ -69,7 +84,11 @@ const TIMEOUT_OPTIONS = [
   { value: 300000, label: '5m' },
 ] as const;
 
-function RetryTimeoutFields({ data, nodeId, onUpdate }: {
+function RetryTimeoutFields({
+  data,
+  nodeId,
+  onUpdate,
+}: {
   data: Record<string, unknown>;
   nodeId: string;
   onUpdate: (id: string, data: Record<string, unknown>) => void;
@@ -80,14 +99,20 @@ function RetryTimeoutFields({ data, nodeId, onUpdate }: {
         Error Handling
       </div>
       <div className="flex items-center justify-between">
-        <label className="text-xs text-text-secondary dark:text-dark-text-secondary">Retry on failure</label>
+        <label className="text-xs text-text-secondary dark:text-dark-text-secondary">
+          Retry on failure
+        </label>
         <select
           value={(data.retryCount as number) ?? 0}
-          onChange={(e) => onUpdate(nodeId, { ...data, retryCount: Number(e.target.value) || undefined })}
+          onChange={(e) =>
+            onUpdate(nodeId, { ...data, retryCount: Number(e.target.value) || undefined })
+          }
           className="px-2 py-1 text-xs bg-bg-primary dark:bg-dark-bg-primary border border-border dark:border-dark-border rounded text-text-primary dark:text-dark-text-primary focus:outline-none focus:ring-1 focus:ring-primary"
         >
           {RETRY_OPTIONS.map((opt) => (
-            <option key={opt.value} value={opt.value}>{opt.label}</option>
+            <option key={opt.value} value={opt.value}>
+              {opt.label}
+            </option>
           ))}
         </select>
       </div>
@@ -95,11 +120,15 @@ function RetryTimeoutFields({ data, nodeId, onUpdate }: {
         <label className="text-xs text-text-secondary dark:text-dark-text-secondary">Timeout</label>
         <select
           value={(data.timeoutMs as number) ?? 0}
-          onChange={(e) => onUpdate(nodeId, { ...data, timeoutMs: Number(e.target.value) || undefined })}
+          onChange={(e) =>
+            onUpdate(nodeId, { ...data, timeoutMs: Number(e.target.value) || undefined })
+          }
           className="px-2 py-1 text-xs bg-bg-primary dark:bg-dark-bg-primary border border-border dark:border-dark-border rounded text-text-primary dark:text-dark-text-primary focus:outline-none focus:ring-1 focus:ring-primary"
         >
           {TIMEOUT_OPTIONS.map((opt) => (
-            <option key={opt.value} value={opt.value}>{opt.label}</option>
+            <option key={opt.value} value={opt.value}>
+              {opt.label}
+            </option>
           ))}
         </select>
       </div>
@@ -107,14 +136,23 @@ function RetryTimeoutFields({ data, nodeId, onUpdate }: {
   );
 }
 
-function RetryAttemptsDisplay({ retryAttempts, status }: { retryAttempts: number; status: string }) {
-  const label = status === 'success'
-    ? `Succeeded after ${retryAttempts} ${retryAttempts === 1 ? 'retry' : 'retries'}`
-    : `Failed after ${retryAttempts} ${retryAttempts === 1 ? 'retry' : 'retries'}`;
+function RetryAttemptsDisplay({
+  retryAttempts,
+  status,
+}: {
+  retryAttempts: number;
+  status: string;
+}) {
+  const label =
+    status === 'success'
+      ? `Succeeded after ${retryAttempts} ${retryAttempts === 1 ? 'retry' : 'retries'}`
+      : `Failed after ${retryAttempts} ${retryAttempts === 1 ? 'retry' : 'retries'}`;
   return (
-    <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium rounded-full ${
-      status === 'success' ? 'bg-warning/10 text-warning' : 'bg-error/10 text-error'
-    }`}>
+    <span
+      className={`inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium rounded-full ${
+        status === 'success' ? 'bg-warning/10 text-warning' : 'bg-error/10 text-error'
+      }`}
+    >
       {label}
     </span>
   );
@@ -164,7 +202,9 @@ function ToolConfigPanel({
   const [argsError, setArgsError] = useState('');
 
   const hasResults = !!data.executionStatus && data.executionStatus !== 'pending';
-  const [activeTab, setActiveTab] = useState<'config' | 'results'>(hasResults ? 'results' : 'config');
+  const [activeTab, setActiveTab] = useState<'config' | 'results'>(
+    hasResults ? 'results' : 'config'
+  );
 
   // Schema-driven form state
   const [focusedField, setFocusedField] = useState<string | null>(null);
@@ -197,16 +237,21 @@ function ToolConfigPanel({
     }
 
     let cancelled = false;
-    toolsApi.list().then((tools) => {
-      if (cancelled) return;
-      for (const t of tools) {
-        schemaCache.set(t.name, t.parameters as ToolParams);
-      }
-      setToolSchema(schemaCache.get(data.toolName));
-    }).catch(() => {
-      // Non-critical — falls back to JSON editor
-    });
-    return () => { cancelled = true; };
+    toolsApi
+      .list()
+      .then((tools) => {
+        if (cancelled) return;
+        for (const t of tools) {
+          schemaCache.set(t.name, t.parameters as ToolParams);
+        }
+        setToolSchema(schemaCache.get(data.toolName));
+      })
+      .catch(() => {
+        // Non-critical — falls back to JSON editor
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [data.toolName]);
 
   const handleLabelBlur = useCallback(() => {
@@ -233,39 +278,63 @@ function ToolConfigPanel({
   }, [argsJson, data, node.id, onUpdate]);
 
   // Schema form: update a single field in toolArgs
-  const handleFieldChange = useCallback((name: string, value: unknown) => {
-    const newArgs = { ...data.toolArgs };
-    if (value === undefined) {
-      delete newArgs[name];
-    } else {
-      newArgs[name] = value;
-    }
-    onUpdate(node.id, { ...data, toolArgs: newArgs });
-    setArgsJson(JSON.stringify(newArgs, null, 2));
-  }, [data, node.id, onUpdate]);
+  const handleFieldChange = useCallback(
+    (name: string, value: unknown) => {
+      const newArgs = { ...data.toolArgs };
+      if (value === undefined) {
+        delete newArgs[name];
+      } else {
+        newArgs[name] = value;
+      }
+      onUpdate(node.id, { ...data, toolArgs: newArgs });
+      setArgsJson(JSON.stringify(newArgs, null, 2));
+    },
+    [data, node.id, onUpdate]
+  );
 
   // Insert template from output tree — into focused field or clipboard
-  const injectTemplate = useCallback((template: string) => {
-    if (focusedField) {
-      handleFieldChange(focusedField, template);
-    } else {
-      navigator.clipboard?.writeText(template);
-    }
-  }, [focusedField, handleFieldChange]);
+  const injectTemplate = useCallback(
+    (template: string) => {
+      if (focusedField) {
+        handleFieldChange(focusedField, template);
+      } else {
+        navigator.clipboard?.writeText(template);
+      }
+    },
+    [focusedField, handleFieldChange]
+  );
 
   // Test-run a single node with current args
   const handleTestRun = useCallback(async () => {
     if (isTesting) return;
     setIsTesting(true);
-    onUpdate(node.id, { ...data, executionStatus: 'running', executionError: undefined, executionOutput: undefined, executionDuration: undefined, resolvedArgs: undefined });
+    onUpdate(node.id, {
+      ...data,
+      executionStatus: 'running',
+      executionError: undefined,
+      executionOutput: undefined,
+      executionDuration: undefined,
+      resolvedArgs: undefined,
+    });
     const startTime = Date.now();
     try {
       const result = await toolsApi.execute(data.toolName, data.toolArgs ?? {});
       const durationMs = Date.now() - startTime;
-      onUpdate(node.id, { ...data, executionStatus: 'success', executionOutput: result, executionDuration: durationMs, resolvedArgs: data.toolArgs });
+      onUpdate(node.id, {
+        ...data,
+        executionStatus: 'success',
+        executionOutput: result,
+        executionDuration: durationMs,
+        resolvedArgs: data.toolArgs,
+      });
     } catch (err) {
       const durationMs = Date.now() - startTime;
-      onUpdate(node.id, { ...data, executionStatus: 'error', executionError: err instanceof Error ? err.message : 'Test run failed', executionDuration: durationMs });
+      onUpdate(node.id, {
+        ...data,
+        executionStatus: 'error',
+        executionError: err instanceof Error ? err.message : 'Test run failed',
+        executionDuration: durationMs,
+      });
     } finally {
       setIsTesting(false);
     }
@@ -279,7 +348,9 @@ function ToolConfigPanel({
   const hasSchemaFields = toolSchema?.properties && Object.keys(toolSchema.properties).length > 0;
 
   return (
-    <div className={`flex flex-col border-l border-border dark:border-dark-border bg-bg-secondary dark:bg-dark-bg-secondary ${className}`}>
+    <div
+      className={`flex flex-col border-l border-border dark:border-dark-border bg-bg-secondary dark:bg-dark-bg-secondary ${className}`}
+    >
       {/* Header with tabs */}
       <div className="flex items-center gap-2 p-3 border-b border-border dark:border-dark-border">
         <h3 className="text-sm font-semibold text-text-primary dark:text-dark-text-primary flex-1 truncate">
@@ -329,7 +400,9 @@ function ToolConfigPanel({
               const StatusIcon = statusIcons[status];
               return (
                 <>
-                  <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full ${statusBadgeStyles[status]}`}>
+                  <span
+                    className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full ${statusBadgeStyles[status]}`}
+                  >
                     {StatusIcon && <StatusIcon className="w-3 h-3" />}
                     {status}
                   </span>
@@ -341,7 +414,10 @@ function ToolConfigPanel({
                     </span>
                   )}
                   {(data.retryAttempts as number) > 0 && (
-                    <RetryAttemptsDisplay retryAttempts={data.retryAttempts as number} status={String(data.executionStatus)} />
+                    <RetryAttemptsDisplay
+                      retryAttempts={data.retryAttempts as number}
+                      status={String(data.executionStatus)}
+                    />
                   )}
                 </>
               );
@@ -349,16 +425,21 @@ function ToolConfigPanel({
           </div>
 
           {/* Resolved Input Args */}
-          {data.resolvedArgs && Object.keys(data.resolvedArgs as Record<string, unknown>).length > 0 && (
-            <div>
-              <label className="block text-xs font-medium text-text-muted dark:text-dark-text-muted mb-1">
-                Input (Resolved Args)
-              </label>
-              <div className="px-2 py-1.5 bg-bg-tertiary dark:bg-dark-bg-tertiary rounded-md max-h-48 overflow-y-auto">
-                <JsonTreeView data={data.resolvedArgs} pathPrefix={`${node.id}.input`} onClickPath={copyToClipboard} />
+          {data.resolvedArgs &&
+            Object.keys(data.resolvedArgs as Record<string, unknown>).length > 0 && (
+              <div>
+                <label className="block text-xs font-medium text-text-muted dark:text-dark-text-muted mb-1">
+                  Input (Resolved Args)
+                </label>
+                <div className="px-2 py-1.5 bg-bg-tertiary dark:bg-dark-bg-tertiary rounded-md max-h-48 overflow-y-auto">
+                  <JsonTreeView
+                    data={data.resolvedArgs}
+                    pathPrefix={`${node.id}.input`}
+                    onClickPath={copyToClipboard}
+                  />
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
           {/* Output */}
           {data.executionOutput !== undefined && data.executionOutput !== null && (
@@ -367,7 +448,11 @@ function ToolConfigPanel({
                 Output
               </label>
               <div className="px-2 py-1.5 bg-bg-tertiary dark:bg-dark-bg-tertiary rounded-md max-h-64 overflow-y-auto">
-                <JsonTreeView data={data.executionOutput} pathPrefix={`${node.id}.output`} onClickPath={copyToClipboard} />
+                <JsonTreeView
+                  data={data.executionOutput}
+                  pathPrefix={`${node.id}.output`}
+                  onClickPath={copyToClipboard}
+                />
               </div>
             </div>
           )}
@@ -375,9 +460,7 @@ function ToolConfigPanel({
           {/* Error */}
           {data.executionError && (
             <div>
-              <label className="block text-xs font-medium text-error mb-1">
-                Error
-              </label>
+              <label className="block text-xs font-medium text-error mb-1">Error</label>
               <pre className="px-3 py-2 text-xs font-mono bg-error/5 border border-error/20 rounded-md overflow-x-auto max-h-32 overflow-y-auto text-error whitespace-pre-wrap break-words">
                 {data.executionError as string}
               </pre>
@@ -491,21 +574,20 @@ function ToolConfigPanel({
                       : 'border-border dark:border-dark-border focus:ring-primary'
                   }`}
                 />
-                {argsError && (
-                  <p className="text-xs text-error mt-1">{argsError}</p>
-                )}
+                {argsError && <p className="text-xs text-error mt-1">{argsError}</p>}
               </div>
             )}
 
             {/* Output tree browser — upstream node outputs */}
             {upstreamNodes.length > 0 && (
-              <OutputTreeBrowser
-                upstreamNodes={upstreamNodes}
-                onInsert={injectTemplate}
-              />
+              <OutputTreeBrowser upstreamNodes={upstreamNodes} onInsert={injectTemplate} />
             )}
 
-            <RetryTimeoutFields data={data as unknown as Record<string, unknown>} nodeId={node.id} onUpdate={onUpdate} />
+            <RetryTimeoutFields
+              data={data as unknown as Record<string, unknown>}
+              nodeId={node.id}
+              onUpdate={onUpdate}
+            />
           </div>
 
           {/* Test Run + Delete */}
@@ -555,7 +637,13 @@ const CONDITION_OPTIONS = [
   { value: 'no_activity', label: 'No Activity' },
 ];
 
-function TriggerConfigPanel({ node, onUpdate, onDelete, onClose, className = '' }: NodeConfigPanelProps) {
+function TriggerConfigPanel({
+  node,
+  onUpdate,
+  onDelete,
+  onClose,
+  className = '',
+}: NodeConfigPanelProps) {
   const data = node.data as TriggerNodeData;
 
   const [label, setLabel] = useState(data.label ?? 'Trigger');
@@ -578,14 +666,19 @@ function TriggerConfigPanel({ node, onUpdate, onDelete, onClose, className = '' 
   }, [node.id]);
 
   // Push updates to parent
-  const pushUpdate = useCallback((partial: Partial<TriggerNodeData>) => {
-    onUpdate(node.id, { ...data, ...partial });
-  }, [node.id, data, onUpdate]);
+  const pushUpdate = useCallback(
+    (partial: Partial<TriggerNodeData>) => {
+      onUpdate(node.id, { ...data, ...partial });
+    },
+    [node.id, data, onUpdate]
+  );
 
   const cronValidation = triggerType === 'schedule' ? validateCron(cron) : { valid: true };
 
   return (
-    <div className={`flex flex-col border-l border-border dark:border-dark-border bg-bg-secondary dark:bg-dark-bg-secondary ${className}`}>
+    <div
+      className={`flex flex-col border-l border-border dark:border-dark-border bg-bg-secondary dark:bg-dark-bg-secondary ${className}`}
+    >
       {/* Header */}
       <div className="flex items-center gap-2 p-3 border-b border-border dark:border-dark-border">
         <div className="w-5 h-5 rounded-full bg-violet-500/20 flex items-center justify-center shrink-0">
@@ -606,19 +699,25 @@ function TriggerConfigPanel({ node, onUpdate, onDelete, onClose, className = '' 
       <div className="flex-1 overflow-y-auto p-3 space-y-4">
         {/* Label */}
         <div>
-          <label className="block text-xs font-medium text-text-muted dark:text-dark-text-muted mb-1">Label</label>
+          <label className="block text-xs font-medium text-text-muted dark:text-dark-text-muted mb-1">
+            Label
+          </label>
           <input
             type="text"
             value={label}
             onChange={(e) => setLabel(e.target.value)}
-            onBlur={() => { if (label !== data.label) pushUpdate({ label }); }}
+            onBlur={() => {
+              if (label !== data.label) pushUpdate({ label });
+            }}
             className={INPUT_CLS}
           />
         </div>
 
         {/* Trigger Type */}
         <div>
-          <label className="block text-xs font-medium text-text-muted dark:text-dark-text-muted mb-1">When to run</label>
+          <label className="block text-xs font-medium text-text-muted dark:text-dark-text-muted mb-1">
+            When to run
+          </label>
           <select
             value={triggerType}
             onChange={(e) => {
@@ -629,7 +728,9 @@ function TriggerConfigPanel({ node, onUpdate, onDelete, onClose, className = '' 
             className={INPUT_CLS}
           >
             {TRIGGER_TYPES.map((t) => (
-              <option key={t.value} value={t.value}>{t.label}</option>
+              <option key={t.value} value={t.value}>
+                {t.label}
+              </option>
             ))}
           </select>
         </div>
@@ -645,7 +746,9 @@ function TriggerConfigPanel({ node, onUpdate, onDelete, onClose, className = '' 
                 type="text"
                 value={cron}
                 onChange={(e) => setCron(e.target.value)}
-                onBlur={() => { if (cronValidation.valid) pushUpdate({ cron }); }}
+                onBlur={() => {
+                  if (cronValidation.valid) pushUpdate({ cron });
+                }}
                 placeholder="0 8 * * *"
                 className={`${INPUT_CLS} font-mono ${cron.trim() && !cronValidation.valid ? '!border-error !ring-error' : ''}`}
               />
@@ -660,7 +763,10 @@ function TriggerConfigPanel({ node, onUpdate, onDelete, onClose, className = '' 
                 <button
                   key={preset.cron}
                   type="button"
-                  onClick={() => { setCron(preset.cron); pushUpdate({ cron: preset.cron }); }}
+                  onClick={() => {
+                    setCron(preset.cron);
+                    pushUpdate({ cron: preset.cron });
+                  }}
                   className={`px-2 py-0.5 text-[10px] rounded border transition-colors ${
                     cron === preset.cron
                       ? 'bg-violet-500/20 border-violet-400 text-violet-600 dark:text-violet-400'
@@ -701,12 +807,17 @@ function TriggerConfigPanel({ node, onUpdate, onDelete, onClose, className = '' 
               </label>
               <select
                 value={condition}
-                onChange={(e) => { setCondition(e.target.value); pushUpdate({ condition: e.target.value }); }}
+                onChange={(e) => {
+                  setCondition(e.target.value);
+                  pushUpdate({ condition: e.target.value });
+                }}
                 className={INPUT_CLS}
               >
                 <option value="">Select condition...</option>
                 {CONDITION_OPTIONS.map((c) => (
-                  <option key={c.value} value={c.value}>{c.label}</option>
+                  <option key={c.value} value={c.value}>
+                    {c.label}
+                  </option>
                 ))}
               </select>
             </div>
@@ -793,11 +904,15 @@ function LlmConfigPanel({
   const [showAdvanced, setShowAdvanced] = useState(!!data.apiKey || !!data.baseUrl);
 
   // Available providers from API (with configuration status)
-  const [providers, setProviders] = useState<Array<{ id: string; name: string; isConfigured: boolean }>>([]);
+  const [providers, setProviders] = useState<
+    Array<{ id: string; name: string; isConfigured: boolean }>
+  >([]);
   const [models, setModels] = useState<Array<{ id: string; name: string }>>([]);
 
   const hasResults = !!(data.executionStatus as string) && data.executionStatus !== 'pending';
-  const [activeTab, setActiveTab] = useState<'config' | 'results'>(hasResults ? 'results' : 'config');
+  const [activeTab, setActiveTab] = useState<'config' | 'results'>(
+    hasResults ? 'results' : 'config'
+  );
 
   // Reset on node change
   useEffect(() => {
@@ -819,46 +934,65 @@ function LlmConfigPanel({
   }, [hasResults]);
 
   // Derived: configured providers sorted first
-  const configuredProviders = useMemo(
-    () => providers.filter((p) => p.isConfigured),
-    [providers],
-  );
+  const configuredProviders = useMemo(() => providers.filter((p) => p.isConfigured), [providers]);
   const isProviderConfigured = useMemo(
     () => configuredProviders.some((p) => p.id === provider),
-    [configuredProviders, provider],
+    [configuredProviders, provider]
   );
 
   // Fetch available providers
   useEffect(() => {
     let cancelled = false;
-    providersApi.list().then((resp) => {
-      if (cancelled) return;
-      const items = resp.providers.map((p) => ({
-        id: p.id,
-        name: p.name ?? p.id,
-        isConfigured: 'isConfigured' in p ? !!(p as unknown as Record<string, unknown>).isConfigured : false,
-      })).filter((p) => p.id);
-      setProviders(items);
-    }).catch(() => { /* non-critical */ });
-    return () => { cancelled = true; };
+    providersApi
+      .list()
+      .then((resp) => {
+        if (cancelled) return;
+        const items = resp.providers
+          .map((p) => ({
+            id: p.id,
+            name: p.name ?? p.id,
+            isConfigured:
+              'isConfigured' in p
+                ? !!(p as unknown as Record<string, unknown>).isConfigured
+                : false,
+          }))
+          .filter((p) => p.id);
+        setProviders(items);
+      })
+      .catch(() => {
+        /* non-critical */
+      });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   // Fetch models when provider changes, auto-select first if model empty
   useEffect(() => {
-    if (!provider) { setModels([]); return; }
+    if (!provider) {
+      setModels([]);
+      return;
+    }
     let cancelled = false;
-    providersApi.models(provider).then((resp) => {
-      if (cancelled) return;
-      const list = resp.models ?? [];
-      setModels(list);
-      // Auto-select first model when current model is empty
-      const firstModel = list[0];
-      if (!model && firstModel) {
-        setModel(firstModel.id);
-        onUpdate(node.id, { ...data, model: firstModel.id });
-      }
-    }).catch(() => { if (!cancelled) setModels([]); });
-    return () => { cancelled = true; };
+    providersApi
+      .models(provider)
+      .then((resp) => {
+        if (cancelled) return;
+        const list = resp.models ?? [];
+        setModels(list);
+        // Auto-select first model when current model is empty
+        const firstModel = list[0];
+        if (!model && firstModel) {
+          setModel(firstModel.id);
+          onUpdate(node.id, { ...data, model: firstModel.id });
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setModels([]);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [provider]);
 
   // Auto-select first configured provider when provider is empty/unconfigured
@@ -877,15 +1011,21 @@ function LlmConfigPanel({
     }
   }, [isProviderConfigured, providers.length]);
 
-  const pushUpdate = useCallback((partial: Partial<LlmNodeData>) => {
-    onUpdate(node.id, { ...data, ...partial });
-  }, [node.id, data, onUpdate]);
+  const pushUpdate = useCallback(
+    (partial: Partial<LlmNodeData>) => {
+      onUpdate(node.id, { ...data, ...partial });
+    },
+    [node.id, data, onUpdate]
+  );
 
   // Insert template from output tree
-  const injectTemplate = useCallback((template: string) => {
-    setUserMessage((prev) => prev + template);
-    pushUpdate({ userMessage: userMessage + template });
-  }, [userMessage, pushUpdate]);
+  const injectTemplate = useCallback(
+    (template: string) => {
+      setUserMessage((prev) => prev + template);
+      pushUpdate({ userMessage: userMessage + template });
+    },
+    [userMessage, pushUpdate]
+  );
 
   // Copy template path to clipboard
   const copyToClipboard = useCallback((template: string) => {
@@ -893,7 +1033,9 @@ function LlmConfigPanel({
   }, []);
 
   return (
-    <div className={`flex flex-col border-l border-border dark:border-dark-border bg-bg-secondary dark:bg-dark-bg-secondary ${className}`}>
+    <div
+      className={`flex flex-col border-l border-border dark:border-dark-border bg-bg-secondary dark:bg-dark-bg-secondary ${className}`}
+    >
       {/* Header with tabs */}
       <div className="flex items-center gap-2 p-3 border-b border-border dark:border-dark-border">
         <div className="w-5 h-5 rounded-full bg-indigo-500/20 flex items-center justify-center shrink-0">
@@ -946,7 +1088,9 @@ function LlmConfigPanel({
               const StatusIcon = statusIcons[status];
               return (
                 <>
-                  <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full ${statusBadgeStyles[status]}`}>
+                  <span
+                    className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full ${statusBadgeStyles[status]}`}
+                  >
                     {StatusIcon && <StatusIcon className="w-3 h-3" />}
                     {status}
                   </span>
@@ -958,7 +1102,10 @@ function LlmConfigPanel({
                     </span>
                   )}
                   {(data.retryAttempts as number) > 0 && (
-                    <RetryAttemptsDisplay retryAttempts={data.retryAttempts as number} status={String(data.executionStatus)} />
+                    <RetryAttemptsDisplay
+                      retryAttempts={data.retryAttempts as number}
+                      status={String(data.executionStatus)}
+                    />
                   )}
                 </>
               );
@@ -977,7 +1124,11 @@ function LlmConfigPanel({
                 </pre>
               ) : (
                 <div className="px-2 py-1.5 bg-bg-tertiary dark:bg-dark-bg-tertiary rounded-md max-h-64 overflow-y-auto">
-                  <JsonTreeView data={data.executionOutput} pathPrefix={`${node.id}.output`} onClickPath={copyToClipboard} />
+                  <JsonTreeView
+                    data={data.executionOutput}
+                    pathPrefix={`${node.id}.output`}
+                    onClickPath={copyToClipboard}
+                  />
                 </div>
               )}
             </div>
@@ -1035,25 +1186,32 @@ function LlmConfigPanel({
               </div>
             ) : providers.length > 0 ? (
               <div className="px-3 py-2 text-xs bg-bg-tertiary dark:bg-dark-bg-tertiary rounded-md text-text-muted">
-                No AI providers configured. Add API keys in <span className="font-medium">Settings → AI Providers</span>.
+                No AI providers configured. Add API keys in{' '}
+                <span className="font-medium">Settings → AI Providers</span>.
               </div>
             ) : null}
 
             {/* Label */}
             <div>
-              <label className="block text-xs font-medium text-text-muted dark:text-dark-text-muted mb-1">Label</label>
+              <label className="block text-xs font-medium text-text-muted dark:text-dark-text-muted mb-1">
+                Label
+              </label>
               <input
                 type="text"
                 value={label}
                 onChange={(e) => setLabel(e.target.value)}
-                onBlur={() => { if (label !== data.label) pushUpdate({ label }); }}
+                onBlur={() => {
+                  if (label !== data.label) pushUpdate({ label });
+                }}
                 className={INPUT_CLS}
               />
             </div>
 
             {/* Provider */}
             <div>
-              <label className="block text-xs font-medium text-text-muted dark:text-dark-text-muted mb-1">Provider</label>
+              <label className="block text-xs font-medium text-text-muted dark:text-dark-text-muted mb-1">
+                Provider
+              </label>
               {providers.length > 0 ? (
                 <select
                   value={provider}
@@ -1068,14 +1226,20 @@ function LlmConfigPanel({
                   {configuredProviders.length > 0 && (
                     <optgroup label="Configured">
                       {configuredProviders.map((p) => (
-                        <option key={p.id} value={p.id}>{p.name}</option>
+                        <option key={p.id} value={p.id}>
+                          {p.name}
+                        </option>
                       ))}
                     </optgroup>
                   )}
                   <optgroup label="Other">
-                    {providers.filter((p) => !p.isConfigured).map((p) => (
-                      <option key={p.id} value={p.id}>{p.name} (no key)</option>
-                    ))}
+                    {providers
+                      .filter((p) => !p.isConfigured)
+                      .map((p) => (
+                        <option key={p.id} value={p.id}>
+                          {p.name} (no key)
+                        </option>
+                      ))}
                   </optgroup>
                 </select>
               ) : (
@@ -1091,14 +1255,17 @@ function LlmConfigPanel({
               {/* Warning for unconfigured provider */}
               {providers.length > 0 && !isProviderConfigured && provider && (
                 <p className="mt-1.5 px-2.5 py-1.5 text-[10px] bg-warning/10 text-warning border border-warning/20 rounded-md">
-                  No API key for <span className="font-medium">{provider}</span>. Configure it in Settings → AI Providers, or enter a key below.
+                  No API key for <span className="font-medium">{provider}</span>. Configure it in
+                  Settings → AI Providers, or enter a key below.
                 </p>
               )}
             </div>
 
             {/* Model */}
             <div>
-              <label className="block text-xs font-medium text-text-muted dark:text-dark-text-muted mb-1">Model</label>
+              <label className="block text-xs font-medium text-text-muted dark:text-dark-text-muted mb-1">
+                Model
+              </label>
               {models.length > 0 ? (
                 <select
                   value={model}
@@ -1110,7 +1277,9 @@ function LlmConfigPanel({
                 >
                   <option value="">Select model...</option>
                   {models.map((m) => (
-                    <option key={m.id} value={m.id}>{m.name || m.id}</option>
+                    <option key={m.id} value={m.id}>
+                      {m.name || m.id}
+                    </option>
                   ))}
                 </select>
               ) : (
@@ -1207,7 +1376,9 @@ function LlmConfigPanel({
                   <div>
                     <label className="block text-xs font-medium text-text-muted dark:text-dark-text-muted mb-1">
                       Custom API Key
-                      <span className="ml-1 font-normal text-text-muted/60">(overrides stored key)</span>
+                      <span className="ml-1 font-normal text-text-muted/60">
+                        (overrides stored key)
+                      </span>
                     </label>
                     <input
                       type="password"
@@ -1237,13 +1408,14 @@ function LlmConfigPanel({
 
             {/* Output tree browser — upstream node outputs */}
             {upstreamNodes.length > 0 && (
-              <OutputTreeBrowser
-                upstreamNodes={upstreamNodes}
-                onInsert={injectTemplate}
-              />
+              <OutputTreeBrowser upstreamNodes={upstreamNodes} onInsert={injectTemplate} />
             )}
 
-            <RetryTimeoutFields data={data as unknown as Record<string, unknown>} nodeId={node.id} onUpdate={onUpdate} />
+            <RetryTimeoutFields
+              data={data as unknown as Record<string, unknown>}
+              nodeId={node.id}
+              onUpdate={onUpdate}
+            />
           </div>
 
           {/* Delete */}
@@ -1281,7 +1453,9 @@ function ConditionConfigPanel({
   const [description, setDescription] = useState(data.description ?? '');
 
   const hasResults = !!(data.executionStatus as string) && data.executionStatus !== 'pending';
-  const [activeTab, setActiveTab] = useState<'config' | 'results'>(hasResults ? 'results' : 'config');
+  const [activeTab, setActiveTab] = useState<'config' | 'results'>(
+    hasResults ? 'results' : 'config'
+  );
 
   useEffect(() => {
     setLabel(data.label ?? 'Condition');
@@ -1294,17 +1468,25 @@ function ConditionConfigPanel({
     if (hasResults) setActiveTab('results');
   }, [hasResults]);
 
-  const pushUpdate = useCallback((partial: Partial<ConditionNodeData>) => {
-    onUpdate(node.id, { ...data, ...partial });
-  }, [node.id, data, onUpdate]);
+  const pushUpdate = useCallback(
+    (partial: Partial<ConditionNodeData>) => {
+      onUpdate(node.id, { ...data, ...partial });
+    },
+    [node.id, data, onUpdate]
+  );
 
-  const injectTemplate = useCallback((template: string) => {
-    setExpression((prev) => prev + template);
-    pushUpdate({ expression: expression + template });
-  }, [expression, pushUpdate]);
+  const injectTemplate = useCallback(
+    (template: string) => {
+      setExpression((prev) => prev + template);
+      pushUpdate({ expression: expression + template });
+    },
+    [expression, pushUpdate]
+  );
 
   return (
-    <div className={`flex flex-col border-l border-border dark:border-dark-border bg-bg-secondary dark:bg-dark-bg-secondary ${className}`}>
+    <div
+      className={`flex flex-col border-l border-border dark:border-dark-border bg-bg-secondary dark:bg-dark-bg-secondary ${className}`}
+    >
       {/* Header with tabs */}
       <div className="flex items-center gap-2 p-3 border-b border-border dark:border-dark-border">
         <div className="w-5 h-5 rounded-full bg-emerald-500/20 flex items-center justify-center shrink-0">
@@ -1353,7 +1535,9 @@ function ConditionConfigPanel({
               const StatusIcon = statusIcons[status];
               return (
                 <>
-                  <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full ${statusBadgeStyles[status]}`}>
+                  <span
+                    className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full ${statusBadgeStyles[status]}`}
+                  >
                     {StatusIcon && <StatusIcon className="w-3 h-3" />}
                     {status}
                   </span>
@@ -1365,7 +1549,10 @@ function ConditionConfigPanel({
                     </span>
                   )}
                   {(data.retryAttempts as number) > 0 && (
-                    <RetryAttemptsDisplay retryAttempts={data.retryAttempts as number} status={String(data.executionStatus)} />
+                    <RetryAttemptsDisplay
+                      retryAttempts={data.retryAttempts as number}
+                      status={String(data.executionStatus)}
+                    />
                   )}
                 </>
               );
@@ -1375,12 +1562,16 @@ function ConditionConfigPanel({
           {/* Branch taken */}
           {data.branchTaken && (
             <div>
-              <label className="block text-xs font-medium text-text-muted dark:text-dark-text-muted mb-1">Branch Taken</label>
-              <span className={`inline-block px-2 py-0.5 text-xs font-medium rounded ${
-                data.branchTaken === 'true'
-                  ? 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300'
-                  : 'bg-red-500/20 text-red-700 dark:text-red-300'
-              }`}>
+              <label className="block text-xs font-medium text-text-muted dark:text-dark-text-muted mb-1">
+                Branch Taken
+              </label>
+              <span
+                className={`inline-block px-2 py-0.5 text-xs font-medium rounded ${
+                  data.branchTaken === 'true'
+                    ? 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300'
+                    : 'bg-red-500/20 text-red-700 dark:text-red-300'
+                }`}
+              >
                 {data.branchTaken === 'true' ? 'True' : 'False'}
               </span>
             </div>
@@ -1399,12 +1590,16 @@ function ConditionConfigPanel({
         <>
           <div className="flex-1 overflow-y-auto p-3 space-y-4">
             <div>
-              <label className="block text-xs font-medium text-text-muted dark:text-dark-text-muted mb-1">Label</label>
+              <label className="block text-xs font-medium text-text-muted dark:text-dark-text-muted mb-1">
+                Label
+              </label>
               <input
                 type="text"
                 value={label}
                 onChange={(e) => setLabel(e.target.value)}
-                onBlur={() => { if (label !== data.label) pushUpdate({ label }); }}
+                onBlur={() => {
+                  if (label !== data.label) pushUpdate({ label });
+                }}
                 className={INPUT_CLS}
               />
             </div>
@@ -1412,7 +1607,9 @@ function ConditionConfigPanel({
             <div>
               <label className="block text-xs font-medium text-text-muted dark:text-dark-text-muted mb-1">
                 Expression
-                <span className="ml-1 font-normal text-text-muted/60">(JS — returns truthy/falsy)</span>
+                <span className="ml-1 font-normal text-text-muted/60">
+                  (JS — returns truthy/falsy)
+                </span>
               </label>
               <textarea
                 value={expression}
@@ -1423,33 +1620,44 @@ function ConditionConfigPanel({
                 placeholder="node_1 > 10 || node_2.status === 'ok'"
               />
               <p className="mt-1 text-[10px] text-text-muted">
-                Access upstream data by node ID: <code className="text-emerald-600 dark:text-emerald-400">node_1</code>, <code className="text-emerald-600 dark:text-emerald-400">node_2.field</code>
+                Access upstream data by node ID:{' '}
+                <code className="text-emerald-600 dark:text-emerald-400">node_1</code>,{' '}
+                <code className="text-emerald-600 dark:text-emerald-400">node_2.field</code>
               </p>
             </div>
 
             {/* Quick presets */}
             <div>
-              <label className="block text-xs font-medium text-text-muted dark:text-dark-text-muted mb-1">Quick Expressions</label>
+              <label className="block text-xs font-medium text-text-muted dark:text-dark-text-muted mb-1">
+                Quick Expressions
+              </label>
               <div className="flex flex-wrap gap-1">
-                {['node_1 !== null', 'node_1 > 0', 'node_1.length > 0', "node_1 === 'value'"].map((preset) => (
-                  <button
-                    key={preset}
-                    type="button"
-                    onClick={() => { setExpression(preset); pushUpdate({ expression: preset }); }}
-                    className={`px-2 py-0.5 text-[10px] font-mono rounded border transition-colors ${
-                      expression === preset
-                        ? 'bg-emerald-500/20 border-emerald-400 text-emerald-600 dark:text-emerald-400'
-                        : 'bg-bg-tertiary dark:bg-dark-bg-tertiary border-border dark:border-dark-border text-text-muted hover:border-emerald-400/50'
-                    }`}
-                  >
-                    {preset}
-                  </button>
-                ))}
+                {['node_1 !== null', 'node_1 > 0', 'node_1.length > 0', "node_1 === 'value'"].map(
+                  (preset) => (
+                    <button
+                      key={preset}
+                      type="button"
+                      onClick={() => {
+                        setExpression(preset);
+                        pushUpdate({ expression: preset });
+                      }}
+                      className={`px-2 py-0.5 text-[10px] font-mono rounded border transition-colors ${
+                        expression === preset
+                          ? 'bg-emerald-500/20 border-emerald-400 text-emerald-600 dark:text-emerald-400'
+                          : 'bg-bg-tertiary dark:bg-dark-bg-tertiary border-border dark:border-dark-border text-text-muted hover:border-emerald-400/50'
+                      }`}
+                    >
+                      {preset}
+                    </button>
+                  )
+                )}
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-text-muted dark:text-dark-text-muted mb-1">Description</label>
+              <label className="block text-xs font-medium text-text-muted dark:text-dark-text-muted mb-1">
+                Description
+              </label>
               <textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
@@ -1464,7 +1672,11 @@ function ConditionConfigPanel({
               <OutputTreeBrowser upstreamNodes={upstreamNodes} onInsert={injectTemplate} />
             )}
 
-            <RetryTimeoutFields data={data as unknown as Record<string, unknown>} nodeId={node.id} onUpdate={onUpdate} />
+            <RetryTimeoutFields
+              data={data as unknown as Record<string, unknown>}
+              nodeId={node.id}
+              onUpdate={onUpdate}
+            />
           </div>
 
           <div className="p-3 border-t border-border dark:border-dark-border">
@@ -1508,7 +1720,9 @@ function CodeConfigPanel({
   const [description, setDescription] = useState(data.description ?? '');
 
   const hasResults = !!(data.executionStatus as string) && data.executionStatus !== 'pending';
-  const [activeTab, setActiveTab] = useState<'config' | 'results'>(hasResults ? 'results' : 'config');
+  const [activeTab, setActiveTab] = useState<'config' | 'results'>(
+    hasResults ? 'results' : 'config'
+  );
 
   useEffect(() => {
     setLabel(data.label ?? 'Code');
@@ -1522,21 +1736,29 @@ function CodeConfigPanel({
     if (hasResults) setActiveTab('results');
   }, [hasResults]);
 
-  const pushUpdate = useCallback((partial: Partial<CodeNodeData>) => {
-    onUpdate(node.id, { ...data, ...partial });
-  }, [node.id, data, onUpdate]);
+  const pushUpdate = useCallback(
+    (partial: Partial<CodeNodeData>) => {
+      onUpdate(node.id, { ...data, ...partial });
+    },
+    [node.id, data, onUpdate]
+  );
 
-  const injectTemplate = useCallback((template: string) => {
-    setCode((prev) => prev + template);
-    pushUpdate({ code: code + template });
-  }, [code, pushUpdate]);
+  const injectTemplate = useCallback(
+    (template: string) => {
+      setCode((prev) => prev + template);
+      pushUpdate({ code: code + template });
+    },
+    [code, pushUpdate]
+  );
 
   const copyToClipboard = useCallback((template: string) => {
     navigator.clipboard?.writeText(template);
   }, []);
 
   return (
-    <div className={`flex flex-col border-l border-border dark:border-dark-border bg-bg-secondary dark:bg-dark-bg-secondary ${className}`}>
+    <div
+      className={`flex flex-col border-l border-border dark:border-dark-border bg-bg-secondary dark:bg-dark-bg-secondary ${className}`}
+    >
       <div className="flex items-center gap-2 p-3 border-b border-border dark:border-dark-border">
         <div className="w-5 h-5 rounded-full bg-teal-500/20 flex items-center justify-center shrink-0">
           <Terminal className="w-3 h-3 text-teal-600 dark:text-teal-400" />
@@ -1568,7 +1790,10 @@ function CodeConfigPanel({
             </button>
           </div>
         )}
-        <button onClick={onClose} className="p-1 text-text-muted hover:text-text-primary dark:hover:text-dark-text-primary transition-colors shrink-0">
+        <button
+          onClick={onClose}
+          className="p-1 text-text-muted hover:text-text-primary dark:hover:text-dark-text-primary transition-colors shrink-0"
+        >
           <X className="w-4 h-4" />
         </button>
       </div>
@@ -1581,17 +1806,24 @@ function CodeConfigPanel({
               const StatusIcon = statusIcons[status];
               return (
                 <>
-                  <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full ${statusBadgeStyles[status]}`}>
+                  <span
+                    className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full ${statusBadgeStyles[status]}`}
+                  >
                     {StatusIcon && <StatusIcon className="w-3 h-3" />}
                     {status}
                   </span>
                   {data.executionDuration != null && (
                     <span className="text-xs text-text-muted dark:text-dark-text-muted">
-                      {(data.executionDuration as number) < 1000 ? `${data.executionDuration}ms` : `${((data.executionDuration as number) / 1000).toFixed(1)}s`}
+                      {(data.executionDuration as number) < 1000
+                        ? `${data.executionDuration}ms`
+                        : `${((data.executionDuration as number) / 1000).toFixed(1)}s`}
                     </span>
                   )}
                   {(data.retryAttempts as number) > 0 && (
-                    <RetryAttemptsDisplay retryAttempts={data.retryAttempts as number} status={String(data.executionStatus)} />
+                    <RetryAttemptsDisplay
+                      retryAttempts={data.retryAttempts as number}
+                      status={String(data.executionStatus)}
+                    />
                   )}
                 </>
               );
@@ -1599,12 +1831,20 @@ function CodeConfigPanel({
           </div>
           {data.executionOutput !== undefined && data.executionOutput !== null && (
             <div>
-              <label className="block text-xs font-medium text-text-muted dark:text-dark-text-muted mb-1">Output</label>
+              <label className="block text-xs font-medium text-text-muted dark:text-dark-text-muted mb-1">
+                Output
+              </label>
               {typeof data.executionOutput === 'string' ? (
-                <pre className="px-3 py-2 text-xs font-mono bg-bg-tertiary dark:bg-dark-bg-tertiary rounded-md overflow-x-auto max-h-64 overflow-y-auto text-text-primary dark:text-dark-text-primary whitespace-pre-wrap break-words">{data.executionOutput}</pre>
+                <pre className="px-3 py-2 text-xs font-mono bg-bg-tertiary dark:bg-dark-bg-tertiary rounded-md overflow-x-auto max-h-64 overflow-y-auto text-text-primary dark:text-dark-text-primary whitespace-pre-wrap break-words">
+                  {data.executionOutput}
+                </pre>
               ) : (
                 <div className="px-2 py-1.5 bg-bg-tertiary dark:bg-dark-bg-tertiary rounded-md max-h-64 overflow-y-auto">
-                  <JsonTreeView data={data.executionOutput} pathPrefix={`${node.id}.output`} onClickPath={copyToClipboard} />
+                  <JsonTreeView
+                    data={data.executionOutput}
+                    pathPrefix={`${node.id}.output`}
+                    onClickPath={copyToClipboard}
+                  />
                 </div>
               )}
             </div>
@@ -1612,47 +1852,104 @@ function CodeConfigPanel({
           {data.executionError && (
             <div>
               <label className="block text-xs font-medium text-error mb-1">Error</label>
-              <pre className="px-3 py-2 text-xs font-mono bg-error/5 border border-error/20 rounded-md overflow-x-auto max-h-32 overflow-y-auto text-error whitespace-pre-wrap break-words">{data.executionError as string}</pre>
+              <pre className="px-3 py-2 text-xs font-mono bg-error/5 border border-error/20 rounded-md overflow-x-auto max-h-32 overflow-y-auto text-error whitespace-pre-wrap break-words">
+                {data.executionError as string}
+              </pre>
             </div>
           )}
           <div className="pt-2 border-t border-border dark:border-dark-border">
-            <span className="text-[10px] text-text-muted dark:text-dark-text-muted">{language}</span>
+            <span className="text-[10px] text-text-muted dark:text-dark-text-muted">
+              {language}
+            </span>
           </div>
         </div>
       ) : (
         <>
           <div className="flex-1 overflow-y-auto p-3 space-y-4">
             <div>
-              <label className="block text-xs font-medium text-text-muted dark:text-dark-text-muted mb-1">Label</label>
-              <input type="text" value={label} onChange={(e) => setLabel(e.target.value)}
-                onBlur={() => { if (label !== data.label) pushUpdate({ label }); }} className={INPUT_CLS} />
+              <label className="block text-xs font-medium text-text-muted dark:text-dark-text-muted mb-1">
+                Label
+              </label>
+              <input
+                type="text"
+                value={label}
+                onChange={(e) => setLabel(e.target.value)}
+                onBlur={() => {
+                  if (label !== data.label) pushUpdate({ label });
+                }}
+                className={INPUT_CLS}
+              />
             </div>
             <div>
-              <label className="block text-xs font-medium text-text-muted dark:text-dark-text-muted mb-1">Language</label>
-              <select value={language} onChange={(e) => { const lang = e.target.value as CodeNodeData['language']; setLanguage(lang); pushUpdate({ language: lang }); }} className={INPUT_CLS}>
-                {LANGUAGE_OPTIONS.map((opt) => (<option key={opt.value} value={opt.value}>{opt.label}</option>))}
+              <label className="block text-xs font-medium text-text-muted dark:text-dark-text-muted mb-1">
+                Language
+              </label>
+              <select
+                value={language}
+                onChange={(e) => {
+                  const lang = e.target.value as CodeNodeData['language'];
+                  setLanguage(lang);
+                  pushUpdate({ language: lang });
+                }}
+                className={INPUT_CLS}
+              >
+                {LANGUAGE_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
               </select>
             </div>
             <div>
               <label className="block text-xs font-medium text-text-muted dark:text-dark-text-muted mb-1">
-                Code <span className="ml-1 font-normal text-text-muted/60">(supports {'{{nodeId.output}}'} templates)</span>
+                Code{' '}
+                <span className="ml-1 font-normal text-text-muted/60">
+                  (supports {'{{nodeId.output}}'} templates)
+                </span>
               </label>
-              <textarea value={code} onChange={(e) => setCode(e.target.value)} onBlur={() => pushUpdate({ code })}
-                rows={12} spellCheck={false} className={`${INPUT_CLS} resize-y font-mono text-xs`}
-                placeholder={language === 'javascript' ? '// Your JavaScript code here\nconst result = 42;\nreturn result;' :
-                  language === 'python' ? '# Your Python code here\nresult = 42\nprint(result)' : '# Shell script\necho "Hello"'} />
+              <textarea
+                value={code}
+                onChange={(e) => setCode(e.target.value)}
+                onBlur={() => pushUpdate({ code })}
+                rows={12}
+                spellCheck={false}
+                className={`${INPUT_CLS} resize-y font-mono text-xs`}
+                placeholder={
+                  language === 'javascript'
+                    ? '// Your JavaScript code here\nconst result = 42;\nreturn result;'
+                    : language === 'python'
+                      ? '# Your Python code here\nresult = 42\nprint(result)'
+                      : '# Shell script\necho "Hello"'
+                }
+              />
             </div>
             <div>
-              <label className="block text-xs font-medium text-text-muted dark:text-dark-text-muted mb-1">Description</label>
-              <textarea value={description} onChange={(e) => setDescription(e.target.value)}
-                onBlur={() => pushUpdate({ description: description || undefined })} rows={2}
-                className={`${INPUT_CLS} resize-none`} placeholder="Optional description..." />
+              <label className="block text-xs font-medium text-text-muted dark:text-dark-text-muted mb-1">
+                Description
+              </label>
+              <textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                onBlur={() => pushUpdate({ description: description || undefined })}
+                rows={2}
+                className={`${INPUT_CLS} resize-none`}
+                placeholder="Optional description..."
+              />
             </div>
-            {upstreamNodes.length > 0 && <OutputTreeBrowser upstreamNodes={upstreamNodes} onInsert={injectTemplate} />}
-            <RetryTimeoutFields data={data as unknown as Record<string, unknown>} nodeId={node.id} onUpdate={onUpdate} />
+            {upstreamNodes.length > 0 && (
+              <OutputTreeBrowser upstreamNodes={upstreamNodes} onInsert={injectTemplate} />
+            )}
+            <RetryTimeoutFields
+              data={data as unknown as Record<string, unknown>}
+              nodeId={node.id}
+              onUpdate={onUpdate}
+            />
           </div>
           <div className="p-3 border-t border-border dark:border-dark-border">
-            <button onClick={() => onDelete(node.id)} className="w-full flex items-center justify-center gap-2 px-3 py-2 text-xs font-medium text-error bg-error/10 hover:bg-error/20 rounded-md transition-colors">
+            <button
+              onClick={() => onDelete(node.id)}
+              className="w-full flex items-center justify-center gap-2 px-3 py-2 text-xs font-medium text-error bg-error/10 hover:bg-error/20 rounded-md transition-colors"
+            >
               <Trash2 className="w-3.5 h-3.5" /> Delete Code Node
             </button>
           </div>
@@ -1688,7 +1985,9 @@ function TransformerConfigPanel({
   const [description, setDescription] = useState(data.description ?? '');
 
   const hasResults = !!(data.executionStatus as string) && data.executionStatus !== 'pending';
-  const [activeTab, setActiveTab] = useState<'config' | 'results'>(hasResults ? 'results' : 'config');
+  const [activeTab, setActiveTab] = useState<'config' | 'results'>(
+    hasResults ? 'results' : 'config'
+  );
 
   useEffect(() => {
     setLabel(data.label ?? 'Transform');
@@ -1701,21 +2000,29 @@ function TransformerConfigPanel({
     if (hasResults) setActiveTab('results');
   }, [hasResults]);
 
-  const pushUpdate = useCallback((partial: Partial<TransformerNodeData>) => {
-    onUpdate(node.id, { ...data, ...partial });
-  }, [node.id, data, onUpdate]);
+  const pushUpdate = useCallback(
+    (partial: Partial<TransformerNodeData>) => {
+      onUpdate(node.id, { ...data, ...partial });
+    },
+    [node.id, data, onUpdate]
+  );
 
-  const injectTemplate = useCallback((template: string) => {
-    setExpression((prev) => prev + template);
-    pushUpdate({ expression: expression + template });
-  }, [expression, pushUpdate]);
+  const injectTemplate = useCallback(
+    (template: string) => {
+      setExpression((prev) => prev + template);
+      pushUpdate({ expression: expression + template });
+    },
+    [expression, pushUpdate]
+  );
 
   const copyToClipboard = useCallback((template: string) => {
     navigator.clipboard?.writeText(template);
   }, []);
 
   return (
-    <div className={`flex flex-col border-l border-border dark:border-dark-border bg-bg-secondary dark:bg-dark-bg-secondary ${className}`}>
+    <div
+      className={`flex flex-col border-l border-border dark:border-dark-border bg-bg-secondary dark:bg-dark-bg-secondary ${className}`}
+    >
       <div className="flex items-center gap-2 p-3 border-b border-border dark:border-dark-border">
         <div className="w-5 h-5 rounded-full bg-amber-500/20 flex items-center justify-center shrink-0">
           <RefreshCw className="w-3 h-3 text-amber-600 dark:text-amber-400" />
@@ -1725,11 +2032,24 @@ function TransformerConfigPanel({
         </h3>
         {hasResults && (
           <div className="flex bg-bg-tertiary dark:bg-dark-bg-tertiary rounded-md p-0.5 shrink-0">
-            <button onClick={() => setActiveTab('config')} className={`px-2.5 py-1 text-[11px] rounded transition-colors ${activeTab === 'config' ? 'bg-bg-primary dark:bg-dark-bg-primary shadow-sm font-medium text-text-primary dark:text-dark-text-primary' : 'text-text-muted hover:text-text-secondary'}`}>Config</button>
-            <button onClick={() => setActiveTab('results')} className={`px-2.5 py-1 text-[11px] rounded transition-colors ${activeTab === 'results' ? 'bg-bg-primary dark:bg-dark-bg-primary shadow-sm font-medium text-text-primary dark:text-dark-text-primary' : 'text-text-muted hover:text-text-secondary'}`}>Results</button>
+            <button
+              onClick={() => setActiveTab('config')}
+              className={`px-2.5 py-1 text-[11px] rounded transition-colors ${activeTab === 'config' ? 'bg-bg-primary dark:bg-dark-bg-primary shadow-sm font-medium text-text-primary dark:text-dark-text-primary' : 'text-text-muted hover:text-text-secondary'}`}
+            >
+              Config
+            </button>
+            <button
+              onClick={() => setActiveTab('results')}
+              className={`px-2.5 py-1 text-[11px] rounded transition-colors ${activeTab === 'results' ? 'bg-bg-primary dark:bg-dark-bg-primary shadow-sm font-medium text-text-primary dark:text-dark-text-primary' : 'text-text-muted hover:text-text-secondary'}`}
+            >
+              Results
+            </button>
           </div>
         )}
-        <button onClick={onClose} className="p-1 text-text-muted hover:text-text-primary dark:hover:text-dark-text-primary transition-colors shrink-0">
+        <button
+          onClick={onClose}
+          className="p-1 text-text-muted hover:text-text-primary dark:hover:text-dark-text-primary transition-colors shrink-0"
+        >
           <X className="w-4 h-4" />
         </button>
       </div>
@@ -1742,17 +2062,24 @@ function TransformerConfigPanel({
               const StatusIcon = statusIcons[status];
               return (
                 <>
-                  <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full ${statusBadgeStyles[status]}`}>
+                  <span
+                    className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full ${statusBadgeStyles[status]}`}
+                  >
                     {StatusIcon && <StatusIcon className="w-3 h-3" />}
                     {status}
                   </span>
                   {data.executionDuration != null && (
                     <span className="text-xs text-text-muted dark:text-dark-text-muted">
-                      {(data.executionDuration as number) < 1000 ? `${data.executionDuration}ms` : `${((data.executionDuration as number) / 1000).toFixed(1)}s`}
+                      {(data.executionDuration as number) < 1000
+                        ? `${data.executionDuration}ms`
+                        : `${((data.executionDuration as number) / 1000).toFixed(1)}s`}
                     </span>
                   )}
                   {(data.retryAttempts as number) > 0 && (
-                    <RetryAttemptsDisplay retryAttempts={data.retryAttempts as number} status={String(data.executionStatus)} />
+                    <RetryAttemptsDisplay
+                      retryAttempts={data.retryAttempts as number}
+                      status={String(data.executionStatus)}
+                    />
                   )}
                 </>
               );
@@ -1760,12 +2087,20 @@ function TransformerConfigPanel({
           </div>
           {data.executionOutput !== undefined && data.executionOutput !== null && (
             <div>
-              <label className="block text-xs font-medium text-text-muted dark:text-dark-text-muted mb-1">Output</label>
+              <label className="block text-xs font-medium text-text-muted dark:text-dark-text-muted mb-1">
+                Output
+              </label>
               {typeof data.executionOutput === 'string' ? (
-                <pre className="px-3 py-2 text-xs font-mono bg-bg-tertiary dark:bg-dark-bg-tertiary rounded-md overflow-x-auto max-h-64 overflow-y-auto text-text-primary dark:text-dark-text-primary whitespace-pre-wrap break-words">{data.executionOutput}</pre>
+                <pre className="px-3 py-2 text-xs font-mono bg-bg-tertiary dark:bg-dark-bg-tertiary rounded-md overflow-x-auto max-h-64 overflow-y-auto text-text-primary dark:text-dark-text-primary whitespace-pre-wrap break-words">
+                  {data.executionOutput}
+                </pre>
               ) : (
                 <div className="px-2 py-1.5 bg-bg-tertiary dark:bg-dark-bg-tertiary rounded-md max-h-64 overflow-y-auto">
-                  <JsonTreeView data={data.executionOutput} pathPrefix={`${node.id}.output`} onClickPath={copyToClipboard} />
+                  <JsonTreeView
+                    data={data.executionOutput}
+                    pathPrefix={`${node.id}.output`}
+                    onClickPath={copyToClipboard}
+                  />
                 </div>
               )}
             </div>
@@ -1773,7 +2108,9 @@ function TransformerConfigPanel({
           {data.executionError && (
             <div>
               <label className="block text-xs font-medium text-error mb-1">Error</label>
-              <pre className="px-3 py-2 text-xs font-mono bg-error/5 border border-error/20 rounded-md overflow-x-auto max-h-32 overflow-y-auto text-error whitespace-pre-wrap break-words">{data.executionError as string}</pre>
+              <pre className="px-3 py-2 text-xs font-mono bg-error/5 border border-error/20 rounded-md overflow-x-auto max-h-32 overflow-y-auto text-error whitespace-pre-wrap break-words">
+                {data.executionError as string}
+              </pre>
             </div>
           )}
         </div>
@@ -1781,48 +2118,89 @@ function TransformerConfigPanel({
         <>
           <div className="flex-1 overflow-y-auto p-3 space-y-4">
             <div>
-              <label className="block text-xs font-medium text-text-muted dark:text-dark-text-muted mb-1">Label</label>
-              <input type="text" value={label} onChange={(e) => setLabel(e.target.value)}
-                onBlur={() => { if (label !== data.label) pushUpdate({ label }); }} className={INPUT_CLS} />
+              <label className="block text-xs font-medium text-text-muted dark:text-dark-text-muted mb-1">
+                Label
+              </label>
+              <input
+                type="text"
+                value={label}
+                onChange={(e) => setLabel(e.target.value)}
+                onBlur={() => {
+                  if (label !== data.label) pushUpdate({ label });
+                }}
+                className={INPUT_CLS}
+              />
             </div>
             <div>
               <label className="block text-xs font-medium text-text-muted dark:text-dark-text-muted mb-1">
-                Expression <span className="ml-1 font-normal text-text-muted/60">(JS — transforms data)</span>
+                Expression{' '}
+                <span className="ml-1 font-normal text-text-muted/60">(JS — transforms data)</span>
               </label>
-              <textarea value={expression} onChange={(e) => setExpression(e.target.value)}
-                onBlur={() => pushUpdate({ expression })} rows={4}
+              <textarea
+                value={expression}
+                onChange={(e) => setExpression(e.target.value)}
+                onBlur={() => pushUpdate({ expression })}
+                rows={4}
                 className={`${INPUT_CLS} resize-y font-mono text-xs`}
-                placeholder="data.items.filter(i => i.active).map(i => i.name)" />
+                placeholder="data.items.filter(i => i.active).map(i => i.name)"
+              />
               <p className="mt-1 text-[10px] text-text-muted">
-                <code className="text-amber-600 dark:text-amber-400">data</code> = last upstream output.
-                Also access by node ID: <code className="text-amber-600 dark:text-amber-400">node_1</code>
+                <code className="text-amber-600 dark:text-amber-400">data</code> = last upstream
+                output. Also access by node ID:{' '}
+                <code className="text-amber-600 dark:text-amber-400">node_1</code>
               </p>
             </div>
             <div>
-              <label className="block text-xs font-medium text-text-muted dark:text-dark-text-muted mb-1">Quick Transforms</label>
+              <label className="block text-xs font-medium text-text-muted dark:text-dark-text-muted mb-1">
+                Quick Transforms
+              </label>
               <div className="flex flex-wrap gap-1">
                 {TRANSFORMER_PRESETS.map((preset) => (
-                  <button key={preset} type="button"
-                    onClick={() => { setExpression(preset); pushUpdate({ expression: preset }); }}
+                  <button
+                    key={preset}
+                    type="button"
+                    onClick={() => {
+                      setExpression(preset);
+                      pushUpdate({ expression: preset });
+                    }}
                     className={`px-2 py-0.5 text-[10px] font-mono rounded border transition-colors ${
                       expression === preset
                         ? 'bg-amber-500/20 border-amber-400 text-amber-600 dark:text-amber-400'
                         : 'bg-bg-tertiary dark:bg-dark-bg-tertiary border-border dark:border-dark-border text-text-muted hover:border-amber-400/50'
-                    }`}>{preset}</button>
+                    }`}
+                  >
+                    {preset}
+                  </button>
                 ))}
               </div>
             </div>
             <div>
-              <label className="block text-xs font-medium text-text-muted dark:text-dark-text-muted mb-1">Description</label>
-              <textarea value={description} onChange={(e) => setDescription(e.target.value)}
-                onBlur={() => pushUpdate({ description: description || undefined })} rows={2}
-                className={`${INPUT_CLS} resize-none`} placeholder="Optional: what does this transformation do?" />
+              <label className="block text-xs font-medium text-text-muted dark:text-dark-text-muted mb-1">
+                Description
+              </label>
+              <textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                onBlur={() => pushUpdate({ description: description || undefined })}
+                rows={2}
+                className={`${INPUT_CLS} resize-none`}
+                placeholder="Optional: what does this transformation do?"
+              />
             </div>
-            {upstreamNodes.length > 0 && <OutputTreeBrowser upstreamNodes={upstreamNodes} onInsert={injectTemplate} />}
-            <RetryTimeoutFields data={data as unknown as Record<string, unknown>} nodeId={node.id} onUpdate={onUpdate} />
+            {upstreamNodes.length > 0 && (
+              <OutputTreeBrowser upstreamNodes={upstreamNodes} onInsert={injectTemplate} />
+            )}
+            <RetryTimeoutFields
+              data={data as unknown as Record<string, unknown>}
+              nodeId={node.id}
+              onUpdate={onUpdate}
+            />
           </div>
           <div className="p-3 border-t border-border dark:border-dark-border">
-            <button onClick={() => onDelete(node.id)} className="w-full flex items-center justify-center gap-2 px-3 py-2 text-xs font-medium text-error bg-error/10 hover:bg-error/20 rounded-md transition-colors">
+            <button
+              onClick={() => onDelete(node.id)}
+              className="w-full flex items-center justify-center gap-2 px-3 py-2 text-xs font-medium text-error bg-error/10 hover:bg-error/20 rounded-md transition-colors"
+            >
               <Trash2 className="w-3.5 h-3.5" /> Delete Transformer
             </button>
           </div>
@@ -1856,11 +2234,15 @@ function ForEachConfigPanel({
   const [arrayExpression, setArrayExpression] = useState(data.arrayExpression ?? '');
   const [itemVariable, setItemVariable] = useState((data.itemVariable as string) ?? '');
   const [maxIterations, setMaxIterations] = useState(data.maxIterations ?? 100);
-  const [onErrorMode, setOnErrorMode] = useState<'stop' | 'continue'>((data.onError as 'stop' | 'continue') ?? 'stop');
+  const [onErrorMode, setOnErrorMode] = useState<'stop' | 'continue'>(
+    (data.onError as 'stop' | 'continue') ?? 'stop'
+  );
   const [description, setDescription] = useState((data.description as string) ?? '');
 
   const hasResults = !!(data.executionStatus as string) && data.executionStatus !== 'pending';
-  const [activeTab, setActiveTab] = useState<'config' | 'results'>(hasResults ? 'results' : 'config');
+  const [activeTab, setActiveTab] = useState<'config' | 'results'>(
+    hasResults ? 'results' : 'config'
+  );
 
   useEffect(() => {
     setLabel(data.label ?? 'ForEach');
@@ -1876,17 +2258,25 @@ function ForEachConfigPanel({
     if (hasResults) setActiveTab('results');
   }, [hasResults]);
 
-  const pushUpdate = useCallback((partial: Partial<ForEachNodeData>) => {
-    onUpdate(node.id, { ...data, ...partial });
-  }, [node.id, data, onUpdate]);
+  const pushUpdate = useCallback(
+    (partial: Partial<ForEachNodeData>) => {
+      onUpdate(node.id, { ...data, ...partial });
+    },
+    [node.id, data, onUpdate]
+  );
 
-  const injectTemplate = useCallback((template: string) => {
-    setArrayExpression((prev) => prev + template);
-    pushUpdate({ arrayExpression: arrayExpression + template });
-  }, [arrayExpression, pushUpdate]);
+  const injectTemplate = useCallback(
+    (template: string) => {
+      setArrayExpression((prev) => prev + template);
+      pushUpdate({ arrayExpression: arrayExpression + template });
+    },
+    [arrayExpression, pushUpdate]
+  );
 
   return (
-    <div className={`flex flex-col border-l border-border dark:border-dark-border bg-bg-secondary dark:bg-dark-bg-secondary ${className}`}>
+    <div
+      className={`flex flex-col border-l border-border dark:border-dark-border bg-bg-secondary dark:bg-dark-bg-secondary ${className}`}
+    >
       {/* Header */}
       <div className="flex items-center gap-2 p-3 border-b border-border dark:border-dark-border">
         <div className="w-5 h-5 rounded-full bg-sky-500/20 flex items-center justify-center shrink-0">
@@ -1900,13 +2290,20 @@ function ForEachConfigPanel({
           <button
             onClick={() => setActiveTab('config')}
             className={`px-2 py-0.5 text-[10px] rounded ${activeTab === 'config' ? 'bg-sky-500/20 text-sky-600 dark:text-sky-400' : 'text-text-muted hover:text-text-primary'}`}
-          >Config</button>
+          >
+            Config
+          </button>
           <button
             onClick={() => setActiveTab('results')}
             className={`px-2 py-0.5 text-[10px] rounded ${activeTab === 'results' ? 'bg-sky-500/20 text-sky-600 dark:text-sky-400' : 'text-text-muted hover:text-text-primary'}`}
-          >Results</button>
+          >
+            Results
+          </button>
         </div>
-        <button onClick={onClose} className="p-1 text-text-muted hover:text-text-primary transition-colors">
+        <button
+          onClick={onClose}
+          className="p-1 text-text-muted hover:text-text-primary transition-colors"
+        >
           <X className="w-4 h-4" />
         </button>
       </div>
@@ -1916,19 +2313,29 @@ function ForEachConfigPanel({
           {/* Status badge */}
           <div className="flex items-center gap-2">
             <div>
-              <label className="block text-xs font-medium text-text-muted dark:text-dark-text-muted mb-1">Status</label>
-              <span className={`inline-block px-2 py-0.5 text-xs font-medium rounded ${
-                data.executionStatus === 'success' ? 'bg-success/20 text-success' :
-                data.executionStatus === 'error' ? 'bg-error/20 text-error' :
-                data.executionStatus === 'running' ? 'bg-warning/20 text-warning' :
-                'bg-text-muted/20 text-text-muted'
-              }`}>
+              <label className="block text-xs font-medium text-text-muted dark:text-dark-text-muted mb-1">
+                Status
+              </label>
+              <span
+                className={`inline-block px-2 py-0.5 text-xs font-medium rounded ${
+                  data.executionStatus === 'success'
+                    ? 'bg-success/20 text-success'
+                    : data.executionStatus === 'error'
+                      ? 'bg-error/20 text-error'
+                      : data.executionStatus === 'running'
+                        ? 'bg-warning/20 text-warning'
+                        : 'bg-text-muted/20 text-text-muted'
+                }`}
+              >
                 {String(data.executionStatus ?? 'pending')}
               </span>
             </div>
             {(data.retryAttempts as number) > 0 && (
               <div className="pt-4">
-                <RetryAttemptsDisplay retryAttempts={data.retryAttempts as number} status={String(data.executionStatus)} />
+                <RetryAttemptsDisplay
+                  retryAttempts={data.retryAttempts as number}
+                  status={String(data.executionStatus)}
+                />
               </div>
             )}
           </div>
@@ -1940,7 +2347,10 @@ function ForEachConfigPanel({
                 Iterations
               </label>
               <span className="inline-block px-2 py-0.5 text-xs font-medium rounded bg-sky-500/20 text-sky-700 dark:text-sky-300">
-                {String((data.executionOutput as { completedIterations?: number })?.completedIterations ?? 0)}
+                {String(
+                  (data.executionOutput as { completedIterations?: number })?.completedIterations ??
+                    0
+                )}
                 {' / '}
                 {String((data.executionOutput as { count?: number })?.count ?? 0)} items
               </span>
@@ -1950,15 +2360,21 @@ function ForEachConfigPanel({
           {/* Error */}
           {!!data.executionError && (
             <div>
-              <label className="block text-xs font-medium text-text-muted dark:text-dark-text-muted mb-1">Error</label>
-              <p className="text-xs text-error bg-error/10 px-2 py-1 rounded">{String(data.executionError)}</p>
+              <label className="block text-xs font-medium text-text-muted dark:text-dark-text-muted mb-1">
+                Error
+              </label>
+              <p className="text-xs text-error bg-error/10 px-2 py-1 rounded">
+                {String(data.executionError)}
+              </p>
             </div>
           )}
 
           {/* Duration */}
           {data.executionDuration != null && (
             <div>
-              <label className="block text-xs font-medium text-text-muted dark:text-dark-text-muted mb-1">Duration</label>
+              <label className="block text-xs font-medium text-text-muted dark:text-dark-text-muted mb-1">
+                Duration
+              </label>
               <p className="text-xs text-text-primary dark:text-dark-text-primary">
                 {(data.executionDuration as number) < 1000
                   ? `${data.executionDuration}ms`
@@ -1984,12 +2400,16 @@ function ForEachConfigPanel({
           <div className="flex-1 overflow-y-auto p-3 space-y-4">
             {/* Label */}
             <div>
-              <label className="block text-xs font-medium text-text-muted dark:text-dark-text-muted mb-1">Label</label>
+              <label className="block text-xs font-medium text-text-muted dark:text-dark-text-muted mb-1">
+                Label
+              </label>
               <input
                 type="text"
                 value={label}
                 onChange={(e) => setLabel(e.target.value)}
-                onBlur={() => { if (label !== data.label) pushUpdate({ label }); }}
+                onBlur={() => {
+                  if (label !== data.label) pushUpdate({ label });
+                }}
                 className={INPUT_CLS}
               />
             </div>
@@ -2009,7 +2429,8 @@ function ForEachConfigPanel({
                 placeholder="{{node_1.output}} or {{node_1.output.items}}"
               />
               <p className="mt-1 text-[10px] text-text-muted">
-                Use <code className="text-sky-600 dark:text-sky-400">{'{{nodeId.output}}'}</code> to reference upstream data
+                Use <code className="text-sky-600 dark:text-sky-400">{'{{nodeId.output}}'}</code> to
+                reference upstream data
               </p>
             </div>
 
@@ -2023,7 +2444,10 @@ function ForEachConfigPanel({
                   <button
                     key={preset}
                     type="button"
-                    onClick={() => { setArrayExpression(preset); pushUpdate({ arrayExpression: preset }); }}
+                    onClick={() => {
+                      setArrayExpression(preset);
+                      pushUpdate({ arrayExpression: preset });
+                    }}
                     className={`px-2 py-0.5 text-[10px] font-mono rounded border transition-colors ${
                       arrayExpression === preset
                         ? 'bg-sky-500/20 border-sky-400 text-sky-600 dark:text-sky-400'
@@ -2052,7 +2476,9 @@ function ForEachConfigPanel({
               />
               {itemVariable && (
                 <p className="mt-1 text-[10px] text-text-muted">
-                  Body nodes can use <code className="text-sky-600 dark:text-sky-400">{`{{${itemVariable}}}`}</code> for the current item
+                  Body nodes can use{' '}
+                  <code className="text-sky-600 dark:text-sky-400">{`{{${itemVariable}}}`}</code>{' '}
+                  for the current item
                 </p>
               )}
             </div>
@@ -2095,7 +2521,9 @@ function ForEachConfigPanel({
 
             {/* Description */}
             <div>
-              <label className="block text-xs font-medium text-text-muted dark:text-dark-text-muted mb-1">Description</label>
+              <label className="block text-xs font-medium text-text-muted dark:text-dark-text-muted mb-1">
+                Description
+              </label>
               <textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
@@ -2111,7 +2539,11 @@ function ForEachConfigPanel({
               <OutputTreeBrowser upstreamNodes={upstreamNodes} onInsert={injectTemplate} />
             )}
 
-            <RetryTimeoutFields data={data as unknown as Record<string, unknown>} nodeId={node.id} onUpdate={onUpdate} />
+            <RetryTimeoutFields
+              data={data as unknown as Record<string, unknown>}
+              nodeId={node.id}
+              onUpdate={onUpdate}
+            />
           </div>
 
           {/* Delete */}

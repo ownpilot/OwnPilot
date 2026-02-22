@@ -19,7 +19,9 @@ function ToolGroupCard({
   const [expanded, setExpanded] = useState(false);
 
   return (
-    <div className={`rounded-lg border ${group.enabled ? 'border-border bg-card' : 'border-border/50 bg-card/50 opacity-75'}`}>
+    <div
+      className={`rounded-lg border ${group.enabled ? 'border-border bg-card' : 'border-border/50 bg-card/50 opacity-75'}`}
+    >
       <div className="flex items-center gap-3 px-4 py-3">
         {/* Expand/collapse */}
         <button
@@ -27,10 +29,7 @@ function ToolGroupCard({
           className="text-text-muted hover:text-text-primary transition-colors"
           aria-label={expanded ? 'Collapse' : 'Expand'}
         >
-          {expanded
-            ? <ChevronDown className="w-4 h-4" />
-            : <ChevronRight className="w-4 h-4" />
-          }
+          {expanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
         </button>
 
         {/* Group info */}
@@ -118,9 +117,7 @@ export function ToolGroupsPage() {
   }, [fetchGroups]);
 
   const handleToggle = useCallback((id: string, enabled: boolean) => {
-    setGroups((prev) =>
-      prev.map((g) => (g.id === id ? { ...g, enabled } : g))
-    );
+    setGroups((prev) => prev.map((g) => (g.id === id ? { ...g, enabled } : g)));
     setDirty(true);
   }, []);
 
@@ -140,9 +137,7 @@ export function ToolGroupsPage() {
   }, [groups, toast]);
 
   const handleReset = useCallback(() => {
-    setGroups((prev) =>
-      prev.map((g) => ({ ...g, enabled: g.defaultEnabled || g.alwaysOn }))
-    );
+    setGroups((prev) => prev.map((g) => ({ ...g, enabled: g.defaultEnabled || g.alwaysOn })));
     setDirty(true);
   }, []);
 
@@ -198,7 +193,9 @@ export function ToolGroupsPage() {
       {/* Always-on groups */}
       {alwaysOnGroups.length > 0 && (
         <div className="mb-6">
-          <h2 className="text-sm font-medium text-text-muted mb-2 uppercase tracking-wide">Always Enabled</h2>
+          <h2 className="text-sm font-medium text-text-muted mb-2 uppercase tracking-wide">
+            Always Enabled
+          </h2>
           <div className="space-y-2">
             {alwaysOnGroups.map((group) => (
               <ToolGroupCard key={group.id} group={group} onToggle={handleToggle} />
@@ -210,7 +207,9 @@ export function ToolGroupsPage() {
       {/* Toggleable groups */}
       {toggleableGroups.length > 0 && (
         <div>
-          <h2 className="text-sm font-medium text-text-muted mb-2 uppercase tracking-wide">Optional</h2>
+          <h2 className="text-sm font-medium text-text-muted mb-2 uppercase tracking-wide">
+            Optional
+          </h2>
           <div className="space-y-2">
             {toggleableGroups.map((group) => (
               <ToolGroupCard key={group.id} group={group} onToggle={handleToggle} />
@@ -220,9 +219,7 @@ export function ToolGroupsPage() {
       )}
 
       {dirty && (
-        <p className="text-xs text-warning mt-4">
-          You have unsaved changes. Click Save to apply.
-        </p>
+        <p className="text-xs text-warning mt-4">You have unsaved changes. Click Save to apply.</p>
       )}
     </div>
   );

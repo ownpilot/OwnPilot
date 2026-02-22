@@ -91,7 +91,10 @@ function makeForecastDay(overrides = {}) {
   };
 }
 
-function makeForecastResponse(days: ReturnType<typeof makeForecastDay>[] = [makeForecastDay()], overrides = {}) {
+function makeForecastResponse(
+  days: ReturnType<typeof makeForecastDay>[] = [makeForecastDay()],
+  overrides = {}
+) {
   return {
     location: 'Istanbul, TR',
     forecast: days,
@@ -116,7 +119,9 @@ beforeEach(() => {
 
 describe('setWeatherConfig', () => {
   it('should accept a config function', () => {
-    expect(() => setWeatherConfig(() => ({ provider: 'openweathermap' as const, apiKey: 'key-1' }))).not.toThrow();
+    expect(() =>
+      setWeatherConfig(() => ({ provider: 'openweathermap' as const, apiKey: 'key-1' }))
+    ).not.toThrow();
   });
 
   it('should allow resetting to null-returning function', () => {
@@ -227,14 +232,18 @@ describe('getWeatherService resolution order', () => {
     const result = await getWeatherExecutor({ location: 'Istanbul' }, {});
 
     expect(result.isError).toBe(true);
-    expect((result.content as Record<string, unknown>).error).toBe('Weather service not configured');
+    expect((result.content as Record<string, unknown>).error).toBe(
+      'Weather service not configured'
+    );
   });
 
   it('should return null when context is undefined', async () => {
     const result = await getWeatherExecutor({ location: 'Istanbul' }, undefined);
 
     expect(result.isError).toBe(true);
-    expect((result.content as Record<string, unknown>).error).toBe('Weather service not configured');
+    expect((result.content as Record<string, unknown>).error).toBe(
+      'Weather service not configured'
+    );
   });
 
   it('should handle context.getApiKey returning empty string (falsy)', async () => {
@@ -245,7 +254,9 @@ describe('getWeatherService resolution order', () => {
     const result = await getWeatherExecutor({ location: 'Istanbul' }, context);
 
     expect(result.isError).toBe(true);
-    expect((result.content as Record<string, unknown>).error).toBe('Weather service not configured');
+    expect((result.content as Record<string, unknown>).error).toBe(
+      'Weather service not configured'
+    );
   });
 });
 
@@ -657,7 +668,10 @@ describe('getWeatherForecastExecutor', () => {
     });
 
     it('should return success with mapped forecast', async () => {
-      const days = [makeForecastDay(), makeForecastDay({ date: '2026-02-23', condition: 'Cloudy' })];
+      const days = [
+        makeForecastDay(),
+        makeForecastDay({ date: '2026-02-23', condition: 'Cloudy' }),
+      ];
       svc.getForecast.mockResolvedValue(makeForecastResponse(days));
 
       const result = await getWeatherForecastExecutor({ location: 'Istanbul', days: 2 }, {});
@@ -749,7 +763,12 @@ describe('getWeatherForecastExecutor', () => {
     });
 
     it('should handle forecast with optional fields undefined', async () => {
-      const day = makeForecastDay({ sunrise: undefined, sunset: undefined, moonPhase: undefined, uvIndex: undefined });
+      const day = makeForecastDay({
+        sunrise: undefined,
+        sunset: undefined,
+        moonPhase: undefined,
+        uvIndex: undefined,
+      });
       svc.getForecast.mockResolvedValue(makeForecastResponse([day]));
 
       const result = await getWeatherForecastExecutor({ location: 'Istanbul' }, {});
@@ -890,7 +909,9 @@ describe('getWeatherTool', () => {
 
   it('should have api_key schema in both config requirements', () => {
     for (const req of getWeatherTool.configRequirements!) {
-      const apiKeyField = req.configSchema.find((f: Record<string, unknown>) => f.name === 'api_key');
+      const apiKeyField = req.configSchema.find(
+        (f: Record<string, unknown>) => f.name === 'api_key'
+      );
       expect(apiKeyField).toBeDefined();
       expect(apiKeyField!.type).toBe('secret');
       expect(apiKeyField!.required).toBe(true);

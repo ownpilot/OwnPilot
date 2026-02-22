@@ -13,21 +13,19 @@ const mockExtname = vi.hoisted(() =>
   vi.fn((p: string) => {
     const m = p.match(/\.\w+$/);
     return m ? m[0] : '';
-  }),
+  })
 );
 const mockDirname = vi.hoisted(() =>
-  vi.fn((p: string) => p.substring(0, p.lastIndexOf('/')) || '.'),
+  vi.fn((p: string) => p.substring(0, p.lastIndexOf('/')) || '.')
 );
 const mockBasename = vi.hoisted(() =>
   vi.fn((p: string, ext?: string) => {
     const base = p.substring(p.lastIndexOf('/') + 1);
     if (ext && base.endsWith(ext)) return base.slice(0, -ext.length);
     return base;
-  }),
+  })
 );
-const mockJoin = vi.hoisted(() =>
-  vi.fn((...parts: string[]) => parts.join('/')),
-);
+const mockJoin = vi.hoisted(() => vi.fn((...parts: string[]) => parts.join('/')));
 
 vi.mock('./module-resolver.js', () => ({
   tryImport: (...args: unknown[]) => mockTryImport(...args),
@@ -103,11 +101,7 @@ describe('tool definitions and exports', () => {
   });
 
   it('should export IMAGE_TOOL_NAMES with correct names', () => {
-    expect(IMAGE_TOOL_NAMES).toEqual([
-      'analyze_image',
-      'generate_image',
-      'resize_image',
-    ]);
+    expect(IMAGE_TOOL_NAMES).toEqual(['analyze_image', 'generate_image', 'resize_image']);
   });
 
   it('analyzeImageTool should have configRequirements for openai', () => {
@@ -128,16 +122,20 @@ describe('tool definitions and exports', () => {
 
   it('analyzeImageTool should enumerate task types', () => {
     const taskProp = analyzeImageTool.parameters.properties!['task'] as Record<string, unknown>;
-    expect(taskProp.enum).toEqual([
-      'describe', 'ocr', 'objects', 'faces', 'colors', 'custom',
-    ]);
+    expect(taskProp.enum).toEqual(['describe', 'ocr', 'objects', 'faces', 'colors', 'custom']);
   });
 
   it('generateImageTool should enumerate style types', () => {
     const styleProp = generateImageTool.parameters.properties!['style'] as Record<string, unknown>;
     expect(styleProp.enum).toEqual([
-      'realistic', 'artistic', 'cartoon', 'sketch', 'digital-art',
-      '3d-render', 'anime', 'photography',
+      'realistic',
+      'artistic',
+      'cartoon',
+      'sketch',
+      'digital-art',
+      '3d-render',
+      'anime',
+      'photography',
     ]);
   });
 });
@@ -183,7 +181,10 @@ describe('analyzeImageExecutor', () => {
     });
 
     it('should accept URL with webp extension', async () => {
-      const result = await analyzeImageExecutor({ source: 'https://cdn.example.com/img.webp' }, ctx);
+      const result = await analyzeImageExecutor(
+        { source: 'https://cdn.example.com/img.webp' },
+        ctx
+      );
       expect(result.isError).toBe(false);
       const content = result.content as Record<string, unknown>;
       expect(content.format).toBe('webp');
@@ -233,9 +234,12 @@ describe('analyzeImageExecutor', () => {
   // ---------------------------------------------------------------------------
   describe('base64 source', () => {
     it('should detect png format from base64 data URI', async () => {
-      const result = await analyzeImageExecutor({
-        source: 'data:image/png;base64,iVBORw0KGgo=',
-      }, ctx);
+      const result = await analyzeImageExecutor(
+        {
+          source: 'data:image/png;base64,iVBORw0KGgo=',
+        },
+        ctx
+      );
       expect(result.isError).toBe(false);
       const content = result.content as Record<string, unknown>;
       expect(content.source).toBe('base64');
@@ -244,27 +248,36 @@ describe('analyzeImageExecutor', () => {
     });
 
     it('should detect jpeg format from base64 data URI', async () => {
-      const result = await analyzeImageExecutor({
-        source: 'data:image/jpeg;base64,/9j/4AAQ=',
-      }, ctx);
+      const result = await analyzeImageExecutor(
+        {
+          source: 'data:image/jpeg;base64,/9j/4AAQ=',
+        },
+        ctx
+      );
       expect(result.isError).toBe(false);
       const content = result.content as Record<string, unknown>;
       expect(content.format).toBe('jpeg');
     });
 
     it('should detect gif format from base64 data URI', async () => {
-      const result = await analyzeImageExecutor({
-        source: 'data:image/gif;base64,R0lGODlh',
-      }, ctx);
+      const result = await analyzeImageExecutor(
+        {
+          source: 'data:image/gif;base64,R0lGODlh',
+        },
+        ctx
+      );
       expect(result.isError).toBe(false);
       const content = result.content as Record<string, unknown>;
       expect(content.format).toBe('gif');
     });
 
     it('should detect webp format from base64 data URI', async () => {
-      const result = await analyzeImageExecutor({
-        source: 'data:image/webp;base64,UklGRg==',
-      }, ctx);
+      const result = await analyzeImageExecutor(
+        {
+          source: 'data:image/webp;base64,UklGRg==',
+        },
+        ctx
+      );
       expect(result.isError).toBe(false);
       const content = result.content as Record<string, unknown>;
       expect(content.format).toBe('webp');
@@ -272,9 +285,12 @@ describe('analyzeImageExecutor', () => {
 
     it('should return unknown when base64 URI has non-matching format', async () => {
       // The regex /data:image\/(\w+);base64,/ won't match a missing semicolon
-      const result = await analyzeImageExecutor({
-        source: 'data:image/;base64,abc',
-      }, ctx);
+      const result = await analyzeImageExecutor(
+        {
+          source: 'data:image/;base64,abc',
+        },
+        ctx
+      );
       expect(result.isError).toBe(false);
       const content = result.content as Record<string, unknown>;
       expect(content.format).toBe('unknown');
@@ -378,11 +394,14 @@ describe('analyzeImageExecutor', () => {
     });
 
     it('should use describe with low detail level', async () => {
-      const result = await analyzeImageExecutor({
-        source: 'https://example.com/a.jpg',
-        task: 'describe',
-        detailLevel: 'low',
-      }, ctx);
+      const result = await analyzeImageExecutor(
+        {
+          source: 'https://example.com/a.jpg',
+          task: 'describe',
+          detailLevel: 'low',
+        },
+        ctx
+      );
       const content = result.content as Record<string, unknown>;
       expect(content.prompt).toContain('Briefly describe');
       expect(content.prompt).toContain('one or two sentences');
@@ -390,10 +409,13 @@ describe('analyzeImageExecutor', () => {
     });
 
     it('should use describe with medium detail level (default)', async () => {
-      const result = await analyzeImageExecutor({
-        source: 'https://example.com/a.jpg',
-        task: 'describe',
-      }, ctx);
+      const result = await analyzeImageExecutor(
+        {
+          source: 'https://example.com/a.jpg',
+          task: 'describe',
+        },
+        ctx
+      );
       const content = result.content as Record<string, unknown>;
       expect(content.prompt).toContain('Describe this image in detail');
       expect(content.prompt).toContain('composition');
@@ -401,11 +423,14 @@ describe('analyzeImageExecutor', () => {
     });
 
     it('should use describe with high detail level', async () => {
-      const result = await analyzeImageExecutor({
-        source: 'https://example.com/a.jpg',
-        task: 'describe',
-        detailLevel: 'high',
-      }, ctx);
+      const result = await analyzeImageExecutor(
+        {
+          source: 'https://example.com/a.jpg',
+          task: 'describe',
+          detailLevel: 'high',
+        },
+        ctx
+      );
       const content = result.content as Record<string, unknown>;
       expect(content.prompt).toContain('very detailed description');
       expect(content.prompt).toContain('textures');
@@ -413,30 +438,39 @@ describe('analyzeImageExecutor', () => {
     });
 
     it('should build OCR prompt', async () => {
-      const result = await analyzeImageExecutor({
-        source: 'https://example.com/a.jpg',
-        task: 'ocr',
-      }, ctx);
+      const result = await analyzeImageExecutor(
+        {
+          source: 'https://example.com/a.jpg',
+          task: 'ocr',
+        },
+        ctx
+      );
       const content = result.content as Record<string, unknown>;
       expect(content.task).toBe('ocr');
       expect(content.prompt).toContain('Extract and transcribe all text');
     });
 
     it('should build objects prompt', async () => {
-      const result = await analyzeImageExecutor({
-        source: 'https://example.com/a.jpg',
-        task: 'objects',
-      }, ctx);
+      const result = await analyzeImageExecutor(
+        {
+          source: 'https://example.com/a.jpg',
+          task: 'objects',
+        },
+        ctx
+      );
       const content = result.content as Record<string, unknown>;
       expect(content.task).toBe('objects');
       expect(content.prompt).toContain('List all distinct objects');
     });
 
     it('should build faces prompt', async () => {
-      const result = await analyzeImageExecutor({
-        source: 'https://example.com/a.jpg',
-        task: 'faces',
-      }, ctx);
+      const result = await analyzeImageExecutor(
+        {
+          source: 'https://example.com/a.jpg',
+          task: 'faces',
+        },
+        ctx
+      );
       const content = result.content as Record<string, unknown>;
       expect(content.task).toBe('faces');
       expect(content.prompt).toContain('faces visible');
@@ -444,41 +478,53 @@ describe('analyzeImageExecutor', () => {
     });
 
     it('should build colors prompt', async () => {
-      const result = await analyzeImageExecutor({
-        source: 'https://example.com/a.jpg',
-        task: 'colors',
-      }, ctx);
+      const result = await analyzeImageExecutor(
+        {
+          source: 'https://example.com/a.jpg',
+          task: 'colors',
+        },
+        ctx
+      );
       const content = result.content as Record<string, unknown>;
       expect(content.task).toBe('colors');
       expect(content.prompt).toContain('color palette');
     });
 
     it('should build custom prompt with question', async () => {
-      const result = await analyzeImageExecutor({
-        source: 'https://example.com/a.jpg',
-        task: 'custom',
-        question: 'How many people are in this image?',
-      }, ctx);
+      const result = await analyzeImageExecutor(
+        {
+          source: 'https://example.com/a.jpg',
+          task: 'custom',
+          question: 'How many people are in this image?',
+        },
+        ctx
+      );
       const content = result.content as Record<string, unknown>;
       expect(content.task).toBe('custom');
       expect(content.prompt).toBe('How many people are in this image?');
     });
 
     it('should error for custom task without question', async () => {
-      const result = await analyzeImageExecutor({
-        source: 'https://example.com/a.jpg',
-        task: 'custom',
-      }, ctx);
+      const result = await analyzeImageExecutor(
+        {
+          source: 'https://example.com/a.jpg',
+          task: 'custom',
+        },
+        ctx
+      );
       expect(result.isError).toBe(true);
       const content = result.content as Record<string, unknown>;
       expect(content.error).toContain('Question is required for custom analysis task');
     });
 
     it('should use default prompt for unknown task', async () => {
-      const result = await analyzeImageExecutor({
-        source: 'https://example.com/a.jpg',
-        task: 'nonexistent',
-      }, ctx);
+      const result = await analyzeImageExecutor(
+        {
+          source: 'https://example.com/a.jpg',
+          task: 'nonexistent',
+        },
+        ctx
+      );
       const content = result.content as Record<string, unknown>;
       expect(content.prompt).toBe('Describe this image.');
     });
@@ -665,13 +711,21 @@ describe('generateImageExecutor', () => {
     });
 
     it('should enhance prompt for photography style', async () => {
-      const result = await generateImageExecutor({ prompt: 'A mountain', style: 'photography' }, ctx);
+      const result = await generateImageExecutor(
+        { prompt: 'A mountain', style: 'photography' },
+        ctx
+      );
       const content = result.content as Record<string, unknown>;
-      expect(content.prompt).toBe('A mountain, professional photography, high resolution, detailed');
+      expect(content.prompt).toBe(
+        'A mountain, professional photography, high resolution, detailed'
+      );
     });
 
     it('should append empty string for unknown style (prompt + ", ")', async () => {
-      const result = await generateImageExecutor({ prompt: 'A mountain', style: 'watercolor' }, ctx);
+      const result = await generateImageExecutor(
+        { prompt: 'A mountain', style: 'watercolor' },
+        ctx
+      );
       const content = result.content as Record<string, unknown>;
       // style !== 'realistic', so it does `prompt, ${getStyleDescription('watercolor')}` -> 'A mountain, '
       expect(content.prompt).toBe('A mountain, ');
@@ -683,10 +737,13 @@ describe('generateImageExecutor', () => {
   // ---------------------------------------------------------------------------
   describe('explicit parameters', () => {
     it('should pass through outputPath', async () => {
-      const result = await generateImageExecutor({
-        prompt: 'A sunset',
-        outputPath: '/output/image.png',
-      }, ctx);
+      const result = await generateImageExecutor(
+        {
+          prompt: 'A sunset',
+          outputPath: '/output/image.png',
+        },
+        ctx
+      );
       const content = result.content as Record<string, unknown>;
       expect(content.outputPath).toBe('/output/image.png');
     });
@@ -698,19 +755,25 @@ describe('generateImageExecutor', () => {
     });
 
     it('should pass through explicit size', async () => {
-      const result = await generateImageExecutor({
-        prompt: 'A sunset',
-        size: '512x512',
-      }, ctx);
+      const result = await generateImageExecutor(
+        {
+          prompt: 'A sunset',
+          size: '512x512',
+        },
+        ctx
+      );
       const content = result.content as Record<string, unknown>;
       expect(content.size).toBe('512x512');
     });
 
     it('should pass through explicit quality', async () => {
-      const result = await generateImageExecutor({
-        prompt: 'A sunset',
-        quality: 'hd',
-      }, ctx);
+      const result = await generateImageExecutor(
+        {
+          prompt: 'A sunset',
+          quality: 'hd',
+        },
+        ctx
+      );
       const content = result.content as Record<string, unknown>;
       expect(content.quality).toBe('hd');
     });
@@ -819,11 +882,14 @@ describe('resizeImageExecutor', () => {
     it('should use both width and height when both provided (aspect ratio on)', async () => {
       mockSharpInstance.metadata.mockResolvedValue({ width: 1920, height: 1080 });
 
-      const result = await resizeImageExecutor({
-        source: '/img/photo.jpg',
-        width: 800,
-        height: 600,
-      }, ctx);
+      const result = await resizeImageExecutor(
+        {
+          source: '/img/photo.jpg',
+          width: 800,
+          height: 600,
+        },
+        ctx
+      );
       expect(result.isError).toBe(false);
       // When both are provided, neither branch triggers — both remain as specified
       const content = result.content as Record<string, unknown>;
@@ -839,23 +905,29 @@ describe('resizeImageExecutor', () => {
     });
 
     it('should pass fit=fill when maintainAspectRatio is false', async () => {
-      await resizeImageExecutor({
-        source: '/img/photo.jpg',
-        width: 800,
-        height: 600,
-        maintainAspectRatio: false,
-      }, ctx);
+      await resizeImageExecutor(
+        {
+          source: '/img/photo.jpg',
+          width: 800,
+          height: 600,
+          maintainAspectRatio: false,
+        },
+        ctx
+      );
       expect(mockSharpInstance.resize).toHaveBeenCalledWith(800, 600, { fit: 'fill' });
     });
 
     it('should not calculate aspect ratio when maintainAspectRatio is false', async () => {
       mockSharpInstance.metadata.mockResolvedValue({ width: 1920, height: 1080 });
 
-      const result = await resizeImageExecutor({
-        source: '/img/photo.jpg',
-        width: 800,
-        maintainAspectRatio: false,
-      }, ctx);
+      const result = await resizeImageExecutor(
+        {
+          source: '/img/photo.jpg',
+          width: 800,
+          maintainAspectRatio: false,
+        },
+        ctx
+      );
       expect(result.isError).toBe(false);
       const content = result.content as Record<string, unknown>;
       const newDims = content.newDimensions as Record<string, unknown>;
@@ -924,21 +996,27 @@ describe('resizeImageExecutor', () => {
     });
 
     it('should use explicit outputPath when provided', async () => {
-      const result = await resizeImageExecutor({
-        source: '/img/photo.jpg',
-        width: 800,
-        outputPath: '/output/resized.jpg',
-      }, ctx);
+      const result = await resizeImageExecutor(
+        {
+          source: '/img/photo.jpg',
+          width: 800,
+          outputPath: '/output/resized.jpg',
+        },
+        ctx
+      );
       expect(result.isError).toBe(false);
       expect(mockSharpInstance.toFile).toHaveBeenCalledWith('/output/resized.jpg');
     });
 
     it('should report output path in result', async () => {
-      const result = await resizeImageExecutor({
-        source: '/img/photo.jpg',
-        width: 800,
-        outputPath: '/out/small.jpg',
-      }, ctx);
+      const result = await resizeImageExecutor(
+        {
+          source: '/img/photo.jpg',
+          width: 800,
+          outputPath: '/out/small.jpg',
+        },
+        ctx
+      );
       const content = result.content as Record<string, unknown>;
       expect(content.output).toBe('/out/small.jpg');
     });
@@ -1013,52 +1091,67 @@ describe('resizeImageExecutor', () => {
     });
 
     it('should clamp quality below 1 to 1', async () => {
-      const result = await resizeImageExecutor({
-        source: '/img/photo.jpg',
-        width: 800,
-        quality: 0,
-      }, ctx);
+      const result = await resizeImageExecutor(
+        {
+          source: '/img/photo.jpg',
+          width: 800,
+          quality: 0,
+        },
+        ctx
+      );
       const content = result.content as Record<string, unknown>;
       // quality=0 is falsy, || 90 gives 90
       expect(content.quality).toBe(90);
     });
 
     it('should clamp quality above 100 to 100', async () => {
-      const result = await resizeImageExecutor({
-        source: '/img/photo.jpg',
-        width: 800,
-        quality: 150,
-      }, ctx);
+      const result = await resizeImageExecutor(
+        {
+          source: '/img/photo.jpg',
+          width: 800,
+          quality: 150,
+        },
+        ctx
+      );
       const content = result.content as Record<string, unknown>;
       expect(content.quality).toBe(100);
     });
 
     it('should accept quality at minimum boundary (1)', async () => {
-      const result = await resizeImageExecutor({
-        source: '/img/photo.jpg',
-        width: 800,
-        quality: 1,
-      }, ctx);
+      const result = await resizeImageExecutor(
+        {
+          source: '/img/photo.jpg',
+          width: 800,
+          quality: 1,
+        },
+        ctx
+      );
       const content = result.content as Record<string, unknown>;
       expect(content.quality).toBe(1);
     });
 
     it('should accept quality at maximum boundary (100)', async () => {
-      const result = await resizeImageExecutor({
-        source: '/img/photo.jpg',
-        width: 800,
-        quality: 100,
-      }, ctx);
+      const result = await resizeImageExecutor(
+        {
+          source: '/img/photo.jpg',
+          width: 800,
+          quality: 100,
+        },
+        ctx
+      );
       const content = result.content as Record<string, unknown>;
       expect(content.quality).toBe(100);
     });
 
     it('should clamp negative quality to 1', async () => {
-      const result = await resizeImageExecutor({
-        source: '/img/photo.jpg',
-        width: 800,
-        quality: -50,
-      }, ctx);
+      const result = await resizeImageExecutor(
+        {
+          source: '/img/photo.jpg',
+          width: 800,
+          quality: -50,
+        },
+        ctx
+      );
       const content = result.content as Record<string, unknown>;
       expect(content.quality).toBe(1);
     });
@@ -1072,11 +1165,14 @@ describe('resizeImageExecutor', () => {
       mockSharpInstance.metadata.mockResolvedValue({ width: 1920, height: 1080 });
       mockStat.mockResolvedValue({ size: 45_000 });
 
-      const result = await resizeImageExecutor({
-        source: '/img/photo.jpg',
-        width: 800,
-        outputPath: '/out/small.jpg',
-      }, ctx);
+      const result = await resizeImageExecutor(
+        {
+          source: '/img/photo.jpg',
+          width: 800,
+          outputPath: '/out/small.jpg',
+        },
+        ctx
+      );
       expect(result.isError).toBe(false);
       const content = result.content as Record<string, unknown>;
       expect(content.success).toBe(true);
@@ -1087,19 +1183,25 @@ describe('resizeImageExecutor', () => {
     });
 
     it('should call sharp with source path', async () => {
-      await resizeImageExecutor({
-        source: '/img/photo.jpg',
-        width: 400,
-      }, ctx);
+      await resizeImageExecutor(
+        {
+          source: '/img/photo.jpg',
+          width: 400,
+        },
+        ctx
+      );
       expect(mockSharp).toHaveBeenCalledWith('/img/photo.jpg');
     });
 
     it('should read output file stats after saving', async () => {
-      await resizeImageExecutor({
-        source: '/img/photo.jpg',
-        width: 400,
-        outputPath: '/out/result.jpg',
-      }, ctx);
+      await resizeImageExecutor(
+        {
+          source: '/img/photo.jpg',
+          width: 400,
+          outputPath: '/out/result.jpg',
+        },
+        ctx
+      );
       expect(mockSharpInstance.toFile).toHaveBeenCalledWith('/out/result.jpg');
       expect(mockStat).toHaveBeenCalledWith('/out/result.jpg');
     });
@@ -1112,10 +1214,13 @@ describe('resizeImageExecutor', () => {
     it('should catch sharp processing errors', async () => {
       mockSharpInstance.metadata.mockRejectedValue(new Error('Corrupt image'));
 
-      const result = await resizeImageExecutor({
-        source: '/img/broken.jpg',
-        width: 800,
-      }, ctx);
+      const result = await resizeImageExecutor(
+        {
+          source: '/img/broken.jpg',
+          width: 800,
+        },
+        ctx
+      );
       expect(result.isError).toBe(true);
       const content = result.content as Record<string, unknown>;
       expect(content.error).toContain('Failed to resize image');
@@ -1125,11 +1230,14 @@ describe('resizeImageExecutor', () => {
     it('should catch toFile errors', async () => {
       mockSharpInstance.toFile.mockRejectedValue(new Error('Permission denied'));
 
-      const result = await resizeImageExecutor({
-        source: '/img/photo.jpg',
-        width: 800,
-        outputPath: '/readonly/out.jpg',
-      }, ctx);
+      const result = await resizeImageExecutor(
+        {
+          source: '/img/photo.jpg',
+          width: 800,
+          outputPath: '/readonly/out.jpg',
+        },
+        ctx
+      );
       expect(result.isError).toBe(true);
       const content = result.content as Record<string, unknown>;
       expect(content.error).toContain('Failed to resize image');
@@ -1139,10 +1247,13 @@ describe('resizeImageExecutor', () => {
     it('should catch output stat errors', async () => {
       mockStat.mockRejectedValue(new Error('Stat failed'));
 
-      const result = await resizeImageExecutor({
-        source: '/img/photo.jpg',
-        width: 800,
-      }, ctx);
+      const result = await resizeImageExecutor(
+        {
+          source: '/img/photo.jpg',
+          width: 800,
+        },
+        ctx
+      );
       expect(result.isError).toBe(true);
       const content = result.content as Record<string, unknown>;
       expect(content.error).toContain('Failed to resize image');
@@ -1164,11 +1275,14 @@ describe('resizeImageExecutor', () => {
     it('should treat explicit true the same as default', async () => {
       mockSharpInstance.metadata.mockResolvedValue({ width: 1000, height: 500 });
 
-      await resizeImageExecutor({
-        source: '/img/photo.jpg',
-        width: 500,
-        maintainAspectRatio: true,
-      }, ctx);
+      await resizeImageExecutor(
+        {
+          source: '/img/photo.jpg',
+          width: 500,
+          maintainAspectRatio: true,
+        },
+        ctx
+      );
       // 500 / (1000/500) = 500 / 2 = 250
       expect(mockSharpInstance.resize).toHaveBeenCalledWith(500, 250, { fit: 'inside' });
     });

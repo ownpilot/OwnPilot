@@ -69,10 +69,12 @@ export class PlanService implements IPlanService {
     }
     const repo = this.getRepo(userId);
     const plan = await repo.create(input);
-    getEventBus().emit(createEvent<ResourceCreatedData>(
-      EventTypes.RESOURCE_CREATED, 'resource', 'plan-service',
-      { resourceType: 'plan', id: plan.id },
-    ));
+    getEventBus().emit(
+      createEvent<ResourceCreatedData>(EventTypes.RESOURCE_CREATED, 'resource', 'plan-service', {
+        resourceType: 'plan',
+        id: plan.id,
+      })
+    );
     return plan;
   }
 
@@ -81,25 +83,37 @@ export class PlanService implements IPlanService {
     return repo.get(id);
   }
 
-  async getPlanWithDetails(userId: string, id: string): Promise<(PlanWithSteps & { history: PlanHistory[] }) | null> {
+  async getPlanWithDetails(
+    userId: string,
+    id: string
+  ): Promise<(PlanWithSteps & { history: PlanHistory[] }) | null> {
     const repo = this.getRepo(userId);
     const plan = await repo.get(id);
     if (!plan) return null;
 
-    const [steps, history] = await Promise.all([
-      repo.getSteps(id),
-      repo.getHistory(id),
-    ]);
+    const [steps, history] = await Promise.all([repo.getSteps(id), repo.getHistory(id)]);
 
     return { ...plan, steps, history };
   }
 
-  async listPlans(userId: string, options?: { status?: PlanStatus; goalId?: string; triggerId?: string; limit?: number; offset?: number }): Promise<Plan[]> {
+  async listPlans(
+    userId: string,
+    options?: {
+      status?: PlanStatus;
+      goalId?: string;
+      triggerId?: string;
+      limit?: number;
+      offset?: number;
+    }
+  ): Promise<Plan[]> {
     const repo = this.getRepo(userId);
     return repo.list(options);
   }
 
-  async countPlans(userId: string, options?: { status?: PlanStatus; goalId?: string; triggerId?: string }): Promise<number> {
+  async countPlans(
+    userId: string,
+    options?: { status?: PlanStatus; goalId?: string; triggerId?: string }
+  ): Promise<number> {
     const repo = this.getRepo(userId);
     return repo.count(options);
   }
@@ -108,10 +122,13 @@ export class PlanService implements IPlanService {
     const repo = this.getRepo(userId);
     const updated = await repo.update(id, input);
     if (updated) {
-      getEventBus().emit(createEvent<ResourceUpdatedData>(
-        EventTypes.RESOURCE_UPDATED, 'resource', 'plan-service',
-        { resourceType: 'plan', id, changes: input },
-      ));
+      getEventBus().emit(
+        createEvent<ResourceUpdatedData>(EventTypes.RESOURCE_UPDATED, 'resource', 'plan-service', {
+          resourceType: 'plan',
+          id,
+          changes: input,
+        })
+      );
     }
     return updated;
   }
@@ -120,10 +137,12 @@ export class PlanService implements IPlanService {
     const repo = this.getRepo(userId);
     const deleted = await repo.delete(id);
     if (deleted) {
-      getEventBus().emit(createEvent<ResourceDeletedData>(
-        EventTypes.RESOURCE_DELETED, 'resource', 'plan-service',
-        { resourceType: 'plan', id },
-      ));
+      getEventBus().emit(
+        createEvent<ResourceDeletedData>(EventTypes.RESOURCE_DELETED, 'resource', 'plan-service', {
+          resourceType: 'plan',
+          id,
+        })
+      );
     }
     return deleted;
   }
@@ -168,7 +187,11 @@ export class PlanService implements IPlanService {
     return repo.getStep(stepId);
   }
 
-  async updateStep(userId: string, stepId: string, input: UpdateStepInput): Promise<PlanStep | null> {
+  async updateStep(
+    userId: string,
+    stepId: string,
+    input: UpdateStepInput
+  ): Promise<PlanStep | null> {
     const repo = this.getRepo(userId);
     return repo.updateStep(stepId, input);
   }
@@ -197,7 +220,7 @@ export class PlanService implements IPlanService {
     planId: string,
     eventType: PlanEventType,
     stepId?: string,
-    details?: Record<string, unknown>,
+    details?: Record<string, unknown>
   ): Promise<void> {
     const repo = this.getRepo(userId);
     await repo.logEvent(planId, eventType, stepId, details);
@@ -232,7 +255,7 @@ export type PlanServiceErrorCode = 'VALIDATION_ERROR' | 'NOT_FOUND' | 'INTERNAL_
 export class PlanServiceError extends Error {
   constructor(
     message: string,
-    public readonly code: PlanServiceErrorCode,
+    public readonly code: PlanServiceErrorCode
   ) {
     super(message);
     this.name = 'PlanServiceError';

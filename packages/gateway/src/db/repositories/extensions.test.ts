@@ -187,7 +187,7 @@ describe('ExtensionsRepository', () => {
 
       const enabled = repo.getEnabled();
       expect(enabled).toHaveLength(2);
-      expect(enabled.map(p => p.id).sort()).toEqual(['a', 'c']);
+      expect(enabled.map((p) => p.id).sort()).toEqual(['a', 'c']);
     });
   });
 
@@ -238,7 +238,7 @@ describe('ExtensionsRepository', () => {
       // Check that execute was called with default userId ('default'), category ('other'), etc.
       const args = mockAdapter.execute.mock.calls[0][1];
       expect(args[1]).toBe('default'); // userId
-      expect(args[5]).toBe('other');   // category (default)
+      expect(args[5]).toBe('other'); // category (default)
     });
   });
 
@@ -260,7 +260,9 @@ describe('ExtensionsRepository', () => {
       await repo.initialize();
 
       mockAdapter.execute.mockResolvedValue({ changes: 1 });
-      mockAdapter.queryOne.mockResolvedValue(makeRow({ status: 'error', error_message: 'Something broke' }));
+      mockAdapter.queryOne.mockResolvedValue(
+        makeRow({ status: 'error', error_message: 'Something broke' })
+      );
 
       const result = await repo.updateStatus('test-ext', 'error', 'Something broke');
       expect(result!.status).toBe('error');
@@ -338,9 +340,7 @@ describe('ExtensionsRepository', () => {
     });
 
     it('handles manifest as parsed object (PostgreSQL)', async () => {
-      mockAdapter.query.mockResolvedValue([
-        makeRow({ manifest: sampleManifest }),
-      ]);
+      mockAdapter.query.mockResolvedValue([makeRow({ manifest: sampleManifest })]);
       await repo.initialize();
 
       const record = repo.getById('test-ext');
@@ -348,13 +348,15 @@ describe('ExtensionsRepository', () => {
     });
 
     it('handles null optional fields', async () => {
-      mockAdapter.query.mockResolvedValue([makeRow({
-        description: null,
-        icon: null,
-        author_name: null,
-        source_path: null,
-        error_message: null,
-      })]);
+      mockAdapter.query.mockResolvedValue([
+        makeRow({
+          description: null,
+          icon: null,
+          author_name: null,
+          source_path: null,
+          error_message: null,
+        }),
+      ]);
       await repo.initialize();
 
       const record = repo.getById('test-ext');
@@ -366,9 +368,7 @@ describe('ExtensionsRepository', () => {
     });
 
     it('handles invalid manifest JSON gracefully', async () => {
-      mockAdapter.query.mockResolvedValue([
-        makeRow({ manifest: 'not json' }),
-      ]);
+      mockAdapter.query.mockResolvedValue([makeRow({ manifest: 'not json' })]);
       await repo.initialize();
 
       const record = repo.getById('test-ext');
@@ -378,9 +378,7 @@ describe('ExtensionsRepository', () => {
     });
 
     it('handles settings as parsed object', async () => {
-      mockAdapter.query.mockResolvedValue([
-        makeRow({ settings: { foo: 'bar' } }),
-      ]);
+      mockAdapter.query.mockResolvedValue([makeRow({ settings: { foo: 'bar' } })]);
       await repo.initialize();
 
       const record = repo.getById('test-ext');

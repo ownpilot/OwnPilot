@@ -19,14 +19,7 @@ import { useToast } from '../components/ToastProvider';
 import { autonomyApi } from '../api';
 import type { PendingApproval, AutonomyConfig, AutonomyLevel } from '../api';
 
-
-const levelColors = [
-  'bg-error',
-  'bg-warning',
-  'bg-warning',
-  'bg-success',
-  'bg-primary',
-];
+const levelColors = ['bg-error', 'bg-warning', 'bg-warning', 'bg-success', 'bg-primary'];
 
 const riskColors = {
   low: 'text-success',
@@ -66,9 +59,7 @@ export function AutonomyPage() {
   }, []);
 
   useEffect(() => {
-    Promise.all([fetchConfig(), fetchPendingApprovals()]).finally(() =>
-      setIsLoading(false)
-    );
+    Promise.all([fetchConfig(), fetchPendingApprovals()]).finally(() => setIsLoading(false));
   }, [fetchConfig, fetchPendingApprovals]);
 
   // WS-triggered refresh when tools complete or system notifications arrive
@@ -77,81 +68,100 @@ export function AutonomyPage() {
       subscribe('tool:end', () => fetchPendingApprovals()),
       subscribe('system:notification', () => fetchPendingApprovals()),
     ];
-    return () => unsubs.forEach(fn => fn());
+    return () => unsubs.forEach((fn) => fn());
   }, [subscribe, fetchPendingApprovals]);
 
-  const handleLevelChange = useCallback(async (level: number) => {
-    try {
-      await autonomyApi.setLevel(level);
-      fetchConfig();
-      toast.success("Autonomy level updated");
-    } catch {
-      // API client handles error reporting
-    }
-  }, [fetchConfig, toast]);
-
-  const handleBudgetUpdate = useCallback(async (updates: Partial<AutonomyConfig>) => {
-    try {
-      await autonomyApi.updateBudget({ ...updates });
-      fetchConfig();
-      toast.success("Budget updated");
-    } catch {
-      // API client handles error reporting
-    }
-  }, [fetchConfig, toast]);
-
-  const handleAddTool = useCallback(async (type: "allow" | "block", tool: string) => {
-    if (!tool.trim()) return;
-    try {
-      if (type === "allow") {
-        await autonomyApi.allowTool(tool.trim());
-      } else {
-        await autonomyApi.blockTool(tool.trim());
+  const handleLevelChange = useCallback(
+    async (level: number) => {
+      try {
+        await autonomyApi.setLevel(level);
+        fetchConfig();
+        toast.success('Autonomy level updated');
+      } catch {
+        // API client handles error reporting
       }
-      fetchConfig();
-      toast.success("Tool added");
-      if (type === "allow") setNewAllowedTool("");
-      else setNewBlockedTool("");
-    } catch {
-      // API client handles error reporting
-    }
-  }, [fetchConfig, toast]);
+    },
+    [fetchConfig, toast]
+  );
 
-  const handleRemoveTool = useCallback(async (tool: string) => {
-    try {
-      await autonomyApi.removeTool(tool);
-      fetchConfig();
-      toast.success("Tool removed");
-    } catch {
-      // API client handles error reporting
-    }
-  }, [fetchConfig, toast]);
+  const handleBudgetUpdate = useCallback(
+    async (updates: Partial<AutonomyConfig>) => {
+      try {
+        await autonomyApi.updateBudget({ ...updates });
+        fetchConfig();
+        toast.success('Budget updated');
+      } catch {
+        // API client handles error reporting
+      }
+    },
+    [fetchConfig, toast]
+  );
 
-  const handleApproval = useCallback(async (actionId: string, decision: 'approve' | 'reject') => {
-    try {
-      await autonomyApi.resolveApproval(actionId, decision);
-      fetchPendingApprovals();
-      toast.success(decision === 'approve' ? 'Action approved' : 'Action rejected');
-    } catch {
-      // API client handles error reporting
-    }
-  }, [fetchPendingApprovals, toast]);
+  const handleAddTool = useCallback(
+    async (type: 'allow' | 'block', tool: string) => {
+      if (!tool.trim()) return;
+      try {
+        if (type === 'allow') {
+          await autonomyApi.allowTool(tool.trim());
+        } else {
+          await autonomyApi.blockTool(tool.trim());
+        }
+        fetchConfig();
+        toast.success('Tool added');
+        if (type === 'allow') setNewAllowedTool('');
+        else setNewBlockedTool('');
+      } catch {
+        // API client handles error reporting
+      }
+    },
+    [fetchConfig, toast]
+  );
+
+  const handleRemoveTool = useCallback(
+    async (tool: string) => {
+      try {
+        await autonomyApi.removeTool(tool);
+        fetchConfig();
+        toast.success('Tool removed');
+      } catch {
+        // API client handles error reporting
+      }
+    },
+    [fetchConfig, toast]
+  );
+
+  const handleApproval = useCallback(
+    async (actionId: string, decision: 'approve' | 'reject') => {
+      try {
+        await autonomyApi.resolveApproval(actionId, decision);
+        fetchPendingApprovals();
+        toast.success(decision === 'approve' ? 'Action approved' : 'Action rejected');
+      } catch {
+        // API client handles error reporting
+      }
+    },
+    [fetchPendingApprovals, toast]
+  );
 
   const handleResetConfig = useCallback(async () => {
-    if (!await confirm({ message: 'Are you sure you want to reset autonomy settings to defaults?', variant: 'danger' })) return;
+    if (
+      !(await confirm({
+        message: 'Are you sure you want to reset autonomy settings to defaults?',
+        variant: 'danger',
+      }))
+    )
+      return;
     try {
       await autonomyApi.resetConfig();
       fetchConfig();
-      toast.success("Config reset");
+      toast.success('Config reset');
     } catch {
       // API client handles error reporting
     }
   }, [confirm, fetchConfig, toast]);
 
   if (isLoading || !config) {
-    return (
-      <LoadingSpinner message="Loading autonomy settings..." />
-    );
+    return <LoadingSpinner message="Loading autonomy settings..." />;
   }
 
   const currentLevel = levels.find((l) => l.level === config.level);
@@ -277,9 +287,7 @@ export function AutonomyPage() {
                     {level.description}
                   </div>
                 </div>
-                {config.level === level.level && (
-                  <ShieldCheck className="w-5 h-5 text-primary" />
-                )}
+                {config.level === level.level && <ShieldCheck className="w-5 h-5 text-primary" />}
               </button>
             ))}
           </div>

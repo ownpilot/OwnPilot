@@ -224,7 +224,7 @@ describe('GatewayConfigCenter', () => {
       expect(mockConfigServicesRepo.getFieldValue).toHaveBeenCalledWith(
         'openai',
         'api_key',
-        undefined,
+        undefined
       );
     });
 
@@ -236,7 +236,7 @@ describe('GatewayConfigCenter', () => {
       expect(mockConfigServicesRepo.getFieldValue).toHaveBeenCalledWith(
         'openai',
         'api_key',
-        'staging',
+        'staging'
       );
     });
 
@@ -267,6 +267,5 @@ describe('GatewayConfigCenter', () => {
     it('gatewayConfigCenter is a GatewayConfigCenter instance', () => {
       expect(gatewayConfigCenter).toBeInstanceOf(GatewayConfigCenter);
     });
-
   });
 });

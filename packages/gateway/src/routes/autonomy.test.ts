@@ -48,7 +48,13 @@ const mockApprovalManager = {
 vi.mock('../autonomy/index.js', () => ({
   getApprovalManager: vi.fn(() => mockApprovalManager),
   assessRisk: vi.fn(
-    (_category: string, _actionType: string, _params: unknown, _context: unknown, _config: unknown) => ({
+    (
+      _category: string,
+      _actionType: string,
+      _params: unknown,
+      _context: unknown,
+      _config: unknown
+    ) => ({
       level: 'medium',
       score: 0.6,
       reasons: ['Shell command execution'],
@@ -361,7 +367,10 @@ describe('Autonomy Routes', () => {
 
   describe('POST /autonomy/approvals/:id/decide', () => {
     it('processes an approval decision', async () => {
-      mockApprovalManager.processDecision.mockReturnValue({ ...mockPendingAction, status: 'approved' });
+      mockApprovalManager.processDecision.mockReturnValue({
+        ...mockPendingAction,
+        status: 'approved',
+      });
 
       const res = await app.request('/autonomy/approvals/action-1/decide', {
         method: 'POST',
@@ -405,7 +414,10 @@ describe('Autonomy Routes', () => {
 
   describe('POST /autonomy/approvals/:id/approve', () => {
     it('approves a pending action', async () => {
-      mockApprovalManager.processDecision.mockReturnValue({ ...mockPendingAction, status: 'approved' });
+      mockApprovalManager.processDecision.mockReturnValue({
+        ...mockPendingAction,
+        status: 'approved',
+      });
 
       const res = await app.request('/autonomy/approvals/action-1/approve', {
         method: 'POST',
@@ -437,7 +449,10 @@ describe('Autonomy Routes', () => {
 
   describe('POST /autonomy/approvals/:id/reject', () => {
     it('rejects a pending action', async () => {
-      mockApprovalManager.processDecision.mockReturnValue({ ...mockPendingAction, status: 'rejected' });
+      mockApprovalManager.processDecision.mockReturnValue({
+        ...mockPendingAction,
+        status: 'rejected',
+      });
 
       const res = await app.request('/autonomy/approvals/action-1/reject', {
         method: 'POST',

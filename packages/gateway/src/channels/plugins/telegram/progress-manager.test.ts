@@ -19,7 +19,7 @@ vi.mock('../../../services/log.js', () => ({
 }));
 
 const mockMarkdownToTelegramHtml = vi.hoisted(() =>
-  vi.fn((text: string) => `<html>${text}</html>`),
+  vi.fn((text: string) => `<html>${text}</html>`)
 );
 const mockSplitMessage = vi.hoisted(() => vi.fn((text: string) => [text]));
 const mockPlatformLimits = vi.hoisted(() => ({ telegram: 4096 }));
@@ -45,9 +45,7 @@ function createMockBot() {
     api: {
       sendMessage: vi
         .fn()
-        .mockImplementation(() =>
-          Promise.resolve({ message_id: messageIdCounter++ }),
-        ),
+        .mockImplementation(() => Promise.resolve({ message_id: messageIdCounter++ })),
       editMessageText: vi.fn().mockResolvedValue({}),
     },
   };
@@ -159,10 +157,9 @@ describe('TelegramProgressManager', () => {
       bot.api.sendMessage.mockRejectedValueOnce(error);
       const pm = new TelegramProgressManager(bot as never, '12345');
       await pm.start();
-      expect(mockLogWarn).toHaveBeenCalledWith(
-        'Failed to send initial progress message',
-        { error },
-      );
+      expect(mockLogWarn).toHaveBeenCalledWith('Failed to send initial progress message', {
+        error,
+      });
     });
   });
 
@@ -191,11 +188,7 @@ describe('TelegramProgressManager', () => {
       await pm.start();
       vi.advanceTimersByTime(3000);
       pm.update('progress update');
-      expect(bot.api.editMessageText).toHaveBeenCalledWith(
-        '12345',
-        100,
-        'progress update',
-      );
+      expect(bot.api.editMessageText).toHaveBeenCalledWith('12345', 100, 'progress update');
     });
 
     it('queues update when within throttle window', async () => {
@@ -367,11 +360,7 @@ describe('TelegramProgressManager', () => {
       pm.update('queued after immediate');
       expect(bot.api.editMessageText).not.toHaveBeenCalled();
       vi.advanceTimersByTime(3000);
-      expect(bot.api.editMessageText).toHaveBeenCalledWith(
-        '12345',
-        100,
-        'queued after immediate',
-      );
+      expect(bot.api.editMessageText).toHaveBeenCalledWith('12345', 100, 'queued after immediate');
     });
 
     it('editMessageText error in doEdit logs debug message', async () => {
@@ -429,12 +418,7 @@ describe('TelegramProgressManager', () => {
       await pm.start();
       bot.api.editMessageText.mockClear();
       await pm.finish('');
-      expect(bot.api.editMessageText).toHaveBeenCalledWith(
-        '12345',
-        100,
-        '(empty response)',
-        {},
-      );
+      expect(bot.api.editMessageText).toHaveBeenCalledWith('12345', 100, '(empty response)', {});
     });
 
     it('trims whitespace from final text', async () => {
@@ -442,12 +426,7 @@ describe('TelegramProgressManager', () => {
       await pm.start();
       bot.api.editMessageText.mockClear();
       await pm.finish('  hello world  ');
-      expect(bot.api.editMessageText).toHaveBeenCalledWith(
-        '12345',
-        100,
-        'hello world',
-        {},
-      );
+      expect(bot.api.editMessageText).toHaveBeenCalledWith('12345', 100, 'hello world', {});
     });
 
     it('trims whitespace-only text to "(empty response)"', async () => {
@@ -455,12 +434,7 @@ describe('TelegramProgressManager', () => {
       await pm.start();
       bot.api.editMessageText.mockClear();
       await pm.finish('   ');
-      expect(bot.api.editMessageText).toHaveBeenCalledWith(
-        '12345',
-        100,
-        '(empty response)',
-        {},
-      );
+      expect(bot.api.editMessageText).toHaveBeenCalledWith('12345', 100, '(empty response)', {});
     });
 
     it('falls back to sendFresh when no messageId', async () => {
@@ -468,7 +442,7 @@ describe('TelegramProgressManager', () => {
       const pm = new TelegramProgressManager(bot as never, '12345');
       await pm.start(); // fails, messageId stays null
       bot.api.sendMessage.mockImplementation(() =>
-        Promise.resolve({ message_id: messageIdCounter++ }),
+        Promise.resolve({ message_id: messageIdCounter++ })
       );
       const result = await pm.finish('fallback text');
       // sendFresh sends via sendMessage, not editMessageText
@@ -574,7 +548,7 @@ describe('TelegramProgressManager', () => {
       await pm.finish('text');
       expect(mockLogDebug).toHaveBeenCalledWith(
         'Failed to edit progress → final message, sending fresh',
-        { error },
+        { error }
       );
     });
 
@@ -703,7 +677,7 @@ describe('TelegramProgressManager', () => {
       expect(bot.api.editMessageText).toHaveBeenCalledWith(
         '12345',
         100,
-        '⚠️ Processing cancelled.',
+        '⚠️ Processing cancelled.'
       );
     });
 
@@ -787,7 +761,7 @@ describe('TelegramProgressManager', () => {
       await pm.start(); // fails
       mockMarkdownToTelegramHtml.mockClear();
       bot.api.sendMessage.mockImplementation(() =>
-        Promise.resolve({ message_id: messageIdCounter++ }),
+        Promise.resolve({ message_id: messageIdCounter++ })
       );
       await pm.finish('**bold**');
       expect(mockMarkdownToTelegramHtml).toHaveBeenCalledWith('**bold**');
@@ -799,7 +773,7 @@ describe('TelegramProgressManager', () => {
       await pm.start();
       mockMarkdownToTelegramHtml.mockClear();
       bot.api.sendMessage.mockImplementation(() =>
-        Promise.resolve({ message_id: messageIdCounter++ }),
+        Promise.resolve({ message_id: messageIdCounter++ })
       );
       await pm.finish('plain text');
       expect(mockMarkdownToTelegramHtml).not.toHaveBeenCalled();
@@ -811,7 +785,7 @@ describe('TelegramProgressManager', () => {
       await pm.start();
       mockSplitMessage.mockClear();
       bot.api.sendMessage.mockImplementation(() =>
-        Promise.resolve({ message_id: messageIdCounter++ }),
+        Promise.resolve({ message_id: messageIdCounter++ })
       );
       await pm.finish('split this');
       expect(mockSplitMessage).toHaveBeenCalledWith('split this', 4096);
@@ -824,7 +798,7 @@ describe('TelegramProgressManager', () => {
       mockSplitMessage.mockReturnValueOnce(['fresh 1', 'fresh 2']);
       bot.api.sendMessage.mockClear();
       bot.api.sendMessage.mockImplementation(() =>
-        Promise.resolve({ message_id: messageIdCounter++ }),
+        Promise.resolve({ message_id: messageIdCounter++ })
       );
       await pm.finish('fresh text');
       expect(bot.api.sendMessage).toHaveBeenCalledTimes(2);
@@ -838,7 +812,7 @@ describe('TelegramProgressManager', () => {
       await pm.start();
       messageIdCounter = 300;
       bot.api.sendMessage.mockImplementation(() =>
-        Promise.resolve({ message_id: messageIdCounter++ }),
+        Promise.resolve({ message_id: messageIdCounter++ })
       );
       const result = await pm.finish('text');
       expect(result).toBe('300');
@@ -871,7 +845,7 @@ describe('TelegramProgressManager', () => {
       await pm.start();
       bot.api.sendMessage.mockClear();
       bot.api.sendMessage.mockImplementation(() =>
-        Promise.resolve({ message_id: messageIdCounter++ }),
+        Promise.resolve({ message_id: messageIdCounter++ })
       );
       await pm.finish('text');
       const options = bot.api.sendMessage.mock.calls[0]![2] as Record<string, unknown>;
@@ -897,31 +871,18 @@ describe('TelegramProgressManager', () => {
 
       // advance 3s — queued update fires
       vi.advanceTimersByTime(3000);
-      expect(bot.api.editMessageText).toHaveBeenCalledWith(
-        '12345',
-        100,
-        'Working on step 1...',
-      );
+      expect(bot.api.editMessageText).toHaveBeenCalledWith('12345', 100, 'Working on step 1...');
 
       // second update after throttle window
       vi.advanceTimersByTime(3000);
       bot.api.editMessageText.mockClear();
       pm.update('Working on step 2...');
-      expect(bot.api.editMessageText).toHaveBeenCalledWith(
-        '12345',
-        100,
-        'Working on step 2...',
-      );
+      expect(bot.api.editMessageText).toHaveBeenCalledWith('12345', 100, 'Working on step 2...');
 
       // finish
       bot.api.editMessageText.mockClear();
       const result = await pm.finish('Final response');
-      expect(bot.api.editMessageText).toHaveBeenCalledWith(
-        '12345',
-        100,
-        'Final response',
-        {},
-      );
+      expect(bot.api.editMessageText).toHaveBeenCalledWith('12345', 100, 'Final response', {});
       expect(result).toBe('100');
     });
 

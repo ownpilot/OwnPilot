@@ -42,21 +42,19 @@ export interface ApprovalRequest {
 
 export const executionPermissionsApi = {
   /** Get current execution permissions */
-  get: () =>
-    apiClient.get<ExecutionPermissions>('/execution-permissions'),
+  get: () => apiClient.get<ExecutionPermissions>('/execution-permissions'),
 
   /** Update execution permissions (partial merge) */
   update: (perms: Partial<ExecutionPermissions>) =>
     apiClient.put<ExecutionPermissions>('/execution-permissions', perms),
 
   /** Reset to all-blocked defaults */
-  reset: () =>
-    apiClient.post<{ reset: boolean }>('/execution-permissions/reset'),
+  reset: () => apiClient.post<{ reset: boolean }>('/execution-permissions/reset'),
 
   /** Resolve a pending approval request */
   resolveApproval: (id: string, approved: boolean) =>
     apiClient.post<{ resolved: boolean; approved: boolean }>(
       `/execution-permissions/approvals/${id}/resolve`,
-      { approved },
+      { approved }
     ),
 };

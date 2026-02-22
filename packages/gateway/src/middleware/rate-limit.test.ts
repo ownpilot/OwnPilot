@@ -10,13 +10,7 @@
  *     soft vs hard limit, store overflow, window expiry, cleanup intervals.
  */
 
-import {
-  describe,
-  it,
-  expect,
-  vi,
-  afterEach,
-} from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { Hono } from 'hono';
 
 // ---------------------------------------------------------------------------
@@ -77,10 +71,7 @@ function createTestApp(middleware: MiddlewareFn) {
  * Build a test app where every request carries a userId context value,
  * simulating an authenticated user upstream of the rate limiter.
  */
-function createAuthenticatedApp(
-  middleware: MiddlewareFn,
-  userId = 'user-abc',
-) {
+function createAuthenticatedApp(middleware: MiddlewareFn, userId = 'user-abc') {
   const app = new Hono();
   app.use('*', async (c, next) => {
     c.set('userId', userId);
@@ -100,7 +91,7 @@ async function hitN(
   app: Hono,
   n: number,
   url = '/test',
-  headers: Record<string, string> = {},
+  headers: Record<string, string> = {}
 ): Promise<Response[]> {
   const results: Response[] = [];
   for (let i = 0; i < n; i++) {

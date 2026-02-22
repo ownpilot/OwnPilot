@@ -39,10 +39,7 @@ export type {
   MessageRole,
   MessageProcessingResult,
 } from './message-types.js';
-export type {
-  IToolService,
-  ToolServiceResult,
-} from './tool-service.js';
+export type { IToolService, ToolServiceResult } from './tool-service.js';
 export type {
   IProviderService,
   ProviderInfo,
@@ -180,21 +177,13 @@ export type {
 } from './mcp-client-service.js';
 
 // Extension Service
-export type {
-  IExtensionService,
-  ExtensionInfo,
-  ExtensionScanResult,
-} from './extension-service.js';
+export type { IExtensionService, ExtensionInfo, ExtensionScanResult } from './extension-service.js';
 
 // Embedding Service
-export type {
-  IEmbeddingService,
-  EmbeddingResult,
-} from './embedding-service.js';
+export type { IEmbeddingService, EmbeddingResult } from './embedding-service.js';
 
 // Config Center
 export * from './config-center.js';
-
 
 // Weather Service
 export * from './weather-service.js';

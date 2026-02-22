@@ -279,7 +279,10 @@ describe('bulk_delete_memories executor', () => {
   it('deletes matching memories when confirmed', async () => {
     const mems = [makeMemoryEntry({ id: 'a' }), makeMemoryEntry({ id: 'b' })];
     store.queryMemories.mockResolvedValue(mems);
-    const result = await executors.bulk_delete_memories({ confirm: true, category: 'preference' }, mockCtx);
+    const result = await executors.bulk_delete_memories(
+      { confirm: true, category: 'preference' },
+      mockCtx
+    );
     expect(store.deleteMemory).toHaveBeenCalledTimes(2);
     expect(result.content.success).toBe(true);
     expect(result.content.message).toContain('2');
@@ -289,10 +292,7 @@ describe('bulk_delete_memories executor', () => {
     const old = makeMemoryEntry({ id: 'old', createdAt: '2025-01-01T00:00:00Z' });
     const recent = makeMemoryEntry({ id: 'recent', createdAt: '2026-02-20T00:00:00Z' });
     store.queryMemories.mockResolvedValue([old, recent]);
-    await executors.bulk_delete_memories(
-      { confirm: true, olderThan: '2026-01-01' },
-      mockCtx,
-    );
+    await executors.bulk_delete_memories({ confirm: true, olderThan: '2026-01-01' }, mockCtx);
     expect(store.deleteMemory).toHaveBeenCalledWith('old');
     expect(store.deleteMemory).not.toHaveBeenCalledWith('recent');
   });
@@ -301,10 +301,7 @@ describe('bulk_delete_memories executor', () => {
     const low = makeMemoryEntry({ id: 'lo', importance: 'low' });
     const high = makeMemoryEntry({ id: 'hi', importance: 'high' });
     store.queryMemories.mockResolvedValue([low, high]);
-    await executors.bulk_delete_memories(
-      { confirm: true, importance: 'low' },
-      mockCtx,
-    );
+    await executors.bulk_delete_memories({ confirm: true, importance: 'low' }, mockCtx);
     expect(store.deleteMemory).toHaveBeenCalledWith('lo');
     expect(store.deleteMemory).not.toHaveBeenCalledWith('hi');
   });
@@ -444,7 +441,7 @@ describe('update_memory_importance executor', () => {
     store.getMemory.mockResolvedValue(makeMemoryEntry({ importance: 'low' }));
     const result = await executors.update_memory_importance(
       { memoryId: 'mem_1', importance: 'critical' },
-      mockCtx,
+      mockCtx
     );
     expect(result.content.success).toBe(true);
     expect(result.content.message).toContain('low');
@@ -455,7 +452,7 @@ describe('update_memory_importance executor', () => {
     store.getMemory.mockResolvedValue(null);
     const result = await executors.update_memory_importance(
       { memoryId: 'nope', importance: 'high' },
-      mockCtx,
+      mockCtx
     );
     expect(store.updateMemory).not.toHaveBeenCalled();
     expect(result.content.success).toBe(false);
@@ -464,10 +461,7 @@ describe('update_memory_importance executor', () => {
 
   it('calls updateMemory with the new importance', async () => {
     store.getMemory.mockResolvedValue(makeMemoryEntry());
-    await executors.update_memory_importance(
-      { memoryId: 'mem_1', importance: 'high' },
-      mockCtx,
-    );
+    await executors.update_memory_importance({ memoryId: 'mem_1', importance: 'high' }, mockCtx);
     expect(store.updateMemory).toHaveBeenCalledWith('mem_1', { importance: 'high' });
   });
 });
@@ -524,9 +518,24 @@ describe('memory_stats executor', () => {
 
   it('calculates stats by category, importance, and dates', async () => {
     const mems = [
-      makeMemoryEntry({ id: '1', category: 'preference', importance: 'high', createdAt: '2026-01-10T00:00:00Z' }),
-      makeMemoryEntry({ id: '2', category: 'fact', importance: 'low', createdAt: '2026-01-05T00:00:00Z' }),
-      makeMemoryEntry({ id: '3', category: 'preference', importance: 'medium', createdAt: '2026-01-20T00:00:00Z' }),
+      makeMemoryEntry({
+        id: '1',
+        category: 'preference',
+        importance: 'high',
+        createdAt: '2026-01-10T00:00:00Z',
+      }),
+      makeMemoryEntry({
+        id: '2',
+        category: 'fact',
+        importance: 'low',
+        createdAt: '2026-01-05T00:00:00Z',
+      }),
+      makeMemoryEntry({
+        id: '3',
+        category: 'preference',
+        importance: 'medium',
+        createdAt: '2026-01-20T00:00:00Z',
+      }),
     ];
     store.queryMemories.mockResolvedValue(mems);
     const result = await executors.memory_stats({}, mockCtx);
@@ -588,7 +597,7 @@ describe('clear_all_memories executor', () => {
   it('requires confirm=true', async () => {
     const result = await executors.clear_all_memories(
       { confirm: false, confirmPhrase: 'DELETE ALL MY MEMORIES' },
-      mockCtx,
+      mockCtx
     );
     expect(result.content.success).toBe(false);
     expect(result.content.error).toMatch(/confirm/i);
@@ -597,7 +606,7 @@ describe('clear_all_memories executor', () => {
   it('requires exact confirmPhrase "DELETE ALL MY MEMORIES"', async () => {
     const result = await executors.clear_all_memories(
       { confirm: true, confirmPhrase: 'wrong phrase' },
-      mockCtx,
+      mockCtx
     );
     expect(store.deleteMemory).not.toHaveBeenCalled();
     expect(result.content.success).toBe(false);
@@ -605,11 +614,15 @@ describe('clear_all_memories executor', () => {
   });
 
   it('deletes all memories when properly confirmed', async () => {
-    const mems = [makeMemoryEntry({ id: 'a' }), makeMemoryEntry({ id: 'b' }), makeMemoryEntry({ id: 'c' })];
+    const mems = [
+      makeMemoryEntry({ id: 'a' }),
+      makeMemoryEntry({ id: 'b' }),
+      makeMemoryEntry({ id: 'c' }),
+    ];
     store.queryMemories.mockResolvedValue(mems);
     const result = await executors.clear_all_memories(
       { confirm: true, confirmPhrase: 'DELETE ALL MY MEMORIES' },
-      mockCtx,
+      mockCtx
     );
     expect(store.deleteMemory).toHaveBeenCalledTimes(3);
     expect(result.content.success).toBe(true);
@@ -632,7 +645,7 @@ describe('configure_retention executor', () => {
   it('updates policy with new values merged with defaults', async () => {
     const result = await executors.configure_retention(
       { autoArchiveDays: 30, maxMemories: 500 },
-      mockCtx,
+      mockCtx
     );
     expect(store.setRetentionPolicy).toHaveBeenCalled();
     const policy = store.setRetentionPolicy.mock.calls[0]![0];
@@ -670,7 +683,9 @@ describe('createMemoryOversightTools', () => {
       expect(tool.definition).toHaveProperty('name');
     }
     // Executors whose definition.name matches executor key should be functions
-    const toolsWithExecutors = tools.filter((t: { executor?: unknown }) => t.executor !== undefined);
+    const toolsWithExecutors = tools.filter(
+      (t: { executor?: unknown }) => t.executor !== undefined
+    );
     for (const tool of toolsWithExecutors) {
       expect(typeof tool.executor).toBe('function');
     }
@@ -731,7 +746,11 @@ describe('MemoryCleaner', () => {
   it('deduplicateMemories removes duplicates keeping highest importance', async () => {
     const dup1 = makeMemoryEntry({ id: 'dup1', content: 'user likes coffee', importance: 'low' });
     const dup2 = makeMemoryEntry({ id: 'dup2', content: 'User Likes Coffee', importance: 'high' });
-    const unique = makeMemoryEntry({ id: 'unique', content: 'something else', importance: 'medium' });
+    const unique = makeMemoryEntry({
+      id: 'unique',
+      content: 'something else',
+      importance: 'medium',
+    });
     store.queryMemories.mockResolvedValue([dup1, dup2, unique]);
 
     const cleaner = new MemoryCleaner(store);
@@ -769,7 +788,8 @@ describe('MemoryCleaner', () => {
     });
     const mem2 = makeMemoryEntry({
       id: 'm2',
-      content: 'User strongly prefers using dark mode in all of their reading applications and browsers',
+      content:
+        'User strongly prefers using dark mode in all of their reading applications and browsers',
       category: 'preference',
       tags: ['dark', 'reading'],
       importance: 'medium',
@@ -788,8 +808,16 @@ describe('MemoryCleaner', () => {
   });
 
   it('mergeSimilarMemories with different categories does not merge', async () => {
-    const mem1 = makeMemoryEntry({ id: '1', content: 'User prefers dark mode for coding and development', category: 'preference' });
-    const mem2 = makeMemoryEntry({ id: '2', content: 'User prefers dark mode for coding and development', category: 'fact' });
+    const mem1 = makeMemoryEntry({
+      id: '1',
+      content: 'User prefers dark mode for coding and development',
+      category: 'preference',
+    });
+    const mem2 = makeMemoryEntry({
+      id: '2',
+      content: 'User prefers dark mode for coding and development',
+      category: 'fact',
+    });
     store.queryMemories.mockResolvedValue([mem1, mem2]);
 
     const cleaner = new MemoryCleaner(store);

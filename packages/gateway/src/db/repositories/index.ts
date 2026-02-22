@@ -15,11 +15,7 @@ export {
   type Conversation,
 } from './conversations.js';
 
-export {
-  MessagesRepository,
-  createMessagesRepository,
-  type Message,
-} from './messages.js';
+export { MessagesRepository, createMessagesRepository, type Message } from './messages.js';
 
 export {
   ChannelMessagesRepository,
@@ -268,9 +264,7 @@ export {
 } from './local-providers.js';
 
 // Execution permissions repository
-export {
-  executionPermissionsRepo,
-} from './execution-permissions.js';
+export { executionPermissionsRepo } from './execution-permissions.js';
 
 // Embedding cache repository
 export {

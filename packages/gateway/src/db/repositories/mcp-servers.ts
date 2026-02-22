@@ -21,8 +21,8 @@ interface McpServerRow {
   display_name: string;
   transport: string;
   command: string | null;
-  args: string | null;  // JSONB
-  env: string | null;   // JSONB
+  args: string | null; // JSONB
+  env: string | null; // JSONB
   url: string | null;
   headers: string | null; // JSONB
   enabled: number | boolean;
@@ -95,7 +95,6 @@ export interface UpdateMcpServerInput {
 // HELPERS
 // =============================================================================
 
-
 function rowToRecord(row: McpServerRow): McpServerRecord {
   return {
     id: row.id,
@@ -124,27 +123,23 @@ function rowToRecord(row: McpServerRow): McpServerRecord {
 // =============================================================================
 
 class McpServersRepository extends BaseRepository {
-
   async getAll(userId = 'default'): Promise<McpServerRecord[]> {
     const rows = await this.query<McpServerRow>(
       'SELECT * FROM mcp_servers WHERE user_id = ? ORDER BY display_name',
-      [userId],
+      [userId]
     );
     return rows.map(rowToRecord);
   }
 
   async getById(id: string): Promise<McpServerRecord | null> {
-    const rows = await this.query<McpServerRow>(
-      'SELECT * FROM mcp_servers WHERE id = ?',
-      [id],
-    );
+    const rows = await this.query<McpServerRow>('SELECT * FROM mcp_servers WHERE id = ?', [id]);
     return rows[0] ? rowToRecord(rows[0]) : null;
   }
 
   async getByName(name: string, userId = 'default'): Promise<McpServerRecord | null> {
     const rows = await this.query<McpServerRow>(
       'SELECT * FROM mcp_servers WHERE name = ? AND user_id = ?',
-      [name, userId],
+      [name, userId]
     );
     return rows[0] ? rowToRecord(rows[0]) : null;
   }
@@ -152,7 +147,7 @@ class McpServersRepository extends BaseRepository {
   async getEnabled(userId = 'default'): Promise<McpServerRecord[]> {
     const rows = await this.query<McpServerRow>(
       'SELECT * FROM mcp_servers WHERE user_id = ? AND enabled = TRUE AND auto_connect = TRUE ORDER BY display_name',
-      [userId],
+      [userId]
     );
     return rows.map(rowToRecord);
   }
@@ -180,7 +175,7 @@ class McpServersRepository extends BaseRepository {
         input.autoConnect !== false,
         now,
         now,
-      ],
+      ]
     );
 
     const record = await this.getById(id);
@@ -195,17 +190,50 @@ class McpServersRepository extends BaseRepository {
     const setClauses: string[] = [];
     const values: unknown[] = [];
 
-    if (input.name !== undefined) { setClauses.push('name = ?'); values.push(input.name); }
-    if (input.displayName !== undefined) { setClauses.push('display_name = ?'); values.push(input.displayName); }
-    if (input.transport !== undefined) { setClauses.push('transport = ?'); values.push(input.transport); }
-    if (input.command !== undefined) { setClauses.push('command = ?'); values.push(input.command); }
-    if (input.args !== undefined) { setClauses.push('args = ?'); values.push(JSON.stringify(input.args)); }
-    if (input.env !== undefined) { setClauses.push('env = ?'); values.push(JSON.stringify(input.env)); }
-    if (input.url !== undefined) { setClauses.push('url = ?'); values.push(input.url); }
-    if (input.headers !== undefined) { setClauses.push('headers = ?'); values.push(JSON.stringify(input.headers)); }
-    if (input.enabled !== undefined) { setClauses.push('enabled = ?'); values.push(input.enabled); }
-    if (input.autoConnect !== undefined) { setClauses.push('auto_connect = ?'); values.push(input.autoConnect); }
-    if (input.metadata !== undefined) { setClauses.push('metadata = ?'); values.push(JSON.stringify(input.metadata)); }
+    if (input.name !== undefined) {
+      setClauses.push('name = ?');
+      values.push(input.name);
+    }
+    if (input.displayName !== undefined) {
+      setClauses.push('display_name = ?');
+      values.push(input.displayName);
+    }
+    if (input.transport !== undefined) {
+      setClauses.push('transport = ?');
+      values.push(input.transport);
+    }
+    if (input.command !== undefined) {
+      setClauses.push('command = ?');
+      values.push(input.command);
+    }
+    if (input.args !== undefined) {
+      setClauses.push('args = ?');
+      values.push(JSON.stringify(input.args));
+    }
+    if (input.env !== undefined) {
+      setClauses.push('env = ?');
+      values.push(JSON.stringify(input.env));
+    }
+    if (input.url !== undefined) {
+      setClauses.push('url = ?');
+      values.push(input.url);
+    }
+    if (input.headers !== undefined) {
+      setClauses.push('headers = ?');
+      values.push(JSON.stringify(input.headers));
+    }
+    if (input.enabled !== undefined) {
+      setClauses.push('enabled = ?');
+      values.push(input.enabled);
+    }
+    if (input.autoConnect !== undefined) {
+      setClauses.push('auto_connect = ?');
+      values.push(input.autoConnect);
+    }
+    if (input.metadata !== undefined) {
+      setClauses.push('metadata = ?');
+      values.push(JSON.stringify(input.metadata));
+    }
 
     if (setClauses.length === 0) return existing;
 
@@ -213,10 +241,7 @@ class McpServersRepository extends BaseRepository {
     values.push(new Date().toISOString());
     values.push(id);
 
-    await this.execute(
-      `UPDATE mcp_servers SET ${setClauses.join(', ')} WHERE id = ?`,
-      values,
-    );
+    await this.execute(`UPDATE mcp_servers SET ${setClauses.join(', ')} WHERE id = ?`, values);
 
     return this.getById(id);
   }
@@ -230,7 +255,7 @@ class McpServersRepository extends BaseRepository {
     id: string,
     status: McpStatus,
     errorMessage?: string,
-    toolCount?: number,
+    toolCount?: number
   ): Promise<void> {
     const setClauses = ['status = ?', 'updated_at = ?'];
     const values: unknown[] = [status, new Date().toISOString()];
@@ -245,10 +270,7 @@ class McpServersRepository extends BaseRepository {
     }
 
     values.push(id);
-    await this.execute(
-      `UPDATE mcp_servers SET ${setClauses.join(', ')} WHERE id = ?`,
-      values,
-    );
+    await this.execute(`UPDATE mcp_servers SET ${setClauses.join(', ')} WHERE id = ?`, values);
   }
 }
 

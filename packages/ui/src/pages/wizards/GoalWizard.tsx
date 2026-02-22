@@ -46,21 +46,26 @@ export function GoalWizard({ onComplete, onCancel }: Props) {
   const [category, setCategory] = useState('');
   const [dueDate, setDueDate] = useState('');
   const [priority, setPriority] = useState(5);
-  const [goalSteps, setGoalSteps] = useState<GoalStepDraft[]>([
-    { title: '', description: '' },
-  ]);
+  const [goalSteps, setGoalSteps] = useState<GoalStepDraft[]>([{ title: '', description: '' }]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [aiGenerating, setAiGenerating] = useState(false);
   const aiAbortRef = useRef<AbortController | null>(null);
-  const [result, setResult] = useState<{ ok: boolean; goalId?: string; error?: string } | null>(null);
+  const [result, setResult] = useState<{ ok: boolean; goalId?: string; error?: string } | null>(
+    null
+  );
 
   const canGoNext = useMemo(() => {
     switch (step) {
-      case 0: return title.trim().length >= 3;
-      case 1: return true; // due date and priority have defaults
-      case 2: return true; // steps are optional
-      case 3: return result?.ok === true;
-      default: return false;
+      case 0:
+        return title.trim().length >= 3;
+      case 1:
+        return true; // due date and priority have defaults
+      case 2:
+        return true; // steps are optional
+      case 3:
+        return result?.ok === true;
+      default:
+        return false;
     }
   }, [step, title, result]);
 
@@ -125,15 +130,23 @@ Return ONLY the JSON array, nothing else.`;
         // Add steps if any
         const validSteps = goalSteps.filter((s) => s.title.trim());
         for (const gs of validSteps) {
-          await goalsApi.update(goal.id, {
-            steps: [...(goal.steps ?? []), { title: gs.title.trim(), description: gs.description.trim(), completed: false }],
-          }).catch(() => {});
+          await goalsApi
+            .update(goal.id, {
+              steps: [
+                ...(goal.steps ?? []),
+                { title: gs.title.trim(), description: gs.description.trim(), completed: false },
+              ],
+            })
+            .catch(() => {});
         }
 
         setResult({ ok: true, goalId: goal.id });
         setStep(3);
       } catch (err) {
-        setResult({ ok: false, error: err instanceof Error ? err.message : 'Failed to create goal' });
+        setResult({
+          ok: false,
+          error: err instanceof Error ? err.message : 'Failed to create goal',
+        });
         setStep(3);
       } finally {
         setIsProcessing(false);
@@ -184,7 +197,10 @@ Return ONLY the JSON array, nothing else.`;
 
             <div>
               <label className="block text-sm font-medium text-text-primary dark:text-dark-text-primary mb-2">
-                Description <span className="text-text-muted dark:text-dark-text-muted font-normal">(optional)</span>
+                Description{' '}
+                <span className="text-text-muted dark:text-dark-text-muted font-normal">
+                  (optional)
+                </span>
               </label>
               <textarea
                 value={description}
@@ -197,7 +213,10 @@ Return ONLY the JSON array, nothing else.`;
 
             <div>
               <label className="block text-sm font-medium text-text-primary dark:text-dark-text-primary mb-2">
-                Category <span className="text-text-muted dark:text-dark-text-muted font-normal">(optional)</span>
+                Category{' '}
+                <span className="text-text-muted dark:text-dark-text-muted font-normal">
+                  (optional)
+                </span>
               </label>
               <div className="flex flex-wrap gap-2">
                 {GOAL_CATEGORIES.map((c) => (
@@ -232,7 +251,10 @@ Return ONLY the JSON array, nothing else.`;
           <div className="space-y-5">
             <div>
               <label className="block text-sm font-medium text-text-primary dark:text-dark-text-primary mb-2">
-                Due Date <span className="text-text-muted dark:text-dark-text-muted font-normal">(optional)</span>
+                Due Date{' '}
+                <span className="text-text-muted dark:text-dark-text-muted font-normal">
+                  (optional)
+                </span>
               </label>
               <input
                 type="date"
@@ -248,7 +270,9 @@ Return ONLY the JSON array, nothing else.`;
                 <label className="text-sm font-medium text-text-primary dark:text-dark-text-primary">
                   Priority
                 </label>
-                <span className="text-sm font-mono text-text-muted dark:text-dark-text-muted">{priority}/10</span>
+                <span className="text-sm font-mono text-text-muted dark:text-dark-text-muted">
+                  {priority}/10
+                </span>
               </div>
               <input
                 type="range"
@@ -332,8 +356,19 @@ Return ONLY the JSON array, nothing else.`;
           {!result && (
             <div className="flex flex-col items-center gap-3">
               <svg className="w-10 h-10 animate-spin text-primary" viewBox="0 0 24 24" fill="none">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                />
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                />
               </svg>
               <p className="text-text-muted dark:text-dark-text-muted">Creating goal...</p>
             </div>
@@ -363,7 +398,10 @@ Return ONLY the JSON array, nothing else.`;
               </h3>
               <p className="text-sm text-error max-w-md mx-auto">{result.error}</p>
               <button
-                onClick={() => { setStep(2); setResult(null); }}
+                onClick={() => {
+                  setStep(2);
+                  setResult(null);
+                }}
                 className="mt-3 text-sm text-primary hover:underline"
               >
                 Go back and try again
@@ -383,7 +421,8 @@ Return ONLY the JSON array, nothing else.`;
             Goal Set!
           </h2>
           <p className="text-sm text-text-muted dark:text-dark-text-muted mb-6 max-w-md mx-auto">
-            <strong>{title}</strong> has been created with {goalSteps.filter((s) => s.title.trim()).length} step(s).
+            <strong>{title}</strong> has been created with{' '}
+            {goalSteps.filter((s) => s.title.trim()).length} step(s).
             {dueDate && ` Target date: ${new Date(dueDate).toLocaleDateString()}.`}
           </p>
           <div className="flex justify-center gap-3">

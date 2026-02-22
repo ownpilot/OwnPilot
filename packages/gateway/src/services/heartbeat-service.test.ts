@@ -23,15 +23,13 @@ const mockEventBus = {
 
 vi.mock('@ownpilot/core', () => ({
   getEventBus: () => mockEventBus,
-  createEvent: vi.fn(
-    (type: string, category: string, source: string, data: unknown) => ({
-      type,
-      category,
-      source,
-      data,
-      timestamp: new Date().toISOString(),
-    }),
-  ),
+  createEvent: vi.fn((type: string, category: string, source: string, data: unknown) => ({
+    type,
+    category,
+    source,
+    data,
+    timestamp: new Date().toISOString(),
+  })),
   EventTypes: {
     RESOURCE_CREATED: 'resource.created',
     RESOURCE_UPDATED: 'resource.updated',
@@ -168,7 +166,10 @@ describe('HeartbeatService', () => {
     });
 
     it('creates a backing trigger with correct params', async () => {
-      mockParseSchedule.mockReturnValue({ cron: '0 17 * * 5', normalized: 'Every Friday at 17:00' });
+      mockParseSchedule.mockReturnValue({
+        cron: '0 17 * * 5',
+        normalized: 'Every Friday at 17:00',
+      });
       mockRepo.create.mockResolvedValue(fakeHeartbeat());
 
       await service.createHeartbeat('user-1', {
@@ -197,7 +198,7 @@ describe('HeartbeatService', () => {
 
       expect(mockTriggerService.createTrigger).toHaveBeenCalledWith(
         'user-1',
-        expect.objectContaining({ name: '[Heartbeat] Morning Summary' }),
+        expect.objectContaining({ name: '[Heartbeat] Morning Summary' })
       );
     });
 
@@ -219,7 +220,7 @@ describe('HeartbeatService', () => {
           triggerId: 'trigger-1',
           enabled: true,
           tags: ['email', 'morning'],
-        }),
+        })
       );
     });
 
@@ -235,7 +236,7 @@ describe('HeartbeatService', () => {
         expect.objectContaining({
           type: 'resource.created',
           data: { resourceType: 'heartbeat', id: 'hb-42' },
-        }),
+        })
       );
     });
 
@@ -249,11 +250,9 @@ describe('HeartbeatService', () => {
 
       expect(mockTriggerService.createTrigger).toHaveBeenCalledWith(
         'user-1',
-        expect.objectContaining({ enabled: true }),
+        expect.objectContaining({ enabled: true })
       );
-      expect(mockRepo.create).toHaveBeenCalledWith(
-        expect.objectContaining({ enabled: true }),
-      );
+      expect(mockRepo.create).toHaveBeenCalledWith(expect.objectContaining({ enabled: true }));
     });
 
     it('respects enabled=false on create', async () => {
@@ -267,20 +266,21 @@ describe('HeartbeatService', () => {
 
       expect(mockTriggerService.createTrigger).toHaveBeenCalledWith(
         'user-1',
-        expect.objectContaining({ enabled: false }),
+        expect.objectContaining({ enabled: false })
       );
-      expect(mockRepo.create).toHaveBeenCalledWith(
-        expect.objectContaining({ enabled: false }),
-      );
+      expect(mockRepo.create).toHaveBeenCalledWith(expect.objectContaining({ enabled: false }));
     });
 
     it('throws HeartbeatServiceError with VALIDATION_ERROR when taskDescription is empty', async () => {
       await expect(
-        service.createHeartbeat('user-1', { scheduleText: 'Every Hour', taskDescription: '' }),
+        service.createHeartbeat('user-1', { scheduleText: 'Every Hour', taskDescription: '' })
       ).rejects.toThrow(HeartbeatServiceError);
 
       try {
-        await service.createHeartbeat('user-1', { scheduleText: 'Every Hour', taskDescription: '' });
+        await service.createHeartbeat('user-1', {
+          scheduleText: 'Every Hour',
+          taskDescription: '',
+        });
       } catch (e) {
         expect((e as HeartbeatServiceError).code).toBe('VALIDATION_ERROR');
         expect((e as HeartbeatServiceError).message).toMatch(/Task description is required/);
@@ -289,19 +289,19 @@ describe('HeartbeatService', () => {
 
     it('throws VALIDATION_ERROR when taskDescription is whitespace only', async () => {
       await expect(
-        service.createHeartbeat('user-1', { scheduleText: 'Every Hour', taskDescription: '   ' }),
+        service.createHeartbeat('user-1', { scheduleText: 'Every Hour', taskDescription: '   ' })
       ).rejects.toThrow(/Task description is required/);
     });
 
     it('throws VALIDATION_ERROR when scheduleText is empty', async () => {
       await expect(
-        service.createHeartbeat('user-1', { scheduleText: '', taskDescription: 'Do stuff' }),
+        service.createHeartbeat('user-1', { scheduleText: '', taskDescription: 'Do stuff' })
       ).rejects.toThrow(/Schedule text is required/);
     });
 
     it('throws VALIDATION_ERROR when scheduleText is whitespace only', async () => {
       await expect(
-        service.createHeartbeat('user-1', { scheduleText: '   ', taskDescription: 'Do stuff' }),
+        service.createHeartbeat('user-1', { scheduleText: '   ', taskDescription: 'Do stuff' })
       ).rejects.toThrow(/Schedule text is required/);
     });
 
@@ -332,13 +332,13 @@ describe('HeartbeatService', () => {
         service.createHeartbeat('user-1', {
           scheduleText: 'Every Morning',
           taskDescription: 'Do stuff',
-        }),
+        })
       ).rejects.toThrow(TypeError);
     });
 
     it('does not call repo.create or triggerService if validation fails', async () => {
       await expect(
-        service.createHeartbeat('user-1', { scheduleText: '', taskDescription: '' }),
+        service.createHeartbeat('user-1', { scheduleText: '', taskDescription: '' })
       ).rejects.toThrow();
 
       expect(mockParseSchedule).not.toHaveBeenCalled();
@@ -355,7 +355,7 @@ describe('HeartbeatService', () => {
         service.createHeartbeat('user-1', {
           scheduleText: 'gibberish',
           taskDescription: 'Do stuff',
-        }),
+        })
       ).rejects.toThrow();
 
       expect(mockTriggerService.createTrigger).not.toHaveBeenCalled();
@@ -446,7 +446,7 @@ describe('HeartbeatService', () => {
         expect.objectContaining({
           type: 'resource.updated',
           data: expect.objectContaining({ resourceType: 'heartbeat', id: 'hb-1' }),
-        }),
+        })
       );
     });
 
@@ -466,7 +466,10 @@ describe('HeartbeatService', () => {
 
     it('re-parses and syncs trigger config when scheduleText changes', async () => {
       const existing = fakeHeartbeat();
-      mockParseSchedule.mockReturnValue({ cron: '0 17 * * 5', normalized: 'Every Friday at 17:00' });
+      mockParseSchedule.mockReturnValue({
+        cron: '0 17 * * 5',
+        normalized: 'Every Friday at 17:00',
+      });
       mockRepo.get.mockResolvedValue(existing);
       mockRepo.update.mockResolvedValue(fakeHeartbeat({ cron: '0 17 * * 5' }));
 
@@ -478,7 +481,7 @@ describe('HeartbeatService', () => {
       expect(mockTriggerService.updateTrigger).toHaveBeenCalledWith(
         'user-1',
         'trigger-1',
-        expect.objectContaining({ config: { cron: '0 17 * * 5' } }),
+        expect.objectContaining({ config: { cron: '0 17 * * 5' } })
       );
     });
 
@@ -586,7 +589,7 @@ describe('HeartbeatService', () => {
       });
 
       await expect(
-        service.updateHeartbeat('user-1', 'hb-1', { scheduleText: 'something' }),
+        service.updateHeartbeat('user-1', 'hb-1', { scheduleText: 'something' })
       ).rejects.toThrow(RangeError);
     });
 
@@ -639,7 +642,7 @@ describe('HeartbeatService', () => {
         expect.objectContaining({
           type: 'resource.deleted',
           data: { resourceType: 'heartbeat', id: 'hb-99' },
-        }),
+        })
       );
     });
 
@@ -689,7 +692,7 @@ describe('HeartbeatService', () => {
       expect(result?.enabled).toBe(true);
       expect(mockRepo.update).toHaveBeenCalledWith(
         'hb-1',
-        expect.objectContaining({ enabled: true }),
+        expect.objectContaining({ enabled: true })
       );
     });
 
@@ -712,7 +715,7 @@ describe('HeartbeatService', () => {
       expect(result?.enabled).toBe(false);
       expect(mockRepo.update).toHaveBeenCalledWith(
         'hb-1',
-        expect.objectContaining({ enabled: false }),
+        expect.objectContaining({ enabled: false })
       );
     });
 
@@ -734,8 +737,18 @@ describe('HeartbeatService', () => {
       const hb2 = fakeHeartbeat({ id: 'hb-2' });
       mockParseMarkdown.mockReturnValue({
         entries: [
-          { scheduleText: 'Every Morning 8:00', taskDescription: 'Task 1', normalized: 'Every morning at 08:00', cron: '0 8 * * *' },
-          { scheduleText: 'Every Friday 17:00', taskDescription: 'Task 2', normalized: 'Every Friday at 17:00', cron: '0 17 * * 5' },
+          {
+            scheduleText: 'Every Morning 8:00',
+            taskDescription: 'Task 1',
+            normalized: 'Every morning at 08:00',
+            cron: '0 8 * * *',
+          },
+          {
+            scheduleText: 'Every Friday 17:00',
+            taskDescription: 'Task 2',
+            normalized: 'Every Friday at 17:00',
+            cron: '0 17 * * 5',
+          },
         ],
         errors: [],
       });
@@ -768,8 +781,18 @@ describe('HeartbeatService', () => {
     it('catches per-entry creation errors and adds to importErrors', async () => {
       mockParseMarkdown.mockReturnValue({
         entries: [
-          { scheduleText: 'Every Morning 8:00', taskDescription: 'Task 1', normalized: 'Norm1', cron: '0 8 * * *' },
-          { scheduleText: 'Every Night', taskDescription: 'Task 2', normalized: 'Norm2', cron: '0 22 * * *' },
+          {
+            scheduleText: 'Every Morning 8:00',
+            taskDescription: 'Task 1',
+            normalized: 'Norm1',
+            cron: '0 8 * * *',
+          },
+          {
+            scheduleText: 'Every Night',
+            taskDescription: 'Task 2',
+            normalized: 'Norm2',
+            cron: '0 22 * * *',
+          },
         ],
         errors: [],
       });
@@ -793,7 +816,12 @@ describe('HeartbeatService', () => {
     it('combines parser errors and creation errors', async () => {
       mockParseMarkdown.mockReturnValue({
         entries: [
-          { scheduleText: 'Every Morning 8:00', taskDescription: 'Task 1', normalized: 'Norm', cron: '0 8 * * *' },
+          {
+            scheduleText: 'Every Morning 8:00',
+            taskDescription: 'Task 1',
+            normalized: 'Norm',
+            cron: '0 8 * * *',
+          },
         ],
         errors: [{ scheduleText: 'gibberish', error: 'Cannot parse' }],
       });
@@ -820,7 +848,12 @@ describe('HeartbeatService', () => {
     it('passes normalized name from entry to createHeartbeat', async () => {
       mockParseMarkdown.mockReturnValue({
         entries: [
-          { scheduleText: 'Every Hour', taskDescription: 'Ping', normalized: 'Every hour', cron: '0 * * * *' },
+          {
+            scheduleText: 'Every Hour',
+            taskDescription: 'Ping',
+            normalized: 'Every hour',
+            cron: '0 * * * *',
+          },
         ],
         errors: [],
       });
@@ -829,9 +862,7 @@ describe('HeartbeatService', () => {
 
       await service.importMarkdown('user-1', 'markdown');
 
-      expect(mockRepo.create).toHaveBeenCalledWith(
-        expect.objectContaining({ name: 'Every hour' }),
-      );
+      expect(mockRepo.create).toHaveBeenCalledWith(expect.objectContaining({ name: 'Every hour' }));
     });
   });
 

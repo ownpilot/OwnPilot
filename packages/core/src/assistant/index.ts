@@ -176,7 +176,6 @@ export type Intent =
  * any language and convert it to proper tool parameters.
  */
 export function classifyIntent(message: string, _context: ConversationContext): IntentResult {
-
   // Code-related patterns
   const codePatterns = [
     /(?:generate|create|write)\s*(?:a)?\s*(?:code|script|program|function)/i,
@@ -208,7 +207,7 @@ export function classifyIntent(message: string, _context: ConversationContext): 
     if (pattern.test(message)) {
       return {
         intent: 'schedule',
-        confidence: 0.80,
+        confidence: 0.8,
         entities: extractScheduleEntities(message),
         suggestedTools: ['create_scheduled_task', 'list_scheduled_tasks'],
       };
@@ -227,7 +226,7 @@ export function classifyIntent(message: string, _context: ConversationContext): 
     if (pattern.test(message)) {
       return {
         intent: 'memory',
-        confidence: 0.80,
+        confidence: 0.8,
         entities: {},
         suggestedTools: ['create_memory', 'search_memories'],
       };
@@ -245,33 +244,27 @@ export function classifyIntent(message: string, _context: ConversationContext): 
     if (pattern.test(message)) {
       return {
         intent: 'help',
-        confidence: 0.90,
+        confidence: 0.9,
         entities: {},
       };
     }
   }
 
   // Question patterns
-  const questionPatterns = [
-    /\?$/,
-    /^(?:what|who|where|when|why|how|which)/i,
-  ];
+  const questionPatterns = [/\?$/, /^(?:what|who|where|when|why|how|which)/i];
 
   for (const pattern of questionPatterns) {
     if (pattern.test(message)) {
       return {
         intent: 'question',
-        confidence: 0.70,
+        confidence: 0.7,
         entities: {},
       };
     }
   }
 
   // Task patterns (commands)
-  const taskPatterns = [
-    /^(?:do|make|create|generate|delete|send|open)/i,
-    /please\s+\w+/i,
-  ];
+  const taskPatterns = [/^(?:do|make|create|generate|delete|send|open)/i, /please\s+\w+/i];
 
   for (const pattern of taskPatterns) {
     if (pattern.test(message)) {
@@ -286,7 +279,7 @@ export function classifyIntent(message: string, _context: ConversationContext): 
   // Default: general chat
   return {
     intent: 'general_chat',
-    confidence: 0.50,
+    confidence: 0.5,
     entities: {},
   };
 }
@@ -298,7 +291,18 @@ function extractCodeEntities(message: string): Record<string, unknown> {
   const entities: Record<string, unknown> = {};
 
   // Language detection
-  const languages = ['python', 'javascript', 'typescript', 'java', 'c++', 'rust', 'go', 'sql', 'html', 'css'];
+  const languages = [
+    'python',
+    'javascript',
+    'typescript',
+    'java',
+    'c++',
+    'rust',
+    'go',
+    'sql',
+    'html',
+    'css',
+  ];
   for (const lang of languages) {
     if (message.toLowerCase().includes(lang)) {
       entities.language = lang;
@@ -595,7 +599,8 @@ export class PersonalAssistant {
       };
     } else {
       return {
-        message: result.error ?? 'Could not generate code. Please provide a more detailed description.',
+        message:
+          result.error ?? 'Could not generate code. Please provide a more detailed description.',
         suggestions: [
           'What problem are you trying to solve?',
           'Can you provide example input/output?',
@@ -687,7 +692,8 @@ export class PersonalAssistant {
   ): Promise<AssistantResponse> {
     // In production, this would call the LLM
     return {
-      message: 'This request requires LLM integration. Currently operating with basic pattern matching.',
+      message:
+        'This request requires LLM integration. Currently operating with basic pattern matching.',
       metadata: {
         intent: intent.intent,
         confidence: intent.confidence,
@@ -701,12 +707,13 @@ export class PersonalAssistant {
   private formatToolResults(results: AssistantResponse['toolCalls']): string {
     if (!results || results.length === 0) return '';
 
-    return results.map(r => {
-      const resultStr = typeof r.result === 'string'
-        ? r.result
-        : JSON.stringify(r.result, null, 2);
-      return `**${r.tool}**:\n${resultStr}`;
-    }).join('\n\n');
+    return results
+      .map((r) => {
+        const resultStr =
+          typeof r.result === 'string' ? r.result : JSON.stringify(r.result, null, 2);
+        return `**${r.tool}**:\n${resultStr}`;
+      })
+      .join('\n\n');
   }
 
   /**
@@ -714,7 +721,7 @@ export class PersonalAssistant {
    */
   getAvailableTools(): ToolDefinition[] {
     if (!this.pluginRegistry) return [];
-    return this.pluginRegistry.getAllTools().map(t => t.definition);
+    return this.pluginRegistry.getAllTools().map((t) => t.definition);
   }
 
   /**

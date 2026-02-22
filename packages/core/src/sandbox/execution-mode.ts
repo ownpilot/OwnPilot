@@ -54,7 +54,9 @@ export function getExecutionModeConfig(): ExecutionModeConfig {
   return {
     mode: getExecutionMode(),
     requireApproval: process.env.LOCAL_EXEC_REQUIRE_APPROVAL === 'true',
-    allowedLanguages: (process.env.LOCAL_EXEC_LANGUAGES || 'javascript,python,shell').split(',').map(s => s.trim()),
+    allowedLanguages: (process.env.LOCAL_EXEC_LANGUAGES || 'javascript,python,shell')
+      .split(',')
+      .map((s) => s.trim()),
     localTimeout: parseInt(process.env.LOCAL_EXEC_TIMEOUT || '30000', 10),
     localMaxOutputSize: parseInt(process.env.LOCAL_EXEC_MAX_OUTPUT || String(1024 * 1024), 10),
   };

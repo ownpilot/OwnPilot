@@ -5,7 +5,13 @@
 /**
  * JSON-serializable value
  */
-export type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue };
+export type JsonValue =
+  | string
+  | number
+  | boolean
+  | null
+  | JsonValue[]
+  | { [key: string]: JsonValue };
 
 /**
  * JSON object type
@@ -24,9 +30,7 @@ export type DeepReadonly<T> = T extends (infer U)[]
 /**
  * Deep partial - makes all nested properties optional
  */
-export type DeepPartial<T> = T extends object
-  ? { [K in keyof T]?: DeepPartial<T[K]> }
-  : T;
+export type DeepPartial<T> = T extends object ? { [K in keyof T]?: DeepPartial<T[K]> } : T;
 
 /**
  * Make specific properties required

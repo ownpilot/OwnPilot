@@ -8,7 +8,15 @@ import { Hono } from 'hono';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import { generateId } from '@ownpilot/core';
-import { apiResponse, apiError, getIntParam, notFoundError, validateQueryEnum, ERROR_CODES, getErrorMessage } from './helpers.js';
+import {
+  apiResponse,
+  apiError,
+  getIntParam,
+  notFoundError,
+  validateQueryEnum,
+  ERROR_CODES,
+  getErrorMessage,
+} from './helpers.js';
 import { MAX_PAGINATION_OFFSET } from '../config/defaults.js';
 import { wsGateway } from '../ws/server.js';
 
@@ -116,7 +124,19 @@ expensesRoutes.get('/', async (c) => {
   // Query params
   const startDate = c.req.query('startDate');
   const endDate = c.req.query('endDate');
-  const category = validateQueryEnum(c.req.query('category'), ['food', 'transport', 'utilities', 'entertainment', 'shopping', 'health', 'education', 'travel', 'subscription', 'housing', 'other'] as const);
+  const category = validateQueryEnum(c.req.query('category'), [
+    'food',
+    'transport',
+    'utilities',
+    'entertainment',
+    'shopping',
+    'health',
+    'education',
+    'travel',
+    'subscription',
+    'housing',
+    'other',
+  ] as const);
   const search = c.req.query('search');
   const limit = getIntParam(c, 'limit', 100, 1, 1000);
   const offset = getIntParam(c, 'offset', 0, 0, MAX_PAGINATION_OFFSET);
@@ -150,12 +170,12 @@ expensesRoutes.get('/', async (c) => {
   const paginatedExpenses = expenses.slice(offset, offset + limit);
 
   return apiResponse(c, {
-      expenses: paginatedExpenses,
-      total,
-      limit,
-      offset,
-      categories: db.categories,
-    });
+    expenses: paginatedExpenses,
+    total,
+    limit,
+    offset,
+    categories: db.categories,
+  });
 });
 
 /**
@@ -234,31 +254,29 @@ expensesRoutes.get('/summary', async (c) => {
     }));
 
   // Biggest expenses
-  const biggestExpenses = [...expenses]
-    .sort((a, b) => b.amount - a.amount)
-    .slice(0, 5);
+  const biggestExpenses = [...expenses].sort((a, b) => b.amount - a.amount).slice(0, 5);
 
   // Daily average
   const uniqueDays = new Set(expenses.map((e) => e.date)).size || 1;
   const dailyAverage = grandTotal / uniqueDays;
 
   return apiResponse(c, {
-      period: {
-        name: period,
-        startDate,
-        endDate,
-      },
-      summary: {
-        totalExpenses: expenses.length,
-        grandTotal: Math.round(grandTotal * 100) / 100,
-        dailyAverage: Math.round(dailyAverage * 100) / 100,
-        totalByCurrency,
-        totalByCategory,
-        topCategories,
-        biggestExpenses,
-      },
-      categories: db.categories,
-    });
+    period: {
+      name: period,
+      startDate,
+      endDate,
+    },
+    summary: {
+      totalExpenses: expenses.length,
+      grandTotal: Math.round(grandTotal * 100) / 100,
+      dailyAverage: Math.round(dailyAverage * 100) / 100,
+      totalByCurrency,
+      totalByCategory,
+      topCategories,
+      biggestExpenses,
+    },
+    categories: db.categories,
+  });
 });
 
 /**
@@ -321,12 +339,12 @@ expensesRoutes.get('/monthly', async (c) => {
   const yearTotal = expenses.reduce((sum, e) => sum + e.amount, 0);
 
   return apiResponse(c, {
-      year,
-      months: chartData,
-      yearTotal: Math.round(yearTotal * 100) / 100,
-      expenseCount: expenses.length,
-      categories: db.categories,
-    });
+    year,
+    months: chartData,
+    yearTotal: Math.round(yearTotal * 100) / 100,
+    expenseCount: expenses.length,
+    categories: db.categories,
+  });
 });
 
 /**
@@ -369,7 +387,14 @@ expensesRoutes.post('/', async (c) => {
     wsGateway.broadcast('data:changed', { entity: 'expense', action: 'created', id: expense.id });
     return apiResponse(c, expense, 201);
   } catch (error) {
-    return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(error, 'Failed to create expense') }, 500);
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.INTERNAL_ERROR,
+        message: getErrorMessage(error, 'Failed to create expense'),
+      },
+      500
+    );
   }
 });
 
@@ -404,7 +429,14 @@ expensesRoutes.put('/:id', async (c) => {
     wsGateway.broadcast('data:changed', { entity: 'expense', action: 'updated', id: updated.id });
     return apiResponse(c, updated);
   } catch (error) {
-    return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(error, 'Failed to update expense') }, 500);
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.INTERNAL_ERROR,
+        message: getErrorMessage(error, 'Failed to update expense'),
+      },
+      500
+    );
   }
 });
 
@@ -428,6 +460,13 @@ expensesRoutes.delete('/:id', async (c) => {
     wsGateway.broadcast('data:changed', { entity: 'expense', action: 'deleted', id });
     return apiResponse(c, { deleted });
   } catch (error) {
-    return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(error, 'Failed to delete expense') }, 500);
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.INTERNAL_ERROR,
+        message: getErrorMessage(error, 'Failed to delete expense'),
+      },
+      500
+    );
   }
 });

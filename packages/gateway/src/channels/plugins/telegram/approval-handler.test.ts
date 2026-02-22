@@ -19,8 +19,13 @@ vi.mock('../../../services/log.js', () => ({
   getLog: () => ({ info: mockLogInfo, debug: mockLogDebug, warn: mockLogWarn, error: vi.fn() }),
 }));
 
-interface MockButton { text: string; data: string }
-interface MockKeyboard { _buttons: MockButton[] }
+interface MockButton {
+  text: string;
+  data: string;
+}
+interface MockKeyboard {
+  _buttons: MockButton[];
+}
 
 const allKeyboards: MockKeyboard[] = [];
 let lastKeyboard: MockKeyboard;
@@ -71,7 +76,7 @@ type CallbackQueryHandler = (
     answerCallbackQuery: ReturnType<typeof vi.fn>;
     editMessageText: ReturnType<typeof vi.fn>;
   },
-  next: ReturnType<typeof vi.fn>,
+  next: ReturnType<typeof vi.fn>
 ) => Promise<void>;
 
 function getRegisteredHandler(mockBot: ReturnType<typeof createMockBot>): CallbackQueryHandler {
@@ -102,7 +107,7 @@ async function flushMicrotasks() {
 async function requestAndFlush(
   bot: ReturnType<typeof createMockBot>,
   chatId: string,
-  params: { toolName: string; description: string; riskLevel?: string },
+  params: { toolName: string; description: string; riskLevel?: string }
 ) {
   const promise = requestTelegramApproval(bot as never, chatId, params);
   const keyboard = lastKeyboard;
@@ -576,7 +581,10 @@ describe('registerApprovalHandler', () => {
     const result = await promise;
     // Resolve happens BEFORE edit, so it still works
     expect(result).toBe(true);
-    expect(mockLogDebug).toHaveBeenCalledWith('Failed to edit approval message', expect.any(Object));
+    expect(mockLogDebug).toHaveBeenCalledWith(
+      'Failed to edit approval message',
+      expect.any(Object)
+    );
   });
 
   it('should handle answerCallbackQuery failure gracefully', async () => {
@@ -596,7 +604,10 @@ describe('registerApprovalHandler', () => {
 
     const result = await promise;
     expect(result).toBe(false);
-    expect(mockLogDebug).toHaveBeenCalledWith('Failed to answer callback query', expect.any(Object));
+    expect(mockLogDebug).toHaveBeenCalledWith(
+      'Failed to answer callback query',
+      expect.any(Object)
+    );
   });
 
   it('should resolve even when editMessageText fails', async () => {
@@ -661,7 +672,7 @@ describe('requestTelegramApproval', () => {
     expect(bot.api.sendMessage).toHaveBeenCalledWith(
       '123',
       expect.any(String),
-      expect.objectContaining({ parse_mode: 'HTML' }),
+      expect.objectContaining({ parse_mode: 'HTML' })
     );
   });
 
@@ -674,7 +685,7 @@ describe('requestTelegramApproval', () => {
     expect(bot.api.sendMessage).toHaveBeenCalledWith(
       '123',
       expect.any(String),
-      expect.objectContaining({ reply_markup: expect.any(Object) }),
+      expect.objectContaining({ reply_markup: expect.any(Object) })
     );
   });
 
@@ -847,7 +858,7 @@ describe('requestTelegramApproval', () => {
     expect(bot.api.editMessageText).toHaveBeenCalledWith(
       '123',
       42, // message_id from mock
-      '\u23f0 Approval timed out \u2014 denied automatically.',
+      '\u23f0 Approval timed out \u2014 denied automatically.'
     );
   });
 
@@ -935,11 +946,7 @@ describe('requestTelegramApproval', () => {
     await promise;
 
     // Timeout edit uses the returned message_id
-    expect(bot.api.editMessageText).toHaveBeenCalledWith(
-      '123',
-      999,
-      expect.any(String),
-    );
+    expect(bot.api.editMessageText).toHaveBeenCalledWith('123', 999, expect.any(String));
   });
 
   it('should include lock emoji in heading', async () => {
@@ -963,10 +970,7 @@ describe('requestTelegramApproval', () => {
 
     // Promise should still be pending -- test by racing with a sentinel
     const sentinel = Symbol('pending');
-    const raceResult = await Promise.race([
-      promise,
-      Promise.resolve(sentinel),
-    ]);
+    const raceResult = await Promise.race([promise, Promise.resolve(sentinel)]);
     expect(raceResult).toBe(sentinel);
 
     // Now cross the 120s boundary
@@ -1206,7 +1210,7 @@ describe('integration', () => {
     expect(bot.api.editMessageText).toHaveBeenCalledWith(
       '123',
       42,
-      '\u23f0 Approval timed out \u2014 denied automatically.',
+      '\u23f0 Approval timed out \u2014 denied automatically.'
     );
   });
 

@@ -78,12 +78,9 @@ vi.mock('./log.js', () => ({
 // =============================================================================
 
 const { Server } = await import('@modelcontextprotocol/sdk/server/index.js');
-const { WebStandardStreamableHTTPServerTransport } = await import(
-  '@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js'
-);
-const { handleMcpRequest, invalidateMcpServer } = await import(
-  './mcp-server-service.js'
-);
+const { WebStandardStreamableHTTPServerTransport } =
+  await import('@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js');
+const { handleMcpRequest, invalidateMcpServer } = await import('./mcp-server-service.js');
 
 // =============================================================================
 // HELPERS
@@ -101,7 +98,7 @@ function makeToolDef(
   name: string,
   description: string,
   properties: Record<string, unknown> = {},
-  required: string[] = [],
+  required: string[] = []
 ) {
   return {
     definition: {
@@ -116,7 +113,7 @@ function makeToolDef(
 /** Extract the tools/list handler registered on the mock Server */
 function getListHandler(): ((...args: unknown[]) => unknown) | undefined {
   const call = mockSetRequestHandler.mock.calls.find(
-    (c: unknown[]) => c[0] === 'ListToolsRequestSchema',
+    (c: unknown[]) => c[0] === 'ListToolsRequestSchema'
   );
   return call?.[1];
 }
@@ -124,7 +121,7 @@ function getListHandler(): ((...args: unknown[]) => unknown) | undefined {
 /** Extract the tools/call handler registered on the mock Server */
 function getCallHandler(): ((...args: unknown[]) => unknown) | undefined {
   const call = mockSetRequestHandler.mock.calls.find(
-    (c: unknown[]) => c[0] === 'CallToolRequestSchema',
+    (c: unknown[]) => c[0] === 'CallToolRequestSchema'
   );
   return call?.[1];
 }
@@ -176,9 +173,7 @@ describe('handleMcpRequest — POST', () => {
     await handleMcpRequest(makeRequest('POST'));
     const opts = transportConstructorCalls[0]!;
     const uuid = (opts.sessionIdGenerator as () => string)();
-    expect(uuid).toMatch(
-      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
-    );
+    expect(uuid).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);
   });
 
   it('connects the server to the new transport', async () => {
@@ -335,9 +330,7 @@ describe('handleMcpRequest — DELETE', () => {
   });
 
   it('returns 404 when session ID header is present but unknown', async () => {
-    const res = await handleMcpRequest(
-      makeRequest('DELETE', 'no-such-session'),
-    );
+    const res = await handleMcpRequest(makeRequest('DELETE', 'no-such-session'));
     expect(res.status).toBe(404);
     const body = await res.json();
     expect(body).toEqual({ error: 'Session not found' });
@@ -403,7 +396,7 @@ describe('lazy MCP server singleton', () => {
     await handleMcpRequest(makeRequest('POST'));
     expect(Server).toHaveBeenCalledWith(
       { name: 'OwnPilot', version: '1.0.0' },
-      { capabilities: { tools: {} } },
+      { capabilities: { tools: {} } }
     );
   });
 
@@ -423,11 +416,11 @@ describe('lazy MCP server singleton', () => {
     expect(mockSetRequestHandler).toHaveBeenCalledTimes(2);
     expect(mockSetRequestHandler).toHaveBeenCalledWith(
       'ListToolsRequestSchema',
-      expect.any(Function),
+      expect.any(Function)
     );
     expect(mockSetRequestHandler).toHaveBeenCalledWith(
       'CallToolRequestSchema',
-      expect.any(Function),
+      expect.any(Function)
     );
   });
 
@@ -452,9 +445,7 @@ describe('tools/list handler', () => {
   });
 
   it('maps tool definition names using getBaseName', async () => {
-    mockGetAllTools.mockReturnValue([
-      makeToolDef('core.search_files', 'Search files'),
-    ]);
+    mockGetAllTools.mockReturnValue([makeToolDef('core.search_files', 'Search files')]);
     await ensureServerInitialized();
     const handler = getListHandler()!;
 
@@ -474,9 +465,7 @@ describe('tools/list handler', () => {
   });
 
   it('preserves unqualified names (no dot)', async () => {
-    mockGetAllTools.mockReturnValue([
-      makeToolDef('simple_tool', 'A simple tool'),
-    ]);
+    mockGetAllTools.mockReturnValue([makeToolDef('simple_tool', 'A simple tool')]);
     await ensureServerInitialized();
     const handler = getListHandler()!;
 
@@ -485,9 +474,7 @@ describe('tools/list handler', () => {
   });
 
   it('includes description in output', async () => {
-    mockGetAllTools.mockReturnValue([
-      makeToolDef('core.read_file', 'Read a file from disk'),
-    ]);
+    mockGetAllTools.mockReturnValue([makeToolDef('core.read_file', 'Read a file from disk')]);
     await ensureServerInitialized();
     const handler = getListHandler()!;
 
@@ -529,12 +516,7 @@ describe('tools/list handler', () => {
 
   it('includes required array when non-empty', async () => {
     mockGetAllTools.mockReturnValue([
-      makeToolDef(
-        'core.tool1',
-        'desc',
-        { path: { type: 'string' } },
-        ['path'],
-      ),
+      makeToolDef('core.tool1', 'desc', { path: { type: 'string' } }, ['path']),
     ]);
     await ensureServerInitialized();
     const handler = getListHandler()!;
@@ -591,18 +573,12 @@ describe('tools/list handler', () => {
 
     const result = (await handler()) as { tools: Array<{ name: string }> };
     expect(result.tools).toHaveLength(3);
-    expect(result.tools.map((t) => t.name)).toEqual([
-      'tool_a',
-      'tool_b',
-      'tool_c',
-    ]);
+    expect(result.tools.map((t) => t.name)).toEqual(['tool_a', 'tool_b', 'tool_c']);
   });
 
   it('spreads required array (no mutation of original)', async () => {
     const required = ['path', 'encoding'];
-    mockGetAllTools.mockReturnValue([
-      makeToolDef('core.tool1', 'desc', {}, required),
-    ]);
+    mockGetAllTools.mockReturnValue([makeToolDef('core.tool1', 'desc', {}, required)]);
     await ensureServerInitialized();
     const handler = getListHandler()!;
 
@@ -622,9 +598,7 @@ describe('tools/list handler', () => {
 
 describe('tools/call handler', () => {
   it('resolves base name to qualified name and executes', async () => {
-    mockGetAllTools.mockReturnValue([
-      makeToolDef('core.search_files', 'Search files'),
-    ]);
+    mockGetAllTools.mockReturnValue([makeToolDef('core.search_files', 'Search files')]);
     mockExecute.mockResolvedValue('search results');
     await ensureServerInitialized();
     const handler = getCallHandler()!;
@@ -636,7 +610,7 @@ describe('tools/call handler', () => {
     expect(mockExecute).toHaveBeenCalledWith(
       'core.search_files',
       { query: 'test' },
-      { userId: 'default', conversationId: 'mcp-session' },
+      { userId: 'default', conversationId: 'mcp-session' }
     );
   });
 
@@ -751,7 +725,7 @@ describe('tools/call handler', () => {
     expect(mockExecute).toHaveBeenCalledWith(
       'core.tool1',
       {},
-      { userId: 'default', conversationId: 'mcp-session' },
+      { userId: 'default', conversationId: 'mcp-session' }
     );
   });
 
@@ -834,9 +808,7 @@ describe('invalidateMcpServer', () => {
 
     invalidateMcpServer();
 
-    const res = await handleMcpRequest(
-      makeRequest('DELETE', 'invalidated-sid'),
-    );
+    const res = await handleMcpRequest(makeRequest('DELETE', 'invalidated-sid'));
     expect(res.status).toBe(404);
   });
 

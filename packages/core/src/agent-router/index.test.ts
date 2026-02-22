@@ -74,12 +74,14 @@ describe('DEFAULT_CONFIG values (verified via behavior)', () => {
   it('minConfidence defaults to 0.4 (single keyword score 0.3 falls back)', async () => {
     // 1 keyword match = 0.3 score < default minConfidence (0.4) => fallback
     const router = new AgentRouter();
-    router.registerAgent(makeAgent({
-      id: 'threshold-test',
-      name: 'Threshold Test',
-      capabilities: [],
-      triggers: { keywords: ['unique_word_xyz'] },
-    }));
+    router.registerAgent(
+      makeAgent({
+        id: 'threshold-test',
+        name: 'Threshold Test',
+        capabilities: [],
+        triggers: { keywords: ['unique_word_xyz'] },
+      })
+    );
     const result = await router.route('unique_word_xyz', {});
     expect(result.agentId).toBe('general-assistant');
   });
@@ -124,7 +126,9 @@ describe('AgentRouter - constructor', () => {
     const router = new AgentRouter({ defaultAgentId: 'custom-default' });
     // minConfidence should still be 0.4 (default)
     // register an agent that scores just above 0.4
-    router.registerAgent(makeAgent({ id: 'coded', name: 'coded', capabilities: [], triggers: { keywords: ['hello'] } }));
+    router.registerAgent(
+      makeAgent({ id: 'coded', name: 'coded', capabilities: [], triggers: { keywords: ['hello'] } })
+    );
     const result = await router.route('hello world', {});
     // 0.3 for keyword match < 0.4 minConfidence => falls back
     expect(result.agentId).toBe('custom-default');
@@ -132,7 +136,9 @@ describe('AgentRouter - constructor', () => {
 
   it('uses custom minConfidence when provided', async () => {
     const router = new AgentRouter({ minConfidence: 0.2 });
-    router.registerAgent(makeAgent({ id: 'low', name: 'low', capabilities: [], triggers: { keywords: ['hello'] } }));
+    router.registerAgent(
+      makeAgent({ id: 'low', name: 'low', capabilities: [], triggers: { keywords: ['hello'] } })
+    );
     const result = await router.route('hello world', {});
     // 0.3 >= 0.2 => should match
     expect(result.agentId).toBe('low');
@@ -201,7 +207,10 @@ describe('AgentRouter - registerAgents', () => {
       makeAgent({ id: 'alpha', name: 'Alpha' }),
       makeAgent({ id: 'beta', name: 'Beta' }),
     ]);
-    const ids = router.getAgents().map((a) => a.id).sort();
+    const ids = router
+      .getAgents()
+      .map((a) => a.id)
+      .sort();
     expect(ids).toEqual(['alpha', 'beta']);
   });
 });
@@ -231,9 +240,16 @@ describe('AgentRouter - unregisterAgent', () => {
   });
 
   it('only removes the specified agent', () => {
-    router.registerAgents([makeAgent({ id: 'a1' }), makeAgent({ id: 'a2' }), makeAgent({ id: 'a3' })]);
+    router.registerAgents([
+      makeAgent({ id: 'a1' }),
+      makeAgent({ id: 'a2' }),
+      makeAgent({ id: 'a3' }),
+    ]);
     router.unregisterAgent('a2');
-    const ids = router.getAgents().map((a) => a.id).sort();
+    const ids = router
+      .getAgents()
+      .map((a) => a.id)
+      .sort();
     expect(ids).toEqual(['a1', 'a3']);
   });
 
@@ -354,13 +370,15 @@ describe('AgentRouter - routeWithRules', () => {
 
   it('returns fallback when no agents score above minConfidence', async () => {
     // Agent with no matching keywords or capabilities
-    router.registerAgent(makeAgent({
-      id: 'unrelated',
-      name: 'Unrelated Agent',
-      description: 'Does unrelated things',
-      capabilities: ['xyz', 'abc'],
-      triggers: { keywords: ['xyz', 'abc'] },
-    }));
+    router.registerAgent(
+      makeAgent({
+        id: 'unrelated',
+        name: 'Unrelated Agent',
+        description: 'Does unrelated things',
+        capabilities: ['xyz', 'abc'],
+        triggers: { keywords: ['xyz', 'abc'] },
+      })
+    );
     const result = await router.route('hello world nothing matches here', {});
     expect(result.agentId).toBe('general-assistant');
     expect(result.confidence).toBe(0.5);
@@ -370,24 +388,28 @@ describe('AgentRouter - routeWithRules', () => {
   it('adds +0.3 per matching keyword', async () => {
     // Use minConfidence:0.2 so that a single keyword hit (0.3) passes the threshold
     const lowRouter = new AgentRouter({ minConfidence: 0.2 });
-    lowRouter.registerAgent(makeAgent({
-      id: 'kw-agent',
-      name: 'KW Agent',
-      capabilities: [],
-      triggers: { keywords: ['weather'] },
-    }));
+    lowRouter.registerAgent(
+      makeAgent({
+        id: 'kw-agent',
+        name: 'KW Agent',
+        capabilities: [],
+        triggers: { keywords: ['weather'] },
+      })
+    );
     const result = await lowRouter.route('what is the weather today?', {});
     expect(result.agentId).toBe('kw-agent');
     expect(result.confidence).toBeCloseTo(0.3);
   });
 
   it('accumulates +0.3 for each matching keyword', async () => {
-    router.registerAgent(makeAgent({
-      id: 'multi-kw',
-      name: 'Multi KW',
-      capabilities: [],
-      triggers: { keywords: ['python', 'code', 'script'] },
-    }));
+    router.registerAgent(
+      makeAgent({
+        id: 'multi-kw',
+        name: 'Multi KW',
+        capabilities: [],
+        triggers: { keywords: ['python', 'code', 'script'] },
+      })
+    );
     const result = await router.route('python code script', {});
     expect(result.agentId).toBe('multi-kw');
     // 3 keywords * 0.3 = 0.9
@@ -395,12 +417,14 @@ describe('AgentRouter - routeWithRules', () => {
   });
 
   it('keyword matching is case-insensitive', async () => {
-    router.registerAgent(makeAgent({
-      id: 'case-agent',
-      name: 'Case Agent',
-      capabilities: [],
-      triggers: { keywords: ['Python', 'CODE'] },
-    }));
+    router.registerAgent(
+      makeAgent({
+        id: 'case-agent',
+        name: 'Case Agent',
+        capabilities: [],
+        triggers: { keywords: ['Python', 'CODE'] },
+      })
+    );
     const result = await router.route('i love python and code', {});
     expect(result.agentId).toBe('case-agent');
     expect(result.confidence).toBeCloseTo(0.6);
@@ -410,24 +434,28 @@ describe('AgentRouter - routeWithRules', () => {
   it('adds +0.2 per matching capability', async () => {
     // Use minConfidence:0.1 so that a single capability hit (0.2) passes the threshold
     const lowRouter = new AgentRouter({ minConfidence: 0.1 });
-    lowRouter.registerAgent(makeAgent({
-      id: 'cap-agent',
-      name: 'Cap Agent',
-      capabilities: ['translation'],
-      triggers: { keywords: [] },
-    }));
+    lowRouter.registerAgent(
+      makeAgent({
+        id: 'cap-agent',
+        name: 'Cap Agent',
+        capabilities: ['translation'],
+        triggers: { keywords: [] },
+      })
+    );
     const result = await lowRouter.route('I need translation help', {});
     expect(result.agentId).toBe('cap-agent');
     expect(result.confidence).toBeCloseTo(0.2);
   });
 
   it('accumulates +0.2 for each matching capability', async () => {
-    router.registerAgent(makeAgent({
-      id: 'multi-cap',
-      name: 'Multi Cap',
-      capabilities: ['math', 'science', 'history'],
-      triggers: {},
-    }));
+    router.registerAgent(
+      makeAgent({
+        id: 'multi-cap',
+        name: 'Multi Cap',
+        capabilities: ['math', 'science', 'history'],
+        triggers: {},
+      })
+    );
     const result = await router.route('I need math and science and history help', {});
     expect(result.agentId).toBe('multi-cap');
     // 3 capabilities * 0.2 = 0.6
@@ -435,12 +463,14 @@ describe('AgentRouter - routeWithRules', () => {
   });
 
   it('capability matching is case-insensitive', async () => {
-    router.registerAgent(makeAgent({
-      id: 'cap-case',
-      name: 'Cap Case',
-      capabilities: ['Translation', 'MATH'],
-      triggers: {},
-    }));
+    router.registerAgent(
+      makeAgent({
+        id: 'cap-case',
+        name: 'Cap Case',
+        capabilities: ['Translation', 'MATH'],
+        triggers: {},
+      })
+    );
     const result = await router.route('i need translation and math', {});
     expect(result.agentId).toBe('cap-case');
     expect(result.confidence).toBeCloseTo(0.4);
@@ -448,24 +478,28 @@ describe('AgentRouter - routeWithRules', () => {
 
   // Name matching (+0.4)
   it('adds +0.4 when agent name appears in message', async () => {
-    router.registerAgent(makeAgent({
-      id: 'named',
-      name: 'Sherlock',
-      capabilities: [],
-      triggers: {},
-    }));
+    router.registerAgent(
+      makeAgent({
+        id: 'named',
+        name: 'Sherlock',
+        capabilities: [],
+        triggers: {},
+      })
+    );
     const result = await router.route('I want to talk to Sherlock', {});
     expect(result.agentId).toBe('named');
     expect(result.confidence).toBeCloseTo(0.4);
   });
 
   it('name matching is case-insensitive', async () => {
-    router.registerAgent(makeAgent({
-      id: 'named-case',
-      name: 'Watson',
-      capabilities: [],
-      triggers: {},
-    }));
+    router.registerAgent(
+      makeAgent({
+        id: 'named-case',
+        name: 'Watson',
+        capabilities: [],
+        triggers: {},
+      })
+    );
     const result = await router.route('let me ask watson about this', {});
     expect(result.agentId).toBe('named-case');
     expect(result.confidence).toBeCloseTo(0.4);
@@ -473,13 +507,18 @@ describe('AgentRouter - routeWithRules', () => {
 
   // Previous agent boost (+0.1)
   it('adds +0.1 for previousAgentId match', async () => {
-    router.registerAgent(makeAgent({
-      id: 'prev',
-      name: 'Prev Agent',
-      capabilities: [],
-      triggers: { keywords: ['weather'] },
-    }));
-    const result = await router.route('what is the weather', makeContext({ previousAgentId: 'prev' }));
+    router.registerAgent(
+      makeAgent({
+        id: 'prev',
+        name: 'Prev Agent',
+        capabilities: [],
+        triggers: { keywords: ['weather'] },
+      })
+    );
+    const result = await router.route(
+      'what is the weather',
+      makeContext({ previousAgentId: 'prev' })
+    );
     // 0.3 (keyword) + 0.1 (previous) = 0.4
     expect(result.agentId).toBe('prev');
     expect(result.confidence).toBeCloseTo(0.4);
@@ -488,13 +527,18 @@ describe('AgentRouter - routeWithRules', () => {
   it('does not add boost when previousAgentId does not match', async () => {
     // Use low minConfidence so the single keyword match (0.3) still wins, showing no boost added
     const lowRouter = new AgentRouter({ minConfidence: 0.2 });
-    lowRouter.registerAgent(makeAgent({
-      id: 'target',
-      name: 'Target',
-      capabilities: [],
-      triggers: { keywords: ['weather'] },
-    }));
-    const result = await lowRouter.route('what is the weather', makeContext({ previousAgentId: 'other-agent' }));
+    lowRouter.registerAgent(
+      makeAgent({
+        id: 'target',
+        name: 'Target',
+        capabilities: [],
+        triggers: { keywords: ['weather'] },
+      })
+    );
+    const result = await lowRouter.route(
+      'what is the weather',
+      makeContext({ previousAgentId: 'other-agent' })
+    );
     // Only keyword match: 0.3 (no previous boost since IDs don't match)
     expect(result.agentId).toBe('target');
     expect(result.confidence).toBeCloseTo(0.3);
@@ -502,12 +546,14 @@ describe('AgentRouter - routeWithRules', () => {
 
   // Score cap at 1.0
   it('caps score at 1.0 via Math.min', async () => {
-    router.registerAgent(makeAgent({
-      id: 'high-scorer',
-      name: 'High Scorer',
-      capabilities: ['math', 'science', 'history', 'art', 'music'],
-      triggers: { keywords: ['math', 'science'] },
-    }));
+    router.registerAgent(
+      makeAgent({
+        id: 'high-scorer',
+        name: 'High Scorer',
+        capabilities: ['math', 'science', 'history', 'art', 'music'],
+        triggers: { keywords: ['math', 'science'] },
+      })
+    );
     // keywords: math(0.3) + science(0.3) = 0.6
     // capabilities: math(0.2) + science(0.2) + history(0.2) + art(0.2) + music(0.2) = 1.0
     // total would be 1.6 but capped at 1.0
@@ -518,18 +564,22 @@ describe('AgentRouter - routeWithRules', () => {
 
   // Sorting
   it('returns highest scoring agent as top match', async () => {
-    router.registerAgent(makeAgent({
-      id: 'low',
-      name: 'Low Scorer',
-      capabilities: [],
-      triggers: { keywords: ['coding'] },
-    }));
-    router.registerAgent(makeAgent({
-      id: 'high',
-      name: 'High Scorer',
-      capabilities: [],
-      triggers: { keywords: ['coding', 'programming', 'development'] },
-    }));
+    router.registerAgent(
+      makeAgent({
+        id: 'low',
+        name: 'Low Scorer',
+        capabilities: [],
+        triggers: { keywords: ['coding'] },
+      })
+    );
+    router.registerAgent(
+      makeAgent({
+        id: 'high',
+        name: 'High Scorer',
+        capabilities: [],
+        triggers: { keywords: ['coding', 'programming', 'development'] },
+      })
+    );
     const result = await router.route('coding programming development', {});
     expect(result.agentId).toBe('high');
   });
@@ -537,8 +587,18 @@ describe('AgentRouter - routeWithRules', () => {
   // Alternatives
   it('includes up to 3 alternatives from runners-up', async () => {
     router.registerAgents([
-      makeAgent({ id: 'a1', name: 'A1', capabilities: [], triggers: { keywords: ['coding', 'programming', 'development'] } }),
-      makeAgent({ id: 'a2', name: 'A2', capabilities: [], triggers: { keywords: ['coding', 'programming'] } }),
+      makeAgent({
+        id: 'a1',
+        name: 'A1',
+        capabilities: [],
+        triggers: { keywords: ['coding', 'programming', 'development'] },
+      }),
+      makeAgent({
+        id: 'a2',
+        name: 'A2',
+        capabilities: [],
+        triggers: { keywords: ['coding', 'programming'] },
+      }),
       makeAgent({ id: 'a3', name: 'A3', capabilities: [], triggers: { keywords: ['coding'] } }),
       makeAgent({ id: 'a4', name: 'A4', capabilities: [], triggers: { keywords: ['coding'] } }),
     ]);
@@ -550,7 +610,12 @@ describe('AgentRouter - routeWithRules', () => {
 
   it('alternatives contain agentId and confidence fields', async () => {
     router.registerAgents([
-      makeAgent({ id: 'a1', name: 'A1', capabilities: [], triggers: { keywords: ['coding', 'programming'] } }),
+      makeAgent({
+        id: 'a1',
+        name: 'A1',
+        capabilities: [],
+        triggers: { keywords: ['coding', 'programming'] },
+      }),
       makeAgent({ id: 'a2', name: 'A2', capabilities: [], triggers: { keywords: ['coding'] } }),
     ]);
     const result = await router.route('coding programming', {});
@@ -562,8 +627,18 @@ describe('AgentRouter - routeWithRules', () => {
   it('alternatives are sliced to first 3 runners-up (indices 1-3)', async () => {
     // 5 agents: winner + 4 runners-up => alternatives should have max 3
     router.registerAgents([
-      makeAgent({ id: 'w', name: 'W', capabilities: [], triggers: { keywords: ['a', 'b', 'c', 'd'] } }),
-      makeAgent({ id: 'r1', name: 'R1', capabilities: [], triggers: { keywords: ['a', 'b', 'c'] } }),
+      makeAgent({
+        id: 'w',
+        name: 'W',
+        capabilities: [],
+        triggers: { keywords: ['a', 'b', 'c', 'd'] },
+      }),
+      makeAgent({
+        id: 'r1',
+        name: 'R1',
+        capabilities: [],
+        triggers: { keywords: ['a', 'b', 'c'] },
+      }),
       makeAgent({ id: 'r2', name: 'R2', capabilities: [], triggers: { keywords: ['a', 'b'] } }),
       makeAgent({ id: 'r3', name: 'R3', capabilities: [], triggers: { keywords: ['a'] } }),
       makeAgent({ id: 'r4', name: 'R4', capabilities: [], triggers: { keywords: ['a'] } }),
@@ -578,8 +653,18 @@ describe('AgentRouter - routeWithRules', () => {
     // Use low minConfidence so keyword match (0.3) passes
     const lowRouter = new AgentRouter({ minConfidence: 0.2 });
     lowRouter.registerAgents([
-      makeAgent({ id: 'match', name: 'Match', capabilities: [], triggers: { keywords: ['python'] } }),
-      makeAgent({ id: 'nomatch', name: 'No Match', capabilities: [], triggers: { keywords: ['ruby'] } }),
+      makeAgent({
+        id: 'match',
+        name: 'Match',
+        capabilities: [],
+        triggers: { keywords: ['python'] },
+      }),
+      makeAgent({
+        id: 'nomatch',
+        name: 'No Match',
+        capabilities: [],
+        triggers: { keywords: ['ruby'] },
+      }),
     ]);
     const result = await lowRouter.route('python is great', {});
     expect(result.agentId).toBe('match');
@@ -592,12 +677,14 @@ describe('AgentRouter - routeWithRules', () => {
   it('falls back to default when top match is below minConfidence', async () => {
     // Default minConfidence = 0.4
     // A single keyword match gives score 0.3 which is below 0.4
-    router.registerAgent(makeAgent({
-      id: 'below-threshold',
-      name: 'Below Threshold',
-      capabilities: [],
-      triggers: { keywords: ['hello'] },
-    }));
+    router.registerAgent(
+      makeAgent({
+        id: 'below-threshold',
+        name: 'Below Threshold',
+        capabilities: [],
+        triggers: { keywords: ['hello'] },
+      })
+    );
     const result = await router.route('hello there', {});
     expect(result.agentId).toBe('general-assistant');
     expect(result.confidence).toBe(0.5);
@@ -607,12 +694,14 @@ describe('AgentRouter - routeWithRules', () => {
     // 2 keywords * 0.3 = 0.6 which is >= 0.4
     // But let's set minConfidence=0.6 to test exact boundary
     const exactRouter = new AgentRouter({ minConfidence: 0.6 });
-    exactRouter.registerAgent(makeAgent({
-      id: 'exact',
-      name: 'Exact',
-      capabilities: [],
-      triggers: { keywords: ['word1', 'word2'] },
-    }));
+    exactRouter.registerAgent(
+      makeAgent({
+        id: 'exact',
+        name: 'Exact',
+        capabilities: [],
+        triggers: { keywords: ['word1', 'word2'] },
+      })
+    );
     const result = await exactRouter.route('word1 word2', {});
     // 0.6 >= 0.6 => should match
     expect(result.agentId).toBe('exact');
@@ -623,12 +712,14 @@ describe('AgentRouter - routeWithRules', () => {
   it('includes rule-based reasoning text', async () => {
     // Need score >= 0.4 to trigger rule-based match (not fallback)
     // keyword 'code' => 0.3, capability 'coding' => 0.2, total 0.5 >= 0.4
-    router.registerAgent(makeAgent({
-      id: 'matched',
-      name: 'Matched',
-      capabilities: ['coding'],
-      triggers: { keywords: ['code'] },
-    }));
+    router.registerAgent(
+      makeAgent({
+        id: 'matched',
+        name: 'Matched',
+        capabilities: ['coding'],
+        triggers: { keywords: ['code'] },
+      })
+    );
     const result = await router.route('I need to write code with coding skills', {});
     expect(result.agentId).toBe('matched');
     expect(result.reasoning).toBe('Rule-based matching (LLM not available)');
@@ -636,12 +727,14 @@ describe('AgentRouter - routeWithRules', () => {
 
   // Combined scoring
   it('combines keywords and capabilities into total score', async () => {
-    router.registerAgent(makeAgent({
-      id: 'combo',
-      name: 'Combo',
-      capabilities: ['math'],
-      triggers: { keywords: ['calculate'] },
-    }));
+    router.registerAgent(
+      makeAgent({
+        id: 'combo',
+        name: 'Combo',
+        capabilities: ['math'],
+        triggers: { keywords: ['calculate'] },
+      })
+    );
     const result = await router.route('please calculate some math for me', {});
     // keyword: 0.3 + capability: 0.2 = 0.5
     expect(result.agentId).toBe('combo');
@@ -651,12 +744,14 @@ describe('AgentRouter - routeWithRules', () => {
   it('no triggers object does not crash', async () => {
     // Use low minConfidence to let capability match (0.2) pass
     const lowRouter = new AgentRouter({ minConfidence: 0.1 });
-    lowRouter.registerAgent(makeAgent({
-      id: 'no-triggers',
-      name: 'No Triggers',
-      capabilities: ['helpful'],
-      triggers: undefined,
-    }));
+    lowRouter.registerAgent(
+      makeAgent({
+        id: 'no-triggers',
+        name: 'No Triggers',
+        capabilities: ['helpful'],
+        triggers: undefined,
+      })
+    );
     const result = await lowRouter.route('I need helpful assistance', {});
     expect(result.agentId).toBe('no-triggers');
     expect(result.confidence).toBeCloseTo(0.2);
@@ -665,12 +760,14 @@ describe('AgentRouter - routeWithRules', () => {
   it('empty triggers.keywords does not crash', async () => {
     // Use low minConfidence so capability match (0.2) passes threshold
     const lowRouter = new AgentRouter({ minConfidence: 0.1 });
-    lowRouter.registerAgent(makeAgent({
-      id: 'empty-kw',
-      name: 'Empty KW',
-      capabilities: ['coding'],
-      triggers: { keywords: [] },
-    }));
+    lowRouter.registerAgent(
+      makeAgent({
+        id: 'empty-kw',
+        name: 'Empty KW',
+        capabilities: ['coding'],
+        triggers: { keywords: [] },
+      })
+    );
     const result = await lowRouter.route('I need coding help', {});
     expect(result.agentId).toBe('empty-kw');
     expect(result.confidence).toBeCloseTo(0.2);
@@ -679,12 +776,14 @@ describe('AgentRouter - routeWithRules', () => {
   it('empty capabilities array does not crash', async () => {
     // Use low minConfidence so keyword match (0.3) passes threshold
     const lowRouter = new AgentRouter({ minConfidence: 0.2 });
-    lowRouter.registerAgent(makeAgent({
-      id: 'empty-caps',
-      name: 'Empty Caps',
-      capabilities: [],
-      triggers: { keywords: ['data'] },
-    }));
+    lowRouter.registerAgent(
+      makeAgent({
+        id: 'empty-caps',
+        name: 'Empty Caps',
+        capabilities: [],
+        triggers: { keywords: ['data'] },
+      })
+    );
     const result = await lowRouter.route('data analysis', {});
     expect(result.agentId).toBe('empty-caps');
   });
@@ -713,7 +812,10 @@ describe('AgentRouter - routeWithLLM', () => {
 
     await router.route('I need help', {});
 
-    const messages = (llm.complete as ReturnType<typeof vi.fn>).mock.calls[0]![0] as Array<{ role: string; content: string }>;
+    const messages = (llm.complete as ReturnType<typeof vi.fn>).mock.calls[0]![0] as Array<{
+      role: string;
+      content: string;
+    }>;
     expect(messages).toHaveLength(2);
     expect(messages[0]!.role).toBe('system');
     expect(messages[1]!.role).toBe('user');
@@ -726,7 +828,12 @@ describe('AgentRouter - routeWithLLM', () => {
 
     await router.route('test', {});
 
-    const systemContent = ((llm.complete as ReturnType<typeof vi.fn>).mock.calls[0]![0] as Array<{ role: string; content: string }>)[0]!.content;
+    const systemContent = (
+      (llm.complete as ReturnType<typeof vi.fn>).mock.calls[0]![0] as Array<{
+        role: string;
+        content: string;
+      }>
+    )[0]!.content;
     expect(systemContent).toContain('agent-a');
     expect(systemContent).toContain('agent-b');
   });
@@ -738,7 +845,12 @@ describe('AgentRouter - routeWithLLM', () => {
 
     await router.route('My specific question', {});
 
-    const userContent = ((llm.complete as ReturnType<typeof vi.fn>).mock.calls[0]![0] as Array<{ role: string; content: string }>)[1]!.content;
+    const userContent = (
+      (llm.complete as ReturnType<typeof vi.fn>).mock.calls[0]![0] as Array<{
+        role: string;
+        content: string;
+      }>
+    )[1]!.content;
     expect(userContent).toContain('My specific question');
   });
 
@@ -829,12 +941,14 @@ describe('AgentRouter - routeWithLLM', () => {
     (llm.complete as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error('Network error'));
 
     // Register agent with keywords matching the query so rules can pick it up
-    router.registerAgent(makeAgent({
-      id: 'rules-match',
-      name: 'Rules Match',
-      capabilities: [],
-      triggers: { keywords: ['special', 'query', 'word'] },
-    }));
+    router.registerAgent(
+      makeAgent({
+        id: 'rules-match',
+        name: 'Rules Match',
+        capabilities: [],
+        triggers: { keywords: ['special', 'query', 'word'] },
+      })
+    );
 
     const result = await router.route('special query word', {});
     // Rules: 3 keywords * 0.3 = 0.9 >= 0.4 minConfidence => should match via rules
@@ -903,7 +1017,9 @@ describe('AgentRouter - buildAgentListPrompt (via LLM prompt)', () => {
   }
 
   it('includes agent id and name as heading', async () => {
-    router.registerAgent(makeAgent({ id: 'my-agent', name: 'My Agent', capabilities: ['coding'], triggers: {} }));
+    router.registerAgent(
+      makeAgent({ id: 'my-agent', name: 'My Agent', capabilities: ['coding'], triggers: {} })
+    );
     (llm.complete as ReturnType<typeof vi.fn>).mockResolvedValueOnce(
       JSON.stringify({ agentId: 'my-agent', confidence: 0.9, reasoning: 'ok' })
     );
@@ -913,7 +1029,15 @@ describe('AgentRouter - buildAgentListPrompt (via LLM prompt)', () => {
   });
 
   it('includes description', async () => {
-    router.registerAgent(makeAgent({ id: 'x', name: 'X', description: 'Special description here', capabilities: [], triggers: {} }));
+    router.registerAgent(
+      makeAgent({
+        id: 'x',
+        name: 'X',
+        description: 'Special description here',
+        capabilities: [],
+        triggers: {},
+      })
+    );
     (llm.complete as ReturnType<typeof vi.fn>).mockResolvedValueOnce(
       JSON.stringify({ agentId: 'x', confidence: 0.9, reasoning: 'ok' })
     );
@@ -923,7 +1047,9 @@ describe('AgentRouter - buildAgentListPrompt (via LLM prompt)', () => {
   });
 
   it('includes capabilities joined by comma', async () => {
-    router.registerAgent(makeAgent({ id: 'x', name: 'X', capabilities: ['math', 'science', 'art'], triggers: {} }));
+    router.registerAgent(
+      makeAgent({ id: 'x', name: 'X', capabilities: ['math', 'science', 'art'], triggers: {} })
+    );
     (llm.complete as ReturnType<typeof vi.fn>).mockResolvedValueOnce(
       JSON.stringify({ agentId: 'x', confidence: 0.9, reasoning: 'ok' })
     );
@@ -933,7 +1059,9 @@ describe('AgentRouter - buildAgentListPrompt (via LLM prompt)', () => {
   });
 
   it('includes Keywords line when keywords are present', async () => {
-    router.registerAgent(makeAgent({ id: 'x', name: 'X', capabilities: [], triggers: { keywords: ['foo', 'bar'] } }));
+    router.registerAgent(
+      makeAgent({ id: 'x', name: 'X', capabilities: [], triggers: { keywords: ['foo', 'bar'] } })
+    );
     (llm.complete as ReturnType<typeof vi.fn>).mockResolvedValueOnce(
       JSON.stringify({ agentId: 'x', confidence: 0.9, reasoning: 'ok' })
     );
@@ -943,7 +1071,9 @@ describe('AgentRouter - buildAgentListPrompt (via LLM prompt)', () => {
   });
 
   it('omits Keywords line when keywords array is empty', async () => {
-    router.registerAgent(makeAgent({ id: 'x', name: 'X', capabilities: [], triggers: { keywords: [] } }));
+    router.registerAgent(
+      makeAgent({ id: 'x', name: 'X', capabilities: [], triggers: { keywords: [] } })
+    );
     (llm.complete as ReturnType<typeof vi.fn>).mockResolvedValueOnce(
       JSON.stringify({ agentId: 'x', confidence: 0.9, reasoning: 'ok' })
     );
@@ -963,7 +1093,14 @@ describe('AgentRouter - buildAgentListPrompt (via LLM prompt)', () => {
   });
 
   it('includes When to use line when trigger description present', async () => {
-    router.registerAgent(makeAgent({ id: 'x', name: 'X', capabilities: [], triggers: { description: 'Use for advanced tasks' } }));
+    router.registerAgent(
+      makeAgent({
+        id: 'x',
+        name: 'X',
+        capabilities: [],
+        triggers: { description: 'Use for advanced tasks' },
+      })
+    );
     (llm.complete as ReturnType<typeof vi.fn>).mockResolvedValueOnce(
       JSON.stringify({ agentId: 'x', confidence: 0.9, reasoning: 'ok' })
     );
@@ -973,7 +1110,9 @@ describe('AgentRouter - buildAgentListPrompt (via LLM prompt)', () => {
   });
 
   it('omits When to use line when trigger description absent', async () => {
-    router.registerAgent(makeAgent({ id: 'x', name: 'X', capabilities: [], triggers: { keywords: ['test'] } }));
+    router.registerAgent(
+      makeAgent({ id: 'x', name: 'X', capabilities: [], triggers: { keywords: ['test'] } })
+    );
     (llm.complete as ReturnType<typeof vi.fn>).mockResolvedValueOnce(
       JSON.stringify({ agentId: 'x', confidence: 0.9, reasoning: 'ok' })
     );
@@ -1023,7 +1162,9 @@ describe('AgentRouter - buildContextPrompt (via LLM user prompt)', () => {
     router = new AgentRouter();
     llm = makeLLMProvider();
     router.setLLMProvider(llm);
-    router.registerAgent(makeAgent({ id: 'target', name: 'Target', capabilities: [], triggers: {} }));
+    router.registerAgent(
+      makeAgent({ id: 'target', name: 'Target', capabilities: [], triggers: {} })
+    );
   });
 
   function getUserPrompt(): string {
@@ -1132,11 +1273,14 @@ describe('AgentRouter - buildContextPrompt (via LLM user prompt)', () => {
     );
 
     const history = [{ role: 'user' as const, content: 'Prior message' }];
-    await router.route('test', makeContext({
-      channel: 'web',
-      previousAgentId: 'old-agent',
-      conversationHistory: history,
-    }));
+    await router.route(
+      'test',
+      makeContext({
+        channel: 'web',
+        previousAgentId: 'old-agent',
+        conversationHistory: history,
+      })
+    );
 
     const prompt = getUserPrompt();
     expect(prompt).toContain('Channel: web');
@@ -1195,7 +1339,9 @@ describe('AgentRouter - fallbackResult', () => {
     const router = new AgentRouter();
     const llm = makeLLMProvider();
     router.setLLMProvider(llm);
-    router.registerAgent(makeAgent({ id: 'exists', name: 'Exists', capabilities: [], triggers: {} }));
+    router.registerAgent(
+      makeAgent({ id: 'exists', name: 'Exists', capabilities: [], triggers: {} })
+    );
 
     (llm.complete as ReturnType<typeof vi.fn>).mockResolvedValueOnce(
       JSON.stringify({ agentId: 'ghost', confidence: 0.9, reasoning: 'Sure' })
@@ -1303,7 +1449,8 @@ describe('agentConfigToInfo', () => {
     const info = agentConfigToInfo({
       id: 'x',
       name: 'X',
-      systemPrompt: 'I can help with cooking. I have expertise in nutrition. capabilities: meal planning',
+      systemPrompt:
+        'I can help with cooking. I have expertise in nutrition. capabilities: meal planning',
     });
     // Multiple matches expected
     expect(info.capabilities.length).toBeGreaterThanOrEqual(2);
@@ -1446,12 +1593,14 @@ describe('createAgentRouter', () => {
 describe('AgentRouter - integration scenarios', () => {
   it('name + keyword + capability all contribute to score', async () => {
     const router = new AgentRouter({ minConfidence: 0.4 });
-    router.registerAgent(makeAgent({
-      id: 'math-agent',
-      name: 'MathBot',
-      capabilities: ['algebra'],
-      triggers: { keywords: ['calculate'] },
-    }));
+    router.registerAgent(
+      makeAgent({
+        id: 'math-agent',
+        name: 'MathBot',
+        capabilities: ['algebra'],
+        triggers: { keywords: ['calculate'] },
+      })
+    );
 
     // 'calculate' keyword: +0.3
     // 'algebra' capability: +0.2
@@ -1464,15 +1613,20 @@ describe('AgentRouter - integration scenarios', () => {
 
   it('previous agent boost tips score above threshold', async () => {
     const router = new AgentRouter({ minConfidence: 0.4 });
-    router.registerAgent(makeAgent({
-      id: 'prev-agent',
-      name: 'Previous',
-      capabilities: [],
-      triggers: { keywords: ['status'] },
-    }));
+    router.registerAgent(
+      makeAgent({
+        id: 'prev-agent',
+        name: 'Previous',
+        capabilities: [],
+        triggers: { keywords: ['status'] },
+      })
+    );
 
     // keyword 'status': 0.3 < 0.4 but with previous boost: 0.4 >= 0.4
-    const result = await router.route('give me a status update', makeContext({ previousAgentId: 'prev-agent' }));
+    const result = await router.route(
+      'give me a status update',
+      makeContext({ previousAgentId: 'prev-agent' })
+    );
     expect(result.agentId).toBe('prev-agent');
     expect(result.confidence).toBeCloseTo(0.4);
   });
@@ -1480,9 +1634,24 @@ describe('AgentRouter - integration scenarios', () => {
   it('selects highest scoring agent from multiple registered', async () => {
     const router = new AgentRouter({ minConfidence: 0.3 });
     router.registerAgents([
-      makeAgent({ id: 'code-agent', name: 'Coder', capabilities: ['coding', 'programming'], triggers: { keywords: ['code', 'python'] } }),
-      makeAgent({ id: 'chat-agent', name: 'Chatter', capabilities: ['chat'], triggers: { keywords: ['hello', 'hi'] } }),
-      makeAgent({ id: 'math-agent', name: 'Mathematician', capabilities: ['math'], triggers: { keywords: ['calculate', 'equation'] } }),
+      makeAgent({
+        id: 'code-agent',
+        name: 'Coder',
+        capabilities: ['coding', 'programming'],
+        triggers: { keywords: ['code', 'python'] },
+      }),
+      makeAgent({
+        id: 'chat-agent',
+        name: 'Chatter',
+        capabilities: ['chat'],
+        triggers: { keywords: ['hello', 'hi'] },
+      }),
+      makeAgent({
+        id: 'math-agent',
+        name: 'Mathematician',
+        capabilities: ['math'],
+        triggers: { keywords: ['calculate', 'equation'] },
+      }),
     ]);
 
     const result = await router.route('I need help with python code', {});
@@ -1493,12 +1662,14 @@ describe('AgentRouter - integration scenarios', () => {
     const router = new AgentRouter({ minConfidence: 0.3 });
     const llm = makeLLMProvider();
     router.setLLMProvider(llm);
-    router.registerAgent(makeAgent({
-      id: 'rules-agent',
-      name: 'Rules Agent',
-      capabilities: [],
-      triggers: { keywords: ['fallback', 'rules'] },
-    }));
+    router.registerAgent(
+      makeAgent({
+        id: 'rules-agent',
+        name: 'Rules Agent',
+        capabilities: [],
+        triggers: { keywords: ['fallback', 'rules'] },
+      })
+    );
 
     (llm.complete as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error('Timeout'));
 

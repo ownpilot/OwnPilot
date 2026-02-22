@@ -118,7 +118,12 @@ function formatCellValue(value: unknown, type: string): string {
   if (type === 'date') {
     if (typeof value === 'string') {
       const date = new Date(value);
-      return date.toLocaleDateString() + (value.includes('T') ? ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '');
+      return (
+        date.toLocaleDateString() +
+        (value.includes('T')
+          ? ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+          : '')
+      );
     }
     return '-';
   }
@@ -151,12 +156,13 @@ export function DataBrowserPage() {
       }
 
       const data = await apiClient.get<Record<string, unknown>[] | Record<string, unknown>>(
-        config.endpoint, { params },
+        config.endpoint,
+        { params }
       );
       // Expenses API wraps array in { expenses: [...] }
       const items = Array.isArray(data)
         ? data
-        : (data as Record<string, unknown>).expenses as Record<string, unknown>[] ?? [];
+        : (((data as Record<string, unknown>).expenses as Record<string, unknown>[]) ?? []);
       setRecords(items);
     } catch {
       // apiClient fires global error handler
@@ -175,17 +181,26 @@ export function DataBrowserPage() {
     setRecords([]);
   }, [selectedType]);
 
-  const handleDelete = useCallback(async (recordId: string) => {
-    if (!await confirm({ message: 'Are you sure you want to delete this record?', variant: 'danger' })) return;
+  const handleDelete = useCallback(
+    async (recordId: string) => {
+      if (
+        !(await confirm({
+          message: 'Are you sure you want to delete this record?',
+          variant: 'danger',
+        }))
+      )
+        return;
 
-    try {
-      await apiClient.delete(`${config.endpoint}/${recordId}`);
-      toast.success('Record deleted');
-      fetchRecords();
-    } catch {
-      toast.error('Failed to delete record');
-    }
-  }, [confirm, fetchRecords, toast]);
+      try {
+        await apiClient.delete(`${config.endpoint}/${recordId}`);
+        toast.success('Record deleted');
+        fetchRecords();
+      } catch {
+        toast.error('Failed to delete record');
+      }
+    },
+    [confirm, fetchRecords, toast]
+  );
 
   const TypeIcon = config.icon;
 
@@ -209,26 +224,28 @@ export function DataBrowserPage() {
 
             {showTypeSelector && (
               <div className="absolute top-full left-0 mt-1 w-56 bg-bg-primary dark:bg-dark-bg-primary border border-border dark:border-dark-border rounded-lg shadow-lg z-50 overflow-hidden">
-                {(Object.entries(DATA_TYPES) as [DataType, DataTypeConfig][]).map(([type, typeConfig]) => {
-                  const Icon = typeConfig.icon;
-                  return (
-                    <button
-                      key={type}
-                      onClick={() => {
-                        setSelectedType(type);
-                        setShowTypeSelector(false);
-                      }}
-                      className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-colors ${
-                        selectedType === type
-                          ? 'bg-primary/10 text-primary'
-                          : 'text-text-primary dark:text-dark-text-primary hover:bg-bg-secondary dark:hover:bg-dark-bg-secondary'
-                      }`}
-                    >
-                      <Icon className="w-5 h-5" />
-                      <span>{typeConfig.name}</span>
-                    </button>
-                  );
-                })}
+                {(Object.entries(DATA_TYPES) as [DataType, DataTypeConfig][]).map(
+                  ([type, typeConfig]) => {
+                    const Icon = typeConfig.icon;
+                    return (
+                      <button
+                        key={type}
+                        onClick={() => {
+                          setSelectedType(type);
+                          setShowTypeSelector(false);
+                        }}
+                        className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-colors ${
+                          selectedType === type
+                            ? 'bg-primary/10 text-primary'
+                            : 'text-text-primary dark:text-dark-text-primary hover:bg-bg-secondary dark:hover:bg-dark-bg-secondary'
+                        }`}
+                      >
+                        <Icon className="w-5 h-5" />
+                        <span>{typeConfig.name}</span>
+                      </button>
+                    );
+                  }
+                )}
               </div>
             )}
           </div>
@@ -265,10 +282,7 @@ export function DataBrowserPage() {
 
       {/* Click outside handler for type selector */}
       {showTypeSelector && (
-        <div
-          className="fixed inset-0 z-40"
-          onClick={() => setShowTypeSelector(false)}
-        />
+        <div className="fixed inset-0 z-40" onClick={() => setShowTypeSelector(false)} />
       )}
 
       {/* Data Type Tabs (alternative navigation) */}
@@ -300,7 +314,11 @@ export function DataBrowserPage() {
           <EmptyState
             icon={Table}
             title={searchQuery ? 'No records found' : `No ${config.name.toLowerCase()} yet`}
-            description={searchQuery ? 'Try a different search term.' : `Add your first ${config.name.toLowerCase().replace(/s$/, '')} to get started.`}
+            description={
+              searchQuery
+                ? 'Try a different search term.'
+                : `Add your first ${config.name.toLowerCase().replace(/s$/, '')} to get started.`
+            }
           />
         ) : (
           <div className="p-6">
@@ -342,7 +360,11 @@ export function DataBrowserPage() {
                               {formatCellValue(record[col.key], col.type)}
                             </a>
                           ) : (
-                            <span className={col.type === 'text' && col.key === 'title' ? 'font-medium' : ''}>
+                            <span
+                              className={
+                                col.type === 'text' && col.key === 'title' ? 'font-medium' : ''
+                              }
+                            >
                               {formatCellValue(record[col.key], col.type)}
                             </span>
                           )}
@@ -439,7 +461,12 @@ function RecordModal({ dataType, config, record, onClose, onSave }: RecordModalP
     }
   };
 
-  const getFieldsForType = (): { key: string; label: string; type: string; required?: boolean }[] => {
+  const getFieldsForType = (): {
+    key: string;
+    label: string;
+    type: string;
+    required?: boolean;
+  }[] => {
     switch (dataType) {
       case 'tasks':
         return [
@@ -497,10 +524,14 @@ function RecordModal({ dataType, config, record, onClose, onSave }: RecordModalP
   };
 
   const fields = getFieldsForType();
-  const inputClasses = 'w-full px-3 py-2 bg-bg-tertiary dark:bg-dark-bg-tertiary border border-border dark:border-dark-border rounded-lg text-text-primary dark:text-dark-text-primary focus:outline-none focus:ring-2 focus:ring-primary/50';
+  const inputClasses =
+    'w-full px-3 py-2 bg-bg-tertiary dark:bg-dark-bg-tertiary border border-border dark:border-dark-border rounded-lg text-text-primary dark:text-dark-text-primary focus:outline-none focus:ring-2 focus:ring-primary/50';
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onBackdropClick}>
+    <div
+      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+      onClick={onBackdropClick}
+    >
       <div className="w-full max-w-lg bg-bg-primary dark:bg-dark-bg-primary border border-border dark:border-dark-border rounded-xl shadow-xl max-h-[90vh] overflow-hidden flex flex-col">
         <form onSubmit={handleSubmit} className="flex flex-col h-full">
           <div className="p-6 border-b border-border dark:border-dark-border">
@@ -535,7 +566,9 @@ function RecordModal({ dataType, config, record, onClose, onSave }: RecordModalP
                     <option value="high">High</option>
                     <option value="urgent">Urgent</option>
                   </select>
-                ) : field.type === 'select' && field.key === 'category' && dataType === 'expenses' ? (
+                ) : field.type === 'select' &&
+                  field.key === 'category' &&
+                  dataType === 'expenses' ? (
                   <select
                     value={(formData[field.key] as string) || 'other'}
                     onChange={(e) => handleChange(field.key, e.target.value)}
@@ -557,7 +590,12 @@ function RecordModal({ dataType, config, record, onClose, onSave }: RecordModalP
                   <input
                     type={field.type}
                     value={(formData[field.key] as string) || ''}
-                    onChange={(e) => handleChange(field.key, field.type === 'number' ? Number(e.target.value) : e.target.value)}
+                    onChange={(e) =>
+                      handleChange(
+                        field.key,
+                        field.type === 'number' ? Number(e.target.value) : e.target.value
+                      )
+                    }
                     className={inputClasses}
                     required={field.required}
                   />

@@ -124,7 +124,12 @@ describe('ComposioService', () => {
       mockConfigServicesRepo.getFieldValue.mockReturnValue('comp-key');
       mockComposioInstance.tools.getRawComposioTools.mockResolvedValue({
         items: [
-          { slug: 'GMAIL_SEND_EMAIL', name: 'Send Email', description: 'Send an email via Gmail', appName: 'gmail' },
+          {
+            slug: 'GMAIL_SEND_EMAIL',
+            name: 'Send Email',
+            description: 'Send an email via Gmail',
+            appName: 'gmail',
+          },
         ],
       });
 
@@ -159,7 +164,9 @@ describe('ComposioService', () => {
       mockConfigServicesRepo.getFieldValue.mockReturnValue('comp-key');
       mockComposioInstance.tools.execute.mockResolvedValue({ data: { sent: true } });
 
-      const result = await composioService.executeAction('user1', 'GMAIL_SEND_EMAIL', { to: 'a@b.com' });
+      const result = await composioService.executeAction('user1', 'GMAIL_SEND_EMAIL', {
+        to: 'a@b.com',
+      });
       expect(result).toEqual({ data: { sent: true } });
       expect(mockComposioInstance.tools.execute).toHaveBeenCalledWith('GMAIL_SEND_EMAIL', {
         userId: 'user1',
@@ -177,9 +184,7 @@ describe('ComposioService', () => {
     it('returns mapped connections', async () => {
       mockConfigServicesRepo.getFieldValue.mockReturnValue('comp-key');
       mockComposioInstance.connectedAccounts.list.mockResolvedValue({
-        items: [
-          { id: 'c1', appName: 'github', status: 'ACTIVE', createdAt: '2026-01-01' },
-        ],
+        items: [{ id: 'c1', appName: 'github', status: 'ACTIVE', createdAt: '2026-01-01' }],
       });
 
       const connections = await composioService.getConnections('user1');
@@ -277,7 +282,9 @@ describe('ComposioService', () => {
   describe('error handling', () => {
     it('throws when API key not configured', async () => {
       mockConfigServicesRepo.getFieldValue.mockReturnValue(undefined);
-      await expect(composioService.getAvailableApps()).rejects.toThrow('Composio API key not configured');
+      await expect(composioService.getAvailableApps()).rejects.toThrow(
+        'Composio API key not configured'
+      );
     });
   });
 });

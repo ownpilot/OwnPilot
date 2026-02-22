@@ -29,7 +29,7 @@ export class ToolService implements IToolService {
   async execute(
     name: string,
     args: Record<string, unknown>,
-    context?: { conversationId?: string; userId?: string },
+    context?: { conversationId?: string; userId?: string }
   ): Promise<ToolServiceResult> {
     let argsJson: string;
     try {
@@ -45,7 +45,7 @@ export class ToolService implements IToolService {
         arguments: argsJson,
       },
       context?.conversationId ?? 'service',
-      context?.userId ?? this.userId,
+      context?.userId ?? this.userId
     );
 
     let content: string;
@@ -71,7 +71,7 @@ export class ToolService implements IToolService {
   }
 
   getDefinitionsBySource(source: ToolSource): readonly ToolDefinition[] {
-    return this.registry.getToolsBySource(source).map(t => t.definition);
+    return this.registry.getToolsBySource(source).map((t) => t.definition);
   }
 
   has(name: string): boolean {

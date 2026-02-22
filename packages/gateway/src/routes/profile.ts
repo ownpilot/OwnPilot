@@ -6,7 +6,14 @@
  */
 
 import { Hono } from 'hono';
-import { apiResponse, apiError, ERROR_CODES, getUserId, zodValidationError, getErrorMessage } from './helpers.js';
+import {
+  apiResponse,
+  apiError,
+  ERROR_CODES,
+  getUserId,
+  zodValidationError,
+  getErrorMessage,
+} from './helpers.js';
 import {
   getPersonalMemoryStore,
   getMemoryInjector,
@@ -14,16 +21,43 @@ import {
 } from '@ownpilot/core';
 
 const VALID_CATEGORIES: ReadonlySet<string> = new Set<PersonalDataCategory>([
-  'identity', 'contact', 'occupation', 'education',
-  'location', 'timezone', 'places',
-  'routine', 'food', 'sleep', 'exercise', 'hobbies',
-  'communication', 'technology', 'entertainment', 'style',
-  'health', 'diet', 'wellness',
-  'family', 'friends', 'colleagues', 'pets',
-  'work_style', 'projects', 'skills', 'tools',
-  'goals_short', 'goals_medium', 'goals_long', 'dreams',
-  'history', 'milestones', 'context',
-  'ai_preferences', 'instructions', 'boundaries',
+  'identity',
+  'contact',
+  'occupation',
+  'education',
+  'location',
+  'timezone',
+  'places',
+  'routine',
+  'food',
+  'sleep',
+  'exercise',
+  'hobbies',
+  'communication',
+  'technology',
+  'entertainment',
+  'style',
+  'health',
+  'diet',
+  'wellness',
+  'family',
+  'friends',
+  'colleagues',
+  'pets',
+  'work_style',
+  'projects',
+  'skills',
+  'tools',
+  'goals_short',
+  'goals_medium',
+  'goals_long',
+  'dreams',
+  'history',
+  'milestones',
+  'context',
+  'ai_preferences',
+  'instructions',
+  'boundaries',
 ]);
 
 const app = new Hono();
@@ -38,7 +72,14 @@ app.get('/', async (c) => {
 
     return apiResponse(c, profile);
   } catch (error) {
-    return apiError(c, { code: ERROR_CODES.PROFILE_FETCH_ERROR, message: getErrorMessage(error, 'Failed to fetch profile') }, 500);
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.PROFILE_FETCH_ERROR,
+        message: getErrorMessage(error, 'Failed to fetch profile'),
+      },
+      500
+    );
   }
 });
 
@@ -52,7 +93,14 @@ app.get('/summary', async (c) => {
 
     return apiResponse(c, { summary });
   } catch (error) {
-    return apiError(c, { code: ERROR_CODES.SUMMARY_FETCH_ERROR, message: getErrorMessage(error, 'Failed to fetch summary') }, 500);
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.SUMMARY_FETCH_ERROR,
+        message: getErrorMessage(error, 'Failed to fetch summary'),
+      },
+      500
+    );
   }
 });
 
@@ -62,7 +110,11 @@ app.get('/summary', async (c) => {
 app.get('/category/:category', async (c) => {
   const category = c.req.param('category');
   if (!VALID_CATEGORIES.has(category)) {
-    return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: `Invalid category: ${category}` }, 400);
+    return apiError(
+      c,
+      { code: ERROR_CODES.INVALID_INPUT, message: `Invalid category: ${category}` },
+      400
+    );
   }
 
   try {
@@ -70,12 +122,19 @@ app.get('/category/:category', async (c) => {
     const entries = await store.getCategory(category as PersonalDataCategory);
 
     return apiResponse(c, {
-        category,
-        entries,
-        count: entries.length,
-      });
+      category,
+      entries,
+      count: entries.length,
+    });
   } catch (error) {
-    return apiError(c, { code: ERROR_CODES.CATEGORY_FETCH_ERROR, message: getErrorMessage(error, 'Failed to fetch category') }, 500);
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.CATEGORY_FETCH_ERROR,
+        message: getErrorMessage(error, 'Failed to fetch category'),
+      },
+      500
+    );
   }
 });
 
@@ -107,7 +166,11 @@ app.post('/data', async (c) => {
 
     return apiResponse(c, entry, 201);
   } catch (error) {
-    return apiError(c, { code: ERROR_CODES.DATA_SET_ERROR, message: getErrorMessage(error, 'Failed to set data') }, 500);
+    return apiError(
+      c,
+      { code: ERROR_CODES.DATA_SET_ERROR, message: getErrorMessage(error, 'Failed to set data') },
+      500
+    );
   }
 });
 
@@ -133,7 +196,14 @@ app.delete('/data', async (c) => {
 
     return apiResponse(c, { deleted });
   } catch (error) {
-    return apiError(c, { code: ERROR_CODES.DATA_DELETE_ERROR, message: getErrorMessage(error, 'Failed to delete data') }, 500);
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.DATA_DELETE_ERROR,
+        message: getErrorMessage(error, 'Failed to delete data'),
+      },
+      500
+    );
   }
 });
 
@@ -145,23 +215,31 @@ app.get('/search', async (c) => {
   const categoriesParam = c.req.query('categories');
 
   if (!query) {
-    return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'Query parameter "q" is required' }, 400);
+    return apiError(
+      c,
+      { code: ERROR_CODES.INVALID_INPUT, message: 'Query parameter "q" is required' },
+      400
+    );
   }
 
   try {
     const store = await getPersonalMemoryStore(getUserId(c));
     const categories = categoriesParam
-      ? categoriesParam.split(',') as PersonalDataCategory[]
+      ? (categoriesParam.split(',') as PersonalDataCategory[])
       : undefined;
     const results = await store.search(query, categories);
 
     return apiResponse(c, {
-        query,
-        results,
-        count: results.length,
-      });
+      query,
+      results,
+      count: results.length,
+    });
   } catch (error) {
-    return apiError(c, { code: ERROR_CODES.SEARCH_ERROR, message: getErrorMessage(error, 'Failed to search') }, 500);
+    return apiError(
+      c,
+      { code: ERROR_CODES.SEARCH_ERROR, message: getErrorMessage(error, 'Failed to search') },
+      500
+    );
   }
 });
 
@@ -181,21 +259,31 @@ app.post('/import', async (c) => {
     const { entries } = parsed.data;
 
     const store = await getPersonalMemoryStore(getUserId(c));
-    const imported = await store.importData(entries as Array<{
-      category: PersonalDataCategory;
-      key: string;
-      value: string;
-      data?: Record<string, unknown>;
-    }>);
+    const imported = await store.importData(
+      entries as Array<{
+        category: PersonalDataCategory;
+        key: string;
+        value: string;
+        data?: Record<string, unknown>;
+      }>
+    );
 
     getMemoryInjector().invalidateCache(getUserId(c));
 
-    return apiResponse(c, {
+    return apiResponse(
+      c,
+      {
         imported,
         message: `Successfully imported ${imported} entries`,
-      }, 201);
+      },
+      201
+    );
   } catch (error) {
-    return apiError(c, { code: ERROR_CODES.IMPORT_ERROR, message: getErrorMessage(error, 'Failed to import') }, 500);
+    return apiError(
+      c,
+      { code: ERROR_CODES.IMPORT_ERROR, message: getErrorMessage(error, 'Failed to import') },
+      500
+    );
   }
 });
 
@@ -208,12 +296,16 @@ app.get('/export', async (c) => {
     const data = await store.exportData();
 
     return apiResponse(c, {
-        entries: data,
-        count: data.length,
-        exportedAt: new Date().toISOString(),
-      });
+      entries: data,
+      count: data.length,
+      exportedAt: new Date().toISOString(),
+    });
   } catch (error) {
-    return apiError(c, { code: ERROR_CODES.EXPORT_ERROR, message: getErrorMessage(error, 'Failed to export') }, 500);
+    return apiError(
+      c,
+      { code: ERROR_CODES.EXPORT_ERROR, message: getErrorMessage(error, 'Failed to export') },
+      500
+    );
   }
 });
 
@@ -284,11 +376,18 @@ app.post('/quick', async (c) => {
     const profile = await store.getProfile();
 
     return apiResponse(c, {
-        updated: count,
-        profile,
-      });
+      updated: count,
+      profile,
+    });
   } catch (error) {
-    return apiError(c, { code: ERROR_CODES.QUICK_SETUP_ERROR, message: getErrorMessage(error, 'Failed to setup profile') }, 500);
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.QUICK_SETUP_ERROR,
+        message: getErrorMessage(error, 'Failed to setup profile'),
+      },
+      500
+    );
   }
 });
 

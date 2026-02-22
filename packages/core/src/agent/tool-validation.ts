@@ -57,7 +57,7 @@ interface ToolParameterSchema {
 export function validateAgainstSchema(
   value: unknown,
   schema: Record<string, unknown>,
-  path: string = 'params',
+  path: string = 'params'
 ): ToolValidationError[] {
   const errors: ToolValidationError[] = [];
   const type = schema.type as string | undefined;
@@ -88,8 +88,8 @@ export function validateAgainstSchema(
     if (!enumValues.includes(value)) {
       errors.push({
         path,
-        message: `${path}: must be one of ${enumValues.map(v => JSON.stringify(v)).join(', ')}`,
-        expected: enumValues.map(v => JSON.stringify(v)).join(' | '),
+        message: `${path}: must be one of ${enumValues.map((v) => JSON.stringify(v)).join(', ')}`,
+        expected: enumValues.map((v) => JSON.stringify(v)).join(' | '),
         received: JSON.stringify(value),
       });
     }
@@ -165,7 +165,7 @@ function isTypeMatch(actual: string, expected: string): boolean {
 export function validateToolCall(
   registry: ToolRegistry,
   toolName: string,
-  args: Record<string, unknown>,
+  args: Record<string, unknown>
 ): ToolCallValidation {
   // Stage 1: Tool existence check
   let def = registry.getDefinition(toolName);
@@ -197,17 +197,17 @@ export function validateToolCall(
     }
 
     // Tool not found, no auto-correction
-    const suggestionsText = similar.length > 0
-      ? `\nDid you mean: ${similar.join(', ')}?`
-      : '';
+    const suggestionsText = similar.length > 0 ? `\nDid you mean: ${similar.join(', ')}?` : '';
     return {
       valid: false,
-      errors: [{
-        path: 'tool_name',
-        message: `Tool '${toolName}' not found.${suggestionsText}`,
-        expected: 'valid tool name',
-        received: toolName,
-      }],
+      errors: [
+        {
+          path: 'tool_name',
+          message: `Tool '${toolName}' not found.${suggestionsText}`,
+          expected: 'valid tool name',
+          received: toolName,
+        },
+      ],
     };
   }
 
@@ -274,20 +274,21 @@ function validateParams(def: ToolDefinition, args: Record<string, unknown>): Too
 export function findSimilarToolNames(
   registry: ToolRegistry,
   query: string,
-  limit: number = 5,
+  limit: number = 5
 ): string[] {
   const allDefs = registry.getDefinitions();
   const q = query.toLowerCase().replace(/[_.\-]/g, ' ');
   const qWords = q.split(/\s+/).filter(Boolean);
 
   const scored = allDefs
-    .filter(d =>
-      d.name !== 'search_tools' &&
-      d.name !== 'get_tool_help' &&
-      d.name !== 'use_tool' &&
-      d.name !== 'batch_use_tool'
+    .filter(
+      (d) =>
+        d.name !== 'search_tools' &&
+        d.name !== 'get_tool_help' &&
+        d.name !== 'use_tool' &&
+        d.name !== 'batch_use_tool'
     )
-    .map(d => {
+    .map((d) => {
       const name = d.name.toLowerCase();
       const nameWords = name.replace(/[_.\-]/g, ' ');
       let score = 0;
@@ -313,11 +314,11 @@ export function findSimilarToolNames(
 
       return { name: d.name, score };
     })
-    .filter(s => s.score > 0)
+    .filter((s) => s.score > 0)
     .sort((a, b) => b.score - a.score)
     .slice(0, limit);
 
-  return scored.map(s => s.name);
+  return scored.map((s) => s.name);
 }
 
 /**
@@ -333,9 +334,10 @@ function levenshtein(a: string, b: string): number {
 
   for (let i = 1; i <= m; i++) {
     for (let j = 1; j <= n; j++) {
-      dp[i]![j] = a[i - 1] === b[j - 1]
-        ? dp[i - 1]![j - 1]!
-        : 1 + Math.min(dp[i - 1]![j]!, dp[i]![j - 1]!, dp[i - 1]![j - 1]!);
+      dp[i]![j] =
+        a[i - 1] === b[j - 1]
+          ? dp[i - 1]![j - 1]!
+          : 1 + Math.min(dp[i - 1]![j]!, dp[i]![j - 1]!, dp[i - 1]![j - 1]!);
     }
   }
 
@@ -354,16 +356,16 @@ export function formatParamSchema(
   name: string,
   schema: Record<string, unknown>,
   requiredSet: Set<string>,
-  indent: string = '  ',
+  indent: string = '  '
 ): string[] {
   const lines: string[] = [];
   const req = requiredSet.has(name) ? ' (REQUIRED)' : ' (optional)';
-  const type = schema.type as string || 'any';
+  const type = (schema.type as string) || 'any';
   const desc = schema.description ? ` — ${schema.description}` : '';
   const dflt = schema.default !== undefined ? ` [default: ${JSON.stringify(schema.default)}]` : '';
 
   if (Array.isArray(schema.enum)) {
-    const enumVals = (schema.enum as string[]).map(v => JSON.stringify(v)).join(' | ');
+    const enumVals = (schema.enum as string[]).map((v) => JSON.stringify(v)).join(' | ');
     lines.push(`${indent}• ${name}: ${enumVals}${req}${desc}${dflt}`);
   } else if (type === 'array') {
     const items = schema.items as Record<string, unknown> | undefined;
@@ -376,7 +378,7 @@ export function formatParamSchema(
         lines.push(...formatParamSchema(propName, propSchema, itemRequired, indent + '    '));
       }
     } else {
-      const itemType = items ? (items.type as string || 'any') : 'any';
+      const itemType = items ? (items.type as string) || 'any' : 'any';
       lines.push(`${indent}• ${name}: array of ${itemType}${req}${desc}${dflt}`);
     }
   } else if (type === 'object' && schema.properties) {
@@ -454,12 +456,7 @@ export function buildToolHelpText(registry: ToolRegistry, toolName: string): str
   if (!params.properties) return '';
 
   const requiredSet = new Set(params.required || []);
-  const lines = [
-    `\n\n--- TOOL HELP (${toolName}) ---`,
-    def.description,
-    '',
-    'Parameters:',
-  ];
+  const lines = [`\n\n--- TOOL HELP (${toolName}) ---`, def.description, '', 'Parameters:'];
 
   const exampleArgs: Record<string, unknown> = {};
 
@@ -486,11 +483,7 @@ export function formatFullToolHelp(registry: ToolRegistry, toolName: string): st
 
   const params = def.parameters as unknown as ToolParameterSchema;
 
-  const lines = [
-    `## ${def.name}`,
-    def.description,
-    '',
-  ];
+  const lines = [`## ${def.name}`, def.description, ''];
 
   if (!params?.properties || Object.keys(params.properties).length === 0) {
     lines.push('No parameters required.');
@@ -501,8 +494,8 @@ export function formatFullToolHelp(registry: ToolRegistry, toolName: string): st
   }
 
   const requiredSet = new Set(params.required || []);
-  const requiredNames = Object.keys(params.properties).filter(n => requiredSet.has(n));
-  const optionalNames = Object.keys(params.properties).filter(n => !requiredSet.has(n));
+  const requiredNames = Object.keys(params.properties).filter((n) => requiredSet.has(n));
+  const optionalNames = Object.keys(params.properties).filter((n) => !requiredSet.has(n));
 
   // Required parameters first
   if (requiredNames.length > 0) {
@@ -535,7 +528,9 @@ export function formatFullToolHelp(registry: ToolRegistry, toolName: string): st
   const toolLimit = TOOL_MAX_LIMITS[toolName];
   if (toolLimit) {
     lines.push('');
-    lines.push(`Note: "${toolLimit.paramName}" parameter is capped at max ${toolLimit.maxValue} (default: ${toolLimit.defaultValue}).`);
+    lines.push(
+      `Note: "${toolLimit.paramName}" parameter is capped at max ${toolLimit.maxValue} (default: ${toolLimit.defaultValue}).`
+    );
   }
 
   return lines.join('\n');
@@ -548,14 +543,14 @@ export function formatFullToolHelp(registry: ToolRegistry, toolName: string): st
 export function validateRequiredParams(
   registry: ToolRegistry,
   toolName: string,
-  args: Record<string, unknown>,
+  args: Record<string, unknown>
 ): string | null {
   const def = registry.getDefinition(toolName);
   if (!def?.parameters) return null;
   const required = def.parameters.required as string[] | undefined;
   if (!required || required.length === 0) return null;
 
-  const missing = required.filter(p => args[p] === undefined || args[p] === null);
+  const missing = required.filter((p) => args[p] === undefined || args[p] === null);
   if (missing.length === 0) return null;
 
   return `Missing required parameter(s): ${missing.join(', ')}`;

@@ -23,12 +23,7 @@ export class ChannelsRepository extends BaseRepository {
    * This keeps the channels table in sync with in-memory channel state
    * and satisfies the FK constraint on channel_messages.
    */
-  async upsert(data: {
-    id: string;
-    type: string;
-    name: string;
-    status: string;
-  }): Promise<void> {
+  async upsert(data: { id: string; type: string; name: string; status: string }): Promise<void> {
     await this.execute(
       `INSERT INTO channels (id, type, name, status)
        VALUES ($1, $2, $3, $4)
@@ -42,17 +37,14 @@ export class ChannelsRepository extends BaseRepository {
   }
 
   async updateStatus(id: string, status: string): Promise<void> {
-    await this.execute(
-      `UPDATE channels SET status = $1, last_activity_at = NOW() WHERE id = $2`,
-      [status, id]
-    );
+    await this.execute(`UPDATE channels SET status = $1, last_activity_at = NOW() WHERE id = $2`, [
+      status,
+      id,
+    ]);
   }
 
   async updateLastActivity(id: string): Promise<void> {
-    await this.execute(
-      `UPDATE channels SET last_activity_at = NOW() WHERE id = $1`,
-      [id]
-    );
+    await this.execute(`UPDATE channels SET last_activity_at = NOW() WHERE id = $1`, [id]);
   }
 }
 

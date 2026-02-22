@@ -6,11 +6,7 @@
  */
 
 import { createInterface } from 'node:readline';
-import {
-  initializeAdapter,
-  settingsRepo,
-  getDatabasePath,
-} from '@ownpilot/gateway';
+import { initializeAdapter, settingsRepo, getDatabasePath } from '@ownpilot/gateway';
 
 // Database key prefixes
 const API_KEY_PREFIX = 'api_key:';
@@ -71,14 +67,25 @@ async function readLine(prompt: string): Promise<string> {
 
     let settled = false;
     rl.on('error', (err) => {
-      if (!settled) { settled = true; rl.close(); reject(err); }
+      if (!settled) {
+        settled = true;
+        rl.close();
+        reject(err);
+      }
     });
     rl.on('close', () => {
-      if (!settled) { settled = true; resolve(''); }
+      if (!settled) {
+        settled = true;
+        resolve('');
+      }
     });
 
     rl.question(prompt, (answer) => {
-      if (!settled) { settled = true; rl.close(); resolve(answer.trim()); }
+      if (!settled) {
+        settled = true;
+        rl.close();
+        resolve(answer.trim());
+      }
     });
   });
 }
@@ -101,7 +108,7 @@ function parseKey(key: string): { dbKey: string; isApiKey: boolean; isSensitive:
 
   // Direct key (e.g., default_ai_provider)
   if (OTHER_KEYS.includes(key as OtherKey)) {
-    const isSensitive = SENSITIVE_KEYS.includes(key as typeof SENSITIVE_KEYS[number]);
+    const isSensitive = SENSITIVE_KEYS.includes(key as (typeof SENSITIVE_KEYS)[number]);
     return { dbKey: key, isApiKey: false, isSensitive };
   }
 
@@ -159,9 +166,10 @@ export async function configGet(options: ConfigGetOptions): Promise<void> {
   if (value) {
     // Mask sensitive values
     if (isSensitive) {
-      const masked = value.length > 12
-        ? value.substring(0, 8) + '...' + value.substring(value.length - 4)
-        : '********';
+      const masked =
+        value.length > 12
+          ? value.substring(0, 8) + '...' + value.substring(value.length - 4)
+          : '********';
       console.log(`${key}: ${masked}`);
     } else {
       console.log(`${key}: ${value}`);
@@ -219,7 +227,13 @@ export async function configList(): Promise<void> {
   // Group settings by category
   const aiSettings = ['default_ai_provider', 'default_ai_model'] as const;
   const channelSettings = ['telegram_bot_token'] as const;
-  const gatewaySettings = ['gateway_api_keys', 'gateway_jwt_secret', 'gateway_auth_type', 'gateway_rate_limit_max', 'gateway_rate_limit_window_ms'] as const;
+  const gatewaySettings = [
+    'gateway_api_keys',
+    'gateway_jwt_secret',
+    'gateway_auth_type',
+    'gateway_rate_limit_max',
+    'gateway_rate_limit_window_ms',
+  ] as const;
 
   // List AI settings
   console.log('\nAI Settings:');
@@ -233,9 +247,10 @@ export async function configList(): Promise<void> {
   for (const key of channelSettings) {
     const value = await settingsRepo.get<string>(key);
     if (value) {
-      const masked = value.length > 12
-        ? value.substring(0, 8) + '...' + value.substring(value.length - 4)
-        : '********';
+      const masked =
+        value.length > 12
+          ? value.substring(0, 8) + '...' + value.substring(value.length - 4)
+          : '********';
       console.log(`   ${key}: ${masked}`);
     } else {
       console.log(`   ${key}: (not set)`);
@@ -249,9 +264,10 @@ export async function configList(): Promise<void> {
     if (value) {
       // Mask sensitive values
       if (key.includes('secret') || key === 'gateway_api_keys') {
-        const masked = value.length > 12
-          ? value.substring(0, 8) + '...' + value.substring(value.length - 4)
-          : '********';
+        const masked =
+          value.length > 12
+            ? value.substring(0, 8) + '...' + value.substring(value.length - 4)
+            : '********';
         console.log(`   ${key}: ${masked}`);
       } else {
         console.log(`   ${key}: ${value}`);

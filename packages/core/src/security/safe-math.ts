@@ -6,7 +6,8 @@
  * No code execution surface — no eval, no Function constructor.
  */
 
-type Token = { type: 'number'; value: number }
+type Token =
+  | { type: 'number'; value: number }
   | { type: 'op'; value: string }
   | { type: 'paren'; value: '(' | ')' }
   | { type: 'comma'; value: ',' }
@@ -49,14 +50,21 @@ function tokenize(expr: string): Token[] {
     const ch = expr[i]!;
 
     // Skip whitespace
-    if (/\s/.test(ch)) { i++; continue; }
+    if (/\s/.test(ch)) {
+      i++;
+      continue;
+    }
 
     // Numbers (including decimals)
     if (/[\d.]/.test(ch)) {
       let num = '';
       while (i < expr.length && /[\d.eE]/.test(expr[i]!)) {
         // Handle scientific notation: 1e5, 1E-3
-        if ((expr[i] === 'e' || expr[i] === 'E') && i + 1 < expr.length && /[\d+\-]/.test(expr[i + 1]!)) {
+        if (
+          (expr[i] === 'e' || expr[i] === 'E') &&
+          i + 1 < expr.length &&
+          /[\d+\-]/.test(expr[i + 1]!)
+        ) {
           num += expr[i]!;
           i++;
           if (expr[i] === '+' || expr[i] === '-') {
@@ -159,7 +167,10 @@ class Parser {
 
   private expr(): number {
     let left = this.term();
-    while (this.peek()?.type === 'op' && (this.peek()!.value === '+' || this.peek()!.value === '-')) {
+    while (
+      this.peek()?.type === 'op' &&
+      (this.peek()!.value === '+' || this.peek()!.value === '-')
+    ) {
       const op = this.eat().value;
       const right = this.term();
       left = op === '+' ? left + right : left - right;
@@ -169,7 +180,10 @@ class Parser {
 
   private term(): number {
     let left = this.unary();
-    while (this.peek()?.type === 'op' && (this.peek()!.value === '*' || this.peek()!.value === '/' || this.peek()!.value === '%')) {
+    while (
+      this.peek()?.type === 'op' &&
+      (this.peek()!.value === '*' || this.peek()!.value === '/' || this.peek()!.value === '%')
+    ) {
       const op = this.eat().value;
       const right = this.unary();
       if (op === '*') left = left * right;

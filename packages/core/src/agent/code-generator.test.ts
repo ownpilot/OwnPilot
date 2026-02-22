@@ -9,8 +9,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 // Mocks - vi.hoisted ensures these are available when vi.mock factories run
 // ---------------------------------------------------------------------------
 
-const { mockCreateSandbox, mockValidateCode, mockCreatePluginId, mockSandboxExecutor } =
-  vi.hoisted(() => {
+const { mockCreateSandbox, mockValidateCode, mockCreatePluginId, mockSandboxExecutor } = vi.hoisted(
+  () => {
     const mockSandboxExecutor = {
       execute: vi.fn(),
     };
@@ -22,7 +22,8 @@ const { mockCreateSandbox, mockValidateCode, mockCreatePluginId, mockSandboxExec
     const mockCreatePluginId = vi.fn((id: string) => id);
 
     return { mockCreateSandbox, mockValidateCode, mockCreatePluginId, mockSandboxExecutor };
-  });
+  }
+);
 
 vi.mock('../sandbox/executor.js', () => ({
   createSandbox: mockCreateSandbox,
@@ -37,11 +38,7 @@ vi.mock('../types/branded.js', () => ({
 }));
 
 // Import after mocks are declared
-import {
-  CodeGenerator,
-  createCodeGenerator,
-  executeCodeSnippet,
-} from './code-generator.js';
+import { CodeGenerator, createCodeGenerator, executeCodeSnippet } from './code-generator.js';
 import type {
   CodeLanguage,
   CodeGenerationRequest,
@@ -487,7 +484,15 @@ describe('CodeGenerator', () => {
 
     it('should return failure for non-executable languages', async () => {
       const generator = new CodeGenerator();
-      const languages: CodeLanguage[] = ['python', 'shell', 'sql', 'html', 'css', 'json', 'markdown'];
+      const languages: CodeLanguage[] = [
+        'python',
+        'shell',
+        'sql',
+        'html',
+        'css',
+        'json',
+        'markdown',
+      ];
 
       for (const lang of languages) {
         const result = await generator.execute('some code', lang);

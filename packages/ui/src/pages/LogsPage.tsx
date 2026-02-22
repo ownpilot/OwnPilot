@@ -5,11 +5,6 @@ import { LoadingSpinner } from '../components/LoadingSpinner';
 import { debugApi } from '../api';
 import type { DebugInfo, DebugLogEntry, LogDetail, RequestLog, LogStats } from '../api';
 
-
-
-
-
-
 type FilterType = 'all' | 'chat' | 'completion' | 'embedding' | 'tool' | 'agent' | 'other';
 type ErrorFilter = 'all' | 'errors' | 'success';
 type TabType = 'requests' | 'debug';
@@ -86,7 +81,13 @@ export function LogsPage() {
   };
 
   const clearOldLogs = async (olderThanDays: number) => {
-    if (!await confirm({ message: `Delete logs older than ${olderThanDays} days?`, variant: 'danger' })) return;
+    if (
+      !(await confirm({
+        message: `Delete logs older than ${olderThanDays} days?`,
+        variant: 'danger',
+      }))
+    )
+      return;
 
     try {
       await debugApi.deleteLogs({ olderThanDays });
@@ -99,7 +100,13 @@ export function LogsPage() {
   };
 
   const clearAllLogs = async () => {
-    if (!await confirm({ message: 'Delete ALL request logs? This cannot be undone.', variant: 'danger' })) return;
+    if (
+      !(await confirm({
+        message: 'Delete ALL request logs? This cannot be undone.',
+        variant: 'danger',
+      }))
+    )
+      return;
 
     try {
       await debugApi.deleteLogs({ all: true });
@@ -112,7 +119,7 @@ export function LogsPage() {
   };
 
   const clearDebugLogs = async () => {
-    if (!await confirm({ message: 'Clear all debug logs?', variant: 'danger' })) return;
+    if (!(await confirm({ message: 'Clear all debug logs?', variant: 'danger' }))) return;
     try {
       await debugApi.clear();
       toast.success('Debug logs cleared');
@@ -203,18 +210,32 @@ export function LogsPage() {
     }
   };
 
-  const filteredDebugEntries = useMemo(() => debugInfo?.entries.filter(entry => {
-    if (debugFilter === 'all') return true;
-    return entry.type === debugFilter;
-  }) || [], [debugInfo, debugFilter]);
+  const filteredDebugEntries = useMemo(
+    () =>
+      debugInfo?.entries.filter((entry) => {
+        if (debugFilter === 'all') return true;
+        return entry.type === debugFilter;
+      }) || [],
+    [debugInfo, debugFilter]
+  );
 
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
         <div className="flex items-center gap-3">
-          <svg className="w-6 h-6 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          <svg
+            className="w-6 h-6 text-indigo-500"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+            />
           </svg>
           <h1 className="text-xl font-semibold text-gray-900 dark:text-white">Logs</h1>
         </div>
@@ -264,7 +285,10 @@ export function LogsPage() {
                 Clear All
               </button>
               <button
-                onClick={() => { fetchLogs(); fetchStats(); }}
+                onClick={() => {
+                  fetchLogs();
+                  fetchStats();
+                }}
                 className="px-3 py-1.5 text-sm bg-indigo-500 text-white hover:bg-indigo-600 rounded-lg transition-colors"
               >
                 Refresh
@@ -389,7 +413,9 @@ export function LogsPage() {
           {/* Request Logs Content */}
           <div className="flex-1 overflow-hidden flex">
             {/* Logs List */}
-            <div className={`flex-1 overflow-auto ${selectedLog ? 'hidden md:block md:w-1/2' : ''}`}>
+            <div
+              className={`flex-1 overflow-auto ${selectedLog ? 'hidden md:block md:w-1/2' : ''}`}
+            >
               {isLoading ? (
                 <div className="py-12">
                   <LoadingSpinner size="sm" message="Loading logs..." />
@@ -413,10 +439,14 @@ export function LogsPage() {
                       }`}
                     >
                       <div className="flex items-center gap-3">
-                        <span className={`px-2 py-0.5 text-xs font-medium rounded ${getTypeColor(log.type)}`}>
+                        <span
+                          className={`px-2 py-0.5 text-xs font-medium rounded ${getTypeColor(log.type)}`}
+                        >
                           {log.type}
                         </span>
-                        <span className={`px-2 py-0.5 text-xs font-medium rounded ${getStatusColor(log.statusCode, !!log.error)}`}>
+                        <span
+                          className={`px-2 py-0.5 text-xs font-medium rounded ${getStatusColor(log.statusCode, !!log.error)}`}
+                        >
                           {log.error ? 'Error' : log.statusCode || 200}
                         </span>
                         {log.provider && (
@@ -433,17 +463,13 @@ export function LogsPage() {
                       <div className="mt-1 flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400">
                         <span>{formatDate(log.createdAt)}</span>
                         <span>{formatDuration(log.durationMs)}</span>
-                        {log.inputTokens !== null && (
-                          <span>↑{formatTokens(log.inputTokens)}</span>
-                        )}
+                        {log.inputTokens !== null && <span>↑{formatTokens(log.inputTokens)}</span>}
                         {log.outputTokens !== null && (
                           <span>↓{formatTokens(log.outputTokens)}</span>
                         )}
                       </div>
                       {log.error && (
-                        <div className="mt-1 text-xs text-red-500 truncate">
-                          {log.error}
-                        </div>
+                        <div className="mt-1 text-xs text-red-500 truncate">{log.error}</div>
                       )}
                     </button>
                   ))}
@@ -461,7 +487,12 @@ export function LogsPage() {
                     className="p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded"
                   >
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M6 18L18 6M6 6l12 12"
+                      />
                     </svg>
                   </button>
                 </div>
@@ -469,45 +500,79 @@ export function LogsPage() {
                 <div className="p-4 space-y-4">
                   {/* Basic Info */}
                   <div className="bg-white dark:bg-gray-800 rounded-lg p-4 space-y-2">
-                    <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">Basic Info</h4>
+                    <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Basic Info
+                    </h4>
                     <div className="grid grid-cols-2 gap-2 text-sm">
                       <div className="text-gray-500 dark:text-gray-400">ID</div>
-                      <div className="text-gray-900 dark:text-white font-mono text-xs">{selectedLog.id}</div>
+                      <div className="text-gray-900 dark:text-white font-mono text-xs">
+                        {selectedLog.id}
+                      </div>
                       <div className="text-gray-500 dark:text-gray-400">Type</div>
-                      <div><span className={`px-2 py-0.5 text-xs font-medium rounded ${getTypeColor(selectedLog.type)}`}>{selectedLog.type}</span></div>
+                      <div>
+                        <span
+                          className={`px-2 py-0.5 text-xs font-medium rounded ${getTypeColor(selectedLog.type)}`}
+                        >
+                          {selectedLog.type}
+                        </span>
+                      </div>
                       <div className="text-gray-500 dark:text-gray-400">Status</div>
-                      <div><span className={`px-2 py-0.5 text-xs font-medium rounded ${getStatusColor(selectedLog.statusCode, !!selectedLog.error)}`}>{selectedLog.error ? 'Error' : selectedLog.statusCode || 200}</span></div>
+                      <div>
+                        <span
+                          className={`px-2 py-0.5 text-xs font-medium rounded ${getStatusColor(selectedLog.statusCode, !!selectedLog.error)}`}
+                        >
+                          {selectedLog.error ? 'Error' : selectedLog.statusCode || 200}
+                        </span>
+                      </div>
                       <div className="text-gray-500 dark:text-gray-400">Provider</div>
-                      <div className="text-gray-900 dark:text-white">{selectedLog.provider || '-'}</div>
+                      <div className="text-gray-900 dark:text-white">
+                        {selectedLog.provider || '-'}
+                      </div>
                       <div className="text-gray-500 dark:text-gray-400">Model</div>
-                      <div className="text-gray-900 dark:text-white text-xs">{selectedLog.model || '-'}</div>
+                      <div className="text-gray-900 dark:text-white text-xs">
+                        {selectedLog.model || '-'}
+                      </div>
                       <div className="text-gray-500 dark:text-gray-400">Endpoint</div>
-                      <div className="text-gray-900 dark:text-white text-xs">{selectedLog.endpoint || '-'}</div>
+                      <div className="text-gray-900 dark:text-white text-xs">
+                        {selectedLog.endpoint || '-'}
+                      </div>
                       <div className="text-gray-500 dark:text-gray-400">Method</div>
                       <div className="text-gray-900 dark:text-white">{selectedLog.method}</div>
                       <div className="text-gray-500 dark:text-gray-400">Duration</div>
-                      <div className="text-gray-900 dark:text-white">{formatDuration(selectedLog.durationMs)}</div>
+                      <div className="text-gray-900 dark:text-white">
+                        {formatDuration(selectedLog.durationMs)}
+                      </div>
                       <div className="text-gray-500 dark:text-gray-400">Created</div>
-                      <div className="text-gray-900 dark:text-white text-xs">{formatDate(selectedLog.createdAt)}</div>
+                      <div className="text-gray-900 dark:text-white text-xs">
+                        {formatDate(selectedLog.createdAt)}
+                      </div>
                     </div>
                   </div>
 
                   {/* Tokens */}
                   {(selectedLog.inputTokens || selectedLog.outputTokens) && (
                     <div className="bg-white dark:bg-gray-800 rounded-lg p-4 space-y-2">
-                      <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">Token Usage</h4>
+                      <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Token Usage
+                      </h4>
                       <div className="grid grid-cols-3 gap-2 text-sm">
                         <div className="text-center">
                           <div className="text-gray-500 dark:text-gray-400 text-xs">Input</div>
-                          <div className="text-gray-900 dark:text-white font-medium">{formatTokens(selectedLog.inputTokens)}</div>
+                          <div className="text-gray-900 dark:text-white font-medium">
+                            {formatTokens(selectedLog.inputTokens)}
+                          </div>
                         </div>
                         <div className="text-center">
                           <div className="text-gray-500 dark:text-gray-400 text-xs">Output</div>
-                          <div className="text-gray-900 dark:text-white font-medium">{formatTokens(selectedLog.outputTokens)}</div>
+                          <div className="text-gray-900 dark:text-white font-medium">
+                            {formatTokens(selectedLog.outputTokens)}
+                          </div>
                         </div>
                         <div className="text-center">
                           <div className="text-gray-500 dark:text-gray-400 text-xs">Total</div>
-                          <div className="text-gray-900 dark:text-white font-medium">{formatTokens(selectedLog.totalTokens)}</div>
+                          <div className="text-gray-900 dark:text-white font-medium">
+                            {formatTokens(selectedLog.totalTokens)}
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -517,7 +582,9 @@ export function LogsPage() {
                   {selectedLog.error && (
                     <div className="bg-red-50 dark:bg-red-900/20 rounded-lg p-4 space-y-2">
                       <h4 className="text-sm font-medium text-red-700 dark:text-red-400">Error</h4>
-                      <div className="text-sm text-red-600 dark:text-red-300">{selectedLog.error}</div>
+                      <div className="text-sm text-red-600 dark:text-red-300">
+                        {selectedLog.error}
+                      </div>
                       {selectedLog.errorStack && (
                         <pre className="mt-2 p-2 bg-red-100 dark:bg-red-900/40 rounded text-xs overflow-auto max-h-40 text-red-700 dark:text-red-300">
                           {selectedLog.errorStack}
@@ -529,7 +596,9 @@ export function LogsPage() {
                   {/* Request Body */}
                   {selectedLog.requestBody && (
                     <div className="bg-white dark:bg-gray-800 rounded-lg p-4 space-y-2">
-                      <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">Request Body</h4>
+                      <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Request Body
+                      </h4>
                       <pre className="p-2 bg-gray-100 dark:bg-gray-900 rounded text-xs overflow-auto max-h-60 text-gray-700 dark:text-gray-300">
                         {JSON.stringify(selectedLog.requestBody, null, 2)}
                       </pre>
@@ -539,7 +608,9 @@ export function LogsPage() {
                   {/* Response Body */}
                   {selectedLog.responseBody && (
                     <div className="bg-white dark:bg-gray-800 rounded-lg p-4 space-y-2">
-                      <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">Response Body</h4>
+                      <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Response Body
+                      </h4>
                       <pre className="p-2 bg-gray-100 dark:bg-gray-900 rounded text-xs overflow-auto max-h-60 text-gray-700 dark:text-gray-300">
                         {JSON.stringify(selectedLog.responseBody, null, 2)}
                       </pre>
@@ -548,16 +619,24 @@ export function LogsPage() {
 
                   {/* Metadata */}
                   <div className="bg-white dark:bg-gray-800 rounded-lg p-4 space-y-2">
-                    <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">Metadata</h4>
+                    <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Metadata
+                    </h4>
                     <div className="grid grid-cols-2 gap-2 text-sm">
                       <div className="text-gray-500 dark:text-gray-400">Conversation ID</div>
-                      <div className="text-gray-900 dark:text-white font-mono text-xs">{selectedLog.conversationId || '-'}</div>
+                      <div className="text-gray-900 dark:text-white font-mono text-xs">
+                        {selectedLog.conversationId || '-'}
+                      </div>
                       <div className="text-gray-500 dark:text-gray-400">User ID</div>
                       <div className="text-gray-900 dark:text-white">{selectedLog.userId}</div>
                       <div className="text-gray-500 dark:text-gray-400">IP Address</div>
-                      <div className="text-gray-900 dark:text-white">{selectedLog.ipAddress || '-'}</div>
+                      <div className="text-gray-900 dark:text-white">
+                        {selectedLog.ipAddress || '-'}
+                      </div>
                       <div className="text-gray-500 dark:text-gray-400">User Agent</div>
-                      <div className="text-gray-900 dark:text-white text-xs truncate">{selectedLog.userAgent || '-'}</div>
+                      <div className="text-gray-900 dark:text-white text-xs truncate">
+                        {selectedLog.userAgent || '-'}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -604,7 +683,9 @@ export function LogsPage() {
                 </div>
                 <div className="p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
                   <div className="text-xs text-gray-500 dark:text-gray-400">Status</div>
-                  <div className={`text-xl font-bold ${debugInfo.enabled ? 'text-green-600 dark:text-green-400' : 'text-gray-400'}`}>
+                  <div
+                    className={`text-xl font-bold ${debugInfo.enabled ? 'text-green-600 dark:text-green-400' : 'text-gray-400'}`}
+                  >
                     {debugInfo.enabled ? 'ON' : 'OFF'}
                   </div>
                 </div>
@@ -636,7 +717,9 @@ export function LogsPage() {
 
           {/* Debug Logs Content */}
           <div className="flex-1 overflow-hidden flex">
-            <div className={`flex-1 overflow-auto ${selectedDebugEntry ? 'hidden md:block md:w-1/2' : ''}`}>
+            <div
+              className={`flex-1 overflow-auto ${selectedDebugEntry ? 'hidden md:block md:w-1/2' : ''}`}
+            >
               {debugLoading ? (
                 <div className="py-12">
                   <LoadingSpinner size="sm" message="Loading debug logs..." />
@@ -660,7 +743,9 @@ export function LogsPage() {
                     >
                       <div className="flex items-center gap-3">
                         <span className="text-lg">{getDebugTypeIcon(entry.type)}</span>
-                        <span className={`px-2 py-0.5 text-xs font-medium rounded ${getDebugTypeColor(entry.type)}`}>
+                        <span
+                          className={`px-2 py-0.5 text-xs font-medium rounded ${getDebugTypeColor(entry.type)}`}
+                        >
                           {entry.type.replace('_', ' ')}
                         </span>
                         {entry.provider && (
@@ -688,21 +773,25 @@ export function LogsPage() {
                       {/* Tool result specific info */}
                       {entry.type === 'tool_result' && entry.data && (
                         <div className="mt-1 text-sm">
-                          <span className="font-medium text-gray-700 dark:text-gray-300">{entry.data.name}</span>
-                          <span className={`ml-2 text-xs ${entry.data.success ? 'text-green-500' : 'text-red-500'}`}>
+                          <span className="font-medium text-gray-700 dark:text-gray-300">
+                            {entry.data.name}
+                          </span>
+                          <span
+                            className={`ml-2 text-xs ${entry.data.success ? 'text-green-500' : 'text-red-500'}`}
+                          >
                             {entry.data.success ? 'Success' : 'Failed'}
                           </span>
                           {entry.duration && (
-                            <span className="ml-2 text-xs text-gray-500">{formatDuration(entry.duration)}</span>
+                            <span className="ml-2 text-xs text-gray-500">
+                              {formatDuration(entry.duration)}
+                            </span>
                           )}
                         </div>
                       )}
 
                       {/* Error specific info */}
                       {entry.type === 'error' && entry.data && (
-                        <div className="mt-1 text-xs text-red-500 truncate">
-                          {entry.data.error}
-                        </div>
+                        <div className="mt-1 text-xs text-red-500 truncate">{entry.data.error}</div>
                       )}
 
                       <div className="mt-1 flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400">
@@ -730,7 +819,12 @@ export function LogsPage() {
                     className="p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded"
                   >
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M6 18L18 6M6 6l12 12"
+                      />
                     </svg>
                   </button>
                 </div>
@@ -741,25 +835,39 @@ export function LogsPage() {
                     <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">Info</h4>
                     <div className="grid grid-cols-2 gap-2 text-sm">
                       <div className="text-gray-500 dark:text-gray-400">Type</div>
-                      <div><span className={`px-2 py-0.5 text-xs font-medium rounded ${getDebugTypeColor(selectedDebugEntry.type)}`}>{selectedDebugEntry.type}</span></div>
+                      <div>
+                        <span
+                          className={`px-2 py-0.5 text-xs font-medium rounded ${getDebugTypeColor(selectedDebugEntry.type)}`}
+                        >
+                          {selectedDebugEntry.type}
+                        </span>
+                      </div>
                       <div className="text-gray-500 dark:text-gray-400">Timestamp</div>
-                      <div className="text-gray-900 dark:text-white text-xs">{formatDate(selectedDebugEntry.timestamp)}</div>
+                      <div className="text-gray-900 dark:text-white text-xs">
+                        {formatDate(selectedDebugEntry.timestamp)}
+                      </div>
                       {selectedDebugEntry.provider && (
                         <>
                           <div className="text-gray-500 dark:text-gray-400">Provider</div>
-                          <div className="text-gray-900 dark:text-white">{selectedDebugEntry.provider}</div>
+                          <div className="text-gray-900 dark:text-white">
+                            {selectedDebugEntry.provider}
+                          </div>
                         </>
                       )}
                       {selectedDebugEntry.model && (
                         <>
                           <div className="text-gray-500 dark:text-gray-400">Model</div>
-                          <div className="text-gray-900 dark:text-white text-xs">{selectedDebugEntry.model}</div>
+                          <div className="text-gray-900 dark:text-white text-xs">
+                            {selectedDebugEntry.model}
+                          </div>
                         </>
                       )}
                       {selectedDebugEntry.duration && (
                         <>
                           <div className="text-gray-500 dark:text-gray-400">Duration</div>
-                          <div className="text-gray-900 dark:text-white">{formatDuration(selectedDebugEntry.duration)}</div>
+                          <div className="text-gray-900 dark:text-white">
+                            {formatDuration(selectedDebugEntry.duration)}
+                          </div>
                         </>
                       )}
                     </div>
@@ -769,20 +877,32 @@ export function LogsPage() {
                   {selectedDebugEntry.type === 'tool_call' && selectedDebugEntry.data && (
                     <>
                       <div className="bg-emerald-50 dark:bg-emerald-900/20 rounded-lg p-4 space-y-2">
-                        <h4 className="text-sm font-medium text-emerald-700 dark:text-emerald-400">Tool Call</h4>
+                        <h4 className="text-sm font-medium text-emerald-700 dark:text-emerald-400">
+                          Tool Call
+                        </h4>
                         <div className="grid grid-cols-2 gap-2 text-sm">
                           <div className="text-emerald-600 dark:text-emerald-400">Name</div>
-                          <div className="text-emerald-800 dark:text-emerald-200 font-medium">{selectedDebugEntry.data.name}</div>
+                          <div className="text-emerald-800 dark:text-emerald-200 font-medium">
+                            {selectedDebugEntry.data.name}
+                          </div>
                           <div className="text-emerald-600 dark:text-emerald-400">ID</div>
-                          <div className="text-emerald-800 dark:text-emerald-200 font-mono text-xs">{selectedDebugEntry.data.id}</div>
+                          <div className="text-emerald-800 dark:text-emerald-200 font-mono text-xs">
+                            {selectedDebugEntry.data.id}
+                          </div>
                           <div className="text-emerald-600 dark:text-emerald-400">Approved</div>
-                          <div className={`font-medium ${selectedDebugEntry.data.approved ? 'text-green-600' : 'text-red-600'}`}>
+                          <div
+                            className={`font-medium ${selectedDebugEntry.data.approved ? 'text-green-600' : 'text-red-600'}`}
+                          >
                             {selectedDebugEntry.data.approved ? 'Yes' : 'No'}
                           </div>
                           {selectedDebugEntry.data.rejectionReason && (
                             <>
-                              <div className="text-emerald-600 dark:text-emerald-400">Rejection Reason</div>
-                              <div className="text-red-600 dark:text-red-400">{selectedDebugEntry.data.rejectionReason}</div>
+                              <div className="text-emerald-600 dark:text-emerald-400">
+                                Rejection Reason
+                              </div>
+                              <div className="text-red-600 dark:text-red-400">
+                                {selectedDebugEntry.data.rejectionReason}
+                              </div>
                             </>
                           )}
                         </div>
@@ -791,7 +911,9 @@ export function LogsPage() {
                       {/* Arguments */}
                       {selectedDebugEntry.data.arguments && (
                         <div className="bg-white dark:bg-gray-800 rounded-lg p-4 space-y-2">
-                          <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">Arguments (Input)</h4>
+                          <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                            Arguments (Input)
+                          </h4>
                           <pre className="p-2 bg-gray-100 dark:bg-gray-900 rounded text-xs overflow-auto max-h-60 text-gray-700 dark:text-gray-300">
                             {JSON.stringify(selectedDebugEntry.data.arguments, null, 2)}
                           </pre>
@@ -803,28 +925,46 @@ export function LogsPage() {
                   {/* Tool Result Specific */}
                   {selectedDebugEntry.type === 'tool_result' && selectedDebugEntry.data && (
                     <>
-                      <div className={`rounded-lg p-4 space-y-2 ${selectedDebugEntry.data.success ? 'bg-teal-50 dark:bg-teal-900/20' : 'bg-red-50 dark:bg-red-900/20'}`}>
-                        <h4 className={`text-sm font-medium ${selectedDebugEntry.data.success ? 'text-teal-700 dark:text-teal-400' : 'text-red-700 dark:text-red-400'}`}>Tool Result</h4>
+                      <div
+                        className={`rounded-lg p-4 space-y-2 ${selectedDebugEntry.data.success ? 'bg-teal-50 dark:bg-teal-900/20' : 'bg-red-50 dark:bg-red-900/20'}`}
+                      >
+                        <h4
+                          className={`text-sm font-medium ${selectedDebugEntry.data.success ? 'text-teal-700 dark:text-teal-400' : 'text-red-700 dark:text-red-400'}`}
+                        >
+                          Tool Result
+                        </h4>
                         <div className="grid grid-cols-2 gap-2 text-sm">
                           <div className="text-teal-600 dark:text-teal-400">Name</div>
-                          <div className="text-teal-800 dark:text-teal-200 font-medium">{selectedDebugEntry.data.name}</div>
+                          <div className="text-teal-800 dark:text-teal-200 font-medium">
+                            {selectedDebugEntry.data.name}
+                          </div>
                           <div className="text-teal-600 dark:text-teal-400">Tool Call ID</div>
-                          <div className="text-teal-800 dark:text-teal-200 font-mono text-xs">{selectedDebugEntry.data.toolCallId}</div>
+                          <div className="text-teal-800 dark:text-teal-200 font-mono text-xs">
+                            {selectedDebugEntry.data.toolCallId}
+                          </div>
                           <div className="text-teal-600 dark:text-teal-400">Success</div>
-                          <div className={`font-medium ${selectedDebugEntry.data.success ? 'text-green-600' : 'text-red-600'}`}>
+                          <div
+                            className={`font-medium ${selectedDebugEntry.data.success ? 'text-green-600' : 'text-red-600'}`}
+                          >
                             {selectedDebugEntry.data.success ? 'Yes' : 'No'}
                           </div>
                           <div className="text-teal-600 dark:text-teal-400">Duration</div>
-                          <div className="text-teal-800 dark:text-teal-200">{formatDuration(selectedDebugEntry.data.durationMs)}</div>
+                          <div className="text-teal-800 dark:text-teal-200">
+                            {formatDuration(selectedDebugEntry.data.durationMs)}
+                          </div>
                           <div className="text-teal-600 dark:text-teal-400">Result Length</div>
-                          <div className="text-teal-800 dark:text-teal-200">{selectedDebugEntry.data.resultLength} chars</div>
+                          <div className="text-teal-800 dark:text-teal-200">
+                            {selectedDebugEntry.data.resultLength} chars
+                          </div>
                         </div>
                       </div>
 
                       {/* Result Preview */}
                       {selectedDebugEntry.data.resultPreview && (
                         <div className="bg-white dark:bg-gray-800 rounded-lg p-4 space-y-2">
-                          <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">Result (Output)</h4>
+                          <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                            Result (Output)
+                          </h4>
                           <pre className="p-2 bg-gray-100 dark:bg-gray-900 rounded text-xs overflow-auto max-h-60 text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
                             {selectedDebugEntry.data.resultPreview}
                           </pre>
@@ -834,15 +974,20 @@ export function LogsPage() {
                       {/* Error if failed */}
                       {selectedDebugEntry.data.error && (
                         <div className="bg-red-50 dark:bg-red-900/20 rounded-lg p-4 space-y-2">
-                          <h4 className="text-sm font-medium text-red-700 dark:text-red-400">Error</h4>
-                          <div className="text-sm text-red-600 dark:text-red-300">{selectedDebugEntry.data.error}</div>
+                          <h4 className="text-sm font-medium text-red-700 dark:text-red-400">
+                            Error
+                          </h4>
+                          <div className="text-sm text-red-600 dark:text-red-300">
+                            {selectedDebugEntry.data.error}
+                          </div>
                         </div>
                       )}
                     </>
                   )}
 
                   {/* Request/Response Specific */}
-                  {(selectedDebugEntry.type === 'request' || selectedDebugEntry.type === 'response') && (
+                  {(selectedDebugEntry.type === 'request' ||
+                    selectedDebugEntry.type === 'response') && (
                     <div className="bg-white dark:bg-gray-800 rounded-lg p-4 space-y-2">
                       <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">Data</h4>
                       <pre className="p-2 bg-gray-100 dark:bg-gray-900 rounded text-xs overflow-auto max-h-80 text-gray-700 dark:text-gray-300">
@@ -854,15 +999,21 @@ export function LogsPage() {
                   {/* Error Specific */}
                   {selectedDebugEntry.type === 'error' && (
                     <div className="bg-red-50 dark:bg-red-900/20 rounded-lg p-4 space-y-2">
-                      <h4 className="text-sm font-medium text-red-700 dark:text-red-400">Error Details</h4>
-                      <div className="text-sm text-red-600 dark:text-red-300">{selectedDebugEntry.data.error}</div>
+                      <h4 className="text-sm font-medium text-red-700 dark:text-red-400">
+                        Error Details
+                      </h4>
+                      <div className="text-sm text-red-600 dark:text-red-300">
+                        {selectedDebugEntry.data.error}
+                      </div>
                       {selectedDebugEntry.data.stack && (
                         <pre className="mt-2 p-2 bg-red-100 dark:bg-red-900/40 rounded text-xs overflow-auto max-h-40 text-red-700 dark:text-red-300">
                           {selectedDebugEntry.data.stack}
                         </pre>
                       )}
                       {selectedDebugEntry.data.context && (
-                        <div className="text-xs text-red-500 mt-2">Context: {selectedDebugEntry.data.context}</div>
+                        <div className="text-xs text-red-500 mt-2">
+                          Context: {selectedDebugEntry.data.context}
+                        </div>
                       )}
                     </div>
                   )}
@@ -870,24 +1021,34 @@ export function LogsPage() {
                   {/* Retry Specific */}
                   {selectedDebugEntry.type === 'retry' && (
                     <div className="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-4 space-y-2">
-                      <h4 className="text-sm font-medium text-yellow-700 dark:text-yellow-400">Retry Info</h4>
+                      <h4 className="text-sm font-medium text-yellow-700 dark:text-yellow-400">
+                        Retry Info
+                      </h4>
                       <div className="grid grid-cols-2 gap-2 text-sm">
                         <div className="text-yellow-600 dark:text-yellow-400">Attempt</div>
                         <div className="text-yellow-800 dark:text-yellow-200">
                           {selectedDebugEntry.data.attempt} / {selectedDebugEntry.data.maxRetries}
                         </div>
                         <div className="text-yellow-600 dark:text-yellow-400">Delay</div>
-                        <div className="text-yellow-800 dark:text-yellow-200">{formatDuration(selectedDebugEntry.data.delayMs)}</div>
+                        <div className="text-yellow-800 dark:text-yellow-200">
+                          {formatDuration(selectedDebugEntry.data.delayMs)}
+                        </div>
                         <div className="text-yellow-600 dark:text-yellow-400">Error</div>
-                        <div className="text-yellow-800 dark:text-yellow-200">{selectedDebugEntry.data.error}</div>
+                        <div className="text-yellow-800 dark:text-yellow-200">
+                          {selectedDebugEntry.data.error}
+                        </div>
                       </div>
                     </div>
                   )}
 
                   {/* Raw Data (fallback for other types) */}
-                  {!['tool_call', 'tool_result', 'request', 'response', 'error', 'retry'].includes(selectedDebugEntry.type) && (
+                  {!['tool_call', 'tool_result', 'request', 'response', 'error', 'retry'].includes(
+                    selectedDebugEntry.type
+                  ) && (
                     <div className="bg-white dark:bg-gray-800 rounded-lg p-4 space-y-2">
-                      <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">Raw Data</h4>
+                      <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Raw Data
+                      </h4>
                       <pre className="p-2 bg-gray-100 dark:bg-gray-900 rounded text-xs overflow-auto max-h-60 text-gray-700 dark:text-gray-300">
                         {JSON.stringify(selectedDebugEntry.data, null, 2)}
                       </pre>

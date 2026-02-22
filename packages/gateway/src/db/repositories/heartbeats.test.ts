@@ -156,7 +156,7 @@ describe('HeartbeatsRepository', () => {
           scheduleText: 'daily',
           cron: '0 0 * * *',
           taskDescription: 'task',
-        }),
+        })
       ).rejects.toThrow('Failed to create heartbeat');
     });
   });
@@ -242,7 +242,7 @@ describe('HeartbeatsRepository', () => {
       mockAdapter.queryOne.mockResolvedValueOnce(makeRow());
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
       mockAdapter.queryOne.mockResolvedValueOnce(
-        makeRow({ tags: '["a","b"]', metadata: '{"x":1}' }),
+        makeRow({ tags: '["a","b"]', metadata: '{"x":1}' })
       );
 
       await repo.update('hb-1', { tags: ['a', 'b'], metadata: { x: 1 } });
@@ -256,9 +256,7 @@ describe('HeartbeatsRepository', () => {
     it('should build dynamic SET clause for partial updates', async () => {
       mockAdapter.queryOne.mockResolvedValueOnce(makeRow());
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
-      mockAdapter.queryOne.mockResolvedValueOnce(
-        makeRow({ cron: '0 0 * * *', enabled: false }),
-      );
+      mockAdapter.queryOne.mockResolvedValueOnce(makeRow({ cron: '0 0 * * *', enabled: false }));
 
       await repo.update('hb-1', { cron: '0 0 * * *', enabled: false });
 
@@ -447,9 +445,7 @@ describe('HeartbeatsRepository', () => {
 
   describe('JSON parsing', () => {
     it('should parse tags from JSON string', async () => {
-      mockAdapter.queryOne.mockResolvedValueOnce(
-        makeRow({ tags: '["a","b","c"]' }),
-      );
+      mockAdapter.queryOne.mockResolvedValueOnce(makeRow({ tags: '["a","b","c"]' }));
 
       const result = await repo.get('hb-1');
 
@@ -457,9 +453,7 @@ describe('HeartbeatsRepository', () => {
     });
 
     it('should parse metadata from JSON string', async () => {
-      mockAdapter.queryOne.mockResolvedValueOnce(
-        makeRow({ metadata: '{"key":"value","num":42}' }),
-      );
+      mockAdapter.queryOne.mockResolvedValueOnce(makeRow({ metadata: '{"key":"value","num":42}' }));
 
       const result = await repo.get('hb-1');
 
@@ -468,7 +462,7 @@ describe('HeartbeatsRepository', () => {
 
     it('should fallback to defaults for invalid JSON', async () => {
       mockAdapter.queryOne.mockResolvedValueOnce(
-        makeRow({ tags: 'invalid-json', metadata: 'bad' }),
+        makeRow({ tags: 'invalid-json', metadata: 'bad' })
       );
 
       const result = await repo.get('hb-1');
@@ -478,9 +472,7 @@ describe('HeartbeatsRepository', () => {
     });
 
     it('should handle already-parsed JSON (PostgreSQL JSONB)', async () => {
-      mockAdapter.queryOne.mockResolvedValueOnce(
-        makeRow({ tags: ['x', 'y'], metadata: { z: 1 } }),
-      );
+      mockAdapter.queryOne.mockResolvedValueOnce(makeRow({ tags: ['x', 'y'], metadata: { z: 1 } }));
 
       const result = await repo.get('hb-1');
 

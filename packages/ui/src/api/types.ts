@@ -636,7 +636,6 @@ export interface DailyBriefingData {
   };
 }
 
-
 // ---- Model Configs / AI Models ----
 
 export interface SyncApplyResult {
@@ -900,7 +899,14 @@ export interface Memory {
 export interface PlanStep {
   id: string;
   planId: string;
-  type: 'tool_call' | 'llm_decision' | 'user_input' | 'condition' | 'parallel' | 'loop' | 'sub_plan';
+  type:
+    | 'tool_call'
+    | 'llm_decision'
+    | 'user_input'
+    | 'condition'
+    | 'parallel'
+    | 'loop'
+    | 'sub_plan';
   name: string;
   description?: string;
   config: Record<string, unknown>;
@@ -936,7 +942,18 @@ export interface Plan {
   steps?: PlanStep[];
 }
 
-export type PlanEventType = 'started' | 'step_started' | 'step_completed' | 'step_failed' | 'paused' | 'resumed' | 'completed' | 'failed' | 'cancelled' | 'checkpoint' | 'rollback';
+export type PlanEventType =
+  | 'started'
+  | 'step_started'
+  | 'step_completed'
+  | 'step_failed'
+  | 'paused'
+  | 'resumed'
+  | 'completed'
+  | 'failed'
+  | 'cancelled'
+  | 'checkpoint'
+  | 'rollback';
 
 export interface PlanHistoryEntry {
   id: string;
@@ -1087,8 +1104,13 @@ export interface WorkflowForEachNodeData {
   timeoutMs?: number;
 }
 
-export type WorkflowNodeData = WorkflowToolNodeData | WorkflowTriggerNodeData | WorkflowLlmNodeData
-  | WorkflowConditionNodeData | WorkflowCodeNodeData | WorkflowTransformerNodeData
+export type WorkflowNodeData =
+  | WorkflowToolNodeData
+  | WorkflowTriggerNodeData
+  | WorkflowLlmNodeData
+  | WorkflowConditionNodeData
+  | WorkflowCodeNodeData
+  | WorkflowTransformerNodeData
   | WorkflowForEachNodeData;
 
 export interface WorkflowNode {
@@ -1145,8 +1167,15 @@ export interface WorkflowLog {
 }
 
 export interface WorkflowProgressEvent {
-  type: 'node_start' | 'node_complete' | 'node_error' | 'node_retry' | 'done' | 'error'
-    | 'foreach_iteration_start' | 'foreach_iteration_complete';
+  type:
+    | 'node_start'
+    | 'node_complete'
+    | 'node_error'
+    | 'node_retry'
+    | 'done'
+    | 'error'
+    | 'foreach_iteration_start'
+    | 'foreach_iteration_complete';
   nodeId?: string;
   toolName?: string;
   status?: NodeExecutionStatus;

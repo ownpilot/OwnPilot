@@ -47,12 +47,15 @@ describe('TOOL_MAX_LIMITS', () => {
   // -------------------------------------------------------------------------
 
   describe('structure', () => {
-    it.each(allEntries)('entry for "%s" has paramName, maxValue, defaultValue', (_toolName, limit) => {
-      expect(typeof limit.paramName).toBe('string');
-      expect(limit.paramName.length).toBeGreaterThan(0);
-      expect(typeof limit.maxValue).toBe('number');
-      expect(typeof limit.defaultValue).toBe('number');
-    });
+    it.each(allEntries)(
+      'entry for "%s" has paramName, maxValue, defaultValue',
+      (_toolName, limit) => {
+        expect(typeof limit.paramName).toBe('string');
+        expect(limit.paramName.length).toBeGreaterThan(0);
+        expect(typeof limit.maxValue).toBe('number');
+        expect(typeof limit.defaultValue).toBe('number');
+      }
+    );
 
     it.each(allEntries)('entry for "%s" has maxValue > 0', (_toolName, limit) => {
       expect(limit.maxValue).toBeGreaterThan(0);

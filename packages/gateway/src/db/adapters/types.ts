@@ -46,7 +46,10 @@ export interface DatabaseAdapter {
    * Execute a statement (INSERT, UPDATE, DELETE)
    * Returns the number of affected rows
    */
-  execute(sql: string, params?: QueryParams): Promise<{ changes: number; lastInsertRowid?: number | bigint }>;
+  execute(
+    sql: string,
+    params?: QueryParams
+  ): Promise<{ changes: number; lastInsertRowid?: number | bigint }>;
 
   /**
    * Execute multiple statements in a transaction
@@ -140,7 +143,7 @@ export function getDatabaseConfig(): DatabaseConfig {
   if (isProduction && !hasExplicitConfig) {
     log.warn(
       '[Database] WARNING: Running in production without explicit database credentials. ' +
-      'Set DATABASE_URL or POSTGRES_* environment variables.'
+        'Set DATABASE_URL or POSTGRES_* environment variables.'
     );
   }
 
@@ -157,7 +160,9 @@ export function getDatabaseConfig(): DatabaseConfig {
     postgresUser: process.env.POSTGRES_USER || 'ownpilot',
     postgresPassword: process.env.POSTGRES_PASSWORD || 'ownpilot_secret',
     postgresDatabase: process.env.POSTGRES_DB || 'ownpilot',
-    postgresPoolSize: process.env.POSTGRES_POOL_SIZE ? parseInt(process.env.POSTGRES_POOL_SIZE, 10) : 10,
+    postgresPoolSize: process.env.POSTGRES_POOL_SIZE
+      ? parseInt(process.env.POSTGRES_POOL_SIZE, 10)
+      : 10,
     verbose: process.env.DB_VERBOSE === 'true',
   };
 }

@@ -24,7 +24,9 @@ export function buildCorePlugin(): { manifest: PluginManifest; implementation: P
     .id('core')
     .name('OwnPilot Core')
     .version('1.0.0')
-    .description('Built-in core tools: file system, code execution, web fetch, data processing, utilities, and more.')
+    .description(
+      'Built-in core tools: file system, code execution, web fetch, data processing, utilities, and more.'
+    )
     .meta({
       category: 'core',
       capabilities: ['tools'],

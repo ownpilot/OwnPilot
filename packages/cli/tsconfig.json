@@ -9,9 +9,5 @@
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist", "**/*.test.ts"],
-  "references": [
-    { "path": "../core" },
-    { "path": "../gateway" },
-    { "path": "../channels" }
-  ]
+  "references": [{ "path": "../core" }, { "path": "../gateway" }, { "path": "../channels" }]
 }

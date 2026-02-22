@@ -34,7 +34,7 @@ export const UNPREFIXED_META_TOOLS = new Set([
 export function qualifyToolName(
   baseName: string,
   prefix: ToolNamespacePrefix,
-  subId?: string,
+  subId?: string
 ): string {
   if (UNPREFIXED_META_TOOLS.has(baseName)) return baseName;
   return subId ? `${prefix}.${subId}.${baseName}` : `${prefix}.${baseName}`;

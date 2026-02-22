@@ -192,11 +192,7 @@ describe('ChannelPluginBuilder', () => {
     });
 
     it('platform value persists through chaining with other methods', () => {
-      const builder = createChannelPlugin()
-        .id('x')
-        .platform('telegram')
-        .name('X')
-        .version('1.0.0');
+      const builder = createChannelPlugin().id('x').platform('telegram').name('X').version('1.0.0');
       expect(builder.getChannelPlatform()).toBe('telegram');
     });
   });
@@ -388,28 +384,19 @@ describe('ChannelPluginBuilder', () => {
   // -------------------------------------------------------------------------
   describe('build()', () => {
     it('throws when platform is not set (empty string)', () => {
-      const builder = createChannelPlugin()
-        .id('channel.test')
-        .name('Test')
-        .version('1.0.0');
+      const builder = createChannelPlugin().id('channel.test').name('Test').version('1.0.0');
 
       expect(() => builder.build()).toThrow();
     });
 
     it('error message contains "platform"', () => {
-      const builder = createChannelPlugin()
-        .id('channel.test')
-        .name('Test')
-        .version('1.0.0');
+      const builder = createChannelPlugin().id('channel.test').name('Test').version('1.0.0');
 
       expect(() => builder.build()).toThrow(/platform/i);
     });
 
     it('error message references .platform() method', () => {
-      const builder = createChannelPlugin()
-        .id('test')
-        .name('Test')
-        .version('1.0.0');
+      const builder = createChannelPlugin().id('test').name('Test').version('1.0.0');
 
       expect(() => builder.build()).toThrow('.platform()');
     });
@@ -425,9 +412,7 @@ describe('ChannelPluginBuilder', () => {
     });
 
     it('category "channel" overrides previously set category', () => {
-      const result = fullBuilder()
-        .meta({ category: 'utilities' })
-        .build();
+      const result = fullBuilder().meta({ category: 'utilities' }).build();
       // The build() method calls this.meta({ category: 'channel' }) which
       // Object.assign merges, so category ends up as 'channel'.
       expect(result.manifest.category).toBe('channel');
@@ -500,9 +485,7 @@ describe('ChannelPluginBuilder', () => {
       const toolDef = makeToolDef('send_message');
       const toolExec = makeToolExec();
 
-      const result = fullBuilder()
-        .tool(toolDef, toolExec)
-        .build();
+      const result = fullBuilder().tool(toolDef, toolExec).build();
 
       expect(result.implementation.tools).toBeDefined();
       expect(result.implementation.tools.has('send_message')).toBe(true);
@@ -516,29 +499,17 @@ describe('ChannelPluginBuilder', () => {
     it('throws if parent build validation fails (missing id/name/version)', () => {
       // Missing id
       expect(() =>
-        createChannelPlugin()
-          .name('Test')
-          .version('1.0.0')
-          .platform('test')
-          .build()
+        createChannelPlugin().name('Test').version('1.0.0').platform('test').build()
       ).toThrow();
 
       // Missing name
       expect(() =>
-        createChannelPlugin()
-          .id('test')
-          .version('1.0.0')
-          .platform('test')
-          .build()
+        createChannelPlugin().id('test').version('1.0.0').platform('test').build()
       ).toThrow();
 
       // Missing version
       expect(() =>
-        createChannelPlugin()
-          .id('test')
-          .name('Test')
-          .platform('test')
-          .build()
+        createChannelPlugin().id('test').name('Test').platform('test').build()
       ).toThrow();
     });
 
@@ -678,7 +649,9 @@ describe('ChannelPluginBuilder', () => {
     });
 
     it('build result manifest conforms to ChannelPluginManifest shape', () => {
-      const result = fullBuilder().channelApi(() => makeMockChannelApi()).build();
+      const result = fullBuilder()
+        .channelApi(() => makeMockChannelApi())
+        .build();
 
       // ChannelPluginManifest extends PluginManifest with platform field
       expect(result.manifest).toHaveProperty('id');
@@ -725,9 +698,7 @@ describe('ChannelPluginBuilder', () => {
     });
 
     it('description() from parent is available and works', () => {
-      const result = fullBuilder()
-        .description('A test channel plugin')
-        .build();
+      const result = fullBuilder().description('A test channel plugin').build();
 
       expect(result.manifest.description).toBe('A test channel plugin');
     });
@@ -751,11 +722,7 @@ describe('ChannelPluginBuilder', () => {
   describe('edge cases', () => {
     it('platform set to whitespace-only string passes the truthy check', () => {
       // ' ' is truthy in JS, so it should NOT throw
-      const builder = createChannelPlugin()
-        .id('ch.ws')
-        .name('WS')
-        .version('1.0.0')
-        .platform(' ');
+      const builder = createChannelPlugin().id('ch.ws').name('WS').version('1.0.0').platform(' ');
 
       expect(() => builder.build()).not.toThrow();
       expect(builder.build().manifest.platform).toBe(' ');
@@ -803,7 +770,9 @@ describe('ChannelPluginBuilder', () => {
       };
 
       const result = fullBuilder().channelApi(factory).build();
-      expect(() => result.implementation.channelApiFactory!({})).toThrow('Config missing bot_token');
+      expect(() => result.implementation.channelApiFactory!({})).toThrow(
+        'Config missing bot_token'
+      );
     });
 
     it('channelApi set to a factory that returns different implementations', () => {

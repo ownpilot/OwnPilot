@@ -223,7 +223,7 @@ describe('Security Module', () => {
 
         const status = await validateSecurityConfig();
         expect(status.isSecure).toBe(false);
-        expect(status.errors.some(e => e.includes('ALLOW_HOME_DIR_ACCESS'))).toBe(true);
+        expect(status.errors.some((e) => e.includes('ALLOW_HOME_DIR_ACCESS'))).toBe(true);
       });
 
       it('errors when DOCKER_SANDBOX_RELAXED_SECURITY is set', async () => {
@@ -231,7 +231,7 @@ describe('Security Module', () => {
 
         const status = await validateSecurityConfig();
         expect(status.isSecure).toBe(false);
-        expect(status.errors.some(e => e.includes('DOCKER_SANDBOX_RELAXED_SECURITY'))).toBe(true);
+        expect(status.errors.some((e) => e.includes('DOCKER_SANDBOX_RELAXED_SECURITY'))).toBe(true);
       });
 
       it('errors when Docker is not available', async () => {
@@ -239,7 +239,7 @@ describe('Security Module', () => {
 
         const status = await validateSecurityConfig();
         expect(status.isSecure).toBe(false);
-        expect(status.errors.some(e => e.includes('Docker is required'))).toBe(true);
+        expect(status.errors.some((e) => e.includes('Docker is required'))).toBe(true);
       });
 
       it('is secure when Docker is available and no dangerous vars', async () => {
@@ -263,7 +263,7 @@ describe('Security Module', () => {
 
         const status = await validateSecurityConfig();
         expect(status.isSecure).toBe(true); // Not an error in dev
-        expect(status.warnings.some(w => w.includes('ALLOW_HOME_DIR_ACCESS'))).toBe(true);
+        expect(status.warnings.some((w) => w.includes('ALLOW_HOME_DIR_ACCESS'))).toBe(true);
       });
 
       it('warns when Docker not available in docker mode', async () => {
@@ -271,7 +271,7 @@ describe('Security Module', () => {
         mockDocker.mockResolvedValue(false);
 
         const status = await validateSecurityConfig();
-        expect(status.warnings.some(w => w.includes('DISABLED'))).toBe(true);
+        expect(status.warnings.some((w) => w.includes('DISABLED'))).toBe(true);
       });
 
       it('warns when Docker not available in auto mode', async () => {
@@ -279,14 +279,14 @@ describe('Security Module', () => {
         mockDocker.mockResolvedValue(false);
 
         const status = await validateSecurityConfig();
-        expect(status.warnings.some(w => w.includes('LOCAL mode'))).toBe(true);
+        expect(status.warnings.some((w) => w.includes('LOCAL mode'))).toBe(true);
       });
 
       it('warns about local execution mode', async () => {
         mockMode.mockReturnValue('local');
 
         const status = await validateSecurityConfig();
-        expect(status.warnings.some(w => w.includes('EXECUTION_MODE=local'))).toBe(true);
+        expect(status.warnings.some((w) => w.includes('EXECUTION_MODE=local'))).toBe(true);
       });
     });
 
@@ -296,7 +296,7 @@ describe('Security Module', () => {
       process.env.NODE_ENV = 'development';
 
       const status = await validateSecurityConfig();
-      expect(status.errors.some(e => e.includes('Docker is not available'))).toBe(true);
+      expect(status.errors.some((e) => e.includes('Docker is not available'))).toBe(true);
     });
 
     it('adds warning for non-docker mode without Docker', async () => {
@@ -305,7 +305,7 @@ describe('Security Module', () => {
       process.env.NODE_ENV = 'development';
 
       const status = await validateSecurityConfig();
-      expect(status.warnings.some(w => w.includes('Docker not available'))).toBe(true);
+      expect(status.warnings.some((w) => w.includes('Docker not available'))).toBe(true);
     });
   });
 
@@ -429,7 +429,7 @@ describe('Security Module', () => {
       delete process.env.TEMP;
 
       const config = getDefaultSecurityConfig();
-      expect(config.tempDirs.every(d => d.length > 0)).toBe(true);
+      expect(config.tempDirs.every((d) => d.length > 0)).toBe(true);
     });
   });
 

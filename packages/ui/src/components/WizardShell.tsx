@@ -92,11 +92,7 @@ export function WizardShell({
                           : 'bg-bg-tertiary dark:bg-dark-bg-tertiary text-text-muted dark:text-dark-text-muted'
                     }`}
                   >
-                    {idx < currentStep ? (
-                      <Check className="w-4 h-4" />
-                    ) : (
-                      idx + 1
-                    )}
+                    {idx < currentStep ? <Check className="w-4 h-4" /> : idx + 1}
                   </div>
                   <span
                     className={`text-[10px] mt-1 whitespace-nowrap ${
@@ -112,9 +108,7 @@ export function WizardShell({
                 {idx < steps.length - 1 && (
                   <div
                     className={`flex-1 h-0.5 mx-2 mb-4 ${
-                      idx < currentStep
-                        ? 'bg-success'
-                        : 'bg-border dark:bg-dark-border'
+                      idx < currentStep ? 'bg-success' : 'bg-border dark:bg-dark-border'
                     }`}
                   />
                 )}
@@ -157,8 +151,19 @@ export function WizardShell({
               {isProcessing ? (
                 <>
                   <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    />
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                    />
                   </svg>
                   Processing...
                 </>

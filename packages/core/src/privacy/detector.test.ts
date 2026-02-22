@@ -1,9 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import {
-  createDetector,
-  detectPII,
-  hasPII,
-} from './detector.js';
+import { createDetector, detectPII, hasPII } from './detector.js';
 
 describe('PIIDetector', () => {
   describe('email detection', () => {
@@ -191,10 +187,9 @@ describe('PIIDetector', () => {
 
     it('detectCategories filters results', () => {
       const detector = createDetector();
-      const result = detector.detectCategories(
-        'Email: test@example.com SSN: 123-45-6789',
-        ['email']
-      );
+      const result = detector.detectCategories('Email: test@example.com SSN: 123-45-6789', [
+        'email',
+      ]);
       expect(result.matches.every((m) => m.category === 'email')).toBe(true);
     });
 

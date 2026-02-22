@@ -44,7 +44,7 @@ import type {
 // ---------------------------------------------------------------------------
 
 function makeUsage(
-  overrides: Partial<Omit<UsageRecord, 'id' | 'timestamp' | 'cost'>> = {},
+  overrides: Partial<Omit<UsageRecord, 'id' | 'timestamp' | 'cost'>> = {}
 ): Omit<UsageRecord, 'id' | 'timestamp' | 'cost'> {
   return {
     userId: 'user-1',
@@ -70,7 +70,7 @@ describe('MODEL_PRICING', () => {
   });
 
   it('contains all expected providers', () => {
-    const providers = new Set(MODEL_PRICING.map(p => p.provider));
+    const providers = new Set(MODEL_PRICING.map((p) => p.provider));
     expect(providers).toContain('openai');
     expect(providers).toContain('anthropic');
     expect(providers).toContain('google');
@@ -96,14 +96,14 @@ describe('MODEL_PRICING', () => {
   });
 
   it('local model has zero pricing', () => {
-    const local = MODEL_PRICING.find(p => p.provider === 'local');
+    const local = MODEL_PRICING.find((p) => p.provider === 'local');
     expect(local).toBeDefined();
     expect(local!.inputPricePerMillion).toBe(0);
     expect(local!.outputPricePerMillion).toBe(0);
   });
 
   it('contains specific expected models', () => {
-    const modelIds = MODEL_PRICING.map(p => p.modelId);
+    const modelIds = MODEL_PRICING.map((p) => p.modelId);
     expect(modelIds).toContain('gpt-5');
     expect(modelIds).toContain('gpt-4o');
     expect(modelIds).toContain('claude-4.5-opus');
@@ -115,7 +115,7 @@ describe('MODEL_PRICING', () => {
   });
 
   it('non-local models have positive pricing', () => {
-    const nonLocal = MODEL_PRICING.filter(p => p.provider !== 'local');
+    const nonLocal = MODEL_PRICING.filter((p) => p.provider !== 'local');
     for (const entry of nonLocal) {
       expect(entry.inputPricePerMillion).toBeGreaterThan(0);
       expect(entry.outputPricePerMillion).toBeGreaterThan(0);
@@ -445,10 +445,12 @@ describe('UsageTracker', () => {
 
     it('calculates cost correctly', async () => {
       // gpt-4o: input $2.50/M, output $10.00/M
-      const record = await tracker.record(makeUsage({
-        inputTokens: 1_000_000,
-        outputTokens: 1_000_000,
-      }));
+      const record = await tracker.record(
+        makeUsage({
+          inputTokens: 1_000_000,
+          outputTokens: 1_000_000,
+        })
+      );
       expect(record.cost).toBeCloseTo(12.5, 4);
     });
 
@@ -469,12 +471,14 @@ describe('UsageTracker', () => {
     });
 
     it('preserves optional fields', async () => {
-      const record = await tracker.record(makeUsage({
-        sessionId: 'session-1',
-        cached: true,
-        error: 'timeout',
-        metadata: { foo: 'bar' },
-      }));
+      const record = await tracker.record(
+        makeUsage({
+          sessionId: 'session-1',
+          cached: true,
+          error: 'timeout',
+          metadata: { foo: 'bar' },
+        })
+      );
       expect(record.sessionId).toBe('session-1');
       expect(record.cached).toBe(true);
       expect(record.error).toBe('timeout');
@@ -511,10 +515,7 @@ describe('UsageTracker', () => {
       const inRange = await tracker.getUsage(pastDate, futureDate);
       expect(inRange.length).toBe(1);
 
-      const outOfRange = await tracker.getUsage(
-        new Date('2020-01-01'),
-        new Date('2020-12-31'),
-      );
+      const outOfRange = await tracker.getUsage(new Date('2020-01-01'), new Date('2020-12-31'));
       expect(outOfRange.length).toBe(0);
     });
 
@@ -547,7 +548,9 @@ describe('UsageTracker', () => {
 
     it('combines multiple filters', async () => {
       await tracker.record(makeUsage({ userId: 'alice', provider: 'openai', model: 'gpt-4o' }));
-      await tracker.record(makeUsage({ userId: 'alice', provider: 'anthropic', model: 'claude-4.5-sonnet' }));
+      await tracker.record(
+        makeUsage({ userId: 'alice', provider: 'anthropic', model: 'claude-4.5-sonnet' })
+      );
       await tracker.record(makeUsage({ userId: 'bob', provider: 'openai', model: 'gpt-4o' }));
 
       const records = await tracker.getUsage(new Date(0), new Date(), {
@@ -606,9 +609,13 @@ describe('UsageTracker', () => {
     it('builds byProvider breakdown', async () => {
       await tracker.record(makeUsage({ provider: 'openai', model: 'gpt-4o', latencyMs: 100 }));
       await tracker.record(makeUsage({ provider: 'openai', model: 'gpt-4o', latencyMs: 200 }));
-      await tracker.record(makeUsage({
-        provider: 'anthropic', model: 'claude-4.5-sonnet', latencyMs: 300,
-      }));
+      await tracker.record(
+        makeUsage({
+          provider: 'anthropic',
+          model: 'claude-4.5-sonnet',
+          latencyMs: 300,
+        })
+      );
 
       const summary = await tracker.getSummary(new Date(0));
 
@@ -809,7 +816,9 @@ describe('UsageTracker', () => {
       const lines = csv.split('\n');
 
       expect(lines.length).toBe(2); // header + 1 row
-      expect(lines[0]).toBe('id,timestamp,userId,provider,model,inputTokens,outputTokens,cost,latencyMs,requestType');
+      expect(lines[0]).toBe(
+        'id,timestamp,userId,provider,model,inputTokens,outputTokens,cost,latencyMs,requestType'
+      );
     });
 
     it('CSV has correct column count', async () => {
@@ -824,15 +833,17 @@ describe('UsageTracker', () => {
     });
 
     it('CSV contains correct data', async () => {
-      await tracker.record(makeUsage({
-        userId: 'alice',
-        provider: 'anthropic',
-        model: 'claude-4.5-sonnet',
-        inputTokens: 2000,
-        outputTokens: 1000,
-        latencyMs: 150,
-        requestType: 'completion',
-      }));
+      await tracker.record(
+        makeUsage({
+          userId: 'alice',
+          provider: 'anthropic',
+          model: 'claude-4.5-sonnet',
+          inputTokens: 2000,
+          outputTokens: 1000,
+          latencyMs: 150,
+          requestType: 'completion',
+        })
+      );
 
       const csv = await tracker.exportUsage(new Date(0), new Date(), 'csv');
       const lines = csv.split('\n');
@@ -848,10 +859,7 @@ describe('UsageTracker', () => {
     });
 
     it('exports empty result when no records in range', async () => {
-      const result = await tracker.exportUsage(
-        new Date('2020-01-01'),
-        new Date('2020-12-31'),
-      );
+      const result = await tracker.exportUsage(new Date('2020-01-01'), new Date('2020-12-31'));
       expect(JSON.parse(result)).toEqual([]);
     });
 
@@ -982,7 +990,7 @@ describe('BudgetManager', () => {
       await tracker.record(makeUsage());
       const status = await manager.getStatus();
 
-      const dailyAlerts = status.alerts.filter(a => a.type === 'daily');
+      const dailyAlerts = status.alerts.filter((a) => a.type === 'daily');
       expect(dailyAlerts.length).toBe(3); // 50%, 75%, 100%
     });
 
@@ -995,7 +1003,7 @@ describe('BudgetManager', () => {
       await tracker.record(makeUsage());
       const status = await manager.getStatus();
 
-      const weeklyAlerts = status.alerts.filter(a => a.type === 'weekly');
+      const weeklyAlerts = status.alerts.filter((a) => a.type === 'weekly');
       expect(weeklyAlerts.length).toBe(2);
     });
 
@@ -1008,7 +1016,7 @@ describe('BudgetManager', () => {
       await tracker.record(makeUsage());
       const status = await manager.getStatus();
 
-      const monthlyAlerts = status.alerts.filter(a => a.type === 'monthly');
+      const monthlyAlerts = status.alerts.filter((a) => a.type === 'monthly');
       expect(monthlyAlerts.length).toBe(2);
     });
 
@@ -1174,7 +1182,7 @@ describe('BudgetManager', () => {
       await tracker.record(makeUsage());
 
       // checkBudget is async, give it a tick
-      await new Promise(r => setTimeout(r, 50));
+      await new Promise((r) => setTimeout(r, 50));
 
       expect(alertSpy).toHaveBeenCalled();
       const alert = alertSpy.mock.calls[0]![0];
@@ -1193,14 +1201,16 @@ describe('BudgetManager', () => {
 
       // Record usage twice
       await tracker.record(makeUsage());
-      await new Promise(r => setTimeout(r, 50));
+      await new Promise((r) => setTimeout(r, 50));
 
       await tracker.record(makeUsage());
-      await new Promise(r => setTimeout(r, 50));
+      await new Promise((r) => setTimeout(r, 50));
 
       // daily_100 should only be emitted once
       const dailyAlerts = alertSpy.mock.calls.filter(
-        (call: unknown[]) => (call[0] as { type: string; threshold: number }).type === 'daily' && (call[0] as { type: string; threshold: number }).threshold === 100,
+        (call: unknown[]) =>
+          (call[0] as { type: string; threshold: number }).type === 'daily' &&
+          (call[0] as { type: string; threshold: number }).threshold === 100
       );
       expect(dailyAlerts.length).toBe(1);
     });
@@ -1229,15 +1239,17 @@ describe('generateRecommendations', () => {
     // gpt-4-turbo: input $10/M, output $30/M
     // To get cost > 1: need about 50K input + 25K output
     for (let i = 0; i < 20; i++) {
-      await tracker.record(makeUsage({
-        model: 'gpt-4-turbo',
-        inputTokens: 10_000,
-        outputTokens: 5_000,
-      }));
+      await tracker.record(
+        makeUsage({
+          model: 'gpt-4-turbo',
+          inputTokens: 10_000,
+          outputTokens: 5_000,
+        })
+      );
     }
 
     const recs = await generateRecommendations(tracker);
-    const modelSwitchRecs = recs.filter(r => r.type === 'model_switch');
+    const modelSwitchRecs = recs.filter((r) => r.type === 'model_switch');
     expect(modelSwitchRecs.length).toBeGreaterThan(0);
     expect(modelSwitchRecs[0]!.estimatedSavings).toBeGreaterThan(0);
     expect(modelSwitchRecs[0]!.currentCost).toBeGreaterThan(0);
@@ -1247,14 +1259,16 @@ describe('generateRecommendations', () => {
   it('returns prompt_optimization when avg input tokens > 2000', async () => {
     // Record usage with high input tokens
     for (let i = 0; i < 5; i++) {
-      await tracker.record(makeUsage({
-        inputTokens: 5000,
-        outputTokens: 500,
-      }));
+      await tracker.record(
+        makeUsage({
+          inputTokens: 5000,
+          outputTokens: 500,
+        })
+      );
     }
 
     const recs = await generateRecommendations(tracker);
-    const promptRecs = recs.filter(r => r.type === 'prompt_optimization');
+    const promptRecs = recs.filter((r) => r.type === 'prompt_optimization');
     expect(promptRecs.length).toBe(1);
     expect(promptRecs[0]!.title).toContain('prompt length');
     expect(promptRecs[0]!.estimatedSavings).toBeGreaterThan(0);
@@ -1262,25 +1276,29 @@ describe('generateRecommendations', () => {
 
   it('does not return prompt_optimization when avg input <= 2000', async () => {
     for (let i = 0; i < 5; i++) {
-      await tracker.record(makeUsage({
-        inputTokens: 1000,
-        outputTokens: 500,
-      }));
+      await tracker.record(
+        makeUsage({
+          inputTokens: 1000,
+          outputTokens: 500,
+        })
+      );
     }
 
     const recs = await generateRecommendations(tracker);
-    const promptRecs = recs.filter(r => r.type === 'prompt_optimization');
+    const promptRecs = recs.filter((r) => r.type === 'prompt_optimization');
     expect(promptRecs.length).toBe(0);
   });
 
   it('sorts recommendations by estimatedSavings descending', async () => {
     // Generate enough usage for both model_switch and prompt_optimization
     for (let i = 0; i < 20; i++) {
-      await tracker.record(makeUsage({
-        model: 'gpt-4-turbo',
-        inputTokens: 10_000,
-        outputTokens: 5_000,
-      }));
+      await tracker.record(
+        makeUsage({
+          model: 'gpt-4-turbo',
+          inputTokens: 10_000,
+          outputTokens: 5_000,
+        })
+      );
     }
 
     const recs = await generateRecommendations(tracker);
@@ -1295,30 +1313,34 @@ describe('generateRecommendations', () => {
 
     const recs = await generateRecommendations(tracker, 1);
     // Should still find the record recorded "now"
-    const promptRecs = recs.filter(r => r.type === 'prompt_optimization');
+    const promptRecs = recs.filter((r) => r.type === 'prompt_optimization');
     expect(promptRecs.length).toBe(1);
   });
 
   it('does not recommend model_switch when cost <= $1', async () => {
     // Single cheap request
-    await tracker.record(makeUsage({
-      model: 'gpt-4o',
-      inputTokens: 100,
-      outputTokens: 50,
-    }));
+    await tracker.record(
+      makeUsage({
+        model: 'gpt-4o',
+        inputTokens: 100,
+        outputTokens: 50,
+      })
+    );
 
     const recs = await generateRecommendations(tracker);
-    const modelSwitchRecs = recs.filter(r => r.type === 'model_switch');
+    const modelSwitchRecs = recs.filter((r) => r.type === 'model_switch');
     expect(modelSwitchRecs.length).toBe(0);
   });
 
   it('recommendation has correct fields', async () => {
     for (let i = 0; i < 20; i++) {
-      await tracker.record(makeUsage({
-        model: 'gpt-4-turbo',
-        inputTokens: 10_000,
-        outputTokens: 5_000,
-      }));
+      await tracker.record(
+        makeUsage({
+          model: 'gpt-4-turbo',
+          inputTokens: 10_000,
+          outputTokens: 5_000,
+        })
+      );
     }
 
     const recs = await generateRecommendations(tracker);
@@ -1335,15 +1357,17 @@ describe('generateRecommendations', () => {
 
   it('does not recommend local models as alternatives', async () => {
     for (let i = 0; i < 20; i++) {
-      await tracker.record(makeUsage({
-        model: 'gpt-4-turbo',
-        inputTokens: 10_000,
-        outputTokens: 5_000,
-      }));
+      await tracker.record(
+        makeUsage({
+          model: 'gpt-4-turbo',
+          inputTokens: 10_000,
+          outputTokens: 5_000,
+        })
+      );
     }
 
     const recs = await generateRecommendations(tracker);
-    const modelSwitchRecs = recs.filter(r => r.type === 'model_switch');
+    const modelSwitchRecs = recs.filter((r) => r.type === 'model_switch');
     for (const rec of modelSwitchRecs) {
       expect(rec.title).not.toContain('Local Model');
     }
@@ -1428,7 +1452,7 @@ describe('UsageTracker + BudgetManager integration', () => {
       dailyLimit: 1.0,
       weeklyLimit: 5.0,
       monthlyLimit: 20.0,
-      perRequestLimit: 0.50,
+      perRequestLimit: 0.5,
       alertThresholds: [50, 90, 100],
       limitAction: 'block',
     });
@@ -1445,10 +1469,12 @@ describe('UsageTracker + BudgetManager integration', () => {
 
     // Record a lot of usage to exceed daily limit ($1)
     // gpt-4o: 100K input = $0.25, 100K output = $1.0 → $1.25 per record
-    await tracker.record(makeUsage({
-      inputTokens: 100_000,
-      outputTokens: 100_000,
-    }));
+    await tracker.record(
+      makeUsage({
+        inputTokens: 100_000,
+        outputTokens: 100_000,
+      })
+    );
 
     // Now should be blocked for daily
     const after = await manager.canSpend(0.01);
@@ -1470,13 +1496,15 @@ describe('UsageTracker + BudgetManager integration', () => {
     manager.on('alert', alertSpy);
 
     // Exceed daily limit
-    await tracker.record(makeUsage({
-      inputTokens: 100_000,
-      outputTokens: 100_000,
-    }));
+    await tracker.record(
+      makeUsage({
+        inputTokens: 100_000,
+        outputTokens: 100_000,
+      })
+    );
 
     // Wait for async checkBudget
-    await new Promise(r => setTimeout(r, 100));
+    await new Promise((r) => setTimeout(r, 100));
 
     expect(alertSpy).toHaveBeenCalled();
   });
@@ -1524,7 +1552,7 @@ describe('edge cases', () => {
 
     expect(results.length).toBe(50);
     // All should have unique IDs
-    const ids = new Set(results.map(r => r.id));
+    const ids = new Set(results.map((r) => r.id));
     expect(ids.size).toBe(50);
   });
 

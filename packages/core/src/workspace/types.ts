@@ -22,7 +22,13 @@ export type WorkspaceStatus = 'active' | 'suspended' | 'deleted';
 /**
  * Execution status
  */
-export type ExecutionStatus = 'pending' | 'running' | 'completed' | 'failed' | 'timeout' | 'cancelled';
+export type ExecutionStatus =
+  | 'pending'
+  | 'running'
+  | 'completed'
+  | 'failed'
+  | 'timeout'
+  | 'cancelled';
 
 /**
  * Supported execution languages

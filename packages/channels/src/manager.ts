@@ -67,8 +67,11 @@ export class ChannelManager {
   private setupMessageHandler(handler: ChannelHandler): void {
     handler.onMessage(async (message: IncomingMessage) => {
       const MAX_MESSAGE_LENGTH = 32_000;
-      const displayText = message.text.length > 100 ? message.text.slice(0, 100) + '...' : message.text;
-      log.info(`[${handler.type}] Message from ${message.username ?? message.userId}: ${displayText}`);
+      const displayText =
+        message.text.length > 100 ? message.text.slice(0, 100) + '...' : message.text;
+      log.info(
+        `[${handler.type}] Message from ${message.username ?? message.userId}: ${displayText}`
+      );
 
       if (!message.text.trim()) {
         return; // Ignore empty messages

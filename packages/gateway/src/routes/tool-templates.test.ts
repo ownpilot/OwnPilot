@@ -69,7 +69,7 @@ describe('tool-templates', () => {
         expect(template.parameters).toBeDefined();
         expect(template.code).toBeTruthy();
         expect(typeof template.code).toBe('string');
-      },
+      }
     );
   });
 
@@ -78,7 +78,7 @@ describe('tool-templates', () => {
       'template "%s" has parameters.type = "object"',
       (_id, template) => {
         expect(template.parameters.type).toBe('object');
-      },
+      }
     );
 
     it.each(TOOL_TEMPLATES.map((t) => [t.id, t] as const))(
@@ -87,13 +87,13 @@ describe('tool-templates', () => {
         expect(typeof template.parameters.properties).toBe('object');
         expect(template.parameters.properties).not.toBeNull();
         expect(Object.keys(template.parameters.properties).length).toBeGreaterThan(0);
-      },
+      }
     );
 
     it.each(
       TOOL_TEMPLATES.filter((t) => t.parameters.required && t.parameters.required.length > 0).map(
-        (t) => [t.id, t] as const,
-      ),
+        (t) => [t.id, t] as const
+      )
     )('template "%s" required fields are listed in properties', (_id, template) => {
       const propertyKeys = Object.keys(template.parameters.properties);
       for (const requiredField of template.parameters.required!) {
@@ -107,7 +107,7 @@ describe('tool-templates', () => {
       'template "%s" has non-empty code',
       (_id, template) => {
         expect(template.code.trim().length).toBeGreaterThan(0);
-      },
+      }
     );
   });
 
@@ -116,7 +116,7 @@ describe('tool-templates', () => {
       'template "%s" has permissions as an array',
       (_id, template) => {
         expect(Array.isArray(template.permissions)).toBe(true);
-      },
+      }
     );
 
     it.each(TOOL_TEMPLATES.map((t) => [t.id, t] as const))(
@@ -125,7 +125,7 @@ describe('tool-templates', () => {
         for (const perm of template.permissions) {
           expect(typeof perm).toBe('string');
         }
-      },
+      }
     );
   });
 
@@ -134,7 +134,7 @@ describe('tool-templates', () => {
       'template "%s" has a known category',
       (_id, template) => {
         expect(KNOWN_CATEGORIES).toContain(template.category);
-      },
+      }
     );
 
     it('covers multiple categories', () => {
@@ -145,7 +145,7 @@ describe('tool-templates', () => {
 
   describe('requiredApiKeys', () => {
     const templatesWithApiKeys = TOOL_TEMPLATES.filter(
-      (t) => t.requiredApiKeys && t.requiredApiKeys.length > 0,
+      (t) => t.requiredApiKeys && t.requiredApiKeys.length > 0
     );
 
     it('at least one template has requiredApiKeys', () => {
@@ -172,7 +172,7 @@ describe('tool-templates', () => {
             expect(typeof key.docsUrl).toBe('string');
           }
         }
-      },
+      }
     );
   });
 

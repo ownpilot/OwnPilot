@@ -86,12 +86,17 @@ function LlmNodeComponent({ data, selected }: NodeProps<LlmNodeType>) {
             {(data.label as string) || 'LLM'}
           </span>
           {StatusIcon && (
-            <StatusIcon className={`w-4 h-4 shrink-0 ${
-              status === 'success' ? 'text-success' :
-              status === 'error' ? 'text-error' :
-              status === 'running' ? 'text-warning' :
-              'text-text-muted'
-            }`} />
+            <StatusIcon
+              className={`w-4 h-4 shrink-0 ${
+                status === 'success'
+                  ? 'text-success'
+                  : status === 'error'
+                    ? 'text-error'
+                    : status === 'running'
+                      ? 'text-warning'
+                      : 'text-text-muted'
+              }`}
+            />
           )}
         </div>
 

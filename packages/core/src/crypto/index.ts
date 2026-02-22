@@ -33,11 +33,7 @@ export {
 } from './keychain.js';
 
 // Secure Vault
-export {
-  SecureVault,
-  createVault,
-  type VaultConfig,
-} from './vault.js';
+export { SecureVault, createVault, type VaultConfig } from './vault.js';
 
 // Credential Store (password-based, for VPS deployments)
 export {

@@ -13,7 +13,8 @@ import { tryImport } from './module-resolver.js';
 export const readPdfTool: ToolDefinition = {
   name: 'read_pdf',
   brief: 'Extract text from a PDF file',
-  description: 'Extract text content from a PDF file. Supports multi-page PDFs with page selection.',
+  description:
+    'Extract text content from a PDF file. Supports multi-page PDFs with page selection.',
   parameters: {
     type: 'object',
     properties: {
@@ -38,7 +39,10 @@ export const readPdfTool: ToolDefinition = {
   },
 };
 
-export const readPdfExecutor: ToolExecutor = async (params, _context): Promise<ToolExecutionResult> => {
+export const readPdfExecutor: ToolExecutor = async (
+  params,
+  _context
+): Promise<ToolExecutionResult> => {
   const path = params.path as string;
   const pages = (params.pages as string) || 'all';
   const extractTables = params.extractTables === true;
@@ -63,7 +67,7 @@ export const readPdfExecutor: ToolExecutor = async (params, _context): Promise<T
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let pdfParse: any = null; // Optional dependency - dynamically imported
     try {
-      pdfParse = (await tryImport('pdf-parse') as Record<string, unknown>).default;
+      pdfParse = ((await tryImport('pdf-parse')) as Record<string, unknown>).default;
     } catch {
       // pdf-parse not installed, use basic extraction
     }
@@ -124,7 +128,7 @@ function extractTablesFromText(text: string): Array<{ rows: string[][] }> {
 
   for (const line of lines) {
     // Detect table-like patterns (multiple whitespace-separated columns)
-    const columns = line.split(/\s{2,}/).filter(c => c.trim());
+    const columns = line.split(/\s{2,}/).filter((c) => c.trim());
 
     if (columns.length >= 2) {
       if (!inTable) {
@@ -195,7 +199,10 @@ export const createPdfTool: ToolDefinition = {
   },
 };
 
-export const createPdfExecutor: ToolExecutor = async (params, _context): Promise<ToolExecutionResult> => {
+export const createPdfExecutor: ToolExecutor = async (
+  params,
+  _context
+): Promise<ToolExecutionResult> => {
   const outputPath = params.path as string;
   const content = params.content as string;
   const format = (params.format as string) || 'text';
@@ -215,7 +222,7 @@ export const createPdfExecutor: ToolExecutor = async (params, _context): Promise
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let PDFDocument: any = null; // Optional dependency - dynamically imported
     try {
-      PDFDocument = (await tryImport('pdfkit') as Record<string, unknown>).default;
+      PDFDocument = ((await tryImport('pdfkit')) as Record<string, unknown>).default;
     } catch {
       // pdfkit not installed
     }
@@ -335,7 +342,8 @@ function convertMarkdownToText(markdown: string): string {
 export const pdfInfoTool: ToolDefinition = {
   name: 'get_pdf_info',
   brief: 'Get PDF page count, title, author metadata',
-  description: 'Get metadata and information about a PDF file without reading its full content. Returns file size, page count, title, author, and other document properties.',
+  description:
+    'Get metadata and information about a PDF file without reading its full content. Returns file size, page count, title, author, and other document properties.',
   parameters: {
     type: 'object',
     properties: {
@@ -348,7 +356,10 @@ export const pdfInfoTool: ToolDefinition = {
   },
 };
 
-export const pdfInfoExecutor: ToolExecutor = async (params, _context): Promise<ToolExecutionResult> => {
+export const pdfInfoExecutor: ToolExecutor = async (
+  params,
+  _context
+): Promise<ToolExecutionResult> => {
   const pdfPath = params.path as string;
 
   try {
@@ -363,7 +374,7 @@ export const pdfInfoExecutor: ToolExecutor = async (params, _context): Promise<T
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let pdfParse: any = null; // Optional dependency - dynamically imported
     try {
-      pdfParse = (await tryImport('pdf-parse') as Record<string, unknown>).default;
+      pdfParse = ((await tryImport('pdf-parse')) as Record<string, unknown>).default;
     } catch {
       // pdf-parse not installed
     }

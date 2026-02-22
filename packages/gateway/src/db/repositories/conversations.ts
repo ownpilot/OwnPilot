@@ -43,12 +43,7 @@ export class ConversationsRepository extends BaseRepository {
     await this.execute(
       `INSERT INTO conversations (id, agent_name, system_prompt, metadata)
        VALUES ($1, $2, $3, $4)`,
-      [
-        data.id,
-        data.agentName,
-        data.systemPrompt ?? null,
-        JSON.stringify(data.metadata ?? {}),
-      ]
+      [data.id, data.agentName, data.systemPrompt ?? null, JSON.stringify(data.metadata ?? {})]
     );
 
     const result = await this.getById(data.id);
@@ -57,10 +52,9 @@ export class ConversationsRepository extends BaseRepository {
   }
 
   async getById(id: string): Promise<Conversation | null> {
-    const row = await this.queryOne<ConversationRow>(
-      `SELECT * FROM conversations WHERE id = $1`,
-      [id]
-    );
+    const row = await this.queryOne<ConversationRow>(`SELECT * FROM conversations WHERE id = $1`, [
+      id,
+    ]);
     return row ? rowToConversation(row) : null;
   }
 
@@ -86,10 +80,7 @@ export class ConversationsRepository extends BaseRepository {
   }
 
   async updateTimestamp(id: string): Promise<void> {
-    await this.execute(
-      `UPDATE conversations SET updated_at = NOW() WHERE id = $1`,
-      [id]
-    );
+    await this.execute(`UPDATE conversations SET updated_at = NOW() WHERE id = $1`, [id]);
   }
 
   async updateSystemPrompt(id: string, systemPrompt: string): Promise<void> {
@@ -100,10 +91,7 @@ export class ConversationsRepository extends BaseRepository {
   }
 
   async delete(id: string): Promise<boolean> {
-    const result = await this.execute(
-      `DELETE FROM conversations WHERE id = $1`,
-      [id]
-    );
+    const result = await this.execute(`DELETE FROM conversations WHERE id = $1`, [id]);
     return result.changes > 0;
   }
 

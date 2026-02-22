@@ -148,7 +148,7 @@ describe('MCP Routes', () => {
       const res = await app.request('/mcp/serve/info');
 
       expect(res.status).toBe(200);
-      const json = await res.json() as { success: boolean; data: Record<string, unknown> };
+      const json = (await res.json()) as { success: boolean; data: Record<string, unknown> };
       expect(json.success).toBe(true);
       expect(json.data.server).toBeDefined();
       expect((json.data.server as Record<string, unknown>).name).toBe('OwnPilot');
@@ -179,9 +179,17 @@ describe('MCP Routes', () => {
       ]);
 
       const res = await app.request('/mcp/serve/info');
-      const json = await res.json() as {
+      const json = (await res.json()) as {
         data: {
-          tools: { count: number; items: Array<{ name: string; qualifiedName: string; description: string; category: string }> };
+          tools: {
+            count: number;
+            items: Array<{
+              name: string;
+              qualifiedName: string;
+              description: string;
+              category: string;
+            }>;
+          };
         };
       };
 
@@ -197,8 +205,10 @@ describe('MCP Routes', () => {
 
     it('returns all four config snippets', async () => {
       const res = await app.request('/mcp/serve/info');
-      const json = await res.json() as {
-        data: { configSnippets: Record<string, { label: string; description: string; config: unknown }> };
+      const json = (await res.json()) as {
+        data: {
+          configSnippets: Record<string, { label: string; description: string; config: unknown }>;
+        };
       };
 
       const snippets = json.data.configSnippets;
@@ -220,7 +230,7 @@ describe('MCP Routes', () => {
         },
       });
 
-      const json = await res.json() as { data: { server: { endpoint: string } } };
+      const json = (await res.json()) as { data: { server: { endpoint: string } } };
       expect(json.data.server.endpoint).toBe('https://my.domain.com/api/v1/mcp/serve');
     });
 
@@ -232,7 +242,7 @@ describe('MCP Routes', () => {
       const res = await app.request('/mcp/serve/info');
 
       expect(res.status).toBe(500);
-      const json = await res.json() as { error: { code: string; message: string } };
+      const json = (await res.json()) as { error: { code: string; message: string } };
       expect(json.error.code).toBe('INTERNAL_ERROR');
       expect(json.error.message).toBe('Registry unavailable');
     });
@@ -245,14 +255,12 @@ describe('MCP Routes', () => {
   describe('GET /mcp', () => {
     it('returns enriched server list with live connection status', async () => {
       mockRepo.getAll.mockResolvedValue([sampleServer, sampleSseServer]);
-      mockMcpClientService.isConnected.mockImplementation(
-        (name: string) => name === 'test-server',
-      );
+      mockMcpClientService.isConnected.mockImplementation((name: string) => name === 'test-server');
 
       const res = await app.request('/mcp');
 
       expect(res.status).toBe(200);
-      const json = await res.json() as {
+      const json = (await res.json()) as {
         data: {
           servers: Array<{ id: string; name: string; connected: boolean }>;
           count: number;
@@ -261,10 +269,10 @@ describe('MCP Routes', () => {
       expect(json.data.count).toBe(2);
       expect(json.data.servers).toHaveLength(2);
 
-      const first = json.data.servers.find(s => s.id === 'mcp-1')!;
+      const first = json.data.servers.find((s) => s.id === 'mcp-1')!;
       expect(first.connected).toBe(true);
 
-      const second = json.data.servers.find(s => s.id === 'mcp-2')!;
+      const second = json.data.servers.find((s) => s.id === 'mcp-2')!;
       expect(second.connected).toBe(false);
     });
 
@@ -274,7 +282,7 @@ describe('MCP Routes', () => {
       const res = await app.request('/mcp');
 
       expect(res.status).toBe(200);
-      const json = await res.json() as { data: { servers: unknown[]; count: number } };
+      const json = (await res.json()) as { data: { servers: unknown[]; count: number } };
       expect(json.data.servers).toHaveLength(0);
       expect(json.data.count).toBe(0);
     });
@@ -285,7 +293,7 @@ describe('MCP Routes', () => {
       const res = await app.request('/mcp');
 
       expect(res.status).toBe(500);
-      const json = await res.json() as { error: { code: string } };
+      const json = (await res.json()) as { error: { code: string } };
       expect(json.error.code).toBe('INTERNAL_ERROR');
     });
   });
@@ -312,7 +320,7 @@ describe('MCP Routes', () => {
       });
 
       expect(res.status).toBe(201);
-      const json = await res.json() as { data: typeof sampleServer };
+      const json = (await res.json()) as { data: typeof sampleServer };
       expect(json.data.id).toBe('mcp-1');
       expect(json.data.name).toBe('test-server');
       expect(mockRepo.create).toHaveBeenCalledWith(
@@ -321,7 +329,7 @@ describe('MCP Routes', () => {
           displayName: 'Test Server',
           transport: 'stdio',
           command: '/usr/bin/node',
-        }),
+        })
       );
     });
 
@@ -341,13 +349,13 @@ describe('MCP Routes', () => {
       });
 
       expect(res.status).toBe(201);
-      const json = await res.json() as { data: typeof sampleSseServer };
+      const json = (await res.json()) as { data: typeof sampleSseServer };
       expect(json.data.transport).toBe('sse');
       expect(mockRepo.create).toHaveBeenCalledWith(
         expect.objectContaining({
           transport: 'sse',
           url: 'http://localhost:3001/sse',
-        }),
+        })
       );
     });
 
@@ -387,7 +395,7 @@ describe('MCP Routes', () => {
       });
 
       expect(res.status).toBe(400);
-      const json = await res.json() as { error: { code: string; message: string } };
+      const json = (await res.json()) as { error: { code: string; message: string } };
       expect(json.error.code).toBe('VALIDATION_ERROR');
       expect(json.error.message).toContain('Name is required');
     });
@@ -405,7 +413,7 @@ describe('MCP Routes', () => {
       });
 
       expect(res.status).toBe(400);
-      const json = await res.json() as { error: { code: string } };
+      const json = (await res.json()) as { error: { code: string } };
       expect(json.error.code).toBe('VALIDATION_ERROR');
     });
 
@@ -421,7 +429,7 @@ describe('MCP Routes', () => {
       });
 
       expect(res.status).toBe(400);
-      const json = await res.json() as { error: { code: string; message: string } };
+      const json = (await res.json()) as { error: { code: string; message: string } };
       expect(json.error.code).toBe('VALIDATION_ERROR');
       expect(json.error.message).toContain('Display name is required');
     });
@@ -437,7 +445,7 @@ describe('MCP Routes', () => {
       });
 
       expect(res.status).toBe(400);
-      const json = await res.json() as { error: { code: string; message: string } };
+      const json = (await res.json()) as { error: { code: string; message: string } };
       expect(json.error.code).toBe('VALIDATION_ERROR');
       expect(json.error.message).toContain('Transport type is required');
     });
@@ -454,7 +462,7 @@ describe('MCP Routes', () => {
       });
 
       expect(res.status).toBe(400);
-      const json = await res.json() as { error: { code: string; message: string } };
+      const json = (await res.json()) as { error: { code: string; message: string } };
       expect(json.error.code).toBe('VALIDATION_ERROR');
       expect(json.error.message).toContain('Command is required for stdio transport');
     });
@@ -471,7 +479,7 @@ describe('MCP Routes', () => {
       });
 
       expect(res.status).toBe(400);
-      const json = await res.json() as { error: { code: string; message: string } };
+      const json = (await res.json()) as { error: { code: string; message: string } };
       expect(json.error.code).toBe('VALIDATION_ERROR');
       expect(json.error.message).toContain('URL is required for network transport');
     });
@@ -488,7 +496,7 @@ describe('MCP Routes', () => {
       });
 
       expect(res.status).toBe(400);
-      const json = await res.json() as { error: { code: string; message: string } };
+      const json = (await res.json()) as { error: { code: string; message: string } };
       expect(json.error.code).toBe('VALIDATION_ERROR');
       expect(json.error.message).toContain('URL is required for network transport');
     });
@@ -508,7 +516,7 @@ describe('MCP Routes', () => {
       });
 
       expect(res.status).toBe(409);
-      const json = await res.json() as { error: { code: string; message: string } };
+      const json = (await res.json()) as { error: { code: string; message: string } };
       expect(json.error.code).toBe('ALREADY_EXISTS');
       expect(json.error.message).toContain('"test-server"');
       expect(json.error.message).toContain('already exists');
@@ -530,7 +538,7 @@ describe('MCP Routes', () => {
       });
 
       expect(res.status).toBe(500);
-      const json = await res.json() as { error: { code: string } };
+      const json = (await res.json()) as { error: { code: string } };
       expect(json.error.code).toBe('INTERNAL_ERROR');
     });
   });
@@ -547,7 +555,7 @@ describe('MCP Routes', () => {
       const res = await app.request('/mcp/mcp-1');
 
       expect(res.status).toBe(200);
-      const json = await res.json() as {
+      const json = (await res.json()) as {
         data: typeof sampleServer & { connected: boolean };
       };
       expect(json.data.id).toBe('mcp-1');
@@ -562,7 +570,7 @@ describe('MCP Routes', () => {
 
       const res = await app.request('/mcp/mcp-1');
 
-      const json = await res.json() as { data: { connected: boolean } };
+      const json = (await res.json()) as { data: { connected: boolean } };
       expect(json.data.connected).toBe(false);
     });
 
@@ -572,7 +580,7 @@ describe('MCP Routes', () => {
       const res = await app.request('/mcp/nonexistent');
 
       expect(res.status).toBe(404);
-      const json = await res.json() as { error: { code: string; message: string } };
+      const json = (await res.json()) as { error: { code: string; message: string } };
       expect(json.error.code).toBe('NOT_FOUND');
       expect(json.error.message).toContain('MCP server not found');
     });
@@ -583,7 +591,7 @@ describe('MCP Routes', () => {
       const res = await app.request('/mcp/mcp-1');
 
       expect(res.status).toBe(500);
-      const json = await res.json() as { error: { code: string } };
+      const json = (await res.json()) as { error: { code: string } };
       expect(json.error.code).toBe('INTERNAL_ERROR');
     });
   });
@@ -606,11 +614,11 @@ describe('MCP Routes', () => {
       });
 
       expect(res.status).toBe(200);
-      const json = await res.json() as { data: typeof updated };
+      const json = (await res.json()) as { data: typeof updated };
       expect(json.data.displayName).toBe('Updated Name');
       expect(mockRepo.update).toHaveBeenCalledWith(
         'mcp-1',
-        expect.objectContaining({ displayName: 'Updated Name' }),
+        expect.objectContaining({ displayName: 'Updated Name' })
       );
     });
 
@@ -675,7 +683,7 @@ describe('MCP Routes', () => {
       });
 
       expect(res.status).toBe(404);
-      const json = await res.json() as { error: { code: string; message: string } };
+      const json = (await res.json()) as { error: { code: string; message: string } };
       expect(json.error.code).toBe('NOT_FOUND');
       expect(json.error.message).toContain('MCP server not found');
     });
@@ -692,7 +700,7 @@ describe('MCP Routes', () => {
       });
 
       expect(res.status).toBe(500);
-      const json = await res.json() as { error: { code: string } };
+      const json = (await res.json()) as { error: { code: string } };
       expect(json.error.code).toBe('INTERNAL_ERROR');
     });
   });
@@ -710,7 +718,7 @@ describe('MCP Routes', () => {
       const res = await app.request('/mcp/mcp-1', { method: 'DELETE' });
 
       expect(res.status).toBe(200);
-      const json = await res.json() as { data: { deleted: boolean } };
+      const json = (await res.json()) as { data: { deleted: boolean } };
       expect(json.data.deleted).toBe(true);
       expect(mockRepo.delete).toHaveBeenCalledWith('mcp-1');
     });
@@ -759,7 +767,7 @@ describe('MCP Routes', () => {
       const res = await app.request('/mcp/nonexistent', { method: 'DELETE' });
 
       expect(res.status).toBe(404);
-      const json = await res.json() as { error: { code: string; message: string } };
+      const json = (await res.json()) as { error: { code: string; message: string } };
       expect(json.error.code).toBe('NOT_FOUND');
       expect(json.error.message).toContain('MCP server not found');
     });
@@ -772,7 +780,7 @@ describe('MCP Routes', () => {
       const res = await app.request('/mcp/mcp-1', { method: 'DELETE' });
 
       expect(res.status).toBe(500);
-      const json = await res.json() as { error: { code: string } };
+      const json = (await res.json()) as { error: { code: string } };
       expect(json.error.code).toBe('INTERNAL_ERROR');
     });
   });
@@ -793,7 +801,9 @@ describe('MCP Routes', () => {
       const res = await app.request('/mcp/mcp-1/connect', { method: 'POST' });
 
       expect(res.status).toBe(200);
-      const json = await res.json() as { data: { connected: boolean; tools: unknown[]; toolCount: number } };
+      const json = (await res.json()) as {
+        data: { connected: boolean; tools: unknown[]; toolCount: number };
+      };
       expect(json.data.connected).toBe(true);
       expect(json.data.tools).toHaveLength(2);
       expect(json.data.toolCount).toBe(2);
@@ -821,7 +831,7 @@ describe('MCP Routes', () => {
       const res = await app.request('/mcp/nonexistent/connect', { method: 'POST' });
 
       expect(res.status).toBe(404);
-      const json = await res.json() as { error: { code: string; message: string } };
+      const json = (await res.json()) as { error: { code: string; message: string } };
       expect(json.error.code).toBe('NOT_FOUND');
       expect(json.error.message).toContain('MCP server not found');
     });
@@ -833,7 +843,7 @@ describe('MCP Routes', () => {
       const res = await app.request('/mcp/mcp-1/connect', { method: 'POST' });
 
       expect(res.status).toBe(500);
-      const json = await res.json() as { error: { code: string; message: string } };
+      const json = (await res.json()) as { error: { code: string; message: string } };
       expect(json.error.code).toBe('INTERNAL_ERROR');
       expect(json.error.message).toContain('Connection refused');
     });
@@ -845,7 +855,7 @@ describe('MCP Routes', () => {
       const res = await app.request('/mcp/mcp-1/connect', { method: 'POST' });
 
       expect(res.status).toBe(500);
-      const json = await res.json() as { error: { message: string } };
+      const json = (await res.json()) as { error: { message: string } };
       expect(json.error.message).toBe('Failed to connect');
     });
   });
@@ -862,7 +872,7 @@ describe('MCP Routes', () => {
       const res = await app.request('/mcp/mcp-1/disconnect', { method: 'POST' });
 
       expect(res.status).toBe(200);
-      const json = await res.json() as { data: { disconnected: boolean } };
+      const json = (await res.json()) as { data: { disconnected: boolean } };
       expect(json.data.disconnected).toBe(true);
       expect(mockMcpClientService.disconnect).toHaveBeenCalledWith('test-server');
     });
@@ -888,7 +898,7 @@ describe('MCP Routes', () => {
       const res = await app.request('/mcp/nonexistent/disconnect', { method: 'POST' });
 
       expect(res.status).toBe(404);
-      const json = await res.json() as { error: { code: string; message: string } };
+      const json = (await res.json()) as { error: { code: string; message: string } };
       expect(json.error.code).toBe('NOT_FOUND');
       expect(json.error.message).toContain('MCP server not found');
     });
@@ -900,7 +910,7 @@ describe('MCP Routes', () => {
       const res = await app.request('/mcp/mcp-1/disconnect', { method: 'POST' });
 
       expect(res.status).toBe(500);
-      const json = await res.json() as { error: { code: string } };
+      const json = (await res.json()) as { error: { code: string } };
       expect(json.error.code).toBe('INTERNAL_ERROR');
     });
   });
@@ -922,7 +932,7 @@ describe('MCP Routes', () => {
       const res = await app.request('/mcp/mcp-1/tools');
 
       expect(res.status).toBe(200);
-      const json = await res.json() as { data: { tools: unknown[]; count: number } };
+      const json = (await res.json()) as { data: { tools: unknown[]; count: number } };
       expect(json.data.tools).toHaveLength(2);
       expect(json.data.count).toBe(2);
       expect(mockMcpClientService.getServerTools).toHaveBeenCalledWith('test-server');
@@ -936,7 +946,7 @@ describe('MCP Routes', () => {
       const res = await app.request('/mcp/mcp-1/tools');
 
       expect(res.status).toBe(200);
-      const json = await res.json() as { data: { tools: unknown[]; count: number } };
+      const json = (await res.json()) as { data: { tools: unknown[]; count: number } };
       expect(json.data.tools).toHaveLength(0);
       expect(json.data.count).toBe(0);
     });
@@ -947,7 +957,7 @@ describe('MCP Routes', () => {
       const res = await app.request('/mcp/nonexistent/tools');
 
       expect(res.status).toBe(404);
-      const json = await res.json() as { error: { code: string; message: string } };
+      const json = (await res.json()) as { error: { code: string; message: string } };
       expect(json.error.code).toBe('NOT_FOUND');
       expect(json.error.message).toContain('MCP server not found');
     });
@@ -959,7 +969,7 @@ describe('MCP Routes', () => {
       const res = await app.request('/mcp/mcp-1/tools');
 
       expect(res.status).toBe(400);
-      const json = await res.json() as { error: { code: string; message: string } };
+      const json = (await res.json()) as { error: { code: string; message: string } };
       expect(json.error.code).toBe('BAD_REQUEST');
       expect(json.error.message).toContain('not connected');
       expect(json.error.message).toContain('Connect first');
@@ -971,7 +981,7 @@ describe('MCP Routes', () => {
       const res = await app.request('/mcp/mcp-1/tools');
 
       expect(res.status).toBe(500);
-      const json = await res.json() as { error: { code: string } };
+      const json = (await res.json()) as { error: { code: string } };
       expect(json.error.code).toBe('INTERNAL_ERROR');
     });
 
@@ -982,7 +992,7 @@ describe('MCP Routes', () => {
       const res = await user2App.request('/mcp/mcp-1/tools');
 
       expect(res.status).toBe(404);
-      const json = await res.json() as { error: { code: string; message: string } };
+      const json = (await res.json()) as { error: { code: string; message: string } };
       expect(json.error.code).toBe('NOT_FOUND');
       expect(json.error.message).toContain('MCP server not found');
     });
@@ -995,7 +1005,10 @@ describe('MCP Routes', () => {
   describe('PATCH /mcp/:id/tool-settings', () => {
     it('updates workflowUsable for a tool and returns result', async () => {
       mockRepo.getById.mockResolvedValue(sampleServer);
-      mockRepo.update.mockResolvedValue({ ...sampleServer, metadata: { toolSettings: { my_tool: { workflowUsable: false } } } });
+      mockRepo.update.mockResolvedValue({
+        ...sampleServer,
+        metadata: { toolSettings: { my_tool: { workflowUsable: false } } },
+      });
       mockMcpClientService.isConnected.mockReturnValue(false);
 
       const res = await app.request('/mcp/mcp-1/tool-settings', {
@@ -1005,7 +1018,7 @@ describe('MCP Routes', () => {
       });
 
       expect(res.status).toBe(200);
-      const json = await res.json() as { data: { toolName: string; workflowUsable: boolean } };
+      const json = (await res.json()) as { data: { toolName: string; workflowUsable: boolean } };
       expect(json.data.toolName).toBe('my_tool');
       expect(json.data.workflowUsable).toBe(false);
       expect(mockRepo.update).toHaveBeenCalledWith('mcp-1', {
@@ -1079,7 +1092,7 @@ describe('MCP Routes', () => {
       });
 
       expect(res.status).toBe(400);
-      const json = await res.json() as { error: { code: string } };
+      const json = (await res.json()) as { error: { code: string } };
       expect(json.error.code).toBe('VALIDATION_ERROR');
     });
 
@@ -1091,7 +1104,7 @@ describe('MCP Routes', () => {
       });
 
       expect(res.status).toBe(400);
-      const json = await res.json() as { error: { code: string } };
+      const json = (await res.json()) as { error: { code: string } };
       expect(json.error.code).toBe('VALIDATION_ERROR');
     });
 
@@ -1105,7 +1118,7 @@ describe('MCP Routes', () => {
       });
 
       expect(res.status).toBe(404);
-      const json = await res.json() as { error: { code: string } };
+      const json = (await res.json()) as { error: { code: string } };
       expect(json.error.code).toBe('NOT_FOUND');
     });
 
@@ -1120,7 +1133,7 @@ describe('MCP Routes', () => {
       });
 
       expect(res.status).toBe(404);
-      const json = await res.json() as { error: { code: string } };
+      const json = (await res.json()) as { error: { code: string } };
       expect(json.error.code).toBe('NOT_FOUND');
     });
 
@@ -1156,7 +1169,7 @@ describe('MCP Routes', () => {
       });
 
       expect(res.status).toBe(500);
-      const json = await res.json() as { error: { code: string } };
+      const json = (await res.json()) as { error: { code: string } };
       expect(json.error.code).toBe('INTERNAL_ERROR');
     });
   });

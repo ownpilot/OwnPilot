@@ -20,7 +20,12 @@ const log = getLog('WorkflowCopilot');
 
 interface CopilotBody {
   messages: Array<{ role: 'user' | 'assistant'; content: string }>;
-  currentWorkflow?: { name: string; nodes: unknown[]; edges: unknown[]; variables?: Record<string, unknown> };
+  currentWorkflow?: {
+    name: string;
+    nodes: unknown[];
+    edges: unknown[];
+    variables?: Record<string, unknown>;
+  };
   availableTools?: string[];
   provider?: string;
   model?: string;
@@ -32,28 +37,47 @@ workflowCopilotRoute.post('/', async (c) => {
   const _userId = getUserId(c);
 
   const rawBody = await c.req.json().catch(() => null);
-  if (!rawBody) return apiError(c, { code: ERROR_CODES.BAD_REQUEST, message: 'Invalid JSON body' }, 400);
+  if (!rawBody)
+    return apiError(c, { code: ERROR_CODES.BAD_REQUEST, message: 'Invalid JSON body' }, 400);
 
   let body: CopilotBody;
   try {
     body = validateBody(workflowCopilotSchema, rawBody) as CopilotBody;
   } catch (error) {
-    return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: getErrorMessage(error) }, 400);
+    return apiError(
+      c,
+      { code: ERROR_CODES.VALIDATION_ERROR, message: getErrorMessage(error) },
+      400
+    );
   }
 
   // Resolve provider and model (fall back to user defaults)
   const { provider: resolvedProvider, model: resolvedModel } = await resolveProviderAndModel(
     body.provider ?? 'default',
-    body.model ?? 'default',
+    body.model ?? 'default'
   );
 
   if (!resolvedProvider) {
-    return apiError(c, { code: ERROR_CODES.PROVIDER_NOT_FOUND, message: 'No AI provider configured. Set up a provider in Settings.' }, 400);
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.PROVIDER_NOT_FOUND,
+        message: 'No AI provider configured. Set up a provider in Settings.',
+      },
+      400
+    );
   }
 
   const apiKey = await getProviderApiKey(resolvedProvider);
   if (!apiKey) {
-    return apiError(c, { code: ERROR_CODES.PROVIDER_NOT_FOUND, message: `API key not configured for provider: ${resolvedProvider}` }, 400);
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.PROVIDER_NOT_FOUND,
+        message: `API key not configured for provider: ${resolvedProvider}`,
+      },
+      400
+    );
   }
 
   // Resolve base URL for custom/local providers

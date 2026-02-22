@@ -98,8 +98,8 @@ describe('ConfigServicesRepository', () => {
   describe('initialize', () => {
     it('should load services and entries into cache', async () => {
       mockAdapter.query
-        .mockResolvedValueOnce([makeServiceRow()])         // services query
-        .mockResolvedValueOnce([makeEntryRow()]);           // entries query
+        .mockResolvedValueOnce([makeServiceRow()]) // services query
+        .mockResolvedValueOnce([makeEntryRow()]); // entries query
 
       await repo.initialize();
 
@@ -127,9 +127,7 @@ describe('ConfigServicesRepository', () => {
     });
 
     it('should handle empty database', async () => {
-      mockAdapter.query
-        .mockResolvedValueOnce([])
-        .mockResolvedValueOnce([]);
+      mockAdapter.query.mockResolvedValueOnce([]).mockResolvedValueOnce([]);
 
       await repo.initialize();
 
@@ -147,9 +145,7 @@ describe('ConfigServicesRepository', () => {
       expect(repo.getByName('openai')).not.toBeNull();
 
       // Refresh with empty
-      mockAdapter.query
-        .mockResolvedValueOnce([])
-        .mockResolvedValueOnce([]);
+      mockAdapter.query.mockResolvedValueOnce([]).mockResolvedValueOnce([]);
       await repo.refreshCache();
       expect(repo.getByName('openai')).toBeNull();
     });
@@ -167,9 +163,7 @@ describe('ConfigServicesRepository', () => {
     });
 
     it('should return service when cached', async () => {
-      mockAdapter.query
-        .mockResolvedValueOnce([makeServiceRow()])
-        .mockResolvedValueOnce([]);
+      mockAdapter.query.mockResolvedValueOnce([makeServiceRow()]).mockResolvedValueOnce([]);
       await repo.initialize();
 
       const result = repo.getByName('openai');
@@ -178,9 +172,7 @@ describe('ConfigServicesRepository', () => {
     });
 
     it('should return null for unknown name', async () => {
-      mockAdapter.query
-        .mockResolvedValueOnce([makeServiceRow()])
-        .mockResolvedValueOnce([]);
+      mockAdapter.query.mockResolvedValueOnce([makeServiceRow()]).mockResolvedValueOnce([]);
       await repo.initialize();
 
       expect(repo.getByName('unknown')).toBeNull();
@@ -216,9 +208,7 @@ describe('ConfigServicesRepository', () => {
     });
 
     it('should return empty array when no match', async () => {
-      mockAdapter.query
-        .mockResolvedValueOnce([makeServiceRow()])
-        .mockResolvedValueOnce([]);
+      mockAdapter.query.mockResolvedValueOnce([makeServiceRow()]).mockResolvedValueOnce([]);
       await repo.initialize();
 
       expect(repo.list('nonexistent')).toEqual([]);
@@ -317,15 +307,15 @@ describe('ConfigServicesRepository', () => {
   describe('update', () => {
     it('should update existing service and refresh cache', async () => {
       // Initialize with a service
-      mockAdapter.query
-        .mockResolvedValueOnce([makeServiceRow()])
-        .mockResolvedValueOnce([]);
+      mockAdapter.query.mockResolvedValueOnce([makeServiceRow()]).mockResolvedValueOnce([]);
       await repo.initialize();
 
       // execute update
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
       // refreshServiceCache
-      mockAdapter.queryOne.mockResolvedValueOnce(makeServiceRow({ display_name: 'Updated OpenAI' }));
+      mockAdapter.queryOne.mockResolvedValueOnce(
+        makeServiceRow({ display_name: 'Updated OpenAI' })
+      );
       mockAdapter.query.mockResolvedValueOnce([]);
 
       const result = await repo.update('openai', { displayName: 'Updated OpenAI' });
@@ -345,9 +335,7 @@ describe('ConfigServicesRepository', () => {
     });
 
     it('should return existing service when no changes provided', async () => {
-      mockAdapter.query
-        .mockResolvedValueOnce([makeServiceRow()])
-        .mockResolvedValueOnce([]);
+      mockAdapter.query.mockResolvedValueOnce([makeServiceRow()]).mockResolvedValueOnce([]);
       await repo.initialize();
 
       const result = await repo.update('openai', {});
@@ -358,9 +346,7 @@ describe('ConfigServicesRepository', () => {
     });
 
     it('should build dynamic SET clause for provided fields', async () => {
-      mockAdapter.query
-        .mockResolvedValueOnce([makeServiceRow()])
-        .mockResolvedValueOnce([]);
+      mockAdapter.query.mockResolvedValueOnce([makeServiceRow()]).mockResolvedValueOnce([]);
       await repo.initialize();
 
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
@@ -382,9 +368,7 @@ describe('ConfigServicesRepository', () => {
     });
 
     it('should serialize configSchema when provided', async () => {
-      mockAdapter.query
-        .mockResolvedValueOnce([makeServiceRow()])
-        .mockResolvedValueOnce([]);
+      mockAdapter.query.mockResolvedValueOnce([makeServiceRow()]).mockResolvedValueOnce([]);
       await repo.initialize();
 
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
@@ -562,9 +546,7 @@ describe('ConfigServicesRepository', () => {
     it('should return null when no default entry', async () => {
       mockAdapter.query
         .mockResolvedValueOnce([makeServiceRow()])
-        .mockResolvedValueOnce([
-          makeEntryRow({ is_default: false }),
-        ]);
+        .mockResolvedValueOnce([makeEntryRow({ is_default: false })]);
       await repo.initialize();
 
       expect(repo.getDefaultEntry('openai')).toBeNull();
@@ -724,7 +706,9 @@ describe('ConfigServicesRepository', () => {
 
   describe('updateEntry', () => {
     it('should update entry and refresh cache', async () => {
-      mockAdapter.query.mockResolvedValueOnce([makeServiceRow()]).mockResolvedValueOnce([makeEntryRow()]);
+      mockAdapter.query
+        .mockResolvedValueOnce([makeServiceRow()])
+        .mockResolvedValueOnce([makeEntryRow()]);
       await repo.initialize();
 
       // queryOne to find entry
@@ -753,7 +737,9 @@ describe('ConfigServicesRepository', () => {
     });
 
     it('should return existing entry when no changes provided', async () => {
-      mockAdapter.query.mockResolvedValueOnce([makeServiceRow()]).mockResolvedValueOnce([makeEntryRow()]);
+      mockAdapter.query
+        .mockResolvedValueOnce([makeServiceRow()])
+        .mockResolvedValueOnce([makeEntryRow()]);
       await repo.initialize();
 
       mockAdapter.queryOne.mockResolvedValueOnce(makeEntryRow());
@@ -766,10 +752,14 @@ describe('ConfigServicesRepository', () => {
     });
 
     it('should unset other defaults when setting isDefault=true', async () => {
-      mockAdapter.query.mockResolvedValueOnce([makeServiceRow()]).mockResolvedValueOnce([makeEntryRow()]);
+      mockAdapter.query
+        .mockResolvedValueOnce([makeServiceRow()])
+        .mockResolvedValueOnce([makeEntryRow()]);
       await repo.initialize();
 
-      mockAdapter.queryOne.mockResolvedValueOnce(makeEntryRow({ id: 'entry-2', is_default: false }));
+      mockAdapter.queryOne.mockResolvedValueOnce(
+        makeEntryRow({ id: 'entry-2', is_default: false })
+      );
       // unset existing defaults
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
       // actual update
@@ -788,7 +778,9 @@ describe('ConfigServicesRepository', () => {
     });
 
     it('should serialize data as JSON when provided', async () => {
-      mockAdapter.query.mockResolvedValueOnce([makeServiceRow()]).mockResolvedValueOnce([makeEntryRow()]);
+      mockAdapter.query
+        .mockResolvedValueOnce([makeServiceRow()])
+        .mockResolvedValueOnce([makeEntryRow()]);
       await repo.initialize();
 
       mockAdapter.queryOne.mockResolvedValueOnce(makeEntryRow());
@@ -805,7 +797,9 @@ describe('ConfigServicesRepository', () => {
 
   describe('deleteEntry', () => {
     it('should delete entry and refresh cache', async () => {
-      mockAdapter.query.mockResolvedValueOnce([makeServiceRow()]).mockResolvedValueOnce([makeEntryRow()]);
+      mockAdapter.query
+        .mockResolvedValueOnce([makeServiceRow()])
+        .mockResolvedValueOnce([makeEntryRow()]);
       await repo.initialize();
 
       // queryOne to find entry
@@ -833,7 +827,9 @@ describe('ConfigServicesRepository', () => {
     });
 
     it('should return false when delete changes nothing', async () => {
-      mockAdapter.query.mockResolvedValueOnce([makeServiceRow()]).mockResolvedValueOnce([makeEntryRow()]);
+      mockAdapter.query
+        .mockResolvedValueOnce([makeServiceRow()])
+        .mockResolvedValueOnce([makeEntryRow()]);
       await repo.initialize();
 
       mockAdapter.queryOne.mockResolvedValueOnce(makeEntryRow());
@@ -847,7 +843,9 @@ describe('ConfigServicesRepository', () => {
 
   describe('setDefaultEntry', () => {
     it('should unset other defaults and set the given entry atomically', async () => {
-      mockAdapter.query.mockResolvedValueOnce([makeServiceRow()]).mockResolvedValueOnce([makeEntryRow()]);
+      mockAdapter.query
+        .mockResolvedValueOnce([makeServiceRow()])
+        .mockResolvedValueOnce([makeEntryRow()]);
       await repo.initialize();
 
       // Single atomic CTE statement
@@ -1079,19 +1077,28 @@ describe('ConfigServicesRepository', () => {
     it('should return value from default entry data', async () => {
       mockAdapter.query
         .mockResolvedValueOnce([makeServiceRow()])
-        .mockResolvedValueOnce([makeEntryRow({ data: JSON.stringify({ api_key: 'sk-123', base_url: 'http://x' }) })]);
+        .mockResolvedValueOnce([
+          makeEntryRow({ data: JSON.stringify({ api_key: 'sk-123', base_url: 'http://x' }) }),
+        ]);
       await repo.initialize();
 
       expect(repo.getFieldValue('openai', 'base_url')).toBe('http://x');
     });
 
     it('should pick entry by label when provided', async () => {
-      mockAdapter.query
-        .mockResolvedValueOnce([makeServiceRow()])
-        .mockResolvedValueOnce([
-          makeEntryRow({ id: 'e1', label: 'Default', data: JSON.stringify({ api_key: 'default-key' }) }),
-          makeEntryRow({ id: 'e2', label: 'Prod', data: JSON.stringify({ api_key: 'prod-key' }), is_default: false }),
-        ]);
+      mockAdapter.query.mockResolvedValueOnce([makeServiceRow()]).mockResolvedValueOnce([
+        makeEntryRow({
+          id: 'e1',
+          label: 'Default',
+          data: JSON.stringify({ api_key: 'default-key' }),
+        }),
+        makeEntryRow({
+          id: 'e2',
+          label: 'Prod',
+          data: JSON.stringify({ api_key: 'prod-key' }),
+          is_default: false,
+        }),
+      ]);
       await repo.initialize();
 
       expect(repo.getFieldValue('openai', 'api_key', 'Prod')).toBe('prod-key');
@@ -1126,7 +1133,9 @@ describe('ConfigServicesRepository', () => {
 
       try {
         mockAdapter.query
-          .mockResolvedValueOnce([makeServiceRow({ config_schema: JSON.stringify(schemaWithDefault) })])
+          .mockResolvedValueOnce([
+            makeServiceRow({ config_schema: JSON.stringify(schemaWithDefault) }),
+          ])
           .mockResolvedValueOnce([makeEntryRow({ data: '{}' })]);
         await repo.initialize();
 
@@ -1160,7 +1169,9 @@ describe('ConfigServicesRepository', () => {
 
       try {
         mockAdapter.query
-          .mockResolvedValueOnce([makeServiceRow({ config_schema: JSON.stringify(schemaWithDefault) })])
+          .mockResolvedValueOnce([
+            makeServiceRow({ config_schema: JSON.stringify(schemaWithDefault) }),
+          ])
           .mockResolvedValueOnce([makeEntryRow({ data: JSON.stringify({ api_key: '' }) })]);
         await repo.initialize();
 
@@ -1208,7 +1219,9 @@ describe('ConfigServicesRepository', () => {
     it('should return false when data has only empty values', async () => {
       mockAdapter.query
         .mockResolvedValueOnce([makeServiceRow()])
-        .mockResolvedValueOnce([makeEntryRow({ data: JSON.stringify({ api_key: '', url: null }) })]);
+        .mockResolvedValueOnce([
+          makeEntryRow({ data: JSON.stringify({ api_key: '', url: null }) }),
+        ]);
       await repo.initialize();
 
       expect(repo.isAvailable('openai')).toBe(false);
@@ -1217,7 +1230,9 @@ describe('ConfigServicesRepository', () => {
     it('should return true when at least one data field has a value', async () => {
       mockAdapter.query
         .mockResolvedValueOnce([makeServiceRow()])
-        .mockResolvedValueOnce([makeEntryRow({ data: JSON.stringify({ api_key: '', url: 'http://x' }) })]);
+        .mockResolvedValueOnce([
+          makeEntryRow({ data: JSON.stringify({ api_key: '', url: 'http://x' }) }),
+        ]);
       await repo.initialize();
 
       expect(repo.isAvailable('openai')).toBe(true);
@@ -1233,7 +1248,13 @@ describe('ConfigServicesRepository', () => {
       mockAdapter.query
         .mockResolvedValueOnce([
           makeServiceRow({ name: 'openai', is_active: true, required_by: '[]' }),
-          makeServiceRow({ name: 'google', display_name: 'Google', category: 'search', is_active: false, required_by: '[]' }),
+          makeServiceRow({
+            name: 'google',
+            display_name: 'Google',
+            category: 'search',
+            is_active: false,
+            required_by: '[]',
+          }),
         ])
         .mockResolvedValueOnce([
           makeEntryRow({ service_name: 'openai', data: JSON.stringify({ api_key: 'sk-123' }) }),

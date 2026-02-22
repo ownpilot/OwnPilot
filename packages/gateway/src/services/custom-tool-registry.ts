@@ -38,7 +38,17 @@ let _sharedRegistry: {
   registerCustomTool: (def: ToolDefinition, exec: ToolExecutor, id: string) => unknown;
   unregister: (name: string) => void;
   has: (name: string) => boolean;
-  execute: (name: string, args: Record<string, unknown>, context: Omit<ToolContext, 'callId'>) => Promise<{ ok: true; value: { content: unknown; isError?: boolean; metadata?: Record<string, unknown> } } | { ok: false; error: { message: string } }>;
+  execute: (
+    name: string,
+    args: Record<string, unknown>,
+    context: Omit<ToolContext, 'callId'>
+  ) => Promise<
+    | {
+        ok: true;
+        value: { content: unknown; isError?: boolean; metadata?: Record<string, unknown> };
+      }
+    | { ok: false; error: { message: string } }
+  >;
 } | null = null;
 
 /**
@@ -122,16 +132,17 @@ export function syncToolToRegistry(tool: CustomToolRecord): void {
         description: tool.description,
         parameters: tool.parameters as ToolDefinition['parameters'],
         category: tool.category ?? 'Custom',
-        configRequirements: tool.requiredApiKeys?.map(k => ({
+        configRequirements: tool.requiredApiKeys?.map((k) => ({
           name: k.name,
           displayName: k.displayName,
           description: k.description,
           category: k.category,
           docsUrl: k.docsUrl,
         })),
-        workflowUsable: tool.metadata?.workflowUsable !== undefined
-          ? Boolean(tool.metadata.workflowUsable)
-          : undefined,
+        workflowUsable:
+          tool.metadata?.workflowUsable !== undefined
+            ? Boolean(tool.metadata.workflowUsable)
+            : undefined,
       };
       const executor = (args: Record<string, unknown>, context: ToolContext) =>
         dynamicRegistry.execute(tool.name, args, context);

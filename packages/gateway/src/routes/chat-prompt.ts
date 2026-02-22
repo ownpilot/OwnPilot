@@ -5,12 +5,20 @@
  * buildToolCatalog, generateDemoResponse, tryGetMessageBus.
  */
 
-import { Services, getBaseName, type ToolDefinition, type ExecutionPermissions, type IMessageBus } from '@ownpilot/core';
+import {
+  Services,
+  getBaseName,
+  type ToolDefinition,
+  type ExecutionPermissions,
+  type IMessageBus,
+} from '@ownpilot/core';
 import { tryGetService } from '../services/service-helpers.js';
 import { AI_META_TOOL_NAMES } from '../config/defaults.js';
 
 export const PERM_LABELS: Record<string, string> = {
-  blocked: 'Blocked', prompt: 'Ask', allowed: 'Allow',
+  blocked: 'Blocked',
+  prompt: 'Ask',
+  allowed: 'Allow',
 };
 export const MODE_LABELS: Record<string, string> = {
   local: 'Local (host machine)',
@@ -18,7 +26,13 @@ export const MODE_LABELS: Record<string, string> = {
   auto: 'Auto (Docker if available, else local)',
 };
 
-export const EXEC_CATEGORIES = ['execute_javascript', 'execute_python', 'execute_shell', 'compile_code', 'package_manager'] as const;
+export const EXEC_CATEGORIES = [
+  'execute_javascript',
+  'execute_python',
+  'execute_shell',
+  'compile_code',
+  'package_manager',
+] as const;
 
 /**
  * Build execution context for the system prompt.
@@ -32,9 +46,9 @@ export function buildExecutionSystemPrompt(perms: ExecutionPermissions): string 
   const modeDesc = MODE_LABELS[perms.mode] ?? perms.mode;
 
   // Build compact permission table: tool → Allow/Ask/Blocked
-  const catLines = EXEC_CATEGORIES
-    .map(k => `\`${k}\`: ${PERM_LABELS[perms[k]] ?? perms[k]}`)
-    .join(' | ');
+  const catLines = EXEC_CATEGORIES.map(
+    (k) => `\`${k}\`: ${PERM_LABELS[perms[k]] ?? perms[k]}`
+  ).join(' | ');
 
   let section = `\n\n## Code Execution`;
   section += `\nENABLED (${modeDesc}). When asked to run code, use the execution tool via \`use_tool\` — don't just explain.`;
@@ -63,7 +77,9 @@ export async function buildToolCatalog(allTools: readonly ToolDefinition[]): Pro
   // 1. List active custom/user-created tools (if any)
   const skipTools = new Set<string>(AI_META_TOOL_NAMES);
   const customTools = allTools.filter(
-    t => !skipTools.has(t.name) && (t.category === 'Custom' || t.category === 'User' || t.category === 'Dynamic Tools')
+    (t) =>
+      !skipTools.has(t.name) &&
+      (t.category === 'Custom' || t.category === 'User' || t.category === 'Dynamic Tools')
   );
   if (customTools.length > 0) {
     lines.push('');
@@ -90,7 +106,8 @@ export async function buildToolCatalog(allTools: readonly ToolDefinition[]): Pro
       lines.push('');
       lines.push('## Custom Data Tables');
       for (const t of tables) {
-        const display = t.displayName && t.displayName !== t.name ? `${t.displayName} (${t.name})` : t.name;
+        const display =
+          t.displayName && t.displayName !== t.name ? `${t.displayName} (${t.name})` : t.name;
         lines.push(`  ${display}`);
       }
     }

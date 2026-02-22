@@ -281,7 +281,10 @@ describe('Config Services Routes', () => {
 
   describe('PUT /config-services/:name', () => {
     it('updates a service', async () => {
-      mockConfigServicesRepo.update.mockResolvedValue({ ...sampleService, displayName: 'Updated Gmail' });
+      mockConfigServicesRepo.update.mockResolvedValue({
+        ...sampleService,
+        displayName: 'Updated Gmail',
+      });
       mockConfigServicesRepo.getEntries.mockReturnValue([]);
 
       const res = await app.request('/config-services/gmail', {
@@ -484,7 +487,7 @@ describe('Config Services Routes', () => {
     it('sets entry as default', async () => {
       mockConfigServicesRepo.getByName.mockReturnValue(sampleService);
       mockConfigServicesRepo.getEntries
-        .mockReturnValueOnce([sampleEntry])       // verify entry exists
+        .mockReturnValueOnce([sampleEntry]) // verify entry exists
         .mockReturnValueOnce([{ ...sampleEntry, isDefault: true }]); // after setDefault
 
       const res = await app.request('/config-services/gmail/entries/entry-1/default', {

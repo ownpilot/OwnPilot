@@ -72,7 +72,7 @@ function createSanitizedEnv(extra?: Record<string, string>): Record<string, stri
   for (const [key, value] of Object.entries(processEnv)) {
     if (!value) continue;
     const upperKey = key.toUpperCase();
-    const isSensitive = SENSITIVE_ENV_PREFIXES.some(prefix => upperKey.includes(prefix));
+    const isSensitive = SENSITIVE_ENV_PREFIXES.some((prefix) => upperKey.includes(prefix));
     if (!isSensitive) {
       env[key] = value;
     }
@@ -103,7 +103,7 @@ function truncateOutput(output: string, maxSize: number): string {
  */
 export async function executeJavaScriptLocal(
   code: string,
-  options?: LocalExecOptions,
+  options?: LocalExecOptions
 ): Promise<SandboxResult> {
   const timeout = options?.timeout ?? DEFAULT_TIMEOUT;
   const maxOutput = options?.maxOutputSize ?? DEFAULT_MAX_OUTPUT;
@@ -173,7 +173,7 @@ export async function executeJavaScriptLocal(
  */
 export async function executePythonLocal(
   code: string,
-  options?: LocalExecOptions,
+  options?: LocalExecOptions
 ): Promise<SandboxResult> {
   const timeout = options?.timeout ?? DEFAULT_TIMEOUT;
   const maxOutput = options?.maxOutputSize ?? DEFAULT_MAX_OUTPUT;
@@ -245,7 +245,7 @@ export async function executePythonLocal(
  */
 export async function executeShellLocal(
   command: string,
-  options?: LocalExecOptions,
+  options?: LocalExecOptions
 ): Promise<SandboxResult> {
   const timeout = options?.timeout ?? DEFAULT_TIMEOUT;
   const maxOutput = options?.maxOutputSize ?? DEFAULT_MAX_OUTPUT;

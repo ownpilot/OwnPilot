@@ -101,9 +101,10 @@ function rowToWorkspace(row: WorkspaceRow): UserWorkspace {
     description: row.description || undefined,
     status: row.status as WorkspaceStatus,
     storagePath: row.storage_path,
-    containerConfig: typeof row.container_config === 'string'
-      ? JSON.parse(row.container_config)
-      : row.container_config,
+    containerConfig:
+      typeof row.container_config === 'string'
+        ? JSON.parse(row.container_config)
+        : row.container_config,
     containerId: row.container_id || undefined,
     containerStatus: row.container_status as ContainerStatus,
     createdAt: new Date(row.created_at),
@@ -258,7 +259,11 @@ export class WorkspacesRepository extends BaseRepository {
   /**
    * Update container status
    */
-  async updateContainerStatus(id: string, containerId: string | null, status: ContainerStatus): Promise<boolean> {
+  async updateContainerStatus(
+    id: string,
+    containerId: string | null,
+    status: ContainerStatus
+  ): Promise<boolean> {
     const result = await this.execute(
       `UPDATE user_workspaces SET container_id = $1, container_status = $2, updated_at = NOW() WHERE id = $3 AND user_id = $4`,
       [containerId, status, id, this.userId]
@@ -296,10 +301,9 @@ export class WorkspacesRepository extends BaseRepository {
       [id, workspaceId, this.userId, language, codeHash, now]
     );
 
-    const row = await this.queryOne<ExecutionRow>(
-      `SELECT * FROM code_executions WHERE id = $1`,
-      [id]
-    );
+    const row = await this.queryOne<ExecutionRow>(`SELECT * FROM code_executions WHERE id = $1`, [
+      id,
+    ]);
     if (!row) throw new Error('Failed to create execution');
     return rowToExecution(row);
   }
@@ -319,7 +323,14 @@ export class WorkspacesRepository extends BaseRepository {
       `UPDATE code_executions
        SET status = $1, stdout = $2, stderr = $3, exit_code = $4, execution_time_ms = $5
        WHERE id = $6`,
-      [status, stdout || null, stderr || null, exitCode ?? null, executionTimeMs ?? null, executionId]
+      [
+        status,
+        stdout || null,
+        stderr || null,
+        exitCode ?? null,
+        executionTimeMs ?? null,
+        executionId,
+      ]
     );
     return result.changes > 0;
   }

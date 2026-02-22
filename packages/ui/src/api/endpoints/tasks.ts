@@ -10,8 +10,7 @@ export const tasksApi = {
     apiClient.get<Task[]>('/tasks', {
       params: params?.status ? { status: params.status } : undefined,
     }),
-  create: (body: Record<string, unknown>) =>
-    apiClient.post<Task>('/tasks', body),
+  create: (body: Record<string, unknown>) => apiClient.post<Task>('/tasks', body),
   update: (id: string, body: Record<string, unknown>) =>
     apiClient.patch<Task>(`/tasks/${id}`, body),
   complete: (id: string) => apiClient.post<Task>(`/tasks/${id}/complete`),

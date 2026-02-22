@@ -26,17 +26,17 @@ export const TOOL_MAX_LIMITS: Record<string, ToolLimit> = {
   // ─────────────────────────────────────────────
   // EMAIL
   // ─────────────────────────────────────────────
-  list_emails:        { paramName: 'limit', maxValue: 50,  defaultValue: 20 },
-  search_emails:      { paramName: 'limit', maxValue: 100, defaultValue: 50 },
+  list_emails: { paramName: 'limit', maxValue: 50, defaultValue: 20 },
+  search_emails: { paramName: 'limit', maxValue: 100, defaultValue: 50 },
 
   // ─────────────────────────────────────────────
   // PERSONAL DATA (tasks, notes, calendar, contacts, bookmarks)
   // ─────────────────────────────────────────────
-  list_tasks:           { paramName: 'limit', maxValue: 50,  defaultValue: 20 },
-  list_notes:           { paramName: 'limit', maxValue: 50,  defaultValue: 20 },
-  list_calendar_events: { paramName: 'limit', maxValue: 50,  defaultValue: 20 },
-  list_contacts:        { paramName: 'limit', maxValue: 50,  defaultValue: 20 },
-  list_bookmarks:       { paramName: 'limit', maxValue: 50,  defaultValue: 20 },
+  list_tasks: { paramName: 'limit', maxValue: 50, defaultValue: 20 },
+  list_notes: { paramName: 'limit', maxValue: 50, defaultValue: 20 },
+  list_calendar_events: { paramName: 'limit', maxValue: 50, defaultValue: 20 },
+  list_contacts: { paramName: 'limit', maxValue: 50, defaultValue: 20 },
+  list_bookmarks: { paramName: 'limit', maxValue: 50, defaultValue: 20 },
 
   // ─────────────────────────────────────────────
   // EXPENSES
@@ -46,19 +46,19 @@ export const TOOL_MAX_LIMITS: Record<string, ToolLimit> = {
   // ─────────────────────────────────────────────
   // MEMORY
   // ─────────────────────────────────────────────
-  search_memories: { paramName: 'limit', maxValue: 50,  defaultValue: 10 },
-  list_memories:  { paramName: 'limit', maxValue: 50,  defaultValue: 20 },
+  search_memories: { paramName: 'limit', maxValue: 50, defaultValue: 10 },
+  list_memories: { paramName: 'limit', maxValue: 50, defaultValue: 20 },
 
   // ─────────────────────────────────────────────
   // GOALS
   // ─────────────────────────────────────────────
-  list_goals:      { paramName: 'limit', maxValue: 30, defaultValue: 10 },
+  list_goals: { paramName: 'limit', maxValue: 30, defaultValue: 10 },
   get_next_actions: { paramName: 'limit', maxValue: 20, defaultValue: 5 },
 
   // ─────────────────────────────────────────────
   // CUSTOM DATA
   // ─────────────────────────────────────────────
-  list_custom_records:   { paramName: 'limit', maxValue: 50, defaultValue: 20 },
+  list_custom_records: { paramName: 'limit', maxValue: 50, defaultValue: 20 },
   search_custom_records: { paramName: 'limit', maxValue: 50, defaultValue: 20 },
 
   // ─────────────────────────────────────────────
@@ -75,7 +75,6 @@ export const TOOL_MAX_LIMITS: Record<string, ToolLimit> = {
   // WEB SEARCH
   // ─────────────────────────────────────────────
   search_web: { paramName: 'maxResults', maxValue: 20, defaultValue: 10 },
-
 };
 
 /**
@@ -87,7 +86,7 @@ export const TOOL_MAX_LIMITS: Record<string, ToolLimit> = {
  */
 export function applyToolLimits(
   toolName: string,
-  args: Record<string, unknown>,
+  args: Record<string, unknown>
 ): Record<string, unknown> {
   const limit = TOOL_MAX_LIMITS[toolName] ?? TOOL_MAX_LIMITS[getBaseName(toolName)];
   if (!limit) return args;

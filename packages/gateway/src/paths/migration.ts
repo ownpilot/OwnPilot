@@ -7,7 +7,12 @@
 
 import { existsSync, copyFileSync, mkdirSync, readdirSync, statSync } from 'node:fs';
 import { join, dirname } from 'node:path';
-import { getDataPaths, getLegacyDataPath, hasLegacyData, initializeDataDirectories } from './index.js';
+import {
+  getDataPaths,
+  getLegacyDataPath,
+  hasLegacyData,
+  initializeDataDirectories,
+} from './index.js';
 import { getLog } from '../services/log.js';
 import { getErrorMessage } from '../routes/helpers.js';
 
@@ -176,7 +181,9 @@ export function migrateData(_options: { backup?: boolean } = {}): MigrationResul
     result.success = false;
   }
 
-  log.info(`[Migration] Complete. Migrated ${result.migratedFiles.length} items, ${result.errors.length} errors`);
+  log.info(
+    `[Migration] Complete. Migrated ${result.migratedFiles.length} items, ${result.errors.length} errors`
+  );
 
   if (result.migratedFiles.length > 0) {
     log.info(`[Migration] IMPORTANT: You can now safely delete the legacy data directory:`);

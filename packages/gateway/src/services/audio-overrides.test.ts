@@ -60,7 +60,7 @@ vi.mock('./log.js', () => ({
 }));
 
 vi.mock('../routes/helpers.js', () => ({
-  getErrorMessage: (e: unknown) => e instanceof Error ? e.message : String(e),
+  getErrorMessage: (e: unknown) => (e instanceof Error ? e.message : String(e)),
 }));
 
 vi.mock('../routes/settings.js', () => ({
@@ -161,11 +161,13 @@ function setupDedicatedAudioConfig(overrides: Record<string, string | undefined>
   });
 }
 
-function setupDefaultProviderFallback(opts: {
-  provider?: string | null;
-  apiKey?: string | null;
-  baseUrl?: string;
-} = {}): void {
+function setupDefaultProviderFallback(
+  opts: {
+    provider?: string | null;
+    apiKey?: string | null;
+    baseUrl?: string;
+  } = {}
+): void {
   mockGetFieldValue.mockReturnValue(undefined);
   mockResolveProviderAndModel.mockResolvedValue({
     provider: opts.provider !== undefined ? opts.provider : 'openai',
@@ -173,7 +175,7 @@ function setupDefaultProviderFallback(opts: {
   });
   mockGetProviderApiKey.mockResolvedValue(opts.apiKey !== undefined ? opts.apiKey : 'fallback-key');
   mockLoadProviderConfig.mockReturnValue(
-    opts.baseUrl !== undefined ? { baseUrl: opts.baseUrl } : null,
+    opts.baseUrl !== undefined ? { baseUrl: opts.baseUrl } : null
   );
 }
 
@@ -182,12 +184,14 @@ function setupNoConfig(): void {
   mockResolveProviderAndModel.mockResolvedValue({ provider: null, model: null });
 }
 
-function makeFetchResponse(opts: {
-  ok?: boolean;
-  status?: number;
-  body?: string | object | ArrayBuffer;
-  contentType?: string;
-} = {}) {
+function makeFetchResponse(
+  opts: {
+    ok?: boolean;
+    status?: number;
+    body?: string | object | ArrayBuffer;
+    contentType?: string;
+  } = {}
+) {
   const ok = opts.ok !== undefined ? opts.ok : true;
   const status = opts.status ?? (ok ? 200 : 500);
   const body = opts.body ?? '';
@@ -195,8 +199,10 @@ function makeFetchResponse(opts: {
   return {
     ok,
     status,
-    text: vi.fn(async () => typeof body === 'string' ? body : JSON.stringify(body)),
-    json: vi.fn(async () => typeof body === 'object' && !(body instanceof ArrayBuffer) ? body : JSON.parse(body as string)),
+    text: vi.fn(async () => (typeof body === 'string' ? body : JSON.stringify(body))),
+    json: vi.fn(async () =>
+      typeof body === 'object' && !(body instanceof ArrayBuffer) ? body : JSON.parse(body as string)
+    ),
     arrayBuffer: vi.fn(async () => {
       if (body instanceof ArrayBuffer) return body;
       if (typeof body === 'string') return Buffer.from(body).buffer;
@@ -250,10 +256,22 @@ describe('registerAudioOverrides', () => {
     await registerAudioOverrides(mockRegistry as never);
     // Each tool: first call returns false, second call (core.X) returns true = 8 calls
     expect(mockRegistry.updateExecutor).toHaveBeenCalledTimes(8);
-    expect(mockRegistry.updateExecutor).toHaveBeenCalledWith('core.text_to_speech', expect.any(Function));
-    expect(mockRegistry.updateExecutor).toHaveBeenCalledWith('core.speech_to_text', expect.any(Function));
-    expect(mockRegistry.updateExecutor).toHaveBeenCalledWith('core.translate_audio', expect.any(Function));
-    expect(mockRegistry.updateExecutor).toHaveBeenCalledWith('core.split_audio', expect.any(Function));
+    expect(mockRegistry.updateExecutor).toHaveBeenCalledWith(
+      'core.text_to_speech',
+      expect.any(Function)
+    );
+    expect(mockRegistry.updateExecutor).toHaveBeenCalledWith(
+      'core.speech_to_text',
+      expect.any(Function)
+    );
+    expect(mockRegistry.updateExecutor).toHaveBeenCalledWith(
+      'core.translate_audio',
+      expect.any(Function)
+    );
+    expect(mockRegistry.updateExecutor).toHaveBeenCalledWith(
+      'core.split_audio',
+      expect.any(Function)
+    );
   });
 
   it('should call ensureAudioService to upsert config center entry', async () => {
@@ -261,20 +279,22 @@ describe('registerAudioOverrides', () => {
     const mockRegistry = { updateExecutor: vi.fn(() => true) };
     await registerAudioOverrides(mockRegistry as never);
     // Wait for async fire-and-forget
-    await new Promise(r => setTimeout(r, 10));
+    await new Promise((r) => setTimeout(r, 10));
     expect(mockUpsert).toHaveBeenCalledTimes(1);
-    expect(mockUpsert).toHaveBeenCalledWith(expect.objectContaining({
-      name: 'audio_service',
-      displayName: 'Audio Service',
-      category: 'ai',
-    }));
+    expect(mockUpsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: 'audio_service',
+        displayName: 'Audio Service',
+        category: 'ai',
+      })
+    );
   });
 
   it('should not throw when ensureAudioService fails', async () => {
     mockUpsert.mockRejectedValue(new Error('DB down'));
     const mockRegistry = { updateExecutor: vi.fn(() => true) };
     await expect(registerAudioOverrides(mockRegistry as never)).resolves.not.toThrow();
-    await new Promise(r => setTimeout(r, 10));
+    await new Promise((r) => setTimeout(r, 10));
   });
 });
 
@@ -326,7 +346,9 @@ describe('tryUpdateExecutor', () => {
       updateExecutor: vi.fn((name: string) => name.startsWith('core.')),
     };
     await registerAudioOverrides(mockRegistry as never);
-    expect(mockLogInfo).toHaveBeenCalledWith(expect.stringContaining('Overrode core.text_to_speech'));
+    expect(mockLogInfo).toHaveBeenCalledWith(
+      expect.stringContaining('Overrode core.text_to_speech')
+    );
   });
 });
 
@@ -477,7 +499,10 @@ describe('textToSpeechOverride', () => {
   });
 
   it('should return error for unsupported format', async () => {
-    const result = await executors.text_to_speech!({ text: 'Hello', format: 'wma' }, defaultContext);
+    const result = await executors.text_to_speech!(
+      { text: 'Hello', format: 'wma' },
+      defaultContext
+    );
     expect(result.isError).toBe(true);
     expect(result.content.error).toContain('Unsupported format: wma');
     expect(result.content.supportedFormats).toEqual(['mp3', 'opus', 'aac', 'flac', 'wav', 'pcm']);
@@ -511,13 +536,16 @@ describe('textToSpeechOverride', () => {
     mockFetch.mockResolvedValue(makeFetchResponse({ body: audioData.buffer }));
     mockFsStat.mockResolvedValue({ size: audioData.length });
 
-    const result = await executors.text_to_speech!({
-      text: 'Hello world',
-      voice: 'nova',
-      model: 'tts-1-hd',
-      speed: 1.5,
-      format: 'opus',
-    }, defaultContext);
+    const result = await executors.text_to_speech!(
+      {
+        text: 'Hello world',
+        voice: 'nova',
+        model: 'tts-1-hd',
+        speed: 1.5,
+        format: 'opus',
+      },
+      defaultContext
+    );
 
     expect(result.isError).toBe(false);
     const [url, opts] = mockFetch.mock.calls[0]!;
@@ -660,7 +688,10 @@ describe('textToSpeechOverride', () => {
     mockFetch.mockResolvedValue(makeFetchResponse({ body: Buffer.from('audio').buffer }));
     mockFsStat.mockResolvedValue({ size: 1024 });
 
-    const result = await executors.text_to_speech!({ text: 'Hello' }, { workspaceDir: '/my/workspace' });
+    const result = await executors.text_to_speech!(
+      { text: 'Hello' },
+      { workspaceDir: '/my/workspace' }
+    );
     expect(result.content.path).toMatch(/^\/my\/workspace\/tts_\d+\.mp3$/);
   });
 
@@ -669,11 +700,14 @@ describe('textToSpeechOverride', () => {
     mockFetch.mockResolvedValue(makeFetchResponse({ body: Buffer.from('audio').buffer }));
     mockFsStat.mockResolvedValue({ size: 1024 });
 
-    const result = await executors.text_to_speech!({
-      text: 'Hello',
-      outputPath: '/custom/output/speech.wav',
-      format: 'wav',
-    }, defaultContext);
+    const result = await executors.text_to_speech!(
+      {
+        text: 'Hello',
+        outputPath: '/custom/output/speech.wav',
+        format: 'wav',
+      },
+      defaultContext
+    );
 
     expect(result.content.path).toBe('/custom/output/speech.wav');
     expect(mockFsMkdir).toHaveBeenCalledWith('/custom/output', { recursive: true });
@@ -692,11 +726,13 @@ describe('textToSpeechOverride', () => {
 
   it('should handle OpenAI TTS API error', async () => {
     setupDedicatedAudioConfig();
-    mockFetch.mockResolvedValue(makeFetchResponse({
-      ok: false,
-      status: 429,
-      body: 'Rate limit exceeded',
-    }));
+    mockFetch.mockResolvedValue(
+      makeFetchResponse({
+        ok: false,
+        status: 429,
+        body: 'Rate limit exceeded',
+      })
+    );
 
     const result = await executors.text_to_speech!({ text: 'Hello' }, defaultContext);
     expect(result.isError).toBe(true);
@@ -706,11 +742,13 @@ describe('textToSpeechOverride', () => {
 
   it('should handle ElevenLabs TTS API error', async () => {
     setupDedicatedAudioConfig({ provider_type: 'elevenlabs' });
-    mockFetch.mockResolvedValue(makeFetchResponse({
-      ok: false,
-      status: 401,
-      body: 'Unauthorized',
-    }));
+    mockFetch.mockResolvedValue(
+      makeFetchResponse({
+        ok: false,
+        status: 401,
+        body: 'Unauthorized',
+      })
+    );
 
     const result = await executors.text_to_speech!({ text: 'Hello' }, defaultContext);
     expect(result.isError).toBe(true);
@@ -742,11 +780,13 @@ describe('textToSpeechOverride', () => {
   it('should truncate long API error text to 500 chars', async () => {
     setupDedicatedAudioConfig();
     const longError = 'x'.repeat(1000);
-    mockFetch.mockResolvedValue(makeFetchResponse({
-      ok: false,
-      status: 500,
-      body: longError,
-    }));
+    mockFetch.mockResolvedValue(
+      makeFetchResponse({
+        ok: false,
+        status: 500,
+        body: longError,
+      })
+    );
 
     const result = await executors.text_to_speech!({ text: 'Hello' }, defaultContext);
     expect(result.isError).toBe(true);
@@ -789,13 +829,18 @@ describe('speechToTextOverride', () => {
     // First fetch: download the audio URL
     mockFetch.mockResolvedValueOnce(makeFetchResponse({ body: audioBuffer.buffer }));
     // Second fetch: Whisper API call
-    mockFetch.mockResolvedValueOnce(makeFetchResponse({
-      body: { text: 'Transcribed text', language: 'en', duration: 10.5 },
-    }));
+    mockFetch.mockResolvedValueOnce(
+      makeFetchResponse({
+        body: { text: 'Transcribed text', language: 'en', duration: 10.5 },
+      })
+    );
 
-    const result = await executors.speech_to_text!({
-      source: 'https://example.com/audio/recording.mp3',
-    }, defaultContext);
+    const result = await executors.speech_to_text!(
+      {
+        source: 'https://example.com/audio/recording.mp3',
+      },
+      defaultContext
+    );
 
     expect(result.isError).toBe(false);
     expect(result.content.success).toBe(true);
@@ -808,13 +853,18 @@ describe('speechToTextOverride', () => {
   it('should extract filename from URL path', async () => {
     setupDedicatedAudioConfig();
     mockFetch.mockResolvedValueOnce(makeFetchResponse({ body: Buffer.from('audio').buffer }));
-    mockFetch.mockResolvedValueOnce(makeFetchResponse({
-      body: { text: 'Hello' },
-    }));
+    mockFetch.mockResolvedValueOnce(
+      makeFetchResponse({
+        body: { text: 'Hello' },
+      })
+    );
 
-    await executors.speech_to_text!({
-      source: 'https://example.com/files/interview.wav',
-    }, defaultContext);
+    await executors.speech_to_text!(
+      {
+        source: 'https://example.com/files/interview.wav',
+      },
+      defaultContext
+    );
 
     // The second fetch is the Whisper API call — check the FormData has the filename
     expect(mockFetch).toHaveBeenCalledTimes(2);
@@ -824,11 +874,16 @@ describe('speechToTextOverride', () => {
 
   it('should handle URL download failure', async () => {
     setupDedicatedAudioConfig();
-    mockFetch.mockResolvedValueOnce(makeFetchResponse({ ok: false, status: 404, body: 'Not found' }));
+    mockFetch.mockResolvedValueOnce(
+      makeFetchResponse({ ok: false, status: 404, body: 'Not found' })
+    );
 
-    const result = await executors.speech_to_text!({
-      source: 'https://example.com/missing.mp3',
-    }, defaultContext);
+    const result = await executors.speech_to_text!(
+      {
+        source: 'https://example.com/missing.mp3',
+      },
+      defaultContext
+    );
 
     expect(result.isError).toBe(true);
     expect(result.content.error).toContain('Failed to transcribe');
@@ -838,13 +893,18 @@ describe('speechToTextOverride', () => {
   it('should use audio.mp3 as fallback filename for URLs with no path', async () => {
     setupDedicatedAudioConfig();
     mockFetch.mockResolvedValueOnce(makeFetchResponse({ body: Buffer.from('audio').buffer }));
-    mockFetch.mockResolvedValueOnce(makeFetchResponse({
-      body: { text: 'Hello' },
-    }));
+    mockFetch.mockResolvedValueOnce(
+      makeFetchResponse({
+        body: { text: 'Hello' },
+      })
+    );
 
-    const result = await executors.speech_to_text!({
-      source: 'https://example.com/',
-    }, defaultContext);
+    const result = await executors.speech_to_text!(
+      {
+        source: 'https://example.com/',
+      },
+      defaultContext
+    );
     expect(result.isError).toBe(false);
   });
 
@@ -852,15 +912,26 @@ describe('speechToTextOverride', () => {
 
   it('should validate local file format', async () => {
     setupDedicatedAudioConfig();
-    const result = await executors.speech_to_text!({
-      source: '/audio/test.pdf',
-    }, defaultContext);
+    const result = await executors.speech_to_text!(
+      {
+        source: '/audio/test.pdf',
+      },
+      defaultContext
+    );
 
     expect(result.isError).toBe(true);
     expect(result.content.error).toContain('Unsupported format: pdf');
-    expect(result.content.supportedFormats).toEqual(
-      ['mp3', 'mp4', 'mpeg', 'mpga', 'm4a', 'wav', 'webm', 'ogg', 'flac'],
-    );
+    expect(result.content.supportedFormats).toEqual([
+      'mp3',
+      'mp4',
+      'mpeg',
+      'mpga',
+      'm4a',
+      'wav',
+      'webm',
+      'ogg',
+      'flac',
+    ]);
   });
 
   it('should accept all supported input formats', async () => {
@@ -871,13 +942,18 @@ describe('speechToTextOverride', () => {
       setupDedicatedAudioConfig();
       mockFsStat.mockResolvedValue({ size: 1024 });
       mockFsReadFile.mockResolvedValue(Buffer.from('audio'));
-      mockFetch.mockResolvedValue(makeFetchResponse({
-        body: { text: 'Transcribed' },
-      }));
+      mockFetch.mockResolvedValue(
+        makeFetchResponse({
+          body: { text: 'Transcribed' },
+        })
+      );
 
-      const result = await executors.speech_to_text!({
-        source: `/audio/test.${ext}`,
-      }, defaultContext);
+      const result = await executors.speech_to_text!(
+        {
+          source: `/audio/test.${ext}`,
+        },
+        defaultContext
+      );
       expect(result.isError).toBe(false);
     }
   });
@@ -886,9 +962,12 @@ describe('speechToTextOverride', () => {
     setupDedicatedAudioConfig();
     mockFsStat.mockResolvedValue({ size: 26 * 1024 * 1024 }); // 26MB
 
-    const result = await executors.speech_to_text!({
-      source: '/audio/huge.mp3',
-    }, defaultContext);
+    const result = await executors.speech_to_text!(
+      {
+        source: '/audio/huge.mp3',
+      },
+      defaultContext
+    );
 
     expect(result.isError).toBe(true);
     expect(result.content.error).toContain('File too large');
@@ -900,13 +979,18 @@ describe('speechToTextOverride', () => {
     setupDedicatedAudioConfig();
     mockFsStat.mockResolvedValue({ size: 25 * 1024 * 1024 }); // exactly 25MB
     mockFsReadFile.mockResolvedValue(Buffer.from('audio'));
-    mockFetch.mockResolvedValue(makeFetchResponse({
-      body: { text: 'Transcribed' },
-    }));
+    mockFetch.mockResolvedValue(
+      makeFetchResponse({
+        body: { text: 'Transcribed' },
+      })
+    );
 
-    const result = await executors.speech_to_text!({
-      source: '/audio/exact25.mp3',
-    }, defaultContext);
+    const result = await executors.speech_to_text!(
+      {
+        source: '/audio/exact25.mp3',
+      },
+      defaultContext
+    );
     expect(result.isError).toBe(false);
   });
 
@@ -914,15 +998,20 @@ describe('speechToTextOverride', () => {
     setupDedicatedAudioConfig();
     mockFsStat.mockResolvedValue({ size: 1024 });
     mockFsReadFile.mockResolvedValue(Buffer.from('audio-data'));
-    mockFetch.mockResolvedValue(makeFetchResponse({
-      body: { text: 'Bonjour', language: 'fr', duration: 5.0 },
-    }));
+    mockFetch.mockResolvedValue(
+      makeFetchResponse({
+        body: { text: 'Bonjour', language: 'fr', duration: 5.0 },
+      })
+    );
 
-    const result = await executors.speech_to_text!({
-      source: '/audio/french.mp3',
-      language: 'fr',
-      prompt: 'This is a French conversation',
-    }, defaultContext);
+    const result = await executors.speech_to_text!(
+      {
+        source: '/audio/french.mp3',
+        language: 'fr',
+        prompt: 'This is a French conversation',
+      },
+      defaultContext
+    );
 
     expect(result.isError).toBe(false);
     expect(result.content.text).toBe('Bonjour');
@@ -937,21 +1026,26 @@ describe('speechToTextOverride', () => {
     setupDedicatedAudioConfig();
     mockFsStat.mockResolvedValue({ size: 1024 });
     mockFsReadFile.mockResolvedValue(Buffer.from('audio'));
-    mockFetch.mockResolvedValue(makeFetchResponse({
-      body: {
-        text: 'Hello world',
-        language: 'en',
-        duration: 3.0,
-        segments: [
-          { start: 0, end: 1.5, text: 'Hello' },
-          { start: 1.5, end: 3.0, text: ' world' },
-        ],
-      },
-    }));
+    mockFetch.mockResolvedValue(
+      makeFetchResponse({
+        body: {
+          text: 'Hello world',
+          language: 'en',
+          duration: 3.0,
+          segments: [
+            { start: 0, end: 1.5, text: 'Hello' },
+            { start: 1.5, end: 3.0, text: ' world' },
+          ],
+        },
+      })
+    );
 
-    const result = await executors.speech_to_text!({
-      source: '/audio/test.mp3',
-    }, defaultContext);
+    const result = await executors.speech_to_text!(
+      {
+        source: '/audio/test.mp3',
+      },
+      defaultContext
+    );
 
     expect(result.isError).toBe(false);
     expect(result.content.segments).toHaveLength(2);
@@ -971,10 +1065,13 @@ describe('speechToTextOverride', () => {
       arrayBuffer: vi.fn(),
     });
 
-    const result = await executors.speech_to_text!({
-      source: '/audio/test.mp3',
-      responseFormat: 'text',
-    }, defaultContext);
+    const result = await executors.speech_to_text!(
+      {
+        source: '/audio/test.mp3',
+        responseFormat: 'text',
+      },
+      defaultContext
+    );
 
     expect(result.isError).toBe(false);
     expect(result.content.text).toBe('Plain text transcription');
@@ -984,13 +1081,18 @@ describe('speechToTextOverride', () => {
     setupDedicatedAudioConfig();
     mockFsStat.mockResolvedValue({ size: 1024 });
     mockFsReadFile.mockResolvedValue(Buffer.from('audio'));
-    mockFetch.mockResolvedValue(makeFetchResponse({
-      body: { text: 'Hello' },
-    }));
+    mockFetch.mockResolvedValue(
+      makeFetchResponse({
+        body: { text: 'Hello' },
+      })
+    );
 
-    const result = await executors.speech_to_text!({
-      source: '/audio/test.mp3',
-    }, defaultContext);
+    const result = await executors.speech_to_text!(
+      {
+        source: '/audio/test.mp3',
+      },
+      defaultContext
+    );
 
     expect(result.isError).toBe(false);
     expect(result.content.language).toBe('auto-detected');
@@ -1000,13 +1102,18 @@ describe('speechToTextOverride', () => {
     setupDedicatedAudioConfig();
     mockFsStat.mockResolvedValue({ size: 1024 });
     mockFsReadFile.mockResolvedValue(Buffer.from('audio'));
-    mockFetch.mockResolvedValue(makeFetchResponse({
-      body: { text: 'Hola', language: 'es' },
-    }));
+    mockFetch.mockResolvedValue(
+      makeFetchResponse({
+        body: { text: 'Hola', language: 'es' },
+      })
+    );
 
-    const result = await executors.speech_to_text!({
-      source: '/audio/test.mp3',
-    }, defaultContext);
+    const result = await executors.speech_to_text!(
+      {
+        source: '/audio/test.mp3',
+      },
+      defaultContext
+    );
 
     expect(result.content.language).toBe('es');
   });
@@ -1015,15 +1122,20 @@ describe('speechToTextOverride', () => {
     setupDedicatedAudioConfig();
     mockFsStat.mockResolvedValue({ size: 1024 });
     mockFsReadFile.mockResolvedValue(Buffer.from('audio'));
-    mockFetch.mockResolvedValue(makeFetchResponse({
-      ok: false,
-      status: 400,
-      body: 'Invalid audio format',
-    }));
+    mockFetch.mockResolvedValue(
+      makeFetchResponse({
+        ok: false,
+        status: 400,
+        body: 'Invalid audio format',
+      })
+    );
 
-    const result = await executors.speech_to_text!({
-      source: '/audio/test.mp3',
-    }, defaultContext);
+    const result = await executors.speech_to_text!(
+      {
+        source: '/audio/test.mp3',
+      },
+      defaultContext
+    );
 
     expect(result.isError).toBe(true);
     expect(result.content.error).toContain('Failed to transcribe');
@@ -1035,9 +1147,12 @@ describe('speechToTextOverride', () => {
     mockFsStat.mockResolvedValue({ size: 1024 });
     mockFsReadFile.mockRejectedValue(new Error('ENOENT: no such file'));
 
-    const result = await executors.speech_to_text!({
-      source: '/audio/missing.mp3',
-    }, defaultContext);
+    const result = await executors.speech_to_text!(
+      {
+        source: '/audio/missing.mp3',
+      },
+      defaultContext
+    );
 
     expect(result.isError).toBe(true);
     expect(result.content.error).toContain('Failed to transcribe');
@@ -1047,13 +1162,18 @@ describe('speechToTextOverride', () => {
   it('should handle http:// URLs as well as https://', async () => {
     setupDedicatedAudioConfig();
     mockFetch.mockResolvedValueOnce(makeFetchResponse({ body: Buffer.from('audio').buffer }));
-    mockFetch.mockResolvedValueOnce(makeFetchResponse({
-      body: { text: 'Hello' },
-    }));
+    mockFetch.mockResolvedValueOnce(
+      makeFetchResponse({
+        body: { text: 'Hello' },
+      })
+    );
 
-    const result = await executors.speech_to_text!({
-      source: 'http://example.com/audio.mp3',
-    }, defaultContext);
+    const result = await executors.speech_to_text!(
+      {
+        source: 'http://example.com/audio.mp3',
+      },
+      defaultContext
+    );
 
     expect(result.isError).toBe(false);
     // First fetch was to download the audio
@@ -1089,24 +1209,38 @@ describe('translateAudioOverride', () => {
 
   it('should return error for unsupported format', async () => {
     setupDedicatedAudioConfig();
-    const result = await executors.translate_audio!({
-      source: '/audio/test.txt',
-    }, defaultContext);
+    const result = await executors.translate_audio!(
+      {
+        source: '/audio/test.txt',
+      },
+      defaultContext
+    );
 
     expect(result.isError).toBe(true);
     expect(result.content.error).toContain('Unsupported format: txt');
-    expect(result.content.supportedFormats).toEqual(
-      ['mp3', 'mp4', 'mpeg', 'mpga', 'm4a', 'wav', 'webm', 'ogg', 'flac'],
-    );
+    expect(result.content.supportedFormats).toEqual([
+      'mp3',
+      'mp4',
+      'mpeg',
+      'mpga',
+      'm4a',
+      'wav',
+      'webm',
+      'ogg',
+      'flac',
+    ]);
   });
 
   it('should return error when file exceeds 25MB', async () => {
     setupDedicatedAudioConfig();
     mockFsStat.mockResolvedValue({ size: 30 * 1024 * 1024 });
 
-    const result = await executors.translate_audio!({
-      source: '/audio/large.mp3',
-    }, defaultContext);
+    const result = await executors.translate_audio!(
+      {
+        source: '/audio/large.mp3',
+      },
+      defaultContext
+    );
 
     expect(result.isError).toBe(true);
     expect(result.content.error).toContain('File too large');
@@ -1119,13 +1253,18 @@ describe('translateAudioOverride', () => {
     setupDedicatedAudioConfig();
     mockFsStat.mockResolvedValue({ size: 1024 });
     mockFsReadFile.mockResolvedValue(Buffer.from('audio'));
-    mockFetch.mockResolvedValue(makeFetchResponse({
-      body: { text: 'Translated text', duration: 15.0 },
-    }));
+    mockFetch.mockResolvedValue(
+      makeFetchResponse({
+        body: { text: 'Translated text', duration: 15.0 },
+      })
+    );
 
-    const result = await executors.translate_audio!({
-      source: '/audio/spanish.mp3',
-    }, defaultContext);
+    const result = await executors.translate_audio!(
+      {
+        source: '/audio/spanish.mp3',
+      },
+      defaultContext
+    );
 
     expect(result.isError).toBe(false);
     expect(result.content.success).toBe(true);
@@ -1143,9 +1282,11 @@ describe('translateAudioOverride', () => {
     setupDedicatedAudioConfig();
     mockFsStat.mockResolvedValue({ size: 1024 });
     mockFsReadFile.mockResolvedValue(Buffer.from('audio'));
-    mockFetch.mockResolvedValue(makeFetchResponse({
-      body: { text: 'Hello' },
-    }));
+    mockFetch.mockResolvedValue(
+      makeFetchResponse({
+        body: { text: 'Hello' },
+      })
+    );
 
     await executors.translate_audio!({ source: '/audio/test.mp3' }, defaultContext);
 
@@ -1158,14 +1299,19 @@ describe('translateAudioOverride', () => {
     setupDedicatedAudioConfig();
     mockFsStat.mockResolvedValue({ size: 1024 });
     mockFsReadFile.mockResolvedValue(Buffer.from('audio'));
-    mockFetch.mockResolvedValue(makeFetchResponse({
-      body: { text: 'Translated with context' },
-    }));
+    mockFetch.mockResolvedValue(
+      makeFetchResponse({
+        body: { text: 'Translated with context' },
+      })
+    );
 
-    const result = await executors.translate_audio!({
-      source: '/audio/test.mp3',
-      prompt: 'Technical discussion about coding',
-    }, defaultContext);
+    const result = await executors.translate_audio!(
+      {
+        source: '/audio/test.mp3',
+        prompt: 'Technical discussion about coding',
+      },
+      defaultContext
+    );
 
     expect(result.isError).toBe(false);
     expect(result.content.text).toBe('Translated with context');
@@ -1183,10 +1329,13 @@ describe('translateAudioOverride', () => {
       arrayBuffer: vi.fn(),
     });
 
-    const result = await executors.translate_audio!({
-      source: '/audio/test.mp3',
-      responseFormat: 'text',
-    }, defaultContext);
+    const result = await executors.translate_audio!(
+      {
+        source: '/audio/test.mp3',
+        responseFormat: 'text',
+      },
+      defaultContext
+    );
 
     expect(result.isError).toBe(false);
     expect(result.content.text).toBe('Plain translated text');
@@ -1198,14 +1347,19 @@ describe('translateAudioOverride', () => {
     setupDedicatedAudioConfig();
     mockFsStat.mockResolvedValue({ size: 1024 });
     mockFsReadFile.mockResolvedValue(Buffer.from('audio'));
-    mockFetch.mockResolvedValue(makeFetchResponse({
-      body: { text: 'Translated JSON', duration: 20.0 },
-    }));
+    mockFetch.mockResolvedValue(
+      makeFetchResponse({
+        body: { text: 'Translated JSON', duration: 20.0 },
+      })
+    );
 
-    const result = await executors.translate_audio!({
-      source: '/audio/test.mp3',
-      responseFormat: 'json',
-    }, defaultContext);
+    const result = await executors.translate_audio!(
+      {
+        source: '/audio/test.mp3',
+        responseFormat: 'json',
+      },
+      defaultContext
+    );
 
     expect(result.isError).toBe(false);
     expect(result.content.text).toBe('Translated JSON');
@@ -1217,15 +1371,20 @@ describe('translateAudioOverride', () => {
     setupDedicatedAudioConfig();
     mockFsStat.mockResolvedValue({ size: 1024 });
     mockFsReadFile.mockResolvedValue(Buffer.from('audio'));
-    mockFetch.mockResolvedValue(makeFetchResponse({
-      ok: false,
-      status: 500,
-      body: 'Internal server error',
-    }));
+    mockFetch.mockResolvedValue(
+      makeFetchResponse({
+        ok: false,
+        status: 500,
+        body: 'Internal server error',
+      })
+    );
 
-    const result = await executors.translate_audio!({
-      source: '/audio/test.mp3',
-    }, defaultContext);
+    const result = await executors.translate_audio!(
+      {
+        source: '/audio/test.mp3',
+      },
+      defaultContext
+    );
 
     expect(result.isError).toBe(true);
     expect(result.content.error).toContain('Failed to translate audio');
@@ -1236,9 +1395,12 @@ describe('translateAudioOverride', () => {
     setupDedicatedAudioConfig();
     mockFsStat.mockRejectedValue(new Error('ENOENT'));
 
-    const result = await executors.translate_audio!({
-      source: '/audio/missing.mp3',
-    }, defaultContext);
+    const result = await executors.translate_audio!(
+      {
+        source: '/audio/missing.mp3',
+      },
+      defaultContext
+    );
 
     expect(result.isError).toBe(true);
     expect(result.content.error).toContain('Failed to translate audio');
@@ -1249,13 +1411,18 @@ describe('translateAudioOverride', () => {
     setupDedicatedAudioConfig();
     mockFsStat.mockResolvedValue({ size: 1024 });
     mockFsReadFile.mockResolvedValue(Buffer.from('audio'));
-    mockFetch.mockResolvedValue(makeFetchResponse({
-      body: { text: 'Default format', duration: 5.0 },
-    }));
+    mockFetch.mockResolvedValue(
+      makeFetchResponse({
+        body: { text: 'Default format', duration: 5.0 },
+      })
+    );
 
-    const result = await executors.translate_audio!({
-      source: '/audio/test.mp3',
-    }, defaultContext);
+    const result = await executors.translate_audio!(
+      {
+        source: '/audio/test.mp3',
+      },
+      defaultContext
+    );
 
     expect(result.isError).toBe(false);
     expect(result.content.duration).toBe(5.0); // duration only available with JSON
@@ -1265,13 +1432,18 @@ describe('translateAudioOverride', () => {
     setupDefaultProviderFallback();
     mockFsStat.mockResolvedValue({ size: 1024 });
     mockFsReadFile.mockResolvedValue(Buffer.from('audio'));
-    mockFetch.mockResolvedValue(makeFetchResponse({
-      body: { text: 'Fallback translation' },
-    }));
+    mockFetch.mockResolvedValue(
+      makeFetchResponse({
+        body: { text: 'Fallback translation' },
+      })
+    );
 
-    const result = await executors.translate_audio!({
-      source: '/audio/test.mp3',
-    }, defaultContext);
+    const result = await executors.translate_audio!(
+      {
+        source: '/audio/test.mp3',
+      },
+      defaultContext
+    );
 
     expect(result.isError).toBe(false);
     expect(result.content.text).toBe('Fallback translation');
@@ -1302,9 +1474,12 @@ describe('splitAudioOverride', () => {
   it('should return error when source file not found', async () => {
     mockFsAccess.mockRejectedValue(new Error('ENOENT: no such file'));
 
-    const result = await executors.split_audio!({
-      source: '/audio/missing.mp3',
-    }, defaultContext);
+    const result = await executors.split_audio!(
+      {
+        source: '/audio/missing.mp3',
+      },
+      defaultContext
+    );
 
     expect(result.isError).toBe(true);
     expect(result.content.error).toContain('Failed to split audio');
@@ -1327,9 +1502,12 @@ describe('splitAudioOverride', () => {
       'podcast_segment_002.mp3',
     ]);
 
-    const result = await executors.split_audio!({
-      source: '/audio/podcast.mp3',
-    }, defaultContext);
+    const result = await executors.split_audio!(
+      {
+        source: '/audio/podcast.mp3',
+      },
+      defaultContext
+    );
 
     expect(result.isError).toBe(false);
     expect(result.content.success).toBe(true);
@@ -1374,10 +1552,13 @@ describe('splitAudioOverride', () => {
     });
     mockFsReaddir.mockResolvedValue([]);
 
-    await executors.split_audio!({
-      source: '/audio/test.mp3',
-      segmentDuration: 300,
-    }, defaultContext);
+    await executors.split_audio!(
+      {
+        source: '/audio/test.mp3',
+        segmentDuration: 300,
+      },
+      defaultContext
+    );
 
     const cmdArgs = mockExecFile.mock.calls[0]![1] as string[];
     expect(cmdArgs).toContain('300');
@@ -1391,9 +1572,12 @@ describe('splitAudioOverride', () => {
     });
     mockFsReaddir.mockResolvedValue([]);
 
-    const result = await executors.split_audio!({
-      source: '/audio/test.mp3',
-    }, { workspaceDir: '/my/workspace' });
+    const result = await executors.split_audio!(
+      {
+        source: '/audio/test.mp3',
+      },
+      { workspaceDir: '/my/workspace' }
+    );
 
     expect(result.content.outputDir).toBe('/my/workspace/audio_segments');
   });
@@ -1406,10 +1590,13 @@ describe('splitAudioOverride', () => {
     });
     mockFsReaddir.mockResolvedValue([]);
 
-    const result = await executors.split_audio!({
-      source: '/audio/test.mp3',
-      outputDir: '/custom/output',
-    }, defaultContext);
+    const result = await executors.split_audio!(
+      {
+        source: '/audio/test.mp3',
+        outputDir: '/custom/output',
+      },
+      defaultContext
+    );
 
     expect(result.content.outputDir).toBe('/custom/output');
     expect(mockFsMkdir).toHaveBeenCalledWith('/custom/output', { recursive: true });
@@ -1423,9 +1610,12 @@ describe('splitAudioOverride', () => {
     });
     mockFsReaddir.mockResolvedValue([]);
 
-    const result = await executors.split_audio!({
-      source: '/audio/files/test.mp3',
-    }, {});
+    const result = await executors.split_audio!(
+      {
+        source: '/audio/files/test.mp3',
+      },
+      {}
+    );
 
     // path.dirname('/audio/files/test.mp3') => '/audio/files', then join with 'audio_segments'
     expect(result.content.outputDir).toBe('/audio/files/audio_segments');
@@ -1444,9 +1634,12 @@ describe('splitAudioOverride', () => {
       'song_segment_002.mp3',
     ]);
 
-    const result = await executors.split_audio!({
-      source: '/audio/song.mp3',
-    }, defaultContext);
+    const result = await executors.split_audio!(
+      {
+        source: '/audio/song.mp3',
+      },
+      defaultContext
+    );
 
     expect(result.isError).toBe(false);
     // Only files matching baseName_segment_ and .format should be included
@@ -1468,9 +1661,12 @@ describe('splitAudioOverride', () => {
       'test_segment_001.mp3',
     ]);
 
-    const result = await executors.split_audio!({
-      source: '/audio/test.mp3',
-    }, defaultContext);
+    const result = await executors.split_audio!(
+      {
+        source: '/audio/test.mp3',
+      },
+      defaultContext
+    );
 
     expect(result.content.segments[0].path).toContain('test_segment_000');
     expect(result.content.segments[1].path).toContain('test_segment_001');
@@ -1485,10 +1681,13 @@ describe('splitAudioOverride', () => {
     });
     mockFsReaddir.mockResolvedValue([]);
 
-    const result = await executors.split_audio!({
-      source: '/audio/test.mp3',
-      segmentDuration: 120,
-    }, defaultContext);
+    const result = await executors.split_audio!(
+      {
+        source: '/audio/test.mp3',
+        segmentDuration: 120,
+      },
+      defaultContext
+    );
 
     expect(result.content.segmentDuration).toBe('120 seconds');
   });
@@ -1499,14 +1698,15 @@ describe('splitAudioOverride', () => {
       const cb = args[args.length - 1] as (...cbArgs: unknown[]) => unknown;
       cb(null, { stdout: '', stderr: '' });
     });
-    mockFsReaddir.mockResolvedValue([
-      'test_segment_000.wav',
-    ]);
+    mockFsReaddir.mockResolvedValue(['test_segment_000.wav']);
 
-    const result = await executors.split_audio!({
-      source: '/audio/test.mp3',
-      format: 'wav',
-    }, defaultContext);
+    const result = await executors.split_audio!(
+      {
+        source: '/audio/test.mp3',
+        format: 'wav',
+      },
+      defaultContext
+    );
 
     expect(result.content.format).toBe('wav');
     // output pattern should contain .wav
@@ -1538,9 +1738,12 @@ describe('splitAudioOverride', () => {
       cb(new Error('ENOENT: ffmpeg not found'));
     });
 
-    const result = await executors.split_audio!({
-      source: '/audio/test.mp3',
-    }, defaultContext);
+    const result = await executors.split_audio!(
+      {
+        source: '/audio/test.mp3',
+      },
+      defaultContext
+    );
 
     expect(result.isError).toBe(true);
     expect(result.content.error).toContain('FFmpeg not installed');
@@ -1554,9 +1757,12 @@ describe('splitAudioOverride', () => {
       cb(new Error('ffmpeg is not recognized as an internal or external command'));
     });
 
-    const result = await executors.split_audio!({
-      source: '/audio/test.mp3',
-    }, defaultContext);
+    const result = await executors.split_audio!(
+      {
+        source: '/audio/test.mp3',
+      },
+      defaultContext
+    );
 
     expect(result.isError).toBe(true);
     expect(result.content.error).toContain('FFmpeg not installed');
@@ -1569,9 +1775,12 @@ describe('splitAudioOverride', () => {
       cb(new Error('command not found: ffmpeg'));
     });
 
-    const result = await executors.split_audio!({
-      source: '/audio/test.mp3',
-    }, defaultContext);
+    const result = await executors.split_audio!(
+      {
+        source: '/audio/test.mp3',
+      },
+      defaultContext
+    );
 
     expect(result.isError).toBe(true);
     expect(result.content.error).toContain('FFmpeg not installed');
@@ -1584,9 +1793,12 @@ describe('splitAudioOverride', () => {
       cb(new Error('Invalid codec'));
     });
 
-    const result = await executors.split_audio!({
-      source: '/audio/test.mp3',
-    }, defaultContext);
+    const result = await executors.split_audio!(
+      {
+        source: '/audio/test.mp3',
+      },
+      defaultContext
+    );
 
     expect(result.isError).toBe(true);
     expect(result.content.error).toContain('Failed to split audio');
@@ -1603,9 +1815,12 @@ describe('splitAudioOverride', () => {
     });
     mockFsReaddir.mockResolvedValue([]);
 
-    const result = await executors.split_audio!({
-      source: '/audio/test.mp3',
-    }, defaultContext);
+    const result = await executors.split_audio!(
+      {
+        source: '/audio/test.mp3',
+      },
+      defaultContext
+    );
 
     expect(result.isError).toBe(false);
     expect(result.content.segmentCount).toBe(0);
@@ -1619,14 +1834,14 @@ describe('splitAudioOverride', () => {
       const cb = args[args.length - 1] as (...cbArgs: unknown[]) => unknown;
       cb(null, { stdout: '', stderr: '' });
     });
-    mockFsReaddir.mockResolvedValue([
-      'test_segment_000.mp3',
-      'test_segment_001.mp3',
-    ]);
+    mockFsReaddir.mockResolvedValue(['test_segment_000.mp3', 'test_segment_001.mp3']);
 
-    await executors.split_audio!({
-      source: '/audio/test.mp3',
-    }, defaultContext);
+    await executors.split_audio!(
+      {
+        source: '/audio/test.mp3',
+      },
+      defaultContext
+    );
 
     expect(mockLogInfo).toHaveBeenCalledWith(expect.stringContaining('2 segments'));
   });
@@ -1673,9 +1888,12 @@ describe('edge cases', () => {
     });
     mockFsReaddir.mockResolvedValue([]);
 
-    const result = await executors.split_audio!({
-      source: '/audio/test.mp3',
-    }, { workspaceDir: '/custom/workspace' });
+    const result = await executors.split_audio!(
+      {
+        source: '/audio/test.mp3',
+      },
+      { workspaceDir: '/custom/workspace' }
+    );
 
     expect(result.content.outputDir).toBe('/custom/workspace/audio_segments');
   });
@@ -1683,7 +1901,7 @@ describe('edge cases', () => {
   it('should handle concurrent calls independently', async () => {
     setupDedicatedAudioConfig();
     mockFetch.mockImplementation(() =>
-      Promise.resolve(makeFetchResponse({ body: new ArrayBuffer(5) })),
+      Promise.resolve(makeFetchResponse({ body: new ArrayBuffer(5) }))
     );
     mockFsStat.mockResolvedValue({ size: 1024 });
 
@@ -1703,7 +1921,7 @@ describe('edge cases', () => {
     mockUpsert.mockRejectedValue(new Error('Connection timeout'));
     const mockRegistry = { updateExecutor: vi.fn(() => true) };
     await registerAudioOverrides(mockRegistry as never);
-    await new Promise(r => setTimeout(r, 10));
+    await new Promise((r) => setTimeout(r, 10));
     // Should not throw; just logs debug
     expect(mockLogDebug).toHaveBeenCalled();
   });
@@ -1714,10 +1932,13 @@ describe('edge cases', () => {
     mockFetch.mockResolvedValue(makeFetchResponse({ body: Buffer.from('audio').buffer }));
     mockFsStat.mockResolvedValue({ size: 1024 });
 
-    const openaiResult = await executors.text_to_speech!({
-      text: 'Hello',
-      model: 'tts-1-hd',
-    }, defaultContext);
+    const openaiResult = await executors.text_to_speech!(
+      {
+        text: 'Hello',
+        model: 'tts-1-hd',
+      },
+      defaultContext
+    );
     expect(openaiResult.content.model).toBe('tts-1-hd');
 
     // ElevenLabs case
@@ -1729,10 +1950,13 @@ describe('edge cases', () => {
     mockFsMkdir.mockResolvedValue(undefined);
     mockFsWriteFile.mockResolvedValue(undefined);
 
-    const elResult = await executors.text_to_speech!({
-      text: 'Hello',
-      model: 'tts-1-hd',
-    }, defaultContext);
+    const elResult = await executors.text_to_speech!(
+      {
+        text: 'Hello',
+        model: 'tts-1-hd',
+      },
+      defaultContext
+    );
     expect(elResult.content.model).toBe('elevenlabs');
   });
 });

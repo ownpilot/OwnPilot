@@ -16,10 +16,7 @@ vi.mock('../../db/repositories/channel-users.js', () => ({
 }));
 
 import { getEventBus } from '@ownpilot/core';
-import {
-  ChannelVerificationService,
-  getChannelVerificationService,
-} from './verification.js';
+import { ChannelVerificationService, getChannelVerificationService } from './verification.js';
 import type { ChannelVerificationRepository } from '../../db/repositories/channel-verification.js';
 import type { ChannelUsersRepository } from '../../db/repositories/channel-users.js';
 
@@ -106,10 +103,7 @@ describe('ChannelVerificationService', () => {
 
       await service.generateToken('user-1');
 
-      expect(mockVerificationRepo.generateToken).toHaveBeenCalledWith(
-        'user-1',
-        undefined
-      );
+      expect(mockVerificationRepo.generateToken).toHaveBeenCalledWith('user-1', undefined);
     });
 
     it('should return token and expiresAt from repo', async () => {
@@ -133,10 +127,7 @@ describe('ChannelVerificationService', () => {
 
       await service.generateToken('user-1', options);
 
-      expect(mockVerificationRepo.generateToken).toHaveBeenCalledWith(
-        'user-1',
-        options
-      );
+      expect(mockVerificationRepo.generateToken).toHaveBeenCalledWith('user-1', options);
     });
   });
 
@@ -157,14 +148,11 @@ describe('ChannelVerificationService', () => {
       mockUsersRepo.findOrCreate.mockResolvedValue(channelUser);
       mockUsersRepo.markVerified.mockResolvedValue(undefined);
       mockVerificationRepo.consumeToken.mockResolvedValue(undefined);
-      vi.mocked(getEventBus).mockReturnValue({ emit: vi.fn() } as unknown as ReturnType<typeof getEventBus>);
+      vi.mocked(getEventBus).mockReturnValue({ emit: vi.fn() } as unknown as ReturnType<
+        typeof getEventBus
+      >);
 
-      const result = await service.verifyToken(
-        token,
-        platform,
-        platformUserId,
-        displayName
-      );
+      const result = await service.verifyToken(token, platform, platformUserId, displayName);
 
       expect(result).toEqual({
         success: true,
@@ -175,12 +163,7 @@ describe('ChannelVerificationService', () => {
     it('should return error when token is invalid or expired', async () => {
       mockVerificationRepo.findValidToken.mockResolvedValue(null);
 
-      const result = await service.verifyToken(
-        token,
-        platform,
-        platformUserId,
-        displayName
-      );
+      const result = await service.verifyToken(token, platform, platformUserId, displayName);
 
       expect(result).toEqual({
         success: false,
@@ -193,15 +176,11 @@ describe('ChannelVerificationService', () => {
       const tokenEntity = makeTokenEntity();
       mockVerificationRepo.findValidToken.mockResolvedValue(tokenEntity);
       mockUsersRepo.findOrCreate.mockResolvedValue(makeChannelUser());
-      vi.mocked(getEventBus).mockReturnValue({ emit: vi.fn() } as unknown as ReturnType<typeof getEventBus>);
+      vi.mocked(getEventBus).mockReturnValue({ emit: vi.fn() } as unknown as ReturnType<
+        typeof getEventBus
+      >);
 
-      await service.verifyToken(
-        token,
-        platform,
-        platformUserId,
-        displayName,
-        'alice_tg'
-      );
+      await service.verifyToken(token, platform, platformUserId, displayName, 'alice_tg');
 
       expect(mockUsersRepo.findOrCreate).toHaveBeenCalledWith({
         platform,
@@ -217,7 +196,9 @@ describe('ChannelVerificationService', () => {
       const channelUser = makeChannelUser({ id: 'cu-42' });
       mockVerificationRepo.findValidToken.mockResolvedValue(tokenEntity);
       mockUsersRepo.findOrCreate.mockResolvedValue(channelUser);
-      vi.mocked(getEventBus).mockReturnValue({ emit: vi.fn() } as unknown as ReturnType<typeof getEventBus>);
+      vi.mocked(getEventBus).mockReturnValue({ emit: vi.fn() } as unknown as ReturnType<
+        typeof getEventBus
+      >);
 
       await service.verifyToken(token, platform, platformUserId, displayName);
 
@@ -233,14 +214,13 @@ describe('ChannelVerificationService', () => {
       const channelUser = makeChannelUser({ id: 'cu-42' });
       mockVerificationRepo.findValidToken.mockResolvedValue(tokenEntity);
       mockUsersRepo.findOrCreate.mockResolvedValue(channelUser);
-      vi.mocked(getEventBus).mockReturnValue({ emit: vi.fn() } as unknown as ReturnType<typeof getEventBus>);
+      vi.mocked(getEventBus).mockReturnValue({ emit: vi.fn() } as unknown as ReturnType<
+        typeof getEventBus
+      >);
 
       await service.verifyToken(token, platform, platformUserId, displayName);
 
-      expect(mockVerificationRepo.consumeToken).toHaveBeenCalledWith(
-        'tok-99',
-        'cu-42'
-      );
+      expect(mockVerificationRepo.consumeToken).toHaveBeenCalledWith('tok-99', 'cu-42');
     });
 
     it('should emit channel.user.verified event on success', async () => {
@@ -248,7 +228,9 @@ describe('ChannelVerificationService', () => {
       mockVerificationRepo.findValidToken.mockResolvedValue(tokenEntity);
       mockUsersRepo.findOrCreate.mockResolvedValue(makeChannelUser());
       const mockEmit = vi.fn();
-      vi.mocked(getEventBus).mockReturnValue({ emit: mockEmit } as unknown as ReturnType<typeof getEventBus>);
+      vi.mocked(getEventBus).mockReturnValue({ emit: mockEmit } as unknown as ReturnType<
+        typeof getEventBus
+      >);
 
       await service.verifyToken(token, platform, platformUserId, displayName);
 
@@ -263,12 +245,7 @@ describe('ChannelVerificationService', () => {
         throw new Error('EventBus not initialized');
       });
 
-      const result = await service.verifyToken(
-        token,
-        platform,
-        platformUserId,
-        displayName
-      );
+      const result = await service.verifyToken(token, platform, platformUserId, displayName);
 
       expect(result).toEqual({
         success: true,
@@ -280,7 +257,9 @@ describe('ChannelVerificationService', () => {
       const tokenEntity = makeTokenEntity();
       mockVerificationRepo.findValidToken.mockResolvedValue(tokenEntity);
       mockUsersRepo.findOrCreate.mockResolvedValue(makeChannelUser());
-      vi.mocked(getEventBus).mockReturnValue({ emit: vi.fn() } as unknown as ReturnType<typeof getEventBus>);
+      vi.mocked(getEventBus).mockReturnValue({ emit: vi.fn() } as unknown as ReturnType<
+        typeof getEventBus
+      >);
 
       await service.verifyToken(token, platform, platformUserId, displayName);
 
@@ -334,9 +313,7 @@ describe('ChannelVerificationService', () => {
     });
 
     it('should return false when isVerified is explicitly false', async () => {
-      mockUsersRepo.findByPlatform.mockResolvedValue(
-        makeChannelUser({ isVerified: false })
-      );
+      mockUsersRepo.findByPlatform.mockResolvedValue(makeChannelUser({ isVerified: false }));
 
       const result = await service.isVerified('telegram', 'tg-123');
 
@@ -368,10 +345,7 @@ describe('ChannelVerificationService', () => {
     });
 
     it('should return true when user is among multiple entries', async () => {
-      const result = await service.checkWhitelist(
-        ['tg-111', 'tg-123', 'tg-456'],
-        'tg-123'
-      );
+      const result = await service.checkWhitelist(['tg-111', 'tg-123', 'tg-456'], 'tg-123');
 
       expect(result).toBe(true);
     });
@@ -388,11 +362,7 @@ describe('ChannelVerificationService', () => {
 
       await service.verifyViaWhitelist('telegram', 'tg-123', 'Alice');
 
-      expect(mockUsersRepo.markVerified).toHaveBeenCalledWith(
-        user.id,
-        'default',
-        'whitelist'
-      );
+      expect(mockUsersRepo.markVerified).toHaveBeenCalledWith(user.id, 'default', 'whitelist');
     });
 
     it('should skip markVerified for an already verified user', async () => {
@@ -408,19 +378,13 @@ describe('ChannelVerificationService', () => {
       const user = makeChannelUser({ isVerified: false });
       mockUsersRepo.findOrCreate.mockResolvedValue(user);
 
-      const result = await service.verifyViaWhitelist(
-        'telegram',
-        'tg-123',
-        'Alice'
-      );
+      const result = await service.verifyViaWhitelist('telegram', 'tg-123', 'Alice');
 
       expect(result.isVerified).toBe(true);
     });
 
     it('should use default ownpilotUserId when not specified', async () => {
-      mockUsersRepo.findOrCreate.mockResolvedValue(
-        makeChannelUser({ isVerified: false })
-      );
+      mockUsersRepo.findOrCreate.mockResolvedValue(makeChannelUser({ isVerified: false }));
 
       await service.verifyViaWhitelist('telegram', 'tg-123', 'Alice');
 
@@ -430,16 +394,9 @@ describe('ChannelVerificationService', () => {
     });
 
     it('should use provided ownpilotUserId when specified', async () => {
-      mockUsersRepo.findOrCreate.mockResolvedValue(
-        makeChannelUser({ isVerified: false })
-      );
+      mockUsersRepo.findOrCreate.mockResolvedValue(makeChannelUser({ isVerified: false }));
 
-      await service.verifyViaWhitelist(
-        'telegram',
-        'tg-123',
-        'Alice',
-        'custom-owner'
-      );
+      await service.verifyViaWhitelist('telegram', 'tg-123', 'Alice', 'custom-owner');
 
       expect(mockUsersRepo.findOrCreate).toHaveBeenCalledWith(
         expect.objectContaining({ ownpilotUserId: 'custom-owner' })
@@ -520,16 +477,11 @@ describe('ChannelVerificationService', () => {
     });
 
     it('should call usersRepo.block with correct user ID', async () => {
-      mockUsersRepo.findByPlatform.mockResolvedValue(
-        makeChannelUser({ id: 'cu-special' })
-      );
+      mockUsersRepo.findByPlatform.mockResolvedValue(makeChannelUser({ id: 'cu-special' }));
 
       await service.blockUser('telegram', 'tg-999');
 
-      expect(mockUsersRepo.findByPlatform).toHaveBeenCalledWith(
-        'telegram',
-        'tg-999'
-      );
+      expect(mockUsersRepo.findByPlatform).toHaveBeenCalledWith('telegram', 'tg-999');
       expect(mockUsersRepo.block).toHaveBeenCalledWith('cu-special');
     });
   });
@@ -559,16 +511,11 @@ describe('ChannelVerificationService', () => {
     });
 
     it('should call usersRepo.unblock with correct user ID', async () => {
-      mockUsersRepo.findByPlatform.mockResolvedValue(
-        makeChannelUser({ id: 'cu-unblock' })
-      );
+      mockUsersRepo.findByPlatform.mockResolvedValue(makeChannelUser({ id: 'cu-unblock' }));
 
       await service.unblockUser('telegram', 'tg-555');
 
-      expect(mockUsersRepo.findByPlatform).toHaveBeenCalledWith(
-        'telegram',
-        'tg-555'
-      );
+      expect(mockUsersRepo.findByPlatform).toHaveBeenCalledWith('telegram', 'tg-555');
       expect(mockUsersRepo.unblock).toHaveBeenCalledWith('cu-unblock');
     });
   });

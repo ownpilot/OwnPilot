@@ -64,11 +64,14 @@ export interface McpServerInfo {
       category?: string;
     }>;
   };
-  configSnippets: Record<string, {
-    label: string;
-    description: string;
-    config: Record<string, unknown>;
-  }>;
+  configSnippets: Record<
+    string,
+    {
+      label: string;
+      description: string;
+      config: Record<string, unknown>;
+    }
+  >;
 }
 
 export interface UpdateMcpServerInput {
@@ -86,36 +89,31 @@ export interface UpdateMcpServerInput {
 
 export const mcpApi = {
   /** Get OwnPilot MCP server info (endpoint URL, exposed tools, config snippets) */
-  serverInfo: () =>
-    apiClient.get<McpServerInfo>('/mcp/serve/info'),
+  serverInfo: () => apiClient.get<McpServerInfo>('/mcp/serve/info'),
 
   /** List all configured MCP servers */
-  list: () =>
-    apiClient.get<{ servers: McpServer[]; count: number }>('/mcp'),
+  list: () => apiClient.get<{ servers: McpServer[]; count: number }>('/mcp'),
 
   /** Add new MCP server configuration */
-  create: (data: CreateMcpServerInput) =>
-    apiClient.post<McpServer>('/mcp', data),
+  create: (data: CreateMcpServerInput) => apiClient.post<McpServer>('/mcp', data),
 
   /** Get server details */
-  get: (id: string) =>
-    apiClient.get<McpServer>(`/mcp/${id}`),
+  get: (id: string) => apiClient.get<McpServer>(`/mcp/${id}`),
 
   /** Update server configuration */
-  update: (id: string, data: UpdateMcpServerInput) =>
-    apiClient.put<McpServer>(`/mcp/${id}`, data),
+  update: (id: string, data: UpdateMcpServerInput) => apiClient.put<McpServer>(`/mcp/${id}`, data),
 
   /** Delete server configuration */
-  delete: (id: string) =>
-    apiClient.delete<{ deleted: boolean }>(`/mcp/${id}`),
+  delete: (id: string) => apiClient.delete<{ deleted: boolean }>(`/mcp/${id}`),
 
   /** Connect to server */
   connect: (id: string) =>
-    apiClient.post<{ connected: boolean; tools: McpServerTool[]; toolCount: number }>(`/mcp/${id}/connect`),
+    apiClient.post<{ connected: boolean; tools: McpServerTool[]; toolCount: number }>(
+      `/mcp/${id}/connect`
+    ),
 
   /** Disconnect from server */
-  disconnect: (id: string) =>
-    apiClient.post<{ disconnected: boolean }>(`/mcp/${id}/disconnect`),
+  disconnect: (id: string) => apiClient.post<{ disconnected: boolean }>(`/mcp/${id}/disconnect`),
 
   /** List tools from a connected server */
   tools: (id: string) =>
@@ -125,6 +123,6 @@ export const mcpApi = {
   setToolSettings: (serverId: string, toolName: string, workflowUsable: boolean) =>
     apiClient.patch<{ toolName: string; workflowUsable: boolean }>(
       `/mcp/${serverId}/tool-settings`,
-      { toolName, workflowUsable },
+      { toolName, workflowUsable }
     ),
 };

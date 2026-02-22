@@ -39,7 +39,9 @@ export function MemoryCards({ memories, onAccept, onReject }: MemoryCardsProps) 
           key={`${memory.type}-${index}`}
           className="flex items-center gap-2 px-3 py-2 bg-bg-tertiary dark:bg-dark-bg-tertiary border border-border dark:border-dark-border rounded-lg text-sm"
         >
-          <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium shrink-0 ${TYPE_COLORS[memory.type] ?? TYPE_COLORS.conversation}`}>
+          <span
+            className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium shrink-0 ${TYPE_COLORS[memory.type] ?? TYPE_COLORS.conversation}`}
+          >
             {TYPE_LABELS[memory.type] ?? memory.type}
           </span>
           <span className="flex-1 truncate text-text-primary dark:text-dark-text-primary">
@@ -50,7 +52,16 @@ export function MemoryCards({ memories, onAccept, onReject }: MemoryCardsProps) 
             title="Save memory"
             className="p-1 rounded hover:bg-green-100 dark:hover:bg-green-900/30 text-text-muted dark:text-dark-text-muted hover:text-green-600 dark:hover:text-green-400 transition-colors shrink-0"
           >
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 16 16"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
               <polyline points="3.5 8 6.5 11 12.5 5" />
             </svg>
           </button>
@@ -59,7 +70,16 @@ export function MemoryCards({ memories, onAccept, onReject }: MemoryCardsProps) 
             title="Dismiss memory"
             className="p-1 rounded hover:bg-red-100 dark:hover:bg-red-900/30 text-text-muted dark:text-dark-text-muted hover:text-red-600 dark:hover:text-red-400 transition-colors shrink-0"
           >
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 16 16"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
               <line x1="4" y1="4" x2="12" y2="12" />
               <line x1="12" y1="4" x2="4" y2="12" />
             </svg>

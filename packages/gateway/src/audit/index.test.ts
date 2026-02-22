@@ -42,12 +42,7 @@ async function freshModule() {
 
 import { createAuditLogger } from '@ownpilot/core';
 import { getDataPaths } from '../paths/index.js';
-import {
-  logToolExecution,
-  logChatEvent,
-  logAgentEvent,
-  logSystemEvent,
-} from './index.js';
+import { logToolExecution, logChatEvent, logAgentEvent, logSystemEvent } from './index.js';
 
 // ---------------------------------------------------------------------------
 // Tests
@@ -94,9 +89,7 @@ describe('audit/index', () => {
       try {
         const { getAuditLogger: fresh } = await freshModule();
         fresh();
-        expect(createAuditLogger).toHaveBeenCalledWith(
-          expect.objectContaining({ console: true })
-        );
+        expect(createAuditLogger).toHaveBeenCalledWith(expect.objectContaining({ console: true }));
       } finally {
         process.env.NODE_ENV = original;
       }
@@ -108,9 +101,7 @@ describe('audit/index', () => {
       try {
         const { getAuditLogger: fresh } = await freshModule();
         fresh();
-        expect(createAuditLogger).toHaveBeenCalledWith(
-          expect.objectContaining({ console: false })
-        );
+        expect(createAuditLogger).toHaveBeenCalledWith(expect.objectContaining({ console: false }));
       } finally {
         process.env.NODE_ENV = original;
       }
@@ -122,9 +113,7 @@ describe('audit/index', () => {
       try {
         const { getAuditLogger: fresh } = await freshModule();
         fresh();
-        expect(createAuditLogger).toHaveBeenCalledWith(
-          expect.objectContaining({ console: false })
-        );
+        expect(createAuditLogger).toHaveBeenCalledWith(expect.objectContaining({ console: false }));
       } finally {
         process.env.NODE_ENV = original;
       }
@@ -186,23 +175,17 @@ describe('audit/index', () => {
 
     it('calls logger.log with type "tool.error" when error is present', async () => {
       await logToolExecution({ ...baseParams, error: 'timeout' });
-      expect(mockLogger.log).toHaveBeenCalledWith(
-        expect.objectContaining({ type: 'tool.error' })
-      );
+      expect(mockLogger.log).toHaveBeenCalledWith(expect.objectContaining({ type: 'tool.error' }));
     });
 
     it('sets severity to "info" for a successful execution', async () => {
       await logToolExecution(baseParams);
-      expect(mockLogger.log).toHaveBeenCalledWith(
-        expect.objectContaining({ severity: 'info' })
-      );
+      expect(mockLogger.log).toHaveBeenCalledWith(expect.objectContaining({ severity: 'info' }));
     });
 
     it('sets severity to "error" when error is present', async () => {
       await logToolExecution({ ...baseParams, error: 'something went wrong' });
-      expect(mockLogger.log).toHaveBeenCalledWith(
-        expect.objectContaining({ severity: 'error' })
-      );
+      expect(mockLogger.log).toHaveBeenCalledWith(expect.objectContaining({ severity: 'error' }));
     });
 
     it('sets actor type to "agent"', async () => {
@@ -255,16 +238,12 @@ describe('audit/index', () => {
 
     it('sets outcome to "success" when no error', async () => {
       await logToolExecution(baseParams);
-      expect(mockLogger.log).toHaveBeenCalledWith(
-        expect.objectContaining({ outcome: 'success' })
-      );
+      expect(mockLogger.log).toHaveBeenCalledWith(expect.objectContaining({ outcome: 'success' }));
     });
 
     it('sets outcome to "failure" when error is present', async () => {
       await logToolExecution({ ...baseParams, error: 'network error' });
-      expect(mockLogger.log).toHaveBeenCalledWith(
-        expect.objectContaining({ outcome: 'failure' })
-      );
+      expect(mockLogger.log).toHaveBeenCalledWith(expect.objectContaining({ outcome: 'failure' }));
     });
 
     it('includes durationMs in details', async () => {
@@ -332,7 +311,13 @@ describe('audit/index', () => {
     it('awaits the logger.log promise', async () => {
       let resolved = false;
       mockLogger.log.mockImplementationOnce(
-        () => new Promise<void>(res => setTimeout(() => { resolved = true; res(); }, 0))
+        () =>
+          new Promise<void>((res) =>
+            setTimeout(() => {
+              resolved = true;
+              res();
+            }, 0)
+          )
       );
       await logToolExecution(baseParams);
       expect(resolved).toBe(true);
@@ -374,16 +359,12 @@ describe('audit/index', () => {
 
     it('sets severity to "info" when no error', async () => {
       await logChatEvent({ ...baseParams, type: 'complete' });
-      expect(mockLogger.log).toHaveBeenCalledWith(
-        expect.objectContaining({ severity: 'info' })
-      );
+      expect(mockLogger.log).toHaveBeenCalledWith(expect.objectContaining({ severity: 'info' }));
     });
 
     it('sets severity to "error" when error is present', async () => {
       await logChatEvent({ ...baseParams, type: 'error', error: 'api_error' });
-      expect(mockLogger.log).toHaveBeenCalledWith(
-        expect.objectContaining({ severity: 'error' })
-      );
+      expect(mockLogger.log).toHaveBeenCalledWith(expect.objectContaining({ severity: 'error' }));
     });
 
     it('sets actor type to "agent" with the provided agentId', async () => {
@@ -405,7 +386,12 @@ describe('audit/index', () => {
     });
 
     it('sets resource name to "provider/model"', async () => {
-      await logChatEvent({ ...baseParams, type: 'complete', provider: 'anthropic', model: 'claude-3' });
+      await logChatEvent({
+        ...baseParams,
+        type: 'complete',
+        provider: 'anthropic',
+        model: 'claude-3',
+      });
       expect(mockLogger.log).toHaveBeenCalledWith(
         expect.objectContaining({
           resource: expect.objectContaining({ name: 'anthropic/claude-3' }),
@@ -451,16 +437,12 @@ describe('audit/index', () => {
 
     it('sets outcome to "success" when no error', async () => {
       await logChatEvent({ ...baseParams, type: 'complete' });
-      expect(mockLogger.log).toHaveBeenCalledWith(
-        expect.objectContaining({ outcome: 'success' })
-      );
+      expect(mockLogger.log).toHaveBeenCalledWith(expect.objectContaining({ outcome: 'success' }));
     });
 
     it('sets outcome to "failure" when error is present', async () => {
       await logChatEvent({ ...baseParams, type: 'error', error: 'rate_limit' });
-      expect(mockLogger.log).toHaveBeenCalledWith(
-        expect.objectContaining({ outcome: 'failure' })
-      );
+      expect(mockLogger.log).toHaveBeenCalledWith(expect.objectContaining({ outcome: 'failure' }));
     });
 
     it('sets correlationId from requestId', async () => {
@@ -566,16 +548,12 @@ describe('audit/index', () => {
 
     it('sets severity to "info"', async () => {
       await logAgentEvent({ ...baseParams, type: 'create' });
-      expect(mockLogger.log).toHaveBeenCalledWith(
-        expect.objectContaining({ severity: 'info' })
-      );
+      expect(mockLogger.log).toHaveBeenCalledWith(expect.objectContaining({ severity: 'info' }));
     });
 
     it('sets outcome to "success"', async () => {
       await logAgentEvent({ ...baseParams, type: 'destroy' });
-      expect(mockLogger.log).toHaveBeenCalledWith(
-        expect.objectContaining({ outcome: 'success' })
-      );
+      expect(mockLogger.log).toHaveBeenCalledWith(expect.objectContaining({ outcome: 'success' }));
     });
 
     it('includes provided details object in the event', async () => {
@@ -593,9 +571,7 @@ describe('audit/index', () => {
 
     it('uses empty object for details when details is undefined', async () => {
       await logAgentEvent({ ...baseParams, type: 'create' });
-      expect(mockLogger.log).toHaveBeenCalledWith(
-        expect.objectContaining({ details: {} })
-      );
+      expect(mockLogger.log).toHaveBeenCalledWith(expect.objectContaining({ details: {} }));
     });
 
     it('sets correlationId from requestId when provided', async () => {
@@ -626,9 +602,7 @@ describe('audit/index', () => {
 
     it('maps type "stop" to audit event type "system.stop"', async () => {
       await logSystemEvent({ type: 'stop' });
-      expect(mockLogger.log).toHaveBeenCalledWith(
-        expect.objectContaining({ type: 'system.stop' })
-      );
+      expect(mockLogger.log).toHaveBeenCalledWith(expect.objectContaining({ type: 'system.stop' }));
     });
 
     it('maps type "error" to audit event type "system.error"', async () => {
@@ -647,16 +621,12 @@ describe('audit/index', () => {
 
     it('sets severity to "info" when no error is present', async () => {
       await logSystemEvent({ type: 'start' });
-      expect(mockLogger.log).toHaveBeenCalledWith(
-        expect.objectContaining({ severity: 'info' })
-      );
+      expect(mockLogger.log).toHaveBeenCalledWith(expect.objectContaining({ severity: 'info' }));
     });
 
     it('sets severity to "error" when error is present', async () => {
       await logSystemEvent({ type: 'error', error: 'crash' });
-      expect(mockLogger.log).toHaveBeenCalledWith(
-        expect.objectContaining({ severity: 'error' })
-      );
+      expect(mockLogger.log).toHaveBeenCalledWith(expect.objectContaining({ severity: 'error' }));
     });
 
     it('sets actor type to "system" and id to "gateway"', async () => {
@@ -679,16 +649,12 @@ describe('audit/index', () => {
 
     it('sets outcome to "success" when no error', async () => {
       await logSystemEvent({ type: 'start' });
-      expect(mockLogger.log).toHaveBeenCalledWith(
-        expect.objectContaining({ outcome: 'success' })
-      );
+      expect(mockLogger.log).toHaveBeenCalledWith(expect.objectContaining({ outcome: 'success' }));
     });
 
     it('sets outcome to "failure" when error is present', async () => {
       await logSystemEvent({ type: 'error', error: 'OOM' });
-      expect(mockLogger.log).toHaveBeenCalledWith(
-        expect.objectContaining({ outcome: 'failure' })
-      );
+      expect(mockLogger.log).toHaveBeenCalledWith(expect.objectContaining({ outcome: 'failure' }));
     });
 
     it('includes error string in details', async () => {

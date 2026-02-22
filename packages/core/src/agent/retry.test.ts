@@ -5,7 +5,11 @@ vi.mock('../services/get-log.js', () => ({
 }));
 
 const { isRetryableError, withRetry, createRetryWrapper } = await import('./retry.js');
-const { TimeoutError, InternalError: _InternalError, ValidationError: _ValidationError } = await import('../types/errors.js');
+const {
+  TimeoutError,
+  InternalError: _InternalError,
+  ValidationError: _ValidationError,
+} = await import('../types/errors.js');
 const { ok, err } = await import('../types/result.js');
 
 // ---------------------------------------------------------------------------
@@ -244,7 +248,7 @@ describe('withRetry', () => {
           maxRetries: 3,
           initialDelayMs: 100,
           addJitter: false,
-        }),
+        })
       ).rejects.toThrow(nonRetryableError);
 
       expect(operation).toHaveBeenCalledTimes(1);
@@ -341,7 +345,7 @@ describe('withRetry', () => {
           maxRetries: 3,
           initialDelayMs: 100,
           addJitter: false,
-        }),
+        })
       ).rejects.toThrow(nonRetryableError);
 
       expect(operation).toHaveBeenCalledTimes(1);

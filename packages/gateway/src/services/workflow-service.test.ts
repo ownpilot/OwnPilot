@@ -27,7 +27,7 @@ vi.mock('./tool-executor.js', () => ({
 
 vi.mock('../routes/helpers.js', () => ({
   getErrorMessage: vi.fn((err: unknown, fallback: string) =>
-    err instanceof Error ? err.message : fallback,
+    err instanceof Error ? err.message : fallback
   ),
 }));
 
@@ -44,9 +44,8 @@ vi.mock('./log.js', () => ({
 // Import under test (dynamic to respect mocks)
 // ---------------------------------------------------------------------------
 
-const { topologicalSort, resolveTemplates, WorkflowService } = await import(
-  './workflow-service.js'
-);
+const { topologicalSort, resolveTemplates, WorkflowService } =
+  await import('./workflow-service.js');
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -55,7 +54,7 @@ const { topologicalSort, resolveTemplates, WorkflowService } = await import(
 function makeNode(
   id: string,
   type = 'toolNode',
-  data: Record<string, unknown> = {},
+  data: Record<string, unknown> = {}
 ): { id: string; type: string; position: { x: number; y: number }; data: Record<string, unknown> } {
   return { id, type, position: { x: 0, y: 0 }, data };
 }
@@ -63,7 +62,7 @@ function makeNode(
 function makeEdge(
   source: string,
   target: string,
-  sourceHandle?: string,
+  sourceHandle?: string
 ): { id: string; source: string; target: string; sourceHandle?: string } {
   return { id: `${source}-${target}`, source, target, sourceHandle };
 }
@@ -106,12 +105,7 @@ describe('topologicalSort', () => {
 
   it('handles diamond shape: A→B, A→C, B→D, C→D', () => {
     const nodes = [makeNode('A'), makeNode('B'), makeNode('C'), makeNode('D')];
-    const edges = [
-      makeEdge('A', 'B'),
-      makeEdge('A', 'C'),
-      makeEdge('B', 'D'),
-      makeEdge('C', 'D'),
-    ];
+    const edges = [makeEdge('A', 'B'), makeEdge('A', 'C'), makeEdge('B', 'D'), makeEdge('C', 'D')];
     const levels = topologicalSort(nodes, edges);
 
     expect(levels).toHaveLength(3);
@@ -138,22 +132,14 @@ describe('topologicalSort', () => {
 
   it('throws on cycle: A→B→C→A', () => {
     const nodes = [makeNode('A'), makeNode('B'), makeNode('C')];
-    const edges = [
-      makeEdge('A', 'B'),
-      makeEdge('B', 'C'),
-      makeEdge('C', 'A'),
-    ];
-    expect(() => topologicalSort(nodes, edges)).toThrow(
-      'Workflow contains a cycle',
-    );
+    const edges = [makeEdge('A', 'B'), makeEdge('B', 'C'), makeEdge('C', 'A')];
+    expect(() => topologicalSort(nodes, edges)).toThrow('Workflow contains a cycle');
   });
 
   it('throws on self-loop: A→A', () => {
     const nodes = [makeNode('A')];
     const edges = [makeEdge('A', 'A')];
-    expect(() => topologicalSort(nodes, edges)).toThrow(
-      'Workflow contains a cycle',
-    );
+    expect(() => topologicalSort(nodes, edges)).toThrow('Workflow contains a cycle');
   });
 
   it('ignores edges referencing non-existent nodes', () => {
@@ -188,13 +174,8 @@ describe('topologicalSort', () => {
 
   it('handles a wider DAG: multiple roots feeding multiple sinks', () => {
     // A→D, B→D, B→E, C→E
-    const nodes = 'ABCDE'.split('').map(id => makeNode(id));
-    const edges = [
-      makeEdge('A', 'D'),
-      makeEdge('B', 'D'),
-      makeEdge('B', 'E'),
-      makeEdge('C', 'E'),
-    ];
+    const nodes = 'ABCDE'.split('').map((id) => makeNode(id));
+    const edges = [makeEdge('A', 'D'), makeEdge('B', 'D'), makeEdge('B', 'E'), makeEdge('C', 'E')];
     const levels = topologicalSort(nodes, edges);
 
     expect(levels).toHaveLength(2);
@@ -210,14 +191,12 @@ describe('topologicalSort', () => {
   it('throws on two-node cycle: A↔B', () => {
     const nodes = [makeNode('A'), makeNode('B')];
     const edges = [makeEdge('A', 'B'), makeEdge('B', 'A')];
-    expect(() => topologicalSort(nodes, edges)).toThrow(
-      'Workflow contains a cycle',
-    );
+    expect(() => topologicalSort(nodes, edges)).toThrow('Workflow contains a cycle');
   });
 
   it('handles long linear chain', () => {
     const ids = Array.from({ length: 10 }, (_, i) => `n${i}`);
-    const nodes = ids.map(id => makeNode(id));
+    const nodes = ids.map((id) => makeNode(id));
     const edges = ids.slice(0, -1).map((id, i) => makeEdge(id, ids[i + 1]!));
     const levels = topologicalSort(nodes, edges);
 
@@ -242,9 +221,7 @@ describe('topologicalSort', () => {
 // ============================================================================
 
 describe('resolveTemplates', () => {
-  const makeResult = (
-    output: unknown,
-  ): { nodeId: string; status: 'success'; output: unknown } => ({
+  const makeResult = (output: unknown): { nodeId: string; status: 'success'; output: unknown } => ({
     nodeId: 'test',
     status: 'success',
     output,
@@ -253,11 +230,7 @@ describe('resolveTemplates', () => {
   describe('simple string replacement', () => {
     it('replaces {{nodeId.output}} with the node output', () => {
       const nodeOutputs = { node1: makeResult('hello') };
-      const result = resolveTemplates(
-        { msg: '{{node1.output}}' },
-        nodeOutputs,
-        {},
-      );
+      const result = resolveTemplates({ msg: '{{node1.output}}' }, nodeOutputs, {});
       expect(result.msg).toBe('hello');
     });
 
@@ -272,11 +245,7 @@ describe('resolveTemplates', () => {
   describe('nested field access', () => {
     it('accesses nested object fields: {{node1.output.name}}', () => {
       const nodeOutputs = { node1: makeResult({ name: 'John', age: 30 }) };
-      const result = resolveTemplates(
-        { val: '{{node1.output.name}}' },
-        nodeOutputs,
-        {},
-      );
+      const result = resolveTemplates({ val: '{{node1.output.name}}' }, nodeOutputs, {});
       expect(result.val).toBe('John');
     });
 
@@ -287,29 +256,21 @@ describe('resolveTemplates', () => {
       const result = resolveTemplates(
         { val: '{{node1.output.user.address.city}}' },
         nodeOutputs,
-        {},
+        {}
       );
       expect(result.val).toBe('NYC');
     });
 
     it('supports shorthand nested access: {{node1.name}} (without .output)', () => {
       const nodeOutputs = { node1: makeResult({ name: 'Alice' }) };
-      const result = resolveTemplates(
-        { val: '{{node1.name}}' },
-        nodeOutputs,
-        {},
-      );
+      const result = resolveTemplates({ val: '{{node1.name}}' }, nodeOutputs, {});
       expect(result.val).toBe('Alice');
     });
   });
 
   describe('variable access', () => {
     it('resolves {{variables.key}}', () => {
-      const result = resolveTemplates(
-        { env: '{{variables.env}}' },
-        {},
-        { env: 'production' },
-      );
+      const result = resolveTemplates({ env: '{{variables.env}}' }, {}, { env: 'production' });
       expect(result.env).toBe('production');
     });
 
@@ -317,17 +278,13 @@ describe('resolveTemplates', () => {
       const result = resolveTemplates(
         { r: '{{variables.config.region}}' },
         {},
-        { config: { region: 'us-east-1' } },
+        { config: { region: 'us-east-1' } }
       );
       expect(result.r).toBe('us-east-1');
     });
 
     it('resolves direct variable fallback: {{env}}', () => {
-      const result = resolveTemplates(
-        { val: '{{env}}' },
-        {},
-        { env: 'staging' },
-      );
+      const result = resolveTemplates({ val: '{{env}}' }, {}, { env: 'staging' });
       expect(result.val).toBe('staging');
     });
 
@@ -335,17 +292,13 @@ describe('resolveTemplates', () => {
       const result = resolveTemplates(
         { r: '{{config.region}}' },
         {},
-        { config: { region: 'eu-west-1' } },
+        { config: { region: 'eu-west-1' } }
       );
       expect(result.r).toBe('eu-west-1');
     });
 
     it('resolves item variable alias (ForEach pattern)', () => {
-      const result = resolveTemplates(
-        { val: '{{item}}' },
-        {},
-        { item: 'task-42' },
-      );
+      const result = resolveTemplates({ val: '{{item}}' }, {}, { item: 'task-42' });
       expect(result.val).toBe('task-42');
     });
   });
@@ -354,53 +307,33 @@ describe('resolveTemplates', () => {
     it('preserves object type when entire template is a single reference', () => {
       const obj = { a: 1, b: 2 };
       const nodeOutputs = { node1: makeResult(obj) };
-      const result = resolveTemplates(
-        { data: '{{node1.output}}' },
-        nodeOutputs,
-        {},
-      );
+      const result = resolveTemplates({ data: '{{node1.output}}' }, nodeOutputs, {});
       expect(result.data).toEqual(obj);
       expect(typeof result.data).toBe('object');
     });
 
     it('preserves number type from full template', () => {
       const nodeOutputs = { node1: makeResult(42) };
-      const result = resolveTemplates(
-        { count: '{{node1.output}}' },
-        nodeOutputs,
-        {},
-      );
+      const result = resolveTemplates({ count: '{{node1.output}}' }, nodeOutputs, {});
       expect(result.count).toBe(42);
     });
 
     it('preserves boolean type from full template', () => {
       const nodeOutputs = { node1: makeResult(true) };
-      const result = resolveTemplates(
-        { flag: '{{node1.output}}' },
-        nodeOutputs,
-        {},
-      );
+      const result = resolveTemplates({ flag: '{{node1.output}}' }, nodeOutputs, {});
       expect(result.flag).toBe(true);
     });
 
     it('preserves array type from full template', () => {
       const arr = [1, 2, 3];
       const nodeOutputs = { node1: makeResult(arr) };
-      const result = resolveTemplates(
-        { list: '{{node1.output}}' },
-        nodeOutputs,
-        {},
-      );
+      const result = resolveTemplates({ list: '{{node1.output}}' }, nodeOutputs, {});
       expect(result.list).toEqual(arr);
     });
 
     it('preserves null type from full template', () => {
       const nodeOutputs = { node1: makeResult(null) };
-      const result = resolveTemplates(
-        { val: '{{node1.output}}' },
-        nodeOutputs,
-        {},
-      );
+      const result = resolveTemplates({ val: '{{node1.output}}' }, nodeOutputs, {});
       // Full template with parts.length === 2 returns nodeResult.output directly → null
       expect(result.val).toBeNull();
     });
@@ -409,21 +342,13 @@ describe('resolveTemplates', () => {
   describe('inline interpolation (returns string)', () => {
     it('interpolates into surrounding text', () => {
       const nodeOutputs = { node1: makeResult('world') };
-      const result = resolveTemplates(
-        { greeting: 'Hello {{node1.output}}!' },
-        nodeOutputs,
-        {},
-      );
+      const result = resolveTemplates({ greeting: 'Hello {{node1.output}}!' }, nodeOutputs, {});
       expect(result.greeting).toBe('Hello world!');
     });
 
     it('stringifies objects in inline interpolation', () => {
       const nodeOutputs = { node1: makeResult({ key: 'val' }) };
-      const result = resolveTemplates(
-        { msg: 'Data: {{node1.output}}' },
-        nodeOutputs,
-        {},
-      );
+      const result = resolveTemplates({ msg: 'Data: {{node1.output}}' }, nodeOutputs, {});
       expect(result.msg).toBe('Data: {"key":"val"}');
     });
 
@@ -432,50 +357,30 @@ describe('resolveTemplates', () => {
         a: makeResult('Hello'),
         b: makeResult('World'),
       };
-      const result = resolveTemplates(
-        { msg: '{{a.output}} {{b.output}}!' },
-        nodeOutputs,
-        {},
-      );
+      const result = resolveTemplates({ msg: '{{a.output}} {{b.output}}!' }, nodeOutputs, {});
       expect(result.msg).toBe('Hello World!');
     });
 
     it('replaces missing node reference with empty string in inline', () => {
-      const result = resolveTemplates(
-        { msg: 'Result: {{missing.output}} done' },
-        {},
-        {},
-      );
+      const result = resolveTemplates({ msg: 'Result: {{missing.output}} done' }, {}, {});
       expect(result.msg).toBe('Result:  done');
     });
   });
 
   describe('missing references', () => {
     it('returns undefined for full template referencing missing node', () => {
-      const result = resolveTemplates(
-        { val: '{{nonexistent.output}}' },
-        {},
-        {},
-      );
+      const result = resolveTemplates({ val: '{{nonexistent.output}}' }, {}, {});
       expect(result.val).toBeUndefined();
     });
 
     it('returns undefined for full template referencing missing field', () => {
       const nodeOutputs = { node1: makeResult({ name: 'John' }) };
-      const result = resolveTemplates(
-        { val: '{{node1.output.email}}' },
-        nodeOutputs,
-        {},
-      );
+      const result = resolveTemplates({ val: '{{node1.output.email}}' }, nodeOutputs, {});
       expect(result.val).toBeUndefined();
     });
 
     it('returns undefined for full template referencing missing variable', () => {
-      const result = resolveTemplates(
-        { val: '{{variables.missing}}' },
-        {},
-        {},
-      );
+      const result = resolveTemplates({ val: '{{variables.missing}}' }, {}, {});
       expect(result.val).toBeUndefined();
     });
   });
@@ -483,31 +388,19 @@ describe('resolveTemplates', () => {
   describe('auto-parse JSON strings', () => {
     it('auto-parses JSON string output for nested field access', () => {
       const nodeOutputs = { node1: makeResult('{"name":"John","age":30}') };
-      const result = resolveTemplates(
-        { val: '{{node1.output.name}}' },
-        nodeOutputs,
-        {},
-      );
+      const result = resolveTemplates({ val: '{{node1.output.name}}' }, nodeOutputs, {});
       expect(result.val).toBe('John');
     });
 
     it('auto-parses JSON array string for nested access', () => {
       const nodeOutputs = { node1: makeResult('[1,2,3]') };
-      const result = resolveTemplates(
-        { val: '{{node1.output.1}}' },
-        nodeOutputs,
-        {},
-      );
+      const result = resolveTemplates({ val: '{{node1.output.1}}' }, nodeOutputs, {});
       expect(result.val).toBe(2);
     });
 
     it('returns undefined for non-JSON string with nested access', () => {
       const nodeOutputs = { node1: makeResult('plain text') };
-      const result = resolveTemplates(
-        { val: '{{node1.output.field}}' },
-        nodeOutputs,
-        {},
-      );
+      const result = resolveTemplates({ val: '{{node1.output.field}}' }, nodeOutputs, {});
       expect(result.val).toBeUndefined();
     });
 
@@ -516,11 +409,7 @@ describe('resolveTemplates', () => {
       const nodeOutputs = {
         node1: makeResult({ data: '{"inner":"value"}' }),
       };
-      const result = resolveTemplates(
-        { val: '{{node1.output.data}}' },
-        nodeOutputs,
-        {},
-      );
+      const result = resolveTemplates({ val: '{{node1.output.data}}' }, nodeOutputs, {});
       expect(result.val).toEqual({ inner: 'value' });
     });
   });
@@ -531,29 +420,21 @@ describe('resolveTemplates', () => {
       const result = resolveTemplates(
         { items: ['{{n1.output}}', '{{n2.output}}', 'static'] as unknown },
         nodeOutputs,
-        {},
+        {}
       );
       expect(result.items).toEqual(['alpha', 'beta', 'static']);
     });
 
     it('resolves templates in nested object values', () => {
       const nodeOutputs = { n1: makeResult('deep-value') };
-      const result = resolveTemplates(
-        { outer: { inner: '{{n1.output}}' } },
-        nodeOutputs,
-        {},
-      );
+      const result = resolveTemplates({ outer: { inner: '{{n1.output}}' } }, nodeOutputs, {});
       expect(result.outer).toEqual({ inner: 'deep-value' });
     });
 
     it('resolves templates in deeply nested structure', () => {
       const nodeOutputs = { n1: makeResult(42) };
-      const result = resolveTemplates(
-        { a: { b: { c: '{{n1.output}}' } } },
-        nodeOutputs,
-        {},
-      );
-      expect((result.a as Record<string, unknown>)).toEqual({ b: { c: 42 } });
+      const result = resolveTemplates({ a: { b: { c: '{{n1.output}}' } } }, nodeOutputs, {});
+      expect(result.a as Record<string, unknown>).toEqual({ b: { c: 42 } });
     });
   });
 
@@ -574,11 +455,7 @@ describe('resolveTemplates', () => {
     });
 
     it('passes through undefined unchanged', () => {
-      const result = resolveTemplates(
-        { val: undefined as unknown },
-        {},
-        {},
-      );
+      const result = resolveTemplates({ val: undefined as unknown }, {}, {});
       expect(result.val).toBeUndefined();
     });
   });
@@ -596,32 +473,20 @@ describe('resolveTemplates', () => {
 
     it('handles template with whitespace: {{ node1.output }}', () => {
       const nodeOutputs = { node1: makeResult('trimmed') };
-      const result = resolveTemplates(
-        { val: '{{ node1.output }}' },
-        nodeOutputs,
-        {},
-      );
+      const result = resolveTemplates({ val: '{{ node1.output }}' }, nodeOutputs, {});
       expect(result.val).toBe('trimmed');
     });
 
     it('node output takes priority over variable fallback', () => {
       const nodeOutputs = { env: makeResult('from-node') };
-      const result = resolveTemplates(
-        { val: '{{env}}' },
-        nodeOutputs,
-        { env: 'from-variable' },
-      );
+      const result = resolveTemplates({ val: '{{env}}' }, nodeOutputs, { env: 'from-variable' });
       // resolveTemplatePath is tried first — parts.length === 1 → nodeResult.output
       expect(result.val).toBe('from-node');
     });
 
     it('numbers stringified with JSON.stringify in inline interpolation', () => {
       const nodeOutputs = { node1: makeResult(42) };
-      const result = resolveTemplates(
-        { msg: 'Count: {{node1.output}} items' },
-        nodeOutputs,
-        {},
-      );
+      const result = resolveTemplates({ msg: 'Count: {{node1.output}} items' }, nodeOutputs, {});
       expect(result.msg).toBe('Count: 42 items');
     });
   });
@@ -662,8 +527,9 @@ describe('WorkflowService', () => {
     it('reflects state after manual map manipulation', () => {
       // Access private map to simulate an active execution
       const controller = new AbortController();
-      (service as unknown as { activeExecutions: Map<string, AbortController> })
-        .activeExecutions.set('wf-test', controller);
+      (
+        service as unknown as { activeExecutions: Map<string, AbortController> }
+      ).activeExecutions.set('wf-test', controller);
 
       expect(service.isRunning('wf-test')).toBe(true);
       expect(service.isRunning('wf-other')).toBe(false);
@@ -679,17 +545,17 @@ describe('WorkflowService', () => {
 
     it('cancelling a second time still returns true (controller is still in map)', () => {
       const controller = new AbortController();
-      (service as unknown as { activeExecutions: Map<string, AbortController> })
-        .activeExecutions.set('wf-x', controller);
+      (
+        service as unknown as { activeExecutions: Map<string, AbortController> }
+      ).activeExecutions.set('wf-x', controller);
 
       expect(service.cancelExecution('wf-x')).toBe(true);
       expect(service.cancelExecution('wf-x')).toBe(true);
     });
 
     it('does not affect other workflows when cancelling one', () => {
-      const map = (
-        service as unknown as { activeExecutions: Map<string, AbortController> }
-      ).activeExecutions;
+      const map = (service as unknown as { activeExecutions: Map<string, AbortController> })
+        .activeExecutions;
 
       const c1 = new AbortController();
       const c2 = new AbortController();
@@ -711,16 +577,23 @@ describe('WorkflowService', () => {
     function callRetry(
       svc: InstanceType<typeof WorkflowService>,
       node: ReturnType<typeof makeNode>,
-      executeFn: () => Promise<{ nodeId: string; status: string; error?: string; [k: string]: unknown }>,
-      onProgress?: (e: { type: string; nodeId?: string; retryAttempt?: number }) => void,
+      executeFn: () => Promise<{
+        nodeId: string;
+        status: string;
+        error?: string;
+        [k: string]: unknown;
+      }>,
+      onProgress?: (e: { type: string; nodeId?: string; retryAttempt?: number }) => void
     ) {
-      return (svc as unknown as {
-        executeWithRetryAndTimeout: (
-          node: unknown,
-          fn: () => Promise<unknown>,
-          progress?: (e: unknown) => void,
-        ) => Promise<{ nodeId: string; status: string; error?: string; retryAttempts?: number }>;
-      }).executeWithRetryAndTimeout(node, executeFn, onProgress);
+      return (
+        svc as unknown as {
+          executeWithRetryAndTimeout: (
+            node: unknown,
+            fn: () => Promise<unknown>,
+            progress?: (e: unknown) => void
+          ) => Promise<{ nodeId: string; status: string; error?: string; retryAttempts?: number }>;
+        }
+      ).executeWithRetryAndTimeout(node, executeFn, onProgress);
     }
 
     it('succeeds on first try with retryAttempts = 0', async () => {
@@ -736,7 +609,8 @@ describe('WorkflowService', () => {
 
     it('retries on failure and succeeds on second attempt', async () => {
       const node = makeNode('n1', 'toolNode', { retryCount: 2 });
-      const executeFn = vi.fn()
+      const executeFn = vi
+        .fn()
         .mockResolvedValueOnce({ nodeId: 'n1', status: 'error', error: 'fail' })
         .mockResolvedValueOnce({ nodeId: 'n1', status: 'success', output: 'ok' });
 
@@ -749,7 +623,9 @@ describe('WorkflowService', () => {
 
     it('fails after all retry attempts exhausted', async () => {
       const node = makeNode('n1', 'toolNode', { retryCount: 2 });
-      const executeFn = vi.fn().mockResolvedValue({ nodeId: 'n1', status: 'error', error: 'persistent failure' });
+      const executeFn = vi
+        .fn()
+        .mockResolvedValue({ nodeId: 'n1', status: 'error', error: 'persistent failure' });
 
       const result = await callRetry(service, node, executeFn);
 
@@ -772,7 +648,8 @@ describe('WorkflowService', () => {
 
     it('emits node_retry progress events on retries', async () => {
       const node = makeNode('n1', 'toolNode', { retryCount: 2 });
-      const executeFn = vi.fn()
+      const executeFn = vi
+        .fn()
         .mockResolvedValueOnce({ nodeId: 'n1', status: 'error', error: 'fail1' })
         .mockResolvedValueOnce({ nodeId: 'n1', status: 'error', error: 'fail2' })
         .mockResolvedValueOnce({ nodeId: 'n1', status: 'success', output: 'ok' });
@@ -787,7 +664,8 @@ describe('WorkflowService', () => {
 
     it('handles thrown errors from executeFn', async () => {
       const node = makeNode('n1', 'toolNode', { retryCount: 1 });
-      const executeFn = vi.fn()
+      const executeFn = vi
+        .fn()
         .mockRejectedValueOnce(new Error('Network error'))
         .mockResolvedValueOnce({ nodeId: 'n1', status: 'success', output: 'recovered' });
 
@@ -799,9 +677,14 @@ describe('WorkflowService', () => {
 
     it('handles timeout wrapping for async nodes', async () => {
       const node = makeNode('n1', 'toolNode', { timeoutMs: 50 });
-      const executeFn = vi.fn().mockImplementation(
-        () => new Promise((resolve) => setTimeout(() => resolve({ nodeId: 'n1', status: 'success' }), 200)),
-      );
+      const executeFn = vi
+        .fn()
+        .mockImplementation(
+          () =>
+            new Promise((resolve) =>
+              setTimeout(() => resolve({ nodeId: 'n1', status: 'success' }), 200)
+            )
+        );
 
       const result = await callRetry(service, node, executeFn);
 
@@ -811,7 +694,9 @@ describe('WorkflowService', () => {
 
     it('skips outer timeout for conditionNode (vm-based)', async () => {
       const node = makeNode('n1', 'conditionNode', { timeoutMs: 50 });
-      const executeFn = vi.fn().mockResolvedValue({ nodeId: 'n1', status: 'success', output: true });
+      const executeFn = vi
+        .fn()
+        .mockResolvedValue({ nodeId: 'n1', status: 'success', output: true });
 
       const result = await callRetry(service, node, executeFn);
 
@@ -821,9 +706,13 @@ describe('WorkflowService', () => {
 
     it('combines retry + timeout: retries after timeout', async () => {
       const node = makeNode('n1', 'toolNode', { retryCount: 1, timeoutMs: 50 });
-      const executeFn = vi.fn()
+      const executeFn = vi
+        .fn()
         .mockImplementationOnce(
-          () => new Promise((resolve) => setTimeout(() => resolve({ nodeId: 'n1', status: 'success' }), 200)),
+          () =>
+            new Promise((resolve) =>
+              setTimeout(() => resolve({ nodeId: 'n1', status: 'success' }), 200)
+            )
         )
         .mockResolvedValueOnce({ nodeId: 'n1', status: 'success', output: 'fast' });
 

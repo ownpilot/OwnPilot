@@ -12,9 +12,34 @@ import { generateId } from '@ownpilot/core';
 // ============================================================================
 
 export type PlanStatus = 'pending' | 'running' | 'paused' | 'completed' | 'failed' | 'cancelled';
-export type StepType = 'tool_call' | 'llm_decision' | 'user_input' | 'condition' | 'parallel' | 'loop' | 'sub_plan';
-export type StepStatus = 'pending' | 'running' | 'completed' | 'failed' | 'skipped' | 'blocked' | 'waiting';
-export type PlanEventType = 'started' | 'step_started' | 'step_completed' | 'step_failed' | 'paused' | 'resumed' | 'completed' | 'failed' | 'cancelled' | 'checkpoint' | 'rollback';
+export type StepType =
+  | 'tool_call'
+  | 'llm_decision'
+  | 'user_input'
+  | 'condition'
+  | 'parallel'
+  | 'loop'
+  | 'sub_plan';
+export type StepStatus =
+  | 'pending'
+  | 'running'
+  | 'completed'
+  | 'failed'
+  | 'skipped'
+  | 'blocked'
+  | 'waiting';
+export type PlanEventType =
+  | 'started'
+  | 'step_started'
+  | 'step_completed'
+  | 'step_failed'
+  | 'paused'
+  | 'resumed'
+  | 'completed'
+  | 'failed'
+  | 'cancelled'
+  | 'checkpoint'
+  | 'rollback';
 
 export interface Plan {
   id: string;
@@ -282,10 +307,10 @@ export class PlansRepository extends BaseRepository {
    * Get a plan by ID
    */
   async get(id: string): Promise<Plan | null> {
-    const row = await this.queryOne<PlanRow>(
-      'SELECT * FROM plans WHERE id = $1 AND user_id = $2',
-      [id, this.userId]
-    );
+    const row = await this.queryOne<PlanRow>('SELECT * FROM plans WHERE id = $1 AND user_id = $2', [
+      id,
+      this.userId,
+    ]);
     return row ? this.mapPlan(row) : null;
   }
 
@@ -316,7 +341,11 @@ export class PlansRepository extends BaseRepository {
         updates.push(`started_at = $${paramIndex++}`);
         values.push(new Date().toISOString());
       }
-      if (input.status === 'completed' || input.status === 'failed' || input.status === 'cancelled') {
+      if (
+        input.status === 'completed' ||
+        input.status === 'failed' ||
+        input.status === 'cancelled'
+      ) {
         updates.push(`completed_at = $${paramIndex++}`);
         values.push(new Date().toISOString());
       }
@@ -365,23 +394,25 @@ export class PlansRepository extends BaseRepository {
    * Delete a plan
    */
   async delete(id: string): Promise<boolean> {
-    const result = await this.execute(
-      'DELETE FROM plans WHERE id = $1 AND user_id = $2',
-      [id, this.userId]
-    );
+    const result = await this.execute('DELETE FROM plans WHERE id = $1 AND user_id = $2', [
+      id,
+      this.userId,
+    ]);
     return result.changes > 0;
   }
 
   /**
    * List plans
    */
-  async list(options: {
-    status?: PlanStatus;
-    goalId?: string;
-    triggerId?: string;
-    limit?: number;
-    offset?: number;
-  } = {}): Promise<Plan[]> {
+  async list(
+    options: {
+      status?: PlanStatus;
+      goalId?: string;
+      triggerId?: string;
+      limit?: number;
+      offset?: number;
+    } = {}
+  ): Promise<Plan[]> {
     const conditions = ['user_id = $1'];
     const values: unknown[] = [this.userId];
     let paramIndex = 2;
@@ -416,7 +447,9 @@ export class PlansRepository extends BaseRepository {
   /**
    * Count plans (with same filters as list)
    */
-  async count(options: { status?: PlanStatus; goalId?: string; triggerId?: string } = {}): Promise<number> {
+  async count(
+    options: { status?: PlanStatus; goalId?: string; triggerId?: string } = {}
+  ): Promise<number> {
     const conditions = ['user_id = $1'];
     const values: unknown[] = [this.userId];
     let paramIndex = 2;
@@ -653,7 +686,12 @@ export class PlansRepository extends BaseRepository {
   /**
    * Log a plan event
    */
-  async logEvent(planId: string, eventType: PlanEventType, stepId?: string, details: Record<string, unknown> = {}): Promise<void> {
+  async logEvent(
+    planId: string,
+    eventType: PlanEventType,
+    stepId?: string,
+    details: Record<string, unknown> = {}
+  ): Promise<void> {
     const id = generateId('evt');
 
     await this.execute(

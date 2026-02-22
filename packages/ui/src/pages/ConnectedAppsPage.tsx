@@ -3,7 +3,13 @@ import { useSearchParams } from 'react-router-dom';
 import { useDialog } from '../components/ConfirmDialog';
 import { useToast } from '../components/ToastProvider';
 import {
-  Search, RefreshCw, ExternalLink, Unlink, AlertCircle, Check, Link,
+  Search,
+  RefreshCw,
+  ExternalLink,
+  Unlink,
+  AlertCircle,
+  Check,
+  Link,
 } from '../components/icons';
 import { composioApi } from '../api';
 import type { ComposioApp, ComposioConnection } from '../api/endpoints/composio';
@@ -13,30 +19,150 @@ import type { ComposioApp, ComposioConnection } from '../api/endpoints/composio'
 // =============================================================================
 
 const POPULAR_APPS: ComposioApp[] = [
-  { slug: 'google', name: 'Google', description: 'Gmail, Calendar, Drive, Docs, Sheets and more', categories: ['productivity'] },
-  { slug: 'github', name: 'GitHub', description: 'Code hosting, issues, pull requests, actions', categories: ['developer'] },
-  { slug: 'slack', name: 'Slack', description: 'Team messaging and communication', categories: ['communication'] },
-  { slug: 'notion', name: 'Notion', description: 'Notes, docs, wikis, and project management', categories: ['productivity'] },
-  { slug: 'discord', name: 'Discord', description: 'Community chat and voice communication', categories: ['communication'] },
-  { slug: 'trello', name: 'Trello', description: 'Visual project management boards', categories: ['productivity'] },
-  { slug: 'linear', name: 'Linear', description: 'Issue tracking and project management', categories: ['developer'] },
-  { slug: 'spotify', name: 'Spotify', description: 'Music streaming and playlists', categories: ['media'] },
-  { slug: 'twitter', name: 'Twitter', description: 'Social media posts and engagement', categories: ['social'] },
-  { slug: 'dropbox', name: 'Dropbox', description: 'Cloud file storage and sharing', categories: ['storage'] },
-  { slug: 'jira', name: 'Jira', description: 'Agile project management and issue tracking', categories: ['developer'] },
-  { slug: 'asana', name: 'Asana', description: 'Work management and team coordination', categories: ['productivity'] },
-  { slug: 'hubspot', name: 'HubSpot', description: 'CRM, marketing, and sales automation', categories: ['crm'] },
-  { slug: 'salesforce', name: 'Salesforce', description: 'Enterprise CRM platform', categories: ['crm'] },
-  { slug: 'shopify', name: 'Shopify', description: 'E-commerce platform and store management', categories: ['commerce'] },
-  { slug: 'stripe', name: 'Stripe', description: 'Payment processing and billing', categories: ['finance'] },
-  { slug: 'figma', name: 'Figma', description: 'Collaborative design and prototyping', categories: ['design'] },
-  { slug: 'youtube', name: 'YouTube', description: 'Video platform — upload, manage, analytics', categories: ['media'] },
-  { slug: 'todoist', name: 'Todoist', description: 'Personal and team task management', categories: ['productivity'] },
-  { slug: 'airtable', name: 'Airtable', description: 'Spreadsheet-database hybrid for teams', categories: ['productivity'] },
-  { slug: 'zoom', name: 'Zoom', description: 'Video conferencing and meetings', categories: ['communication'] },
-  { slug: 'microsoft-teams', name: 'Microsoft Teams', description: 'Team collaboration and meetings', categories: ['communication'] },
-  { slug: 'clickup', name: 'ClickUp', description: 'All-in-one project management', categories: ['productivity'] },
-  { slug: 'intercom', name: 'Intercom', description: 'Customer messaging and support', categories: ['support'] },
+  {
+    slug: 'google',
+    name: 'Google',
+    description: 'Gmail, Calendar, Drive, Docs, Sheets and more',
+    categories: ['productivity'],
+  },
+  {
+    slug: 'github',
+    name: 'GitHub',
+    description: 'Code hosting, issues, pull requests, actions',
+    categories: ['developer'],
+  },
+  {
+    slug: 'slack',
+    name: 'Slack',
+    description: 'Team messaging and communication',
+    categories: ['communication'],
+  },
+  {
+    slug: 'notion',
+    name: 'Notion',
+    description: 'Notes, docs, wikis, and project management',
+    categories: ['productivity'],
+  },
+  {
+    slug: 'discord',
+    name: 'Discord',
+    description: 'Community chat and voice communication',
+    categories: ['communication'],
+  },
+  {
+    slug: 'trello',
+    name: 'Trello',
+    description: 'Visual project management boards',
+    categories: ['productivity'],
+  },
+  {
+    slug: 'linear',
+    name: 'Linear',
+    description: 'Issue tracking and project management',
+    categories: ['developer'],
+  },
+  {
+    slug: 'spotify',
+    name: 'Spotify',
+    description: 'Music streaming and playlists',
+    categories: ['media'],
+  },
+  {
+    slug: 'twitter',
+    name: 'Twitter',
+    description: 'Social media posts and engagement',
+    categories: ['social'],
+  },
+  {
+    slug: 'dropbox',
+    name: 'Dropbox',
+    description: 'Cloud file storage and sharing',
+    categories: ['storage'],
+  },
+  {
+    slug: 'jira',
+    name: 'Jira',
+    description: 'Agile project management and issue tracking',
+    categories: ['developer'],
+  },
+  {
+    slug: 'asana',
+    name: 'Asana',
+    description: 'Work management and team coordination',
+    categories: ['productivity'],
+  },
+  {
+    slug: 'hubspot',
+    name: 'HubSpot',
+    description: 'CRM, marketing, and sales automation',
+    categories: ['crm'],
+  },
+  {
+    slug: 'salesforce',
+    name: 'Salesforce',
+    description: 'Enterprise CRM platform',
+    categories: ['crm'],
+  },
+  {
+    slug: 'shopify',
+    name: 'Shopify',
+    description: 'E-commerce platform and store management',
+    categories: ['commerce'],
+  },
+  {
+    slug: 'stripe',
+    name: 'Stripe',
+    description: 'Payment processing and billing',
+    categories: ['finance'],
+  },
+  {
+    slug: 'figma',
+    name: 'Figma',
+    description: 'Collaborative design and prototyping',
+    categories: ['design'],
+  },
+  {
+    slug: 'youtube',
+    name: 'YouTube',
+    description: 'Video platform — upload, manage, analytics',
+    categories: ['media'],
+  },
+  {
+    slug: 'todoist',
+    name: 'Todoist',
+    description: 'Personal and team task management',
+    categories: ['productivity'],
+  },
+  {
+    slug: 'airtable',
+    name: 'Airtable',
+    description: 'Spreadsheet-database hybrid for teams',
+    categories: ['productivity'],
+  },
+  {
+    slug: 'zoom',
+    name: 'Zoom',
+    description: 'Video conferencing and meetings',
+    categories: ['communication'],
+  },
+  {
+    slug: 'microsoft-teams',
+    name: 'Microsoft Teams',
+    description: 'Team collaboration and meetings',
+    categories: ['communication'],
+  },
+  {
+    slug: 'clickup',
+    name: 'ClickUp',
+    description: 'All-in-one project management',
+    categories: ['productivity'],
+  },
+  {
+    slug: 'intercom',
+    name: 'Intercom',
+    description: 'Customer messaging and support',
+    categories: ['support'],
+  },
 ];
 
 // =============================================================================
@@ -56,7 +182,9 @@ const FALLBACK_STATUS = { bg: 'bg-text-muted/10', text: 'text-text-muted', label
 function StatusBadge({ status }: { status: string }) {
   const style = STATUS_STYLES[status] ?? FALLBACK_STATUS;
   return (
-    <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded-full ${style.bg} ${style.text}`}>
+    <span
+      className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded-full ${style.bg} ${style.text}`}
+    >
       {status === 'ACTIVE' && <Check className="w-3 h-3" />}
       {status === 'FAILED' && <AlertCircle className="w-3 h-3" />}
       {style.label}
@@ -181,7 +309,9 @@ export function ConnectedAppsPage() {
 
   // Clear poll timers on unmount to prevent state updates on unmounted component
   useEffect(() => {
-    return () => { pollTimersRef.current.forEach(clearTimeout); };
+    return () => {
+      pollTimersRef.current.forEach(clearTimeout);
+    };
   }, []);
 
   // =========================================================================
@@ -193,10 +323,7 @@ export function ConnectedAppsPage() {
       const status = await composioApi.status();
       setComposioConfigured(status.configured);
       if (status.configured) {
-        const results = await Promise.allSettled([
-          composioApi.connections(),
-          composioApi.apps(),
-        ]);
+        const results = await Promise.allSettled([composioApi.connections(), composioApi.apps()]);
         if (results[0].status === 'fulfilled') {
           setConnections(results[0].value.connections);
         }
@@ -253,7 +380,12 @@ export function ConnectedAppsPage() {
   };
 
   const handleDisconnect = async (connectionId: string, appName: string) => {
-    if (!await confirm({ message: `Disconnect ${appName}? You will need to re-authorize to use it again.`, variant: 'danger' })) {
+    if (
+      !(await confirm({
+        message: `Disconnect ${appName}? You will need to re-authorize to use it again.`,
+        variant: 'danger',
+      }))
+    ) {
       return;
     }
     try {
@@ -288,13 +420,14 @@ export function ConnectedAppsPage() {
   const allApps = apps.length > 0 ? apps : POPULAR_APPS;
 
   // Dedupe: if dynamic list loaded, merge any static apps not already present
-  const mergedApps = apps.length > 0
-    ? (() => {
-        const dynamicSlugs = new Set(apps.map((a) => a.slug.toLowerCase()));
-        const extras = POPULAR_APPS.filter((p) => !dynamicSlugs.has(p.slug.toLowerCase()));
-        return [...apps, ...extras];
-      })()
-    : allApps;
+  const mergedApps =
+    apps.length > 0
+      ? (() => {
+          const dynamicSlugs = new Set(apps.map((a) => a.slug.toLowerCase()));
+          const extras = POPULAR_APPS.filter((p) => !dynamicSlugs.has(p.slug.toLowerCase()));
+          return [...apps, ...extras];
+        })()
+      : allApps;
 
   const filteredApps = mergedApps.filter((app) => {
     if (connectedSlugs.has(app.slug.toLowerCase())) return false;

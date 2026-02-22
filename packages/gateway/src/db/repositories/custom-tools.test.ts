@@ -93,7 +93,11 @@ describe('CustomToolsRepository', () => {
       const result = await repo.create({
         name: 'my_tool',
         description: 'A test tool',
-        parameters: { type: 'object', properties: { input: { type: 'string' } }, required: ['input'] },
+        parameters: {
+          type: 'object',
+          properties: { input: { type: 'string' } },
+          required: ['input'],
+        },
         code: 'return input;',
       });
 
@@ -124,7 +128,9 @@ describe('CustomToolsRepository', () => {
 
     it('should serialize permissions as JSON', async () => {
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
-      mockAdapter.queryOne.mockResolvedValueOnce(makeToolRow({ permissions: '["network","database"]' }));
+      mockAdapter.queryOne.mockResolvedValueOnce(
+        makeToolRow({ permissions: '["network","database"]' })
+      );
 
       await repo.create({
         name: 'test',
@@ -140,7 +146,9 @@ describe('CustomToolsRepository', () => {
 
     it('should set status to pending_approval for LLM-created tools with dangerous permissions', async () => {
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
-      mockAdapter.queryOne.mockResolvedValueOnce(makeToolRow({ status: 'pending_approval', created_by: 'llm' }));
+      mockAdapter.queryOne.mockResolvedValueOnce(
+        makeToolRow({ status: 'pending_approval', created_by: 'llm' })
+      );
 
       await repo.create({
         name: 'danger_tool',
@@ -157,7 +165,9 @@ describe('CustomToolsRepository', () => {
 
     it('should set status to active for LLM-created tools without dangerous permissions', async () => {
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
-      mockAdapter.queryOne.mockResolvedValueOnce(makeToolRow({ status: 'active', created_by: 'llm' }));
+      mockAdapter.queryOne.mockResolvedValueOnce(
+        makeToolRow({ status: 'active', created_by: 'llm' })
+      );
 
       await repo.create({
         name: 'safe_tool',
@@ -208,7 +218,9 @@ describe('CustomToolsRepository', () => {
     it('should serialize requiredApiKeys as JSON', async () => {
       const apiKeys = [{ name: 'OPENAI_KEY', displayName: 'OpenAI API Key' }];
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
-      mockAdapter.queryOne.mockResolvedValueOnce(makeToolRow({ required_api_keys: JSON.stringify(apiKeys) }));
+      mockAdapter.queryOne.mockResolvedValueOnce(
+        makeToolRow({ required_api_keys: JSON.stringify(apiKeys) })
+      );
 
       await repo.create({
         name: 'test',
@@ -232,7 +244,7 @@ describe('CustomToolsRepository', () => {
           description: 'Test',
           parameters: { type: 'object', properties: {} },
           code: 'return 1;',
-        }),
+        })
       ).rejects.toThrow('Failed to create custom tool');
     });
 
@@ -317,7 +329,7 @@ describe('CustomToolsRepository', () => {
           permissions: '["network","database"]',
           metadata: '{"version":"2.0"}',
           required_api_keys: '[{"name":"API_KEY"}]',
-        }),
+        })
       );
 
       const result = await repo.get('tool_abc123');
@@ -330,7 +342,7 @@ describe('CustomToolsRepository', () => {
 
     it('should parse dates correctly', async () => {
       mockAdapter.queryOne.mockResolvedValueOnce(
-        makeToolRow({ last_used_at: '2025-01-10T08:00:00.000Z' }),
+        makeToolRow({ last_used_at: '2025-01-10T08:00:00.000Z' })
       );
 
       const result = await repo.get('tool_abc123');
@@ -645,7 +657,7 @@ describe('CustomToolsRepository', () => {
       mockAdapter.queryOne.mockResolvedValueOnce(makeToolRow());
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
       mockAdapter.queryOne.mockResolvedValueOnce(
-        makeToolRow({ name: 'new_name', description: 'new desc', category: 'new_cat' }),
+        makeToolRow({ name: 'new_name', description: 'new desc', category: 'new_cat' })
       );
 
       const result = await repo.update('tool_abc123', {

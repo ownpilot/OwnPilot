@@ -45,12 +45,7 @@ export interface EditModelModalProps {
 // Component
 // ============================================================================
 
-export function EditModelModal({
-  model,
-  capabilities,
-  onSave,
-  onClose,
-}: EditModelModalProps) {
+export function EditModelModal({ model, capabilities, onSave, onClose }: EditModelModalProps) {
   const [displayName, setDisplayName] = useState(model.displayName);
   const [selectedCaps, setSelectedCaps] = useState<Set<ModelCapability>>(
     new Set(model.capabilities)

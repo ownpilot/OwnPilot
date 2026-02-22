@@ -325,9 +325,7 @@ describe('tryImport — concurrent calls', () => {
   });
 
   it('handles multiple concurrent tryImport calls with resolver', async () => {
-    const resolver = vi.fn().mockImplementation((name: string) =>
-      Promise.resolve({ name })
-    );
+    const resolver = vi.fn().mockImplementation((name: string) => Promise.resolve({ name }));
     setModuleResolver(resolver);
 
     const [a, b, c] = await Promise.all([

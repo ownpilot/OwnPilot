@@ -71,17 +71,17 @@ This document covers every aspect of the system: database schema, trigger types 
 
 Key components:
 
-| Component | Location | Role |
-|-----------|----------|------|
-| `TriggerEngine` | `packages/gateway/src/triggers/engine.ts` | Singleton background processor that polls schedules, evaluates conditions, and dispatches event-based triggers |
-| `TriggersRepository` | `packages/gateway/src/db/repositories/triggers.ts` | All database operations for the `triggers` and `trigger_history` tables |
-| Trigger Routes | `packages/gateway/src/routes/triggers.ts` | REST API for CRUD, fire, enable/disable, history, stats, engine control |
-| Trigger Tools | `packages/gateway/src/tools/trigger-tools.ts` | Six tools exposed to the AI agent for managing triggers via conversation |
-| Proactive Module | `packages/gateway/src/triggers/proactive.ts` | Built-in default triggers shipped with the system |
-| Plans Repository | `packages/gateway/src/db/repositories/plans.ts` | Plan execution with `trigger_id` foreign key back to the trigger |
-| Autonomy Module | `packages/gateway/src/autonomy/` | Levels, risk assessment, approval workflow, budget controls |
-| Autonomy Routes | `packages/gateway/src/routes/autonomy.ts` | REST API for autonomy configuration, approvals, budgets, tool permissions |
-| AutonomyPage | `packages/ui/src/pages/AutonomyPage.tsx` | React UI for autonomy level selection, budget management, tool permissions, pending approvals |
+| Component            | Location                                           | Role                                                                                                           |
+| -------------------- | -------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `TriggerEngine`      | `packages/gateway/src/triggers/engine.ts`          | Singleton background processor that polls schedules, evaluates conditions, and dispatches event-based triggers |
+| `TriggersRepository` | `packages/gateway/src/db/repositories/triggers.ts` | All database operations for the `triggers` and `trigger_history` tables                                        |
+| Trigger Routes       | `packages/gateway/src/routes/triggers.ts`          | REST API for CRUD, fire, enable/disable, history, stats, engine control                                        |
+| Trigger Tools        | `packages/gateway/src/tools/trigger-tools.ts`      | Six tools exposed to the AI agent for managing triggers via conversation                                       |
+| Proactive Module     | `packages/gateway/src/triggers/proactive.ts`       | Built-in default triggers shipped with the system                                                              |
+| Plans Repository     | `packages/gateway/src/db/repositories/plans.ts`    | Plan execution with `trigger_id` foreign key back to the trigger                                               |
+| Autonomy Module      | `packages/gateway/src/autonomy/`                   | Levels, risk assessment, approval workflow, budget controls                                                    |
+| Autonomy Routes      | `packages/gateway/src/routes/autonomy.ts`          | REST API for autonomy configuration, approvals, budgets, tool permissions                                      |
+| AutonomyPage         | `packages/ui/src/pages/AutonomyPage.tsx`           | React UI for autonomy level selection, budget management, tool permissions, pending approvals                  |
 
 ---
 
@@ -110,22 +110,22 @@ CREATE TABLE IF NOT EXISTS triggers (
 );
 ```
 
-| Column | Type | Default | Description |
-|--------|------|---------|-------------|
-| `id` | TEXT (PK) | auto-generated | Format: `trigger_{timestamp}_{random7}` |
-| `user_id` | TEXT | `'default'` | Owner of the trigger; all queries are scoped by this value |
-| `name` | TEXT | required | Human-readable name (e.g. "Daily Morning Summary") |
-| `description` | TEXT | null | Optional longer explanation |
-| `type` | TEXT | required | One of: `schedule`, `event`, `condition`, `webhook` |
-| `config` | JSONB | `'{}'` | Type-specific configuration (see Trigger Types below) |
-| `action` | JSONB | `'{}'` | What to do when the trigger fires (see Action Types below) |
-| `enabled` | BOOLEAN | `TRUE` | Whether the trigger is active; disabled triggers are never evaluated |
-| `priority` | INTEGER | `5` | 1 (lowest) to 10 (highest); affects processing order |
-| `last_fired` | TIMESTAMP | null | When the trigger last executed |
-| `next_fire` | TIMESTAMP | null | For schedule triggers: next calculated fire time from cron |
-| `fire_count` | INTEGER | `0` | Total number of times this trigger has fired |
-| `created_at` | TIMESTAMP | NOW() | Creation timestamp |
-| `updated_at` | TIMESTAMP | NOW() | Last modification timestamp |
+| Column        | Type      | Default        | Description                                                          |
+| ------------- | --------- | -------------- | -------------------------------------------------------------------- |
+| `id`          | TEXT (PK) | auto-generated | Format: `trigger_{timestamp}_{random7}`                              |
+| `user_id`     | TEXT      | `'default'`    | Owner of the trigger; all queries are scoped by this value           |
+| `name`        | TEXT      | required       | Human-readable name (e.g. "Daily Morning Summary")                   |
+| `description` | TEXT      | null           | Optional longer explanation                                          |
+| `type`        | TEXT      | required       | One of: `schedule`, `event`, `condition`, `webhook`                  |
+| `config`      | JSONB     | `'{}'`         | Type-specific configuration (see Trigger Types below)                |
+| `action`      | JSONB     | `'{}'`         | What to do when the trigger fires (see Action Types below)           |
+| `enabled`     | BOOLEAN   | `TRUE`         | Whether the trigger is active; disabled triggers are never evaluated |
+| `priority`    | INTEGER   | `5`            | 1 (lowest) to 10 (highest); affects processing order                 |
+| `last_fired`  | TIMESTAMP | null           | When the trigger last executed                                       |
+| `next_fire`   | TIMESTAMP | null           | For schedule triggers: next calculated fire time from cron           |
+| `fire_count`  | INTEGER   | `0`            | Total number of times this trigger has fired                         |
+| `created_at`  | TIMESTAMP | NOW()          | Creation timestamp                                                   |
+| `updated_at`  | TIMESTAMP | NOW()          | Last modification timestamp                                          |
 
 **Indexes:**
 
@@ -152,15 +152,15 @@ CREATE TABLE IF NOT EXISTS trigger_history (
 );
 ```
 
-| Column | Type | Description |
-|--------|------|-------------|
-| `id` | TEXT (PK) | Format: `hist_{timestamp}_{random7}` |
-| `trigger_id` | TEXT (FK) | References `triggers(id)`; cascading delete |
-| `fired_at` | TIMESTAMP | When execution started |
-| `status` | TEXT | `success`, `failure`, or `skipped` |
-| `result` | TEXT | JSON-serialized result data on success |
-| `error` | TEXT | Error message on failure |
-| `duration_ms` | INTEGER | Execution wall-clock time in milliseconds |
+| Column        | Type      | Description                                 |
+| ------------- | --------- | ------------------------------------------- |
+| `id`          | TEXT (PK) | Format: `hist_{timestamp}_{random7}`        |
+| `trigger_id`  | TEXT (FK) | References `triggers(id)`; cascading delete |
+| `fired_at`    | TIMESTAMP | When execution started                      |
+| `status`      | TEXT      | `success`, `failure`, or `skipped`          |
+| `result`      | TEXT      | JSON-serialized result data on success      |
+| `error`       | TEXT      | Error message on failure                    |
+| `duration_ms` | INTEGER   | Execution wall-clock time in milliseconds   |
 
 **Indexes:**
 
@@ -195,8 +195,8 @@ Schedule triggers fire at specific times defined by a cron expression. The trigg
 
 ```typescript
 interface ScheduleConfig {
-  cron: string;       // Required. 5-field cron expression.
-  timezone?: string;  // Optional. E.g. "Europe/Istanbul", "local".
+  cron: string; // Required. 5-field cron expression.
+  timezone?: string; // Optional. E.g. "Europe/Istanbul", "local".
 }
 ```
 
@@ -204,27 +204,27 @@ interface ScheduleConfig {
 
 Standard 5-field cron: `minute hour day-of-month month day-of-week`
 
-| Field | Allowed Values | Special Characters |
-|-------|---------------|-------------------|
-| Minute | 0-59 | `*` `,` `-` `/` |
-| Hour | 0-23 | `*` `,` `-` `/` |
-| Day of Month | 1-31 | `*` `,` `-` `/` |
-| Month | 1-12 | `*` `,` `-` `/` |
-| Day of Week | 0-6 (0 = Sunday) | `*` `,` `-` `/` |
+| Field        | Allowed Values   | Special Characters |
+| ------------ | ---------------- | ------------------ |
+| Minute       | 0-59             | `*` `,` `-` `/`    |
+| Hour         | 0-23             | `*` `,` `-` `/`    |
+| Day of Month | 1-31             | `*` `,` `-` `/`    |
+| Month        | 1-12             | `*` `,` `-` `/`    |
+| Day of Week  | 0-6 (0 = Sunday) | `*` `,` `-` `/`    |
 
 **Cron Examples:**
 
-| Expression | Meaning |
-|-----------|---------|
-| `0 8 * * *` | Every day at 08:00 |
-| `0 9 * * 1-5` | Weekdays at 09:00 |
-| `*/15 * * * *` | Every 15 minutes |
-| `0 20 * * *` | Every day at 20:00 |
-| `0 9 * * 1` | Every Monday at 09:00 |
-| `0 0 1 * *` | First of every month at midnight |
-| `0 18 * * 0` | Every Sunday at 18:00 |
-| `0 2 * * *` | Every day at 02:00 |
-| `0 21 * * *` | Every day at 21:00 |
+| Expression     | Meaning                          |
+| -------------- | -------------------------------- |
+| `0 8 * * *`    | Every day at 08:00               |
+| `0 9 * * 1-5`  | Weekdays at 09:00                |
+| `*/15 * * * *` | Every 15 minutes                 |
+| `0 20 * * *`   | Every day at 20:00               |
+| `0 9 * * 1`    | Every Monday at 09:00            |
+| `0 0 1 * *`    | First of every month at midnight |
+| `0 18 * * 0`   | Every Sunday at 18:00            |
+| `0 2 * * *`    | Every day at 02:00               |
+| `0 21 * * *`   | Every day at 21:00               |
 
 **Validation:** Cron expressions are validated at creation time using the `validateCronExpression` utility from `@ownpilot/core`. Invalid expressions are rejected with a `400 INVALID_CRON` error. Additionally, the system verifies that the expression produces a valid next fire time -- if it does not, creation is blocked.
 
@@ -249,18 +249,18 @@ Event triggers fire in response to system events emitted through the trigger eng
 
 ```typescript
 interface EventConfig {
-  eventType: string;                     // Required. The event name to listen for.
-  filters?: Record<string, unknown>;     // Optional. Key-value filters on the event payload.
+  eventType: string; // Required. The event name to listen for.
+  filters?: Record<string, unknown>; // Optional. Key-value filters on the event payload.
 }
 ```
 
 **Available Event Types:**
 
-| Event | Emitted When |
-|-------|-------------|
-| `goal_completed` | A goal is marked as complete |
-| `memory_added` | A new memory is stored |
-| `message_received` | An incoming message arrives |
+| Event              | Emitted When                 |
+| ------------------ | ---------------------------- |
+| `goal_completed`   | A goal is marked as complete |
+| `memory_added`     | A new memory is stored       |
+| `message_received` | An incoming message arrives  |
 
 **Filter Matching:**
 
@@ -298,21 +298,21 @@ Condition triggers are evaluated periodically by the engine. They check a named 
 
 ```typescript
 interface ConditionConfig {
-  condition: string;       // Required. The condition name to evaluate.
-  threshold?: number;      // Optional. Meaning depends on condition type.
-  checkInterval?: number;  // Optional. Minutes between evaluations. Default: 60.
+  condition: string; // Required. The condition name to evaluate.
+  threshold?: number; // Optional. Meaning depends on condition type.
+  checkInterval?: number; // Optional. Minutes between evaluations. Default: 60.
 }
 ```
 
 **Available Conditions:**
 
-| Condition | Description | Threshold Meaning | Default Threshold |
-|-----------|-------------|-------------------|-------------------|
-| `stale_goals` | True if any active goals have not been updated in N days | Days since last update | 3 |
-| `upcoming_deadline` | True if any goals have deadlines within N days | Days until deadline | 7 |
-| `memory_threshold` | True if total memory count exceeds N | Memory count | 100 |
-| `low_progress` | True if any active goals have progress below N% | Progress percentage | 20 |
-| `no_activity` | True if there has been no recent activity | Not used | N/A |
+| Condition           | Description                                              | Threshold Meaning      | Default Threshold |
+| ------------------- | -------------------------------------------------------- | ---------------------- | ----------------- |
+| `stale_goals`       | True if any active goals have not been updated in N days | Days since last update | 3                 |
+| `upcoming_deadline` | True if any goals have deadlines within N days           | Days until deadline    | 7                 |
+| `memory_threshold`  | True if total memory count exceeds N                     | Memory count           | 100               |
+| `low_progress`      | True if any active goals have progress below N%          | Progress percentage    | 20                |
+| `no_activity`       | True if there has been no recent activity                | Not used               | N/A               |
 
 **Check Interval Throttling:**
 
@@ -338,7 +338,7 @@ Webhook triggers are designed to be fired by external HTTP calls. They provide a
 
 ```typescript
 interface WebhookConfig {
-  secret?: string;           // Optional. Shared secret for signature verification.
+  secret?: string; // Optional. Shared secret for signature verification.
   allowedSources?: string[]; // Optional. Allowed origin domains/IPs. "*" allows all.
 }
 ```
@@ -375,11 +375,11 @@ interface TriggerAction {
 
 Sends a message through the AI agent system. The engine uses an injected chat handler (set via `engine.setChatHandler()` during server initialization) to route the message to the agent.
 
-| Payload Key | Type | Description |
-|-------------|------|-------------|
-| `prompt` or `message` | string | The text to send to the agent |
-| `agentId` | string | Optional. Target agent identifier |
-| `includeContext` | boolean | Optional. Whether to include contextual data |
+| Payload Key           | Type    | Description                                  |
+| --------------------- | ------- | -------------------------------------------- |
+| `prompt` or `message` | string  | The text to send to the agent                |
+| `agentId`             | string  | Optional. Target agent identifier            |
+| `includeContext`      | boolean | Optional. Whether to include contextual data |
 
 If the chat handler is not yet initialized (e.g., during early startup), the action is logged and returns success with a note that the agent was not available.
 
@@ -387,11 +387,11 @@ If the chat handler is not yet initialized (e.g., during early startup), the act
 
 Executes a registered tool via the shared tool executor service.
 
-| Payload Key | Type | Description |
-|-------------|------|-------------|
-| `tool` | string | Required. Name of the tool to execute |
-| `toolName` | string | Alternative key (used in some seed examples) |
-| (other keys) | any | Passed through as tool arguments |
+| Payload Key  | Type   | Description                                  |
+| ------------ | ------ | -------------------------------------------- |
+| `tool`       | string | Required. Name of the tool to execute        |
+| `toolName`   | string | Alternative key (used in some seed examples) |
+| (other keys) | any    | Passed through as tool arguments             |
 
 The engine strips internal metadata keys (`tool`, `triggerId`, `triggerName`, `manual`) before passing the remaining payload as tool arguments. The tool must be registered in the system -- the engine calls `hasTool()` to verify before execution.
 
@@ -399,31 +399,31 @@ The engine strips internal metadata keys (`tool`, `triggerId`, `triggerName`, `m
 
 Logs a notification message. This is the simplest action type -- it writes to the console and returns success.
 
-| Payload Key | Type | Description |
-|-------------|------|-------------|
-| `message` | string | The notification text |
-| `title` | string | Optional. Notification title |
-| `template` | string | Optional. Template with `{{variable}}` placeholders |
-| `priority` | string | Optional. `"high"`, `"normal"`, etc. |
-| `channel` | string | Optional. `"push"`, `"email"`, etc. |
+| Payload Key | Type   | Description                                         |
+| ----------- | ------ | --------------------------------------------------- |
+| `message`   | string | The notification text                               |
+| `title`     | string | Optional. Notification title                        |
+| `template`  | string | Optional. Template with `{{variable}}` placeholders |
+| `priority`  | string | Optional. `"high"`, `"normal"`, etc.                |
+| `channel`   | string | Optional. `"push"`, `"email"`, etc.                 |
 
 ### `goal_check`
 
 Queries the Goals repository for stale goals and returns a summary.
 
-| Payload Key | Type | Description |
-|-------------|------|-------------|
-| `staleDays` | number | Days without update to consider a goal stale (default: 3) |
-| `reviewType` | string | Optional. E.g. `"weekly"` |
-| `includeMetrics` | boolean | Optional. Include additional metrics |
+| Payload Key      | Type    | Description                                               |
+| ---------------- | ------- | --------------------------------------------------------- |
+| `staleDays`      | number  | Days without update to consider a goal stale (default: 3) |
+| `reviewType`     | string  | Optional. E.g. `"weekly"`                                 |
+| `includeMetrics` | boolean | Optional. Include additional metrics                      |
 
 ### `memory_summary`
 
 Queries the Memories repository for aggregate statistics and returns a summary.
 
-| Payload Key | Type | Description |
-|-------------|------|-------------|
-| `maxAge` | number | Optional. Maximum age in days |
+| Payload Key  | Type     | Description                            |
+| ------------ | -------- | -------------------------------------- |
+| `maxAge`     | number   | Optional. Maximum age in days          |
 | `categories` | string[] | Optional. Memory categories to include |
 
 ---
@@ -438,10 +438,10 @@ The `TriggerEngine` class is a singleton background processor.
 
 ```typescript
 interface TriggerEngineConfig {
-  pollIntervalMs?: number;              // Interval for schedule trigger polling. Default: 60000 (1 minute)
-  conditionCheckIntervalMs?: number;    // Interval for condition evaluation. Default: 300000 (5 minutes)
-  enabled?: boolean;                    // Whether the engine starts. Default: true
-  userId?: string;                      // User scope. Default: 'default'
+  pollIntervalMs?: number; // Interval for schedule trigger polling. Default: 60000 (1 minute)
+  conditionCheckIntervalMs?: number; // Interval for condition evaluation. Default: 300000 (5 minutes)
+  enabled?: boolean; // Whether the engine starts. Default: true
+  userId?: string; // User scope. Default: 'default'
 }
 ```
 
@@ -456,10 +456,10 @@ engine.isRunning()          -->  returns boolean
 
 ### Internal Timers
 
-| Timer | Default Interval | Purpose |
-|-------|-----------------|---------|
-| `pollTimer` | 60,000ms (1 min) | Calls `processScheduleTriggers()` -- fetches due schedule triggers and executes them |
-| `conditionTimer` | 300,000ms (5 min) | Calls `processConditionTriggers()` -- evaluates all enabled condition triggers |
+| Timer            | Default Interval  | Purpose                                                                              |
+| ---------------- | ----------------- | ------------------------------------------------------------------------------------ |
+| `pollTimer`      | 60,000ms (1 min)  | Calls `processScheduleTriggers()` -- fetches due schedule triggers and executes them |
+| `conditionTimer` | 300,000ms (5 min) | Calls `processConditionTriggers()` -- evaluates all enabled condition triggers       |
 
 Both timers run their processing function immediately on `start()`, then repeat at the configured interval.
 
@@ -550,9 +550,9 @@ The `plans` table has a `trigger_id` column that references `triggers(id)`. When
 const plan = await plansRepo.create({
   name: 'Morning Routine Analysis',
   goal: 'Provide morning briefing',
-  triggerId: trigger.id,        // Links back to the trigger
-  source: 'trigger',            // Provenance tracking
-  sourceId: trigger.id,         // Additional provenance
+  triggerId: trigger.id, // Links back to the trigger
+  source: 'trigger', // Provenance tracking
+  sourceId: trigger.id, // Additional provenance
   autonomyLevel: 3,
 });
 ```
@@ -567,15 +567,15 @@ const plans = await plansRepo.list({ triggerId: 'trigger_123...' });
 
 Plans consist of ordered steps, each with a type that determines execution behavior:
 
-| Step Type | Description |
-|-----------|-------------|
-| `tool_call` | Execute a named tool with arguments |
-| `llm_decision` | Send a prompt to the LLM for analysis/decision |
-| `user_input` | Pause and wait for user input (text, choice, confirm) |
-| `condition` | Evaluate a condition and branch (true/false step) |
-| `parallel` | Execute multiple steps concurrently |
-| `loop` | Repeat a step with a termination condition |
-| `sub_plan` | Execute another plan as a sub-plan |
+| Step Type      | Description                                           |
+| -------------- | ----------------------------------------------------- |
+| `tool_call`    | Execute a named tool with arguments                   |
+| `llm_decision` | Send a prompt to the LLM for analysis/decision        |
+| `user_input`   | Pause and wait for user input (text, choice, confirm) |
+| `condition`    | Evaluate a condition and branch (true/false step)     |
+| `parallel`     | Execute multiple steps concurrently                   |
+| `loop`         | Repeat a step with a termination condition            |
+| `sub_plan`     | Execute another plan as a sub-plan                    |
 
 ### 3. Execution Flow
 
@@ -592,14 +592,14 @@ Trigger fires
 
 ### 4. Plan Status Tracking
 
-| Status | Description |
-|--------|-------------|
-| `pending` | Created but not yet started |
-| `running` | Currently executing steps |
-| `paused` | Execution paused (e.g., waiting for user input) |
-| `completed` | All steps finished successfully |
-| `failed` | One or more steps failed beyond retry limits |
-| `cancelled` | Manually cancelled by user or system |
+| Status      | Description                                     |
+| ----------- | ----------------------------------------------- |
+| `pending`   | Created but not yet started                     |
+| `running`   | Currently executing steps                       |
+| `paused`    | Execution paused (e.g., waiting for user input) |
+| `completed` | All steps finished successfully                 |
+| `failed`    | One or more steps failed beyond retry limits    |
+| `cancelled` | Manually cancelled by user or system            |
 
 ---
 
@@ -611,33 +611,33 @@ The autonomy system governs how much freedom the AI has to act without human app
 
 ### Autonomy Levels
 
-| Level | Name | Enum Value | Behavior |
-|-------|------|------------|----------|
-| 0 | Manual | `MANUAL` | Always ask before any action. Maximum user control. |
-| 1 | Assisted | `ASSISTED` | Suggest actions and wait for approval before executing. |
-| 2 | Supervised | `SUPERVISED` | Execute low-risk actions automatically, ask for high-risk ones. **(Default)** |
-| 3 | Autonomous | `AUTONOMOUS` | Execute all actions automatically, send notifications. |
-| 4 | Full Autonomy | `FULL` | Fully autonomous operation with minimal notifications. |
+| Level | Name          | Enum Value   | Behavior                                                                      |
+| ----- | ------------- | ------------ | ----------------------------------------------------------------------------- |
+| 0     | Manual        | `MANUAL`     | Always ask before any action. Maximum user control.                           |
+| 1     | Assisted      | `ASSISTED`   | Suggest actions and wait for approval before executing.                       |
+| 2     | Supervised    | `SUPERVISED` | Execute low-risk actions automatically, ask for high-risk ones. **(Default)** |
+| 3     | Autonomous    | `AUTONOMOUS` | Execute all actions automatically, send notifications.                        |
+| 4     | Full Autonomy | `FULL`       | Fully autonomous operation with minimal notifications.                        |
 
 ### Autonomy Configuration
 
 Each user has an `AutonomyConfig` that controls behavior:
 
-| Field | Type | Default | Description |
-|-------|------|---------|-------------|
-| `level` | number (0-4) | 2 (Supervised) | Global autonomy level |
-| `allowedTools` | string[] | `[]` | Tools that can run without approval regardless of level |
-| `blockedTools` | string[] | `[]` | Tools that always need approval regardless of level |
-| `allowedCategories` | ActionCategory[] | `[]` | Categories that bypass approval |
-| `blockedCategories` | ActionCategory[] | `['system_command', 'code_execution']` | Categories that always require approval |
-| `maxCostPerAction` | number | 1000 | Maximum cost (tokens) per autonomous action |
-| `dailyBudget` | number | 10000 | Daily budget for autonomous actions |
-| `dailySpend` | number | 0 | Current spend for the day |
-| `budgetResetAt` | Date | auto | When the daily budget resets |
-| `notificationThreshold` | number | 2 | Notify user for actions at or above this level |
-| `confirmationRequired` | string[] | `['delete_data', 'send_email', 'make_payment', 'modify_system']` | Actions that always need explicit confirmation |
-| `auditEnabled` | boolean | true | Whether to log all autonomous actions |
-| `timeRestrictions` | TimeRestriction[] | `[]` | Time-based autonomy level overrides |
+| Field                   | Type              | Default                                                          | Description                                             |
+| ----------------------- | ----------------- | ---------------------------------------------------------------- | ------------------------------------------------------- |
+| `level`                 | number (0-4)      | 2 (Supervised)                                                   | Global autonomy level                                   |
+| `allowedTools`          | string[]          | `[]`                                                             | Tools that can run without approval regardless of level |
+| `blockedTools`          | string[]          | `[]`                                                             | Tools that always need approval regardless of level     |
+| `allowedCategories`     | ActionCategory[]  | `[]`                                                             | Categories that bypass approval                         |
+| `blockedCategories`     | ActionCategory[]  | `['system_command', 'code_execution']`                           | Categories that always require approval                 |
+| `maxCostPerAction`      | number            | 1000                                                             | Maximum cost (tokens) per autonomous action             |
+| `dailyBudget`           | number            | 10000                                                            | Daily budget for autonomous actions                     |
+| `dailySpend`            | number            | 0                                                                | Current spend for the day                               |
+| `budgetResetAt`         | Date              | auto                                                             | When the daily budget resets                            |
+| `notificationThreshold` | number            | 2                                                                | Notify user for actions at or above this level          |
+| `confirmationRequired`  | string[]          | `['delete_data', 'send_email', 'make_payment', 'modify_system']` | Actions that always need explicit confirmation          |
+| `auditEnabled`          | boolean           | true                                                             | Whether to log all autonomous actions                   |
+| `timeRestrictions`      | TimeRestriction[] | `[]`                                                             | Time-based autonomy level overrides                     |
 
 ### Risk Assessment
 
@@ -645,29 +645,29 @@ Every action is assessed for risk before execution. The risk assessment consider
 
 **Risk Levels:**
 
-| Level | Score Range | Description |
-|-------|------------|-------------|
-| `low` | 0-25 | Safe, routine operations |
-| `medium` | 26-50 | Standard operations with some impact |
-| `high` | 51-75 | Significant impact or irreversible actions |
-| `critical` | 76-100 | Dangerous, expensive, or system-altering actions |
+| Level      | Score Range | Description                                      |
+| ---------- | ----------- | ------------------------------------------------ |
+| `low`      | 0-25        | Safe, routine operations                         |
+| `medium`   | 26-50       | Standard operations with some impact             |
+| `high`     | 51-75       | Significant impact or irreversible actions       |
+| `critical` | 76-100      | Dangerous, expensive, or system-altering actions |
 
 **Action Categories:**
 
-| Category | Typical Risk |
-|----------|-------------|
-| `tool_execution` | Varies by tool |
-| `data_modification` | Medium-High |
-| `external_communication` | High |
-| `file_operation` | Medium |
-| `code_execution` | High-Critical |
-| `system_command` | Critical |
-| `api_call` | Medium |
-| `notification` | Low |
-| `plan_execution` | Medium |
-| `memory_modification` | Medium |
-| `goal_modification` | Medium |
-| `financial` | High-Critical |
+| Category                 | Typical Risk   |
+| ------------------------ | -------------- |
+| `tool_execution`         | Varies by tool |
+| `data_modification`      | Medium-High    |
+| `external_communication` | High           |
+| `file_operation`         | Medium         |
+| `code_execution`         | High-Critical  |
+| `system_command`         | Critical       |
+| `api_call`               | Medium         |
+| `notification`           | Low            |
+| `plan_execution`         | Medium         |
+| `memory_modification`    | Medium         |
+| `goal_modification`      | Medium         |
+| `financial`              | High-Critical  |
 
 ### Approval Workflow
 
@@ -704,10 +704,10 @@ Autonomy levels can vary by time of day and day of week:
 
 ```typescript
 interface TimeRestriction {
-  daysOfWeek: number[];   // 0-6, Sunday=0
-  startHour: number;      // 0-23
-  endHour: number;        // 0-23
-  level: AutonomyLevel;   // Override level during this period
+  daysOfWeek: number[]; // 0-6, Sunday=0
+  startHour: number; // 0-23
+  endHour: number; // 0-23
+  level: AutonomyLevel; // Override level during this period
 }
 ```
 
@@ -747,12 +747,12 @@ List triggers with optional filters.
 
 **Query Parameters:**
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `userId` | string | No | User ID (default: `'default'`) |
-| `type` | string | No | Filter by type: `schedule`, `event`, `condition`, `webhook` |
-| `enabled` | string | No | `'true'` or `'false'` to filter by enabled state |
-| `limit` | number | No | Maximum results (default: 20) |
+| Parameter | Type   | Required | Description                                                 |
+| --------- | ------ | -------- | ----------------------------------------------------------- |
+| `userId`  | string | No       | User ID (default: `'default'`)                              |
+| `type`    | string | No       | Filter by type: `schedule`, `event`, `condition`, `webhook` |
+| `enabled` | string | No       | `'true'` or `'false'` to filter by enabled state            |
+| `limit`   | number | No       | Maximum results (default: 20)                               |
 
 **Response (200):**
 
@@ -814,6 +814,7 @@ Create a new trigger.
 **Required fields:** `name`, `type`, `config`, `action`
 
 **Validation:**
+
 - Schedule triggers must include `config.cron` with a valid 5-field cron expression.
 - Invalid cron returns `400 INVALID_CRON`.
 - If the cron does not produce a valid next fire time, creation is rejected.
@@ -832,11 +833,11 @@ Create a new trigger.
 
 **Error Responses:**
 
-| Status | Code | Reason |
-|--------|------|--------|
-| 400 | `INVALID_REQUEST` | Missing required fields |
-| 400 | `INVALID_CRON` | Invalid cron expression or no next fire time |
-| 400 | `CREATE_FAILED` | Database constraint violation |
+| Status | Code              | Reason                                       |
+| ------ | ----------------- | -------------------------------------------- |
+| 400    | `INVALID_REQUEST` | Missing required fields                      |
+| 400    | `INVALID_CRON`    | Invalid cron expression or no next fire time |
+| 400    | `CREATE_FAILED`   | Database constraint violation                |
 
 ---
 
@@ -949,9 +950,9 @@ Get recent execution history across all triggers.
 
 **Query Parameters:**
 
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `limit` | number | 50 | Maximum entries |
+| Parameter | Type   | Default | Description     |
+| --------- | ------ | ------- | --------------- |
+| `limit`   | number | 50      | Maximum entries |
 
 **Response:** Returns array of history entries with `triggerName` included.
 
@@ -963,9 +964,9 @@ Get execution history for a specific trigger.
 
 **Query Parameters:**
 
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `limit` | number | 20 | Maximum entries |
+| Parameter | Type   | Default | Description     |
+| --------- | ------ | ------- | --------------- |
+| `limit`   | number | 20      | Maximum entries |
 
 ---
 
@@ -1061,19 +1062,19 @@ Create a new proactive trigger.
 
 **Parameters:**
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `name` | string | Yes | Trigger name |
-| `description` | string | No | What this trigger does |
-| `type` | string | Yes | `schedule`, `event`, `condition`, `webhook` |
-| `cron` | string | Conditional | Required for `schedule` type. 5-field cron expression. |
-| `event_type` | string | Conditional | Required for `event` type. One of: `goal_completed`, `memory_added`, `message_received` |
-| `condition` | string | Conditional | Required for `condition` type. One of: `stale_goals`, `upcoming_deadline`, `memory_threshold`, `low_progress`, `no_activity` |
-| `threshold` | number | No | For `condition` type. Varies by condition (default: 3) |
-| `action_type` | string | Yes | `chat`, `tool`, `notification`, `goal_check`, `memory_summary` |
-| `action_payload` | object | Yes | Payload for the action |
-| `enabled` | boolean | No | Default: `true` |
-| `priority` | number | No | 1-10, default: 5 |
+| Parameter        | Type    | Required    | Description                                                                                                                  |
+| ---------------- | ------- | ----------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `name`           | string  | Yes         | Trigger name                                                                                                                 |
+| `description`    | string  | No          | What this trigger does                                                                                                       |
+| `type`           | string  | Yes         | `schedule`, `event`, `condition`, `webhook`                                                                                  |
+| `cron`           | string  | Conditional | Required for `schedule` type. 5-field cron expression.                                                                       |
+| `event_type`     | string  | Conditional | Required for `event` type. One of: `goal_completed`, `memory_added`, `message_received`                                      |
+| `condition`      | string  | Conditional | Required for `condition` type. One of: `stale_goals`, `upcoming_deadline`, `memory_threshold`, `low_progress`, `no_activity` |
+| `threshold`      | number  | No          | For `condition` type. Varies by condition (default: 3)                                                                       |
+| `action_type`    | string  | Yes         | `chat`, `tool`, `notification`, `goal_check`, `memory_summary`                                                               |
+| `action_payload` | object  | Yes         | Payload for the action                                                                                                       |
+| `enabled`        | boolean | No          | Default: `true`                                                                                                              |
+| `priority`       | number  | No          | 1-10, default: 5                                                                                                             |
 
 **Example (via agent conversation):**
 
@@ -1101,10 +1102,10 @@ List all triggers with their status.
 
 **Parameters:**
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `type` | string | No | Filter by trigger type |
-| `enabled` | boolean | No | Filter by enabled status |
+| Parameter | Type    | Required | Description              |
+| --------- | ------- | -------- | ------------------------ |
+| `type`    | string  | No       | Filter by trigger type   |
+| `enabled` | boolean | No       | Filter by enabled status |
 
 Returns up to 50 triggers with: id, name, type, enabled, priority, lastFired, nextFire, fireCount, description, actionType.
 
@@ -1116,10 +1117,10 @@ Enable or disable a trigger.
 
 **Parameters:**
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `trigger_id` | string | Yes | Trigger ID |
-| `enabled` | boolean | Yes | `true` to enable, `false` to disable |
+| Parameter    | Type    | Required | Description                          |
+| ------------ | ------- | -------- | ------------------------------------ |
+| `trigger_id` | string  | Yes      | Trigger ID                           |
+| `enabled`    | boolean | Yes      | `true` to enable, `false` to disable |
 
 ---
 
@@ -1129,9 +1130,9 @@ Manually fire a trigger immediately, regardless of schedule or conditions.
 
 **Parameters:**
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `trigger_id` | string | Yes | Trigger ID to fire |
+| Parameter    | Type   | Required | Description        |
+| ------------ | ------ | -------- | ------------------ |
+| `trigger_id` | string | Yes      | Trigger ID to fire |
 
 ---
 
@@ -1141,9 +1142,9 @@ Permanently delete a trigger.
 
 **Parameters:**
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `trigger_id` | string | Yes | Trigger ID to delete |
+| Parameter    | Type   | Required | Description          |
+| ------------ | ------ | -------- | -------------------- |
+| `trigger_id` | string | Yes      | Trigger ID to delete |
 
 ---
 
@@ -1159,14 +1160,14 @@ The system ships with six default triggers that are created for each user on ini
 
 **Source:** `packages/gateway/src/triggers/proactive.ts`
 
-| Name | Type | Schedule/Condition | Action | Priority |
-|------|------|-------------------|--------|----------|
-| Morning Briefing | `schedule` | `0 8 * * *` (daily 8 AM) | `chat` -- generate briefing with goals, deadlines, events, priorities | 7 |
-| Stale Goal Reminder | `condition` | `stale_goals`, threshold: 3 days, check every 6 hours | `notification` -- "goals need attention" | 5 |
-| Deadline Warning | `condition` | `upcoming_deadline`, threshold: 3 days, check every 12 hours | `notification` -- "deadlines approaching" | 8 |
-| Weekly Memory Summary | `schedule` | `0 18 * * 0` (Sunday 6 PM) | `memory_summary` | 4 |
-| Low Progress Alert | `condition` | `low_progress`, threshold: 10%, check daily | `goal_check` -- find stale goals with 7-day threshold | 5 |
-| Daily Goal Check | `schedule` | `0 21 * * *` (daily 9 PM) | `chat` -- review day's goal progress | 6 |
+| Name                  | Type        | Schedule/Condition                                           | Action                                                                | Priority |
+| --------------------- | ----------- | ------------------------------------------------------------ | --------------------------------------------------------------------- | -------- |
+| Morning Briefing      | `schedule`  | `0 8 * * *` (daily 8 AM)                                     | `chat` -- generate briefing with goals, deadlines, events, priorities | 7        |
+| Stale Goal Reminder   | `condition` | `stale_goals`, threshold: 3 days, check every 6 hours        | `notification` -- "goals need attention"                              | 5        |
+| Deadline Warning      | `condition` | `upcoming_deadline`, threshold: 3 days, check every 12 hours | `notification` -- "deadlines approaching"                             | 8        |
+| Weekly Memory Summary | `schedule`  | `0 18 * * 0` (Sunday 6 PM)                                   | `memory_summary`                                                      | 4        |
+| Low Progress Alert    | `condition` | `low_progress`, threshold: 10%, check daily                  | `goal_check` -- find stale goals with 7-day threshold                 | 5        |
+| Daily Goal Check      | `schedule`  | `0 21 * * *` (daily 9 PM)                                    | `chat` -- review day's goal progress                                  | 6        |
 
 ### Management Functions
 
@@ -1202,49 +1203,49 @@ The script requires the gateway API to be running (default: `http://localhost:30
 
 ### Sample Triggers
 
-| Name | Type | Description |
-|------|------|-------------|
-| Daily Morning Summary | `schedule` | Cron `0 8 * * *`, chat action for morning briefing |
-| Weekly Review | `schedule` | Cron `0 18 * * 0`, goal_check action |
-| Memory Consolidation | `schedule` | Cron `0 2 * * *`, memory_summary action (disabled) |
-| Goal Completed Celebration | `event` | On `goal_completed`, notification action |
-| High Priority Message Alert | `event` | On `message_received` (high priority), notification action |
-| New Memory Learning | `event` | On `memory_added` (fact type), tool action (disabled) |
-| Stale Goals Reminder | `condition` | `stale_goals` 7-day threshold, chat action |
-| Deadline Approaching | `condition` | `upcoming_deadline` 24-hour threshold, notification action |
-| Memory Storage Check | `condition` | `memory_threshold` 80%, notification action (disabled) |
-| GitHub Webhook | `webhook` | External GitHub integration (disabled) |
-| External API Webhook | `webhook` | Generic webhook processor (disabled) |
+| Name                        | Type        | Description                                                |
+| --------------------------- | ----------- | ---------------------------------------------------------- |
+| Daily Morning Summary       | `schedule`  | Cron `0 8 * * *`, chat action for morning briefing         |
+| Weekly Review               | `schedule`  | Cron `0 18 * * 0`, goal_check action                       |
+| Memory Consolidation        | `schedule`  | Cron `0 2 * * *`, memory_summary action (disabled)         |
+| Goal Completed Celebration  | `event`     | On `goal_completed`, notification action                   |
+| High Priority Message Alert | `event`     | On `message_received` (high priority), notification action |
+| New Memory Learning         | `event`     | On `memory_added` (fact type), tool action (disabled)      |
+| Stale Goals Reminder        | `condition` | `stale_goals` 7-day threshold, chat action                 |
+| Deadline Approaching        | `condition` | `upcoming_deadline` 24-hour threshold, notification action |
+| Memory Storage Check        | `condition` | `memory_threshold` 80%, notification action (disabled)     |
+| GitHub Webhook              | `webhook`   | External GitHub integration (disabled)                     |
+| External API Webhook        | `webhook`   | Generic webhook processor (disabled)                       |
 
 ### Sample Plans
 
-| Name | Steps | Autonomy Level | Description |
-|------|-------|---------------|-------------|
-| Morning Routine Analysis | 4 | 3 | Fetch calendar, fetch tasks, prioritize (LLM), send briefing |
-| Weekly Goal Review | 5 | 2 | Fetch goals, calculate progress, analyze (LLM), user feedback, conditional action |
-| Email Processing Pipeline | 5 | 4 | Fetch emails, categorize (LLM), check urgency, alert, archive |
-| Code Review Assistant | 6 | 2 | Get PR URL (user input), fetch PR, review (LLM), confirm, conditional post |
-| Research Topic Deep Dive | 7 | 3 | Get topic (user input), web search, fetch articles, check memories, synthesize (LLM), save, create memory |
+| Name                      | Steps | Autonomy Level | Description                                                                                               |
+| ------------------------- | ----- | -------------- | --------------------------------------------------------------------------------------------------------- |
+| Morning Routine Analysis  | 4     | 3              | Fetch calendar, fetch tasks, prioritize (LLM), send briefing                                              |
+| Weekly Goal Review        | 5     | 2              | Fetch goals, calculate progress, analyze (LLM), user feedback, conditional action                         |
+| Email Processing Pipeline | 5     | 4              | Fetch emails, categorize (LLM), check urgency, alert, archive                                             |
+| Code Review Assistant     | 6     | 2              | Get PR URL (user input), fetch PR, review (LLM), confirm, conditional post                                |
+| Research Topic Deep Dive  | 7     | 3              | Get topic (user input), web search, fetch articles, check memories, synthesize (LLM), save, create memory |
 
 ---
 
 ## Source File Map
 
-| File | Purpose |
-|------|---------|
-| `packages/gateway/src/db/schema.ts` | SQL schema for `triggers`, `trigger_history`, and `plans` tables with indexes |
-| `packages/gateway/src/db/repositories/triggers.ts` | `TriggersRepository` class -- all CRUD, history, stats, due trigger queries |
-| `packages/gateway/src/db/repositories/plans.ts` | `PlansRepository` class -- plan/step CRUD, progress tracking, dependency cycle detection |
-| `packages/gateway/src/services/trigger-service.ts` | TriggerService -- business logic layer for trigger operations, EventBus emission |
-| `packages/gateway/src/triggers/engine.ts` | `TriggerEngine` singleton -- polling, condition evaluation, event dispatch, action execution |
-| `packages/gateway/src/triggers/proactive.ts` | Built-in default trigger definitions and management functions |
-| `packages/gateway/src/triggers/index.ts` | Module barrel export |
-| `packages/gateway/src/routes/triggers.ts` | Hono routes for trigger REST API (thin HTTP handler, delegates to TriggerService) |
-| `packages/gateway/src/routes/autonomy.ts` | Hono routes for autonomy configuration, approvals, budgets |
-| `packages/gateway/src/tools/trigger-tools.ts` | Agent-accessible tools for trigger management (6 tools) |
-| `packages/gateway/src/autonomy/index.ts` | Autonomy module barrel export |
-| `packages/gateway/src/autonomy/types.ts` | Autonomy levels, risk types, config, approval flow types |
-| `packages/gateway/src/autonomy/risk.ts` | Risk assessment logic |
-| `packages/gateway/src/autonomy/approvals.ts` | Approval manager singleton |
-| `packages/gateway/scripts/seed-triggers-plans.ts` | Seed script for sample triggers and plans |
-| `packages/ui/src/pages/AutonomyPage.tsx` | React UI for autonomy level, budget, tool permissions, pending approvals |
+| File                                               | Purpose                                                                                      |
+| -------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| `packages/gateway/src/db/schema.ts`                | SQL schema for `triggers`, `trigger_history`, and `plans` tables with indexes                |
+| `packages/gateway/src/db/repositories/triggers.ts` | `TriggersRepository` class -- all CRUD, history, stats, due trigger queries                  |
+| `packages/gateway/src/db/repositories/plans.ts`    | `PlansRepository` class -- plan/step CRUD, progress tracking, dependency cycle detection     |
+| `packages/gateway/src/services/trigger-service.ts` | TriggerService -- business logic layer for trigger operations, EventBus emission             |
+| `packages/gateway/src/triggers/engine.ts`          | `TriggerEngine` singleton -- polling, condition evaluation, event dispatch, action execution |
+| `packages/gateway/src/triggers/proactive.ts`       | Built-in default trigger definitions and management functions                                |
+| `packages/gateway/src/triggers/index.ts`           | Module barrel export                                                                         |
+| `packages/gateway/src/routes/triggers.ts`          | Hono routes for trigger REST API (thin HTTP handler, delegates to TriggerService)            |
+| `packages/gateway/src/routes/autonomy.ts`          | Hono routes for autonomy configuration, approvals, budgets                                   |
+| `packages/gateway/src/tools/trigger-tools.ts`      | Agent-accessible tools for trigger management (6 tools)                                      |
+| `packages/gateway/src/autonomy/index.ts`           | Autonomy module barrel export                                                                |
+| `packages/gateway/src/autonomy/types.ts`           | Autonomy levels, risk types, config, approval flow types                                     |
+| `packages/gateway/src/autonomy/risk.ts`            | Risk assessment logic                                                                        |
+| `packages/gateway/src/autonomy/approvals.ts`       | Approval manager singleton                                                                   |
+| `packages/gateway/scripts/seed-triggers-plans.ts`  | Seed script for sample triggers and plans                                                    |
+| `packages/ui/src/pages/AutonomyPage.tsx`           | React UI for autonomy level, budget, tool permissions, pending approvals                     |

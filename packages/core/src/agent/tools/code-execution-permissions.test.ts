@@ -51,7 +51,7 @@ describe('Code Execution Permissions', () => {
           compile_code: 'allowed',
           package_manager: 'allowed',
         },
-      }),
+      })
     );
 
     expect(result.isError).toBe(true);
@@ -72,7 +72,7 @@ describe('Code Execution Permissions', () => {
           compile_code: 'blocked',
           package_manager: 'blocked',
         },
-      }),
+      })
     );
 
     expect(result.isError).toBe(true);
@@ -94,7 +94,7 @@ describe('Code Execution Permissions', () => {
           package_manager: 'blocked',
         },
         // No requestApproval callback!
-      }),
+      })
     );
 
     expect(result.isError).toBe(true);
@@ -116,7 +116,7 @@ describe('Code Execution Permissions', () => {
           package_manager: 'blocked',
         },
         requestApproval: async () => false, // User rejects
-      }),
+      })
     );
 
     expect(result.isError).toBe(true);
@@ -137,7 +137,7 @@ describe('Code Execution Permissions', () => {
           compile_code: 'blocked',
           package_manager: 'blocked',
         },
-      }),
+      })
     );
 
     expect(result.isError).toBeFalsy();
@@ -161,7 +161,7 @@ describe('Code Execution Permissions', () => {
           package_manager: 'blocked',
         },
         requestApproval: async () => true, // User approves
-      }),
+      })
     );
 
     expect(result.isError).toBeFalsy();
@@ -175,7 +175,7 @@ describe('Code Execution Permissions', () => {
       makeContext({
         userId: 'some-user',
         // executionPermissions: undefined — simulates failed DB load
-      }),
+      })
     );
 
     expect(result.isError).toBe(true);
@@ -189,7 +189,7 @@ describe('Code Execution Permissions', () => {
       makeContext({
         userId: undefined,
         // No executionPermissions, no requestApproval → CLI backward compat
-      }),
+      })
     );
 
     // Should succeed in CLI mode

@@ -84,7 +84,7 @@ export interface AgentConfig {
     category: string,
     actionType: string,
     description: string,
-    params: Record<string, unknown>,
+    params: Record<string, unknown>
   ) => Promise<boolean>;
 }
 
@@ -138,7 +138,6 @@ export interface AgentStep {
   /** Timestamp */
   timestamp: Date;
 }
-
 
 // ============================================================================
 // AGENT ORCHESTRATOR
@@ -322,13 +321,16 @@ export class AgentOrchestrator {
         includeInstructions: true,
         includeTimeContext: true,
         includeToolDescriptions: true,
-        conversationContext: messageCount > 0 ? {
-          messageCount,
-        } : undefined,
+        conversationContext:
+          messageCount > 0
+            ? {
+                messageCount,
+              }
+            : undefined,
         capabilities: {
-          codeExecution: this.config.tools.some(t => t.category === 'code_execution'),
-          fileAccess: this.config.tools.some(t => t.category === 'file_system'),
-          webBrowsing: this.config.tools.some(t => t.category === 'web_fetch'),
+          codeExecution: this.config.tools.some((t) => t.category === 'code_execution'),
+          fileAccess: this.config.tools.some((t) => t.category === 'file_system'),
+          webBrowsing: this.config.tools.some((t) => t.category === 'web_fetch'),
           memory: true,
         },
         ...this.config.memoryOptions,
@@ -394,11 +396,13 @@ export class AgentOrchestrator {
           context.messages.push({
             role: 'tool',
             content: JSON.stringify(toolResult.result),
-            toolResults: [{
-              toolCallId: toolCall.id,
-              content: JSON.stringify(toolResult.result),
-              isError: !toolResult.success,
-            }],
+            toolResults: [
+              {
+                toolCallId: toolCall.id,
+                content: JSON.stringify(toolResult.result),
+                isError: !toolResult.success,
+              },
+            ],
           });
         }
       } else {
@@ -416,9 +420,8 @@ export class AgentOrchestrator {
     if (!context.response && context.iteration >= this.config.maxIterations!) {
       const lastMessage = context.messages[context.messages.length - 1];
       if (lastMessage && lastMessage.role === 'assistant') {
-        context.response = typeof lastMessage.content === 'string'
-          ? lastMessage.content
-          : '[Complex content]';
+        context.response =
+          typeof lastMessage.content === 'string' ? lastMessage.content : '[Complex content]';
       } else {
         context.response = '[Max iterations reached]';
       }
@@ -514,11 +517,13 @@ export class AgentOrchestrator {
           context.messages.push({
             role: 'tool',
             content: JSON.stringify(toolResult.result),
-            toolResults: [{
-              toolCallId: toolCall.id,
-              content: JSON.stringify(toolResult.result),
-              isError: !toolResult.success,
-            }],
+            toolResults: [
+              {
+                toolCallId: toolCall.id,
+                content: JSON.stringify(toolResult.result),
+                isError: !toolResult.success,
+              },
+            ],
           });
         }
       } else {
@@ -542,13 +547,15 @@ export class AgentOrchestrator {
     let args: Record<string, unknown>;
 
     try {
-      const parsed = typeof toolCall.arguments === 'string'
-        ? JSON.parse(toolCall.arguments)
-        : toolCall.arguments;
+      const parsed =
+        typeof toolCall.arguments === 'string'
+          ? JSON.parse(toolCall.arguments)
+          : toolCall.arguments;
       // Ensure parsed result is a non-null object (not array, primitive, or null)
-      args = (parsed && typeof parsed === 'object' && !Array.isArray(parsed))
-        ? parsed as Record<string, unknown>
-        : {};
+      args =
+        parsed && typeof parsed === 'object' && !Array.isArray(parsed)
+          ? (parsed as Record<string, unknown>)
+          : {};
     } catch {
       log.warn(`Failed to parse tool arguments for "${toolName}":`, toolCall.arguments);
       args = {};
@@ -576,8 +583,8 @@ export class AgentOrchestrator {
 
     try {
       // Get executor
-      const executor = this.config.toolExecutors.get(toolName) ||
-        this.registry?.get(toolName)?.executor;
+      const executor =
+        this.config.toolExecutors.get(toolName) || this.registry?.get(toolName)?.executor;
 
       if (!executor) {
         throw new Error(`Unknown tool: ${toolName}`);
@@ -858,9 +865,7 @@ export interface PlanStep {
  * Creates a planning prompt for decomposing tasks
  */
 export function createPlanningPrompt(goal: string, availableTools: ToolDefinition[]): string {
-  const toolList = availableTools
-    .map((t) => `- ${t.name}: ${t.description}`)
-    .join('\n');
+  const toolList = availableTools.map((t) => `- ${t.name}: ${t.description}`).join('\n');
 
   return `You are a planning agent. Your task is to decompose the following goal into a series of steps.
 

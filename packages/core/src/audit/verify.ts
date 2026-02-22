@@ -134,9 +134,7 @@ export function verifyEventChain(previous: AuditEvent, current: AuditEvent): boo
 /**
  * Get a summary of audit log integrity
  */
-export async function getAuditSummary(
-  path: string
-): Promise<
+export async function getAuditSummary(path: string): Promise<
   Result<
     {
       totalEvents: number;

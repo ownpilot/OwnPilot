@@ -23,7 +23,12 @@ import {
  * Compute the SHA-256 checksum that verify.ts expects for an event.
  * It strips `checksum` and `previousChecksum`, then hashes the JSON.
  */
-function computeTestChecksum(event: Omit<AuditEvent, 'checksum' | 'previousChecksum'> & { checksum?: string; previousChecksum?: string }): string {
+function computeTestChecksum(
+  event: Omit<AuditEvent, 'checksum' | 'previousChecksum'> & {
+    checksum?: string;
+    previousChecksum?: string;
+  }
+): string {
   const { checksum: _, previousChecksum: __, ...rest } = event;
   const hash = createHash('sha256');
   hash.update(JSON.stringify(rest));
@@ -58,7 +63,10 @@ function buildEvent(
 /**
  * Build a valid chain of N audit events with proper hash linkage.
  */
-function buildChain(count: number, options?: { typeOverride?: string; timestampBase?: Date }): AuditEvent[] {
+function buildChain(
+  count: number,
+  options?: { typeOverride?: string; timestampBase?: Date }
+): AuditEvent[] {
   const events: AuditEvent[] = [];
   let previousChecksum = '';
   const baseTime = options?.timestampBase ?? new Date('2025-01-01T00:00:00.000Z');
@@ -465,7 +473,11 @@ describe('getAuditSummary', () => {
   it('returns correct error count for multiple issues', async () => {
     const events = buildChain(3);
     // Break chain on second and third event
-    const bad2 = { ...events[1], previousChecksum: 'bad', details: { hacked: true } } as unknown as AuditEvent;
+    const bad2 = {
+      ...events[1],
+      previousChecksum: 'bad',
+      details: { hacked: true },
+    } as unknown as AuditEvent;
     const bad3 = { ...events[2], previousChecksum: 'bad' } as unknown as AuditEvent;
     await writeFile(logPath, toJSONL([events[0], bad2, bad3]));
 
@@ -580,13 +592,29 @@ describe('exportAuditLog', () => {
     const base = new Date('2025-01-01T00:00:00.000Z');
     let prevChecksum = '';
 
-    const e1 = buildEvent({ type: 'auth.login', timestamp: new Date(base.getTime()).toISOString(), previousChecksum: prevChecksum });
+    const e1 = buildEvent({
+      type: 'auth.login',
+      timestamp: new Date(base.getTime()).toISOString(),
+      previousChecksum: prevChecksum,
+    });
     prevChecksum = e1.checksum;
-    const e2 = buildEvent({ type: 'auth.login', timestamp: new Date(base.getTime() + 60_000).toISOString(), previousChecksum: prevChecksum });
+    const e2 = buildEvent({
+      type: 'auth.login',
+      timestamp: new Date(base.getTime() + 60_000).toISOString(),
+      previousChecksum: prevChecksum,
+    });
     prevChecksum = e2.checksum;
-    const e3 = buildEvent({ type: 'system.start', timestamp: new Date(base.getTime() + 2 * 60_000).toISOString(), previousChecksum: prevChecksum });
+    const e3 = buildEvent({
+      type: 'system.start',
+      timestamp: new Date(base.getTime() + 2 * 60_000).toISOString(),
+      previousChecksum: prevChecksum,
+    });
     prevChecksum = e3.checksum;
-    const e4 = buildEvent({ type: 'auth.login', timestamp: new Date(base.getTime() + 3 * 60_000).toISOString(), previousChecksum: prevChecksum });
+    const e4 = buildEvent({
+      type: 'auth.login',
+      timestamp: new Date(base.getTime() + 3 * 60_000).toISOString(),
+      previousChecksum: prevChecksum,
+    });
 
     await writeFile(logPath, toJSONL([e1, e2, e3, e4]));
 

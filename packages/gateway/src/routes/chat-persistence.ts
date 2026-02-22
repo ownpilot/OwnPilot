@@ -10,17 +10,17 @@ import { ChatRepository, LogsRepository } from '../db/repositories/index.js';
 import { wsGateway } from '../ws/server.js';
 import { getLog } from '../services/log.js';
 import { truncate, getErrorMessage } from './helpers.js';
-import {
-  extractMemories,
-  updateGoalProgress,
-  evaluateTriggers,
-} from '../assistant/index.js';
+import { extractMemories, updateGoalProgress, evaluateTriggers } from '../assistant/index.js';
 import type { StreamState } from './chat-streaming.js';
 
 const log = getLog('ChatPersistence');
 
 /** Broadcast chat history update to WebSocket clients */
-export function broadcastChatUpdate(conversation: { id: string; title: string | null; messageCount: number }) {
+export function broadcastChatUpdate(conversation: {
+  id: string;
+  title: string | null;
+  messageCount: number;
+}) {
   wsGateway.broadcast('chat:history:updated', {
     conversationId: conversation.id,
     title: conversation.title ?? '',
@@ -67,9 +67,20 @@ export interface SaveChatParams {
  */
 export async function saveChatToDatabase(params: SaveChatParams): Promise<void> {
   const {
-    userId, conversationId, agentId, provider, model,
-    userMessage, assistantContent, toolCalls, trace,
-    usage, historyLength, streaming, ipAddress, userAgent,
+    userId,
+    conversationId,
+    agentId,
+    provider,
+    model,
+    userMessage,
+    assistantContent,
+    toolCalls,
+    trace,
+    usage,
+    historyLength,
+    streaming,
+    ipAddress,
+    userAgent,
   } = params;
 
   try {
@@ -110,7 +121,7 @@ export async function saveChatToDatabase(params: SaveChatParams): Promise<void> 
 
     // Extract payload breakdown from debug log
     const recentEntries = debugLog.getRecent(5);
-    const payloadEntry = recentEntries.find(e => e.type === 'request');
+    const payloadEntry = recentEntries.find((e) => e.type === 'request');
     const payloadInfo = payloadEntry?.data as { payload?: Record<string, unknown> } | undefined;
 
     // Log the request
@@ -137,7 +148,9 @@ export async function saveChatToDatabase(params: SaveChatParams): Promise<void> 
       userAgent,
     });
 
-    log.info(`Saved${streaming ? ' streaming' : ''} to history: conversation=${dbConversation.id}, messages=+2`);
+    log.info(
+      `Saved${streaming ? ' streaming' : ''} to history: conversation=${dbConversation.id}, messages=+2`
+    );
 
     broadcastChatUpdate(dbConversation);
   } catch (err) {
@@ -164,27 +177,31 @@ export async function saveStreamingChat(
     historyLength?: number;
     ipAddress?: string;
     userAgent?: string;
-  },
+  }
 ): Promise<void> {
   const streamLatency = Math.round(performance.now() - state.startTime);
 
   const streamTraceInfo = {
     duration: streamLatency,
-    toolCalls: state.traceToolCalls.map(tc => ({
+    toolCalls: state.traceToolCalls.map((tc) => ({
       name: tc.name,
       arguments: tc.arguments,
       result: tc.result,
       success: tc.success,
       duration: tc.duration,
     })),
-    modelCalls: state.lastUsage ? [{
-      provider: params.provider,
-      model: params.model,
-      inputTokens: state.lastUsage.promptTokens,
-      outputTokens: state.lastUsage.completionTokens,
-      tokens: state.lastUsage.totalTokens,
-      duration: streamLatency,
-    }] : [],
+    modelCalls: state.lastUsage
+      ? [
+          {
+            provider: params.provider,
+            model: params.model,
+            inputTokens: state.lastUsage.promptTokens,
+            outputTokens: state.lastUsage.completionTokens,
+            tokens: state.lastUsage.totalTokens,
+            duration: streamLatency,
+          },
+        ]
+      : [],
     request: {
       provider: params.provider,
       model: params.model,
@@ -201,11 +218,13 @@ export async function saveStreamingChat(
   await saveChatToDatabase({
     ...params,
     trace: streamTraceInfo as Record<string, unknown>,
-    usage: state.lastUsage ? {
-      promptTokens: state.lastUsage.promptTokens,
-      completionTokens: state.lastUsage.completionTokens,
-      totalTokens: state.lastUsage.totalTokens,
-    } : undefined,
+    usage: state.lastUsage
+      ? {
+          promptTokens: state.lastUsage.promptTokens,
+          completionTokens: state.lastUsage.completionTokens,
+          totalTokens: state.lastUsage.totalTokens,
+        }
+      : undefined,
     streaming: true,
   });
 }
@@ -218,7 +237,7 @@ export function runPostChatProcessing(
   userId: string,
   userMessage: string,
   assistantContent: string,
-  toolCalls?: readonly ToolCall[],
+  toolCalls?: readonly ToolCall[]
 ): void {
   Promise.all([
     extractMemories(userId, userMessage, assistantContent).catch((e) =>
@@ -230,27 +249,29 @@ export function runPostChatProcessing(
     evaluateTriggers(userId, userMessage, assistantContent).catch((e) =>
       log.warn('Trigger evaluation failed:', e)
     ),
-  ]).then(([memoriesExtracted, _, triggerResult]) => {
-    if (memoriesExtracted && (memoriesExtracted as number) > 0) {
-      log.info(`Extracted ${memoriesExtracted} new memories from conversation`);
-    }
-    if (triggerResult && typeof triggerResult === 'object') {
-      const { triggered, pending, executed } = triggerResult as {
-        triggered: string[];
-        pending: string[];
-        executed: string[];
-      };
-      if (triggered.length > 0) {
-        log.info(`${triggered.length} triggers evaluated`);
+  ])
+    .then(([memoriesExtracted, _, triggerResult]) => {
+      if (memoriesExtracted && (memoriesExtracted as number) > 0) {
+        log.info(`Extracted ${memoriesExtracted} new memories from conversation`);
       }
-      if (executed.length > 0) {
-        log.info(`${executed.length} triggers executed successfully`);
+      if (triggerResult && typeof triggerResult === 'object') {
+        const { triggered, pending, executed } = triggerResult as {
+          triggered: string[];
+          pending: string[];
+          executed: string[];
+        };
+        if (triggered.length > 0) {
+          log.info(`${triggered.length} triggers evaluated`);
+        }
+        if (executed.length > 0) {
+          log.info(`${executed.length} triggers executed successfully`);
+        }
+        if (pending.length > 0) {
+          log.info(`${pending.length} triggers pending/failed`);
+        }
       }
-      if (pending.length > 0) {
-        log.info(`${pending.length} triggers pending/failed`);
-      }
-    }
-  }).catch((error) => {
-    log.error('Post-chat processing failed', { error: getErrorMessage(error) });
-  });
+    })
+    .catch((error) => {
+      log.error('Post-chat processing failed', { error: getErrorMessage(error) });
+    });
 }

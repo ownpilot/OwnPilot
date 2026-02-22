@@ -37,12 +37,31 @@ async function ensureImageGenService(): Promise<void> {
       name: IMAGE_GEN_SERVICE,
       displayName: 'Image Generation',
       category: 'ai',
-      description: 'Image generation service (OpenAI DALL-E, Stability AI, FAL, Replicate, or any OpenAI-compatible API)',
+      description:
+        'Image generation service (OpenAI DALL-E, Stability AI, FAL, Replicate, or any OpenAI-compatible API)',
       configSchema: [
-        { name: 'provider_type', label: 'Provider Type', type: 'string' as const, required: true, description: 'openai, stability, fal, replicate, or openai-compatible' },
+        {
+          name: 'provider_type',
+          label: 'Provider Type',
+          type: 'string' as const,
+          required: true,
+          description: 'openai, stability, fal, replicate, or openai-compatible',
+        },
         { name: 'api_key', label: 'API Key', type: 'secret' as const, required: true },
-        { name: 'base_url', label: 'Base URL', type: 'string' as const, required: false, description: 'Custom API endpoint (required for fal, replicate, openai-compatible)' },
-        { name: 'model', label: 'Model', type: 'string' as const, required: false, description: 'e.g. dall-e-3, stable-diffusion-xl, flux-pro' },
+        {
+          name: 'base_url',
+          label: 'Base URL',
+          type: 'string' as const,
+          required: false,
+          description: 'Custom API endpoint (required for fal, replicate, openai-compatible)',
+        },
+        {
+          name: 'model',
+          label: 'Model',
+          type: 'string' as const,
+          required: false,
+          description: 'e.g. dall-e-3, stable-diffusion-xl, flux-pro',
+        },
       ],
     });
   } catch (error) {
@@ -114,7 +133,10 @@ function getStyleDescription(style: string): string {
 // analyze_image Override
 // ============================================================================
 
-const analyzeImageOverride: ToolExecutor = async (params, _context): Promise<ToolExecutionResult> => {
+const analyzeImageOverride: ToolExecutor = async (
+  params,
+  _context
+): Promise<ToolExecutionResult> => {
   const source = params.source as string;
   const task = (params.task as string) || 'describe';
   const question = params.question as string | undefined;
@@ -131,7 +153,13 @@ const analyzeImageOverride: ToolExecutor = async (params, _context): Promise<Too
       // URL source — pass as URL, let provider handle it
       const format = getFormatFromUrl(source);
       if (format !== 'unknown' && !SUPPORTED_FORMATS.includes(format)) {
-        return { content: { error: `Unsupported image format: ${format}`, supportedFormats: SUPPORTED_FORMATS }, isError: true };
+        return {
+          content: {
+            error: `Unsupported image format: ${format}`,
+            supportedFormats: SUPPORTED_FORMATS,
+          },
+          isError: true,
+        };
       }
       imageBase64 = source;
       mediaType = getMimeType(format !== 'unknown' ? format : 'jpeg');
@@ -150,7 +178,12 @@ const analyzeImageOverride: ToolExecutor = async (params, _context): Promise<Too
       try {
         const stats = await fs.stat(source);
         if (stats.size > MAX_IMAGE_SIZE) {
-          return { content: { error: `Image too large: ${Math.round(stats.size / 1024 / 1024)}MB (max ${MAX_IMAGE_SIZE / 1024 / 1024}MB)` }, isError: true };
+          return {
+            content: {
+              error: `Image too large: ${Math.round(stats.size / 1024 / 1024)}MB (max ${MAX_IMAGE_SIZE / 1024 / 1024}MB)`,
+            },
+            isError: true,
+          };
         }
       } catch {
         return { content: { error: `Image file not found: ${source}` }, isError: true };
@@ -158,7 +191,13 @@ const analyzeImageOverride: ToolExecutor = async (params, _context): Promise<Too
 
       const ext = path.extname(source).slice(1).toLowerCase();
       if (!SUPPORTED_FORMATS.includes(ext)) {
-        return { content: { error: `Unsupported image format: ${ext}`, supportedFormats: SUPPORTED_FORMATS }, isError: true };
+        return {
+          content: {
+            error: `Unsupported image format: ${ext}`,
+            supportedFormats: SUPPORTED_FORMATS,
+          },
+          isError: true,
+        };
       }
 
       const buffer = await fs.readFile(source);
@@ -167,14 +206,25 @@ const analyzeImageOverride: ToolExecutor = async (params, _context): Promise<Too
     }
 
     // --- Resolve provider ---
-    const { provider: resolvedProvider, model: resolvedModel } = await resolveProviderAndModel('default', 'default');
+    const { provider: resolvedProvider, model: resolvedModel } = await resolveProviderAndModel(
+      'default',
+      'default'
+    );
     if (!resolvedProvider) {
-      return { content: { error: 'No AI provider configured. Set up a provider in Settings to use image analysis.' }, isError: true };
+      return {
+        content: {
+          error: 'No AI provider configured. Set up a provider in Settings to use image analysis.',
+        },
+        isError: true,
+      };
     }
 
     const apiKey = await getProviderApiKey(resolvedProvider);
     if (!apiKey) {
-      return { content: { error: `API key not configured for provider: ${resolvedProvider}` }, isError: true };
+      return {
+        content: { error: `API key not configured for provider: ${resolvedProvider}` },
+        isError: true,
+      };
     }
 
     const config = loadProviderConfig(resolvedProvider);
@@ -188,13 +238,15 @@ const analyzeImageOverride: ToolExecutor = async (params, _context): Promise<Too
     // --- Build vision request ---
     const analysisPrompt = buildAnalysisPrompt(task, detailLevel, question);
 
-    const messages: Message[] = [{
-      role: 'user',
-      content: [
-        { type: 'text' as const, text: analysisPrompt },
-        { type: 'image' as const, data: imageBase64, mediaType, isUrl },
-      ],
-    }];
+    const messages: Message[] = [
+      {
+        role: 'user',
+        content: [
+          { type: 'text' as const, text: analysisPrompt },
+          { type: 'image' as const, data: imageBase64, mediaType, isUrl },
+        ],
+      },
+    ];
 
     const result = await provider.complete({
       messages,
@@ -221,7 +273,10 @@ const analyzeImageOverride: ToolExecutor = async (params, _context): Promise<Too
       isError: false,
     };
   } catch (error) {
-    return { content: { error: `Failed to analyze image: ${getErrorMessage(error)}` }, isError: true };
+    return {
+      content: { error: `Failed to analyze image: ${getErrorMessage(error)}` },
+      isError: true,
+    };
   }
 };
 
@@ -235,54 +290,91 @@ interface ImageGenResult {
 }
 
 async function callOpenAIImageGen(
-  apiKey: string, baseUrl: string, model: string, prompt: string, size: string, quality: string, n: number,
+  apiKey: string,
+  baseUrl: string,
+  model: string,
+  prompt: string,
+  size: string,
+  quality: string,
+  n: number
 ): Promise<ImageGenResult[]> {
   const url = `${baseUrl}/v1/images/generations`;
   const response = await fetch(url, {
     method: 'POST',
-    headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ prompt, model: model || 'dall-e-3', size, quality, n, response_format: 'b64_json' }),
+    headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      prompt,
+      model: model || 'dall-e-3',
+      size,
+      quality,
+      n,
+      response_format: 'b64_json',
+    }),
   });
   if (!response.ok) {
     const text = await response.text();
     throw new Error(`OpenAI Image API ${response.status}: ${text.slice(0, 500)}`);
   }
-  const data = await response.json() as { data: Array<{ b64_json: string; revised_prompt?: string }> };
-  return data.data.map(d => ({ base64: d.b64_json, revisedPrompt: d.revised_prompt }));
+  const data = (await response.json()) as {
+    data: Array<{ b64_json: string; revised_prompt?: string }>;
+  };
+  return data.data.map((d) => ({ base64: d.b64_json, revisedPrompt: d.revised_prompt }));
 }
 
 async function callStabilityImageGen(
-  apiKey: string, baseUrl: string, model: string, prompt: string, width: number, height: number, n: number,
+  apiKey: string,
+  baseUrl: string,
+  model: string,
+  prompt: string,
+  width: number,
+  height: number,
+  n: number
 ): Promise<ImageGenResult[]> {
   const engineId = model || 'stable-diffusion-xl-1024-v1-0';
   const url = `${baseUrl}/v1/generation/${engineId}/text-to-image`;
   const response = await fetch(url, {
     method: 'POST',
-    headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json', 'Accept': 'application/json' },
-    body: JSON.stringify({ text_prompts: [{ text: prompt, weight: 1 }], cfg_scale: 7, width, height, samples: n, steps: 30 }),
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+    },
+    body: JSON.stringify({
+      text_prompts: [{ text: prompt, weight: 1 }],
+      cfg_scale: 7,
+      width,
+      height,
+      samples: n,
+      steps: 30,
+    }),
   });
   if (!response.ok) {
     const text = await response.text();
     throw new Error(`Stability API ${response.status}: ${text.slice(0, 500)}`);
   }
-  const data = await response.json() as { artifacts: Array<{ base64: string }> };
-  return data.artifacts.map(a => ({ base64: a.base64 }));
+  const data = (await response.json()) as { artifacts: Array<{ base64: string }> };
+  return data.artifacts.map((a) => ({ base64: a.base64 }));
 }
 
 async function callFalImageGen(
-  apiKey: string, baseUrl: string, model: string, prompt: string, size: string, n: number,
+  apiKey: string,
+  baseUrl: string,
+  model: string,
+  prompt: string,
+  size: string,
+  n: number
 ): Promise<ImageGenResult[]> {
   const url = `${baseUrl}/${model || 'fal-ai/flux-pro'}`;
   const response = await fetch(url, {
     method: 'POST',
-    headers: { 'Authorization': `Key ${apiKey}`, 'Content-Type': 'application/json' },
+    headers: { Authorization: `Key ${apiKey}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({ prompt, image_size: size, num_images: n }),
   });
   if (!response.ok) {
     const text = await response.text();
     throw new Error(`FAL API ${response.status}: ${text.slice(0, 500)}`);
   }
-  const data = await response.json() as { images: Array<{ url: string }> };
+  const data = (await response.json()) as { images: Array<{ url: string }> };
   // FAL returns URLs — download to base64
   const results: ImageGenResult[] = [];
   for (const img of data.images) {
@@ -294,21 +386,34 @@ async function callFalImageGen(
 }
 
 async function callReplicateImageGen(
-  apiKey: string, baseUrl: string, model: string, prompt: string, width: number, height: number, n: number,
+  apiKey: string,
+  baseUrl: string,
+  model: string,
+  prompt: string,
+  width: number,
+  height: number,
+  n: number
 ): Promise<ImageGenResult[]> {
   const url = `${baseUrl}/v1/predictions`;
   const response = await fetch(url, {
     method: 'POST',
-    headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json', 'Prefer': 'wait' },
-    body: JSON.stringify({ model: model || 'black-forest-labs/flux-schnell', input: { prompt, width, height, num_outputs: n } }),
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+      Prefer: 'wait',
+    },
+    body: JSON.stringify({
+      model: model || 'black-forest-labs/flux-schnell',
+      input: { prompt, width, height, num_outputs: n },
+    }),
   });
   if (!response.ok) {
     const text = await response.text();
     throw new Error(`Replicate API ${response.status}: ${text.slice(0, 500)}`);
   }
-  const data = await response.json() as { output: string[] };
+  const data = (await response.json()) as { output: string[] };
   const results: ImageGenResult[] = [];
-  for (const imgUrl of (data.output ?? [])) {
+  for (const imgUrl of data.output ?? []) {
     const imgResp = await fetch(imgUrl);
     const buffer = Buffer.from(await imgResp.arrayBuffer());
     results.push({ base64: buffer.toString('base64') });
@@ -322,7 +427,10 @@ function parseSizeToDimensions(size: string): { width: number; height: number } 
   return { width: 1024, height: 1024 };
 }
 
-const generateImageOverride: ToolExecutor = async (params, context): Promise<ToolExecutionResult> => {
+const generateImageOverride: ToolExecutor = async (
+  params,
+  context
+): Promise<ToolExecutionResult> => {
   const prompt = params.prompt as string;
   const style = (params.style as string) || 'realistic';
   const size = (params.size as string) || '1024x1024';
@@ -340,22 +448,32 @@ const generateImageOverride: ToolExecutor = async (params, context): Promise<Too
 
   try {
     // --- Read config ---
-    const providerType = configServicesRepo.getFieldValue(IMAGE_GEN_SERVICE, 'provider_type') as string | undefined;
-    const apiKey = configServicesRepo.getFieldValue(IMAGE_GEN_SERVICE, 'api_key') as string | undefined;
-    const baseUrl = configServicesRepo.getFieldValue(IMAGE_GEN_SERVICE, 'base_url') as string | undefined;
-    const model = configServicesRepo.getFieldValue(IMAGE_GEN_SERVICE, 'model') as string | undefined;
+    const providerType = configServicesRepo.getFieldValue(IMAGE_GEN_SERVICE, 'provider_type') as
+      | string
+      | undefined;
+    const apiKey = configServicesRepo.getFieldValue(IMAGE_GEN_SERVICE, 'api_key') as
+      | string
+      | undefined;
+    const baseUrl = configServicesRepo.getFieldValue(IMAGE_GEN_SERVICE, 'base_url') as
+      | string
+      | undefined;
+    const model = configServicesRepo.getFieldValue(IMAGE_GEN_SERVICE, 'model') as
+      | string
+      | undefined;
 
     if (!providerType || !apiKey) {
       return {
-        content: { error: 'Image generation not configured. Go to Settings → Config Center → Image Generation and set provider_type + api_key.' },
+        content: {
+          error:
+            'Image generation not configured. Go to Settings → Config Center → Image Generation and set provider_type + api_key.',
+        },
         isError: true,
       };
     }
 
     // Enhance prompt with style
-    const enhancedPrompt = style !== 'realistic'
-      ? `${prompt}, ${getStyleDescription(style)}`
-      : prompt;
+    const enhancedPrompt =
+      style !== 'realistic' ? `${prompt}, ${getStyleDescription(style)}` : prompt;
 
     const { width, height } = parseSizeToDimensions(size);
 
@@ -366,20 +484,59 @@ const generateImageOverride: ToolExecutor = async (params, context): Promise<Too
     switch (providerType) {
       case 'openai':
       case 'openai-compatible':
-        results = await callOpenAIImageGen(apiKey, resolvedBaseUrl, model ?? '', enhancedPrompt, size, quality, n);
+        results = await callOpenAIImageGen(
+          apiKey,
+          resolvedBaseUrl,
+          model ?? '',
+          enhancedPrompt,
+          size,
+          quality,
+          n
+        );
         break;
       case 'stability':
-        results = await callStabilityImageGen(apiKey, resolvedBaseUrl, model ?? '', enhancedPrompt, width, height, n);
+        results = await callStabilityImageGen(
+          apiKey,
+          resolvedBaseUrl,
+          model ?? '',
+          enhancedPrompt,
+          width,
+          height,
+          n
+        );
         break;
       case 'fal':
-        results = await callFalImageGen(apiKey, resolvedBaseUrl, model ?? '', enhancedPrompt, size, n);
+        results = await callFalImageGen(
+          apiKey,
+          resolvedBaseUrl,
+          model ?? '',
+          enhancedPrompt,
+          size,
+          n
+        );
         break;
       case 'replicate':
-        results = await callReplicateImageGen(apiKey, resolvedBaseUrl, model ?? '', enhancedPrompt, width, height, n);
+        results = await callReplicateImageGen(
+          apiKey,
+          resolvedBaseUrl,
+          model ?? '',
+          enhancedPrompt,
+          width,
+          height,
+          n
+        );
         break;
       default:
         // Assume OpenAI-compatible for unknown providers
-        results = await callOpenAIImageGen(apiKey, resolvedBaseUrl, model ?? '', enhancedPrompt, size, quality, n);
+        results = await callOpenAIImageGen(
+          apiKey,
+          resolvedBaseUrl,
+          model ?? '',
+          enhancedPrompt,
+          size,
+          quality,
+          n
+        );
     }
 
     if (!results.length) {
@@ -397,9 +554,10 @@ const generateImageOverride: ToolExecutor = async (params, context): Promise<Too
 
     for (let i = 0; i < results.length; i++) {
       const result = results[i]!;
-      const filename = outputPath && results.length === 1
-        ? outputPath
-        : path.join(imagesDir, `image_${Date.now()}_${i}.png`);
+      const filename =
+        outputPath && results.length === 1
+          ? outputPath
+          : path.join(imagesDir, `image_${Date.now()}_${i}.png`);
 
       const dir = path.dirname(filename);
       await fs.mkdir(dir, { recursive: true });
@@ -412,10 +570,12 @@ const generateImageOverride: ToolExecutor = async (params, context): Promise<Too
     }
 
     // Build markdown for display (use relative paths so UI resolveImageUrl() works)
-    const markdown = savedImages.map(img => {
-      const relativePath = path.relative(workDir, img.path).replace(/\\/g, '/');
-      return `![Generated image](${relativePath})`;
-    }).join('\n');
+    const markdown = savedImages
+      .map((img) => {
+        const relativePath = path.relative(workDir, img.path).replace(/\\/g, '/');
+        return `![Generated image](${relativePath})`;
+      })
+      .join('\n');
 
     return {
       content: {
@@ -432,17 +592,25 @@ const generateImageOverride: ToolExecutor = async (params, context): Promise<Too
       isError: false,
     };
   } catch (error) {
-    return { content: { error: `Failed to generate image: ${getErrorMessage(error)}` }, isError: true };
+    return {
+      content: { error: `Failed to generate image: ${getErrorMessage(error)}` },
+      isError: true,
+    };
   }
 };
 
 function getDefaultBaseUrl(providerType: string): string {
   switch (providerType) {
-    case 'openai': return 'https://api.openai.com';
-    case 'stability': return 'https://api.stability.ai';
-    case 'fal': return 'https://fal.run';
-    case 'replicate': return 'https://api.replicate.com';
-    default: return 'https://api.openai.com';
+    case 'openai':
+      return 'https://api.openai.com';
+    case 'stability':
+      return 'https://api.stability.ai';
+    case 'fal':
+      return 'https://fal.run';
+    case 'replicate':
+      return 'https://api.replicate.com';
+    default:
+      return 'https://api.openai.com';
   }
 }
 

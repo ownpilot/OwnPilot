@@ -180,7 +180,7 @@ describe('ConversationMemory', () => {
       memory.addUserMessage(conversation.id, 'msg 5');
 
       const messages = memory.getContextMessages(conversation.id);
-      const toolMsg = messages.find(m => m.role === 'tool');
+      const toolMsg = messages.find((m) => m.role === 'tool');
       expect(toolMsg).toBeDefined();
       expect(toolMsg!.toolResults![0]!.content).toContain('[...truncated]');
       expect(toolMsg!.toolResults![0]!.content.length).toBeLessThan(longContent.length);
@@ -197,7 +197,7 @@ describe('ConversationMemory', () => {
       memory.addUserMessage(conversation.id, 'msg 3');
 
       const messages = memory.getContextMessages(conversation.id);
-      const toolMsg = messages.find(m => m.role === 'tool');
+      const toolMsg = messages.find((m) => m.role === 'tool');
       expect(toolMsg).toBeDefined();
       expect(toolMsg!.toolResults![0]!.content).toBe(longContent); // intact
     });
@@ -213,7 +213,7 @@ describe('ConversationMemory', () => {
       memory.addUserMessage(conversation.id, 'msg 6');
 
       const messages = memory.getContextMessages(conversation.id);
-      const toolMsg = messages.find(m => m.role === 'tool');
+      const toolMsg = messages.find((m) => m.role === 'tool');
       expect(toolMsg!.toolResults![0]!.content).toBe(shortContent); // not truncated
     });
   });

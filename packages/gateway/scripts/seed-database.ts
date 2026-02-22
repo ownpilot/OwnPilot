@@ -139,13 +139,15 @@ This is your personal AI assistant platform. Here are some things you can do:
 const sampleMemories = [
   {
     type: 'preference',
-    content: 'User prefers concise responses with code examples when discussing programming topics.',
+    content:
+      'User prefers concise responses with code examples when discussing programming topics.',
     importance: 0.8,
     tags: ['preference', 'communication'],
   },
   {
     type: 'fact',
-    content: 'This AI assistant system supports multiple providers including OpenAI, Anthropic, Google, and local models via Ollama.',
+    content:
+      'This AI assistant system supports multiple providers including OpenAI, Anthropic, Google, and local models via Ollama.',
     importance: 0.7,
     tags: ['system', 'capabilities'],
   },
@@ -199,7 +201,10 @@ async function seedAgents() {
         created++;
       } else {
         // Agent might already exist
-        if (result.error?.message?.includes('already exists') || result.error?.message?.includes('UNIQUE')) {
+        if (
+          result.error?.message?.includes('already exists') ||
+          result.error?.message?.includes('UNIQUE')
+        ) {
           console.log(`  → Exists: ${agent.name}`);
           skipped++;
         } else {

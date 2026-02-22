@@ -5,11 +5,7 @@
  * Avoids duplicating the try/catch pattern across multiple files.
  */
 
-import {
-  hasServiceRegistry,
-  getServiceRegistry,
-  type ServiceToken,
-} from '@ownpilot/core';
+import { hasServiceRegistry, getServiceRegistry, type ServiceToken } from '@ownpilot/core';
 
 /**
  * Try to get a service from the registry.

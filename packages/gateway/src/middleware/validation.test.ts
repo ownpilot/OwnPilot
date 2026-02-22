@@ -292,12 +292,16 @@ describe('chatMessageSchema', () => {
 
   it('accepts valid streamingMode values', () => {
     for (const mode of ['auto', 'always', 'never'] as const) {
-      expect(chatMessageSchema.safeParse({ message: 'Hi', streamingMode: mode }).success).toBe(true);
+      expect(chatMessageSchema.safeParse({ message: 'Hi', streamingMode: mode }).success).toBe(
+        true
+      );
     }
   });
 
   it('rejects invalid streamingMode', () => {
-    expect(chatMessageSchema.safeParse({ message: 'Hi', streamingMode: 'sometimes' }).success).toBe(false);
+    expect(chatMessageSchema.safeParse({ message: 'Hi', streamingMode: 'sometimes' }).success).toBe(
+      false
+    );
   });
 
   it('strips unknown fields', () => {
@@ -426,7 +430,14 @@ describe('updatePlanSchema', () => {
   });
 
   it('accepts all valid status values', () => {
-    for (const status of ['pending', 'running', 'paused', 'completed', 'failed', 'cancelled'] as const) {
+    for (const status of [
+      'pending',
+      'running',
+      'paused',
+      'completed',
+      'failed',
+      'cancelled',
+    ] as const) {
       expect(updatePlanSchema.safeParse({ status }).success).toBe(true);
     }
   });
@@ -444,7 +455,15 @@ describe('createPlanStepSchema', () => {
   });
 
   it('accepts all valid type values', () => {
-    const types = ['tool_call', 'llm_decision', 'user_input', 'condition', 'parallel', 'loop', 'sub_plan'] as const;
+    const types = [
+      'tool_call',
+      'llm_decision',
+      'user_input',
+      'condition',
+      'parallel',
+      'loop',
+      'sub_plan',
+    ] as const;
     for (const type of types) {
       expect(createPlanStepSchema.safeParse({ ...validStep, type }).success).toBe(true);
     }
@@ -561,7 +580,9 @@ describe('autonomyBudgetSchema', () => {
   });
 
   it('accepts valid budget values', () => {
-    expect(autonomyBudgetSchema.safeParse({ dailyBudget: 100, maxCostPerAction: 10 }).success).toBe(true);
+    expect(autonomyBudgetSchema.safeParse({ dailyBudget: 100, maxCostPerAction: 10 }).success).toBe(
+      true
+    );
   });
 
   it('rejects dailyBudget over 10000', () => {
@@ -641,17 +662,25 @@ describe('createCustomToolSchema', () => {
 
   it('accepts valid snake_case names', () => {
     expect(createCustomToolSchema.safeParse({ ...validTool, name: 'a' }).success).toBe(true);
-    expect(createCustomToolSchema.safeParse({ ...validTool, name: 'web_search' }).success).toBe(true);
+    expect(createCustomToolSchema.safeParse({ ...validTool, name: 'web_search' }).success).toBe(
+      true
+    );
     expect(createCustomToolSchema.safeParse({ ...validTool, name: 'tool123' }).success).toBe(true);
-    expect(createCustomToolSchema.safeParse({ ...validTool, name: 'a_b_c_1_2' }).success).toBe(true);
+    expect(createCustomToolSchema.safeParse({ ...validTool, name: 'a_b_c_1_2' }).success).toBe(
+      true
+    );
   });
 
   it('rejects code over 50000 characters', () => {
-    expect(createCustomToolSchema.safeParse({ ...validTool, code: 'x'.repeat(50001) }).success).toBe(false);
+    expect(
+      createCustomToolSchema.safeParse({ ...validTool, code: 'x'.repeat(50001) }).success
+    ).toBe(false);
   });
 
   it('accepts code at exactly 50000 characters', () => {
-    expect(createCustomToolSchema.safeParse({ ...validTool, code: 'x'.repeat(50000) }).success).toBe(true);
+    expect(
+      createCustomToolSchema.safeParse({ ...validTool, code: 'x'.repeat(50000) }).success
+    ).toBe(true);
   });
 
   it('rejects empty code', () => {
@@ -659,26 +688,53 @@ describe('createCustomToolSchema', () => {
   });
 
   it('rejects invalid permission enum value', () => {
-    expect(createCustomToolSchema.safeParse({ ...validTool, permissions: ['admin'] }).success).toBe(false);
+    expect(createCustomToolSchema.safeParse({ ...validTool, permissions: ['admin'] }).success).toBe(
+      false
+    );
   });
 
   it('accepts all valid permission values', () => {
-    const allPermissions = ['network', 'filesystem', 'database', 'shell', 'email', 'scheduling', 'local'] as const;
-    expect(createCustomToolSchema.safeParse({ ...validTool, permissions: [...allPermissions] }).success).toBe(true);
+    const allPermissions = [
+      'network',
+      'filesystem',
+      'database',
+      'shell',
+      'email',
+      'scheduling',
+      'local',
+    ] as const;
+    expect(
+      createCustomToolSchema.safeParse({ ...validTool, permissions: [...allPermissions] }).success
+    ).toBe(true);
   });
 
   it('rejects permissions array over 7 items', () => {
-    const tooMany = ['network', 'filesystem', 'database', 'shell', 'email', 'scheduling', 'local', 'network'] as const;
-    expect(createCustomToolSchema.safeParse({ ...validTool, permissions: [...tooMany] }).success).toBe(false);
+    const tooMany = [
+      'network',
+      'filesystem',
+      'database',
+      'shell',
+      'email',
+      'scheduling',
+      'local',
+      'network',
+    ] as const;
+    expect(
+      createCustomToolSchema.safeParse({ ...validTool, permissions: [...tooMany] }).success
+    ).toBe(false);
   });
 
   it('rejects invalid createdBy value', () => {
-    expect(createCustomToolSchema.safeParse({ ...validTool, createdBy: 'system' }).success).toBe(false);
+    expect(createCustomToolSchema.safeParse({ ...validTool, createdBy: 'system' }).success).toBe(
+      false
+    );
   });
 
   it('rejects requiredApiKeys over 10 items', () => {
     const keys = Array.from({ length: 11 }, (_, i) => ({ name: `key_${i}` }));
-    expect(createCustomToolSchema.safeParse({ ...validTool, requiredApiKeys: keys }).success).toBe(false);
+    expect(createCustomToolSchema.safeParse({ ...validTool, requiredApiKeys: keys }).success).toBe(
+      false
+    );
   });
 
   it('rejects requiredApiKey with invalid docsUrl', () => {
@@ -735,7 +791,9 @@ describe('autonomyDecisionSchema', () => {
   });
 
   it('rejects reason over 2000 characters', () => {
-    expect(autonomyDecisionSchema.safeParse({ decision: 'reject', reason: 'r'.repeat(2001) }).success).toBe(false);
+    expect(
+      autonomyDecisionSchema.safeParse({ decision: 'reject', reason: 'r'.repeat(2001) }).success
+    ).toBe(false);
   });
 });
 
@@ -921,7 +979,9 @@ describe('createGoalStepSchema', () => {
 
   it('rejects dependencies over 50 items', () => {
     const deps = Array.from({ length: 51 }, (_, i) => `dep-${i}`);
-    expect(createGoalStepSchema.safeParse({ title: 'Step', dependencies: deps }).success).toBe(false);
+    expect(createGoalStepSchema.safeParse({ title: 'Step', dependencies: deps }).success).toBe(
+      false
+    );
   });
 });
 
@@ -1022,7 +1082,9 @@ describe('createMemorySchema', () => {
   });
 
   it('rejects content over 50000 characters', () => {
-    expect(createMemorySchema.safeParse({ ...validMemory, content: 'c'.repeat(50001) }).success).toBe(false);
+    expect(
+      createMemorySchema.safeParse({ ...validMemory, content: 'c'.repeat(50001) }).success
+    ).toBe(false);
   });
 
   it('rejects importance over 1', () => {
@@ -1049,7 +1111,9 @@ describe('createMemorySchema', () => {
   });
 
   it('rejects tag over 100 characters', () => {
-    expect(createMemorySchema.safeParse({ ...validMemory, tags: ['t'.repeat(101)] }).success).toBe(false);
+    expect(createMemorySchema.safeParse({ ...validMemory, tags: ['t'.repeat(101)] }).success).toBe(
+      false
+    );
   });
 });
 
@@ -1101,7 +1165,9 @@ describe('decayMemoriesSchema', () => {
   });
 
   it('accepts valid values', () => {
-    expect(decayMemoriesSchema.safeParse({ daysThreshold: 30, decayFactor: 0.9 }).success).toBe(true);
+    expect(decayMemoriesSchema.safeParse({ daysThreshold: 30, decayFactor: 0.9 }).success).toBe(
+      true
+    );
   });
 
   it('rejects daysThreshold over 3650', () => {
@@ -1151,7 +1217,7 @@ describe('cleanupMemoriesSchema', () => {
 
 describe('createExpenseSchema', () => {
   const validExpense = {
-    amount: 42.50,
+    amount: 42.5,
     category: 'food' as const,
     description: 'Lunch',
   };
@@ -1174,8 +1240,17 @@ describe('createExpenseSchema', () => {
 
   it('accepts all valid category values', () => {
     const categories = [
-      'food', 'transport', 'utilities', 'entertainment', 'shopping',
-      'health', 'education', 'travel', 'subscription', 'housing', 'other',
+      'food',
+      'transport',
+      'utilities',
+      'entertainment',
+      'shopping',
+      'health',
+      'education',
+      'travel',
+      'subscription',
+      'housing',
+      'other',
     ] as const;
     for (const category of categories) {
       expect(createExpenseSchema.safeParse({ ...validExpense, category }).success).toBe(true);
@@ -1183,8 +1258,12 @@ describe('createExpenseSchema', () => {
   });
 
   it('rejects invalid category', () => {
-    expect(createExpenseSchema.safeParse({ ...validExpense, category: 'groceries' }).success).toBe(false);
-    expect(createExpenseSchema.safeParse({ ...validExpense, category: 'misc' }).success).toBe(false);
+    expect(createExpenseSchema.safeParse({ ...validExpense, category: 'groceries' }).success).toBe(
+      false
+    );
+    expect(createExpenseSchema.safeParse({ ...validExpense, category: 'misc' }).success).toBe(
+      false
+    );
   });
 
   it('rejects negative amount', () => {
@@ -1204,7 +1283,9 @@ describe('createExpenseSchema', () => {
   });
 
   it('rejects description over 1000 characters', () => {
-    expect(createExpenseSchema.safeParse({ ...validExpense, description: 'd'.repeat(1001) }).success).toBe(false);
+    expect(
+      createExpenseSchema.safeParse({ ...validExpense, description: 'd'.repeat(1001) }).success
+    ).toBe(false);
   });
 
   it('rejects tags over 20 items', () => {
@@ -1274,9 +1355,7 @@ describe('createCustomTableSchema', () => {
   const validTable = {
     name: 'contacts',
     displayName: 'Contacts',
-    columns: [
-      { name: 'email', type: 'text' as const },
-    ],
+    columns: [{ name: 'email', type: 'text' as const }],
   };
 
   it('accepts valid table with one column', () => {
@@ -1323,7 +1402,10 @@ describe('createCustomTableSchema', () => {
   });
 
   it('rejects columns array over 100 items', () => {
-    const columns = Array.from({ length: 101 }, (_, i) => ({ name: `col_${i}`, type: 'text' as const }));
+    const columns = Array.from({ length: 101 }, (_, i) => ({
+      name: `col_${i}`,
+      type: 'text' as const,
+    }));
     expect(createCustomTableSchema.safeParse({ ...validTable, columns }).success).toBe(false);
   });
 
@@ -1332,7 +1414,9 @@ describe('createCustomTableSchema', () => {
   });
 
   it('rejects empty displayName', () => {
-    expect(createCustomTableSchema.safeParse({ ...validTable, displayName: '' }).success).toBe(false);
+    expect(createCustomTableSchema.safeParse({ ...validTable, displayName: '' }).success).toBe(
+      false
+    );
   });
 
   it('rejects column with empty name', () => {
@@ -1446,80 +1530,102 @@ describe('createWorkspaceSchema', () => {
   });
 
   it('accepts containerConfig with memoryMB at boundaries 64 and 2048', () => {
-    expect(createWorkspaceSchema.safeParse({
-      name: 'ws',
-      containerConfig: { memoryMB: 64 },
-    }).success).toBe(true);
-    expect(createWorkspaceSchema.safeParse({
-      name: 'ws',
-      containerConfig: { memoryMB: 2048 },
-    }).success).toBe(true);
+    expect(
+      createWorkspaceSchema.safeParse({
+        name: 'ws',
+        containerConfig: { memoryMB: 64 },
+      }).success
+    ).toBe(true);
+    expect(
+      createWorkspaceSchema.safeParse({
+        name: 'ws',
+        containerConfig: { memoryMB: 2048 },
+      }).success
+    ).toBe(true);
   });
 
   it('rejects cpuCores over 4', () => {
-    expect(createWorkspaceSchema.safeParse({
-      name: 'ws',
-      containerConfig: { cpuCores: 5 },
-    }).success).toBe(false);
+    expect(
+      createWorkspaceSchema.safeParse({
+        name: 'ws',
+        containerConfig: { cpuCores: 5 },
+      }).success
+    ).toBe(false);
   });
 
   it('rejects cpuCores below 0.25', () => {
-    expect(createWorkspaceSchema.safeParse({
-      name: 'ws',
-      containerConfig: { cpuCores: 0.1 },
-    }).success).toBe(false);
+    expect(
+      createWorkspaceSchema.safeParse({
+        name: 'ws',
+        containerConfig: { cpuCores: 0.1 },
+      }).success
+    ).toBe(false);
   });
 
   it('rejects storageGB over 10', () => {
-    expect(createWorkspaceSchema.safeParse({
-      name: 'ws',
-      containerConfig: { storageGB: 11 },
-    }).success).toBe(false);
+    expect(
+      createWorkspaceSchema.safeParse({
+        name: 'ws',
+        containerConfig: { storageGB: 11 },
+      }).success
+    ).toBe(false);
   });
 
   it('rejects storageGB below 1', () => {
-    expect(createWorkspaceSchema.safeParse({
-      name: 'ws',
-      containerConfig: { storageGB: 0 },
-    }).success).toBe(false);
+    expect(
+      createWorkspaceSchema.safeParse({
+        name: 'ws',
+        containerConfig: { storageGB: 0 },
+      }).success
+    ).toBe(false);
   });
 
   it('rejects timeoutMs over 120000', () => {
-    expect(createWorkspaceSchema.safeParse({
-      name: 'ws',
-      containerConfig: { timeoutMs: 120001 },
-    }).success).toBe(false);
+    expect(
+      createWorkspaceSchema.safeParse({
+        name: 'ws',
+        containerConfig: { timeoutMs: 120001 },
+      }).success
+    ).toBe(false);
   });
 
   it('rejects timeoutMs below 5000', () => {
-    expect(createWorkspaceSchema.safeParse({
-      name: 'ws',
-      containerConfig: { timeoutMs: 4999 },
-    }).success).toBe(false);
+    expect(
+      createWorkspaceSchema.safeParse({
+        name: 'ws',
+        containerConfig: { timeoutMs: 4999 },
+      }).success
+    ).toBe(false);
   });
 
   it('rejects invalid networkPolicy value', () => {
-    expect(createWorkspaceSchema.safeParse({
-      name: 'ws',
-      containerConfig: { networkPolicy: 'open' },
-    }).success).toBe(false);
+    expect(
+      createWorkspaceSchema.safeParse({
+        name: 'ws',
+        containerConfig: { networkPolicy: 'open' },
+      }).success
+    ).toBe(false);
   });
 
   it('accepts all valid networkPolicy values', () => {
     for (const networkPolicy of ['none', 'restricted', 'full'] as const) {
-      expect(createWorkspaceSchema.safeParse({
-        name: 'ws',
-        containerConfig: { networkPolicy },
-      }).success).toBe(true);
+      expect(
+        createWorkspaceSchema.safeParse({
+          name: 'ws',
+          containerConfig: { networkPolicy },
+        }).success
+      ).toBe(true);
     }
   });
 
   it('rejects allowedHosts over 50 items', () => {
     const allowedHosts = Array.from({ length: 51 }, (_, i) => `host${i}.com`);
-    expect(createWorkspaceSchema.safeParse({
-      name: 'ws',
-      containerConfig: { allowedHosts },
-    }).success).toBe(false);
+    expect(
+      createWorkspaceSchema.safeParse({
+        name: 'ws',
+        containerConfig: { allowedHosts },
+      }).success
+    ).toBe(false);
   });
 });
 
@@ -1533,8 +1639,10 @@ describe('updateWorkspaceSchema', () => {
   });
 
   it('still validates containerConfig constraints', () => {
-    expect(updateWorkspaceSchema.safeParse({
-      containerConfig: { memoryMB: 99999 },
-    }).success).toBe(false);
+    expect(
+      updateWorkspaceSchema.safeParse({
+        containerConfig: { memoryMB: 99999 },
+      }).success
+    ).toBe(false);
   });
 });

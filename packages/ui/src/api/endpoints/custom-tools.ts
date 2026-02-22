@@ -29,5 +29,7 @@ export const customToolsApi = {
 
   /** Toggle workflowUsable flag for a custom tool */
   setWorkflowUsable: (id: string, enabled: boolean) =>
-    apiClient.patch<{ workflowUsable: boolean }>(`/custom-tools/${id}/workflow-usable`, { enabled }),
+    apiClient.patch<{ workflowUsable: boolean }>(`/custom-tools/${id}/workflow-usable`, {
+      enabled,
+    }),
 };

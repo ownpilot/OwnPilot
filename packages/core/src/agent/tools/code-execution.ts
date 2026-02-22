@@ -24,8 +24,12 @@ import { checkCriticalPatterns, isCommandBlocked } from '../../security/index.js
 
 /** Debug logging for execution security — only active when DEBUG_EXEC_SECURITY env is set */
 const EXEC_DEBUG = typeof process !== 'undefined' && !!process.env.DEBUG_EXEC_SECURITY;
-const securityLog = EXEC_DEBUG ? (...args: unknown[]) => console.log('[ExecSecurity]', ...args) : () => {};
-const securityWarn = EXEC_DEBUG ? (...args: unknown[]) => console.warn('[ExecSecurity]', ...args) : () => {};
+const securityLog = EXEC_DEBUG
+  ? (...args: unknown[]) => console.log('[ExecSecurity]', ...args)
+  : () => {};
+const securityWarn = EXEC_DEBUG
+  ? (...args: unknown[]) => console.warn('[ExecSecurity]', ...args)
+  : () => {};
 import { analyzeCodeRisk } from '../../security/code-analyzer.js';
 import { getExecutionMode } from '../../sandbox/execution-mode.js';
 import {
@@ -54,8 +58,10 @@ function truncateOutput(output: string, maxSize: number = MAX_OUTPUT_SIZE): stri
 
 const DOCKER_REQUIRED_ERROR = {
   error: 'Docker is required for code execution in this mode.',
-  reason: 'Code execution without Docker sandbox would allow arbitrary code to run on the host system.',
-  solution: 'Set execution mode to "Auto" or "Local" in the Execution Security panel, or install Docker.',
+  reason:
+    'Code execution without Docker sandbox would allow arbitrary code to run on the host system.',
+  solution:
+    'Set execution mode to "Auto" or "Local" in the Execution Security panel, or install Docker.',
   securityNote: 'This restriction exists to protect your system from malicious code.',
 };
 
@@ -114,11 +120,13 @@ async function checkExecutionPermission(
   code: string,
   language: 'javascript' | 'python' | 'shell',
   context: ToolContext,
-  sandboxed: boolean = false,
+  sandboxed: boolean = false
 ): Promise<{ allowed: boolean; error?: ToolExecutionResult }> {
   const permissions = context.executionPermissions;
 
-  securityLog(`checkPermission: category=${category}, enabled=${permissions?.enabled}, mode=${permissions?.mode}, permLevel=${permissions?.[category]}, hasRequestApproval=${!!context.requestApproval}, userId=${context.userId}`);
+  securityLog(
+    `checkPermission: category=${category}, enabled=${permissions?.enabled}, mode=${permissions?.mode}, permLevel=${permissions?.[category]}, hasRequestApproval=${!!context.requestApproval}, userId=${context.userId}`
+  );
 
   // Layer 0: Master switch — instant reject when disabled
   if (permissions && permissions.enabled === false) {
@@ -135,7 +143,9 @@ async function checkExecutionPermission(
       return { allowed: true };
     }
     // Web/chat context but permissions failed to load → block for safety
-    securityWarn(`${category}: permissions=undefined in user context (userId=${context.userId}) → blocked`);
+    securityWarn(
+      `${category}: permissions=undefined in user context (userId=${context.userId}) → blocked`
+    );
     return {
       allowed: false,
       error: {
@@ -174,7 +184,8 @@ async function checkExecutionPermission(
       error: {
         content: {
           error: `${category} is blocked in Execution Security settings.`,
-          solution: 'Open the Execution Security panel above the chat input and change the permission level.',
+          solution:
+            'Open the Execution Security panel above the chat input and change the permission level.',
           currentLevel: 'blocked',
         },
         isError: true,
@@ -207,7 +218,7 @@ async function checkExecutionPermission(
       'code_execution',
       category,
       `Execute ${language} code ${execEnv}`,
-      { code: code.slice(0, 2000), riskAnalysis: risk },
+      { code: code.slice(0, 2000), riskAnalysis: risk }
     );
 
     securityLog(`${category}: user approval result = ${approved}`);
@@ -234,7 +245,8 @@ async function checkExecutionPermission(
 export const executeJavaScriptTool: ToolDefinition = {
   name: 'execute_javascript',
   brief: 'Run JavaScript/Node.js code',
-  description: 'Execute JavaScript/Node.js code. Uses Docker sandbox when available, or runs locally with user approval if EXECUTION_MODE allows.',
+  description:
+    'Execute JavaScript/Node.js code. Uses Docker sandbox when available, or runs locally with user approval if EXECUTION_MODE allows.',
   parameters: {
     type: 'object',
     properties: {
@@ -252,7 +264,10 @@ export const executeJavaScriptTool: ToolDefinition = {
   },
 };
 
-export const executeJavaScriptExecutor: ToolExecutor = async (params, context): Promise<ToolExecutionResult> => {
+export const executeJavaScriptExecutor: ToolExecutor = async (
+  params,
+  context
+): Promise<ToolExecutionResult> => {
   const code = params.code as string;
   const timeout = Math.min((params.timeout as number) || 10000, MAX_EXECUTION_TIME);
   const startTime = Date.now();
@@ -263,7 +278,13 @@ export const executeJavaScriptExecutor: ToolExecutor = async (params, context): 
 
   // Local execution path (when Docker is not available or mode is 'local')
   if (mode === 'local' || (mode === 'auto' && !dockerReady)) {
-    const permCheck = await checkExecutionPermission('execute_javascript', code, 'javascript', context, false);
+    const permCheck = await checkExecutionPermission(
+      'execute_javascript',
+      code,
+      'javascript',
+      context,
+      false
+    );
     if (!permCheck.allowed) return permCheck.error!;
     const localResult = await executeJavaScriptLocal(code, { timeout });
     logSandboxExecution({
@@ -296,11 +317,20 @@ export const executeJavaScriptExecutor: ToolExecutor = async (params, context): 
   }
 
   // Permission check applies to Docker sandbox too
-  const permCheck = await checkExecutionPermission('execute_javascript', code, 'javascript', context, true);
+  const permCheck = await checkExecutionPermission(
+    'execute_javascript',
+    code,
+    'javascript',
+    context,
+    true
+  );
   if (!permCheck.allowed) return permCheck.error!;
 
   // Docker execution path
-  const result = await executeJavaScriptSandbox(code, { timeout, relaxedSecurity: DOCKER_RELAXED_SECURITY });
+  const result = await executeJavaScriptSandbox(code, {
+    timeout,
+    relaxedSecurity: DOCKER_RELAXED_SECURITY,
+  });
   const durationMs = Date.now() - startTime;
 
   // Log sandbox execution
@@ -338,7 +368,8 @@ export const executeJavaScriptExecutor: ToolExecutor = async (params, context): 
 export const executePythonTool: ToolDefinition = {
   name: 'execute_python',
   brief: 'Run Python code',
-  description: 'Execute Python code. Uses Docker sandbox when available, or runs locally with user approval if EXECUTION_MODE allows.',
+  description:
+    'Execute Python code. Uses Docker sandbox when available, or runs locally with user approval if EXECUTION_MODE allows.',
   parameters: {
     type: 'object',
     properties: {
@@ -356,7 +387,10 @@ export const executePythonTool: ToolDefinition = {
   },
 };
 
-export const executePythonExecutor: ToolExecutor = async (params, context): Promise<ToolExecutionResult> => {
+export const executePythonExecutor: ToolExecutor = async (
+  params,
+  context
+): Promise<ToolExecutionResult> => {
   const code = params.code as string;
   const timeout = Math.min((params.timeout as number) || 10000, MAX_EXECUTION_TIME);
   const startTime = Date.now();
@@ -366,7 +400,13 @@ export const executePythonExecutor: ToolExecutor = async (params, context): Prom
 
   // Local execution path
   if (mode === 'local' || (mode === 'auto' && !dockerReady)) {
-    const permCheck = await checkExecutionPermission('execute_python', code, 'python', context, false);
+    const permCheck = await checkExecutionPermission(
+      'execute_python',
+      code,
+      'python',
+      context,
+      false
+    );
     if (!permCheck.allowed) return permCheck.error!;
     const localResult = await executePythonLocal(code, { timeout });
     logSandboxExecution({
@@ -403,7 +443,10 @@ export const executePythonExecutor: ToolExecutor = async (params, context): Prom
   if (!permCheck.allowed) return permCheck.error!;
 
   // Docker execution path
-  const result = await executePythonSandbox(code, { timeout, relaxedSecurity: DOCKER_RELAXED_SECURITY });
+  const result = await executePythonSandbox(code, {
+    timeout,
+    relaxedSecurity: DOCKER_RELAXED_SECURITY,
+  });
   const durationMs = Date.now() - startTime;
 
   // Log sandbox execution
@@ -441,7 +484,8 @@ export const executePythonExecutor: ToolExecutor = async (params, context): Prom
 export const executeShellTool: ToolDefinition = {
   name: 'execute_shell',
   brief: 'Run shell commands',
-  description: 'Execute a shell command. Uses Docker sandbox when available, or runs locally with user approval if EXECUTION_MODE allows. Blocked commands include: rm -rf /, mkfs, dd if=/dev, fork bombs, chmod -R 777 /, shutdown/reboot/halt, format c:, and similar destructive operations.',
+  description:
+    'Execute a shell command. Uses Docker sandbox when available, or runs locally with user approval if EXECUTION_MODE allows. Blocked commands include: rm -rf /, mkfs, dd if=/dev, fork bombs, chmod -R 777 /, shutdown/reboot/halt, format c:, and similar destructive operations.',
   parameters: {
     type: 'object',
     properties: {
@@ -459,7 +503,10 @@ export const executeShellTool: ToolDefinition = {
   },
 };
 
-export const executeShellExecutor: ToolExecutor = async (params, context): Promise<ToolExecutionResult> => {
+export const executeShellExecutor: ToolExecutor = async (
+  params,
+  context
+): Promise<ToolExecutionResult> => {
   const command = params.command as string;
   const timeout = Math.min((params.timeout as number) || 10000, MAX_EXECUTION_TIME);
   const startTime = Date.now();
@@ -487,7 +534,13 @@ export const executeShellExecutor: ToolExecutor = async (params, context): Promi
 
   // Local execution path
   if (mode === 'local' || (mode === 'auto' && !dockerReady)) {
-    const permCheck = await checkExecutionPermission('execute_shell', command, 'shell', context, false);
+    const permCheck = await checkExecutionPermission(
+      'execute_shell',
+      command,
+      'shell',
+      context,
+      false
+    );
     if (!permCheck.allowed) return permCheck.error!;
     const localResult = await executeShellLocal(command, { timeout });
     logSandboxExecution({
@@ -520,11 +573,20 @@ export const executeShellExecutor: ToolExecutor = async (params, context): Promi
   }
 
   // Permission check applies to Docker sandbox too
-  const shellPermCheck = await checkExecutionPermission('execute_shell', command, 'shell', context, true);
+  const shellPermCheck = await checkExecutionPermission(
+    'execute_shell',
+    command,
+    'shell',
+    context,
+    true
+  );
   if (!shellPermCheck.allowed) return shellPermCheck.error!;
 
   // Execute in Docker sandbox
-  const result = await executeShellSandbox(command, { timeout, relaxedSecurity: DOCKER_RELAXED_SECURITY });
+  const result = await executeShellSandbox(command, {
+    timeout,
+    relaxedSecurity: DOCKER_RELAXED_SECURITY,
+  });
   const durationMs = Date.now() - startTime;
 
   // Log sandbox execution
@@ -562,7 +624,8 @@ export const executeShellExecutor: ToolExecutor = async (params, context): Promi
 export const compileCodeTool: ToolDefinition = {
   name: 'compile_code',
   brief: 'Compile source code',
-  description: 'Compile source code using a specified compiler. Requires local execution mode (no Docker sandbox). Supported compilers: tsc, gcc, g++, rustc, go, javac.',
+  description:
+    'Compile source code using a specified compiler. Requires local execution mode (no Docker sandbox). Supported compilers: tsc, gcc, g++, rustc, go, javac.',
   parameters: {
     type: 'object',
     properties: {
@@ -592,7 +655,10 @@ export const compileCodeTool: ToolDefinition = {
 /** Allowed compilers — prevents arbitrary command injection */
 const ALLOWED_COMPILERS = new Set(['tsc', 'gcc', 'g++', 'rustc', 'go', 'javac']);
 
-export const compileCodeExecutor: ToolExecutor = async (params, context): Promise<ToolExecutionResult> => {
+export const compileCodeExecutor: ToolExecutor = async (
+  params,
+  context
+): Promise<ToolExecutionResult> => {
   const filePath = params.filePath as string;
   const compiler = (params.compiler as string) || 'tsc';
   const extraArgs = (params.args as string) || '';
@@ -600,7 +666,12 @@ export const compileCodeExecutor: ToolExecutor = async (params, context): Promis
   const startTime = Date.now();
 
   if (!ALLOWED_COMPILERS.has(compiler)) {
-    return { content: { error: `Unknown compiler: ${compiler}. Allowed: ${[...ALLOWED_COMPILERS].join(', ')}` }, isError: true };
+    return {
+      content: {
+        error: `Unknown compiler: ${compiler}. Allowed: ${[...ALLOWED_COMPILERS].join(', ')}`,
+      },
+      isError: true,
+    };
   }
 
   const { mode } = resolveExecutionConfig(context);
@@ -663,7 +734,8 @@ export const compileCodeExecutor: ToolExecutor = async (params, context): Promis
 export const packageManagerTool: ToolDefinition = {
   name: 'package_manager',
   brief: 'Run package manager commands',
-  description: 'Run package manager commands (npm, yarn, pnpm, pip). Requires local execution mode. Supports install, uninstall, update, list, run scripts, and other standard commands.',
+  description:
+    'Run package manager commands (npm, yarn, pnpm, pip). Requires local execution mode. Supports install, uninstall, update, list, run scripts, and other standard commands.',
   parameters: {
     type: 'object',
     properties: {
@@ -674,11 +746,13 @@ export const packageManagerTool: ToolDefinition = {
       },
       command: {
         type: 'string',
-        description: 'Subcommand to run (e.g., "install", "install lodash", "run build", "list --depth=0")',
+        description:
+          'Subcommand to run (e.g., "install", "install lodash", "run build", "list --depth=0")',
       },
       timeout: {
         type: 'number',
-        description: 'Execution timeout in milliseconds (max 120000, default 60000). Package installations may need more time.',
+        description:
+          'Execution timeout in milliseconds (max 120000, default 60000). Package installations may need more time.',
         default: 60000,
       },
     },
@@ -691,9 +765,9 @@ const ALLOWED_MANAGERS = new Set(['npm', 'yarn', 'pnpm', 'pip']);
 
 /** Package manager subcommands that are blocked for safety */
 const BLOCKED_PM_SUBCOMMANDS = new Set([
-  'publish',    // Don't accidentally publish packages
-  'unpublish',  // Don't remove published packages
-  'login',      // Don't handle auth tokens
+  'publish', // Don't accidentally publish packages
+  'unpublish', // Don't remove published packages
+  'login', // Don't handle auth tokens
   'logout',
   'adduser',
   'token',
@@ -701,20 +775,33 @@ const BLOCKED_PM_SUBCOMMANDS = new Set([
   'access',
 ]);
 
-export const packageManagerExecutor: ToolExecutor = async (params, context): Promise<ToolExecutionResult> => {
+export const packageManagerExecutor: ToolExecutor = async (
+  params,
+  context
+): Promise<ToolExecutionResult> => {
   const manager = params.manager as string;
   const subcommand = params.command as string;
   const timeout = Math.min((params.timeout as number) || 60000, 120000);
   const startTime = Date.now();
 
   if (!ALLOWED_MANAGERS.has(manager)) {
-    return { content: { error: `Unknown package manager: ${manager}. Allowed: ${[...ALLOWED_MANAGERS].join(', ')}` }, isError: true };
+    return {
+      content: {
+        error: `Unknown package manager: ${manager}. Allowed: ${[...ALLOWED_MANAGERS].join(', ')}`,
+      },
+      isError: true,
+    };
   }
 
   // Check for blocked subcommands
   const firstWord = subcommand.trim().split(/\s+/)[0]?.toLowerCase();
   if (firstWord && BLOCKED_PM_SUBCOMMANDS.has(firstWord)) {
-    return { content: { error: `Subcommand '${firstWord}' is blocked for safety. Blocked: ${[...BLOCKED_PM_SUBCOMMANDS].join(', ')}` }, isError: true };
+    return {
+      content: {
+        error: `Subcommand '${firstWord}' is blocked for safety. Blocked: ${[...BLOCKED_PM_SUBCOMMANDS].join(', ')}`,
+      },
+      isError: true,
+    };
   }
 
   const { mode } = resolveExecutionConfig(context);

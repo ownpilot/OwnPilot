@@ -17,7 +17,17 @@
  * └── _shared/                # Shared files across sessions (legacy)
  */
 
-import { existsSync, readdirSync, statSync, unlinkSync, rmSync, mkdirSync, writeFileSync, readFileSync, createWriteStream } from 'node:fs';
+import {
+  existsSync,
+  readdirSync,
+  statSync,
+  unlinkSync,
+  rmSync,
+  mkdirSync,
+  writeFileSync,
+  readFileSync,
+  createWriteStream,
+} from 'node:fs';
 import { join, resolve, sep, relative, basename } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import {
@@ -127,23 +137,25 @@ export function listWorkspaceFiles(subdir: WorkspaceSubdir): {
   }
 
   const files = readdirSync(dir);
-  return files.map(name => {
-    const filePath = join(dir, name);
-    const stats = statSync(filePath);
-    return {
-      name,
-      path: filePath,
-      size: stats.size,
-      modified: stats.mtime,
-    };
-  }).filter(f => {
-    try {
-      const stats = statSync(join(dir, f.name));
-      return stats.isFile();
-    } catch {
-      return false;
-    }
-  });
+  return files
+    .map((name) => {
+      const filePath = join(dir, name);
+      const stats = statSync(filePath);
+      return {
+        name,
+        path: filePath,
+        size: stats.size,
+        modified: stats.mtime,
+      };
+    })
+    .filter((f) => {
+      try {
+        const stats = statSync(join(dir, f.name));
+        return stats.isFile();
+      } catch {
+        return false;
+      }
+    });
 }
 
 /**
@@ -238,7 +250,11 @@ export function isInFileWorkspace(filePath: string): boolean {
  * Validate that a path is safe for writing
  * Only allows writing to workspace directories
  */
-export function validateWritePath(filePath: string): { valid: boolean; error?: string; suggestedPath?: string } {
+export function validateWritePath(filePath: string): {
+  valid: boolean;
+  error?: string;
+  suggestedPath?: string;
+} {
   const resolved = resolve(filePath);
 
   // Check if in workspace
@@ -324,14 +340,16 @@ function validateWorkspaceId(id: string): string {
 /**
  * Create a new session workspace
  */
-export function createSessionWorkspace(options: {
-  name?: string;
-  userId?: string;
-  agentId?: string;
-  sessionId?: string;
-  description?: string;
-  tags?: string[];
-} = {}): SessionWorkspaceInfo {
+export function createSessionWorkspace(
+  options: {
+    name?: string;
+    userId?: string;
+    agentId?: string;
+    sessionId?: string;
+    description?: string;
+    tags?: string[];
+  } = {}
+): SessionWorkspaceInfo {
   const workspaceRoot = getDataPaths().workspace;
   const id = options.sessionId || randomUUID().slice(0, 8);
   const now = new Date().toISOString();
@@ -357,10 +375,7 @@ export function createSessionWorkspace(options: {
   }
 
   // Write metadata
-  writeFileSync(
-    join(workspacePath, '.meta.json'),
-    JSON.stringify(meta, null, 2)
-  );
+  writeFileSync(join(workspacePath, '.meta.json'), JSON.stringify(meta, null, 2));
 
   log.info(`[FileWorkspace] Created session workspace: ${id}`);
 
@@ -427,7 +442,11 @@ export function getSessionWorkspace(id: string): SessionWorkspaceInfo | null {
 /**
  * Get or create session workspace
  */
-export function getOrCreateSessionWorkspace(sessionId: string, agentId?: string, userId?: string): SessionWorkspaceInfo {
+export function getOrCreateSessionWorkspace(
+  sessionId: string,
+  agentId?: string,
+  userId?: string
+): SessionWorkspaceInfo {
   const existing = getSessionWorkspace(sessionId);
   if (existing) {
     return existing;
@@ -465,9 +484,7 @@ export function listSessionWorkspaces(userId?: string): SessionWorkspaceInfo[] {
   }
 
   // Sort by updatedAt descending
-  workspaces.sort((a, b) =>
-    new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
-  );
+  workspaces.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
 
   return workspaces;
 }
@@ -560,7 +577,11 @@ export function readSessionWorkspaceFile(id: string, filePath: string): Buffer |
 /**
  * Write a file to session workspace
  */
-export function writeSessionWorkspaceFile(id: string, filePath: string, content: Buffer | string): void {
+export function writeSessionWorkspaceFile(
+  id: string,
+  filePath: string,
+  content: Buffer | string
+): void {
   validateWorkspaceId(id);
   const workspaceRoot = getDataPaths().workspace;
   const fullPath = resolve(workspaceRoot, id, filePath);
@@ -642,7 +663,7 @@ export async function zipSessionWorkspace(id: string): Promise<string> {
   }
 
   // Dynamic import for archiver (ESM)
-  const archiver = await import('archiver').then(m => m.default);
+  const archiver = await import('archiver').then((m) => m.default);
 
   const zipPath = join(workspaceRoot, `${id}.zip`);
 
@@ -672,7 +693,10 @@ export async function zipSessionWorkspace(id: string): Promise<string> {
 /**
  * Clean up old session workspaces
  */
-export function cleanupSessionWorkspaces(maxAgeDays: number = 7): { deleted: string[]; kept: string[] } {
+export function cleanupSessionWorkspaces(maxAgeDays: number = 7): {
+  deleted: string[];
+  kept: string[];
+} {
   const workspaces = listSessionWorkspaces();
   const maxAge = maxAgeDays * MS_PER_DAY;
   const now = Date.now();
@@ -709,7 +733,7 @@ export function cleanupSessionWorkspaces(maxAgeDays: number = 7): { deleted: str
 export function smartCleanupSessionWorkspaces(
   mode: 'empty' | 'old' | 'both' = 'both',
   maxAgeDays: number = 30,
-  userId?: string,
+  userId?: string
 ): { deleted: number; kept: number; deletedEmpty: number; deletedOld: number } {
   const workspaces = listSessionWorkspaces(userId);
   const maxAge = maxAgeDays * MS_PER_DAY;
@@ -741,7 +765,9 @@ export function smartCleanupSessionWorkspaces(
   }
 
   if (deleted > 0) {
-    log.info(`[FileWorkspace] Smart cleanup (${mode}): deleted ${deleted}, kept ${kept} (empty: ${deletedEmpty}, old: ${deletedOld})`);
+    log.info(
+      `[FileWorkspace] Smart cleanup (${mode}): deleted ${deleted}, kept ${kept} (empty: ${deletedEmpty}, old: ${deletedOld})`
+    );
   }
 
   return { deleted, kept, deletedEmpty, deletedOld };

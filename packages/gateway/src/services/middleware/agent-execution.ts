@@ -15,7 +15,10 @@ const log = getLog('Middleware:AgentExecution');
 
 /** Minimal agent interface needed by this middleware */
 interface ChatAgent {
-  chat(message: string | readonly ContentPart[], options?: Record<string, unknown>): Promise<{
+  chat(
+    message: string | readonly ContentPart[],
+    options?: Record<string, unknown>
+  ): Promise<{
     ok: boolean;
     value?: {
       id: string;
@@ -82,7 +85,7 @@ export function createAgentExecutionMiddleware(): MessageMiddleware {
         savedSystemPrompt = currentPrompt;
         const directPrompt = currentPrompt.replace(
           /## How to Call Tools[\s\S]*?(?=\n## [^#]|$)/,
-          `## How to Call Tools\nCall tools directly by function name. Names use __ (double underscore) instead of dots as namespace separator.\nNamespaces: core__ = built-in, custom__ = user-created, plugin__<id>__ = plugins, ext__<id>__ = extensions, mcp__<server>__ = MCP servers.\nExample: core__add_task({title:"Buy milk"}) calls the built-in add_task tool.\nWhen mentioning tools to users, use dot notation for readability (e.g., "core.add_task" not "core__add_task").\nUse search_tools("keyword") to discover tools, get_tool_help("tool_name") for parameters.\n\n`,
+          `## How to Call Tools\nCall tools directly by function name. Names use __ (double underscore) instead of dots as namespace separator.\nNamespaces: core__ = built-in, custom__ = user-created, plugin__<id>__ = plugins, ext__<id>__ = extensions, mcp__<server>__ = MCP servers.\nExample: core__add_task({title:"Buy milk"}) calls the built-in add_task tool.\nWhen mentioning tools to users, use dot notation for readability (e.g., "core.add_task" not "core__add_task").\nUse search_tools("keyword") to discover tools, get_tool_help("tool_name") for parameters.\n\n`
         );
         if (directPrompt !== currentPrompt) {
           agent.updateSystemPrompt(directPrompt);
@@ -111,7 +114,11 @@ export function createAgentExecutionMiddleware(): MessageMiddleware {
       if (stream?.onBeforeToolCall) {
         chatOptions.onBeforeToolCall = stream.onBeforeToolCall;
       } else {
-        chatOptions.onBeforeToolCall = async (toolCall: { id: string; name: string; arguments: string }) => {
+        chatOptions.onBeforeToolCall = async (toolCall: {
+          id: string;
+          name: string;
+          arguments: string;
+        }) => {
           const approval = await checkToolCallApproval(userId, toolCall, {
             agentId,
             conversationId,
@@ -120,7 +127,9 @@ export function createAgentExecutionMiddleware(): MessageMiddleware {
           });
 
           if (!approval.approved) {
-            log.info(`Tool call blocked: ${toolCall.name} - ${approval.reason ?? 'Requires approval'}`);
+            log.info(
+              `Tool call blocked: ${toolCall.name} - ${approval.reason ?? 'Requires approval'}`
+            );
           }
 
           return { approved: approval.approved, reason: approval.reason };
@@ -133,7 +142,11 @@ export function createAgentExecutionMiddleware(): MessageMiddleware {
         const parts: ContentPart[] = [{ type: 'text', text: message.content }];
         for (const att of message.attachments) {
           if (att.type === 'image' && att.data) {
-            parts.push({ type: 'image', data: att.data, mediaType: att.mimeType as 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp' });
+            parts.push({
+              type: 'image',
+              data: att.data,
+              mediaType: att.mimeType as 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp',
+            });
           }
         }
         chatContent = parts;
@@ -199,13 +212,24 @@ export function createAgentExecutionMiddleware(): MessageMiddleware {
           provider,
           model,
           conversationId: agent.getConversation().id,
-          toolCalls: result.value?.toolCalls?.map(tc => ({
+          toolCalls: result.value?.toolCalls?.map((tc) => ({
             id: tc.id,
             name: tc.name,
-            arguments: tc.arguments ? (() => { try { return JSON.parse(tc.arguments); } catch { return {}; } })() : {},
+            arguments: tc.arguments
+              ? (() => {
+                  try {
+                    return JSON.parse(tc.arguments);
+                  } catch {
+                    return {};
+                  }
+                })()
+              : {},
           })),
           tokens: result.value?.usage
-            ? { input: result.value.usage.promptTokens, output: result.value.usage.completionTokens }
+            ? {
+                input: result.value.usage.promptTokens,
+                output: result.value.usage.completionTokens,
+              }
             : undefined,
         },
         timestamp: new Date(),

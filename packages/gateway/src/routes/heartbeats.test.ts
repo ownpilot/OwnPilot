@@ -98,24 +98,29 @@ describe('Heartbeats Routes', () => {
     mockService.listHeartbeats.mockResolvedValue([sampleHeartbeat, sampleHeartbeat2]);
     mockService.createHeartbeat.mockResolvedValue(sampleHeartbeat);
     mockService.getHeartbeat.mockImplementation(async (_userId: string, id: string) =>
-      id === 'hb-1' ? sampleHeartbeat : null,
+      id === 'hb-1' ? sampleHeartbeat : null
     );
-    mockService.updateHeartbeat.mockImplementation(async (_userId: string, id: string, input: Record<string, unknown>) =>
-      id === 'hb-1' ? { ...sampleHeartbeat, ...input } : null,
+    mockService.updateHeartbeat.mockImplementation(
+      async (_userId: string, id: string, input: Record<string, unknown>) =>
+        id === 'hb-1' ? { ...sampleHeartbeat, ...input } : null
     );
-    mockService.deleteHeartbeat.mockImplementation(async (_userId: string, id: string) => id === 'hb-1');
+    mockService.deleteHeartbeat.mockImplementation(
+      async (_userId: string, id: string) => id === 'hb-1'
+    );
     mockService.enableHeartbeat.mockImplementation(async (_userId: string, id: string) =>
-      id === 'hb-1' ? { ...sampleHeartbeat, enabled: true } : null,
+      id === 'hb-1' ? { ...sampleHeartbeat, enabled: true } : null
     );
     mockService.disableHeartbeat.mockImplementation(async (_userId: string, id: string) =>
-      id === 'hb-1' ? { ...sampleHeartbeat, enabled: false } : null,
+      id === 'hb-1' ? { ...sampleHeartbeat, enabled: false } : null
     );
     mockService.importMarkdown.mockResolvedValue({
       created: 1,
       errors: [],
       heartbeats: [sampleHeartbeat],
     });
-    mockService.exportMarkdown.mockResolvedValue('## every day at 9am\nSend a morning briefing with weather and calendar');
+    mockService.exportMarkdown.mockResolvedValue(
+      '## every day at 9am\nSend a morning briefing with weather and calendar'
+    );
     app = createApp();
   });
 
@@ -349,7 +354,7 @@ describe('Heartbeats Routes', () => {
 
     it('returns 400 when service throws HeartbeatServiceError', async () => {
       mockService.createHeartbeat.mockRejectedValue(
-        new MockHeartbeatServiceError('Cannot parse schedule', 'PARSE_ERROR'),
+        new MockHeartbeatServiceError('Cannot parse schedule', 'PARSE_ERROR')
       );
 
       const res = await app.request('/heartbeats', {
@@ -401,7 +406,9 @@ describe('Heartbeats Routes', () => {
       expect(json.data.heartbeat.id).toBe('hb-1');
       expect(json.data.heartbeat.name).toBe('Morning briefing');
       expect(json.data.heartbeat.scheduleText).toBe('every day at 9am');
-      expect(json.data.heartbeat.taskDescription).toBe('Send a morning briefing with weather and calendar');
+      expect(json.data.heartbeat.taskDescription).toBe(
+        'Send a morning briefing with weather and calendar'
+      );
       expect(json.data.heartbeat.enabled).toBe(true);
       expect(json.data.heartbeat.tags).toEqual(['daily']);
     });
@@ -518,7 +525,7 @@ describe('Heartbeats Routes', () => {
 
     it('returns 400 when service throws HeartbeatServiceError', async () => {
       mockService.updateHeartbeat.mockRejectedValue(
-        new MockHeartbeatServiceError('Invalid schedule expression', 'PARSE_ERROR'),
+        new MockHeartbeatServiceError('Invalid schedule expression', 'PARSE_ERROR')
       );
 
       const res = await app.request('/heartbeats/hb-1', {
@@ -657,7 +664,9 @@ describe('Heartbeats Routes', () => {
       const res = await app.request('/heartbeats/import', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ markdown: '## bad schedule\nDo stuff\n\n## every day at 9am\nBriefing' }),
+        body: JSON.stringify({
+          markdown: '## bad schedule\nDo stuff\n\n## every day at 9am\nBriefing',
+        }),
       });
 
       expect(res.status).toBe(201);

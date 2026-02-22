@@ -25,14 +25,17 @@ import {
  *
  * @param userId - User ID for user-scoped tool providers (memory, goals).
  */
-export function buildGatewayPlugin(
-  userId = 'default',
-): { manifest: PluginManifest; implementation: Partial<Plugin> } {
+export function buildGatewayPlugin(userId = 'default'): {
+  manifest: PluginManifest;
+  implementation: Partial<Plugin>;
+} {
   const builder = createPlugin()
     .id('gateway')
     .name('OwnPilot Gateway')
     .version('1.0.0')
-    .description('Gateway service tools: memory, goals, custom data, personal data, triggers, and plans.')
+    .description(
+      'Gateway service tools: memory, goals, custom data, personal data, triggers, and plans.'
+    )
     .meta({
       category: 'core',
       capabilities: ['tools'],

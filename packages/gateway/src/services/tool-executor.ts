@@ -19,7 +19,12 @@ import {
   createPluginSecurityMiddleware,
   createPluginId,
 } from '@ownpilot/core';
-import type { ToolDefinition, ToolContext, DynamicToolDefinition, ExecutionPermissions } from '@ownpilot/core';
+import type {
+  ToolDefinition,
+  ToolContext,
+  DynamicToolDefinition,
+  ExecutionPermissions,
+} from '@ownpilot/core';
 import { gatewayConfigCenter } from './config-center-impl.js';
 import { registerToolConfigRequirements } from './api-service-registrar.js';
 import {
@@ -89,9 +94,15 @@ export function getSharedToolRegistry(userId = 'default'): ToolRegistry {
   registerAllTools(tools);
 
   // Override tool placeholders with real implementations
-  registerImageOverrides(tools).catch((err) => log.warn('registerImageOverrides failed:', String(err)));
-  registerEmailOverrides(tools).catch((err) => log.warn('registerEmailOverrides failed:', String(err)));
-  registerAudioOverrides(tools).catch((err) => log.warn('registerAudioOverrides failed:', String(err)));
+  registerImageOverrides(tools).catch((err) =>
+    log.warn('registerImageOverrides failed:', String(err))
+  );
+  registerEmailOverrides(tools).catch((err) =>
+    log.warn('registerEmailOverrides failed:', String(err))
+  );
+  registerAudioOverrides(tools).catch((err) =>
+    log.warn('registerAudioOverrides failed:', String(err))
+  );
 
   // Register legacy core tools (get_current_time, calculate, etc.)
   // Duplicates are safely ignored by ToolRegistry
@@ -183,7 +194,8 @@ let toolSyncPromise: Promise<void> | null = null;
 function syncCustomToolsIntoRegistry(registry: ToolRegistry, userId: string): void {
   const repo = createCustomToolsRepo(userId);
 
-  toolSyncPromise = repo.getActiveTools()
+  toolSyncPromise = repo
+    .getActiveTools()
     .then((tools) => {
       const dynamicRegistry = getCustomToolDynamicRegistry();
 
@@ -205,16 +217,17 @@ function syncCustomToolsIntoRegistry(registry: ToolRegistry, userId: string): vo
           description: tool.description,
           parameters: tool.parameters as ToolDefinition['parameters'],
           category: tool.category ?? 'Custom',
-          configRequirements: tool.requiredApiKeys?.map(k => ({
+          configRequirements: tool.requiredApiKeys?.map((k) => ({
             name: k.name,
             displayName: k.displayName,
             description: k.description,
             category: k.category,
             docsUrl: k.docsUrl,
           })),
-          workflowUsable: tool.metadata?.workflowUsable !== undefined
-            ? Boolean(tool.metadata.workflowUsable)
-            : undefined,
+          workflowUsable:
+            tool.metadata?.workflowUsable !== undefined
+              ? Boolean(tool.metadata.workflowUsable)
+              : undefined,
         };
 
         // Executor delegates to dynamic registry which handles sandboxing
@@ -231,7 +244,9 @@ function syncCustomToolsIntoRegistry(registry: ToolRegistry, userId: string): vo
       }
     })
     .catch((err) => {
-      log.warn('[tool-executor] Custom tools sync deferred — DB may not be ready yet', { error: err });
+      log.warn('[tool-executor] Custom tools sync deferred — DB may not be ready yet', {
+        error: err,
+      });
     });
 }
 
@@ -253,7 +268,7 @@ export async function executeTool(
   toolName: string,
   args: Record<string, unknown>,
   userId = 'default',
-  executionPermissions?: ExecutionPermissions,
+  executionPermissions?: ExecutionPermissions
 ): Promise<ToolExecutionResult> {
   const start = Date.now();
   const result = await executeToolInternal(toolName, args, userId, executionPermissions);
@@ -274,7 +289,9 @@ export async function executeTool(
           error: result.error,
         },
       });
-    } catch { /* audit failure should not affect tool execution */ }
+    } catch {
+      /* audit failure should not affect tool execution */
+    }
   }
 
   return result;
@@ -284,7 +301,7 @@ async function executeToolInternal(
   toolName: string,
   args: Record<string, unknown>,
   userId: string,
-  executionPermissions?: ExecutionPermissions,
+  executionPermissions?: ExecutionPermissions
 ): Promise<ToolExecutionResult> {
   const tools = getSharedToolRegistry(userId);
 
@@ -324,8 +341,14 @@ async function executeToolInternal(
     const pluginTool = pluginService.getTool(toolName);
     if (pluginTool != null) {
       try {
-        const pluginResult = await pluginTool.executor(args, { callId: 'fallback', conversationId: 'system-execution' });
-        const content = typeof pluginResult.content === 'string' ? pluginResult.content : String(pluginResult.content);
+        const pluginResult = await pluginTool.executor(args, {
+          callId: 'fallback',
+          conversationId: 'system-execution',
+        });
+        const content =
+          typeof pluginResult.content === 'string'
+            ? pluginResult.content
+            : String(pluginResult.content);
         return {
           success: !pluginResult.isError,
           result: content,

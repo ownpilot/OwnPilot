@@ -70,7 +70,7 @@ vi.mock('./log.js', () => ({
 }));
 
 vi.mock('../routes/helpers.js', () => ({
-  getErrorMessage: (e: unknown) => e instanceof Error ? e.message : String(e),
+  getErrorMessage: (e: unknown) => (e instanceof Error ? e.message : String(e)),
 }));
 
 vi.mock('node:fs/promises', () => ({
@@ -145,7 +145,11 @@ function setupImageGenConfig(overrides: Record<string, string | undefined> = {})
 /**
  * Set up AI provider resolution mocks for analyze_image.
  */
-function setupAnalysisProvider(provider = 'openai', model = 'gpt-4o', apiKey = 'sk-test-key'): void {
+function setupAnalysisProvider(
+  provider = 'openai',
+  model = 'gpt-4o',
+  apiKey = 'sk-test-key'
+): void {
   mockResolveProviderAndModel.mockResolvedValue({ provider, model });
   mockGetProviderApiKey.mockResolvedValue(apiKey);
   mockLoadProviderConfig.mockReturnValue({ baseUrl: undefined });
@@ -195,8 +199,14 @@ describe('image-overrides', () => {
       };
       await registerImageOverrides(mockRegistry as never);
 
-      expect(mockRegistry.updateExecutor).toHaveBeenCalledWith('analyze_image', expect.any(Function));
-      expect(mockRegistry.updateExecutor).toHaveBeenCalledWith('generate_image', expect.any(Function));
+      expect(mockRegistry.updateExecutor).toHaveBeenCalledWith(
+        'analyze_image',
+        expect.any(Function)
+      );
+      expect(mockRegistry.updateExecutor).toHaveBeenCalledWith(
+        'generate_image',
+        expect.any(Function)
+      );
       expect(captured['analyze_image']).toBeDefined();
       expect(captured['generate_image']).toBeDefined();
     });
@@ -208,11 +218,23 @@ describe('image-overrides', () => {
       await registerImageOverrides(mockRegistry as never);
 
       // For analyze_image: first try bare name, then core.analyze_image
-      expect(mockRegistry.updateExecutor).toHaveBeenCalledWith('analyze_image', expect.any(Function));
-      expect(mockRegistry.updateExecutor).toHaveBeenCalledWith('core.analyze_image', expect.any(Function));
+      expect(mockRegistry.updateExecutor).toHaveBeenCalledWith(
+        'analyze_image',
+        expect.any(Function)
+      );
+      expect(mockRegistry.updateExecutor).toHaveBeenCalledWith(
+        'core.analyze_image',
+        expect.any(Function)
+      );
       // For generate_image: same pattern
-      expect(mockRegistry.updateExecutor).toHaveBeenCalledWith('generate_image', expect.any(Function));
-      expect(mockRegistry.updateExecutor).toHaveBeenCalledWith('core.generate_image', expect.any(Function));
+      expect(mockRegistry.updateExecutor).toHaveBeenCalledWith(
+        'generate_image',
+        expect.any(Function)
+      );
+      expect(mockRegistry.updateExecutor).toHaveBeenCalledWith(
+        'core.generate_image',
+        expect.any(Function)
+      );
     });
 
     it('does not fall back if first updateExecutor succeeds', async () => {
@@ -222,8 +244,14 @@ describe('image-overrides', () => {
       await registerImageOverrides(mockRegistry as never);
 
       expect(mockRegistry.updateExecutor).toHaveBeenCalledTimes(2);
-      expect(mockRegistry.updateExecutor).toHaveBeenCalledWith('analyze_image', expect.any(Function));
-      expect(mockRegistry.updateExecutor).toHaveBeenCalledWith('generate_image', expect.any(Function));
+      expect(mockRegistry.updateExecutor).toHaveBeenCalledWith(
+        'analyze_image',
+        expect.any(Function)
+      );
+      expect(mockRegistry.updateExecutor).toHaveBeenCalledWith(
+        'generate_image',
+        expect.any(Function)
+      );
     });
 
     it('calls ensureImageGenService (upserts config entry)', async () => {
@@ -231,13 +259,15 @@ describe('image-overrides', () => {
       await registerImageOverrides(mockRegistry as never);
 
       // Give the async ensureImageGenService time to resolve
-      await new Promise(r => setTimeout(r, 10));
+      await new Promise((r) => setTimeout(r, 10));
 
-      expect(mockUpsert).toHaveBeenCalledWith(expect.objectContaining({
-        name: 'image_generation',
-        displayName: 'Image Generation',
-        category: 'ai',
-      }));
+      expect(mockUpsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          name: 'image_generation',
+          displayName: 'Image Generation',
+          category: 'ai',
+        })
+      );
     });
 
     it('logs debug if ensureImageGenService upsert fails', async () => {
@@ -245,11 +275,11 @@ describe('image-overrides', () => {
       const mockRegistry = { updateExecutor: vi.fn().mockReturnValue(true) };
       await registerImageOverrides(mockRegistry as never);
 
-      await new Promise(r => setTimeout(r, 10));
+      await new Promise((r) => setTimeout(r, 10));
 
       expect(mockLogDebug).toHaveBeenCalledWith(
         expect.stringContaining('Config upsert for image_generation'),
-        expect.stringContaining('DB down'),
+        expect.stringContaining('DB down')
       );
     });
   });
@@ -365,21 +395,30 @@ describe('image-overrides', () => {
 
     it('describe + high detail includes "very detailed"', async () => {
       const provider = createMockProviderInstance();
-      await analyze({ source: 'https://example.com/img.jpg', task: 'describe', detailLevel: 'high' }, defaultContext);
+      await analyze(
+        { source: 'https://example.com/img.jpg', task: 'describe', detailLevel: 'high' },
+        defaultContext
+      );
       const prompt = provider.complete.mock.calls[0]![0].messages[0].content[0].text;
       expect(prompt).toContain('very detailed');
     });
 
     it('describe + low detail includes "Briefly describe"', async () => {
       const provider = createMockProviderInstance();
-      await analyze({ source: 'https://example.com/img.jpg', task: 'describe', detailLevel: 'low' }, defaultContext);
+      await analyze(
+        { source: 'https://example.com/img.jpg', task: 'describe', detailLevel: 'low' },
+        defaultContext
+      );
       const prompt = provider.complete.mock.calls[0]![0].messages[0].content[0].text;
       expect(prompt).toContain('Briefly describe');
     });
 
     it('describe + medium (default) detail includes "composition"', async () => {
       const provider = createMockProviderInstance();
-      await analyze({ source: 'https://example.com/img.jpg', task: 'describe', detailLevel: 'medium' }, defaultContext);
+      await analyze(
+        { source: 'https://example.com/img.jpg', task: 'describe', detailLevel: 'medium' },
+        defaultContext
+      );
       const prompt = provider.complete.mock.calls[0]![0].messages[0].content[0].text;
       expect(prompt).toContain('composition');
     });
@@ -421,7 +460,10 @@ describe('image-overrides', () => {
 
     it('custom task with question uses the question as prompt', async () => {
       const provider = createMockProviderInstance();
-      await analyze({ source: 'https://example.com/img.jpg', task: 'custom', question: 'How many cats?' }, defaultContext);
+      await analyze(
+        { source: 'https://example.com/img.jpg', task: 'custom', question: 'How many cats?' },
+        defaultContext
+      );
       const prompt = provider.complete.mock.calls[0]![0].messages[0].content[0].text;
       expect(prompt).toBe('How many cats?');
     });
@@ -435,7 +477,10 @@ describe('image-overrides', () => {
 
     it('unknown task defaults to "Describe this image."', async () => {
       const provider = createMockProviderInstance();
-      await analyze({ source: 'https://example.com/img.jpg', task: 'something_else' }, defaultContext);
+      await analyze(
+        { source: 'https://example.com/img.jpg', task: 'something_else' },
+        defaultContext
+      );
       const prompt = provider.complete.mock.calls[0]![0].messages[0].content[0].text;
       expect(prompt).toBe('Describe this image.');
     });
@@ -687,9 +732,12 @@ describe('image-overrides', () => {
         setupAnalysisProvider();
         const provider = createMockProviderInstance();
 
-        const result = await analyze({
-          source: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUg==',
-        }, defaultContext);
+        const result = await analyze(
+          {
+            source: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUg==',
+          },
+          defaultContext
+        );
 
         expect(result.isError).toBeFalsy();
         const message = provider.complete.mock.calls[0]![0].messages[0];
@@ -806,9 +854,11 @@ describe('image-overrides', () => {
 
         await analyze({ source: 'https://example.com/img.jpg' }, defaultContext);
 
-        expect(mockCreateProvider).toHaveBeenCalledWith(expect.objectContaining({
-          provider: 'anthropic',
-        }));
+        expect(mockCreateProvider).toHaveBeenCalledWith(
+          expect.objectContaining({
+            provider: 'anthropic',
+          })
+        );
       });
 
       it('falls back to openai for non-native providers', async () => {
@@ -817,9 +867,11 @@ describe('image-overrides', () => {
 
         await analyze({ source: 'https://example.com/img.jpg' }, defaultContext);
 
-        expect(mockCreateProvider).toHaveBeenCalledWith(expect.objectContaining({
-          provider: 'openai',
-        }));
+        expect(mockCreateProvider).toHaveBeenCalledWith(
+          expect.objectContaining({
+            provider: 'openai',
+          })
+        );
       });
 
       it('passes baseUrl from loadProviderConfig', async () => {
@@ -830,9 +882,11 @@ describe('image-overrides', () => {
 
         await analyze({ source: 'https://example.com/img.jpg' }, defaultContext);
 
-        expect(mockCreateProvider).toHaveBeenCalledWith(expect.objectContaining({
-          baseUrl: 'https://custom.api.com',
-        }));
+        expect(mockCreateProvider).toHaveBeenCalledWith(
+          expect.objectContaining({
+            baseUrl: 'https://custom.api.com',
+          })
+        );
       });
     });
 
@@ -843,21 +897,31 @@ describe('image-overrides', () => {
         setupAnalysisProvider('openai', 'gpt-4o');
         const provider = createMockProviderInstance();
 
-        await analyze({
-          source: 'https://example.com/img.jpg',
-          task: 'describe',
-          detailLevel: 'high',
-          maxTokens: 4096,
-        }, defaultContext);
+        await analyze(
+          {
+            source: 'https://example.com/img.jpg',
+            task: 'describe',
+            detailLevel: 'high',
+            maxTokens: 4096,
+          },
+          defaultContext
+        );
 
         expect(provider.complete).toHaveBeenCalledWith({
-          messages: [{
-            role: 'user',
-            content: [
-              { type: 'text', text: expect.stringContaining('very detailed') },
-              { type: 'image', data: 'https://example.com/img.jpg', mediaType: 'image/jpeg', isUrl: true },
-            ],
-          }],
+          messages: [
+            {
+              role: 'user',
+              content: [
+                { type: 'text', text: expect.stringContaining('very detailed') },
+                {
+                  type: 'image',
+                  data: 'https://example.com/img.jpg',
+                  mediaType: 'image/jpeg',
+                  isUrl: true,
+                },
+              ],
+            },
+          ],
           model: {
             model: 'gpt-4o',
             maxTokens: 4096,
@@ -874,9 +938,11 @@ describe('image-overrides', () => {
 
         await analyze({ source: 'https://example.com/img.jpg' }, defaultContext);
 
-        expect(provider.complete).toHaveBeenCalledWith(expect.objectContaining({
-          model: expect.objectContaining({ model: 'gpt-4o' }),
-        }));
+        expect(provider.complete).toHaveBeenCalledWith(
+          expect.objectContaining({
+            model: expect.objectContaining({ model: 'gpt-4o' }),
+          })
+        );
       });
 
       it('returns error when vision API fails', async () => {
@@ -899,11 +965,14 @@ describe('image-overrides', () => {
         setupAnalysisProvider('openai', 'gpt-4o');
         createMockProviderInstance('A beautiful landscape with mountains');
 
-        const result = await analyze({
-          source: 'https://example.com/img.jpg',
-          task: 'describe',
-          detailLevel: 'medium',
-        }, defaultContext);
+        const result = await analyze(
+          {
+            source: 'https://example.com/img.jpg',
+            task: 'describe',
+            detailLevel: 'medium',
+          },
+          defaultContext
+        );
 
         expect(result.isError).toBe(false);
         expect(result.content).toEqual({
@@ -933,9 +1002,11 @@ describe('image-overrides', () => {
 
         await analyze({ source: 'https://example.com/img.jpg' }, defaultContext);
 
-        expect(provider.complete).toHaveBeenCalledWith(expect.objectContaining({
-          model: expect.objectContaining({ maxTokens: 2048 }),
-        }));
+        expect(provider.complete).toHaveBeenCalledWith(
+          expect.objectContaining({
+            model: expect.objectContaining({ maxTokens: 2048 }),
+          })
+        );
       });
     });
 
@@ -1085,10 +1156,10 @@ describe('image-overrides', () => {
           expect.objectContaining({
             method: 'POST',
             headers: expect.objectContaining({
-              'Authorization': 'Bearer sk-test-key',
+              Authorization: 'Bearer sk-test-key',
               'Content-Type': 'application/json',
             }),
-          }),
+          })
         );
       });
 
@@ -1098,7 +1169,10 @@ describe('image-overrides', () => {
           json: async () => ({ data: [{ b64_json: 'aW1hZ2VkYXRh' }] }),
         });
 
-        await generate({ prompt: 'A castle', size: '512x512', quality: 'hd', n: 2 }, defaultContext);
+        await generate(
+          { prompt: 'A castle', size: '512x512', quality: 'hd', n: 2 },
+          defaultContext
+        );
 
         const body = JSON.parse(mockFetch.mock.calls[0]![1].body);
         expect(body.prompt).toBe('A castle');
@@ -1112,7 +1186,9 @@ describe('image-overrides', () => {
       it('saves base64 result to file', async () => {
         mockFetch.mockResolvedValue({
           ok: true,
-          json: async () => ({ data: [{ b64_json: 'aW1hZ2VkYXRh', revised_prompt: 'enhanced castle' }] }),
+          json: async () => ({
+            data: [{ b64_json: 'aW1hZ2VkYXRh', revised_prompt: 'enhanced castle' }],
+          }),
         });
 
         const result = await generate({ prompt: 'A castle' }, defaultContext);
@@ -1141,7 +1217,10 @@ describe('image-overrides', () => {
 
     describe('openai-compatible provider', () => {
       it('uses same code path as openai', async () => {
-        setupImageGenConfig({ provider_type: 'openai-compatible', base_url: 'https://custom.api.com' });
+        setupImageGenConfig({
+          provider_type: 'openai-compatible',
+          base_url: 'https://custom.api.com',
+        });
         mockFsStat.mockResolvedValue({ size: 1024 });
         mockFetch.mockResolvedValue({
           ok: true,
@@ -1270,7 +1349,12 @@ describe('image-overrides', () => {
         mockFetch
           .mockResolvedValueOnce({
             ok: true,
-            json: async () => ({ images: [{ url: 'https://fal.run/out/img1.png' }, { url: 'https://fal.run/out/img2.png' }] }),
+            json: async () => ({
+              images: [
+                { url: 'https://fal.run/out/img1.png' },
+                { url: 'https://fal.run/out/img2.png' },
+              ],
+            }),
           })
           .mockResolvedValueOnce({ ok: true, arrayBuffer: async () => imageBuffer })
           .mockResolvedValueOnce({ ok: true, arrayBuffer: async () => imageBuffer });
@@ -1395,7 +1479,12 @@ describe('image-overrides', () => {
         mockFetch
           .mockResolvedValueOnce({
             ok: true,
-            json: async () => ({ output: ['https://replicate.delivery/img1.png', 'https://replicate.delivery/img2.png'] }),
+            json: async () => ({
+              output: [
+                'https://replicate.delivery/img1.png',
+                'https://replicate.delivery/img2.png',
+              ],
+            }),
           })
           .mockResolvedValueOnce({ ok: true, arrayBuffer: async () => new ArrayBuffer(8) })
           .mockResolvedValueOnce({ ok: true, arrayBuffer: async () => new ArrayBuffer(8) });
@@ -1540,7 +1629,9 @@ describe('image-overrides', () => {
 
         await generate({ prompt: 'test' }, defaultContext);
 
-        expect(mockFsMkdir).toHaveBeenCalledWith('/workspace/generated_images', { recursive: true });
+        expect(mockFsMkdir).toHaveBeenCalledWith('/workspace/generated_images', {
+          recursive: true,
+        });
       });
 
       it('uses outputPath for single image when provided', async () => {
@@ -1552,24 +1643,21 @@ describe('image-overrides', () => {
         await generate({ prompt: 'test', outputPath: '/workspace/my-image.png' }, defaultContext);
 
         // writeFile should be called with the custom output path
-        expect(mockFsWriteFile).toHaveBeenCalledWith(
-          '/workspace/my-image.png',
-          expect.any(Buffer),
-        );
+        expect(mockFsWriteFile).toHaveBeenCalledWith('/workspace/my-image.png', expect.any(Buffer));
       });
 
       it('ignores outputPath for multiple images (n>1)', async () => {
         mockFetch.mockResolvedValue({
           ok: true,
           json: async () => ({
-            data: [
-              { b64_json: 'aW1hZ2VkYXRh' },
-              { b64_json: 'aW1hZ2VkYXRh' },
-            ],
+            data: [{ b64_json: 'aW1hZ2VkYXRh' }, { b64_json: 'aW1hZ2VkYXRh' }],
           }),
         });
 
-        await generate({ prompt: 'test', n: 2, outputPath: '/workspace/single.png' }, defaultContext);
+        await generate(
+          { prompt: 'test', n: 2, outputPath: '/workspace/single.png' },
+          defaultContext
+        );
 
         // With n=2, outputPath is ignored, auto-generated names used
         const calls = mockFsWriteFile.mock.calls;
@@ -1624,10 +1712,15 @@ describe('image-overrides', () => {
       it('returns success with all expected fields', async () => {
         mockFetch.mockResolvedValue({
           ok: true,
-          json: async () => ({ data: [{ b64_json: 'aW1hZ2VkYXRh', revised_prompt: 'better castle' }] }),
+          json: async () => ({
+            data: [{ b64_json: 'aW1hZ2VkYXRh', revised_prompt: 'better castle' }],
+          }),
         });
 
-        const result = await generate({ prompt: 'A castle', style: 'artistic', size: '512x512' }, defaultContext);
+        const result = await generate(
+          { prompt: 'A castle', style: 'artistic', size: '512x512' },
+          defaultContext
+        );
 
         expect(result.isError).toBe(false);
         expect(result.content.success).toBe(true);
@@ -1695,7 +1788,9 @@ describe('image-overrides', () => {
 
       it('appends style description for non-realistic style', async () => {
         const result = await generate({ prompt: 'A mountain', style: 'anime' }, defaultContext);
-        expect(result.content.prompt).toBe('A mountain, anime style, Japanese animation, cel-shaded');
+        expect(result.content.prompt).toBe(
+          'A mountain, anime style, Japanese animation, cel-shaded'
+        );
       });
 
       it('defaults to realistic style when not provided', async () => {
@@ -1746,7 +1841,9 @@ describe('image-overrides', () => {
       });
 
       it('handles configServicesRepo.getFieldValue throwing', async () => {
-        mockGetFieldValue.mockImplementation(() => { throw new Error('DB connection lost'); });
+        mockGetFieldValue.mockImplementation(() => {
+          throw new Error('DB connection lost');
+        });
 
         const result = await generate({ prompt: 'test' }, defaultContext);
         expect(result.isError).toBe(true);

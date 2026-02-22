@@ -269,7 +269,9 @@ describe('buildEnhancedSystemPrompt', () => {
   });
 
   it('adds preference items under User Preferences header', async () => {
-    mockMemoryService.listMemories.mockResolvedValue([makeMemory('preference', 'Prefers dark mode')]);
+    mockMemoryService.listMemories.mockResolvedValue([
+      makeMemory('preference', 'Prefers dark mode'),
+    ]);
     const { prompt } = await buildEnhancedSystemPrompt('Base', { userId: USER_ID });
     expect(prompt).toContain('**User Preferences:**');
     expect(prompt).toContain('Prefers dark mode');
@@ -462,85 +464,169 @@ describe('buildEnhancedSystemPrompt', () => {
   });
 
   it('uses level name "Manual" for level 0', async () => {
-    mockGetUserConfig.mockReturnValue({ level: 0, dailyBudget: 10, dailySpend: 0, allowedTools: [], blockedTools: [] });
+    mockGetUserConfig.mockReturnValue({
+      level: 0,
+      dailyBudget: 10,
+      dailySpend: 0,
+      allowedTools: [],
+      blockedTools: [],
+    });
     const { prompt } = await buildEnhancedSystemPrompt('Base', { userId: USER_ID });
     expect(prompt).toContain('## Autonomy Level: Manual');
   });
 
   it('uses level name "Assisted" for level 1', async () => {
-    mockGetUserConfig.mockReturnValue({ level: 1, dailyBudget: 10, dailySpend: 0, allowedTools: [], blockedTools: [] });
+    mockGetUserConfig.mockReturnValue({
+      level: 1,
+      dailyBudget: 10,
+      dailySpend: 0,
+      allowedTools: [],
+      blockedTools: [],
+    });
     const { prompt } = await buildEnhancedSystemPrompt('Base', { userId: USER_ID });
     expect(prompt).toContain('## Autonomy Level: Assisted');
   });
 
   it('uses level name "Supervised" for level 2', async () => {
-    mockGetUserConfig.mockReturnValue({ level: 2, dailyBudget: 10, dailySpend: 0, allowedTools: [], blockedTools: [] });
+    mockGetUserConfig.mockReturnValue({
+      level: 2,
+      dailyBudget: 10,
+      dailySpend: 0,
+      allowedTools: [],
+      blockedTools: [],
+    });
     const { prompt } = await buildEnhancedSystemPrompt('Base', { userId: USER_ID });
     expect(prompt).toContain('## Autonomy Level: Supervised');
   });
 
   it('uses level name "Autonomous" for level 3', async () => {
-    mockGetUserConfig.mockReturnValue({ level: 3, dailyBudget: 10, dailySpend: 0, allowedTools: [], blockedTools: [] });
+    mockGetUserConfig.mockReturnValue({
+      level: 3,
+      dailyBudget: 10,
+      dailySpend: 0,
+      allowedTools: [],
+      blockedTools: [],
+    });
     const { prompt } = await buildEnhancedSystemPrompt('Base', { userId: USER_ID });
     expect(prompt).toContain('## Autonomy Level: Autonomous');
   });
 
   it('uses level name "Full" for level 4', async () => {
-    mockGetUserConfig.mockReturnValue({ level: 4, dailyBudget: 10, dailySpend: 0, allowedTools: [], blockedTools: [] });
+    mockGetUserConfig.mockReturnValue({
+      level: 4,
+      dailyBudget: 10,
+      dailySpend: 0,
+      allowedTools: [],
+      blockedTools: [],
+    });
     const { prompt } = await buildEnhancedSystemPrompt('Base', { userId: USER_ID });
     expect(prompt).toContain('## Autonomy Level: Full');
   });
 
   it('uses "Unknown" level name for out-of-range level', async () => {
-    mockGetUserConfig.mockReturnValue({ level: 99, dailyBudget: 10, dailySpend: 0, allowedTools: [], blockedTools: [] });
+    mockGetUserConfig.mockReturnValue({
+      level: 99,
+      dailyBudget: 10,
+      dailySpend: 0,
+      allowedTools: [],
+      blockedTools: [],
+    });
     const { prompt } = await buildEnhancedSystemPrompt('Base', { userId: USER_ID });
     expect(prompt).toContain('## Autonomy Level: Unknown');
   });
 
   it('includes level 0 behavior text', async () => {
-    mockGetUserConfig.mockReturnValue({ level: 0, dailyBudget: 10, dailySpend: 0, allowedTools: [], blockedTools: [] });
+    mockGetUserConfig.mockReturnValue({
+      level: 0,
+      dailyBudget: 10,
+      dailySpend: 0,
+      allowedTools: [],
+      blockedTools: [],
+    });
     const { prompt } = await buildEnhancedSystemPrompt('Base', { userId: USER_ID });
     expect(prompt).toContain('Ask for explicit permission before taking any action.');
   });
 
   it('includes level 1 behavior text', async () => {
-    mockGetUserConfig.mockReturnValue({ level: 1, dailyBudget: 10, dailySpend: 0, allowedTools: [], blockedTools: [] });
+    mockGetUserConfig.mockReturnValue({
+      level: 1,
+      dailyBudget: 10,
+      dailySpend: 0,
+      allowedTools: [],
+      blockedTools: [],
+    });
     const { prompt } = await buildEnhancedSystemPrompt('Base', { userId: USER_ID });
     expect(prompt).toContain('Perform read-only operations freely');
   });
 
   it('includes level 2 behavior text', async () => {
-    mockGetUserConfig.mockReturnValue({ level: 2, dailyBudget: 10, dailySpend: 0, allowedTools: [], blockedTools: [] });
+    mockGetUserConfig.mockReturnValue({
+      level: 2,
+      dailyBudget: 10,
+      dailySpend: 0,
+      allowedTools: [],
+      blockedTools: [],
+    });
     const { prompt } = await buildEnhancedSystemPrompt('Base', { userId: USER_ID });
     expect(prompt).toContain('Perform most operations freely');
   });
 
   it('includes level 3 behavior text', async () => {
-    mockGetUserConfig.mockReturnValue({ level: 3, dailyBudget: 10, dailySpend: 0, allowedTools: [], blockedTools: [] });
+    mockGetUserConfig.mockReturnValue({
+      level: 3,
+      dailyBudget: 10,
+      dailySpend: 0,
+      allowedTools: [],
+      blockedTools: [],
+    });
     const { prompt } = await buildEnhancedSystemPrompt('Base', { userId: USER_ID });
     expect(prompt).toContain('Operate autonomously');
   });
 
   it('includes level 4 behavior text', async () => {
-    mockGetUserConfig.mockReturnValue({ level: 4, dailyBudget: 10, dailySpend: 0, allowedTools: [], blockedTools: [] });
+    mockGetUserConfig.mockReturnValue({
+      level: 4,
+      dailyBudget: 10,
+      dailySpend: 0,
+      allowedTools: [],
+      blockedTools: [],
+    });
     const { prompt } = await buildEnhancedSystemPrompt('Base', { userId: USER_ID });
     expect(prompt).toContain('Full autonomy');
   });
 
   it('falls back to level 2 behavior text for unknown level', async () => {
-    mockGetUserConfig.mockReturnValue({ level: 99, dailyBudget: 10, dailySpend: 0, allowedTools: [], blockedTools: [] });
+    mockGetUserConfig.mockReturnValue({
+      level: 99,
+      dailyBudget: 10,
+      dailySpend: 0,
+      allowedTools: [],
+      blockedTools: [],
+    });
     const { prompt } = await buildEnhancedSystemPrompt('Base', { userId: USER_ID });
     expect(prompt).toContain('Perform most operations freely');
   });
 
   it('shows correct daily budget remaining', async () => {
-    mockGetUserConfig.mockReturnValue({ level: 2, dailyBudget: 20, dailySpend: 7.50, allowedTools: [], blockedTools: [] });
+    mockGetUserConfig.mockReturnValue({
+      level: 2,
+      dailyBudget: 20,
+      dailySpend: 7.5,
+      allowedTools: [],
+      blockedTools: [],
+    });
     const { prompt } = await buildEnhancedSystemPrompt('Base', { userId: USER_ID });
     expect(prompt).toContain('Daily budget remaining: $12.50');
   });
 
   it('shows $0.00 when budget is exhausted', async () => {
-    mockGetUserConfig.mockReturnValue({ level: 2, dailyBudget: 10, dailySpend: 10, allowedTools: [], blockedTools: [] });
+    mockGetUserConfig.mockReturnValue({
+      level: 2,
+      dailyBudget: 10,
+      dailySpend: 10,
+      allowedTools: [],
+      blockedTools: [],
+    });
     const { prompt } = await buildEnhancedSystemPrompt('Base', { userId: USER_ID });
     expect(prompt).toContain('Daily budget remaining: $0.00');
   });
@@ -579,13 +665,17 @@ describe('checkToolCallApproval', () => {
       allowedTools: [],
       blockedTools: [],
     });
-    vi.mocked(assessRisk).mockReturnValue({ level: 'low', requiresApproval: false } as ReturnType<typeof assessRisk>);
+    vi.mocked(assessRisk).mockReturnValue({ level: 'low', requiresApproval: false } as ReturnType<
+      typeof assessRisk
+    >);
   });
 
   // --- No approval required ---
 
   it('auto-approves when risk.requiresApproval is false', async () => {
-    vi.mocked(assessRisk).mockReturnValue({ level: 'low', requiresApproval: false } as ReturnType<typeof assessRisk>);
+    vi.mocked(assessRisk).mockReturnValue({ level: 'low', requiresApproval: false } as ReturnType<
+      typeof assessRisk
+    >);
     const result = await checkToolCallApproval(USER_ID, makeToolCall('fetch_url'));
     expect(result.approved).toBe(true);
     expect(result.requiresApproval).toBe(false);
@@ -601,7 +691,9 @@ describe('checkToolCallApproval', () => {
   // --- allowedTools ---
 
   it('auto-approves tool in allowedTools even if requiresApproval=true', async () => {
-    vi.mocked(assessRisk).mockReturnValue({ level: 'high', requiresApproval: true } as ReturnType<typeof assessRisk>);
+    vi.mocked(assessRisk).mockReturnValue({ level: 'high', requiresApproval: true } as ReturnType<
+      typeof assessRisk
+    >);
     mockGetUserConfig.mockReturnValue({
       level: 0,
       dailyBudget: 10,
@@ -615,7 +707,10 @@ describe('checkToolCallApproval', () => {
   });
 
   it('does not auto-approve tool not in allowedTools', async () => {
-    vi.mocked(assessRisk).mockReturnValue({ level: 'critical', requiresApproval: true } as ReturnType<typeof assessRisk>);
+    vi.mocked(assessRisk).mockReturnValue({
+      level: 'critical',
+      requiresApproval: true,
+    } as ReturnType<typeof assessRisk>);
     mockGetUserConfig.mockReturnValue({
       level: 0,
       dailyBudget: 10,
@@ -630,7 +725,9 @@ describe('checkToolCallApproval', () => {
   // --- blockedTools ---
 
   it('blocks tool in blockedTools with a reason', async () => {
-    vi.mocked(assessRisk).mockReturnValue({ level: 'low', requiresApproval: true } as ReturnType<typeof assessRisk>);
+    vi.mocked(assessRisk).mockReturnValue({ level: 'low', requiresApproval: true } as ReturnType<
+      typeof assessRisk
+    >);
     mockGetUserConfig.mockReturnValue({
       level: 3,
       dailyBudget: 10,
@@ -645,7 +742,9 @@ describe('checkToolCallApproval', () => {
   });
 
   it('includes requiresApproval=true for blocked tool', async () => {
-    vi.mocked(assessRisk).mockReturnValue({ level: 'low', requiresApproval: true } as ReturnType<typeof assessRisk>);
+    vi.mocked(assessRisk).mockReturnValue({ level: 'low', requiresApproval: true } as ReturnType<
+      typeof assessRisk
+    >);
     mockGetUserConfig.mockReturnValue({
       level: 3,
       dailyBudget: 10,
@@ -660,31 +759,64 @@ describe('checkToolCallApproval', () => {
   // --- Level >= 2 (Supervised) ---
 
   it('level 2 + medium risk + requiresApproval=true → auto-approve', async () => {
-    vi.mocked(assessRisk).mockReturnValue({ level: 'medium', requiresApproval: true } as ReturnType<typeof assessRisk>);
-    mockGetUserConfig.mockReturnValue({ level: 2, dailyBudget: 10, dailySpend: 0, allowedTools: [], blockedTools: [] });
+    vi.mocked(assessRisk).mockReturnValue({ level: 'medium', requiresApproval: true } as ReturnType<
+      typeof assessRisk
+    >);
+    mockGetUserConfig.mockReturnValue({
+      level: 2,
+      dailyBudget: 10,
+      dailySpend: 0,
+      allowedTools: [],
+      blockedTools: [],
+    });
     const result = await checkToolCallApproval(USER_ID, makeToolCall('fetch_url'));
     expect(result.approved).toBe(true);
     expect(result.requiresApproval).toBe(false);
   });
 
   it('level 2 + low risk → auto-approve', async () => {
-    vi.mocked(assessRisk).mockReturnValue({ level: 'low', requiresApproval: true } as ReturnType<typeof assessRisk>);
-    mockGetUserConfig.mockReturnValue({ level: 2, dailyBudget: 10, dailySpend: 0, allowedTools: [], blockedTools: [] });
+    vi.mocked(assessRisk).mockReturnValue({ level: 'low', requiresApproval: true } as ReturnType<
+      typeof assessRisk
+    >);
+    mockGetUserConfig.mockReturnValue({
+      level: 2,
+      dailyBudget: 10,
+      dailySpend: 0,
+      allowedTools: [],
+      blockedTools: [],
+    });
     const result = await checkToolCallApproval(USER_ID, makeToolCall('fetch_url'));
     expect(result.approved).toBe(true);
   });
 
   it('level 2 + high risk → requires approval', async () => {
-    vi.mocked(assessRisk).mockReturnValue({ level: 'high', requiresApproval: true } as ReturnType<typeof assessRisk>);
-    mockGetUserConfig.mockReturnValue({ level: 2, dailyBudget: 10, dailySpend: 0, allowedTools: [], blockedTools: [] });
+    vi.mocked(assessRisk).mockReturnValue({ level: 'high', requiresApproval: true } as ReturnType<
+      typeof assessRisk
+    >);
+    mockGetUserConfig.mockReturnValue({
+      level: 2,
+      dailyBudget: 10,
+      dailySpend: 0,
+      allowedTools: [],
+      blockedTools: [],
+    });
     const result = await checkToolCallApproval(USER_ID, makeToolCall('make_payment'));
     expect(result.approved).toBe(false);
     expect(result.requiresApproval).toBe(true);
   });
 
   it('level 2 + critical risk → requires approval', async () => {
-    vi.mocked(assessRisk).mockReturnValue({ level: 'critical', requiresApproval: true } as ReturnType<typeof assessRisk>);
-    mockGetUserConfig.mockReturnValue({ level: 2, dailyBudget: 10, dailySpend: 0, allowedTools: [], blockedTools: [] });
+    vi.mocked(assessRisk).mockReturnValue({
+      level: 'critical',
+      requiresApproval: true,
+    } as ReturnType<typeof assessRisk>);
+    mockGetUserConfig.mockReturnValue({
+      level: 2,
+      dailyBudget: 10,
+      dailySpend: 0,
+      allowedTools: [],
+      blockedTools: [],
+    });
     const result = await checkToolCallApproval(USER_ID, makeToolCall('make_payment'));
     expect(result.approved).toBe(false);
   });
@@ -692,16 +824,33 @@ describe('checkToolCallApproval', () => {
   // --- Level >= 3 (Autonomous) ---
 
   it('level 3 + high risk → auto-approve', async () => {
-    vi.mocked(assessRisk).mockReturnValue({ level: 'high', requiresApproval: true } as ReturnType<typeof assessRisk>);
-    mockGetUserConfig.mockReturnValue({ level: 3, dailyBudget: 10, dailySpend: 0, allowedTools: [], blockedTools: [] });
+    vi.mocked(assessRisk).mockReturnValue({ level: 'high', requiresApproval: true } as ReturnType<
+      typeof assessRisk
+    >);
+    mockGetUserConfig.mockReturnValue({
+      level: 3,
+      dailyBudget: 10,
+      dailySpend: 0,
+      allowedTools: [],
+      blockedTools: [],
+    });
     const result = await checkToolCallApproval(USER_ID, makeToolCall('execute_code'));
     expect(result.approved).toBe(true);
     expect(result.requiresApproval).toBe(false);
   });
 
   it('level 3 + critical risk → requires approval', async () => {
-    vi.mocked(assessRisk).mockReturnValue({ level: 'critical', requiresApproval: true } as ReturnType<typeof assessRisk>);
-    mockGetUserConfig.mockReturnValue({ level: 3, dailyBudget: 10, dailySpend: 0, allowedTools: [], blockedTools: [] });
+    vi.mocked(assessRisk).mockReturnValue({
+      level: 'critical',
+      requiresApproval: true,
+    } as ReturnType<typeof assessRisk>);
+    mockGetUserConfig.mockReturnValue({
+      level: 3,
+      dailyBudget: 10,
+      dailySpend: 0,
+      allowedTools: [],
+      blockedTools: [],
+    });
     const result = await checkToolCallApproval(USER_ID, makeToolCall('make_payment'));
     expect(result.approved).toBe(false);
   });
@@ -709,15 +858,32 @@ describe('checkToolCallApproval', () => {
   // --- Level >= 4 (Full) ---
 
   it('level 4 + high risk → auto-approve', async () => {
-    vi.mocked(assessRisk).mockReturnValue({ level: 'high', requiresApproval: true } as ReturnType<typeof assessRisk>);
-    mockGetUserConfig.mockReturnValue({ level: 4, dailyBudget: 10, dailySpend: 0, allowedTools: [], blockedTools: [] });
+    vi.mocked(assessRisk).mockReturnValue({ level: 'high', requiresApproval: true } as ReturnType<
+      typeof assessRisk
+    >);
+    mockGetUserConfig.mockReturnValue({
+      level: 4,
+      dailyBudget: 10,
+      dailySpend: 0,
+      allowedTools: [],
+      blockedTools: [],
+    });
     const result = await checkToolCallApproval(USER_ID, makeToolCall('execute_code'));
     expect(result.approved).toBe(true);
   });
 
   it('level 4 + critical risk → still requires approval', async () => {
-    vi.mocked(assessRisk).mockReturnValue({ level: 'critical', requiresApproval: true } as ReturnType<typeof assessRisk>);
-    mockGetUserConfig.mockReturnValue({ level: 4, dailyBudget: 10, dailySpend: 0, allowedTools: [], blockedTools: [] });
+    vi.mocked(assessRisk).mockReturnValue({
+      level: 'critical',
+      requiresApproval: true,
+    } as ReturnType<typeof assessRisk>);
+    mockGetUserConfig.mockReturnValue({
+      level: 4,
+      dailyBudget: 10,
+      dailySpend: 0,
+      allowedTools: [],
+      blockedTools: [],
+    });
     const result = await checkToolCallApproval(USER_ID, makeToolCall('transfer_funds'));
     expect(result.approved).toBe(false);
     expect(result.requiresApproval).toBe(true);
@@ -726,23 +892,48 @@ describe('checkToolCallApproval', () => {
   // --- Level 0 / 1 ---
 
   it('level 0 + any risk requiring approval → requires approval', async () => {
-    vi.mocked(assessRisk).mockReturnValue({ level: 'medium', requiresApproval: true } as ReturnType<typeof assessRisk>);
-    mockGetUserConfig.mockReturnValue({ level: 0, dailyBudget: 10, dailySpend: 0, allowedTools: [], blockedTools: [] });
+    vi.mocked(assessRisk).mockReturnValue({ level: 'medium', requiresApproval: true } as ReturnType<
+      typeof assessRisk
+    >);
+    mockGetUserConfig.mockReturnValue({
+      level: 0,
+      dailyBudget: 10,
+      dailySpend: 0,
+      allowedTools: [],
+      blockedTools: [],
+    });
     const result = await checkToolCallApproval(USER_ID, makeToolCall('fetch_url'));
     expect(result.approved).toBe(false);
     expect(result.requiresApproval).toBe(true);
   });
 
   it('level 1 + high risk requiring approval → requires approval', async () => {
-    vi.mocked(assessRisk).mockReturnValue({ level: 'high', requiresApproval: true } as ReturnType<typeof assessRisk>);
-    mockGetUserConfig.mockReturnValue({ level: 1, dailyBudget: 10, dailySpend: 0, allowedTools: [], blockedTools: [] });
+    vi.mocked(assessRisk).mockReturnValue({ level: 'high', requiresApproval: true } as ReturnType<
+      typeof assessRisk
+    >);
+    mockGetUserConfig.mockReturnValue({
+      level: 1,
+      dailyBudget: 10,
+      dailySpend: 0,
+      allowedTools: [],
+      blockedTools: [],
+    });
     const result = await checkToolCallApproval(USER_ID, makeToolCall('send_email'));
     expect(result.approved).toBe(false);
   });
 
   it('approval reason includes tool name and risk level', async () => {
-    vi.mocked(assessRisk).mockReturnValue({ level: 'critical', requiresApproval: true } as ReturnType<typeof assessRisk>);
-    mockGetUserConfig.mockReturnValue({ level: 0, dailyBudget: 10, dailySpend: 0, allowedTools: [], blockedTools: [] });
+    vi.mocked(assessRisk).mockReturnValue({
+      level: 'critical',
+      requiresApproval: true,
+    } as ReturnType<typeof assessRisk>);
+    mockGetUserConfig.mockReturnValue({
+      level: 0,
+      dailyBudget: 10,
+      dailySpend: 0,
+      allowedTools: [],
+      blockedTools: [],
+    });
     const result = await checkToolCallApproval(USER_ID, makeToolCall('make_payment'));
     expect(result.reason).toContain('make_payment');
     expect(result.reason).toContain('critical');
@@ -751,7 +942,9 @@ describe('checkToolCallApproval', () => {
   // --- safeJsonParse (tested via arguments parsing) ---
 
   it('handles malformed JSON arguments gracefully (safeJsonParse fallback)', async () => {
-    vi.mocked(assessRisk).mockReturnValue({ level: 'low', requiresApproval: false } as ReturnType<typeof assessRisk>);
+    vi.mocked(assessRisk).mockReturnValue({ level: 'low', requiresApproval: false } as ReturnType<
+      typeof assessRisk
+    >);
     const tc = makeToolCall('fetch_url', '{not valid json}');
     await expect(checkToolCallApproval(USER_ID, tc)).resolves.toMatchObject({ approved: true });
     // assessRisk was called with the fallback empty object
@@ -761,7 +954,9 @@ describe('checkToolCallApproval', () => {
   });
 
   it('passes valid JSON arguments to assessRisk', async () => {
-    vi.mocked(assessRisk).mockReturnValue({ level: 'low', requiresApproval: false } as ReturnType<typeof assessRisk>);
+    vi.mocked(assessRisk).mockReturnValue({ level: 'low', requiresApproval: false } as ReturnType<
+      typeof assessRisk
+    >);
     const tc = makeToolCall('fetch_url', '{"url":"https://example.com"}');
     await checkToolCallApproval(USER_ID, tc);
     const callArgs = vi.mocked(assessRisk).mock.calls[0]!;
@@ -769,7 +964,9 @@ describe('checkToolCallApproval', () => {
   });
 
   it('handles empty string arguments with fallback', async () => {
-    vi.mocked(assessRisk).mockReturnValue({ level: 'low', requiresApproval: false } as ReturnType<typeof assessRisk>);
+    vi.mocked(assessRisk).mockReturnValue({ level: 'low', requiresApproval: false } as ReturnType<
+      typeof assessRisk
+    >);
     const tc = { id: 'tc', name: 'fetch_url', arguments: '' };
     await expect(checkToolCallApproval(USER_ID, tc)).resolves.toMatchObject({ approved: true });
     const callArgs = vi.mocked(assessRisk).mock.calls[0]!;
@@ -777,7 +974,9 @@ describe('checkToolCallApproval', () => {
   });
 
   it('handles undefined arguments with fallback', async () => {
-    vi.mocked(assessRisk).mockReturnValue({ level: 'low', requiresApproval: false } as ReturnType<typeof assessRisk>);
+    vi.mocked(assessRisk).mockReturnValue({ level: 'low', requiresApproval: false } as ReturnType<
+      typeof assessRisk
+    >);
     const tc = { id: 'tc', name: 'fetch_url', arguments: undefined as unknown as string };
     await expect(checkToolCallApproval(USER_ID, tc)).resolves.toMatchObject({ approved: true });
   });
@@ -785,68 +984,150 @@ describe('checkToolCallApproval', () => {
   // --- mapToolToCategory (tested indirectly via assessRisk first arg) ---
 
   it('maps create_memory to data_modification', async () => {
-    vi.mocked(assessRisk).mockReturnValue({ level: 'low', requiresApproval: false } as ReturnType<typeof assessRisk>);
+    vi.mocked(assessRisk).mockReturnValue({ level: 'low', requiresApproval: false } as ReturnType<
+      typeof assessRisk
+    >);
     await checkToolCallApproval(USER_ID, makeToolCall('create_memory'));
-    expect(assessRisk).toHaveBeenCalledWith('data_modification', expect.any(String), expect.any(Object), expect.any(Object), expect.any(Object));
+    expect(assessRisk).toHaveBeenCalledWith(
+      'data_modification',
+      expect.any(String),
+      expect.any(Object),
+      expect.any(Object),
+      expect.any(Object)
+    );
   });
 
   it('maps delete_memory to data_modification', async () => {
-    vi.mocked(assessRisk).mockReturnValue({ level: 'low', requiresApproval: false } as ReturnType<typeof assessRisk>);
+    vi.mocked(assessRisk).mockReturnValue({ level: 'low', requiresApproval: false } as ReturnType<
+      typeof assessRisk
+    >);
     await checkToolCallApproval(USER_ID, makeToolCall('delete_memory'));
-    expect(assessRisk).toHaveBeenCalledWith('data_modification', expect.any(String), expect.any(Object), expect.any(Object), expect.any(Object));
+    expect(assessRisk).toHaveBeenCalledWith(
+      'data_modification',
+      expect.any(String),
+      expect.any(Object),
+      expect.any(Object),
+      expect.any(Object)
+    );
   });
 
   it('maps send_email to external_communication', async () => {
-    vi.mocked(assessRisk).mockReturnValue({ level: 'low', requiresApproval: false } as ReturnType<typeof assessRisk>);
+    vi.mocked(assessRisk).mockReturnValue({ level: 'low', requiresApproval: false } as ReturnType<
+      typeof assessRisk
+    >);
     await checkToolCallApproval(USER_ID, makeToolCall('send_email'));
-    expect(assessRisk).toHaveBeenCalledWith('external_communication', expect.any(String), expect.any(Object), expect.any(Object), expect.any(Object));
+    expect(assessRisk).toHaveBeenCalledWith(
+      'external_communication',
+      expect.any(String),
+      expect.any(Object),
+      expect.any(Object),
+      expect.any(Object)
+    );
   });
 
   it('maps send_notification to external_communication', async () => {
-    vi.mocked(assessRisk).mockReturnValue({ level: 'low', requiresApproval: false } as ReturnType<typeof assessRisk>);
+    vi.mocked(assessRisk).mockReturnValue({ level: 'low', requiresApproval: false } as ReturnType<
+      typeof assessRisk
+    >);
     await checkToolCallApproval(USER_ID, makeToolCall('send_notification'));
-    expect(assessRisk).toHaveBeenCalledWith('external_communication', expect.any(String), expect.any(Object), expect.any(Object), expect.any(Object));
+    expect(assessRisk).toHaveBeenCalledWith(
+      'external_communication',
+      expect.any(String),
+      expect.any(Object),
+      expect.any(Object),
+      expect.any(Object)
+    );
   });
 
   it('maps fetch_url to api_call', async () => {
-    vi.mocked(assessRisk).mockReturnValue({ level: 'low', requiresApproval: false } as ReturnType<typeof assessRisk>);
+    vi.mocked(assessRisk).mockReturnValue({ level: 'low', requiresApproval: false } as ReturnType<
+      typeof assessRisk
+    >);
     await checkToolCallApproval(USER_ID, makeToolCall('fetch_url'));
-    expect(assessRisk).toHaveBeenCalledWith('api_call', expect.any(String), expect.any(Object), expect.any(Object), expect.any(Object));
+    expect(assessRisk).toHaveBeenCalledWith(
+      'api_call',
+      expect.any(String),
+      expect.any(Object),
+      expect.any(Object),
+      expect.any(Object)
+    );
   });
 
   it('maps execute_code to system_command', async () => {
-    vi.mocked(assessRisk).mockReturnValue({ level: 'low', requiresApproval: false } as ReturnType<typeof assessRisk>);
+    vi.mocked(assessRisk).mockReturnValue({ level: 'low', requiresApproval: false } as ReturnType<
+      typeof assessRisk
+    >);
     await checkToolCallApproval(USER_ID, makeToolCall('execute_code'));
-    expect(assessRisk).toHaveBeenCalledWith('system_command', expect.any(String), expect.any(Object), expect.any(Object), expect.any(Object));
+    expect(assessRisk).toHaveBeenCalledWith(
+      'system_command',
+      expect.any(String),
+      expect.any(Object),
+      expect.any(Object),
+      expect.any(Object)
+    );
   });
 
   it('maps file_write to file_operation', async () => {
-    vi.mocked(assessRisk).mockReturnValue({ level: 'low', requiresApproval: false } as ReturnType<typeof assessRisk>);
+    vi.mocked(assessRisk).mockReturnValue({ level: 'low', requiresApproval: false } as ReturnType<
+      typeof assessRisk
+    >);
     await checkToolCallApproval(USER_ID, makeToolCall('file_write'));
-    expect(assessRisk).toHaveBeenCalledWith('file_operation', expect.any(String), expect.any(Object), expect.any(Object), expect.any(Object));
+    expect(assessRisk).toHaveBeenCalledWith(
+      'file_operation',
+      expect.any(String),
+      expect.any(Object),
+      expect.any(Object),
+      expect.any(Object)
+    );
   });
 
   it('maps make_payment to financial', async () => {
-    vi.mocked(assessRisk).mockReturnValue({ level: 'low', requiresApproval: false } as ReturnType<typeof assessRisk>);
+    vi.mocked(assessRisk).mockReturnValue({ level: 'low', requiresApproval: false } as ReturnType<
+      typeof assessRisk
+    >);
     await checkToolCallApproval(USER_ID, makeToolCall('make_payment'));
-    expect(assessRisk).toHaveBeenCalledWith('financial', expect.any(String), expect.any(Object), expect.any(Object), expect.any(Object));
+    expect(assessRisk).toHaveBeenCalledWith(
+      'financial',
+      expect.any(String),
+      expect.any(Object),
+      expect.any(Object),
+      expect.any(Object)
+    );
   });
 
   it('maps unknown tool to tool_execution', async () => {
-    vi.mocked(assessRisk).mockReturnValue({ level: 'low', requiresApproval: false } as ReturnType<typeof assessRisk>);
+    vi.mocked(assessRisk).mockReturnValue({ level: 'low', requiresApproval: false } as ReturnType<
+      typeof assessRisk
+    >);
     await checkToolCallApproval(USER_ID, makeToolCall('completely_unknown_tool'));
-    expect(assessRisk).toHaveBeenCalledWith('tool_execution', expect.any(String), expect.any(Object), expect.any(Object), expect.any(Object));
+    expect(assessRisk).toHaveBeenCalledWith(
+      'tool_execution',
+      expect.any(String),
+      expect.any(Object),
+      expect.any(Object),
+      expect.any(Object)
+    );
   });
 
   it('resolves namespaced tool via getBaseName fallback (e.g. plugin.send_email)', async () => {
-    vi.mocked(assessRisk).mockReturnValue({ level: 'low', requiresApproval: false } as ReturnType<typeof assessRisk>);
+    vi.mocked(assessRisk).mockReturnValue({ level: 'low', requiresApproval: false } as ReturnType<
+      typeof assessRisk
+    >);
     // getBaseName mock returns last segment: 'send_email'
     await checkToolCallApproval(USER_ID, makeToolCall('plugin.abc.send_email'));
-    expect(assessRisk).toHaveBeenCalledWith('external_communication', expect.any(String), expect.any(Object), expect.any(Object), expect.any(Object));
+    expect(assessRisk).toHaveBeenCalledWith(
+      'external_communication',
+      expect.any(String),
+      expect.any(Object),
+      expect.any(Object),
+      expect.any(Object)
+    );
   });
 
   it('uses default context {} when not provided', async () => {
-    vi.mocked(assessRisk).mockReturnValue({ level: 'low', requiresApproval: false } as ReturnType<typeof assessRisk>);
+    vi.mocked(assessRisk).mockReturnValue({ level: 'low', requiresApproval: false } as ReturnType<
+      typeof assessRisk
+    >);
     await checkToolCallApproval(USER_ID, makeToolCall('fetch_url'));
     const callArgs = vi.mocked(assessRisk).mock.calls[0]!;
     // context param is 4th argument (index 3)
@@ -854,7 +1135,9 @@ describe('checkToolCallApproval', () => {
   });
 
   it('forwards provided context to assessRisk', async () => {
-    vi.mocked(assessRisk).mockReturnValue({ level: 'low', requiresApproval: false } as ReturnType<typeof assessRisk>);
+    vi.mocked(assessRisk).mockReturnValue({ level: 'low', requiresApproval: false } as ReturnType<
+      typeof assessRisk
+    >);
     const ctx = { conversationId: 'conv-1', agentId: 'agent-1' };
     await checkToolCallApproval(USER_ID, makeToolCall('fetch_url'), ctx);
     const callArgs = vi.mocked(assessRisk).mock.calls[0]!;
@@ -925,7 +1208,11 @@ describe('evaluateTriggers', () => {
   it('fires condition trigger when response contains keyword', async () => {
     const trigger = makeTrigger('condition', { condition: 'response_contains: error' }, 't-2');
     mockTriggerService.listTriggers.mockResolvedValue([trigger]);
-    const result = await evaluateTriggers(USER_ID, 'what happened', 'there was an error in the system');
+    const result = await evaluateTriggers(
+      USER_ID,
+      'what happened',
+      'there was an error in the system'
+    );
     expect(result.triggered).toContain('t-2');
   });
 
@@ -1196,9 +1483,7 @@ describe('updateGoalProgress', () => {
     const step1 = makeStep('Step in Goal A', 'pending');
     const step2 = makeStep('Step in Goal B', 'pending');
     mockGoalService.getActive.mockResolvedValue([g1, g2]);
-    mockGoalService.getSteps
-      .mockResolvedValueOnce([step1])
-      .mockResolvedValueOnce([step2]);
+    mockGoalService.getSteps.mockResolvedValueOnce([step1]).mockResolvedValueOnce([step2]);
     const response = 'Step in Goal A is completed and Step in Goal B is done';
     await updateGoalProgress(USER_ID, 'msg', response);
     expect(mockGoalService.completeStep).toHaveBeenCalledTimes(2);
@@ -1237,7 +1522,13 @@ describe('getOrchestratorStats', () => {
     mockMemoryService.getStats.mockResolvedValue({ total: 0 });
     mockGoalService.getActive.mockResolvedValue([]);
     mockTriggerService.listTriggers.mockResolvedValue([]);
-    mockGetUserConfig.mockReturnValue({ level: 2, dailyBudget: 10, dailySpend: 0, allowedTools: [], blockedTools: [] });
+    mockGetUserConfig.mockReturnValue({
+      level: 2,
+      dailyBudget: 10,
+      dailySpend: 0,
+      allowedTools: [],
+      blockedTools: [],
+    });
     mockGetPendingActions.mockReturnValue([]);
   });
 
@@ -1269,10 +1560,7 @@ describe('getOrchestratorStats', () => {
   });
 
   it('returns activeTriggers as length of listTriggers result', async () => {
-    mockTriggerService.listTriggers.mockResolvedValue([
-      { id: 't1' },
-      { id: 't2' },
-    ]);
+    mockTriggerService.listTriggers.mockResolvedValue([{ id: 't1' }, { id: 't2' }]);
     const stats = await getOrchestratorStats(USER_ID);
     expect(stats.activeTriggers).toBe(2);
   });
@@ -1284,7 +1572,13 @@ describe('getOrchestratorStats', () => {
   });
 
   it('returns autonomyLevel from user config', async () => {
-    mockGetUserConfig.mockReturnValue({ level: 3, dailyBudget: 10, dailySpend: 0, allowedTools: [], blockedTools: [] });
+    mockGetUserConfig.mockReturnValue({
+      level: 3,
+      dailyBudget: 10,
+      dailySpend: 0,
+      allowedTools: [],
+      blockedTools: [],
+    });
     const stats = await getOrchestratorStats(USER_ID);
     expect(stats.autonomyLevel).toBe(3);
   });
@@ -1325,13 +1619,25 @@ describe('getOrchestratorStats', () => {
   });
 
   it('returns autonomyLevel 0 for manual config', async () => {
-    mockGetUserConfig.mockReturnValue({ level: 0, dailyBudget: 5, dailySpend: 0, allowedTools: [], blockedTools: [] });
+    mockGetUserConfig.mockReturnValue({
+      level: 0,
+      dailyBudget: 5,
+      dailySpend: 0,
+      allowedTools: [],
+      blockedTools: [],
+    });
     const stats = await getOrchestratorStats(USER_ID);
     expect(stats.autonomyLevel).toBe(0);
   });
 
   it('returns autonomyLevel 4 for full autonomy config', async () => {
-    mockGetUserConfig.mockReturnValue({ level: 4, dailyBudget: 100, dailySpend: 50, allowedTools: [], blockedTools: [] });
+    mockGetUserConfig.mockReturnValue({
+      level: 4,
+      dailyBudget: 100,
+      dailySpend: 50,
+      allowedTools: [],
+      blockedTools: [],
+    });
     const stats = await getOrchestratorStats(USER_ID);
     expect(stats.autonomyLevel).toBe(4);
   });

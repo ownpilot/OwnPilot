@@ -18,15 +18,13 @@ const mockEmit = vi.fn();
 
 vi.mock('@ownpilot/core', () => ({
   getEventBus: () => ({ emit: mockEmit }),
-  createEvent: vi.fn(
-    (type: string, category: string, source: string, data: unknown) => ({
-      type,
-      category,
-      source,
-      data,
-      timestamp: new Date().toISOString(),
-    }),
-  ),
+  createEvent: vi.fn((type: string, category: string, source: string, data: unknown) => ({
+    type,
+    category,
+    source,
+    data,
+    timestamp: new Date().toISOString(),
+  })),
   EventTypes: {
     RESOURCE_CREATED: 'resource.created',
     RESOURCE_UPDATED: 'resource.updated',
@@ -353,13 +351,15 @@ describe('MemoryService', () => {
         'resource.created',
         'resource',
         'memory-service',
-        { resourceType: 'memory', id: 'mem-99' },
+        { resourceType: 'memory', id: 'mem-99' }
       );
       expect(mockEmit).toHaveBeenCalledOnce();
     });
 
     it('should throw MemoryServiceError with VALIDATION_ERROR code for empty content', async () => {
-      const err = await service.createMemory('user-1', { type: 'fact', content: '' }).catch((e) => e);
+      const err = await service
+        .createMemory('user-1', { type: 'fact', content: '' })
+        .catch((e) => e);
       expect(err).toBeInstanceOf(MemoryServiceError);
       expect(err.code).toBe('VALIDATION_ERROR');
       expect(err.name).toBe('MemoryServiceError');
@@ -367,13 +367,13 @@ describe('MemoryService', () => {
 
     it('should throw VALIDATION_ERROR when content is null-ish', async () => {
       await expect(
-        service.createMemory('user-1', { type: 'fact', content: null as unknown as string }),
+        service.createMemory('user-1', { type: 'fact', content: null as unknown as string })
       ).rejects.toThrow(MemoryServiceError);
     });
 
     it('should throw VALIDATION_ERROR when type is falsy', async () => {
       await expect(
-        service.createMemory('user-1', { type: '' as unknown as string, content: 'valid' }),
+        service.createMemory('user-1', { type: '' as unknown as string, content: 'valid' })
       ).rejects.toThrow(/Type is required/);
     });
 
@@ -448,7 +448,7 @@ describe('MemoryService', () => {
 
     it('should throw VALIDATION_ERROR for missing type', async () => {
       await expect(
-        service.rememberMemory('user-1', { type: undefined as unknown as string, content: 'x' }),
+        service.rememberMemory('user-1', { type: undefined as unknown as string, content: 'x' })
       ).rejects.toThrow(/Type is required/);
       expect(memoryRepo.findSimilar).not.toHaveBeenCalled();
     });
@@ -546,7 +546,7 @@ describe('MemoryService', () => {
         'resource.updated',
         'resource',
         'memory-service',
-        { resourceType: 'memory', id: 'mem-1', changes },
+        { resourceType: 'memory', id: 'mem-1', changes }
       );
     });
   });
@@ -759,12 +759,10 @@ describe('PlanService', () => {
 
       const result = await service.createPlan('user-1', { name: 'Ship MVP', goal: 'Launch' });
       expect(result).toBe(plan);
-      expect(mockCreateEvent).toHaveBeenCalledWith(
-        'resource.created',
-        'resource',
-        'plan-service',
-        { resourceType: 'plan', id: 'plan-1' },
-      );
+      expect(mockCreateEvent).toHaveBeenCalledWith('resource.created', 'resource', 'plan-service', {
+        resourceType: 'plan',
+        id: 'plan-1',
+      });
     });
 
     it('should throw PlanServiceError with VALIDATION_ERROR for empty name', async () => {
@@ -775,9 +773,9 @@ describe('PlanService', () => {
     });
 
     it('should throw VALIDATION_ERROR for whitespace-only name', async () => {
-      await expect(
-        service.createPlan('user-1', { name: '  \t  ', goal: 'x' }),
-      ).rejects.toThrow(/Name is required/);
+      await expect(service.createPlan('user-1', { name: '  \t  ', goal: 'x' })).rejects.toThrow(
+        /Name is required/
+      );
     });
 
     it('should throw VALIDATION_ERROR for empty goal', async () => {
@@ -788,7 +786,7 @@ describe('PlanService', () => {
 
     it('should throw VALIDATION_ERROR for null goal', async () => {
       await expect(
-        service.createPlan('user-1', { name: 'OK', goal: null as unknown as string }),
+        service.createPlan('user-1', { name: 'OK', goal: null as unknown as string })
       ).rejects.toThrow(/Goal is required/);
     });
 
@@ -869,12 +867,11 @@ describe('PlanService', () => {
       const updated = fakePlan({ name: 'Renamed' });
       planRepo.update.mockResolvedValue(updated);
       await service.updatePlan('user-1', 'plan-1', { name: 'Renamed' });
-      expect(mockCreateEvent).toHaveBeenCalledWith(
-        'resource.updated',
-        'resource',
-        'plan-service',
-        { resourceType: 'plan', id: 'plan-1', changes: { name: 'Renamed' } },
-      );
+      expect(mockCreateEvent).toHaveBeenCalledWith('resource.updated', 'resource', 'plan-service', {
+        resourceType: 'plan',
+        id: 'plan-1',
+        changes: { name: 'Renamed' },
+      });
     });
 
     it('should return null and skip emit for missing plan', async () => {
@@ -1027,7 +1024,9 @@ describe('PlanService', () => {
     it('should forward all parameters to repo', async () => {
       planRepo.logEvent.mockResolvedValue(undefined);
       await service.logEvent('user-1', 'plan-1', 'step_completed', 'step-1', { ms: 100 });
-      expect(planRepo.logEvent).toHaveBeenCalledWith('plan-1', 'step_completed', 'step-1', { ms: 100 });
+      expect(planRepo.logEvent).toHaveBeenCalledWith('plan-1', 'step_completed', 'step-1', {
+        ms: 100,
+      });
     });
 
     it('should handle missing optional params', async () => {
@@ -1097,12 +1096,10 @@ describe('GoalService', () => {
       goalRepo.create.mockResolvedValue(goal);
       const result = await service.createGoal('user-1', { title: 'Learn Rust' });
       expect(result).toBe(goal);
-      expect(mockCreateEvent).toHaveBeenCalledWith(
-        'resource.created',
-        'resource',
-        'goal-service',
-        { resourceType: 'goal', id: 'goal-1' },
-      );
+      expect(mockCreateEvent).toHaveBeenCalledWith('resource.created', 'resource', 'goal-service', {
+        resourceType: 'goal',
+        id: 'goal-1',
+      });
     });
 
     it('should throw GoalServiceError with VALIDATION_ERROR for empty title', async () => {
@@ -1113,12 +1110,14 @@ describe('GoalService', () => {
     });
 
     it('should throw for whitespace-only title', async () => {
-      await expect(service.createGoal('user-1', { title: '   ' })).rejects.toThrow(/Title is required/);
+      await expect(service.createGoal('user-1', { title: '   ' })).rejects.toThrow(
+        /Title is required/
+      );
     });
 
     it('should throw for null title', async () => {
       await expect(
-        service.createGoal('user-1', { title: null as unknown as string }),
+        service.createGoal('user-1', { title: null as unknown as string })
       ).rejects.toThrow(GoalServiceError);
     });
 
@@ -1185,12 +1184,11 @@ describe('GoalService', () => {
     it('should emit resource.updated with changes', async () => {
       goalRepo.update.mockResolvedValue(fakeGoal({ priority: 10 }));
       await service.updateGoal('user-1', 'goal-1', { priority: 10 });
-      expect(mockCreateEvent).toHaveBeenCalledWith(
-        'resource.updated',
-        'resource',
-        'goal-service',
-        { resourceType: 'goal', id: 'goal-1', changes: { priority: 10 } },
-      );
+      expect(mockCreateEvent).toHaveBeenCalledWith('resource.updated', 'resource', 'goal-service', {
+        resourceType: 'goal',
+        id: 'goal-1',
+        changes: { priority: 10 },
+      });
     });
 
     it('should not emit event when goal not found', async () => {
@@ -1345,9 +1343,9 @@ describe('GoalService', () => {
 
     it('should throw NOT_FOUND when goal does not exist', async () => {
       goalRepo.get.mockResolvedValue(null);
-      await expect(
-        service.decomposeGoal('user-1', 'gone', [{ title: 'x' }]),
-      ).rejects.toThrow(/Goal not found/);
+      await expect(service.decomposeGoal('user-1', 'gone', [{ title: 'x' }])).rejects.toThrow(
+        /Goal not found/
+      );
     });
 
     it('should throw when addStep returns null during decompose', async () => {
@@ -1358,10 +1356,7 @@ describe('GoalService', () => {
       goalRepo.recalculateProgress.mockResolvedValue(50);
 
       await expect(
-        service.decomposeGoal('user-1', 'goal-1', [
-          { title: 'A' },
-          { title: 'B' },
-        ]),
+        service.decomposeGoal('user-1', 'goal-1', [{ title: 'A' }, { title: 'B' }])
       ).rejects.toThrow(/Failed to create step/);
     });
 
@@ -1511,7 +1506,7 @@ describe('TriggerService', () => {
         'resource.created',
         'resource',
         'trigger-service',
-        { resourceType: 'trigger', id: 'trg-1' },
+        { resourceType: 'trigger', id: 'trg-1' }
       );
     });
 
@@ -1536,7 +1531,7 @@ describe('TriggerService', () => {
           type: 'schedule',
           config: {},
           action: { type: 'chat', payload: {} },
-        }),
+        })
       ).rejects.toThrow(/Name is required/);
     });
 
@@ -1547,7 +1542,7 @@ describe('TriggerService', () => {
           type: 'schedule',
           config: {},
           action: { type: 'chat', payload: {} },
-        }),
+        })
       ).rejects.toThrow(TriggerServiceError);
     });
 
@@ -1623,7 +1618,7 @@ describe('TriggerService', () => {
         'resource.updated',
         'resource',
         'trigger-service',
-        { resourceType: 'trigger', id: 'trg-1', changes: { enabled: false } },
+        { resourceType: 'trigger', id: 'trg-1', changes: { enabled: false } }
       );
     });
 
@@ -1704,20 +1699,57 @@ describe('TriggerService', () => {
   describe('logExecution', () => {
     it('should delegate success execution', async () => {
       triggerRepo.logExecution.mockResolvedValue(undefined);
-      await service.logExecution('user-1', 'trg-1', 'Test Trigger', 'success', { data: 1 }, undefined, 50);
-      expect(triggerRepo.logExecution).toHaveBeenCalledWith('trg-1', 'Test Trigger', 'success', { data: 1 }, undefined, 50);
+      await service.logExecution(
+        'user-1',
+        'trg-1',
+        'Test Trigger',
+        'success',
+        { data: 1 },
+        undefined,
+        50
+      );
+      expect(triggerRepo.logExecution).toHaveBeenCalledWith(
+        'trg-1',
+        'Test Trigger',
+        'success',
+        { data: 1 },
+        undefined,
+        50
+      );
     });
 
     it('should delegate failure execution with error', async () => {
       triggerRepo.logExecution.mockResolvedValue(undefined);
-      await service.logExecution('user-1', 'trg-1', 'Test Trigger', 'failure', undefined, 'Timeout', 5000);
-      expect(triggerRepo.logExecution).toHaveBeenCalledWith('trg-1', 'Test Trigger', 'failure', undefined, 'Timeout', 5000);
+      await service.logExecution(
+        'user-1',
+        'trg-1',
+        'Test Trigger',
+        'failure',
+        undefined,
+        'Timeout',
+        5000
+      );
+      expect(triggerRepo.logExecution).toHaveBeenCalledWith(
+        'trg-1',
+        'Test Trigger',
+        'failure',
+        undefined,
+        'Timeout',
+        5000
+      );
     });
 
     it('should delegate skipped execution', async () => {
       triggerRepo.logExecution.mockResolvedValue(undefined);
       await service.logExecution('user-1', 'trg-1', 'Test Trigger', 'skipped');
-      expect(triggerRepo.logExecution).toHaveBeenCalledWith('trg-1', 'Test Trigger', 'skipped', undefined, undefined, undefined);
+      expect(triggerRepo.logExecution).toHaveBeenCalledWith(
+        'trg-1',
+        'Test Trigger',
+        'skipped',
+        undefined,
+        undefined,
+        undefined
+      );
     });
   });
 
@@ -1745,7 +1777,10 @@ describe('TriggerService', () => {
     });
 
     it('should accept custom limit', async () => {
-      triggerRepo.getHistoryForTrigger.mockResolvedValue({ rows: [fakeTriggerHistory()], total: 1 });
+      triggerRepo.getHistoryForTrigger.mockResolvedValue({
+        rows: [fakeTriggerHistory()],
+        total: 1,
+      });
       await service.getHistoryForTrigger('user-1', 'trg-1', { limit: 5 });
       expect(triggerRepo.getHistoryForTrigger).toHaveBeenCalledWith('trg-1', { limit: 5 });
     });

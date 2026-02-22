@@ -20,7 +20,6 @@ import { formatBytes } from '../utils/formatters';
 import { useModalClose } from '../hooks';
 import type { FileWorkspaceInfo, WorkspaceFile } from '../api';
 
-
 interface WorkspaceStats {
   total: number;
   totalSize: number;
@@ -159,7 +158,9 @@ export function WorkspacesPage() {
     try {
       const result = await fileWorkspacesApi.cleanup({ mode, maxAgeDays });
       const label = mode === 'empty' ? 'empty' : mode === 'old' ? 'old' : 'empty + old';
-      toast.success(`Cleaned up ${result.deleted} ${label} workspace${result.deleted !== 1 ? 's' : ''}`);
+      toast.success(
+        `Cleaned up ${result.deleted} ${label} workspace${result.deleted !== 1 ? 's' : ''}`
+      );
       fetchWorkspaces();
     } catch {
       // API client handles error reporting
@@ -247,17 +248,23 @@ export function WorkspacesPage() {
             <div className="flex items-center gap-2">
               <Folder className="w-4 h-4 text-primary" />
               <span className="text-text-muted dark:text-dark-text-muted">Workspaces:</span>
-              <span className="font-medium text-text-primary dark:text-dark-text-primary">{stats.total}</span>
+              <span className="font-medium text-text-primary dark:text-dark-text-primary">
+                {stats.total}
+              </span>
             </div>
             <div className="flex items-center gap-2">
               <HardDrive className="w-4 h-4 text-primary" />
               <span className="text-text-muted dark:text-dark-text-muted">Total Size:</span>
-              <span className="font-medium text-text-primary dark:text-dark-text-primary">{formatBytes(stats.totalSize)}</span>
+              <span className="font-medium text-text-primary dark:text-dark-text-primary">
+                {formatBytes(stats.totalSize)}
+              </span>
             </div>
             <div className="flex items-center gap-2">
               <File className="w-4 h-4 text-primary" />
               <span className="text-text-muted dark:text-dark-text-muted">Files:</span>
-              <span className="font-medium text-text-primary dark:text-dark-text-primary">{stats.totalFiles}</span>
+              <span className="font-medium text-text-primary dark:text-dark-text-primary">
+                {stats.totalFiles}
+              </span>
             </div>
           </div>
         </div>
@@ -392,17 +399,20 @@ export function WorkspacesPage() {
                     >
                       Root
                     </button>
-                    {currentPath.split('/').filter(Boolean).map((part, idx, arr) => (
-                      <span key={idx} className="flex items-center gap-1">
-                        <ChevronRight className="w-4 h-4 text-text-muted" />
-                        <button
-                          onClick={() => navigateToPath(arr.slice(0, idx + 1).join('/'))}
-                          className="text-primary hover:underline"
-                        >
-                          {part}
-                        </button>
-                      </span>
-                    ))}
+                    {currentPath
+                      .split('/')
+                      .filter(Boolean)
+                      .map((part, idx, arr) => (
+                        <span key={idx} className="flex items-center gap-1">
+                          <ChevronRight className="w-4 h-4 text-text-muted" />
+                          <button
+                            onClick={() => navigateToPath(arr.slice(0, idx + 1).join('/'))}
+                            className="text-primary hover:underline"
+                          >
+                            {part}
+                          </button>
+                        </span>
+                      ))}
                   </div>
                 )}
               </div>
@@ -484,7 +494,10 @@ export function WorkspacesPage() {
 
       {/* Delete Confirmation Modal */}
       {deleteConfirm && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onDeleteBackdropClick}>
+        <div
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+          onClick={onDeleteBackdropClick}
+        >
           <div className="bg-bg-primary dark:bg-dark-bg-primary border border-border dark:border-dark-border rounded-xl shadow-xl p-6 max-w-md w-full mx-4">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 rounded-full bg-error/10 flex items-center justify-center">

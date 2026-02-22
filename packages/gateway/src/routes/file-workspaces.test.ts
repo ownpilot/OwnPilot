@@ -318,7 +318,9 @@ describe('File Workspaces Routes', () => {
 
     it('should list files in subdirectory', async () => {
       const mockWorkspace = { id: 'ws-123', path: '/tmp/ws-123' };
-      const mockFiles = [{ name: 'file2.txt', path: 'subdir/file2.txt', size: 50, isDirectory: false }];
+      const mockFiles = [
+        { name: 'file2.txt', path: 'subdir/file2.txt', size: 50, isDirectory: false },
+      ];
       vi.mocked(getSessionWorkspace).mockReturnValue(mockWorkspace);
       vi.mocked(getSessionWorkspaceFiles).mockReturnValue(mockFiles);
 
@@ -450,7 +452,11 @@ describe('File Workspaces Routes', () => {
       expect(data.success).toBe(true);
       expect(data.data.path).toBe('newfile.txt');
       expect(data.data.written).toBe(true);
-      expect(writeSessionWorkspaceFile).toHaveBeenCalledWith('ws-123', 'newfile.txt', 'File content');
+      expect(writeSessionWorkspaceFile).toHaveBeenCalledWith(
+        'ws-123',
+        'newfile.txt',
+        'File content'
+      );
     });
 
     it('should return 404 for non-existent workspace', async () => {
@@ -600,8 +606,12 @@ describe('File Workspaces Routes', () => {
       const mockStream = { on: vi.fn().mockReturnThis() };
       vi.mocked(getSessionWorkspace).mockReturnValue(mockWorkspace);
       vi.mocked(zipSessionWorkspace).mockResolvedValue(mockZipPath);
-      vi.mocked(stat).mockResolvedValue({ size: 1024 } as unknown as Awaited<ReturnType<typeof stat>>);
-      vi.mocked(createReadStream).mockReturnValue(mockStream as unknown as ReturnType<typeof createReadStream>);
+      vi.mocked(stat).mockResolvedValue({ size: 1024 } as unknown as Awaited<
+        ReturnType<typeof stat>
+      >);
+      vi.mocked(createReadStream).mockReturnValue(
+        mockStream as unknown as ReturnType<typeof createReadStream>
+      );
 
       const res = await app.request('/file-workspaces/ws-123/download');
 
@@ -637,7 +647,10 @@ describe('File Workspaces Routes', () => {
   describe('POST /file-workspaces/cleanup - Cleanup workspaces', () => {
     it('should cleanup with default mode (old) and default maxAgeDays (7)', async () => {
       vi.mocked(smartCleanupSessionWorkspaces).mockReturnValue({
-        deleted: 2, kept: 3, deletedEmpty: 0, deletedOld: 2,
+        deleted: 2,
+        kept: 3,
+        deletedEmpty: 0,
+        deletedOld: 2,
       });
 
       const res = await app.request('/file-workspaces/cleanup', {
@@ -656,7 +669,10 @@ describe('File Workspaces Routes', () => {
 
     it('should cleanup with empty mode', async () => {
       vi.mocked(smartCleanupSessionWorkspaces).mockReturnValue({
-        deleted: 1, kept: 4, deletedEmpty: 1, deletedOld: 0,
+        deleted: 1,
+        kept: 4,
+        deletedEmpty: 1,
+        deletedOld: 0,
       });
 
       const res = await app.request('/file-workspaces/cleanup', {
@@ -674,7 +690,10 @@ describe('File Workspaces Routes', () => {
 
     it('should cleanup with both mode and custom maxAgeDays', async () => {
       vi.mocked(smartCleanupSessionWorkspaces).mockReturnValue({
-        deleted: 5, kept: 0, deletedEmpty: 2, deletedOld: 4,
+        deleted: 5,
+        kept: 0,
+        deletedEmpty: 2,
+        deletedOld: 4,
       });
 
       const res = await app.request('/file-workspaces/cleanup', {
@@ -692,7 +711,10 @@ describe('File Workspaces Routes', () => {
 
     it('should clamp maxAgeDays to valid range', async () => {
       vi.mocked(smartCleanupSessionWorkspaces).mockReturnValue({
-        deleted: 0, kept: 0, deletedEmpty: 0, deletedOld: 0,
+        deleted: 0,
+        kept: 0,
+        deletedEmpty: 0,
+        deletedOld: 0,
       });
 
       // Test minimum clamp

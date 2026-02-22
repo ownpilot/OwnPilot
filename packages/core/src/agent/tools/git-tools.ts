@@ -31,7 +31,8 @@ const MAX_OUTPUT_SIZE = 100000;
 export const gitStatusTool: ToolDefinition = {
   name: 'git_status',
   brief: 'Show staged, modified, and untracked files',
-  description: 'Get the current git repository status including staged, modified, and untracked files',
+  description:
+    'Get the current git repository status including staged, modified, and untracked files',
   parameters: {
     type: 'object',
     properties: {
@@ -47,7 +48,10 @@ export const gitStatusTool: ToolDefinition = {
   },
 };
 
-export const gitStatusExecutor: ToolExecutor = async (params, _context): Promise<ToolExecutionResult> => {
+export const gitStatusExecutor: ToolExecutor = async (
+  params,
+  _context
+): Promise<ToolExecutionResult> => {
   const repoPath = (params.path as string) || process.cwd();
   const short = params.short === true;
 
@@ -84,7 +88,10 @@ export const gitStatusExecutor: ToolExecutor = async (params, _context): Promise
  * Parse git status output
  */
 function parseGitStatus(output: string, short: boolean): Record<string, unknown> {
-  const lines = output.trim().split('\n').filter(l => l);
+  const lines = output
+    .trim()
+    .split('\n')
+    .filter((l) => l);
 
   if (short) {
     const staged: string[] = [];
@@ -132,7 +139,7 @@ function parseGitStatus(output: string, short: boolean): Record<string, unknown>
 
   return {
     ...sections,
-    clean: Object.values(sections).every(arr => arr.length === 0),
+    clean: Object.values(sections).every((arr) => arr.length === 0),
   };
 }
 
@@ -175,7 +182,10 @@ export const gitDiffTool: ToolDefinition = {
   },
 };
 
-export const gitDiffExecutor: ToolExecutor = async (params, _context): Promise<ToolExecutionResult> => {
+export const gitDiffExecutor: ToolExecutor = async (
+  params,
+  _context
+): Promise<ToolExecutionResult> => {
   const repoPath = (params.path as string) || process.cwd();
   const file = params.file as string | undefined;
   const staged = params.staged === true;
@@ -190,7 +200,10 @@ export const gitDiffExecutor: ToolExecutor = async (params, _context): Promise<T
     if (stat) args.push('--stat');
     if (commit) args.push(commit);
     if (commitRange) args.push(commitRange);
-    if (file) { args.push('--'); args.push(file); }
+    if (file) {
+      args.push('--');
+      args.push(file);
+    }
 
     const stdout = await gitExec(args, repoPath);
 
@@ -272,7 +285,10 @@ export const gitLogTool: ToolDefinition = {
   },
 };
 
-export const gitLogExecutor: ToolExecutor = async (params, _context): Promise<ToolExecutionResult> => {
+export const gitLogExecutor: ToolExecutor = async (
+  params,
+  _context
+): Promise<ToolExecutionResult> => {
   const repoPath = (params.path as string) || process.cwd();
   const limit = (params.limit as number) || 10;
   const oneline = params.oneline === true;
@@ -291,26 +307,36 @@ export const gitLogExecutor: ToolExecutor = async (params, _context): Promise<To
     if (until) args.push(`--until=${until}`);
     if (!oneline) args.push('--format=%H|%an|%ae|%at|%s');
     if (branch) args.push(branch);
-    if (file) { args.push('--'); args.push(file); }
+    if (file) {
+      args.push('--');
+      args.push(file);
+    }
 
     const stdout = await gitExec(args, repoPath);
 
     // Parse commits
     const commits = oneline
-      ? stdout.trim().split('\n').map(line => {
-          const [hash, ...messageParts] = line.split(' ');
-          return { hash, message: messageParts.join(' ') };
-        })
-      : stdout.trim().split('\n').filter(l => l).map(line => {
-          const [hash, author, email, timestamp, ...messageParts] = line.split('|');
-          return {
-            hash,
-            author,
-            email,
-            date: new Date(parseInt(timestamp || '0') * 1000).toISOString(),
-            message: messageParts.join('|'),
-          };
-        });
+      ? stdout
+          .trim()
+          .split('\n')
+          .map((line) => {
+            const [hash, ...messageParts] = line.split(' ');
+            return { hash, message: messageParts.join(' ') };
+          })
+      : stdout
+          .trim()
+          .split('\n')
+          .filter((l) => l)
+          .map((line) => {
+            const [hash, author, email, timestamp, ...messageParts] = line.split('|');
+            return {
+              hash,
+              author,
+              email,
+              date: new Date(parseInt(timestamp || '0') * 1000).toISOString(),
+              message: messageParts.join('|'),
+            };
+          });
 
     return {
       content: {
@@ -361,7 +387,10 @@ export const gitCommitTool: ToolDefinition = {
   },
 };
 
-export const gitCommitExecutor: ToolExecutor = async (params, _context): Promise<ToolExecutionResult> => {
+export const gitCommitExecutor: ToolExecutor = async (
+  params,
+  _context
+): Promise<ToolExecutionResult> => {
   const repoPath = (params.path as string) || process.cwd();
   const message = params.message as string;
   const all = params.all === true;
@@ -432,7 +461,10 @@ export const gitAddTool: ToolDefinition = {
   },
 };
 
-export const gitAddExecutor: ToolExecutor = async (params, _context): Promise<ToolExecutionResult> => {
+export const gitAddExecutor: ToolExecutor = async (
+  params,
+  _context
+): Promise<ToolExecutionResult> => {
   const repoPath = (params.path as string) || process.cwd();
   const files = params.files as string[] | undefined;
   const all = params.all === true;
@@ -454,7 +486,10 @@ export const gitAddExecutor: ToolExecutor = async (params, _context): Promise<To
       content: {
         success: true,
         staged: files || ['all'],
-        currentStatus: status.trim().split('\n').filter(l => l),
+        currentStatus: status
+          .trim()
+          .split('\n')
+          .filter((l) => l),
       },
       isError: false,
     };
@@ -503,7 +538,10 @@ export const gitBranchTool: ToolDefinition = {
   },
 };
 
-export const gitBranchExecutor: ToolExecutor = async (params, _context): Promise<ToolExecutionResult> => {
+export const gitBranchExecutor: ToolExecutor = async (
+  params,
+  _context
+): Promise<ToolExecutionResult> => {
   const repoPath = (params.path as string) || process.cwd();
   const action = (params.action as string) || 'list';
   const name = params.name as string | undefined;
@@ -519,13 +557,16 @@ export const gitBranchExecutor: ToolExecutor = async (params, _context): Promise
         if (remote) branchArgs.push('-a');
         const branchOutput = await gitExec(branchArgs, repoPath);
 
-        const branches = branchOutput.trim().split('\n').map(b => {
-          const isCurrent = b.startsWith('*');
-          return {
-            name: b.replace(/^\*?\s+/, ''),
-            current: isCurrent,
-          };
-        });
+        const branches = branchOutput
+          .trim()
+          .split('\n')
+          .map((b) => {
+            const isCurrent = b.startsWith('*');
+            return {
+              name: b.replace(/^\*?\s+/, ''),
+              current: isCurrent,
+            };
+          });
 
         result = { branches, count: branches.length };
         break;
@@ -603,7 +644,10 @@ export const gitCheckoutTool: ToolDefinition = {
   },
 };
 
-export const gitCheckoutExecutor: ToolExecutor = async (params, _context): Promise<ToolExecutionResult> => {
+export const gitCheckoutExecutor: ToolExecutor = async (
+  params,
+  _context
+): Promise<ToolExecutionResult> => {
   const repoPath = (params.path as string) || process.cwd();
   const branch = params.branch as string | undefined;
   const file = params.file as string | undefined;

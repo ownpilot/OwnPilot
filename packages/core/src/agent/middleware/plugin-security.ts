@@ -18,7 +18,7 @@ import type { ToolMiddleware, ToolMiddlewareContext, ToolExecutionResult } from 
 // ---------------------------------------------------------------------------
 
 const rateLimits = new Map<string, { tokens: number; lastRefill: number }>();
-const MAX_TOKENS = 60;        // 60 calls per window
+const MAX_TOKENS = 60; // 60 calls per window
 const REFILL_WINDOW_MS = 60_000; // 1 minute window
 
 function checkRateLimit(key: string): void {
@@ -50,10 +50,10 @@ function checkRateLimit(key: string): void {
 
 /** Patterns that indicate potential path traversal or injection */
 const DANGEROUS_PATTERNS = [
-  /\.\.[/\\]/,                      // Path traversal
-  /[;&|`$]/,                         // Shell injection chars
-  /<script[\s>]/i,                   // XSS attempts
-  /javascript:/i,                    // JS protocol
+  /\.\.[/\\]/, // Path traversal
+  /[;&|`$]/, // Shell injection chars
+  /<script[\s>]/i, // XSS attempts
+  /javascript:/i, // JS protocol
 ];
 
 function validateArguments(args: Record<string, unknown>): void {

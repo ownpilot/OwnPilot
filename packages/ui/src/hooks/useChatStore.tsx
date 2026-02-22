@@ -6,14 +6,7 @@
  * Supports SSE streaming with progress events.
  */
 
-import {
-  createContext,
-  useContext,
-  useRef,
-  useState,
-  useCallback,
-  type ReactNode,
-} from 'react';
+import { createContext, useContext, useRef, useState, useCallback, type ReactNode } from 'react';
 import type { Message, MessageAttachment, ChatResponse, ApiResponse, SessionInfo } from '../types';
 import type { ApprovalRequest } from '../api';
 import { executionPermissionsApi, memoriesApi } from '../api';
@@ -67,7 +60,11 @@ interface ChatStore extends ChatState {
   setModel: (model: string) => void;
   setAgentId: (agentId: string | null) => void;
   setWorkspaceId: (workspaceId: string | null) => void;
-  sendMessage: (content: string, directTools?: string[], imageAttachments?: MessageAttachment[]) => Promise<void>;
+  sendMessage: (
+    content: string,
+    directTools?: string[],
+    imageAttachments?: MessageAttachment[]
+  ) => Promise<void>;
   retryLastMessage: () => Promise<void>;
   clearMessages: () => void;
   cancelRequest: () => void;
@@ -91,7 +88,9 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   const [streamingContent, setStreamingContent] = useState('');
   const [progressEvents, setProgressEvents] = useState<ProgressEvent[]>([]);
   const [suggestions, setSuggestions] = useState<Array<{ title: string; detail: string }>>([]);
-  const [extractedMemories, setExtractedMemories] = useState<Array<{ type: string; content: string; importance?: number }>>([]);
+  const [extractedMemories, setExtractedMemories] = useState<
+    Array<{ type: string; content: string; importance?: number }>
+  >([]);
   const [pendingApproval, setPendingApproval] = useState<ApprovalRequest | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [sessionInfo, setSessionInfo] = useState<SessionInfo | null>(null);
@@ -122,39 +121,55 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   extractedMemoriesRef.current = extractedMemories;
 
   const acceptMemory = useCallback((index: number) => {
-    setExtractedMemories(prev => {
+    setExtractedMemories((prev) => {
       const mem = prev[index];
       if (mem) {
-        memoriesApi.create({
-          type: mem.type,
-          content: mem.content,
-          source: 'conversation',
-          importance: mem.importance ?? 0.7,
-        }).catch(() => {});
+        memoriesApi
+          .create({
+            type: mem.type,
+            content: mem.content,
+            source: 'conversation',
+            importance: mem.importance ?? 0.7,
+          })
+          .catch(() => {});
       }
       return prev.filter((_, i) => i !== index);
     });
   }, []);
 
   const rejectMemory = useCallback((index: number) => {
-    setExtractedMemories(prev => prev.filter((_, i) => i !== index));
+    setExtractedMemories((prev) => prev.filter((_, i) => i !== index));
   }, []);
 
-  const resolveApproval = useCallback((approved: boolean) => {
-    const approval = pendingApproval;
-    if (!approval) return;
-    setPendingApproval(null);
-    executionPermissionsApi.resolveApproval(approval.approvalId, approved).catch(() => {
-      // If the resolve call fails, the backend will timeout and auto-reject
-    });
-  }, [pendingApproval]);
+  const resolveApproval = useCallback(
+    (approved: boolean) => {
+      const approval = pendingApproval;
+      if (!approval) return;
+      setPendingApproval(null);
+      executionPermissionsApi.resolveApproval(approval.approvalId, approved).catch(() => {
+        // If the resolve call fails, the backend will timeout and auto-reject
+      });
+    },
+    [pendingApproval]
+  );
 
   const sendMessage = useCallback(
-    async (content: string, directToolsOrRetry?: string[] | boolean, isRetryOrAttachments?: boolean | MessageAttachment[]) => {
+    async (
+      content: string,
+      directToolsOrRetry?: string[] | boolean,
+      isRetryOrAttachments?: boolean | MessageAttachment[]
+    ) => {
       // Support both old signature (content, isRetry) and new (content, directTools, isRetry/attachments)
       const directTools = Array.isArray(directToolsOrRetry) ? directToolsOrRetry : undefined;
-      const isRetry = typeof directToolsOrRetry === 'boolean' ? directToolsOrRetry : (typeof isRetryOrAttachments === 'boolean' ? isRetryOrAttachments : false);
-      const imageAttachments = Array.isArray(isRetryOrAttachments) ? isRetryOrAttachments : undefined;
+      const isRetry =
+        typeof directToolsOrRetry === 'boolean'
+          ? directToolsOrRetry
+          : typeof isRetryOrAttachments === 'boolean'
+            ? isRetryOrAttachments
+            : false;
+      const imageAttachments = Array.isArray(isRetryOrAttachments)
+        ? isRetryOrAttachments
+        : undefined;
       // Cancel any previous ongoing request before starting a new one
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
@@ -166,12 +181,14 @@ export function ChatProvider({ children }: { children: ReactNode }) {
 
       // Auto-accept any remaining memories from previous response
       for (const mem of extractedMemoriesRef.current) {
-        memoriesApi.create({
-          type: mem.type,
-          content: mem.content,
-          source: 'conversation',
-          importance: mem.importance ?? 0.7,
-        }).catch(() => {});
+        memoriesApi
+          .create({
+            type: mem.type,
+            content: mem.content,
+            source: 'conversation',
+            importance: mem.importance ?? 0.7,
+          })
+          .catch(() => {});
       }
 
       setError(null);
@@ -219,7 +236,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
             ...(workspaceId && { workspaceId }),
             ...(directTools?.length && { directTools }),
             ...(imageAttachments?.length && {
-              attachments: imageAttachments.map(a => ({
+              attachments: imageAttachments.map((a) => ({
                 type: a.type,
                 data: a.data,
                 mimeType: a.mimeType,
@@ -238,7 +255,9 @@ export function ChatProvider({ children }: { children: ReactNode }) {
                   const n = parseInt(raw, 10);
                   if (!isNaN(n) && n >= 0 && n !== 200) return { maxToolCalls: n };
                 }
-              } catch { /* localStorage unavailable */ }
+              } catch {
+                /* localStorage unavailable */
+              }
               return {};
             })(),
           }),
@@ -290,7 +309,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
                     });
                     break;
                   case 'progress':
-                    setProgressEvents(prev => [...prev, event.data as unknown as ProgressEvent]);
+                    setProgressEvents((prev) => [...prev, event.data as unknown as ProgressEvent]);
                     break;
                   case 'delta':
                     if (event.data.delta) {
@@ -317,7 +336,11 @@ export function ChatProvider({ children }: { children: ReactNode }) {
                         const s = event.data.session as SessionInfo;
                         const usage = event.data.usage as { cachedTokens?: number } | undefined;
                         setSessionId(s.sessionId);
-                        setSessionInfo(usage?.cachedTokens != null ? { ...s, cachedTokens: usage.cachedTokens } : s);
+                        setSessionInfo(
+                          usage?.cachedTokens != null
+                            ? { ...s, cachedTokens: usage.cachedTokens }
+                            : s
+                        );
                       }
                     }
                     break;
@@ -341,7 +364,10 @@ export function ChatProvider({ children }: { children: ReactNode }) {
           const assistantMessage: Message = {
             id: crypto.randomUUID(),
             role: 'assistant',
-            content: (accumulatedContent || finalResponse?.response || '').replace(/<memories>[\s\S]*<\/memories>\s*/, '').replace(/<suggestions>[\s\S]*<\/suggestions>\s*$/, '').trimEnd(),
+            content: (accumulatedContent || finalResponse?.response || '')
+              .replace(/<memories>[\s\S]*<\/memories>\s*/, '')
+              .replace(/<suggestions>[\s\S]*<\/suggestions>\s*$/, '')
+              .trimEnd(),
             timestamp: new Date().toISOString(),
             toolCalls: finalResponse?.toolCalls,
             provider,
@@ -359,7 +385,6 @@ export function ChatProvider({ children }: { children: ReactNode }) {
           if (finalResponse?.memories?.length) {
             setExtractedMemories(finalResponse.memories);
           }
-
         } else {
           // Non-streaming fallback
           const data: ApiResponse<ChatResponse> = await response.json();

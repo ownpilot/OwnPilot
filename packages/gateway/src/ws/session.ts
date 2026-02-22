@@ -151,7 +151,10 @@ export class SessionManager {
     if (!session) return false;
 
     // Prevent unbounded channel subscription growth
-    if (session.channels.size >= SessionManager.MAX_CHANNEL_SUBS && !session.channels.has(channelId)) {
+    if (
+      session.channels.size >= SessionManager.MAX_CHANNEL_SUBS &&
+      !session.channels.has(channelId)
+    ) {
       return false;
     }
 
@@ -257,10 +260,7 @@ export class SessionManager {
   /**
    * Broadcast to all sessions
    */
-  broadcast<K extends keyof ServerEvents>(
-    event: K,
-    payload: ServerEvents[K]
-  ): number {
+  broadcast<K extends keyof ServerEvents>(event: K, payload: ServerEvents[K]): number {
     let count = 0;
     const message: WSMessage<ServerEvents[K]> = {
       type: event,

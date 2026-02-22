@@ -16,15 +16,13 @@ import type { CustomTableSchema, CustomDataRecord } from '../db/repositories/cus
 const mockEmit = vi.fn();
 vi.mock('@ownpilot/core', () => ({
   getEventBus: () => ({ emit: mockEmit }),
-  createEvent: vi.fn(
-    (type: string, category: string, source: string, data: unknown) => ({
-      type,
-      category,
-      source,
-      data,
-      timestamp: new Date().toISOString(),
-    }),
-  ),
+  createEvent: vi.fn((type: string, category: string, source: string, data: unknown) => ({
+    type,
+    category,
+    source,
+    data,
+    timestamp: new Date().toISOString(),
+  })),
   EventTypes: {
     RESOURCE_CREATED: 'resource.created',
     RESOURCE_UPDATED: 'resource.updated',
@@ -115,7 +113,7 @@ describe('CustomDataService', () => {
         'contacts',
         'Contacts',
         [{ name: 'name', type: 'text' }],
-        'Address book',
+        'Address book'
       );
 
       expect(result).toBe(table);
@@ -123,21 +121,19 @@ describe('CustomDataService', () => {
         expect.objectContaining({
           type: 'resource.created',
           data: { resourceType: 'custom_table', id: 'tbl-1' },
-        }),
+        })
       );
     });
 
     it('throws VALIDATION_ERROR when name is empty', async () => {
-      await expect(
-        service.createTable('', 'X', [{ name: 'c', type: 'text' }]),
-      ).rejects.toThrow(/Table name is required/);
+      await expect(service.createTable('', 'X', [{ name: 'c', type: 'text' }])).rejects.toThrow(
+        /Table name is required/
+      );
       expect(mockRepo.createTable).not.toHaveBeenCalled();
     });
 
     it('throws VALIDATION_ERROR when columns are empty', async () => {
-      await expect(service.createTable('t', 'T', [])).rejects.toThrow(
-        /At least one column/,
-      );
+      await expect(service.createTable('t', 'T', [])).rejects.toThrow(/At least one column/);
     });
   });
 
@@ -154,7 +150,7 @@ describe('CustomDataService', () => {
         expect.objectContaining({
           type: 'resource.deleted',
           data: { resourceType: 'custom_table', id: 'tbl-1' },
-        }),
+        })
       );
     });
 
@@ -162,9 +158,7 @@ describe('CustomDataService', () => {
       const table = fakeTable({ isProtected: true, ownerPluginId: 'gmail' });
       mockRepo.getTable.mockResolvedValue(table);
 
-      await expect(service.deleteTable('contacts')).rejects.toThrow(
-        /protected by plugin/,
-      );
+      await expect(service.deleteTable('contacts')).rejects.toThrow(/protected by plugin/);
 
       const error = await service.deleteTable('contacts').catch((e) => e);
       expect(error).toBeInstanceOf(CustomDataServiceError);
@@ -237,7 +231,7 @@ describe('CustomDataService', () => {
         expect.objectContaining({
           type: 'resource.created',
           data: { resourceType: 'custom_record', id: 'rec-1' },
-        }),
+        })
       );
     });
   });
@@ -266,9 +260,9 @@ describe('CustomDataService', () => {
     it('throws NOT_FOUND when table does not exist', async () => {
       mockRepo.getTable.mockResolvedValue(null);
 
-      await expect(
-        service.batchAddRecords('missing', [{ name: 'Alice' }]),
-      ).rejects.toThrow(/Table not found/);
+      await expect(service.batchAddRecords('missing', [{ name: 'Alice' }])).rejects.toThrow(
+        /Table not found/
+      );
     });
   });
 
@@ -284,7 +278,7 @@ describe('CustomDataService', () => {
         expect.objectContaining({
           type: 'resource.updated',
           data: expect.objectContaining({ resourceType: 'custom_record', id: 'rec-1' }),
-        }),
+        })
       );
     });
 
@@ -307,7 +301,7 @@ describe('CustomDataService', () => {
         expect.objectContaining({
           type: 'resource.deleted',
           data: { resourceType: 'custom_record', id: 'rec-1' },
-        }),
+        })
       );
     });
 
@@ -347,12 +341,9 @@ describe('CustomDataService', () => {
       const table = fakeTable({ isProtected: true, ownerPluginId: 'gmail' });
       mockRepo.ensurePluginTable.mockResolvedValue(table);
 
-      const result = await service.ensurePluginTable(
-        'gmail',
-        'gmail_emails',
-        'Gmail Emails',
-        [{ name: 'subject', type: 'text' }],
-      );
+      const result = await service.ensurePluginTable('gmail', 'gmail_emails', 'Gmail Emails', [
+        { name: 'subject', type: 'text' },
+      ]);
       expect(result).toBe(table);
     });
 

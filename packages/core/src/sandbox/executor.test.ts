@@ -124,9 +124,7 @@ describe('SandboxExecutor', () => {
   describe('available globals', () => {
     it('provides console', async () => {
       const sandbox = createSandbox({ pluginId: testPluginId });
-      const result = await sandbox.execute<boolean>(
-        'console.log("test"); return true'
-      );
+      const result = await sandbox.execute<boolean>('console.log("test"); return true');
 
       expect(result.ok).toBe(true);
       if (result.ok) {

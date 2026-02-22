@@ -1,5 +1,14 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Database, Plus, Trash2, Search, Table, ChevronRight, Edit3, Lock } from '../components/icons';
+import {
+  Database,
+  Plus,
+  Trash2,
+  Search,
+  Table,
+  ChevronRight,
+  Edit3,
+  Lock,
+} from '../components/icons';
 import { useDialog } from '../components/ConfirmDialog';
 import { useToast } from '../components/ToastProvider';
 import { LoadingSpinner } from '../components/LoadingSpinner';
@@ -7,7 +16,6 @@ import { EmptyState } from '../components/EmptyState';
 import { useDebouncedValue, useModalClose } from '../hooks';
 import { customDataApi } from '../api';
 import type { ColumnDefinition, CustomTable, CustomRecord } from '../api';
-
 
 export function CustomDataPage() {
   const { confirm } = useDialog();
@@ -72,39 +80,56 @@ export function CustomDataPage() {
     setRecords([]);
   }, []);
 
-  const handleDeleteTable = useCallback(async (tableId: string) => {
-    if (!await confirm({ message: 'Are you sure you want to delete this table and ALL its data? This cannot be undone.', variant: 'danger' })) {
-      return;
-    }
-
-    try {
-      await customDataApi.deleteTable(tableId);
-      toast.success('Table deleted');
-      if (selectedTable?.id === tableId) {
-        setSelectedTable(null);
-        setRecords([]);
+  const handleDeleteTable = useCallback(
+    async (tableId: string) => {
+      if (
+        !(await confirm({
+          message:
+            'Are you sure you want to delete this table and ALL its data? This cannot be undone.',
+          variant: 'danger',
+        }))
+      ) {
+        return;
       }
-      fetchTables();
-    } catch {
-      // API client handles error reporting
-    }
-  }, [confirm, selectedTable, fetchTables, toast]);
 
-  const handleDeleteRecord = useCallback(async (recordId: string) => {
-    if (!await confirm({ message: 'Are you sure you want to delete this record?', variant: 'danger' })) {
-      return;
-    }
-
-    try {
-      await customDataApi.deleteRecord(recordId);
-      toast.success('Record deleted');
-      if (selectedTable) {
-        fetchRecords(selectedTable.id, debouncedSearch || undefined);
+      try {
+        await customDataApi.deleteTable(tableId);
+        toast.success('Table deleted');
+        if (selectedTable?.id === tableId) {
+          setSelectedTable(null);
+          setRecords([]);
+        }
+        fetchTables();
+      } catch {
+        // API client handles error reporting
       }
-    } catch {
-      // API client handles error reporting
-    }
-  }, [confirm, selectedTable, fetchRecords, debouncedSearch, toast]);
+    },
+    [confirm, selectedTable, fetchTables, toast]
+  );
+
+  const handleDeleteRecord = useCallback(
+    async (recordId: string) => {
+      if (
+        !(await confirm({
+          message: 'Are you sure you want to delete this record?',
+          variant: 'danger',
+        }))
+      ) {
+        return;
+      }
+
+      try {
+        await customDataApi.deleteRecord(recordId);
+        toast.success('Record deleted');
+        if (selectedTable) {
+          fetchRecords(selectedTable.id, debouncedSearch || undefined);
+        }
+      } catch {
+        // API client handles error reporting
+      }
+    },
+    [confirm, selectedTable, fetchRecords, debouncedSearch, toast]
+  );
 
   return (
     <div className="flex flex-col h-full">
@@ -156,12 +181,18 @@ export function CustomDataPage() {
                         <Table className="w-4 h-4 flex-shrink-0" />
                         <span className="truncate text-sm">{table.displayName}</span>
                         {table.isProtected && (
-                          <Lock className={`w-3 h-3 flex-shrink-0 ${
-                            selectedTable?.id === table.id ? 'text-white/70' : 'text-text-muted dark:text-dark-text-muted'
-                          }`} />
+                          <Lock
+                            className={`w-3 h-3 flex-shrink-0 ${
+                              selectedTable?.id === table.id
+                                ? 'text-white/70'
+                                : 'text-text-muted dark:text-dark-text-muted'
+                            }`}
+                          />
                         )}
                       </div>
-                      <span className={`text-xs ${selectedTable?.id === table.id ? 'text-white/70' : 'text-text-muted dark:text-dark-text-muted'}`}>
+                      <span
+                        className={`text-xs ${selectedTable?.id === table.id ? 'text-white/70' : 'text-text-muted dark:text-dark-text-muted'}`}
+                      >
                         {table.recordCount ?? 0}
                       </span>
                     </button>
@@ -233,7 +264,11 @@ export function CustomDataPage() {
                   <EmptyState
                     icon={Database}
                     title={searchQuery ? 'No records found' : 'No records yet'}
-                    description={searchQuery ? 'Try a different search term.' : 'Add your first record or ask AI to add data.'}
+                    description={
+                      searchQuery
+                        ? 'Try a different search term.'
+                        : 'Add your first record or ask AI to add data.'
+                    }
                   />
                 ) : (
                   <div className="overflow-x-auto">
@@ -289,7 +324,8 @@ export function CustomDataPage() {
                       </tbody>
                     </table>
                     <p className="mt-4 text-sm text-text-muted dark:text-dark-text-muted">
-                      Showing {records.length} of {totalRecords} record{totalRecords !== 1 ? 's' : ''}
+                      Showing {records.length} of {totalRecords} record
+                      {totalRecords !== 1 ? 's' : ''}
                     </p>
                   </div>
                 )}
@@ -435,7 +471,10 @@ function CreateTableModal({ onClose, onSave }: CreateTableModalProps) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onBackdropClick}>
+    <div
+      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+      onClick={onBackdropClick}
+    >
       <div className="w-full max-w-2xl bg-bg-primary dark:bg-dark-bg-primary border border-border dark:border-dark-border rounded-xl shadow-xl">
         <form onSubmit={handleSubmit}>
           <div className="p-6 border-b border-border dark:border-dark-border">
@@ -608,7 +647,10 @@ function RecordModal({ table, record, onClose, onSave }: RecordModalProps) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onBackdropClick}>
+    <div
+      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+      onClick={onBackdropClick}
+    >
       <div className="w-full max-w-lg bg-bg-primary dark:bg-dark-bg-primary border border-border dark:border-dark-border rounded-xl shadow-xl">
         <form onSubmit={handleSubmit}>
           <div className="p-6 border-b border-border dark:border-dark-border">

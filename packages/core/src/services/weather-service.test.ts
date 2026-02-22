@@ -67,15 +67,60 @@ function owmCurrentResponse(overrides: Record<string, unknown> = {}) {
 function owmForecastResponse(list?: unknown[]) {
   return {
     list: list ?? [
-      { dt_txt: '2026-02-21 00:00:00', main: { temp: 8, humidity: 80 }, pop: 0.2, weather: [{ description: 'light rain', icon: '10d' }] },
-      { dt_txt: '2026-02-21 03:00:00', main: { temp: 7, humidity: 82 }, pop: 0.4, weather: [{ description: 'moderate rain', icon: '10n' }] },
-      { dt_txt: '2026-02-21 06:00:00', main: { temp: 6, humidity: 85 }, pop: 0.5, weather: [{ description: 'light rain', icon: '10d' }] },
-      { dt_txt: '2026-02-21 09:00:00', main: { temp: 9, humidity: 75 }, pop: 0.3, weather: [{ description: 'cloudy', icon: '04d' }] },
-      { dt_txt: '2026-02-21 12:00:00', main: { temp: 12, humidity: 65 }, pop: 0.1, weather: [{ description: 'partly cloudy', icon: '03d' }] },
-      { dt_txt: '2026-02-22 00:00:00', main: { temp: 10, humidity: 70 }, pop: 0.0, weather: [{ description: 'clear sky', icon: '01d' }] },
-      { dt_txt: '2026-02-22 12:00:00', main: { temp: 14, humidity: 60 }, pop: 0.1, weather: [{ description: 'sunny', icon: '01d' }] },
-      { dt_txt: '2026-02-23 06:00:00', main: { temp: 11, humidity: 68 }, pop: 0.6, weather: [{ description: 'heavy rain', icon: '09d' }] },
-      { dt_txt: '2026-02-23 12:00:00', main: { temp: 13, humidity: 62 }, pop: 0.7, weather: [{ description: 'thunderstorm', icon: '11d' }] },
+      {
+        dt_txt: '2026-02-21 00:00:00',
+        main: { temp: 8, humidity: 80 },
+        pop: 0.2,
+        weather: [{ description: 'light rain', icon: '10d' }],
+      },
+      {
+        dt_txt: '2026-02-21 03:00:00',
+        main: { temp: 7, humidity: 82 },
+        pop: 0.4,
+        weather: [{ description: 'moderate rain', icon: '10n' }],
+      },
+      {
+        dt_txt: '2026-02-21 06:00:00',
+        main: { temp: 6, humidity: 85 },
+        pop: 0.5,
+        weather: [{ description: 'light rain', icon: '10d' }],
+      },
+      {
+        dt_txt: '2026-02-21 09:00:00',
+        main: { temp: 9, humidity: 75 },
+        pop: 0.3,
+        weather: [{ description: 'cloudy', icon: '04d' }],
+      },
+      {
+        dt_txt: '2026-02-21 12:00:00',
+        main: { temp: 12, humidity: 65 },
+        pop: 0.1,
+        weather: [{ description: 'partly cloudy', icon: '03d' }],
+      },
+      {
+        dt_txt: '2026-02-22 00:00:00',
+        main: { temp: 10, humidity: 70 },
+        pop: 0.0,
+        weather: [{ description: 'clear sky', icon: '01d' }],
+      },
+      {
+        dt_txt: '2026-02-22 12:00:00',
+        main: { temp: 14, humidity: 60 },
+        pop: 0.1,
+        weather: [{ description: 'sunny', icon: '01d' }],
+      },
+      {
+        dt_txt: '2026-02-23 06:00:00',
+        main: { temp: 11, humidity: 68 },
+        pop: 0.6,
+        weather: [{ description: 'heavy rain', icon: '09d' }],
+      },
+      {
+        dt_txt: '2026-02-23 12:00:00',
+        main: { temp: 13, humidity: 62 },
+        pop: 0.7,
+        weather: [{ description: 'thunderstorm', icon: '11d' }],
+      },
     ],
   };
 }
@@ -124,17 +169,47 @@ function weatherApiForecastResponse(forecastDays?: unknown[]) {
       forecastday: forecastDays ?? [
         {
           date: '2026-02-21',
-          day: { maxtemp_c: 16.2, mintemp_c: 8.1, avgtemp_c: 12.3, avghumidity: 68, condition: { text: 'Partly cloudy', icon: '//cdn.weatherapi.com/weather/64x64/day/116.png' }, daily_chance_of_rain: 30, uv: 3 },
+          day: {
+            maxtemp_c: 16.2,
+            mintemp_c: 8.1,
+            avgtemp_c: 12.3,
+            avghumidity: 68,
+            condition: {
+              text: 'Partly cloudy',
+              icon: '//cdn.weatherapi.com/weather/64x64/day/116.png',
+            },
+            daily_chance_of_rain: 30,
+            uv: 3,
+          },
           astro: { sunrise: '07:05 AM', sunset: '05:32 PM', moon_phase: 'Waxing Crescent' },
         },
         {
           date: '2026-02-22',
-          day: { maxtemp_c: 14.5, mintemp_c: 6.8, avgtemp_c: 10.7, avghumidity: 72, condition: { text: 'Sunny', icon: '//cdn.weatherapi.com/weather/64x64/day/113.png' }, daily_chance_of_rain: 10, uv: 4 },
+          day: {
+            maxtemp_c: 14.5,
+            mintemp_c: 6.8,
+            avgtemp_c: 10.7,
+            avghumidity: 72,
+            condition: { text: 'Sunny', icon: '//cdn.weatherapi.com/weather/64x64/day/113.png' },
+            daily_chance_of_rain: 10,
+            uv: 4,
+          },
           astro: { sunrise: '07:03 AM', sunset: '05:34 PM', moon_phase: 'First Quarter' },
         },
         {
           date: '2026-02-23',
-          day: { maxtemp_c: 12.0, mintemp_c: 5.3, avgtemp_c: 8.7, avghumidity: 80, condition: { text: 'Heavy rain', icon: '//cdn.weatherapi.com/weather/64x64/day/308.png' }, daily_chance_of_rain: 85, uv: 1 },
+          day: {
+            maxtemp_c: 12.0,
+            mintemp_c: 5.3,
+            avgtemp_c: 8.7,
+            avghumidity: 80,
+            condition: {
+              text: 'Heavy rain',
+              icon: '//cdn.weatherapi.com/weather/64x64/day/308.png',
+            },
+            daily_chance_of_rain: 85,
+            uv: 1,
+          },
           astro: { sunrise: '07:01 AM', sunset: '05:36 PM', moon_phase: 'Waxing Gibbous' },
         },
       ],
@@ -282,7 +357,9 @@ describe('WeatherDataService', () => {
 
     it('throws for unsupported provider', async () => {
       const svc = new WeatherDataService({ provider: 'unknown' as never, apiKey: 'key' });
-      await expect(svc.getCurrentWeather('London')).rejects.toThrow('Unsupported weather provider: unknown');
+      await expect(svc.getCurrentWeather('London')).rejects.toThrow(
+        'Unsupported weather provider: unknown'
+      );
     });
   });
 
@@ -308,7 +385,9 @@ describe('WeatherDataService', () => {
 
     it('throws for unsupported provider', async () => {
       const svc = new WeatherDataService({ provider: 'badprovider' as never, apiKey: 'key' });
-      await expect(svc.getForecast('London')).rejects.toThrow('Unsupported weather provider: badprovider');
+      await expect(svc.getForecast('London')).rejects.toThrow(
+        'Unsupported weather provider: badprovider'
+      );
     });
 
     it('uses default days=5 when not specified', async () => {
@@ -381,7 +460,9 @@ describe('OpenWeatherMap Current Weather', () => {
 
   it('throws "Location not found" for empty geocoding response', async () => {
     mockFetch.mockResolvedValueOnce(mockResponse([]));
-    await expect(svc.getCurrentWeather('Nonexistent')).rejects.toThrow('Location not found: Nonexistent');
+    await expect(svc.getCurrentWeather('Nonexistent')).rejects.toThrow(
+      'Location not found: Nonexistent'
+    );
   });
 
   it('throws on geocoding API error (non-200)', async () => {
@@ -407,7 +488,11 @@ describe('OpenWeatherMap Current Weather', () => {
 
   it('rounds temperature up at .5', async () => {
     mockFetch.mockResolvedValueOnce(mockResponse(owmGeoResponse()));
-    mockFetch.mockResolvedValueOnce(mockResponse(owmCurrentResponse({ main: { temp: 15.5, feels_like: 13.5, humidity: 72, pressure: 1013 } })));
+    mockFetch.mockResolvedValueOnce(
+      mockResponse(
+        owmCurrentResponse({ main: { temp: 15.5, feels_like: 13.5, humidity: 72, pressure: 1013 } })
+      )
+    );
 
     const result = await svc.getCurrentWeather('London');
     expect(result.current.temperature).toBe(16);
@@ -485,7 +570,9 @@ describe('OpenWeatherMap Current Weather', () => {
 
   it('isDay is true when icon contains "d"', async () => {
     mockFetch.mockResolvedValueOnce(mockResponse(owmGeoResponse()));
-    mockFetch.mockResolvedValueOnce(mockResponse(owmCurrentResponse({ weather: [{ description: 'clear sky', icon: '01d' }] })));
+    mockFetch.mockResolvedValueOnce(
+      mockResponse(owmCurrentResponse({ weather: [{ description: 'clear sky', icon: '01d' }] }))
+    );
 
     const result = await svc.getCurrentWeather('London');
     expect(result.current.isDay).toBe(true);
@@ -493,7 +580,9 @@ describe('OpenWeatherMap Current Weather', () => {
 
   it('isDay is false when icon contains "n" (night)', async () => {
     mockFetch.mockResolvedValueOnce(mockResponse(owmGeoResponse()));
-    mockFetch.mockResolvedValueOnce(mockResponse(owmCurrentResponse({ weather: [{ description: 'clear sky', icon: '01n' }] })));
+    mockFetch.mockResolvedValueOnce(
+      mockResponse(owmCurrentResponse({ weather: [{ description: 'clear sky', icon: '01n' }] }))
+    );
 
     const result = await svc.getCurrentWeather('London');
     expect(result.current.isDay).toBe(false);
@@ -501,7 +590,9 @@ describe('OpenWeatherMap Current Weather', () => {
 
   it('constructs conditionIcon URL correctly', async () => {
     mockFetch.mockResolvedValueOnce(mockResponse(owmGeoResponse()));
-    mockFetch.mockResolvedValueOnce(mockResponse(owmCurrentResponse({ weather: [{ description: 'clear sky', icon: '01d' }] })));
+    mockFetch.mockResolvedValueOnce(
+      mockResponse(owmCurrentResponse({ weather: [{ description: 'clear sky', icon: '01d' }] }))
+    );
 
     const result = await svc.getCurrentWeather('London');
     expect(result.current.conditionIcon).toBe('https://openweathermap.org/img/wn/01d@2x.png');
@@ -724,7 +815,12 @@ describe('OpenWeatherMap Forecast', () => {
 
   it('handles single forecast item per day', async () => {
     const singleItemList = [
-      { dt_txt: '2026-02-21 12:00:00', main: { temp: 15, humidity: 60 }, pop: 0.2, weather: [{ description: 'sunny', icon: '01d' }] },
+      {
+        dt_txt: '2026-02-21 12:00:00',
+        main: { temp: 15, humidity: 60 },
+        pop: 0.2,
+        weather: [{ description: 'sunny', icon: '01d' }],
+      },
     ];
     mockFetch.mockResolvedValueOnce(mockResponse(owmGeoResponse()));
     mockFetch.mockResolvedValueOnce(mockResponse(owmForecastResponse(singleItemList)));
@@ -738,7 +834,12 @@ describe('OpenWeatherMap Forecast', () => {
 
   it('handles pop=0 (no rain) correctly', async () => {
     const noRainList = [
-      { dt_txt: '2026-02-21 12:00:00', main: { temp: 20, humidity: 50 }, pop: 0, weather: [{ description: 'clear', icon: '01d' }] },
+      {
+        dt_txt: '2026-02-21 12:00:00',
+        main: { temp: 20, humidity: 50 },
+        pop: 0,
+        weather: [{ description: 'clear', icon: '01d' }],
+      },
     ];
     mockFetch.mockResolvedValueOnce(mockResponse(owmGeoResponse()));
     mockFetch.mockResolvedValueOnce(mockResponse(owmForecastResponse(noRainList)));
@@ -835,7 +936,9 @@ describe('WeatherAPI Current Weather', () => {
     mockFetch.mockResolvedValueOnce(mockResponse(weatherApiCurrentResponse()));
 
     const result = await svc.getCurrentWeather('London');
-    expect(result.current.conditionIcon).toBe('https://cdn.weatherapi.com/weather/64x64/day/116.png');
+    expect(result.current.conditionIcon).toBe(
+      'https://cdn.weatherapi.com/weather/64x64/day/116.png'
+    );
   });
 
   it('rounds temperature correctly', async () => {
@@ -877,21 +980,29 @@ describe('WeatherAPI Current Weather', () => {
   });
 
   it('throws on non-200 response with error message', async () => {
-    mockFetch.mockResolvedValueOnce(mockResponse({ error: { message: 'API key is invalid.' } }, false, 403));
+    mockFetch.mockResolvedValueOnce(
+      mockResponse({ error: { message: 'API key is invalid.' } }, false, 403)
+    );
 
-    await expect(svc.getCurrentWeather('London')).rejects.toThrow('WeatherAPI error: API key is invalid.');
+    await expect(svc.getCurrentWeather('London')).rejects.toThrow(
+      'WeatherAPI error: API key is invalid.'
+    );
   });
 
   it('throws with "Unknown error" when error response has no message', async () => {
     mockFetch.mockResolvedValueOnce(mockResponse({}, false, 500));
 
-    await expect(svc.getCurrentWeather('London')).rejects.toThrow('WeatherAPI error: Unknown error');
+    await expect(svc.getCurrentWeather('London')).rejects.toThrow(
+      'WeatherAPI error: Unknown error'
+    );
   });
 
   it('throws with "Unknown error" when error response has empty error object', async () => {
     mockFetch.mockResolvedValueOnce(mockResponse({ error: {} }, false, 400));
 
-    await expect(svc.getCurrentWeather('London')).rejects.toThrow('WeatherAPI error: Unknown error');
+    await expect(svc.getCurrentWeather('London')).rejects.toThrow(
+      'WeatherAPI error: Unknown error'
+    );
   });
 
   it('provider is "weatherapi"', async () => {
@@ -1034,7 +1145,9 @@ describe('WeatherAPI Forecast', () => {
     mockFetch.mockResolvedValueOnce(mockResponse(weatherApiForecastResponse()));
 
     const result = await svc.getForecast('London');
-    expect(result.forecast[0]!.conditionIcon).toBe('https://cdn.weatherapi.com/weather/64x64/day/116.png');
+    expect(result.forecast[0]!.conditionIcon).toBe(
+      'https://cdn.weatherapi.com/weather/64x64/day/116.png'
+    );
   });
 
   it('includes astro data (sunrise, sunset, moonPhase)', async () => {
@@ -1081,9 +1194,13 @@ describe('WeatherAPI Forecast', () => {
   });
 
   it('throws on non-200 response with error message', async () => {
-    mockFetch.mockResolvedValueOnce(mockResponse({ error: { message: 'No matching location found.' } }, false, 400));
+    mockFetch.mockResolvedValueOnce(
+      mockResponse({ error: { message: 'No matching location found.' } }, false, 400)
+    );
 
-    await expect(svc.getForecast('InvalidPlace')).rejects.toThrow('WeatherAPI error: No matching location found.');
+    await expect(svc.getForecast('InvalidPlace')).rejects.toThrow(
+      'WeatherAPI error: No matching location found.'
+    );
   });
 
   it('throws with "Unknown error" when error has no message', async () => {
@@ -1250,9 +1367,13 @@ describe('Edge cases', () => {
   it('OWM current: negative temperatures', async () => {
     const svc = new WeatherDataService({ provider: 'openweathermap', apiKey: 'key' });
     mockFetch.mockResolvedValueOnce(mockResponse(owmGeoResponse()));
-    mockFetch.mockResolvedValueOnce(mockResponse(owmCurrentResponse({
-      main: { temp: -5.7, feels_like: -9.3, humidity: 90, pressure: 1020 },
-    })));
+    mockFetch.mockResolvedValueOnce(
+      mockResponse(
+        owmCurrentResponse({
+          main: { temp: -5.7, feels_like: -9.3, humidity: 90, pressure: 1020 },
+        })
+      )
+    );
 
     const result = await svc.getCurrentWeather('Moscow');
     expect(result.current.temperature).toBe(-6);
@@ -1262,9 +1383,13 @@ describe('Edge cases', () => {
   it('OWM current: zero wind speed', async () => {
     const svc = new WeatherDataService({ provider: 'openweathermap', apiKey: 'key' });
     mockFetch.mockResolvedValueOnce(mockResponse(owmGeoResponse()));
-    mockFetch.mockResolvedValueOnce(mockResponse(owmCurrentResponse({
-      wind: { speed: 0, deg: 0 },
-    })));
+    mockFetch.mockResolvedValueOnce(
+      mockResponse(
+        owmCurrentResponse({
+          wind: { speed: 0, deg: 0 },
+        })
+      )
+    );
 
     const result = await svc.getCurrentWeather('London');
     expect(result.current.windSpeed).toBe(0);
@@ -1283,14 +1408,54 @@ describe('Edge cases', () => {
   it('OWM forecast: all items in same day', async () => {
     const svc = new WeatherDataService({ provider: 'openweathermap', apiKey: 'key' });
     const sameDayList = [
-      { dt_txt: '2026-02-21 00:00:00', main: { temp: 5, humidity: 90 }, pop: 0.8, weather: [{ description: 'rain', icon: '09d' }] },
-      { dt_txt: '2026-02-21 03:00:00', main: { temp: 6, humidity: 88 }, pop: 0.7, weather: [{ description: 'rain', icon: '09d' }] },
-      { dt_txt: '2026-02-21 06:00:00', main: { temp: 7, humidity: 85 }, pop: 0.5, weather: [{ description: 'clouds', icon: '04d' }] },
-      { dt_txt: '2026-02-21 09:00:00', main: { temp: 10, humidity: 80 }, pop: 0.3, weather: [{ description: 'clouds', icon: '04d' }] },
-      { dt_txt: '2026-02-21 12:00:00', main: { temp: 12, humidity: 75 }, pop: 0.2, weather: [{ description: 'sunny', icon: '01d' }] },
-      { dt_txt: '2026-02-21 15:00:00', main: { temp: 11, humidity: 78 }, pop: 0.1, weather: [{ description: 'clouds', icon: '03d' }] },
-      { dt_txt: '2026-02-21 18:00:00', main: { temp: 8, humidity: 82 }, pop: 0.2, weather: [{ description: 'clouds', icon: '04n' }] },
-      { dt_txt: '2026-02-21 21:00:00', main: { temp: 6, humidity: 87 }, pop: 0.4, weather: [{ description: 'drizzle', icon: '09n' }] },
+      {
+        dt_txt: '2026-02-21 00:00:00',
+        main: { temp: 5, humidity: 90 },
+        pop: 0.8,
+        weather: [{ description: 'rain', icon: '09d' }],
+      },
+      {
+        dt_txt: '2026-02-21 03:00:00',
+        main: { temp: 6, humidity: 88 },
+        pop: 0.7,
+        weather: [{ description: 'rain', icon: '09d' }],
+      },
+      {
+        dt_txt: '2026-02-21 06:00:00',
+        main: { temp: 7, humidity: 85 },
+        pop: 0.5,
+        weather: [{ description: 'clouds', icon: '04d' }],
+      },
+      {
+        dt_txt: '2026-02-21 09:00:00',
+        main: { temp: 10, humidity: 80 },
+        pop: 0.3,
+        weather: [{ description: 'clouds', icon: '04d' }],
+      },
+      {
+        dt_txt: '2026-02-21 12:00:00',
+        main: { temp: 12, humidity: 75 },
+        pop: 0.2,
+        weather: [{ description: 'sunny', icon: '01d' }],
+      },
+      {
+        dt_txt: '2026-02-21 15:00:00',
+        main: { temp: 11, humidity: 78 },
+        pop: 0.1,
+        weather: [{ description: 'clouds', icon: '03d' }],
+      },
+      {
+        dt_txt: '2026-02-21 18:00:00',
+        main: { temp: 8, humidity: 82 },
+        pop: 0.2,
+        weather: [{ description: 'clouds', icon: '04n' }],
+      },
+      {
+        dt_txt: '2026-02-21 21:00:00',
+        main: { temp: 6, humidity: 87 },
+        pop: 0.4,
+        weather: [{ description: 'drizzle', icon: '09n' }],
+      },
     ];
     mockFetch.mockResolvedValueOnce(mockResponse(owmGeoResponse()));
     mockFetch.mockResolvedValueOnce(mockResponse(owmForecastResponse(sameDayList)));
@@ -1309,7 +1474,9 @@ describe('Edge cases', () => {
 
   it('WeatherAPI current: temperature rounds .5 up', async () => {
     const svc = new WeatherDataService({ provider: 'weatherapi', apiKey: 'key' });
-    mockFetch.mockResolvedValueOnce(mockResponse(weatherApiCurrentResponse({ temp_c: 20.5, feelslike_c: 18.5, wind_kph: 10.5 })));
+    mockFetch.mockResolvedValueOnce(
+      mockResponse(weatherApiCurrentResponse({ temp_c: 20.5, feelslike_c: 18.5, wind_kph: 10.5 }))
+    );
 
     const result = await svc.getCurrentWeather('London');
     expect(result.current.temperature).toBe(21);
@@ -1340,7 +1507,15 @@ describe('Edge cases', () => {
     const coldForecast = [
       {
         date: '2026-02-21',
-        day: { maxtemp_c: -3.7, mintemp_c: -15.2, avgtemp_c: -9.8, avghumidity: 95, condition: { text: 'Blizzard', icon: '//cdn.weatherapi.com/weather/64x64/day/227.png' }, daily_chance_of_rain: 0, uv: 1 },
+        day: {
+          maxtemp_c: -3.7,
+          mintemp_c: -15.2,
+          avgtemp_c: -9.8,
+          avghumidity: 95,
+          condition: { text: 'Blizzard', icon: '//cdn.weatherapi.com/weather/64x64/day/227.png' },
+          daily_chance_of_rain: 0,
+          uv: 1,
+        },
         astro: { sunrise: '08:30 AM', sunset: '04:15 PM', moon_phase: 'Full Moon' },
       },
     ];
@@ -1361,7 +1536,9 @@ describe('Edge cases', () => {
       json: vi.fn(),
     });
 
-    await expect(svc.getCurrentWeather('London')).rejects.toThrow('OpenWeatherMap geocoding error: Invalid API key');
+    await expect(svc.getCurrentWeather('London')).rejects.toThrow(
+      'OpenWeatherMap geocoding error: Invalid API key'
+    );
   });
 
   it('OWM weather error includes response text', async () => {
@@ -1374,7 +1551,9 @@ describe('Edge cases', () => {
       json: vi.fn(),
     });
 
-    await expect(svc.getCurrentWeather('London')).rejects.toThrow('OpenWeatherMap weather error: Rate limit exceeded');
+    await expect(svc.getCurrentWeather('London')).rejects.toThrow(
+      'OpenWeatherMap weather error: Rate limit exceeded'
+    );
   });
 
   it('OWM forecast error includes response text', async () => {
@@ -1387,7 +1566,9 @@ describe('Edge cases', () => {
       json: vi.fn(),
     });
 
-    await expect(svc.getForecast('London')).rejects.toThrow('OpenWeatherMap forecast error: Internal server error');
+    await expect(svc.getForecast('London')).rejects.toThrow(
+      'OpenWeatherMap forecast error: Internal server error'
+    );
   });
 
   it('OWM forecast with empty list returns empty forecast array', async () => {
@@ -1408,8 +1589,8 @@ describe('Edge cases', () => {
     await svc.getCurrentWeather('Paris');
 
     expect(mockFetch).toHaveBeenCalledTimes(2);
-    expect((mockFetch.mock.calls[0]![0] as string)).toContain('q=London');
-    expect((mockFetch.mock.calls[1]![0] as string)).toContain('q=Paris');
+    expect(mockFetch.mock.calls[0]![0] as string).toContain('q=London');
+    expect(mockFetch.mock.calls[1]![0] as string).toContain('q=Paris');
   });
 
   it('OWM forecast does not check geocoding response.ok', async () => {

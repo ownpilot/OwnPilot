@@ -7,7 +7,14 @@
 
 import { Hono } from 'hono';
 import { loadProviderConfig, PROVIDER_IDS } from '@ownpilot/core';
-import { apiResponse, apiError, getUserId, ERROR_CODES, zodValidationError, getErrorMessage } from './helpers.js';
+import {
+  apiResponse,
+  apiError,
+  getUserId,
+  ERROR_CODES,
+  zodValidationError,
+  getErrorMessage,
+} from './helpers.js';
 import { hasApiKey, getApiKeySource } from './settings.js';
 import { modelConfigsRepo } from '../db/repositories/model-configs.js';
 import { localProvidersRepo } from '../db/repositories/index.js';
@@ -112,44 +119,92 @@ const DEFAULT_UI_METADATA: { color: string; apiKeyPlaceholder?: string } = { col
 
 // Provider categories for UI organization
 const PROVIDER_CATEGORIES: Record<string, string[]> = {
-  'Popular': [
-    'openai', 'anthropic', 'google', 'deepseek', 'groq', 'mistral', 'xai'
-  ],
+  Popular: ['openai', 'anthropic', 'google', 'deepseek', 'groq', 'mistral', 'xai'],
   'Cloud Platforms': [
-    'azure', 'amazon-bedrock', 'google-vertex', 'google-vertex-anthropic',
-    'cloudflare-workers-ai', 'cloudflare-ai-gateway', 'scaleway', 'ovhcloud',
-    'vultr', 'nvidia', 'sap-ai-core'
+    'azure',
+    'amazon-bedrock',
+    'google-vertex',
+    'google-vertex-anthropic',
+    'cloudflare-workers-ai',
+    'cloudflare-ai-gateway',
+    'scaleway',
+    'ovhcloud',
+    'vultr',
+    'nvidia',
+    'sap-ai-core',
   ],
   'Inference Providers': [
-    'togetherai', 'fireworks-ai', 'deepinfra', 'groq', 'cerebras', 'baseten',
-    'friendli', 'inference', 'novita-ai', 'siliconflow', 'siliconflow-cn'
+    'togetherai',
+    'fireworks-ai',
+    'deepinfra',
+    'groq',
+    'cerebras',
+    'baseten',
+    'friendli',
+    'inference',
+    'novita-ai',
+    'siliconflow',
+    'siliconflow-cn',
   ],
-  'Search & Research': [
-    'perplexity'
-  ],
+  'Search & Research': ['perplexity'],
   'Chinese Providers': [
-    'zhipuai', 'alibaba', 'alibaba-cn', 'moonshotai', 'moonshotai-cn',
-    'minimax', 'minimax-cn', 'xiaomi', 'bailing', 'zai', 'iflowcn'
+    'zhipuai',
+    'alibaba',
+    'alibaba-cn',
+    'moonshotai',
+    'moonshotai-cn',
+    'minimax',
+    'minimax-cn',
+    'xiaomi',
+    'bailing',
+    'zai',
+    'iflowcn',
   ],
   'Development Tools': [
-    'github-copilot', 'github-models', 'gitlab', 'v0', 'lmstudio',
-    'opencode', 'kimi-for-coding'
+    'github-copilot',
+    'github-models',
+    'gitlab',
+    'v0',
+    'lmstudio',
+    'opencode',
+    'kimi-for-coding',
   ],
   'Aggregators & Routers': [
-    'openrouter', 'helicone', 'fastrouter', 'zenmux', 'aihubmix',
-    'vercel', 'morph', 'requesty'
+    'openrouter',
+    'helicone',
+    'fastrouter',
+    'zenmux',
+    'aihubmix',
+    'vercel',
+    'morph',
+    'requesty',
   ],
-  'Specialized': [
-    'cohere', 'upstage', 'huggingface', 'ollama-cloud', 'llama',
-    'poe', 'venice', 'synthetic', 'nano-gpt', 'modelscope'
+  Specialized: [
+    'cohere',
+    'upstage',
+    'huggingface',
+    'ollama-cloud',
+    'llama',
+    'poe',
+    'venice',
+    'synthetic',
+    'nano-gpt',
+    'modelscope',
   ],
-  'Enterprise': [
-    'azure-cognitive-services', 'wandb', 'inception', 'cortecs',
-    'lucidquery', 'firmware', 'chutes', 'vivgrid', 'moark', 'submodel', 'io-net'
+  Enterprise: [
+    'azure-cognitive-services',
+    'wandb',
+    'inception',
+    'cortecs',
+    'lucidquery',
+    'firmware',
+    'chutes',
+    'vivgrid',
+    'moark',
+    'submodel',
+    'io-net',
   ],
-  'Other': [
-    'privatemode-ai', 'nebius', 'abacus'
-  ]
+  Other: ['privatemode-ai', 'nebius', 'abacus'],
 };
 
 /**
@@ -230,7 +285,13 @@ app.get('/', async (c) => {
       baseUrl: lp.baseUrl,
       apiKeyEnv: '',
       docsUrl: undefined,
-      features: { streaming: true, toolUse: true, vision: false, jsonMode: true, systemMessage: true },
+      features: {
+        streaming: true,
+        toolUse: true,
+        vision: false,
+        jsonMode: true,
+        systemMessage: true,
+      },
       modelCount: localModels.length,
       isConfigured: true,
       isEnabled: true,
@@ -242,10 +303,10 @@ app.get('/', async (c) => {
   }
 
   return apiResponse(c, {
-      providers,
-      categories: PROVIDER_CATEGORIES,
-      total: providers.length,
-    });
+    providers,
+    categories: PROVIDER_CATEGORIES,
+    total: providers.length,
+  });
 });
 
 /**
@@ -253,16 +314,14 @@ app.get('/', async (c) => {
  */
 app.get('/categories', (c) => {
   // Find uncategorized providers
-  const allCategorizedIds = new Set(
-    Object.values(PROVIDER_CATEGORIES).flat()
-  );
+  const allCategorizedIds = new Set(Object.values(PROVIDER_CATEGORIES).flat());
   const allProviderIds = getProviderIds();
-  const uncategorized = allProviderIds.filter(id => !allCategorizedIds.has(id));
+  const uncategorized = allProviderIds.filter((id) => !allCategorizedIds.has(id));
 
   return apiResponse(c, {
-      categories: PROVIDER_CATEGORIES,
-      uncategorized,
-    });
+    categories: PROVIDER_CATEGORIES,
+    uncategorized,
+  });
 });
 
 /**
@@ -274,7 +333,11 @@ app.get('/:id', async (c) => {
   const config = loadProviderConfig(id);
 
   if (!config) {
-    return apiError(c, { code: ERROR_CODES.PROVIDER_NOT_FOUND, message: `Provider '${id}' not found` }, 404);
+    return apiError(
+      c,
+      { code: ERROR_CODES.PROVIDER_NOT_FOUND, message: `Provider '${id}' not found` },
+      404
+    );
   }
 
   // Get UI metadata
@@ -284,29 +347,29 @@ app.get('/:id', async (c) => {
   const override = await modelConfigsRepo.getUserProviderConfig(userId, id);
 
   return apiResponse(c, {
-      ...config,
-      // Effective type (user override > base config)
-      type: override?.providerType || config.type,
-      // Effective baseUrl (user override > base config)
-      baseUrl: override?.baseUrl || config.baseUrl,
-      apiKeyEnv: override?.apiKeyEnv || config.apiKeyEnv,
-      isConfigured: hasApiKey(config.id),
-      isEnabled: override?.isEnabled !== false,
-      hasOverride: !!override,
-      // Include user override details if present
-      userOverride: override
-        ? {
-            baseUrl: override.baseUrl,
-            providerType: override.providerType,
-            isEnabled: override.isEnabled,
-            apiKeyEnv: override.apiKeyEnv,
-            notes: override.notes,
-          }
-        : null,
-      // UI metadata
-      color: uiMeta.color,
-      apiKeyPlaceholder: uiMeta.apiKeyPlaceholder,
-    });
+    ...config,
+    // Effective type (user override > base config)
+    type: override?.providerType || config.type,
+    // Effective baseUrl (user override > base config)
+    baseUrl: override?.baseUrl || config.baseUrl,
+    apiKeyEnv: override?.apiKeyEnv || config.apiKeyEnv,
+    isConfigured: hasApiKey(config.id),
+    isEnabled: override?.isEnabled !== false,
+    hasOverride: !!override,
+    // Include user override details if present
+    userOverride: override
+      ? {
+          baseUrl: override.baseUrl,
+          providerType: override.providerType,
+          isEnabled: override.isEnabled,
+          apiKeyEnv: override.apiKeyEnv,
+          notes: override.notes,
+        }
+      : null,
+    // UI metadata
+    color: uiMeta.color,
+    apiKeyPlaceholder: uiMeta.apiKeyPlaceholder,
+  });
 });
 
 /**
@@ -317,15 +380,19 @@ app.get('/:id/models', (c) => {
   const config = loadProviderConfig(id);
 
   if (!config) {
-    return apiError(c, { code: ERROR_CODES.PROVIDER_NOT_FOUND, message: `Provider '${id}' not found` }, 404);
+    return apiError(
+      c,
+      { code: ERROR_CODES.PROVIDER_NOT_FOUND, message: `Provider '${id}' not found` },
+      404
+    );
   }
 
   return apiResponse(c, {
-      provider: config.id,
-      providerName: config.name,
-      models: config.models,
-      isConfigured: hasApiKey(config.id),
-    });
+    provider: config.id,
+    providerName: config.name,
+    models: config.models,
+    isConfigured: hasApiKey(config.id),
+  });
 });
 
 /**
@@ -337,38 +404,42 @@ app.get('/:id/config', async (c) => {
   const config = loadProviderConfig(id);
 
   if (!config) {
-    return apiError(c, { code: ERROR_CODES.PROVIDER_NOT_FOUND, message: `Provider '${id}' not found` }, 404);
+    return apiError(
+      c,
+      { code: ERROR_CODES.PROVIDER_NOT_FOUND, message: `Provider '${id}' not found` },
+      404
+    );
   }
 
   // Get user override
   const userConfig = await modelConfigsRepo.getUserProviderConfig(userId, id);
 
   return apiResponse(c, {
-      providerId: id,
-      // Base config (from JSON)
-      baseConfig: {
-        type: config.type,
-        baseUrl: config.baseUrl,
-        apiKeyEnv: config.apiKeyEnv,
-      },
-      // User overrides (if any)
-      userOverride: userConfig
-        ? {
-            baseUrl: userConfig.baseUrl,
-            providerType: userConfig.providerType,
-            isEnabled: userConfig.isEnabled,
-            apiKeyEnv: userConfig.apiKeyEnv,
-            notes: userConfig.notes,
-          }
-        : null,
-      // Effective config (merged)
-      effectiveConfig: {
-        type: userConfig?.providerType || config.type,
-        baseUrl: userConfig?.baseUrl || config.baseUrl,
-        apiKeyEnv: userConfig?.apiKeyEnv || config.apiKeyEnv,
-        isEnabled: userConfig?.isEnabled !== false,
-      },
-    });
+    providerId: id,
+    // Base config (from JSON)
+    baseConfig: {
+      type: config.type,
+      baseUrl: config.baseUrl,
+      apiKeyEnv: config.apiKeyEnv,
+    },
+    // User overrides (if any)
+    userOverride: userConfig
+      ? {
+          baseUrl: userConfig.baseUrl,
+          providerType: userConfig.providerType,
+          isEnabled: userConfig.isEnabled,
+          apiKeyEnv: userConfig.apiKeyEnv,
+          notes: userConfig.notes,
+        }
+      : null,
+    // Effective config (merged)
+    effectiveConfig: {
+      type: userConfig?.providerType || config.type,
+      baseUrl: userConfig?.baseUrl || config.baseUrl,
+      apiKeyEnv: userConfig?.apiKeyEnv || config.apiKeyEnv,
+      isEnabled: userConfig?.isEnabled !== false,
+    },
+  });
 });
 
 /**
@@ -380,7 +451,11 @@ app.put('/:id/config', async (c) => {
   const config = loadProviderConfig(id);
 
   if (!config) {
-    return apiError(c, { code: ERROR_CODES.PROVIDER_NOT_FOUND, message: `Provider '${id}' not found` }, 404);
+    return apiError(
+      c,
+      { code: ERROR_CODES.PROVIDER_NOT_FOUND, message: `Provider '${id}' not found` },
+      404
+    );
   }
 
   try {
@@ -405,17 +480,24 @@ app.put('/:id/config', async (c) => {
     });
 
     return apiResponse(c, {
-        providerId: id,
-        userOverride: {
-          baseUrl: updated.baseUrl,
-          providerType: updated.providerType,
-          isEnabled: updated.isEnabled,
-          apiKeyEnv: updated.apiKeyEnv,
-          notes: updated.notes,
-        },
-      });
+      providerId: id,
+      userOverride: {
+        baseUrl: updated.baseUrl,
+        providerType: updated.providerType,
+        isEnabled: updated.isEnabled,
+        apiKeyEnv: updated.apiKeyEnv,
+        notes: updated.notes,
+      },
+    });
   } catch (error) {
-    return apiError(c, { code: ERROR_CODES.UPDATE_FAILED, message: getErrorMessage(error, 'Failed to update provider config') }, 500);
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.UPDATE_FAILED,
+        message: getErrorMessage(error, 'Failed to update provider config'),
+      },
+      500
+    );
   }
 });
 
@@ -429,9 +511,9 @@ app.delete('/:id/config', async (c) => {
   const deleted = await modelConfigsRepo.deleteUserProviderConfig(userId, id);
 
   return apiResponse(c, {
-      providerId: id,
-      deleted,
-    });
+    providerId: id,
+    deleted,
+  });
 });
 
 /**
@@ -443,7 +525,11 @@ app.patch('/:id/toggle', async (c) => {
   const config = loadProviderConfig(id);
 
   if (!config) {
-    return apiError(c, { code: ERROR_CODES.PROVIDER_NOT_FOUND, message: `Provider '${id}' not found` }, 404);
+    return apiError(
+      c,
+      { code: ERROR_CODES.PROVIDER_NOT_FOUND, message: `Provider '${id}' not found` },
+      404
+    );
   }
 
   try {
@@ -461,11 +547,18 @@ app.patch('/:id/toggle', async (c) => {
     const userConfig = await modelConfigsRepo.getUserProviderConfig(userId, id);
 
     return apiResponse(c, {
-        providerId: id,
-        isEnabled: userConfig?.isEnabled ?? true,
-      });
+      providerId: id,
+      isEnabled: userConfig?.isEnabled ?? true,
+    });
   } catch (error) {
-    return apiError(c, { code: ERROR_CODES.TOGGLE_FAILED, message: getErrorMessage(error, 'Failed to toggle provider') }, 500);
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.TOGGLE_FAILED,
+        message: getErrorMessage(error, 'Failed to toggle provider'),
+      },
+      500
+    );
   }
 });
 
@@ -477,16 +570,16 @@ app.get('/overrides/all', async (c) => {
   const overrides = await modelConfigsRepo.listUserProviderConfigs(userId);
 
   return apiResponse(c, {
-      overrides: overrides.map((o) => ({
-        providerId: o.providerId,
-        baseUrl: o.baseUrl,
-        providerType: o.providerType,
-        isEnabled: o.isEnabled,
-        apiKeyEnv: o.apiKeyEnv,
-        notes: o.notes,
-      })),
-      total: overrides.length,
-    });
+    overrides: overrides.map((o) => ({
+      providerId: o.providerId,
+      baseUrl: o.baseUrl,
+      providerType: o.providerType,
+      isEnabled: o.isEnabled,
+      apiKeyEnv: o.apiKeyEnv,
+      notes: o.notes,
+    })),
+    total: overrides.length,
+  });
 });
 
 export const providersRoutes = app;

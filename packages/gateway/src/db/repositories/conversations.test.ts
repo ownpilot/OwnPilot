@@ -92,7 +92,7 @@ describe('ConversationsRepository', () => {
       // Verify INSERT was called with correct params
       expect(mockAdapter.execute).toHaveBeenCalledWith(
         expect.stringContaining('INSERT INTO conversations'),
-        ['conv-1', 'assistant', 'You are helpful.', '{"key":"value"}'],
+        ['conv-1', 'assistant', 'You are helpful.', '{"key":"value"}']
       );
 
       // Verify the returned entity is properly mapped
@@ -107,7 +107,7 @@ describe('ConversationsRepository', () => {
     it('uses defaults for optional fields', async () => {
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
       mockAdapter.queryOne.mockResolvedValueOnce(
-        makeConversationRow({ system_prompt: null, metadata: '{}' }),
+        makeConversationRow({ system_prompt: null, metadata: '{}' })
       );
 
       const result = await repo.create({
@@ -118,7 +118,7 @@ describe('ConversationsRepository', () => {
       // systemPrompt should be undefined, metadata should be empty object
       expect(mockAdapter.execute).toHaveBeenCalledWith(
         expect.stringContaining('INSERT INTO conversations'),
-        ['conv-2', 'bot', null, '{}'],
+        ['conv-2', 'bot', null, '{}']
       );
       expect(result.systemPrompt).toBeUndefined();
       expect(result.metadata).toEqual({});
@@ -128,9 +128,9 @@ describe('ConversationsRepository', () => {
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
       mockAdapter.queryOne.mockResolvedValueOnce(null);
 
-      await expect(
-        repo.create({ id: 'conv-3', agentName: 'bot' }),
-      ).rejects.toThrow('Failed to create conversation');
+      await expect(repo.create({ id: 'conv-3', agentName: 'bot' })).rejects.toThrow(
+        'Failed to create conversation'
+      );
     });
   });
 
@@ -145,10 +145,9 @@ describe('ConversationsRepository', () => {
       expect(result).not.toBeNull();
       expect(result!.id).toBe('conv-1');
       expect(result!.agentName).toBe('assistant');
-      expect(mockAdapter.queryOne).toHaveBeenCalledWith(
-        expect.stringContaining('WHERE id = $1'),
-        ['conv-1'],
-      );
+      expect(mockAdapter.queryOne).toHaveBeenCalledWith(expect.stringContaining('WHERE id = $1'), [
+        'conv-1',
+      ]);
     });
 
     it('returns null when not found', async () => {
@@ -160,9 +159,7 @@ describe('ConversationsRepository', () => {
     });
 
     it('handles null system_prompt as undefined', async () => {
-      mockAdapter.queryOne.mockResolvedValueOnce(
-        makeConversationRow({ system_prompt: null }),
-      );
+      mockAdapter.queryOne.mockResolvedValueOnce(makeConversationRow({ system_prompt: null }));
 
       const result = await repo.getById('conv-1');
 
@@ -171,7 +168,7 @@ describe('ConversationsRepository', () => {
 
     it('handles non-string metadata gracefully', async () => {
       mockAdapter.queryOne.mockResolvedValueOnce(
-        makeConversationRow({ metadata: { already: 'parsed' } }),
+        makeConversationRow({ metadata: { already: 'parsed' } })
       );
 
       const result = await repo.getById('conv-1');
@@ -194,7 +191,7 @@ describe('ConversationsRepository', () => {
       expect(result).toHaveLength(2);
       expect(mockAdapter.query).toHaveBeenCalledWith(
         expect.stringContaining('WHERE agent_name = $1'),
-        ['assistant', 50],
+        ['assistant', 50]
       );
     });
 
@@ -203,10 +200,10 @@ describe('ConversationsRepository', () => {
 
       await repo.getByAgent('assistant', 10);
 
-      expect(mockAdapter.query).toHaveBeenCalledWith(
-        expect.stringContaining('LIMIT $2'),
-        ['assistant', 10],
-      );
+      expect(mockAdapter.query).toHaveBeenCalledWith(expect.stringContaining('LIMIT $2'), [
+        'assistant',
+        10,
+      ]);
     });
 
     it('returns empty array when no conversations found', async () => {
@@ -229,7 +226,7 @@ describe('ConversationsRepository', () => {
       expect(result).toHaveLength(1);
       expect(mockAdapter.query).toHaveBeenCalledWith(
         expect.stringContaining('LIMIT $1 OFFSET $2'),
-        [100, 0],
+        [100, 0]
       );
     });
 
@@ -240,7 +237,7 @@ describe('ConversationsRepository', () => {
 
       expect(mockAdapter.query).toHaveBeenCalledWith(
         expect.stringContaining('LIMIT $1 OFFSET $2'),
-        [25, 50],
+        [25, 50]
       );
     });
   });
@@ -255,7 +252,7 @@ describe('ConversationsRepository', () => {
 
       expect(mockAdapter.execute).toHaveBeenCalledWith(
         expect.stringContaining('UPDATE conversations SET updated_at'),
-        ['conv-1'],
+        ['conv-1']
       );
     });
   });
@@ -270,7 +267,7 @@ describe('ConversationsRepository', () => {
 
       expect(mockAdapter.execute).toHaveBeenCalledWith(
         expect.stringContaining('SET system_prompt = $1'),
-        ['New prompt', 'conv-1'],
+        ['New prompt', 'conv-1']
       );
     });
   });
@@ -286,7 +283,7 @@ describe('ConversationsRepository', () => {
       expect(result).toBe(true);
       expect(mockAdapter.execute).toHaveBeenCalledWith(
         expect.stringContaining('DELETE FROM conversations WHERE id = $1'),
-        ['conv-1'],
+        ['conv-1']
       );
     });
 
@@ -330,7 +327,7 @@ describe('ConversationsRepository', () => {
         makeConversationRow({
           created_at: '2024-01-15T08:30:00.000Z',
           updated_at: '2024-02-20T16:45:00.000Z',
-        }),
+        })
       );
 
       const result = await repo.getById('conv-1');
@@ -340,9 +337,7 @@ describe('ConversationsRepository', () => {
     });
 
     it('handles empty metadata string', async () => {
-      mockAdapter.queryOne.mockResolvedValueOnce(
-        makeConversationRow({ metadata: '' }),
-      );
+      mockAdapter.queryOne.mockResolvedValueOnce(makeConversationRow({ metadata: '' }));
 
       const result = await repo.getById('conv-1');
 

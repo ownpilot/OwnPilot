@@ -10,11 +10,7 @@ import {
   DEFAULT_TOOL_PERMISSIONS,
   DEFAULT_PERMISSION_POLICY,
 } from './permissions.js';
-import type {
-  PermissionLevel,
-  PermissionPolicy,
-  ToolPermissionConfig,
-} from './permissions.js';
+import type { PermissionLevel, PermissionPolicy, ToolPermissionConfig } from './permissions.js';
 import type { ToolContext } from './types.js';
 
 // ---------------------------------------------------------------------------
@@ -214,12 +210,32 @@ describe('PermissionChecker', () => {
     it('denies an explicitly denied tool even if everything else allows it', () => {
       const policy = makePolicy({
         defaultLevel: 'admin',
-        defaultCategories: ['file_read', 'file_write', 'code_execute', 'network_read', 'network_write', 'system', 'memory', 'file_delete', 'custom'],
+        defaultCategories: [
+          'file_read',
+          'file_write',
+          'code_execute',
+          'network_read',
+          'network_write',
+          'system',
+          'memory',
+          'file_delete',
+          'custom',
+        ],
         users: {
           'user-1': {
             userId: 'user-1',
             maxLevel: 'admin',
-            allowedCategories: ['file_read', 'file_write', 'code_execute', 'network_read', 'network_write', 'system', 'memory', 'file_delete', 'custom'],
+            allowedCategories: [
+              'file_read',
+              'file_write',
+              'code_execute',
+              'network_read',
+              'network_write',
+              'system',
+              'memory',
+              'file_delete',
+              'custom',
+            ],
             deniedTools: ['read_file'],
           },
         },
@@ -271,7 +287,17 @@ describe('PermissionChecker', () => {
     it('flags requiresConfirmation for write_file when tool config says so', () => {
       const policy = makePolicy({
         defaultLevel: 'admin',
-        defaultCategories: ['file_read', 'file_write', 'code_execute', 'network_read', 'network_write', 'system', 'memory', 'file_delete', 'custom'],
+        defaultCategories: [
+          'file_read',
+          'file_write',
+          'code_execute',
+          'network_read',
+          'network_write',
+          'system',
+          'memory',
+          'file_delete',
+          'custom',
+        ],
       });
       const c = new PermissionChecker(policy);
       const result = c.check('write_file', ctx);
@@ -282,7 +308,17 @@ describe('PermissionChecker', () => {
     it('flags requiresConfirmation when user-level requireConfirmation is true', () => {
       const policy = makePolicy({
         defaultLevel: 'admin',
-        defaultCategories: ['file_read', 'file_write', 'code_execute', 'network_read', 'network_write', 'system', 'memory', 'file_delete', 'custom'],
+        defaultCategories: [
+          'file_read',
+          'file_write',
+          'code_execute',
+          'network_read',
+          'network_write',
+          'system',
+          'memory',
+          'file_delete',
+          'custom',
+        ],
         users: {
           'user-1': {
             userId: 'user-1',
@@ -812,9 +848,7 @@ describe('PermissionChecker', () => {
   describe('recordUsage', () => {
     it('does nothing when auditLog is false', () => {
       const spy = vi.spyOn(console, 'log').mockImplementation(() => {});
-      const noAuditChecker = new PermissionChecker(
-        makePolicy({ auditLog: false })
-      );
+      const noAuditChecker = new PermissionChecker(makePolicy({ auditLog: false }));
       noAuditChecker.recordUsage('read_file', ctx, { allowed: true });
       expect(spy).not.toHaveBeenCalled();
       spy.mockRestore();
@@ -825,14 +859,19 @@ describe('PermissionChecker', () => {
       const originalEnv = process.env.NODE_ENV;
       process.env.NODE_ENV = 'development';
 
-      checker.recordUsage('read_file', ctx, { allowed: true }, {
-        password: 'hunter2',
-        token: 'abc123',
-        secret: 'top-secret',
-        apiKey: 'sk-xxx',
-        credentials: 'creds',
-        normalArg: 'visible',
-      });
+      checker.recordUsage(
+        'read_file',
+        ctx,
+        { allowed: true },
+        {
+          password: 'hunter2',
+          token: 'abc123',
+          secret: 'top-secret',
+          apiKey: 'sk-xxx',
+          credentials: 'creds',
+          normalArg: 'visible',
+        }
+      );
 
       expect(spy).toHaveBeenCalled();
       // getLog('Permission').debug('Audit:', logEntry) → console.debug('[Permission]', 'Audit:', logEntry)
@@ -854,13 +893,20 @@ describe('PermissionChecker', () => {
       process.env.NODE_ENV = 'development';
 
       const longValue = 'a'.repeat(200);
-      checker.recordUsage('read_file', ctx, { allowed: true }, {
-        longField: longValue,
-      });
+      checker.recordUsage(
+        'read_file',
+        ctx,
+        { allowed: true },
+        {
+          longField: longValue,
+        }
+      );
 
       const loggedData = spy.mock.calls[0][2] as Record<string, unknown>;
       expect((loggedData.args as Record<string, string>).longField).toContain('truncated');
-      expect((loggedData.args as Record<string, string>).longField.length).toBeLessThan(longValue.length);
+      expect((loggedData.args as Record<string, string>).longField.length).toBeLessThan(
+        longValue.length
+      );
 
       process.env.NODE_ENV = originalEnv;
       spy.mockRestore();
@@ -1037,12 +1083,12 @@ describe('createPermissiveChecker', () => {
     const ctx = makeContext();
 
     const tools = [
-      'read_file',       // file_read
-      'write_file',      // file_write
-      'delete_file',     // file_delete
+      'read_file', // file_read
+      'write_file', // file_write
+      'delete_file', // file_delete
       'execute_javascript', // code_execute
-      'http_request',    // network_read
-      'memory_recall',   // memory
+      'http_request', // network_read
+      'memory_recall', // memory
     ];
 
     for (const tool of tools) {
@@ -1070,7 +1116,10 @@ describe('withPermissionCheck', () => {
     const wrapped = withPermissionCheck('read_file', executor, c);
 
     const result = await wrapped({ path: '/test' }, makeContext());
-    expect(executor).toHaveBeenCalledWith({ path: '/test' }, expect.objectContaining({ userId: 'user-1' }));
+    expect(executor).toHaveBeenCalledWith(
+      { path: '/test' },
+      expect.objectContaining({ userId: 'user-1' })
+    );
     expect(result).toEqual({ content: 'result' });
   });
 
@@ -1079,7 +1128,11 @@ describe('withPermissionCheck', () => {
     const c = createRestrictiveChecker();
     const wrapped = withPermissionCheck('execute_javascript', executor, c);
 
-    const result = await wrapped({}, makeContext()) as { content: string; isError: boolean; metadata: Record<string, unknown> };
+    const result = (await wrapped({}, makeContext())) as {
+      content: string;
+      isError: boolean;
+      metadata: Record<string, unknown>;
+    };
     expect(executor).not.toHaveBeenCalled();
     expect(result.isError).toBe(true);
     expect(result.content).toContain('Permission denied');
@@ -1106,10 +1159,7 @@ describe('withPermissionCheck', () => {
 
     await wrapped({ path: '/test', content: 'data' }, makeContext());
     // getLog('Permission').info(msg) → console.log('[Permission]', msg)
-    expect(logSpy).toHaveBeenCalledWith(
-      '[Permission]',
-      expect.stringContaining('write_file')
-    );
+    expect(logSpy).toHaveBeenCalledWith('[Permission]', expect.stringContaining('write_file'));
     // Executor still gets called
     expect(executor).toHaveBeenCalled();
 

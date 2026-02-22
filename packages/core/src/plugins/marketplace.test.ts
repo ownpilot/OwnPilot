@@ -38,9 +38,7 @@ import type {
 // Helpers
 // =============================================================================
 
-function makeMinimalManifest(
-  overrides: Partial<MarketplaceManifest> = {},
-): MarketplaceManifest {
+function makeMinimalManifest(overrides: Partial<MarketplaceManifest> = {}): MarketplaceManifest {
   return {
     id: 'test-plugin',
     name: 'Test Plugin',
@@ -531,8 +529,12 @@ describe('PluginVerifier', () => {
 
   describe('registerPublisherKey', () => {
     // Freeze time so signManifest/verifySignature timestamps are consistent
-    beforeEach(() => { vi.useFakeTimers(); });
-    afterEach(() => { vi.useRealTimers(); });
+    beforeEach(() => {
+      vi.useFakeTimers();
+    });
+    afterEach(() => {
+      vi.useRealTimers();
+    });
 
     it('should register a publisher key', () => {
       const keys = generatePublisherKeys();
@@ -631,8 +633,12 @@ describe('PluginVerifier', () => {
 
   describe('verify', () => {
     // Freeze time so signManifest/verifySignature timestamps are consistent
-    beforeEach(() => { vi.useFakeTimers(); });
-    afterEach(() => { vi.useRealTimers(); });
+    beforeEach(() => {
+      vi.useFakeTimers();
+    });
+    afterEach(() => {
+      vi.useRealTimers();
+    });
 
     it('should return unverified for unsigned manifest', () => {
       const manifest = makeMinimalManifest();
@@ -707,9 +713,7 @@ describe('PluginVerifier', () => {
       const result = verifier.verify(signedManifest, 'different-hash');
       expect(result.valid).toBe(false);
       expect(result.integrityValid).toBe(false);
-      expect(result.errors).toContain(
-        'Content hash mismatch - files may have been tampered with',
-      );
+      expect(result.errors).toContain('Content hash mismatch - files may have been tampered with');
     });
 
     it('should immediately return revoked result for revoked plugin', () => {
@@ -810,8 +814,17 @@ describe('validateManifest', () => {
   it('should require all mandatory fields', () => {
     const errors = validateManifest({});
     const requiredFields = [
-      'id', 'name', 'version', 'description', 'publisher',
-      'category', 'security', 'capabilities', 'main', 'files', 'compatibility',
+      'id',
+      'name',
+      'version',
+      'description',
+      'publisher',
+      'category',
+      'security',
+      'capabilities',
+      'main',
+      'files',
+      'compatibility',
     ];
     for (const field of requiredFields) {
       expect(errors.some((e) => e.field === field && e.severity === 'error')).toBe(true);
@@ -875,9 +888,7 @@ describe('validateManifest', () => {
     });
     const manifest = makeMinimalManifest({ security });
     const errors = validateManifest(manifest);
-    expect(
-      errors.some((e) => e.field === 'security.networkAccess.domains'),
-    ).toBe(true);
+    expect(errors.some((e) => e.field === 'security.networkAccess.domains')).toBe(true);
   });
 
   it('should not require domains when makesExternalRequests is false', () => {
@@ -906,7 +917,7 @@ describe('validateManifest', () => {
     });
     const errors = validateManifest(manifest);
     expect(
-      errors.some((e) => e.field === 'capabilities' && e.message.includes('invalid:cap')),
+      errors.some((e) => e.field === 'capabilities' && e.message.includes('invalid:cap'))
     ).toBe(true);
   });
 
@@ -924,9 +935,9 @@ describe('validateManifest', () => {
       files: ['index.js'],
     });
     const errors = validateManifest(manifest);
-    expect(
-      errors.some((e) => e.field === 'main' && e.message.includes('listed in files')),
-    ).toBe(true);
+    expect(errors.some((e) => e.field === 'main' && e.message.includes('listed in files'))).toBe(
+      true
+    );
   });
 
   it('should pass when main is included in files', () => {
@@ -1035,7 +1046,7 @@ describe('MarketplaceRegistry', () => {
           category: 'productivity',
           tags: ['alpha', 'tool'],
           pricing: { type: 'free' },
-        }),
+        })
       );
       registry.register(
         makeMinimalManifest({
@@ -1045,7 +1056,7 @@ describe('MarketplaceRegistry', () => {
           category: 'communication',
           tags: ['beta', 'chat'],
           pricing: { type: 'paid', price: 9.99, currency: 'USD' },
-        }),
+        })
       );
       registry.register(
         makeMinimalManifest({
@@ -1055,7 +1066,7 @@ describe('MarketplaceRegistry', () => {
           category: 'development',
           tags: ['gamma', 'tool'],
           pricing: { type: 'freemium' },
-        }),
+        })
       );
       // Set downloads/ratings for sorting tests
       registry.recordDownload('alpha-tool');
