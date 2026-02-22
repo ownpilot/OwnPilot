@@ -40,8 +40,10 @@ const MAX_OUTPUT_SIZE = 512 * 1024; // 512KB for sandbox outputs
  * Throws if the resolved path escapes the workspace directory.
  */
 function resolveSafePath(workspaceDir: string, userPath: string): string {
-  // Normalize and resolve
-  const resolved = path.resolve(workspaceDir, userPath);
+  // Normalize backslashes to forward slashes before resolution so that
+  // Windows-style traversal (e.g. "..\\..\\secret") is caught on all platforms.
+  const sanitized = userPath.replace(/\\/g, '/');
+  const resolved = path.resolve(workspaceDir, sanitized);
   const normalizedWorkspace = path.resolve(workspaceDir);
 
   // Check that resolved path is within workspace
