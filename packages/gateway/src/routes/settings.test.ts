@@ -144,9 +144,7 @@ describe('Settings Routes', () => {
 
     it('returns demoMode false when only local provider is enabled', async () => {
       mockSettingsRepo.getByPrefix.mockResolvedValue([]);
-      mockLocalProvidersRepo.listProviders.mockResolvedValue([
-        { id: 'ollama', isEnabled: true },
-      ]);
+      mockLocalProvidersRepo.listProviders.mockResolvedValue([{ id: 'ollama', isEnabled: true }]);
       mockSettingsRepo.get.mockResolvedValue(null);
 
       const res = await app.request('/settings');
@@ -209,6 +207,18 @@ describe('Settings Routes', () => {
       });
 
       expect(res.status).toBe(400);
+    });
+
+    it('returns 400 when provider name is too long', async () => {
+      const res = await app.request('/settings/default-provider', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ provider: 'a'.repeat(65) }),
+      });
+
+      expect(res.status).toBe(400);
+      const json = await res.json();
+      expect(json.error.message).toContain('too long');
     });
   });
 
@@ -376,6 +386,119 @@ describe('Settings Routes', () => {
       expect(res.status).toBe(200);
       const json = await res.json();
       expect(json.data.enabled).toBe(false);
+    });
+  });
+
+  describe('POST /settings/sandbox', () => {
+    it('updates sandbox settings', async () => {
+      const res = await app.request('/settings/sandbox', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          enabled: true,
+          defaultMemoryMB: 1024,
+          defaultTimeoutMs: 60000,
+        }),
+      });
+
+      expect(res.status).toBe(200);
+      const json = await res.json();
+      expect(json.data.updated).toContain('enabled');
+      expect(json.data.updated).toContain('defaultMemoryMB');
+      expect(json.data.updated).toContain('defaultTimeoutMs');
+    });
+
+    it('returns 400 for invalid defaultNetwork value', async () => {
+      const res = await app.request('/settings/sandbox', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          defaultNetwork: 'invalid-network',
+        }),
+      });
+
+      expect(res.status).toBe(400);
+      const json = await res.json();
+      expect(json.error.message).toContain('defaultNetwork must be one of');
+    });
+
+    it('returns 400 for invalid allowedImages type', async () => {
+      const res = await app.request('/settings/sandbox', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          allowedImages: 'not-an-array',
+        }),
+      });
+
+      expect(res.status).toBe(400);
+      const json = await res.json();
+      expect(json.error.message).toContain('must be an array');
+    });
+
+    it('ignores invalid sandbox setting keys', async () => {
+      const res = await app.request('/settings/sandbox', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          invalidKey: 'some-value',
+          enabled: true,
+        }),
+      });
+
+      expect(res.status).toBe(200);
+      const json = await res.json();
+      expect(json.data.updated).not.toContain('invalidKey');
+      expect(json.data.updated).toContain('enabled');
+    });
+  });
+
+  describe('Utility Functions', () => {
+    it('should test hasApiKey', async () => {
+      const { hasApiKey } = await import('./settings.js');
+      mockSettingsRepo.has.mockResolvedValueOnce(true);
+
+      const result = await hasApiKey('openai');
+
+      expect(result).toBe(true);
+      expect(mockSettingsRepo.has).toHaveBeenCalledWith('api_key:openai');
+    });
+
+    it('should test getApiKey', async () => {
+      const { getApiKey } = await import('./settings.js');
+      mockSettingsRepo.get.mockResolvedValueOnce('secret-key');
+
+      const result = await getApiKey('anthropic');
+
+      expect(result).toBe('secret-key');
+      expect(mockSettingsRepo.get).toHaveBeenCalledWith('api_key:anthropic');
+    });
+
+    it('should test getConfiguredProviderIds', async () => {
+      const { getConfiguredProviderIds } = await import('./settings.js');
+      mockSettingsRepo.getByPrefix.mockResolvedValueOnce([
+        { key: 'api_key:openai', value: 'key1' },
+        { key: 'api_key:anthropic', value: 'key2' },
+      ]);
+
+      const result = await getConfiguredProviderIds();
+
+      expect(result).toContain('openai');
+      expect(result).toContain('anthropic');
+    });
+
+    it('should test loadApiKeysToEnvironment', async () => {
+      const { loadApiKeysToEnvironment } = await import('./settings.js');
+      const originalEnv = process.env.OPENAI_API_KEY;
+
+      mockSettingsRepo.getByPrefix.mockResolvedValueOnce([
+        { key: 'api_key:openai', value: 'loaded-key' },
+      ]);
+
+      await loadApiKeysToEnvironment();
+
+      expect(process.env.OPENAI_API_KEY).toBe('loaded-key');
+      process.env.OPENAI_API_KEY = originalEnv;
     });
   });
 });
