@@ -442,6 +442,23 @@ async function main() {
     log.warn('Triggers will be available but engine is not running.');
   }
 
+  // Start Autonomy Engine (Pulse System)
+  try {
+    const { getAutonomyEngine, createPulseServiceAdapter } = await import('./autonomy/engine.js');
+    const pulseEngine = getAutonomyEngine({ userId: 'default' });
+    pulseEngine.setBroadcaster((_event, data) =>
+      wsGateway.broadcast(
+        'system:notification',
+        data as import('./ws/types.js').ServerEvents['system:notification']
+      )
+    );
+    registry.register(Services.Pulse, createPulseServiceAdapter(pulseEngine));
+    pulseEngine.start();
+    log.info('Autonomy Engine started.');
+  } catch (error) {
+    log.warn('Autonomy Engine failed to start', { error: String(error) });
+  }
+
   // Seed example plans (only creates if not already present)
   try {
     const planSeed = await seedExamplePlans('default');

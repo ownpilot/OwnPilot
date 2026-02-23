@@ -248,3 +248,25 @@ export const EMBEDDING_QUEUE_MAX_SIZE = 5_000;
 
 /** Maximum memories to load in a single backfill run */
 export const EMBEDDING_BACKFILL_LIMIT = 1_000;
+
+// ============================================================================
+// Autonomy Engine (Pulse System)
+// ============================================================================
+
+/** Minimum pulse interval (ms) — adaptive timer floor */
+export const PULSE_MIN_INTERVAL_MS = 5 * 60_000; // 5 min
+
+/** Maximum pulse interval (ms) — adaptive timer ceiling */
+export const PULSE_MAX_INTERVAL_MS = 15 * 60_000; // 15 min
+
+/** Maximum actions the engine can execute per pulse cycle */
+export const PULSE_MAX_ACTIONS = 5;
+
+/** Quiet hours start (hour, 0-23) — pulses are skipped during quiet hours */
+export const PULSE_QUIET_HOURS_START = 22;
+
+/** Quiet hours end (hour, 0-23) */
+export const PULSE_QUIET_HOURS_END = 7;
+
+/** Days to retain autonomy log entries */
+export const PULSE_LOG_RETENTION_DAYS = 30;

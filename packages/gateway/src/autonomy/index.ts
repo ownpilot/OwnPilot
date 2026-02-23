@@ -36,3 +36,34 @@ export {
   type ApprovalManagerConfig,
   type ApprovalManagerEvents,
 } from './approvals.js';
+
+// Pulse System (Autonomy Engine)
+export {
+  AutonomyEngine,
+  getAutonomyEngine,
+  createPulseServiceAdapter,
+  stopAutonomyEngine,
+  type AutonomyEngineConfig,
+} from './engine.js';
+
+export { gatherPulseContext, type PulseContext, type GoalSummary } from './context.js';
+
+export {
+  evaluatePulseContext,
+  calculateNextInterval,
+  type Signal,
+  type SignalSeverity,
+  type EvaluationResult,
+} from './evaluator.js';
+
+export {
+  getPulseSystemPrompt,
+  buildPulseUserMessage,
+  parsePulseDecision,
+  type PulseAction,
+  type PulseDecision,
+} from './prompt.js';
+
+export { executePulseActions } from './executor.js';
+
+export { reportPulseResult, type Broadcaster } from './reporter.js';

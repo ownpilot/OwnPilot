@@ -190,6 +190,15 @@ export type {
   UpdateHeartbeatInput as HeartbeatUpdateInput,
 } from './heartbeat-service.js';
 
+// Pulse Service (Autonomy Engine)
+export type {
+  IPulseService,
+  PulseResult,
+  PulseActionResult,
+  PulseStats,
+  AutonomyLogEntry,
+} from './pulse-service.js';
+
 // Config Center
 export * from './config-center.js';
 

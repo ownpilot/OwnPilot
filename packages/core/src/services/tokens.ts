@@ -33,6 +33,7 @@ import type { IMcpClientService } from './mcp-client-service.js';
 import type { IExtensionService } from './extension-service.js';
 import type { IEmbeddingService } from './embedding-service.js';
 import type { IHeartbeatService } from './heartbeat-service.js';
+import type { IPulseService } from './pulse-service.js';
 
 /**
  * All service tokens.
@@ -103,4 +104,7 @@ export const Services = {
 
   /** Heartbeat management (NL-to-cron periodic tasks) */
   Heartbeat: new ServiceToken<IHeartbeatService>('heartbeat'),
+
+  /** Autonomy Engine (Pulse System) */
+  Pulse: new ServiceToken<IPulseService>('pulse'),
 } as const;

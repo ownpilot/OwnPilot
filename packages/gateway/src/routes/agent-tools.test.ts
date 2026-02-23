@@ -49,6 +49,8 @@ vi.mock('../tools/index.js', () => ({
   executeHeartbeatTool: vi.fn(),
   EXTENSION_TOOLS: [],
   executeExtensionTool: vi.fn(),
+  PULSE_TOOLS: [],
+  executePulseTool: vi.fn(),
 }));
 vi.mock('../services/config-tools.js', () => ({
   CONFIG_TOOLS: [],
