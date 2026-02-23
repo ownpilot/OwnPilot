@@ -36,6 +36,7 @@ const mockSessionsRepo = vi.hoisted(() => ({
   findActive: vi.fn(),
   create: vi.fn(),
   touchLastMessage: vi.fn(),
+  linkConversation: vi.fn().mockResolvedValue(undefined),
 }));
 
 const mockMessagesRepo = vi.hoisted(() => ({
@@ -268,6 +269,48 @@ function createChannelUser(
     firstSeenAt: new Date(),
     lastSeenAt: new Date(),
     ...overrides,
+  };
+}
+
+/**
+ * Create a mock agent with memory/conversation methods needed by processViaBus.
+ * The memory object is stable (same reference on every getMemory() call).
+ */
+function createMockAgent(
+  overrides?: Partial<{
+    id: string;
+    memoryHas: boolean;
+    newConvId: string;
+    systemPrompt: string;
+    chat: ReturnType<typeof vi.fn>;
+  }>
+) {
+  const opts = {
+    id: 'default',
+    memoryHas: true,
+    newConvId: 'new-conv-id',
+    systemPrompt: 'You are helpful',
+    chat: undefined as ReturnType<typeof vi.fn> | undefined,
+    ...overrides,
+  };
+  const memory = {
+    has: vi.fn(() => opts.memoryHas),
+    create: vi.fn((_prompt: string) => ({
+      id: opts.newConvId,
+      systemPrompt: opts.systemPrompt,
+      messages: [],
+    })),
+  };
+  return {
+    id: opts.id,
+    setRequestApproval: vi.fn(),
+    getConversation: vi.fn(() => ({
+      id: 'conv-default',
+      systemPrompt: opts.systemPrompt,
+    })),
+    loadConversation: vi.fn(() => true),
+    getMemory: vi.fn(() => memory),
+    ...(opts.chat ? { chat: opts.chat } : {}),
   };
 }
 
@@ -872,7 +915,7 @@ describe('ChannelServiceImpl', () => {
             throw new Error('Not found');
           }),
         });
-        mockGetOrCreateDefaultAgent.mockResolvedValue({ id: 'default' });
+        mockGetOrCreateDefaultAgent.mockResolvedValue(createMockAgent());
 
         await service.processIncomingMessage(message);
 
@@ -979,7 +1022,7 @@ describe('ChannelServiceImpl', () => {
             throw new Error('Not found');
           }),
         });
-        mockGetOrCreateDefaultAgent.mockResolvedValue({ id: 'default' });
+        mockGetOrCreateDefaultAgent.mockResolvedValue(createMockAgent());
 
         await service.processIncomingMessage(message);
 
@@ -1012,7 +1055,7 @@ describe('ChannelServiceImpl', () => {
             throw new Error('Not found');
           }),
         });
-        mockGetOrCreateDefaultAgent.mockResolvedValue({ id: 'default' });
+        mockGetOrCreateDefaultAgent.mockResolvedValue(createMockAgent());
 
         await service.processIncomingMessage(message);
 
@@ -1030,9 +1073,11 @@ describe('ChannelServiceImpl', () => {
       beforeEach(() => {
         // Set up direct agent path (no bus) for simplicity
         mockHasServiceRegistry.mockReturnValue(false);
-        mockGetOrCreateDefaultAgent.mockResolvedValue({
-          chat: vi.fn().mockResolvedValue({ ok: true, value: { content: 'AI says hi' } }),
-        });
+        mockGetOrCreateDefaultAgent.mockResolvedValue(
+          createMockAgent({
+            chat: vi.fn().mockResolvedValue({ ok: true, value: { content: 'AI says hi' } }),
+          })
+        );
       });
 
       it('should save incoming message', async () => {
@@ -1092,9 +1137,11 @@ describe('ChannelServiceImpl', () => {
     describe('session management', () => {
       beforeEach(() => {
         mockHasServiceRegistry.mockReturnValue(false);
-        mockGetOrCreateDefaultAgent.mockResolvedValue({
-          chat: vi.fn().mockResolvedValue({ ok: true, value: { content: 'response' } }),
-        });
+        mockGetOrCreateDefaultAgent.mockResolvedValue(
+          createMockAgent({
+            chat: vi.fn().mockResolvedValue({ ok: true, value: { content: 'response' } }),
+          })
+        );
       });
 
       it('should reuse existing session if found', async () => {
@@ -1112,13 +1159,15 @@ describe('ChannelServiceImpl', () => {
         mockSessionsRepo.findActive.mockResolvedValue(null);
         mockSessionsRepo.create.mockResolvedValue({
           id: 'new-session',
-          conversationId: 'new-conv',
+          conversationId: 'new-conv-id',
         });
 
         await service.processIncomingMessage(message);
 
+        // Should create conversation in agent memory and persist to DB
         expect(mockConversationsRepo.create).toHaveBeenCalledWith(
           expect.objectContaining({
+            id: 'new-conv-id', // ID from agent.getMemory().create()
             agentName: 'default',
             metadata: expect.objectContaining({
               source: 'channel',
@@ -1131,6 +1180,7 @@ describe('ChannelServiceImpl', () => {
             channelUserId: 'cu-1',
             channelPluginId: 'test-plugin',
             platformChatId: 'chat-123',
+            conversationId: 'new-conv-id',
           })
         );
       });
@@ -1138,6 +1188,22 @@ describe('ChannelServiceImpl', () => {
       it('should touch session lastMessageAt', async () => {
         await service.processIncomingMessage(message);
         expect(mockSessionsRepo.touchLastMessage).toHaveBeenCalledWith('session-1');
+      });
+
+      it('should create conversation in agent memory when creating new session', async () => {
+        mockSessionsRepo.findActive.mockResolvedValue(null);
+        const agent = createMockAgent({ newConvId: 'mem-conv-1' });
+        mockGetOrCreateDefaultAgent.mockResolvedValue(agent);
+        mockSessionsRepo.create.mockResolvedValue({
+          id: 'new-session',
+          conversationId: 'mem-conv-1',
+        });
+
+        await service.processIncomingMessage(message);
+
+        // Agent memory should have been used to create the conversation
+        const memory = agent.getMemory();
+        expect(memory.create).toHaveBeenCalledWith('You are helpful');
       });
 
       it('should register/touch unified session service when available', async () => {
@@ -1169,9 +1235,11 @@ describe('ChannelServiceImpl', () => {
     describe('typing indicator', () => {
       beforeEach(() => {
         mockHasServiceRegistry.mockReturnValue(false);
-        mockGetOrCreateDefaultAgent.mockResolvedValue({
-          chat: vi.fn().mockResolvedValue({ ok: true, value: { content: 'response' } }),
-        });
+        mockGetOrCreateDefaultAgent.mockResolvedValue(
+          createMockAgent({
+            chat: vi.fn().mockResolvedValue({ ok: true, value: { content: 'response' } }),
+          })
+        );
       });
 
       it('should send typing indicator (best-effort)', async () => {
@@ -1204,10 +1272,7 @@ describe('ChannelServiceImpl', () => {
             throw new Error('Not found');
           }),
         });
-        mockGetOrCreateDefaultAgent.mockResolvedValue({
-          id: 'default',
-          setRequestApproval: vi.fn(),
-        });
+        mockGetOrCreateDefaultAgent.mockResolvedValue(createMockAgent());
       });
 
       it('should route through MessageBus when available', async () => {
@@ -1314,20 +1379,74 @@ describe('ChannelServiceImpl', () => {
 
         expect(mockResolveProviderAndModel).toHaveBeenCalledWith('default', 'default');
       });
+
+      it('should load session conversation onto agent for context continuity', async () => {
+        const agent = createMockAgent();
+        mockGetOrCreateDefaultAgent.mockResolvedValue(agent);
+
+        await service.processIncomingMessage(message);
+
+        // Should call loadConversation with the session's conversationId
+        expect(agent.loadConversation).toHaveBeenCalledWith('conv-1');
+      });
+
+      it('should create new conversation when agent memory lost it (server restart)', async () => {
+        // Agent memory does NOT have the session's conversation
+        const agent = createMockAgent({ memoryHas: false, newConvId: 'recovered-conv-id' });
+        mockGetOrCreateDefaultAgent.mockResolvedValue(agent);
+
+        await service.processIncomingMessage(message);
+
+        // Should create a new conversation and update the DB session
+        expect(mockSessionsRepo.linkConversation).toHaveBeenCalledWith(
+          'session-1',
+          'recovered-conv-id'
+        );
+        expect(agent.loadConversation).toHaveBeenCalledWith('recovered-conv-id');
+
+        // bus.process should receive the new conversationId
+        expect(mockBus.process).toHaveBeenCalledWith(
+          expect.objectContaining({
+            metadata: expect.objectContaining({
+              conversationId: 'recovered-conv-id',
+            }),
+          }),
+          expect.objectContaining({
+            context: expect.objectContaining({
+              conversationId: 'recovered-conv-id',
+            }),
+          })
+        );
+      });
+
+      it('should skip conversation loading when conversationId is null', async () => {
+        // Session with null conversationId
+        mockSessionsRepo.findActive.mockResolvedValue({
+          id: 'session-null',
+          conversationId: null,
+        });
+        const agent = createMockAgent();
+        mockGetOrCreateDefaultAgent.mockResolvedValue(agent);
+
+        await service.processIncomingMessage(message);
+
+        // Should NOT call loadConversation
+        expect(agent.loadConversation).not.toHaveBeenCalled();
+      });
     });
 
     describe('processDirectAgent path (fallback)', () => {
-      let mockAgent: { chat: ReturnType<typeof vi.fn> };
+      let mockAgent: ReturnType<typeof createMockAgent>;
 
       beforeEach(() => {
         // No MessageBus available
         mockHasServiceRegistry.mockReturnValue(false);
-        mockAgent = {
+        mockAgent = createMockAgent({
           chat: vi.fn().mockResolvedValue({
             ok: true,
             value: { content: 'Direct agent response' },
           }),
-        };
+        });
         mockGetOrCreateDefaultAgent.mockResolvedValue(mockAgent);
       });
 
@@ -1410,9 +1529,11 @@ describe('ChannelServiceImpl', () => {
 
       it('should tolerate outgoing message save failure', async () => {
         mockHasServiceRegistry.mockReturnValue(false);
-        mockGetOrCreateDefaultAgent.mockResolvedValue({
-          chat: vi.fn().mockResolvedValue({ ok: true, value: { content: 'response' } }),
-        });
+        mockGetOrCreateDefaultAgent.mockResolvedValue(
+          createMockAgent({
+            chat: vi.fn().mockResolvedValue({ ok: true, value: { content: 'response' } }),
+          })
+        );
         // First call (incoming) succeeds, second call (outgoing) fails
         mockMessagesRepo.create
           .mockResolvedValueOnce(undefined)
@@ -1628,9 +1749,11 @@ describe('ChannelServiceImpl', () => {
         conversationId: null,
       });
       mockHasServiceRegistry.mockReturnValue(false);
-      mockGetOrCreateDefaultAgent.mockResolvedValue({
-        chat: vi.fn().mockResolvedValue({ ok: true, value: { content: 'response' } }),
-      });
+      mockGetOrCreateDefaultAgent.mockResolvedValue(
+        createMockAgent({
+          chat: vi.fn().mockResolvedValue({ ok: true, value: { content: 'response' } }),
+        })
+      );
 
       // Should not throw; skips linkConversation
       await service.processIncomingMessage(createIncomingMessage());
