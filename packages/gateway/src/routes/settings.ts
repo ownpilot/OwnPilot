@@ -326,7 +326,13 @@ export async function resolveProviderAndModel(
  */
 export async function isDemoModeFromSettings(): Promise<boolean> {
   const apiKeySettings = await settingsRepo.getByPrefix(API_KEY_PREFIX);
-  return apiKeySettings.length === 0;
+  if (apiKeySettings.length > 0) return false;
+
+  // Check local providers (Ollama, LM Studio, etc.)
+  const localProviders = await localProvidersRepo.listProviders();
+  if (localProviders.some((p: { isEnabled: boolean }) => p.isEnabled)) return false;
+
+  return true;
 }
 
 /**
