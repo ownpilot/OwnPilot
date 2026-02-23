@@ -1133,7 +1133,9 @@ describe('GoogleProvider', () => {
       mockFetch.mockResolvedValue({
         ok: false,
         status: 503,
+        statusText: 'Service Unavailable',
         body: null,
+        text: async () => 'Service temporarily unavailable',
       });
 
       const chunks: Result<StreamChunk>[] = [];
