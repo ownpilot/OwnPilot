@@ -121,6 +121,24 @@ describe('IsolatedStorage', () => {
   });
 
   // -------------------------------------------------------------------------
+  // User storage deletion
+  // -------------------------------------------------------------------------
+  describe('deleteUserStorage', () => {
+    it('deletes user storage directory', async () => {
+      await storage.deleteUserStorage('user1');
+      expect(fsMock.promises.rm).toHaveBeenCalledWith(expect.stringContaining('user1'), {
+        recursive: true,
+        force: true,
+      });
+    });
+
+    it('throws error for invalid user path', async () => {
+      // Try to delete with path traversal attempt
+      await expect(storage.deleteUserStorage('../etc')).rejects.toThrow('Invalid user path');
+    });
+  });
+
+  // -------------------------------------------------------------------------
   // File operations
   // -------------------------------------------------------------------------
   describe('readFile', () => {
