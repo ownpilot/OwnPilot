@@ -25,7 +25,7 @@ const mockToolRegistry = {
 
 const mockPluginService = {
   getTool: vi.fn(),
-  getEnabled: vi.fn(() => []),
+  getEnabled: vi.fn(() => [] as any[]),
   get: vi.fn(),
 };
 
@@ -398,6 +398,132 @@ describe('Tool Executor', () => {
       const result = await hasTool('any_tool');
 
       expect(result).toBe(false);
+    });
+  });
+
+  // ========================================================================
+  // Additional coverage tests for uncovered lines
+  // ========================================================================
+
+  describe('getSharedToolRegistry - plugin registration', () => {
+    it('registers plugin tools when plugin has tools and category is not core', () => {
+      resetSharedToolRegistry();
+      mockPluginService.getEnabled.mockReturnValue([
+        {
+          manifest: { id: 'test-plugin', category: 'integration' },
+          tools: new Map([['tool1', { name: 'tool1' }]]),
+        } as any,
+      ]);
+
+      getSharedToolRegistry('test-user');
+
+      expect(mockToolRegistry.registerPluginTools).toHaveBeenCalledWith(
+        'test-plugin',
+        expect.any(Map)
+      );
+    });
+
+    it('skips core category plugins during plugin tool registration', () => {
+      resetSharedToolRegistry();
+      mockPluginService.getEnabled.mockReturnValue([
+        {
+          manifest: { id: 'core-plugin', category: 'core' },
+          tools: new Map([['tool1', { name: 'tool1' }]]),
+        } as any,
+      ]);
+
+      getSharedToolRegistry('test-user');
+
+      expect(mockToolRegistry.registerPluginTools).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('executeTool - audit error handling', () => {
+    it('continues execution when audit service throws', async () => {
+      mockToolRegistry.has.mockReturnValue(true);
+      mockToolRegistry.execute.mockResolvedValue({
+        ok: true,
+        value: { content: 'success', isError: false },
+      });
+
+      const { getServiceRegistry } = await import('@ownpilot/core');
+      const mockAuditService = {
+        log: vi.fn().mockRejectedValue(new Error('Audit system failure')),
+      };
+      vi.mocked(getServiceRegistry).mockReturnValue({
+        get: vi.fn((token: { name: string }) => {
+          if (token.name === 'plugin') return mockPluginService;
+          if (token.name === 'event') return mockEventSystem;
+          if (token.name === 'audit') return mockAuditService;
+          return undefined;
+        }),
+        tryGet: vi.fn(() => undefined),
+      } as unknown as ReturnType<typeof getServiceRegistry>);
+
+      const result = await executeTool('test_tool', {});
+
+      expect(result.success).toBe(true);
+      expect(result.result).toBe('success');
+    });
+  });
+
+  describe('executeTool - non-string plugin result content', () => {
+    it('converts non-string plugin result content to string', async () => {
+      mockToolRegistry.has.mockReturnValue(false);
+
+      const mockPluginExecutor = vi.fn().mockResolvedValue({
+        content: { key: 'value', number: 123 },
+        isError: false,
+      });
+      mockPluginService.getTool.mockReturnValue({
+        executor: mockPluginExecutor,
+        plugin: { manifest: { id: 'test-plugin' } },
+      });
+
+      const result = await executeTool('object_tool', {});
+
+      expect(result.success).toBe(true);
+      expect(result.result).toBe('[object Object]');
+    });
+
+    it('handles null content from plugin tool', async () => {
+      mockToolRegistry.has.mockReturnValue(false);
+
+      const mockPluginExecutor = vi.fn().mockResolvedValue({
+        content: null,
+        isError: false,
+      });
+      mockPluginService.getTool.mockReturnValue({
+        executor: mockPluginExecutor,
+        plugin: { manifest: { id: 'test-plugin' } },
+      });
+
+      const result = await executeTool('null_tool', {});
+
+      expect(result.success).toBe(true);
+      expect(result.result).toBe('null');
+    });
+  });
+
+  describe('executeTool - plugin service lookup errors', () => {
+    it('handles plugin service lookup errors during execution', async () => {
+      mockToolRegistry.has.mockReturnValue(false);
+
+      const { getServiceRegistry } = await import('@ownpilot/core');
+      vi.mocked(getServiceRegistry).mockReturnValue({
+        get: vi.fn((token: { name: string }) => {
+          if (token.name === 'plugin') {
+            throw new Error('Plugin service unavailable');
+          }
+          return undefined;
+        }),
+        tryGet: vi.fn(() => undefined),
+      } as unknown as ReturnType<typeof getServiceRegistry>);
+
+      const result = await executeTool('plugin_lookup_tool', {});
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('not found');
     });
   });
 });
