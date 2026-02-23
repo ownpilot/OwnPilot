@@ -30,8 +30,8 @@ COPY packages/channels/ ./packages/channels/
 COPY packages/cli/ ./packages/cli/
 COPY packages/ui/ ./packages/ui/
 
-# Build all packages (Turbo builds dependencies in order, including UI)
-RUN pnpm build
+# Build core first to ensure declarations exist, then build all packages
+RUN pnpm --filter @ownpilot/core build && pnpm build
 
 # ============================================
 # Stage 2: Production
