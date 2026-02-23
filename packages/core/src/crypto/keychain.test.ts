@@ -282,4 +282,101 @@ describe('hasSecret', () => {
     vi.mocked(osMock.platform).mockReturnValue('freebsd' as NodeJS.Platform);
     expect(await hasSecret()).toBe(false);
   });
+
+  it('handles errors and returns false', async () => {
+    vi.mocked(osMock.platform).mockReturnValue('darwin');
+    asyncMock.mockRejectedValueOnce(new Error('keychain error'));
+    expect(await hasSecret({ service: 'test', account: 'test' })).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Platform-specific delete tests
+// ---------------------------------------------------------------------------
+describe('deleteSecret platform-specific', () => {
+  let osMock: typeof import('node:os');
+
+  beforeEach(async () => {
+    vi.clearAllMocks();
+    asyncMock.mockResolvedValue({ stdout: '', stderr: '' });
+    osMock = await import('node:os');
+  });
+
+  it('deletes secret on linux', async () => {
+    vi.mocked(osMock.platform).mockReturnValue('linux');
+    const result = await deleteSecret({ service: 'test', account: 'test' });
+    expect(result.ok).toBe(true);
+  });
+
+  it('deletes secret on win32', async () => {
+    vi.mocked(osMock.platform).mockReturnValue('win32');
+    const result = await deleteSecret({ service: 'test', account: 'test' });
+    expect(result.ok).toBe(true);
+  });
+
+  it('handles linux delete failure gracefully', async () => {
+    vi.mocked(osMock.platform).mockReturnValue('linux');
+    asyncMock.mockRejectedValueOnce(new Error('secret not found'));
+    const result = await deleteSecret({ service: 'test', account: 'test' });
+    expect(result.ok).toBe(true);
+  });
+
+  it('handles win32 delete failure gracefully', async () => {
+    vi.mocked(osMock.platform).mockReturnValue('win32');
+    asyncMock.mockRejectedValueOnce(new Error('credential not found'));
+    const result = await deleteSecret({ service: 'test', account: 'test' });
+    expect(result.ok).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Platform-specific retrieve tests
+// ---------------------------------------------------------------------------
+describe('retrieveSecret platform-specific', () => {
+  let osMock: typeof import('node:os');
+
+  beforeEach(async () => {
+    vi.clearAllMocks();
+    asyncMock.mockResolvedValue({ stdout: '', stderr: '' });
+    osMock = await import('node:os');
+  });
+
+  it('retrieves secret on linux', async () => {
+    vi.mocked(osMock.platform).mockReturnValue('linux');
+    const encoded = Buffer.from(new Uint8Array([1, 2, 3])).toString('base64');
+    asyncMock.mockResolvedValueOnce({ stdout: encoded, stderr: '' });
+    const result = await retrieveSecret({ service: 'test', account: 'test' });
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.value).not.toBeNull();
+    }
+  });
+
+  it('returns null when secret not found on linux', async () => {
+    vi.mocked(osMock.platform).mockReturnValue('linux');
+    asyncMock.mockResolvedValueOnce({ stdout: '', stderr: '' });
+    const result = await retrieveSecret({ service: 'test', account: 'test' });
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.value).toBeNull();
+    }
+  });
+
+  it('handles linux retrieve failure', async () => {
+    vi.mocked(osMock.platform).mockReturnValue('linux');
+    asyncMock.mockRejectedValueOnce(new Error('command failed'));
+    const result = await retrieveSecret({ service: 'test', account: 'test' });
+    // Generic errors return an error Result
+    expect(result.ok).toBe(false);
+  });
+
+  it('handles win32 retrieve failure', async () => {
+    vi.mocked(osMock.platform).mockReturnValue('win32');
+    asyncMock.mockRejectedValueOnce(new Error('file read error'));
+    const result = await retrieveSecret({ service: 'test', account: 'test' });
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.value).toBeNull();
+    }
+  });
 });

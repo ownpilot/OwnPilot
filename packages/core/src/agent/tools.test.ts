@@ -1,8 +1,11 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ToolRegistry, registerCoreTools } from './tools.js';
 import type { ToolDefinition, ToolExecutor } from './types.js';
 
 describe('ToolRegistry', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
   describe('registration', () => {
     it('registers a tool', () => {
       const registry = new ToolRegistry();
@@ -292,6 +295,48 @@ describe('registerCoreTools', () => {
     }
   });
 
+  describe('ToolRegistry stats and providers', () => {
+    it('getStats() returns tool statistics', () => {
+      const registry = new ToolRegistry();
+
+      // Register some tools
+      registry.register(
+        {
+          name: 'core_tool',
+          description: 'Core tool',
+          parameters: { type: 'object', properties: {} },
+        },
+        async () => ({ content: {} }),
+        { source: 'core' }
+      );
+
+      registry.register(
+        {
+          name: 'plugin_tool',
+          description: 'Plugin tool',
+          parameters: { type: 'object', properties: {} },
+        },
+        async () => ({ content: {} }),
+        { source: 'plugin', pluginId: 'test-plugin' as import('../types/branded.js').PluginId }
+      );
+
+      const stats = registry.getStats();
+
+      expect(stats.totalTools).toBe(2);
+      expect(stats.coreTools).toBe(1);
+      expect(stats.pluginTools).toBe(1);
+    });
+
+    it('getStats() returns zeros for empty registry', () => {
+      const registry = new ToolRegistry();
+      const stats = registry.getStats();
+
+      expect(stats.totalTools).toBe(0);
+      expect(stats.coreTools).toBe(0);
+      expect(stats.pluginTools).toBe(0);
+    });
+  });
+
   it('generate_uuid returns valid UUIDs', async () => {
     const registry = new ToolRegistry();
     registerCoreTools(registry);
@@ -305,5 +350,162 @@ describe('registerCoreTools', () => {
         /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
       );
     }
+  });
+
+  describe('ToolRegistry middleware', () => {
+    it('use() adds global middleware that runs before execution', async () => {
+      const registry = new ToolRegistry();
+      let middlewareCalled = false;
+
+      registry.use({
+        name: 'test-middleware',
+        before: async () => {
+          middlewareCalled = true;
+        },
+      });
+
+      registry.register(
+        {
+          name: 'test_tool',
+          description: 'Test tool',
+          parameters: { type: 'object', properties: {} },
+        },
+        async () => ({ content: 'success' })
+      );
+
+      await registry.execute('test_tool', {}, { conversationId: 'conv-1' });
+
+      expect(middlewareCalled).toBe(true);
+    });
+
+    it('useFor() adds tool-specific middleware', async () => {
+      const registry = new ToolRegistry();
+      let specificMiddlewareCalled = false;
+
+      registry.useFor('specific_tool', {
+        name: 'specific-middleware',
+        before: async () => {
+          specificMiddlewareCalled = true;
+        },
+      });
+
+      registry.register(
+        {
+          name: 'specific_tool',
+          description: 'Specific tool',
+          parameters: { type: 'object', properties: {} },
+        },
+        async () => ({ content: 'success' })
+      );
+
+      await registry.execute('specific_tool', {}, { conversationId: 'conv-1' });
+      expect(specificMiddlewareCalled).toBe(true);
+    });
+
+    it('middleware after hook transforms result', async () => {
+      const registry = new ToolRegistry();
+
+      registry.use({
+        name: 'transform-result',
+        after: async (_ctx, result) => {
+          return { ...result, content: `Modified: ${result.content}` };
+        },
+      });
+
+      registry.register(
+        {
+          name: 'test_tool',
+          description: 'Test tool',
+          parameters: { type: 'object', properties: {} },
+        },
+        async () => ({ content: 'original' })
+      );
+
+      const result = await registry.execute('test_tool', {}, { conversationId: 'conv-1' });
+
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.value.content).toBe('Modified: original');
+      }
+    });
+  });
+
+  describe('ToolRegistry clear', () => {
+    it('clears all tools and middleware', () => {
+      const registry = new ToolRegistry();
+
+      registry.register(
+        { name: 'tool1', description: 'Tool 1', parameters: { type: 'object', properties: {} } },
+        async () => ({ content: {} })
+      );
+
+      registry.use({
+        name: 'test-middleware',
+        before: async () => {},
+      });
+
+      expect(registry.getAllTools().length).toBe(1);
+
+      registry.clear();
+
+      expect(registry.getAllTools().length).toBe(0);
+      expect(registry.has('tool1')).toBe(false);
+    });
+  });
+
+  describe('executeToolCall error handling', () => {
+    it('handles JSON parse errors in tool call arguments', async () => {
+      const registry = new ToolRegistry();
+      registry.register(
+        {
+          name: 'test_tool',
+          description: 'Test tool',
+          parameters: { type: 'object', properties: {} },
+        },
+        async () => ({ content: 'success' })
+      );
+
+      const result = await registry.executeToolCall(
+        { id: 'call1', name: 'test_tool', arguments: 'invalid json' },
+        'conv-1'
+      );
+
+      expect(result.isError).toBe(true);
+      expect(result.content).toContain('Invalid JSON');
+    });
+
+    it('handles tool not found error', async () => {
+      const registry = new ToolRegistry();
+
+      const result = await registry.executeToolCall(
+        { id: 'call1', name: 'nonexistent_tool', arguments: '{}' },
+        'conv-1'
+      );
+
+      expect(result.isError).toBe(true);
+      expect(result.content).toContain('not found');
+    });
+
+    it('handles tool execution errors', async () => {
+      const registry = new ToolRegistry();
+      registry.register(
+        {
+          name: 'failing_tool',
+          description: 'Failing tool',
+          parameters: { type: 'object', properties: {} },
+        },
+        async () => {
+          throw new Error('Tool execution failed');
+        }
+      );
+
+      const result = await registry.executeToolCall(
+        { id: 'call1', name: 'failing_tool', arguments: '{}' },
+        'conv-1'
+      );
+
+      expect(result.isError).toBe(true);
+      expect(result.content).toContain('Tool execution failed');
+    });
   });
 });

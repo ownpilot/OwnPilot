@@ -24,6 +24,7 @@ vi.mock('./log.js', () => ({
 const mockIsAvailable = vi.fn().mockReturnValue(true);
 const mockGenerateBatch = vi.fn();
 
+const mockEventSystemOn = vi.fn();
 vi.mock('@ownpilot/core', () => ({
   getServiceRegistry: () => ({
     get: (token: { key: string }) => {
@@ -35,6 +36,7 @@ vi.mock('@ownpilot/core', () => ({
       throw new Error(`Unexpected token: ${token.key}`);
     },
   }),
+  getEventSystem: () => ({ on: mockEventSystemOn }),
   Services: { Embedding: { key: 'embedding' } },
 }));
 

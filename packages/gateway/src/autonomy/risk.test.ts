@@ -868,7 +868,7 @@ describe('assessRisk', () => {
       expect(result.requiresApproval).toBe(false);
     });
 
-    it('AUTONOMOUS does not require approval for high risk', () => {
+    it('AUTONOMOUS requires approval for critical risk (compound detection)', () => {
       const result = assessRisk(
         'financial',
         'run_script',
@@ -876,8 +876,10 @@ describe('assessRisk', () => {
         emptyContext,
         makeConfig({ level: AutonomyLevel.AUTONOMOUS })
       );
-      expect(result.level).toBe('high');
-      expect(result.requiresApproval).toBe(false);
+      // Compound risk detection: 3+ high-weight factors floor score at 75 → critical
+      // AUTONOMOUS requires approval for critical level
+      expect(result.level).toBe('critical');
+      expect(result.requiresApproval).toBe(true);
     });
 
     it('FULL never requires approval', () => {
@@ -1085,6 +1087,64 @@ describe('assessRisk', () => {
       );
       const uniqueMitigations = [...new Set(result.mitigations)];
       expect(result.mitigations).toEqual(uniqueMitigations);
+    });
+  });
+
+  // ==========================================================================
+  // Compound risk detection
+  // ==========================================================================
+
+  describe('compound risk detection', () => {
+    it('floors score at 75 when 3+ high-weight factors are present', () => {
+      // delete_file: file_delete(0.8) + data_deletion(0.8) + irreversible(0.7) = 3 factors with weight >= 0.7
+      // Using notification category (base risk 15) to ensure the floor kicks in
+      const result = assessRisk(
+        'notification',
+        'delete_file', // tool factors: file_delete(0.8), data_deletion(0.8), irreversible(0.7)
+        {},
+        emptyContext,
+        makeConfig()
+      );
+      // Without compound detection: baseRisk=15, factors present have low factorScore
+      // With compound detection: score should be >= 75
+      expect(result.score).toBeGreaterThanOrEqual(75);
+      expect(result.level).toBe('critical');
+    });
+
+    it('does not floor score when fewer than 3 high-weight factors', () => {
+      // write_file: file_write(0.6) + data_modification(0.5) — both < 0.7
+      const result = assessRisk('notification', 'write_file', {}, emptyContext, makeConfig());
+      const highWeightPresent = result.factors.filter((f) => f.present && f.weight >= 0.7);
+      expect(highWeightPresent.length).toBeLessThan(3);
+      expect(result.score).toBeLessThan(75);
+    });
+
+    it('compound detection combines tool and parameter factors', () => {
+      // file_delete: file_delete(0.8) + data_deletion(0.8) + irreversible(0.7)
+      // sensitive: true adds sensitive_data(0.7)
+      // That's 4 high-weight factors
+      const result = assessRisk(
+        'notification',
+        'delete_file',
+        { sensitive: true },
+        emptyContext,
+        makeConfig()
+      );
+      const highWeightPresent = result.factors.filter((f) => f.present && f.weight >= 0.7);
+      expect(highWeightPresent.length).toBeGreaterThanOrEqual(3);
+      expect(result.score).toBeGreaterThanOrEqual(75);
+    });
+
+    it('score can exceed 75 through normal calculation even without compound', () => {
+      // financial category (base risk 90) with many factors can naturally exceed 75
+      const result = assessRisk(
+        'financial',
+        'run_script',
+        { cost: 5000, force: true, global: true, bulk: true, sensitive: true, recipients: ['x'] },
+        emptyContext,
+        makeConfig()
+      );
+      expect(result.score).toBeGreaterThanOrEqual(75);
     });
   });
 

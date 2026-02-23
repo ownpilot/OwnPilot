@@ -294,6 +294,53 @@ describe('SandboxExecutor', () => {
     });
   });
 
+  describe('executeFunction', () => {
+    it('executes a function with arguments', async () => {
+      const sandbox = createSandbox({ pluginId: testPluginId });
+      const result = await sandbox.executeFunction<number, [number, number]>(
+        '(a, b) => a + b',
+        [2, 3]
+      );
+
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.value.success).toBe(true);
+        expect(result.value.value).toBe(5);
+      }
+    });
+
+    it('handles function execution errors', async () => {
+      const sandbox = createSandbox({ pluginId: testPluginId });
+      const result = await sandbox.executeFunction('(x) => { throw new Error("test"); }', [1]);
+
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.value.success).toBe(false);
+        expect(result.value.error).toContain('test');
+      }
+    });
+
+    it('passes multiple arguments correctly', async () => {
+      const sandbox = createSandbox({ pluginId: testPluginId });
+      const result = await sandbox.executeFunction<string, [string, number, boolean]>(
+        '(name, count, active) => `${name}:${count}:${active}`',
+        ['test', 42, true]
+      );
+
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.value.value).toBe('test:42:true');
+      }
+    });
+  });
+
+  describe('getPluginId', () => {
+    it('returns the plugin ID', () => {
+      const sandbox = createSandbox({ pluginId: testPluginId });
+      expect(sandbox.getPluginId()).toBe(testPluginId);
+    });
+  });
+
   describe('statistics', () => {
     it('tracks execution count', async () => {
       const sandbox = createSandbox({ pluginId: testPluginId });

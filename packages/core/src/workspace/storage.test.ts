@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { IsolatedStorage, StorageSecurityError, initializeStorage } from './storage.js';
 
 // Mock node:fs
@@ -224,6 +224,65 @@ describe('IsolatedStorage', () => {
     });
   });
 
+  describe('listFiles', () => {
+    it('lists files in directory', async () => {
+      vi.mocked(fsMock.promises.readdir).mockResolvedValue([
+        { name: 'file1.txt', isDirectory: () => false, isFile: () => true } as never,
+        { name: 'file2.txt', isDirectory: () => false, isFile: () => true } as never,
+      ]);
+      vi.mocked(fsMock.promises.stat).mockResolvedValue({
+        size: 100,
+        isDirectory: () => false,
+        mtime: new Date('2024-01-01'),
+        birthtime: new Date('2024-01-01'),
+      } as never);
+
+      const files = await storage.listFiles('user1', '.');
+      expect(files).toHaveLength(2);
+      expect(files[0]?.name).toBe('file1.txt');
+      expect(files[1]?.name).toBe('file2.txt');
+    });
+
+    it('lists files recursively', async () => {
+      const dirEntry = { name: 'subdir', isDirectory: () => true, isFile: () => false } as never;
+      const fileEntry = { name: 'file.txt', isDirectory: () => false, isFile: () => true } as never;
+
+      // First call returns directory, second returns file in subdirectory
+      vi.mocked(fsMock.promises.readdir)
+        .mockResolvedValueOnce([dirEntry])
+        .mockResolvedValueOnce([fileEntry]);
+
+      vi.mocked(fsMock.promises.stat).mockResolvedValue({
+        size: 100,
+        isDirectory: () => false,
+        mtime: new Date('2024-01-01'),
+        birthtime: new Date('2024-01-01'),
+      } as never);
+
+      const files = await storage.listFiles('user1', '.', true);
+      expect(files.length).toBeGreaterThan(0);
+    });
+
+    it('skips files that cannot be stat', async () => {
+      vi.mocked(fsMock.promises.readdir).mockResolvedValue([
+        { name: 'readable.txt', isDirectory: () => false, isFile: () => true } as never,
+        { name: 'unreadable.txt', isDirectory: () => false, isFile: () => true } as never,
+      ]);
+      vi.mocked(fsMock.promises.stat)
+        .mockResolvedValueOnce({
+          size: 100,
+          isDirectory: () => false,
+          mtime: new Date('2024-01-01'),
+          birthtime: new Date('2024-01-01'),
+        } as never)
+        .mockRejectedValueOnce(new Error('Permission denied'));
+
+      const files = await storage.listFiles('user1', '.');
+      expect(files).toHaveLength(1);
+      expect(files[0]?.name).toBe('readable.txt');
+    });
+  });
+
   describe('fileExists', () => {
     it('returns true when file exists', async () => {
       vi.mocked(fsMock.promises.access).mockResolvedValue(undefined);
@@ -263,6 +322,62 @@ describe('IsolatedStorage', () => {
       expect(usage.quotaBytes).toBe(2 * 1024 * 1024 * 1024);
       expect(usage.fileCount).toBe(0);
     });
+
+    it('calculates size from files', async () => {
+      vi.mocked(fsMock.promises.readdir).mockResolvedValue([
+        { name: 'file1.txt', isDirectory: () => false } as never,
+        { name: 'file2.txt', isDirectory: () => false } as never,
+      ]);
+      vi.mocked(fsMock.promises.stat).mockResolvedValue({
+        size: 1000,
+        isDirectory: () => false,
+      } as never);
+
+      const usage = await storage.getStorageUsage('user1');
+      expect(usage.usedBytes).toBe(2000);
+      expect(usage.fileCount).toBe(2);
+    });
+
+    it('recursively calculates size from directories', async () => {
+      const dirEntry = { name: 'subdir', isDirectory: () => true } as never;
+      const fileEntry = { name: 'file.txt', isDirectory: () => false } as never;
+
+      // First call returns directory, second call returns files in subdirectory
+      vi.mocked(fsMock.promises.readdir)
+        .mockResolvedValueOnce([dirEntry])
+        .mockResolvedValueOnce([fileEntry]);
+
+      vi.mocked(fsMock.promises.stat).mockResolvedValue({
+        size: 500,
+        isDirectory: () => false,
+      } as never);
+
+      const usage = await storage.getStorageUsage('user1');
+      expect(usage.usedBytes).toBe(500);
+      expect(usage.fileCount).toBe(1);
+    });
+
+    it('skips files that cannot be stat', async () => {
+      vi.mocked(fsMock.promises.readdir).mockResolvedValue([
+        { name: 'readable.txt', isDirectory: () => false } as never,
+        { name: 'unreadable.txt', isDirectory: () => false } as never,
+      ]);
+      vi.mocked(fsMock.promises.stat)
+        .mockResolvedValueOnce({ size: 1000, isDirectory: () => false } as never)
+        .mockRejectedValueOnce(new Error('Permission denied'));
+
+      const usage = await storage.getStorageUsage('user1');
+      expect(usage.usedBytes).toBe(1000);
+      expect(usage.fileCount).toBe(1);
+    });
+
+    it('handles missing directory gracefully', async () => {
+      vi.mocked(fsMock.promises.readdir).mockRejectedValue(new Error('ENOENT'));
+
+      const usage = await storage.getStorageUsage('user1');
+      expect(usage.usedBytes).toBe(0);
+      expect(usage.fileCount).toBe(0);
+    });
   });
 
   // -------------------------------------------------------------------------
@@ -285,9 +400,37 @@ describe('IsolatedStorage', () => {
       expect(cleaned).toBe(1);
     });
 
+    it('removes old temp directories recursively', async () => {
+      const oldDate = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000);
+      vi.mocked(fsMock.promises.readdir).mockResolvedValue([
+        { name: 'old_dir', isDirectory: () => true } as never,
+      ]);
+      vi.mocked(fsMock.promises.stat).mockResolvedValue({
+        size: 100,
+        isDirectory: () => true,
+        mtime: oldDate,
+        birthtime: oldDate,
+      } as never);
+
+      const cleaned = await storage.cleanupTempFiles('user1', 24 * 60 * 60 * 1000);
+      expect(cleaned).toBe(1);
+      expect(fsMock.promises.rm).toHaveBeenCalledWith(expect.any(String), { recursive: true });
+    });
+
     it('handles missing temp directory gracefully', async () => {
       vi.mocked(fsMock.promises.readdir).mockRejectedValue(new Error('ENOENT'));
       const cleaned = await storage.cleanupTempFiles('user1');
+      expect(cleaned).toBe(0);
+    });
+
+    it('skips files that cannot be processed', async () => {
+      const oldDate = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000);
+      vi.mocked(fsMock.promises.readdir).mockResolvedValue([
+        { name: 'problematic.tmp', isDirectory: () => false } as never,
+      ]);
+      vi.mocked(fsMock.promises.stat).mockRejectedValue(new Error('Permission denied'));
+
+      const cleaned = await storage.cleanupTempFiles('user1', 24 * 60 * 60 * 1000);
       expect(cleaned).toBe(0);
     });
   });

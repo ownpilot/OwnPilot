@@ -1689,6 +1689,99 @@ describe('ApprovalManager', () => {
   });
 
   // ==========================================================================
+  // Absolute risk ceiling (score >= 95)
+  // ==========================================================================
+
+  describe('absolute risk ceiling', () => {
+    it('should force approval when risk score >= 95 even if requiresApproval=false', async () => {
+      // assessRisk returns requiresApproval=false, but score=95 triggers ceiling
+      mockedAssessRisk.mockReturnValueOnce(
+        makeRisk({ requiresApproval: false, score: 95, level: 'critical' })
+      );
+
+      const result = await manager.requestApproval(
+        'user-1',
+        'system_command',
+        'dangerous_tool',
+        'Do dangerous thing',
+        {}
+      );
+
+      // Should NOT be auto-approved — should create a pending action
+      expect(result).not.toBeNull();
+      expect(result!.action.status).toBe('pending');
+    });
+
+    it('should force approval for FULL autonomy level when score >= 95', async () => {
+      manager.setUserConfig('user-1', { level: AutonomyLevel.FULL });
+      mockedAssessRisk.mockReturnValueOnce(
+        makeRisk({ requiresApproval: false, score: 96, level: 'critical' })
+      );
+
+      const result = await manager.requestApproval(
+        'user-1',
+        'system_command',
+        'risky_op',
+        'Very risky',
+        {}
+      );
+
+      expect(result).not.toBeNull();
+      expect(result!.action.status).toBe('pending');
+    });
+
+    it('should NOT force approval when score is 94', async () => {
+      mockedAssessRisk.mockReturnValueOnce(
+        makeRisk({ requiresApproval: false, score: 94, level: 'critical' })
+      );
+
+      const result = await manager.requestApproval(
+        'user-1',
+        'tool_execution',
+        'some_tool',
+        'Moderate risk',
+        {}
+      );
+
+      // score < 95, requiresApproval=false → auto-approved
+      expect(result).toBeNull();
+    });
+
+    it('should force approval at exactly score 95', async () => {
+      mockedAssessRisk.mockReturnValueOnce(
+        makeRisk({ requiresApproval: false, score: 95 })
+      );
+
+      const result = await manager.requestApproval(
+        'user-1',
+        'tool_execution',
+        'edge_tool',
+        'Edge case',
+        {}
+      );
+
+      expect(result).not.toBeNull();
+      expect(result!.action.status).toBe('pending');
+    });
+
+    it('should force approval at score 100', async () => {
+      mockedAssessRisk.mockReturnValueOnce(
+        makeRisk({ requiresApproval: false, score: 100 })
+      );
+
+      const result = await manager.requestApproval(
+        'user-1',
+        'tool_execution',
+        'max_risk_tool',
+        'Maximum risk',
+        {}
+      );
+
+      expect(result).not.toBeNull();
+    });
+  });
+
+  // ==========================================================================
   // Edge cases
   // ==========================================================================
 

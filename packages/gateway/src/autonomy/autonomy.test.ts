@@ -619,14 +619,21 @@ describe('Risk Assessment', () => {
       expect(result.level).toBe('medium');
     });
 
-    // system_command (base=80) + run_script tool factors: code_execution(0.9)+system_command(0.95) = 1.85
-    // plus param sensitive(0.7) = 2.55 total present weight
-    // factorScore = (2.55/9.65)*100 ~= 26.42, score = round((80+26.42)/2) = round(53.21) = 53 => high
+    // code_execution (base=70) + execute_code tool factors: code_execution(0.9)+irreversible(0.6) = 1.5
+    // Only 2 high-weight factors (below compound threshold of 3), so no floor applied.
+    // factorScore = (1.5/9.65)*100 ~= 15.54, score = round((70+15.54)/2) = round(42.77) = 43
+    // Use bulk:true to raise score: bulk_operation(0.4) → presentWeight 1.9
+    // factorScore = (1.9/9.65)*100 ~= 19.69, score = round((70+19.69)/2) = round(44.85) = 45
+    // Still too low. Use external_communication(50) + send_email + bulk + sensitive for a 'high' score.
     it('should assign "high" for scores 50-74', () => {
+      // external_communication (base=50) + send_email factors: email_send(0.6)
+      // + sensitive(0.7) + bulk(0.4) = 1.7 present, only 1 high-weight factor
+      // factorScore ~= 17.62, score = round((50+17.62)/2) = round(33.81) = 34 => medium (too low)
+      // Use system_command(80) + run_script but WITHOUT sensitive (only 2 high-weight factors)
       const result = assessRisk(
         'system_command',
         'run_script',
-        { sensitive: true },
+        { bulk: true }, // Only bulk (0.4), not sensitive — avoids 3+ high-weight compound
         emptyContext,
         makeConfig({ level: AutonomyLevel.FULL, blockedCategories: [], confirmationRequired: [] })
       );
@@ -753,12 +760,14 @@ describe('Risk Assessment', () => {
           confirmationRequired: [],
         })
       );
-      expect(high.level).toBe('high');
-      expect(high.requiresApproval).toBe(false);
+      // Compound risk detection: run_script triggers code_execution (0.9) + system_command (0.95)
+      // + sensitive_data (0.7) = 3 high-weight factors → floor score at 75 → critical
+      expect(high.level).toBe('critical');
+      expect(high.requiresApproval).toBe(true);
 
-      // For AUTONOMOUS, only critical requires approval. The highest achievable score with
-      // current factors is 74 (high). We verify the non-critical path works, and test the
-      // critical boundary by asserting that medium/high do NOT require approval.
+      // For AUTONOMOUS, only critical requires approval. With compound risk detection,
+      // actions with 3+ high-weight factors are floored at critical.
+      // We verify medium does NOT require approval.
       const medium = assessRisk(
         'external_communication',
         'send_email',

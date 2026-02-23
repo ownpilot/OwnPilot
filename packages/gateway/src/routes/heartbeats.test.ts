@@ -69,8 +69,23 @@ class MockHeartbeatServiceError extends Error {
 
 vi.mock('../services/heartbeat-service.js', () => ({
   getHeartbeatService: () => mockService,
+  HeartbeatService: vi.fn(),
   HeartbeatServiceError: MockHeartbeatServiceError,
 }));
+
+vi.mock('@ownpilot/core', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@ownpilot/core')>();
+  return {
+    ...actual,
+    getServiceRegistry: () => ({
+      get: (token: { key: string }) => {
+        if (token.key === 'heartbeat') return mockService;
+        throw new Error(`Unexpected token: ${token.key}`);
+      },
+    }),
+    Services: { ...actual.Services, Heartbeat: { key: 'heartbeat' } },
+  };
+});
 
 // Import after mocks
 const { heartbeatsRoutes } = await import('./heartbeats.js');

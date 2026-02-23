@@ -12,8 +12,9 @@ import type { ExtensionManifest } from './extension-types.js';
 // Mocks (vi.hoisted so they're available in vi.mock factories)
 // ---------------------------------------------------------------------------
 
-const { mockEmit, mockTriggerService, mockRepo } = vi.hoisted(() => ({
+const { mockEmit, mockEventSystemEmit, mockTriggerService, mockRepo } = vi.hoisted(() => ({
   mockEmit: vi.fn(),
+  mockEventSystemEmit: vi.fn(),
   mockTriggerService: {
     createTrigger: vi.fn(async (_userId: string, input: Record<string, unknown>) => ({
       id: `trigger-${Date.now()}`,
@@ -34,6 +35,7 @@ const { mockEmit, mockTriggerService, mockRepo } = vi.hoisted(() => ({
 
 vi.mock('@ownpilot/core', () => ({
   getEventBus: () => ({ emit: mockEmit }),
+  getEventSystem: () => ({ emit: mockEventSystemEmit }),
   createEvent: vi.fn((type: string, category: string, source: string, data: unknown) => ({
     type,
     category,

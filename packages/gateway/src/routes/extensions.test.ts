@@ -97,6 +97,13 @@ vi.mock('../services/extension-types.js', () => ({
 vi.mock('@ownpilot/core', () => ({
   createProvider: vi.fn(() => ({ complete: mockComplete })),
   getProviderConfig: vi.fn(() => null),
+  getServiceRegistry: () => ({
+    get: (token: { key: string }) => {
+      if (token.key === 'extension') return mockService;
+      throw new Error(`Unexpected token: ${token.key}`);
+    },
+  }),
+  Services: { Extension: { key: 'extension' } },
   getLog: vi.fn(() => ({
     info: vi.fn(),
     warn: vi.fn(),

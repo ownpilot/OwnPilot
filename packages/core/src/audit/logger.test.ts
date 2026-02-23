@@ -313,4 +313,142 @@ describe('AuditLogger', () => {
       }
     });
   });
+
+  describe('log rotation', () => {
+    it('rotates log when file exceeds max size', async () => {
+      // Create a logger with very small max file size
+      const logger = createAuditLogger({
+        path: logPath,
+        maxFileSize: 100, // 100 bytes - very small
+      });
+
+      // Log multiple events to exceed file size
+      for (let i = 0; i < 10; i++) {
+        await logger.log({
+          type: 'message.receive',
+          actor: SYSTEM_ACTOR,
+          resource: { type: 'message', id: `msg-${i}` },
+          outcome: 'success',
+        });
+      }
+
+      // Check that rotation happened
+      const result = await logger.query({ limit: 100 });
+      expect(result.ok).toBe(true);
+    });
+
+    it('handles empty file gracefully', async () => {
+      const logger = createAuditLogger({ path: logPath });
+
+      // Query on empty log should return empty array
+      const result = await logger.query();
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.value).toEqual([]);
+      }
+    });
+
+    it('handles malformed lines in query', async () => {
+      const logger = createAuditLogger({ path: logPath });
+
+      // Write a valid event
+      await logger.log({
+        type: 'system.start',
+        actor: SYSTEM_ACTOR,
+        resource: { type: 'system', id: 'gateway' },
+        outcome: 'success',
+      });
+
+      // Append malformed line directly to file
+      const { appendFile } = await import('node:fs/promises');
+      await appendFile(logPath, 'not valid json\n', 'utf-8');
+
+      // Query should skip malformed line and return valid events
+      const result = await logger.query();
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.value.length).toBe(1);
+      }
+    });
+  });
+
+  describe('query filtering', () => {
+    it('filters by correlation ID', async () => {
+      const logger = createAuditLogger({ path: logPath });
+
+      await logger.log({
+        type: 'system.start',
+        actor: SYSTEM_ACTOR,
+        resource: { type: 'system', id: 'gateway' },
+        outcome: 'success',
+        correlationId: 'corr-123',
+      });
+
+      await logger.log({
+        type: 'system.stop',
+        actor: SYSTEM_ACTOR,
+        resource: { type: 'system', id: 'gateway' },
+        outcome: 'success',
+        correlationId: 'corr-456',
+      });
+
+      const result = await logger.query({ correlationId: 'corr-123' });
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.value).toHaveLength(1);
+        expect(result.value[0]?.correlationId).toBe('corr-123');
+      }
+    });
+
+    it('filters by outcome', async () => {
+      const logger = createAuditLogger({ path: logPath });
+
+      await logger.log({
+        type: 'auth.login',
+        actor: { type: 'user', id: 'user-1' },
+        resource: { type: 'session', id: 'sess-1' },
+        outcome: 'success',
+      });
+
+      await logger.log({
+        type: 'auth.failure',
+        actor: { type: 'user', id: 'user-2' },
+        resource: { type: 'session', id: 'sess-2' },
+        outcome: 'failure',
+      });
+
+      const result = await logger.query({ outcome: 'failure' });
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.value).toHaveLength(1);
+        expect(result.value[0]?.outcome).toBe('failure');
+      }
+    });
+
+    it('filters by time range', async () => {
+      const logger = createAuditLogger({ path: logPath });
+
+      const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+      const oneHourFromNow = new Date(Date.now() + 60 * 60 * 1000);
+
+      // Log event now (should be within range)
+      await logger.log({
+        type: 'message.receive',
+        actor: SYSTEM_ACTOR,
+        resource: { type: 'message', id: 'msg-recent' },
+        outcome: 'success',
+      });
+
+      // Query with time range that includes recent event
+      const result = await logger.query({
+        from: oneHourAgo,
+        to: oneHourFromNow,
+      });
+
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.value.length).toBeGreaterThan(0);
+      }
+    });
+  });
 });

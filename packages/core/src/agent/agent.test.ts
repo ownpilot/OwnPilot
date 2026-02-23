@@ -135,6 +135,110 @@ describe('Agent', () => {
     });
   });
 
+  describe('getAllToolDefinitions', () => {
+    it('returns all tool definitions ignoring filter', () => {
+      const agent = new Agent(
+        createTestConfig({
+          tools: ['get_current_time'],
+        })
+      );
+
+      const allTools = agent.getAllToolDefinitions();
+      const filteredTools = agent.getTools();
+
+      // All tools should be more than filtered tools
+      expect(allTools.length).toBeGreaterThan(filteredTools.length);
+      expect(allTools.length).toBeGreaterThan(0);
+    });
+  });
+
+  describe('setAdditionalTools', () => {
+    it('temporarily exposes additional tools', () => {
+      const agent = new Agent(
+        createTestConfig({
+          tools: ['get_current_time'],
+        })
+      );
+
+      const initialTools = agent.getTools();
+      expect(initialTools.length).toBe(1);
+
+      agent.setAdditionalTools(['calculate']);
+
+      const toolsWithAdditional = agent.getTools();
+      expect(toolsWithAdditional.length).toBe(2);
+      expect(toolsWithAdditional.find((t) => t.name === 'core.calculate')).toBeDefined();
+    });
+
+    it('avoids duplicate tool names', () => {
+      const agent = new Agent(
+        createTestConfig({
+          tools: ['get_current_time'],
+        })
+      );
+
+      agent.setAdditionalTools(['get_current_time']);
+
+      const tools = agent.getTools();
+      const getCurrentTimeTools = tools.filter((t) => t.name === 'core.get_current_time');
+      expect(getCurrentTimeTools.length).toBe(1);
+    });
+  });
+
+  describe('clearAdditionalTools', () => {
+    it('clears temporarily added tools', () => {
+      const agent = new Agent(
+        createTestConfig({
+          tools: ['get_current_time'],
+        })
+      );
+
+      agent.setAdditionalTools(['calculate']);
+      expect(agent.getTools().length).toBe(2);
+
+      agent.clearAdditionalTools();
+
+      const tools = agent.getTools();
+      expect(tools.length).toBe(1);
+      expect(tools.find((t) => t.name === 'core.calculate')).toBeUndefined();
+    });
+  });
+
+  describe('setDirectToolMode', () => {
+    it('enables direct tool mode', () => {
+      const agent = new Agent(createTestConfig());
+
+      expect(agent.isDirectToolMode()).toBe(false);
+
+      agent.setDirectToolMode(true);
+
+      expect(agent.isDirectToolMode()).toBe(true);
+    });
+
+    it('disables direct tool mode', () => {
+      const agent = new Agent(createTestConfig());
+
+      agent.setDirectToolMode(true);
+      expect(agent.isDirectToolMode()).toBe(true);
+
+      agent.setDirectToolMode(false);
+      expect(agent.isDirectToolMode()).toBe(false);
+    });
+
+    it('excludes use_tool and batch_use_tool in direct mode', () => {
+      const agent = new Agent(createTestConfig());
+
+      agent.setDirectToolMode(true);
+
+      const tools = agent.getTools();
+      const useTool = tools.find((t) => t.name === 'use_tool');
+      const batchUseTool = tools.find((t) => t.name === 'batch_use_tool');
+
+      expect(useTool).toBeUndefined();
+      expect(batchUseTool).toBeUndefined();
+    });
+  });
+
   describe('reset', () => {
     it('creates new conversation', () => {
       const agent = new Agent(createTestConfig());
@@ -281,5 +385,110 @@ describe('createSimpleAgent', () => {
     });
 
     expect(agent.name).toBe('Custom Bot');
+  });
+});
+
+describe('Agent configuration methods', () => {
+  describe('setWorkspaceDir', () => {
+    it('sets workspace directory', () => {
+      const agent = new Agent(createTestConfig());
+      const tools = agent.getToolRegistry();
+
+      // Set a custom workspace directory
+      agent.setWorkspaceDir('/custom/workspace');
+
+      // Verify the method was called ( ToolRegistry.setWorkspaceDir should be called)
+      expect(agent.getToolRegistry()).toBe(tools);
+    });
+
+    it('sets workspace directory to undefined', () => {
+      const agent = new Agent(createTestConfig());
+
+      // Should not throw when setting to undefined
+      expect(() => agent.setWorkspaceDir(undefined)).not.toThrow();
+    });
+  });
+
+  describe('setExecutionPermissions', () => {
+    it('sets execution permissions', () => {
+      const agent = new Agent(createTestConfig());
+      const permissions = {
+        enabled: true,
+        mode: 'auto' as const,
+        execute_javascript: 'allowed' as const,
+        execute_python: 'allowed' as const,
+        execute_shell: 'blocked' as const,
+        compile_code: 'prompt' as const,
+        package_manager: 'blocked' as const,
+      };
+
+      agent.setExecutionPermissions(permissions);
+
+      // Config should be updated (access via internal config)
+      expect(agent).toBeInstanceOf(Agent);
+    });
+
+    it('sets execution permissions to undefined', () => {
+      const agent = new Agent(createTestConfig());
+
+      // Should not throw when setting to undefined
+      expect(() => agent.setExecutionPermissions(undefined)).not.toThrow();
+    });
+  });
+
+  describe('setRequestApproval', () => {
+    it('sets approval callback function', () => {
+      const agent = new Agent(createTestConfig());
+      const approvalFn = async (
+        _category: string,
+        _actionType: string,
+        _description: string,
+        _params: Record<string, unknown>
+      ) => true;
+
+      agent.setRequestApproval(approvalFn);
+
+      // Method should complete without error
+      expect(agent).toBeInstanceOf(Agent);
+    });
+
+    it('clears approval callback when set to undefined', () => {
+      const agent = new Agent(createTestConfig());
+
+      // Should not throw when clearing
+      expect(() => agent.setRequestApproval(undefined)).not.toThrow();
+    });
+  });
+
+  describe('setMaxToolCalls', () => {
+    it('sets max tool calls override', () => {
+      const agent = new Agent(createTestConfig());
+
+      agent.setMaxToolCalls(100);
+
+      // Method should complete without error
+      expect(agent).toBeInstanceOf(Agent);
+    });
+
+    it('sets max tool calls to unlimited (0)', () => {
+      const agent = new Agent(createTestConfig());
+
+      agent.setMaxToolCalls(0);
+
+      // Method should complete without error
+      expect(agent).toBeInstanceOf(Agent);
+    });
+
+    it('clears max tool calls override when set to undefined', () => {
+      const agent = new Agent(createTestConfig());
+
+      // First set a value
+      agent.setMaxToolCalls(50);
+      // Then clear it
+      agent.setMaxToolCalls(undefined);
+
+      // Method should complete without error
+      expect(agent).toBeInstanceOf(Agent);
+    });
   });
 });

@@ -58,6 +58,15 @@ vi.mock('./tool-executor.js', () => ({
   getSharedToolRegistry: () => mockRegistry,
 }));
 
+const mockEventSystemEmit = vi.fn();
+vi.mock('@ownpilot/core', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@ownpilot/core')>();
+  return {
+    ...actual,
+    getEventSystem: () => ({ emit: mockEventSystemEmit }),
+  };
+});
+
 vi.mock('./log.js', () => ({
   getLog: () => ({
     info: vi.fn(),

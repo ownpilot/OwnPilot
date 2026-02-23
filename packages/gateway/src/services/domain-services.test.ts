@@ -15,9 +15,11 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 // ---------------------------------------------------------------------------
 
 const mockEmit = vi.fn();
+const mockEventSystemEmit = vi.fn();
 
 vi.mock('@ownpilot/core', () => ({
   getEventBus: () => ({ emit: mockEmit }),
+  getEventSystem: () => ({ emit: mockEventSystemEmit }),
   createEvent: vi.fn((type: string, category: string, source: string, data: unknown) => ({
     type,
     category,

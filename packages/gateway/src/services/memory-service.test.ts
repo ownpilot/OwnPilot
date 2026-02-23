@@ -14,8 +14,10 @@ import type { Memory } from '../db/repositories/memories.js';
 // ---------------------------------------------------------------------------
 
 const mockEmit = vi.fn();
+const mockEventSystemEmit = vi.fn();
 vi.mock('@ownpilot/core', () => ({
   getEventBus: () => ({ emit: mockEmit }),
+  getEventSystem: () => ({ emit: mockEventSystemEmit }),
   createEvent: vi.fn((type: string, category: string, source: string, data: unknown) => ({
     type,
     category,
@@ -69,14 +71,7 @@ vi.mock('../db/repositories/memories.js', () => ({
   createMemoriesRepository: () => mockRepo,
 }));
 
-// Mock embedding queue (fire-and-forget, not tested here)
-vi.mock('./embedding-queue.js', () => ({
-  getEmbeddingQueue: () => ({
-    enqueue: vi.fn(),
-    backfill: vi.fn(),
-    getStats: vi.fn(() => ({ queueSize: 0, running: false })),
-  }),
-}));
+// Embedding queue is no longer directly imported — memory service emits events instead.
 
 // Mock embedding service (used via registry in @ownpilot/core mock above)
 const mockEmbeddingAvailable = vi.fn().mockReturnValue(false);

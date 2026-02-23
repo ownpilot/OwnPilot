@@ -17,13 +17,20 @@ vi.mock('../db/repositories/workflows.js', () => ({
   createWorkflowsRepository: vi.fn(),
 }));
 
-vi.mock('./tool-executor.js', () => ({
-  executeTool: vi.fn(),
-  getSharedToolRegistry: vi.fn(() => ({
-    has: vi.fn().mockReturnValue(false),
-    getDefinitions: vi.fn().mockReturnValue([]),
-  })),
-}));
+vi.mock('@ownpilot/core', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@ownpilot/core')>();
+  return {
+    ...actual,
+    getServiceRegistry: vi.fn(() => ({
+      get: () => ({
+        execute: vi.fn(async () => ({ content: '{}', isError: false })),
+        has: vi.fn().mockReturnValue(false),
+        getDefinitions: vi.fn().mockReturnValue([]),
+        getDefinition: vi.fn(),
+      }),
+    })),
+  };
+});
 
 vi.mock('../routes/helpers.js', () => ({
   getErrorMessage: vi.fn((err: unknown, fallback: string) =>
