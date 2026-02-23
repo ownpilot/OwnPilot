@@ -23,12 +23,15 @@ import {
 } from '../db/repositories/workflows.js';
 import {
   createProvider,
+  getServiceRegistry,
+  Services,
   type ProviderConfig,
   type IWorkflowService,
+  type IToolService,
+  type ToolServiceResult,
   sleep,
   withTimeout,
 } from '@ownpilot/core';
-import { executeTool, getSharedToolRegistry, type ToolExecutionResult } from './tool-executor.js';
 import { getErrorMessage } from '../routes/helpers.js';
 import { getLog } from './log.js';
 import vm from 'node:vm';
@@ -327,8 +330,32 @@ function getNestedValue(obj: unknown, path: string[]): unknown {
 // Workflow Service
 // ============================================================================
 
+/** Result of a tool execution within a workflow node. */
+interface ToolExecutionResult {
+  success: boolean;
+  result?: unknown;
+  error?: string;
+}
+
+/** Convert ToolServiceResult to ToolExecutionResult. */
+function toToolExecResult(r: ToolServiceResult): ToolExecutionResult {
+  if (r.isError) {
+    return { success: false, error: r.content };
+  }
+  // Try to parse JSON content for structured results
+  try {
+    return { success: true, result: JSON.parse(r.content) };
+  } catch {
+    return { success: true, result: r.content };
+  }
+}
+
 export class WorkflowService implements IWorkflowService {
   private activeExecutions = new Map<string, AbortController>();
+
+  private getToolService(): IToolService {
+    return getServiceRegistry().get(Services.Tool);
+  }
 
   /**
    * Execute a workflow by ID. Calls onProgress for each node start/complete.
@@ -676,9 +703,10 @@ export class WorkflowService implements IWorkflowService {
       const resolvedArgs = resolveTemplates(data.toolArgs, nodeOutputs, variables);
 
       // Resolve tool name — handles cases where dots were stripped (e.g. copilot AI)
-      const toolName = resolveWorkflowToolName(data.toolName);
+      const toolName = this.resolveWorkflowToolName(data.toolName);
 
-      const result: ToolExecutionResult = await executeTool(toolName, resolvedArgs, userId);
+      const toolResult = await this.getToolService().execute(toolName, resolvedArgs, { userId });
+      const result: ToolExecutionResult = toToolExecResult(toolResult);
 
       return {
         nodeId: node.id,
@@ -867,11 +895,8 @@ export class WorkflowService implements IWorkflowService {
       };
       const toolName = toolMap[data.language] ?? 'execute_javascript';
 
-      const result: ToolExecutionResult = await executeTool(
-        toolName,
-        { code: resolvedCode },
-        userId
-      );
+      const toolResult = await this.getToolService().execute(toolName, { code: resolvedCode }, { userId });
+      const result: ToolExecutionResult = toToolExecResult(toolResult);
 
       return {
         nodeId: node.id,
@@ -1221,39 +1246,38 @@ export class WorkflowService implements IWorkflowService {
       };
     }
   }
-}
 
-// ============================================================================
-// Tool name resolution for workflows
-// ============================================================================
+  // --------------------------------------------------------------------------
+  // Tool name resolution
+  // --------------------------------------------------------------------------
 
-/**
- * Resolve a tool name that may have dots stripped by the AI copilot.
- * e.g. "mcpgithublist_repositories" → "mcp.github.list_repositories"
- *
- * Resolution order:
- * 1. Exact match in registry → use as-is
- * 2. Base name resolution (handled by ToolRegistry.has/resolveToQualified)
- * 3. Normalized match: remove dots from all registered names, find match
- */
-function resolveWorkflowToolName(name: string): string {
-  const registry = getSharedToolRegistry();
+  /**
+   * Resolve a tool name that may have dots stripped by the AI copilot.
+   * e.g. "mcpgithublist_repositories" → "mcp.github.list_repositories"
+   *
+   * Resolution order:
+   * 1. Exact match in registry → use as-is
+   * 2. Normalized match: remove dots from all registered names, find match
+   */
+  private resolveWorkflowToolName(name: string): string {
+    const toolService = this.getToolService();
 
-  // 1. Exact or base-name match (ToolRegistry handles both)
-  if (registry.has(name)) return name;
+    // 1. Exact or base-name match
+    if (toolService.has(name)) return name;
 
-  // 2. Try normalized match — remove dots from all registered names and compare
-  const normalized = name.replace(/\./g, '').toLowerCase();
-  for (const def of registry.getDefinitions()) {
-    const defNormalized = def.name.replace(/\./g, '').toLowerCase();
-    if (defNormalized === normalized) {
-      _log.info(`Resolved workflow tool name "${name}" → "${def.name}"`);
-      return def.name;
+    // 2. Try normalized match — remove dots from all registered names and compare
+    const normalized = name.replace(/\./g, '').toLowerCase();
+    for (const def of toolService.getDefinitions()) {
+      const defNormalized = def.name.replace(/\./g, '').toLowerCase();
+      if (defNormalized === normalized) {
+        _log.info(`Resolved workflow tool name "${name}" → "${def.name}"`);
+        return def.name;
+      }
     }
-  }
 
-  // No match found — return original (will produce a "not found" error)
-  return name;
+    // No match found — return original (will produce a "not found" error)
+    return name;
+  }
 }
 
 // ============================================================================

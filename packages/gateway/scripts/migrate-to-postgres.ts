@@ -264,7 +264,7 @@ class Migrator {
       try {
         await this.pg.query(`TRUNCATE TABLE ${table} CASCADE`);
         console.log(`   ✅ Truncated: ${table}`);
-      } catch (error) {
+      } catch {
         // Table might not exist
         console.log(`   ⚠️ Skipped: ${table} (might not exist)`);
       }
@@ -355,7 +355,7 @@ class Migrator {
     const converted: Record<string, unknown> = {};
 
     for (const col of columns) {
-      let value = row[col];
+      const value = row[col];
 
       // Skip null values
       if (value === null || value === undefined) {

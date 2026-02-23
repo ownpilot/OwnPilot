@@ -162,18 +162,19 @@ All messages (web UI chat, Telegram, trigger-initiated chats) flow through the s
 ```bash
 git clone https://github.com/ownpilot/ownpilot.git
 cd ownpilot
-cp .env.example .env
 
-# Start OwnPilot + PostgreSQL
+# Start OwnPilot + PostgreSQL (uses defaults, no .env needed)
 docker compose --profile postgres up -d
 
 # UI + API: http://localhost:8080
 ```
 
-Or use the pre-built image:
+To customize settings (auth, Telegram, etc.), copy and edit `.env` before starting:
 
 ```bash
-docker pull ghcr.io/ownpilot/ownpilot:latest
+cp .env.example .env
+# Edit .env — docker-compose.yml defaults match .env.example
+docker compose --profile postgres up -d
 ```
 
 ### From Source
@@ -182,7 +183,7 @@ docker pull ghcr.io/ownpilot/ownpilot:latest
 
 - **Node.js** >= 22.0.0
 - **pnpm** >= 10.0.0
-- **PostgreSQL** (via Docker or native)
+- **PostgreSQL** 16+ (via Docker Compose or native install)
 
 #### Setup
 
@@ -194,8 +195,10 @@ pnpm install
 
 # Configure
 cp .env.example .env
-# Edit .env with database connection details
-# AI provider API keys are configured via the Config Center UI after setup
+# Edit .env if needed (defaults work with docker compose PostgreSQL)
+
+# Start PostgreSQL (if you don't have one already)
+docker compose --profile postgres up -d
 
 # Start development (gateway + ui)
 pnpm dev
@@ -203,6 +206,8 @@ pnpm dev
 # UI: http://localhost:5173
 # API: http://localhost:8080
 ```
+
+AI provider API keys are configured via the **Config Center UI** (Settings page) after setup.
 
 ### Configuration via CLI
 
@@ -448,23 +453,35 @@ All API keys are managed via the **Config Center UI** (Settings page) or the `ow
 
 ### Supported Providers
 
-| Provider           | Integration Type               | Key Models                                                            |
-| ------------------ | ------------------------------ | --------------------------------------------------------------------- |
-| **OpenAI**         | Native                         | GPT-4o, GPT-4o-mini, o1, o3-mini                                      |
-| **Anthropic**      | Native (with prompt caching)   | Claude Sonnet 4.6, Claude Opus 4.6, Claude 3.7 Sonnet, Claude 3 Haiku |
-| **Google**         | Native (with OAuth)            | Gemini 2.0 Flash, Gemini 1.5 Pro                                      |
-| **Zhipu AI**       | Native                         | GLM-4                                                                 |
-| **Together AI**    | Aggregator (OpenAI-compatible) | Llama 3.3 70B, DeepSeek R1/V3, Qwen 2.5 Coder                         |
-| **Groq**           | Aggregator (ultra-fast LPU)    | Llama 3.3 70B, Mixtral 8x7B, Gemma 2 9B                               |
-| **Fireworks AI**   | Aggregator                     | Llama 3.3 70B, Qwen 2.5, FLUX image models                            |
-| **DeepInfra**      | Aggregator                     | Serverless open-source inference                                      |
-| **OpenRouter**     | Aggregator                     | Unified API for all providers                                         |
-| **Perplexity**     | Aggregator                     | Sonar Pro, Sonar Reasoning (with citations)                           |
-| **Cerebras**       | Aggregator (fastest inference) | Llama 3.3 70B, Llama 3.1 8B                                           |
-| **fal.ai**         | Aggregator (image/video)       | FLUX Pro/Dev/Schnell, Stable Diffusion, Recraft v3                    |
-| **Ollama**         | Local (auto-discovered)        | Any GGUF model                                                        |
-| **LM Studio**      | Local (auto-discovered)        | Any loaded model                                                      |
-| **LocalAI / vLLM** | Local                          | Self-hosted models                                                    |
+**96 providers** with auto-synced model catalogs from [models.dev](https://models.dev). Key providers:
+
+| Provider | Integration Type | Key Models |
+| --- | --- | --- |
+| **OpenAI** | Native | GPT-5.3 Codex, GPT-5.2, GPT-5.1, o4-mini, o3 |
+| **Anthropic** | Native (prompt caching) | Claude Sonnet 4.6, Claude Opus 4.6, Claude Sonnet 4.5, Claude Haiku 4.5 |
+| **Google** | Native | Gemini 3.1 Pro, Gemini 3 Flash, Gemini 2.5 Flash/Pro |
+| **xAI** | Native | Grok 4.1 Fast, Grok 4, Grok 3 |
+| **DeepSeek** | Native | DeepSeek Chat, DeepSeek Reasoner |
+| **Mistral** | Native | Devstral 2, Mistral Medium 3.1, Mistral Large 3, Codestral |
+| **Zhipu AI** | Native | GLM-5, GLM-4.7, GLM-4.6 |
+| **Cohere** | Native | Command A, Command A Reasoning, Command R+ |
+| **Together AI** | Aggregator | Qwen3.5 397B, GLM-5, Kimi K2.5, DeepSeek V3.1 |
+| **Groq** | Aggregator (LPU) | Kimi K2, GPT OSS 120B, Llama 4 Scout, Qwen3 32B |
+| **Fireworks AI** | Aggregator | MiniMax-M2.5, GLM 5, Kimi K2.5, DeepSeek V3.2 |
+| **DeepInfra** | Aggregator | Kimi K2.5, GLM-4.7, DeepSeek-V3.2, Qwen3 Coder |
+| **OpenRouter** | Aggregator (161+ models) | Unified API for all providers |
+| **Perplexity** | Aggregator | Sonar Deep Research, Sonar Pro, Sonar Reasoning Pro |
+| **Cerebras** | Aggregator (fastest) | GLM-4.7, GPT OSS 120B, Qwen 3 235B |
+| **NVIDIA** | Aggregator (65+ models) | GLM5, Kimi K2.5, DeepSeek V3.2, Nemotron |
+| **Amazon Bedrock** | Cloud (96+ models) | Claude 4.6, DeepSeek-V3.2, Kimi K2.5, Nova Pro |
+| **Azure** | Cloud (85+ models) | GPT-5.2, Claude 4.6, DeepSeek-V3.2, Grok 4 |
+| **GitHub Models** | Cloud | GPT-4.1, DeepSeek-R1, Llama 4, Mistral |
+| **Hugging Face** | Aggregator | MiniMax-M2.5, GLM-5, Qwen3.5, DeepSeek-V3.2 |
+| **SiliconFlow** | Aggregator (66+ models) | GLM-5, Kimi K2.5, DeepSeek V3.2, Qwen3 VL |
+| **Novita AI** | Aggregator (80+ models) | Qwen3.5, GLM-5, Kimi K2.5, ERNIE-4.5 |
+| **Nebius** | Aggregator (45+ models) | DeepSeek-V3.2, GLM-4.7, Qwen3, FLUX |
+| **Ollama** | Local | qwen3.5, minimax-m2.5, glm-5, kimi-k2.5 |
+| **LM Studio** | Local | GPT OSS 20B, Qwen3 30B, Qwen3 Coder 30B |
 
 Any OpenAI-compatible endpoint can be added as a custom provider.
 
@@ -1015,7 +1032,7 @@ NODE_ENV=development
 POSTGRES_HOST=localhost
 POSTGRES_PORT=25432
 POSTGRES_USER=ownpilot
-POSTGRES_PASSWORD=ownpilot_secret
+POSTGRES_PASSWORD=ownpilot_secret     # Change in production
 POSTGRES_DB=ownpilot
 # POSTGRES_POOL_SIZE=10
 # DB_VERBOSE=false

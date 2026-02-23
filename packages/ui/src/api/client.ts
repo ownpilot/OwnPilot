@@ -11,6 +11,9 @@
  *   - Configurable global error callback
  */
 
+// Session token key — must match STORAGE_KEYS.SESSION_TOKEN in constants/storage-keys.ts
+const SESSION_TOKEN_KEY = 'ownpilot-session-token';
+
 // ============================================================================
 // Types
 // ============================================================================
@@ -51,7 +54,7 @@ export interface StreamOptions extends RequestOptions {
 interface ApiClientConfig {
   /** Base path prepended to all requests (default: '/api/v1') */
   basePath: string;
-  /** Global error callback — called for every ApiError thrown */
+  /** @deprecated Use addOnError/removeOnError instead */
   onError?: (error: ApiError) => void;
 }
 
@@ -96,6 +99,9 @@ function buildQueryString(
 
 function createApiClient(config: ApiClientConfig) {
   const { basePath } = config;
+
+  /** Multiple error listeners (replaces the old single-handler pattern) */
+  const errorListeners = new Set<(error: ApiError) => void>();
 
   /** Build full URL from path + optional query params */
   function buildUrl(path: string, params?: RequestOptions['params']): string {
@@ -149,7 +155,7 @@ function createApiClient(config: ApiClientConfig) {
     return { code: error.code, message: error.message, details: error.details };
   }
 
-  /** Create an ApiError and invoke the global callback */
+  /** Create an ApiError and invoke all error listeners */
   function createError(
     status: number,
     code: string,
@@ -159,7 +165,26 @@ function createApiClient(config: ApiClientConfig) {
   ): ApiError {
     const err = new ApiError(status, code, message, details, requestId);
     config.onError?.(err);
+    for (const listener of errorListeners) {
+      try {
+        listener(err);
+      } catch {
+        // Don't let a failing listener break others
+      }
+    }
     return err;
+  }
+
+  /** Inject session token from localStorage if available */
+  function injectSessionToken(headers: Record<string, string>): void {
+    try {
+      const token = localStorage.getItem(SESSION_TOKEN_KEY);
+      if (token) {
+        headers['X-Session-Token'] = token;
+      }
+    } catch {
+      // localStorage may not be available
+    }
   }
 
   /** Core request method */
@@ -171,6 +196,8 @@ function createApiClient(config: ApiClientConfig) {
   ): Promise<T> {
     const url = buildUrl(path, options?.params);
     const headers: Record<string, string> = { ...options?.headers };
+
+    injectSessionToken(headers);
 
     if (body !== undefined) {
       headers['Content-Type'] = 'application/json';
@@ -232,6 +259,8 @@ function createApiClient(config: ApiClientConfig) {
         ...options?.headers,
       };
 
+      injectSessionToken(headers);
+
       let response: Response;
       try {
         response = await fetch(url, {
@@ -269,11 +298,22 @@ function createApiClient(config: ApiClientConfig) {
     },
 
     /**
-     * Set or replace the global error callback.
-     * Useful for wiring toast notifications after the client is created.
+     * @deprecated Use addOnError/removeOnError instead.
+     * Sets a single legacy handler (does NOT affect listeners added via addOnError).
      */
     setOnError(handler: (error: ApiError) => void): void {
       config.onError = handler;
+    },
+
+    /**
+     * Add an error listener. Multiple listeners can coexist.
+     * Returns unsubscribe function.
+     */
+    addOnError(listener: (error: ApiError) => void): () => void {
+      errorListeners.add(listener);
+      return () => {
+        errorListeners.delete(listener);
+      };
     },
   };
 }

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Sparkles,
   Power,
@@ -18,6 +18,7 @@ import {
   Copy,
   Code,
   Check,
+  Upload,
 } from '../components/icons';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { EmptyState } from '../components/EmptyState';
@@ -110,6 +111,28 @@ export function ExtensionsPage() {
     }
   };
 
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isUploading, setIsUploading] = useState(false);
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Reset the input so the same file can be selected again
+    if (fileInputRef.current) fileInputRef.current.value = '';
+
+    setIsUploading(true);
+    try {
+      const result = await extensionsApi.upload(file);
+      toast.success(result.message || `Uploaded "${file.name}"`);
+      fetchPackages();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Upload failed');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   const filteredPackages = packages.filter((p) => {
     if (filter === 'enabled') return p.status === 'enabled';
     if (filter === 'disabled') return p.status === 'disabled';
@@ -144,6 +167,22 @@ export function ExtensionsPage() {
           >
             <FolderOpen className="w-4 h-4" />
             Scan
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".md,.json,.zip"
+            className="hidden"
+            onChange={handleFileUpload}
+          />
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isUploading}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-text-secondary dark:text-dark-text-secondary hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary rounded-lg transition-colors disabled:opacity-50"
+            title="Upload extension file (.md, .json, or .zip)"
+          >
+            <Upload className="w-4 h-4" />
+            {isUploading ? 'Uploading...' : 'Upload'}
           </button>
           <button
             onClick={() => setShowCreatorModal(true)}

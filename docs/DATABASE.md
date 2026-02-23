@@ -185,7 +185,7 @@ HTTP request and API call logging for debugging.
 
 #### `channels`
 
-External communication channel configurations (Telegram, Discord, Slack, etc.).
+External communication channel configurations (Telegram).
 
 | Column             | Type      | Constraints                     | Description           |
 | ------------------ | --------- | ------------------------------- | --------------------- |
@@ -1529,7 +1529,7 @@ Pre-populates the `config_services` table with definitions for known external se
 - Category classification (`weather`, `email`, `media`, `translation`, `search`, `messaging`)
 - Documentation URLs
 
-Known services include: OpenWeatherMap, WeatherAPI, SMTP, IMAP, ElevenLabs, Deepgram, DeepL, Tavily, Serper, Perplexity, Telegram, Discord, and Slack.
+Known services include: OpenWeatherMap, WeatherAPI, SMTP, IMAP, ElevenLabs, Deepgram, DeepL, Tavily, Serper, Perplexity, and Telegram.
 
 The `seedConfigServices()` function uses idempotent upserts and cleans up stale services that are no longer in the seed list.
 

@@ -9,6 +9,7 @@ import * as path from 'node:path';
 import type { ToolDefinition, ToolExecutor, ToolExecutionResult } from '../types.js';
 import { getErrorMessage } from '../../services/error-utils.js';
 import { isBlockedUrl } from './web-fetch.js';
+import { isOwnPilotPath } from '../../security/self-protection.js';
 
 /** Maximum file size for read/write operations (10 MB) */
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
@@ -76,6 +77,11 @@ async function isPathAllowedAsync(filePath: string, workspaceDir?: string): Prom
       resolvedPath = path.normalize(targetPath);
     }
 
+    // Self-protection: NEVER allow access to OwnPilot's own files
+    if (isOwnPilotPath(resolvedPath)) {
+      return false;
+    }
+
     const allowedPaths = getAllowedPaths(workspaceDir);
 
     for (const allowed of allowedPaths) {
@@ -103,6 +109,12 @@ function _isPathAllowed(filePath: string, workspaceDir?: string): boolean {
 
   // Normalize to resolve .. and . segments
   const normalizedPath = path.normalize(targetPath);
+
+  // Self-protection: NEVER allow access to OwnPilot's own files
+  if (isOwnPilotPath(normalizedPath)) {
+    return false;
+  }
+
   const allowedPaths = getAllowedPaths(workspaceDir);
 
   return allowedPaths.some((allowed) => {

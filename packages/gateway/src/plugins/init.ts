@@ -230,7 +230,8 @@ function buildNewsRssPlugin(): BuiltinPluginEntry {
             last_fetched: new Date().toISOString(),
             status: 'active',
           });
-        } catch {
+        } catch (err) {
+          log.error('RSS feed fetch failed', { feedId: feedRecord.id, error: String(err) });
           await repo.updateRecord(feedRecord.id, { status: 'error' });
         }
 
@@ -397,7 +398,8 @@ function buildNewsRssPlugin(): BuiltinPluginEntry {
             last_fetched: new Date().toISOString(),
             status: 'active',
           });
-        } catch {
+        } catch (err) {
+          log.error('RSS feed refresh failed', { feedId, error: String(err) });
           await repo.updateRecord(feedId, { status: 'error' });
           return { content: { error: 'Failed to fetch feed' }, isError: true };
         }

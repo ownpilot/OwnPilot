@@ -2,6 +2,7 @@ import { lazy, Suspense, type ReactNode } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { Layout } from './components/Layout';
 import { PageErrorBoundary } from './components/PageErrorBoundary';
+import { useAuth } from './hooks/useAuth';
 
 // Lazy-load ChatPage like all other pages — keeps main bundle under 500 KB
 const ChatPage = lazy(() => import('./pages/ChatPage').then((m) => ({ default: m.ChatPage })));
@@ -116,6 +117,10 @@ const SystemPage = lazy(() =>
   import('./pages/SystemPage').then((m) => ({ default: m.SystemPage }))
 );
 const AboutPage = lazy(() => import('./pages/AboutPage').then((m) => ({ default: m.AboutPage })));
+const LoginPage = lazy(() => import('./pages/LoginPage').then((m) => ({ default: m.LoginPage })));
+const SecurityPage = lazy(() =>
+  import('./pages/SecurityPage').then((m) => ({ default: m.SecurityPage }))
+);
 
 function PageLoader() {
   return (
@@ -134,10 +139,33 @@ function page(children: ReactNode) {
   );
 }
 
+/** Redirects to /login if password is configured but user is not authenticated */
+function AuthGuard({ children }: { children: ReactNode }) {
+  const { isAuthenticated, passwordConfigured, isLoading } = useAuth();
+
+  if (isLoading) {
+    return <PageLoader />;
+  }
+
+  if (passwordConfigured && !isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
+  return <>{children}</>;
+}
+
 export function App() {
   return (
     <Routes>
-      <Route path="/" element={<Layout />}>
+      <Route path="/login" element={page(<LoginPage />)} />
+      <Route
+        path="/"
+        element={
+          <AuthGuard>
+            <Layout />
+          </AuthGuard>
+        }
+      >
         <Route index element={page(<ChatPage />)} />
         <Route path="dashboard" element={page(<DashboardPage />)} />
         <Route path="wizards" element={page(<WizardsPage />)} />
@@ -178,6 +206,7 @@ export function App() {
         <Route path="settings/connected-apps" element={page(<ConnectedAppsPage />)} />
         <Route path="settings/tool-groups" element={page(<ToolGroupsPage />)} />
         <Route path="settings/workflow-tools" element={page(<WorkflowToolSettingsPage />)} />
+        <Route path="settings/security" element={page(<SecurityPage />)} />
         <Route path="settings/system" element={page(<SystemPage />)} />
         <Route path="about" element={page(<AboutPage />)} />
         <Route path="profile" element={page(<ProfilePage />)} />

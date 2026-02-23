@@ -5,6 +5,7 @@ import { App } from './App';
 import { WebSocketProvider } from './hooks/useWebSocket';
 import { ThemeProvider } from './hooks/useTheme';
 import { ChatProvider } from './hooks/useChatStore';
+import { AuthProvider } from './hooks/useAuth';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { DialogProvider } from './components/ConfirmDialog';
 import { ToastProvider } from './components/ToastProvider';
@@ -15,15 +16,17 @@ createRoot(document.getElementById('root')!).render(
     <ErrorBoundary>
       <ThemeProvider>
         <BrowserRouter>
-          <WebSocketProvider>
-            <ChatProvider>
-              <DialogProvider>
-                <ToastProvider>
-                  <App />
-                </ToastProvider>
-              </DialogProvider>
-            </ChatProvider>
-          </WebSocketProvider>
+          <AuthProvider>
+            <WebSocketProvider>
+              <ChatProvider>
+                <DialogProvider>
+                  <ToastProvider>
+                    <App />
+                  </ToastProvider>
+                </DialogProvider>
+              </ChatProvider>
+            </WebSocketProvider>
+          </AuthProvider>
         </BrowserRouter>
       </ThemeProvider>
     </ErrorBoundary>

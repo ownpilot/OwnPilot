@@ -126,6 +126,14 @@ export const DANGEROUS_CODE_PATTERNS: ReadonlyArray<CodeValidationPattern> = [
 
   // ── Binary/WASM execution ─────────────────────────────────────
   { pattern: /\bWebAssembly\b/, message: 'WebAssembly is not allowed' },
+
+  // ── Runtime escape vectors ──────────────────────────────────────
+  { pattern: /\bDeno\s*\./, message: 'Deno namespace access is not allowed' },
+  { pattern: /\bBun\s*\./, message: 'Bun namespace access is not allowed' },
+
+  // ── Timing attack vectors ───────────────────────────────────────
+  { pattern: /\bSharedArrayBuffer\b/, message: 'SharedArrayBuffer is not allowed (timing attack vector)' },
+  { pattern: /\bAtomics\b/, message: 'Atomics is not allowed (timing attack vector)' },
 ];
 
 // =============================================================================

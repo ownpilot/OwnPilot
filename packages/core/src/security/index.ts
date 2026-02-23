@@ -288,6 +288,19 @@ export const CRITICAL_PATTERNS: readonly CriticalPattern[] = [
   { pattern: /\b(curl|wget)\s+[^|]*\|\s*(ba)?sh\b/i, description: 'Remote code pipe to shell' },
   { pattern: /\/dev\/tcp\//i, description: 'Bash reverse shell' },
   { pattern: /\bnc\s+-\w*e\b/i, description: 'Netcat shell' },
+  // Disk overwrite via dd (output target)
+  { pattern: /\bdd\s+if=.*of=\/dev\//i, description: 'Disk device overwrite via dd' },
+  // Firewall flush
+  { pattern: /\biptables\s+-F\b/i, description: 'Flush firewall rules' },
+  // User/password management
+  { pattern: /\bpasswd\b/i, description: 'Password change attempt' },
+  { pattern: /\b(useradd|usermod|userdel)\b/i, description: 'User management command' },
+  // System service control
+  { pattern: /\bsystemctl\s+(stop|disable)\b/i, description: 'Stop/disable system service' },
+  // Cron removal
+  { pattern: /\bcrontab\s+-r\b/i, description: 'Remove all cron jobs' },
+  // World-writable root
+  { pattern: /\bchmod\s+777\s+\//i, description: 'World-writable root directory' },
 ];
 
 /**

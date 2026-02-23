@@ -5,7 +5,6 @@
 # Default credentials: ownpilot / ownpilot_secret
 #
 # Then in your .env:
-#   DB_TYPE=postgres
 #   POSTGRES_HOST=localhost
 #   POSTGRES_PORT=25432
 #   POSTGRES_USER=ownpilot

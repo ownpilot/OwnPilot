@@ -182,6 +182,14 @@ export type { IExtensionService, ExtensionInfo, ExtensionScanResult } from './ex
 // Embedding Service
 export type { IEmbeddingService, EmbeddingResult } from './embedding-service.js';
 
+// Heartbeat Service
+export type {
+  IHeartbeatService,
+  HeartbeatInfo,
+  CreateHeartbeatInput as HeartbeatCreateInput,
+  UpdateHeartbeatInput as HeartbeatUpdateInput,
+} from './heartbeat-service.js';
+
 // Config Center
 export * from './config-center.js';
 

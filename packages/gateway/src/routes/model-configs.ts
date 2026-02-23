@@ -38,8 +38,11 @@ import {
   notFoundError,
 } from './helpers.js';
 import { wsGateway } from '../ws/server.js';
+import { fileURLToPath } from 'url';
+import path from 'path';
 
 const log = getLog('ModelConfigs');
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export const modelConfigsRoutes = new Hono();
 
@@ -1102,16 +1105,12 @@ modelConfigsRoutes.post('/sync/apply', async (c) => {
 modelConfigsRoutes.post('/sync/reset', async (c) => {
   try {
     const fs = await import('fs');
-    const path = await import('path');
-    const { fileURLToPath } = await import('url');
 
     // 1. Clear database records first
     const userId = getUserId(c);
     const dbResult = await modelConfigsRepo.fullReset(userId);
 
     // 2. Delete all JSON config files
-    const __filename = fileURLToPath(import.meta.url);
-    const __dirname = path.dirname(__filename);
     const configsDir = path.join(
       __dirname,
       '..',
@@ -1187,11 +1186,7 @@ modelConfigsRoutes.delete('/sync/provider/:id', async (c) => {
 
   try {
     const fs = await import('fs');
-    const path = await import('path');
-    const { fileURLToPath } = await import('url');
 
-    const __filename = fileURLToPath(import.meta.url);
-    const __dirname = path.dirname(__filename);
     const configPath = path.join(
       __dirname,
       '..',

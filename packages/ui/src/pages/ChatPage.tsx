@@ -262,7 +262,12 @@ export function ChatPage() {
   };
 
   const handleCompactContext = async () => {
-    await chatApi.compactContext(provider, model);
+    try {
+      await chatApi.compactContext(provider, model);
+    } catch {
+      // Error propagates to ContextDetailModal's try/catch
+      throw new Error('Failed to compact context');
+    }
   };
 
   const currentProviderName = providerNames[provider] ?? provider;

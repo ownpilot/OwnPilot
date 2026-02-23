@@ -13,6 +13,7 @@ import { bodyLimit } from 'hono/body-limit';
 import { logger } from 'hono/logger';
 import { secureHeaders } from 'hono/secure-headers';
 
+import { VERSION } from '@ownpilot/core';
 import type { GatewayConfig } from './types/index.js';
 import {
   requestId,
@@ -22,6 +23,7 @@ import {
   errorHandler,
   notFoundHandler,
   auditMiddleware,
+  uiSessionMiddleware,
 } from './middleware/index.js';
 import {
   healthRoutes,
@@ -62,6 +64,7 @@ import {
   webhookRoutes,
   workflowRoutes,
   composioRoutes,
+  uiAuthRoutes,
 } from './routes/index.js';
 import {
   RATE_LIMIT_WINDOW_MS,
@@ -126,7 +129,7 @@ export function createApp(config: Partial<GatewayConfig> = {}): Hono {
     cors({
       origin: fullConfig.corsOrigins ?? [],
       allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-      allowHeaders: ['Content-Type', 'Authorization', 'X-API-Key', 'X-Request-ID'],
+      allowHeaders: ['Content-Type', 'Authorization', 'X-API-Key', 'X-Request-ID', 'X-Session-Token'],
       exposeHeaders: [
         'X-Request-ID',
         'X-Response-Time',
@@ -173,6 +176,9 @@ export function createApp(config: Partial<GatewayConfig> = {}): Hono {
     app.use('/api/*', createRateLimitMiddleware(fullConfig.rateLimit));
   }
 
+  // UI session authentication (before API auth — valid session bypasses api-key/jwt)
+  app.use('/api/v1/*', uiSessionMiddleware);
+
   // Authentication (skip health routes)
   if (fullConfig.auth && fullConfig.auth.type !== 'none') {
     app.use('/api/v1/*', createAuthMiddleware(fullConfig.auth));
@@ -188,6 +194,7 @@ export function createApp(config: Partial<GatewayConfig> = {}): Hono {
   app.route('/webhooks', webhookRoutes);
 
   app.route('/health', healthRoutes);
+  app.route('/api/v1/auth', uiAuthRoutes);
   app.route('/api/v1/health', healthRoutes); // Also mount at /api/v1 for API consistency
   app.route('/api/v1/agents', agentRoutes);
   app.route('/api/v1/chat', chatRoutes);
@@ -283,7 +290,7 @@ export function createApp(config: Partial<GatewayConfig> = {}): Hono {
     app.get('/', (c) => {
       return c.json({
         name: 'OwnPilot',
-        version: '0.1.0',
+        version: VERSION,
         documentation: '/api/v1',
       });
     });
@@ -295,6 +302,7 @@ export function createApp(config: Partial<GatewayConfig> = {}): Hono {
       version: 'v1',
       endpoints: {
         health: '/health',
+        auth: '/api/v1/auth',
         agents: '/api/v1/agents',
         chat: '/api/v1/chat',
         tools: '/api/v1/tools',
@@ -408,5 +416,6 @@ declare module 'hono' {
     startTime: number;
     userId?: string;
     jwtPayload?: Record<string, unknown>;
+    sessionAuthenticated?: boolean;
   }
 }

@@ -287,6 +287,72 @@ export interface GatewaySystemStatusData {
 }
 
 // ============================================================================
+// Memory Event Data
+// ============================================================================
+
+export interface MemoryCreatedData {
+  memoryId: string;
+  userId: string;
+  content: string;
+  type: string;
+  needsEmbedding: boolean;
+}
+
+export interface MemoryUpdatedData {
+  memoryId: string;
+  userId: string;
+  content?: string;
+  needsEmbedding?: boolean;
+}
+
+export interface MemoryDeletedData {
+  memoryId: string;
+  userId: string;
+}
+
+// ============================================================================
+// Extension Event Data
+// ============================================================================
+
+export interface ExtensionInstalledData {
+  extensionId: string;
+  userId: string;
+  name: string;
+  format: string;
+}
+
+export interface ExtensionUninstalledData {
+  extensionId: string;
+  userId: string;
+}
+
+export interface ExtensionEnabledData {
+  extensionId: string;
+  userId: string;
+  triggers?: number;
+}
+
+export interface ExtensionDisabledData {
+  extensionId: string;
+  userId: string;
+  triggerIds?: string[];
+}
+
+// ============================================================================
+// MCP Event Data
+// ============================================================================
+
+export interface McpServerConnectedData {
+  serverName: string;
+  toolCount: number;
+  tools: Array<{ name: string; description?: string }>;
+}
+
+export interface McpServerDisconnectedData {
+  serverName: string;
+}
+
+// ============================================================================
 // Master Event Map
 // ============================================================================
 
@@ -338,6 +404,21 @@ export interface EventMap {
   'channel.user.unblocked': ChannelUserBlockedData;
   'channel.typing': ChannelTypingData;
   'channel.reaction.added': ChannelReactionData;
+
+  // --- Memory Events ---
+  'memory.created': MemoryCreatedData;
+  'memory.updated': MemoryUpdatedData;
+  'memory.deleted': MemoryDeletedData;
+
+  // --- Extension Events ---
+  'extension.installed': ExtensionInstalledData;
+  'extension.uninstalled': ExtensionUninstalledData;
+  'extension.enabled': ExtensionEnabledData;
+  'extension.disabled': ExtensionDisabledData;
+
+  // --- MCP Events ---
+  'mcp.server.connected': McpServerConnectedData;
+  'mcp.server.disconnected': McpServerDisconnectedData;
 
   // --- Gateway Events ---
   'gateway.connection.ready': GatewayConnectionReadyData;

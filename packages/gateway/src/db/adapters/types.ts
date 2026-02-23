@@ -139,10 +139,10 @@ export function getDatabaseConfig(): DatabaseConfig {
     process.env.POSTGRES_PASSWORD
   );
 
-  // Warn in production if using default credentials
+  // Fail hard in production if using default credentials
   if (isProduction && !hasExplicitConfig) {
-    log.warn(
-      '[Database] WARNING: Running in production without explicit database credentials. ' +
+    throw new Error(
+      '[Database] Running in production without explicit database credentials. ' +
         'Set DATABASE_URL or POSTGRES_* environment variables.'
     );
   }

@@ -120,10 +120,10 @@ if (Get-Command node -ErrorAction SilentlyContinue) {
 if (Get-Command pnpm -ErrorAction SilentlyContinue) {
     $pnpmVersion = pnpm -v
     $pnpmMajor = [int]($pnpmVersion.Split('.')[0])
-    if ($pnpmMajor -ge 9) {
+    if ($pnpmMajor -ge 10) {
         Write-Ok "pnpm v$pnpmVersion"
     } else {
-        Write-Fail "pnpm v$pnpmVersion found - v9+ required"
+        Write-Fail "pnpm v$pnpmVersion found - v10+ required"
         $prereqsOk = $false
     }
 } else {
@@ -169,7 +169,7 @@ Write-Section "Server Configuration"
 
 $port = Ask -Prompt "Gateway API port" -Default "8080"
 $uiPort = Ask -Prompt "UI dev server port" -Default "5173"
-$host_ = Ask -Prompt "Bind address" -Default "0.0.0.0"
+$host_ = Ask -Prompt "Bind address" -Default "127.0.0.1"
 $nodeEnv = Ask-Choice -Prompt "Environment" -Default "development" -Options @("development", "production")
 $corsOrigins = Ask -Prompt "Extra CORS origins (comma-separated, empty = auto)" -Default ""
 

@@ -12,3 +12,4 @@ export {
 } from './rate-limit.js';
 export { errorHandler, notFoundHandler } from './error-handler.js';
 export { auditMiddleware } from './audit.js';
+export { uiSessionMiddleware } from './ui-session.js';

@@ -8,4 +8,5 @@ export const STORAGE_KEYS = {
   SETUP_COMPLETE: 'ownpilot-setup-complete',
   BRIEFING_MODEL: 'briefing-model-preference',
   DESKTOP_NOTIFICATIONS: 'ownpilot-desktop-notifications',
+  SESSION_TOKEN: 'ownpilot-session-token',
 } as const;

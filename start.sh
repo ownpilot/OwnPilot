@@ -170,7 +170,7 @@ load_environment() {
 
     # Set defaults
     export PORT=$PORT
-    export HOST="0.0.0.0"
+    export HOST="${HOST:-127.0.0.1}"
     export NODE_ENV=$([ "$MODE" = "prod" ] && echo "production" || echo "development")
 }
 
@@ -239,7 +239,7 @@ start_dev_mode() {
         sleep 2
 
         # Start UI
-        VITE_PORT=$UI_PORT pnpm --filter @ownpilot/ui dev &
+        UI_PORT=$UI_PORT pnpm --filter @ownpilot/ui dev &
         UI_PID=$!
     fi
 
@@ -268,9 +268,9 @@ start_docker_mode() {
     cd "$SCRIPT_DIR"
 
     if [[ "$NO_UI" == true ]]; then
-        docker-compose up --build gateway
+        docker compose up --build gateway
     else
-        docker-compose --profile ui up --build
+        docker compose --profile postgres up --build
     fi
 }
 

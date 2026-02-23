@@ -61,7 +61,7 @@ Comprehensive documentation of the OwnPilot frontend -- a React 19 single-page a
 | React                | 19      | UI framework                       |
 | React DOM            | 19      | DOM rendering                      |
 | React Router DOM     | 7       | Client-side routing                |
-| Vite                 | 6       | Build tool and dev server          |
+| Vite                 | 7       | Build tool and dev server          |
 | Tailwind CSS         | 4       | Utility-first styling              |
 | prism-react-renderer | latest  | Syntax highlighting in code blocks |
 | TypeScript           | 5.7     | Static type checking               |

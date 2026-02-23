@@ -205,6 +205,10 @@ async function main() {
   // Load saved API keys from database into environment
   loadApiKeysToEnvironment();
 
+  // Start UI session cleanup (purge expired sessions hourly)
+  const { startCleanup: startSessionCleanup } = await import('./services/ui-session.js');
+  startSessionCleanup();
+
   // Initialize Config Center (centralized config management)
   log.info('Initializing Config Center...');
   await initializeConfigServicesRepo();
@@ -348,6 +352,10 @@ async function main() {
   // 18. Workflow Service
   const { getWorkflowService } = await import('./services/workflow-service.js');
   registry.register(Services.Workflow, getWorkflowService());
+
+  // 19. Heartbeat Service
+  const { getHeartbeatService } = await import('./services/heartbeat-service.js');
+  registry.register(Services.Heartbeat, getHeartbeatService());
 
   // Start trigger engine (proactive automation)
   log.info('Starting Trigger Engine...');
@@ -528,6 +536,14 @@ async function main() {
 
     // 4. Stop rate limiter cleanup intervals
     stopAllRateLimiters();
+
+    // 4.5. Stop UI session cleanup
+    try {
+      const { stopCleanup: stopSessionCleanup } = await import('./services/ui-session.js');
+      stopSessionCleanup();
+    } catch (e) {
+      log.warn('UI session cleanup stop error', { error: String(e) });
+    }
 
     // 5. Stop approval manager cleanup
     try {

@@ -11,6 +11,7 @@ import type { Message, MessageAttachment, ChatResponse, ApiResponse, SessionInfo
 import type { ApprovalRequest } from '../api';
 import { executionPermissionsApi, memoriesApi } from '../api';
 import { parseSSELine } from '../utils/sse-parser';
+import { STORAGE_KEYS } from '../constants/storage-keys';
 
 // Progress event types from the stream
 export interface ProgressEvent {
@@ -224,9 +225,16 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       });
 
       try {
+        // Build headers — include session token for UI auth
+        const chatHeaders: Record<string, string> = { 'Content-Type': 'application/json' };
+        try {
+          const sessionToken = localStorage.getItem(STORAGE_KEYS.SESSION_TOKEN);
+          if (sessionToken) chatHeaders['X-Session-Token'] = sessionToken;
+        } catch { /* localStorage unavailable */ }
+
         const response = await fetch('/api/v1/chat', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: chatHeaders,
           body: JSON.stringify({
             message: content,
             provider,
@@ -270,7 +278,15 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         }
 
         if (!response.ok) {
-          const errorData = await response.json();
+          const errorData = await response.json().catch(() => ({}));
+
+          // Handle 401 — clear session and let AuthGuard redirect to login
+          if (response.status === 401) {
+            try { localStorage.removeItem(STORAGE_KEYS.SESSION_TOKEN); } catch { /* */ }
+            // Trigger a page-level auth refresh by dispatching a storage event
+            window.dispatchEvent(new StorageEvent('storage', { key: STORAGE_KEYS.SESSION_TOKEN, newValue: null }));
+          }
+
           throw new Error(errorData.error?.message || `HTTP error ${response.status}`);
         }
 
