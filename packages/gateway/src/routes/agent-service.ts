@@ -31,6 +31,7 @@ import {
   getConfiguredProviderIds,
   getEnabledToolGroupIds,
 } from './settings.js';
+import { localProvidersRepo } from '../db/repositories/local-providers.js';
 import { gatewayConfigCenter } from '../services/config-center-impl.js';
 import { getLog } from '../services/log.js';
 import { BASE_SYSTEM_PROMPT } from './agent-prompt.js';
@@ -744,6 +745,7 @@ export function getWorkspaceContext(sessionWorkspaceDir?: string): WorkspaceCont
  * Check if demo mode is enabled (no API keys configured)
  */
 export async function isDemoMode(): Promise<boolean> {
+  // Check cloud providers
   const configured = await getConfiguredProviderIds();
   const providers = [
     'openai',
@@ -758,5 +760,11 @@ export async function isDemoMode(): Promise<boolean> {
     'fireworks',
     'perplexity',
   ];
-  return !providers.some((p) => configured.has(p));
+  if (providers.some((p) => configured.has(p))) return false;
+
+  // Check local providers (Ollama, LM Studio, etc.)
+  const localProviders = await localProvidersRepo.listProviders();
+  if (localProviders.some((p: { isEnabled: boolean }) => p.isEnabled)) return false;
+
+  return true;
 }
