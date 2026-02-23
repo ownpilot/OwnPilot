@@ -2,6 +2,9 @@ import { describe, it, expect, vi } from 'vitest';
 import { TelegramBot, createTelegramBot } from './bot.js';
 import type { TelegramConfig } from '../types/index.js';
 
+// Track whether sendMessage should fail
+let shouldSendMessageFail = false;
+
 // Mock grammy Bot class
 vi.mock('grammy', () => ({
   Bot: vi.fn().mockImplementation(function () {
@@ -13,7 +16,12 @@ vi.mock('grammy', () => ({
       stop: vi.fn().mockResolvedValue(undefined),
       api: {
         getMe: vi.fn().mockResolvedValue({ username: 'test_bot' }),
-        sendMessage: vi.fn().mockResolvedValue({ message_id: 123 }),
+        sendMessage: vi.fn().mockImplementation(() => {
+          if (shouldSendMessageFail) {
+            return Promise.reject(new Error('Network error'));
+          }
+          return Promise.resolve({ message_id: 123 });
+        }),
         setWebhook: vi.fn().mockResolvedValue(true),
         deleteWebhook: vi.fn().mockResolvedValue(true),
       },
@@ -94,6 +102,42 @@ describe('TelegramBot', () => {
         })
       ).resolves.not.toThrow();
     });
+
+    it('throws error for invalid chatId', async () => {
+      const bot = new TelegramBot(createTestConfig());
+
+      await expect(
+        bot.sendMessage({
+          chatId: 'invalid',
+          text: 'Hello',
+        })
+      ).rejects.toThrow('Invalid chatId');
+    });
+
+    it('throws error for NaN chatId', async () => {
+      const bot = new TelegramBot(createTestConfig());
+
+      await expect(
+        bot.sendMessage({
+          chatId: 'not-a-number',
+          text: 'Hello',
+        })
+      ).rejects.toThrow('Invalid chatId');
+    });
+
+    it('handles API errors when sending message', async () => {
+      shouldSendMessageFail = true;
+      const bot = new TelegramBot(createTestConfig());
+
+      await expect(
+        bot.sendMessage({
+          chatId: '12345',
+          text: 'Hello',
+        })
+      ).rejects.toThrow('Network error');
+
+      shouldSendMessageFail = false;
+    });
   });
 
   describe('start/stop', () => {
@@ -105,6 +149,14 @@ describe('TelegramBot', () => {
     it('stops the bot', async () => {
       const bot = new TelegramBot(createTestConfig());
       await bot.start();
+      await expect(bot.stop()).resolves.not.toThrow();
+    });
+
+    it('stops bot only once when called multiple times', async () => {
+      const bot = new TelegramBot(createTestConfig());
+      await bot.start();
+      await bot.stop();
+      // Second stop should not throw and should return early
       await expect(bot.stop()).resolves.not.toThrow();
     });
 
