@@ -51,16 +51,16 @@ export function markdownToTelegramHtml(text: string): string {
   let result = text;
 
   // Code blocks (must be done before inline patterns)
-  result = result.replace(
-    /```(\w*)\n([\s\S]*?)```/g,
-    (_match, lang: string, code: string) => {
-      const cls = lang ? ` class="language-${lang}"` : '';
-      return `<pre><code${cls}>${escapeHtml(code.trimEnd())}</code></pre>`;
-    }
-  );
+  result = result.replace(/```(\w*)\n([\s\S]*?)```/g, (_match, lang: string, code: string) => {
+    const cls = lang ? ` class="language-${lang}"` : '';
+    return `<pre><code${cls}>${escapeHtml(code.trimEnd())}</code></pre>`;
+  });
 
   // Inline code (after code blocks to avoid double-matching)
-  result = result.replace(/`([^`]+)`/g, (_match, code: string) => `<code>${escapeHtml(code)}</code>`);
+  result = result.replace(
+    /`([^`]+)`/g,
+    (_match, code: string) => `<code>${escapeHtml(code)}</code>`
+  );
 
   // Bold: **text**
   result = result.replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
@@ -69,10 +69,7 @@ export function markdownToTelegramHtml(text: string): string {
   result = result.replace(/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, '<i>$1</i>');
 
   // Links: [text](url)
-  result = result.replace(
-    /\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g,
-    '<a href="$2">$1</a>'
-  );
+  result = result.replace(/\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g, '<a href="$2">$1</a>');
 
   return result;
 }
@@ -81,10 +78,7 @@ export function markdownToTelegramHtml(text: string): string {
  * Escape HTML special characters for Telegram.
  */
 function escapeHtml(text: string): string {
-  return text
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
+  return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
 // ============================================================================
@@ -131,6 +125,10 @@ export const telegramNormalizer: ChannelNormalizer = {
     let cleaned = stripInternalTags(response);
 
     if (!cleaned) return [];
+
+    // Decode any HTML entities that might have been escaped
+    // (e.g., &lt;b&gt; → <b>)
+    cleaned = decodeHtmlEntities(cleaned);
 
     // Convert markdown to Telegram HTML
     cleaned = markdownToTelegramHtml(cleaned);

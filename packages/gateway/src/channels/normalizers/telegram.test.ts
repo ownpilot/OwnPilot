@@ -182,9 +182,7 @@ describe('telegramNormalizer.normalizeIncoming', () => {
   it('filters out attachments without data', () => {
     const result = telegramNormalizer.normalizeIncoming(
       makeMsg({
-        attachments: [
-          { type: 'image', mimeType: 'image/png', filename: 'test.png', size: 0 },
-        ],
+        attachments: [{ type: 'image', mimeType: 'image/png', filename: 'test.png', size: 0 }],
       })
     );
     expect(result.attachments).toBeUndefined();
@@ -232,16 +230,12 @@ describe('telegramNormalizer.normalizeOutgoing', () => {
   });
 
   it('strips <system> tags', () => {
-    const parts = telegramNormalizer.normalizeOutgoing(
-      'Text <system>internal</system> more'
-    );
+    const parts = telegramNormalizer.normalizeOutgoing('Text <system>internal</system> more');
     expect(parts.join('')).not.toContain('<system>');
   });
 
   it('strips <context> tags', () => {
-    const parts = telegramNormalizer.normalizeOutgoing(
-      'Text <context>injected</context> more'
-    );
+    const parts = telegramNormalizer.normalizeOutgoing('Text <context>injected</context> more');
     expect(parts.join('')).not.toContain('<context>');
   });
 
@@ -287,5 +281,21 @@ describe('telegramNormalizer.normalizeOutgoing', () => {
     const md = `\`\`\`\n${code}\n\`\`\``;
     const parts = telegramNormalizer.normalizeOutgoing(md);
     expect(parts.length).toBeGreaterThan(1);
+  });
+
+  it('decodes HTML entities in outgoing messages', () => {
+    // When agent sends escaped HTML entities, they should be decoded
+    const text = '&lt;b&gt;bold text&lt;/b&gt; and &lt;i&gt;italic&lt;/i&gt;';
+    const parts = telegramNormalizer.normalizeOutgoing(text);
+    expect(parts).toHaveLength(1);
+    expect(parts[0]).toBe('<b>bold text</b> and <i>italic</i>');
+  });
+
+  it('preserves existing HTML tags while converting markdown', () => {
+    // Mix of existing HTML and markdown
+    const text = '<b>already bold</b> and **markdown bold**';
+    const parts = telegramNormalizer.normalizeOutgoing(text);
+    expect(parts).toHaveLength(1);
+    expect(parts[0]).toBe('<b>already bold</b> and <b>markdown bold</b>');
   });
 });
