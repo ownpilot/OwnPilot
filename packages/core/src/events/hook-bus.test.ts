@@ -347,4 +347,36 @@ describe('HookBus', () => {
       expect(handler).not.toHaveBeenCalled();
     });
   });
+
+  // ==========================================================================
+  // Max taps limit
+  // ==========================================================================
+
+  describe('max taps limit', () => {
+    it('handles max taps limit gracefully', () => {
+      // Tap 101 handlers (exceeds MAX_TAPS_PER_HOOK of 100)
+      const unsubscribes: (() => void)[] = [];
+      for (let i = 0; i < 101; i++) {
+        const unsub = hooks.tap('tool:before-execute', () => {});
+        unsubscribes.push(unsub);
+      }
+
+      // 101st tap should have returned a function (even if empty)
+      expect(typeof unsubscribes[100]).toBe('function');
+    });
+
+    it('returns empty unsubscribe function when max taps reached', () => {
+      // Tap 100 handlers (at limit)
+      for (let i = 0; i < 100; i++) {
+        hooks.tap('tool:before-execute', () => {});
+      }
+
+      // 101st tap should return empty function
+      const unsubscribe = hooks.tap('tool:before-execute', () => {});
+      expect(typeof unsubscribe).toBe('function');
+
+      // Calling unsubscribe should not throw
+      expect(() => unsubscribe()).not.toThrow();
+    });
+  });
 });
