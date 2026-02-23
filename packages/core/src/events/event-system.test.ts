@@ -147,4 +147,34 @@ describe('getEventSystem / resetEventSystem', () => {
 
     expect(handler).not.toHaveBeenCalled();
   });
+
+  it('waits for a specific event with waitFor', async () => {
+    const system = getEventSystem();
+
+    const waitPromise = system.waitFor('tool.executed');
+
+    system.emit('tool.executed', 'test', { name: 'calc', duration: 10, success: true });
+
+    const event = await waitPromise;
+    expect(event.type).toBe('tool.executed');
+    expect(event.data).toEqual({ name: 'calc', duration: 10, success: true });
+  });
+
+  it('handles once() to subscribe only once', () => {
+    const handler = vi.fn();
+    const system = getEventSystem();
+
+    system.once('tool.executed', handler);
+
+    system.emit('tool.executed', 'test', { name: 'calc1', duration: 10, success: true });
+    system.emit('tool.executed', 'test', { name: 'calc2', duration: 20, success: true });
+
+    expect(handler).toHaveBeenCalledTimes(1);
+    expect(handler).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'tool.executed',
+        data: { name: 'calc1', duration: 10, success: true },
+      })
+    );
+  });
 });
