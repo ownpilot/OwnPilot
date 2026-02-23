@@ -1,5 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { PersonalMemoryStore, createPersonalMemoryStore } from './personal.js';
+import {
+  PersonalMemoryStore,
+  createPersonalMemoryStore,
+  getPersonalMemoryStore,
+} from './personal.js';
 
 // Mock node:fs/promises
 vi.mock('node:fs/promises', () => ({
@@ -381,6 +385,19 @@ describe('PersonalMemoryStore', () => {
 describe('createPersonalMemoryStore', () => {
   it('creates store instance', () => {
     const store = createPersonalMemoryStore('test-user');
+    expect(store).toBeInstanceOf(PersonalMemoryStore);
+  });
+});
+
+describe('getPersonalMemoryStore', () => {
+  it('returns cached store for existing user', async () => {
+    const store1 = await getPersonalMemoryStore('cached-user');
+    const store2 = await getPersonalMemoryStore('cached-user');
+    expect(store1).toBe(store2);
+  });
+
+  it('creates new store for new user', async () => {
+    const store = await getPersonalMemoryStore('new-user-' + Date.now());
     expect(store).toBeInstanceOf(PersonalMemoryStore);
   });
 });
