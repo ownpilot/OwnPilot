@@ -27,6 +27,7 @@ export type {
 export { profileApi } from './profile';
 export {
   autonomyApi,
+  pulseApi,
   systemApi,
   debugApi,
   pluginsApi,
@@ -72,6 +73,17 @@ export {
 
 // Re-export API response types
 export type {
+  PulseStatus,
+  PulseActivity,
+  PulseEngineConfig,
+  PulseLogEntry,
+  PulseActionResult,
+  PulseStats,
+  PulseDirectives,
+  PulseRuleDefinition,
+  PulseActionType,
+  RuleThresholds,
+  ActionCooldowns,
   AutonomyLevel,
   AutonomyConfig,
   PendingApproval,

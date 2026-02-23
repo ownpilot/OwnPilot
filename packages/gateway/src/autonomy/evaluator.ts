@@ -16,6 +16,26 @@ import {
 // Types
 // ============================================================================
 
+export interface RuleThresholds {
+  staleDays: number;
+  deadlineDays: number;
+  activityDays: number;
+  lowProgressPct: number;
+  memoryMaxCount: number;
+  memoryMinImportance: number;
+  triggerErrorMin: number;
+}
+
+export const DEFAULT_RULE_THRESHOLDS: RuleThresholds = {
+  staleDays: 3,
+  deadlineDays: 3,
+  activityDays: 2,
+  lowProgressPct: 10,
+  memoryMaxCount: 500,
+  memoryMinImportance: 0.3,
+  triggerErrorMin: 3,
+};
+
 export type SignalSeverity = 'info' | 'warning' | 'critical';
 
 export interface Signal {
@@ -49,89 +69,130 @@ const SEVERITY_WEIGHT: Record<SignalSeverity, number> = {
 };
 
 // ============================================================================
+// Rule Definitions (exported for UI)
+// ============================================================================
+
+export const RULE_DEFINITIONS = [
+  { id: 'stale_goals', label: 'Stale Goals', description: 'Goals not updated in >3 days', thresholdKey: 'staleDays' as const },
+  { id: 'upcoming_deadline', label: 'Upcoming Deadline', description: 'Goals due within 3 days', thresholdKey: 'deadlineDays' as const },
+  { id: 'no_activity', label: 'No Recent Activity', description: 'No user activity for >2 days', thresholdKey: null },
+  { id: 'low_progress', label: 'Low Progress', description: 'Active goals below 10% progress', thresholdKey: 'lowProgressPct' as const },
+  { id: 'memory_cleanup', label: 'Memory Cleanup', description: 'Too many low-importance memories', thresholdKey: 'memoryMaxCount' as const },
+  { id: 'pending_approvals', label: 'Pending Approvals', description: 'Actions awaiting approval', thresholdKey: null },
+  { id: 'trigger_errors', label: 'Trigger Errors', description: 'Trigger failures in last 24h', thresholdKey: 'triggerErrorMin' as const },
+] as const;
+
+// ============================================================================
 // Rules
 // ============================================================================
 
-type RuleFn = (ctx: PulseContext) => Signal | null;
+type RuleFn = (ctx: PulseContext, thresholds: RuleThresholds) => Signal | null;
 
-const rules: RuleFn[] = [
-  // 1. Stale goals — not updated in >3 days
-  (ctx) => {
-    if (ctx.goals.stale.length === 0) return null;
-    return {
-      id: 'stale_goals',
-      label: 'Stale Goals',
-      description: `${ctx.goals.stale.length} goal(s) not updated in >3 days`,
-      severity: 'warning',
-    };
+interface Rule {
+  id: string;
+  fn: RuleFn;
+}
+
+const rules: Rule[] = [
+  // 1. Stale goals — not updated in >N days
+  {
+    id: 'stale_goals',
+    fn: (ctx, _thresholds) => {
+      if (ctx.goals.stale.length === 0) return null;
+      return {
+        id: 'stale_goals',
+        label: 'Stale Goals',
+        description: `${ctx.goals.stale.length} goal(s) not updated recently`,
+        severity: 'warning',
+      };
+    },
   },
 
-  // 2. Upcoming deadline — goal due within 3 days
-  (ctx) => {
-    const urgent = ctx.goals.upcoming.filter((g) => g.daysUntilDue <= 3);
-    if (urgent.length === 0) return null;
-    return {
-      id: 'upcoming_deadline',
-      label: 'Upcoming Deadline',
-      description: `${urgent.length} goal(s) due within 3 days`,
-      severity: 'critical',
-    };
+  // 2. Upcoming deadline — goal due within N days
+  {
+    id: 'upcoming_deadline',
+    fn: (ctx, thresholds) => {
+      const urgent = ctx.goals.upcoming.filter((g) => g.daysUntilDue <= thresholds.deadlineDays);
+      if (urgent.length === 0) return null;
+      return {
+        id: 'upcoming_deadline',
+        label: 'Upcoming Deadline',
+        description: `${urgent.length} goal(s) due within ${thresholds.deadlineDays} days`,
+        severity: 'critical',
+      };
+    },
   },
 
-  // 3. No user activity in >2 days
-  (ctx) => {
-    if (ctx.activity.hasRecentActivity) return null;
-    return {
-      id: 'no_activity',
-      label: 'No Recent Activity',
-      description: `No user activity for ${ctx.activity.daysSinceLastActivity} day(s)`,
-      severity: 'info',
-    };
+  // 3. No user activity
+  {
+    id: 'no_activity',
+    fn: (ctx, _thresholds) => {
+      if (ctx.activity.hasRecentActivity) return null;
+      return {
+        id: 'no_activity',
+        label: 'No Recent Activity',
+        description: `No user activity for ${ctx.activity.daysSinceLastActivity} day(s)`,
+        severity: 'info',
+      };
+    },
   },
 
-  // 4. Low progress — active goal with progress <10%
-  (ctx) => {
-    const lowProgress = ctx.goals.active.filter((g) => g.progress < 10);
-    if (lowProgress.length === 0) return null;
-    return {
-      id: 'low_progress',
-      label: 'Low Progress',
-      description: `${lowProgress.length} goal(s) below 10% progress`,
-      severity: 'warning',
-    };
+  // 4. Low progress — active goal with progress <N%
+  {
+    id: 'low_progress',
+    fn: (ctx, thresholds) => {
+      const lowProgress = ctx.goals.active.filter((g) => g.progress < thresholds.lowProgressPct);
+      if (lowProgress.length === 0) return null;
+      return {
+        id: 'low_progress',
+        label: 'Low Progress',
+        description: `${lowProgress.length} goal(s) below ${thresholds.lowProgressPct}% progress`,
+        severity: 'warning',
+      };
+    },
   },
 
   // 5. Memory cleanup — too many memories, low avg importance
-  (ctx) => {
-    if (ctx.memories.total <= 500 || ctx.memories.avgImportance >= 0.3) return null;
-    return {
-      id: 'memory_cleanup',
-      label: 'Memory Cleanup',
-      description: `${ctx.memories.total} memories with avg importance ${ctx.memories.avgImportance.toFixed(2)}`,
-      severity: 'info',
-    };
+  {
+    id: 'memory_cleanup',
+    fn: (ctx, thresholds) => {
+      if (ctx.memories.total <= thresholds.memoryMaxCount || ctx.memories.avgImportance >= thresholds.memoryMinImportance) return null;
+      return {
+        id: 'memory_cleanup',
+        label: 'Memory Cleanup',
+        description: `${ctx.memories.total} memories with avg importance ${ctx.memories.avgImportance.toFixed(2)}`,
+        severity: 'info',
+      };
+    },
   },
 
   // 6. Pending approvals
-  (ctx) => {
-    if (ctx.systemHealth.pendingApprovals === 0) return null;
-    return {
-      id: 'pending_approvals',
-      label: 'Pending Approvals',
-      description: `${ctx.systemHealth.pendingApprovals} action(s) awaiting approval`,
-      severity: 'warning',
-    };
+  {
+    id: 'pending_approvals',
+    fn: (ctx, _thresholds) => {
+      if (ctx.systemHealth.pendingApprovals === 0) return null;
+      return {
+        id: 'pending_approvals',
+        label: 'Pending Approvals',
+        description: `${ctx.systemHealth.pendingApprovals} action(s) awaiting approval`,
+        severity: 'warning',
+      };
+    },
   },
 
   // 7. Trigger errors in last 24h
-  (ctx) => {
-    if (ctx.systemHealth.triggerErrors <= 2) return null;
-    return {
-      id: 'trigger_errors',
-      label: 'Trigger Errors',
-      description: `${ctx.systemHealth.triggerErrors} trigger failure(s) in last 24h`,
-      severity: 'warning',
-    };
+  {
+    id: 'trigger_errors',
+    fn: (ctx, thresholds) => {
+      const threshold = thresholds.triggerErrorMin - 1;
+      if (ctx.systemHealth.triggerErrors <= threshold) return null;
+      return {
+        id: 'trigger_errors',
+        label: 'Trigger Errors',
+        description: `${ctx.systemHealth.triggerErrors} trigger failure(s) in last 24h`,
+        severity: 'warning',
+      };
+    },
   },
 ];
 
@@ -143,11 +204,16 @@ const rules: RuleFn[] = [
  * Evaluate pulse context against all rules.
  * Pure function — no side effects or service dependencies.
  */
-export function evaluatePulseContext(ctx: PulseContext): EvaluationResult {
+export function evaluatePulseContext(
+  ctx: PulseContext,
+  disabledRules: string[] = [],
+  thresholds: RuleThresholds = DEFAULT_RULE_THRESHOLDS
+): EvaluationResult {
   const signals: Signal[] = [];
 
   for (const rule of rules) {
-    const signal = rule(ctx);
+    if (disabledRules.includes(rule.id)) continue;
+    const signal = rule.fn(ctx, thresholds);
     if (signal) {
       signals.push(signal);
     }

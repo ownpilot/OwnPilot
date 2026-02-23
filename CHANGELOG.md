@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.1] - 2026-02-23
+
+### Added
+
+- **Pulse System** — Autonomous AI-driven engine that proactively gathers context, evaluates signals, invokes the LLM, executes actions, and reports results on an adaptive timer (5–15 min)
+- **Pulse Directives** — Configurable evaluation rules, action cooldowns, blocked actions, custom instructions, and 4 preset templates (Balanced, Conservative, Proactive, Minimal)
+- **Pulse Execution Lock** — Prevents concurrent pulse execution; manual and auto pulses share the same lock
+- **Pulse Activity Broadcasting** — Real-time WebSocket `pulse:activity` events with stage progression (starting → gathering → evaluating → deciding → executing → reporting → done)
+- **Pulse Activity Monitor (UI)** — Live activity banner with stage name and elapsed time, "Run Now" button disables during pulse, 409 toast on concurrent attempts
+- **Pulse History & Stats** — Paginated pulse log with signal IDs, urgency scores, action results, and expandable details
+- **Pulse Route Guard** — `POST /pulse/run` returns 409 `ALREADY_RUNNING` when a pulse is in progress
+
+### Changed
+
+- `AutonomyEngine.getStatus()` now includes `activePulse` field (null when idle)
+- Broadcaster in `server.ts` routes `pulse:activity` events separately from `system:notification`
+
+### Testing
+
+- 315 test files, 19,100+ tests total
+- New: 5 engine execution lock tests + 2 route guard tests
+
 ## [0.1.0] - 2026-02-22
 
 Initial release of OwnPilot.
@@ -53,4 +75,5 @@ Initial release of OwnPilot.
 - Docker multi-arch image (amd64 + arm64) published to `ghcr.io/ownpilot/ownpilot`
 - PostgreSQL with pgvector for vector search
 
+[0.1.1]: https://github.com/ownpilot/ownpilot/releases/tag/v0.1.1
 [0.1.0]: https://github.com/ownpilot/ownpilot/releases/tag/v0.1.0

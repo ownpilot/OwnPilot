@@ -45,8 +45,13 @@ const mockApprovalManager = {
   clearRememberedDecisions: vi.fn((_userId: string) => 3),
 };
 
+const mockGetAutonomyEngine = vi.fn(() => {
+  throw new Error('Engine not initialized');
+});
+
 vi.mock('../autonomy/index.js', () => ({
   getApprovalManager: vi.fn(() => mockApprovalManager),
+  getAutonomyEngine: (...args: unknown[]) => mockGetAutonomyEngine(...args),
   assessRisk: vi.fn(
     (
       _category: string,
@@ -88,6 +93,73 @@ vi.mock('../middleware/validation.js', () => ({
   autonomyDecisionSchema: {},
   autonomyApproveRejectSchema: {},
   autonomyToolPermissionSchema: {},
+  pulseSettingsSchema: {},
+  pulseDirectivesSchema: {},
+}));
+
+const mockSettingsRepo = {
+  get: vi.fn().mockReturnValue(null),
+  set: vi.fn().mockResolvedValue(undefined),
+};
+
+vi.mock('../db/repositories/settings.js', () => ({
+  settingsRepo: {
+    get: (...args: unknown[]) => mockSettingsRepo.get(...args),
+    set: (...args: unknown[]) => mockSettingsRepo.set(...args),
+  },
+}));
+
+vi.mock('../autonomy/evaluator.js', () => ({
+  RULE_DEFINITIONS: [
+    { id: 'stale_goals', label: 'Stale Goals', description: 'Goals not updated in >3 days', thresholdKey: 'staleDays' },
+    { id: 'upcoming_deadline', label: 'Upcoming Deadline', description: 'Goals due within 3 days', thresholdKey: 'deadlineDays' },
+    { id: 'memory_cleanup', label: 'Memory Cleanup', description: 'Too many low-importance memories', thresholdKey: 'memoryMaxCount' },
+  ],
+  DEFAULT_RULE_THRESHOLDS: {
+    staleDays: 3,
+    deadlineDays: 3,
+    activityDays: 2,
+    lowProgressPct: 10,
+    memoryMaxCount: 500,
+    memoryMinImportance: 0.3,
+    triggerErrorMin: 3,
+  },
+}));
+
+vi.mock('../autonomy/engine.js', () => ({
+  DEFAULT_PULSE_DIRECTIVES: {
+    disabledRules: [],
+    blockedActions: [],
+    customInstructions: '',
+    template: 'balanced',
+    ruleThresholds: {
+      staleDays: 3,
+      deadlineDays: 3,
+      activityDays: 2,
+      lowProgressPct: 10,
+      memoryMaxCount: 500,
+      memoryMinImportance: 0.3,
+      triggerErrorMin: 3,
+    },
+    actionCooldowns: {
+      create_memory: 30,
+      update_goal_progress: 60,
+      send_notification: 15,
+      run_memory_cleanup: 360,
+    },
+  },
+  getAutonomyEngine: vi.fn(() => {
+    throw new Error('Engine not initialized');
+  }),
+}));
+
+vi.mock('../autonomy/executor.js', () => ({
+  DEFAULT_ACTION_COOLDOWNS: {
+    create_memory: 30,
+    update_goal_progress: 60,
+    send_notification: 15,
+    run_memory_cleanup: 360,
+  },
 }));
 
 // Import after mocks
@@ -114,6 +186,9 @@ describe('Autonomy Routes', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mockGetAutonomyEngine.mockImplementation(() => {
+      throw new Error('Engine not initialized');
+    });
     mockApprovalManager.getUserConfig.mockImplementation(() => ({ ...mockConfig }));
     mockApprovalManager.getPendingActions.mockReturnValue([mockPendingAction]);
     mockApprovalManager.getPendingAction.mockImplementation((id: string) =>
@@ -593,6 +668,204 @@ describe('Autonomy Routes', () => {
       expect(res.status).toBe(200);
       const json = await res.json();
       expect(json.data.message).toContain('updated');
+    });
+  });
+
+  // ========================================================================
+  // POST /autonomy/pulse/run
+  // ========================================================================
+
+  describe('POST /autonomy/pulse/run', () => {
+    it('returns 409 when a pulse is already in progress', async () => {
+      mockGetAutonomyEngine.mockReturnValueOnce({
+        getStatus: () => ({
+          running: true,
+          enabled: true,
+          config: {},
+          activePulse: { pulseId: 'p-1', stage: 'gathering', startedAt: Date.now() },
+        }),
+        runPulse: vi.fn(),
+      });
+
+      const res = await app.request('/autonomy/pulse/run', { method: 'POST' });
+      expect(res.status).toBe(409);
+
+      const json = await res.json();
+      expect(json.error.code).toBe('ALREADY_RUNNING');
+      expect(json.error.message).toContain('already in progress');
+    });
+
+    it('returns 503 when engine not initialized', async () => {
+      const res = await app.request('/autonomy/pulse/run', { method: 'POST' });
+      expect(res.status).toBe(503);
+    });
+  });
+
+  // ========================================================================
+  // GET /autonomy/pulse/directives
+  // ========================================================================
+
+  describe('GET /autonomy/pulse/directives', () => {
+    it('returns default directives when none saved', async () => {
+      mockSettingsRepo.get.mockReturnValue(null);
+
+      const res = await app.request('/autonomy/pulse/directives');
+      expect(res.status).toBe(200);
+
+      const json = await res.json();
+      expect(json.data.directives.disabledRules).toEqual([]);
+      expect(json.data.directives.blockedActions).toEqual([]);
+      expect(json.data.directives.customInstructions).toBe('');
+      expect(json.data.directives.template).toBe('balanced');
+      expect(json.data.directives.ruleThresholds).toBeDefined();
+      expect(json.data.directives.ruleThresholds.staleDays).toBe(3);
+      expect(json.data.directives.actionCooldowns).toBeDefined();
+      expect(json.data.directives.actionCooldowns.create_memory).toBe(30);
+      expect(json.data.ruleDefinitions).toHaveLength(3);
+      expect(json.data.actionTypes).toHaveLength(4);
+      expect(json.data.defaultThresholds).toBeDefined();
+      expect(json.data.defaultCooldowns).toBeDefined();
+    });
+
+    it('returns saved directives merged with defaults', async () => {
+      const saved = {
+        disabledRules: ['memory_cleanup'],
+        blockedActions: ['run_memory_cleanup'],
+        customInstructions: 'Be conservative.',
+        template: 'conservative',
+      };
+      mockSettingsRepo.get.mockReturnValue(saved);
+
+      const res = await app.request('/autonomy/pulse/directives');
+      expect(res.status).toBe(200);
+
+      const json = await res.json();
+      expect(json.data.directives.disabledRules).toEqual(['memory_cleanup']);
+      expect(json.data.directives.template).toBe('conservative');
+      // Should have default thresholds/cooldowns since saved didn't include them
+      expect(json.data.directives.ruleThresholds.staleDays).toBe(3);
+      expect(json.data.directives.actionCooldowns.create_memory).toBe(30);
+    });
+
+    it('includes rule definitions with thresholdKey and action types', async () => {
+      const res = await app.request('/autonomy/pulse/directives');
+      const json = await res.json();
+
+      expect(json.data.ruleDefinitions[0]).toEqual({
+        id: 'stale_goals',
+        label: 'Stale Goals',
+        description: 'Goals not updated in >3 days',
+        thresholdKey: 'staleDays',
+      });
+      expect(json.data.actionTypes).toContainEqual({
+        id: 'create_memory',
+        label: 'Create Memory',
+      });
+      expect(json.data.actionTypes).toContainEqual({
+        id: 'send_notification',
+        label: 'Send Notification',
+      });
+    });
+  });
+
+  // ========================================================================
+  // PUT /autonomy/pulse/directives
+  // ========================================================================
+
+  describe('PUT /autonomy/pulse/directives', () => {
+    it('updates directives and saves to settings', async () => {
+      mockSettingsRepo.get.mockReturnValue(null);
+
+      const res = await app.request('/autonomy/pulse/directives', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          disabledRules: ['memory_cleanup', 'no_activity'],
+          template: 'conservative',
+        }),
+      });
+
+      expect(res.status).toBe(200);
+      const json = await res.json();
+      expect(json.data.directives.disabledRules).toEqual(['memory_cleanup', 'no_activity']);
+      expect(json.data.directives.template).toBe('conservative');
+      expect(json.data.directives.ruleThresholds).toBeDefined();
+      expect(json.data.directives.actionCooldowns).toBeDefined();
+      expect(json.data.message).toContain('updated');
+      expect(mockSettingsRepo.set).toHaveBeenCalledWith('pulse.directives', expect.any(Object));
+    });
+
+    it('merges partial updates with existing', async () => {
+      mockSettingsRepo.get.mockReturnValue({
+        disabledRules: ['stale_goals'],
+        blockedActions: ['run_memory_cleanup'],
+        customInstructions: 'Be careful.',
+        template: 'conservative',
+      });
+
+      const res = await app.request('/autonomy/pulse/directives', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          customInstructions: 'New instructions.',
+          template: 'custom',
+        }),
+      });
+
+      expect(res.status).toBe(200);
+      const json = await res.json();
+      // Existing fields preserved
+      expect(json.data.directives.disabledRules).toEqual(['stale_goals']);
+      expect(json.data.directives.blockedActions).toEqual(['run_memory_cleanup']);
+      // Updated fields
+      expect(json.data.directives.customInstructions).toBe('New instructions.');
+      expect(json.data.directives.template).toBe('custom');
+    });
+
+    it('merges ruleThresholds and actionCooldowns with existing', async () => {
+      mockSettingsRepo.get.mockReturnValue({
+        disabledRules: [],
+        blockedActions: [],
+        customInstructions: '',
+        template: 'balanced',
+        ruleThresholds: { staleDays: 5 },
+        actionCooldowns: { create_memory: 60 },
+      });
+
+      const res = await app.request('/autonomy/pulse/directives', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ruleThresholds: { deadlineDays: 7 },
+          actionCooldowns: { send_notification: 30 },
+        }),
+      });
+
+      expect(res.status).toBe(200);
+      const json = await res.json();
+      // Existing threshold preserved, new one merged
+      expect(json.data.directives.ruleThresholds.staleDays).toBe(5);
+      expect(json.data.directives.ruleThresholds.deadlineDays).toBe(7);
+      // Existing cooldown preserved, new one merged
+      expect(json.data.directives.actionCooldowns.create_memory).toBe(60);
+      expect(json.data.directives.actionCooldowns.send_notification).toBe(30);
+    });
+
+    it('returns 400 for invalid body', async () => {
+      const { validateBody } = await import('../middleware/validation.js');
+      (validateBody as ReturnType<typeof vi.fn>).mockImplementationOnce(() => {
+        throw new Error('Validation failed: disabledRules: too long');
+      });
+
+      const res = await app.request('/autonomy/pulse/directives', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ disabledRules: 'not-an-array' }),
+      });
+
+      expect(res.status).toBe(400);
+      const json = await res.json();
+      expect(json.error.code).toBe('INVALID_REQUEST');
     });
   });
 });

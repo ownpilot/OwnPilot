@@ -34,11 +34,24 @@ vi.mock('./evaluator.js', async (importOriginal) => {
 });
 
 vi.mock('./executor.js', () => ({
-  executePulseActions: vi.fn().mockResolvedValue([]),
+  executePulseActions: vi.fn().mockResolvedValue({ results: [], updatedActionTimes: {} }),
+  DEFAULT_ACTION_COOLDOWNS: {
+    create_memory: 30,
+    update_goal_progress: 60,
+    send_notification: 15,
+    run_memory_cleanup: 360,
+  },
 }));
 
 vi.mock('./reporter.js', () => ({
   reportPulseResult: vi.fn().mockResolvedValue(undefined),
+}));
+
+vi.mock('../db/repositories/settings.js', () => ({
+  settingsRepo: {
+    get: vi.fn().mockReturnValue(null),
+    set: vi.fn().mockResolvedValue(undefined),
+  },
 }));
 
 vi.mock('../db/repositories/autonomy-log.js', () => ({
@@ -195,6 +208,106 @@ describe('AutonomyEngine', () => {
       const broadcaster = vi.fn();
       engine.setBroadcaster(broadcaster);
       // No assertion on internal state — tested via runPulse + reporter mock
+    });
+  });
+
+  // ============================================================================
+  // Execution lock
+  // ============================================================================
+
+  describe('execution lock', () => {
+    it('prevents concurrent execution', async () => {
+      const { gatherPulseContext } = await import('./context.js');
+
+      // Make gatherPulseContext slow so we can test concurrency
+      let resolveGather!: () => void;
+      (gatherPulseContext as ReturnType<typeof vi.fn>).mockImplementationOnce(
+        () => new Promise<unknown>((resolve) => {
+          resolveGather = () => resolve({
+            userId: 'test-user',
+            gatheredAt: new Date(),
+            timeContext: { hour: 10, dayOfWeek: 1, isWeekend: false },
+            goals: { active: [], stale: [], upcoming: [] },
+            memories: { total: 0, recentCount: 0, avgImportance: 0.5 },
+            activity: { daysSinceLastActivity: 0, hasRecentActivity: true },
+            systemHealth: { pendingApprovals: 0, triggerErrors: 0 },
+          });
+        })
+      );
+
+      // Start first pulse (will block on gatherPulseContext)
+      const first = engine.runPulse('test-user', true);
+
+      // Second pulse should return immediately with error
+      const second = await engine.runPulse('test-user', true);
+      expect(second.error).toBe('Pulse already in progress');
+      expect(second.durationMs).toBe(0);
+
+      // Let the first one finish
+      resolveGather();
+      const firstResult = await first;
+      expect(firstResult.error).toBeUndefined();
+    });
+
+    it('getStatus exposes activePulse as null when idle', () => {
+      const status = engine.getStatus();
+      expect(status.activePulse).toBeNull();
+    });
+
+    it('broadcasts stage events through broadcaster', async () => {
+      const broadcaster = vi.fn();
+      engine.setBroadcaster(broadcaster);
+
+      await engine.runPulse('test-user', true);
+
+      // Should have received: started, gathering, evaluating, executing, reporting, completed
+      const activityCalls = broadcaster.mock.calls.filter(
+        ([event]: [string]) => event === 'pulse:activity'
+      );
+      expect(activityCalls.length).toBeGreaterThanOrEqual(5);
+
+      // First event should be 'started'
+      expect(activityCalls[0][1].status).toBe('started');
+      expect(activityCalls[0][1].stage).toBe('starting');
+
+      // Last event should be 'completed'
+      const lastCall = activityCalls[activityCalls.length - 1];
+      expect(lastCall[1].status).toBe('completed');
+      expect(lastCall[1].stage).toBe('done');
+      expect(lastCall[1].durationMs).toBeGreaterThanOrEqual(0);
+    });
+
+    it('releases lock on error', async () => {
+      const { gatherPulseContext } = await import('./context.js');
+      (gatherPulseContext as ReturnType<typeof vi.fn>).mockRejectedValueOnce(
+        new Error('Gather failed')
+      );
+
+      const errorResult = await engine.runPulse('test-user', true);
+      expect(errorResult.error).toContain('Gather failed');
+
+      // Lock should be released — next pulse succeeds
+      const successResult = await engine.runPulse('test-user', true);
+      expect(successResult.error).toBeUndefined();
+    });
+
+    it('broadcasts error event on failure', async () => {
+      const broadcaster = vi.fn();
+      engine.setBroadcaster(broadcaster);
+
+      const { gatherPulseContext } = await import('./context.js');
+      (gatherPulseContext as ReturnType<typeof vi.fn>).mockRejectedValueOnce(
+        new Error('Boom')
+      );
+
+      await engine.runPulse('test-user', true);
+
+      const errorCalls = broadcaster.mock.calls.filter(
+        ([event, data]: [string, Record<string, unknown>]) =>
+          event === 'pulse:activity' && data.status === 'error'
+      );
+      expect(errorCalls.length).toBe(1);
+      expect(errorCalls[0][1].error).toContain('Boom');
     });
   });
 

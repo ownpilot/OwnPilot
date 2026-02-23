@@ -7,6 +7,13 @@
 import { apiClient } from '../client';
 import type { RequestOptions, StreamOptions } from '../client';
 import type {
+  PulseStatus,
+  PulseLogEntry,
+  PulseEngineConfig,
+  PulseStats,
+  PulseDirectives,
+  PulseRuleDefinition,
+  PulseActionType,
   AutonomyConfig,
   AutonomyLevel,
   PendingApproval,
@@ -63,6 +70,37 @@ export const autonomyApi = {
   resolveApproval: (actionId: string, decision: 'approve' | 'reject') =>
     apiClient.post<void>(`/autonomy/approvals/${actionId}/${decision}`),
   resetConfig: () => apiClient.post<void>('/autonomy/config/reset'),
+};
+
+// ---- Pulse Engine ----
+
+export const pulseApi = {
+  status: () => apiClient.get<PulseStatus>('/autonomy/pulse/status'),
+  start: () => apiClient.post<{ running: boolean; message: string }>('/autonomy/pulse/start'),
+  stop: () => apiClient.post<{ running: boolean; message: string }>('/autonomy/pulse/stop'),
+  run: () => apiClient.post<PulseLogEntry>('/autonomy/pulse/run'),
+  updateSettings: (settings: Partial<PulseEngineConfig>) =>
+    apiClient.patch<{ config: PulseEngineConfig; message: string }>('/autonomy/pulse/settings', settings),
+  history: (params?: { limit?: number; offset?: number }) => {
+    const p: Record<string, string> = {};
+    if (params?.limit != null) p.limit = String(params.limit);
+    if (params?.offset != null) p.offset = String(params.offset);
+    return apiClient.get<{ history: PulseLogEntry[]; total: number }>(
+      '/autonomy/pulse/history',
+      { params: Object.keys(p).length ? p : undefined }
+    );
+  },
+  stats: () => apiClient.get<PulseStats>('/autonomy/pulse/stats'),
+  getDirectives: () =>
+    apiClient.get<{
+      directives: PulseDirectives;
+      ruleDefinitions: PulseRuleDefinition[];
+      actionTypes: PulseActionType[];
+      defaultThresholds: import('../types').RuleThresholds;
+      defaultCooldowns: import('../types').ActionCooldowns;
+    }>('/autonomy/pulse/directives'),
+  updateDirectives: (d: Partial<PulseDirectives>) =>
+    apiClient.put<{ directives: PulseDirectives }>('/autonomy/pulse/directives', d),
 };
 
 // ---- System / Health / Database ----

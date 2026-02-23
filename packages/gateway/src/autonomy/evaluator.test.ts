@@ -5,7 +5,8 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { evaluatePulseContext, calculateNextInterval } from './evaluator.js';
+import { evaluatePulseContext, calculateNextInterval, RULE_DEFINITIONS, DEFAULT_RULE_THRESHOLDS } from './evaluator.js';
+import type { RuleThresholds } from './evaluator.js';
 import type { PulseContext } from './context.js';
 
 // ============================================================================
@@ -200,6 +201,214 @@ describe('evaluatePulseContext', () => {
     const result = evaluatePulseContext(ctx);
 
     expect(result.urgencyScore).toBeLessThanOrEqual(100);
+  });
+});
+
+// ============================================================================
+// RULE_DEFINITIONS
+// ============================================================================
+
+describe('RULE_DEFINITIONS', () => {
+  it('exports 7 rule definitions', () => {
+    expect(RULE_DEFINITIONS).toHaveLength(7);
+  });
+
+  it('each definition has id, label, description, and thresholdKey', () => {
+    for (const def of RULE_DEFINITIONS) {
+      expect(def.id).toBeTruthy();
+      expect(def.label).toBeTruthy();
+      expect(def.description).toBeTruthy();
+      expect('thresholdKey' in def).toBe(true);
+    }
+  });
+
+  it('ids match the signal ids produced by rules', () => {
+    const expectedIds = [
+      'stale_goals',
+      'upcoming_deadline',
+      'no_activity',
+      'low_progress',
+      'memory_cleanup',
+      'pending_approvals',
+      'trigger_errors',
+    ];
+    expect(RULE_DEFINITIONS.map((r) => r.id)).toEqual(expectedIds);
+  });
+
+  it('thresholdKey is null for rules without configurable thresholds', () => {
+    const noActivity = RULE_DEFINITIONS.find((r) => r.id === 'no_activity');
+    const pending = RULE_DEFINITIONS.find((r) => r.id === 'pending_approvals');
+    expect(noActivity!.thresholdKey).toBeNull();
+    expect(pending!.thresholdKey).toBeNull();
+  });
+
+  it('thresholdKey matches RuleThresholds keys for configurable rules', () => {
+    const configurable = RULE_DEFINITIONS.filter((r) => r.thresholdKey !== null);
+    const validKeys = Object.keys(DEFAULT_RULE_THRESHOLDS);
+    for (const def of configurable) {
+      expect(validKeys).toContain(def.thresholdKey);
+    }
+  });
+});
+
+// ============================================================================
+// disabledRules
+// ============================================================================
+
+describe('evaluatePulseContext with disabledRules', () => {
+  it('skips disabled rules', () => {
+    const ctx = makeContext({
+      goals: {
+        active: [],
+        stale: [{ id: 'g1', title: 'Stale', daysSinceUpdate: 5 }],
+        upcoming: [],
+      },
+    });
+
+    // Without disabling — stale_goals should fire
+    const result1 = evaluatePulseContext(ctx);
+    expect(result1.signals.find((s) => s.id === 'stale_goals')).toBeDefined();
+
+    // With disabling — stale_goals should NOT fire
+    const result2 = evaluatePulseContext(ctx, ['stale_goals']);
+    expect(result2.signals.find((s) => s.id === 'stale_goals')).toBeUndefined();
+  });
+
+  it('can disable multiple rules', () => {
+    const ctx = makeContext({
+      goals: {
+        active: [],
+        stale: [{ id: 'g1', title: 'Stale', daysSinceUpdate: 5 }],
+        upcoming: [],
+      },
+      activity: { daysSinceLastActivity: 3, hasRecentActivity: false },
+      memories: { total: 600, recentCount: 10, avgImportance: 0.2 },
+    });
+
+    const result = evaluatePulseContext(ctx, ['stale_goals', 'no_activity', 'memory_cleanup']);
+    expect(result.signals.find((s) => s.id === 'stale_goals')).toBeUndefined();
+    expect(result.signals.find((s) => s.id === 'no_activity')).toBeUndefined();
+    expect(result.signals.find((s) => s.id === 'memory_cleanup')).toBeUndefined();
+    expect(result.shouldCallLLM).toBe(false);
+  });
+
+  it('only disables specified rules, others still fire', () => {
+    const ctx = makeContext({
+      goals: {
+        active: [],
+        stale: [{ id: 'g1', title: 'Stale', daysSinceUpdate: 5 }],
+        upcoming: [{ id: 'g2', title: 'Urgent', daysUntilDue: 1 }],
+      },
+    });
+
+    const result = evaluatePulseContext(ctx, ['stale_goals']);
+    expect(result.signals.find((s) => s.id === 'stale_goals')).toBeUndefined();
+    expect(result.signals.find((s) => s.id === 'upcoming_deadline')).toBeDefined();
+    expect(result.shouldCallLLM).toBe(true);
+  });
+
+  it('empty disabledRules array has no effect', () => {
+    const ctx = makeContext({
+      goals: {
+        active: [],
+        stale: [{ id: 'g1', title: 'Stale', daysSinceUpdate: 5 }],
+        upcoming: [],
+      },
+    });
+
+    const result = evaluatePulseContext(ctx, []);
+    expect(result.signals.find((s) => s.id === 'stale_goals')).toBeDefined();
+  });
+});
+
+// ============================================================================
+// Custom thresholds
+// ============================================================================
+
+describe('evaluatePulseContext with custom thresholds', () => {
+  it('respects custom deadlineDays threshold', () => {
+    const ctx = makeContext({
+      goals: {
+        active: [],
+        stale: [],
+        upcoming: [{ id: 'g1', title: 'Ship v1', daysUntilDue: 5 }],
+      },
+    });
+
+    // Default threshold (3 days) should NOT fire for daysUntilDue=5
+    const result1 = evaluatePulseContext(ctx);
+    expect(result1.signals.find((s) => s.id === 'upcoming_deadline')).toBeUndefined();
+
+    // Custom threshold (7 days) SHOULD fire for daysUntilDue=5
+    const custom: RuleThresholds = { ...DEFAULT_RULE_THRESHOLDS, deadlineDays: 7 };
+    const result2 = evaluatePulseContext(ctx, [], custom);
+    expect(result2.signals.find((s) => s.id === 'upcoming_deadline')).toBeDefined();
+  });
+
+  it('respects custom lowProgressPct threshold', () => {
+    const ctx = makeContext({
+      goals: {
+        active: [
+          { id: 'g1', title: 'Goal', progress: 15, updatedAt: new Date(), dueDate: null },
+        ],
+        stale: [],
+        upcoming: [],
+      },
+    });
+
+    // Default threshold (10%) should NOT fire for progress=15
+    const result1 = evaluatePulseContext(ctx);
+    expect(result1.signals.find((s) => s.id === 'low_progress')).toBeUndefined();
+
+    // Custom threshold (20%) SHOULD fire for progress=15
+    const custom: RuleThresholds = { ...DEFAULT_RULE_THRESHOLDS, lowProgressPct: 20 };
+    const result2 = evaluatePulseContext(ctx, [], custom);
+    expect(result2.signals.find((s) => s.id === 'low_progress')).toBeDefined();
+  });
+
+  it('respects custom memoryMaxCount threshold', () => {
+    const ctx = makeContext({
+      memories: { total: 300, recentCount: 10, avgImportance: 0.2 },
+    });
+
+    // Default threshold (500) should NOT fire for total=300
+    const result1 = evaluatePulseContext(ctx);
+    expect(result1.signals.find((s) => s.id === 'memory_cleanup')).toBeUndefined();
+
+    // Custom threshold (200) SHOULD fire for total=300
+    const custom: RuleThresholds = { ...DEFAULT_RULE_THRESHOLDS, memoryMaxCount: 200 };
+    const result2 = evaluatePulseContext(ctx, [], custom);
+    expect(result2.signals.find((s) => s.id === 'memory_cleanup')).toBeDefined();
+  });
+
+  it('respects custom memoryMinImportance threshold', () => {
+    const ctx = makeContext({
+      memories: { total: 600, recentCount: 10, avgImportance: 0.25 },
+    });
+
+    // Default threshold (0.3) SHOULD fire for avgImportance=0.25
+    const result1 = evaluatePulseContext(ctx);
+    expect(result1.signals.find((s) => s.id === 'memory_cleanup')).toBeDefined();
+
+    // Custom threshold (0.2) should NOT fire for avgImportance=0.25
+    const custom: RuleThresholds = { ...DEFAULT_RULE_THRESHOLDS, memoryMinImportance: 0.2 };
+    const result2 = evaluatePulseContext(ctx, [], custom);
+    expect(result2.signals.find((s) => s.id === 'memory_cleanup')).toBeUndefined();
+  });
+
+  it('respects custom triggerErrorMin threshold', () => {
+    const ctx = makeContext({
+      systemHealth: { pendingApprovals: 0, triggerErrors: 4 },
+    });
+
+    // Default threshold (3) SHOULD fire for triggerErrors=4 (>= 3)
+    const result1 = evaluatePulseContext(ctx);
+    expect(result1.signals.find((s) => s.id === 'trigger_errors')).toBeDefined();
+
+    // Custom threshold (5) should NOT fire for triggerErrors=4
+    const custom: RuleThresholds = { ...DEFAULT_RULE_THRESHOLDS, triggerErrorMin: 5 };
+    const result2 = evaluatePulseContext(ctx, [], custom);
+    expect(result2.signals.find((s) => s.id === 'trigger_errors')).toBeUndefined();
   });
 });
 

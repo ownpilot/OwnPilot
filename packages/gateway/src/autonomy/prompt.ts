@@ -58,7 +58,12 @@ Respond with ONLY valid JSON matching this schema:
 /**
  * Build the user message containing current state and detected signals.
  */
-export function buildPulseUserMessage(ctx: PulseContext, signals: Signal[]): string {
+export function buildPulseUserMessage(
+  ctx: PulseContext,
+  signals: Signal[],
+  blockedActions?: string[],
+  cooledDownActions?: Array<{ type: string; remainingMinutes: number }>
+): string {
   const sections: string[] = [];
 
   // Time context
@@ -141,14 +146,32 @@ export function buildPulseUserMessage(ctx: PulseContext, signals: Signal[]): str
     sections.push('');
   }
 
+  // Blocked actions
+  if (blockedActions && blockedActions.length > 0) {
+    sections.push(`## Blocked Actions`);
+    sections.push(`The following action types are DISABLED and must NOT be used: ${blockedActions.join(', ')}`);
+    sections.push('');
+  }
+
+  // Actions in cooldown
+  if (cooledDownActions && cooledDownActions.length > 0) {
+    sections.push(`## Actions in Cooldown`);
+    for (const cd of cooledDownActions) {
+      sections.push(`- ${cd.type}: available in ~${cd.remainingMinutes} min`);
+    }
+    sections.push('Do NOT use these action types yet.');
+    sections.push('');
+  }
+
   return sections.join('\n');
 }
 
 /**
  * Get the system prompt for pulse LLM calls.
  */
-export function getPulseSystemPrompt(): string {
-  return SYSTEM_PROMPT;
+export function getPulseSystemPrompt(directives?: string): string {
+  if (!directives?.trim()) return SYSTEM_PROMPT;
+  return SYSTEM_PROMPT + `\n\n## User Directives\nThe user has set these directives for the autonomous engine. Follow them:\n${directives}`;
 }
 
 /**

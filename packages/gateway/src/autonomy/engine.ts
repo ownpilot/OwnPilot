@@ -20,11 +20,13 @@ import type {
 } from '@ownpilot/core';
 import { randomUUID } from 'node:crypto';
 import { gatherPulseContext } from './context.js';
-import { evaluatePulseContext, calculateNextInterval } from './evaluator.js';
+import { evaluatePulseContext, calculateNextInterval, DEFAULT_RULE_THRESHOLDS, type RuleThresholds } from './evaluator.js';
+import { DEFAULT_ACTION_COOLDOWNS, type ActionCooldowns } from './executor.js';
 import { getPulseSystemPrompt, buildPulseUserMessage, parsePulseDecision, type PulseAction } from './prompt.js';
 import { executePulseActions } from './executor.js';
 import { reportPulseResult, type Broadcaster } from './reporter.js';
 import { createAutonomyLogRepo } from '../db/repositories/autonomy-log.js';
+import { settingsRepo } from '../db/repositories/settings.js';
 import {
   PULSE_MIN_INTERVAL_MS,
   PULSE_MAX_INTERVAL_MS,
@@ -36,6 +38,28 @@ import {
 import { getLog } from '../services/log.js';
 
 const log = getLog('AutonomyEngine');
+
+// ============================================================================
+// Pulse Directives
+// ============================================================================
+
+export interface PulseDirectives {
+  disabledRules: string[];
+  blockedActions: string[];
+  customInstructions: string;
+  template: string;
+  ruleThresholds: RuleThresholds;
+  actionCooldowns: ActionCooldowns;
+}
+
+export const DEFAULT_PULSE_DIRECTIVES: PulseDirectives = {
+  disabledRules: [],
+  blockedActions: [],
+  customInstructions: '',
+  template: 'balanced',
+  ruleThresholds: DEFAULT_RULE_THRESHOLDS,
+  actionCooldowns: DEFAULT_ACTION_COOLDOWNS,
+};
 
 // ============================================================================
 // Configuration
@@ -59,7 +83,7 @@ export class AutonomyEngine implements IPulseService {
   private config: Required<AutonomyEngineConfig>;
   private timer: ReturnType<typeof setTimeout> | null = null;
   private running = false;
-  private isPulsing = false;
+  private activePulse: { pulseId: string; stage: string; startedAt: number } | null = null;
   private broadcaster?: Broadcaster;
   private lastPulseResult?: PulseResult;
 
@@ -111,31 +135,78 @@ export class AutonomyEngine implements IPulseService {
     const pulseId = generateId('pulse');
     const startTime = Date.now();
 
+    // Execution lock — prevent concurrent pulses
+    if (this.activePulse) {
+      return {
+        pulseId,
+        userId,
+        pulsedAt: new Date(),
+        durationMs: 0,
+        signalsFound: 0,
+        llmCalled: false,
+        actionsExecuted: [],
+        reportMessage: '',
+        urgencyScore: 0,
+        error: 'Pulse already in progress',
+        manual,
+      };
+    }
+
+    this.activePulse = { pulseId, stage: 'starting', startedAt: startTime };
+    this.broadcastActivity('started', 'starting');
+
     try {
+      // Load user directives
+      const directives = this.getDirectives();
+
       // 1. Gather context
+      this.setStage('gathering');
       const ctx = await gatherPulseContext(userId);
 
-      // 2. Evaluate signals
-      const evaluation = evaluatePulseContext(ctx);
+      // 2. Evaluate signals (skip disabled rules, apply thresholds)
+      this.setStage('evaluating');
+      const evaluation = evaluatePulseContext(ctx, directives.disabledRules, directives.ruleThresholds);
 
       // 3. LLM decision (if warranted)
       let llmCalled = false;
       let actionsToExecute: PulseAction[] = [{ type: 'skip', params: {} }];
       let reportMessage = '';
 
+      // Compute cooldown status for the LLM prompt
+      const lastActionTimes = this.getLastActionTimes();
+      const cooledDownActions: Array<{ type: string; remainingMinutes: number }> = [];
+      for (const [actionType, cooldownMin] of Object.entries(directives.actionCooldowns)) {
+        if (cooldownMin <= 0) continue;
+        const lastTime = lastActionTimes[actionType];
+        if (lastTime) {
+          const elapsed = (Date.now() - new Date(lastTime).getTime()) / 60_000;
+          if (elapsed < cooldownMin) {
+            cooledDownActions.push({ type: actionType, remainingMinutes: Math.ceil(cooldownMin - elapsed) });
+          }
+        }
+      }
+
       if (evaluation.shouldCallLLM) {
         llmCalled = true;
-        const decision = await this.callLLM(userId, ctx, evaluation.signals);
+        this.setStage('deciding');
+        const decision = await this.callLLM(userId, ctx, evaluation.signals, directives, cooledDownActions);
         actionsToExecute = decision.actions;
         reportMessage = decision.reportMessage;
       }
 
-      // 4. Execute actions
-      const actionResults = await executePulseActions(
+      // 4. Execute actions (block disabled action types, apply cooldowns)
+      this.setStage('executing');
+      const { results: actionResults, updatedActionTimes } = await executePulseActions(
         actionsToExecute,
         userId,
-        this.config.maxActions
+        this.config.maxActions,
+        directives.blockedActions,
+        directives.actionCooldowns,
+        lastActionTimes
       );
+
+      // Persist updated action times
+      await this.saveLastActionTimes(updatedActionTimes);
 
       // 5. Build result
       const result: PulseResult = {
@@ -149,15 +220,23 @@ export class AutonomyEngine implements IPulseService {
         reportMessage,
         urgencyScore: evaluation.urgencyScore,
         manual,
+        signalIds: evaluation.signals.map((s) => s.id),
       };
 
       // 6. Report
+      this.setStage('reporting');
       await reportPulseResult(result, this.broadcaster);
 
       // 7. Log to DB
       await this.logResult(result);
 
       this.lastPulseResult = result;
+
+      this.broadcastActivity('completed', 'done', {
+        signalsFound: result.signalsFound,
+        actionsExecuted: result.actionsExecuted.length,
+        durationMs: result.durationMs,
+      });
 
       // Adjust interval based on urgency
       if (this.running && !manual) {
@@ -171,6 +250,9 @@ export class AutonomyEngine implements IPulseService {
 
       return result;
     } catch (error) {
+      const errorMsg = getErrorMessage(error);
+      this.broadcastActivity('error', 'error', { error: errorMsg });
+
       const result: PulseResult = {
         pulseId,
         userId,
@@ -181,7 +263,7 @@ export class AutonomyEngine implements IPulseService {
         actionsExecuted: [],
         reportMessage: '',
         urgencyScore: 0,
-        error: getErrorMessage(error),
+        error: errorMsg,
         manual,
       };
 
@@ -193,12 +275,19 @@ export class AutonomyEngine implements IPulseService {
       }
 
       return result;
+    } finally {
+      this.activePulse = null;
     }
   }
 
   async getRecentLogs(userId: string, limit = 20): Promise<AutonomyLogEntry[]> {
     const repo = createAutonomyLogRepo(userId);
     return repo.getRecent(limit);
+  }
+
+  async getRecentLogsPaginated(userId: string, limit = 20, offset = 0) {
+    const repo = createAutonomyLogRepo(userId);
+    return repo.getPage(limit, offset);
   }
 
   async getStats(userId: string): Promise<PulseStats> {
@@ -212,6 +301,28 @@ export class AutonomyEngine implements IPulseService {
 
   setBroadcaster(broadcaster: Broadcaster): void {
     this.broadcaster = broadcaster;
+  }
+
+  private broadcastActivity(
+    status: 'started' | 'stage' | 'completed' | 'error',
+    stage: string,
+    extra?: Record<string, unknown>
+  ): void {
+    if (!this.broadcaster) return;
+    this.broadcaster('pulse:activity', {
+      status,
+      stage,
+      pulseId: this.activePulse?.pulseId ?? null,
+      startedAt: this.activePulse?.startedAt ?? null,
+      ...extra,
+    });
+  }
+
+  private setStage(stage: string): void {
+    if (this.activePulse) {
+      this.activePulse.stage = stage;
+      this.broadcastActivity('stage', stage);
+    }
   }
 
   updateSettings(settings: Partial<AutonomyEngineConfig>): void {
@@ -233,12 +344,14 @@ export class AutonomyEngine implements IPulseService {
     running: boolean;
     enabled: boolean;
     config: Required<AutonomyEngineConfig>;
+    activePulse: { pulseId: string; stage: string; startedAt: number } | null;
     lastPulse?: { pulsedAt: Date; signalsFound: number; urgencyScore: number };
   } {
     return {
       running: this.running,
       enabled: this.config.enabled,
       config: { ...this.config },
+      activePulse: this.activePulse ? { ...this.activePulse } : null,
       lastPulse: this.lastPulseResult
         ? {
             pulsedAt: this.lastPulseResult.pulsedAt,
@@ -253,6 +366,25 @@ export class AutonomyEngine implements IPulseService {
   // Internal
   // ============================================================================
 
+  private getDirectives(): PulseDirectives {
+    const stored = settingsRepo.get<Partial<PulseDirectives>>('pulse.directives');
+    if (!stored) return DEFAULT_PULSE_DIRECTIVES;
+    return {
+      ...DEFAULT_PULSE_DIRECTIVES,
+      ...stored,
+      ruleThresholds: { ...DEFAULT_RULE_THRESHOLDS, ...stored.ruleThresholds },
+      actionCooldowns: { ...DEFAULT_ACTION_COOLDOWNS, ...stored.actionCooldowns },
+    };
+  }
+
+  private getLastActionTimes(): Record<string, string> {
+    return settingsRepo.get<Record<string, string>>('pulse.lastActionTimes') ?? {};
+  }
+
+  private async saveLastActionTimes(times: Record<string, string>): Promise<void> {
+    await settingsRepo.set('pulse.lastActionTimes', times);
+  }
+
   private scheduleNext(delayMs: number): void {
     if (this.timer) {
       clearTimeout(this.timer);
@@ -262,7 +394,7 @@ export class AutonomyEngine implements IPulseService {
   }
 
   private async tick(): Promise<void> {
-    if (!this.running || this.isPulsing) return;
+    if (!this.running || this.activePulse) return;
 
     // Quiet hours check
     const hour = new Date().getHours();
@@ -272,7 +404,6 @@ export class AutonomyEngine implements IPulseService {
       return;
     }
 
-    this.isPulsing = true;
     try {
       await this.runPulse(this.config.userId);
     } catch (error) {
@@ -280,8 +411,6 @@ export class AutonomyEngine implements IPulseService {
       if (this.running) {
         this.scheduleNext(this.config.maxIntervalMs);
       }
-    } finally {
-      this.isPulsing = false;
     }
   }
 
@@ -301,7 +430,9 @@ export class AutonomyEngine implements IPulseService {
   private async callLLM(
     userId: string,
     ctx: Awaited<ReturnType<typeof gatherPulseContext>>,
-    signals: Awaited<ReturnType<typeof evaluatePulseContext>>['signals']
+    signals: Awaited<ReturnType<typeof evaluatePulseContext>>['signals'],
+    directives?: PulseDirectives,
+    cooledDownActions?: Array<{ type: string; remainingMinutes: number }>
   ): Promise<ReturnType<typeof parsePulseDecision>> {
     try {
       const registry = getServiceRegistry();
@@ -311,8 +442,8 @@ export class AutonomyEngine implements IPulseService {
       const provider = resolved.provider ?? 'openai';
       const model = resolved.model ?? 'gpt-4o-mini';
 
-      const systemPrompt = getPulseSystemPrompt();
-      const userMessage = buildPulseUserMessage(ctx, signals);
+      const systemPrompt = getPulseSystemPrompt(directives?.customInstructions);
+      const userMessage = buildPulseUserMessage(ctx, signals, directives?.blockedActions, cooledDownActions);
 
       const normalized: NormalizedMessage = {
         id: randomUUID(),
@@ -359,6 +490,8 @@ export class AutonomyEngine implements IPulseService {
         reportMsg: result.reportMessage || null,
         error: result.error ?? null,
         manual: result.manual,
+        signalIds: result.signalIds ?? [],
+        urgencyScore: result.urgencyScore ?? 0,
       });
 
       // Periodic cleanup
