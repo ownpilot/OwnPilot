@@ -188,4 +188,44 @@ describe('agent-tools helpers', () => {
       expect(safeStringArray(input)).toEqual(['hello\nworld', 'tab\there', 'emoji😀', '']);
     });
   });
+
+  // =========================================================================
+  // registerGatewayTools
+  // =========================================================================
+  describe('registerGatewayTools', () => {
+    it('registers tools without throwing', async () => {
+      const { registerGatewayTools } = await import('./agent-tools.js');
+      const mockToolRegistry = {
+        register: vi.fn(),
+        unregister: vi.fn(),
+        has: vi.fn(),
+        execute: vi.fn(),
+        list: vi.fn(),
+      };
+
+      // Should not throw
+      expect(() => registerGatewayTools(mockToolRegistry as any, 'test-user', false)).not.toThrow();
+    });
+  });
+
+  // =========================================================================
+  // registerDynamicTools
+  // =========================================================================
+  describe('registerDynamicTools', () => {
+    it('registers dynamic tools without throwing', async () => {
+      const { registerDynamicTools } = await import('./agent-tools.js');
+      const mockToolRegistry = {
+        register: vi.fn(),
+        unregister: vi.fn(),
+        has: vi.fn(),
+        execute: vi.fn(),
+        list: vi.fn(),
+      };
+
+      // Should not throw
+      await expect(
+        registerDynamicTools(mockToolRegistry as any, 'test-user', 'conv-123', false)
+      ).resolves.not.toThrow();
+    });
+  });
 });
