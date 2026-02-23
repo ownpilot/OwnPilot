@@ -13,6 +13,11 @@ import {
   loadApiKeysToEnvironment,
   getDefaultProvider,
   isDemoModeFromSettings,
+  initializeSettingsRepo,
+  initializeConfigServicesRepo,
+  initializeLocalProvidersRepo,
+  initializePluginsRepo,
+  seedConfigServices,
 } from '@ownpilot/gateway';
 
 interface StartOptions {
@@ -30,6 +35,13 @@ export async function startAll(options: StartOptions): Promise<void> {
     console.error('❌ Database initialization failed:', err instanceof Error ? err.message : err);
     process.exit(1);
   }
+
+  // Initialize repository caches (required before any DB queries)
+  await initializeSettingsRepo();
+  await initializeConfigServicesRepo();
+  await seedConfigServices();
+  await initializePluginsRepo();
+  await initializeLocalProvidersRepo();
 
   // Load saved API keys from database into environment (for SDKs)
   await loadApiKeysToEnvironment();
