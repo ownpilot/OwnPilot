@@ -19,6 +19,27 @@ import {
   loadCredentialsToEnv,
 } from './commands/config.js';
 import {
+  initializeAdapter,
+  initializeSettingsRepo,
+  initializeConfigServicesRepo,
+  initializeLocalProvidersRepo,
+  initializePluginsRepo,
+  seedConfigServices,
+} from '@ownpilot/gateway';
+
+/**
+ * Initialize database adapter and all repository caches.
+ * Must run before any code that accesses settings or local providers.
+ */
+async function initializeAll(): Promise<void> {
+  await initializeAdapter();
+  await initializeSettingsRepo();
+  await initializeConfigServicesRepo();
+  await seedConfigServices();
+  await initializePluginsRepo();
+  await initializeLocalProvidersRepo();
+}
+import {
   channelList,
   channelAdd,
   channelRemove,
@@ -54,7 +75,7 @@ program
   .option('-p, --password <password>', 'Master password (will prompt if not provided)')
   .action(setup);
 
-// Server command - loads credentials before starting
+// Server command - initializes repos before starting
 program
   .command('server')
   .description('Start the HTTP API server')
@@ -63,6 +84,7 @@ program
   .option('--no-auth', 'Disable authentication')
   .option('--no-rate-limit', 'Disable rate limiting')
   .action(async (options) => {
+    await initializeAll();
     await loadCredentialsToEnv();
     await startServer(options);
   });
@@ -76,17 +98,19 @@ program
   .option('--users <ids>', 'Comma-separated allowed user IDs')
   .option('--chats <ids>', 'Comma-separated allowed chat IDs')
   .action(async (options) => {
+    await initializeAll();
     await loadCredentialsToEnv();
     await startBot(options);
   });
 
-// Start all command - loads credentials before starting
+// Start all command - initializes repos before starting
 program
   .command('start')
   .description('Start both server and bot')
   .option('-p, --port <port>', 'Server port', '8080')
   .option('--no-bot', 'Skip starting the Telegram bot')
   .action(async (options) => {
+    await initializeAll();
     await loadCredentialsToEnv();
     await startAll(options);
   });
