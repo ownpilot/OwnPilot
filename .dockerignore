@@ -5,6 +5,8 @@ node_modules
 # Build outputs
 dist
 **/dist
+*.tsbuildinfo
+**/*.tsbuildinfo
 .turbo
 **/.turbo
 
@@ -18,6 +20,7 @@ dist
 **/*.test.ts
 **/*.spec.ts
 coverage
+**/coverage
 **/.vitest
 
 # Documentation
