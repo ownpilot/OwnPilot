@@ -170,6 +170,24 @@ describe('IsolatedStorage', () => {
       await storage.appendFile('user1', 'log.txt', 'new line');
       expect(fsMock.promises.appendFile).toHaveBeenCalled();
     });
+
+    it('throws error when storage quota exceeded on append', async () => {
+      // Mock usage to be at limit
+      vi.mocked(fsMock.promises.readdir).mockResolvedValue([
+        { name: 'largefile.bin', isDirectory: () => false } as never,
+      ]);
+      vi.mocked(fsMock.promises.stat).mockResolvedValue({
+        size: 1024 * 1024 * 1024 * 2, // 2GB - at limit
+        isDirectory: () => false,
+        mtime: new Date(),
+        birthtime: new Date(),
+      } as never);
+
+      // Try to append content when already at quota
+      await expect(storage.appendFile('user1', 'log.txt', 'more content')).rejects.toThrow(
+        'Storage quota exceeded'
+      );
+    });
   });
 
   describe('deleteFile', () => {
@@ -207,6 +225,30 @@ describe('IsolatedStorage', () => {
       } as never);
       await storage.copyFile('user1', 'a.txt', 'b.txt');
       expect(fsMock.promises.copyFile).toHaveBeenCalled();
+    });
+
+    it('throws error when storage quota exceeded', async () => {
+      // Mock usage to be near limit
+      vi.mocked(fsMock.promises.readdir).mockResolvedValue([
+        { name: 'existing.txt', isDirectory: () => false } as never,
+      ]);
+      vi.mocked(fsMock.promises.stat)
+        .mockResolvedValueOnce({
+          size: 1024 * 1024 * 1024 * 2, // 2GB file
+          isDirectory: () => false,
+          mtime: new Date(),
+          birthtime: new Date(),
+        } as never)
+        .mockResolvedValueOnce({
+          size: 1024 * 1024 * 1024 * 2, // Another 2GB
+          isDirectory: () => false,
+          mtime: new Date(),
+          birthtime: new Date(),
+        } as never);
+
+      await expect(storage.copyFile('user1', 'large.txt', 'copy.txt')).rejects.toThrow(
+        'Storage quota exceeded'
+      );
     });
   });
 

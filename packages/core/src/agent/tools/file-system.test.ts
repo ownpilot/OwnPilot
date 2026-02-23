@@ -570,6 +570,19 @@ describe('copyFileExecutor', () => {
 });
 
 // ===========================================================================
+// 12. searchFilesExecutor — searches file contents
+// ===========================================================================
+describe('searchFilesExecutor', () => {
+  it('returns error when search fails', async () => {
+    fsMock.readdir.mockRejectedValue(new Error('Permission denied'));
+
+    const result = await searchFilesExecutor({ path: '.', query: 'test' }, ctx());
+    expect(result.isError).toBe(true);
+    expect(result.content).toContain('Error searching files');
+  });
+});
+
+// ===========================================================================
 // 13. downloadFileExecutor — downloads files from URLs
 // ===========================================================================
 describe('downloadFileExecutor', () => {
@@ -673,6 +686,20 @@ describe('downloadFileExecutor', () => {
     );
     expect(result.isError).toBe(true);
     expect(result.content).toContain('blocked');
+  });
+
+  it('returns error when fetch throws exception', async () => {
+    fsMock.access.mockRejectedValue(new Error('ENOENT'));
+    fsMock.mkdir.mockResolvedValue(undefined);
+
+    mockFetch.mockRejectedValue(new Error('Network error'));
+
+    const result = await downloadFileExecutor(
+      { url: 'https://example.com/file.txt', path: 'file.txt' },
+      ctx()
+    );
+    expect(result.isError).toBe(true);
+    expect(result.content).toContain('Error downloading file');
   });
 });
 
