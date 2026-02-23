@@ -456,4 +456,14 @@ describe('getStorage', () => {
     const s = initializeStorage('/tmp/test-storage', 1);
     expect(s).toBeInstanceOf(IsolatedStorage);
   });
+
+  it('initializes with custom base path', () => {
+    const s = initializeStorage('/custom/path', 5);
+    expect(s).toBeInstanceOf(IsolatedStorage);
+  });
+
+  it('initializes with custom max storage', () => {
+    const s = initializeStorage('/tmp/test', 10);
+    expect(s).toBeInstanceOf(IsolatedStorage);
+  });
 });
