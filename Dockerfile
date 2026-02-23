@@ -56,23 +56,34 @@ RUN pnpm install --frozen-lockfile --prod
 
 # Copy built files from builder
 COPY --from=builder /app/packages/core/dist ./packages/core/dist
+COPY --from=builder /app/packages/core/data ./packages/core/data
 COPY --from=builder /app/packages/gateway/dist ./packages/gateway/dist
+COPY --from=builder /app/packages/gateway/data ./packages/gateway/data
 COPY --from=builder /app/packages/channels/dist ./packages/channels/dist
 COPY --from=builder /app/packages/cli/dist ./packages/cli/dist
 
 # Copy UI static assets (no node_modules needed — pre-built by Vite)
 COPY --from=builder /app/packages/ui/dist ./packages/ui/dist
 
+# Create non-root user
+RUN addgroup -g 1001 -S ownpilot && adduser -S ownpilot -u 1001 -G ownpilot
+
+# Create data directory with proper ownership
+RUN mkdir -p /app/data && chown -R ownpilot:ownpilot /app/data
+
 # Set environment variables
 ENV NODE_ENV=production
 ENV PORT=8080
 ENV HOST=0.0.0.0
 
+# Switch to non-root user
+USER ownpilot
+
 # Expose port
 EXPOSE 8080
 
 # Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
   CMD wget --no-verbose --tries=1 --spider http://localhost:8080/health || exit 1
 
 # OCI labels for GHCR

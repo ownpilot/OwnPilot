@@ -1,6 +1,6 @@
 import { Heart, Globe, Github, Twitter, ExternalLink } from '../components/icons';
 
-const VERSION = '0.1.0';
+const VERSION = __APP_VERSION__;
 
 const highlights = [
   'Open Source',

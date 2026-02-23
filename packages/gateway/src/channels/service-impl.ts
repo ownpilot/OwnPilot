@@ -744,24 +744,18 @@ export class ChannelServiceImpl implements IChannelService {
     const { resolveProviderAndModel } = await import('../routes/settings.js');
     const resolved = await resolveProviderAndModel('default', preferredModel ?? 'default');
 
-    // Convert channel attachments → normalized attachments (base64-encoded)
-    const normalizedAttachments: NormalizedAttachment[] | undefined = message.attachments
-      ?.filter((a) => a.data)
-      .map((a) => ({
-        type: a.type,
-        data: `data:${a.mimeType};base64,${Buffer.from(a.data!).toString('base64')}`,
-        mimeType: a.mimeType,
-        filename: a.filename,
-        size: a.size,
-      }));
+    // Normalize incoming message via channel normalizer
+    const { getNormalizer } = await import('./normalizers/index.js');
+    const channelNormalizer = getNormalizer(message.platform);
+    const incoming = channelNormalizer.normalizeIncoming(message);
 
-    // Normalize channel message into NormalizedMessage
+    // Build NormalizedMessage from normalized incoming
     const normalized: NormalizedMessage = {
       id: message.id,
       sessionId: session.conversationId ?? randomUUID(),
       role: 'user',
-      content: message.text || (normalizedAttachments?.length ? '[Attachment]' : ''),
-      attachments: normalizedAttachments?.length ? normalizedAttachments : undefined,
+      content: incoming.text,
+      attachments: incoming.attachments,
       metadata: {
         source: 'channel',
         channelPluginId: message.channelPluginId,
@@ -801,10 +795,12 @@ export class ChannelServiceImpl implements IChannelService {
         },
       });
 
-      // Strip <memories> and <suggestions> tags from channel response
+      // Normalize outgoing response via channel normalizer
+      // (strips internal tags, converts markdown, splits if needed)
       const { extractMemoriesFromResponse } = await import('../utils/memory-extraction.js');
       const { content: stripped } = extractMemoriesFromResponse(result.response.content);
-      return stripped.replace(/<suggestions>[\s\S]*<\/suggestions>\s*$/, '').trimEnd();
+      const parts = channelNormalizer.normalizeOutgoing(stripped);
+      return parts.join('\n\n');
     } finally {
       // Always cleanup per-request overrides — even if bus.process() throws,
       // otherwise the Telegram approval handler leaks to subsequent non-channel requests

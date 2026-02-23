@@ -25,18 +25,15 @@ export function RealtimeBridge({ onBadgeUpdate }: RealtimeBridgeProps) {
   const toast = useToast();
   const { notify } = useDesktopNotifications();
 
-  // Wire apiClient global error handler → toast
+  // Wire apiClient error listener → toast
   useEffect(() => {
-    apiClient.setOnError((error) => {
+    return apiClient.addOnError((error) => {
       // Skip network errors — they're transient and the connection indicator covers it
       if (error.code === 'NETWORK_ERROR') return;
+      // Skip 401 — handled by AuthProvider (redirect to login)
+      if (error.status === 401) return;
       toast.error(error.message, 'API Error');
     });
-
-    return () => {
-      // Clear the handler on unmount
-      apiClient.setOnError(() => {});
-    };
   }, [toast]);
 
   // WS: system:notification → toast

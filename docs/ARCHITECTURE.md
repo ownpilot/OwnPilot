@@ -69,15 +69,15 @@ OwnPilot is a self-hosted, privacy-first personal AI assistant platform. It conn
  +---------------------------------------------------------------------------+
  |                                                                           |
  |   CLIENTS                                                                 |
- |   +----------+  +----------+  +----------+  +----------+  +----------+   |
- |   |  Web UI  |  |   CLI    |  | Telegram |  | Discord  |  |  Slack   |   |
- |   | (React)  |  |(commander|  |  (grammy)|  |(discord.js|  |(@slack/  |   |
- |   |          |  |inquirer) |  |          |  |          |  | bolt)    |   |
- |   +----+-----+  +----+-----+  +----+-----+  +----+-----+  +----+-----+   |
- |        |             |             |             |             |           |
- |        |   HTTP/WS   |    HTTP     |    Events   |   Events   |  Events   |
- |        +------+------+------+------+------+------+------+-----+           |
- |               |                    |                    |                  |
+ |   +----------+  +----------+  +----------+                               |
+ |   |  Web UI  |  |   CLI    |  | Telegram |                               |
+ |   | (React)  |  |(commander|  |  (grammy)|                               |
+ |   |          |  |inquirer) |  |          |                               |
+ |   +----+-----+  +----+-----+  +----+-----+                               |
+ |        |             |             |                                      |
+ |        |   HTTP/WS   |    HTTP     |    Events                            |
+ |        +------+------+------+------+                                      |
+ |               |                    |                                      |
  +---------------|--------------------|--------------------|------------------+
                  v                    v                    v
  +---------------------------------------------------------------------------+
@@ -190,7 +190,7 @@ ownpilot/
 |   |   |   |-- assistant/        # Gateway-level assistant orchestrator
 |   |   |   |-- audit/            # Audit trail persistence
 |   |   |   |-- autonomy/         # Autonomy levels and risk assessment
-|   |   |   |-- channels/         # Channel adapters (Discord, Slack, Telegram)
+|   |   |   |-- channels/         # Channel adapters (Telegram)
 |   |   |   |-- db/               # Database layer
 |   |   |   |   |-- adapters/     # PostgreSQL adapter (DatabaseAdapter interface)
 |   |   |   |   |-- migrations/   # SQL schema migrations (47 tables)
@@ -285,8 +285,6 @@ Detailed dependency table:
 | ws                | ^8.19   | gateway  | WebSocket server                    |
 | jose              | ^6.0    | gateway  | JWT authentication                  |
 | dotenv            | ^16.4   | gateway  | Environment variable loading        |
-| discord.js        | ^14.16  | gateway  | Discord channel adapter             |
-| @slack/bolt       | ^4.1    | gateway  | Slack channel adapter               |
 | nodemailer        | ^7.0    | gateway  | Email sending                       |
 | imapflow          | ^1.2    | gateway  | Email receiving (IMAP)              |
 | archiver          | ^7.0    | gateway  | File archival                       |
@@ -294,7 +292,7 @@ Detailed dependency table:
 | react             | ^19.0   | ui       | UI framework                        |
 | react-router-dom  | ^7.1    | ui       | Client-side routing                 |
 | tailwindcss       | ^4.0    | ui       | Utility-first CSS                   |
-| vite              | ^6.0    | ui       | Build tool and dev server           |
+| vite              | ^7.3    | ui       | Build tool and dev server           |
 | commander         | ^13.1   | cli      | CLI framework                       |
 | @inquirer/prompts | ^7.0    | cli      | Interactive CLI prompts             |
 | vitest            | ^2.1    | all      | Test framework (dev)                |
@@ -1090,15 +1088,9 @@ The `ChannelManager` (`packages/gateway/src/channels/manager.ts`) provides a uni
 
 **Supported Channel Types:**
 
-| Channel  | Library     | Adapter Location                                    |
-| -------- | ----------- | --------------------------------------------------- |
-| Telegram | grammy      | `packages/channels/src/telegram/bot.ts`             |
-| Discord  | discord.js  | `packages/gateway/src/channels/adapters/discord.ts` |
-| Slack    | @slack/bolt | `packages/gateway/src/channels/adapters/slack.ts`   |
-| WhatsApp | (planned)   | --                                                  |
-| Matrix   | (planned)   | --                                                  |
-| Signal   | (planned)   | --                                                  |
-| Webchat  | (built-in)  | Via WebSocket                                       |
+| Channel  | Library | Adapter Location                        |
+| -------- | ------- | --------------------------------------- |
+| Telegram | grammy  | `packages/channels/src/telegram/bot.ts` |
 
 **Architecture:**
 
@@ -1114,11 +1106,9 @@ The `ChannelManager` (`packages/gateway/src/channels/manager.ts`) provides a uni
               | send(message)                |
               +------------------------------+
                        |
-          +------------+------------+
-          |            |            |
-     TelegramAdapter  DiscordAdapter  SlackAdapter
-          |            |            |
-     grammy Bot     discord.js   @slack/bolt
+                TelegramAdapter
+                       |
+                  grammy Bot
 ```
 
 Each adapter converts platform-specific messages into the unified `IncomingMessage` / `OutgoingMessage` types defined in `packages/gateway/src/ws/types.ts`.
@@ -1215,7 +1205,7 @@ The frontend is a single-page application built with modern React.
 | -------------------- | ------- | ----------------------------------- |
 | React                | 19.x    | UI framework                        |
 | React Router         | 7.x     | Client-side routing                 |
-| Vite                 | 6.x     | Build tool and dev server           |
+| Vite                 | 7.x     | Build tool and dev server           |
 | Tailwind CSS         | 4.x     | Utility-first CSS framework         |
 | @tailwindcss/vite    | 4.x     | Vite integration for Tailwind       |
 | prism-react-renderer | 2.x     | Syntax highlighting for code blocks |
@@ -1560,8 +1550,6 @@ Channel adapters use factories for registration:
 
 ```typescript
 channelManager.registerFactory('telegram', (config) => new TelegramAdapter(config));
-channelManager.registerFactory('discord', (config) => new DiscordAdapter(config));
-channelManager.registerFactory('slack', (config) => new SlackAdapter(config));
 
 // Later:
 const adapter = await channelManager.connect({ type: 'telegram', id: '...', ... });
@@ -1800,7 +1788,6 @@ pnpm --filter @ownpilot/cli start
 | `HOST`                      | No       | `0.0.0.0`              | HTTP server bind address            |
 | `DATA_DIR`                  | No       | `./data`               | Persistent data directory           |
 | **Database**                |          |                        |                                     |
-| `DB_TYPE`                   | No       | `postgres`             | Database type (PostgreSQL only)     |
 | `DATABASE_URL`              | No       | --                     | PostgreSQL connection string        |
 | `POSTGRES_HOST`             | No       | `postgres`             | PostgreSQL host                     |
 | `POSTGRES_PORT`             | No       | `5432`                 | PostgreSQL port                     |

@@ -1219,18 +1219,18 @@ Multi-channel messaging infrastructure for integrating with external platforms.
 
 ### 9.1 `channels`
 
-Registered messaging channels (WhatsApp, Telegram, Slack, etc.).
+Registered messaging channels (Telegram).
 
-| Column             | Type                     | Default          | Nullable | Description                                          |
-| ------------------ | ------------------------ | ---------------- | -------- | ---------------------------------------------------- |
-| `id`               | TEXT                     | --               | PK       | Unique identifier                                    |
-| `type`             | TEXT                     | --               | NOT NULL | Channel type (e.g., `whatsapp`, `telegram`, `slack`) |
-| `name`             | TEXT                     | --               | NOT NULL | Display name                                         |
-| `status`           | TEXT                     | `'disconnected'` | NOT NULL | Connection status                                    |
-| `config`           | JSONB                    | `'{}'`           | NOT NULL | Channel-specific configuration                       |
-| `created_at`       | TIMESTAMP WITH TIME ZONE | `NOW()`          | NOT NULL | Registration time                                    |
-| `connected_at`     | TIMESTAMP WITH TIME ZONE | --               | Yes      | Last successful connection                           |
-| `last_activity_at` | TIMESTAMP WITH TIME ZONE | --               | Yes      | Last message activity                                |
+| Column             | Type                     | Default          | Nullable | Description                     |
+| ------------------ | ------------------------ | ---------------- | -------- | ------------------------------- |
+| `id`               | TEXT                     | --               | PK       | Unique identifier               |
+| `type`             | TEXT                     | --               | NOT NULL | Channel type (e.g., `telegram`) |
+| `name`             | TEXT                     | --               | NOT NULL | Display name                    |
+| `status`           | TEXT                     | `'disconnected'` | NOT NULL | Connection status               |
+| `config`           | JSONB                    | `'{}'`           | NOT NULL | Channel-specific configuration  |
+| `created_at`       | TIMESTAMP WITH TIME ZONE | `NOW()`          | NOT NULL | Registration time               |
+| `connected_at`     | TIMESTAMP WITH TIME ZONE | --               | Yes      | Last successful connection      |
+| `last_activity_at` | TIMESTAMP WITH TIME ZONE | --               | Yes      | Last message activity           |
 
 **AI Tools (CHANNEL_TOOLS):**
 Available for listing channels, sending messages, and managing channel state.

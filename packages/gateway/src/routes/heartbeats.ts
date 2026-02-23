@@ -5,7 +5,9 @@
  */
 
 import { Hono } from 'hono';
-import { getHeartbeatService, HeartbeatServiceError } from '../services/heartbeat-service.js';
+import { getServiceRegistry, Services } from '@ownpilot/core';
+import { HeartbeatServiceError } from '../services/heartbeat-service.js';
+import type { HeartbeatService } from '../services/heartbeat-service.js';
 import {
   getUserId,
   apiResponse,
@@ -19,6 +21,9 @@ import { wsGateway } from '../ws/server.js';
 
 export const heartbeatsRoutes = new Hono();
 
+/** Get HeartbeatService from registry. */
+const getService = () => getServiceRegistry().get(Services.Heartbeat) as HeartbeatService;
+
 // ============================================================================
 // Routes
 // ============================================================================
@@ -31,7 +36,7 @@ heartbeatsRoutes.get('/', async (c) => {
   const enabled = c.req.query('enabled');
   const limit = getIntParam(c, 'limit', 20, 1, 100);
 
-  const service = getHeartbeatService();
+  const service = getService();
   const heartbeats = await service.listHeartbeats(userId, {
     enabled: enabled === 'true' ? true : enabled === 'false' ? false : undefined,
     limit,
@@ -75,7 +80,7 @@ heartbeatsRoutes.post('/', async (c) => {
   }
 
   try {
-    const service = getHeartbeatService();
+    const service = getService();
     const heartbeat = await service.createHeartbeat(userId, {
       scheduleText,
       taskDescription,
@@ -120,7 +125,7 @@ heartbeatsRoutes.post('/import', async (c) => {
     );
   }
 
-  const service = getHeartbeatService();
+  const service = getService();
   const result = await service.importMarkdown(userId, (body as { markdown: string }).markdown);
 
   return apiResponse(c, result, 201);
@@ -133,7 +138,7 @@ heartbeatsRoutes.post('/import', async (c) => {
 heartbeatsRoutes.get('/export', async (c) => {
   const userId = getUserId(c);
 
-  const service = getHeartbeatService();
+  const service = getService();
   const markdown = await service.exportMarkdown(userId);
 
   return apiResponse(c, { markdown });
@@ -146,7 +151,7 @@ heartbeatsRoutes.get('/:id', async (c) => {
   const userId = getUserId(c);
   const id = c.req.param('id');
 
-  const service = getHeartbeatService();
+  const service = getService();
   const heartbeat = await service.getHeartbeat(userId, id);
 
   if (!heartbeat) {
@@ -169,7 +174,7 @@ heartbeatsRoutes.patch('/:id', async (c) => {
   }
 
   try {
-    const service = getHeartbeatService();
+    const service = getService();
     const heartbeat = await service.updateHeartbeat(userId, id, body);
 
     if (!heartbeat) {
@@ -200,7 +205,7 @@ heartbeatsRoutes.delete('/:id', async (c) => {
   const userId = getUserId(c);
   const id = c.req.param('id');
 
-  const service = getHeartbeatService();
+  const service = getService();
   const deleted = await service.deleteHeartbeat(userId, id);
 
   if (!deleted) {
@@ -219,7 +224,7 @@ heartbeatsRoutes.post('/:id/enable', async (c) => {
   const userId = getUserId(c);
   const id = c.req.param('id');
 
-  const service = getHeartbeatService();
+  const service = getService();
   const heartbeat = await service.enableHeartbeat(userId, id);
 
   if (!heartbeat) {
@@ -238,7 +243,7 @@ heartbeatsRoutes.post('/:id/disable', async (c) => {
   const userId = getUserId(c);
   const id = c.req.param('id');
 
-  const service = getHeartbeatService();
+  const service = getService();
   const heartbeat = await service.disableHeartbeat(userId, id);
 
   if (!heartbeat) {

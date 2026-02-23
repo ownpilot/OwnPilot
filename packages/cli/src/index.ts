@@ -4,6 +4,7 @@
  */
 
 import { Command } from 'commander';
+import { VERSION } from '@ownpilot/core';
 import { config as loadEnv } from 'dotenv';
 import { startServer } from './commands/server.js';
 import { startBot } from './commands/bot.js';
@@ -44,7 +45,7 @@ loadEnv({ quiet: true });
 
 const program = new Command();
 
-program.name('ownpilot').description('Privacy-first AI Gateway CLI').version('0.1.0');
+program.name('ownpilot').description('Privacy-first AI Gateway CLI').version(VERSION);
 
 // Setup command - first-time configuration
 program

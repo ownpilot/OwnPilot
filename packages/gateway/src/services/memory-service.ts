@@ -7,6 +7,7 @@
 
 import {
   getEventBus,
+  getEventSystem,
   createEvent,
   EventTypes,
   getServiceRegistry,
@@ -25,7 +26,6 @@ import {
   type CreateMemoryInput,
   type UpdateMemoryInput,
 } from '../db/repositories/memories.js';
-import { getEmbeddingQueue } from './embedding-queue.js';
 import { shouldChunk, chunkMarkdown } from './chunking.js';
 import { getLog } from './log.js';
 
@@ -71,17 +71,22 @@ export class MemoryService implements IMemoryService {
     const repo = this.getRepo(userId);
     const memory = await repo.create(input);
 
-    // Queue embedding generation (async, non-blocking)
-    if (!input.embedding) {
-      getEmbeddingQueue().enqueue(memory.id, userId, memory.content);
-    }
-
     getEventBus().emit(
       createEvent<ResourceCreatedData>(EventTypes.RESOURCE_CREATED, 'resource', 'memory-service', {
         resourceType: 'memory',
         id: memory.id,
       })
     );
+
+    // Emit memory.created event — embedding queue subscribes to this
+    getEventSystem().emit('memory.created', 'memory-service', {
+      memoryId: memory.id,
+      userId,
+      content: memory.content,
+      type: memory.type,
+      needsEmbedding: !input.embedding,
+    });
+
     return memory;
   }
 
@@ -121,8 +126,14 @@ export class MemoryService implements IMemoryService {
       });
       chunkIds.push(chunkMemory.id);
 
-      // Queue embedding for each chunk
-      getEmbeddingQueue().enqueue(chunkMemory.id, userId, chunk.text);
+      // Emit memory.created for each chunk — embedding queue subscribes to this
+      getEventSystem().emit('memory.created', 'memory-service', {
+        memoryId: chunkMemory.id,
+        userId,
+        content: chunk.text,
+        type: input.type,
+        needsEmbedding: true,
+      });
     }
 
     // Update parent with chunk IDs
@@ -135,8 +146,14 @@ export class MemoryService implements IMemoryService {
       },
     });
 
-    // Also queue embedding for the parent (full content — truncated by API if too long)
-    getEmbeddingQueue().enqueue(parentMemory.id, userId, input.content);
+    // Emit memory.created for the parent too (full content — truncated by API if too long)
+    getEventSystem().emit('memory.created', 'memory-service', {
+      memoryId: parentMemory.id,
+      userId,
+      content: input.content,
+      type: input.type,
+      needsEmbedding: true,
+    });
 
     getEventBus().emit(
       createEvent<ResourceCreatedData>(EventTypes.RESOURCE_CREATED, 'resource', 'memory-service', {
@@ -176,10 +193,14 @@ export class MemoryService implements IMemoryService {
 
     const memory = await repo.create(input);
 
-    // Queue embedding generation for new memories
-    if (!input.embedding) {
-      getEmbeddingQueue().enqueue(memory.id, userId, memory.content);
-    }
+    // Emit memory.created — embedding queue subscribes to this
+    getEventSystem().emit('memory.created', 'memory-service', {
+      memoryId: memory.id,
+      userId,
+      content: memory.content,
+      type: memory.type,
+      needsEmbedding: !input.embedding,
+    });
 
     return { memory, deduplicated: false };
   }
@@ -225,6 +246,14 @@ export class MemoryService implements IMemoryService {
           { resourceType: 'memory', id, changes: input }
         )
       );
+      // Emit memory.updated — embedding queue re-embeds if content changed
+      const hasNewContent = typeof input.content === 'string' && input.content.trim().length > 0;
+      getEventSystem().emit('memory.updated', 'memory-service', {
+        memoryId: id,
+        userId,
+        content: hasNewContent ? input.content : undefined,
+        needsEmbedding: hasNewContent,
+      });
     }
     return updated;
   }
@@ -241,6 +270,10 @@ export class MemoryService implements IMemoryService {
           { resourceType: 'memory', id }
         )
       );
+      getEventSystem().emit('memory.deleted', 'memory-service', {
+        memoryId: id,
+        userId,
+      });
     }
     return deleted;
   }

@@ -10,6 +10,7 @@ import type { Server as HttpServer } from 'node:http';
 import type { Server as HttpsServer } from 'node:https';
 import type { Http2SecureServer, Http2Server } from 'node:http2';
 import { timingSafeEqual } from 'node:crypto';
+import { validateSession as validateUiSession, isPasswordConfigured } from '../services/ui-session.js';
 import type { ClientEvents, WSMessage, Channel } from './types.js';
 import { sessionManager } from './session.js';
 import { ClientEventHandler } from './events.js';
@@ -34,9 +35,18 @@ const log = getLog('WebSocket');
  * Returns true if auth is disabled (no keys) or token is valid.
  */
 function validateWsToken(token: string | null): boolean {
+  // Check UI session token first
+  if (token && validateUiSession(token)) return true;
+
   const apiKeys = process.env.API_KEYS?.split(',').filter(Boolean);
-  // No API keys configured = auth disabled, allow connection
-  if (!apiKeys || apiKeys.length === 0) return true;
+
+  if (!apiKeys || apiKeys.length === 0) {
+    // No API keys configured — but if UI password is set, require a valid session token
+    // (the check above already failed, so reject)
+    if (isPasswordConfigured()) return false;
+    return true;
+  }
+
   // Auth enabled but no token provided
   if (!token) return false;
   // Timing-safe comparison against all valid keys

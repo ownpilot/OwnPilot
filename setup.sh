@@ -100,10 +100,10 @@ fi
 if command -v pnpm &>/dev/null; then
   pnpm_version=$(pnpm -v)
   pnpm_major=$(echo "$pnpm_version" | cut -d. -f1)
-  if (( pnpm_major >= 9 )); then
+  if (( pnpm_major >= 10 )); then
     ok "pnpm v${pnpm_version}"
   else
-    fail "pnpm v${pnpm_version} found — v9+ required"
+    fail "pnpm v${pnpm_version} found — v10+ required"
     prereqs_ok=false
   fi
 else
@@ -138,7 +138,7 @@ section "Server Configuration"
 
 ask "Gateway API port" "8080" PORT
 ask "UI dev server port" "5173" UI_PORT
-ask "Bind address" "0.0.0.0" HOST
+ask "Bind address" "127.0.0.1" HOST
 ask_choice "Environment" "development" NODE_ENV "development" "production"
 ask "Extra CORS origins (comma-separated, empty = auto)" "" CORS_ORIGINS
 

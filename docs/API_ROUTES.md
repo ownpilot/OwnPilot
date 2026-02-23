@@ -939,7 +939,7 @@ LLM usage cost tracking and budget management. Tracks tokens, costs, latency, an
 **Mount:** `/api/v1/channels`
 **Source:** `packages/gateway/src/routes/channels.ts`
 
-Communication channel management for Telegram, Discord, Slack, and other messaging platforms. Manages channel configurations, message inbox, and webhook endpoints.
+Communication channel management for Telegram. Manages channel configurations, message inbox, and webhook endpoints.
 
 ### Endpoints
 

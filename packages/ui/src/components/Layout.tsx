@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Outlet, NavLink, useLocation } from 'react-router-dom';
 import { useGateway, type ConnectionStatus } from '../hooks/useWebSocket';
 import { useIsMobile } from '../hooks/useMediaQuery';
+import { useAuth } from '../hooks/useAuth';
 import {
   MessageSquare,
   Inbox,
@@ -43,9 +44,11 @@ import {
   X,
   GitBranch,
   Link,
+  LogOut,
 } from './icons';
 import { StatsPanel } from './StatsPanel';
 import { RealtimeBridge, type BadgeCounts } from './RealtimeBridge';
+import { SecurityBanner } from './SecurityBanner';
 import { STORAGE_KEYS } from '../constants/storage-keys';
 
 interface NavItem {
@@ -127,6 +130,7 @@ const navGroups: NavGroup[] = [
     label: 'Settings',
     icon: Settings,
     items: [
+      { to: '/settings/security', icon: Shield, label: 'Security' },
       { to: '/settings/config-center', icon: Globe, label: 'Config Center' },
       { to: '/settings/api-keys', icon: Key, label: 'API Keys' },
       { to: '/settings/providers', icon: Server, label: 'Providers' },
@@ -142,6 +146,7 @@ const navGroups: NavGroup[] = [
 
 // Simple mode shows fewer settings
 const simpleSettingsItems: NavItem[] = [
+  { to: '/settings/security', icon: Shield, label: 'Security' },
   { to: '/settings/api-keys', icon: Key, label: 'API Keys' },
   { to: '/settings/ai-models', icon: Cpu, label: 'AI Models' },
 ];
@@ -278,6 +283,7 @@ function ConnectionIndicator({ status }: { status: ConnectionStatus }) {
 
 export function Layout() {
   const { status: wsStatus } = useGateway();
+  const { passwordConfigured, logout } = useAuth();
   const isMobile = useIsMobile();
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isStatsPanelCollapsed, setIsStatsPanelCollapsed] = useState(true);
@@ -472,12 +478,23 @@ export function Layout() {
             isAdvanced={isAdvancedMode}
             onToggle={() => setIsAdvancedMode(!isAdvancedMode)}
           />
+          {passwordConfigured && (
+            <button
+              onClick={() => logout()}
+              className="w-full flex items-center gap-2 px-3 py-1.5 rounded-md text-xs text-text-muted dark:text-dark-text-muted hover:bg-error/10 hover:text-error transition-colors"
+              title="Log out"
+            >
+              <LogOut className="w-3.5 h-3.5 shrink-0" />
+              <span className="flex-1 text-left">Log Out</span>
+            </button>
+          )}
           <ConnectionIndicator status={wsStatus} />
         </div>
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col overflow-hidden">
+      <main className="flex-1 flex flex-col overflow-y-auto">
+        <SecurityBanner />
         <Outlet />
       </main>
 

@@ -235,7 +235,7 @@ export function AIBriefingCard() {
         abortControllerRef.current.abort();
       }
     };
-  }, []);
+  }, [fetchBriefing]);
 
   // Close dropdown when clicking outside
   useEffect(() => {

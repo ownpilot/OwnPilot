@@ -12,6 +12,22 @@
   },
   "models": [
     {
+      "id": "Pro/MiniMaxAI/MiniMax-M2.5",
+      "name": "Pro/MiniMaxAI/MiniMax-M2.5",
+      "contextWindow": 192000,
+      "maxOutput": 131000,
+      "inputPrice": 0.3,
+      "outputPrice": 1.22,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-02-13"
+    },
+    {
       "id": "Pro/zai-org/GLM-5",
       "name": "Pro/zai-org/GLM-5",
       "contextWindow": 205000,
@@ -25,7 +41,7 @@
         "reasoning",
         "streaming"
       ],
-      "default": true,
+      "default": false,
       "releaseDate": "2026-02-12"
     },
     {
@@ -44,6 +60,21 @@
       ],
       "default": false,
       "releaseDate": "2026-02-11"
+    },
+    {
+      "id": "PaddlePaddle/PaddleOCR-VL-1.5",
+      "name": "PaddlePaddle/PaddleOCR-VL-1.5",
+      "contextWindow": 16384,
+      "maxOutput": 16384,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-01-29"
     },
     {
       "id": "Pro/moonshotai/Kimi-K2.5",
@@ -215,6 +246,36 @@
       ],
       "default": false,
       "releaseDate": "2025-10-21"
+    },
+    {
+      "id": "deepseek-ai/DeepSeek-OCR",
+      "name": "deepseek-ai/DeepSeek-OCR",
+      "contextWindow": 8192,
+      "maxOutput": 8192,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-10-20"
+    },
+    {
+      "id": "PaddlePaddle/PaddleOCR-VL",
+      "name": "PaddlePaddle/PaddleOCR-VL",
+      "contextWindow": 16384,
+      "maxOutput": 16384,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-10-16"
     },
     {
       "id": "Qwen/Qwen3-VL-8B-Instruct",

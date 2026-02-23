@@ -30,6 +30,11 @@ function apiKeyMatches(candidate: string, validKeys: string[]): boolean {
  */
 export function createAuthMiddleware(config: AuthConfig) {
   return createMiddleware(async (c, next) => {
+    // Skip auth if already authenticated via UI session
+    if (c.get('sessionAuthenticated')) {
+      return next();
+    }
+
     // Skip auth if type is 'none'
     if (config.type === 'none') {
       return next();

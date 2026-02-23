@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # PostgreSQL Database
   postgres:
@@ -42,9 +40,9 @@ services:
       - PORT=8080
       - HOST=0.0.0.0
       - OWNPILOT_DATA_DIR=/app/data
-      # Database
+      # Database (always connects to the postgres service inside Docker network)
       - DATABASE_URL=${DATABASE_URL:-}
-      - POSTGRES_HOST=${POSTGRES_HOST:-postgres}
+      - POSTGRES_HOST=postgres
       - POSTGRES_PORT=5432
       - POSTGRES_USER=${POSTGRES_USER:-ownpilot}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-ownpilot_secret}

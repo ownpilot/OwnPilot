@@ -330,7 +330,7 @@ async function main() {
       throw new Error('API not responding');
     }
     console.log('API is reachable\n');
-  } catch (error) {
+  } catch {
     console.error('ERROR: Cannot reach API at', API_BASE);
     console.error('Make sure the server is running: pnpm dev\n');
     process.exit(1);

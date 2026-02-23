@@ -6,7 +6,7 @@
  * without blocking memory creation.
  */
 
-import { getServiceRegistry, Services } from '@ownpilot/core';
+import { getServiceRegistry, getEventSystem, Services } from '@ownpilot/core';
 import { getLog } from './log.js';
 import { createMemoriesRepository } from '../db/repositories/memories.js';
 import {
@@ -48,7 +48,7 @@ export class EmbeddingQueue {
   }
 
   /**
-   * Start the background worker.
+   * Start the background worker and subscribe to memory events.
    */
   start(): void {
     if (this.running) return;
@@ -58,6 +58,20 @@ export class EmbeddingQueue {
         log.error('Queue processing error', String(err));
       });
     }, EMBEDDING_QUEUE_INTERVAL_MS);
+
+    // Subscribe to memory events for automatic embedding generation
+    const eventSystem = getEventSystem();
+    eventSystem.on('memory.created', (event) => {
+      if (event.data.needsEmbedding) {
+        this.enqueue(event.data.memoryId, event.data.userId, event.data.content);
+      }
+    });
+    eventSystem.on('memory.updated', (event) => {
+      if (event.data.needsEmbedding && event.data.content) {
+        this.enqueue(event.data.memoryId, event.data.userId, event.data.content);
+      }
+    });
+
     log.info('Embedding queue started');
   }
 

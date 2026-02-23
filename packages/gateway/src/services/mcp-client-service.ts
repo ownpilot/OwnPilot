@@ -11,11 +11,12 @@ import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
 import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
-import type {
-  ToolDefinition,
-  ToolExecutionResult,
-  ToolExecutor,
-  IMcpClientService,
+import {
+  getEventSystem,
+  type ToolDefinition,
+  type ToolExecutionResult,
+  type ToolExecutor,
+  type IMcpClientService,
 } from '@ownpilot/core';
 import { getMcpServersRepo, type McpServerRecord } from '../db/repositories/mcp-servers.js';
 import { getSharedToolRegistry } from './tool-executor.js';
@@ -92,6 +93,14 @@ class McpClientService implements IMcpClientService {
 
       // Update DB status
       await repo.updateStatus(server.id, 'connected', undefined, mcpTools.length);
+
+      // Emit connection event for observability
+      getEventSystem().emit('mcp.server.connected', 'mcp-client', {
+        serverName: server.name,
+        toolCount: mcpTools.length,
+        tools: mcpTools.map((t) => ({ name: t.name, description: t.description })),
+      });
+
       log.info(`Connected to MCP server "${server.displayName}" — ${mcpTools.length} tools`);
 
       return mcpTools;
@@ -130,6 +139,11 @@ class McpClientService implements IMcpClientService {
     }
 
     this.connections.delete(serverName);
+
+    // Emit disconnection event for observability
+    getEventSystem().emit('mcp.server.disconnected', 'mcp-client', {
+      serverName,
+    });
 
     // Update DB status
     const repo = getMcpServersRepo();

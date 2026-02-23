@@ -12,6 +12,23 @@
   },
   "models": [
     {
+      "id": "Qwen/Qwen3.5-397B-A17B",
+      "name": "Qwen3.5 397B A17B",
+      "contextWindow": 262144,
+      "maxOutput": 130000,
+      "inputPrice": 0.6,
+      "outputPrice": 3.6,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-02-16"
+    },
+    {
       "id": "MiniMaxAI/MiniMax-M2.5",
       "name": "MiniMax-M2.5",
       "contextWindow": 204800,
@@ -24,7 +41,7 @@
         "reasoning",
         "streaming"
       ],
-      "default": true,
+      "default": false,
       "releaseDate": "2026-02-12"
     },
     {

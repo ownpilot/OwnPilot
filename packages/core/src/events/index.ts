@@ -75,6 +75,15 @@ export type {
   GatewayWorkspaceDeletedData,
   GatewaySystemNotificationData,
   GatewaySystemStatusData,
+  MemoryCreatedData,
+  MemoryUpdatedData,
+  MemoryDeletedData,
+  ExtensionInstalledData,
+  ExtensionUninstalledData,
+  ExtensionEnabledData,
+  ExtensionDisabledData,
+  McpServerConnectedData,
+  McpServerDisconnectedData,
 } from './event-map.js';
 
 // ============================================================================

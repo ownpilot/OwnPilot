@@ -136,7 +136,7 @@ function Initialize-Environment {
 
     # Set defaults
     $env:PORT = $Port
-    $env:HOST = "0.0.0.0"
+    if (-not $env:HOST) { $env:HOST = "127.0.0.1" }
     $env:NODE_ENV = if ($Mode -eq 'prod') { "production" } else { "development" }
 }
 
@@ -193,7 +193,7 @@ function Start-DevMode {
         $uiJob = Start-Job -ScriptBlock {
             param($dir, $port)
             Set-Location $dir
-            $env:VITE_PORT = $port
+            $env:UI_PORT = $port
             pnpm --filter @ownpilot/ui dev
         } -ArgumentList $ScriptDir, $UIPort
     }
@@ -239,9 +239,9 @@ function Start-DockerMode {
     Set-Location $ScriptDir
 
     if ($NoUI) {
-        docker-compose up --build gateway
+        docker compose up --build gateway
     } else {
-        docker-compose --profile ui up --build
+        docker compose --profile postgres up --build
     }
 }
 

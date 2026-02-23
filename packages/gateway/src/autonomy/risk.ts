@@ -239,7 +239,13 @@ export function assessRisk(
 
   // Calculate risk score (0-100)
   const factorScore = totalWeight > 0 ? (presentWeight / totalWeight) * 100 : 0;
-  const score = Math.min(100, Math.round((baseRisk + factorScore) / 2));
+  let score = Math.min(100, Math.round((baseRisk + factorScore) / 2));
+
+  // Compound risk detection: when 3+ high-severity factors combine, floor score at 75
+  const highWeightFactors = factors.filter((f) => f.present && f.weight >= 0.7);
+  if (highWeightFactors.length >= 3) {
+    score = Math.max(score, 75);
+  }
 
   // Determine risk level
   const level = scoreToLevel(score);

@@ -121,6 +121,12 @@ export class ApprovalManager extends EventEmitter {
     // Assess risk
     const risk = assessRisk(category, actionType, params, context, config);
 
+    // Absolute risk ceiling — NEVER auto-approve score >= 95
+    // Even FULL autonomy (level 4) cannot bypass this
+    if (risk.score >= 95) {
+      risk.requiresApproval = true;
+    }
+
     // Check if action needs approval
     if (!risk.requiresApproval) {
       // Auto-approve and log

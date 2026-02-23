@@ -26,7 +26,7 @@
         "streaming"
       ],
       "default": true,
-      "releaseDate": "2026-02"
+      "releaseDate": "2026-02-16"
     },
     {
       "id": "qwen3.5-plus",
@@ -43,7 +43,7 @@
         "streaming"
       ],
       "default": false,
-      "releaseDate": "2026-02"
+      "releaseDate": "2026-02-16"
     },
     {
       "id": "qwen3-vl-plus",

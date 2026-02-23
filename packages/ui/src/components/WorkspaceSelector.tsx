@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { HardDrive, Plus, Trash2, Download, Folder, FolderOpen, RefreshCw } from './icons';
 import { workspacesApi, apiClient } from '../api';
 import { formatBytes } from '../utils/formatters';
+import { STORAGE_KEYS } from '../constants/storage-keys';
 import type { WorkspaceSelectorInfo } from '../api';
 
 interface WorkspaceSelectorProps {
@@ -74,8 +75,26 @@ export function WorkspaceSelector({
   };
 
   const handleDownloadWorkspace = async (id: string) => {
-    // Trigger download via API
-    window.open(`/api/v1/workspaces/${id}/download`, '_blank');
+    try {
+      const headers: Record<string, string> = {};
+      try {
+        const t = localStorage.getItem(STORAGE_KEYS.SESSION_TOKEN);
+        if (t) headers['X-Session-Token'] = t;
+      } catch { /* */ }
+      const response = await fetch(`/api/v1/workspaces/${id}/download`, { headers });
+      if (!response.ok) throw new Error('Download failed');
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `workspace-${id}.zip`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch {
+      // API client handles error reporting
+    }
   };
 
   const selectedWorkspace = workspaces.find((w) => w.id === selectedWorkspaceId);

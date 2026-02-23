@@ -32,6 +32,7 @@ import type { IWorkflowService } from './workflow-service.js';
 import type { IMcpClientService } from './mcp-client-service.js';
 import type { IExtensionService } from './extension-service.js';
 import type { IEmbeddingService } from './embedding-service.js';
+import type { IHeartbeatService } from './heartbeat-service.js';
 
 /**
  * All service tokens.
@@ -99,4 +100,7 @@ export const Services = {
 
   /** Embedding generation for semantic search */
   Embedding: new ServiceToken<IEmbeddingService>('embedding'),
+
+  /** Heartbeat management (NL-to-cron periodic tasks) */
+  Heartbeat: new ServiceToken<IHeartbeatService>('heartbeat'),
 } as const;

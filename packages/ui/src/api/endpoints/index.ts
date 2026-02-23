@@ -2,6 +2,8 @@
  * API Endpoints — barrel export
  */
 
+export { authApi } from './auth';
+export type { AuthStatus, LoginResponse, PasswordResponse, SessionsResponse } from './auth';
 export { providersApi } from './providers';
 export type { ProvidersListData, ProviderConfigData } from './providers';
 export { modelsApi } from './models';
