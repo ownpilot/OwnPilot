@@ -11,7 +11,7 @@ RUN corepack enable && corepack prepare pnpm@10.29.3 --activate
 
 WORKDIR /app
 
-# Copy package files
+# Copy package files (layer cached when only source changes)
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY packages/core/package.json ./packages/core/
 COPY packages/gateway/package.json ./packages/gateway/
@@ -22,7 +22,7 @@ COPY packages/ui/package.json ./packages/ui/
 # Install dependencies
 RUN pnpm install --frozen-lockfile
 
-# Copy source code
+# Copy source code and build config
 COPY tsconfig.base.json turbo.json ./
 COPY packages/core/ ./packages/core/
 COPY packages/gateway/ ./packages/gateway/
@@ -30,8 +30,12 @@ COPY packages/channels/ ./packages/channels/
 COPY packages/cli/ ./packages/cli/
 COPY packages/ui/ ./packages/ui/
 
-# Build core first to ensure declarations exist, then build all packages
-RUN pnpm --filter @ownpilot/core build && pnpm build
+# Re-run install to rebuild workspace symlinks after source overlay
+# (Docker overlay layers can shadow pnpm-created links from earlier layers)
+RUN pnpm install --frozen-lockfile
+
+# Build all packages (Turbo builds dependencies in order, including UI)
+RUN pnpm build
 
 # ============================================
 # Stage 2: Production
