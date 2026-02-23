@@ -30,10 +30,6 @@ COPY packages/channels/ ./packages/channels/
 COPY packages/cli/ ./packages/cli/
 COPY packages/ui/ ./packages/ui/
 
-# Re-run install to rebuild workspace symlinks after source overlay
-# (Docker overlay layers can shadow pnpm-created links from earlier layers)
-RUN pnpm install --frozen-lockfile
-
 # Build all packages (Turbo builds dependencies in order, including UI)
 RUN pnpm build
 
