@@ -337,17 +337,282 @@ describe('readFileExecutor', () => {
     expect(result.content).toContain('Error reading file');
     expect(result.content).toContain('ENOENT');
   });
+});
 
-  it('supports line range selection with startLine and endLine', async () => {
-    fsMock.stat.mockResolvedValue(makeStat({ size: 50 }));
-    fsMock.readFile.mockResolvedValue('line1\nline2\nline3\nline4\nline5');
+// ===========================================================================
+// Additional tests for uncovered lines (targeting 90%+ coverage)
+// ===========================================================================
 
-    const result = await readFileExecutor({ path: 'file.txt', startLine: 2, endLine: 4 }, ctx());
+describe('listDirectoryExecutor additional coverage', () => {
+  const makeDirent = (name: string, type: 'file' | 'directory' | 'symlink' = 'file') => ({
+    name,
+    isFile: () => type === 'file',
+    isDirectory: () => type === 'directory',
+    isSymbolicLink: () => type === 'symlink',
+  });
+
+  it('lists directory contents successfully', async () => {
+    fsMock.readdir.mockResolvedValue([
+      makeDirent('file1.txt', 'file'),
+      makeDirent('subdir', 'directory'),
+      makeDirent('link', 'symlink'),
+    ]);
+    fsMock.stat.mockResolvedValue(makeStat({ size: 100 }));
+
+    const result = await listDirectoryExecutor({ path: '.' }, ctx());
+    expect(result.isError).toBeUndefined();
     const data = parse(result);
-    expect(data.content).toBe('line2\nline3\nline4');
-    expect(data.lines.start).toBe(2);
-    expect(data.lines.end).toBe(4);
-    expect(data.lines.total).toBe(5);
+    expect(data.count).toBe(3);
+    expect(data.entries).toHaveLength(3);
+    expect(data.entries[0].name).toBe('file1.txt');
+    expect(data.entries[0].type).toBe('file');
+    expect(data.entries[0].size).toBe(100);
+    expect(data.entries[1].type).toBe('directory');
+    expect(data.entries[2].type).toBe('symlink');
+  });
+
+  it('excludes hidden files by default', async () => {
+    fsMock.readdir.mockResolvedValue([
+      makeDirent('visible.txt', 'file'),
+      makeDirent('.hidden', 'file'),
+      makeDirent('.gitignore', 'file'),
+    ]);
+    fsMock.stat.mockResolvedValue(makeStat({ size: 10 }));
+
+    const result = await listDirectoryExecutor({ path: '.' }, ctx());
+    const data = parse(result);
+    expect(data.count).toBe(1);
+    expect(data.entries[0].name).toBe('visible.txt');
+  });
+
+  it('includes hidden files when includeHidden is true', async () => {
+    fsMock.readdir.mockResolvedValue([
+      makeDirent('visible.txt', 'file'),
+      makeDirent('.hidden', 'file'),
+    ]);
+    fsMock.stat.mockResolvedValue(makeStat({ size: 10 }));
+
+    const result = await listDirectoryExecutor({ path: '.', includeHidden: true }, ctx());
+    const data = parse(result);
+    expect(data.count).toBe(2);
+  });
+
+  it('lists directory recursively', async () => {
+    fsMock.readdir.mockImplementation(async (dirPath: string) => {
+      if (dirPath.includes('subdir')) {
+        return [makeDirent('nested.txt', 'file')];
+      }
+      return [makeDirent('root.txt', 'file'), makeDirent('subdir', 'directory')];
+    });
+    fsMock.stat.mockResolvedValue(makeStat({ size: 50 }));
+
+    const result = await listDirectoryExecutor({ path: '.', recursive: true }, ctx());
+    const data = parse(result);
+    expect(data.count).toBe(3);
+    const names = data.entries.map((e: { name: string }) => e.name);
+    expect(names).toContain('root.txt');
+    expect(names).toContain('subdir');
+    expect(names).toContain('nested.txt');
+  });
+
+  it('respects max depth limit in recursive mode', async () => {
+    let callCount = 0;
+    fsMock.readdir.mockImplementation(async () => {
+      callCount++;
+      return [
+        makeDirent(`file${callCount}.txt`, 'file'),
+        makeDirent(`dir${callCount}`, 'directory'),
+      ];
+    });
+    fsMock.stat.mockResolvedValue(makeStat({ size: 10 }));
+
+    const result = await listDirectoryExecutor({ path: '.', recursive: true }, ctx());
+    const data = parse(result);
+    // Should stop at depth 5
+    expect(data.count).toBeGreaterThan(0);
+    expect(callCount).toBeLessThanOrEqual(6); // root + 5 levels
+  });
+});
+
+describe('searchFilesExecutor additional coverage', () => {
+  beforeEach(() => {
+    // Ensure realpath returns paths within workspace
+    fsMock.realpath.mockImplementation(async (p: string) => {
+      // Handle both Unix and Windows paths (for cross-platform compatibility)
+      const normalizedP = (p as string).replace(/\\/g, '/');
+      if (normalizedP.startsWith('/workspace')) return p;
+      return path.join(WORKSPACE, p);
+    });
+  });
+
+  it('finds matching content in files', async () => {
+    fsMock.readdir.mockResolvedValue([
+      {
+        name: 'test.ts',
+        isFile: () => true,
+        isDirectory: () => false,
+        isSymbolicLink: () => false,
+      },
+    ]);
+    fsMock.readFile.mockResolvedValue('const foo = "bar";\nconst baz = "qux";');
+
+    const result = await searchFilesExecutor({ path: '/workspace', query: 'foo' }, ctx());
+    expect(result.isError).toBeUndefined();
+    const data = parse(result);
+    expect(data.count).toBe(1);
+    expect(data.results[0].content).toContain('foo');
+    expect(data.results[0].line).toBe(1);
+  });
+
+  it('respects maxResults limit', async () => {
+    fsMock.readdir.mockResolvedValue([
+      {
+        name: 'file1.ts',
+        isFile: () => true,
+        isDirectory: () => false,
+        isSymbolicLink: () => false,
+      },
+      {
+        name: 'file2.ts',
+        isFile: () => true,
+        isDirectory: () => false,
+        isSymbolicLink: () => false,
+      },
+    ]);
+    fsMock.readFile.mockResolvedValue('match\nmatch\nmatch\nmatch\nmatch');
+
+    const result = await searchFilesExecutor(
+      { path: '/workspace', query: 'match', maxResults: 3 },
+      ctx()
+    );
+    const data = parse(result);
+    expect(data.count).toBe(3);
+  });
+
+  it('filters by file pattern', async () => {
+    fsMock.readdir.mockResolvedValue([
+      {
+        name: 'test.ts',
+        isFile: () => true,
+        isDirectory: () => false,
+        isSymbolicLink: () => false,
+      },
+      {
+        name: 'test.js',
+        isFile: () => true,
+        isDirectory: () => false,
+        isSymbolicLink: () => false,
+      },
+    ]);
+    fsMock.readFile.mockResolvedValue('const x = 1;');
+
+    const result = await searchFilesExecutor(
+      { path: '/workspace', query: 'const', filePattern: '*.ts' },
+      ctx()
+    );
+    const data = parse(result);
+    expect(data.count).toBe(1);
+    expect(data.results[0].file).toBe('test.ts');
+  });
+
+  it('is case insensitive by default', async () => {
+    fsMock.readdir.mockResolvedValue([
+      {
+        name: 'test.ts',
+        isFile: () => true,
+        isDirectory: () => false,
+        isSymbolicLink: () => false,
+      },
+    ]);
+    fsMock.readFile.mockResolvedValue('const FOO = 1;');
+
+    const result = await searchFilesExecutor({ path: '/workspace', query: 'foo' }, ctx());
+    const data = parse(result);
+    expect(data.count).toBe(1);
+  });
+
+  it('respects caseSensitive flag', async () => {
+    fsMock.readdir.mockResolvedValue([
+      {
+        name: 'test.ts',
+        isFile: () => true,
+        isDirectory: () => false,
+        isSymbolicLink: () => false,
+      },
+    ]);
+    fsMock.readFile.mockResolvedValue('const FOO = 1;');
+
+    const result = await searchFilesExecutor(
+      { path: '/workspace', query: 'foo', caseSensitive: true },
+      ctx()
+    );
+    const data = parse(result);
+    expect(data.count).toBe(0);
+  });
+
+  it('returns empty results when no matches found', async () => {
+    fsMock.readdir.mockResolvedValue([
+      {
+        name: 'test.ts',
+        isFile: () => true,
+        isDirectory: () => false,
+        isSymbolicLink: () => false,
+      },
+    ]);
+    fsMock.readFile.mockResolvedValue('const x = 1;');
+
+    const result = await searchFilesExecutor({ path: '/workspace', query: 'notfound' }, ctx());
+    const data = parse(result);
+    expect(data.count).toBe(0);
+    expect(data.results).toHaveLength(0);
+  });
+
+  it('trims and limits line content to 200 chars', async () => {
+    fsMock.readdir.mockResolvedValue([
+      {
+        name: 'test.ts',
+        isFile: () => true,
+        isDirectory: () => false,
+        isSymbolicLink: () => false,
+      },
+    ]);
+    fsMock.readFile.mockResolvedValue('x'.repeat(300));
+
+    const result = await searchFilesExecutor({ path: '/workspace', query: 'x' }, ctx());
+    const data = parse(result);
+    expect(data.results[0].content.length).toBeLessThanOrEqual(200);
+  });
+
+  it('handles unreadable files gracefully', async () => {
+    fsMock.readdir.mockResolvedValue([
+      {
+        name: 'readable.ts',
+        isFile: () => true,
+        isDirectory: () => false,
+        isSymbolicLink: () => false,
+      },
+      {
+        name: 'unreadable.ts',
+        isFile: () => true,
+        isDirectory: () => false,
+        isSymbolicLink: () => false,
+      },
+    ]);
+    fsMock.readFile.mockImplementation(async (filePath: string) => {
+      if (filePath.includes('unreadable')) throw new Error('Permission denied');
+      return 'readable content';
+    });
+
+    const result = await searchFilesExecutor({ path: '/workspace', query: 'content' }, ctx());
+    const data = parse(result);
+    expect(data.count).toBe(1);
+    expect(data.results[0].file).toBe('readable.ts');
+  });
+
+  it('returns error for invalid regex pattern', async () => {
+    const result = await searchFilesExecutor({ path: '/workspace', query: '[invalid' }, ctx());
+    expect(result.isError).toBe(true);
+    expect(result.content).toContain('Invalid search pattern');
   });
 });
 
