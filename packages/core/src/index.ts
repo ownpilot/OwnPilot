@@ -72,4 +72,4 @@ export * from './security/code-analyzer.js';
 export * from './channels/index.js';
 
 // Version
-export const VERSION = '0.1.0';
+export const VERSION = '0.1.1';
