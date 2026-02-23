@@ -99,6 +99,29 @@ describe('ConversationMemoryStore', () => {
       const s = new ConversationMemoryStore('u');
       expect(s.getRetentionPolicy()).toEqual(DEFAULT_RETENTION_POLICY);
     });
+
+    it('sets retention policy after creation', () => {
+      const s = new ConversationMemoryStore('u');
+      const newPolicy = {
+        maxMemories: 200,
+        lowImportanceMaxAgeDays: 30,
+        mediumImportanceMaxAgeDays: 90,
+        autoArchiveDays: 15,
+        deleteArchivedAfterDays: 365,
+        exemptCategories: ['fact' as const],
+      };
+      s.setRetentionPolicy(newPolicy);
+      expect(s.getRetentionPolicy().maxMemories).toBe(200);
+      expect(s.getRetentionPolicy().autoArchiveDays).toBe(15);
+    });
+
+    it('getRetentionPolicy returns a copy of the policy', () => {
+      const s = new ConversationMemoryStore('u');
+      const policy1 = s.getRetentionPolicy();
+      const policy2 = s.getRetentionPolicy();
+      expect(policy1).toEqual(policy2);
+      expect(policy1).not.toBe(policy2); // Different object reference
+    });
   });
 
   describe('initialize()', () => {
