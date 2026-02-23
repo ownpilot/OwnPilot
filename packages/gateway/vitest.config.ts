@@ -8,7 +8,17 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
-      exclude: ['**/*.test.ts', 'dist/**'],
+      exclude: [
+        '**/*.test.ts',
+        'dist/**',
+        '**/types.ts',
+        '**/index.ts',
+        '**/*.d.ts',
+        '**/vitest.config.ts',
+        'scripts/**',
+        '**/seed-database.ts',
+        '**/plans-seed.ts',
+      ],
     },
     typecheck: {
       enabled: true,
