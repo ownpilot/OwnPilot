@@ -8,7 +8,6 @@
 import { createSimpleAgent } from '@ownpilot/core';
 import { createTelegramBot, type TelegramConfig } from '@ownpilot/channels';
 import {
-  initializeAdapter,
   loadApiKeysToEnvironment,
   getDefaultProvider,
   getApiKey,
@@ -27,14 +26,6 @@ interface BotOptions {
 const TELEGRAM_TOKEN_KEY = 'telegram_bot_token';
 
 export async function startBot(options: BotOptions): Promise<void> {
-  // Initialize database first
-  try {
-    await initializeAdapter();
-  } catch (err) {
-    console.error('❌ Database initialization failed:', err instanceof Error ? err.message : err);
-    process.exit(1);
-  }
-
   // Load saved API keys from database into environment (for SDKs)
   await loadApiKeysToEnvironment();
 

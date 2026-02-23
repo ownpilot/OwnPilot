@@ -9,7 +9,6 @@ import { serve } from '@hono/node-server';
 import {
   createApp,
   type GatewayConfig,
-  initializeAdapter,
   loadApiKeysToEnvironment,
   getDefaultProvider,
   isDemoModeFromSettings,
@@ -22,14 +21,6 @@ interface StartOptions {
 
 export async function startAll(options: StartOptions): Promise<void> {
   console.log('\n🚀 Starting OwnPilot...\n');
-
-  // Initialize PostgreSQL database first
-  try {
-    await initializeAdapter();
-  } catch (err) {
-    console.error('❌ Database initialization failed:', err instanceof Error ? err.message : err);
-    process.exit(1);
-  }
 
   // Load saved API keys from database into environment (for SDKs)
   await loadApiKeysToEnvironment();

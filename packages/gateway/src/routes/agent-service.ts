@@ -764,7 +764,7 @@ export async function isDemoMode(): Promise<boolean> {
 
   // Check local providers (Ollama, LM Studio, etc.)
   const localProviders = await localProvidersRepo.listProviders();
-  if (localProviders.some((p: { isEnabled: boolean }) => p.isEnabled)) return false;
+  if (localProviders.some((p) => p.isEnabled)) return false;
 
   return true;
 }

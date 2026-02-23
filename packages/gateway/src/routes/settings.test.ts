@@ -142,6 +142,18 @@ describe('Settings Routes', () => {
       expect(json.data.availableProviders).toHaveLength(2);
     });
 
+    it('returns demoMode false when only local provider is enabled', async () => {
+      mockSettingsRepo.getByPrefix.mockResolvedValue([]);
+      mockLocalProvidersRepo.listProviders.mockResolvedValue([
+        { id: 'ollama', isEnabled: true },
+      ]);
+      mockSettingsRepo.get.mockResolvedValue(null);
+
+      const res = await app.request('/settings');
+      const body = await res.json();
+      expect(body.data.demoMode).toBe(false);
+    });
+
     it('returns demoMode true when no providers configured', async () => {
       mockSettingsRepo.getByPrefix.mockResolvedValue([]);
       mockLocalProvidersRepo.listProviders.mockResolvedValue([]);

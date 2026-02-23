@@ -9,7 +9,6 @@ import {
   createApp,
   type GatewayConfig,
   initializeScheduler,
-  initializeAdapter,
   loadApiKeysToEnvironment,
   settingsRepo,
   initializePlugins,
@@ -31,14 +30,6 @@ interface ServerOptions {
 }
 
 export async function startServer(options: ServerOptions): Promise<void> {
-  // Initialize PostgreSQL database first
-  try {
-    await initializeAdapter();
-  } catch (err) {
-    console.error('❌ Database initialization failed:', err instanceof Error ? err.message : err);
-    process.exit(1);
-  }
-
   // Load saved API keys from database into environment (for SDKs)
   await loadApiKeysToEnvironment();
 

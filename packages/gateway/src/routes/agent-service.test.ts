@@ -33,8 +33,16 @@ const mockAgentsRepo = {
   create: vi.fn(),
 };
 
+const mockLocalProvidersRepo = {
+  listProviders: vi.fn(async () => []),
+};
+
 vi.mock('../db/repositories/index.js', () => ({
   agentsRepo: mockAgentsRepo,
+}));
+
+vi.mock('../db/repositories/local-providers.js', () => ({
+  localProvidersRepo: mockLocalProvidersRepo,
 }));
 
 const mockResolveProviderAndModel = vi.fn(async (p: string, m: string) => ({
@@ -851,6 +859,24 @@ describe('isDemoMode', () => {
     // Verify the function checks the right set of providers
     // If no known providers match, it should be demo mode
     mockGetConfiguredProviderIds.mockResolvedValue(new Set(['some-random-provider']));
+    const result = await mod.isDemoMode();
+    expect(result).toBe(true);
+  });
+
+  it('returns false when local provider is enabled', async () => {
+    mockGetConfiguredProviderIds.mockResolvedValue(new Set<string>());
+    mockLocalProvidersRepo.listProviders.mockResolvedValue([
+      { id: 'ollama', isEnabled: true },
+    ]);
+    const result = await mod.isDemoMode();
+    expect(result).toBe(false);
+  });
+
+  it('returns true when local provider exists but is disabled', async () => {
+    mockGetConfiguredProviderIds.mockResolvedValue(new Set<string>());
+    mockLocalProvidersRepo.listProviders.mockResolvedValue([
+      { id: 'ollama', isEnabled: false },
+    ]);
     const result = await mod.isDemoMode();
     expect(result).toBe(true);
   });
