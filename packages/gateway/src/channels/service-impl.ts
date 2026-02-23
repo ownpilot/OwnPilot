@@ -521,11 +521,18 @@ export class ChannelServiceImpl implements IChannelService {
         );
         if (existing) return existing;
 
-        // Create a new conversation for this channel session
+        // Create a new conversation in the agent's in-memory ConversationMemory
+        // so that loadConversation() can find it later for context continuity
+        const { getOrCreateDefaultAgent } = await import('../routes/agents.js');
+        const agent = await getOrCreateDefaultAgent();
+        const systemPrompt = agent.getConversation().systemPrompt;
+        const conv = agent.getMemory().create(systemPrompt);
+        const conversationId = conv.id;
+
+        // Also persist to DB for audit/history
         const { createConversationsRepository } =
           await import('../db/repositories/conversations.js');
         const conversationsRepo = createConversationsRepository();
-        const conversationId = randomUUID();
         await conversationsRepo.create({
           id: conversationId,
           agentName: 'default',
@@ -602,7 +609,7 @@ export class ChannelServiceImpl implements IChannelService {
         responseText = await this.processViaBus(
           bus,
           message,
-          { conversationId: session.conversationId, context: session.context },
+          { sessionId: session.id, conversationId: session.conversationId, context: session.context },
           channelUser,
           progress ?? undefined
         );
@@ -705,7 +712,7 @@ export class ChannelServiceImpl implements IChannelService {
   private async processViaBus(
     bus: IMessageBus,
     message: ChannelIncomingMessage,
-    session: { conversationId: string | null; context?: Record<string, unknown> },
+    session: { sessionId: string; conversationId: string | null; context?: Record<string, unknown> },
     channelUser: { ownpilotUserId: string },
     progress?: { update(text: string): void }
   ): Promise<string> {
@@ -717,6 +724,20 @@ export class ChannelServiceImpl implements IChannelService {
     }
 
     const agent = await getOrCreateDefaultAgent();
+
+    // Load session conversation for context continuity
+    let activeConversationId = session.conversationId;
+    if (activeConversationId) {
+      if (!agent.getMemory().has(activeConversationId)) {
+        // Conversation lost (server restart, agent cache eviction) — create a new one
+        const systemPrompt = agent.getConversation().systemPrompt;
+        const newConv = agent.getMemory().create(systemPrompt);
+        activeConversationId = newConv.id;
+        // Update session in DB to point to new conversation
+        await this.sessionsRepo.linkConversation(session.sessionId, activeConversationId);
+      }
+      agent.loadConversation(activeConversationId);
+    }
 
     // Wire tool approval via Telegram inline keyboard (if channel supports it)
     const api = this.getChannel(message.channelPluginId);
@@ -752,7 +773,7 @@ export class ChannelServiceImpl implements IChannelService {
     // Build NormalizedMessage from normalized incoming
     const normalized: NormalizedMessage = {
       id: message.id,
-      sessionId: session.conversationId ?? randomUUID(),
+      sessionId: activeConversationId ?? randomUUID(),
       role: 'user',
       content: incoming.text,
       attachments: incoming.attachments,
@@ -763,7 +784,7 @@ export class ChannelServiceImpl implements IChannelService {
         platformMessageId: message.metadata?.platformMessageId?.toString(),
         provider: resolved.provider ?? undefined,
         model: resolved.model ?? undefined,
-        conversationId: session.conversationId ?? undefined,
+        conversationId: activeConversationId ?? undefined,
         agentId: 'default',
       },
       timestamp: new Date(),
@@ -790,13 +811,13 @@ export class ChannelServiceImpl implements IChannelService {
           agentId: 'default',
           provider: resolved.provider ?? 'unknown',
           model: resolved.model ?? 'unknown',
-          conversationId: session.conversationId,
+          conversationId: activeConversationId,
           directToolMode: true,
         },
       });
 
       // Normalize outgoing response via channel normalizer
-      // (strips internal tags, converts markdown, splits if needed)
+      // (strips internal tags, decodes entities, splits if needed — markdown→HTML is done by sender)
       const { extractMemoriesFromResponse } = await import('../utils/memory-extraction.js');
       const { content: stripped } = extractMemoriesFromResponse(result.response.content);
       const parts = channelNormalizer.normalizeOutgoing(stripped);
