@@ -183,6 +183,33 @@ vi.mock('../services/config-tools.js', () => ({
   executeConfigTool: vi.fn(),
 }));
 
+vi.mock('./agent-service.js', () => ({
+  getOrCreateAgentInstance: vi.fn(async () => ({
+    reset: vi.fn(() => ({ id: 'new-conversation-id' })),
+    getTools: vi.fn(() => []),
+    getMemory: vi.fn(() => ({
+      get: vi.fn(),
+      delete: vi.fn(() => true),
+    })),
+    getConversation: vi.fn(() => ({ id: 'conv-1', systemPrompt: 'test' })),
+    loadConversation: vi.fn(() => true),
+    setWorkspaceDir: vi.fn(),
+    updateSystemPrompt: vi.fn(),
+    setExecutionPermissions: vi.fn(),
+    setRequestApproval: vi.fn(),
+    setMaxToolCalls: vi.fn(),
+    setAdditionalTools: vi.fn(),
+    clearAdditionalTools: vi.fn(),
+    getAllToolDefinitions: vi.fn(() => []),
+    chat: vi.fn(async () => ({
+      response: 'AI response',
+      toolCalls: [],
+      usage: { promptTokens: 10, completionTokens: 20, totalTokens: 30 },
+      finishReason: 'stop',
+    })),
+  })),
+}));
+
 vi.mock('../tracing/index.js', () => ({
   traceToolCallStart: vi.fn(() => Date.now()),
   traceToolCallEnd: vi.fn(),

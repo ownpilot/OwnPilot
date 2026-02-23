@@ -5,7 +5,11 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { validateManifest } from './extension-types.js';
+import {
+  validateManifest,
+  normalizeSkillName,
+  validateAgentSkillsFrontmatter,
+} from './extension-types.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -165,5 +169,88 @@ describe('validateManifest', () => {
     });
     expect(result.valid).toBe(false);
     expect(result.errors.length).toBeGreaterThanOrEqual(3);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// normalizeSkillName
+// ---------------------------------------------------------------------------
+
+describe('normalizeSkillName', () => {
+  it('converts spaces to hyphens', () => {
+    expect(normalizeSkillName('Suno AI Music Architect')).toBe('suno-ai-music-architect');
+  });
+
+  it('converts to lowercase', () => {
+    expect(normalizeSkillName('My Skill Name')).toBe('my-skill-name');
+  });
+
+  it('removes special characters', () => {
+    expect(normalizeSkillName('Skill@Name#123!')).toBe('skillname123');
+  });
+
+  it('handles underscores like spaces', () => {
+    expect(normalizeSkillName('my_skill_name')).toBe('my-skill-name');
+  });
+
+  it('removes consecutive hyphens', () => {
+    expect(normalizeSkillName('my--skill---name')).toBe('my-skill-name');
+  });
+
+  it('trims hyphens from start and end', () => {
+    expect(normalizeSkillName('-my-skill-name-')).toBe('my-skill-name');
+  });
+
+  it('handles mixed case with spaces and special chars', () => {
+    expect(normalizeSkillName('  My Awesome SKILL!!!  ')).toBe('my-awesome-skill');
+  });
+
+  it('handles empty string', () => {
+    expect(normalizeSkillName('')).toBe('');
+  });
+
+  it('handles string with only special chars', () => {
+    expect(normalizeSkillName('!@#$%')).toBe('');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// validateAgentSkillsFrontmatter
+// ---------------------------------------------------------------------------
+
+describe('validateAgentSkillsFrontmatter', () => {
+  it('accepts valid frontmatter', () => {
+    const result = validateAgentSkillsFrontmatter({
+      name: 'test-skill',
+      description: 'A test skill description',
+    });
+    expect(result.valid).toBe(true);
+    expect(result.errors).toHaveLength(0);
+  });
+
+  it('normalizes invalid name before validation', () => {
+    const fm = {
+      name: 'Suno AI Music Architect',
+      description: 'Creates AI music using Suno',
+    };
+    const result = validateAgentSkillsFrontmatter(fm);
+    expect(result.valid).toBe(true);
+    expect(fm.name).toBe('suno-ai-music-architect');
+  });
+
+  it('rejects missing name', () => {
+    const result = validateAgentSkillsFrontmatter({
+      description: 'A test skill',
+    });
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContain('Missing or invalid "name" (required)');
+  });
+
+  it('rejects missing description', () => {
+    const result = validateAgentSkillsFrontmatter({
+      name: 'test-skill',
+    });
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContain('Missing or invalid "description" (required)');
   });
 });

@@ -244,6 +244,26 @@ export function validateManifest(manifest: unknown): ValidationResult {
 /** AgentSkills.io SKILL.md name pattern: lowercase alphanumeric + hyphens, no consecutive hyphens */
 const AGENTSKILLS_NAME_PATTERN = /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/;
 
+/**
+ * Normalizes a skill name to meet AgentSkills.io format requirements.
+ * Converts "Suno AI Music Architect" to "suno-ai-music-architect"
+ */
+export function normalizeSkillName(name: string): string {
+  return (
+    name
+      // Convert to lowercase
+      .toLowerCase()
+      // Replace spaces and underscores with hyphens
+      .replace(/[\s_]+/g, '-')
+      // Remove invalid characters (keep only alphanumeric and hyphens)
+      .replace(/[^a-z0-9-]/g, '')
+      // Replace consecutive hyphens with single hyphen
+      .replace(/-+/g, '-')
+      // Trim hyphens from start and end
+      .replace(/^-+|-+$/g, '')
+  );
+}
+
 /** Parsed frontmatter from an AgentSkills.io SKILL.md file */
 export interface AgentSkillsFrontmatter {
   name: string;
@@ -262,6 +282,13 @@ export function validateAgentSkillsFrontmatter(fm: unknown): ValidationResult {
   }
 
   const f = fm as Record<string, unknown>;
+
+  // Normalize skill name before validation
+  if (f.name && typeof f.name === 'string') {
+    const normalizedName = normalizeSkillName(f.name);
+    // Store normalized name back
+    f.name = normalizedName;
+  }
 
   if (!f.name || typeof f.name !== 'string') {
     errors.push('Missing or invalid "name" (required)');
