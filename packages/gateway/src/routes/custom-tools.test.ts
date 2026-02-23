@@ -1166,4 +1166,53 @@ describe('Custom Tools Routes', () => {
       });
     });
   });
+
+  // ========================================================================
+  // GET /active/definitions
+  // ========================================================================
+
+  describe('GET /custom-tools/active/definitions', () => {
+    it('returns active tool definitions', async () => {
+      mockRepo.getActiveTools.mockResolvedValueOnce([
+        {
+          ...sampleTool,
+          metadata: { workflowUsable: true },
+        },
+      ]);
+
+      const res = await app.request('/custom-tools/active/definitions');
+
+      expect(res.status).toBe(200);
+      const json = await res.json();
+      expect(json.data.tools).toHaveLength(1);
+      expect(json.data.tools[0]).toHaveProperty('name', 'test_tool');
+      expect(json.data.tools[0]).toHaveProperty('workflowUsable', true);
+    });
+
+    it('returns empty array when no active tools', async () => {
+      mockRepo.getActiveTools.mockResolvedValueOnce([]);
+
+      const res = await app.request('/custom-tools/active/definitions');
+
+      expect(res.status).toBe(200);
+      const json = await res.json();
+      expect(json.data.tools).toHaveLength(0);
+      expect(json.data.count).toBe(0);
+    });
+
+    it('handles tools without metadata', async () => {
+      mockRepo.getActiveTools.mockResolvedValueOnce([
+        {
+          ...sampleTool,
+          metadata: null,
+        },
+      ]);
+
+      const res = await app.request('/custom-tools/active/definitions');
+
+      expect(res.status).toBe(200);
+      const json = await res.json();
+      expect(json.data.tools[0].workflowUsable).toBeUndefined();
+    });
+  });
 });
