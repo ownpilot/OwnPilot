@@ -40,6 +40,19 @@ describe('getPulseSystemPrompt', () => {
     expect(prompt).toContain('create_memory');
     expect(prompt).toContain('skip');
   });
+
+  it('returns base prompt when directives are empty', () => {
+    const base = getPulseSystemPrompt();
+    expect(getPulseSystemPrompt('')).toBe(base);
+    expect(getPulseSystemPrompt('  ')).toBe(base);
+    expect(getPulseSystemPrompt(undefined)).toBe(base);
+  });
+
+  it('appends user directives when provided', () => {
+    const prompt = getPulseSystemPrompt('Only notify for high-urgency items.');
+    expect(prompt).toContain('User Directives');
+    expect(prompt).toContain('Only notify for high-urgency items.');
+  });
 });
 
 describe('buildPulseUserMessage', () => {
@@ -87,6 +100,46 @@ describe('buildPulseUserMessage', () => {
     const msg = buildPulseUserMessage(ctx, []);
     expect(msg).toContain('2 pending approval');
     expect(msg).toContain('3 trigger error');
+  });
+
+  it('includes blocked actions section when provided', () => {
+    const msg = buildPulseUserMessage(makeContext(), [], ['create_memory', 'run_memory_cleanup']);
+    expect(msg).toContain('Blocked Actions');
+    expect(msg).toContain('create_memory');
+    expect(msg).toContain('run_memory_cleanup');
+    expect(msg).toContain('DISABLED');
+  });
+
+  it('omits blocked actions section when list is empty', () => {
+    const msg = buildPulseUserMessage(makeContext(), [], []);
+    expect(msg).not.toContain('Blocked Actions');
+  });
+
+  it('omits blocked actions section when not provided', () => {
+    const msg = buildPulseUserMessage(makeContext(), []);
+    expect(msg).not.toContain('Blocked Actions');
+  });
+
+  it('includes cooled-down actions section when provided', () => {
+    const cooledDown = [
+      { type: 'create_memory', remainingMinutes: 25 },
+      { type: 'run_memory_cleanup', remainingMinutes: 180 },
+    ];
+    const msg = buildPulseUserMessage(makeContext(), [], [], cooledDown);
+    expect(msg).toContain('Actions in Cooldown');
+    expect(msg).toContain('create_memory: available in ~25 min');
+    expect(msg).toContain('run_memory_cleanup: available in ~180 min');
+    expect(msg).toContain('Do NOT use these action types yet.');
+  });
+
+  it('omits cooled-down actions section when list is empty', () => {
+    const msg = buildPulseUserMessage(makeContext(), [], [], []);
+    expect(msg).not.toContain('Actions in Cooldown');
+  });
+
+  it('omits cooled-down actions section when not provided', () => {
+    const msg = buildPulseUserMessage(makeContext(), []);
+    expect(msg).not.toContain('Actions in Cooldown');
   });
 });
 

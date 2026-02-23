@@ -25,6 +25,8 @@ interface AutonomyLogRow {
   report_msg: string | null;
   error: string | null;
   manual: boolean;
+  signal_ids: string | string[];
+  urgency_score: number;
 }
 
 // ============================================================================
@@ -42,8 +44,8 @@ export class AutonomyLogRepository extends BaseRepository {
   async insert(entry: Omit<AutonomyLogEntry, 'id'>): Promise<string> {
     const id = generateId('alog');
     await this.execute(
-      `INSERT INTO autonomy_log (id, user_id, pulsed_at, duration_ms, signals_found, llm_called, actions_count, actions, report_msg, error, manual)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+      `INSERT INTO autonomy_log (id, user_id, pulsed_at, duration_ms, signals_found, llm_called, actions_count, actions, report_msg, error, manual, signal_ids, urgency_score)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
       [
         id,
         this.userId,
@@ -56,6 +58,8 @@ export class AutonomyLogRepository extends BaseRepository {
         entry.reportMsg,
         entry.error,
         entry.manual,
+        JSON.stringify(entry.signalIds ?? []),
+        entry.urgencyScore ?? 0,
       ]
     );
     return id;
@@ -103,6 +107,22 @@ export class AutonomyLogRepository extends BaseRepository {
   }
 
   /**
+   * Get paginated log entries
+   */
+  async getPage(limit: number, offset: number): Promise<{ entries: AutonomyLogEntry[]; total: number }> {
+    const countRow = await this.queryOne<{ count: string }>(
+      'SELECT COUNT(*) as count FROM autonomy_log WHERE user_id = $1',
+      [this.userId]
+    );
+    const total = Number(countRow?.count ?? 0);
+    const rows = await this.query<AutonomyLogRow>(
+      'SELECT * FROM autonomy_log WHERE user_id = $1 ORDER BY pulsed_at DESC LIMIT $2 OFFSET $3',
+      [this.userId, limit, offset]
+    );
+    return { entries: rows.map((r) => this.toEntry(r)), total };
+  }
+
+  /**
    * Delete entries older than the specified number of days
    */
   async cleanup(olderThanDays: number): Promise<number> {
@@ -130,6 +150,8 @@ export class AutonomyLogRepository extends BaseRepository {
       reportMsg: row.report_msg,
       error: row.error,
       manual: this.parseBoolean(row.manual),
+      signalIds: parseJsonField<string[]>(row.signal_ids, []),
+      urgencyScore: row.urgency_score ?? 0,
     };
   }
 }

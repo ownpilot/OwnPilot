@@ -136,6 +136,43 @@ export const autonomyBudgetSchema = z.object({
   maxCostPerAction: z.number().min(0).max(1000).optional(),
 });
 
+export const pulseSettingsSchema = z.object({
+  enabled: z.boolean().optional(),
+  minIntervalMs: z.number().int().min(60000).max(3600000).optional(),
+  maxIntervalMs: z.number().int().min(60000).max(7200000).optional(),
+  maxActions: z.number().int().min(1).max(20).optional(),
+  quietHoursStart: z.number().int().min(0).max(23).optional(),
+  quietHoursEnd: z.number().int().min(0).max(23).optional(),
+});
+
+// ─── Pulse Directives Schema ─────────────────────────────────────
+
+const ruleThresholdsSchema = z.object({
+  staleDays: z.number().int().min(1).max(30).optional(),
+  deadlineDays: z.number().int().min(1).max(30).optional(),
+  activityDays: z.number().int().min(1).max(30).optional(),
+  lowProgressPct: z.number().int().min(1).max(100).optional(),
+  memoryMaxCount: z.number().int().min(50).max(10000).optional(),
+  memoryMinImportance: z.number().min(0).max(1).optional(),
+  triggerErrorMin: z.number().int().min(1).max(100).optional(),
+}).optional();
+
+const actionCooldownsSchema = z.object({
+  create_memory: z.number().int().min(0).max(1440).optional(),
+  update_goal_progress: z.number().int().min(0).max(1440).optional(),
+  send_notification: z.number().int().min(0).max(1440).optional(),
+  run_memory_cleanup: z.number().int().min(0).max(1440).optional(),
+}).optional();
+
+export const pulseDirectivesSchema = z.object({
+  disabledRules: z.array(z.string().max(50)).max(20).optional(),
+  blockedActions: z.array(z.string().max(50)).max(10).optional(),
+  customInstructions: z.string().max(2000).optional(),
+  template: z.string().max(50).optional(),
+  ruleThresholds: ruleThresholdsSchema,
+  actionCooldowns: actionCooldownsSchema,
+});
+
 // ─── Custom Tool Schemas ─────────────────────────────────────────
 
 const toolPermissionValues = [

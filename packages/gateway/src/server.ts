@@ -446,12 +446,19 @@ async function main() {
   try {
     const { getAutonomyEngine, createPulseServiceAdapter } = await import('./autonomy/engine.js');
     const pulseEngine = getAutonomyEngine({ userId: 'default' });
-    pulseEngine.setBroadcaster((_event, data) =>
-      wsGateway.broadcast(
-        'system:notification',
-        data as import('./ws/types.js').ServerEvents['system:notification']
-      )
-    );
+    pulseEngine.setBroadcaster((event, data) => {
+      if (event === 'pulse:activity') {
+        wsGateway.broadcast(
+          'pulse:activity',
+          data as import('./ws/types.js').ServerEvents['pulse:activity']
+        );
+      } else {
+        wsGateway.broadcast(
+          'system:notification',
+          data as import('./ws/types.js').ServerEvents['system:notification']
+        );
+      }
+    });
     registry.register(Services.Pulse, createPulseServiceAdapter(pulseEngine));
     pulseEngine.start();
     log.info('Autonomy Engine started.');

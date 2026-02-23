@@ -16,6 +16,24 @@ import { getLog } from '../services/log.js';
 const log = getLog('PulseExecutor');
 
 // ============================================================================
+// Action Cooldowns
+// ============================================================================
+
+export interface ActionCooldowns {
+  create_memory: number;
+  update_goal_progress: number;
+  send_notification: number;
+  run_memory_cleanup: number;
+}
+
+export const DEFAULT_ACTION_COOLDOWNS: ActionCooldowns = {
+  create_memory: 30,
+  update_goal_progress: 60,
+  send_notification: 15,
+  run_memory_cleanup: 360,
+};
+
+// ============================================================================
 // Risk assessment helpers
 // ============================================================================
 
@@ -42,21 +60,54 @@ function getAutonomyConfig(userId: string): AutonomyConfig {
 // ============================================================================
 
 /**
- * Execute a list of pulse actions, respecting risk assessment and action limits.
+ * Execute a list of pulse actions, respecting risk assessment, cooldowns, and action limits.
  */
 export async function executePulseActions(
   actions: PulseAction[],
   userId: string,
-  maxActions = PULSE_MAX_ACTIONS
-): Promise<PulseActionResult[]> {
+  maxActions = PULSE_MAX_ACTIONS,
+  blockedActions: string[] = [],
+  cooldowns: ActionCooldowns = DEFAULT_ACTION_COOLDOWNS,
+  lastActionTimes: Record<string, string> = {}
+): Promise<{ results: PulseActionResult[]; updatedActionTimes: Record<string, string> }> {
   // Bound the number of actions
   const bounded = actions.slice(0, maxActions);
   const results: PulseActionResult[] = [];
+  const updatedActionTimes = { ...lastActionTimes };
 
   for (const action of bounded) {
     if (action.type === 'skip') {
       results.push({ type: 'skip', success: true, skipped: true });
       continue;
+    }
+
+    // Check if action type is blocked by user directives
+    if (blockedActions.includes(action.type)) {
+      results.push({
+        type: action.type,
+        success: false,
+        skipped: true,
+        error: 'Action type disabled by user',
+      });
+      continue;
+    }
+
+    // Cooldown check
+    const cooldownMinutes = cooldowns[action.type as keyof ActionCooldowns] ?? 0;
+    if (cooldownMinutes > 0) {
+      const lastTime = updatedActionTimes[action.type];
+      if (lastTime) {
+        const elapsed = (Date.now() - new Date(lastTime).getTime()) / 60_000;
+        if (elapsed < cooldownMinutes) {
+          results.push({
+            type: action.type,
+            success: false,
+            skipped: true,
+            error: `Action in cooldown (${Math.ceil(cooldownMinutes - elapsed)} min remaining)`,
+          });
+          continue;
+        }
+      }
     }
 
     // Assess risk
@@ -78,9 +129,14 @@ export async function executePulseActions(
     // Execute the action
     const result = await executeAction(action, userId);
     results.push(result);
+
+    // Update last action time on success
+    if (result.success) {
+      updatedActionTimes[action.type] = new Date().toISOString();
+    }
   }
 
-  return results;
+  return { results, updatedActionTimes };
 }
 
 // ============================================================================

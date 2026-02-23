@@ -50,6 +50,8 @@ export interface PulseResult {
   error?: string;
   /** Whether this was a manually triggered pulse */
   manual: boolean;
+  /** IDs of signals that fired during evaluation */
+  signalIds?: string[];
 }
 
 export interface PulseStats {
@@ -75,6 +77,8 @@ export interface AutonomyLogEntry {
   reportMsg: string | null;
   error: string | null;
   manual: boolean;
+  signalIds: string[];
+  urgencyScore: number;
 }
 
 // ============================================================================

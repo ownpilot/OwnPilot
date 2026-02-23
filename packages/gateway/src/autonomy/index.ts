@@ -43,7 +43,9 @@ export {
   getAutonomyEngine,
   createPulseServiceAdapter,
   stopAutonomyEngine,
+  DEFAULT_PULSE_DIRECTIVES,
   type AutonomyEngineConfig,
+  type PulseDirectives,
 } from './engine.js';
 
 export { gatherPulseContext, type PulseContext, type GoalSummary } from './context.js';
@@ -51,6 +53,9 @@ export { gatherPulseContext, type PulseContext, type GoalSummary } from './conte
 export {
   evaluatePulseContext,
   calculateNextInterval,
+  RULE_DEFINITIONS,
+  DEFAULT_RULE_THRESHOLDS,
+  type RuleThresholds,
   type Signal,
   type SignalSeverity,
   type EvaluationResult,
@@ -64,6 +69,10 @@ export {
   type PulseDecision,
 } from './prompt.js';
 
-export { executePulseActions } from './executor.js';
+export {
+  executePulseActions,
+  DEFAULT_ACTION_COOLDOWNS,
+  type ActionCooldowns,
+} from './executor.js';
 
 export { reportPulseResult, type Broadcaster } from './reporter.js';

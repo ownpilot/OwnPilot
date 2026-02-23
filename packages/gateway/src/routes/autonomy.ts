@@ -7,6 +7,7 @@
 import { Hono, type Context } from 'hono';
 import {
   getApprovalManager,
+  getAutonomyEngine,
   assessRisk,
   AutonomyLevel,
   AUTONOMY_LEVEL_NAMES,
@@ -14,6 +15,10 @@ import {
   type ActionCategory,
   type ApprovalDecision,
 } from '../autonomy/index.js';
+import { RULE_DEFINITIONS, DEFAULT_RULE_THRESHOLDS } from '../autonomy/evaluator.js';
+import { DEFAULT_ACTION_COOLDOWNS } from '../autonomy/executor.js';
+import { DEFAULT_PULSE_DIRECTIVES, type PulseDirectives } from '../autonomy/engine.js';
+import { settingsRepo } from '../db/repositories/settings.js';
 import {
   getUserId,
   apiResponse,
@@ -22,6 +27,7 @@ import {
   sanitizeId,
   notFoundError,
   getErrorMessage,
+  getPaginationParams,
 } from './helpers.js';
 
 export const autonomyRoutes = new Hono();
@@ -545,4 +551,201 @@ autonomyRoutes.patch('/budget', async (c) => {
     maxCostPerAction: config.maxCostPerAction,
     message: 'Budget settings updated.',
   });
+});
+
+// ============================================================================
+// Pulse Engine Routes
+// ============================================================================
+
+/**
+ * GET /autonomy/pulse/status - Get pulse engine status
+ */
+autonomyRoutes.get('/pulse/status', (c) => {
+  try {
+    const engine = getAutonomyEngine();
+    return apiResponse(c, engine.getStatus());
+  } catch {
+    return apiError(c, { code: ERROR_CODES.SERVICE_UNAVAILABLE, message: 'Pulse engine not initialized' }, 503);
+  }
+});
+
+/**
+ * POST /autonomy/pulse/start - Start the pulse engine
+ */
+autonomyRoutes.post('/pulse/start', (c) => {
+  try {
+    const engine = getAutonomyEngine();
+    engine.start();
+    return apiResponse(c, { running: engine.isRunning(), message: 'Pulse engine started.' });
+  } catch {
+    return apiError(c, { code: ERROR_CODES.SERVICE_UNAVAILABLE, message: 'Pulse engine not initialized' }, 503);
+  }
+});
+
+/**
+ * POST /autonomy/pulse/stop - Stop the pulse engine
+ */
+autonomyRoutes.post('/pulse/stop', (c) => {
+  try {
+    const engine = getAutonomyEngine();
+    engine.stop();
+    return apiResponse(c, { running: engine.isRunning(), message: 'Pulse engine stopped.' });
+  } catch {
+    return apiError(c, { code: ERROR_CODES.SERVICE_UNAVAILABLE, message: 'Pulse engine not initialized' }, 503);
+  }
+});
+
+/**
+ * POST /autonomy/pulse/run - Manually trigger a pulse
+ */
+autonomyRoutes.post('/pulse/run', async (c) => {
+  try {
+    const userId = getUserId(c);
+    const engine = getAutonomyEngine();
+
+    const status = engine.getStatus();
+    if (status.activePulse) {
+      return apiError(
+        c,
+        { code: ERROR_CODES.ALREADY_RUNNING, message: 'A pulse is already in progress.' },
+        409
+      );
+    }
+
+    const result = await engine.runPulse(userId, true);
+    return apiResponse(c, result);
+  } catch (error) {
+    const msg = getErrorMessage(error);
+    if (msg.includes('not initialized')) {
+      return apiError(c, { code: ERROR_CODES.SERVICE_UNAVAILABLE, message: 'Pulse engine not initialized' }, 503);
+    }
+    return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: msg }, 500);
+  }
+});
+
+/**
+ * PATCH /autonomy/pulse/settings - Update pulse engine settings
+ */
+autonomyRoutes.patch('/pulse/settings', async (c) => {
+  try {
+    const rawBody = await c.req.json().catch(() => null);
+    const { validateBody, pulseSettingsSchema } = await import('../middleware/validation.js');
+    const body = validateBody(pulseSettingsSchema, rawBody);
+
+    const engine = getAutonomyEngine();
+    engine.updateSettings(body);
+
+    return apiResponse(c, {
+      config: engine.getStatus().config,
+      message: 'Pulse settings updated.',
+    });
+  } catch (error) {
+    const msg = getErrorMessage(error);
+    if (msg.includes('not initialized')) {
+      return apiError(c, { code: ERROR_CODES.SERVICE_UNAVAILABLE, message: 'Pulse engine not initialized' }, 503);
+    }
+    if (msg.includes('Validation failed')) {
+      return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: msg }, 400);
+    }
+    return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: msg }, 500);
+  }
+});
+
+/**
+ * GET /autonomy/pulse/directives - Get pulse directives + rule/action metadata
+ */
+autonomyRoutes.get('/pulse/directives', (c) => {
+  const stored = settingsRepo.get<Partial<PulseDirectives>>('pulse.directives');
+  const directives: PulseDirectives = stored
+    ? {
+        ...DEFAULT_PULSE_DIRECTIVES,
+        ...stored,
+        ruleThresholds: { ...DEFAULT_RULE_THRESHOLDS, ...stored.ruleThresholds },
+        actionCooldowns: { ...DEFAULT_ACTION_COOLDOWNS, ...stored.actionCooldowns },
+      }
+    : DEFAULT_PULSE_DIRECTIVES;
+
+  const actionTypes = [
+    { id: 'create_memory', label: 'Create Memory' },
+    { id: 'update_goal_progress', label: 'Update Goal' },
+    { id: 'send_notification', label: 'Send Notification' },
+    { id: 'run_memory_cleanup', label: 'Memory Cleanup' },
+  ];
+
+  return apiResponse(c, {
+    directives,
+    ruleDefinitions: RULE_DEFINITIONS,
+    actionTypes,
+    defaultThresholds: DEFAULT_RULE_THRESHOLDS,
+    defaultCooldowns: DEFAULT_ACTION_COOLDOWNS,
+  });
+});
+
+/**
+ * PUT /autonomy/pulse/directives - Update pulse directives
+ */
+autonomyRoutes.put('/pulse/directives', async (c) => {
+  try {
+    const rawBody = await c.req.json().catch(() => null);
+    const { validateBody, pulseDirectivesSchema } = await import('../middleware/validation.js');
+    const body = validateBody(pulseDirectivesSchema, rawBody);
+
+    const stored = settingsRepo.get<Partial<PulseDirectives>>('pulse.directives');
+    const current: PulseDirectives = stored
+      ? {
+          ...DEFAULT_PULSE_DIRECTIVES,
+          ...stored,
+          ruleThresholds: { ...DEFAULT_RULE_THRESHOLDS, ...stored.ruleThresholds },
+          actionCooldowns: { ...DEFAULT_ACTION_COOLDOWNS, ...stored.actionCooldowns },
+        }
+      : DEFAULT_PULSE_DIRECTIVES;
+
+    const updated: PulseDirectives = {
+      disabledRules: body.disabledRules ?? current.disabledRules,
+      blockedActions: body.blockedActions ?? current.blockedActions,
+      customInstructions: body.customInstructions ?? current.customInstructions,
+      template: body.template ?? current.template,
+      ruleThresholds: { ...current.ruleThresholds, ...body.ruleThresholds },
+      actionCooldowns: { ...current.actionCooldowns, ...body.actionCooldowns },
+    };
+
+    await settingsRepo.set('pulse.directives', updated);
+
+    return apiResponse(c, { directives: updated, message: 'Pulse directives updated.' });
+  } catch (error) {
+    const msg = getErrorMessage(error);
+    if (msg.includes('Validation failed')) {
+      return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: msg }, 400);
+    }
+    return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: msg }, 500);
+  }
+});
+
+/**
+ * GET /autonomy/pulse/history - Get paginated pulse history
+ */
+autonomyRoutes.get('/pulse/history', async (c) => {
+  try {
+    const userId = getUserId(c);
+    const { limit, offset } = getPaginationParams(c, 15);
+    const engine = getAutonomyEngine();
+    const result = await engine.getRecentLogsPaginated(userId, limit, offset);
+    return apiResponse(c, { history: result.entries, total: result.total });
+  } catch {
+    return apiError(c, { code: ERROR_CODES.SERVICE_UNAVAILABLE, message: 'Pulse engine not initialized' }, 503);
+  }
+});
+
+/**
+ * GET /autonomy/pulse/stats - Get pulse statistics
+ */
+autonomyRoutes.get('/pulse/stats', async (c) => {
+  try {
+    const userId = getUserId(c);
+    const engine = getAutonomyEngine();
+    const stats = await engine.getStats(userId);
+    return apiResponse(c, stats);
+  } catch {
+    return apiError(c, { code: ERROR_CODES.SERVICE_UNAVAILABLE, message: 'Pulse engine not initialized' }, 503);
+  }
 });

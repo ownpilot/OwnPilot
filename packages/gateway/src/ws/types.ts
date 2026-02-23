@@ -221,6 +221,18 @@ export interface ServerEvents {
     count?: number;
   };
 
+  // Pulse events
+  'pulse:activity': {
+    status: 'started' | 'stage' | 'completed' | 'error';
+    stage: string;
+    pulseId: string | null;
+    startedAt: number | null;
+    signalsFound?: number;
+    actionsExecuted?: number;
+    durationMs?: number;
+    error?: string;
+  };
+
   // System events
   'system:notification': {
     type: 'info' | 'warning' | 'error' | 'success';
