@@ -72,3 +72,11 @@ packages/gateway/*.png
 # Debug/cache
 .cache/
 *.cache
+
+# Temp helper scripts (prefixed with _)
+_*.js
+_*.mjs
+_*.cjs
+_*.txt
+_*.json
+_*.b64

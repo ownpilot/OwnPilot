@@ -137,9 +137,12 @@ export async function getProviderApiKey(provider: string): Promise<string | unde
  * Load provider config from core module
  * Uses the core's getProviderConfig which properly resolves JSON paths
  */
-export function loadProviderConfig(
-  providerId: string
-): { baseUrl?: string; apiKeyEnv?: string; type?: string; headers?: Record<string, string> } | null {
+export function loadProviderConfig(providerId: string): {
+  baseUrl?: string;
+  apiKeyEnv?: string;
+  type?: string;
+  headers?: Record<string, string>;
+} | null {
   // 1. Check builtin provider configs
   const config = coreGetProviderConfig(providerId);
   if (config) {

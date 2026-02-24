@@ -67,7 +67,11 @@ describe('extensionsApi', () => {
     it('builds URLSearchParams from filter options', async () => {
       mockGet.mockResolvedValueOnce({ packages: [{ id: '1' }], total: 1 });
 
-      const result = await extensionsApi.list({ status: 'active', category: 'tools', format: 'ownpilot' });
+      const result = await extensionsApi.list({
+        status: 'active',
+        category: 'tools',
+        format: 'ownpilot',
+      });
 
       const url = mockGet.mock.calls[0]![0] as string;
       expect(url).toContain('status=active');
@@ -434,7 +438,7 @@ describe('composioApi', () => {
 describe('customToolsApi', () => {
   it('list passes status filter', async () => {
     mockGet.mockResolvedValueOnce({ tools: [] });
-    await customToolsApi.list('active' as 'active');
+    await customToolsApi.list('active');
     expect(mockGet).toHaveBeenCalledWith('/custom-tools', { params: { status: 'active' } });
   });
 
@@ -521,7 +525,13 @@ describe('triggersApi', () => {
         offset: 5,
       });
       expect(mockGet).toHaveBeenCalledWith('/triggers/tr-1/history', {
-        params: { status: 'success', from: '2025-01-01', to: '2025-12-31', limit: '10', offset: '5' },
+        params: {
+          status: 'success',
+          from: '2025-01-01',
+          to: '2025-12-31',
+          limit: '10',
+          offset: '5',
+        },
       });
     });
 
@@ -619,7 +629,10 @@ describe('simple passthrough endpoints', () => {
   it('settingsApi.saveApiKey', async () => {
     mockPost.mockResolvedValueOnce(undefined);
     await settingsApi.saveApiKey('openai', 'sk-xxx');
-    expect(mockPost).toHaveBeenCalledWith('/settings/api-keys', { provider: 'openai', apiKey: 'sk-xxx' });
+    expect(mockPost).toHaveBeenCalledWith('/settings/api-keys', {
+      provider: 'openai',
+      apiKey: 'sk-xxx',
+    });
   });
 
   it('settingsApi.deleteApiKey', async () => {

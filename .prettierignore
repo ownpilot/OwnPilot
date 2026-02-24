@@ -10,3 +10,5 @@ data/
 *.tsbuildinfo
 packages/ui/vite.config.js
 packages/ui/vite.config.d.ts
+_*
+packages/**/_*
