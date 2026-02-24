@@ -531,6 +531,15 @@ async function main() {
   wsGateway.attachToServer(server as Server);
   log.info(`WebSocket Gateway attached at ws://${host}:${port}/ws`);
 
+  // Wire debug log entries to WebSocket broadcast
+  const { debugLog } = await import('@ownpilot/core');
+  debugLog.onEntry = (entry) => {
+    wsGateway.broadcast(
+      'debug:entry',
+      entry as import('./ws/types.js').ServerEvents['debug:entry']
+    );
+  };
+
   // ── Graceful Shutdown ─────────────────────────────────────────────────────
   let isShuttingDown = false;
 

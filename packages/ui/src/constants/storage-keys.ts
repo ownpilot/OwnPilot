@@ -9,4 +9,5 @@ export const STORAGE_KEYS = {
   BRIEFING_MODEL: 'briefing-model-preference',
   DESKTOP_NOTIFICATIONS: 'ownpilot-desktop-notifications',
   SESSION_TOKEN: 'ownpilot-session-token',
+  DEBUG_DRAWER: 'ownpilot-debug-drawer',
 } as const;

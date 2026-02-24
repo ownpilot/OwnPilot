@@ -233,6 +233,23 @@ export interface ServerEvents {
     error?: string;
   };
 
+  // Debug events
+  'debug:entry': {
+    timestamp: string;
+    type:
+      | 'request'
+      | 'response'
+      | 'tool_call'
+      | 'tool_result'
+      | 'error'
+      | 'retry'
+      | 'sandbox_execution';
+    provider?: string;
+    model?: string;
+    data: unknown;
+    duration?: number;
+  };
+
   // System events
   'system:notification': {
     type: 'info' | 'warning' | 'error' | 'success';

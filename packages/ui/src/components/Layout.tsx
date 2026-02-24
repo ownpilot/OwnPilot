@@ -51,6 +51,7 @@ import { RealtimeBridge, type BadgeCounts } from './RealtimeBridge';
 import { SecurityBanner } from './SecurityBanner';
 import { usePulseSlots, PulseSlotGrid } from './PulseSlots';
 import { STORAGE_KEYS } from '../constants/storage-keys';
+import { DebugDrawer } from './DebugDrawer';
 
 interface NavItem {
   to: string;
@@ -395,7 +396,7 @@ export function Layout() {
       </header>
 
       {/* Body: sidebar + content + stats */}
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 overflow-hidden min-h-0">
         {/* Backdrop (mobile only, when sidebar open) */}
         {isMobile && isMobileSidebarOpen && (
           <div
@@ -510,6 +511,9 @@ export function Layout() {
 
       {/* Realtime WS→UI wiring (invisible) */}
       <RealtimeBridge onBadgeUpdate={handleBadgeUpdate} />
+
+      {/* Debug Drawer (advanced mode only) */}
+      {isAdvancedMode && <DebugDrawer />}
     </div>
   );
 }
