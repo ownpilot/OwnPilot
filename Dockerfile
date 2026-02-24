@@ -84,7 +84,7 @@ EXPOSE 8080
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:8080/health || exit 1
+  CMD wget --no-verbose --tries=1 --spider http://127.0.0.1:8080/health || exit 1
 
 # OCI labels for GHCR
 LABEL org.opencontainers.image.source="https://github.com/ownpilot/ownpilot"
@@ -92,4 +92,4 @@ LABEL org.opencontainers.image.description="OwnPilot — Privacy-first personal 
 LABEL org.opencontainers.image.licenses="MIT"
 
 # Start the application
-CMD ["node", "packages/cli/dist/index.js", "start"]
+CMD ["node", "packages/gateway/dist/server.js"]

@@ -20,7 +20,7 @@ export const settingsApi = {
   get: () => apiClient.get<SettingsData>('/settings'),
   getProviders: () =>
     apiClient.get<{ providers: Array<{ id: string; name: string; apiKeyEnv: string }> }>(
-      '/settings/providers'
+      '/providers'
     ),
   saveApiKey: (provider: string, apiKey: string) =>
     apiClient.post<void>('/settings/api-keys', { provider, apiKey }),

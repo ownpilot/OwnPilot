@@ -836,10 +836,10 @@ describe('isDemoMode', () => {
     }
   });
 
-  it('returns true when only unknown providers are configured', async () => {
-    mockGetConfiguredProviderIds.mockResolvedValue(new Set(['custom-local', 'ollama']));
+  it('returns false when any provider is configured (including non-standard)', async () => {
+    mockGetConfiguredProviderIds.mockResolvedValue(new Set(['minimax', 'ollama']));
     const result = await mod.isDemoMode();
-    expect(result).toBe(true);
+    expect(result).toBe(false);
   });
 
   it('returns false when multiple providers are configured', async () => {
@@ -854,12 +854,11 @@ describe('isDemoMode', () => {
     expect(mockGetConfiguredProviderIds).toHaveBeenCalled();
   });
 
-  it('checks all 11 known provider IDs', async () => {
-    // Verify the function checks the right set of providers
-    // If no known providers match, it should be demo mode
+  it('returns false for any configured provider regardless of name', async () => {
+    // Any configured provider means not demo mode
     mockGetConfiguredProviderIds.mockResolvedValue(new Set(['some-random-provider']));
     const result = await mod.isDemoMode();
-    expect(result).toBe(true);
+    expect(result).toBe(false);
   });
 
   it('returns false when local provider is enabled', async () => {
