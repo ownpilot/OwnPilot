@@ -151,6 +151,9 @@ export {
   createResourceServiceImpl,
 } from './services/index.js';
 
+// Pipeline Middleware
+export { registerPipelineMiddleware } from './services/middleware/index.js';
+
 // Data Migration
 export {
   needsMigration,

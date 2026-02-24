@@ -12,7 +12,18 @@ import {
   loadApiKeysToEnvironment,
   getDefaultProvider,
   isDemoModeFromSettings,
+  createLogService,
+  createSessionService,
+  createMessageBus,
+  registerPipelineMiddleware,
 } from '@ownpilot/gateway';
+import {
+  initServiceRegistry,
+  hasServiceRegistry,
+  Services,
+  getEventSystem,
+  setModuleResolver,
+} from '@ownpilot/core';
 
 interface StartOptions {
   port: string;
@@ -21,6 +32,21 @@ interface StartOptions {
 
 export async function startAll(options: StartOptions): Promise<void> {
   console.log('\n🚀 Starting OwnPilot...\n');
+
+  // ── Module resolver (allows core tools to import gateway's npm packages) ──
+  setModuleResolver((name: string) => import(name));
+
+  // ── ServiceRegistry (required by dashboard, custom-data, and other routes) ──
+  if (!hasServiceRegistry()) {
+    const registry = initServiceRegistry();
+    const logLevel = (process.env.LOG_LEVEL ?? 'info') as 'debug' | 'info' | 'warn' | 'error';
+    registry.register(Services.Log, createLogService({ level: logLevel }));
+    registry.register(Services.Event, getEventSystem());
+    registry.register(Services.Session, createSessionService());
+    const messageBus = createMessageBus();
+    registerPipelineMiddleware(messageBus);
+    registry.register(Services.Message, messageBus);
+  }
 
   // Load saved API keys from database into environment (for SDKs)
   await loadApiKeysToEnvironment();

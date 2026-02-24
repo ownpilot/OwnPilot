@@ -745,22 +745,9 @@ export function getWorkspaceContext(sessionWorkspaceDir?: string): WorkspaceCont
  * Check if demo mode is enabled (no API keys configured)
  */
 export async function isDemoMode(): Promise<boolean> {
-  // Check cloud providers
+  // Check cloud providers — any configured provider means not demo mode
   const configured = await getConfiguredProviderIds();
-  const providers = [
-    'openai',
-    'anthropic',
-    'zhipu',
-    'deepseek',
-    'groq',
-    'google',
-    'xai',
-    'mistral',
-    'together',
-    'fireworks',
-    'perplexity',
-  ];
-  if (providers.some((p) => configured.has(p))) return false;
+  if (configured.size > 0) return false;
 
   // Check local providers (Ollama, LM Studio, etc.)
   const localProviders = await localProvidersRepo.listProviders();

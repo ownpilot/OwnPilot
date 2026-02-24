@@ -109,27 +109,30 @@ databaseRoutes.use('*', async (c, next) => {
     return next();
   }
   // Destructive operations (POST, DELETE) and export require admin key
-  const adminKey = process.env.ADMIN_KEY;
-  if (!adminKey) {
-    return apiError(
-      c,
-      {
-        code: ERROR_CODES.UNAUTHORIZED,
-        message: 'ADMIN_KEY environment variable must be set for database write operations.',
-      },
-      403
-    );
-  }
-  const providedKey = c.req.header('X-Admin-Key');
-  if (!safeKeyCompare(providedKey, adminKey)) {
-    return apiError(
-      c,
-      {
-        code: ERROR_CODES.UNAUTHORIZED,
-        message: 'Admin key required for this operation. Set X-Admin-Key header.',
-      },
-      403
-    );
+  // In development mode, skip admin key requirement for local access
+  if (process.env.NODE_ENV !== 'development') {
+    const adminKey = process.env.ADMIN_KEY;
+    if (!adminKey) {
+      return apiError(
+        c,
+        {
+          code: ERROR_CODES.UNAUTHORIZED,
+          message: 'ADMIN_KEY environment variable must be set for database write operations.',
+        },
+        403
+      );
+    }
+    const providedKey = c.req.header('X-Admin-Key');
+    if (!safeKeyCompare(providedKey, adminKey)) {
+      return apiError(
+        c,
+        {
+          code: ERROR_CODES.UNAUTHORIZED,
+          message: 'Admin key required for this operation. Set X-Admin-Key header.',
+        },
+        403
+      );
+    }
   }
   return next();
 });

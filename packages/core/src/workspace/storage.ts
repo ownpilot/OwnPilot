@@ -8,6 +8,7 @@
 import { promises as fs } from 'node:fs';
 import { join, resolve, relative, basename, dirname } from 'node:path';
 import { createHash } from 'node:crypto';
+import { homedir } from 'node:os';
 import type { FileInfo, StorageUsage } from './types.js';
 import { getLog } from '../services/get-log.js';
 
@@ -417,10 +418,12 @@ let storageInstance: IsolatedStorage | null = null;
  */
 export function getStorage(basePath?: string, maxStorageGB?: number): IsolatedStorage {
   if (!storageInstance) {
-    // Default to /data/workspaces or environment variable
+    // Default to platform-specific data directory or environment variable
     const defaultPath =
       process.env.SANDBOX_BASE_PATH ||
-      (process.platform === 'win32' ? 'C:\\data\\workspaces' : '/data/workspaces');
+      (process.platform === 'win32'
+        ? join(process.env.LOCALAPPDATA ?? join(homedir(), 'AppData', 'Local'), 'ownpilot', 'workspaces')
+        : join(process.env.XDG_DATA_HOME ?? join(homedir(), '.local', 'share'), 'ownpilot', 'workspaces'));
 
     storageInstance = new IsolatedStorage(basePath || defaultPath, maxStorageGB || 2);
   }
