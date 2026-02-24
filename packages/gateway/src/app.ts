@@ -417,5 +417,6 @@ declare module 'hono' {
     userId?: string;
     jwtPayload?: Record<string, unknown>;
     sessionAuthenticated?: boolean;
+    pagination?: import('./middleware/pagination.js').PaginationParams;
   }
 }

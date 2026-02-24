@@ -8,6 +8,17 @@
 // Base repository
 export { BaseRepository } from './base.js';
 
+// CRUD base repository
+export { CrudRepository, type CreateFields } from './crud-base.js';
+
+// Query helpers
+export {
+  buildUpdateStatement,
+  type UpdateField,
+  type RawSetClause,
+  type UpdateStatement,
+} from './query-helpers.js';
+
 // Core repositories
 export {
   ConversationsRepository,

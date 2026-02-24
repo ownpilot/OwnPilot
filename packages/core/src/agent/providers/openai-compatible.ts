@@ -223,7 +223,12 @@ export class OpenAICompatibleProvider {
       this.clearRequestTimeout();
 
       if (!response.ok || !response.body) {
-        yield err(new InternalError(`${this.providerId} stream error: ${response.status}`));
+        const errorText = await response.text().catch(() => '');
+        yield err(
+          new InternalError(
+            `${this.providerId} stream error: ${response.status}${errorText ? ` - ${errorText}` : ''}`
+          )
+        );
         return;
       }
 

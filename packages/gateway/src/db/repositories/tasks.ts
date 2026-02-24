@@ -5,6 +5,7 @@
  */
 
 import { BaseRepository, parseJsonField } from './base.js';
+import { buildUpdateStatement, type RawSetClause } from './query-helpers.js';
 import { MS_PER_DAY } from '../../config/defaults.js';
 import type { StandardQuery } from './interfaces.js';
 import {
@@ -183,75 +184,49 @@ export class TasksRepository extends BaseRepository {
     const existing = await this.get(id);
     if (!existing) return null;
 
-    const updates: string[] = [];
-    const values: unknown[] = [];
-    let paramIndex = 1;
+    const fields = [
+      { column: 'title', value: input.title },
+      { column: 'description', value: input.description },
+      { column: 'status', value: input.status },
+      { column: 'priority', value: input.priority },
+      { column: 'due_date', value: input.dueDate },
+      { column: 'due_time', value: input.dueTime },
+      { column: 'reminder_at', value: input.reminderAt },
+      { column: 'category', value: input.category },
+      { column: 'tags', value: input.tags !== undefined ? JSON.stringify(input.tags) : undefined },
+      { column: 'parent_id', value: input.parentId },
+      { column: 'project_id', value: input.projectId },
+      { column: 'recurrence', value: input.recurrence },
+    ];
 
-    if (input.title !== undefined) {
-      updates.push(`title = $${paramIndex++}`);
-      values.push(input.title);
-    }
-    if (input.description !== undefined) {
-      updates.push(`description = $${paramIndex++}`);
-      values.push(input.description);
-    }
+    const hasChanges = fields.some((f) => f.value !== undefined);
+    if (!hasChanges) return existing;
+
+    // Build raw clauses for completed_at and updated_at
+    const rawClauses: RawSetClause[] = [];
     if (input.status !== undefined) {
-      updates.push(`status = $${paramIndex++}`);
-      values.push(input.status);
-
-      // Handle completed_at timestamp
       if (input.status === 'completed' && existing.status !== 'completed') {
-        updates.push(`completed_at = NOW()`);
+        rawClauses.push({ sql: 'completed_at = NOW()' });
       } else if (input.status !== 'completed') {
-        updates.push(`completed_at = NULL`);
+        rawClauses.push({ sql: 'completed_at = NULL' });
       }
     }
-    if (input.priority !== undefined) {
-      updates.push(`priority = $${paramIndex++}`);
-      values.push(input.priority);
-    }
-    if (input.dueDate !== undefined) {
-      updates.push(`due_date = $${paramIndex++}`);
-      values.push(input.dueDate);
-    }
-    if (input.dueTime !== undefined) {
-      updates.push(`due_time = $${paramIndex++}`);
-      values.push(input.dueTime);
-    }
-    if (input.reminderAt !== undefined) {
-      updates.push(`reminder_at = $${paramIndex++}`);
-      values.push(input.reminderAt);
-    }
-    if (input.category !== undefined) {
-      updates.push(`category = $${paramIndex++}`);
-      values.push(input.category);
-    }
-    if (input.tags !== undefined) {
-      updates.push(`tags = $${paramIndex++}`);
-      values.push(JSON.stringify(input.tags));
-    }
-    if (input.parentId !== undefined) {
-      updates.push(`parent_id = $${paramIndex++}`);
-      values.push(input.parentId);
-    }
-    if (input.projectId !== undefined) {
-      updates.push(`project_id = $${paramIndex++}`);
-      values.push(input.projectId);
-    }
-    if (input.recurrence !== undefined) {
-      updates.push(`recurrence = $${paramIndex++}`);
-      values.push(input.recurrence);
-    }
+    rawClauses.push({ sql: 'updated_at = NOW()' });
 
-    if (updates.length === 0) return existing;
-
-    updates.push('updated_at = NOW()');
-    values.push(id, this.userId);
-
-    await this.execute(
-      `UPDATE tasks SET ${updates.join(', ')} WHERE id = $${paramIndex++} AND user_id = $${paramIndex}`,
-      values
+    const stmt = buildUpdateStatement(
+      'tasks',
+      fields,
+      [
+        { column: 'id', value: id },
+        { column: 'user_id', value: this.userId },
+      ],
+      1,
+      rawClauses,
     );
+
+    if (!stmt) return existing;
+
+    await this.execute(stmt.sql, stmt.params);
 
     const updated = await this.get(id);
 

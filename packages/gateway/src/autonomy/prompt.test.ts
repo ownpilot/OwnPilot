@@ -6,7 +6,6 @@ import { describe, it, expect } from 'vitest';
 import {
   getPulseSystemPrompt,
   buildPulseUserMessage,
-  parsePulseDecision,
 } from './prompt.js';
 import type { PulseContext } from './context.js';
 import type { Signal } from './evaluator.js';
@@ -24,6 +23,10 @@ function makeContext(overrides: Partial<PulseContext> = {}): PulseContext {
     memories: { total: 100, recentCount: 5, avgImportance: 0.5 },
     activity: { daysSinceLastActivity: 0, hasRecentActivity: true },
     systemHealth: { pendingApprovals: 0, triggerErrors: 0 },
+    habits: { todayHabits: [], todayProgress: 0 },
+    tasks: { overdue: [], dueToday: [] },
+    calendar: { todayEvents: [], tomorrowEvents: [] },
+    recentMemories: [],
     ...overrides,
   };
 }
@@ -33,25 +36,34 @@ function makeContext(overrides: Partial<PulseContext> = {}): PulseContext {
 // ============================================================================
 
 describe('getPulseSystemPrompt', () => {
-  it('returns a non-empty string', () => {
-    const prompt = getPulseSystemPrompt();
+  it('returns a non-empty personality-rich prompt', () => {
+    const ctx = makeContext();
+    const prompt = getPulseSystemPrompt(ctx);
     expect(prompt.length).toBeGreaterThan(100);
-    expect(prompt).toContain('Autonomy Engine');
-    expect(prompt).toContain('create_memory');
-    expect(prompt).toContain('skip');
+    expect(prompt).toContain('pulse');
+    expect(prompt).toContain('send_user_notification');
   });
 
   it('returns base prompt when directives are empty', () => {
-    const base = getPulseSystemPrompt();
-    expect(getPulseSystemPrompt('')).toBe(base);
-    expect(getPulseSystemPrompt('  ')).toBe(base);
-    expect(getPulseSystemPrompt(undefined)).toBe(base);
+    const ctx = makeContext();
+    const base = getPulseSystemPrompt(ctx);
+    expect(getPulseSystemPrompt(ctx, '')).toBe(base);
+    expect(getPulseSystemPrompt(ctx, '  ')).toBe(base);
+    expect(getPulseSystemPrompt(ctx, undefined)).toBe(base);
   });
 
   it('appends user directives when provided', () => {
-    const prompt = getPulseSystemPrompt('Only notify for high-urgency items.');
+    const ctx = makeContext();
+    const prompt = getPulseSystemPrompt(ctx, 'Only notify for high-urgency items.');
     expect(prompt).toContain('User Directives');
     expect(prompt).toContain('Only notify for high-urgency items.');
+  });
+
+  it('includes user location when available', () => {
+    const ctx = makeContext({ userLocation: 'Tallinn, Estonia' });
+    const prompt = getPulseSystemPrompt(ctx);
+    expect(prompt).toContain('User Location');
+    expect(prompt).toContain('Tallinn, Estonia');
   });
 });
 
@@ -67,8 +79,13 @@ describe('buildPulseUserMessage', () => {
       { id: 'stale_goals', label: 'Stale Goals', description: '2 stale', severity: 'warning' },
     ];
     const msg = buildPulseUserMessage(makeContext(), signals);
-    expect(msg).toContain('Detected Signals (1)');
+    expect(msg).toContain('Detected Signals');
     expect(msg).toContain('[WARNING] Stale Goals');
+  });
+
+  it('omits signals section when none detected', () => {
+    const msg = buildPulseUserMessage(makeContext(), []);
+    expect(msg).not.toContain('Detected Signals');
   });
 
   it('shows active goals', () => {
@@ -85,6 +102,57 @@ describe('buildPulseUserMessage', () => {
     expect(msg).toContain('Learn Rust');
     expect(msg).toContain('30%');
     expect(msg).toContain('2026-03-01');
+  });
+
+  it('shows habits progress', () => {
+    const ctx = makeContext({
+      habits: {
+        todayHabits: [
+          { name: 'Reading', completed: true, streak: 3 },
+          { name: 'Exercise', completed: false, streak: 0 },
+        ],
+        todayProgress: 50,
+      },
+    });
+    const msg = buildPulseUserMessage(ctx, []);
+    expect(msg).toContain("Today's Habits (50% done)");
+    expect(msg).toContain('Reading: done (3-day streak)');
+    expect(msg).toContain('Exercise: pending');
+  });
+
+  it('shows overdue and due-today tasks', () => {
+    const ctx = makeContext({
+      tasks: {
+        overdue: [{ title: 'Fix bug', dueDate: '2026-02-20' }],
+        dueToday: [{ title: 'Write docs', priority: 'high' }],
+      },
+    });
+    const msg = buildPulseUserMessage(ctx, []);
+    expect(msg).toContain('OVERDUE: Fix bug');
+    expect(msg).toContain('Due today: Write docs');
+  });
+
+  it('shows calendar events', () => {
+    const ctx = makeContext({
+      calendar: {
+        todayEvents: [{ title: 'Team sync', startTime: '14:00' }],
+        tomorrowEvents: [{ title: 'Dentist', startTime: '09:00' }],
+      },
+    });
+    const msg = buildPulseUserMessage(ctx, []);
+    expect(msg).toContain('Today: Team sync at 14:00');
+    expect(msg).toContain('Tomorrow: Dentist at 09:00');
+  });
+
+  it('shows recent important memories', () => {
+    const ctx = makeContext({
+      recentMemories: [
+        { content: 'User prefers dark mode', type: 'preference', importance: 0.8 },
+      ],
+    });
+    const msg = buildPulseUserMessage(ctx, []);
+    expect(msg).toContain('Recent Important Memories');
+    expect(msg).toContain('[preference] User prefers dark mode');
   });
 
   it('shows memory stats', () => {
@@ -140,43 +208,5 @@ describe('buildPulseUserMessage', () => {
   it('omits cooled-down actions section when not provided', () => {
     const msg = buildPulseUserMessage(makeContext(), []);
     expect(msg).not.toContain('Actions in Cooldown');
-  });
-});
-
-describe('parsePulseDecision', () => {
-  it('parses valid JSON', () => {
-    const json = JSON.stringify({
-      reasoning: 'All looks good.',
-      actions: [{ type: 'skip', params: {} }],
-      reportMessage: 'Nothing to do.',
-    });
-    const decision = parsePulseDecision(json);
-
-    expect(decision.reasoning).toBe('All looks good.');
-    expect(decision.actions).toHaveLength(1);
-    expect(decision.reportMessage).toBe('Nothing to do.');
-  });
-
-  it('extracts JSON from markdown code block', () => {
-    const wrapped = '```json\n{"reasoning":"test","actions":[],"reportMessage":"ok"}\n```';
-    const decision = parsePulseDecision(wrapped);
-
-    expect(decision.reasoning).toBe('test');
-    expect(decision.reportMessage).toBe('ok');
-  });
-
-  it('returns fallback for invalid JSON', () => {
-    const decision = parsePulseDecision('not json at all');
-
-    expect(decision.reasoning).toContain('Failed to parse');
-    expect(decision.actions).toHaveLength(1);
-    expect(decision.actions[0]!.type).toBe('skip');
-  });
-
-  it('returns fallback for missing fields', () => {
-    const decision = parsePulseDecision('{"foo": "bar"}');
-
-    expect(decision.reasoning).toContain('Invalid');
-    expect(decision.actions[0]!.type).toBe('skip');
   });
 });

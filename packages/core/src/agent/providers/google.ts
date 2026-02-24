@@ -499,7 +499,12 @@ export class GoogleProvider {
       this.clearAbortTimeout();
 
       if (!response.ok || !response.body) {
-        yield err(new InternalError(`Google stream error: ${response.status}`));
+        const errorText = await response.text().catch(() => '');
+        yield err(
+          new InternalError(
+            `Google stream error: ${response.status}${errorText ? ` - ${errorText}` : ''}`
+          )
+        );
         return;
       }
 

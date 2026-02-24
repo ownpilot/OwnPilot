@@ -11,14 +11,16 @@ import {
   Users,
   FileText,
   ListChecks,
+  BookOpen,
 } from './icons';
 import { LoadingSpinner } from './LoadingSpinner';
 import { toolsApi, customToolsApi, customDataApi } from '../api';
+import { extensionsApi } from '../api/endpoints/extensions';
 
 // --- Types ---
 
-export type ResourceType = 'tool' | 'custom-tool' | 'custom-data' | 'builtin-data';
-type TabId = 'tools' | 'custom-data' | 'builtin-data';
+export type ResourceType = 'tool' | 'custom-tool' | 'custom-data' | 'builtin-data' | 'skill';
+type TabId = 'tools' | 'custom-data' | 'builtin-data' | 'skills';
 
 export interface ResourceAttachment {
   name: string;
@@ -39,6 +41,8 @@ interface ResourceItem {
   recordCount?: number;
   /** Full JSON Schema parameters object for tools (fetched from API) */
   parameters?: Record<string, unknown>;
+  /** Skill instructions text (for skill type) */
+  instructions?: string;
 }
 
 interface ToolPickerProps {
@@ -52,6 +56,7 @@ const TABS: { id: TabId; label: string; icon: React.ComponentType<{ className?: 
   { id: 'tools', label: 'Tools', icon: Wrench },
   { id: 'custom-data', label: 'Custom Data', icon: Table },
   { id: 'builtin-data', label: 'Built-in Data', icon: Database },
+  { id: 'skills', label: 'Skills', icon: BookOpen },
 ];
 
 // --- Hard-coded tool instructions per built-in data type ---
@@ -246,6 +251,17 @@ function buildToolInstructions(
   return lines.join('\n');
 }
 
+// --- Build skill instructions for context injection ---
+
+function buildSkillInstructions(name: string, instructions: string): string {
+  return [
+    `Skill: ${name}`,
+    'Follow these skill instructions carefully:',
+    '',
+    instructions,
+  ].join('\n');
+}
+
 // --- Icon mapping ---
 
 function getItemIcon(item: ResourceItem) {
@@ -270,6 +286,9 @@ function getItemIcon(item: ResourceItem) {
   if (item.type === 'custom-data') {
     return <Table className="w-4 h-4" />;
   }
+  if (item.type === 'skill') {
+    return <BookOpen className="w-4 h-4" />;
+  }
   return <Wrench className="w-4 h-4" />;
 }
 
@@ -283,6 +302,8 @@ function getIconColor(type: ResourceType): string {
       return 'text-emerald-500';
     case 'builtin-data':
       return 'text-amber-500';
+    case 'skill':
+      return 'text-violet-500';
   }
 }
 
@@ -296,6 +317,8 @@ function getIconBg(type: ResourceType): string {
       return 'bg-emerald-500/10 group-hover:bg-emerald-500/20';
     case 'builtin-data':
       return 'bg-amber-500/10 group-hover:bg-amber-500/20';
+    case 'skill':
+      return 'bg-violet-500/10 group-hover:bg-violet-500/20';
   }
 }
 
@@ -399,6 +422,16 @@ export function ToolPicker({ onSelect, disabled }: ToolPickerProps) {
         setItems(tableItems);
       } else if (tab === 'builtin-data') {
         setItems(BUILTIN_DATA_ITEMS);
+      } else if (tab === 'skills') {
+        const skills = await extensionsApi.list({ format: 'agentskills', status: 'enabled' });
+        const skillItems: ResourceItem[] = (Array.isArray(skills) ? skills : []).map((s) => ({
+          name: s.name,
+          description: s.description || s.manifest.description || 'No description',
+          category: s.category || 'Skills',
+          type: 'skill' as ResourceType,
+          instructions: s.manifest.instructions || s.manifest.system_prompt || '',
+        }));
+        setItems(skillItems);
       }
     } catch {
       setItems([]);
@@ -411,7 +444,9 @@ export function ToolPicker({ onSelect, disabled }: ToolPickerProps) {
     // Build the appropriate tool instruction block
     let toolInstructions: string;
 
-    if (item.type === 'builtin-data') {
+    if (item.type === 'skill') {
+      toolInstructions = buildSkillInstructions(item.name, item.instructions || '');
+    } else if (item.type === 'builtin-data') {
       toolInstructions = BUILTIN_DATA_TOOL_INSTRUCTIONS[item.name] || `Data source: ${item.name}`;
     } else if (item.type === 'custom-data') {
       const display = item.displayName || item.name;
@@ -464,6 +499,8 @@ export function ToolPicker({ onSelect, disabled }: ToolPickerProps) {
           return 'No custom tables created yet';
         case 'builtin-data':
           return 'No built-in data available';
+        case 'skills':
+          return 'No skills installed yet';
       }
     }
     return 'No results match your search';
@@ -479,6 +516,8 @@ export function ToolPicker({ onSelect, disabled }: ToolPickerProps) {
         return 'Click to attach a custom data table to your message';
       case 'builtin-data':
         return 'Click to attach built-in data with ready-to-use tool instructions';
+      case 'skills':
+        return 'Click to attach skill instructions to your message';
     }
   };
 

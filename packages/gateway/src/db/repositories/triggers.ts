@@ -6,6 +6,7 @@
  */
 
 import { BaseRepository, parseJsonField, parseJsonFieldNullable } from './base.js';
+import { buildUpdateStatement } from './query-helpers.js';
 import { getNextRunTime, generateId } from '@ownpilot/core';
 import { getLog } from '../../services/log.js';
 
@@ -214,36 +215,8 @@ export class TriggersRepository extends BaseRepository {
     const existing = await this.get(id);
     if (!existing) return null;
 
-    const updates: string[] = ['updated_at = $1'];
-    const values: unknown[] = [new Date().toISOString()];
-    let paramIndex = 2;
-
-    if (input.name !== undefined) {
-      updates.push(`name = $${paramIndex++}`);
-      values.push(input.name);
-    }
-    if (input.description !== undefined) {
-      updates.push(`description = $${paramIndex++}`);
-      values.push(input.description);
-    }
-    if (input.config !== undefined) {
-      updates.push(`config = $${paramIndex++}`);
-      values.push(JSON.stringify(input.config));
-    }
-    if (input.action !== undefined) {
-      updates.push(`action = $${paramIndex++}`);
-      values.push(JSON.stringify(input.action));
-    }
-    if (input.enabled !== undefined) {
-      updates.push(`enabled = $${paramIndex++}`);
-      values.push(input.enabled);
-    }
-    if (input.priority !== undefined) {
-      updates.push(`priority = $${paramIndex++}`);
-      values.push(Math.max(1, Math.min(10, input.priority)));
-    }
-
-    // Recalculate next fire if config or enabled changed
+    // Recalculate next fire if config or enabled changed (may throw)
+    let nextFireValue: string | undefined;
     if (input.config !== undefined || input.enabled !== undefined) {
       const config = input.config ?? existing.config;
       const enabled = input.enabled ?? existing.enabled;
@@ -255,17 +228,44 @@ export class TriggersRepository extends BaseRepository {
             `Cannot update schedule trigger: cron expression "${cron ?? '(empty)'}" did not produce a valid next fire time`
           );
         }
-        updates.push(`next_fire = $${paramIndex++}`);
-        values.push(newNextFire);
+        nextFireValue = newNextFire;
       }
     }
 
-    values.push(id, this.userId);
+    const fields = [
+      { column: 'updated_at', value: new Date().toISOString() },
+      { column: 'name', value: input.name },
+      { column: 'description', value: input.description },
+      {
+        column: 'config',
+        value: input.config !== undefined ? JSON.stringify(input.config) : undefined,
+      },
+      {
+        column: 'action',
+        value: input.action !== undefined ? JSON.stringify(input.action) : undefined,
+      },
+      { column: 'enabled', value: input.enabled },
+      {
+        column: 'priority',
+        value: input.priority !== undefined ? Math.max(1, Math.min(10, input.priority)) : undefined,
+      },
+      { column: 'next_fire', value: nextFireValue },
+    ];
 
-    await this.execute(
-      `UPDATE triggers SET ${updates.join(', ')} WHERE id = $${paramIndex++} AND user_id = $${paramIndex}`,
-      values
+    const stmt = buildUpdateStatement(
+      'triggers',
+      fields,
+      [
+        { column: 'id', value: id },
+        { column: 'user_id', value: this.userId },
+      ],
     );
+
+    // stmt is always non-null because updated_at is always provided,
+    // but guard defensively.
+    if (!stmt) return existing;
+
+    await this.execute(stmt.sql, stmt.params);
 
     return this.get(id);
   }

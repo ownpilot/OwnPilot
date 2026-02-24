@@ -17,8 +17,8 @@ import {
   ERROR_CODES,
   getErrorMessage,
 } from './helpers.js';
-import { MAX_PAGINATION_OFFSET } from '../config/defaults.js';
 import { wsGateway } from '../ws/server.js';
+import { pagination } from '../middleware/pagination.js';
 
 // =============================================================================
 // Types
@@ -118,7 +118,7 @@ export const expensesRoutes = new Hono();
 /**
  * GET /api/v1/expenses - List all expenses with optional filtering
  */
-expensesRoutes.get('/', async (c) => {
+expensesRoutes.get('/', pagination({ defaultLimit: 100, maxLimit: 1000 }), async (c) => {
   const db = await loadExpenseDb();
 
   // Query params
@@ -138,8 +138,7 @@ expensesRoutes.get('/', async (c) => {
     'other',
   ] as const);
   const search = c.req.query('search');
-  const limit = getIntParam(c, 'limit', 100, 1, 1000);
-  const offset = getIntParam(c, 'offset', 0, 0, MAX_PAGINATION_OFFSET);
+  const { limit, offset } = c.get('pagination')!;
 
   let expenses = [...db.expenses];
 

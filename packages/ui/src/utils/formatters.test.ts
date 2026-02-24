@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { formatNumber, formatBytes } from './formatters.js';
+import { formatNumber, formatBytes, formatToolName } from './formatters.js';
 
 describe('formatNumber', () => {
   it('returns plain string for numbers under 1000', () => {
@@ -58,5 +58,27 @@ describe('formatBytes', () => {
     // parseFloat strips trailing zeros — "1.50" → "1.5" is intentional for clean display
     expect(formatBytes(1536, 2)).toBe('1.5 KB');
     expect(formatBytes(1536, 0)).toBe('2 KB');
+  });
+});
+
+describe('formatToolName', () => {
+  it('title-cases simple names', () => {
+    expect(formatToolName('get_time')).toBe('Get Time');
+  });
+
+  it('strips namespace prefix', () => {
+    expect(formatToolName('core.get_time')).toBe('Get Time');
+  });
+
+  it('strips nested namespace prefixes', () => {
+    expect(formatToolName('plugin.my_plugin.search_web')).toBe('Search Web');
+  });
+
+  it('handles single word names', () => {
+    expect(formatToolName('search')).toBe('Search');
+  });
+
+  it('handles names without underscores or dots', () => {
+    expect(formatToolName('mytool')).toBe('Mytool');
   });
 });

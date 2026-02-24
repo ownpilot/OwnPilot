@@ -6,7 +6,6 @@
 
 import { Hono } from 'hono';
 import {
-  type PlanStatus,
   type CreatePlanInput,
   type UpdatePlanInput,
   type CreateStepInput,
@@ -21,10 +20,12 @@ import {
   ERROR_CODES,
   notFoundError,
   getErrorMessage,
+  validateQueryEnum,
 } from './helpers.js';
-import { MAX_PAGINATION_OFFSET } from '../config/defaults.js';
 import { wsGateway } from '../ws/server.js';
 import { getLog } from '../services/log.js';
+import { pagination } from '../middleware/pagination.js';
+import { createCrudRoutes } from './crud-factory.js';
 
 const log = getLog('Plans');
 export const plansRoutes = new Hono();
@@ -36,25 +37,19 @@ export const plansRoutes = new Hono();
 /**
  * GET /plans - List plans
  */
-plansRoutes.get('/', async (c) => {
+plansRoutes.get('/', pagination(), async (c) => {
   const userId = getUserId(c);
-  const VALID_PLAN_STATUSES: PlanStatus[] = [
+  const status = validateQueryEnum(c.req.query('status'), [
     'pending',
     'running',
     'paused',
     'completed',
     'failed',
     'cancelled',
-  ];
-  const rawStatus = c.req.query('status');
-  const status =
-    rawStatus && VALID_PLAN_STATUSES.includes(rawStatus as PlanStatus)
-      ? (rawStatus as PlanStatus)
-      : undefined;
+  ] as const);
   const goalId = c.req.query('goalId');
   const triggerId = c.req.query('triggerId');
-  const limit = getIntParam(c, 'limit', 20, 1, 100);
-  const offset = getIntParam(c, 'offset', 0, 0, MAX_PAGINATION_OFFSET);
+  const { limit, offset } = c.get('pagination')!;
 
   const service = getServiceRegistry().get(Services.Plan);
   const [total, plans] = await Promise.all([
@@ -181,26 +176,14 @@ plansRoutes.patch('/:id', async (c) => {
   return apiResponse(c, updated);
 });
 
-/**
- * DELETE /plans/:id - Delete a plan
- */
-plansRoutes.delete('/:id', async (c) => {
-  const userId = getUserId(c);
-  const id = c.req.param('id');
-
-  const service = getServiceRegistry().get(Services.Plan);
-  const deleted = await service.deletePlan(userId, id);
-
-  if (!deleted) {
-    return notFoundError(c, 'Plan', id);
-  }
-
-  wsGateway.broadcast('data:changed', { entity: 'plan', action: 'deleted', id });
-
-  return apiResponse(c, {
-    message: 'Plan deleted successfully.',
-  });
+// Factory-generated DELETE /:id route
+const planCrudRoutes = createCrudRoutes({
+  entity: 'plan',
+  serviceToken: Services.Plan,
+  methods: ['delete'],
+  serviceMethods: { delete: 'deletePlan' },
 });
+plansRoutes.route('/', planCrudRoutes);
 
 // ============================================================================
 // Plan Execution Routes

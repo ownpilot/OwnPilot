@@ -6,35 +6,17 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { createMockAdapter } from '../../test-helpers.js';
 
 // ---------------------------------------------------------------------------
 // Mock the database adapter
 // ---------------------------------------------------------------------------
 
-const mockAdapter = {
-  type: 'postgres' as const,
-  isConnected: () => true,
-  query: vi.fn(async () => []),
-  queryOne: vi.fn(async () => null),
-  execute: vi.fn(async () => ({ changes: 1 })),
-  transaction: vi.fn(async (fn: () => Promise<unknown>) => fn()),
-  exec: vi.fn(async () => {}),
-  close: vi.fn(async () => {}),
-  now: () => 'NOW()',
-  date: (col: string) => `DATE(${col})`,
-  dateSubtract: (col: string, n: number, u: string) => `${col} - INTERVAL '${n} ${u}'`,
-  placeholder: (i: number) => `$${i}`,
-  boolean: (v: boolean) => v,
-  parseBoolean: (v: unknown) => Boolean(v),
-};
+const mockAdapter = createMockAdapter();
 
 vi.mock('../adapters/index.js', () => ({
   getAdapter: async () => mockAdapter,
   getAdapterSync: () => mockAdapter,
-}));
-
-vi.mock('../../services/log.js', () => ({
-  getLog: () => ({ info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() }),
 }));
 
 import { ChatRepository } from './chat.js';

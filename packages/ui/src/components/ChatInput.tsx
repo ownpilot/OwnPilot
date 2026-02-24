@@ -42,6 +42,8 @@ function getChipStyle(type: ResourceType): string {
       return 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20';
     case 'builtin-data':
       return 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20';
+    case 'skill':
+      return 'bg-violet-500/10 text-violet-600 dark:text-violet-400 border-violet-500/20';
   }
 }
 
@@ -55,6 +57,8 @@ function getChipLabel(type: ResourceType): string {
       return 'data';
     case 'builtin-data':
       return 'built-in';
+    case 'skill':
+      return 'skill';
   }
 }
 

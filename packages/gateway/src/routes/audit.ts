@@ -7,8 +7,8 @@
 
 import { Hono } from 'hono';
 import { getAuditLogger } from '../audit/index.js';
-import { apiResponse, apiError, getIntParam, ERROR_CODES, validateQueryEnum } from './helpers.js';
-import { MAX_PAGINATION_OFFSET } from '../config/defaults.js';
+import { apiResponse, apiError, ERROR_CODES, validateQueryEnum } from './helpers.js';
+import { pagination } from '../middleware/pagination.js';
 
 const app = new Hono();
 
@@ -30,7 +30,8 @@ const app = new Hono();
  * - offset: pagination offset
  * - order: asc or desc (default desc)
  */
-app.get('/', async (c) => {
+app.get('/', pagination({ defaultLimit: 100, maxLimit: 1000 }), async (c) => {
+  const { limit, offset } = c.get('pagination')!;
   const logger = getAuditLogger();
   await logger.initialize();
 
@@ -58,8 +59,8 @@ app.get('/', async (c) => {
     from: from ? new Date(from) : undefined,
     to: to ? new Date(to) : undefined,
     correlationId: c.req.query('correlationId'),
-    limit: getIntParam(c, 'limit', 100, 1, 1000),
-    offset: getIntParam(c, 'offset', 0, 0, MAX_PAGINATION_OFFSET),
+    limit,
+    offset,
     order: validateQueryEnum(c.req.query('order'), ['asc', 'desc'] as const),
   });
 
@@ -95,14 +96,15 @@ app.get('/stats', async (c) => {
 /**
  * GET /audit/tools - Get tool execution logs
  */
-app.get('/tools', async (c) => {
+app.get('/tools', pagination({ defaultLimit: 50, maxLimit: 1000 }), async (c) => {
+  const { limit, offset } = c.get('pagination')!;
   const logger = getAuditLogger();
   await logger.initialize();
 
   const result = await logger.query({
     types: ['tool.execute', 'tool.success', 'tool.error'],
-    limit: getIntParam(c, 'limit', 50, 1, 1000),
-    offset: getIntParam(c, 'offset', 0, 0, MAX_PAGINATION_OFFSET),
+    limit,
+    offset,
     order: 'desc',
   });
 
@@ -119,14 +121,15 @@ app.get('/tools', async (c) => {
 /**
  * GET /audit/sessions - Get session/conversation logs
  */
-app.get('/sessions', async (c) => {
+app.get('/sessions', pagination({ defaultLimit: 50, maxLimit: 1000 }), async (c) => {
+  const { limit, offset } = c.get('pagination')!;
   const logger = getAuditLogger();
   await logger.initialize();
 
   const result = await logger.query({
     types: ['session.create', 'session.destroy', 'message.receive', 'message.send', 'system.error'],
-    limit: getIntParam(c, 'limit', 50, 1, 1000),
-    offset: getIntParam(c, 'offset', 0, 0, MAX_PAGINATION_OFFSET),
+    limit,
+    offset,
     order: 'desc',
   });
 
@@ -143,14 +146,15 @@ app.get('/sessions', async (c) => {
 /**
  * GET /audit/errors - Get error logs
  */
-app.get('/errors', async (c) => {
+app.get('/errors', pagination({ defaultLimit: 50, maxLimit: 1000 }), async (c) => {
+  const { limit, offset } = c.get('pagination')!;
   const logger = getAuditLogger();
   await logger.initialize();
 
   const result = await logger.query({
     minSeverity: 'error',
-    limit: getIntParam(c, 'limit', 50, 1, 1000),
-    offset: getIntParam(c, 'offset', 0, 0, MAX_PAGINATION_OFFSET),
+    limit,
+    offset,
     order: 'desc',
   });
 

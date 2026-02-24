@@ -123,6 +123,13 @@ describe('PlanExecutor', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.useFakeTimers();
+
+    // Reset mock implementations that vi.clearAllMocks() doesn't restore
+    mockPlanService.areDependenciesMet.mockResolvedValue(true);
+    mockPlanService.updatePlan.mockResolvedValue({});
+    mockPlanService.getNextStep.mockResolvedValue(null);
+    mockPlanService.getStepsByStatus.mockResolvedValue([]);
+
     executor = new PlanExecutor({ userId: 'user-1' });
   });
 
@@ -572,6 +579,1101 @@ describe('PlanExecutor', () => {
       await resultPromise;
 
       expect(listener).toHaveBeenCalled();
+    });
+
+    it('emits step:started event', async () => {
+      const listener = vi.fn();
+      executor.on('step:started', listener);
+
+      const plan = makePlan();
+      const step = makeStep({
+        config: { toolName: 'test_tool', toolArgs: {} },
+      });
+
+      mockPlanService.getPlan.mockResolvedValue(plan);
+      mockPlanService.getSteps.mockResolvedValue([step]);
+      (hasTool as ReturnType<typeof vi.fn>).mockResolvedValue(true);
+      (executeTool as ReturnType<typeof vi.fn>).mockResolvedValue({
+        success: true,
+        result: 'ok',
+      });
+
+      let callCount = 0;
+      mockPlanService.getNextStep.mockImplementation(async () => {
+        callCount++;
+        return callCount === 1 ? step : null;
+      });
+      mockPlanService.getStepsByStatus.mockResolvedValue([step]);
+
+      const resultPromise = executor.execute('plan-1');
+      await vi.advanceTimersByTimeAsync(100);
+      await resultPromise;
+
+      expect(listener).toHaveBeenCalledWith(plan, step);
+    });
+  });
+
+  // ========================================================================
+  // Retry logic with backoff
+  // ========================================================================
+
+  describe('retry with backoff', () => {
+    it('retries a failed step and resets to pending', async () => {
+      const plan = makePlan();
+      const step = makeStep({
+        retryCount: 0,
+        maxRetries: 2,
+        onFailure: 'abort',
+        config: { toolName: 'flaky_tool', toolArgs: {} },
+      });
+
+      mockPlanService.getPlan.mockResolvedValue(plan);
+      mockPlanService.getSteps.mockResolvedValue([step]);
+      (hasTool as ReturnType<typeof vi.fn>).mockResolvedValue(true);
+      (executeTool as ReturnType<typeof vi.fn>)
+        .mockResolvedValueOnce({ success: false, error: 'Transient failure' })
+        .mockResolvedValueOnce({ success: true, result: 'recovered' });
+
+      let callCount = 0;
+      mockPlanService.getNextStep.mockImplementation(async () => {
+        callCount++;
+        // First call: return the step (fails, retries)
+        // Second call: return the step again (succeeds)
+        // Third call: null (done)
+        return callCount <= 2 ? step : null;
+      });
+      mockPlanService.getStepsByStatus.mockResolvedValue([step]);
+
+      const resultPromise = executor.execute('plan-1');
+      // Need enough time for backoff (1000ms * 2^0 = 1000ms)
+      await vi.advanceTimersByTimeAsync(5000);
+      const _result = await resultPromise;
+
+      // Step should have been set back to pending with retryCount: 1
+      expect(mockPlanService.updateStep).toHaveBeenCalledWith('user-1', 'step-1', {
+        status: 'pending',
+        retryCount: 1,
+        error: 'Transient failure',
+      });
+    });
+  });
+
+  // ========================================================================
+  // Step failure with onFailure: 'skip'
+  // ========================================================================
+
+  describe('step failure with skip', () => {
+    it('continues to next step when onFailure is skip', async () => {
+      const plan = makePlan();
+      const step1 = makeStep({
+        id: 'step-1',
+        retryCount: 3,
+        maxRetries: 3,
+        onFailure: 'skip',
+        config: { toolName: 'skip_tool', toolArgs: {} },
+      });
+      const step2 = makeStep({
+        id: 'step-2',
+        orderNum: 2,
+        config: { toolName: 'next_tool', toolArgs: {} },
+      });
+
+      mockPlanService.getPlan.mockResolvedValue(plan);
+      mockPlanService.getSteps.mockResolvedValue([step1, step2]);
+      (hasTool as ReturnType<typeof vi.fn>).mockResolvedValue(true);
+      (executeTool as ReturnType<typeof vi.fn>)
+        .mockResolvedValueOnce({ success: false, error: 'Skippable error' })
+        .mockResolvedValueOnce({ success: true, result: 'ok' });
+
+      let callCount = 0;
+      mockPlanService.getNextStep.mockImplementation(async () => {
+        callCount++;
+        if (callCount === 1) return step1;
+        if (callCount === 2) return step2;
+        return null;
+      });
+      mockPlanService.getStepsByStatus.mockResolvedValue([step2]);
+
+      const resultPromise = executor.execute('plan-1');
+      await vi.advanceTimersByTimeAsync(200);
+      const _result = await resultPromise;
+
+      // Step 1 should be marked as failed
+      expect(mockPlanService.updateStep).toHaveBeenCalledWith('user-1', 'step-1', {
+        status: 'failed',
+        error: 'Skippable error',
+      });
+      // Step 2 should have been started
+      expect(mockPlanService.updateStep).toHaveBeenCalledWith('user-1', 'step-2', {
+        status: 'running',
+      });
+    });
+  });
+
+  // ========================================================================
+  // Step failure with onFailure referencing another step
+  // ========================================================================
+
+  describe('step failure with jump-to-step', () => {
+    it('looks up the failure step by ID', async () => {
+      const plan = makePlan();
+      const step1 = makeStep({
+        id: 'step-1',
+        retryCount: 3,
+        maxRetries: 3,
+        onFailure: 'step-3', // Jump to step-3
+        config: { toolName: 'jump_tool', toolArgs: {} },
+      });
+
+      mockPlanService.getPlan.mockResolvedValue(plan);
+      mockPlanService.getSteps
+        .mockResolvedValueOnce([step1]) // initial getSteps
+        .mockResolvedValue([step1, { id: 'step-3', status: 'pending' }]); // failure step lookup
+      (hasTool as ReturnType<typeof vi.fn>).mockResolvedValue(true);
+      (executeTool as ReturnType<typeof vi.fn>).mockResolvedValue({
+        success: false,
+        error: 'Step failed',
+      });
+
+      let callCount = 0;
+      mockPlanService.getNextStep.mockImplementation(async () => {
+        callCount++;
+        return callCount === 1 ? step1 : null;
+      });
+      mockPlanService.getStepsByStatus.mockResolvedValue([]);
+
+      const resultPromise = executor.execute('plan-1');
+      await vi.advanceTimersByTimeAsync(200);
+      const _result = await resultPromise;
+
+      // Step should be marked failed
+      expect(mockPlanService.updateStep).toHaveBeenCalledWith('user-1', 'step-1', {
+        status: 'failed',
+        error: 'Step failed',
+      });
+    });
+  });
+
+  // ========================================================================
+  // Dependency deadlock detection
+  // ========================================================================
+
+  describe('dependency deadlock', () => {
+    it('detects deadlock after max stall count', async () => {
+      const plan = makePlan();
+      const step = makeStep({
+        id: 'step-1',
+        config: { toolName: 'test_tool', toolArgs: {} },
+      });
+
+      mockPlanService.getPlan.mockResolvedValue(plan);
+      mockPlanService.getSteps.mockResolvedValue([step]);
+      // Dependencies are never met
+      mockPlanService.areDependenciesMet.mockResolvedValue(false);
+      // getNextStep returns the step each time, but deps always unmet
+      mockPlanService.getNextStep.mockResolvedValue(step);
+      mockPlanService.getStepsByStatus.mockResolvedValue([step]);
+
+      const resultPromise = executor.execute('plan-1');
+      // Need to advance past PLAN_STALL_RETRY_MS * PLAN_MAX_STALL
+      await vi.advanceTimersByTimeAsync(10_000);
+      const result = await resultPromise;
+
+      expect(result.status).toBe('failed');
+      expect(result.error).toContain('Dependency deadlock');
+      // Blocked steps should be marked
+      expect(mockPlanService.updateStep).toHaveBeenCalledWith('user-1', 'step-1', {
+        status: 'blocked',
+      });
+    });
+  });
+
+  // ========================================================================
+  // Pause during execution
+  // ========================================================================
+
+  describe('pause during execution', () => {
+    it('pauses a running plan and emits event', async () => {
+      const plan = makePlan();
+      mockPlanService.getPlan.mockResolvedValue(plan);
+      mockPlanService.getSteps.mockResolvedValue([]);
+
+      // Make getNextStep hang so we can pause while running
+      let resolveNextStep!: (value: null) => void;
+      mockPlanService.getNextStep.mockReturnValue(
+        new Promise<null>((resolve) => {
+          resolveNextStep = resolve;
+        })
+      );
+      mockPlanService.getStepsByStatus.mockResolvedValue([]);
+
+      const pauseListener = vi.fn();
+      executor.on('plan:paused', pauseListener);
+
+      const promise = executor.execute('plan-1');
+      await vi.advanceTimersByTimeAsync(0);
+
+      // Now pause
+      const paused = await executor.pause('plan-1');
+      expect(paused).toBe(true);
+      expect(executor.isPaused('plan-1')).toBe(true);
+
+      // Release the getNextStep promise
+      resolveNextStep(null);
+      await vi.advanceTimersByTimeAsync(10);
+      await promise;
+
+      expect(pauseListener).toHaveBeenCalled();
+    });
+  });
+
+  // ========================================================================
+  // Abort during execution
+  // ========================================================================
+
+  describe('abort during execution', () => {
+    it('aborts a running plan', async () => {
+      const plan = makePlan();
+
+      mockPlanService.getPlan.mockResolvedValue(plan);
+      mockPlanService.getSteps.mockResolvedValue([]);
+
+      // Block on getNextStep with a deferred promise
+      let resolveNextStep!: (value: null) => void;
+      mockPlanService.getNextStep.mockReturnValue(
+        new Promise<null>((resolve) => {
+          resolveNextStep = resolve;
+        })
+      );
+      mockPlanService.getStepsByStatus.mockResolvedValue([]);
+
+      const promise = executor.execute('plan-1');
+      await vi.advanceTimersByTimeAsync(0);
+
+      const aborted = await executor.abort('plan-1');
+      expect(aborted).toBe(true);
+
+      expect(mockPlanService.updatePlan).toHaveBeenCalledWith('user-1', 'plan-1', {
+        status: 'cancelled',
+      });
+
+      // Release getNextStep — returns null so executeSteps completes
+      // Note: abort signal is only checked at the top of the loop,
+      // so when getNextStep returns null, the plan completes normally
+      resolveNextStep(null);
+      await vi.advanceTimersByTimeAsync(100);
+      const result = await promise;
+
+      // After abort, updatePlan was called with 'cancelled'
+      // but executeSteps completed (step=null → completed path)
+      expect(result.planId).toBe('plan-1');
+    });
+  });
+
+  // ========================================================================
+  // Resume after pause
+  // ========================================================================
+
+  describe('resume', () => {
+    it('resumes a paused plan', async () => {
+      const plan = makePlan({ status: 'paused' });
+      mockPlanService.getPlan.mockResolvedValue(plan);
+      mockPlanService.getSteps.mockResolvedValue([]);
+      mockPlanService.getNextStep.mockResolvedValue(null);
+      mockPlanService.getStepsByStatus.mockResolvedValue([]);
+
+      const resumeListener = vi.fn();
+      executor.on('plan:resumed', resumeListener);
+
+      const resultPromise = executor.resume('plan-1');
+      await vi.advanceTimersByTimeAsync(100);
+      const result = await resultPromise;
+
+      expect(resumeListener).toHaveBeenCalledWith(plan);
+      expect(mockPlanService.updatePlan).toHaveBeenCalledWith('user-1', 'plan-1', {
+        status: 'running',
+      });
+      expect(result.planId).toBe('plan-1');
+    });
+  });
+
+  // ========================================================================
+  // Condition handler edge cases
+  // ========================================================================
+
+  describe('condition handler edge cases', () => {
+    it('evaluates false condition', async () => {
+      const plan = makePlan();
+      const step = makeStep({
+        type: 'condition',
+        config: { condition: 'false', trueStep: 'step-3', falseStep: 'step-4' },
+      });
+
+      mockPlanService.getPlan.mockResolvedValue(plan);
+      mockPlanService.getSteps.mockResolvedValue([step]);
+
+      let callCount = 0;
+      mockPlanService.getNextStep.mockImplementation(async () => {
+        callCount++;
+        return callCount === 1 ? step : null;
+      });
+      mockPlanService.getStepsByStatus.mockResolvedValue([step]);
+
+      const resultPromise = executor.execute('plan-1');
+      await vi.advanceTimersByTimeAsync(100);
+      const _result = await resultPromise;
+
+      expect(mockPlanService.updateStep).toHaveBeenCalledWith(
+        'user-1',
+        'step-1',
+        expect.objectContaining({
+          status: 'completed',
+          result: { condition: 'false', result: false },
+        })
+      );
+    });
+
+    it('evaluates result: condition referencing previous step', async () => {
+      const plan = makePlan();
+      const step = makeStep({
+        type: 'condition',
+        config: { condition: 'result:step-0', trueStep: 'step-3' },
+      });
+
+      mockPlanService.getPlan.mockResolvedValue(plan);
+      mockPlanService.getSteps.mockResolvedValue([
+        makeStep({ id: 'step-0', status: 'completed', result: { data: 'yes' } }),
+        step,
+      ]);
+
+      let callCount = 0;
+      mockPlanService.getNextStep.mockImplementation(async () => {
+        callCount++;
+        return callCount === 1 ? step : null;
+      });
+      mockPlanService.getStepsByStatus.mockResolvedValue([step]);
+
+      const resultPromise = executor.execute('plan-1');
+      await vi.advanceTimersByTimeAsync(100);
+      const _result = await resultPromise;
+
+      // step-0's result is loaded from the initial steps scan
+      expect(mockPlanService.updateStep).toHaveBeenCalledWith(
+        'user-1',
+        'step-1',
+        expect.objectContaining({ status: 'completed' })
+      );
+    });
+
+    it('returns error when condition config is missing', async () => {
+      const plan = makePlan();
+      const step = makeStep({
+        type: 'condition',
+        config: {},
+        retryCount: 3,
+        maxRetries: 3,
+      });
+
+      mockPlanService.getPlan.mockResolvedValue(plan);
+      mockPlanService.getSteps.mockResolvedValue([step]);
+      mockPlanService.getNextStep.mockResolvedValueOnce(step).mockResolvedValue(null);
+      mockPlanService.getStepsByStatus.mockResolvedValue([]);
+
+      const resultPromise = executor.execute('plan-1');
+      await vi.advanceTimersByTimeAsync(200);
+      const result = await resultPromise;
+
+      expect(result.status).toBe('failed');
+    });
+  });
+
+  // ========================================================================
+  // Parallel handler
+  // ========================================================================
+
+  describe('parallel handler', () => {
+    it('executes multiple tools in parallel', async () => {
+      const plan = makePlan();
+      const step = makeStep({
+        type: 'parallel',
+        config: {
+          steps: [
+            { toolName: 'tool_a', toolArgs: { key: 'a' } },
+            { toolName: 'tool_b', toolArgs: { key: 'b' } },
+          ],
+        },
+      });
+
+      mockPlanService.getPlan.mockResolvedValue(plan);
+      mockPlanService.getSteps.mockResolvedValue([step]);
+      (hasTool as ReturnType<typeof vi.fn>).mockResolvedValue(true);
+      (executeTool as ReturnType<typeof vi.fn>)
+        .mockResolvedValueOnce({ success: true, result: 'result-a' })
+        .mockResolvedValueOnce({ success: true, result: 'result-b' });
+
+      let callCount = 0;
+      mockPlanService.getNextStep.mockImplementation(async () => {
+        callCount++;
+        return callCount === 1 ? step : null;
+      });
+      mockPlanService.getStepsByStatus.mockResolvedValue([step]);
+
+      const resultPromise = executor.execute('plan-1');
+      await vi.advanceTimersByTimeAsync(200);
+      const _result = await resultPromise;
+
+      expect(executeTool).toHaveBeenCalledTimes(2);
+      expect(mockPlanService.updateStep).toHaveBeenCalledWith(
+        'user-1',
+        'step-1',
+        expect.objectContaining({ status: 'completed' })
+      );
+    });
+
+    it('returns empty results for no steps', async () => {
+      const plan = makePlan();
+      const step = makeStep({
+        type: 'parallel',
+        config: { steps: [] },
+      });
+
+      mockPlanService.getPlan.mockResolvedValue(plan);
+      mockPlanService.getSteps.mockResolvedValue([step]);
+
+      let callCount = 0;
+      mockPlanService.getNextStep.mockImplementation(async () => {
+        callCount++;
+        return callCount === 1 ? step : null;
+      });
+      mockPlanService.getStepsByStatus.mockResolvedValue([step]);
+
+      const resultPromise = executor.execute('plan-1');
+      await vi.advanceTimersByTimeAsync(100);
+      const _result = await resultPromise;
+
+      expect(mockPlanService.updateStep).toHaveBeenCalledWith(
+        'user-1',
+        'step-1',
+        expect.objectContaining({ status: 'completed' })
+      );
+    });
+
+    it('reports failure when some parallel steps fail', async () => {
+      const plan = makePlan();
+      const step = makeStep({
+        type: 'parallel',
+        config: {
+          steps: [
+            { toolName: 'tool_ok' },
+            { toolName: 'tool_fail' },
+          ],
+        },
+        retryCount: 3,
+        maxRetries: 3,
+      });
+
+      mockPlanService.getPlan.mockResolvedValue(plan);
+      mockPlanService.getSteps.mockResolvedValue([step]);
+      (hasTool as ReturnType<typeof vi.fn>)
+        .mockResolvedValueOnce(true)
+        .mockResolvedValueOnce(true);
+      (executeTool as ReturnType<typeof vi.fn>)
+        .mockResolvedValueOnce({ success: true, result: 'ok' })
+        .mockResolvedValueOnce({ success: false, error: 'Parallel fail' });
+
+      let callCount = 0;
+      mockPlanService.getNextStep.mockImplementation(async () => {
+        callCount++;
+        return callCount === 1 ? step : null;
+      });
+      mockPlanService.getStepsByStatus.mockResolvedValue([]);
+
+      const resultPromise = executor.execute('plan-1');
+      await vi.advanceTimersByTimeAsync(200);
+      const result = await resultPromise;
+
+      // Should fail because not all succeeded
+      expect(result.status).toBe('failed');
+    });
+
+    it('handles string-only step entries', async () => {
+      const plan = makePlan();
+      const step = makeStep({
+        type: 'parallel',
+        config: {
+          steps: ['tool_string'],
+        },
+      });
+
+      mockPlanService.getPlan.mockResolvedValue(plan);
+      mockPlanService.getSteps.mockResolvedValue([step]);
+      (hasTool as ReturnType<typeof vi.fn>).mockResolvedValue(true);
+      (executeTool as ReturnType<typeof vi.fn>).mockResolvedValue({
+        success: true,
+        result: 'string-ok',
+      });
+
+      let callCount = 0;
+      mockPlanService.getNextStep.mockImplementation(async () => {
+        callCount++;
+        return callCount === 1 ? step : null;
+      });
+      mockPlanService.getStepsByStatus.mockResolvedValue([step]);
+
+      const resultPromise = executor.execute('plan-1');
+      await vi.advanceTimersByTimeAsync(200);
+      const _result = await resultPromise;
+
+      expect(executeTool).toHaveBeenCalledWith('tool_string', {}, 'user-1');
+    });
+
+    it('returns not-found error for missing parallel tools', async () => {
+      const plan = makePlan();
+      const step = makeStep({
+        type: 'parallel',
+        config: {
+          steps: [{ toolName: 'missing_tool' }],
+        },
+        retryCount: 3,
+        maxRetries: 3,
+      });
+
+      mockPlanService.getPlan.mockResolvedValue(plan);
+      mockPlanService.getSteps.mockResolvedValue([step]);
+      (hasTool as ReturnType<typeof vi.fn>).mockResolvedValue(false);
+
+      let callCount = 0;
+      mockPlanService.getNextStep.mockImplementation(async () => {
+        callCount++;
+        return callCount === 1 ? step : null;
+      });
+      mockPlanService.getStepsByStatus.mockResolvedValue([]);
+
+      const resultPromise = executor.execute('plan-1');
+      await vi.advanceTimersByTimeAsync(200);
+      const result = await resultPromise;
+
+      expect(result.status).toBe('failed');
+    });
+  });
+
+  // ========================================================================
+  // Loop handler
+  // ========================================================================
+
+  describe('loop handler', () => {
+    it('executes tool in a loop until max iterations', async () => {
+      const plan = makePlan();
+      const step = makeStep({
+        type: 'loop',
+        config: { toolName: 'loop_tool', toolArgs: { x: 1 }, maxIterations: 3 },
+      });
+
+      mockPlanService.getPlan.mockResolvedValue(plan);
+      mockPlanService.getSteps.mockResolvedValue([step]);
+      (hasTool as ReturnType<typeof vi.fn>).mockResolvedValue(true);
+      (executeTool as ReturnType<typeof vi.fn>).mockResolvedValue({
+        success: true,
+        result: 'iter-ok',
+      });
+
+      let callCount = 0;
+      mockPlanService.getNextStep.mockImplementation(async () => {
+        callCount++;
+        return callCount === 1 ? step : null;
+      });
+      mockPlanService.getStepsByStatus.mockResolvedValue([step]);
+
+      const resultPromise = executor.execute('plan-1');
+      await vi.advanceTimersByTimeAsync(200);
+      const _result = await resultPromise;
+
+      // Tool called 3 times (maxIterations)
+      expect(executeTool).toHaveBeenCalledTimes(3);
+      // Each call should include iteration number
+      expect(executeTool).toHaveBeenCalledWith('loop_tool', { x: 1, iteration: 0 }, 'user-1');
+      expect(executeTool).toHaveBeenCalledWith('loop_tool', { x: 1, iteration: 1 }, 'user-1');
+      expect(executeTool).toHaveBeenCalledWith('loop_tool', { x: 1, iteration: 2 }, 'user-1');
+    });
+
+    it('stops loop on tool failure', async () => {
+      const plan = makePlan();
+      const step = makeStep({
+        type: 'loop',
+        config: { toolName: 'flaky_loop', toolArgs: {}, maxIterations: 5 },
+        retryCount: 3,
+        maxRetries: 3,
+      });
+
+      mockPlanService.getPlan.mockResolvedValue(plan);
+      mockPlanService.getSteps.mockResolvedValue([step]);
+      (hasTool as ReturnType<typeof vi.fn>).mockResolvedValue(true);
+      (executeTool as ReturnType<typeof vi.fn>)
+        .mockResolvedValueOnce({ success: true, result: 'ok' })
+        .mockResolvedValueOnce({ success: false, error: 'Loop iteration failed' });
+
+      let callCount = 0;
+      mockPlanService.getNextStep.mockImplementation(async () => {
+        callCount++;
+        return callCount === 1 ? step : null;
+      });
+      mockPlanService.getStepsByStatus.mockResolvedValue([]);
+
+      const resultPromise = executor.execute('plan-1');
+      await vi.advanceTimersByTimeAsync(200);
+      const result = await resultPromise;
+
+      // Should fail after 2nd iteration
+      expect(executeTool).toHaveBeenCalledTimes(2);
+      expect(result.status).toBe('failed');
+    });
+
+    it('returns error for unknown loop tool', async () => {
+      const plan = makePlan();
+      const step = makeStep({
+        type: 'loop',
+        config: { toolName: 'missing_tool', maxIterations: 3 },
+        retryCount: 3,
+        maxRetries: 3,
+      });
+
+      mockPlanService.getPlan.mockResolvedValue(plan);
+      mockPlanService.getSteps.mockResolvedValue([step]);
+      (hasTool as ReturnType<typeof vi.fn>).mockResolvedValue(false);
+
+      let callCount = 0;
+      mockPlanService.getNextStep.mockImplementation(async () => {
+        callCount++;
+        return callCount === 1 ? step : null;
+      });
+      mockPlanService.getStepsByStatus.mockResolvedValue([]);
+
+      const resultPromise = executor.execute('plan-1');
+      await vi.advanceTimersByTimeAsync(200);
+      const result = await resultPromise;
+
+      expect(result.status).toBe('failed');
+    });
+  });
+
+  // ========================================================================
+  // Sub-plan handler
+  // ========================================================================
+
+  describe('sub_plan handler', () => {
+    it('returns error when no sub-plan ID specified', async () => {
+      const plan = makePlan();
+      const step = makeStep({
+        type: 'sub_plan',
+        config: {},
+        retryCount: 3,
+        maxRetries: 3,
+      });
+
+      mockPlanService.getPlan.mockResolvedValue(plan);
+      mockPlanService.getSteps.mockResolvedValue([step]);
+
+      let callCount = 0;
+      mockPlanService.getNextStep.mockImplementation(async () => {
+        callCount++;
+        return callCount === 1 ? step : null;
+      });
+      mockPlanService.getStepsByStatus.mockResolvedValue([]);
+
+      const resultPromise = executor.execute('plan-1');
+      await vi.advanceTimersByTimeAsync(200);
+      const result = await resultPromise;
+
+      expect(result.status).toBe('failed');
+    });
+  });
+
+  // ========================================================================
+  // Step branching (nextStep)
+  // ========================================================================
+
+  describe('step branching', () => {
+    it('marks intermediate steps as skipped when branching', async () => {
+      const plan = makePlan();
+      const step1 = makeStep({
+        id: 'step-1',
+        orderNum: 1,
+        type: 'condition',
+        config: { condition: 'true', trueStep: 'step-4' },
+      });
+      const step2 = makeStep({ id: 'step-2', orderNum: 2, status: 'pending' });
+      const step3 = makeStep({ id: 'step-3', orderNum: 3, status: 'pending' });
+      const step4 = makeStep({ id: 'step-4', orderNum: 4, status: 'pending' });
+
+      mockPlanService.getPlan.mockResolvedValue(plan);
+      mockPlanService.getSteps.mockResolvedValue([step1, step2, step3, step4]);
+
+      let callCount = 0;
+      mockPlanService.getNextStep.mockImplementation(async () => {
+        callCount++;
+        return callCount === 1 ? step1 : null;
+      });
+      mockPlanService.getStepsByStatus.mockResolvedValue([]);
+
+      const skipListener = vi.fn();
+      executor.on('step:skipped', skipListener);
+
+      const resultPromise = executor.execute('plan-1');
+      await vi.advanceTimersByTimeAsync(200);
+      const _result = await resultPromise;
+
+      // Steps 2 and 3 should be skipped
+      expect(mockPlanService.updateStep).toHaveBeenCalledWith('user-1', 'step-2', {
+        status: 'skipped',
+      });
+      expect(mockPlanService.updateStep).toHaveBeenCalledWith('user-1', 'step-3', {
+        status: 'skipped',
+      });
+      expect(skipListener).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  // ========================================================================
+  // Step approval required
+  // ========================================================================
+
+  describe('approval required', () => {
+    it('pauses plan and emits approval:required when step requires it', async () => {
+      const approvalListener = vi.fn();
+      executor.on('approval:required', approvalListener);
+
+      // Register a handler that returns requiresApproval
+      executor.registerHandler('approval_step', async () => ({
+        success: true,
+        data: { needsReview: true },
+        requiresApproval: true,
+      }));
+
+      const plan = makePlan();
+      const step = makeStep({
+        type: 'approval_step' as PlanStep['type'],
+        config: {},
+      });
+
+      mockPlanService.getPlan.mockResolvedValue(plan);
+      mockPlanService.getSteps.mockResolvedValue([step]);
+
+      let callCount = 0;
+      mockPlanService.getNextStep.mockImplementation(async () => {
+        callCount++;
+        return callCount === 1 ? step : null;
+      });
+      mockPlanService.getStepsByStatus.mockResolvedValue([step]);
+
+      const resultPromise = executor.execute('plan-1');
+      await vi.advanceTimersByTimeAsync(200);
+      const _result = await resultPromise;
+
+      expect(mockPlanService.updatePlan).toHaveBeenCalledWith('user-1', 'plan-1', {
+        status: 'paused',
+      });
+      expect(approvalListener).toHaveBeenCalledWith(plan, step, { needsReview: true });
+    });
+  });
+
+  // ========================================================================
+  // LLM decision handler
+  // ========================================================================
+
+  describe('llm_decision handler', () => {
+    it('calls agent with prompt and returns decision', async () => {
+      const { getOrCreateChatAgent } = await import('../routes/agents.js');
+      const mockAgent = {
+        chat: vi.fn(async () => ({
+          ok: true,
+          value: { content: 'Go with option A', toolCalls: [] },
+        })),
+      };
+      (getOrCreateChatAgent as ReturnType<typeof vi.fn>).mockResolvedValue(mockAgent);
+
+      const plan = makePlan();
+      const step = makeStep({
+        type: 'llm_decision',
+        config: {
+          prompt: 'What should we do?',
+          choices: ['option A', 'option B'],
+        },
+      });
+
+      mockPlanService.getPlan.mockResolvedValue(plan);
+      mockPlanService.getSteps.mockResolvedValue([step]);
+
+      let callCount = 0;
+      mockPlanService.getNextStep.mockImplementation(async () => {
+        callCount++;
+        return callCount === 1 ? step : null;
+      });
+      mockPlanService.getStepsByStatus.mockResolvedValue([step]);
+
+      const resultPromise = executor.execute('plan-1');
+      await vi.advanceTimersByTimeAsync(200);
+      const _result = await resultPromise;
+
+      expect(mockAgent.chat).toHaveBeenCalled();
+      const chatArg = mockAgent.chat.mock.calls[0][0] as string;
+      expect(chatArg).toContain('What should we do?');
+      expect(chatArg).toContain('option A');
+      expect(chatArg).toContain('option B');
+    });
+
+    it('returns error when no prompt specified', async () => {
+      const plan = makePlan();
+      const step = makeStep({
+        type: 'llm_decision',
+        config: {},
+        retryCount: 3,
+        maxRetries: 3,
+      });
+
+      mockPlanService.getPlan.mockResolvedValue(plan);
+      mockPlanService.getSteps.mockResolvedValue([step]);
+      mockPlanService.getNextStep.mockResolvedValueOnce(step).mockResolvedValue(null);
+      mockPlanService.getStepsByStatus.mockResolvedValue([]);
+
+      const resultPromise = executor.execute('plan-1');
+      await vi.advanceTimersByTimeAsync(200);
+      const result = await resultPromise;
+
+      expect(result.status).toBe('failed');
+    });
+
+    it('returns error when agent result is not ok', async () => {
+      const { getOrCreateChatAgent } = await import('../routes/agents.js');
+      const mockAgent = {
+        chat: vi.fn(async () => ({
+          ok: false,
+          error: { message: 'API error' },
+        })),
+      };
+      (getOrCreateChatAgent as ReturnType<typeof vi.fn>).mockResolvedValue(mockAgent);
+
+      const plan = makePlan();
+      const step = makeStep({
+        type: 'llm_decision',
+        config: { prompt: 'Decide now' },
+        retryCount: 3,
+        maxRetries: 3,
+      });
+
+      mockPlanService.getPlan.mockResolvedValue(plan);
+      mockPlanService.getSteps.mockResolvedValue([step]);
+      mockPlanService.getNextStep.mockResolvedValueOnce(step).mockResolvedValue(null);
+      mockPlanService.getStepsByStatus.mockResolvedValue([]);
+
+      const resultPromise = executor.execute('plan-1');
+      await vi.advanceTimersByTimeAsync(200);
+      const result = await resultPromise;
+
+      expect(result.status).toBe('failed');
+    });
+  });
+
+  // ========================================================================
+  // No handler for step type
+  // ========================================================================
+
+  describe('unknown step type', () => {
+    it('fails when no handler registered for step type', async () => {
+      const plan = makePlan();
+      const step = makeStep({
+        type: 'nonexistent_type' as PlanStep['type'],
+        config: {},
+        retryCount: 3,
+        maxRetries: 3,
+      });
+
+      mockPlanService.getPlan.mockResolvedValue(plan);
+      mockPlanService.getSteps.mockResolvedValue([step]);
+      mockPlanService.getNextStep.mockResolvedValueOnce(step).mockResolvedValue(null);
+      mockPlanService.getStepsByStatus.mockResolvedValue([]);
+
+      const resultPromise = executor.execute('plan-1');
+      await vi.advanceTimersByTimeAsync(200);
+      const result = await resultPromise;
+
+      expect(result.status).toBe('failed');
+      expect(result.error).toContain('No handler for step type');
+    });
+  });
+
+  // ========================================================================
+  // Plan deleted during execution
+  // ========================================================================
+
+  describe('plan deleted during execution', () => {
+    it('throws when plan is deleted during step execution', async () => {
+      const plan = makePlan();
+      const step = makeStep({ config: { toolName: 'test_tool', toolArgs: {} } });
+
+      // First call returns plan, step execution's getPlan returns null
+      let getPlanCount = 0;
+      mockPlanService.getPlan.mockImplementation(async () => {
+        getPlanCount++;
+        return getPlanCount <= 1 ? plan : null;
+      });
+      mockPlanService.getSteps.mockResolvedValue([step]);
+
+      let callCount = 0;
+      mockPlanService.getNextStep.mockImplementation(async () => {
+        callCount++;
+        return callCount === 1 ? step : null;
+      });
+      mockPlanService.getStepsByStatus.mockResolvedValue([]);
+
+      const resultPromise = executor.execute('plan-1');
+      await vi.advanceTimersByTimeAsync(200);
+      const result = await resultPromise;
+
+      expect(result.status).toBe('failed');
+      expect(result.error).toContain('deleted during execution');
+    });
+  });
+
+  // ========================================================================
+  // Verbose logging
+  // ========================================================================
+
+  describe('verbose mode', () => {
+    it('does not throw when verbose is enabled', async () => {
+      const verboseExecutor = new PlanExecutor({ userId: 'user-1', verbose: true });
+      const plan = makePlan();
+      const step = makeStep({ config: { toolName: 'test_tool', toolArgs: {} } });
+
+      mockPlanService.getPlan.mockResolvedValue(plan);
+      mockPlanService.getSteps.mockResolvedValue([step]);
+      (hasTool as ReturnType<typeof vi.fn>).mockResolvedValue(true);
+      (executeTool as ReturnType<typeof vi.fn>).mockResolvedValue({
+        success: true,
+        result: 'done',
+      });
+
+      let callCount = 0;
+      mockPlanService.getNextStep.mockImplementation(async () => {
+        callCount++;
+        return callCount === 1 ? step : null;
+      });
+      mockPlanService.getStepsByStatus.mockResolvedValue([step]);
+
+      const resultPromise = verboseExecutor.execute('plan-1');
+      await vi.advanceTimersByTimeAsync(200);
+      const _result = await resultPromise;
+
+      // Should complete without errors
+      expect(mockPlanService.updateStep).toHaveBeenCalledWith(
+        'user-1',
+        'step-1',
+        expect.objectContaining({ status: 'completed' })
+      );
+    });
+  });
+
+  // ========================================================================
+  // Singleton getPlanExecutor
+  // ========================================================================
+
+  describe('getPlanExecutor', () => {
+    it('returns a PlanExecutor instance', async () => {
+      const { getPlanExecutor } = await import('./executor.js');
+      const exec1 = getPlanExecutor();
+      expect(exec1).toBeInstanceOf(PlanExecutor);
+    });
+
+    it('returns new instance when config is provided', async () => {
+      const { getPlanExecutor } = await import('./executor.js');
+      const exec1 = getPlanExecutor({ userId: 'user-a' });
+      const exec2 = getPlanExecutor({ userId: 'user-b' });
+      // When config is provided, a new instance is created
+      expect(exec2).toBeInstanceOf(PlanExecutor);
+    });
+  });
+
+  // ========================================================================
+  // Step timeout
+  // ========================================================================
+
+  describe('step timeout', () => {
+    it('fails when step exceeds timeout', async () => {
+      const plan = makePlan();
+      const step = makeStep({
+        config: { toolName: 'slow_tool', toolArgs: {} },
+        timeoutMs: 100, // very short timeout
+        retryCount: 3,
+        maxRetries: 3,
+      });
+
+      mockPlanService.getPlan.mockResolvedValue(plan);
+      mockPlanService.getSteps.mockResolvedValue([step]);
+      (hasTool as ReturnType<typeof vi.fn>).mockResolvedValue(true);
+      // Make executeTool hang
+      (executeTool as ReturnType<typeof vi.fn>).mockReturnValue(
+        new Promise(() => {}) // never resolves
+      );
+
+      let callCount = 0;
+      mockPlanService.getNextStep.mockImplementation(async () => {
+        callCount++;
+        return callCount === 1 ? step : null;
+      });
+      mockPlanService.getStepsByStatus.mockResolvedValue([]);
+
+      const resultPromise = executor.execute('plan-1');
+      // Advance past the timeout
+      await vi.advanceTimersByTimeAsync(5000);
+      const result = await resultPromise;
+
+      expect(result.status).toBe('failed');
+      expect(result.error).toContain('timed out');
+    });
+  });
+
+  // ========================================================================
+  // Resuming previous results
+  // ========================================================================
+
+  describe('resume with previous results', () => {
+    it('loads completed step results before executing', async () => {
+      const plan = makePlan();
+      const completedStep = makeStep({
+        id: 'step-0',
+        status: 'completed',
+        result: { loaded: true },
+      });
+      const pendingStep = makeStep({
+        id: 'step-1',
+        orderNum: 2,
+        config: { toolName: 'next_tool', toolArgs: {} },
+      });
+
+      mockPlanService.getPlan.mockResolvedValue(plan);
+      mockPlanService.getSteps.mockResolvedValue([completedStep, pendingStep]);
+      (hasTool as ReturnType<typeof vi.fn>).mockResolvedValue(true);
+      (executeTool as ReturnType<typeof vi.fn>).mockResolvedValue({
+        success: true,
+        result: 'done',
+      });
+
+      let callCount = 0;
+      mockPlanService.getNextStep.mockImplementation(async () => {
+        callCount++;
+        return callCount === 1 ? pendingStep : null;
+      });
+      mockPlanService.getStepsByStatus.mockResolvedValue([pendingStep]);
+
+      const resultPromise = executor.execute('plan-1');
+      await vi.advanceTimersByTimeAsync(200);
+      const _result = await resultPromise;
+
+      // Step-0's result should have been pre-loaded into results map
+      expect(mockPlanService.updateStep).toHaveBeenCalledWith(
+        'user-1',
+        'step-1',
+        expect.objectContaining({ status: 'running' })
+      );
     });
   });
 });

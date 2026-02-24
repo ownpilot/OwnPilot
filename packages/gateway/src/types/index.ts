@@ -173,6 +173,8 @@ export interface StreamChunkResponse {
   suggestions?: Array<{ title: string; detail: string }>;
   /** AI-extracted memories pending user acceptance (only present on done event) */
   memories?: Array<{ type: string; content: string; importance?: number }>;
+  /** Model is currently producing thinking/reasoning content (hidden from display) */
+  thinking?: boolean;
 }
 
 /**

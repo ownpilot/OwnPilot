@@ -1,8 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { GET_LOG_MOCK } from '../test-helpers.js';
 
-vi.mock('../services/get-log.js', () => ({
-  getLog: () => ({ info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() }),
-}));
+vi.mock('../services/get-log.js', () => GET_LOG_MOCK);
 
 const { isRetryableError, withRetry, createRetryWrapper } = await import('./retry.js');
 const {

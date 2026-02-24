@@ -430,6 +430,8 @@ export interface ProviderConfig {
   readonly timeout?: number;
   /** Maximum retries */
   readonly maxRetries?: number;
+  /** Custom headers to include in API requests */
+  readonly headers?: Record<string, string>;
 }
 
 /**

@@ -33,15 +33,6 @@ vi.mock('../adapters/index.js', () => ({
   getAdapterSync: vi.fn(() => mockAdapter),
 }));
 
-vi.mock('../../services/log.js', () => ({
-  getLog: () => ({
-    info: vi.fn(),
-    warn: vi.fn(),
-    error: vi.fn(),
-    debug: vi.fn(),
-  }),
-}));
-
 import { PlansRepository, detectDependencyCycle, type PlanStep } from './plans.js';
 
 // ---------------------------------------------------------------------------

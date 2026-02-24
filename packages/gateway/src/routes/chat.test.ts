@@ -78,6 +78,13 @@ vi.mock('./agents.js', () => ({
     homeDir: '/home/test',
     tempDir: '/tmp',
   })),
+  getSessionInfo: vi.fn(() => ({
+    sessionId: 'conv-1',
+    messageCount: 2,
+    estimatedTokens: 500,
+    maxContextTokens: 128000,
+    contextFillPercent: 1,
+  })),
   resetChatAgentContext: vi.fn(() => ({ reset: true, newSessionId: 'new-session-1' })),
   clearAllChatAgentCaches: vi.fn(() => 3),
 }));
@@ -89,7 +96,7 @@ vi.mock('./costs.js', () => ({
 }));
 
 vi.mock('../audit/index.js', () => ({
-  logChatEvent: vi.fn(),
+  logChatEvent: vi.fn(async () => {}),
 }));
 
 vi.mock('../workspace/file-workspace.js', () => ({
@@ -98,23 +105,14 @@ vi.mock('../workspace/file-workspace.js', () => ({
 }));
 
 vi.mock('../utils/index.js', () => ({
-  extractSuggestions: vi.fn(() => []),
-  extractMemoriesFromResponse: vi.fn(() => []),
+  extractSuggestions: vi.fn((content: string) => ({ content, suggestions: [] })),
+  extractMemoriesFromResponse: vi.fn((content: string) => ({ content, memories: [] })),
 }));
 
 vi.mock('../ws/server.js', () => ({
   wsGateway: {
     broadcast: vi.fn(),
   },
-}));
-
-vi.mock('../services/log.js', () => ({
-  getLog: vi.fn(() => ({
-    info: vi.fn(),
-    warn: vi.fn(),
-    error: vi.fn(),
-    debug: vi.fn(),
-  })),
 }));
 
 // Mock transitive dependencies that get loaded by non-mocked modules
@@ -169,7 +167,18 @@ vi.mock('../db/seeds/default-agents.js', () => ({
 }));
 
 vi.mock('@ownpilot/core', () => ({
-  debugLog: vi.fn(),
+  debugLog: {
+    getRecent: vi.fn(() => []),
+  },
+  DEFAULT_EXECUTION_PERMISSIONS: {
+    enabled: false,
+    mode: 'local',
+    execute_javascript: 'blocked',
+    execute_python: 'blocked',
+    execute_shell: 'blocked',
+    compile_code: 'blocked',
+    package_manager: 'blocked',
+  },
   hasServiceRegistry: vi.fn(() => true),
   getServiceRegistry: vi.fn(() => ({
     tryGet: vi.fn(() => null),
@@ -251,6 +260,98 @@ vi.mock('../tracing/index.js', () => ({
     response: {},
     retries: [],
   })),
+  withTraceContextAsync: vi.fn(async (_ctx: unknown, fn: () => Promise<unknown>) => fn()),
+  traceInfo: vi.fn(),
+  traceError: vi.fn(),
+  traceModelCall: vi.fn(),
+  traceAutonomyCheck: vi.fn(),
+  getTraceSummary: vi.fn(() => ({
+    totalDuration: 100,
+    toolCalls: [],
+    modelCalls: [{ provider: 'openai', model: 'gpt-4', tokens: { input: 10, output: 20 }, duration: 100 }],
+    autonomyChecks: [],
+    dbOperations: [],
+    memoryOps: [],
+    triggersFired: [],
+    errors: [],
+    events: [],
+  })),
+}));
+
+vi.mock('../db/repositories/model-configs.js', () => ({
+  modelConfigsRepo: {
+    getModel: vi.fn(async () => null),
+  },
+}));
+
+const mockExecPermRepo = vi.hoisted(() => ({
+  get: vi.fn(async () => ({
+    enabled: false,
+    mode: 'local',
+    execute_javascript: 'blocked',
+    execute_python: 'blocked',
+    execute_shell: 'blocked',
+    compile_code: 'blocked',
+    package_manager: 'blocked',
+  })),
+}));
+
+vi.mock('../db/repositories/execution-permissions.js', () => ({
+  executionPermissionsRepo: mockExecPermRepo,
+}));
+
+vi.mock('../services/log.js', () => ({
+  getLog: vi.fn(() => ({
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    debug: vi.fn(),
+  })),
+}));
+
+vi.mock('../assistant/index.js', () => ({
+  buildEnhancedSystemPrompt: vi.fn(async (prompt: string) => ({
+    prompt,
+    stats: { memoriesUsed: 0, goalsUsed: 0 },
+  })),
+  checkToolCallApproval: vi.fn(async () => ({ approved: true })),
+  extractMemories: vi.fn(async () => []),
+  updateGoalProgress: vi.fn(async () => {}),
+  evaluateTriggers: vi.fn(async () => []),
+}));
+
+const mockSaveChatToDatabase = vi.fn(async () => {});
+const mockSaveStreamingChat = vi.fn(async () => {});
+const mockRunPostChatProcessing = vi.fn();
+
+vi.mock('./chat-persistence.js', () => ({
+  saveChatToDatabase: (...args: unknown[]) => mockSaveChatToDatabase(...args),
+  saveStreamingChat: (...args: unknown[]) => mockSaveStreamingChat(...args),
+  runPostChatProcessing: (...args: unknown[]) => mockRunPostChatProcessing(...args),
+}));
+
+vi.mock('./chat-prompt.js', () => ({
+  buildExecutionSystemPrompt: vi.fn(() => '\n\n## Code Execution\nCode execution is DISABLED.'),
+  buildToolCatalog: vi.fn(async () => null),
+  generateDemoResponse: vi.fn(
+    (_msg: string, _p: string, _m: string) => 'This is a demo response.'
+  ),
+  tryGetMessageBus: vi.fn(() => null),
+}));
+
+vi.mock('./chat-streaming.js', () => ({
+  createStreamCallbacks: vi.fn(),
+  recordStreamUsage: vi.fn(),
+  processStreamingViaBus: vi.fn(),
+  wireStreamApproval: vi.fn(),
+}));
+
+vi.mock('./chat-state.js', () => ({
+  promptInitializedConversations: new Set(),
+  lastExecPermHash: new Map(),
+  execPermHash: vi.fn(() => 'hash-1'),
+  boundedSetAdd: vi.fn(),
+  boundedMapSet: vi.fn(),
 }));
 
 // ─── Import route + mocked modules ──────────────────────────────
@@ -259,11 +360,29 @@ import { chatRoutes } from './chat.js';
 import { errorHandler } from '../middleware/error-handler.js';
 import {
   getAgent,
+  getOrCreateChatAgent,
   isDemoMode,
   getDefaultModel,
+  getSessionInfo,
   resetChatAgentContext,
   clearAllChatAgentCaches,
 } from './agents.js';
+import { tryGetMessageBus, buildToolCatalog, buildExecutionSystemPrompt } from './chat-prompt.js';
+import { promptInitializedConversations, lastExecPermHash } from './chat-state.js';
+import {
+  createStreamCallbacks,
+  processStreamingViaBus,
+  wireStreamApproval,
+  recordStreamUsage,
+} from './chat-streaming.js';
+import { extractSuggestions, extractMemoriesFromResponse } from '../utils/index.js';
+import { modelConfigsRepo } from '../db/repositories/model-configs.js';
+import { debugLog } from '@ownpilot/core';
+import { buildEnhancedSystemPrompt } from '../assistant/index.js';
+import { getTraceSummary } from '../tracing/index.js';
+import { getOrCreateSessionWorkspace } from '../workspace/file-workspace.js';
+import { usageTracker } from './costs.js';
+import { logChatEvent } from '../audit/index.js';
 
 // ─── Helpers ─────────────────────────────────────────────────────
 
@@ -340,6 +459,7 @@ describe('Chat Routes', () => {
     vi.mocked(isDemoMode).mockResolvedValue(false);
     vi.mocked(getDefaultModel).mockResolvedValue('gpt-4');
     vi.mocked(getAgent).mockResolvedValue(undefined);
+    vi.mocked(getOrCreateChatAgent).mockResolvedValue(mockAgent);
     vi.mocked(resetChatAgentContext).mockReturnValue({
       reset: true,
       newSessionId: 'new-session-1',
@@ -367,6 +487,16 @@ describe('Chat Routes', () => {
       delete: vi.fn(() => true),
     });
     mockAgent.loadConversation.mockReturnValue(true);
+    mockAgent.chat.mockResolvedValue({
+      ok: true,
+      value: {
+        id: 'msg-1',
+        content: 'AI response',
+        toolCalls: [],
+        usage: { promptTokens: 10, completionTokens: 20, totalTokens: 30 },
+        finishReason: 'stop',
+      },
+    });
   });
 
   // ─── POST / - Send Chat Message ──────────────────────────────
@@ -1071,6 +1201,369 @@ describe('Chat Routes', () => {
       const data = await res.json();
       expect(data.data.reset).toBe(false);
       expect(data.data.message).toContain('No cached agent');
+    });
+  });
+
+  // ─── POST /chat - Additional Coverage ──────────────────────────
+
+  describe('POST /chat - Conversation loading', () => {
+    it('should return 404 when conversationId not found in agent', async () => {
+      mockAgent.loadConversation.mockReturnValue(false);
+
+      const res = await app.request('/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: 'Hello',
+          conversationId: 'nonexistent-conv',
+        }),
+      });
+
+      expect(res.status).toBe(404);
+      const data = await res.json();
+      expect(data.error.message).toContain('Conversation not found');
+    });
+
+    it('should return 400 when getOrCreateChatAgent throws', async () => {
+      vi.mocked(getOrCreateChatAgent).mockRejectedValue(
+        new Error('Provider not configured')
+      );
+
+      const res = await app.request('/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: 'Hello' }),
+      });
+
+      expect(res.status).toBe(400);
+      const data = await res.json();
+      expect(data.success).toBe(false);
+      expect(data.error.message).toContain('Provider not configured');
+    });
+
+    it('should use explicit provider and model from request body', async () => {
+      vi.mocked(isDemoMode).mockResolvedValue(true);
+
+      const res = await app.request('/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: 'Hello',
+          provider: 'anthropic',
+          model: 'claude-3',
+        }),
+      });
+
+      expect(res.status).toBe(200);
+      const data = await res.json();
+      expect(data.data.model).toBe('claude-3');
+    });
+
+    it('should default to openai provider when not specified', async () => {
+      vi.mocked(isDemoMode).mockResolvedValue(true);
+
+      const res = await app.request('/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: 'Hello' }),
+      });
+
+      expect(res.status).toBe(200);
+      // Uses getDefaultModel('openai') which returns 'gpt-4' in the mock
+    });
+
+    it('should fall back to gpt-4o when getDefaultModel returns null but model in body', async () => {
+      vi.mocked(getDefaultModel).mockResolvedValue(null as unknown as string);
+
+      const res = await app.request('/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: 'Hello', model: 'gpt-4-turbo' }),
+      });
+
+      // model = body.model ?? getDefaultModel() ?? 'gpt-4o'
+      // body.model = 'gpt-4-turbo', so requestedModel = 'gpt-4-turbo'
+      // Since requestedModel is truthy, no 400 error
+      expect(res.status).not.toBe(400);
+    });
+  });
+
+  describe('POST /chat - Non-streaming with agentId', () => {
+    it('should use getAgent when agentId is provided and agent exists', async () => {
+      vi.mocked(getAgent).mockResolvedValue(mockAgent);
+      mockAgent.chat.mockResolvedValue({
+        ok: true,
+        value: {
+          id: 'msg-1',
+          content: 'AI response',
+          toolCalls: [],
+          usage: { promptTokens: 10, completionTokens: 20, totalTokens: 30 },
+          finishReason: 'stop',
+        },
+      });
+
+      const res = await app.request('/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: 'Hello',
+          agentId: 'my-agent',
+        }),
+      });
+
+      // agentId provided and getAgent returns mockAgent
+      expect(vi.mocked(getAgent)).toHaveBeenCalledWith('my-agent');
+      // Should not error - returns a response
+      expect(res.status).toBe(200);
+    });
+  });
+
+  describe('POST /chat - Legacy non-streaming path', () => {
+    beforeEach(() => {
+      // Ensure no MessageBus so we hit the legacy path
+      vi.mocked(tryGetMessageBus).mockReturnValue(null);
+      // Clear the set so prompt init runs
+      promptInitializedConversations.clear();
+
+      mockAgent.chat.mockResolvedValue({
+        ok: true,
+        value: {
+          id: 'msg-1',
+          content: 'Hello from AI',
+          toolCalls: [],
+          usage: { promptTokens: 10, completionTokens: 20, totalTokens: 30 },
+          finishReason: 'stop',
+        },
+      });
+    });
+
+    it('should return successful non-streaming response via legacy path', async () => {
+      const res = await app.request('/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: 'Hello' }),
+      });
+
+      expect(res.status).toBe(200);
+      const data = await res.json();
+      expect(data.success).toBe(true);
+      expect(data.data.response).toBeDefined();
+      expect(data.data.model).toBe('gpt-4');
+      expect(data.data.finishReason).toBe('stop');
+      expect(data.data.session).toBeDefined();
+      expect(data.meta).toBeDefined();
+      expect(data.meta.processingTime).toBeDefined();
+    });
+
+    it('should handle chat error in legacy non-streaming path', async () => {
+      mockAgent.chat.mockResolvedValue({
+        ok: false,
+        error: { message: 'Model overloaded', stack: 'Error: ...' },
+      });
+
+      const res = await app.request('/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: 'Hello' }),
+      });
+
+      expect(res.status).toBe(500);
+      const data = await res.json();
+      expect(data.success).toBe(false);
+      expect(data.error.message).toContain('Model overloaded');
+    });
+
+    it('should save chat history to database on success', async () => {
+      await app.request('/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: 'Hello' }),
+      });
+
+      expect(mockSaveChatToDatabase).toHaveBeenCalledWith(
+        expect.objectContaining({
+          userMessage: 'Hello',
+          provider: 'openai',
+          model: 'gpt-4',
+        })
+      );
+    });
+
+    it('should run post-chat processing on success', async () => {
+      await app.request('/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: 'Hello' }),
+      });
+
+      expect(mockRunPostChatProcessing).toHaveBeenCalled();
+    });
+
+    it('should handle response with tool calls', async () => {
+      mockAgent.chat.mockResolvedValue({
+        ok: true,
+        value: {
+          id: 'msg-1',
+          content: 'Used a tool',
+          toolCalls: [
+            { id: 'tc-1', name: 'search', arguments: '{"q":"test"}' },
+          ],
+          usage: { promptTokens: 10, completionTokens: 20, totalTokens: 30 },
+          finishReason: 'stop',
+        },
+      });
+
+      const res = await app.request('/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: 'Search for test' }),
+      });
+
+      expect(res.status).toBe(200);
+      const data = await res.json();
+      expect(data.data.toolCalls).toBeDefined();
+      expect(data.data.toolCalls).toHaveLength(1);
+      expect(data.data.toolCalls[0].name).toBe('search');
+      expect(data.data.toolCalls[0].arguments).toEqual({ q: 'test' });
+    });
+
+    it('should handle tool calls with malformed JSON arguments', async () => {
+      mockAgent.chat.mockResolvedValue({
+        ok: true,
+        value: {
+          id: 'msg-1',
+          content: 'Used a tool',
+          toolCalls: [
+            { id: 'tc-1', name: 'search', arguments: 'not-json' },
+          ],
+          usage: { promptTokens: 10, completionTokens: 20, totalTokens: 30 },
+          finishReason: 'stop',
+        },
+      });
+
+      const res = await app.request('/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: 'Hello' }),
+      });
+
+      expect(res.status).toBe(200);
+      const data = await res.json();
+      // Malformed JSON falls back to empty object
+      expect(data.data.toolCalls[0].arguments).toEqual({});
+    });
+
+    it('should handle response without usage data', async () => {
+      mockAgent.chat.mockResolvedValue({
+        ok: true,
+        value: {
+          id: 'msg-1',
+          content: 'Hello',
+          toolCalls: [],
+          usage: undefined,
+          finishReason: 'stop',
+        },
+      });
+
+      const res = await app.request('/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: 'Hello' }),
+      });
+
+      expect(res.status).toBe(200);
+      const data = await res.json();
+      expect(data.data.usage).toBeUndefined();
+    });
+
+    it('should set maxToolCalls when provided in body', async () => {
+      await app.request('/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: 'Hello', maxToolCalls: 5 }),
+      });
+
+      expect(mockAgent.setMaxToolCalls).toHaveBeenCalledWith(5);
+    });
+
+    it('should set directTools when provided in body', async () => {
+      await app.request('/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: 'Hello', directTools: ['tool1', 'tool2'] }),
+      });
+
+      expect(mockAgent.setAdditionalTools).toHaveBeenCalledWith(['tool1', 'tool2']);
+      expect(mockAgent.clearAdditionalTools).toHaveBeenCalled();
+    });
+
+    it('should clean up execution permissions after non-streaming response', async () => {
+      await app.request('/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: 'Hello' }),
+      });
+
+      expect(mockAgent.setExecutionPermissions).toHaveBeenCalledWith(undefined);
+      expect(mockAgent.setMaxToolCalls).toHaveBeenCalledWith(undefined);
+    });
+  });
+
+  describe('POST /chat - Execution permissions fallback', () => {
+    it('should use default permissions when DB lookup fails', async () => {
+      mockExecPermRepo.get.mockRejectedValue(new Error('DB error'));
+
+      const res = await app.request('/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: 'Hello' }),
+      });
+
+      // Should not crash - uses DEFAULT_EXECUTION_PERMISSIONS
+      expect(mockAgent.setExecutionPermissions).toHaveBeenCalled();
+      expect(res.status).toBe(200);
+    });
+  });
+
+  describe('GET /chat/conversations/:id - with agentId returning agent', () => {
+    it('should look up agent when agentId is provided and found', async () => {
+      vi.mocked(getAgent).mockResolvedValue(mockAgent);
+      const mockConv = {
+        id: 'conv-1',
+        systemPrompt: 'Prompt',
+        messages: [],
+        createdAt: new Date('2024-01-01'),
+        updatedAt: new Date('2024-01-02'),
+      };
+      mockAgent.getMemory.mockReturnValue({
+        get: vi.fn(() => mockConv),
+        delete: vi.fn(),
+      });
+
+      const res = await app.request('/chat/conversations/conv-1?agentId=my-agent');
+
+      expect(res.status).toBe(200);
+      expect(vi.mocked(getAgent)).toHaveBeenCalledWith('my-agent');
+      const data = await res.json();
+      expect(data.data.id).toBe('conv-1');
+    });
+  });
+
+  describe('DELETE /chat/conversations/:id - with agentId returning agent', () => {
+    it('should look up agent when agentId is provided and found', async () => {
+      vi.mocked(getAgent).mockResolvedValue(mockAgent);
+      mockAgent.getMemory.mockReturnValue({
+        get: vi.fn(),
+        delete: vi.fn(() => true),
+      });
+      mockChatRepo.deleteConversation.mockResolvedValue(true);
+
+      const res = await app.request('/chat/conversations/conv-1?agentId=my-agent', {
+        method: 'DELETE',
+      });
+
+      expect(res.status).toBe(200);
+      expect(vi.mocked(getAgent)).toHaveBeenCalledWith('my-agent');
     });
   });
 });

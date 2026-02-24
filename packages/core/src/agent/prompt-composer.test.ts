@@ -16,40 +16,14 @@ import type {
   TimeContext,
   WorkspaceContext,
 } from './prompt-composer.js';
-import type { UserProfile } from '../memory/conversation.js';
-import type { ToolDefinition } from './types.js';
+import {
+  createMockUserProfile as makeProfile,
+  createMockToolDef as makeTool,
+} from '../test-helpers.js';
 
 // ---------------------------------------------------------------------------
 // Factories
 // ---------------------------------------------------------------------------
-
-function makeProfile(overrides: Partial<UserProfile> = {}): UserProfile {
-  return {
-    userId: 'u1',
-    name: 'Alice',
-    facts: [],
-    preferences: [],
-    communicationStyle: undefined,
-    interests: [],
-    topicsOfInterest: [],
-    goals: [],
-    relationships: [],
-    customInstructions: [],
-    lastInteraction: new Date().toISOString(),
-    totalConversations: 0,
-    completeness: 0,
-    ...overrides,
-  };
-}
-
-function makeTool(name: string, category?: string): ToolDefinition {
-  return {
-    name,
-    description: `Desc for ${name}`,
-    parameters: { type: 'object' as const, properties: {} },
-    category,
-  };
-}
 
 function baseContext(overrides: Partial<PromptContext> = {}): PromptContext {
   return {

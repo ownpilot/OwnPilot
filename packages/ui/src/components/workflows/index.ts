@@ -16,3 +16,4 @@ export {
   convertDefinitionToReactFlow,
   type WorkflowDefinition,
 } from './WorkflowCopilotPanel';
+export { autoArrangeNodes } from './auto-arrange';

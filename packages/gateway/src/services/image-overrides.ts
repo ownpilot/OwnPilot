@@ -233,6 +233,7 @@ const analyzeImageOverride: ToolExecutor = async (
       provider: providerType as ProviderConfig['provider'],
       apiKey,
       baseUrl: config?.baseUrl,
+      headers: config?.headers,
     });
 
     // --- Build vision request ---

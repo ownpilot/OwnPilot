@@ -1096,4 +1096,137 @@ describe('Config CLI Commands', () => {
       await expect(loadCredentialsToEnv()).rejects.toThrow('prefix query failed');
     });
   });
+
+  // ==========================================================================
+  // readLine — error and close event handlers (lines 69-80)
+  // ==========================================================================
+
+  describe('readLine() — readline error and close events', () => {
+    it('rejects the promise when readline emits an error event', async () => {
+      // Override the mock to capture the 'error' and 'close' event handlers
+      let errorHandler: ((err: Error) => void) | undefined;
+      mockRlOn.mockImplementation(function (this: unknown, event: string, handler: (...args: unknown[]) => void) {
+        if (event === 'error') {
+          errorHandler = handler as (err: Error) => void;
+        }
+        return this;
+      });
+
+      // Make question never call its callback — the error event will resolve the promise
+      mockQuestion.mockImplementation(() => {
+        // Simulate async error after question is asked
+        setTimeout(() => {
+          errorHandler?.(new Error('readline error'));
+        }, 0);
+      });
+
+      // configSet without value triggers readLine
+      await expect(configSet({ key: 'openai-api-key' })).rejects.toThrow('readline error');
+    });
+
+    it('resolves with empty string when readline emits close event before answering', async () => {
+      // Override the mock to capture the 'close' event handler
+      let closeHandler: (() => void) | undefined;
+      mockRlOn.mockImplementation(function (this: unknown, event: string, handler: (...args: unknown[]) => void) {
+        if (event === 'close') {
+          closeHandler = handler as () => void;
+        }
+        return this;
+      });
+
+      // Make question never call its callback — the close event will resolve the promise
+      mockQuestion.mockImplementation(() => {
+        // Simulate close after question is asked (e.g. user presses Ctrl+D)
+        setTimeout(() => {
+          closeHandler?.();
+        }, 0);
+      });
+
+      // configSet without value triggers readLine; close resolves with '' which is empty
+      // Empty value causes process.exit(1)
+      await expect(configSet({ key: 'openai-api-key' })).rejects.toThrow('process.exit');
+      expect(exitSpy).toHaveBeenCalledWith(1);
+      expect(errorOutput(errorSpy)).toContain('Value cannot be empty');
+    });
+
+    it('does not reject twice when error fires after settled via question callback', async () => {
+      let errorHandler: ((err: Error) => void) | undefined;
+      mockRlOn.mockImplementation(function (this: unknown, event: string, handler: (...args: unknown[]) => void) {
+        if (event === 'error') {
+          errorHandler = handler as (err: Error) => void;
+        }
+        return this;
+      });
+
+      // question callback fires first (settling the promise), then error fires later
+      mockQuestion.mockImplementation((_prompt: string, cb: (a: string) => void) => {
+        cb('valid-value');
+        // Fire error after already settled — should be a no-op (the settled guard)
+        errorHandler?.(new Error('late error'));
+      });
+
+      // Should succeed despite the late error event
+      await configSet({ key: 'openai-api-key' });
+      expect(mockSettingsRepo.set).toHaveBeenCalledWith('api_key:openai', 'valid-value');
+    });
+
+    it('does not resolve twice when close fires after settled via question callback', async () => {
+      let closeHandler: (() => void) | undefined;
+      mockRlOn.mockImplementation(function (this: unknown, event: string, handler: (...args: unknown[]) => void) {
+        if (event === 'close') {
+          closeHandler = handler as () => void;
+        }
+        return this;
+      });
+
+      // question callback fires first (settling the promise), then close fires later
+      mockQuestion.mockImplementation((_prompt: string, cb: (a: string) => void) => {
+        cb('valid-value');
+        // Fire close after already settled — should be a no-op
+        closeHandler?.();
+      });
+
+      // Should succeed despite the late close event
+      await configSet({ key: 'openai-api-key' });
+      expect(mockSettingsRepo.set).toHaveBeenCalledWith('api_key:openai', 'valid-value');
+    });
+  });
+
+  // ==========================================================================
+  // configList — gateway settings short sensitive value masking (line 270)
+  // ==========================================================================
+
+  describe('configList() — short sensitive gateway settings masking', () => {
+    it('shows "********" for short gateway_api_keys (12 chars or fewer)', async () => {
+      mockSettingsRepo.get.mockImplementation(async (key: string) => {
+        if (key === 'gateway_api_keys') return 'shortgwkey';
+        return null;
+      });
+      await configList();
+      const out = logOutput(logSpy);
+      expect(out).toContain('********');
+      expect(out).not.toContain('shortgwkey');
+    });
+
+    it('shows "********" for short gateway_jwt_secret (12 chars or fewer)', async () => {
+      mockSettingsRepo.get.mockImplementation(async (key: string) => {
+        if (key === 'gateway_jwt_secret') return 'short-jwt';
+        return null;
+      });
+      await configList();
+      const out = logOutput(logSpy);
+      expect(out).toContain('********');
+      expect(out).not.toContain('short-jwt');
+    });
+
+    it('shows "********" for gateway_api_keys of exactly 12 chars', async () => {
+      mockSettingsRepo.get.mockImplementation(async (key: string) => {
+        if (key === 'gateway_api_keys') return '123456789012'; // exactly 12 chars
+        return null;
+      });
+      await configList();
+      const out = logOutput(logSpy);
+      expect(out).toContain('********');
+    });
+  });
 });

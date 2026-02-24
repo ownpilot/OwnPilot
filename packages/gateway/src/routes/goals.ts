@@ -26,10 +26,12 @@ import {
   sanitizeId,
   notFoundError,
   getErrorMessage,
+  validateQueryEnum,
 } from './helpers.js';
 import { MAX_DAYS_LOOKBACK } from '../config/defaults.js';
 import { wsGateway } from '../ws/server.js';
 import { getLog } from '../services/log.js';
+import { createCrudRoutes } from './crud-factory.js';
 
 const log = getLog('Goals');
 
@@ -44,12 +46,12 @@ export const goalsRoutes = new Hono();
  */
 goalsRoutes.get('/', async (c) => {
   const userId = getUserId(c);
-  const VALID_GOAL_STATUSES: GoalStatus[] = ['active', 'paused', 'completed', 'abandoned'];
-  const rawStatus = c.req.query('status');
-  const status =
-    rawStatus && VALID_GOAL_STATUSES.includes(rawStatus as GoalStatus)
-      ? (rawStatus as GoalStatus)
-      : undefined;
+  const status = validateQueryEnum(c.req.query('status'), [
+    'active',
+    'paused',
+    'completed',
+    'abandoned',
+  ] as const);
   const limit = getIntParam(c, 'limit', 20, 1, 100);
   const parentId = c.req.query('parentId');
 
@@ -186,25 +188,14 @@ goalsRoutes.patch('/:id', async (c) => {
   return apiResponse(c, updated);
 });
 
-/**
- * DELETE /goals/:id - Delete a goal
- */
-goalsRoutes.delete('/:id', async (c) => {
-  const userId = getUserId(c);
-  const id = c.req.param('id');
-
-  const service = getServiceRegistry().get(Services.Goal);
-  const deleted = await service.deleteGoal(userId, id);
-
-  if (!deleted) {
-    return notFoundError(c, 'Goal', id);
-  }
-
-  wsGateway.broadcast('data:changed', { entity: 'goal', action: 'deleted', id });
-  return apiResponse(c, {
-    message: 'Goal deleted successfully.',
-  });
+// Factory-generated DELETE /:id route
+const goalCrudRoutes = createCrudRoutes({
+  entity: 'goal',
+  serviceToken: Services.Goal,
+  methods: ['delete'],
+  serviceMethods: { delete: 'deleteGoal' },
 });
+goalsRoutes.route('/', goalCrudRoutes);
 
 // ============================================================================
 // Step Routes

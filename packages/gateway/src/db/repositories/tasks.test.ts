@@ -6,51 +6,37 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { createMockAdapter } from '../../test-helpers.js';
 
 // ---------------------------------------------------------------------------
 // Mock the database adapter and event bus
 // ---------------------------------------------------------------------------
 
-const mockAdapter = {
-  type: 'postgres' as const,
-  isConnected: () => true,
-  query: vi.fn(async () => []),
-  queryOne: vi.fn(async () => null),
-  execute: vi.fn(async () => ({ changes: 1 })),
-  transaction: vi.fn(async (fn: () => Promise<unknown>) => fn()),
-  exec: vi.fn(async () => {}),
-  close: vi.fn(async () => {}),
-  now: () => 'NOW()',
-  date: (col: string) => `DATE(${col})`,
-  dateSubtract: (col: string, n: number, u: string) => `${col} - INTERVAL '${n} ${u}'`,
-  placeholder: (i: number) => `$${i}`,
-  boolean: (v: boolean) => v,
-  parseBoolean: (v: unknown) => Boolean(v),
-};
+const mockAdapter = createMockAdapter();
 
 vi.mock('../adapters/index.js', () => ({
   getAdapter: async () => mockAdapter,
   getAdapterSync: () => mockAdapter,
 }));
 
-vi.mock('../../services/log.js', () => ({
-  getLog: () => ({ info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() }),
-}));
-
 const mockEmit = vi.fn();
 
-vi.mock('@ownpilot/core', () => ({
-  getEventBus: () => ({ emit: mockEmit }),
-  createEvent: vi.fn((_type: string, _cat: string, _src: string, data: unknown) => ({
-    type: _type,
-    data,
-  })),
-  EventTypes: {
-    RESOURCE_CREATED: 'resource.created',
-    RESOURCE_UPDATED: 'resource.updated',
-    RESOURCE_DELETED: 'resource.deleted',
-  },
-}));
+vi.mock('@ownpilot/core', async (importOriginal) => {
+  const actual = await importOriginal<Record<string, unknown>>();
+  return {
+    ...actual,
+    getEventBus: () => ({ emit: mockEmit }),
+    createEvent: vi.fn((_type: string, _cat: string, _src: string, data: unknown) => ({
+      type: _type,
+      data,
+    })),
+    EventTypes: {
+      RESOURCE_CREATED: 'resource.created',
+      RESOURCE_UPDATED: 'resource.updated',
+      RESOURCE_DELETED: 'resource.deleted',
+    },
+  };
+});
 
 import { TasksRepository } from './tasks.js';
 

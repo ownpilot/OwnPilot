@@ -25,6 +25,7 @@ import {
   type Connection,
   type Edge,
   type Node,
+  type ReactFlowInstance,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
@@ -44,6 +45,7 @@ import {
   ForEachNode,
   WorkflowCopilotPanel,
   convertDefinitionToReactFlow,
+  autoArrangeNodes,
   type ToolNodeData,
   type ToolNodeType,
   type TriggerNodeData,
@@ -54,7 +56,15 @@ import {
   type ForEachNodeData,
   type WorkflowDefinition,
 } from '../components/workflows';
-import { ChevronLeft, Save, Play, StopCircle, Code, Sparkles } from '../components/icons';
+import {
+  ChevronLeft,
+  Save,
+  Play,
+  StopCircle,
+  Code,
+  Sparkles,
+  LayoutDashboard,
+} from '../components/icons';
 import { toolsApi } from '../api';
 import { useToast } from '../components/ToastProvider';
 import { LoadingSpinner } from '../components/LoadingSpinner';
@@ -102,6 +112,7 @@ export function WorkflowEditorPage() {
 
   const abortRef = useRef<AbortController | null>(null);
   const nodeIdCounter = useRef(0);
+  const reactFlowInstance = useRef<ReactFlowInstance | null>(null);
 
   // ========================================================================
   // Load workflow
@@ -235,6 +246,19 @@ export function WorkflowEditorPage() {
   const onPaneClick = useCallback(() => {
     setSelectedNodeId(null);
   }, []);
+
+  const onInit = useCallback((instance: ReactFlowInstance) => {
+    reactFlowInstance.current = instance;
+  }, []);
+
+  const handleArrange = useCallback(() => {
+    const arranged = autoArrangeNodes(nodes, edges);
+    setNodes(arranged);
+    setHasUnsavedChanges(true);
+    requestAnimationFrame(() => {
+      reactFlowInstance.current?.fitView({ padding: 0.15, duration: 300 });
+    });
+  }, [nodes, edges, setNodes]);
 
   // ========================================================================
   // Drop handler — create new node from palette drag
@@ -1046,6 +1070,16 @@ export function WorkflowEditorPage() {
         </button>
 
         <button
+          onClick={handleArrange}
+          disabled={nodes.length === 0 || isExecuting}
+          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-bg-tertiary dark:bg-dark-bg-tertiary text-text-primary dark:text-dark-text-primary hover:bg-bg-primary dark:hover:bg-dark-bg-primary border border-border dark:border-dark-border rounded-md transition-colors disabled:opacity-50"
+          title="Auto-arrange nodes"
+        >
+          <LayoutDashboard className="w-3.5 h-3.5" />
+          Arrange
+        </button>
+
+        <button
           onClick={() => setShowSource(true)}
           className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-bg-tertiary dark:bg-dark-bg-tertiary text-text-primary dark:text-dark-text-primary hover:bg-bg-primary dark:hover:bg-dark-bg-primary border border-border dark:border-dark-border rounded-md transition-colors"
           title="View workflow source"
@@ -1107,6 +1141,7 @@ export function WorkflowEditorPage() {
             onConnect={onConnect}
             onNodeClick={onNodeClick}
             onPaneClick={onPaneClick}
+            onInit={onInit}
             nodeTypes={nodeTypes}
             defaultEdgeOptions={defaultEdgeOptions}
             fitView

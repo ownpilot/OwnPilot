@@ -9,9 +9,17 @@
 import { getServiceRegistry, Services, getErrorMessage } from '@ownpilot/core';
 import type { PulseActionResult } from '@ownpilot/core';
 import { assessRisk, DEFAULT_AUTONOMY_CONFIG, type AutonomyConfig } from './index.js';
-import type { PulseAction } from './prompt.js';
 import { PULSE_MAX_ACTIONS } from '../config/defaults.js';
 import { getLog } from '../services/log.js';
+
+// ============================================================================
+// Action types (used by executor and tests)
+// ============================================================================
+
+export interface PulseAction {
+  type: 'create_memory' | 'update_goal_progress' | 'send_notification' | 'run_memory_cleanup' | 'skip';
+  params: Record<string, unknown>;
+}
 
 const log = getLog('PulseExecutor');
 

@@ -1,59 +1,69 @@
 /**
- * Pulse LLM Prompt Builder
+ * Pulse Agent Prompt Builder
  *
- * Constructs the system prompt and user message for the LLM call
- * during a pulse cycle. Pure functions, no dependencies.
+ * Constructs the personality-rich system prompt and context-dense user message
+ * for the pulse agent. The agent uses tools freely (including send_user_notification)
+ * rather than returning rigid JSON actions.
  */
 
 import type { PulseContext } from './context.js';
 import type { Signal } from './evaluator.js';
 
 // ============================================================================
-// Action schema (what the LLM can request)
+// System Prompt
 // ============================================================================
 
-export interface PulseAction {
-  type: 'create_memory' | 'update_goal_progress' | 'send_notification' | 'run_memory_cleanup' | 'skip';
-  params: Record<string, unknown>;
+const PULSE_SYSTEM_PROMPT = `You are the living pulse of OwnPilot — your user's personal AI assistant.
+You wake up periodically to check on their world and help proactively.
+
+You have a warm, casual personality — like a thoughtful friend who pays attention.
+
+## What you can do
+- Use send_user_notification to message the user (Telegram + web)
+- Use get_weather / get_weather_forecast for weather info
+- Use search_web to look things up
+- Use all memory, goal, task, calendar, custom data tools
+- Create memories about patterns you notice
+
+## When to reach out
+- Morning (8-10): Brief greeting — weather, today's tasks/habits, anything notable
+- Midday: Only for genuinely important things (deadline approaching, broken streak)
+- Evening (18-20): Quick wrap-up — habit progress, tomorrow's preview
+- NOT every pulse. Most pulses: just observe, learn, take quiet actions.
+
+## Tone
+- Brief and natural. No robotic reports. No bullet-point lists.
+- "Hey, it's -2 in Tallinn today — bundle up!" not "WEATHER REPORT: Temperature: -2C"
+- Celebrate wins: "3-day reading streak — nice!"
+- Gentle nudges: "That Python project hasn't moved in a week — want to revisit it?"
+
+## Rules
+- Max 1-2 notifications per pulse. Silence is often the best action.
+- Create memories about patterns you notice for future reference.
+- Respect blocked actions and cooldowns shown in context.
+- Do NOT create memories about the pulse itself.
+- If there's nothing noteworthy, just respond with a brief internal note — no notification needed.`;
+
+/**
+ * Build the full system prompt with optional user directives.
+ */
+export function getPulseSystemPrompt(ctx: PulseContext, directives?: string): string {
+  let prompt = PULSE_SYSTEM_PROMPT;
+
+  if (ctx.userLocation) {
+    prompt += `\n\n## User Location\nThe user is located in/near: ${ctx.userLocation}`;
+  }
+
+  if (directives?.trim()) {
+    prompt += `\n\n## User Directives\nThe user has set these directives for the autonomous engine. Follow them:\n${directives}`;
+  }
+
+  return prompt;
 }
 
-export interface PulseDecision {
-  reasoning: string;
-  actions: PulseAction[];
-  reportMessage: string;
-}
-
 // ============================================================================
-// Prompt Builder
+// User Message Builder
 // ============================================================================
-
-const SYSTEM_PROMPT = `You are the Autonomy Engine of a personal AI assistant called OwnPilot.
-You are running an autonomous pulse — a periodic check of the user's goals, tasks, and system state.
-Your role is to assess the current state and decide what proactive actions to take.
-
-IMPORTANT: Be conservative. Only take actions when there is a clear reason to do so.
-The user trusts you to manage their data responsibly.
-
-Available action types:
-- create_memory: Create a new memory (params: { content: string, type: "fact"|"preference"|"event", importance: 0.0-1.0 })
-- update_goal_progress: Update goal progress (params: { goalId: string, progress: number, note: string })
-- send_notification: Notify the user about something important (params: { message: string, urgency: "low"|"medium"|"high" })
-- run_memory_cleanup: Clean up low-importance memories (params: { minImportance: number })
-- skip: Take no action (params: {})
-
-Rules:
-- Maximum 5 actions per pulse
-- Only send notifications for genuinely important items
-- Do NOT create memories about the pulse itself
-- Keep reportMessage brief (1-2 sentences summarizing what you found and did)
-- Use "skip" if no action is warranted (still provide reasoning)
-
-Respond with ONLY valid JSON matching this schema:
-{
-  "reasoning": "Brief explanation of your assessment",
-  "actions": [{ "type": "...", "params": { ... } }],
-  "reportMessage": "Brief summary for the user"
-}`;
 
 /**
  * Build the user message containing current state and detected signals.
@@ -75,36 +85,27 @@ export function buildPulseUserMessage(
   );
 
   // Detected signals
-  sections.push(`## Detected Signals (${signals.length})`);
-  if (signals.length === 0) {
-    sections.push('No signals detected.');
-  } else {
+  if (signals.length > 0) {
+    sections.push(`## Detected Signals`);
     for (const signal of signals) {
       sections.push(`- [${signal.severity.toUpperCase()}] ${signal.label}: ${signal.description}`);
     }
+    sections.push('');
   }
-  sections.push('');
 
   // Goals
-  sections.push(`## Active Goals (${ctx.goals.active.length})`);
-  if (ctx.goals.active.length === 0) {
-    sections.push('No active goals.');
-  } else {
+  if (ctx.goals.active.length > 0) {
+    sections.push(`## Active Goals (${ctx.goals.active.length})`);
     for (const goal of ctx.goals.active.slice(0, 10)) {
       const due = goal.dueDate ? ` | Due: ${goal.dueDate.split('T')[0]}` : '';
-      sections.push(
-        `- ${goal.title} — ${goal.progress}% progress${due}`
-      );
+      sections.push(`- ${goal.title} — ${goal.progress}% progress${due}`);
     }
-    if (ctx.goals.active.length > 10) {
-      sections.push(`  ...and ${ctx.goals.active.length - 10} more`);
-    }
+    sections.push('');
   }
-  sections.push('');
 
   // Stale goals
   if (ctx.goals.stale.length > 0) {
-    sections.push(`## Stale Goals (${ctx.goals.stale.length})`);
+    sections.push(`## Stale Goals`);
     for (const g of ctx.goals.stale.slice(0, 5)) {
       sections.push(`- ${g.title} — ${g.daysSinceUpdate} days since last update`);
     }
@@ -113,16 +114,62 @@ export function buildPulseUserMessage(
 
   // Upcoming deadlines
   if (ctx.goals.upcoming.length > 0) {
-    sections.push(`## Upcoming Deadlines (${ctx.goals.upcoming.length})`);
+    sections.push(`## Upcoming Deadlines`);
     for (const g of ctx.goals.upcoming.slice(0, 5)) {
       sections.push(`- ${g.title} — ${g.daysUntilDue} day(s) until due`);
     }
     sections.push('');
   }
 
+  // Habits
+  if (ctx.habits.todayHabits.length > 0) {
+    sections.push(`## Today's Habits (${ctx.habits.todayProgress}% done)`);
+    for (const h of ctx.habits.todayHabits) {
+      const status = h.completed ? 'done' : 'pending';
+      const streak = h.streak > 0 ? ` (${h.streak}-day streak)` : '';
+      sections.push(`- ${h.name}: ${status}${streak}`);
+    }
+    sections.push('');
+  }
+
+  // Tasks
+  if (ctx.tasks.overdue.length > 0 || ctx.tasks.dueToday.length > 0) {
+    sections.push(`## Tasks`);
+    for (const t of ctx.tasks.overdue.slice(0, 5)) {
+      sections.push(`- OVERDUE: ${t.title} (was due ${t.dueDate})`);
+    }
+    for (const t of ctx.tasks.dueToday.slice(0, 5)) {
+      sections.push(`- Due today: ${t.title}`);
+    }
+    sections.push('');
+  }
+
+  // Calendar
+  if (ctx.calendar.todayEvents.length > 0 || ctx.calendar.tomorrowEvents.length > 0) {
+    sections.push(`## Calendar`);
+    for (const e of ctx.calendar.todayEvents) {
+      sections.push(`- Today: ${e.title} at ${e.startTime}`);
+    }
+    for (const e of ctx.calendar.tomorrowEvents) {
+      sections.push(`- Tomorrow: ${e.title} at ${e.startTime}`);
+    }
+    sections.push('');
+  }
+
+  // Recent important memories
+  if (ctx.recentMemories.length > 0) {
+    sections.push(`## Recent Important Memories`);
+    for (const m of ctx.recentMemories.slice(0, 5)) {
+      sections.push(`- [${m.type}] ${m.content}`);
+    }
+    sections.push('');
+  }
+
   // Memory stats
   sections.push(`## Memory Stats`);
-  sections.push(`Total: ${ctx.memories.total} | Recent: ${ctx.memories.recentCount} | Avg importance: ${ctx.memories.avgImportance.toFixed(2)}`);
+  sections.push(
+    `Total: ${ctx.memories.total} | Recent: ${ctx.memories.recentCount} | Avg importance: ${ctx.memories.avgImportance.toFixed(2)}`
+  );
   sections.push('');
 
   // Activity
@@ -149,7 +196,9 @@ export function buildPulseUserMessage(
   // Blocked actions
   if (blockedActions && blockedActions.length > 0) {
     sections.push(`## Blocked Actions`);
-    sections.push(`The following action types are DISABLED and must NOT be used: ${blockedActions.join(', ')}`);
+    sections.push(
+      `The following action types are DISABLED and must NOT be used: ${blockedActions.join(', ')}`
+    );
     sections.push('');
   }
 
@@ -164,46 +213,4 @@ export function buildPulseUserMessage(
   }
 
   return sections.join('\n');
-}
-
-/**
- * Get the system prompt for pulse LLM calls.
- */
-export function getPulseSystemPrompt(directives?: string): string {
-  if (!directives?.trim()) return SYSTEM_PROMPT;
-  return SYSTEM_PROMPT + `\n\n## User Directives\nThe user has set these directives for the autonomous engine. Follow them:\n${directives}`;
-}
-
-/**
- * Parse the LLM response into a PulseDecision.
- * Returns a safe default on parse failure.
- */
-export function parsePulseDecision(response: string): PulseDecision {
-  try {
-    // Extract JSON from response (may be wrapped in markdown code blocks)
-    let jsonStr = response.trim();
-    const jsonMatch = jsonStr.match(/```(?:json)?\s*([\s\S]*?)```/);
-    if (jsonMatch) {
-      jsonStr = jsonMatch[1]!.trim();
-    }
-
-    const parsed = JSON.parse(jsonStr) as PulseDecision;
-
-    // Validate structure
-    if (!parsed.reasoning || !Array.isArray(parsed.actions) || !parsed.reportMessage) {
-      return fallbackDecision('Invalid LLM response structure');
-    }
-
-    return parsed;
-  } catch {
-    return fallbackDecision('Failed to parse LLM response');
-  }
-}
-
-function fallbackDecision(reason: string): PulseDecision {
-  return {
-    reasoning: reason,
-    actions: [{ type: 'skip', params: {} }],
-    reportMessage: '',
-  };
 }

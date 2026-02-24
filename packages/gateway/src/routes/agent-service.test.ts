@@ -10,12 +10,14 @@ const mockInjectMemoryIntoPrompt = vi.fn(async (prompt: string) => ({ systemProm
 const mockHasServiceRegistry = vi.fn(() => false);
 const mockGetServiceRegistry = vi.fn();
 
-vi.mock('@ownpilot/core', () => {
+vi.mock('@ownpilot/core', async (importOriginal) => {
+  const actual = await importOriginal<Record<string, unknown>>();
   class MockToolRegistry {
     has = vi.fn(() => true);
     setConfigCenter = vi.fn();
   }
   return {
+    ...actual,
     hasServiceRegistry: (...args: unknown[]) => mockHasServiceRegistry(...args),
     getServiceRegistry: (...args: unknown[]) => mockGetServiceRegistry(...args),
     Services: { Provider: 'provider' },
@@ -94,6 +96,7 @@ vi.mock('./agent-tools.js', () => ({
   PLAN_TOOLS: [],
   HEARTBEAT_TOOLS: [],
   EXTENSION_TOOLS: [],
+  NOTIFICATION_TOOLS: [],
   DYNAMIC_TOOL_DEFINITIONS: [],
 }));
 
@@ -150,10 +153,6 @@ vi.mock('../config/defaults.js', () => ({
   AGENT_DEFAULT_MAX_TURNS: 25,
   AGENT_DEFAULT_MAX_TOOL_CALLS: 200,
   AI_META_TOOL_NAMES: ['search_tools', 'get_tool_help', 'use_tool', 'batch_use_tool'],
-}));
-
-vi.mock('../services/log.js', () => ({
-  getLog: () => ({ info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() }),
 }));
 
 // ---------------------------------------------------------------------------

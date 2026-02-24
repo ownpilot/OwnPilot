@@ -5,6 +5,7 @@
  */
 
 import { BaseRepository } from './base.js';
+import { buildUpdateStatement, type RawSetClause } from './query-helpers.js';
 import { randomUUID, createHash } from 'node:crypto';
 import type { ContainerConfig } from '@ownpilot/core';
 
@@ -209,38 +210,39 @@ export class WorkspacesRepository extends BaseRepository {
    * Update a workspace
    */
   async update(id: string, input: UpdateWorkspaceInput): Promise<UserWorkspace | null> {
-    const updates: string[] = [];
-    const values: unknown[] = [];
-    let paramIndex = 1;
+    const fields = [
+      { column: 'name', value: input.name },
+      { column: 'description', value: input.description },
+      { column: 'status', value: input.status },
+      {
+        column: 'container_config',
+        value: input.containerConfig !== undefined ? JSON.stringify(input.containerConfig) : undefined,
+      },
+    ];
 
-    if (input.name !== undefined) {
-      updates.push(`name = $${paramIndex++}`);
-      values.push(input.name);
-    }
-    if (input.description !== undefined) {
-      updates.push(`description = $${paramIndex++}`);
-      values.push(input.description);
-    }
-    if (input.status !== undefined) {
-      updates.push(`status = $${paramIndex++}`);
-      values.push(input.status);
-    }
-    if (input.containerConfig !== undefined) {
-      updates.push(`container_config = $${paramIndex++}`);
-      values.push(JSON.stringify(input.containerConfig));
-    }
-
-    if (updates.length === 0) {
+    const hasChanges = fields.some((f) => f.value !== undefined);
+    if (!hasChanges) {
       return this.get(id);
     }
 
-    updates.push(`updated_at = NOW()`);
-    values.push(id, this.userId);
+    const rawClauses: RawSetClause[] = [{ sql: 'updated_at = NOW()' }];
 
-    await this.execute(
-      `UPDATE user_workspaces SET ${updates.join(', ')} WHERE id = $${paramIndex++} AND user_id = $${paramIndex}`,
-      values
+    const stmt = buildUpdateStatement(
+      'user_workspaces',
+      fields,
+      [
+        { column: 'id', value: id },
+        { column: 'user_id', value: this.userId },
+      ],
+      1,
+      rawClauses,
     );
+
+    if (!stmt) {
+      return this.get(id);
+    }
+
+    await this.execute(stmt.sql, stmt.params);
 
     return this.get(id);
   }

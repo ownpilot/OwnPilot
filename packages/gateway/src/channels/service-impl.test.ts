@@ -117,15 +117,6 @@ vi.mock('../routes/helpers.js', () => ({
   getErrorMessage: (err: unknown) => (err instanceof Error ? err.message : String(err)),
 }));
 
-vi.mock('../services/log.js', () => ({
-  getLog: () => ({
-    info: vi.fn(),
-    debug: vi.fn(),
-    warn: vi.fn(),
-    error: vi.fn(),
-  }),
-}));
-
 vi.mock('../routes/agents.js', () => ({
   getOrCreateDefaultAgent: mockGetOrCreateDefaultAgent,
   isDemoMode: mockIsDemoMode,

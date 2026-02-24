@@ -9,6 +9,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Hono } from 'hono';
 import { requestId } from '../middleware/request-id.js';
 import { errorHandler } from '../middleware/error-handler.js';
+import { createMockServiceRegistry } from '../test-helpers.js';
 
 // ---------------------------------------------------------------------------
 // Mocks
@@ -60,12 +61,7 @@ vi.mock('@ownpilot/core', async (importOriginal) => {
   const original = await importOriginal<Record<string, unknown>>();
   return {
     ...original,
-    getServiceRegistry: vi.fn(() => ({
-      get: vi.fn((token: { name: string }) => {
-        const services: Record<string, unknown> = { plan: mockPlanService };
-        return services[token.name];
-      }),
-    })),
+    getServiceRegistry: vi.fn(() => createMockServiceRegistry({ plan: mockPlanService })),
   };
 });
 

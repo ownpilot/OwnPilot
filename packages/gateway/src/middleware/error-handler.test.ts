@@ -2,15 +2,6 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { HTTPException } from 'hono/http-exception';
 import type { Context } from 'hono';
 
-vi.mock('../services/log.js', () => ({
-  getLog: () => ({
-    info: vi.fn(),
-    warn: vi.fn(),
-    error: vi.fn(),
-    debug: vi.fn(),
-  }),
-}));
-
 vi.mock('../routes/helpers.js', () => ({
   ERROR_CODES: {
     BAD_REQUEST: 'BAD_REQUEST',

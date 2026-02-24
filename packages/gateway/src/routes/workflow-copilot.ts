@@ -91,6 +91,7 @@ workflowCopilotRoute.post('/', async (c) => {
     provider: providerType as ProviderConfig['provider'],
     apiKey,
     baseUrl,
+    headers: config?.headers,
   });
 
   // Build system prompt

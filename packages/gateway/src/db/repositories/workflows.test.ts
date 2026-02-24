@@ -36,13 +36,13 @@ vi.mock('../adapters/index.js', () => ({
   getAdapterSync: vi.fn().mockReturnValue(mockAdapter),
 }));
 
-vi.mock('../../services/log.js', () => ({
-  getLog: () => ({ info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() }),
-}));
-
-vi.mock('@ownpilot/core', () => ({
-  generateId: vi.fn().mockReturnValue('wf-generated-id'),
-}));
+vi.mock('@ownpilot/core', async (importOriginal) => {
+  const actual = await importOriginal<Record<string, unknown>>();
+  return {
+    ...actual,
+    generateId: vi.fn().mockReturnValue('wf-generated-id'),
+  };
+});
 
 // ---------------------------------------------------------------------------
 // Dynamic import after mocks

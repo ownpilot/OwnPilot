@@ -54,6 +54,8 @@ interface ChatState {
   sessionId: string | null;
   /** Current session context info (tokens, fill %, etc.) */
   sessionInfo: SessionInfo | null;
+  /** Model is currently producing thinking/reasoning content */
+  isThinking: boolean;
 }
 
 interface ChatStore extends ChatState {
@@ -95,6 +97,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   const [pendingApproval, setPendingApproval] = useState<ApprovalRequest | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [sessionInfo, setSessionInfo] = useState<SessionInfo | null>(null);
+  const [isThinking, setIsThinking] = useState(false);
 
   // AbortController persists across navigation
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -332,6 +335,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
                       accumulatedContent += event.data.delta;
                       setStreamingContent(accumulatedContent);
                     }
+                    setIsThinking(!!event.data.thinking);
                     if (event.data.done) {
                       finalResponse = {
                         id: event.data.id,
@@ -376,11 +380,13 @@ export function ChatProvider({ children }: { children: ReactNode }) {
           setLastFailedMessage(null);
           setStreamingContent('');
           setProgressEvents([]);
+          setIsThinking(false);
 
           const assistantMessage: Message = {
             id: crypto.randomUUID(),
             role: 'assistant',
             content: (accumulatedContent || finalResponse?.response || '')
+              .replace(/<(?:think|thinking)>[\s\S]*?<\/(?:think|thinking)>\s*/g, '')
               .replace(/<memories>[\s\S]*<\/memories>\s*/, '')
               .replace(/<suggestions>[\s\S]*<\/suggestions>\s*$/, '')
               .trimEnd(),
@@ -517,6 +523,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     pendingApproval,
     sessionId,
     sessionInfo,
+    isThinking,
     setProvider,
     setModel,
     setAgentId,

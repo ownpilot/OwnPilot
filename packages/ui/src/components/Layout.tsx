@@ -49,6 +49,7 @@ import {
 import { StatsPanel } from './StatsPanel';
 import { RealtimeBridge, type BadgeCounts } from './RealtimeBridge';
 import { SecurityBanner } from './SecurityBanner';
+import { usePulseSlots, PulseSlotGrid } from './PulseSlots';
 import { STORAGE_KEYS } from '../constants/storage-keys';
 
 interface NavItem {
@@ -290,6 +291,7 @@ export function Layout() {
   const [isAdvancedMode, setIsAdvancedMode] = useState(() => {
     return localStorage.getItem(STORAGE_KEYS.ADVANCED_MODE) === 'true';
   });
+  const { slots: pulseSlots } = usePulseSlots();
   const [badgeCounts, setBadgeCounts] = useState<BadgeCounts>({ inbox: 0, tasks: 0 });
   const handleBadgeUpdate = useCallback(
     (updater: (prev: BadgeCounts) => BadgeCounts) => setBadgeCounts(updater),
@@ -368,10 +370,10 @@ export function Layout() {
   const connectionStyle = CONNECTION_STYLES[wsStatus];
 
   return (
-    <div className="flex flex-col md:flex-row h-screen bg-bg-primary dark:bg-dark-bg-primary">
-      {/* Mobile Header — visible on small screens only */}
-      {isMobile && (
-        <div className="flex items-center gap-3 px-4 py-3 border-b border-border dark:border-dark-border bg-bg-secondary dark:bg-dark-bg-secondary">
+    <div className="flex flex-col h-screen bg-bg-primary dark:bg-dark-bg-primary">
+      {/* Global Header Bar */}
+      <header className="h-12 flex items-center px-4 gap-3 border-b border-border dark:border-dark-border bg-bg-secondary dark:bg-dark-bg-secondary shrink-0 z-50">
+        {isMobile && (
           <button
             onClick={() => setIsMobileSidebarOpen(true)}
             className="p-1 -ml-1 rounded-md text-text-secondary dark:text-dark-text-secondary hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary"
@@ -379,132 +381,132 @@ export function Layout() {
           >
             <Menu className="w-5 h-5" />
           </button>
-          <h1 className="font-semibold text-text-primary dark:text-dark-text-primary">OwnPilot</h1>
-          <span
-            className={`ml-auto w-2 h-2 rounded-full ${connectionStyle.color} ${connectionStyle.pulse ? 'animate-pulse' : ''}`}
-            title={connectionStyle.label}
-          />
+        )}
+        <h1 className="font-semibold text-text-primary dark:text-dark-text-primary whitespace-nowrap text-sm">
+          OwnPilot
+        </h1>
+        <div className="flex-1 flex justify-center">
+          <PulseSlotGrid slots={pulseSlots} compact={isMobile} />
         </div>
-      )}
-
-      {/* Backdrop (mobile only, when sidebar open) */}
-      {isMobile && isMobileSidebarOpen && (
-        <div
-          className="fixed inset-0 bg-black/50 z-30"
-          onClick={() => setIsMobileSidebarOpen(false)}
-          aria-hidden="true"
+        <span
+          className={`w-2 h-2 rounded-full shrink-0 ${connectionStyle.color} ${connectionStyle.pulse ? 'animate-pulse' : ''}`}
+          title={connectionStyle.label}
         />
-      )}
+      </header>
 
-      {/* Left Sidebar - Navigation */}
-      <aside
-        className={
-          isMobile
-            ? `fixed inset-y-0 left-0 z-40 w-64 bg-bg-secondary dark:bg-dark-bg-secondary flex flex-col transform transition-transform duration-200 ease-out ${
-                isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'
-              }`
-            : 'w-56 border-r border-border dark:border-dark-border bg-bg-secondary dark:bg-dark-bg-secondary flex flex-col'
-        }
-      >
-        {/* Logo / Close button */}
-        <div className="p-3 border-b border-border dark:border-dark-border flex items-center justify-between">
-          <div>
-            <h1 className="text-lg font-semibold text-text-primary dark:text-dark-text-primary">
-              OwnPilot
-            </h1>
-            <p className="text-xs text-text-muted dark:text-dark-text-muted">
-              Privacy-first AI Assistant
-            </p>
-          </div>
+      {/* Body: sidebar + content + stats */}
+      <div className="flex flex-1 overflow-hidden">
+        {/* Backdrop (mobile only, when sidebar open) */}
+        {isMobile && isMobileSidebarOpen && (
+          <div
+            className="fixed inset-0 bg-black/50 z-30"
+            onClick={() => setIsMobileSidebarOpen(false)}
+            aria-hidden="true"
+          />
+        )}
+
+        {/* Left Sidebar - Navigation */}
+        <aside
+          className={
+            isMobile
+              ? `fixed inset-y-0 left-0 z-40 w-64 bg-bg-secondary dark:bg-dark-bg-secondary flex flex-col transform transition-transform duration-200 ease-out ${
+                  isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'
+                }`
+              : 'w-56 border-r border-border dark:border-dark-border bg-bg-secondary dark:bg-dark-bg-secondary flex flex-col'
+          }
+        >
+          {/* Mobile close button */}
           {isMobile && (
-            <button
-              onClick={() => setIsMobileSidebarOpen(false)}
-              className="p-1 rounded-md text-text-secondary dark:text-dark-text-secondary hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary"
-              aria-label="Close menu"
-            >
-              <X className="w-5 h-5" />
-            </button>
+            <div className="p-3 border-b border-border dark:border-dark-border flex items-center justify-end">
+              <button
+                onClick={() => setIsMobileSidebarOpen(false)}
+                className="p-1 rounded-md text-text-secondary dark:text-dark-text-secondary hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary"
+                aria-label="Close menu"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
           )}
-        </div>
 
-        {/* Navigation */}
-        <nav className="flex-1 p-2 overflow-y-auto">
-          {/* Main Items */}
-          <div className="space-y-0.5 mb-3">
-            {mainItems.map((item) => (
-              <NavItemLink
-                key={item.to}
-                item={item}
-                badge={
-                  item.to === '/inbox'
-                    ? badgeCounts.inbox
-                    : item.to === '/tasks'
-                      ? badgeCounts.tasks
-                      : undefined
-                }
-              />
-            ))}
+          {/* Navigation */}
+          <nav className="flex-1 p-2 overflow-y-auto">
+            {/* Main Items */}
+            <div className="space-y-0.5 mb-3">
+              {mainItems.map((item) => (
+                <NavItemLink
+                  key={item.to}
+                  item={item}
+                  badge={
+                    item.to === '/inbox'
+                      ? badgeCounts.inbox
+                      : item.to === '/tasks'
+                        ? badgeCounts.tasks
+                        : undefined
+                  }
+                />
+              ))}
+            </div>
+
+            {/* Divider */}
+            <div className="border-t border-border dark:border-dark-border my-2" />
+
+            {/* Grouped Items */}
+            <div className="space-y-1">
+              {visibleGroups.map((group) => (
+                <CollapsibleGroup
+                  key={group.id}
+                  group={group}
+                  isOpen={openGroups[group.id] || false}
+                  onToggle={() => toggleGroup(group.id)}
+                />
+              ))}
+            </div>
+
+            {/* Divider */}
+            <div className="border-t border-border dark:border-dark-border my-2" />
+
+            {/* Bottom Items */}
+            <div className="space-y-0.5">
+              {bottomItems.map((item) => (
+                <NavItemLink key={item.to} item={item} />
+              ))}
+            </div>
+          </nav>
+
+          {/* Mode Toggle + Status */}
+          <div className="p-2 border-t border-border dark:border-dark-border space-y-1">
+            <ModeToggle
+              isAdvanced={isAdvancedMode}
+              onToggle={() => setIsAdvancedMode(!isAdvancedMode)}
+            />
+            {passwordConfigured && (
+              <button
+                onClick={() => logout()}
+                className="w-full flex items-center gap-2 px-3 py-1.5 rounded-md text-xs text-text-muted dark:text-dark-text-muted hover:bg-error/10 hover:text-error transition-colors"
+                title="Log out"
+              >
+                <LogOut className="w-3.5 h-3.5 shrink-0" />
+                <span className="flex-1 text-left">Log Out</span>
+              </button>
+            )}
+            <ConnectionIndicator status={wsStatus} />
           </div>
+        </aside>
 
-          {/* Divider */}
-          <div className="border-t border-border dark:border-dark-border my-2" />
+        {/* Main Content */}
+        <main className="flex-1 flex flex-col overflow-y-auto">
+          <SecurityBanner />
+          <Outlet />
+        </main>
 
-          {/* Grouped Items */}
-          <div className="space-y-1">
-            {visibleGroups.map((group) => (
-              <CollapsibleGroup
-                key={group.id}
-                group={group}
-                isOpen={openGroups[group.id] || false}
-                onToggle={() => toggleGroup(group.id)}
-              />
-            ))}
-          </div>
-
-          {/* Divider */}
-          <div className="border-t border-border dark:border-dark-border my-2" />
-
-          {/* Bottom Items */}
-          <div className="space-y-0.5">
-            {bottomItems.map((item) => (
-              <NavItemLink key={item.to} item={item} />
-            ))}
-          </div>
-        </nav>
-
-        {/* Mode Toggle + Status */}
-        <div className="p-2 border-t border-border dark:border-dark-border space-y-1">
-          <ModeToggle
-            isAdvanced={isAdvancedMode}
-            onToggle={() => setIsAdvancedMode(!isAdvancedMode)}
+        {/* Right Sidebar - Stats Panel (desktop only) */}
+        {!isMobile && (
+          <StatsPanel
+            isCollapsed={isStatsPanelCollapsed}
+            onToggle={() => setIsStatsPanelCollapsed(!isStatsPanelCollapsed)}
           />
-          {passwordConfigured && (
-            <button
-              onClick={() => logout()}
-              className="w-full flex items-center gap-2 px-3 py-1.5 rounded-md text-xs text-text-muted dark:text-dark-text-muted hover:bg-error/10 hover:text-error transition-colors"
-              title="Log out"
-            >
-              <LogOut className="w-3.5 h-3.5 shrink-0" />
-              <span className="flex-1 text-left">Log Out</span>
-            </button>
-          )}
-          <ConnectionIndicator status={wsStatus} />
-        </div>
-      </aside>
-
-      {/* Main Content */}
-      <main className="flex-1 flex flex-col overflow-y-auto">
-        <SecurityBanner />
-        <Outlet />
-      </main>
-
-      {/* Right Sidebar - Stats Panel (desktop only) */}
-      {!isMobile && (
-        <StatsPanel
-          isCollapsed={isStatsPanelCollapsed}
-          onToggle={() => setIsStatsPanelCollapsed(!isStatsPanelCollapsed)}
-        />
-      )}
+        )}
+      </div>
 
       {/* Realtime WS→UI wiring (invisible) */}
       <RealtimeBridge onBadgeUpdate={handleBadgeUpdate} />

@@ -7,4 +7,4 @@
  */
 
 export { CORE_TOOLS } from './core-tool-defs.js';
-export { CORE_EXECUTORS } from './core-tool-executors.js';
+export { CORE_EXECUTORS } from './executors/index.js';

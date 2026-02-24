@@ -229,5 +229,116 @@ describe('Server CLI Command', () => {
 
       process.env.CORS_ORIGINS = originalCors;
     });
+
+    // ========================================================================
+    // Shutdown handler (lines 138-146)
+    // ========================================================================
+
+    describe('shutdown signal handlers', () => {
+      it('registers SIGINT and SIGTERM handlers after server starts', async () => {
+        const processOnSpy = vi.spyOn(process, 'on');
+
+        await startServer({ port: '3000', host: '0.0.0.0' });
+
+        expect(processOnSpy).toHaveBeenCalledWith('SIGINT', expect.any(Function));
+        expect(processOnSpy).toHaveBeenCalledWith('SIGTERM', expect.any(Function));
+
+        processOnSpy.mockRestore();
+      });
+
+      it('calls server.close() when SIGINT fires', async () => {
+        const processOnSpy = vi.spyOn(process, 'on');
+
+        await startServer({ port: '3000', host: '0.0.0.0' });
+
+        // Find the SIGINT handler
+        const sigintCall = processOnSpy.mock.calls.find((c) => c[0] === 'SIGINT');
+        expect(sigintCall).toBeDefined();
+
+        const shutdownFn = sigintCall![1] as () => void;
+
+        // Mock setTimeout to capture the unref call
+        const mockUnref = vi.fn();
+        const setTimeoutSpy = vi.spyOn(global, 'setTimeout').mockReturnValue({ unref: mockUnref } as unknown as ReturnType<typeof setTimeout>);
+
+        shutdownFn();
+
+        expect(mockServerClose).toHaveBeenCalled();
+        expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('Shutting down'));
+        expect(setTimeoutSpy).toHaveBeenCalledWith(expect.any(Function), 3000);
+        expect(mockUnref).toHaveBeenCalled();
+
+        setTimeoutSpy.mockRestore();
+        processOnSpy.mockRestore();
+      });
+
+      it('only shuts down once even when SIGINT fires twice', async () => {
+        const processOnSpy = vi.spyOn(process, 'on');
+
+        await startServer({ port: '3000', host: '0.0.0.0' });
+
+        const sigintCall = processOnSpy.mock.calls.find((c) => c[0] === 'SIGINT');
+        const shutdownFn = sigintCall![1] as () => void;
+
+        const mockUnref = vi.fn();
+        const setTimeoutSpy = vi.spyOn(global, 'setTimeout').mockReturnValue({ unref: mockUnref } as unknown as ReturnType<typeof setTimeout>);
+
+        shutdownFn();
+        shutdownFn(); // second call should be a no-op
+
+        // server.close should only be called once
+        expect(mockServerClose).toHaveBeenCalledTimes(1);
+
+        setTimeoutSpy.mockRestore();
+        processOnSpy.mockRestore();
+      });
+
+      it('calls server.close() when SIGTERM fires', async () => {
+        const processOnSpy = vi.spyOn(process, 'on');
+
+        await startServer({ port: '3000', host: '0.0.0.0' });
+
+        const sigtermCall = processOnSpy.mock.calls.find((c) => c[0] === 'SIGTERM');
+        expect(sigtermCall).toBeDefined();
+
+        const shutdownFn = sigtermCall![1] as () => void;
+
+        const mockUnref = vi.fn();
+        const setTimeoutSpy = vi.spyOn(global, 'setTimeout').mockReturnValue({ unref: mockUnref } as unknown as ReturnType<typeof setTimeout>);
+
+        shutdownFn();
+
+        expect(mockServerClose).toHaveBeenCalled();
+
+        setTimeoutSpy.mockRestore();
+        processOnSpy.mockRestore();
+      });
+
+      it('schedules process.exit(0) after 3 seconds on shutdown', async () => {
+        const processOnSpy = vi.spyOn(process, 'on');
+
+        await startServer({ port: '3000', host: '0.0.0.0' });
+
+        const sigintCall = processOnSpy.mock.calls.find((c) => c[0] === 'SIGINT');
+        const shutdownFn = sigintCall![1] as () => void;
+
+        let capturedCallback: (() => void) | undefined;
+        const mockUnref = vi.fn();
+        const setTimeoutSpy = vi.spyOn(global, 'setTimeout').mockImplementation((cb: () => void, _ms?: number) => {
+          capturedCallback = cb;
+          return { unref: mockUnref } as unknown as ReturnType<typeof setTimeout>;
+        });
+
+        shutdownFn();
+
+        // Execute the captured timeout callback to trigger process.exit(0)
+        expect(capturedCallback).toBeDefined();
+        capturedCallback!();
+        expect(exitSpy).toHaveBeenCalledWith(0);
+
+        setTimeoutSpy.mockRestore();
+        processOnSpy.mockRestore();
+      });
+    });
   });
 });

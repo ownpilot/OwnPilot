@@ -3,8 +3,8 @@
  *
  * The "heart and soul" — an AI-driven engine that proactively decides
  * what to do without user prompting. Runs on an adaptive timer (5-15 min),
- * gathers context, evaluates signals, optionally invokes the LLM,
- * executes actions, and reports results.
+ * gathers rich context, creates a real Agent with tools, and lets the agent
+ * act freely — using tools like send_user_notification, memory, weather, etc.
  *
  * Follows the TriggerEngine singleton lifecycle pattern.
  */
@@ -13,17 +13,15 @@ import { generateId, getServiceRegistry, Services, getErrorMessage } from '@ownp
 import type {
   IPulseService,
   PulseResult,
+  PulseActionResult,
   PulseStats,
   AutonomyLogEntry,
-  IMessageBus,
-  NormalizedMessage,
 } from '@ownpilot/core';
-import { randomUUID } from 'node:crypto';
-import { gatherPulseContext } from './context.js';
+import { gatherPulseContext, type PulseContext } from './context.js';
 import { evaluatePulseContext, calculateNextInterval, DEFAULT_RULE_THRESHOLDS, type RuleThresholds } from './evaluator.js';
+import type { Signal } from './evaluator.js';
 import { DEFAULT_ACTION_COOLDOWNS, type ActionCooldowns } from './executor.js';
-import { getPulseSystemPrompt, buildPulseUserMessage, parsePulseDecision, type PulseAction } from './prompt.js';
-import { executePulseActions } from './executor.js';
+import { getPulseSystemPrompt, buildPulseUserMessage } from './prompt.js';
 import { reportPulseResult, type Broadcaster } from './reporter.js';
 import { createAutonomyLogRepo } from '../db/repositories/autonomy-log.js';
 import { settingsRepo } from '../db/repositories/settings.js';
@@ -159,7 +157,7 @@ export class AutonomyEngine implements IPulseService {
       // Load user directives
       const directives = this.getDirectives();
 
-      // 1. Gather context
+      // 1. Gather rich context
       this.setStage('gathering');
       const ctx = await gatherPulseContext(userId);
 
@@ -167,12 +165,7 @@ export class AutonomyEngine implements IPulseService {
       this.setStage('evaluating');
       const evaluation = evaluatePulseContext(ctx, directives.disabledRules, directives.ruleThresholds);
 
-      // 3. LLM decision (if warranted)
-      let llmCalled = false;
-      let actionsToExecute: PulseAction[] = [{ type: 'skip', params: {} }];
-      let reportMessage = '';
-
-      // Compute cooldown status for the LLM prompt
+      // Compute cooldown status for the agent prompt
       const lastActionTimes = this.getLastActionTimes();
       const cooledDownActions: Array<{ type: string; remainingMinutes: number }> = [];
       for (const [actionType, cooldownMin] of Object.entries(directives.actionCooldowns)) {
@@ -186,26 +179,35 @@ export class AutonomyEngine implements IPulseService {
         }
       }
 
-      if (evaluation.shouldCallLLM) {
-        llmCalled = true;
-        this.setStage('deciding');
-        const decision = await this.callLLM(userId, ctx, evaluation.signals, directives, cooledDownActions);
-        actionsToExecute = decision.actions;
-        reportMessage = decision.reportMessage;
-      }
-
-      // 4. Execute actions (block disabled action types, apply cooldowns)
-      this.setStage('executing');
-      const { results: actionResults, updatedActionTimes } = await executePulseActions(
-        actionsToExecute,
+      // 3. Run agent pulse — real agent with tools
+      this.setStage('deciding');
+      const agentResult = await this.runAgentPulse(
         userId,
-        this.config.maxActions,
-        directives.blockedActions,
-        directives.actionCooldowns,
-        lastActionTimes
+        ctx,
+        evaluation.signals,
+        directives,
+        cooledDownActions
       );
 
-      // Persist updated action times
+      // 4. Map agent's tool calls to PulseActionResult[] for logging
+      const actionResults: PulseActionResult[] = agentResult.toolCalls.map((tc) => ({
+        type: tc.name ?? 'agent_action',
+        success: true,
+        output: { arguments: tc.arguments },
+      }));
+
+      // If agent didn't use any tools, log a skip
+      if (actionResults.length === 0) {
+        actionResults.push({ type: 'skip', success: true, skipped: true });
+      }
+
+      // Update last action times for tool calls
+      const updatedActionTimes = { ...lastActionTimes };
+      for (const tc of agentResult.toolCalls) {
+        if (tc.name) {
+          updatedActionTimes[tc.name] = new Date().toISOString();
+        }
+      }
       await this.saveLastActionTimes(updatedActionTimes);
 
       // 5. Build result
@@ -215,15 +217,15 @@ export class AutonomyEngine implements IPulseService {
         pulsedAt: new Date(),
         durationMs: Date.now() - startTime,
         signalsFound: evaluation.signals.length,
-        llmCalled,
+        llmCalled: true,
         actionsExecuted: actionResults,
-        reportMessage,
+        reportMessage: agentResult.responseContent,
         urgencyScore: evaluation.urgencyScore,
         manual,
         signalIds: evaluation.signals.map((s) => s.id),
       };
 
-      // 6. Report
+      // 6. Report (WS broadcast)
       this.setStage('reporting');
       await reportPulseResult(result, this.broadcaster);
 
@@ -363,6 +365,66 @@ export class AutonomyEngine implements IPulseService {
   }
 
   // ============================================================================
+  // Agent-based Pulse Execution
+  // ============================================================================
+
+  private async runAgentPulse(
+    userId: string,
+    ctx: PulseContext,
+    signals: Signal[],
+    directives: PulseDirectives,
+    cooledDownActions: Array<{ type: string; remainingMinutes: number }>
+  ): Promise<{ responseContent: string; toolCalls: Array<{ name?: string; arguments?: string }> }> {
+    try {
+      const { getOrCreateChatAgent } = await import('../routes/agent-service.js');
+      const registry = getServiceRegistry();
+      const providerService = registry.get(Services.Provider);
+      const resolved = await providerService.resolve();
+      const provider = resolved.provider ?? 'openai';
+      const model = resolved.model ?? 'gpt-4o-mini';
+
+      // Get or create a chat agent with full tool access
+      const agent = await getOrCreateChatAgent(provider, model);
+
+      // Create a fresh conversation for this pulse cycle
+      const memory = agent.getMemory();
+      const systemPrompt = getPulseSystemPrompt(ctx, directives.customInstructions);
+      const conversation = memory.create(systemPrompt);
+      agent.loadConversation(conversation.id);
+
+      // Build context message
+      const userMessage = buildPulseUserMessage(
+        ctx,
+        signals,
+        directives.blockedActions,
+        cooledDownActions
+      );
+
+      // Run agent — it uses tools freely (send_user_notification, memory, weather, etc.)
+      const result = await agent.chat(userMessage);
+
+      // Clean up the pulse conversation to avoid accumulating context
+      memory.delete(conversation.id);
+
+      if (result.ok) {
+        return {
+          responseContent: result.value.content ?? '',
+          toolCalls: (result.value.toolCalls ?? []).map((tc) => ({
+            name: tc.name,
+            arguments: tc.arguments,
+          })),
+        };
+      }
+
+      log.warn('Agent pulse returned error result', { error: result.error.message });
+      return { responseContent: '', toolCalls: [] };
+    } catch (error) {
+      log.warn('Agent pulse failed', { error: String(error) });
+      return { responseContent: `Agent pulse failed: ${getErrorMessage(error)}`, toolCalls: [] };
+    }
+  }
+
+  // ============================================================================
   // Internal
   // ============================================================================
 
@@ -419,61 +481,11 @@ export class AutonomyEngine implements IPulseService {
     const end = this.config.quietHoursEnd;
 
     if (start <= end) {
-      // e.g. 22-07 wraps around midnight (which is the default)
-      // Actually for 22-7, start > end, so this branch is e.g. 9-17
+      // e.g. 9-17
       return hour >= start && hour < end;
     }
     // Wraps around midnight (e.g. 22-7)
     return hour >= start || hour < end;
-  }
-
-  private async callLLM(
-    userId: string,
-    ctx: Awaited<ReturnType<typeof gatherPulseContext>>,
-    signals: Awaited<ReturnType<typeof evaluatePulseContext>>['signals'],
-    directives?: PulseDirectives,
-    cooledDownActions?: Array<{ type: string; remainingMinutes: number }>
-  ): Promise<ReturnType<typeof parsePulseDecision>> {
-    try {
-      const registry = getServiceRegistry();
-      const bus = registry.get<IMessageBus>(Services.Message);
-      const providerService = registry.get(Services.Provider);
-      const resolved = await providerService.resolve();
-      const provider = resolved.provider ?? 'openai';
-      const model = resolved.model ?? 'gpt-4o-mini';
-
-      const systemPrompt = getPulseSystemPrompt(directives?.customInstructions);
-      const userMessage = buildPulseUserMessage(ctx, signals, directives?.blockedActions, cooledDownActions);
-
-      const normalized: NormalizedMessage = {
-        id: randomUUID(),
-        sessionId: `pulse:${userId}`,
-        role: 'user',
-        content: userMessage,
-        metadata: { source: 'system', provider, model },
-        timestamp: new Date(),
-      };
-
-      // Use the MessageBus pipeline with a pulse-specific system prompt
-      const result = await bus.process(normalized, {
-        context: {
-          userId,
-          agentId: 'pulse',
-          provider,
-          model,
-          systemPrompt,
-        },
-      });
-
-      return parsePulseDecision(result.response.content);
-    } catch (error) {
-      log.warn('LLM call failed during pulse', { error: String(error) });
-      return {
-        reasoning: `LLM call failed: ${getErrorMessage(error)}`,
-        actions: [{ type: 'skip', params: {} }],
-        reportMessage: '',
-      };
-    }
   }
 
   private async logResult(result: PulseResult): Promise<void> {

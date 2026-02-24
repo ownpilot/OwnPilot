@@ -2,6 +2,10 @@
  * Heartbeats Routes
  *
  * API for managing heartbeat entries (NL-to-cron periodic tasks).
+ *
+ * Uses createCrudRoutes factory for standard GET /:id and DELETE /:id,
+ * with custom handlers for list, create, update (which need specialized
+ * validation and error handling), and the import/export/enable/disable endpoints.
  */
 
 import { Hono } from 'hono';
@@ -18,6 +22,7 @@ import {
   getErrorMessage,
 } from './helpers.js';
 import { wsGateway } from '../ws/server.js';
+import { createCrudRoutes } from './crud-factory.js';
 
 export const heartbeatsRoutes = new Hono();
 
@@ -25,11 +30,12 @@ export const heartbeatsRoutes = new Hono();
 const getService = () => getServiceRegistry().get(Services.Heartbeat) as HeartbeatService;
 
 // ============================================================================
-// Routes
+// Custom Routes (must be registered BEFORE parametric /:id routes)
 // ============================================================================
 
 /**
  * GET / - List heartbeats
+ * (Custom: uses enabled filter and listHeartbeats-specific API)
  */
 heartbeatsRoutes.get('/', async (c) => {
   const userId = getUserId(c);
@@ -47,6 +53,7 @@ heartbeatsRoutes.get('/', async (c) => {
 
 /**
  * POST / - Create a heartbeat
+ * (Custom: has manual field validation and HeartbeatServiceError handling)
  */
 heartbeatsRoutes.post('/', async (c) => {
   const userId = getUserId(c);
@@ -111,7 +118,7 @@ heartbeatsRoutes.post('/', async (c) => {
 
 /**
  * POST /import - Import from markdown
- * (Static routes must be defined before parametric /:id routes)
+ * (Static route: must be defined before parametric /:id routes)
  */
 heartbeatsRoutes.post('/import', async (c) => {
   const userId = getUserId(c);
@@ -133,7 +140,7 @@ heartbeatsRoutes.post('/import', async (c) => {
 
 /**
  * GET /export - Export as markdown
- * (Static routes must be defined before parametric /:id routes)
+ * (Static route: must be defined before parametric /:id routes)
  */
 heartbeatsRoutes.get('/export', async (c) => {
   const userId = getUserId(c);
@@ -144,25 +151,29 @@ heartbeatsRoutes.get('/export', async (c) => {
   return apiResponse(c, { markdown });
 });
 
-/**
- * GET /:id - Get a heartbeat
- */
-heartbeatsRoutes.get('/:id', async (c) => {
-  const userId = getUserId(c);
-  const id = c.req.param('id');
+// ============================================================================
+// Factory-generated CRUD routes: GET /:id, DELETE /:id
+// ============================================================================
 
-  const service = getService();
-  const heartbeat = await service.getHeartbeat(userId, id);
-
-  if (!heartbeat) {
-    return notFoundError(c, 'Heartbeat', id);
-  }
-
-  return apiResponse(c, { heartbeat });
+const crudRoutes = createCrudRoutes({
+  entity: 'heartbeat',
+  serviceToken: Services.Heartbeat,
+  methods: ['get', 'delete'],
+  serviceMethods: {
+    get: 'getHeartbeat',
+    delete: 'deleteHeartbeat',
+  },
 });
+
+heartbeatsRoutes.route('/', crudRoutes);
+
+// ============================================================================
+// Custom PATCH /:id (needs HeartbeatServiceError handling)
+// ============================================================================
 
 /**
  * PATCH /:id - Update a heartbeat
+ * (Custom: catches HeartbeatServiceError for domain-specific error codes)
  */
 heartbeatsRoutes.patch('/:id', async (c) => {
   const userId = getUserId(c);
@@ -198,24 +209,9 @@ heartbeatsRoutes.patch('/:id', async (c) => {
   }
 });
 
-/**
- * DELETE /:id - Delete a heartbeat + backing trigger
- */
-heartbeatsRoutes.delete('/:id', async (c) => {
-  const userId = getUserId(c);
-  const id = c.req.param('id');
-
-  const service = getService();
-  const deleted = await service.deleteHeartbeat(userId, id);
-
-  if (!deleted) {
-    return notFoundError(c, 'Heartbeat', id);
-  }
-
-  wsGateway.broadcast('data:changed', { entity: 'heartbeat', action: 'deleted', id });
-
-  return apiResponse(c, { message: 'Heartbeat deleted successfully.' });
-});
+// ============================================================================
+// Custom Parametric Routes (after factory-generated /:id)
+// ============================================================================
 
 /**
  * POST /:id/enable - Enable heartbeat + trigger

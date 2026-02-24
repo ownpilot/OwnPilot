@@ -5,6 +5,7 @@
  */
 
 import { BaseRepository, parseJsonField } from './base.js';
+import { buildUpdateStatement, type RawSetClause } from './query-helpers.js';
 import { MS_PER_DAY } from '../../config/defaults.js';
 
 export interface CalendarEvent {
@@ -184,72 +185,50 @@ export class CalendarRepository extends BaseRepository {
     const existing = await this.get(id);
     if (!existing) return null;
 
-    const updates: string[] = [];
-    const values: unknown[] = [];
-    let paramIndex = 1;
+    const fields = [
+      { column: 'title', value: input.title },
+      { column: 'description', value: input.description },
+      { column: 'location', value: input.location },
+      {
+        column: 'start_time',
+        value: input.startTime !== undefined ? toISOString(input.startTime) : undefined,
+      },
+      {
+        column: 'end_time',
+        value: input.endTime !== undefined ? toISOString(input.endTime) : undefined,
+      },
+      { column: 'all_day', value: input.allDay },
+      { column: 'timezone', value: input.timezone },
+      { column: 'recurrence', value: input.recurrence },
+      { column: 'reminder_minutes', value: input.reminderMinutes },
+      { column: 'category', value: input.category },
+      { column: 'tags', value: input.tags !== undefined ? JSON.stringify(input.tags) : undefined },
+      { column: 'color', value: input.color },
+      {
+        column: 'attendees',
+        value: input.attendees !== undefined ? JSON.stringify(input.attendees) : undefined,
+      },
+    ];
 
-    if (input.title !== undefined) {
-      updates.push(`title = $${paramIndex++}`);
-      values.push(input.title);
-    }
-    if (input.description !== undefined) {
-      updates.push(`description = $${paramIndex++}`);
-      values.push(input.description);
-    }
-    if (input.location !== undefined) {
-      updates.push(`location = $${paramIndex++}`);
-      values.push(input.location);
-    }
-    if (input.startTime !== undefined) {
-      updates.push(`start_time = $${paramIndex++}`);
-      values.push(toISOString(input.startTime));
-    }
-    if (input.endTime !== undefined) {
-      updates.push(`end_time = $${paramIndex++}`);
-      values.push(toISOString(input.endTime));
-    }
-    if (input.allDay !== undefined) {
-      updates.push(`all_day = $${paramIndex++}`);
-      values.push(input.allDay);
-    }
-    if (input.timezone !== undefined) {
-      updates.push(`timezone = $${paramIndex++}`);
-      values.push(input.timezone);
-    }
-    if (input.recurrence !== undefined) {
-      updates.push(`recurrence = $${paramIndex++}`);
-      values.push(input.recurrence);
-    }
-    if (input.reminderMinutes !== undefined) {
-      updates.push(`reminder_minutes = $${paramIndex++}`);
-      values.push(input.reminderMinutes);
-    }
-    if (input.category !== undefined) {
-      updates.push(`category = $${paramIndex++}`);
-      values.push(input.category);
-    }
-    if (input.tags !== undefined) {
-      updates.push(`tags = $${paramIndex++}`);
-      values.push(JSON.stringify(input.tags));
-    }
-    if (input.color !== undefined) {
-      updates.push(`color = $${paramIndex++}`);
-      values.push(input.color);
-    }
-    if (input.attendees !== undefined) {
-      updates.push(`attendees = $${paramIndex++}`);
-      values.push(JSON.stringify(input.attendees));
-    }
+    const hasChanges = fields.some((f) => f.value !== undefined);
+    if (!hasChanges) return existing;
 
-    if (updates.length === 0) return existing;
+    const rawClauses: RawSetClause[] = [{ sql: 'updated_at = NOW()' }];
 
-    updates.push('updated_at = NOW()');
-    values.push(id, this.userId);
-
-    await this.execute(
-      `UPDATE calendar_events SET ${updates.join(', ')} WHERE id = $${paramIndex++} AND user_id = $${paramIndex}`,
-      values
+    const stmt = buildUpdateStatement(
+      'calendar_events',
+      fields,
+      [
+        { column: 'id', value: id },
+        { column: 'user_id', value: this.userId },
+      ],
+      1,
+      rawClauses,
     );
+
+    if (!stmt) return existing;
+
+    await this.execute(stmt.sql, stmt.params);
 
     return this.get(id);
   }

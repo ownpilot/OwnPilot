@@ -160,5 +160,57 @@ describe('Start CLI Command', () => {
         })
       );
     });
+
+    // ========================================================================
+    // Shutdown handler (lines 90-95)
+    // ========================================================================
+
+    describe('shutdown signal handlers', () => {
+      it('registers SIGINT and SIGTERM handlers after server starts', async () => {
+        const processOnSpy = vi.spyOn(process, 'on');
+
+        await startAll({ port: '3000' });
+
+        expect(processOnSpy).toHaveBeenCalledWith('SIGINT', expect.any(Function));
+        expect(processOnSpy).toHaveBeenCalledWith('SIGTERM', expect.any(Function));
+
+        processOnSpy.mockRestore();
+      });
+
+      it('calls process.exit(0) when SIGINT fires', async () => {
+        const processOnSpy = vi.spyOn(process, 'on');
+
+        await startAll({ port: '3000' });
+
+        // Find the SIGINT handler
+        const sigintCall = processOnSpy.mock.calls.find((c) => c[0] === 'SIGINT');
+        expect(sigintCall).toBeDefined();
+
+        const shutdownFn = sigintCall![1] as () => void;
+        shutdownFn();
+
+        expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('Shutting down'));
+        expect(exitSpy).toHaveBeenCalledWith(0);
+
+        processOnSpy.mockRestore();
+      });
+
+      it('calls process.exit(0) when SIGTERM fires', async () => {
+        const processOnSpy = vi.spyOn(process, 'on');
+
+        await startAll({ port: '3000' });
+
+        // Find the SIGTERM handler
+        const sigtermCall = processOnSpy.mock.calls.find((c) => c[0] === 'SIGTERM');
+        expect(sigtermCall).toBeDefined();
+
+        const shutdownFn = sigtermCall![1] as () => void;
+        shutdownFn();
+
+        expect(exitSpy).toHaveBeenCalledWith(0);
+
+        processOnSpy.mockRestore();
+      });
+    });
   });
 });

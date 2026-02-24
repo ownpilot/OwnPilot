@@ -1,10 +1,13 @@
 /**
  * Bookmarks Repository (PostgreSQL)
  *
- * CRUD operations for saved bookmarks/links
+ * CRUD operations for saved bookmarks/links.
+ * Extends CrudRepository for standard create/get/update/delete/count.
  */
 
-import { BaseRepository, parseJsonField } from './base.js';
+import { parseJsonField } from './base.js';
+import { CrudRepository, type CreateFields } from './crud-base.js';
+import type { UpdateField } from './query-helpers.js';
 
 export interface Bookmark {
   id: string;
@@ -51,7 +54,7 @@ export interface BookmarkQuery {
   offset?: number;
 }
 
-interface BookmarkRow {
+interface BookmarkRow extends Record<string, unknown> {
   id: string;
   user_id: string;
   url: string;
@@ -67,128 +70,70 @@ interface BookmarkRow {
   updated_at: string;
 }
 
-function rowToBookmark(row: BookmarkRow): Bookmark {
-  return {
-    id: row.id,
-    userId: row.user_id,
-    url: row.url,
-    title: row.title,
-    description: row.description ?? undefined,
-    favicon: row.favicon ?? undefined,
-    category: row.category ?? undefined,
-    tags: parseJsonField(row.tags, []),
-    isFavorite: row.is_favorite === true,
-    visitCount: Number(row.visit_count),
-    lastVisitedAt: row.last_visited_at ? new Date(row.last_visited_at) : undefined,
-    createdAt: new Date(row.created_at),
-    updatedAt: new Date(row.updated_at),
-  };
-}
+export class BookmarksRepository extends CrudRepository<
+  BookmarkRow,
+  Bookmark,
+  CreateBookmarkInput,
+  UpdateBookmarkInput
+> {
+  readonly tableName = 'bookmarks';
 
-export class BookmarksRepository extends BaseRepository {
-  private userId: string;
-
-  constructor(userId = 'default') {
-    super();
-    this.userId = userId;
+  mapRow(row: BookmarkRow): Bookmark {
+    return {
+      id: row.id,
+      userId: row.user_id,
+      url: row.url,
+      title: row.title,
+      description: row.description ?? undefined,
+      favicon: row.favicon ?? undefined,
+      category: row.category ?? undefined,
+      tags: parseJsonField(row.tags, []),
+      isFavorite: row.is_favorite === true,
+      visitCount: Number(row.visit_count),
+      lastVisitedAt: row.last_visited_at ? new Date(row.last_visited_at) : undefined,
+      createdAt: new Date(row.created_at),
+      updatedAt: new Date(row.updated_at),
+    };
   }
 
-  async create(input: CreateBookmarkInput): Promise<Bookmark> {
-    const id = crypto.randomUUID();
-
-    await this.execute(
-      `INSERT INTO bookmarks (id, user_id, url, title, description, favicon, category, tags, is_favorite)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
-      [
-        id,
-        this.userId,
-        input.url,
-        input.title,
-        input.description ?? null,
-        input.favicon ?? null,
-        input.category ?? null,
-        JSON.stringify(input.tags ?? []),
-        input.isFavorite ?? false,
-      ]
-    );
-
-    const result = await this.get(id);
-    if (!result) throw new Error('Failed to create bookmark');
-    return result;
+  buildCreateFields(input: CreateBookmarkInput): CreateFields {
+    return {
+      url: input.url,
+      title: input.title,
+      description: input.description ?? null,
+      favicon: input.favicon ?? null,
+      category: input.category ?? null,
+      tags: JSON.stringify(input.tags ?? []),
+      is_favorite: input.isFavorite ?? false,
+    };
   }
+
+  buildUpdateFields(input: UpdateBookmarkInput): UpdateField[] {
+    return [
+      { column: 'url', value: input.url },
+      { column: 'title', value: input.title },
+      { column: 'description', value: input.description },
+      { column: 'favicon', value: input.favicon },
+      { column: 'category', value: input.category },
+      { column: 'tags', value: input.tags !== undefined ? JSON.stringify(input.tags) : undefined },
+      { column: 'is_favorite', value: input.isFavorite },
+    ];
+  }
+
+  // --- Alias: keep backward-compatible `get` method ---
 
   async get(id: string): Promise<Bookmark | null> {
-    const row = await this.queryOne<BookmarkRow>(
-      `SELECT * FROM bookmarks WHERE id = $1 AND user_id = $2`,
-      [id, this.userId]
-    );
-    return row ? rowToBookmark(row) : null;
+    return this.getById(id);
   }
+
+  // --- Domain-specific methods ---
 
   async getByUrl(url: string): Promise<Bookmark | null> {
     const row = await this.queryOne<BookmarkRow>(
       `SELECT * FROM bookmarks WHERE url = $1 AND user_id = $2`,
-      [url, this.userId]
+      [url, this.userId],
     );
-    return row ? rowToBookmark(row) : null;
-  }
-
-  async update(id: string, input: UpdateBookmarkInput): Promise<Bookmark | null> {
-    const existing = await this.get(id);
-    if (!existing) return null;
-
-    const updates: string[] = [];
-    const values: unknown[] = [];
-    let paramIndex = 1;
-
-    if (input.url !== undefined) {
-      updates.push(`url = $${paramIndex++}`);
-      values.push(input.url);
-    }
-    if (input.title !== undefined) {
-      updates.push(`title = $${paramIndex++}`);
-      values.push(input.title);
-    }
-    if (input.description !== undefined) {
-      updates.push(`description = $${paramIndex++}`);
-      values.push(input.description);
-    }
-    if (input.favicon !== undefined) {
-      updates.push(`favicon = $${paramIndex++}`);
-      values.push(input.favicon);
-    }
-    if (input.category !== undefined) {
-      updates.push(`category = $${paramIndex++}`);
-      values.push(input.category);
-    }
-    if (input.tags !== undefined) {
-      updates.push(`tags = $${paramIndex++}`);
-      values.push(JSON.stringify(input.tags));
-    }
-    if (input.isFavorite !== undefined) {
-      updates.push(`is_favorite = $${paramIndex++}`);
-      values.push(input.isFavorite);
-    }
-
-    if (updates.length === 0) return existing;
-
-    updates.push('updated_at = NOW()');
-    values.push(id, this.userId);
-
-    await this.execute(
-      `UPDATE bookmarks SET ${updates.join(', ')} WHERE id = $${paramIndex++} AND user_id = $${paramIndex}`,
-      values
-    );
-
-    return this.get(id);
-  }
-
-  async delete(id: string): Promise<boolean> {
-    const result = await this.execute(`DELETE FROM bookmarks WHERE id = $1 AND user_id = $2`, [
-      id,
-      this.userId,
-    ]);
-    return result.changes > 0;
+    return row ? this.mapRow(row) : null;
   }
 
   async recordVisit(id: string): Promise<Bookmark | null> {
@@ -198,7 +143,7 @@ export class BookmarksRepository extends BaseRepository {
         last_visited_at = NOW(),
         updated_at = NOW()
       WHERE id = $1 AND user_id = $2`,
-      [id, this.userId]
+      [id, this.userId],
     );
     return this.get(id);
   }
@@ -250,7 +195,7 @@ export class BookmarksRepository extends BaseRepository {
     }
 
     const rows = await this.query<BookmarkRow>(sql, params);
-    return rows.map(rowToBookmark);
+    return rows.map((row) => this.mapRow(row));
   }
 
   async getFavorites(): Promise<Bookmark[]> {
@@ -264,15 +209,15 @@ export class BookmarksRepository extends BaseRepository {
   async getMostVisited(limit = 10): Promise<Bookmark[]> {
     const rows = await this.query<BookmarkRow>(
       `SELECT * FROM bookmarks WHERE user_id = $1 ORDER BY visit_count DESC LIMIT $2`,
-      [this.userId, limit]
+      [this.userId, limit],
     );
-    return rows.map(rowToBookmark);
+    return rows.map((row) => this.mapRow(row));
   }
 
   async getCategories(): Promise<string[]> {
     const rows = await this.query<{ category: string }>(
       `SELECT DISTINCT category FROM bookmarks WHERE user_id = $1 AND category IS NOT NULL ORDER BY category`,
-      [this.userId]
+      [this.userId],
     );
     return rows.map((r) => r.category);
   }
@@ -280,7 +225,7 @@ export class BookmarksRepository extends BaseRepository {
   async getTags(): Promise<string[]> {
     const rows = await this.query<{ tags: string }>(
       `SELECT tags FROM bookmarks WHERE user_id = $1`,
-      [this.userId]
+      [this.userId],
     );
 
     const allTags = new Set<string>();
@@ -292,14 +237,6 @@ export class BookmarksRepository extends BaseRepository {
     }
 
     return Array.from(allTags).sort();
-  }
-
-  async count(): Promise<number> {
-    const row = await this.queryOne<{ count: string }>(
-      `SELECT COUNT(*) as count FROM bookmarks WHERE user_id = $1`,
-      [this.userId]
-    );
-    return parseInt(row?.count ?? '0', 10);
   }
 
   async search(searchQuery: string, limit = 20): Promise<Bookmark[]> {

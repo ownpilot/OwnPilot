@@ -80,6 +80,7 @@ export const RULE_DEFINITIONS = [
   { id: 'memory_cleanup', label: 'Memory Cleanup', description: 'Too many low-importance memories', thresholdKey: 'memoryMaxCount' as const },
   { id: 'pending_approvals', label: 'Pending Approvals', description: 'Actions awaiting approval', thresholdKey: null },
   { id: 'trigger_errors', label: 'Trigger Errors', description: 'Trigger failures in last 24h', thresholdKey: 'triggerErrorMin' as const },
+  { id: 'routine_checkin', label: 'Routine Check-in', description: 'Morning or evening routine check-in', thresholdKey: null },
 ] as const;
 
 // ============================================================================
@@ -194,6 +195,25 @@ const rules: Rule[] = [
       };
     },
   },
+
+  // 8. Routine check-in — morning (8-10) and evening (18-20) when no recent user activity
+  {
+    id: 'routine_checkin',
+    fn: (ctx, _thresholds) => {
+      const hour = ctx.timeContext.hour;
+      const isMorning = hour >= 8 && hour < 10;
+      const isEvening = hour >= 18 && hour < 20;
+      if (!isMorning && !isEvening) return null;
+      // Only fire if user hasn't been active recently
+      if (ctx.activity.hasRecentActivity) return null;
+      return {
+        id: 'routine_checkin',
+        label: 'Routine Check-in',
+        description: isMorning ? 'Morning check-in time' : 'Evening check-in time',
+        severity: 'info',
+      };
+    },
+  },
 ];
 
 // ============================================================================
@@ -224,7 +244,7 @@ export function evaluatePulseContext(
   const urgencyScore = Math.min(100, rawScore);
 
   return {
-    shouldCallLLM: signals.length > 0,
+    shouldCallLLM: true,
     signals,
     urgencyScore,
   };

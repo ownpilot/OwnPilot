@@ -12,12 +12,11 @@ import { configServicesRepo } from '../db/repositories/config-services.js';
 import {
   apiResponse,
   apiError,
-  getIntParam,
   ERROR_CODES,
   notFoundError,
   getErrorMessage,
 } from './helpers.js';
-import { MAX_PAGINATION_OFFSET } from '../config/defaults.js';
+import { pagination } from '../middleware/pagination.js';
 import { refreshChannelApi } from '../plugins/init.js';
 import { wsGateway } from '../ws/server.js';
 import { getLog } from '../services/log.js';
@@ -59,10 +58,9 @@ function getChannelBotInfo(api: unknown): { username?: string; firstName?: strin
 /**
  * GET /channels/messages/inbox - Get all messages from all channels (DB-backed)
  */
-channelRoutes.get('/messages/inbox', async (c) => {
+channelRoutes.get('/messages/inbox', pagination({ defaultLimit: 100, maxLimit: 500 }), async (c) => {
   const channelId = c.req.query('channelId');
-  const limit = getIntParam(c, 'limit', 100, 1, 500);
-  const offset = getIntParam(c, 'offset', 0, 0, MAX_PAGINATION_OFFSET);
+  const { limit, offset } = c.get('pagination')!;
 
   try {
     const messagesRepo = new ChannelMessagesRepository();
@@ -587,10 +585,9 @@ channelRoutes.post('/:id/reply', async (c) => {
 /**
  * GET /channels/:id/messages - Get messages for a channel
  */
-channelRoutes.get('/:id/messages', async (c) => {
+channelRoutes.get('/:id/messages', pagination({ defaultLimit: 50, maxLimit: 200 }), async (c) => {
   const channelId = c.req.param('id');
-  const limit = getIntParam(c, 'limit', 50, 1, 200);
-  const offset = getIntParam(c, 'offset', 0, 0, MAX_PAGINATION_OFFSET);
+  const { limit, offset } = c.get('pagination')!;
 
   try {
     const messagesRepo = new ChannelMessagesRepository();

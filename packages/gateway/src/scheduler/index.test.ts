@@ -52,14 +52,18 @@ vi.mock('../config/defaults.js', () => ({
   SCHEDULER_MAX_HISTORY_PER_TASK: 100,
 }));
 
-vi.mock('@ownpilot/core', () => ({
-  createScheduler: vi.fn(() => mockScheduler),
-  createSchedulerNotificationBridge: vi.fn((handler: unknown) => {
-    capturedNotificationHandler = handler as (...args: unknown[]) => Promise<void>;
-    return { handler };
-  }),
-  getChannelService: vi.fn(() => mockChannelService),
-}));
+vi.mock('@ownpilot/core', async (importOriginal) => {
+  const actual = await importOriginal<Record<string, unknown>>();
+  return {
+    ...actual,
+    createScheduler: vi.fn(() => mockScheduler),
+    createSchedulerNotificationBridge: vi.fn((handler: unknown) => {
+      capturedNotificationHandler = handler as (...args: unknown[]) => Promise<void>;
+      return { handler };
+    }),
+    getChannelService: vi.fn(() => mockChannelService),
+  };
+});
 
 vi.mock('../routes/agents.js', () => ({
   getOrCreateDefaultAgent: vi.fn(() => Promise.resolve(mockAgent)),
@@ -67,15 +71,6 @@ vi.mock('../routes/agents.js', () => ({
 
 vi.mock('../paths/index.js', () => ({
   getDataPaths: vi.fn(() => ({ data: '/tmp/data' })),
-}));
-
-vi.mock('../services/log.js', () => ({
-  getLog: () => ({
-    info: vi.fn(),
-    warn: vi.fn(),
-    error: vi.fn(),
-    debug: vi.fn(),
-  }),
 }));
 
 vi.mock('../routes/helpers.js', () => ({

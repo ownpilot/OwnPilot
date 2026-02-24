@@ -850,3 +850,162 @@ describe('environment-gated console logging', () => {
     expect(console.log).not.toHaveBeenCalled();
   });
 });
+
+// Console output branch coverage
+
+describe('console output branches', () => {
+  const origEnv2 = { ...process.env };
+  beforeEach(() => {
+    debugLog.clear();
+    debugLog.setEnabled(true);
+    vi.spyOn(console, 'log').mockImplementation(() => {});
+    process.env.DEBUG_AI_REQUESTS = 'true';
+    process.env.DEBUG_AGENT = '';
+    process.env.DEBUG_LLM = '';
+    process.env.NODE_ENV = 'test';
+  });
+  afterEach(() => {
+    vi.restoreAllMocks();
+    Object.assign(process.env, origEnv2);
+  });
+
+  it('logRequest logs tools list', () => {
+    logRequest(makeRequestInfo({ tools: ['read_file', 'write_file'], maxTokens: 4096, temperature: 0.7 }));
+    const calls = (console.log as any).mock.calls.flat().join(' ');
+    expect(calls).toContain('Tools');
+    expect(calls).toContain('read_file');
+  });
+
+  it('logRequest truncates tools list when more than 10', () => {
+    const tools = Array.from({ length: 15 }, (_, i) => 'tool_' + i);
+    logRequest(makeRequestInfo({ tools }));
+    const calls = (console.log as any).mock.calls.flat().join(' ');
+    expect(calls).toContain('...');
+  });
+
+  it('logRequest logs payload breakdown', () => {
+    logRequest(makeRequestInfo({
+      payload: { totalChars: 5000, estimatedTokens: 1250, systemPromptChars: 500, messagesChars: 3000, toolsChars: 1500, toolCount: 10, perToolAvgChars: 150 },
+    }));
+    const calls = (console.log as any).mock.calls.flat().join(' ');
+    expect(calls).toContain('PAYLOAD BREAKDOWN');
+    expect(calls).toContain('System Prompt');
+  });
+
+  it('logRequest logs messages with role and preview', () => {
+    logRequest(makeRequestInfo({
+      messages: [
+        { role: 'system', contentPreview: 'You are helpful', contentLength: 15 },
+        { role: 'user', contentPreview: 'Hello', contentLength: 5 },
+      ],
+    }));
+    const calls = (console.log as any).mock.calls.flat().join(' ');
+    expect(calls).toContain('SYSTEM');
+    expect(calls).toContain('USER');
+  });
+
+  it('logResponse logs success with content and tool calls', () => {
+    logResponse(makeResponseInfo({
+      status: 'success',
+      contentPreview: 'Hello',
+      contentLength: 5,
+      toolCalls: [{ id: 'call_abc12345', name: 'read_file', argumentsPreview: '{}' }],
+      finishReason: 'stop',
+      usage: { promptTokens: 10, completionTokens: 5, totalTokens: 15 },
+    }));
+    const calls = (console.log as any).mock.calls.flat().join(' ');
+    expect(calls).toContain('Tool Calls');
+    expect(calls).toContain('read_file');
+    expect(calls).toContain('Tokens');
+  });
+
+  it('logResponse logs error response details', () => {
+    logResponse(makeResponseInfo({ status: 'error', error: 'rate limited' }));
+    const calls = (console.log as any).mock.calls.flat().join(' ');
+    expect(calls).toContain('ERROR');
+    expect(calls).toContain('rate limited');
+  });
+
+  it('logResponse logs without usage or content', () => {
+    logResponse(makeResponseInfo({ status: 'success', finishReason: 'stop' }));
+    const calls = (console.log as any).mock.calls.flat().join(' ');
+    expect(calls).toContain('stop');
+  });
+
+  it('logToolCall logs rejected call with reason', () => {
+    logToolCall(makeToolCallInfo({ approved: false, rejectionReason: 'unsafe operation' }));
+    const calls = (console.log as any).mock.calls.flat().join(' ');
+    expect(calls).toContain('REJECTED');
+    expect(calls).toContain('unsafe operation');
+  });
+
+  it('logToolResult logs error info', () => {
+    logToolResult(makeToolResultInfo({ success: false, error: 'file not found' }));
+    const calls = (console.log as any).mock.calls.flat().join(' ');
+    expect(calls).toContain('file not found');
+  });
+
+  it('logRetry logs retry details to console', () => {
+    logRetry(2, 5, new Error('timeout'), 2000);
+    const calls = (console.log as any).mock.calls.flat().join(' ');
+    expect(calls).toContain('RETRY');
+    expect(calls).toContain('timeout');
+  });
+
+  it('logError logs with context and stack', () => {
+    const err = new Error('bad request');
+    logError('openai', err, 'during completion');
+    const calls = (console.log as any).mock.calls.flat().join(' ');
+    expect(calls).toContain('Context');
+    expect(calls).toContain('during completion');
+    expect(calls).toContain('Stack');
+  });
+
+  it('logError logs non-Error without stack', () => {
+    logError('test', 'string error');
+    const calls = (console.log as any).mock.calls.flat().join(' ');
+    expect(calls).toContain('string error');
+  });
+
+  it('logError logs without context', () => {
+    logError('test', new Error('oops'));
+    const calls = (console.log as any).mock.calls.flat().join(' ');
+    expect(calls).toContain('oops');
+  });
+
+  it('logSandboxExecution logs all sandbox fields including timedOut and docker', () => {
+    logSandboxExecution(makeSandboxInfo({
+      language: 'python',
+      sandboxed: false,
+      dockerImage: 'python:3.11-slim',
+      command: 'python script.py',
+      codePreview: 'print(42)',
+      exitCode: 1,
+      success: false,
+      error: 'syntax error',
+      timedOut: true,
+    }));
+    const calls = (console.log as any).mock.calls.flat().join(' ');
+    expect(calls).toContain('INSECURE');
+    expect(calls).toContain('TIMED OUT');
+    expect(calls).toContain('syntax error');
+    expect(calls).toContain('Docker Image');
+    expect(calls).toContain('Command');
+    expect(calls).toContain('Code');
+  });
+
+  it('logSandboxExecution logs shell language', () => {
+    logSandboxExecution(makeSandboxInfo({ language: 'shell', sandboxed: true }));
+    const calls = (console.log as any).mock.calls.flat().join(' ');
+    expect(calls).toContain('SANDBOX');
+    expect(calls).toContain('SHELL');
+  });
+
+  it('logResponse handles toolCall with empty id', () => {
+    logResponse(makeResponseInfo({
+      status: 'success',
+      toolCalls: [{ id: '', name: '', argumentsPreview: '{}' }],
+    }));
+    expect(console.log).toHaveBeenCalled();
+  });
+});

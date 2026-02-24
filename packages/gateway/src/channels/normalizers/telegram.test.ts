@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { ChannelIncomingMessage } from '@ownpilot/core';
-import { telegramNormalizer, decodeHtmlEntities, markdownToTelegramHtml } from './telegram.js';
+import { telegramNormalizer, decodeHtmlEntities } from './telegram.js';
 
 // ============================================================================
 // Helpers
@@ -49,64 +49,6 @@ describe('decodeHtmlEntities', () => {
 
   it('handles multiple entities in one string', () => {
     expect(decodeHtmlEntities('a &amp; b &lt; c &gt; d')).toBe('a & b < c > d');
-  });
-});
-
-// ============================================================================
-// markdownToTelegramHtml
-// ============================================================================
-
-describe('markdownToTelegramHtml', () => {
-  it('converts **bold** to <b>bold</b>', () => {
-    expect(markdownToTelegramHtml('This is **bold** text')).toBe('This is <b>bold</b> text');
-  });
-
-  it('converts *italic* to <i>italic</i>', () => {
-    expect(markdownToTelegramHtml('This is *italic* text')).toBe('This is <i>italic</i> text');
-  });
-
-  it('converts `code` to <code>code</code>', () => {
-    expect(markdownToTelegramHtml('Use `console.log`')).toContain('<code>console.log</code>');
-  });
-
-  it('escapes HTML inside inline code', () => {
-    const result = markdownToTelegramHtml('Use `a<b>c`');
-    expect(result).toContain('&lt;b&gt;');
-  });
-
-  it('converts code blocks with language', () => {
-    const md = '```js\nconsole.log("hi");\n```';
-    const result = markdownToTelegramHtml(md);
-    expect(result).toContain('<pre><code class="language-js">');
-    expect(result).toContain('</code></pre>');
-  });
-
-  it('converts code blocks without language', () => {
-    const md = '```\nsome code\n```';
-    const result = markdownToTelegramHtml(md);
-    expect(result).toContain('<pre><code>');
-  });
-
-  it('escapes HTML inside code blocks', () => {
-    const md = '```\na<b>c\n```';
-    const result = markdownToTelegramHtml(md);
-    expect(result).toContain('&lt;b&gt;');
-  });
-
-  it('converts [text](url) to <a> tag', () => {
-    const result = markdownToTelegramHtml('Visit [Google](https://google.com)');
-    expect(result).toBe('Visit <a href="https://google.com">Google</a>');
-  });
-
-  it('handles plain text without any markdown', () => {
-    expect(markdownToTelegramHtml('Hello world')).toBe('Hello world');
-  });
-
-  it('handles mixed formatting', () => {
-    const result = markdownToTelegramHtml('**bold** and *italic* and `code`');
-    expect(result).toContain('<b>bold</b>');
-    expect(result).toContain('<i>italic</i>');
-    expect(result).toContain('<code>code</code>');
   });
 });
 
@@ -239,9 +181,9 @@ describe('telegramNormalizer.normalizeOutgoing', () => {
     expect(parts.join('')).not.toContain('<context>');
   });
 
-  it('converts markdown to Telegram HTML', () => {
+  it('passes markdown through without conversion (downstream handles it)', () => {
     const parts = telegramNormalizer.normalizeOutgoing('This is **bold** text');
-    expect(parts[0]).toContain('<b>bold</b>');
+    expect(parts[0]).toBe('This is **bold** text');
   });
 
   it('splits long messages at 4096 chars', () => {
@@ -264,10 +206,10 @@ describe('telegramNormalizer.normalizeOutgoing', () => {
     expect(parts).toEqual([]);
   });
 
-  it('handles code blocks in output', () => {
+  it('passes code blocks through without conversion', () => {
     const md = 'Here is code:\n```python\nprint("hello")\n```';
     const parts = telegramNormalizer.normalizeOutgoing(md);
-    expect(parts[0]).toContain('<pre><code');
+    expect(parts[0]).toContain('```python');
   });
 
   it('preserves short messages as single part', () => {
@@ -291,11 +233,11 @@ describe('telegramNormalizer.normalizeOutgoing', () => {
     expect(parts[0]).toBe('<b>bold text</b> and <i>italic</i>');
   });
 
-  it('preserves existing HTML tags while converting markdown', () => {
-    // Mix of existing HTML and markdown
+  it('preserves existing HTML tags and passes markdown through', () => {
+    // Mix of existing HTML and markdown — normalizer does not convert markdown
     const text = '<b>already bold</b> and **markdown bold**';
     const parts = telegramNormalizer.normalizeOutgoing(text);
     expect(parts).toHaveLength(1);
-    expect(parts[0]).toBe('<b>already bold</b> and <b>markdown bold</b>');
+    expect(parts[0]).toBe('<b>already bold</b> and **markdown bold**');
   });
 });
