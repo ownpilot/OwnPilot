@@ -47,12 +47,16 @@ vi.mock('../ws/events.js', () => {
 const mockGetChannel = vi.fn(() => null);
 const mockChannelSend = vi.fn();
 
-vi.mock('@ownpilot/core', () => ({
-  getChannelService: vi.fn(() => ({
-    getChannel: mockGetChannel,
-    send: mockChannelSend,
-  })),
-}));
+vi.mock('@ownpilot/core', async (importOriginal) => {
+  const actual = await importOriginal<Record<string, unknown>>();
+  return {
+    ...actual,
+    getChannelService: vi.fn(() => ({
+      getChannel: mockGetChannel,
+      send: mockChannelSend,
+    })),
+  };
+});
 
 const mockAgentChat = vi.fn(() => ({ ok: true, value: { content: 'AI response' } }));
 const mockGetOrCreateChatAgent = vi.fn(() => ({ chat: mockAgentChat }));
@@ -72,15 +76,6 @@ vi.mock('../routes/settings.js', () => ({
 
 vi.mock('../routes/helpers.js', () => ({
   getErrorMessage: vi.fn((e: unknown) => (e instanceof Error ? e.message : String(e))),
-}));
-
-vi.mock('../services/log.js', () => ({
-  getLog: () => ({
-    info: vi.fn(),
-    warn: vi.fn(),
-    error: vi.fn(),
-    debug: vi.fn(),
-  }),
 }));
 
 // ---------------------------------------------------------------------------

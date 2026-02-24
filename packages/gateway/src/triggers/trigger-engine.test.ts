@@ -50,19 +50,23 @@ const { mockExecuteTool, mockHasTool } = vi.hoisted(() => ({
   mockHasTool: vi.fn(),
 }));
 
-vi.mock('@ownpilot/core', () => ({
-  getServiceRegistry: () => ({ get: (token: { name: string }) => mockServices[token.name] }),
-  Services: {
-    Trigger: { name: 'trigger' },
-    Goal: { name: 'goal' },
-    Memory: { name: 'memory' },
-  },
-  getNextRunTime: vi.fn(),
-  // Needed by transitive imports (ws/events.ts, tool-executor.ts → custom-tools.ts)
-  getEventSystem: () => ({ scoped: () => ({ on: vi.fn(), emit: vi.fn() }) }),
-  createDynamicToolRegistry: vi.fn(() => ({ register: vi.fn(), execute: vi.fn() })),
-  ALL_TOOLS: [],
-}));
+vi.mock('@ownpilot/core', async (importOriginal) => {
+  const actual = await importOriginal<Record<string, unknown>>();
+  return {
+    ...actual,
+    getServiceRegistry: () => ({ get: (token: { name: string }) => mockServices[token.name] }),
+    Services: {
+      Trigger: { name: 'trigger' },
+      Goal: { name: 'goal' },
+      Memory: { name: 'memory' },
+    },
+    getNextRunTime: vi.fn(),
+    // Needed by transitive imports (ws/events.ts, tool-executor.ts → custom-tools.ts)
+    getEventSystem: () => ({ scoped: () => ({ on: vi.fn(), emit: vi.fn() }) }),
+    createDynamicToolRegistry: vi.fn(() => ({ register: vi.fn(), execute: vi.fn() })),
+    ALL_TOOLS: [],
+  };
+});
 
 vi.mock('../ws/server.js', () => ({
   wsGateway: { broadcast: vi.fn() },
@@ -86,10 +90,6 @@ vi.mock('../db/repositories/execution-permissions.js', () => ({
       package_manager: 'allowed',
     })),
   },
-}));
-
-vi.mock('../services/log.js', () => ({
-  getLog: () => ({ info: vi.fn(), warn: vi.fn(), error: vi.fn() }),
 }));
 
 // Must import after mocks are declared

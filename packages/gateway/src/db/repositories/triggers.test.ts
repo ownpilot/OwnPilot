@@ -35,19 +35,14 @@ vi.mock('../adapters/index.js', () => ({
 
 const mockGetNextRunTime = vi.hoisted(() => vi.fn());
 
-vi.mock('@ownpilot/core', () => ({
-  getNextRunTime: mockGetNextRunTime,
-  generateId: (prefix: string) => `${prefix}_test_${Date.now()}`,
-}));
-
-vi.mock('../../services/log.js', () => ({
-  getLog: () => ({
-    info: vi.fn(),
-    warn: vi.fn(),
-    error: vi.fn(),
-    debug: vi.fn(),
-  }),
-}));
+vi.mock('@ownpilot/core', async (importOriginal) => {
+  const actual = await importOriginal<Record<string, unknown>>();
+  return {
+    ...actual,
+    getNextRunTime: mockGetNextRunTime,
+    generateId: (prefix: string) => `${prefix}_test_${Date.now()}`,
+  };
+});
 
 import { TriggersRepository } from './triggers.js';
 

@@ -45,15 +45,6 @@ vi.mock('./index.js', () => ({
   })),
 }));
 
-vi.mock('../services/log.js', () => ({
-  getLog: () => ({
-    info: vi.fn(),
-    warn: vi.fn(),
-    error: vi.fn(),
-    debug: vi.fn(),
-  }),
-}));
-
 vi.mock('../routes/helpers.js', () => ({
   getErrorMessage: vi.fn((e: unknown) => (e instanceof Error ? e.message : String(e))),
 }));

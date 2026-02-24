@@ -3,7 +3,7 @@
  *
  * Handles Telegram-specific message formatting:
  * - Incoming: HTML entity decoding, /command stripping
- * - Outgoing: Markdown → Telegram HTML, message splitting at 4096 chars
+ * - Outgoing: Internal tag stripping, entity decoding, message splitting at 4096 chars
  */
 
 import type { ChannelIncomingMessage, NormalizedAttachment } from '@ownpilot/core';
@@ -31,54 +31,6 @@ const HTML_ENTITIES: Record<string, string> = {
  */
 export function decodeHtmlEntities(text: string): string {
   return text.replace(/&(?:amp|lt|gt|quot|#39|apos);/g, (match) => HTML_ENTITIES[match] ?? match);
-}
-
-// ============================================================================
-// Markdown → Telegram HTML conversion
-// ============================================================================
-
-/**
- * Convert common markdown formatting to Telegram HTML.
- *
- * Supported conversions:
- * - **bold** → <b>bold</b>
- * - *italic* → <i>italic</i>
- * - `inline code` → <code>inline code</code>
- * - ```lang\ncode\n``` → <pre><code class="language-lang">code</code></pre>
- * - [text](url) → <a href="url">text</a>
- */
-export function markdownToTelegramHtml(text: string): string {
-  let result = text;
-
-  // Code blocks (must be done before inline patterns)
-  result = result.replace(/```(\w*)\n([\s\S]*?)```/g, (_match, lang: string, code: string) => {
-    const cls = lang ? ` class="language-${lang}"` : '';
-    return `<pre><code${cls}>${escapeHtml(code.trimEnd())}</code></pre>`;
-  });
-
-  // Inline code (after code blocks to avoid double-matching)
-  result = result.replace(
-    /`([^`]+)`/g,
-    (_match, code: string) => `<code>${escapeHtml(code)}</code>`
-  );
-
-  // Bold: **text**
-  result = result.replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
-
-  // Italic: *text* (but not inside <b> tags or when preceded by *)
-  result = result.replace(/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, '<i>$1</i>');
-
-  // Links: [text](url)
-  result = result.replace(/\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g, '<a href="$2">$1</a>');
-
-  return result;
-}
-
-/**
- * Escape HTML special characters for Telegram.
- */
-function escapeHtml(text: string): string {
-  return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
 // ============================================================================
@@ -130,8 +82,8 @@ export const telegramNormalizer: ChannelNormalizer = {
     // (e.g., &lt;b&gt; → <b>)
     cleaned = decodeHtmlEntities(cleaned);
 
-    // Convert markdown to Telegram HTML
-    cleaned = markdownToTelegramHtml(cleaned);
+    // NOTE: No markdown→HTML conversion here. Downstream senders
+    // (TelegramChannelAPI.sendMessage, TelegramProgressManager) handle it.
 
     // Split into message parts if too long
     return splitMessage(cleaned, TELEGRAM_MAX_LENGTH);

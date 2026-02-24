@@ -64,15 +64,13 @@ export {
 export {
   getPulseSystemPrompt,
   buildPulseUserMessage,
-  parsePulseDecision,
-  type PulseAction,
-  type PulseDecision,
 } from './prompt.js';
 
 export {
   executePulseActions,
   DEFAULT_ACTION_COOLDOWNS,
   type ActionCooldowns,
+  type PulseAction,
 } from './executor.js';
 
 export { reportPulseResult, type Broadcaster } from './reporter.js';

@@ -13,15 +13,10 @@ const mockGenerateApprovalId = vi.fn(() => 'test-approval-id');
 const mockCreateApprovalRequest = vi.fn(() => Promise.resolve(true));
 const mockSaveStreamingChat = vi.fn();
 const mockRunPostChatProcessing = vi.fn();
-const mockLog = { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() };
 
 // ---------------------------------------------------------------------------
 // vi.mock — modules the SUT imports
 // ---------------------------------------------------------------------------
-
-vi.mock('../services/log.js', () => ({
-  getLog: () => mockLog,
-}));
 
 vi.mock('../assistant/index.js', () => ({
   checkToolCallApproval: (...args: unknown[]) => mockCheckToolCallApproval(...args),

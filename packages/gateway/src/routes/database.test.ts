@@ -39,15 +39,6 @@ vi.mock('../paths/index.js', () => ({
   getDataPaths: vi.fn(() => ({ root: '/data' })),
 }));
 
-vi.mock('../services/log.js', () => ({
-  getLog: vi.fn(() => ({
-    info: vi.fn(),
-    warn: vi.fn(),
-    error: vi.fn(),
-    debug: vi.fn(),
-  })),
-}));
-
 // Mock fs functions
 const mockExistsSync = vi.fn(() => false);
 const mockMkdirSync = vi.fn();
@@ -92,9 +83,13 @@ const mockChildProcess = {
   }),
 };
 
-vi.mock('child_process', () => ({
-  spawn: vi.fn(() => mockChildProcess),
-}));
+vi.mock('child_process', async (importOriginal) => {
+  const actual = await importOriginal<Record<string, unknown>>();
+  return {
+    ...actual,
+    spawn: vi.fn(() => mockChildProcess),
+  };
+});
 
 // Mock db/schema.js for migrate-schema
 vi.mock('../db/schema.js', () => ({

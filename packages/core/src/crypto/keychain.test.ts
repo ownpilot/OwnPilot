@@ -41,6 +41,42 @@ vi.mock('./derive.js', () => ({
     .mockImplementation((b64: string) => new Uint8Array(Buffer.from(b64, 'base64'))),
 }));
 
+// Mock node:fs for win32 tests
+const mockReadFileSync = vi.fn();
+const mockWriteFileSync = vi.fn();
+const mockMkdirSync = vi.fn();
+const mockExistsSync = vi.fn().mockReturnValue(false);
+const mockUnlinkSync = vi.fn();
+
+vi.mock('node:fs', () => ({
+  readFileSync: (...args: unknown[]) => mockReadFileSync(...args),
+  writeFileSync: (...args: unknown[]) => mockWriteFileSync(...args),
+  mkdirSync: (...args: unknown[]) => mockMkdirSync(...args),
+  existsSync: (...args: unknown[]) => mockExistsSync(...args),
+  unlinkSync: (...args: unknown[]) => mockUnlinkSync(...args),
+}));
+
+// Helper to create a mock child process for spawnAsync tests
+function createMockProcess(exitCode: number, stdoutData: string = '', stderrData: string = '') {
+  const { EventEmitter } = require('events');
+  const proc = new EventEmitter();
+  const stdinEmitter = new EventEmitter();
+  (stdinEmitter as any).write = vi.fn();
+  (stdinEmitter as any).end = vi.fn();
+  const stdoutEmitter = new EventEmitter();
+  const stderrEmitter = new EventEmitter();
+  (proc as any).stdin = stdinEmitter;
+  (proc as any).stdout = stdoutEmitter;
+  (proc as any).stderr = stderrEmitter;
+  // Emit data and close on next tick
+  process.nextTick(() => {
+    if (stdoutData) stdoutEmitter.emit('data', Buffer.from(stdoutData));
+    if (stderrData) stderrEmitter.emit('data', Buffer.from(stderrData));
+    proc.emit('close', exitCode);
+  });
+  return proc;
+}
+
 // ---------------------------------------------------------------------------
 // getPlatform
 // ---------------------------------------------------------------------------
@@ -338,6 +374,8 @@ describe('retrieveSecret platform-specific', () => {
   beforeEach(async () => {
     vi.clearAllMocks();
     asyncMock.mockResolvedValue({ stdout: '', stderr: '' });
+    mockReadFileSync.mockReset();
+    mockReadFileSync.mockReturnValue('');
     osMock = await import('node:os');
   });
 
@@ -372,7 +410,9 @@ describe('retrieveSecret platform-specific', () => {
 
   it('handles win32 retrieve failure', async () => {
     vi.mocked(osMock.platform).mockReturnValue('win32');
-    asyncMock.mockRejectedValueOnce(new Error('file read error'));
+    mockReadFileSync.mockImplementationOnce(() => {
+      throw new Error('file read error');
+    });
     const result = await retrieveSecret({ service: 'test', account: 'test' });
     expect(result.ok).toBe(true);
     if (result.ok) {
@@ -380,3 +420,134 @@ describe('retrieveSecret platform-specific', () => {
     }
   });
 });
+
+// ---------------------------------------------------------------------------
+// storeSecret - Linux path
+// ---------------------------------------------------------------------------
+describe('storeSecret - Linux', () => {
+  let osMock: typeof import('node:os');
+  let cpMock: typeof import('node:child_process');
+
+  beforeEach(async () => {
+    vi.clearAllMocks();
+    asyncMock.mockResolvedValue({ stdout: '', stderr: '' });
+    osMock = await import('node:os');
+    cpMock = await import('node:child_process');
+  });
+
+  it('stores secret on linux via spawnAsync', async () => {
+    vi.mocked(osMock.platform).mockReturnValue('linux');
+    // Mock spawn to return a mock process
+    const mockProc = createMockProcess(0);
+    vi.mocked(cpMock.spawn).mockReturnValue(mockProc as any);
+    const result = await storeSecret(new Uint8Array([1, 2, 3]), {
+      service: 'test',
+      account: 'test',
+    });
+    expect(result.ok).toBe(true);
+  });
+
+  it('handles linux storeSecret spawn failure', async () => {
+    vi.mocked(osMock.platform).mockReturnValue('linux');
+    const mockProc = createMockProcess(1, 'error output');
+    vi.mocked(cpMock.spawn).mockReturnValue(mockProc as any);
+    const result = await storeSecret(new Uint8Array([1, 2, 3]), {
+      service: 'test',
+      account: 'test',
+    });
+    expect(result.ok).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// storeSecret - Win32 path
+// ---------------------------------------------------------------------------
+describe('storeSecret - Win32', () => {
+  let osMock: typeof import('node:os');
+  let cpMock: typeof import('node:child_process');
+
+  beforeEach(async () => {
+    vi.clearAllMocks();
+    asyncMock.mockResolvedValue({ stdout: '', stderr: '' });
+    osMock = await import('node:os');
+    cpMock = await import('node:child_process');
+  });
+
+  it('stores secret on win32 with DPAPI encryption', async () => {
+    vi.mocked(osMock.platform).mockReturnValue('win32');
+    const mockProc = createMockProcess(0, 'encrypted-data');
+    vi.mocked(cpMock.spawn).mockReturnValue(mockProc as any);
+    const result = await storeSecret(new Uint8Array([1, 2, 3]), {
+      service: 'test',
+      account: 'test',
+    });
+    expect(result.ok).toBe(true);
+  });
+
+  it('falls back to plain base64 on win32 when DPAPI fails', async () => {
+    vi.mocked(osMock.platform).mockReturnValue('win32');
+    const mockProc = createMockProcess(1, '', 'DPAPI error');
+    vi.mocked(cpMock.spawn).mockReturnValue(mockProc as any);
+    const result = await storeSecret(new Uint8Array([1, 2, 3]), {
+      service: 'test',
+      account: 'test',
+    });
+    expect(result.ok).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// retrieveSecret - Win32 path
+// ---------------------------------------------------------------------------
+describe('retrieveSecret - Win32 DPAPI', () => {
+  let osMock: typeof import('node:os');
+  let cpMock: typeof import('node:child_process');
+
+  beforeEach(async () => {
+    vi.clearAllMocks();
+    asyncMock.mockResolvedValue({ stdout: '', stderr: '' });
+    osMock = await import('node:os');
+    cpMock = await import('node:child_process');
+  });
+
+  it('retrieves secret on win32 with DPAPI decryption', async () => {
+    vi.mocked(osMock.platform).mockReturnValue('win32');
+    const encoded = Buffer.from(new Uint8Array([1, 2, 3])).toString('base64');
+    mockReadFileSync.mockReturnValueOnce('encrypted-content');
+    const mockProc = createMockProcess(0, encoded);
+    vi.mocked(cpMock.spawn).mockReturnValue(mockProc as any);
+    const result = await retrieveSecret({ service: 'test', account: 'test' });
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.value).not.toBeNull();
+    }
+  });
+
+  it('returns null when win32 DPAPI returns empty stdout', async () => {
+    vi.mocked(osMock.platform).mockReturnValue('win32');
+    const mockProc = createMockProcess(0, '');
+    vi.mocked(cpMock.spawn).mockReturnValue(mockProc as any);
+    const result = await retrieveSecret({ service: 'test', account: 'test' });
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.value).toBeNull();
+    }
+  });
+
+  it('falls back to plain base64 when DPAPI decryption fails on win32', async () => {
+    vi.mocked(osMock.platform).mockReturnValue('win32');
+    const encoded = Buffer.from(new Uint8Array([1, 2, 3])).toString('base64');
+    mockReadFileSync.mockReturnValueOnce(encoded);
+    const mockProc = createMockProcess(1, '', 'DPAPI error');
+    vi.mocked(cpMock.spawn).mockReturnValue(mockProc as any);
+    const result = await retrieveSecret({ service: 'test', account: 'test' });
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.value).not.toBeNull();
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// isKeychainAvailable - Linux
+// ---------------------------------------------------------------------------

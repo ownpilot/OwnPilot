@@ -86,6 +86,7 @@ const mockChannelMessagesRepo = {
   getAll: vi.fn(async () => []),
   count: vi.fn(async () => 0),
   deleteAll: vi.fn(async () => 5),
+  create: vi.fn(async () => undefined),
   deleteByChannel: vi.fn(async () => 3),
 };
 
@@ -758,4 +759,395 @@ describe('Channels Routes', () => {
       expect(json.error.code).toBe('INTERNAL_ERROR');
     });
   });
+
+  // ========================================================================
+  // POST /channels/:id/reconnect
+  // ========================================================================
+
+  describe('POST /channels/:id/reconnect', () => {
+    it('reconnects a channel (disconnect + connect)', async () => {
+      const res = await app.request('/channels/channel.telegram/reconnect', {
+        method: 'POST',
+      });
+
+      expect(res.status).toBe(200);
+      const json = await res.json();
+      expect(json.success).toBe(true);
+      expect(json.data.pluginId).toBe('channel.telegram');
+      expect(json.data.status).toBe('reconnected');
+      expect(mockRefreshChannelApi).toHaveBeenCalledWith('channel.telegram');
+      expect(mockService.disconnect).toHaveBeenCalledWith('channel.telegram');
+      expect(mockService.connect).toHaveBeenCalledWith('channel.telegram');
+    });
+
+    it('succeeds even if disconnect fails (best-effort)', async () => {
+      mockService.disconnect.mockRejectedValueOnce(new Error('already disconnected'));
+      const res = await app.request('/channels/channel.telegram/reconnect', { method: 'POST' });
+      expect(res.status).toBe(200);
+      const json = await res.json();
+      expect(json.data.status).toBe('reconnected');
+    });
+
+    it('broadcasts WebSocket event on reconnect', async () => {
+      await app.request('/channels/channel.telegram/reconnect', { method: 'POST' });
+      expect(mockWsGateway.broadcast).toHaveBeenCalledWith('data:changed', {
+        entity: 'channel', action: 'updated', id: 'channel.telegram',
+      });
+    });
+
+    it('returns 500 when connect fails after refresh', async () => {
+      mockService.connect.mockRejectedValueOnce(new Error('Connect failed'));
+      const res = await app.request('/channels/channel.telegram/reconnect', { method: 'POST' });
+      expect(res.status).toBe(500);
+      const json = await res.json();
+      expect(json.error.code).toBe('CONNECTION_FAILED');
+    });
+
+    it('returns 500 when refreshChannelApi fails', async () => {
+      mockRefreshChannelApi.mockRejectedValueOnce(new Error('Refresh failed'));
+      const res = await app.request('/channels/channel.telegram/reconnect', { method: 'POST' });
+      expect(res.status).toBe(500);
+      const json = await res.json();
+      expect(json.error.code).toBe('CONNECTION_FAILED');
+    });
+  });
+
+  describe('POST /channels/:id/setup -- edge cases', () => {
+    it('returns 400 for invalid JSON body', async () => {
+      const res = await app.request('/channels/channel.telegram/setup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: 'not json',
+      });
+      expect(res.status).toBe(400);
+      const json = await res.json();
+      expect(json.error.code).toBe('INVALID_REQUEST');
+      expect(json.error.message).toBe('Invalid JSON body');
+    });
+
+    it('returns 400 when plugin has no required services', async () => {
+      const pluginNoServices = {
+        manifest: { id: 'channel.telegram', name: 'Telegram', category: 'channel', requiredServices: [] },
+        status: 'enabled',
+        api: telegramApi,
+      };
+      mockRegistry.get.mockReturnValueOnce(pluginNoServices);
+      const res = await app.request('/channels/channel.telegram/setup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ config: { bot_token: '123:ABC' } }),
+      });
+      expect(res.status).toBe(400);
+      const json = await res.json();
+      expect(json.error.code).toBe('INVALID_REQUEST');
+      expect(json.error.message).toBe('Channel has no required services');
+    });
+  });
+
+  describe('GET /channels -- botInfo', () => {
+    it('includes botInfo when channel API has getBotInfo', async () => {
+      const apiWithBot = { ...telegramApi, getBotInfo: vi.fn(() => ({ username: 'testbot', firstName: 'Test Bot' })) };
+      mockService.getChannel.mockImplementation((id: string) => id === 'channel.telegram' ? apiWithBot : telegram2Api);
+      const res = await app.request('/channels');
+      const json = await res.json();
+      expect(json.data.channels[0].botInfo).toEqual({ username: 'testbot', firstName: 'Test Bot' });
+      expect(json.data.channels[1].botInfo).toBeUndefined();
+    });
+  });
+
+  describe('GET /channels/status -- mixed statuses', () => {
+    it('counts disconnected and error channels correctly', async () => {
+      mockService.listChannels.mockReturnValue([
+        { pluginId: 'ch1', platform: 'telegram', name: 'A', status: 'connected', icon: '' },
+        { pluginId: 'ch2', platform: 'telegram', name: 'B', status: 'disconnected', icon: '' },
+        { pluginId: 'ch3', platform: 'slack', name: 'C', status: 'error', icon: '' },
+      ]);
+      const res = await app.request('/channels/status');
+      const json = await res.json();
+      expect(json.data.total).toBe(3);
+      expect(json.data.connected).toBe(1);
+      expect(json.data.disconnected).toBe(1);
+      expect(json.data.error).toBe(1);
+      expect(json.data.byPlatform.telegram).toBe(2);
+      expect(json.data.byPlatform.slack).toBe(1);
+    });
+  });
+
+  describe('GET /channels/:id -- botInfo', () => {
+    it('includes botInfo when channel API has getBotInfo', async () => {
+      const apiWithBot = { ...telegramApi, getBotInfo: vi.fn(() => ({ username: 'mybot', firstName: 'My Bot' })) };
+      mockService.getChannel.mockReturnValue(apiWithBot);
+      const res = await app.request('/channels/channel.telegram');
+      const json = await res.json();
+      expect(json.data.botInfo).toEqual({ username: 'mybot', firstName: 'My Bot' });
+    });
+
+    it('omits botInfo when channel API lacks getBotInfo', async () => {
+      const res = await app.request('/channels/channel.telegram');
+      const json = await res.json();
+      expect(json.data.botInfo).toBeUndefined();
+    });
+  });
+
+  describe('POST /channels/:id/send -- additional paths', () => {
+    it('accepts content field as alias for text', async () => {
+      const res = await app.request('/channels/channel.telegram/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: 'Hello via content!', chatId: '12345' }),
+      });
+      expect(res.status).toBe(200);
+      expect(mockService.send).toHaveBeenCalledWith(
+        'channel.telegram',
+        expect.objectContaining({ text: 'Hello via content!' })
+      );
+    });
+
+    it('auto-resolves chatId from Config Center allowed_users', async () => {
+      mockConfigServicesRepo.getFieldValue.mockReturnValue('99887766,11223344');
+      const res = await app.request('/channels/channel.telegram/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: 'Auto-resolve chat' }),
+      });
+      expect(res.status).toBe(200);
+      const json = await res.json();
+      expect(json.data.chatId).toBe('99887766');
+    });
+
+    it('returns 400 when chatId cannot be resolved from config', async () => {
+      mockConfigServicesRepo.getFieldValue.mockReturnValue(undefined);
+      const res = await app.request('/channels/channel.telegram/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: 'No chatId' }),
+      });
+      expect(res.status).toBe(400);
+      const json = await res.json();
+      expect(json.error.code).toBe('INVALID_REQUEST');
+      expect(json.error.message).toContain('chatId is required');
+    });
+
+    it('returns 400 when allowed_users is empty string', async () => {
+      mockConfigServicesRepo.getFieldValue.mockReturnValue('  ');
+      const res = await app.request('/channels/channel.telegram/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: 'No chatId' }),
+      });
+      expect(res.status).toBe(400);
+    });
+  });
+
+  describe('POST /channels/:id/reply', () => {
+    it('sends a reply and saves to DB', async () => {
+      const res = await app.request('/channels/channel.telegram/reply', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: 'Reply text', platformChatId: '12345' }),
+      });
+      expect(res.status).toBe(200);
+      const json = await res.json();
+      expect(json.success).toBe(true);
+      expect(json.data.platformMessageId).toBe('msg-sent-001');
+      expect(json.data.messageId).toContain('channel.telegram:reply:msg-sent-001');
+      expect(mockService.send).toHaveBeenCalledWith('channel.telegram', {
+        platformChatId: '12345', text: 'Reply text', replyToId: undefined,
+      });
+      expect(mockChannelMessagesRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          channelId: 'channel.telegram', direction: 'outbound',
+          senderId: 'web-ui', senderName: 'You', content: 'Reply text',
+        })
+      );
+      expect(mockWsGateway.broadcast).toHaveBeenCalledWith(
+        'channel:message',
+        expect.objectContaining({
+          channelId: 'channel.telegram', content: 'Reply text',
+          direction: 'outgoing', sender: 'You',
+        })
+      );
+    });
+
+    it('sends reply with replyToMessageId', async () => {
+      const res = await app.request('/channels/channel.telegram/reply', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: 'Thread reply', platformChatId: '12345', replyToMessageId: 'orig-msg-123' }),
+      });
+      expect(res.status).toBe(200);
+      expect(mockService.send).toHaveBeenCalledWith('channel.telegram', {
+        platformChatId: '12345', text: 'Thread reply', replyToId: 'orig-msg-123',
+      });
+    });
+
+    it('returns 404 for unknown channel', async () => {
+      const res = await app.request('/channels/nonexistent/reply', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: 'Hello', platformChatId: '123' }),
+      });
+      expect(res.status).toBe(404);
+    });
+
+    it('returns 400 when channel is not connected', async () => {
+      telegramApi.getStatus.mockReturnValueOnce('disconnected');
+      const res = await app.request('/channels/channel.telegram/reply', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: 'Hello', platformChatId: '123' }),
+      });
+      expect(res.status).toBe(400);
+      const json = await res.json();
+      expect(json.error.code).toBe('CONNECTION_FAILED');
+    });
+
+    it('returns 400 when text is missing', async () => {
+      const res = await app.request('/channels/channel.telegram/reply', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ platformChatId: '12345' }),
+      });
+      expect(res.status).toBe(400);
+      const json = await res.json();
+      expect(json.error.message).toBe('text is required');
+    });
+
+    it('returns 400 when text is empty after trimming', async () => {
+      const res = await app.request('/channels/channel.telegram/reply', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: '   ', platformChatId: '12345' }),
+      });
+      expect(res.status).toBe(400);
+    });
+
+    it('returns 400 when text exceeds 4096 characters', async () => {
+      const longText = 'x'.repeat(4097);
+      const res = await app.request('/channels/channel.telegram/reply', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: longText, platformChatId: '12345' }),
+      });
+      expect(res.status).toBe(400);
+      const json = await res.json();
+      expect(json.error.message).toBe('text must be 4096 characters or less');
+    });
+
+    it('auto-resolves platformChatId from Config Center', async () => {
+      mockConfigServicesRepo.getFieldValue.mockReturnValue('55667788');
+      const res = await app.request('/channels/channel.telegram/reply', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: 'Auto resolved' }),
+      });
+      expect(res.status).toBe(200);
+      expect(mockService.send).toHaveBeenCalledWith(
+        'channel.telegram',
+        expect.objectContaining({ platformChatId: '55667788' })
+      );
+    });
+
+    it('returns 400 when platformChatId cannot be resolved', async () => {
+      mockConfigServicesRepo.getFieldValue.mockReturnValue(undefined);
+      const res = await app.request('/channels/channel.telegram/reply', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: 'No chat id' }),
+      });
+      expect(res.status).toBe(400);
+      const json = await res.json();
+      expect(json.error.message).toBe('platformChatId is required');
+    });
+
+    it('succeeds even if DB save fails (non-critical)', async () => {
+      mockChannelMessagesRepo.create.mockRejectedValueOnce(new Error('DB write failed'));
+      const res = await app.request('/channels/channel.telegram/reply', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: 'Still sent', platformChatId: '12345' }),
+      });
+      expect(res.status).toBe(200);
+    });
+
+    it('returns 500 when send fails', async () => {
+      mockService.send.mockRejectedValueOnce(new Error('API error'));
+      const res = await app.request('/channels/channel.telegram/reply', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: 'Will fail', platformChatId: '12345' }),
+      });
+      expect(res.status).toBe(500);
+      const json = await res.json();
+      expect(json.error.code).toBe('SEND_FAILED');
+    });
+
+    it('broadcasts correct channelType', async () => {
+      await app.request('/channels/channel.telegram/reply', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: 'Check platform', platformChatId: '12345' }),
+      });
+      expect(mockWsGateway.broadcast).toHaveBeenCalledWith(
+        'channel:message',
+        expect.objectContaining({ channelType: 'telegram' })
+      );
+    });
+  });
+
+  describe('GET /channels/messages/inbox -- sender defaults', () => {
+    it('uses default sender id/name for inbound messages', async () => {
+      mockChannelMessagesRepo.getAll.mockResolvedValue([{
+        id: 'msg-no-sender', channelId: 'channel.telegram', direction: 'inbound',
+        senderId: null, senderName: null, content: 'anonymous', metadata: null, createdAt: new Date(),
+      }]);
+      const res = await app.request('/channels/messages/inbox');
+      const json = await res.json();
+      const msg = json.data.messages.find((m: { id: string }) => m.id === 'msg-no-sender');
+      expect(msg.sender.id).toBe('unknown');
+      expect(msg.sender.name).toBe('Unknown');
+    });
+
+    it('uses assistant defaults for outbound without sender', async () => {
+      mockChannelMessagesRepo.getAll.mockResolvedValue([{
+        id: 'msg-out-no-sender', channelId: 'channel.telegram', direction: 'outbound',
+        senderId: null, senderName: null, content: 'from bot', metadata: null, createdAt: new Date(),
+      }]);
+      const res = await app.request('/channels/messages/inbox');
+      const json = await res.json();
+      const msg = json.data.messages.find((m: { id: string }) => m.id === 'msg-out-no-sender');
+      expect(msg.sender.id).toBe('assistant');
+      expect(msg.sender.name).toBe('Assistant');
+    });
+
+    it('extracts channelType from channelId', async () => {
+      mockChannelMessagesRepo.getAll.mockResolvedValue([{
+        id: 'msg-type', channelId: 'channel.telegram', direction: 'inbound',
+        senderId: 'u1', senderName: 'U1', content: 'hi', metadata: null, createdAt: new Date(),
+      }]);
+      const res = await app.request('/channels/messages/inbox');
+      const json = await res.json();
+      const msg = json.data.messages.find((m: { id: string }) => m.id === 'msg-type');
+      expect(msg.channelType).toBe('telegram');
+    });
+
+    it('counts unread messages correctly', async () => {
+      mockChannelMessagesRepo.getAll.mockResolvedValue([
+        { id: 'msg-in', channelId: 'channel.telegram', direction: 'inbound', senderId: 'u1', senderName: 'U1', content: 'unread', metadata: null, createdAt: new Date() },
+        { id: 'msg-out', channelId: 'channel.telegram', direction: 'outbound', senderId: 'bot', senderName: 'Bot', content: 'sent', metadata: null, createdAt: new Date() },
+      ]);
+      const res = await app.request('/channels/messages/inbox');
+      const json = await res.json();
+      expect(json.data.unreadCount).toBe(1);
+    });
+
+    it('returns total from count query', async () => {
+      mockChannelMessagesRepo.getAll.mockResolvedValue([]);
+      mockChannelMessagesRepo.count.mockResolvedValue(42);
+      const res = await app.request('/channels/messages/inbox');
+      const json = await res.json();
+      expect(json.data.total).toBe(42);
+    });
+  });
+
 });

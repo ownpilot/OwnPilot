@@ -446,7 +446,7 @@ async function main() {
   try {
     const { getAutonomyEngine, createPulseServiceAdapter } = await import('./autonomy/engine.js');
     const pulseEngine = getAutonomyEngine({ userId: 'default' });
-    pulseEngine.setBroadcaster((event, data) => {
+    const pulseBroadcaster = (event: string, data: unknown) => {
       if (event === 'pulse:activity') {
         wsGateway.broadcast(
           'pulse:activity',
@@ -458,7 +458,14 @@ async function main() {
           data as import('./ws/types.js').ServerEvents['system:notification']
         );
       }
-    });
+    };
+    pulseEngine.setBroadcaster(pulseBroadcaster);
+
+    // Share the broadcaster with notification tools so the agent's
+    // send_user_notification tool can push to web clients
+    const { setNotificationBroadcaster } = await import('./tools/notification-tools.js');
+    setNotificationBroadcaster(pulseBroadcaster);
+
     registry.register(Services.Pulse, createPulseServiceAdapter(pulseEngine));
     pulseEngine.start();
     log.info('Autonomy Engine started.');

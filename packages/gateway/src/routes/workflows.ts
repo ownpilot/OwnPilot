@@ -12,7 +12,6 @@ import {
   getUserId,
   apiResponse,
   apiError,
-  getIntParam,
   notFoundError,
   getErrorMessage,
   sanitizeId,
@@ -23,8 +22,8 @@ import { topologicalSort } from '../services/workflow-service.js';
 import { wsGateway } from '../ws/server.js';
 import { validateBody } from '../middleware/validation.js';
 import { createWorkflowSchema, updateWorkflowSchema } from '../middleware/validation.js';
-import { MAX_PAGINATION_OFFSET } from '../config/defaults.js';
 import { workflowCopilotRoute } from './workflow-copilot.js';
+import { pagination } from '../middleware/pagination.js';
 
 export const workflowRoutes = new Hono();
 
@@ -35,10 +34,9 @@ workflowRoutes.route('/copilot', workflowCopilotRoute);
 // List Workflows
 // ============================================================================
 
-workflowRoutes.get('/', async (c) => {
+workflowRoutes.get('/', pagination(), async (c) => {
   const userId = getUserId(c);
-  const limit = getIntParam(c, 'limit', 20, 1, 100);
-  const offset = getIntParam(c, 'offset', 0, 0, MAX_PAGINATION_OFFSET);
+  const { limit, offset } = c.get('pagination')!;
 
   const repo = createWorkflowsRepository(userId);
   const [total, workflows] = await Promise.all([repo.count(), repo.getPage(limit, offset)]);
@@ -109,10 +107,9 @@ workflowRoutes.post('/', async (c) => {
 // Recent Logs (must be before /:id to avoid route conflict)
 // ============================================================================
 
-workflowRoutes.get('/logs/recent', async (c) => {
+workflowRoutes.get('/logs/recent', pagination(), async (c) => {
   const userId = getUserId(c);
-  const limit = getIntParam(c, 'limit', 20, 1, 100);
-  const offset = getIntParam(c, 'offset', 0, 0, MAX_PAGINATION_OFFSET);
+  const { limit, offset } = c.get('pagination')!;
 
   const repo = createWorkflowsRepository(userId);
   const [total, logs] = await Promise.all([repo.countLogs(), repo.getRecentLogs(limit, offset)]);
@@ -315,11 +312,10 @@ workflowRoutes.post('/:id/cancel', async (c) => {
 // Workflow Execution Logs
 // ============================================================================
 
-workflowRoutes.get('/:id/logs', async (c) => {
+workflowRoutes.get('/:id/logs', pagination(), async (c) => {
   const userId = getUserId(c);
   const id = sanitizeId(c.req.param('id'));
-  const limit = getIntParam(c, 'limit', 20, 1, 100);
-  const offset = getIntParam(c, 'offset', 0, 0, MAX_PAGINATION_OFFSET);
+  const { limit, offset } = c.get('pagination')!;
 
   const repo = createWorkflowsRepository(userId);
   const workflow = await repo.get(id);

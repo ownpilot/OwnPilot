@@ -5,6 +5,7 @@
  */
 
 import { BaseRepository, parseJsonField, parseJsonFieldNullable } from './base.js';
+import { buildUpdateStatement } from './query-helpers.js';
 import { generateId } from '@ownpilot/core';
 
 // ============================================================================
@@ -321,71 +322,51 @@ export class PlansRepository extends BaseRepository {
     const plan = await this.get(id);
     if (!plan) return null;
 
-    const updates: string[] = ['updated_at = $1'];
-    const values: unknown[] = [new Date().toISOString()];
-    let paramIndex = 2;
+    const now = new Date().toISOString();
 
-    if (input.name !== undefined) {
-      updates.push(`name = $${paramIndex++}`);
-      values.push(input.name);
-    }
-    if (input.description !== undefined) {
-      updates.push(`description = $${paramIndex++}`);
-      values.push(input.description);
-    }
-    if (input.status !== undefined) {
-      updates.push(`status = $${paramIndex++}`);
-      values.push(input.status);
+    const fields = [
+      { column: 'updated_at', value: now },
+      { column: 'name', value: input.name },
+      { column: 'description', value: input.description },
+      { column: 'status', value: input.status },
+      {
+        column: 'started_at',
+        value:
+          input.status === 'running' && !plan.startedAt ? now : undefined,
+      },
+      {
+        column: 'completed_at',
+        value:
+          input.status === 'completed' || input.status === 'failed' || input.status === 'cancelled'
+            ? now
+            : undefined,
+      },
+      { column: 'current_step', value: input.currentStep },
+      { column: 'progress', value: input.progress },
+      { column: 'priority', value: input.priority },
+      { column: 'autonomy_level', value: input.autonomyLevel },
+      { column: 'checkpoint', value: input.checkpoint },
+      { column: 'error', value: input.error },
+      {
+        column: 'metadata',
+        value: input.metadata !== undefined ? JSON.stringify(input.metadata) : undefined,
+      },
+    ];
 
-      if (input.status === 'running' && !plan.startedAt) {
-        updates.push(`started_at = $${paramIndex++}`);
-        values.push(new Date().toISOString());
-      }
-      if (
-        input.status === 'completed' ||
-        input.status === 'failed' ||
-        input.status === 'cancelled'
-      ) {
-        updates.push(`completed_at = $${paramIndex++}`);
-        values.push(new Date().toISOString());
-      }
-    }
-    if (input.currentStep !== undefined) {
-      updates.push(`current_step = $${paramIndex++}`);
-      values.push(input.currentStep);
-    }
-    if (input.progress !== undefined) {
-      updates.push(`progress = $${paramIndex++}`);
-      values.push(input.progress);
-    }
-    if (input.priority !== undefined) {
-      updates.push(`priority = $${paramIndex++}`);
-      values.push(input.priority);
-    }
-    if (input.autonomyLevel !== undefined) {
-      updates.push(`autonomy_level = $${paramIndex++}`);
-      values.push(input.autonomyLevel);
-    }
-    if (input.checkpoint !== undefined) {
-      updates.push(`checkpoint = $${paramIndex++}`);
-      values.push(input.checkpoint);
-    }
-    if (input.error !== undefined) {
-      updates.push(`error = $${paramIndex++}`);
-      values.push(input.error);
-    }
-    if (input.metadata !== undefined) {
-      updates.push(`metadata = $${paramIndex++}`);
-      values.push(JSON.stringify(input.metadata));
-    }
-
-    values.push(id, this.userId);
-
-    await this.execute(
-      `UPDATE plans SET ${updates.join(', ')}
-       WHERE id = $${paramIndex++} AND user_id = $${paramIndex}`,
-      values
+    const stmt = buildUpdateStatement(
+      'plans',
+      fields,
+      [
+        { column: 'id', value: id },
+        { column: 'user_id', value: this.userId },
+      ],
     );
+
+    // stmt is always non-null because updated_at is always provided,
+    // but guard defensively.
+    if (!stmt) return plan;
+
+    await this.execute(stmt.sql, stmt.params);
 
     return this.get(id);
   }
@@ -578,54 +559,49 @@ export class PlansRepository extends BaseRepository {
     const step = await this.getStep(id);
     if (!step) return null;
 
-    const updates: string[] = [];
-    const values: unknown[] = [];
-    let paramIndex = 1;
+    // Pre-compute conditional timestamp values
+    const now = new Date();
+    const nowIso = now.toISOString();
+    const isTerminal =
+      input.status === 'completed' || input.status === 'failed' || input.status === 'skipped';
 
-    if (input.status !== undefined) {
-      updates.push(`status = $${paramIndex++}`);
-      values.push(input.status);
+    const fields = [
+      { column: 'status', value: input.status },
+      {
+        column: 'started_at',
+        value: input.status === 'running' && !step.startedAt ? nowIso : undefined,
+      },
+      {
+        column: 'completed_at',
+        value: isTerminal ? nowIso : undefined,
+      },
+      {
+        column: 'duration_ms',
+        value: isTerminal && step.startedAt ? now.getTime() - step.startedAt.getTime() : undefined,
+      },
+      {
+        column: 'result',
+        value: input.result !== undefined ? JSON.stringify(input.result) : undefined,
+      },
+      { column: 'error', value: input.error },
+      { column: 'retry_count', value: input.retryCount },
+      {
+        column: 'metadata',
+        value: input.metadata !== undefined ? JSON.stringify(input.metadata) : undefined,
+      },
+    ];
 
-      if (input.status === 'running' && !step.startedAt) {
-        updates.push(`started_at = $${paramIndex++}`);
-        values.push(new Date().toISOString());
-      }
-      if (input.status === 'completed' || input.status === 'failed' || input.status === 'skipped') {
-        const now = new Date();
-        updates.push(`completed_at = $${paramIndex++}`);
-        values.push(now.toISOString());
-        if (step.startedAt) {
-          updates.push(`duration_ms = $${paramIndex++}`);
-          values.push(now.getTime() - step.startedAt.getTime());
-        }
-      }
-    }
-    if (input.result !== undefined) {
-      updates.push(`result = $${paramIndex++}`);
-      values.push(JSON.stringify(input.result));
-    }
-    if (input.error !== undefined) {
-      updates.push(`error = $${paramIndex++}`);
-      values.push(input.error);
-    }
-    if (input.retryCount !== undefined) {
-      updates.push(`retry_count = $${paramIndex++}`);
-      values.push(input.retryCount);
-    }
-    if (input.metadata !== undefined) {
-      updates.push(`metadata = $${paramIndex++}`);
-      values.push(JSON.stringify(input.metadata));
-    }
+    // Use empty where array because the WHERE clause has a subquery
+    const stmt = buildUpdateStatement('plan_steps', fields, []);
 
-    if (updates.length === 0) return step;
+    if (!stmt) return step;
 
-    values.push(id, this.userId);
+    // Append complex WHERE clause with subquery
+    const whereIdx = stmt.params.length + 1;
+    const sql = `${stmt.sql} WHERE id = $${whereIdx} AND plan_id IN (SELECT id FROM plans WHERE user_id = $${whereIdx + 1})`;
+    const params = [...stmt.params, id, this.userId];
 
-    await this.execute(
-      `UPDATE plan_steps SET ${updates.join(', ')}
-       WHERE id = $${paramIndex} AND plan_id IN (SELECT id FROM plans WHERE user_id = $${paramIndex + 1})`,
-      values
-    );
+    await this.execute(sql, params);
 
     return this.getStep(id);
   }

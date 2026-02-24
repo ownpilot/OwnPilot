@@ -866,4 +866,266 @@ describe('MemoriesRepository', () => {
       expect(result).toBe(false);
     });
   });
+
+  // ==========================================================================
+  // searchByFTS (Full-text search)
+  // ==========================================================================
+
+  describe('searchByFTS', () => {
+    it('returns memories with FTS rank scores', async () => {
+      mockAdapter.query.mockResolvedValue([
+        { ...memoryRow(), fts_rank: 0.85 },
+        { ...memoryRow({ id: 'mem-2' }), fts_rank: 0.6 },
+      ]);
+      const results = await repo.searchByFTS('blue sky');
+      expect(results).toHaveLength(2);
+      expect(results[0]!.ftsRank).toBe(0.85);
+      expect(results[1]!.ftsRank).toBe(0.6);
+      const sql = mockAdapter.query.mock.calls[0]![0] as string;
+      expect(sql).toContain('ts_rank_cd');
+      expect(sql).toContain('websearch_to_tsquery');
+      expect(sql).toContain('search_vector');
+    });
+
+    it('applies type filter', async () => {
+      mockAdapter.query.mockResolvedValue([]);
+      await repo.searchByFTS('test', { type: 'fact' });
+      const sql = mockAdapter.query.mock.calls[0]![0] as string;
+      expect(sql).toContain('type =');
+    });
+
+    it('applies minImportance', async () => {
+      mockAdapter.query.mockResolvedValue([]);
+      await repo.searchByFTS('test', { minImportance: 0.7 });
+      const sql = mockAdapter.query.mock.calls[0]![0] as string;
+      expect(sql).toContain('importance >=');
+    });
+
+    it('defaults limit to 20', async () => {
+      mockAdapter.query.mockResolvedValue([]);
+      await repo.searchByFTS('test');
+      const params = mockAdapter.query.mock.calls[0]![1] as unknown[];
+      expect(params).toContain(20);
+    });
+
+    it('applies custom limit', async () => {
+      mockAdapter.query.mockResolvedValue([]);
+      await repo.searchByFTS('test', { limit: 5 });
+      const params = mockAdapter.query.mock.calls[0]![1] as unknown[];
+      expect(params).toContain(5);
+    });
+  });
+
+  describe('hybridSearch', () => {
+    it('falls back to FTS when no embedding', async () => {
+      mockAdapter.query.mockResolvedValueOnce([{ ...memoryRow(), fts_rank: 0.9 }]);
+      const results = await repo.hybridSearch('test query');
+      expect(results).toHaveLength(1);
+      expect(results[0]!.matchType).toBe('fts');
+      expect(results[0]!.score).toBe(0.9);
+    });
+
+    it('falls back to keyword when FTS empty', async () => {
+      mockAdapter.query.mockResolvedValueOnce([]);
+      mockAdapter.query.mockResolvedValueOnce([memoryRow()]);
+      const results = await repo.hybridSearch('test query');
+      expect(results).toHaveLength(1);
+      expect(results[0]!.matchType).toBe('keyword');
+    });
+
+    it('returns empty when both FTS and keyword empty', async () => {
+      mockAdapter.query.mockResolvedValueOnce([]);
+      mockAdapter.query.mockResolvedValueOnce([]);
+      expect(await repo.hybridSearch('x')).toEqual([]);
+    });
+
+    it('uses RRF when embedding provided', async () => {
+      mockAdapter.query.mockResolvedValueOnce([{ ...memoryRow(), rrf_score: 0.5, match_type: 'hybrid' }]);
+      const results = await repo.hybridSearch('test', { embedding: [0.1, 0.2] });
+      expect(results[0]!.matchType).toBe('hybrid');
+      expect(results[0]!.score).toBe(0.5);
+    });
+
+    it('applies type filter in RRF', async () => {
+      mockAdapter.query.mockResolvedValueOnce([]);
+      await repo.hybridSearch('test', { embedding: [0.1], type: 'fact' });
+      expect((mockAdapter.query.mock.calls[0]![0] as string)).toContain('type =');
+    });
+
+    it('applies minImportance in RRF', async () => {
+      mockAdapter.query.mockResolvedValueOnce([]);
+      await repo.hybridSearch('test', { embedding: [0.1], minImportance: 0.5 });
+      expect((mockAdapter.query.mock.calls[0]![0] as string)).toContain('importance >=');
+    });
+
+    it('applies limit in RRF', async () => {
+      mockAdapter.query.mockResolvedValueOnce([]);
+      await repo.hybridSearch('test', { embedding: [0.1], limit: 5 });
+      expect(mockAdapter.query.mock.calls[0]![1] as unknown[]).toContain(5);
+    });
+
+    it('empty embedding falls back to FTS', async () => {
+      mockAdapter.query.mockResolvedValueOnce([{ ...memoryRow(), fts_rank: 0.7 }]);
+      const r = await repo.hybridSearch('test', { embedding: [] });
+      expect(r[0]!.matchType).toBe('fts');
+    });
+
+    it('RRF SQL has vector+FTS CTEs', async () => {
+      mockAdapter.query.mockResolvedValueOnce([]);
+      await repo.hybridSearch('test', { embedding: [0.1] });
+      const sql = mockAdapter.query.mock.calls[0]![0] as string;
+      expect(sql).toContain('vector_results');
+      expect(sql).toContain('fts_results');
+      expect(sql).toContain('FULL OUTER JOIN');
+    });
+
+    it('keyword fallback decreasing scores', async () => {
+      mockAdapter.query.mockResolvedValueOnce([]);
+      mockAdapter.query.mockResolvedValueOnce([memoryRow({id:'m1'}), memoryRow({id:'m2'}), memoryRow({id:'m3'})]);
+      const r = await repo.hybridSearch('test');
+      expect(r[0]!.score).toBeGreaterThan(r[1]!.score);
+      expect(r[1]!.score).toBeGreaterThan(r[2]!.score);
+    });
+
+    it('type+minImportance in RRF', async () => {
+      mockAdapter.query.mockResolvedValueOnce([]);
+      await repo.hybridSearch('t', { embedding: [0.1], type: 'preference', minImportance: 0.3 });
+      const sql = mockAdapter.query.mock.calls[0]![0] as string;
+      expect(sql).toContain('type =');
+      expect(sql).toContain('importance >=');
+    });
+  });
+
+  describe('getWithoutEmbeddings', () => {
+    it('returns memories without embeddings', async () => {
+      mockAdapter.query.mockResolvedValue([memoryRow({ embedding: null })]);
+      const r = await repo.getWithoutEmbeddings();
+      expect(r).toHaveLength(1);
+      const sql = mockAdapter.query.mock.calls[0]![0] as string;
+      expect(sql).toContain('embedding IS NULL');
+      expect(sql).toContain('ORDER BY importance DESC');
+    });
+    it('defaults limit to 100', async () => {
+      mockAdapter.query.mockResolvedValue([]);
+      await repo.getWithoutEmbeddings();
+      expect(mockAdapter.query.mock.calls[0]![1] as unknown[]).toContain(100);
+    });
+    it('applies custom limit', async () => {
+      mockAdapter.query.mockResolvedValue([]);
+      await repo.getWithoutEmbeddings(50);
+      expect(mockAdapter.query.mock.calls[0]![1] as unknown[]).toContain(50);
+    });
+  });
+
+  describe('parseEmbedding edge cases', () => {
+    it('undefined for invalid JSON', async () => {
+      mockAdapter.queryOne.mockResolvedValue(memoryRow({ embedding: 'not-json' }));
+      expect((await repo.get('mem-1', false))!.embedding).toBeUndefined();
+    });
+    it('undefined for JSON object string', async () => {
+      mockAdapter.queryOne.mockResolvedValue(memoryRow({ embedding: '{"a":1}' }));
+      expect((await repo.get('mem-1', false))!.embedding).toBeUndefined();
+    });
+    it('undefined for numeric', async () => {
+      mockAdapter.queryOne.mockResolvedValue(memoryRow({ embedding: 42 }));
+      expect((await repo.get('mem-1', false))!.embedding).toBeUndefined();
+    });
+  });
+
+  describe('getStats null edge', () => {
+    it('handles null statsRow/recentRow', async () => {
+      mockAdapter.query.mockResolvedValue([]);
+      mockAdapter.queryOne.mockResolvedValueOnce(null).mockResolvedValueOnce(null);
+      const s = await repo.getStats();
+      expect(s.total).toBe(0);
+      expect(s.avgImportance).toBe(0);
+      expect(s.recentCount).toBe(0);
+    });
+  });
+
+  describe('findSimilar edge cases', () => {
+    it('includes type in text fallback', async () => {
+      mockAdapter.queryOne.mockResolvedValue(memoryRow());
+      await repo.findSimilar('content', 'preference');
+      expect((mockAdapter.queryOne.mock.calls[0]![0] as string)).toContain('type =');
+    });
+    it('omits type when not provided', async () => {
+      mockAdapter.queryOne.mockResolvedValue(null);
+      await repo.findSimilar('content');
+      expect((mockAdapter.queryOne.mock.calls[0]![0] as string)).not.toContain('type =');
+    });
+    it('skips vector for empty embedding', async () => {
+      mockAdapter.queryOne.mockResolvedValue(memoryRow());
+      await repo.findSimilar('content', 'fact', []);
+      expect(mockAdapter.query).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('searchByEmbedding combined', () => {
+    it('all filters together', async () => {
+      mockAdapter.query.mockResolvedValue([]);
+      await repo.searchByEmbedding([0.1], { type: 'fact', limit: 5, threshold: 0.5, minImportance: 0.3 });
+      const sql = mockAdapter.query.mock.calls[0]![0] as string;
+      expect(sql).toContain('type =');
+      expect(sql).toContain('importance >=');
+    });
+  });
+
+  describe('factory', () => {
+    it('creates with userId', async () => {
+      const { createMemoriesRepository } = await import('./memories.js');
+      expect(createMemoriesRepository('u42')).toBeInstanceOf(MemoriesRepository);
+    });
+    it('defaults userId', async () => {
+      const { createMemoriesRepository } = await import('./memories.js');
+      expect(createMemoriesRepository()).toBeInstanceOf(MemoriesRepository);
+    });
+  });
+
+  describe('update no-emit when refresh null', () => {
+    it('no emit when get returns null after update', async () => {
+      mockAdapter.queryOne.mockResolvedValueOnce(memoryRow());
+      mockAdapter.execute.mockResolvedValue({ changes: 1 });
+      mockAdapter.queryOne.mockResolvedValueOnce(null);
+      expect(await repo.update('mem-1', { content: 'New' })).toBeNull();
+      expect(mockEmit).not.toHaveBeenCalled();
+    });
+    it('serializes metadata JSON', async () => {
+      mockAdapter.queryOne.mockResolvedValueOnce(memoryRow()).mockResolvedValueOnce(memoryRow());
+      mockAdapter.execute.mockResolvedValue({ changes: 1 });
+      await repo.update('mem-1', { metadata: { foo: 'bar' } });
+      expect(mockAdapter.execute.mock.calls[0]![1] as unknown[]).toContain('{"foo":"bar"}');
+    });
+  });
+
+  describe('create source fields', () => {
+    it('passes source and sourceId', async () => {
+      mockAdapter.execute.mockResolvedValue({ changes: 1 });
+      mockAdapter.queryOne.mockResolvedValue(memoryRow());
+      await repo.create({ type: 'conversation', content: 'S', source: 'chat', sourceId: 'c1' });
+      const p = mockAdapter.execute.mock.calls[0]![1] as unknown[];
+      expect(p[5]).toBe('chat');
+      expect(p[6]).toBe('c1');
+    });
+    it('defaults source/sourceId to null', async () => {
+      mockAdapter.execute.mockResolvedValue({ changes: 1 });
+      mockAdapter.queryOne.mockResolvedValue(memoryRow());
+      await repo.create({ type: 'fact', content: 'T' });
+      const p = mockAdapter.execute.mock.calls[0]![1] as unknown[];
+      expect(p[5]).toBeNull();
+      expect(p[6]).toBeNull();
+    });
+  });
+
+  describe('row mapping: lastAccessedAt', () => {
+    it('Date when present', async () => {
+      mockAdapter.queryOne.mockResolvedValue(memoryRow({ accessed_at: NOW_ISO }));
+      expect((await repo.get('mem-1', false))!.lastAccessedAt).toBeInstanceOf(Date);
+    });
+    it('undefined when null', async () => {
+      mockAdapter.queryOne.mockResolvedValue(memoryRow({ accessed_at: null }));
+      expect((await repo.get('mem-1', false))!.lastAccessedAt).toBeUndefined();
+    });
+  });
+
 });

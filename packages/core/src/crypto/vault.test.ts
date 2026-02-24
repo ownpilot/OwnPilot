@@ -509,3 +509,5 @@ describe('createVault', () => {
     expect(vault).toBeInstanceOf(SecureVault);
   });
 });
+
+// test append

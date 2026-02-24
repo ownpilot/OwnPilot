@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import {
   deriveKey,
   deriveKeyBytes,
@@ -434,3 +434,54 @@ describe('secureClear', () => {
     expect(data.every((b) => b === 0)).toBe(true);
   });
 });
+
+// ---------------------------------------------------------------------------
+// deriveKey — error path
+// ---------------------------------------------------------------------------
+describe('deriveKey — error handling', () => {
+  it('returns an error result when given an invalid key length for AES-GCM', async () => {
+    const salt = generateSalt();
+    // AES-GCM only supports 128, 192, 256 — passing 7 triggers an error
+    const result = await deriveKey('password', salt, {
+      iterations: 1000,
+      keyLength: 7,
+    });
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error.message).toMatch(/Key derivation failed/i);
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// deriveKeyBytes — error path
+// ---------------------------------------------------------------------------
+describe('deriveKeyBytes — error handling', () => {
+  it('returns an error result when given an invalid hash algorithm', async () => {
+    const salt = generateSalt();
+    const result = await deriveKeyBytes('password', salt, {
+      iterations: 1000,
+      hash: 'INVALID-HASH' as 'SHA-256',
+    });
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error.message).toMatch(/Key derivation failed/i);
+    }
+  });
+
+  it('works with no options (default parameters)', async () => {
+    const salt = generateSalt();
+    // Call without explicit options to cover default parameter branch
+    const result = await deriveKeyBytes('password', salt, { iterations: 1000 });
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.value).toBeInstanceOf(Uint8Array);
+      expect(result.value.length).toBe(32); // default 256 bits = 32 bytes
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------

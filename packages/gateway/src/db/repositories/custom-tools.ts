@@ -6,6 +6,7 @@
  */
 
 import { BaseRepository, parseJsonField, parseJsonFieldNullable } from './base.js';
+import { buildUpdateStatement, type RawSetClause } from './query-helpers.js';
 import { randomUUID } from 'node:crypto';
 
 // =============================================================================
@@ -280,61 +281,58 @@ export class CustomToolsRepository extends BaseRepository {
     const existing = await this.get(id);
     if (!existing) return null;
 
-    const updates: string[] = [];
-    const values: unknown[] = [];
-    let paramIndex = 1;
+    const fields = [
+      { column: 'name', value: input.name },
+      { column: 'description', value: input.description },
+      {
+        column: 'parameters',
+        value: input.parameters !== undefined ? JSON.stringify(input.parameters) : undefined,
+      },
+      { column: 'code', value: input.code },
+      { column: 'category', value: input.category },
+      {
+        column: 'permissions',
+        value: input.permissions !== undefined ? JSON.stringify(input.permissions) : undefined,
+      },
+      { column: 'requires_approval', value: input.requiresApproval },
+      {
+        column: 'metadata',
+        value: input.metadata !== undefined ? JSON.stringify(input.metadata) : undefined,
+      },
+      {
+        column: 'required_api_keys',
+        value:
+          input.requiredApiKeys !== undefined
+            ? input.requiredApiKeys
+              ? JSON.stringify(input.requiredApiKeys)
+              : null
+            : undefined,
+      },
+    ];
 
-    if (input.name !== undefined) {
-      updates.push(`name = $${paramIndex++}`);
-      values.push(input.name);
-    }
-    if (input.description !== undefined) {
-      updates.push(`description = $${paramIndex++}`);
-      values.push(input.description);
-    }
-    if (input.parameters !== undefined) {
-      updates.push(`parameters = $${paramIndex++}`);
-      values.push(JSON.stringify(input.parameters));
-    }
-    if (input.code !== undefined) {
-      updates.push(`code = $${paramIndex++}`);
-      values.push(input.code);
-    }
-    if (input.category !== undefined) {
-      updates.push(`category = $${paramIndex++}`);
-      values.push(input.category);
-    }
-    if (input.permissions !== undefined) {
-      updates.push(`permissions = $${paramIndex++}`);
-      values.push(JSON.stringify(input.permissions));
-    }
-    if (input.requiresApproval !== undefined) {
-      updates.push(`requires_approval = $${paramIndex++}`);
-      values.push(input.requiresApproval);
-    }
-    if (input.metadata !== undefined) {
-      updates.push(`metadata = $${paramIndex++}`);
-      values.push(JSON.stringify(input.metadata));
-    }
-    if (input.requiredApiKeys !== undefined) {
-      updates.push(`required_api_keys = $${paramIndex++}`);
-      values.push(input.requiredApiKeys ? JSON.stringify(input.requiredApiKeys) : null);
-    }
-
-    if (updates.length === 0) return existing;
+    const hasChanges = fields.some((f) => f.value !== undefined);
+    if (!hasChanges) return existing;
 
     // Increment version on code changes
+    const rawClauses: RawSetClause[] = [{ sql: 'updated_at = NOW()' }];
     if (input.code !== undefined || input.parameters !== undefined) {
-      updates.push('version = version + 1');
+      rawClauses.push({ sql: 'version = version + 1' });
     }
 
-    updates.push('updated_at = NOW()');
-    values.push(id, this.userId);
-
-    await this.execute(
-      `UPDATE custom_tools SET ${updates.join(', ')} WHERE id = $${paramIndex++} AND user_id = $${paramIndex}`,
-      values
+    const stmt = buildUpdateStatement(
+      'custom_tools',
+      fields,
+      [
+        { column: 'id', value: id },
+        { column: 'user_id', value: this.userId },
+      ],
+      1,
+      rawClauses,
     );
+
+    if (!stmt) return existing;
+
+    await this.execute(stmt.sql, stmt.params);
 
     return this.get(id);
   }

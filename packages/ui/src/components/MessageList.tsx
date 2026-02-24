@@ -48,12 +48,17 @@ function MessageBubble({ message, onRetry, showRetry, workspaceId }: MessageBubb
     isUser &&
     (message.content.includes('\n---\n[ATTACHED CONTEXT') ||
       message.content.includes('\n---\n[TOOL CATALOG'));
-  const displayContent = hasAttachedContext
+  const strippedContent = hasAttachedContext
     ? message.content
         .replace(/\n---\n\[ATTACHED CONTEXT[\s\S]*$/, '')
         .replace(/\n---\n\[TOOL CATALOG[\s\S]*$/, '')
         .trim()
     : message.content;
+  // Strip any think/thinking tags that may have been saved to message history
+  const displayContent = strippedContent.replace(
+    /<(?:think|thinking)>[\s\S]*?<\/(?:think|thinking)>\s*/g,
+    ''
+  );
 
   const copyToClipboard = async () => {
     try {

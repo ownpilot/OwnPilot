@@ -36,15 +36,6 @@ vi.mock('../adapters/index.js', () => ({
   getAdapterSync: vi.fn().mockReturnValue(mockAdapter),
 }));
 
-vi.mock('../../services/log.js', () => ({
-  getLog: () => ({
-    info: vi.fn(),
-    warn: vi.fn(),
-    error: vi.fn(),
-    debug: vi.fn(),
-  }),
-}));
-
 // Import after mocks are established
 const { BaseRepository, ensureTable } = await import('./base.js');
 

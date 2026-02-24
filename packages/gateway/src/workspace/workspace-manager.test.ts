@@ -19,13 +19,13 @@ vi.mock('../ws/events.js', () => {
   };
 });
 
-vi.mock('@ownpilot/core', () => ({
-  getChannelService: () => ({ getChannel: vi.fn(), send: vi.fn() }),
-}));
-
-vi.mock('../services/log.js', () => ({
-  getLog: () => ({ info: vi.fn(), warn: vi.fn(), error: vi.fn() }),
-}));
+vi.mock('@ownpilot/core', async (importOriginal) => {
+  const actual = await importOriginal<Record<string, unknown>>();
+  return {
+    ...actual,
+    getChannelService: () => ({ getChannel: vi.fn(), send: vi.fn() }),
+  };
+});
 
 // Import after mocks are set up
 import { WorkspaceManager } from './manager.js';

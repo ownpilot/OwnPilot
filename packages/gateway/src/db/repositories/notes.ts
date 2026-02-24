@@ -1,10 +1,13 @@
 /**
  * Notes Repository (PostgreSQL)
  *
- * CRUD operations for personal notes
+ * CRUD operations for personal notes.
+ * Extends CrudRepository for standard create/get/update/delete.
  */
 
-import { BaseRepository, parseJsonField } from './base.js';
+import { parseJsonField } from './base.js';
+import { CrudRepository, type CreateFields } from './crud-base.js';
+import type { UpdateField } from './query-helpers.js';
 
 export interface Note {
   id: string;
@@ -52,7 +55,7 @@ export interface NoteQuery {
   offset?: number;
 }
 
-interface NoteRow {
+interface NoteRow extends Record<string, unknown> {
   id: string;
   user_id: string;
   title: string;
@@ -67,124 +70,63 @@ interface NoteRow {
   updated_at: string;
 }
 
-function rowToNote(row: NoteRow): Note {
-  return {
-    id: row.id,
-    userId: row.user_id,
-    title: row.title,
-    content: row.content,
-    contentType: row.content_type as Note['contentType'],
-    category: row.category ?? undefined,
-    tags: parseJsonField(row.tags, []),
-    isPinned: row.is_pinned === true,
-    isArchived: row.is_archived === true,
-    color: row.color ?? undefined,
-    createdAt: new Date(row.created_at),
-    updatedAt: new Date(row.updated_at),
-  };
-}
+export class NotesRepository extends CrudRepository<
+  NoteRow,
+  Note,
+  CreateNoteInput,
+  UpdateNoteInput
+> {
+  readonly tableName = 'notes';
 
-export class NotesRepository extends BaseRepository {
-  private userId: string;
-
-  constructor(userId = 'default') {
-    super();
-    this.userId = userId;
+  mapRow(row: NoteRow): Note {
+    return {
+      id: row.id,
+      userId: row.user_id,
+      title: row.title,
+      content: row.content,
+      contentType: row.content_type as Note['contentType'],
+      category: row.category ?? undefined,
+      tags: parseJsonField(row.tags, []),
+      isPinned: row.is_pinned === true,
+      isArchived: row.is_archived === true,
+      color: row.color ?? undefined,
+      createdAt: new Date(row.created_at),
+      updatedAt: new Date(row.updated_at),
+    };
   }
 
-  async create(input: CreateNoteInput): Promise<Note> {
-    const id = crypto.randomUUID();
-
-    await this.execute(
-      `INSERT INTO notes (id, user_id, title, content, content_type, category, tags, is_pinned, color)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
-      [
-        id,
-        this.userId,
-        input.title,
-        input.content,
-        input.contentType ?? 'markdown',
-        input.category ?? null,
-        JSON.stringify(input.tags ?? []),
-        input.isPinned ?? false,
-        input.color ?? null,
-      ]
-    );
-
-    const result = await this.get(id);
-    if (!result) throw new Error('Failed to create note');
-    return result;
+  buildCreateFields(input: CreateNoteInput): CreateFields {
+    return {
+      title: input.title,
+      content: input.content,
+      content_type: input.contentType ?? 'markdown',
+      category: input.category ?? null,
+      tags: JSON.stringify(input.tags ?? []),
+      is_pinned: input.isPinned ?? false,
+      color: input.color ?? null,
+    };
   }
+
+  buildUpdateFields(input: UpdateNoteInput): UpdateField[] {
+    return [
+      { column: 'title', value: input.title },
+      { column: 'content', value: input.content },
+      { column: 'content_type', value: input.contentType },
+      { column: 'category', value: input.category },
+      { column: 'tags', value: input.tags !== undefined ? JSON.stringify(input.tags) : undefined },
+      { column: 'is_pinned', value: input.isPinned },
+      { column: 'is_archived', value: input.isArchived },
+      { column: 'color', value: input.color },
+    ];
+  }
+
+  // --- Alias: keep backward-compatible `get` method ---
 
   async get(id: string): Promise<Note | null> {
-    const row = await this.queryOne<NoteRow>(`SELECT * FROM notes WHERE id = $1 AND user_id = $2`, [
-      id,
-      this.userId,
-    ]);
-    return row ? rowToNote(row) : null;
+    return this.getById(id);
   }
 
-  async update(id: string, input: UpdateNoteInput): Promise<Note | null> {
-    const existing = await this.get(id);
-    if (!existing) return null;
-
-    const updates: string[] = [];
-    const values: unknown[] = [];
-    let paramIndex = 1;
-
-    if (input.title !== undefined) {
-      updates.push(`title = $${paramIndex++}`);
-      values.push(input.title);
-    }
-    if (input.content !== undefined) {
-      updates.push(`content = $${paramIndex++}`);
-      values.push(input.content);
-    }
-    if (input.contentType !== undefined) {
-      updates.push(`content_type = $${paramIndex++}`);
-      values.push(input.contentType);
-    }
-    if (input.category !== undefined) {
-      updates.push(`category = $${paramIndex++}`);
-      values.push(input.category);
-    }
-    if (input.tags !== undefined) {
-      updates.push(`tags = $${paramIndex++}`);
-      values.push(JSON.stringify(input.tags));
-    }
-    if (input.isPinned !== undefined) {
-      updates.push(`is_pinned = $${paramIndex++}`);
-      values.push(input.isPinned);
-    }
-    if (input.isArchived !== undefined) {
-      updates.push(`is_archived = $${paramIndex++}`);
-      values.push(input.isArchived);
-    }
-    if (input.color !== undefined) {
-      updates.push(`color = $${paramIndex++}`);
-      values.push(input.color);
-    }
-
-    if (updates.length === 0) return existing;
-
-    updates.push('updated_at = NOW()');
-    values.push(id, this.userId);
-
-    await this.execute(
-      `UPDATE notes SET ${updates.join(', ')} WHERE id = $${paramIndex++} AND user_id = $${paramIndex}`,
-      values
-    );
-
-    return this.get(id);
-  }
-
-  async delete(id: string): Promise<boolean> {
-    const result = await this.execute(`DELETE FROM notes WHERE id = $1 AND user_id = $2`, [
-      id,
-      this.userId,
-    ]);
-    return result.changes > 0;
-  }
+  // --- Domain-specific methods ---
 
   async archive(id: string): Promise<Note | null> {
     return this.update(id, { isArchived: true });
@@ -249,7 +191,7 @@ export class NotesRepository extends BaseRepository {
     }
 
     const rows = await this.query<NoteRow>(sql, params);
-    return rows.map(rowToNote);
+    return rows.map((row) => this.mapRow(row));
   }
 
   async getPinned(): Promise<Note[]> {
@@ -267,7 +209,7 @@ export class NotesRepository extends BaseRepository {
   async getCategories(): Promise<string[]> {
     const rows = await this.query<{ category: string }>(
       `SELECT DISTINCT category FROM notes WHERE user_id = $1 AND category IS NOT NULL AND is_archived = FALSE ORDER BY category`,
-      [this.userId]
+      [this.userId],
     );
     return rows.map((r) => r.category);
   }
@@ -275,7 +217,7 @@ export class NotesRepository extends BaseRepository {
   async getTags(): Promise<string[]> {
     const rows = await this.query<{ tags: string }>(
       `SELECT tags FROM notes WHERE user_id = $1 AND is_archived = FALSE`,
-      [this.userId]
+      [this.userId],
     );
 
     const allTags = new Set<string>();
@@ -289,7 +231,7 @@ export class NotesRepository extends BaseRepository {
     return Array.from(allTags).sort();
   }
 
-  async count(includeArchived = false): Promise<number> {
+  override async count(includeArchived = false): Promise<number> {
     const sql = includeArchived
       ? `SELECT COUNT(*) as count FROM notes WHERE user_id = $1`
       : `SELECT COUNT(*) as count FROM notes WHERE user_id = $1 AND is_archived = FALSE`;

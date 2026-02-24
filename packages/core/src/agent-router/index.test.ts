@@ -8,14 +8,9 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 // Mocks (must be declared before imports)
 // ---------------------------------------------------------------------------
 
-vi.mock('../services/get-log.js', () => ({
-  getLog: () => ({
-    info: vi.fn(),
-    warn: vi.fn(),
-    error: vi.fn(),
-    debug: vi.fn(),
-  }),
-}));
+import { GET_LOG_MOCK } from '../test-helpers.js';
+
+vi.mock('../services/get-log.js', () => GET_LOG_MOCK);
 
 // Import after mocks
 import {

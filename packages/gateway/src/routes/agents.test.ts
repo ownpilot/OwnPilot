@@ -36,55 +36,59 @@ const mockPluginSvc = {
   getEnabled: vi.fn(() => []),
 };
 
-vi.mock('@ownpilot/core', () => ({
-  hasServiceRegistry: vi.fn(() => true),
-  getServiceRegistry: vi.fn(() => ({
-    tryGet: vi.fn(() => null),
-    get: vi.fn((token: { name: string }) => {
-      const services: Record<string, unknown> = {
-        memory: mockMemorySvc,
-        goal: mockGoalSvc,
-        plugin: mockPluginSvc,
-      };
-      return services[token.name];
+vi.mock('@ownpilot/core', async (importOriginal) => {
+  const actual = await importOriginal<Record<string, unknown>>();
+  return {
+    ...actual,
+    hasServiceRegistry: vi.fn(() => true),
+    getServiceRegistry: vi.fn(() => ({
+      tryGet: vi.fn(() => null),
+      get: vi.fn((token: { name: string }) => {
+        const services: Record<string, unknown> = {
+          memory: mockMemorySvc,
+          goal: mockGoalSvc,
+          plugin: mockPluginSvc,
+        };
+        return services[token.name];
+      }),
+    })),
+    Services: {
+      Provider: { name: 'provider' },
+      Memory: { name: 'memory' },
+      Goal: { name: 'goal' },
+      Plugin: { name: 'plugin' },
+    },
+    Agent: vi.fn(),
+    createAgent: vi.fn(() => ({
+      reset: vi.fn(() => ({ id: 'new-conversation-id' })),
+      getTools: vi.fn(() => []),
+    })),
+    ToolRegistry: vi.fn(function () {
+      return mockToolRegistry;
     }),
-  })),
-  Services: {
-    Provider: { name: 'provider' },
-    Memory: { name: 'memory' },
-    Goal: { name: 'goal' },
-    Plugin: { name: 'plugin' },
-  },
-  Agent: vi.fn(),
-  createAgent: vi.fn(() => ({
-    reset: vi.fn(() => ({ id: 'new-conversation-id' })),
-    getTools: vi.fn(() => []),
-  })),
-  ToolRegistry: vi.fn(function () {
-    return mockToolRegistry;
-  }),
-  registerCoreTools: vi.fn(),
-  registerAllTools: vi.fn(),
-  getToolDefinitions: vi.fn(() => []),
-  injectMemoryIntoPrompt: vi.fn(async (prompt: string) => ({ systemPrompt: prompt })),
-  MEMORY_TOOLS: [],
-  GOAL_TOOLS: [],
-  CUSTOM_DATA_TOOLS: [],
-  PERSONAL_DATA_TOOLS: [],
-  DYNAMIC_TOOL_DEFINITIONS: [],
-  TOOL_SEARCH_TAGS: {},
-  TOOL_MAX_LIMITS: {},
-  applyToolLimits: vi.fn((_name: string, args: unknown) => args),
-  getDefaultPluginRegistry: vi.fn(async () => ({ getAllTools: () => [] })),
-  TOOL_GROUPS: {
-    core: { tools: ['get_current_time', 'calculate'] },
-    memory: { tools: ['save_memory', 'search_memories'] },
-    goals: { tools: ['create_goal', 'list_goals'] },
-  } as Record<string, { tools: string[] }>,
-  getProviderConfig: vi.fn(() => null),
-  unsafeToolId: vi.fn((id: string) => id),
-  generateId: (prefix: string) => `${prefix}_test_${Date.now()}`,
-}));
+    registerCoreTools: vi.fn(),
+    registerAllTools: vi.fn(),
+    getToolDefinitions: vi.fn(() => []),
+    injectMemoryIntoPrompt: vi.fn(async (prompt: string) => ({ systemPrompt: prompt })),
+    MEMORY_TOOLS: [],
+    GOAL_TOOLS: [],
+    CUSTOM_DATA_TOOLS: [],
+    PERSONAL_DATA_TOOLS: [],
+    DYNAMIC_TOOL_DEFINITIONS: [],
+    TOOL_SEARCH_TAGS: {},
+    TOOL_MAX_LIMITS: {},
+    applyToolLimits: vi.fn((_name: string, args: unknown) => args),
+    getDefaultPluginRegistry: vi.fn(async () => ({ getAllTools: () => [] })),
+    TOOL_GROUPS: {
+      core: { tools: ['get_current_time', 'calculate'] },
+      memory: { tools: ['save_memory', 'search_memories'] },
+      goals: { tools: ['create_goal', 'list_goals'] },
+    } as Record<string, { tools: string[] }>,
+    getProviderConfig: vi.fn(() => null),
+    unsafeToolId: vi.fn((id: string) => id),
+    generateId: (prefix: string) => `${prefix}_test_${Date.now()}`,
+  };
+});
 
 vi.mock('../db/repositories/index.js', () => ({
   agentsRepo: {
@@ -119,15 +123,6 @@ vi.mock('../services/config-center-impl.js', () => ({
     get: vi.fn(),
     set: vi.fn(),
   },
-}));
-
-vi.mock('../services/log.js', () => ({
-  getLog: vi.fn(() => ({
-    info: vi.fn(),
-    warn: vi.fn(),
-    error: vi.fn(),
-    debug: vi.fn(),
-  })),
 }));
 
 vi.mock('./memories.js', () => ({
@@ -176,6 +171,10 @@ vi.mock('../tools/index.js', () => ({
   executeHeartbeatTool: vi.fn(),
   EXTENSION_TOOLS: [],
   executeExtensionTool: vi.fn(),
+  PULSE_TOOLS: [],
+  executePulseTool: vi.fn(),
+  NOTIFICATION_TOOLS: [],
+  executeNotificationTool: vi.fn(),
 }));
 
 vi.mock('../services/config-tools.js', () => ({

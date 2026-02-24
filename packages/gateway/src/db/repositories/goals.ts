@@ -6,6 +6,7 @@
  */
 
 import { BaseRepository, parseJsonField } from './base.js';
+import { buildUpdateStatement } from './query-helpers.js';
 import type { StandardQuery } from './interfaces.js';
 import {
   getEventBus,
@@ -207,49 +208,45 @@ export class GoalsRepository extends BaseRepository {
     const existing = await this.get(id);
     if (!existing) return null;
 
-    const updates: string[] = ['updated_at = $1'];
-    const values: unknown[] = [new Date().toISOString()];
-    let paramIndex = 2;
+    const now = new Date().toISOString();
 
-    if (input.title !== undefined) {
-      updates.push(`title = $${paramIndex++}`);
-      values.push(input.title);
-    }
-    if (input.description !== undefined) {
-      updates.push(`description = $${paramIndex++}`);
-      values.push(input.description);
-    }
-    if (input.status !== undefined) {
-      updates.push(`status = $${paramIndex++}`);
-      values.push(input.status);
-      if (input.status === 'completed') {
-        updates.push(`completed_at = $${paramIndex++}`);
-        values.push(new Date().toISOString());
-      }
-    }
-    if (input.priority !== undefined) {
-      updates.push(`priority = $${paramIndex++}`);
-      values.push(Math.max(1, Math.min(10, input.priority)));
-    }
-    if (input.dueDate !== undefined) {
-      updates.push(`due_date = $${paramIndex++}`);
-      values.push(input.dueDate);
-    }
-    if (input.progress !== undefined) {
-      updates.push(`progress = $${paramIndex++}`);
-      values.push(Math.max(0, Math.min(100, input.progress)));
-    }
-    if (input.metadata !== undefined) {
-      updates.push(`metadata = $${paramIndex++}`);
-      values.push(JSON.stringify(input.metadata));
-    }
-
-    values.push(id, this.userId);
-
-    await this.execute(
-      `UPDATE goals SET ${updates.join(', ')} WHERE id = $${paramIndex++} AND user_id = $${paramIndex}`,
-      values
+    const stmt = buildUpdateStatement(
+      'goals',
+      [
+        { column: 'updated_at', value: now },
+        { column: 'title', value: input.title },
+        { column: 'description', value: input.description },
+        { column: 'status', value: input.status },
+        {
+          column: 'completed_at',
+          value: input.status === 'completed' ? now : undefined,
+        },
+        {
+          column: 'priority',
+          value: input.priority !== undefined ? Math.max(1, Math.min(10, input.priority)) : undefined,
+        },
+        { column: 'due_date', value: input.dueDate },
+        {
+          column: 'progress',
+          value:
+            input.progress !== undefined ? Math.max(0, Math.min(100, input.progress)) : undefined,
+        },
+        {
+          column: 'metadata',
+          value: input.metadata !== undefined ? JSON.stringify(input.metadata) : undefined,
+        },
+      ],
+      [
+        { column: 'id', value: id },
+        { column: 'user_id', value: this.userId },
+      ],
     );
+
+    // stmt is always non-null because updated_at is always provided,
+    // but guard defensively.
+    if (!stmt) return existing;
+
+    await this.execute(stmt.sql, stmt.params);
 
     const updated = await this.get(id);
 
@@ -466,49 +463,36 @@ export class GoalsRepository extends BaseRepository {
     const existing = await this.getStep(id);
     if (!existing) return null;
 
-    const updates: string[] = [];
-    const values: unknown[] = [];
-    let paramIndex = 1;
+    const fields = [
+      { column: 'title', value: input.title },
+      { column: 'description', value: input.description },
+      { column: 'status', value: input.status },
+      {
+        column: 'completed_at',
+        value: input.status === 'completed' ? new Date().toISOString() : undefined,
+      },
+      { column: 'order_num', value: input.orderNum },
+      {
+        column: 'dependencies',
+        value: input.dependencies !== undefined ? JSON.stringify(input.dependencies) : undefined,
+      },
+      { column: 'result', value: input.result },
+    ];
 
-    if (input.title !== undefined) {
-      updates.push(`title = $${paramIndex++}`);
-      values.push(input.title);
-    }
-    if (input.description !== undefined) {
-      updates.push(`description = $${paramIndex++}`);
-      values.push(input.description);
-    }
-    if (input.status !== undefined) {
-      updates.push(`status = $${paramIndex++}`);
-      values.push(input.status);
-      if (input.status === 'completed') {
-        updates.push(`completed_at = $${paramIndex++}`);
-        values.push(new Date().toISOString());
-      }
-    }
-    if (input.orderNum !== undefined) {
-      updates.push(`order_num = $${paramIndex++}`);
-      values.push(input.orderNum);
-    }
-    if (input.dependencies !== undefined) {
-      updates.push(`dependencies = $${paramIndex++}`);
-      values.push(JSON.stringify(input.dependencies));
-    }
-    if (input.result !== undefined) {
-      updates.push(`result = $${paramIndex++}`);
-      values.push(input.result);
-    }
+    const hasChanges = fields.some((f) => f.value !== undefined);
+    if (!hasChanges) return existing;
 
-    if (updates.length === 0) return existing;
+    // Use empty where array because the WHERE clause has a subquery
+    const stmt = buildUpdateStatement('goal_steps', fields, []);
 
-    values.push(id);
+    if (!stmt) return existing;
 
-    values.push(this.userId);
-    await this.execute(
-      `UPDATE goal_steps SET ${updates.join(', ')}
-       WHERE id = $${paramIndex} AND goal_id IN (SELECT id FROM goals WHERE user_id = $${paramIndex + 1})`,
-      values
-    );
+    // Append complex WHERE clause with subquery
+    const whereIdx = stmt.params.length + 1;
+    const sql = `${stmt.sql} WHERE id = $${whereIdx} AND goal_id IN (SELECT id FROM goals WHERE user_id = $${whereIdx + 1})`;
+    const params = [...stmt.params, id, this.userId];
+
+    await this.execute(sql, params);
 
     // Recalculate goal progress
     await this.recalculateProgress(existing.goalId);

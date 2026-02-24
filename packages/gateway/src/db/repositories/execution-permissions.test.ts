@@ -36,21 +36,21 @@ vi.mock('../adapters/index.js', () => ({
   getAdapterSync: vi.fn().mockReturnValue(mockAdapter),
 }));
 
-vi.mock('../../services/log.js', () => ({
-  getLog: () => ({ info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() }),
-}));
-
-vi.mock('@ownpilot/core', () => ({
-  DEFAULT_EXECUTION_PERMISSIONS: {
-    enabled: false,
-    mode: 'local',
-    execute_javascript: 'blocked',
-    execute_python: 'blocked',
-    execute_shell: 'blocked',
-    compile_code: 'blocked',
-    package_manager: 'blocked',
-  },
-}));
+vi.mock('@ownpilot/core', async (importOriginal) => {
+  const actual = await importOriginal<Record<string, unknown>>();
+  return {
+    ...actual,
+    DEFAULT_EXECUTION_PERMISSIONS: {
+      enabled: false,
+      mode: 'local',
+      execute_javascript: 'blocked',
+      execute_python: 'blocked',
+      execute_shell: 'blocked',
+      compile_code: 'blocked',
+      package_manager: 'blocked',
+    },
+  };
+});
 
 // ---------------------------------------------------------------------------
 // Import after mocks

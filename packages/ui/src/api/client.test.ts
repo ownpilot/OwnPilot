@@ -286,6 +286,163 @@ describe('apiClient.setOnError', () => {
 });
 
 // ---------------------------------------------------------------------------
+// addOnError / removeOnError
+// ---------------------------------------------------------------------------
+
+describe('apiClient.addOnError', () => {
+  it('calls multiple error listeners on API errors', async () => {
+    const listener1 = vi.fn();
+    const listener2 = vi.fn();
+    const unsub1 = apiClient.addOnError(listener1);
+    const unsub2 = apiClient.addOnError(listener2);
+
+    mockFetch.mockResolvedValueOnce(errorEnvelope(500, 'SERVER_ERROR', 'Boom'));
+
+    await expect(apiClient.get('/fail')).rejects.toThrow();
+    expect(listener1).toHaveBeenCalledWith(expect.objectContaining({ code: 'SERVER_ERROR' }));
+    expect(listener2).toHaveBeenCalledWith(expect.objectContaining({ code: 'SERVER_ERROR' }));
+
+    unsub1();
+    unsub2();
+  });
+
+  it('unsubscribe stops future notifications', async () => {
+    const listener = vi.fn();
+    const unsub = apiClient.addOnError(listener);
+    unsub();
+
+    mockFetch.mockResolvedValueOnce(errorEnvelope(400, 'BAD', 'nope'));
+    await expect(apiClient.get('/fail')).rejects.toThrow();
+    expect(listener).not.toHaveBeenCalled();
+  });
+
+  it('does not break if a listener throws', async () => {
+    const badListener = vi.fn(() => { throw new Error('listener bug'); });
+    const goodListener = vi.fn();
+    const unsub1 = apiClient.addOnError(badListener);
+    const unsub2 = apiClient.addOnError(goodListener);
+
+    mockFetch.mockResolvedValueOnce(errorEnvelope(500, 'ERR', 'fail'));
+    await expect(apiClient.get('/fail')).rejects.toThrow();
+    expect(badListener).toHaveBeenCalled();
+    expect(goodListener).toHaveBeenCalled();
+
+    unsub1();
+    unsub2();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Additional edge cases
+// ---------------------------------------------------------------------------
+
+describe('apiClient edge cases', () => {
+  it('returns empty object when success response has no data field', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ success: true }),
+    });
+
+    const result = await apiClient.get('/empty');
+    expect(result).toEqual({});
+  });
+
+  it('handles error response with no error field (UNKNOWN_ERROR)', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 500,
+      json: async () => ({ success: false }),
+    });
+
+    await expect(apiClient.get('/unknown')).rejects.toMatchObject({
+      code: 'UNKNOWN_ERROR',
+      message: 'Unknown error',
+    });
+  });
+
+  it('normalizes path without leading slash', async () => {
+    mockFetch.mockResolvedValueOnce(okEnvelope({ ok: true }));
+
+    await apiClient.get('no-slash');
+
+    const url = mockFetch.mock.calls[0]![0] as string;
+    expect(url).toBe('/api/v1/no-slash');
+  });
+
+  it('returns empty query string when params is undefined', async () => {
+    mockFetch.mockResolvedValueOnce(okEnvelope({}));
+
+    await apiClient.get('/tasks');
+
+    const url = mockFetch.mock.calls[0]![0] as string;
+    expect(url).toBe('/api/v1/tasks');
+  });
+
+  it('handles non-Error thrown from fetch (network)', async () => {
+    mockFetch.mockRejectedValueOnce('string error');
+
+    await expect(apiClient.get('/tasks')).rejects.toMatchObject({
+      code: 'NETWORK_ERROR',
+      message: 'Network error',
+    });
+  });
+
+  it('passes signal option to fetch', async () => {
+    const controller = new AbortController();
+    mockFetch.mockResolvedValueOnce(okEnvelope({}));
+
+    await apiClient.get('/tasks', { signal: controller.signal });
+
+    const [, init] = mockFetch.mock.calls[0]! as [string, RequestInit];
+    expect(init.signal).toBe(controller.signal);
+  });
+
+  it('merges custom headers', async () => {
+    mockFetch.mockResolvedValueOnce(okEnvelope({}));
+
+    await apiClient.get('/tasks', { headers: { 'X-Custom': 'value' } });
+
+    const [, init] = mockFetch.mock.calls[0]! as [string, RequestInit];
+    expect((init.headers as Record<string, string>)['X-Custom']).toBe('value');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Stream edge cases
+// ---------------------------------------------------------------------------
+
+describe('apiClient.stream edge cases', () => {
+  it('throws STREAM_ERROR when non-2xx body is not parseable JSON', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 502,
+      json: async () => { throw new Error('not json'); },
+    });
+
+    await expect(apiClient.stream('/chat', {})).rejects.toMatchObject({
+      code: 'STREAM_ERROR',
+      status: 502,
+    });
+  });
+
+  it('re-throws AbortError during stream unchanged', async () => {
+    const abortError = Object.assign(new Error('aborted'), { name: 'AbortError' });
+    mockFetch.mockRejectedValueOnce(abortError);
+
+    await expect(apiClient.stream('/chat', {})).rejects.toMatchObject({ name: 'AbortError' });
+  });
+
+  it('handles non-Error thrown from fetch during stream', async () => {
+    mockFetch.mockRejectedValueOnce(42);
+
+    await expect(apiClient.stream('/chat', {})).rejects.toMatchObject({
+      code: 'NETWORK_ERROR',
+      message: 'Network error',
+    });
+  });
+});
+
+// ---------------------------------------------------------------------------
 // ApiError class
 // ---------------------------------------------------------------------------
 

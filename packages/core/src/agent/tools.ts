@@ -107,8 +107,8 @@ export class ToolRegistry {
         : (metadataOrPluginId ?? {});
 
     // Validate tool name
-    if (!definition.name || definition.name.length > 128) {
-      return err(new ValidationError('Tool name must be 1-128 characters'));
+    if (!definition.name || definition.name.length > 100) {
+      return err(new ValidationError('Tool name must be 1-100 characters'));
     }
 
     if (!/^[a-zA-Z][a-zA-Z0-9_.]*$/.test(definition.name)) {

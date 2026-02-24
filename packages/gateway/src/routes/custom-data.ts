@@ -18,7 +18,7 @@ import {
   notFoundError,
   getErrorMessage,
 } from './helpers.js';
-import { MAX_PAGINATION_OFFSET } from '../config/defaults.js';
+import { pagination } from '../middleware/pagination.js';
 import type { ColumnDefinition } from '../db/repositories/custom-data.js';
 import { CustomDataServiceError } from '../services/custom-data-service.js';
 import { getServiceRegistry, Services } from '@ownpilot/core';
@@ -170,10 +170,9 @@ customDataRoutes.delete('/tables/:table', async (c) => {
 /**
  * GET /custom-data/tables/:table/records - List records
  */
-customDataRoutes.get('/tables/:table/records', async (c) => {
+customDataRoutes.get('/tables/:table/records', pagination({ defaultLimit: 50, maxLimit: 1000 }), async (c) => {
   const tableId = c.req.param('table');
-  const limit = getIntParam(c, 'limit', 50, 1, 1000);
-  const offset = getIntParam(c, 'offset', 0, 0, MAX_PAGINATION_OFFSET);
+  const { limit, offset } = c.get('pagination')!;
   const filterParam = c.req.query('filter');
 
   let filter: Record<string, unknown> | undefined;

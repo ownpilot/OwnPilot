@@ -16,12 +16,16 @@ const mockLocalProvidersRepo = {
 const mockGetApiKey = vi.fn().mockResolvedValue(undefined);
 const mockGetApprovalManager = vi.fn();
 
-vi.mock('@ownpilot/core', () => ({
-  generateId: (...args: unknown[]) => mockGenerateId(...args),
-  getProviderConfig: (...args: unknown[]) => mockGetProviderConfig(...args),
-  getModelPricing: (...args: unknown[]) => mockGetModelPricing(...args),
-  TOOL_GROUPS: mockToolGroups,
-}));
+vi.mock('@ownpilot/core', async (importOriginal) => {
+  const actual = await importOriginal<Record<string, unknown>>();
+  return {
+    ...actual,
+    generateId: (...args: unknown[]) => mockGenerateId(...args),
+    getProviderConfig: (...args: unknown[]) => mockGetProviderConfig(...args),
+    getModelPricing: (...args: unknown[]) => mockGetModelPricing(...args),
+    TOOL_GROUPS: mockToolGroups,
+  };
+});
 
 vi.mock('../db/repositories/index.js', () => ({
   localProvidersRepo: mockLocalProvidersRepo,
@@ -42,10 +46,6 @@ vi.mock('../config/defaults.js', () => ({
   AGENT_DEFAULT_TEMPERATURE: 0.7,
   AGENT_DEFAULT_MAX_TURNS: 25,
   AGENT_DEFAULT_MAX_TOOL_CALLS: 200,
-}));
-
-vi.mock('../services/log.js', () => ({
-  getLog: () => ({ info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() }),
 }));
 
 vi.mock('./agent-tools.js', () => ({

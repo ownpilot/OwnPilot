@@ -29,8 +29,8 @@ import {
   validateQueryEnum,
   notFoundError,
 } from './helpers.js';
-import { MAX_PAGINATION_OFFSET } from '../config/defaults.js';
 import { wsGateway } from '../ws/server.js';
+import { pagination } from '../middleware/pagination.js';
 
 export const productivityRoutes = new Hono();
 
@@ -405,7 +405,7 @@ function getCapturesRepo(userId = 'default'): CapturesRepository {
 /**
  * GET /captures - List captures
  */
-capturesRoutes.get('/', async (c) => {
+capturesRoutes.get('/', pagination(), async (c) => {
   const userId = getUserId(c);
   const type = validateQueryEnum(c.req.query('type'), [
     'idea',
@@ -419,8 +419,7 @@ capturesRoutes.get('/', async (c) => {
   ] as const);
   const tag = c.req.query('tag');
   const processed = c.req.query('processed');
-  const limit = getIntParam(c, 'limit', 20, 1, 100);
-  const offset = getIntParam(c, 'offset', 0, 0, MAX_PAGINATION_OFFSET);
+  const { limit, offset } = c.get('pagination')!;
 
   const repo = getCapturesRepo(userId);
   const captures = await repo.list({

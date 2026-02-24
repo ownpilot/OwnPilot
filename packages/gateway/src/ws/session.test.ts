@@ -6,15 +6,15 @@ import { SessionManager } from './session.js';
 // Mocks
 // ---------------------------------------------------------------------------
 
-vi.mock('@ownpilot/core', () => ({
-  hasServiceRegistry: () => false,
-  getServiceRegistry: vi.fn(),
-  Services: { Session: 'session' },
-}));
-
-vi.mock('../services/log.js', () => ({
-  getLog: () => ({ info: vi.fn(), warn: vi.fn(), debug: vi.fn(), error: vi.fn() }),
-}));
+vi.mock('@ownpilot/core', async (importOriginal) => {
+  const actual = await importOriginal<Record<string, unknown>>();
+  return {
+    ...actual,
+    hasServiceRegistry: () => false,
+    getServiceRegistry: vi.fn(),
+    Services: { Session: 'session' },
+  };
+});
 
 // ---------------------------------------------------------------------------
 // Helpers

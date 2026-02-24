@@ -31,6 +31,7 @@ export type SSEEventType =
         session?: unknown;
         suggestions?: unknown;
         memories?: unknown;
+        thinking?: boolean;
       };
     }
   | { kind: 'error'; message: string }

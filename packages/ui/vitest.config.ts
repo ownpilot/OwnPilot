@@ -15,7 +15,16 @@ export default defineConfig({
     environment: 'node',
     include: ['src/**/*.{test,spec}.{ts,tsx}'],
     coverage: {
+      provider: 'v8',
       reporter: ['text', 'json', 'html'],
+      exclude: [
+        '**/*.test.ts',
+        '**/*.test.tsx',
+        '**/index.ts',
+        '**/types.ts',
+        '**/types/**',
+        'src/main.tsx',
+      ],
     },
   },
   resolve: {

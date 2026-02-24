@@ -4,7 +4,11 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import type { ToolDefinition, ToolExecutor } from './types.js';
+import type { ToolExecutor } from './types.js';
+import {
+  createMockToolDef as makeTool,
+  createMockToolExecutor as makeExecutor,
+} from '../test-helpers.js';
 
 // ---------------------------------------------------------------------------
 // Mocks - vi.hoisted ensures these are available when vi.mock factories run
@@ -67,19 +71,6 @@ import { ToolRegistry } from './tools.js';
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-
-function makeTool(name: string, category?: string): ToolDefinition {
-  return {
-    name,
-    description: `Desc for ${name}`,
-    parameters: { type: 'object' as const, properties: {} },
-    category,
-  };
-}
-
-function makeExecutor(result: unknown = 'ok', isError = false): ToolExecutor {
-  return vi.fn().mockResolvedValue({ content: result, isError });
-}
 
 /**
  * Create a mock LLM provider that returns a sequence of responses.

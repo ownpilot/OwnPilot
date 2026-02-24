@@ -37,11 +37,15 @@ const mockRegistryGet = vi.fn((service: string) => {
   return {};
 });
 
-vi.mock('@ownpilot/core', () => ({
-  getServiceRegistry: vi.fn(() => ({ get: mockRegistryGet })),
-  Services: { Memory: 'memory', Goal: 'goal', Trigger: 'trigger' },
-  getBaseName: vi.fn((name: string) => name.split('.').pop() ?? name),
-}));
+vi.mock('@ownpilot/core', async (importOriginal) => {
+  const actual = await importOriginal<Record<string, unknown>>();
+  return {
+    ...actual,
+    getServiceRegistry: vi.fn(() => ({ get: mockRegistryGet })),
+    Services: { Memory: 'memory', Goal: 'goal', Trigger: 'trigger' },
+    getBaseName: vi.fn((name: string) => name.split('.').pop() ?? name),
+  };
+});
 
 const mockResourceSummary = vi.fn(() => []);
 vi.mock('../services/resource-registry.js', () => ({
@@ -82,10 +86,6 @@ vi.mock('../triggers/engine.js', () => ({
 const mockExtractMemoriesFromResponse = vi.fn(() => ({ memories: [] as unknown[] }));
 vi.mock('../utils/memory-extraction.js', () => ({
   extractMemoriesFromResponse: mockExtractMemoriesFromResponse,
-}));
-
-vi.mock('../services/log.js', () => ({
-  getLog: () => ({ info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() }),
 }));
 
 // ---------------------------------------------------------------------------

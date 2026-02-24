@@ -36,15 +36,6 @@ vi.mock('../adapters/index.js', () => ({
   getAdapterSync: vi.fn().mockReturnValue(mockAdapter),
 }));
 
-vi.mock('../../services/log.js', () => ({
-  getLog: () => ({
-    info: vi.fn(),
-    warn: vi.fn(),
-    error: vi.fn(),
-    debug: vi.fn(),
-  }),
-}));
-
 // Mock crypto to produce deterministic values
 vi.mock('node:crypto', async (importOriginal) => {
   const actual = await importOriginal<typeof import('node:crypto')>();

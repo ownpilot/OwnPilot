@@ -5,6 +5,7 @@
  */
 
 import { BaseRepository, parseJsonField } from './base.js';
+import { buildUpdateStatement, type RawSetClause } from './query-helpers.js';
 
 export interface AgentRecord {
   id: string;
@@ -104,37 +105,33 @@ export class AgentsRepository extends BaseRepository {
     const existing = await this.getById(id);
     if (!existing) return null;
 
-    const updates: string[] = [];
-    const values: unknown[] = [];
-    let paramIndex = 1;
+    const fields = [
+      { column: 'name', value: data.name },
+      { column: 'system_prompt', value: data.systemPrompt },
+      { column: 'provider', value: data.provider },
+      { column: 'model', value: data.model },
+      {
+        column: 'config',
+        value: data.config !== undefined ? JSON.stringify(data.config) : undefined,
+      },
+    ];
 
-    if (data.name !== undefined) {
-      updates.push(`name = $${paramIndex++}`);
-      values.push(data.name);
-    }
-    if (data.systemPrompt !== undefined) {
-      updates.push(`system_prompt = $${paramIndex++}`);
-      values.push(data.systemPrompt);
-    }
-    if (data.provider !== undefined) {
-      updates.push(`provider = $${paramIndex++}`);
-      values.push(data.provider);
-    }
-    if (data.model !== undefined) {
-      updates.push(`model = $${paramIndex++}`);
-      values.push(data.model);
-    }
-    if (data.config !== undefined) {
-      updates.push(`config = $${paramIndex++}`);
-      values.push(JSON.stringify(data.config));
-    }
+    const hasChanges = fields.some((f) => f.value !== undefined);
+    if (!hasChanges) return existing;
 
-    if (updates.length === 0) return existing;
+    const rawClauses: RawSetClause[] = [{ sql: 'updated_at = NOW()' }];
 
-    updates.push('updated_at = NOW()');
-    values.push(id);
+    const stmt = buildUpdateStatement(
+      'agents',
+      fields,
+      [{ column: 'id', value: id }],
+      1,
+      rawClauses,
+    );
 
-    await this.execute(`UPDATE agents SET ${updates.join(', ')} WHERE id = $${paramIndex}`, values);
+    if (!stmt) return existing;
+
+    await this.execute(stmt.sql, stmt.params);
 
     return this.getById(id);
   }

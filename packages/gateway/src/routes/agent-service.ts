@@ -52,6 +52,7 @@ import {
   PLAN_TOOLS,
   HEARTBEAT_TOOLS,
   EXTENSION_TOOLS,
+  NOTIFICATION_TOOLS,
   DYNAMIC_TOOL_DEFINITIONS,
 } from './agent-tools.js';
 import {
@@ -160,6 +161,7 @@ async function createAgentFromRecord(record: AgentRecord): Promise<Agent> {
     ...PLAN_TOOLS,
     ...HEARTBEAT_TOOLS,
     ...EXTENSION_TOOLS,
+    ...NOTIFICATION_TOOLS,
   ];
 
   // These tools ALWAYS bypass toolGroup filtering:
@@ -226,6 +228,7 @@ async function createAgentFromRecord(record: AgentRecord): Promise<Agent> {
       provider: providerType as AIProvider,
       apiKey,
       baseUrl,
+      headers: providerConfig?.headers,
     },
     model: {
       model: resolvedModel,
@@ -427,6 +430,7 @@ async function createChatAgentInstance(
     ...PLAN_TOOLS,
     ...HEARTBEAT_TOOLS,
     ...EXTENSION_TOOLS,
+    ...NOTIFICATION_TOOLS,
   ];
   const chatAlwaysIncluded = [
     ...DYNAMIC_TOOL_DEFINITIONS,
@@ -477,6 +481,7 @@ async function createChatAgentInstance(
       provider: providerType as AIProvider,
       apiKey,
       baseUrl,
+      headers: providerConfig?.headers,
     },
     model: {
       model,
@@ -679,6 +684,7 @@ export async function compactContext(
       provider: providerType as ProviderConfig['provider'],
       apiKey,
       baseUrl: providerConfig?.baseUrl,
+      headers: providerConfig?.headers,
     });
 
     const result = await summaryProvider.complete({

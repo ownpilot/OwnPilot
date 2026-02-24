@@ -118,7 +118,18 @@ export interface StreamState {
     startTime?: number;
   }>;
   startTime: number;
+  /** Raw content before think-tag stripping (for think-tag state detection) */
+  rawContent: string;
+  /** Length of clean content already sent to the client */
+  sentContentLength: number;
+  /** Model is currently producing thinking content */
+  isThinking: boolean;
 }
+
+// Matches both <think>...</think> and <thinking>...</thinking> blocks (completed)
+const THINK_TAG_REGEX = /<(?:think|thinking)>[\s\S]*?<\/(?:think|thinking)>\s*/g;
+// Detects unclosed <think> or <thinking> tag
+const UNCLOSED_THINK_REGEX = /<(?:think|thinking)>(?![\s\S]*<\/(?:think|thinking)>)/;
 
 /**
  * Create shared StreamCallbacks for SSE streaming.
@@ -135,17 +146,29 @@ export function createStreamCallbacks(config: StreamingConfig): {
     lastUsage: undefined,
     traceToolCalls: [],
     startTime: performance.now(),
+    rawContent: '',
+    sentContentLength: 0,
+    isThinking: false,
   };
 
   const callbacks: StreamCallbacks = {
     onChunk(chunk: StreamChunk) {
-      if (chunk.content) state.streamedContent += chunk.content;
+      // Accumulate raw content and compute clean delta (think-tags stripped)
+      if (chunk.content) state.rawContent += chunk.content;
+      const cleanContent = state.rawContent.replace(THINK_TAG_REGEX, '');
+      const cleanDelta = cleanContent.slice(state.sentContentLength) || undefined;
+      state.sentContentLength = cleanContent.length;
+      state.isThinking = UNCLOSED_THINK_REGEX.test(state.rawContent);
+
+      // streamedContent stores the CLEAN version (used for memory/suggestion extraction + persistence)
+      state.streamedContent = cleanContent;
 
       const data: StreamChunkResponse & { trace?: Record<string, unknown>; session?: SessionInfo } =
         {
           id: chunk.id,
           conversationId,
-          delta: chunk.content,
+          delta: cleanDelta,
+          thinking: state.isThinking || undefined,
           toolCalls: chunk.toolCalls?.map((tc) => {
             let args: Record<string, unknown> | undefined;
             try {
@@ -511,7 +534,9 @@ export async function processStreamingViaBus(
 
   // Persistence middleware saves to ChatRepository but NOT LogsRepository.
   // Save streaming trace/logs here to match what the legacy path does.
-  const assistantContent = result.response.content || state.streamedContent;
+  const assistantContent = (result.response.content || state.streamedContent)
+    .replace(THINK_TAG_REGEX, '')
+    .trim();
   if (assistantContent) {
     const toolCalls = result.response.metadata.toolCalls as unknown[] | undefined;
     await saveStreamingChat(state, {

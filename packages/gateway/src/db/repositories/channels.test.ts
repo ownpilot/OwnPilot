@@ -36,15 +36,6 @@ vi.mock('../adapters/index.js', () => ({
   getAdapterSync: vi.fn().mockReturnValue(mockAdapter),
 }));
 
-vi.mock('../../services/log.js', () => ({
-  getLog: () => ({
-    info: vi.fn(),
-    warn: vi.fn(),
-    error: vi.fn(),
-    debug: vi.fn(),
-  }),
-}));
-
 const { ChannelsRepository, channelsRepo } = await import('./channels.js');
 
 // ---------------------------------------------------------------------------

@@ -5,6 +5,7 @@
  */
 
 import { BaseRepository, parseJsonField } from './base.js';
+import { buildUpdateStatement, type RawSetClause } from './query-helpers.js';
 import { MS_PER_DAY } from '../../config/defaults.js';
 
 export interface Contact {
@@ -204,80 +205,49 @@ export class ContactsRepository extends BaseRepository {
     const existing = await this.get(id);
     if (!existing) return null;
 
-    const updates: string[] = [];
-    const values: unknown[] = [];
-    let paramIndex = 1;
+    const fields = [
+      { column: 'name', value: input.name },
+      { column: 'nickname', value: input.nickname },
+      { column: 'email', value: input.email },
+      { column: 'phone', value: input.phone },
+      { column: 'company', value: input.company },
+      { column: 'job_title', value: input.jobTitle },
+      { column: 'avatar', value: input.avatar },
+      { column: 'birthday', value: input.birthday },
+      { column: 'address', value: input.address },
+      { column: 'notes', value: input.notes },
+      { column: 'relationship', value: input.relationship },
+      { column: 'tags', value: input.tags !== undefined ? JSON.stringify(input.tags) : undefined },
+      { column: 'is_favorite', value: input.isFavorite },
+      {
+        column: 'social_links',
+        value: input.socialLinks !== undefined ? JSON.stringify(input.socialLinks) : undefined,
+      },
+      {
+        column: 'custom_fields',
+        value: input.customFields !== undefined ? JSON.stringify(input.customFields) : undefined,
+      },
+    ];
 
-    if (input.name !== undefined) {
-      updates.push(`name = $${paramIndex++}`);
-      values.push(input.name);
-    }
-    if (input.nickname !== undefined) {
-      updates.push(`nickname = $${paramIndex++}`);
-      values.push(input.nickname);
-    }
-    if (input.email !== undefined) {
-      updates.push(`email = $${paramIndex++}`);
-      values.push(input.email);
-    }
-    if (input.phone !== undefined) {
-      updates.push(`phone = $${paramIndex++}`);
-      values.push(input.phone);
-    }
-    if (input.company !== undefined) {
-      updates.push(`company = $${paramIndex++}`);
-      values.push(input.company);
-    }
-    if (input.jobTitle !== undefined) {
-      updates.push(`job_title = $${paramIndex++}`);
-      values.push(input.jobTitle);
-    }
-    if (input.avatar !== undefined) {
-      updates.push(`avatar = $${paramIndex++}`);
-      values.push(input.avatar);
-    }
-    if (input.birthday !== undefined) {
-      updates.push(`birthday = $${paramIndex++}`);
-      values.push(input.birthday);
-    }
-    if (input.address !== undefined) {
-      updates.push(`address = $${paramIndex++}`);
-      values.push(input.address);
-    }
-    if (input.notes !== undefined) {
-      updates.push(`notes = $${paramIndex++}`);
-      values.push(input.notes);
-    }
-    if (input.relationship !== undefined) {
-      updates.push(`relationship = $${paramIndex++}`);
-      values.push(input.relationship);
-    }
-    if (input.tags !== undefined) {
-      updates.push(`tags = $${paramIndex++}`);
-      values.push(JSON.stringify(input.tags));
-    }
-    if (input.isFavorite !== undefined) {
-      updates.push(`is_favorite = $${paramIndex++}`);
-      values.push(input.isFavorite);
-    }
-    if (input.socialLinks !== undefined) {
-      updates.push(`social_links = $${paramIndex++}`);
-      values.push(JSON.stringify(input.socialLinks));
-    }
-    if (input.customFields !== undefined) {
-      updates.push(`custom_fields = $${paramIndex++}`);
-      values.push(JSON.stringify(input.customFields));
-    }
+    const hasChanges = fields.some((f) => f.value !== undefined);
+    if (!hasChanges) return existing;
 
-    if (updates.length === 0) return existing;
+    const rawClauses: RawSetClause[] = [{ sql: 'updated_at = NOW()' }];
 
-    updates.push('updated_at = NOW()');
-    values.push(id, this.userId);
-
-    await this.execute(
-      `UPDATE contacts SET ${updates.join(', ')} WHERE id = $${paramIndex++} AND user_id = $${paramIndex}`,
-      values
+    const stmt = buildUpdateStatement(
+      'contacts',
+      fields,
+      [
+        { column: 'id', value: id },
+        { column: 'user_id', value: this.userId },
+      ],
+      1,
+      rawClauses,
     );
+
+    if (!stmt) return existing;
+
+    await this.execute(stmt.sql, stmt.params);
 
     return this.get(id);
   }

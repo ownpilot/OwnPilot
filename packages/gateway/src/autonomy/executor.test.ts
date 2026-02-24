@@ -5,7 +5,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { executePulseActions, DEFAULT_ACTION_COOLDOWNS } from './executor.js';
 import type { ActionCooldowns } from './executor.js';
-import type { PulseAction } from './prompt.js';
+import type { PulseAction } from './executor.js';
 
 // ============================================================================
 // Mocks

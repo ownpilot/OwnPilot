@@ -474,6 +474,15 @@ describe('Settings Routes', () => {
       expect(mockSettingsRepo.get).toHaveBeenCalledWith('api_key:anthropic');
     });
 
+    it('getApiKey returns undefined when no key exists', async () => {
+      const { getApiKey } = await import('./settings.js');
+      mockSettingsRepo.get.mockResolvedValueOnce(null);
+
+      const result = await getApiKey('unknown');
+
+      expect(result).toBeUndefined();
+    });
+
     it('should test getConfiguredProviderIds', async () => {
       const { getConfiguredProviderIds } = await import('./settings.js');
       mockSettingsRepo.getByPrefix.mockResolvedValueOnce([
@@ -499,6 +508,613 @@ describe('Settings Routes', () => {
 
       expect(process.env.OPENAI_API_KEY).toBe('loaded-key');
       process.env.OPENAI_API_KEY = originalEnv;
+    });
+
+    it('loadApiKeysToEnvironment skips providers with empty sanitized name', async () => {
+      const { loadApiKeysToEnvironment } = await import('./settings.js');
+
+      mockSettingsRepo.getByPrefix.mockResolvedValueOnce([
+        { key: 'api_key:!!!', value: 'key-for-weird-provider' },
+      ]);
+
+      await loadApiKeysToEnvironment();
+
+      // !!!  sanitized = '' -> should be skipped
+      // No env var should be set for empty sanitized name
+    });
+  });
+
+  // ========================================================================
+  // getDefaultProvider
+  // ========================================================================
+
+  describe('getDefaultProvider', () => {
+    it('returns saved provider if it has an API key', async () => {
+      const { getDefaultProvider } = await import('./settings.js');
+      mockSettingsRepo.get.mockResolvedValueOnce('openai');
+      mockLocalProvidersRepo.getProvider.mockResolvedValueOnce(null);
+      mockSettingsRepo.has.mockResolvedValueOnce(true); // hasApiKey
+
+      const result = await getDefaultProvider();
+
+      expect(result).toBe('openai');
+    });
+
+    it('returns saved provider if it is a local enabled provider', async () => {
+      const { getDefaultProvider } = await import('./settings.js');
+      mockSettingsRepo.get.mockResolvedValueOnce('ollama');
+      mockLocalProvidersRepo.getProvider.mockResolvedValueOnce({ id: 'ollama', isEnabled: true });
+
+      const result = await getDefaultProvider();
+
+      expect(result).toBe('ollama');
+    });
+
+    it('falls back to default local provider', async () => {
+      const { getDefaultProvider } = await import('./settings.js');
+      mockSettingsRepo.get.mockResolvedValueOnce(null); // no saved provider
+      mockLocalProvidersRepo.getDefault.mockResolvedValueOnce({ id: 'ollama-local', isEnabled: true });
+
+      const result = await getDefaultProvider();
+
+      expect(result).toBe('ollama-local');
+    });
+
+    it('falls back to first configured remote provider', async () => {
+      const { getDefaultProvider } = await import('./settings.js');
+      mockSettingsRepo.get.mockResolvedValueOnce(null);
+      mockLocalProvidersRepo.getDefault.mockResolvedValueOnce(null);
+      mockSettingsRepo.getByPrefix.mockResolvedValueOnce([
+        { key: 'api_key:anthropic', value: 'sk-xxx' },
+      ]);
+
+      const result = await getDefaultProvider();
+
+      expect(result).toBe('anthropic');
+    });
+
+    it('returns null when no providers configured', async () => {
+      const { getDefaultProvider } = await import('./settings.js');
+      mockSettingsRepo.get.mockResolvedValueOnce(null);
+      mockLocalProvidersRepo.getDefault.mockResolvedValueOnce(null);
+      mockSettingsRepo.getByPrefix.mockResolvedValueOnce([]);
+
+      const result = await getDefaultProvider();
+
+      expect(result).toBeNull();
+    });
+
+    it('skips saved provider when disabled local and no API key', async () => {
+      const { getDefaultProvider } = await import('./settings.js');
+      mockSettingsRepo.get.mockResolvedValueOnce('ollama');
+      mockLocalProvidersRepo.getProvider.mockResolvedValueOnce({ id: 'ollama', isEnabled: false });
+      mockSettingsRepo.has.mockResolvedValueOnce(false); // no API key
+      mockLocalProvidersRepo.getDefault.mockResolvedValueOnce(null);
+      mockSettingsRepo.getByPrefix.mockResolvedValueOnce([]);
+
+      const result = await getDefaultProvider();
+
+      expect(result).toBeNull();
+    });
+  });
+
+  // ========================================================================
+  // setDefaultProvider / setDefaultModel
+  // ========================================================================
+
+  describe('setDefaultProvider', () => {
+    it('sets the provider in settings repo', async () => {
+      const { setDefaultProvider } = await import('./settings.js');
+      await setDefaultProvider('anthropic');
+
+      expect(mockSettingsRepo.set).toHaveBeenCalledWith('default_ai_provider', 'anthropic');
+    });
+  });
+
+  describe('setDefaultModel', () => {
+    it('sets the model in settings repo', async () => {
+      const { setDefaultModel } = await import('./settings.js');
+      await setDefaultModel('gpt-4o');
+
+      expect(mockSettingsRepo.set).toHaveBeenCalledWith('default_ai_model', 'gpt-4o');
+    });
+  });
+
+  // ========================================================================
+  // getDefaultModel
+  // ========================================================================
+
+  describe('getDefaultModel', () => {
+    it('returns saved model when present', async () => {
+      const { getDefaultModel } = await import('./settings.js');
+      mockSettingsRepo.get.mockResolvedValueOnce('claude-3-opus');
+
+      const result = await getDefaultModel();
+
+      expect(result).toBe('claude-3-opus');
+    });
+
+    it('falls back to provider default when no saved model', async () => {
+      const { getDefaultModel } = await import('./settings.js');
+      mockSettingsRepo.get
+        .mockResolvedValueOnce(null) // no saved model
+        .mockResolvedValueOnce('openai'); // default provider lookup
+      mockLocalProvidersRepo.getProvider.mockResolvedValueOnce(null);
+      mockSettingsRepo.has.mockResolvedValueOnce(true); // hasApiKey
+
+      const result = await getDefaultModel();
+
+      expect(result).toBe('gpt-4'); // from mock getDefaultModelForProvider
+    });
+
+    it('returns null when no provider and no saved model', async () => {
+      const { getDefaultModel } = await import('./settings.js');
+      mockSettingsRepo.get.mockResolvedValueOnce(null); // no saved model
+      // getDefaultProvider returns null:
+      mockSettingsRepo.get.mockResolvedValueOnce(null);
+      mockLocalProvidersRepo.getDefault.mockResolvedValueOnce(null);
+      mockSettingsRepo.getByPrefix.mockResolvedValueOnce([]);
+
+      const result = await getDefaultModel();
+
+      expect(result).toBeNull();
+    });
+
+    it('uses explicit provider parameter', async () => {
+      const { getDefaultModel } = await import('./settings.js');
+      mockSettingsRepo.get.mockResolvedValueOnce(null); // no saved model
+
+      const result = await getDefaultModel('anthropic');
+
+      expect(result).toBe('gpt-4'); // from the mock getDefaultModelForProvider
+    });
+  });
+
+  // ========================================================================
+  // resolveProviderAndModel
+  // ========================================================================
+
+  describe('resolveProviderAndModel', () => {
+    it('resolves "default" provider and model', async () => {
+      const { resolveProviderAndModel } = await import('./settings.js');
+      // getDefaultProvider:
+      mockSettingsRepo.get.mockResolvedValueOnce('openai');
+      mockLocalProvidersRepo.getProvider.mockResolvedValueOnce(null);
+      mockSettingsRepo.has.mockResolvedValueOnce(true);
+      // getDefaultModel:
+      mockSettingsRepo.get.mockResolvedValueOnce('gpt-4o');
+
+      const result = await resolveProviderAndModel('default', 'default');
+
+      expect(result.provider).toBe('openai');
+      expect(result.model).toBe('gpt-4o');
+    });
+
+    it('passes through non-default values', async () => {
+      const { resolveProviderAndModel } = await import('./settings.js');
+
+      const result = await resolveProviderAndModel('anthropic', 'claude-3');
+
+      expect(result.provider).toBe('anthropic');
+      expect(result.model).toBe('claude-3');
+    });
+  });
+
+  // ========================================================================
+  // isDemoModeFromSettings
+  // ========================================================================
+
+  describe('isDemoModeFromSettings', () => {
+    it('returns false when API keys exist', async () => {
+      const { isDemoModeFromSettings } = await import('./settings.js');
+      mockSettingsRepo.getByPrefix.mockResolvedValueOnce([{ key: 'api_key:openai', value: 'key' }]);
+
+      const result = await isDemoModeFromSettings();
+
+      expect(result).toBe(false);
+    });
+
+    it('returns false when local providers are enabled', async () => {
+      const { isDemoModeFromSettings } = await import('./settings.js');
+      mockSettingsRepo.getByPrefix.mockResolvedValueOnce([]);
+      mockLocalProvidersRepo.listProviders.mockResolvedValueOnce([
+        { id: 'ollama', isEnabled: true },
+      ]);
+
+      const result = await isDemoModeFromSettings();
+
+      expect(result).toBe(false);
+    });
+
+    it('returns true when nothing is configured', async () => {
+      const { isDemoModeFromSettings } = await import('./settings.js');
+      mockSettingsRepo.getByPrefix.mockResolvedValueOnce([]);
+      mockLocalProvidersRepo.listProviders.mockResolvedValueOnce([]);
+
+      const result = await isDemoModeFromSettings();
+
+      expect(result).toBe(true);
+    });
+
+    it('returns true when only disabled local providers exist', async () => {
+      const { isDemoModeFromSettings } = await import('./settings.js');
+      mockSettingsRepo.getByPrefix.mockResolvedValueOnce([]);
+      mockLocalProvidersRepo.listProviders.mockResolvedValueOnce([
+        { id: 'ollama', isEnabled: false },
+      ]);
+
+      const result = await isDemoModeFromSettings();
+
+      expect(result).toBe(true);
+    });
+  });
+
+  // ========================================================================
+  // getApiKeySource
+  // ========================================================================
+
+  describe('getApiKeySource', () => {
+    it('returns "database" when key exists', async () => {
+      const { getApiKeySource } = await import('./settings.js');
+      mockSettingsRepo.has.mockResolvedValueOnce(true);
+
+      const result = await getApiKeySource('openai');
+
+      expect(result).toBe('database');
+    });
+
+    it('returns null when key does not exist', async () => {
+      const { getApiKeySource } = await import('./settings.js');
+      mockSettingsRepo.has.mockResolvedValueOnce(false);
+
+      const result = await getApiKeySource('unknown');
+
+      expect(result).toBeNull();
+    });
+  });
+
+  // ========================================================================
+  // Sandbox settings utility functions
+  // ========================================================================
+
+  describe('getSandboxSettings', () => {
+    it('returns defaults when no saved settings', async () => {
+      const { getSandboxSettings } = await import('./settings.js');
+      mockSettingsRepo.getByPrefix.mockResolvedValueOnce([]);
+
+      const settings = await getSandboxSettings();
+
+      expect(settings.enabled).toBe(false);
+      expect(settings.defaultMemoryMB).toBe(512);
+    });
+
+    it('overrides boolean settings from saved values', async () => {
+      const { getSandboxSettings } = await import('./settings.js');
+      mockSettingsRepo.getByPrefix.mockResolvedValueOnce([
+        { key: 'sandbox:enabled', value: 'true' },
+      ]);
+
+      const settings = await getSandboxSettings();
+
+      expect(settings.enabled).toBe(true);
+    });
+
+    it('overrides number settings from saved values', async () => {
+      const { getSandboxSettings } = await import('./settings.js');
+      mockSettingsRepo.getByPrefix.mockResolvedValueOnce([
+        { key: 'sandbox:defaultMemoryMB', value: '1024' },
+      ]);
+
+      const settings = await getSandboxSettings();
+
+      expect(settings.defaultMemoryMB).toBe(1024);
+    });
+
+    it('overrides string settings from saved values', async () => {
+      const { getSandboxSettings } = await import('./settings.js');
+      mockSettingsRepo.getByPrefix.mockResolvedValueOnce([
+        { key: 'sandbox:pythonImage', value: 'python:3.12' },
+      ]);
+
+      const settings = await getSandboxSettings();
+
+      expect(settings.pythonImage).toBe('python:3.12');
+    });
+
+    it('overrides array settings from saved JSON', async () => {
+      const { getSandboxSettings } = await import('./settings.js');
+      mockSettingsRepo.getByPrefix.mockResolvedValueOnce([
+        { key: 'sandbox:allowedImages', value: '["ubuntu:22.04","python:3.11"]' },
+      ]);
+
+      const settings = await getSandboxSettings();
+
+      expect(settings.allowedImages).toEqual(['ubuntu:22.04', 'python:3.11']);
+    });
+
+    it('keeps default for invalid JSON in array settings', async () => {
+      const { getSandboxSettings } = await import('./settings.js');
+      mockSettingsRepo.getByPrefix.mockResolvedValueOnce([
+        { key: 'sandbox:allowedImages', value: 'not-json' },
+      ]);
+
+      const settings = await getSandboxSettings();
+
+      expect(settings.allowedImages).toEqual([]); // default
+    });
+
+    it('keeps default for non-array JSON in array settings', async () => {
+      const { getSandboxSettings } = await import('./settings.js');
+      mockSettingsRepo.getByPrefix.mockResolvedValueOnce([
+        { key: 'sandbox:allowedImages', value: '"just-a-string"' },
+      ]);
+
+      const settings = await getSandboxSettings();
+
+      expect(settings.allowedImages).toEqual([]);
+    });
+  });
+
+  describe('setSandboxSetting', () => {
+    it('stores array values as JSON', async () => {
+      const { setSandboxSetting } = await import('./settings.js');
+      await setSandboxSetting('allowedImages', ['ubuntu:22.04']);
+
+      expect(mockSettingsRepo.set).toHaveBeenCalledWith(
+        'sandbox:allowedImages',
+        '["ubuntu:22.04"]'
+      );
+    });
+
+    it('stores non-array values as strings', async () => {
+      const { setSandboxSetting } = await import('./settings.js');
+      await setSandboxSetting('enabled', true);
+
+      expect(mockSettingsRepo.set).toHaveBeenCalledWith('sandbox:enabled', 'true');
+    });
+  });
+
+  describe('isSandboxEnabled', () => {
+    it('returns true when enabled setting is "true"', async () => {
+      const { isSandboxEnabled } = await import('./settings.js');
+      mockSettingsRepo.get.mockResolvedValueOnce('true');
+
+      const result = await isSandboxEnabled();
+
+      expect(result).toBe(true);
+    });
+
+    it('returns false when enabled setting is not "true"', async () => {
+      const { isSandboxEnabled } = await import('./settings.js');
+      mockSettingsRepo.get.mockResolvedValueOnce('false');
+
+      const result = await isSandboxEnabled();
+
+      expect(result).toBe(false);
+    });
+
+    it('returns false when enabled setting is null', async () => {
+      const { isSandboxEnabled } = await import('./settings.js');
+      mockSettingsRepo.get.mockResolvedValueOnce(null);
+
+      const result = await isSandboxEnabled();
+
+      expect(result).toBe(false);
+    });
+  });
+
+  // ========================================================================
+  // POST /settings/default-model — model name too long
+  // ========================================================================
+
+  describe('POST /settings/default-model - validation', () => {
+    it('returns 400 when model name is too long', async () => {
+      const res = await app.request('/settings/default-model', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ model: 'a'.repeat(129) }),
+      });
+
+      expect(res.status).toBe(400);
+      const json = await res.json();
+      expect(json.error.message).toContain('too long');
+    });
+  });
+
+  // ========================================================================
+  // POST /settings/api-keys — validation
+  // ========================================================================
+
+  describe('POST /settings/api-keys - validation', () => {
+    it('returns 400 when provider name is too long', async () => {
+      const res = await app.request('/settings/api-keys', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ provider: 'x'.repeat(65), apiKey: 'key' }),
+      });
+
+      expect(res.status).toBe(400);
+      const json = await res.json();
+      expect(json.error.message).toContain('too long');
+    });
+  });
+
+  // ========================================================================
+  // POST /settings/sandbox — number validation
+  // ========================================================================
+
+  describe('POST /settings/sandbox - numeric validation', () => {
+    it('returns 400 for non-number numeric fields', async () => {
+      const res = await app.request('/settings/sandbox', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ defaultMemoryMB: 'not-a-number' }),
+      });
+
+      expect(res.status).toBe(400);
+      const json = await res.json();
+      expect(json.error.message).toContain('must be a number');
+    });
+
+    it('returns 500 when getSandboxSettings throws', async () => {
+      // Make the GET endpoint fail by having getByPrefix throw
+      mockSettingsRepo.getByPrefix.mockRejectedValueOnce(new Error('DB error'));
+
+      const res = await app.request('/settings/sandbox');
+
+      expect(res.status).toBe(500);
+    });
+  });
+
+  // ========================================================================
+  // POST /settings/sandbox/enable — error path
+  // ========================================================================
+
+  describe('POST /settings/sandbox/enable - error', () => {
+    it('returns 500 when setSandboxSetting throws', async () => {
+      mockSettingsRepo.set.mockRejectedValueOnce(new Error('DB write error'));
+
+      const res = await app.request('/settings/sandbox/enable', { method: 'POST' });
+
+      expect(res.status).toBe(500);
+    });
+  });
+
+  // ========================================================================
+  // POST /settings/sandbox/disable — error path
+  // ========================================================================
+
+  describe('POST /settings/sandbox/disable - error', () => {
+    it('returns 500 when setSandboxSetting throws', async () => {
+      mockSettingsRepo.set.mockRejectedValueOnce(new Error('DB write error'));
+
+      const res = await app.request('/settings/sandbox/disable', { method: 'POST' });
+
+      expect(res.status).toBe(500);
+    });
+  });
+
+  // ========================================================================
+  // POST /settings/sandbox — error path
+  // ========================================================================
+
+  describe('POST /settings/sandbox - error', () => {
+    it('returns 500 when internal error occurs', async () => {
+      mockSettingsRepo.set.mockRejectedValueOnce(new Error('DB fail'));
+
+      const res = await app.request('/settings/sandbox', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ enabled: true }),
+      });
+
+      expect(res.status).toBe(500);
+    });
+  });
+
+  // ========================================================================
+  // GET /settings/sandbox — status message paths
+  // ========================================================================
+
+  describe('GET /settings/sandbox - status messages', () => {
+    it('shows disabled message when sandbox is disabled but docker available', async () => {
+      mockSettingsRepo.getByPrefix.mockResolvedValue([]);
+
+      const res = await app.request('/settings/sandbox');
+      const json = await res.json();
+
+      expect(json.data.status.message).toContain('disabled');
+    });
+
+    it('shows enabled+ready message when sandbox is enabled', async () => {
+      mockSettingsRepo.getByPrefix.mockResolvedValue([
+        { key: 'sandbox:enabled', value: 'true' },
+      ]);
+
+      const res = await app.request('/settings/sandbox');
+      const json = await res.json();
+
+      expect(json.data.status.enabled).toBe(true);
+      expect(json.data.status.ready).toBe(true);
+      expect(json.data.status.message).toContain('enabled and ready');
+    });
+
+    it('shows docker unavailable message', async () => {
+      const { isDockerAvailable } = await import('@ownpilot/core');
+      vi.mocked(isDockerAvailable).mockResolvedValueOnce(false);
+      mockSettingsRepo.getByPrefix.mockResolvedValue([]);
+
+      const res = await app.request('/settings/sandbox');
+      const json = await res.json();
+
+      expect(json.data.status.message).toContain('Docker is not available');
+      expect(json.data.status.ready).toBe(false);
+    });
+  });
+
+  // ========================================================================
+  // Tool Groups routes
+  // ========================================================================
+
+  describe('GET /settings/tool-groups', () => {
+    it('returns tool groups with default enabled state', async () => {
+      mockSettingsRepo.get.mockReturnValue(null); // no saved groups -> uses defaults
+
+      const res = await app.request('/settings/tool-groups');
+
+      expect(res.status).toBe(200);
+      const json = await res.json();
+      expect(json.data.groups).toBeInstanceOf(Array);
+      expect(json.data.enabledGroupIds).toBeInstanceOf(Array);
+    });
+  });
+
+  describe('PUT /settings/tool-groups', () => {
+    it('returns 400 when enabledGroupIds is not an array', async () => {
+      const res = await app.request('/settings/tool-groups', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ enabledGroupIds: 'not-an-array' }),
+      });
+
+      expect(res.status).toBe(400);
+    });
+
+    it('returns 400 for unknown tool group IDs', async () => {
+      const res = await app.request('/settings/tool-groups', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ enabledGroupIds: ['nonexistent_group_xyz'] }),
+      });
+
+      expect(res.status).toBe(400);
+      const json = await res.json();
+      expect(json.error.message).toContain('Unknown tool group');
+    });
+  });
+
+  // ========================================================================
+  // getEnabledToolGroupIds
+  // ========================================================================
+
+  describe('getEnabledToolGroupIds', () => {
+    it('returns saved groups when available', async () => {
+      const { getEnabledToolGroupIds } = await import('./settings.js');
+      mockSettingsRepo.get.mockReturnValue(['core', 'memory']);
+
+      const result = getEnabledToolGroupIds();
+
+      expect(result).toEqual(['core', 'memory']);
+    });
+
+    it('returns defaults when no saved groups', async () => {
+      const { getEnabledToolGroupIds } = await import('./settings.js');
+      mockSettingsRepo.get.mockReturnValue(null);
+
+      const result = getEnabledToolGroupIds();
+
+      expect(result).toBeInstanceOf(Array);
+      expect(result.length).toBeGreaterThan(0);
     });
   });
 });

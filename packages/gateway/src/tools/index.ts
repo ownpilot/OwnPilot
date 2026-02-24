@@ -9,3 +9,9 @@ export { PLAN_TOOLS, executePlanTool } from './plan-tools.js';
 export { HEARTBEAT_TOOLS, executeHeartbeatTool } from './heartbeat-tools.js';
 export { EXTENSION_TOOLS, executeExtensionTool } from './extension-tools.js';
 export { PULSE_TOOLS, executePulseTool } from './pulse-tools.js';
+export {
+  NOTIFICATION_TOOLS,
+  executeNotificationTool,
+  sendTelegramMessage,
+  setNotificationBroadcaster,
+} from './notification-tools.js';

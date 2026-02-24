@@ -18,8 +18,9 @@ import {
   getErrorMessage,
   validateQueryEnum,
 } from './helpers.js';
-import { MAX_DAYS_LOOKBACK, MAX_PAGINATION_OFFSET } from '../config/defaults.js';
+import { MAX_DAYS_LOOKBACK } from '../config/defaults.js';
 import { wsGateway } from '../ws/server.js';
+import { pagination } from '../middleware/pagination.js';
 
 export const triggersRoutes = new Hono();
 
@@ -118,10 +119,9 @@ triggersRoutes.get('/stats', async (c) => {
 /**
  * GET /triggers/history - Get recent trigger history
  */
-triggersRoutes.get('/history', async (c) => {
+triggersRoutes.get('/history', pagination({ defaultLimit: 25, maxLimit: 200 }), async (c) => {
   const userId = getUserId(c);
-  const limit = getIntParam(c, 'limit', 25, 1, 200);
-  const offset = getIntParam(c, 'offset', 0, 0, MAX_PAGINATION_OFFSET);
+  const { limit, offset } = c.get('pagination')!;
   const status = validateQueryEnum(c.req.query('status'), [
     'success',
     'failure',
@@ -338,11 +338,10 @@ triggersRoutes.delete('/:id', async (c) => {
 /**
  * GET /triggers/:id/history - Get history for a specific trigger
  */
-triggersRoutes.get('/:id/history', async (c) => {
+triggersRoutes.get('/:id/history', pagination({ defaultLimit: 25, maxLimit: 200 }), async (c) => {
   const userId = getUserId(c);
   const id = c.req.param('id');
-  const limit = getIntParam(c, 'limit', 25, 1, 200);
-  const offset = getIntParam(c, 'offset', 0, 0, MAX_PAGINATION_OFFSET);
+  const { limit, offset } = c.get('pagination')!;
   const status = validateQueryEnum(c.req.query('status'), [
     'success',
     'failure',

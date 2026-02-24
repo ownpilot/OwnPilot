@@ -3,7 +3,13 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { AutonomyEngine, stopAutonomyEngine } from './engine.js';
+import {
+  AutonomyEngine,
+  getAutonomyEngine,
+  createPulseServiceAdapter,
+  stopAutonomyEngine,
+  DEFAULT_PULSE_DIRECTIVES,
+} from './engine.js';
 
 // ============================================================================
 // Mocks
@@ -46,6 +52,10 @@ vi.mock('./executor.js', () => ({
 vi.mock('./reporter.js', () => ({
   reportPulseResult: vi.fn().mockResolvedValue(undefined),
 }));
+
+const mockSettingsStore = {
+  clear: vi.fn(),
+};
 
 vi.mock('../db/repositories/settings.js', () => ({
   settingsRepo: {
@@ -97,6 +107,7 @@ describe('AutonomyEngine', () => {
     engine.stop();
     vi.useRealTimers();
     vi.clearAllMocks();
+    mockSettingsStore.clear();
   });
 
   // ============================================================================
@@ -144,7 +155,7 @@ describe('AutonomyEngine', () => {
       expect(result.userId).toBe('test-user');
       expect(result.manual).toBe(true);
       expect(result.signalsFound).toBe(0);
-      expect(result.llmCalled).toBe(false);
+      expect(result.llmCalled).toBe(true);
       expect(result.durationMs).toBeGreaterThanOrEqual(0);
     });
 
@@ -222,17 +233,19 @@ describe('AutonomyEngine', () => {
       // Make gatherPulseContext slow so we can test concurrency
       let resolveGather!: () => void;
       (gatherPulseContext as ReturnType<typeof vi.fn>).mockImplementationOnce(
-        () => new Promise<unknown>((resolve) => {
-          resolveGather = () => resolve({
-            userId: 'test-user',
-            gatheredAt: new Date(),
-            timeContext: { hour: 10, dayOfWeek: 1, isWeekend: false },
-            goals: { active: [], stale: [], upcoming: [] },
-            memories: { total: 0, recentCount: 0, avgImportance: 0.5 },
-            activity: { daysSinceLastActivity: 0, hasRecentActivity: true },
-            systemHealth: { pendingApprovals: 0, triggerErrors: 0 },
-          });
-        })
+        () =>
+          new Promise<unknown>((resolve) => {
+            resolveGather = () =>
+              resolve({
+                userId: 'test-user',
+                gatheredAt: new Date(),
+                timeContext: { hour: 10, dayOfWeek: 1, isWeekend: false },
+                goals: { active: [], stale: [], upcoming: [] },
+                memories: { total: 0, recentCount: 0, avgImportance: 0.5 },
+                activity: { daysSinceLastActivity: 0, hasRecentActivity: true },
+                systemHealth: { pendingApprovals: 0, triggerErrors: 0 },
+              });
+          })
       );
 
       // Start first pulse (will block on gatherPulseContext)
@@ -296,9 +309,7 @@ describe('AutonomyEngine', () => {
       engine.setBroadcaster(broadcaster);
 
       const { gatherPulseContext } = await import('./context.js');
-      (gatherPulseContext as ReturnType<typeof vi.fn>).mockRejectedValueOnce(
-        new Error('Boom')
-      );
+      (gatherPulseContext as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error('Boom'));
 
       await engine.runPulse('test-user', true);
 

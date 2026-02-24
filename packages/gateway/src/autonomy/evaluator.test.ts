@@ -35,7 +35,7 @@ describe('evaluatePulseContext', () => {
     const ctx = makeContext();
     const result = evaluatePulseContext(ctx);
 
-    expect(result.shouldCallLLM).toBe(false);
+    expect(result.shouldCallLLM).toBe(true);
     expect(result.signals).toHaveLength(0);
     expect(result.urgencyScore).toBe(0);
   });
@@ -209,8 +209,8 @@ describe('evaluatePulseContext', () => {
 // ============================================================================
 
 describe('RULE_DEFINITIONS', () => {
-  it('exports 7 rule definitions', () => {
-    expect(RULE_DEFINITIONS).toHaveLength(7);
+  it('exports 8 rule definitions', () => {
+    expect(RULE_DEFINITIONS).toHaveLength(8);
   });
 
   it('each definition has id, label, description, and thresholdKey', () => {
@@ -231,6 +231,7 @@ describe('RULE_DEFINITIONS', () => {
       'memory_cleanup',
       'pending_approvals',
       'trigger_errors',
+      'routine_checkin',
     ];
     expect(RULE_DEFINITIONS.map((r) => r.id)).toEqual(expectedIds);
   });
@@ -289,7 +290,7 @@ describe('evaluatePulseContext with disabledRules', () => {
     expect(result.signals.find((s) => s.id === 'stale_goals')).toBeUndefined();
     expect(result.signals.find((s) => s.id === 'no_activity')).toBeUndefined();
     expect(result.signals.find((s) => s.id === 'memory_cleanup')).toBeUndefined();
-    expect(result.shouldCallLLM).toBe(false);
+    expect(result.shouldCallLLM).toBe(true);
   });
 
   it('only disables specified rules, others still fire', () => {

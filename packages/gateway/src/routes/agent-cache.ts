@@ -139,7 +139,7 @@ export async function getProviderApiKey(provider: string): Promise<string | unde
  */
 export function loadProviderConfig(
   providerId: string
-): { baseUrl?: string; apiKeyEnv?: string; type?: string } | null {
+): { baseUrl?: string; apiKeyEnv?: string; type?: string; headers?: Record<string, string> } | null {
   // 1. Check builtin provider configs
   const config = coreGetProviderConfig(providerId);
   if (config) {
@@ -147,6 +147,7 @@ export function loadProviderConfig(
       baseUrl: config.baseUrl,
       apiKeyEnv: config.apiKeyEnv,
       type: config.type,
+      headers: config.headers,
     };
   }
 

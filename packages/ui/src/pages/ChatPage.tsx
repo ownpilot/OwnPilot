@@ -54,6 +54,7 @@ export function ChatPage() {
     acceptMemory,
     rejectMemory,
     resolveApproval,
+    isThinking,
   } = useChatStore();
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -730,6 +731,27 @@ export function ChatPage() {
                   </div>
                 )}
 
+                {/* Thinking indicator (model is reasoning but not producing visible content yet) */}
+                {isThinking && (
+                  <div className="flex items-center gap-2 text-sm text-text-muted dark:text-dark-text-muted">
+                    <div className="flex gap-1">
+                      <span
+                        className="w-2 h-2 bg-primary rounded-full animate-bounce"
+                        style={{ animationDelay: '0ms' }}
+                      />
+                      <span
+                        className="w-2 h-2 bg-primary rounded-full animate-bounce"
+                        style={{ animationDelay: '150ms' }}
+                      />
+                      <span
+                        className="w-2 h-2 bg-primary rounded-full animate-bounce"
+                        style={{ animationDelay: '300ms' }}
+                      />
+                    </div>
+                    <span>Thinking...</span>
+                  </div>
+                )}
+
                 {/* Streaming text */}
                 {streamingContent && (
                   <div className="prose prose-sm dark:prose-invert max-w-none">
@@ -741,7 +763,7 @@ export function ChatPage() {
                 )}
 
                 {/* Loading indicator when no content yet */}
-                {!streamingContent && progressEvents.length === 0 && (
+                {!streamingContent && !isThinking && progressEvents.length === 0 && (
                   <div className="flex items-center gap-2 text-sm text-text-muted dark:text-dark-text-muted">
                     <div className="flex gap-1">
                       <span

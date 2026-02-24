@@ -55,20 +55,20 @@ vi.mock('../ws/server.js', () => ({
   wsGateway: { broadcast: vi.fn() },
 }));
 
-vi.mock('../services/log.js', () => ({
-  getLog: () => ({ info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() }),
-}));
-
-vi.mock('@ownpilot/core', () => ({
-  getBaseName: vi.fn((name: string) => name.split('.').pop() ?? name),
-  getServiceRegistry: () => ({
-    get: (token: { key: string }) => {
-      if (token.key === 'mcp-client') return mockMcpClientService;
-      throw new Error(`Unexpected token: ${token.key}`);
-    },
-  }),
-  Services: { McpClient: { key: 'mcp-client' } },
-}));
+vi.mock('@ownpilot/core', async (importOriginal) => {
+  const actual = await importOriginal<Record<string, unknown>>();
+  return {
+    ...actual,
+    getBaseName: vi.fn((name: string) => name.split('.').pop() ?? name),
+    getServiceRegistry: () => ({
+      get: (token: { key: string }) => {
+        if (token.key === 'mcp-client') return mockMcpClientService;
+        throw new Error(`Unexpected token: ${token.key}`);
+      },
+    }),
+    Services: { McpClient: { key: 'mcp-client' } },
+  };
+});
 
 // Import after mocks
 const { mcpRoutes } = await import('./mcp.js');
