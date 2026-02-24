@@ -197,6 +197,14 @@ export class Agent {
     this.state = { ...this.state, isProcessing: true, lastError: undefined };
 
     try {
+      // Auto-recover if the conversation was evicted from memory (e.g. server restart,
+      // agent cache reuse). Without this, addUserMessage silently fails and the provider
+      // receives an empty messages array, causing a 400 error.
+      if (!this.memory.has(this.state.conversation.id)) {
+        const recovered = this.memory.create(this.config.systemPrompt);
+        this.state = { ...this.state, conversation: recovered };
+      }
+
       // Add user message
       this.memory.addUserMessage(this.state.conversation.id, message);
 
@@ -243,6 +251,18 @@ export class Agent {
 
       // Get context messages
       const messages = this.memory.getFullContext(this.state.conversation.id);
+
+      // Guard: providers require at least one message. If the context is empty
+      // (conversation lost or no messages added), fail fast with a clear error
+      // instead of sending an invalid request to the LLM API.
+      if (messages.length === 0) {
+        return err(
+          new InternalError(
+            'Empty conversation context — no messages to send to provider. ' +
+              `Conversation ${this.state.conversation.id} may have been evicted from memory.`
+          )
+        );
+      }
 
       // Build completion request
       const request = {

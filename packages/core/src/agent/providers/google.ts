@@ -662,8 +662,17 @@ export class GoogleProvider {
     const systemMessage = request.messages.find((m) => m.role === 'system');
     const otherMessages = request.messages.filter((m) => m.role !== 'system');
 
+    // Gemini API requires `contents` to be non-empty. If only a system message
+    // exists (or messages are empty entirely), inject a minimal user turn so the
+    // request doesn't get rejected with INVALID_ARGUMENT.
+    const contents = this.buildGeminiContents(otherMessages);
+    if (contents.length === 0) {
+      log.warn('Empty contents for Gemini request — injecting minimal user turn');
+      contents.push({ role: 'user', parts: [{ text: '(start)' }] });
+    }
+
     const geminiRequest: Record<string, unknown> = {
-      contents: this.buildGeminiContents(otherMessages),
+      contents,
       generationConfig: {
         maxOutputTokens: request.model.maxTokens,
         temperature: request.model.temperature,
