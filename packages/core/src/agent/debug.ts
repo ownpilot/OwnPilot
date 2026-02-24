@@ -137,6 +137,9 @@ class DebugLogStorage {
   private maxEntries: number = 100;
   private enabled: boolean = true;
 
+  /** Optional callback invoked on every new entry (used by gateway to broadcast via WS) */
+  onEntry?: (entry: DebugLogEntry) => void;
+
   setMaxEntries(max: number): void {
     this.maxEntries = max;
     this.trim();
@@ -153,12 +156,16 @@ class DebugLogStorage {
   add(entry: Omit<DebugLogEntry, 'timestamp'>): void {
     if (!this.enabled) return;
 
-    this.entries.push({
+    const full: DebugLogEntry = {
       ...entry,
       timestamp: new Date().toISOString(),
-    });
+    };
 
+    this.entries.push(full);
     this.trim();
+
+    // Notify listener (e.g. WebSocket broadcast)
+    this.onEntry?.(full);
   }
 
   getAll(): DebugLogEntry[] {
