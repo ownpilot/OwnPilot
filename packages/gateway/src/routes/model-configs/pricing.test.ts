@@ -36,17 +36,21 @@ vi.mock('../../ws/server.js', () => ({
   wsGateway: { broadcast: mockBroadcast },
 }));
 
-const mockSyncAllProviders = vi.hoisted(() => vi.fn(async () => ({
-  synced: ['openai', 'anthropic'],
-  failed: [],
-  total: 2,
-})));
+const mockSyncAllProviders = vi.hoisted(() =>
+  vi.fn(async () => ({
+    synced: ['openai', 'anthropic'],
+    failed: [],
+    total: 2,
+  }))
+);
 const mockClearConfigCache = vi.hoisted(() => vi.fn());
-const mockSyncProviders = vi.hoisted(() => vi.fn(async () => ({
-  synced: ['openai'],
-  failed: [],
-  total: 1,
-})));
+const mockSyncProviders = vi.hoisted(() =>
+  vi.fn(async () => ({
+    synced: ['openai'],
+    failed: [],
+    total: 1,
+  }))
+);
 
 vi.mock('@ownpilot/core', async (importOriginal) => {
   const original = await importOriginal<Record<string, unknown>>();
@@ -59,7 +63,15 @@ vi.mock('@ownpilot/core', async (importOriginal) => {
         baseUrl: 'https://api.openai.com/v1',
         apiKeyEnv: 'OPENAI_API_KEY',
         models: [
-          { id: 'gpt-4', name: 'GPT-4', inputPrice: 30, outputPrice: 60, capabilities: ['chat'], contextWindow: 8192, maxOutput: 4096 },
+          {
+            id: 'gpt-4',
+            name: 'GPT-4',
+            inputPrice: 30,
+            outputPrice: 60,
+            capabilities: ['chat'],
+            contextWindow: 8192,
+            maxOutput: 4096,
+          },
         ],
       },
     ]),
@@ -123,10 +135,13 @@ describe('Pricing Routes', () => {
         },
       };
 
-      vi.stubGlobal('fetch', vi.fn(async () => ({
-        ok: true,
-        json: async () => modelsDevData,
-      })));
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(async () => ({
+          ok: true,
+          json: async () => modelsDevData,
+        }))
+      );
 
       const res = await app.request('/pricing/sync', { method: 'POST' });
 
@@ -152,10 +167,13 @@ describe('Pricing Routes', () => {
         },
       };
 
-      vi.stubGlobal('fetch', vi.fn(async () => ({
-        ok: true,
-        json: async () => modelsDevData,
-      })));
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(async () => ({
+          ok: true,
+          json: async () => modelsDevData,
+        }))
+      );
 
       const res = await app.request('/pricing/sync', { method: 'POST' });
 
@@ -173,10 +191,13 @@ describe('Pricing Routes', () => {
         empty_provider: { id: 'empty', name: 'Empty' },
       };
 
-      vi.stubGlobal('fetch', vi.fn(async () => ({
-        ok: true,
-        json: async () => modelsDevData,
-      })));
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(async () => ({
+          ok: true,
+          json: async () => modelsDevData,
+        }))
+      );
 
       const res = await app.request('/pricing/sync', { method: 'POST' });
 
@@ -199,10 +220,13 @@ describe('Pricing Routes', () => {
         },
       };
 
-      vi.stubGlobal('fetch', vi.fn(async () => ({
-        ok: true,
-        json: async () => modelsDevData,
-      })));
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(async () => ({
+          ok: true,
+          json: async () => modelsDevData,
+        }))
+      );
 
       const res = await app.request('/pricing/sync', { method: 'POST' });
 
@@ -215,10 +239,13 @@ describe('Pricing Routes', () => {
     });
 
     it('returns 500 when fetch fails with non-ok response', async () => {
-      vi.stubGlobal('fetch', vi.fn(async () => ({
-        ok: false,
-        status: 503,
-      })));
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(async () => ({
+          ok: false,
+          status: 503,
+        }))
+      );
 
       const res = await app.request('/pricing/sync', { method: 'POST' });
 
@@ -231,9 +258,12 @@ describe('Pricing Routes', () => {
     });
 
     it('returns 500 when fetch throws an error', async () => {
-      vi.stubGlobal('fetch', vi.fn(async () => {
-        throw new Error('Network unreachable');
-      }));
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(async () => {
+          throw new Error('Network unreachable');
+        })
+      );
 
       const res = await app.request('/pricing/sync', { method: 'POST' });
 
@@ -416,7 +446,9 @@ describe('Pricing Routes', () => {
     it('returns 500 when delete throws an error', async () => {
       vi.doMock('fs', () => ({
         existsSync: vi.fn(() => true),
-        unlinkSync: vi.fn(() => { throw new Error('Permission denied'); }),
+        unlinkSync: vi.fn(() => {
+          throw new Error('Permission denied');
+        }),
       }));
 
       const res = await app.request('/pricing/sync/provider/test-provider', { method: 'DELETE' });

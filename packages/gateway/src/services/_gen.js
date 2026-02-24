@@ -1,1 +1,1 @@
-console.log("gen ok");
+console.log('gen ok');

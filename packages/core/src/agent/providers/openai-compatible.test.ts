@@ -7,7 +7,16 @@ import type { ResolvedProviderConfig, ProviderConfig } from './configs/index.js'
 import type { CompletionRequest, Message, StreamChunk } from '../types.js';
 import type { Result } from '../../types/result.js';
 import type { InternalError } from '../../types/errors.js';
-import { OpenAICompatibleProvider, createDeepSeekProvider, createGroqProvider, createTogetherProvider, createFireworksProvider, createMistralProvider, createXAIProvider, createPerplexityProvider } from './openai-compatible.js';
+import {
+  OpenAICompatibleProvider,
+  createDeepSeekProvider,
+  createGroqProvider,
+  createTogetherProvider,
+  createFireworksProvider,
+  createMistralProvider,
+  createXAIProvider,
+  createPerplexityProvider,
+} from './openai-compatible.js';
 
 // Mock configs module — vi.hoisted ensures the fns exist before the hoisted vi.mock runs
 const { mockLoadProviderConfig, mockResolveProviderConfig } = vi.hoisted(() => ({

@@ -331,8 +331,7 @@ export class PlansRepository extends BaseRepository {
       { column: 'status', value: input.status },
       {
         column: 'started_at',
-        value:
-          input.status === 'running' && !plan.startedAt ? now : undefined,
+        value: input.status === 'running' && !plan.startedAt ? now : undefined,
       },
       {
         column: 'completed_at',
@@ -353,14 +352,10 @@ export class PlansRepository extends BaseRepository {
       },
     ];
 
-    const stmt = buildUpdateStatement(
-      'plans',
-      fields,
-      [
-        { column: 'id', value: id },
-        { column: 'user_id', value: this.userId },
-      ],
-    );
+    const stmt = buildUpdateStatement('plans', fields, [
+      { column: 'id', value: id },
+      { column: 'user_id', value: this.userId },
+    ]);
 
     // stmt is always non-null because updated_at is always provided,
     // but guard defensively.

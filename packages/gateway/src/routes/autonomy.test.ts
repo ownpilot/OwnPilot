@@ -111,9 +111,24 @@ vi.mock('../db/repositories/settings.js', () => ({
 
 vi.mock('../autonomy/evaluator.js', () => ({
   RULE_DEFINITIONS: [
-    { id: 'stale_goals', label: 'Stale Goals', description: 'Goals not updated in >3 days', thresholdKey: 'staleDays' },
-    { id: 'upcoming_deadline', label: 'Upcoming Deadline', description: 'Goals due within 3 days', thresholdKey: 'deadlineDays' },
-    { id: 'memory_cleanup', label: 'Memory Cleanup', description: 'Too many low-importance memories', thresholdKey: 'memoryMaxCount' },
+    {
+      id: 'stale_goals',
+      label: 'Stale Goals',
+      description: 'Goals not updated in >3 days',
+      thresholdKey: 'staleDays',
+    },
+    {
+      id: 'upcoming_deadline',
+      label: 'Upcoming Deadline',
+      description: 'Goals due within 3 days',
+      thresholdKey: 'deadlineDays',
+    },
+    {
+      id: 'memory_cleanup',
+      label: 'Memory Cleanup',
+      description: 'Too many low-importance memories',
+      thresholdKey: 'memoryMaxCount',
+    },
   ],
   DEFAULT_RULE_THRESHOLDS: {
     staleDays: 3,

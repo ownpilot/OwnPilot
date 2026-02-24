@@ -269,9 +269,7 @@ describe('RESOURCE_EXECUTORS.list_tasks', () => {
     mockResolveWorkspacePath.mockReturnValue('/workspace/tasks/tasks.json');
     mockExistsSync.mockReturnValue(true);
     mockReadFile.mockResolvedValue(
-      JSON.stringify([
-        { id: '1', title: 'A', status: 'completed', priority: 'medium' },
-      ])
+      JSON.stringify([{ id: '1', title: 'A', status: 'completed', priority: 'medium' }])
     );
 
     const result = await fn({ filter: 'pending' });
@@ -295,9 +293,7 @@ describe('RESOURCE_EXECUTORS.list_tasks', () => {
     mockResolveWorkspacePath.mockReturnValue('/workspace/tasks/tasks.json');
     mockExistsSync.mockReturnValue(true);
     mockReadFile.mockResolvedValue(
-      JSON.stringify([
-        { id: '1', title: 'High', status: 'pending', priority: 'high' },
-      ])
+      JSON.stringify([{ id: '1', title: 'High', status: 'pending', priority: 'high' }])
     );
 
     const result = await fn({});
@@ -308,9 +304,7 @@ describe('RESOURCE_EXECUTORS.list_tasks', () => {
     mockResolveWorkspacePath.mockReturnValue('/workspace/tasks/tasks.json');
     mockExistsSync.mockReturnValue(true);
     mockReadFile.mockResolvedValue(
-      JSON.stringify([
-        { id: '1', title: 'Low', status: 'pending', priority: 'low' },
-      ])
+      JSON.stringify([{ id: '1', title: 'Low', status: 'pending', priority: 'low' }])
     );
 
     const result = await fn({});
@@ -321,9 +315,7 @@ describe('RESOURCE_EXECUTORS.list_tasks', () => {
     mockResolveWorkspacePath.mockReturnValue('/workspace/tasks/tasks.json');
     mockExistsSync.mockReturnValue(true);
     mockReadFile.mockResolvedValue(
-      JSON.stringify([
-        { id: '1', title: 'Med', status: 'pending', priority: 'medium' },
-      ])
+      JSON.stringify([{ id: '1', title: 'Med', status: 'pending', priority: 'medium' }])
     );
 
     const result = await fn({});
@@ -334,9 +326,7 @@ describe('RESOURCE_EXECUTORS.list_tasks', () => {
     mockResolveWorkspacePath.mockReturnValue('/workspace/tasks/tasks.json');
     mockExistsSync.mockReturnValue(true);
     mockReadFile.mockResolvedValue(
-      JSON.stringify([
-        { id: '1', title: 'Done', status: 'completed', priority: 'medium' },
-      ])
+      JSON.stringify([{ id: '1', title: 'Done', status: 'completed', priority: 'medium' }])
     );
 
     const result = await fn({});
@@ -510,9 +500,7 @@ describe('RESOURCE_EXECUTORS.search_notes', () => {
   it('searches notes with category filter', async () => {
     mockResolveWorkspacePath.mockReturnValue('/workspace/notes/recipes');
     mockExistsSync.mockReturnValue(true);
-    mockReaddir.mockResolvedValue([
-      { name: 'pasta.md', isDirectory: () => false },
-    ]);
+    mockReaddir.mockResolvedValue([{ name: 'pasta.md', isDirectory: () => false }]);
     mockReadFile.mockResolvedValue('Pasta recipe');
 
     const result = await fn({ query: 'pasta', category: 'recipes' });
@@ -522,9 +510,7 @@ describe('RESOURCE_EXECUTORS.search_notes', () => {
   it('matches by filename', async () => {
     mockResolveWorkspacePath.mockReturnValue('/workspace/notes');
     mockExistsSync.mockReturnValue(true);
-    mockReaddir.mockResolvedValue([
-      { name: 'testfile.md', isDirectory: () => false },
-    ]);
+    mockReaddir.mockResolvedValue([{ name: 'testfile.md', isDirectory: () => false }]);
     mockReadFile.mockResolvedValue('No match in content');
 
     const result = await fn({ query: 'testfile' });
@@ -535,12 +521,8 @@ describe('RESOURCE_EXECUTORS.search_notes', () => {
     mockResolveWorkspacePath.mockReturnValue('/workspace/notes');
     mockExistsSync.mockReturnValue(true);
 
-    mockReaddir.mockResolvedValueOnce([
-      { name: 'subcat', isDirectory: () => true },
-    ]);
-    mockReaddir.mockResolvedValueOnce([
-      { name: 'deep.md', isDirectory: () => false },
-    ]);
+    mockReaddir.mockResolvedValueOnce([{ name: 'subcat', isDirectory: () => true }]);
+    mockReaddir.mockResolvedValueOnce([{ name: 'deep.md', isDirectory: () => false }]);
     mockReadFile.mockResolvedValue('Found the query term');
 
     const result = await fn({ query: 'query' });
@@ -550,9 +532,7 @@ describe('RESOURCE_EXECUTORS.search_notes', () => {
   it('returns no match message when nothing found', async () => {
     mockResolveWorkspacePath.mockReturnValue('/workspace/notes');
     mockExistsSync.mockReturnValue(true);
-    mockReaddir.mockResolvedValue([
-      { name: 'note.md', isDirectory: () => false },
-    ]);
+    mockReaddir.mockResolvedValue([{ name: 'note.md', isDirectory: () => false }]);
     mockReadFile.mockResolvedValue('Nothing relevant');
 
     const result = await fn({ query: 'xyznonexistent' });
@@ -562,9 +542,7 @@ describe('RESOURCE_EXECUTORS.search_notes', () => {
   it('ignores non-md files', async () => {
     mockResolveWorkspacePath.mockReturnValue('/workspace/notes');
     mockExistsSync.mockReturnValue(true);
-    mockReaddir.mockResolvedValue([
-      { name: 'image.png', isDirectory: () => false },
-    ]);
+    mockReaddir.mockResolvedValue([{ name: 'image.png', isDirectory: () => false }]);
 
     const result = await fn({ query: 'anything' });
     expect(result.content).toContain('No notes found matching');
@@ -575,9 +553,7 @@ describe('RESOURCE_EXECUTORS.search_notes', () => {
   it('search is case-insensitive', async () => {
     mockResolveWorkspacePath.mockReturnValue('/workspace/notes');
     mockExistsSync.mockReturnValue(true);
-    mockReaddir.mockResolvedValue([
-      { name: 'note.md', isDirectory: () => false },
-    ]);
+    mockReaddir.mockResolvedValue([{ name: 'note.md', isDirectory: () => false }]);
     mockReadFile.mockResolvedValue('IMPORTANT NOTE');
 
     const result = await fn({ query: 'important' });

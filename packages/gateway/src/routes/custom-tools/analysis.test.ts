@@ -45,8 +45,10 @@ vi.mock('@ownpilot/core', async (importOriginal) => {
   const actual = await importOriginal<Record<string, unknown>>();
   return {
     ...actual,
-    analyzeToolCode: (...args: unknown[]) => mockAnalyzeToolCode(...(args as [string, string[] | undefined])),
-    calculateSecurityScore: (...args: unknown[]) => mockCalculateSecurityScore(...(args as [string, string[] | undefined])),
+    analyzeToolCode: (...args: unknown[]) =>
+      mockAnalyzeToolCode(...(args as [string, string[] | undefined])),
+    calculateSecurityScore: (...args: unknown[]) =>
+      mockCalculateSecurityScore(...(args as [string, string[] | undefined])),
   };
 });
 
@@ -145,7 +147,9 @@ describe('Custom Tools Analysis Routes', () => {
       const res = await app.request('/analysis/validate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code: 'const r = await fetch("http://example.com"); return { content: r };' }),
+        body: JSON.stringify({
+          code: 'const r = await fetch("http://example.com"); return { content: r };',
+        }),
       });
 
       expect(res.status).toBe(200);
@@ -172,9 +176,7 @@ describe('Custom Tools Analysis Routes', () => {
 
       expect(res.status).toBe(200);
       const json = await res.json();
-      expect(
-        json.data.warnings.some((w: string) => w.includes('network'))
-      ).toBe(false);
+      expect(json.data.warnings.some((w: string) => w.includes('network'))).toBe(false);
     });
 
     it('passes permissions to analyzeToolCode', async () => {
@@ -184,10 +186,7 @@ describe('Custom Tools Analysis Routes', () => {
         body: JSON.stringify({ code: 'return {};', permissions: ['filesystem', 'network'] }),
       });
 
-      expect(mockAnalyzeToolCode).toHaveBeenCalledWith(
-        'return {};',
-        ['filesystem', 'network']
-      );
+      expect(mockAnalyzeToolCode).toHaveBeenCalledWith('return {};', ['filesystem', 'network']);
     });
 
     // --- Recommendation generation ---
@@ -223,9 +222,7 @@ describe('Custom Tools Analysis Routes', () => {
       });
 
       const json = await res.json();
-      expect(
-        json.data.recommendations.some((r: string) => r.includes('async/await'))
-      ).toBe(true);
+      expect(json.data.recommendations.some((r: string) => r.includes('async/await'))).toBe(true);
     });
 
     it('recommends splitting complex code over 100 lines', async () => {
@@ -241,9 +238,7 @@ describe('Custom Tools Analysis Routes', () => {
       });
 
       const json = await res.json();
-      expect(
-        json.data.recommendations.some((r: string) => r.includes('splitting'))
-      ).toBe(true);
+      expect(json.data.recommendations.some((r: string) => r.includes('splitting'))).toBe(true);
     });
 
     it('recommends utils.getApiKey for network tools without utils usage', async () => {
@@ -259,9 +254,7 @@ describe('Custom Tools Analysis Routes', () => {
       });
 
       const json = await res.json();
-      expect(
-        json.data.recommendations.some((r: string) => r.includes('getApiKey'))
-      ).toBe(true);
+      expect(json.data.recommendations.some((r: string) => r.includes('getApiKey'))).toBe(true);
     });
 
     it('recommends wrapping fetch in try/catch', async () => {
@@ -277,9 +270,7 @@ describe('Custom Tools Analysis Routes', () => {
       });
 
       const json = await res.json();
-      expect(
-        json.data.recommendations.some((r: string) => r.includes('try/catch'))
-      ).toBe(true);
+      expect(json.data.recommendations.some((r: string) => r.includes('try/catch'))).toBe(true);
     });
 
     it('adds security warning recommendation for dangerous score', async () => {
@@ -295,9 +286,9 @@ describe('Custom Tools Analysis Routes', () => {
       });
 
       const json = await res.json();
-      expect(
-        json.data.recommendations.some((r: string) => r.includes('Security score'))
-      ).toBe(true);
+      expect(json.data.recommendations.some((r: string) => r.includes('Security score'))).toBe(
+        true
+      );
     });
 
     it('includes best practice violations as recommendations', async () => {
@@ -339,8 +330,8 @@ describe('Custom Tools Analysis Routes', () => {
       const json = await res.json();
       // The fetch try/catch recommendation appears from both the violated check
       // and the usesFetch check, but should be deduplicated via Set
-      const fetchRecs = json.data.recommendations.filter((r: string) =>
-        r.includes('fetch') && r.includes('try/catch')
+      const fetchRecs = json.data.recommendations.filter(
+        (r: string) => r.includes('fetch') && r.includes('try/catch')
       );
       expect(fetchRecs.length).toBeLessThanOrEqual(2);
     });
@@ -532,7 +523,9 @@ describe('Custom Tools Analysis Routes', () => {
       });
 
       const json = await res.json();
-      expect(json.data.staticAnalysis.dataFlowRisks).toContain('User input flows to dangerous function');
+      expect(json.data.staticAnalysis.dataFlowRisks).toContain(
+        'User input flows to dangerous function'
+      );
     });
 
     it('includes suggestedPermissions in static analysis response', async () => {

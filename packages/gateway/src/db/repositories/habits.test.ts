@@ -875,8 +875,10 @@ describe('HabitsRepository', () => {
       mockAdapter.queryOne.mockResolvedValueOnce(makeHabitRow());
       mockAdapter.queryOne.mockResolvedValueOnce({ total: 3 });
       const today = new Date();
-      const d1 = new Date(today); d1.setDate(today.getDate() - 2);
-      const d2 = new Date(today); d2.setDate(today.getDate() - 1);
+      const d1 = new Date(today);
+      d1.setDate(today.getDate() - 2);
+      const d2 = new Date(today);
+      d2.setDate(today.getDate() - 1);
       mockAdapter.query.mockResolvedValueOnce([
         makeHabitLogRow({ date: d1.toISOString().split('T')[0], count: 1 }),
         makeHabitLogRow({ date: d2.toISOString().split('T')[0], count: 1 }),
@@ -903,10 +905,14 @@ describe('HabitsRepository', () => {
     });
 
     it('should handle custom frequency', async () => {
-      mockAdapter.queryOne.mockResolvedValueOnce(makeHabitRow({ frequency: 'custom', target_days: '[1,3,5]' }));
+      mockAdapter.queryOne.mockResolvedValueOnce(
+        makeHabitRow({ frequency: 'custom', target_days: '[1,3,5]' })
+      );
       mockAdapter.queryOne.mockResolvedValueOnce(null);
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
-      mockAdapter.queryOne.mockResolvedValueOnce(makeHabitRow({ frequency: 'custom', target_days: '[1,3,5]' }));
+      mockAdapter.queryOne.mockResolvedValueOnce(
+        makeHabitRow({ frequency: 'custom', target_days: '[1,3,5]' })
+      );
       mockAdapter.queryOne.mockResolvedValueOnce({ total: 2 });
       mockAdapter.query.mockResolvedValueOnce([
         makeHabitLogRow({ date: '2025-01-13', count: 1 }),
@@ -947,7 +953,9 @@ describe('HabitsRepository', () => {
 
   describe('getHabitStats frequency calculations', () => {
     it('weekdays: expectedMonthly=22', async () => {
-      mockAdapter.queryOne.mockResolvedValueOnce(makeHabitRow({ frequency: 'weekdays', target_count: 1 }));
+      mockAdapter.queryOne.mockResolvedValueOnce(
+        makeHabitRow({ frequency: 'weekdays', target_count: 1 })
+      );
       mockAdapter.query.mockResolvedValueOnce([]);
       mockAdapter.query.mockResolvedValueOnce([makeHabitLogRow({ count: 11 })]);
       const r = await repo.getHabitStats('hab_1');
@@ -955,7 +963,9 @@ describe('HabitsRepository', () => {
     });
 
     it('weekly: expectedMonthly=4', async () => {
-      mockAdapter.queryOne.mockResolvedValueOnce(makeHabitRow({ frequency: 'weekly', target_count: 1 }));
+      mockAdapter.queryOne.mockResolvedValueOnce(
+        makeHabitRow({ frequency: 'weekly', target_count: 1 })
+      );
       mockAdapter.query.mockResolvedValueOnce([]);
       mockAdapter.query.mockResolvedValueOnce([makeHabitLogRow({ count: 2 })]);
       const r = await repo.getHabitStats('hab_1');
@@ -963,7 +973,9 @@ describe('HabitsRepository', () => {
     });
 
     it('custom: expectedMonthly=targetDays*4', async () => {
-      mockAdapter.queryOne.mockResolvedValueOnce(makeHabitRow({ frequency: 'custom', target_days: '[1,3,5]', target_count: 1 }));
+      mockAdapter.queryOne.mockResolvedValueOnce(
+        makeHabitRow({ frequency: 'custom', target_days: '[1,3,5]', target_count: 1 })
+      );
       mockAdapter.query.mockResolvedValueOnce([]);
       mockAdapter.query.mockResolvedValueOnce([makeHabitLogRow({ count: 6 })]);
       const r = await repo.getHabitStats('hab_1');
@@ -971,7 +983,9 @@ describe('HabitsRepository', () => {
     });
 
     it('daily: expectedMonthly=30', async () => {
-      mockAdapter.queryOne.mockResolvedValueOnce(makeHabitRow({ frequency: 'daily', target_count: 1 }));
+      mockAdapter.queryOne.mockResolvedValueOnce(
+        makeHabitRow({ frequency: 'daily', target_count: 1 })
+      );
       mockAdapter.query.mockResolvedValueOnce([]);
       mockAdapter.query.mockResolvedValueOnce([makeHabitLogRow({ count: 15 })]);
       const r = await repo.getHabitStats('hab_1');
@@ -982,7 +996,9 @@ describe('HabitsRepository', () => {
   describe('getTodayHabits frequency filtering', () => {
     it('custom frequency: includes habit targeting today', async () => {
       const dow = new Date().getDay();
-      mockAdapter.query.mockResolvedValueOnce([makeHabitRow({ frequency: 'custom', target_days: JSON.stringify([dow]) })]);
+      mockAdapter.query.mockResolvedValueOnce([
+        makeHabitRow({ frequency: 'custom', target_days: JSON.stringify([dow]) }),
+      ]);
       mockAdapter.query.mockResolvedValueOnce([]);
       expect(await repo.getTodayHabits()).toHaveLength(1);
     });
@@ -990,7 +1006,9 @@ describe('HabitsRepository', () => {
     it('custom frequency: excludes habit not targeting today', async () => {
       const dow = new Date().getDay();
       const other = (dow + 3) % 7;
-      mockAdapter.query.mockResolvedValueOnce([makeHabitRow({ frequency: 'custom', target_days: JSON.stringify([other]) })]);
+      mockAdapter.query.mockResolvedValueOnce([
+        makeHabitRow({ frequency: 'custom', target_days: JSON.stringify([other]) }),
+      ]);
       mockAdapter.query.mockResolvedValueOnce([]);
       expect(await repo.getTodayHabits()).toHaveLength(0);
     });
@@ -998,7 +1016,9 @@ describe('HabitsRepository', () => {
     it('marks not completed when count < targetCount', async () => {
       const todayStr = new Date().toISOString().split('T')[0]!;
       mockAdapter.query.mockResolvedValueOnce([makeHabitRow({ target_count: 3 })]);
-      mockAdapter.query.mockResolvedValueOnce([makeHabitLogRow({ date: todayStr, count: 2, habit_id: 'hab_1' })]);
+      mockAdapter.query.mockResolvedValueOnce([
+        makeHabitLogRow({ date: todayStr, count: 2, habit_id: 'hab_1' }),
+      ]);
       const r = await repo.getTodayHabits();
       if (r.length > 0) {
         expect(r[0]!.completedToday).toBe(false);
@@ -1009,7 +1029,9 @@ describe('HabitsRepository', () => {
     it('marks completed when count >= targetCount', async () => {
       const todayStr = new Date().toISOString().split('T')[0]!;
       mockAdapter.query.mockResolvedValueOnce([makeHabitRow({ target_count: 2 })]);
-      mockAdapter.query.mockResolvedValueOnce([makeHabitLogRow({ date: todayStr, count: 3, habit_id: 'hab_1' })]);
+      mockAdapter.query.mockResolvedValueOnce([
+        makeHabitLogRow({ date: todayStr, count: 3, habit_id: 'hab_1' }),
+      ]);
       const r = await repo.getTodayHabits();
       if (r.length > 0) {
         expect(r[0]!.completedToday).toBe(true);
@@ -1025,7 +1047,9 @@ describe('HabitsRepository', () => {
         makeHabitRow({ id: 'hab_1', target_count: 1 }),
         makeHabitRow({ id: 'hab_2', target_count: 1 }),
       ]);
-      mockAdapter.query.mockResolvedValueOnce([makeHabitLogRow({ habit_id: 'hab_1', date: todayStr, count: 1 })]);
+      mockAdapter.query.mockResolvedValueOnce([
+        makeHabitLogRow({ habit_id: 'hab_1', date: todayStr, count: 1 }),
+      ]);
       const r = await repo.getTodayProgress();
       expect(r.total).toBe(2);
       expect(r.completed).toBe(1);
@@ -1078,5 +1102,4 @@ describe('HabitsRepository', () => {
       expect(habitsRepo).toBeInstanceOf(HabitsRepository);
     });
   });
-
 });

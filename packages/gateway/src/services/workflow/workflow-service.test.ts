@@ -9,7 +9,12 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import type { WorkflowNode, WorkflowEdge, NodeResult, WorkflowLog } from '../../db/repositories/workflows.js';
+import type {
+  WorkflowNode,
+  WorkflowEdge,
+  NodeResult,
+  WorkflowLog,
+} from '../../db/repositories/workflows.js';
 
 // ---------------------------------------------------------------------------
 // Hoisted mocks
@@ -109,19 +114,16 @@ import { WorkflowService, getWorkflowService } from './workflow-service.js';
 // Helpers
 // ---------------------------------------------------------------------------
 
-function makeNode(
-  id: string,
-  type: string,
-  data: Record<string, unknown> = {}
-): WorkflowNode {
-  return { id, type, position: { x: 0, y: 0 }, data: { label: id, ...data } as WorkflowNode['data'] };
+function makeNode(id: string, type: string, data: Record<string, unknown> = {}): WorkflowNode {
+  return {
+    id,
+    type,
+    position: { x: 0, y: 0 },
+    data: { label: id, ...data } as WorkflowNode['data'],
+  };
 }
 
-function makeEdge(
-  source: string,
-  target: string,
-  sourceHandle?: string
-): WorkflowEdge {
+function makeEdge(source: string, target: string, sourceHandle?: string): WorkflowEdge {
   return { id: `${source}-${target}`, source, target, sourceHandle };
 }
 
@@ -140,7 +142,11 @@ function makeLog(overrides: Partial<WorkflowLog> = {}): WorkflowLog {
   };
 }
 
-function makeNodeResult(nodeId: string, output: unknown, status: NodeResult['status'] = 'success'): NodeResult {
+function makeNodeResult(
+  nodeId: string,
+  output: unknown,
+  status: NodeResult['status'] = 'success'
+): NodeResult {
   return {
     nodeId,
     status,
@@ -305,9 +311,7 @@ describe('executeWorkflow', () => {
   });
 
   it('executes a single condition node', async () => {
-    const nodes = [
-      makeNode('cond1', 'conditionNode', { expression: 'true' }),
-    ];
+    const nodes = [makeNode('cond1', 'conditionNode', { expression: 'true' })];
     mockRepo.get.mockResolvedValue({
       id: 'wf-1',
       name: 'Test',
@@ -316,9 +320,7 @@ describe('executeWorkflow', () => {
       variables: {},
     });
 
-    mockExecuteConditionNode.mockReturnValue(
-      makeNodeResult('cond1', true)
-    );
+    mockExecuteConditionNode.mockReturnValue(makeNodeResult('cond1', true));
     mockRepo.getLog.mockResolvedValue(makeLog({ status: 'completed' }));
 
     await service.executeWorkflow('wf-1', 'user1');
@@ -327,9 +329,7 @@ describe('executeWorkflow', () => {
   });
 
   it('executes a code node', async () => {
-    const nodes = [
-      makeNode('code1', 'codeNode', { language: 'javascript', code: 'return 1;' }),
-    ];
+    const nodes = [makeNode('code1', 'codeNode', { language: 'javascript', code: 'return 1;' })];
     mockRepo.get.mockResolvedValue({
       id: 'wf-1',
       name: 'Test',
@@ -347,9 +347,7 @@ describe('executeWorkflow', () => {
   });
 
   it('executes a transformer node', async () => {
-    const nodes = [
-      makeNode('tf1', 'transformerNode', { expression: '42' }),
-    ];
+    const nodes = [makeNode('tf1', 'transformerNode', { expression: '42' })];
     mockRepo.get.mockResolvedValue({
       id: 'wf-1',
       name: 'Test',
@@ -367,9 +365,7 @@ describe('executeWorkflow', () => {
   });
 
   it('executes a forEach node', async () => {
-    const nodes = [
-      makeNode('fe1', 'forEachNode', { arrayExpression: '{{n1.output}}' }),
-    ];
+    const nodes = [makeNode('fe1', 'forEachNode', { arrayExpression: '{{n1.output}}' })];
     mockRepo.get.mockResolvedValue({
       id: 'wf-1',
       name: 'Test',
@@ -378,9 +374,7 @@ describe('executeWorkflow', () => {
       variables: {},
     });
 
-    mockExecuteForEachNode.mockResolvedValue(
-      makeNodeResult('fe1', { results: [], count: 0 })
-    );
+    mockExecuteForEachNode.mockResolvedValue(makeNodeResult('fe1', { results: [], count: 0 }));
     mockRepo.getLog.mockResolvedValue(makeLog({ status: 'completed' }));
 
     await service.executeWorkflow('wf-1', 'user1');
@@ -470,9 +464,7 @@ describe('executeWorkflow', () => {
   });
 
   it('marks workflow as failed when any node has errors', async () => {
-    const nodes = [
-      makeNode('n1', 'toolNode', { toolName: 'tool1', toolArgs: {} }),
-    ];
+    const nodes = [makeNode('n1', 'toolNode', { toolName: 'tool1', toolArgs: {} })];
     mockRepo.get.mockResolvedValue({
       id: 'wf-1',
       name: 'Test',
@@ -498,9 +490,7 @@ describe('executeWorkflow', () => {
   });
 
   it('calls onProgress with node_start and node_complete events', async () => {
-    const nodes = [
-      makeNode('n1', 'toolNode', { toolName: 'test_tool', toolArgs: {} }),
-    ];
+    const nodes = [makeNode('n1', 'toolNode', { toolName: 'test_tool', toolArgs: {} })];
     mockRepo.get.mockResolvedValue({
       id: 'wf-1',
       name: 'Test',
@@ -522,9 +512,7 @@ describe('executeWorkflow', () => {
   });
 
   it('emits node_error event on node failure', async () => {
-    const nodes = [
-      makeNode('n1', 'toolNode', { toolName: 'test', toolArgs: {} }),
-    ];
+    const nodes = [makeNode('n1', 'toolNode', { toolName: 'test', toolArgs: {} })];
     mockRepo.get.mockResolvedValue({
       id: 'wf-1',
       name: 'Test',
@@ -746,9 +734,7 @@ describe('executeWorkflow', () => {
   });
 
   it('emits done event with log status and duration', async () => {
-    const nodes = [
-      makeNode('n1', 'toolNode', { toolName: 'test', toolArgs: {} }),
-    ];
+    const nodes = [makeNode('n1', 'toolNode', { toolName: 'test', toolArgs: {} })];
     mockRepo.get.mockResolvedValue({
       id: 'wf-1',
       name: 'Test',

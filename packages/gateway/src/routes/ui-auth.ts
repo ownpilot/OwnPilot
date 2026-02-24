@@ -51,28 +51,16 @@ uiAuthRoutes.post('/login', async (c) => {
   const { password } = body;
 
   if (!password || typeof password !== 'string') {
-    return apiError(
-      c,
-      { code: ERROR_CODES.INVALID_INPUT, message: 'Password is required' },
-      400
-    );
+    return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'Password is required' }, 400);
   }
 
   const storedHash = getPasswordHash();
   if (!storedHash) {
-    return apiError(
-      c,
-      { code: ERROR_CODES.INVALID_INPUT, message: 'No password configured' },
-      400
-    );
+    return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'No password configured' }, 400);
   }
 
   if (!verifyPassword(password, storedHash)) {
-    return apiError(
-      c,
-      { code: ERROR_CODES.ACCESS_DENIED, message: 'Invalid password' },
-      403
-    );
+    return apiError(c, { code: ERROR_CODES.ACCESS_DENIED, message: 'Invalid password' }, 403);
   }
 
   const session = createSession();
@@ -108,11 +96,7 @@ uiAuthRoutes.post('/password', async (c) => {
   const { password, currentPassword } = body;
 
   if (!password || typeof password !== 'string') {
-    return apiError(
-      c,
-      { code: ERROR_CODES.INVALID_INPUT, message: 'Password is required' },
-      400
-    );
+    return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'Password is required' }, 400);
   }
 
   if (password.length < MIN_PASSWORD_LENGTH) {
@@ -132,13 +116,20 @@ uiAuthRoutes.post('/password', async (c) => {
     // Changing password — require valid session + current password
     const token = c.req.header('X-Session-Token');
     if (!token || !validateSession(token)) {
-      return apiError(c, { code: ERROR_CODES.UNAUTHORIZED, message: 'Authentication required' }, 401);
+      return apiError(
+        c,
+        { code: ERROR_CODES.UNAUTHORIZED, message: 'Authentication required' },
+        401
+      );
     }
 
     if (!currentPassword || typeof currentPassword !== 'string') {
       return apiError(
         c,
-        { code: ERROR_CODES.INVALID_INPUT, message: 'Current password is required to change password' },
+        {
+          code: ERROR_CODES.INVALID_INPUT,
+          message: 'Current password is required to change password',
+        },
         400
       );
     }
@@ -180,11 +171,7 @@ uiAuthRoutes.delete('/password', async (c) => {
   }
 
   if (!isPasswordConfigured()) {
-    return apiError(
-      c,
-      { code: ERROR_CODES.INVALID_INPUT, message: 'No password configured' },
-      400
-    );
+    return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'No password configured' }, 400);
   }
 
   await removePassword();

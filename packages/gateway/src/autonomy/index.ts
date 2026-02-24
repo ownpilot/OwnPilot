@@ -61,10 +61,7 @@ export {
   type EvaluationResult,
 } from './evaluator.js';
 
-export {
-  getPulseSystemPrompt,
-  buildPulseUserMessage,
-} from './prompt.js';
+export { getPulseSystemPrompt, buildPulseUserMessage } from './prompt.js';
 
 export {
   executePulseActions,

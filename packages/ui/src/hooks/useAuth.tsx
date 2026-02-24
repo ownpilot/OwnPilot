@@ -5,14 +5,7 @@
  * Provides login/logout/refreshStatus and global 401 handling.
  */
 
-import {
-  createContext,
-  useContext,
-  useState,
-  useEffect,
-  useCallback,
-  type ReactNode,
-} from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
 import { authApi } from '../api/endpoints/auth';
 import { apiClient } from '../api/client';
 import { STORAGE_KEYS } from '../constants/storage-keys';

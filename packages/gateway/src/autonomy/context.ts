@@ -254,11 +254,7 @@ async function gatherHabits(
   }
 }
 
-async function gatherTasks(
-  userId: string,
-  now: Date,
-  ctx: PulseContext
-): Promise<void> {
+async function gatherTasks(userId: string, now: Date, ctx: PulseContext): Promise<void> {
   try {
     const { TasksRepository } = await import('../db/repositories/index.js');
     const tasksRepo = new TasksRepository(userId);
@@ -292,11 +288,7 @@ async function gatherTasks(
   }
 }
 
-async function gatherCalendar(
-  userId: string,
-  _now: Date,
-  ctx: PulseContext
-): Promise<void> {
+async function gatherCalendar(userId: string, _now: Date, ctx: PulseContext): Promise<void> {
   try {
     const { CalendarRepository } = await import('../db/repositories/index.js');
     const calendarRepo = new CalendarRepository(userId);

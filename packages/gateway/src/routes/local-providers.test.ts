@@ -502,10 +502,13 @@ describe('Local Providers Routes', () => {
         }),
       });
       expect(res.status).toBe(201);
-      expect(wsGateway.broadcast).toHaveBeenCalledWith('data:changed', expect.objectContaining({
-        entity: 'local_provider',
-        action: 'created',
-      }));
+      expect(wsGateway.broadcast).toHaveBeenCalledWith(
+        'data:changed',
+        expect.objectContaining({
+          entity: 'local_provider',
+          action: 'created',
+        })
+      );
     });
   });
 
@@ -529,7 +532,10 @@ describe('Local Providers Routes', () => {
 
   describe('GET /local-providers/:id -- error paths', () => {
     it('returns 404 when userId does not match', async () => {
-      mockLocalProvidersRepo.getProvider.mockResolvedValue({ ...sampleProvider, userId: 'other-user' });
+      mockLocalProvidersRepo.getProvider.mockResolvedValue({
+        ...sampleProvider,
+        userId: 'other-user',
+      });
       const res = await app.request('/local-providers/ollama-1');
       expect(res.status).toBe(404);
     });
@@ -597,16 +603,24 @@ describe('Local Providers Routes', () => {
     it('broadcasts WebSocket event on update', async () => {
       const { wsGateway } = await import('../ws/server.js');
       mockLocalProvidersRepo.getProvider.mockResolvedValue(sampleProvider);
-      mockLocalProvidersRepo.updateProvider.mockResolvedValue({ ...sampleProvider, name: 'Updated' });
+      mockLocalProvidersRepo.updateProvider.mockResolvedValue({
+        ...sampleProvider,
+        name: 'Updated',
+      });
       const res = await app.request('/local-providers/ollama-1', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: 'Updated' }),
       });
       expect(res.status).toBe(200);
-      expect(wsGateway.broadcast).toHaveBeenCalledWith('data:changed', expect.objectContaining({
-        entity: 'local_provider', action: 'updated', id: 'ollama-1',
-      }));
+      expect(wsGateway.broadcast).toHaveBeenCalledWith(
+        'data:changed',
+        expect.objectContaining({
+          entity: 'local_provider',
+          action: 'updated',
+          id: 'ollama-1',
+        })
+      );
     });
   });
 
@@ -637,9 +651,14 @@ describe('Local Providers Routes', () => {
       mockLocalProvidersRepo.deleteProvider.mockResolvedValue(true);
       const res = await app.request('/local-providers/ollama-1', { method: 'DELETE' });
       expect(res.status).toBe(200);
-      expect(wsGateway.broadcast).toHaveBeenCalledWith('data:changed', expect.objectContaining({
-        entity: 'local_provider', action: 'deleted', id: 'ollama-1',
-      }));
+      expect(wsGateway.broadcast).toHaveBeenCalledWith(
+        'data:changed',
+        expect.objectContaining({
+          entity: 'local_provider',
+          action: 'deleted',
+          id: 'ollama-1',
+        })
+      );
     });
   });
 
@@ -795,16 +814,18 @@ describe('Local Providers Routes', () => {
         { id: 'db-id-2', modelId: 'org/model-name', displayName: 'Org Model', isEnabled: true },
       ]);
       const encodedModelId = encodeURIComponent('org/model-name');
-      const res = await app.request('/local-providers/ollama-1/models/' + encodedModelId + '/toggle', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ enabled: false }),
-      });
+      const res = await app.request(
+        '/local-providers/ollama-1/models/' + encodedModelId + '/toggle',
+        {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ enabled: false }),
+        }
+      );
       expect(res.status).toBe(200);
       expect(mockLocalProvidersRepo.toggleModel).toHaveBeenCalledWith('db-id-2', false);
     });
   });
-
 
   describe('POST /local-providers -- URL validation edge cases', () => {
     it('returns 400 for unparseable baseUrl', async () => {
@@ -846,5 +867,4 @@ describe('Local Providers Routes', () => {
       expect(res.status).toBe(400);
     });
   });
-
 });

@@ -20,12 +20,16 @@ import { workspaceContainerRoutes } from './container.js';
 
 function makeWorkspace(overrides: Record<string, unknown> = {}) {
   return {
-    id: 'ws-1', userId: 'user-1', name: 'Test', status: 'active',
+    id: 'ws-1',
+    userId: 'user-1',
+    name: 'Test',
+    status: 'active',
     storagePath: '/tmp/ws-1',
     containerConfig: { memoryMB: 512, cpuCores: 1, timeoutMs: 30000 },
     containerId: null as string | null,
     containerStatus: 'stopped',
-    createdAt: new Date('2024-01-01'), updatedAt: new Date('2024-01-02'),
+    createdAt: new Date('2024-01-01'),
+    updatedAt: new Date('2024-01-02'),
     ...overrides,
   };
 }
@@ -38,14 +42,20 @@ describe('Workspace Container Routes', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     app = new Hono();
-    app.use('*', async (c, next) => { c.set('userId', 'user-1'); await next(); });
+    app.use('*', async (c, next) => {
+      c.set('userId', 'user-1');
+      await next();
+    });
     app.route('/', workspaceContainerRoutes);
     mockRepo = { get: vi.fn(), logAudit: vi.fn(), updateContainerStatus: vi.fn() };
     vi.mocked(WorkspacesRepository).mockImplementation(() => mockRepo as never);
     mockOrchestrator = {
-      createContainer: vi.fn(), stopContainer: vi.fn(),
-      getContainerStatus: vi.fn(), getResourceUsage: vi.fn(),
-      getContainerLogs: vi.fn(), getActiveContainers: vi.fn(),
+      createContainer: vi.fn(),
+      stopContainer: vi.fn(),
+      getContainerStatus: vi.fn(),
+      getResourceUsage: vi.fn(),
+      getContainerLogs: vi.fn(),
+      getActiveContainers: vi.fn(),
     };
     vi.mocked(getOrchestrator).mockReturnValue(mockOrchestrator as never);
     vi.mocked(isDockerAvailable).mockResolvedValue(true);
@@ -62,12 +72,19 @@ describe('Workspace Container Routes', () => {
       expect(json.success).toBe(true);
       expect(json.data.containerId).toBe('ctr-new');
       expect(json.data.status).toBe('running');
-      expect(mockOrchestrator.createContainer).toHaveBeenCalledWith('user-1', 'ws-1', '/tmp/ws-1', ws.containerConfig);
+      expect(mockOrchestrator.createContainer).toHaveBeenCalledWith(
+        'user-1',
+        'ws-1',
+        '/tmp/ws-1',
+        ws.containerConfig
+      );
       expect(mockRepo.updateContainerStatus).toHaveBeenCalledWith('ws-1', 'ctr-new', 'running');
       expect(mockRepo.logAudit).toHaveBeenCalledWith('start', 'container', 'ws-1');
     });
     it('should return existing container if already running', async () => {
-      mockRepo.get.mockResolvedValue(makeWorkspace({ containerStatus: 'running', containerId: 'ctr-existing' }));
+      mockRepo.get.mockResolvedValue(
+        makeWorkspace({ containerStatus: 'running', containerId: 'ctr-existing' })
+      );
       const res = await app.request('/ws-1/container/start', { method: 'POST' });
       expect(res.status).toBe(200);
       const json = await res.json();
@@ -140,7 +157,9 @@ describe('Workspace Container Routes', () => {
 
   describe('GET /:id/container/status', () => {
     it('should return status for workspace without container', async () => {
-      mockRepo.get.mockResolvedValue(makeWorkspace({ containerId: null, containerStatus: 'stopped' }));
+      mockRepo.get.mockResolvedValue(
+        makeWorkspace({ containerId: null, containerStatus: 'stopped' })
+      );
       const res = await app.request('/ws-1/container/status');
       expect(res.status).toBe(200);
       const json = await res.json();
@@ -149,7 +168,9 @@ describe('Workspace Container Routes', () => {
       expect(mockOrchestrator.getContainerStatus).not.toHaveBeenCalled();
     });
     it('should query orchestrator when container exists and status unchanged', async () => {
-      mockRepo.get.mockResolvedValue(makeWorkspace({ containerId: 'ctr-1', containerStatus: 'running' }));
+      mockRepo.get.mockResolvedValue(
+        makeWorkspace({ containerId: 'ctr-1', containerStatus: 'running' })
+      );
       mockOrchestrator.getContainerStatus.mockResolvedValue('running');
       mockOrchestrator.getResourceUsage.mockResolvedValue({ cpuPercent: 25, memoryMB: 128 });
       const res = await app.request('/ws-1/container/status');
@@ -160,7 +181,9 @@ describe('Workspace Container Routes', () => {
       expect(mockRepo.updateContainerStatus).not.toHaveBeenCalled();
     });
     it('should update DB when container status has changed', async () => {
-      mockRepo.get.mockResolvedValue(makeWorkspace({ containerId: 'ctr-1', containerStatus: 'running' }));
+      mockRepo.get.mockResolvedValue(
+        makeWorkspace({ containerId: 'ctr-1', containerStatus: 'running' })
+      );
       mockOrchestrator.getContainerStatus.mockResolvedValue('stopped');
       mockOrchestrator.getResourceUsage.mockResolvedValue(null);
       const res = await app.request('/ws-1/container/status');
@@ -248,7 +271,13 @@ describe('Workspace Container Routes', () => {
     it('should return Docker available with active containers', async () => {
       vi.mocked(isDockerAvailable).mockResolvedValue(true);
       mockOrchestrator.getActiveContainers.mockReturnValue([
-        { userId: 'u-1', workspaceId: 'ws-1', status: 'running', startedAt: new Date(), lastActivityAt: new Date() },
+        {
+          userId: 'u-1',
+          workspaceId: 'ws-1',
+          status: 'running',
+          startedAt: new Date(),
+          lastActivityAt: new Date(),
+        },
       ]);
       const res = await app.request('/system/status');
       expect(res.status).toBe(200);
@@ -274,7 +303,9 @@ describe('Workspace Container Routes', () => {
     });
     it('should return 500 when getActiveContainers throws', async () => {
       vi.mocked(isDockerAvailable).mockResolvedValue(true);
-      mockOrchestrator.getActiveContainers.mockImplementation(() => { throw new Error('err'); });
+      mockOrchestrator.getActiveContainers.mockImplementation(() => {
+        throw new Error('err');
+      });
       const res = await app.request('/system/status');
       expect(res.status).toBe(500);
       expect((await res.json()).error.code).toBe('SYSTEM_STATUS_ERROR');

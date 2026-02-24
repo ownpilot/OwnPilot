@@ -45,7 +45,15 @@ const builtinOpenai = {
   apiKeyEnv: 'OPENAI_API_KEY',
   docsUrl: 'https://platform.openai.com/docs',
   models: [
-    { id: 'gpt-4', name: 'GPT-4', capabilities: ['chat'], inputPrice: 30, outputPrice: 60, contextWindow: 8192, maxOutput: 4096 },
+    {
+      id: 'gpt-4',
+      name: 'GPT-4',
+      capabilities: ['chat'],
+      inputPrice: 30,
+      outputPrice: 60,
+      contextWindow: 8192,
+      maxOutput: 4096,
+    },
   ],
 };
 
@@ -58,7 +66,15 @@ const aggregatorOpenRouter = {
   description: 'AI model aggregator',
   docsUrl: 'https://openrouter.ai/docs',
   defaultModels: [
-    { id: 'meta-llama/llama-3', name: 'Llama 3', capabilities: ['chat'], pricingInput: 0.5, pricingOutput: 0.5, contextWindow: 8192, maxOutput: 4096 },
+    {
+      id: 'meta-llama/llama-3',
+      name: 'Llama 3',
+      capabilities: ['chat'],
+      pricingInput: 0.5,
+      pricingOutput: 0.5,
+      contextWindow: 8192,
+      maxOutput: 4096,
+    },
   ],
 };
 
@@ -69,7 +85,9 @@ vi.mock('@ownpilot/core', async (importOriginal) => {
     getAllProviderConfigs: vi.fn(() => [builtinOpenai]),
     getProviderConfig: vi.fn((id: string) => (id === 'openai' ? builtinOpenai : null)),
     getAllAggregatorProviders: vi.fn(() => [aggregatorOpenRouter]),
-    getAggregatorProvider: vi.fn((id: string) => (id === 'openrouter' ? aggregatorOpenRouter : null)),
+    getAggregatorProvider: vi.fn((id: string) =>
+      id === 'openrouter' ? aggregatorOpenRouter : null
+    ),
     isAggregatorProvider: vi.fn((id: string) => id === 'openrouter'),
   };
 });
@@ -171,7 +189,11 @@ describe('Provider Routes', () => {
     });
 
     it('creates a provider and broadcasts event', async () => {
-      mockModelConfigsRepo.upsertProvider.mockResolvedValueOnce({ id: 'p1', providerId: 'my-api', displayName: 'My API' });
+      mockModelConfigsRepo.upsertProvider.mockResolvedValueOnce({
+        id: 'p1',
+        providerId: 'my-api',
+        displayName: 'My API',
+      });
 
       const res = await app.request('/prov/providers', {
         method: 'POST',
@@ -179,7 +201,10 @@ describe('Provider Routes', () => {
         body: JSON.stringify({ providerId: 'my-api', displayName: 'My API' }),
       });
       expect(res.status).toBe(200);
-      expect(mockBroadcast).toHaveBeenCalledWith('data:changed', expect.objectContaining({ entity: 'model_provider', action: 'created' }));
+      expect(mockBroadcast).toHaveBeenCalledWith(
+        'data:changed',
+        expect.objectContaining({ entity: 'model_provider', action: 'created' })
+      );
     });
   });
 
@@ -200,7 +225,11 @@ describe('Provider Routes', () => {
     });
 
     it('returns 500 when updateProvider throws', async () => {
-      mockModelConfigsRepo.getProvider.mockResolvedValueOnce({ providerId: 'test', displayName: 'Test', isEnabled: true });
+      mockModelConfigsRepo.getProvider.mockResolvedValueOnce({
+        providerId: 'test',
+        displayName: 'Test',
+        isEnabled: true,
+      });
       mockModelConfigsRepo.updateProvider.mockRejectedValueOnce(new Error('DB error'));
 
       const res = await app.request('/prov/providers/test', {
@@ -215,12 +244,19 @@ describe('Provider Routes', () => {
 
     it('creates config for aggregator with custom fields', async () => {
       mockModelConfigsRepo.getProvider.mockResolvedValueOnce(null);
-      mockModelConfigsRepo.upsertProvider.mockResolvedValueOnce({ providerId: 'openrouter', isEnabled: true });
+      mockModelConfigsRepo.upsertProvider.mockResolvedValueOnce({
+        providerId: 'openrouter',
+        isEnabled: true,
+      });
 
       const res = await app.request('/prov/providers/openrouter', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ displayName: 'My Router', apiBaseUrl: 'https://custom.url', isEnabled: true }),
+        body: JSON.stringify({
+          displayName: 'My Router',
+          apiBaseUrl: 'https://custom.url',
+          isEnabled: true,
+        }),
       });
       expect(res.status).toBe(200);
       expect(mockModelConfigsRepo.upsertProvider).toHaveBeenCalledWith(
@@ -303,7 +339,11 @@ describe('Provider Routes', () => {
         body: JSON.stringify({ enabled: false }),
       });
       expect(res.status).toBe(200);
-      expect(mockModelConfigsRepo.toggleProvider).toHaveBeenCalledWith('default', 'my-custom', false);
+      expect(mockModelConfigsRepo.toggleProvider).toHaveBeenCalledWith(
+        'default',
+        'my-custom',
+        false
+      );
     });
 
     it('returns 404 when custom provider toggle returns false', async () => {
@@ -452,12 +492,17 @@ describe('Provider Routes', () => {
       });
       mockModelConfigsRepo.listModels.mockResolvedValueOnce([]);
 
-      vi.stubGlobal('fetch', vi.fn(async (url: string) => ({
-        ok: true,
-        text: async () => JSON.stringify({ data: [{ id: 'my-model', object: 'model' }] }),
-      })));
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(async (url: string) => ({
+          ok: true,
+          text: async () => JSON.stringify({ data: [{ id: 'my-model', object: 'model' }] }),
+        }))
+      );
 
-      const res = await app.request('/prov/providers/local-llm/discover-models', { method: 'POST' });
+      const res = await app.request('/prov/providers/local-llm/discover-models', {
+        method: 'POST',
+      });
 
       expect(res.status).toBe(200);
       const json = await res.json();
@@ -473,10 +518,13 @@ describe('Provider Routes', () => {
       mockModelConfigsRepo.getProvider.mockResolvedValueOnce(null);
       mockModelConfigsRepo.listModels.mockResolvedValueOnce([]);
 
-      vi.stubGlobal('fetch', vi.fn(async () => ({
-        ok: true,
-        text: async () => JSON.stringify({ data: [{ id: 'gpt-4o' }] }),
-      })));
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(async () => ({
+          ok: true,
+          text: async () => JSON.stringify({ data: [{ id: 'gpt-4o' }] }),
+        }))
+      );
 
       const res = await app.request('/prov/providers/openai/discover-models', { method: 'POST' });
 
@@ -492,12 +540,17 @@ describe('Provider Routes', () => {
       mockModelConfigsRepo.getProvider.mockResolvedValueOnce(null);
       mockModelConfigsRepo.listModels.mockResolvedValueOnce([]);
 
-      vi.stubGlobal('fetch', vi.fn(async () => ({
-        ok: true,
-        text: async () => JSON.stringify({ data: [{ id: 'meta-llama/llama-3.1' }] }),
-      })));
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(async () => ({
+          ok: true,
+          text: async () => JSON.stringify({ data: [{ id: 'meta-llama/llama-3.1' }] }),
+        }))
+      );
 
-      const res = await app.request('/prov/providers/openrouter/discover-models', { method: 'POST' });
+      const res = await app.request('/prov/providers/openrouter/discover-models', {
+        method: 'POST',
+      });
 
       expect(res.status).toBe(200);
       const json = await res.json();
@@ -509,7 +562,9 @@ describe('Provider Routes', () => {
     it('returns 400 when no base URL can be resolved', async () => {
       mockModelConfigsRepo.getProvider.mockResolvedValueOnce(null);
 
-      const res = await app.request('/prov/providers/unknown-provider/discover-models', { method: 'POST' });
+      const res = await app.request('/prov/providers/unknown-provider/discover-models', {
+        method: 'POST',
+      });
 
       expect(res.status).toBe(400);
       const json = await res.json();
@@ -525,12 +580,17 @@ describe('Provider Routes', () => {
         isEnabled: true,
       });
 
-      vi.stubGlobal('fetch', vi.fn(async () => ({
-        ok: false,
-        status: 500,
-      })));
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(async () => ({
+          ok: false,
+          status: 500,
+        }))
+      );
 
-      const res = await app.request('/prov/providers/bad-provider/discover-models', { method: 'POST' });
+      const res = await app.request('/prov/providers/bad-provider/discover-models', {
+        method: 'POST',
+      });
 
       expect(res.status).toBe(502);
       const json = await res.json();
@@ -548,10 +608,13 @@ describe('Provider Routes', () => {
       });
       mockModelConfigsRepo.listModels.mockResolvedValueOnce([]);
 
-      vi.stubGlobal('fetch', vi.fn(async () => ({
-        ok: true,
-        text: async () => JSON.stringify([{ id: 'llama2' }, { id: 'codellama' }]),
-      })));
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(async () => ({
+          ok: true,
+          text: async () => JSON.stringify([{ id: 'llama2' }, { id: 'codellama' }]),
+        }))
+      );
 
       const res = await app.request('/prov/providers/ollama/discover-models', { method: 'POST' });
 
@@ -573,10 +636,14 @@ describe('Provider Routes', () => {
         { providerId: 'local', modelId: 'existing-model' },
       ]);
 
-      vi.stubGlobal('fetch', vi.fn(async () => ({
-        ok: true,
-        text: async () => JSON.stringify({ data: [{ id: 'existing-model' }, { id: 'new-model' }] }),
-      })));
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(async () => ({
+          ok: true,
+          text: async () =>
+            JSON.stringify({ data: [{ id: 'existing-model' }, { id: 'new-model' }] }),
+        }))
+      );
 
       const res = await app.request('/prov/providers/local/discover-models', { method: 'POST' });
 
@@ -596,10 +663,13 @@ describe('Provider Routes', () => {
         isEnabled: true,
       });
 
-      vi.stubGlobal('fetch', vi.fn(async () => ({
-        ok: true,
-        text: async () => '<html>Not JSON</html>',
-      })));
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(async () => ({
+          ok: true,
+          text: async () => '<html>Not JSON</html>',
+        }))
+      );
 
       const res = await app.request('/prov/providers/broken/discover-models', { method: 'POST' });
 
@@ -618,10 +688,13 @@ describe('Provider Routes', () => {
         isEnabled: true,
       });
 
-      vi.stubGlobal('fetch', vi.fn(async () => ({
-        ok: true,
-        text: async () => '',
-      })));
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(async () => ({
+          ok: true,
+          text: async () => '',
+        }))
+      );
 
       const res = await app.request('/prov/providers/empty/discover-models', { method: 'POST' });
 
@@ -638,12 +711,17 @@ describe('Provider Routes', () => {
         isEnabled: true,
       });
 
-      vi.stubGlobal('fetch', vi.fn(async () => ({
-        ok: true,
-        text: async () => JSON.stringify({ data: [] }),
-      })));
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(async () => ({
+          ok: true,
+          text: async () => JSON.stringify({ data: [] }),
+        }))
+      );
 
-      const res = await app.request('/prov/providers/no-models/discover-models', { method: 'POST' });
+      const res = await app.request('/prov/providers/no-models/discover-models', {
+        method: 'POST',
+      });
 
       expect(res.status).toBe(502);
 
@@ -659,10 +737,13 @@ describe('Provider Routes', () => {
       });
       mockModelConfigsRepo.listModels.mockResolvedValueOnce([]);
 
-      vi.stubGlobal('fetch', vi.fn(async () => ({
-        ok: true,
-        text: async () => JSON.stringify({ data: [{ id: 'valid-model' }, { object: 'model' }] }),
-      })));
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(async () => ({
+          ok: true,
+          text: async () => JSON.stringify({ data: [{ id: 'valid-model' }, { object: 'model' }] }),
+        }))
+      );
 
       const res = await app.request('/prov/providers/partial/discover-models', { method: 'POST' });
 
@@ -710,10 +791,13 @@ describe('Provider Routes', () => {
       mockModelConfigsRepo.listModels.mockResolvedValueOnce([]);
       mockModelConfigsRepo.upsertModel.mockRejectedValueOnce(new Error('DB save failed'));
 
-      vi.stubGlobal('fetch', vi.fn(async () => ({
-        ok: true,
-        text: async () => JSON.stringify({ data: [{ id: 'model-1' }] }),
-      })));
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(async () => ({
+          ok: true,
+          text: async () => JSON.stringify({ data: [{ id: 'model-1' }] }),
+        }))
+      );
 
       const res = await app.request('/prov/providers/local/discover-models', { method: 'POST' });
 
@@ -733,11 +817,14 @@ describe('Provider Routes', () => {
         isEnabled: true,
       });
 
-      vi.stubGlobal('fetch', vi.fn(async () => {
-        const err = new Error('The operation was aborted');
-        err.name = 'AbortError';
-        throw err;
-      }));
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(async () => {
+          const err = new Error('The operation was aborted');
+          err.name = 'AbortError';
+          throw err;
+        })
+      );
 
       const res = await app.request('/prov/providers/slow/discover-models', { method: 'POST' });
 
@@ -757,10 +844,13 @@ describe('Provider Routes', () => {
       });
       mockModelConfigsRepo.listModels.mockResolvedValueOnce([]);
 
-      vi.stubGlobal('fetch', vi.fn(async () => ({
-        ok: true,
-        text: async () => JSON.stringify({ data: [{ id: 'org/my-cool-model' }] }),
-      })));
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(async () => ({
+          ok: true,
+          text: async () => JSON.stringify({ data: [{ id: 'org/my-cool-model' }] }),
+        }))
+      );
 
       const res = await app.request('/prov/providers/org/discover-models', { method: 'POST' });
 

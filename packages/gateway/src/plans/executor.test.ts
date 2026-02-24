@@ -1063,10 +1063,7 @@ describe('PlanExecutor', () => {
       const step = makeStep({
         type: 'parallel',
         config: {
-          steps: [
-            { toolName: 'tool_ok' },
-            { toolName: 'tool_fail' },
-          ],
+          steps: [{ toolName: 'tool_ok' }, { toolName: 'tool_fail' }],
         },
         retryCount: 3,
         maxRetries: 3,
@@ -1074,9 +1071,7 @@ describe('PlanExecutor', () => {
 
       mockPlanService.getPlan.mockResolvedValue(plan);
       mockPlanService.getSteps.mockResolvedValue([step]);
-      (hasTool as ReturnType<typeof vi.fn>)
-        .mockResolvedValueOnce(true)
-        .mockResolvedValueOnce(true);
+      (hasTool as ReturnType<typeof vi.fn>).mockResolvedValueOnce(true).mockResolvedValueOnce(true);
       (executeTool as ReturnType<typeof vi.fn>)
         .mockResolvedValueOnce({ success: true, result: 'ok' })
         .mockResolvedValueOnce({ success: false, error: 'Parallel fail' });

@@ -49,10 +49,9 @@ describe('getWorkspacePath', () => {
   it('creates workspace directory if it does not exist', () => {
     mockExistsSync.mockReturnValue(false);
     const result = getWorkspacePath();
-    expect(mockMkdirSync).toHaveBeenCalledWith(
-      path.join(process.cwd(), 'workspace'),
-      { recursive: true }
-    );
+    expect(mockMkdirSync).toHaveBeenCalledWith(path.join(process.cwd(), 'workspace'), {
+      recursive: true,
+    });
     expect(result).toBe(path.join(process.cwd(), 'workspace'));
   });
 

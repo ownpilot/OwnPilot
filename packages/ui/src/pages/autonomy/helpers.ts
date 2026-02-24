@@ -62,7 +62,10 @@ export const DIRECTIVE_TEMPLATES: Record<string, Omit<PulseDirectives, 'template
   },
 };
 
-export const THRESHOLD_LABELS: Record<string, { label: string; unit: string; min: number; max: number }> = {
+export const THRESHOLD_LABELS: Record<
+  string,
+  { label: string; unit: string; min: number; max: number }
+> = {
   staleDays: { label: 'Stale', unit: 'days', min: 1, max: 30 },
   deadlineDays: { label: 'Deadline', unit: 'days', min: 1, max: 30 },
   activityDays: { label: 'Activity', unit: 'days', min: 1, max: 30 },

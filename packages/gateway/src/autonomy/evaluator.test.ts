@@ -5,7 +5,12 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { evaluatePulseContext, calculateNextInterval, RULE_DEFINITIONS, DEFAULT_RULE_THRESHOLDS } from './evaluator.js';
+import {
+  evaluatePulseContext,
+  calculateNextInterval,
+  RULE_DEFINITIONS,
+  DEFAULT_RULE_THRESHOLDS,
+} from './evaluator.js';
 import type { RuleThresholds } from './evaluator.js';
 import type { PulseContext } from './context.js';
 
@@ -168,9 +173,7 @@ describe('evaluatePulseContext', () => {
   it('accumulates urgency score from multiple signals', () => {
     const ctx = makeContext({
       goals: {
-        active: [
-          { id: 'g1', title: 'Goal', progress: 5, updatedAt: new Date(), dueDate: null },
-        ],
+        active: [{ id: 'g1', title: 'Goal', progress: 5, updatedAt: new Date(), dueDate: null }],
         stale: [{ id: 'g2', title: 'Stale Goal', daysSinceUpdate: 5 }],
         upcoming: [{ id: 'g3', title: 'Urgent Goal', daysUntilDue: 1 }],
       },
@@ -188,9 +191,7 @@ describe('evaluatePulseContext', () => {
     // Create a context that would generate a very high raw score
     const ctx = makeContext({
       goals: {
-        active: [
-          { id: 'g1', title: 'G1', progress: 0, updatedAt: new Date(), dueDate: null },
-        ],
+        active: [{ id: 'g1', title: 'G1', progress: 0, updatedAt: new Date(), dueDate: null }],
         stale: [{ id: 'g2', title: 'G2', daysSinceUpdate: 10 }],
         upcoming: [{ id: 'g3', title: 'G3', daysUntilDue: 1 }],
       },
@@ -349,9 +350,7 @@ describe('evaluatePulseContext with custom thresholds', () => {
   it('respects custom lowProgressPct threshold', () => {
     const ctx = makeContext({
       goals: {
-        active: [
-          { id: 'g1', title: 'Goal', progress: 15, updatedAt: new Date(), dueDate: null },
-        ],
+        active: [{ id: 'g1', title: 'Goal', progress: 15, updatedAt: new Date(), dueDate: null }],
         stale: [],
         upcoming: [],
       },

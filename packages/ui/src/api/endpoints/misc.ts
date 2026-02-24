@@ -80,15 +80,17 @@ export const pulseApi = {
   stop: () => apiClient.post<{ running: boolean; message: string }>('/autonomy/pulse/stop'),
   run: () => apiClient.post<PulseLogEntry>('/autonomy/pulse/run'),
   updateSettings: (settings: Partial<PulseEngineConfig>) =>
-    apiClient.patch<{ config: PulseEngineConfig; message: string }>('/autonomy/pulse/settings', settings),
+    apiClient.patch<{ config: PulseEngineConfig; message: string }>(
+      '/autonomy/pulse/settings',
+      settings
+    ),
   history: (params?: { limit?: number; offset?: number }) => {
     const p: Record<string, string> = {};
     if (params?.limit != null) p.limit = String(params.limit);
     if (params?.offset != null) p.offset = String(params.offset);
-    return apiClient.get<{ history: PulseLogEntry[]; total: number }>(
-      '/autonomy/pulse/history',
-      { params: Object.keys(p).length ? p : undefined }
-    );
+    return apiClient.get<{ history: PulseLogEntry[]; total: number }>('/autonomy/pulse/history', {
+      params: Object.keys(p).length ? p : undefined,
+    });
   },
   stats: () => apiClient.get<PulseStats>('/autonomy/pulse/stats'),
   getDirectives: () =>

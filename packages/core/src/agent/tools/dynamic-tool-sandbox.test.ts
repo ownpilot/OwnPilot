@@ -265,9 +265,7 @@ describe('createSandboxUtils', () => {
   describe('uuid', () => {
     it('returns a valid UUID string', () => {
       const result = utils.uuid();
-      expect(result).toMatch(
-        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-      );
+      expect(result).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);
     });
   });
 

@@ -113,9 +113,7 @@ describe('createCrudRoutes', () => {
       async (_userId: string, id: string, body: Record<string, unknown>) =>
         id === 'w1' ? { id: 'w1', ...body } : null
     );
-    mockService.delete.mockImplementation(
-      async (_userId: string, id: string) => id === 'w1'
-    );
+    mockService.delete.mockImplementation(async (_userId: string, id: string) => id === 'w1');
     // Custom methods
     mockService.findAll.mockResolvedValue([{ id: 'c1' }]);
     mockService.findById.mockImplementation(async (_u: string, id: string) =>

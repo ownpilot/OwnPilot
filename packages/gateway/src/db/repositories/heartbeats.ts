@@ -191,7 +191,7 @@ export class HeartbeatsRepository extends CrudRepository<
 
     await this.execute(
       `UPDATE heartbeats SET ${updates.join(', ')} WHERE id = $${paramIndex++} AND user_id = $${paramIndex}`,
-      values,
+      values
     );
 
     return this.get(id);
@@ -202,7 +202,7 @@ export class HeartbeatsRepository extends CrudRepository<
   async getByTriggerId(triggerId: string): Promise<Heartbeat | null> {
     const row = await this.queryOne<HeartbeatRow>(
       'SELECT * FROM heartbeats WHERE trigger_id = $1 AND user_id = $2',
-      [triggerId, this.userId],
+      [triggerId, this.userId]
     );
     return row ? this.mapRow(row) : null;
   }

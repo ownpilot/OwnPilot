@@ -9,13 +9,7 @@ import { Hono } from 'hono';
 import { getChannelService, getDefaultPluginRegistry } from '@ownpilot/core';
 import { ChannelMessagesRepository } from '../db/repositories/channel-messages.js';
 import { configServicesRepo } from '../db/repositories/config-services.js';
-import {
-  apiResponse,
-  apiError,
-  ERROR_CODES,
-  notFoundError,
-  getErrorMessage,
-} from './helpers.js';
+import { apiResponse, apiError, ERROR_CODES, notFoundError, getErrorMessage } from './helpers.js';
 import { pagination } from '../middleware/pagination.js';
 import { refreshChannelApi } from '../plugins/init.js';
 import { wsGateway } from '../ws/server.js';
@@ -58,52 +52,56 @@ function getChannelBotInfo(api: unknown): { username?: string; firstName?: strin
 /**
  * GET /channels/messages/inbox - Get all messages from all channels (DB-backed)
  */
-channelRoutes.get('/messages/inbox', pagination({ defaultLimit: 100, maxLimit: 500 }), async (c) => {
-  const channelId = c.req.query('channelId');
-  const { limit, offset } = c.get('pagination')!;
+channelRoutes.get(
+  '/messages/inbox',
+  pagination({ defaultLimit: 100, maxLimit: 500 }),
+  async (c) => {
+    const channelId = c.req.query('channelId');
+    const { limit, offset } = c.get('pagination')!;
 
-  try {
-    const messagesRepo = new ChannelMessagesRepository();
-    const [dbMessages, total] = await Promise.all([
-      messagesRepo.getAll({ channelId: channelId ?? undefined, limit, offset }),
-      messagesRepo.count(channelId ?? undefined),
-    ]);
+    try {
+      const messagesRepo = new ChannelMessagesRepository();
+      const [dbMessages, total] = await Promise.all([
+        messagesRepo.getAll({ channelId: channelId ?? undefined, limit, offset }),
+        messagesRepo.count(channelId ?? undefined),
+      ]);
 
-    const messages = dbMessages.map((m) => ({
-      id: m.id,
-      channelId: m.channelId,
-      channelType: (m.channelId?.split('.')[1] ?? 'telegram') as string,
-      sender: {
-        id: m.senderId ?? (m.direction === 'outbound' ? 'assistant' : 'unknown'),
-        name: m.senderName ?? (m.direction === 'outbound' ? 'Assistant' : 'Unknown'),
-      },
-      content: m.content,
-      timestamp: m.createdAt.toISOString(),
-      read: m.direction === 'outbound' || readMessageIds.has(m.id),
-      replied: false,
-      direction: m.direction === 'inbound' ? ('incoming' as const) : ('outgoing' as const),
-      replyTo: m.replyToId,
-      metadata: m.metadata,
-    }));
+      const messages = dbMessages.map((m) => ({
+        id: m.id,
+        channelId: m.channelId,
+        channelType: (m.channelId?.split('.')[1] ?? 'telegram') as string,
+        sender: {
+          id: m.senderId ?? (m.direction === 'outbound' ? 'assistant' : 'unknown'),
+          name: m.senderName ?? (m.direction === 'outbound' ? 'Assistant' : 'Unknown'),
+        },
+        content: m.content,
+        timestamp: m.createdAt.toISOString(),
+        read: m.direction === 'outbound' || readMessageIds.has(m.id),
+        replied: false,
+        direction: m.direction === 'inbound' ? ('incoming' as const) : ('outgoing' as const),
+        replyTo: m.replyToId,
+        metadata: m.metadata,
+      }));
 
-    const unreadCount = messages.filter((m) => !m.read).length;
+      const unreadCount = messages.filter((m) => !m.read).length;
 
-    return apiResponse(c, {
-      messages,
-      total,
-      unreadCount,
-    });
-  } catch (error) {
-    return apiError(
-      c,
-      {
-        code: ERROR_CODES.FETCH_FAILED,
-        message: getErrorMessage(error, 'Failed to fetch inbox'),
-      },
-      500
-    );
+      return apiResponse(c, {
+        messages,
+        total,
+        unreadCount,
+      });
+    } catch (error) {
+      return apiError(
+        c,
+        {
+          code: ERROR_CODES.FETCH_FAILED,
+          message: getErrorMessage(error, 'Failed to fetch inbox'),
+        },
+        500
+      );
+    }
   }
-});
+);
 
 /**
  * POST /channels/messages/:messageId/read - Mark message as read

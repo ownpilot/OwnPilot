@@ -66,7 +66,7 @@ export function buildUpdateStatement(
   fields: UpdateField[],
   where: UpdateField[],
   startIndex = 1,
-  rawClauses: RawSetClause[] = [],
+  rawClauses: RawSetClause[] = []
 ): UpdateStatement | null {
   const setClauses: string[] = [];
   const params: unknown[] = [];

@@ -259,7 +259,9 @@ describe('Server CLI Command', () => {
 
         // Mock setTimeout to capture the unref call
         const mockUnref = vi.fn();
-        const setTimeoutSpy = vi.spyOn(global, 'setTimeout').mockReturnValue({ unref: mockUnref } as unknown as ReturnType<typeof setTimeout>);
+        const setTimeoutSpy = vi
+          .spyOn(global, 'setTimeout')
+          .mockReturnValue({ unref: mockUnref } as unknown as ReturnType<typeof setTimeout>);
 
         shutdownFn();
 
@@ -281,7 +283,9 @@ describe('Server CLI Command', () => {
         const shutdownFn = sigintCall![1] as () => void;
 
         const mockUnref = vi.fn();
-        const setTimeoutSpy = vi.spyOn(global, 'setTimeout').mockReturnValue({ unref: mockUnref } as unknown as ReturnType<typeof setTimeout>);
+        const setTimeoutSpy = vi
+          .spyOn(global, 'setTimeout')
+          .mockReturnValue({ unref: mockUnref } as unknown as ReturnType<typeof setTimeout>);
 
         shutdownFn();
         shutdownFn(); // second call should be a no-op
@@ -304,7 +308,9 @@ describe('Server CLI Command', () => {
         const shutdownFn = sigtermCall![1] as () => void;
 
         const mockUnref = vi.fn();
-        const setTimeoutSpy = vi.spyOn(global, 'setTimeout').mockReturnValue({ unref: mockUnref } as unknown as ReturnType<typeof setTimeout>);
+        const setTimeoutSpy = vi
+          .spyOn(global, 'setTimeout')
+          .mockReturnValue({ unref: mockUnref } as unknown as ReturnType<typeof setTimeout>);
 
         shutdownFn();
 
@@ -324,10 +330,12 @@ describe('Server CLI Command', () => {
 
         let capturedCallback: (() => void) | undefined;
         const mockUnref = vi.fn();
-        const setTimeoutSpy = vi.spyOn(global, 'setTimeout').mockImplementation((cb: () => void, _ms?: number) => {
-          capturedCallback = cb;
-          return { unref: mockUnref } as unknown as ReturnType<typeof setTimeout>;
-        });
+        const setTimeoutSpy = vi
+          .spyOn(global, 'setTimeout')
+          .mockImplementation((cb: () => void, _ms?: number) => {
+            capturedCallback = cb;
+            return { unref: mockUnref } as unknown as ReturnType<typeof setTimeout>;
+          });
 
         shutdownFn();
 

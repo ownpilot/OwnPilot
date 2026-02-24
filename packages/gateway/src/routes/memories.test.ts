@@ -759,7 +759,11 @@ describe('Memories Routes', () => {
 // ============================================================================
 
 describe('executeMemoryTool', () => {
-  let executeMemoryTool: (toolName: string, args: Record<string, unknown>, userId: string) => Promise<{ success: boolean; result?: unknown; error?: string }>;
+  let executeMemoryTool: (
+    toolName: string,
+    args: Record<string, unknown>,
+    userId: string
+  ) => Promise<{ success: boolean; result?: unknown; error?: string }>;
 
   beforeAll(async () => {
     const mod = await import('./memories.js');
@@ -793,12 +797,16 @@ describe('executeMemoryTool', () => {
         deduplicated: false,
       });
 
-      const result = await executeMemoryTool('create_memory', {
-        content: 'User likes TypeScript',
-        type: 'fact',
-        importance: 0.7,
-        tags: ['tech'],
-      }, 'u1');
+      const result = await executeMemoryTool(
+        'create_memory',
+        {
+          content: 'User likes TypeScript',
+          type: 'fact',
+          importance: 0.7,
+          tags: ['tech'],
+        },
+        'u1'
+      );
 
       expect(result.success).toBe(true);
       expect(result.result.message).toContain('Remembered');
@@ -811,10 +819,14 @@ describe('executeMemoryTool', () => {
         deduplicated: true,
       });
 
-      const result = await executeMemoryTool('create_memory', {
-        content: 'Similar content',
-        type: 'fact',
-      }, 'u1');
+      const result = await executeMemoryTool(
+        'create_memory',
+        {
+          content: 'Similar content',
+          type: 'fact',
+        },
+        'u1'
+      );
 
       expect(result.success).toBe(true);
       expect(result.result.deduplicated).toBe(true);
@@ -827,10 +839,14 @@ describe('executeMemoryTool', () => {
         deduplicated: false,
       });
 
-      await executeMemoryTool('create_memory', {
-        content: 'Some fact',
-        type: 'fact',
-      }, 'u1');
+      await executeMemoryTool(
+        'create_memory',
+        {
+          content: 'Some fact',
+          type: 'fact',
+        },
+        'u1'
+      );
 
       expect(mockMemoryService.rememberMemory).toHaveBeenCalledWith('u1', {
         content: 'Some fact',
@@ -862,13 +878,17 @@ describe('executeMemoryTool', () => {
         ],
       });
 
-      const result = await executeMemoryTool('batch_create_memories', {
-        memories: [
-          { content: 'Fact 1', type: 'fact' },
-          { content: 'Pref 1', type: 'preference', importance: 0.7 },
-          { content: 'Fact 2', type: 'fact', importance: 0.8 },
-        ],
-      }, 'u1');
+      const result = await executeMemoryTool(
+        'batch_create_memories',
+        {
+          memories: [
+            { content: 'Fact 1', type: 'fact' },
+            { content: 'Pref 1', type: 'preference', importance: 0.7 },
+            { content: 'Fact 2', type: 'fact', importance: 0.8 },
+          ],
+        },
+        'u1'
+      );
 
       expect(result.success).toBe(true);
       expect(result.result.created).toBe(2);
@@ -890,9 +910,13 @@ describe('executeMemoryTool', () => {
     it('returns empty results message', async () => {
       mockMemoryService.hybridSearch.mockResolvedValue([]);
 
-      const result = await executeMemoryTool('search_memories', {
-        query: 'nonexistent',
-      }, 'u1');
+      const result = await executeMemoryTool(
+        'search_memories',
+        {
+          query: 'nonexistent',
+        },
+        'u1'
+      );
 
       expect(result.success).toBe(true);
       expect(result.result.message).toContain('No memories found');
@@ -913,9 +937,13 @@ describe('executeMemoryTool', () => {
         },
       ]);
 
-      const result = await executeMemoryTool('search_memories', {
-        query: 'TypeScript',
-      }, 'u1');
+      const result = await executeMemoryTool(
+        'search_memories',
+        {
+          query: 'TypeScript',
+        },
+        'u1'
+      );
 
       expect(result.success).toBe(true);
       expect(result.result.memories).toHaveLength(1);
@@ -928,10 +956,14 @@ describe('executeMemoryTool', () => {
         { id: 'm2', content: 'B', tags: ['personal'], importance: 0.7 },
       ]);
 
-      const result = await executeMemoryTool('search_memories', {
-        query: 'test',
-        tags: ['tech'],
-      }, 'u1');
+      const result = await executeMemoryTool(
+        'search_memories',
+        {
+          query: 'test',
+          tags: ['tech'],
+        },
+        'u1'
+      );
 
       expect(result.success).toBe(true);
       expect(result.result.memories).toHaveLength(1);
@@ -941,10 +973,14 @@ describe('executeMemoryTool', () => {
     it('clamps limit to [1, 100]', async () => {
       mockMemoryService.hybridSearch.mockResolvedValue([]);
 
-      await executeMemoryTool('search_memories', {
-        query: 'test',
-        limit: 999,
-      }, 'u1');
+      await executeMemoryTool(
+        'search_memories',
+        {
+          query: 'test',
+          limit: 999,
+        },
+        'u1'
+      );
 
       expect(mockMemoryService.hybridSearch).toHaveBeenCalledWith('u1', 'test', {
         type: undefined,
@@ -991,7 +1027,14 @@ describe('executeMemoryTool', () => {
   describe('list_memories', () => {
     it('lists memories with defaults', async () => {
       mockMemoryService.listMemories.mockResolvedValue([
-        { id: 'm1', type: 'fact', content: 'Test', importance: 0.5, tags: [], createdAt: '2026-01-01' },
+        {
+          id: 'm1',
+          type: 'fact',
+          content: 'Test',
+          importance: 0.5,
+          tags: [],
+          createdAt: '2026-01-01',
+        },
       ]);
       mockMemoryService.countMemories.mockResolvedValue(1);
 
@@ -1007,11 +1050,15 @@ describe('executeMemoryTool', () => {
       mockMemoryService.listMemories.mockResolvedValue([]);
       mockMemoryService.countMemories.mockResolvedValue(0);
 
-      const result = await executeMemoryTool('list_memories', {
-        type: 'preference',
-        limit: 5,
-        minImportance: 0.3,
-      }, 'u1');
+      const result = await executeMemoryTool(
+        'list_memories',
+        {
+          type: 'preference',
+          limit: 5,
+          minImportance: 0.3,
+        },
+        'u1'
+      );
 
       expect(mockMemoryService.listMemories).toHaveBeenCalledWith('u1', {
         type: 'preference',
@@ -1036,10 +1083,14 @@ describe('executeMemoryTool', () => {
     it('returns error when memory not found', async () => {
       mockMemoryService.boostMemory.mockResolvedValue(null);
 
-      const result = await executeMemoryTool('update_memory_importance', {
-        memoryId: 'm999',
-        amount: 0.2,
-      }, 'u1');
+      const result = await executeMemoryTool(
+        'update_memory_importance',
+        {
+          memoryId: 'm999',
+          amount: 0.2,
+        },
+        'u1'
+      );
 
       expect(result.success).toBe(false);
       expect(result.error).toContain('Memory not found');
@@ -1052,10 +1103,14 @@ describe('executeMemoryTool', () => {
         importance: 0.85,
       });
 
-      const result = await executeMemoryTool('update_memory_importance', {
-        memoryId: 'm1',
-        amount: 0.15,
-      }, 'u1');
+      const result = await executeMemoryTool(
+        'update_memory_importance',
+        {
+          memoryId: 'm1',
+          amount: 0.15,
+        },
+        'u1'
+      );
 
       expect(result.success).toBe(true);
       expect(result.result.message).toContain('0.85');
@@ -1069,9 +1124,13 @@ describe('executeMemoryTool', () => {
         importance: 0.6,
       });
 
-      await executeMemoryTool('update_memory_importance', {
-        memoryId: 'm1',
-      }, 'u1');
+      await executeMemoryTool(
+        'update_memory_importance',
+        {
+          memoryId: 'm1',
+        },
+        'u1'
+      );
 
       expect(mockMemoryService.boostMemory).toHaveBeenCalledWith('u1', 'm1', 0.1);
     });
@@ -1128,10 +1187,14 @@ describe('executeMemoryTool', () => {
         new MemoryServiceError('Duplicate memory', 'VALIDATION_ERROR')
       );
 
-      const result = await executeMemoryTool('create_memory', {
-        content: 'Test',
-        type: 'fact',
-      }, 'u1');
+      const result = await executeMemoryTool(
+        'create_memory',
+        {
+          content: 'Test',
+          type: 'fact',
+        },
+        'u1'
+      );
 
       expect(result.success).toBe(false);
       expect(result.error).toBe('Duplicate memory');
@@ -1140,10 +1203,14 @@ describe('executeMemoryTool', () => {
     it('catches generic errors and returns error message', async () => {
       mockMemoryService.rememberMemory.mockRejectedValue(new Error('DB connection failed'));
 
-      const result = await executeMemoryTool('create_memory', {
-        content: 'Test',
-        type: 'fact',
-      }, 'u1');
+      const result = await executeMemoryTool(
+        'create_memory',
+        {
+          content: 'Test',
+          type: 'fact',
+        },
+        'u1'
+      );
 
       expect(result.success).toBe(false);
       expect(result.error).toContain('DB connection failed');

@@ -9,7 +9,9 @@ const exec = (name: string, args: Record<string, unknown> = {}) =>
   TIME_EXECUTORS[name]!(args, {} as never);
 
 describe('get_current_time', () => {
-  afterEach(() => { vi.useRealTimers(); });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
 
   it('returns current time for default UTC timezone', async () => {
     const result = await exec('get_current_time', {});
@@ -33,7 +35,9 @@ describe('get_current_time', () => {
 });
 
 describe('format_date', () => {
-  afterEach(() => { vi.useRealTimers(); });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
 
   it('handles now', async () => {
     const result = await exec('format_date', { date: 'now', format: 'iso' });
@@ -124,11 +128,19 @@ describe('format_date', () => {
     expect(result.content).toMatch(/^\d{4}-\d{2}-\d{2}T/);
   });
   it('applies timezone to short format', async () => {
-    const result = await exec('format_date', { date: '2026-01-15T23:00:00Z', format: 'short', timezone: 'America/New_York' });
+    const result = await exec('format_date', {
+      date: '2026-01-15T23:00:00Z',
+      format: 'short',
+      timezone: 'America/New_York',
+    });
     expect(result.content).toMatch(/\d+\/\d+\/\d+/);
   });
   it('applies timezone to long format', async () => {
-    const result = await exec('format_date', { date: '2026-01-15T23:00:00Z', format: 'long', timezone: 'Asia/Tokyo' });
+    const result = await exec('format_date', {
+      date: '2026-01-15T23:00:00Z',
+      format: 'long',
+      timezone: 'Asia/Tokyo',
+    });
     expect(result.content).toContain('2026');
   });
   it('returns error for invalid date string', async () => {
@@ -143,33 +155,62 @@ describe('format_date', () => {
 });
 
 describe('date_diff', () => {
-  afterEach(() => { vi.useRealTimers(); });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
   it('calculates difference in days (default unit)', async () => {
-    const result = await exec('date_diff', { date1: '2026-01-10T00:00:00Z', date2: '2026-01-15T00:00:00Z' });
+    const result = await exec('date_diff', {
+      date1: '2026-01-10T00:00:00Z',
+      date2: '2026-01-15T00:00:00Z',
+    });
     expect(result.content).toBe('5.00 days');
   });
   it('calculates difference in seconds', async () => {
-    const result = await exec('date_diff', { date1: '2026-01-15T00:00:00Z', date2: '2026-01-15T00:01:00Z', unit: 'seconds' });
+    const result = await exec('date_diff', {
+      date1: '2026-01-15T00:00:00Z',
+      date2: '2026-01-15T00:01:00Z',
+      unit: 'seconds',
+    });
     expect(result.content).toBe('60.00 seconds');
   });
   it('calculates difference in minutes', async () => {
-    const result = await exec('date_diff', { date1: '2026-01-15T00:00:00Z', date2: '2026-01-15T02:00:00Z', unit: 'minutes' });
+    const result = await exec('date_diff', {
+      date1: '2026-01-15T00:00:00Z',
+      date2: '2026-01-15T02:00:00Z',
+      unit: 'minutes',
+    });
     expect(result.content).toBe('120.00 minutes');
   });
   it('calculates difference in hours', async () => {
-    const result = await exec('date_diff', { date1: '2026-01-15T00:00:00Z', date2: '2026-01-15T12:00:00Z', unit: 'hours' });
+    const result = await exec('date_diff', {
+      date1: '2026-01-15T00:00:00Z',
+      date2: '2026-01-15T12:00:00Z',
+      unit: 'hours',
+    });
     expect(result.content).toBe('12.00 hours');
   });
   it('calculates difference in weeks', async () => {
-    const result = await exec('date_diff', { date1: '2026-01-01T00:00:00Z', date2: '2026-01-15T00:00:00Z', unit: 'weeks' });
+    const result = await exec('date_diff', {
+      date1: '2026-01-01T00:00:00Z',
+      date2: '2026-01-15T00:00:00Z',
+      unit: 'weeks',
+    });
     expect(result.content).toBe('2.00 weeks');
   });
   it('calculates difference in months', async () => {
-    const result = await exec('date_diff', { date1: '2026-01-01T00:00:00Z', date2: '2026-03-02T10:33:36Z', unit: 'months' });
+    const result = await exec('date_diff', {
+      date1: '2026-01-01T00:00:00Z',
+      date2: '2026-03-02T10:33:36Z',
+      unit: 'months',
+    });
     expect(result.content).toMatch(/months$/);
   });
   it('calculates difference in years', async () => {
-    const result = await exec('date_diff', { date1: '2025-01-01T00:00:00Z', date2: '2026-01-01T00:00:00Z', unit: 'years' });
+    const result = await exec('date_diff', {
+      date1: '2025-01-01T00:00:00Z',
+      date2: '2026-01-01T00:00:00Z',
+      unit: 'years',
+    });
     expect(result.content).toMatch(/years$/);
   });
   it('defaults date2 to now when not provided', async () => {
@@ -179,7 +220,11 @@ describe('date_diff', () => {
     expect(result.content).toBe('5.00 days');
   });
   it('returns negative values when date1 is after date2', async () => {
-    const result = await exec('date_diff', { date1: '2026-01-20T00:00:00Z', date2: '2026-01-15T00:00:00Z', unit: 'days' });
+    const result = await exec('date_diff', {
+      date1: '2026-01-20T00:00:00Z',
+      date2: '2026-01-15T00:00:00Z',
+      unit: 'days',
+    });
     expect(result.content).toBe('-5.00 days');
   });
   it('returns error for invalid date1', async () => {
@@ -193,52 +238,98 @@ describe('date_diff', () => {
     expect(result.isError).toBe(true);
   });
   it('returns error for unknown unit', async () => {
-    const result = await exec('date_diff', { date1: '2026-01-01T00:00:00Z', date2: '2026-01-15T00:00:00Z', unit: 'fortnights' });
+    const result = await exec('date_diff', {
+      date1: '2026-01-01T00:00:00Z',
+      date2: '2026-01-15T00:00:00Z',
+      unit: 'fortnights',
+    });
     expect(result.content).toBe('Error: Unknown unit: fortnights');
     expect(result.isError).toBe(true);
   });
 });
 
 describe('add_to_date', () => {
-  afterEach(() => { vi.useRealTimers(); });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
   it('adds seconds', async () => {
-    const result = await exec('add_to_date', { date: '2026-01-15T00:00:00.000Z', amount: 30, unit: 'seconds' });
+    const result = await exec('add_to_date', {
+      date: '2026-01-15T00:00:00.000Z',
+      amount: 30,
+      unit: 'seconds',
+    });
     expect(result.content).toBe('2026-01-15T00:00:30.000Z');
   });
   it('adds minutes', async () => {
-    const result = await exec('add_to_date', { date: '2026-01-15T00:00:00.000Z', amount: 45, unit: 'minutes' });
+    const result = await exec('add_to_date', {
+      date: '2026-01-15T00:00:00.000Z',
+      amount: 45,
+      unit: 'minutes',
+    });
     expect(result.content).toBe('2026-01-15T00:45:00.000Z');
   });
   it('adds hours', async () => {
-    const result = await exec('add_to_date', { date: '2026-01-15T00:00:00.000Z', amount: 5, unit: 'hours' });
+    const result = await exec('add_to_date', {
+      date: '2026-01-15T00:00:00.000Z',
+      amount: 5,
+      unit: 'hours',
+    });
     expect(result.content).toBe('2026-01-15T05:00:00.000Z');
   });
   it('adds days', async () => {
-    const result = await exec('add_to_date', { date: '2026-01-15T00:00:00.000Z', amount: 10, unit: 'days' });
+    const result = await exec('add_to_date', {
+      date: '2026-01-15T00:00:00.000Z',
+      amount: 10,
+      unit: 'days',
+    });
     expect(result.content).toBe('2026-01-25T00:00:00.000Z');
   });
   it('adds weeks', async () => {
-    const result = await exec('add_to_date', { date: '2026-01-15T00:00:00.000Z', amount: 2, unit: 'weeks' });
+    const result = await exec('add_to_date', {
+      date: '2026-01-15T00:00:00.000Z',
+      amount: 2,
+      unit: 'weeks',
+    });
     expect(result.content).toBe('2026-01-29T00:00:00.000Z');
   });
   it('adds months', async () => {
-    const result = await exec('add_to_date', { date: '2026-01-15T00:00:00.000Z', amount: 3, unit: 'months' });
+    const result = await exec('add_to_date', {
+      date: '2026-01-15T00:00:00.000Z',
+      amount: 3,
+      unit: 'months',
+    });
     expect(result.content).toContain('2026-04');
   });
   it('adds years', async () => {
-    const result = await exec('add_to_date', { date: '2026-01-15T00:00:00.000Z', amount: 2, unit: 'years' });
+    const result = await exec('add_to_date', {
+      date: '2026-01-15T00:00:00.000Z',
+      amount: 2,
+      unit: 'years',
+    });
     expect(result.content).toBe('2028-01-15T00:00:00.000Z');
   });
   it('subtracts days', async () => {
-    const result = await exec('add_to_date', { date: '2026-01-15T00:00:00.000Z', amount: -5, unit: 'days' });
+    const result = await exec('add_to_date', {
+      date: '2026-01-15T00:00:00.000Z',
+      amount: -5,
+      unit: 'days',
+    });
     expect(result.content).toBe('2026-01-10T00:00:00.000Z');
   });
   it('subtracts months', async () => {
-    const result = await exec('add_to_date', { date: '2026-06-15T00:00:00.000Z', amount: -3, unit: 'months' });
+    const result = await exec('add_to_date', {
+      date: '2026-06-15T00:00:00.000Z',
+      amount: -3,
+      unit: 'months',
+    });
     expect(result.content).toContain('2026-03-15');
   });
   it('subtracts years', async () => {
-    const result = await exec('add_to_date', { date: '2026-01-15T00:00:00.000Z', amount: -1, unit: 'years' });
+    const result = await exec('add_to_date', {
+      date: '2026-01-15T00:00:00.000Z',
+      amount: -1,
+      unit: 'years',
+    });
     expect(result.content).toBe('2025-01-15T00:00:00.000Z');
   });
   it('defaults date to now when not provided', async () => {
@@ -253,7 +344,11 @@ describe('add_to_date', () => {
     expect(result.isError).toBe(true);
   });
   it('returns error for unknown unit', async () => {
-    const result = await exec('add_to_date', { date: '2026-01-15T00:00:00Z', amount: 5, unit: 'centuries' });
+    const result = await exec('add_to_date', {
+      date: '2026-01-15T00:00:00Z',
+      amount: 5,
+      unit: 'centuries',
+    });
     expect(result.content).toBe('Error: Unknown unit: centuries');
     expect(result.isError).toBe(true);
   });

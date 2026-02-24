@@ -94,7 +94,13 @@ const mockRepo = {
   recordUsage: vi.fn(async () => undefined),
   getActiveTools: vi.fn(async () => [
     sampleTool,
-    { ...sampleTool, id: 'ct_005', name: 'another_tool', category: null, metadata: { workflowUsable: true } },
+    {
+      ...sampleTool,
+      id: 'ct_005',
+      name: 'another_tool',
+      category: null,
+      metadata: { workflowUsable: true },
+    },
   ]),
 };
 
@@ -114,8 +120,10 @@ vi.mock('@ownpilot/core', async (importOriginal) => {
     createDynamicToolRegistry: vi.fn(() => mockDynamicRegistry),
     ALL_TOOLS: [],
     validateToolCode: (code: string) => {
-      if (code.includes('process.exit')) return { valid: false, errors: ['forbidden pattern: process access'] };
-      if (code.includes('require(')) return { valid: false, errors: ['forbidden pattern: require()'] };
+      if (code.includes('process.exit'))
+        return { valid: false, errors: ['forbidden pattern: process access'] };
+      if (code.includes('require('))
+        return { valid: false, errors: ['forbidden pattern: require()'] };
       if (code.length > 50_000) return { valid: false, errors: ['Code exceeds maximum size'] };
       return { valid: true, errors: [] };
     },
@@ -677,7 +685,8 @@ describe('Custom Tools Generation Routes', () => {
 
       it('registers config requirements when required_api_keys provided', async () => {
         mockRepo.getByName.mockResolvedValueOnce(null);
-        const { registerToolConfigRequirements } = await import('../../services/api-service-registrar.js');
+        const { registerToolConfigRequirements } =
+          await import('../../services/api-service-registrar.js');
 
         await executeCustomToolTool('create_tool', {
           name: 'api_tool',

@@ -1,9 +1,4 @@
-import {
-  AlertTriangle,
-  CheckCircle2,
-  XCircle,
-  Clock,
-} from '../../components/icons';
+import { AlertTriangle, CheckCircle2, XCircle, Clock } from '../../components/icons';
 import { riskColors } from './helpers';
 import type { PendingApproval } from '../../api';
 

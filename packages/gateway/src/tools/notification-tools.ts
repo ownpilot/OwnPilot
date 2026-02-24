@@ -38,7 +38,8 @@ const sendUserNotificationDef: ToolDefinition = {
       urgency: {
         type: 'string',
         enum: ['low', 'medium', 'high'],
-        description: 'Urgency level (default: low). High = important alert, medium = worth seeing soon, low = casual/informational',
+        description:
+          'Urgency level (default: low). High = important alert, medium = worth seeing soon, low = casual/informational',
       },
     },
     required: ['message'],
@@ -62,9 +63,7 @@ export async function sendTelegramMessage(userId: string, text: string): Promise
     const registry = getServiceRegistry();
     const channelService = registry.get(Services.Channel);
 
-    const { createChannelUsersRepository } = await import(
-      '../db/repositories/channel-users.js'
-    );
+    const { createChannelUsersRepository } = await import('../db/repositories/channel-users.js');
     const channelUsersRepo = createChannelUsersRepository();
     const channelUsers = await channelUsersRepo.findByOwnpilotUser(userId);
     const telegramUser = channelUsers.find((cu) => cu.platform === 'telegram');
@@ -74,9 +73,8 @@ export async function sendTelegramMessage(userId: string, text: string): Promise
       return false;
     }
 
-    const { createChannelSessionsRepository } = await import(
-      '../db/repositories/channel-sessions.js'
-    );
+    const { createChannelSessionsRepository } =
+      await import('../db/repositories/channel-sessions.js');
     const sessionsRepo = createChannelSessionsRepository();
     const sessions = await sessionsRepo.listByUser(telegramUser.id);
     const activeSession = sessions.find((s) => s.isActive);
@@ -120,7 +118,12 @@ export async function executeNotificationTool(
         const deliveries: string[] = [];
 
         // 1. Send via Telegram
-        const emoji = urgency === 'high' ? '\u26a0\ufe0f' : urgency === 'medium' ? '\u2139\ufe0f' : '\ud83d\udcac';
+        const emoji =
+          urgency === 'high'
+            ? '\u26a0\ufe0f'
+            : urgency === 'medium'
+              ? '\u2139\ufe0f'
+              : '\ud83d\udcac';
         const telegramText = `${emoji} ${message}`;
         const telegramSent = await sendTelegramMessage(userId, telegramText);
         if (telegramSent) deliveries.push('telegram');
@@ -144,9 +147,10 @@ export async function executeNotificationTool(
           success: true,
           result: {
             delivered: deliveries,
-            message: deliveries.length > 0
-              ? `Notification sent via ${deliveries.join(', ')}`
-              : 'No delivery channels available',
+            message:
+              deliveries.length > 0
+                ? `Notification sent via ${deliveries.join(', ')}`
+                : 'No delivery channels available',
           },
         };
       } catch (error) {

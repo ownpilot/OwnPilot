@@ -366,10 +366,7 @@ describe('Bot CLI Command', () => {
           username: 'user',
         });
 
-        expect(errorSpy).toHaveBeenCalledWith(
-          'Failed to send error message:',
-          'Telegram API down'
-        );
+        expect(errorSpy).toHaveBeenCalledWith('Failed to send error message:', 'Telegram API down');
       });
 
       it('handles non-Error thrown when sending error message', async () => {
@@ -407,10 +404,7 @@ describe('Bot CLI Command', () => {
           username: 'user',
         });
 
-        expect(errorSpy).toHaveBeenCalledWith(
-          'Failed to process message:',
-          'Unexpected crash'
-        );
+        expect(errorSpy).toHaveBeenCalledWith('Failed to process message:', 'Unexpected crash');
       });
 
       it('catches top-level non-Error thrown in message processing', async () => {
@@ -427,10 +421,7 @@ describe('Bot CLI Command', () => {
           username: 'user',
         });
 
-        expect(errorSpy).toHaveBeenCalledWith(
-          'Failed to process message:',
-          'raw string throw'
-        );
+        expect(errorSpy).toHaveBeenCalledWith('Failed to process message:', 'raw string throw');
       });
     });
 

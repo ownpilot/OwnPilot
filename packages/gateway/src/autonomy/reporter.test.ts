@@ -112,9 +112,7 @@ describe('reportPulseResult', () => {
       reportMessage: '',
       signalsFound: 1,
       urgencyScore: 10,
-      actionsExecuted: [
-        { type: 'create_memory', success: true, output: {} },
-      ],
+      actionsExecuted: [{ type: 'create_memory', success: true, output: {} }],
     });
 
     await reportPulseResult(result, mockBroadcaster);
@@ -135,35 +133,25 @@ describe('reportPulseResult', () => {
   it('does not broadcast notification when reportMessage is empty and all actions are skipped', async () => {
     const result = makeResult({
       reportMessage: '',
-      actionsExecuted: [
-        { type: 'create_memory', success: true, skipped: true, output: {} },
-      ],
+      actionsExecuted: [{ type: 'create_memory', success: true, skipped: true, output: {} }],
     });
 
     await reportPulseResult(result, mockBroadcaster);
 
     // No system:notification call — only data:changed might be emitted (but
     // skipped actions are excluded from that too).
-    expect(mockBroadcaster).not.toHaveBeenCalledWith(
-      'system:notification',
-      expect.anything()
-    );
+    expect(mockBroadcaster).not.toHaveBeenCalledWith('system:notification', expect.anything());
   });
 
   it('does not broadcast notification when reportMessage is empty and all actions failed', async () => {
     const result = makeResult({
       reportMessage: '',
-      actionsExecuted: [
-        { type: 'create_memory', success: false, output: {}, error: 'fail' },
-      ],
+      actionsExecuted: [{ type: 'create_memory', success: false, output: {}, error: 'fail' }],
     });
 
     await reportPulseResult(result, mockBroadcaster);
 
-    expect(mockBroadcaster).not.toHaveBeenCalledWith(
-      'system:notification',
-      expect.anything()
-    );
+    expect(mockBroadcaster).not.toHaveBeenCalledWith('system:notification', expect.anything());
   });
 
   it('does not broadcast notification when reportMessage is empty and no actions exist', async () => {
@@ -184,9 +172,7 @@ describe('reportPulseResult', () => {
   it('emits data:changed for memories on create_memory action', async () => {
     const result = makeResult({
       reportMessage: 'done',
-      actionsExecuted: [
-        { type: 'create_memory', success: true, output: {} },
-      ],
+      actionsExecuted: [{ type: 'create_memory', success: true, output: {} }],
     });
 
     await reportPulseResult(result, mockBroadcaster);
@@ -197,9 +183,7 @@ describe('reportPulseResult', () => {
   it('emits data:changed for memories on run_memory_cleanup action', async () => {
     const result = makeResult({
       reportMessage: 'done',
-      actionsExecuted: [
-        { type: 'run_memory_cleanup', success: true, output: {} },
-      ],
+      actionsExecuted: [{ type: 'run_memory_cleanup', success: true, output: {} }],
     });
 
     await reportPulseResult(result, mockBroadcaster);
@@ -210,9 +194,7 @@ describe('reportPulseResult', () => {
   it('emits data:changed for goals on update_goal_progress action', async () => {
     const result = makeResult({
       reportMessage: 'done',
-      actionsExecuted: [
-        { type: 'update_goal_progress', success: true, output: {} },
-      ],
+      actionsExecuted: [{ type: 'update_goal_progress', success: true, output: {} }],
     });
 
     await reportPulseResult(result, mockBroadcaster);
@@ -223,9 +205,7 @@ describe('reportPulseResult', () => {
   it('emits data:changed for notifications on send_user_notification action', async () => {
     const result = makeResult({
       reportMessage: 'done',
-      actionsExecuted: [
-        { type: 'send_user_notification', success: true, output: {} },
-      ],
+      actionsExecuted: [{ type: 'send_user_notification', success: true, output: {} }],
     });
 
     await reportPulseResult(result, mockBroadcaster);
@@ -278,9 +258,7 @@ describe('reportPulseResult', () => {
   it('does not emit data:changed for skipped actions', async () => {
     const result = makeResult({
       reportMessage: 'done',
-      actionsExecuted: [
-        { type: 'create_memory', success: true, skipped: true, output: {} },
-      ],
+      actionsExecuted: [{ type: 'create_memory', success: true, skipped: true, output: {} }],
     });
 
     await reportPulseResult(result, mockBroadcaster);
@@ -304,9 +282,7 @@ describe('reportPulseResult', () => {
   it('does not emit data:changed for unrecognized action types', async () => {
     const result = makeResult({
       reportMessage: 'done',
-      actionsExecuted: [
-        { type: 'some_unknown_action', success: true, output: {} },
-      ],
+      actionsExecuted: [{ type: 'some_unknown_action', success: true, output: {} }],
     });
 
     await reportPulseResult(result, mockBroadcaster);

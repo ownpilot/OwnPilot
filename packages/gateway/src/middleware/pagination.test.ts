@@ -148,14 +148,10 @@ describe('Pagination Middleware', () => {
   describe('middleware chaining', () => {
     it('calls next() and allows handler to run', async () => {
       const app = new Hono();
-      app.get(
-        '/items',
-        pagination(),
-        (c) => {
-          const { limit, offset } = c.get('pagination') as PaginationParams;
-          return c.json({ items: [], limit, offset, custom: 'data' });
-        }
-      );
+      app.get('/items', pagination(), (c) => {
+        const { limit, offset } = c.get('pagination') as PaginationParams;
+        return c.json({ items: [], limit, offset, custom: 'data' });
+      });
 
       const res = await app.request('/items?limit=5&offset=2');
       const json = await res.json();

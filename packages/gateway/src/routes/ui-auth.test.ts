@@ -26,11 +26,7 @@ vi.mock('./helpers.js', async (importOriginal) => {
   return { ...original };
 });
 
-import {
-  isPasswordConfigured,
-  getPasswordHash,
-  validateSession,
-} from '../services/ui-session.js';
+import { isPasswordConfigured, getPasswordHash, validateSession } from '../services/ui-session.js';
 
 const mockIsPasswordConfigured = vi.mocked(isPasswordConfigured);
 const mockGetPasswordHash = vi.mocked(getPasswordHash);

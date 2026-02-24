@@ -18,7 +18,12 @@ import type {
   AutonomyLogEntry,
 } from '@ownpilot/core';
 import { gatherPulseContext, type PulseContext } from './context.js';
-import { evaluatePulseContext, calculateNextInterval, DEFAULT_RULE_THRESHOLDS, type RuleThresholds } from './evaluator.js';
+import {
+  evaluatePulseContext,
+  calculateNextInterval,
+  DEFAULT_RULE_THRESHOLDS,
+  type RuleThresholds,
+} from './evaluator.js';
 import type { Signal } from './evaluator.js';
 import { DEFAULT_ACTION_COOLDOWNS, type ActionCooldowns } from './executor.js';
 import { getPulseSystemPrompt, buildPulseUserMessage } from './prompt.js';
@@ -163,7 +168,11 @@ export class AutonomyEngine implements IPulseService {
 
       // 2. Evaluate signals (skip disabled rules, apply thresholds)
       this.setStage('evaluating');
-      const evaluation = evaluatePulseContext(ctx, directives.disabledRules, directives.ruleThresholds);
+      const evaluation = evaluatePulseContext(
+        ctx,
+        directives.disabledRules,
+        directives.ruleThresholds
+      );
 
       // Compute cooldown status for the agent prompt
       const lastActionTimes = this.getLastActionTimes();
@@ -174,7 +183,10 @@ export class AutonomyEngine implements IPulseService {
         if (lastTime) {
           const elapsed = (Date.now() - new Date(lastTime).getTime()) / 60_000;
           if (elapsed < cooldownMin) {
-            cooledDownActions.push({ type: actionType, remainingMinutes: Math.ceil(cooldownMin - elapsed) });
+            cooledDownActions.push({
+              type: actionType,
+              remainingMinutes: Math.ceil(cooldownMin - elapsed),
+            });
           }
         }
       }
@@ -332,7 +344,8 @@ export class AutonomyEngine implements IPulseService {
     if (settings.minIntervalMs !== undefined) this.config.minIntervalMs = settings.minIntervalMs;
     if (settings.maxIntervalMs !== undefined) this.config.maxIntervalMs = settings.maxIntervalMs;
     if (settings.maxActions !== undefined) this.config.maxActions = settings.maxActions;
-    if (settings.quietHoursStart !== undefined) this.config.quietHoursStart = settings.quietHoursStart;
+    if (settings.quietHoursStart !== undefined)
+      this.config.quietHoursStart = settings.quietHoursStart;
     if (settings.quietHoursEnd !== undefined) this.config.quietHoursEnd = settings.quietHoursEnd;
 
     if (!settings.enabled && this.running) {

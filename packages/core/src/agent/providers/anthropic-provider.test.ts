@@ -338,9 +338,7 @@ describe('AnthropicProvider', () => {
     it('uses default maxTokens 4096 when not provided', async () => {
       mockFetch.mockImplementation(mockFetchOk(makeAnthropicResponse()));
 
-      await provider.complete(
-        makeRequest({ model: { model: 'claude-3-5-sonnet-20241022' } })
-      );
+      await provider.complete(makeRequest({ model: { model: 'claude-3-5-sonnet-20241022' } }));
 
       const body = JSON.parse(mockFetch.mock.calls[0][1].body);
       expect(body.max_tokens).toBe(4096);
@@ -440,9 +438,7 @@ describe('AnthropicProvider', () => {
       ];
       mockFetch.mockImplementation(mockFetchOk(makeAnthropicResponse()));
 
-      await provider.complete(
-        makeRequest({ tools, toolChoice: { name: 'core.read_file' } })
-      );
+      await provider.complete(makeRequest({ tools, toolChoice: { name: 'core.read_file' } }));
 
       const body = JSON.parse(mockFetch.mock.calls[0][1].body);
       expect(body.tool_choice).toEqual({ type: 'tool', name: 'core__read_file' });
@@ -484,16 +480,12 @@ describe('AnthropicProvider', () => {
             {
               role: 'assistant',
               content: 'I will use the tool',
-              toolCalls: [
-                { id: 'call_1', name: 'core.read_file', arguments: '{"path":"/tmp"}' },
-              ],
+              toolCalls: [{ id: 'call_1', name: 'core.read_file', arguments: '{"path":"/tmp"}' }],
             },
             {
               role: 'tool',
               content: '',
-              toolResults: [
-                { toolCallId: 'call_1', content: 'file content here' },
-              ],
+              toolResults: [{ toolCallId: 'call_1', content: 'file content here' }],
             },
           ],
         })
@@ -502,7 +494,8 @@ describe('AnthropicProvider', () => {
       const body = JSON.parse(mockFetch.mock.calls[0][1].body);
       // Tool results should be user role with tool_result type
       const toolResultMsg = body.messages.find(
-        (m: any) => m.role === 'user' && Array.isArray(m.content) && m.content[0]?.type === 'tool_result'
+        (m: any) =>
+          m.role === 'user' && Array.isArray(m.content) && m.content[0]?.type === 'tool_result'
       );
       expect(toolResultMsg).toBeDefined();
       expect(toolResultMsg.content[0].tool_use_id).toBe('call_1');
@@ -518,9 +511,7 @@ describe('AnthropicProvider', () => {
             {
               role: 'assistant',
               content: 'Let me check',
-              toolCalls: [
-                { id: 'tc_1', name: 'core.search', arguments: '{"q":"test"}' },
-              ],
+              toolCalls: [{ id: 'tc_1', name: 'core.search', arguments: '{"q":"test"}' }],
             },
           ],
         })
@@ -546,9 +537,7 @@ describe('AnthropicProvider', () => {
             {
               role: 'assistant',
               content: 'Using tool',
-              toolCalls: [
-                { id: 'tc_1', name: 'test', arguments: 'not valid json' },
-              ],
+              toolCalls: [{ id: 'tc_1', name: 'test', arguments: 'not valid json' }],
             },
           ],
         })
@@ -753,8 +742,7 @@ describe('AnthropicProvider', () => {
     it('picks the earliest dynamic marker as split point', async () => {
       mockFetch.mockImplementation(mockFetchOk(makeAnthropicResponse()));
 
-      const systemPrompt =
-        'Static\n\n## Current Context\nCtx\n\n## Code Execution\nExec';
+      const systemPrompt = 'Static\n\n## Current Context\nCtx\n\n## Code Execution\nExec';
 
       await provider.complete(
         makeRequest({
@@ -891,9 +879,7 @@ describe('AnthropicProvider', () => {
       }
 
       // message_delta chunk should have usage with input tokens from message_start
-      const deltaChunk = chunks.find(
-        (c) => c.ok && (c as any).value.usage?.promptTokens === 42
-      );
+      const deltaChunk = chunks.find((c) => c.ok && (c as any).value.usage?.promptTokens === 42);
       expect(deltaChunk).toBeDefined();
       if (deltaChunk && deltaChunk.ok) {
         expect(deltaChunk.value.usage!.completionTokens).toBe(7);

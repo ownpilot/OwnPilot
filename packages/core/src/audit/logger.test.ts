@@ -456,8 +456,10 @@ describe('AuditLogger', () => {
     it('logs to console when enabled', async () => {
       const logger = createAuditLogger({ path: logPath, console: true });
       const result = await logger.log({
-        type: 'system.start', actor: SYSTEM_ACTOR,
-        resource: { type: 'system', id: 'gateway' }, outcome: 'success',
+        type: 'system.start',
+        actor: SYSTEM_ACTOR,
+        resource: { type: 'system', id: 'gateway' },
+        outcome: 'success',
       });
       expect(result.ok).toBe(true);
     });
@@ -465,8 +467,10 @@ describe('AuditLogger', () => {
     it('logs to console with error details suffix', async () => {
       const logger = createAuditLogger({ path: logPath, console: true });
       const result = await logger.log({
-        type: 'system.error', actor: SYSTEM_ACTOR,
-        resource: { type: 'system', id: 'gateway' }, outcome: 'failure',
+        type: 'system.error',
+        actor: SYSTEM_ACTOR,
+        resource: { type: 'system', id: 'gateway' },
+        outcome: 'failure',
         details: { error: 'something went wrong' },
       });
       expect(result.ok).toBe(true);
@@ -475,13 +479,18 @@ describe('AuditLogger', () => {
     it('logs events with all severity levels to console', async () => {
       const logger = createAuditLogger({ path: logPath, console: true });
       const types = [
-        'message.receive', 'system.start', 'pii.detected',
-        'system.error', 'security.threat_detected',
+        'message.receive',
+        'system.start',
+        'pii.detected',
+        'system.error',
+        'security.threat_detected',
       ] as const;
       for (const type of types) {
         const result = await logger.log({
-          type, actor: SYSTEM_ACTOR,
-          resource: { type: 'system', id: 'gateway' }, outcome: 'success',
+          type,
+          actor: SYSTEM_ACTOR,
+          resource: { type: 'system', id: 'gateway' },
+          outcome: 'success',
         });
         expect(result.ok).toBe(true);
       }
@@ -491,8 +500,18 @@ describe('AuditLogger', () => {
   describe('query filters - extended', () => {
     it('filters by actorId', async () => {
       const logger = createAuditLogger({ path: logPath });
-      await logger.log({ type: 'auth.login', actor: { type: 'user', id: 'user-1' }, resource: { type: 'session', id: 'sess-1' }, outcome: 'success' });
-      await logger.log({ type: 'auth.login', actor: { type: 'user', id: 'user-2' }, resource: { type: 'session', id: 'sess-2' }, outcome: 'success' });
+      await logger.log({
+        type: 'auth.login',
+        actor: { type: 'user', id: 'user-1' },
+        resource: { type: 'session', id: 'sess-1' },
+        outcome: 'success',
+      });
+      await logger.log({
+        type: 'auth.login',
+        actor: { type: 'user', id: 'user-2' },
+        resource: { type: 'session', id: 'sess-2' },
+        outcome: 'success',
+      });
       const result = await logger.query({ actorId: 'user-1' });
       expect(result.ok).toBe(true);
       if (result.ok) {
@@ -503,8 +522,18 @@ describe('AuditLogger', () => {
 
     it('filters by actorType', async () => {
       const logger = createAuditLogger({ path: logPath });
-      await logger.log({ type: 'auth.login', actor: { type: 'user', id: 'user-1' }, resource: { type: 'session', id: 'sess-1' }, outcome: 'success' });
-      await logger.log({ type: 'system.start', actor: SYSTEM_ACTOR, resource: { type: 'system', id: 'gateway' }, outcome: 'success' });
+      await logger.log({
+        type: 'auth.login',
+        actor: { type: 'user', id: 'user-1' },
+        resource: { type: 'session', id: 'sess-1' },
+        outcome: 'success',
+      });
+      await logger.log({
+        type: 'system.start',
+        actor: SYSTEM_ACTOR,
+        resource: { type: 'system', id: 'gateway' },
+        outcome: 'success',
+      });
       const result = await logger.query({ actorType: 'user' });
       expect(result.ok).toBe(true);
       if (result.ok) {
@@ -515,8 +544,18 @@ describe('AuditLogger', () => {
 
     it('filters by resourceId', async () => {
       const logger = createAuditLogger({ path: logPath });
-      await logger.log({ type: 'tool.execute', actor: SYSTEM_ACTOR, resource: { type: 'tool', id: 'web_fetch' }, outcome: 'success' });
-      await logger.log({ type: 'tool.execute', actor: SYSTEM_ACTOR, resource: { type: 'tool', id: 'search' }, outcome: 'success' });
+      await logger.log({
+        type: 'tool.execute',
+        actor: SYSTEM_ACTOR,
+        resource: { type: 'tool', id: 'web_fetch' },
+        outcome: 'success',
+      });
+      await logger.log({
+        type: 'tool.execute',
+        actor: SYSTEM_ACTOR,
+        resource: { type: 'tool', id: 'search' },
+        outcome: 'success',
+      });
       const result = await logger.query({ resourceId: 'web_fetch' });
       expect(result.ok).toBe(true);
       if (result.ok) {
@@ -527,8 +566,18 @@ describe('AuditLogger', () => {
 
     it('filters by resourceType', async () => {
       const logger = createAuditLogger({ path: logPath });
-      await logger.log({ type: 'tool.execute', actor: SYSTEM_ACTOR, resource: { type: 'tool', id: 'web_fetch' }, outcome: 'success' });
-      await logger.log({ type: 'channel.connect', actor: SYSTEM_ACTOR, resource: { type: 'channel', id: 'telegram:123' }, outcome: 'success' });
+      await logger.log({
+        type: 'tool.execute',
+        actor: SYSTEM_ACTOR,
+        resource: { type: 'tool', id: 'web_fetch' },
+        outcome: 'success',
+      });
+      await logger.log({
+        type: 'channel.connect',
+        actor: SYSTEM_ACTOR,
+        resource: { type: 'channel', id: 'telegram:123' },
+        outcome: 'success',
+      });
       const result = await logger.query({ resourceType: 'tool' });
       expect(result.ok).toBe(true);
       if (result.ok) {
@@ -539,9 +588,27 @@ describe('AuditLogger', () => {
 
     it('filters by minSeverity in query', async () => {
       const logger = createAuditLogger({ path: logPath });
-      await logger.log({ type: 'message.receive', actor: SYSTEM_ACTOR, resource: { type: 'message', id: 'msg-1' }, outcome: 'success', severity: 'debug' });
-      await logger.log({ type: 'system.error', actor: SYSTEM_ACTOR, resource: { type: 'system', id: 'gw' }, outcome: 'failure', severity: 'error' });
-      await logger.log({ type: 'security.threat_detected', actor: SYSTEM_ACTOR, resource: { type: 'system', id: 'gw' }, outcome: 'failure', severity: 'critical' });
+      await logger.log({
+        type: 'message.receive',
+        actor: SYSTEM_ACTOR,
+        resource: { type: 'message', id: 'msg-1' },
+        outcome: 'success',
+        severity: 'debug',
+      });
+      await logger.log({
+        type: 'system.error',
+        actor: SYSTEM_ACTOR,
+        resource: { type: 'system', id: 'gw' },
+        outcome: 'failure',
+        severity: 'error',
+      });
+      await logger.log({
+        type: 'security.threat_detected',
+        actor: SYSTEM_ACTOR,
+        resource: { type: 'system', id: 'gw' },
+        outcome: 'failure',
+        severity: 'critical',
+      });
       const result = await logger.query({ minSeverity: 'error' });
       expect(result.ok).toBe(true);
       if (result.ok) {
@@ -552,26 +619,50 @@ describe('AuditLogger', () => {
 
     it('filters events outside to date range', async () => {
       const logger = createAuditLogger({ path: logPath });
-      await logger.log({ type: 'system.start', actor: SYSTEM_ACTOR, resource: { type: 'system', id: 'gw' }, outcome: 'success' });
+      await logger.log({
+        type: 'system.start',
+        actor: SYSTEM_ACTOR,
+        resource: { type: 'system', id: 'gw' },
+        outcome: 'success',
+      });
       const pastDate = new Date(Date.now() - 60 * 60 * 1000);
       const result = await logger.query({ to: pastDate });
       expect(result.ok).toBe(true);
-      if (result.ok) { expect(result.value).toHaveLength(0); }
+      if (result.ok) {
+        expect(result.value).toHaveLength(0);
+      }
     });
 
     it('filters events outside from date range', async () => {
       const logger = createAuditLogger({ path: logPath });
-      await logger.log({ type: 'system.start', actor: SYSTEM_ACTOR, resource: { type: 'system', id: 'gw' }, outcome: 'success' });
+      await logger.log({
+        type: 'system.start',
+        actor: SYSTEM_ACTOR,
+        resource: { type: 'system', id: 'gw' },
+        outcome: 'success',
+      });
       const futureDate = new Date(Date.now() + 60 * 60 * 1000);
       const result = await logger.query({ from: futureDate });
       expect(result.ok).toBe(true);
-      if (result.ok) { expect(result.value).toHaveLength(0); }
+      if (result.ok) {
+        expect(result.value).toHaveLength(0);
+      }
     });
 
     it('returns events in descending order by default', async () => {
       const logger = createAuditLogger({ path: logPath });
-      await logger.log({ type: 'system.start', actor: SYSTEM_ACTOR, resource: { type: 'system', id: 'first' }, outcome: 'success' });
-      await logger.log({ type: 'system.stop', actor: SYSTEM_ACTOR, resource: { type: 'system', id: 'second' }, outcome: 'success' });
+      await logger.log({
+        type: 'system.start',
+        actor: SYSTEM_ACTOR,
+        resource: { type: 'system', id: 'first' },
+        outcome: 'success',
+      });
+      await logger.log({
+        type: 'system.stop',
+        actor: SYSTEM_ACTOR,
+        resource: { type: 'system', id: 'second' },
+        outcome: 'success',
+      });
       const result = await logger.query();
       expect(result.ok).toBe(true);
       if (result.ok) {
@@ -594,8 +685,10 @@ describe('AuditLogger', () => {
     it('loads last checksum from existing file', async () => {
       const logger1 = createAuditLogger({ path: logPath });
       const result = await logger1.log({
-        type: 'system.start', actor: SYSTEM_ACTOR,
-        resource: { type: 'system', id: 'gateway' }, outcome: 'success',
+        type: 'system.start',
+        actor: SYSTEM_ACTOR,
+        resource: { type: 'system', id: 'gateway' },
+        outcome: 'success',
       });
       expect(result.ok).toBe(true);
       if (!result.ok) return;
@@ -657,8 +750,18 @@ describe('AuditLogger', () => {
 
     it('returns last event from valid file', async () => {
       const logger = createAuditLogger({ path: logPath });
-      await logger.log({ type: 'system.start', actor: SYSTEM_ACTOR, resource: { type: 'system', id: 'first' }, outcome: 'success' });
-      await logger.log({ type: 'system.stop', actor: SYSTEM_ACTOR, resource: { type: 'system', id: 'second' }, outcome: 'success' });
+      await logger.log({
+        type: 'system.start',
+        actor: SYSTEM_ACTOR,
+        resource: { type: 'system', id: 'first' },
+        outcome: 'success',
+      });
+      await logger.log({
+        type: 'system.stop',
+        actor: SYSTEM_ACTOR,
+        resource: { type: 'system', id: 'second' },
+        outcome: 'success',
+      });
       const lastEvent = await logger.getLastEvent();
       expect(lastEvent).not.toBeNull();
       expect(lastEvent!.resource.id).toBe('second');
@@ -674,7 +777,12 @@ describe('AuditLogger', () => {
     it('skips empty lines when counting', async () => {
       const { appendFile: af } = await import('node:fs/promises');
       const logger = createAuditLogger({ path: logPath });
-      await logger.log({ type: 'system.start', actor: SYSTEM_ACTOR, resource: { type: 'system', id: 'gw' }, outcome: 'success' });
+      await logger.log({
+        type: 'system.start',
+        actor: SYSTEM_ACTOR,
+        resource: { type: 'system', id: 'gw' },
+        outcome: 'success',
+      });
       await af(logPath, '\n\n', 'utf-8');
       expect(await logger.countEvents()).toBe(1);
     });
@@ -684,18 +792,25 @@ describe('AuditLogger', () => {
     it('uses explicit severity override', async () => {
       const logger = createAuditLogger({ path: logPath });
       const result = await logger.log({
-        type: 'message.receive', severity: 'critical',
-        actor: SYSTEM_ACTOR, resource: { type: 'message', id: 'msg-1' }, outcome: 'success',
+        type: 'message.receive',
+        severity: 'critical',
+        actor: SYSTEM_ACTOR,
+        resource: { type: 'message', id: 'msg-1' },
+        outcome: 'success',
       });
       expect(result.ok).toBe(true);
-      if (result.ok) { expect(result.value.severity).toBe('critical'); }
+      if (result.ok) {
+        expect(result.value.severity).toBe('critical');
+      }
     });
 
     it('returns fake event for below-threshold severity', async () => {
       const logger = createAuditLogger({ path: logPath, minSeverity: 'error' });
       const result = await logger.log({
-        type: 'message.receive', actor: SYSTEM_ACTOR,
-        resource: { type: 'message', id: 'msg-1' }, outcome: 'success',
+        type: 'message.receive',
+        actor: SYSTEM_ACTOR,
+        resource: { type: 'message', id: 'msg-1' },
+        outcome: 'success',
       });
       expect(result.ok).toBe(true);
       if (result.ok) {
@@ -707,9 +822,12 @@ describe('AuditLogger', () => {
     it('stores correlationId and parentId', async () => {
       const logger = createAuditLogger({ path: logPath });
       const result = await logger.log({
-        type: 'system.start', actor: SYSTEM_ACTOR,
-        resource: { type: 'system', id: 'gateway' }, outcome: 'success',
-        correlationId: 'corr-abc', parentId: 'parent-123' as any,
+        type: 'system.start',
+        actor: SYSTEM_ACTOR,
+        resource: { type: 'system', id: 'gateway' },
+        outcome: 'success',
+        correlationId: 'corr-abc',
+        parentId: 'parent-123' as any,
       });
       expect(result.ok).toBe(true);
       if (result.ok) {
@@ -721,11 +839,15 @@ describe('AuditLogger', () => {
     it('defaults details to empty object', async () => {
       const logger = createAuditLogger({ path: logPath });
       const result = await logger.log({
-        type: 'system.start', actor: SYSTEM_ACTOR,
-        resource: { type: 'system', id: 'gateway' }, outcome: 'success',
+        type: 'system.start',
+        actor: SYSTEM_ACTOR,
+        resource: { type: 'system', id: 'gateway' },
+        outcome: 'success',
       });
       expect(result.ok).toBe(true);
-      if (result.ok) { expect(result.value.details).toEqual({}); }
+      if (result.ok) {
+        expect(result.value.details).toEqual({});
+      }
     });
   });
 
@@ -735,5 +857,4 @@ describe('AuditLogger', () => {
       expect(logger).toBeInstanceOf(AuditLogger);
     });
   });
-
 });

@@ -281,9 +281,7 @@ describe('FILE_EXECUTORS.list_files', () => {
     mockStat
       .mockResolvedValueOnce({ isDirectory: () => true }) // dir check
       .mockResolvedValueOnce({ size: 512 }); // file size
-    mockReaddir.mockResolvedValue([
-      { name: 'small.txt', isDirectory: () => false },
-    ]);
+    mockReaddir.mockResolvedValue([{ name: 'small.txt', isDirectory: () => false }]);
 
     const result = await fn({ path: '' });
     expect(result.content).toContain('small.txt');
@@ -295,9 +293,7 @@ describe('FILE_EXECUTORS.list_files', () => {
     mockStat
       .mockResolvedValueOnce({ isDirectory: () => true }) // dir check
       .mockResolvedValueOnce({ size: 2048 }); // file size
-    mockReaddir.mockResolvedValue([
-      { name: 'medium.txt', isDirectory: () => false },
-    ]);
+    mockReaddir.mockResolvedValue([{ name: 'medium.txt', isDirectory: () => false }]);
 
     const result = await fn({ path: '' });
     expect(result.content).toContain('KB');
@@ -308,9 +304,7 @@ describe('FILE_EXECUTORS.list_files', () => {
     mockStat
       .mockResolvedValueOnce({ isDirectory: () => true }) // dir check
       .mockResolvedValueOnce({ size: 2 * 1024 * 1024 }); // file size
-    mockReaddir.mockResolvedValue([
-      { name: 'large.bin', isDirectory: () => false },
-    ]);
+    mockReaddir.mockResolvedValue([{ name: 'large.bin', isDirectory: () => false }]);
 
     const result = await fn({ path: '' });
     expect(result.content).toContain('MB');
@@ -319,9 +313,7 @@ describe('FILE_EXECUTORS.list_files', () => {
   it('lists directories with folder icon', async () => {
     mockExistsSync.mockReturnValue(true);
     mockStat.mockResolvedValueOnce({ isDirectory: () => true }); // dir check
-    mockReaddir.mockResolvedValue([
-      { name: 'subdir', isDirectory: () => true },
-    ]);
+    mockReaddir.mockResolvedValue([{ name: 'subdir', isDirectory: () => true }]);
 
     const result = await fn({ path: '' });
     expect(result.content).toContain('subdir/');
@@ -332,13 +324,9 @@ describe('FILE_EXECUTORS.list_files', () => {
     mockStat.mockResolvedValueOnce({ isDirectory: () => true }); // dir check
 
     // Root readdir returns a subdirectory
-    mockReaddir.mockResolvedValueOnce([
-      { name: 'subdir', isDirectory: () => true },
-    ]);
+    mockReaddir.mockResolvedValueOnce([{ name: 'subdir', isDirectory: () => true }]);
     // Recursive readdir for subdir returns a file
-    mockReaddir.mockResolvedValueOnce([
-      { name: 'nested.txt', isDirectory: () => false },
-    ]);
+    mockReaddir.mockResolvedValueOnce([{ name: 'nested.txt', isDirectory: () => false }]);
     mockStat.mockResolvedValueOnce({ size: 100 }); // nested file size
 
     const result = await fn({ path: '', recursive: true });
@@ -349,9 +337,7 @@ describe('FILE_EXECUTORS.list_files', () => {
   it('does not recurse when recursive flag is false', async () => {
     mockExistsSync.mockReturnValue(true);
     mockStat.mockResolvedValueOnce({ isDirectory: () => true });
-    mockReaddir.mockResolvedValueOnce([
-      { name: 'subdir', isDirectory: () => true },
-    ]);
+    mockReaddir.mockResolvedValueOnce([{ name: 'subdir', isDirectory: () => true }]);
 
     const result = await fn({ path: '', recursive: false });
     expect(result.content).toContain('subdir/');
@@ -382,15 +368,9 @@ describe('FILE_EXECUTORS.list_files', () => {
     mockExistsSync.mockReturnValue(true);
     mockStat.mockResolvedValueOnce({ isDirectory: () => true }); // dir check
 
-    mockReaddir.mockResolvedValueOnce([
-      { name: 'a', isDirectory: () => true },
-    ]);
-    mockReaddir.mockResolvedValueOnce([
-      { name: 'b', isDirectory: () => true },
-    ]);
-    mockReaddir.mockResolvedValueOnce([
-      { name: 'file.txt', isDirectory: () => false },
-    ]);
+    mockReaddir.mockResolvedValueOnce([{ name: 'a', isDirectory: () => true }]);
+    mockReaddir.mockResolvedValueOnce([{ name: 'b', isDirectory: () => true }]);
+    mockReaddir.mockResolvedValueOnce([{ name: 'file.txt', isDirectory: () => false }]);
     mockStat.mockResolvedValueOnce({ size: 50 });
 
     const result = await fn({ path: 'root', recursive: true });

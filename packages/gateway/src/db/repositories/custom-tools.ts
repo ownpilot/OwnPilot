@@ -327,7 +327,7 @@ export class CustomToolsRepository extends BaseRepository {
         { column: 'user_id', value: this.userId },
       ],
       1,
-      rawClauses,
+      rawClauses
     );
 
     if (!stmt) return existing;

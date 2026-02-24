@@ -1105,7 +1105,11 @@ describe('Config CLI Commands', () => {
     it('rejects the promise when readline emits an error event', async () => {
       // Override the mock to capture the 'error' and 'close' event handlers
       let errorHandler: ((err: Error) => void) | undefined;
-      mockRlOn.mockImplementation(function (this: unknown, event: string, handler: (...args: unknown[]) => void) {
+      mockRlOn.mockImplementation(function (
+        this: unknown,
+        event: string,
+        handler: (...args: unknown[]) => void
+      ) {
         if (event === 'error') {
           errorHandler = handler as (err: Error) => void;
         }
@@ -1127,7 +1131,11 @@ describe('Config CLI Commands', () => {
     it('resolves with empty string when readline emits close event before answering', async () => {
       // Override the mock to capture the 'close' event handler
       let closeHandler: (() => void) | undefined;
-      mockRlOn.mockImplementation(function (this: unknown, event: string, handler: (...args: unknown[]) => void) {
+      mockRlOn.mockImplementation(function (
+        this: unknown,
+        event: string,
+        handler: (...args: unknown[]) => void
+      ) {
         if (event === 'close') {
           closeHandler = handler as () => void;
         }
@@ -1151,7 +1159,11 @@ describe('Config CLI Commands', () => {
 
     it('does not reject twice when error fires after settled via question callback', async () => {
       let errorHandler: ((err: Error) => void) | undefined;
-      mockRlOn.mockImplementation(function (this: unknown, event: string, handler: (...args: unknown[]) => void) {
+      mockRlOn.mockImplementation(function (
+        this: unknown,
+        event: string,
+        handler: (...args: unknown[]) => void
+      ) {
         if (event === 'error') {
           errorHandler = handler as (err: Error) => void;
         }
@@ -1172,7 +1184,11 @@ describe('Config CLI Commands', () => {
 
     it('does not resolve twice when close fires after settled via question callback', async () => {
       let closeHandler: (() => void) | undefined;
-      mockRlOn.mockImplementation(function (this: unknown, event: string, handler: (...args: unknown[]) => void) {
+      mockRlOn.mockImplementation(function (
+        this: unknown,
+        event: string,
+        handler: (...args: unknown[]) => void
+      ) {
         if (event === 'close') {
           closeHandler = handler as () => void;
         }

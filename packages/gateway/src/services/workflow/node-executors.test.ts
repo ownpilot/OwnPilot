@@ -86,11 +86,7 @@ import { resolveTemplates } from './template-resolver.js';
 // Helpers
 // ---------------------------------------------------------------------------
 
-function makeNode(
-  id: string,
-  type: string,
-  data: Record<string, unknown> = {}
-): WorkflowNode {
+function makeNode(id: string, type: string, data: Record<string, unknown> = {}): WorkflowNode {
   return { id, type, position: { x: 0, y: 0 }, data: data as WorkflowNode['data'] };
 }
 
@@ -177,18 +173,14 @@ describe('resolveWorkflowToolName', () => {
 
   it('returns original name when no match found', () => {
     mockToolService.has.mockReturnValue(false);
-    mockToolService.getDefinitions.mockReturnValue([
-      { name: 'core.get_time' },
-    ]);
+    mockToolService.getDefinitions.mockReturnValue([{ name: 'core.get_time' }]);
     const result = resolveWorkflowToolName('nonexistent_tool', mockToolService);
     expect(result).toBe('nonexistent_tool');
   });
 
   it('normalized match is case-insensitive', () => {
     mockToolService.has.mockReturnValue(false);
-    mockToolService.getDefinitions.mockReturnValue([
-      { name: 'MCP.GitHub.ListRepos' },
-    ]);
+    mockToolService.getDefinitions.mockReturnValue([{ name: 'MCP.GitHub.ListRepos' }]);
     const result = resolveWorkflowToolName('MCPGitHubListRepos', mockToolService);
     expect(result).toBe('MCP.GitHub.ListRepos');
   });
@@ -256,11 +248,7 @@ describe('executeNode', () => {
 
     const result = await executeNode(node, nodeOutputs, {}, 'user1', mockToolService);
 
-    expect(resolveTemplates).toHaveBeenCalledWith(
-      { query: '{{prev.output}}' },
-      nodeOutputs,
-      {}
-    );
+    expect(resolveTemplates).toHaveBeenCalledWith({ query: '{{prev.output}}' }, nodeOutputs, {});
     expect(result.resolvedArgs).toEqual({ query: 'resolved-query' });
   });
 

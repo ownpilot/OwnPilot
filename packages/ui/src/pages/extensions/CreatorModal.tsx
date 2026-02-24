@@ -1,13 +1,5 @@
 import { useState } from 'react';
-import {
-  Sparkles,
-  Wrench,
-  X,
-  Plus,
-  Copy,
-  Code,
-  Check,
-} from '../../components/icons';
+import { Sparkles, Wrench, X, Plus, Copy, Code, Check } from '../../components/icons';
 import { useToast } from '../../components/ToastProvider';
 import { extensionsApi } from '../../api/endpoints/extensions';
 import type { ToolDraft } from './constants';

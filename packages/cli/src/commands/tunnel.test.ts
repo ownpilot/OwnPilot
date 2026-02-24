@@ -421,7 +421,9 @@ describe('tunnel commands', () => {
       tunnelStatus();
 
       expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('ngrok'));
-      expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('https://abc123.ngrok-free.app'));
+      expect(consoleSpy).toHaveBeenCalledWith(
+        expect.stringContaining('https://abc123.ngrok-free.app')
+      );
       expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('running'));
     });
   });
@@ -546,9 +548,7 @@ describe('tunnel commands', () => {
       await tunnelStartNgrok({});
 
       expect(exitSpy).toHaveBeenCalledWith(1);
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        expect.stringContaining('ngrok tunnel failed')
-      );
+      expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('ngrok tunnel failed'));
       expect(consoleErrorSpy).toHaveBeenCalledWith(
         expect.stringContaining('You may need to provide an ngrok auth token')
       );

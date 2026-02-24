@@ -174,9 +174,7 @@ describe('executePulseActions', () => {
   });
 
   it('handles unknown action type', async () => {
-    const actions: PulseAction[] = [
-      { type: 'unknown_action' as PulseAction['type'], params: {} },
-    ];
+    const actions: PulseAction[] = [{ type: 'unknown_action' as PulseAction['type'], params: {} }];
     const { results } = await executePulseActions(actions, 'user1');
 
     expect(results).toHaveLength(1);

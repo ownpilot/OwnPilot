@@ -2,10 +2,7 @@
  * Shared types and helper functions for model-configs sub-routes.
  */
 
-import {
-  modelConfigsRepo,
-  localProvidersRepo,
-} from '../../db/repositories/index.js';
+import { modelConfigsRepo, localProvidersRepo } from '../../db/repositories/index.js';
 import {
   getAllProviderConfigs,
   getProviderConfig,

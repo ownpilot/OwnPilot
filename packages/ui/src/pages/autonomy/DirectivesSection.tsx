@@ -40,9 +40,7 @@ export function DirectivesSection({
 
       {/* Template selector */}
       <div className="flex items-center gap-3 mb-4">
-        <label className="text-sm text-text-muted dark:text-dark-text-muted">
-          Template:
-        </label>
+        <label className="text-sm text-text-muted dark:text-dark-text-muted">Template:</label>
         <select
           value={pulseDirectives.template}
           onChange={(e) => onApplyTemplate(e.target.value)}
@@ -52,9 +50,7 @@ export function DirectivesSection({
           <option value="conservative">Conservative</option>
           <option value="proactive">Proactive</option>
           <option value="minimal">Minimal</option>
-          {pulseDirectives.template === 'custom' && (
-            <option value="custom">Custom</option>
-          )}
+          {pulseDirectives.template === 'custom' && <option value="custom">Custom</option>}
         </select>
       </div>
 
@@ -68,7 +64,9 @@ export function DirectivesSection({
             {ruleDefinitions.map((rule) => {
               const thresholdKey = rule.thresholdKey as keyof RuleThresholds | null;
               const thresholdInfo = thresholdKey ? THRESHOLD_LABELS[thresholdKey] : null;
-              const currentValue = thresholdKey ? pulseDirectives.ruleThresholds?.[thresholdKey] : null;
+              const currentValue = thresholdKey
+                ? pulseDirectives.ruleThresholds?.[thresholdKey]
+                : null;
               return (
                 <div
                   key={rule.id}
@@ -99,11 +97,15 @@ export function DirectivesSection({
                         step={thresholdKey === 'memoryMinImportance' ? 0.1 : 1}
                         value={currentValue}
                         onChange={(e) => {
-                          const val = thresholdKey === 'memoryMinImportance'
-                            ? parseFloat(e.target.value) || 0
-                            : parseInt(e.target.value) || 0;
+                          const val =
+                            thresholdKey === 'memoryMinImportance'
+                              ? parseFloat(e.target.value) || 0
+                              : parseInt(e.target.value) || 0;
                           onDirectivesUpdate({
-                            ruleThresholds: { ...pulseDirectives.ruleThresholds, [thresholdKey!]: val },
+                            ruleThresholds: {
+                              ...pulseDirectives.ruleThresholds,
+                              [thresholdKey!]: val,
+                            },
                             template: 'custom',
                           });
                         }}
@@ -155,7 +157,10 @@ export function DirectivesSection({
                         onChange={(e) => {
                           const val = Math.max(0, Math.min(1440, parseInt(e.target.value) || 0));
                           onDirectivesUpdate({
-                            actionCooldowns: { ...pulseDirectives.actionCooldowns, [cooldownKey]: val },
+                            actionCooldowns: {
+                              ...pulseDirectives.actionCooldowns,
+                              [cooldownKey]: val,
+                            },
                             template: 'custom',
                           });
                         }}

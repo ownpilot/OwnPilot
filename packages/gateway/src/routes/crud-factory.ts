@@ -170,9 +170,7 @@ function broadcastChange(
  *   PATCH /:id   - Update with optional Zod validation
  *   DELETE /:id  - Delete by ID
  */
-export function createCrudRoutes<TService = unknown>(
-  config: CrudRouteConfig<TService>
-): Hono {
+export function createCrudRoutes<TService = unknown>(config: CrudRouteConfig<TService>): Hono {
   const app = new Hono();
 
   const {
@@ -295,11 +293,7 @@ export function createCrudRoutes<TService = unknown>(
       if (schemas.create) {
         const validation = validateWithSchema(schemas.create, body);
         if (validation.error) {
-          return apiError(
-            c,
-            { code: ERROR_CODES.INVALID_INPUT, message: validation.error },
-            400
-          );
+          return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: validation.error }, 400);
         }
         validatedBody = validation.data;
       }
@@ -361,11 +355,7 @@ export function createCrudRoutes<TService = unknown>(
       if (schemas.update) {
         const validation = validateWithSchema(schemas.update, body);
         if (validation.error) {
-          return apiError(
-            c,
-            { code: ERROR_CODES.INVALID_INPUT, message: validation.error },
-            400
-          );
+          return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: validation.error }, 400);
         }
         validatedBody = validation.data;
       }

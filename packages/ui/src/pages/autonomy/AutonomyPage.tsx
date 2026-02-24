@@ -181,7 +181,14 @@ export function AutonomyPage() {
       unsubs.forEach((fn) => fn());
       if (pulseRefreshTimer.current) clearTimeout(pulseRefreshTimer.current);
     };
-  }, [subscribe, fetchPendingApprovals, fetchPulseStatus, fetchPulseStats, fetchPulseHistory, pulsePage]);
+  }, [
+    subscribe,
+    fetchPendingApprovals,
+    fetchPulseStatus,
+    fetchPulseStats,
+    fetchPulseHistory,
+    pulsePage,
+  ]);
 
   const handleLevelChange = useCallback(
     async (level: number) => {
@@ -311,7 +318,9 @@ export function AutonomyPage() {
     async (updates: Partial<PulseEngineConfig>) => {
       try {
         const { config: newConfig } = await pulseApi.updateSettings(updates);
-        setPulseStatus((prev) => (prev ? { ...prev, config: newConfig, enabled: newConfig.enabled } : prev));
+        setPulseStatus((prev) =>
+          prev ? { ...prev, config: newConfig, enabled: newConfig.enabled } : prev
+        );
         toast.success('Pulse settings updated');
       } catch {
         // API client handles error reporting
@@ -424,10 +433,7 @@ export function AutonomyPage() {
         )}
 
         {/* Pending Approvals */}
-        <ApprovalsSection
-          pendingApprovals={pendingApprovals}
-          onApproval={handleApproval}
-        />
+        <ApprovalsSection pendingApprovals={pendingApprovals} onApproval={handleApproval} />
 
         {/* Autonomy Level */}
         <section className="bg-bg-secondary dark:bg-dark-bg-secondary border border-border dark:border-dark-border rounded-xl p-6">

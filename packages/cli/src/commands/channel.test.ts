@@ -446,7 +446,9 @@ describe('Channel CLI Commands', () => {
       mockFetch.mockResolvedValue({
         ok: false,
         status: 500,
-        json: async () => { throw new Error('not json'); },
+        json: async () => {
+          throw new Error('not json');
+        },
       });
 
       const exitSpy = vi.spyOn(process, 'exit').mockImplementation((() => {
@@ -563,7 +565,12 @@ describe('Channel CLI Commands', () => {
         .mockResolvedValueOnce(
           apiOk(
             channelListData([
-              { id: 'channel.telegram', type: 'telegram', name: 'Telegram', status: 'disconnected' },
+              {
+                id: 'channel.telegram',
+                type: 'telegram',
+                name: 'Telegram',
+                status: 'disconnected',
+              },
             ])
           )
         )
@@ -596,7 +603,12 @@ describe('Channel CLI Commands', () => {
         .mockResolvedValueOnce(
           apiOk(
             channelListData([
-              { id: 'channel.telegram', type: 'telegram', name: 'Telegram', status: 'disconnected' },
+              {
+                id: 'channel.telegram',
+                type: 'telegram',
+                name: 'Telegram',
+                status: 'disconnected',
+              },
             ])
           )
         )
@@ -720,9 +732,9 @@ describe('Channel CLI Commands', () => {
     it('collects allowed_users when user confirms restricting to specific users', async () => {
       vi.mocked(select).mockResolvedValue('telegram');
       vi.mocked(input)
-        .mockResolvedValueOnce('123:ABC')          // bot_token
-        .mockResolvedValueOnce('12345,67890');      // allowed_users
-      vi.mocked(confirm).mockResolvedValue(true);   // restrictUsers = true
+        .mockResolvedValueOnce('123:ABC') // bot_token
+        .mockResolvedValueOnce('12345,67890'); // allowed_users
+      vi.mocked(confirm).mockResolvedValue(true); // restrictUsers = true
 
       mockFetch.mockResolvedValue(
         apiOk({

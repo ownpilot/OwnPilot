@@ -80,7 +80,12 @@ export function encryptContent(
 /**
  * Decrypt content
  */
-export function decryptContent(encrypted: string, iv: string, authTag: string, key: Buffer): string {
+export function decryptContent(
+  encrypted: string,
+  iv: string,
+  authTag: string,
+  key: Buffer
+): string {
   const decipher = createDecipheriv(ALGORITHM, key, Buffer.from(iv, 'base64'));
   decipher.setAuthTag(Buffer.from(authTag, 'base64'));
 

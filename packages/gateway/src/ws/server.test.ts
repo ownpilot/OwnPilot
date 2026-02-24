@@ -824,9 +824,7 @@ describe('WSGateway', () => {
       const _gw = new WSGateway();
 
       // clientHandler.handle is called once per event type in the constructor
-      const registeredTypes = mockClientHandler.handle.mock.calls.map(
-        (call: unknown[]) => call[0]
-      );
+      const registeredTypes = mockClientHandler.handle.mock.calls.map((call: unknown[]) => call[0]);
 
       expect(registeredTypes).toContain('chat:send');
       expect(registeredTypes).toContain('chat:stop');
@@ -851,10 +849,10 @@ describe('WSGateway', () => {
     /**
      * Helper to extract a registered handler function for a given event type
      */
-    function getRegisteredHandler(eventType: string): (data: unknown, sessionId?: string) => Promise<void> {
-      const call = mockClientHandler.handle.mock.calls.find(
-        (c: unknown[]) => c[0] === eventType
-      );
+    function getRegisteredHandler(
+      eventType: string
+    ): (data: unknown, sessionId?: string) => Promise<void> {
+      const call = mockClientHandler.handle.mock.calls.find((c: unknown[]) => c[0] === eventType);
       if (!call) throw new Error(`No handler registered for ${eventType}`);
       return call[1] as (data: unknown, sessionId?: string) => Promise<void>;
     }
@@ -999,7 +997,11 @@ describe('WSGateway', () => {
 
         await handler({ workspaceId: 'ws-1' }, 'session-1');
 
-        expect(mockSessionManager.setMetadata).toHaveBeenCalledWith('session-1', 'currentWorkspace', 'ws-1');
+        expect(mockSessionManager.setMetadata).toHaveBeenCalledWith(
+          'session-1',
+          'currentWorkspace',
+          'ws-1'
+        );
         expect(mockSessionManager.send).toHaveBeenCalledWith('session-1', 'system:notification', {
           type: 'success',
           message: 'Switched to workspace ws-1',
@@ -1042,7 +1044,11 @@ describe('WSGateway', () => {
 
         await handler(config, 'session-1');
 
-        expect(mockSessionManager.setMetadata).toHaveBeenCalledWith('session-1', 'agentConfig', config);
+        expect(mockSessionManager.setMetadata).toHaveBeenCalledWith(
+          'session-1',
+          'agentConfig',
+          config
+        );
         expect(mockSessionManager.send).toHaveBeenCalledWith('session-1', 'agent:state', {
           agentId: 'default',
           state: 'idle',
@@ -1117,9 +1123,7 @@ describe('WSGateway', () => {
       const mockHttpServer = { on: vi.fn(), removeListener: vi.fn() };
       gw.attachToServer(mockHttpServer as unknown as import('node:http').Server);
 
-      const upgradeCall = mockHttpServer.on.mock.calls.find(
-        (c: unknown[]) => c[0] === 'upgrade'
-      );
+      const upgradeCall = mockHttpServer.on.mock.calls.find((c: unknown[]) => c[0] === 'upgrade');
       const upgradeHandler = upgradeCall![1] as (...args: unknown[]) => void;
 
       return { gw, upgradeHandler, mockHttpServer };
@@ -1194,9 +1198,7 @@ describe('WSGateway', () => {
   // =========================================================================
   describe('handleMessage handler error', () => {
     it('sends HANDLER_ERROR when clientHandler.process rejects', async () => {
-      mockClientHandler.process.mockReturnValue(
-        Promise.reject(new Error('Handler boom'))
-      );
+      mockClientHandler.process.mockReturnValue(Promise.reject(new Error('Handler boom')));
 
       const gw = new WSGateway();
       gw.start();
@@ -1209,7 +1211,9 @@ describe('WSGateway', () => {
       const messageHandler = getSocketHandler(socket, 'message') as (data: RawData) => void;
       mockSessionManager.send.mockClear();
 
-      messageHandler(Buffer.from(JSON.stringify({ type: 'chat:send', payload: { content: 'hi' } })));
+      messageHandler(
+        Buffer.from(JSON.stringify({ type: 'chat:send', payload: { content: 'hi' } }))
+      );
 
       // The error is caught asynchronously, so we need to wait
       await vi.advanceTimersByTimeAsync(0);

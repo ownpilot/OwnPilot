@@ -268,7 +268,9 @@ vi.mock('../tracing/index.js', () => ({
   getTraceSummary: vi.fn(() => ({
     totalDuration: 100,
     toolCalls: [],
-    modelCalls: [{ provider: 'openai', model: 'gpt-4', tokens: { input: 10, output: 20 }, duration: 100 }],
+    modelCalls: [
+      { provider: 'openai', model: 'gpt-4', tokens: { input: 10, output: 20 }, duration: 100 },
+    ],
     autonomyChecks: [],
     dbOperations: [],
     memoryOps: [],
@@ -333,9 +335,7 @@ vi.mock('./chat-persistence.js', () => ({
 vi.mock('./chat-prompt.js', () => ({
   buildExecutionSystemPrompt: vi.fn(() => '\n\n## Code Execution\nCode execution is DISABLED.'),
   buildToolCatalog: vi.fn(async () => null),
-  generateDemoResponse: vi.fn(
-    (_msg: string, _p: string, _m: string) => 'This is a demo response.'
-  ),
+  generateDemoResponse: vi.fn((_msg: string, _p: string, _m: string) => 'This is a demo response.'),
   tryGetMessageBus: vi.fn(() => null),
 }));
 
@@ -1225,9 +1225,7 @@ describe('Chat Routes', () => {
     });
 
     it('should return 400 when getOrCreateChatAgent throws', async () => {
-      vi.mocked(getOrCreateChatAgent).mockRejectedValue(
-        new Error('Provider not configured')
-      );
+      vi.mocked(getOrCreateChatAgent).mockRejectedValue(new Error('Provider not configured'));
 
       const res = await app.request('/chat', {
         method: 'POST',
@@ -1405,9 +1403,7 @@ describe('Chat Routes', () => {
         value: {
           id: 'msg-1',
           content: 'Used a tool',
-          toolCalls: [
-            { id: 'tc-1', name: 'search', arguments: '{"q":"test"}' },
-          ],
+          toolCalls: [{ id: 'tc-1', name: 'search', arguments: '{"q":"test"}' }],
           usage: { promptTokens: 10, completionTokens: 20, totalTokens: 30 },
           finishReason: 'stop',
         },
@@ -1433,9 +1429,7 @@ describe('Chat Routes', () => {
         value: {
           id: 'msg-1',
           content: 'Used a tool',
-          toolCalls: [
-            { id: 'tc-1', name: 'search', arguments: 'not-json' },
-          ],
+          toolCalls: [{ id: 'tc-1', name: 'search', arguments: 'not-json' }],
           usage: { promptTokens: 10, completionTokens: 20, totalTokens: 30 },
           finishReason: 'stop',
         },

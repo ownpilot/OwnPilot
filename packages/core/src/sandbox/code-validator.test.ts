@@ -154,10 +154,7 @@ describe('validateToolCodeWithPermissions', () => {
   });
 
   it('still blocks require and exec with local only (no filesystem/shell)', () => {
-    const code = [
-      "const fs = require('fs');",
-      "exec('rm -rf /');",
-    ].join('\n');
+    const code = ["const fs = require('fs');", "exec('rm -rf /');"].join('\n');
     const result = validateToolCodeWithPermissions(code, ['local']);
     expect(result.valid).toBe(false);
     expect(result.errors).toContain('require() is not allowed');

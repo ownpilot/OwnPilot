@@ -21,12 +21,16 @@ import { workspaceExecutionRoutes } from './execution.js';
 
 function makeWorkspace(overrides: Record<string, unknown> = {}) {
   return {
-    id: 'ws-1', userId: 'user-1', name: 'Test', status: 'active',
+    id: 'ws-1',
+    userId: 'user-1',
+    name: 'Test',
+    status: 'active',
     storagePath: '/tmp/ws-1',
     containerConfig: { memoryMB: 512, cpuCores: 1, timeoutMs: 30000 },
     containerId: null as string | null,
     containerStatus: 'stopped',
-    createdAt: new Date('2024-01-01'), updatedAt: new Date('2024-01-02'),
+    createdAt: new Date('2024-01-01'),
+    updatedAt: new Date('2024-01-02'),
     ...overrides,
   };
 }
@@ -40,20 +44,30 @@ describe('Workspace Execution Routes', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     app = new Hono();
-    app.use('*', async (c, next) => { c.set('userId', 'user-1'); await next(); });
+    app.use('*', async (c, next) => {
+      c.set('userId', 'user-1');
+      await next();
+    });
     app.route('/', workspaceExecutionRoutes);
     mockRepo = {
-      get: vi.fn(), logAudit: vi.fn(), updateContainerStatus: vi.fn(),
-      createExecution: vi.fn(), updateExecution: vi.fn(),
-      listExecutions: vi.fn(), countExecutions: vi.fn(),
+      get: vi.fn(),
+      logAudit: vi.fn(),
+      updateContainerStatus: vi.fn(),
+      createExecution: vi.fn(),
+      updateExecution: vi.fn(),
+      listExecutions: vi.fn(),
+      countExecutions: vi.fn(),
     };
     vi.mocked(WorkspacesRepository).mockImplementation(() => mockRepo as never);
     mockOrchestrator = {
-      createContainer: vi.fn(), executeInContainer: vi.fn(),
+      createContainer: vi.fn(),
+      executeInContainer: vi.fn(),
     };
     vi.mocked(getOrchestrator).mockReturnValue(mockOrchestrator as never);
     mockStorage = {
-      listFiles: vi.fn(), getStorageUsage: vi.fn(), writeFile: vi.fn(),
+      listFiles: vi.fn(),
+      getStorageUsage: vi.fn(),
+      writeFile: vi.fn(),
     };
     vi.mocked(getWorkspaceStorage).mockReturnValue(mockStorage as never);
     vi.mocked(isDockerAvailable).mockResolvedValue(true);
@@ -114,10 +128,16 @@ describe('Workspace Execution Routes', () => {
   // =========================================================================
   describe('POST /:id/execute', () => {
     it('should execute code successfully with existing container', async () => {
-      mockRepo.get.mockResolvedValue(makeWorkspace({ containerId: 'ctr-1', containerConfig: { timeoutMs: 30000 } }));
+      mockRepo.get.mockResolvedValue(
+        makeWorkspace({ containerId: 'ctr-1', containerConfig: { timeoutMs: 30000 } })
+      );
       mockRepo.createExecution.mockResolvedValue({ id: 'exec-1', codeHash: 'abc12345' });
       mockOrchestrator.executeInContainer.mockResolvedValue({
-        status: 'completed', stdout: 'Hello', stderr: '', exitCode: 0, executionTimeMs: 150,
+        status: 'completed',
+        stdout: 'Hello',
+        stderr: '',
+        exitCode: 0,
+        executionTimeMs: 150,
       });
       const res = await app.request('/ws-1/execute', {
         method: 'POST',
@@ -130,7 +150,14 @@ describe('Workspace Execution Routes', () => {
       expect(json.data.status).toBe('completed');
       expect(json.data.stdout).toBe('Hello');
       expect(json.data.exitCode).toBe(0);
-      expect(mockRepo.updateExecution).toHaveBeenCalledWith('exec-1', 'completed', 'Hello', '', 0, 150);
+      expect(mockRepo.updateExecution).toHaveBeenCalledWith(
+        'exec-1',
+        'completed',
+        'Hello',
+        '',
+        0,
+        150
+      );
       expect(mockRepo.logAudit).toHaveBeenCalled();
     });
     it('should create container if not exists', async () => {
@@ -138,7 +165,11 @@ describe('Workspace Execution Routes', () => {
       mockOrchestrator.createContainer.mockResolvedValue('new-ctr');
       mockRepo.createExecution.mockResolvedValue({ id: 'exec-1', codeHash: 'abc' });
       mockOrchestrator.executeInContainer.mockResolvedValue({
-        status: 'completed', stdout: '', stderr: '', exitCode: 0, executionTimeMs: 100,
+        status: 'completed',
+        stdout: '',
+        stderr: '',
+        exitCode: 0,
+        executionTimeMs: 100,
       });
       const res = await app.request('/ws-1/execute', {
         method: 'POST',
@@ -153,24 +184,39 @@ describe('Workspace Execution Routes', () => {
       mockRepo.get.mockResolvedValue(makeWorkspace({ containerId: 'ctr-1', containerConfig: {} }));
       mockRepo.createExecution.mockResolvedValue({ id: 'exec-1', codeHash: 'abc' });
       mockOrchestrator.executeInContainer.mockResolvedValue({
-        status: 'completed', stdout: '', stderr: '', exitCode: 0, executionTimeMs: 50,
+        status: 'completed',
+        stdout: '',
+        stderr: '',
+        exitCode: 0,
+        executionTimeMs: 50,
       });
       const res = await app.request('/ws-1/execute', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          code: 'import helper', language: 'python',
+          code: 'import helper',
+          language: 'python',
           files: [{ path: 'helper.py', content: 'def foo(): pass' }],
         }),
       });
       expect(res.status).toBe(200);
-      expect(mockStorage.writeFile).toHaveBeenCalledWith('user-1/ws-1', 'helper.py', 'def foo(): pass');
+      expect(mockStorage.writeFile).toHaveBeenCalledWith(
+        'user-1/ws-1',
+        'helper.py',
+        'def foo(): pass'
+      );
     });
     it('should use custom timeout from body', async () => {
-      mockRepo.get.mockResolvedValue(makeWorkspace({ containerId: 'ctr-1', containerConfig: { timeoutMs: 30000 } }));
+      mockRepo.get.mockResolvedValue(
+        makeWorkspace({ containerId: 'ctr-1', containerConfig: { timeoutMs: 30000 } })
+      );
       mockRepo.createExecution.mockResolvedValue({ id: 'exec-1', codeHash: 'abc' });
       mockOrchestrator.executeInContainer.mockResolvedValue({
-        status: 'completed', stdout: '', stderr: '', exitCode: 0, executionTimeMs: 50,
+        status: 'completed',
+        stdout: '',
+        stderr: '',
+        exitCode: 0,
+        executionTimeMs: 50,
       });
       const res = await app.request('/ws-1/execute', {
         method: 'POST',
@@ -178,7 +224,12 @@ describe('Workspace Execution Routes', () => {
         body: JSON.stringify({ code: 'echo hi', language: 'shell', timeout: 5000 }),
       });
       expect(res.status).toBe(200);
-      expect(mockOrchestrator.executeInContainer).toHaveBeenCalledWith('ctr-1', 'echo hi', 'shell', 5000);
+      expect(mockOrchestrator.executeInContainer).toHaveBeenCalledWith(
+        'ctr-1',
+        'echo hi',
+        'shell',
+        5000
+      );
     });
     it('should return 404 for non-existent workspace', async () => {
       mockRepo.get.mockResolvedValue(null);
@@ -237,7 +288,13 @@ describe('Workspace Execution Routes', () => {
       });
       expect(res.status).toBe(500);
       expect((await res.json()).error.code).toBe('EXECUTION_ERROR');
-      expect(mockRepo.logAudit).toHaveBeenCalledWith('execute', 'execution', undefined, false, 'DB error');
+      expect(mockRepo.logAudit).toHaveBeenCalledWith(
+        'execute',
+        'execution',
+        undefined,
+        false,
+        'DB error'
+      );
     });
   });
 
@@ -249,9 +306,17 @@ describe('Workspace Execution Routes', () => {
       mockRepo.get.mockResolvedValue(makeWorkspace());
       mockRepo.listExecutions.mockResolvedValue([
         {
-          id: 'exec-1', workspaceId: 'ws-1', userId: 'user-1', language: 'python',
-          codeHash: 'abc123', status: 'completed', stdout: 'output', stderr: '',
-          exitCode: 0, executionTimeMs: 150, createdAt: new Date('2024-01-01'),
+          id: 'exec-1',
+          workspaceId: 'ws-1',
+          userId: 'user-1',
+          language: 'python',
+          codeHash: 'abc123',
+          status: 'completed',
+          stdout: 'output',
+          stderr: '',
+          exitCode: 0,
+          executionTimeMs: 150,
+          createdAt: new Date('2024-01-01'),
         },
       ]);
       const res = await app.request('/ws-1/executions');

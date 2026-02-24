@@ -855,7 +855,11 @@ export class ToolRegistry {
       } else if (source === 'dynamic' && provider.pluginId) {
         // ext:{id} → ext namespace, skill:{id} → skill namespace
         const nsPrefix = provider.pluginId.startsWith('ext:') ? 'ext' : 'skill';
-        qName = qualifyToolName(definition.name, nsPrefix, provider.pluginId.replace(/^(ext|skill):/, ''));
+        qName = qualifyToolName(
+          definition.name,
+          nsPrefix,
+          provider.pluginId.replace(/^(ext|skill):/, '')
+        );
       } else if (source === 'custom') {
         qName = qualifyToolName(definition.name, 'custom');
       } else {

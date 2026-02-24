@@ -864,18 +864,14 @@ describe('isDemoMode', () => {
 
   it('returns false when local provider is enabled', async () => {
     mockGetConfiguredProviderIds.mockResolvedValue(new Set<string>());
-    mockLocalProvidersRepo.listProviders.mockResolvedValue([
-      { id: 'ollama', isEnabled: true },
-    ]);
+    mockLocalProvidersRepo.listProviders.mockResolvedValue([{ id: 'ollama', isEnabled: true }]);
     const result = await mod.isDemoMode();
     expect(result).toBe(false);
   });
 
   it('returns true when local provider exists but is disabled', async () => {
     mockGetConfiguredProviderIds.mockResolvedValue(new Set<string>());
-    mockLocalProvidersRepo.listProviders.mockResolvedValue([
-      { id: 'ollama', isEnabled: false },
-    ]);
+    mockLocalProvidersRepo.listProviders.mockResolvedValue([{ id: 'ollama', isEnabled: false }]);
     const result = await mod.isDemoMode();
     expect(result).toBe(true);
   });

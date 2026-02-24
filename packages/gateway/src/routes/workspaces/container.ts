@@ -10,11 +10,7 @@
 
 import { Hono } from 'hono';
 import { WorkspacesRepository } from '../../db/repositories/workspaces.js';
-import {
-  getOrchestrator,
-  isDockerAvailable,
-  type ContainerConfig,
-} from '@ownpilot/core';
+import { getOrchestrator, isDockerAvailable, type ContainerConfig } from '@ownpilot/core';
 import {
   apiResponse,
   apiError,

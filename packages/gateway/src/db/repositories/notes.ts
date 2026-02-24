@@ -209,7 +209,7 @@ export class NotesRepository extends CrudRepository<
   async getCategories(): Promise<string[]> {
     const rows = await this.query<{ category: string }>(
       `SELECT DISTINCT category FROM notes WHERE user_id = $1 AND category IS NOT NULL AND is_archived = FALSE ORDER BY category`,
-      [this.userId],
+      [this.userId]
     );
     return rows.map((r) => r.category);
   }
@@ -217,7 +217,7 @@ export class NotesRepository extends CrudRepository<
   async getTags(): Promise<string[]> {
     const rows = await this.query<{ tags: string }>(
       `SELECT tags FROM notes WHERE user_id = $1 AND is_archived = FALSE`,
-      [this.userId],
+      [this.userId]
     );
 
     const allTags = new Set<string>();

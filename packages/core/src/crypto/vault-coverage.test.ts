@@ -7,8 +7,21 @@ const { mockEncrypt, mockDecrypt } = vi.hoisted(() => ({
   mockDecrypt: vi.fn().mockResolvedValue(new TextEncoder().encode(JSON.stringify('hello')).buffer),
 }));
 
-vi.mock('./derive.js', () => ({ deriveKey: vi.fn(), generateSalt: vi.fn(), generateIV: vi.fn(), generateMasterKey: vi.fn(), toBase64: vi.fn(), fromBase64: vi.fn(), secureClear: vi.fn() }));
-vi.mock('./keychain.js', () => ({ storeSecret: vi.fn(), retrieveSecret: vi.fn(), deleteSecret: vi.fn(), hasSecret: vi.fn() }));
+vi.mock('./derive.js', () => ({
+  deriveKey: vi.fn(),
+  generateSalt: vi.fn(),
+  generateIV: vi.fn(),
+  generateMasterKey: vi.fn(),
+  toBase64: vi.fn(),
+  fromBase64: vi.fn(),
+  secureClear: vi.fn(),
+}));
+vi.mock('./keychain.js', () => ({
+  storeSecret: vi.fn(),
+  retrieveSecret: vi.fn(),
+  deleteSecret: vi.fn(),
+  hasSecret: vi.fn(),
+}));
 vi.mock('node:fs/promises', () => ({ readFile: vi.fn(), writeFile: vi.fn(), mkdir: vi.fn() }));
 vi.mock('node:fs', () => ({ existsSync: vi.fn() }));
 vi.mock('node:path', () => ({ dirname: vi.fn().mockReturnValue('/data') }));
@@ -17,7 +30,8 @@ vi.mock('node:crypto', () => ({
     subtle: {
       encrypt: (...args: unknown[]) => mockEncrypt(...args),
       decrypt: (...args: unknown[]) => mockDecrypt(...args),
-      importKey: vi.fn(), deriveKey: vi.fn(),
+      importKey: vi.fn(),
+      deriveKey: vi.fn(),
     },
     getRandomValues: (arr: Uint8Array) => arr,
   },
@@ -30,17 +44,30 @@ async function setupMocks() {
   const fsp = await import('node:fs/promises');
   vi.mocked(keychain.hasSecret).mockResolvedValue(false);
   vi.mocked(keychain.storeSecret).mockResolvedValue({ ok: true, value: undefined });
-  vi.mocked(keychain.retrieveSecret).mockResolvedValue({ ok: true, value: new Uint8Array([10, 20, 30]) });
+  vi.mocked(keychain.retrieveSecret).mockResolvedValue({
+    ok: true,
+    value: new Uint8Array([10, 20, 30]),
+  });
   vi.mocked(keychain.deleteSecret).mockResolvedValue({ ok: true, value: undefined });
   vi.mocked(derive.deriveKey).mockResolvedValue({ ok: true, value: 'mock-derived-key' as never });
   vi.mocked(derive.generateSalt).mockReturnValue(new Uint8Array([1, 2, 3, 4]));
   vi.mocked(derive.generateIV).mockReturnValue(new Uint8Array(12));
   vi.mocked(derive.generateMasterKey).mockReturnValue(new Uint8Array([10, 20, 30]));
-  vi.mocked(derive.toBase64).mockImplementation((data: Uint8Array) => Buffer.from(data).toString('base64'));
-  vi.mocked(derive.fromBase64).mockImplementation((b64: string) => new Uint8Array(Buffer.from(b64, 'base64')));
+  vi.mocked(derive.toBase64).mockImplementation((data: Uint8Array) =>
+    Buffer.from(data).toString('base64')
+  );
+  vi.mocked(derive.fromBase64).mockImplementation(
+    (b64: string) => new Uint8Array(Buffer.from(b64, 'base64'))
+  );
   vi.mocked(derive.secureClear).mockImplementation(() => {});
   vi.mocked(nfs.existsSync).mockReturnValue(true);
-  vi.mocked(fsp.readFile).mockResolvedValue(JSON.stringify({ version: 1, salt: Buffer.from(new Uint8Array([1, 2, 3, 4])).toString('base64'), entries: {} }));
+  vi.mocked(fsp.readFile).mockResolvedValue(
+    JSON.stringify({
+      version: 1,
+      salt: Buffer.from(new Uint8Array([1, 2, 3, 4])).toString('base64'),
+      entries: {},
+    })
+  );
   vi.mocked(fsp.writeFile).mockResolvedValue(undefined);
   vi.mocked(fsp.mkdir).mockResolvedValue(undefined as never);
   mockEncrypt.mockResolvedValue(new ArrayBuffer(16));
@@ -58,7 +85,11 @@ function forceUnlock(v: SecureVault): void {
 
 describe('SecureVault - additional coverage', () => {
   let vault: SecureVault;
-  beforeEach(async () => { vi.clearAllMocks(); await setupMocks(); vault = new SecureVault({ path: '/data/vault.json' }); });
+  beforeEach(async () => {
+    vi.clearAllMocks();
+    await setupMocks();
+    vault = new SecureVault({ path: '/data/vault.json' });
+  });
 
   describe('initialize - save failure', () => {
     it('returns error when saveVault fails', async () => {
@@ -113,7 +144,9 @@ describe('SecureVault - additional coverage', () => {
     it('returns error when vaultData is null', async () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const vx = vault as any;
-      vx.isUnlocked = true; vx.derivedKey = 'mock-key'; vx.vaultData = null;
+      vx.isUnlocked = true;
+      vx.derivedKey = 'mock-key';
+      vx.vaultData = null;
       expect((await vault.delete('key')).ok).toBe(false);
       expect((await vault.clear()).ok).toBe(false);
       expect(vault.has('key').ok).toBe(false);
@@ -151,7 +184,10 @@ describe('SecureVault - additional coverage', () => {
     it('returns error when deriveKey fails during rotation', async () => {
       forceUnlock(vault);
       const derive = await import('./derive.js');
-      vi.mocked(derive.deriveKey).mockResolvedValueOnce({ ok: false, error: new CryptoError('derive', 'derivation failed') });
+      vi.mocked(derive.deriveKey).mockResolvedValueOnce({
+        ok: false,
+        error: new CryptoError('derive', 'derivation failed'),
+      });
       const result = await vault.rotateMasterKey();
       expect(result.ok).toBe(false);
       if (!result.ok) expect(result.error.message).toMatch(/derivation failed/i);
@@ -198,7 +234,7 @@ describe('SecureVault - additional coverage', () => {
       vx.isUnlocked = true;
       vx.derivedKey = 'mock-key';
       vx.vaultData = null;
-      
+
       // Call private saveVault directly
       const result = await vx.saveVault();
       expect(result.ok).toBe(false);

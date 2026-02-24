@@ -149,9 +149,7 @@ export function SecurityPage() {
               <span className="text-text-muted dark:text-dark-text-muted">Password Protection</span>
               <span
                 className={
-                  passwordConfigured
-                    ? 'text-success font-medium'
-                    : 'text-warning font-medium'
+                  passwordConfigured ? 'text-success font-medium' : 'text-warning font-medium'
                 }
               >
                 {passwordConfigured ? 'Enabled' : 'Disabled'}
@@ -161,11 +159,7 @@ export function SecurityPage() {
               <div className="flex justify-between">
                 <span className="text-text-muted dark:text-dark-text-muted">Active Sessions</span>
                 <span className="text-text-primary dark:text-dark-text-primary">
-                  {isLoadingSessions ? (
-                    <LoadingSpinner size="sm" />
-                  ) : (
-                    activeSessions ?? '-'
-                  )}
+                  {isLoadingSessions ? <LoadingSpinner size="sm" /> : (activeSessions ?? '-')}
                 </span>
               </div>
             )}
@@ -230,11 +224,7 @@ export function SecurityPage() {
               disabled={!newPassword || !confirmPassword || isSubmitting}
               className="px-4 py-2 text-sm rounded-lg bg-primary text-white font-medium hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              {isSubmitting
-                ? 'Saving...'
-                : passwordConfigured
-                  ? 'Change Password'
-                  : 'Set Password'}
+              {isSubmitting ? 'Saving...' : passwordConfigured ? 'Change Password' : 'Set Password'}
             </button>
           </form>
         </div>

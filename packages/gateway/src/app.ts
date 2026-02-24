@@ -129,7 +129,13 @@ export function createApp(config: Partial<GatewayConfig> = {}): Hono {
     cors({
       origin: fullConfig.corsOrigins ?? [],
       allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-      allowHeaders: ['Content-Type', 'Authorization', 'X-API-Key', 'X-Request-ID', 'X-Session-Token'],
+      allowHeaders: [
+        'Content-Type',
+        'Authorization',
+        'X-API-Key',
+        'X-Request-ID',
+        'X-Session-Token',
+      ],
       exposeHeaders: [
         'X-Request-ID',
         'X-Response-Time',

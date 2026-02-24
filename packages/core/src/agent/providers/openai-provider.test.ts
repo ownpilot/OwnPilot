@@ -420,9 +420,7 @@ describe('OpenAIProvider', () => {
 
     it('maps finish reason "length" correctly', async () => {
       const response = makeOpenAIResponse({
-        choices: [
-          { message: { content: 'truncated...' }, finish_reason: 'length' },
-        ],
+        choices: [{ message: { content: 'truncated...' }, finish_reason: 'length' }],
       });
       mockFetch.mockImplementation(mockFetchOk(response));
 
@@ -435,9 +433,7 @@ describe('OpenAIProvider', () => {
 
     it('maps finish reason "content_filter" correctly', async () => {
       const response = makeOpenAIResponse({
-        choices: [
-          { message: { content: '' }, finish_reason: 'content_filter' },
-        ],
+        choices: [{ message: { content: '' }, finish_reason: 'content_filter' }],
       });
       mockFetch.mockImplementation(mockFetchOk(response));
 
@@ -450,9 +446,7 @@ describe('OpenAIProvider', () => {
 
     it('maps unknown finish reason to "stop"', async () => {
       const response = makeOpenAIResponse({
-        choices: [
-          { message: { content: 'ok' }, finish_reason: 'unknown_reason' },
-        ],
+        choices: [{ message: { content: 'ok' }, finish_reason: 'unknown_reason' }],
       });
       mockFetch.mockImplementation(mockFetchOk(response));
 
@@ -612,9 +606,7 @@ describe('OpenAIProvider', () => {
       const chunks = await collectStream(provider.stream(makeRequest()));
 
       // Should have tool call chunks with desanitized name
-      const tcChunks = chunks.filter(
-        (c) => c.ok && (c as any).value.toolCalls?.length > 0
-      );
+      const tcChunks = chunks.filter((c) => c.ok && (c as any).value.toolCalls?.length > 0);
       expect(tcChunks.length).toBeGreaterThanOrEqual(1);
 
       // First tool call chunk should have the name desanitized
@@ -711,9 +703,7 @@ describe('OpenAIProvider', () => {
 
       const chunks = await collectStream(provider.stream(makeRequest()));
 
-      const finishChunk = chunks.find(
-        (c) => c.ok && (c as any).value.finishReason === 'length'
-      );
+      const finishChunk = chunks.find((c) => c.ok && (c as any).value.finishReason === 'length');
       expect(finishChunk).toBeDefined();
     });
 

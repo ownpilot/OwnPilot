@@ -609,7 +609,11 @@ export class ChannelServiceImpl implements IChannelService {
         responseText = await this.processViaBus(
           bus,
           message,
-          { sessionId: session.id, conversationId: session.conversationId, context: session.context },
+          {
+            sessionId: session.id,
+            conversationId: session.conversationId,
+            context: session.context,
+          },
           channelUser,
           progress ?? undefined
         );
@@ -712,7 +716,11 @@ export class ChannelServiceImpl implements IChannelService {
   private async processViaBus(
     bus: IMessageBus,
     message: ChannelIncomingMessage,
-    session: { sessionId: string; conversationId: string | null; context?: Record<string, unknown> },
+    session: {
+      sessionId: string;
+      conversationId: string | null;
+      context?: Record<string, unknown>;
+    },
     channelUser: { ownpilotUserId: string },
     progress?: { update(text: string): void }
   ): Promise<string> {

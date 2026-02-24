@@ -5,7 +5,12 @@
  */
 
 export type { WorkflowProgressEvent, ToolExecutionResult } from './types.js';
-export { topologicalSort, getDownstreamNodes, getDownstreamNodesByHandle, getForEachBodyNodes } from './dag-utils.js';
+export {
+  topologicalSort,
+  getDownstreamNodes,
+  getDownstreamNodesByHandle,
+  getForEachBodyNodes,
+} from './dag-utils.js';
 export {
   resolveTemplates,
   deepResolve,

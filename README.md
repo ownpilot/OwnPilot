@@ -455,33 +455,33 @@ All API keys are managed via the **Config Center UI** (Settings page) or the `ow
 
 **96 providers** with auto-synced model catalogs from [models.dev](https://models.dev). Key providers:
 
-| Provider | Integration Type | Key Models |
-| --- | --- | --- |
-| **OpenAI** | Native | GPT-5.3 Codex, GPT-5.2, GPT-5.1, o4-mini, o3 |
-| **Anthropic** | Native (prompt caching) | Claude Sonnet 4.6, Claude Opus 4.6, Claude Sonnet 4.5, Claude Haiku 4.5 |
-| **Google** | Native | Gemini 3.1 Pro, Gemini 3 Flash, Gemini 2.5 Flash/Pro |
-| **xAI** | Native | Grok 4.1 Fast, Grok 4, Grok 3 |
-| **DeepSeek** | Native | DeepSeek Chat, DeepSeek Reasoner |
-| **Mistral** | Native | Devstral 2, Mistral Medium 3.1, Mistral Large 3, Codestral |
-| **Zhipu AI** | Native | GLM-5, GLM-4.7, GLM-4.6 |
-| **Cohere** | Native | Command A, Command A Reasoning, Command R+ |
-| **Together AI** | Aggregator | Qwen3.5 397B, GLM-5, Kimi K2.5, DeepSeek V3.1 |
-| **Groq** | Aggregator (LPU) | Kimi K2, GPT OSS 120B, Llama 4 Scout, Qwen3 32B |
-| **Fireworks AI** | Aggregator | MiniMax-M2.5, GLM 5, Kimi K2.5, DeepSeek V3.2 |
-| **DeepInfra** | Aggregator | Kimi K2.5, GLM-4.7, DeepSeek-V3.2, Qwen3 Coder |
-| **OpenRouter** | Aggregator (161+ models) | Unified API for all providers |
-| **Perplexity** | Aggregator | Sonar Deep Research, Sonar Pro, Sonar Reasoning Pro |
-| **Cerebras** | Aggregator (fastest) | GLM-4.7, GPT OSS 120B, Qwen 3 235B |
-| **NVIDIA** | Aggregator (65+ models) | GLM5, Kimi K2.5, DeepSeek V3.2, Nemotron |
-| **Amazon Bedrock** | Cloud (96+ models) | Claude 4.6, DeepSeek-V3.2, Kimi K2.5, Nova Pro |
-| **Azure** | Cloud (85+ models) | GPT-5.2, Claude 4.6, DeepSeek-V3.2, Grok 4 |
-| **GitHub Models** | Cloud | GPT-4.1, DeepSeek-R1, Llama 4, Mistral |
-| **Hugging Face** | Aggregator | MiniMax-M2.5, GLM-5, Qwen3.5, DeepSeek-V3.2 |
-| **SiliconFlow** | Aggregator (66+ models) | GLM-5, Kimi K2.5, DeepSeek V3.2, Qwen3 VL |
-| **Novita AI** | Aggregator (80+ models) | Qwen3.5, GLM-5, Kimi K2.5, ERNIE-4.5 |
-| **Nebius** | Aggregator (45+ models) | DeepSeek-V3.2, GLM-4.7, Qwen3, FLUX |
-| **Ollama** | Local | qwen3.5, minimax-m2.5, glm-5, kimi-k2.5 |
-| **LM Studio** | Local | GPT OSS 20B, Qwen3 30B, Qwen3 Coder 30B |
+| Provider           | Integration Type         | Key Models                                                              |
+| ------------------ | ------------------------ | ----------------------------------------------------------------------- |
+| **OpenAI**         | Native                   | GPT-5.3 Codex, GPT-5.2, GPT-5.1, o4-mini, o3                            |
+| **Anthropic**      | Native (prompt caching)  | Claude Sonnet 4.6, Claude Opus 4.6, Claude Sonnet 4.5, Claude Haiku 4.5 |
+| **Google**         | Native                   | Gemini 3.1 Pro, Gemini 3 Flash, Gemini 2.5 Flash/Pro                    |
+| **xAI**            | Native                   | Grok 4.1 Fast, Grok 4, Grok 3                                           |
+| **DeepSeek**       | Native                   | DeepSeek Chat, DeepSeek Reasoner                                        |
+| **Mistral**        | Native                   | Devstral 2, Mistral Medium 3.1, Mistral Large 3, Codestral              |
+| **Zhipu AI**       | Native                   | GLM-5, GLM-4.7, GLM-4.6                                                 |
+| **Cohere**         | Native                   | Command A, Command A Reasoning, Command R+                              |
+| **Together AI**    | Aggregator               | Qwen3.5 397B, GLM-5, Kimi K2.5, DeepSeek V3.1                           |
+| **Groq**           | Aggregator (LPU)         | Kimi K2, GPT OSS 120B, Llama 4 Scout, Qwen3 32B                         |
+| **Fireworks AI**   | Aggregator               | MiniMax-M2.5, GLM 5, Kimi K2.5, DeepSeek V3.2                           |
+| **DeepInfra**      | Aggregator               | Kimi K2.5, GLM-4.7, DeepSeek-V3.2, Qwen3 Coder                          |
+| **OpenRouter**     | Aggregator (161+ models) | Unified API for all providers                                           |
+| **Perplexity**     | Aggregator               | Sonar Deep Research, Sonar Pro, Sonar Reasoning Pro                     |
+| **Cerebras**       | Aggregator (fastest)     | GLM-4.7, GPT OSS 120B, Qwen 3 235B                                      |
+| **NVIDIA**         | Aggregator (65+ models)  | GLM5, Kimi K2.5, DeepSeek V3.2, Nemotron                                |
+| **Amazon Bedrock** | Cloud (96+ models)       | Claude 4.6, DeepSeek-V3.2, Kimi K2.5, Nova Pro                          |
+| **Azure**          | Cloud (85+ models)       | GPT-5.2, Claude 4.6, DeepSeek-V3.2, Grok 4                              |
+| **GitHub Models**  | Cloud                    | GPT-4.1, DeepSeek-R1, Llama 4, Mistral                                  |
+| **Hugging Face**   | Aggregator               | MiniMax-M2.5, GLM-5, Qwen3.5, DeepSeek-V3.2                             |
+| **SiliconFlow**    | Aggregator (66+ models)  | GLM-5, Kimi K2.5, DeepSeek V3.2, Qwen3 VL                               |
+| **Novita AI**      | Aggregator (80+ models)  | Qwen3.5, GLM-5, Kimi K2.5, ERNIE-4.5                                    |
+| **Nebius**         | Aggregator (45+ models)  | DeepSeek-V3.2, GLM-4.7, Qwen3, FLUX                                     |
+| **Ollama**         | Local                    | qwen3.5, minimax-m2.5, glm-5, kimi-k2.5                                 |
+| **LM Studio**      | Local                    | GPT OSS 20B, Qwen3 30B, Qwen3 Coder 30B                                 |
 
 Any OpenAI-compatible endpoint can be added as a custom provider.
 

@@ -69,7 +69,8 @@ vi.mock('../../services/extension-types.js', () => ({
 
 const mockSerializeExtensionMarkdown = vi.fn(() => '# Extension\nSome markdown');
 vi.mock('../../services/extension-markdown.js', () => ({
-  serializeExtensionMarkdown: (...args: unknown[]) => mockSerializeExtensionMarkdown(...(args as [unknown])),
+  serializeExtensionMarkdown: (...args: unknown[]) =>
+    mockSerializeExtensionMarkdown(...(args as [unknown])),
 }));
 
 const mockParseAgentSkillsMd = vi.fn(() => ({ name: 'Code Review Assistant' }));
@@ -81,7 +82,8 @@ const mockResolveProviderAndModel = vi.fn(async () => ({ provider: 'openai', mod
 const mockGetApiKey = vi.fn(async () => 'test-api-key');
 
 vi.mock('../settings.js', () => ({
-  resolveProviderAndModel: (...args: unknown[]) => mockResolveProviderAndModel(...(args as [string, string])),
+  resolveProviderAndModel: (...args: unknown[]) =>
+    mockResolveProviderAndModel(...(args as [string, string])),
   getApiKey: (...args: unknown[]) => mockGetApiKey(...(args as [string])),
 }));
 

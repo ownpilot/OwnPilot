@@ -106,7 +106,9 @@ describe('Branded Types', () => {
 
   describe('createAuditEventId', () => {
     it('creates valid AuditEventId from UUID', () => {
-      expect(createAuditEventId('01903e4c-7a8b-7c9d-8e0f-123456789abc')).toBe('01903e4c-7a8b-7c9d-8e0f-123456789abc');
+      expect(createAuditEventId('01903e4c-7a8b-7c9d-8e0f-123456789abc')).toBe(
+        '01903e4c-7a8b-7c9d-8e0f-123456789abc'
+      );
     });
     it('throws for invalid format', () => {
       expect(() => createAuditEventId('not-uuid')).toThrow('Invalid AuditEventId format');
@@ -134,7 +136,9 @@ describe('Branded Types', () => {
 
   describe('createConversationId', () => {
     it('creates valid ConversationId from UUID', () => {
-      expect(createConversationId('550e8400-e29b-41d4-a716-446655440000')).toBe('550e8400-e29b-41d4-a716-446655440000');
+      expect(createConversationId('550e8400-e29b-41d4-a716-446655440000')).toBe(
+        '550e8400-e29b-41d4-a716-446655440000'
+      );
     });
     it('throws for invalid format', () => {
       expect(() => createConversationId('not-a-uuid')).toThrow('Invalid ConversationId format');
@@ -143,7 +147,9 @@ describe('Branded Types', () => {
       expect(() => createConversationId('')).toThrow('Invalid ConversationId format');
     });
     it('accepts uppercase hex', () => {
-      expect(createConversationId('AABBCCDD-1122-3344-5566-778899AABBCC')).toBe('AABBCCDD-1122-3344-5566-778899AABBCC');
+      expect(createConversationId('AABBCCDD-1122-3344-5566-778899AABBCC')).toBe(
+        'AABBCCDD-1122-3344-5566-778899AABBCC'
+      );
     });
   });
 

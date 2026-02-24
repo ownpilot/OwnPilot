@@ -180,7 +180,7 @@ export function createMockServiceRegistry(services: Record<string, unknown> = {}
  * @returns A factory function that merges overrides into defaults
  */
 export function createRowFactory<T extends Record<string, unknown>>(defaults: T) {
-  return (overrides?: Partial<T>): T => ({ ...defaults, ...overrides } as T);
+  return (overrides?: Partial<T>): T => ({ ...defaults, ...overrides }) as T;
 }
 
 // ============================================================

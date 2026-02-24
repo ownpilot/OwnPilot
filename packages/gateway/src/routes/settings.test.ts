@@ -553,7 +553,10 @@ describe('Settings Routes', () => {
     it('falls back to default local provider', async () => {
       const { getDefaultProvider } = await import('./settings.js');
       mockSettingsRepo.get.mockResolvedValueOnce(null); // no saved provider
-      mockLocalProvidersRepo.getDefault.mockResolvedValueOnce({ id: 'ollama-local', isEnabled: true });
+      mockLocalProvidersRepo.getDefault.mockResolvedValueOnce({
+        id: 'ollama-local',
+        isEnabled: true,
+      });
 
       const result = await getDefaultProvider();
 
@@ -1027,9 +1030,7 @@ describe('Settings Routes', () => {
     });
 
     it('shows enabled+ready message when sandbox is enabled', async () => {
-      mockSettingsRepo.getByPrefix.mockResolvedValue([
-        { key: 'sandbox:enabled', value: 'true' },
-      ]);
+      mockSettingsRepo.getByPrefix.mockResolvedValue([{ key: 'sandbox:enabled', value: 'true' }]);
 
       const res = await app.request('/settings/sandbox');
       const json = await res.json();

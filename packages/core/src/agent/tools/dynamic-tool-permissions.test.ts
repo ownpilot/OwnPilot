@@ -287,9 +287,7 @@ describe('isPrivateUrl', () => {
     });
 
     it('blocks metadata.google.internal with path', () => {
-      expect(
-        isPrivateUrl('http://metadata.google.internal/computeMetadata/v1/')
-      ).toBe(true);
+      expect(isPrivateUrl('http://metadata.google.internal/computeMetadata/v1/')).toBe(true);
     });
   });
 

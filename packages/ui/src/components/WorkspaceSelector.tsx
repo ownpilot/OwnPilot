@@ -80,7 +80,9 @@ export function WorkspaceSelector({
       try {
         const t = localStorage.getItem(STORAGE_KEYS.SESSION_TOKEN);
         if (t) headers['X-Session-Token'] = t;
-      } catch { /* */ }
+      } catch {
+        /* */
+      }
       const response = await fetch(`/api/v1/workspaces/${id}/download`, { headers });
       if (!response.ok) throw new Error('Download failed');
       const blob = await response.blob();

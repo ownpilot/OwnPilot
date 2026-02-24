@@ -53,7 +53,9 @@ export const extensionsApi = {
     try {
       const token = localStorage.getItem('ownpilot-session-token');
       if (token) headers['X-Session-Token'] = token;
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
 
     const response = await fetch('/api/v1/extensions/upload', {
       method: 'POST',
@@ -64,7 +66,8 @@ export const extensionsApi = {
     const body = await response.json();
 
     if (!response.ok || !body.success) {
-      const msg = typeof body.error === 'string' ? body.error : body.error?.message ?? 'Upload failed';
+      const msg =
+        typeof body.error === 'string' ? body.error : (body.error?.message ?? 'Upload failed');
       throw new Error(msg);
     }
 

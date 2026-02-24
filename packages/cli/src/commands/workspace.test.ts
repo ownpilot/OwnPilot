@@ -42,14 +42,16 @@ describe('Workspace CLI Commands', () => {
   // Helper: create a workspace and return its ID
   // ============================================================================
 
-  async function createWorkspace(opts: {
-    name?: string;
-    description?: string;
-    provider?: string;
-    model?: string;
-    prompt?: string;
-    withChannels?: boolean;
-  } = {}): Promise<string> {
+  async function createWorkspace(
+    opts: {
+      name?: string;
+      description?: string;
+      provider?: string;
+      model?: string;
+      prompt?: string;
+      withChannels?: boolean;
+    } = {}
+  ): Promise<string> {
     const {
       name = 'Test Workspace',
       description = '',
@@ -75,7 +77,7 @@ describe('Workspace CLI Commands', () => {
 
     // Extract workspace ID from the console.log output "   ID: ws-xxxxx"
     const idCall = logSpy.mock.calls.find(
-      (call) => typeof call[0] === 'string' && call[0].includes('ID:'),
+      (call) => typeof call[0] === 'string' && call[0].includes('ID:')
     );
     const id = idCall?.[0]?.replace(/.*ID:\s*/, '').trim() ?? '';
     logSpy.mockClear();
@@ -96,7 +98,12 @@ describe('Workspace CLI Commands', () => {
     });
 
     it('lists workspaces with description', async () => {
-      await createWorkspace({ name: 'Dev Workspace', description: 'For development', provider: 'anthropic', model: 'claude-opus-4.5' });
+      await createWorkspace({
+        name: 'Dev Workspace',
+        description: 'For development',
+        provider: 'anthropic',
+        model: 'claude-opus-4.5',
+      });
 
       await workspaceModule.workspaceList();
 
@@ -114,7 +121,7 @@ describe('Workspace CLI Commands', () => {
       expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('openai / gpt-4.1'));
       // Description line should not appear — only name, provider, and channels lines
       const descCalls = logSpy.mock.calls.filter(
-        (call) => typeof call[0] === 'string' && call[0].includes('For development'),
+        (call) => typeof call[0] === 'string' && call[0].includes('For development')
       );
       expect(descCalls).toHaveLength(0);
     });
@@ -242,7 +249,7 @@ describe('Workspace CLI Commands', () => {
       await workspaceModule.workspaceDelete({});
 
       expect(mockSelect).toHaveBeenCalledWith(
-        expect.objectContaining({ message: 'Select workspace to delete:' }),
+        expect.objectContaining({ message: 'Select workspace to delete:' })
       );
       expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('Delete Target" deleted'));
     });
@@ -252,7 +259,9 @@ describe('Workspace CLI Commands', () => {
 
       await workspaceModule.workspaceDelete({ id: 'non-existent-id' });
 
-      expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('Workspace not found: non-existent-id'));
+      expect(logSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Workspace not found: non-existent-id')
+      );
     });
 
     it('deletes workspace when confirmed', async () => {
@@ -313,9 +322,11 @@ describe('Workspace CLI Commands', () => {
       await workspaceModule.workspaceSwitch({});
 
       expect(mockSelect).toHaveBeenCalledWith(
-        expect.objectContaining({ message: 'Select workspace to activate:' }),
+        expect.objectContaining({ message: 'Select workspace to activate:' })
       );
-      expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('Switched to workspace "Switch Target"'));
+      expect(logSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Switched to workspace "Switch Target"')
+      );
     });
 
     it('shows not found when workspace id does not exist', async () => {
@@ -331,7 +342,9 @@ describe('Workspace CLI Commands', () => {
 
       await workspaceModule.workspaceSwitch({ id: wsId });
 
-      expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('Switched to workspace "My Active"'));
+      expect(logSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Switched to workspace "My Active"')
+      );
     });
 
     it('shows no workspace selected when select returns falsy', async () => {
@@ -364,7 +377,7 @@ describe('Workspace CLI Commands', () => {
       await workspaceModule.workspaceInfo({});
 
       expect(mockSelect).toHaveBeenCalledWith(
-        expect.objectContaining({ message: 'Select workspace:' }),
+        expect.objectContaining({ message: 'Select workspace:' })
       );
       expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('Workspace: Info Target'));
     });
@@ -374,7 +387,9 @@ describe('Workspace CLI Commands', () => {
 
       await workspaceModule.workspaceInfo({ id: 'missing-id' });
 
-      expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('Workspace not found: missing-id'));
+      expect(logSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Workspace not found: missing-id')
+      );
     });
 
     it('displays workspace details with description', async () => {
@@ -389,7 +404,9 @@ describe('Workspace CLI Commands', () => {
       await workspaceModule.workspaceInfo({ id: wsId });
 
       expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('Workspace: Detailed WS'));
-      expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('Description: A detailed description'));
+      expect(logSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Description: A detailed description')
+      );
       expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('Provider:  anthropic'));
       expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('Model:     claude-sonnet-4.5'));
       expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('Prompt:'));
@@ -409,7 +426,7 @@ describe('Workspace CLI Commands', () => {
       expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('Workspace: No Desc WS'));
       // Description line should NOT appear
       const descCalls = logSpy.mock.calls.filter(
-        (call) => typeof call[0] === 'string' && call[0].startsWith('Description:'),
+        (call) => typeof call[0] === 'string' && call[0].startsWith('Description:')
       );
       expect(descCalls).toHaveLength(0);
     });
@@ -441,7 +458,7 @@ describe('Workspace CLI Commands', () => {
       await workspaceModule.workspaceCreate();
 
       const idCall = logSpy.mock.calls.find(
-        (call) => typeof call[0] === 'string' && call[0].includes('ID:'),
+        (call) => typeof call[0] === 'string' && call[0].includes('ID:')
       );
       const wsId = idCall?.[0]?.replace(/.*ID:\s*/, '').trim() ?? '';
       logSpy.mockClear();
@@ -450,7 +467,9 @@ describe('Workspace CLI Commands', () => {
       await workspaceModule.workspaceInfo({ id: wsId });
 
       expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('Channels (1)'));
-      expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('non-existent-channel (unknown)'));
+      expect(logSpy).toHaveBeenCalledWith(
+        expect.stringContaining('non-existent-channel (unknown)')
+      );
     });
 
     it('displays no channels associated when workspace has none', async () => {
@@ -496,7 +515,9 @@ describe('Workspace CLI Commands', () => {
       expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('Provider:  deepseek'));
       expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('Model:     deepseek-v3.2'));
       // .slice(0, 50) -> 'You are a coding assistant specializing in TypeScr'
-      expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('Prompt:    You are a coding assistant specializing in TypeScr...'));
+      expect(logSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Prompt:    You are a coding assistant specializing in TypeScr...')
+      );
     });
   });
 });

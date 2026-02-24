@@ -1,6 +1,11 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import * as path from 'node:path';
-import { getOwnPilotRoot, isOwnPilotPath, assertNotOwnPilotPath, _resetCache } from './self-protection.js';
+import {
+  getOwnPilotRoot,
+  isOwnPilotPath,
+  assertNotOwnPilotPath,
+  _resetCache,
+} from './self-protection.js';
 
 describe('Self-Protection Module', () => {
   beforeEach(() => {
@@ -86,7 +91,14 @@ describe('Self-Protection Module', () => {
     it('blocks path traversal attempts after resolution', () => {
       const root = getOwnPilotRoot()!;
       // Construct a traversal that resolves back into OwnPilot root
-      const traversal = path.join(root, 'packages', '..', '..', path.basename(root), 'package.json');
+      const traversal = path.join(
+        root,
+        'packages',
+        '..',
+        '..',
+        path.basename(root),
+        'package.json'
+      );
       expect(isOwnPilotPath(traversal)).toBe(true);
     });
 

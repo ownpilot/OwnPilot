@@ -33,7 +33,9 @@ describe('tool-namespace', () => {
     });
 
     it('prefixes skill tools with skill.{id}.', () => {
-      expect(qualifyToolName('search_web', 'skill', 'web_search')).toBe('skill.web_search.search_web');
+      expect(qualifyToolName('search_web', 'skill', 'web_search')).toBe(
+        'skill.web_search.search_web'
+      );
     });
 
     it('does NOT prefix meta-tools', () => {
@@ -138,7 +140,9 @@ describe('tool-namespace', () => {
         'plugin.telegram.send_message'
       );
       expect(desanitizeToolName('ext__scraper__fetch_page')).toBe('ext.scraper.fetch_page');
-      expect(desanitizeToolName('skill__web_search__search_web')).toBe('skill.web_search.search_web');
+      expect(desanitizeToolName('skill__web_search__search_web')).toBe(
+        'skill.web_search.search_web'
+      );
     });
 
     it('leaves names without double underscores unchanged', () => {

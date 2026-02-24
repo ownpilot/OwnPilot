@@ -271,19 +271,39 @@ describe('AutonomyLogRepository', () => {
     });
 
     it('returns zero llmCallRate when total is 0', async () => {
-      mockAdapter.queryOne.mockResolvedValueOnce({ total: '0', llm_count: '0', avg_duration: null, total_actions: '0' });
+      mockAdapter.queryOne.mockResolvedValueOnce({
+        total: '0',
+        llm_count: '0',
+        avg_duration: null,
+        total_actions: '0',
+      });
       const stats = await repo.getStats();
-      expect(stats).toEqual({ totalPulses: 0, llmCallRate: 0, avgDurationMs: 0, actionsExecuted: 0 });
+      expect(stats).toEqual({
+        totalPulses: 0,
+        llmCallRate: 0,
+        avgDurationMs: 0,
+        actionsExecuted: 0,
+      });
     });
 
     it('handles null queryOne result (no data)', async () => {
       mockAdapter.queryOne.mockResolvedValueOnce(null);
       const stats = await repo.getStats();
-      expect(stats).toEqual({ totalPulses: 0, llmCallRate: 0, avgDurationMs: 0, actionsExecuted: 0 });
+      expect(stats).toEqual({
+        totalPulses: 0,
+        llmCallRate: 0,
+        avgDurationMs: 0,
+        actionsExecuted: 0,
+      });
     });
 
     it('handles null avg_duration', async () => {
-      mockAdapter.queryOne.mockResolvedValueOnce({ total: '10', llm_count: '3', avg_duration: null, total_actions: '5' });
+      mockAdapter.queryOne.mockResolvedValueOnce({
+        total: '10',
+        llm_count: '3',
+        avg_duration: null,
+        total_actions: '5',
+      });
       const stats = await repo.getStats();
       expect(stats.avgDurationMs).toBe(0);
       expect(stats.llmCallRate).toBeCloseTo(0.3);

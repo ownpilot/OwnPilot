@@ -252,14 +252,10 @@ export class TriggersRepository extends BaseRepository {
       { column: 'next_fire', value: nextFireValue },
     ];
 
-    const stmt = buildUpdateStatement(
-      'triggers',
-      fields,
-      [
-        { column: 'id', value: id },
-        { column: 'user_id', value: this.userId },
-      ],
-    );
+    const stmt = buildUpdateStatement('triggers', fields, [
+      { column: 'id', value: id },
+      { column: 'user_id', value: this.userId },
+    ]);
 
     // stmt is always non-null because updated_at is always provided,
     // but guard defensively.

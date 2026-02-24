@@ -12,11 +12,17 @@ const mockReadFile = vi.fn(async (p: string, _enc?: string) => {
   if (p in fsStore) return fsStore[p];
   throw new Error('ENOENT: no such file');
 });
-const mockWriteFile = vi.fn(async (p: string, data: string, _opts?: unknown) => { fsStore[p] = data; });
+const mockWriteFile = vi.fn(async (p: string, data: string, _opts?: unknown) => {
+  fsStore[p] = data;
+});
 const mockMkdir = vi.fn(async () => undefined);
-const mockUnlink = vi.fn(async (p: string) => { delete fsStore[p]; });
+const mockUnlink = vi.fn(async (p: string) => {
+  delete fsStore[p];
+});
 
-vi.mock('node:fs', () => ({ existsSync: (...args: unknown[]) => mockExistsSync(...(args as [string])) }));
+vi.mock('node:fs', () => ({
+  existsSync: (...args: unknown[]) => mockExistsSync(...(args as [string])),
+}));
 vi.mock('node:fs/promises', () => ({
   readFile: (...args: unknown[]) => mockReadFile(...(args as [string, string?])),
   writeFile: (...args: unknown[]) => mockWriteFile(...(args as [string, string, unknown?])),
@@ -41,7 +47,10 @@ async function initAndUnlock(): Promise<CredentialStore> {
 }
 
 describe('CredentialStore - additional coverage', () => {
-  beforeEach(() => { fsStore = {}; vi.clearAllMocks(); });
+  beforeEach(() => {
+    fsStore = {};
+    vi.clearAllMocks();
+  });
   afterEach(() => {
     delete process.env.OPENAI_API_KEY;
     delete process.env.ANTHROPIC_API_KEY;
@@ -113,7 +122,8 @@ describe('CredentialStore - additional coverage', () => {
       mockWriteFile.mockRejectedValueOnce(new Error('crypto fail'));
       const result = await store.initialize(PASSWORD);
       expect(result.ok).toBe(false);
-      if (!result.ok) expect(result.error.message).toMatch(/Failed to initialize credential store/i);
+      if (!result.ok)
+        expect(result.error.message).toMatch(/Failed to initialize credential store/i);
     });
   });
 

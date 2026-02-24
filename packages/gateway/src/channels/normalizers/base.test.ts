@@ -116,9 +116,7 @@ describe('baseNormalizer.normalizeIncoming', () => {
   it('filters out attachments without data', () => {
     const result = baseNormalizer.normalizeIncoming(
       makeMsg({
-        attachments: [
-          { type: 'image', mimeType: 'image/png', filename: 'no-data.png', size: 0 },
-        ],
+        attachments: [{ type: 'image', mimeType: 'image/png', filename: 'no-data.png', size: 0 }],
       })
     );
     expect(result.attachments).toBeUndefined();
@@ -140,9 +138,7 @@ describe('baseNormalizer.normalizeOutgoing', () => {
   });
 
   it('strips internal tags from output', () => {
-    const parts = baseNormalizer.normalizeOutgoing(
-      'Reply <memories>secret</memories> here'
-    );
+    const parts = baseNormalizer.normalizeOutgoing('Reply <memories>secret</memories> here');
     expect(parts).toEqual(['Reply  here']);
   });
 

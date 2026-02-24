@@ -131,7 +131,7 @@ export class BookmarksRepository extends CrudRepository<
   async getByUrl(url: string): Promise<Bookmark | null> {
     const row = await this.queryOne<BookmarkRow>(
       `SELECT * FROM bookmarks WHERE url = $1 AND user_id = $2`,
-      [url, this.userId],
+      [url, this.userId]
     );
     return row ? this.mapRow(row) : null;
   }
@@ -143,7 +143,7 @@ export class BookmarksRepository extends CrudRepository<
         last_visited_at = NOW(),
         updated_at = NOW()
       WHERE id = $1 AND user_id = $2`,
-      [id, this.userId],
+      [id, this.userId]
     );
     return this.get(id);
   }
@@ -209,7 +209,7 @@ export class BookmarksRepository extends CrudRepository<
   async getMostVisited(limit = 10): Promise<Bookmark[]> {
     const rows = await this.query<BookmarkRow>(
       `SELECT * FROM bookmarks WHERE user_id = $1 ORDER BY visit_count DESC LIMIT $2`,
-      [this.userId, limit],
+      [this.userId, limit]
     );
     return rows.map((row) => this.mapRow(row));
   }
@@ -217,7 +217,7 @@ export class BookmarksRepository extends CrudRepository<
   async getCategories(): Promise<string[]> {
     const rows = await this.query<{ category: string }>(
       `SELECT DISTINCT category FROM bookmarks WHERE user_id = $1 AND category IS NOT NULL ORDER BY category`,
-      [this.userId],
+      [this.userId]
     );
     return rows.map((r) => r.category);
   }
@@ -225,7 +225,7 @@ export class BookmarksRepository extends CrudRepository<
   async getTags(): Promise<string[]> {
     const rows = await this.query<{ tags: string }>(
       `SELECT tags FROM bookmarks WHERE user_id = $1`,
-      [this.userId],
+      [this.userId]
     );
 
     const allTags = new Set<string>();

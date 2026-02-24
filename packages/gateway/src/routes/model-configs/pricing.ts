@@ -9,7 +9,14 @@ import { Hono } from 'hono';
 import { modelConfigsRepo } from '../../db/repositories/index.js';
 import { getAllProviderConfigs } from '@ownpilot/core';
 import { getLog } from '../../services/log.js';
-import { getUserId, apiResponse, apiError, ERROR_CODES, sanitizeId, notFoundError } from '../helpers.js';
+import {
+  getUserId,
+  apiResponse,
+  apiError,
+  ERROR_CODES,
+  sanitizeId,
+  notFoundError,
+} from '../helpers.js';
 import { wsGateway } from '../../ws/server.js';
 import { fileURLToPath } from 'url';
 import path from 'path';

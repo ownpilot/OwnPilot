@@ -233,7 +233,9 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         try {
           const sessionToken = localStorage.getItem(STORAGE_KEYS.SESSION_TOKEN);
           if (sessionToken) chatHeaders['X-Session-Token'] = sessionToken;
-        } catch { /* localStorage unavailable */ }
+        } catch {
+          /* localStorage unavailable */
+        }
 
         const response = await fetch('/api/v1/chat', {
           method: 'POST',
@@ -285,9 +287,15 @@ export function ChatProvider({ children }: { children: ReactNode }) {
 
           // Handle 401 — clear session and let AuthGuard redirect to login
           if (response.status === 401) {
-            try { localStorage.removeItem(STORAGE_KEYS.SESSION_TOKEN); } catch { /* */ }
+            try {
+              localStorage.removeItem(STORAGE_KEYS.SESSION_TOKEN);
+            } catch {
+              /* */
+            }
             // Trigger a page-level auth refresh by dispatching a storage event
-            window.dispatchEvent(new StorageEvent('storage', { key: STORAGE_KEYS.SESSION_TOKEN, newValue: null }));
+            window.dispatchEvent(
+              new StorageEvent('storage', { key: STORAGE_KEYS.SESSION_TOKEN, newValue: null })
+            );
           }
 
           throw new Error(errorData.error?.message || `HTTP error ${response.status}`);

@@ -1748,9 +1748,7 @@ describe('ApprovalManager', () => {
     });
 
     it('should force approval at exactly score 95', async () => {
-      mockedAssessRisk.mockReturnValueOnce(
-        makeRisk({ requiresApproval: false, score: 95 })
-      );
+      mockedAssessRisk.mockReturnValueOnce(makeRisk({ requiresApproval: false, score: 95 }));
 
       const result = await manager.requestApproval(
         'user-1',
@@ -1765,9 +1763,7 @@ describe('ApprovalManager', () => {
     });
 
     it('should force approval at score 100', async () => {
-      mockedAssessRisk.mockReturnValueOnce(
-        makeRisk({ requiresApproval: false, score: 100 })
-      );
+      mockedAssessRisk.mockReturnValueOnce(makeRisk({ requiresApproval: false, score: 100 }));
 
       const result = await manager.requestApproval(
         'user-1',

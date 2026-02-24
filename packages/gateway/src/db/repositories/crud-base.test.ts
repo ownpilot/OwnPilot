@@ -353,7 +353,7 @@ describe('CrudRepository', () => {
       mockAdapter.queryOne.mockResolvedValueOnce(makeWidgetRow());
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
       mockAdapter.queryOne.mockResolvedValueOnce(
-        makeWidgetRow({ name: 'New', color: 'red', active: false }),
+        makeWidgetRow({ name: 'New', color: 'red', active: false })
       );
 
       const result = await repo.update('w-1', {
@@ -577,9 +577,7 @@ describe('CrudRepository', () => {
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
       mockAdapter.queryOne.mockResolvedValueOnce(null);
 
-      await expect(customRepo.create({ name: 'Test' })).rejects.toThrow(
-        'Failed to create gadget',
-      );
+      await expect(customRepo.create({ name: 'Test' })).rejects.toThrow('Failed to create gadget');
     });
 
     it('should derive entityName from tableName by default', () => {

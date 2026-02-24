@@ -71,9 +71,7 @@ export async function executeForEachNode(
     // Safety cap
     const items = resolvedArray.slice(0, maxIterations);
     if (resolvedArray.length > maxIterations) {
-      _log.warn(
-        `ForEach ${node.id}: truncated ${resolvedArray.length} items to ${maxIterations}`
-      );
+      _log.warn(`ForEach ${node.id}: truncated ${resolvedArray.length} items to ${maxIterations}`);
     }
 
     // 3. Handle empty array — skip body
@@ -222,11 +220,7 @@ export async function executeForEachNode(
           const bodyNode = nodeMap.get(bodyNodeId);
           if (bodyNode?.type === 'conditionNode' && bodyResult.branchTaken) {
             const skippedHandle = bodyResult.branchTaken === 'true' ? 'false' : 'true';
-            const skippedInBody = getDownstreamNodesByHandle(
-              bodyNodeId,
-              skippedHandle,
-              bodyEdges
-            );
+            const skippedInBody = getDownstreamNodesByHandle(bodyNodeId, skippedHandle, bodyEdges);
             for (const skipId of skippedInBody) {
               if (!nodeOutputs[skipId] || nodeOutputs[skipId].status !== 'skipped') {
                 nodeOutputs[skipId] = {

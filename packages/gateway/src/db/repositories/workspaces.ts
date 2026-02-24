@@ -216,7 +216,8 @@ export class WorkspacesRepository extends BaseRepository {
       { column: 'status', value: input.status },
       {
         column: 'container_config',
-        value: input.containerConfig !== undefined ? JSON.stringify(input.containerConfig) : undefined,
+        value:
+          input.containerConfig !== undefined ? JSON.stringify(input.containerConfig) : undefined,
       },
     ];
 
@@ -235,7 +236,7 @@ export class WorkspacesRepository extends BaseRepository {
         { column: 'user_id', value: this.userId },
       ],
       1,
-      rawClauses,
+      rawClauses
     );
 
     if (!stmt) {

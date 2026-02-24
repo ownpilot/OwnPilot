@@ -317,7 +317,9 @@ describe('apiClient.addOnError', () => {
   });
 
   it('does not break if a listener throws', async () => {
-    const badListener = vi.fn(() => { throw new Error('listener bug'); });
+    const badListener = vi.fn(() => {
+      throw new Error('listener bug');
+    });
     const goodListener = vi.fn();
     const unsub1 = apiClient.addOnError(badListener);
     const unsub2 = apiClient.addOnError(goodListener);
@@ -416,7 +418,9 @@ describe('apiClient.stream edge cases', () => {
     mockFetch.mockResolvedValueOnce({
       ok: false,
       status: 502,
-      json: async () => { throw new Error('not json'); },
+      json: async () => {
+        throw new Error('not json');
+      },
     });
 
     await expect(apiClient.stream('/chat', {})).rejects.toMatchObject({

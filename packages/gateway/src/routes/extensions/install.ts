@@ -97,7 +97,10 @@ installRoutes.post('/upload', async (c) => {
   if (!file || typeof file === 'string') {
     return apiError(
       c,
-      { code: ERROR_CODES.VALIDATION_ERROR, message: 'file field is required (multipart file upload)' },
+      {
+        code: ERROR_CODES.VALIDATION_ERROR,
+        message: 'file field is required (multipart file upload)',
+      },
       400
     );
   }
@@ -215,7 +218,9 @@ installRoutes.post('/upload', async (c) => {
         // Clean up temp dir on failure
         try {
           rmSync(tempDir, { recursive: true, force: true });
-        } catch { /* ignore cleanup errors */ }
+        } catch {
+          /* ignore cleanup errors */
+        }
 
         if (error instanceof ExtensionError) {
           return apiError(c, { code: error.code, message: error.message }, 400);
@@ -262,7 +267,9 @@ installRoutes.post('/upload', async (c) => {
         // Clean up saved file on install failure
         try {
           rmSync(destDir, { recursive: true, force: true });
-        } catch { /* ignore cleanup errors */ }
+        } catch {
+          /* ignore cleanup errors */
+        }
 
         if (error instanceof ExtensionError) {
           return apiError(c, { code: error.code, message: error.message }, 400);

@@ -125,8 +125,12 @@ export function WorkspacesPage() {
       try {
         const t = localStorage.getItem(STORAGE_KEYS.SESSION_TOKEN);
         if (t) dlHeaders['X-Session-Token'] = t;
-      } catch { /* */ }
-      const response = await fetch(fileWorkspacesApi.downloadUrl(workspaceId), { headers: dlHeaders });
+      } catch {
+        /* */
+      }
+      const response = await fetch(fileWorkspacesApi.downloadUrl(workspaceId), {
+        headers: dlHeaders,
+      });
       if (!response.ok) throw new Error('Download failed');
 
       const blob = await response.blob();
@@ -476,7 +480,9 @@ export function WorkspacesPage() {
                                   try {
                                     const t = localStorage.getItem(STORAGE_KEYS.SESSION_TOKEN);
                                     if (t) hdrs['X-Session-Token'] = t;
-                                  } catch { /* */ }
+                                  } catch {
+                                    /* */
+                                  }
                                   const res = await fetch(
                                     `/api/v1/file-workspaces/${selectedWorkspace.id}/file/${file.path}?download=true`,
                                     { headers: hdrs }

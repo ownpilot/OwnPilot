@@ -96,7 +96,11 @@ describe('Tools Routes', () => {
       expect(typeof json.data).toBe('object');
 
       // At least one category should exist with a count
-      const categories = Object.values(json.data) as Array<{ count: number; icon: string; description: string }>;
+      const categories = Object.values(json.data) as Array<{
+        count: number;
+        icon: string;
+        description: string;
+      }>;
       expect(categories.length).toBeGreaterThan(0);
 
       for (const cat of categories) {
@@ -124,7 +128,9 @@ describe('Tools Routes', () => {
       expect(json.data.totalCategories).toBeGreaterThan(0);
 
       // Each category has info and tools array
-      for (const [_categoryId, cat] of Object.entries(json.data.categories) as Array<[string, { info: unknown; tools: unknown[] }]>) {
+      for (const [_categoryId, cat] of Object.entries(json.data.categories) as Array<
+        [string, { info: unknown; tools: unknown[] }]
+      >) {
         expect(cat.info).toBeDefined();
         expect(cat.tools).toBeInstanceOf(Array);
         expect(cat.tools.length).toBeGreaterThan(0);
@@ -318,9 +324,7 @@ describe('Tools Routes', () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          executions: [
-            { tool: 'generate_uuid', arguments: {} },
-          ],
+          executions: [{ tool: 'generate_uuid', arguments: {} }],
           parallel: false,
         }),
       });

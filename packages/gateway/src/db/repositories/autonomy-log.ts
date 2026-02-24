@@ -109,7 +109,10 @@ export class AutonomyLogRepository extends BaseRepository {
   /**
    * Get paginated log entries
    */
-  async getPage(limit: number, offset: number): Promise<{ entries: AutonomyLogEntry[]; total: number }> {
+  async getPage(
+    limit: number,
+    offset: number
+  ): Promise<{ entries: AutonomyLogEntry[]; total: number }> {
     const countRow = await this.queryOne<{ count: string }>(
       'SELECT COUNT(*) as count FROM autonomy_log WHERE user_id = $1',
       [this.userId]

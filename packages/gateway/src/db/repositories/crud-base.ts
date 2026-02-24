@@ -124,7 +124,7 @@ export abstract class CrudRepository<
 
     await this.execute(
       `INSERT INTO ${this.tableName} (${columns.join(', ')}) VALUES (${placeholders})`,
-      values,
+      values
     );
 
     const result = await this.getById(id);
@@ -136,7 +136,7 @@ export abstract class CrudRepository<
         createEvent(EventTypes.RESOURCE_CREATED, 'resource', `${this.tableName}-repository`, {
           resourceType: this.resourceType,
           id,
-        }),
+        })
       );
     }
 
@@ -149,7 +149,7 @@ export abstract class CrudRepository<
   async getById(id: string): Promise<TEntity | null> {
     const row = await this.queryOne<TRow>(
       `SELECT * FROM ${this.tableName} WHERE id = $1 AND user_id = $2`,
-      [id, this.userId],
+      [id, this.userId]
     );
     return row ? this.mapRow(row) : null;
   }
@@ -175,7 +175,7 @@ export abstract class CrudRepository<
         { column: 'user_id', value: this.userId },
       ],
       1,
-      [{ sql: 'updated_at = NOW()' }],
+      [{ sql: 'updated_at = NOW()' }]
     );
 
     if (!stmt) return existing;
@@ -191,7 +191,7 @@ export abstract class CrudRepository<
           resourceType: this.resourceType,
           id,
           changes: input,
-        }),
+        })
       );
     }
 
@@ -205,7 +205,7 @@ export abstract class CrudRepository<
   async delete(id: string): Promise<boolean> {
     const result = await this.execute(
       `DELETE FROM ${this.tableName} WHERE id = $1 AND user_id = $2`,
-      [id, this.userId],
+      [id, this.userId]
     );
     const deleted = result.changes > 0;
 
@@ -215,7 +215,7 @@ export abstract class CrudRepository<
         createEvent(EventTypes.RESOURCE_DELETED, 'resource', `${this.tableName}-repository`, {
           resourceType: this.resourceType,
           id,
-        }),
+        })
       );
     }
 
@@ -255,7 +255,7 @@ export abstract class CrudRepository<
   async count(): Promise<number> {
     const row = await this.queryOne<{ count: string }>(
       `SELECT COUNT(*) as count FROM ${this.tableName} WHERE user_id = $1`,
-      [this.userId],
+      [this.userId]
     );
     return parseInt(row?.count ?? '0', 10);
   }

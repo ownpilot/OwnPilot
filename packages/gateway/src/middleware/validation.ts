@@ -147,22 +147,26 @@ export const pulseSettingsSchema = z.object({
 
 // ─── Pulse Directives Schema ─────────────────────────────────────
 
-const ruleThresholdsSchema = z.object({
-  staleDays: z.number().int().min(1).max(30).optional(),
-  deadlineDays: z.number().int().min(1).max(30).optional(),
-  activityDays: z.number().int().min(1).max(30).optional(),
-  lowProgressPct: z.number().int().min(1).max(100).optional(),
-  memoryMaxCount: z.number().int().min(50).max(10000).optional(),
-  memoryMinImportance: z.number().min(0).max(1).optional(),
-  triggerErrorMin: z.number().int().min(1).max(100).optional(),
-}).optional();
+const ruleThresholdsSchema = z
+  .object({
+    staleDays: z.number().int().min(1).max(30).optional(),
+    deadlineDays: z.number().int().min(1).max(30).optional(),
+    activityDays: z.number().int().min(1).max(30).optional(),
+    lowProgressPct: z.number().int().min(1).max(100).optional(),
+    memoryMaxCount: z.number().int().min(50).max(10000).optional(),
+    memoryMinImportance: z.number().min(0).max(1).optional(),
+    triggerErrorMin: z.number().int().min(1).max(100).optional(),
+  })
+  .optional();
 
-const actionCooldownsSchema = z.object({
-  create_memory: z.number().int().min(0).max(1440).optional(),
-  update_goal_progress: z.number().int().min(0).max(1440).optional(),
-  send_notification: z.number().int().min(0).max(1440).optional(),
-  run_memory_cleanup: z.number().int().min(0).max(1440).optional(),
-}).optional();
+const actionCooldownsSchema = z
+  .object({
+    create_memory: z.number().int().min(0).max(1440).optional(),
+    update_goal_progress: z.number().int().min(0).max(1440).optional(),
+    send_notification: z.number().int().min(0).max(1440).optional(),
+    run_memory_cleanup: z.number().int().min(0).max(1440).optional(),
+  })
+  .optional();
 
 export const pulseDirectivesSchema = z.object({
   disabledRules: z.array(z.string().max(50)).max(20).optional(),

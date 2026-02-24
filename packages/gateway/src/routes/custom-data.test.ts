@@ -507,9 +507,7 @@ describe('Custom Data Routes', () => {
 
   describe('GET /custom-data/tables/:table/records - errors', () => {
     it('returns 400 for invalid JSON in filter parameter', async () => {
-      const res = await app.request(
-        '/custom-data/tables/books/records?filter=not-valid-json'
-      );
+      const res = await app.request('/custom-data/tables/books/records?filter=not-valid-json');
 
       expect(res.status).toBe(400);
       const json = await res.json();
@@ -623,7 +621,11 @@ describe('Custom Data Routes', () => {
 // ===========================================================================
 
 describe('executeCustomDataTool', () => {
-  let executeCustomDataTool: (toolName: string, args: Record<string, unknown>, userId: string) => Promise<{ success: boolean; result?: unknown; error?: string }>;
+  let executeCustomDataTool: (
+    toolName: string,
+    args: Record<string, unknown>,
+    userId: string
+  ) => Promise<{ success: boolean; result?: unknown; error?: string }>;
 
   beforeAll(async () => {
     const mod = await import('./custom-data.js');
@@ -690,7 +692,10 @@ describe('executeCustomDataTool', () => {
       mockCustomDataService.getTable.mockResolvedValue({
         id: 'tbl-1',
         displayName: 'Books',
-        columns: [{ name: 'title', type: 'text' }, { name: 'author', type: 'text' }],
+        columns: [
+          { name: 'title', type: 'text' },
+          { name: 'author', type: 'text' },
+        ],
       });
       mockCustomDataService.getTableStats.mockResolvedValue({ recordCount: 10 });
 
@@ -782,10 +787,7 @@ describe('executeCustomDataTool', () => {
     });
 
     it('batch adds records successfully', async () => {
-      mockCustomDataService.batchAddRecords.mockResolvedValue([
-        { id: 'r1' },
-        { id: 'r2' },
-      ]);
+      mockCustomDataService.batchAddRecords.mockResolvedValue([{ id: 'r1' }, { id: 'r2' }]);
       mockCustomDataService.getTable.mockResolvedValue({ displayName: 'Books' });
 
       const result = await executeCustomDataTool('batch_add_custom_records', {

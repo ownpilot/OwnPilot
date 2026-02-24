@@ -12,13 +12,9 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 // ---------------------------------------------------------------------------
 
 const mockSandboxExecute = vi.hoisted(() => vi.fn());
-const mockCreateSandbox = vi.hoisted(() =>
-  vi.fn(() => ({ execute: mockSandboxExecute }))
-);
+const mockCreateSandbox = vi.hoisted(() => vi.fn(() => ({ execute: mockSandboxExecute })));
 const mockCreateScopedFs = vi.hoisted(() => vi.fn(() => ({ readFile: vi.fn() })));
-const mockCreateScopedExec = vi.hoisted(() =>
-  vi.fn(() => ({ exec: vi.fn() }))
-);
+const mockCreateScopedExec = vi.hoisted(() => vi.fn(() => ({ exec: vi.fn() })));
 const mockIsToolCallAllowed = vi.hoisted(() => vi.fn());
 const mockCreateSafeFetch = vi.hoisted(() => vi.fn(() => vi.fn()));
 const mockMapPermissions = vi.hoisted(() =>
@@ -36,10 +32,12 @@ const mockCreateSandboxUtils = vi.hoisted(() =>
     uuid: vi.fn(),
   }))
 );
-const mockGetBaseName = vi.hoisted(() => vi.fn((name: string) => {
-  const i = name.lastIndexOf('.');
-  return i >= 0 ? name.substring(i + 1) : name;
-}));
+const mockGetBaseName = vi.hoisted(() =>
+  vi.fn((name: string) => {
+    const i = name.lastIndexOf('.');
+    return i >= 0 ? name.substring(i + 1) : name;
+  })
+);
 
 const mockUtilityTools = vi.hoisted(() => [
   {
@@ -267,11 +265,7 @@ describe('executeDynamicTool', () => {
       value: { success: true, value: null, executionTime: 1 },
     });
 
-    await executeDynamicTool(
-      makeTool({ permissions: ['network'] }),
-      {},
-      makeContext()
-    );
+    await executeDynamicTool(makeTool({ permissions: ['network'] }), {}, makeContext());
 
     expect(mockCreateSafeFetch).toHaveBeenCalledWith('my_tool');
     const globals = mockCreateSandbox.mock.calls[0]![0].globals;
@@ -312,11 +306,7 @@ describe('executeDynamicTool', () => {
       value: { success: true, value: null, executionTime: 1 },
     });
 
-    await executeDynamicTool(
-      makeTool({ permissions: ['local'] }),
-      {},
-      makeContext()
-    );
+    await executeDynamicTool(makeTool({ permissions: ['local'] }), {}, makeContext());
 
     // createScopedFs might still be called for local permission alone,
     // but let's check the globals
@@ -346,11 +336,7 @@ describe('executeDynamicTool', () => {
       value: { success: true, value: null, executionTime: 1 },
     });
 
-    await executeDynamicTool(
-      makeTool({ permissions: ['shell'] }),
-      {},
-      makeContext()
-    );
+    await executeDynamicTool(makeTool({ permissions: ['shell'] }), {}, makeContext());
 
     const globals = mockCreateSandbox.mock.calls[0]![0].globals;
     expect(globals.exec).toBeUndefined();
@@ -427,11 +413,7 @@ describe('executeDynamicTool', () => {
     });
 
     const mockGetFieldValue = vi.fn().mockReturnValue('api-key-123');
-    await executeDynamicTool(
-      makeTool(),
-      {},
-      makeContext({ getFieldValue: mockGetFieldValue })
-    );
+    await executeDynamicTool(makeTool(), {}, makeContext({ getFieldValue: mockGetFieldValue }));
 
     const globals = mockCreateSandbox.mock.calls[0]![0].globals;
     expect(globals.config).toBeDefined();
@@ -493,10 +475,7 @@ describe('executeDynamicTool', () => {
 
       // Actually call it
       const result = await callTool('my_callable', { arg: 'value' });
-      expect(callableTool.executor).toHaveBeenCalledWith(
-        { arg: 'value' },
-        expect.any(Object)
-      );
+      expect(callableTool.executor).toHaveBeenCalledWith({ arg: 'value' }, expect.any(Object));
       expect(result).toEqual({ result: 42 });
     });
 
@@ -514,9 +493,7 @@ describe('executeDynamicTool', () => {
       await executeDynamicTool(makeTool(), {}, makeContext());
 
       const globals = mockCreateSandbox.mock.calls[0]![0].globals;
-      await expect(globals.utils.callTool('execute_shell', {})).rejects.toThrow(
-        'Tool is blocked'
-      );
+      await expect(globals.utils.callTool('execute_shell', {})).rejects.toThrow('Tool is blocked');
     });
 
     it('throws when tool is not found', async () => {
@@ -530,9 +507,7 @@ describe('executeDynamicTool', () => {
       await executeDynamicTool(makeTool(), {}, makeContext());
 
       const globals = mockCreateSandbox.mock.calls[0]![0].globals;
-      await expect(globals.utils.callTool('nonexistent_tool', {})).rejects.toThrow(
-        'not found'
-      );
+      await expect(globals.utils.callTool('nonexistent_tool', {})).rejects.toThrow('not found');
     });
 
     it('throws when called tool returns error', async () => {
@@ -550,9 +525,7 @@ describe('executeDynamicTool', () => {
       await executeDynamicTool(makeTool(), {}, makeContext());
 
       const globals = mockCreateSandbox.mock.calls[0]![0].globals;
-      await expect(globals.utils.callTool('test_util', {})).rejects.toThrow(
-        'Something failed'
-      );
+      await expect(globals.utils.callTool('test_util', {})).rejects.toThrow('Something failed');
     });
 
     it('returns string content when JSON parsing fails', async () => {
@@ -734,11 +707,7 @@ describe('executeDynamicTool', () => {
         value: { success: true, value: null, executionTime: 1 },
       });
 
-      await executeDynamicTool(
-        makeTool(),
-        {},
-        makeContext({ getApiKey: mockGetApiKey })
-      );
+      await executeDynamicTool(makeTool(), {}, makeContext({ getApiKey: mockGetApiKey }));
 
       const globals = mockCreateSandbox.mock.calls[0]![0].globals;
       const result = globals.utils.getApiKey('openai');
@@ -786,11 +755,7 @@ describe('executeDynamicTool', () => {
         value: { success: true, value: null, executionTime: 1 },
       });
 
-      await executeDynamicTool(
-        makeTool(),
-        {},
-        makeContext({ getConfigEntry: mockGetConfigEntry })
-      );
+      await executeDynamicTool(makeTool(), {}, makeContext({ getConfigEntry: mockGetConfigEntry }));
 
       const globals = mockCreateSandbox.mock.calls[0]![0].globals;
       globals.utils.getConfigEntry('smtp', 'Work');
@@ -849,11 +814,7 @@ describe('executeDynamicTool', () => {
         value: { success: true, value: null, executionTime: 1 },
       });
 
-      await executeDynamicTool(
-        makeTool(),
-        {},
-        makeContext({ getFieldValue: mockGetFieldValue })
-      );
+      await executeDynamicTool(makeTool(), {}, makeContext({ getFieldValue: mockGetFieldValue }));
 
       const globals = mockCreateSandbox.mock.calls[0]![0].globals;
       const result = globals.utils.getFieldValue('smtp', 'host', 'Work');
@@ -869,11 +830,7 @@ describe('executeDynamicTool', () => {
         value: { success: true, value: null, executionTime: 1 },
       });
 
-      await executeDynamicTool(
-        makeTool(),
-        {},
-        makeContext({ getFieldValue: mockGetFieldValue })
-      );
+      await executeDynamicTool(makeTool(), {}, makeContext({ getFieldValue: mockGetFieldValue }));
 
       const globals = mockCreateSandbox.mock.calls[0]![0].globals;
       const result = await globals.config.get('weather', 'api_key');
@@ -922,9 +879,7 @@ describe('executeDynamicTool', () => {
 
     await executeDynamicTool(makeTool(), {}, makeContext());
 
-    expect(mockCreateSandbox).toHaveBeenCalledWith(
-      expect.objectContaining({ debug: false })
-    );
+    expect(mockCreateSandbox).toHaveBeenCalledWith(expect.objectContaining({ debug: false }));
   });
 
   // --- Console injection ---

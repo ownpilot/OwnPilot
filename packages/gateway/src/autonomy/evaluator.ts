@@ -7,10 +7,7 @@
  */
 
 import type { PulseContext } from './context.js';
-import {
-  PULSE_MIN_INTERVAL_MS,
-  PULSE_MAX_INTERVAL_MS,
-} from '../config/defaults.js';
+import { PULSE_MIN_INTERVAL_MS, PULSE_MAX_INTERVAL_MS } from '../config/defaults.js';
 
 // ============================================================================
 // Types
@@ -73,14 +70,54 @@ const SEVERITY_WEIGHT: Record<SignalSeverity, number> = {
 // ============================================================================
 
 export const RULE_DEFINITIONS = [
-  { id: 'stale_goals', label: 'Stale Goals', description: 'Goals not updated in >3 days', thresholdKey: 'staleDays' as const },
-  { id: 'upcoming_deadline', label: 'Upcoming Deadline', description: 'Goals due within 3 days', thresholdKey: 'deadlineDays' as const },
-  { id: 'no_activity', label: 'No Recent Activity', description: 'No user activity for >2 days', thresholdKey: null },
-  { id: 'low_progress', label: 'Low Progress', description: 'Active goals below 10% progress', thresholdKey: 'lowProgressPct' as const },
-  { id: 'memory_cleanup', label: 'Memory Cleanup', description: 'Too many low-importance memories', thresholdKey: 'memoryMaxCount' as const },
-  { id: 'pending_approvals', label: 'Pending Approvals', description: 'Actions awaiting approval', thresholdKey: null },
-  { id: 'trigger_errors', label: 'Trigger Errors', description: 'Trigger failures in last 24h', thresholdKey: 'triggerErrorMin' as const },
-  { id: 'routine_checkin', label: 'Routine Check-in', description: 'Morning or evening routine check-in', thresholdKey: null },
+  {
+    id: 'stale_goals',
+    label: 'Stale Goals',
+    description: 'Goals not updated in >3 days',
+    thresholdKey: 'staleDays' as const,
+  },
+  {
+    id: 'upcoming_deadline',
+    label: 'Upcoming Deadline',
+    description: 'Goals due within 3 days',
+    thresholdKey: 'deadlineDays' as const,
+  },
+  {
+    id: 'no_activity',
+    label: 'No Recent Activity',
+    description: 'No user activity for >2 days',
+    thresholdKey: null,
+  },
+  {
+    id: 'low_progress',
+    label: 'Low Progress',
+    description: 'Active goals below 10% progress',
+    thresholdKey: 'lowProgressPct' as const,
+  },
+  {
+    id: 'memory_cleanup',
+    label: 'Memory Cleanup',
+    description: 'Too many low-importance memories',
+    thresholdKey: 'memoryMaxCount' as const,
+  },
+  {
+    id: 'pending_approvals',
+    label: 'Pending Approvals',
+    description: 'Actions awaiting approval',
+    thresholdKey: null,
+  },
+  {
+    id: 'trigger_errors',
+    label: 'Trigger Errors',
+    description: 'Trigger failures in last 24h',
+    thresholdKey: 'triggerErrorMin' as const,
+  },
+  {
+    id: 'routine_checkin',
+    label: 'Routine Check-in',
+    description: 'Morning or evening routine check-in',
+    thresholdKey: null,
+  },
 ] as const;
 
 // ============================================================================
@@ -157,7 +194,11 @@ const rules: Rule[] = [
   {
     id: 'memory_cleanup',
     fn: (ctx, thresholds) => {
-      if (ctx.memories.total <= thresholds.memoryMaxCount || ctx.memories.avgImportance >= thresholds.memoryMinImportance) return null;
+      if (
+        ctx.memories.total <= thresholds.memoryMaxCount ||
+        ctx.memories.avgImportance >= thresholds.memoryMinImportance
+      )
+        return null;
       return {
         id: 'memory_cleanup',
         label: 'Memory Cleanup',

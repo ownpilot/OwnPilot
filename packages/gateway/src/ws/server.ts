@@ -10,7 +10,10 @@ import type { Server as HttpServer } from 'node:http';
 import type { Server as HttpsServer } from 'node:https';
 import type { Http2SecureServer, Http2Server } from 'node:http2';
 import { timingSafeEqual } from 'node:crypto';
-import { validateSession as validateUiSession, isPasswordConfigured } from '../services/ui-session.js';
+import {
+  validateSession as validateUiSession,
+  isPasswordConfigured,
+} from '../services/ui-session.js';
 import type { ClientEvents, WSMessage, Channel } from './types.js';
 import { sessionManager } from './session.js';
 import { ClientEventHandler } from './events.js';

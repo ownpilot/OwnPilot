@@ -9,13 +9,7 @@ import { Hono } from 'hono';
 import { createCustomToolsRepo } from '../../db/repositories/custom-tools.js';
 import { invalidateAgentCache } from '../agents.js';
 import { syncToolToRegistry } from '../../services/custom-tool-registry.js';
-import {
-  getUserId,
-  apiResponse,
-  apiError,
-  ERROR_CODES,
-  notFoundError,
-} from '../helpers.js';
+import { getUserId, apiResponse, apiError, ERROR_CODES, notFoundError } from '../helpers.js';
 import { wsGateway } from '../../ws/server.js';
 
 export const approvalRoutes = new Hono();

@@ -170,43 +170,47 @@ customDataRoutes.delete('/tables/:table', async (c) => {
 /**
  * GET /custom-data/tables/:table/records - List records
  */
-customDataRoutes.get('/tables/:table/records', pagination({ defaultLimit: 50, maxLimit: 1000 }), async (c) => {
-  const tableId = c.req.param('table');
-  const { limit, offset } = c.get('pagination')!;
-  const filterParam = c.req.query('filter');
+customDataRoutes.get(
+  '/tables/:table/records',
+  pagination({ defaultLimit: 50, maxLimit: 1000 }),
+  async (c) => {
+    const tableId = c.req.param('table');
+    const { limit, offset } = c.get('pagination')!;
+    const filterParam = c.req.query('filter');
 
-  let filter: Record<string, unknown> | undefined;
-  if (filterParam) {
+    let filter: Record<string, unknown> | undefined;
+    if (filterParam) {
+      try {
+        filter = JSON.parse(filterParam);
+      } catch {
+        return apiError(
+          c,
+          { code: ERROR_CODES.INVALID_INPUT, message: 'Invalid JSON in filter parameter' },
+          400
+        );
+      }
+    }
+
     try {
-      filter = JSON.parse(filterParam);
-    } catch {
+      const service = getServiceRegistry().get(Services.Database);
+      const { records, total } = await service.listRecords(tableId, { limit, offset, filter });
+
+      return apiResponse(c, {
+        records,
+        total,
+        limit,
+        offset,
+        hasMore: offset + records.length < total,
+      });
+    } catch (err) {
       return apiError(
         c,
-        { code: ERROR_CODES.INVALID_INPUT, message: 'Invalid JSON in filter parameter' },
+        { code: ERROR_CODES.LIST_FAILED, message: getErrorMessage(err, 'Failed to list records') },
         400
       );
     }
   }
-
-  try {
-    const service = getServiceRegistry().get(Services.Database);
-    const { records, total } = await service.listRecords(tableId, { limit, offset, filter });
-
-    return apiResponse(c, {
-      records,
-      total,
-      limit,
-      offset,
-      hasMore: offset + records.length < total,
-    });
-  } catch (err) {
-    return apiError(
-      c,
-      { code: ERROR_CODES.LIST_FAILED, message: getErrorMessage(err, 'Failed to list records') },
-      400
-    );
-  }
-});
+);
 
 /**
  * POST /custom-data/tables/:table/records - Add a record

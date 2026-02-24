@@ -248,7 +248,9 @@ export class OpenAIProvider extends BaseProvider {
           .join(' | ');
         logError('openai', new InternalError(`Stream error: ${detail}`), `HTTP ${response.status}`);
         yield err(
-          new InternalError(`OpenAI stream error: ${response.status}${errorText ? ` - ${errorText}` : ''}`)
+          new InternalError(
+            `OpenAI stream error: ${response.status}${errorText ? ` - ${errorText}` : ''}`
+          )
         );
         return;
       }

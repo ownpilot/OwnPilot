@@ -50,9 +50,7 @@ function makeConfig(overrides: Partial<TelegramConfig> = {}): TelegramConfig {
 }
 
 function captureHandler(methodName: 'on' | 'command', trigger: string) {
-  const call = mockBot[methodName].mock.calls.find(
-    (c: unknown[]) => c[0] === trigger
-  );
+  const call = mockBot[methodName].mock.calls.find((c: unknown[]) => c[0] === trigger);
   if (!call) throw new Error(`No ${methodName}('${trigger}') call found`);
   return call[1] as (ctx: Record<string, unknown>) => Promise<void>;
 }
@@ -497,7 +495,9 @@ describe('TelegramBot', () => {
       const bot = new TelegramBot(makeConfig());
       await bot.setWebhook('https://example.com/hook');
       expect(mockBot.api.setWebhook).toHaveBeenCalledWith('https://example.com/hook');
-      expect(mockLog.info).toHaveBeenCalledWith('Telegram webhook set to: https://example.com/hook');
+      expect(mockLog.info).toHaveBeenCalledWith(
+        'Telegram webhook set to: https://example.com/hook'
+      );
     });
 
     it('deleteWebhook calls API and logs', async () => {

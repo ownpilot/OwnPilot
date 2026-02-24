@@ -12,7 +12,10 @@ import { InternalError } from '../types/errors.js';
  * Create a mock provider for testing processConversation / streamCompletion.
  * By default, `isReady` returns true only when apiKey is non-empty.
  */
-function createMockProvider(overrides: Partial<IProvider> = {}, apiKey = 'test-api-key'): IProvider {
+function createMockProvider(
+  overrides: Partial<IProvider> = {},
+  apiKey = 'test-api-key'
+): IProvider {
   return {
     type: 'openai',
     isReady: () => !!apiKey,
@@ -607,9 +610,7 @@ describe('Agent processConversation (via chat)', () => {
       ok({
         id: 'resp-1',
         content: '',
-        toolCalls: [
-          { id: 'tc-1', name: 'test_tool', arguments: '{"input":"hello"}' },
-        ],
+        toolCalls: [{ id: 'tc-1', name: 'test_tool', arguments: '{"input":"hello"}' }],
         finishReason: 'tool_calls' as const,
         model: 'gpt-4o',
         createdAt: new Date(),
@@ -694,13 +695,15 @@ describe('Agent processConversation (via chat)', () => {
       })
     );
 
-    const onBeforeToolCall = vi.fn().mockImplementation(async (tc: { name: string; arguments: string }) => {
-      const args = JSON.parse(tc.arguments);
-      if (args.input === 'rejected') {
-        return { approved: false, reason: 'Not allowed' };
-      }
-      return { approved: true };
-    });
+    const onBeforeToolCall = vi
+      .fn()
+      .mockImplementation(async (tc: { name: string; arguments: string }) => {
+        const args = JSON.parse(tc.arguments);
+        if (args.input === 'rejected') {
+          return { approved: false, reason: 'Not allowed' };
+        }
+        return { approved: true };
+      });
 
     const result = await agent.chat('Run tools', { onBeforeToolCall });
 
@@ -716,9 +719,7 @@ describe('Agent processConversation (via chat)', () => {
       ok({
         id: 'resp-1',
         content: '',
-        toolCalls: [
-          { id: 'tc-1', name: 'test_tool', arguments: '{"input":"x"}' },
-        ],
+        toolCalls: [{ id: 'tc-1', name: 'test_tool', arguments: '{"input":"x"}' }],
         finishReason: 'tool_calls' as const,
         model: 'gpt-4o',
         createdAt: new Date(),
@@ -751,9 +752,7 @@ describe('Agent processConversation (via chat)', () => {
       ok({
         id: 'resp-1',
         content: '',
-        toolCalls: [
-          { id: 'tc-1', name: 'test_tool', arguments: '{"input":"hello"}' },
-        ],
+        toolCalls: [{ id: 'tc-1', name: 'test_tool', arguments: '{"input":"hello"}' }],
         finishReason: 'tool_calls' as const,
         model: 'gpt-4o',
         createdAt: new Date(),
@@ -799,9 +798,7 @@ describe('Agent processConversation (via chat)', () => {
       ok({
         id: 'resp-1',
         content: '',
-        toolCalls: [
-          { id: 'tc-1', name: 'test_tool', arguments: '{}' },
-        ],
+        toolCalls: [{ id: 'tc-1', name: 'test_tool', arguments: '{}' }],
         finishReason: 'tool_calls' as const,
         model: 'gpt-4o',
         createdAt: new Date(),
@@ -856,9 +853,7 @@ describe('Agent processConversation (via chat)', () => {
       ok({
         id: 'resp-1',
         content: '',
-        toolCalls: [
-          { id: 'tc-1', name: 'failing_tool', arguments: '{}' },
-        ],
+        toolCalls: [{ id: 'tc-1', name: 'failing_tool', arguments: '{}' }],
         finishReason: 'tool_calls' as const,
         model: 'gpt-4o',
         createdAt: new Date(),
@@ -893,9 +888,7 @@ describe('Agent processConversation (via chat)', () => {
     const toolCallResponse = ok({
       id: 'resp-loop',
       content: '',
-      toolCalls: [
-        { id: 'tc-loop', name: 'test_tool', arguments: '{}' },
-      ],
+      toolCalls: [{ id: 'tc-loop', name: 'test_tool', arguments: '{}' }],
       finishReason: 'tool_calls' as const,
       model: 'gpt-4o',
       createdAt: new Date(),
@@ -915,9 +908,7 @@ describe('Agent processConversation (via chat)', () => {
     const { agent, provider } = createAgentWithMockProvider();
     const completeFn = provider.complete as ReturnType<typeof vi.fn>;
 
-    completeFn.mockResolvedValueOnce(
-      err(new InternalError('Provider failed'))
-    );
+    completeFn.mockResolvedValueOnce(err(new InternalError('Provider failed')));
 
     const result = await agent.chat('Fail');
 
@@ -968,9 +959,7 @@ describe('Agent processConversation (via chat)', () => {
       ok({
         id: 'resp-1',
         content: '',
-        toolCalls: [
-          { id: 'tc-1', name: 'test_tool', arguments: '{}' },
-        ],
+        toolCalls: [{ id: 'tc-1', name: 'test_tool', arguments: '{}' }],
         finishReason: 'tool_calls' as const,
         model: 'gpt-4o',
         createdAt: new Date(),
@@ -1024,9 +1013,7 @@ describe('Agent processConversation (via chat)', () => {
 
   it('sets lastError in state when chat throws', async () => {
     const { agent, provider } = createAgentWithMockProvider();
-    (provider.complete as ReturnType<typeof vi.fn>).mockRejectedValueOnce(
-      new Error('Kaboom')
-    );
+    (provider.complete as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error('Kaboom'));
 
     const result = await agent.chat('Hello');
 
@@ -1081,9 +1068,7 @@ describe('Agent processConversation (via chat)', () => {
       ok({
         id: 'resp-1',
         content: '',
-        toolCalls: [
-          { id: 'tc-1', name: 'test_tool', arguments: '{"input":"a"}' },
-        ],
+        toolCalls: [{ id: 'tc-1', name: 'test_tool', arguments: '{"input":"a"}' }],
         finishReason: 'tool_calls' as const,
         model: 'gpt-4o',
         createdAt: new Date(),
@@ -1163,10 +1148,20 @@ describe('Agent streamCompletion (via chat with stream=true)', () => {
     mockProviderOverride = provider;
 
     // Create a stream generator that yields text chunks
-    async function* fakeStream(): AsyncGenerator<Result<StreamChunk, InternalError>, void, unknown> {
+    async function* fakeStream(): AsyncGenerator<
+      Result<StreamChunk, InternalError>,
+      void,
+      unknown
+    > {
       yield ok({ id: 'resp-s', content: 'Hello', done: false });
       yield ok({ id: 'resp-s', content: ' world', done: false });
-      yield ok({ id: '', content: '!', done: true, finishReason: 'stop' as const, usage: { promptTokens: 10, completionTokens: 5, totalTokens: 15 } });
+      yield ok({
+        id: '',
+        content: '!',
+        done: true,
+        finishReason: 'stop' as const,
+        usage: { promptTokens: 10, completionTokens: 5, totalTokens: 15 },
+      });
     }
 
     (provider.stream as ReturnType<typeof vi.fn>).mockReturnValueOnce(fakeStream());
@@ -1184,7 +1179,11 @@ describe('Agent streamCompletion (via chat with stream=true)', () => {
     if (result.ok) {
       expect(result.value.content).toBe('Hello world!');
       expect(result.value.finishReason).toBe('stop');
-      expect(result.value.usage).toEqual({ promptTokens: 10, completionTokens: 5, totalTokens: 15 });
+      expect(result.value.usage).toEqual({
+        promptTokens: 10,
+        completionTokens: 5,
+        totalTokens: 15,
+      });
       expect(result.value.id).toBe('resp-s');
     }
     expect(chunks).toHaveLength(3);
@@ -1206,7 +1205,11 @@ describe('Agent streamCompletion (via chat with stream=true)', () => {
     const completeFn = provider.complete as ReturnType<typeof vi.fn>;
 
     // First call: stream with tool call chunks
-    async function* streamWithToolCall(): AsyncGenerator<Result<StreamChunk, InternalError>, void, unknown> {
+    async function* streamWithToolCall(): AsyncGenerator<
+      Result<StreamChunk, InternalError>,
+      void,
+      unknown
+    > {
       // New tool call with id
       yield ok({
         id: 'resp-s1',
@@ -1240,8 +1243,17 @@ describe('Agent streamCompletion (via chat with stream=true)', () => {
     // After tool execution, the second turn should NOT stream (provider.complete is used
     // for subsequent turns since the streaming generator is consumed). We need to set up
     // a second stream for the second turn.
-    async function* streamFinal(): AsyncGenerator<Result<StreamChunk, InternalError>, void, unknown> {
-      yield ok({ id: 'resp-s2', content: 'Stream done.', done: true, finishReason: 'stop' as const });
+    async function* streamFinal(): AsyncGenerator<
+      Result<StreamChunk, InternalError>,
+      void,
+      unknown
+    > {
+      yield ok({
+        id: 'resp-s2',
+        content: 'Stream done.',
+        done: true,
+        finishReason: 'stop' as const,
+      });
     }
 
     (provider.stream as ReturnType<typeof vi.fn>).mockReturnValueOnce(streamFinal());
@@ -1264,7 +1276,11 @@ describe('Agent streamCompletion (via chat with stream=true)', () => {
     const provider = createMockProvider();
     mockProviderOverride = provider;
 
-    async function* errorStream(): AsyncGenerator<Result<StreamChunk, InternalError>, void, unknown> {
+    async function* errorStream(): AsyncGenerator<
+      Result<StreamChunk, InternalError>,
+      void,
+      unknown
+    > {
       yield ok({ id: 'resp-err', content: 'partial', done: false });
       yield err(new InternalError('Stream broke'));
     }
@@ -1309,7 +1325,11 @@ describe('Agent streamCompletion (via chat with stream=true)', () => {
     mockProviderOverride = provider;
 
     // Stream with two parallel tool calls
-    async function* parallelToolStream(): AsyncGenerator<Result<StreamChunk, InternalError>, void, unknown> {
+    async function* parallelToolStream(): AsyncGenerator<
+      Result<StreamChunk, InternalError>,
+      void,
+      unknown
+    > {
       // Tool A at index 0
       yield ok({
         id: 'r1',
@@ -1330,7 +1350,11 @@ describe('Agent streamCompletion (via chat with stream=true)', () => {
     (provider.stream as ReturnType<typeof vi.fn>).mockReturnValueOnce(parallelToolStream());
 
     // Final response
-    async function* finalStream(): AsyncGenerator<Result<StreamChunk, InternalError>, void, unknown> {
+    async function* finalStream(): AsyncGenerator<
+      Result<StreamChunk, InternalError>,
+      void,
+      unknown
+    > {
       yield ok({ id: 'r2', content: 'Both done.', done: true, finishReason: 'stop' as const });
     }
 
@@ -1365,7 +1389,11 @@ describe('Agent streamCompletion (via chat with stream=true)', () => {
     const provider = createMockProvider();
     mockProviderOverride = provider;
 
-    async function* metadataStream(): AsyncGenerator<Result<StreamChunk, InternalError>, void, unknown> {
+    async function* metadataStream(): AsyncGenerator<
+      Result<StreamChunk, InternalError>,
+      void,
+      unknown
+    > {
       // Initial tool call with metadata
       yield ok({
         id: 'r1',
@@ -1386,7 +1414,11 @@ describe('Agent streamCompletion (via chat with stream=true)', () => {
     (provider.stream as ReturnType<typeof vi.fn>).mockReturnValueOnce(metadataStream());
 
     // Final
-    async function* finalStream(): AsyncGenerator<Result<StreamChunk, InternalError>, void, unknown> {
+    async function* finalStream(): AsyncGenerator<
+      Result<StreamChunk, InternalError>,
+      void,
+      unknown
+    > {
       yield ok({ id: 'r2', content: 'Metadata done.', done: true, finishReason: 'stop' as const });
     }
 
@@ -1416,7 +1448,11 @@ describe('Agent streamCompletion (via chat with stream=true)', () => {
     const provider = createMockProvider();
     mockProviderOverride = provider;
 
-    async function* argContinuationStream(): AsyncGenerator<Result<StreamChunk, InternalError>, void, unknown> {
+    async function* argContinuationStream(): AsyncGenerator<
+      Result<StreamChunk, InternalError>,
+      void,
+      unknown
+    > {
       // New tool call
       yield ok({
         id: 'r1',
@@ -1436,7 +1472,11 @@ describe('Agent streamCompletion (via chat with stream=true)', () => {
 
     (provider.stream as ReturnType<typeof vi.fn>).mockReturnValueOnce(argContinuationStream());
 
-    async function* finalStream(): AsyncGenerator<Result<StreamChunk, InternalError>, void, unknown> {
+    async function* finalStream(): AsyncGenerator<
+      Result<StreamChunk, InternalError>,
+      void,
+      unknown
+    > {
       yield ok({ id: 'r2', content: 'Cont done.', done: true, finishReason: 'stop' as const });
     }
 
@@ -1459,7 +1499,11 @@ describe('Agent streamCompletion (via chat with stream=true)', () => {
     const provider = createMockProvider();
     mockProviderOverride = provider;
 
-    async function* noToolStream(): AsyncGenerator<Result<StreamChunk, InternalError>, void, unknown> {
+    async function* noToolStream(): AsyncGenerator<
+      Result<StreamChunk, InternalError>,
+      void,
+      unknown
+    > {
       yield ok({ id: 'r1', content: 'Just text.', done: true, finishReason: 'stop' as const });
     }
 
@@ -1507,7 +1551,11 @@ describe('Agent streamCompletion (via chat with stream=true)', () => {
 
     (provider.stream as ReturnType<typeof vi.fn>).mockReturnValueOnce(gapStream());
 
-    async function* finalStream(): AsyncGenerator<Result<StreamChunk, InternalError>, void, unknown> {
+    async function* finalStream(): AsyncGenerator<
+      Result<StreamChunk, InternalError>,
+      void,
+      unknown
+    > {
       yield ok({ id: 'r2', content: 'Gap done.', done: true, finishReason: 'stop' as const });
     }
 

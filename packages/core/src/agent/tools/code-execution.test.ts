@@ -209,10 +209,7 @@ describe('Layer 1: critical pattern blocking', () => {
       reason: 'Fork bomb detected',
     });
 
-    const result = await executeShellExecutor(
-      { command: ':(){ :|:& };:' },
-      createContext()
-    );
+    const result = await executeShellExecutor({ command: ':(){ :|:& };:' }, createContext());
     expect(result.isError).toBe(true);
     expect(result.content).toMatchObject({ severity: 'critical' });
   });
@@ -577,7 +574,7 @@ describe('output truncation', () => {
     const result = await executeShellExecutor({ command: 'echo short' }, createContext());
     const content = result.content as Record<string, unknown>;
     expect(content.stdout).toBe('short output');
-    expect((content.stdout as string)).not.toContain('truncated');
+    expect(content.stdout as string).not.toContain('truncated');
   });
 });
 

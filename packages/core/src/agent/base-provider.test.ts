@@ -212,9 +212,7 @@ describe('BaseProvider', () => {
     it('includes Authorization header when apiKey is set', () => {
       const options = provider.testCreateFetchOptions({});
 
-      expect((options.headers as Record<string, string>)['Authorization']).toBe(
-        'Bearer test-key'
-      );
+      expect((options.headers as Record<string, string>)['Authorization']).toBe('Bearer test-key');
     });
 
     it('includes Organization header when organization is set', () => {
@@ -343,15 +341,11 @@ describe('BaseProvider', () => {
     });
 
     it('uses tc.name fallback when function.name is missing', () => {
-      const toolCalls = [
-        { id: 'call_2', name: 'core__search', arguments: '{"q":"hello"}' },
-      ];
+      const toolCalls = [{ id: 'call_2', name: 'core__search', arguments: '{"q":"hello"}' }];
 
       const result = provider.testParseToolCalls(toolCalls);
 
-      expect(result).toEqual([
-        { id: 'call_2', name: 'core.search', arguments: '{"q":"hello"}' },
-      ]);
+      expect(result).toEqual([{ id: 'call_2', name: 'core.search', arguments: '{"q":"hello"}' }]);
     });
 
     it('defaults id to empty string when missing', () => {
@@ -419,9 +413,7 @@ describe('BaseProvider', () => {
       const messages: Message[] = [
         {
           role: 'user',
-          content: [
-            { type: 'image', data: 'abcdef', mediaType: 'image/png' as const },
-          ],
+          content: [{ type: 'image', data: 'abcdef', mediaType: 'image/png' as const }],
         },
       ];
 
@@ -506,9 +498,7 @@ describe('BaseProvider', () => {
         {
           role: 'assistant',
           content: 'Let me help',
-          toolCalls: [
-            { id: 'call_1', name: 'core.read_file', arguments: '{"path":"/tmp"}' },
-          ],
+          toolCalls: [{ id: 'call_1', name: 'core.read_file', arguments: '{"path":"/tmp"}' }],
         },
       ];
 
@@ -540,9 +530,7 @@ describe('BaseProvider', () => {
     });
 
     it('handles tool role message without toolResults (non-expanded path)', () => {
-      const messages: Message[] = [
-        { role: 'tool', content: 'raw tool content' },
-      ];
+      const messages: Message[] = [{ role: 'tool', content: 'raw tool content' }];
 
       const result = provider.testBuildMessages(messages);
       expect(result).toHaveLength(1);

@@ -126,7 +126,7 @@ export class AgentsRepository extends BaseRepository {
       fields,
       [{ column: 'id', value: id }],
       1,
-      rawClauses,
+      rawClauses
     );
 
     if (!stmt) return existing;

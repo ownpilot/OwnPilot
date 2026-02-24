@@ -1,1 +1,1 @@
-console.log("generator loaded");
+console.log('generator loaded');

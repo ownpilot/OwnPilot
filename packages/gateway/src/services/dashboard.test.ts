@@ -16,7 +16,13 @@ import {
   type AIBriefing,
   type HabitProgressItem,
 } from './dashboard.js';
-import { type Plan, type CalendarEvent, type Goal, type Task, type Note } from '../db/repositories/index.js';
+import {
+  type Plan,
+  type CalendarEvent,
+  type Goal,
+  type Task,
+  type Note,
+} from '../db/repositories/index.js';
 
 // ---------------------------------------------------------------------------
 // Mocks for aggregateDailyData / generateAIBriefing
@@ -125,10 +131,19 @@ interface PrivateDashboardService {
     averageProgress: number;
     overdueCount: number;
   };
-  getHabitProgress(repo: unknown): Promise<{ completed: number; total: number; habits: HabitProgressItem[] }>;
-  getDailyCosts(repo: unknown): Promise<{ totalTokens: number; totalCost: number; totalCalls: number }>;
-  getMonthlyCosts(repo: unknown): Promise<{ totalTokens: number; totalCost: number; totalCalls: number }>;
-  getCustomDataSummary(service: unknown, tables: unknown[]): Promise<{ tables: unknown[]; totalRecords: number }>;
+  getHabitProgress(
+    repo: unknown
+  ): Promise<{ completed: number; total: number; habits: HabitProgressItem[] }>;
+  getDailyCosts(
+    repo: unknown
+  ): Promise<{ totalTokens: number; totalCost: number; totalCalls: number }>;
+  getMonthlyCosts(
+    repo: unknown
+  ): Promise<{ totalTokens: number; totalCost: number; totalCalls: number }>;
+  getCustomDataSummary(
+    service: unknown,
+    tables: unknown[]
+  ): Promise<{ tables: unknown[]; totalRecords: number }>;
 }
 
 // ---------------------------------------------------------------------------
@@ -645,7 +660,9 @@ describe('Dashboard Service', () => {
         .mockResolvedValueOnce([task1]) // pending
         .mockResolvedValueOnce([task1]) // due today
         .mockResolvedValueOnce([]); // overdue
-      mockCalendarGetToday.mockResolvedValue([{ id: 'e1', title: 'Meeting', startTime: new Date().toISOString() }]);
+      mockCalendarGetToday.mockResolvedValue([
+        { id: 'e1', title: 'Meeting', startTime: new Date().toISOString() },
+      ]);
       mockCalendarGetUpcoming.mockResolvedValue([]);
       mockGoalService.getActive.mockResolvedValue([]);
       mockGoalService.getNextActions.mockResolvedValue([]);
@@ -1055,7 +1072,9 @@ describe('Dashboard Service', () => {
 
       // Streaks at risk: not completed today AND streakCurrent > 0
       expect(data.habits.streaksAtRisk).toHaveLength(2);
-      expect(data.habits.streaksAtRisk.map((h: HabitProgressItem) => h.name)).toContain('Meditation');
+      expect(data.habits.streaksAtRisk.map((h: HabitProgressItem) => h.name)).toContain(
+        'Meditation'
+      );
       expect(data.habits.streaksAtRisk.map((h: HabitProgressItem) => h.name)).toContain('Reading');
     });
 
@@ -1108,7 +1127,7 @@ describe('Dashboard Service', () => {
       mockCostsGetDailyCosts
         .mockResolvedValueOnce([{ totalTokens: 5000, totalCost: 0.15, totalCalls: 10 }])
         .mockResolvedValueOnce([
-          { totalTokens: 3000, totalCost: 0.10, totalCalls: 5 },
+          { totalTokens: 3000, totalCost: 0.1, totalCalls: 5 },
           { totalTokens: 7000, totalCost: 0.25, totalCalls: 15 },
         ]);
       mockDatabaseService.listTables.mockResolvedValue([]);
@@ -1185,22 +1204,28 @@ describe('Dashboard Service', () => {
     it('bypasses cache when forceRefresh is true', async () => {
       const data = makeBriefingData();
       const hash = calculateDataHash(data);
-      briefingCache.set('user-1', {
-        id: 'b-cached',
-        summary: 'Cached',
-        priorities: [],
-        insights: [],
-        suggestedFocusAreas: [],
-        generatedAt: '',
-        expiresAt: '',
-        modelUsed: '',
-        cached: false,
-      }, hash);
+      briefingCache.set(
+        'user-1',
+        {
+          id: 'b-cached',
+          summary: 'Cached',
+          priorities: [],
+          insights: [],
+          suggestedFocusAreas: [],
+          generatedAt: '',
+          expiresAt: '',
+          modelUsed: '',
+          cached: false,
+        },
+        hash
+      );
 
       const mockAgent = {
         chat: vi.fn(async () => ({
           ok: true,
-          value: { content: '{"summary":"Fresh","priorities":[],"insights":[],"suggestedFocusAreas":[]}' },
+          value: {
+            content: '{"summary":"Fresh","priorities":[],"insights":[],"suggestedFocusAreas":[]}',
+          },
         })),
       };
       mockGetOrCreateChatAgent.mockResolvedValue(mockAgent);
@@ -1216,12 +1241,18 @@ describe('Dashboard Service', () => {
       const mockAgent = {
         chat: vi.fn(async () => ({
           ok: true,
-          value: { content: '{"summary":"AI generated","priorities":["Do X"],"insights":["Y"],"suggestedFocusAreas":["Z"]}' },
+          value: {
+            content:
+              '{"summary":"AI generated","priorities":["Do X"],"insights":["Y"],"suggestedFocusAreas":["Z"]}',
+          },
         })),
       };
       mockGetOrCreateChatAgent.mockResolvedValue(mockAgent);
 
-      const result = await service.generateAIBriefing(data, { provider: 'openai', model: 'gpt-4o' });
+      const result = await service.generateAIBriefing(data, {
+        provider: 'openai',
+        model: 'gpt-4o',
+      });
 
       expect(result.summary).toBe('AI generated');
       expect(result.priorities).toEqual(['Do X']);
@@ -1238,7 +1269,10 @@ describe('Dashboard Service', () => {
       };
       mockGetOrCreateChatAgent.mockResolvedValue(mockAgent);
 
-      const result = await service.generateAIBriefing(data, { provider: 'openai', model: 'gpt-4o' });
+      const result = await service.generateAIBriefing(data, {
+        provider: 'openai',
+        model: 'gpt-4o',
+      });
 
       expect(result.modelUsed).toBe('fallback');
     });
@@ -1247,7 +1281,10 @@ describe('Dashboard Service', () => {
       const data = makeBriefingData();
       mockGetOrCreateChatAgent.mockRejectedValue(new Error('Network error'));
 
-      const result = await service.generateAIBriefing(data, { provider: 'openai', model: 'gpt-4o' });
+      const result = await service.generateAIBriefing(data, {
+        provider: 'openai',
+        model: 'gpt-4o',
+      });
 
       expect(result.modelUsed).toBe('fallback');
     });
@@ -1259,7 +1296,9 @@ describe('Dashboard Service', () => {
       const mockAgent = {
         chat: vi.fn(async () => ({
           ok: true,
-          value: { content: '{"summary":"Test","priorities":[],"insights":[],"suggestedFocusAreas":[]}' },
+          value: {
+            content: '{"summary":"Test","priorities":[],"insights":[],"suggestedFocusAreas":[]}',
+          },
         })),
       };
       mockGetOrCreateChatAgent.mockResolvedValue(mockAgent);
@@ -1274,7 +1313,10 @@ describe('Dashboard Service', () => {
       const mockAgent = {
         chat: vi.fn(async () => ({
           ok: true,
-          value: { content: '{"summary":"Cacheable","priorities":[],"insights":[],"suggestedFocusAreas":[]}' },
+          value: {
+            content:
+              '{"summary":"Cacheable","priorities":[],"insights":[],"suggestedFocusAreas":[]}',
+          },
         })),
       };
       mockGetOrCreateChatAgent.mockResolvedValue(mockAgent);
@@ -1298,20 +1340,27 @@ describe('Dashboard Service', () => {
     it('streams chunks and returns parsed briefing', async () => {
       const data = makeBriefingData();
       const chunks: string[] = [];
-      const onChunk = vi.fn(async (chunk: string) => { chunks.push(chunk); });
+      const onChunk = vi.fn(async (chunk: string) => {
+        chunks.push(chunk);
+      });
 
       const mockAgent = {
-        chat: vi.fn(async (_prompt: string, opts: { stream: boolean; onChunk: (c: { content: string }) => void }) => {
-          // Simulate streaming chunks
-          opts.onChunk({ content: '{"summary":"Streamed"' });
-          opts.onChunk({ content: ',"priorities":[]' });
-          opts.onChunk({ content: ',"insights":[]' });
-          opts.onChunk({ content: ',"suggestedFocusAreas":[]}' });
-          return {
-            ok: true,
-            value: { content: '' }, // empty content, full content comes from chunks
-          };
-        }),
+        chat: vi.fn(
+          async (
+            _prompt: string,
+            opts: { stream: boolean; onChunk: (c: { content: string }) => void }
+          ) => {
+            // Simulate streaming chunks
+            opts.onChunk({ content: '{"summary":"Streamed"' });
+            opts.onChunk({ content: ',"priorities":[]' });
+            opts.onChunk({ content: ',"insights":[]' });
+            opts.onChunk({ content: ',"suggestedFocusAreas":[]}' });
+            return {
+              ok: true,
+              value: { content: '' }, // empty content, full content comes from chunks
+            };
+          }
+        ),
       };
       mockGetOrCreateChatAgent.mockResolvedValue(mockAgent);
 
@@ -1332,7 +1381,10 @@ describe('Dashboard Service', () => {
       const mockAgent = {
         chat: vi.fn(async () => ({
           ok: true,
-          value: { content: '{"summary":"From result","priorities":[],"insights":[],"suggestedFocusAreas":[]}' },
+          value: {
+            content:
+              '{"summary":"From result","priorities":[],"insights":[],"suggestedFocusAreas":[]}',
+          },
         })),
       };
       mockGetOrCreateChatAgent.mockResolvedValue(mockAgent);
@@ -1386,14 +1438,26 @@ describe('Dashboard Service', () => {
       const onChunk = vi.fn(async () => {});
 
       const mockAgent = {
-        chat: vi.fn(async (_prompt: string, opts: { stream: boolean; onChunk: (c: { content: string }) => void }) => {
-          opts.onChunk({ content: '{"summary":"Cached stream","priorities":[],"insights":[],"suggestedFocusAreas":[]}' });
-          return { ok: true, value: { content: '' } };
-        }),
+        chat: vi.fn(
+          async (
+            _prompt: string,
+            opts: { stream: boolean; onChunk: (c: { content: string }) => void }
+          ) => {
+            opts.onChunk({
+              content:
+                '{"summary":"Cached stream","priorities":[],"insights":[],"suggestedFocusAreas":[]}',
+            });
+            return { ok: true, value: { content: '' } };
+          }
+        ),
       };
       mockGetOrCreateChatAgent.mockResolvedValue(mockAgent);
 
-      await service.generateAIBriefingStreaming(data, { provider: 'openai', model: 'gpt-4o' }, onChunk);
+      await service.generateAIBriefingStreaming(
+        data,
+        { provider: 'openai', model: 'gpt-4o' },
+        onChunk
+      );
 
       const hash = calculateDataHash(data);
       const cached = briefingCache.get('user-1', hash);
@@ -1412,12 +1476,8 @@ describe('Dashboard Service', () => {
       const data = makeBriefingData({
         tasks: {
           pending: [],
-          dueToday: [
-            { id: 't1', title: 'Ship feature', priority: 'high' } as unknown as Task,
-          ],
-          overdue: [
-            { id: 't2', title: 'Fix bug' } as unknown as Task,
-          ],
+          dueToday: [{ id: 't1', title: 'Ship feature', priority: 'high' } as unknown as Task],
+          overdue: [{ id: 't2', title: 'Fix bug' } as unknown as Task],
           counts: { pending: 2, dueToday: 1, overdue: 1, total: 5 },
         },
       });
@@ -1434,7 +1494,11 @@ describe('Dashboard Service', () => {
       const data = makeBriefingData({
         calendar: {
           todayEvents: [
-            { id: 'e1', title: 'Team meeting', startTime: '2026-02-24T14:00:00Z' } as unknown as CalendarEvent,
+            {
+              id: 'e1',
+              title: 'Team meeting',
+              startTime: '2026-02-24T14:00:00Z',
+            } as unknown as CalendarEvent,
           ],
           upcomingEvents: [],
           counts: { today: 1, upcoming: 0 },
@@ -1544,7 +1608,10 @@ describe('Dashboard Service', () => {
     it('parses JSON from bare code fence (no json tag)', () => {
       const content = '```\n{"summary":"Bare fence","priorities":[]}\n```';
 
-      const briefing = (service as unknown as PrivateDashboardService).parseAIResponse(content, 'test');
+      const briefing = (service as unknown as PrivateDashboardService).parseAIResponse(
+        content,
+        'test'
+      );
 
       expect(briefing.summary).toBe('Bare fence');
     });
@@ -1552,7 +1619,10 @@ describe('Dashboard Service', () => {
     it('handles missing summary gracefully', () => {
       const content = '{"priorities":["A"]}';
 
-      const briefing = (service as unknown as PrivateDashboardService).parseAIResponse(content, 'test');
+      const briefing = (service as unknown as PrivateDashboardService).parseAIResponse(
+        content,
+        'test'
+      );
 
       expect(briefing.summary).toBe('No summary available.');
     });
@@ -1560,7 +1630,10 @@ describe('Dashboard Service', () => {
     it('handles non-array priorities gracefully', () => {
       const content = '{"summary":"Test","priorities":"not an array"}';
 
-      const briefing = (service as unknown as PrivateDashboardService).parseAIResponse(content, 'test');
+      const briefing = (service as unknown as PrivateDashboardService).parseAIResponse(
+        content,
+        'test'
+      );
 
       expect(briefing.priorities).toEqual([]);
     });
@@ -1568,7 +1641,10 @@ describe('Dashboard Service', () => {
     it('sets generatedAt and expiresAt', () => {
       const content = '{"summary":"Timed"}';
 
-      const briefing = (service as unknown as PrivateDashboardService).parseAIResponse(content, 'test');
+      const briefing = (service as unknown as PrivateDashboardService).parseAIResponse(
+        content,
+        'test'
+      );
 
       expect(briefing.generatedAt).toBeTruthy();
       expect(briefing.expiresAt).toBeTruthy();
@@ -1581,7 +1657,10 @@ describe('Dashboard Service', () => {
     it('handles escaped quotes in JSON strings', () => {
       const content = '{"summary":"He said \\"hello\\"","priorities":[]}';
 
-      const briefing = (service as unknown as PrivateDashboardService).parseAIResponse(content, 'test');
+      const briefing = (service as unknown as PrivateDashboardService).parseAIResponse(
+        content,
+        'test'
+      );
 
       expect(briefing.summary).toBe('He said "hello"');
     });

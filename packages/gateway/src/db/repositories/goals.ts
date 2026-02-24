@@ -223,7 +223,8 @@ export class GoalsRepository extends BaseRepository {
         },
         {
           column: 'priority',
-          value: input.priority !== undefined ? Math.max(1, Math.min(10, input.priority)) : undefined,
+          value:
+            input.priority !== undefined ? Math.max(1, Math.min(10, input.priority)) : undefined,
         },
         { column: 'due_date', value: input.dueDate },
         {
@@ -239,7 +240,7 @@ export class GoalsRepository extends BaseRepository {
       [
         { column: 'id', value: id },
         { column: 'user_id', value: this.userId },
-      ],
+      ]
     );
 
     // stmt is always non-null because updated_at is always provided,

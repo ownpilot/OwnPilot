@@ -22,21 +22,63 @@ vi.mock('@ownpilot/core', () => ({
   ToolRegistry: vi.fn(),
   registerAllTools: vi.fn(),
   getToolDefinitions: vi.fn().mockReturnValue([]),
-  MEMORY_TOOLS: [{ name: 'store_memory', description: 'Store a memory', parameters: { type: 'object', properties: {} } }],
+  MEMORY_TOOLS: [
+    {
+      name: 'store_memory',
+      description: 'Store a memory',
+      parameters: { type: 'object', properties: {} },
+    },
+  ],
   GOAL_TOOLS: [],
   CUSTOM_DATA_TOOLS: [],
   PERSONAL_DATA_TOOLS: [],
   DYNAMIC_TOOL_DEFINITIONS: [
-    { name: 'create_tool', description: 'Create custom tool', parameters: { type: 'object', properties: {} } },
-    { name: 'list_custom_tools', description: 'List custom tools', parameters: { type: 'object', properties: {} } },
-    { name: 'delete_custom_tool', description: 'Delete custom tool', parameters: { type: 'object', properties: {} } },
-    { name: 'toggle_custom_tool', description: 'Toggle custom tool', parameters: { type: 'object', properties: {} } },
-    { name: 'update_custom_tool', description: 'Update custom tool', parameters: { type: 'object', properties: {} } },
-    { name: 'search_tools', description: 'Search tools', parameters: { type: 'object', properties: {} } },
-    { name: 'get_tool_help', description: 'Get tool help', parameters: { type: 'object', properties: {} } },
+    {
+      name: 'create_tool',
+      description: 'Create custom tool',
+      parameters: { type: 'object', properties: {} },
+    },
+    {
+      name: 'list_custom_tools',
+      description: 'List custom tools',
+      parameters: { type: 'object', properties: {} },
+    },
+    {
+      name: 'delete_custom_tool',
+      description: 'Delete custom tool',
+      parameters: { type: 'object', properties: {} },
+    },
+    {
+      name: 'toggle_custom_tool',
+      description: 'Toggle custom tool',
+      parameters: { type: 'object', properties: {} },
+    },
+    {
+      name: 'update_custom_tool',
+      description: 'Update custom tool',
+      parameters: { type: 'object', properties: {} },
+    },
+    {
+      name: 'search_tools',
+      description: 'Search tools',
+      parameters: { type: 'object', properties: {} },
+    },
+    {
+      name: 'get_tool_help',
+      description: 'Get tool help',
+      parameters: { type: 'object', properties: {} },
+    },
     { name: 'use_tool', description: 'Use a tool', parameters: { type: 'object', properties: {} } },
-    { name: 'batch_use_tool', description: 'Batch use tools', parameters: { type: 'object', properties: {} } },
-    { name: 'inspect_tool_source', description: 'Inspect tool source', parameters: { type: 'object', properties: {} } },
+    {
+      name: 'batch_use_tool',
+      description: 'Batch use tools',
+      parameters: { type: 'object', properties: {} },
+    },
+    {
+      name: 'inspect_tool_source',
+      description: 'Inspect tool source',
+      parameters: { type: 'object', properties: {} },
+    },
   ],
   TOOL_SEARCH_TAGS: { store_memory: ['save', 'remember'] },
   applyToolLimits: mockApplyToolLimits,
@@ -124,7 +166,7 @@ vi.mock('../tracing/index.js', () => ({
 }));
 vi.mock('./helpers.js', () => ({
   getErrorMessage: (err: unknown, fallback?: string) =>
-    err instanceof Error ? err.message : fallback ?? String(err),
+    err instanceof Error ? err.message : (fallback ?? String(err)),
   truncate: (s: string) => s,
 }));
 vi.mock('../config/defaults.js', () => ({
@@ -160,7 +202,12 @@ const {
 // Helper: create a mock ToolRegistry for meta-tool tests
 // ---------------------------------------------------------------------------
 
-function createMockRegistry(toolMap: Record<string, { name: string; description: string; category?: string; parameters?: unknown; tags?: string[] }> = {}) {
+function createMockRegistry(
+  toolMap: Record<
+    string,
+    { name: string; description: string; category?: string; parameters?: unknown; tags?: string[] }
+  > = {}
+) {
   const defs = Object.values(toolMap);
 
   return {
@@ -355,7 +402,9 @@ describe('agent-tools helpers', () => {
     });
 
     it('returns error content when executor returns failure', async () => {
-      const registeredExecutors: Array<(args: unknown) => Promise<{ content: string; isError?: boolean }>> = [];
+      const registeredExecutors: Array<
+        (args: unknown) => Promise<{ content: string; isError?: boolean }>
+      > = [];
       const mockToolRegistry = {
         register: vi.fn((_def: unknown, executor: unknown) => {
           registeredExecutors.push(executor as any);
@@ -377,7 +426,9 @@ describe('agent-tools helpers', () => {
     });
 
     it('returns "Unknown error" when failure has no error message', async () => {
-      const registeredExecutors: Array<(args: unknown) => Promise<{ content: string; isError?: boolean }>> = [];
+      const registeredExecutors: Array<
+        (args: unknown) => Promise<{ content: string; isError?: boolean }>
+      > = [];
       const mockToolRegistry = {
         register: vi.fn((_def: unknown, executor: unknown) => {
           registeredExecutors.push(executor as any);
@@ -399,7 +450,9 @@ describe('agent-tools helpers', () => {
     });
 
     it('stringifies non-string result values', async () => {
-      const registeredExecutors: Array<(args: unknown) => Promise<{ content: string; isError?: boolean }>> = [];
+      const registeredExecutors: Array<
+        (args: unknown) => Promise<{ content: string; isError?: boolean }>
+      > = [];
       const mockToolRegistry = {
         register: vi.fn((_def: unknown, executor: unknown) => {
           registeredExecutors.push(executor as any);
@@ -462,7 +515,11 @@ describe('agent-tools helpers', () => {
 
     it('registers active custom tools and returns their definitions', async () => {
       const customToolDefs = [
-        { name: 'my_tool', description: 'My custom tool', parameters: { type: 'object', properties: {} } },
+        {
+          name: 'my_tool',
+          description: 'My custom tool',
+          parameters: { type: 'object', properties: {} },
+        },
       ];
       mockGetActiveCustomToolDefinitions.mockResolvedValue(customToolDefs);
 
@@ -474,12 +531,18 @@ describe('agent-tools helpers', () => {
         list: vi.fn(),
       };
 
-      const result = await registerDynamicTools(mockToolRegistry as any, 'test-user', 'conv-123', false);
+      const result = await registerDynamicTools(
+        mockToolRegistry as any,
+        'test-user',
+        'conv-123',
+        false
+      );
       expect(result).toEqual(customToolDefs);
     });
 
     it('traces CRUD tool calls with DB tracing when trace=true', async () => {
-      const registeredExecutors: Record<string, (args: unknown, ctx: unknown) => Promise<unknown>> = {};
+      const registeredExecutors: Record<string, (args: unknown, ctx: unknown) => Promise<unknown>> =
+        {};
       const mockToolRegistry = {
         register: vi.fn((def: { name: string }, executor: unknown) => {
           registeredExecutors[def.name] = executor as any;
@@ -514,7 +577,11 @@ describe('agent-tools helpers', () => {
           getAllTools: vi.fn().mockReturnValue([
             {
               pluginId: 'weather-plugin',
-              definition: { name: 'get_weather', description: 'Get weather', parameters: { type: 'object', properties: {} } },
+              definition: {
+                name: 'get_weather',
+                description: 'Get weather',
+                parameters: { type: 'object', properties: {} },
+              },
               executor: pluginExecutor,
             },
           ]),
@@ -539,9 +606,9 @@ describe('agent-tools helpers', () => {
               executor: vi.fn(),
             },
           ]),
-          getEnabled: vi.fn().mockReturnValue([
-            { manifest: { id: 'core-plugin', category: 'core' } },
-          ]),
+          getEnabled: vi
+            .fn()
+            .mockReturnValue([{ manifest: { id: 'core-plugin', category: 'core' } }]),
         })),
       });
 
@@ -575,7 +642,9 @@ describe('agent-tools helpers', () => {
     });
 
     it('catches executor errors and returns error result', async () => {
-      const pluginExecutor = vi.fn(async () => { throw new Error('Plugin crashed'); });
+      const pluginExecutor = vi.fn(async () => {
+        throw new Error('Plugin crashed');
+      });
       mockGetServiceRegistry.mockReturnValue({
         get: vi.fn(() => ({
           getAllTools: vi.fn().mockReturnValue([
@@ -599,11 +668,18 @@ describe('agent-tools helpers', () => {
       registerPluginTools(mockToolRegistry as any, true);
 
       if (wrappedExecutors.length > 0) {
-        const result = await wrappedExecutors[0]!({}, {}) as { content: string; isError: boolean };
+        const result = (await wrappedExecutors[0]!({}, {})) as {
+          content: string;
+          isError: boolean;
+        };
         expect(result.content).toBe('Plugin crashed');
         expect(result.isError).toBe(true);
         expect(mockTraceToolCallEnd).toHaveBeenCalledWith(
-          'crash_tool', expect.any(Number), false, undefined, 'Plugin crashed'
+          'crash_tool',
+          expect.any(Number),
+          false,
+          undefined,
+          'Plugin crashed'
         );
       }
     });
@@ -615,7 +691,9 @@ describe('agent-tools helpers', () => {
   describe('registerExtensionTools', () => {
     it('returns empty array when extension service is not initialized', () => {
       mockGetServiceRegistry.mockReturnValue({
-        get: vi.fn(() => { throw new Error('Not initialized'); }),
+        get: vi.fn(() => {
+          throw new Error('Not initialized');
+        }),
       });
 
       const mockToolRegistry = createMockRegistry();
@@ -705,7 +783,9 @@ describe('agent-tools helpers', () => {
         })),
       });
 
-      mockDynamicRegistry.register.mockImplementation(() => { throw new Error('Registration failed'); });
+      mockDynamicRegistry.register.mockImplementation(() => {
+        throw new Error('Registration failed');
+      });
 
       const mockToolRegistry = createMockRegistry();
       const result = registerExtensionTools(mockToolRegistry as any, 'user-1', false);
@@ -793,7 +873,9 @@ describe('agent-tools helpers', () => {
     });
 
     it('wraps MCP executor with error handling', async () => {
-      const failingExecutor = vi.fn(async () => { throw new Error('MCP failure'); });
+      const failingExecutor = vi.fn(async () => {
+        throw new Error('MCP failure');
+      });
       mockSharedToolRegistry.getToolsBySource.mockReturnValue([
         {
           definition: { name: 'mcp.failing', description: 'Failing', parameters: {} },
@@ -813,7 +895,10 @@ describe('agent-tools helpers', () => {
       registerMcpTools(mockToolRegistry as any, true);
 
       if (wrappedExecutors.length > 0) {
-        const result = await wrappedExecutors[0]!({}, {}) as { content: string; isError: boolean };
+        const result = (await wrappedExecutors[0]!({}, {})) as {
+          content: string;
+          isError: boolean;
+        };
         expect(result.content).toBe('MCP failure');
         expect(result.isError).toBe(true);
       }
@@ -898,7 +983,9 @@ describe('agent-tools helpers', () => {
     });
 
     it('returns error with help text on execution failure (result not ok)', async () => {
-      const registry = createMockRegistry({ fail_tool: { name: 'fail_tool', description: 'desc' } });
+      const registry = createMockRegistry({
+        fail_tool: { name: 'fail_tool', description: 'desc' },
+      });
       mockValidateRequiredParams.mockReturnValue(null);
       registry.execute.mockResolvedValue({ ok: false, error: { message: 'Exec failed' } });
 
@@ -913,7 +1000,9 @@ describe('agent-tools helpers', () => {
     });
 
     it('catches thrown errors and includes help text', async () => {
-      const registry = createMockRegistry({ throw_tool: { name: 'throw_tool', description: 'desc' } });
+      const registry = createMockRegistry({
+        throw_tool: { name: 'throw_tool', description: 'desc' },
+      });
       mockValidateRequiredParams.mockReturnValue(null);
       registry.execute.mockRejectedValue(new Error('Unexpected crash'));
 
@@ -928,7 +1017,9 @@ describe('agent-tools helpers', () => {
     });
 
     it('applies tool limits before execution', async () => {
-      const registry = createMockRegistry({ limited_tool: { name: 'limited_tool', description: 'desc' } });
+      const registry = createMockRegistry({
+        limited_tool: { name: 'limited_tool', description: 'desc' },
+      });
       mockValidateRequiredParams.mockReturnValue(null);
       registry.execute.mockResolvedValue({ ok: true, value: { content: 'ok' } });
 
@@ -965,7 +1056,10 @@ describe('agent-tools helpers', () => {
 
     it('returns error when batch size exceeds maximum', async () => {
       const registry = createMockRegistry();
-      const calls = Array.from({ length: 4 }, (_, i) => ({ tool_name: `tool_${i}`, arguments: {} }));
+      const calls = Array.from({ length: 4 }, (_, i) => ({
+        tool_name: `tool_${i}`,
+        arguments: {},
+      }));
 
       const result = await executeBatchUseTool(registry as any, { calls }, {});
 
@@ -983,7 +1077,12 @@ describe('agent-tools helpers', () => {
 
       const result = await executeBatchUseTool(
         registry as any,
-        { calls: [{ tool_name: 'tool_a', arguments: {} }, { tool_name: 'tool_b', arguments: {} }] },
+        {
+          calls: [
+            { tool_name: 'tool_a', arguments: {} },
+            { tool_name: 'tool_b', arguments: {} },
+          ],
+        },
         {}
       );
 
@@ -1002,7 +1101,12 @@ describe('agent-tools helpers', () => {
 
       const result = await executeBatchUseTool(
         registry as any,
-        { calls: [{ tool_name: 'tool_a', arguments: {} }, { tool_name: 'unknown', arguments: {} }] },
+        {
+          calls: [
+            { tool_name: 'tool_a', arguments: {} },
+            { tool_name: 'unknown', arguments: {} },
+          ],
+        },
         {}
       );
 
@@ -1030,7 +1134,12 @@ describe('agent-tools helpers', () => {
 
       const result = await executeBatchUseTool(
         registry as any,
-        { calls: [{ tool_name: 'bad1', arguments: {} }, { tool_name: 'bad2', arguments: {} }] },
+        {
+          calls: [
+            { tool_name: 'bad1', arguments: {} },
+            { tool_name: 'bad2', arguments: {} },
+          ],
+        },
         {}
       );
 
@@ -1124,7 +1233,10 @@ describe('agent-tools helpers', () => {
         real_tool: { name: 'real_tool', description: 'Real tool', category: 'core' },
       });
 
-      const result = await executeSearchTools(registry as any, { query: 'all', include_params: false });
+      const result = await executeSearchTools(registry as any, {
+        query: 'all',
+        include_params: false,
+      });
 
       expect(result.content).not.toContain('search_tools');
       expect(result.content).toContain('real_tool');
@@ -1136,7 +1248,11 @@ describe('agent-tools helpers', () => {
         tool_b: { name: 'tool_b', description: 'Tool B', category: 'core' },
       });
 
-      const result = await executeSearchTools(registry as any, { query: 'all', category: 'memory', include_params: false });
+      const result = await executeSearchTools(registry as any, {
+        query: 'all',
+        category: 'memory',
+        include_params: false,
+      });
 
       expect(result.content).toContain('tool_a');
       expect(result.content).not.toContain('tool_b');
@@ -1158,10 +1274,17 @@ describe('agent-tools helpers', () => {
 
     it('matches by description keywords', async () => {
       const registry = createMockRegistry({
-        weather_tool: { name: 'weather_tool', description: 'Get current weather forecast', category: 'weather' },
+        weather_tool: {
+          name: 'weather_tool',
+          description: 'Get current weather forecast',
+          category: 'weather',
+        },
       });
 
-      const result = await executeSearchTools(registry as any, { query: 'weather', include_params: false });
+      const result = await executeSearchTools(registry as any, {
+        query: 'weather',
+        include_params: false,
+      });
 
       expect(result.content).toContain('weather_tool');
     });
@@ -1171,7 +1294,10 @@ describe('agent-tools helpers', () => {
         detailed_tool: { name: 'detailed_tool', description: 'Detailed', category: 'core' },
       });
 
-      const result = await executeSearchTools(registry as any, { query: 'all', include_params: true });
+      const result = await executeSearchTools(registry as any, {
+        query: 'all',
+        include_params: true,
+      });
 
       expect(result.content).toContain('with parameters');
       expect(mockFormatFullToolHelp).toHaveBeenCalled();
@@ -1208,7 +1334,9 @@ describe('agent-tools helpers', () => {
         tool_b: { name: 'tool_b', description: 'B' },
       });
 
-      const result = await executeGetToolHelp(registry as any, { tool_names: ['tool_a', 'tool_b'] });
+      const result = await executeGetToolHelp(registry as any, {
+        tool_names: ['tool_a', 'tool_b'],
+      });
 
       expect(mockFormatFullToolHelp).toHaveBeenCalledTimes(2);
       expect(result.content).toContain('---');
@@ -1290,7 +1418,9 @@ describe('agent-tools helpers', () => {
         permissions: ['http'],
       });
 
-      const result = await executeInspectToolSource(registry as any, 'user-1', { tool_name: 'my_custom' });
+      const result = await executeInspectToolSource(registry as any, 'user-1', {
+        tool_name: 'my_custom',
+      });
 
       expect(result.content).toContain('my_custom');
       expect(result.content).toContain('return 42;');
@@ -1313,7 +1443,9 @@ describe('agent-tools helpers', () => {
         permissions: [],
       });
 
-      const result = await executeInspectToolSource(registry as any, 'user-1', { tool_name: 'simple_custom' });
+      const result = await executeInspectToolSource(registry as any, 'user-1', {
+        tool_name: 'simple_custom',
+      });
 
       expect(result.content).toContain('simple_custom');
       expect(result.content).not.toContain('Permissions');
@@ -1326,7 +1458,9 @@ describe('agent-tools helpers', () => {
       mockCustomToolsRepo.getByName.mockResolvedValue(null);
       mockGetToolSource.mockReturnValue('function builtin() { return true; }');
 
-      const result = await executeInspectToolSource(registry as any, 'user-1', { tool_name: 'builtin_tool' });
+      const result = await executeInspectToolSource(registry as any, 'user-1', {
+        tool_name: 'builtin_tool',
+      });
 
       expect(result.content).toContain('builtin_tool');
       expect(result.content).toContain('built-in');
@@ -1341,7 +1475,9 @@ describe('agent-tools helpers', () => {
       mockCustomToolsRepo.getByName.mockResolvedValue(null);
       mockGetToolSource.mockReturnValue(null);
 
-      const result = await executeInspectToolSource(registry as any, 'user-1', { tool_name: 'no_source' });
+      const result = await executeInspectToolSource(registry as any, 'user-1', {
+        tool_name: 'no_source',
+      });
 
       expect(result.content).toContain('Source code not available');
     });
@@ -1351,7 +1487,9 @@ describe('agent-tools helpers', () => {
       mockCustomToolsRepo.getByName.mockResolvedValue(null);
       mockFindSimilarToolNames.mockReturnValue(['similar_tool']);
 
-      const result = await executeInspectToolSource(registry as any, 'user-1', { tool_name: 'nope' });
+      const result = await executeInspectToolSource(registry as any, 'user-1', {
+        tool_name: 'nope',
+      });
 
       expect(result.isError).toBe(true);
       expect(result.content).toContain('not found');
@@ -1363,7 +1501,9 @@ describe('agent-tools helpers', () => {
       mockCustomToolsRepo.getByName.mockResolvedValue(null);
       mockFindSimilarToolNames.mockReturnValue([]);
 
-      const result = await executeInspectToolSource(registry as any, 'user-1', { tool_name: 'nope' });
+      const result = await executeInspectToolSource(registry as any, 'user-1', {
+        tool_name: 'nope',
+      });
 
       expect(result.isError).toBe(true);
       expect(result.content).toContain('search_tools');

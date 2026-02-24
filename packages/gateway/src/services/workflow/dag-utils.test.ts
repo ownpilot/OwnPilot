@@ -23,7 +23,12 @@ import {
 // ---------------------------------------------------------------------------
 
 function makeNode(id: string, type = 'toolNode'): WorkflowNode {
-  return { id, type, position: { x: 0, y: 0 }, data: { toolName: 'test', toolArgs: {}, label: id } };
+  return {
+    id,
+    type,
+    position: { x: 0, y: 0 },
+    data: { toolName: 'test', toolArgs: {}, label: id },
+  };
 }
 
 function makeEdge(
@@ -185,12 +190,7 @@ describe('getDownstreamNodes', () => {
 
   it('returns all downstream in branching graph', () => {
     // A -> B, A -> C, B -> D, C -> D
-    const edges = [
-      makeEdge('A', 'B'),
-      makeEdge('A', 'C'),
-      makeEdge('B', 'D'),
-      makeEdge('C', 'D'),
-    ];
+    const edges = [makeEdge('A', 'B'), makeEdge('A', 'C'), makeEdge('B', 'D'), makeEdge('C', 'D')];
     const downstream = getDownstreamNodes('A', edges);
     expect(downstream).toEqual(new Set(['B', 'C', 'D']));
   });
@@ -203,12 +203,7 @@ describe('getDownstreamNodes', () => {
 
   it('handles diamond with no duplicates', () => {
     // A -> B, A -> C, B -> D, C -> D
-    const edges = [
-      makeEdge('A', 'B'),
-      makeEdge('A', 'C'),
-      makeEdge('B', 'D'),
-      makeEdge('C', 'D'),
-    ];
+    const edges = [makeEdge('A', 'B'), makeEdge('A', 'C'), makeEdge('B', 'D'), makeEdge('C', 'D')];
     const downstream = getDownstreamNodes('A', edges);
     // D should only appear once
     expect([...downstream].filter((id) => id === 'D')).toHaveLength(1);

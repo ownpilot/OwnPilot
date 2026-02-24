@@ -870,7 +870,9 @@ describe('console output branches', () => {
   });
 
   it('logRequest logs tools list', () => {
-    logRequest(makeRequestInfo({ tools: ['read_file', 'write_file'], maxTokens: 4096, temperature: 0.7 }));
+    logRequest(
+      makeRequestInfo({ tools: ['read_file', 'write_file'], maxTokens: 4096, temperature: 0.7 })
+    );
     const calls = (console.log as any).mock.calls.flat().join(' ');
     expect(calls).toContain('Tools');
     expect(calls).toContain('read_file');
@@ -884,35 +886,49 @@ describe('console output branches', () => {
   });
 
   it('logRequest logs payload breakdown', () => {
-    logRequest(makeRequestInfo({
-      payload: { totalChars: 5000, estimatedTokens: 1250, systemPromptChars: 500, messagesChars: 3000, toolsChars: 1500, toolCount: 10, perToolAvgChars: 150 },
-    }));
+    logRequest(
+      makeRequestInfo({
+        payload: {
+          totalChars: 5000,
+          estimatedTokens: 1250,
+          systemPromptChars: 500,
+          messagesChars: 3000,
+          toolsChars: 1500,
+          toolCount: 10,
+          perToolAvgChars: 150,
+        },
+      })
+    );
     const calls = (console.log as any).mock.calls.flat().join(' ');
     expect(calls).toContain('PAYLOAD BREAKDOWN');
     expect(calls).toContain('System Prompt');
   });
 
   it('logRequest logs messages with role and preview', () => {
-    logRequest(makeRequestInfo({
-      messages: [
-        { role: 'system', contentPreview: 'You are helpful', contentLength: 15 },
-        { role: 'user', contentPreview: 'Hello', contentLength: 5 },
-      ],
-    }));
+    logRequest(
+      makeRequestInfo({
+        messages: [
+          { role: 'system', contentPreview: 'You are helpful', contentLength: 15 },
+          { role: 'user', contentPreview: 'Hello', contentLength: 5 },
+        ],
+      })
+    );
     const calls = (console.log as any).mock.calls.flat().join(' ');
     expect(calls).toContain('SYSTEM');
     expect(calls).toContain('USER');
   });
 
   it('logResponse logs success with content and tool calls', () => {
-    logResponse(makeResponseInfo({
-      status: 'success',
-      contentPreview: 'Hello',
-      contentLength: 5,
-      toolCalls: [{ id: 'call_abc12345', name: 'read_file', argumentsPreview: '{}' }],
-      finishReason: 'stop',
-      usage: { promptTokens: 10, completionTokens: 5, totalTokens: 15 },
-    }));
+    logResponse(
+      makeResponseInfo({
+        status: 'success',
+        contentPreview: 'Hello',
+        contentLength: 5,
+        toolCalls: [{ id: 'call_abc12345', name: 'read_file', argumentsPreview: '{}' }],
+        finishReason: 'stop',
+        usage: { promptTokens: 10, completionTokens: 5, totalTokens: 15 },
+      })
+    );
     const calls = (console.log as any).mock.calls.flat().join(' ');
     expect(calls).toContain('Tool Calls');
     expect(calls).toContain('read_file');
@@ -974,17 +990,19 @@ describe('console output branches', () => {
   });
 
   it('logSandboxExecution logs all sandbox fields including timedOut and docker', () => {
-    logSandboxExecution(makeSandboxInfo({
-      language: 'python',
-      sandboxed: false,
-      dockerImage: 'python:3.11-slim',
-      command: 'python script.py',
-      codePreview: 'print(42)',
-      exitCode: 1,
-      success: false,
-      error: 'syntax error',
-      timedOut: true,
-    }));
+    logSandboxExecution(
+      makeSandboxInfo({
+        language: 'python',
+        sandboxed: false,
+        dockerImage: 'python:3.11-slim',
+        command: 'python script.py',
+        codePreview: 'print(42)',
+        exitCode: 1,
+        success: false,
+        error: 'syntax error',
+        timedOut: true,
+      })
+    );
     const calls = (console.log as any).mock.calls.flat().join(' ');
     expect(calls).toContain('INSECURE');
     expect(calls).toContain('TIMED OUT');
@@ -1002,10 +1020,12 @@ describe('console output branches', () => {
   });
 
   it('logResponse handles toolCall with empty id', () => {
-    logResponse(makeResponseInfo({
-      status: 'success',
-      toolCalls: [{ id: '', name: '', argumentsPreview: '{}' }],
-    }));
+    logResponse(
+      makeResponseInfo({
+        status: 'success',
+        toolCalls: [{ id: '', name: '', argumentsPreview: '{}' }],
+      })
+    );
     expect(console.log).toHaveBeenCalled();
   });
 });

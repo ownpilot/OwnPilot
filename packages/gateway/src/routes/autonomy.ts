@@ -565,7 +565,11 @@ autonomyRoutes.get('/pulse/status', (c) => {
     const engine = getAutonomyEngine();
     return apiResponse(c, engine.getStatus());
   } catch {
-    return apiError(c, { code: ERROR_CODES.SERVICE_UNAVAILABLE, message: 'Pulse engine not initialized' }, 503);
+    return apiError(
+      c,
+      { code: ERROR_CODES.SERVICE_UNAVAILABLE, message: 'Pulse engine not initialized' },
+      503
+    );
   }
 });
 
@@ -578,7 +582,11 @@ autonomyRoutes.post('/pulse/start', (c) => {
     engine.start();
     return apiResponse(c, { running: engine.isRunning(), message: 'Pulse engine started.' });
   } catch {
-    return apiError(c, { code: ERROR_CODES.SERVICE_UNAVAILABLE, message: 'Pulse engine not initialized' }, 503);
+    return apiError(
+      c,
+      { code: ERROR_CODES.SERVICE_UNAVAILABLE, message: 'Pulse engine not initialized' },
+      503
+    );
   }
 });
 
@@ -591,7 +599,11 @@ autonomyRoutes.post('/pulse/stop', (c) => {
     engine.stop();
     return apiResponse(c, { running: engine.isRunning(), message: 'Pulse engine stopped.' });
   } catch {
-    return apiError(c, { code: ERROR_CODES.SERVICE_UNAVAILABLE, message: 'Pulse engine not initialized' }, 503);
+    return apiError(
+      c,
+      { code: ERROR_CODES.SERVICE_UNAVAILABLE, message: 'Pulse engine not initialized' },
+      503
+    );
   }
 });
 
@@ -617,7 +629,11 @@ autonomyRoutes.post('/pulse/run', async (c) => {
   } catch (error) {
     const msg = getErrorMessage(error);
     if (msg.includes('not initialized')) {
-      return apiError(c, { code: ERROR_CODES.SERVICE_UNAVAILABLE, message: 'Pulse engine not initialized' }, 503);
+      return apiError(
+        c,
+        { code: ERROR_CODES.SERVICE_UNAVAILABLE, message: 'Pulse engine not initialized' },
+        503
+      );
     }
     return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: msg }, 500);
   }
@@ -642,7 +658,11 @@ autonomyRoutes.patch('/pulse/settings', async (c) => {
   } catch (error) {
     const msg = getErrorMessage(error);
     if (msg.includes('not initialized')) {
-      return apiError(c, { code: ERROR_CODES.SERVICE_UNAVAILABLE, message: 'Pulse engine not initialized' }, 503);
+      return apiError(
+        c,
+        { code: ERROR_CODES.SERVICE_UNAVAILABLE, message: 'Pulse engine not initialized' },
+        503
+      );
     }
     if (msg.includes('Validation failed')) {
       return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: msg }, 400);
@@ -732,7 +752,11 @@ autonomyRoutes.get('/pulse/history', async (c) => {
     const result = await engine.getRecentLogsPaginated(userId, limit, offset);
     return apiResponse(c, { history: result.entries, total: result.total });
   } catch {
-    return apiError(c, { code: ERROR_CODES.SERVICE_UNAVAILABLE, message: 'Pulse engine not initialized' }, 503);
+    return apiError(
+      c,
+      { code: ERROR_CODES.SERVICE_UNAVAILABLE, message: 'Pulse engine not initialized' },
+      503
+    );
   }
 });
 
@@ -746,6 +770,10 @@ autonomyRoutes.get('/pulse/stats', async (c) => {
     const stats = await engine.getStats(userId);
     return apiResponse(c, stats);
   } catch {
-    return apiError(c, { code: ERROR_CODES.SERVICE_UNAVAILABLE, message: 'Pulse engine not initialized' }, 503);
+    return apiError(
+      c,
+      { code: ERROR_CODES.SERVICE_UNAVAILABLE, message: 'Pulse engine not initialized' },
+      503
+    );
   }
 });

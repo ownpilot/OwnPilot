@@ -155,9 +155,7 @@ describe('notification-tools', () => {
     });
 
     it('returns false on error', async () => {
-      mockChannelUsersRepo.findByOwnpilotUser.mockRejectedValueOnce(
-        new Error('DB down')
-      );
+      mockChannelUsersRepo.findByOwnpilotUser.mockRejectedValueOnce(new Error('DB down'));
 
       const result = await sendTelegramMessage('user-1', 'Hello');
       expect(result).toBe(false);

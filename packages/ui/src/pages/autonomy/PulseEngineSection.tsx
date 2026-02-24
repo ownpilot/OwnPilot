@@ -188,9 +188,7 @@ export function PulseEngineSection({
               onChange={(e) => {
                 const val = parseInt(e.target.value) || 0;
                 onPulseStatusChange((prev) =>
-                  prev
-                    ? { ...prev, config: { ...prev.config, minIntervalMs: val * 60000 } }
-                    : prev
+                  prev ? { ...prev, config: { ...prev.config, minIntervalMs: val * 60000 } } : prev
                 );
               }}
               className="w-full px-3 py-2 bg-bg-tertiary dark:bg-dark-bg-tertiary border border-border dark:border-dark-border rounded-lg text-text-primary dark:text-dark-text-primary focus:outline-none focus:ring-2 focus:ring-primary/50"
@@ -212,9 +210,7 @@ export function PulseEngineSection({
               onChange={(e) => {
                 const val = parseInt(e.target.value) || 0;
                 onPulseStatusChange((prev) =>
-                  prev
-                    ? { ...prev, config: { ...prev.config, maxIntervalMs: val * 60000 } }
-                    : prev
+                  prev ? { ...prev, config: { ...prev.config, maxIntervalMs: val * 60000 } } : prev
                 );
               }}
               className="w-full px-3 py-2 bg-bg-tertiary dark:bg-dark-bg-tertiary border border-border dark:border-dark-border rounded-lg text-text-primary dark:text-dark-text-primary focus:outline-none focus:ring-2 focus:ring-primary/50"
@@ -307,9 +303,7 @@ export function PulseEngineSection({
             {pulseHistory.map((entry) => (
               <div key={entry.id}>
                 <button
-                  onClick={() =>
-                    setExpandedLogId(expandedLogId === entry.id ? null : entry.id)
-                  }
+                  onClick={() => setExpandedLogId(expandedLogId === entry.id ? null : entry.id)}
                   className="w-full grid grid-cols-[1fr_70px_50px_70px_70px_32px] gap-2 px-3 py-2 text-sm rounded-lg hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary transition-colors"
                 >
                   <span className="text-left text-text-primary dark:text-dark-text-primary flex items-center gap-1.5">
@@ -366,10 +360,15 @@ export function PulseEngineSection({
                         {entry.urgencyScore > 0 && (
                           <span className="ml-auto flex items-center gap-1 text-xs text-text-muted dark:text-dark-text-muted">
                             <span>Urgency:</span>
-                            <span className={`font-medium ${
-                              entry.urgencyScore >= 75 ? 'text-error' :
-                              entry.urgencyScore >= 40 ? 'text-warning' : 'text-success'
-                            }`}>
+                            <span
+                              className={`font-medium ${
+                                entry.urgencyScore >= 75
+                                  ? 'text-error'
+                                  : entry.urgencyScore >= 40
+                                    ? 'text-warning'
+                                    : 'text-success'
+                              }`}
+                            >
                               {entry.urgencyScore}%
                             </span>
                           </span>
@@ -399,10 +398,7 @@ export function PulseEngineSection({
                         </span>
                         <div className="mt-1 space-y-1">
                           {entry.actions.map((action, i) => (
-                            <div
-                              key={i}
-                              className="flex items-center gap-2 text-xs"
-                            >
+                            <div key={i} className="flex items-center gap-2 text-xs">
                               {action.success ? (
                                 <CheckCircle2 className="w-3 h-3 text-success flex-shrink-0" />
                               ) : (

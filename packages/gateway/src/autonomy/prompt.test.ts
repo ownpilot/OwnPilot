@@ -3,10 +3,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import {
-  getPulseSystemPrompt,
-  buildPulseUserMessage,
-} from './prompt.js';
+import { getPulseSystemPrompt, buildPulseUserMessage } from './prompt.js';
 import type { PulseContext } from './context.js';
 import type { Signal } from './evaluator.js';
 
@@ -92,7 +89,13 @@ describe('buildPulseUserMessage', () => {
     const ctx = makeContext({
       goals: {
         active: [
-          { id: 'g1', title: 'Learn Rust', progress: 30, updatedAt: new Date(), dueDate: '2026-03-01T00:00:00Z' },
+          {
+            id: 'g1',
+            title: 'Learn Rust',
+            progress: 30,
+            updatedAt: new Date(),
+            dueDate: '2026-03-01T00:00:00Z',
+          },
         ],
         stale: [],
         upcoming: [],
@@ -146,9 +149,7 @@ describe('buildPulseUserMessage', () => {
 
   it('shows recent important memories', () => {
     const ctx = makeContext({
-      recentMemories: [
-        { content: 'User prefers dark mode', type: 'preference', importance: 0.8 },
-      ],
+      recentMemories: [{ content: 'User prefers dark mode', type: 'preference', importance: 0.8 }],
     });
     const msg = buildPulseUserMessage(ctx, []);
     expect(msg).toContain('Recent Important Memories');

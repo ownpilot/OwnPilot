@@ -14,9 +14,13 @@ const mockReadFile = vi.fn(async (p: string, _enc?: string) => {
   if (p in fsStore) return fsStore[p];
   throw new Error('ENOENT');
 });
-const mockWriteFile = vi.fn(async (p: string, data: string, _opts?: unknown) => { fsStore[p] = data; });
+const mockWriteFile = vi.fn(async (p: string, data: string, _opts?: unknown) => {
+  fsStore[p] = data;
+});
 const mockMkdir = vi.fn(async () => undefined);
-const mockUnlink = vi.fn(async (p: string) => { delete fsStore[p]; });
+const mockUnlink = vi.fn(async (p: string) => {
+  delete fsStore[p];
+});
 
 vi.mock('node:fs', () => ({
   existsSync: (...args: unknown[]) => mockExistsSync(...(args as [string])),
@@ -31,7 +35,7 @@ vi.mock('node:fs/promises', () => ({
 // Mock deriveKey to control when it fails
 const mockDeriveKey = vi.fn();
 vi.mock('./derive.js', async (importOriginal) => {
-  const actual = await importOriginal() as Record<string, unknown>;
+  const actual = (await importOriginal()) as Record<string, unknown>;
   return {
     ...actual,
     deriveKey: (...args: unknown[]) => mockDeriveKey(...args),
@@ -76,13 +80,13 @@ describe('CredentialStore - deriveKey failure paths', () => {
         verifier: 'AAAA',
         data: 'AAAA',
       });
-      
+
       // Now make deriveKey fail
       mockDeriveKey.mockResolvedValueOnce({
         ok: false,
         error: new CryptoError('derive', 'Key derivation failed'),
       });
-      
+
       const store = makeStore();
       const result = await store.unlock(PASSWORD);
       expect(result.ok).toBe(false);
@@ -100,7 +104,11 @@ describe('CredentialStore - deriveKey failure paths', () => {
       // Create a real CryptoKey for initial setup
       const { webcrypto } = await import('node:crypto');
       const passwordKey = await webcrypto.subtle.importKey(
-        'raw', new TextEncoder().encode(PASSWORD), 'PBKDF2', false, ['deriveBits', 'deriveKey']
+        'raw',
+        new TextEncoder().encode(PASSWORD),
+        'PBKDF2',
+        false,
+        ['deriveBits', 'deriveKey']
       );
       const realKey = await webcrypto.subtle.deriveKey(
         { name: 'PBKDF2', salt, iterations: 1, hash: 'SHA-256' },
@@ -116,7 +124,9 @@ describe('CredentialStore - deriveKey failure paths', () => {
       // Create verifier
       const verifierIv = generateIV();
       const verifierCt = await webcrypto.subtle.encrypt(
-        { name: 'AES-GCM', iv: verifierIv }, realKey, new TextEncoder().encode('OWNPILOT_VERIFIED')
+        { name: 'AES-GCM', iv: verifierIv },
+        realKey,
+        new TextEncoder().encode('OWNPILOT_VERIFIED')
       );
       const verifierCombined = new Uint8Array(verifierIv.length + verifierCt.byteLength);
       verifierCombined.set(verifierIv, 0);
@@ -125,7 +135,9 @@ describe('CredentialStore - deriveKey failure paths', () => {
       // Create data
       const dataIv = generateIV();
       const dataCt = await webcrypto.subtle.encrypt(
-        { name: 'AES-GCM', iv: dataIv }, realKey, new TextEncoder().encode('{}')
+        { name: 'AES-GCM', iv: dataIv },
+        realKey,
+        new TextEncoder().encode('{}')
       );
       const dataCombined = new Uint8Array(dataIv.length + dataCt.byteLength);
       dataCombined.set(dataIv, 0);

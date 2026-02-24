@@ -92,7 +92,8 @@ export const RESOURCE_EXECUTORS: Record<string, ToolExecutor> = {
 
     const taskList = tasks.map((t) => {
       const status = t.status === 'completed' ? '\u2705' : '\u2B1C';
-      const priority = t.priority === 'high' ? '\u{1F534}' : t.priority === 'low' ? '\u{1F7E2}' : '\u{1F7E1}';
+      const priority =
+        t.priority === 'high' ? '\u{1F534}' : t.priority === 'low' ? '\u{1F7E2}' : '\u{1F7E1}';
       return `${status} ${priority} [${t.id}] ${t.title}${t.dueDate ? ` (Due: ${t.dueDate})` : ''}`;
     });
 
@@ -271,7 +272,8 @@ ${content}
     }
 
     const list = bookmarks.map(
-      (b) => `\u{1F4CC} ${b.title}\n   \u{1F517} ${b.url}${b.tags?.length ? `\n   \u{1F3F7}\uFE0F ${b.tags.join(', ')}` : ''}`
+      (b) =>
+        `\u{1F4CC} ${b.title}\n   \u{1F517} ${b.url}${b.tags?.length ? `\n   \u{1F3F7}\uFE0F ${b.tags.join(', ')}` : ''}`
     );
 
     return { content: `\u{1F516} Bookmarks (${bookmarks.length}):\n\n${list.join('\n\n')}` };

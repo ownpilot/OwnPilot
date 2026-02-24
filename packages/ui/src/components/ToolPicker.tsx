@@ -254,12 +254,9 @@ function buildToolInstructions(
 // --- Build skill instructions for context injection ---
 
 function buildSkillInstructions(name: string, instructions: string): string {
-  return [
-    `Skill: ${name}`,
-    'Follow these skill instructions carefully:',
-    '',
-    instructions,
-  ].join('\n');
+  return [`Skill: ${name}`, 'Follow these skill instructions carefully:', '', instructions].join(
+    '\n'
+  );
 }
 
 // --- Icon mapping ---

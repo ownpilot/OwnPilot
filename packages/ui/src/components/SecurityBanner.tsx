@@ -21,10 +21,7 @@ export function SecurityBanner() {
       <span className="text-text-primary dark:text-dark-text-primary">
         Your dashboard is not password protected.
       </span>
-      <Link
-        to="/settings/security"
-        className="text-primary hover:underline font-medium ml-1"
-      >
+      <Link to="/settings/security" className="text-primary hover:underline font-medium ml-1">
         Set Password
       </Link>
     </div>

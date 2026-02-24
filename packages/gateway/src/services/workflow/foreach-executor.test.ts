@@ -68,19 +68,16 @@ import { resolveTemplates } from './template-resolver.js';
 // Helpers
 // ---------------------------------------------------------------------------
 
-function makeNode(
-  id: string,
-  type: string,
-  data: Record<string, unknown> = {}
-): WorkflowNode {
-  return { id, type, position: { x: 0, y: 0 }, data: { label: id, ...data } as WorkflowNode['data'] };
+function makeNode(id: string, type: string, data: Record<string, unknown> = {}): WorkflowNode {
+  return {
+    id,
+    type,
+    position: { x: 0, y: 0 },
+    data: { label: id, ...data } as WorkflowNode['data'],
+  };
 }
 
-function makeEdge(
-  source: string,
-  target: string,
-  sourceHandle?: string
-): WorkflowEdge {
+function makeEdge(source: string, target: string, sourceHandle?: string): WorkflowEdge {
   return { id: `${source}-${target}`, source, target, sourceHandle };
 }
 
@@ -114,12 +111,15 @@ function makeToolService() {
 }
 
 // Standard forEach setup
-function createForEachSetup(items: unknown[], opts: {
-  bodyNodeType?: string;
-  maxIterations?: number;
-  onError?: 'stop' | 'continue';
-  itemVariable?: string;
-} = {}) {
+function createForEachSetup(
+  items: unknown[],
+  opts: {
+    bodyNodeType?: string;
+    maxIterations?: number;
+    onError?: 'stop' | 'continue';
+    itemVariable?: string;
+  } = {}
+) {
   const feNode = makeNode('fe1', 'forEachNode', {
     arrayExpression: '{{source.output}}',
     maxIterations: opts.maxIterations,
@@ -281,14 +281,12 @@ describe('executeForEachNode', () => {
     const items = ['a', 'b', 'c'];
     const setup = createForEachSetup(items, { onError: 'stop' });
 
-    mockExecuteNode
-      .mockResolvedValueOnce(makeNodeResult('body1', 'ok'))
-      .mockResolvedValueOnce({
-        nodeId: 'body1',
-        status: 'error',
-        error: 'Failed on b',
-        completedAt: new Date().toISOString(),
-      });
+    mockExecuteNode.mockResolvedValueOnce(makeNodeResult('body1', 'ok')).mockResolvedValueOnce({
+      nodeId: 'body1',
+      status: 'error',
+      error: 'Failed on b',
+      completedAt: new Date().toISOString(),
+    });
 
     const result = await executeForEachNode(
       setup.feNode,
@@ -435,7 +433,9 @@ describe('executeForEachNode', () => {
       setup.abortSignal,
       setup.toolService,
       undefined,
-      mockRepo as unknown as ReturnType<typeof import('../../db/repositories/workflows.js').createWorkflowsRepository>,
+      mockRepo as unknown as ReturnType<
+        typeof import('../../db/repositories/workflows.js').createWorkflowsRepository
+      >,
       'log-1'
     );
 
@@ -469,10 +469,12 @@ describe('executeForEachNode', () => {
     const setup = createForEachSetup(items);
 
     let capturedOutput: unknown;
-    mockExecuteNode.mockImplementation(async (_node: WorkflowNode, nodeOutputs: Record<string, NodeResult>) => {
-      capturedOutput = nodeOutputs['fe1']?.output;
-      return makeNodeResult('body1', 'done');
-    });
+    mockExecuteNode.mockImplementation(
+      async (_node: WorkflowNode, nodeOutputs: Record<string, NodeResult>) => {
+        capturedOutput = nodeOutputs['fe1']?.output;
+        return makeNodeResult('body1', 'done');
+      }
+    );
 
     await executeForEachNode(
       setup.feNode,
@@ -499,10 +501,16 @@ describe('executeForEachNode', () => {
     const setup = createForEachSetup(items, { itemVariable: 'issue' });
 
     let capturedVars: Record<string, unknown> | undefined;
-    mockExecuteNode.mockImplementation(async (_node: WorkflowNode, _outputs: Record<string, NodeResult>, vars: Record<string, unknown>) => {
-      capturedVars = vars;
-      return makeNodeResult('body1', 'done');
-    });
+    mockExecuteNode.mockImplementation(
+      async (
+        _node: WorkflowNode,
+        _outputs: Record<string, NodeResult>,
+        vars: Record<string, unknown>
+      ) => {
+        capturedVars = vars;
+        return makeNodeResult('body1', 'done');
+      }
+    );
 
     await executeForEachNode(
       setup.feNode,
@@ -594,9 +602,7 @@ describe('executeForEachNode', () => {
     expect(result.status).toBe('success');
     expect(mockExecuteConditionNode).toHaveBeenCalled();
     // falseBody should be skipped
-    const falseSkipped = events.find(
-      (e) => e.nodeId === 'falseBody' && e.status === 'skipped'
-    );
+    const falseSkipped = events.find((e) => e.nodeId === 'falseBody' && e.status === 'skipped');
     expect(falseSkipped).toBeDefined();
   });
 

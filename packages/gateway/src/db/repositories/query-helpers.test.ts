@@ -18,7 +18,7 @@ describe('buildUpdateStatement', () => {
       const result = buildUpdateStatement(
         'goals',
         [{ column: 'title', value: 'New Title' }],
-        [{ column: 'id', value: 'goal_1' }],
+        [{ column: 'id', value: 'goal_1' }]
       );
 
       expect(result).not.toBeNull();
@@ -34,7 +34,7 @@ describe('buildUpdateStatement', () => {
           { column: 'content', value: 'New content' },
           { column: 'updated_at', value: '2026-01-01' },
         ],
-        [{ column: 'id', value: 'note-1' }],
+        [{ column: 'id', value: 'note-1' }]
       );
 
       expect(result).not.toBeNull();
@@ -51,13 +51,11 @@ describe('buildUpdateStatement', () => {
         [
           { column: 'id', value: 'task-1' },
           { column: 'user_id', value: 'user-1' },
-        ],
+        ]
       );
 
       expect(result).not.toBeNull();
-      expect(result!.sql).toBe(
-        'UPDATE tasks SET status = $1 WHERE id = $2 AND user_id = $3'
-      );
+      expect(result!.sql).toBe('UPDATE tasks SET status = $1 WHERE id = $2 AND user_id = $3');
       expect(result!.params).toEqual(['completed', 'task-1', 'user-1']);
     });
   });
@@ -75,7 +73,7 @@ describe('buildUpdateStatement', () => {
           { column: 'description', value: undefined },
           { column: 'priority', value: 8 },
         ],
-        [{ column: 'id', value: 'goal_1' }],
+        [{ column: 'id', value: 'goal_1' }]
       );
 
       expect(result).not.toBeNull();
@@ -90,18 +88,14 @@ describe('buildUpdateStatement', () => {
           { column: 'title', value: undefined },
           { column: 'description', value: undefined },
         ],
-        [{ column: 'id', value: 'goal_1' }],
+        [{ column: 'id', value: 'goal_1' }]
       );
 
       expect(result).toBeNull();
     });
 
     it('should return null for an empty fields array', () => {
-      const result = buildUpdateStatement(
-        'goals',
-        [],
-        [{ column: 'id', value: 'goal_1' }],
-      );
+      const result = buildUpdateStatement('goals', [], [{ column: 'id', value: 'goal_1' }]);
 
       expect(result).toBeNull();
     });
@@ -116,7 +110,7 @@ describe('buildUpdateStatement', () => {
       const result = buildUpdateStatement(
         'notes',
         [{ column: 'category', value: null }],
-        [{ column: 'id', value: 'note-1' }],
+        [{ column: 'id', value: 'note-1' }]
       );
 
       expect(result).not.toBeNull();
@@ -128,7 +122,7 @@ describe('buildUpdateStatement', () => {
       const result = buildUpdateStatement(
         'notes',
         [{ column: 'title', value: '' }],
-        [{ column: 'id', value: 'note-1' }],
+        [{ column: 'id', value: 'note-1' }]
       );
 
       expect(result).not.toBeNull();
@@ -139,7 +133,7 @@ describe('buildUpdateStatement', () => {
       const result = buildUpdateStatement(
         'goals',
         [{ column: 'progress', value: 0 }],
-        [{ column: 'id', value: 'goal_1' }],
+        [{ column: 'id', value: 'goal_1' }]
       );
 
       expect(result).not.toBeNull();
@@ -150,7 +144,7 @@ describe('buildUpdateStatement', () => {
       const result = buildUpdateStatement(
         'notes',
         [{ column: 'is_pinned', value: false }],
-        [{ column: 'id', value: 'note-1' }],
+        [{ column: 'id', value: 'note-1' }]
       );
 
       expect(result).not.toBeNull();
@@ -167,7 +161,7 @@ describe('buildUpdateStatement', () => {
       const result = buildUpdateStatement(
         'goals',
         [{ column: 'title', value: 'x' }],
-        [{ column: 'id', value: '1' }],
+        [{ column: 'id', value: '1' }]
       );
 
       expect(result!.sql).toContain('$1');
@@ -182,7 +176,7 @@ describe('buildUpdateStatement', () => {
           { column: 'status', value: 'active' },
         ],
         [{ column: 'id', value: '1' }],
-        3,
+        3
       );
 
       expect(result!.sql).toBe('UPDATE goals SET title = $3, status = $4 WHERE id = $5');
@@ -202,7 +196,7 @@ describe('buildUpdateStatement', () => {
         [
           { column: 'id', value: 't1' },
           { column: 'user_id', value: 'u1' },
-        ],
+        ]
       );
 
       expect(result).not.toBeNull();
@@ -220,11 +214,7 @@ describe('buildUpdateStatement', () => {
 
   describe('WHERE clause', () => {
     it('should omit WHERE when where array is empty', () => {
-      const result = buildUpdateStatement(
-        'settings',
-        [{ column: 'value', value: 'new' }],
-        [],
-      );
+      const result = buildUpdateStatement('settings', [{ column: 'value', value: 'new' }], []);
 
       expect(result).not.toBeNull();
       expect(result!.sql).toBe('UPDATE settings SET value = $1');
@@ -239,7 +229,7 @@ describe('buildUpdateStatement', () => {
           { column: 'id', value: '1' },
           { column: 'user_id', value: 'u1' },
           { column: 'workspace_id', value: 'w1' },
-        ],
+        ]
       );
 
       expect(result!.sql).toBe(
@@ -259,7 +249,7 @@ describe('buildUpdateStatement', () => {
       const result = buildUpdateStatement(
         'goals',
         [{ column: 'metadata', value: metadata }],
-        [{ column: 'id', value: 'g1' }],
+        [{ column: 'id', value: 'g1' }]
       );
 
       expect(result!.params[0]).toBe('{"key":"value"}');
@@ -272,7 +262,7 @@ describe('buildUpdateStatement', () => {
           { column: 'is_pinned', value: true },
           { column: 'is_archived', value: false },
         ],
-        [{ column: 'id', value: 'n1' }],
+        [{ column: 'id', value: 'n1' }]
       );
 
       expect(result!.params).toEqual([true, false, 'n1']);
@@ -285,7 +275,7 @@ describe('buildUpdateStatement', () => {
           { column: 'priority', value: 10 },
           { column: 'progress', value: 75.5 },
         ],
-        [{ column: 'id', value: 'g1' }],
+        [{ column: 'id', value: 'g1' }]
       );
 
       expect(result!.params).toEqual([10, 75.5, 'g1']);
@@ -296,7 +286,7 @@ describe('buildUpdateStatement', () => {
       const result = buildUpdateStatement(
         'tasks',
         [{ column: 'completed_at', value: now.toISOString() }],
-        [{ column: 'id', value: 't1' }],
+        [{ column: 'id', value: 't1' }]
       );
 
       expect(result!.params[0]).toBe('2026-01-15T12:00:00.000Z');
@@ -317,7 +307,7 @@ describe('buildUpdateStatement', () => {
           { column: 'user_id', value: 'user-1' },
         ],
         1,
-        [{ sql: 'updated_at = NOW()' }],
+        [{ sql: 'updated_at = NOW()' }]
       );
 
       expect(result).not.toBeNull();
@@ -333,10 +323,7 @@ describe('buildUpdateStatement', () => {
         [{ column: 'status', value: 'completed' }],
         [{ column: 'id', value: 'task-1' }],
         1,
-        [
-          { sql: 'completed_at = NOW()' },
-          { sql: 'updated_at = NOW()' },
-        ],
+        [{ sql: 'completed_at = NOW()' }, { sql: 'updated_at = NOW()' }]
       );
 
       expect(result).not.toBeNull();
@@ -355,7 +342,7 @@ describe('buildUpdateStatement', () => {
         ],
         [{ column: 'id', value: 'task-1' }],
         1,
-        [{ sql: 'updated_at = NOW()' }],
+        [{ sql: 'updated_at = NOW()' }]
       );
 
       expect(result).not.toBeNull();
@@ -369,7 +356,7 @@ describe('buildUpdateStatement', () => {
         [{ column: 'title', value: undefined }],
         [{ column: 'id', value: 'task-1' }],
         1,
-        [],
+        []
       );
 
       expect(result).toBeNull();
@@ -381,12 +368,10 @@ describe('buildUpdateStatement', () => {
         [{ column: 'status', value: 'pending' }],
         [{ column: 'id', value: 'task-1' }],
         1,
-        [{ sql: 'completed_at = NULL' }],
+        [{ sql: 'completed_at = NULL' }]
       );
 
-      expect(result!.sql).toBe(
-        'UPDATE tasks SET status = $1, completed_at = NULL WHERE id = $2'
-      );
+      expect(result!.sql).toBe('UPDATE tasks SET status = $1, completed_at = NULL WHERE id = $2');
     });
   });
 
@@ -421,7 +406,7 @@ describe('buildUpdateStatement', () => {
         [
           { column: 'id', value: 'goal_1' },
           { column: 'user_id', value: 'user-1' },
-        ],
+        ]
       );
 
       expect(result).not.toBeNull();
@@ -455,7 +440,7 @@ describe('buildUpdateStatement', () => {
         [
           { column: 'id', value: 'note-1' },
           { column: 'user_id', value: 'user-1' },
-        ],
+        ]
       );
 
       expect(result).not.toBeNull();

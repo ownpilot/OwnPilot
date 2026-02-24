@@ -791,7 +791,9 @@ describe('Channels Routes', () => {
     it('broadcasts WebSocket event on reconnect', async () => {
       await app.request('/channels/channel.telegram/reconnect', { method: 'POST' });
       expect(mockWsGateway.broadcast).toHaveBeenCalledWith('data:changed', {
-        entity: 'channel', action: 'updated', id: 'channel.telegram',
+        entity: 'channel',
+        action: 'updated',
+        id: 'channel.telegram',
       });
     });
 
@@ -827,7 +829,12 @@ describe('Channels Routes', () => {
 
     it('returns 400 when plugin has no required services', async () => {
       const pluginNoServices = {
-        manifest: { id: 'channel.telegram', name: 'Telegram', category: 'channel', requiredServices: [] },
+        manifest: {
+          id: 'channel.telegram',
+          name: 'Telegram',
+          category: 'channel',
+          requiredServices: [],
+        },
         status: 'enabled',
         api: telegramApi,
       };
@@ -846,8 +853,13 @@ describe('Channels Routes', () => {
 
   describe('GET /channels -- botInfo', () => {
     it('includes botInfo when channel API has getBotInfo', async () => {
-      const apiWithBot = { ...telegramApi, getBotInfo: vi.fn(() => ({ username: 'testbot', firstName: 'Test Bot' })) };
-      mockService.getChannel.mockImplementation((id: string) => id === 'channel.telegram' ? apiWithBot : telegram2Api);
+      const apiWithBot = {
+        ...telegramApi,
+        getBotInfo: vi.fn(() => ({ username: 'testbot', firstName: 'Test Bot' })),
+      };
+      mockService.getChannel.mockImplementation((id: string) =>
+        id === 'channel.telegram' ? apiWithBot : telegram2Api
+      );
       const res = await app.request('/channels');
       const json = await res.json();
       expect(json.data.channels[0].botInfo).toEqual({ username: 'testbot', firstName: 'Test Bot' });
@@ -875,7 +887,10 @@ describe('Channels Routes', () => {
 
   describe('GET /channels/:id -- botInfo', () => {
     it('includes botInfo when channel API has getBotInfo', async () => {
-      const apiWithBot = { ...telegramApi, getBotInfo: vi.fn(() => ({ username: 'mybot', firstName: 'My Bot' })) };
+      const apiWithBot = {
+        ...telegramApi,
+        getBotInfo: vi.fn(() => ({ username: 'mybot', firstName: 'My Bot' })),
+      };
       mockService.getChannel.mockReturnValue(apiWithBot);
       const res = await app.request('/channels/channel.telegram');
       const json = await res.json();
@@ -952,19 +967,26 @@ describe('Channels Routes', () => {
       expect(json.data.platformMessageId).toBe('msg-sent-001');
       expect(json.data.messageId).toContain('channel.telegram:reply:msg-sent-001');
       expect(mockService.send).toHaveBeenCalledWith('channel.telegram', {
-        platformChatId: '12345', text: 'Reply text', replyToId: undefined,
+        platformChatId: '12345',
+        text: 'Reply text',
+        replyToId: undefined,
       });
       expect(mockChannelMessagesRepo.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          channelId: 'channel.telegram', direction: 'outbound',
-          senderId: 'web-ui', senderName: 'You', content: 'Reply text',
+          channelId: 'channel.telegram',
+          direction: 'outbound',
+          senderId: 'web-ui',
+          senderName: 'You',
+          content: 'Reply text',
         })
       );
       expect(mockWsGateway.broadcast).toHaveBeenCalledWith(
         'channel:message',
         expect.objectContaining({
-          channelId: 'channel.telegram', content: 'Reply text',
-          direction: 'outgoing', sender: 'You',
+          channelId: 'channel.telegram',
+          content: 'Reply text',
+          direction: 'outgoing',
+          sender: 'You',
         })
       );
     });
@@ -973,11 +995,17 @@ describe('Channels Routes', () => {
       const res = await app.request('/channels/channel.telegram/reply', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: 'Thread reply', platformChatId: '12345', replyToMessageId: 'orig-msg-123' }),
+        body: JSON.stringify({
+          text: 'Thread reply',
+          platformChatId: '12345',
+          replyToMessageId: 'orig-msg-123',
+        }),
       });
       expect(res.status).toBe(200);
       expect(mockService.send).toHaveBeenCalledWith('channel.telegram', {
-        platformChatId: '12345', text: 'Thread reply', replyToId: 'orig-msg-123',
+        platformChatId: '12345',
+        text: 'Thread reply',
+        replyToId: 'orig-msg-123',
       });
     });
 
@@ -1097,10 +1125,18 @@ describe('Channels Routes', () => {
 
   describe('GET /channels/messages/inbox -- sender defaults', () => {
     it('uses default sender id/name for inbound messages', async () => {
-      mockChannelMessagesRepo.getAll.mockResolvedValue([{
-        id: 'msg-no-sender', channelId: 'channel.telegram', direction: 'inbound',
-        senderId: null, senderName: null, content: 'anonymous', metadata: null, createdAt: new Date(),
-      }]);
+      mockChannelMessagesRepo.getAll.mockResolvedValue([
+        {
+          id: 'msg-no-sender',
+          channelId: 'channel.telegram',
+          direction: 'inbound',
+          senderId: null,
+          senderName: null,
+          content: 'anonymous',
+          metadata: null,
+          createdAt: new Date(),
+        },
+      ]);
       const res = await app.request('/channels/messages/inbox');
       const json = await res.json();
       const msg = json.data.messages.find((m: { id: string }) => m.id === 'msg-no-sender');
@@ -1109,10 +1145,18 @@ describe('Channels Routes', () => {
     });
 
     it('uses assistant defaults for outbound without sender', async () => {
-      mockChannelMessagesRepo.getAll.mockResolvedValue([{
-        id: 'msg-out-no-sender', channelId: 'channel.telegram', direction: 'outbound',
-        senderId: null, senderName: null, content: 'from bot', metadata: null, createdAt: new Date(),
-      }]);
+      mockChannelMessagesRepo.getAll.mockResolvedValue([
+        {
+          id: 'msg-out-no-sender',
+          channelId: 'channel.telegram',
+          direction: 'outbound',
+          senderId: null,
+          senderName: null,
+          content: 'from bot',
+          metadata: null,
+          createdAt: new Date(),
+        },
+      ]);
       const res = await app.request('/channels/messages/inbox');
       const json = await res.json();
       const msg = json.data.messages.find((m: { id: string }) => m.id === 'msg-out-no-sender');
@@ -1121,10 +1165,18 @@ describe('Channels Routes', () => {
     });
 
     it('extracts channelType from channelId', async () => {
-      mockChannelMessagesRepo.getAll.mockResolvedValue([{
-        id: 'msg-type', channelId: 'channel.telegram', direction: 'inbound',
-        senderId: 'u1', senderName: 'U1', content: 'hi', metadata: null, createdAt: new Date(),
-      }]);
+      mockChannelMessagesRepo.getAll.mockResolvedValue([
+        {
+          id: 'msg-type',
+          channelId: 'channel.telegram',
+          direction: 'inbound',
+          senderId: 'u1',
+          senderName: 'U1',
+          content: 'hi',
+          metadata: null,
+          createdAt: new Date(),
+        },
+      ]);
       const res = await app.request('/channels/messages/inbox');
       const json = await res.json();
       const msg = json.data.messages.find((m: { id: string }) => m.id === 'msg-type');
@@ -1133,8 +1185,26 @@ describe('Channels Routes', () => {
 
     it('counts unread messages correctly', async () => {
       mockChannelMessagesRepo.getAll.mockResolvedValue([
-        { id: 'msg-in', channelId: 'channel.telegram', direction: 'inbound', senderId: 'u1', senderName: 'U1', content: 'unread', metadata: null, createdAt: new Date() },
-        { id: 'msg-out', channelId: 'channel.telegram', direction: 'outbound', senderId: 'bot', senderName: 'Bot', content: 'sent', metadata: null, createdAt: new Date() },
+        {
+          id: 'msg-in',
+          channelId: 'channel.telegram',
+          direction: 'inbound',
+          senderId: 'u1',
+          senderName: 'U1',
+          content: 'unread',
+          metadata: null,
+          createdAt: new Date(),
+        },
+        {
+          id: 'msg-out',
+          channelId: 'channel.telegram',
+          direction: 'outbound',
+          senderId: 'bot',
+          senderName: 'Bot',
+          content: 'sent',
+          metadata: null,
+          createdAt: new Date(),
+        },
       ]);
       const res = await app.request('/channels/messages/inbox');
       const json = await res.json();
@@ -1149,5 +1219,4 @@ describe('Channels Routes', () => {
       expect(json.data.total).toBe(42);
     });
   });
-
 });

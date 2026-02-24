@@ -605,9 +605,7 @@ function SkillCreatorModal({
       setGeneratedName(result.name);
 
       if (!result.validation.valid) {
-        toast.warning(
-          `Generated with warnings: ${result.validation.errors.join(', ')}`
-        );
+        toast.warning(`Generated with warnings: ${result.validation.errors.join(', ')}`);
       }
 
       setStep('preview');
@@ -686,8 +684,8 @@ function SkillCreatorModal({
                 />
               </div>
               <p className="text-xs text-text-muted dark:text-dark-text-muted">
-                The AI will generate a SKILL.md file following the AgentSkills.io open standard.
-                Be specific about the workflow steps, checks, and output format you want.
+                The AI will generate a SKILL.md file following the AgentSkills.io open standard. Be
+                specific about the workflow steps, checks, and output format you want.
               </p>
             </div>
           ) : (
