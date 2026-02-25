@@ -1018,5 +1018,9 @@ chatRoutes.delete('/conversations/:id', async (c) => {
   const chatRepo = new ChatRepository(getUserId(c));
   await chatRepo.deleteConversation(id);
 
+  // Clean up conversation state caches (BUG-11 fix)
+  promptInitializedConversations.delete(id);
+  lastExecPermHash.delete(id);
+
   return apiResponse(c, {});
 });

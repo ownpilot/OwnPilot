@@ -25,7 +25,7 @@ import {
   getContextBreakdown,
   compactContext,
 } from './agents.js';
-import { promptInitializedConversations } from './chat-state.js';
+import { promptInitializedConversations, lastExecPermHash } from './chat-state.js';
 import { clearInjectionCache } from '../services/middleware/context-injection.js';
 import { getDefaultProvider } from './settings.js';
 import { ChatRepository, LogsRepository } from '../db/repositories/index.js';
@@ -95,13 +95,20 @@ chatHistoryRoutes.post('/history/bulk-delete', async (c) => {
     const chatRepo = new ChatRepository(userId);
     let deleted = 0;
 
+    let idsToDelete: string[] = [];
+
     if (body.all === true) {
       // Delete all conversations for this user
       const conversations = await chatRepo.listConversations({ limit: 10000 });
-      const ids = conversations.map((c) => c.id);
-      deleted = await chatRepo.deleteConversations(ids);
+      idsToDelete = conversations.map((c) => c.id);
+      deleted = await chatRepo.deleteConversations(idsToDelete);
     } else if (typeof body.olderThanDays === 'number' && body.olderThanDays > 0) {
-      deleted = await chatRepo.deleteOldConversations(body.olderThanDays);
+      // For olderThanDays, we need to get the IDs first to clean up caches
+      const conversations = await chatRepo.listConversations({ limit: 10000 });
+      const cutoffDate = new Date();
+      cutoffDate.setDate(cutoffDate.getDate() - body.olderThanDays);
+      idsToDelete = conversations.filter((c) => c.updatedAt < cutoffDate).map((c) => c.id);
+      deleted = await chatRepo.deleteConversations(idsToDelete);
     } else if (Array.isArray(body.ids) && body.ids.length > 0) {
       if (body.ids.length > 500) {
         return apiError(
@@ -110,7 +117,8 @@ chatHistoryRoutes.post('/history/bulk-delete', async (c) => {
           400
         );
       }
-      deleted = await chatRepo.deleteConversations(body.ids);
+      idsToDelete = body.ids;
+      deleted = await chatRepo.deleteConversations(idsToDelete);
     } else {
       return apiError(
         c,
@@ -120,6 +128,12 @@ chatHistoryRoutes.post('/history/bulk-delete', async (c) => {
         },
         400
       );
+    }
+
+    // Clean up conversation state caches for deleted conversations (BUG-11 fix)
+    for (const conversationId of idsToDelete) {
+      promptInitializedConversations.delete(conversationId);
+      lastExecPermHash.delete(conversationId);
     }
 
     return apiResponse(c, { deleted });
@@ -236,6 +250,10 @@ chatHistoryRoutes.delete('/history/:id', async (c) => {
     if (!deleted) {
       return notFoundError(c, 'Conversation', id);
     }
+
+    // Clean up conversation state caches (BUG-11 fix)
+    promptInitializedConversations.delete(id);
+    lastExecPermHash.delete(id);
 
     return apiResponse(c, { deleted: true });
   } catch (error) {

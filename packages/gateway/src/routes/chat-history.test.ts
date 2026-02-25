@@ -185,6 +185,7 @@ vi.mock('./agents.js', () => ({
 
 vi.mock('./chat-state.js', () => ({
   promptInitializedConversations: new Set<string>(),
+  lastExecPermHash: new Map<string, string>(),
 }));
 
 vi.mock('../config/defaults.js', async (importOriginal) => {
@@ -392,6 +393,16 @@ describe('Chat History & Logs Routes', () => {
     });
 
     it('deletes by olderThanDays', async () => {
+      // Create 5 old conversations (more than 30 days ago)
+      const oldDate = new Date();
+      oldDate.setDate(oldDate.getDate() - 31);
+      const oldConversations = Array.from({ length: 5 }, (_, i) => ({
+        ...sampleConversation,
+        id: `old-conv-${i}`,
+        updatedAt: oldDate,
+      }));
+      mockChatRepo.listConversations.mockResolvedValueOnce(oldConversations);
+
       const res = await app.request('/api/history/bulk-delete', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -401,7 +412,13 @@ describe('Chat History & Logs Routes', () => {
       expect(res.status).toBe(200);
       const json = await res.json();
       expect(json.data.deleted).toBe(5);
-      expect(mockChatRepo.deleteOldConversations).toHaveBeenCalledWith(30);
+      expect(mockChatRepo.deleteConversations).toHaveBeenCalledWith([
+        'old-conv-0',
+        'old-conv-1',
+        'old-conv-2',
+        'old-conv-3',
+        'old-conv-4',
+      ]);
     });
 
     it('returns 400 when body is missing', async () => {
