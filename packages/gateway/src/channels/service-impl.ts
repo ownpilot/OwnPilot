@@ -523,8 +523,18 @@ export class ChannelServiceImpl implements IChannelService {
 
         // Create a new conversation in the agent's in-memory ConversationMemory
         // so that loadConversation() can find it later for context continuity
-        const { getOrCreateDefaultAgent } = await import('../routes/agents.js');
-        const agent = await getOrCreateDefaultAgent();
+        const { getOrCreateChatAgent } = await import('../routes/agents.js');
+        const { resolveForProcess } = await import('../services/model-routing.js');
+        const routing = await resolveForProcess('telegram');
+        const fallback =
+          routing.fallbackProvider && routing.fallbackModel
+            ? { provider: routing.fallbackProvider, model: routing.fallbackModel }
+            : undefined;
+        const agent = await getOrCreateChatAgent(
+          routing.provider ?? 'openai',
+          routing.model ?? 'gpt-4o',
+          fallback
+        );
         const systemPrompt = agent.getConversation().systemPrompt;
         const conv = agent.getMemory().create(systemPrompt);
         const conversationId = conv.id;
@@ -724,14 +734,24 @@ export class ChannelServiceImpl implements IChannelService {
     channelUser: { ownpilotUserId: string },
     progress?: { update(text: string): void }
   ): Promise<string> {
-    const { getOrCreateDefaultAgent, isDemoMode } = await import('../routes/agents.js');
+    const { getOrCreateChatAgent, isDemoMode } = await import('../routes/agents.js');
+    const { resolveForProcess } = await import('../services/model-routing.js');
 
     // Demo mode short-circuit (bus isn't needed for demo)
     if (await isDemoMode()) {
       return demoModeReply(message.text);
     }
 
-    const agent = await getOrCreateDefaultAgent();
+    const routing = await resolveForProcess('telegram');
+    const fallback =
+      routing.fallbackProvider && routing.fallbackModel
+        ? { provider: routing.fallbackProvider, model: routing.fallbackModel }
+        : undefined;
+    const agent = await getOrCreateChatAgent(
+      routing.provider ?? 'openai',
+      routing.model ?? 'gpt-4o',
+      fallback
+    );
 
     // Load session conversation for context continuity
     let activeConversationId = session.conversationId;
@@ -841,13 +861,23 @@ export class ChannelServiceImpl implements IChannelService {
    * Legacy fallback: process directly via agent.chat() without the bus.
    */
   private async processDirectAgent(message: ChannelIncomingMessage): Promise<string> {
-    const { getOrCreateDefaultAgent, isDemoMode } = await import('../routes/agents.js');
+    const { getOrCreateChatAgent, isDemoMode } = await import('../routes/agents.js');
+    const { resolveForProcess } = await import('../services/model-routing.js');
 
     if (await isDemoMode()) {
       return demoModeReply(message.text);
     }
 
-    const agent = await getOrCreateDefaultAgent();
+    const routing = await resolveForProcess('telegram');
+    const fallback =
+      routing.fallbackProvider && routing.fallbackModel
+        ? { provider: routing.fallbackProvider, model: routing.fallbackModel }
+        : undefined;
+    const agent = await getOrCreateChatAgent(
+      routing.provider ?? 'openai',
+      routing.model ?? 'gpt-4o',
+      fallback
+    );
     const result = await agent.chat(message.text);
 
     if (result.ok) {

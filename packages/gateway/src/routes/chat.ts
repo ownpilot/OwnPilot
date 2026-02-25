@@ -29,6 +29,7 @@ import {
   getWorkspaceContext,
   getSessionInfo,
 } from './agents.js';
+import { resolveForProcess } from '../services/model-routing.js';
 import { usageTracker } from './costs.js';
 import { logChatEvent } from '../audit/index.js';
 import { ChatRepository, LogsRepository } from '../db/repositories/index.js';
@@ -169,10 +170,27 @@ chatRoutes.post('/', async (c) => {
     workspaceId?: string;
   };
 
-  // Get provider and model from request
-  const provider = body.provider ?? 'openai';
-  const requestedModel = body.model ?? (await getDefaultModel(provider));
-  const model = requestedModel ?? 'gpt-4o';
+  // Resolve provider and model: explicit request body > per-process routing > global default
+  let provider: string;
+  let model: string;
+  let requestedModel: string | null;
+  let routingFallback: { provider: string; model: string } | undefined;
+
+  if (body.provider || body.model) {
+    // User explicitly selected provider/model — honor it directly
+    provider = body.provider ?? 'openai';
+    requestedModel = body.model ?? (await getDefaultModel(provider));
+    model = requestedModel ?? 'gpt-4o';
+  } else {
+    // Use per-process model routing with waterfall to global default
+    const resolved = await resolveForProcess('chat');
+    provider = resolved.provider ?? 'openai';
+    requestedModel = resolved.model;
+    model = requestedModel ?? 'gpt-4o';
+    if (resolved.fallbackProvider && resolved.fallbackModel) {
+      routingFallback = { provider: resolved.fallbackProvider, model: resolved.fallbackModel };
+    }
+  }
 
   // Check for demo mode
   if (await isDemoMode()) {
@@ -221,7 +239,7 @@ chatRoutes.post('/', async (c) => {
     }
   } else {
     try {
-      agent = await getOrCreateChatAgent(provider, model);
+      agent = await getOrCreateChatAgent(provider, model, routingFallback);
     } catch (error) {
       return apiError(
         c,

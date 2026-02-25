@@ -7,8 +7,15 @@ export type { AuthStatus, LoginResponse, PasswordResponse, SessionsResponse } fr
 export { providersApi } from './providers';
 export type { ProvidersListData, ProviderConfigData } from './providers';
 export { modelsApi } from './models';
-export { settingsApi } from './settings';
-export type { ToolGroupInfo } from './settings';
+export { settingsApi, modelRoutingApi } from './settings';
+export type {
+  ToolGroupInfo,
+  ProcessRouting,
+  ResolvedRouting,
+  RoutingProcess,
+  ModelRoutingData,
+  ProcessRoutingData,
+} from './settings';
 export { tasksApi } from './tasks';
 export { summaryApi, costsApi } from './summary';
 export { agentsApi } from './agents';

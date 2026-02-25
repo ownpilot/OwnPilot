@@ -390,14 +390,17 @@ export class AutonomyEngine implements IPulseService {
   ): Promise<{ responseContent: string; toolCalls: Array<{ name?: string; arguments?: string }> }> {
     try {
       const { getOrCreateChatAgent } = await import('../routes/agent-service.js');
-      const registry = getServiceRegistry();
-      const providerService = registry.get(Services.Provider);
-      const resolved = await providerService.resolve();
+      const { resolveForProcess } = await import('../services/model-routing.js');
+      const resolved = await resolveForProcess('pulse');
       const provider = resolved.provider ?? 'openai';
       const model = resolved.model ?? 'gpt-4o-mini';
+      const fallback =
+        resolved.fallbackProvider && resolved.fallbackModel
+          ? { provider: resolved.fallbackProvider, model: resolved.fallbackModel }
+          : undefined;
 
       // Get or create a chat agent with full tool access
-      const agent = await getOrCreateChatAgent(provider, model);
+      const agent = await getOrCreateChatAgent(provider, model, fallback);
 
       // Create a fresh conversation for this pulse cycle
       const memory = agent.getMemory();

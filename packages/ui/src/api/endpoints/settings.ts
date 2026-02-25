@@ -16,6 +16,45 @@ export interface ToolGroupInfo {
   defaultEnabled: boolean;
 }
 
+// ---- Model Routing Types ----
+
+export interface ProcessRouting {
+  provider: string | null;
+  model: string | null;
+  fallbackProvider: string | null;
+  fallbackModel: string | null;
+}
+
+export interface ResolvedRouting extends ProcessRouting {
+  source: 'process' | 'global' | 'first-configured';
+}
+
+export type RoutingProcess = 'chat' | 'telegram' | 'pulse';
+
+export interface ModelRoutingData {
+  routing: Record<RoutingProcess, ProcessRouting>;
+  resolved: Record<RoutingProcess, ResolvedRouting>;
+}
+
+export interface ProcessRoutingData {
+  routing: ProcessRouting;
+  resolved: ResolvedRouting;
+}
+
+// ---- Model Routing API ----
+
+export const modelRoutingApi = {
+  getAll: () => apiClient.get<ModelRoutingData>('/model-routing'),
+  get: (process: RoutingProcess) =>
+    apiClient.get<ProcessRoutingData>(`/model-routing/${process}`),
+  update: (process: RoutingProcess, data: Partial<ProcessRouting>) =>
+    apiClient.put<ProcessRoutingData>(`/model-routing/${process}`, data),
+  clear: (process: RoutingProcess) =>
+    apiClient.delete<{ cleared: boolean }>(`/model-routing/${process}`),
+};
+
+// ---- Settings API ----
+
 export const settingsApi = {
   get: () => apiClient.get<SettingsData>('/settings'),
   getProviders: () =>

@@ -88,6 +88,9 @@ const ProvidersPage = lazy(() =>
 const AIModelsPage = lazy(() =>
   import('./pages/AIModelsPage').then((m) => ({ default: m.AIModelsPage }))
 );
+const ModelRoutingPage = lazy(() =>
+  import('./pages/ModelRoutingPage').then((m) => ({ default: m.ModelRoutingPage }))
+);
 const McpServersPage = lazy(() =>
   import('./pages/McpServersPage').then((m) => ({ default: m.McpServersPage }))
 );
@@ -202,6 +205,7 @@ export function App() {
         <Route path="settings/api-keys" element={page(<ApiKeysPage />)} />
         <Route path="settings/providers" element={page(<ProvidersPage />)} />
         <Route path="settings/ai-models" element={page(<AIModelsPage />)} />
+        <Route path="settings/model-routing" element={page(<ModelRoutingPage />)} />
         <Route path="settings/mcp-servers" element={page(<McpServersPage />)} />
         <Route path="settings/connected-apps" element={page(<ConnectedAppsPage />)} />
         <Route path="settings/tool-groups" element={page(<ToolGroupsPage />)} />

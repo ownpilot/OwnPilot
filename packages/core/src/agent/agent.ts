@@ -53,11 +53,12 @@ export class Agent {
     options?: {
       tools?: ToolRegistry;
       memory?: ConversationMemory;
+      provider?: IProvider;
     }
   ) {
     this.name = config.name;
     this.config = { ...DEFAULT_CONFIG, ...config };
-    this.provider = createProvider(config.provider);
+    this.provider = options?.provider ?? createProvider(config.provider);
     this.tools = options?.tools ?? new ToolRegistry();
     this.memory = options?.memory ?? createMemory(config.memory);
 
@@ -644,6 +645,7 @@ export function createAgent(
   options?: {
     tools?: ToolRegistry;
     memory?: ConversationMemory;
+    provider?: IProvider;
   }
 ): Agent {
   return new Agent(config, options);
