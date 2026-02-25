@@ -8,6 +8,7 @@ import { InternalError, ValidationError, TimeoutError } from '../types/errors.js
 import type {
   AgentConfig,
   AgentState,
+  CompletionRequest,
   CompletionResponse,
   ContentPart,
   Message,
@@ -184,6 +185,8 @@ export class Agent {
       ) => void;
       /** Callback for progress updates */
       onProgress?: (message: string, data?: Record<string, unknown>) => void;
+      /** Extended thinking configuration (Anthropic) */
+      thinking?: CompletionRequest['thinking'];
     }
   ): Promise<Result<CompletionResponse, InternalError | ValidationError | TimeoutError>> {
     if (this.state.isProcessing) {
@@ -216,6 +219,7 @@ export class Agent {
         onToolStart: options?.onToolStart,
         onToolEnd: options?.onToolEnd,
         onProgress: options?.onProgress,
+        thinking: options?.thinking,
       });
     } catch (error) {
       const errorMessage = getErrorMessage(error);
@@ -239,6 +243,7 @@ export class Agent {
       result: { content: string; isError: boolean; durationMs: number }
     ) => void;
     onProgress?: (message: string, data?: Record<string, unknown>) => void;
+    thinking?: CompletionRequest['thinking'];
   }): Promise<Result<CompletionResponse, InternalError | ValidationError | TimeoutError>> {
     let turnCount = 0;
     const maxTurns = this.config.maxTurns ?? 10;
@@ -271,6 +276,7 @@ export class Agent {
         tools: this.getTools(),
         toolChoice: 'auto' as const,
         stream: options?.stream ?? false,
+        thinking: options?.thinking,
       };
 
       // Notify that we're about to call the model
@@ -299,11 +305,12 @@ export class Agent {
         response = result.value;
       }
 
-      // Add assistant message
+      // Add assistant message (include thinking blocks in metadata for tool use roundtrips)
       this.memory.addAssistantMessage(
         this.state.conversation.id,
         response.content,
-        response.toolCalls
+        response.toolCalls,
+        response.thinkingBlocks ? { thinkingBlocks: response.thinkingBlocks } : undefined
       );
 
       // Check for tool calls - execute if present regardless of finishReason
@@ -421,14 +428,17 @@ export class Agent {
       tools: readonly ToolDefinition[];
       toolChoice: 'auto';
       stream: boolean;
+      thinking?: CompletionRequest['thinking'];
     },
     onChunk: (chunk: StreamChunk) => void
   ): Promise<Result<CompletionResponse, InternalError | TimeoutError>> {
     let content = '';
+    let thinkingContent = '';
     const toolCallsArr: ToolCall[] = [];
     let finishReason: CompletionResponse['finishReason'] = 'stop';
     let usage: CompletionResponse['usage'];
     let responseId = '';
+    let thinkingBlocks: Record<string, unknown>[] | undefined;
 
     const generator = this.provider.stream(request);
 
@@ -441,9 +451,22 @@ export class Agent {
       onChunk(chunk);
 
       if (chunk.id) responseId = chunk.id;
-      if (chunk.content) content += chunk.content;
       if (chunk.finishReason) finishReason = chunk.finishReason;
       if (chunk.usage) usage = chunk.usage;
+
+      // Separate thinking content from regular content
+      if (chunk.content) {
+        if (chunk.metadata?.type === 'thinking') {
+          thinkingContent += chunk.content;
+        } else {
+          content += chunk.content;
+        }
+      }
+
+      // Capture thinking blocks from done chunk metadata (for tool use roundtrips)
+      if (chunk.done && chunk.metadata?.thinkingBlocks) {
+        thinkingBlocks = chunk.metadata.thinkingBlocks as Record<string, unknown>[];
+      }
 
       // Accumulate tool calls (use index for parallel tool call support)
       if (chunk.toolCalls) {
@@ -489,6 +512,8 @@ export class Agent {
       usage,
       model: request.model.model,
       createdAt: new Date(),
+      thinkingContent: thinkingContent || undefined,
+      thinkingBlocks,
     });
   }
 

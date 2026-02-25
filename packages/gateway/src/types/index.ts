@@ -48,6 +48,12 @@ export interface ChatRequest {
   includeToolList?: boolean;
   /** Override max tool calls for this request (0 = unlimited) */
   maxToolCalls?: number;
+  /** Extended thinking configuration (Anthropic Claude) */
+  thinking?: {
+    type: 'enabled' | 'adaptive';
+    budgetTokens?: number;
+    effort?: 'low' | 'medium' | 'high' | 'max';
+  };
   /** File/image attachments (base64 encoded) */
   attachments?: Array<{
     type: 'image' | 'file';
@@ -175,6 +181,8 @@ export interface StreamChunkResponse {
   memories?: Array<{ type: string; content: string; importance?: number }>;
   /** Model is currently producing thinking/reasoning content (hidden from display) */
   thinking?: boolean;
+  /** Thinking content delta (extended thinking — shown in collapsible UI) */
+  thinkingDelta?: string;
 }
 
 /**

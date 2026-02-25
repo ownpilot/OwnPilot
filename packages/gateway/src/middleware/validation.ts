@@ -41,6 +41,13 @@ export const chatMessageSchema = z.object({
   stream: z.boolean().optional(),
   streamingMode: z.enum(['auto', 'always', 'never']).optional(),
   maxToolCalls: z.number().int().min(0).max(1000).optional(),
+  thinking: z
+    .object({
+      type: z.enum(['enabled', 'adaptive']),
+      budgetTokens: z.number().int().min(1024).max(128000).optional(),
+      effort: z.enum(['low', 'medium', 'high', 'max']).optional(),
+    })
+    .optional(),
   attachments: z
     .array(
       z.object({

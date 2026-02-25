@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { User, Bot, Copy, Check, RefreshCw, ChevronRight, ChevronDown, Wrench } from './icons';
+import { User, Bot, Copy, Check, RefreshCw, ChevronRight, ChevronDown, Wrench, Brain } from './icons';
 import { ToolExecutionDisplay } from './ToolExecutionDisplay';
 import { TraceDisplay } from './TraceDisplay';
 import { MarkdownContent } from './MarkdownContent';
@@ -40,6 +40,7 @@ function MessageBubble({ message, onRetry, showRetry, workspaceId }: MessageBubb
   const [copied, setCopied] = useState(false);
   const [isRetrying, setIsRetrying] = useState(false);
   const [toolCallsExpanded, setToolCallsExpanded] = useState(false);
+  const [thinkingExpanded, setThinkingExpanded] = useState(false);
   const isUser = message.role === 'user';
   const isError = message.isError;
 
@@ -188,6 +189,37 @@ function MessageBubble({ message, onRetry, showRetry, workspaceId }: MessageBubb
             })}
           </span>
         </div>
+
+        {/* Thinking Content - Collapsible (for messages with thinking/reasoning) */}
+        {!isUser && message.thinkingContent && (
+          <div className="mt-3">
+            <div className="rounded-lg border border-border dark:border-dark-border bg-bg-tertiary/50 dark:bg-dark-bg-tertiary/50 overflow-hidden text-sm">
+              <button
+                onClick={() => setThinkingExpanded(!thinkingExpanded)}
+                className="w-full flex items-center gap-2 px-3 py-2 hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary transition-colors"
+              >
+                <div className="text-text-muted dark:text-dark-text-muted">
+                  {thinkingExpanded ? (
+                    <ChevronDown className="w-4 h-4" />
+                  ) : (
+                    <ChevronRight className="w-4 h-4" />
+                  )}
+                </div>
+                <Brain className="w-3.5 h-3.5 text-text-muted dark:text-dark-text-muted" />
+                <span className="font-medium text-text-secondary dark:text-dark-text-secondary">
+                  Thought Process
+                </span>
+              </button>
+              {thinkingExpanded && (
+                <div className="border-t border-border dark:border-dark-border px-3 py-2 max-h-64 overflow-y-auto">
+                  <div className="whitespace-pre-wrap text-text-muted dark:text-dark-text-muted text-xs leading-relaxed">
+                    {message.thinkingContent}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Tool Calls - Collapsible container */}
         {(() => {

@@ -56,6 +56,10 @@ interface ChatState {
   sessionInfo: SessionInfo | null;
   /** Model is currently producing thinking/reasoning content */
   isThinking: boolean;
+  /** Accumulated thinking content during streaming */
+  thinkingContent: string;
+  /** Thinking configuration for requests */
+  thinkingConfig: { type: 'enabled' | 'adaptive'; budgetTokens?: number; effort?: 'low' | 'medium' | 'high' | 'max' } | null;
 }
 
 interface ChatStore extends ChatState {
@@ -75,6 +79,7 @@ interface ChatStore extends ChatState {
   acceptMemory: (index: number) => void;
   rejectMemory: (index: number) => void;
   resolveApproval: (approved: boolean) => void;
+  setThinkingConfig: (config: ChatState['thinkingConfig']) => void;
 }
 
 const ChatContext = createContext<ChatStore | null>(null);
@@ -98,6 +103,8 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [sessionInfo, setSessionInfo] = useState<SessionInfo | null>(null);
   const [isThinking, setIsThinking] = useState(false);
+  const [thinkingContent, setThinkingContent] = useState('');
+  const [thinkingConfig, setThinkingConfig] = useState<ChatState['thinkingConfig']>(null);
 
   // AbortController persists across navigation
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -109,6 +116,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       abortControllerRef.current = null;
       setIsLoading(false);
       setStreamingContent('');
+      setThinkingContent('');
       setProgressEvents([]);
     }
     // Reject any pending execution approval so the backend doesn't hang
@@ -198,6 +206,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       setError(null);
       setIsLoading(true);
       setStreamingContent('');
+      setThinkingContent('');
       setProgressEvents([]);
       setSuggestions([]);
       setExtractedMemories([]);
@@ -248,6 +257,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
             ...(agentId && { agentId }),
             ...(workspaceId && { workspaceId }),
             ...(directTools?.length && { directTools }),
+            ...(thinkingConfig && { thinking: thinkingConfig }),
             ...(imageAttachments?.length && {
               attachments: imageAttachments.map((a) => ({
                 type: a.type,
@@ -310,6 +320,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
 
           const decoder = new TextDecoder();
           let accumulatedContent = '';
+          let accumulatedThinking = '';
           let buffer = '';
           let finalResponse: ChatResponse | null = null;
 
@@ -339,11 +350,19 @@ export function ChatProvider({ children }: { children: ReactNode }) {
                     setProgressEvents((prev) => [...prev, event.data as unknown as ProgressEvent]);
                     break;
                   case 'delta':
+                    if (event.data.thinkingDelta) {
+                      accumulatedThinking += event.data.thinkingDelta;
+                      setThinkingContent(accumulatedThinking);
+                      setIsThinking(true);
+                    }
                     if (event.data.delta) {
                       accumulatedContent += event.data.delta;
                       setStreamingContent(accumulatedContent);
+                      if (isThinking) setIsThinking(false);
                     }
-                    setIsThinking(!!event.data.thinking);
+                    if (!event.data.thinkingDelta && !event.data.delta) {
+                      setIsThinking(!!event.data.thinking);
+                    }
                     if (event.data.done) {
                       finalResponse = {
                         id: event.data.id,
@@ -387,8 +406,13 @@ export function ChatProvider({ children }: { children: ReactNode }) {
           // Stream complete - add final message
           setLastFailedMessage(null);
           setStreamingContent('');
+          setThinkingContent('');
           setProgressEvents([]);
           setIsThinking(false);
+
+          // Use thinkingContent from done event or accumulated during stream
+          const finalThinking = (finalResponse as Record<string, unknown> | null)?.thinkingContent as string | undefined
+            || accumulatedThinking || undefined;
 
           const assistantMessage: Message = {
             id: crypto.randomUUID(),
@@ -403,6 +427,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
             provider,
             model: finalResponse?.model ?? model,
             trace: finalResponse?.trace,
+            ...(finalThinking && { thinkingContent: finalThinking }),
           };
           setMessages((prev) => [...prev, assistantMessage]);
 
@@ -493,7 +518,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         }
       }
     },
-    [provider, model, agentId, workspaceId]
+    [provider, model, agentId, workspaceId, thinkingConfig]
   );
 
   const retryLastMessage = useCallback(async () => {
@@ -532,6 +557,8 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     sessionId,
     sessionInfo,
     isThinking,
+    thinkingContent,
+    thinkingConfig,
     setProvider,
     setModel,
     setAgentId,
@@ -544,6 +571,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     acceptMemory,
     rejectMemory,
     resolveApproval,
+    setThinkingConfig,
   };
 
   return <ChatContext.Provider value={value}>{children}</ChatContext.Provider>;

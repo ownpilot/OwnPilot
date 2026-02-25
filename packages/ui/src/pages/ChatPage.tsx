@@ -10,6 +10,7 @@ import { WorkspaceSelector } from '../components/WorkspaceSelector';
 import { useChatStore } from '../hooks/useChatStore';
 import { ExecutionSecurityPanel } from '../components/ExecutionSecurityPanel';
 import { ToolCallLimitPanel } from '../components/ToolCallLimitPanel';
+import { ThinkingToggle } from '../components/ThinkingToggle';
 
 // Lazy-load rarely-used components
 const SetupWizard = lazy(() =>
@@ -20,7 +21,7 @@ const ExecutionApprovalDialog = lazy(() =>
     default: m.ExecutionApprovalDialog,
   }))
 );
-import { AlertCircle, AlertTriangle, Settings, Bot, Shield } from '../components/icons';
+import { AlertCircle, AlertTriangle, Settings, Bot, Shield, ChevronDown, ChevronRight } from '../components/icons';
 import { modelsApi, providersApi, settingsApi, agentsApi, chatApi } from '../api';
 import type { ModelInfo, AgentDetail } from '../types';
 import { STORAGE_KEYS } from '../constants/storage-keys';
@@ -55,6 +56,7 @@ export function ChatPage() {
     rejectMemory,
     resolveApproval,
     isThinking,
+    thinkingContent,
   } = useChatStore();
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -66,6 +68,7 @@ export function ChatPage() {
   const [isLoadingModels, setIsLoadingModels] = useState(true);
   const [currentAgent, setCurrentAgent] = useState<AgentDetail | null>(null);
   const [showContextDetail, setShowContextDetail] = useState(false);
+  const [thinkingExpanded, setThinkingExpanded] = useState(false);
 
   // Close dropdowns on Escape key
   useEffect(() => {
@@ -731,24 +734,38 @@ export function ChatPage() {
                   </div>
                 )}
 
-                {/* Thinking indicator (model is reasoning but not producing visible content yet) */}
-                {isThinking && (
-                  <div className="flex items-center gap-2 text-sm text-text-muted dark:text-dark-text-muted">
-                    <div className="flex gap-1">
-                      <span
-                        className="w-2 h-2 bg-primary rounded-full animate-bounce"
-                        style={{ animationDelay: '0ms' }}
-                      />
-                      <span
-                        className="w-2 h-2 bg-primary rounded-full animate-bounce"
-                        style={{ animationDelay: '150ms' }}
-                      />
-                      <span
-                        className="w-2 h-2 bg-primary rounded-full animate-bounce"
-                        style={{ animationDelay: '300ms' }}
-                      />
-                    </div>
-                    <span>Thinking...</span>
+                {/* Thinking section (collapsible, shows streaming thinking content) */}
+                {(isThinking || thinkingContent) && (
+                  <div className="rounded-lg border border-border dark:border-dark-border bg-bg-tertiary/50 dark:bg-dark-bg-tertiary/50 overflow-hidden text-sm">
+                    <button
+                      onClick={() => setThinkingExpanded(!thinkingExpanded)}
+                      className="w-full flex items-center gap-2 px-3 py-2 hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary transition-colors"
+                    >
+                      <div className="text-text-muted dark:text-dark-text-muted">
+                        {thinkingExpanded ? (
+                          <ChevronDown className="w-4 h-4" />
+                        ) : (
+                          <ChevronRight className="w-4 h-4" />
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-text-secondary dark:text-dark-text-secondary font-medium">Thinking</span>
+                        {isThinking && (
+                          <div className="flex gap-1">
+                            <span className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                            <span className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                            <span className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                          </div>
+                        )}
+                      </div>
+                    </button>
+                    {thinkingExpanded && thinkingContent && (
+                      <div className="border-t border-border dark:border-dark-border px-3 py-2 max-h-64 overflow-y-auto">
+                        <div className="whitespace-pre-wrap text-text-muted dark:text-dark-text-muted text-xs leading-relaxed">
+                          {thinkingContent}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -823,6 +840,7 @@ export function ChatPage() {
       <div className="px-6 py-4 border-t border-border dark:border-dark-border">
         <ExecutionSecurityPanel />
         <ToolCallLimitPanel />
+        <ThinkingToggle />
         <ChatInput
           ref={chatInputRef}
           onSend={sendMessage}

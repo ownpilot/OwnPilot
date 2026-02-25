@@ -30,6 +30,7 @@ export type {
   CompletionRequest,
   CompletionResponse,
   StreamChunk,
+  ThinkingConfig,
   ProviderConfig,
   ModelConfig,
   MemoryConfig,

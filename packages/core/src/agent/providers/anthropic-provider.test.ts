@@ -973,6 +973,234 @@ describe('AnthropicProvider', () => {
     });
   });
 
+  // ==================== Thinking Support ====================
+
+  describe('thinking support', () => {
+    describe('complete - thinking response', () => {
+      it('extracts thinking content from non-streaming response', async () => {
+        const response = makeAnthropicResponse({
+          content: [
+            { type: 'thinking', thinking: 'Let me reason about this...', signature: 'sig_abc' },
+            { type: 'text', text: 'Here is my answer.' },
+          ],
+        });
+        mockFetch.mockImplementation(mockFetchOk(response));
+
+        const result = await provider.complete(makeRequest({ thinking: { type: 'adaptive' } }));
+
+        expect(result.ok).toBe(true);
+        if (result.ok) {
+          expect(result.value.content).toBe('Here is my answer.');
+          expect(result.value.thinkingContent).toBe('Let me reason about this...');
+          expect(result.value.thinkingBlocks).toHaveLength(1);
+          expect(result.value.thinkingBlocks![0]).toEqual({
+            type: 'thinking',
+            thinking: 'Let me reason about this...',
+            signature: 'sig_abc',
+          });
+        }
+      });
+
+      it('handles redacted_thinking blocks', async () => {
+        const response = makeAnthropicResponse({
+          content: [
+            { type: 'thinking', thinking: 'Visible thought', signature: 'sig_1' },
+            { type: 'redacted_thinking', data: 'encrypted_data_here' },
+            { type: 'text', text: 'Answer.' },
+          ],
+        });
+        mockFetch.mockImplementation(mockFetchOk(response));
+
+        const result = await provider.complete(makeRequest({ thinking: { type: 'adaptive' } }));
+
+        expect(result.ok).toBe(true);
+        if (result.ok) {
+          expect(result.value.thinkingBlocks).toHaveLength(2);
+          expect(result.value.thinkingBlocks![0]).toEqual({
+            type: 'thinking',
+            thinking: 'Visible thought',
+            signature: 'sig_1',
+          });
+          expect(result.value.thinkingBlocks![1]).toEqual({
+            type: 'redacted_thinking',
+            data: 'encrypted_data_here',
+          });
+        }
+      });
+
+      it('omits temperature when thinking is enabled', async () => {
+        mockFetch.mockImplementation(mockFetchOk(makeAnthropicResponse()));
+
+        await provider.complete(
+          makeRequest({
+            thinking: { type: 'adaptive' },
+            model: { model: 'claude-3-5-sonnet-20241022', temperature: 0.7 },
+          })
+        );
+
+        const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+        expect(body.temperature).toBeUndefined();
+        expect(body.thinking).toBeDefined();
+      });
+
+      it('sends adaptive thinking param correctly', async () => {
+        mockFetch.mockImplementation(mockFetchOk(makeAnthropicResponse()));
+
+        await provider.complete(makeRequest({ thinking: { type: 'adaptive' } }));
+
+        const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+        expect(body.thinking).toEqual({ type: 'adaptive' });
+      });
+
+      it('sends manual thinking param with budget_tokens', async () => {
+        mockFetch.mockImplementation(mockFetchOk(makeAnthropicResponse()));
+
+        await provider.complete(
+          makeRequest({ thinking: { type: 'enabled', budgetTokens: 16000 } })
+        );
+
+        const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+        expect(body.thinking).toEqual({ type: 'enabled', budget_tokens: 16000 });
+      });
+
+      it('restricts tool_choice to auto when thinking is enabled', async () => {
+        const tools: ToolDefinition[] = [
+          { name: 'test', description: 'desc', parameters: { type: 'object', properties: {} } },
+        ];
+        mockFetch.mockImplementation(mockFetchOk(makeAnthropicResponse()));
+
+        await provider.complete(
+          makeRequest({
+            thinking: { type: 'adaptive' },
+            tools,
+            toolChoice: 'required',
+          })
+        );
+
+        const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+        // tool_choice 'required' should fall back to 'auto' when thinking is enabled
+        expect(body.tool_choice).toEqual({ type: 'auto' });
+      });
+    });
+
+    describe('stream - thinking deltas', () => {
+      it('yields thinking content with metadata type thinking', async () => {
+        const sseChunks = [
+          'data: {"type":"message_start","message":{"id":"msg_1","usage":{"input_tokens":10}}}\n\n',
+          'data: {"type":"content_block_start","content_block":{"type":"thinking"},"index":0}\n\n',
+          'data: {"type":"content_block_delta","delta":{"type":"thinking_delta","thinking":"Let me think"}}\n\n',
+          'data: {"type":"content_block_delta","delta":{"type":"thinking_delta","thinking":"... more thought"}}\n\n',
+          'data: {"type":"content_block_delta","delta":{"type":"signature_delta","signature":"sig_123"}}\n\n',
+          'data: {"type":"content_block_stop","index":0}\n\n',
+          'data: {"type":"content_block_start","content_block":{"type":"text"},"index":1}\n\n',
+          'data: {"type":"content_block_delta","delta":{"type":"text_delta","text":"My answer"}}\n\n',
+          'data: {"type":"message_delta","delta":{"stop_reason":"end_turn"},"usage":{"output_tokens":20}}\n\n',
+          'data: {"type":"message_stop"}\n\n',
+        ];
+
+        mockFetch.mockImplementation(mockFetchStream(sseChunks));
+
+        const chunks = await collectStream(provider.stream(makeRequest({ thinking: { type: 'adaptive' } })));
+
+        // Find thinking chunks (metadata.type === 'thinking')
+        const thinkingChunks = chunks.filter(
+          (c) => c.ok && (c as any).value.metadata?.type === 'thinking'
+        );
+        expect(thinkingChunks.length).toBeGreaterThanOrEqual(2);
+
+        // Verify thinking content
+        const thinkingTexts = thinkingChunks
+          .filter((c) => c.ok)
+          .map((c) => (c as any).value.content);
+        expect(thinkingTexts).toContain('Let me think');
+        expect(thinkingTexts).toContain('... more thought');
+
+        // Find text chunks (no thinking metadata)
+        const textChunks = chunks.filter(
+          (c) => c.ok && (c as any).value.content && !(c as any).value.metadata?.type
+        );
+        expect(textChunks.length).toBeGreaterThanOrEqual(1);
+
+        // Done chunk should have thinkingBlocks in metadata
+        const doneChunk = chunks.find((c) => c.ok && (c as any).value.done === true);
+        expect(doneChunk).toBeDefined();
+        if (doneChunk && doneChunk.ok) {
+          const blocks = doneChunk.value.metadata?.thinkingBlocks as Record<string, unknown>[];
+          expect(blocks).toBeDefined();
+          expect(blocks.length).toBeGreaterThanOrEqual(1);
+          expect(blocks[0].type).toBe('thinking');
+          expect(blocks[0].thinking).toBe('Let me think... more thought');
+          expect(blocks[0].signature).toBe('sig_123');
+        }
+      });
+    });
+
+    describe('message history - thinking block preservation', () => {
+      it('includes thinking blocks from metadata in assistant messages', async () => {
+        mockFetch.mockImplementation(mockFetchOk(makeAnthropicResponse()));
+
+        await provider.complete(
+          makeRequest({
+            messages: [
+              { role: 'user', content: 'Hello' },
+              {
+                role: 'assistant',
+                content: 'Response',
+                metadata: {
+                  thinkingBlocks: [
+                    { type: 'thinking', thinking: 'My reasoning...', signature: 'sig_abc' },
+                  ],
+                },
+              },
+              { role: 'user', content: 'Follow up' },
+            ],
+          })
+        );
+
+        const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+        const assistantMsg = body.messages.find((m: any) => m.role === 'assistant');
+        expect(assistantMsg).toBeDefined();
+        expect(Array.isArray(assistantMsg.content)).toBe(true);
+
+        // Should have thinking block first, then text
+        const thinkingBlock = assistantMsg.content.find((b: any) => b.type === 'thinking');
+        expect(thinkingBlock).toBeDefined();
+        expect(thinkingBlock.thinking).toBe('My reasoning...');
+        expect(thinkingBlock.signature).toBe('sig_abc');
+      });
+
+      it('preserves redacted_thinking blocks in message history', async () => {
+        mockFetch.mockImplementation(mockFetchOk(makeAnthropicResponse()));
+
+        await provider.complete(
+          makeRequest({
+            messages: [
+              { role: 'user', content: 'Hello' },
+              {
+                role: 'assistant',
+                content: 'Response',
+                metadata: {
+                  thinkingBlocks: [
+                    { type: 'redacted_thinking', data: 'encrypted_data' },
+                  ],
+                },
+              },
+              { role: 'user', content: 'Follow up' },
+            ],
+          })
+        );
+
+        const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+        const assistantMsg = body.messages.find((m: any) => m.role === 'assistant');
+        const redactedBlock = assistantMsg.content.find(
+          (b: any) => b.type === 'redacted_thinking'
+        );
+        expect(redactedBlock).toBeDefined();
+        expect(redactedBlock.data).toBe('encrypted_data');
+      });
+    });
+  });
+
   // ==================== countTokens (inherited from BaseProvider) ====================
 
   describe('countTokens', () => {

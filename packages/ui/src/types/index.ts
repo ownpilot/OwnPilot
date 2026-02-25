@@ -42,6 +42,8 @@ export interface Message {
   trace?: TraceInfo;
   isError?: boolean;
   attachments?: MessageAttachment[];
+  /** Thinking/reasoning content from extended thinking models */
+  thinkingContent?: string;
 }
 
 export interface ToolCall {

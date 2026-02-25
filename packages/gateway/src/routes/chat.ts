@@ -152,6 +152,7 @@ async function processNonStreamingViaBus(
       conversationId: conversationId ?? agent.getConversation().id,
       requestId,
       directTools: body.directTools,
+      thinking: body.thinking,
     },
   });
 }
@@ -388,6 +389,7 @@ chatRoutes.post('/', async (c) => {
       try {
         const result = await agent.chat(chatMessage, {
           stream: true,
+          thinking: body.thinking,
           onBeforeToolCall: callbacks.onBeforeToolCall,
           onChunk: callbacks.onChunk,
           onToolStart: callbacks.onToolStart,
@@ -630,6 +632,7 @@ chatRoutes.post('/', async (c) => {
     const modelCallStart = Date.now();
 
     const result = await agent.chat(chatMessage, {
+      thinking: body.thinking,
       onBeforeToolCall: async (toolCall) => {
         let toolArgs: Record<string, unknown>;
         try {

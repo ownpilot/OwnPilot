@@ -124,6 +124,8 @@ export interface StreamState {
   sentContentLength: number;
   /** Model is currently producing thinking content */
   isThinking: boolean;
+  /** Accumulated thinking content from extended thinking (Anthropic) */
+  thinkingContent: string;
 }
 
 // Matches both <think>...</think> and <thinking>...</thinking> blocks (completed)
@@ -149,16 +151,48 @@ export function createStreamCallbacks(config: StreamingConfig): {
     rawContent: '',
     sentContentLength: 0,
     isThinking: false,
+    thinkingContent: '',
   };
 
   const callbacks: StreamCallbacks = {
     onChunk(chunk: StreamChunk) {
-      // Accumulate raw content and compute clean delta (think-tags stripped)
+      // Handle extended thinking chunks (Anthropic) — separate path
+      const isThinkingChunk = chunk.metadata?.type === 'thinking';
+      if (isThinkingChunk && chunk.content) {
+        state.thinkingContent += chunk.content;
+        state.isThinking = true;
+        // Emit thinking delta as a separate SSE event
+        try {
+          sseStream.writeSSE({
+            data: JSON.stringify({
+              id: chunk.id,
+              conversationId,
+              thinkingDelta: chunk.content,
+              thinking: true,
+              done: false,
+            }),
+            event: 'chunk',
+          });
+        } catch {
+          // Client disconnected
+        }
+        return;
+      }
+
+      // If we were in extended thinking and now got a non-thinking chunk, mark transition
+      if (state.thinkingContent && state.isThinking && !isThinkingChunk) {
+        state.isThinking = false;
+      }
+
+      // Accumulate raw content and compute clean delta (think-tags stripped for DeepSeek/Google)
       if (chunk.content) state.rawContent += chunk.content;
       const cleanContent = state.rawContent.replace(THINK_TAG_REGEX, '');
       const cleanDelta = cleanContent.slice(state.sentContentLength) || undefined;
       state.sentContentLength = cleanContent.length;
-      state.isThinking = UNCLOSED_THINK_REGEX.test(state.rawContent);
+      // For non-extended-thinking models, detect <think> tags
+      if (!state.thinkingContent) {
+        state.isThinking = UNCLOSED_THINK_REGEX.test(state.rawContent);
+      }
 
       // streamedContent stores the CLEAN version (used for memory/suggestion extraction + persistence)
       state.streamedContent = cleanContent;
@@ -197,6 +231,10 @@ export function createStreamCallbacks(config: StreamingConfig): {
         const { suggestions } = extractSuggestions(memStripped);
         if (suggestions.length > 0) data.suggestions = suggestions;
         if (memories.length > 0) data.memories = memories;
+        // Include accumulated thinking content in done event for UI persistence
+        if (state.thinkingContent) {
+          (data as unknown as Record<string, unknown>).thinkingContent = state.thinkingContent;
+        }
         const streamDuration = Math.round(performance.now() - state.startTime);
         data.trace = {
           duration: streamDuration,
@@ -452,6 +490,7 @@ export async function processStreamingViaBus(
       model?: string;
       workspaceId?: string;
       attachments?: Array<{ type: string; data: string; mimeType: string; filename?: string }>;
+      thinking?: { type: 'enabled' | 'adaptive'; budgetTokens?: number; effort?: 'low' | 'medium' | 'high' | 'max' };
     };
     provider: string;
     model: string;
@@ -521,6 +560,7 @@ export async function processStreamingViaBus(
       model,
       conversationId,
       directTools: body.directTools,
+      thinking: body.thinking,
     },
   });
 

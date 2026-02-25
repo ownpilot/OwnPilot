@@ -21,6 +21,7 @@ export type SSEEventType =
       kind: 'delta';
       data: {
         delta?: string;
+        thinkingDelta?: string;
         done?: boolean;
         id?: string;
         conversationId?: string;
@@ -32,6 +33,7 @@ export type SSEEventType =
         suggestions?: unknown;
         memories?: unknown;
         thinking?: boolean;
+        thinkingContent?: string;
       };
     }
   | { kind: 'error'; message: string }
@@ -70,7 +72,7 @@ export function parseSSELine(line: string): SSEEventType {
     return { kind: 'progress', data: data as { type: string } };
   }
 
-  if (data.delta !== undefined || data.done) {
+  if (data.delta !== undefined || data.thinkingDelta !== undefined || data.done) {
     return {
       kind: 'delta',
       data: data as SSEEventType extends { kind: 'delta'; data: infer D } ? D : never,

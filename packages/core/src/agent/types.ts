@@ -450,6 +450,21 @@ export interface CompletionRequest {
   readonly stream?: boolean;
   /** User identifier for rate limiting */
   readonly user?: string;
+  /** Extended thinking configuration (Anthropic) */
+  readonly thinking?: ThinkingConfig;
+}
+
+/**
+ * Extended thinking configuration.
+ * - 'adaptive': Model decides when/how much to think (Opus 4.6, Sonnet 4.6).
+ * - 'enabled': Manual mode with fixed budget_tokens (older Claude models).
+ */
+export interface ThinkingConfig {
+  readonly type: 'enabled' | 'adaptive';
+  /** Token budget for thinking (required for type: 'enabled', min 1024) */
+  readonly budgetTokens?: number;
+  /** Effort level for adaptive thinking (default: 'high') */
+  readonly effort?: 'low' | 'medium' | 'high' | 'max';
 }
 
 /**
@@ -484,6 +499,10 @@ export interface CompletionResponse {
   readonly model: string;
   /** Created timestamp */
   readonly createdAt: Date;
+  /** Thinking/reasoning content (extended thinking) */
+  readonly thinkingContent?: string;
+  /** Raw thinking blocks for tool use roundtrips (must be sent back unmodified) */
+  readonly thinkingBlocks?: readonly Record<string, unknown>[];
 }
 
 /**
@@ -502,6 +521,8 @@ export interface StreamChunk {
   readonly finishReason?: CompletionResponse['finishReason'];
   /** Token usage (only in final chunk) */
   readonly usage?: TokenUsage;
+  /** Provider-specific metadata (e.g. { type: 'thinking' } for thinking chunks) */
+  readonly metadata?: Record<string, unknown>;
 }
 
 /**

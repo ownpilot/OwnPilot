@@ -98,6 +98,12 @@ export function createAgentExecutionMiddleware(): MessageMiddleware {
     try {
       const chatOptions: Record<string, unknown> = {};
 
+      // Add thinking config if provided
+      const thinking = ctx.get<{ type: 'enabled' | 'adaptive'; budgetTokens?: number; effort?: string }>('thinking');
+      if (thinking) {
+        chatOptions.thinking = thinking;
+      }
+
       // Add streaming callbacks if streaming
       if (stream) {
         chatOptions.stream = true;
