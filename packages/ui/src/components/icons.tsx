@@ -102,6 +102,8 @@ export {
   Wrench,
   X,
   XCircle,
+  Maximize2,
+  Minimize2,
   Zap,
 } from 'lucide-react';
 

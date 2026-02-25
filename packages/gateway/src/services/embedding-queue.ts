@@ -99,10 +99,17 @@ export class EmbeddingQueue {
     if (this.queue.length >= EMBEDDING_QUEUE_MAX_SIZE) return;
 
     this.queuedIds.add(key);
-    this.queue.push({ memoryId, userId, content, priority });
 
-    // Sort by priority (lower number = higher priority)
-    this.queue.sort((a, b) => a.priority - b.priority);
+    // Binary insertion to maintain sorted order (lower priority number = higher priority)
+    const item: QueueItem = { memoryId, userId, content, priority };
+    let lo = 0;
+    let hi = this.queue.length;
+    while (lo < hi) {
+      const mid = (lo + hi) >>> 1;
+      if (this.queue[mid]!.priority <= priority) lo = mid + 1;
+      else hi = mid;
+    }
+    this.queue.splice(lo, 0, item);
 
     log.debug('Enqueued memory for embedding', { memoryId, queueSize: this.queue.length });
   }

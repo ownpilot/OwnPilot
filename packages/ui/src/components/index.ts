@@ -6,3 +6,4 @@ export { ToolExecutionDisplay } from './ToolExecutionDisplay';
 export * from './icons';
 export { DialogProvider, useDialog } from './ConfirmDialog';
 export { DebugInfoModal } from './DebugInfoModal';
+export { MiniChat } from './MiniChat';

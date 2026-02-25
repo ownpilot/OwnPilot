@@ -229,6 +229,14 @@ export async function saveStreamingChat(
   });
 }
 
+/** Track in-flight post-processing for graceful shutdown. */
+const pendingTasks = new Set<Promise<unknown>>();
+
+/** Wait for all in-flight post-processing tasks to complete. */
+export function waitForPendingProcessing(): Promise<void> {
+  return Promise.allSettled([...pendingTasks]).then(() => {});
+}
+
 /**
  * Run post-chat processing: extract memories, update goals, evaluate triggers.
  * Runs asynchronously to not block the response.
@@ -239,7 +247,7 @@ export function runPostChatProcessing(
   assistantContent: string,
   toolCalls?: readonly ToolCall[]
 ): void {
-  Promise.all([
+  const task = Promise.all([
     extractMemories(userId, userMessage, assistantContent).catch((e) =>
       log.warn('Memory extraction failed:', e)
     ),
@@ -274,4 +282,7 @@ export function runPostChatProcessing(
     .catch((error) => {
       log.error('Post-chat processing failed', { error: getErrorMessage(error) });
     });
+
+  pendingTasks.add(task);
+  task.finally(() => pendingTasks.delete(task));
 }

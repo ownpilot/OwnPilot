@@ -52,6 +52,7 @@ import { SecurityBanner } from './SecurityBanner';
 import { usePulseSlots, PulseSlotGrid } from './PulseSlots';
 import { STORAGE_KEYS } from '../constants/storage-keys';
 import { DebugDrawer } from './DebugDrawer';
+import { MiniChat } from './MiniChat';
 
 interface NavItem {
   to: string;
@@ -512,6 +513,9 @@ export function Layout() {
 
       {/* Realtime WS→UI wiring (invisible) */}
       <RealtimeBridge onBadgeUpdate={handleBadgeUpdate} />
+
+      {/* Floating mini chat widget (desktop only, hidden on ChatPage) */}
+      {!isMobile && <MiniChat />}
 
       {/* Debug Drawer (advanced mode only) */}
       {isAdvancedMode && <DebugDrawer />}

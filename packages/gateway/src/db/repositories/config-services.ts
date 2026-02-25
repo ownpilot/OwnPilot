@@ -94,8 +94,11 @@ export interface UpdateConfigEntryInput {
 // CACHE
 // =============================================================================
 
-let servicesCache = new Map<string, ConfigServiceDefinition>();
-let entriesCache = new Map<string, ConfigEntry[]>(); // keyed by service_name
+/** Atomic cache — both maps are swapped together to prevent inconsistent reads. */
+let cache = {
+  services: new Map<string, ConfigServiceDefinition>(),
+  entries: new Map<string, ConfigEntry[]>(), // keyed by service_name
+};
 let cacheInitialized = false;
 
 // =============================================================================
@@ -153,19 +156,20 @@ export class ConfigServicesRepository extends BaseRepository {
       this.query<ConfigEntryRow>('SELECT * FROM config_entries ORDER BY created_at ASC'),
     ]);
 
-    servicesCache = new Map(serviceRows.map((r) => [r.name, rowToService(r)]));
+    const newServices = new Map(serviceRows.map((r) => [r.name, rowToService(r)]));
 
-    const grouped = new Map<string, ConfigEntry[]>();
+    const newEntries = new Map<string, ConfigEntry[]>();
     for (const row of entryRows) {
       const entry = rowToEntry(row);
-      const list = grouped.get(entry.serviceName);
+      const list = newEntries.get(entry.serviceName);
       if (list) {
         list.push(entry);
       } else {
-        grouped.set(entry.serviceName, [entry]);
+        newEntries.set(entry.serviceName, [entry]);
       }
     }
-    entriesCache = grouped;
+    // Atomic swap — both maps update together
+    cache = { services: newServices, entries: newEntries };
     cacheInitialized = true;
   }
 
@@ -184,15 +188,15 @@ export class ConfigServicesRepository extends BaseRepository {
     ]);
 
     if (serviceRow) {
-      servicesCache.set(serviceName, rowToService(serviceRow));
+      cache.services.set(serviceName, rowToService(serviceRow));
     } else {
-      servicesCache.delete(serviceName);
+      cache.services.delete(serviceName);
     }
 
     if (entryRows.length > 0) {
-      entriesCache.set(serviceName, entryRows.map(rowToEntry));
+      cache.entries.set(serviceName, entryRows.map(rowToEntry));
     } else {
-      entriesCache.delete(serviceName);
+      cache.entries.delete(serviceName);
     }
   }
 
@@ -208,14 +212,14 @@ export class ConfigServicesRepository extends BaseRepository {
       log.warn(`[ConfigServices] Cache not initialized, returning null for: ${name}`);
       return null;
     }
-    return servicesCache.get(name) ?? null;
+    return cache.services.get(name) ?? null;
   }
 
   /**
    * List all service definitions, optionally filtered by category (sync, from cache).
    */
   list(category?: string): ConfigServiceDefinition[] {
-    const all = Array.from(servicesCache.values());
+    const all = Array.from(cache.services.values());
     return category ? all.filter((s) => s.category === category) : all;
   }
 
@@ -251,7 +255,7 @@ export class ConfigServicesRepository extends BaseRepository {
     );
 
     await this.refreshServiceCache(input.name);
-    return servicesCache.get(input.name)!;
+    return cache.services.get(input.name)!;
   }
 
   /**
@@ -261,7 +265,7 @@ export class ConfigServicesRepository extends BaseRepository {
     name: string,
     input: UpdateConfigServiceInput
   ): Promise<ConfigServiceDefinition | null> {
-    const existing = servicesCache.get(name);
+    const existing = cache.services.get(name);
     if (!existing) return null;
 
     const updates: string[] = [];
@@ -309,7 +313,7 @@ export class ConfigServicesRepository extends BaseRepository {
     );
 
     await this.refreshServiceCache(name);
-    return servicesCache.get(name) ?? null;
+    return cache.services.get(name) ?? null;
   }
 
   /**
@@ -320,8 +324,8 @@ export class ConfigServicesRepository extends BaseRepository {
     await this.execute('DELETE FROM config_entries WHERE service_name = $1', [name]);
     const result = await this.execute('DELETE FROM config_services WHERE name = $1', [name]);
 
-    servicesCache.delete(name);
-    entriesCache.delete(name);
+    cache.services.delete(name);
+    cache.entries.delete(name);
 
     return result.changes > 0;
   }
@@ -373,7 +377,7 @@ export class ConfigServicesRepository extends BaseRepository {
     );
 
     await this.refreshServiceCache(input.name);
-    return servicesCache.get(input.name)!;
+    return cache.services.get(input.name)!;
   }
 
   // ---------------------------------------------------------------------------
@@ -384,14 +388,14 @@ export class ConfigServicesRepository extends BaseRepository {
    * Get all entries for a service (sync, from cache).
    */
   getEntries(serviceName: string): ConfigEntry[] {
-    return entriesCache.get(serviceName) ?? [];
+    return cache.entries.get(serviceName) ?? [];
   }
 
   /**
    * Get the default entry for a service (sync, from cache).
    */
   getDefaultEntry(serviceName: string): ConfigEntry | null {
-    const entries = entriesCache.get(serviceName);
+    const entries = cache.entries.get(serviceName);
     if (!entries) return null;
     return entries.find((e) => e.isDefault) ?? null;
   }
@@ -400,7 +404,7 @@ export class ConfigServicesRepository extends BaseRepository {
    * Get an entry by service name and label (sync, from cache).
    */
   getEntryByLabel(serviceName: string, label: string): ConfigEntry | null {
-    const entries = entriesCache.get(serviceName);
+    const entries = cache.entries.get(serviceName);
     if (!entries) return null;
     return entries.find((e) => e.label === label) ?? null;
   }
@@ -419,7 +423,7 @@ export class ConfigServicesRepository extends BaseRepository {
     const now = new Date().toISOString();
 
     // Determine if this should be the default entry
-    const existingEntries = entriesCache.get(serviceName);
+    const existingEntries = cache.entries.get(serviceName);
     const isFirstEntry = !existingEntries || existingEntries.length === 0;
     const isDefault = input.isDefault === true || isFirstEntry;
 
@@ -450,7 +454,7 @@ export class ConfigServicesRepository extends BaseRepository {
     await this.refreshServiceCache(serviceName);
 
     // Return the newly created entry from cache
-    const entries = entriesCache.get(serviceName) ?? [];
+    const entries = cache.entries.get(serviceName) ?? [];
     return entries.find((e) => e.id === id)!;
   }
 
@@ -514,7 +518,7 @@ export class ConfigServicesRepository extends BaseRepository {
 
     await this.refreshServiceCache(serviceName);
 
-    const entries = entriesCache.get(serviceName) ?? [];
+    const entries = cache.entries.get(serviceName) ?? [];
     return entries.find((e) => e.id === id) ?? null;
   }
 
@@ -577,7 +581,7 @@ export class ConfigServicesRepository extends BaseRepository {
       [name]
     );
     if (row) {
-      servicesCache.set(name, rowToService(row));
+      cache.services.set(name, rowToService(row));
     }
   }
 
@@ -586,7 +590,7 @@ export class ConfigServicesRepository extends BaseRepository {
    * Replaces any existing entry with the same id.
    */
   async addRequiredBy(serviceName: string, dependent: ConfigServiceRequiredBy): Promise<void> {
-    const svc = servicesCache.get(serviceName);
+    const svc = cache.services.get(serviceName);
     if (!svc) return;
 
     const filtered = svc.requiredBy.filter((d) => d.id !== dependent.id);
@@ -598,7 +602,7 @@ export class ConfigServicesRepository extends BaseRepository {
    * Remove a dependent from all services' required_by lists by dependent id.
    */
   async removeRequiredById(dependentId: string): Promise<void> {
-    const all = Array.from(servicesCache.values());
+    const all = Array.from(cache.services.values());
     for (const svc of all) {
       if (svc.requiredBy.some((d) => d.id === dependentId)) {
         const filtered = svc.requiredBy.filter((d) => d.id !== dependentId);
@@ -619,7 +623,7 @@ export class ConfigServicesRepository extends BaseRepository {
    *  2. envVar from the schema field definition named 'api_key'
    */
   getApiKey(serviceName: string): string | undefined {
-    const svc = servicesCache.get(serviceName);
+    const svc = cache.services.get(serviceName);
     if (!svc || !svc.isActive) return undefined;
 
     const defaultEntry = this.getDefaultEntry(serviceName);
@@ -649,7 +653,7 @@ export class ConfigServicesRepository extends BaseRepository {
    *  3. defaultValue from the matching schema field definition
    */
   getFieldValue(serviceName: string, fieldName: string, entryLabel?: string): unknown {
-    const svc = servicesCache.get(serviceName);
+    const svc = cache.services.get(serviceName);
     if (!svc) return undefined;
 
     // Pick the entry
@@ -685,7 +689,7 @@ export class ConfigServicesRepository extends BaseRepository {
    * contains at least one non-empty value.
    */
   isAvailable(serviceName: string): boolean {
-    const svc = servicesCache.get(serviceName);
+    const svc = cache.services.get(serviceName);
     if (!svc || !svc.isActive) return false;
 
     const defaultEntry = this.getDefaultEntry(serviceName);
@@ -716,7 +720,7 @@ export class ConfigServicesRepository extends BaseRepository {
     neededByTools: number;
     neededButUnconfigured: number;
   }> {
-    const all = Array.from(servicesCache.values());
+    const all = Array.from(cache.services.values());
     const categories = [...new Set(all.map((s) => s.category))];
     const needed = all.filter((s) => s.requiredBy.length > 0);
 
@@ -724,7 +728,7 @@ export class ConfigServicesRepository extends BaseRepository {
       total: all.length,
       active: all.filter((s) => s.isActive).length,
       configured: all.filter((s) => {
-        const entries = entriesCache.get(s.name);
+        const entries = cache.entries.get(s.name);
         if (!entries || entries.length === 0) return false;
         return entries.some((e) => {
           const data = e.data;

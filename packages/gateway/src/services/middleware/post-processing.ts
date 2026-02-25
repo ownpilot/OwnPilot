@@ -12,6 +12,14 @@ import { getLog } from '../log.js';
 
 const log = getLog('Middleware:PostProcess');
 
+/** Track in-flight post-processing for graceful shutdown. */
+const pendingTasks = new Set<Promise<unknown>>();
+
+/** Wait for all in-flight post-processing tasks to complete. */
+export function waitForPendingPostProcessing(): Promise<void> {
+  return Promise.allSettled([...pendingTasks]).then(() => {});
+}
+
 /**
  * Create middleware that runs post-processing tasks after agent execution.
  *
@@ -56,7 +64,7 @@ export function createPostProcessingMiddleware(): MessageMiddleware {
       )
     );
 
-    Promise.all(tasks)
+    const task = Promise.all(tasks)
       .then((results) => {
         if (isChannel) {
           const memoriesExtracted = results[0];
@@ -78,6 +86,9 @@ export function createPostProcessingMiddleware(): MessageMiddleware {
       .catch((e) => {
         log.warn('Post-processing chain failed', { error: e });
       });
+
+    pendingTasks.add(task);
+    task.finally(() => pendingTasks.delete(task));
 
     return result;
   };

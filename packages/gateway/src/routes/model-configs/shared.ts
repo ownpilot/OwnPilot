@@ -66,6 +66,7 @@ export async function isProviderConfigured(providerId: string): Promise<boolean>
  */
 export async function getMergedModels(userId: string): Promise<MergedModel[]> {
   const models: MergedModel[] = [];
+  const seenKeys = new Set<string>();
   const [userConfigs, disabledSet, configuredProviders] = await Promise.all([
     modelConfigsRepo.listModels(userId),
     modelConfigsRepo.getDisabledModelIds(userId),
@@ -80,6 +81,7 @@ export async function getMergedModels(userId: string): Promise<MergedModel[]> {
 
     for (const model of provider.models) {
       const key = `${provider.id}/${model.id}`;
+      seenKeys.add(key);
       const userConfig = userConfigMap.get(key);
       const isDisabled = disabledSet.has(key);
 
@@ -116,6 +118,7 @@ export async function getMergedModels(userId: string): Promise<MergedModel[]> {
 
     for (const model of agg.defaultModels) {
       const key = `${agg.id}/${model.id}`;
+      seenKeys.add(key);
       const userConfig = userConfigMap.get(key);
       const isDisabled = disabledSet.has(key);
 
@@ -146,7 +149,8 @@ export async function getMergedModels(userId: string): Promise<MergedModel[]> {
   for (const custom of customModels) {
     // Avoid duplicates - skip if already in list
     const key = `${custom.providerId}/${custom.modelId}`;
-    if (models.some((m) => `${m.providerId}/${m.modelId}` === key)) continue;
+    if (seenKeys.has(key)) continue;
+    seenKeys.add(key);
 
     // Resolve provider display name from built-in, aggregator, or user provider
     let resolvedProviderName = custom.providerId;
@@ -185,14 +189,25 @@ export async function getMergedModels(userId: string): Promise<MergedModel[]> {
 
   // 4. Local providers (LM Studio, Ollama, etc.)
   const localProviders = await localProvidersRepo.listProviders(userId);
+  // Batch-load all local models at once (avoids N+1 per-provider queries)
+  const allLocalModels = localProviders.length > 0
+    ? await localProvidersRepo.listModels(userId)
+    : [];
+  const localModelsByProvider = new Map<string, typeof allLocalModels>();
+  for (const lm of allLocalModels) {
+    const list = localModelsByProvider.get(lm.localProviderId);
+    if (list) list.push(lm);
+    else localModelsByProvider.set(lm.localProviderId, [lm]);
+  }
   for (const lp of localProviders) {
     if (!lp.isEnabled) continue;
-    const localModels = await localProvidersRepo.listModels(userId, lp.id);
+    const localModels = localModelsByProvider.get(lp.id) ?? [];
     for (const lm of localModels) {
       if (!lm.isEnabled) continue;
       // Skip duplicates (local provider ID + model ID)
       const key = `${lp.id}/${lm.modelId}`;
-      if (models.some((m) => `${m.providerId}/${m.modelId}` === key)) continue;
+      if (seenKeys.has(key)) continue;
+      seenKeys.add(key);
 
       models.push({
         providerId: lp.id,
@@ -292,8 +307,20 @@ export async function getMergedProviders(userId: string): Promise<MergedProvider
 
   // 4. Local providers (LM Studio, Ollama, etc.)
   const localProviders = await localProvidersRepo.listProviders(userId);
+  // Batch-load all local models at once (avoids N+1 per-provider queries)
+  const allLocalModelsForProviders = localProviders.length > 0
+    ? await localProvidersRepo.listModels(userId)
+    : [];
+  const localModelCountByProvider = new Map<string, number>();
+  for (const lm of allLocalModelsForProviders) {
+    if (lm.isEnabled) {
+      localModelCountByProvider.set(
+        lm.localProviderId,
+        (localModelCountByProvider.get(lm.localProviderId) ?? 0) + 1
+      );
+    }
+  }
   for (const lp of localProviders) {
-    const localModels = await localProvidersRepo.listModels(userId, lp.id);
     providers.push({
       id: lp.id,
       name: lp.name,
@@ -301,7 +328,7 @@ export async function getMergedProviders(userId: string): Promise<MergedProvider
       apiBase: lp.baseUrl,
       isEnabled: lp.isEnabled,
       isConfigured: true, // local = always configured
-      modelCount: localModels.filter((m) => m.isEnabled).length,
+      modelCount: localModelCountByProvider.get(lp.id) ?? 0,
     });
   }
 

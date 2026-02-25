@@ -23,7 +23,7 @@
     "clean": "rimraf dist coverage"
   },
   "dependencies": {
-    "@hono/node-server": "^1.14.1",
+    "@hono/node-server": "^1.19.9",
     "@inquirer/prompts": "^8.2.1",
     "@ownpilot/channels": "workspace:*",
     "@ownpilot/core": "workspace:*",

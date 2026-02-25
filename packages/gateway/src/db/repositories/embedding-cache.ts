@@ -69,7 +69,7 @@ export class EmbeddingCacheRepository extends BaseRepository {
        SET last_used_at = NOW(), use_count = use_count + 1
        WHERE id = $1`,
       [row.id]
-    ).catch(() => {});
+    ).catch((err) => log.debug('Failed to touch embedding cache entry', { error: String(err) }));
 
     return parseEmbedding(row.embedding);
   }

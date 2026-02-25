@@ -23,6 +23,7 @@ interface PendingApproval {
   timer: ReturnType<typeof setTimeout>;
   chatId: string;
   messageId: number;
+  resolved: boolean;
 }
 
 const pending = new Map<string, PendingApproval>();
@@ -43,12 +44,13 @@ export function registerApprovalHandler(bot: Bot): void {
     const id = data.slice(colonIdx + 1);
     const entry = pending.get(id);
 
-    if (!entry) {
+    if (!entry || entry.resolved) {
       await ctx.answerCallbackQuery({ text: 'This approval has expired.' }).catch(() => {});
       return;
     }
 
     const approved = action === 'approve';
+    entry.resolved = true;
     clearTimeout(entry.timer);
     pending.delete(id);
 
@@ -90,6 +92,7 @@ export async function requestTelegramApproval(
     const oldest = pending.keys().next().value;
     if (oldest) {
       const entry = pending.get(oldest)!;
+      entry.resolved = true;
       clearTimeout(entry.timer);
       pending.delete(oldest);
       entry.resolve(false);
@@ -124,7 +127,17 @@ export async function requestTelegramApproval(
   }
 
   return new Promise<boolean>((resolve) => {
-    const timer = setTimeout(() => {
+    const entry: PendingApproval = {
+      resolve,
+      timer: undefined!,
+      chatId,
+      messageId: sent.message_id,
+      resolved: false,
+    };
+
+    entry.timer = setTimeout(() => {
+      if (entry.resolved) return;
+      entry.resolved = true;
       pending.delete(id);
       resolve(false);
 
@@ -138,12 +151,7 @@ export async function requestTelegramApproval(
         .catch(() => {});
     }, APPROVAL_TIMEOUT_MS);
 
-    pending.set(id, {
-      resolve,
-      timer,
-      chatId,
-      messageId: sent.message_id,
-    });
+    pending.set(id, entry);
   });
 }
 
@@ -152,8 +160,11 @@ export async function requestTelegramApproval(
  */
 export function clearPendingApprovals(): void {
   for (const [id, entry] of pending) {
-    clearTimeout(entry.timer);
-    entry.resolve(false);
+    if (!entry.resolved) {
+      entry.resolved = true;
+      clearTimeout(entry.timer);
+      entry.resolve(false);
+    }
     pending.delete(id);
   }
 }

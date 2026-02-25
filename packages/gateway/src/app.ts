@@ -121,8 +121,13 @@ export function createApp(config: Partial<GatewayConfig> = {}): Hono {
 
   const app = new Hono();
 
-  // Security headers
-  app.use('*', secureHeaders());
+  // Security headers (includes HSTS for HTTPS deployments)
+  app.use(
+    '*',
+    secureHeaders({
+      strictTransportSecurity: 'max-age=63072000; includeSubDomains; preload',
+    })
+  );
 
   // CORS - Never default to wildcard for security
   app.use(

@@ -10,4 +10,5 @@ export const STORAGE_KEYS = {
   DESKTOP_NOTIFICATIONS: 'ownpilot-desktop-notifications',
   SESSION_TOKEN: 'ownpilot-session-token',
   DEBUG_DRAWER: 'ownpilot-debug-drawer',
+  MINI_CHAT_OPEN: 'ownpilot-mini-chat-open',
 } as const;

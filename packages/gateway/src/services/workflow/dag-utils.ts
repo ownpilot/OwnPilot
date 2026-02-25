@@ -53,18 +53,30 @@ export function topologicalSort(nodes: WorkflowNode[], edges: WorkflowEdge[]): s
   return levels;
 }
 
+/** Build a source -> targets adjacency map from edges. */
+function buildAdjacency(edges: WorkflowEdge[]): Map<string, string[]> {
+  const adj = new Map<string, string[]>();
+  for (const edge of edges) {
+    const list = adj.get(edge.source);
+    if (list) list.push(edge.target);
+    else adj.set(edge.source, [edge.target]);
+  }
+  return adj;
+}
+
 /**
  * Get all downstream node IDs reachable from a given node.
  */
 export function getDownstreamNodes(nodeId: string, edges: WorkflowEdge[]): Set<string> {
+  const adj = buildAdjacency(edges);
   const downstream = new Set<string>();
   const queue = [nodeId];
   while (queue.length > 0) {
     const current = queue.pop()!;
-    for (const edge of edges) {
-      if (edge.source === current && !downstream.has(edge.target)) {
-        downstream.add(edge.target);
-        queue.push(edge.target);
+    for (const target of adj.get(current) ?? []) {
+      if (!downstream.has(target)) {
+        downstream.add(target);
+        queue.push(target);
       }
     }
   }
@@ -80,6 +92,7 @@ export function getDownstreamNodesByHandle(
   handle: string,
   edges: WorkflowEdge[]
 ): Set<string> {
+  const adj = buildAdjacency(edges);
   const downstream = new Set<string>();
   const queue = edges
     .filter((e) => e.source === nodeId && e.sourceHandle === handle)
@@ -89,9 +102,9 @@ export function getDownstreamNodesByHandle(
     const current = queue.pop()!;
     if (downstream.has(current)) continue;
     downstream.add(current);
-    for (const edge of edges) {
-      if (edge.source === current && !downstream.has(edge.target)) {
-        queue.push(edge.target);
+    for (const target of adj.get(current) ?? []) {
+      if (!downstream.has(target)) {
+        queue.push(target);
       }
     }
   }
