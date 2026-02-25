@@ -14,12 +14,14 @@ import {
   type Agent,
   type AgentConfig,
   type AIProvider,
+  type IProvider,
   type WorkspaceContext,
   ToolRegistry,
   injectMemoryIntoPrompt,
   unsafeToolId,
   getBaseName,
   createProvider,
+  createFallbackProvider,
   type ProviderConfig,
 } from '@ownpilot/core';
 import type { SessionInfo } from '../types/index.js';
@@ -366,9 +368,16 @@ export async function getOrCreateDefaultAgent(): Promise<Agent> {
 
 /**
  * Get or create an agent for chat with specific provider and model.
+ * Optionally accepts a fallback provider/model for automatic failover.
  */
-export async function getOrCreateChatAgent(provider: string, model: string): Promise<Agent> {
-  const cacheKey = `chat|${provider.replace(/\|/g, '_')}|${model.replace(/\|/g, '_')}`;
+export async function getOrCreateChatAgent(
+  provider: string,
+  model: string,
+  fallback?: { provider: string; model: string }
+): Promise<Agent> {
+  const sanitize = (s: string) => s.replace(/\|/g, '_');
+  const fbSuffix = fallback ? `|fb_${sanitize(fallback.provider)}_${sanitize(fallback.model)}` : '';
+  const cacheKey = `chat|${sanitize(provider)}|${sanitize(model)}${fbSuffix}`;
 
   const cached = lruGet(chatAgentCache, cacheKey);
   if (cached) return cached;
@@ -376,7 +385,7 @@ export async function getOrCreateChatAgent(provider: string, model: string): Pro
   const pending = pendingChatAgents.get(cacheKey);
   if (pending) return pending;
 
-  const promise = createChatAgentInstance(provider, model, cacheKey).finally(() => {
+  const promise = createChatAgentInstance(provider, model, cacheKey, fallback).finally(() => {
     pendingChatAgents.delete(cacheKey);
   });
   pendingChatAgents.set(cacheKey, promise);
@@ -386,11 +395,14 @@ export async function getOrCreateChatAgent(provider: string, model: string): Pro
 
 /**
  * Internal: Create a chat agent instance.
+ * When a fallback is provided, wraps the provider in a FallbackProvider
+ * so the agent automatically retries with the backup on failure.
  */
 async function createChatAgentInstance(
   provider: string,
   model: string,
-  cacheKey: string
+  cacheKey: string,
+  fallback?: { provider: string; model: string }
 ): Promise<Agent> {
   const apiKey = await getProviderApiKey(provider);
   if (!apiKey) {
@@ -495,12 +507,45 @@ async function createChatAgentInstance(
     memory: { maxTokens: memoryMaxTokens },
   };
 
+  // Build FallbackProvider if a backup model is configured
+  let providerInstance: IProvider | undefined;
+  if (fallback) {
+    try {
+      const fbApiKey = await getProviderApiKey(fallback.provider);
+      if (fbApiKey) {
+        const fbConfig = loadProviderConfig(fallback.provider);
+        const fbType = NATIVE_PROVIDERS.has(fallback.provider) ? fallback.provider : 'openai';
+        providerInstance = createFallbackProvider({
+          primary: {
+            provider: providerType as AIProvider,
+            apiKey,
+            baseUrl,
+            headers: providerConfig?.headers,
+          },
+          fallbacks: [
+            {
+              provider: fbType as AIProvider,
+              apiKey: fbApiKey,
+              baseUrl: fbConfig?.baseUrl,
+              headers: fbConfig?.headers,
+            },
+          ],
+          onFallback: (failed, error, next) => {
+            log.warn(`Fallback triggered: ${String(failed)} -> ${String(next)}: ${error.message}`);
+          },
+        });
+      }
+    } catch (fbErr) {
+      log.warn(`Failed to build fallback provider: ${String(fbErr)}`);
+    }
+  }
+
   if (chatAgentCache.size >= MAX_CHAT_AGENT_CACHE_SIZE) {
     const oldestKey = chatAgentCache.keys().next().value;
     if (oldestKey) chatAgentCache.delete(oldestKey);
   }
 
-  const agent = createAgent(config, { tools });
+  const agent = createAgent(config, { tools, provider: providerInstance });
   chatAgentCache.set(cacheKey, agent);
 
   return agent;

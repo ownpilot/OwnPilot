@@ -24,7 +24,8 @@ import {
 } from '@ownpilot/core';
 import type { NotificationRequest } from '@ownpilot/core';
 import { getChannelService } from '@ownpilot/core';
-import { getOrCreateDefaultAgent } from '../routes/agents.js';
+import { getOrCreateChatAgent } from '../routes/agents.js';
+import { resolveForProcess } from '../services/model-routing.js';
 import { getDataPaths } from '../paths/index.js';
 import { getLog } from '../services/log.js';
 import { getErrorMessage } from '../routes/helpers.js';
@@ -37,6 +38,16 @@ let notificationBridge: SchedulerNotificationBridge | null = null;
 
 const MAX_WORKFLOW_DEPTH = 10;
 
+/** Resolve the pulse routing and get a chat agent with optional fallback. */
+async function getSchedulerAgent() {
+  const routing = await resolveForProcess('pulse');
+  const fallback =
+    routing.fallbackProvider && routing.fallbackModel
+      ? { provider: routing.fallbackProvider, model: routing.fallbackModel }
+      : undefined;
+  return getOrCreateChatAgent(routing.provider ?? 'openai', routing.model ?? 'gpt-4o', fallback);
+}
+
 /**
  * Execute a scheduled task
  * This is the task executor that handles prompt and tool tasks
@@ -47,7 +58,7 @@ async function executeScheduledTask(task: ScheduledTask, depth = 0): Promise<Tas
   try {
     if (task.payload.type === 'prompt') {
       // Execute prompt using agent
-      const agent = await getOrCreateDefaultAgent();
+      const agent = await getSchedulerAgent();
       const result = await agent.chat(task.payload.prompt);
 
       if (result.ok) {
@@ -82,7 +93,7 @@ async function executeScheduledTask(task: ScheduledTask, depth = 0): Promise<Tas
         toolName: string;
         args: Record<string, unknown>;
       };
-      const agent = await getOrCreateDefaultAgent();
+      const agent = await getSchedulerAgent();
       const tools = agent.getTools();
       const tool = tools.find((t) => t.name === toolPayload.toolName);
 

@@ -154,6 +154,16 @@ vi.mock('../services/config-center-impl.js', () => ({
   gatewayConfigCenter: { get: vi.fn(), set: vi.fn() },
 }));
 
+vi.mock('../services/model-routing.js', () => ({
+  resolveForProcess: vi.fn(async () => ({
+    provider: 'openai',
+    model: 'gpt-4',
+    fallbackProvider: null,
+    fallbackModel: null,
+    source: 'global',
+  })),
+}));
+
 vi.mock('./settings.js', () => ({
   hasApiKey: vi.fn(() => true),
   getApiKey: vi.fn(() => 'test-key'),
@@ -377,6 +387,7 @@ import {
 } from './chat-streaming.js';
 import { extractSuggestions, extractMemoriesFromResponse } from '../utils/index.js';
 import { modelConfigsRepo } from '../db/repositories/model-configs.js';
+import { resolveForProcess } from '../services/model-routing.js';
 import { debugLog } from '@ownpilot/core';
 import { buildEnhancedSystemPrompt } from '../assistant/index.js';
 import { getTraceSummary } from '../tracing/index.js';
@@ -465,6 +476,13 @@ describe('Chat Routes', () => {
       newSessionId: 'new-session-1',
     });
     vi.mocked(clearAllChatAgentCaches).mockReturnValue(3);
+    vi.mocked(resolveForProcess).mockResolvedValue({
+      provider: 'openai',
+      model: 'gpt-4',
+      fallbackProvider: null,
+      fallbackModel: null,
+      source: 'global',
+    });
 
     // Reset repository mocks
     mockChatRepo.listConversations.mockResolvedValue([]);
@@ -543,7 +561,13 @@ describe('Chat Routes', () => {
     });
 
     it('should return 400 when no model available in non-demo mode', async () => {
-      vi.mocked(getDefaultModel).mockResolvedValue(undefined as unknown as string);
+      vi.mocked(resolveForProcess).mockResolvedValue({
+        provider: 'unknown-provider',
+        model: null,
+        fallbackProvider: null,
+        fallbackModel: null,
+        source: 'global',
+      });
 
       const res = await app.request('/chat', {
         method: 'POST',

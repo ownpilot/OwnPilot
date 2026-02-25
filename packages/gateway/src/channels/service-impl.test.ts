@@ -62,10 +62,16 @@ const mockConversationsRepo = vi.hoisted(() => ({
   create: vi.fn().mockResolvedValue(undefined),
 }));
 
-const mockGetOrCreateDefaultAgent = vi.hoisted(() => vi.fn());
+const mockGetOrCreateChatAgent = vi.hoisted(() => vi.fn());
 const mockIsDemoMode = vi.hoisted(() => vi.fn().mockResolvedValue(false));
-const mockResolveProviderAndModel = vi.hoisted(() =>
-  vi.fn().mockResolvedValue({ provider: 'openai', model: 'gpt-4' })
+const mockResolveForProcess = vi.hoisted(() =>
+  vi.fn().mockResolvedValue({
+    provider: 'openai',
+    model: 'gpt-4',
+    fallbackProvider: null,
+    fallbackModel: null,
+    source: 'global',
+  })
 );
 
 // ============================================================================
@@ -118,12 +124,16 @@ vi.mock('../routes/helpers.js', () => ({
 }));
 
 vi.mock('../routes/agents.js', () => ({
-  getOrCreateDefaultAgent: mockGetOrCreateDefaultAgent,
+  getOrCreateChatAgent: mockGetOrCreateChatAgent,
   isDemoMode: mockIsDemoMode,
 }));
 
+vi.mock('../services/model-routing.js', () => ({
+  resolveForProcess: mockResolveForProcess,
+}));
+
 vi.mock('../routes/settings.js', () => ({
-  resolveProviderAndModel: mockResolveProviderAndModel,
+  resolveProviderAndModel: vi.fn().mockResolvedValue({ provider: 'openai', model: 'gpt-4' }),
 }));
 
 vi.mock('../db/repositories/conversations.js', () => ({
@@ -906,7 +916,7 @@ describe('ChannelServiceImpl', () => {
             throw new Error('Not found');
           }),
         });
-        mockGetOrCreateDefaultAgent.mockResolvedValue(createMockAgent());
+        mockGetOrCreateChatAgent.mockResolvedValue(createMockAgent());
 
         await service.processIncomingMessage(message);
 
@@ -1013,7 +1023,7 @@ describe('ChannelServiceImpl', () => {
             throw new Error('Not found');
           }),
         });
-        mockGetOrCreateDefaultAgent.mockResolvedValue(createMockAgent());
+        mockGetOrCreateChatAgent.mockResolvedValue(createMockAgent());
 
         await service.processIncomingMessage(message);
 
@@ -1046,7 +1056,7 @@ describe('ChannelServiceImpl', () => {
             throw new Error('Not found');
           }),
         });
-        mockGetOrCreateDefaultAgent.mockResolvedValue(createMockAgent());
+        mockGetOrCreateChatAgent.mockResolvedValue(createMockAgent());
 
         await service.processIncomingMessage(message);
 
@@ -1064,7 +1074,7 @@ describe('ChannelServiceImpl', () => {
       beforeEach(() => {
         // Set up direct agent path (no bus) for simplicity
         mockHasServiceRegistry.mockReturnValue(false);
-        mockGetOrCreateDefaultAgent.mockResolvedValue(
+        mockGetOrCreateChatAgent.mockResolvedValue(
           createMockAgent({
             chat: vi.fn().mockResolvedValue({ ok: true, value: { content: 'AI says hi' } }),
           })
@@ -1128,7 +1138,7 @@ describe('ChannelServiceImpl', () => {
     describe('session management', () => {
       beforeEach(() => {
         mockHasServiceRegistry.mockReturnValue(false);
-        mockGetOrCreateDefaultAgent.mockResolvedValue(
+        mockGetOrCreateChatAgent.mockResolvedValue(
           createMockAgent({
             chat: vi.fn().mockResolvedValue({ ok: true, value: { content: 'response' } }),
           })
@@ -1184,7 +1194,7 @@ describe('ChannelServiceImpl', () => {
       it('should create conversation in agent memory when creating new session', async () => {
         mockSessionsRepo.findActive.mockResolvedValue(null);
         const agent = createMockAgent({ newConvId: 'mem-conv-1' });
-        mockGetOrCreateDefaultAgent.mockResolvedValue(agent);
+        mockGetOrCreateChatAgent.mockResolvedValue(agent);
         mockSessionsRepo.create.mockResolvedValue({
           id: 'new-session',
           conversationId: 'mem-conv-1',
@@ -1226,7 +1236,7 @@ describe('ChannelServiceImpl', () => {
     describe('typing indicator', () => {
       beforeEach(() => {
         mockHasServiceRegistry.mockReturnValue(false);
-        mockGetOrCreateDefaultAgent.mockResolvedValue(
+        mockGetOrCreateChatAgent.mockResolvedValue(
           createMockAgent({
             chat: vi.fn().mockResolvedValue({ ok: true, value: { content: 'response' } }),
           })
@@ -1263,7 +1273,7 @@ describe('ChannelServiceImpl', () => {
             throw new Error('Not found');
           }),
         });
-        mockGetOrCreateDefaultAgent.mockResolvedValue(createMockAgent());
+        mockGetOrCreateChatAgent.mockResolvedValue(createMockAgent());
       });
 
       it('should route through MessageBus when available', async () => {
@@ -1365,15 +1375,15 @@ describe('ChannelServiceImpl', () => {
         expect(mockBus.process).not.toHaveBeenCalled();
       });
 
-      it('should resolve provider and model from settings', async () => {
+      it('should resolve provider and model via model routing', async () => {
         await service.processIncomingMessage(message);
 
-        expect(mockResolveProviderAndModel).toHaveBeenCalledWith('default', 'default');
+        expect(mockResolveForProcess).toHaveBeenCalledWith('telegram');
       });
 
       it('should load session conversation onto agent for context continuity', async () => {
         const agent = createMockAgent();
-        mockGetOrCreateDefaultAgent.mockResolvedValue(agent);
+        mockGetOrCreateChatAgent.mockResolvedValue(agent);
 
         await service.processIncomingMessage(message);
 
@@ -1384,7 +1394,7 @@ describe('ChannelServiceImpl', () => {
       it('should create new conversation when agent memory lost it (server restart)', async () => {
         // Agent memory does NOT have the session's conversation
         const agent = createMockAgent({ memoryHas: false, newConvId: 'recovered-conv-id' });
-        mockGetOrCreateDefaultAgent.mockResolvedValue(agent);
+        mockGetOrCreateChatAgent.mockResolvedValue(agent);
 
         await service.processIncomingMessage(message);
 
@@ -1417,7 +1427,7 @@ describe('ChannelServiceImpl', () => {
           conversationId: null,
         });
         const agent = createMockAgent();
-        mockGetOrCreateDefaultAgent.mockResolvedValue(agent);
+        mockGetOrCreateChatAgent.mockResolvedValue(agent);
 
         await service.processIncomingMessage(message);
 
@@ -1438,7 +1448,7 @@ describe('ChannelServiceImpl', () => {
             value: { content: 'Direct agent response' },
           }),
         });
-        mockGetOrCreateDefaultAgent.mockResolvedValue(mockAgent);
+        mockGetOrCreateChatAgent.mockResolvedValue(mockAgent);
       });
 
       it('should fall back to direct agent when no MessageBus', async () => {
@@ -1484,7 +1494,7 @@ describe('ChannelServiceImpl', () => {
     describe('error handling', () => {
       it('should send provider-error message for provider-related failures', async () => {
         mockHasServiceRegistry.mockReturnValue(false);
-        mockGetOrCreateDefaultAgent.mockRejectedValue(new Error('No provider configured'));
+        mockGetOrCreateChatAgent.mockRejectedValue(new Error('No provider configured'));
 
         await service.processIncomingMessage(message);
 
@@ -1498,7 +1508,7 @@ describe('ChannelServiceImpl', () => {
 
       it('should send generic error message for non-provider failures', async () => {
         mockHasServiceRegistry.mockReturnValue(false);
-        mockGetOrCreateDefaultAgent.mockRejectedValue(new Error('Something unexpected'));
+        mockGetOrCreateChatAgent.mockRejectedValue(new Error('Something unexpected'));
 
         await service.processIncomingMessage(message);
 
@@ -1511,7 +1521,7 @@ describe('ChannelServiceImpl', () => {
 
       it('should not throw if error reply also fails', async () => {
         mockHasServiceRegistry.mockReturnValue(false);
-        mockGetOrCreateDefaultAgent.mockRejectedValue(new Error('Primary error'));
+        mockGetOrCreateChatAgent.mockRejectedValue(new Error('Primary error'));
         channelPlugin.api.sendMessage.mockRejectedValue(new Error('Reply also failed'));
 
         // Should not throw — best-effort error reply
@@ -1520,7 +1530,7 @@ describe('ChannelServiceImpl', () => {
 
       it('should tolerate outgoing message save failure', async () => {
         mockHasServiceRegistry.mockReturnValue(false);
-        mockGetOrCreateDefaultAgent.mockResolvedValue(
+        mockGetOrCreateChatAgent.mockResolvedValue(
           createMockAgent({
             chat: vi.fn().mockResolvedValue({ ok: true, value: { content: 'response' } }),
           })
@@ -1740,7 +1750,7 @@ describe('ChannelServiceImpl', () => {
         conversationId: null,
       });
       mockHasServiceRegistry.mockReturnValue(false);
-      mockGetOrCreateDefaultAgent.mockResolvedValue(
+      mockGetOrCreateChatAgent.mockResolvedValue(
         createMockAgent({
           chat: vi.fn().mockResolvedValue({ ok: true, value: { content: 'response' } }),
         })

@@ -66,7 +66,17 @@ vi.mock('@ownpilot/core', async (importOriginal) => {
 });
 
 vi.mock('../routes/agents.js', () => ({
-  getOrCreateDefaultAgent: vi.fn(() => Promise.resolve(mockAgent)),
+  getOrCreateChatAgent: vi.fn(() => Promise.resolve(mockAgent)),
+}));
+
+vi.mock('../services/model-routing.js', () => ({
+  resolveForProcess: vi.fn(async () => ({
+    provider: 'openai',
+    model: 'gpt-4',
+    fallbackProvider: null,
+    fallbackModel: null,
+    source: 'global',
+  })),
 }));
 
 vi.mock('../paths/index.js', () => ({
@@ -435,7 +445,7 @@ describe('scheduler/index', () => {
     // -------------------------------------------------------------------------
 
     describe('prompt task — success path', () => {
-      it('calls getOrCreateDefaultAgent', async () => {
+      it('calls getOrCreateChatAgent', async () => {
         const { executor } = await initFresh();
         mockAgent.chat.mockResolvedValue({
           ok: true,
@@ -444,8 +454,8 @@ describe('scheduler/index', () => {
 
         await executor(makeTask({ type: 'prompt', payload: { type: 'prompt', prompt: 'Say hi' } }));
 
-        const { getOrCreateDefaultAgent } = await import('../routes/agents.js');
-        expect(getOrCreateDefaultAgent).toHaveBeenCalled();
+        const { getOrCreateChatAgent } = await import('../routes/agents.js');
+        expect(getOrCreateChatAgent).toHaveBeenCalled();
       });
 
       it('calls agent.chat with the prompt string', async () => {
@@ -626,10 +636,10 @@ describe('scheduler/index', () => {
         expect(result.error).toBe('Network error');
       });
 
-      it('returns status "failed" when getOrCreateDefaultAgent throws', async () => {
+      it('returns status "failed" when getOrCreateChatAgent throws', async () => {
         const { executor } = await initFresh();
-        const { getOrCreateDefaultAgent } = await import('../routes/agents.js');
-        (getOrCreateDefaultAgent as ReturnType<typeof vi.fn>).mockRejectedValueOnce(
+        const { getOrCreateChatAgent } = await import('../routes/agents.js');
+        (getOrCreateChatAgent as ReturnType<typeof vi.fn>).mockRejectedValueOnce(
           new Error('Agent unavailable')
         );
 

@@ -65,6 +65,7 @@ import {
   workflowRoutes,
   composioRoutes,
   uiAuthRoutes,
+  modelRoutingRoutes,
 } from './routes/index.js';
 import {
   RATE_LIMIT_WINDOW_MS,
@@ -254,6 +255,7 @@ export function createApp(config: Partial<GatewayConfig> = {}): Hono {
 
   // AI Model Configs (model management, custom providers)
   app.route('/api/v1/model-configs', modelConfigsRoutes);
+  app.route('/api/v1/model-routing', modelRoutingRoutes);
 
   // Dashboard (AI-powered daily briefing)
   app.route('/api/v1/dashboard', dashboardRoutes);
