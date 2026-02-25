@@ -380,7 +380,7 @@ export class GoogleProvider {
           toolCalls.push({
             id: generateId('call'),
             name: desanitizeToolName(part.functionCall.name),
-            arguments: JSON.stringify(part.functionCall.args),
+            arguments: JSON.stringify(part.functionCall.args ?? {}),
             // Capture thoughtSignature for Gemini 3+ thinking models
             metadata: part.thoughtSignature
               ? { thoughtSignature: part.thoughtSignature }
@@ -542,12 +542,12 @@ export class GoogleProvider {
                   }
                   if (part.functionCall) {
                     yield ok({
-                      id: `gemini_${Date.now()}`,
+                      id: `call_${Date.now()}`,
                       toolCalls: [
                         {
                           id: `call_${Date.now()}`,
                           name: desanitizeToolName(part.functionCall.name),
-                          arguments: JSON.stringify(part.functionCall.args),
+                          arguments: JSON.stringify(part.functionCall.args ?? {}),
                           // Capture thoughtSignature for Gemini 3+ thinking models
                           metadata: part.thoughtSignature
                             ? { thoughtSignature: part.thoughtSignature }

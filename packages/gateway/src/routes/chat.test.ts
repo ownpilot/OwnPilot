@@ -1048,7 +1048,23 @@ describe('Chat Routes', () => {
     });
 
     it('should delete old conversations', async () => {
-      mockChatRepo.deleteOldConversations.mockResolvedValue(5);
+      // Create 5 old conversations (more than 30 days ago)
+      const oldDate = new Date();
+      oldDate.setDate(oldDate.getDate() - 31);
+      const oldConversations = Array.from({ length: 5 }, (_, i) => ({
+        id: `old-conv-${i}`,
+        title: `Old Chat ${i}`,
+        agentId: null,
+        agentName: null,
+        provider: 'openai',
+        model: 'gpt-4',
+        messageCount: 5,
+        isArchived: false,
+        createdAt: oldDate,
+        updatedAt: oldDate,
+      }));
+      mockChatRepo.listConversations.mockResolvedValue(oldConversations);
+      mockChatRepo.deleteConversations.mockResolvedValue(5);
 
       const res = await app.request('/chat/history/bulk-delete', {
         method: 'POST',
@@ -1059,7 +1075,13 @@ describe('Chat Routes', () => {
       expect(res.status).toBe(200);
       const data = await res.json();
       expect(data.data.deleted).toBe(5);
-      expect(mockChatRepo.deleteOldConversations).toHaveBeenCalledWith(30);
+      expect(mockChatRepo.deleteConversations).toHaveBeenCalledWith([
+        'old-conv-0',
+        'old-conv-1',
+        'old-conv-2',
+        'old-conv-3',
+        'old-conv-4',
+      ]);
     });
 
     it('should return 400 for empty body', async () => {
