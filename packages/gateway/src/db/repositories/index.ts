@@ -338,3 +338,24 @@ export {
   type CreateWorkspaceInput as CreateWorkspaceRepoInput,
   type UpdateWorkspaceInput as UpdateWorkspaceRepoInput,
 } from './workspaces.js';
+
+// Coding agent results repository
+export {
+  CodingAgentResultsRepository,
+  codingAgentResultsRepo,
+  createCodingAgentResultsRepository,
+  type CodingAgentResultRecord,
+  type SaveResultInput,
+} from './coding-agent-results.js';
+
+// CLI providers repository
+export {
+  CliProvidersRepository,
+  cliProvidersRepo,
+  createCliProvidersRepository,
+  type CliProviderRecord,
+  type CliAuthMethod,
+  type CliOutputFormat,
+  type CreateCliProviderInput,
+  type UpdateCliProviderInput,
+} from './cli-providers.js';

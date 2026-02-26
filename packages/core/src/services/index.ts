@@ -199,6 +199,22 @@ export type {
   AutonomyLogEntry,
 } from './pulse-service.js';
 
+// Coding Agent Service
+export type {
+  ICodingAgentService,
+  BuiltinCodingAgentProvider,
+  CodingAgentProvider,
+  CodingAgentMode,
+  CodingAgentSessionMode,
+  CodingAgentSessionState,
+  CodingAgentTask,
+  CodingAgentResult,
+  CodingAgentStatus,
+  CodingAgentSession,
+  CreateCodingSessionInput,
+} from './coding-agent-service.js';
+export { isBuiltinProvider, getCustomProviderName } from './coding-agent-service.js';
+
 // Config Center
 export * from './config-center.js';
 

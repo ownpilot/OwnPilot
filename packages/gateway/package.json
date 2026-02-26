@@ -47,9 +47,15 @@
     "pgvector": "^0.2.1",
     "sharp": "^0.34.5",
     "ws": "^8.19.0",
+    "adm-zip": "^0.5.16",
     "zod": "^4.3.6"
   },
+  "optionalDependencies": {
+    "@anthropic-ai/claude-agent-sdk": "^0.2.56",
+    "node-pty": "^1.0.0"
+  },
   "devDependencies": {
+    "@types/adm-zip": "^0.5.7",
     "@types/archiver": "^7.0.0",
     "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^22.19.11",

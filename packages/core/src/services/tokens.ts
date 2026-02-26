@@ -34,6 +34,7 @@ import type { IExtensionService } from './extension-service.js';
 import type { IEmbeddingService } from './embedding-service.js';
 import type { IHeartbeatService } from './heartbeat-service.js';
 import type { IPulseService } from './pulse-service.js';
+import type { ICodingAgentService } from './coding-agent-service.js';
 
 /**
  * All service tokens.
@@ -107,4 +108,7 @@ export const Services = {
 
   /** Autonomy Engine (Pulse System) */
   Pulse: new ServiceToken<IPulseService>('pulse'),
+
+  /** External coding agent orchestration (Claude Code, Codex, Gemini CLI) */
+  CodingAgent: new ServiceToken<ICodingAgentService>('coding-agent'),
 } as const;

@@ -25,6 +25,8 @@ import {
   executeHeartbeatTool,
   EXTENSION_TOOLS,
   executeExtensionTool,
+  CODING_AGENT_TOOLS,
+  executeCodingAgentTool,
 } from '../../tools/index.js';
 import { CONFIG_TOOLS, executeConfigTool } from '../config-tools.js';
 import { getErrorMessage } from '../../routes/helpers.js';
@@ -205,6 +207,20 @@ export function createExtensionToolProvider(userId: string): ToolProvider {
       EXTENSION_TOOLS.map((def) => ({
         definition: def,
         executor: wrapGatewayExecutor(def, executeExtensionTool, userId),
+      })),
+  };
+}
+
+/**
+ * Create a provider for coding agent tools (requires userId)
+ */
+export function createCodingAgentToolProvider(userId: string): ToolProvider {
+  return {
+    name: 'coding-agent',
+    getTools: () =>
+      CODING_AGENT_TOOLS.map((def) => ({
+        definition: def,
+        executor: wrapGatewayExecutor(def, executeCodingAgentTool, userId),
       })),
   };
 }

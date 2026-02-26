@@ -58,6 +58,21 @@ export type {
   ComposioStatus,
   ComposioActionInfo,
 } from './composio';
+export { codingAgentsApi, cliProvidersApi } from './coding-agents';
+export type {
+  CodingAgentStatus,
+  CodingAgentTestResult,
+  CodingAgentSession,
+  CodingAgentSessionState,
+  CreateCodingSessionInput,
+  CodingAgentResultRecord,
+  CliProviderRecord,
+  CliAuthMethod,
+  CliOutputFormat,
+  CreateCliProviderInput,
+  UpdateCliProviderInput,
+  CliProviderTestResult,
+} from './coding-agents';
 export { workflowsApi } from './workflows';
 export type {
   McpServer,

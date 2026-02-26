@@ -80,6 +80,9 @@ const VALID_CLIENT_EVENTS = new Set<string>([
   'tool:cancel',
   'session:ping',
   'session:pong',
+  'coding-agent:input',
+  'coding-agent:resize',
+  'coding-agent:subscribe',
 ]);
 
 export interface WSGatewayConfig {
@@ -781,6 +784,43 @@ export class WSGateway {
     // Session pong (response to server ping)
     this.clientHandler.handle('session:pong', async (data) => {
       log.debug('Session pong', { data });
+    });
+
+    // =========================================================================
+    // Coding Agent terminal events
+    // =========================================================================
+
+    this.clientHandler.handle('coding-agent:input', async (data, wsSessionId) => {
+      if (!wsSessionId) return;
+      const userId = sessionManager.get(wsSessionId)?.userId ?? 'default';
+      try {
+        const { getCodingAgentSessionManager } = await import('../services/coding-agent-sessions.js');
+        getCodingAgentSessionManager().writeToSession(data.sessionId, userId, data.data);
+      } catch (err) {
+        log.error('Coding agent input error', { error: String(err) });
+      }
+    });
+
+    this.clientHandler.handle('coding-agent:resize', async (data, wsSessionId) => {
+      if (!wsSessionId) return;
+      const userId = sessionManager.get(wsSessionId)?.userId ?? 'default';
+      try {
+        const { getCodingAgentSessionManager } = await import('../services/coding-agent-sessions.js');
+        getCodingAgentSessionManager().resizeSession(data.sessionId, userId, data.cols, data.rows);
+      } catch (err) {
+        log.error('Coding agent resize error', { error: String(err) });
+      }
+    });
+
+    this.clientHandler.handle('coding-agent:subscribe', async (data, wsSessionId) => {
+      if (!wsSessionId) return;
+      const userId = sessionManager.get(wsSessionId)?.userId ?? 'default';
+      try {
+        const { getCodingAgentSessionManager } = await import('../services/coding-agent-sessions.js');
+        getCodingAgentSessionManager().subscribe(data.sessionId, wsSessionId, userId);
+      } catch (err) {
+        log.error('Coding agent subscribe error', { error: String(err) });
+      }
     });
   }
 
