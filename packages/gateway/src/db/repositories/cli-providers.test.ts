@@ -27,7 +27,7 @@ function makeProviderRow(overrides: Record<string, unknown> = {}) {
     name: 'prettier',
     display_name: 'Prettier',
     description: 'Code formatter',
-    binary: 'prettier',
+    binary_path: 'prettier',
     category: 'formatter',
     icon: null,
     color: null,
@@ -300,7 +300,7 @@ describe('CliProvidersRepository', () => {
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
       // getById after update
       mockAdapter.queryOne.mockResolvedValueOnce(
-        makeProviderRow({ display_name: 'Prettier v2', binary: 'npx prettier' })
+        makeProviderRow({ display_name: 'Prettier v2', binary_path: 'npx prettier' })
       );
 
       const result = await repo.update('prov-1', {

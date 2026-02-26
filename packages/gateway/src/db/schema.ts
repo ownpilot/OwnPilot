@@ -841,7 +841,7 @@ CREATE TABLE IF NOT EXISTS cli_providers (
   name TEXT NOT NULL,
   display_name TEXT NOT NULL,
   description TEXT,
-  binary TEXT NOT NULL,
+  binary_path TEXT NOT NULL,
   category TEXT NOT NULL DEFAULT 'general',
   icon TEXT,
   color TEXT,

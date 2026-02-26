@@ -17,7 +17,7 @@ interface CliProviderRow {
   name: string;
   display_name: string;
   description: string | null;
-  binary: string;
+  binary_path: string;
   category: string;
   icon: string | null;
   color: string | null;
@@ -113,7 +113,7 @@ function rowToRecord(row: CliProviderRow): CliProviderRecord {
     name: row.name,
     displayName: row.display_name,
     description: row.description ?? undefined,
-    binary: row.binary,
+    binary: row.binary_path,
     category: row.category,
     icon: row.icon ?? undefined,
     color: row.color ?? undefined,
@@ -143,7 +143,7 @@ export class CliProvidersRepository extends BaseRepository {
 
     await this.execute(
       `INSERT INTO cli_providers (
-        id, user_id, name, display_name, description, binary, category,
+        id, user_id, name, display_name, description, binary_path, category,
         icon, color, auth_method, config_service_name, api_key_env_var,
         default_args, prompt_template, output_format,
         default_timeout_ms, max_timeout_ms, is_active, created_at, updated_at
@@ -225,7 +225,7 @@ export class CliProvidersRepository extends BaseRepository {
     if (input.name !== undefined) addField('name', input.name);
     if (input.displayName !== undefined) addField('display_name', input.displayName);
     if (input.description !== undefined) addField('description', input.description);
-    if (input.binary !== undefined) addField('binary', input.binary);
+    if (input.binary !== undefined) addField('binary_path', input.binary);
     if (input.category !== undefined) addField('category', input.category);
     if (input.icon !== undefined) addField('icon', input.icon);
     if (input.color !== undefined) addField('color', input.color);
