@@ -11,10 +11,12 @@
  */
 
 import { type ToolCall, getServiceRegistry, Services, getBaseName } from '@ownpilot/core';
+import type { CliToolPolicy } from '@ownpilot/core';
 import { getResourceRegistry } from '../services/resource-registry.js';
 import { getApprovalManager, assessRisk, type ActionCategory } from '../autonomy/index.js';
 import { getTriggerEngine } from '../triggers/engine.js';
 import { getLog } from '../services/log.js';
+import { getCliToolService } from '../services/cli-tool-service.js';
 
 const log = getLog('Orchestrator');
 
@@ -219,14 +221,44 @@ export async function checkToolCallApproval(
   // Map tool name to action category
   const category = mapToolToCategory(toolCall.name);
 
+  // Parse arguments once (used by risk assessment and CLI policy check)
+  const parsedArgs = safeJsonParse(toolCall.arguments || '{}', {});
+
   // Assess risk
-  const risk = assessRisk(
-    category,
-    toolCall.name,
-    safeJsonParse(toolCall.arguments || '{}', {}),
-    context,
-    config
-  );
+  const risk = assessRisk(category, toolCall.name, parsedArgs, context, config);
+
+  // =========================================================================
+  // CLI Tool policy override — per-tool granularity for run_cli_tool / install_cli_tool
+  // The per-tool policy (allowed/prompt/blocked) takes precedence over the
+  // generic risk score so that users can fine-tune which CLI tools auto-execute.
+  // =========================================================================
+  if (toolCall.name === 'run_cli_tool' || toolCall.name === 'install_cli_tool') {
+    const cliToolName = parsedArgs.name as string | undefined;
+    if (cliToolName) {
+      const cliPolicy = await getCliToolPolicyForApproval(cliToolName, userId);
+      if (cliPolicy === 'blocked') {
+        return {
+          approved: false,
+          requiresApproval: true,
+          reason: `CLI tool "${cliToolName}" is blocked by policy. Update it in Settings → CLI Tools.`,
+          risk,
+        };
+      }
+      if (cliPolicy === 'allowed' && toolCall.name !== 'install_cli_tool') {
+        // allowed = auto-approve for run, but install always requires approval
+        return { approved: true, requiresApproval: false, risk };
+      }
+      if (cliPolicy === 'prompt') {
+        // prompt = always require approval regardless of autonomy level
+        return {
+          approved: false,
+          requiresApproval: true,
+          reason: `CLI tool "${cliToolName}" requires approval (policy: prompt).`,
+          risk,
+        };
+      }
+    }
+  }
 
   // If no approval required, auto-approve
   if (!risk.requiresApproval) {
@@ -302,6 +334,11 @@ function mapToolToCategory(toolName: string): ActionCategory {
     run_script: 'system_command',
     file_write: 'file_operation',
     file_delete: 'file_operation',
+
+    // CLI tool execution
+    run_cli_tool: 'system_command',
+    install_cli_tool: 'system_command',
+    list_cli_tools: 'tool_execution',
 
     // Financial tools
     make_payment: 'financial',
@@ -444,6 +481,22 @@ export async function updateGoalProgress(
         await goalService.completeStep(userId, step.id);
       }
     }
+  }
+}
+
+/**
+ * Look up a CLI tool's per-tool policy for the approval decision.
+ * Returns the user's configured policy or falls back to the catalog default.
+ */
+async function getCliToolPolicyForApproval(
+  cliToolName: string,
+  userId: string
+): Promise<CliToolPolicy> {
+  try {
+    return await getCliToolService().getToolPolicy(cliToolName, userId);
+  } catch {
+    // Service not ready (startup race) — default to 'prompt' (safe)
+    return 'prompt';
   }
 }
 

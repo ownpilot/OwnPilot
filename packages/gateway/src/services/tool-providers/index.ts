@@ -27,6 +27,8 @@ import {
   executeExtensionTool,
   CODING_AGENT_TOOLS,
   executeCodingAgentTool,
+  CLI_TOOL_TOOLS,
+  executeCliToolTool,
 } from '../../tools/index.js';
 import { CONFIG_TOOLS, executeConfigTool } from '../config-tools.js';
 import { getErrorMessage } from '../../routes/helpers.js';
@@ -221,6 +223,20 @@ export function createCodingAgentToolProvider(userId: string): ToolProvider {
       CODING_AGENT_TOOLS.map((def) => ({
         definition: def,
         executor: wrapGatewayExecutor(def, executeCodingAgentTool, userId),
+      })),
+  };
+}
+
+/**
+ * Create a provider for CLI tool execution tools (requires userId)
+ */
+export function createCliToolProvider(userId: string): ToolProvider {
+  return {
+    name: 'cli-tools',
+    getTools: () =>
+      CLI_TOOL_TOOLS.map((def) => ({
+        definition: def,
+        executor: wrapGatewayExecutor(def, executeCliToolTool, userId),
       })),
   };
 }

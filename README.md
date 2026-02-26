@@ -75,20 +75,39 @@ Privacy-first personal AI assistant platform with autonomous agents, tool orches
 - **Goals** — Goal creation, decomposition into steps, progress tracking, next-action recommendations
 - **Custom Data Tables** — Create your own structured data types with AI-determined schemas
 
+### Coding Agents
+
+- **External AI Coding CLIs** — Orchestrate Claude Code, Codex, and Gemini CLI from the web UI or via AI tool calling
+- **Session Management** — Long-running coding sessions with real-time terminal output streaming
+- **Dual Execution Modes** — Auto mode (headless `child_process.spawn`) and interactive mode (PTY terminal)
+- **Custom Providers** — Register any CLI binary as a coding agent provider
+- **Result Persistence** — Task output, exit codes, and duration stored in the database
+
+### CLI Tools
+
+- **40+ Discoverable Tools** — Automatic PATH-based detection of installed CLI tools (linters, formatters, build tools, package managers, security scanners, databases, containers)
+- **Per-Tool Security Policies** — `allowed` (auto-execute), `prompt` (require approval), `blocked` (reject) per user per tool
+- **Dynamic Risk Scoring** — Catalog-based risk levels (low/medium/high/critical) feed into the autonomy risk engine
+- **Custom Tool Registration** — Register any binary as a CLI tool with category and risk metadata
+- **Approval Integration** — CLI tool policies wired into the real-time approval flow, overriding generic risk scores
+
 ### Autonomy & Automation
 
 - **5 Autonomy Levels** — Manual, Assisted, Supervised, Autonomous, Full
+- **Pulse System** — Proactive AI engine that gathers context, evaluates signals, and executes actions on an adaptive 5-15 min timer with configurable directives and 4 preset templates
 - **Triggers** — Schedule-based (cron), event-driven, condition-based, webhook
 - **Heartbeats** — Natural language to cron conversion for periodic tasks ("every weekday at 9am")
 - **Plans** — Multi-step autonomous execution with checkpoints, retry logic, and timeout handling
 - **Risk Assessment** — Automatic risk scoring for tool executions with approval workflows
+- **Model Routing** — Per-process model selection (chat, telegram, pulse) with fallback chains
+- **Extended Thinking** — Anthropic extended thinking support for deeper reasoning in complex tasks
 
 ### Communication
 
-- **Web UI** — React 19 + Vite 7 + Tailwind CSS 4 with dark mode, 41 pages, 60+ components, code-split
+- **Web UI** — React 19 + Vite 7 + Tailwind CSS 4 with dark mode, 47 pages, 60+ components, code-split
 - **Telegram Bot** — Full bot integration with user/chat filtering, message splitting, HTML/Markdown formatting
 - **WebSocket** — Real-time broadcasts for all data mutations, event subscriptions, session management
-- **REST API** — 40 route modules with standardized responses, pagination, and error codes
+- **REST API** — 50+ route modules with standardized responses, pagination, and error codes
 
 ### Security
 
@@ -122,11 +141,14 @@ Privacy-first personal AI assistant platform with autonomous agents, tool orches
                        │
               ┌────────▼────────┐
               │    Gateway      │  Hono HTTP API Server
-              │  (Port 8080)    │  40 Route Modules
+              │  (Port 8080)    │  50+ Route Modules
               ├─────────────────┤
               │  MessageBus     │  Middleware Pipeline
               │  Agent Engine   │  Tool Orchestration
               │  Provider Router│  Smart Model Selection
+              │  Coding Agents  │  External AI CLIs
+              │  CLI Tools      │  40+ Discoverable Tools
+              │  Pulse Engine   │  Proactive Autonomy
               │  MCP Client     │  External Tool Servers
               │  Plugin System  │  Extensible Architecture
               │  EventBus       │  Typed Event System
@@ -138,10 +160,11 @@ Privacy-first personal AI assistant platform with autonomous agents, tool orches
               └────────┬────────┘
                        │
               ┌────────▼────────┐
-              │   PostgreSQL    │  37 Repositories
+              │   PostgreSQL    │  40+ Repositories
               │                 │  Conversations, Personal Data,
               │                 │  Memories, Goals, Triggers, Plans,
-              │                 │  MCP Servers, User Extensions
+              │                 │  MCP Servers, User Extensions,
+              │                 │  CLI Tools, Coding Agents
               └─────────────────┘
 ```
 
@@ -251,12 +274,13 @@ ownpilot/
 │   │   │   └── types/           # Branded types, Result<T,E>, guards
 │   │   └── package.json
 │   │
-│   ├── gateway/                 # Hono API server (~67K LOC)
+│   ├── gateway/                 # Hono API server (~72K LOC)
 │   │   ├── src/
-│   │   │   ├── routes/          # 40 route modules
-│   │   │   ├── services/        # 45 business logic services
+│   │   │   ├── routes/          # 50+ route modules
+│   │   │   ├── services/        # 50+ business logic services
+│   │   │   ├── tools/           # Coding agent & CLI tool providers
 │   │   │   ├── db/
-│   │   │   │   ├── repositories/  # 37 data access repositories
+│   │   │   │   ├── repositories/  # 40+ data access repositories
 │   │   │   │   ├── adapters/      # PostgreSQL adapter
 │   │   │   │   ├── migrations/    # Schema migrations
 │   │   │   │   └── seeds/         # Default data
@@ -264,7 +288,7 @@ ownpilot/
 │   │   │   ├── plugins/         # Plugin initialization & registration
 │   │   │   ├── triggers/        # Proactive automation engine
 │   │   │   ├── plans/           # Plan executor with step handlers
-│   │   │   ├── autonomy/        # Risk assessment, approval manager
+│   │   │   ├── autonomy/        # Risk assessment, approval manager, pulse
 │   │   │   ├── ws/              # WebSocket server & real-time broadcasts
 │   │   │   ├── middleware/      # Auth, rate limiting, CORS, audit
 │   │   │   ├── assistant/       # AI orchestration (memories, goals)
@@ -272,9 +296,9 @@ ownpilot/
 │   │   │   └── audit/           # Gateway audit logging
 │   │   └── package.json
 │   │
-│   ├── ui/                      # React 19 web interface (~36K LOC)
+│   ├── ui/                      # React 19 web interface (~38K LOC)
 │   │   ├── src/
-│   │   │   ├── pages/           # 41 page components
+│   │   │   ├── pages/           # 47 page components
 │   │   │   ├── components/      # 60+ reusable components
 │   │   │   ├── hooks/           # Custom hooks (chat store, theme, WebSocket)
 │   │   │   ├── api/             # Typed fetch wrapper + endpoint modules
@@ -334,23 +358,24 @@ The API server built on [Hono](https://hono.dev/). Handles HTTP/WebSocket commun
 
 **~72,000 LOC** across 200+ source files. **188 test files** with **9,800+ tests**.
 
-**Route Modules (40):**
+**Route Modules (43 top-level + sub-modules):**
 
 | Category               | Routes                                                                                                                                                                            |
 | ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Chat & Agents**      | `chat.ts`, `chat-history.ts`, `agents.ts`, `chat-streaming.ts`, `chat-persistence.ts`, `chat-state.ts`, `chat-prompt.ts`                                                          |
-| **AI Configuration**   | `models.ts`, `providers.ts`, `model-configs.ts`, `local-providers.ts`                                                                                                             |
+| **AI Configuration**   | `models.ts`, `providers.ts`, `model-configs.ts`, `local-providers.ts`, `model-routing.ts`                                                                                          |
 | **Personal Data**      | `personal-data.ts`, `personal-data-tools.ts`, `memories.ts`, `goals.ts`, `expenses.ts`, `custom-data.ts`                                                                          |
 | **Productivity**       | `productivity.ts` (Pomodoro, Habits, Captures)                                                                                                                                    |
 | **Automation**         | `triggers.ts`, `heartbeats.ts`, `plans.ts`, `autonomy.ts`, `workflows.ts`, `workflow-copilot.ts`                                                                                  |
 | **Tools & Extensions** | `tools.ts`, `custom-tools.ts`, `plugins.ts`, `extensions.ts`, `mcp.ts`, `composio.ts`                                                                                             |
+| **Coding & CLI**       | `coding-agents.ts`, `cli-tools.ts`, `cli-providers.ts`                                                                                                                            |
 | **Channels**           | `channels.ts`, `channel-auth.ts`, `webhooks.ts`                                                                                                                                   |
-| **Configuration**      | `settings.ts`, `config-services.ts`                                                                                                                                               |
+| **Configuration**      | `settings.ts`, `config-services.ts`, `ui-auth.ts`                                                                                                                                 |
 | **System**             | `health.ts`, `dashboard.ts`, `costs.ts`, `audit.ts`, `debug.ts`, `database.ts`, `profile.ts`, `workspaces.ts`, `file-workspaces.ts`, `execution-permissions.ts`, `error-codes.ts` |
 
-**Services (45):** MessageBus, ConfigCenter, ToolExecutor, ProviderService, McpClientService, McpServerService, ExtensionService, ComposioService, EmbeddingService, HeartbeatService, AuditService, PluginService, MemoryService, GoalService, TriggerService, PlanService, WorkspaceService, DatabaseService, SessionService, LogService, ResourceService, LocalDiscovery, WorkflowService, AgentSkillsParser, and more.
+**Services (50+):** MessageBus, ConfigCenter, ToolExecutor, ProviderService, McpClientService, McpServerService, ExtensionService, ComposioService, EmbeddingService, HeartbeatService, AuditService, PluginService, MemoryService, GoalService, TriggerService, PlanService, WorkspaceService, DatabaseService, SessionService, LogService, ResourceService, LocalDiscovery, WorkflowService, AgentSkillsParser, CodingAgentService, CodingAgentSessions, CliToolService, CliToolsDiscovery, ModelRouting, ExecutionApproval, and more.
 
-**Repositories (37):** agents, conversations, messages, tasks, notes, bookmarks, calendar, contacts, memories, goals, triggers, plans, expenses, custom-data, custom-tools, plugins, channels, channel-messages, channel-users, channel-sessions, channel-verification, costs, settings, config-services, pomodoro, habits, captures, workspaces, model-configs, execution-permissions, logs, mcp-servers, extensions, local-providers, heartbeats, embedding-cache, workflows.
+**Repositories (41):** agents, conversations, messages, tasks, notes, bookmarks, calendar, contacts, memories, goals, triggers, plans, expenses, custom-data, custom-tools, plugins, channels, channel-messages, channel-users, channel-sessions, channel-verification, costs, settings, config-services, pomodoro, habits, captures, workspaces, model-configs, execution-permissions, logs, mcp-servers, extensions, local-providers, heartbeats, embedding-cache, workflows, autonomy-log, coding-agent-results, cli-providers, cli-tool-policies.
 
 ### UI (`@ownpilot/ui`)
 
@@ -364,7 +389,7 @@ Modern web interface built with React 19, Vite 7, and Tailwind CSS 4. Minimal de
 | Tailwind CSS         | 4.2.0   |
 | prism-react-renderer | 2.4.1   |
 
-**Pages (41):**
+**Pages (47):**
 
 | Page                                                | Description                                                                                |
 | --------------------------------------------------- | ------------------------------------------------------------------------------------------ |
@@ -377,6 +402,7 @@ Modern web interface built with React 19, Vite 7, and Tailwind CSS 4. Minimal de
 | **Memories**                                        | AI long-term memory browser                                                                |
 | **Goals**                                           | Goal tracking with progress and step management                                            |
 | **Triggers / Plans / Autonomy / Workflows**         | Automation configuration                                                                   |
+| **Coding Agents**                                   | External AI coding CLI sessions (Claude Code, Codex, Gemini CLI)                           |
 | **Agents**                                          | Agent selection and configuration                                                          |
 | **Tools / Custom Tools**                            | Tool browser and custom tool management                                                    |
 | **User Extensions**                                 | Install and manage tool bundles with custom tools and configs                              |
@@ -386,9 +412,12 @@ Modern web interface built with React 19, Vite 7, and Tailwind CSS 4. Minimal de
 | **Connected Apps**                                  | Composio OAuth integrations (1000+ apps)                                                   |
 | **Models / AI Models / Costs**                      | AI model browser, configuration, and usage tracking                                        |
 | **Providers**                                       | Provider management and status                                                             |
+| **Model Routing**                                   | Per-process model selection with fallback chains                                           |
 | **Plugins / Workspaces / Wizards**                  | Extension management, workspace management, guided setup wizards                           |
 | **Data Browser / Custom Data**                      | Universal data exploration and custom tables                                               |
 | **Settings / Config Center / API Keys**             | Service configuration, API key management                                                  |
+| **Coding Agent Settings / CLI Tools Settings**      | Coding agent provider config, CLI tool policy management                                   |
+| **Security**                                        | UI authentication and password management                                                  |
 | **System**                                          | Database backup/restore, sandbox status, theme, notifications                              |
 | **Profile / Logs / About**                          | User profile, request logs, system info                                                    |
 
@@ -749,7 +778,7 @@ Visual multi-step automation with a workflow editor:
 
 ## Database
 
-PostgreSQL with 37 repositories via the `pg` adapter.
+PostgreSQL with 41 repositories via the `pg` adapter.
 
 ### Key Tables
 
@@ -759,11 +788,13 @@ PostgreSQL with 37 repositories via the `pg` adapter.
 
 **Productivity:** `pomodoro_sessions`, `habits`, `captures`
 
-**Autonomous AI:** `memories`, `goals`, `triggers`, `plans`, `heartbeats`, `workflows`
+**Autonomous AI:** `memories`, `goals`, `triggers`, `plans`, `heartbeats`, `workflows`, `autonomy_log`
 
 **Channels:** `channel_messages`, `channel_users`, `channel_sessions`, `channel_verification`
 
 **Extensions:** `plugins`, `custom_tools`, `user_extensions`, `mcp_servers`, `embedding_cache`
+
+**Coding & CLI:** `coding_agent_results`, `cli_providers`, `cli_tool_policies`
 
 **System:** `custom_data_tables`, `config_services`, `execution_permissions`, `workspaces`, `model_configs`, `local_providers`
 
@@ -967,6 +998,44 @@ Sliding window algorithm with configurable window (default 60s), max requests (d
 | `GET/POST` | `/api/v1/custom-tools` | Custom tool management                |
 | `GET/POST` | `/api/v1/composio`     | Connected apps (Composio)             |
 
+### Coding Agents
+
+| Method   | Endpoint                                 | Description                         |
+| -------- | ---------------------------------------- | ----------------------------------- |
+| `GET`    | `/api/v1/coding-agents/providers`        | List available coding agent CLIs    |
+| `POST`   | `/api/v1/coding-agents/execute`          | Execute a coding agent task         |
+| `GET`    | `/api/v1/coding-agents/sessions`         | List active sessions                |
+| `DELETE` | `/api/v1/coding-agents/sessions/:id`     | Stop a running session              |
+| `GET`    | `/api/v1/coding-agents/results`          | List past execution results         |
+
+### CLI Tools
+
+| Method   | Endpoint                                 | Description                         |
+| -------- | ---------------------------------------- | ----------------------------------- |
+| `GET`    | `/api/v1/cli-tools`                      | Discover installed CLI tools        |
+| `GET`    | `/api/v1/cli-tools/policies`             | Get per-tool security policies      |
+| `PUT`    | `/api/v1/cli-tools/policies`             | Update tool policies (batch)        |
+| `POST`   | `/api/v1/cli-tools/execute`              | Execute a CLI tool                  |
+| `POST`   | `/api/v1/cli-tools/custom`               | Register a custom CLI tool          |
+| `DELETE` | `/api/v1/cli-tools/custom/:name`         | Remove a custom CLI tool            |
+
+### CLI Providers
+
+| Method   | Endpoint                                 | Description                         |
+| -------- | ---------------------------------------- | ----------------------------------- |
+| `GET`    | `/api/v1/cli-providers`                  | List coding agent providers         |
+| `POST`   | `/api/v1/cli-providers`                  | Register a custom provider          |
+| `PUT`    | `/api/v1/cli-providers/:id`              | Update provider config              |
+| `DELETE` | `/api/v1/cli-providers/:id`              | Remove a custom provider            |
+
+### Model Routing
+
+| Method   | Endpoint                                 | Description                         |
+| -------- | ---------------------------------------- | ----------------------------------- |
+| `GET`    | `/api/v1/model-routing`                  | Get model routing configuration     |
+| `PUT`    | `/api/v1/model-routing`                  | Update model routing rules          |
+| `GET`    | `/api/v1/model-routing/resolve`          | Resolve model for a given process   |
+
 ### System
 
 | Method     | Endpoint                        | Description                |
@@ -983,13 +1052,15 @@ Sliding window algorithm with configurable window (default 60s), max requests (d
 
 Real-time broadcasts on `ws://localhost:18789`:
 
-| Event                     | Description                                      |
-| ------------------------- | ------------------------------------------------ |
-| `data:changed`            | CRUD mutation on any entity (tasks, notes, etc.) |
-| `chat:stream:*`           | Streaming response chunks                        |
-| `tool:start/progress/end` | Tool execution lifecycle                         |
-| `channel:message`         | Incoming Telegram message                        |
-| `trigger:executed`        | Trigger execution result                         |
+| Event                        | Description                                      |
+| ---------------------------- | ------------------------------------------------ |
+| `data:changed`               | CRUD mutation on any entity (tasks, notes, etc.) |
+| `chat:stream:*`              | Streaming response chunks                        |
+| `tool:start/progress/end`    | Tool execution lifecycle                         |
+| `channel:message`            | Incoming Telegram message                        |
+| `trigger:executed`           | Trigger execution result                         |
+| `coding-agent:session:*`     | Coding agent session lifecycle and output         |
+| `pulse:activity`             | Pulse system proactive activity                  |
 
 ### Response Format
 
@@ -1160,7 +1231,7 @@ pnpm clean            # Clear all build artifacts
 | **Telegram**   | Grammy 1.40                                   |
 | **CLI**        | Commander.js 14                               |
 | **MCP**        | @modelcontextprotocol/sdk                     |
-| **Testing**    | Vitest 2.x (307 test files, 19,200+ tests)    |
+| **Testing**    | Vitest 2.x (315+ test files, 19,200+ tests)   |
 | **Linting**    | ESLint 10 (flat config)                       |
 | **Formatting** | Prettier 3.8                                  |
 | **Container**  | Docker multi-arch (ghcr.io/ownpilot/ownpilot) |

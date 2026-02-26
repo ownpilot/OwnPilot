@@ -13,6 +13,7 @@ import {
   type ActionContext,
   AutonomyLevel,
 } from './types.js';
+import { CLI_TOOLS_BY_NAME } from '../services/cli-tools-catalog.js';
 
 // ============================================================================
 // Risk Factors
@@ -183,6 +184,11 @@ const TOOL_RISK_FACTORS: Record<string, string[]> = {
   list_contacts: [],
   update_contact: ['data_modification', 'sensitive_data'],
   delete_contact: ['data_deletion'],
+
+  // CLI tool execution tools
+  run_cli_tool: ['system_command'],
+  list_cli_tools: [],
+  install_cli_tool: ['system_command', 'irreversible', 'code_execution'],
 };
 
 /**
@@ -224,8 +230,29 @@ export function assessRisk(
   // Get base risk from category
   const baseRisk = CATEGORY_BASE_RISK[category] ?? 30;
 
-  // Get tool-specific factors
-  const toolFactors = TOOL_RISK_FACTORS[actionType] ?? [];
+  // Get tool-specific factors — with dynamic override for run_cli_tool
+  let toolFactors = TOOL_RISK_FACTORS[actionType] ?? [];
+
+  // Dynamic risk for CLI tools: override static 'system_command' with catalog-aware factors
+  if (actionType === 'run_cli_tool' && typeof params?.name === 'string') {
+    const catalogEntry = CLI_TOOLS_BY_NAME.get(params.name);
+    if (catalogEntry) {
+      switch (catalogEntry.riskLevel) {
+        case 'low':
+          toolFactors = [];
+          break; // eslint, prettier → no risk factors
+        case 'medium':
+          toolFactors = ['code_execution'];
+          break; // npm, tsc → moderate
+        case 'high':
+          toolFactors = ['system_command'];
+          break; // docker, git push → high
+        case 'critical':
+          toolFactors = ['system_command', 'irreversible'];
+          break;
+      }
+    }
+  }
 
   // Evaluate predefined factors
   for (const [factorId, factor] of Object.entries(RISK_FACTORS)) {

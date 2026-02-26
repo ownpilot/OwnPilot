@@ -23,11 +23,13 @@ import {
 import { extensionsRepo, type ExtensionRecord } from '../db/repositories/extensions.js';
 import {
   validateManifest,
+  validateAgentSkillsFrontmatter,
   type ExtensionManifest,
   type ExtensionToolDefinition,
 } from './extension-types.js';
 import { parseExtensionMarkdown } from './extension-markdown.js';
 import { parseAgentSkillsMd } from './agentskills-parser.js';
+import { auditSkillSecurity } from './skill-security-audit.js';
 import { registerToolConfigRequirements, unregisterDependencies } from './api-service-registrar.js';
 import { getDataDirectoryInfo } from '../paths/index.js';
 import { getLog } from './log.js';
@@ -127,8 +129,34 @@ export class ExtensionService implements IExtensionService {
     userId = 'default',
     sourcePath?: string
   ): Promise<ExtensionRecord> {
-    // AgentSkills.io format doesn't require tools — skip tool validation
-    if (manifest.format !== 'agentskills') {
+    // Validate manifest: native format requires tool validation, AgentSkills gets security audit
+    if (manifest.format === 'agentskills') {
+      // Validate frontmatter fields
+      const fmValidation = validateAgentSkillsFrontmatter(manifest as unknown as Record<string, unknown>);
+      if (!fmValidation.valid) {
+        throw new ExtensionError(
+          `Invalid skill: ${fmValidation.errors.join('; ')}`,
+          'VALIDATION_ERROR'
+        );
+      }
+
+      // Security audit — block skills with prompt injection or critical risks
+      const securityResult = auditSkillSecurity(manifest);
+      if (securityResult.blocked) {
+        throw new ExtensionError(
+          `Skill blocked by security audit: ${securityResult.reasons.join('; ')}`,
+          'VALIDATION_ERROR'
+        );
+      }
+      // Store warnings for UI display (attached to manifest metadata)
+      if (securityResult.warnings.length > 0) {
+        log.warn('Skill installed with security warnings', {
+          skillId: manifest.id,
+          riskLevel: securityResult.riskLevel,
+          warnings: securityResult.warnings,
+        });
+      }
+    } else {
       const validation = validateManifest(manifest);
       if (!validation.valid) {
         throw new ExtensionError(

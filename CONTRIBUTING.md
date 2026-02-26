@@ -51,11 +51,11 @@ pnpm dev
 
 ## Testing
 
-We use **Vitest 2.x** across all packages. The test suite contains **307 test files** with **19,200+ tests**.
+We use **Vitest 2.x** across all packages. The test suite contains **315+ test files** with **19,200+ tests**.
 
 | Package    | Test Files | Tests  |
 | ---------- | ---------- | ------ |
-| `gateway`  | 188        | 9,800+ |
+| `gateway`  | 195+       | 9,900+ |
 | `core`     | 109        | 9,000+ |
 | `ui`       | 5          | 51     |
 | `cli`      | 4          | ~50    |

@@ -1,6 +1,6 @@
 # OwnPilot Tool System
 
-Comprehensive reference for the OwnPilot tool architecture, all 148+ built-in tools, the registration lifecycle, execution model, and extensibility system.
+Comprehensive reference for the OwnPilot tool architecture, all 170+ built-in tools, the registration lifecycle, execution model, and extensibility system.
 
 ---
 
@@ -49,6 +49,8 @@ Comprehensive reference for the OwnPilot tool architecture, all 148+ built-in to
   - [Goals](#22-goals)
   - [Dynamic Tools](#23-dynamic-tools)
   - [Utilities](#24-utilities)
+  - [CLI Tools](#25-cli-tools)
+  - [Coding Agents](#26-coding-agents)
 - [Security Model](#security-model)
 - [Definition-Only vs Built-In Executor Tools](#definition-only-vs-built-in-executor-tools)
 - [Dynamic Tool Creation](#dynamic-tool-creation)
@@ -1436,7 +1438,7 @@ All tool source files are located under `packages/core/src/agent/tools/`.
 
 ---
 
-## Quick Reference: All 148+ Tools by Category
+## Quick Reference: All 170+ Tools by Category
 
 | #   | Category        | Tool Count | Tools                                                                                                                                                                                                                                                                                                                                                     |
 | --- | --------------- | ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -1464,3 +1466,51 @@ All tool source files are located under `packages/core/src/agent/tools/`.
 | 22  | Goals           | 8          | `create_goal`, `list_goals`, `update_goal`, `decompose_goal`, `get_next_actions`, `complete_step`, `get_goal_details`, `goal_stats`                                                                                                                                                                                                                       |
 | 23  | Dynamic Tools   | 7          | `search_tools`, `get_tool_help`, `use_tool`, `create_tool`, `list_custom_tools`, `delete_custom_tool`, `toggle_custom_tool`                                                                                                                                                                                                                               |
 | 24  | Utilities       | 22         | `get_current_datetime`, `date_diff`, `date_add`, `calculate`, `statistics`, `convert_units`, `generate_uuid`, `generate_password`, `random_number`, `hash_text`, `encode_decode`, `count_text`, `extract_from_text`, `transform_text`, `compare_text`, `regex`, `format_json`, `parse_csv`, `generate_csv`, `array_operations`, `validate`, `system_info` |
+| 25  | CLI Tools       | 3          | `run_cli_tool`, `list_cli_tools`, `install_cli_tool`                                                                                                                                                                                                                                                                                                      |
+| 26  | Coding Agents   | 4          | `run_coding_task`, `list_coding_agents`, `get_task_result`, `list_task_results`                                                                                                                                                                                                                                                                            |
+
+### 25. CLI Tools
+
+**Source:** `packages/gateway/src/tools/cli-tool-tools.ts`
+
+Gateway-registered tools for executing discovered CLI tools. These tools interact with the CLI Tools Discovery and Execution system.
+
+| Tool              | Description                                                                                                |
+| ----------------- | ---------------------------------------------------------------------------------------------------------- |
+| `run_cli_tool`    | Execute a CLI tool by name with arguments. Respects per-tool policies (allowed/prompt/blocked) and risk scoring. |
+| `list_cli_tools`  | List all discovered CLI tools with their install status, version, category, risk level, and current policy.  |
+| `install_cli_tool`| Install a CLI tool via npx (for tools with an npx package defined in the catalog).                          |
+
+**Parameters for `run_cli_tool`:**
+
+| Parameter | Type     | Required | Description                            |
+| --------- | -------- | -------- | -------------------------------------- |
+| `name`    | `string` | Yes      | CLI tool name (from catalog or custom) |
+| `args`    | `string[]` | No     | Command-line arguments array           |
+| `cwd`     | `string` | No       | Working directory for execution        |
+| `timeout` | `number` | No       | Timeout in milliseconds (default: 30s) |
+
+### 26. Coding Agents
+
+**Source:** `packages/gateway/src/tools/coding-agent-tools.ts`
+
+Gateway-registered tools for delegating coding tasks to external AI coding agents. Creates visible sessions with real-time terminal output streaming.
+
+| Tool                 | Description                                                                                              |
+| -------------------- | -------------------------------------------------------------------------------------------------------- |
+| `run_coding_task`    | Delegate a coding task to an external AI coding agent (Claude Code, Codex, Gemini CLI, or custom).       |
+| `list_coding_agents` | List available coding agents with status (installed, configured, version).                                |
+| `get_task_result`    | Get the result of a previously executed coding agent task by result ID.                                   |
+| `list_task_results`  | List recent coding agent task results (provider, prompt, success, duration, cost).                        |
+
+**Parameters for `run_coding_task`:**
+
+| Parameter         | Type     | Required | Description                                                         |
+| ----------------- | -------- | -------- | ------------------------------------------------------------------- |
+| `provider`        | `string` | Yes      | `claude-code`, `codex`, `gemini-cli`, or `custom:{name}`           |
+| `prompt`          | `string` | Yes      | Task description — be specific about files and expected outcome     |
+| `cwd`             | `string` | No       | Working directory (absolute path)                                   |
+| `model`           | `string` | No       | Model override (provider-specific)                                  |
+| `max_budget_usd`  | `number` | No       | Maximum cost in USD (default: 1.0, Claude Code SDK only)            |
+| `max_turns`       | `number` | No       | Maximum agent turns (default: 10, Claude Code SDK only)             |
+| `timeout_seconds` | `number` | No       | Timeout in seconds (default: 300, max: 1800)                        |

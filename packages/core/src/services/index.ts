@@ -215,6 +215,18 @@ export type {
 } from './coding-agent-service.js';
 export { isBuiltinProvider, getCustomProviderName } from './coding-agent-service.js';
 
+// CLI Tool Service
+export type {
+  ICliToolService,
+  CliToolCatalogEntry,
+  CliToolStatus,
+  CliToolExecutionResult,
+  CliToolRiskLevel,
+  CliToolPolicy,
+  CliToolCategory,
+  CliInstallMethod,
+} from './cli-tool-service.js';
+
 // Config Center
 export * from './config-center.js';
 

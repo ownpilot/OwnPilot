@@ -21,6 +21,8 @@ import {
 } from '../config/defaults.js';
 import { executeTool, hasTool } from '../services/tool-executor.js';
 import { getServiceRegistry, Services, type IPlanService } from '@ownpilot/core';
+import { executionPermissionsRepo } from '../db/repositories/execution-permissions.js';
+import { downgradePromptToBlocked } from '../services/permission-utils.js';
 import { getErrorMessage } from '../routes/helpers.js';
 import { getLog } from '../services/log.js';
 
@@ -596,7 +598,13 @@ export class PlanExecutor extends EventEmitter {
       }
 
       this.log(`Executing tool: ${toolName}`);
-      const result = await executeTool(toolName, toolArgs, this.config.userId);
+      // Load user's execution permissions; 'prompt' → 'blocked' for plans (no UI for approval)
+      const userPerms = await executionPermissionsRepo.get(this.config.userId);
+      const planPerms = downgradePromptToBlocked(userPerms);
+      const result = await executeTool(toolName, toolArgs, this.config.userId, planPerms, {
+        source: 'plan',
+        executionPermissions: planPerms,
+      });
 
       if (result.success) {
         return {

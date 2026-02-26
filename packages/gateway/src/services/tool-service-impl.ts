@@ -4,6 +4,9 @@
  * Wraps the existing ToolRegistry to provide IToolService interface.
  * This is an adapter — the existing tool registration code continues to work.
  *
+ * When an execSource is provided, execution is routed through the shared
+ * executeTool() function which applies ToolPermissionService checks.
+ *
  * Usage:
  *   const tools = registry.get(Services.Tool);
  *   const defs = tools.getDefinitions();
@@ -13,7 +16,8 @@
 import { randomUUID } from 'node:crypto';
 import type { IToolService, ToolServiceResult } from '@ownpilot/core';
 import type { ToolDefinition, ToolMiddleware, ToolSource } from '@ownpilot/core';
-import { getSharedToolRegistry } from './tool-executor.js';
+import { getSharedToolRegistry, executeTool } from './tool-executor.js';
+import type { ToolExecContext } from './permission-utils.js';
 
 // ============================================================================
 // ToolService Adapter
@@ -29,8 +33,23 @@ export class ToolService implements IToolService {
   async execute(
     name: string,
     args: Record<string, unknown>,
-    context?: { conversationId?: string; userId?: string }
+    context?: { conversationId?: string; userId?: string; execSource?: string }
   ): Promise<ToolServiceResult> {
+    const userId = context?.userId ?? this.userId;
+
+    // When execSource is provided, route through executeTool() for permission enforcement
+    if (context?.execSource) {
+      const execContext: ToolExecContext = {
+        source: context.execSource as ToolExecContext['source'],
+      };
+      const result = await executeTool(name, args, userId, undefined, execContext);
+      return {
+        content: result.success ? String(result.result ?? '') : (result.error ?? 'Tool execution failed'),
+        isError: !result.success,
+      };
+    }
+
+    // Direct registry execution (backward compatible for callers without execSource)
     let argsJson: string;
     try {
       argsJson = JSON.stringify(args);
@@ -45,7 +64,7 @@ export class ToolService implements IToolService {
         arguments: argsJson,
       },
       context?.conversationId ?? 'service',
-      context?.userId ?? this.userId
+      userId
     );
 
     let content: string;

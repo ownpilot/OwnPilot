@@ -142,6 +142,7 @@ const navGroups: NavGroup[] = [
       { to: '/settings/providers', icon: Server, label: 'Providers' },
       { to: '/settings/ai-models', icon: Cpu, label: 'AI Models' },
       { to: '/settings/coding-agents', icon: Terminal, label: 'Coding Agents' },
+      { to: '/settings/cli-tools', icon: Code, label: 'CLI Tools' },
       { to: '/settings/model-routing', icon: Sparkles, label: 'Model Routing' },
       { to: '/settings/mcp-servers', icon: Zap, label: 'MCP Servers' },
       { to: '/settings/connected-apps', icon: Link, label: 'Connected Apps' },

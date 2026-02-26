@@ -860,6 +860,18 @@ CREATE TABLE IF NOT EXISTS cli_providers (
   updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
   UNIQUE(user_id, name)
 );
+
+-- CLI tool policies (per-user, per-tool execution policies)
+CREATE TABLE IF NOT EXISTS cli_tool_policies (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL DEFAULT 'default',
+  tool_name TEXT NOT NULL,
+  policy TEXT NOT NULL DEFAULT 'prompt'
+    CHECK(policy IN ('allowed', 'prompt', 'blocked')),
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  UNIQUE(user_id, tool_name)
+);
 `;
 
 /**
@@ -1676,6 +1688,10 @@ CREATE INDEX IF NOT EXISTS idx_coding_agent_results_created ON coding_agent_resu
 CREATE INDEX IF NOT EXISTS idx_cli_providers_user ON cli_providers(user_id);
 CREATE INDEX IF NOT EXISTS idx_cli_providers_active ON cli_providers(is_active);
 CREATE INDEX IF NOT EXISTS idx_cli_providers_user_name ON cli_providers(user_id, name);
+
+-- CLI tool policies indexes
+CREATE INDEX IF NOT EXISTS idx_cli_tool_policies_user ON cli_tool_policies(user_id);
+CREATE INDEX IF NOT EXISTS idx_cli_tool_policies_user_tool ON cli_tool_policies(user_id, tool_name);
 `;
 
 /**

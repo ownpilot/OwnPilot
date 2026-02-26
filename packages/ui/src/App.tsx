@@ -125,6 +125,9 @@ const CodingAgentsPage = lazy(() =>
 const CodingAgentSettingsPage = lazy(() =>
   import('./pages/CodingAgentSettingsPage').then((m) => ({ default: m.CodingAgentSettingsPage }))
 );
+const CliToolsSettingsPage = lazy(() =>
+  import('./pages/CliToolsSettingsPage').then((m) => ({ default: m.CliToolsSettingsPage }))
+);
 const AboutPage = lazy(() => import('./pages/AboutPage').then((m) => ({ default: m.AboutPage })));
 const LoginPage = lazy(() => import('./pages/LoginPage').then((m) => ({ default: m.LoginPage })));
 const SecurityPage = lazy(() =>
@@ -213,6 +216,7 @@ export function App() {
         <Route path="settings/providers" element={page(<ProvidersPage />)} />
         <Route path="settings/ai-models" element={page(<AIModelsPage />)} />
         <Route path="settings/coding-agents" element={page(<CodingAgentSettingsPage />)} />
+        <Route path="settings/cli-tools" element={page(<CliToolsSettingsPage />)} />
         <Route path="settings/model-routing" element={page(<ModelRoutingPage />)} />
         <Route path="settings/mcp-servers" element={page(<McpServersPage />)} />
         <Route path="settings/connected-apps" element={page(<ConnectedAppsPage />)} />

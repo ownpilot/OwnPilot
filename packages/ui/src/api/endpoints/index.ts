@@ -73,6 +73,16 @@ export type {
   UpdateCliProviderInput,
   CliProviderTestResult,
 } from './coding-agents';
+export { cliToolsApi } from './cli-tools';
+export type {
+  CliToolStatus,
+  CliToolPolicy,
+  CliToolRiskLevel,
+  CliToolCategory,
+  CliToolPolicyEntry,
+  CliToolExecutionResult,
+  RegisterCustomCliToolInput,
+} from './cli-tools';
 export { workflowsApi } from './workflows';
 export type {
   McpServer,
