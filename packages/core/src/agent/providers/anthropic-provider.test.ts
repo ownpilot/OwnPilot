@@ -1100,7 +1100,9 @@ describe('AnthropicProvider', () => {
 
         mockFetch.mockImplementation(mockFetchStream(sseChunks));
 
-        const chunks = await collectStream(provider.stream(makeRequest({ thinking: { type: 'adaptive' } })));
+        const chunks = await collectStream(
+          provider.stream(makeRequest({ thinking: { type: 'adaptive' } }))
+        );
 
         // Find thinking chunks (metadata.type === 'thinking')
         const thinkingChunks = chunks.filter(
@@ -1180,9 +1182,7 @@ describe('AnthropicProvider', () => {
                 role: 'assistant',
                 content: 'Response',
                 metadata: {
-                  thinkingBlocks: [
-                    { type: 'redacted_thinking', data: 'encrypted_data' },
-                  ],
+                  thinkingBlocks: [{ type: 'redacted_thinking', data: 'encrypted_data' }],
                 },
               },
               { role: 'user', content: 'Follow up' },
@@ -1192,9 +1192,7 @@ describe('AnthropicProvider', () => {
 
         const body = JSON.parse(mockFetch.mock.calls[0][1].body);
         const assistantMsg = body.messages.find((m: any) => m.role === 'assistant');
-        const redactedBlock = assistantMsg.content.find(
-          (b: any) => b.type === 'redacted_thinking'
-        );
+        const redactedBlock = assistantMsg.content.find((b: any) => b.type === 'redacted_thinking');
         expect(redactedBlock).toBeDefined();
         expect(redactedBlock.data).toBe('encrypted_data');
       });

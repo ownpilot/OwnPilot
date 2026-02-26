@@ -464,13 +464,7 @@ export function CliToolsSettingsPage() {
 // Add Custom Tool Modal
 // =============================================================================
 
-function AddCustomToolModal({
-  onClose,
-  onAdded,
-}: {
-  onClose: () => void;
-  onAdded: () => void;
-}) {
+function AddCustomToolModal({ onClose, onAdded }: { onClose: () => void; onAdded: () => void }) {
   const toast = useToast();
   const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState({

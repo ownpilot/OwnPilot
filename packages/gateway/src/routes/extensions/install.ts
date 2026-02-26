@@ -10,7 +10,14 @@ import { randomBytes } from 'node:crypto';
 import { Hono } from 'hono';
 import { getServiceRegistry, Services } from '@ownpilot/core';
 import { type ExtensionService, ExtensionError } from '../../services/extension-service.js';
-import { getUserId, apiResponse, apiError, ERROR_CODES, getErrorMessage, parseJsonBody } from '../helpers.js';
+import {
+  getUserId,
+  apiResponse,
+  apiError,
+  ERROR_CODES,
+  getErrorMessage,
+  parseJsonBody,
+} from '../helpers.js';
 import { wsGateway } from '../../ws/server.js';
 import { getDataDirectoryInfo } from '../../paths/index.js';
 

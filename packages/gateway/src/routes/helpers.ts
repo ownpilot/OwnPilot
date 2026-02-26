@@ -268,9 +268,7 @@ export function validateQueryEnum<T extends string>(
  * Result type for operations that can fail.
  * Use this instead of throwing exceptions for expected failure cases.
  */
-type Result<T, E = Error> =
-  | { success: true; data: T }
-  | { success: false; error: E };
+type Result<T, E = Error> = { success: true; data: T } | { success: false; error: E };
 
 /**
  * Parse and optionally validate JSON request body.
@@ -306,24 +304,21 @@ export async function parseJsonBody<T = unknown>(
       try {
         return validator(data);
       } catch (validationError) {
-        const message = validationError instanceof Error
-          ? validationError.message
-          : 'Validation failed';
-        return apiError(
-          c,
-          { code: ERROR_CODES.INVALID_INPUT, message },
-          400
-        ) && null;
+        const message =
+          validationError instanceof Error ? validationError.message : 'Validation failed';
+        return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message }, 400) && null;
       }
     }
 
     return data as T;
   } catch {
-    return apiError(
-      c,
-      { code: ERROR_CODES.INVALID_INPUT, message: 'Invalid JSON in request body' },
-      400
-    ) && null;
+    return (
+      apiError(
+        c,
+        { code: ERROR_CODES.INVALID_INPUT, message: 'Invalid JSON in request body' },
+        400
+      ) && null
+    );
   }
 }
 
@@ -342,9 +337,7 @@ export async function parseJsonBody<T = unknown>(
  * }
  * const data = result.data;
  */
-export async function parseJsonBodySafe<T = unknown>(
-  c: Context
-): Promise<Result<T, string>> {
+export async function parseJsonBodySafe<T = unknown>(c: Context): Promise<Result<T, string>> {
   try {
     const data = await c.req.json();
     return { success: true, data: data as T };

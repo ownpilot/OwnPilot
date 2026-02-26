@@ -114,8 +114,8 @@ export function createSanitizedEnv(
   // Inject the provider's API key if available
   if (apiKey) {
     // For built-in providers, use the known env var name
-    const envVarName = apiKeyEnvVar
-      ?? (isBuiltinProvider(provider) ? API_KEY_ENV_VARS[provider] : undefined);
+    const envVarName =
+      apiKeyEnvVar ?? (isBuiltinProvider(provider) ? API_KEY_ENV_VARS[provider] : undefined);
     if (envVarName) {
       env[envVarName] = apiKey;
     }

@@ -310,7 +310,7 @@ crudRoutes.delete('/:id', async (c) => {
  */
 crudRoutes.patch('/:id/workflow-usable', async (c) => {
   const id = c.req.param('id');
-  const body = await parseJsonBody(c) as { enabled: boolean } | null;
+  const body = (await parseJsonBody(c)) as { enabled: boolean } | null;
   if (!body || typeof body.enabled !== 'boolean') {
     return apiError(
       c,
@@ -392,7 +392,7 @@ crudRoutes.post('/:id/disable', async (c) => {
  */
 crudRoutes.post('/templates/:templateId/create', async (c) => {
   const templateId = c.req.param('templateId');
-  const body = await parseJsonBody(c) as {
+  const body = (await parseJsonBody(c)) as {
     name?: string;
     description?: string;
     code?: string;

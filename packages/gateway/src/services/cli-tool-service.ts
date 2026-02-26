@@ -62,13 +62,21 @@ class CliToolService implements ICliToolService {
     // 1. Resolve the tool (catalog or custom provider) — binary allowlist
     const resolved = await this.resolveTool(name, userId);
     if (!resolved) {
-      return this.errorResult(name, start, `Tool '${name}' not found in catalog or custom providers. Use list_cli_tools to see available tools.`);
+      return this.errorResult(
+        name,
+        start,
+        `Tool '${name}' not found in catalog or custom providers. Use list_cli_tools to see available tools.`
+      );
     }
 
     // 2. Check policy
     const policy = await this.getToolPolicy(name, userId);
     if (policy === 'blocked') {
-      return this.errorResult(name, start, `Tool '${name}' is blocked by policy. Update the policy in Settings to 'allowed' or 'prompt'.`);
+      return this.errorResult(
+        name,
+        start,
+        `Tool '${name}' is blocked by policy. Update the policy in Settings to 'allowed' or 'prompt'.`
+      );
     }
 
     // 3. Validate cwd
@@ -138,16 +146,28 @@ class CliToolService implements ICliToolService {
 
     const toolEntry = CLI_TOOLS_BY_NAME.get(name);
     if (!toolEntry) {
-      return this.errorResult(name, start, `Tool '${name}' not found in catalog. Only catalog tools can be installed.`);
+      return this.errorResult(
+        name,
+        start,
+        `Tool '${name}' not found in catalog. Only catalog tools can be installed.`
+      );
     }
 
     if (!toolEntry.installMethods.includes(method)) {
-      return this.errorResult(name, start, `Install method '${method}' is not available for '${name}'. Available: ${toolEntry.installMethods.join(', ')}`);
+      return this.errorResult(
+        name,
+        start,
+        `Install method '${method}' is not available for '${name}'. Available: ${toolEntry.installMethods.join(', ')}`
+      );
     }
 
     const pkg = toolEntry.npmPackage ?? toolEntry.npxPackage;
     if (!pkg && (method === 'npm-global' || method === 'pnpm-global')) {
-      return this.errorResult(name, start, `No npm package defined for '${name}'. Use a different install method.`);
+      return this.errorResult(
+        name,
+        start,
+        `No npm package defined for '${name}'. Use a different install method.`
+      );
     }
 
     let command: string;
@@ -162,7 +182,11 @@ class CliToolService implements ICliToolService {
         args = ['add', '-g', pkg!];
         break;
       default:
-        return this.errorResult(name, start, `Install method '${method}' requires manual installation.`);
+        return this.errorResult(
+          name,
+          start,
+          `Install method '${method}' requires manual installation.`
+        );
     }
 
     log.info(`Installing CLI tool: ${name}`, { command, args, method });
@@ -247,11 +271,7 @@ class CliToolService implements ICliToolService {
     return null;
   }
 
-  private errorResult(
-    toolName: string,
-    start: number,
-    error: string
-  ): CliToolExecutionResult {
+  private errorResult(toolName: string, start: number, error: string): CliToolExecutionResult {
     return {
       success: false,
       toolName,

@@ -44,7 +44,9 @@ export class ToolService implements IToolService {
       };
       const result = await executeTool(name, args, userId, undefined, execContext);
       return {
-        content: result.success ? String(result.result ?? '') : (result.error ?? 'Tool execution failed'),
+        content: result.success
+          ? String(result.result ?? '')
+          : (result.error ?? 'Tool execution failed'),
         isError: !result.success,
       };
     }

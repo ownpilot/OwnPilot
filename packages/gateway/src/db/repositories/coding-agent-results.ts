@@ -146,11 +146,7 @@ export class CodingAgentResultsRepository extends BaseRepository {
     return row ? rowToRecord(row) : null;
   }
 
-  async list(
-    userId = 'default',
-    limit = 50,
-    offset = 0
-  ): Promise<CodingAgentResultRecord[]> {
+  async list(userId = 'default', limit = 50, offset = 0): Promise<CodingAgentResultRecord[]> {
     const rows = await this.query<ResultRow>(
       'SELECT * FROM coding_agent_results WHERE user_id = $1 ORDER BY created_at DESC LIMIT $2 OFFSET $3',
       [userId, limit, offset]

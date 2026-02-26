@@ -33,7 +33,9 @@ export function ThinkingToggle() {
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEY, mode);
-    } catch { /* */ }
+    } catch {
+      /* */
+    }
 
     if (mode === 'off') {
       setThinkingConfig(null);
@@ -51,7 +53,14 @@ export function ThinkingToggle() {
         className="flex items-center gap-2 text-xs text-text-muted dark:text-dark-text-muted hover:text-text-secondary dark:hover:text-dark-text-secondary transition-colors"
       >
         <Brain className="w-3.5 h-3.5" />
-        <span>Thinking: {mode === 'off' ? 'Off' : mode === 'adaptive' ? 'Adaptive' : `Manual (${(budgetTokens / 1000).toFixed(0)}k)`}</span>
+        <span>
+          Thinking:{' '}
+          {mode === 'off'
+            ? 'Off'
+            : mode === 'adaptive'
+              ? 'Adaptive'
+              : `Manual (${(budgetTokens / 1000).toFixed(0)}k)`}
+        </span>
         <ChevronDown className={`w-3 h-3 transition-transform ${expanded ? 'rotate-180' : ''}`} />
       </button>
 

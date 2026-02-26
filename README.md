@@ -363,7 +363,7 @@ The API server built on [Hono](https://hono.dev/). Handles HTTP/WebSocket commun
 | Category               | Routes                                                                                                                                                                            |
 | ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Chat & Agents**      | `chat.ts`, `chat-history.ts`, `agents.ts`, `chat-streaming.ts`, `chat-persistence.ts`, `chat-state.ts`, `chat-prompt.ts`                                                          |
-| **AI Configuration**   | `models.ts`, `providers.ts`, `model-configs.ts`, `local-providers.ts`, `model-routing.ts`                                                                                          |
+| **AI Configuration**   | `models.ts`, `providers.ts`, `model-configs.ts`, `local-providers.ts`, `model-routing.ts`                                                                                         |
 | **Personal Data**      | `personal-data.ts`, `personal-data-tools.ts`, `memories.ts`, `goals.ts`, `expenses.ts`, `custom-data.ts`                                                                          |
 | **Productivity**       | `productivity.ts` (Pomodoro, Habits, Captures)                                                                                                                                    |
 | **Automation**         | `triggers.ts`, `heartbeats.ts`, `plans.ts`, `autonomy.ts`, `workflows.ts`, `workflow-copilot.ts`                                                                                  |
@@ -1000,41 +1000,41 @@ Sliding window algorithm with configurable window (default 60s), max requests (d
 
 ### Coding Agents
 
-| Method   | Endpoint                                 | Description                         |
-| -------- | ---------------------------------------- | ----------------------------------- |
-| `GET`    | `/api/v1/coding-agents/providers`        | List available coding agent CLIs    |
-| `POST`   | `/api/v1/coding-agents/execute`          | Execute a coding agent task         |
-| `GET`    | `/api/v1/coding-agents/sessions`         | List active sessions                |
-| `DELETE` | `/api/v1/coding-agents/sessions/:id`     | Stop a running session              |
-| `GET`    | `/api/v1/coding-agents/results`          | List past execution results         |
+| Method   | Endpoint                             | Description                      |
+| -------- | ------------------------------------ | -------------------------------- |
+| `GET`    | `/api/v1/coding-agents/providers`    | List available coding agent CLIs |
+| `POST`   | `/api/v1/coding-agents/execute`      | Execute a coding agent task      |
+| `GET`    | `/api/v1/coding-agents/sessions`     | List active sessions             |
+| `DELETE` | `/api/v1/coding-agents/sessions/:id` | Stop a running session           |
+| `GET`    | `/api/v1/coding-agents/results`      | List past execution results      |
 
 ### CLI Tools
 
-| Method   | Endpoint                                 | Description                         |
-| -------- | ---------------------------------------- | ----------------------------------- |
-| `GET`    | `/api/v1/cli-tools`                      | Discover installed CLI tools        |
-| `GET`    | `/api/v1/cli-tools/policies`             | Get per-tool security policies      |
-| `PUT`    | `/api/v1/cli-tools/policies`             | Update tool policies (batch)        |
-| `POST`   | `/api/v1/cli-tools/execute`              | Execute a CLI tool                  |
-| `POST`   | `/api/v1/cli-tools/custom`               | Register a custom CLI tool          |
-| `DELETE` | `/api/v1/cli-tools/custom/:name`         | Remove a custom CLI tool            |
+| Method   | Endpoint                         | Description                    |
+| -------- | -------------------------------- | ------------------------------ |
+| `GET`    | `/api/v1/cli-tools`              | Discover installed CLI tools   |
+| `GET`    | `/api/v1/cli-tools/policies`     | Get per-tool security policies |
+| `PUT`    | `/api/v1/cli-tools/policies`     | Update tool policies (batch)   |
+| `POST`   | `/api/v1/cli-tools/execute`      | Execute a CLI tool             |
+| `POST`   | `/api/v1/cli-tools/custom`       | Register a custom CLI tool     |
+| `DELETE` | `/api/v1/cli-tools/custom/:name` | Remove a custom CLI tool       |
 
 ### CLI Providers
 
-| Method   | Endpoint                                 | Description                         |
-| -------- | ---------------------------------------- | ----------------------------------- |
-| `GET`    | `/api/v1/cli-providers`                  | List coding agent providers         |
-| `POST`   | `/api/v1/cli-providers`                  | Register a custom provider          |
-| `PUT`    | `/api/v1/cli-providers/:id`              | Update provider config              |
-| `DELETE` | `/api/v1/cli-providers/:id`              | Remove a custom provider            |
+| Method   | Endpoint                    | Description                 |
+| -------- | --------------------------- | --------------------------- |
+| `GET`    | `/api/v1/cli-providers`     | List coding agent providers |
+| `POST`   | `/api/v1/cli-providers`     | Register a custom provider  |
+| `PUT`    | `/api/v1/cli-providers/:id` | Update provider config      |
+| `DELETE` | `/api/v1/cli-providers/:id` | Remove a custom provider    |
 
 ### Model Routing
 
-| Method   | Endpoint                                 | Description                         |
-| -------- | ---------------------------------------- | ----------------------------------- |
-| `GET`    | `/api/v1/model-routing`                  | Get model routing configuration     |
-| `PUT`    | `/api/v1/model-routing`                  | Update model routing rules          |
-| `GET`    | `/api/v1/model-routing/resolve`          | Resolve model for a given process   |
+| Method | Endpoint                        | Description                       |
+| ------ | ------------------------------- | --------------------------------- |
+| `GET`  | `/api/v1/model-routing`         | Get model routing configuration   |
+| `PUT`  | `/api/v1/model-routing`         | Update model routing rules        |
+| `GET`  | `/api/v1/model-routing/resolve` | Resolve model for a given process |
 
 ### System
 
@@ -1052,15 +1052,15 @@ Sliding window algorithm with configurable window (default 60s), max requests (d
 
 Real-time broadcasts on `ws://localhost:18789`:
 
-| Event                        | Description                                      |
-| ---------------------------- | ------------------------------------------------ |
-| `data:changed`               | CRUD mutation on any entity (tasks, notes, etc.) |
-| `chat:stream:*`              | Streaming response chunks                        |
-| `tool:start/progress/end`    | Tool execution lifecycle                         |
-| `channel:message`            | Incoming Telegram message                        |
-| `trigger:executed`           | Trigger execution result                         |
-| `coding-agent:session:*`     | Coding agent session lifecycle and output         |
-| `pulse:activity`             | Pulse system proactive activity                  |
+| Event                     | Description                                      |
+| ------------------------- | ------------------------------------------------ |
+| `data:changed`            | CRUD mutation on any entity (tasks, notes, etc.) |
+| `chat:stream:*`           | Streaming response chunks                        |
+| `tool:start/progress/end` | Tool execution lifecycle                         |
+| `channel:message`         | Incoming Telegram message                        |
+| `trigger:executed`        | Trigger execution result                         |
+| `coding-agent:session:*`  | Coding agent session lifecycle and output        |
+| `pulse:activity`          | Pulse system proactive activity                  |
 
 ### Response Format
 

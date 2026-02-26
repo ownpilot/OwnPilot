@@ -82,7 +82,12 @@ chatHistoryRoutes.get('/history', async (c) => {
  */
 chatHistoryRoutes.post('/history/bulk-delete', async (c) => {
   const userId = getUserId(c);
-  const body = await parseJsonBody<{ ids?: string[]; all?: boolean; olderThanDays?: number; archived?: boolean }>(c);
+  const body = await parseJsonBody<{
+    ids?: string[];
+    all?: boolean;
+    olderThanDays?: number;
+    archived?: boolean;
+  }>(c);
 
   if (!body) {
     return apiError(
@@ -153,7 +158,12 @@ chatHistoryRoutes.post('/history/bulk-delete', async (c) => {
  */
 chatHistoryRoutes.post('/history/bulk-archive', async (c) => {
   const userId = getUserId(c);
-  const body = await parseJsonBody<{ ids?: string[]; all?: boolean; olderThanDays?: number; archived?: boolean }>(c);
+  const body = await parseJsonBody<{
+    ids?: string[];
+    all?: boolean;
+    olderThanDays?: number;
+    archived?: boolean;
+  }>(c);
 
   if (!body || !Array.isArray(body.ids) || typeof body.archived !== 'boolean') {
     return apiError(

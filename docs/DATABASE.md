@@ -1097,68 +1097,68 @@ UNIQUE constraint on `(user_id, local_provider_id, model_id)`.
 
 Persists the results of coding agent task executions.
 
-| Column        | Type        | Constraints              | Description                                |
-| ------------- | ----------- | ------------------------ | ------------------------------------------ |
-| `id`          | `TEXT`       | `PRIMARY KEY`           | UUID identifier                            |
-| `user_id`     | `TEXT`       | `NOT NULL`              | Owner user ID                              |
-| `provider`    | `TEXT`       | `NOT NULL`              | Agent provider (claude-code, codex, etc.)  |
-| `prompt`      | `TEXT`       | `NOT NULL`              | Task prompt                                |
-| `output`      | `TEXT`       |                          | Agent output text                          |
-| `exit_code`   | `INTEGER`   |                          | Process exit code                          |
-| `duration_ms` | `INTEGER`   |                          | Execution duration in milliseconds         |
-| `success`     | `BOOLEAN`   | `DEFAULT false`         | Whether the task succeeded                 |
-| `metadata`    | `JSONB`     |                          | Additional execution metadata              |
-| `created_at`  | `TIMESTAMP` | `NOT NULL DEFAULT NOW()` | Creation timestamp                         |
+| Column        | Type        | Constraints              | Description                               |
+| ------------- | ----------- | ------------------------ | ----------------------------------------- |
+| `id`          | `TEXT`      | `PRIMARY KEY`            | UUID identifier                           |
+| `user_id`     | `TEXT`      | `NOT NULL`               | Owner user ID                             |
+| `provider`    | `TEXT`      | `NOT NULL`               | Agent provider (claude-code, codex, etc.) |
+| `prompt`      | `TEXT`      | `NOT NULL`               | Task prompt                               |
+| `output`      | `TEXT`      |                          | Agent output text                         |
+| `exit_code`   | `INTEGER`   |                          | Process exit code                         |
+| `duration_ms` | `INTEGER`   |                          | Execution duration in milliseconds        |
+| `success`     | `BOOLEAN`   | `DEFAULT false`          | Whether the task succeeded                |
+| `metadata`    | `JSONB`     |                          | Additional execution metadata             |
+| `created_at`  | `TIMESTAMP` | `NOT NULL DEFAULT NOW()` | Creation timestamp                        |
 
 #### `cli_providers`
 
 Stores user-registered CLI tool providers for the coding agents system. These appear as `custom:{name}`.
 
-| Column              | Type        | Constraints              | Description                              |
-| ------------------- | ----------- | ------------------------ | ---------------------------------------- |
-| `id`                | `TEXT`       | `PRIMARY KEY`           | UUID identifier                          |
-| `name`              | `TEXT`       | `NOT NULL`              | Provider name (lowercase, alphanumeric)  |
-| `display_name`      | `TEXT`       | `NOT NULL`              | Human-readable display name              |
-| `description`       | `TEXT`       |                          | Provider description                     |
-| `binary`            | `TEXT`       | `NOT NULL`              | Path to binary executable                |
-| `category`          | `TEXT`       |                          | Tool category                            |
-| `icon`              | `TEXT`       |                          | Icon identifier                          |
-| `color`             | `TEXT`       |                          | Display color                            |
-| `auth_method`       | `TEXT`       | `DEFAULT 'none'`        | none, config_center, or env_var          |
-| `config_service_name` | `TEXT`     |                          | Config Center service name               |
-| `api_key_env_var`   | `TEXT`       |                          | Environment variable for API key         |
-| `default_args`      | `JSONB`     |                          | Default command-line arguments           |
-| `prompt_template`   | `TEXT`       |                          | Template for prompt formatting           |
-| `output_format`     | `TEXT`       | `DEFAULT 'text'`        | text, json, or stream-json              |
-| `default_timeout_ms` | `INTEGER`  |                          | Default execution timeout                |
-| `max_timeout_ms`    | `INTEGER`   |                          | Maximum allowed timeout                  |
-| `user_id`           | `TEXT`       | `NOT NULL DEFAULT 'default'` | Owner user ID                     |
-| `is_active`         | `BOOLEAN`   | `DEFAULT true`          | Whether provider is active               |
-| `created_at`        | `TIMESTAMP` | `NOT NULL DEFAULT NOW()` | Creation timestamp                       |
-| `updated_at`        | `TIMESTAMP` | `NOT NULL DEFAULT NOW()` | Last update timestamp                    |
+| Column                | Type        | Constraints                  | Description                             |
+| --------------------- | ----------- | ---------------------------- | --------------------------------------- |
+| `id`                  | `TEXT`      | `PRIMARY KEY`                | UUID identifier                         |
+| `name`                | `TEXT`      | `NOT NULL`                   | Provider name (lowercase, alphanumeric) |
+| `display_name`        | `TEXT`      | `NOT NULL`                   | Human-readable display name             |
+| `description`         | `TEXT`      |                              | Provider description                    |
+| `binary`              | `TEXT`      | `NOT NULL`                   | Path to binary executable               |
+| `category`            | `TEXT`      |                              | Tool category                           |
+| `icon`                | `TEXT`      |                              | Icon identifier                         |
+| `color`               | `TEXT`      |                              | Display color                           |
+| `auth_method`         | `TEXT`      | `DEFAULT 'none'`             | none, config_center, or env_var         |
+| `config_service_name` | `TEXT`      |                              | Config Center service name              |
+| `api_key_env_var`     | `TEXT`      |                              | Environment variable for API key        |
+| `default_args`        | `JSONB`     |                              | Default command-line arguments          |
+| `prompt_template`     | `TEXT`      |                              | Template for prompt formatting          |
+| `output_format`       | `TEXT`      | `DEFAULT 'text'`             | text, json, or stream-json              |
+| `default_timeout_ms`  | `INTEGER`   |                              | Default execution timeout               |
+| `max_timeout_ms`      | `INTEGER`   |                              | Maximum allowed timeout                 |
+| `user_id`             | `TEXT`      | `NOT NULL DEFAULT 'default'` | Owner user ID                           |
+| `is_active`           | `BOOLEAN`   | `DEFAULT true`               | Whether provider is active              |
+| `created_at`          | `TIMESTAMP` | `NOT NULL DEFAULT NOW()`     | Creation timestamp                      |
+| `updated_at`          | `TIMESTAMP` | `NOT NULL DEFAULT NOW()`     | Last update timestamp                   |
 
 #### `cli_tool_policies`
 
 Per-tool security policies for CLI tool execution.
 
-| Column        | Type        | Constraints              | Description                                   |
-| ------------- | ----------- | ------------------------ | --------------------------------------------- |
-| `id`          | `TEXT`       | `PRIMARY KEY`           | UUID identifier                               |
-| `user_id`     | `TEXT`       | `NOT NULL`              | Owner user ID                                 |
-| `tool_name`   | `TEXT`       | `NOT NULL`              | CLI tool name (from catalog or custom:name)   |
-| `policy`      | `TEXT`       | `NOT NULL`              | allowed, prompt, or blocked                   |
-| `created_at`  | `TIMESTAMP` | `NOT NULL DEFAULT NOW()` | Creation timestamp                            |
-| `updated_at`  | `TIMESTAMP` | `NOT NULL DEFAULT NOW()` | Last update timestamp                         |
+| Column       | Type        | Constraints              | Description                                 |
+| ------------ | ----------- | ------------------------ | ------------------------------------------- |
+| `id`         | `TEXT`      | `PRIMARY KEY`            | UUID identifier                             |
+| `user_id`    | `TEXT`      | `NOT NULL`               | Owner user ID                               |
+| `tool_name`  | `TEXT`      | `NOT NULL`               | CLI tool name (from catalog or custom:name) |
+| `policy`     | `TEXT`      | `NOT NULL`               | allowed, prompt, or blocked                 |
+| `created_at` | `TIMESTAMP` | `NOT NULL DEFAULT NOW()` | Creation timestamp                          |
+| `updated_at` | `TIMESTAMP` | `NOT NULL DEFAULT NOW()` | Last update timestamp                       |
 
 **Unique constraint:** `(user_id, tool_name)` — one policy per user per tool.
 
 **Repositories:**
 
-| Repository                    | Source File                   | Description                        |
-| ----------------------------- | ----------------------------- | ---------------------------------- |
-| `CodingAgentResultsRepository` | `coding-agent-results.ts`    | CRUD for task execution results    |
-| `CliProvidersRepository`      | `cli-providers.ts`           | CRUD for custom CLI providers      |
-| `CliToolPoliciesRepository`   | `cli-tool-policies.ts`       | Per-tool security policy management |
+| Repository                     | Source File               | Description                         |
+| ------------------------------ | ------------------------- | ----------------------------------- |
+| `CodingAgentResultsRepository` | `coding-agent-results.ts` | CRUD for task execution results     |
+| `CliProvidersRepository`       | `cli-providers.ts`        | CRUD for custom CLI providers       |
+| `CliToolPoliciesRepository`    | `cli-tool-policies.ts`    | Per-tool security policy management |
 
 ---
 

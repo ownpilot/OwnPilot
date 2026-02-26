@@ -13,7 +13,8 @@ import type { ExecutionPermissions } from '@ownpilot/core';
 export function downgradePromptToBlocked(perms: ExecutionPermissions): ExecutionPermissions {
   return {
     ...perms,
-    execute_javascript: perms.execute_javascript === 'prompt' ? 'blocked' : perms.execute_javascript,
+    execute_javascript:
+      perms.execute_javascript === 'prompt' ? 'blocked' : perms.execute_javascript,
     execute_python: perms.execute_python === 'prompt' ? 'blocked' : perms.execute_python,
     execute_shell: perms.execute_shell === 'prompt' ? 'blocked' : perms.execute_shell,
     compile_code: perms.compile_code === 'prompt' ? 'blocked' : perms.compile_code,

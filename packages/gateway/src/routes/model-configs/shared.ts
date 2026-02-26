@@ -190,9 +190,8 @@ export async function getMergedModels(userId: string): Promise<MergedModel[]> {
   // 4. Local providers (LM Studio, Ollama, etc.)
   const localProviders = await localProvidersRepo.listProviders(userId);
   // Batch-load all local models at once (avoids N+1 per-provider queries)
-  const allLocalModels = localProviders.length > 0
-    ? await localProvidersRepo.listModels(userId)
-    : [];
+  const allLocalModels =
+    localProviders.length > 0 ? await localProvidersRepo.listModels(userId) : [];
   const localModelsByProvider = new Map<string, typeof allLocalModels>();
   for (const lm of allLocalModels) {
     const list = localModelsByProvider.get(lm.localProviderId);
@@ -308,9 +307,8 @@ export async function getMergedProviders(userId: string): Promise<MergedProvider
   // 4. Local providers (LM Studio, Ollama, etc.)
   const localProviders = await localProvidersRepo.listProviders(userId);
   // Batch-load all local models at once (avoids N+1 per-provider queries)
-  const allLocalModelsForProviders = localProviders.length > 0
-    ? await localProvidersRepo.listModels(userId)
-    : [];
+  const allLocalModelsForProviders =
+    localProviders.length > 0 ? await localProvidersRepo.listModels(userId) : [];
   const localModelCountByProvider = new Map<string, number>();
   for (const lm of allLocalModelsForProviders) {
     if (lm.isEnabled) {

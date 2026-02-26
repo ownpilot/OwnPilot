@@ -155,9 +155,7 @@ export function CodingAgentsPage() {
       'coding-agent:session:state',
       (payload) => {
         setSessions((prev) =>
-          prev.map((s) =>
-            s.id === payload.sessionId ? { ...s, state: payload.state } : s
-          )
+          prev.map((s) => (s.id === payload.sessionId ? { ...s, state: payload.state } : s))
         );
       }
     );
@@ -294,9 +292,7 @@ export function CodingAgentsPage() {
                     No results yet
                   </p>
                 ) : (
-                  results.map((r) => (
-                    <ResultCard key={r.id} result={r} />
-                  ))
+                  results.map((r) => <ResultCard key={r.id} result={r} />)
                 )}
               </div>
             )}
@@ -364,10 +360,7 @@ export function CodingAgentsPage() {
                 </div>
                 <div className="flex-1 min-h-0 relative">
                   <div className="absolute inset-0">
-                    <XTerminal
-                      sessionId={activeSession.id}
-                      interactive={true}
-                    />
+                    <XTerminal sessionId={activeSession.id} interactive={true} />
                   </div>
                 </div>
               </>
@@ -427,14 +420,17 @@ function SessionCard({
 }) {
   const color = PROVIDER_COLORS[session.provider] ?? 'bg-gray-500/20 text-gray-500';
   const icon = PROVIDER_META[session.provider]?.icon ?? '?';
-  const isActive = session.state === 'running' || session.state === 'starting' || session.state === 'waiting';
+  const isActive =
+    session.state === 'running' || session.state === 'starting' || session.state === 'waiting';
 
   return (
     <div
       role="button"
       tabIndex={0}
       onClick={onClick}
-      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onClick(); }}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') onClick();
+      }}
       className={`w-full text-left p-2.5 rounded-lg transition-colors group cursor-pointer ${
         active
           ? 'bg-primary/10 border border-primary/30'
@@ -475,7 +471,9 @@ function SessionCard({
 function StateBadge({ state }: { state: CodingAgentSessionState }) {
   return (
     <span className="inline-flex items-center gap-1 text-[10px] text-text-muted dark:text-dark-text-muted">
-      <span className={`w-1.5 h-1.5 rounded-full ${STATE_COLORS[state]} ${state === 'running' ? 'animate-pulse' : ''}`} />
+      <span
+        className={`w-1.5 h-1.5 rounded-full ${STATE_COLORS[state]} ${state === 'running' ? 'animate-pulse' : ''}`}
+      />
       {STATE_LABELS[state]}
     </span>
   );
@@ -487,7 +485,9 @@ function ProviderStatusCard({ status }: { status: CodingAgentStatus }) {
 
   return (
     <div className="flex items-center gap-2 p-2 rounded-lg bg-bg-tertiary dark:bg-dark-bg-tertiary">
-      <div className={`w-6 h-6 rounded flex items-center justify-center text-xs font-bold ${color}`}>
+      <div
+        className={`w-6 h-6 rounded flex items-center justify-center text-xs font-bold ${color}`}
+      >
         {meta?.icon ?? '?'}
       </div>
       <div className="flex-1 min-w-0">
@@ -536,7 +536,10 @@ function NewSessionModal({
 
   // Fetch file workspaces for the picker
   useEffect(() => {
-    fileWorkspacesApi.list().then((data) => setWorkspaces(data.workspaces ?? [])).catch(() => {});
+    fileWorkspacesApi
+      .list()
+      .then((data) => setWorkspaces(data.workspaces ?? []))
+      .catch(() => {});
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -568,8 +571,11 @@ function NewSessionModal({
                 {statuses.map((s) => {
                   const meta = PROVIDER_META[s.provider];
                   const isCustom = s.provider.startsWith('custom:');
-                  const color = PROVIDER_COLORS[s.provider] ?? 'bg-purple-500/20 text-purple-600 dark:text-purple-400';
-                  const icon = meta?.icon ?? (isCustom ? s.displayName.charAt(0).toUpperCase() : '?');
+                  const color =
+                    PROVIDER_COLORS[s.provider] ??
+                    'bg-purple-500/20 text-purple-600 dark:text-purple-400';
+                  const icon =
+                    meta?.icon ?? (isCustom ? s.displayName.charAt(0).toUpperCase() : '?');
                   const selected = provider === s.provider;
 
                   return (
@@ -586,14 +592,18 @@ function NewSessionModal({
                             : 'border-border dark:border-dark-border opacity-40 cursor-not-allowed'
                       }`}
                     >
-                      <div className={`w-8 h-8 rounded-lg mx-auto mb-1 flex items-center justify-center text-sm font-bold ${color}`}>
+                      <div
+                        className={`w-8 h-8 rounded-lg mx-auto mb-1 flex items-center justify-center text-sm font-bold ${color}`}
+                      >
                         {icon}
                       </div>
                       <div className="text-xs font-medium text-text-primary dark:text-dark-text-primary">
                         {s.displayName}
                       </div>
                       {isCustom && (
-                        <div className="text-[10px] text-text-muted dark:text-dark-text-muted mt-0.5">Custom</div>
+                        <div className="text-[10px] text-text-muted dark:text-dark-text-muted mt-0.5">
+                          Custom
+                        </div>
                       )}
                       {!s.installed && (
                         <div className="text-[10px] text-error mt-0.5">Not installed</div>
@@ -618,7 +628,10 @@ function NewSessionModal({
               <div className="flex gap-1.5 mb-2">
                 <button
                   type="button"
-                  onClick={() => { setCwdMode('workspace'); setCwd(''); }}
+                  onClick={() => {
+                    setCwdMode('workspace');
+                    setCwd('');
+                  }}
                   className={`px-2.5 py-1 rounded text-xs font-medium transition-colors ${
                     cwdMode === 'workspace'
                       ? 'bg-primary/10 text-primary'
@@ -629,7 +642,10 @@ function NewSessionModal({
                 </button>
                 <button
                   type="button"
-                  onClick={() => { setCwdMode('custom'); setCwd(''); }}
+                  onClick={() => {
+                    setCwdMode('custom');
+                    setCwd('');
+                  }}
                   className={`px-2.5 py-1 rounded text-xs font-medium transition-colors ${
                     cwdMode === 'custom'
                       ? 'bg-primary/10 text-primary'

@@ -424,8 +424,16 @@ export function getStorage(basePath?: string, maxStorageGB?: number): IsolatedSt
       (process.env.OWNPILOT_DATA_DIR
         ? join(process.env.OWNPILOT_DATA_DIR, 'workspaces')
         : process.platform === 'win32'
-          ? join(process.env.LOCALAPPDATA ?? join(homedir(), 'AppData', 'Local'), 'ownpilot', 'workspaces')
-          : join(process.env.XDG_DATA_HOME ?? join(homedir(), '.local', 'share'), 'ownpilot', 'workspaces'));
+          ? join(
+              process.env.LOCALAPPDATA ?? join(homedir(), 'AppData', 'Local'),
+              'ownpilot',
+              'workspaces'
+            )
+          : join(
+              process.env.XDG_DATA_HOME ?? join(homedir(), '.local', 'share'),
+              'ownpilot',
+              'workspaces'
+            ));
 
     storageInstance = new IsolatedStorage(basePath || defaultPath, maxStorageGB || 2);
   }

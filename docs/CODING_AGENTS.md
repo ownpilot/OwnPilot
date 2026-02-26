@@ -75,11 +75,11 @@ The flow in detail:
 
 ## Supported Providers
 
-| Provider | Binary | Install Command | Auth | API Key Env Var | Docs |
-|---|---|---|---|---|---|
-| `claude-code` | `claude` | `npm i -g @anthropic-ai/claude-code` | Claude Pro subscription or API key | `ANTHROPIC_API_KEY` | [console.anthropic.com](https://console.anthropic.com) |
-| `codex` | `codex` | `npm i -g @openai/codex` | ChatGPT Plus subscription or API key | `CODEX_API_KEY` | [platform.openai.com](https://platform.openai.com) |
-| `gemini-cli` | `gemini` | `npm i -g @google/gemini-cli` | Google account login or API key | `GEMINI_API_KEY` | [aistudio.google.com](https://aistudio.google.com) |
+| Provider      | Binary   | Install Command                      | Auth                                 | API Key Env Var     | Docs                                                   |
+| ------------- | -------- | ------------------------------------ | ------------------------------------ | ------------------- | ------------------------------------------------------ |
+| `claude-code` | `claude` | `npm i -g @anthropic-ai/claude-code` | Claude Pro subscription or API key   | `ANTHROPIC_API_KEY` | [console.anthropic.com](https://console.anthropic.com) |
+| `codex`       | `codex`  | `npm i -g @openai/codex`             | ChatGPT Plus subscription or API key | `CODEX_API_KEY`     | [platform.openai.com](https://platform.openai.com)     |
+| `gemini-cli`  | `gemini` | `npm i -g @google/gemini-cli`        | Google account login or API key      | `GEMINI_API_KEY`    | [aistudio.google.com](https://aistudio.google.com)     |
 
 All three providers support **login-based auth** -- no API key is strictly required. When an API key is configured (via Config Center or environment variable), it is injected into the child process environment. When no key is configured, the CLI falls back to its native authentication flow (OAuth, browser login, etc.), which works in interactive mode.
 
@@ -91,11 +91,11 @@ Each provider gets specific CLI arguments depending on the mode:
 
 **Auto mode (non-interactive):**
 
-| Provider | CLI Arguments |
-|---|---|
+| Provider      | CLI Arguments                                                                                  |
+| ------------- | ---------------------------------------------------------------------------------------------- |
 | `claude-code` | `-p <prompt> --dangerously-skip-permissions --output-format stream-json --verbose [--model M]` |
-| `codex` | `exec --full-auto <prompt> [--model M]` |
-| `gemini-cli` | `-p <prompt> [--model M]` |
+| `codex`       | `exec --full-auto <prompt> [--model M]`                                                        |
+| `gemini-cli`  | `-p <prompt> [--model M]`                                                                      |
 
 **Interactive mode:** All providers are launched with no arguments (bare REPL mode) since user input drives the session.
 
@@ -131,27 +131,27 @@ Each provider gets specific CLI arguments depending on the mode:
 
 ### Key Constants
 
-| Constant | Value | Description |
-|---|---|---|
-| `MAX_SESSIONS_PER_USER` | 3 | Maximum concurrent sessions per user |
-| `SESSION_TIMEOUT_MS` | 1,800,000 (30 min) | Default session timeout |
-| `OUTPUT_BUFFER_MAX` | 102,400 (100 KB) | Ring buffer for reconnection replay |
-| `CLEANUP_INTERVAL_MS` | 60,000 (1 min) | Cleanup interval for expired sessions |
-| `DEFAULT_TIMEOUT_MS` | 300,000 (5 min) | Default task timeout (legacy `runTask`) |
-| `MAX_TIMEOUT_MS` | 1,800,000 (30 min) | Maximum allowed timeout |
-| `DEFAULT_MAX_TURNS` | 10 | Default agent turns (Claude Code SDK) |
-| `DEFAULT_MAX_BUDGET_USD` | 1.0 | Default cost cap (Claude Code SDK) |
+| Constant                 | Value              | Description                             |
+| ------------------------ | ------------------ | --------------------------------------- |
+| `MAX_SESSIONS_PER_USER`  | 3                  | Maximum concurrent sessions per user    |
+| `SESSION_TIMEOUT_MS`     | 1,800,000 (30 min) | Default session timeout                 |
+| `OUTPUT_BUFFER_MAX`      | 102,400 (100 KB)   | Ring buffer for reconnection replay     |
+| `CLEANUP_INTERVAL_MS`    | 60,000 (1 min)     | Cleanup interval for expired sessions   |
+| `DEFAULT_TIMEOUT_MS`     | 300,000 (5 min)    | Default task timeout (legacy `runTask`) |
+| `MAX_TIMEOUT_MS`         | 1,800,000 (30 min) | Maximum allowed timeout                 |
+| `DEFAULT_MAX_TURNS`      | 10                 | Default agent turns (Claude Code SDK)   |
+| `DEFAULT_MAX_BUDGET_USD` | 1.0                | Default cost cap (Claude Code SDK)      |
 
 ### Session States
 
-| State | Description |
-|---|---|
-| `starting` | Session created, process being spawned |
-| `running` | Process is alive and producing output |
-| `waiting` | Process is waiting for user input (interactive mode) |
-| `completed` | Process exited with code 0 |
-| `failed` | Process exited with non-zero code or encountered an error |
-| `terminated` | User manually killed the session |
+| State        | Description                                               |
+| ------------ | --------------------------------------------------------- |
+| `starting`   | Session created, process being spawned                    |
+| `running`    | Process is alive and producing output                     |
+| `waiting`    | Process is waiting for user input (interactive mode)      |
+| `completed`  | Process exited with code 0                                |
+| `failed`     | Process exited with non-zero code or encountered an error |
+| `terminated` | User manually killed the session                          |
 
 Completed, failed, and terminated sessions are automatically cleaned up 5 minutes after completion.
 
@@ -183,15 +183,15 @@ Completed, failed, and terminated sessions are automatically cleaned up 5 minute
 
 ### Comparison
 
-| Feature | Auto Mode | Interactive Mode |
-|---|---|---|
-| Native dependency | None | `node-pty` required |
-| Terminal emulation | No (piped stdio) | Yes (full PTY) |
-| ANSI colors | Only if CLI forces them | Full support |
-| User input | Not supported | Full keyboard input |
-| Resize support | No | Yes |
-| Default for AI tools | Yes | No |
-| Default for UI sessions | Yes | No (requires node-pty) |
+| Feature                 | Auto Mode               | Interactive Mode       |
+| ----------------------- | ----------------------- | ---------------------- |
+| Native dependency       | None                    | `node-pty` required    |
+| Terminal emulation      | No (piped stdio)        | Yes (full PTY)         |
+| ANSI colors             | Only if CLI forces them | Full support           |
+| User input              | Not supported           | Full keyboard input    |
+| Resize support          | No                      | Yes                    |
+| Default for AI tools    | Yes                     | No                     |
+| Default for UI sessions | Yes                     | No (requires node-pty) |
 
 ---
 
@@ -204,7 +204,7 @@ function createSanitizedEnv(
   provider: string,
   apiKey?: string,
   apiKeyEnvVar?: string
-): Record<string, string>
+): Record<string, string>;
 ```
 
 ### What it does
@@ -246,21 +246,21 @@ Users can register any CLI tool as a coding agent provider. Custom providers app
 
 Custom providers are created via `POST /cli-providers` with these fields:
 
-| Field | Required | Description |
-|---|---|---|
-| `name` | Yes | Lowercase alphanumeric with hyphens (e.g., `aider`, `my-tool`) |
-| `display_name` | Yes | Human-readable name shown in UI |
-| `binary` | Yes | CLI binary name (must be on PATH) |
-| `description` | No | Short description |
-| `category` | No | Category string (default: `general`) |
-| `auth_method` | No | `none`, `config_center`, or `env_var` (default: `none`) |
-| `config_service_name` | No | Config Center service name (when `auth_method` = `config_center`) |
-| `api_key_env_var` | No | Environment variable name for the API key |
-| `default_args` | No | Default CLI arguments (JSON array of strings) |
-| `prompt_template` | No | Template with `{prompt}`, `{cwd}`, `{model}` placeholders |
-| `output_format` | No | `text`, `json`, or `stream-json` (default: `text`) |
-| `default_timeout_ms` | No | Default timeout (default: 300,000 ms) |
-| `max_timeout_ms` | No | Maximum timeout (default: 1,800,000 ms) |
+| Field                 | Required | Description                                                       |
+| --------------------- | -------- | ----------------------------------------------------------------- |
+| `name`                | Yes      | Lowercase alphanumeric with hyphens (e.g., `aider`, `my-tool`)    |
+| `display_name`        | Yes      | Human-readable name shown in UI                                   |
+| `binary`              | Yes      | CLI binary name (must be on PATH)                                 |
+| `description`         | No       | Short description                                                 |
+| `category`            | No       | Category string (default: `general`)                              |
+| `auth_method`         | No       | `none`, `config_center`, or `env_var` (default: `none`)           |
+| `config_service_name` | No       | Config Center service name (when `auth_method` = `config_center`) |
+| `api_key_env_var`     | No       | Environment variable name for the API key                         |
+| `default_args`        | No       | Default CLI arguments (JSON array of strings)                     |
+| `prompt_template`     | No       | Template with `{prompt}`, `{cwd}`, `{model}` placeholders         |
+| `output_format`       | No       | `text`, `json`, or `stream-json` (default: `text`)                |
+| `default_timeout_ms`  | No       | Default timeout (default: 300,000 ms)                             |
+| `max_timeout_ms`      | No       | Maximum timeout (default: 1,800,000 ms)                           |
 
 ### Prompt Template
 
@@ -302,15 +302,15 @@ Delegates a coding task to an external AI coding agent. Creates a visible sessio
 
 **Parameters:**
 
-| Parameter | Type | Required | Description |
-|---|---|---|---|
-| `provider` | string | Yes | `claude-code`, `codex`, `gemini-cli`, or `custom:{name}` |
-| `prompt` | string | Yes | Task description |
-| `cwd` | string | No | Working directory (absolute path) |
-| `model` | string | No | Model override (e.g., `claude-sonnet-4-5-20250929`, `o3`) |
-| `max_budget_usd` | number | No | Cost cap in USD (default: 1.0, Claude Code SDK only) |
-| `max_turns` | number | No | Max agent turns (default: 10, Claude Code SDK only) |
-| `timeout_seconds` | number | No | Timeout (default: 300, max: 1800) |
+| Parameter         | Type   | Required | Description                                               |
+| ----------------- | ------ | -------- | --------------------------------------------------------- |
+| `provider`        | string | Yes      | `claude-code`, `codex`, `gemini-cli`, or `custom:{name}`  |
+| `prompt`          | string | Yes      | Task description                                          |
+| `cwd`             | string | No       | Working directory (absolute path)                         |
+| `model`           | string | No       | Model override (e.g., `claude-sonnet-4-5-20250929`, `o3`) |
+| `max_budget_usd`  | number | No       | Cost cap in USD (default: 1.0, Claude Code SDK only)      |
+| `max_turns`       | number | No       | Max agent turns (default: 10, Claude Code SDK only)       |
+| `timeout_seconds` | number | No       | Timeout (default: 300, max: 1800)                         |
 
 The tool creates a session in `auto` mode with `source: 'ai-tool'`, waits for completion via `waitForCompletion()`, and returns the persisted result. Output is truncated to 8,000 characters for the LLM context window.
 
@@ -334,11 +334,11 @@ Lists recent coding agent task results with summaries.
 
 Each built-in provider registers a Config Center service for API key management:
 
-| Config Service | Display Name | Env Var |
-|---|---|---|
-| `coding-claude-code` | Claude Code | `ANTHROPIC_API_KEY` |
-| `coding-codex` | OpenAI Codex | `CODEX_API_KEY` |
-| `coding-gemini` | Gemini CLI | `GEMINI_API_KEY` |
+| Config Service       | Display Name | Env Var             |
+| -------------------- | ------------ | ------------------- |
+| `coding-claude-code` | Claude Code  | `ANTHROPIC_API_KEY` |
+| `coding-codex`       | OpenAI Codex | `CODEX_API_KEY`     |
+| `coding-gemini`      | Gemini CLI   | `GEMINI_API_KEY`    |
 
 ---
 
@@ -433,6 +433,7 @@ Create a new session.
 **Response:** `CodingAgentSession` (201 Created)
 
 **Error codes:**
+
 - 400: Invalid provider or missing prompt
 - 409: Maximum 3 concurrent sessions
 - 422: CLI not installed or node-pty not available
@@ -539,21 +540,21 @@ Test if the provider's binary is installed and get its version.
 
 ### Server-to-Client Events
 
-| Event | Payload | Description |
-|---|---|---|
-| `coding-agent:session:created` | `{ session: { id, provider, displayName, state, mode, prompt, startedAt, userId } }` | New session created (broadcast to all clients) |
-| `coding-agent:session:output` | `{ sessionId, data }` | Incremental output from the process (raw bytes including ANSI) |
-| `coding-agent:session:state` | `{ sessionId, state }` | Session state changed |
-| `coding-agent:session:exit` | `{ sessionId, exitCode, signal? }` | Process exited |
-| `coding-agent:session:error` | `{ sessionId, error }` | Error occurred (timeout, spawn failure) |
+| Event                          | Payload                                                                              | Description                                                    |
+| ------------------------------ | ------------------------------------------------------------------------------------ | -------------------------------------------------------------- |
+| `coding-agent:session:created` | `{ session: { id, provider, displayName, state, mode, prompt, startedAt, userId } }` | New session created (broadcast to all clients)                 |
+| `coding-agent:session:output`  | `{ sessionId, data }`                                                                | Incremental output from the process (raw bytes including ANSI) |
+| `coding-agent:session:state`   | `{ sessionId, state }`                                                               | Session state changed                                          |
+| `coding-agent:session:exit`    | `{ sessionId, exitCode, signal? }`                                                   | Process exited                                                 |
+| `coding-agent:session:error`   | `{ sessionId, error }`                                                               | Error occurred (timeout, spawn failure)                        |
 
 ### Client-to-Server Events
 
-| Event | Payload | Description |
-|---|---|---|
-| `coding-agent:input` | `{ sessionId, data }` | Send input to session stdin |
-| `coding-agent:resize` | `{ sessionId, cols, rows }` | Resize terminal dimensions |
-| `coding-agent:subscribe` | `{ sessionId }` | Subscribe to session output (triggers replay of output buffer) |
+| Event                    | Payload                     | Description                                                    |
+| ------------------------ | --------------------------- | -------------------------------------------------------------- |
+| `coding-agent:input`     | `{ sessionId, data }`       | Send input to session stdin                                    |
+| `coding-agent:resize`    | `{ sessionId, cols, rows }` | Resize terminal dimensions                                     |
+| `coding-agent:subscribe` | `{ sessionId }`             | Subscribe to session output (triggers replay of output buffer) |
 
 ### Subscriber Management
 
@@ -573,23 +574,23 @@ When a WS connection disconnects, `removeSubscriber()` cleans up all subscriptio
 
 Persists outcomes from coding agent task executions.
 
-| Column | Type | Default | Description |
-|---|---|---|---|
-| `id` | TEXT (PK) | -- | Unique result ID |
-| `user_id` | TEXT | `'default'` | Owner user ID |
-| `session_id` | TEXT | NULL | Associated session ID (if session-based) |
-| `provider` | TEXT | -- | Provider identifier |
-| `prompt` | TEXT | -- | Original task prompt |
-| `cwd` | TEXT | NULL | Working directory |
-| `model` | TEXT | NULL | Model used |
-| `success` | BOOLEAN | FALSE | Whether the task completed successfully |
-| `output` | TEXT | `''` | Final output (ANSI stripped) |
-| `exit_code` | INTEGER | NULL | Process exit code |
-| `error` | TEXT | NULL | Error message if failed |
-| `duration_ms` | INTEGER | 0 | Execution duration |
-| `cost_usd` | REAL | NULL | Cost in USD (if reported) |
-| `mode` | TEXT | NULL | Execution mode (`auto`, `sdk`, `pty`) |
-| `created_at` | TIMESTAMP | NOW() | When the result was created |
+| Column        | Type      | Default     | Description                              |
+| ------------- | --------- | ----------- | ---------------------------------------- |
+| `id`          | TEXT (PK) | --          | Unique result ID                         |
+| `user_id`     | TEXT      | `'default'` | Owner user ID                            |
+| `session_id`  | TEXT      | NULL        | Associated session ID (if session-based) |
+| `provider`    | TEXT      | --          | Provider identifier                      |
+| `prompt`      | TEXT      | --          | Original task prompt                     |
+| `cwd`         | TEXT      | NULL        | Working directory                        |
+| `model`       | TEXT      | NULL        | Model used                               |
+| `success`     | BOOLEAN   | FALSE       | Whether the task completed successfully  |
+| `output`      | TEXT      | `''`        | Final output (ANSI stripped)             |
+| `exit_code`   | INTEGER   | NULL        | Process exit code                        |
+| `error`       | TEXT      | NULL        | Error message if failed                  |
+| `duration_ms` | INTEGER   | 0           | Execution duration                       |
+| `cost_usd`    | REAL      | NULL        | Cost in USD (if reported)                |
+| `mode`        | TEXT      | NULL        | Execution mode (`auto`, `sdk`, `pty`)    |
+| `created_at`  | TIMESTAMP | NOW()       | When the result was created              |
 
 **Indexes:** `user_id`, `session_id`, `created_at DESC`
 
@@ -597,28 +598,28 @@ Persists outcomes from coding agent task executions.
 
 User-registered CLI tools that serve as custom coding agent providers.
 
-| Column | Type | Default | Description |
-|---|---|---|---|
-| `id` | TEXT (PK) | -- | Unique provider ID |
-| `user_id` | TEXT | `'default'` | Owner user ID |
-| `name` | TEXT | -- | Unique name (lowercase, alphanumeric + hyphens) |
-| `display_name` | TEXT | -- | Human-readable display name |
-| `description` | TEXT | NULL | Short description |
-| `binary_path` | TEXT | -- | CLI binary name/path |
-| `category` | TEXT | `'general'` | Category |
-| `icon` | TEXT | NULL | Icon identifier |
-| `color` | TEXT | NULL | Color for UI |
-| `auth_method` | TEXT | `'none'` | `none`, `config_center`, or `env_var` |
-| `config_service_name` | TEXT | NULL | Config Center service name |
-| `api_key_env_var` | TEXT | NULL | Environment variable for API key |
-| `default_args` | JSONB | `'[]'` | Default CLI arguments |
-| `prompt_template` | TEXT | NULL | Template with `{prompt}`, `{cwd}`, `{model}` |
-| `output_format` | TEXT | `'text'` | `text`, `json`, or `stream-json` |
-| `default_timeout_ms` | INTEGER | 300,000 | Default timeout |
-| `max_timeout_ms` | INTEGER | 1,800,000 | Maximum timeout |
-| `is_active` | BOOLEAN | TRUE | Whether the provider is active |
-| `created_at` | TIMESTAMP | NOW() | Created timestamp |
-| `updated_at` | TIMESTAMP | NOW() | Last updated timestamp |
+| Column                | Type      | Default     | Description                                     |
+| --------------------- | --------- | ----------- | ----------------------------------------------- |
+| `id`                  | TEXT (PK) | --          | Unique provider ID                              |
+| `user_id`             | TEXT      | `'default'` | Owner user ID                                   |
+| `name`                | TEXT      | --          | Unique name (lowercase, alphanumeric + hyphens) |
+| `display_name`        | TEXT      | --          | Human-readable display name                     |
+| `description`         | TEXT      | NULL        | Short description                               |
+| `binary_path`         | TEXT      | --          | CLI binary name/path                            |
+| `category`            | TEXT      | `'general'` | Category                                        |
+| `icon`                | TEXT      | NULL        | Icon identifier                                 |
+| `color`               | TEXT      | NULL        | Color for UI                                    |
+| `auth_method`         | TEXT      | `'none'`    | `none`, `config_center`, or `env_var`           |
+| `config_service_name` | TEXT      | NULL        | Config Center service name                      |
+| `api_key_env_var`     | TEXT      | NULL        | Environment variable for API key                |
+| `default_args`        | JSONB     | `'[]'`      | Default CLI arguments                           |
+| `prompt_template`     | TEXT      | NULL        | Template with `{prompt}`, `{cwd}`, `{model}`    |
+| `output_format`       | TEXT      | `'text'`    | `text`, `json`, or `stream-json`                |
+| `default_timeout_ms`  | INTEGER   | 300,000     | Default timeout                                 |
+| `max_timeout_ms`      | INTEGER   | 1,800,000   | Maximum timeout                                 |
+| `is_active`           | BOOLEAN   | TRUE        | Whether the provider is active                  |
+| `created_at`          | TIMESTAMP | NOW()       | Created timestamp                               |
+| `updated_at`          | TIMESTAMP | NOW()       | Last updated timestamp                          |
 
 **Constraints:** `UNIQUE(user_id, name)`
 
@@ -689,22 +690,22 @@ Structured output view for auto mode sessions (replaces raw terminal):
 
 ## Key Source Files
 
-| File | Description |
-|---|---|
-| `packages/core/src/services/coding-agent-service.ts` | Core interface: types, session states, `ICodingAgentService` |
-| `packages/gateway/src/services/coding-agent-service.ts` | Main service: provider adapters, session creation, API key resolution |
-| `packages/gateway/src/services/coding-agent-sessions.ts` | Session manager: spawn, stream, cleanup, WS subscriber management |
-| `packages/gateway/src/services/coding-agent-pty.ts` | PTY adapter: `runWithPty()`, `spawnStreamingPty()`, `spawnStreamingProcess()` |
-| `packages/gateway/src/services/binary-utils.ts` | Binary detection, environment sanitization, process spawning |
-| `packages/gateway/src/routes/coding-agents.ts` | REST API: sessions CRUD, run, test, results |
-| `packages/gateway/src/routes/cli-providers.ts` | REST API: custom provider CRUD + test |
-| `packages/gateway/src/tools/coding-agent-tools.ts` | AI tool definitions: `run_coding_task`, `list_coding_agents`, etc. |
-| `packages/gateway/src/db/repositories/coding-agent-results.ts` | Results repository: save, getById, getBySessionId, list, count |
-| `packages/gateway/src/db/repositories/cli-providers.ts` | CLI providers repository: CRUD, list, listActive |
-| `packages/gateway/src/ws/types.ts` | WebSocket event type definitions (coding-agent:* events) |
-| `packages/ui/src/pages/CodingAgentsPage.tsx` | Sessions page: split panel, session list, new session modal |
-| `packages/ui/src/pages/CodingAgentSettingsPage.tsx` | Settings page: provider status, install info, test |
-| `packages/ui/src/components/XTerminal.tsx` | xterm.js terminal with keyboard capture and REST/WS output |
-| `packages/ui/src/components/MiniTerminal.tsx` | Floating terminal widget with resize and session tabs |
-| `packages/ui/src/components/AutoModePanel.tsx` | Structured auto mode output: stream-json parser, tool call display |
-| `packages/ui/src/api/endpoints/coding-agents.ts` | Frontend API client: types and endpoint wrappers |
+| File                                                           | Description                                                                   |
+| -------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| `packages/core/src/services/coding-agent-service.ts`           | Core interface: types, session states, `ICodingAgentService`                  |
+| `packages/gateway/src/services/coding-agent-service.ts`        | Main service: provider adapters, session creation, API key resolution         |
+| `packages/gateway/src/services/coding-agent-sessions.ts`       | Session manager: spawn, stream, cleanup, WS subscriber management             |
+| `packages/gateway/src/services/coding-agent-pty.ts`            | PTY adapter: `runWithPty()`, `spawnStreamingPty()`, `spawnStreamingProcess()` |
+| `packages/gateway/src/services/binary-utils.ts`                | Binary detection, environment sanitization, process spawning                  |
+| `packages/gateway/src/routes/coding-agents.ts`                 | REST API: sessions CRUD, run, test, results                                   |
+| `packages/gateway/src/routes/cli-providers.ts`                 | REST API: custom provider CRUD + test                                         |
+| `packages/gateway/src/tools/coding-agent-tools.ts`             | AI tool definitions: `run_coding_task`, `list_coding_agents`, etc.            |
+| `packages/gateway/src/db/repositories/coding-agent-results.ts` | Results repository: save, getById, getBySessionId, list, count                |
+| `packages/gateway/src/db/repositories/cli-providers.ts`        | CLI providers repository: CRUD, list, listActive                              |
+| `packages/gateway/src/ws/types.ts`                             | WebSocket event type definitions (coding-agent:\* events)                     |
+| `packages/ui/src/pages/CodingAgentsPage.tsx`                   | Sessions page: split panel, session list, new session modal                   |
+| `packages/ui/src/pages/CodingAgentSettingsPage.tsx`            | Settings page: provider status, install info, test                            |
+| `packages/ui/src/components/XTerminal.tsx`                     | xterm.js terminal with keyboard capture and REST/WS output                    |
+| `packages/ui/src/components/MiniTerminal.tsx`                  | Floating terminal widget with resize and session tabs                         |
+| `packages/ui/src/components/AutoModePanel.tsx`                 | Structured auto mode output: stream-json parser, tool call display            |
+| `packages/ui/src/api/endpoints/coding-agents.ts`               | Frontend API client: types and endpoint wrappers                              |

@@ -4,7 +4,14 @@ import type { ExecutionPermissions } from '@ownpilot/core';
 // Mock dependencies before importing the module under test
 vi.mock('../routes/settings.js', () => ({
   getEnabledToolGroupIds: vi.fn(() => [
-    'core', 'filesystem', 'personalData', 'customData', 'memory', 'goals', 'utilities', 'customTools',
+    'core',
+    'filesystem',
+    'personalData',
+    'customData',
+    'memory',
+    'goals',
+    'utilities',
+    'customTools',
   ]),
 }));
 
@@ -52,7 +59,14 @@ describe('tool-permission-service', () => {
 
     // Default: all standard groups enabled
     mockGetEnabledToolGroupIds.mockReturnValue([
-      'core', 'filesystem', 'personalData', 'customData', 'memory', 'goals', 'utilities', 'customTools',
+      'core',
+      'filesystem',
+      'personalData',
+      'customData',
+      'memory',
+      'goals',
+      'utilities',
+      'customTools',
     ]);
     mockGetPolicy.mockResolvedValue(null);
     mockGetDynamicRegistry.mockReturnValue({ tools: new Map() });
@@ -128,8 +142,15 @@ describe('tool-permission-service', () => {
     // Enable codeExecution group for these tests
     beforeEach(() => {
       mockGetEnabledToolGroupIds.mockReturnValue([
-        'core', 'filesystem', 'personalData', 'customData', 'memory',
-        'goals', 'utilities', 'customTools', 'codeExecution',
+        'core',
+        'filesystem',
+        'personalData',
+        'customData',
+        'memory',
+        'goals',
+        'utilities',
+        'customTools',
+        'codeExecution',
       ]);
     });
 
@@ -367,11 +388,11 @@ describe('tool-permission-service', () => {
   describe('filterAllowedTools', () => {
     it('filters out tools in disabled groups', async () => {
       mockGetEnabledToolGroupIds.mockReturnValue(['core']); // Only core enabled
-      const result = await filterAllowedTools('user1', [
-        'get_current_time',
-        'execute_shell',
-        'http_request',
-      ], { source: 'chat' });
+      const result = await filterAllowedTools(
+        'user1',
+        ['get_current_time', 'execute_shell', 'http_request'],
+        { source: 'chat' }
+      );
       expect(result).toContain('get_current_time');
       expect(result).not.toContain('execute_shell');
       expect(result).not.toContain('http_request');
@@ -379,18 +400,26 @@ describe('tool-permission-service', () => {
 
     it('returns all tools when their groups are enabled', async () => {
       // All three tools are in always-on groups (core, filesystem, personalData)
-      const result = await filterAllowedTools('user1', [
-        'get_current_time',
-        'read_file',
-        'add_task',
-      ], { source: 'chat' });
+      const result = await filterAllowedTools(
+        'user1',
+        ['get_current_time', 'read_file', 'add_task'],
+        { source: 'chat' }
+      );
       expect(result).toHaveLength(3);
     });
 
     it('passes toggleable groups when enabled', async () => {
       mockGetEnabledToolGroupIds.mockReturnValue([
-        'core', 'filesystem', 'personalData', 'customData', 'memory',
-        'goals', 'utilities', 'customTools', 'codeExecution', 'webFetch',
+        'core',
+        'filesystem',
+        'personalData',
+        'customData',
+        'memory',
+        'goals',
+        'utilities',
+        'customTools',
+        'codeExecution',
+        'webFetch',
       ]);
       const r1 = await checkToolPermission('user1', 'execute_shell', { source: 'chat' });
       expect(r1.allowed).toBe(true);

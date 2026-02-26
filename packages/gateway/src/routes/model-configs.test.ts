@@ -388,7 +388,9 @@ describe('Model Configs Routes', () => {
       mockLocalProvidersRepo.listProviders.mockResolvedValue([
         { id: 'ollama', name: 'Ollama', isEnabled: true, baseUrl: 'http://localhost:11434' },
       ]);
-      mockLocalProvidersRepo.listModels.mockResolvedValue([{ localProviderId: 'ollama', modelId: 'llama2', isEnabled: true }]);
+      mockLocalProvidersRepo.listModels.mockResolvedValue([
+        { localProviderId: 'ollama', modelId: 'llama2', isEnabled: true },
+      ]);
 
       const res = await app.request('/models/providers/list');
       const json = await res.json();

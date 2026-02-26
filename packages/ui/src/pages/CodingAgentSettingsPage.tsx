@@ -178,7 +178,6 @@ export function CodingAgentSettingsPage() {
           </div>
         )}
       </div>
-
     </div>
   );
 }
@@ -244,11 +243,15 @@ function ProviderCard({
           <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
             {status.version && (
               <div className="text-text-muted dark:text-dark-text-muted">
-                Version: <span className="font-mono text-text-primary dark:text-dark-text-primary">{status.version}</span>
+                Version:{' '}
+                <span className="font-mono text-text-primary dark:text-dark-text-primary">
+                  {status.version}
+                </span>
               </div>
             )}
             <div className="text-text-muted dark:text-dark-text-muted">
-              PTY: {status.ptyAvailable ? (
+              PTY:{' '}
+              {status.ptyAvailable ? (
                 <span className="text-success">Available</span>
               ) : (
                 <span className="text-error">Unavailable</span>
@@ -277,9 +280,7 @@ function ProviderCard({
           {testResult && (
             <div
               className={`mt-2 p-2 rounded-lg text-xs ${
-                testResult.available
-                  ? 'bg-success/10 text-success'
-                  : 'bg-error/10 text-error'
+                testResult.available ? 'bg-success/10 text-success' : 'bg-error/10 text-error'
               }`}
             >
               {testResult.available
@@ -319,4 +320,3 @@ function ProviderCard({
     </div>
   );
 }
-

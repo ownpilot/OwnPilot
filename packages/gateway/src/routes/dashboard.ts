@@ -7,7 +7,14 @@
 import { Hono } from 'hono';
 import { DashboardService, briefingCache, type AIBriefing } from '../services/dashboard.js';
 import { getLog } from '../services/log.js';
-import { getUserId, apiResponse, apiError, ERROR_CODES, getErrorMessage, parseJsonBody } from './helpers.js';
+import {
+  getUserId,
+  apiResponse,
+  apiError,
+  ERROR_CODES,
+  getErrorMessage,
+  parseJsonBody,
+} from './helpers.js';
 import { getDefaultProvider, getDefaultModel } from './settings.js';
 
 const log = getLog('Dashboard');
@@ -228,13 +235,17 @@ dashboardRoutes.get('/timeline', async (c) => {
  */
 dashboardRoutes.post('/briefing/stream', async (c) => {
   const userId = getUserId(c);
-  const body = await parseJsonBody<{ provider?: string; model?: string }>(c) ?? {};
+  const body = (await parseJsonBody<{ provider?: string; model?: string }>(c)) ?? {};
   const provider = body.provider ?? (await getDefaultProvider());
   if (!provider) {
-    return apiError(c, {
-      code: ERROR_CODES.BRIEFING_FAILED,
-      message: 'No AI provider configured. Add an API key in Settings.',
-    }, 400);
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.BRIEFING_FAILED,
+        message: 'No AI provider configured. Add an API key in Settings.',
+      },
+      400
+    );
   }
   const model = body.model ?? (await getDefaultModel(provider));
 

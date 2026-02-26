@@ -51,7 +51,11 @@ cliProvidersRoutes.post('/', async (c) => {
     return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: 'name is required' }, 400);
   }
   if (!b.display_name || typeof b.display_name !== 'string') {
-    return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: 'display_name is required' }, 400);
+    return apiError(
+      c,
+      { code: ERROR_CODES.VALIDATION_ERROR, message: 'display_name is required' },
+      400
+    );
   }
   if (!b.binary || typeof b.binary !== 'string') {
     return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: 'binary is required' }, 400);
@@ -61,7 +65,10 @@ cliProvidersRoutes.post('/', async (c) => {
   if (!/^[a-z0-9][a-z0-9-]*[a-z0-9]$/.test(b.name) && b.name.length > 1) {
     return apiError(
       c,
-      { code: ERROR_CODES.VALIDATION_ERROR, message: 'name must be lowercase alphanumeric with hyphens (e.g., "prettier", "my-tool")' },
+      {
+        code: ERROR_CODES.VALIDATION_ERROR,
+        message: 'name must be lowercase alphanumeric with hyphens (e.g., "prettier", "my-tool")',
+      },
       400
     );
   }
@@ -70,7 +77,11 @@ cliProvidersRoutes.post('/', async (c) => {
     // Check for duplicates
     const existing = await cliProvidersRepo.getByName(b.name as string, userId);
     if (existing) {
-      return apiError(c, { code: ERROR_CODES.ALREADY_EXISTS, message: `Provider '${b.name}' already exists` }, 409);
+      return apiError(
+        c,
+        { code: ERROR_CODES.ALREADY_EXISTS, message: `Provider '${b.name}' already exists` },
+        409
+      );
     }
 
     const provider = await cliProvidersRepo.create({

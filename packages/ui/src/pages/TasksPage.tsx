@@ -235,7 +235,9 @@ function TaskItem({ task, onComplete, onEdit, onDelete }: TaskItemProps) {
         onClick={onComplete}
         className="mt-0.5 flex-shrink-0"
         disabled={isDone}
-        aria-label={isCompleted ? 'Task completed' : isCancelled ? 'Task cancelled' : 'Mark task as complete'}
+        aria-label={
+          isCompleted ? 'Task completed' : isCancelled ? 'Task cancelled' : 'Mark task as complete'
+        }
       >
         {isCompleted ? (
           <CheckCircle2 className="w-5 h-5 text-success" />

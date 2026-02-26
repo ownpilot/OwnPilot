@@ -378,11 +378,7 @@ export function ModelRoutingPage() {
                 onClick={() => handleSave(proc.id)}
                 disabled={!state.isDirty || state.isSaving}
               >
-                {state.isSaving ? (
-                  <LoadingSpinner size="sm" />
-                ) : (
-                  <Check className="h-3.5 w-3.5" />
-                )}
+                {state.isSaving ? <LoadingSpinner size="sm" /> : <Check className="h-3.5 w-3.5" />}
                 Save
               </button>
             </div>

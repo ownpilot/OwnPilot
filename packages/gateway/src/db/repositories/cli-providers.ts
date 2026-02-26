@@ -178,10 +178,9 @@ export class CliProvidersRepository extends BaseRepository {
   }
 
   async getById(id: string): Promise<CliProviderRecord | null> {
-    const row = await this.queryOne<CliProviderRow>(
-      'SELECT * FROM cli_providers WHERE id = $1',
-      [id]
-    );
+    const row = await this.queryOne<CliProviderRow>('SELECT * FROM cli_providers WHERE id = $1', [
+      id,
+    ]);
     return row ? rowToRecord(row) : null;
   }
 
@@ -230,12 +229,15 @@ export class CliProvidersRepository extends BaseRepository {
     if (input.icon !== undefined) addField('icon', input.icon);
     if (input.color !== undefined) addField('color', input.color);
     if (input.authMethod !== undefined) addField('auth_method', input.authMethod);
-    if (input.configServiceName !== undefined) addField('config_service_name', input.configServiceName);
+    if (input.configServiceName !== undefined)
+      addField('config_service_name', input.configServiceName);
     if (input.apiKeyEnvVar !== undefined) addField('api_key_env_var', input.apiKeyEnvVar);
-    if (input.defaultArgs !== undefined) addField('default_args', JSON.stringify(input.defaultArgs));
+    if (input.defaultArgs !== undefined)
+      addField('default_args', JSON.stringify(input.defaultArgs));
     if (input.promptTemplate !== undefined) addField('prompt_template', input.promptTemplate);
     if (input.outputFormat !== undefined) addField('output_format', input.outputFormat);
-    if (input.defaultTimeoutMs !== undefined) addField('default_timeout_ms', input.defaultTimeoutMs);
+    if (input.defaultTimeoutMs !== undefined)
+      addField('default_timeout_ms', input.defaultTimeoutMs);
     if (input.maxTimeoutMs !== undefined) addField('max_timeout_ms', input.maxTimeoutMs);
     if (input.isActive !== undefined) addField('is_active', input.isActive);
 

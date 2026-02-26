@@ -281,10 +281,14 @@ export async function executeCodeNode(
     };
     const toolName = toolMap[data.language] ?? 'execute_javascript';
 
-    const toolResult = await toolService.execute(toolName, { code: resolvedCode }, {
-      userId,
-      execSource: 'workflow',
-    });
+    const toolResult = await toolService.execute(
+      toolName,
+      { code: resolvedCode },
+      {
+        userId,
+        execSource: 'workflow',
+      }
+    );
     const result: ToolExecutionResult = toToolExecResult(toolResult);
 
     return {

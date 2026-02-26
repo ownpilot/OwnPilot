@@ -98,18 +98,15 @@ export function RealtimeBridge({ onBadgeUpdate }: RealtimeBridgeProps) {
 
   // Coding agent session state changes → toast
   useEffect(() => {
-    return subscribe<{ sessionId: string; state: string }>(
-      'coding-agent:session:state',
-      (data) => {
-        if (data.state === 'completed') {
-          toast.success('Coding agent session completed');
-        } else if (data.state === 'failed') {
-          toast.error('Coding agent session failed');
-        } else if (data.state === 'terminated') {
-          toast.warning('Coding agent session terminated');
-        }
+    return subscribe<{ sessionId: string; state: string }>('coding-agent:session:state', (data) => {
+      if (data.state === 'completed') {
+        toast.success('Coding agent session completed');
+      } else if (data.state === 'failed') {
+        toast.error('Coding agent session failed');
+      } else if (data.state === 'terminated') {
+        toast.warning('Coding agent session terminated');
       }
-    );
+    });
   }, [subscribe, toast]);
 
   return null;

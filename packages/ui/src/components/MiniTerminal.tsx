@@ -230,7 +230,10 @@ export function MiniTerminal() {
         const deltaY = dragStart.current.y - ev.clientY;
         setSize({
           width: Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, dragStartSize.current.width + deltaX)),
-          height: Math.max(MIN_HEIGHT, Math.min(maxHeight(), dragStartSize.current.height + deltaY)),
+          height: Math.max(
+            MIN_HEIGHT,
+            Math.min(maxHeight(), dragStartSize.current.height + deltaY)
+          ),
         });
       };
 
@@ -268,7 +271,12 @@ export function MiniTerminal() {
   );
 
   // Hidden on /coding-agents and mobile
-  if (location.pathname === '/coding-agents' || location.pathname.startsWith('/settings/coding-agents') || isMobile) return null;
+  if (
+    location.pathname === '/coding-agents' ||
+    location.pathname.startsWith('/settings/coding-agents') ||
+    isMobile
+  )
+    return null;
 
   // Nothing to show if no sessions
   if (sessions.length === 0 && !isOpen) return null;
@@ -335,7 +343,11 @@ export function MiniTerminal() {
             aria-label={isMaximized ? 'Restore size' : 'Maximize'}
             title={isMaximized ? 'Restore size' : 'Maximize'}
           >
-            {isMaximized ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
+            {isMaximized ? (
+              <Minimize2 className="w-3.5 h-3.5" />
+            ) : (
+              <Maximize2 className="w-3.5 h-3.5" />
+            )}
           </button>
           {/* Expand to full page */}
           <button
@@ -391,11 +403,7 @@ export function MiniTerminal() {
             />
           ) : (
             <div className="absolute inset-0">
-              <XTerminal
-                key={activeSession.id}
-                sessionId={activeSession.id}
-                interactive={true}
-              />
+              <XTerminal key={activeSession.id} sessionId={activeSession.id} interactive={true} />
             </div>
           )
         ) : (

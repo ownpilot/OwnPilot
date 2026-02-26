@@ -303,7 +303,11 @@ export function AutonomyPage() {
     try {
       await pulseApi.run();
       toast.success('Pulse executed');
-      await Promise.allSettled([fetchPulseStatus(), fetchPulseStats(), fetchPulseHistory(pulsePage)]);
+      await Promise.allSettled([
+        fetchPulseStatus(),
+        fetchPulseStats(),
+        fetchPulseHistory(pulsePage),
+      ]);
     } catch (err) {
       if (err instanceof ApiError && err.status === 409) {
         toast.info('A pulse is already running.');

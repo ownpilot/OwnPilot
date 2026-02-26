@@ -163,7 +163,11 @@ describe('CodingAgentService', () => {
       // Binary check passes
       mockExecFileSync.mockReturnValue('codex v1.0.0\n');
 
-      const jsonOutput = JSON.stringify({ type: 'message', role: 'assistant', content: 'Done! Fixed the bug.' });
+      const jsonOutput = JSON.stringify({
+        type: 'message',
+        role: 'assistant',
+        content: 'Done! Fixed the bug.',
+      });
       const proc = createMockProcess(jsonOutput, '', 0);
       mockSpawn.mockReturnValue(proc);
 
@@ -464,7 +468,10 @@ describe('Coding Agent Tool Definitions', () => {
     const { CODING_AGENT_TOOLS } = await import('../tools/coding-agent-tools.js');
     const runTask = CODING_AGENT_TOOLS.find((t) => t.name === 'run_coding_task')!;
 
-    const props = runTask.parameters.properties as Record<string, { type: string; enum?: string[] }>;
+    const props = runTask.parameters.properties as Record<
+      string,
+      { type: string; enum?: string[] }
+    >;
     // No enum — accepts built-in names and custom:* providers
     expect(props.provider.type).toBe('string');
     expect(props.provider.enum).toBeUndefined();

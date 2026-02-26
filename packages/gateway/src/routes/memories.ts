@@ -231,7 +231,7 @@ memoriesRoutes.patch('/:id', async (c) => {
 memoriesRoutes.post('/:id/boost', async (c) => {
   const userId = getUserId(c);
   const id = c.req.param('id');
-  const rawBody = await parseJsonBody(c) ?? {};
+  const rawBody = (await parseJsonBody(c)) ?? {};
   const { validateBody, boostMemorySchema } = await import('../middleware/validation.js');
   const body = validateBody(boostMemorySchema, rawBody) as { amount?: number };
   const amount = body.amount ?? 0.1;
@@ -286,7 +286,7 @@ memoriesRoutes.delete('/:id', async (c) => {
  */
 memoriesRoutes.post('/decay', async (c) => {
   const userId = getUserId(c);
-  const rawBody = await parseJsonBody(c) ?? {};
+  const rawBody = (await parseJsonBody(c)) ?? {};
   const { validateBody, decayMemoriesSchema } = await import('../middleware/validation.js');
   const body = validateBody(decayMemoriesSchema, rawBody) as {
     daysThreshold?: number;
@@ -309,7 +309,7 @@ memoriesRoutes.post('/decay', async (c) => {
  */
 memoriesRoutes.post('/cleanup', async (c) => {
   const userId = getUserId(c);
-  const rawBody = await parseJsonBody(c) ?? {};
+  const rawBody = (await parseJsonBody(c)) ?? {};
   const { validateBody, cleanupMemoriesSchema } = await import('../middleware/validation.js');
   const body = validateBody(cleanupMemoriesSchema, rawBody) as {
     maxAge?: number;

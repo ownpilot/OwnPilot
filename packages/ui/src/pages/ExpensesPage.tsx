@@ -60,13 +60,18 @@ export function ExpensesPage() {
       // Use proper end-of-month (new Date(year, month, 0) gives last day of previous month)
       const lastDay = selectedMonth ? new Date(year, parseInt(selectedMonth, 10), 0).getDate() : 31;
       const summaryParams: Record<string, string> = selectedMonth
-        ? { startDate: `${year}-${selectedMonth}-01`, endDate: `${year}-${selectedMonth}-${String(lastDay).padStart(2, '0')}` }
+        ? {
+            startDate: `${year}-${selectedMonth}-01`,
+            endDate: `${year}-${selectedMonth}-${String(lastDay).padStart(2, '0')}`,
+          }
         : { period: 'this_year' };
       const summaryJson = await expensesApi.summary(summaryParams);
       setSummaryData(summaryJson);
 
       // Fetch expense list
-      const listLastDay = selectedMonth ? new Date(year, parseInt(selectedMonth, 10), 0).getDate() : 31;
+      const listLastDay = selectedMonth
+        ? new Date(year, parseInt(selectedMonth, 10), 0).getDate()
+        : 31;
       const listParams: Record<string, string> = selectedMonth
         ? {
             startDate: `${year}-${selectedMonth}-01`,

@@ -329,7 +329,7 @@ Always explain WHY a change was suggested.
  * POST /generate - Generate extension manifest from description using AI
  */
 generationRoutes.post('/generate', async (c) => {
-  const body = await parseJsonBody(c) as {
+  const body = (await parseJsonBody(c)) as {
     description?: string;
     format?: 'json' | 'markdown';
   } | null;
@@ -461,7 +461,7 @@ generationRoutes.post('/generate', async (c) => {
  * POST /generate-skill - Generate SKILL.md content from description using AI
  */
 generationRoutes.post('/generate-skill', async (c) => {
-  const body = await parseJsonBody(c) as {
+  const body = (await parseJsonBody(c)) as {
     description?: string;
   } | null;
 

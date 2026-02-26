@@ -209,10 +209,7 @@ describe('model-routing', () => {
   describe('setProcessRouting', () => {
     it('writes correct keys for provider and model', async () => {
       await setProcessRouting('chat', { provider: 'anthropic', model: 'claude-3' });
-      expect(mockSettingsRepo.set).toHaveBeenCalledWith(
-        'model_routing:chat:provider',
-        'anthropic'
-      );
+      expect(mockSettingsRepo.set).toHaveBeenCalledWith('model_routing:chat:provider', 'anthropic');
       expect(mockSettingsRepo.set).toHaveBeenCalledWith('model_routing:chat:model', 'claude-3');
     });
 

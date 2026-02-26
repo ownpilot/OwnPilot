@@ -36,19 +36,23 @@ Each provider uses the user's own API key. The agent runs autonomously in the sp
     properties: {
       provider: {
         type: 'string',
-        description: "Which coding agent to use. Built-in: 'claude-code', 'codex', 'gemini-cli'. Custom: 'custom:{name}'.",
+        description:
+          "Which coding agent to use. Built-in: 'claude-code', 'codex', 'gemini-cli'. Custom: 'custom:{name}'.",
       },
       prompt: {
         type: 'string',
-        description: 'The coding task description — be specific about what files to change and what the expected outcome is',
+        description:
+          'The coding task description — be specific about what files to change and what the expected outcome is',
       },
       cwd: {
         type: 'string',
-        description: 'Working directory for the task (absolute path). The coding agent will operate within this directory.',
+        description:
+          'Working directory for the task (absolute path). The coding agent will operate within this directory.',
       },
       model: {
         type: 'string',
-        description: 'Model override (e.g., "claude-sonnet-4-5-20250929" for Claude Code, "o3" for Codex)',
+        description:
+          'Model override (e.g., "claude-sonnet-4-5-20250929" for Claude Code, "o3" for Codex)',
       },
       max_budget_usd: {
         type: 'number',
@@ -231,7 +235,7 @@ export async function executeCodingAgentTool(
               costUsd: result.costUsd,
               exitCode: result.exitCode,
             },
-            error: result.success ? undefined : result.error ?? 'Task failed',
+            error: result.success ? undefined : (result.error ?? 'Task failed'),
           };
         }
 
@@ -243,7 +247,10 @@ export async function executeCodingAgentTool(
             state: completedSession.state,
             exitCode: completedSession.exitCode,
           },
-          error: completedSession.state !== 'completed' ? `Session ended with state: ${completedSession.state}` : undefined,
+          error:
+            completedSession.state !== 'completed'
+              ? `Session ended with state: ${completedSession.state}`
+              : undefined,
         };
       } catch (e) {
         return { success: false, error: getErrorMessage(e) };

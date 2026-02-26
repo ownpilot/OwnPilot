@@ -59,7 +59,11 @@ interface ChatState {
   /** Accumulated thinking content during streaming */
   thinkingContent: string;
   /** Thinking configuration for requests */
-  thinkingConfig: { type: 'enabled' | 'adaptive'; budgetTokens?: number; effort?: 'low' | 'medium' | 'high' | 'max' } | null;
+  thinkingConfig: {
+    type: 'enabled' | 'adaptive';
+    budgetTokens?: number;
+    effort?: 'low' | 'medium' | 'high' | 'max';
+  } | null;
 }
 
 interface ChatStore extends ChatState {
@@ -411,8 +415,12 @@ export function ChatProvider({ children }: { children: ReactNode }) {
           setIsThinking(false);
 
           // Use thinkingContent from done event or accumulated during stream
-          const finalThinking = (finalResponse as Record<string, unknown> | null)?.thinkingContent as string | undefined
-            || accumulatedThinking || undefined;
+          const finalThinking =
+            ((finalResponse as Record<string, unknown> | null)?.thinkingContent as
+              | string
+              | undefined) ||
+            accumulatedThinking ||
+            undefined;
 
           const assistantMessage: Message = {
             id: crypto.randomUUID(),

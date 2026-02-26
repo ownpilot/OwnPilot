@@ -184,7 +184,14 @@ describe('CodingAgentResultsRepository', () => {
 
     it('should convert null optional fields to undefined', async () => {
       mockAdapter.queryOne.mockResolvedValueOnce(
-        makeResultRow({ session_id: null, cwd: null, model: null, error: null, cost_usd: null, mode: null })
+        makeResultRow({
+          session_id: null,
+          cwd: null,
+          model: null,
+          error: null,
+          cost_usd: null,
+          mode: null,
+        })
       );
 
       const result = await repo.getById('result-1');

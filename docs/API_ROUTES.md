@@ -1946,22 +1946,23 @@ Discovers installed CLI tools from a 40+ item catalog, manages per-tool security
 
 ### Endpoints
 
-| Method   | Path                    | Description                                  |
-| -------- | ----------------------- | -------------------------------------------- |
-| `GET`    | `/`                     | Discover all installed CLI tools             |
-| `GET`    | `/policies`             | List per-tool security policies              |
-| `PUT`    | `/policies/:toolName`   | Update policy for a single tool              |
-| `POST`   | `/policies/batch`       | Batch update policies for multiple tools     |
-| `POST`   | `/:name/install`        | Install a CLI tool via npx                   |
-| `POST`   | `/refresh`              | Force refresh tool discovery cache           |
-| `POST`   | `/custom`               | Register a custom CLI tool                   |
-| `DELETE` | `/custom/:name`         | Remove a custom CLI tool                     |
+| Method   | Path                  | Description                              |
+| -------- | --------------------- | ---------------------------------------- |
+| `GET`    | `/`                   | Discover all installed CLI tools         |
+| `GET`    | `/policies`           | List per-tool security policies          |
+| `PUT`    | `/policies/:toolName` | Update policy for a single tool          |
+| `POST`   | `/policies/batch`     | Batch update policies for multiple tools |
+| `POST`   | `/:name/install`      | Install a CLI tool via npx               |
+| `POST`   | `/refresh`            | Force refresh tool discovery cache       |
+| `POST`   | `/custom`             | Register a custom CLI tool               |
+| `DELETE` | `/custom/:name`       | Remove a custom CLI tool                 |
 
 ### GET `/`
 
 Returns all discovered CLI tools (catalog + custom) with install status, version, and effective policy.
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -1992,6 +1993,7 @@ Update the security policy for a specific tool.
 Batch update policies for multiple tools at once.
 
 **Body:**
+
 ```json
 {
   "policies": {
@@ -2007,6 +2009,7 @@ Batch update policies for multiple tools at once.
 Register a custom CLI binary as a tool.
 
 **Body:**
+
 ```json
 {
   "name": "my-tool",
@@ -2028,26 +2031,27 @@ Manage and run external AI coding agents (Claude Code, Codex, Gemini CLI) with s
 
 ### Endpoints
 
-| Method   | Path                      | Description                              |
-| -------- | ------------------------- | ---------------------------------------- |
-| `GET`    | `/status`                 | List all provider statuses               |
-| `POST`   | `/run`                    | Run a coding task (blocking)             |
-| `POST`   | `/test`                   | Test provider connectivity               |
-| `GET`    | `/sessions`               | List active sessions                     |
-| `POST`   | `/sessions`               | Create a new session                     |
-| `GET`    | `/sessions/:id`           | Get session details                      |
-| `DELETE` | `/sessions/:id`           | Terminate a session                      |
-| `POST`   | `/sessions/:id/input`     | Send input to a session                  |
-| `GET`    | `/sessions/:id/output`    | Get session output buffer                |
-| `POST`   | `/sessions/:id/resize`    | Resize terminal dimensions               |
-| `GET`    | `/results`                | List persisted task results              |
-| `GET`    | `/results/:id`            | Get a specific result                    |
+| Method   | Path                   | Description                  |
+| -------- | ---------------------- | ---------------------------- |
+| `GET`    | `/status`              | List all provider statuses   |
+| `POST`   | `/run`                 | Run a coding task (blocking) |
+| `POST`   | `/test`                | Test provider connectivity   |
+| `GET`    | `/sessions`            | List active sessions         |
+| `POST`   | `/sessions`            | Create a new session         |
+| `GET`    | `/sessions/:id`        | Get session details          |
+| `DELETE` | `/sessions/:id`        | Terminate a session          |
+| `POST`   | `/sessions/:id/input`  | Send input to a session      |
+| `GET`    | `/sessions/:id/output` | Get session output buffer    |
+| `POST`   | `/sessions/:id/resize` | Resize terminal dimensions   |
+| `GET`    | `/results`             | List persisted task results  |
+| `GET`    | `/results/:id`         | Get a specific result        |
 
 ### POST `/run`
 
 Run a coding agent task and wait for completion.
 
 **Body:**
+
 ```json
 {
   "provider": "claude-code",
@@ -2068,6 +2072,7 @@ Run a coding agent task and wait for completion.
 Create a new session with real-time output streaming via WebSocket.
 
 **Body:**
+
 ```json
 {
   "provider": "claude-code",
@@ -2090,19 +2095,20 @@ CRUD for user-registered CLI tools as coding agent providers. These appear in th
 
 ### Endpoints
 
-| Method   | Path         | Description                          |
-| -------- | ------------ | ------------------------------------ |
-| `GET`    | `/`          | List all CLI providers for the user  |
-| `POST`   | `/`          | Create a new CLI provider            |
-| `PUT`    | `/:id`       | Update a CLI provider                |
-| `DELETE` | `/:id`       | Delete a CLI provider                |
-| `POST`   | `/:id/test`  | Test if binary is installed          |
+| Method   | Path        | Description                         |
+| -------- | ----------- | ----------------------------------- |
+| `GET`    | `/`         | List all CLI providers for the user |
+| `POST`   | `/`         | Create a new CLI provider           |
+| `PUT`    | `/:id`      | Update a CLI provider               |
+| `DELETE` | `/:id`      | Delete a CLI provider               |
+| `POST`   | `/:id/test` | Test if binary is installed         |
 
 ### POST `/`
 
 Register a custom CLI binary as a coding agent provider.
 
 **Body:**
+
 ```json
 {
   "name": "my-agent",
@@ -2129,18 +2135,19 @@ Per-process model selection with fallback chains. Allows different AI processes 
 
 ### Endpoints
 
-| Method   | Path          | Description                              |
-| -------- | ------------- | ---------------------------------------- |
-| `GET`    | `/`           | List all process routing configs         |
-| `GET`    | `/:process`   | Get routing for a single process         |
-| `PUT`    | `/:process`   | Update routing for a process             |
-| `DELETE` | `/:process`   | Clear routing for a process (use global) |
+| Method   | Path        | Description                              |
+| -------- | ----------- | ---------------------------------------- |
+| `GET`    | `/`         | List all process routing configs         |
+| `GET`    | `/:process` | Get routing for a single process         |
+| `PUT`    | `/:process` | Update routing for a process             |
+| `DELETE` | `/:process` | Clear routing for a process (use global) |
 
 ### GET `/`
 
 Returns routing configuration and resolved provider/model for each process.
 
 **Response:**
+
 ```json
 {
   "success": true,

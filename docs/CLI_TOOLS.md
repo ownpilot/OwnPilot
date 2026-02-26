@@ -98,78 +98,78 @@ The catalog is a hardcoded allowlist of well-known CLI tools. Only tools from th
 
 ### Linters
 
-| Name | Display Name | Binary | Risk | Default Policy | npx Package | Tags |
-|------|-------------|--------|------|---------------|-------------|------|
-| `eslint` | ESLint | `eslint` | low | allowed | `eslint` | javascript, typescript, lint, code-quality |
-| `biome` | Biome | `biome` | low | allowed | `@biomejs/biome` | formatter, linter, javascript, typescript |
-| `stylelint` | Stylelint | `stylelint` | low | allowed | `stylelint` | css, scss, lint, style |
-| `markdownlint` | markdownlint | `markdownlint` | low | allowed | `markdownlint-cli` | markdown, lint, docs |
+| Name           | Display Name | Binary         | Risk | Default Policy | npx Package        | Tags                                       |
+| -------------- | ------------ | -------------- | ---- | -------------- | ------------------ | ------------------------------------------ |
+| `eslint`       | ESLint       | `eslint`       | low  | allowed        | `eslint`           | javascript, typescript, lint, code-quality |
+| `biome`        | Biome        | `biome`        | low  | allowed        | `@biomejs/biome`   | formatter, linter, javascript, typescript  |
+| `stylelint`    | Stylelint    | `stylelint`    | low  | allowed        | `stylelint`        | css, scss, lint, style                     |
+| `markdownlint` | markdownlint | `markdownlint` | low  | allowed        | `markdownlint-cli` | markdown, lint, docs                       |
 
 ### Formatters
 
-| Name | Display Name | Binary | Risk | Default Policy | npx Package | Tags |
-|------|-------------|--------|------|---------------|-------------|------|
-| `prettier` | Prettier | `prettier` | medium | prompt | `prettier` | format, style, javascript, typescript, css, html |
+| Name       | Display Name | Binary     | Risk   | Default Policy | npx Package | Tags                                             |
+| ---------- | ------------ | ---------- | ------ | -------------- | ----------- | ------------------------------------------------ |
+| `prettier` | Prettier     | `prettier` | medium | prompt         | `prettier`  | format, style, javascript, typescript, css, html |
 
 ### Build Tools
 
-| Name | Display Name | Binary | Risk | Default Policy | npx Package | Tags |
-|------|-------------|--------|------|---------------|-------------|------|
-| `tsc` | TypeScript Compiler | `tsc` | low | allowed | `typescript` | typescript, compiler, typecheck |
-| `vite` | Vite | `vite` | medium | prompt | `vite` | build, frontend, bundler |
-| `turbo` | Turborepo | `turbo` | medium | prompt | `turbo` | build, monorepo, ci |
-| `esbuild` | esbuild | `esbuild` | low | allowed | `esbuild` | build, bundler, javascript, typescript |
-| `webpack` | webpack | `webpack` | medium | prompt | `webpack-cli` | build, bundler, javascript |
+| Name      | Display Name        | Binary    | Risk   | Default Policy | npx Package   | Tags                                   |
+| --------- | ------------------- | --------- | ------ | -------------- | ------------- | -------------------------------------- |
+| `tsc`     | TypeScript Compiler | `tsc`     | low    | allowed        | `typescript`  | typescript, compiler, typecheck        |
+| `vite`    | Vite                | `vite`    | medium | prompt         | `vite`        | build, frontend, bundler               |
+| `turbo`   | Turborepo           | `turbo`   | medium | prompt         | `turbo`       | build, monorepo, ci                    |
+| `esbuild` | esbuild             | `esbuild` | low    | allowed        | `esbuild`     | build, bundler, javascript, typescript |
+| `webpack` | webpack             | `webpack` | medium | prompt         | `webpack-cli` | build, bundler, javascript             |
 
 ### Test Runners
 
-| Name | Display Name | Binary | Risk | Default Policy | npx Package | Install |
-|------|-------------|--------|------|---------------|-------------|---------|
-| `vitest` | Vitest | `vitest` | medium | prompt | `vitest` | npm, pnpm, npx |
-| `jest` | Jest | `jest` | medium | prompt | `jest` | npm, pnpm, npx |
-| `pytest` | pytest | `pytest` | medium | prompt | -- | system |
+| Name     | Display Name | Binary   | Risk   | Default Policy | npx Package | Install        |
+| -------- | ------------ | -------- | ------ | -------------- | ----------- | -------------- |
+| `vitest` | Vitest       | `vitest` | medium | prompt         | `vitest`    | npm, pnpm, npx |
+| `jest`   | Jest         | `jest`   | medium | prompt         | `jest`      | npm, pnpm, npx |
+| `pytest` | pytest       | `pytest` | medium | prompt         | --          | system         |
 
 ### Package Managers
 
-| Name | Display Name | Binary | Risk | Default Policy | Install |
-|------|-------------|--------|------|---------------|---------|
-| `npm` | npm | `npm` | medium | prompt | system |
-| `pnpm` | pnpm | `pnpm` | medium | prompt | npm-global, system |
-| `yarn` | Yarn | `yarn` | medium | prompt | npm-global, system |
-| `bun` | Bun | `bun` | medium | prompt | system |
+| Name   | Display Name | Binary | Risk   | Default Policy | Install            |
+| ------ | ------------ | ------ | ------ | -------------- | ------------------ |
+| `npm`  | npm          | `npm`  | medium | prompt         | system             |
+| `pnpm` | pnpm         | `pnpm` | medium | prompt         | npm-global, system |
+| `yarn` | Yarn         | `yarn` | medium | prompt         | npm-global, system |
+| `bun`  | Bun          | `bun`  | medium | prompt         | system             |
 
 ### Containers
 
-| Name | Display Name | Binary | Risk | Default Policy | Install |
-|------|-------------|--------|------|---------------|---------|
-| `docker` | Docker | `docker` | high | blocked | system, manual |
-| `docker-compose` | Docker Compose | `docker-compose` | high | blocked | system, manual |
+| Name             | Display Name   | Binary           | Risk | Default Policy | Install        |
+| ---------------- | -------------- | ---------------- | ---- | -------------- | -------------- |
+| `docker`         | Docker         | `docker`         | high | blocked        | system, manual |
+| `docker-compose` | Docker Compose | `docker-compose` | high | blocked        | system, manual |
 
 ### Version Control
 
-| Name | Display Name | Binary | Risk | Default Policy | Install |
-|------|-------------|--------|------|---------------|---------|
-| `git` | Git | `git` | medium | prompt | system |
-| `gh` | GitHub CLI | `gh` | medium | prompt | system, manual |
+| Name  | Display Name | Binary | Risk   | Default Policy | Install        |
+| ----- | ------------ | ------ | ------ | -------------- | -------------- |
+| `git` | Git          | `git`  | medium | prompt         | system         |
+| `gh`  | GitHub CLI   | `gh`   | medium | prompt         | system, manual |
 
 ### Utilities
 
-| Name | Display Name | Binary | Risk | Default Policy | Install |
-|------|-------------|--------|------|---------------|---------|
-| `node` | Node.js | `node` | high | blocked | system |
-| `python` | Python | `python` | high | blocked | system |
-| `jq` | jq | `jq` | low | allowed | system, manual |
-| `curl` | curl | `curl` | medium | prompt | system |
-| `ripgrep` | ripgrep | `rg` | low | allowed | system, manual |
+| Name      | Display Name | Binary   | Risk   | Default Policy | Install        |
+| --------- | ------------ | -------- | ------ | -------------- | -------------- |
+| `node`    | Node.js      | `node`   | high   | blocked        | system         |
+| `python`  | Python       | `python` | high   | blocked        | system         |
+| `jq`      | jq           | `jq`     | low    | allowed        | system, manual |
+| `curl`    | curl         | `curl`   | medium | prompt         | system         |
+| `ripgrep` | ripgrep      | `rg`     | low    | allowed        | system, manual |
 
 ### Risk Level Summary
 
-| Risk Level | Meaning | Default Policy | Examples |
-|-----------|---------|---------------|----------|
-| `low` | Read-only or safe output | `allowed` | eslint, tsc, jq, ripgrep |
-| `medium` | Can modify files or access network | `prompt` | prettier, npm, git, vitest |
-| `high` | System-level access, containers, runtimes | `blocked` | docker, node, python |
-| `critical` | Reserved for destructive or irreversible tools | `blocked` | (none in current catalog) |
+| Risk Level | Meaning                                        | Default Policy | Examples                   |
+| ---------- | ---------------------------------------------- | -------------- | -------------------------- |
+| `low`      | Read-only or safe output                       | `allowed`      | eslint, tsc, jq, ripgrep   |
+| `medium`   | Can modify files or access network             | `prompt`       | prettier, npm, git, vitest |
+| `high`     | System-level access, containers, runtimes      | `blocked`      | docker, node, python       |
+| `critical` | Reserved for destructive or irreversible tools | `blocked`      | (none in current catalog)  |
 
 ---
 
@@ -206,12 +206,12 @@ const discoveryCache = new Map<string, CachedDiscovery>();
 
 ```typescript
 interface CliToolStatus {
-  name: string;          // 'eslint' or 'custom:my-tool'
-  displayName: string;   // 'ESLint'
+  name: string; // 'eslint' or 'custom:my-tool'
+  displayName: string; // 'ESLint'
   category: CliToolCategory;
   riskLevel: CliToolRiskLevel;
-  installed: boolean;    // true if binary found on PATH
-  version?: string;      // e.g., 'v9.21.0'
+  installed: boolean; // true if binary found on PATH
+  version?: string; // e.g., 'v9.21.0'
   npxAvailable: boolean; // true if not installed but npx can run it
   policy: CliToolPolicy; // 'allowed' | 'prompt' | 'blocked'
   source: 'catalog' | 'custom';
@@ -224,11 +224,11 @@ interface CliToolStatus {
 
 Every CLI tool has a per-user execution policy that controls how the AI interacts with it:
 
-| Policy | Behavior |
-|--------|----------|
-| `allowed` | AI can run automatically without user approval |
-| `prompt` | AI must request user approval before each execution |
-| `blocked` | AI cannot run the tool at all |
+| Policy    | Behavior                                            |
+| --------- | --------------------------------------------------- |
+| `allowed` | AI can run automatically without user approval      |
+| `prompt`  | AI must request user approval before each execution |
+| `blocked` | AI cannot run the tool at all                       |
 
 ### Policy Resolution
 
@@ -241,11 +241,11 @@ Every CLI tool has a per-user execution policy that controls how the AI interact
 When registering a custom tool, the default policy is derived from the risk level:
 
 | Risk Level | Auto-Assigned Default Policy |
-|-----------|------------------------------|
-| `low` | `allowed` |
-| `medium` | `prompt` |
-| `high` | `blocked` |
-| `critical` | `blocked` |
+| ---------- | ---------------------------- |
+| `low`      | `allowed`                    |
+| `medium`   | `prompt`                     |
+| `high`     | `blocked`                    |
+| `critical` | `blocked`                    |
 
 ### Batch Policy Updates
 
@@ -333,12 +333,12 @@ By default, `run_cli_tool` is mapped to the `system_command` risk factor (weight
 
 When `run_cli_tool` is called with a specific tool name, the risk engine looks up the catalog entry and overrides the static factors:
 
-| Catalog Risk Level | Risk Factors Applied | Effect |
-|-------------------|---------------------|--------|
-| `low` | (none) | Minimal risk score -- safe tools like eslint, jq |
-| `medium` | `code_execution` (weight: 0.9) | Moderate risk -- npm, tsc, vitest |
-| `high` | `system_command` (weight: 0.95) | High risk -- docker, node, python |
-| `critical` | `system_command` + `irreversible` | Maximum risk |
+| Catalog Risk Level | Risk Factors Applied              | Effect                                           |
+| ------------------ | --------------------------------- | ------------------------------------------------ |
+| `low`              | (none)                            | Minimal risk score -- safe tools like eslint, jq |
+| `medium`           | `code_execution` (weight: 0.9)    | Moderate risk -- npm, tsc, vitest                |
+| `high`             | `system_command` (weight: 0.95)   | High risk -- docker, node, python                |
+| `critical`         | `system_command` + `irreversible` | Maximum risk                                     |
 
 ### Risk Score Calculation
 
@@ -347,10 +347,12 @@ risk_score = (base_risk_for_category + factor_score) / 2
 ```
 
 Where:
+
 - `base_risk_for_category`: For `tool_execution` = 20, for `system_command` = 80.
 - `factor_score`: Percentage of present risk factors weighted by their importance.
 
 Risk levels derived from score:
+
 - `low`: score < 25
 - `medium`: score 25-49
 - `high`: score 50-74
@@ -386,6 +388,7 @@ POST /cli-tools/custom
 ```
 
 **Validation rules:**
+
 - `name` must be lowercase alphanumeric with hyphens/underscores (`^[a-z0-9_-]+$`).
 - `name` must not collide with a catalog tool name.
 - `displayName` and `binaryName` are required.
@@ -437,20 +440,22 @@ The CLI tools system exposes three tools to the AI agent. These are registered i
 
 Run an installed CLI tool and return its output.
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `name` | string | yes | Tool name from catalog (e.g., `eslint`) or custom provider (`custom:my-tool`) |
-| `args` | string[] | yes | Command-line arguments array |
-| `cwd` | string | yes | Working directory (absolute path) |
-| `timeout_seconds` | number | no | Timeout in seconds (default: 60, max: 300) |
+| Parameter         | Type     | Required | Description                                                                   |
+| ----------------- | -------- | -------- | ----------------------------------------------------------------------------- |
+| `name`            | string   | yes      | Tool name from catalog (e.g., `eslint`) or custom provider (`custom:my-tool`) |
+| `args`            | string[] | yes      | Command-line arguments array                                                  |
+| `cwd`             | string   | yes      | Working directory (absolute path)                                             |
+| `timeout_seconds` | number   | no       | Timeout in seconds (default: 60, max: 300)                                    |
 
 **Behavior:**
+
 - Checks the binary allowlist (catalog + custom providers).
 - Checks per-tool policy (`blocked` = rejected, `prompt` = requires approval).
 - If binary is not installed but npx is available, auto-invokes via `npx --yes <package>`.
 - Returns stdout (truncated to 8,000 chars for LLM context), stderr (truncated to 2,000 chars), exit code, and duration.
 
 **Examples:**
+
 ```
 run_cli_tool(name="eslint", args=["--format", "json", "src/"], cwd="/project")
 run_cli_tool(name="prettier", args=["--check", "**/*.ts"], cwd="/project")
@@ -463,8 +468,8 @@ run_cli_tool(name="tsc", args=["--noEmit"], cwd="/project")
 List all available CLI tools with their status.
 
 | Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| (none) | | | |
+| --------- | ---- | -------- | ----------- |
+| (none)    |      |          |             |
 
 Returns an array of `CliToolStatus` objects including name, category, risk level, installed status, version, npx availability, policy, and source.
 
@@ -472,12 +477,13 @@ Returns an array of `CliToolStatus` objects including name, category, risk level
 
 Install a missing CLI tool globally via npm or pnpm.
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `name` | string | yes | Tool name from the catalog |
-| `method` | string | yes | `npm-global` or `pnpm-global` |
+| Parameter | Type   | Required | Description                   |
+| --------- | ------ | -------- | ----------------------------- |
+| `name`    | string | yes      | Tool name from the catalog    |
+| `method`  | string | yes      | `npm-global` or `pnpm-global` |
 
 **Behavior:**
+
 - Only catalog tools can be installed (not custom providers).
 - Always requires user approval regardless of policy.
 - Runs `npm install -g <package>` or `pnpm add -g <package>`.
@@ -495,6 +501,7 @@ All endpoints are under `/cli-tools`. Responses use the standard `apiResponse` /
 List all CLI tools with discovery status, policy, and metadata.
 
 **Response:**
+
 ```json
 {
   "data": [
@@ -518,6 +525,7 @@ List all CLI tools with discovery status, policy, and metadata.
 Get all per-tool policies for the current user.
 
 **Response:**
+
 ```json
 {
   "data": [
@@ -538,6 +546,7 @@ Get all per-tool policies for the current user.
 Update a single tool's policy.
 
 **Request body:**
+
 ```json
 { "policy": "allowed" }
 ```
@@ -545,6 +554,7 @@ Update a single tool's policy.
 Valid values: `allowed`, `prompt`, `blocked`.
 
 **Response:**
+
 ```json
 {
   "data": { "toolName": "eslint", "policy": "allowed" }
@@ -556,6 +566,7 @@ Valid values: `allowed`, `prompt`, `blocked`.
 Batch update policies by risk level or explicit tool list.
 
 **Request body (by risk level):**
+
 ```json
 {
   "policy": "blocked",
@@ -564,6 +575,7 @@ Batch update policies by risk level or explicit tool list.
 ```
 
 **Request body (by tool list):**
+
 ```json
 {
   "policy": "allowed",
@@ -572,6 +584,7 @@ Batch update policies by risk level or explicit tool list.
 ```
 
 **Response:**
+
 ```json
 {
   "data": { "updated": 3, "policy": "allowed" }
@@ -583,6 +596,7 @@ Batch update policies by risk level or explicit tool list.
 Install a catalog tool globally.
 
 **Request body:**
+
 ```json
 { "method": "npm-global" }
 ```
@@ -590,6 +604,7 @@ Install a catalog tool globally.
 Valid methods: `npm-global`, `pnpm-global`.
 
 **Response (success):**
+
 ```json
 {
   "data": {
@@ -609,6 +624,7 @@ Valid methods: `npm-global`, `pnpm-global`.
 Clear the discovery cache and force a re-scan on next request.
 
 **Response:**
+
 ```json
 {
   "data": { "refreshed": true }
@@ -641,11 +657,11 @@ Before spawning any child process, `createSanitizedEnv()` strips sensitive varia
 
 ```typescript
 const sensitivePatterns = [
-  /^OWNPILOT_/i,     // All OwnPilot internal vars
-  /^DATABASE_/i,      // Database connection strings
-  /^ADMIN_KEY$/i,     // Admin authentication key
-  /^JWT_SECRET$/i,    // JWT signing secret
-  /^SESSION_SECRET$/i // Session secret
+  /^OWNPILOT_/i, // All OwnPilot internal vars
+  /^DATABASE_/i, // Database connection strings
+  /^ADMIN_KEY$/i, // Admin authentication key
+  /^JWT_SECRET$/i, // JWT signing secret
+  /^SESSION_SECRET$/i, // Session secret
 ];
 ```
 
@@ -672,6 +688,7 @@ const proc = spawn(command, args, {
 ### 4. Working Directory Validation
 
 The `validateCwd()` function ensures:
+
 - Path is absolute (rejects relative paths).
 - No path traversal (`..` components are rejected).
 
@@ -691,6 +708,7 @@ For LLM context, output is further truncated: stdout to 8,000 characters and std
 ### 7. Per-Tool Policy Enforcement
 
 Policies are checked at two points:
+
 1. **Orchestrator level** -- Before the tool call reaches the service (approval flow).
 2. **Service level** -- Inside `executeTool()` as defense-in-depth.
 
@@ -731,6 +749,7 @@ CREATE TABLE IF NOT EXISTS cli_providers (
 ```
 
 **Indexes:**
+
 - `idx_cli_providers_user` on `user_id`
 - `idx_cli_providers_active` on `is_active`
 - `idx_cli_providers_user_name` on `(user_id, name)`
@@ -753,6 +772,7 @@ CREATE TABLE IF NOT EXISTS cli_tool_policies (
 ```
 
 **Indexes:**
+
 - `idx_cli_tool_policies_user` on `user_id`
 - `idx_cli_tool_policies_user_tool` on `(user_id, tool_name)`
 
@@ -771,6 +791,7 @@ Displays three stat cards: Total Tools, Installed, and npx Available.
 ### Quick Actions
 
 Batch policy buttons for common operations:
+
 - **Allow All Low-Risk** -- Sets all `low` risk tools to `allowed`.
 - **Block All High-Risk** -- Sets all `high` risk tools to `blocked`.
 - **Block All Critical** -- Sets all `critical` risk tools to `blocked`.
@@ -778,6 +799,7 @@ Batch policy buttons for common operations:
 ### Policy Legend
 
 Visual indicator of what each policy means:
+
 - Green dot: `Allowed` -- AI runs automatically.
 - Yellow dot: `Prompt` -- AI asks for approval.
 - Red dot: `Blocked` -- AI cannot use this.
@@ -790,6 +812,7 @@ Visual indicator of what each policy means:
 ### Tool Table (grouped by category)
 
 Each row displays:
+
 - Tool name and display name (with `custom` badge for custom tools).
 - Installation status: Installed (green), npx (blue), Missing (gray).
 - Version string (if installed).
@@ -801,6 +824,7 @@ Each row displays:
 ### Register Custom Tool Modal
 
 A modal form with fields for:
+
 - Tool ID (slug) -- auto-lowercased, restricted to `[a-z0-9_-]`.
 - Display Name.
 - Binary Name (must be in PATH).
@@ -812,19 +836,19 @@ A modal form with fields for:
 
 ## Key Source Files
 
-| File | Package | Description |
-|------|---------|-------------|
-| `packages/core/src/services/cli-tool-service.ts` | core | Type definitions and `ICliToolService` interface |
-| `packages/gateway/src/services/cli-tool-service.ts` | gateway | Service implementation (resolve, policy, install) |
-| `packages/gateway/src/services/cli-tools-catalog.ts` | gateway | Hardcoded catalog of 26 known CLI tools |
-| `packages/gateway/src/services/cli-tools-discovery.ts` | gateway | PATH scanning, version detection, caching (5-min TTL) |
-| `packages/gateway/src/services/binary-utils.ts` | gateway | Binary detection, env sanitization, safe process spawning |
-| `packages/gateway/src/routes/cli-tools.ts` | gateway | REST API endpoints (`/cli-tools`) |
-| `packages/gateway/src/tools/cli-tool-tools.ts` | gateway | AI tool definitions (run/list/install) and executor |
-| `packages/gateway/src/autonomy/risk.ts` | gateway | Dynamic risk scoring with catalog-aware factor override |
-| `packages/gateway/src/assistant/orchestrator.ts` | gateway | Approval integration, `getCliToolPolicyForApproval()` |
-| `packages/gateway/src/db/repositories/cli-tool-policies.ts` | gateway | Per-tool policy DB repository (CRUD, batch) |
-| `packages/gateway/src/db/repositories/cli-providers.ts` | gateway | Custom CLI provider DB repository (CRUD) |
-| `packages/gateway/src/db/schema.ts` | gateway | Table definitions for `cli_providers` and `cli_tool_policies` |
-| `packages/ui/src/pages/CliToolsSettingsPage.tsx` | ui | Settings page UI component |
-| `packages/ui/src/api/endpoints/cli-tools.ts` | ui | API client types and methods |
+| File                                                        | Package | Description                                                   |
+| ----------------------------------------------------------- | ------- | ------------------------------------------------------------- |
+| `packages/core/src/services/cli-tool-service.ts`            | core    | Type definitions and `ICliToolService` interface              |
+| `packages/gateway/src/services/cli-tool-service.ts`         | gateway | Service implementation (resolve, policy, install)             |
+| `packages/gateway/src/services/cli-tools-catalog.ts`        | gateway | Hardcoded catalog of 26 known CLI tools                       |
+| `packages/gateway/src/services/cli-tools-discovery.ts`      | gateway | PATH scanning, version detection, caching (5-min TTL)         |
+| `packages/gateway/src/services/binary-utils.ts`             | gateway | Binary detection, env sanitization, safe process spawning     |
+| `packages/gateway/src/routes/cli-tools.ts`                  | gateway | REST API endpoints (`/cli-tools`)                             |
+| `packages/gateway/src/tools/cli-tool-tools.ts`              | gateway | AI tool definitions (run/list/install) and executor           |
+| `packages/gateway/src/autonomy/risk.ts`                     | gateway | Dynamic risk scoring with catalog-aware factor override       |
+| `packages/gateway/src/assistant/orchestrator.ts`            | gateway | Approval integration, `getCliToolPolicyForApproval()`         |
+| `packages/gateway/src/db/repositories/cli-tool-policies.ts` | gateway | Per-tool policy DB repository (CRUD, batch)                   |
+| `packages/gateway/src/db/repositories/cli-providers.ts`     | gateway | Custom CLI provider DB repository (CRUD)                      |
+| `packages/gateway/src/db/schema.ts`                         | gateway | Table definitions for `cli_providers` and `cli_tool_policies` |
+| `packages/ui/src/pages/CliToolsSettingsPage.tsx`            | ui      | Settings page UI component                                    |
+| `packages/ui/src/api/endpoints/cli-tools.ts`                | ui      | API client types and methods                                  |

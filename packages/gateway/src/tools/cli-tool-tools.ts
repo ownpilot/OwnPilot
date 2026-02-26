@@ -37,7 +37,8 @@ Tools blocked by policy will be rejected. Tools with 'prompt' policy may require
     properties: {
       name: {
         type: 'string',
-        description: "Tool name from catalog (e.g., 'eslint', 'prettier', 'docker', 'git') or custom provider ('custom:my-tool')",
+        description:
+          "Tool name from catalog (e.g., 'eslint', 'prettier', 'docker', 'git') or custom provider ('custom:my-tool')",
       },
       args: {
         type: 'array',
@@ -99,11 +100,7 @@ Examples:
   tags: ['cli', 'tool', 'install', 'setup'],
 };
 
-export const CLI_TOOL_TOOLS: ToolDefinition[] = [
-  runCliToolDef,
-  listCliToolsDef,
-  installCliToolDef,
-];
+export const CLI_TOOL_TOOLS: ToolDefinition[] = [runCliToolDef, listCliToolsDef, installCliToolDef];
 
 // =============================================================================
 // Executor

@@ -153,9 +153,7 @@ function StreamingIndicator({
   if (streamingContent) {
     // Show last ~200 chars of streaming content
     const tail =
-      streamingContent.length > 200
-        ? '...' + streamingContent.slice(-200)
-        : streamingContent;
+      streamingContent.length > 200 ? '...' + streamingContent.slice(-200) : streamingContent;
     return (
       <div className="flex justify-start">
         <div className="max-w-[85%] px-3 py-2 rounded-2xl rounded-tl-md bg-bg-secondary dark:bg-dark-bg-secondary border border-border dark:border-dark-border text-sm text-text-primary dark:text-dark-text-primary">
@@ -442,11 +440,7 @@ export function MiniChat() {
             aria-label={isMaximized ? 'Restore size' : 'Maximize'}
             title={isMaximized ? 'Restore size' : 'Maximize'}
           >
-            {isMaximized ? (
-              <Minimize2 className="w-4 h-4" />
-            ) : (
-              <Maximize2 className="w-4 h-4" />
-            )}
+            {isMaximized ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
           </button>
           {/* Expand to full page */}
           <button
@@ -486,7 +480,8 @@ export function MiniChat() {
             <>
               <span className="text-border dark:text-dark-border">|</span>
               <span className="truncate max-w-[100px]">
-                {provider}{model ? ` / ${model}` : ''}
+                {provider}
+                {model ? ` / ${model}` : ''}
               </span>
             </>
           )}

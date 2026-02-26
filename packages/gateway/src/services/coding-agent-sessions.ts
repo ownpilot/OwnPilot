@@ -166,7 +166,10 @@ export class CodingAgentSessionManager {
             log.warn(`Failed to persist result for session ${sessionId}`, { error: String(err) });
           });
 
-          log.info(`Coding agent session ${sessionId} exited`, { exitCode, provider: input.provider });
+          log.info(`Coding agent session ${sessionId} exited`, {
+            exitCode,
+            provider: input.provider,
+          });
         },
 
         onError: (error: string) => {
@@ -183,7 +186,9 @@ export class CodingAgentSessionManager {
 
           // Persist failed result
           this.persistResult(managed, undefined, error).catch((err) => {
-            log.warn(`Failed to persist error result for session ${sessionId}`, { error: String(err) });
+            log.warn(`Failed to persist error result for session ${sessionId}`, {
+              error: String(err),
+            });
           });
 
           log.error(`Coding agent session ${sessionId} error: ${error}`);
@@ -204,19 +209,22 @@ export class CodingAgentSessionManager {
       session.state = 'running';
 
       // Broadcast session creation to all WS clients (for MiniTerminal on other pages)
-      wsSessionManager.broadcast('coding-agent:session:created' as never, {
-        session: {
-          id: session.id,
-          provider: session.provider,
-          displayName: session.displayName,
-          state: session.state,
-          mode: session.mode,
-          cwd: session.cwd,
-          prompt: session.prompt,
-          startedAt: session.startedAt,
-          userId: session.userId,
-        },
-      } as never);
+      wsSessionManager.broadcast(
+        'coding-agent:session:created' as never,
+        {
+          session: {
+            id: session.id,
+            provider: session.provider,
+            displayName: session.displayName,
+            state: session.state,
+            mode: session.mode,
+            cwd: session.cwd,
+            prompt: session.prompt,
+            startedAt: session.startedAt,
+            userId: session.userId,
+          },
+        } as never
+      );
 
       log.info(`Coding agent session ${sessionId} started`, {
         provider: input.provider,
@@ -260,7 +268,10 @@ export class CodingAgentSessionManager {
       return false;
     }
     if (managed.session.userId !== userId) {
-      log.debug(`writeToSession: userId mismatch`, { expected: managed.session.userId, got: userId });
+      log.debug(`writeToSession: userId mismatch`, {
+        expected: managed.session.userId,
+        got: userId,
+      });
       return false;
     }
     if (!managed.pty) {
@@ -330,17 +341,25 @@ export class CodingAgentSessionManager {
 
     // Replay output buffer for reconnection
     if (managed.outputBuffer.length > 0) {
-      wsSessionManager.send(wsSessionId, 'coding-agent:session:output' as never, {
-        sessionId: codingSessionId,
-        data: managed.outputBuffer,
-      } as never);
+      wsSessionManager.send(
+        wsSessionId,
+        'coding-agent:session:output' as never,
+        {
+          sessionId: codingSessionId,
+          data: managed.outputBuffer,
+        } as never
+      );
     }
 
     // Send current state
-    wsSessionManager.send(wsSessionId, 'coding-agent:session:state' as never, {
-      sessionId: codingSessionId,
-      state: managed.session.state,
-    } as never);
+    wsSessionManager.send(
+      wsSessionId,
+      'coding-agent:session:state' as never,
+      {
+        sessionId: codingSessionId,
+        state: managed.session.state,
+      } as never
+    );
 
     return true;
   }
@@ -500,7 +519,12 @@ export class CodingAgentSessionManager {
     let count = 0;
     for (const sessionId of userSet) {
       const managed = this.sessions.get(sessionId);
-      if (managed && (managed.session.state === 'starting' || managed.session.state === 'running' || managed.session.state === 'waiting')) {
+      if (
+        managed &&
+        (managed.session.state === 'starting' ||
+          managed.session.state === 'running' ||
+          managed.session.state === 'waiting')
+      ) {
         count++;
       }
     }
@@ -515,7 +539,9 @@ export class CodingAgentSessionManager {
       // Remove completed/failed/terminated sessions older than 5 minutes
       if (
         session.completedAt &&
-        (session.state === 'completed' || session.state === 'failed' || session.state === 'terminated')
+        (session.state === 'completed' ||
+          session.state === 'failed' ||
+          session.state === 'terminated')
       ) {
         const completedAt = new Date(session.completedAt).getTime();
         if (now - completedAt > 300_000) {

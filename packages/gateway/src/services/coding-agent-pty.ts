@@ -29,7 +29,8 @@ function resolveCommand(command: string, args: string[]): { file: string; args: 
 
 // ANSI escape code regex (compatible with strip-ansi)
 // eslint-disable-next-line no-control-regex
-const ANSI_REGEX = /[\u001B\u009B][[\]()#;?]*(?:(?:(?:[a-zA-Z\d]*(?:;[-a-zA-Z\d/#&.:=?%@~_]*)*)?\u0007)|(?:(?:\d{1,4}(?:;\d{0,4})*)?[\dA-PR-TZcf-nq-uy=><~]))/g;
+const ANSI_REGEX =
+  /[\u001B\u009B][[\]()#;?]*(?:(?:(?:[a-zA-Z\d]*(?:;[-a-zA-Z\d/#&.:=?%@~_]*)*)?\u0007)|(?:(?:\d{1,4}(?:;\d{0,4})*)?[\dA-PR-TZcf-nq-uy=><~]))/g;
 
 const MAX_OUTPUT_SIZE = 1_048_576; // 1 MB
 
@@ -222,7 +223,11 @@ export async function spawnStreamingPty(
   const { cwd, env, timeout = 1_800_000, cols = 120, rows = 40 } = options;
 
   const resolved = resolveCommand(command, args);
-  log.debug(`Spawning streaming PTY: ${resolved.file} ${resolved.args.join(' ')}`, { cwd, cols, rows });
+  log.debug(`Spawning streaming PTY: ${resolved.file} ${resolved.args.join(' ')}`, {
+    cwd,
+    cols,
+    rows,
+  });
 
   let proc: IPty;
   try {
@@ -351,7 +356,11 @@ export function spawnStreamingProcess(
   // Close stdin immediately — auto-mode CLIs read prompts from args, not stdin.
   // Without this, some CLIs (e.g. Claude Code) block waiting for stdin EOF
   // before processing the -p prompt, causing zero output.
-  try { proc.stdin?.end(); } catch { /* stdin may already be closed */ }
+  try {
+    proc.stdin?.end();
+  } catch {
+    /* stdin may already be closed */
+  }
 
   const pid = proc.pid;
 

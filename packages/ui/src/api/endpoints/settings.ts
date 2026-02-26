@@ -45,8 +45,7 @@ export interface ProcessRoutingData {
 
 export const modelRoutingApi = {
   getAll: () => apiClient.get<ModelRoutingData>('/model-routing'),
-  get: (process: RoutingProcess) =>
-    apiClient.get<ProcessRoutingData>(`/model-routing/${process}`),
+  get: (process: RoutingProcess) => apiClient.get<ProcessRoutingData>(`/model-routing/${process}`),
   update: (process: RoutingProcess, data: Partial<ProcessRouting>) =>
     apiClient.put<ProcessRoutingData>(`/model-routing/${process}`, data),
   clear: (process: RoutingProcess) =>

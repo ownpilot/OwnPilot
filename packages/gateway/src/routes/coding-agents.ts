@@ -59,7 +59,14 @@ codingAgentsRoutes.post('/run', async (c) => {
     body as Record<string, unknown>;
 
   if (!provider || typeof provider !== 'string') {
-    return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: 'provider is required (claude-code, codex, gemini-cli)' }, 400);
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.VALIDATION_ERROR,
+        message: 'provider is required (claude-code, codex, gemini-cli)',
+      },
+      400
+    );
   }
 
   if (!prompt || typeof prompt !== 'string') {
@@ -69,7 +76,10 @@ codingAgentsRoutes.post('/run', async (c) => {
   if (!isValidProvider(provider)) {
     return apiError(
       c,
-      { code: ERROR_CODES.VALIDATION_ERROR, message: `Invalid provider "${provider}". Must be a built-in (${VALID_BUILTIN_PROVIDERS.join(', ')}) or custom:name` },
+      {
+        code: ERROR_CODES.VALIDATION_ERROR,
+        message: `Invalid provider "${provider}". Must be a built-in (${VALID_BUILTIN_PROVIDERS.join(', ')}) or custom:name`,
+      },
       400
     );
   }
@@ -109,11 +119,19 @@ codingAgentsRoutes.post('/test', async (c) => {
 
   const { provider } = body as Record<string, unknown>;
   if (!provider || typeof provider !== 'string') {
-    return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: 'provider is required' }, 400);
+    return apiError(
+      c,
+      { code: ERROR_CODES.VALIDATION_ERROR, message: 'provider is required' },
+      400
+    );
   }
 
   if (!isValidProvider(provider)) {
-    return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: `Invalid provider: ${provider}` }, 400);
+    return apiError(
+      c,
+      { code: ERROR_CODES.VALIDATION_ERROR, message: `Invalid provider: ${provider}` },
+      400
+    );
   }
 
   try {
@@ -164,7 +182,10 @@ codingAgentsRoutes.post('/sessions', async (c) => {
   if (!provider || typeof provider !== 'string' || !isValidProvider(provider)) {
     return apiError(
       c,
-      { code: ERROR_CODES.VALIDATION_ERROR, message: `provider must be a built-in (${VALID_BUILTIN_PROVIDERS.join(', ')}) or custom:name` },
+      {
+        code: ERROR_CODES.VALIDATION_ERROR,
+        message: `provider must be a built-in (${VALID_BUILTIN_PROVIDERS.join(', ')}) or custom:name`,
+      },
       400
     );
   }
@@ -174,7 +195,11 @@ codingAgentsRoutes.post('/sessions', async (c) => {
   }
 
   if (mode && mode !== 'auto' && mode !== 'interactive') {
-    return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: 'mode must be "auto" or "interactive"' }, 400);
+    return apiError(
+      c,
+      { code: ERROR_CODES.VALIDATION_ERROR, message: 'mode must be "auto" or "interactive"' },
+      400
+    );
   }
 
   try {
@@ -200,7 +225,11 @@ codingAgentsRoutes.post('/sessions', async (c) => {
     if (message.includes('Maximum')) {
       return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message }, 409);
     }
-    if (message.includes('not installed') || message.includes('CLI not found') || message.includes('node-pty')) {
+    if (
+      message.includes('not installed') ||
+      message.includes('CLI not found') ||
+      message.includes('node-pty')
+    ) {
       return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message }, 422);
     }
     return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message }, 500);
@@ -247,13 +276,25 @@ codingAgentsRoutes.post('/sessions/:id/input', async (c) => {
 
   const body = await parseJsonBody(c);
   if (!body || typeof (body as Record<string, unknown>).data !== 'string') {
-    return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: '"data" string is required' }, 400);
+    return apiError(
+      c,
+      { code: ERROR_CODES.VALIDATION_ERROR, message: '"data" string is required' },
+      400
+    );
   }
 
   const service = getCodingAgentService();
-  const success = service.writeToSession(sessionId, userId, (body as Record<string, unknown>).data as string);
+  const success = service.writeToSession(
+    sessionId,
+    userId,
+    (body as Record<string, unknown>).data as string
+  );
   if (!success) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Session not found or not running' }, 404);
+    return apiError(
+      c,
+      { code: ERROR_CODES.NOT_FOUND, message: 'Session not found or not running' },
+      404
+    );
   }
   return apiResponse(c, { sent: true });
 });
@@ -296,13 +337,21 @@ codingAgentsRoutes.post('/sessions/:id/resize', async (c) => {
 
   const { cols, rows } = body as Record<string, unknown>;
   if (typeof cols !== 'number' || typeof rows !== 'number' || cols < 1 || rows < 1) {
-    return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: '"cols" and "rows" must be positive numbers' }, 400);
+    return apiError(
+      c,
+      { code: ERROR_CODES.VALIDATION_ERROR, message: '"cols" and "rows" must be positive numbers' },
+      400
+    );
   }
 
   const service = getCodingAgentService();
   const success = service.resizeSession(sessionId, userId, cols, rows);
   if (!success) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Session not found or not running' }, 404);
+    return apiError(
+      c,
+      { code: ERROR_CODES.NOT_FOUND, message: 'Session not found or not running' },
+      404
+    );
   }
   return apiResponse(c, { resized: true });
 });

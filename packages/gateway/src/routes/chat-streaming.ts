@@ -490,7 +490,11 @@ export async function processStreamingViaBus(
       model?: string;
       workspaceId?: string;
       attachments?: Array<{ type: string; data: string; mimeType: string; filename?: string }>;
-      thinking?: { type: 'enabled' | 'adaptive'; budgetTokens?: number; effort?: 'low' | 'medium' | 'high' | 'max' };
+      thinking?: {
+        type: 'enabled' | 'adaptive';
+        budgetTokens?: number;
+        effort?: 'low' | 'medium' | 'high' | 'max';
+      };
     };
     provider: string;
     model: string;

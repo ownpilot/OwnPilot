@@ -81,25 +81,44 @@ function keyToAnsi(e: React.KeyboardEvent): string | null {
 
   // Special keys
   switch (e.key) {
-    case 'Enter': return '\r';
-    case 'Backspace': return '\x7f';
-    case 'Tab': return '\t';
-    case 'Escape': return '\x1b';
-    case 'ArrowUp': return '\x1b[A';
-    case 'ArrowDown': return '\x1b[B';
-    case 'ArrowRight': return '\x1b[C';
-    case 'ArrowLeft': return '\x1b[D';
-    case 'Home': return '\x1b[H';
-    case 'End': return '\x1b[F';
-    case 'Delete': return '\x1b[3~';
-    case 'PageUp': return '\x1b[5~';
-    case 'PageDown': return '\x1b[6~';
-    case 'Insert': return '\x1b[2~';
-    case 'F1': return '\x1bOP';
-    case 'F2': return '\x1bOQ';
-    case 'F3': return '\x1bOR';
-    case 'F4': return '\x1bOS';
-    default: break;
+    case 'Enter':
+      return '\r';
+    case 'Backspace':
+      return '\x7f';
+    case 'Tab':
+      return '\t';
+    case 'Escape':
+      return '\x1b';
+    case 'ArrowUp':
+      return '\x1b[A';
+    case 'ArrowDown':
+      return '\x1b[B';
+    case 'ArrowRight':
+      return '\x1b[C';
+    case 'ArrowLeft':
+      return '\x1b[D';
+    case 'Home':
+      return '\x1b[H';
+    case 'End':
+      return '\x1b[F';
+    case 'Delete':
+      return '\x1b[3~';
+    case 'PageUp':
+      return '\x1b[5~';
+    case 'PageDown':
+      return '\x1b[6~';
+    case 'Insert':
+      return '\x1b[2~';
+    case 'F1':
+      return '\x1bOP';
+    case 'F2':
+      return '\x1bOQ';
+    case 'F3':
+      return '\x1bOR';
+    case 'F4':
+      return '\x1bOS';
+    default:
+      break;
   }
 
   // Printable characters (single char)
@@ -147,7 +166,11 @@ export function XTerminal({ sessionId, interactive = false, onReady, className }
   // Fit terminal to container
   const fitTerminal = useCallback(() => {
     if (fitAddonRef.current) {
-      try { fitAddonRef.current.fit(); } catch { /* not visible */ }
+      try {
+        fitAddonRef.current.fit();
+      } catch {
+        /* not visible */
+      }
     }
   }, []);
 
@@ -247,7 +270,10 @@ export function XTerminal({ sessionId, interactive = false, onReady, className }
         if (payload.sessionId === sessionId) {
           writeOutput(payload.data);
           restFallbackActive = false;
-          if (restPollTimer) { clearTimeout(restPollTimer); restPollTimer = null; }
+          if (restPollTimer) {
+            clearTimeout(restPollTimer);
+            restPollTimer = null;
+          }
         }
       }
     );
@@ -294,8 +320,11 @@ export function XTerminal({ sessionId, interactive = false, onReady, className }
           }
 
           if (['completed', 'failed', 'terminated'].includes(result.state)) {
-            const color = result.state === 'completed' ? '32' : result.state === 'failed' ? '31' : '33';
-            terminalRef.current?.write(`\r\n\x1b[${color}m--- Session ${result.state} ---\x1b[0m\r\n`);
+            const color =
+              result.state === 'completed' ? '32' : result.state === 'failed' ? '31' : '33';
+            terminalRef.current?.write(
+              `\r\n\x1b[${color}m--- Session ${result.state} ---\x1b[0m\r\n`
+            );
             restFallbackActive = false;
             return;
           }
@@ -322,7 +351,9 @@ export function XTerminal({ sessionId, interactive = false, onReady, className }
     };
   }, [sessionId, send, subscribe, status]);
 
-  useEffect(() => { fitTerminal(); }, [className, fitTerminal]);
+  useEffect(() => {
+    fitTerminal();
+  }, [className, fitTerminal]);
 
   // Auto-focus the wrapper on mount so keyboard capture works immediately
   useEffect(() => {
@@ -407,15 +438,15 @@ export function XTerminal({ sessionId, interactive = false, onReady, className }
             ^C
           </button>
           <button
-            onClick={() => { sendToPty('y\r'); }}
+            onClick={() => {
+              sendToPty('y\r');
+            }}
             className="px-2 py-1 text-xs font-mono text-green-400 hover:text-green-300 hover:bg-zinc-700 rounded"
             title="Yes + Enter"
           >
             y↵
           </button>
-          {sendFlash && (
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
-          )}
+          {sendFlash && <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />}
           {inputError && (
             <span className="text-xs text-red-400 ml-1 truncate max-w-[160px]">{inputError}</span>
           )}

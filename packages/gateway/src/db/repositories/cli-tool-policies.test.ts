@@ -25,8 +25,12 @@ describe('CliToolPoliciesRepository', () => {
   describe('getPolicy', () => {
     it('should return policy when found', async () => {
       mockAdapter.queryOne.mockResolvedValueOnce({
-        id: '1', user_id: 'default', tool_name: 'eslint', policy: 'allowed',
-        created_at: '2026-01-01', updated_at: '2026-01-01',
+        id: '1',
+        user_id: 'default',
+        tool_name: 'eslint',
+        policy: 'allowed',
+        created_at: '2026-01-01',
+        updated_at: '2026-01-01',
       });
 
       const result = await repo.getPolicy('eslint');
@@ -91,8 +95,22 @@ describe('CliToolPoliciesRepository', () => {
   describe('listPolicies', () => {
     it('should return all policies for a user', async () => {
       mockAdapter.query.mockResolvedValueOnce([
-        { id: '1', user_id: 'default', tool_name: 'docker', policy: 'blocked', created_at: '2026-01-01', updated_at: '2026-01-01' },
-        { id: '2', user_id: 'default', tool_name: 'eslint', policy: 'allowed', created_at: '2026-01-01', updated_at: '2026-01-01' },
+        {
+          id: '1',
+          user_id: 'default',
+          tool_name: 'docker',
+          policy: 'blocked',
+          created_at: '2026-01-01',
+          updated_at: '2026-01-01',
+        },
+        {
+          id: '2',
+          user_id: 'default',
+          tool_name: 'eslint',
+          policy: 'allowed',
+          created_at: '2026-01-01',
+          updated_at: '2026-01-01',
+        },
       ]);
 
       const result = await repo.listPolicies();

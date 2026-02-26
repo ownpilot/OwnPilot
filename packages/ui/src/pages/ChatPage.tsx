@@ -21,7 +21,15 @@ const ExecutionApprovalDialog = lazy(() =>
     default: m.ExecutionApprovalDialog,
   }))
 );
-import { AlertCircle, AlertTriangle, Settings, Bot, Shield, ChevronDown, ChevronRight } from '../components/icons';
+import {
+  AlertCircle,
+  AlertTriangle,
+  Settings,
+  Bot,
+  Shield,
+  ChevronDown,
+  ChevronRight,
+} from '../components/icons';
 import { modelsApi, providersApi, settingsApi, agentsApi, chatApi } from '../api';
 import type { ModelInfo, AgentDetail } from '../types';
 import { STORAGE_KEYS } from '../constants/storage-keys';
@@ -749,12 +757,23 @@ export function ChatPage() {
                         )}
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="text-text-secondary dark:text-dark-text-secondary font-medium">Thinking</span>
+                        <span className="text-text-secondary dark:text-dark-text-secondary font-medium">
+                          Thinking
+                        </span>
                         {isThinking && (
                           <div className="flex gap-1">
-                            <span className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                            <span className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                            <span className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                            <span
+                              className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce"
+                              style={{ animationDelay: '0ms' }}
+                            />
+                            <span
+                              className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce"
+                              style={{ animationDelay: '150ms' }}
+                            />
+                            <span
+                              className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce"
+                              style={{ animationDelay: '300ms' }}
+                            />
                           </div>
                         )}
                       </div>

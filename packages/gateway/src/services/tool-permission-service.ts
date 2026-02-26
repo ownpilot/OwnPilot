@@ -56,9 +56,8 @@ let _getEnabledToolGroupIds: (() => string[]) | null = null;
 let _cliToolPoliciesRepo: {
   getPolicy(toolName: string, userId?: string): Promise<string | null>;
 } | null = null;
-let _dynamicRegistryGetter:
-  | (() => { tools: Map<string, { requiresApproval?: boolean }> })
-  | null = null;
+let _dynamicRegistryGetter: (() => { tools: Map<string, { requiresApproval?: boolean }> }) | null =
+  null;
 
 async function loadEnabledToolGroupIds(): Promise<string[]> {
   if (!_getEnabledToolGroupIds) {
@@ -68,10 +67,7 @@ async function loadEnabledToolGroupIds(): Promise<string[]> {
   return _getEnabledToolGroupIds();
 }
 
-async function loadCliToolPolicy(
-  toolName: string,
-  userId: string
-): Promise<string | null> {
+async function loadCliToolPolicy(toolName: string, userId: string): Promise<string | null> {
   if (!_cliToolPoliciesRepo) {
     try {
       const mod = await import('../db/repositories/cli-tool-policies.js');
@@ -87,8 +83,9 @@ async function loadCustomToolRequiresApproval(toolName: string): Promise<boolean
   if (!_dynamicRegistryGetter) {
     try {
       const mod = await import('./custom-tool-registry.js');
-      _dynamicRegistryGetter =
-        mod.getCustomToolDynamicRegistry as NonNullable<typeof _dynamicRegistryGetter>;
+      _dynamicRegistryGetter = mod.getCustomToolDynamicRegistry as NonNullable<
+        typeof _dynamicRegistryGetter
+      >;
     } catch {
       return false;
     }

@@ -77,10 +77,9 @@ export const cliToolsApi = {
 
   /** Update a tool's execution policy */
   setPolicy: (toolName: string, policy: CliToolPolicy) =>
-    apiClient.put<{ toolName: string; policy: CliToolPolicy }>(
-      `/cli-tools/policies/${toolName}`,
-      { policy }
-    ),
+    apiClient.put<{ toolName: string; policy: CliToolPolicy }>(`/cli-tools/policies/${toolName}`, {
+      policy,
+    }),
 
   /** Batch update policies by risk level or tool list */
   batchSetPolicy: (policy: CliToolPolicy, opts: { riskLevel?: string; tools?: string[] }) =>

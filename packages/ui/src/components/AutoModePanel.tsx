@@ -388,8 +388,12 @@ export function AutoModePanel({ sessionId, session, onTerminate }: AutoModePanel
   }, [entries, rawBuffer, isClaudeCode]);
 
   // Derived state
-  const badge = PROVIDER_BADGE[session.provider] ?? { icon: '?', color: 'bg-zinc-500/20 text-zinc-400' };
-  const isActive = session.state === 'running' || session.state === 'starting' || session.state === 'waiting';
+  const badge = PROVIDER_BADGE[session.provider] ?? {
+    icon: '?',
+    color: 'bg-zinc-500/20 text-zinc-400',
+  };
+  const isActive =
+    session.state === 'running' || session.state === 'starting' || session.state === 'waiting';
   const promptLong = session.prompt.length > 100;
 
   return (
@@ -398,13 +402,13 @@ export function AutoModePanel({ sessionId, session, onTerminate }: AutoModePanel
       <div className="px-4 py-3 border-b border-zinc-700/50 space-y-2 shrink-0">
         {/* Row 1: provider + name + elapsed + copy */}
         <div className="flex items-center gap-3">
-          <div className={`w-7 h-7 rounded-md flex items-center justify-center text-xs font-bold shrink-0 ${badge.color}`}>
+          <div
+            className={`w-7 h-7 rounded-md flex items-center justify-center text-xs font-bold shrink-0 ${badge.color}`}
+          >
             {badge.icon}
           </div>
           <div className="flex-1 min-w-0">
-            <div className="text-sm font-medium text-zinc-100 truncate">
-              {session.displayName}
-            </div>
+            <div className="text-sm font-medium text-zinc-100 truncate">{session.displayName}</div>
           </div>
           <div className="flex items-center gap-2 shrink-0">
             <span className="text-xs text-zinc-500 font-mono tabular-nums">
@@ -416,7 +420,11 @@ export function AutoModePanel({ sessionId, session, onTerminate }: AutoModePanel
               className="p-1 rounded text-zinc-500 hover:text-zinc-300 hover:bg-zinc-700 transition-colors"
               title="Copy output"
             >
-              {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+              {copied ? (
+                <Check className="w-3.5 h-3.5 text-emerald-400" />
+              ) : (
+                <Copy className="w-3.5 h-3.5" />
+              )}
             </button>
           </div>
         </div>
@@ -446,11 +454,7 @@ export function AutoModePanel({ sessionId, session, onTerminate }: AutoModePanel
             <Folder className="w-3 h-3 inline mr-1 opacity-50" />
             {truncatePath(session.cwd)}
           </span>
-          {session.model && (
-            <span className="shrink-0">
-              {session.model}
-            </span>
-          )}
+          {session.model && <span className="shrink-0">{session.model}</span>}
         </div>
       </div>
 
@@ -463,10 +467,7 @@ export function AutoModePanel({ sessionId, session, onTerminate }: AutoModePanel
       )}
 
       {/* ---- Output area ---- */}
-      <div
-        ref={outputRef}
-        className="flex-1 overflow-y-auto px-4 py-3 min-h-0 scroll-smooth"
-      >
+      <div ref={outputRef} className="flex-1 overflow-y-auto px-4 py-3 min-h-0 scroll-smooth">
         {!hasReceivedOutput.current && isActive && (
           <div className="flex items-center gap-2 text-zinc-500 text-sm py-4">
             <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
@@ -495,9 +496,7 @@ export function AutoModePanel({ sessionId, session, onTerminate }: AutoModePanel
           {/* State dot + label */}
           <div className="flex items-center gap-1.5">
             <span className={`w-2 h-2 rounded-full ${STATE_DOT[session.state]}`} />
-            <span className="text-xs text-zinc-400">
-              {STATE_LABEL[session.state]}
-            </span>
+            <span className="text-xs text-zinc-400">{STATE_LABEL[session.state]}</span>
           </div>
 
           {/* Duration */}
@@ -515,7 +514,9 @@ export function AutoModePanel({ sessionId, session, onTerminate }: AutoModePanel
 
           {/* Exit code */}
           {session.exitCode !== undefined && !isActive && (
-            <span className={`text-xs font-mono ${session.exitCode === 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+            <span
+              className={`text-xs font-mono ${session.exitCode === 0 ? 'text-emerald-400' : 'text-red-400'}`}
+            >
               exit {session.exitCode}
             </span>
           )}
@@ -564,9 +565,7 @@ function OutputEntryView({ entry }: { entry: OutputEntry }) {
 
     case 'error':
       return (
-        <div className="font-mono text-xs text-red-400 whitespace-pre-wrap py-1">
-          {entry.text}
-        </div>
+        <div className="font-mono text-xs text-red-400 whitespace-pre-wrap py-1">{entry.text}</div>
       );
 
     case 'status':

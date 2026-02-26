@@ -160,7 +160,8 @@ async function runClaudeCode(task: CodingAgentTask, apiKey?: string): Promise<Co
       output: '',
       provider: 'claude-code',
       durationMs: Date.now() - start,
-      error: 'Claude Code SDK not installed. Install it with: pnpm add @anthropic-ai/claude-agent-sdk',
+      error:
+        'Claude Code SDK not installed. Install it with: pnpm add @anthropic-ai/claude-agent-sdk',
     };
   }
 
@@ -252,7 +253,8 @@ async function runCodex(task: CodingAgentTask, apiKey?: string): Promise<CodingA
       provider: 'codex',
       durationMs: Date.now() - start,
       exitCode: result.exitCode,
-      error: result.exitCode !== 0 ? result.stderr || `Exited with code ${result.exitCode}` : undefined,
+      error:
+        result.exitCode !== 0 ? result.stderr || `Exited with code ${result.exitCode}` : undefined,
       mode: 'sdk',
     };
   } catch (err) {
@@ -299,7 +301,8 @@ async function runGeminiCli(task: CodingAgentTask, apiKey?: string): Promise<Cod
       provider: 'gemini-cli',
       durationMs: Date.now() - start,
       exitCode: result.exitCode,
-      error: result.exitCode !== 0 ? result.stderr || `Exited with code ${result.exitCode}` : undefined,
+      error:
+        result.exitCode !== 0 ? result.stderr || `Exited with code ${result.exitCode}` : undefined,
       mode: 'sdk',
     };
   } catch (err) {
@@ -426,7 +429,7 @@ class CodingAgentService implements ICodingAgentService {
         installed: isBinaryInstalled(cp.binary),
         hasApiKey: !!resolveCustomApiKey(cp),
         configured: !!resolveCustomApiKey(cp),
-        authMethod: cp.authMethod === 'none' ? 'login' as const : 'both' as const,
+        authMethod: cp.authMethod === 'none' ? ('login' as const) : ('both' as const),
         version: isBinaryInstalled(cp.binary) ? getBinaryVersion(cp.binary) : undefined,
         ptyAvailable,
       }));
@@ -474,8 +477,7 @@ class CodingAgentService implements ICodingAgentService {
         output: '',
         provider: task.provider,
         durationMs: Date.now() - start,
-        error:
-          'PTY fallback not available. Install node-pty: pnpm add node-pty',
+        error: 'PTY fallback not available. Install node-pty: pnpm add node-pty',
       };
     }
 
@@ -546,7 +548,10 @@ class CodingAgentService implements ICodingAgentService {
   // Session-based API (interactive PTY terminals)
   // ===========================================================================
 
-  async createSession(input: CreateCodingSessionInput, userId: string): Promise<CodingAgentSession> {
+  async createSession(
+    input: CreateCodingSessionInput,
+    userId: string
+  ): Promise<CodingAgentSession> {
     const provider = input.provider;
     let apiKey: string | undefined;
     let binary: string;
@@ -557,7 +562,9 @@ class CodingAgentService implements ICodingAgentService {
       // Custom provider: load from DB
       const cp = await cliProvidersRepo.getByName(customName, userId);
       if (!cp) {
-        throw new Error(`Custom CLI provider '${customName}' not found. Register it first via Settings.`);
+        throw new Error(
+          `Custom CLI provider '${customName}' not found. Register it first via Settings.`
+        );
       }
       binary = cp.binary;
       apiKeyEnvVar = cp.apiKeyEnvVar;
@@ -572,7 +579,8 @@ class CodingAgentService implements ICodingAgentService {
 
     // All session modes require the CLI binary
     if (!isBinaryInstalled(binary)) {
-      const displayName = customName ?? (isBuiltinProvider(provider) ? DISPLAY_NAMES[provider] : provider);
+      const displayName =
+        customName ?? (isBuiltinProvider(provider) ? DISPLAY_NAMES[provider] : provider);
       throw new Error(
         `${displayName} CLI not found. Install '${binary}' and ensure it's on your PATH.`
       );
@@ -592,7 +600,9 @@ class CodingAgentService implements ICodingAgentService {
 
     const displayName = customName
       ? customName
-      : (isBuiltinProvider(provider) ? DISPLAY_NAMES[provider] : provider);
+      : isBuiltinProvider(provider)
+        ? DISPLAY_NAMES[provider]
+        : provider;
 
     log.info(`Creating coding agent session with ${displayName}`, {
       provider,
@@ -643,24 +653,25 @@ class CodingAgentService implements ICodingAgentService {
         // --output-format stream-json --verbose: structured JSON event stream
         //   (tool calls, results, costs) for rich UI display
         return [
-          '-p', input.prompt,
+          '-p',
+          input.prompt,
           '--dangerously-skip-permissions',
-          '--output-format', 'stream-json',
+          '--output-format',
+          'stream-json',
           '--verbose',
           ...(input.model ? ['--model', input.model] : []),
         ];
       case 'codex':
         if (isInteractive) return [];
         return [
-          'exec', '--full-auto', input.prompt,
+          'exec',
+          '--full-auto',
+          input.prompt,
           ...(input.model ? ['--model', input.model] : []),
         ];
       case 'gemini-cli':
         if (isInteractive) return [];
-        return [
-          '-p', input.prompt,
-          ...(input.model ? ['--model', input.model] : []),
-        ];
+        return ['-p', input.prompt, ...(input.model ? ['--model', input.model] : [])];
       default:
         return [input.prompt];
     }
@@ -670,10 +681,7 @@ class CodingAgentService implements ICodingAgentService {
    * Build CLI args for a custom provider session.
    * Uses the provider's defaultArgs and optional promptTemplate.
    */
-  private buildCustomSessionArgs(
-    input: CreateCodingSessionInput,
-    cp: CliProviderRecord
-  ): string[] {
+  private buildCustomSessionArgs(input: CreateCodingSessionInput, cp: CliProviderRecord): string[] {
     const args = [...cp.defaultArgs];
 
     if (cp.promptTemplate) {
@@ -691,10 +699,13 @@ class CodingAgentService implements ICodingAgentService {
     return args;
   }
 
-  private sessionManager: import('./coding-agent-sessions.js').CodingAgentSessionManager | null = null;
+  private sessionManager: import('./coding-agent-sessions.js').CodingAgentSessionManager | null =
+    null;
   private sessionManagerInitPromise: Promise<void> | null = null;
 
-  private getSessionManager(): import('./coding-agent-sessions.js').CodingAgentSessionManager | null {
+  private getSessionManager():
+    | import('./coding-agent-sessions.js').CodingAgentSessionManager
+    | null {
     return this.sessionManager;
   }
 

@@ -23,11 +23,7 @@ const PREFIX = 'model_routing:';
 
 export type RoutingProcess = 'chat' | 'telegram' | 'pulse';
 
-export const VALID_PROCESSES: readonly RoutingProcess[] = [
-  'chat',
-  'telegram',
-  'pulse',
-] as const;
+export const VALID_PROCESSES: readonly RoutingProcess[] = ['chat', 'telegram', 'pulse'] as const;
 
 export interface ProcessRouting {
   provider: string | null;

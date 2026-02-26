@@ -259,7 +259,18 @@ export interface ServerEvents {
   'system:status': { online: boolean; version: string; uptime: number };
 
   // Coding Agent session events
-  'coding-agent:session:created': { session: { id: string; provider: string; displayName: string; state: string; mode: string; prompt: string; startedAt: string; userId: string } };
+  'coding-agent:session:created': {
+    session: {
+      id: string;
+      provider: string;
+      displayName: string;
+      state: string;
+      mode: string;
+      prompt: string;
+      startedAt: string;
+      userId: string;
+    };
+  };
   'coding-agent:session:output': { sessionId: string; data: string };
   'coding-agent:session:state': { sessionId: string; state: string };
   'coding-agent:session:exit': { sessionId: string; exitCode: number; signal?: number };

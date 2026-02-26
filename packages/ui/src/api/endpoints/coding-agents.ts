@@ -172,16 +172,14 @@ export const codingAgentsApi = {
   // --- Session management ---
 
   /** List active sessions */
-  listSessions: () =>
-    apiClient.get<CodingAgentSession[]>('/coding-agents/sessions'),
+  listSessions: () => apiClient.get<CodingAgentSession[]>('/coding-agents/sessions'),
 
   /** Create a new PTY session */
   createSession: (input: CreateCodingSessionInput) =>
     apiClient.post<CodingAgentSession>('/coding-agents/sessions', input),
 
   /** Get a specific session */
-  getSession: (id: string) =>
-    apiClient.get<CodingAgentSession>(`/coding-agents/sessions/${id}`),
+  getSession: (id: string) => apiClient.get<CodingAgentSession>(`/coding-agents/sessions/${id}`),
 
   /** Terminate a session */
   terminateSession: (id: string) =>
@@ -205,13 +203,13 @@ export const codingAgentsApi = {
 
   /** List persisted task results */
   listResults: (page = 1, limit = 20) =>
-    apiClient.get<{ data: CodingAgentResultRecord[]; pagination: { page: number; limit: number; total: number; totalPages: number } }>(
-      `/coding-agents/results?page=${page}&limit=${limit}`
-    ),
+    apiClient.get<{
+      data: CodingAgentResultRecord[];
+      pagination: { page: number; limit: number; total: number; totalPages: number };
+    }>(`/coding-agents/results?page=${page}&limit=${limit}`),
 
   /** Get a specific result */
-  getResult: (id: string) =>
-    apiClient.get<CodingAgentResultRecord>(`/coding-agents/results/${id}`),
+  getResult: (id: string) => apiClient.get<CodingAgentResultRecord>(`/coding-agents/results/${id}`),
 };
 
 // =============================================================================
@@ -231,10 +229,8 @@ export const cliProvidersApi = {
     apiClient.put<CliProviderRecord>(`/cli-providers/${id}`, input),
 
   /** Delete a CLI provider */
-  delete: (id: string) =>
-    apiClient.delete<{ deleted: boolean }>(`/cli-providers/${id}`),
+  delete: (id: string) => apiClient.delete<{ deleted: boolean }>(`/cli-providers/${id}`),
 
   /** Test if a CLI provider binary is installed */
-  test: (id: string) =>
-    apiClient.post<CliProviderTestResult>(`/cli-providers/${id}/test`),
+  test: (id: string) => apiClient.post<CliProviderTestResult>(`/cli-providers/${id}/test`),
 };

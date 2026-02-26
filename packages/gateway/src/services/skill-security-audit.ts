@@ -47,20 +47,10 @@ const DANGEROUS_TOOLS = new Set([
 ]);
 
 /** Tools that modify filesystem — medium risk if undeclared */
-const FILESYSTEM_WRITE_TOOLS = new Set([
-  'write_file',
-  'delete_file',
-  'move_file',
-  'create_folder',
-]);
+const FILESYSTEM_WRITE_TOOLS = new Set(['write_file', 'delete_file', 'move_file', 'create_folder']);
 
 /** Tools that communicate externally — medium risk if undeclared */
-const EXTERNAL_TOOLS = new Set([
-  'send_email',
-  'http_request',
-  'fetch_web_page',
-  'call_json_api',
-]);
+const EXTERNAL_TOOLS = new Set(['send_email', 'http_request', 'fetch_web_page', 'call_json_api']);
 
 /** All known tool names for reference-detection in instructions */
 const ALL_KNOWN_TOOLS = new Set([
@@ -199,9 +189,7 @@ export function auditSkillSecurity(manifest: ExtensionManifest): SkillSecurityRe
       if (!tool.code) continue;
       for (const pattern of DANGEROUS_SCRIPT_PATTERNS) {
         if (pattern.test(tool.code)) {
-          warnings.push(
-            `Tool "${tool.name}" code contains suspicious pattern: ${pattern.source}`
-          );
+          warnings.push(`Tool "${tool.name}" code contains suspicious pattern: ${pattern.source}`);
           riskLevel = elevateRisk(riskLevel, 'high');
         }
       }

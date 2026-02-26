@@ -126,9 +126,9 @@ describe('CodingAgentSessionManager', () => {
       await manager.createSession(defaultInput(), USER_A, {}, 'codex', []);
 
       // Fourth should fail
-      await expect(
-        manager.createSession(defaultInput(), USER_A, {}, 'codex', [])
-      ).rejects.toThrow('Maximum 3 concurrent sessions allowed');
+      await expect(manager.createSession(defaultInput(), USER_A, {}, 'codex', [])).rejects.toThrow(
+        'Maximum 3 concurrent sessions allowed'
+      );
     });
 
     it('allows different users to each have 3 sessions', async () => {
@@ -146,11 +146,13 @@ describe('CodingAgentSessionManager', () => {
     });
 
     it('cleans up on spawn failure', async () => {
-      mockSpawnStreamingProcess.mockImplementation(() => { throw new Error('spawn failed'); });
+      mockSpawnStreamingProcess.mockImplementation(() => {
+        throw new Error('spawn failed');
+      });
 
-      await expect(
-        manager.createSession(defaultInput(), USER_A, {}, 'codex', [])
-      ).rejects.toThrow('spawn failed');
+      await expect(manager.createSession(defaultInput(), USER_A, {}, 'codex', [])).rejects.toThrow(
+        'spawn failed'
+      );
 
       // Session should not remain
       expect(manager.listSessions(USER_A)).toHaveLength(0);
@@ -288,11 +290,10 @@ describe('CodingAgentSessionManager', () => {
       const callbacks = mockSpawnStreamingProcess.mock.calls[0][3];
       callbacks.onData('test output');
 
-      expect(mockWsSend).toHaveBeenCalledWith(
-        'ws-1',
-        'coding-agent:session:output',
-        { sessionId: session.id, data: 'test output' }
-      );
+      expect(mockWsSend).toHaveBeenCalledWith('ws-1', 'coding-agent:session:output', {
+        sessionId: session.id,
+        data: 'test output',
+      });
     });
 
     it('onExit updates state and broadcasts', async () => {
@@ -317,11 +318,10 @@ describe('CodingAgentSessionManager', () => {
         'coding-agent:session:exit',
         expect.objectContaining({ sessionId: session.id, exitCode: 0 })
       );
-      expect(mockWsSend).toHaveBeenCalledWith(
-        'ws-1',
-        'coding-agent:session:state',
-        { sessionId: session.id, state: 'completed' }
-      );
+      expect(mockWsSend).toHaveBeenCalledWith('ws-1', 'coding-agent:session:state', {
+        sessionId: session.id,
+        state: 'completed',
+      });
     });
 
     it('onExit with non-zero code sets failed state', async () => {
@@ -350,11 +350,10 @@ describe('CodingAgentSessionManager', () => {
       const updated = manager.getSession(session.id, USER_A);
       expect(updated?.state).toBe('failed');
 
-      expect(mockWsSend).toHaveBeenCalledWith(
-        'ws-1',
-        'coding-agent:session:error',
-        { sessionId: session.id, error: 'spawn error' }
-      );
+      expect(mockWsSend).toHaveBeenCalledWith('ws-1', 'coding-agent:session:error', {
+        sessionId: session.id,
+        error: 'spawn error',
+      });
     });
   });
 
@@ -379,16 +378,14 @@ describe('CodingAgentSessionManager', () => {
       manager.subscribe(session.id, 'ws-1', USER_A);
 
       // Should receive replay + current state
-      expect(mockWsSend).toHaveBeenCalledWith(
-        'ws-1',
-        'coding-agent:session:output',
-        { sessionId: session.id, data: 'line 1\nline 2\n' }
-      );
-      expect(mockWsSend).toHaveBeenCalledWith(
-        'ws-1',
-        'coding-agent:session:state',
-        { sessionId: session.id, state: 'running' }
-      );
+      expect(mockWsSend).toHaveBeenCalledWith('ws-1', 'coding-agent:session:output', {
+        sessionId: session.id,
+        data: 'line 1\nline 2\n',
+      });
+      expect(mockWsSend).toHaveBeenCalledWith('ws-1', 'coding-agent:session:state', {
+        sessionId: session.id,
+        state: 'running',
+      });
     });
 
     it('subscribe returns false for wrong user', async () => {

@@ -132,7 +132,9 @@ export class ExtensionService implements IExtensionService {
     // Validate manifest: native format requires tool validation, AgentSkills gets security audit
     if (manifest.format === 'agentskills') {
       // Validate frontmatter fields
-      const fmValidation = validateAgentSkillsFrontmatter(manifest as unknown as Record<string, unknown>);
+      const fmValidation = validateAgentSkillsFrontmatter(
+        manifest as unknown as Record<string, unknown>
+      );
       if (!fmValidation.valid) {
         throw new ExtensionError(
           `Invalid skill: ${fmValidation.errors.join('; ')}`,

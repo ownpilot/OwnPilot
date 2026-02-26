@@ -1,5 +1,15 @@
 import { useState } from 'react';
-import { User, Bot, Copy, Check, RefreshCw, ChevronRight, ChevronDown, Wrench, Brain } from './icons';
+import {
+  User,
+  Bot,
+  Copy,
+  Check,
+  RefreshCw,
+  ChevronRight,
+  ChevronDown,
+  Wrench,
+  Brain,
+} from './icons';
 import { ToolExecutionDisplay } from './ToolExecutionDisplay';
 import { TraceDisplay } from './TraceDisplay';
 import { MarkdownContent } from './MarkdownContent';

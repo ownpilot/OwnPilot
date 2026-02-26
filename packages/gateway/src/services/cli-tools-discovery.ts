@@ -70,9 +70,7 @@ export async function discoverTools(
   const results: CliToolStatus[] = [];
   for (const entry of CLI_TOOLS_CATALOG) {
     const installed = isBinaryInstalled(entry.binaryName);
-    const version = installed
-      ? getBinaryVersion(entry.binaryName, entry.versionFlag)
-      : undefined;
+    const version = installed ? getBinaryVersion(entry.binaryName, entry.versionFlag) : undefined;
     const npxAvailable = !installed && !!entry.npxPackage && isBinaryInstalled('npx');
 
     results.push({

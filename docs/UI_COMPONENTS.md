@@ -1345,19 +1345,19 @@ All data pages follow a consistent pattern: fetch data from REST API, display in
 
 ### System Pages
 
-| Page              | Path            | Purpose                                                |
-| ----------------- | --------------- | ------------------------------------------------------ |
-| `AgentsPage`       | `/agents`         | Agent configuration (name, provider, model, tools)                        |
-| `ToolsPage`        | `/tools`          | Built-in tool browser with schema, code, and test tabs                    |
-| `CustomToolsPage`  | `/custom-tools`   | User-created tools with JavaScript code                                   |
-| `CodingAgentsPage` | `/coding-agents`  | External AI coding CLI sessions (Claude Code, Codex, Gemini CLI)          |
-| `PluginsPage`      | `/plugins`        | Plugin management                                                         |
-| `ExtensionsPage`   | `/extensions`     | User extension bundles with custom tools and configs                      |
-| `SkillsPage`       | `/skills`         | AgentSkills.io SKILL.md instruction packages                              |
-| `WorkspacesPage`   | `/workspaces`     | Workspace management (create, delete, download)                           |
-| `ModelsPage`       | `/models`         | AI model browser                                                          |
-| `CostsPage`        | `/costs`          | AI cost analytics and token usage                                         |
-| `LogsPage`         | `/logs`           | Request and debug log viewer                                              |
+| Page               | Path             | Purpose                                                          |
+| ------------------ | ---------------- | ---------------------------------------------------------------- |
+| `AgentsPage`       | `/agents`        | Agent configuration (name, provider, model, tools)               |
+| `ToolsPage`        | `/tools`         | Built-in tool browser with schema, code, and test tabs           |
+| `CustomToolsPage`  | `/custom-tools`  | User-created tools with JavaScript code                          |
+| `CodingAgentsPage` | `/coding-agents` | External AI coding CLI sessions (Claude Code, Codex, Gemini CLI) |
+| `PluginsPage`      | `/plugins`       | Plugin management                                                |
+| `ExtensionsPage`   | `/extensions`    | User extension bundles with custom tools and configs             |
+| `SkillsPage`       | `/skills`        | AgentSkills.io SKILL.md instruction packages                     |
+| `WorkspacesPage`   | `/workspaces`    | Workspace management (create, delete, download)                  |
+| `ModelsPage`       | `/models`        | AI model browser                                                 |
+| `CostsPage`        | `/costs`         | AI cost analytics and token usage                                |
+| `LogsPage`         | `/logs`          | Request and debug log viewer                                     |
 
 ---
 
@@ -1365,43 +1365,43 @@ All data pages follow a consistent pattern: fetch data from REST API, display in
 
 All settings pages are under `/settings/*` and provide configuration for the system:
 
-| Page                | Path                      | Purpose                                            |
-| ------------------- | ------------------------- | -------------------------------------------------- |
-| `SettingsPage`              | `/settings`                 | Settings hub / overview                                    |
-| `ConfigCenterPage`          | `/settings/config-center`   | Unified config management with `DynamicConfigForm`         |
-| `ApiKeysPage`               | `/settings/api-keys`        | API key management                                         |
-| `ProvidersPage`             | `/settings/providers`       | AI provider configuration                                  |
-| `AIModelsPage`              | `/settings/ai-models`       | Model configuration                                        |
-| `CodingAgentSettingsPage`   | `/settings/coding-agents`   | Coding agent provider config and API key management        |
-| `CliToolsSettingsPage`      | `/settings/cli-tools`       | CLI tool discovery, per-tool policy management             |
-| `ModelRoutingPage`          | `/settings/model-routing`   | Per-process model selection with fallback chains           |
-| `McpServersPage`            | `/settings/mcp-servers`     | MCP server connections with preset quick-add               |
-| `ConnectedAppsPage`         | `/settings/connected-apps`  | OAuth integrations (Composio)                              |
-| `ToolGroupsPage`            | `/settings/tool-groups`     | Tool group visibility and assignments                      |
-| `WorkflowToolSettingsPage`  | `/settings/workflow-tools`  | Workflow tool configuration                                |
-| `SecurityPage`              | `/settings/security`        | UI authentication and password management                  |
-| `SystemPage`                | `/settings/system`          | System-level configuration, database backup/restore        |
+| Page                       | Path                       | Purpose                                             |
+| -------------------------- | -------------------------- | --------------------------------------------------- |
+| `SettingsPage`             | `/settings`                | Settings hub / overview                             |
+| `ConfigCenterPage`         | `/settings/config-center`  | Unified config management with `DynamicConfigForm`  |
+| `ApiKeysPage`              | `/settings/api-keys`       | API key management                                  |
+| `ProvidersPage`            | `/settings/providers`      | AI provider configuration                           |
+| `AIModelsPage`             | `/settings/ai-models`      | Model configuration                                 |
+| `CodingAgentSettingsPage`  | `/settings/coding-agents`  | Coding agent provider config and API key management |
+| `CliToolsSettingsPage`     | `/settings/cli-tools`      | CLI tool discovery, per-tool policy management      |
+| `ModelRoutingPage`         | `/settings/model-routing`  | Per-process model selection with fallback chains    |
+| `McpServersPage`           | `/settings/mcp-servers`    | MCP server connections with preset quick-add        |
+| `ConnectedAppsPage`        | `/settings/connected-apps` | OAuth integrations (Composio)                       |
+| `ToolGroupsPage`           | `/settings/tool-groups`    | Tool group visibility and assignments               |
+| `WorkflowToolSettingsPage` | `/settings/workflow-tools` | Workflow tool configuration                         |
+| `SecurityPage`             | `/settings/security`       | UI authentication and password management           |
+| `SystemPage`               | `/settings/system`         | System-level configuration, database backup/restore |
 
 ---
 
 ### Additional Pages
 
-| Page          | Path       | Purpose                        |
-| ------------- | ---------- | ------------------------------ |
-| `InboxPage`   | `/inbox`   | Read-only channel messages     |
-| `ProfilePage` | `/profile` | User profile                   |
-| `AboutPage`   | `/about`   | System info and version        |
-| `LoginPage`   | `/login`   | UI authentication              |
+| Page          | Path       | Purpose                    |
+| ------------- | ---------- | -------------------------- |
+| `InboxPage`   | `/inbox`   | Read-only channel messages |
+| `ProfilePage` | `/profile` | User profile               |
+| `AboutPage`   | `/about`   | System info and version    |
+| `LoginPage`   | `/login`   | UI authentication          |
 
 ---
 
 ### New Components (Coding Agents / CLI Tools)
 
-| Component        | Source                          | Purpose                                                                 |
-| ---------------- | ------------------------------- | ----------------------------------------------------------------------- |
-| `XTerminal`      | `components/XTerminal.tsx`      | Full xterm.js terminal emulator for interactive coding agent sessions   |
-| `MiniTerminal`   | `components/MiniTerminal.tsx`   | Lightweight terminal viewer for auto-mode coding agent output streaming |
-| `AutoModePanel`  | `components/AutoModePanel.tsx`  | Coding agent auto-mode execution panel with provider selector           |
+| Component       | Source                         | Purpose                                                                 |
+| --------------- | ------------------------------ | ----------------------------------------------------------------------- |
+| `XTerminal`     | `components/XTerminal.tsx`     | Full xterm.js terminal emulator for interactive coding agent sessions   |
+| `MiniTerminal`  | `components/MiniTerminal.tsx`  | Lightweight terminal viewer for auto-mode coding agent output streaming |
+| `AutoModePanel` | `components/AutoModePanel.tsx` | Coding agent auto-mode execution panel with provider selector           |
 
 ---
 
