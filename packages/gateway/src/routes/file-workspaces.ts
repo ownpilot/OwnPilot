@@ -10,7 +10,7 @@ import { Hono } from 'hono';
 import { createReadStream } from 'node:fs';
 import { stat, unlink } from 'node:fs/promises';
 import { basename } from 'node:path';
-import { apiResponse, apiError, ERROR_CODES, getUserId, getErrorMessage } from './helpers.js';
+import { apiResponse, apiError, ERROR_CODES, getUserId, getErrorMessage, parseJsonBody } from './helpers.js';
 import { MAX_DAYS_LOOKBACK } from '../config/defaults.js';
 
 /** Sanitize a filename for use in Content-Disposition headers */
@@ -92,7 +92,15 @@ app.get('/', async (c) => {
 app.post('/', async (c) => {
   const userId = getUserId(c);
   try {
-    const body = await c.req.json().catch(() => ({}));
+    const body = await parseJsonBody<{
+      name?: string;
+      agentId?: string;
+      sessionId?: string;
+      description?: string;
+      tags?: string[];
+      mode?: string;
+      maxAgeDays?: number;
+    }>(c) ?? {};
 
     const workspace = createSessionWorkspace({
       name: body.name,
@@ -290,7 +298,7 @@ app.put('/:id/file/*', async (c) => {
     const result = getOwnedWorkspace(c, workspaceId, userId);
     if (result instanceof Response) return result;
 
-    const body = await c.req.json().catch(() => null);
+    const body = await parseJsonBody<{ content: string }>(c);
 
     if (!body || body.content === undefined) {
       return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'Content is required' }, 400);
@@ -412,9 +420,17 @@ app.get('/:id/download', async (c) => {
 app.post('/cleanup', async (c) => {
   const userId = getUserId(c);
   try {
-    const body = await c.req.json().catch(() => ({}));
-    const mode: 'empty' | 'old' | 'both' = ['empty', 'old', 'both'].includes(body.mode)
-      ? body.mode
+    const body = await parseJsonBody<{
+      name?: string;
+      agentId?: string;
+      sessionId?: string;
+      description?: string;
+      tags?: string[];
+      mode?: string;
+      maxAgeDays?: number;
+    }>(c) ?? {};
+    const mode: 'empty' | 'old' | 'both' = body.mode && ['empty', 'old', 'both'].includes(body.mode)
+      ? body.mode as 'empty' | 'old' | 'both'
       : 'old';
     const raw = Number(body.maxAgeDays) || 7;
     const maxAgeDays = Math.max(1, Math.min(MAX_DAYS_LOOKBACK, raw));
@@ -447,7 +463,15 @@ app.post('/session/:sessionId', async (c) => {
   const sessionId = c.req.param('sessionId');
 
   try {
-    const body = await c.req.json().catch(() => ({}));
+    const body = await parseJsonBody<{
+      name?: string;
+      agentId?: string;
+      sessionId?: string;
+      description?: string;
+      tags?: string[];
+      mode?: string;
+      maxAgeDays?: number;
+    }>(c) ?? {};
 
     const workspace = getOrCreateSessionWorkspace(sessionId, body.agentId, userId);
 

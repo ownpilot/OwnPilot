@@ -15,6 +15,7 @@ import {
   notFoundError,
   getErrorMessage,
   sanitizeId,
+  parseJsonBody,
 } from './helpers.js';
 import { ERROR_CODES } from './error-codes.js';
 import { createWorkflowsRepository } from '../db/repositories/workflows.js';
@@ -56,7 +57,7 @@ workflowRoutes.get('/', pagination(), async (c) => {
 
 workflowRoutes.post('/', async (c) => {
   const userId = getUserId(c);
-  const rawBody = await c.req.json().catch(() => null);
+  const rawBody = await parseJsonBody(c);
   if (!rawBody)
     return apiError(c, { code: ERROR_CODES.BAD_REQUEST, message: 'Invalid JSON body' }, 400);
 
@@ -182,7 +183,7 @@ workflowRoutes.get('/:id', async (c) => {
 workflowRoutes.patch('/:id', async (c) => {
   const userId = getUserId(c);
   const id = sanitizeId(c.req.param('id'));
-  const rawBody = await c.req.json().catch(() => null);
+  const rawBody = await parseJsonBody(c);
   if (!rawBody)
     return apiError(c, { code: ERROR_CODES.BAD_REQUEST, message: 'Invalid JSON body' }, 400);
 

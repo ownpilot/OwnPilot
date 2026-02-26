@@ -21,6 +21,7 @@ import {
   sanitizeId,
   notFoundError,
   getErrorMessage,
+  parseJsonBody,
 } from './helpers.js';
 import { agentsRepo } from '../db/repositories/index.js';
 import { wsGateway } from '../ws/server.js';
@@ -102,7 +103,7 @@ agentRoutes.get('/', async (c) => {
  * Tools can be specified explicitly via 'tools' array or via 'toolGroups' array.
  */
 agentRoutes.post('/', async (c) => {
-  const rawBody = await c.req.json().catch(() => null);
+  const rawBody = await parseJsonBody(c);
   const { validateBody, createAgentSchema } = await import('../middleware/validation.js');
   const body = validateBody(createAgentSchema, rawBody) as CreateAgentRequest;
 
@@ -200,7 +201,7 @@ agentRoutes.get('/:id', async (c) => {
  */
 agentRoutes.patch('/:id', async (c) => {
   const id = c.req.param('id');
-  const rawBody = await c.req.json().catch(() => null);
+  const rawBody = await parseJsonBody(c);
   const { validateBody, updateAgentSchema } = await import('../middleware/validation.js');
   const body = validateBody(updateAgentSchema, rawBody) as UpdateAgentRequest;
 

@@ -17,6 +17,7 @@ import {
   sanitizeText,
   notFoundError,
   getErrorMessage,
+  parseJsonBody,
 } from './helpers.js';
 import { pagination } from '../middleware/pagination.js';
 import type { ColumnDefinition } from '../db/repositories/custom-data.js';
@@ -55,7 +56,7 @@ customDataRoutes.get('/tables/by-plugin/:pluginId', async (c) => {
  * POST /custom-data/tables - Create a new custom table
  */
 customDataRoutes.post('/tables', async (c) => {
-  const rawBody = await c.req.json().catch(() => null);
+  const rawBody = await parseJsonBody(c);
   const { validateBody, createCustomTableSchema } = await import('../middleware/validation.js');
   const body = validateBody(createCustomTableSchema, rawBody) as {
     name: string;
@@ -117,7 +118,7 @@ customDataRoutes.get('/tables/:table', async (c) => {
  */
 customDataRoutes.put('/tables/:table', async (c) => {
   const tableId = c.req.param('table');
-  const rawBody = await c.req.json().catch(() => null);
+  const rawBody = await parseJsonBody(c);
   const { validateBody, updateCustomTableSchema } = await import('../middleware/validation.js');
   const body = validateBody(updateCustomTableSchema, rawBody) as {
     displayName?: string;
@@ -217,7 +218,7 @@ customDataRoutes.get(
  */
 customDataRoutes.post('/tables/:table/records', async (c) => {
   const tableId = c.req.param('table');
-  const rawBody = await c.req.json().catch(() => null);
+  const rawBody = await parseJsonBody(c);
   const { validateBody, createCustomRecordSchema } = await import('../middleware/validation.js');
   const body = validateBody(createCustomRecordSchema, rawBody) as { data: Record<string, unknown> };
 
@@ -302,7 +303,7 @@ customDataRoutes.get('/records/:id', async (c) => {
  */
 customDataRoutes.put('/records/:id', async (c) => {
   const recordId = c.req.param('id');
-  const rawBody = await c.req.json().catch(() => null);
+  const rawBody = await parseJsonBody(c);
   const { validateBody, updateCustomRecordSchema } = await import('../middleware/validation.js');
   const body = validateBody(updateCustomRecordSchema, rawBody) as { data: Record<string, unknown> };
 

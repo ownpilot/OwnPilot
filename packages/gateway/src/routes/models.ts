@@ -18,7 +18,7 @@ import {
 } from '@ownpilot/core';
 import { modelConfigsRepo } from '../db/repositories/model-configs.js';
 import { localProvidersRepo } from '../db/repositories/index.js';
-import { getUserId, apiResponse, apiError, ERROR_CODES, getErrorMessage } from './helpers.js';
+import { getUserId, apiResponse, apiError, ERROR_CODES, getErrorMessage, parseJsonBody } from './helpers.js';
 
 const app = new Hono();
 
@@ -166,7 +166,7 @@ app.get('/sync/providers', async (c) => {
  */
 app.post('/sync', async (c) => {
   try {
-    const body = await c.req.json().catch(() => ({}));
+    const body = await parseJsonBody<{ providers?: string[] }>(c) ?? {};
     const providerIds = body.providers as string[] | undefined;
 
     let result;

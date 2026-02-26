@@ -6,7 +6,7 @@
  */
 
 import { Hono } from 'hono';
-import { apiResponse, apiError, ERROR_CODES } from './helpers.js';
+import { apiResponse, apiError, ERROR_CODES, parseJsonBody } from './helpers.js';
 import {
   getAllRouting,
   getProcessRouting,
@@ -75,7 +75,7 @@ modelRoutingRoutes.put('/:process', async (c) => {
     );
   }
 
-  const body = await c.req.json().catch(() => null);
+  const body = await parseJsonBody<Record<string, unknown>>(c);
   if (!body || typeof body !== 'object') {
     return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'Invalid request body' }, 400);
   }

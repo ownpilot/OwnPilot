@@ -40,6 +40,7 @@ import {
   sanitizeText,
   notFoundError,
   getErrorMessage,
+  parseJsonBody,
 } from '../helpers.js';
 import { TOOL_ARGS_MAX_SIZE } from '../../config/defaults.js';
 import type { ToolExecutionResult as BaseToolExecutionResult } from '../../services/tool-executor.js';
@@ -55,7 +56,7 @@ export const generationRoutes = new Hono();
  */
 generationRoutes.post('/:id/execute', async (c) => {
   const id = c.req.param('id');
-  const body = (await c.req.json().catch(() => null)) as {
+  const body = await parseJsonBody(c) as {
     arguments?: Record<string, unknown>;
   } | null;
   if (!body) {
@@ -162,7 +163,7 @@ generationRoutes.get('/:id/executions', async (c) => {
  * Test a tool without saving (dry run)
  */
 generationRoutes.post('/test', async (c) => {
-  const body = (await c.req.json().catch(() => null)) as {
+  const body = await parseJsonBody(c) as {
     name: string;
     description: string;
     parameters: CustomToolRecord['parameters'];

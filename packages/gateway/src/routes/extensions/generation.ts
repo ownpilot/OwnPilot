@@ -13,7 +13,7 @@ import {
 import { validateManifest, type ExtensionManifest } from '../../services/extension-types.js';
 import { serializeExtensionMarkdown } from '../../services/extension-markdown.js';
 import { parseAgentSkillsMd } from '../../services/agentskills-parser.js';
-import { apiResponse, apiError, ERROR_CODES, getErrorMessage } from '../helpers.js';
+import { apiResponse, apiError, ERROR_CODES, getErrorMessage, parseJsonBody } from '../helpers.js';
 import { resolveProviderAndModel, getApiKey } from '../settings.js';
 import { localProvidersRepo } from '../../db/repositories/index.js';
 
@@ -329,7 +329,7 @@ Always explain WHY a change was suggested.
  * POST /generate - Generate extension manifest from description using AI
  */
 generationRoutes.post('/generate', async (c) => {
-  const body = (await c.req.json().catch(() => null)) as {
+  const body = await parseJsonBody(c) as {
     description?: string;
     format?: 'json' | 'markdown';
   } | null;
@@ -461,7 +461,7 @@ generationRoutes.post('/generate', async (c) => {
  * POST /generate-skill - Generate SKILL.md content from description using AI
  */
 generationRoutes.post('/generate-skill', async (c) => {
-  const body = (await c.req.json().catch(() => null)) as {
+  const body = await parseJsonBody(c) as {
     description?: string;
   } | null;
 

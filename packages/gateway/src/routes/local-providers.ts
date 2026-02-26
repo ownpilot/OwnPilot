@@ -17,6 +17,7 @@ import {
   zodValidationError,
   getErrorMessage,
   notFoundError,
+  parseJsonBody,
 } from './helpers.js';
 import { wsGateway } from '../ws/server.js';
 
@@ -142,7 +143,7 @@ localProvidersRoutes.post('/', async (c) => {
   const userId = getUserId(c);
 
   try {
-    const body = await c.req.json().catch(() => null);
+    const body = await parseJsonBody(c);
     const { createLocalProviderSchema } = await import('../middleware/validation.js');
     const parsed = createLocalProviderSchema.safeParse(body);
 
@@ -238,7 +239,7 @@ localProvidersRoutes.put('/:id', async (c) => {
       return notFoundError(c, 'Local provider', id);
     }
 
-    const body = await c.req.json().catch(() => null);
+    const body = await parseJsonBody(c);
     const { updateLocalProviderSchema } = await import('../middleware/validation.js');
     const parsed = updateLocalProviderSchema.safeParse(body);
 
@@ -325,7 +326,7 @@ localProvidersRoutes.patch('/:id/toggle', async (c) => {
   const id = c.req.param('id');
 
   try {
-    const body = await c.req.json().catch(() => null);
+    const body = await parseJsonBody(c);
     const { toggleEnabledSchema } = await import('../middleware/validation.js');
     const parsed = toggleEnabledSchema.safeParse(body);
 
@@ -497,7 +498,7 @@ localProvidersRoutes.patch('/:id/models/:modelId/toggle', async (c) => {
   const modelId = decodeURIComponent(c.req.param('modelId'));
 
   try {
-    const body = await c.req.json().catch(() => null);
+    const body = await parseJsonBody(c);
     const { toggleEnabledSchema } = await import('../middleware/validation.js');
     const parsed = toggleEnabledSchema.safeParse(body);
 

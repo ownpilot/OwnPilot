@@ -7,7 +7,7 @@
 import { Hono } from 'hono';
 import { DashboardService, briefingCache, type AIBriefing } from '../services/dashboard.js';
 import { getLog } from '../services/log.js';
-import { getUserId, apiResponse, apiError, ERROR_CODES, getErrorMessage } from './helpers.js';
+import { getUserId, apiResponse, apiError, ERROR_CODES, getErrorMessage, parseJsonBody } from './helpers.js';
 import { getDefaultProvider, getDefaultModel } from './settings.js';
 
 const log = getLog('Dashboard');
@@ -228,7 +228,7 @@ dashboardRoutes.get('/timeline', async (c) => {
  */
 dashboardRoutes.post('/briefing/stream', async (c) => {
   const userId = getUserId(c);
-  const body = await c.req.json().catch(() => ({}));
+  const body = await parseJsonBody<{ provider?: string; model?: string }>(c) ?? {};
   const provider = body.provider ?? (await getDefaultProvider()) ?? 'openai';
   const model = body.model ?? (await getDefaultModel(provider)) ?? 'gpt-4o-mini';
 

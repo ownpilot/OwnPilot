@@ -27,6 +27,7 @@ import {
   notFoundError,
   getErrorMessage,
   validateQueryEnum,
+  parseJsonBody,
 } from './helpers.js';
 import { MAX_DAYS_LOOKBACK } from '../config/defaults.js';
 import { wsGateway } from '../ws/server.js';
@@ -74,7 +75,7 @@ goalsRoutes.get('/', async (c) => {
  */
 goalsRoutes.post('/', async (c) => {
   const userId = getUserId(c);
-  const rawBody = await c.req.json().catch(() => null);
+  const rawBody = await parseJsonBody(c);
   const { validateBody, createGoalSchema } = await import('../middleware/validation.js');
   const body = validateBody(createGoalSchema, rawBody) as unknown as CreateGoalInput;
 
@@ -173,7 +174,7 @@ goalsRoutes.get('/:id', async (c) => {
 goalsRoutes.patch('/:id', async (c) => {
   const userId = getUserId(c);
   const id = c.req.param('id');
-  const rawBody = await c.req.json().catch(() => null);
+  const rawBody = await parseJsonBody(c);
   const { validateBody, updateGoalSchema } = await import('../middleware/validation.js');
   const body = validateBody(updateGoalSchema, rawBody) as unknown as UpdateGoalInput;
 
@@ -207,7 +208,7 @@ goalsRoutes.route('/', goalCrudRoutes);
 goalsRoutes.post('/:id/steps', async (c) => {
   const userId = getUserId(c);
   const goalId = c.req.param('id');
-  const rawBody = await c.req.json().catch(() => null);
+  const rawBody = await parseJsonBody(c);
   const { validateBody, createGoalStepsSchema } = await import('../middleware/validation.js');
   const body = validateBody(createGoalStepsSchema, rawBody) as
     | { steps: CreateStepInput[] }
@@ -265,7 +266,7 @@ goalsRoutes.get('/:id/steps', async (c) => {
 goalsRoutes.patch('/:goalId/steps/:stepId', async (c) => {
   const userId = getUserId(c);
   const stepId = c.req.param('stepId');
-  const rawBody = await c.req.json().catch(() => null);
+  const rawBody = await parseJsonBody(c);
   const { validateBody, updateGoalStepSchema } = await import('../middleware/validation.js');
   const body = validateBody(updateGoalStepSchema, rawBody) as {
     title?: string;
@@ -296,7 +297,7 @@ goalsRoutes.patch('/:goalId/steps/:stepId', async (c) => {
 goalsRoutes.post('/:goalId/steps/:stepId/complete', async (c) => {
   const userId = getUserId(c);
   const stepId = c.req.param('stepId');
-  const rawBody = await c.req.json().catch(() => ({}));
+  const rawBody = await parseJsonBody(c) ?? {};
   const { validateBody, completeGoalStepSchema } = await import('../middleware/validation.js');
   const body = validateBody(completeGoalStepSchema, rawBody) as { result?: string };
 

@@ -17,6 +17,7 @@ import {
   notFoundError,
   getErrorMessage,
   validateQueryEnum,
+  parseJsonBody,
 } from './helpers.js';
 import { MAX_DAYS_LOOKBACK } from '../config/defaults.js';
 import { wsGateway } from '../ws/server.js';
@@ -60,7 +61,7 @@ triggersRoutes.get('/', async (c) => {
  */
 triggersRoutes.post('/', async (c) => {
   const userId = getUserId(c);
-  const rawBody = await c.req.json().catch(() => null);
+  const rawBody = await parseJsonBody(c);
   const { validateBody, createTriggerSchema } = await import('../middleware/validation.js');
   const body = validateBody(createTriggerSchema, rawBody) as unknown as CreateTriggerInput;
 
@@ -193,7 +194,7 @@ triggersRoutes.get('/:id', async (c) => {
 triggersRoutes.patch('/:id', async (c) => {
   const userId = getUserId(c);
   const id = c.req.param('id');
-  const body = (await c.req.json().catch(() => null)) as UpdateTriggerInput | null;
+  const body = await parseJsonBody<UpdateTriggerInput>(c);
   if (!body) {
     return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'Invalid JSON body' }, 400);
   }

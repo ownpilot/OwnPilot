@@ -7,7 +7,7 @@
 
 import { Hono } from 'hono';
 import { analyzeToolCode, calculateSecurityScore } from '@ownpilot/core';
-import { apiResponse, apiError, ERROR_CODES } from '../helpers.js';
+import { apiResponse, apiError, ERROR_CODES, parseJsonBody } from '../helpers.js';
 
 export const analysisRoutes = new Hono();
 
@@ -18,7 +18,7 @@ export const analysisRoutes = new Hono();
  * LLM can use this to verify tool code before creating it.
  */
 analysisRoutes.post('/validate', async (c) => {
-  const body = (await c.req.json().catch(() => null)) as {
+  const body = await parseJsonBody(c) as {
     code: string;
     name?: string;
     permissions?: string[];
@@ -55,7 +55,7 @@ analysisRoutes.post('/validate', async (c) => {
  * Returns structured review with risks, improvements, and overall assessment.
  */
 analysisRoutes.post('/llm-review', async (c) => {
-  const body = (await c.req.json().catch(() => null)) as {
+  const body = await parseJsonBody(c) as {
     code: string;
     name?: string;
     description?: string;

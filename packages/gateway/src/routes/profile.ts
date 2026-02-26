@@ -13,6 +13,7 @@ import {
   getUserId,
   zodValidationError,
   getErrorMessage,
+  parseJsonBody,
 } from './helpers.js';
 import {
   getPersonalMemoryStore,
@@ -143,7 +144,7 @@ app.get('/category/:category', async (c) => {
  */
 app.post('/data', async (c) => {
   try {
-    const body = await c.req.json().catch(() => null);
+    const body = await parseJsonBody(c);
     const { profileSetDataSchema } = await import('../middleware/validation.js');
     const parsed = profileSetDataSchema.safeParse(body);
 
@@ -179,7 +180,7 @@ app.post('/data', async (c) => {
  */
 app.delete('/data', async (c) => {
   try {
-    const body = await c.req.json().catch(() => null);
+    const body = await parseJsonBody(c);
     const { profileDeleteDataSchema } = await import('../middleware/validation.js');
     const parsed = profileDeleteDataSchema.safeParse(body);
 
@@ -248,7 +249,7 @@ app.get('/search', async (c) => {
  */
 app.post('/import', async (c) => {
   try {
-    const body = await c.req.json().catch(() => null);
+    const body = await parseJsonBody(c);
     const { profileImportSchema } = await import('../middleware/validation.js');
     const parsed = profileImportSchema.safeParse(body);
 
@@ -314,7 +315,7 @@ app.get('/export', async (c) => {
  */
 app.post('/quick', async (c) => {
   try {
-    const body = await c.req.json().catch(() => null);
+    const body = await parseJsonBody(c);
     const { profileQuickSetupSchema } = await import('../middleware/validation.js');
     const parsed = profileQuickSetupSchema.safeParse(body);
 

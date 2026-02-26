@@ -19,6 +19,7 @@ import {
   getUserId,
   notFoundError,
   getErrorMessage,
+  parseJsonBody,
 } from './helpers.js';
 import {
   getAgent,
@@ -162,7 +163,7 @@ async function processNonStreamingViaBus(
  * Send a chat message
  */
 chatRoutes.post('/', async (c) => {
-  const rawBody = await c.req.json().catch(() => null);
+  const rawBody = await parseJsonBody(c);
   const { validateBody, chatMessageSchema } = await import('../middleware/validation.js');
   const body = validateBody(chatMessageSchema, rawBody) as ChatRequest & {
     provider?: string;

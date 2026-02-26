@@ -18,7 +18,7 @@ import {
   type ContainerConfig,
   DEFAULT_CONTAINER_CONFIG,
 } from '@ownpilot/core';
-import { apiResponse, apiError, ERROR_CODES, getUserId, getErrorMessage } from '../helpers.js';
+import { apiResponse, apiError, ERROR_CODES, getUserId, getErrorMessage, parseJsonBody } from '../helpers.js';
 import { wsGateway } from '../../ws/server.js';
 import { sanitizeContainerConfig } from './shared.js';
 
@@ -70,7 +70,7 @@ app.post('/', async (c) => {
   const repo = new WorkspacesRepository(userId);
 
   try {
-    const rawBody = await c.req.json().catch(() => null);
+    const rawBody = await parseJsonBody(c);
 
     if (!rawBody) {
       return apiError(
@@ -204,7 +204,7 @@ app.patch('/:id', async (c) => {
   const repo = new WorkspacesRepository(userId);
 
   try {
-    const rawBody = await c.req.json().catch(() => null);
+    const rawBody = await parseJsonBody(c);
 
     if (!rawBody) {
       return apiError(

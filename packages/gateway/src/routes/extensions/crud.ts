@@ -15,6 +15,7 @@ import {
   ERROR_CODES,
   notFoundError,
   getErrorMessage,
+  parseJsonBody,
 } from '../helpers.js';
 import { wsGateway } from '../../ws/server.js';
 
@@ -53,7 +54,7 @@ crudRoutes.get('/', async (c) => {
  */
 crudRoutes.post('/', async (c) => {
   const userId = getUserId(c);
-  const body = await c.req.json().catch(() => null);
+  const body = await parseJsonBody(c);
 
   if (!body || !(body as { manifest?: unknown }).manifest) {
     return apiError(
