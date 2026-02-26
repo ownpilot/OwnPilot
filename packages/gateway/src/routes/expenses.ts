@@ -16,6 +16,7 @@ import {
   validateQueryEnum,
   ERROR_CODES,
   getErrorMessage,
+  parseJsonBody,
 } from './helpers.js';
 import { wsGateway } from '../ws/server.js';
 import { pagination } from '../middleware/pagination.js';
@@ -350,7 +351,7 @@ expensesRoutes.get('/monthly', async (c) => {
  * POST /api/v1/expenses - Add a new expense
  */
 expensesRoutes.post('/', async (c) => {
-  const rawBody = await c.req.json().catch(() => null);
+  const rawBody = await parseJsonBody(c);
   const { validateBody, createExpenseSchema } = await import('../middleware/validation.js');
   const body = validateBody(createExpenseSchema, rawBody) as {
     date?: string;
@@ -402,7 +403,7 @@ expensesRoutes.post('/', async (c) => {
  */
 expensesRoutes.put('/:id', async (c) => {
   const id = c.req.param('id');
-  const rawBody = await c.req.json().catch(() => null);
+  const rawBody = await parseJsonBody(c);
   const { validateBody, updateExpenseSchema } = await import('../middleware/validation.js');
   const body = validateBody(updateExpenseSchema, rawBody) as Partial<ExpenseEntry>;
 

@@ -21,6 +21,7 @@ import {
   notFoundError,
   getErrorMessage,
   validateQueryEnum,
+  parseJsonBody,
 } from './helpers.js';
 import { wsGateway } from '../ws/server.js';
 import { getLog } from '../services/log.js';
@@ -71,7 +72,7 @@ plansRoutes.get('/', pagination(), async (c) => {
  */
 plansRoutes.post('/', async (c) => {
   const userId = getUserId(c);
-  const rawBody = await c.req.json().catch(() => null);
+  const rawBody = await parseJsonBody(c);
   const { validateBody, createPlanSchema } = await import('../middleware/validation.js');
   const body = validateBody(createPlanSchema, rawBody) as unknown as CreatePlanInput;
 
@@ -160,7 +161,7 @@ plansRoutes.get('/:id', async (c) => {
 plansRoutes.patch('/:id', async (c) => {
   const userId = getUserId(c);
   const id = c.req.param('id');
-  const rawBody = await c.req.json().catch(() => null);
+  const rawBody = await parseJsonBody(c);
   const { validateBody, updatePlanSchema } = await import('../middleware/validation.js');
   const body = validateBody(updatePlanSchema, rawBody) as unknown as UpdatePlanInput;
 
@@ -549,7 +550,7 @@ plansRoutes.get('/:id/steps', async (c) => {
 plansRoutes.post('/:id/steps', async (c) => {
   const userId = getUserId(c);
   const id = c.req.param('id');
-  const rawBody = await c.req.json().catch(() => null);
+  const rawBody = await parseJsonBody(c);
   const { validateBody, createPlanStepSchema } = await import('../middleware/validation.js');
   const body = validateBody(createPlanStepSchema, rawBody) as unknown as CreateStepInput;
 
@@ -596,7 +597,7 @@ plansRoutes.get('/:id/steps/:stepId', async (c) => {
 plansRoutes.patch('/:id/steps/:stepId', async (c) => {
   const userId = getUserId(c);
   const stepId = c.req.param('stepId');
-  const rawBody = await c.req.json().catch(() => null);
+  const rawBody = await parseJsonBody(c);
 
   // Validate step update body
   const { validateBody, updatePlanStepSchema } = await import('../middleware/validation.js');

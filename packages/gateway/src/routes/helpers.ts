@@ -263,3 +263,92 @@ export function validateQueryEnum<T extends string>(
   if (value === undefined) return undefined;
   return (allowed as readonly string[]).includes(value) ? (value as T) : undefined;
 }
+
+/**
+ * Result type for operations that can fail.
+ * Use this instead of throwing exceptions for expected failure cases.
+ */
+type Result<T, E = Error> =
+  | { success: true; data: T }
+  | { success: false; error: E };
+
+/**
+ * Parse and optionally validate JSON request body.
+ * Returns an error response if parsing fails.
+ *
+ * @param c - Hono context
+ * @param validator - Optional Zod schema or validation function
+ * @returns Object with validated data, or calls c.json() with error and returns null
+ *
+ * @example
+ * // Simple usage
+ * const body = await parseJsonBody(c);
+ * if (!body) return; // Error response already sent
+ *
+ * // With Zod validation
+ * const body = await parseJsonBody(c, CreateAgentSchema);
+ * if (!body) return; // Error response already sent
+ *
+ * // Manual validation
+ * const body = await parseJsonBody(c, (data) => {
+ *   if (!data.name) throw new Error('name required');
+ *   return data;
+ * });
+ */
+export async function parseJsonBody<T = unknown>(
+  c: Context,
+  validator?: (data: unknown) => T
+): Promise<T | null> {
+  try {
+    const data = await c.req.json();
+
+    if (validator) {
+      try {
+        return validator(data);
+      } catch (validationError) {
+        const message = validationError instanceof Error
+          ? validationError.message
+          : 'Validation failed';
+        return apiError(
+          c,
+          { code: ERROR_CODES.INVALID_INPUT, message },
+          400
+        ) && null;
+      }
+    }
+
+    return data as T;
+  } catch {
+    return apiError(
+      c,
+      { code: ERROR_CODES.INVALID_INPUT, message: 'Invalid JSON in request body' },
+      400
+    ) && null;
+  }
+}
+
+/**
+ * Parse JSON with custom error handling - returns Result instead of sending response.
+ * Use this when you want to handle the error yourself.
+ *
+ * @param c - Hono context
+ * @returns Result with parsed data or error
+ *
+ * @example
+ * const result = await parseJsonBodySafe(c);
+ * if (!result.success) {
+ *   console.error(result.error);
+ *   return apiError(c, 'Invalid JSON', 400);
+ * }
+ * const data = result.data;
+ */
+export async function parseJsonBodySafe<T = unknown>(
+  c: Context
+): Promise<Result<T, string>> {
+  try {
+    const data = await c.req.json();
+    return { success: true, data: data as T };
+  } catch {
+    return { success: false, error: 'Invalid JSON in request body' };
+  }
+}

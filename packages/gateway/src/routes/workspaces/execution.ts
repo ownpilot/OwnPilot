@@ -23,6 +23,7 @@ import {
   getUserId,
   zodValidationError,
   getErrorMessage,
+  parseJsonBody,
 } from '../helpers.js';
 
 const app = new Hono();
@@ -125,7 +126,7 @@ app.post('/:id/execute', async (c) => {
       );
     }
 
-    const rawBody = await c.req.json().catch(() => null);
+    const rawBody = await parseJsonBody(c);
     const { workspaceExecuteCodeSchema } = await import('../../middleware/validation.js');
     const parsed = workspaceExecuteCodeSchema.safeParse(rawBody);
 

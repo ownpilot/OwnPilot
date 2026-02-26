@@ -14,6 +14,7 @@ import {
   ERROR_CODES,
   zodValidationError,
   getErrorMessage,
+  parseJsonBody,
 } from './helpers.js';
 import { hasApiKey, getApiKeySource } from './settings.js';
 import { modelConfigsRepo } from '../db/repositories/model-configs.js';
@@ -459,7 +460,7 @@ app.put('/:id/config', async (c) => {
   }
 
   try {
-    const body = await c.req.json().catch(() => null);
+    const body = await parseJsonBody(c);
     const { providerConfigSchema } = await import('../middleware/validation.js');
     const parsed = providerConfigSchema.safeParse(body);
 
@@ -533,7 +534,7 @@ app.patch('/:id/toggle', async (c) => {
   }
 
   try {
-    const body = await c.req.json().catch(() => null);
+    const body = await parseJsonBody(c);
     const { toggleEnabledSchema } = await import('../middleware/validation.js');
     const parsed = toggleEnabledSchema.safeParse(body);
 

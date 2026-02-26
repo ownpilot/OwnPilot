@@ -7,7 +7,7 @@
 
 import { Hono } from 'hono';
 import { streamSSE } from 'hono/streaming';
-import { getUserId, apiError, getErrorMessage } from './helpers.js';
+import { getUserId, apiError, getErrorMessage, parseJsonBody } from './helpers.js';
 import { ERROR_CODES } from './error-codes.js';
 import { getProviderApiKey, loadProviderConfig, NATIVE_PROVIDERS } from './agent-cache.js';
 import { resolveProviderAndModel } from './settings.js';
@@ -36,7 +36,7 @@ export const workflowCopilotRoute = new Hono();
 workflowCopilotRoute.post('/', async (c) => {
   const _userId = getUserId(c);
 
-  const rawBody = await c.req.json().catch(() => null);
+  const rawBody = await parseJsonBody(c);
   if (!rawBody)
     return apiError(c, { code: ERROR_CODES.BAD_REQUEST, message: 'Invalid JSON body' }, 400);
 

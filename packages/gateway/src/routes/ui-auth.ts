@@ -6,7 +6,7 @@
  */
 
 import { Hono } from 'hono';
-import { apiResponse, apiError, ERROR_CODES } from './helpers.js';
+import { apiResponse, apiError, ERROR_CODES, parseJsonBody } from './helpers.js';
 import {
   hashPassword,
   verifyPassword,
@@ -47,7 +47,7 @@ uiAuthRoutes.get('/status', (c) => {
  * Authenticate with password, receive a session token.
  */
 uiAuthRoutes.post('/login', async (c) => {
-  const body = (await c.req.json().catch(() => ({}))) as { password?: string };
+  const body = (await parseJsonBody(c) ?? {}) as { password?: string };
   const { password } = body;
 
   if (!password || typeof password !== 'string') {
@@ -89,7 +89,7 @@ uiAuthRoutes.post('/logout', (c) => {
  * Set (first time) or change (requires current password) the UI password.
  */
 uiAuthRoutes.post('/password', async (c) => {
-  const body = (await c.req.json().catch(() => ({}))) as {
+  const body = (await parseJsonBody(c) ?? {}) as {
     password?: string;
     currentPassword?: string;
   };

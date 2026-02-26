@@ -7,7 +7,7 @@
 import { Hono } from 'hono';
 import { getServiceRegistry, Services } from '@ownpilot/core';
 import { type ExtensionService } from '../../services/extension-service.js';
-import { getUserId, apiResponse, apiError, ERROR_CODES, getErrorMessage } from '../helpers.js';
+import { getUserId, apiResponse, apiError, ERROR_CODES, getErrorMessage, parseJsonBody } from '../helpers.js';
 
 export const scannerRoutes = new Hono();
 
@@ -19,7 +19,7 @@ const getExtService = () => getServiceRegistry().get(Services.Extension) as Exte
  */
 scannerRoutes.post('/scan', async (c) => {
   const userId = getUserId(c);
-  const body = (await c.req.json().catch(() => ({}))) as { directory?: string };
+  const body = (await parseJsonBody(c) ?? {}) as { directory?: string };
 
   try {
     const service = getExtService();

@@ -10,7 +10,7 @@ import { randomBytes } from 'node:crypto';
 import { Hono } from 'hono';
 import { getServiceRegistry, Services } from '@ownpilot/core';
 import { type ExtensionService, ExtensionError } from '../../services/extension-service.js';
-import { getUserId, apiResponse, apiError, ERROR_CODES, getErrorMessage } from '../helpers.js';
+import { getUserId, apiResponse, apiError, ERROR_CODES, getErrorMessage, parseJsonBody } from '../helpers.js';
 import { wsGateway } from '../../ws/server.js';
 import { getDataDirectoryInfo } from '../../paths/index.js';
 
@@ -54,7 +54,7 @@ function findManifestInDir(dir: string): string | null {
  */
 installRoutes.post('/install', async (c) => {
   const userId = getUserId(c);
-  const body = await c.req.json().catch(() => null);
+  const body = await parseJsonBody(c);
 
   if (!body || typeof (body as { path?: string }).path !== 'string') {
     return apiError(

@@ -16,6 +16,7 @@ import {
   notFoundError,
   getErrorMessage,
   validateQueryEnum,
+  parseJsonBody,
 } from './helpers.js';
 import { MAX_DAYS_LOOKBACK } from '../config/defaults.js';
 import {
@@ -81,7 +82,7 @@ chatHistoryRoutes.get('/history', async (c) => {
  */
 chatHistoryRoutes.post('/history/bulk-delete', async (c) => {
   const userId = getUserId(c);
-  const body = await c.req.json().catch(() => null);
+  const body = await parseJsonBody<{ ids?: string[]; all?: boolean; olderThanDays?: number; archived?: boolean }>(c);
 
   if (!body) {
     return apiError(
@@ -152,7 +153,7 @@ chatHistoryRoutes.post('/history/bulk-delete', async (c) => {
  */
 chatHistoryRoutes.post('/history/bulk-archive', async (c) => {
   const userId = getUserId(c);
-  const body = await c.req.json().catch(() => null);
+  const body = await parseJsonBody<{ ids?: string[]; all?: boolean; olderThanDays?: number; archived?: boolean }>(c);
 
   if (!body || !Array.isArray(body.ids) || typeof body.archived !== 'boolean') {
     return apiError(
@@ -274,7 +275,7 @@ chatHistoryRoutes.delete('/history/:id', async (c) => {
 chatHistoryRoutes.patch('/history/:id/archive', async (c) => {
   const id = c.req.param('id');
   const userId = getUserId(c);
-  const body = (await c.req.json().catch(() => null)) as { archived: boolean } | null;
+  const body = await parseJsonBody<{ archived: boolean }>(c);
   if (!body) {
     return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'Invalid JSON body' }, 400);
   }
@@ -421,11 +422,11 @@ chatHistoryRoutes.delete('/logs', async (c) => {
  * Call this when starting a "New Chat" to clear conversation memory
  */
 chatHistoryRoutes.post('/reset-context', async (c) => {
-  const body = (await c.req.json().catch(() => null)) as {
+  const body = await parseJsonBody<{
     provider?: string;
     model?: string;
     clearAll?: boolean;
-  } | null;
+  }>(c);
   if (!body) {
     return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'Invalid JSON body' }, 400);
   }
@@ -492,11 +493,11 @@ chatHistoryRoutes.get('/context-detail', async (c) => {
  * Keeps recent messages and replaces older ones with a concise AI-generated summary.
  */
 chatHistoryRoutes.post('/compact', async (c) => {
-  const body = (await c.req.json().catch(() => null)) as {
+  const body = await parseJsonBody<{
     provider?: string;
     model?: string;
     keepRecentMessages?: number;
-  } | null;
+  }>(c);
 
   const provider = body?.provider ?? (await getDefaultProvider()) ?? 'openai';
   const model = body?.model ?? (await getDefaultModel(provider)) ?? 'gpt-4o';

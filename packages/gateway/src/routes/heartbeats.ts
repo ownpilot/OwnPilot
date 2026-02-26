@@ -20,6 +20,7 @@ import {
   ERROR_CODES,
   notFoundError,
   getErrorMessage,
+  parseJsonBody,
 } from './helpers.js';
 import { wsGateway } from '../ws/server.js';
 import { createCrudRoutes } from './crud-factory.js';
@@ -57,7 +58,7 @@ heartbeatsRoutes.get('/', async (c) => {
  */
 heartbeatsRoutes.post('/', async (c) => {
   const userId = getUserId(c);
-  const body = await c.req.json().catch(() => null);
+  const body = await parseJsonBody(c);
 
   if (!body) {
     return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: 'Invalid JSON body' }, 400);
@@ -122,7 +123,7 @@ heartbeatsRoutes.post('/', async (c) => {
  */
 heartbeatsRoutes.post('/import', async (c) => {
   const userId = getUserId(c);
-  const body = await c.req.json().catch(() => null);
+  const body = await parseJsonBody(c);
 
   if (!body || typeof (body as { markdown?: string }).markdown !== 'string') {
     return apiError(
@@ -178,7 +179,7 @@ heartbeatsRoutes.route('/', crudRoutes);
 heartbeatsRoutes.patch('/:id', async (c) => {
   const userId = getUserId(c);
   const id = c.req.param('id');
-  const body = await c.req.json().catch(() => null);
+  const body = await parseJsonBody(c);
 
   if (!body) {
     return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: 'Invalid JSON body' }, 400);

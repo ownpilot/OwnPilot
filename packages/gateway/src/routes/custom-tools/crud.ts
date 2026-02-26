@@ -33,6 +33,7 @@ import {
   sanitizeText,
   notFoundError,
   validateQueryEnum,
+  parseJsonBody,
 } from '../helpers.js';
 import { TOOL_TEMPLATES } from '../tool-templates.js';
 import { wsGateway } from '../../ws/server.js';
@@ -139,7 +140,7 @@ crudRoutes.get('/:id', async (c) => {
  * Create a new custom tool
  */
 crudRoutes.post('/', async (c) => {
-  const rawBody = await c.req.json().catch(() => null);
+  const rawBody = await parseJsonBody(c);
   const { validateBody, createCustomToolSchema } = await import('../../middleware/validation.js');
   const body = validateBody(createCustomToolSchema, rawBody) as {
     name: string;
@@ -216,7 +217,7 @@ crudRoutes.post('/', async (c) => {
  */
 crudRoutes.patch('/:id', async (c) => {
   const id = c.req.param('id');
-  const rawBody = await c.req.json().catch(() => null);
+  const rawBody = await parseJsonBody(c);
   const { validateBody, updateCustomToolSchema } = await import('../../middleware/validation.js');
   const body = validateBody(updateCustomToolSchema, rawBody) as {
     name?: string;
@@ -309,7 +310,7 @@ crudRoutes.delete('/:id', async (c) => {
  */
 crudRoutes.patch('/:id/workflow-usable', async (c) => {
   const id = c.req.param('id');
-  const body = (await c.req.json().catch(() => null)) as { enabled: boolean } | null;
+  const body = await parseJsonBody(c) as { enabled: boolean } | null;
   if (!body || typeof body.enabled !== 'boolean') {
     return apiError(
       c,
@@ -391,7 +392,7 @@ crudRoutes.post('/:id/disable', async (c) => {
  */
 crudRoutes.post('/templates/:templateId/create', async (c) => {
   const templateId = c.req.param('templateId');
-  const body = (await c.req.json().catch(() => null)) as {
+  const body = await parseJsonBody(c) as {
     name?: string;
     description?: string;
     code?: string;

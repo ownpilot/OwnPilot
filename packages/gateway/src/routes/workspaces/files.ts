@@ -18,6 +18,7 @@ import {
   getUserId,
   zodValidationError,
   getErrorMessage,
+  parseJsonBody,
 } from '../helpers.js';
 import { sanitizeFilePath } from './shared.js';
 
@@ -152,7 +153,7 @@ app.put('/:id/files/*', async (c) => {
       );
     }
 
-    const body = await c.req.json().catch(() => null);
+    const body = await parseJsonBody(c);
     const { workspaceWriteFileSchema } = await import('../../middleware/validation.js');
     const parsed = workspaceWriteFileSchema.safeParse(body);
 
