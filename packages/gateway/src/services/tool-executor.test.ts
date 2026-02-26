@@ -74,6 +74,7 @@ const mockConfigProvider = { name: 'config', getTools: vi.fn(() => []) };
 const mockHeartbeatProvider = { name: 'heartbeat', getTools: vi.fn(() => []) };
 const mockExtensionProvider = { name: 'extension', getTools: vi.fn(() => []) };
 const mockCodingAgentProvider = { name: 'coding-agent', getTools: vi.fn(() => []) };
+const mockCliToolProvider = { name: 'cli-tools', getTools: vi.fn(() => []) };
 
 vi.mock('./tool-providers/index.js', () => ({
   createMemoryToolProvider: vi.fn(() => mockMemoryProvider),
@@ -86,6 +87,7 @@ vi.mock('./tool-providers/index.js', () => ({
   createHeartbeatToolProvider: vi.fn(() => mockHeartbeatProvider),
   createExtensionToolProvider: vi.fn(() => mockExtensionProvider),
   createCodingAgentToolProvider: vi.fn(() => mockCodingAgentProvider),
+  createCliToolProvider: vi.fn(() => mockCliToolProvider),
 }));
 
 import {
@@ -106,6 +108,7 @@ import {
   createHeartbeatToolProvider,
   createExtensionToolProvider,
   createCodingAgentToolProvider,
+  createCliToolProvider,
 } from './tool-providers/index.js';
 
 // ---------------------------------------------------------------------------
@@ -157,7 +160,7 @@ describe('Tool Executor', () => {
       expect(createExtensionToolProvider).toHaveBeenCalledWith('user-1');
       expect(createCodingAgentToolProvider).toHaveBeenCalledWith('user-1');
 
-      expect(mockToolRegistry.registerProvider).toHaveBeenCalledTimes(10);
+      expect(mockToolRegistry.registerProvider).toHaveBeenCalledTimes(11);
       expect(mockToolRegistry.registerProvider).toHaveBeenCalledWith(mockMemoryProvider);
       expect(mockToolRegistry.registerProvider).toHaveBeenCalledWith(mockGoalProvider);
       expect(mockToolRegistry.registerProvider).toHaveBeenCalledWith(mockCustomDataProvider);
@@ -168,6 +171,7 @@ describe('Tool Executor', () => {
       expect(mockToolRegistry.registerProvider).toHaveBeenCalledWith(mockHeartbeatProvider);
       expect(mockToolRegistry.registerProvider).toHaveBeenCalledWith(mockExtensionProvider);
       expect(mockToolRegistry.registerProvider).toHaveBeenCalledWith(mockCodingAgentProvider);
+      expect(mockToolRegistry.registerProvider).toHaveBeenCalledWith(mockCliToolProvider);
     });
 
     it('returns cached registry on subsequent calls', () => {

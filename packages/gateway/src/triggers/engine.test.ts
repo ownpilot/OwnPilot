@@ -318,7 +318,8 @@ describe('TriggerEngine', () => {
         'my_tool',
         expect.objectContaining({ param1: 'a' }),
         'default',
-        expect.any(Object)
+        expect.any(Object),
+        expect.objectContaining({ source: 'trigger' })
       );
     });
 

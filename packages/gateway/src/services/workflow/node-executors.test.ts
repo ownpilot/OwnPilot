@@ -268,7 +268,7 @@ describe('executeNode', () => {
     expect(mockToolService.execute).toHaveBeenCalledWith(
       'mcp.github.list_repos',
       {},
-      { userId: 'user1' }
+      { userId: 'user1', execSource: 'workflow' }
     );
   });
 });
@@ -422,7 +422,7 @@ describe('executeCodeNode', () => {
     expect(mockToolService.execute).toHaveBeenCalledWith(
       'execute_javascript',
       { code: 'console.log("hello")' },
-      { userId: 'user1' }
+      { userId: 'user1', execSource: 'workflow' }
     );
   });
 
@@ -440,7 +440,7 @@ describe('executeCodeNode', () => {
     expect(mockToolService.execute).toHaveBeenCalledWith(
       'execute_python',
       { code: 'print("hello")' },
-      { userId: 'user1' }
+      { userId: 'user1', execSource: 'workflow' }
     );
   });
 
@@ -458,7 +458,7 @@ describe('executeCodeNode', () => {
     expect(mockToolService.execute).toHaveBeenCalledWith(
       'execute_shell',
       { code: 'echo hello' },
-      { userId: 'user1' }
+      { userId: 'user1', execSource: 'workflow' }
     );
   });
 
@@ -475,7 +475,7 @@ describe('executeCodeNode', () => {
     expect(mockToolService.execute).toHaveBeenCalledWith(
       'execute_javascript',
       { code: 'code' },
-      { userId: 'user1' }
+      { userId: 'user1', execSource: 'workflow' }
     );
   });
 

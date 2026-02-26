@@ -86,7 +86,10 @@ export async function executeNode(
     // Resolve tool name — handles cases where dots were stripped (e.g. copilot AI)
     const toolName = resolveWorkflowToolName(data.toolName, toolService);
 
-    const toolResult = await toolService.execute(toolName, resolvedArgs, { userId });
+    const toolResult = await toolService.execute(toolName, resolvedArgs, {
+      userId,
+      execSource: 'workflow',
+    });
     const result: ToolExecutionResult = toToolExecResult(toolResult);
 
     return {
@@ -278,7 +281,10 @@ export async function executeCodeNode(
     };
     const toolName = toolMap[data.language] ?? 'execute_javascript';
 
-    const toolResult = await toolService.execute(toolName, { code: resolvedCode }, { userId });
+    const toolResult = await toolService.execute(toolName, { code: resolvedCode }, {
+      userId,
+      execSource: 'workflow',
+    });
     const result: ToolExecutionResult = toToolExecResult(toolResult);
 
     return {

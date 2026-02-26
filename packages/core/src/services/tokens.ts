@@ -35,6 +35,7 @@ import type { IEmbeddingService } from './embedding-service.js';
 import type { IHeartbeatService } from './heartbeat-service.js';
 import type { IPulseService } from './pulse-service.js';
 import type { ICodingAgentService } from './coding-agent-service.js';
+import type { ICliToolService } from './cli-tool-service.js';
 
 /**
  * All service tokens.
@@ -111,4 +112,7 @@ export const Services = {
 
   /** External coding agent orchestration (Claude Code, Codex, Gemini CLI) */
   CodingAgent: new ServiceToken<ICodingAgentService>('coding-agent'),
+
+  /** CLI tool discovery, execution, and management */
+  CliTool: new ServiceToken<ICliToolService>('cli-tool'),
 } as const;

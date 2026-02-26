@@ -5,6 +5,33 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.2] - 2026-02-26
+
+### Added
+
+- **CLI Tools Platform** — 40+ discoverable CLI tools with automatic PATH-based binary detection, categorization (linters, formatters, build tools, package managers, security scanners, databases, containers), and version detection
+- **Per-Tool Security Policies** — `allowed` (auto-execute), `prompt` (require approval), `blocked` (reject) per user per tool, with batch policy updates via API
+- **Dynamic Risk Scoring** — Catalog-based risk levels (low/medium/high/critical) feed into the autonomy risk engine, overriding generic tool risk scores
+- **Custom CLI Tool Registration** — Register any binary as a CLI tool with category and risk metadata via `POST /cli-tools/custom`
+- **CLI Policy Approval Integration** — Per-tool policies wired into the real-time approval flow in the orchestrator, dynamic risk scoring based on catalog risk levels
+- **Coding Agents** — Orchestrate external AI coding CLIs (Claude Code, Codex, Gemini CLI) with session management, real-time terminal output streaming, and result persistence
+- **Dual Execution Modes** — Auto mode (headless `child_process.spawn`) and interactive mode (PTY terminal) for coding agents
+- **Custom Coding Agent Providers** — Register any CLI binary as a coding agent provider via the CLI Providers API
+- **Model Routing** — Per-process model selection (chat, telegram, pulse) with fallback chains, configurable via API and UI
+- **Extended Thinking** — Anthropic extended thinking support for deeper reasoning in complex tasks
+
+### Changed
+
+- Gateway route modules: 40 → 43 top-level (added `coding-agents.ts`, `cli-tools.ts`, `cli-providers.ts`, `model-routing.ts`)
+- Repositories: 37 → 41 (added `coding-agent-results`, `cli-providers`, `cli-tool-policies`, `autonomy-log`)
+- UI pages: 41 → 47 (added CodingAgentsPage, CodingAgentSettingsPage, CliToolsSettingsPage, ModelRoutingPage, SecurityPage, AboutPage)
+- WebSocket events: added `coding-agent:session:*` for coding agent lifecycle
+
+### Testing
+
+- 315+ test files, 19,200+ tests total
+- New: coding-agent-service, coding-agent-sessions, cli-providers, cli-tool-policies, coding-agent-results repository tests
+
 ## [0.1.1] - 2026-02-23
 
 ### Added
@@ -75,5 +102,6 @@ Initial release of OwnPilot.
 - Docker multi-arch image (amd64 + arm64) published to `ghcr.io/ownpilot/ownpilot`
 - PostgreSQL with pgvector for vector search
 
+[0.1.2]: https://github.com/ownpilot/ownpilot/releases/tag/v0.1.2
 [0.1.1]: https://github.com/ownpilot/ownpilot/releases/tag/v0.1.1
 [0.1.0]: https://github.com/ownpilot/ownpilot/releases/tag/v0.1.0

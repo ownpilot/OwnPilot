@@ -28,11 +28,14 @@ export interface ToolServiceResult {
 export interface IToolService {
   /**
    * Execute a tool by name.
+   *
+   * @param context.execSource - Identifies the calling context (e.g. 'workflow', 'trigger')
+   *                             for centralized permission enforcement.
    */
   execute(
     name: string,
     args: Record<string, unknown>,
-    context?: { conversationId?: string; userId?: string }
+    context?: { conversationId?: string; userId?: string; execSource?: string }
   ): Promise<ToolServiceResult>;
 
   /**

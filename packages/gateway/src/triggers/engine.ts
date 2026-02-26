@@ -22,9 +22,9 @@ import {
   type ITriggerService,
   type IGoalService,
   type IMemoryService,
-  type ExecutionPermissions,
 } from '@ownpilot/core';
 import { executionPermissionsRepo } from '../db/repositories/execution-permissions.js';
+import { downgradePromptToBlocked } from '../services/permission-utils.js';
 import { getLog } from '../services/log.js';
 import { getErrorMessage } from '../routes/helpers.js';
 import {
@@ -300,21 +300,13 @@ export class TriggerEngine {
 
       // Load user's execution permissions; 'prompt' → 'blocked' for triggers (no UI for approval)
       const userPerms = await executionPermissionsRepo.get(this.config.userId);
-      const triggerPerms = {
-        ...userPerms,
-        // Downgrade 'prompt' to 'blocked' for category permissions only
-        execute_javascript:
-          userPerms.execute_javascript === 'prompt' ? 'blocked' : userPerms.execute_javascript,
-        execute_python:
-          userPerms.execute_python === 'prompt' ? 'blocked' : userPerms.execute_python,
-        execute_shell: userPerms.execute_shell === 'prompt' ? 'blocked' : userPerms.execute_shell,
-        compile_code: userPerms.compile_code === 'prompt' ? 'blocked' : userPerms.compile_code,
-        package_manager:
-          userPerms.package_manager === 'prompt' ? 'blocked' : userPerms.package_manager,
-      } as ExecutionPermissions;
+      const triggerPerms = downgradePromptToBlocked(userPerms);
 
       log.info('Executing tool', { toolName });
-      const result = await executeTool(toolName, toolArgs, this.config.userId, triggerPerms);
+      const result = await executeTool(toolName, toolArgs, this.config.userId, triggerPerms, {
+        source: 'trigger',
+        executionPermissions: triggerPerms,
+      });
 
       return {
         success: result.success,

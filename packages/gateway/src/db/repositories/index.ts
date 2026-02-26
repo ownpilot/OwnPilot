@@ -359,3 +359,11 @@ export {
   type CreateCliProviderInput,
   type UpdateCliProviderInput,
 } from './cli-providers.js';
+
+// CLI tool policies repository
+export {
+  CliToolPoliciesRepository,
+  cliToolPoliciesRepo,
+  createCliToolPoliciesRepository,
+  type ToolPolicyRecord,
+} from './cli-tool-policies.js';

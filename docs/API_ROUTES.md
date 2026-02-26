@@ -71,6 +71,10 @@ Error responses:
 31. [Plugins](#31-plugins)
 32. [Debug](#32-debug)
 33. [Audit](#33-audit)
+34. [CLI Tools](#34-cli-tools)
+35. [Coding Agents](#35-coding-agents)
+36. [CLI Providers](#36-cli-providers)
+37. [Model Routing](#37-model-routing)
 
 ---
 
@@ -1930,3 +1934,229 @@ Two streaming mechanisms are used:
 ### Authentication
 
 Currently operates in single-user mode with `userId = "default"`. JWT authentication via the `jose` library is prepared but not enforced on routes. OAuth integration (Google) is fully implemented for external service access.
+
+---
+
+## 34. CLI Tools
+
+**Mount:** `/api/v1/cli-tools`
+**Source:** `packages/gateway/src/routes/cli-tools.ts`
+
+Discovers installed CLI tools from a 40+ item catalog, manages per-tool security policies, and supports custom tool registration.
+
+### Endpoints
+
+| Method   | Path                    | Description                                  |
+| -------- | ----------------------- | -------------------------------------------- |
+| `GET`    | `/`                     | Discover all installed CLI tools             |
+| `GET`    | `/policies`             | List per-tool security policies              |
+| `PUT`    | `/policies/:toolName`   | Update policy for a single tool              |
+| `POST`   | `/policies/batch`       | Batch update policies for multiple tools     |
+| `POST`   | `/:name/install`        | Install a CLI tool via npx                   |
+| `POST`   | `/refresh`              | Force refresh tool discovery cache           |
+| `POST`   | `/custom`               | Register a custom CLI tool                   |
+| `DELETE` | `/custom/:name`         | Remove a custom CLI tool                     |
+
+### GET `/`
+
+Returns all discovered CLI tools (catalog + custom) with install status, version, and effective policy.
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "name": "eslint",
+      "displayName": "ESLint",
+      "category": "linter",
+      "riskLevel": "low",
+      "installed": true,
+      "version": "9.20.0",
+      "npxAvailable": false,
+      "policy": "allowed",
+      "source": "catalog"
+    }
+  ]
+}
+```
+
+### PUT `/policies/:toolName`
+
+Update the security policy for a specific tool.
+
+**Body:** `{ "policy": "allowed" | "prompt" | "blocked" }`
+
+### POST `/policies/batch`
+
+Batch update policies for multiple tools at once.
+
+**Body:**
+```json
+{
+  "policies": {
+    "eslint": "allowed",
+    "rm": "blocked",
+    "docker": "prompt"
+  }
+}
+```
+
+### POST `/custom`
+
+Register a custom CLI binary as a tool.
+
+**Body:**
+```json
+{
+  "name": "my-tool",
+  "displayName": "My Custom Tool",
+  "binary": "/usr/local/bin/my-tool",
+  "category": "utility",
+  "description": "Custom tool for X"
+}
+```
+
+---
+
+## 35. Coding Agents
+
+**Mount:** `/api/v1/coding-agents`
+**Source:** `packages/gateway/src/routes/coding-agents.ts`
+
+Manage and run external AI coding agents (Claude Code, Codex, Gemini CLI) with session management, real-time output streaming, and result persistence.
+
+### Endpoints
+
+| Method   | Path                      | Description                              |
+| -------- | ------------------------- | ---------------------------------------- |
+| `GET`    | `/status`                 | List all provider statuses               |
+| `POST`   | `/run`                    | Run a coding task (blocking)             |
+| `POST`   | `/test`                   | Test provider connectivity               |
+| `GET`    | `/sessions`               | List active sessions                     |
+| `POST`   | `/sessions`               | Create a new session                     |
+| `GET`    | `/sessions/:id`           | Get session details                      |
+| `DELETE` | `/sessions/:id`           | Terminate a session                      |
+| `POST`   | `/sessions/:id/input`     | Send input to a session                  |
+| `GET`    | `/sessions/:id/output`    | Get session output buffer                |
+| `POST`   | `/sessions/:id/resize`    | Resize terminal dimensions               |
+| `GET`    | `/results`                | List persisted task results              |
+| `GET`    | `/results/:id`            | Get a specific result                    |
+
+### POST `/run`
+
+Run a coding agent task and wait for completion.
+
+**Body:**
+```json
+{
+  "provider": "claude-code",
+  "prompt": "Add unit tests for the user service",
+  "cwd": "/path/to/project",
+  "model": "claude-sonnet-4-5-20250929",
+  "max_budget_usd": 1.0,
+  "max_turns": 10,
+  "timeout_seconds": 300,
+  "mode": "auto"
+}
+```
+
+**provider** values: `claude-code`, `codex`, `gemini-cli`, or `custom:{name}` for user-registered providers.
+
+### POST `/sessions`
+
+Create a new session with real-time output streaming via WebSocket.
+
+**Body:**
+```json
+{
+  "provider": "claude-code",
+  "prompt": "Refactor auth module to use JWT",
+  "cwd": "/path/to/project",
+  "mode": "auto"
+}
+```
+
+**mode** values: `auto` (headless child_process.spawn) or `interactive` (PTY terminal, requires node-pty).
+
+---
+
+## 36. CLI Providers
+
+**Mount:** `/api/v1/cli-providers`
+**Source:** `packages/gateway/src/routes/cli-providers.ts`
+
+CRUD for user-registered CLI tools as coding agent providers. These appear in the coding agents system as `custom:{name}`.
+
+### Endpoints
+
+| Method   | Path         | Description                          |
+| -------- | ------------ | ------------------------------------ |
+| `GET`    | `/`          | List all CLI providers for the user  |
+| `POST`   | `/`          | Create a new CLI provider            |
+| `PUT`    | `/:id`       | Update a CLI provider                |
+| `DELETE` | `/:id`       | Delete a CLI provider                |
+| `POST`   | `/:id/test`  | Test if binary is installed          |
+
+### POST `/`
+
+Register a custom CLI binary as a coding agent provider.
+
+**Body:**
+```json
+{
+  "name": "my-agent",
+  "display_name": "My Custom Agent",
+  "binary": "/usr/local/bin/my-agent",
+  "description": "Custom coding agent",
+  "category": "coding",
+  "auth_method": "env_var",
+  "api_key_env_var": "MY_AGENT_KEY",
+  "default_args": ["--no-color"],
+  "output_format": "text",
+  "default_timeout_ms": 300000
+}
+```
+
+---
+
+## 37. Model Routing
+
+**Mount:** `/api/v1/model-routing`
+**Source:** `packages/gateway/src/routes/model-routing.ts`
+
+Per-process model selection with fallback chains. Allows different AI processes (chat, telegram, pulse) to use different provider/model combinations.
+
+### Endpoints
+
+| Method   | Path          | Description                              |
+| -------- | ------------- | ---------------------------------------- |
+| `GET`    | `/`           | List all process routing configs         |
+| `GET`    | `/:process`   | Get routing for a single process         |
+| `PUT`    | `/:process`   | Update routing for a process             |
+| `DELETE` | `/:process`   | Clear routing for a process (use global) |
+
+### GET `/`
+
+Returns routing configuration and resolved provider/model for each process.
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "routing": {
+      "chat": { "provider": "anthropic", "model": "claude-sonnet-4-5-20250929" },
+      "telegram": null,
+      "pulse": { "provider": "openai", "model": "gpt-4.1-mini" }
+    },
+    "resolved": {
+      "chat": { "provider": "anthropic", "model": "claude-sonnet-4-5-20250929" },
+      "telegram": { "provider": "anthropic", "model": "claude-sonnet-4-5-20250929" },
+      "pulse": { "provider": "openai", "model": "gpt-4.1-mini" }
+    }
+  }
+}
+```
+
+Valid process names: `chat`, `telegram`, `pulse`.

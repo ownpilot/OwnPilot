@@ -13,8 +13,6 @@
  * PTY fallback is available when node-pty is installed (optional dependency).
  */
 
-import { spawn, execFileSync, type ChildProcess } from 'node:child_process';
-import { resolve, isAbsolute } from 'node:path';
 import {
   type ICodingAgentService,
   type CodingAgentTask,
@@ -31,6 +29,14 @@ import {
 import { tryImport } from '@ownpilot/core';
 import { configServicesRepo } from '../db/repositories/config-services.js';
 import { cliProvidersRepo, type CliProviderRecord } from '../db/repositories/cli-providers.js';
+import {
+  isBinaryInstalled,
+  getBinaryVersion,
+  validateCwd,
+  createSanitizedEnv,
+  spawnCliProcess,
+  MAX_OUTPUT_SIZE,
+} from './binary-utils.js';
 import { getLog } from './log.js';
 
 const log = getLog('CodingAgent');
@@ -41,7 +47,6 @@ const log = getLog('CodingAgent');
 
 const DEFAULT_TIMEOUT_MS = 300_000; // 5 minutes
 const MAX_TIMEOUT_MS = 1_800_000; // 30 minutes
-const MAX_OUTPUT_SIZE = 1_048_576; // 1 MB
 const DEFAULT_MAX_TURNS = 10;
 const DEFAULT_MAX_BUDGET_USD = 1.0;
 
@@ -117,153 +122,8 @@ function resolveCustomApiKey(customProvider: CliProviderRecord): string | undefi
   return undefined;
 }
 
-/**
- * Check if a CLI binary is installed using execFileSync (safe, no shell injection).
- */
-function isBinaryInstalled(binary: string): boolean {
-  try {
-    const cmd = process.platform === 'win32' ? 'where' : 'which';
-    execFileSync(cmd, [binary], { stdio: 'pipe', timeout: 5000 });
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-/**
- * Get version of a CLI binary using execFileSync (safe, no shell injection).
- */
-function getBinaryVersion(binary: string): string | undefined {
-  try {
-    const output = execFileSync(binary, ['--version'], {
-      stdio: 'pipe',
-      timeout: 10000,
-      encoding: 'utf8',
-    });
-    return output.trim().split('\n')[0];
-  } catch {
-    return undefined;
-  }
-}
-
-/**
- * Validate working directory: must be absolute, no path traversal.
- */
-function validateCwd(cwd: string): string {
-  const resolved = resolve(cwd);
-  if (!isAbsolute(resolved)) {
-    throw new Error(`Working directory must be an absolute path: ${cwd}`);
-  }
-  if (resolved.includes('..')) {
-    throw new Error(`Working directory must not contain path traversal: ${cwd}`);
-  }
-  return resolved;
-}
-
-/**
- * Create a sanitized environment for child processes.
- * Strips OwnPilot secrets, optionally injects the target API key.
- * API key is optional — CLIs support login-based auth.
- */
-function createSanitizedEnv(
-  provider: string,
-  apiKey?: string,
-  apiKeyEnvVar?: string
-): Record<string, string> {
-  const env = { ...process.env } as Record<string, string>;
-
-  // Remove sensitive OwnPilot variables
-  const sensitivePatterns = [
-    /^OWNPILOT_/i,
-    /^DATABASE_/i,
-    /^ADMIN_KEY$/i,
-    /^JWT_SECRET$/i,
-    /^SESSION_SECRET$/i,
-  ];
-  for (const key of Object.keys(env)) {
-    if (sensitivePatterns.some((p) => p.test(key))) {
-      delete env[key];
-    }
-  }
-
-  // Remove nesting-detection env vars so child CLIs don't refuse to start
-  delete env.CLAUDECODE;
-  delete env.CLAUDE_CODE;
-
-  // Inject the provider's API key if available
-  if (apiKey) {
-    // For built-in providers, use the known env var name
-    const envVarName = apiKeyEnvVar
-      ?? (isBuiltinProvider(provider) ? API_KEY_ENV_VARS[provider] : undefined);
-    if (envVarName) {
-      env[envVarName] = apiKey;
-    }
-  }
-
-  return env;
-}
-
-/**
- * Spawn a CLI agent as a child process and collect output.
- * Uses spawn() with explicit args array (no shell injection).
- */
-function spawnCliAgent(
-  command: string,
-  args: string[],
-  options: {
-    cwd?: string;
-    env: Record<string, string>;
-    timeout: number;
-  }
-): Promise<{ stdout: string; stderr: string; exitCode: number }> {
-  return new Promise((resolvePromise, reject) => {
-    let stdout = '';
-    let stderr = '';
-    let killed = false;
-
-    const proc: ChildProcess = spawn(command, args, {
-      cwd: options.cwd,
-      env: options.env,
-      stdio: ['pipe', 'pipe', 'pipe'],
-      windowsHide: true,
-    });
-
-    const timer = setTimeout(() => {
-      killed = true;
-      proc.kill('SIGTERM');
-      // Force kill after 5s grace period
-      setTimeout(() => {
-        if (!proc.killed) proc.kill('SIGKILL');
-      }, 5000);
-    }, options.timeout);
-
-    proc.stdout?.on('data', (chunk: Buffer) => {
-      if (stdout.length < MAX_OUTPUT_SIZE) {
-        stdout += chunk.toString();
-      }
-    });
-
-    proc.stderr?.on('data', (chunk: Buffer) => {
-      if (stderr.length < MAX_OUTPUT_SIZE) {
-        stderr += chunk.toString();
-      }
-    });
-
-    proc.on('error', (err) => {
-      clearTimeout(timer);
-      reject(err);
-    });
-
-    proc.on('close', (code) => {
-      clearTimeout(timer);
-      if (killed) {
-        reject(new Error(`Process timed out after ${options.timeout}ms`));
-      } else {
-        resolvePromise({ stdout, stderr, exitCode: code ?? 1 });
-      }
-    });
-  });
-}
+// isBinaryInstalled, getBinaryVersion, validateCwd, createSanitizedEnv, spawnCliProcess
+// are imported from './binary-utils.js'
 
 // =============================================================================
 // PROVIDER ADAPTERS
@@ -357,7 +217,7 @@ async function runCodex(task: CodingAgentTask, apiKey?: string): Promise<CodingA
   args.push(task.prompt);
 
   try {
-    const result = await spawnCliAgent('codex', args, {
+    const result = await spawnCliProcess('codex', args, {
       cwd,
       env: createSanitizedEnv('codex', apiKey),
       timeout,
@@ -419,7 +279,7 @@ async function runGeminiCli(task: CodingAgentTask, apiKey?: string): Promise<Cod
   if (task.model) args.push('--model', task.model);
 
   try {
-    const result = await spawnCliAgent('gemini', args, {
+    const result = await spawnCliProcess('gemini', args, {
       cwd,
       env: createSanitizedEnv('gemini-cli', apiKey),
       timeout,

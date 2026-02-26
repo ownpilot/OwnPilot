@@ -50,6 +50,20 @@ vi.mock('../services/tool-executor.js', () => ({
   hasTool: vi.fn(async () => true),
 }));
 
+vi.mock('../db/repositories/execution-permissions.js', () => ({
+  executionPermissionsRepo: {
+    get: vi.fn(async () => ({
+      enabled: true,
+      mode: 'local',
+      execute_javascript: 'allowed',
+      execute_python: 'allowed',
+      execute_shell: 'allowed',
+      compile_code: 'allowed',
+      package_manager: 'allowed',
+    })),
+  },
+}));
+
 // Mock the dynamic imports used by llm_decision handler
 vi.mock('../routes/agents.js', () => ({
   getOrCreateChatAgent: vi.fn(),
@@ -231,7 +245,13 @@ describe('PlanExecutor', () => {
       expect(mockPlanService.updateStep).toHaveBeenCalledWith('user-1', 'step-1', {
         status: 'running',
       });
-      expect(executeTool).toHaveBeenCalledWith('my_tool', { key: 'val' }, 'user-1');
+      expect(executeTool).toHaveBeenCalledWith(
+        'my_tool',
+        { key: 'val' },
+        'user-1',
+        expect.any(Object),
+        expect.objectContaining({ source: 'plan' })
+      );
     });
 
     it('handles step execution failure', async () => {

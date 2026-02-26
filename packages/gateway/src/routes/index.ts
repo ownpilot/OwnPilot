@@ -45,3 +45,4 @@ export { uiAuthRoutes } from './ui-auth.js';
 export { modelRoutingRoutes } from './model-routing.js';
 export { codingAgentsRoutes } from './coding-agents.js';
 export { cliProvidersRoutes } from './cli-providers.js';
+export { cliToolsRoutes } from './cli-tools.js';

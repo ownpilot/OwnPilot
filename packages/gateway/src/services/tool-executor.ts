@@ -38,6 +38,7 @@ import {
   createHeartbeatToolProvider,
   createExtensionToolProvider,
   createCodingAgentToolProvider,
+  createCliToolProvider,
 } from './tool-providers/index.js';
 import { createCustomToolsRepo } from '../db/repositories/custom-tools.js';
 import {
@@ -51,6 +52,8 @@ import { registerEmailOverrides } from './email-overrides.js';
 import { registerAudioOverrides } from './audio-overrides.js';
 import { hasServiceRegistry, getServiceRegistry, Services } from '@ownpilot/core';
 import type { IAuditService } from '@ownpilot/core';
+import { checkToolPermission } from './tool-permission-service.js';
+import type { ToolExecContext } from './permission-utils.js';
 
 const log = getLog('ToolExecutor');
 
@@ -122,6 +125,7 @@ export function getSharedToolRegistry(userId = 'default'): ToolRegistry {
   tools.registerProvider(createHeartbeatToolProvider(userId));
   tools.registerProvider(createExtensionToolProvider(userId));
   tools.registerProvider(createCodingAgentToolProvider(userId));
+  tools.registerProvider(createCliToolProvider(userId));
 
   // Register plugin tools into the shared registry (source: 'plugin')
   initPluginToolsIntoRegistry(tools);
@@ -265,13 +269,29 @@ export async function waitForToolSync(): Promise<void> {
  * First checks the shared ToolRegistry, then falls back to PluginRegistry
  * (in case plugin tools haven't been synced yet due to async initialization).
  * Returns a standardized result object.
+ *
+ * @param execContext - Execution context identifying the caller (trigger, plan, workflow, etc.).
+ *                      When provided, the ToolPermissionService enforces tool group checks,
+ *                      execution permissions, CLI policies, and custom tool approval requirements.
  */
 export async function executeTool(
   toolName: string,
   args: Record<string, unknown>,
   userId = 'default',
-  executionPermissions?: ExecutionPermissions
+  executionPermissions?: ExecutionPermissions,
+  execContext?: ToolExecContext
 ): Promise<ToolExecutionResult> {
+  // Centralized permission check — blocks disabled tools in ALL execution contexts
+  if (execContext) {
+    const perm = await checkToolPermission(userId, toolName, {
+      ...execContext,
+      executionPermissions: execContext.executionPermissions ?? executionPermissions,
+    });
+    if (!perm.allowed) {
+      return { success: false, error: `Tool '${toolName}' blocked: ${perm.reason}` };
+    }
+  }
+
   const start = Date.now();
   const result = await executeToolInternal(toolName, args, userId, executionPermissions);
 

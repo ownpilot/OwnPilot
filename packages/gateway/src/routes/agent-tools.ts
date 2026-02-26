@@ -70,6 +70,7 @@ import {
   AI_META_TOOL_NAMES,
 } from '../config/defaults.js';
 import { getLog } from '../services/log.js';
+import { checkToolPermission } from '../services/tool-permission-service.js';
 
 const log = getLog('AgentTools');
 
@@ -569,6 +570,15 @@ export async function executeUseTool(
         ? `\n\nDid you mean one of these?\n${similar.map((s) => `  • ${s}`).join('\n')}\n\nCall get_tool_help("tool_name") to see parameters, then retry with the correct name.`
         : '\n\nUse search_tools("keyword") to find the correct tool name.';
     return { content: `Tool '${tool_name}' not found.${hint}`, isError: true };
+  }
+
+  // Centralized permission check — enforces tool groups, exec perms, CLI policies, skill restrictions
+  const perm = await checkToolPermission(context.userId ?? 'default', tool_name, {
+    source: 'chat',
+    executionPermissions: context.executionPermissions,
+  });
+  if (!perm.allowed) {
+    return { content: `Tool '${tool_name}' is not available: ${perm.reason}`, isError: true };
   }
 
   // Pre-validate required parameters before execution
