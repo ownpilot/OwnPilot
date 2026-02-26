@@ -1398,7 +1398,19 @@ describe('ChannelServiceImpl', () => {
 
         await service.processIncomingMessage(message);
 
-        // Should create a new conversation and update the DB session
+        // Should persist conversation to DB first (fixes FK constraint violation)
+        expect(mockConversationsRepo.create).toHaveBeenCalledWith(
+          expect.objectContaining({
+            id: 'recovered-conv-id',
+            agentName: 'default',
+            metadata: expect.objectContaining({
+              source: 'channel',
+              recoveredFrom: 'conv-1',
+            }),
+          })
+        );
+
+        // Then update the DB session FK
         expect(mockSessionsRepo.linkConversation).toHaveBeenCalledWith(
           'session-1',
           'recovered-conv-id'

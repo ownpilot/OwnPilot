@@ -761,7 +761,22 @@ export class ChannelServiceImpl implements IChannelService {
         const systemPrompt = agent.getConversation().systemPrompt;
         const newConv = agent.getMemory().create(systemPrompt);
         activeConversationId = newConv.id;
-        // Update session in DB to point to new conversation
+
+        // Persist to DB before updating the FK on channel_sessions
+        const { createConversationsRepository } =
+          await import('../db/repositories/conversations.js');
+        const conversationsRepo = createConversationsRepository();
+        await conversationsRepo.create({
+          id: activeConversationId,
+          agentName: 'default',
+          metadata: {
+            source: 'channel',
+            platform: message.platform,
+            recoveredFrom: session.conversationId,
+          },
+        });
+
+        // Now safe to update session FK
         await this.sessionsRepo.linkConversation(session.sessionId, activeConversationId);
       }
       agent.loadConversation(activeConversationId);
