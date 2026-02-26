@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   Container,
   RefreshCw,
@@ -76,6 +76,18 @@ export function SystemPage() {
   const [backups, setBackups] = useState<BackupInfo[]>([]);
   const [dbStats, setDbStats] = useState<DatabaseStats | null>(null);
 
+  // Track active poll timers for cleanup
+  const pollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const cancelledRef = useRef(false);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      cancelledRef.current = true;
+      if (pollTimerRef.current) clearTimeout(pollTimerRef.current);
+    };
+  }, []);
+
   // Load system status on mount
   useEffect(() => {
     loadSystemStatus();
@@ -122,13 +134,12 @@ export function SystemPage() {
       await systemApi.databaseOperation(endpoint, body);
       setDbOperationOutput([`${operationType} started...`]);
 
-      // Poll for status with cleanup guard
-      let cancelled = false;
+      // Poll for status — uses ref-based cancellation for unmount safety
       const pollStatus = async () => {
-        if (cancelled) return;
+        if (cancelledRef.current) return;
         try {
           const statusData = await systemApi.databaseOperationStatus();
-          if (cancelled) return;
+          if (cancelledRef.current) return;
 
           setDbOperationOutput(statusData.output || []);
 
@@ -139,21 +150,16 @@ export function SystemPage() {
             return;
           }
 
-          setTimeout(pollStatus, 1000);
+          pollTimerRef.current = setTimeout(pollStatus, 1000);
         } catch {
-          if (!cancelled) {
+          if (!cancelledRef.current) {
             setDbOperationResult('failure');
             setDbOperationRunning(false);
           }
         }
       };
 
-      // Start polling, stop on unmount
-      setTimeout(pollStatus, 1000);
-      // Note: cancelled flag set if component unmounts during operation
-      return () => {
-        cancelled = true;
-      };
+      pollTimerRef.current = setTimeout(pollStatus, 1000);
     } catch {
       setDbOperationOutput([`Failed to start ${operationType.toLowerCase()}`]);
       setDbOperationResult('failure');

@@ -174,8 +174,9 @@ export function ApiKeysPage() {
     // Save to backend
     try {
       await settingsApi.setDefaultModel(modelId);
+      toast.success('Default model updated');
     } catch {
-      // API client handles error reporting
+      toast.error('Failed to save default model');
     }
   };
 

@@ -330,5 +330,14 @@ export const expensesApi = {
     description: string;
     notes?: string;
   }) => apiClient.post<ExpenseEntry>(`/expenses`, expense),
+  update: (id: string, expense: Partial<{
+    date: string;
+    amount: number;
+    currency: string;
+    category: string;
+    description: string;
+    notes: string;
+    paymentMethod: string;
+  }>) => apiClient.put<ExpenseEntry>(`/expenses/${id}`, expense),
   delete: (id: string) => apiClient.delete<void>(`/expenses/${id}`),
 };
