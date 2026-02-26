@@ -42,7 +42,7 @@ const getConfigServiceTool: ToolDefinition = {
     properties: {
       service: {
         type: 'string',
-        description: 'Service name (e.g. "deepl", "smtp", "imap", "openweathermap", "tavily")',
+        description: 'Service name (e.g. "smtp", "imap", "openweathermap", "elevenlabs")',
       },
     },
     required: ['service'],
@@ -61,7 +61,7 @@ const setConfigEntryTool: ToolDefinition = {
     properties: {
       service: {
         type: 'string',
-        description: 'Service name (e.g. "deepl", "smtp", "openweathermap")',
+        description: 'Service name (e.g. "smtp", "openweathermap", "elevenlabs")',
       },
       data: {
         type: 'object',

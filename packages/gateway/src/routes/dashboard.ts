@@ -229,8 +229,14 @@ dashboardRoutes.get('/timeline', async (c) => {
 dashboardRoutes.post('/briefing/stream', async (c) => {
   const userId = getUserId(c);
   const body = await parseJsonBody<{ provider?: string; model?: string }>(c) ?? {};
-  const provider = body.provider ?? (await getDefaultProvider()) ?? 'openai';
-  const model = body.model ?? (await getDefaultModel(provider)) ?? 'gpt-4o-mini';
+  const provider = body.provider ?? (await getDefaultProvider());
+  if (!provider) {
+    return apiError(c, {
+      code: ERROR_CODES.BRIEFING_FAILED,
+      message: 'No AI provider configured. Add an API key in Settings.',
+    }, 400);
+  }
+  const model = body.model ?? (await getDefaultModel(provider));
 
   const service = new DashboardService(userId);
 
@@ -260,7 +266,7 @@ dashboardRoutes.post('/briefing/stream', async (c) => {
       // Generate streaming briefing
       const briefing = await service.generateAIBriefingStreaming(
         data,
-        { provider, model },
+        { provider, model: model ?? undefined },
         async (chunk: string) => {
           await sendEvent({ type: 'chunk', content: chunk });
         }

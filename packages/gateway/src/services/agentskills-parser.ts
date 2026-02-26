@@ -63,6 +63,21 @@ function parseSimpleYaml(yaml: string): Record<string, unknown> {
   const lines = yaml.split('\n');
   let currentKey: string | null = null;
   let currentMap: Record<string, string> | null = null;
+  let currentList: string[] | null = null;
+
+  const flushCurrent = () => {
+    if (currentKey) {
+      if (currentList && currentList.length > 0) {
+        result[currentKey] = currentList;
+      } else if (currentMap && Object.keys(currentMap).length > 0) {
+        result[currentKey] = currentMap;
+      }
+      // If both are empty, the key had no nested content — skip it
+    }
+    currentKey = null;
+    currentMap = null;
+    currentList = null;
+  };
 
   for (const rawLine of lines) {
     const line = rawLine.trimEnd();
@@ -70,22 +85,31 @@ function parseSimpleYaml(yaml: string): Record<string, unknown> {
     // Skip empty lines and comments
     if (!line.trim() || line.trim().startsWith('#')) continue;
 
-    // Check if this is a nested key (indented, part of a map)
-    if (currentKey && currentMap && /^\s{2,}/.test(line)) {
-      const match = line.trim().match(/^([^:]+):\s*(.*)$/);
-      if (match) {
-        const val = unquote(match[2]!.trim());
-        currentMap[match[1]!.trim()] = val;
+    // Check if this is an indented line (part of a nested block)
+    if (currentKey && /^\s{2,}/.test(line)) {
+      const trimmed = line.trim();
+
+      // Block-style list item: "- value" or "- key: value"
+      if (trimmed.startsWith('- ')) {
+        if (!currentList) currentList = [];
+        const itemValue = unquote(trimmed.slice(2).trim());
+        if (itemValue) currentList.push(itemValue);
+        continue;
+      }
+
+      // Nested key-value pair: "key: value"
+      if (currentMap) {
+        const match = trimmed.match(/^([^:]+):\s*(.*)$/);
+        if (match) {
+          const val = unquote(match[2]!.trim());
+          currentMap[match[1]!.trim()] = val;
+        }
       }
       continue;
     }
 
-    // Flush current map if we're back at top level
-    if (currentKey && currentMap) {
-      result[currentKey] = currentMap;
-      currentKey = null;
-      currentMap = null;
-    }
+    // Flush current nested block if we're back at top level
+    flushCurrent();
 
     // Top-level key: value
     const kvMatch = line.match(/^([a-z_-]+):\s*(.*)$/i);
@@ -98,6 +122,7 @@ function parseSimpleYaml(yaml: string): Record<string, unknown> {
       // Start of a nested map or block sequence
       currentKey = key;
       currentMap = {};
+      currentList = null;
       continue;
     }
 
@@ -116,10 +141,8 @@ function parseSimpleYaml(yaml: string): Record<string, unknown> {
     result[key] = unquote(rawValue);
   }
 
-  // Flush last map
-  if (currentKey && currentMap) {
-    result[currentKey] = currentMap;
-  }
+  // Flush last nested block
+  flushCurrent();
 
   return result;
 }
@@ -223,10 +246,14 @@ export function parseAgentSkillsMd(content: string, skillDir?: string): Extensio
     referencePaths = [...scanned.referencePaths, ...scanned.assetPaths];
   }
 
-  // Parse allowed-tools (space-delimited string → array)
-  const allowedToolsRaw =
-    fm['allowed-tools'] ?? (frontmatter['allowed-tools'] as string | undefined);
-  const allowedTools = allowedToolsRaw ? allowedToolsRaw.split(/\s+/).filter(Boolean) : undefined;
+  // Parse allowed-tools (string → split by space, array → use directly)
+  const allowedToolsRaw = frontmatter['allowed-tools'] as string | string[] | undefined;
+  let allowedTools: string[] | undefined;
+  if (Array.isArray(allowedToolsRaw)) {
+    allowedTools = allowedToolsRaw.filter(Boolean);
+  } else if (typeof allowedToolsRaw === 'string') {
+    allowedTools = allowedToolsRaw.split(/\s+/).filter(Boolean);
+  }
 
   const manifest: ExtensionManifest = {
     id: fm.name, // agentskills uses name as ID (must match directory name)

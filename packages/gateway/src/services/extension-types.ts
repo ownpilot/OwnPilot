@@ -318,8 +318,17 @@ export function validateAgentSkillsFrontmatter(fm: unknown): ValidationResult {
     }
   }
 
-  if (f.metadata !== undefined && (typeof f.metadata !== 'object' || Array.isArray(f.metadata))) {
-    errors.push('"metadata" must be a key-value mapping');
+  // Coerce non-object metadata instead of rejecting (e.g. OpenClaw skills may use string metadata)
+  if (f.metadata !== undefined && f.metadata !== null) {
+    if (typeof f.metadata === 'string') {
+      // Treat string metadata as a single "value" entry
+      f.metadata = { value: f.metadata };
+    } else if (typeof f.metadata !== 'object' || Array.isArray(f.metadata)) {
+      // Drop invalid types silently
+      f.metadata = undefined;
+    }
+  } else if (f.metadata === null) {
+    f.metadata = undefined;
   }
 
   return { valid: errors.length === 0, errors };

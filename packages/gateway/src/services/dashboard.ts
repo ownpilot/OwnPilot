@@ -542,7 +542,7 @@ export class DashboardService {
    */
   async generateAIBriefingStreaming(
     data: DailyBriefingData,
-    options: { provider: string; model: string },
+    options: { provider: string; model?: string },
     onChunk: (chunk: string) => Promise<void>
   ): Promise<AIBriefing> {
     // Calculate data hash for smart cache
@@ -551,10 +551,14 @@ export class DashboardService {
     // Build prompt for AI
     const prompt = this.buildBriefingPrompt(data);
 
+    // Resolve model if not provided
+    const { getDefaultModel } = await import('../routes/settings.js');
+    const model = options.model ?? (await getDefaultModel(options.provider)) ?? 'default';
+
     try {
       // Dynamic import to avoid circular dependency
       const { getOrCreateChatAgent } = await import('../routes/agents.js');
-      const agent = await getOrCreateChatAgent(options.provider, options.model);
+      const agent = await getOrCreateChatAgent(options.provider, model);
 
       let fullContent = '';
 
@@ -580,7 +584,7 @@ export class DashboardService {
       const content = fullContent || result.value.content;
 
       // Parse the AI response
-      const briefing = this.parseAIResponse(content, options.model);
+      const briefing = this.parseAIResponse(content, model);
 
       // Cache the briefing with data hash
       briefingCache.set(this.userId, briefing, dataHash);

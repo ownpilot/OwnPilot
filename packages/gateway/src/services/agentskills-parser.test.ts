@@ -120,6 +120,36 @@ description: No body.
     expect(result.body).toBe('');
   });
 
+  it('parses block-style list', () => {
+    const content = `---
+name: list-skill
+description: Has block list.
+allowed-tools:
+  - search_web
+  - read_file
+  - write_file
+---
+
+Body.`;
+
+    const result = parseSkillMdFrontmatter(content);
+    expect(result.frontmatter['allowed-tools']).toEqual(['search_web', 'read_file', 'write_file']);
+  });
+
+  it('parses metadata as string without failing', () => {
+    const content = `---
+name: string-meta
+description: Metadata is a string.
+metadata: v1.0.0
+---
+
+Body.`;
+
+    const result = parseSkillMdFrontmatter(content);
+    // String metadata is stored as-is by the parser
+    expect(result.frontmatter.metadata).toBe('v1.0.0');
+  });
+
   it('skips comments in YAML', () => {
     const content = `---
 # This is a comment
@@ -259,6 +289,37 @@ Body.`;
 
     const manifest = parseAgentSkillsMd(content);
     expect(manifest.icon).toBe('\uD83D\uDCD8');
+  });
+
+  it('accepts string metadata (coerced by validator)', () => {
+    const content = `---
+name: openclaw-skill
+description: A skill from OpenClaw.
+metadata: v1.0.0
+---
+
+Instructions.`;
+
+    // Should not throw — validator coerces string metadata
+    const manifest = parseAgentSkillsMd(content);
+    expect(manifest.name).toBe('openclaw-skill');
+    expect(manifest.version).toBe('1.0.0'); // Falls back to default since metadata is coerced
+  });
+
+  it('parses block-style allowed-tools list', () => {
+    const content = `---
+name: block-tools
+description: Uses block-style list.
+allowed-tools:
+  - search_web
+  - read_file
+  - write_file
+---
+
+Instructions.`;
+
+    const manifest = parseAgentSkillsMd(content);
+    expect(manifest.allowed_tools).toEqual(['search_web', 'read_file', 'write_file']);
   });
 
   it('handles skill with no body gracefully', () => {
