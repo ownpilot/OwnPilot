@@ -667,7 +667,7 @@ ${nextActionsList || '  (no next actions)'}
 ${streaksAtRiskList || '  (no streaks at risk)'}
 
 ### AI Costs
-- Today: $${data.costs.daily.totalCost.toFixed(2)} (${data.costs.daily.totalTokens.toLocaleString()} tokens)
+- Today: $${data.costs.daily.totalCost.toFixed(2)} (${data.costs.daily.totalTokens.toLocaleString('en-US')} tokens)
 - This month: $${data.costs.monthly.totalCost.toFixed(2)}
 
 ### Running Automations

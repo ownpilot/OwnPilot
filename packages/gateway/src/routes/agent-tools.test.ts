@@ -88,6 +88,7 @@ vi.mock('@ownpilot/core', () => ({
   validateRequiredParams: mockValidateRequiredParams,
   qualifyToolName: mockQualifyToolName,
   getBaseName: mockGetBaseName,
+  getGroupForTool: vi.fn().mockReturnValue(undefined),
   getServiceRegistry: mockGetServiceRegistry,
   Services: { Plugin: { name: 'plugin' }, Extension: { name: 'extension' } },
 }));

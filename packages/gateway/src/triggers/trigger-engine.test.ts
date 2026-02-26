@@ -546,7 +546,8 @@ describe('TriggerEngine', () => {
           'web_search',
           expect.objectContaining({ query: 'vitest' }),
           'default',
-          expect.any(Object)
+          expect.any(Object),
+          expect.objectContaining({ source: 'trigger' })
         );
       });
 
