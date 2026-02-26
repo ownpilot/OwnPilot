@@ -76,8 +76,6 @@ interface NavGroup {
 const mainItems: NavItem[] = [
   { to: '/', icon: MessageSquare, label: 'Chat' },
   { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-  { to: '/wizards', icon: Sparkles, label: 'Wizards' },
-  { to: '/coding-agents', icon: Terminal, label: 'Coding Agents' },
   { to: '/inbox', icon: Inbox, label: 'Inbox' },
   { to: '/history', icon: History, label: 'History' },
 ];
@@ -86,7 +84,7 @@ const mainItems: NavItem[] = [
 const navGroups: NavGroup[] = [
   {
     id: 'data',
-    label: 'Data',
+    label: 'Personal Data',
     icon: Database,
     items: [
       { to: '/tasks', icon: CheckCircle2, label: 'Tasks' },
@@ -95,22 +93,33 @@ const navGroups: NavGroup[] = [
       { to: '/contacts', icon: Users, label: 'Contacts' },
       { to: '/bookmarks', icon: Bookmark, label: 'Bookmarks' },
       { to: '/expenses', icon: Receipt, label: 'Expenses' },
-      { to: '/custom-data', icon: Database, label: 'Custom Data' },
-      { to: '/data-browser', icon: Table, label: 'Data Browser' },
     ],
   },
   {
     id: 'ai',
-    label: 'AI',
+    label: 'AI & Automation',
     icon: Brain,
     advancedOnly: true,
     items: [
       { to: '/memories', icon: Brain, label: 'Memories' },
       { to: '/goals', icon: Target, label: 'Goals' },
-      { to: '/triggers', icon: Zap, label: 'Triggers' },
       { to: '/plans', icon: ListChecks, label: 'Plans' },
+      { to: '/triggers', icon: Zap, label: 'Triggers' },
       { to: '/workflows', icon: GitBranch, label: 'Workflows' },
       { to: '/autonomy', icon: Shield, label: 'Autonomy' },
+    ],
+  },
+  {
+    id: 'tools',
+    label: 'Tools & Extensions',
+    icon: Wrench,
+    advancedOnly: true,
+    items: [
+      { to: '/tools', icon: Wrench, label: 'Tools' },
+      { to: '/custom-tools', icon: Code, label: 'Custom Tools' },
+      { to: '/extensions', icon: Sparkles, label: 'User Extensions' },
+      { to: '/skills', icon: BookOpen, label: 'Skills' },
+      { to: '/plugins', icon: Puzzle, label: 'Plugins' },
     ],
   },
   {
@@ -120,13 +129,12 @@ const navGroups: NavGroup[] = [
     advancedOnly: true,
     items: [
       { to: '/agents', icon: Bot, label: 'Agents' },
-      { to: '/tools', icon: Wrench, label: 'Tools' },
-      { to: '/custom-tools', icon: Code, label: 'Custom Tools' },
-      { to: '/plugins', icon: Puzzle, label: 'Plugins' },
-      { to: '/extensions', icon: Sparkles, label: 'User Extensions' },
-      { to: '/skills', icon: BookOpen, label: 'Skills' },
-      { to: '/workspaces', icon: HardDrive, label: 'Workspaces' },
       { to: '/models', icon: Cpu, label: 'Models' },
+      { to: '/coding-agents', icon: Terminal, label: 'Coding Agents' },
+      { to: '/wizards', icon: Sparkles, label: 'Wizards' },
+      { to: '/workspaces', icon: HardDrive, label: 'Workspaces' },
+      { to: '/custom-data', icon: Database, label: 'Custom Data' },
+      { to: '/data-browser', icon: Table, label: 'Data Browser' },
       { to: '/costs', icon: DollarSign, label: 'Costs' },
       { to: '/logs', icon: Activity, label: 'Logs' },
     ],
@@ -136,18 +144,22 @@ const navGroups: NavGroup[] = [
     label: 'Settings',
     icon: Settings,
     items: [
-      { to: '/settings/security', icon: Shield, label: 'Security' },
-      { to: '/settings/config-center', icon: Globe, label: 'Config Center' },
+      // Setup essentials
       { to: '/settings/api-keys', icon: Key, label: 'API Keys' },
       { to: '/settings/providers', icon: Server, label: 'Providers' },
       { to: '/settings/ai-models', icon: Cpu, label: 'AI Models' },
-      { to: '/settings/coding-agents', icon: Terminal, label: 'Coding Agents' },
-      { to: '/settings/cli-tools', icon: Code, label: 'CLI Tools' },
       { to: '/settings/model-routing', icon: Sparkles, label: 'Model Routing' },
+      // Security & access
+      { to: '/settings/security', icon: Shield, label: 'Security' },
+      { to: '/settings/tool-groups', icon: Wrench, label: 'Tool Groups' },
+      // Tools & integrations
+      { to: '/settings/cli-tools', icon: Code, label: 'CLI Tools' },
+      { to: '/settings/coding-agents', icon: Terminal, label: 'Coding Agents' },
       { to: '/settings/mcp-servers', icon: Zap, label: 'MCP Servers' },
       { to: '/settings/connected-apps', icon: Link, label: 'Connected Apps' },
-      { to: '/settings/tool-groups', icon: Wrench, label: 'Tool Groups' },
       { to: '/settings/workflow-tools', icon: GitBranch, label: 'Workflow Tools' },
+      // System
+      { to: '/settings/config-center', icon: Globe, label: 'Config Center' },
       { to: '/settings/system', icon: Container, label: 'System' },
     ],
   },
@@ -155,8 +167,8 @@ const navGroups: NavGroup[] = [
 
 // Simple mode shows fewer settings
 const simpleSettingsItems: NavItem[] = [
-  { to: '/settings/security', icon: Shield, label: 'Security' },
   { to: '/settings/api-keys', icon: Key, label: 'API Keys' },
+  { to: '/settings/security', icon: Shield, label: 'Security' },
   { to: '/settings/ai-models', icon: Cpu, label: 'AI Models' },
 ];
 
