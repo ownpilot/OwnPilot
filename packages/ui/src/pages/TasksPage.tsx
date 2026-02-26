@@ -30,7 +30,7 @@ export function TasksPage() {
   const { subscribe } = useGateway();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [filter, setFilter] = useState<'all' | 'pending' | 'completed'>('all');
+  const [filter, setFilter] = useState<'all' | 'pending' | 'completed' | 'cancelled'>('all');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const { animatedItems, handleDelete: animatedDelete } = useAnimatedList(tasks);
@@ -42,7 +42,9 @@ export function TasksPage() {
           ? { status: ['pending', 'in_progress'] }
           : filter === 'completed'
             ? { status: ['completed'] }
-            : undefined
+            : filter === 'cancelled'
+              ? { status: ['cancelled'] }
+              : undefined
       );
       setTasks(data);
     } catch {
@@ -135,7 +137,7 @@ export function TasksPage() {
 
       {/* Filters */}
       <div className="flex gap-2 px-6 py-3 border-b border-border dark:border-dark-border">
-        {(['all', 'pending', 'completed'] as const).map((f) => (
+        {(['all', 'pending', 'completed', 'cancelled'] as const).map((f) => (
           <button
             key={f}
             onClick={() => setFilter(f)}
@@ -216,25 +218,29 @@ interface TaskItemProps {
 
 function TaskItem({ task, onComplete, onEdit, onDelete }: TaskItemProps) {
   const isCompleted = task.status === 'completed';
+  const isCancelled = task.status === 'cancelled';
+  const isDone = isCompleted || isCancelled;
   const isOverdue =
     task.dueDate &&
-    !isCompleted &&
+    !isDone &&
     new Date(task.dueDate) < new Date(new Date().toISOString().split('T')[0]!);
 
   return (
     <div
       className={`card-elevated card-hover flex items-start gap-3 p-4 bg-bg-secondary dark:bg-dark-bg-secondary border border-border dark:border-dark-border rounded-lg ${
-        isCompleted ? 'opacity-60' : ''
+        isDone ? 'opacity-60' : ''
       }`}
     >
       <button
         onClick={onComplete}
         className="mt-0.5 flex-shrink-0"
-        disabled={isCompleted}
-        aria-label={isCompleted ? 'Task completed' : 'Mark task as complete'}
+        disabled={isDone}
+        aria-label={isCompleted ? 'Task completed' : isCancelled ? 'Task cancelled' : 'Mark task as complete'}
       >
         {isCompleted ? (
           <CheckCircle2 className="w-5 h-5 text-success" />
+        ) : isCancelled ? (
+          <Circle className="w-5 h-5 text-text-muted dark:text-dark-text-muted" />
         ) : (
           <Circle className="w-5 h-5 text-text-muted dark:text-dark-text-muted hover:text-primary transition-colors" />
         )}
@@ -255,7 +261,7 @@ function TaskItem({ task, onComplete, onEdit, onDelete }: TaskItemProps) {
         <div className="flex items-center gap-2">
           <span
             className={`font-medium text-text-primary dark:text-dark-text-primary ${
-              isCompleted ? 'line-through' : ''
+              isDone ? 'line-through' : ''
             }`}
           >
             {task.title}

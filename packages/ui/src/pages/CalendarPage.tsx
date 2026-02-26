@@ -297,6 +297,14 @@ function EventModal({ event, defaultDate, onClose, onSave }: EventModalProps) {
     e.preventDefault();
     if (!title.trim() || !startDate) return;
 
+    // Validate end date/time is not before start
+    if (endDate && endDate < startDate) {
+      return; // Silently prevent — UI should make this obvious
+    }
+    if (endDate === startDate && startTime && endTime && endTime < startTime) {
+      return;
+    }
+
     setIsSaving(true);
     try {
       const body = {

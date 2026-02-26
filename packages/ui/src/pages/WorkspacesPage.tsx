@@ -350,7 +350,7 @@ export function WorkspacesPage() {
                         {workspace.fileCount} files
                       </span>
                     )}
-                    {workspace.fileCount !== undefined && workspace.fileCount <= 1 && (
+                    {workspace.fileCount !== undefined && workspace.fileCount === 0 && (
                       <span className="px-1.5 py-0.5 text-[10px] font-medium rounded bg-warning/10 text-warning">
                         Empty
                       </span>

@@ -80,3 +80,22 @@ _*.cjs
 _*.txt
 _*.json
 _*.b64
+_*.py
+
+# Stray tool/test directories that don't belong in the monorepo
+**/playwright_test/
+**/playwright-report/
+**/test-results/
+**/.playwright/
+**/e2e-results/
+
+# Prevent random package installs inside workspace packages
+packages/*/package-lock.json
+packages/**/package-lock.json
+!package-lock.json
+
+# Stray Python/data files anywhere in packages
+packages/**/*.py
+packages/**/*.csv
+packages/**/*.png
+packages/**/*.b64

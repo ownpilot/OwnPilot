@@ -162,10 +162,10 @@ export function ModelsPage() {
               Anthropic, and more.
             </p>
             <a
-              href="/settings"
+              href="/settings/api-keys"
               className="px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg transition-colors"
             >
-              Go to Settings
+              Configure API Keys
             </a>
           </div>
         ) : (

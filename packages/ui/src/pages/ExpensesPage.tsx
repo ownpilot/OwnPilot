@@ -9,6 +9,7 @@ import {
   ChevronRight,
   Plus,
   Trash2,
+  Edit3,
   Filter,
   RefreshCw,
 } from '../components/icons';
@@ -46,16 +47,8 @@ export function ExpensesPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedMonth, setSelectedMonth] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
+  const [editingExpense, setEditingExpense] = useState<ExpenseEntry | null>(null);
 
-  // New expense form state
-  const [newExpense, setNewExpense] = useState({
-    date: new Date().toISOString().split('T')[0]!,
-    amount: '',
-    currency: 'TRY',
-    category: 'other',
-    description: '',
-    notes: '',
-  });
   const fetchData = useCallback(async () => {
     setIsLoading(true);
     try {
@@ -64,17 +57,20 @@ export function ExpensesPage() {
       setMonthlyData(monthlyJson);
 
       // Fetch summary for current period
+      // Use proper end-of-month (new Date(year, month, 0) gives last day of previous month)
+      const lastDay = selectedMonth ? new Date(year, parseInt(selectedMonth, 10), 0).getDate() : 31;
       const summaryParams: Record<string, string> = selectedMonth
-        ? { startDate: `${year}-${selectedMonth}-01`, endDate: `${year}-${selectedMonth}-31` }
+        ? { startDate: `${year}-${selectedMonth}-01`, endDate: `${year}-${selectedMonth}-${String(lastDay).padStart(2, '0')}` }
         : { period: 'this_year' };
       const summaryJson = await expensesApi.summary(summaryParams);
       setSummaryData(summaryJson);
 
       // Fetch expense list
+      const listLastDay = selectedMonth ? new Date(year, parseInt(selectedMonth, 10), 0).getDate() : 31;
       const listParams: Record<string, string> = selectedMonth
         ? {
             startDate: `${year}-${selectedMonth}-01`,
-            endDate: `${year}-${selectedMonth}-31`,
+            endDate: `${year}-${selectedMonth}-${String(listLastDay).padStart(2, '0')}`,
             limit: '50',
           }
         : { startDate: `${year}-01-01`, endDate: `${year}-12-31`, limit: '50' };
@@ -101,32 +97,6 @@ export function ExpensesPage() {
       unsub();
     };
   }, [subscribe, debouncedRefresh]);
-
-  const handleAddExpense = useCallback(
-    async (e: React.FormEvent) => {
-      e.preventDefault();
-      try {
-        await expensesApi.create({
-          ...newExpense,
-          amount: parseFloat(newExpense.amount),
-        });
-        toast.success('Expense added');
-        setShowAddForm(false);
-        setNewExpense({
-          date: new Date().toISOString().split('T')[0]!,
-          amount: '',
-          currency: 'TRY',
-          category: 'other',
-          description: '',
-          notes: '',
-        });
-        fetchData();
-      } catch {
-        // API client handles error reporting
-      }
-    },
-    [newExpense, toast, fetchData]
-  );
 
   const handleDeleteExpense = useCallback(
     async (id: string) => {
@@ -401,6 +371,14 @@ export function ExpensesPage() {
                     {expense.amount.toLocaleString('en-US')} {expense.currency}
                   </div>
                   <button
+                    onClick={() => setEditingExpense(expense)}
+                    className="p-1.5 text-text-muted hover:text-primary transition-colors"
+                    title="Edit"
+                    aria-label="Edit expense"
+                  >
+                    <Edit3 className="w-4 h-4" />
+                  </button>
+                  <button
                     onClick={() => handleDeleteExpense(expense.id)}
                     className="p-1.5 text-text-muted hover:text-error transition-colors"
                     title="Delete"
@@ -415,115 +393,196 @@ export function ExpensesPage() {
         </div>
       </div>
 
-      {/* Add Expense Modal */}
-      {showAddForm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-bg-primary dark:bg-dark-bg-primary rounded-xl shadow-xl w-full max-w-md mx-4">
-            <div className="px-6 py-4 border-b border-border dark:border-dark-border">
-              <h3 className="text-lg font-semibold text-text-primary dark:text-dark-text-primary">
-                Add New Expense
-              </h3>
+      {/* Add/Edit Expense Modal */}
+      {(showAddForm || editingExpense) && (
+        <ExpenseFormModal
+          expense={editingExpense}
+          onClose={() => {
+            setShowAddForm(false);
+            setEditingExpense(null);
+          }}
+          onSaved={() => {
+            setShowAddForm(false);
+            setEditingExpense(null);
+            fetchData();
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+// =============================================================================
+// Expense Form Modal (Add + Edit)
+// =============================================================================
+
+function ExpenseFormModal({
+  expense,
+  onClose,
+  onSaved,
+}: {
+  expense: ExpenseEntry | null;
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  const toast = useToast();
+  const isEditing = !!expense;
+  const [formData, setFormData] = useState({
+    date: expense?.date ?? new Date().toISOString().split('T')[0]!,
+    amount: expense?.amount?.toString() ?? '',
+    currency: expense?.currency ?? 'TRY',
+    category: expense?.category ?? 'other',
+    description: expense?.description ?? '',
+    notes: expense?.notes ?? '',
+    paymentMethod: expense?.paymentMethod ?? '',
+  });
+  const [isSaving, setIsSaving] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSaving(true);
+    try {
+      const payload = {
+        ...formData,
+        amount: parseFloat(formData.amount),
+      };
+      if (isEditing) {
+        await expensesApi.update(expense.id, payload);
+        toast.success('Expense updated');
+      } else {
+        await expensesApi.create(payload);
+        toast.success('Expense added');
+      }
+      onSaved();
+    } catch {
+      toast.error(isEditing ? 'Failed to update expense' : 'Failed to add expense');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const inputClasses =
+    'w-full px-3 py-2 bg-bg-tertiary dark:bg-dark-bg-tertiary border border-border dark:border-dark-border rounded-lg text-text-primary dark:text-dark-text-primary';
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+      <div className="bg-bg-primary dark:bg-dark-bg-primary rounded-xl shadow-xl w-full max-w-md mx-4">
+        <div className="px-6 py-4 border-b border-border dark:border-dark-border">
+          <h3 className="text-lg font-semibold text-text-primary dark:text-dark-text-primary">
+            {isEditing ? 'Edit Expense' : 'Add New Expense'}
+          </h3>
+        </div>
+        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-text-secondary dark:text-dark-text-secondary mb-1">
+                Date
+              </label>
+              <input
+                type="date"
+                value={formData.date}
+                onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                className={inputClasses}
+                required
+              />
             </div>
-            <form onSubmit={handleAddExpense} className="p-6 space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-text-secondary dark:text-dark-text-secondary mb-1">
-                    Date
-                  </label>
-                  <input
-                    type="date"
-                    value={newExpense.date}
-                    onChange={(e) => setNewExpense({ ...newExpense, date: e.target.value })}
-                    className="w-full px-3 py-2 bg-bg-tertiary dark:bg-dark-bg-tertiary border border-border dark:border-dark-border rounded-lg text-text-primary dark:text-dark-text-primary"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-text-secondary dark:text-dark-text-secondary mb-1">
-                    Amount
-                  </label>
-                  <div className="flex gap-2">
-                    <input
-                      type="number"
-                      step="0.01"
-                      value={newExpense.amount}
-                      onChange={(e) => setNewExpense({ ...newExpense, amount: e.target.value })}
-                      placeholder="0.00"
-                      className="flex-1 px-3 py-2 bg-bg-tertiary dark:bg-dark-bg-tertiary border border-border dark:border-dark-border rounded-lg text-text-primary dark:text-dark-text-primary"
-                      required
-                    />
-                    <select
-                      value={newExpense.currency}
-                      onChange={(e) => setNewExpense({ ...newExpense, currency: e.target.value })}
-                      className="w-20 px-2 py-2 bg-bg-tertiary dark:bg-dark-bg-tertiary border border-border dark:border-dark-border rounded-lg text-text-primary dark:text-dark-text-primary"
-                    >
-                      <option value="TRY">TRY</option>
-                      <option value="USD">USD</option>
-                      <option value="EUR">EUR</option>
-                      <option value="GBP">GBP</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-text-secondary dark:text-dark-text-secondary mb-1">
-                  Category
-                </label>
-                <select
-                  value={newExpense.category}
-                  onChange={(e) => setNewExpense({ ...newExpense, category: e.target.value })}
-                  className="w-full px-3 py-2 bg-bg-tertiary dark:bg-dark-bg-tertiary border border-border dark:border-dark-border rounded-lg text-text-primary dark:text-dark-text-primary"
-                >
-                  {Object.entries(CATEGORY_LABELS).map(([key, label]) => (
-                    <option key={key} value={key}>
-                      {label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-text-secondary dark:text-dark-text-secondary mb-1">
-                  Description
-                </label>
+            <div>
+              <label className="block text-sm font-medium text-text-secondary dark:text-dark-text-secondary mb-1">
+                Amount
+              </label>
+              <div className="flex gap-2">
                 <input
-                  type="text"
-                  value={newExpense.description}
-                  onChange={(e) => setNewExpense({ ...newExpense, description: e.target.value })}
-                  placeholder="Store or expense description"
-                  className="w-full px-3 py-2 bg-bg-tertiary dark:bg-dark-bg-tertiary border border-border dark:border-dark-border rounded-lg text-text-primary dark:text-dark-text-primary"
+                  type="number"
+                  step="0.01"
+                  value={formData.amount}
+                  onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+                  placeholder="0.00"
+                  className={`flex-1 ${inputClasses}`}
                   required
                 />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-text-secondary dark:text-dark-text-secondary mb-1">
-                  Notes (optional)
-                </label>
-                <textarea
-                  value={newExpense.notes}
-                  onChange={(e) => setNewExpense({ ...newExpense, notes: e.target.value })}
-                  rows={2}
-                  className="w-full px-3 py-2 bg-bg-tertiary dark:bg-dark-bg-tertiary border border-border dark:border-dark-border rounded-lg text-text-primary dark:text-dark-text-primary resize-none"
-                />
-              </div>
-              <div className="flex gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setShowAddForm(false)}
-                  className="flex-1 px-4 py-2 bg-bg-tertiary dark:bg-dark-bg-tertiary text-text-primary dark:text-dark-text-primary rounded-lg hover:bg-bg-secondary dark:hover:bg-dark-bg-secondary transition-colors"
+                <select
+                  value={formData.currency}
+                  onChange={(e) => setFormData({ ...formData, currency: e.target.value })}
+                  className={`w-20 px-2 py-2 bg-bg-tertiary dark:bg-dark-bg-tertiary border border-border dark:border-dark-border rounded-lg text-text-primary dark:text-dark-text-primary`}
                 >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="flex-1 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors"
-                >
-                  Add
-                </button>
+                  <option value="TRY">TRY</option>
+                  <option value="USD">USD</option>
+                  <option value="EUR">EUR</option>
+                  <option value="GBP">GBP</option>
+                </select>
               </div>
-            </form>
+            </div>
           </div>
-        </div>
-      )}
+          <div>
+            <label className="block text-sm font-medium text-text-secondary dark:text-dark-text-secondary mb-1">
+              Category
+            </label>
+            <select
+              value={formData.category}
+              onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+              className={inputClasses}
+            >
+              {Object.entries(CATEGORY_LABELS).map(([key, label]) => (
+                <option key={key} value={key}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-text-secondary dark:text-dark-text-secondary mb-1">
+              Description
+            </label>
+            <input
+              type="text"
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              placeholder="Store or expense description"
+              className={inputClasses}
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-text-secondary dark:text-dark-text-secondary mb-1">
+              Payment Method (optional)
+            </label>
+            <input
+              type="text"
+              value={formData.paymentMethod}
+              onChange={(e) => setFormData({ ...formData, paymentMethod: e.target.value })}
+              placeholder="Cash, Credit Card, etc."
+              className={inputClasses}
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-text-secondary dark:text-dark-text-secondary mb-1">
+              Notes (optional)
+            </label>
+            <textarea
+              value={formData.notes}
+              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+              rows={2}
+              className={`${inputClasses} resize-none`}
+            />
+          </div>
+          <div className="flex gap-3 pt-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 px-4 py-2 bg-bg-tertiary dark:bg-dark-bg-tertiary text-text-primary dark:text-dark-text-primary rounded-lg hover:bg-bg-secondary dark:hover:bg-dark-bg-secondary transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={isSaving}
+              className="flex-1 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors disabled:opacity-50"
+            >
+              {isSaving ? 'Saving...' : isEditing ? 'Save' : 'Add'}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }
