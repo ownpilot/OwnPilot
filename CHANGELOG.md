@@ -5,6 +5,35 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.3] - 2026-02-26
+
+### Added
+
+- **Model Routing** — Per-process model selection (chat, telegram, pulse) with provider fallback chains, configurable via API and UI
+- **Extended Thinking** — Anthropic extended thinking support with configurable budget tokens for deeper reasoning
+- **Sidebar Reorganization** — Navigation menus reordered by usage frequency: daily items at top, power-user features in collapsible groups, settings ordered by domain
+
+### Fixed
+
+- **Telegram FK Constraint** — Second message after server restart failed with `channel_sessions_conversation_id_fkey` violation; conversation recovery now persists to DB before updating FK (fixes #7)
+- **Dashboard Streaming** — Null model parameter caused TypeScript build failures in `generateAIBriefingStreaming`
+- **Expenses Page** — Feb-31 date bug when filtering by month; added edit support with modal form
+- **SystemPage Polling** — Database operation status polling leaked timers on unmount; added ref-based cleanup
+- **ApiKeysPage** — Default model save silently swallowed errors; now shows toast feedback
+- **AutonomyPage** — `Promise.all` → `Promise.allSettled` so partial API failures don't blank the page
+- **ModelsPage** — Settings link pointed to `/settings` instead of `/settings/api-keys`
+- **WorkspacesPage** — Empty workspace badge showed for workspaces with 1 file (should be 0)
+- **CalendarPage** — No validation when end date/time was before start
+- **TasksPage** — Missing `cancelled` status in filter and visual styling
+- **SKILL.md Parser** — Improved YAML metadata parsing for block sequences and nested maps
+
+### Changed
+
+- Config Center: removed 5 orphaned seed services (Deepgram, DeepL, Tavily, Serper, Perplexity) with no built-in consumer code
+- Gateway routes: `parseJsonBody` helper adopted across all route modules
+- Dev dependencies bumped: ESLint 10.0.2, Turbo 2.8.11, typescript-eslint 8.56.1
+- `.gitignore`: broader protection patterns for stray generated files
+
 ## [0.1.2] - 2026-02-26
 
 ### Added
@@ -102,6 +131,7 @@ Initial release of OwnPilot.
 - Docker multi-arch image (amd64 + arm64) published to `ghcr.io/ownpilot/ownpilot`
 - PostgreSQL with pgvector for vector search
 
+[0.1.3]: https://github.com/ownpilot/ownpilot/releases/tag/v0.1.3
 [0.1.2]: https://github.com/ownpilot/ownpilot/releases/tag/v0.1.2
 [0.1.1]: https://github.com/ownpilot/ownpilot/releases/tag/v0.1.1
 [0.1.0]: https://github.com/ownpilot/ownpilot/releases/tag/v0.1.0
