@@ -357,6 +357,10 @@ async function main() {
   const { getHeartbeatService } = await import('./services/heartbeat-service.js');
   registry.register(Services.Heartbeat, getHeartbeatService());
 
+  // 20. Coding Agent Service (external AI coding CLI orchestration)
+  const { getCodingAgentService } = await import('./services/coding-agent-service.js');
+  registry.register(Services.CodingAgent, getCodingAgentService());
+
   // Start trigger engine (proactive automation)
   log.info('Starting Trigger Engine...');
   try {

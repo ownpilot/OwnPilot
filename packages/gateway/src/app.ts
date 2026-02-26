@@ -66,6 +66,8 @@ import {
   composioRoutes,
   uiAuthRoutes,
   modelRoutingRoutes,
+  codingAgentsRoutes,
+  cliProvidersRoutes,
 } from './routes/index.js';
 import {
   RATE_LIMIT_WINDOW_MS,
@@ -298,6 +300,12 @@ export function createApp(config: Partial<GatewayConfig> = {}): Hono {
   // Composio (OAuth app integrations — Gmail, GitHub, Slack, etc.)
   app.route('/api/v1/composio', composioRoutes);
 
+  // Coding Agents (external AI coding CLI orchestration)
+  app.route('/api/v1/coding-agents', codingAgentsRoutes);
+
+  // CLI Providers (custom coding agent provider registry)
+  app.route('/api/v1/cli-providers', cliProvidersRoutes);
+
   // Root route (API-only mode, when UI is not bundled)
   if (!UI_AVAILABLE) {
     app.get('/', (c) => {
@@ -375,6 +383,9 @@ export function createApp(config: Partial<GatewayConfig> = {}): Hono {
         workflows: '/api/v1/workflows',
         // Composio (OAuth app integrations)
         composio: '/api/v1/composio',
+        // Coding Agents (CLI orchestration)
+        codingAgents: '/api/v1/coding-agents',
+        cliProviders: '/api/v1/cli-providers',
         // Webhooks (external service callbacks, no auth required)
         webhooks: '/webhooks/telegram/:secret',
       },

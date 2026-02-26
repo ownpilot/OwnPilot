@@ -119,6 +119,12 @@ const WorkflowToolSettingsPage = lazy(() =>
 const SystemPage = lazy(() =>
   import('./pages/SystemPage').then((m) => ({ default: m.SystemPage }))
 );
+const CodingAgentsPage = lazy(() =>
+  import('./pages/CodingAgentsPage').then((m) => ({ default: m.CodingAgentsPage }))
+);
+const CodingAgentSettingsPage = lazy(() =>
+  import('./pages/CodingAgentSettingsPage').then((m) => ({ default: m.CodingAgentSettingsPage }))
+);
 const AboutPage = lazy(() => import('./pages/AboutPage').then((m) => ({ default: m.AboutPage })));
 const LoginPage = lazy(() => import('./pages/LoginPage').then((m) => ({ default: m.LoginPage })));
 const SecurityPage = lazy(() =>
@@ -188,6 +194,7 @@ export function App() {
         <Route path="expenses" element={page(<ExpensesPage />)} />
         <Route path="custom-data" element={page(<CustomDataPage />)} />
         <Route path="data-browser" element={page(<DataBrowserPage />)} />
+        <Route path="coding-agents" element={page(<CodingAgentsPage />)} />
         <Route path="inbox" element={page(<InboxPage />)} />
         <Route path="history" element={page(<ChatHistoryPage />)} />
         <Route path="agents" element={page(<AgentsPage />)} />
@@ -205,6 +212,7 @@ export function App() {
         <Route path="settings/api-keys" element={page(<ApiKeysPage />)} />
         <Route path="settings/providers" element={page(<ProvidersPage />)} />
         <Route path="settings/ai-models" element={page(<AIModelsPage />)} />
+        <Route path="settings/coding-agents" element={page(<CodingAgentSettingsPage />)} />
         <Route path="settings/model-routing" element={page(<ModelRoutingPage />)} />
         <Route path="settings/mcp-servers" element={page(<McpServersPage />)} />
         <Route path="settings/connected-apps" element={page(<ConnectedAppsPage />)} />

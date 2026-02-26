@@ -37,7 +37,8 @@
   },
   "pnpm": {
     "onlyBuiltDependencies": [
-      "sharp"
+      "sharp",
+      "node-pty"
     ],
     "overrides": {
       "@isaacs/brace-expansion": ">=5.0.1",

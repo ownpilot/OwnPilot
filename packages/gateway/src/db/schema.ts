@@ -810,6 +810,56 @@ CREATE TABLE IF NOT EXISTS mcp_servers (
   updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
   UNIQUE(user_id, name)
 );
+
+-- =====================================================
+-- CODING AGENT TABLES
+-- =====================================================
+
+-- Coding agent results (persisted task outcomes)
+CREATE TABLE IF NOT EXISTS coding_agent_results (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL DEFAULT 'default',
+  session_id TEXT,
+  provider TEXT NOT NULL,
+  prompt TEXT NOT NULL,
+  cwd TEXT,
+  model TEXT,
+  success BOOLEAN NOT NULL DEFAULT FALSE,
+  output TEXT NOT NULL DEFAULT '',
+  exit_code INTEGER,
+  error TEXT,
+  duration_ms INTEGER NOT NULL DEFAULT 0,
+  cost_usd REAL,
+  mode TEXT,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+-- CLI providers (user-registered CLI tools as coding agent providers)
+CREATE TABLE IF NOT EXISTS cli_providers (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL DEFAULT 'default',
+  name TEXT NOT NULL,
+  display_name TEXT NOT NULL,
+  description TEXT,
+  binary TEXT NOT NULL,
+  category TEXT NOT NULL DEFAULT 'general',
+  icon TEXT,
+  color TEXT,
+  auth_method TEXT NOT NULL DEFAULT 'none'
+    CHECK(auth_method IN ('none', 'config_center', 'env_var')),
+  config_service_name TEXT,
+  api_key_env_var TEXT,
+  default_args JSONB NOT NULL DEFAULT '[]',
+  prompt_template TEXT,
+  output_format TEXT DEFAULT 'text'
+    CHECK(output_format IN ('text', 'json', 'stream-json')),
+  default_timeout_ms INTEGER NOT NULL DEFAULT 300000,
+  max_timeout_ms INTEGER NOT NULL DEFAULT 1800000,
+  is_active BOOLEAN NOT NULL DEFAULT TRUE,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  UNIQUE(user_id, name)
+);
 `;
 
 /**
@@ -1616,6 +1666,16 @@ CREATE INDEX IF NOT EXISTS idx_mcp_servers_enabled ON mcp_servers(enabled);
 -- Autonomy log indexes
 CREATE INDEX IF NOT EXISTS idx_autonomy_log_user ON autonomy_log(user_id);
 CREATE INDEX IF NOT EXISTS idx_autonomy_log_time ON autonomy_log(pulsed_at DESC);
+
+-- Coding agent results indexes
+CREATE INDEX IF NOT EXISTS idx_coding_agent_results_user ON coding_agent_results(user_id);
+CREATE INDEX IF NOT EXISTS idx_coding_agent_results_session ON coding_agent_results(session_id);
+CREATE INDEX IF NOT EXISTS idx_coding_agent_results_created ON coding_agent_results(created_at DESC);
+
+-- CLI providers indexes
+CREATE INDEX IF NOT EXISTS idx_cli_providers_user ON cli_providers(user_id);
+CREATE INDEX IF NOT EXISTS idx_cli_providers_active ON cli_providers(is_active);
+CREATE INDEX IF NOT EXISTS idx_cli_providers_user_name ON cli_providers(user_id, name);
 `;
 
 /**

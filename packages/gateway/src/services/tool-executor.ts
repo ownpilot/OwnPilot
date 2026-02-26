@@ -37,6 +37,7 @@ import {
   createConfigToolProvider,
   createHeartbeatToolProvider,
   createExtensionToolProvider,
+  createCodingAgentToolProvider,
 } from './tool-providers/index.js';
 import { createCustomToolsRepo } from '../db/repositories/custom-tools.js';
 import {
@@ -120,6 +121,7 @@ export function getSharedToolRegistry(userId = 'default'): ToolRegistry {
   tools.registerProvider(createConfigToolProvider());
   tools.registerProvider(createHeartbeatToolProvider(userId));
   tools.registerProvider(createExtensionToolProvider(userId));
+  tools.registerProvider(createCodingAgentToolProvider(userId));
 
   // Register plugin tools into the shared registry (source: 'plugin')
   initPluginToolsIntoRegistry(tools);

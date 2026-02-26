@@ -45,6 +45,7 @@ import {
   GitBranch,
   Link,
   LogOut,
+  Terminal,
 } from './icons';
 import { StatsPanel } from './StatsPanel';
 import { RealtimeBridge, type BadgeCounts } from './RealtimeBridge';
@@ -53,6 +54,7 @@ import { usePulseSlots, PulseSlotGrid } from './PulseSlots';
 import { STORAGE_KEYS } from '../constants/storage-keys';
 import { DebugDrawer } from './DebugDrawer';
 import { MiniChat } from './MiniChat';
+import { MiniTerminal } from './MiniTerminal';
 
 interface NavItem {
   to: string;
@@ -75,6 +77,7 @@ const mainItems: NavItem[] = [
   { to: '/', icon: MessageSquare, label: 'Chat' },
   { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/wizards', icon: Sparkles, label: 'Wizards' },
+  { to: '/coding-agents', icon: Terminal, label: 'Coding Agents' },
   { to: '/inbox', icon: Inbox, label: 'Inbox' },
   { to: '/history', icon: History, label: 'History' },
 ];
@@ -138,6 +141,7 @@ const navGroups: NavGroup[] = [
       { to: '/settings/api-keys', icon: Key, label: 'API Keys' },
       { to: '/settings/providers', icon: Server, label: 'Providers' },
       { to: '/settings/ai-models', icon: Cpu, label: 'AI Models' },
+      { to: '/settings/coding-agents', icon: Terminal, label: 'Coding Agents' },
       { to: '/settings/model-routing', icon: Sparkles, label: 'Model Routing' },
       { to: '/settings/mcp-servers', icon: Zap, label: 'MCP Servers' },
       { to: '/settings/connected-apps', icon: Link, label: 'Connected Apps' },
@@ -516,6 +520,9 @@ export function Layout() {
 
       {/* Floating mini chat widget (desktop only, hidden on ChatPage) */}
       {!isMobile && <MiniChat />}
+
+      {/* Floating mini terminal widget (desktop only, hidden on CodingAgentsPage) */}
+      {!isMobile && <MiniTerminal />}
 
       {/* Debug Drawer (advanced mode only) */}
       {isAdvancedMode && <DebugDrawer />}
