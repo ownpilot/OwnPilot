@@ -127,10 +127,8 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
 
       // Handle incoming messages
       this.sock.ev.on('messages.upsert', (upsert) => {
-        log.info(`[WA-DEBUG] messages.upsert type=${upsert.type} count=${upsert.messages.length}`);
         if (upsert.type !== 'notify') return;
         for (const msg of upsert.messages) {
-          log.info(`[WA-DEBUG] Message: fromMe=${msg.key.fromMe} jid=${msg.key.remoteJid} id=${msg.key.id}`);
           if (msg.key.fromMe) continue;
           this.handleIncomingMessage(msg).catch((err) => {
             log.error('Failed to handle WhatsApp message:', err);
@@ -378,10 +376,7 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
 
     // Extract message content
     const m = msg.message;
-    if (!m) {
-      log.info(`[WA-DEBUG] No message content (msg.message is null/undefined) for ${phone}`);
-      return;
-    }
+    if (!m) return;
 
     let text = '';
     const attachments: ChannelAttachment[] = [];
@@ -426,11 +421,7 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
     }
 
     // Skip empty messages
-    if (!text && attachments.length === 0) {
-      log.info(`[WA-DEBUG] Empty message (no text, no attachments) from ${phone}, keys: ${Object.keys(m).join(', ')}`);
-      return;
-    }
-    log.info(`[WA-DEBUG] Extracted text="${text.substring(0, 50)}" attachments=${attachments.length} from ${phone}`);
+    if (!text && attachments.length === 0) return;
 
     const messageId = msg.key.id ?? '';
     const isGroup = remoteJid.endsWith('@g.us');
@@ -470,7 +461,6 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
     this.trackMessage(messageId, phone);
 
     try {
-      log.info(`[WA-DEBUG] Emitting MESSAGE_RECEIVED for "${text.substring(0, 30)}" from ${phone}`);
       const eventBus = getEventBus();
       eventBus.emit(
         createEvent<ChannelMessageReceivedData>(
@@ -480,7 +470,6 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
           { message: channelMessage }
         )
       );
-      log.info('[WA-DEBUG] EventBus emit completed');
     } catch (err) {
       log.error('Failed to emit WhatsApp message event:', err);
     }

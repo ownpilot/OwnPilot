@@ -2,7 +2,7 @@
  * WhatsApp Session Store (File-based)
  *
  * Wraps Baileys' useMultiFileAuthState() for persistent session storage.
- * Sessions are stored in DATA_DIR/whatsapp-sessions/{pluginId}/.
+ * Sessions are stored in the app data directory (e.g. %LOCALAPPDATA%\OwnPilot\whatsapp-sessions\).
  * Supports clearing a session for re-authentication (new QR scan).
  */
 
@@ -11,13 +11,13 @@ import { mkdir, rm } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { useMultiFileAuthState } from '@whiskeysockets/baileys';
 import { getLog } from '../../../services/log.js';
+import { getDataPath } from '../../../paths/index.js';
 
 const log = getLog('WhatsAppSession');
 
-/** Base directory for WhatsApp sessions. */
+/** Base directory for WhatsApp sessions — uses the app data root, NOT the codebase. */
 function getSessionsBaseDir(): string {
-  const dataDir = process.env.DATA_DIR || process.env.OWNPILOT_DATA_DIR || '.data';
-  return join(dataDir, 'whatsapp-sessions');
+  return join(getDataPath('root'), 'whatsapp-sessions');
 }
 
 /** Get the session directory for a specific plugin instance. */
