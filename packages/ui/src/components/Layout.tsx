@@ -151,6 +151,7 @@ const navGroups: NavGroup[] = [
       { to: '/settings/model-routing', icon: Sparkles, label: 'Model Routing' },
       // Security & access
       { to: '/settings/security', icon: Shield, label: 'Security' },
+      { to: '/settings/security-scanner', icon: Activity, label: 'Security Scanner' },
       { to: '/settings/tool-groups', icon: Wrench, label: 'Tool Groups' },
       // Tools & integrations
       { to: '/settings/cli-tools', icon: Code, label: 'CLI Tools' },

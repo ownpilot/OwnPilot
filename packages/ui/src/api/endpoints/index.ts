@@ -74,6 +74,18 @@ export type {
   CliProviderTestResult,
 } from './coding-agents';
 export { cliToolsApi } from './cli-tools';
+export { securityApi } from './security';
+export type {
+  PlatformScanResult,
+  SeverityLevel,
+  RiskItem,
+  SectionScanResult,
+  ExtensionScanItem,
+  CustomToolScanItem,
+  TriggerScanItem,
+  WorkflowScanItem,
+  CliToolScanItem,
+} from './security';
 export type {
   CliToolStatus,
   CliToolPolicy,

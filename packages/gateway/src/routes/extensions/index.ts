@@ -9,6 +9,7 @@ import { crudRoutes } from './crud.js';
 import { installRoutes } from './install.js';
 import { generationRoutes } from './generation.js';
 import { scannerRoutes } from './scanner.js';
+import { auditRoutes } from './audit.js';
 
 export const extensionsRoutes = new Hono();
 
@@ -16,4 +17,5 @@ export const extensionsRoutes = new Hono();
 extensionsRoutes.route('', installRoutes);
 extensionsRoutes.route('', generationRoutes);
 extensionsRoutes.route('', scannerRoutes);
+extensionsRoutes.route('', auditRoutes);
 extensionsRoutes.route('', crudRoutes);
