@@ -214,6 +214,7 @@ export interface ServerEvents {
       | 'model_config'
       | 'model_provider'
       | 'channel'
+      | 'conversation'
       | 'mcp_server'
       | 'workflow';
     action: 'created' | 'updated' | 'deleted';

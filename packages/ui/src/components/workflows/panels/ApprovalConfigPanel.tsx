@@ -8,6 +8,8 @@ import { ShieldCheck } from '../../icons';
 import type { NodeConfigPanelProps } from '../NodeConfigPanel';
 import type { ApprovalNodeData } from '../ApprovalNode';
 import { OutputAliasField } from '../NodeConfigPanel';
+import { OutputTreeBrowser } from '../OutputTreeBrowser';
+import { TemplateValidator } from '../TemplateValidator';
 
 // ============================================================================
 // Main component
@@ -15,7 +17,7 @@ import { OutputAliasField } from '../NodeConfigPanel';
 
 export function ApprovalConfigPanel({
   node,
-  upstreamNodes: _upstreamNodes,
+  upstreamNodes,
   onUpdate,
   onDelete,
   onClose,
@@ -33,6 +35,15 @@ export function ApprovalConfigPanel({
       onUpdate(node.id, { ...data, ...updates });
     },
     [node.id, data, onUpdate]
+  );
+
+  const injectTemplate = useCallback(
+    (template: string) => {
+      const updated = approvalMessage + template;
+      setApprovalMessage(updated);
+      save({ approvalMessage: updated });
+    },
+    [approvalMessage, save]
   );
 
   return (
@@ -101,8 +112,9 @@ export function ApprovalConfigPanel({
             className="w-full px-2 py-1 text-xs bg-bg-primary dark:bg-dark-bg-primary border border-border dark:border-dark-border rounded text-text-primary dark:text-dark-text-primary resize-none"
           />
           <p className="text-[10px] text-text-muted dark:text-dark-text-muted">
-            This message will be shown when the workflow pauses for approval.
+            {'This message will be shown when the workflow pauses for approval. Supports {{template}} expressions.'}
           </p>
+          <TemplateValidator value={approvalMessage} upstreamNodes={upstreamNodes} />
         </div>
 
         {/* Timeout */}
@@ -126,6 +138,11 @@ export function ApprovalConfigPanel({
             Auto-reject if not approved within this time. Leave empty for no timeout.
           </p>
         </div>
+
+        {/* Upstream outputs browser */}
+        {upstreamNodes.length > 0 && (
+          <OutputTreeBrowser upstreamNodes={upstreamNodes} onInsert={injectTemplate} />
+        )}
 
         {/* Output Alias */}
         <OutputAliasField data={data} nodeId={node.id} onUpdate={onUpdate} />

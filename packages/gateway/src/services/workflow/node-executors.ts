@@ -143,19 +143,42 @@ export async function executeLlmNode(
     // Lazy import to avoid circular deps (agent-cache is in routes/)
     const { getProviderApiKey, loadProviderConfig, NATIVE_PROVIDERS } =
       await import('../../routes/agent-cache.js');
+    const { resolveProviderAndModel } = await import('../../routes/settings.js');
+
+    // Resolve provider/model: empty or 'default' → user's configured defaults
+    let effectiveProvider = data.provider;
+    let effectiveModel = data.model;
+    if (!effectiveProvider || effectiveProvider === 'default' || !effectiveModel || effectiveModel === 'default') {
+      const resolved = await resolveProviderAndModel(
+        effectiveProvider || 'default',
+        effectiveModel || 'default'
+      );
+      if (!resolved.provider) {
+        return {
+          nodeId: node.id,
+          status: 'error',
+          error: 'No AI provider configured. Set up a provider in Settings.',
+          durationMs: Date.now() - startTime,
+          startedAt: new Date(startTime).toISOString(),
+          completedAt: new Date().toISOString(),
+        };
+      }
+      effectiveProvider = resolved.provider;
+      effectiveModel = resolved.model ?? effectiveModel;
+    }
 
     // Resolve API key: use node-level override or stored key
-    const apiKey = data.apiKey || (await getProviderApiKey(data.provider));
+    const apiKey = data.apiKey || (await getProviderApiKey(effectiveProvider));
 
     // Resolve base URL and headers from provider config
     let baseUrl = data.baseUrl;
-    const providerCfg = loadProviderConfig(data.provider);
+    const providerCfg = loadProviderConfig(effectiveProvider);
     if (!baseUrl) {
       if (providerCfg?.baseUrl) baseUrl = providerCfg.baseUrl;
     }
 
     // Map non-native providers to openai-compatible
-    const providerType = NATIVE_PROVIDERS.has(data.provider) ? data.provider : 'openai';
+    const providerType = NATIVE_PROVIDERS.has(effectiveProvider) ? effectiveProvider : 'openai';
 
     const provider = createProvider({
       provider: providerType as ProviderConfig['provider'],
@@ -173,7 +196,7 @@ export async function executeLlmNode(
     const result = await provider.complete({
       messages,
       model: {
-        model: data.model,
+        model: effectiveModel,
         maxTokens: data.maxTokens ?? 4096,
         temperature: data.temperature ?? 0.7,
       },
@@ -194,7 +217,7 @@ export async function executeLlmNode(
       nodeId: node.id,
       status: 'success',
       output: result.value.content,
-      resolvedArgs: { provider: data.provider, model: data.model, userMessage: resolvedMessage },
+      resolvedArgs: { provider: effectiveProvider, model: effectiveModel, userMessage: resolvedMessage },
       durationMs: Date.now() - startTime,
       startedAt: new Date(startTime).toISOString(),
       completedAt: new Date().toISOString(),
@@ -229,9 +252,12 @@ export function executeConditionNode(
 
     // Build evaluation context: upstream outputs accessible by node ID + variables
     const evalContext: Record<string, unknown> = { ...variables };
+    let lastOutput: unknown = undefined;
     for (const [nid, result] of Object.entries(nodeOutputs)) {
       evalContext[nid] = result.output;
+      lastOutput = result.output;
     }
+    evalContext.data = lastOutput; // convenience alias for the most recent upstream output
 
     const vmTimeout = (node.data as ConditionNodeData).timeoutMs || 5000;
     const result = vm.runInNewContext(resolvedExpr, evalContext, { timeout: vmTimeout });
@@ -741,11 +767,14 @@ export function executeSwitchNode(
     const resolvedExpr = resolveTemplates({ _expr: data.expression }, nodeOutputs, variables)
       ._expr as string;
 
-    // Build evaluation context: upstream outputs + variables
+    // Build evaluation context: upstream outputs + variables + convenience `data` alias
     const evalContext: Record<string, unknown> = { ...variables };
+    let lastOutput: unknown = undefined;
     for (const [nid, result] of Object.entries(nodeOutputs)) {
       evalContext[nid] = result.output;
+      lastOutput = result.output;
     }
+    evalContext.data = lastOutput; // convenience alias for the most recent upstream output
 
     const vmTimeout = data.timeoutMs || 5000;
     const result = vm.runInNewContext(resolvedExpr, evalContext, { timeout: vmTimeout });

@@ -65,7 +65,7 @@ describe('model-routing', () => {
   describe('isValidProcess', () => {
     it('returns true for valid processes', () => {
       expect(isValidProcess('chat')).toBe(true);
-      expect(isValidProcess('telegram')).toBe(true);
+      expect(isValidProcess('channel')).toBe(true);
       expect(isValidProcess('pulse')).toBe(true);
     });
 
@@ -78,7 +78,7 @@ describe('model-routing', () => {
 
   describe('VALID_PROCESSES', () => {
     it('contains exactly 3 processes', () => {
-      expect(VALID_PROCESSES).toEqual(['chat', 'telegram', 'pulse']);
+      expect(VALID_PROCESSES).toEqual(['chat', 'channel', 'pulse']);
     });
   });
 
@@ -118,11 +118,11 @@ describe('model-routing', () => {
 
     it('reads the correct keys for each process', () => {
       mockSettingsRepo.get.mockReturnValue(null);
-      getProcessRouting('telegram');
-      expect(mockSettingsRepo.get).toHaveBeenCalledWith('model_routing:telegram:provider');
-      expect(mockSettingsRepo.get).toHaveBeenCalledWith('model_routing:telegram:model');
-      expect(mockSettingsRepo.get).toHaveBeenCalledWith('model_routing:telegram:fallback_provider');
-      expect(mockSettingsRepo.get).toHaveBeenCalledWith('model_routing:telegram:fallback_model');
+      getProcessRouting('channel');
+      expect(mockSettingsRepo.get).toHaveBeenCalledWith('model_routing:channel:provider');
+      expect(mockSettingsRepo.get).toHaveBeenCalledWith('model_routing:channel:model');
+      expect(mockSettingsRepo.get).toHaveBeenCalledWith('model_routing:channel:fallback_provider');
+      expect(mockSettingsRepo.get).toHaveBeenCalledWith('model_routing:channel:fallback_model');
     });
   });
 
@@ -133,7 +133,7 @@ describe('model-routing', () => {
       mockSettingsRepo.get.mockReturnValue(null);
       const result = getAllRouting();
       expect(result).toHaveProperty('chat');
-      expect(result).toHaveProperty('telegram');
+      expect(result).toHaveProperty('channel');
       expect(result).toHaveProperty('pulse');
     });
   });
@@ -191,12 +191,12 @@ describe('model-routing', () => {
 
     it('passes through fallback fields independently', async () => {
       mockSettingsRepo.get.mockImplementation((key: string) => {
-        if (key === 'model_routing:telegram:fallback_provider') return 'openai';
-        if (key === 'model_routing:telegram:fallback_model') return 'gpt-4o-mini';
+        if (key === 'model_routing:channel:fallback_provider') return 'openai';
+        if (key === 'model_routing:channel:fallback_model') return 'gpt-4o-mini';
         return null;
       });
 
-      const result = await resolveForProcess('telegram');
+      const result = await resolveForProcess('channel');
       expect(result.fallbackProvider).toBe('openai');
       expect(result.fallbackModel).toBe('gpt-4o-mini');
       // Primary still falls to global
@@ -250,8 +250,8 @@ describe('model-routing', () => {
 
   describe('clearProcessRouting', () => {
     it('calls deleteByPrefix with correct prefix', async () => {
-      await clearProcessRouting('telegram');
-      expect(mockSettingsRepo.deleteByPrefix).toHaveBeenCalledWith('model_routing:telegram:');
+      await clearProcessRouting('channel');
+      expect(mockSettingsRepo.deleteByPrefix).toHaveBeenCalledWith('model_routing:channel:');
     });
 
     it('uses the right prefix for each process', async () => {

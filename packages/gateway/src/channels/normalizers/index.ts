@@ -7,6 +7,9 @@
 
 import type { ChannelIncomingMessage, NormalizedAttachment } from '@ownpilot/core';
 import { telegramNormalizer } from './telegram.js';
+import { discordNormalizer } from './discord.js';
+import { whatsappNormalizer } from './whatsapp.js';
+import { slackNormalizer } from './slack.js';
 import { baseNormalizer } from './base.js';
 
 // ============================================================================
@@ -46,6 +49,9 @@ const normalizers = new Map<string, ChannelNormalizer>();
 
 // Register built-in normalizers
 normalizers.set('telegram', telegramNormalizer);
+normalizers.set('discord', discordNormalizer);
+normalizers.set('whatsapp', whatsappNormalizer);
+normalizers.set('slack', slackNormalizer);
 
 /**
  * Get the normalizer for a given platform.

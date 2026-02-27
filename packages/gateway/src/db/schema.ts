@@ -1498,6 +1498,23 @@ DO $$ BEGIN
     ALTER TABLE workflows ADD COLUMN input_schema JSONB NOT NULL DEFAULT '[]';
   END IF;
 END $$;
+
+-- =====================================================
+-- CHANNEL_MESSAGES: Add conversation_id for unified chat
+-- =====================================================
+
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'channel_messages' AND column_name = 'conversation_id') THEN
+    ALTER TABLE channel_messages ADD COLUMN conversation_id TEXT;
+  END IF;
+END $$;
+
+-- Backfill conversation_id from channel_sessions
+UPDATE channel_messages cm SET conversation_id = cs.conversation_id
+FROM channel_sessions cs
+WHERE cm.channel_id = cs.channel_plugin_id
+  AND cm.conversation_id IS NULL
+  AND cs.conversation_id IS NOT NULL;
 `;
 
 export const INDEXES_SQL = `
@@ -1520,6 +1537,7 @@ CREATE INDEX IF NOT EXISTS idx_request_logs_created ON request_logs(created_at D
 CREATE INDEX IF NOT EXISTS idx_request_logs_error ON request_logs(error);
 CREATE INDEX IF NOT EXISTS idx_channel_messages_channel ON channel_messages(channel_id);
 CREATE INDEX IF NOT EXISTS idx_channel_messages_created ON channel_messages(created_at);
+CREATE INDEX IF NOT EXISTS idx_channel_messages_conversation ON channel_messages(conversation_id);
 CREATE INDEX IF NOT EXISTS idx_costs_provider ON costs(provider);
 CREATE INDEX IF NOT EXISTS idx_costs_created ON costs(created_at);
 CREATE INDEX IF NOT EXISTS idx_costs_conversation ON costs(conversation_id);

@@ -165,6 +165,8 @@ export type {
   ChannelMessage,
   Conversation,
   HistoryMessage,
+  UnifiedMessage,
+  ChannelInfo,
   ExpenseEntry,
   ExpenseMonthData,
   ExpenseCategoryInfo,

@@ -29,7 +29,7 @@ export interface ResolvedRouting extends ProcessRouting {
   source: 'process' | 'global' | 'first-configured';
 }
 
-export type RoutingProcess = 'chat' | 'telegram' | 'pulse';
+export type RoutingProcess = 'chat' | 'channel' | 'pulse';
 
 export interface ModelRoutingData {
   routing: Record<RoutingProcess, ProcessRouting>;

@@ -27,6 +27,9 @@ const {
   mockBuildGatewayPlugin,
   mockBuildComposioPlugin,
   mockBuildTelegramChannelPlugin,
+  mockBuildDiscordChannelPlugin,
+  mockBuildWhatsAppChannelPlugin,
+  mockBuildSlackChannelPlugin,
   mockGetServiceRegistry,
 } = vi.hoisted(() => {
   const mockPlugin = {
@@ -124,6 +127,42 @@ const {
         name: 'Telegram',
         version: '1.0.0',
         requiredServices: [{ name: 'telegram_bot' }],
+        defaultConfig: {},
+      },
+      implementation: {
+        channelApiFactory: vi.fn(() => ({ connect: vi.fn(), disconnect: vi.fn() })),
+      },
+    })),
+    mockBuildDiscordChannelPlugin: vi.fn(() => ({
+      manifest: {
+        id: 'channel.discord',
+        name: 'Discord',
+        version: '1.0.0',
+        requiredServices: [{ name: 'discord_bot' }],
+        defaultConfig: {},
+      },
+      implementation: {
+        channelApiFactory: vi.fn(() => ({ connect: vi.fn(), disconnect: vi.fn() })),
+      },
+    })),
+    mockBuildWhatsAppChannelPlugin: vi.fn(() => ({
+      manifest: {
+        id: 'channel.whatsapp',
+        name: 'WhatsApp',
+        version: '1.0.0',
+        requiredServices: [{ name: 'whatsapp_business' }],
+        defaultConfig: {},
+      },
+      implementation: {
+        channelApiFactory: vi.fn(() => ({ connect: vi.fn(), disconnect: vi.fn() })),
+      },
+    })),
+    mockBuildSlackChannelPlugin: vi.fn(() => ({
+      manifest: {
+        id: 'channel.slack',
+        name: 'Slack',
+        version: '1.0.0',
+        requiredServices: [{ name: 'slack_bot' }],
         defaultConfig: {},
       },
       implementation: {
@@ -284,6 +323,18 @@ vi.mock('../services/api-service-registrar.js', () => ({
 
 vi.mock('../channels/plugins/telegram/index.js', () => ({
   buildTelegramChannelPlugin: mockBuildTelegramChannelPlugin,
+}));
+
+vi.mock('../channels/plugins/discord/index.js', () => ({
+  buildDiscordChannelPlugin: mockBuildDiscordChannelPlugin,
+}));
+
+vi.mock('../channels/plugins/whatsapp/index.js', () => ({
+  buildWhatsAppChannelPlugin: mockBuildWhatsAppChannelPlugin,
+}));
+
+vi.mock('../channels/plugins/slack/index.js', () => ({
+  buildSlackChannelPlugin: mockBuildSlackChannelPlugin,
 }));
 
 vi.mock('./gateway-plugin.js', () => ({
@@ -460,9 +511,9 @@ describe('initializePlugins()', () => {
       expect(getDefaultPluginRegistry).toHaveBeenCalledOnce();
     });
 
-    it('registers 6 built-in plugins total', async () => {
+    it('registers 9 built-in plugins total', async () => {
       await initializePlugins();
-      expect(mockRegistry.register).toHaveBeenCalledTimes(6);
+      expect(mockRegistry.register).toHaveBeenCalledTimes(9);
     });
 
     it('registers the core plugin', async () => {
@@ -629,6 +680,36 @@ describe('initializePlugins()', () => {
         },
         implementation: {},
       });
+      mockBuildDiscordChannelPlugin.mockReturnValue({
+        manifest: {
+          id: 'channel.discord',
+          name: 'Discord',
+          version: '1.0.0',
+          requiredServices: [],
+          defaultConfig: {},
+        },
+        implementation: {},
+      });
+      mockBuildWhatsAppChannelPlugin.mockReturnValue({
+        manifest: {
+          id: 'channel.whatsapp',
+          name: 'WhatsApp',
+          version: '1.0.0',
+          requiredServices: [],
+          defaultConfig: {},
+        },
+        implementation: {},
+      });
+      mockBuildSlackChannelPlugin.mockReturnValue({
+        manifest: {
+          id: 'channel.slack',
+          name: 'Slack',
+          version: '1.0.0',
+          requiredServices: [],
+          defaultConfig: {},
+        },
+        implementation: {},
+      });
 
       await initializePlugins();
       // news-rss and pomodoro have no requiredServices either
@@ -682,7 +763,7 @@ describe('initializePlugins()', () => {
 
       await expect(initializePlugins()).resolves.toBeUndefined();
       // All 6 plugins should still attempt to register
-      expect(mockRegistry.register).toHaveBeenCalledTimes(6);
+      expect(mockRegistry.register).toHaveBeenCalledTimes(9);
     });
 
     it('logs error when table creation fails', async () => {
@@ -770,6 +851,19 @@ describe('initializePlugins()', () => {
           defaultConfig: {},
         },
         implementation: { channelApiFactory: factory },
+      });
+      // Remove factory from other channel plugins so they don't overwrite plugin.api
+      mockBuildDiscordChannelPlugin.mockReturnValueOnce({
+        manifest: { id: 'channel.discord', name: 'Discord', version: '1.0.0', requiredServices: [{ name: 'discord_bot' }], defaultConfig: {} },
+        implementation: {},
+      });
+      mockBuildWhatsAppChannelPlugin.mockReturnValueOnce({
+        manifest: { id: 'channel.whatsapp', name: 'WhatsApp', version: '1.0.0', requiredServices: [{ name: 'whatsapp_business' }], defaultConfig: {} },
+        implementation: {},
+      });
+      mockBuildSlackChannelPlugin.mockReturnValueOnce({
+        manifest: { id: 'channel.slack', name: 'Slack', version: '1.0.0', requiredServices: [{ name: 'slack_bot' }], defaultConfig: {} },
+        implementation: {},
       });
       mockConfigServicesRepo.getDefaultEntry.mockReturnValue(null);
 
@@ -875,7 +969,7 @@ describe('initializePlugins()', () => {
 
       await initializePlugins();
       // At least some plugins should have registered after the failure
-      expect(mockRegistry.register).toHaveBeenCalledTimes(6);
+      expect(mockRegistry.register).toHaveBeenCalledTimes(9);
     });
   });
 

@@ -8,6 +8,7 @@
 import { Hono } from 'hono';
 import { getChannelService, getDefaultPluginRegistry } from '@ownpilot/core';
 import { ChannelMessagesRepository } from '../db/repositories/channel-messages.js';
+import { channelUsersRepo } from '../db/repositories/channel-users.js';
 import { configServicesRepo } from '../db/repositories/config-services.js';
 import { apiResponse, apiError, ERROR_CODES, notFoundError, getErrorMessage } from './helpers.js';
 import { pagination } from '../middleware/pagination.js';
@@ -360,6 +361,79 @@ channelRoutes.post('/:id/setup', async (c) => {
       {
         code: ERROR_CODES.CONNECTION_FAILED,
         message: getErrorMessage(error, 'Channel setup failed'),
+      },
+      500
+    );
+  }
+});
+
+/**
+ * GET /channels/:id/users - List users who have interacted with a channel
+ */
+channelRoutes.get('/:id/users', async (c) => {
+  const pluginId = c.req.param('id');
+  const platform = pluginId.split('.')[1] ?? '';
+
+  try {
+    const users = await channelUsersRepo.list({ platform, limit: 100, offset: 0 });
+
+    return apiResponse(c, {
+      users: users.map((u) => ({
+        id: u.id,
+        platformUserId: u.platformUserId,
+        platformUsername: u.platformUsername,
+        displayName: u.displayName,
+        isVerified: u.isVerified,
+        isBlocked: u.isBlocked,
+        lastSeenAt: u.lastSeenAt.toISOString(),
+      })),
+      count: users.length,
+    });
+  } catch (error) {
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.FETCH_FAILED,
+        message: getErrorMessage(error, 'Failed to fetch channel users'),
+      },
+      500
+    );
+  }
+});
+
+/**
+ * GET /channels/:id/stats - Message statistics for a channel
+ */
+channelRoutes.get('/:id/stats', async (c) => {
+  const channelId = c.req.param('id');
+
+  try {
+    const messagesRepo = new ChannelMessagesRepository();
+
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const weekStart = new Date(todayStart);
+    weekStart.setDate(weekStart.getDate() - 7);
+
+    const [total, today, week, lastActivityAt] = await Promise.all([
+      messagesRepo.count(channelId),
+      messagesRepo.countSince(channelId, todayStart),
+      messagesRepo.countSince(channelId, weekStart),
+      messagesRepo.lastMessageAt(channelId),
+    ]);
+
+    return apiResponse(c, {
+      totalMessages: total,
+      todayMessages: today,
+      weekMessages: week,
+      lastActivityAt: lastActivityAt?.toISOString() ?? null,
+    });
+  } catch (error) {
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.FETCH_FAILED,
+        message: getErrorMessage(error, 'Failed to fetch channel stats'),
       },
       500
     );

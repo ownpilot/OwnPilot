@@ -21,6 +21,7 @@ export interface ChannelMessage {
     name?: string;
   }>;
   replyToId?: string;
+  conversationId?: string;
   metadata: Record<string, unknown>;
   createdAt: Date;
 }
@@ -36,6 +37,7 @@ interface ChannelMessageRow {
   content_type: string;
   attachments: string | null;
   reply_to_id: string | null;
+  conversation_id: string | null;
   metadata: string;
   created_at: string;
 }
@@ -52,6 +54,7 @@ function rowToChannelMessage(row: ChannelMessageRow): ChannelMessage {
     contentType: row.content_type,
     attachments: parseJsonFieldNullable(row.attachments) ?? undefined,
     replyToId: row.reply_to_id ?? undefined,
+    conversationId: row.conversation_id ?? undefined,
     metadata: parseJsonField(row.metadata, {}),
     createdAt: new Date(row.created_at),
   };
@@ -69,13 +72,14 @@ export class ChannelMessagesRepository extends BaseRepository {
     contentType?: string;
     attachments?: ChannelMessage['attachments'];
     replyToId?: string;
+    conversationId?: string;
     metadata?: Record<string, unknown>;
   }): Promise<ChannelMessage> {
     await this.execute(
       `INSERT INTO channel_messages (
         id, channel_id, external_id, direction, sender_id, sender_name,
-        content, content_type, attachments, reply_to_id, metadata
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+        content, content_type, attachments, reply_to_id, conversation_id, metadata
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
       [
         data.id,
         data.channelId,
@@ -87,6 +91,7 @@ export class ChannelMessagesRepository extends BaseRepository {
         data.contentType ?? 'text',
         data.attachments ? JSON.stringify(data.attachments) : null,
         data.replyToId ?? null,
+        data.conversationId ?? null,
         JSON.stringify(data.metadata ?? {}),
       ]
     );
@@ -111,6 +116,17 @@ export class ChannelMessagesRepository extends BaseRepository {
        ORDER BY created_at DESC
        LIMIT $2 OFFSET $3`,
       [channelId, limit, offset]
+    );
+    return rows.map(rowToChannelMessage);
+  }
+
+  async getByConversation(conversationId: string, limit = 100, offset = 0): Promise<ChannelMessage[]> {
+    const rows = await this.query<ChannelMessageRow>(
+      `SELECT * FROM channel_messages
+       WHERE conversation_id = $1
+       ORDER BY created_at ASC
+       LIMIT $2 OFFSET $3`,
+      [conversationId, limit, offset]
     );
     return rows.map(rowToChannelMessage);
   }
@@ -189,6 +205,13 @@ export class ChannelMessagesRepository extends BaseRepository {
     return rows.map(rowToChannelMessage);
   }
 
+  async linkConversation(id: string, conversationId: string): Promise<void> {
+    await this.execute(
+      `UPDATE channel_messages SET conversation_id = $1 WHERE id = $2 AND conversation_id IS NULL`,
+      [conversationId, id]
+    );
+  }
+
   async delete(id: string): Promise<boolean> {
     const result = await this.execute(`DELETE FROM channel_messages WHERE id = $1`, [id]);
     return result.changes > 0;
@@ -219,6 +242,22 @@ export class ChannelMessagesRepository extends BaseRepository {
       `SELECT COUNT(*) as count FROM channel_messages`
     );
     return parseInt(row?.count ?? '0', 10);
+  }
+
+  async countSince(channelId: string, since: Date): Promise<number> {
+    const row = await this.queryOne<{ count: string }>(
+      `SELECT COUNT(*) as count FROM channel_messages WHERE channel_id = $1 AND created_at >= $2`,
+      [channelId, since.toISOString()]
+    );
+    return parseInt(row?.count ?? '0', 10);
+  }
+
+  async lastMessageAt(channelId: string): Promise<Date | null> {
+    const row = await this.queryOne<{ created_at: string }>(
+      `SELECT created_at FROM channel_messages WHERE channel_id = $1 ORDER BY created_at DESC LIMIT 1`,
+      [channelId]
+    );
+    return row ? new Date(row.created_at) : null;
   }
 
   async countInbox(): Promise<number> {

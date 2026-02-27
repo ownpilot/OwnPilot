@@ -5,7 +5,6 @@ import { useIsMobile } from '../hooks/useMediaQuery';
 import { useAuth } from '../hooks/useAuth';
 import {
   MessageSquare,
-  Inbox,
   History,
   Bot,
   Wrench,
@@ -47,6 +46,7 @@ import {
   LogOut,
   Terminal,
   ShieldCheck,
+  Send,
 } from './icons';
 import { StatsPanel } from './StatsPanel';
 import { RealtimeBridge, type BadgeCounts } from './RealtimeBridge';
@@ -77,8 +77,8 @@ interface NavGroup {
 const mainItems: NavItem[] = [
   { to: '/', icon: MessageSquare, label: 'Chat' },
   { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-  { to: '/inbox', icon: Inbox, label: 'Inbox' },
-  { to: '/history', icon: History, label: 'History' },
+  { to: '/channels', icon: Send, label: 'Channels' },
+  { to: '/history', icon: History, label: 'Conversations' },
 ];
 
 // Grouped navigation

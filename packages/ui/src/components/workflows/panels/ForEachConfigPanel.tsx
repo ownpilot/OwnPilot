@@ -8,6 +8,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { X, Trash2, RefreshCw } from '../../icons';
 import type { ForEachNodeData } from '../ForEachNode';
 import { OutputTreeBrowser } from '../OutputTreeBrowser';
+import { TemplateValidator } from '../TemplateValidator';
 import type { NodeConfigPanelProps } from '../NodeConfigPanel';
 import { OutputAliasField, RetryTimeoutFields, RetryAttemptsDisplay, INPUT_CLS } from '../NodeConfigPanel';
 
@@ -229,6 +230,7 @@ export function ForEachConfigPanel({
                 Use <code className="text-sky-600 dark:text-sky-400">{'{{nodeId.output}}'}</code> to
                 reference upstream data
               </p>
+              <TemplateValidator value={arrayExpression} upstreamNodes={upstreamNodes} />
             </div>
 
             {/* Quick Presets */}

@@ -10,6 +10,7 @@ import { providersApi } from '../../../api';
 import type { LlmNodeData } from '../LlmNode';
 import type { NodeExecutionStatus } from '../../../api/types';
 import { OutputTreeBrowser } from '../OutputTreeBrowser';
+import { TemplateValidator } from '../TemplateValidator';
 import { JsonTreeView } from '../JsonTreeView';
 import type { NodeConfigPanelProps } from '../NodeConfigPanel';
 import {
@@ -32,8 +33,13 @@ export function LlmConfigPanel({
   const data = node.data as LlmNodeData;
 
   const [label, setLabel] = useState(data.label ?? 'LLM');
-  const [provider, setProvider] = useState(data.provider ?? '');
-  const [model, setModel] = useState(data.model ?? '');
+  // Normalize 'default' → '' so auto-select logic picks user's configured provider/model
+  const [provider, setProvider] = useState(
+    data.provider && data.provider !== 'default' ? data.provider : ''
+  );
+  const [model, setModel] = useState(
+    data.model && data.model !== 'default' ? data.model : ''
+  );
   const [systemPrompt, setSystemPrompt] = useState(data.systemPrompt ?? '');
   const [userMessage, setUserMessage] = useState(data.userMessage ?? '');
   const [temperature, setTemperature] = useState(data.temperature ?? 0.7);
@@ -56,8 +62,8 @@ export function LlmConfigPanel({
   // Reset on node change
   useEffect(() => {
     setLabel(data.label ?? 'LLM');
-    setProvider(data.provider ?? '');
-    setModel(data.model ?? '');
+    setProvider(data.provider && data.provider !== 'default' ? data.provider : '');
+    setModel(data.model && data.model !== 'default' ? data.model : '');
     setSystemPrompt(data.systemPrompt ?? '');
     setUserMessage(data.userMessage ?? '');
     setTemperature(data.temperature ?? 0.7);
@@ -462,8 +468,9 @@ export function LlmConfigPanel({
                 onBlur={() => pushUpdate({ userMessage })}
                 rows={4}
                 className={`${INPUT_CLS} resize-y font-mono text-xs`}
-                placeholder="Analyze the following data: {{node_1.output}}"
+                placeholder="Analyze the following data: {{node_2.output}}"
               />
+              <TemplateValidator value={userMessage} upstreamNodes={upstreamNodes} />
             </div>
 
             {/* Temperature + Max Tokens */}

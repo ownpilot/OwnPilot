@@ -4,7 +4,7 @@
 
 import { apiClient } from '../client';
 import type { StreamOptions } from '../client';
-import type { Conversation, HistoryMessage } from '../types';
+import type { Conversation, HistoryMessage, UnifiedMessage, ChannelInfo } from '../types';
 import type { ContextBreakdown } from '../../types';
 
 export interface ChatRequestBody {
@@ -52,6 +52,22 @@ export const chatApi = {
       conversation: Conversation;
       messages: HistoryMessage[];
     }>(`/chat/history/${id}`),
+
+  /** Get unified conversation (merges AI + channel messages) */
+  getUnifiedHistory: (id: string) =>
+    apiClient.get<{
+      conversation: Conversation & { source: 'web' | 'channel'; channelPlatform?: string; channelSenderName?: string };
+      messages: UnifiedMessage[];
+      channelInfo?: ChannelInfo | null;
+    }>(`/chat/history/${id}/unified`),
+
+  /** Send a reply from WebUI to a channel conversation */
+  channelReply: (conversationId: string, text: string) =>
+    apiClient.post<{
+      sent: boolean;
+      messageId: string;
+      channelPluginId: string;
+    }>(`/chat/history/${conversationId}/channel-reply`, { text }),
 
   /** Delete a conversation */
   deleteHistory: (id: string) => apiClient.delete<{ deleted: boolean }>(`/chat/history/${id}`),

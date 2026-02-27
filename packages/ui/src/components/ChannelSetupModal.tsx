@@ -2,7 +2,7 @@
  * Channel Setup Modal
  *
  * Step-by-step modal for quickly adding a channel bot:
- * 1. Select platform (Telegram / Discord)
+ * 1. Select platform (Telegram / Discord / WhatsApp / Slack)
  * 2. Paste bot token
  * 3. Connecting...
  * 4. Result (success or error)
@@ -11,7 +11,7 @@
 import { useState, useCallback } from 'react';
 import { channelsApi } from '../api';
 import { useModalClose } from '../hooks';
-import { Telegram, Discord, X, Check, AlertTriangle } from './icons';
+import { Telegram, Discord, WhatsApp, SlackIcon, X, Check, AlertTriangle } from './icons';
 import { LoadingSpinner } from './LoadingSpinner';
 import { useToast } from './ToastProvider';
 
@@ -66,6 +66,32 @@ const PLATFORMS: PlatformInfo[] = [
     restrictField: 'guild_ids',
     Icon: Discord,
     validateToken: (v) => (v.length > 50 ? null : 'Token seems too short'),
+  },
+  {
+    id: 'whatsapp',
+    pluginId: 'channel.whatsapp',
+    name: 'WhatsApp',
+    tokenLabel: 'Access Token',
+    tokenPlaceholder: 'EAABs...',
+    tokenHint: 'Meta Business API permanent access token',
+    docsUrl: 'https://developers.facebook.com/docs/whatsapp/cloud-api/get-started',
+    restrictLabel: 'Phone Number ID',
+    restrictField: 'phone_number_id',
+    Icon: WhatsApp,
+    validateToken: (v) => (v.length > 20 ? null : 'Token seems too short'),
+  },
+  {
+    id: 'slack',
+    pluginId: 'channel.slack',
+    name: 'Slack',
+    tokenLabel: 'Bot Token',
+    tokenPlaceholder: 'xoxb-1234567890-...',
+    tokenHint: 'Bot User OAuth Token from Slack App settings',
+    docsUrl: 'https://api.slack.com/quickstart',
+    restrictLabel: 'Allowed Channel IDs (comma-separated, optional)',
+    restrictField: 'allowed_channels',
+    Icon: SlackIcon,
+    validateToken: (v) => (v.startsWith('xoxb-') ? null : 'Token should start with "xoxb-"'),
   },
 ];
 

@@ -8,6 +8,8 @@ import { Plus, Trash2, GitBranch } from '../../icons';
 import type { NodeConfigPanelProps } from '../NodeConfigPanel';
 import type { SubWorkflowNodeData } from '../SubWorkflowNode';
 import { OutputAliasField, RetryTimeoutFields } from '../NodeConfigPanel';
+import { OutputTreeBrowser } from '../OutputTreeBrowser';
+import { TemplateValidator } from '../TemplateValidator';
 import { workflowsApi } from '../../../api/endpoints/workflows';
 
 interface WorkflowOption {
@@ -21,7 +23,7 @@ interface WorkflowOption {
 
 export function SubWorkflowConfigPanel({
   node,
-  upstreamNodes: _upstreamNodes,
+  upstreamNodes,
   onUpdate,
   onDelete,
   onClose,
@@ -96,6 +98,13 @@ export function SubWorkflowConfigPanel({
       save({ inputMapping: obj });
     },
     [inputMapping, save]
+  );
+
+  const injectTemplate = useCallback(
+    (template: string) => {
+      navigator.clipboard?.writeText(template);
+    },
+    []
   );
 
   return (
@@ -206,29 +215,37 @@ export function SubWorkflowConfigPanel({
             {'Map variables into the sub-workflow. Key = variable name, Value = template expression (e.g. {{node_1.output}})'}
           </p>
           {inputMapping.map((m, i) => (
-            <div key={i} className="flex items-center gap-1">
-              <input
-                value={m.key}
-                onChange={(e) => handleMappingChange(i, 'key', e.target.value)}
-                placeholder="variable"
-                className="flex-1 px-2 py-1 text-xs bg-bg-primary dark:bg-dark-bg-primary border border-border dark:border-dark-border rounded text-text-primary dark:text-dark-text-primary"
-              />
-              <span className="text-[10px] text-text-muted">=</span>
-              <input
-                value={m.value}
-                onChange={(e) => handleMappingChange(i, 'value', e.target.value)}
-                placeholder="{{node.output}}"
-                className="flex-1 px-2 py-1 text-xs bg-bg-primary dark:bg-dark-bg-primary border border-border dark:border-dark-border rounded text-text-primary dark:text-dark-text-primary"
-              />
-              <button
-                onClick={() => removeMapping(i)}
-                className="p-0.5 text-text-muted hover:text-error"
-              >
-                <Trash2 className="w-3 h-3" />
-              </button>
+            <div key={i} className="space-y-0.5">
+              <div className="flex items-center gap-1">
+                <input
+                  value={m.key}
+                  onChange={(e) => handleMappingChange(i, 'key', e.target.value)}
+                  placeholder="variable"
+                  className="flex-1 px-2 py-1 text-xs bg-bg-primary dark:bg-dark-bg-primary border border-border dark:border-dark-border rounded text-text-primary dark:text-dark-text-primary"
+                />
+                <span className="text-[10px] text-text-muted">=</span>
+                <input
+                  value={m.value}
+                  onChange={(e) => handleMappingChange(i, 'value', e.target.value)}
+                  placeholder="{{node_2.output}}"
+                  className="flex-1 px-2 py-1 text-xs bg-bg-primary dark:bg-dark-bg-primary border border-border dark:border-dark-border rounded text-text-primary dark:text-dark-text-primary"
+                />
+                <button
+                  onClick={() => removeMapping(i)}
+                  className="p-0.5 text-text-muted hover:text-error"
+                >
+                  <Trash2 className="w-3 h-3" />
+                </button>
+              </div>
+              <TemplateValidator value={m.value} upstreamNodes={upstreamNodes} />
             </div>
           ))}
         </div>
+
+        {/* Upstream outputs browser */}
+        {upstreamNodes.length > 0 && (
+          <OutputTreeBrowser upstreamNodes={upstreamNodes} onInsert={injectTemplate} />
+        )}
 
         {/* Output Alias */}
         <OutputAliasField data={data} nodeId={node.id} onUpdate={onUpdate} />

@@ -53,6 +53,27 @@ function extractWorkflowJson(content: string): WorkflowDefinition | null {
     const parsed = JSON.parse(match[1]);
     if (parsed && typeof parsed === 'object' && Array.isArray(parsed.nodes)) {
       if (!Array.isArray(parsed.edges)) parsed.edges = [];
+
+      // Deduplicate trigger nodes — keep only the first one
+      let triggerSeen = false;
+      const droppedIds = new Set<string>();
+      parsed.nodes = parsed.nodes.filter((n: Record<string, unknown>) => {
+        if (n.type === 'trigger') {
+          if (triggerSeen) {
+            if (n.id) droppedIds.add(n.id as string);
+            return false;
+          }
+          triggerSeen = true;
+        }
+        return true;
+      });
+      if (droppedIds.size > 0) {
+        parsed.edges = parsed.edges.filter(
+          (e: { source: string; target: string }) =>
+            !droppedIds.has(e.source) && !droppedIds.has(e.target)
+        );
+      }
+
       return parsed as WorkflowDefinition;
     }
   } catch {
@@ -589,9 +610,26 @@ export function convertDefinitionToReactFlow(
   // Build lookup for resolving AI-generated tool names that may be missing dots
   const resolveToolName = buildToolNameResolver(availableToolNames);
 
+  // Deduplicate trigger nodes — only keep the first one (should be node_1).
+  // AI sometimes generates multiple triggers when editing workflows.
+  let seenTrigger = false;
+  const dedupedNodes = definition.nodes.filter((def) => {
+    if (def.type === 'trigger') {
+      if (seenTrigger) return false; // Drop duplicate trigger
+      seenTrigger = true;
+    }
+    return true;
+  });
+
+  // Remove edges that reference dropped trigger nodes
+  const keptNodeIds = new Set(dedupedNodes.map((n) => n.id as string));
+  const dedupedEdges = definition.edges.filter(
+    (e) => keptNodeIds.has(e.source) && keptNodeIds.has(e.target)
+  );
+
   // Compute max existing node ID for deterministic sequential fallback IDs
   let maxIdNum = 0;
-  for (const def of definition.nodes) {
+  for (const def of dedupedNodes) {
     const existingId = def.id as string;
     if (existingId) {
       const num = parseInt(existingId.replace('node_', ''), 10);
@@ -599,7 +637,7 @@ export function convertDefinitionToReactFlow(
     }
   }
 
-  const nodes: Node[] = definition.nodes.map((def) => {
+  const nodes: Node[] = dedupedNodes.map((def) => {
     const id = (def.id as string) || `node_${++maxIdNum}`;
     const position = (def.position as { x: number; y: number }) || { x: 300, y: 100 };
 
@@ -621,14 +659,17 @@ export function convertDefinitionToReactFlow(
     }
 
     if (def.type === 'llm') {
+      // Map 'default' provider/model to '' so LlmConfigPanel auto-selects user's configured defaults
+      const llmProvider = (def.provider as string) ?? '';
+      const llmModel = (def.model as string) ?? '';
       return {
         id,
         type: 'llmNode',
         position,
         data: {
           label: def.label ?? 'LLM',
-          provider: def.provider ?? '',
-          model: def.model ?? '',
+          provider: llmProvider === 'default' ? '' : llmProvider,
+          model: llmModel === 'default' ? '' : llmModel,
           ...(def.systemPrompt != null ? { systemPrompt: def.systemPrompt } : {}),
           userMessage: (def.userMessage as string) ?? '',
           ...(def.temperature != null ? { temperature: def.temperature } : {}),
@@ -853,7 +894,7 @@ export function convertDefinitionToReactFlow(
     };
   });
 
-  const rfEdges: Edge[] = definition.edges.map((e, i) => ({
+  const rfEdges: Edge[] = dedupedEdges.map((e, i) => ({
     id: `edge_${e.source}_${e.target}_${i}`,
     source: e.source,
     target: e.target,
