@@ -5,6 +5,40 @@
 import { apiClient } from '../client';
 import type { ExtensionInfo } from '../types';
 
+export interface LlmAuditRisk {
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  description: string;
+  mitigation?: string;
+}
+
+export interface LlmAuditResult {
+  summary: string;
+  capabilities: string[];
+  dataAccess: string[];
+  externalCommunication: string[];
+  risks: LlmAuditRisk[];
+  trustScore: number;
+  verdict: 'safe' | 'caution' | 'unsafe';
+  reasoning: string;
+}
+
+export interface StaticAuditResult {
+  blocked: boolean;
+  reasons: string[];
+  warnings: string[];
+  riskLevel: 'low' | 'medium' | 'high' | 'critical';
+  undeclaredTools: string[];
+}
+
+export interface ExtensionAuditResult {
+  extensionId: string;
+  extensionName: string;
+  format: string;
+  staticAnalysis: StaticAuditResult;
+  llmAnalysis: LlmAuditResult | null;
+  llmError: string | null;
+}
+
 export const extensionsApi = {
   list: (params?: { status?: string; category?: string; format?: string }) => {
     const search = new URLSearchParams();
@@ -43,6 +77,10 @@ export const extensionsApi = {
       name: string;
       validation: { valid: boolean; errors: string[] };
     }>('/extensions/generate-skill', { description }),
+
+  /** Run LLM-powered security audit on an installed extension */
+  audit: (id: string, options?: { provider?: string; model?: string }) =>
+    apiClient.post<ExtensionAuditResult>(`/extensions/${id}/audit`, options ?? {}),
 
   upload: async (file: File): Promise<{ package: ExtensionInfo; message: string }> => {
     const formData = new FormData();

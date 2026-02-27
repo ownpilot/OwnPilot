@@ -71,7 +71,12 @@ crudRoutes.post('/', async (c) => {
       userId
     );
     wsGateway.broadcast('data:changed', { entity: 'extension', action: 'created', id: record.id });
-    return apiResponse(c, { package: record, message: 'Extension installed successfully.' }, 201);
+    const security = (record.manifest as unknown as Record<string, unknown>)?._security ?? null;
+    return apiResponse(
+      c,
+      { package: record, security, message: 'Extension installed successfully.' },
+      201
+    );
   } catch (error) {
     if (error instanceof ExtensionError) {
       return apiError(c, { code: error.code, message: error.message }, 400);

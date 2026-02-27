@@ -398,6 +398,13 @@ export interface ExtensionInfo {
     allowed_tools?: string[];
     script_paths?: string[];
     reference_paths?: string[];
+    _security?: {
+      riskLevel: 'low' | 'medium' | 'high' | 'critical';
+      blocked: boolean;
+      warnings: string[];
+      undeclaredTools: string[];
+      auditedAt: number;
+    };
   };
 }
 

@@ -29,7 +29,7 @@ import {
 } from './extension-types.js';
 import { parseExtensionMarkdown } from './extension-markdown.js';
 import { parseAgentSkillsMd } from './agentskills-parser.js';
-import { auditSkillSecurity } from './skill-security-audit.js';
+import { auditSkillSecurity, type SkillSecurityResult } from './skill-security-audit.js';
 import { registerToolConfigRequirements, unregisterDependencies } from './api-service-registrar.js';
 import { getDataDirectoryInfo } from '../paths/index.js';
 import { getLog } from './log.js';
@@ -129,9 +129,8 @@ export class ExtensionService implements IExtensionService {
     userId = 'default',
     sourcePath?: string
   ): Promise<ExtensionRecord> {
-    // Validate manifest: native format requires tool validation, AgentSkills gets security audit
+    // Validate manifest format
     if (manifest.format === 'agentskills') {
-      // Validate frontmatter fields
       const fmValidation = validateAgentSkillsFrontmatter(
         manifest as unknown as Record<string, unknown>
       );
@@ -141,23 +140,6 @@ export class ExtensionService implements IExtensionService {
           'VALIDATION_ERROR'
         );
       }
-
-      // Security audit — block skills with prompt injection or critical risks
-      const securityResult = auditSkillSecurity(manifest);
-      if (securityResult.blocked) {
-        throw new ExtensionError(
-          `Skill blocked by security audit: ${securityResult.reasons.join('; ')}`,
-          'VALIDATION_ERROR'
-        );
-      }
-      // Store warnings for UI display (attached to manifest metadata)
-      if (securityResult.warnings.length > 0) {
-        log.warn('Skill installed with security warnings', {
-          skillId: manifest.id,
-          riskLevel: securityResult.riskLevel,
-          warnings: securityResult.warnings,
-        });
-      }
     } else {
       const validation = validateManifest(manifest);
       if (!validation.valid) {
@@ -166,6 +148,33 @@ export class ExtensionService implements IExtensionService {
           'VALIDATION_ERROR'
         );
       }
+    }
+
+    // Security audit — runs for ALL formats (static pattern analysis)
+    const securityResult = auditSkillSecurity(manifest);
+    if (securityResult.blocked) {
+      throw new ExtensionError(
+        `Extension blocked by security audit: ${securityResult.reasons.join('; ')}`,
+        'VALIDATION_ERROR'
+      );
+    }
+
+    // Store security metadata in manifest for UI display
+    (manifest as unknown as Record<string, unknown>)._security = {
+      riskLevel: securityResult.riskLevel,
+      blocked: false,
+      warnings: securityResult.warnings,
+      undeclaredTools: securityResult.undeclaredTools,
+      auditedAt: Date.now(),
+    };
+
+    if (securityResult.warnings.length > 0) {
+      log.warn('Extension installed with security warnings', {
+        extensionId: manifest.id,
+        format: manifest.format ?? 'ownpilot',
+        riskLevel: securityResult.riskLevel,
+        warnings: securityResult.warnings,
+      });
     }
 
     // Register required services in Config Center
@@ -483,6 +492,57 @@ export class ExtensionService implements IExtensionService {
         description: pkg.manifest.description,
         id: pkg.id,
       }));
+  }
+
+  /**
+   * Get system prompt sections for specific extension IDs only.
+   * Used by the request preprocessor for selective context injection.
+   */
+  getSystemPromptSectionsForIds(ids: string[]): string[] {
+    if (ids.length === 0) return [];
+    const idSet = new Set(ids);
+    const enabled = extensionsRepo.getEnabled();
+    const sections: string[] = [];
+
+    for (const pkg of enabled) {
+      if (!idSet.has(pkg.id)) continue;
+
+      if (pkg.manifest.format === 'agentskills') {
+        const instructions = pkg.manifest.instructions?.trim();
+        if (instructions) {
+          sections.push(`## Skill: ${pkg.manifest.name}\n${instructions}`);
+        }
+      } else if (pkg.manifest.system_prompt?.trim()) {
+        sections.push(`## Extension: ${pkg.manifest.name}\n${pkg.manifest.system_prompt.trim()}`);
+      }
+    }
+
+    return sections;
+  }
+
+  /**
+   * Get lightweight metadata for all enabled extensions.
+   * Used by the request preprocessor to build its keyword index.
+   */
+  getEnabledMetadata(): Array<{
+    id: string;
+    name: string;
+    description: string;
+    format: string;
+    category?: string;
+    toolNames: string[];
+    keywords?: string[];
+  }> {
+    const enabled = extensionsRepo.getEnabled();
+    return enabled.map((pkg) => ({
+      id: pkg.id,
+      name: pkg.manifest.name,
+      description: pkg.manifest.description,
+      format: pkg.manifest.format ?? 'ownpilot',
+      category: pkg.manifest.category,
+      toolNames: (pkg.manifest.tools ?? []).map((t) => t.name),
+      keywords: pkg.manifest.keywords ?? pkg.manifest.tags,
+    }));
   }
 
   // --------------------------------------------------------------------------

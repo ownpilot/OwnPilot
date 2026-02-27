@@ -7,7 +7,7 @@
  */
 
 import { createContext, useContext, useRef, useState, useCallback, type ReactNode } from 'react';
-import type { Message, MessageAttachment, ChatResponse, ApiResponse, SessionInfo } from '../types';
+import type { Message, MessageAttachment, ChatResponse, ApiResponse, SessionInfo, TraceInfo } from '../types';
 import type { ApprovalRequest } from '../api';
 import { executionPermissionsApi, memoriesApi } from '../api';
 import { parseSSELine } from '../utils/sse-parser';
@@ -327,6 +327,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
           let accumulatedThinking = '';
           let buffer = '';
           let finalResponse: ChatResponse | null = null;
+          let routingData: TraceInfo['routing'] | undefined;
 
           try {
             while (true) {
@@ -395,6 +396,9 @@ export function ChatProvider({ children }: { children: ReactNode }) {
                       }
                     }
                     break;
+                  case 'routing':
+                    routingData = event.data;
+                    break;
                   case 'error':
                     throw new Error(event.message);
                 }
@@ -422,6 +426,13 @@ export function ChatProvider({ children }: { children: ReactNode }) {
             accumulatedThinking ||
             undefined;
 
+          // Merge routing data into trace if available
+          const trace = finalResponse?.trace
+            ? routingData
+              ? { ...finalResponse.trace, routing: routingData }
+              : finalResponse.trace
+            : undefined;
+
           const assistantMessage: Message = {
             id: crypto.randomUUID(),
             role: 'assistant',
@@ -434,7 +445,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
             toolCalls: finalResponse?.toolCalls,
             provider,
             model: finalResponse?.model ?? model,
-            trace: finalResponse?.trace,
+            trace,
             ...(finalThinking && { thinkingContent: finalThinking }),
           };
           setMessages((prev) => [...prev, assistantMessage]);

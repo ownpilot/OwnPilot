@@ -1,16 +1,23 @@
 /**
  * Context Injection Middleware
  *
- * Injects memories and goals into the agent's system prompt
- * before the agent execution stage.
+ * Injects memories, goals, and relevant extension/skill sections into
+ * the agent's system prompt before the agent execution stage.
  *
- * Caches the enhanced prompt per userId+agentId to avoid redundant DB queries
- * on every message. Cache invalidates after TTL or when memories/goals change.
+ * When the request-preprocessor middleware has set routing decisions in
+ * PipelineContext, only relevant extension sections are injected.
+ * Otherwise, falls back to injecting all enabled extension sections.
+ *
+ * Caches the orchestrator injection (memories/goals) per userId+agentId
+ * to avoid redundant DB queries on every message. Extension injection
+ * is always per-request (routing differs per message).
  */
 
 import type { MessageMiddleware } from '@ownpilot/core';
+import { getServiceRegistry, Services, type IExtensionService } from '@ownpilot/core';
 import { buildEnhancedSystemPrompt } from '../../assistant/index.js';
 import { getErrorMessage } from '../../routes/helpers.js';
+import type { RequestRouting } from './request-preprocessor.js';
 import { getLog } from '../log.js';
 
 const log = getLog('Middleware:ContextInjection');
@@ -40,7 +47,8 @@ export function clearInjectionCache(userId?: string): void {
 }
 
 /**
- * Create middleware that injects memories/goals into the agent's system prompt.
+ * Create middleware that injects memories/goals and relevant extension sections
+ * into the agent's system prompt.
  *
  * Expects `ctx.get('agent')` to be set by the route handler before processing.
  */
@@ -63,55 +71,65 @@ export function createContextInjectionMiddleware(): MessageMiddleware {
       const currentSystemPrompt =
         agent.getConversation().systemPrompt || 'You are a helpful AI assistant.';
 
-      // Check cache — if we have a recent injection for this user+agent, reuse it
+      // 1. Strip all previously injected sections to get the base prompt
+      const basePrompt = stripInjectedSections(currentSystemPrompt);
+
+      // 2. Build extension sections based on routing (per-request)
+      const extensionSuffix = buildExtensionSections(ctx);
+
+      // 3. Build orchestrator sections (memories, goals, resources, autonomy) — cached
+      let orchestratorSuffix: string;
+      let stats: { memoriesUsed: number; goalsUsed: number };
+
       const cached = injectionCache.get(cacheKey);
       if (cached && Date.now() - cached.cachedAt < INJECTION_CACHE_TTL_MS) {
-        // Re-apply cached suffix if not already present
-        if (!currentSystemPrompt.includes(cached.injectedSuffix)) {
-          // Strip old injected sections, append cached
-          const basePrompt = stripInjectedSections(currentSystemPrompt);
-          agent.updateSystemPrompt(basePrompt + cached.injectedSuffix);
+        orchestratorSuffix = cached.injectedSuffix;
+        stats = cached.stats;
+      } else {
+        // Cache miss or expired — rebuild from DB
+        const { prompt: enhancedPrompt, stats: freshStats } = await buildEnhancedSystemPrompt(
+          basePrompt,
+          {
+            userId,
+            agentId,
+            maxMemories: 10,
+            maxGoals: 5,
+            enableTriggers: true,
+            enableAutonomy: true,
+          }
+        );
+
+        // Extract the suffix that buildEnhancedSystemPrompt added
+        orchestratorSuffix = enhancedPrompt.slice(basePrompt.length);
+        stats = freshStats;
+
+        // Cache it (evict oldest before insert to enforce cap)
+        if (injectionCache.size >= 50) {
+          const oldest = injectionCache.keys().next().value;
+          if (oldest) injectionCache.delete(oldest);
         }
-        ctx.set('contextStats', cached.stats);
-        return next();
-      }
+        injectionCache.set(cacheKey, {
+          injectedSuffix: orchestratorSuffix,
+          stats,
+          cachedAt: Date.now(),
+        });
 
-      // Cache miss or expired — rebuild from DB
-      const { prompt: enhancedPrompt, stats } = await buildEnhancedSystemPrompt(
-        currentSystemPrompt,
-        {
-          userId,
-          agentId,
-          maxMemories: 10,
-          maxGoals: 5,
-          enableTriggers: true,
-          enableAutonomy: true,
-        }
-      );
-
-      // Extract the injected suffix (everything buildEnhancedSystemPrompt added)
-      const basePrompt = stripInjectedSections(currentSystemPrompt);
-      const injectedSuffix = enhancedPrompt.slice(basePrompt.length);
-
-      // Cache it
-      // Evict oldest before insert to enforce cap
-      if (injectionCache.size >= 50) {
-        const oldest = injectionCache.keys().next().value;
-        if (oldest) injectionCache.delete(oldest);
-      }
-
-      injectionCache.set(cacheKey, {
-        injectedSuffix,
-        stats,
-        cachedAt: Date.now(),
-      });
-
-      // Only update if prompt actually changed
-      if (enhancedPrompt !== currentSystemPrompt) {
-        agent.updateSystemPrompt(enhancedPrompt);
         if (stats.memoriesUsed > 0 || stats.goalsUsed > 0) {
           log.info(`Injected ${stats.memoriesUsed} memories, ${stats.goalsUsed} goals`);
         }
+      }
+
+      // 4. Build request focus hint
+      const routing = ctx.get<RequestRouting>('routing');
+      const focusSuffix = routing?.intentHint
+        ? `\n---\n## Request Focus\n${routing.intentHint}`
+        : '';
+
+      // 5. Combine: base + extensions + orchestrator + focus
+      const finalPrompt = basePrompt + extensionSuffix + orchestratorSuffix + focusSuffix;
+
+      if (finalPrompt !== currentSystemPrompt) {
+        agent.updateSystemPrompt(finalPrompt);
       }
 
       ctx.set('contextStats', stats);
@@ -126,11 +144,48 @@ export function createContextInjectionMiddleware(): MessageMiddleware {
 }
 
 /**
+ * Build extension sections based on routing decisions.
+ * If routing is present, only inject selected extensions.
+ * Otherwise, inject all enabled extensions (backward compat).
+ */
+function buildExtensionSections(ctx: { get<T>(key: string): T | undefined }): string {
+  try {
+    const extService = getServiceRegistry().get(Services.Extension) as IExtensionService & {
+      getSystemPromptSectionsForIds?(ids: string[]): string[];
+    };
+    if (!extService) return '';
+
+    const routing = ctx.get<RequestRouting>('routing');
+    let sections: string[];
+
+    if (routing?.relevantExtensionIds && extService.getSystemPromptSectionsForIds) {
+      sections = extService.getSystemPromptSectionsForIds(routing.relevantExtensionIds);
+    } else {
+      // No routing or old service — inject all (backward compat)
+      sections = extService.getSystemPromptSections();
+    }
+
+    if (sections.length === 0) return '';
+    return '\n\n' + sections.join('\n\n');
+  } catch {
+    // Extension service not available
+    return '';
+  }
+}
+
+/**
  * Strip previously injected sections from a system prompt.
- * Must match the headers used by buildEnhancedSystemPrompt in orchestrator.ts.
+ * Strips: extension sections, request focus, orchestrator sections
+ * (memories, goals, resources, autonomy).
  */
 function stripInjectedSections(prompt: string): string {
   const markers = [
+    // Extension sections (injected by context-injection or agent-service at creation)
+    '\n\n## Extension:',
+    '\n\n## Skill:',
+    // Request focus (from request-preprocessor)
+    '\n---\n## Request Focus',
+    // Orchestrator sections (from buildEnhancedSystemPrompt)
     '\n---\n## User Context (from memory)',
     '\n---\n## Active Goals',
     '\n---\n## Available Data Resources',
