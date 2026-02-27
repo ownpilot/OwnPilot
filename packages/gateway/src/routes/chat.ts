@@ -537,6 +537,7 @@ chatRoutes.post('/', async (c) => {
       triggersFired: [],
       errors: busResult.warnings ?? [],
       events: busResult.stages.map((s) => ({ type: 'stage', name: s })),
+      routing: busResult.response.metadata.routing ?? undefined,
     };
 
     // Persistence middleware saves to ChatRepository but NOT LogsRepository.

@@ -1,4 +1,4 @@
-import { Sparkles, Power, Wrench, Zap } from '../../components/icons';
+import { Sparkles, Power, Wrench, Zap, Shield } from '../../components/icons';
 import type { ExtensionInfo } from '../../api/types';
 import { STATUS_COLORS, CATEGORY_COLORS } from './constants';
 
@@ -8,8 +8,16 @@ interface ExtensionCardProps {
   onClick: () => void;
 }
 
+const RISK_COLORS: Record<string, string> = {
+  low: 'text-success',
+  medium: 'text-warning',
+  high: 'text-error',
+  critical: 'text-error',
+};
+
 export function ExtensionCard({ pkg, onToggle, onClick }: ExtensionCardProps) {
   const isEnabled = pkg.status === 'enabled';
+  const security = pkg.manifest._security;
   const categoryColor = pkg.category
     ? CATEGORY_COLORS[pkg.category] || CATEGORY_COLORS.other
     : null;
@@ -71,11 +79,22 @@ export function ExtensionCard({ pkg, onToggle, onClick }: ExtensionCardProps) {
 
       {/* Status & Stats */}
       <div className="flex items-center justify-between text-xs">
-        <span
-          className={`px-2 py-0.5 rounded-full ${STATUS_COLORS[pkg.status] || STATUS_COLORS.disabled}`}
-        >
-          {pkg.status}
-        </span>
+        <div className="flex items-center gap-1.5">
+          <span
+            className={`px-2 py-0.5 rounded-full ${STATUS_COLORS[pkg.status] || STATUS_COLORS.disabled}`}
+          >
+            {pkg.status}
+          </span>
+          {security && security.riskLevel !== 'low' && (
+            <span
+              className={`flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-current/10 ${RISK_COLORS[security.riskLevel] || ''}`}
+              title={`Security: ${security.riskLevel} risk${security.warnings?.length ? ` (${security.warnings.length} warning${security.warnings.length !== 1 ? 's' : ''})` : ''}`}
+            >
+              <Shield className="w-3 h-3" />
+              {security.riskLevel}
+            </span>
+          )}
+        </div>
         <div className="flex items-center gap-3 text-text-muted dark:text-dark-text-muted">
           <span className="flex items-center gap-1">
             <Wrench className="w-3 h-3" />

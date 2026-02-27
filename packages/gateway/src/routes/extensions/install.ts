@@ -75,7 +75,12 @@ installRoutes.post('/install', async (c) => {
     const service = getExtService();
     const record = await service.install((body as { path: string }).path, userId);
     wsGateway.broadcast('data:changed', { entity: 'extension', action: 'created', id: record.id });
-    return apiResponse(c, { package: record, message: 'Extension installed successfully.' }, 201);
+    const security = (record.manifest as unknown as Record<string, unknown>)?._security ?? null;
+    return apiResponse(
+      c,
+      { package: record, security, message: 'Extension installed successfully.' },
+      201
+    );
   } catch (error) {
     if (error instanceof ExtensionError) {
       return apiError(c, { code: error.code, message: error.message }, 400);
@@ -216,9 +221,14 @@ installRoutes.post('/upload', async (c) => {
           id: record.id,
         });
 
+        const zipSecurity = (record.manifest as unknown as Record<string, unknown>)?._security ?? null;
         return apiResponse(
           c,
-          { package: record, message: 'Extension uploaded and installed from ZIP.' },
+          {
+            package: record,
+            security: zipSecurity,
+            message: 'Extension uploaded and installed from ZIP.',
+          },
           201
         );
       } catch (error) {
@@ -265,9 +275,14 @@ installRoutes.post('/upload', async (c) => {
           id: record.id,
         });
 
+        const fileSecurity = (record.manifest as unknown as Record<string, unknown>)?._security ?? null;
         return apiResponse(
           c,
-          { package: record, message: 'Extension uploaded and installed.' },
+          {
+            package: record,
+            security: fileSecurity,
+            message: 'Extension uploaded and installed.',
+          },
           201
         );
       } catch (error) {

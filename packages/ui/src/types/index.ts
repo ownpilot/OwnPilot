@@ -114,6 +114,13 @@ export interface TraceInfo {
     error: string;
     delayMs: number;
   }>;
+  /** Request preprocessor routing decisions — which extensions/skills were selected */
+  routing?: {
+    relevantExtensionIds: string[];
+    relevantCategories: string[];
+    intentHint: string | null;
+    confidence: number;
+  };
 }
 
 export interface Agent {

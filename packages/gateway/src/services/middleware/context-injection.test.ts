@@ -788,12 +788,10 @@ describe('createContextInjectionMiddleware', () => {
       const ctx = createContext({ store: { agent, userId: 'user-1', agentId: 'agent-1' } });
       await middleware(createMessage(), ctx, vi.fn().mockResolvedValue(createNextResult()));
 
-      // buildEnhancedSystemPrompt should receive prompt with goals stripped out
-      // The middleware strips before passing to buildEnhancedSystemPrompt? No.
-      // Actually: middleware passes currentSystemPrompt AS-IS to buildEnhancedSystemPrompt.
-      // The stripping happens only for extracting the injectedSuffix and cache re-apply.
+      // Middleware strips injected sections first, then passes base prompt
+      // to buildEnhancedSystemPrompt for fresh injection
       expect(mockBuildEnhancedSystemPrompt).toHaveBeenCalledWith(
-        goalsOnlyPrompt,
+        BASE_PROMPT,
         expect.any(Object)
       );
     });

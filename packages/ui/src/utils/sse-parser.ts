@@ -36,6 +36,15 @@ export type SSEEventType =
         thinkingContent?: string;
       };
     }
+  | {
+      kind: 'routing';
+      data: {
+        relevantExtensionIds: string[];
+        relevantCategories: string[];
+        intentHint: string | null;
+        confidence: number;
+      };
+    }
   | { kind: 'error'; message: string }
   | { kind: 'skip' };
 
@@ -76,6 +85,13 @@ export function parseSSELine(line: string): SSEEventType {
     return {
       kind: 'delta',
       data: data as SSEEventType extends { kind: 'delta'; data: infer D } ? D : never,
+    };
+  }
+
+  if (data.routing && typeof data.routing === 'object') {
+    return {
+      kind: 'routing',
+      data: data.routing as SSEEventType extends { kind: 'routing'; data: infer D } ? D : never,
     };
   }
 

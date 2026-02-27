@@ -943,12 +943,14 @@ describe('Pipeline Middleware', () => {
     });
 
     it('updates agent system prompt with enhanced prompt', async () => {
+      const basePrompt = 'Original';
+      const suffix = '\n---\n## User Context (from memory)\n- Mem 1';
       const mockAgent = {
-        getConversation: () => ({ systemPrompt: 'Original' }),
+        getConversation: () => ({ systemPrompt: basePrompt }),
         updateSystemPrompt: vi.fn(),
       };
       mockBuildEnhancedSystemPrompt.mockResolvedValue({
-        prompt: 'Enhanced with memories and goals',
+        prompt: basePrompt + suffix,
         stats: { memoriesUsed: 3, goalsUsed: 2 },
       });
 
@@ -959,7 +961,8 @@ describe('Pipeline Middleware', () => {
 
       await middleware(message, ctx, next);
 
-      expect(mockAgent.updateSystemPrompt).toHaveBeenCalledWith('Enhanced with memories and goals');
+      // Middleware strips base, extracts orchestrator suffix, then recombines
+      expect(mockAgent.updateSystemPrompt).toHaveBeenCalledWith(basePrompt + suffix);
     });
 
     it('sets contextStats in the pipeline context', async () => {

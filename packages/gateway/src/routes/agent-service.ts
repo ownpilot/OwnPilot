@@ -209,17 +209,8 @@ async function createAgentFromRecord(record: AgentRecord): Promise<Agent> {
     includeToolDescriptions: true,
   });
 
-  // Inject extension system prompts
-  try {
-    const extPromptSections = getServiceRegistry()
-      .get(Services.Extension)
-      .getSystemPromptSections();
-    if (extPromptSections.length > 0) {
-      enhancedPrompt += '\n\n' + extPromptSections.join('\n\n');
-    }
-  } catch {
-    log.debug('Extension service not initialized, skipping system prompt injection');
-  }
+  // Extension sections are now injected per-request by the context-injection middleware
+  // based on routing decisions from the request-preprocessor middleware.
 
   const metaToolFilter = AI_META_TOOL_NAMES.map((n) => unsafeToolId(n));
 
@@ -470,16 +461,8 @@ async function createChatAgentInstance(
     includeToolDescriptions: true,
   });
 
-  try {
-    const extPromptSections = getServiceRegistry()
-      .get(Services.Extension)
-      .getSystemPromptSections();
-    if (extPromptSections.length > 0) {
-      enhancedPrompt += '\n\n' + extPromptSections.join('\n\n');
-    }
-  } catch {
-    log.debug('Extension service not initialized, skipping system prompt injection');
-  }
+  // Extension sections are now injected per-request by the context-injection middleware
+  // based on routing decisions from the request-preprocessor middleware.
 
   const chatMetaToolFilter = AI_META_TOOL_NAMES.map((n) => unsafeToolId(n));
 

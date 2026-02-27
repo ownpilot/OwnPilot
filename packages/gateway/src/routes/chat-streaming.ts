@@ -568,6 +568,16 @@ export async function processStreamingViaBus(
     },
   });
 
+  // Send routing debug info as supplementary SSE event (after main stream completes)
+  const routing = result.response.metadata.routing;
+  if (routing) {
+    try {
+      await sseStream.writeSSE({ data: JSON.stringify({ routing }), event: 'routing' });
+    } catch {
+      /* stream may have closed */
+    }
+  }
+
   await recordStreamUsage(state, {
     userId,
     conversationId,

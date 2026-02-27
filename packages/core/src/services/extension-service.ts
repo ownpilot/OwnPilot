@@ -75,4 +75,22 @@ export interface IExtensionService {
    * Get system prompt sections from enabled extensions.
    */
   getSystemPromptSections(): string[];
+
+  /**
+   * Get system prompt sections for specific extension IDs only (selective injection).
+   */
+  getSystemPromptSectionsForIds(ids: string[]): string[];
+
+  /**
+   * Get lightweight metadata for all enabled extensions (for keyword index building).
+   */
+  getEnabledMetadata(): Array<{
+    id: string;
+    name: string;
+    description: string;
+    format: string;
+    category?: string;
+    toolNames: string[];
+    keywords?: string[];
+  }>;
 }

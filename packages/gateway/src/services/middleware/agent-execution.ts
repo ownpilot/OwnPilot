@@ -241,6 +241,7 @@ export function createAgentExecutionMiddleware(): MessageMiddleware {
                 output: result.value.usage.completionTokens,
               }
             : undefined,
+          routing: ctx.get('routing') ?? undefined,
         },
         timestamp: new Date(),
       };

@@ -13,6 +13,7 @@ import {
   Send,
   Code,
   ExternalLink,
+  Filter,
 } from './icons';
 import { DebugInfoModal } from './DebugInfoModal';
 import type { TraceInfo } from '../types';
@@ -81,6 +82,18 @@ export function TraceDisplay({ trace }: TraceDisplayProps) {
                 </span>
               )}
 
+              {trace.routing && (
+                <span className="flex items-center gap-1 text-purple-500">
+                  <Filter className="w-3 h-3" />
+                  {trace.routing.relevantExtensionIds.length} ext
+                  {trace.routing.confidence > 0 && (
+                    <span className="opacity-70">
+                      ({Math.round(trace.routing.confidence * 100)}%)
+                    </span>
+                  )}
+                </span>
+              )}
+
               {hasRetries && (
                 <span className="flex items-center gap-1 text-amber-500">
                   <RefreshCw className="w-3 h-3" />
@@ -111,6 +124,42 @@ export function TraceDisplay({ trace }: TraceDisplayProps) {
         {/* Expanded content */}
         {isExpanded && (
           <div className="border-t border-border dark:border-dark-border divide-y divide-border dark:divide-dark-border">
+            {/* Routing (request preprocessor) */}
+            {trace.routing && (
+              <TraceSection title="Routing" icon={<Filter className="w-4 h-4" />}>
+                <div className="space-y-2">
+                  {trace.routing.intentHint && (
+                    <div className="px-2 py-1 text-xs text-purple-600 dark:text-purple-400 bg-purple-500/10 rounded">
+                      {trace.routing.intentHint}
+                    </div>
+                  )}
+                  <div className="flex flex-wrap gap-2">
+                    {trace.routing.relevantExtensionIds.map((id) => (
+                      <span
+                        key={id}
+                        className="px-2 py-0.5 text-xs bg-purple-500/10 text-purple-600 dark:text-purple-400 rounded font-mono"
+                      >
+                        {id}
+                      </span>
+                    ))}
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {trace.routing.relevantCategories.map((cat) => (
+                      <span
+                        key={cat}
+                        className="px-2 py-0.5 text-xs bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 rounded"
+                      >
+                        {cat}
+                      </span>
+                    ))}
+                    <span className="px-2 py-0.5 text-xs bg-gray-500/10 text-text-muted dark:text-dark-text-muted rounded">
+                      confidence: {Math.round(trace.routing.confidence * 100)}%
+                    </span>
+                  </div>
+                </div>
+              </TraceSection>
+            )}
+
             {/* Model Calls */}
             {trace.modelCalls.length > 0 && (
               <TraceSection title="Model Calls" icon={<Brain className="w-4 h-4" />}>
