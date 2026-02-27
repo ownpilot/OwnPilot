@@ -1,11 +1,9 @@
 /**
- * WhatsApp Channel Plugin
+ * WhatsApp Channel Plugin (Baileys)
  *
- * Registers WhatsApp as a channel plugin using Meta Cloud API.
- * Provides configuration via Config Center and exposes
- * ChannelPluginAPI for unified channel management.
- *
- * Requires a Meta Business account with WhatsApp Business API access.
+ * Registers WhatsApp as a channel plugin using @whiskeysockets/baileys.
+ * Connects via WhatsApp Web protocol with QR code authentication.
+ * No Meta Business account needed — works with personal WhatsApp accounts.
  */
 
 import { createChannelPlugin, type PluginCapability, type PluginPermission } from '@ownpilot/core';
@@ -17,61 +15,27 @@ export function buildWhatsAppChannelPlugin() {
     .meta({
       id: 'channel.whatsapp',
       name: 'WhatsApp',
-      version: '1.0.0',
-      description: 'Connect to WhatsApp via Meta Cloud API for business messaging',
+      version: '2.0.0',
+      description: 'Connect to WhatsApp via QR code scan — no Meta Business account needed',
       author: { name: 'OwnPilot' },
       capabilities: ['tools', 'events'] as PluginCapability[],
       permissions: ['network'] as PluginPermission[],
       icon: '💬',
       requiredServices: [
         {
-          name: 'whatsapp_business',
-          displayName: 'WhatsApp Business',
+          name: 'whatsapp_baileys',
+          displayName: 'WhatsApp',
           category: 'channels',
-          docsUrl: 'https://developers.facebook.com/docs/whatsapp/cloud-api/get-started',
+          docsUrl: 'https://github.com/WhiskeySockets/Baileys',
           configSchema: [
             {
-              name: 'access_token',
-              label: 'Access Token',
-              type: 'secret',
-              required: true,
-              description: 'Permanent system user token from Meta Business Settings',
-              placeholder: 'EAABs...',
+              name: 'allowed_users',
+              label: 'Allowed Phone Numbers',
+              type: 'string',
+              description:
+                'Comma-separated phone numbers in international format (empty = allow all)',
+              placeholder: '14155551234, 905551234567',
               order: 0,
-            },
-            {
-              name: 'phone_number_id',
-              label: 'Phone Number ID',
-              type: 'string',
-              required: true,
-              description: 'WhatsApp Business phone number ID',
-              placeholder: '123456789012345',
-              order: 1,
-            },
-            {
-              name: 'business_account_id',
-              label: 'Business Account ID',
-              type: 'string',
-              description: 'WhatsApp Business Account ID (for template management)',
-              placeholder: '123456789012345',
-              order: 2,
-            },
-            {
-              name: 'webhook_verify_token',
-              label: 'Webhook Verify Token',
-              type: 'secret',
-              required: true,
-              description: 'Token for webhook verification challenge (you choose this value)',
-              placeholder: 'my-verify-token-123',
-              order: 3,
-            },
-            {
-              name: 'app_secret',
-              label: 'App Secret',
-              type: 'secret',
-              description: 'Meta App Secret for webhook payload signature verification',
-              placeholder: 'abc123...',
-              order: 4,
             },
           ],
         },
@@ -81,24 +45,9 @@ export function buildWhatsAppChannelPlugin() {
     .channelApi((config) => {
       const resolvedConfig = {
         ...config,
-        access_token:
-          config.access_token ??
-          (configServicesRepo.getFieldValue('whatsapp_business', 'access_token') as string) ??
-          '',
-        phone_number_id:
-          (config.phone_number_id as string) ??
-          (configServicesRepo.getFieldValue('whatsapp_business', 'phone_number_id') as string) ??
-          '',
-        webhook_verify_token:
-          (config.webhook_verify_token as string) ??
-          (configServicesRepo.getFieldValue(
-            'whatsapp_business',
-            'webhook_verify_token'
-          ) as string) ??
-          '',
-        app_secret:
-          (config.app_secret as string) ??
-          (configServicesRepo.getFieldValue('whatsapp_business', 'app_secret') as string) ??
+        allowed_users:
+          (config.allowed_users as string) ??
+          (configServicesRepo.getFieldValue('whatsapp_baileys', 'allowed_users') as string) ??
           '',
       };
       return new WhatsAppChannelAPI(resolvedConfig, 'channel.whatsapp');
@@ -106,7 +55,7 @@ export function buildWhatsAppChannelPlugin() {
     .tool(
       {
         name: 'channel_whatsapp_send',
-        description: 'Send a message to a WhatsApp user via the connected business account',
+        description: 'Send a message to a WhatsApp user via the connected account',
         parameters: {
           type: 'object',
           properties: {

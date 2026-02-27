@@ -55,72 +55,7 @@ webhookRoutes.post('/telegram/:secret', async (c) => {
   }
 });
 
-/**
- * GET /webhooks/whatsapp
- *
- * WhatsApp webhook verification challenge.
- * Meta sends a GET request with hub.mode, hub.verify_token, and hub.challenge.
- */
-webhookRoutes.get('/whatsapp', async (c) => {
-  const mode = c.req.query('hub.mode');
-  const token = c.req.query('hub.verify_token');
-  const challenge = c.req.query('hub.challenge');
-
-  const { getWhatsAppWebhookHandler } = await import(
-    '../channels/plugins/whatsapp/whatsapp-api.js'
-  );
-  const handler = getWhatsAppWebhookHandler();
-
-  if (!handler) {
-    return apiError(
-      c,
-      { code: ERROR_CODES.SERVICE_UNAVAILABLE, message: 'WhatsApp webhook not configured' },
-      503
-    );
-  }
-
-  if (mode === 'subscribe' && token && safeKeyCompare(token, handler.verifyToken)) {
-    log.info('WhatsApp webhook verified');
-    return c.text(challenge ?? '', 200);
-  }
-
-  return apiError(c, { code: ERROR_CODES.ACCESS_DENIED, message: 'Verification failed' }, 403);
-});
-
-/**
- * POST /webhooks/whatsapp
- *
- * Receives WhatsApp message delivery via Meta Cloud API.
- * Optionally validates payload signature via X-Hub-Signature-256 header.
- */
-webhookRoutes.post('/whatsapp', async (c) => {
-  const { getWhatsAppWebhookHandler } = await import(
-    '../channels/plugins/whatsapp/whatsapp-api.js'
-  );
-  const handler = getWhatsAppWebhookHandler();
-
-  if (!handler) {
-    return apiError(
-      c,
-      { code: ERROR_CODES.SERVICE_UNAVAILABLE, message: 'WhatsApp webhook not configured' },
-      503
-    );
-  }
-
-  try {
-    const body = await c.req.json();
-    const entries = body.entry ?? [];
-    await handler.callback(entries);
-    return c.text('OK', 200);
-  } catch (error) {
-    log.error('WhatsApp webhook error:', error);
-    return apiError(
-      c,
-      { code: ERROR_CODES.INTERNAL_ERROR, message: 'Webhook processing failed' },
-      500
-    );
-  }
-});
+// WhatsApp webhook routes removed — Baileys uses direct WebSocket connection, no webhooks needed.
 
 /**
  * POST /webhooks/slack/events

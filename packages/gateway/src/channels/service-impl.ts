@@ -405,6 +405,12 @@ export class ChannelServiceImpl implements IChannelService {
    * This is the main pipeline: auth check -> session lookup -> AI routing.
    */
   async processIncomingMessage(message: ChannelIncomingMessage): Promise<void> {
+    log.info('[CHANNEL-DEBUG] processIncomingMessage START', {
+      platform: message.platform,
+      pluginId: message.channelPluginId,
+      sender: message.sender?.displayName,
+      text: message.text?.substring(0, 50),
+    });
     try {
       // 1. Find or create channel user
       const channelUser = await this.usersRepo.findOrCreate({
@@ -590,8 +596,16 @@ export class ChannelServiceImpl implements IChannelService {
       }
 
       // 7. Route to AI agent
+      log.info('[CHANNEL-DEBUG] Step 7: Routing to AI agent', {
+        pluginId: message.channelPluginId,
+        sessionId: session.id,
+        conversationId: session.conversationId,
+      });
       const api = this.getChannel(message.channelPluginId);
-      if (!api) return;
+      if (!api) {
+        log.error('[CHANNEL-DEBUG] Channel API not found for pluginId:', message.channelPluginId);
+        return;
+      }
 
       // Create progress manager if channel supports it
       type ProgressCapableAPI = typeof api & {
@@ -698,6 +712,7 @@ export class ChannelServiceImpl implements IChannelService {
         platform: message.platform,
       });
     } catch (error) {
+      log.error('[CHANNEL-DEBUG] Error processing message:', getErrorMessage(error));
       log.error('Error processing message', { error });
 
       // Build a helpful error message
@@ -1005,6 +1020,12 @@ export class ChannelServiceImpl implements IChannelService {
         ChannelEvents.MESSAGE_RECEIVED,
         (event) => {
           const data = event.data;
+          log.info('[CHANNEL-DEBUG] Received MESSAGE_RECEIVED event', {
+            platform: data.message.platform,
+            pluginId: data.message.channelPluginId,
+            text: data.message.text?.substring(0, 50),
+            sender: data.message.sender?.displayName,
+          });
           // Process asynchronously - don't block the event handler
           this.processIncomingMessage(data.message).catch((error) => {
             log.error('Failed to process incoming message', { error });

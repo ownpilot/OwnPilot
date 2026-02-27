@@ -1,14 +1,21 @@
 /**
- * WhatsApp Channel API (Meta Cloud API)
+ * WhatsApp Channel API (Baileys)
  *
- * Implements ChannelPluginAPI using direct HTTP calls to Meta Graph API.
- * No npm dependency — uses native fetch.
- *
- * Key limitation: WhatsApp has a 24-hour conversation window.
- * Free-form messages can only be sent within 24h of the last user message.
- * After that, approved message templates must be used.
+ * Implements ChannelPluginAPI using @whiskeysockets/baileys.
+ * Connects via WhatsApp Web's WebSocket protocol using QR code authentication.
+ * No Meta Business account needed — works with personal WhatsApp accounts.
  */
 
+import makeWASocket, {
+  useMultiFileAuthState,
+  makeCacheableSignalKeyStore,
+  DisconnectReason,
+  fetchLatestBaileysVersion,
+  type WASocket,
+  type WAMessage,
+} from '@whiskeysockets/baileys';
+import { Boom } from '@hapi/boom';
+import pino from 'pino';
 import {
   type ChannelPluginAPI,
   type ChannelConnectionStatus,
@@ -27,91 +34,52 @@ import { getLog } from '../../../services/log.js';
 import { getErrorMessage } from '../../../routes/helpers.js';
 import { MAX_MESSAGE_CHAT_MAP_SIZE } from '../../../config/defaults.js';
 import { splitMessage } from '../../utils/message-utils.js';
+import { getSessionDir } from './session-store.js';
+import { wsGateway } from '../../../ws/server.js';
 
 const log = getLog('WhatsApp');
-
-const GRAPH_API_BASE = 'https://graph.facebook.com/v21.0';
 const WHATSAPP_MAX_LENGTH = 4096;
+
+// Baileys logger — silent to avoid noisy output
+const baileysLogger = pino({ level: 'silent' }) as ReturnType<typeof pino>;
 
 // ============================================================================
 // Types
 // ============================================================================
 
-interface WhatsAppChannelConfig {
-  access_token: string;
-  phone_number_id: string;
-  business_account_id?: string;
-  webhook_verify_token: string;
-  app_secret?: string;
-}
-
-interface WhatsAppWebhookEntry {
-  id: string;
-  changes: Array<{
-    value: {
-      messaging_product: string;
-      metadata: { display_phone_number: string; phone_number_id: string };
-      contacts?: Array<{ profile: { name: string }; wa_id: string }>;
-      messages?: Array<{
-        from: string;
-        id: string;
-        timestamp: string;
-        type: string;
-        text?: { body: string };
-        image?: { id: string; mime_type: string; sha256: string; caption?: string };
-        document?: { id: string; mime_type: string; filename: string; caption?: string };
-        audio?: { id: string; mime_type: string };
-        video?: { id: string; mime_type: string; caption?: string };
-        context?: { from: string; id: string };
-      }>;
-      statuses?: Array<{ id: string; status: string; timestamp: string }>;
-    };
-    field: string;
-  }>;
-}
-
-// Webhook handler singleton
-let webhookHandler: {
-  verifyToken: string;
-  callback: (body: WhatsAppWebhookEntry[]) => Promise<void>;
-} | null = null;
-
-export function registerWhatsAppWebhookHandler(
-  verifyToken: string,
-  callback: (body: WhatsAppWebhookEntry[]) => Promise<void>
-): void {
-  webhookHandler = { verifyToken, callback };
-}
-
-export function unregisterWhatsAppWebhookHandler(): void {
-  webhookHandler = null;
-}
-
-export function getWhatsAppWebhookHandler() {
-  return webhookHandler;
+interface WhatsAppBaileysConfig {
+  allowed_users?: string;
 }
 
 // ============================================================================
-// WhatsApp API
+// WhatsApp Baileys API
 // ============================================================================
 
 export class WhatsAppChannelAPI implements ChannelPluginAPI {
+  private sock: WASocket | null = null;
   private status: ChannelConnectionStatus = 'disconnected';
-  private readonly config: WhatsAppChannelConfig;
   private readonly pluginId: string;
+  private readonly config: WhatsAppBaileysConfig;
   private messageChatMap = new Map<string, string>();
+  private allowedUsers: Set<string> = new Set();
+  private qrCode: string | null = null;
+  private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+  private reconnectAttempt = 0;
 
   constructor(config: Record<string, unknown>, pluginId: string) {
-    this.config = {
-      access_token: String(config.access_token ?? ''),
-      phone_number_id: String(config.phone_number_id ?? ''),
-      business_account_id: config.business_account_id
-        ? String(config.business_account_id)
-        : undefined,
-      webhook_verify_token: String(config.webhook_verify_token ?? ''),
-      app_secret: config.app_secret ? String(config.app_secret) : undefined,
-    };
     this.pluginId = pluginId;
+    this.config = {
+      allowed_users: config.allowed_users ? String(config.allowed_users) : undefined,
+    };
+
+    // Parse allowed users
+    if (this.config.allowed_users) {
+      this.config.allowed_users
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean)
+        .forEach((phone) => this.allowedUsers.add(phone));
+    }
   }
 
   // ==========================================================================
@@ -119,39 +87,61 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
   // ==========================================================================
 
   async connect(): Promise<void> {
-    if (!this.config.access_token) {
-      throw new Error('WhatsApp access token is required');
-    }
-    if (!this.config.phone_number_id) {
-      throw new Error('WhatsApp phone number ID is required');
+    if (this.status === 'connected' || this.status === 'connecting') return;
+
+    // Clean up any existing socket
+    if (this.sock) {
+      try {
+        this.sock.end(undefined);
+      } catch {
+        /* already closed */
+      }
+      this.sock = null;
     }
 
     this.status = 'connecting';
     this.emitConnectionEvent('connecting');
 
     try {
-      // Verify credentials by fetching the phone number info
-      const response = await fetch(
-        `${GRAPH_API_BASE}/${this.config.phone_number_id}`,
-        {
-          headers: { Authorization: `Bearer ${this.config.access_token}` },
+      const sessionDir = getSessionDir(this.pluginId);
+      const { state, saveCreds } = await useMultiFileAuthState(sessionDir);
+      const { version } = await fetchLatestBaileysVersion();
+
+      this.sock = makeWASocket({
+        version,
+        auth: {
+          creds: state.creds,
+          keys: makeCacheableSignalKeyStore(state.keys, baileysLogger),
+        },
+        printQRInTerminal: false,
+        logger: baileysLogger,
+        browser: ['OwnPilot', 'Chrome', '22.0'],
+        generateHighQualityLinkPreview: false,
+        syncFullHistory: false,
+      });
+
+      // Handle connection updates (QR code, connect, disconnect)
+      this.sock.ev.on('connection.update', (update) => {
+        this.handleConnectionUpdate(update);
+      });
+
+      // Handle incoming messages
+      this.sock.ev.on('messages.upsert', (upsert) => {
+        log.info(`[WA-DEBUG] messages.upsert type=${upsert.type} count=${upsert.messages.length}`);
+        if (upsert.type !== 'notify') return;
+        for (const msg of upsert.messages) {
+          log.info(`[WA-DEBUG] Message: fromMe=${msg.key.fromMe} jid=${msg.key.remoteJid} id=${msg.key.id}`);
+          if (msg.key.fromMe) continue;
+          this.handleIncomingMessage(msg).catch((err) => {
+            log.error('Failed to handle WhatsApp message:', err);
+          });
         }
-      );
+      });
 
-      if (!response.ok) {
-        const error = await response.text();
-        throw new Error(`WhatsApp API verification failed: ${error}`);
-      }
+      // Save credentials on update
+      this.sock.ev.on('creds.update', saveCreds);
 
-      // Register webhook handler
-      registerWhatsAppWebhookHandler(
-        this.config.webhook_verify_token,
-        (entries) => this.handleWebhookEntries(entries)
-      );
-
-      this.status = 'connected';
-      this.emitConnectionEvent('connected');
-      log.info(`WhatsApp bot connected (phone: ${this.config.phone_number_id})`);
+      log.info('WhatsApp socket created, waiting for authentication...');
     } catch (error) {
       this.status = 'error';
       this.emitConnectionEvent('error');
@@ -160,48 +150,47 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
   }
 
   async disconnect(): Promise<void> {
-    unregisterWhatsAppWebhookHandler();
+    this.clearReconnectTimer();
+
+    if (this.sock) {
+      this.sock.end(undefined);
+      this.sock = null;
+    }
+
+    this.qrCode = null;
+    this.reconnectAttempt = 0;
     this.status = 'disconnected';
     this.emitConnectionEvent('disconnected');
-    log.info('WhatsApp bot disconnected');
+    log.info('WhatsApp disconnected');
   }
 
   async sendMessage(message: ChannelOutgoingMessage): Promise<string> {
+    if (!this.sock) {
+      throw new Error('WhatsApp is not connected');
+    }
+
+    const jid = this.toJid(message.platformChatId);
     const parts = splitMessage(message.text, WHATSAPP_MAX_LENGTH);
     let lastMessageId = '';
 
     for (let i = 0; i < parts.length; i++) {
-      const body = {
-        messaging_product: 'whatsapp',
-        to: message.platformChatId,
-        type: 'text',
-        text: { body: parts[i] },
-        ...(i === 0 && message.replyToId
-          ? { context: { message_id: message.replyToId } }
-          : {}),
-      };
+      const options: Record<string, unknown> = {};
 
-      const response = await fetch(
-        `${GRAPH_API_BASE}/${this.config.phone_number_id}/messages`,
-        {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${this.config.access_token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(body),
+      // Reply context for first part
+      if (i === 0 && message.replyToId) {
+        const externalId = message.replyToId.includes(':')
+          ? message.replyToId.split(':').pop()
+          : message.replyToId;
+        if (externalId) {
+          options.quoted = {
+            key: { remoteJid: jid, id: externalId },
+            message: {},
+          };
         }
-      );
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`WhatsApp send failed: ${errorText}`);
       }
 
-      const result = (await response.json()) as {
-        messages?: Array<{ id: string }>;
-      };
-      lastMessageId = result.messages?.[0]?.id ?? '';
+      const result = await this.sock.sendMessage(jid, { text: parts[i]! }, options);
+      lastMessageId = result?.key?.id ?? '';
 
       if (lastMessageId) {
         this.trackMessage(lastMessageId, message.platformChatId);
@@ -229,27 +218,33 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
   // ==========================================================================
 
   async sendTyping(platformChatId: string): Promise<void> {
+    if (!this.sock) return;
     try {
-      await fetch(
-        `${GRAPH_API_BASE}/${this.config.phone_number_id}/messages`,
-        {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${this.config.access_token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            messaging_product: 'whatsapp',
-            to: platformChatId,
-            type: 'reaction',
-            // WhatsApp doesn't have a true typing indicator via API
-            // This is a no-op placeholder
-          }),
-        }
-      );
+      const jid = this.toJid(platformChatId);
+      await this.sock.sendPresenceUpdate('composing', jid);
     } catch {
       // Non-fatal
     }
+  }
+
+  getBotInfo(): { username?: string; firstName?: string } | null {
+    if (!this.sock?.user) return null;
+    const user = this.sock.user;
+    // Baileys user.id format: "phone:device@s.whatsapp.net"
+    const phone = user.id?.split(':')[0] ?? user.id;
+    return {
+      username: phone,
+      firstName: user.name ?? undefined,
+    };
+  }
+
+  // ==========================================================================
+  // QR Code — used by channels route for QR display
+  // ==========================================================================
+
+  /** Get the current QR code string (null if not in QR state). */
+  getQrCode(): string | null {
+    return this.qrCode;
   }
 
   // ==========================================================================
@@ -265,118 +260,248 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
   }
 
   // ==========================================================================
-  // Webhook Handling
+  // Private — Connection Handling
   // ==========================================================================
 
-  private async handleWebhookEntries(entries: WhatsAppWebhookEntry[]): Promise<void> {
-    for (const entry of entries) {
-      for (const change of entry.changes) {
-        if (change.field !== 'messages') continue;
-        const { value } = change;
-        if (!value.messages) continue;
+  private handleConnectionUpdate(update: {
+    connection?: string;
+    lastDisconnect?: { error?: Error | undefined; date?: Date };
+    qr?: string;
+    isOnline?: boolean;
+    isNewLogin?: boolean;
+  }): void {
+    const { connection, lastDisconnect, qr } = update;
 
-        const contacts = value.contacts ?? [];
+    // QR code received — broadcast to UI
+    if (qr) {
+      this.qrCode = qr;
+      this.status = 'connecting';
+      log.info('WhatsApp QR code generated, waiting for scan...');
 
-        for (const msg of value.messages) {
-          const contact = contacts.find((c) => c.wa_id === msg.from);
-          const sender: ChannelUser = {
-            platformUserId: msg.from,
-            platform: 'whatsapp',
-            displayName: contact?.profile?.name ?? msg.from,
-            username: msg.from,
-          };
+      // Broadcast QR to WebSocket clients
+      try {
+        wsGateway.broadcast('channel:qr', { channelId: this.pluginId, qr });
+      } catch {
+        // WS gateway may not be ready
+      }
+    }
 
-          let text = '';
-          const attachments: ChannelAttachment[] = [];
+    // Connected
+    if (connection === 'open') {
+      this.status = 'connected';
+      this.qrCode = null;
+      this.reconnectAttempt = 0;
+      this.emitConnectionEvent('connected');
 
-          switch (msg.type) {
-            case 'text':
-              text = msg.text?.body ?? '';
-              break;
-            case 'image':
-              if (msg.image) {
-                text = msg.image.caption ?? '';
-                attachments.push({
-                  type: 'image',
-                  url: msg.image.id, // Media ID — needs download via Graph API
-                  mimeType: msg.image.mime_type,
-                });
-              }
-              break;
-            case 'document':
-              if (msg.document) {
-                text = msg.document.caption ?? '';
-                attachments.push({
-                  type: 'file',
-                  url: msg.document.id,
-                  mimeType: msg.document.mime_type,
-                  filename: msg.document.filename,
-                });
-              }
-              break;
-            case 'audio':
-              if (msg.audio) {
-                attachments.push({
-                  type: 'audio',
-                  url: msg.audio.id,
-                  mimeType: msg.audio.mime_type,
-                });
-              }
-              break;
-            case 'video':
-              if (msg.video) {
-                text = msg.video.caption ?? '';
-                attachments.push({
-                  type: 'video',
-                  url: msg.video.id,
-                  mimeType: msg.video.mime_type,
-                });
-              }
-              break;
-          }
+      const info = this.getBotInfo();
+      log.info(`WhatsApp connected as ${info?.username ?? 'unknown'} (${info?.firstName ?? ''})`);
 
-          const channelMessage: ChannelIncomingMessage = {
-            id: `${this.pluginId}:${msg.id}`,
-            channelPluginId: this.pluginId,
-            platform: 'whatsapp',
-            platformChatId: msg.from, // WhatsApp uses phone number as chat ID
-            sender,
-            text: text || (attachments.length > 0 ? '[Attachment]' : ''),
-            attachments: attachments.length > 0 ? attachments : undefined,
-            replyToId: msg.context?.id
-              ? `${this.pluginId}:${msg.context.id}`
-              : undefined,
-            timestamp: new Date(parseInt(msg.timestamp, 10) * 1000),
-            metadata: {
-              platformMessageId: msg.id,
-              phoneNumberId: value.metadata.phone_number_id,
-              displayPhoneNumber: value.metadata.display_phone_number,
-            },
-          };
+      // Broadcast status update
+      try {
+        wsGateway.broadcast('channel:status', {
+          channelId: this.pluginId,
+          status: 'connected',
+          botInfo: info,
+        });
+      } catch {
+        // WS gateway may not be ready
+      }
+    }
 
-          this.trackMessage(msg.id, msg.from);
+    // Disconnected
+    if (connection === 'close') {
+      const error = lastDisconnect?.error;
+      const statusCode = (error as Boom)?.output?.statusCode;
+      const isLoggedOut = statusCode === DisconnectReason.loggedOut;
 
-          try {
-            const eventBus = getEventBus();
-            eventBus.emit(
-              createEvent<ChannelMessageReceivedData>(
-                ChannelEvents.MESSAGE_RECEIVED,
-                'channel',
-                this.pluginId,
-                { message: channelMessage }
-              )
-            );
-          } catch (err) {
-            log.error('Failed to emit WhatsApp message event:', err);
-          }
-        }
+      if (isLoggedOut) {
+        // User logged out — need new QR scan
+        this.status = 'disconnected';
+        this.qrCode = null;
+        this.emitConnectionEvent('disconnected');
+        log.info('WhatsApp logged out — session cleared, new QR scan required');
+      } else {
+        // Temporary disconnect — auto-reconnect with backoff
+        this.status = 'reconnecting';
+        this.emitConnectionEvent('reconnecting');
+        this.scheduleReconnect();
+        log.warn(
+          `WhatsApp disconnected (code: ${statusCode}), reconnecting in ${this.getReconnectDelay()}ms...`
+        );
       }
     }
   }
 
+  private scheduleReconnect(): void {
+    this.clearReconnectTimer();
+    const delay = this.getReconnectDelay();
+    this.reconnectAttempt++;
+
+    this.reconnectTimer = setTimeout(() => {
+      log.info(`WhatsApp reconnect attempt ${this.reconnectAttempt}...`);
+      this.sock = null;
+      this.connect().catch((err) => {
+        log.error('WhatsApp reconnect failed:', err);
+        this.status = 'error';
+        this.emitConnectionEvent('error');
+      });
+    }, delay);
+  }
+
+  private getReconnectDelay(): number {
+    // Exponential backoff: 3s, 6s, 12s, 24s, max 60s
+    return Math.min(3000 * Math.pow(2, this.reconnectAttempt), 60000);
+  }
+
+  private clearReconnectTimer(): void {
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
+  }
+
   // ==========================================================================
-  // Private — Connection Events
+  // Private — Message Processing
   // ==========================================================================
+
+  private async handleIncomingMessage(msg: WAMessage): Promise<void> {
+    const remoteJid = msg.key.remoteJid;
+    if (!remoteJid) return;
+
+    // Extract phone number from JID
+    const phone = this.phoneFromJid(remoteJid);
+
+    // Access control
+    if (this.allowedUsers.size > 0 && !this.allowedUsers.has(phone)) {
+      return;
+    }
+
+    // Extract message content
+    const m = msg.message;
+    if (!m) {
+      log.info(`[WA-DEBUG] No message content (msg.message is null/undefined) for ${phone}`);
+      return;
+    }
+
+    let text = '';
+    const attachments: ChannelAttachment[] = [];
+
+    // Text messages
+    if (m.conversation) {
+      text = m.conversation;
+    } else if (m.extendedTextMessage?.text) {
+      text = m.extendedTextMessage.text;
+    }
+    // Image messages
+    else if (m.imageMessage) {
+      text = m.imageMessage.caption ?? '';
+      attachments.push({
+        type: 'image',
+        mimeType: m.imageMessage.mimetype ?? 'image/jpeg',
+      });
+    }
+    // Document messages
+    else if (m.documentMessage) {
+      text = m.documentMessage.caption ?? '';
+      attachments.push({
+        type: 'file',
+        mimeType: m.documentMessage.mimetype ?? 'application/octet-stream',
+        filename: m.documentMessage.fileName ?? undefined,
+      });
+    }
+    // Audio messages
+    else if (m.audioMessage) {
+      attachments.push({
+        type: 'audio',
+        mimeType: m.audioMessage.mimetype ?? 'audio/ogg',
+      });
+    }
+    // Video messages
+    else if (m.videoMessage) {
+      text = m.videoMessage.caption ?? '';
+      attachments.push({
+        type: 'video',
+        mimeType: m.videoMessage.mimetype ?? 'video/mp4',
+      });
+    }
+
+    // Skip empty messages
+    if (!text && attachments.length === 0) {
+      log.info(`[WA-DEBUG] Empty message (no text, no attachments) from ${phone}, keys: ${Object.keys(m).join(', ')}`);
+      return;
+    }
+    log.info(`[WA-DEBUG] Extracted text="${text.substring(0, 50)}" attachments=${attachments.length} from ${phone}`);
+
+    const messageId = msg.key.id ?? '';
+    const isGroup = remoteJid.endsWith('@g.us');
+
+    const sender: ChannelUser = {
+      platformUserId: phone,
+      platform: 'whatsapp',
+      displayName: msg.pushName || phone,
+      username: phone,
+    };
+
+    const rawTs = msg.messageTimestamp;
+    const timestamp =
+      typeof rawTs === 'number'
+        ? new Date(rawTs * 1000)
+        : typeof rawTs === 'object' && rawTs !== null && 'toNumber' in rawTs
+          ? new Date((rawTs as { toNumber(): number }).toNumber() * 1000)
+          : new Date();
+
+    const channelMessage: ChannelIncomingMessage = {
+      id: `${this.pluginId}:${messageId}`,
+      channelPluginId: this.pluginId,
+      platform: 'whatsapp',
+      platformChatId: phone,
+      sender,
+      text: text || (attachments.length > 0 ? '[Attachment]' : ''),
+      attachments: attachments.length > 0 ? attachments : undefined,
+      timestamp,
+      metadata: {
+        platformMessageId: messageId,
+        jid: remoteJid,
+        isGroup,
+        pushName: msg.pushName || undefined,
+      },
+    };
+
+    this.trackMessage(messageId, phone);
+
+    try {
+      log.info(`[WA-DEBUG] Emitting MESSAGE_RECEIVED for "${text.substring(0, 30)}" from ${phone}`);
+      const eventBus = getEventBus();
+      eventBus.emit(
+        createEvent<ChannelMessageReceivedData>(
+          ChannelEvents.MESSAGE_RECEIVED,
+          'channel',
+          this.pluginId,
+          { message: channelMessage }
+        )
+      );
+      log.info('[WA-DEBUG] EventBus emit completed');
+    } catch (err) {
+      log.error('Failed to emit WhatsApp message event:', err);
+    }
+  }
+
+  // ==========================================================================
+  // Private — Helpers
+  // ==========================================================================
+
+  /** Convert a phone number or chat ID to a WhatsApp JID. */
+  private toJid(chatId: string): string {
+    if (chatId.includes('@')) return chatId;
+    // Strip any non-digit characters for phone numbers
+    const cleaned = chatId.replace(/[^0-9]/g, '');
+    return `${cleaned}@s.whatsapp.net`;
+  }
+
+  /** Extract phone number from a WhatsApp JID. */
+  private phoneFromJid(jid: string): string {
+    return jid.split('@')[0]?.split(':')[0] ?? jid;
+  }
 
   private emitConnectionEvent(status: ChannelConnectionStatus): void {
     try {

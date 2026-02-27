@@ -30,11 +30,13 @@
   },
   "dependencies": {
     "@composio/core": "^0.6.3",
+    "@hapi/boom": "^10.0.1",
     "@hono/node-server": "^1.19.9",
     "@modelcontextprotocol/sdk": "^1.26.0",
     "@ownpilot/core": "workspace:*",
     "@slack/socket-mode": "^2.0.5",
     "@slack/web-api": "^7.14.1",
+    "@whiskeysockets/baileys": "7.0.0-rc.9",
     "adm-zip": "^0.5.16",
     "archiver": "^7.0.1",
     "discord.js": "^14.25.1",
@@ -49,6 +51,7 @@
     "pdfkit": "^0.17.2",
     "pg": "^8.18.0",
     "pgvector": "^0.2.1",
+    "pino": "^10.3.1",
     "sharp": "^0.34.5",
     "ws": "^8.19.0",
     "zod": "^4.3.6"

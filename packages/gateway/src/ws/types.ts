@@ -134,7 +134,8 @@ export interface ServerEvents {
   // Channel events
   'channel:connected': { channel: Channel };
   'channel:disconnected': { channelId: string; reason?: string };
-  'channel:status': { channelId: string; status: ChannelStatus; error?: string };
+  'channel:qr': { channelId: string; qr: string };
+  'channel:status': { channelId: string; status: ChannelStatus; error?: string; botInfo?: { username?: string; firstName?: string } | null };
   'channel:message': {
     id: string;
     channelId: string;

@@ -35,12 +35,25 @@ interface ChannelAPIWithBotInfo {
   getBotInfo(): { username?: string; firstName?: string } | null;
 }
 
+interface ChannelAPIWithQrCode {
+  getQrCode(): string | null;
+}
+
 function hasBotInfo(api: unknown): api is ChannelAPIWithBotInfo {
   return (
     typeof api === 'object' &&
     api !== null &&
     'getBotInfo' in api &&
     typeof (api as Record<string, unknown>).getBotInfo === 'function'
+  );
+}
+
+function hasQrCode(api: unknown): api is ChannelAPIWithQrCode {
+  return (
+    typeof api === 'object' &&
+    api !== null &&
+    'getQrCode' in api &&
+    typeof (api as Record<string, unknown>).getQrCode === 'function'
   );
 }
 
@@ -346,13 +359,14 @@ channelRoutes.post('/:id/setup', async (c) => {
     }
     await service.connect(pluginId);
 
-    // 6. Get bot info for response
+    // 6. Get bot/connection info for response
     const api = service.getChannel(pluginId);
-    const botInfo = hasBotInfo(api) ? await api.getBotInfo() : null;
+    const botInfo = hasBotInfo(api) ? api.getBotInfo() : null;
+    const actualStatus = api?.getStatus() ?? 'connected';
 
     return apiResponse(c, {
       pluginId,
-      status: 'connected',
+      status: actualStatus,
       ...(botInfo && { botInfo: { username: botInfo.username, firstName: botInfo.firstName } }),
     });
   } catch (error) {
@@ -365,6 +379,28 @@ channelRoutes.post('/:id/setup', async (c) => {
       500
     );
   }
+});
+
+/**
+ * GET /channels/:id/qr - Get QR code for WhatsApp authentication
+ */
+channelRoutes.get('/:id/qr', (c) => {
+  const pluginId = c.req.param('id');
+  const service = getChannelService();
+  const api = service.getChannel(pluginId);
+
+  if (!api) {
+    return notFoundError(c, 'Channel', pluginId);
+  }
+
+  const qr = hasQrCode(api) ? api.getQrCode() : null;
+  const botInfo = hasBotInfo(api) ? api.getBotInfo() : null;
+
+  return apiResponse(c, {
+    qr,
+    status: api.getStatus(),
+    ...(botInfo && { botInfo }),
+  });
 });
 
 /**

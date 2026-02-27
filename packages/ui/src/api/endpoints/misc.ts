@@ -343,6 +343,10 @@ export const channelsApi = {
     apiClient.post<{ pluginId: string; status: string }>(`/channels/${channelId}/reconnect`),
   getDetail: (channelId: string) =>
     apiClient.get<Channel>(`/channels/${channelId}`),
+  getQr: (channelId: string) =>
+    apiClient.get<{ qr: string | null; status: string; botInfo?: { username?: string; firstName?: string } }>(
+      `/channels/${channelId}/qr`
+    ),
 };
 
 // ---- Expenses ----
