@@ -9,7 +9,7 @@ import { X, Trash2, RefreshCw } from '../../icons';
 import type { ForEachNodeData } from '../ForEachNode';
 import { OutputTreeBrowser } from '../OutputTreeBrowser';
 import type { NodeConfigPanelProps } from '../NodeConfigPanel';
-import { RetryTimeoutFields, RetryAttemptsDisplay, INPUT_CLS } from '../NodeConfigPanel';
+import { OutputAliasField, RetryTimeoutFields, RetryAttemptsDisplay, INPUT_CLS } from '../NodeConfigPanel';
 
 const FOREACH_PRESETS = [
   '{{node_1.output}}',
@@ -335,6 +335,11 @@ export function ForEachConfigPanel({
             {upstreamNodes.length > 0 && (
               <OutputTreeBrowser upstreamNodes={upstreamNodes} onInsert={injectTemplate} />
             )}
+            <OutputAliasField
+              data={data as unknown as Record<string, unknown>}
+              nodeId={node.id}
+              onUpdate={onUpdate}
+            />
 
             <RetryTimeoutFields
               data={data as unknown as Record<string, unknown>}

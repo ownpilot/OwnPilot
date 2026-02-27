@@ -43,6 +43,9 @@ export type SSEEventType =
         relevantCategories: string[];
         intentHint: string | null;
         confidence: number;
+        suggestedTools: Array<{ name: string; brief: string }>;
+        relevantTables?: string[];
+        relevantMcpServers?: string[];
       };
     }
   | { kind: 'error'; message: string }

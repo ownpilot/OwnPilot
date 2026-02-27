@@ -20,12 +20,14 @@ import {
   MiniMap,
   MarkerType,
   addEdge,
+  ReactFlowProvider,
   useNodesState,
   useEdgesState,
+  useReactFlow,
+  useUpdateNodeInternals,
   type Connection,
   type Edge,
   type Node,
-  type ReactFlowInstance,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
@@ -43,7 +45,22 @@ import {
   CodeNode,
   TransformerNode,
   ForEachNode,
+  HttpRequestNode,
+  DelayNode,
+  SwitchNode,
+  ErrorHandlerNode,
+  SubWorkflowNode,
+  ApprovalNode,
+  StickyNoteNode,
+  NotificationNode,
+  ParallelNode,
+  MergeNode,
+  NodeSearchPalette,
   WorkflowCopilotPanel,
+  VariablesPanel,
+  WorkflowVersionsPanel,
+  InputParametersPanel,
+  TemplateGallery,
   convertDefinitionToReactFlow,
   autoArrangeNodes,
   type ToolNodeData,
@@ -54,6 +71,9 @@ import {
   type CodeNodeData,
   type TransformerNodeData,
   type ForEachNodeData,
+  type HttpRequestNodeData,
+  type DelayNodeData,
+  type SwitchNodeData,
   type WorkflowDefinition,
 } from '../components/workflows';
 import {
@@ -64,6 +84,11 @@ import {
   Code,
   Sparkles,
   LayoutDashboard,
+  ListChecks,
+  FlaskConical,
+  History,
+  Settings,
+  Layout,
 } from '../components/icons';
 import { toolsApi } from '../api';
 import { useToast } from '../components/ToastProvider';
@@ -78,6 +103,16 @@ const nodeTypes = {
   codeNode: CodeNode,
   transformerNode: TransformerNode,
   forEachNode: ForEachNode,
+  httpRequestNode: HttpRequestNode,
+  delayNode: DelayNode,
+  switchNode: SwitchNode,
+  errorHandlerNode: ErrorHandlerNode,
+  subWorkflowNode: SubWorkflowNode,
+  approvalNode: ApprovalNode,
+  stickyNoteNode: StickyNoteNode,
+  notificationNode: NotificationNode,
+  parallelNode: ParallelNode,
+  mergeNode: MergeNode,
 };
 
 // Default edge options — arrow markers for flow direction
@@ -87,10 +122,18 @@ const defaultEdgeOptions = {
 };
 
 // ============================================================================
-// Main Component
+// Main Component (wrapped in ReactFlowProvider for hook access)
 // ============================================================================
 
 export function WorkflowEditorPage() {
+  return (
+    <ReactFlowProvider>
+      <WorkflowEditorInner />
+    </ReactFlowProvider>
+  );
+}
+
+function WorkflowEditorInner() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -100,19 +143,78 @@ export function WorkflowEditorPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isExecuting, setIsExecuting] = useState(false);
+  const [isDryRun, setIsDryRun] = useState(false);
   const [workflowName, setWorkflowName] = useState('');
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [showSource, setShowSource] = useState(false);
   const [showCopilot, setShowCopilot] = useState(false);
+  const [showVariables, setShowVariables] = useState(false);
+  const [showVersions, setShowVersions] = useState(false);
+  const [variables, setVariables] = useState<Record<string, unknown>>({});
   const [toolNames, setToolNames] = useState<string[]>([]);
+  const [showNodeSearch, setShowNodeSearch] = useState(false);
+  const [showInputParams, setShowInputParams] = useState(false);
+  const [showTemplates, setShowTemplates] = useState(false);
+  const [inputSchema, setInputSchema] = useState<Array<{ name: string; type: 'string' | 'number' | 'boolean' | 'json'; required: boolean; defaultValue?: string; description?: string }>>([]);
 
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
+  const reactFlow = useReactFlow();
+  const updateNodeInternals = useUpdateNodeInternals();
 
   const abortRef = useRef<AbortController | null>(null);
   const nodeIdCounter = useRef(0);
-  const reactFlowInstance = useRef<ReactFlowInstance | null>(null);
+  const clipboardRef = useRef<{ nodes: Node[]; edges: Edge[] } | null>(null);
+
+  // ========================================================================
+  // Undo/Redo history
+  // ========================================================================
+
+  const MAX_HISTORY = 50;
+  const historyRef = useRef<Array<{ nodes: Node[]; edges: Edge[]; variables: Record<string, unknown> }>>([]);
+  const historyIndexRef = useRef(-1);
+  const skipHistoryRef = useRef(false);
+
+  const pushHistory = useCallback(() => {
+    if (skipHistoryRef.current) return;
+    const snapshot = {
+      nodes: nodes.map((n) => ({ ...n, data: { ...n.data } })),
+      edges: edges.map((e) => ({ ...e })),
+      variables: { ...variables },
+    };
+    // Truncate any future states (after undo)
+    historyRef.current = historyRef.current.slice(0, historyIndexRef.current + 1);
+    historyRef.current.push(snapshot);
+    if (historyRef.current.length > MAX_HISTORY) {
+      historyRef.current.shift();
+    }
+    historyIndexRef.current = historyRef.current.length - 1;
+  }, [nodes, edges, variables]);
+
+  const undo = useCallback(() => {
+    if (historyIndexRef.current <= 0) return;
+    historyIndexRef.current -= 1;
+    const snapshot = historyRef.current[historyIndexRef.current]!;
+    skipHistoryRef.current = true;
+    setNodes(snapshot.nodes);
+    setEdges(snapshot.edges);
+    setVariables(snapshot.variables);
+    setHasUnsavedChanges(true);
+    skipHistoryRef.current = false;
+  }, [setNodes, setEdges]);
+
+  const redo = useCallback(() => {
+    if (historyIndexRef.current >= historyRef.current.length - 1) return;
+    historyIndexRef.current += 1;
+    const snapshot = historyRef.current[historyIndexRef.current]!;
+    skipHistoryRef.current = true;
+    setNodes(snapshot.nodes);
+    setEdges(snapshot.edges);
+    setVariables(snapshot.variables);
+    setHasUnsavedChanges(true);
+    skipHistoryRef.current = false;
+  }, [setNodes, setEdges]);
 
   // ========================================================================
   // Load workflow
@@ -127,6 +229,8 @@ export function WorkflowEditorPage() {
         if (cancelled) return;
         setWorkflow(wf);
         setWorkflowName(wf.name);
+        setVariables(wf.variables ?? {});
+        setInputSchema(wf.inputSchema ?? []);
 
         // Convert stored nodes to ReactFlow nodes
         const rfNodes: Node[] = wf.nodes.map((n) => {
@@ -136,7 +240,17 @@ export function WorkflowEditorPage() {
             n.type === 'conditionNode' ||
             n.type === 'codeNode' ||
             n.type === 'transformerNode' ||
-            n.type === 'forEachNode'
+            n.type === 'forEachNode' ||
+            n.type === 'httpRequestNode' ||
+            n.type === 'delayNode' ||
+            n.type === 'switchNode' ||
+            n.type === 'errorHandlerNode' ||
+            n.type === 'subWorkflowNode' ||
+            n.type === 'approvalNode' ||
+            n.type === 'stickyNoteNode' ||
+            n.type === 'notificationNode' ||
+            n.type === 'parallelNode' ||
+            n.type === 'mergeNode'
           ) {
             return {
               id: n.id,
@@ -177,6 +291,14 @@ export function WorkflowEditorPage() {
           return isNaN(num) ? max : Math.max(max, num);
         }, 0);
         nodeIdCounter.current = maxId;
+
+        // Initialize undo/redo history
+        historyRef.current = [{
+          nodes: rfNodes.map((n) => ({ ...n, data: { ...n.data } })),
+          edges: rfEdges.map((e) => ({ ...e })),
+          variables: wf.variables ?? {},
+        }];
+        historyIndexRef.current = 0;
       } catch {
         toast.error('Failed to load workflow');
         navigate('/workflows');
@@ -202,7 +324,7 @@ export function WorkflowEditorPage() {
   // Auto-execute if ?execute=true
   useEffect(() => {
     if (!isLoading && workflow && searchParams.get('execute') === 'true') {
-      handleExecute();
+      handleExecute(false);
     }
   }, [isLoading, workflow]);
 
@@ -210,33 +332,66 @@ export function WorkflowEditorPage() {
   // Canvas handlers
   // ========================================================================
 
+  // Connection validation — prevent invalid edges
+  const isValidConnection = useCallback(
+    (connection: Edge | Connection) => {
+      // No self-connections
+      if (connection.source === connection.target) return false;
+      // No duplicate edges
+      const duplicate = edges.some(
+        (e) =>
+          e.source === connection.source &&
+          e.target === connection.target &&
+          e.sourceHandle === connection.sourceHandle &&
+          e.targetHandle === connection.targetHandle
+      );
+      if (duplicate) return false;
+      // Trigger node can only be source, never target
+      const targetNode = nodes.find((n) => n.id === connection.target);
+      if (targetNode?.type === 'triggerNode') return false;
+      // Sticky notes cannot be connected
+      const sourceNode = nodes.find((n) => n.id === connection.source);
+      if (sourceNode?.type === 'stickyNoteNode' || targetNode?.type === 'stickyNoteNode') return false;
+      return true;
+    },
+    [edges, nodes]
+  );
+
   const onConnect = useCallback(
     (connection: Connection) => {
+      pushHistory();
       const edgeProps = getEdgeLabelProps(connection.sourceHandle);
       setEdges((eds) => addEdge({ ...connection, ...edgeProps }, eds));
       setHasUnsavedChanges(true);
     },
-    [setEdges]
+    [setEdges, pushHistory]
   );
 
   const onNodesChangeWrapped = useCallback(
     (changes: Parameters<typeof onNodesChange>[0]) => {
+      // Push history only for meaningful changes (not every drag pixel)
+      if (changes.some((c) => c.type === 'remove' || c.type === 'add')) {
+        pushHistory();
+      }
       onNodesChange(changes);
       if (changes.some((c) => c.type === 'position' || c.type === 'remove' || c.type === 'add')) {
         setHasUnsavedChanges(true);
       }
     },
-    [onNodesChange]
+    [onNodesChange, pushHistory]
   );
 
   const onEdgesChangeWrapped = useCallback(
     (changes: Parameters<typeof onEdgesChange>[0]) => {
+      if (changes.some((c) => c.type === 'remove' || c.type === 'add')) {
+        pushHistory();
+      }
       onEdgesChange(changes);
       if (changes.some((c) => c.type === 'remove' || c.type === 'add')) {
         setHasUnsavedChanges(true);
       }
     },
-    [onEdgesChange]
+    [onEdgesChange, pushHistory]
   );
 
   const onNodeClick = useCallback((_: React.MouseEvent, node: Node) => {
@@ -247,18 +402,14 @@ export function WorkflowEditorPage() {
     setSelectedNodeId(null);
   }, []);
 
-  const onInit = useCallback((instance: ReactFlowInstance) => {
-    reactFlowInstance.current = instance;
-  }, []);
-
   const handleArrange = useCallback(() => {
     const arranged = autoArrangeNodes(nodes, edges);
     setNodes(arranged);
     setHasUnsavedChanges(true);
     requestAnimationFrame(() => {
-      reactFlowInstance.current?.fitView({ padding: 0.15, duration: 300 });
+      reactFlow.fitView({ padding: 0.15, duration: 300 });
     });
-  }, [nodes, edges, setNodes]);
+  }, [nodes, edges, setNodes, reactFlow]);
 
   // ========================================================================
   // Drop handler — create new node from palette drag
@@ -320,22 +471,75 @@ export function WorkflowEditorPage() {
 
   const updateNodeData = useCallback(
     (nodeId: string, data: Record<string, unknown>) => {
-      setNodes((nds) =>
-        nds.map((n) => (n.id === nodeId ? { ...n, data: { ...n.data, ...data } } : n))
-      );
+      pushHistory();
+      let needsHandleUpdate = false;
+
+      setNodes((nds) => {
+        const target = nds.find((n) => n.id === nodeId);
+
+        // Switch node: reconcile edges when cases change
+        if (target?.type === 'switchNode' && Array.isArray(data.cases)) {
+          const oldCases = (target.data.cases ?? []) as Array<{ label: string }>;
+          const newCases = data.cases as Array<{ label: string }>;
+
+          // Detect if handle count or labels changed — triggers updateNodeInternals
+          if (
+            oldCases.length !== newCases.length ||
+            oldCases.some((c, i) => c.label !== newCases[i]?.label)
+          ) {
+            needsHandleUpdate = true;
+          }
+
+          // Build old→new label mapping for renames
+          const labelMap = new Map<string, string>();
+          const newLabels = new Set(newCases.map((c) => c.label));
+          newLabels.add('default'); // default handle is always valid
+
+          for (let i = 0; i < Math.min(oldCases.length, newCases.length); i++) {
+            if (oldCases[i]!.label !== newCases[i]!.label) {
+              labelMap.set(oldCases[i]!.label, newCases[i]!.label);
+            }
+          }
+
+          setEdges((eds) =>
+            eds
+              .map((e) => {
+                if (e.source !== nodeId || !e.sourceHandle) return e;
+                // Rename handle if label changed
+                const renamed = labelMap.get(e.sourceHandle);
+                if (renamed) return { ...e, sourceHandle: renamed };
+                return e;
+              })
+              // Remove edges pointing to deleted case handles
+              .filter((e) => {
+                if (e.source !== nodeId || !e.sourceHandle) return true;
+                return newLabels.has(e.sourceHandle);
+              })
+          );
+        }
+
+        return nds.map((n) => (n.id === nodeId ? { ...n, data: { ...n.data, ...data } } : n));
+      });
+
+      // Force ReactFlow to re-detect handle positions after DOM update
+      if (needsHandleUpdate) {
+        requestAnimationFrame(() => updateNodeInternals(nodeId));
+      }
+
       setHasUnsavedChanges(true);
     },
-    [setNodes]
+    [setNodes, setEdges, updateNodeInternals, pushHistory]
   );
 
   const deleteNode = useCallback(
     (nodeId: string) => {
+      pushHistory();
       setNodes((nds) => nds.filter((n) => n.id !== nodeId));
       setEdges((eds) => eds.filter((e) => e.source !== nodeId && e.target !== nodeId));
       setSelectedNodeId(null);
       setHasUnsavedChanges(true);
     },
-    [setNodes, setEdges]
+    [setNodes, setEdges, pushHistory]
   );
 
   // ========================================================================
@@ -346,6 +550,12 @@ export function WorkflowEditorPage() {
     if (!id || !workflow) return;
     setIsSaving(true);
     try {
+      // Helper: extract optional outputAlias from any node data
+      const getAlias = (d: Record<string, unknown>) =>
+        d.outputAlias && typeof d.outputAlias === 'string'
+          ? { outputAlias: d.outputAlias }
+          : {};
+
       const wfNodes = nodes.map((n) => {
         if (n.type === 'triggerNode') {
           const td = n.data as unknown as TriggerNodeData;
@@ -387,6 +597,7 @@ export function WorkflowEditorPage() {
               ...(ld.baseUrl ? { baseUrl: ld.baseUrl } : {}),
               ...(ld.retryCount != null ? { retryCount: ld.retryCount } : {}),
               ...(ld.timeoutMs != null ? { timeoutMs: ld.timeoutMs } : {}),
+              ...getAlias(n.data as unknown as Record<string, unknown>),
             },
           };
         }
@@ -402,6 +613,7 @@ export function WorkflowEditorPage() {
               description: cd.description,
               ...(cd.retryCount != null ? { retryCount: cd.retryCount } : {}),
               ...(cd.timeoutMs != null ? { timeoutMs: cd.timeoutMs } : {}),
+              ...getAlias(n.data as unknown as Record<string, unknown>),
             },
           };
         }
@@ -418,6 +630,7 @@ export function WorkflowEditorPage() {
               description: cd.description,
               ...(cd.retryCount != null ? { retryCount: cd.retryCount } : {}),
               ...(cd.timeoutMs != null ? { timeoutMs: cd.timeoutMs } : {}),
+              ...getAlias(n.data as unknown as Record<string, unknown>),
             },
           };
         }
@@ -433,6 +646,7 @@ export function WorkflowEditorPage() {
               description: td.description,
               ...(td.retryCount != null ? { retryCount: td.retryCount } : {}),
               ...(td.timeoutMs != null ? { timeoutMs: td.timeoutMs } : {}),
+              ...getAlias(n.data as unknown as Record<string, unknown>),
             },
           };
         }
@@ -451,6 +665,171 @@ export function WorkflowEditorPage() {
               ...(fd.description ? { description: fd.description } : {}),
               ...(fd.retryCount != null ? { retryCount: fd.retryCount } : {}),
               ...(fd.timeoutMs != null ? { timeoutMs: fd.timeoutMs } : {}),
+              ...getAlias(n.data as unknown as Record<string, unknown>),
+            },
+          };
+        }
+        if (n.type === 'httpRequestNode') {
+          const hd = n.data as unknown as HttpRequestNodeData;
+          return {
+            id: n.id,
+            type: 'httpRequestNode',
+            position: n.position,
+            data: {
+              label: hd.label,
+              method: hd.method,
+              url: hd.url,
+              ...(hd.headers && Object.keys(hd.headers).length > 0 ? { headers: hd.headers } : {}),
+              ...(hd.queryParams && Object.keys(hd.queryParams).length > 0 ? { queryParams: hd.queryParams } : {}),
+              ...(hd.body ? { body: hd.body } : {}),
+              ...(hd.bodyType ? { bodyType: hd.bodyType } : {}),
+              ...(hd.auth && hd.auth.type !== 'none' ? { auth: hd.auth } : {}),
+              ...(hd.maxResponseSize != null ? { maxResponseSize: hd.maxResponseSize } : {}),
+              ...(hd.description ? { description: hd.description } : {}),
+              ...(hd.retryCount != null ? { retryCount: hd.retryCount } : {}),
+              ...(hd.timeoutMs != null ? { timeoutMs: hd.timeoutMs } : {}),
+              ...getAlias(n.data as unknown as Record<string, unknown>),
+            },
+          };
+        }
+        if (n.type === 'delayNode') {
+          const dd = n.data as unknown as DelayNodeData;
+          return {
+            id: n.id,
+            type: 'delayNode',
+            position: n.position,
+            data: {
+              label: dd.label,
+              duration: dd.duration,
+              unit: dd.unit,
+              ...(dd.description ? { description: dd.description } : {}),
+              ...getAlias(n.data as unknown as Record<string, unknown>),
+            },
+          };
+        }
+        if (n.type === 'switchNode') {
+          const sd = n.data as unknown as SwitchNodeData;
+          return {
+            id: n.id,
+            type: 'switchNode',
+            position: n.position,
+            data: {
+              label: sd.label,
+              expression: sd.expression,
+              cases: sd.cases,
+              ...(sd.description ? { description: sd.description } : {}),
+              ...(sd.retryCount != null ? { retryCount: sd.retryCount } : {}),
+              ...(sd.timeoutMs != null ? { timeoutMs: sd.timeoutMs } : {}),
+              ...getAlias(n.data as unknown as Record<string, unknown>),
+            },
+          };
+        }
+        if (n.type === 'errorHandlerNode') {
+          const eh = n.data as unknown as Record<string, unknown>;
+          return {
+            id: n.id,
+            type: 'errorHandlerNode',
+            position: n.position,
+            data: {
+              label: eh.label ?? 'Error Handler',
+              ...(eh.description ? { description: eh.description } : {}),
+              ...(eh.continueOnSuccess ? { continueOnSuccess: true } : {}),
+              ...getAlias(eh),
+            },
+          };
+        }
+        if (n.type === 'subWorkflowNode') {
+          const sw = n.data as unknown as Record<string, unknown>;
+          return {
+            id: n.id,
+            type: 'subWorkflowNode',
+            position: n.position,
+            data: {
+              label: sw.label ?? 'Sub-Workflow',
+              ...(sw.description ? { description: sw.description } : {}),
+              ...(sw.subWorkflowId ? { subWorkflowId: sw.subWorkflowId } : {}),
+              ...(sw.subWorkflowName ? { subWorkflowName: sw.subWorkflowName } : {}),
+              ...(sw.inputMapping && Object.keys(sw.inputMapping as Record<string, unknown>).length > 0
+                ? { inputMapping: sw.inputMapping }
+                : {}),
+              ...(sw.maxDepth != null ? { maxDepth: sw.maxDepth } : {}),
+              ...(sw.retryCount != null ? { retryCount: sw.retryCount } : {}),
+              ...(sw.timeoutMs != null ? { timeoutMs: sw.timeoutMs } : {}),
+              ...getAlias(sw),
+            },
+          };
+        }
+        if (n.type === 'approvalNode') {
+          const ap = n.data as unknown as Record<string, unknown>;
+          return {
+            id: n.id,
+            type: 'approvalNode',
+            position: n.position,
+            data: {
+              label: ap.label ?? 'Approval Gate',
+              ...(ap.description ? { description: ap.description } : {}),
+              ...(ap.approvalMessage ? { approvalMessage: ap.approvalMessage } : {}),
+              ...(ap.timeoutMinutes != null ? { timeoutMinutes: ap.timeoutMinutes } : {}),
+              ...getAlias(ap),
+            },
+          };
+        }
+        if (n.type === 'stickyNoteNode') {
+          const sn = n.data as unknown as Record<string, unknown>;
+          return {
+            id: n.id,
+            type: 'stickyNoteNode',
+            position: n.position,
+            data: {
+              label: sn.label ?? 'Note',
+              ...(sn.text ? { text: sn.text } : {}),
+              ...(sn.color ? { color: sn.color } : {}),
+            },
+          };
+        }
+        if (n.type === 'notificationNode') {
+          const nn = n.data as unknown as Record<string, unknown>;
+          return {
+            id: n.id,
+            type: 'notificationNode',
+            position: n.position,
+            data: {
+              label: nn.label ?? 'Notification',
+              ...(nn.message ? { message: nn.message } : {}),
+              ...(nn.severity ? { severity: nn.severity } : {}),
+              ...(nn.description ? { description: nn.description } : {}),
+              ...(nn.retryCount != null ? { retryCount: nn.retryCount } : {}),
+              ...(nn.timeoutMs != null ? { timeoutMs: nn.timeoutMs } : {}),
+              ...getAlias(nn),
+            },
+          };
+        }
+        if (n.type === 'parallelNode') {
+          const pn = n.data as unknown as Record<string, unknown>;
+          return {
+            id: n.id,
+            type: 'parallelNode',
+            position: n.position,
+            data: {
+              label: pn.label ?? 'Parallel',
+              ...(pn.branchCount != null ? { branchCount: pn.branchCount } : {}),
+              ...(pn.branchLabels ? { branchLabels: pn.branchLabels } : {}),
+              ...(pn.description ? { description: pn.description } : {}),
+              ...getAlias(pn),
+            },
+          };
+        }
+        if (n.type === 'mergeNode') {
+          const mn = n.data as unknown as Record<string, unknown>;
+          return {
+            id: n.id,
+            type: 'mergeNode',
+            position: n.position,
+            data: {
+              label: mn.label ?? 'Merge',
+              ...(mn.mode ? { mode: mn.mode } : {}),
+              ...(mn.description ? { description: mn.description } : {}),
+              ...getAlias(mn),
             },
           };
         }
@@ -466,6 +845,7 @@ export function WorkflowEditorPage() {
             description: toolData.description,
             ...(toolData.retryCount != null ? { retryCount: toolData.retryCount } : {}),
             ...(toolData.timeoutMs != null ? { timeoutMs: toolData.timeoutMs } : {}),
+            ...getAlias(n.data as unknown as Record<string, unknown>),
           },
         };
       });
@@ -482,6 +862,8 @@ export function WorkflowEditorPage() {
         name: workflowName,
         nodes: wfNodes,
         edges: wfEdges,
+        variables,
+        inputSchema,
       });
 
       // Sync trigger node with trigger system
@@ -527,7 +909,7 @@ export function WorkflowEditorPage() {
   // Execute — SSE stream with real-time node coloring
   // ========================================================================
 
-  const handleExecute = useCallback(async () => {
+  const handleExecute = useCallback(async (dryRun = false) => {
     if (!id || isExecuting) return;
 
     if (hasUnsavedChanges) {
@@ -535,6 +917,7 @@ export function WorkflowEditorPage() {
     }
 
     setIsExecuting(true);
+    setIsDryRun(dryRun);
 
     // Reset all node statuses
     setNodes((nds) =>
@@ -561,7 +944,7 @@ export function WorkflowEditorPage() {
     abortRef.current = abort;
 
     try {
-      const response = await workflowsApi.execute(id);
+      const response = await workflowsApi.execute(id, { dryRun });
       const reader = response.body?.getReader();
       if (!reader) throw new Error('No stream available');
 
@@ -597,6 +980,7 @@ export function WorkflowEditorPage() {
       }
     } finally {
       setIsExecuting(false);
+      setIsDryRun(false);
       abortRef.current = null;
       setEdges((eds) => eds.map((e) => ({ ...e, animated: false })));
     }
@@ -711,6 +1095,255 @@ export function WorkflowEditorPage() {
       // May already be finished
     }
   }, [id, toast]);
+
+  // ========================================================================
+  // Variables
+  // ========================================================================
+
+  const handleVariablesChange = useCallback(
+    (newVars: Record<string, unknown>) => {
+      pushHistory();
+      setVariables(newVars);
+      setHasUnsavedChanges(true);
+    },
+    [pushHistory]
+  );
+
+  // ========================================================================
+  // Import workflow from JSON file
+  // ========================================================================
+
+  const handleImportWorkflow = useCallback(
+    (json: Record<string, unknown>) => {
+      if (nodes.length > 0 && !confirm('This will replace all current nodes and edges. Continue?'))
+        return;
+
+      const def = json as unknown as WorkflowDefinition;
+      const { nodes: rfNodes, edges: rfEdges } = convertDefinitionToReactFlow(def, toolNames);
+
+      const styledEdges = rfEdges.map((e) => ({
+        ...e,
+        ...getEdgeLabelProps(e.sourceHandle),
+      }));
+
+      const maxId = rfNodes.reduce((max, n) => {
+        const num = parseInt(n.id.replace('node_', ''), 10);
+        return isNaN(num) ? max : Math.max(max, num);
+      }, 0);
+      nodeIdCounter.current = maxId;
+
+      setNodes(rfNodes);
+      setEdges(styledEdges);
+      if (def.name) setWorkflowName(def.name);
+      if ((json as Record<string, unknown>).variables) {
+        setVariables((json as Record<string, unknown>).variables as Record<string, unknown>);
+      }
+      setHasUnsavedChanges(true);
+      setSelectedNodeId(null);
+      toast.success('Workflow imported from file');
+    },
+    [nodes, toolNames, setNodes, setEdges, toast]
+  );
+
+  // ========================================================================
+  // Keyboard shortcuts
+  // ========================================================================
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      // Skip if user is typing in an input/textarea
+      const tag = (e.target as HTMLElement).tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+      if ((e.target as HTMLElement).isContentEditable) return;
+
+      const ctrl = e.ctrlKey || e.metaKey;
+
+      // Ctrl+S — Save
+      if (ctrl && e.key === 's') {
+        e.preventDefault();
+        if (hasUnsavedChanges && !isSaving) handleSave();
+        return;
+      }
+
+      // Ctrl+Z — Undo
+      if (ctrl && e.key === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        undo();
+        return;
+      }
+
+      // Ctrl+Shift+Z — Redo
+      if (ctrl && e.key === 'z' && e.shiftKey) {
+        e.preventDefault();
+        redo();
+        return;
+      }
+
+      // Ctrl+Y — Redo (alternative)
+      if (ctrl && e.key === 'y') {
+        e.preventDefault();
+        redo();
+        return;
+      }
+
+      // Delete / Backspace — Delete selected node
+      if ((e.key === 'Delete' || e.key === 'Backspace') && selectedNodeId) {
+        e.preventDefault();
+        deleteNode(selectedNodeId);
+        return;
+      }
+
+      // Escape — Deselect / close panels
+      if (e.key === 'Escape') {
+        if (showNodeSearch) {
+          setShowNodeSearch(false);
+        } else if (selectedNodeId) {
+          setSelectedNodeId(null);
+        } else if (showCopilot) {
+          setShowCopilot(false);
+        } else if (showVariables) {
+          setShowVariables(false);
+        } else if (showVersions) {
+          setShowVersions(false);
+        }
+        return;
+      }
+
+      // Ctrl+D — Duplicate selected node
+      if (ctrl && e.key === 'd' && selectedNodeId) {
+        e.preventDefault();
+        const node = nodes.find((n) => n.id === selectedNodeId);
+        if (!node) return;
+
+        nodeIdCounter.current += 1;
+        const newId = `node_${nodeIdCounter.current}`;
+        const newNode: Node = {
+          id: newId,
+          type: node.type,
+          position: { x: node.position.x + 32, y: node.position.y + 32 },
+          data: { ...node.data },
+        };
+        setNodes((nds) => [...nds, newNode]);
+        setSelectedNodeId(newId);
+        setHasUnsavedChanges(true);
+        return;
+      }
+
+      // Ctrl+C — Copy selected nodes
+      if (ctrl && e.key === 'c') {
+        const selected = nodes.filter((n) => n.selected);
+        if (selected.length === 0) return;
+        e.preventDefault();
+        const selectedIds = new Set(selected.map((n) => n.id));
+        const internalEdges = edges.filter(
+          (ed) => selectedIds.has(ed.source) && selectedIds.has(ed.target)
+        );
+        // Store with relative positions (to center of selection)
+        const avgX = selected.reduce((s, n) => s + n.position.x, 0) / selected.length;
+        const avgY = selected.reduce((s, n) => s + n.position.y, 0) / selected.length;
+        clipboardRef.current = {
+          nodes: selected.map((n) => ({
+            ...n,
+            data: { ...n.data },
+            position: { x: n.position.x - avgX, y: n.position.y - avgY },
+          })),
+          edges: internalEdges.map((ed) => ({ ...ed })),
+        };
+        return;
+      }
+
+      // Ctrl+V — Paste copied nodes
+      if (ctrl && e.key === 'v' && clipboardRef.current) {
+        e.preventDefault();
+        const clip = clipboardRef.current;
+        const idMap = new Map<string, string>();
+        const newNodes: Node[] = [];
+
+        // Generate new IDs and offset positions
+        for (const n of clip.nodes) {
+          nodeIdCounter.current += 1;
+          const newId = `node_${nodeIdCounter.current}`;
+          idMap.set(n.id, newId);
+          newNodes.push({
+            ...n,
+            id: newId,
+            selected: true,
+            position: { x: n.position.x + 400 + 50, y: n.position.y + 300 + 50 },
+            data: { ...n.data },
+          });
+        }
+
+        const newEdges: Edge[] = clip.edges.map((ed) => ({
+          ...ed,
+          id: `e_${idMap.get(ed.source) ?? ed.source}_${idMap.get(ed.target) ?? ed.target}`,
+          source: idMap.get(ed.source) ?? ed.source,
+          target: idMap.get(ed.target) ?? ed.target,
+        }));
+
+        pushHistory();
+        // Deselect existing nodes
+        setNodes((nds) => [...nds.map((n) => ({ ...n, selected: false })), ...newNodes]);
+        setEdges((eds) => [...eds, ...newEdges]);
+        setHasUnsavedChanges(true);
+        return;
+      }
+
+      // Ctrl+X — Cut selected nodes
+      if (ctrl && e.key === 'x') {
+        const selected = nodes.filter((n) => n.selected);
+        if (selected.length === 0) return;
+        e.preventDefault();
+        const selectedIds = new Set(selected.map((n) => n.id));
+        const internalEdges = edges.filter(
+          (ed) => selectedIds.has(ed.source) && selectedIds.has(ed.target)
+        );
+        const avgX = selected.reduce((s, n) => s + n.position.x, 0) / selected.length;
+        const avgY = selected.reduce((s, n) => s + n.position.y, 0) / selected.length;
+        clipboardRef.current = {
+          nodes: selected.map((n) => ({
+            ...n,
+            data: { ...n.data },
+            position: { x: n.position.x - avgX, y: n.position.y - avgY },
+          })),
+          edges: internalEdges.map((ed) => ({ ...ed })),
+        };
+        // Delete cut nodes
+        pushHistory();
+        setNodes((nds) => nds.filter((n) => !selectedIds.has(n.id)));
+        setEdges((eds) => eds.filter((ed) => !selectedIds.has(ed.source) && !selectedIds.has(ed.target)));
+        setSelectedNodeId(null);
+        setHasUnsavedChanges(true);
+        return;
+      }
+
+      // Ctrl+K or "/" — Open node search palette
+      if ((ctrl && e.key === 'k') || (e.key === '/' && !ctrl)) {
+        e.preventDefault();
+        setShowNodeSearch(true);
+        return;
+      }
+    };
+
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, [
+    hasUnsavedChanges,
+    isSaving,
+    handleSave,
+    selectedNodeId,
+    deleteNode,
+    showCopilot,
+    showVariables,
+    showVersions,
+    showNodeSearch,
+    nodes,
+    edges,
+    setNodes,
+    setEdges,
+    undo,
+    redo,
+    pushHistory,
+  ]);
 
   // ========================================================================
   // Trigger node helpers
@@ -909,6 +1542,159 @@ export function WorkflowEditorPage() {
     setHasUnsavedChanges(true);
   }, [nodes, setNodes]);
 
+  /** Add an HTTP Request node from the toolbar button */
+  const addHttpRequestNode = useCallback(() => {
+    nodeIdCounter.current += 1;
+    const newNodeId = `node_${nodeIdCounter.current}`;
+
+    let y = 200;
+    let x = 400;
+    if (nodes.length > 0) {
+      const maxY = Math.max(...nodes.map((n) => n.position.y));
+      y = maxY + 120;
+      const avgX = nodes.reduce((sum, n) => sum + n.position.x, 0) / nodes.length;
+      x = Math.round(avgX / 16) * 16;
+    }
+
+    const newNode: Node = {
+      id: newNodeId,
+      type: 'httpRequestNode',
+      position: { x, y },
+      data: { label: 'HTTP Request', method: 'GET', url: '' },
+    };
+
+    setNodes((nds) => [...nds, newNode]);
+    setSelectedNodeId(newNodeId);
+    setHasUnsavedChanges(true);
+  }, [nodes, setNodes]);
+
+  /** Add a Delay node from the toolbar button */
+  const addDelayNode = useCallback(() => {
+    nodeIdCounter.current += 1;
+    const newNodeId = `node_${nodeIdCounter.current}`;
+
+    let y = 200;
+    let x = 400;
+    if (nodes.length > 0) {
+      const maxY = Math.max(...nodes.map((n) => n.position.y));
+      y = maxY + 120;
+      const avgX = nodes.reduce((sum, n) => sum + n.position.x, 0) / nodes.length;
+      x = Math.round(avgX / 16) * 16;
+    }
+
+    const newNode: Node = {
+      id: newNodeId,
+      type: 'delayNode',
+      position: { x, y },
+      data: { label: 'Delay', duration: '5', unit: 'seconds' },
+    };
+
+    setNodes((nds) => [...nds, newNode]);
+    setSelectedNodeId(newNodeId);
+    setHasUnsavedChanges(true);
+  }, [nodes, setNodes]);
+
+  /** Add a Notification node */
+  const addNotificationNode = useCallback(() => {
+    nodeIdCounter.current += 1;
+    const newNodeId = `node_${nodeIdCounter.current}`;
+    let y = 200, x = 400;
+    if (nodes.length > 0) {
+      const maxY = Math.max(...nodes.map((n) => n.position.y));
+      y = maxY + 120;
+      x = Math.round(nodes.reduce((s, n) => s + n.position.x, 0) / nodes.length / 16) * 16;
+    }
+    setNodes((nds) => [...nds, { id: newNodeId, type: 'notificationNode', position: { x, y }, data: { label: 'Notification', message: '', severity: 'info' } }]);
+    setSelectedNodeId(newNodeId);
+    setHasUnsavedChanges(true);
+  }, [nodes, setNodes]);
+
+  /** Add a Parallel node */
+  const addParallelNode = useCallback(() => {
+    nodeIdCounter.current += 1;
+    const newNodeId = `node_${nodeIdCounter.current}`;
+    let y = 200, x = 400;
+    if (nodes.length > 0) {
+      const maxY = Math.max(...nodes.map((n) => n.position.y));
+      y = maxY + 120;
+      x = Math.round(nodes.reduce((s, n) => s + n.position.x, 0) / nodes.length / 16) * 16;
+    }
+    setNodes((nds) => [...nds, { id: newNodeId, type: 'parallelNode', position: { x, y }, data: { label: 'Parallel', branchCount: 2, branchLabels: ['Branch 0', 'Branch 1'] } }]);
+    setSelectedNodeId(newNodeId);
+    setHasUnsavedChanges(true);
+  }, [nodes, setNodes]);
+
+  /** Add a Merge node */
+  const addMergeNode = useCallback(() => {
+    nodeIdCounter.current += 1;
+    const newNodeId = `node_${nodeIdCounter.current}`;
+    let y = 200, x = 400;
+    if (nodes.length > 0) {
+      const maxY = Math.max(...nodes.map((n) => n.position.y));
+      y = maxY + 120;
+      x = Math.round(nodes.reduce((s, n) => s + n.position.x, 0) / nodes.length / 16) * 16;
+    }
+    setNodes((nds) => [...nds, { id: newNodeId, type: 'mergeNode', position: { x, y }, data: { label: 'Merge', mode: 'waitAll' } }]);
+    setSelectedNodeId(newNodeId);
+    setHasUnsavedChanges(true);
+  }, [nodes, setNodes]);
+
+  /** Add a Sticky Note node from the toolbar button */
+  const addStickyNoteNode = useCallback(() => {
+    nodeIdCounter.current += 1;
+    const newNodeId = `node_${nodeIdCounter.current}`;
+
+    let y = 200;
+    let x = 400;
+    if (nodes.length > 0) {
+      const maxY = Math.max(...nodes.map((n) => n.position.y));
+      y = maxY + 120;
+      const avgX = nodes.reduce((sum, n) => sum + n.position.x, 0) / nodes.length;
+      x = Math.round(avgX / 16) * 16;
+    }
+
+    const newNode: Node = {
+      id: newNodeId,
+      type: 'stickyNoteNode',
+      position: { x, y },
+      data: { label: 'Note', text: '', color: 'yellow' },
+    };
+
+    setNodes((nds) => [...nds, newNode]);
+    setSelectedNodeId(newNodeId);
+    setHasUnsavedChanges(true);
+  }, [nodes, setNodes]);
+
+  /** Add a Switch node from the toolbar button */
+  const addSwitchNode = useCallback(() => {
+    nodeIdCounter.current += 1;
+    const newNodeId = `node_${nodeIdCounter.current}`;
+
+    let y = 200;
+    let x = 400;
+    if (nodes.length > 0) {
+      const maxY = Math.max(...nodes.map((n) => n.position.y));
+      y = maxY + 120;
+      const avgX = nodes.reduce((sum, n) => sum + n.position.x, 0) / nodes.length;
+      x = Math.round(avgX / 16) * 16;
+    }
+
+    const newNode: Node = {
+      id: newNodeId,
+      type: 'switchNode',
+      position: { x, y },
+      data: {
+        label: 'Switch',
+        expression: '',
+        cases: [{ label: 'case_1', value: '' }],
+      },
+    };
+
+    setNodes((nds) => [...nds, newNode]);
+    setSelectedNodeId(newNodeId);
+    setHasUnsavedChanges(true);
+  }, [nodes, setNodes]);
+
   const syncTrigger = useCallback(
     async (workflowId: string, wfName: string, td: TriggerNodeData, nodeId: string) => {
       const config: Record<string, unknown> = {};
@@ -972,9 +1758,30 @@ export function WorkflowEditorPage() {
         case 'forEachNode':
           addForEachNode();
           break;
+        case 'httpRequestNode':
+          addHttpRequestNode();
+          break;
+        case 'delayNode':
+          addDelayNode();
+          break;
+        case 'switchNode':
+          addSwitchNode();
+          break;
+        case 'stickyNoteNode':
+          addStickyNoteNode();
+          break;
+        case 'notificationNode':
+          addNotificationNode();
+          break;
+        case 'parallelNode':
+          addParallelNode();
+          break;
+        case 'mergeNode':
+          addMergeNode();
+          break;
       }
     },
-    [addTriggerNode, addLlmNode, addConditionNode, addCodeNode, addTransformerNode, addForEachNode]
+    [addTriggerNode, addLlmNode, addConditionNode, addCodeNode, addTransformerNode, addForEachNode, addHttpRequestNode, addDelayNode, addSwitchNode, addStickyNoteNode, addNotificationNode, addParallelNode, addMergeNode]
   );
 
   const handleApplyWorkflow = useCallback(
@@ -1089,7 +1896,94 @@ export function WorkflowEditorPage() {
         </button>
 
         <button
-          onClick={() => setShowCopilot(!showCopilot)}
+          onClick={() => {
+            setShowVariables(!showVariables);
+            if (!showVariables) {
+              setShowCopilot(false);
+              setShowVersions(false);
+              setSelectedNodeId(null);
+            }
+          }}
+          className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+            showVariables
+              ? 'bg-primary text-white'
+              : 'bg-bg-tertiary dark:bg-dark-bg-tertiary text-text-primary dark:text-dark-text-primary hover:bg-bg-primary dark:hover:bg-dark-bg-primary border border-border dark:border-dark-border'
+          }`}
+          title={showVariables ? 'Hide Variables' : 'Edit workflow variables'}
+        >
+          <ListChecks className="w-3.5 h-3.5" />
+          Variables
+          {Object.keys(variables).length > 0 && (
+            <span className="ml-0.5 px-1.5 py-0 text-[10px] bg-white/20 rounded-full">
+              {Object.keys(variables).length}
+            </span>
+          )}
+        </button>
+
+        <button
+          onClick={() => {
+            setShowInputParams(!showInputParams);
+            if (!showInputParams) {
+              setShowCopilot(false);
+              setShowVariables(false);
+              setShowVersions(false);
+              setSelectedNodeId(null);
+            }
+          }}
+          className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+            showInputParams
+              ? 'bg-primary text-white'
+              : 'bg-bg-tertiary dark:bg-dark-bg-tertiary text-text-primary dark:text-dark-text-primary hover:bg-bg-primary dark:hover:bg-dark-bg-primary border border-border dark:border-dark-border'
+          }`}
+          title={showInputParams ? 'Hide Input Parameters' : 'Define workflow input parameters'}
+        >
+          <Settings className="w-3.5 h-3.5" />
+          Inputs
+          {inputSchema.length > 0 && (
+            <span className="ml-0.5 px-1.5 py-0 text-[10px] bg-white/20 rounded-full">
+              {inputSchema.length}
+            </span>
+          )}
+        </button>
+
+        <button
+          onClick={() => setShowTemplates(true)}
+          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-bg-tertiary dark:bg-dark-bg-tertiary text-text-primary dark:text-dark-text-primary hover:bg-bg-primary dark:hover:bg-dark-bg-primary border border-border dark:border-dark-border rounded-md transition-colors"
+          title="Import from template gallery"
+        >
+          <Layout className="w-3.5 h-3.5" />
+          Templates
+        </button>
+
+        <button
+          onClick={() => {
+            setShowVersions(!showVersions);
+            if (!showVersions) {
+              setShowCopilot(false);
+              setShowVariables(false);
+              setSelectedNodeId(null);
+            }
+          }}
+          className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+            showVersions
+              ? 'bg-primary text-white'
+              : 'bg-bg-tertiary dark:bg-dark-bg-tertiary text-text-primary dark:text-dark-text-primary hover:bg-bg-primary dark:hover:bg-dark-bg-primary border border-border dark:border-dark-border'
+          }`}
+          title={showVersions ? 'Hide Versions' : 'Version history'}
+        >
+          <History className="w-3.5 h-3.5" />
+          Versions
+        </button>
+
+        <button
+          onClick={() => {
+            setShowCopilot(!showCopilot);
+            if (!showCopilot) {
+              setShowVariables(false);
+              setShowVersions(false);
+              setSelectedNodeId(null);
+            }
+          }}
           className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
             showCopilot
               ? 'bg-primary text-white'
@@ -1106,20 +2000,31 @@ export function WorkflowEditorPage() {
         {isExecuting ? (
           <button
             onClick={handleCancel}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-error text-white hover:bg-error/90 rounded-md transition-colors"
+            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white hover:opacity-90 rounded-md transition-colors ${isDryRun ? 'bg-warning' : 'bg-error'}`}
           >
             <StopCircle className="w-3.5 h-3.5" />
-            Cancel
+            {isDryRun ? 'Cancel Test' : 'Cancel'}
           </button>
         ) : (
-          <button
-            onClick={handleExecute}
-            disabled={nodes.length === 0}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-primary text-white hover:bg-primary-dark rounded-md transition-colors disabled:opacity-50"
-          >
-            <Play className="w-3.5 h-3.5" />
-            Execute
-          </button>
+          <>
+            <button
+              onClick={() => handleExecute(true)}
+              disabled={nodes.length === 0}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-warning/15 text-warning hover:bg-warning/25 border border-warning/30 rounded-md transition-colors disabled:opacity-50"
+              title="Dry-run: resolve templates without executing side-effect nodes (LLM, HTTP, Delay, Tool)"
+            >
+              <FlaskConical className="w-3.5 h-3.5" />
+              Test Run
+            </button>
+            <button
+              onClick={() => handleExecute(false)}
+              disabled={nodes.length === 0}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-primary text-white hover:bg-primary-dark rounded-md transition-colors disabled:opacity-50"
+            >
+              <Play className="w-3.5 h-3.5" />
+              Execute
+            </button>
+          </>
         )}
       </header>
 
@@ -1139,9 +2044,9 @@ export function WorkflowEditorPage() {
             onNodesChange={onNodesChangeWrapped}
             onEdgesChange={onEdgesChangeWrapped}
             onConnect={onConnect}
+            isValidConnection={isValidConnection}
             onNodeClick={onNodeClick}
             onPaneClick={onPaneClick}
-            onInit={onInit}
             nodeTypes={nodeTypes}
             defaultEdgeOptions={defaultEdgeOptions}
             fitView
@@ -1182,6 +2087,35 @@ export function WorkflowEditorPage() {
             onClose={() => setSelectedNodeId(null)}
             className="w-80 shrink-0"
           />
+        ) : showVariables ? (
+          <VariablesPanel
+            variables={variables}
+            onChange={handleVariablesChange}
+            onClose={() => setShowVariables(false)}
+            className="w-80 shrink-0"
+          />
+        ) : showInputParams ? (
+          <InputParametersPanel
+            parameters={inputSchema}
+            onChange={(params) => {
+              setInputSchema(params);
+              setHasUnsavedChanges(true);
+            }}
+            onClose={() => setShowInputParams(false)}
+          />
+        ) : showVersions && id ? (
+          <WorkflowVersionsPanel
+            workflowId={id}
+            onRestore={(data) => {
+              setNodes(data.nodes as Node[]);
+              setEdges(data.edges as Edge[]);
+              setVariables(data.variables);
+              setHasUnsavedChanges(false);
+              toast.success('Version restored');
+            }}
+            onClose={() => setShowVersions(false)}
+            className="w-80 shrink-0"
+          />
         ) : showCopilot ? (
           <WorkflowCopilotPanel
             workflowName={workflowName}
@@ -1194,13 +2128,51 @@ export function WorkflowEditorPage() {
         ) : null}
       </div>
 
+      {showNodeSearch && (
+        <NodeSearchPalette
+          toolNames={toolNames}
+          onAddNode={handleAddNode}
+          onAddTool={addToolNode}
+          onClose={() => setShowNodeSearch(false)}
+          hasTriggerNode={hasTriggerNode}
+        />
+      )}
+
+      {showTemplates && (
+        <TemplateGallery
+          onUseTemplate={(template) => {
+            const { nodes: rfNodes, edges: rfEdges } = convertDefinitionToReactFlow(
+              template.definition as WorkflowDefinition,
+              toolNames
+            );
+            const styledEdges = rfEdges.map((e) => ({
+              ...e,
+              ...getEdgeLabelProps(e.sourceHandle),
+            }));
+            const maxId = rfNodes.reduce((max, n) => {
+              const num = parseInt(n.id.replace('node_', ''), 10);
+              return isNaN(num) ? max : Math.max(max, num);
+            }, 0);
+            nodeIdCounter.current = maxId;
+            setNodes(rfNodes);
+            setEdges(styledEdges);
+            if (template.definition.name) setWorkflowName(template.definition.name);
+            setHasUnsavedChanges(true);
+            setShowTemplates(false);
+            toast.success(`Template "${template.name}" applied`);
+          }}
+          onClose={() => setShowTemplates(false)}
+        />
+      )}
+
       {showSource && (
         <WorkflowSourceModal
           workflowName={workflowName}
           nodes={nodes}
           edges={edges}
-          variables={workflow.variables}
+          variables={variables}
           onClose={() => setShowSource(false)}
+          onImport={handleImportWorkflow}
         />
       )}
     </div>
@@ -1224,14 +2196,26 @@ const EDGE_LABEL_STYLE = {
 function getEdgeLabelProps(sourceHandle: string | null | undefined) {
   if (!sourceHandle) return {};
   const cfg = HANDLE_EDGE_PROPS[sourceHandle];
-  if (!cfg) return {};
+  if (cfg) {
+    return {
+      label: cfg.label,
+      labelStyle: EDGE_LABEL_STYLE,
+      labelBgPadding: [6, 3] as [number, number],
+      labelBgBorderRadius: 4,
+      labelBgStyle: { fill: 'var(--color-bg-secondary)', opacity: 0.9 },
+      style: { ...defaultEdgeOptions.style, ...cfg.style },
+      markerEnd: { ...defaultEdgeOptions.markerEnd, color: cfg.style.stroke },
+    };
+  }
+  // Fallback for dynamic handles (switch node cases, etc.)
+  const switchColor = '#d946ef'; // fuchsia-500
   return {
-    label: cfg.label,
+    label: sourceHandle === 'default' ? 'Default' : sourceHandle,
     labelStyle: EDGE_LABEL_STYLE,
     labelBgPadding: [6, 3] as [number, number],
     labelBgBorderRadius: 4,
     labelBgStyle: { fill: 'var(--color-bg-secondary)', opacity: 0.9 },
-    style: { ...defaultEdgeOptions.style, ...cfg.style },
-    markerEnd: { ...defaultEdgeOptions.markerEnd, color: cfg.style.stroke },
+    style: { ...defaultEdgeOptions.style, stroke: switchColor },
+    markerEnd: { ...defaultEdgeOptions.markerEnd, color: switchColor },
   };
 }

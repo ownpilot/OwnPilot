@@ -13,7 +13,7 @@ import { generateId } from '@ownpilot/core';
 // ============================================================================
 
 export type WorkflowStatus = 'active' | 'inactive';
-export type WorkflowLogStatus = 'running' | 'completed' | 'failed' | 'cancelled';
+export type WorkflowLogStatus = 'running' | 'completed' | 'failed' | 'cancelled' | 'awaiting_approval';
 export type NodeExecutionStatus = 'pending' | 'running' | 'success' | 'error' | 'skipped';
 
 export interface ToolNodeData {
@@ -97,6 +97,50 @@ export interface ForEachNodeData {
   timeoutMs?: number;
 }
 
+export interface HttpRequestNodeData {
+  label: string;
+  method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
+  /** URL template — supports {{node_id.output}} expressions */
+  url: string;
+  headers?: Record<string, string>;
+  queryParams?: Record<string, string>;
+  /** Request body (JSON string or raw text) — template-resolved */
+  body?: string;
+  bodyType?: 'json' | 'text' | 'form';
+  auth?: {
+    type: 'none' | 'bearer' | 'basic' | 'apiKey';
+    token?: string;
+    username?: string;
+    password?: string;
+    /** API key header name (default: X-API-Key) */
+    headerName?: string;
+  };
+  /** Response body size limit in bytes (default: 1MB) */
+  maxResponseSize?: number;
+  description?: string;
+  retryCount?: number;
+  timeoutMs?: number;
+}
+
+export interface DelayNodeData {
+  label: string;
+  /** Duration value — supports template expressions */
+  duration: string;
+  unit: 'seconds' | 'minutes' | 'hours';
+  description?: string;
+}
+
+export interface SwitchNodeData {
+  label: string;
+  /** JS expression evaluated to produce a switch value */
+  expression: string;
+  /** Named cases: each has a label (handle ID) and a value to match against */
+  cases: Array<{ label: string; value: string }>;
+  description?: string;
+  retryCount?: number;
+  timeoutMs?: number;
+}
+
 export type WorkflowNodeData =
   | ToolNodeData
   | TriggerNodeData
@@ -104,7 +148,10 @@ export type WorkflowNodeData =
   | ConditionNodeData
   | CodeNodeData
   | TransformerNodeData
-  | ForEachNodeData;
+  | ForEachNodeData
+  | HttpRequestNodeData
+  | DelayNodeData
+  | SwitchNodeData;
 
 export interface WorkflowNode {
   id: string;
@@ -121,6 +168,14 @@ export interface WorkflowEdge {
   targetHandle?: string;
 }
 
+export interface InputParameter {
+  name: string;
+  type: 'string' | 'number' | 'boolean' | 'json';
+  required: boolean;
+  defaultValue?: string;
+  description?: string;
+}
+
 export interface Workflow {
   id: string;
   userId: string;
@@ -130,6 +185,7 @@ export interface Workflow {
   edges: WorkflowEdge[];
   status: WorkflowStatus;
   variables: Record<string, unknown>;
+  inputSchema: InputParameter[];
   lastRun: Date | null;
   runCount: number;
   createdAt: Date;
@@ -145,8 +201,8 @@ export interface NodeResult {
   durationMs?: number;
   startedAt?: string;
   completedAt?: string;
-  /** For condition nodes: which branch was taken */
-  branchTaken?: 'true' | 'false';
+  /** For condition nodes: 'true'/'false'. For switch nodes: matched case label or 'default'. */
+  branchTaken?: string;
   /** For forEach nodes: number of iterations completed */
   iterationCount?: number;
   /** For forEach nodes: total items in the source array */
@@ -167,6 +223,16 @@ export interface WorkflowLog {
   completedAt: Date | null;
 }
 
+export interface WorkflowVersion {
+  id: string;
+  workflowId: string;
+  version: number;
+  nodes: WorkflowNode[];
+  edges: WorkflowEdge[];
+  variables: Record<string, unknown>;
+  createdAt: Date;
+}
+
 export interface CreateWorkflowInput {
   name: string;
   description?: string;
@@ -174,6 +240,7 @@ export interface CreateWorkflowInput {
   edges: WorkflowEdge[];
   status?: WorkflowStatus;
   variables?: Record<string, unknown>;
+  inputSchema?: InputParameter[];
 }
 
 export interface UpdateWorkflowInput {
@@ -183,6 +250,7 @@ export interface UpdateWorkflowInput {
   edges?: WorkflowEdge[];
   status?: WorkflowStatus;
   variables?: Record<string, unknown>;
+  inputSchema?: InputParameter[];
 }
 
 // ============================================================================
@@ -198,10 +266,21 @@ interface WorkflowRow {
   edges: string;
   status: WorkflowStatus;
   variables: string;
+  input_schema: string;
   last_run: string | null;
   run_count: number;
   created_at: string;
   updated_at: string;
+}
+
+interface WorkflowVersionRow {
+  id: string;
+  workflow_id: string;
+  version: number;
+  nodes: string;
+  edges: string;
+  variables: string;
+  created_at: string;
 }
 
 interface WorkflowLogRow {
@@ -230,10 +309,23 @@ function mapWorkflow(row: WorkflowRow): Workflow {
     edges: parseJsonField<WorkflowEdge[]>(row.edges, []),
     status: row.status,
     variables: parseJsonField<Record<string, unknown>>(row.variables, {}),
+    inputSchema: parseJsonField<InputParameter[]>(row.input_schema, []),
     lastRun: row.last_run ? new Date(row.last_run) : null,
     runCount: row.run_count,
     createdAt: new Date(row.created_at),
     updatedAt: new Date(row.updated_at),
+  };
+}
+
+function mapVersion(row: WorkflowVersionRow): WorkflowVersion {
+  return {
+    id: row.id,
+    workflowId: row.workflow_id,
+    version: row.version,
+    nodes: parseJsonField<WorkflowNode[]>(row.nodes, []),
+    edges: parseJsonField<WorkflowEdge[]>(row.edges, []),
+    variables: parseJsonField<Record<string, unknown>>(row.variables, {}),
+    createdAt: new Date(row.created_at),
   };
 }
 
@@ -272,8 +364,8 @@ export class WorkflowsRepository extends BaseRepository {
     const now = new Date().toISOString();
 
     await this.execute(
-      `INSERT INTO workflows (id, user_id, name, description, nodes, edges, status, variables, created_at, updated_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+      `INSERT INTO workflows (id, user_id, name, description, nodes, edges, status, variables, input_schema, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
       [
         id,
         this.userId,
@@ -283,6 +375,7 @@ export class WorkflowsRepository extends BaseRepository {
         JSON.stringify(input.edges),
         input.status ?? 'inactive',
         JSON.stringify(input.variables ?? {}),
+        JSON.stringify(input.inputSchema ?? []),
         now,
         now,
       ]
@@ -333,6 +426,10 @@ export class WorkflowsRepository extends BaseRepository {
       updates.push(`variables = $${paramIndex++}`);
       values.push(JSON.stringify(input.variables));
     }
+    if (input.inputSchema !== undefined) {
+      updates.push(`input_schema = $${paramIndex++}`);
+      values.push(JSON.stringify(input.inputSchema));
+    }
 
     values.push(id, this.userId);
 
@@ -382,6 +479,98 @@ export class WorkflowsRepository extends BaseRepository {
       `UPDATE workflows SET last_run = $1, run_count = run_count + 1, updated_at = $1 WHERE id = $2 AND user_id = $3`,
       [new Date().toISOString(), id, this.userId]
     );
+  }
+
+  // ==========================================================================
+  // Workflow Versions
+  // ==========================================================================
+
+  async createVersion(workflowId: string): Promise<WorkflowVersion> {
+    const workflow = await this.get(workflowId);
+    if (!workflow) throw new Error('Workflow not found');
+
+    // Get next version number
+    const latest = await this.queryOne<{ max_version: number | null }>(
+      `SELECT MAX(version) as max_version FROM workflow_versions WHERE workflow_id = $1`,
+      [workflowId]
+    );
+    const nextVersion = (latest?.max_version ?? 0) + 1;
+
+    const id = generateId('wfver');
+    const now = new Date().toISOString();
+
+    await this.execute(
+      `INSERT INTO workflow_versions (id, workflow_id, version, nodes, edges, variables, created_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+      [
+        id,
+        workflowId,
+        nextVersion,
+        JSON.stringify(workflow.nodes),
+        JSON.stringify(workflow.edges),
+        JSON.stringify(workflow.variables),
+        now,
+      ]
+    );
+
+    // Cleanup: keep only the last 50 versions
+    await this.execute(
+      `DELETE FROM workflow_versions WHERE workflow_id = $1 AND id NOT IN (
+        SELECT id FROM workflow_versions WHERE workflow_id = $1
+        ORDER BY version DESC LIMIT 50
+      )`,
+      [workflowId]
+    );
+
+    const version = await this.getVersion(workflowId, nextVersion);
+    if (!version) throw new Error('Failed to create version');
+    return version;
+  }
+
+  async getVersions(workflowId: string, limit = 20, offset = 0): Promise<WorkflowVersion[]> {
+    const rows = await this.query<WorkflowVersionRow>(
+      `SELECT wv.* FROM workflow_versions wv
+       JOIN workflows w ON wv.workflow_id = w.id
+       WHERE wv.workflow_id = $1 AND w.user_id = $2
+       ORDER BY wv.version DESC LIMIT $3 OFFSET $4`,
+      [workflowId, this.userId, limit, offset]
+    );
+    return rows.map(mapVersion);
+  }
+
+  async countVersions(workflowId: string): Promise<number> {
+    const row = await this.queryOne<{ count: string }>(
+      `SELECT COUNT(*) as count FROM workflow_versions wv
+       JOIN workflows w ON wv.workflow_id = w.id
+       WHERE wv.workflow_id = $1 AND w.user_id = $2`,
+      [workflowId, this.userId]
+    );
+    return parseInt(row?.count ?? '0', 10);
+  }
+
+  async getVersion(workflowId: string, version: number): Promise<WorkflowVersion | null> {
+    const row = await this.queryOne<WorkflowVersionRow>(
+      `SELECT wv.* FROM workflow_versions wv
+       JOIN workflows w ON wv.workflow_id = w.id
+       WHERE wv.workflow_id = $1 AND wv.version = $2 AND w.user_id = $3`,
+      [workflowId, version, this.userId]
+    );
+    return row ? mapVersion(row) : null;
+  }
+
+  async restoreVersion(workflowId: string, version: number): Promise<Workflow | null> {
+    const ver = await this.getVersion(workflowId, version);
+    if (!ver) return null;
+
+    // Snapshot current state before restoring
+    await this.createVersion(workflowId);
+
+    // Update workflow with version data
+    return this.update(workflowId, {
+      nodes: ver.nodes,
+      edges: ver.edges,
+      variables: ver.variables,
+    });
   }
 
   // ==========================================================================

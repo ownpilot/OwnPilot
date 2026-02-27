@@ -12,6 +12,9 @@ import type {
   ConditionNodeData,
   CodeNodeData,
   TransformerNodeData,
+  HttpRequestNodeData,
+  DelayNodeData,
+  SwitchNodeData,
   NodeResult,
 } from '../../db/repositories/workflows.js';
 import {
@@ -355,6 +358,418 @@ export function executeTransformerNode(
       nodeId: node.id,
       status: 'error',
       error: getErrorMessage(error, 'Transformer evaluation failed'),
+      durationMs: Date.now() - startTime,
+      startedAt: new Date(startTime).toISOString(),
+      completedAt: new Date().toISOString(),
+    };
+  }
+}
+
+// ============================================================================
+// SSRF protection for HTTP Request node
+// ============================================================================
+
+const PRIVATE_IP_PATTERNS = [
+  /^127\./,
+  /^10\./,
+  /^172\.(1[6-9]|2\d|3[01])\./,
+  /^192\.168\./,
+  /^0\./,
+  /^169\.254\./,
+  /^::1$/,
+  /^fc00:/i,
+  /^fe80:/i,
+  /^localhost$/i,
+];
+
+function isSsrfTarget(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    return PRIVATE_IP_PATTERNS.some((p) => p.test(parsed.hostname));
+  } catch {
+    return true; // Malformed URL — block
+  }
+}
+
+const MAX_RESPONSE_SIZE = 1_048_576; // 1MB default
+
+/**
+ * Execute an HTTP Request node: make an API call with configurable method, headers, auth, body.
+ */
+export async function executeHttpRequestNode(
+  node: WorkflowNode,
+  nodeOutputs: Record<string, NodeResult>,
+  variables: Record<string, unknown>
+): Promise<NodeResult> {
+  const startTime = Date.now();
+  try {
+    const data = node.data as HttpRequestNodeData;
+
+    // Resolve templates in all configurable string fields
+    const resolveMap: Record<string, unknown> = { _url: data.url };
+    if (data.body) resolveMap._body = data.body;
+    if (data.headers) {
+      for (const [k, v] of Object.entries(data.headers)) {
+        resolveMap[`_h_${k}`] = v;
+      }
+    }
+    if (data.queryParams) {
+      for (const [k, v] of Object.entries(data.queryParams)) {
+        resolveMap[`_q_${k}`] = v;
+      }
+    }
+    // Resolve auth token/credentials too
+    if (data.auth?.token) resolveMap._authToken = data.auth.token;
+    if (data.auth?.username) resolveMap._authUser = data.auth.username;
+    if (data.auth?.password) resolveMap._authPass = data.auth.password;
+
+    const resolved = resolveTemplates(resolveMap, nodeOutputs, variables);
+
+    const url = resolved._url as string;
+
+    // SSRF protection
+    if (isSsrfTarget(url)) {
+      _log.warn(`HTTP node ${node.id}: blocked request to private/internal address: ${url}`);
+      return {
+        nodeId: node.id,
+        status: 'error',
+        error: 'Requests to private/internal addresses are not allowed',
+        durationMs: Date.now() - startTime,
+        startedAt: new Date(startTime).toISOString(),
+        completedAt: new Date().toISOString(),
+      };
+    }
+
+    // Build headers
+    const headers: Record<string, string> = {};
+    if (data.headers) {
+      for (const k of Object.keys(data.headers)) {
+        headers[k] = resolved[`_h_${k}`] as string;
+      }
+    }
+
+    // Auth
+    if (data.auth && data.auth.type !== 'none') {
+      const authToken = (resolved._authToken as string) ?? '';
+      switch (data.auth.type) {
+        case 'bearer':
+          headers['Authorization'] = `Bearer ${authToken}`;
+          break;
+        case 'basic': {
+          const user = (resolved._authUser as string) ?? '';
+          const pass = (resolved._authPass as string) ?? '';
+          headers['Authorization'] = `Basic ${Buffer.from(`${user}:${pass}`).toString('base64')}`;
+          break;
+        }
+        case 'apiKey':
+          headers[data.auth.headerName ?? 'X-API-Key'] = authToken;
+          break;
+      }
+    }
+
+    // Build URL with query params
+    const urlObj = new URL(url);
+    if (data.queryParams) {
+      for (const k of Object.keys(data.queryParams)) {
+        urlObj.searchParams.set(k, resolved[`_q_${k}`] as string);
+      }
+    }
+
+    // Fetch options
+    const fetchOptions: RequestInit = {
+      method: data.method,
+      headers,
+      signal: AbortSignal.timeout(data.timeoutMs || 30_000),
+    };
+
+    if (['POST', 'PUT', 'PATCH'].includes(data.method) && data.body) {
+      fetchOptions.body = resolved._body as string;
+      if (data.bodyType === 'json' && !headers['Content-Type']) {
+        headers['Content-Type'] = 'application/json';
+      } else if (data.bodyType === 'form' && !headers['Content-Type']) {
+        headers['Content-Type'] = 'application/x-www-form-urlencoded';
+      }
+    }
+
+    const response = await fetch(urlObj.toString(), fetchOptions);
+
+    // Read response with size limit
+    const maxSize = data.maxResponseSize ?? MAX_RESPONSE_SIZE;
+    const contentLength = response.headers.get('content-length');
+    if (contentLength && parseInt(contentLength) > maxSize) {
+      return {
+        nodeId: node.id,
+        status: 'error',
+        error: `Response too large: ${contentLength} bytes (max: ${maxSize})`,
+        durationMs: Date.now() - startTime,
+        startedAt: new Date(startTime).toISOString(),
+        completedAt: new Date().toISOString(),
+      };
+    }
+
+    const responseText = await response.text();
+
+    // Parse response body — auto-detect JSON
+    let responseBody: unknown = responseText;
+    const contentType = response.headers.get('content-type') ?? '';
+    if (contentType.includes('application/json')) {
+      try {
+        responseBody = JSON.parse(responseText);
+      } catch {
+        /* keep as text */
+      }
+    }
+
+    const responseHeaders: Record<string, string> = {};
+    response.headers.forEach((v, k) => {
+      responseHeaders[k] = v;
+    });
+
+    const output = {
+      status: response.status,
+      statusText: response.statusText,
+      headers: responseHeaders,
+      body: responseBody,
+    };
+
+    return {
+      nodeId: node.id,
+      status: response.ok ? 'success' : 'error',
+      output,
+      resolvedArgs: { method: data.method, url: urlObj.toString() },
+      error: response.ok ? undefined : `HTTP ${response.status}: ${response.statusText}`,
+      durationMs: Date.now() - startTime,
+      startedAt: new Date(startTime).toISOString(),
+      completedAt: new Date().toISOString(),
+    };
+  } catch (error) {
+    return {
+      nodeId: node.id,
+      status: 'error',
+      error: getErrorMessage(error, 'HTTP request failed'),
+      durationMs: Date.now() - startTime,
+      startedAt: new Date(startTime).toISOString(),
+      completedAt: new Date().toISOString(),
+    };
+  }
+}
+
+/**
+ * Execute a Delay node: wait for a specified duration before continuing.
+ */
+export async function executeDelayNode(
+  node: WorkflowNode,
+  nodeOutputs: Record<string, NodeResult>,
+  variables: Record<string, unknown>,
+  abortSignal?: AbortSignal
+): Promise<NodeResult> {
+  const startTime = Date.now();
+  try {
+    const data = node.data as DelayNodeData;
+
+    // Resolve template in duration (allows dynamic wait times)
+    const resolved = resolveTemplates({ _dur: data.duration }, nodeOutputs, variables);
+    const durationValue = Number(resolved._dur);
+
+    if (isNaN(durationValue) || durationValue < 0) {
+      return {
+        nodeId: node.id,
+        status: 'error',
+        error: `Invalid delay duration: ${String(resolved._dur)}`,
+        durationMs: Date.now() - startTime,
+        startedAt: new Date(startTime).toISOString(),
+        completedAt: new Date().toISOString(),
+      };
+    }
+
+    // Convert to milliseconds
+    const multiplier = data.unit === 'hours' ? 3_600_000 : data.unit === 'minutes' ? 60_000 : 1000;
+    const delayMs = durationValue * multiplier;
+
+    // Safety cap: max 1 hour
+    const cappedMs = Math.min(delayMs, 3_600_000);
+
+    // Wait with abort support
+    await new Promise<void>((resolve, reject) => {
+      const timer = setTimeout(resolve, cappedMs);
+      if (abortSignal) {
+        if (abortSignal.aborted) {
+          clearTimeout(timer);
+          reject(new Error('Workflow execution cancelled'));
+          return;
+        }
+        abortSignal.addEventListener(
+          'abort',
+          () => {
+            clearTimeout(timer);
+            reject(new Error('Workflow execution cancelled'));
+          },
+          { once: true }
+        );
+      }
+    });
+
+    return {
+      nodeId: node.id,
+      status: 'success',
+      output: { delayMs: cappedMs, unit: data.unit, value: durationValue },
+      durationMs: Date.now() - startTime,
+      startedAt: new Date(startTime).toISOString(),
+      completedAt: new Date().toISOString(),
+    };
+  } catch (error) {
+    return {
+      nodeId: node.id,
+      status: 'error',
+      error: getErrorMessage(error, 'Delay execution failed'),
+      durationMs: Date.now() - startTime,
+      startedAt: new Date(startTime).toISOString(),
+      completedAt: new Date().toISOString(),
+    };
+  }
+}
+
+/**
+ * Execute a Switch node: evaluate expression, match against cases, return which branch to take.
+ */
+/**
+ * Execute a Notification node: resolve message template, broadcast via WebSocket.
+ */
+export function executeNotificationNode(
+  node: WorkflowNode,
+  nodeOutputs: Record<string, NodeResult>,
+  variables: Record<string, unknown>
+): NodeResult {
+  const startTime = Date.now();
+  try {
+    const data = node.data as unknown as Record<string, unknown>;
+    const severity = (data.severity as string) || 'info';
+
+    // Resolve templates in the message
+    const resolvedMsg = resolveTemplates({ _msg: data.message as string }, nodeOutputs, variables)
+      ._msg as string;
+
+    // Lazy-import wsGateway to avoid circular deps
+    import('../../ws/server.js').then(({ wsGateway }) => {
+      wsGateway.broadcast('system:notification', {
+        type: severity as 'info' | 'warning' | 'error' | 'success',
+        message: resolvedMsg,
+        source: 'workflow',
+      });
+    }).catch(() => {
+      _log.warn(`Notification node ${node.id}: failed to broadcast via WebSocket`);
+    });
+
+    return {
+      nodeId: node.id,
+      status: 'success',
+      output: { sent: true, channel: 'websocket', message: resolvedMsg, severity },
+      resolvedArgs: { message: resolvedMsg, severity },
+      durationMs: Date.now() - startTime,
+      startedAt: new Date(startTime).toISOString(),
+      completedAt: new Date().toISOString(),
+    };
+  } catch (error) {
+    return {
+      nodeId: node.id,
+      status: 'error',
+      error: getErrorMessage(error, 'Notification node failed'),
+      durationMs: Date.now() - startTime,
+      startedAt: new Date(startTime).toISOString(),
+      completedAt: new Date().toISOString(),
+    };
+  }
+}
+
+/**
+ * Execute a Merge node: collect all incoming node outputs into a single array/object.
+ */
+export function executeMergeNode(
+  node: WorkflowNode,
+  nodeOutputs: Record<string, NodeResult>,
+  _variables: Record<string, unknown>,
+  incomingNodeIds: string[]
+): NodeResult {
+  const startTime = Date.now();
+  try {
+    const data = node.data as unknown as Record<string, unknown>;
+    const mode = (data.mode as string) || 'waitAll';
+
+    // Collect outputs from all incoming (upstream) nodes
+    const collected: Record<string, unknown> = {};
+    for (const nid of incomingNodeIds) {
+      const result = nodeOutputs[nid];
+      if (result) {
+        collected[nid] = result.output;
+      }
+    }
+
+    const output = mode === 'waitAll'
+      ? { mode, results: collected, count: Object.keys(collected).length }
+      : { mode, results: collected, count: Object.keys(collected).length };
+
+    return {
+      nodeId: node.id,
+      status: 'success',
+      output,
+      durationMs: Date.now() - startTime,
+      startedAt: new Date(startTime).toISOString(),
+      completedAt: new Date().toISOString(),
+    };
+  } catch (error) {
+    return {
+      nodeId: node.id,
+      status: 'error',
+      error: getErrorMessage(error, 'Merge node failed'),
+      durationMs: Date.now() - startTime,
+      startedAt: new Date(startTime).toISOString(),
+      completedAt: new Date().toISOString(),
+    };
+  }
+}
+
+export function executeSwitchNode(
+  node: WorkflowNode,
+  nodeOutputs: Record<string, NodeResult>,
+  variables: Record<string, unknown>
+): NodeResult {
+  const startTime = Date.now();
+  try {
+    const data = node.data as SwitchNodeData;
+
+    // Resolve templates in the expression
+    const resolvedExpr = resolveTemplates({ _expr: data.expression }, nodeOutputs, variables)
+      ._expr as string;
+
+    // Build evaluation context: upstream outputs + variables
+    const evalContext: Record<string, unknown> = { ...variables };
+    for (const [nid, result] of Object.entries(nodeOutputs)) {
+      evalContext[nid] = result.output;
+    }
+
+    const vmTimeout = data.timeoutMs || 5000;
+    const result = vm.runInNewContext(resolvedExpr, evalContext, { timeout: vmTimeout });
+    const resultStr = String(result);
+
+    // Match against cases
+    const matchedCase = data.cases.find((c) => c.value === resultStr);
+    const branchTaken = matchedCase ? matchedCase.label : 'default';
+
+    return {
+      nodeId: node.id,
+      status: 'success',
+      output: result,
+      branchTaken,
+      resolvedArgs: { expression: resolvedExpr, evaluatedValue: resultStr, matchedCase: branchTaken },
+      durationMs: Date.now() - startTime,
+      startedAt: new Date(startTime).toISOString(),
+      completedAt: new Date().toISOString(),
+    };
+  } catch (error) {
+    return {
+      nodeId: node.id,
+      status: 'error',
+      error: getErrorMessage(error, 'Switch evaluation failed'),
       durationMs: Date.now() - startTime,
       startedAt: new Date(startTime).toISOString(),
       completedAt: new Date().toISOString(),

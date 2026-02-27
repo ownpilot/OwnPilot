@@ -326,6 +326,15 @@ export {
   type UpdateWorkflowInput,
 } from './workflows.js';
 
+// Workflow Approvals repository
+export {
+  WorkflowApprovalsRepository,
+  createWorkflowApprovalsRepository,
+  type WorkflowApproval,
+  type ApprovalStatus,
+  type CreateApprovalInput,
+} from './workflow-approvals.js';
+
 // Workspaces repository
 export {
   WorkspacesRepository,

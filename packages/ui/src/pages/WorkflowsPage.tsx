@@ -13,6 +13,8 @@ import {
   CheckCircle2,
   XCircle,
   AlertCircle,
+  Copy,
+  Upload,
 } from '../components/icons';
 import { useDialog } from '../components/ConfirmDialog';
 import { useToast } from '../components/ToastProvider';
@@ -131,6 +133,48 @@ export function WorkflowsPage() {
     [toast, fetchWorkflows]
   );
 
+  const handleClone = useCallback(
+    async (id: string) => {
+      try {
+        const cloned = await workflowsApi.clone(id);
+        toast.success('Workflow cloned');
+        navigate(`/workflows/${cloned.id}`);
+      } catch {
+        toast.error('Failed to clone workflow');
+      }
+    },
+    [toast, navigate]
+  );
+
+  const handleImportFile = useCallback(async () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json,.workflow.json';
+    input.onchange = async () => {
+      const file = input.files?.[0];
+      if (!file) return;
+      try {
+        const text = await file.text();
+        const json = JSON.parse(text);
+        if (!json || !Array.isArray(json.nodes) || !Array.isArray(json.edges)) {
+          toast.error('Invalid workflow JSON: must contain "nodes" and "edges" arrays');
+          return;
+        }
+        const wf = await workflowsApi.create({
+          name: json.name || 'Imported Workflow',
+          nodes: json.nodes,
+          edges: json.edges,
+          variables: json.variables ?? {},
+        });
+        toast.success('Workflow imported');
+        navigate(`/workflows/${wf.id}`);
+      } catch {
+        toast.error('Failed to import workflow');
+      }
+    };
+    input.click();
+  }, [toast, navigate]);
+
   const handleExecute = useCallback(
     async (id: string) => {
       navigate(`/workflows/${id}?execute=true`);
@@ -152,13 +196,22 @@ export function WorkflowsPage() {
             {workflows.length} workflow{workflows.length !== 1 ? 's' : ''}, {activeCount} active
           </p>
         </div>
-        <button
-          onClick={handleCreate}
-          className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg transition-colors"
-        >
-          <Plus className="w-4 h-4" />
-          New Workflow
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleImportFile}
+            className="flex items-center gap-2 px-4 py-2 bg-bg-tertiary dark:bg-dark-bg-tertiary text-text-primary dark:text-dark-text-primary hover:bg-bg-primary dark:hover:bg-dark-bg-primary border border-border dark:border-dark-border rounded-lg transition-colors"
+          >
+            <Upload className="w-4 h-4" />
+            Import
+          </button>
+          <button
+            onClick={handleCreate}
+            className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            New Workflow
+          </button>
+        </div>
       </header>
 
       {/* Tab bar */}
@@ -211,6 +264,7 @@ export function WorkflowsPage() {
                   onDelete={() => handleDelete(wf.id, wf.name)}
                   onToggle={() => handleToggleStatus(wf.id, wf.status)}
                   onExecute={() => handleExecute(wf.id)}
+                  onClone={() => handleClone(wf.id)}
                 />
               ))}
             </div>
@@ -229,6 +283,7 @@ export function WorkflowsPage() {
                 key={log.id}
                 log={log}
                 onNavigate={(wfId) => navigate(`/workflows/${wfId}`)}
+                onViewLog={(logId) => navigate(`/workflows/logs/${logId}`)}
               />
             ))}
           </div>
@@ -248,12 +303,14 @@ function WorkflowCard({
   onDelete,
   onToggle,
   onExecute,
+  onClone,
 }: {
   workflow: Workflow;
   onEdit: () => void;
   onDelete: () => void;
   onToggle: () => void;
   onExecute: () => void;
+  onClone: () => void;
 }) {
   return (
     <div className="card-elevated card-hover bg-bg-secondary dark:bg-dark-bg-secondary border border-border dark:border-dark-border rounded-lg p-4 flex flex-col">
@@ -319,6 +376,13 @@ function WorkflowCard({
         </button>
         <div className="flex-1" />
         <button
+          onClick={onClone}
+          className="p-1.5 text-text-muted dark:text-dark-text-muted hover:text-primary transition-colors"
+          title="Clone workflow"
+        >
+          <Copy className="w-4 h-4" />
+        </button>
+        <button
           onClick={onDelete}
           className="p-1.5 text-text-muted dark:text-dark-text-muted hover:text-error transition-colors"
           title="Delete workflow"
@@ -334,16 +398,19 @@ function WorkflowCard({
 // Log Entry
 // ============================================================================
 
-function LogEntry({ log, onNavigate }: { log: WorkflowLog; onNavigate: (id: string) => void }) {
+function LogEntry({ log, onNavigate, onViewLog }: { log: WorkflowLog; onNavigate: (id: string) => void; onViewLog: (logId: string) => void }) {
   const StatusIcon = logStatusIcons[log.status] || Activity;
 
   return (
-    <div className="flex items-center gap-3 px-4 py-3 bg-bg-secondary dark:bg-dark-bg-secondary border border-border dark:border-dark-border rounded-lg">
+    <div
+      className="flex items-center gap-3 px-4 py-3 bg-bg-secondary dark:bg-dark-bg-secondary border border-border dark:border-dark-border rounded-lg cursor-pointer hover:border-primary/50 transition-colors"
+      onClick={() => onViewLog(log.id)}
+    >
       <StatusIcon className="w-4 h-4 shrink-0" />
       <div className="flex-1 min-w-0">
         <span
           className={`font-medium text-sm text-text-primary dark:text-dark-text-primary ${log.workflowId ? 'cursor-pointer hover:text-primary' : ''}`}
-          onClick={() => log.workflowId && onNavigate(log.workflowId)}
+          onClick={(e) => { e.stopPropagation(); log.workflowId && onNavigate(log.workflowId); }}
         >
           {log.workflowName ?? 'Deleted Workflow'}
         </span>

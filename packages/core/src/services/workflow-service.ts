@@ -12,7 +12,7 @@
 // Types
 // ============================================================================
 
-export type WorkflowLogStatus = 'running' | 'completed' | 'failed' | 'cancelled';
+export type WorkflowLogStatus = 'running' | 'completed' | 'failed' | 'cancelled' | 'awaiting_approval';
 
 export interface WorkflowLog {
   readonly id: string;
@@ -28,6 +28,7 @@ export interface WorkflowLog {
 
 export interface WorkflowProgressEvent {
   type:
+    | 'started'
     | 'node_start'
     | 'node_complete'
     | 'node_error'
@@ -41,7 +42,7 @@ export interface WorkflowProgressEvent {
   status?: string;
   result?: unknown;
   resolvedArgs?: Record<string, unknown>;
-  branchTaken?: 'true' | 'false';
+  branchTaken?: string;
   error?: string;
   durationMs?: number;
   logId?: string;
@@ -55,6 +56,12 @@ export interface WorkflowProgressEvent {
 // IWorkflowService
 // ============================================================================
 
+export interface WorkflowExecuteOptions {
+  dryRun?: boolean;
+  depth?: number;
+  inputs?: Record<string, unknown>;
+}
+
 export interface IWorkflowService {
   /**
    * Execute a workflow by ID.
@@ -62,7 +69,8 @@ export interface IWorkflowService {
   executeWorkflow(
     workflowId: string,
     userId: string,
-    onProgress?: (event: WorkflowProgressEvent) => void
+    onProgress?: (event: WorkflowProgressEvent) => void,
+    options?: WorkflowExecuteOptions
   ): Promise<WorkflowLog>;
 
   /**

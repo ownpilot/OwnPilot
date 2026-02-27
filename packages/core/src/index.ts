@@ -71,5 +71,7 @@ export * from './security/code-analyzer.js';
 // Channels (unified multi-platform messaging)
 export * from './channels/index.js';
 
-// Version
-export const VERSION = '0.1.1';
+// Version — derived from package.json so it stays in sync
+import { createRequire } from 'node:module';
+const _require = createRequire(import.meta.url);
+export const VERSION: string = (_require('../package.json') as { version: string }).version;

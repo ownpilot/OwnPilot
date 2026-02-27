@@ -40,6 +40,7 @@ function UpstreamNodeSection({
 }) {
   const [isOpen, setIsOpen] = useState(true);
   const data = node.data as ToolNodeData;
+  const alias = (data as unknown as Record<string, unknown>).outputAlias as string | undefined;
   const output = data.executionOutput;
   const hasOutput = output !== undefined && output !== null;
 
@@ -54,7 +55,12 @@ function UpstreamNodeSection({
         ) : (
           <ChevronRight className="w-3 h-3 shrink-0" />
         )}
-        <span className="truncate">{data.label || data.toolName}</span>
+        <span className="truncate">
+          {data.label || data.toolName}
+          {alias && (
+            <span className="ml-1 text-[10px] text-primary font-normal">{`(${alias})`}</span>
+          )}
+        </span>
         {hasOutput && (
           <span
             className={`ml-auto px-1 py-0.5 text-[9px] font-medium rounded ${typeColors[detectType(output)]}`}
@@ -71,7 +77,7 @@ function UpstreamNodeSection({
               Run workflow to see output fields
             </p>
           ) : (
-            <JsonTreeView data={output} pathPrefix={`${node.id}.output`} onClickPath={onInsert} />
+            <JsonTreeView data={output} pathPrefix={`${alias || node.id}.output`} onClickPath={onInsert} />
           )}
         </div>
       )}

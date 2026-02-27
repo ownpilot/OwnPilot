@@ -218,4 +218,7 @@ export type {
   WorkflowLogStatus,
   NodeExecutionStatus,
   WorkflowProgressEvent,
+  WorkflowApproval,
+  WorkflowApprovalStatus,
+  WorkflowVersion,
 } from '../types';

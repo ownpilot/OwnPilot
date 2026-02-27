@@ -46,6 +46,7 @@ import {
   Link,
   LogOut,
   Terminal,
+  ShieldCheck,
 } from './icons';
 import { StatsPanel } from './StatsPanel';
 import { RealtimeBridge, type BadgeCounts } from './RealtimeBridge';
@@ -106,6 +107,7 @@ const navGroups: NavGroup[] = [
       { to: '/plans', icon: ListChecks, label: 'Plans' },
       { to: '/triggers', icon: Zap, label: 'Triggers' },
       { to: '/workflows', icon: GitBranch, label: 'Workflows' },
+      { to: '/approvals', icon: ShieldCheck, label: 'Approvals' },
       { to: '/autonomy', icon: Shield, label: 'Autonomy' },
     ],
   },

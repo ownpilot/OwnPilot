@@ -16,6 +16,7 @@ import {
   statusBadgeStyles,
   statusIcons,
   RetryTimeoutFields,
+  OutputAliasField,
   RetryAttemptsDisplay,
   INPUT_CLS,
 } from '../NodeConfigPanel';
@@ -548,6 +549,12 @@ export function LlmConfigPanel({
             {upstreamNodes.length > 0 && (
               <OutputTreeBrowser upstreamNodes={upstreamNodes} onInsert={injectTemplate} />
             )}
+            <OutputAliasField
+              data={data as unknown as Record<string, unknown>}
+              nodeId={node.id}
+              onUpdate={onUpdate}
+            />
+
 
             <RetryTimeoutFields
               data={data as unknown as Record<string, unknown>}

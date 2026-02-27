@@ -107,6 +107,27 @@ export const pulseApi = {
 
 // ---- System / Health / Database ----
 
+export interface ToolDependency {
+  package: string;
+  category: string;
+  tools: string[];
+  description: string;
+  installed: boolean;
+  version: string | null;
+  type?: 'cli';
+}
+
+export interface ToolDependenciesResponse {
+  packages: ToolDependency[];
+  cliTools: ToolDependency[];
+  summary: {
+    packagesInstalled: number;
+    packagesTotal: number;
+    cliInstalled: number;
+    cliTotal: number;
+  };
+}
+
 export const systemApi = {
   health: () =>
     apiClient.get<{
@@ -117,6 +138,7 @@ export const systemApi = {
       sandbox?: SandboxStatus;
       database?: DatabaseStatus;
     }>('/health'),
+  toolDependencies: () => apiClient.get<ToolDependenciesResponse>('/health/tool-dependencies'),
   databaseStatus: () => apiClient.get<{ backups: BackupInfo[] }>('/database/status'),
   databaseStats: () => apiClient.get<DatabaseStats>('/database/stats'),
   databaseOperation: (endpoint: string, body?: Record<string, unknown>) =>

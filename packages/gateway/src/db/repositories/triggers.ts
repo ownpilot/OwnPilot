@@ -198,12 +198,23 @@ export class TriggersRepository extends BaseRepository {
   }
 
   /**
-   * Get a trigger by ID
+   * Get a trigger by ID (scoped to this user)
    */
   async get(id: string): Promise<Trigger | null> {
     const row = await this.queryOne<TriggerRow>(
       'SELECT * FROM triggers WHERE id = $1 AND user_id = $2',
       [id, this.userId]
+    );
+    return row ? this.mapTrigger(row) : null;
+  }
+
+  /**
+   * Get a trigger by ID without user scope (for webhook lookups).
+   */
+  async getByIdGlobal(id: string): Promise<Trigger | null> {
+    const row = await this.queryOne<TriggerRow>(
+      'SELECT * FROM triggers WHERE id = $1',
+      [id]
     );
     return row ? this.mapTrigger(row) : null;
   }

@@ -119,14 +119,24 @@ export function createContextInjectionMiddleware(): MessageMiddleware {
         }
       }
 
-      // 4. Build request focus hint
+      // 4. Build tool suggestion and data hint sections (per-request)
       const routing = ctx.get<RequestRouting>('routing');
+      const toolSuggestionSuffix = buildToolSuggestionSection(routing);
+      const dataHintSuffix = buildDataHintSection(routing);
+
+      // 5. Build request focus hint
       const focusSuffix = routing?.intentHint
         ? `\n---\n## Request Focus\n${routing.intentHint}`
         : '';
 
-      // 5. Combine: base + extensions + orchestrator + focus
-      const finalPrompt = basePrompt + extensionSuffix + orchestratorSuffix + focusSuffix;
+      // 6. Combine: base + extensions + tool suggestions + data hints + orchestrator + focus
+      const finalPrompt =
+        basePrompt +
+        extensionSuffix +
+        toolSuggestionSuffix +
+        dataHintSuffix +
+        orchestratorSuffix +
+        focusSuffix;
 
       if (finalPrompt !== currentSystemPrompt) {
         agent.updateSystemPrompt(finalPrompt);
@@ -174,15 +184,63 @@ function buildExtensionSections(ctx: { get<T>(key: string): T | undefined }): st
 }
 
 /**
+ * Build a "## Suggested Tools" section from routing tool suggestions.
+ * Tells the LLM which tools are most relevant, so it can skip search_tools.
+ */
+function buildToolSuggestionSection(routing: RequestRouting | undefined): string {
+  if (!routing?.suggestedTools?.length) return '';
+
+  const lines = routing.suggestedTools.map(
+    (t) => `- ${t.name}${t.brief ? `: ${t.brief}` : ''}`
+  );
+
+  return (
+    '\n\n## Suggested Tools\n' +
+    'Based on the request, these tools are most relevant:\n' +
+    lines.join('\n') +
+    '\nCall via: use_tool("tool_name", {args}) or get_tool_help("tool_name") for parameter details.'
+  );
+}
+
+/**
+ * Build a "## Available Data" section from routing table/MCP hints.
+ */
+function buildDataHintSection(routing: RequestRouting | undefined): string {
+  if (!routing) return '';
+
+  const parts: string[] = [];
+
+  if (routing.relevantTables?.length) {
+    parts.push(
+      `Your data tables that may be relevant: ${routing.relevantTables.join(', ')}.\n` +
+        'Use custom data tools (list_custom_records, search_custom_records, add_custom_record) to work with them.'
+    );
+  }
+
+  if (routing.relevantMcpServers?.length) {
+    parts.push(
+      `Connected MCP servers: ${routing.relevantMcpServers.join(', ')}.\n` +
+        'Use search_tools to discover their available tools.'
+    );
+  }
+
+  if (parts.length === 0) return '';
+  return '\n\n## Available Data\n' + parts.join('\n\n');
+}
+
+/**
  * Strip previously injected sections from a system prompt.
- * Strips: extension sections, request focus, orchestrator sections
- * (memories, goals, resources, autonomy).
+ * Strips: extension sections, tool suggestions, data hints, request focus,
+ * orchestrator sections (memories, goals, resources, autonomy).
  */
 function stripInjectedSections(prompt: string): string {
   const markers = [
     // Extension sections (injected by context-injection or agent-service at creation)
     '\n\n## Extension:',
     '\n\n## Skill:',
+    // Tool suggestions and data hints (from preprocessor routing)
+    '\n\n## Suggested Tools',
+    '\n\n## Available Data',
     // Request focus (from request-preprocessor)
     '\n---\n## Request Focus',
     // Orchestrator sections (from buildEnhancedSystemPrompt)

@@ -10,7 +10,7 @@ import type { Node, Edge } from '@xyflow/react';
 import { workflowsApi } from '../../api';
 import { formatToolName } from '../../utils/formatters';
 import { MarkdownContent } from '../MarkdownContent';
-import { Sparkles, Send, StopCircle, X, Play, AlertCircle } from '../icons';
+import { Sparkles, Send, StopCircle, X, Play, AlertCircle, RefreshCw } from '../icons';
 
 // ============================================================================
 // Types
@@ -130,6 +130,36 @@ function buildCurrentWorkflow(name: string, nodes: Node[], edges: Edge[]) {
           label: d.label,
           arrayExpression: d.arrayExpression,
           ...pickDefined(d, ['itemVariable', 'maxIterations', 'onError', 'description']),
+        };
+      }
+      if (n.type === 'httpRequestNode') {
+        return {
+          ...base,
+          type: 'httpRequest',
+          label: d.label,
+          method: d.method,
+          url: d.url,
+          ...pickDefined(d, ['headers', 'queryParams', 'body', 'bodyType', 'auth', 'description']),
+        };
+      }
+      if (n.type === 'delayNode') {
+        return {
+          ...base,
+          type: 'delay',
+          label: d.label,
+          duration: d.duration,
+          unit: d.unit,
+          ...pickDefined(d, ['description']),
+        };
+      }
+      if (n.type === 'switchNode') {
+        return {
+          ...base,
+          type: 'switch',
+          label: d.label,
+          expression: d.expression,
+          cases: d.cases,
+          ...pickDefined(d, ['description']),
         };
       }
       // Tool node
@@ -359,26 +389,12 @@ export function WorkflowCopilotPanel({
       {/* Messages */}
       <div ref={listRef} className="flex-1 overflow-y-auto px-3 py-3 space-y-3">
         {messages.length === 0 && !isStreaming && (
-          <div className="text-center py-8">
-            <Sparkles className="w-8 h-8 text-text-muted/30 mx-auto mb-3" />
-            <p className="text-sm text-text-muted dark:text-dark-text-muted">
-              Describe the workflow you want to build, or ask me to modify the current one.
-            </p>
-            <div className="mt-3 space-y-1.5">
-              {SUGGESTIONS.map((s) => (
-                <button
-                  key={s}
-                  onClick={() => {
-                    setInput(s);
-                    inputRef.current?.focus();
-                  }}
-                  className="block w-full text-left px-3 py-1.5 text-xs text-text-secondary dark:text-dark-text-secondary bg-bg-tertiary dark:bg-dark-bg-tertiary hover:bg-bg-primary dark:hover:bg-dark-bg-primary rounded-md transition-colors"
-                >
-                  {s}
-                </button>
-              ))}
-            </div>
-          </div>
+          <SuggestionsList
+            onSelect={(s) => {
+              setInput(s);
+              inputRef.current?.focus();
+            }}
+          />
         )}
 
         {messages.map((msg) => (
@@ -474,10 +490,89 @@ export function WorkflowCopilotPanel({
 // ============================================================================
 
 const SUGGESTIONS = [
-  'Create a workflow that checks weather daily and sends an email summary',
-  'Build a pipeline that fetches data, filters results, and stores them',
-  'Make a workflow with a condition that branches based on a value',
+  // Basic workflows
+  'Create a daily weather check workflow that fetches forecast and sends a summary via Telegram',
+  'Build a pipeline that fetches data from an API, filters results, and stores them in custom data',
+  'Make a workflow with a condition that branches based on a numeric value',
+  // HTTP & API
+  'Create a workflow that monitors a website every hour and alerts me if it goes down',
+  'Build a webhook-triggered workflow that receives JSON data, validates it, and stores it',
+  'Make a workflow that calls an external REST API, transforms the response, and saves key metrics',
+  // LLM workflows
+  'Create a content pipeline: fetch RSS feed, summarize each article with an LLM, and store summaries',
+  'Build a workflow that takes user input, generates an AI response, and sends it to Telegram',
+  'Make a workflow that classifies incoming messages using an LLM and routes them based on category',
+  // Data processing
+  'Create a workflow that reads records from a custom table, processes each one, and updates them',
+  'Build an ETL pipeline: extract data from HTTP, transform with code, load into custom data',
+  'Make a forEach workflow that iterates over a list and performs an HTTP request for each item',
+  // Scheduling & triggers
+  'Create a scheduled workflow that runs every Monday at 9 AM and generates a weekly report',
+  'Build a workflow triggered by new goals that automatically creates a plan for each goal',
+  'Make a cron-based cleanup workflow that archives old records every night',
+  // Conditional logic
+  'Create a workflow with a switch node that routes requests based on priority level (low/medium/high)',
+  'Build a workflow that checks stock prices and sends alerts only when price drops below a threshold',
+  'Make a workflow with nested conditions: check type first, then check status, then take action',
+  // Advanced features
+  'Create a workflow with an approval gate that pauses for human review before sending notifications',
+  'Build a workflow with an error handler that catches failures and sends a Telegram alert',
+  'Make a multi-step workflow: trigger -> validate -> process -> delay 5 minutes -> confirm',
+  'Create a workflow that calls a sub-workflow for each item in a batch, with max depth of 3',
+  // Code & transformation
+  'Build a workflow with a code node that calculates statistics from input data',
+  'Make a data transformation pipeline: fetch JSON, reshape with transformer, filter with condition',
+  'Create a workflow that generates a CSV report from custom data using a code node',
+  // Real-world scenarios
+  'Build a lead scoring workflow: receive webhook, enrich data via API, score with LLM, route by score',
+  'Create an incident response workflow: detect alert, classify severity, notify team, wait for approval',
+  'Make a social media automation: fetch trending topics, generate posts with LLM, schedule with delays',
+  'Build a customer onboarding workflow: receive signup, send welcome message, wait 1 day, follow up',
+  'Create a document processing pipeline: receive file via webhook, extract text, summarize, store results',
 ];
+
+/** Pick `count` random items from an array without repeats */
+function pickRandom<T>(arr: T[], count: number): T[] {
+  const shuffled = [...arr].sort(() => Math.random() - 0.5);
+  return shuffled.slice(0, count);
+}
+
+const VISIBLE_COUNT = 5;
+
+function SuggestionsList({ onSelect }: { onSelect: (s: string) => void }) {
+  const [visible, setVisible] = useState(() => pickRandom(SUGGESTIONS, VISIBLE_COUNT));
+
+  const shuffle = useCallback(() => {
+    setVisible(pickRandom(SUGGESTIONS, VISIBLE_COUNT));
+  }, []);
+
+  return (
+    <div className="text-center py-8">
+      <Sparkles className="w-8 h-8 text-text-muted/30 mx-auto mb-3" />
+      <p className="text-sm text-text-muted dark:text-dark-text-muted">
+        Describe the workflow you want to build, or ask me to modify the current one.
+      </p>
+      <div className="mt-3 space-y-1.5">
+        {visible.map((s) => (
+          <button
+            key={s}
+            onClick={() => onSelect(s)}
+            className="block w-full text-left px-3 py-1.5 text-xs text-text-secondary dark:text-dark-text-secondary bg-bg-tertiary dark:bg-dark-bg-tertiary hover:bg-bg-primary dark:hover:bg-dark-bg-primary rounded-md transition-colors"
+          >
+            {s}
+          </button>
+        ))}
+        <button
+          onClick={shuffle}
+          className="inline-flex items-center gap-1.5 mt-2 px-3 py-1.5 text-[10px] text-text-muted hover:text-text-secondary dark:hover:text-dark-text-secondary transition-colors"
+        >
+          <RefreshCw className="w-3 h-3" />
+          More examples
+        </button>
+      </div>
+    </div>
+  );
+}
 
 // ============================================================================
 // Node conversion (AI JSON → ReactFlow nodes)
@@ -593,6 +688,53 @@ export function convertDefinitionToReactFlow(
           ...(def.itemVariable != null ? { itemVariable: def.itemVariable } : {}),
           ...(def.maxIterations != null ? { maxIterations: def.maxIterations } : {}),
           ...(def.onError != null ? { onError: def.onError } : {}),
+          ...(def.description != null ? { description: def.description } : {}),
+        },
+      };
+    }
+
+    if (def.type === 'httpRequest') {
+      return {
+        id,
+        type: 'httpRequestNode',
+        position,
+        data: {
+          label: def.label ?? 'HTTP Request',
+          method: def.method ?? 'GET',
+          url: (def.url as string) ?? '',
+          ...(def.headers != null ? { headers: def.headers } : {}),
+          ...(def.queryParams != null ? { queryParams: def.queryParams } : {}),
+          ...(def.body != null ? { body: def.body } : {}),
+          ...(def.bodyType != null ? { bodyType: def.bodyType } : {}),
+          ...(def.auth != null ? { auth: def.auth } : {}),
+          ...(def.description != null ? { description: def.description } : {}),
+        },
+      };
+    }
+
+    if (def.type === 'delay') {
+      return {
+        id,
+        type: 'delayNode',
+        position,
+        data: {
+          label: def.label ?? 'Delay',
+          duration: (def.duration as string) ?? '5',
+          unit: (def.unit as string) ?? 'seconds',
+          ...(def.description != null ? { description: def.description } : {}),
+        },
+      };
+    }
+
+    if (def.type === 'switch') {
+      return {
+        id,
+        type: 'switchNode',
+        position,
+        data: {
+          label: def.label ?? 'Switch',
+          expression: def.expression ?? '',
+          cases: (def.cases as Array<{ label: string; value: string }>) ?? [{ label: 'case_1', value: '' }],
           ...(def.description != null ? { description: def.description } : {}),
         },
       };

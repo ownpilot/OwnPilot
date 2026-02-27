@@ -2,16 +2,31 @@
  * Request Preprocessor Middleware
  *
  * Analyzes each incoming message and determines which extensions, skills,
- * and tool categories are relevant. Stores routing decisions in PipelineContext
- * so context-injection can selectively inject only matching content.
+ * tools, custom data tables, and MCP servers are relevant. Stores routing
+ * decisions in PipelineContext so context-injection can selectively inject
+ * only matching content.
  *
- * Uses fast keyword matching (no LLM calls) — typically <5ms per request.
+ * Data sources:
+ *   1. Extensions/skills — name, description, tool names, keywords
+ *   2. TOOL_SEARCH_TAGS — 100+ tool→keyword synonym map (static)
+ *   3. ToolRegistry — tool briefs for display (in-memory singleton)
+ *   4. Custom data tables — table names, descriptions (async DB, cached)
+ *   5. MCP servers — server names, tool names (service call, cached)
+ *
+ * Uses fast keyword matching (no LLM calls) — typically <10ms per request.
  *
  * Pipeline position: post-processing → [request-preprocessor] → context-injection
  */
 
-import type { MessageMiddleware } from '@ownpilot/core';
-import { getServiceRegistry, Services, type IExtensionService } from '@ownpilot/core';
+import type { MessageMiddleware, IMcpClientService } from '@ownpilot/core';
+import {
+  getServiceRegistry,
+  Services,
+  type IExtensionService,
+  TOOL_SEARCH_TAGS,
+} from '@ownpilot/core';
+import { getSharedToolRegistry } from '../tool-executor.js';
+import { CustomDataRepository } from '../../db/repositories/index.js';
 import { getLog } from '../log.js';
 
 const log = getLog('Middleware:RequestPreprocessor');
@@ -29,6 +44,12 @@ export interface RequestRouting {
   intentHint: string | null;
   /** Confidence score 0-1 */
   confidence: number;
+  /** Suggested tools based on TOOL_SEARCH_TAGS matching */
+  suggestedTools: Array<{ name: string; brief: string }>;
+  /** Custom data table displayNames that may be relevant */
+  relevantTables?: string[];
+  /** Connected MCP server names that may be relevant */
+  relevantMcpServers?: string[];
 }
 
 interface ExtensionKeywords {
@@ -38,8 +59,26 @@ interface ExtensionKeywords {
   category?: string;
 }
 
+interface CustomTableEntry {
+  displayName: string;
+  keywords: Set<string>;
+}
+
+interface McpServerEntry {
+  name: string;
+  keywords: Set<string>;
+}
+
 interface KeywordIndex {
   extensions: ExtensionKeywords[];
+  /** Reverse index: keyword → Set<toolBaseName> from TOOL_SEARCH_TAGS */
+  toolTagIndex: Map<string, Set<string>>;
+  /** toolBaseName → brief description */
+  toolBriefs: Map<string, string>;
+  /** Custom data tables with extracted keywords */
+  customTables: CustomTableEntry[];
+  /** MCP servers with extracted keywords */
+  mcpServers: McpServerEntry[];
   builtAt: number;
 }
 
@@ -56,8 +95,17 @@ const MIN_WORDS_FOR_ROUTING = 3;
 /** Maximum extensions to inject per request */
 const MAX_EXTENSIONS_PER_REQUEST = 5;
 
+/** Maximum tool suggestions per request */
+const MAX_TOOL_SUGGESTIONS = 8;
+
+/** Maximum custom tables to suggest per request */
+const MAX_TABLE_SUGGESTIONS = 3;
+
 /** Minimum score threshold to consider an extension relevant */
 const RELEVANCE_THRESHOLD = 0.15;
+
+/** Minimum score for tool suggestions (lower than extensions — tool tags are more specific) */
+const TOOL_RELEVANCE_THRESHOLD = 0.1;
 
 /** Fallback: if no extension scores above threshold, include top N */
 const FALLBACK_TOP_N = 2;
@@ -130,7 +178,149 @@ export function tokenizeMessage(message: string): Set<string> {
 }
 
 // =============================================================================
-// Index building
+// Tool tag index (static, from TOOL_SEARCH_TAGS)
+// =============================================================================
+
+/**
+ * Build a reverse index from TOOL_SEARCH_TAGS: keyword → Set<toolBaseName>.
+ * Also handles multi-word tags by splitting them into individual keywords.
+ */
+export function buildToolTagIndex(): Map<string, Set<string>> {
+  const index = new Map<string, Set<string>>();
+
+  for (const [toolName, tags] of Object.entries(TOOL_SEARCH_TAGS)) {
+    for (const tag of tags) {
+      // Split multi-word tags (e.g., "read mail" → "read", "mail")
+      const words = tag.toLowerCase().split(/\s+/).filter((w) => w.length > 1);
+      for (const word of words) {
+        let toolSet = index.get(word);
+        if (!toolSet) {
+          toolSet = new Set();
+          index.set(word, toolSet);
+        }
+        toolSet.add(toolName);
+      }
+    }
+
+    // Also add the tool name parts as keywords for self-matching
+    for (const part of toolName.split('_')) {
+      if (part.length > 1 && !STOP_WORDS.has(part)) {
+        let toolSet = index.get(part);
+        if (!toolSet) {
+          toolSet = new Set();
+          index.set(part, toolSet);
+        }
+        toolSet.add(toolName);
+      }
+    }
+  }
+
+  return index;
+}
+
+/**
+ * Build a tool brief map from the ToolRegistry.
+ * Returns toolBaseName → brief string.
+ */
+function buildToolBriefs(): Map<string, string> {
+  const briefs = new Map<string, string>();
+  try {
+    const registry = getSharedToolRegistry();
+    for (const { definition } of registry.getAllTools()) {
+      // Use brief if available, otherwise first sentence of description
+      const baseName = definition.name.includes('.')
+        ? definition.name.split('.').pop()!
+        : definition.name;
+      const brief =
+        definition.brief ??
+        definition.description.split(/[.!?]\s/)[0]?.slice(0, 80) ??
+        '';
+      if (brief) briefs.set(baseName, brief);
+    }
+  } catch {
+    // ToolRegistry not initialized yet
+  }
+  return briefs;
+}
+
+// =============================================================================
+// Custom data table index
+// =============================================================================
+
+/**
+ * Build keyword entries from custom data tables.
+ */
+async function buildCustomDataIndex(): Promise<CustomTableEntry[]> {
+  try {
+    const repo = new CustomDataRepository();
+    const tables = await repo.listTables();
+    return tables.map((t) => {
+      const keywords = new Set<string>();
+      for (const kw of extractKeywords(t.displayName)) keywords.add(kw);
+      if (t.description) {
+        for (const kw of extractKeywords(t.description)) keywords.add(kw);
+      }
+      // Add column names as keywords
+      for (const col of t.columns) {
+        for (const kw of extractKeywords(col.name)) keywords.add(kw);
+      }
+      return { displayName: t.displayName, keywords };
+    });
+  } catch {
+    // DB not available
+    return [];
+  }
+}
+
+// =============================================================================
+// MCP server index
+// =============================================================================
+
+/**
+ * Build keyword entries from connected MCP servers.
+ */
+function buildMcpIndex(): McpServerEntry[] {
+  try {
+    const mcpService = getServiceRegistry().get(Services.McpClient) as IMcpClientService | undefined;
+    if (!mcpService) return [];
+
+    const status = mcpService.getStatus();
+    const entries: McpServerEntry[] = [];
+
+    for (const [name, info] of status.entries()) {
+      if (!info.connected) continue;
+
+      const keywords = new Set<string>();
+      for (const kw of extractKeywords(name)) keywords.add(kw);
+
+      // Add tool names as keywords
+      const tools = mcpService.getServerTools(name);
+      for (const tool of tools) {
+        for (const kw of extractKeywords(tool.name)) keywords.add(kw);
+        if (tool.description) {
+          // Only first few keywords from description to avoid noise
+          const descKw = extractKeywords(tool.description);
+          let count = 0;
+          for (const kw of descKw) {
+            if (count >= 5) break;
+            keywords.add(kw);
+            count++;
+          }
+        }
+      }
+
+      entries.push({ name, keywords });
+    }
+
+    return entries;
+  } catch {
+    // MCP service not available
+    return [];
+  }
+}
+
+// =============================================================================
+// Extension index building (existing, unchanged)
 // =============================================================================
 
 /**
@@ -148,7 +338,7 @@ export function buildKeywordIndex(
       keywords?: string[];
     }>;
   }
-): KeywordIndex {
+): ExtensionKeywords[] {
   const metadata = extensionService.getEnabledMetadata();
   const extensions: ExtensionKeywords[] = [];
 
@@ -184,27 +374,59 @@ export function buildKeywordIndex(
     });
   }
 
-  return { extensions, builtAt: Date.now() };
+  return extensions;
 }
 
+// =============================================================================
+// Comprehensive index building
+// =============================================================================
+
 /**
- * Get or build the keyword index (with caching).
+ * Get or build the comprehensive keyword index (with caching).
+ * Async because custom data table lookup requires DB access.
  */
-function getIndex(): KeywordIndex | null {
+async function getIndexAsync(): Promise<KeywordIndex | null> {
   if (cachedIndex && Date.now() - cachedIndex.builtAt < INDEX_CACHE_TTL_MS) {
     return cachedIndex;
   }
 
   try {
-    const extService = getServiceRegistry().get(Services.Extension) as IExtensionService & {
-      getEnabledMetadata: () => ReturnType<typeof buildKeywordIndex extends (s: infer _S) => infer _R ? never : never>;
-    };
-    if (!extService?.getEnabledMetadata) return null;
+    // Build extension index
+    let extensions: ExtensionKeywords[] = [];
+    try {
+      const extService = getServiceRegistry().get(Services.Extension) as
+        | (IExtensionService & { getEnabledMetadata?: () => unknown })
+        | undefined;
+      if (extService?.getEnabledMetadata) {
+        extensions = buildKeywordIndex(extService as Parameters<typeof buildKeywordIndex>[0]);
+      }
+    } catch {
+      // Extension service not initialized yet
+    }
 
-    cachedIndex = buildKeywordIndex(extService as Parameters<typeof buildKeywordIndex>[0]);
+    // Build tool tag index (static, always available)
+    const toolTagIndex = buildToolTagIndex();
+
+    // Build tool briefs (from ToolRegistry singleton)
+    const toolBriefs = buildToolBriefs();
+
+    // Build custom data index (async DB query)
+    const customTables = await buildCustomDataIndex();
+
+    // Build MCP server index
+    const mcpServers = buildMcpIndex();
+
+    cachedIndex = {
+      extensions,
+      toolTagIndex,
+      toolBriefs,
+      customTables,
+      mcpServers,
+      builtAt: Date.now(),
+    };
+
     return cachedIndex;
   } catch {
-    // Extension service not initialized yet
     return null;
   }
 }
@@ -214,22 +436,107 @@ function getIndex(): KeywordIndex | null {
 // =============================================================================
 
 /**
- * Classify a request message and determine relevant extensions.
+ * Match user message keywords against the tool tag index.
+ * Returns scored tools sorted by relevance.
+ */
+function matchTools(
+  messageWords: Set<string>,
+  toolTagIndex: Map<string, Set<string>>,
+  toolBriefs: Map<string, string>
+): Array<{ name: string; brief: string }> {
+  if (messageWords.size < 2) return [];
+
+  // Collect match counts per tool
+  const toolScores = new Map<string, number>();
+  for (const word of messageWords) {
+    const matchedTools = toolTagIndex.get(word);
+    if (!matchedTools) continue;
+    for (const toolName of matchedTools) {
+      toolScores.set(toolName, (toolScores.get(toolName) ?? 0) + 1);
+    }
+  }
+
+  // Score and filter
+  const scored: Array<{ name: string; brief: string; score: number }> = [];
+  for (const [name, matchCount] of toolScores) {
+    const score = matchCount / messageWords.size;
+    if (score >= TOOL_RELEVANCE_THRESHOLD) {
+      scored.push({ name, brief: toolBriefs.get(name) ?? '', score });
+    }
+  }
+
+  // Sort by score descending
+  scored.sort((a, b) => b.score - a.score);
+
+  return scored.slice(0, MAX_TOOL_SUGGESTIONS).map(({ name, brief }) => ({ name, brief }));
+}
+
+/**
+ * Match user message keywords against custom data tables.
+ */
+function matchTables(
+  messageWords: Set<string>,
+  customTables: CustomTableEntry[]
+): string[] {
+  if (messageWords.size < 2 || customTables.length === 0) return [];
+
+  const scored: Array<{ displayName: string; score: number }> = [];
+  for (const table of customTables) {
+    let matchCount = 0;
+    for (const word of messageWords) {
+      if (table.keywords.has(word)) matchCount++;
+    }
+    const score = matchCount / messageWords.size;
+    if (score >= TOOL_RELEVANCE_THRESHOLD) {
+      scored.push({ displayName: table.displayName, score });
+    }
+  }
+
+  scored.sort((a, b) => b.score - a.score);
+  return scored.slice(0, MAX_TABLE_SUGGESTIONS).map((s) => s.displayName);
+}
+
+/**
+ * Match user message keywords against MCP servers.
+ */
+function matchMcpServers(
+  messageWords: Set<string>,
+  mcpServers: McpServerEntry[]
+): string[] {
+  if (messageWords.size < 2 || mcpServers.length === 0) return [];
+
+  const matched: string[] = [];
+  for (const server of mcpServers) {
+    let matchCount = 0;
+    for (const word of messageWords) {
+      if (server.keywords.has(word)) matchCount++;
+    }
+    const score = matchCount / messageWords.size;
+    if (score >= TOOL_RELEVANCE_THRESHOLD) {
+      matched.push(server.name);
+    }
+  }
+  return matched;
+}
+
+/**
+ * Classify a request message and determine relevant extensions, tools, tables, and MCP servers.
  */
 export function classifyRequest(message: string, index: KeywordIndex): RequestRouting {
   const messageWords = tokenizeMessage(message);
 
-  // If message is too short to classify, return all extensions
+  // If message is too short to classify, return all extensions, no suggestions
   if (messageWords.size < MIN_WORDS_FOR_ROUTING) {
     return {
       relevantExtensionIds: index.extensions.map((e) => e.id),
       relevantCategories: [],
       intentHint: null,
       confidence: 0,
+      suggestedTools: [],
     };
   }
 
-  // Score each extension
+  // --- Extension scoring (existing) ---
   const scored: Array<{ ext: ExtensionKeywords; score: number }> = [];
 
   for (const ext of index.extensions) {
@@ -238,10 +545,9 @@ export function classifyRequest(message: string, index: KeywordIndex): RequestRo
       if (ext.keywords.has(word)) matchCount++;
     }
 
-    // Base score: ratio of matched keywords
     let score = matchCount / messageWords.size;
 
-    // Name match bonus: if any word from the extension name is in the message
+    // Name match bonus
     const nameWords = extractKeywords(ext.name);
     for (const nw of nameWords) {
       if (messageWords.has(nw)) {
@@ -253,44 +559,62 @@ export function classifyRequest(message: string, index: KeywordIndex): RequestRo
     scored.push({ ext, score });
   }
 
-  // Sort by score descending
   scored.sort((a, b) => b.score - a.score);
 
-  // Select relevant extensions
   let selected = scored.filter((s) => s.score >= RELEVANCE_THRESHOLD);
-
-  // Fallback: if nothing matched well, take top N
   if (selected.length === 0 && scored.length > 0) {
     selected = scored.slice(0, FALLBACK_TOP_N);
   }
-
-  // Cap at max
   if (selected.length > MAX_EXTENSIONS_PER_REQUEST) {
     selected = selected.slice(0, MAX_EXTENSIONS_PER_REQUEST);
   }
 
   const relevantExtensionIds = selected.map((s) => s.ext.id);
 
-  // Determine relevant categories
   const categories = new Set<string>();
   for (const s of selected) {
     if (s.ext.category) categories.add(s.ext.category);
   }
   const relevantCategories = [...categories];
 
-  // Generate intent hint
+  // --- Tool matching (new) ---
+  const suggestedTools = matchTools(messageWords, index.toolTagIndex, index.toolBriefs);
+
+  // --- Custom data table matching (new) ---
+  const relevantTables = matchTables(messageWords, index.customTables);
+
+  // --- MCP server matching (new) ---
+  const relevantMcpServers = matchMcpServers(messageWords, index.mcpServers);
+
+  // --- Intent hint generation ---
   let intentHint: string | null = null;
+  const hintParts: string[] = [];
+
   if (relevantCategories.length > 0) {
-    const hints = relevantCategories
-      .map((c) => CATEGORY_HINTS[c] ?? c)
-      .slice(0, 3);
-    intentHint = `Request relates to: ${hints.join(', ')}`;
+    const catHints = relevantCategories.map((c) => CATEGORY_HINTS[c] ?? c).slice(0, 3);
+    hintParts.push(`Request relates to: ${catHints.join(', ')}`);
+  }
+  if (relevantTables.length > 0) {
+    hintParts.push(`Data tables: ${relevantTables.join(', ')}`);
+  }
+  if (relevantMcpServers.length > 0) {
+    hintParts.push(`MCP: ${relevantMcpServers.join(', ')}`);
+  }
+  if (hintParts.length > 0) {
+    intentHint = hintParts.join('. ');
   }
 
-  // Confidence based on best score
   const confidence = scored.length > 0 ? Math.min(scored[0]!.score, 1) : 0;
 
-  return { relevantExtensionIds, relevantCategories, intentHint, confidence };
+  return {
+    relevantExtensionIds,
+    relevantCategories,
+    intentHint,
+    confidence,
+    suggestedTools,
+    ...(relevantTables.length > 0 && { relevantTables }),
+    ...(relevantMcpServers.length > 0 && { relevantMcpServers }),
+  };
 }
 
 // =============================================================================
@@ -300,15 +624,16 @@ export function classifyRequest(message: string, index: KeywordIndex): RequestRo
 /**
  * Create the request preprocessor middleware.
  *
- * Analyzes message content to determine which extensions/skills are relevant,
- * then stores routing decisions in PipelineContext for downstream middleware.
+ * Analyzes message content to determine which extensions, tools, custom data
+ * tables, and MCP servers are relevant, then stores routing decisions in
+ * PipelineContext for downstream middleware.
  */
 export function createRequestPreprocessorMiddleware(): MessageMiddleware {
   return async (message, ctx, next) => {
-    const index = getIndex();
+    const index = await getIndexAsync();
 
-    // If no index (no extensions or service not ready), skip preprocessing
-    if (!index || index.extensions.length === 0) {
+    // If no index available, skip preprocessing
+    if (!index) {
       return next();
     }
 
@@ -321,11 +646,21 @@ export function createRequestPreprocessorMiddleware(): MessageMiddleware {
       const routing = classifyRequest(content, index);
       ctx.set('routing', routing);
 
-      if (routing.relevantExtensionIds.length < index.extensions.length) {
-        log.debug(
-          `Preprocessor: ${routing.relevantExtensionIds.length}/${index.extensions.length} extensions selected` +
-            (routing.intentHint ? ` — ${routing.intentHint}` : '')
-        );
+      const parts: string[] = [];
+      if (routing.relevantExtensionIds.length < index.extensions.length && index.extensions.length > 0) {
+        parts.push(`${routing.relevantExtensionIds.length}/${index.extensions.length} ext`);
+      }
+      if (routing.suggestedTools.length > 0) {
+        parts.push(`${routing.suggestedTools.length} tools`);
+      }
+      if (routing.relevantTables?.length) {
+        parts.push(`${routing.relevantTables.length} tables`);
+      }
+      if (routing.relevantMcpServers?.length) {
+        parts.push(`${routing.relevantMcpServers.length} mcp`);
+      }
+      if (parts.length > 0) {
+        log.debug(`Preprocessor: ${parts.join(', ')}${routing.intentHint ? ` — ${routing.intentHint}` : ''}`);
       }
     } catch (error) {
       // Preprocessing failure should never block the pipeline

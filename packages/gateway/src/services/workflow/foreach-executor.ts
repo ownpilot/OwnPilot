@@ -7,6 +7,7 @@ import {
   type WorkflowNode,
   type WorkflowEdge,
   type ForEachNodeData,
+  type SwitchNodeData,
   type NodeResult,
 } from '../../db/repositories/workflows.js';
 import type { IToolService } from '@ownpilot/core';
@@ -20,6 +21,9 @@ import {
   executeConditionNode,
   executeCodeNode,
   executeTransformerNode,
+  executeHttpRequestNode,
+  executeDelayNode,
+  executeSwitchNode,
 } from './node-executors.js';
 import type { WorkflowProgressEvent } from './types.js';
 
@@ -180,6 +184,12 @@ export async function executeForEachNode(
                 logId
               );
             }
+            if (bodyNode.type === 'httpRequestNode')
+              return executeHttpRequestNode(bodyNode, nodeOutputs, iterationVars);
+            if (bodyNode.type === 'delayNode')
+              return executeDelayNode(bodyNode, nodeOutputs, iterationVars, abortSignal);
+            if (bodyNode.type === 'switchNode')
+              return executeSwitchNode(bodyNode, nodeOutputs, iterationVars);
             return executeNode(bodyNode, nodeOutputs, iterationVars, userId, toolService);
           })
         );
@@ -229,6 +239,27 @@ export async function executeForEachNode(
                   completedAt: new Date().toISOString(),
                 };
                 onProgress?.({ type: 'node_complete', nodeId: skipId, status: 'skipped' });
+              }
+            }
+          }
+
+          // Handle switch branching within body
+          if (bodyNode?.type === 'switchNode' && bodyResult.branchTaken) {
+            const switchData = bodyNode.data as SwitchNodeData;
+            const allHandles = [...switchData.cases.map((c) => c.label), 'default'];
+            for (const handle of allHandles) {
+              if (handle !== bodyResult.branchTaken) {
+                const skippedInBody = getDownstreamNodesByHandle(bodyNodeId, handle, bodyEdges);
+                for (const skipId of skippedInBody) {
+                  if (!nodeOutputs[skipId] || nodeOutputs[skipId].status !== 'skipped') {
+                    nodeOutputs[skipId] = {
+                      nodeId: skipId,
+                      status: 'skipped',
+                      completedAt: new Date().toISOString(),
+                    };
+                    onProgress?.({ type: 'node_complete', nodeId: skipId, status: 'skipped' });
+                  }
+                }
               }
             }
           }

@@ -104,6 +104,9 @@ const WorkflowsPage = lazy(() =>
 const WorkflowEditorPage = lazy(() =>
   import('./pages/WorkflowEditorPage').then((m) => ({ default: m.WorkflowEditorPage }))
 );
+const WorkflowLogViewerPage = lazy(() =>
+  import('./pages/WorkflowLogViewerPage').then((m) => ({ default: m.WorkflowLogViewerPage }))
+);
 const ToolGroupsPage = lazy(() =>
   import('./pages/ToolGroupsPage').then((m) => ({ default: m.ToolGroupsPage }))
 );
@@ -127,6 +130,9 @@ const CodingAgentSettingsPage = lazy(() =>
 );
 const CliToolsSettingsPage = lazy(() =>
   import('./pages/CliToolsSettingsPage').then((m) => ({ default: m.CliToolsSettingsPage }))
+);
+const ApprovalsPage = lazy(() =>
+  import('./pages/ApprovalsPage').then((m) => ({ default: m.ApprovalsPage }))
 );
 const AboutPage = lazy(() => import('./pages/AboutPage').then((m) => ({ default: m.AboutPage })));
 const LoginPage = lazy(() => import('./pages/LoginPage').then((m) => ({ default: m.LoginPage })));
@@ -192,6 +198,8 @@ export function App() {
         <Route path="autonomy" element={page(<AutonomyPage />)} />
         <Route path="workflows" element={page(<WorkflowsPage />)} />
         <Route path="workflows/:id" element={page(<WorkflowEditorPage />)} />
+        <Route path="workflows/logs/:logId" element={page(<WorkflowLogViewerPage />)} />
+        <Route path="approvals" element={page(<ApprovalsPage />)} />
         <Route path="tasks" element={page(<TasksPage />)} />
         <Route path="notes" element={page(<NotesPage />)} />
         <Route path="calendar" element={page(<CalendarPage />)} />

@@ -163,6 +163,7 @@ export type {
 // Workflow Service
 export type {
   IWorkflowService,
+  WorkflowExecuteOptions,
   WorkflowLog as ServiceWorkflowLog,
   WorkflowLogStatus,
   WorkflowProgressEvent,

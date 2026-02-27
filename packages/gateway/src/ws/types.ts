@@ -255,6 +255,7 @@ export interface ServerEvents {
     type: 'info' | 'warning' | 'error' | 'success';
     message: string;
     action?: string;
+    source?: string;
   };
   'system:status': { online: boolean; version: string; uptime: number };
 
@@ -275,6 +276,10 @@ export interface ServerEvents {
   'coding-agent:session:state': { sessionId: string; state: string };
   'coding-agent:session:exit': { sessionId: string; exitCode: number; signal?: number };
   'coding-agent:session:error': { sessionId: string; error: string };
+
+  // Workflow approval events
+  'approval:required': { approvalId: string; workflowId: string; nodeId: string };
+  'approval:decided': { approvalId: string; status: 'approved' | 'rejected' };
 }
 
 /**

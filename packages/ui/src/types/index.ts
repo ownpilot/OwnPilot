@@ -114,12 +114,15 @@ export interface TraceInfo {
     error: string;
     delayMs: number;
   }>;
-  /** Request preprocessor routing decisions — which extensions/skills were selected */
+  /** Request preprocessor routing decisions — which extensions/skills/tools were selected */
   routing?: {
     relevantExtensionIds: string[];
     relevantCategories: string[];
     intentHint: string | null;
     confidence: number;
+    suggestedTools: Array<{ name: string; brief: string }>;
+    relevantTables?: string[];
+    relevantMcpServers?: string[];
   };
 }
 

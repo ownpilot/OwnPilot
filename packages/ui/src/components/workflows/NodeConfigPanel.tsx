@@ -19,6 +19,16 @@ import {
   CodeConfigPanel,
   TransformerConfigPanel,
   ForEachConfigPanel,
+  HttpRequestConfigPanel,
+  DelayConfigPanel,
+  SwitchConfigPanel,
+  ErrorHandlerConfigPanel,
+  SubWorkflowConfigPanel,
+  ApprovalConfigPanel,
+  StickyNoteConfigPanel,
+  NotificationConfigPanel,
+  ParallelConfigPanel,
+  MergeConfigPanel,
 } from './panels';
 
 // ============================================================================
@@ -83,6 +93,38 @@ const TIMEOUT_OPTIONS = [
 // ============================================================================
 // Shared sub-components
 // ============================================================================
+
+/**
+ * Output Alias field — shared across all config panels.
+ * Lets users set an alias like "result" so downstream nodes can use {{result}} instead of {{node_5.output}}.
+ */
+export function OutputAliasField({
+  data,
+  nodeId,
+  onUpdate,
+}: {
+  data: Record<string, unknown>;
+  nodeId: string;
+  onUpdate: (id: string, data: Record<string, unknown>) => void;
+}) {
+  return (
+    <div className="space-y-1">
+      <label className="block text-xs font-medium text-text-muted dark:text-dark-text-muted">
+        Output Alias
+      </label>
+      <input
+        type="text"
+        value={(data.outputAlias as string) ?? ''}
+        onChange={(e) => onUpdate(nodeId, { ...data, outputAlias: e.target.value || undefined })}
+        placeholder="e.g. result, summary..."
+        className={INPUT_CLS}
+      />
+      <p className="text-[10px] text-text-muted dark:text-dark-text-muted">
+        {'Reference as {{alias}} in downstream nodes'}
+      </p>
+    </div>
+  );
+}
 
 export function RetryTimeoutFields({
   data,
@@ -180,6 +222,36 @@ export function NodeConfigPanel(props: NodeConfigPanelProps) {
   }
   if (props.node.type === 'forEachNode') {
     return <ForEachConfigPanel {...props} />;
+  }
+  if (props.node.type === 'httpRequestNode') {
+    return <HttpRequestConfigPanel {...props} />;
+  }
+  if (props.node.type === 'delayNode') {
+    return <DelayConfigPanel {...props} />;
+  }
+  if (props.node.type === 'switchNode') {
+    return <SwitchConfigPanel {...props} />;
+  }
+  if (props.node.type === 'errorHandlerNode') {
+    return <ErrorHandlerConfigPanel {...props} />;
+  }
+  if (props.node.type === 'subWorkflowNode') {
+    return <SubWorkflowConfigPanel {...props} />;
+  }
+  if (props.node.type === 'approvalNode') {
+    return <ApprovalConfigPanel {...props} />;
+  }
+  if (props.node.type === 'stickyNoteNode') {
+    return <StickyNoteConfigPanel {...props} />;
+  }
+  if (props.node.type === 'notificationNode') {
+    return <NotificationConfigPanel {...props} />;
+  }
+  if (props.node.type === 'parallelNode') {
+    return <ParallelConfigPanel {...props} />;
+  }
+  if (props.node.type === 'mergeNode') {
+    return <MergeConfigPanel {...props} />;
   }
   return <ToolConfigPanel {...props} />;
 }

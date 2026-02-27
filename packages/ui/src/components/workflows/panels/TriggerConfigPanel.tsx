@@ -6,8 +6,8 @@
 import { useState, useCallback, useEffect } from 'react';
 import { X, Trash2, Play } from '../../icons';
 import type { TriggerNodeData } from '../TriggerNode';
-import { CRON_PRESETS, validateCron } from '../../TriggerModal';
 import type { NodeConfigPanelProps } from '../NodeConfigPanel';
+import { CronBuilder } from '../CronBuilder';
 import { INPUT_CLS } from '../NodeConfigPanel';
 
 const TRIGGER_TYPES = [
@@ -61,8 +61,6 @@ export function TriggerConfigPanel({
     },
     [node.id, data, onUpdate]
   );
-
-  const cronValidation = triggerType === 'schedule' ? validateCron(cron) : { valid: true };
 
   return (
     <div
@@ -124,50 +122,15 @@ export function TriggerConfigPanel({
           </select>
         </div>
 
-        {/* Schedule config */}
+        {/* Schedule config — Visual Cron Builder */}
         {triggerType === 'schedule' && (
-          <div className="space-y-2">
-            <div>
-              <label className="block text-xs font-medium text-text-muted dark:text-dark-text-muted mb-1">
-                Cron Expression
-              </label>
-              <input
-                type="text"
-                value={cron}
-                onChange={(e) => setCron(e.target.value)}
-                onBlur={() => {
-                  if (cronValidation.valid) pushUpdate({ cron });
-                }}
-                placeholder="0 8 * * *"
-                className={`${INPUT_CLS} font-mono ${cron.trim() && !cronValidation.valid ? '!border-error !ring-error' : ''}`}
-              />
-              {cron.trim() && !cronValidation.valid ? (
-                <p className="mt-1 text-[10px] text-error">{cronValidation.error}</p>
-              ) : (
-                <p className="mt-1 text-[10px] text-text-muted">minute hour day month weekday</p>
-              )}
-            </div>
-            <div className="flex flex-wrap gap-1">
-              {CRON_PRESETS.map((preset) => (
-                <button
-                  key={preset.cron}
-                  type="button"
-                  onClick={() => {
-                    setCron(preset.cron);
-                    pushUpdate({ cron: preset.cron });
-                  }}
-                  className={`px-2 py-0.5 text-[10px] rounded border transition-colors ${
-                    cron === preset.cron
-                      ? 'bg-violet-500/20 border-violet-400 text-violet-600 dark:text-violet-400'
-                      : 'bg-bg-tertiary dark:bg-dark-bg-tertiary border-border dark:border-dark-border text-text-muted hover:border-violet-400/50'
-                  }`}
-                  title={preset.desc}
-                >
-                  {preset.label}
-                </button>
-              ))}
-            </div>
-          </div>
+          <CronBuilder
+            value={cron}
+            onChange={(newCron) => {
+              setCron(newCron);
+              pushUpdate({ cron: newCron });
+            }}
+          />
         )}
 
         {/* Event config */}

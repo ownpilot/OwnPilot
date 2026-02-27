@@ -8,31 +8,33 @@ import type { NodeResult } from '../../db/repositories/workflows.js';
 /**
  * Resolve template expressions in tool arguments.
  * Replaces {{nodeId.output}} with full output and {{nodeId.output.field.sub}} with nested access.
- * Also supports {{variables.key}} for workflow-level variables.
+ * Also supports {{variables.key}} for workflow-level variables and {{alias}} for node output aliases.
  */
 export function resolveTemplates(
   args: Record<string, unknown>,
   nodeOutputs: Record<string, NodeResult>,
-  variables: Record<string, unknown>
+  variables: Record<string, unknown>,
+  aliasMap?: Map<string, string>
 ): Record<string, unknown> {
-  return deepResolve(args, nodeOutputs, variables) as Record<string, unknown>;
+  return deepResolve(args, nodeOutputs, variables, aliasMap) as Record<string, unknown>;
 }
 
 export function deepResolve(
   value: unknown,
   nodeOutputs: Record<string, NodeResult>,
-  variables: Record<string, unknown>
+  variables: Record<string, unknown>,
+  aliasMap?: Map<string, string>
 ): unknown {
   if (typeof value === 'string') {
-    return resolveStringTemplates(value, nodeOutputs, variables);
+    return resolveStringTemplates(value, nodeOutputs, variables, aliasMap);
   }
   if (Array.isArray(value)) {
-    return value.map((item) => deepResolve(item, nodeOutputs, variables));
+    return value.map((item) => deepResolve(item, nodeOutputs, variables, aliasMap));
   }
   if (value !== null && typeof value === 'object') {
     const resolved: Record<string, unknown> = {};
     for (const [k, v] of Object.entries(value)) {
-      resolved[k] = deepResolve(v, nodeOutputs, variables);
+      resolved[k] = deepResolve(v, nodeOutputs, variables, aliasMap);
     }
     return resolved;
   }
@@ -42,17 +44,18 @@ export function deepResolve(
 export function resolveStringTemplates(
   str: string,
   nodeOutputs: Record<string, NodeResult>,
-  variables: Record<string, unknown>
+  variables: Record<string, unknown>,
+  aliasMap?: Map<string, string>
 ): unknown {
   // If the entire string is a single template, return the raw value (preserves types)
   const fullMatch = /^\{\{(.+?)\}\}$/.exec(str);
   if (fullMatch?.[1]) {
-    return resolveTemplatePathWithFallback(fullMatch[1].trim(), nodeOutputs, variables);
+    return resolveTemplatePathWithFallback(fullMatch[1].trim(), nodeOutputs, variables, aliasMap);
   }
 
   // Otherwise, replace all templates inline (always returns string)
   return str.replace(/\{\{(.+?)\}\}/g, (_match, path: string) => {
-    const val = resolveTemplatePathWithFallback(path.trim(), nodeOutputs, variables);
+    const val = resolveTemplatePathWithFallback(path.trim(), nodeOutputs, variables, aliasMap);
     return val === undefined ? '' : typeof val === 'string' ? val : JSON.stringify(val);
   });
 }
@@ -60,13 +63,35 @@ export function resolveStringTemplates(
 export function resolveTemplatePath(
   path: string,
   nodeOutputs: Record<string, NodeResult>,
-  variables: Record<string, unknown>
+  variables: Record<string, unknown>,
+  aliasMap?: Map<string, string>
 ): unknown {
   const parts = path.split('.');
 
   // {{variables.key.subkey}}
   if (parts[0] === 'variables') {
     return getNestedValue(variables, parts.slice(1));
+  }
+
+  // {{inputs.paramName}} — workflow input parameters (stored in variables.__inputs)
+  if (parts[0] === 'inputs') {
+    const inputs = (variables.__inputs as Record<string, unknown>) ?? {};
+    return getNestedValue(inputs, parts.slice(1));
+  }
+
+  // Resolve alias: {{alias.field}} → {{resolvedNodeId.field}}
+  if (aliasMap && parts[0]) {
+    const resolvedNodeId = aliasMap.get(parts[0]);
+    if (resolvedNodeId) {
+      const aliasResult = nodeOutputs[resolvedNodeId];
+      if (!aliasResult) return undefined;
+      if (parts.length === 1) return aliasResult.output;
+      if (parts[1] === 'output') {
+        if (parts.length === 2) return aliasResult.output;
+        return getNestedValue(aliasResult.output, parts.slice(2));
+      }
+      return getNestedValue(aliasResult.output, parts.slice(1));
+    }
   }
 
   // {{nodeId.output}} or {{nodeId.output.field.sub}}
@@ -88,9 +113,10 @@ export function resolveTemplatePath(
 function resolveTemplatePathWithFallback(
   path: string,
   nodeOutputs: Record<string, NodeResult>,
-  variables: Record<string, unknown>
+  variables: Record<string, unknown>,
+  aliasMap?: Map<string, string>
 ): unknown {
-  const result = resolveTemplatePath(path, nodeOutputs, variables);
+  const result = resolveTemplatePath(path, nodeOutputs, variables, aliasMap);
   if (result !== undefined) return result;
 
   // Try variables directly ({{issue}} -> variables.issue)

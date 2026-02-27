@@ -644,6 +644,53 @@ const forEachNodeDataSchema = z.object({
   timeoutMs: z.number().int().min(0).max(300000).optional(),
 });
 
+const httpRequestNodeDataSchema = z.object({
+  label: z.string().min(1).max(200),
+  method: z.enum(['GET', 'POST', 'PUT', 'PATCH', 'DELETE']),
+  url: z.string().min(1).max(4096),
+  headers: z.record(z.string(), z.string()).optional(),
+  queryParams: z.record(z.string(), z.string()).optional(),
+  body: z.string().max(1000000).optional(),
+  bodyType: z.enum(['json', 'text', 'form']).optional(),
+  auth: z
+    .object({
+      type: z.enum(['none', 'bearer', 'basic', 'apiKey']),
+      token: z.string().max(5000).optional(),
+      username: z.string().max(500).optional(),
+      password: z.string().max(500).optional(),
+      headerName: z.string().max(200).optional(),
+    })
+    .optional(),
+  maxResponseSize: z.number().int().min(0).max(10000000).optional(),
+  description: z.string().max(2000).optional(),
+  retryCount: z.number().int().min(0).max(5).optional(),
+  timeoutMs: z.number().int().min(0).max(300000).optional(),
+});
+
+const delayNodeDataSchema = z.object({
+  label: z.string().min(1).max(200),
+  duration: z.string().min(1).max(100),
+  unit: z.enum(['seconds', 'minutes', 'hours']),
+  description: z.string().max(2000).optional(),
+});
+
+const switchNodeDataSchema = z.object({
+  label: z.string().min(1).max(200),
+  expression: z.string().max(10000),
+  cases: z
+    .array(
+      z.object({
+        label: z.string().min(1).max(200),
+        value: z.string().max(1000),
+      })
+    )
+    .min(1)
+    .max(20),
+  description: z.string().max(2000).optional(),
+  retryCount: z.number().int().min(0).max(5).optional(),
+  timeoutMs: z.number().int().min(0).max(300000).optional(),
+});
+
 const workflowNodeDataSchema = z.union([
   toolNodeDataSchema,
   triggerNodeDataSchema,
@@ -652,6 +699,9 @@ const workflowNodeDataSchema = z.union([
   codeNodeDataSchema,
   transformerNodeDataSchema,
   forEachNodeDataSchema,
+  httpRequestNodeDataSchema,
+  delayNodeDataSchema,
+  switchNodeDataSchema,
 ]);
 
 const workflowNodeSchema = z.object({
@@ -669,6 +719,14 @@ const workflowEdgeSchema = z.object({
   targetHandle: z.string().max(100).optional(),
 });
 
+const inputParameterSchema = z.object({
+  name: z.string().min(1).max(100),
+  type: z.enum(['string', 'number', 'boolean', 'json']),
+  required: z.boolean(),
+  defaultValue: z.string().max(5000).optional(),
+  description: z.string().max(500).optional(),
+});
+
 export const createWorkflowSchema = z.object({
   name: z.string().min(1).max(200),
   description: z.string().max(5000).optional(),
@@ -676,6 +734,7 @@ export const createWorkflowSchema = z.object({
   edges: z.array(workflowEdgeSchema).max(500).default([]),
   status: z.enum(['active', 'inactive']).optional(),
   variables: z.record(z.string(), z.unknown()).optional(),
+  inputSchema: z.array(inputParameterSchema).max(20).optional(),
 });
 
 export const updateWorkflowSchema = z.object({
@@ -685,6 +744,7 @@ export const updateWorkflowSchema = z.object({
   edges: z.array(workflowEdgeSchema).max(500).optional(),
   status: z.enum(['active', 'inactive']).optional(),
   variables: z.record(z.string(), z.unknown()).optional(),
+  inputSchema: z.array(inputParameterSchema).max(20).optional(),
 });
 
 export const workflowCopilotSchema = z.object({

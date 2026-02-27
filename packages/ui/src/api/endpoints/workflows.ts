@@ -3,7 +3,7 @@
  */
 
 import { apiClient } from '../client';
-import type { Workflow, WorkflowLog, WorkflowProgressEvent } from '../types';
+import type { Workflow, WorkflowLog, WorkflowVersion, WorkflowApproval, WorkflowProgressEvent } from '../types';
 
 interface PaginatedWorkflows {
   workflows: Workflow[];
@@ -15,6 +15,22 @@ interface PaginatedWorkflows {
 
 interface PaginatedLogs {
   logs: WorkflowLog[];
+  total: number;
+  limit: number;
+  offset: number;
+  hasMore: boolean;
+}
+
+interface PaginatedVersions {
+  versions: WorkflowVersion[];
+  total: number;
+  limit: number;
+  offset: number;
+  hasMore: boolean;
+}
+
+interface PaginatedApprovals {
+  approvals: WorkflowApproval[];
   total: number;
   limit: number;
   offset: number;
@@ -34,8 +50,13 @@ export const workflowsApi = {
 
   delete: (id: string) => apiClient.delete<void>(`/workflows/${id}`),
 
+  clone: (id: string) => apiClient.post<Workflow>(`/workflows/${id}/clone`),
+
   /** Execute workflow — returns raw Response for SSE streaming */
-  execute: (id: string) => apiClient.stream(`/workflows/${id}/execute`, {}),
+  execute: (id: string, options?: { dryRun?: boolean }) => {
+    const query = options?.dryRun ? '?dryRun=true' : '';
+    return apiClient.stream(`/workflows/${id}/execute${query}`, {});
+  },
 
   cancel: (id: string) => apiClient.post<{ message: string }>(`/workflows/${id}/cancel`),
 
@@ -47,12 +68,46 @@ export const workflowsApi = {
 
   logDetail: (logId: string) => apiClient.get<WorkflowLog>(`/workflows/logs/${logId}`),
 
+  versions: (id: string, params?: Record<string, string>) =>
+    apiClient.get<PaginatedVersions>(`/workflows/${id}/versions`, { params }),
+
+  restoreVersion: (id: string, version: number) =>
+    apiClient.post<Workflow>(`/workflows/${id}/versions/${version}/restore`),
+
   /** Copilot — stream AI-generated workflow definitions */
   copilot: (body: WorkflowCopilotRequest, options?: { signal?: AbortSignal }) =>
     apiClient.stream('/workflows/copilot', body, { signal: options?.signal }),
 
   /** Get tool names used in active workflows */
   activeToolNames: () => apiClient.get<string[]>('/workflows/active-tool-names'),
+
+  // Approvals
+  pendingApprovals: (params?: Record<string, string>) =>
+    apiClient.get<PaginatedApprovals>('/workflows/approvals/pending', { params }),
+
+  allApprovals: (params?: Record<string, string>) =>
+    apiClient.get<PaginatedApprovals>('/workflows/approvals/all', { params }),
+
+  approveApproval: (id: string) =>
+    apiClient.post<WorkflowApproval>(`/workflows/approvals/${id}/approve`),
+
+  rejectApproval: (id: string) =>
+    apiClient.post<WorkflowApproval>(`/workflows/approvals/${id}/reject`),
+
+  /** Replay a completed execution — returns SSE stream */
+  replayLog: (logId: string) =>
+    apiClient.stream(`/workflows/logs/${logId}/replay`, {}),
+
+  /** Public API: Run workflow with inputs (requires API key) */
+  apiRun: (id: string, inputs?: Record<string, unknown>) =>
+    apiClient.post<{ logId: string; workflowId: string; status: string; pollUrl: string }>(
+      `/workflows/${id}/run`,
+      inputs ? { inputs } : {}
+    ),
+
+  /** Public API: Poll run status */
+  apiRunStatus: (id: string, logId: string) =>
+    apiClient.get<WorkflowLog>(`/workflows/${id}/run/${logId}`),
 };
 
 export interface WorkflowCopilotRequest {
@@ -63,4 +118,14 @@ export interface WorkflowCopilotRequest {
   model?: string;
 }
 
-export type { PaginatedWorkflows, PaginatedLogs, Workflow, WorkflowLog, WorkflowProgressEvent };
+export type {
+  PaginatedWorkflows,
+  PaginatedLogs,
+  PaginatedVersions,
+  PaginatedApprovals,
+  Workflow,
+  WorkflowLog,
+  WorkflowVersion,
+  WorkflowApproval,
+  WorkflowProgressEvent,
+};

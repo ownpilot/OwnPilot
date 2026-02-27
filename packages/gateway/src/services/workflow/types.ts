@@ -10,6 +10,7 @@ import type { NodeExecutionStatus, WorkflowLogStatus } from '../../db/repositori
 
 export interface WorkflowProgressEvent {
   type:
+    | 'started'
     | 'node_start'
     | 'node_complete'
     | 'node_error'
@@ -23,7 +24,7 @@ export interface WorkflowProgressEvent {
   status?: NodeExecutionStatus;
   output?: unknown;
   resolvedArgs?: Record<string, unknown>;
-  branchTaken?: 'true' | 'false';
+  branchTaken?: string;
   error?: string;
   durationMs?: number;
   logId?: string;

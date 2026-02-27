@@ -15,6 +15,7 @@ import {
   AlertCircle,
   Settings,
   Terminal,
+  Puzzle,
 } from '../components/icons';
 import { useDialog } from '../components/ConfirmDialog';
 import { useToast } from '../components/ToastProvider';
@@ -23,6 +24,7 @@ import { useTheme } from '../hooks/useTheme';
 import { useDesktopNotifications } from '../hooks/useDesktopNotifications';
 import { systemApi } from '../api';
 import type { SandboxStatus, DatabaseStatus, BackupInfo, DatabaseStats } from '../api';
+import type { ToolDependenciesResponse } from '../api/endpoints/misc';
 
 // Helper to format uptime
 function formatUptime(seconds: number): string {
@@ -48,6 +50,15 @@ function formatSize(bytes: number): string {
   return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
 }
 
+// Category color map for tool dependency badges
+const CATEGORY_COLORS: Record<string, string> = {
+  Email: 'bg-blue-500/10 text-blue-600 dark:text-blue-400',
+  Image: 'bg-purple-500/10 text-purple-600 dark:text-purple-400',
+  PDF: 'bg-red-500/10 text-red-600 dark:text-red-400',
+  Audio: 'bg-green-500/10 text-green-600 dark:text-green-400',
+  'Coding Agents': 'bg-orange-500/10 text-orange-600 dark:text-orange-400',
+};
+
 export function SystemPage() {
   const { confirm } = useDialog();
   const toast = useToast();
@@ -67,6 +78,10 @@ export function SystemPage() {
   const [systemVersion, setSystemVersion] = useState<string>('');
   const [systemUptime, setSystemUptime] = useState<number>(0);
   const [isLoadingSystem, setIsLoadingSystem] = useState(false);
+
+  // Tool dependencies
+  const [toolDeps, setToolDeps] = useState<ToolDependenciesResponse | null>(null);
+  const [isLoadingDeps, setIsLoadingDeps] = useState(false);
 
   // Database operations state
   const [dbOperationRunning, setDbOperationRunning] = useState(false);
@@ -91,6 +106,7 @@ export function SystemPage() {
   // Load system status on mount
   useEffect(() => {
     loadSystemStatus();
+    loadToolDependencies();
   }, []);
 
   const loadSystemStatus = async () => {
@@ -116,6 +132,18 @@ export function SystemPage() {
       // API client handles error reporting
     } finally {
       setIsLoadingSystem(false);
+    }
+  };
+
+  const loadToolDependencies = async () => {
+    setIsLoadingDeps(true);
+    try {
+      const data = await systemApi.toolDependencies();
+      setToolDeps(data);
+    } catch {
+      // API client handles error reporting
+    } finally {
+      setIsLoadingDeps(false);
     }
   };
 
@@ -184,6 +212,19 @@ export function SystemPage() {
     }
   };
 
+  // Group tool deps by category
+  const depsByCategory = toolDeps
+    ? Object.entries(
+        [...toolDeps.packages, ...toolDeps.cliTools].reduce(
+          (acc, dep) => {
+            (acc[dep.category] ??= []).push(dep);
+            return acc;
+          },
+          {} as Record<string, typeof toolDeps.packages>
+        )
+      )
+    : [];
+
   return (
     <div className="flex flex-col h-full">
       <header className="px-6 pt-4 pb-4 border-b border-border dark:border-dark-border">
@@ -191,7 +232,7 @@ export function SystemPage() {
           System
         </h2>
         <p className="text-sm text-text-muted dark:text-dark-text-muted">
-          Appearance, Docker sandbox, database management, and system info
+          Appearance, tool dependencies, Docker sandbox, database management, and system info
         </p>
       </header>
       <div className="flex-1 overflow-y-auto p-6">
@@ -265,6 +306,124 @@ export function SystemPage() {
                     </button>
                   ) : null}
                 </div>
+              </div>
+            )}
+          </section>
+
+          {/* Tool Dependencies */}
+          <section className="p-6 bg-bg-secondary dark:bg-dark-bg-secondary border border-border dark:border-dark-border rounded-xl">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-base font-medium text-text-primary dark:text-dark-text-primary flex items-center gap-2">
+                <Puzzle className="w-5 h-5" />
+                Tool Dependencies
+              </h3>
+              <div className="flex items-center gap-3">
+                {toolDeps && (
+                  <span className="text-sm text-text-muted dark:text-dark-text-muted">
+                    {toolDeps.summary.packagesInstalled}/{toolDeps.summary.packagesTotal} packages
+                    {' + '}
+                    {toolDeps.summary.cliInstalled}/{toolDeps.summary.cliTotal} CLI tools
+                  </span>
+                )}
+                <button
+                  onClick={loadToolDependencies}
+                  disabled={isLoadingDeps}
+                  className="flex items-center gap-2 px-3 py-1.5 text-sm bg-bg-tertiary dark:bg-dark-bg-tertiary border border-border dark:border-dark-border rounded-lg hover:border-primary transition-colors disabled:opacity-50"
+                >
+                  <RefreshCw className={`w-4 h-4 ${isLoadingDeps ? 'animate-spin' : ''}`} />
+                  Refresh
+                </button>
+              </div>
+            </div>
+
+            {isLoadingDeps && !toolDeps ? (
+              <div className="py-4">
+                <LoadingSpinner size="sm" />
+              </div>
+            ) : toolDeps ? (
+              <div className="space-y-4">
+                {depsByCategory.map(([category, deps]) => (
+                  <div key={category}>
+                    <div className="flex items-center gap-2 mb-2">
+                      <span
+                        className={`px-2 py-0.5 text-xs font-medium rounded ${CATEGORY_COLORS[category] ?? 'bg-gray-500/10 text-text-muted dark:text-dark-text-muted'}`}
+                      >
+                        {category}
+                      </span>
+                    </div>
+                    <div className="space-y-2">
+                      {deps.map((dep) => (
+                        <div
+                          key={dep.package}
+                          className="flex items-center justify-between p-3 bg-bg-tertiary dark:bg-dark-bg-tertiary rounded-lg"
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                            {dep.installed ? (
+                              <CheckCircle2 className="w-4 h-4 text-success shrink-0" />
+                            ) : (
+                              <XCircle className="w-4 h-4 text-error shrink-0" />
+                            )}
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-2">
+                                <p className="font-mono text-sm text-text-primary dark:text-dark-text-primary">
+                                  {dep.package}
+                                </p>
+                                {dep.type === 'cli' && (
+                                  <span className="px-1.5 py-0.5 text-[10px] font-medium bg-gray-500/10 text-text-muted dark:text-dark-text-muted rounded">
+                                    CLI
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-xs text-text-muted dark:text-dark-text-muted truncate">
+                                {dep.description}
+                                {dep.tools.length > 0 && (
+                                  <span className="ml-1 opacity-70">
+                                    ({dep.tools.join(', ')})
+                                  </span>
+                                )}
+                              </p>
+                            </div>
+                          </div>
+                          <span
+                            className={`text-xs font-mono shrink-0 ml-2 ${dep.installed ? 'text-success' : 'text-error'}`}
+                          >
+                            {dep.installed
+                              ? dep.version
+                                ? `v${dep.version}`
+                                : 'Installed'
+                              : 'Missing'}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+
+                {/* Missing packages warning */}
+                {(toolDeps.summary.packagesInstalled < toolDeps.summary.packagesTotal ||
+                  toolDeps.summary.cliInstalled < toolDeps.summary.cliTotal) && (
+                  <div className="p-4 bg-warning/10 border border-warning/20 rounded-lg">
+                    <div className="flex items-start gap-3">
+                      <AlertCircle className="w-5 h-5 text-warning shrink-0 mt-0.5" />
+                      <div>
+                        <p className="font-medium text-warning">
+                          Some dependencies are missing
+                        </p>
+                        <p className="text-sm text-text-muted dark:text-dark-text-muted mt-1">
+                          Missing npm packages can be installed with{' '}
+                          <code className="bg-bg-tertiary dark:bg-dark-bg-tertiary px-1 rounded">
+                            pnpm install
+                          </code>
+                          . Missing CLI tools must be installed globally on the host system.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-text-muted dark:text-dark-text-muted">
+                <p>Unable to load tool dependencies</p>
               </div>
             )}
           </section>

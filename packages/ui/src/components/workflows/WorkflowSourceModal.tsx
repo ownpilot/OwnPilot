@@ -3,8 +3,8 @@
  * Includes Copy and Download buttons. Read-only source view.
  */
 
-import { useState, useCallback, useMemo } from 'react';
-import { X, Copy, Check, Download } from '../icons';
+import { useState, useCallback, useMemo, useRef } from 'react';
+import { X, Copy, Check, Download, Upload } from '../icons';
 import type { ToolNodeData } from './ToolNode';
 import type { TriggerNodeData } from './TriggerNode';
 import type { LlmNodeData } from './LlmNode';
@@ -12,6 +12,9 @@ import type { ConditionNodeData } from './ConditionNode';
 import type { CodeNodeData } from './CodeNode';
 import type { TransformerNodeData } from './TransformerNode';
 import type { ForEachNodeData } from './ForEachNode';
+import type { HttpRequestNodeData } from './HttpRequestNode';
+import type { DelayNodeData } from './DelayNode';
+import type { SwitchNodeData } from './SwitchNode';
 import type { Edge, Node } from '@xyflow/react';
 
 interface WorkflowSourceModalProps {
@@ -20,6 +23,8 @@ interface WorkflowSourceModalProps {
   edges: Edge[];
   variables?: Record<string, unknown>;
   onClose: () => void;
+  /** When provided, shows an Import button that loads a .workflow.json file */
+  onImport?: (json: Record<string, unknown>) => void;
 }
 
 /**
@@ -131,6 +136,103 @@ function buildWorkflowDefinition(
         return node;
       }
 
+      // HTTP Request node
+      if (n.type === 'httpRequestNode') {
+        const hd = n.data as HttpRequestNodeData;
+        const node: Record<string, unknown> = {
+          id: n.id,
+          type: 'httpRequest',
+          label: hd.label,
+          method: hd.method,
+          url: hd.url,
+          position: { x: Math.round(n.position.x), y: Math.round(n.position.y) },
+        };
+        if (hd.headers && Object.keys(hd.headers).length > 0) node.headers = hd.headers;
+        if (hd.queryParams && Object.keys(hd.queryParams).length > 0) node.queryParams = hd.queryParams;
+        if (hd.body) node.body = hd.body;
+        if (hd.bodyType) node.bodyType = hd.bodyType;
+        if (hd.auth && hd.auth.type !== 'none') node.auth = hd.auth;
+        if (hd.description) node.description = hd.description;
+        return node;
+      }
+
+      // Delay node
+      if (n.type === 'delayNode') {
+        const dd = n.data as DelayNodeData;
+        const node: Record<string, unknown> = {
+          id: n.id,
+          type: 'delay',
+          label: dd.label,
+          duration: dd.duration,
+          unit: dd.unit,
+          position: { x: Math.round(n.position.x), y: Math.round(n.position.y) },
+        };
+        if (dd.description) node.description = dd.description;
+        return node;
+      }
+
+      // Switch node
+      if (n.type === 'switchNode') {
+        const sd = n.data as SwitchNodeData;
+        const node: Record<string, unknown> = {
+          id: n.id,
+          type: 'switch',
+          label: sd.label,
+          expression: sd.expression,
+          cases: sd.cases,
+          position: { x: Math.round(n.position.x), y: Math.round(n.position.y) },
+        };
+        if (sd.description) node.description = sd.description;
+        return node;
+      }
+
+      // Error handler node
+      if (n.type === 'errorHandlerNode') {
+        const eh = n.data as Record<string, unknown>;
+        const node: Record<string, unknown> = {
+          id: n.id,
+          type: 'errorHandler',
+          label: eh.label ?? 'Error Handler',
+          position: { x: Math.round(n.position.x), y: Math.round(n.position.y) },
+        };
+        if (eh.description) node.description = eh.description;
+        if (eh.continueOnSuccess) node.continueOnSuccess = true;
+        return node;
+      }
+
+      // Sub-workflow node
+      if (n.type === 'subWorkflowNode') {
+        const sw = n.data as Record<string, unknown>;
+        const node: Record<string, unknown> = {
+          id: n.id,
+          type: 'subWorkflow',
+          label: sw.label ?? 'Sub-Workflow',
+          position: { x: Math.round(n.position.x), y: Math.round(n.position.y) },
+        };
+        if (sw.subWorkflowId) node.subWorkflowId = sw.subWorkflowId;
+        if (sw.subWorkflowName) node.subWorkflowName = sw.subWorkflowName;
+        if (sw.inputMapping && Object.keys(sw.inputMapping as Record<string, unknown>).length > 0)
+          node.inputMapping = sw.inputMapping;
+        if (sw.maxDepth != null) node.maxDepth = sw.maxDepth;
+        if (sw.description) node.description = sw.description;
+        return node;
+      }
+
+      // Approval node
+      if (n.type === 'approvalNode') {
+        const ap = n.data as Record<string, unknown>;
+        const node: Record<string, unknown> = {
+          id: n.id,
+          type: 'approval',
+          label: ap.label ?? 'Approval Gate',
+          position: { x: Math.round(n.position.x), y: Math.round(n.position.y) },
+        };
+        if (ap.approvalMessage) node.approvalMessage = ap.approvalMessage;
+        if (ap.timeoutMinutes != null) node.timeoutMinutes = ap.timeoutMinutes;
+        if (ap.description) node.description = ap.description;
+        return node;
+      }
+
       // Tool node — show tool config
       const d = n.data as ToolNodeData;
       const node: Record<string, unknown> = {
@@ -141,6 +243,11 @@ function buildWorkflowDefinition(
       };
       if (d.description) node.description = d.description;
       if (d.toolArgs && Object.keys(d.toolArgs).length > 0) node.args = d.toolArgs;
+      return node;
+    }).map((node, i) => {
+      // Append outputAlias to any node that has one
+      const alias = (nodes[i]!.data as Record<string, unknown>).outputAlias as string | undefined;
+      if (alias) return { ...node, outputAlias: alias };
       return node;
     }),
     edges: edges.map((e) => {
@@ -162,8 +269,11 @@ export function WorkflowSourceModal({
   edges,
   variables,
   onClose,
+  onImport,
 }: WorkflowSourceModalProps) {
   const [copied, setCopied] = useState(false);
+  const [importError, setImportError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const definition = useMemo(
     () => buildWorkflowDefinition(workflowName, nodes, edges, variables),
@@ -192,6 +302,33 @@ export function WorkflowSourceModal({
     a.click();
     URL.revokeObjectURL(url);
   }, [json, workflowName]);
+
+  const handleImport = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      setImportError(null);
+      const file = e.target.files?.[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const parsed = JSON.parse(reader.result as string);
+          if (!parsed || !Array.isArray(parsed.nodes) || !Array.isArray(parsed.edges)) {
+            setImportError('Invalid workflow JSON: must contain "nodes" and "edges" arrays');
+            return;
+          }
+          onImport?.(parsed);
+          onClose();
+        } catch {
+          setImportError('Failed to parse JSON file');
+        }
+      };
+      reader.readAsText(file);
+      // Reset input so the same file can be re-selected
+      e.target.value = '';
+    },
+    [onImport, onClose]
+  );
 
   return (
     <div
@@ -222,6 +359,24 @@ export function WorkflowSourceModal({
               <Download className="w-3 h-3" />
               Download
             </button>
+            {onImport && (
+              <>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".json,.workflow.json"
+                  onChange={handleImport}
+                  className="hidden"
+                />
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium text-text-secondary dark:text-dark-text-secondary hover:text-text-primary dark:hover:text-dark-text-primary bg-bg-tertiary dark:bg-dark-bg-tertiary hover:bg-bg-primary dark:hover:bg-dark-bg-primary border border-border dark:border-dark-border rounded-md transition-colors"
+                >
+                  <Upload className="w-3 h-3" />
+                  Import
+                </button>
+              </>
+            )}
             <button
               onClick={onClose}
               className="p-1 text-text-muted hover:text-text-primary dark:hover:text-dark-text-primary transition-colors"
@@ -247,6 +402,9 @@ export function WorkflowSourceModal({
             {edges.length} edge{edges.length !== 1 ? 's' : ''}
           </span>
           <span>{json.length.toLocaleString()} chars</span>
+          {importError && (
+            <span className="ml-auto text-error">{importError}</span>
+          )}
         </div>
       </div>
     </div>

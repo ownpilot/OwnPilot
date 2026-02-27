@@ -1139,7 +1139,7 @@ export interface PaginatedHistory {
 // ---- Workflows ----
 
 export type WorkflowStatus = 'active' | 'inactive';
-export type WorkflowLogStatus = 'running' | 'completed' | 'failed' | 'cancelled';
+export type WorkflowLogStatus = 'running' | 'completed' | 'failed' | 'cancelled' | 'awaiting_approval';
 export type NodeExecutionStatus = 'pending' | 'running' | 'success' | 'error' | 'skipped';
 
 export interface WorkflowToolNodeData {
@@ -1237,6 +1237,14 @@ export interface WorkflowEdge {
   targetHandle?: string;
 }
 
+export interface InputParameter {
+  name: string;
+  type: 'string' | 'number' | 'boolean' | 'json';
+  required: boolean;
+  defaultValue?: string;
+  description?: string;
+}
+
 export interface Workflow {
   id: string;
   name: string;
@@ -1245,6 +1253,7 @@ export interface Workflow {
   edges: WorkflowEdge[];
   status: WorkflowStatus;
   variables: Record<string, unknown>;
+  inputSchema: InputParameter[];
   lastRun: string | null;
   runCount: number;
   createdAt: string;
@@ -1275,8 +1284,35 @@ export interface WorkflowLog {
   completedAt: string | null;
 }
 
+export interface WorkflowVersion {
+  id: string;
+  workflowId: string;
+  version: number;
+  nodes: unknown[];
+  edges: unknown[];
+  variables: Record<string, unknown>;
+  createdAt: string;
+}
+
+export type WorkflowApprovalStatus = 'pending' | 'approved' | 'rejected';
+
+export interface WorkflowApproval {
+  id: string;
+  workflowLogId: string;
+  workflowId: string;
+  nodeId: string;
+  userId: string;
+  status: WorkflowApprovalStatus;
+  context: Record<string, unknown>;
+  message: string | null;
+  decidedAt: string | null;
+  expiresAt: string | null;
+  createdAt: string;
+}
+
 export interface WorkflowProgressEvent {
   type:
+    | 'started'
     | 'node_start'
     | 'node_complete'
     | 'node_error'
@@ -1290,7 +1326,7 @@ export interface WorkflowProgressEvent {
   status?: NodeExecutionStatus;
   output?: unknown;
   resolvedArgs?: Record<string, unknown>;
-  branchTaken?: 'true' | 'false';
+  branchTaken?: string;
   error?: string;
   durationMs?: number;
   logId?: string;

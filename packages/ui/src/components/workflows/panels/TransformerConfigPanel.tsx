@@ -13,6 +13,7 @@ import type { NodeConfigPanelProps } from '../NodeConfigPanel';
 import {
   statusBadgeStyles,
   statusIcons,
+  OutputAliasField,
   RetryTimeoutFields,
   RetryAttemptsDisplay,
   INPUT_CLS,
@@ -245,6 +246,12 @@ export function TransformerConfigPanel({
             {upstreamNodes.length > 0 && (
               <OutputTreeBrowser upstreamNodes={upstreamNodes} onInsert={injectTemplate} />
             )}
+            <OutputAliasField
+              data={data as unknown as Record<string, unknown>}
+              nodeId={node.id}
+              onUpdate={onUpdate}
+            />
+
             <RetryTimeoutFields
               data={data as unknown as Record<string, unknown>}
               nodeId={node.id}

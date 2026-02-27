@@ -153,6 +153,154 @@ healthRoutes.post('/sandbox/reset', (c) => {
 });
 
 /**
+ * Tool dependencies status — checks which optional packages are installed
+ * and what tools/features they enable.
+ */
+healthRoutes.get('/tool-dependencies', async (c) => {
+  // Define all known optional dependencies with their tool mappings
+  const deps: Array<{
+    package: string;
+    category: string;
+    tools: string[];
+    description: string;
+  }> = [
+    {
+      package: 'imapflow',
+      category: 'Email',
+      tools: ['list_emails', 'read_email', 'delete_email', 'search_emails'],
+      description: 'Read emails via IMAP',
+    },
+    {
+      package: 'nodemailer',
+      category: 'Email',
+      tools: ['send_email', 'reply_email'],
+      description: 'Send emails via SMTP',
+    },
+    {
+      package: 'sharp',
+      category: 'Image',
+      tools: ['resize_image'],
+      description: 'Image processing (resize, convert, compress)',
+    },
+    {
+      package: 'pdf-parse',
+      category: 'PDF',
+      tools: ['read_pdf', 'get_pdf_info'],
+      description: 'Parse and extract text from PDFs',
+    },
+    {
+      package: 'pdfkit',
+      category: 'PDF',
+      tools: ['create_pdf'],
+      description: 'Create PDF documents',
+    },
+    {
+      package: 'music-metadata',
+      category: 'Audio',
+      tools: ['get_audio_info'],
+      description: 'Extract audio metadata (duration, codec, tags)',
+    },
+    {
+      package: '@anthropic-ai/claude-agent-sdk',
+      category: 'Coding Agents',
+      tools: ['run_coding_task'],
+      description: 'Claude Code SDK for coding agent tasks',
+    },
+    {
+      package: 'node-pty',
+      category: 'Coding Agents',
+      tools: ['run_coding_task'],
+      description: 'Interactive terminal sessions for coding agents',
+    },
+  ];
+
+  const results = await Promise.all(
+    deps.map(async (dep) => {
+      let installed = false;
+      let version: string | null = null;
+
+      try {
+        const mod = await import(dep.package);
+        installed = true;
+        // Try to get version from the module or its package.json
+        version = mod.version ?? mod.default?.version ?? null;
+      } catch {
+        // Not importable — try to read version from node_modules
+        try {
+          const pkgJson = await import(`${dep.package}/package.json`, { with: { type: 'json' } });
+          installed = true;
+          version = pkgJson.default?.version ?? pkgJson.version ?? null;
+        } catch {
+          // Package not installed
+        }
+      }
+
+      return {
+        package: dep.package,
+        category: dep.category,
+        tools: dep.tools,
+        description: dep.description,
+        installed,
+        version,
+      };
+    })
+  );
+
+  // Also check external CLI tools
+  const cliTools = [
+    { name: 'ffmpeg', category: 'Audio', tools: ['split_audio'], description: 'Audio splitting and processing' },
+    { name: 'claude', category: 'Coding Agents', tools: ['run_coding_task'], description: 'Claude Code CLI' },
+    { name: 'codex', category: 'Coding Agents', tools: ['run_coding_task'], description: 'OpenAI Codex CLI' },
+    { name: 'gemini', category: 'Coding Agents', tools: ['run_coding_task'], description: 'Google Gemini CLI' },
+  ];
+
+  const { execFile } = await import('node:child_process');
+  const { promisify } = await import('node:util');
+  const execFileP = promisify(execFile);
+
+  const cliResults = await Promise.all(
+    cliTools.map(async (cli) => {
+      let installed = false;
+      let version: string | null = null;
+
+      try {
+        const { stdout } = await execFileP(cli.name, ['--version'], { timeout: 3000 });
+        installed = true;
+        // Extract version from output (first line, trim)
+        const match = stdout.trim().match(/(\d+\.\d+[\w.-]*)/);
+        version = match?.[1] ?? stdout.trim().split('\n')[0]!.slice(0, 50);
+      } catch {
+        // CLI not found or errored
+      }
+
+      return {
+        package: cli.name,
+        category: cli.category,
+        tools: cli.tools,
+        description: cli.description,
+        installed,
+        version,
+        type: 'cli' as const,
+      };
+    })
+  );
+
+  const installedCount = results.filter((r) => r.installed).length;
+  const cliInstalledCount = cliResults.filter((r) => r.installed).length;
+
+  return apiResponse(c, {
+    packages: results,
+    cliTools: cliResults,
+    summary: {
+      packagesInstalled: installedCount,
+      packagesTotal: results.length,
+      cliInstalled: cliInstalledCount,
+      cliTotal: cliResults.length,
+    },
+  });
+});
+
+/**
  * Pull Docker images for sandbox execution
  */
 healthRoutes.post('/sandbox/pull-images', async (c) => {

@@ -85,7 +85,9 @@ export function TraceDisplay({ trace }: TraceDisplayProps) {
               {trace.routing && (
                 <span className="flex items-center gap-1 text-purple-500">
                   <Filter className="w-3 h-3" />
-                  {trace.routing.relevantExtensionIds.length} ext
+                  {trace.routing.suggestedTools?.length > 0
+                    ? `${trace.routing.suggestedTools.length} tools`
+                    : `${trace.routing.relevantExtensionIds.length} ext`}
                   {trace.routing.confidence > 0 && (
                     <span className="opacity-70">
                       ({Math.round(trace.routing.confidence * 100)}%)
@@ -133,16 +135,85 @@ export function TraceDisplay({ trace }: TraceDisplayProps) {
                       {trace.routing.intentHint}
                     </div>
                   )}
-                  <div className="flex flex-wrap gap-2">
-                    {trace.routing.relevantExtensionIds.map((id) => (
-                      <span
-                        key={id}
-                        className="px-2 py-0.5 text-xs bg-purple-500/10 text-purple-600 dark:text-purple-400 rounded font-mono"
-                      >
-                        {id}
-                      </span>
-                    ))}
-                  </div>
+
+                  {/* Suggested tools */}
+                  {trace.routing.suggestedTools?.length > 0 && (
+                    <div>
+                      <div className="text-xs text-text-muted dark:text-dark-text-muted mb-1">
+                        Suggested Tools:
+                      </div>
+                      <div className="flex flex-wrap gap-1">
+                        {trace.routing.suggestedTools.map((tool) => (
+                          <span
+                            key={tool.name}
+                            className="px-2 py-0.5 text-xs bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded font-mono"
+                            title={tool.brief || tool.name}
+                          >
+                            {tool.name}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Extensions */}
+                  {trace.routing.relevantExtensionIds.length > 0 && (
+                    <div>
+                      <div className="text-xs text-text-muted dark:text-dark-text-muted mb-1">
+                        Extensions:
+                      </div>
+                      <div className="flex flex-wrap gap-1">
+                        {trace.routing.relevantExtensionIds.map((id) => (
+                          <span
+                            key={id}
+                            className="px-2 py-0.5 text-xs bg-purple-500/10 text-purple-600 dark:text-purple-400 rounded font-mono"
+                          >
+                            {id}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Custom data tables */}
+                  {trace.routing.relevantTables && trace.routing.relevantTables.length > 0 && (
+                    <div>
+                      <div className="text-xs text-text-muted dark:text-dark-text-muted mb-1">
+                        Data Tables:
+                      </div>
+                      <div className="flex flex-wrap gap-1">
+                        {trace.routing.relevantTables.map((table) => (
+                          <span
+                            key={table}
+                            className="px-2 py-0.5 text-xs bg-green-500/10 text-green-600 dark:text-green-400 rounded"
+                          >
+                            {table}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* MCP servers */}
+                  {trace.routing.relevantMcpServers && trace.routing.relevantMcpServers.length > 0 && (
+                    <div>
+                      <div className="text-xs text-text-muted dark:text-dark-text-muted mb-1">
+                        MCP Servers:
+                      </div>
+                      <div className="flex flex-wrap gap-1">
+                        {trace.routing.relevantMcpServers.map((server) => (
+                          <span
+                            key={server}
+                            className="px-2 py-0.5 text-xs bg-orange-500/10 text-orange-600 dark:text-orange-400 rounded"
+                          >
+                            {server}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Categories + confidence */}
                   <div className="flex flex-wrap gap-2">
                     {trace.routing.relevantCategories.map((cat) => (
                       <span

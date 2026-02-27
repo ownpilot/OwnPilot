@@ -19,7 +19,7 @@ export interface ConditionNodeData extends Record<string, unknown> {
   executionDuration?: number;
   executionOutput?: unknown;
   /** Which branch was taken during execution */
-  branchTaken?: 'true' | 'false';
+  branchTaken?: string;
 }
 
 export type ConditionNodeType = Node<ConditionNodeData>;
