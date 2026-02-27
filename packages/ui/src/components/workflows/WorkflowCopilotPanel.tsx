@@ -740,6 +740,103 @@ export function convertDefinitionToReactFlow(
       };
     }
 
+    if (def.type === 'errorHandler') {
+      return {
+        id,
+        type: 'errorHandlerNode',
+        position,
+        data: {
+          label: def.label ?? 'Error Handler',
+          ...(def.description != null ? { description: def.description } : {}),
+          ...(def.continueOnSuccess != null ? { continueOnSuccess: def.continueOnSuccess } : {}),
+        },
+      };
+    }
+
+    if (def.type === 'subWorkflow') {
+      return {
+        id,
+        type: 'subWorkflowNode',
+        position,
+        data: {
+          label: def.label ?? 'Sub-Workflow',
+          ...(def.subWorkflowId != null ? { subWorkflowId: def.subWorkflowId } : {}),
+          ...(def.subWorkflowName != null ? { subWorkflowName: def.subWorkflowName } : {}),
+          ...(def.inputMapping != null ? { inputMapping: def.inputMapping } : {}),
+          ...(def.maxDepth != null ? { maxDepth: def.maxDepth } : {}),
+          ...(def.description != null ? { description: def.description } : {}),
+        },
+      };
+    }
+
+    if (def.type === 'approval') {
+      return {
+        id,
+        type: 'approvalNode',
+        position,
+        data: {
+          label: def.label ?? 'Approval Gate',
+          ...(def.approvalMessage != null ? { approvalMessage: def.approvalMessage } : {}),
+          ...(def.timeoutMinutes != null ? { timeoutMinutes: def.timeoutMinutes } : {}),
+          ...(def.description != null ? { description: def.description } : {}),
+        },
+      };
+    }
+
+    if (def.type === 'stickyNote') {
+      return {
+        id,
+        type: 'stickyNoteNode',
+        position,
+        data: {
+          label: def.label ?? 'Note',
+          ...(def.text != null ? { text: def.text } : {}),
+          ...(def.color != null ? { color: def.color } : {}),
+        },
+      };
+    }
+
+    if (def.type === 'notification') {
+      return {
+        id,
+        type: 'notificationNode',
+        position,
+        data: {
+          label: def.label ?? 'Notification',
+          ...(def.message != null ? { message: def.message } : {}),
+          ...(def.severity != null ? { severity: def.severity } : {}),
+          ...(def.description != null ? { description: def.description } : {}),
+        },
+      };
+    }
+
+    if (def.type === 'parallel') {
+      return {
+        id,
+        type: 'parallelNode',
+        position,
+        data: {
+          label: def.label ?? 'Parallel',
+          branchCount: (def.branchCount as number) ?? 2,
+          ...(def.branchLabels != null ? { branchLabels: def.branchLabels } : {}),
+          ...(def.description != null ? { description: def.description } : {}),
+        },
+      };
+    }
+
+    if (def.type === 'merge') {
+      return {
+        id,
+        type: 'mergeNode',
+        position,
+        data: {
+          label: def.label ?? 'Merge',
+          ...(def.mode != null ? { mode: def.mode } : {}),
+          ...(def.description != null ? { description: def.description } : {}),
+        },
+      };
+    }
+
     // Default: tool node (no type field, has "tool" field)
     const rawToolName = (def.tool as string) || 'unknown_tool';
     const toolName = resolveToolName(rawToolName);

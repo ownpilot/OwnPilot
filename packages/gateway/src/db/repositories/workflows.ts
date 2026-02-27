@@ -141,6 +141,59 @@ export interface SwitchNodeData {
   timeoutMs?: number;
 }
 
+export interface ErrorHandlerNodeData {
+  label: string;
+  description?: string;
+  continueOnSuccess?: boolean;
+  outputAlias?: string;
+}
+
+export interface SubWorkflowNodeData {
+  label: string;
+  subWorkflowId?: string;
+  subWorkflowName?: string;
+  inputMapping?: Record<string, string>;
+  maxDepth?: number;
+  description?: string;
+  retryCount?: number;
+  timeoutMs?: number;
+}
+
+export interface ApprovalNodeData {
+  label: string;
+  approvalMessage?: string;
+  timeoutMinutes?: number;
+  description?: string;
+}
+
+export interface StickyNoteNodeData {
+  label: string;
+  text?: string;
+  color?: string;
+}
+
+export interface NotificationNodeData {
+  label: string;
+  message?: string;
+  severity?: 'info' | 'warning' | 'error' | 'success';
+  description?: string;
+  retryCount?: number;
+  timeoutMs?: number;
+}
+
+export interface ParallelNodeData {
+  label: string;
+  branchCount: number;
+  branchLabels?: string[];
+  description?: string;
+}
+
+export interface MergeNodeData {
+  label: string;
+  mode?: 'waitAll' | 'firstCompleted';
+  description?: string;
+}
+
 export type WorkflowNodeData =
   | ToolNodeData
   | TriggerNodeData
@@ -151,7 +204,15 @@ export type WorkflowNodeData =
   | ForEachNodeData
   | HttpRequestNodeData
   | DelayNodeData
-  | SwitchNodeData;
+  | SwitchNodeData
+  | ErrorHandlerNodeData
+  | SubWorkflowNodeData
+  | ApprovalNodeData
+  | StickyNoteNodeData
+  | NotificationNodeData
+  | ParallelNodeData
+  | MergeNodeData
+  | Record<string, unknown>;
 
 export interface WorkflowNode {
   id: string;

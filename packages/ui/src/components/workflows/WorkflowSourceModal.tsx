@@ -233,6 +233,64 @@ function buildWorkflowDefinition(
         return node;
       }
 
+      // Sticky note node
+      if (n.type === 'stickyNoteNode') {
+        const sn = n.data as Record<string, unknown>;
+        const node: Record<string, unknown> = {
+          id: n.id,
+          type: 'stickyNote',
+          label: sn.label ?? 'Note',
+          position: { x: Math.round(n.position.x), y: Math.round(n.position.y) },
+        };
+        if (sn.text) node.text = sn.text;
+        if (sn.color) node.color = sn.color;
+        return node;
+      }
+
+      // Notification node
+      if (n.type === 'notificationNode') {
+        const nn = n.data as Record<string, unknown>;
+        const node: Record<string, unknown> = {
+          id: n.id,
+          type: 'notification',
+          label: nn.label ?? 'Notification',
+          position: { x: Math.round(n.position.x), y: Math.round(n.position.y) },
+        };
+        if (nn.message) node.message = nn.message;
+        if (nn.severity) node.severity = nn.severity;
+        if (nn.description) node.description = nn.description;
+        return node;
+      }
+
+      // Parallel node
+      if (n.type === 'parallelNode') {
+        const pn = n.data as Record<string, unknown>;
+        const node: Record<string, unknown> = {
+          id: n.id,
+          type: 'parallel',
+          label: pn.label ?? 'Parallel',
+          branchCount: pn.branchCount ?? 2,
+          position: { x: Math.round(n.position.x), y: Math.round(n.position.y) },
+        };
+        if (pn.branchLabels) node.branchLabels = pn.branchLabels;
+        if (pn.description) node.description = pn.description;
+        return node;
+      }
+
+      // Merge node
+      if (n.type === 'mergeNode') {
+        const mn = n.data as Record<string, unknown>;
+        const node: Record<string, unknown> = {
+          id: n.id,
+          type: 'merge',
+          label: mn.label ?? 'Merge',
+          position: { x: Math.round(n.position.x), y: Math.round(n.position.y) },
+        };
+        if (mn.mode) node.mode = mn.mode;
+        if (mn.description) node.description = mn.description;
+        return node;
+      }
+
       // Tool node — show tool config
       const d = n.data as ToolNodeData;
       const node: Record<string, unknown> = {

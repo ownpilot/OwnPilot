@@ -115,6 +115,16 @@ function validateWorkflowSemantics(nodes: WfNode[], edges: WfEdge[]): string[] {
           errors.push(`Node "${node.id}": Parallel node requires "branchCount" >= 2`);
         break;
     }
+
+    // ── Common field range checks ──
+    if (d) {
+      if (typeof d.retryCount === 'number' && (d.retryCount < 0 || d.retryCount > 5)) {
+        errors.push(`Node "${node.id}": retryCount must be between 0 and 5`);
+      }
+      if (typeof d.timeoutMs === 'number' && (d.timeoutMs < 0 || d.timeoutMs > 300000)) {
+        errors.push(`Node "${node.id}": timeoutMs must be between 0 and 300000`);
+      }
+    }
   }
 
   // ── Edge reference validation ──
