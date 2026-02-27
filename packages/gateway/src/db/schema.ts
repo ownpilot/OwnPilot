@@ -1488,6 +1488,16 @@ DO $$ BEGIN
     ALTER TABLE messages ADD COLUMN attachments JSONB;
   END IF;
 END $$;
+
+-- =====================================================
+-- WORKFLOWS: Add input_schema column
+-- =====================================================
+
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'workflows' AND column_name = 'input_schema') THEN
+    ALTER TABLE workflows ADD COLUMN input_schema JSONB NOT NULL DEFAULT '[]';
+  END IF;
+END $$;
 `;
 
 export const INDEXES_SQL = `
