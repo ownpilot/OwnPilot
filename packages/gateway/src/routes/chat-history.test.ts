@@ -274,6 +274,9 @@ describe('Chat History & Logs Routes', () => {
         isArchived: false,
         createdAt: '2026-01-01T00:00:00.000Z',
         updatedAt: '2026-01-01T00:00:00.000Z',
+        source: 'web',
+        channelPlatform: null,
+        channelSenderName: null,
       });
       expect(json.data.total).toBe(1);
       expect(json.data.limit).toBe(50);

@@ -24,7 +24,7 @@ import {
   X,
 } from '../components/icons';
 import { chatApi } from '../api';
-import type { Conversation, HistoryMessage } from '../api';
+import type { Conversation, HistoryMessage, UnifiedMessage, ChannelInfo } from '../api';
 import { useGateway } from '../hooks/useWebSocket';
 import { useDialog } from '../components/ConfirmDialog';
 import { useToast } from '../components/ToastProvider';
@@ -53,27 +53,40 @@ function formatFullDate(dateStr: string): string {
   });
 }
 
-/** Detect conversation source from metadata or agentId */
-function getSource(conv: Conversation): 'telegram' | 'web' {
+type ConvSource = 'telegram' | 'discord' | 'whatsapp' | 'slack' | 'web';
+
+/** Detect conversation source and platform */
+function getSource(conv: Conversation): ConvSource {
+  if (conv.source === 'channel' && conv.channelPlatform) {
+    return conv.channelPlatform as ConvSource;
+  }
+  // Fallback: detect from metadata
   const meta = conv.metadata as Record<string, unknown> | undefined;
-  if (meta?.source === 'channel' || meta?.platform === 'telegram') return 'telegram';
-  if (conv.agentId?.startsWith('channel.')) return 'telegram';
+  if (meta?.source === 'channel') {
+    const platform = meta.platform as string;
+    if (platform === 'discord') return 'discord';
+    if (platform === 'whatsapp') return 'whatsapp';
+    if (platform === 'slack') return 'slack';
+    return 'telegram';
+  }
   return 'web';
 }
 
-function SourceBadge({ source }: { source: 'telegram' | 'web' }) {
-  if (source === 'telegram') {
-    return (
-      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-[#229ED9]/10 text-[#229ED9]">
-        <Telegram className="w-3 h-3" />
-        Telegram
-      </span>
-    );
-  }
+const platformConfig: Record<ConvSource, { label: string; color: string; bg: string }> = {
+  telegram: { label: 'Telegram', color: 'text-[#229ED9]', bg: 'bg-[#229ED9]/10' },
+  discord: { label: 'Discord', color: 'text-[#5865F2]', bg: 'bg-[#5865F2]/10' },
+  whatsapp: { label: 'WhatsApp', color: 'text-[#25D366]', bg: 'bg-[#25D366]/10' },
+  slack: { label: 'Slack', color: 'text-[#4A154B]', bg: 'bg-[#4A154B]/10' },
+  web: { label: 'Web', color: 'text-primary', bg: 'bg-primary/10' },
+};
+
+function SourceBadge({ source }: { source: ConvSource }) {
+  const cfg = platformConfig[source] ?? platformConfig.web;
+  const Icon = source === 'web' ? Globe : Telegram; // Telegram icon as fallback for all channels
   return (
-    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-primary/10 text-primary">
-      <Globe className="w-3 h-3" />
-      Web
+    <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium ${cfg.bg} ${cfg.color}`}>
+      <Icon className="w-3 h-3" />
+      {cfg.label}
     </span>
   );
 }
@@ -81,8 +94,11 @@ function SourceBadge({ source }: { source: 'telegram' | 'web' }) {
 export function ChatHistoryPage() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [messages, setMessages] = useState<HistoryMessage[]>([]);
+  const [messages, setMessages] = useState<(HistoryMessage | UnifiedMessage)[]>([]);
   const [selectedConv, setSelectedConv] = useState<Conversation | null>(null);
+  const [channelInfo, setChannelInfo] = useState<ChannelInfo | null>(null);
+  const [replyText, setReplyText] = useState('');
+  const [isSendingReply, setIsSendingReply] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -131,12 +147,13 @@ export function ChatHistoryPage() {
     [showArchived, toast]
   );
 
-  // Reload currently selected conversation messages
+  // Reload currently selected conversation messages (unified for channel conversations)
   const refreshSelectedMessages = useCallback(async (convId: string) => {
     try {
-      const data = await chatApi.getHistory(convId);
+      const data = await chatApi.getUnifiedHistory(convId);
       setSelectedConv(data.conversation);
       setMessages(data.messages);
+      setChannelInfo(data.channelInfo ?? null);
     } catch {
       // Non-critical — list already updated
     }
@@ -183,14 +200,17 @@ export function ChatHistoryPage() {
     };
   }, [search, fetchConversations]);
 
-  // Select conversation and load messages
+  // Select conversation and load messages (unified endpoint merges channel + AI)
   const selectConversation = useCallback(async (id: string) => {
     setSelectedId(id);
     setIsLoadingMessages(true);
+    setChannelInfo(null);
+    setReplyText('');
     try {
-      const data = await chatApi.getHistory(id);
+      const data = await chatApi.getUnifiedHistory(id);
       setSelectedConv(data.conversation);
       setMessages(data.messages);
+      setChannelInfo(data.channelInfo ?? null);
     } catch {
       toast.error('Failed to load conversation');
     } finally {
@@ -207,6 +227,23 @@ export function ChatHistoryPage() {
     }
     setIsRefreshing(false);
   }, [fetchConversations, refreshSelectedMessages, search]);
+
+  // Send reply to channel conversation
+  const handleChannelReply = useCallback(async () => {
+    if (!replyText.trim() || !selectedId || !channelInfo) return;
+    setIsSendingReply(true);
+    try {
+      await chatApi.channelReply(selectedId, replyText.trim());
+      setReplyText('');
+      // Refresh to show the sent message
+      await refreshSelectedMessages(selectedId);
+      toast.success('Reply sent');
+    } catch {
+      toast.error('Failed to send reply');
+    } finally {
+      setIsSendingReply(false);
+    }
+  }, [replyText, selectedId, channelInfo, refreshSelectedMessages, toast]);
 
   // Scroll to bottom when messages load
   useEffect(() => {
@@ -641,7 +678,7 @@ export function ChatHistoryPage() {
               <History className="w-16 h-16 mb-4 opacity-20" />
               <p>Select a conversation to view</p>
               <p className="text-sm mt-1">
-                All chat sessions from Web UI and Telegram are stored here
+                All conversations from Web UI and channels are shown here
               </p>
             </div>
           ) : isLoadingMessages ? (
@@ -674,6 +711,12 @@ export function ChatHistoryPage() {
                         <Clock className="w-3 h-3" />
                         {formatFullDate(selectedConv.createdAt)}
                       </span>
+                      {selectedConv.channelSenderName && (
+                        <span className="flex items-center gap-1">
+                          <User className="w-3 h-3" />
+                          {selectedConv.channelSenderName}
+                        </span>
+                      )}
                       {selectedConv.model && (
                         <span>
                           {selectedConv.provider}/{selectedConv.model}
@@ -706,8 +749,10 @@ export function ChatHistoryPage() {
               <div className="flex-1 overflow-y-auto px-6 py-4">
                 <div className="space-y-4 max-w-3xl mx-auto">
                   {messages.map((msg) => {
+                    const unified = msg as UnifiedMessage;
                     const isAssistant = msg.role === 'assistant';
                     const isSystem = msg.role === 'system' || msg.role === 'tool';
+                    const senderName = unified.senderName;
 
                     if (isSystem) {
                       return (
@@ -752,6 +797,15 @@ export function ChatHistoryPage() {
                                 : 'bg-primary text-white rounded-tr-md'
                             }`}
                           >
+                            {/* Sender name for channel messages */}
+                            {senderName && (
+                              <p className={`text-[10px] font-semibold mb-1 ${
+                                isAssistant ? 'text-primary' : 'text-white/80'
+                              }`}>
+                                {senderName}
+                              </p>
+                            )}
+
                             <MarkdownContent content={msg.content} compact className="text-sm" />
 
                             {/* Tool calls indicator */}
@@ -768,7 +822,7 @@ export function ChatHistoryPage() {
                                 >
                                   Used {msg.toolCalls.length} tool
                                   {msg.toolCalls.length !== 1 ? 's' : ''}:{' '}
-                                  {msg.toolCalls.map((tc) => tc.name).join(', ')}
+                                  {(msg.toolCalls as Array<{ name: string }>).map((tc) => tc.name).join(', ')}
                                 </p>
                               </div>
                             )}
@@ -792,6 +846,30 @@ export function ChatHistoryPage() {
                   <div ref={messagesEndRef} />
                 </div>
               </div>
+
+              {/* Channel Reply Input */}
+              {channelInfo && (
+                <div className="border-t border-border dark:border-dark-border bg-bg-secondary dark:bg-dark-bg-secondary px-6 py-3">
+                  <div className="max-w-3xl mx-auto flex items-center gap-3">
+                    <input
+                      type="text"
+                      placeholder={`Reply to ${channelInfo.senderName ?? 'channel'}...`}
+                      value={replyText}
+                      onChange={(e) => setReplyText(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleChannelReply(); } }}
+                      disabled={isSendingReply}
+                      className="flex-1 px-4 py-2 rounded-lg bg-bg-primary dark:bg-dark-bg-primary border border-border dark:border-dark-border text-sm text-text-primary dark:text-dark-text-primary placeholder:text-text-muted dark:placeholder:text-dark-text-muted focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50"
+                    />
+                    <button
+                      onClick={handleChannelReply}
+                      disabled={!replyText.trim() || isSendingReply}
+                      className="px-4 py-2 rounded-lg bg-primary text-white text-sm font-medium hover:bg-primary-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {isSendingReply ? 'Sending...' : 'Send'}
+                    </button>
+                  </div>
+                </div>
+              )}
             </>
           )}
         </div>

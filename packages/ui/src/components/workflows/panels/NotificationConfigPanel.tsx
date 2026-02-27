@@ -3,14 +3,32 @@
  * Message template, severity selector, output alias.
  */
 
+import { useCallback } from 'react';
 import { X, Bell, Trash2 } from '../../icons';
 import type { NodeConfigPanelProps } from '../NodeConfigPanel';
 import { INPUT_CLS, OutputAliasField, RetryTimeoutFields } from '../NodeConfigPanel';
+import { OutputTreeBrowser } from '../OutputTreeBrowser';
+import { TemplateValidator } from '../TemplateValidator';
 
 const SEVERITIES = ['info', 'warning', 'error', 'success'] as const;
 
-export function NotificationConfigPanel({ node, onUpdate, onDelete, onClose }: NodeConfigPanelProps) {
+export function NotificationConfigPanel({
+  node,
+  upstreamNodes,
+  onUpdate,
+  onDelete,
+  onClose,
+}: NodeConfigPanelProps) {
   const data = node.data as Record<string, unknown>;
+  const message = (data.message as string) ?? '';
+
+  const injectTemplate = useCallback(
+    (template: string) => {
+      const updated = message + template;
+      onUpdate(node.id, { ...data, message: updated });
+    },
+    [message, data, node.id, onUpdate]
+  );
 
   return (
     <div className="flex flex-col h-full border-l border-border dark:border-dark-border bg-bg-secondary dark:bg-dark-bg-secondary">
@@ -48,15 +66,16 @@ export function NotificationConfigPanel({ node, onUpdate, onDelete, onClose }: N
             Message
           </label>
           <textarea
-            value={(data.message as string) ?? ''}
+            value={message}
             onChange={(e) => onUpdate(node.id, { ...data, message: e.target.value })}
-            placeholder="Notification message... Supports {{node_1.output}} templates"
+            placeholder="Notification message... Supports {{node_2.output}} templates"
             rows={4}
             className={`${INPUT_CLS} resize-y`}
           />
           <p className="text-[10px] text-text-muted">
             {'Supports {{template}} expressions for dynamic content'}
           </p>
+          <TemplateValidator value={message} upstreamNodes={upstreamNodes} />
         </div>
 
         {/* Severity */}
@@ -90,6 +109,11 @@ export function NotificationConfigPanel({ node, onUpdate, onDelete, onClose }: N
             className={INPUT_CLS}
           />
         </div>
+
+        {/* Upstream outputs browser */}
+        {upstreamNodes.length > 0 && (
+          <OutputTreeBrowser upstreamNodes={upstreamNodes} onInsert={injectTemplate} />
+        )}
 
         <OutputAliasField data={data} nodeId={node.id} onUpdate={onUpdate} />
         <RetryTimeoutFields data={data} nodeId={node.id} onUpdate={onUpdate} />

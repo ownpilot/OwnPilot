@@ -34,6 +34,8 @@ import type {
   CustomRecord,
   Channel,
   ChannelMessage,
+  ChannelUser,
+  ChannelStats,
   AIBriefing,
   DailyBriefingData,
   MergedModel,
@@ -333,6 +335,14 @@ export const channelsApi = {
     apiClient.delete<{ deleted: number }>('/channels/messages', {
       params: channelId ? { channelId } : undefined,
     }),
+  getUsers: (channelId: string) =>
+    apiClient.get<{ users: ChannelUser[]; count: number }>(`/channels/${channelId}/users`),
+  getStats: (channelId: string) =>
+    apiClient.get<ChannelStats>(`/channels/${channelId}/stats`),
+  reconnect: (channelId: string) =>
+    apiClient.post<{ pluginId: string; status: string }>(`/channels/${channelId}/reconnect`),
+  getDetail: (channelId: string) =>
+    apiClient.get<Channel>(`/channels/${channelId}`),
 };
 
 // ---- Expenses ----

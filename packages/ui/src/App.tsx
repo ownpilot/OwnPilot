@@ -8,7 +8,7 @@ import { useAuth } from './hooks/useAuth';
 const ChatPage = lazy(() => import('./pages/ChatPage').then((m) => ({ default: m.ChatPage })));
 
 // Lazy-load all other pages for code splitting
-const InboxPage = lazy(() => import('./pages/InboxPage').then((m) => ({ default: m.InboxPage })));
+// InboxPage removed — /inbox redirects to /history (unified conversations)
 const ChatHistoryPage = lazy(() =>
   import('./pages/ChatHistoryPage').then((m) => ({ default: m.ChatHistoryPage }))
 );
@@ -98,6 +98,9 @@ const ConnectedAppsPage = lazy(() =>
   import('./pages/ConnectedAppsPage').then((m) => ({ default: m.ConnectedAppsPage }))
 );
 
+const ChannelsPage = lazy(() =>
+  import('./pages/ChannelsPage').then((m) => ({ default: m.ChannelsPage }))
+);
 const WorkflowsPage = lazy(() =>
   import('./pages/WorkflowsPage').then((m) => ({ default: m.WorkflowsPage }))
 );
@@ -209,7 +212,8 @@ export function App() {
         <Route path="custom-data" element={page(<CustomDataPage />)} />
         <Route path="data-browser" element={page(<DataBrowserPage />)} />
         <Route path="coding-agents" element={page(<CodingAgentsPage />)} />
-        <Route path="inbox" element={page(<InboxPage />)} />
+        <Route path="channels" element={page(<ChannelsPage />)} />
+        <Route path="inbox" element={<Navigate to="/history" replace />} />
         <Route path="history" element={page(<ChatHistoryPage />)} />
         <Route path="agents" element={page(<AgentsPage />)} />
         <Route path="tools" element={page(<ToolsPage />)} />

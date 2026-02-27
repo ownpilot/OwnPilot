@@ -1,0 +1,711 @@
+/**
+ * Channels Management Page
+ *
+ * Displays all channel plugins, their live connection status,
+ * message stats, users, and provides connect/disconnect/reconnect actions.
+ */
+
+import { useState, useEffect, useCallback } from 'react';
+import { channelsApi } from '../api/endpoints/misc';
+import { useGateway } from '../hooks/useWebSocket';
+import { useToast } from '../components/ToastProvider';
+import { ChannelSetupModal } from '../components/ChannelSetupModal';
+import {
+  Plus,
+  RefreshCw,
+  Power,
+  AlertTriangle,
+  Users,
+  MessageSquare,
+  Activity,
+  CheckCircle2,
+  XCircle,
+  Clock,
+  Send,
+  Shield,
+  Trash2,
+} from '../components/icons';
+import type { Channel, ChannelUser, ChannelStats } from '../api/types';
+
+// ============================================================================
+// Helper: format relative time
+// ============================================================================
+
+function timeAgo(dateStr: string): string {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const minutes = Math.floor(diff / 60000);
+  if (minutes < 1) return 'just now';
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  return `${days}d ago`;
+}
+
+// ============================================================================
+// Status helpers
+// ============================================================================
+
+function getStatusColor(status: Channel['status']) {
+  switch (status) {
+    case 'connected':
+      return 'text-success';
+    case 'connecting':
+      return 'text-warning';
+    case 'error':
+      return 'text-error';
+    default:
+      return 'text-text-muted dark:text-dark-text-muted';
+  }
+}
+
+function getStatusBg(status: Channel['status']) {
+  switch (status) {
+    case 'connected':
+      return 'bg-success/20';
+    case 'connecting':
+      return 'bg-warning/20';
+    case 'error':
+      return 'bg-error/20';
+    default:
+      return 'bg-text-muted/20';
+  }
+}
+
+function StatusIcon({ status }: { status: Channel['status'] }) {
+  switch (status) {
+    case 'connected':
+      return <CheckCircle2 className="w-4 h-4 text-success" />;
+    case 'connecting':
+      return <Clock className="w-4 h-4 text-warning animate-pulse" />;
+    case 'error':
+      return <XCircle className="w-4 h-4 text-error" />;
+    default:
+      return <Power className="w-4 h-4 text-text-muted dark:text-dark-text-muted" />;
+  }
+}
+
+function PlatformIcon({ type }: { type: string }) {
+  // Telegram SVG icon
+  if (type === 'telegram') {
+    return (
+      <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z" />
+      </svg>
+    );
+  }
+  // Generic globe for others
+  return <Send className="w-5 h-5" />;
+}
+
+// ============================================================================
+// Main Component
+// ============================================================================
+
+export function ChannelsPage() {
+  const toast = useToast();
+  const { subscribe } = useGateway();
+
+  const [channels, setChannels] = useState<Channel[]>([]);
+  const [summary, setSummary] = useState<{ total: number; connected: number; disconnected: number }>({
+    total: 0,
+    connected: 0,
+    disconnected: 0,
+  });
+  const [isLoading, setIsLoading] = useState(true);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [showSetup, setShowSetup] = useState(false);
+
+  // Detail panel state
+  const [users, setUsers] = useState<ChannelUser[]>([]);
+  const [stats, setStats] = useState<ChannelStats | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
+
+  const selectedChannel = channels.find((ch) => ch.id === selectedId) ?? null;
+
+  // ---- Load channels ----
+  const loadChannels = useCallback(async () => {
+    try {
+      const resp = await channelsApi.list();
+      setChannels(resp.channels);
+      setSummary(resp.summary);
+
+      // Auto-select first if nothing selected
+      if (!selectedId && resp.channels.length > 0) {
+        setSelectedId(resp.channels[0]!.id);
+      }
+    } catch {
+      toast.error('Failed to load channels');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [selectedId, toast]);
+
+  useEffect(() => {
+    loadChannels();
+  }, [loadChannels]);
+
+  // ---- Load detail when selection changes ----
+  const loadDetail = useCallback(
+    async (channelId: string) => {
+      setDetailLoading(true);
+      try {
+        const [usersResp, statsResp] = await Promise.all([
+          channelsApi.getUsers(channelId),
+          channelsApi.getStats(channelId),
+        ]);
+        setUsers(usersResp.users);
+        setStats(statsResp);
+      } catch {
+        toast.error('Failed to load channel details');
+      } finally {
+        setDetailLoading(false);
+      }
+    },
+    [toast]
+  );
+
+  useEffect(() => {
+    if (selectedId) {
+      loadDetail(selectedId);
+    }
+  }, [selectedId, loadDetail]);
+
+  // ---- Real-time updates ----
+  useEffect(() => {
+    const unsub1 = subscribe<{ entity: string; action: string; id?: string }>(
+      'data:changed',
+      (data) => {
+        if (data.entity === 'channel') {
+          loadChannels();
+          if (selectedId) loadDetail(selectedId);
+        }
+      }
+    );
+    const unsub2 = subscribe<{ channelId: string }>('channel:message', () => {
+      // Refresh stats on new message
+      if (selectedId) loadDetail(selectedId);
+    });
+    const unsub3 = subscribe<{ pluginId: string; status: string }>('channel:status', (data) => {
+      setChannels((prev) =>
+        prev.map((ch) =>
+          ch.id === data.pluginId ? { ...ch, status: data.status as Channel['status'] } : ch
+        )
+      );
+    });
+
+    return () => {
+      unsub1();
+      unsub2();
+      unsub3();
+    };
+  }, [subscribe, selectedId, loadChannels, loadDetail]);
+
+  // ---- Actions ----
+  const handleConnect = useCallback(
+    async (channelId: string) => {
+      setActionLoading('connect');
+      try {
+        await channelsApi.connect(channelId);
+        toast.success('Channel connected');
+        await loadChannels();
+      } catch {
+        toast.error('Failed to connect channel');
+      } finally {
+        setActionLoading(null);
+      }
+    },
+    [toast, loadChannels]
+  );
+
+  const handleDisconnect = useCallback(
+    async (channelId: string) => {
+      setActionLoading('disconnect');
+      try {
+        await channelsApi.disconnect(channelId);
+        toast.success('Channel disconnected');
+        await loadChannels();
+      } catch {
+        toast.error('Failed to disconnect channel');
+      } finally {
+        setActionLoading(null);
+      }
+    },
+    [toast, loadChannels]
+  );
+
+  const handleReconnect = useCallback(
+    async (channelId: string) => {
+      setActionLoading('reconnect');
+      try {
+        await channelsApi.reconnect(channelId);
+        toast.success('Channel reconnected');
+        await loadChannels();
+      } catch {
+        toast.error('Failed to reconnect channel');
+      } finally {
+        setActionLoading(null);
+      }
+    },
+    [toast, loadChannels]
+  );
+
+  const handleClearMessages = useCallback(
+    async (channelId: string) => {
+      if (!confirm('Clear all messages for this channel? This cannot be undone.')) return;
+      setActionLoading('clear');
+      try {
+        const resp = await channelsApi.clearMessages(channelId);
+        toast.success(`Cleared ${resp.deleted} messages`);
+        if (selectedId === channelId) loadDetail(channelId);
+      } catch {
+        toast.error('Failed to clear messages');
+      } finally {
+        setActionLoading(null);
+      }
+    },
+    [toast, selectedId, loadDetail]
+  );
+
+  // ---- Loading skeleton ----
+  if (isLoading) {
+    return (
+      <div className="p-6 space-y-4">
+        <div className="h-8 w-48 bg-bg-tertiary dark:bg-dark-bg-tertiary rounded animate-pulse" />
+        <div className="flex gap-4">
+          <div className="w-72 space-y-2">
+            {[1, 2, 3].map((i) => (
+              <div
+                key={i}
+                className="h-16 bg-bg-tertiary dark:bg-dark-bg-tertiary rounded-lg animate-pulse"
+              />
+            ))}
+          </div>
+          <div className="flex-1 h-96 bg-bg-tertiary dark:bg-dark-bg-tertiary rounded-lg animate-pulse" />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="h-full flex flex-col">
+      {/* Header */}
+      <div className="px-6 py-4 border-b border-border dark:border-dark-border">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-lg font-semibold text-text-primary dark:text-dark-text-primary">
+              Channels
+            </h1>
+            <p className="text-xs text-text-muted dark:text-dark-text-muted mt-0.5">
+              Manage messaging channels and monitor their status
+            </p>
+          </div>
+          <button
+            onClick={() => setShowSetup(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-primary text-white rounded-md hover:bg-primary/90 transition-colors"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            Add Channel
+          </button>
+        </div>
+
+        {/* Status summary bar */}
+        <div className="flex items-center gap-4 mt-3">
+          <div className="flex items-center gap-1.5 text-xs">
+            <div className="w-2 h-2 rounded-full bg-success" />
+            <span className="text-text-secondary dark:text-dark-text-secondary">
+              {summary.connected} Connected
+            </span>
+          </div>
+          <div className="flex items-center gap-1.5 text-xs">
+            <div className="w-2 h-2 rounded-full bg-text-muted" />
+            <span className="text-text-secondary dark:text-dark-text-secondary">
+              {summary.disconnected} Disconnected
+            </span>
+          </div>
+          <div className="flex items-center gap-1.5 text-xs text-text-muted dark:text-dark-text-muted">
+            <Activity className="w-3 h-3" />
+            {summary.total} Total
+          </div>
+        </div>
+      </div>
+
+      {/* Main content */}
+      <div className="flex-1 flex overflow-hidden">
+        {/* Sidebar — channel list */}
+        <div className="w-72 border-r border-border dark:border-dark-border overflow-y-auto">
+          {channels.length === 0 ? (
+            <div className="p-6 text-center">
+              <Send className="w-8 h-8 mx-auto text-text-muted dark:text-dark-text-muted mb-2" />
+              <p className="text-sm text-text-muted dark:text-dark-text-muted">No channels yet</p>
+              <button
+                onClick={() => setShowSetup(true)}
+                className="mt-2 text-xs text-primary hover:underline"
+              >
+                Set up your first channel
+              </button>
+            </div>
+          ) : (
+            <div className="p-2 space-y-1">
+              {channels.map((ch) => (
+                <button
+                  key={ch.id}
+                  onClick={() => setSelectedId(ch.id)}
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors ${
+                    selectedId === ch.id
+                      ? 'bg-primary/10 border border-primary/30'
+                      : 'hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary border border-transparent'
+                  }`}
+                >
+                  <div
+                    className={`shrink-0 w-9 h-9 rounded-lg flex items-center justify-center ${
+                      ch.status === 'connected'
+                        ? 'bg-primary/10 text-primary'
+                        : 'bg-bg-tertiary dark:bg-dark-bg-tertiary text-text-muted dark:text-dark-text-muted'
+                    }`}
+                  >
+                    <PlatformIcon type={ch.type} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-sm font-medium text-text-primary dark:text-dark-text-primary truncate">
+                        {ch.name}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      <div className={`w-1.5 h-1.5 rounded-full ${getStatusColor(ch.status).replace('text-', 'bg-')}`} />
+                      <span className="text-[10px] text-text-muted dark:text-dark-text-muted capitalize">
+                        {ch.status}
+                      </span>
+                      {ch.botInfo?.username && (
+                        <span className="text-[10px] text-text-muted dark:text-dark-text-muted">
+                          @{ch.botInfo.username}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Detail panel */}
+        <div className="flex-1 overflow-y-auto">
+          {selectedChannel ? (
+            <ChannelDetail
+              channel={selectedChannel}
+              users={users}
+              stats={stats}
+              isLoading={detailLoading}
+              actionLoading={actionLoading}
+              onConnect={handleConnect}
+              onDisconnect={handleDisconnect}
+              onReconnect={handleReconnect}
+              onClearMessages={handleClearMessages}
+            />
+          ) : (
+            <div className="h-full flex items-center justify-center">
+              <div className="text-center">
+                <Send className="w-10 h-10 mx-auto text-text-muted dark:text-dark-text-muted mb-3" />
+                <p className="text-sm text-text-muted dark:text-dark-text-muted">
+                  Select a channel to view details
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Setup modal */}
+      {showSetup && (
+        <ChannelSetupModal
+          onClose={() => setShowSetup(false)}
+          onSuccess={() => {
+            setShowSetup(false);
+            loadChannels();
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+// ============================================================================
+// Channel Detail Panel
+// ============================================================================
+
+function ChannelDetail({
+  channel,
+  users,
+  stats,
+  isLoading,
+  actionLoading,
+  onConnect,
+  onDisconnect,
+  onReconnect,
+  onClearMessages,
+}: {
+  channel: Channel;
+  users: ChannelUser[];
+  stats: ChannelStats | null;
+  isLoading: boolean;
+  actionLoading: string | null;
+  onConnect: (id: string) => void;
+  onDisconnect: (id: string) => void;
+  onReconnect: (id: string) => void;
+  onClearMessages: (id: string) => void;
+}) {
+  return (
+    <div className="p-6 space-y-6">
+      {/* Channel header */}
+      <div className="flex items-start gap-4">
+        <div
+          className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+            channel.status === 'connected'
+              ? 'bg-primary/10 text-primary'
+              : 'bg-bg-tertiary dark:bg-dark-bg-tertiary text-text-muted dark:text-dark-text-muted'
+          }`}
+        >
+          <PlatformIcon type={channel.type} />
+        </div>
+        <div className="flex-1">
+          <h2 className="text-base font-semibold text-text-primary dark:text-dark-text-primary">
+            {channel.name}
+          </h2>
+          <div className="flex items-center gap-2 mt-1">
+            <StatusIcon status={channel.status} />
+            <span className={`text-sm font-medium ${getStatusColor(channel.status)}`}>
+              {channel.status === 'connected' ? 'Connected' : channel.status === 'connecting' ? 'Connecting...' : channel.status === 'error' ? 'Error' : 'Disconnected'}
+            </span>
+          </div>
+          {channel.botInfo && (
+            <p className="text-xs text-text-muted dark:text-dark-text-muted mt-1">
+              Bot: @{channel.botInfo.username}
+              {channel.botInfo.firstName && ` (${channel.botInfo.firstName})`}
+            </p>
+          )}
+        </div>
+        <span
+          className={`px-2 py-1 text-[10px] font-bold uppercase rounded ${getStatusBg(channel.status)} ${getStatusColor(channel.status)}`}
+        >
+          {channel.type}
+        </span>
+      </div>
+
+      {/* Stats cards */}
+      {stats && (
+        <div className="grid grid-cols-3 gap-3">
+          <StatCard label="Total Messages" value={stats.totalMessages} icon={MessageSquare} />
+          <StatCard label="Today" value={stats.todayMessages} icon={Activity} />
+          <StatCard label="This Week" value={stats.weekMessages} icon={Clock} />
+        </div>
+      )}
+
+      {stats?.lastActivityAt && (
+        <p className="text-xs text-text-muted dark:text-dark-text-muted">
+          Last activity: {timeAgo(stats.lastActivityAt)}
+        </p>
+      )}
+
+      {/* Users section */}
+      <div>
+        <div className="flex items-center gap-2 mb-3">
+          <Users className="w-4 h-4 text-text-muted dark:text-dark-text-muted" />
+          <h3 className="text-sm font-medium text-text-primary dark:text-dark-text-primary">
+            Users ({users.length})
+          </h3>
+        </div>
+
+        {isLoading ? (
+          <div className="space-y-2">
+            {[1, 2, 3].map((i) => (
+              <div
+                key={i}
+                className="h-10 bg-bg-tertiary dark:bg-dark-bg-tertiary rounded animate-pulse"
+              />
+            ))}
+          </div>
+        ) : users.length === 0 ? (
+          <p className="text-xs text-text-muted dark:text-dark-text-muted italic py-3">
+            No users have interacted with this channel yet.
+          </p>
+        ) : (
+          <div className="border border-border dark:border-dark-border rounded-lg overflow-hidden">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="bg-bg-tertiary dark:bg-dark-bg-tertiary">
+                  <th className="text-left px-3 py-2 font-medium text-text-secondary dark:text-dark-text-secondary">
+                    User
+                  </th>
+                  <th className="text-left px-3 py-2 font-medium text-text-secondary dark:text-dark-text-secondary">
+                    Status
+                  </th>
+                  <th className="text-left px-3 py-2 font-medium text-text-secondary dark:text-dark-text-secondary">
+                    Last Seen
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border dark:divide-dark-border">
+                {users.map((user) => (
+                  <tr key={user.id} className="hover:bg-bg-tertiary/50 dark:hover:bg-dark-bg-tertiary/50">
+                    <td className="px-3 py-2">
+                      <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-[10px] font-bold">
+                          {(user.displayName ?? user.platformUsername ?? user.platformUserId).charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                          <span className="font-medium text-text-primary dark:text-dark-text-primary">
+                            {user.displayName ?? user.platformUsername ?? user.platformUserId}
+                          </span>
+                          {user.platformUsername && user.displayName && (
+                            <span className="ml-1 text-text-muted dark:text-dark-text-muted">
+                              @{user.platformUsername}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-3 py-2">
+                      <div className="flex items-center gap-1.5">
+                        {user.isBlocked ? (
+                          <span className="flex items-center gap-1 px-1.5 py-0.5 bg-error/10 text-error rounded text-[10px] font-medium">
+                            <AlertTriangle className="w-2.5 h-2.5" />
+                            Blocked
+                          </span>
+                        ) : user.isVerified ? (
+                          <span className="flex items-center gap-1 px-1.5 py-0.5 bg-success/10 text-success rounded text-[10px] font-medium">
+                            <Shield className="w-2.5 h-2.5" />
+                            Verified
+                          </span>
+                        ) : (
+                          <span className="px-1.5 py-0.5 bg-warning/10 text-warning rounded text-[10px] font-medium">
+                            Pending
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-3 py-2 text-text-muted dark:text-dark-text-muted">
+                      {timeAgo(user.lastSeenAt)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {/* Actions */}
+      <div className="border-t border-border dark:border-dark-border pt-4">
+        <h3 className="text-sm font-medium text-text-primary dark:text-dark-text-primary mb-3">
+          Actions
+        </h3>
+        <div className="flex flex-wrap gap-2">
+          {channel.status === 'connected' ? (
+            <>
+              <ActionButton
+                icon={RefreshCw}
+                label="Reconnect"
+                loading={actionLoading === 'reconnect'}
+                onClick={() => onReconnect(channel.id)}
+              />
+              <ActionButton
+                icon={Power}
+                label="Disconnect"
+                variant="warning"
+                loading={actionLoading === 'disconnect'}
+                onClick={() => onDisconnect(channel.id)}
+              />
+            </>
+          ) : (
+            <ActionButton
+              icon={Power}
+              label="Connect"
+              variant="success"
+              loading={actionLoading === 'connect'}
+              onClick={() => onConnect(channel.id)}
+            />
+          )}
+          <ActionButton
+            icon={Trash2}
+            label="Clear Messages"
+            variant="danger"
+            loading={actionLoading === 'clear'}
+            onClick={() => onClearMessages(channel.id)}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
+// Stat Card
+// ============================================================================
+
+function StatCard({
+  label,
+  value,
+  icon: Icon,
+}: {
+  label: string;
+  value: number;
+  icon: React.ComponentType<{ className?: string }>;
+}) {
+  return (
+    <div className="px-4 py-3 bg-bg-tertiary dark:bg-dark-bg-tertiary rounded-lg">
+      <div className="flex items-center gap-2 mb-1">
+        <Icon className="w-3.5 h-3.5 text-text-muted dark:text-dark-text-muted" />
+        <span className="text-[10px] text-text-muted dark:text-dark-text-muted uppercase tracking-wide">
+          {label}
+        </span>
+      </div>
+      <p className="text-lg font-semibold text-text-primary dark:text-dark-text-primary">
+        {value.toLocaleString()}
+      </p>
+    </div>
+  );
+}
+
+// ============================================================================
+// Action Button
+// ============================================================================
+
+function ActionButton({
+  icon: Icon,
+  label,
+  variant = 'default',
+  loading = false,
+  onClick,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  variant?: 'default' | 'success' | 'warning' | 'danger';
+  loading?: boolean;
+  onClick: () => void;
+}) {
+  const colors = {
+    default:
+      'border-border dark:border-dark-border text-text-primary dark:text-dark-text-primary hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary',
+    success: 'border-success/30 text-success hover:bg-success/10',
+    warning: 'border-warning/30 text-warning hover:bg-warning/10',
+    danger: 'border-error/30 text-error hover:bg-error/10',
+  };
+
+  return (
+    <button
+      onClick={onClick}
+      disabled={loading}
+      className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border rounded-md transition-colors disabled:opacity-50 ${colors[variant]}`}
+    >
+      {loading ? (
+        <div className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+      ) : (
+        <Icon className="w-3.5 h-3.5" />
+      )}
+      {label}
+    </button>
+  );
+}

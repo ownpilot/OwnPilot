@@ -469,7 +469,8 @@ export class ChannelServiceImpl implements IChannelService {
         }
       }
 
-      // 5. Save incoming message
+      // 5. Save incoming message (conversationId wired after session creation below)
+      let savedInboundId: string | undefined;
       try {
         await this.messagesRepo.create({
           id: message.id,
@@ -488,6 +489,7 @@ export class ChannelServiceImpl implements IChannelService {
           replyToId: message.replyToId,
           metadata: message.metadata,
         });
+        savedInboundId = message.id;
       } catch (error) {
         log.warn('Failed to save incoming message', { error });
       }
@@ -525,7 +527,7 @@ export class ChannelServiceImpl implements IChannelService {
         // so that loadConversation() can find it later for context continuity
         const { getOrCreateChatAgent } = await import('../routes/agents.js');
         const { resolveForProcess } = await import('../services/model-routing.js');
-        const routing = await resolveForProcess('telegram');
+        const routing = await resolveForProcess('channel');
         const fallback =
           routing.fallbackProvider && routing.fallbackModel
             ? { provider: routing.fallbackProvider, model: routing.fallbackModel }
@@ -565,6 +567,13 @@ export class ChannelServiceImpl implements IChannelService {
 
       // Touch last message
       await this.sessionsRepo.touchLastMessage(session.id);
+
+      // Back-fill conversation_id on the inbound channel_message saved above
+      if (savedInboundId && session.conversationId) {
+        this.messagesRepo
+          .linkConversation(savedInboundId, session.conversationId)
+          .catch((err) => log.warn('Failed to backfill inbound conversation_id', { error: err }));
+      }
 
       // Register/touch in unified ISessionService
       const sessionSvc = tryGetSessionService();
@@ -666,6 +675,7 @@ export class ChannelServiceImpl implements IChannelService {
           content: responseText,
           contentType: 'text',
           replyToId: message.id,
+          conversationId: session.conversationId ?? undefined,
           metadata: { ...message.metadata, platformChatId: message.platformChatId },
         });
       } catch (error) {
@@ -742,7 +752,7 @@ export class ChannelServiceImpl implements IChannelService {
       return demoModeReply(message.text);
     }
 
-    const routing = await resolveForProcess('telegram');
+    const routing = await resolveForProcess('channel');
     const fallback =
       routing.fallbackProvider && routing.fallbackModel
         ? { provider: routing.fallbackProvider, model: routing.fallbackModel }
@@ -883,7 +893,7 @@ export class ChannelServiceImpl implements IChannelService {
       return demoModeReply(message.text);
     }
 
-    const routing = await resolveForProcess('telegram');
+    const routing = await resolveForProcess('channel');
     const fallback =
       routing.fallbackProvider && routing.fallbackModel
         ? { provider: routing.fallbackProvider, model: routing.fallbackModel }

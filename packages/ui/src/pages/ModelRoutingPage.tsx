@@ -29,9 +29,9 @@ const PROCESSES: Array<{
     description: 'Chat conversations from the web UI (when user does not explicitly pick a model)',
   },
   {
-    id: 'telegram',
-    label: 'Telegram',
-    description: 'Messages received through the Telegram channel',
+    id: 'channel',
+    label: 'Channels',
+    description: 'Messages received through channels (Telegram, Discord, WhatsApp, Slack)',
   },
   {
     id: 'pulse',
@@ -67,7 +67,7 @@ export function ModelRoutingPage() {
   const [configuredProviders, setConfiguredProviders] = useState<string[]>([]);
   const [states, setStates] = useState<Record<RoutingProcess, ProcessCardState>>({
     chat: { routing: emptyRouting, resolved: emptyResolved, isDirty: false, isSaving: false },
-    telegram: { routing: emptyRouting, resolved: emptyResolved, isDirty: false, isSaving: false },
+    channel: { routing: emptyRouting, resolved: emptyResolved, isDirty: false, isSaving: false },
     pulse: { routing: emptyRouting, resolved: emptyResolved, isDirty: false, isSaving: false },
   });
 

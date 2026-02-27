@@ -9,6 +9,8 @@
 export const PLATFORM_MESSAGE_LIMITS: Record<string, number> = {
   telegram: 4096,
   discord: 2000,
+  whatsapp: 4096,
+  slack: 4000,
 };
 
 // ============================================================================

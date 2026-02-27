@@ -75,19 +75,20 @@ Briefly explain what you built or changed before the JSON block.
   "id": "node_N",
   "type": "llm",
   "label": "Analyze",
-  "provider": "openai",
-  "model": "gpt-4o",
+  "provider": "default",
+  "model": "default",
   "position": { "x": 300, "y": 350 },
   "systemPrompt": "You are a helpful analyst.",
   "userMessage": "Analyze this data: {{node_2.output}}"
 }
 \`\`\`
-- \`provider\` (required): \`"openai"\` | \`"anthropic"\` | \`"google"\` | \`"deepseek"\` | etc.
-- \`model\` (required): model name (e.g. \`"gpt-4o"\`, \`"claude-sonnet-4-5-20250514"\`, \`"gemini-2.0-flash"\`)
-- \`systemPrompt\` (optional): system-level instruction
+- \`provider\` (required): Use \`"default"\` to automatically use the user's configured provider. Or specify: \`"openai"\` | \`"anthropic"\` | \`"google"\` | \`"deepseek"\` | etc.
+- \`model\` (required): Use \`"default"\` to automatically use the user's configured model. Or specify: \`"gpt-4o"\`, \`"claude-sonnet-4-5-20250514"\`, \`"gemini-2.0-flash"\`, etc.
+- \`systemPrompt\` (optional): system-level instruction — provide specific role and formatting instructions for better results
 - \`userMessage\` (required): user message — use \`{{nodeId.output}}\` to inject upstream data
-- \`temperature\` (optional): 0.0-2.0, default 0.7
+- \`temperature\` (optional): 0.0-2.0, default 0.7. Use lower values (0.1-0.3) for classification/extraction, higher (0.7-0.9) for creative tasks
 - \`maxTokens\` (optional): default 4096
+- **Best practice**: Always use \`"default"\` for provider and model unless the user specifically requests a particular provider. Always include a descriptive \`systemPrompt\` with clear role and output format instructions.
 
 ### 4. Condition Node — if/else branching (TWO outputs: "true" and "false")
 \`\`\`
@@ -319,12 +320,58 @@ Merge node (multiple sources, one target):
 
 ## Template Syntax
 
-Use double-brace templates in tool args, LLM messages, and expressions:
+Use double-brace templates in tool args, LLM messages, HTTP URLs/body, notification messages, and ForEach arrays:
 - \`{{nodeId.output}}\` — full output of an upstream node
-- \`{{nodeId.output.field}}\` — nested field access
+- \`{{nodeId.output.field}}\` — nested field access (e.g. \`{{node_2.output.data.name}}\`)
+- \`{{nodeId.output.0}}\` — array index access (e.g. first element)
 - \`{{variables.key}}\` — workflow-level variable
 - \`{{inputs.paramName}}\` — workflow input parameter (defined in input schema)
+- \`{{alias}}\` or \`{{alias.field}}\` — node output alias (see outputAlias below)
 - \`{{itemVariable}}\` — current ForEach item (if itemVariable is set)
+
+**Type preservation**: When a template is the ENTIRE value (e.g. \`"{{node_2.output}}"\`), the original type is preserved (object, array, number). When mixed with text (e.g. \`"Result: {{node_2.output}}"\`), it becomes a string.
+
+## Data Flow Best Practices
+
+### Passing data between nodes
+Every node produces an output accessible as \`{{nodeId.output}}\`. Common patterns:
+
+1. **Tool → LLM**: Pass tool result as context
+   \`"userMessage": "Summarize this: {{node_2.output}}"\`
+
+2. **LLM → Tool**: Use AI response as tool argument
+   \`"args": { "content": "{{node_3.output}}" }\`
+
+3. **Tool → Condition**: Branch on tool result
+   \`"expression": "data.status === 'success'"\` (condition/switch/transformer nodes use \`data\` variable)
+
+4. **ForEach → Body**: Iterate over upstream array
+   \`"arrayExpression": "{{node_2.output.items}}"\` with \`"itemVariable": "item"\`
+   Then in body nodes: \`"args": { "id": "{{item.id}}" }\`
+
+5. **HTTP → Transformer**: Extract API response fields
+   \`"expression": "data.body.results"\` (HTTP output: \`{ status, statusText, headers, body }\`)
+
+### Output aliases
+Add \`"outputAlias": "weather"\` to any node to create a readable alias:
+- Reference as \`{{weather}}\` or \`{{weather.temperature}}\` instead of \`{{node_3.output.temperature}}\`
+- Aliases make workflows more readable and maintainable
+
+### Template fields by node type
+| Node Type | Template Fields |
+|-----------|----------------|
+| Tool | \`args\` values |
+| LLM | \`userMessage\`, \`systemPrompt\` |
+| HTTP Request | \`url\`, \`headers\` values, \`body\`, auth tokens |
+| Notification | \`message\` |
+| ForEach | \`arrayExpression\` |
+| Delay | \`duration\` |
+| Sub-Workflow | \`inputMapping\` values |
+
+### Expression nodes (use \`data\` variable, NOT templates)
+Condition, Switch, Transformer, and Code nodes evaluate JavaScript expressions where \`data\` holds the most recent upstream output. Do NOT use \`{{}}\` templates inside these expressions:
+- CORRECT: \`"expression": "data.items.length > 0"\`
+- WRONG: \`"expression": "{{node_2.output}}.items.length > 0"\`
 
 ## Layout Rules
 
@@ -335,26 +382,28 @@ Use double-brace templates in tool args, LLM messages, and expressions:
 ## Important Rules
 
 1. Node IDs must be sequential: node_1, node_2, node_3...
-2. Only ONE trigger node per workflow (always node_1)
+2. **CRITICAL: Only ONE trigger node per workflow (always node_1). NEVER add a second trigger node. When editing, keep the existing trigger unchanged unless the user explicitly asks to change the trigger type.**
 3. Every node MUST have an \`id\` and \`position\`
 4. Condition, ForEach, and Switch edges MUST specify \`sourceHandle\`
-5. When editing an existing workflow, preserve unchanged node IDs
+5. When editing an existing workflow, preserve unchanged node IDs and the existing trigger node exactly as-is
 6. Use descriptive labels — they appear on the visual canvas
 7. Always provide the COMPLETE workflow JSON, never partial updates
 
 ## Common Mistakes to Avoid
-1. LLM nodes MUST include \`userMessage\` — it is required, not optional
-2. Tool names must match EXACTLY — use the full dotted name from Available Tools
-3. Condition edges MUST have \`sourceHandle: "true"\` or \`"false"\` — omitting causes broken connections
-4. ForEach edges MUST have \`sourceHandle: "each"\` or \`"done"\`
-5. Switch edges MUST have \`sourceHandle\` matching a case label (e.g. \`"Active"\`) or \`"default"\`
-6. HTTP Request nodes MUST include both \`method\` and \`url\`
-7. Delay nodes MUST include both \`duration\` and \`unit\`
-8. Switch nodes MUST include \`expression\` and at least one entry in \`cases\`
-9. Always include \`edges\` array even if empty: \`"edges": []\`
-10. Notification nodes MUST include \`message\`
-11. Parallel nodes MUST include \`branchCount\` >= 2 and edges MUST use \`sourceHandle: "branch-0"\`, \`"branch-1"\`, etc.
-12. Merge nodes should be placed downstream of Parallel nodes to collect branch results`;
+1. **NEVER add multiple trigger nodes.** A workflow has exactly ONE trigger (node_1). When editing, reuse the existing trigger — do NOT create a new one. This is the #1 most common mistake.
+2. LLM nodes MUST include \`userMessage\` — it is required, not optional. Always include a descriptive \`systemPrompt\` too.
+3. LLM nodes should use \`"provider": "default"\` and \`"model": "default"\` unless the user specifies otherwise. NEVER leave provider/model as empty strings.
+4. Tool names must match EXACTLY — use the full dotted name from Available Tools
+5. Condition edges MUST have \`sourceHandle: "true"\` or \`"false"\` — omitting causes broken connections
+6. ForEach edges MUST have \`sourceHandle: "each"\` or \`"done"\`
+7. Switch edges MUST have \`sourceHandle\` matching a case label (e.g. \`"Active"\`) or \`"default"\`
+8. HTTP Request nodes MUST include both \`method\` and \`url\`
+9. Delay nodes MUST include both \`duration\` and \`unit\`
+10. Switch nodes MUST include \`expression\` and at least one entry in \`cases\`
+11. Always include \`edges\` array even if empty: \`"edges": []\`
+12. Notification nodes MUST include \`message\`
+13. Parallel nodes MUST include \`branchCount\` >= 2 and edges MUST use \`sourceHandle: "branch-0"\`, \`"branch-1"\`, etc.
+14. Merge nodes should be placed downstream of Parallel nodes to collect branch results`;
 
 /**
  * Build the full system prompt for the workflow copilot, optionally
@@ -375,7 +424,7 @@ export function buildCopilotSystemPrompt(
   if (currentWorkflow) {
     const json = JSON.stringify(currentWorkflow, null, 2);
     parts.push(
-      `\n\n## Current Workflow\nThe user has an existing workflow. Modify it based on their request. Preserve existing node IDs where possible.\n\`\`\`json\n${json}\n\`\`\``
+      `\n\n## Current Workflow\nThe user has an existing workflow. Modify it based on their request.\n**IMPORTANT**: Keep the existing trigger node (node_1) EXACTLY as-is — do NOT add a second trigger or change its type unless the user explicitly asks. Preserve all existing node IDs.\n\`\`\`json\n${json}\n\`\`\``
     );
   }
 

@@ -7,6 +7,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { X, Trash2, Globe, Plus } from '../../icons';
 import type { NodeExecutionStatus } from '../../../api/types';
 import { OutputTreeBrowser } from '../OutputTreeBrowser';
+import { TemplateValidator } from '../TemplateValidator';
 import { JsonTreeView } from '../JsonTreeView';
 import type { NodeConfigPanelProps } from '../NodeConfigPanel';
 import {
@@ -422,8 +423,9 @@ export function HttpRequestConfigPanel({
                 onChange={(e) => setUrl(e.target.value)}
                 onBlur={() => pushUpdate({ url })}
                 className={`${INPUT_CLS} font-mono text-xs`}
-                placeholder="https://api.example.com/data/{{node_1.output.id}}"
+                placeholder="https://api.example.com/data/{{node_2.output.id}}"
               />
+              <TemplateValidator value={url} upstreamNodes={upstreamNodes} />
             </div>
 
             {/* Auth */}
@@ -582,10 +584,11 @@ export function HttpRequestConfigPanel({
                     className={`${INPUT_CLS} resize-y font-mono text-xs`}
                     placeholder={
                       bodyType === 'json'
-                        ? '{\n  "key": "{{node_1.output.value}}"\n}'
+                        ? '{\n  "key": "{{node_2.output.value}}"\n}'
                         : 'Request body...'
                     }
                   />
+                  <TemplateValidator value={body} upstreamNodes={upstreamNodes} />
                 </div>
               </>
             )}

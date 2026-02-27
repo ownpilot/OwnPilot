@@ -31,6 +31,12 @@ import { clearInjectionCache } from '../services/middleware/context-injection.js
 import { getDefaultProvider } from './settings.js';
 import { ChatRepository, LogsRepository } from '../db/repositories/index.js';
 import { modelConfigsRepo } from '../db/repositories/model-configs.js';
+import { channelSessionsRepo } from '../db/repositories/channel-sessions.js';
+import { channelMessagesRepo } from '../db/repositories/channel-messages.js';
+import { channelUsersRepo } from '../db/repositories/channel-users.js';
+import { getChannelServiceImpl } from '../channels/service-impl.js';
+import { wsGateway } from '../ws/server.js';
+import { randomUUID } from 'node:crypto';
 
 export const chatHistoryRoutes = new Hono();
 
@@ -58,18 +64,25 @@ chatHistoryRoutes.get('/history', async (c) => {
   });
 
   return apiResponse(c, {
-    conversations: conversations.map((conv) => ({
-      id: conv.id,
-      title: conv.title,
-      agentId: conv.agentId,
-      agentName: conv.agentName,
-      provider: conv.provider,
-      model: conv.model,
-      messageCount: conv.messageCount,
-      isArchived: conv.isArchived,
-      createdAt: conv.createdAt.toISOString(),
-      updatedAt: conv.updatedAt.toISOString(),
-    })),
+    conversations: conversations.map((conv) => {
+      const meta = conv.metadata ?? {};
+      const source = meta.source === 'channel' ? 'channel' : 'web';
+      return {
+        id: conv.id,
+        title: conv.title,
+        agentId: conv.agentId,
+        agentName: conv.agentName,
+        provider: conv.provider,
+        model: conv.model,
+        messageCount: conv.messageCount,
+        isArchived: conv.isArchived,
+        createdAt: conv.createdAt.toISOString(),
+        updatedAt: conv.updatedAt.toISOString(),
+        source,
+        channelPlatform: source === 'channel' ? (meta.platform as string) ?? null : null,
+        channelSenderName: source === 'channel' ? (meta.displayName as string) ?? null : null,
+      };
+    }),
     total: conversations.length,
     limit,
     offset,
@@ -241,6 +254,310 @@ chatHistoryRoutes.get('/history/:id', async (c) => {
       {
         code: ERROR_CODES.EXECUTION_ERROR,
         message: getErrorMessage(error, 'Failed to fetch conversation'),
+      },
+      500
+    );
+  }
+});
+
+/**
+ * Get unified conversation detail — merges AI messages with channel messages.
+ * For web conversations: returns standard messages.
+ * For channel conversations: merges channel_messages (sender info, direction) with
+ * messages (AI content, tool calls) into a single timeline sorted by timestamp.
+ */
+chatHistoryRoutes.get('/history/:id/unified', async (c) => {
+  const id = c.req.param('id');
+  const userId = getUserId(c);
+
+  try {
+    const chatRepo = new ChatRepository(userId);
+    const data = await chatRepo.getConversationWithMessages(id);
+
+    if (!data) {
+      return notFoundError(c, 'Conversation', id);
+    }
+
+    const meta = data.conversation.metadata ?? {};
+    const isChannel = meta.source === 'channel';
+
+    if (!isChannel) {
+      // Web conversation — return standard messages with source tag
+      return apiResponse(c, {
+        conversation: {
+          id: data.conversation.id,
+          title: data.conversation.title,
+          agentId: data.conversation.agentId,
+          agentName: data.conversation.agentName,
+          provider: data.conversation.provider,
+          model: data.conversation.model,
+          messageCount: data.conversation.messageCount,
+          isArchived: data.conversation.isArchived,
+          createdAt: data.conversation.createdAt.toISOString(),
+          updatedAt: data.conversation.updatedAt.toISOString(),
+          source: 'web' as const,
+        },
+        messages: data.messages.map((msg) => ({
+          id: msg.id,
+          role: msg.role,
+          content: msg.content,
+          provider: msg.provider,
+          model: msg.model,
+          toolCalls: msg.toolCalls,
+          trace: msg.trace,
+          isError: msg.isError,
+          createdAt: msg.createdAt.toISOString(),
+          source: 'web' as const,
+          direction: msg.role === 'user' ? 'inbound' : 'outbound',
+        })),
+      });
+    }
+
+    // Channel conversation — merge both message sources
+    const channelMessages = await channelMessagesRepo.getByConversation(id, 500);
+    const session = await channelSessionsRepo.findByConversation(id);
+
+    // Look up channel user for display info
+    let channelUserInfo: { displayName?: string; platform?: string; avatarUrl?: string } = {};
+    if (session) {
+      const user = await channelUsersRepo.getById(session.channelUserId);
+      if (user) {
+        channelUserInfo = {
+          displayName: user.displayName,
+          platform: user.platform,
+          avatarUrl: user.avatarUrl,
+        };
+      }
+    }
+
+    // Build unified timeline
+    type UnifiedMessage = {
+      id: string;
+      role: string;
+      content: string;
+      provider?: string | null;
+      model?: string | null;
+      toolCalls?: unknown[] | null;
+      trace?: Record<string, unknown> | null;
+      isError?: boolean;
+      createdAt: string;
+      source: 'channel' | 'ai';
+      direction: 'inbound' | 'outbound';
+      senderName?: string;
+      senderId?: string;
+    };
+
+    const unified: UnifiedMessage[] = [];
+
+    // Add channel messages (inbound from user, outbound from assistant)
+    for (const cm of channelMessages) {
+      unified.push({
+        id: cm.id,
+        role: cm.direction === 'inbound' ? 'user' : 'assistant',
+        content: cm.content,
+        createdAt: cm.createdAt.toISOString(),
+        source: 'channel',
+        direction: cm.direction,
+        senderName: cm.senderName,
+        senderId: cm.senderId,
+      });
+    }
+
+    // Add AI messages that don't overlap with channel messages
+    // (tool calls, system messages — things not captured in channel_messages)
+    const channelMessageIds = new Set(channelMessages.map((cm) => cm.id));
+    for (const msg of data.messages) {
+      // Skip user/assistant messages already captured via channel_messages
+      if (msg.role === 'user' || msg.role === 'assistant') {
+        // Check if a channel message exists at roughly the same time
+        const msgTime = msg.createdAt.getTime();
+        const hasChannelEquivalent = channelMessages.some(
+          (cm) => Math.abs(cm.createdAt.getTime() - msgTime) < 2000
+            && ((cm.direction === 'inbound' && msg.role === 'user')
+                || (cm.direction === 'outbound' && msg.role === 'assistant'))
+        );
+        if (hasChannelEquivalent) continue;
+      }
+
+      // Include tool messages, system messages, and non-overlapping user/assistant
+      if (!channelMessageIds.has(msg.id)) {
+        unified.push({
+          id: msg.id,
+          role: msg.role,
+          content: msg.content,
+          provider: msg.provider,
+          model: msg.model,
+          toolCalls: msg.toolCalls,
+          trace: msg.trace,
+          isError: msg.isError,
+          createdAt: msg.createdAt.toISOString(),
+          source: 'ai',
+          direction: msg.role === 'user' ? 'inbound' : 'outbound',
+        });
+      }
+    }
+
+    // Sort by timestamp
+    unified.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+
+    return apiResponse(c, {
+      conversation: {
+        id: data.conversation.id,
+        title: data.conversation.title,
+        agentId: data.conversation.agentId,
+        agentName: data.conversation.agentName,
+        provider: data.conversation.provider,
+        model: data.conversation.model,
+        messageCount: data.conversation.messageCount,
+        isArchived: data.conversation.isArchived,
+        createdAt: data.conversation.createdAt.toISOString(),
+        updatedAt: data.conversation.updatedAt.toISOString(),
+        source: 'channel' as const,
+        channelPlatform: (meta.platform as string) ?? null,
+        channelSenderName: channelUserInfo.displayName ?? (meta.displayName as string) ?? null,
+      },
+      messages: unified,
+      channelInfo: session
+        ? {
+            platform: channelUserInfo.platform ?? (meta.platform as string),
+            channelPluginId: session.channelPluginId,
+            platformChatId: session.platformChatId,
+            senderName: channelUserInfo.displayName,
+            sessionId: session.id,
+          }
+        : null,
+    });
+  } catch (error) {
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.EXECUTION_ERROR,
+        message: getErrorMessage(error, 'Failed to fetch unified conversation'),
+      },
+      500
+    );
+  }
+});
+
+/**
+ * Reply to a channel conversation from the WebUI.
+ * Sends the reply back to the originating channel and persists it.
+ */
+chatHistoryRoutes.post('/history/:conversationId/channel-reply', async (c) => {
+  const conversationId = c.req.param('conversationId');
+  const userId = getUserId(c);
+  const body = await parseJsonBody<{ text: string }>(c);
+
+  if (!body?.text?.trim()) {
+    return apiError(
+      c,
+      { code: ERROR_CODES.INVALID_INPUT, message: 'text is required' },
+      400
+    );
+  }
+
+  try {
+    // Verify conversation exists and is channel-sourced
+    const chatRepo = new ChatRepository(userId);
+    const conversation = await chatRepo.getConversation(conversationId);
+    if (!conversation) {
+      return notFoundError(c, 'Conversation', conversationId);
+    }
+
+    const meta = conversation.metadata ?? {};
+    if (meta.source !== 'channel') {
+      return apiError(
+        c,
+        { code: ERROR_CODES.INVALID_REQUEST, message: 'Not a channel conversation' },
+        400
+      );
+    }
+
+    // Look up the channel session
+    const session = await channelSessionsRepo.findByConversation(conversationId);
+    if (!session) {
+      return apiError(
+        c,
+        { code: ERROR_CODES.NOT_FOUND, message: 'No active channel session for this conversation' },
+        404
+      );
+    }
+
+    // Send via channel service
+    const channelService = getChannelServiceImpl();
+    if (!channelService) {
+      return apiError(
+        c,
+        { code: ERROR_CODES.INTERNAL_ERROR, message: 'Channel service not available' },
+        503
+      );
+    }
+
+    const sentMessageId = await channelService.send(session.channelPluginId, {
+      platformChatId: session.platformChatId,
+      text: body.text.trim(),
+    });
+
+    // Save to channel_messages (outbound)
+    const channelMsgId = `webui:${randomUUID()}`;
+    try {
+      await channelMessagesRepo.create({
+        id: channelMsgId,
+        channelId: session.channelPluginId,
+        externalId: sentMessageId,
+        direction: 'outbound',
+        senderId: 'webui',
+        senderName: 'WebUI',
+        content: body.text.trim(),
+        contentType: 'text',
+        conversationId,
+        metadata: { platformChatId: session.platformChatId, sentVia: 'webui' },
+      });
+    } catch (err) {
+      // Non-fatal — message was already sent
+      getErrorMessage(err);
+    }
+
+    // Save to messages table (assistant role)
+    try {
+      await chatRepo.addMessage({
+        conversationId,
+        role: 'assistant',
+        content: body.text.trim(),
+        trace: { sentVia: 'webui', channelPluginId: session.channelPluginId },
+      });
+    } catch (err) {
+      getErrorMessage(err);
+    }
+
+    // Broadcast to WebSocket
+    wsGateway.broadcast('channel:message', {
+      id: channelMsgId,
+      channelId: session.channelPluginId,
+      channelType: (meta.platform as string) ?? 'unknown',
+      sender: 'WebUI',
+      content: body.text.trim(),
+      timestamp: new Date().toISOString(),
+      direction: 'outgoing',
+    });
+
+    wsGateway.broadcast('data:changed', {
+      entity: 'conversation',
+      action: 'updated',
+      id: conversationId,
+    });
+
+    return apiResponse(c, {
+      sent: true,
+      messageId: sentMessageId,
+      channelPluginId: session.channelPluginId,
+    });
+  } catch (error) {
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.EXECUTION_ERROR,
+        message: getErrorMessage(error, 'Failed to send channel reply'),
       },
       500
     );

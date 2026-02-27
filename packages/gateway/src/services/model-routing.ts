@@ -21,9 +21,9 @@ const PREFIX = 'model_routing:';
 // Types
 // ---------------------------------------------------------------------------
 
-export type RoutingProcess = 'chat' | 'telegram' | 'pulse';
+export type RoutingProcess = 'chat' | 'channel' | 'pulse';
 
-export const VALID_PROCESSES: readonly RoutingProcess[] = ['chat', 'telegram', 'pulse'] as const;
+export const VALID_PROCESSES: readonly RoutingProcess[] = ['chat', 'channel', 'pulse'] as const;
 
 export interface ProcessRouting {
   provider: string | null;
@@ -72,8 +72,30 @@ export function getProcessRouting(process: RoutingProcess): ProcessRouting {
 export function getAllRouting(): Record<RoutingProcess, ProcessRouting> {
   return {
     chat: getProcessRouting('chat'),
-    telegram: getProcessRouting('telegram'),
+    channel: getProcessRouting('channel'),
     pulse: getProcessRouting('pulse'),
+  };
+}
+
+/**
+ * Backward-compatible: read 'channel' config, falling back to legacy 'telegram' keys.
+ * This lets existing users' model_routing:telegram:* settings keep working.
+ */
+export function getChannelRouting(): ProcessRouting {
+  const channel = getProcessRouting('channel');
+
+  // If any channel key is configured, use channel config entirely
+  if (channel.provider || channel.model || channel.fallbackProvider || channel.fallbackModel) {
+    return channel;
+  }
+
+  // Fallback: read legacy 'telegram' keys
+  const PREFIX_LEGACY = `${PREFIX}telegram:`;
+  return {
+    provider: settingsRepo.get<string>(`${PREFIX_LEGACY}provider`),
+    model: settingsRepo.get<string>(`${PREFIX_LEGACY}model`),
+    fallbackProvider: settingsRepo.get<string>(`${PREFIX_LEGACY}fallback_provider`),
+    fallbackModel: settingsRepo.get<string>(`${PREFIX_LEGACY}fallback_model`),
   };
 }
 
@@ -90,7 +112,7 @@ export function getAllRouting(): Record<RoutingProcess, ProcessRouting> {
  *   3. First configured provider → source='first-configured'
  */
 export async function resolveForProcess(process: RoutingProcess): Promise<ResolvedRouting> {
-  const routing = getProcessRouting(process);
+  const routing = process === 'channel' ? getChannelRouting() : getProcessRouting(process);
 
   let provider: string | null;
   let model: string | null;
