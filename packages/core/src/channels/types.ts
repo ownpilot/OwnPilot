@@ -142,6 +142,9 @@ export interface ChannelPluginAPI {
 
   /** Resolve user info from platform (optional) */
   resolveUser?(platformUserId: string): Promise<ChannelUser | null>;
+
+  /** Logout and clear session data (optional — forces re-authentication on next connect) */
+  logout?(): Promise<void>;
 }
 
 // ============================================================================

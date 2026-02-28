@@ -67,8 +67,16 @@ export interface IChannelService {
 
   /**
    * Disconnect a channel (triggers the plugin's disconnect() method).
+   * Session data is preserved — reconnecting does not require re-authentication.
    */
   disconnect(channelPluginId: string): Promise<void>;
+
+  /**
+   * Logout a channel — disconnect and clear session data.
+   * Forces re-authentication on next connect (e.g. new QR scan for WhatsApp).
+   * Falls back to disconnect() if the plugin does not support logout.
+   */
+  logout(channelPluginId: string): Promise<void>;
 
   /**
    * Resolve a channel user to an OwnPilot user ID (via verification mapping).

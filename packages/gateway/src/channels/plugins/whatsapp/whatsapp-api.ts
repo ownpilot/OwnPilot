@@ -160,14 +160,37 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
       this.sock = null;
     }
 
-    // Clear session files so next connect() generates a fresh QR code
+    this.qrCode = null;
+    this.reconnectAttempt = 0;
+    this.status = 'disconnected';
+    this.emitConnectionEvent('disconnected');
+    log.info('WhatsApp disconnected (session preserved — reconnect without QR)');
+  }
+
+  /**
+   * Logout: disconnect AND clear session files.
+   * Next connect() will require a fresh QR code scan.
+   */
+  async logout(): Promise<void> {
+    this.clearReconnectTimer();
+
+    if (this.sock) {
+      try {
+        await this.sock.logout();
+      } catch {
+        // logout may fail if already disconnected — just end the socket
+        this.sock.end(undefined);
+      }
+      this.sock = null;
+    }
+
     await clearSession(this.pluginId);
 
     this.qrCode = null;
     this.reconnectAttempt = 0;
     this.status = 'disconnected';
     this.emitConnectionEvent('disconnected');
-    log.info('WhatsApp disconnected');
+    log.info('WhatsApp logged out (session cleared — new QR scan required)');
   }
 
   async sendMessage(message: ChannelOutgoingMessage): Promise<string> {

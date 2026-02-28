@@ -255,6 +255,32 @@ channelRoutes.post('/:id/disconnect', async (c) => {
 });
 
 /**
+ * POST /channels/:id/logout - Logout and clear session data for a channel
+ *
+ * Unlike disconnect (which preserves session for quick reconnect),
+ * logout clears all session data — next connect will require re-authentication
+ * (e.g. new QR scan for WhatsApp, new bot token for Telegram).
+ */
+channelRoutes.post('/:id/logout', async (c) => {
+  const pluginId = c.req.param('id');
+  try {
+    const service = getChannelService();
+    await service.logout(pluginId);
+    wsGateway.broadcast('data:changed', { entity: 'channel', action: 'updated', id: pluginId });
+    return apiResponse(c, { pluginId, status: 'logged_out' });
+  } catch (error) {
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.DISCONNECT_FAILED,
+        message: getErrorMessage(error, 'Failed to logout channel'),
+      },
+      500
+    );
+  }
+});
+
+/**
  * POST /channels/:id/reconnect - Disconnect then reconnect a channel plugin
  *
  * Useful after updating config (e.g. webhook URL) to apply changes.

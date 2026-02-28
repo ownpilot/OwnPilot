@@ -347,6 +347,50 @@ export class ChannelServiceImpl implements IChannelService {
     });
   }
 
+  async logout(channelPluginId: string): Promise<void> {
+    const api = this.getChannel(channelPluginId);
+    if (!api) {
+      throw new Error(`Channel plugin not found: ${channelPluginId}`);
+    }
+
+    // Use logout() if available (clears session), otherwise fall back to disconnect()
+    if (typeof api.logout === 'function') {
+      await api.logout();
+    } else {
+      await api.disconnect();
+    }
+
+    // Update channel status in DB
+    try {
+      await channelsRepo.updateStatus(channelPluginId, 'disconnected');
+    } catch (err) {
+      log.warn('Failed to update channel status', { channelPluginId, error: err });
+    }
+
+    try {
+      const eventBus = getEventBus();
+      eventBus.emit(
+        createEvent<ChannelConnectionEventData>(
+          ChannelEvents.DISCONNECTED,
+          'channel',
+          'channel-service',
+          {
+            channelPluginId,
+            platform: api.getPlatform(),
+            status: 'disconnected',
+          }
+        )
+      );
+    } catch (emitErr) {
+      log.debug('EventBus not available for DISCONNECTED event', { error: emitErr });
+    }
+
+    wsGateway.broadcast('channel:status', {
+      channelId: channelPluginId,
+      status: 'disconnected',
+    });
+  }
+
   async resolveUser(platform: ChannelPlatform, platformUserId: string): Promise<string | null> {
     return this.verificationService.resolveUser(platform, platformUserId);
   }
