@@ -34,6 +34,9 @@ interface AgentRow {
   event_filters: string | null;
   auto_start: boolean;
   stop_condition: string | null;
+  provider: string | null;
+  model: string | null;
+  workspace_id: string | null;
   created_by: string;
   created_at: string;
   updated_at: string;
@@ -93,6 +96,9 @@ function rowToConfig(row: AgentRow): BackgroundAgentConfig {
       : undefined,
     autoStart: row.auto_start,
     stopCondition: row.stop_condition ?? undefined,
+    provider: row.provider ?? undefined,
+    model: row.model ?? undefined,
+    workspaceId: row.workspace_id ?? undefined,
     createdBy: row.created_by as BackgroundAgentCreator,
     createdAt: new Date(row.created_at),
     updatedAt: new Date(row.updated_at),
@@ -138,12 +144,14 @@ export class BackgroundAgentsRepository extends BaseRepository {
     eventFilters?: string[];
     autoStart: boolean;
     stopCondition?: string;
+    provider?: string;
+    model?: string;
     createdBy: BackgroundAgentCreator;
   }): Promise<BackgroundAgentConfig> {
     await this.execute(
       `INSERT INTO background_agents
-       (id, user_id, name, mission, mode, allowed_tools, limits, interval_ms, event_filters, auto_start, stop_condition, created_by)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
+       (id, user_id, name, mission, mode, allowed_tools, limits, interval_ms, event_filters, auto_start, stop_condition, provider, model, created_by)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)`,
       [
         data.id,
         data.userId,
@@ -156,6 +164,8 @@ export class BackgroundAgentsRepository extends BaseRepository {
         data.eventFilters ? JSON.stringify(data.eventFilters) : null,
         data.autoStart,
         data.stopCondition ?? null,
+        data.provider ?? null,
+        data.model ?? null,
         data.createdBy,
       ]
     );
@@ -201,6 +211,9 @@ export class BackgroundAgentsRepository extends BaseRepository {
       eventFilters: string[];
       autoStart: boolean;
       stopCondition: string | null;
+      provider: string | null;
+      model: string | null;
+      workspaceId: string;
     }>
   ): Promise<BackgroundAgentConfig | null> {
     const sets: string[] = [];
@@ -242,6 +255,18 @@ export class BackgroundAgentsRepository extends BaseRepository {
     if (updates.stopCondition !== undefined) {
       sets.push(`stop_condition = $${idx++}`);
       params.push(updates.stopCondition);
+    }
+    if (updates.provider !== undefined) {
+      sets.push(`provider = $${idx++}`);
+      params.push(updates.provider);
+    }
+    if (updates.model !== undefined) {
+      sets.push(`model = $${idx++}`);
+      params.push(updates.model);
+    }
+    if (updates.workspaceId !== undefined) {
+      sets.push(`workspace_id = $${idx++}`);
+      params.push(updates.workspaceId);
     }
 
     if (sets.length === 0) return this.getById(id, userId);

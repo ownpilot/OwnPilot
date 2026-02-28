@@ -57,6 +57,16 @@ The agent has access to all standard tools (memory, goals, custom data, triggers
         description:
           'Optional stop condition. "max_cycles:N" stops after N cycles. Agent can also stop itself by outputting "MISSION_COMPLETE".',
       },
+      provider: {
+        type: 'string',
+        description:
+          'AI provider to use (e.g., "anthropic", "openai", "google"). Optional — defaults to system model routing.',
+      },
+      model: {
+        type: 'string',
+        description:
+          'AI model to use (e.g., "claude-sonnet-4-5-20250929", "gpt-4o"). Optional — defaults to system model routing.',
+      },
     },
     required: ['name', 'mission'],
   },
@@ -146,6 +156,8 @@ export async function executeBackgroundAgentTool(
         const intervalMinutes = args.interval_minutes as number | undefined;
         const allowedTools = args.allowed_tools as string[] | undefined;
         const stopCondition = args.stop_condition as string | undefined;
+        const agentProvider = args.provider as string | undefined;
+        const agentModel = args.model as string | undefined;
 
         if (!name || !mission) {
           return { success: false, error: 'name and mission are required' };
@@ -159,6 +171,8 @@ export async function executeBackgroundAgentTool(
           allowedTools,
           intervalMs: intervalMinutes ? intervalMinutes * 60_000 : undefined,
           stopCondition,
+          provider: agentProvider,
+          model: agentModel,
           createdBy: 'ai',
           autoStart: false,
         });

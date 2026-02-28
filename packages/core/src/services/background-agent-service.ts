@@ -85,6 +85,12 @@ export interface BackgroundAgentConfig {
   autoStart: boolean;
   /** Optional stop condition (e.g. 'max_cycles:100') */
   stopCondition?: string;
+  /** AI provider (optional — falls back to model-routing default) */
+  provider?: string;
+  /** AI model (optional — falls back to model-routing default) */
+  model?: string;
+  /** File workspace ID for isolated file operations (auto-created on start) */
+  workspaceId?: string;
   /** Who created this agent */
   createdBy: BackgroundAgentCreator;
   /** Timestamps */
@@ -104,6 +110,8 @@ export interface CreateBackgroundAgentInput {
   eventFilters?: string[];
   autoStart?: boolean;
   stopCondition?: string;
+  provider?: string;
+  model?: string;
   createdBy?: BackgroundAgentCreator;
 }
 
@@ -118,6 +126,9 @@ export interface UpdateBackgroundAgentInput {
   eventFilters?: string[];
   autoStart?: boolean;
   stopCondition?: string;
+  provider?: string | null;
+  model?: string | null;
+  workspaceId?: string;
 }
 
 // ============================================================================

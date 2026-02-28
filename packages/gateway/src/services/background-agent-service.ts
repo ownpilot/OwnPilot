@@ -55,6 +55,8 @@ export class BackgroundAgentServiceImpl implements IBackgroundAgentService {
       eventFilters: input.eventFilters,
       autoStart: input.autoStart ?? false,
       stopCondition: input.stopCondition,
+      provider: input.provider,
+      model: input.model,
       createdBy: input.createdBy ?? 'user',
     });
 

@@ -25,6 +25,7 @@ import type {
 } from '@ownpilot/core';
 import { BackgroundAgentRunner } from './background-agent-runner.js';
 import { getBackgroundAgentsRepository } from '../db/repositories/background-agents.js';
+import { getOrCreateSessionWorkspace } from '../workspace/file-workspace.js';
 import { getLog } from './log.js';
 
 const log = getLog('BackgroundAgentManager');
@@ -177,6 +178,19 @@ export class BackgroundAgentManager {
           persistentContext: {},
           inbox: [],
         };
+
+    // Ensure agent has an isolated workspace for file operations
+    if (!config.workspaceId) {
+      try {
+        const wsId = `bg-agent-${config.id}`;
+        getOrCreateSessionWorkspace(wsId, config.id, config.userId);
+        config.workspaceId = wsId;
+        // Persist workspace ID back to DB
+        await repo.update(config.id, config.userId, { workspaceId: wsId });
+      } catch (err) {
+        log.debug(`Workspace creation for ${config.id} skipped: ${getErrorMessage(err)}`);
+      }
+    }
 
     const runner = new BackgroundAgentRunner(config);
 

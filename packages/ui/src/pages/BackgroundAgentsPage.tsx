@@ -419,6 +419,11 @@ function AgentDetail({
                 every {Math.round(agent.intervalMs / 60000)}m
               </span>
             )}
+            {agent.provider && (
+              <span className="text-xs text-text-muted px-1.5 py-0.5 rounded bg-surface-hover">
+                {agent.provider}{agent.model ? ` / ${agent.model}` : ''}
+              </span>
+            )}
             <span className="text-xs text-text-muted">
               by {agent.createdBy}
             </span>
@@ -609,6 +614,8 @@ function CreateAgentDialog({
   const [mode, setMode] = useState<BackgroundAgentMode>('interval');
   const [intervalMin, setIntervalMin] = useState(5);
   const [stopCondition, setStopCondition] = useState('');
+  const [provider, setProvider] = useState('');
+  const [model, setModel] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -619,6 +626,8 @@ function CreateAgentDialog({
       mode,
       interval_ms: mode === 'interval' ? intervalMin * 60_000 : undefined,
       stop_condition: stopCondition.trim() || undefined,
+      provider: provider.trim() || undefined,
+      model: model.trim() || undefined,
     });
   };
 
@@ -680,6 +689,33 @@ function CreateAgentDialog({
               />
             </div>
           )}
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm font-medium mb-1">
+                Provider <span className="text-text-muted">(optional)</span>
+              </label>
+              <input
+                type="text"
+                value={provider}
+                onChange={(e) => setProvider(e.target.value)}
+                placeholder="Auto (system default)"
+                className="w-full px-3 py-2 text-sm bg-surface border border-border rounded-lg focus:outline-none focus:border-primary"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">
+                Model <span className="text-text-muted">(optional)</span>
+              </label>
+              <input
+                type="text"
+                value={model}
+                onChange={(e) => setModel(e.target.value)}
+                placeholder="Auto (system default)"
+                className="w-full px-3 py-2 text-sm bg-surface border border-border rounded-lg focus:outline-none focus:border-primary"
+              />
+            </div>
+          </div>
 
           <div>
             <label className="block text-sm font-medium mb-1">

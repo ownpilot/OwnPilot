@@ -19,10 +19,10 @@ const mockRunCycle = vi.fn<[], Promise<BackgroundAgentCycleResult>>().mockResolv
 });
 
 vi.mock('./background-agent-runner.js', () => ({
-  BackgroundAgentRunner: vi.fn().mockImplementation(() => ({
-    runCycle: mockRunCycle,
-    updateConfig: vi.fn(),
-  })),
+  BackgroundAgentRunner: vi.fn(function (this: Record<string, unknown>) {
+    this.runCycle = mockRunCycle;
+    this.updateConfig = vi.fn();
+  }),
 }));
 
 const mockSaveSession = vi.fn().mockResolvedValue(undefined);
@@ -31,6 +31,8 @@ const mockSaveHistory = vi.fn().mockResolvedValue(undefined);
 const mockGetInterruptedSessions = vi.fn().mockResolvedValue([]);
 const mockGetAutoStartAgents = vi.fn().mockResolvedValue([]);
 
+const mockUpdate = vi.fn().mockResolvedValue(null);
+
 vi.mock('../db/repositories/background-agents.js', () => ({
   getBackgroundAgentsRepository: () => ({
     saveSession: mockSaveSession,
@@ -38,6 +40,19 @@ vi.mock('../db/repositories/background-agents.js', () => ({
     saveHistory: mockSaveHistory,
     getInterruptedSessions: mockGetInterruptedSessions,
     getAutoStartAgents: mockGetAutoStartAgents,
+    update: mockUpdate,
+  }),
+}));
+
+vi.mock('../workspace/file-workspace.js', () => ({
+  getOrCreateSessionWorkspace: vi.fn().mockReturnValue({
+    id: 'bg-agent-bg-1',
+    name: 'bg-agent-bg-1',
+    path: '/tmp/workspace/bg-agent-bg-1',
+    size: 0,
+    fileCount: 0,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   }),
 }));
 

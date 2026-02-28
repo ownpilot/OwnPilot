@@ -51,6 +51,9 @@ export interface BackgroundAgentConfig {
   eventFilters?: string[];
   autoStart: boolean;
   stopCondition?: string;
+  provider?: string;
+  model?: string;
+  workspaceId?: string;
   createdBy: 'user' | 'ai';
   createdAt: string;
   updatedAt: string;
@@ -89,6 +92,8 @@ export interface CreateBackgroundAgentInput {
   event_filters?: string[];
   auto_start?: boolean;
   stop_condition?: string;
+  provider?: string;
+  model?: string;
 }
 
 // =============================================================================

@@ -65,7 +65,7 @@ backgroundAgentsRoutes.post('/', async (c) => {
     const userId = getUserId(c);
     const body = await c.req.json();
 
-    const { name, mission, mode, allowed_tools, limits, interval_ms, event_filters, auto_start, stop_condition } =
+    const { name, mission, mode, allowed_tools, limits, interval_ms, event_filters, auto_start, stop_condition, provider, model } =
       body as Record<string, unknown>;
 
     if (!name || typeof name !== 'string') {
@@ -97,6 +97,8 @@ backgroundAgentsRoutes.post('/', async (c) => {
       eventFilters: event_filters as string[] | undefined,
       autoStart: (auto_start as boolean) ?? false,
       stopCondition: stop_condition as string | undefined,
+      provider: provider as string | undefined,
+      model: model as string | undefined,
       createdBy: 'user',
     });
 
@@ -168,6 +170,8 @@ backgroundAgentsRoutes.patch('/:id', async (c) => {
       eventFilters: body.event_filters,
       autoStart: body.auto_start,
       stopCondition: body.stop_condition,
+      provider: body.provider,
+      model: body.model,
     });
 
     if (!updated) {

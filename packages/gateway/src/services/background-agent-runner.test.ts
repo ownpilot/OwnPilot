@@ -42,7 +42,6 @@ vi.mock('@ownpilot/core', async (importOriginal) => {
       setConfigCenter = vi.fn();
     },
     registerAllTools: vi.fn(),
-    registerCoreTools: vi.fn(),
   };
 });
 
@@ -56,8 +55,18 @@ vi.mock('./model-routing.js', () => ({
   resolveForProcess: vi.fn().mockResolvedValue({ provider: 'openai', model: 'gpt-4o-mini' }),
 }));
 
+const mockRegisterGatewayTools = vi.fn();
+const mockRegisterDynamicTools = vi.fn().mockResolvedValue([]);
+const mockRegisterPluginTools = vi.fn().mockReturnValue([]);
+const mockRegisterExtensionTools = vi.fn().mockReturnValue([]);
+const mockRegisterMcpTools = vi.fn().mockReturnValue([]);
+
 vi.mock('../routes/agent-tools.js', () => ({
-  registerGatewayTools: vi.fn(),
+  registerGatewayTools: mockRegisterGatewayTools,
+  registerDynamicTools: mockRegisterDynamicTools,
+  registerPluginTools: mockRegisterPluginTools,
+  registerExtensionTools: mockRegisterExtensionTools,
+  registerMcpTools: mockRegisterMcpTools,
 }));
 
 vi.mock('./config-center-impl.js', () => ({
@@ -67,6 +76,15 @@ vi.mock('./config-center-impl.js', () => ({
 vi.mock('../config/defaults.js', () => ({
   AGENT_DEFAULT_MAX_TOKENS: 8192,
   AGENT_DEFAULT_TEMPERATURE: 0.7,
+}));
+
+const mockBuildEnhancedSystemPrompt = vi.fn().mockResolvedValue({
+  prompt: 'enhanced prompt with memories',
+  stats: { memoriesUsed: 3, goalsUsed: 2 },
+});
+
+vi.mock('../assistant/orchestrator.js', () => ({
+  buildEnhancedSystemPrompt: mockBuildEnhancedSystemPrompt,
 }));
 
 vi.mock('./log.js', () => ({
@@ -189,6 +207,98 @@ describe('BackgroundAgentRunner', () => {
 
       const cycleMessage = mockChat.mock.calls[0]![0] as string;
       expect(cycleMessage).toContain('max_cycles:100');
+    });
+
+    // --- Full tool registration ---
+
+    it('registers all 5 tool sources during cycle', async () => {
+      const session = makeSession();
+      await runner.runCycle(session);
+
+      expect(mockRegisterGatewayTools).toHaveBeenCalledWith(expect.anything(), 'user-1', false);
+      expect(mockRegisterDynamicTools).toHaveBeenCalledWith(expect.anything(), 'user-1', 'bg-bg-1', false);
+      expect(mockRegisterPluginTools).toHaveBeenCalledWith(expect.anything(), false);
+      expect(mockRegisterExtensionTools).toHaveBeenCalledWith(expect.anything(), 'user-1', false);
+      expect(mockRegisterMcpTools).toHaveBeenCalledWith(expect.anything(), false);
+    });
+
+    it('calls buildEnhancedSystemPrompt with userId', async () => {
+      const session = makeSession();
+      await runner.runCycle(session);
+
+      expect(mockBuildEnhancedSystemPrompt).toHaveBeenCalledWith(
+        expect.stringContaining('Test Agent'),
+        expect.objectContaining({
+          userId: 'user-1',
+          maxMemories: 10,
+          maxGoals: 5,
+        })
+      );
+    });
+
+    // --- Configurable provider/model ---
+
+    it('uses configured provider/model when set', async () => {
+      const config = makeConfig({ provider: 'anthropic', model: 'claude-sonnet-4-5-20250929' });
+      const r = new BackgroundAgentRunner(config);
+      const session = makeSession({ config });
+      await r.runCycle(session);
+
+      // Verify resolveForProcess was NOT called since both provider and model are set
+      const { resolveForProcess } = await import('./model-routing.js');
+      expect(resolveForProcess).not.toHaveBeenCalled();
+    });
+
+    it('falls back to model routing when provider/model not configured', async () => {
+      const session = makeSession();
+      await runner.runCycle(session);
+
+      const { resolveForProcess } = await import('./model-routing.js');
+      expect(resolveForProcess).toHaveBeenCalledWith('pulse');
+    });
+
+    // --- Graceful degradation ---
+
+    it('continues even if dynamic tools registration fails', async () => {
+      mockRegisterDynamicTools.mockRejectedValueOnce(new Error('DB not ready'));
+
+      const session = makeSession();
+      const result = await runner.runCycle(session);
+
+      expect(result.success).toBe(true);
+    });
+
+    it('continues even if plugin tools registration fails', async () => {
+      mockRegisterPluginTools.mockImplementationOnce(() => {
+        throw new Error('Plugin service not ready');
+      });
+
+      const session = makeSession();
+      const result = await runner.runCycle(session);
+
+      expect(result.success).toBe(true);
+    });
+
+    it('uses base prompt if buildEnhancedSystemPrompt fails', async () => {
+      mockBuildEnhancedSystemPrompt.mockRejectedValueOnce(new Error('Memory service not ready'));
+
+      const session = makeSession();
+      const result = await runner.runCycle(session);
+
+      expect(result.success).toBe(true);
+    });
+
+    // --- System prompt ---
+
+    it('builds system prompt with mission and rules', async () => {
+      const session = makeSession();
+      await runner.runCycle(session);
+
+      const basePrompt = mockBuildEnhancedSystemPrompt.mock.calls[0]![0] as string;
+      expect(basePrompt).toContain('Test Agent');
+      expect(basePrompt).toContain('Monitor user goals');
+      expect(basePrompt).toContain('MISSION_COMPLETE');
+      expect(basePrompt).toContain('ALL system tools');
     });
   });
 

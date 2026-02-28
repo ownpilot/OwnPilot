@@ -2,19 +2,27 @@
  * Background Agent Runner
  *
  * Executes a single cycle of a background agent:
- * 1. Build system prompt (mission + persistent context + inbox)
- * 2. Create Agent instance with tools from shared registry
- * 3. Run agent.chat() for one cycle
- * 4. Extract results
+ * 1. Resolve AI provider/model (from config or system model routing)
+ * 2. Create Agent instance with FULL tool access (same as chat agents)
+ * 3. Build enhanced system prompt with mission + memories + goals
+ * 4. Run agent.chat() for one cycle
+ * 5. Extract results
  *
  * The runner does NOT own scheduling — that's the manager's job.
+ *
+ * Full tool registration pipeline (mirrors agent-service.ts createAgentFromRecord):
+ * - Core tools (registerAllTools)
+ * - Gateway domain tools (memory, goals, custom data, triggers, etc.)
+ * - Dynamic tools (custom tools, CRUD meta-tools)
+ * - Plugin tools
+ * - Extension/Skill tools
+ * - MCP tools
  */
 
 import {
   Agent,
   ToolRegistry,
   registerAllTools,
-  registerCoreTools,
   getErrorMessage,
 } from '@ownpilot/core';
 import type {
@@ -24,6 +32,7 @@ import type {
   BackgroundAgentCycleResult,
   BackgroundAgentToolCall,
   ToolCall,
+  ToolId,
 } from '@ownpilot/core';
 import { getLog } from './log.js';
 import { resolveForProcess } from './model-routing.js';
@@ -32,9 +41,16 @@ import {
   loadProviderConfig,
   NATIVE_PROVIDERS,
 } from '../routes/agent-cache.js';
-import { registerGatewayTools } from '../routes/agent-tools.js';
+import {
+  registerGatewayTools,
+  registerDynamicTools,
+  registerPluginTools,
+  registerExtensionTools,
+  registerMcpTools,
+} from '../routes/agent-tools.js';
 import { gatewayConfigCenter } from './config-center-impl.js';
 import { AGENT_DEFAULT_MAX_TOKENS, AGENT_DEFAULT_TEMPERATURE } from '../config/defaults.js';
+import { buildEnhancedSystemPrompt } from '../assistant/orchestrator.js';
 
 const log = getLog('BackgroundAgentRunner');
 
@@ -65,12 +81,19 @@ export class BackgroundAgentRunner {
     log.info(`[${this.config.id}] Starting cycle ${cycleNumber}`);
 
     try {
-      // 1. Resolve AI provider/model via model routing
-      const resolved = await resolveForProcess('pulse');
-      const provider = resolved.provider ?? 'openai';
-      const model = resolved.model ?? 'gpt-4o-mini';
+      // 1. Resolve AI provider/model (config override or system model routing)
+      let provider: string;
+      let model: string;
+      if (this.config.provider && this.config.model) {
+        provider = this.config.provider;
+        model = this.config.model;
+      } else {
+        const resolved = await resolveForProcess('pulse');
+        provider = this.config.provider ?? resolved.provider ?? 'openai';
+        model = this.config.model ?? resolved.model ?? 'gpt-4o-mini';
+      }
 
-      // 2. Create agent with scoped tools
+      // 2. Create agent with full tool access
       const agent = await this.createAgent(provider, model);
 
       // 3. Build the cycle message
@@ -151,20 +174,65 @@ export class BackgroundAgentRunner {
     const baseUrl = providerConfig?.baseUrl;
     const providerType = NATIVE_PROVIDERS.has(provider) ? provider : 'openai';
 
-    // Create a fresh ToolRegistry with core + gateway tools
-    const tools = new ToolRegistry();
-    registerAllTools(tools);
-    registerCoreTools(tools);
-    tools.setConfigCenter(gatewayConfigCenter);
-    registerGatewayTools(tools, this.config.userId, false);
+    const userId = this.config.userId;
+    const conversationId = `bg-${this.config.id}`;
 
-    // Build system prompt
-    const systemPrompt = this.buildSystemPrompt();
+    // Create a fresh ToolRegistry with ALL tool sources (same as chat agents)
+    const tools = new ToolRegistry();
+
+    // 1. Core tools (built-in utilities, file, code, web, etc.)
+    registerAllTools(tools);
+    tools.setConfigCenter(gatewayConfigCenter);
+
+    // 2. Gateway domain tools (memory, goals, custom data, triggers, plans, etc.)
+    registerGatewayTools(tools, userId, false);
+
+    // 3. Dynamic tools (custom tools, CRUD meta-tools, user-created tools)
+    try {
+      await registerDynamicTools(tools, userId, conversationId, false);
+    } catch (err) {
+      log.debug(`[${this.config.id}] Dynamic tools registration failed: ${getErrorMessage(err)}`);
+    }
+
+    // 4. Plugin tools
+    try {
+      registerPluginTools(tools, false);
+    } catch (err) {
+      log.debug(`[${this.config.id}] Plugin tools registration failed: ${getErrorMessage(err)}`);
+    }
+
+    // 5. Extension/Skill tools
+    try {
+      registerExtensionTools(tools, userId, false);
+    } catch (err) {
+      log.debug(`[${this.config.id}] Extension tools registration failed: ${getErrorMessage(err)}`);
+    }
+
+    // 6. MCP tools (external MCP servers)
+    try {
+      registerMcpTools(tools, false);
+    } catch (err) {
+      log.debug(`[${this.config.id}] MCP tools registration failed: ${getErrorMessage(err)}`);
+    }
+
+    // Build enhanced system prompt with memories + goals injected
+    const basePrompt = this.buildSystemPrompt();
+    let systemPrompt = basePrompt;
+    try {
+      const enhanced = await buildEnhancedSystemPrompt(basePrompt, {
+        userId,
+        maxMemories: 10,
+        maxGoals: 5,
+      });
+      systemPrompt = enhanced.prompt;
+    } catch (err) {
+      log.debug(`[${this.config.id}] Enhanced prompt build failed, using base: ${getErrorMessage(err)}`);
+    }
 
     // Use allowedTools filter if configured
     const toolFilter =
       this.config.allowedTools.length > 0
-        ? this.config.allowedTools.map((t) => t as import('@ownpilot/core').ToolId)
+        ? this.config.allowedTools.map((t) => t as ToolId)
         : undefined;
 
     const agent = new Agent(
@@ -196,16 +264,28 @@ export class BackgroundAgentRunner {
   }
 
   private buildSystemPrompt(): string {
-    return `You are a background agent running autonomously. Your mission:
+    const parts: string[] = [];
 
-${this.config.mission}
+    parts.push(`You are a persistent background agent named "${this.config.name}".`);
+    parts.push('You run autonomously in cycles, working toward your mission without human intervention.');
+    parts.push('');
+    parts.push('## Your Mission');
+    parts.push(this.config.mission);
+    parts.push('');
+    parts.push('## Execution Rules');
+    parts.push('1. Each cycle, you receive context updates and should make meaningful progress.');
+    parts.push('2. Use tools strategically — plan your approach before acting.');
+    parts.push('3. Store important findings in memory tools for future cycles.');
+    parts.push('4. When your mission is fully complete, respond with "MISSION_COMPLETE".');
+    parts.push('5. Keep responses concise — focus on actions and results.');
+    parts.push('6. You have access to ALL system tools: memories, goals, custom data, triggers, extensions, plugins, MCP, and more.');
+    parts.push('7. Be efficient — only call tools when needed, batch operations when possible.');
 
-## Execution Rules
-1. You run in cycles. Each cycle you receive context updates and should make progress on your mission.
-2. Use the available tools to accomplish your mission.
-3. Be efficient — only use tools when needed.
-4. If your mission is complete, clearly state "MISSION_COMPLETE" in your response.
-5. Keep responses concise — focus on actions, not explanations.`;
+    if (this.config.stopCondition) {
+      parts.push(`8. Stop condition: ${this.config.stopCondition}`);
+    }
+
+    return parts.join('\n');
   }
 
   private buildCycleMessage(session: BackgroundAgentSession, cycleNumber: number): string {
