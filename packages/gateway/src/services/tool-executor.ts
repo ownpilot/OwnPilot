@@ -40,6 +40,7 @@ import {
   createExtensionToolProvider,
   createCodingAgentToolProvider,
   createCliToolProvider,
+  createBackgroundAgentToolProvider,
 } from './tool-providers/index.js';
 import { createCustomToolsRepo } from '../db/repositories/custom-tools.js';
 import {
@@ -127,6 +128,7 @@ export function getSharedToolRegistry(userId = 'default'): ToolRegistry {
   tools.registerProvider(createExtensionToolProvider(userId));
   tools.registerProvider(createCodingAgentToolProvider(userId));
   tools.registerProvider(createCliToolProvider(userId));
+  tools.registerProvider(createBackgroundAgentToolProvider(userId));
 
   // Register plugin tools into the shared registry (source: 'plugin')
   initPluginToolsIntoRegistry(tools);

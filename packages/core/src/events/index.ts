@@ -84,6 +84,14 @@ export type {
   ExtensionDisabledData,
   McpServerConnectedData,
   McpServerDisconnectedData,
+  BackgroundAgentStartedData,
+  BackgroundAgentCycleStartData,
+  BackgroundAgentCycleCompleteData,
+  BackgroundAgentStoppedData,
+  BackgroundAgentErrorData,
+  BackgroundAgentPausedData,
+  BackgroundAgentResumedData,
+  BackgroundAgentMessageData,
 } from './event-map.js';
 
 // ============================================================================

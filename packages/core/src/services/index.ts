@@ -228,6 +228,23 @@ export type {
   CliInstallMethod,
 } from './cli-tool-service.js';
 
+// Background Agent Service
+export type {
+  IBackgroundAgentService,
+  BackgroundAgentMode,
+  BackgroundAgentState,
+  BackgroundAgentCreator,
+  BackgroundAgentLimits,
+  BackgroundAgentConfig,
+  CreateBackgroundAgentInput,
+  UpdateBackgroundAgentInput,
+  BackgroundAgentSession,
+  BackgroundAgentCycleResult,
+  BackgroundAgentToolCall,
+  BackgroundAgentHistoryEntry,
+} from './background-agent-service.js';
+export { DEFAULT_BACKGROUND_AGENT_LIMITS } from './background-agent-service.js';
+
 // Config Center
 export * from './config-center.js';
 

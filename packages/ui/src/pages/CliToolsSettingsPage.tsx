@@ -507,7 +507,7 @@ function AddCustomToolModal({ onClose, onAdded }: { onClose: () => void; onAdded
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60">
-      <div className="mx-4 w-full max-w-lg rounded-lg border border-border bg-card shadow-xl">
+      <div className="mx-4 w-full max-w-lg rounded-lg border border-border dark:border-dark-border bg-bg-primary dark:bg-dark-bg-primary shadow-xl">
         <div className="flex items-center justify-between border-b border-border p-4">
           <h2 className="text-lg font-semibold">Register Custom CLI Tool</h2>
           <button onClick={onClose} className="rounded p-1 hover:bg-accent">
