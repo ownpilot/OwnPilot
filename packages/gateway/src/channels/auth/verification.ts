@@ -5,7 +5,13 @@
  * and user identity resolution for channel users.
  */
 
-import { type ChannelUserVerifiedData, getEventBus, createEvent } from '@ownpilot/core';
+import {
+  type ChannelUserVerifiedData,
+  type ChannelUserBlockedData,
+  ChannelEvents,
+  getEventBus,
+  createEvent,
+} from '@ownpilot/core';
 
 import {
   ChannelVerificationRepository,
@@ -161,6 +167,21 @@ export class ChannelVerificationService {
     const user = await this.usersRepo.findByPlatform(platform, platformUserId);
     if (!user) return false;
     await this.usersRepo.block(user.id);
+
+    try {
+      const eventBus = getEventBus();
+      eventBus.emit(
+        createEvent<ChannelUserBlockedData>(
+          ChannelEvents.USER_BLOCKED,
+          'channel',
+          'channel-verification-service',
+          { platform, platformUserId }
+        )
+      );
+    } catch {
+      // EventBus not initialized yet
+    }
+
     return true;
   }
 
@@ -171,6 +192,21 @@ export class ChannelVerificationService {
     const user = await this.usersRepo.findByPlatform(platform, platformUserId);
     if (!user) return false;
     await this.usersRepo.unblock(user.id);
+
+    try {
+      const eventBus = getEventBus();
+      eventBus.emit(
+        createEvent<ChannelUserBlockedData>(
+          ChannelEvents.USER_UNBLOCKED,
+          'channel',
+          'channel-verification-service',
+          { platform, platformUserId }
+        )
+      );
+    } catch {
+      // EventBus not initialized yet
+    }
+
     return true;
   }
 

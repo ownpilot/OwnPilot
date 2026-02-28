@@ -21,6 +21,7 @@ import type {
   ChannelUserFirstSeenData,
   ChannelUserVerifiedData,
   ChannelUserBlockedData,
+  ChannelUserPendingData,
   ChannelTypingData,
 } from '../channels/events.js';
 
@@ -515,6 +516,7 @@ export interface EventMap {
   'channel.user.verified': ChannelUserVerifiedData;
   'channel.user.blocked': ChannelUserBlockedData;
   'channel.user.unblocked': ChannelUserBlockedData;
+  'channel.user.pending': ChannelUserPendingData;
   'channel.typing': ChannelTypingData;
   'channel.reaction.added': ChannelReactionData;
 
