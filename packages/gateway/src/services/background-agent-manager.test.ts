@@ -44,16 +44,18 @@ vi.mock('../db/repositories/background-agents.js', () => ({
   }),
 }));
 
+const mockGetOrCreateSessionWorkspace = vi.fn().mockReturnValue({
+  id: 'bg-agent-bg-1',
+  name: 'bg-agent-bg-1',
+  path: '/tmp/workspace/bg-agent-bg-1',
+  size: 0,
+  fileCount: 0,
+  createdAt: new Date().toISOString(),
+  updatedAt: new Date().toISOString(),
+});
+
 vi.mock('../workspace/file-workspace.js', () => ({
-  getOrCreateSessionWorkspace: vi.fn().mockReturnValue({
-    id: 'bg-agent-bg-1',
-    name: 'bg-agent-bg-1',
-    path: '/tmp/workspace/bg-agent-bg-1',
-    size: 0,
-    fileCount: 0,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  }),
+  getOrCreateSessionWorkspace: mockGetOrCreateSessionWorkspace,
 }));
 
 vi.mock('@ownpilot/core', async (importOriginal) => {
@@ -146,6 +148,12 @@ describe('BackgroundAgentManager', () => {
     it('persists session to DB', async () => {
       await manager.startAgent(makeConfig());
       expect(mockSaveSession).toHaveBeenCalled();
+    });
+
+    it('creates a workspace for file isolation', async () => {
+      mockGetOrCreateSessionWorkspace.mockClear();
+      await manager.startAgent(makeConfig());
+      expect(mockGetOrCreateSessionWorkspace).toHaveBeenCalledWith('bg-agent-bg-1', 'bg-1', 'user-1');
     });
   });
 

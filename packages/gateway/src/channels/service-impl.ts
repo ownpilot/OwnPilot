@@ -20,6 +20,7 @@ import {
   type ChannelConnectionEventData,
   type ChannelUserVerifiedData,
   type ChannelUserPendingData,
+  type ChannelUserFirstSeenData,
   getEventBus,
   createEvent,
   type PluginRegistry,
@@ -416,6 +417,27 @@ export class ChannelServiceImpl implements IChannelService {
         platformUsername: message.sender.username,
         avatarUrl: message.sender.avatarUrl,
       });
+
+      // 1b. Emit first_seen event for new users
+      if (channelUser.created) {
+        try {
+          const eventBus = getEventBus();
+          eventBus.emit(
+            createEvent<ChannelUserFirstSeenData>(
+              ChannelEvents.USER_FIRST_SEEN,
+              'channel',
+              'channel-service',
+              {
+                platform: message.platform,
+                user: message.sender,
+                channelPluginId: message.channelPluginId,
+              }
+            )
+          );
+        } catch {
+          // EventBus not initialized yet
+        }
+      }
 
       // 2. Check if blocked
       if (channelUser.isBlocked) {

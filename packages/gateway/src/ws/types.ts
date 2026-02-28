@@ -151,6 +151,8 @@ export interface ServerEvents {
   'channel:user:approved': { channelId: string; platform: string; userId: string; platformUserId: string; displayName?: string };
   'channel:user:blocked': { channelId: string; platform: string; platformUserId: string };
   'channel:user:unblocked': { channelId: string; platform: string; platformUserId: string };
+  'channel:user:verified': { channelId: string; platform: string; platformUserId: string; ownpilotUserId: string; verificationMethod?: string };
+  'channel:user:first_seen': { channelId: string; platform: string; platformUserId: string; displayName?: string };
 
   // Chat events
   'chat:message': { sessionId: string; message: AssistantMessage };

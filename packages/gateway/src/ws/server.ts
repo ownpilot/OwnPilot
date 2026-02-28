@@ -235,24 +235,52 @@ export class WSGateway {
       })
     );
 
-    // channel.user.* → channel:user:* (pending, blocked, unblocked, verified)
+    // channel.user.* → channel:user:* (pending, blocked, unblocked, verified, first_seen)
     this.legacyUnsubs.push(
       eventSystem.onPattern('channel.user.*', (event) => {
         const d = event.data as Record<string, unknown>;
-        const actionMap: Record<string, string> = {
-          'channel.user.pending': 'channel:user:pending',
-          'channel.user.blocked': 'channel:user:blocked',
-          'channel.user.unblocked': 'channel:user:unblocked',
-        };
-        const wsType = actionMap[event.type];
-        if (wsType) {
-          this.broadcast(wsType as keyof ServerEvents, {
-            channelId: d.channelPluginId ?? '',
-            platform: d.platform ?? '',
-            userId: '',
-            platformUserId: d.platformUserId ?? '',
-            displayName: d.displayName,
-          } as ServerEvents['channel:user:pending']);
+
+        switch (event.type) {
+          case 'channel.user.pending':
+            this.broadcast('channel:user:pending', {
+              channelId: (d.channelPluginId as string) ?? '',
+              platform: (d.platform as string) ?? '',
+              userId: '',
+              platformUserId: (d.platformUserId as string) ?? '',
+              displayName: d.displayName as string | undefined,
+            });
+            break;
+          case 'channel.user.blocked':
+            this.broadcast('channel:user:blocked', {
+              channelId: (d.channelPluginId as string) ?? '',
+              platform: (d.platform as string) ?? '',
+              platformUserId: (d.platformUserId as string) ?? '',
+            });
+            break;
+          case 'channel.user.unblocked':
+            this.broadcast('channel:user:unblocked', {
+              channelId: (d.channelPluginId as string) ?? '',
+              platform: (d.platform as string) ?? '',
+              platformUserId: (d.platformUserId as string) ?? '',
+            });
+            break;
+          case 'channel.user.verified':
+            this.broadcast('channel:user:verified', {
+              channelId: '',
+              platform: (d.platform as string) ?? '',
+              platformUserId: (d.platformUserId as string) ?? '',
+              ownpilotUserId: (d.ownpilotUserId as string) ?? '',
+              verificationMethod: d.verificationMethod as string | undefined,
+            });
+            break;
+          case 'channel.user.first_seen':
+            this.broadcast('channel:user:first_seen', {
+              channelId: (d.channelPluginId as string) ?? '',
+              platform: (d.platform as string) ?? '',
+              platformUserId: ((d.user as Record<string, unknown>)?.platformUserId as string) ?? '',
+              displayName: ((d.user as Record<string, unknown>)?.displayName as string) ?? undefined,
+            });
+            break;
         }
       })
     );

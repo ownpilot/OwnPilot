@@ -145,8 +145,11 @@ export class ChannelUsersRepository extends BaseRepository {
 
   /**
    * Find or create a channel user. Updates last_seen_at and display info on find.
+   * Returns the entity plus a `created` flag indicating first-time user.
    */
-  async findOrCreate(input: CreateChannelUserInput): Promise<ChannelUserEntity> {
+  async findOrCreate(
+    input: CreateChannelUserInput
+  ): Promise<ChannelUserEntity & { created: boolean }> {
     const existing = await this.findByPlatform(input.platform, input.platformUserId);
     if (existing) {
       // Update last seen and display info
@@ -163,9 +166,10 @@ export class ChannelUsersRepository extends BaseRepository {
           existing.id,
         ]
       );
-      return { ...existing, lastSeenAt: new Date() };
+      return { ...existing, lastSeenAt: new Date(), created: false };
     }
-    return this.create(input);
+    const entity = await this.create(input);
+    return { ...entity, created: true };
   }
 
   /**
