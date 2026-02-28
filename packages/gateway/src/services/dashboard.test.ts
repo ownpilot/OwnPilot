@@ -44,23 +44,23 @@ vi.mock('../db/repositories/index.js', async (importOriginal) => {
   const original = await importOriginal<Record<string, unknown>>();
   return {
     ...original,
-    TasksRepository: vi.fn(() => ({
-      list: mockTasksList,
-    })),
-    CalendarRepository: vi.fn(() => ({
-      getToday: mockCalendarGetToday,
-      getUpcoming: mockCalendarGetUpcoming,
-    })),
-    HabitsRepository: vi.fn(() => ({
-      getTodayProgress: mockHabitsTodayProgress,
-    })),
-    CostsRepository: vi.fn(() => ({
-      getDailyCosts: mockCostsGetDailyCosts,
-    })),
-    NotesRepository: vi.fn(() => ({
-      getPinned: mockNotesPinned,
-      getRecent: mockNotesRecent,
-    })),
+    TasksRepository: vi.fn(function (this: Record<string, unknown>) {
+      this.list = mockTasksList;
+    }),
+    CalendarRepository: vi.fn(function (this: Record<string, unknown>) {
+      this.getToday = mockCalendarGetToday;
+      this.getUpcoming = mockCalendarGetUpcoming;
+    }),
+    HabitsRepository: vi.fn(function (this: Record<string, unknown>) {
+      this.getTodayProgress = mockHabitsTodayProgress;
+    }),
+    CostsRepository: vi.fn(function (this: Record<string, unknown>) {
+      this.getDailyCosts = mockCostsGetDailyCosts;
+    }),
+    NotesRepository: vi.fn(function (this: Record<string, unknown>) {
+      this.getPinned = mockNotesPinned;
+      this.getRecent = mockNotesRecent;
+    }),
   };
 });
 

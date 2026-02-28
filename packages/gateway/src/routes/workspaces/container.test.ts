@@ -11,7 +11,7 @@ vi.mock('@ownpilot/core', () => ({
 }));
 
 vi.mock('../../db/repositories/workspaces.js', () => ({
-  WorkspacesRepository: vi.fn(),
+  WorkspacesRepository: vi.fn(function () {}),
 }));
 
 import { getOrchestrator, isDockerAvailable } from '@ownpilot/core';
@@ -48,7 +48,7 @@ describe('Workspace Container Routes', () => {
     });
     app.route('/', workspaceContainerRoutes);
     mockRepo = { get: vi.fn(), logAudit: vi.fn(), updateContainerStatus: vi.fn() };
-    vi.mocked(WorkspacesRepository).mockImplementation(() => mockRepo as never);
+    vi.mocked(WorkspacesRepository).mockImplementation(function () { return mockRepo as never; });
     mockOrchestrator = {
       createContainer: vi.fn(),
       stopContainer: vi.fn(),
