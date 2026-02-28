@@ -19,6 +19,7 @@ import {
   type ChannelMessageReceivedData,
   type ChannelConnectionEventData,
   type ChannelUserVerifiedData,
+  type ChannelUserPendingData,
   getEventBus,
   createEvent,
   type PluginRegistry,
@@ -501,7 +502,27 @@ export class ChannelServiceImpl implements IChannelService {
             });
           }
 
-          // Broadcast pending user event to UI
+          // Emit pending user event via EventBus
+          try {
+            const eventBus = getEventBus();
+            eventBus.emit(
+              createEvent<ChannelUserPendingData>(
+                ChannelEvents.USER_PENDING,
+                'channel',
+                'channel-service',
+                {
+                  platform: message.platform,
+                  platformUserId: message.sender.platformUserId,
+                  displayName: message.sender.displayName,
+                  channelPluginId: message.channelPluginId,
+                }
+              )
+            );
+          } catch {
+            // EventBus not initialized yet
+          }
+
+          // Broadcast pending user event to UI (legacy WS)
           wsGateway.broadcast('channel:user:pending', {
             channelId: message.channelPluginId,
             platform: message.platform,

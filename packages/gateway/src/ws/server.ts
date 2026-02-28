@@ -234,6 +234,28 @@ export class WSGateway {
         );
       })
     );
+
+    // channel.user.* → channel:user:* (pending, blocked, unblocked, verified)
+    this.legacyUnsubs.push(
+      eventSystem.onPattern('channel.user.*', (event) => {
+        const d = event.data as Record<string, unknown>;
+        const actionMap: Record<string, string> = {
+          'channel.user.pending': 'channel:user:pending',
+          'channel.user.blocked': 'channel:user:blocked',
+          'channel.user.unblocked': 'channel:user:unblocked',
+        };
+        const wsType = actionMap[event.type];
+        if (wsType) {
+          this.broadcast(wsType as keyof ServerEvents, {
+            channelId: d.channelPluginId ?? '',
+            platform: d.platform ?? '',
+            userId: '',
+            platformUserId: d.platformUserId ?? '',
+            displayName: d.displayName,
+          } as ServerEvents['channel:user:pending']);
+        }
+      })
+    );
   }
 
   /**

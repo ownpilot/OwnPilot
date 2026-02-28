@@ -41,6 +41,7 @@ export const ChannelEvents = {
   USER_VERIFIED: 'channel.user.verified',
   USER_BLOCKED: 'channel.user.blocked',
   USER_UNBLOCKED: 'channel.user.unblocked',
+  USER_PENDING: 'channel.user.pending',
 
   // Platform-specific interactions
   TYPING: 'channel.typing',
@@ -110,6 +111,14 @@ export interface ChannelUserBlockedData {
   platform: ChannelPlatform;
   platformUserId: string;
   reason?: string;
+}
+
+/** Data for channel.user.pending (awaiting admin approval) */
+export interface ChannelUserPendingData {
+  platform: ChannelPlatform;
+  platformUserId: string;
+  displayName?: string;
+  channelPluginId: string;
 }
 
 /** Data for channel.typing */

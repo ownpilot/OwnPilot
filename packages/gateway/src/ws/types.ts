@@ -149,6 +149,8 @@ export interface ServerEvents {
   'channel:message:error': { channelId: string; error: string };
   'channel:user:pending': { channelId: string; platform: string; userId: string; platformUserId: string; displayName?: string };
   'channel:user:approved': { channelId: string; platform: string; userId: string; platformUserId: string; displayName?: string };
+  'channel:user:blocked': { channelId: string; platform: string; platformUserId: string };
+  'channel:user:unblocked': { channelId: string; platform: string; platformUserId: string };
 
   // Chat events
   'chat:message': { sessionId: string; message: AssistantMessage };

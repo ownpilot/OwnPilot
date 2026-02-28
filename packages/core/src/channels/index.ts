@@ -40,6 +40,7 @@ export {
   type ChannelUserFirstSeenData,
   type ChannelUserVerifiedData,
   type ChannelUserBlockedData,
+  type ChannelUserPendingData,
   type ChannelTypingData,
 } from './events.js';
 
