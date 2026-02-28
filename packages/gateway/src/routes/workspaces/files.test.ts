@@ -16,7 +16,7 @@ vi.mock('@ownpilot/core', () => ({
 }));
 
 vi.mock('../../db/repositories/workspaces.js', () => ({
-  WorkspacesRepository: vi.fn(),
+  WorkspacesRepository: vi.fn(function () {}),
 }));
 
 import { getWorkspaceStorage, StorageSecurityError } from '@ownpilot/core';
@@ -51,7 +51,7 @@ describe('Workspace File Routes', () => {
     });
     app.route('/workspaces', workspaceFileRoutes);
     mockRepo = { get: vi.fn(), logAudit: vi.fn() };
-    vi.mocked(WorkspacesRepository).mockImplementation(() => mockRepo as never);
+    vi.mocked(WorkspacesRepository).mockImplementation(function () { return mockRepo as never; });
     mockStorage = {
       listFiles: vi.fn(),
       readFile: vi.fn(),

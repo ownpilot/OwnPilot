@@ -1397,6 +1397,9 @@ describe('PlanExecutor', () => {
 
   describe('llm_decision handler', () => {
     it('calls agent with prompt and returns decision', async () => {
+      // Use real timers — dynamic imports + chained promises don't flush with fake timers
+      vi.useRealTimers();
+
       const { getOrCreateChatAgent } = await import('../routes/agents.js');
       const mockAgent = {
         chat: vi.fn(async () => ({
@@ -1425,15 +1428,18 @@ describe('PlanExecutor', () => {
       });
       mockPlanService.getStepsByStatus.mockResolvedValue([step]);
 
-      const resultPromise = executor.execute('plan-1');
-      await vi.advanceTimersByTimeAsync(200);
-      const _result = await resultPromise;
+      // Create a fresh executor with real timers
+      const realExecutor = new PlanExecutor({ userId: 'user-1' });
+      const result = await realExecutor.execute('plan-1');
 
       expect(mockAgent.chat).toHaveBeenCalled();
       const chatArg = mockAgent.chat.mock.calls[0][0] as string;
       expect(chatArg).toContain('What should we do?');
       expect(chatArg).toContain('option A');
       expect(chatArg).toContain('option B');
+
+      // Restore fake timers for subsequent tests
+      vi.useFakeTimers();
     });
 
     it('returns error when no prompt specified', async () => {
