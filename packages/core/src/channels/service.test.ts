@@ -48,6 +48,7 @@ function createMockService(): IChannelService {
     getByPlatform: vi.fn(() => []),
     connect: vi.fn(),
     disconnect: vi.fn(),
+    logout: vi.fn(),
     resolveUser: vi.fn(),
   };
 }
