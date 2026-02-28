@@ -1001,12 +1001,14 @@ describe('ChannelServiceImpl', () => {
             text: expect.stringContaining('admin needs to approve'),
           })
         );
-        // Should broadcast pending event
-        expect(mockWsGateway.broadcast).toHaveBeenCalledWith(
-          'channel:user:pending',
+        // Should emit pending event via EventBus (legacy forwarder handles WS broadcast)
+        expect(mockEventBus.emit).toHaveBeenCalledWith(
           expect.objectContaining({
-            platform: 'telegram',
-            platformUserId: 'user-456',
+            type: 'channel.user.pending',
+            data: expect.objectContaining({
+              platform: 'telegram',
+              platformUserId: 'user-456',
+            }),
           })
         );
         // Should NOT proceed to message processing
@@ -1063,12 +1065,14 @@ describe('ChannelServiceImpl', () => {
             text: expect.stringContaining('admin needs to approve'),
           })
         );
-        // Should broadcast pending event
-        expect(mockWsGateway.broadcast).toHaveBeenCalledWith(
-          'channel:user:pending',
+        // Should emit pending event via EventBus (legacy forwarder handles WS broadcast)
+        expect(mockEventBus.emit).toHaveBeenCalledWith(
           expect.objectContaining({
-            platform: 'telegram',
-            platformUserId: 'user-456',
+            type: 'channel.user.pending',
+            data: expect.objectContaining({
+              platform: 'telegram',
+              platformUserId: 'user-456',
+            }),
           })
         );
         // Should NOT proceed to message processing

@@ -544,15 +544,6 @@ export class ChannelServiceImpl implements IChannelService {
             // EventBus not initialized yet
           }
 
-          // Broadcast pending user event to UI (legacy WS)
-          wsGateway.broadcast('channel:user:pending', {
-            channelId: message.channelPluginId,
-            platform: message.platform,
-            userId: channelUser.id,
-            platformUserId: message.sender.platformUserId,
-            displayName: message.sender.displayName,
-          });
-
           return;
         }
       }
