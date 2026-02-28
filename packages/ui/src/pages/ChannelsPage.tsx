@@ -23,6 +23,9 @@ import {
   Clock,
   Send,
   Shield,
+  ShieldCheck,
+  ShieldAlert,
+  Unlock,
   Trash2,
 } from '../components/icons';
 import type { Channel, ChannelUser, ChannelStats } from '../api/types';
@@ -202,13 +205,18 @@ export function ChannelsPage() {
         )
       );
     });
+    const unsub4 = subscribe<{ displayName?: string }>('channel:user:pending', (data) => {
+      toast.info(`New user pending approval: ${data.displayName ?? 'Unknown'}`);
+      if (selectedId) loadDetail(selectedId);
+    });
 
     return () => {
       unsub1();
       unsub2();
       unsub3();
+      unsub4();
     };
-  }, [subscribe, selectedId, loadChannels, loadDetail]);
+  }, [subscribe, selectedId, loadChannels, loadDetail, toast]);
 
   // ---- Actions ----
   const handleConnect = useCallback(
@@ -271,6 +279,61 @@ export function ChannelsPage() {
         toast.error('Failed to clear messages');
       } finally {
         setActionLoading(null);
+      }
+    },
+    [toast, selectedId, loadDetail]
+  );
+
+  // ---- User actions ----
+  const handleApproveUser = useCallback(
+    async (userId: string) => {
+      try {
+        await channelsApi.approveUser(userId);
+        toast.success('User approved');
+        if (selectedId) loadDetail(selectedId);
+      } catch {
+        toast.error('Failed to approve user');
+      }
+    },
+    [toast, selectedId, loadDetail]
+  );
+
+  const handleBlockUser = useCallback(
+    async (userId: string) => {
+      if (!confirm('Block this user? They will no longer be able to message the bot.')) return;
+      try {
+        await channelsApi.blockUser(userId);
+        toast.success('User blocked');
+        if (selectedId) loadDetail(selectedId);
+      } catch {
+        toast.error('Failed to block user');
+      }
+    },
+    [toast, selectedId, loadDetail]
+  );
+
+  const handleUnblockUser = useCallback(
+    async (userId: string) => {
+      try {
+        await channelsApi.unblockUser(userId);
+        toast.success('User unblocked');
+        if (selectedId) loadDetail(selectedId);
+      } catch {
+        toast.error('Failed to unblock user');
+      }
+    },
+    [toast, selectedId, loadDetail]
+  );
+
+  const handleDeleteUser = useCallback(
+    async (userId: string) => {
+      if (!confirm('Delete this user? This cannot be undone.')) return;
+      try {
+        await channelsApi.deleteUser(userId);
+        toast.success('User deleted');
+        if (selectedId) loadDetail(selectedId);
+      } catch {
+        toast.error('Failed to delete user');
       }
     },
     [toast, selectedId, loadDetail]
@@ -412,6 +475,10 @@ export function ChannelsPage() {
               onDisconnect={handleDisconnect}
               onReconnect={handleReconnect}
               onClearMessages={handleClearMessages}
+              onApproveUser={handleApproveUser}
+              onBlockUser={handleBlockUser}
+              onUnblockUser={handleUnblockUser}
+              onDeleteUser={handleDeleteUser}
             />
           ) : (
             <div className="h-full flex items-center justify-center">
@@ -454,6 +521,10 @@ function ChannelDetail({
   onDisconnect,
   onReconnect,
   onClearMessages,
+  onApproveUser,
+  onBlockUser,
+  onUnblockUser,
+  onDeleteUser,
 }: {
   channel: Channel;
   users: ChannelUser[];
@@ -464,6 +535,10 @@ function ChannelDetail({
   onDisconnect: (id: string) => void;
   onReconnect: (id: string) => void;
   onClearMessages: (id: string) => void;
+  onApproveUser: (userId: string) => void;
+  onBlockUser: (userId: string) => void;
+  onUnblockUser: (userId: string) => void;
+  onDeleteUser: (userId: string) => void;
 }) {
   return (
     <div className="p-6 space-y-6">
@@ -553,6 +628,9 @@ function ChannelDetail({
                   <th className="text-left px-3 py-2 font-medium text-text-secondary dark:text-dark-text-secondary">
                     Last Seen
                   </th>
+                  <th className="text-left px-3 py-2 font-medium text-text-secondary dark:text-dark-text-secondary">
+                    Actions
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border dark:divide-dark-border">
@@ -596,6 +674,48 @@ function ChannelDetail({
                     </td>
                     <td className="px-3 py-2 text-text-muted dark:text-dark-text-muted">
                       {timeAgo(user.lastSeenAt)}
+                    </td>
+                    <td className="px-3 py-2">
+                      <div className="flex items-center gap-1">
+                        {/* Pending: Approve + Block + Delete */}
+                        {!user.isVerified && !user.isBlocked && (
+                          <button
+                            onClick={() => onApproveUser(user.id)}
+                            title="Approve"
+                            className="p-1 rounded hover:bg-success/10 text-success transition-colors"
+                          >
+                            <ShieldCheck className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                        {/* Verified: Block + Delete */}
+                        {!user.isBlocked && (
+                          <button
+                            onClick={() => onBlockUser(user.id)}
+                            title="Block"
+                            className="p-1 rounded hover:bg-warning/10 text-warning transition-colors"
+                          >
+                            <ShieldAlert className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                        {/* Blocked: Unblock */}
+                        {user.isBlocked && (
+                          <button
+                            onClick={() => onUnblockUser(user.id)}
+                            title="Unblock"
+                            className="p-1 rounded hover:bg-primary/10 text-primary transition-colors"
+                          >
+                            <Unlock className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                        {/* Always: Delete */}
+                        <button
+                          onClick={() => onDeleteUser(user.id)}
+                          title="Delete"
+                          className="p-1 rounded hover:bg-error/10 text-error transition-colors"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}

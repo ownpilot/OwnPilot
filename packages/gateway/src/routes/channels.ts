@@ -416,6 +416,7 @@ channelRoutes.get('/:id/users', async (c) => {
     return apiResponse(c, {
       users: users.map((u) => ({
         id: u.id,
+        platform: u.platform,
         platformUserId: u.platformUserId,
         platformUsername: u.platformUsername,
         displayName: u.displayName,

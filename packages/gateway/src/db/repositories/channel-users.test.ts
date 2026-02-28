@@ -340,6 +340,22 @@ describe('ChannelUsersRepository', () => {
     });
   });
 
+  // ---- unverify ----
+
+  describe('unverify', () => {
+    it('clears verification fields', async () => {
+      mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
+
+      await repo.unverify('cu-1');
+
+      const sql = mockAdapter.execute.mock.calls[0][0] as string;
+      expect(sql).toContain('is_verified = FALSE');
+      expect(sql).toContain('verified_at = NULL');
+      expect(sql).toContain('verification_method = NULL');
+      expect(mockAdapter.execute).toHaveBeenCalledWith(expect.any(String), ['cu-1']);
+    });
+  });
+
   // ---- list ----
 
   describe('list', () => {

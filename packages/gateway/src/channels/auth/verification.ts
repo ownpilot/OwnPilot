@@ -175,6 +175,54 @@ export class ChannelVerificationService {
   }
 
   /**
+   * Approve a pending user by ID (admin action).
+   */
+  async approveUser(userId: string): Promise<boolean> {
+    const user = await this.usersRepo.getById(userId);
+    if (!user) return false;
+    await this.usersRepo.markVerified(user.id, user.ownpilotUserId, 'admin');
+
+    // Emit verification event so channel service can notify the user
+    try {
+      const eventBus = getEventBus();
+      eventBus.emit(
+        createEvent<ChannelUserVerifiedData>(
+          'channel.user.verified',
+          'channel',
+          'channel-verification-service',
+          {
+            platform: user.platform,
+            platformUserId: user.platformUserId,
+            ownpilotUserId: user.ownpilotUserId,
+            verificationMethod: 'admin',
+          }
+        )
+      );
+    } catch {
+      // EventBus not initialized yet - ignore
+    }
+
+    return true;
+  }
+
+  /**
+   * Delete a channel user by ID.
+   */
+  async deleteUser(userId: string): Promise<boolean> {
+    return this.usersRepo.delete(userId);
+  }
+
+  /**
+   * Revoke verification for a channel user by ID.
+   */
+  async unverifyUser(userId: string): Promise<boolean> {
+    const user = await this.usersRepo.getById(userId);
+    if (!user) return false;
+    await this.usersRepo.unverify(user.id);
+    return true;
+  }
+
+  /**
    * Clean up expired tokens.
    */
   async cleanup(): Promise<number> {

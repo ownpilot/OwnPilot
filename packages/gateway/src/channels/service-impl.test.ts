@@ -987,7 +987,7 @@ describe('ChannelServiceImpl', () => {
     });
 
     describe('verification', () => {
-      it('should reject unverified user not in whitelist', async () => {
+      it('should send pending approval message for unverified user not in whitelist', async () => {
         mockUsersRepo.findOrCreate.mockResolvedValue(createChannelUser({ isVerified: false }));
         // allowed_users has entries, but NOT our test user (user-456)
         mockConfigServicesRepo.getDefaultEntry.mockReturnValue({
@@ -998,7 +998,15 @@ describe('ChannelServiceImpl', () => {
 
         expect(channelPlugin.api.sendMessage).toHaveBeenCalledWith(
           expect.objectContaining({
-            text: expect.stringContaining('not authorized'),
+            text: expect.stringContaining('admin needs to approve'),
+          })
+        );
+        // Should broadcast pending event
+        expect(mockWsGateway.broadcast).toHaveBeenCalledWith(
+          'channel:user:pending',
+          expect.objectContaining({
+            platform: 'telegram',
+            platformUserId: 'user-456',
           })
         );
         // Should NOT proceed to message processing
@@ -1038,16 +1046,47 @@ describe('ChannelServiceImpl', () => {
         expect(mockMessagesRepo.create).toHaveBeenCalled();
       });
 
-      it('should auto-verify when no allowed_users restriction is set', async () => {
+      it('should send pending approval message when no allowed_users restriction is set', async () => {
         const unverifiedUser = createChannelUser({ isVerified: false });
         mockUsersRepo.findOrCreate.mockResolvedValue(unverifiedUser);
         mockConfigServicesRepo.getDefaultEntry.mockReturnValue({
           data: { allowed_users: '' },
         });
 
+        await service.processIncomingMessage(message);
+
+        // Should NOT auto-verify — approval mode requires admin action
+        expect(mockVerificationService.verifyViaWhitelist).not.toHaveBeenCalled();
+        // Should send pending message
+        expect(channelPlugin.api.sendMessage).toHaveBeenCalledWith(
+          expect.objectContaining({
+            text: expect.stringContaining('admin needs to approve'),
+          })
+        );
+        // Should broadcast pending event
+        expect(mockWsGateway.broadcast).toHaveBeenCalledWith(
+          'channel:user:pending',
+          expect.objectContaining({
+            platform: 'telegram',
+            platformUserId: 'user-456',
+          })
+        );
+        // Should NOT proceed to message processing
+        expect(mockSessionsRepo.findActive).not.toHaveBeenCalled();
+      });
+
+      it('should auto-verify when user sends correct approval code', async () => {
+        const unverifiedUser = createChannelUser({ isVerified: false });
+        mockUsersRepo.findOrCreate.mockResolvedValue(unverifiedUser);
+        mockConfigServicesRepo.getDefaultEntry.mockReturnValue({
+          data: { allowed_users: '', approval_code: 'SECRET123' },
+        });
+
+        const codeMsg = createIncomingMessage({ text: 'SECRET123' });
+
         // Set up MessageBus for continued processing
         const mockBus = {
-          process: vi.fn().mockResolvedValue({ response: { content: 'Auto-verified response' } }),
+          process: vi.fn().mockResolvedValue({ response: { content: 'Welcome!' } }),
         };
         mockHasServiceRegistry.mockReturnValue(true);
         mockGetServiceRegistry.mockReturnValue({
@@ -1060,15 +1099,43 @@ describe('ChannelServiceImpl', () => {
         });
         mockGetOrCreateChatAgent.mockResolvedValue(createMockAgent());
 
-        await service.processIncomingMessage(message);
+        await service.processIncomingMessage(codeMsg);
 
         expect(mockVerificationService.verifyViaWhitelist).toHaveBeenCalledWith(
           'telegram',
           'user-456',
           'Test User'
         );
-        // Should proceed to message processing
-        expect(mockMessagesRepo.create).toHaveBeenCalled();
+        // Should send "Access granted" message
+        expect(channelPlugin.api.sendMessage).toHaveBeenCalledWith(
+          expect.objectContaining({
+            text: expect.stringContaining('Access granted'),
+          })
+        );
+      });
+
+      it('should reject when user sends wrong approval code', async () => {
+        const unverifiedUser = createChannelUser({ isVerified: false });
+        mockUsersRepo.findOrCreate.mockResolvedValue(unverifiedUser);
+        mockConfigServicesRepo.getDefaultEntry.mockReturnValue({
+          data: { allowed_users: '', approval_code: 'SECRET123' },
+        });
+
+        // Send wrong code
+        const wrongMsg = createIncomingMessage({ text: 'WRONG_CODE' });
+
+        await service.processIncomingMessage(wrongMsg);
+
+        // Should NOT auto-verify
+        expect(mockVerificationService.verifyViaWhitelist).not.toHaveBeenCalled();
+        // Should send "send the approval code" message
+        expect(channelPlugin.api.sendMessage).toHaveBeenCalledWith(
+          expect.objectContaining({
+            text: expect.stringContaining('approval code'),
+          })
+        );
+        // Should NOT proceed to message processing
+        expect(mockSessionsRepo.findActive).not.toHaveBeenCalled();
       });
     });
 

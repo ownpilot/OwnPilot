@@ -34,7 +34,7 @@ import { getLog } from '../../../services/log.js';
 import { getErrorMessage } from '../../../routes/helpers.js';
 import { MAX_MESSAGE_CHAT_MAP_SIZE } from '../../../config/defaults.js';
 import { splitMessage } from '../../utils/message-utils.js';
-import { getSessionDir } from './session-store.js';
+import { getSessionDir, clearSession } from './session-store.js';
 import { wsGateway } from '../../../ws/server.js';
 
 const log = getLog('WhatsApp');
@@ -159,6 +159,9 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
       this.sock.end(undefined);
       this.sock = null;
     }
+
+    // Clear session files so next connect() generates a fresh QR code
+    await clearSession(this.pluginId);
 
     this.qrCode = null;
     this.reconnectAttempt = 0;

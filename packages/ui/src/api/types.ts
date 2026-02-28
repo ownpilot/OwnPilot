@@ -556,6 +556,7 @@ export interface ChannelMessage {
 
 export interface ChannelUser {
   id: string;
+  platform: string;
   platformUserId: string;
   platformUsername?: string;
   displayName?: string;

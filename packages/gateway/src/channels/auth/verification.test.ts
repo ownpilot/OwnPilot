@@ -521,6 +521,110 @@ describe('ChannelVerificationService', () => {
   });
 
   // =========================================================================
+  // approveUser
+  // =========================================================================
+
+  describe('approveUser', () => {
+    it('should approve user by ID and return true', async () => {
+      const user = makeChannelUser({ id: 'cu-10' });
+      mockUsersRepo.getById = vi.fn().mockResolvedValue(user);
+      mockUsersRepo.markVerified.mockResolvedValue(undefined);
+      vi.mocked(getEventBus).mockReturnValue({ emit: vi.fn() } as unknown as ReturnType<
+        typeof getEventBus
+      >);
+
+      const result = await service.approveUser('cu-10');
+
+      expect(result).toBe(true);
+      expect(mockUsersRepo.markVerified).toHaveBeenCalledWith('cu-10', 'owner-1', 'admin');
+    });
+
+    it('should return false when user not found', async () => {
+      mockUsersRepo.getById = vi.fn().mockResolvedValue(null);
+
+      const result = await service.approveUser('missing');
+
+      expect(result).toBe(false);
+      expect(mockUsersRepo.markVerified).not.toHaveBeenCalled();
+    });
+
+    it('should emit channel.user.verified event with admin method', async () => {
+      const user = makeChannelUser({ id: 'cu-10' });
+      mockUsersRepo.getById = vi.fn().mockResolvedValue(user);
+      mockUsersRepo.markVerified.mockResolvedValue(undefined);
+      const mockEmit = vi.fn();
+      vi.mocked(getEventBus).mockReturnValue({ emit: mockEmit } as unknown as ReturnType<
+        typeof getEventBus
+      >);
+
+      await service.approveUser('cu-10');
+
+      expect(mockEmit).toHaveBeenCalledOnce();
+    });
+
+    it('should succeed even when getEventBus throws', async () => {
+      const user = makeChannelUser({ id: 'cu-10' });
+      mockUsersRepo.getById = vi.fn().mockResolvedValue(user);
+      mockUsersRepo.markVerified.mockResolvedValue(undefined);
+      vi.mocked(getEventBus).mockImplementation(() => {
+        throw new Error('EventBus not initialized');
+      });
+
+      const result = await service.approveUser('cu-10');
+
+      expect(result).toBe(true);
+    });
+  });
+
+  // =========================================================================
+  // deleteUser
+  // =========================================================================
+
+  describe('deleteUser', () => {
+    it('should delete user and return true', async () => {
+      mockUsersRepo.delete = vi.fn().mockResolvedValue(true);
+
+      const result = await service.deleteUser('cu-10');
+
+      expect(result).toBe(true);
+      expect(mockUsersRepo.delete).toHaveBeenCalledWith('cu-10');
+    });
+
+    it('should return false when user not found', async () => {
+      mockUsersRepo.delete = vi.fn().mockResolvedValue(false);
+
+      const result = await service.deleteUser('missing');
+
+      expect(result).toBe(false);
+    });
+  });
+
+  // =========================================================================
+  // unverifyUser
+  // =========================================================================
+
+  describe('unverifyUser', () => {
+    it('should unverify user by ID and return true', async () => {
+      const user = makeChannelUser({ id: 'cu-10' });
+      mockUsersRepo.getById = vi.fn().mockResolvedValue(user);
+      mockUsersRepo.unverify = vi.fn().mockResolvedValue(undefined);
+
+      const result = await service.unverifyUser('cu-10');
+
+      expect(result).toBe(true);
+      expect(mockUsersRepo.unverify).toHaveBeenCalledWith('cu-10');
+    });
+
+    it('should return false when user not found', async () => {
+      mockUsersRepo.getById = vi.fn().mockResolvedValue(null);
+
+      const result = await service.unverifyUser('missing');
+
+      expect(result).toBe(false);
+    });
+  });
+
+  // =========================================================================
   // cleanup
   // =========================================================================
 

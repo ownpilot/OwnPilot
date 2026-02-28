@@ -10,16 +10,25 @@ import { Hono } from 'hono';
 // ─── Mock Dependencies ──────────────────────────────────────────
 // Use vi.hoisted() so mock objects are available before vi.mock() hoisting
 
-const { mockVerificationService, mockChannelUsersRepo } = vi.hoisted(() => ({
+const { mockVerificationService, mockChannelUsersRepo, mockWsGateway } = vi.hoisted(() => ({
   mockVerificationService: {
     generateToken: vi.fn(),
     isVerified: vi.fn(),
     blockUser: vi.fn(),
     unblockUser: vi.fn(),
+    approveUser: vi.fn(),
+    deleteUser: vi.fn(),
+    unverifyUser: vi.fn(),
   },
   mockChannelUsersRepo: {
     findByPlatform: vi.fn(),
     list: vi.fn(),
+    getById: vi.fn(),
+    block: vi.fn(),
+    unblock: vi.fn(),
+  },
+  mockWsGateway: {
+    broadcast: vi.fn(),
   },
 }));
 
@@ -29,6 +38,10 @@ vi.mock('../channels/auth/verification.js', () => ({
 
 vi.mock('../db/repositories/channel-users.js', () => ({
   channelUsersRepo: mockChannelUsersRepo,
+}));
+
+vi.mock('../ws/server.js', () => ({
+  wsGateway: mockWsGateway,
 }));
 
 // ─── Import route ───────────────────────────────────────────────
@@ -254,6 +267,131 @@ describe('Channel Auth Routes', () => {
       expect(mockChannelUsersRepo.list).toHaveBeenCalledWith(
         expect.objectContaining({ isVerified: false })
       );
+    });
+  });
+
+  // ─── POST /users/:id/approve ───────────────────────────────
+
+  describe('POST /auth/users/:id/approve', () => {
+    it('should approve a pending user', async () => {
+      mockVerificationService.approveUser.mockResolvedValue(true);
+      mockChannelUsersRepo.getById.mockResolvedValue(mockUser({ id: 'u-1', platform: 'telegram', platformUserId: 'tg-123', displayName: 'Alice' }));
+
+      const res = await app.request('/auth/users/u-1/approve', { method: 'POST' });
+
+      expect(res.status).toBe(200);
+      const data = await res.json();
+      expect(data.data.approved).toBe(true);
+      expect(mockVerificationService.approveUser).toHaveBeenCalledWith('u-1');
+      expect(mockWsGateway.broadcast).toHaveBeenCalledWith('data:changed', expect.any(Object));
+      expect(mockWsGateway.broadcast).toHaveBeenCalledWith(
+        'channel:user:approved',
+        expect.objectContaining({ userId: 'u-1' })
+      );
+    });
+
+    it('should return 404 when user not found', async () => {
+      mockVerificationService.approveUser.mockResolvedValue(false);
+
+      const res = await app.request('/auth/users/missing/approve', { method: 'POST' });
+
+      expect(res.status).toBe(404);
+    });
+  });
+
+  // ─── POST /users/:id/block ────────────────────────────────
+
+  describe('POST /auth/users/:id/block', () => {
+    it('should block a user by ID', async () => {
+      mockChannelUsersRepo.getById.mockResolvedValue(mockUser({ id: 'u-1' }));
+      mockChannelUsersRepo.block.mockResolvedValue(undefined);
+
+      const res = await app.request('/auth/users/u-1/block', { method: 'POST' });
+
+      expect(res.status).toBe(200);
+      const data = await res.json();
+      expect(data.data.blocked).toBe(true);
+      expect(mockChannelUsersRepo.block).toHaveBeenCalledWith('u-1');
+      expect(mockWsGateway.broadcast).toHaveBeenCalledWith('data:changed', expect.any(Object));
+    });
+
+    it('should return 404 when user not found', async () => {
+      mockChannelUsersRepo.getById.mockResolvedValue(null);
+
+      const res = await app.request('/auth/users/missing/block', { method: 'POST' });
+
+      expect(res.status).toBe(404);
+    });
+  });
+
+  // ─── POST /users/:id/unblock ──────────────────────────────
+
+  describe('POST /auth/users/:id/unblock', () => {
+    it('should unblock a user by ID', async () => {
+      mockChannelUsersRepo.getById.mockResolvedValue(mockUser({ id: 'u-1' }));
+      mockChannelUsersRepo.unblock.mockResolvedValue(undefined);
+
+      const res = await app.request('/auth/users/u-1/unblock', { method: 'POST' });
+
+      expect(res.status).toBe(200);
+      const data = await res.json();
+      expect(data.data.unblocked).toBe(true);
+      expect(mockChannelUsersRepo.unblock).toHaveBeenCalledWith('u-1');
+    });
+
+    it('should return 404 when user not found', async () => {
+      mockChannelUsersRepo.getById.mockResolvedValue(null);
+
+      const res = await app.request('/auth/users/missing/unblock', { method: 'POST' });
+
+      expect(res.status).toBe(404);
+    });
+  });
+
+  // ─── POST /users/:id/unverify ─────────────────────────────
+
+  describe('POST /auth/users/:id/unverify', () => {
+    it('should unverify a user by ID', async () => {
+      mockVerificationService.unverifyUser.mockResolvedValue(true);
+
+      const res = await app.request('/auth/users/u-1/unverify', { method: 'POST' });
+
+      expect(res.status).toBe(200);
+      const data = await res.json();
+      expect(data.data.unverified).toBe(true);
+      expect(mockVerificationService.unverifyUser).toHaveBeenCalledWith('u-1');
+    });
+
+    it('should return 404 when user not found', async () => {
+      mockVerificationService.unverifyUser.mockResolvedValue(false);
+
+      const res = await app.request('/auth/users/missing/unverify', { method: 'POST' });
+
+      expect(res.status).toBe(404);
+    });
+  });
+
+  // ─── DELETE /users/:id ────────────────────────────────────
+
+  describe('DELETE /auth/users/:id', () => {
+    it('should delete a user by ID', async () => {
+      mockVerificationService.deleteUser.mockResolvedValue(true);
+
+      const res = await app.request('/auth/users/u-1', { method: 'DELETE' });
+
+      expect(res.status).toBe(200);
+      const data = await res.json();
+      expect(data.data.deleted).toBe(true);
+      expect(mockVerificationService.deleteUser).toHaveBeenCalledWith('u-1');
+      expect(mockWsGateway.broadcast).toHaveBeenCalledWith('data:changed', expect.objectContaining({ action: 'deleted' }));
+    });
+
+    it('should return 404 when user not found', async () => {
+      mockVerificationService.deleteUser.mockResolvedValue(false);
+
+      const res = await app.request('/auth/users/missing', { method: 'DELETE' });
+
+      expect(res.status).toBe(404);
     });
   });
 });
