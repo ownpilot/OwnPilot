@@ -356,7 +356,7 @@ async function callWhisperTranscribe(
   const url = `${baseUrl}/v1/audio/transcriptions`;
 
   const formData = new FormData();
-  formData.append('file', new Blob([audioBuffer]), filename);
+  formData.append('file', new Blob([new Uint8Array(audioBuffer)]), filename);
   formData.append('model', 'whisper-1');
   if (opts.language) formData.append('language', opts.language);
   if (opts.prompt) formData.append('prompt', opts.prompt);
@@ -443,7 +443,7 @@ const translateAudioOverride: ToolExecutor = async (
     const url = `${config.baseUrl}/v1/audio/translations`;
 
     const formData = new FormData();
-    formData.append('file', new Blob([audioBuffer]), filename);
+    formData.append('file', new Blob([new Uint8Array(audioBuffer)]), filename);
     formData.append('model', 'whisper-1');
     if (prompt) formData.append('prompt', prompt);
 

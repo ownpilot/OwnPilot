@@ -1,0 +1,63 @@
+{
+  "id": "automation-builder",
+  "name": "Automation Builder",
+  "version": "1.0.0",
+  "description": "Create and manage automated triggers, schedules, and event-driven actions",
+  "category": "productivity",
+  "icon": "🤖",
+  "author": { "name": "OwnPilot" },
+  "tags": ["automation", "triggers", "schedule", "cron", "events"],
+  "keywords": ["automate", "schedule", "remind me", "every day", "trigger", "automation", "recurring"],
+  "system_prompt": "You have automation tools. When the user wants to set up recurring tasks, scheduled reminders, or event-driven automations, use create_automation. Use list_automations to show existing automations. Automations are backed by the trigger system. For schedule triggers, use cron expressions. For event triggers, use event names like 'message.received' or 'goal.completed'.",
+  "tools": [
+    {
+      "name": "create_automation",
+      "description": "Create an automation with a trigger (schedule or event) and an action (chat message to process)",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Automation name (e.g. 'Daily standup reminder')"
+          },
+          "description": {
+            "type": "string",
+            "description": "What this automation does"
+          },
+          "type": {
+            "type": "string",
+            "description": "Trigger type: 'schedule' (cron-based) or 'event' (event-driven)"
+          },
+          "schedule": {
+            "type": "string",
+            "description": "Cron expression for schedule triggers (e.g. '0 9 * * 1-5' for weekdays at 9am)"
+          },
+          "event": {
+            "type": "string",
+            "description": "Event name for event triggers (e.g. 'message.received')"
+          },
+          "action_message": {
+            "type": "string",
+            "description": "The message/instruction to execute when triggered"
+          }
+        },
+        "required": ["name", "type", "action_message"]
+      },
+      "code": "const triggerType = args.type === 'event' ? 'event' : 'schedule'; const config = {}; if (triggerType === 'schedule') { config.cron = args.schedule || '0 9 * * *'; } else { config.event = args.event || 'message.received'; } const trigger = await utils.callTool('create_trigger', { name: args.name, description: args.description || args.name, type: triggerType, config: config, action: { type: 'chat', message: args.action_message }, enabled: true }); await utils.callTool('create_memory', { content: 'Created automation: ' + args.name + ' (' + triggerType + ')' }); return { content: { created: true, automation: { name: args.name, type: triggerType, config, action_message: args.action_message }, trigger } };"
+    },
+    {
+      "name": "list_automations",
+      "description": "List all active automations and triggers",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "description": "Filter by type: 'schedule', 'event', or 'all' (default: all)"
+          }
+        }
+      },
+      "code": "const triggers = await utils.callTool('list_triggers', {}); let filtered = Array.isArray(triggers) ? triggers : []; if (args.type && args.type !== 'all') { filtered = filtered.filter(t => t.type === args.type); } const automations = filtered.map(t => ({ id: t.id, name: t.name, description: t.description, type: t.type, config: t.config, enabled: t.enabled, action: t.action })); return { content: { automations, total: automations.length, active: automations.filter(a => a.enabled).length } };"
+    }
+  ]
+}

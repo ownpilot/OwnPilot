@@ -1,0 +1,74 @@
+{
+  "id": "knowledge-base",
+  "name": "Knowledge Base",
+  "version": "1.0.0",
+  "description": "Store and query structured knowledge using custom data tables and AI memory",
+  "category": "data",
+  "icon": "📚",
+  "author": { "name": "OwnPilot" },
+  "tags": ["knowledge", "database", "reference", "wiki", "learn"],
+  "keywords": ["save knowledge", "remember this", "store information", "knowledge base", "reference", "lookup"],
+  "system_prompt": "You have knowledge base tools. When the user wants to save structured information (facts, references, how-tos, recipes, etc.), use save_knowledge with a clear topic and category. When they want to find something they saved, use query_knowledge. Use list_knowledge_topics to show what topics exist. The knowledge base uses Custom Data tables for persistence.",
+  "tools": [
+    {
+      "name": "save_knowledge",
+      "description": "Save a piece of knowledge with topic, category, and content to the knowledge base",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "topic": {
+            "type": "string",
+            "description": "Short topic title (e.g. 'Docker compose networking')"
+          },
+          "category": {
+            "type": "string",
+            "description": "Category (e.g. 'tech', 'cooking', 'health', 'finance', 'work')"
+          },
+          "content": {
+            "type": "string",
+            "description": "The knowledge content to store"
+          },
+          "tags": {
+            "type": "string",
+            "description": "Comma-separated tags for search"
+          }
+        },
+        "required": ["topic", "content"]
+      },
+      "code": "const tables = await utils.callTool('list_custom_tables', {}); const hasTable = Array.isArray(tables) && tables.some(t => t.name === 'knowledge_base'); if (!hasTable) { await utils.callTool('create_custom_table', { name: 'knowledge_base', columns: [ { name: 'topic', type: 'text' }, { name: 'category', type: 'text' }, { name: 'content', type: 'text' }, { name: 'tags', type: 'text' } ] }); } const record = await utils.callTool('add_custom_record', { table: 'knowledge_base', data: { topic: args.topic, category: args.category || 'general', content: args.content, tags: args.tags || '' } }); await utils.callTool('create_memory', { content: 'Knowledge saved: ' + args.topic + ' (' + (args.category || 'general') + ')', metadata: { source: 'knowledge-base' } }); return { content: { saved: true, topic: args.topic, record } };"
+    },
+    {
+      "name": "query_knowledge",
+      "description": "Search the knowledge base for information matching a query",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "Search query"
+          },
+          "category": {
+            "type": "string",
+            "description": "Filter by category (optional)"
+          }
+        },
+        "required": ["query"]
+      },
+      "code": "const searchArgs = { table: 'knowledge_base', query: args.query }; if (args.category) { searchArgs.filters = { category: args.category }; } let results; try { results = await utils.callTool('search_custom_records', searchArgs); } catch (e) { results = []; } const memories = await utils.callTool('search_memories', { query: args.query, limit: 3 }); return { content: { knowledge_results: results, related_memories: memories } };"
+    },
+    {
+      "name": "list_knowledge_topics",
+      "description": "List all topics in the knowledge base, optionally filtered by category",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "category": {
+            "type": "string",
+            "description": "Filter by category (optional)"
+          }
+        }
+      },
+      "code": "let records; try { const listArgs = { table: 'knowledge_base', limit: 100 }; records = await utils.callTool('list_custom_records', listArgs); } catch (e) { return { content: { topics: [], message: 'Knowledge base is empty. Save some knowledge first!' } }; } if (args.category) { records = records.filter(r => r.category === args.category); } const topics = records.map(r => ({ topic: r.topic, category: r.category, tags: r.tags })); const categories = [...new Set(topics.map(t => t.category))]; return { content: { topics, categories, total: topics.length } };"
+    }
+  ]
+}

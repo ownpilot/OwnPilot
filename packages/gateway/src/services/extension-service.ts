@@ -578,6 +578,7 @@ export class ExtensionService implements IExtensionService {
     // If no explicit directory, scan all known directories
     if (!directory) {
       const dirs = [
+        this.getBundledDefaultExtensionsDirectory(),
         this.getDefaultExtensionsDirectory(),
         this.getDefaultSkillsDirectory(),
         this.getWorkspaceSkillsDirectory(),
@@ -732,6 +733,20 @@ export class ExtensionService implements IExtensionService {
     const workspaceDir = process.env.WORKSPACE_DIR ?? process.cwd();
     const candidate = join(workspaceDir, 'data', 'skills');
     return existsSync(candidate) ? candidate : null;
+  }
+
+  /**
+   * Bundled default extensions shipped with the gateway package.
+   * These are OwnPilot-format extensions that use the SDK (utils.callTool, etc.).
+   */
+  private getBundledDefaultExtensionsDirectory(): string | null {
+    try {
+      const thisDir = dirname(fileURLToPath(import.meta.url));
+      const candidate = join(thisDir, '..', '..', 'data', 'default-extensions');
+      return existsSync(candidate) ? candidate : null;
+    } catch {
+      return null;
+    }
   }
 
   /**

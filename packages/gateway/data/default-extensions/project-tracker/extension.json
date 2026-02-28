@@ -1,0 +1,79 @@
+{
+  "id": "project-tracker",
+  "name": "Project Tracker",
+  "version": "1.0.0",
+  "description": "Create and track projects using goals, tasks, and milestones",
+  "category": "productivity",
+  "icon": "🎯",
+  "author": { "name": "OwnPilot" },
+  "tags": ["project", "tracking", "milestones", "planning", "management"],
+  "keywords": ["new project", "track project", "project status", "project overview", "milestone"],
+  "system_prompt": "You have project tracking tools. When a user wants to start a new project, use create_project to set up a goal with tasks. Use update_project_status to log progress. Use get_project_overview for a full picture of a project. Projects are backed by goals (for high-level tracking) and tasks (for actionable items).",
+  "tools": [
+    {
+      "name": "create_project",
+      "description": "Create a new project with a goal, milestones, and initial tasks",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Project name"
+          },
+          "description": {
+            "type": "string",
+            "description": "What the project aims to achieve"
+          },
+          "milestones": {
+            "type": "string",
+            "description": "Comma-separated milestone names"
+          },
+          "initial_tasks": {
+            "type": "string",
+            "description": "Comma-separated initial task names"
+          }
+        },
+        "required": ["name", "description"]
+      },
+      "code": "const goal = await utils.callTool('create_goal', { title: args.name, description: args.description, category: 'project' }); if (args.milestones) { const milestoneNames = args.milestones.split(',').map(m => m.trim()).filter(Boolean); for (const ms of milestoneNames) { await utils.callTool('decompose_goal', { goalId: goal.id || goal.goalId, subtask: ms }); } } const tasks = []; if (args.initial_tasks) { const taskNames = args.initial_tasks.split(',').map(t => t.trim()).filter(Boolean); for (const t of taskNames) { const task = await utils.callTool('add_task', { title: t, description: 'Part of project: ' + args.name }); tasks.push(task); } } await utils.callTool('create_memory', { content: 'Created project: ' + args.name + ' - ' + args.description }); return { content: { project: args.name, goal, tasks_created: tasks.length } };"
+    },
+    {
+      "name": "update_project_status",
+      "description": "Update project progress by completing a task or milestone",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "project_name": {
+            "type": "string",
+            "description": "Project name to look up"
+          },
+          "completed_task": {
+            "type": "string",
+            "description": "Task name that was completed"
+          },
+          "notes": {
+            "type": "string",
+            "description": "Progress notes"
+          }
+        },
+        "required": ["project_name"]
+      },
+      "code": "const goals = await utils.callTool('list_goals', { status: 'active' }); const projectGoal = Array.isArray(goals) ? goals.find(g => g.title && g.title.toLowerCase().includes(args.project_name.toLowerCase())) : null; const tasks = await utils.callTool('list_tasks', { status: 'pending' }); const projectTasks = Array.isArray(tasks) ? tasks.filter(t => t.description && t.description.includes(args.project_name)) : []; if (args.completed_task) { const matchTask = projectTasks.find(t => t.title && t.title.toLowerCase().includes(args.completed_task.toLowerCase())); if (matchTask) { await utils.callTool('complete_task', { id: matchTask.id }); } } if (args.notes) { await utils.callTool('create_memory', { content: 'Project ' + args.project_name + ' update: ' + args.notes }); } return { content: { project: args.project_name, goal: projectGoal, pending_tasks: projectTasks.length, notes: args.notes || null } };"
+    },
+    {
+      "name": "get_project_overview",
+      "description": "Get a comprehensive overview of a project including goal, tasks, and recent memories",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "project_name": {
+            "type": "string",
+            "description": "Project name to look up"
+          }
+        },
+        "required": ["project_name"]
+      },
+      "code": "const goals = await utils.callTool('list_goals', {}); const projectGoal = Array.isArray(goals) ? goals.find(g => g.title && g.title.toLowerCase().includes(args.project_name.toLowerCase())) : null; let goalDetails = null; if (projectGoal) { goalDetails = await utils.callTool('get_goal_details', { goalId: projectGoal.id || projectGoal.goalId }); } const allTasks = await utils.callTool('list_tasks', {}); const projectTasks = Array.isArray(allTasks) ? allTasks.filter(t => t.description && t.description.includes(args.project_name)) : []; const memories = await utils.callTool('search_memories', { query: 'project ' + args.project_name, limit: 5 }); return { content: { project: args.project_name, goal: goalDetails || projectGoal, tasks: { pending: projectTasks.filter(t => t.status !== 'completed'), completed: projectTasks.filter(t => t.status === 'completed') }, recent_updates: memories } };"
+    }
+  ]
+}

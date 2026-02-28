@@ -1,0 +1,42 @@
+{
+  "id": "daily-briefing",
+  "name": "Daily Briefing",
+  "version": "1.0.0",
+  "description": "Compile daily and weekly briefings from your tasks, calendar, goals, and recent memories",
+  "category": "productivity",
+  "icon": "📋",
+  "author": { "name": "OwnPilot" },
+  "tags": ["daily", "briefing", "summary", "productivity", "overview"],
+  "keywords": ["daily briefing", "morning briefing", "day summary", "weekly summary", "what's on my plate"],
+  "system_prompt": "You have daily briefing tools. When the user asks about their day, schedule, what they need to do, or wants a summary, use get_daily_briefing. For weekly overviews, use get_weekly_summary. Present the results in a clear, organized format with sections for tasks, events, and goals.",
+  "tools": [
+    {
+      "name": "get_daily_briefing",
+      "description": "Get a daily briefing with pending tasks, today's calendar events, active goals, and recent memories",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "include_completed": {
+            "type": "boolean",
+            "description": "Include recently completed tasks (default: false)"
+          }
+        }
+      },
+      "code": "const tasks = await utils.callTool('list_tasks', { status: 'pending' }); const events = await utils.callTool('list_calendar_events', { range: 'today' }); const goals = await utils.callTool('list_goals', { status: 'active' }); const memories = await utils.callTool('search_memories', { query: 'important recent', limit: 5 }); const result = { pending_tasks: tasks, todays_events: events, active_goals: goals, recent_memories: memories }; if (args.include_completed) { result.recently_completed = await utils.callTool('list_tasks', { status: 'completed', limit: 5 }); } return { content: result };"
+    },
+    {
+      "name": "get_weekly_summary",
+      "description": "Get a weekly summary with all tasks, upcoming events, goal progress, and notes from this week",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "include_notes": {
+            "type": "boolean",
+            "description": "Include recent notes (default: true)"
+          }
+        }
+      },
+      "code": "const allTasks = await utils.callTool('list_tasks', {}); const events = await utils.callTool('list_calendar_events', { range: 'week' }); const goals = await utils.callTool('list_goals', {}); const result = { tasks: allTasks, upcoming_events: events, goals: goals }; if (args.include_notes !== false) { result.recent_notes = await utils.callTool('list_notes', { limit: 10 }); } return { content: result };"
+    }
+  ]
+}
