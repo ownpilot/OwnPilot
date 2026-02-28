@@ -27,6 +27,7 @@ import {
   ShieldAlert,
   Unlock,
   Trash2,
+  LogOut,
 } from '../components/icons';
 import type { Channel, ChannelUser, ChannelStats } from '../api/types';
 
@@ -244,6 +245,23 @@ export function ChannelsPage() {
         await loadChannels();
       } catch {
         toast.error('Failed to disconnect channel');
+      } finally {
+        setActionLoading(null);
+      }
+    },
+    [toast, loadChannels]
+  );
+
+  const handleLogout = useCallback(
+    async (channelId: string) => {
+      if (!confirm('Logout will clear session data. You will need to re-authenticate (e.g. scan QR code) on next connect. Continue?')) return;
+      setActionLoading('logout');
+      try {
+        await channelsApi.logout(channelId);
+        toast.success('Channel logged out (session cleared)');
+        await loadChannels();
+      } catch {
+        toast.error('Failed to logout channel');
       } finally {
         setActionLoading(null);
       }
@@ -473,6 +491,7 @@ export function ChannelsPage() {
               actionLoading={actionLoading}
               onConnect={handleConnect}
               onDisconnect={handleDisconnect}
+              onLogout={handleLogout}
               onReconnect={handleReconnect}
               onClearMessages={handleClearMessages}
               onApproveUser={handleApproveUser}
@@ -519,6 +538,7 @@ function ChannelDetail({
   actionLoading,
   onConnect,
   onDisconnect,
+  onLogout,
   onReconnect,
   onClearMessages,
   onApproveUser,
@@ -533,6 +553,7 @@ function ChannelDetail({
   actionLoading: string | null;
   onConnect: (id: string) => void;
   onDisconnect: (id: string) => void;
+  onLogout: (id: string) => void;
   onReconnect: (id: string) => void;
   onClearMessages: (id: string) => void;
   onApproveUser: (userId: string) => void;
@@ -748,13 +769,22 @@ function ChannelDetail({
               />
             </>
           ) : (
-            <ActionButton
-              icon={Power}
-              label="Connect"
-              variant="success"
-              loading={actionLoading === 'connect'}
-              onClick={() => onConnect(channel.id)}
-            />
+            <>
+              <ActionButton
+                icon={Power}
+                label="Connect"
+                variant="success"
+                loading={actionLoading === 'connect'}
+                onClick={() => onConnect(channel.id)}
+              />
+              <ActionButton
+                icon={LogOut}
+                label="Logout"
+                variant="danger"
+                loading={actionLoading === 'logout'}
+                onClick={() => onLogout(channel.id)}
+              />
+            </>
           )}
           <ActionButton
             icon={Trash2}

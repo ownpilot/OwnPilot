@@ -323,6 +323,8 @@ export const channelsApi = {
     apiClient.post<{ pluginId: string; status: string }>(`/channels/${channelId}/connect`),
   disconnect: (channelId: string) =>
     apiClient.post<{ pluginId: string; status: string }>(`/channels/${channelId}/disconnect`),
+  logout: (channelId: string) =>
+    apiClient.post<{ pluginId: string; status: string }>(`/channels/${channelId}/logout`),
   reply: (
     channelId: string,
     body: { text: string; platformChatId?: string; replyToMessageId?: string }

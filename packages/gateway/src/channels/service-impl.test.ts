@@ -805,6 +805,58 @@ describe('ChannelServiceImpl', () => {
   });
 
   // ==========================================================================
+  // logout
+  // ==========================================================================
+
+  describe('logout()', () => {
+    it('should call api.logout() when plugin supports it', async () => {
+      channelPlugin.api.logout = vi.fn().mockResolvedValue(undefined);
+
+      await service.logout('test-plugin');
+
+      expect(channelPlugin.api.logout).toHaveBeenCalled();
+      expect(channelPlugin.api.disconnect).not.toHaveBeenCalled();
+    });
+
+    it('should fall back to api.disconnect() when plugin lacks logout()', async () => {
+      // No logout method on the plugin API (default createChannelPlugin)
+      delete (channelPlugin.api as Record<string, unknown>).logout;
+
+      await service.logout('test-plugin');
+
+      expect(channelPlugin.api.disconnect).toHaveBeenCalled();
+    });
+
+    it('should emit DISCONNECTED event', async () => {
+      await service.logout('test-plugin');
+
+      expect(mockCreateEvent).toHaveBeenCalledWith(
+        'channel.disconnected',
+        'channel',
+        'channel-service',
+        expect.objectContaining({
+          status: 'disconnected',
+          channelPluginId: 'test-plugin',
+        })
+      );
+    });
+
+    it('should broadcast disconnection status to WS clients', async () => {
+      await service.logout('test-plugin');
+      expect(mockWsGateway.broadcast).toHaveBeenCalledWith('channel:status', {
+        channelId: 'test-plugin',
+        status: 'disconnected',
+      });
+    });
+
+    it('should throw if plugin not found', async () => {
+      await expect(service.logout('unknown')).rejects.toThrow(
+        'Channel plugin not found: unknown'
+      );
+    });
+  });
+
+  // ==========================================================================
   // resolveUser
   // ==========================================================================
 
