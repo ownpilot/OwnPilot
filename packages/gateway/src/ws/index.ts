@@ -8,3 +8,4 @@ export * from './types.js';
 export * from './events.js';
 export * from './session.js';
 export * from './server.js';
+export * from './event-bridge.js';

@@ -282,6 +282,13 @@ export interface ServerEvents {
   // Workflow approval events
   'approval:required': { approvalId: string; workflowId: string; nodeId: string };
   'approval:decided': { approvalId: string; status: 'approved' | 'rejected' };
+
+  // EventBus bridge events
+  'event:subscribed': { pattern: string; success: boolean; error?: string };
+  'event:unsubscribed': { pattern: string };
+  'event:message': { type: string; source: string; data: unknown; timestamp: string };
+  'event:publish:ack': { type: string };
+  'event:publish:error': { type: string; error: string };
 }
 
 /**
@@ -322,6 +329,11 @@ export interface ClientEvents {
   'coding-agent:input': { sessionId: string; data: string };
   'coding-agent:resize': { sessionId: string; cols: number; rows: number };
   'coding-agent:subscribe': { sessionId: string };
+
+  // EventBus bridge events
+  'event:subscribe': { pattern: string };
+  'event:unsubscribe': { pattern: string };
+  'event:publish': { type: string; data: unknown };
 }
 
 /**

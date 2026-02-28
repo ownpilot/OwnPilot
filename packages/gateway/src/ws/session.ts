@@ -35,6 +35,8 @@ interface RateLimitBucket {
 interface ManagedSession extends Session {
   socket: WebSocket;
   rateLimitBucket: RateLimitBucket;
+  /** Active EventBus subscriptions — pattern → unsubscribe function */
+  eventSubscriptions: Map<string, () => void>;
 }
 
 /** Try to get ISessionService from the registry (returns null if unavailable). */
@@ -76,6 +78,7 @@ export class SessionManager {
       metadata: {},
       socket,
       rateLimitBucket: { tokens: WS_RATE_LIMIT_BURST, lastRefill: Date.now() },
+      eventSubscriptions: new Map(),
     };
 
     this.sessions.set(id, session);
@@ -205,12 +208,70 @@ export class SessionManager {
     tryGetSessionService()?.setMetadata(sessionId, key, value);
   }
 
+  // ---------- EventBus subscription tracking ----------
+
+  /** Maximum event subscriptions per session */
+  private static readonly MAX_EVENT_SUBS = 50;
+
+  /**
+   * Track an event subscription for a session.
+   * Returns false if the limit is reached or session doesn't exist.
+   */
+  addEventSubscription(sessionId: string, pattern: string, unsubscribe: () => void): boolean {
+    const session = this.sessions.get(sessionId);
+    if (!session) return false;
+    if (
+      session.eventSubscriptions.size >= SessionManager.MAX_EVENT_SUBS &&
+      !session.eventSubscriptions.has(pattern)
+    ) {
+      return false;
+    }
+    // If already subscribed to this pattern, unsubscribe the old one first
+    const existing = session.eventSubscriptions.get(pattern);
+    if (existing) existing();
+    session.eventSubscriptions.set(pattern, unsubscribe);
+    return true;
+  }
+
+  /**
+   * Remove an event subscription for a session.
+   */
+  removeEventSubscription(sessionId: string, pattern: string): boolean {
+    const session = this.sessions.get(sessionId);
+    if (!session) return false;
+    const unsub = session.eventSubscriptions.get(pattern);
+    if (unsub) {
+      unsub();
+      session.eventSubscriptions.delete(pattern);
+      return true;
+    }
+    return false;
+  }
+
+  /**
+   * Get all event subscription patterns for a session.
+   */
+  getEventSubscriptions(sessionId: string): string[] {
+    const session = this.sessions.get(sessionId);
+    return session ? Array.from(session.eventSubscriptions.keys()) : [];
+  }
+
   /**
    * Remove a session. Also closes it in ISessionService.
    */
   remove(sessionId: string): boolean {
     const session = this.sessions.get(sessionId);
     if (session) {
+      // Clean up all event subscriptions
+      for (const unsub of session.eventSubscriptions.values()) {
+        try {
+          unsub();
+        } catch {
+          // Ignore cleanup errors
+        }
+      }
+      session.eventSubscriptions.clear();
+
       this.socketToSession.delete(session.socket);
       this.sessions.delete(sessionId);
       tryGetSessionService()?.close(sessionId);

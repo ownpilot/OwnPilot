@@ -18,6 +18,7 @@ import type { ClientEvents, WSMessage, Channel } from './types.js';
 import { sessionManager } from './session.js';
 import { ClientEventHandler } from './events.js';
 import { getChannelService } from '@ownpilot/core';
+import { EventBusBridge, setEventBusBridge } from './event-bridge.js';
 import {
   WS_PORT,
   WS_HEARTBEAT_INTERVAL_MS,
@@ -83,6 +84,9 @@ const VALID_CLIENT_EVENTS = new Set<string>([
   'coding-agent:input',
   'coding-agent:resize',
   'coding-agent:subscribe',
+  'event:subscribe',
+  'event:unsubscribe',
+  'event:publish',
 ]);
 
 export interface WSGatewayConfig {
@@ -135,10 +139,23 @@ export class WSGateway {
   private clientHandler = new ClientEventHandler();
   private httpServer: (HttpServer | HttpsServer | Http2Server | Http2SecureServer) | null = null;
   private upgradeHandler: ((...args: unknown[]) => void) | null = null;
+  private eventBridge: EventBusBridge | null = null;
 
   constructor(config: WSGatewayConfig = {}) {
     this.config = { ...DEFAULT_CONFIG, ...config };
     this.setupClientHandlers();
+  }
+
+  /**
+   * Initialize and start the EventBusBridge.
+   * Call after the server is set up.
+   */
+  startEventBridge(): EventBusBridge {
+    if (this.eventBridge) return this.eventBridge;
+    this.eventBridge = new EventBusBridge(sessionManager);
+    this.eventBridge.start();
+    setEventBusBridge(this.eventBridge);
+    return this.eventBridge;
   }
 
   /**
@@ -825,6 +842,25 @@ export class WSGateway {
         log.error('Coding agent subscribe error', { error: String(err) });
       }
     });
+
+    // =========================================================================
+    // EventBus Bridge events
+    // =========================================================================
+
+    this.clientHandler.handle('event:subscribe', async (data, wsSessionId) => {
+      if (!wsSessionId || !this.eventBridge) return;
+      this.eventBridge.subscribe(wsSessionId, data.pattern);
+    });
+
+    this.clientHandler.handle('event:unsubscribe', async (data, wsSessionId) => {
+      if (!wsSessionId || !this.eventBridge) return;
+      this.eventBridge.unsubscribe(wsSessionId, data.pattern);
+    });
+
+    this.clientHandler.handle('event:publish', async (data, wsSessionId) => {
+      if (!wsSessionId || !this.eventBridge) return;
+      this.eventBridge.publish(wsSessionId, data.type, data.data);
+    });
   }
 
   /**
@@ -888,6 +924,12 @@ export class WSGateway {
       if (this.cleanupTimer) {
         clearInterval(this.cleanupTimer);
         this.cleanupTimer = null;
+      }
+
+      // Stop EventBusBridge
+      if (this.eventBridge) {
+        this.eventBridge.stop();
+        this.eventBridge = null;
       }
 
       // Remove upgrade handler from HTTP server
