@@ -92,6 +92,7 @@ import {
 } from '../components/icons';
 import { toolsApi } from '../api';
 import { useToast } from '../components/ToastProvider';
+import { useDialog } from '../components/ConfirmDialog';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 
 // Register custom node types
@@ -138,6 +139,7 @@ function WorkflowEditorInner() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const toast = useToast();
+  const { confirm } = useDialog();
 
   const [workflow, setWorkflow] = useState<Workflow | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -1131,8 +1133,8 @@ function WorkflowEditorInner() {
   // ========================================================================
 
   const handleImportWorkflow = useCallback(
-    (json: Record<string, unknown>) => {
-      if (nodes.length > 0 && !confirm('This will replace all current nodes and edges. Continue?'))
+    async (json: Record<string, unknown>) => {
+      if (nodes.length > 0 && !(await confirm({ message: 'This will replace all current nodes and edges. Continue?' })))
         return;
 
       const def = json as unknown as WorkflowDefinition;
@@ -1845,8 +1847,8 @@ function WorkflowEditorInner() {
   );
 
   const handleApplyWorkflow = useCallback(
-    (definition: WorkflowDefinition) => {
-      if (nodes.length > 0 && !confirm('This will replace all current nodes and edges. Continue?'))
+    async (definition: WorkflowDefinition) => {
+      if (nodes.length > 0 && !(await confirm({ message: 'This will replace all current nodes and edges. Continue?' })))
         return;
 
       const { nodes: rfNodes, edges: rfEdges } = convertDefinitionToReactFlow(

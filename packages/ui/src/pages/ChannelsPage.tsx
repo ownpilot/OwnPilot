@@ -9,6 +9,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { channelsApi } from '../api/endpoints/misc';
 import { useGateway } from '../hooks/useWebSocket';
 import { useToast } from '../components/ToastProvider';
+import { useDialog } from '../components/ConfirmDialog';
 import { ChannelSetupModal } from '../components/ChannelSetupModal';
 import {
   Plus,
@@ -116,6 +117,7 @@ function PlatformIcon({ type }: { type: string }) {
 
 export function ChannelsPage() {
   const toast = useToast();
+  const { confirm } = useDialog();
   const { subscribe } = useGateway();
 
   const [channels, setChannels] = useState<Channel[]>([]);
@@ -259,9 +261,11 @@ export function ChannelsPage() {
   const handleLogout = useCallback(
     async (channelId: string) => {
       if (
-        !confirm(
-          'Logout will clear session data. You will need to re-authenticate (e.g. scan QR code) on next connect. Continue?'
-        )
+        !(await confirm({
+          message:
+            'Logout will clear session data. You will need to re-authenticate (e.g. scan QR code) on next connect. Continue?',
+          variant: 'danger',
+        }))
       )
         return;
       setActionLoading('logout');
@@ -296,7 +300,7 @@ export function ChannelsPage() {
 
   const handleClearMessages = useCallback(
     async (channelId: string) => {
-      if (!confirm('Clear all messages for this channel? This cannot be undone.')) return;
+      if (!(await confirm({ message: 'Clear all messages for this channel? This cannot be undone.', variant: 'danger' }))) return;
       setActionLoading('clear');
       try {
         const resp = await channelsApi.clearMessages(channelId);
@@ -327,7 +331,7 @@ export function ChannelsPage() {
 
   const handleBlockUser = useCallback(
     async (userId: string) => {
-      if (!confirm('Block this user? They will no longer be able to message the bot.')) return;
+      if (!(await confirm({ message: 'Block this user? They will no longer be able to message the bot.', variant: 'danger' }))) return;
       try {
         await channelsApi.blockUser(userId);
         toast.success('User blocked');
@@ -354,7 +358,7 @@ export function ChannelsPage() {
 
   const handleDeleteUser = useCallback(
     async (userId: string) => {
-      if (!confirm('Delete this user? This cannot be undone.')) return;
+      if (!(await confirm({ message: 'Delete this user? This cannot be undone.', variant: 'danger' }))) return;
       try {
         await channelsApi.deleteUser(userId);
         toast.success('User deleted');

@@ -7,6 +7,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useToast } from '../components/ToastProvider';
+import { useDialog } from '../components/ConfirmDialog';
 import {
   RefreshCw,
   Plus,
@@ -70,6 +71,7 @@ const MODE_LABELS: Record<BackgroundAgentMode, string> = {
 
 export function BackgroundAgentsPage() {
   const toast = useToast();
+  const { confirm } = useDialog();
   const { subscribe } = useGateway();
 
   const [agents, setAgents] = useState<BackgroundAgentConfig[]>([]);
@@ -194,7 +196,7 @@ export function BackgroundAgentsPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Delete this background agent? This cannot be undone.')) return;
+    if (!(await confirm({ message: 'Delete this background agent? This cannot be undone.', variant: 'danger' }))) return;
     try {
       await backgroundAgentsApi.delete(id);
       toast.success('Agent deleted');
