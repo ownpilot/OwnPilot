@@ -24,7 +24,7 @@ import { vi } from 'vitest';
  *     getLog: () => ({ info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() }),
  *   }));
  */
-export function createMockLog() {
+export function createMockLog(): Record<string, ReturnType<typeof vi.fn>> {
   return {
     info: vi.fn(),
     warn: vi.fn(),
@@ -75,7 +75,7 @@ export function createMockAdapter() {
  * Usage:
  *   const mockAdapter = vi.hoisted(() => createMockAdapterHoisted());
  */
-export function createMockAdapterHoisted() {
+export function createMockAdapterHoisted(): Record<string, unknown> {
   return {
     query: vi.fn(),
     queryOne: vi.fn(),
@@ -104,7 +104,7 @@ export function createMockAdapterHoisted() {
  * Replaces the repeated pattern (12+ files):
  *   getEventBus: () => ({ emit: mockEmit }),
  */
-export function createMockEventBus() {
+export function createMockEventBus(): Record<string, ReturnType<typeof vi.fn>> {
   return {
     emit: vi.fn(),
     on: vi.fn(),
@@ -124,7 +124,7 @@ export function createMockEventBus() {
  *   const mockEmit = vi.hoisted(() => vi.fn());
  *   vi.mock('@ownpilot/core', () => createMockCoreForRepo(mockEmit));
  */
-export function createMockCoreForRepo(mockEmit: ReturnType<typeof vi.fn>) {
+export function createMockCoreForRepo(mockEmit: ReturnType<typeof vi.fn>): Record<string, unknown> {
   return {
     getEventBus: () => ({ emit: mockEmit }),
     createEvent: vi.fn((type: string, category: string, source: string, data: unknown) => ({
