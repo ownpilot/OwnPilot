@@ -117,7 +117,6 @@ export class TriggerEngine {
     log.info('Chat handler registered');
   }
 
-
   // ==========================================================================
   // Lifecycle
   // ==========================================================================
@@ -173,10 +172,10 @@ export class TriggerEngine {
       this.eventBusUnsub = eventSystem.onPattern('**', (event) => {
         // Skip trigger.* events to prevent infinite loops
         if (event.type.startsWith('trigger.')) return;
-        this.processEventTriggers(event.type, (event.data ?? {}) as Record<string, unknown>)
-          .catch((err) =>
+        this.processEventTriggers(event.type, (event.data ?? {}) as Record<string, unknown>).catch(
+          (err) =>
             log.error('EventBus trigger processing failed', { error: err, eventType: event.type })
-          );
+        );
       });
       log.info('Subscribed to EventBus for universal event triggers');
     } catch (err) {
@@ -437,7 +436,10 @@ export class TriggerEngine {
       const legacyType = eventType.replace(/\./g, '_');
       const triggers = await this.triggerService.getByEventType(this.config.userId, eventType);
       if (legacyType !== eventType) {
-        const legacyTriggers = await this.triggerService.getByEventType(this.config.userId, legacyType);
+        const legacyTriggers = await this.triggerService.getByEventType(
+          this.config.userId,
+          legacyType
+        );
         // Deduplicate by ID
         const seen = new Set(triggers.map((t) => t.id));
         for (const t of legacyTriggers) {
@@ -589,8 +591,20 @@ export class TriggerEngine {
         result.success ? 'trigger.success' : 'trigger.failed',
         'trigger-engine',
         result.success
-          ? { triggerId: trigger.id, triggerName: trigger.name, durationMs, actionType: trigger.action.type, result: result.data }
-          : { triggerId: trigger.id, triggerName: trigger.name, durationMs, actionType: trigger.action.type, error: result.error ?? 'Unknown error' }
+          ? {
+              triggerId: trigger.id,
+              triggerName: trigger.name,
+              durationMs,
+              actionType: trigger.action.type,
+              result: result.data,
+            }
+          : {
+              triggerId: trigger.id,
+              triggerName: trigger.name,
+              durationMs,
+              actionType: trigger.action.type,
+              error: result.error ?? 'Unknown error',
+            }
       );
 
       // Calculate next fire time for schedule triggers
@@ -704,8 +718,20 @@ export class TriggerEngine {
         result.success ? 'trigger.success' : 'trigger.failed',
         'trigger-engine',
         result.success
-          ? { triggerId: trigger.id, triggerName: trigger.name, durationMs, actionType: trigger.action.type, result: result.data }
-          : { triggerId: trigger.id, triggerName: trigger.name, durationMs, actionType: trigger.action.type, error: result.error ?? 'Unknown error' }
+          ? {
+              triggerId: trigger.id,
+              triggerName: trigger.name,
+              durationMs,
+              actionType: trigger.action.type,
+              result: result.data,
+            }
+          : {
+              triggerId: trigger.id,
+              triggerName: trigger.name,
+              durationMs,
+              actionType: trigger.action.type,
+              error: result.error ?? 'Unknown error',
+            }
       );
 
       return result;

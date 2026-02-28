@@ -41,11 +41,8 @@ vi.mock('../db/repositories/channel-sessions.js', () => ({
   createChannelSessionsRepository: () => mockSessionsRepo,
 }));
 
-const {
-  NOTIFICATION_TOOLS,
-  executeNotificationTool,
-  sendTelegramMessage,
-} = await import('./notification-tools.js');
+const { NOTIFICATION_TOOLS, executeNotificationTool, sendTelegramMessage } =
+  await import('./notification-tools.js');
 
 // ============================================================================
 // Tests
@@ -286,5 +283,4 @@ describe('notification-tools', () => {
       expect(mockChannelUsersRepo.findByOwnpilotUser).toHaveBeenCalledWith('default');
     });
   });
-
 });

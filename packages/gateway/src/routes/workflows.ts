@@ -107,8 +107,7 @@ function validateWorkflowSemantics(nodes: WfNode[], edges: WfEdge[]): string[] {
           errors.push(`Node "${node.id}": Sub-workflow node requires a target workflow`);
         break;
       case 'notificationNode':
-        if (!d.message)
-          errors.push(`Node "${node.id}": Notification node requires "message"`);
+        if (!d.message) errors.push(`Node "${node.id}": Notification node requires "message"`);
         break;
       case 'parallelNode':
         if (typeof d.branchCount !== 'number' || d.branchCount < 2)
@@ -150,9 +149,7 @@ function validateWorkflowSemantics(nodes: WfNode[], edges: WfEdge[]): string[] {
     if (!branchNode) continue;
 
     if (!edge.sourceHandle) {
-      errors.push(
-        `Edge from "${edge.source}" (${branchNode.type}) requires a sourceHandle`
-      );
+      errors.push(`Edge from "${edge.source}" (${branchNode.type}) requires a sourceHandle`);
       continue;
     }
 
@@ -208,9 +205,7 @@ function validateWorkflowSemantics(nodes: WfNode[], edges: WfEdge[]): string[] {
     }
     const existing = aliasMap.get(a);
     if (existing) {
-      errors.push(
-        `Duplicate output alias "${a}" on nodes "${existing}" and "${node.id}"`
-      );
+      errors.push(`Duplicate output alias "${a}" on nodes "${existing}" and "${node.id}"`);
     } else {
       aliasMap.set(a, node.id);
     }
@@ -266,10 +261,7 @@ workflowRoutes.post('/', async (c) => {
   }
 
   // Semantic validation (node completeness, edge references, branching handles)
-  const semanticErrors = validateWorkflowSemantics(
-    body.nodes as WfNode[],
-    body.edges as WfEdge[]
-  );
+  const semanticErrors = validateWorkflowSemantics(body.nodes as WfNode[], body.edges as WfEdge[]);
   if (semanticErrors.length > 0) {
     return apiError(
       c,
@@ -551,7 +543,9 @@ workflowRoutes.post('/:id/execute', async (c) => {
     if (body && typeof body === 'object' && 'inputs' in body) {
       inputs = body.inputs as Record<string, unknown>;
     }
-  } catch { /* no body is fine */ }
+  } catch {
+    /* no body is fine */
+  }
 
   const repo = createWorkflowsRepository(userId);
   const workflow = await repo.get(id);
@@ -568,12 +562,17 @@ workflowRoutes.post('/:id/execute', async (c) => {
 
   return streamSSE(c, async (stream) => {
     try {
-      await service.executeWorkflow(id, userId, async (event) => {
-        await stream.writeSSE({
-          data: JSON.stringify(event),
-          event: event.type,
-        });
-      }, { dryRun, inputs });
+      await service.executeWorkflow(
+        id,
+        userId,
+        async (event) => {
+          await stream.writeSSE({
+            data: JSON.stringify(event),
+            event: event.type,
+          });
+        },
+        { dryRun, inputs }
+      );
     } catch (error) {
       await stream.writeSSE({
         data: JSON.stringify({ type: 'error', error: getErrorMessage(error) }),
@@ -714,10 +713,7 @@ workflowRoutes.get('/approvals/all', pagination(), async (c) => {
   const { limit, offset } = c.get('pagination')!;
 
   const repo = createWorkflowApprovalsRepository(userId);
-  const [total, approvals] = await Promise.all([
-    repo.countAll(),
-    repo.getAll(limit, offset),
-  ]);
+  const [total, approvals] = await Promise.all([repo.countAll(), repo.getAll(limit, offset)]);
 
   return apiResponse(c, {
     approvals,
@@ -785,7 +781,10 @@ workflowRoutes.post('/:id/run', async (c) => {
   if (!adminKey) {
     return apiError(
       c,
-      { code: ERROR_CODES.UNAUTHORIZED, message: 'ADMIN_KEY environment variable must be set to use the workflow API.' },
+      {
+        code: ERROR_CODES.UNAUTHORIZED,
+        message: 'ADMIN_KEY environment variable must be set to use the workflow API.',
+      },
       403
     );
   }
@@ -807,7 +806,9 @@ workflowRoutes.post('/:id/run', async (c) => {
     if (body && typeof body === 'object' && 'inputs' in body) {
       inputs = body.inputs as Record<string, unknown>;
     }
-  } catch { /* no body is fine */ }
+  } catch {
+    /* no body is fine */
+  }
 
   const repo = createWorkflowsRepository(userId);
   const workflow = await repo.get(id);
@@ -821,7 +822,10 @@ workflowRoutes.post('/:id/run', async (c) => {
     if (missing.length > 0) {
       return apiError(
         c,
-        { code: ERROR_CODES.VALIDATION_ERROR, message: `Missing required inputs: ${missing.join(', ')}` },
+        {
+          code: ERROR_CODES.VALIDATION_ERROR,
+          message: `Missing required inputs: ${missing.join(', ')}`,
+        },
         400
       );
     }
@@ -840,11 +844,16 @@ workflowRoutes.post('/:id/run', async (c) => {
   let logId: string | null = null;
 
   // Start execution in background — capture log ID from first 'started' event
-  const executionPromise = service.executeWorkflow(id, userId, async (event) => {
-    if (event.type === 'started' && event.logId) {
-      logId = event.logId;
-    }
-  }, { inputs });
+  const executionPromise = service.executeWorkflow(
+    id,
+    userId,
+    async (event) => {
+      if (event.type === 'started' && event.logId) {
+        logId = event.logId;
+      }
+    },
+    { inputs }
+  );
 
   // Wait briefly for the started event so we can return the logId
   await new Promise<void>((resolve) => {
@@ -858,7 +867,9 @@ workflowRoutes.post('/:id/run', async (c) => {
   });
 
   // Don't await the full execution — it runs in the background
-  executionPromise.catch(() => { /* execution errors are logged in the workflow log */ });
+  executionPromise.catch(() => {
+    /* execution errors are logged in the workflow log */
+  });
 
   return apiResponse(c, {
     logId,
@@ -913,7 +924,14 @@ workflowRoutes.post('/logs/:logId/replay', async (c) => {
   const log = await repo.getLog(logId);
   if (!log) return notFoundError(c, 'Workflow log', logId);
   if (!log.workflowId) {
-    return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: 'Log has no associated workflow (it may have been deleted)' }, 400);
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.VALIDATION_ERROR,
+        message: 'Log has no associated workflow (it may have been deleted)',
+      },
+      400
+    );
   }
 
   const workflow = await repo.get(log.workflowId);
@@ -921,7 +939,11 @@ workflowRoutes.post('/logs/:logId/replay', async (c) => {
 
   const service = getServiceRegistry().get(Services.Workflow);
   if (service.isRunning(workflow.id)) {
-    return apiError(c, { code: ERROR_CODES.WORKFLOW_ALREADY_RUNNING, message: 'Workflow is already running' }, 409);
+    return apiError(
+      c,
+      { code: ERROR_CODES.WORKFLOW_ALREADY_RUNNING, message: 'Workflow is already running' },
+      409
+    );
   }
 
   return streamSSE(c, async (stream) => {

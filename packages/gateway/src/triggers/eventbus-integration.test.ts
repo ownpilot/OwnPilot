@@ -170,10 +170,12 @@ describe('TriggerEngine EventBus Integration', () => {
     });
 
     // Return empty for dot notation, but trigger for underscore notation
-    mockTriggerService.getByEventType.mockImplementation(async (_userId: string, eventType: string) => {
-      if (eventType === 'chat_completed') return [trigger];
-      return [];
-    });
+    mockTriggerService.getByEventType.mockImplementation(
+      async (_userId: string, eventType: string) => {
+        if (eventType === 'chat_completed') return [trigger];
+        return [];
+      }
+    );
 
     engine.start();
 

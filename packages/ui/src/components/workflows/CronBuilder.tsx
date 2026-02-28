@@ -82,13 +82,25 @@ function getHumanReadable(parts: CronParts): string {
   const { minute, hour, dayOfMonth, month, dayOfWeek } = parts;
 
   // Every minute
-  if (minute === '*/1' && hour === '*' && dayOfMonth === '*' && month === '*' && dayOfWeek === '*') {
+  if (
+    minute === '*/1' &&
+    hour === '*' &&
+    dayOfMonth === '*' &&
+    month === '*' &&
+    dayOfWeek === '*'
+  ) {
     return 'Runs every minute';
   }
 
   // Every N minutes
   const everyMinuteMatch = minute.match(/^\*\/(\d+)$/);
-  if (everyMinuteMatch && hour === '*' && dayOfMonth === '*' && month === '*' && dayOfWeek === '*') {
+  if (
+    everyMinuteMatch &&
+    hour === '*' &&
+    dayOfMonth === '*' &&
+    month === '*' &&
+    dayOfWeek === '*'
+  ) {
     return `Runs every ${everyMinuteMatch[1]} minutes`;
   }
 
@@ -99,7 +111,13 @@ function getHumanReadable(parts: CronParts): string {
 
   // Every N hours
   const everyHourMatch = hour.match(/^\*\/(\d+)$/);
-  if (minute === '0' && everyHourMatch && dayOfMonth === '*' && month === '*' && dayOfWeek === '*') {
+  if (
+    minute === '0' &&
+    everyHourMatch &&
+    dayOfMonth === '*' &&
+    month === '*' &&
+    dayOfWeek === '*'
+  ) {
     return `Runs every ${everyHourMatch[1]} hours`;
   }
 

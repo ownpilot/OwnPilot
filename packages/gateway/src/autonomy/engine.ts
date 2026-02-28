@@ -9,7 +9,13 @@
  * Follows the TriggerEngine singleton lifecycle pattern.
  */
 
-import { generateId, getServiceRegistry, getEventSystem, Services, getErrorMessage } from '@ownpilot/core';
+import {
+  generateId,
+  getServiceRegistry,
+  getEventSystem,
+  Services,
+  getErrorMessage,
+} from '@ownpilot/core';
 import type {
   IPulseService,
   PulseResult,

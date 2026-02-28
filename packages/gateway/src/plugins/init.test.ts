@@ -854,15 +854,33 @@ describe('initializePlugins()', () => {
       });
       // Remove factory from other channel plugins so they don't overwrite plugin.api
       mockBuildDiscordChannelPlugin.mockReturnValueOnce({
-        manifest: { id: 'channel.discord', name: 'Discord', version: '1.0.0', requiredServices: [{ name: 'discord_bot' }], defaultConfig: {} },
+        manifest: {
+          id: 'channel.discord',
+          name: 'Discord',
+          version: '1.0.0',
+          requiredServices: [{ name: 'discord_bot' }],
+          defaultConfig: {},
+        },
         implementation: {},
       });
       mockBuildWhatsAppChannelPlugin.mockReturnValueOnce({
-        manifest: { id: 'channel.whatsapp', name: 'WhatsApp', version: '1.0.0', requiredServices: [{ name: 'whatsapp_business' }], defaultConfig: {} },
+        manifest: {
+          id: 'channel.whatsapp',
+          name: 'WhatsApp',
+          version: '1.0.0',
+          requiredServices: [{ name: 'whatsapp_business' }],
+          defaultConfig: {},
+        },
         implementation: {},
       });
       mockBuildSlackChannelPlugin.mockReturnValueOnce({
-        manifest: { id: 'channel.slack', name: 'Slack', version: '1.0.0', requiredServices: [{ name: 'slack_bot' }], defaultConfig: {} },
+        manifest: {
+          id: 'channel.slack',
+          name: 'Slack',
+          version: '1.0.0',
+          requiredServices: [{ name: 'slack_bot' }],
+          defaultConfig: {},
+        },
         implementation: {},
       });
       mockConfigServicesRepo.getDefaultEntry.mockReturnValue(null);

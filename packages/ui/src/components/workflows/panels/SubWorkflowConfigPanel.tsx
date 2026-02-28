@@ -43,13 +43,16 @@ export function SubWorkflowConfigPanel({
 
   // Load available workflows
   useEffect(() => {
-    workflowsApi.list({ limit: '100' }).then((resp) => {
-      setWorkflows(
-        resp.workflows
-          .filter((w) => w.id !== node.id.split('_')[0]) // rough self-exclusion
-          .map((w) => ({ id: w.id, name: w.name }))
-      );
-    }).catch(() => {});
+    workflowsApi
+      .list({ limit: '100' })
+      .then((resp) => {
+        setWorkflows(
+          resp.workflows
+            .filter((w) => w.id !== node.id.split('_')[0]) // rough self-exclusion
+            .map((w) => ({ id: w.id, name: w.name }))
+        );
+      })
+      .catch(() => {});
   }, [node.id]);
 
   const save = useCallback(
@@ -100,12 +103,9 @@ export function SubWorkflowConfigPanel({
     [inputMapping, save]
   );
 
-  const injectTemplate = useCallback(
-    (template: string) => {
-      navigator.clipboard?.writeText(template);
-    },
-    []
-  );
+  const injectTemplate = useCallback((template: string) => {
+    navigator.clipboard?.writeText(template);
+  }, []);
 
   return (
     <div
@@ -212,7 +212,9 @@ export function SubWorkflowConfigPanel({
             </button>
           </div>
           <p className="text-[10px] text-text-muted dark:text-dark-text-muted">
-            {'Map variables into the sub-workflow. Key = variable name, Value = template expression (e.g. {{node_1.output}})'}
+            {
+              'Map variables into the sub-workflow. Key = variable name, Value = template expression (e.g. {{node_1.output}})'
+            }
           </p>
           {inputMapping.map((m, i) => (
             <div key={i} className="space-y-0.5">

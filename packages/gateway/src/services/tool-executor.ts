@@ -271,7 +271,9 @@ function syncExtensionToolsIntoRegistry(registry: ToolRegistry): void {
   if (!hasServiceRegistry()) return;
 
   try {
-    const service = getServiceRegistry().get(Services.Extension) as import('./extension-service.js').ExtensionService;
+    const service = getServiceRegistry().get(
+      Services.Extension
+    ) as import('./extension-service.js').ExtensionService;
     const dynamicRegistry = getCustomToolDynamicRegistry();
     const extToolDefs = service.getToolDefinitions();
 
@@ -326,7 +328,9 @@ function syncExtensionToolsIntoRegistry(registry: ToolRegistry): void {
     }
 
     if (extToolDefs.length > 0) {
-      log.info(`[tool-executor] Synced ${extToolDefs.length} extension tool(s) into shared registry`);
+      log.info(
+        `[tool-executor] Synced ${extToolDefs.length} extension tool(s) into shared registry`
+      );
     }
 
     // Listen for extension enable/disable/install events to keep in sync

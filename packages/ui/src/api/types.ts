@@ -1187,7 +1187,12 @@ export interface PaginatedHistory {
 // ---- Workflows ----
 
 export type WorkflowStatus = 'active' | 'inactive';
-export type WorkflowLogStatus = 'running' | 'completed' | 'failed' | 'cancelled' | 'awaiting_approval';
+export type WorkflowLogStatus =
+  | 'running'
+  | 'completed'
+  | 'failed'
+  | 'cancelled'
+  | 'awaiting_approval';
 export type NodeExecutionStatus = 'pending' | 'running' | 'success' | 'error' | 'skipped';
 
 export interface WorkflowToolNodeData {

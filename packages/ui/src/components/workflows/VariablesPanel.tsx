@@ -48,7 +48,12 @@ function formatValue(value: unknown): string {
 const INPUT_CLS =
   'w-full px-2.5 py-1.5 text-xs bg-bg-primary dark:bg-dark-bg-primary border border-border dark:border-dark-border rounded-md text-text-primary dark:text-dark-text-primary focus:outline-none focus:ring-1 focus:ring-primary';
 
-export function VariablesPanel({ variables, onChange, onClose, className = '' }: VariablesPanelProps) {
+export function VariablesPanel({
+  variables,
+  onChange,
+  onClose,
+  className = '',
+}: VariablesPanelProps) {
   const [newKey, setNewKey] = useState('');
   const [maskedKeys, setMaskedKeys] = useState<Set<string>>(new Set());
 
@@ -119,7 +124,11 @@ export function VariablesPanel({ variables, onChange, onClose, className = '' }:
 
       {/* Help text */}
       <div className="px-4 py-2 text-[10px] text-text-muted dark:text-dark-text-muted border-b border-border dark:border-dark-border">
-        Use <code className="px-1 py-0.5 bg-bg-tertiary dark:bg-dark-bg-tertiary rounded text-[10px]">{'{{variables.key}}'}</code> in node templates to reference these values.
+        Use{' '}
+        <code className="px-1 py-0.5 bg-bg-tertiary dark:bg-dark-bg-tertiary rounded text-[10px]">
+          {'{{variables.key}}'}
+        </code>{' '}
+        in node templates to reference these values.
       </div>
 
       {/* Variable list */}

@@ -253,8 +253,18 @@ describe('Workflow Routes', () => {
         body: JSON.stringify({
           name: 'Cyclic Workflow',
           nodes: [
-            { id: 'n1', type: 'toolNode', position: { x: 0, y: 0 }, data: { toolName: 't1', toolArgs: {}, label: 'T1' } },
-            { id: 'n2', type: 'toolNode', position: { x: 0, y: 100 }, data: { toolName: 't2', toolArgs: {}, label: 'T2' } },
+            {
+              id: 'n1',
+              type: 'toolNode',
+              position: { x: 0, y: 0 },
+              data: { toolName: 't1', toolArgs: {}, label: 'T1' },
+            },
+            {
+              id: 'n2',
+              type: 'toolNode',
+              position: { x: 0, y: 100 },
+              data: { toolName: 't2', toolArgs: {}, label: 'T2' },
+            },
           ],
           edges: [
             { id: 'e1', source: 'n1', target: 'n2' },
@@ -460,8 +470,18 @@ describe('Workflow Routes', () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           nodes: [
-            { id: 'n1', type: 'toolNode', position: { x: 0, y: 0 }, data: { toolName: 't1', toolArgs: {}, label: 'T1' } },
-            { id: 'n2', type: 'toolNode', position: { x: 0, y: 100 }, data: { toolName: 't2', toolArgs: {}, label: 'T2' } },
+            {
+              id: 'n1',
+              type: 'toolNode',
+              position: { x: 0, y: 0 },
+              data: { toolName: 't1', toolArgs: {}, label: 'T1' },
+            },
+            {
+              id: 'n2',
+              type: 'toolNode',
+              position: { x: 0, y: 100 },
+              data: { toolName: 't2', toolArgs: {}, label: 'T2' },
+            },
           ],
           edges: [
             { id: 'e1', source: 'n1', target: 'n2' },

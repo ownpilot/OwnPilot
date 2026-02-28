@@ -221,7 +221,8 @@ installRoutes.post('/upload', async (c) => {
           id: record.id,
         });
 
-        const zipSecurity = (record.manifest as unknown as Record<string, unknown>)?._security ?? null;
+        const zipSecurity =
+          (record.manifest as unknown as Record<string, unknown>)?._security ?? null;
         return apiResponse(
           c,
           {
@@ -275,7 +276,8 @@ installRoutes.post('/upload', async (c) => {
           id: record.id,
         });
 
-        const fileSecurity = (record.manifest as unknown as Record<string, unknown>)?._security ?? null;
+        const fileSecurity =
+          (record.manifest as unknown as Record<string, unknown>)?._security ?? null;
         return apiResponse(
           c,
           {

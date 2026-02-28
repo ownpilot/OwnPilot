@@ -85,7 +85,11 @@ const listEventCategoriesDef: ToolDefinition = {
   category: 'Events',
 };
 
-export const EVENT_TOOLS: ToolDefinition[] = [emitEventDef, waitForEventDef, listEventCategoriesDef];
+export const EVENT_TOOLS: ToolDefinition[] = [
+  emitEventDef,
+  waitForEventDef,
+  listEventCategoriesDef,
+];
 
 // =============================================================================
 // Event Categories Reference
@@ -160,18 +164,20 @@ export async function executeEventTool(
       try {
         const eventSystem = getEventSystem();
         // waitFor is typed — use onAny-based approach for dynamic event types
-        const event = await new Promise<{ type: string; source: string; data: unknown }>((resolve, reject) => {
-          const timer = setTimeout(() => {
-            unsub();
-            reject(new Error(`Timeout waiting for event '${eventType}' after ${timeoutMs}ms`));
-          }, timeoutMs);
+        const event = await new Promise<{ type: string; source: string; data: unknown }>(
+          (resolve, reject) => {
+            const timer = setTimeout(() => {
+              unsub();
+              reject(new Error(`Timeout waiting for event '${eventType}' after ${timeoutMs}ms`));
+            }, timeoutMs);
 
-          const unsub = eventSystem.onAny(eventType, (evt) => {
-            clearTimeout(timer);
-            unsub();
-            resolve({ type: evt.type, source: evt.source, data: evt.data });
-          });
-        });
+            const unsub = eventSystem.onAny(eventType, (evt) => {
+              clearTimeout(timer);
+              unsub();
+              resolve({ type: evt.type, source: evt.source, data: evt.data });
+            });
+          }
+        );
 
         return {
           success: true,

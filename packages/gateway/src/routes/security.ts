@@ -27,10 +27,7 @@ import {
   parseJsonBody,
   notFoundError,
 } from './helpers.js';
-import {
-  createTriggersRepository,
-  createWorkflowsRepository,
-} from '../db/repositories/index.js';
+import { createTriggersRepository, createWorkflowsRepository } from '../db/repositories/index.js';
 
 export const securityRoutes = new Hono();
 
@@ -114,11 +111,7 @@ securityRoutes.post('/scan/trigger', async (c) => {
   const body = (await parseJsonBody(c)) as { triggerId: string } | null;
 
   if (!body?.triggerId) {
-    return apiError(
-      c,
-      { code: ERROR_CODES.INVALID_INPUT, message: 'triggerId is required' },
-      400
-    );
+    return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'triggerId is required' }, 400);
   }
 
   const repo = createTriggersRepository(userId);
@@ -153,11 +146,7 @@ securityRoutes.post('/scan/workflow', async (c) => {
   const body = (await parseJsonBody(c)) as { workflowId: string } | null;
 
   if (!body?.workflowId) {
-    return apiError(
-      c,
-      { code: ERROR_CODES.INVALID_INPUT, message: 'workflowId is required' },
-      400
-    );
+    return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'workflowId is required' }, 400);
   }
 
   const repo = createWorkflowsRepository(userId);

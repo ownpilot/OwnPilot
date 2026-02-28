@@ -339,16 +339,16 @@ export const channelsApi = {
     }),
   getUsers: (channelId: string) =>
     apiClient.get<{ users: ChannelUser[]; count: number }>(`/channels/${channelId}/users`),
-  getStats: (channelId: string) =>
-    apiClient.get<ChannelStats>(`/channels/${channelId}/stats`),
+  getStats: (channelId: string) => apiClient.get<ChannelStats>(`/channels/${channelId}/stats`),
   reconnect: (channelId: string) =>
     apiClient.post<{ pluginId: string; status: string }>(`/channels/${channelId}/reconnect`),
-  getDetail: (channelId: string) =>
-    apiClient.get<Channel>(`/channels/${channelId}`),
+  getDetail: (channelId: string) => apiClient.get<Channel>(`/channels/${channelId}`),
   getQr: (channelId: string) =>
-    apiClient.get<{ qr: string | null; status: string; botInfo?: { username?: string; firstName?: string } }>(
-      `/channels/${channelId}/qr`
-    ),
+    apiClient.get<{
+      qr: string | null;
+      status: string;
+      botInfo?: { username?: string; firstName?: string };
+    }>(`/channels/${channelId}/qr`),
   approveUser: (userId: string) =>
     apiClient.post<{ approved: boolean }>(`/channels/auth/users/${userId}/approve`),
   blockUser: (userId: string) =>

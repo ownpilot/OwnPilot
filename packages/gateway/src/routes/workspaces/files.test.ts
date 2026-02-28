@@ -51,7 +51,9 @@ describe('Workspace File Routes', () => {
     });
     app.route('/workspaces', workspaceFileRoutes);
     mockRepo = { get: vi.fn(), logAudit: vi.fn() };
-    vi.mocked(WorkspacesRepository).mockImplementation(function () { return mockRepo as never; });
+    vi.mocked(WorkspacesRepository).mockImplementation(function () {
+      return mockRepo as never;
+    });
     mockStorage = {
       listFiles: vi.fn(),
       readFile: vi.fn(),

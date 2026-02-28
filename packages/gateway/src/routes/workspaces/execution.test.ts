@@ -58,7 +58,9 @@ describe('Workspace Execution Routes', () => {
       listExecutions: vi.fn(),
       countExecutions: vi.fn(),
     };
-    vi.mocked(WorkspacesRepository).mockImplementation(function () { return mockRepo as never; });
+    vi.mocked(WorkspacesRepository).mockImplementation(function () {
+      return mockRepo as never;
+    });
     mockOrchestrator = {
       createContainer: vi.fn(),
       executeInContainer: vi.fn(),

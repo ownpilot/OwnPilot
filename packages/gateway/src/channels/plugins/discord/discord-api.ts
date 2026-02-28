@@ -107,9 +107,7 @@ export class DiscordChannelAPI implements ChannelPluginAPI {
         this.status = 'connected';
         this.emitConnectionEvent('connected');
         const user = this.client?.user;
-        log.info(
-          `Discord bot connected as ${user?.tag ?? 'unknown'} (${user?.id ?? 'no-id'})`
-        );
+        log.info(`Discord bot connected as ${user?.tag ?? 'unknown'} (${user?.id ?? 'no-id'})`);
       });
 
       // Message handler
@@ -328,9 +326,7 @@ export class DiscordChannelAPI implements ChannelPluginAPI {
   // Private — Message Processing
   // ==========================================================================
 
-  private async handleIncomingMessage(
-    message: import('discord.js').Message
-  ): Promise<void> {
+  private async handleIncomingMessage(message: import('discord.js').Message): Promise<void> {
     const sender: ChannelUser = {
       platformUserId: message.author.id,
       platform: 'discord',

@@ -115,8 +115,7 @@ export const securityApi = {
     }>('/security/scan/custom-tool', { code, name, permissions }),
 
   /** Scan all triggers */
-  scanTriggers: () =>
-    apiClient.post<SectionScanResult<TriggerScanItem>>('/security/scan/triggers'),
+  scanTriggers: () => apiClient.post<SectionScanResult<TriggerScanItem>>('/security/scan/triggers'),
 
   /** Scan a single trigger */
   scanTrigger: (triggerId: string) =>

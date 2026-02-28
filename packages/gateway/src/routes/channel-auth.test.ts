@@ -275,7 +275,14 @@ describe('Channel Auth Routes', () => {
   describe('POST /auth/users/:id/approve', () => {
     it('should approve a pending user', async () => {
       mockVerificationService.approveUser.mockResolvedValue(true);
-      mockChannelUsersRepo.getById.mockResolvedValue(mockUser({ id: 'u-1', platform: 'telegram', platformUserId: 'tg-123', displayName: 'Alice' }));
+      mockChannelUsersRepo.getById.mockResolvedValue(
+        mockUser({
+          id: 'u-1',
+          platform: 'telegram',
+          platformUserId: 'tg-123',
+          displayName: 'Alice',
+        })
+      );
 
       const res = await app.request('/auth/users/u-1/approve', { method: 'POST' });
 
@@ -383,7 +390,10 @@ describe('Channel Auth Routes', () => {
       const data = await res.json();
       expect(data.data.deleted).toBe(true);
       expect(mockVerificationService.deleteUser).toHaveBeenCalledWith('u-1');
-      expect(mockWsGateway.broadcast).toHaveBeenCalledWith('data:changed', expect.objectContaining({ action: 'deleted' }));
+      expect(mockWsGateway.broadcast).toHaveBeenCalledWith(
+        'data:changed',
+        expect.objectContaining({ action: 'deleted' })
+      );
     });
 
     it('should return 404 when user not found', async () => {

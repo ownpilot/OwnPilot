@@ -153,7 +153,11 @@ describe('BackgroundAgentManager', () => {
     it('creates a workspace for file isolation', async () => {
       mockGetOrCreateSessionWorkspace.mockClear();
       await manager.startAgent(makeConfig());
-      expect(mockGetOrCreateSessionWorkspace).toHaveBeenCalledWith('bg-agent-bg-1', 'bg-1', 'user-1');
+      expect(mockGetOrCreateSessionWorkspace).toHaveBeenCalledWith(
+        'bg-agent-bg-1',
+        'bg-1',
+        'user-1'
+      );
     });
   });
 

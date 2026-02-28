@@ -3,7 +3,13 @@
  */
 
 import { apiClient } from '../client';
-import type { Workflow, WorkflowLog, WorkflowVersion, WorkflowApproval, WorkflowProgressEvent } from '../types';
+import type {
+  Workflow,
+  WorkflowLog,
+  WorkflowVersion,
+  WorkflowApproval,
+  WorkflowProgressEvent,
+} from '../types';
 
 interface PaginatedWorkflows {
   workflows: Workflow[];
@@ -95,8 +101,7 @@ export const workflowsApi = {
     apiClient.post<WorkflowApproval>(`/workflows/approvals/${id}/reject`),
 
   /** Replay a completed execution — returns SSE stream */
-  replayLog: (logId: string) =>
-    apiClient.stream(`/workflows/logs/${logId}/replay`, {}),
+  replayLog: (logId: string) => apiClient.stream(`/workflows/logs/${logId}/replay`, {}),
 
   /** Public API: Run workflow with inputs (requires API key) */
   apiRun: (id: string, inputs?: Record<string, unknown>) =>

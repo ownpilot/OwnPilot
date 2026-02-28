@@ -120,7 +120,11 @@ export class ChannelMessagesRepository extends BaseRepository {
     return rows.map(rowToChannelMessage);
   }
 
-  async getByConversation(conversationId: string, limit = 100, offset = 0): Promise<ChannelMessage[]> {
+  async getByConversation(
+    conversationId: string,
+    limit = 100,
+    offset = 0
+  ): Promise<ChannelMessage[]> {
     const rows = await this.query<ChannelMessageRow>(
       `SELECT * FROM channel_messages
        WHERE conversation_id = $1

@@ -6,7 +6,14 @@
  */
 
 import { useState, useCallback } from 'react';
-import { ShieldCheck, AlertTriangle, AlertCircle, CheckCircle2, Info, RefreshCw } from '../components/icons';
+import {
+  ShieldCheck,
+  AlertTriangle,
+  AlertCircle,
+  CheckCircle2,
+  Info,
+  RefreshCw,
+} from '../components/icons';
 import { useToast } from '../components/ToastProvider';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { securityApi } from '../api/endpoints/security';
@@ -80,7 +87,10 @@ function ScoreGauge({ score, size = 120 }: { score: number; size?: number }) {
           : 'stroke-error';
 
   return (
-    <div className="relative inline-flex items-center justify-center" style={{ width: size, height: size }}>
+    <div
+      className="relative inline-flex items-center justify-center"
+      style={{ width: size, height: size }}
+    >
       <svg width={size} height={size} className="-rotate-90">
         <circle
           cx={size / 2}
@@ -242,9 +252,7 @@ function RiskList({ risks }: { risks: RiskItem[] }) {
                 {risk.description}
               </div>
               <div className="flex items-center gap-2 mt-1">
-                <span className={`text-xs px-1.5 py-0.5 rounded ${badge.color}`}>
-                  {badge.text}
-                </span>
+                <span className={`text-xs px-1.5 py-0.5 rounded ${badge.color}`}>{badge.text}</span>
                 <span className="text-xs text-text-muted dark:text-dark-text-muted capitalize">
                   {risk.source}
                 </span>

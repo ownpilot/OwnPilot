@@ -156,7 +156,15 @@ function WorkflowEditorInner() {
   const [showNodeSearch, setShowNodeSearch] = useState(false);
   const [showInputParams, setShowInputParams] = useState(false);
   const [showTemplates, setShowTemplates] = useState(false);
-  const [inputSchema, setInputSchema] = useState<Array<{ name: string; type: 'string' | 'number' | 'boolean' | 'json'; required: boolean; defaultValue?: string; description?: string }>>([]);
+  const [inputSchema, setInputSchema] = useState<
+    Array<{
+      name: string;
+      type: 'string' | 'number' | 'boolean' | 'json';
+      required: boolean;
+      defaultValue?: string;
+      description?: string;
+    }>
+  >([]);
 
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
@@ -172,7 +180,9 @@ function WorkflowEditorInner() {
   // ========================================================================
 
   const MAX_HISTORY = 50;
-  const historyRef = useRef<Array<{ nodes: Node[]; edges: Edge[]; variables: Record<string, unknown> }>>([]);
+  const historyRef = useRef<
+    Array<{ nodes: Node[]; edges: Edge[]; variables: Record<string, unknown> }>
+  >([]);
   const historyIndexRef = useRef(-1);
   const skipHistoryRef = useRef(false);
 
@@ -293,11 +303,13 @@ function WorkflowEditorInner() {
         nodeIdCounter.current = maxId;
 
         // Initialize undo/redo history
-        historyRef.current = [{
-          nodes: rfNodes.map((n) => ({ ...n, data: { ...n.data } })),
-          edges: rfEdges.map((e) => ({ ...e })),
-          variables: wf.variables ?? {},
-        }];
+        historyRef.current = [
+          {
+            nodes: rfNodes.map((n) => ({ ...n, data: { ...n.data } })),
+            edges: rfEdges.map((e) => ({ ...e })),
+            variables: wf.variables ?? {},
+          },
+        ];
         historyIndexRef.current = 0;
       } catch {
         toast.error('Failed to load workflow');
@@ -351,7 +363,8 @@ function WorkflowEditorInner() {
       if (targetNode?.type === 'triggerNode') return false;
       // Sticky notes cannot be connected
       const sourceNode = nodes.find((n) => n.id === connection.source);
-      if (sourceNode?.type === 'stickyNoteNode' || targetNode?.type === 'stickyNoteNode') return false;
+      if (sourceNode?.type === 'stickyNoteNode' || targetNode?.type === 'stickyNoteNode')
+        return false;
       return true;
     },
     [edges, nodes]
@@ -552,9 +565,7 @@ function WorkflowEditorInner() {
     try {
       // Helper: extract optional outputAlias from any node data
       const getAlias = (d: Record<string, unknown>) =>
-        d.outputAlias && typeof d.outputAlias === 'string'
-          ? { outputAlias: d.outputAlias }
-          : {};
+        d.outputAlias && typeof d.outputAlias === 'string' ? { outputAlias: d.outputAlias } : {};
 
       const wfNodes = nodes.map((n) => {
         if (n.type === 'triggerNode') {
@@ -680,7 +691,9 @@ function WorkflowEditorInner() {
               method: hd.method,
               url: hd.url,
               ...(hd.headers && Object.keys(hd.headers).length > 0 ? { headers: hd.headers } : {}),
-              ...(hd.queryParams && Object.keys(hd.queryParams).length > 0 ? { queryParams: hd.queryParams } : {}),
+              ...(hd.queryParams && Object.keys(hd.queryParams).length > 0
+                ? { queryParams: hd.queryParams }
+                : {}),
               ...(hd.body ? { body: hd.body } : {}),
               ...(hd.bodyType ? { bodyType: hd.bodyType } : {}),
               ...(hd.auth && hd.auth.type !== 'none' ? { auth: hd.auth } : {}),
@@ -749,7 +762,8 @@ function WorkflowEditorInner() {
               ...(sw.description ? { description: sw.description } : {}),
               ...(sw.subWorkflowId ? { subWorkflowId: sw.subWorkflowId } : {}),
               ...(sw.subWorkflowName ? { subWorkflowName: sw.subWorkflowName } : {}),
-              ...(sw.inputMapping && Object.keys(sw.inputMapping as Record<string, unknown>).length > 0
+              ...(sw.inputMapping &&
+              Object.keys(sw.inputMapping as Record<string, unknown>).length > 0
                 ? { inputMapping: sw.inputMapping }
                 : {}),
               ...(sw.maxDepth != null ? { maxDepth: sw.maxDepth } : {}),
@@ -909,82 +923,85 @@ function WorkflowEditorInner() {
   // Execute — SSE stream with real-time node coloring
   // ========================================================================
 
-  const handleExecute = useCallback(async (dryRun = false) => {
-    if (!id || isExecuting) return;
+  const handleExecute = useCallback(
+    async (dryRun = false) => {
+      if (!id || isExecuting) return;
 
-    if (hasUnsavedChanges) {
-      await handleSave();
-    }
+      if (hasUnsavedChanges) {
+        await handleSave();
+      }
 
-    setIsExecuting(true);
-    setIsDryRun(dryRun);
+      setIsExecuting(true);
+      setIsDryRun(dryRun);
 
-    // Reset all node statuses
-    setNodes((nds) =>
-      nds.map((n) => ({
-        ...n,
-        data: {
-          ...n.data,
-          executionStatus: 'pending',
-          executionError: undefined,
-          executionDuration: undefined,
-          executionOutput: undefined,
-          resolvedArgs: undefined,
-          branchTaken: undefined,
-          currentIteration: undefined,
-          totalIterations: undefined,
-        },
-      }))
-    );
+      // Reset all node statuses
+      setNodes((nds) =>
+        nds.map((n) => ({
+          ...n,
+          data: {
+            ...n.data,
+            executionStatus: 'pending',
+            executionError: undefined,
+            executionDuration: undefined,
+            executionOutput: undefined,
+            resolvedArgs: undefined,
+            branchTaken: undefined,
+            currentIteration: undefined,
+            totalIterations: undefined,
+          },
+        }))
+      );
 
-    // Animate edges during execution
-    setEdges((eds) => eds.map((e) => ({ ...e, animated: true })));
+      // Animate edges during execution
+      setEdges((eds) => eds.map((e) => ({ ...e, animated: true })));
 
-    const abort = new AbortController();
-    abortRef.current = abort;
+      const abort = new AbortController();
+      abortRef.current = abort;
 
-    try {
-      const response = await workflowsApi.execute(id, { dryRun });
-      const reader = response.body?.getReader();
-      if (!reader) throw new Error('No stream available');
+      try {
+        const response = await workflowsApi.execute(id, { dryRun });
+        const reader = response.body?.getReader();
+        if (!reader) throw new Error('No stream available');
 
-      const decoder = new TextDecoder();
-      let buffer = '';
+        const decoder = new TextDecoder();
+        let buffer = '';
 
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
 
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n');
-        buffer = lines.pop() ?? '';
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop() ?? '';
 
-        for (const line of lines) {
-          if (!line.startsWith('data:')) continue;
-          const dataStr = line.slice(5).trim();
-          if (!dataStr) continue;
+          for (const line of lines) {
+            if (!line.startsWith('data:')) continue;
+            const dataStr = line.slice(5).trim();
+            if (!dataStr) continue;
 
-          let event: WorkflowProgressEvent;
-          try {
-            event = JSON.parse(dataStr);
-          } catch {
-            continue;
+            let event: WorkflowProgressEvent;
+            try {
+              event = JSON.parse(dataStr);
+            } catch {
+              continue;
+            }
+
+            handleProgressEvent(event);
           }
-
-          handleProgressEvent(event);
         }
+      } catch (err) {
+        if ((err as Error).name !== 'AbortError') {
+          toast.error(err instanceof Error ? err.message : 'Execution failed');
+        }
+      } finally {
+        setIsExecuting(false);
+        setIsDryRun(false);
+        abortRef.current = null;
+        setEdges((eds) => eds.map((e) => ({ ...e, animated: false })));
       }
-    } catch (err) {
-      if ((err as Error).name !== 'AbortError') {
-        toast.error(err instanceof Error ? err.message : 'Execution failed');
-      }
-    } finally {
-      setIsExecuting(false);
-      setIsDryRun(false);
-      abortRef.current = null;
-      setEdges((eds) => eds.map((e) => ({ ...e, animated: false })));
-    }
-  }, [id, isExecuting, hasUnsavedChanges, handleSave, toast, setNodes, setEdges]);
+    },
+    [id, isExecuting, hasUnsavedChanges, handleSave, toast, setNodes, setEdges]
+  );
 
   const handleProgressEvent = useCallback(
     (event: WorkflowProgressEvent) => {
@@ -1310,7 +1327,9 @@ function WorkflowEditorInner() {
         // Delete cut nodes
         pushHistory();
         setNodes((nds) => nds.filter((n) => !selectedIds.has(n.id)));
-        setEdges((eds) => eds.filter((ed) => !selectedIds.has(ed.source) && !selectedIds.has(ed.target)));
+        setEdges((eds) =>
+          eds.filter((ed) => !selectedIds.has(ed.source) && !selectedIds.has(ed.target))
+        );
         setSelectedNodeId(null);
         setHasUnsavedChanges(true);
         return;
@@ -1598,13 +1617,22 @@ function WorkflowEditorInner() {
   const addNotificationNode = useCallback(() => {
     nodeIdCounter.current += 1;
     const newNodeId = `node_${nodeIdCounter.current}`;
-    let y = 200, x = 400;
+    let y = 200,
+      x = 400;
     if (nodes.length > 0) {
       const maxY = Math.max(...nodes.map((n) => n.position.y));
       y = maxY + 120;
       x = Math.round(nodes.reduce((s, n) => s + n.position.x, 0) / nodes.length / 16) * 16;
     }
-    setNodes((nds) => [...nds, { id: newNodeId, type: 'notificationNode', position: { x, y }, data: { label: 'Notification', message: '', severity: 'info' } }]);
+    setNodes((nds) => [
+      ...nds,
+      {
+        id: newNodeId,
+        type: 'notificationNode',
+        position: { x, y },
+        data: { label: 'Notification', message: '', severity: 'info' },
+      },
+    ]);
     setSelectedNodeId(newNodeId);
     setHasUnsavedChanges(true);
   }, [nodes, setNodes]);
@@ -1613,13 +1641,22 @@ function WorkflowEditorInner() {
   const addParallelNode = useCallback(() => {
     nodeIdCounter.current += 1;
     const newNodeId = `node_${nodeIdCounter.current}`;
-    let y = 200, x = 400;
+    let y = 200,
+      x = 400;
     if (nodes.length > 0) {
       const maxY = Math.max(...nodes.map((n) => n.position.y));
       y = maxY + 120;
       x = Math.round(nodes.reduce((s, n) => s + n.position.x, 0) / nodes.length / 16) * 16;
     }
-    setNodes((nds) => [...nds, { id: newNodeId, type: 'parallelNode', position: { x, y }, data: { label: 'Parallel', branchCount: 2, branchLabels: ['Branch 0', 'Branch 1'] } }]);
+    setNodes((nds) => [
+      ...nds,
+      {
+        id: newNodeId,
+        type: 'parallelNode',
+        position: { x, y },
+        data: { label: 'Parallel', branchCount: 2, branchLabels: ['Branch 0', 'Branch 1'] },
+      },
+    ]);
     setSelectedNodeId(newNodeId);
     setHasUnsavedChanges(true);
   }, [nodes, setNodes]);
@@ -1628,13 +1665,22 @@ function WorkflowEditorInner() {
   const addMergeNode = useCallback(() => {
     nodeIdCounter.current += 1;
     const newNodeId = `node_${nodeIdCounter.current}`;
-    let y = 200, x = 400;
+    let y = 200,
+      x = 400;
     if (nodes.length > 0) {
       const maxY = Math.max(...nodes.map((n) => n.position.y));
       y = maxY + 120;
       x = Math.round(nodes.reduce((s, n) => s + n.position.x, 0) / nodes.length / 16) * 16;
     }
-    setNodes((nds) => [...nds, { id: newNodeId, type: 'mergeNode', position: { x, y }, data: { label: 'Merge', mode: 'waitAll' } }]);
+    setNodes((nds) => [
+      ...nds,
+      {
+        id: newNodeId,
+        type: 'mergeNode',
+        position: { x, y },
+        data: { label: 'Merge', mode: 'waitAll' },
+      },
+    ]);
     setSelectedNodeId(newNodeId);
     setHasUnsavedChanges(true);
   }, [nodes, setNodes]);
@@ -1781,7 +1827,21 @@ function WorkflowEditorInner() {
           break;
       }
     },
-    [addTriggerNode, addLlmNode, addConditionNode, addCodeNode, addTransformerNode, addForEachNode, addHttpRequestNode, addDelayNode, addSwitchNode, addStickyNoteNode, addNotificationNode, addParallelNode, addMergeNode]
+    [
+      addTriggerNode,
+      addLlmNode,
+      addConditionNode,
+      addCodeNode,
+      addTransformerNode,
+      addForEachNode,
+      addHttpRequestNode,
+      addDelayNode,
+      addSwitchNode,
+      addStickyNoteNode,
+      addNotificationNode,
+      addParallelNode,
+      addMergeNode,
+    ]
   );
 
   const handleApplyWorkflow = useCallback(

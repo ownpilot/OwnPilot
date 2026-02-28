@@ -1177,10 +1177,7 @@ export class ChannelServiceImpl implements IChannelService {
   /**
    * Send a welcome message to a newly approved user via their channel.
    */
-  private async sendApprovalNotification(
-    platform: string,
-    platformUserId: string
-  ): Promise<void> {
+  private async sendApprovalNotification(platform: string, platformUserId: string): Promise<void> {
     const channelPlugins = this.getChannelPlugins().filter(
       (p) => getChannelPlatform(p) === platform
     );

@@ -92,7 +92,7 @@ function rowToConfig(row: AgentRow): BackgroundAgentConfig {
     }),
     intervalMs: row.interval_ms ?? undefined,
     eventFilters: row.event_filters
-      ? parseJsonFieldNullable<string[]>(row.event_filters) ?? undefined
+      ? (parseJsonFieldNullable<string[]>(row.event_filters) ?? undefined)
       : undefined,
     autoStart: row.auto_start,
     stopCondition: row.stop_condition ?? undefined,
@@ -114,8 +114,8 @@ function rowToHistory(row: HistoryRow): BackgroundAgentHistoryEntry {
     toolCalls: parseJsonField<BackgroundAgentToolCall[]>(row.tool_calls, []),
     outputMessage: row.output_message,
     tokensUsed: row.tokens_used
-      ? parseJsonFieldNullable<{ prompt: number; completion: number }>(row.tokens_used) ??
-        undefined
+      ? (parseJsonFieldNullable<{ prompt: number; completion: number }>(row.tokens_used) ??
+        undefined)
       : undefined,
     costUsd: row.cost_usd ? parseFloat(row.cost_usd) : undefined,
     durationMs: row.duration_ms,
@@ -292,19 +292,22 @@ export class BackgroundAgentsRepository extends BaseRepository {
 
   // ---------- Session Persistence ----------
 
-  async saveSession(agentId: string, session: {
-    state: BackgroundAgentState;
-    cyclesCompleted: number;
-    totalToolCalls: number;
-    totalCostUsd: number;
-    lastCycleAt: Date | null;
-    lastCycleDurationMs: number | null;
-    lastCycleError: string | null;
-    startedAt: Date;
-    stoppedAt: Date | null;
-    persistentContext: Record<string, unknown>;
-    inbox: string[];
-  }): Promise<void> {
+  async saveSession(
+    agentId: string,
+    session: {
+      state: BackgroundAgentState;
+      cyclesCompleted: number;
+      totalToolCalls: number;
+      totalCostUsd: number;
+      lastCycleAt: Date | null;
+      lastCycleDurationMs: number | null;
+      lastCycleError: string | null;
+      startedAt: Date;
+      stoppedAt: Date | null;
+      persistentContext: Record<string, unknown>;
+      inbox: string[];
+    }
+  ): Promise<void> {
     await this.execute(
       `INSERT INTO background_agent_sessions
        (agent_id, state, cycles_completed, total_tool_calls, total_cost_usd,
@@ -390,10 +393,7 @@ export class BackgroundAgentsRepository extends BaseRepository {
   }
 
   async deleteSession(agentId: string): Promise<void> {
-    await this.execute(
-      `DELETE FROM background_agent_sessions WHERE agent_id = $1`,
-      [agentId]
-    );
+    await this.execute(`DELETE FROM background_agent_sessions WHERE agent_id = $1`, [agentId]);
   }
 
   async appendToInbox(agentId: string, message: string): Promise<void> {

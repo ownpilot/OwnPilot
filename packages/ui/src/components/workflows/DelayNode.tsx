@@ -98,7 +98,8 @@ function DelayNodeComponent({ data, selected }: NodeProps<DelayNodeType>) {
         {/* Duration badge */}
         <div className="flex items-center gap-1.5 mt-1">
           <span className="px-1.5 py-0.5 text-[9px] font-bold rounded bg-rose-500/20 text-rose-700 dark:text-rose-300">
-            {duration}{suffix}
+            {duration}
+            {suffix}
           </span>
         </div>
 

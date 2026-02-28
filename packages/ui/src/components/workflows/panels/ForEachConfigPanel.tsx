@@ -10,7 +10,12 @@ import type { ForEachNodeData } from '../ForEachNode';
 import { OutputTreeBrowser } from '../OutputTreeBrowser';
 import { TemplateValidator } from '../TemplateValidator';
 import type { NodeConfigPanelProps } from '../NodeConfigPanel';
-import { OutputAliasField, RetryTimeoutFields, RetryAttemptsDisplay, INPUT_CLS } from '../NodeConfigPanel';
+import {
+  OutputAliasField,
+  RetryTimeoutFields,
+  RetryAttemptsDisplay,
+  INPUT_CLS,
+} from '../NodeConfigPanel';
 
 const FOREACH_PRESETS = [
   '{{node_1.output}}',

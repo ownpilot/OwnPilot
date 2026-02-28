@@ -141,9 +141,8 @@ export class SlackChannelAPI implements ChannelPluginAPI {
         await this.connectSocketMode();
       } else {
         // Events API mode — register webhook handler
-        registerSlackWebhookHandler(
-          this.config.signing_secret,
-          (event) => this.handleSlackEvent(event)
+        registerSlackWebhookHandler(this.config.signing_secret, (event) =>
+          this.handleSlackEvent(event)
         );
       }
 
@@ -400,8 +399,7 @@ export class SlackChannelAPI implements ChannelPluginAPI {
     return {
       platformUserId: userId,
       platform: 'slack',
-      displayName:
-        user?.profile?.display_name || user?.real_name || user?.name || userId,
+      displayName: user?.profile?.display_name || user?.real_name || user?.name || userId,
       username: user?.name,
       avatarUrl: user?.profile?.image_48,
       isBot: user?.is_bot,

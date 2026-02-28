@@ -257,7 +257,6 @@ export function ConditionConfigPanel({
               onUpdate={onUpdate}
             />
 
-
             <RetryTimeoutFields
               data={data as unknown as Record<string, unknown>}
               nodeId={node.id}

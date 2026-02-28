@@ -115,7 +115,9 @@ export class WorkflowService implements IWorkflowService {
       // Build alias map: nodeId → alias name (from outputAlias field on any node)
       const aliasToNodeId = new Map<string, string>();
       for (const node of executableNodes) {
-        const alias = (node.data as unknown as Record<string, unknown>).outputAlias as string | undefined;
+        const alias = (node.data as unknown as Record<string, unknown>).outputAlias as
+          | string
+          | undefined;
         if (alias && typeof alias === 'string' && alias.trim()) {
           aliasToNodeId.set(alias.trim(), node.id);
         }
@@ -243,7 +245,10 @@ export class WorkflowService implements IWorkflowService {
               onProgress?.({ type: 'node_start', nodeId, toolName: 'httpRequest' });
               if (dryRun) {
                 const args = resolveTemplates(
-                  { url: (node.data as unknown as Record<string, unknown>).url, method: (node.data as unknown as Record<string, unknown>).method },
+                  {
+                    url: (node.data as unknown as Record<string, unknown>).url,
+                    method: (node.data as unknown as Record<string, unknown>).method,
+                  },
                   nodeOutputs,
                   workflow.variables
                 );
@@ -259,11 +264,15 @@ export class WorkflowService implements IWorkflowService {
             if (node.type === 'delayNode') {
               onProgress?.({ type: 'node_start', nodeId, toolName: 'delay' });
               if (dryRun) {
-                return dryRunResult(node, { duration: (node.data as unknown as Record<string, unknown>).duration, unit: (node.data as unknown as Record<string, unknown>).unit });
+                return dryRunResult(node, {
+                  duration: (node.data as unknown as Record<string, unknown>).duration,
+                  unit: (node.data as unknown as Record<string, unknown>).unit,
+                });
               }
               return await this.executeWithRetryAndTimeout(
                 node,
-                () => executeDelayNode(node, nodeOutputs, workflow.variables, abortController.signal),
+                () =>
+                  executeDelayNode(node, nodeOutputs, workflow.variables, abortController.signal),
                 onProgress
               );
             }
@@ -285,7 +294,10 @@ export class WorkflowService implements IWorkflowService {
                   nodeOutputs,
                   workflow.variables
                 );
-                return dryRunResult(node, { ...args, severity: (node.data as unknown as Record<string, unknown>).severity });
+                return dryRunResult(node, {
+                  ...args,
+                  severity: (node.data as unknown as Record<string, unknown>).severity,
+                });
               }
               return await this.executeWithRetryAndTimeout(
                 node,
@@ -298,7 +310,8 @@ export class WorkflowService implements IWorkflowService {
               onProgress?.({ type: 'node_start', nodeId, toolName: 'parallel' });
               const parallelStart = Date.now();
 
-              const branchCount = (node.data as unknown as Record<string, unknown>).branchCount as number || 2;
+              const branchCount =
+                ((node.data as unknown as Record<string, unknown>).branchCount as number) || 2;
 
               if (dryRun) {
                 return dryRunResult(node, { branchCount });
@@ -359,7 +372,8 @@ export class WorkflowService implements IWorkflowService {
                 .map((e) => e.source);
               return await this.executeWithRetryAndTimeout(
                 node,
-                async () => executeMergeNode(node, nodeOutputs, workflow.variables, incomingNodeIds),
+                async () =>
+                  executeMergeNode(node, nodeOutputs, workflow.variables, incomingNodeIds),
                 onProgress
               );
             }
@@ -389,7 +403,8 @@ export class WorkflowService implements IWorkflowService {
 
               // Create approval record and pause workflow
               const approvalRepo = createWorkflowApprovalsRepository(userId);
-              const timeoutMin = typeof apData.timeoutMinutes === 'number' ? apData.timeoutMinutes : undefined;
+              const timeoutMin =
+                typeof apData.timeoutMinutes === 'number' ? apData.timeoutMinutes : undefined;
               const approval = await approvalRepo.create({
                 workflowLogId: wfLog.id,
                 workflowId,
@@ -439,7 +454,11 @@ export class WorkflowService implements IWorkflowService {
             if (node.type === 'subWorkflowNode') {
               const swData = node.data as unknown as Record<string, unknown>;
               const subWorkflowId = swData.subWorkflowId as string | undefined;
-              onProgress?.({ type: 'node_start', nodeId, toolName: `subWorkflow:${swData.subWorkflowName ?? subWorkflowId ?? 'unknown'}` });
+              onProgress?.({
+                type: 'node_start',
+                nodeId,
+                toolName: `subWorkflow:${swData.subWorkflowName ?? subWorkflowId ?? 'unknown'}`,
+              });
 
               if (!subWorkflowId) {
                 return {
@@ -466,8 +485,16 @@ export class WorkflowService implements IWorkflowService {
 
               if (dryRun) {
                 const inputMapping = (swData.inputMapping ?? {}) as Record<string, string>;
-                const resolvedMapping = resolveTemplates(inputMapping, nodeOutputs, workflow.variables);
-                return dryRunResult(node, { subWorkflowId, inputMapping: resolvedMapping, depth: depth + 1 });
+                const resolvedMapping = resolveTemplates(
+                  inputMapping,
+                  nodeOutputs,
+                  workflow.variables
+                );
+                return dryRunResult(node, {
+                  subWorkflowId,
+                  inputMapping: resolvedMapping,
+                  depth: depth + 1,
+                });
               }
 
               return await this.executeWithRetryAndTimeout(
@@ -476,7 +503,11 @@ export class WorkflowService implements IWorkflowService {
                   const startTime = Date.now();
                   // Resolve input mapping to build sub-workflow variables
                   const inputMapping = (swData.inputMapping ?? {}) as Record<string, string>;
-                  const subVars = resolveTemplates(inputMapping, nodeOutputs, workflow.variables) as Record<string, unknown>;
+                  const subVars = resolveTemplates(
+                    inputMapping,
+                    nodeOutputs,
+                    workflow.variables
+                  ) as Record<string, unknown>;
 
                   // Load the sub-workflow and execute it
                   const subRepo = createWorkflowsRepository(userId);
@@ -499,27 +530,34 @@ export class WorkflowService implements IWorkflowService {
                   const origVars = subWorkflow.variables;
                   subWorkflow.variables = mergedVars;
 
-                  const subLog = await this.executeWorkflow(
-                    subWorkflowId,
-                    userId,
-                    undefined,
-                    { dryRun, depth: depth + 1 }
-                  );
+                  const subLog = await this.executeWorkflow(subWorkflowId, userId, undefined, {
+                    dryRun,
+                    depth: depth + 1,
+                  });
 
                   // Restore original variables
                   subWorkflow.variables = origVars;
 
                   // Extract the last successful output from the sub-workflow
                   const subResults = subLog.nodeResults;
-                  const successResults = Object.values(subResults).filter((r) => r.status === 'success' && r.output !== undefined);
-                  const lastOutput = successResults.length > 0 ? successResults[successResults.length - 1]!.output : null;
+                  const successResults = Object.values(subResults).filter(
+                    (r) => r.status === 'success' && r.output !== undefined
+                  );
+                  const lastOutput =
+                    successResults.length > 0
+                      ? successResults[successResults.length - 1]!.output
+                      : null;
 
                   return {
                     nodeId,
-                    status: subLog.status === 'completed' ? 'success' as const : 'error' as const,
+                    status:
+                      subLog.status === 'completed' ? ('success' as const) : ('error' as const),
                     output: lastOutput,
                     resolvedArgs: subVars,
-                    error: subLog.status === 'failed' ? (subLog.error ?? 'Sub-workflow failed') : undefined,
+                    error:
+                      subLog.status === 'failed'
+                        ? (subLog.error ?? 'Sub-workflow failed')
+                        : undefined,
                     startedAt: new Date(startTime).toISOString(),
                     completedAt: new Date().toISOString(),
                     durationMs: Date.now() - startTime,
@@ -586,7 +624,11 @@ export class WorkflowService implements IWorkflowService {
             // Invoke global error handler if present
             let handlerRecovered = false;
             if (errorHandlerNode && errorHandlerNode.id !== nodeId) {
-              onProgress?.({ type: 'node_start', nodeId: errorHandlerNode.id, toolName: 'errorHandler' });
+              onProgress?.({
+                type: 'node_start',
+                nodeId: errorHandlerNode.id,
+                toolName: 'errorHandler',
+              });
               const handlerStart = Date.now();
               const handlerResult: NodeResult = {
                 nodeId: errorHandlerNode.id,
@@ -675,11 +717,7 @@ export class WorkflowService implements IWorkflowService {
               const allHandles = [...switchData.cases.map((c) => c.label), 'default'];
               for (const handle of allHandles) {
                 if (handle !== nodeResult.branchTaken) {
-                  const skippedNodes = getDownstreamNodesByHandle(
-                    nodeId,
-                    handle,
-                    workflow.edges
-                  );
+                  const skippedNodes = getDownstreamNodesByHandle(nodeId, handle, workflow.edges);
                   for (const skipId of skippedNodes) {
                     if (!nodeOutputs[skipId]) {
                       nodeOutputs[skipId] = {
@@ -780,7 +818,10 @@ export class WorkflowService implements IWorkflowService {
     const data = node.data as unknown as Record<string, unknown>;
     const retryCount = typeof data.retryCount === 'number' ? data.retryCount : 0;
     const timeoutMs = typeof data.timeoutMs === 'number' ? data.timeoutMs : 0;
-    const isVmNode = node.type === 'conditionNode' || node.type === 'transformerNode' || node.type === 'switchNode';
+    const isVmNode =
+      node.type === 'conditionNode' ||
+      node.type === 'transformerNode' ||
+      node.type === 'switchNode';
 
     let lastResult!: NodeResult;
 

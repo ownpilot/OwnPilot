@@ -84,7 +84,9 @@ function SourceBadge({ source }: { source: ConvSource }) {
   const cfg = platformConfig[source] ?? platformConfig.web;
   const Icon = source === 'web' ? Globe : Telegram; // Telegram icon as fallback for all channels
   return (
-    <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium ${cfg.bg} ${cfg.color}`}>
+    <span
+      className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium ${cfg.bg} ${cfg.color}`}
+    >
       <Icon className="w-3 h-3" />
       {cfg.label}
     </span>
@@ -799,9 +801,11 @@ export function ChatHistoryPage() {
                           >
                             {/* Sender name for channel messages */}
                             {senderName && (
-                              <p className={`text-[10px] font-semibold mb-1 ${
-                                isAssistant ? 'text-primary' : 'text-white/80'
-                              }`}>
+                              <p
+                                className={`text-[10px] font-semibold mb-1 ${
+                                  isAssistant ? 'text-primary' : 'text-white/80'
+                                }`}
+                              >
                                 {senderName}
                               </p>
                             )}
@@ -822,7 +826,9 @@ export function ChatHistoryPage() {
                                 >
                                   Used {msg.toolCalls.length} tool
                                   {msg.toolCalls.length !== 1 ? 's' : ''}:{' '}
-                                  {(msg.toolCalls as Array<{ name: string }>).map((tc) => tc.name).join(', ')}
+                                  {(msg.toolCalls as Array<{ name: string }>)
+                                    .map((tc) => tc.name)
+                                    .join(', ')}
                                 </p>
                               </div>
                             )}
@@ -856,7 +862,12 @@ export function ChatHistoryPage() {
                       placeholder={`Reply to ${channelInfo.senderName ?? 'channel'}...`}
                       value={replyText}
                       onChange={(e) => setReplyText(e.target.value)}
-                      onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleChannelReply(); } }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault();
+                          handleChannelReply();
+                        }
+                      }}
                       disabled={isSendingReply}
                       className="flex-1 px-4 py-2 rounded-lg bg-bg-primary dark:bg-dark-bg-primary border border-border dark:border-dark-border text-sm text-text-primary dark:text-dark-text-primary placeholder:text-text-muted dark:placeholder:text-dark-text-muted focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50"
                     />

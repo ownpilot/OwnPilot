@@ -411,13 +411,9 @@ export function EventMonitorPage() {
               <div className="flex flex-col items-center justify-center h-full text-text-muted dark:text-dark-text-muted">
                 <MonitorCheck className="w-8 h-8 mb-2 opacity-30" />
                 <span className="text-sm">
-                  {events.length === 0
-                    ? 'Waiting for events...'
-                    : 'No events match the filter'}
+                  {events.length === 0 ? 'Waiting for events...' : 'No events match the filter'}
                 </span>
-                {paused && (
-                  <span className="text-xs text-warning mt-1">Stream paused</span>
-                )}
+                {paused && <span className="text-xs text-warning mt-1">Stream paused</span>}
               </div>
             ) : (
               <div className="divide-y divide-border/50 dark:divide-dark-border/50">
@@ -426,9 +422,7 @@ export function EventMonitorPage() {
                     key={event.id}
                     event={event}
                     isSelected={selectedEvent?.id === event.id}
-                    onClick={() =>
-                      setSelectedEvent(selectedEvent?.id === event.id ? null : event)
-                    }
+                    onClick={() => setSelectedEvent(selectedEvent?.id === event.id ? null : event)}
                   />
                 ))}
                 <div ref={eventsEndRef} />
@@ -517,9 +511,7 @@ function EventRow({
       >
         {category}
       </span>
-      <span className="text-text-primary dark:text-dark-text-primary truncate">
-        {event.type}
-      </span>
+      <span className="text-text-primary dark:text-dark-text-primary truncate">{event.type}</span>
       <span className="text-text-muted dark:text-dark-text-muted truncate ml-auto text-[10px]">
         {event.source}
       </span>
@@ -527,15 +519,7 @@ function EventRow({
   );
 }
 
-function DetailField({
-  label,
-  value,
-  mono,
-}: {
-  label: string;
-  value: string;
-  mono?: boolean;
-}) {
+function DetailField({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
   return (
     <div>
       <span className="text-[10px] font-semibold uppercase text-text-muted dark:text-dark-text-muted tracking-wider block mb-0.5">

@@ -211,10 +211,7 @@ export class WSGateway {
     // gateway.system.notification → system:notification
     this.legacyUnsubs.push(
       eventSystem.on('gateway.system.notification', (event) => {
-        this.broadcast(
-          'system:notification',
-          event.data as ServerEvents['system:notification']
-        );
+        this.broadcast('system:notification', event.data as ServerEvents['system:notification']);
       })
     );
 
@@ -278,7 +275,8 @@ export class WSGateway {
               channelId: (d.channelPluginId as string) ?? '',
               platform: (d.platform as string) ?? '',
               platformUserId: ((d.user as Record<string, unknown>)?.platformUserId as string) ?? '',
-              displayName: ((d.user as Record<string, unknown>)?.displayName as string) ?? undefined,
+              displayName:
+                ((d.user as Record<string, unknown>)?.displayName as string) ?? undefined,
             });
             break;
         }

@@ -89,7 +89,20 @@ describe('ChannelMessagesRepository', () => {
 
       expect(mockAdapter.execute).toHaveBeenCalledWith(
         expect.stringContaining('INSERT INTO channel_messages'),
-        ['msg-1', 'ch-1', null, 'inbound', null, null, 'Hello world', 'text', null, null, null, '{}']
+        [
+          'msg-1',
+          'ch-1',
+          null,
+          'inbound',
+          null,
+          null,
+          'Hello world',
+          'text',
+          null,
+          null,
+          null,
+          '{}',
+        ]
       );
 
       expect(result.id).toBe('msg-1');

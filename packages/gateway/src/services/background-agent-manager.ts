@@ -282,7 +282,10 @@ export class BackgroundAgentManager {
   /**
    * Stop a running/paused agent.
    */
-  async stopAgent(agentId: string, reason: 'user' | 'completed' | 'failed' | 'budget_exceeded' = 'user'): Promise<boolean> {
+  async stopAgent(
+    agentId: string,
+    reason: 'user' | 'completed' | 'failed' | 'budget_exceeded' = 'user'
+  ): Promise<boolean> {
     const managed = this.agents.get(agentId);
     if (!managed) return false;
 
@@ -569,9 +572,7 @@ export class BackgroundAgentManager {
 
     // Auto-pause on too many consecutive errors
     if (managed.consecutiveErrors >= MAX_CONSECUTIVE_ERRORS) {
-      log.warn(
-        `Agent ${agentId} hit ${MAX_CONSECUTIVE_ERRORS} consecutive errors, auto-pausing`
-      );
+      log.warn(`Agent ${agentId} hit ${MAX_CONSECUTIVE_ERRORS} consecutive errors, auto-pausing`);
       this.emitEvent('background-agent.error', {
         agentId,
         error: `Auto-paused after ${MAX_CONSECUTIVE_ERRORS} consecutive errors`,
@@ -668,7 +669,8 @@ export class BackgroundAgentManager {
     }
 
     // Update session state
-    managed.session.state = reason === 'completed' ? 'completed' : reason === 'failed' ? 'failed' : 'stopped';
+    managed.session.state =
+      reason === 'completed' ? 'completed' : reason === 'failed' ? 'failed' : 'stopped';
     managed.session.stoppedAt = new Date();
 
     // Persist final session state

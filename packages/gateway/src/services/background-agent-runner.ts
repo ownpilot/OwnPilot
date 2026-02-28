@@ -19,12 +19,7 @@
  * - MCP tools
  */
 
-import {
-  Agent,
-  ToolRegistry,
-  registerAllTools,
-  getErrorMessage,
-} from '@ownpilot/core';
+import { Agent, ToolRegistry, registerAllTools, getErrorMessage } from '@ownpilot/core';
 import type {
   AIProvider,
   BackgroundAgentConfig,
@@ -36,11 +31,7 @@ import type {
 } from '@ownpilot/core';
 import { getLog } from './log.js';
 import { resolveForProcess } from './model-routing.js';
-import {
-  getProviderApiKey,
-  loadProviderConfig,
-  NATIVE_PROVIDERS,
-} from '../routes/agent-cache.js';
+import { getProviderApiKey, loadProviderConfig, NATIVE_PROVIDERS } from '../routes/agent-cache.js';
 import {
   registerGatewayTools,
   registerDynamicTools,
@@ -226,7 +217,9 @@ export class BackgroundAgentRunner {
       });
       systemPrompt = enhanced.prompt;
     } catch (err) {
-      log.debug(`[${this.config.id}] Enhanced prompt build failed, using base: ${getErrorMessage(err)}`);
+      log.debug(
+        `[${this.config.id}] Enhanced prompt build failed, using base: ${getErrorMessage(err)}`
+      );
     }
 
     // Use allowedTools filter if configured
@@ -267,7 +260,9 @@ export class BackgroundAgentRunner {
     const parts: string[] = [];
 
     parts.push(`You are a persistent background agent named "${this.config.name}".`);
-    parts.push('You run autonomously in cycles, working toward your mission without human intervention.');
+    parts.push(
+      'You run autonomously in cycles, working toward your mission without human intervention.'
+    );
     parts.push('');
     parts.push('## Your Mission');
     parts.push(this.config.mission);
@@ -278,7 +273,9 @@ export class BackgroundAgentRunner {
     parts.push('3. Store important findings in memory tools for future cycles.');
     parts.push('4. When your mission is fully complete, respond with "MISSION_COMPLETE".');
     parts.push('5. Keep responses concise — focus on actions and results.');
-    parts.push('6. You have access to ALL system tools: memories, goals, custom data, triggers, extensions, plugins, MCP, and more.');
+    parts.push(
+      '6. You have access to ALL system tools: memories, goals, custom data, triggers, extensions, plugins, MCP, and more.'
+    );
     parts.push('7. Be efficient — only call tools when needed, batch operations when possible.');
 
     if (this.config.stopCondition) {

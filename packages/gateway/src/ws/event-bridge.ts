@@ -12,7 +12,12 @@
  * - Session cleanup automatically unsubscribes all patterns
  */
 
-import { getEventSystem, type TypedEvent, type Unsubscribe, type EventCategory } from '@ownpilot/core';
+import {
+  getEventSystem,
+  type TypedEvent,
+  type Unsubscribe,
+  type EventCategory,
+} from '@ownpilot/core';
 import type { SessionManager } from './session.js';
 import { getLog } from '../services/log.js';
 

@@ -5,7 +5,13 @@
  * Used by the Pulse Engine (Autonomy) to reach out via Telegram and WebSocket.
  */
 
-import { type ToolDefinition, getEventSystem, getErrorMessage, getServiceRegistry, Services } from '@ownpilot/core';
+import {
+  type ToolDefinition,
+  getEventSystem,
+  getErrorMessage,
+  getServiceRegistry,
+  Services,
+} from '@ownpilot/core';
 import { getLog } from '../services/log.js';
 
 const log = getLog('NotificationTools');

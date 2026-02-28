@@ -377,9 +377,7 @@ export function SystemPage() {
                               <p className="text-xs text-text-muted dark:text-dark-text-muted truncate">
                                 {dep.description}
                                 {dep.tools.length > 0 && (
-                                  <span className="ml-1 opacity-70">
-                                    ({dep.tools.join(', ')})
-                                  </span>
+                                  <span className="ml-1 opacity-70">({dep.tools.join(', ')})</span>
                                 )}
                               </p>
                             </div>
@@ -406,9 +404,7 @@ export function SystemPage() {
                     <div className="flex items-start gap-3">
                       <AlertCircle className="w-5 h-5 text-warning shrink-0 mt-0.5" />
                       <div>
-                        <p className="font-medium text-warning">
-                          Some dependencies are missing
-                        </p>
+                        <p className="font-medium text-warning">Some dependencies are missing</p>
                         <p className="text-sm text-text-muted dark:text-dark-text-muted mt-1">
                           Missing npm packages can be installed with{' '}
                           <code className="bg-bg-tertiary dark:bg-dark-bg-tertiary px-1 rounded">

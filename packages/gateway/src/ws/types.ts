@@ -135,7 +135,12 @@ export interface ServerEvents {
   'channel:connected': { channel: Channel };
   'channel:disconnected': { channelId: string; reason?: string };
   'channel:qr': { channelId: string; qr: string };
-  'channel:status': { channelId: string; status: ChannelStatus; error?: string; botInfo?: { username?: string; firstName?: string } | null };
+  'channel:status': {
+    channelId: string;
+    status: ChannelStatus;
+    error?: string;
+    botInfo?: { username?: string; firstName?: string } | null;
+  };
   'channel:message': {
     id: string;
     channelId: string;
@@ -147,12 +152,35 @@ export interface ServerEvents {
   };
   'channel:message:sent': { channelId: string; messageId: string };
   'channel:message:error': { channelId: string; error: string };
-  'channel:user:pending': { channelId: string; platform: string; userId: string; platformUserId: string; displayName?: string };
-  'channel:user:approved': { channelId: string; platform: string; userId: string; platformUserId: string; displayName?: string };
+  'channel:user:pending': {
+    channelId: string;
+    platform: string;
+    userId: string;
+    platformUserId: string;
+    displayName?: string;
+  };
+  'channel:user:approved': {
+    channelId: string;
+    platform: string;
+    userId: string;
+    platformUserId: string;
+    displayName?: string;
+  };
   'channel:user:blocked': { channelId: string; platform: string; platformUserId: string };
   'channel:user:unblocked': { channelId: string; platform: string; platformUserId: string };
-  'channel:user:verified': { channelId: string; platform: string; platformUserId: string; ownpilotUserId: string; verificationMethod?: string };
-  'channel:user:first_seen': { channelId: string; platform: string; platformUserId: string; displayName?: string };
+  'channel:user:verified': {
+    channelId: string;
+    platform: string;
+    platformUserId: string;
+    ownpilotUserId: string;
+    verificationMethod?: string;
+  };
+  'channel:user:first_seen': {
+    channelId: string;
+    platform: string;
+    platformUserId: string;
+    displayName?: string;
+  };
 
   // Chat events
   'chat:message': { sessionId: string; message: AssistantMessage };

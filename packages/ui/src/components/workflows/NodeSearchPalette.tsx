@@ -4,7 +4,26 @@
  */
 
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { Search, X, Zap, Brain, GitBranch, Terminal, RefreshCw, Repeat, Globe, Clock, Shuffle, ShieldAlert, ShieldCheck, StickyNote, Bell, Columns, GitMerge, Wrench } from '../icons';
+import {
+  Search,
+  X,
+  Zap,
+  Brain,
+  GitBranch,
+  Terminal,
+  RefreshCw,
+  Repeat,
+  Globe,
+  Clock,
+  Shuffle,
+  ShieldAlert,
+  ShieldCheck,
+  StickyNote,
+  Bell,
+  Columns,
+  GitMerge,
+  Wrench,
+} from '../icons';
 
 export interface SearchableItem {
   type: 'node' | 'tool';
@@ -20,20 +39,92 @@ export interface SearchableItem {
 const NODE_ITEMS: SearchableItem[] = [
   { type: 'node', nodeType: 'triggerNode', label: 'Trigger', icon: Zap, color: 'text-violet-500' },
   { type: 'node', nodeType: 'llmNode', label: 'LLM', icon: Brain, color: 'text-indigo-500' },
-  { type: 'node', nodeType: 'conditionNode', label: 'If/Else Condition', icon: GitBranch, color: 'text-emerald-500' },
+  {
+    type: 'node',
+    nodeType: 'conditionNode',
+    label: 'If/Else Condition',
+    icon: GitBranch,
+    color: 'text-emerald-500',
+  },
   { type: 'node', nodeType: 'codeNode', label: 'Code', icon: Terminal, color: 'text-teal-500' },
-  { type: 'node', nodeType: 'transformerNode', label: 'Transform', icon: RefreshCw, color: 'text-amber-500' },
-  { type: 'node', nodeType: 'forEachNode', label: 'ForEach Loop', icon: Repeat, color: 'text-sky-500' },
-  { type: 'node', nodeType: 'httpRequestNode', label: 'HTTP Request', icon: Globe, color: 'text-orange-500' },
+  {
+    type: 'node',
+    nodeType: 'transformerNode',
+    label: 'Transform',
+    icon: RefreshCw,
+    color: 'text-amber-500',
+  },
+  {
+    type: 'node',
+    nodeType: 'forEachNode',
+    label: 'ForEach Loop',
+    icon: Repeat,
+    color: 'text-sky-500',
+  },
+  {
+    type: 'node',
+    nodeType: 'httpRequestNode',
+    label: 'HTTP Request',
+    icon: Globe,
+    color: 'text-orange-500',
+  },
   { type: 'node', nodeType: 'delayNode', label: 'Delay', icon: Clock, color: 'text-rose-500' },
-  { type: 'node', nodeType: 'switchNode', label: 'Switch', icon: Shuffle, color: 'text-fuchsia-500' },
-  { type: 'node', nodeType: 'errorHandlerNode', label: 'Error Handler', icon: ShieldAlert, color: 'text-red-500' },
-  { type: 'node', nodeType: 'subWorkflowNode', label: 'Sub-Workflow', icon: GitBranch, color: 'text-indigo-500' },
-  { type: 'node', nodeType: 'approvalNode', label: 'Approval Gate', icon: ShieldCheck, color: 'text-amber-500' },
-  { type: 'node', nodeType: 'stickyNoteNode', label: 'Sticky Note', icon: StickyNote, color: 'text-yellow-500' },
-  { type: 'node', nodeType: 'notificationNode', label: 'Notification', icon: Bell, color: 'text-purple-500' },
-  { type: 'node', nodeType: 'parallelNode', label: 'Parallel Branches', icon: Columns, color: 'text-teal-500' },
-  { type: 'node', nodeType: 'mergeNode', label: 'Merge / Wait', icon: GitMerge, color: 'text-teal-500' },
+  {
+    type: 'node',
+    nodeType: 'switchNode',
+    label: 'Switch',
+    icon: Shuffle,
+    color: 'text-fuchsia-500',
+  },
+  {
+    type: 'node',
+    nodeType: 'errorHandlerNode',
+    label: 'Error Handler',
+    icon: ShieldAlert,
+    color: 'text-red-500',
+  },
+  {
+    type: 'node',
+    nodeType: 'subWorkflowNode',
+    label: 'Sub-Workflow',
+    icon: GitBranch,
+    color: 'text-indigo-500',
+  },
+  {
+    type: 'node',
+    nodeType: 'approvalNode',
+    label: 'Approval Gate',
+    icon: ShieldCheck,
+    color: 'text-amber-500',
+  },
+  {
+    type: 'node',
+    nodeType: 'stickyNoteNode',
+    label: 'Sticky Note',
+    icon: StickyNote,
+    color: 'text-yellow-500',
+  },
+  {
+    type: 'node',
+    nodeType: 'notificationNode',
+    label: 'Notification',
+    icon: Bell,
+    color: 'text-purple-500',
+  },
+  {
+    type: 'node',
+    nodeType: 'parallelNode',
+    label: 'Parallel Branches',
+    icon: Columns,
+    color: 'text-teal-500',
+  },
+  {
+    type: 'node',
+    nodeType: 'mergeNode',
+    label: 'Merge / Wait',
+    icon: GitMerge,
+    color: 'text-teal-500',
+  },
 ];
 
 interface NodeSearchPaletteProps {
@@ -141,10 +232,7 @@ export function NodeSearchPalette({
   );
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-start justify-center pt-[15vh]"
-      onClick={onClose}
-    >
+    <div className="fixed inset-0 z-50 flex items-start justify-center pt-[15vh]" onClick={onClose}>
       {/* Backdrop */}
       <div className="absolute inset-0 bg-black/30" />
 

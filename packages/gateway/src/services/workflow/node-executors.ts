@@ -148,7 +148,12 @@ export async function executeLlmNode(
     // Resolve provider/model: empty or 'default' → user's configured defaults
     let effectiveProvider = data.provider;
     let effectiveModel = data.model;
-    if (!effectiveProvider || effectiveProvider === 'default' || !effectiveModel || effectiveModel === 'default') {
+    if (
+      !effectiveProvider ||
+      effectiveProvider === 'default' ||
+      !effectiveModel ||
+      effectiveModel === 'default'
+    ) {
       const resolved = await resolveProviderAndModel(
         effectiveProvider || 'default',
         effectiveModel || 'default'
@@ -217,7 +222,11 @@ export async function executeLlmNode(
       nodeId: node.id,
       status: 'success',
       output: result.value.content,
-      resolvedArgs: { provider: effectiveProvider, model: effectiveModel, userMessage: resolvedMessage },
+      resolvedArgs: {
+        provider: effectiveProvider,
+        model: effectiveModel,
+        userMessage: resolvedMessage,
+      },
       durationMs: Date.now() - startTime,
       startedAt: new Date(startTime).toISOString(),
       completedAt: new Date().toISOString(),
@@ -676,15 +685,17 @@ export function executeNotificationNode(
       ._msg as string;
 
     // Lazy-import wsGateway to avoid circular deps
-    import('../../ws/server.js').then(({ wsGateway }) => {
-      wsGateway.broadcast('system:notification', {
-        type: severity as 'info' | 'warning' | 'error' | 'success',
-        message: resolvedMsg,
-        source: 'workflow',
+    import('../../ws/server.js')
+      .then(({ wsGateway }) => {
+        wsGateway.broadcast('system:notification', {
+          type: severity as 'info' | 'warning' | 'error' | 'success',
+          message: resolvedMsg,
+          source: 'workflow',
+        });
+      })
+      .catch(() => {
+        _log.warn(`Notification node ${node.id}: failed to broadcast via WebSocket`);
       });
-    }).catch(() => {
-      _log.warn(`Notification node ${node.id}: failed to broadcast via WebSocket`);
-    });
 
     return {
       nodeId: node.id,
@@ -730,9 +741,10 @@ export function executeMergeNode(
       }
     }
 
-    const output = mode === 'waitAll'
-      ? { mode, results: collected, count: Object.keys(collected).length }
-      : { mode, results: collected, count: Object.keys(collected).length };
+    const output =
+      mode === 'waitAll'
+        ? { mode, results: collected, count: Object.keys(collected).length }
+        : { mode, results: collected, count: Object.keys(collected).length };
 
     return {
       nodeId: node.id,
@@ -789,7 +801,11 @@ export function executeSwitchNode(
       status: 'success',
       output: result,
       branchTaken,
-      resolvedArgs: { expression: resolvedExpr, evaluatedValue: resultStr, matchedCase: branchTaken },
+      resolvedArgs: {
+        expression: resolvedExpr,
+        evaluatedValue: resultStr,
+        matchedCase: branchTaken,
+      },
       durationMs: Date.now() - startTime,
       startedAt: new Date(startTime).toISOString(),
       completedAt: new Date().toISOString(),

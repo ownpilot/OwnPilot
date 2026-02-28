@@ -190,9 +190,7 @@ function buildExtensionSections(ctx: { get<T>(key: string): T | undefined }): st
 function buildToolSuggestionSection(routing: RequestRouting | undefined): string {
   if (!routing?.suggestedTools?.length) return '';
 
-  const lines = routing.suggestedTools.map(
-    (t) => `- ${t.name}${t.brief ? `: ${t.brief}` : ''}`
-  );
+  const lines = routing.suggestedTools.map((t) => `- ${t.name}${t.brief ? `: ${t.brief}` : ''}`);
 
   return (
     '\n\n## Suggested Tools\n' +

@@ -61,8 +61,7 @@ export function buildWhatsAppChannelPlugin() {
           properties: {
             phone_number: {
               type: 'string',
-              description:
-                'Recipient phone number in international format (e.g. 14155551234)',
+              description: 'Recipient phone number in international format (e.g. 14155551234)',
             },
             text: {
               type: 'string',

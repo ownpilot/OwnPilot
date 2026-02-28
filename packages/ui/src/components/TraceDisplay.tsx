@@ -195,23 +195,24 @@ export function TraceDisplay({ trace }: TraceDisplayProps) {
                   )}
 
                   {/* MCP servers */}
-                  {trace.routing.relevantMcpServers && trace.routing.relevantMcpServers.length > 0 && (
-                    <div>
-                      <div className="text-xs text-text-muted dark:text-dark-text-muted mb-1">
-                        MCP Servers:
+                  {trace.routing.relevantMcpServers &&
+                    trace.routing.relevantMcpServers.length > 0 && (
+                      <div>
+                        <div className="text-xs text-text-muted dark:text-dark-text-muted mb-1">
+                          MCP Servers:
+                        </div>
+                        <div className="flex flex-wrap gap-1">
+                          {trace.routing.relevantMcpServers.map((server) => (
+                            <span
+                              key={server}
+                              className="px-2 py-0.5 text-xs bg-orange-500/10 text-orange-600 dark:text-orange-400 rounded"
+                            >
+                              {server}
+                            </span>
+                          ))}
+                        </div>
                       </div>
-                      <div className="flex flex-wrap gap-1">
-                        {trace.routing.relevantMcpServers.map((server) => (
-                          <span
-                            key={server}
-                            className="px-2 py-0.5 text-xs bg-orange-500/10 text-orange-600 dark:text-orange-400 rounded"
-                          >
-                            {server}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
+                    )}
 
                   {/* Categories + confidence */}
                   <div className="flex flex-wrap gap-2">

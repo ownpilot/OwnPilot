@@ -404,10 +404,7 @@ export function ExtensionDetailModal({
                         </span>
                         <ul className="mt-1 space-y-1">
                           {security.warnings.map((w, i) => (
-                            <li
-                              key={i}
-                              className="flex items-start gap-1.5 text-xs text-warning"
-                            >
+                            <li key={i} className="flex items-start gap-1.5 text-xs text-warning">
                               <AlertTriangle className="w-3 h-3 mt-0.5 shrink-0" />
                               {w}
                             </li>
@@ -432,13 +429,12 @@ export function ExtensionDetailModal({
                         </div>
                       </div>
                     )}
-                    {security.warnings?.length === 0 &&
-                      security.undeclaredTools?.length === 0 && (
-                        <div className="flex items-center gap-1.5 text-xs text-success">
-                          <CheckCircle2 className="w-3.5 h-3.5" />
-                          No security issues detected
-                        </div>
-                      )}
+                    {security.warnings?.length === 0 && security.undeclaredTools?.length === 0 && (
+                      <div className="flex items-center gap-1.5 text-xs text-success">
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        No security issues detected
+                      </div>
+                    )}
                     {security.auditedAt && (
                       <p className="text-xs text-text-muted dark:text-dark-text-muted">
                         Audited {new Date(security.auditedAt).toLocaleDateString()}
@@ -648,15 +644,9 @@ function AuditResultView({ result }: { result: ExtensionAuditResult }) {
           >
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
-                {llm.verdict === 'safe' && (
-                  <CheckCircle2 className="w-5 h-5 text-success" />
-                )}
-                {llm.verdict === 'caution' && (
-                  <AlertTriangle className="w-5 h-5 text-warning" />
-                )}
-                {llm.verdict === 'unsafe' && (
-                  <AlertCircle className="w-5 h-5 text-error" />
-                )}
+                {llm.verdict === 'safe' && <CheckCircle2 className="w-5 h-5 text-success" />}
+                {llm.verdict === 'caution' && <AlertTriangle className="w-5 h-5 text-warning" />}
+                {llm.verdict === 'unsafe' && <AlertCircle className="w-5 h-5 text-error" />}
                 <span
                   className={`text-sm font-semibold ${VERDICT_STYLE[llm.verdict]?.color ?? ''}`}
                 >
@@ -690,9 +680,7 @@ function AuditResultView({ result }: { result: ExtensionAuditResult }) {
             {llm.capabilities.length > 0 && (
               <DetailList title="Capabilities" items={llm.capabilities} />
             )}
-            {llm.dataAccess.length > 0 && (
-              <DetailList title="Data Access" items={llm.dataAccess} />
-            )}
+            {llm.dataAccess.length > 0 && <DetailList title="Data Access" items={llm.dataAccess} />}
             {llm.externalCommunication.length > 0 && (
               <DetailList title="External Communication" items={llm.externalCommunication} />
             )}
@@ -706,12 +694,9 @@ function AuditResultView({ result }: { result: ExtensionAuditResult }) {
               </span>
               <div className="mt-2 space-y-2">
                 {llm.risks.map((risk, i) => (
-                  <div
-                    key={i}
-                    className="p-3 bg-bg-tertiary dark:bg-dark-bg-tertiary rounded-lg"
-                  >
+                  <div key={i} className="p-3 bg-bg-tertiary dark:bg-dark-bg-tertiary rounded-lg">
                     <div className="flex items-start gap-2">
-                      {(risk.severity === 'critical' || risk.severity === 'high') ? (
+                      {risk.severity === 'critical' || risk.severity === 'high' ? (
                         <AlertCircle className="w-4 h-4 text-error shrink-0 mt-0.5" />
                       ) : (
                         <AlertTriangle className="w-4 h-4 text-warning shrink-0 mt-0.5" />

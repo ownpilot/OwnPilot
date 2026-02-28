@@ -10,7 +10,11 @@ import type { WorkflowVersion } from '../../api/types';
 
 interface WorkflowVersionsPanelProps {
   workflowId: string;
-  onRestore: (workflow: { nodes: unknown[]; edges: unknown[]; variables: Record<string, unknown> }) => void;
+  onRestore: (workflow: {
+    nodes: unknown[];
+    edges: unknown[];
+    variables: Record<string, unknown>;
+  }) => void;
   onClose: () => void;
   className?: string;
 }
@@ -106,9 +110,7 @@ export function WorkflowVersionsPanel({
             Version History
           </h3>
           {total > 0 && (
-            <span className="text-[10px] text-text-muted dark:text-dark-text-muted">
-              ({total})
-            </span>
+            <span className="text-[10px] text-text-muted dark:text-dark-text-muted">({total})</span>
           )}
         </div>
         <button

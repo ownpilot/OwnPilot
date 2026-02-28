@@ -112,17 +112,105 @@ const FALLBACK_TOP_N = 2;
 
 /** Common stop words to filter from message tokenization */
 const STOP_WORDS = new Set([
-  'a', 'an', 'the', 'is', 'are', 'was', 'were', 'be', 'been', 'being',
-  'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could',
-  'should', 'may', 'might', 'shall', 'can', 'need', 'must',
-  'i', 'me', 'my', 'we', 'our', 'you', 'your', 'he', 'she', 'it', 'they',
-  'this', 'that', 'these', 'those', 'what', 'which', 'who', 'whom',
-  'and', 'or', 'but', 'if', 'then', 'so', 'because', 'as', 'of', 'at',
-  'by', 'for', 'with', 'about', 'to', 'from', 'in', 'on', 'not', 'no',
-  'up', 'out', 'just', 'also', 'very', 'too', 'how', 'all', 'any',
-  'both', 'each', 'more', 'most', 'other', 'some', 'such', 'only',
-  'than', 'when', 'where', 'why', 'here', 'there', 'please', 'thanks',
-  'hi', 'hey', 'hello', 'ok', 'okay', 'sure', 'yes', 'no', 'yeah',
+  'a',
+  'an',
+  'the',
+  'is',
+  'are',
+  'was',
+  'were',
+  'be',
+  'been',
+  'being',
+  'have',
+  'has',
+  'had',
+  'do',
+  'does',
+  'did',
+  'will',
+  'would',
+  'could',
+  'should',
+  'may',
+  'might',
+  'shall',
+  'can',
+  'need',
+  'must',
+  'i',
+  'me',
+  'my',
+  'we',
+  'our',
+  'you',
+  'your',
+  'he',
+  'she',
+  'it',
+  'they',
+  'this',
+  'that',
+  'these',
+  'those',
+  'what',
+  'which',
+  'who',
+  'whom',
+  'and',
+  'or',
+  'but',
+  'if',
+  'then',
+  'so',
+  'because',
+  'as',
+  'of',
+  'at',
+  'by',
+  'for',
+  'with',
+  'about',
+  'to',
+  'from',
+  'in',
+  'on',
+  'not',
+  'no',
+  'up',
+  'out',
+  'just',
+  'also',
+  'very',
+  'too',
+  'how',
+  'all',
+  'any',
+  'both',
+  'each',
+  'more',
+  'most',
+  'other',
+  'some',
+  'such',
+  'only',
+  'than',
+  'when',
+  'where',
+  'why',
+  'here',
+  'there',
+  'please',
+  'thanks',
+  'hi',
+  'hey',
+  'hello',
+  'ok',
+  'okay',
+  'sure',
+  'yes',
+  'no',
+  'yeah',
 ]);
 
 /** Category hint templates */
@@ -191,7 +279,10 @@ export function buildToolTagIndex(): Map<string, Set<string>> {
   for (const [toolName, tags] of Object.entries(TOOL_SEARCH_TAGS)) {
     for (const tag of tags) {
       // Split multi-word tags (e.g., "read mail" → "read", "mail")
-      const words = tag.toLowerCase().split(/\s+/).filter((w) => w.length > 1);
+      const words = tag
+        .toLowerCase()
+        .split(/\s+/)
+        .filter((w) => w.length > 1);
       for (const word of words) {
         let toolSet = index.get(word);
         if (!toolSet) {
@@ -232,9 +323,7 @@ function buildToolBriefs(): Map<string, string> {
         ? definition.name.split('.').pop()!
         : definition.name;
       const brief =
-        definition.brief ??
-        definition.description.split(/[.!?]\s/)[0]?.slice(0, 80) ??
-        '';
+        definition.brief ?? definition.description.split(/[.!?]\s/)[0]?.slice(0, 80) ?? '';
       if (brief) briefs.set(baseName, brief);
     }
   } catch {
@@ -281,7 +370,9 @@ async function buildCustomDataIndex(): Promise<CustomTableEntry[]> {
  */
 function buildMcpIndex(): McpServerEntry[] {
   try {
-    const mcpService = getServiceRegistry().get(Services.McpClient) as IMcpClientService | undefined;
+    const mcpService = getServiceRegistry().get(Services.McpClient) as
+      | IMcpClientService
+      | undefined;
     if (!mcpService) return [];
 
     const status = mcpService.getStatus();
@@ -474,10 +565,7 @@ function matchTools(
 /**
  * Match user message keywords against custom data tables.
  */
-function matchTables(
-  messageWords: Set<string>,
-  customTables: CustomTableEntry[]
-): string[] {
+function matchTables(messageWords: Set<string>, customTables: CustomTableEntry[]): string[] {
   if (messageWords.size < 2 || customTables.length === 0) return [];
 
   const scored: Array<{ displayName: string; score: number }> = [];
@@ -499,10 +587,7 @@ function matchTables(
 /**
  * Match user message keywords against MCP servers.
  */
-function matchMcpServers(
-  messageWords: Set<string>,
-  mcpServers: McpServerEntry[]
-): string[] {
+function matchMcpServers(messageWords: Set<string>, mcpServers: McpServerEntry[]): string[] {
   if (messageWords.size < 2 || mcpServers.length === 0) return [];
 
   const matched: string[] = [];
@@ -647,7 +732,10 @@ export function createRequestPreprocessorMiddleware(): MessageMiddleware {
       ctx.set('routing', routing);
 
       const parts: string[] = [];
-      if (routing.relevantExtensionIds.length < index.extensions.length && index.extensions.length > 0) {
+      if (
+        routing.relevantExtensionIds.length < index.extensions.length &&
+        index.extensions.length > 0
+      ) {
         parts.push(`${routing.relevantExtensionIds.length}/${index.extensions.length} ext`);
       }
       if (routing.suggestedTools.length > 0) {
@@ -660,7 +748,9 @@ export function createRequestPreprocessorMiddleware(): MessageMiddleware {
         parts.push(`${routing.relevantMcpServers.length} mcp`);
       }
       if (parts.length > 0) {
-        log.debug(`Preprocessor: ${parts.join(', ')}${routing.intentHint ? ` — ${routing.intentHint}` : ''}`);
+        log.debug(
+          `Preprocessor: ${parts.join(', ')}${routing.intentHint ? ` — ${routing.intentHint}` : ''}`
+        );
       }
     } catch (error) {
       // Preprocessing failure should never block the pipeline

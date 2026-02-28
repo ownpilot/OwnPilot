@@ -248,10 +248,30 @@ healthRoutes.get('/tool-dependencies', async (c) => {
 
   // Also check external CLI tools
   const cliTools = [
-    { name: 'ffmpeg', category: 'Audio', tools: ['split_audio'], description: 'Audio splitting and processing' },
-    { name: 'claude', category: 'Coding Agents', tools: ['run_coding_task'], description: 'Claude Code CLI' },
-    { name: 'codex', category: 'Coding Agents', tools: ['run_coding_task'], description: 'OpenAI Codex CLI' },
-    { name: 'gemini', category: 'Coding Agents', tools: ['run_coding_task'], description: 'Google Gemini CLI' },
+    {
+      name: 'ffmpeg',
+      category: 'Audio',
+      tools: ['split_audio'],
+      description: 'Audio splitting and processing',
+    },
+    {
+      name: 'claude',
+      category: 'Coding Agents',
+      tools: ['run_coding_task'],
+      description: 'Claude Code CLI',
+    },
+    {
+      name: 'codex',
+      category: 'Coding Agents',
+      tools: ['run_coding_task'],
+      description: 'OpenAI Codex CLI',
+    },
+    {
+      name: 'gemini',
+      category: 'Coding Agents',
+      tools: ['run_coding_task'],
+      description: 'Google Gemini CLI',
+    },
   ];
 
   const { execFile } = await import('node:child_process');

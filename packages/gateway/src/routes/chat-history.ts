@@ -79,8 +79,8 @@ chatHistoryRoutes.get('/history', async (c) => {
         createdAt: conv.createdAt.toISOString(),
         updatedAt: conv.updatedAt.toISOString(),
         source,
-        channelPlatform: source === 'channel' ? (meta.platform as string) ?? null : null,
-        channelSenderName: source === 'channel' ? (meta.displayName as string) ?? null : null,
+        channelPlatform: source === 'channel' ? ((meta.platform as string) ?? null) : null,
+        channelSenderName: source === 'channel' ? ((meta.displayName as string) ?? null) : null,
       };
     }),
     total: conversations.length,
@@ -372,9 +372,10 @@ chatHistoryRoutes.get('/history/:id/unified', async (c) => {
         // Check if a channel message exists at roughly the same time
         const msgTime = msg.createdAt.getTime();
         const hasChannelEquivalent = channelMessages.some(
-          (cm) => Math.abs(cm.createdAt.getTime() - msgTime) < 2000
-            && ((cm.direction === 'inbound' && msg.role === 'user')
-                || (cm.direction === 'outbound' && msg.role === 'assistant'))
+          (cm) =>
+            Math.abs(cm.createdAt.getTime() - msgTime) < 2000 &&
+            ((cm.direction === 'inbound' && msg.role === 'user') ||
+              (cm.direction === 'outbound' && msg.role === 'assistant'))
         );
         if (hasChannelEquivalent) continue;
       }
@@ -449,11 +450,7 @@ chatHistoryRoutes.post('/history/:conversationId/channel-reply', async (c) => {
   const body = await parseJsonBody<{ text: string }>(c);
 
   if (!body?.text?.trim()) {
-    return apiError(
-      c,
-      { code: ERROR_CODES.INVALID_INPUT, message: 'text is required' },
-      400
-    );
+    return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'text is required' }, 400);
   }
 
   try {

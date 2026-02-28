@@ -398,7 +398,15 @@ function WorkflowCard({
 // Log Entry
 // ============================================================================
 
-function LogEntry({ log, onNavigate, onViewLog }: { log: WorkflowLog; onNavigate: (id: string) => void; onViewLog: (logId: string) => void }) {
+function LogEntry({
+  log,
+  onNavigate,
+  onViewLog,
+}: {
+  log: WorkflowLog;
+  onNavigate: (id: string) => void;
+  onViewLog: (logId: string) => void;
+}) {
   const StatusIcon = logStatusIcons[log.status] || Activity;
 
   return (
@@ -410,7 +418,10 @@ function LogEntry({ log, onNavigate, onViewLog }: { log: WorkflowLog; onNavigate
       <div className="flex-1 min-w-0">
         <span
           className={`font-medium text-sm text-text-primary dark:text-dark-text-primary ${log.workflowId ? 'cursor-pointer hover:text-primary' : ''}`}
-          onClick={(e) => { e.stopPropagation(); log.workflowId && onNavigate(log.workflowId); }}
+          onClick={(e) => {
+            e.stopPropagation();
+            log.workflowId && onNavigate(log.workflowId);
+          }}
         >
           {log.workflowName ?? 'Deleted Workflow'}
         </span>

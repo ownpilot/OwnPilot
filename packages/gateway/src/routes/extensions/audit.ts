@@ -116,12 +116,7 @@ auditRoutes.post('/audit-manifest', async (c) => {
   const staticAnalysis = auditSkillSecurity(body.manifest);
 
   // Run LLM analysis
-  const llmAnalysis = await runLlmAudit(
-    body.manifest,
-    staticAnalysis,
-    body.provider,
-    body.model
-  );
+  const llmAnalysis = await runLlmAudit(body.manifest, staticAnalysis, body.provider, body.model);
 
   return apiResponse(c, {
     extensionId: body.manifest.id,
@@ -170,9 +165,7 @@ async function runLlmAudit(
 
     // 3. Create provider instance
     const providerConfig = coreGetProviderConfig(resolved.provider);
-    const providerType = NATIVE_PROVIDERS.has(resolved.provider)
-      ? resolved.provider
-      : 'openai';
+    const providerType = NATIVE_PROVIDERS.has(resolved.provider) ? resolved.provider : 'openai';
 
     const providerInstance = createProvider({
       provider: providerType as AIProvider,

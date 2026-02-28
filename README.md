@@ -455,15 +455,15 @@ Modern web interface built with React 19, Vite 7, and Tailwind CSS 4. Minimal de
 
 Multi-platform messaging with Telegram and WhatsApp support. Channel plugins use a builder pattern with unified conversation tracking through the MessageBus pipeline.
 
-| Feature                 | Details                                                                  |
-| ----------------------- | ------------------------------------------------------------------------ |
-| **Telegram**            | Grammy bot with long polling or webhook mode, user/chat filtering        |
-| **WhatsApp (Baileys)**  | QR code auth (no Meta Business account), self-chat mode, session persistence |
-| **User Approval**       | Multi-step verification: approval code, manual admin approval, blocking  |
-| **Message Splitting**   | Intelligent splitting at newlines/spaces for messages > 4096 chars       |
-| **Soft/Hard Disconnect**| `disconnect()` preserves session; `logout()` clears session data         |
-| **Event Integration**   | Channel events forwarded via EventBus → WebSocket for real-time UI       |
-| **Channel Manager**     | Orchestrates multiple channels, routes messages through the MessageBus   |
+| Feature                  | Details                                                                      |
+| ------------------------ | ---------------------------------------------------------------------------- |
+| **Telegram**             | Grammy bot with long polling or webhook mode, user/chat filtering            |
+| **WhatsApp (Baileys)**   | QR code auth (no Meta Business account), self-chat mode, session persistence |
+| **User Approval**        | Multi-step verification: approval code, manual admin approval, blocking      |
+| **Message Splitting**    | Intelligent splitting at newlines/spaces for messages > 4096 chars           |
+| **Soft/Hard Disconnect** | `disconnect()` preserves session; `logout()` clears session data             |
+| **Event Integration**    | Channel events forwarded via EventBus → WebSocket for real-time UI           |
+| **Channel Manager**      | Orchestrates multiple channels, routes messages through the MessageBus       |
 
 ### CLI (`@ownpilot/cli`)
 
@@ -617,11 +617,11 @@ Persistent autonomous agents that run independently from user chat sessions.
 
 ### Lifecycle
 
-| State     | Description                                    |
-| --------- | ---------------------------------------------- |
-| `running` | Agent is actively executing cycles             |
-| `paused`  | Agent is paused, can be resumed                |
-| `stopped` | Agent has been terminated                      |
+| State     | Description                                                         |
+| --------- | ------------------------------------------------------------------- |
+| `running` | Agent is actively executing cycles                                  |
+| `paused`  | Agent is paused, can be resumed                                     |
+| `stopped` | Agent has been terminated                                           |
 | `error`   | Agent encountered an error (auto-pauses after 5 consecutive errors) |
 
 ### Features
@@ -1078,19 +1078,19 @@ Sliding window algorithm with configurable window (default 60s), max requests (d
 
 ### Background Agents
 
-| Method   | Endpoint                              | Description                    |
-| -------- | ------------------------------------- | ------------------------------ |
-| `GET`    | `/api/v1/background-agents`           | List all background agents     |
-| `POST`   | `/api/v1/background-agents`           | Create a new background agent  |
-| `GET`    | `/api/v1/background-agents/:id`       | Get agent details + session    |
-| `PATCH`  | `/api/v1/background-agents/:id`       | Update agent config            |
-| `DELETE` | `/api/v1/background-agents/:id`       | Delete agent                   |
-| `POST`   | `/api/v1/background-agents/:id/start` | Start agent                    |
-| `POST`   | `/api/v1/background-agents/:id/pause` | Pause agent                    |
-| `POST`   | `/api/v1/background-agents/:id/resume`| Resume paused agent            |
-| `POST`   | `/api/v1/background-agents/:id/stop`  | Stop agent                     |
-| `GET`    | `/api/v1/background-agents/:id/history` | Paginated cycle history      |
-| `POST`   | `/api/v1/background-agents/:id/message` | Send message to agent inbox  |
+| Method   | Endpoint                                | Description                   |
+| -------- | --------------------------------------- | ----------------------------- |
+| `GET`    | `/api/v1/background-agents`             | List all background agents    |
+| `POST`   | `/api/v1/background-agents`             | Create a new background agent |
+| `GET`    | `/api/v1/background-agents/:id`         | Get agent details + session   |
+| `PATCH`  | `/api/v1/background-agents/:id`         | Update agent config           |
+| `DELETE` | `/api/v1/background-agents/:id`         | Delete agent                  |
+| `POST`   | `/api/v1/background-agents/:id/start`   | Start agent                   |
+| `POST`   | `/api/v1/background-agents/:id/pause`   | Pause agent                   |
+| `POST`   | `/api/v1/background-agents/:id/resume`  | Resume paused agent           |
+| `POST`   | `/api/v1/background-agents/:id/stop`    | Stop agent                    |
+| `GET`    | `/api/v1/background-agents/:id/history` | Paginated cycle history       |
+| `POST`   | `/api/v1/background-agents/:id/message` | Send message to agent inbox   |
 
 ### CLI Tools
 

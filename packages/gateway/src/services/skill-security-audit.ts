@@ -318,7 +318,9 @@ export function buildLlmAuditPrompt(
       }
       return entry;
     });
-    sections.push(`## Tool Definitions (${manifest.tools.length} tools)\n${toolSections.join('\n\n')}`);
+    sections.push(
+      `## Tool Definitions (${manifest.tools.length} tools)\n${toolSections.join('\n\n')}`
+    );
   }
 
   // -- Triggers --
@@ -331,9 +333,7 @@ export function buildLlmAuditPrompt(
 
   // -- Script paths --
   if (manifest.script_paths && manifest.script_paths.length > 0) {
-    sections.push(
-      `## Bundled Scripts\n${manifest.script_paths.map((p) => `- ${p}`).join('\n')}`
-    );
+    sections.push(`## Bundled Scripts\n${manifest.script_paths.map((p) => `- ${p}`).join('\n')}`);
   }
 
   // -- Static analysis results --
@@ -415,7 +415,8 @@ export function parseLlmAuditResponse(content: string): SkillLlmAuditResult {
           mitigation: typeof r.mitigation === 'string' ? r.mitigation : undefined,
         }))
       : [],
-    trustScore: typeof parsed.trustScore === 'number' ? Math.max(0, Math.min(100, parsed.trustScore)) : 50,
+    trustScore:
+      typeof parsed.trustScore === 'number' ? Math.max(0, Math.min(100, parsed.trustScore)) : 50,
     verdict: ['safe', 'caution', 'unsafe'].includes(parsed.verdict) ? parsed.verdict : 'caution',
     reasoning: typeof parsed.reasoning === 'string' ? parsed.reasoning : 'No reasoning provided.',
   };

@@ -20,11 +20,7 @@ const INPUT_CLS =
 const SELECT_CLS =
   'w-full px-3 py-1.5 text-sm bg-bg-primary dark:bg-dark-bg-primary border border-border dark:border-dark-border rounded-md text-text-primary dark:text-dark-text-primary focus:outline-none focus:ring-1 focus:ring-primary';
 
-export function InputParametersPanel({
-  parameters,
-  onChange,
-  onClose,
-}: InputParametersPanelProps) {
+export function InputParametersPanel({ parameters, onChange, onClose }: InputParametersPanelProps) {
   const handleAddParameter = () => {
     const newParam: InputParameter = {
       name: '',
@@ -110,9 +106,7 @@ export function InputParametersPanel({
                         <input
                           type="text"
                           value={param.name}
-                          onChange={(e) =>
-                            handleUpdateParameter(index, 'name', e.target.value)
-                          }
+                          onChange={(e) => handleUpdateParameter(index, 'name', e.target.value)}
                           placeholder="paramName"
                           className={INPUT_CLS}
                         />
@@ -125,9 +119,7 @@ export function InputParametersPanel({
                         </label>
                         <select
                           value={param.type}
-                          onChange={(e) =>
-                            handleUpdateParameter(index, 'type', e.target.value)
-                          }
+                          onChange={(e) => handleUpdateParameter(index, 'type', e.target.value)}
                           className={SELECT_CLS}
                         >
                           <option value="string">String</option>
@@ -146,11 +138,7 @@ export function InputParametersPanel({
                           type="text"
                           value={param.defaultValue || ''}
                           onChange={(e) =>
-                            handleUpdateParameter(
-                              index,
-                              'defaultValue',
-                              e.target.value
-                            )
+                            handleUpdateParameter(index, 'defaultValue', e.target.value)
                           }
                           placeholder="Optional"
                           className={INPUT_CLS}
@@ -164,11 +152,7 @@ export function InputParametersPanel({
                             type="checkbox"
                             checked={param.required}
                             onChange={(e) =>
-                              handleUpdateParameter(
-                                index,
-                                'required',
-                                e.target.checked
-                              )
+                              handleUpdateParameter(index, 'required', e.target.checked)
                             }
                             className="w-4 h-4 text-primary border-border dark:border-dark-border rounded focus:ring-1 focus:ring-primary"
                           />
@@ -187,11 +171,7 @@ export function InputParametersPanel({
                           type="text"
                           value={param.description || ''}
                           onChange={(e) =>
-                            handleUpdateParameter(
-                              index,
-                              'description',
-                              e.target.value
-                            )
+                            handleUpdateParameter(index, 'description', e.target.value)
                           }
                           placeholder="Optional description"
                           className={INPUT_CLS}

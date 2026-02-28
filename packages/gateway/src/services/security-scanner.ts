@@ -334,9 +334,7 @@ function assessTriggerRisk(trigger: Trigger): { score: number; risks: string[] }
 // WORKFLOWS SCANNER
 // =============================================================================
 
-export async function scanWorkflows(
-  userId: string
-): Promise<SectionScanResult<WorkflowScanItem>> {
+export async function scanWorkflows(userId: string): Promise<SectionScanResult<WorkflowScanItem>> {
   const repo = createWorkflowsRepository(userId);
   const workflows = await repo.getPage(100, 0);
 
@@ -423,9 +421,7 @@ function assessNodeRisk(node: WorkflowNode): number {
 // CLI TOOLS POLICY SCANNER
 // =============================================================================
 
-export async function scanCliPolicies(
-  userId: string
-): Promise<SectionScanResult<CliToolScanItem>> {
+export async function scanCliPolicies(userId: string): Promise<SectionScanResult<CliToolScanItem>> {
   const userPolicies = await cliToolPoliciesRepo.listPolicies(userId);
   const policyMap = new Map(userPolicies.map((p) => [p.toolName, p.policy]));
 

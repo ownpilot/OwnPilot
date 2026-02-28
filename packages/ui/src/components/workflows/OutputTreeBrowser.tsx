@@ -32,7 +32,11 @@ const OUTPUT_HINTS: Record<string, { type: string; description: string; fields?:
   delay: { type: 'string', description: 'Delay completion timestamp' },
   sub_workflow: { type: 'object', description: 'Sub-workflow final outputs' },
   notification: { type: 'object', description: 'Notification delivery result' },
-  approval: { type: 'object', description: 'Approval decision', fields: ['approved', 'approvedBy', 'approvedAt'] },
+  approval: {
+    type: 'object',
+    description: 'Approval decision',
+    fields: ['approved', 'approvedBy', 'approvedAt'],
+  },
 };
 
 export function OutputTreeBrowser({ upstreamNodes, onInsert }: OutputTreeBrowserProps) {

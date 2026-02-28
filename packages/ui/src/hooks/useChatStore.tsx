@@ -7,7 +7,14 @@
  */
 
 import { createContext, useContext, useRef, useState, useCallback, type ReactNode } from 'react';
-import type { Message, MessageAttachment, ChatResponse, ApiResponse, SessionInfo, TraceInfo } from '../types';
+import type {
+  Message,
+  MessageAttachment,
+  ChatResponse,
+  ApiResponse,
+  SessionInfo,
+  TraceInfo,
+} from '../types';
 import type { ApprovalRequest } from '../api';
 import { executionPermissionsApi, memoriesApi } from '../api';
 import { parseSSELine } from '../utils/sse-parser';

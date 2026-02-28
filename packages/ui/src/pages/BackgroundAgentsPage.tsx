@@ -93,18 +93,15 @@ export function BackgroundAgentsPage() {
     }
   }, [toast]);
 
-  const loadHistory = useCallback(
-    async (agentId: string) => {
-      try {
-        const data = await backgroundAgentsApi.getHistory(agentId, 20, 0);
-        setHistory(data.entries);
-        setHistoryTotal(data.total);
-      } catch {
-        setHistory([]);
-      }
-    },
-    []
-  );
+  const loadHistory = useCallback(async (agentId: string) => {
+    try {
+      const data = await backgroundAgentsApi.getHistory(agentId, 20, 0);
+      setHistory(data.entries);
+      setHistoryTotal(data.total);
+    } catch {
+      setHistory([]);
+    }
+  }, []);
 
   useEffect(() => {
     loadAgents();
@@ -339,10 +336,7 @@ export function BackgroundAgentsPage() {
 
       {/* Create Dialog */}
       {showCreateDialog && (
-        <CreateAgentDialog
-          onClose={() => setShowCreateDialog(false)}
-          onCreate={handleCreate}
-        />
+        <CreateAgentDialog onClose={() => setShowCreateDialog(false)} onCreate={handleCreate} />
       )}
     </div>
   );
@@ -421,36 +415,55 @@ function AgentDetail({
             )}
             {agent.provider && (
               <span className="text-xs text-text-muted px-1.5 py-0.5 rounded bg-surface-hover">
-                {agent.provider}{agent.model ? ` / ${agent.model}` : ''}
+                {agent.provider}
+                {agent.model ? ` / ${agent.model}` : ''}
               </span>
             )}
-            <span className="text-xs text-text-muted">
-              by {agent.createdBy}
-            </span>
+            <span className="text-xs text-text-muted">by {agent.createdBy}</span>
           </div>
         </div>
         <div className="flex items-center gap-1">
           {!isActive && s?.state !== 'paused' && (
-            <button onClick={onStart} className="p-1.5 rounded hover:bg-green-500/10 text-green-500" title="Start">
+            <button
+              onClick={onStart}
+              className="p-1.5 rounded hover:bg-green-500/10 text-green-500"
+              title="Start"
+            >
               <Play className="w-4 h-4" />
             </button>
           )}
           {isActive && (
-            <button onClick={onPause} className="p-1.5 rounded hover:bg-blue-500/10 text-blue-500" title="Pause">
+            <button
+              onClick={onPause}
+              className="p-1.5 rounded hover:bg-blue-500/10 text-blue-500"
+              title="Pause"
+            >
               <Pause className="w-4 h-4" />
             </button>
           )}
           {s?.state === 'paused' && (
-            <button onClick={onResume} className="p-1.5 rounded hover:bg-green-500/10 text-green-500" title="Resume">
+            <button
+              onClick={onResume}
+              className="p-1.5 rounded hover:bg-green-500/10 text-green-500"
+              title="Resume"
+            >
               <Play className="w-4 h-4" />
             </button>
           )}
           {(isActive || s?.state === 'paused') && (
-            <button onClick={onStop} className="p-1.5 rounded hover:bg-red-500/10 text-red-500" title="Stop">
+            <button
+              onClick={onStop}
+              className="p-1.5 rounded hover:bg-red-500/10 text-red-500"
+              title="Stop"
+            >
               <StopCircle className="w-4 h-4" />
             </button>
           )}
-          <button onClick={onDelete} className="p-1.5 rounded hover:bg-red-500/10 text-red-500" title="Delete">
+          <button
+            onClick={onDelete}
+            className="p-1.5 rounded hover:bg-red-500/10 text-red-500"
+            title="Delete"
+          >
             <Trash2 className="w-4 h-4" />
           </button>
         </div>
@@ -476,10 +489,7 @@ function AgentDetail({
           <StatCard label="Cycles" value={s.cyclesCompleted} />
           <StatCard label="Tool Calls" value={s.totalToolCalls} />
           <StatCard label="Cost" value={`$${s.totalCostUsd.toFixed(4)}`} />
-          <StatCard
-            label="Last Cycle"
-            value={s.lastCycleAt ? formatTimeAgo(s.lastCycleAt) : '-'}
-          />
+          <StatCard label="Last Cycle" value={s.lastCycleAt ? formatTimeAgo(s.lastCycleAt) : '-'} />
         </div>
       )}
 
@@ -514,9 +524,7 @@ function AgentDetail({
 
       {/* Cycle History */}
       <div>
-        <h3 className="text-sm font-medium mb-2">
-          Cycle History ({historyTotal})
-        </h3>
+        <h3 className="text-sm font-medium mb-2">Cycle History ({historyTotal})</h3>
         {history.length === 0 ? (
           <p className="text-xs text-text-muted">No cycles yet</p>
         ) : (
@@ -580,9 +588,7 @@ function CycleEntry({ entry }: { entry: BackgroundAgentHistoryEntry }) {
               {entry.outputMessage}
             </div>
           )}
-          {entry.error && (
-            <div className="text-xs text-red-400">{entry.error}</div>
-          )}
+          {entry.error && <div className="text-xs text-red-400">{entry.error}</div>}
           {entry.toolCalls.length > 0 && (
             <div className="space-y-1">
               {entry.toolCalls.map((tc, i) => (
@@ -676,9 +682,7 @@ function CreateAgentDialog({
 
           {mode === 'interval' && (
             <div>
-              <label className="block text-sm font-medium mb-1">
-                Interval (minutes)
-              </label>
+              <label className="block text-sm font-medium mb-1">Interval (minutes)</label>
               <input
                 type="number"
                 value={intervalMin}

@@ -585,9 +585,8 @@ async function main() {
 
     // 4.7. Stop background agent service (persist all sessions)
     try {
-      const { getBackgroundAgentService: getBgSvc } = await import(
-        './services/background-agent-service.js'
-      );
+      const { getBackgroundAgentService: getBgSvc } =
+        await import('./services/background-agent-service.js');
       await getBgSvc().stop();
     } catch (e) {
       log.warn('Background agent service stop error', { error: String(e) });

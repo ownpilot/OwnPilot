@@ -850,9 +850,7 @@ describe('ChannelServiceImpl', () => {
     });
 
     it('should throw if plugin not found', async () => {
-      await expect(service.logout('unknown')).rejects.toThrow(
-        'Channel plugin not found: unknown'
-      );
+      await expect(service.logout('unknown')).rejects.toThrow('Channel plugin not found: unknown');
     });
   });
 

@@ -790,10 +790,7 @@ describe('createContextInjectionMiddleware', () => {
 
       // Middleware strips injected sections first, then passes base prompt
       // to buildEnhancedSystemPrompt for fresh injection
-      expect(mockBuildEnhancedSystemPrompt).toHaveBeenCalledWith(
-        BASE_PROMPT,
-        expect.any(Object)
-      );
+      expect(mockBuildEnhancedSystemPrompt).toHaveBeenCalledWith(BASE_PROMPT, expect.any(Object));
     });
 
     it('should strip Available Data Resources section', async () => {

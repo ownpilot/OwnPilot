@@ -92,15 +92,11 @@ describe('reportPulseResult', () => {
 
     await reportPulseResult(result);
 
-    expect(mockEventEmit).toHaveBeenCalledWith(
-      'gateway.system.notification',
-      'pulse-reporter',
-      {
-        type: 'info',
-        message: 'Daily summary ready.',
-        action: 'pulse',
-      }
-    );
+    expect(mockEventEmit).toHaveBeenCalledWith('gateway.system.notification', 'pulse-reporter', {
+      type: 'info',
+      message: 'Daily summary ready.',
+      action: 'pulse',
+    });
   });
 
   it('emits notification with default message when reportMessage is empty but a successful action exists', async () => {
@@ -114,15 +110,11 @@ describe('reportPulseResult', () => {
 
     await reportPulseResult(result);
 
-    expect(mockEventEmit).toHaveBeenCalledWith(
-      'gateway.system.notification',
-      'pulse-reporter',
-      {
-        type: 'info',
-        message: 'Pulse cycle completed.',
-        action: 'pulse',
-      }
-    );
+    expect(mockEventEmit).toHaveBeenCalledWith('gateway.system.notification', 'pulse-reporter', {
+      type: 'info',
+      message: 'Pulse cycle completed.',
+      action: 'pulse',
+    });
   });
 
   it('does not emit notification when reportMessage is empty and all actions are skipped', async () => {

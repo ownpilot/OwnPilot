@@ -59,9 +59,7 @@ export function SwitchConfigPanel({
 
   const [label, setLabel] = useState(data.label ?? 'Switch');
   const [expression, setExpression] = useState(data.expression ?? '');
-  const [cases, setCases] = useState<SwitchCase[]>(
-    data.cases ?? [{ label: 'Case 1', value: '' }]
-  );
+  const [cases, setCases] = useState<SwitchCase[]>(data.cases ?? [{ label: 'Case 1', value: '' }]);
   const [description, setDescription] = useState(data.description ?? '');
 
   const hasResults = !!(data.executionStatus as string) && data.executionStatus !== 'pending';

@@ -216,7 +216,12 @@ describe('BackgroundAgentRunner', () => {
       await runner.runCycle(session);
 
       expect(mockRegisterGatewayTools).toHaveBeenCalledWith(expect.anything(), 'user-1', false);
-      expect(mockRegisterDynamicTools).toHaveBeenCalledWith(expect.anything(), 'user-1', 'bg-bg-1', false);
+      expect(mockRegisterDynamicTools).toHaveBeenCalledWith(
+        expect.anything(),
+        'user-1',
+        'bg-bg-1',
+        false
+      );
       expect(mockRegisterPluginTools).toHaveBeenCalledWith(expect.anything(), false);
       expect(mockRegisterExtensionTools).toHaveBeenCalledWith(expect.anything(), 'user-1', false);
       expect(mockRegisterMcpTools).toHaveBeenCalledWith(expect.anything(), false);

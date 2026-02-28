@@ -104,7 +104,9 @@ export function NotificationConfigPanel({
           <input
             type="text"
             value={(data.description as string) ?? ''}
-            onChange={(e) => onUpdate(node.id, { ...data, description: e.target.value || undefined })}
+            onChange={(e) =>
+              onUpdate(node.id, { ...data, description: e.target.value || undefined })
+            }
             placeholder="Optional description..."
             className={INPUT_CLS}
           />

@@ -65,21 +65,39 @@ backgroundAgentsRoutes.post('/', async (c) => {
     const userId = getUserId(c);
     const body = await c.req.json();
 
-    const { name, mission, mode, allowed_tools, limits, interval_ms, event_filters, auto_start, stop_condition, provider, model } =
-      body as Record<string, unknown>;
+    const {
+      name,
+      mission,
+      mode,
+      allowed_tools,
+      limits,
+      interval_ms,
+      event_filters,
+      auto_start,
+      stop_condition,
+      provider,
+      model,
+    } = body as Record<string, unknown>;
 
     if (!name || typeof name !== 'string') {
       return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: 'name is required' }, 400);
     }
     if (!mission || typeof mission !== 'string') {
-      return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: 'mission is required' }, 400);
+      return apiError(
+        c,
+        { code: ERROR_CODES.VALIDATION_ERROR, message: 'mission is required' },
+        400
+      );
     }
 
     const validModes = ['continuous', 'interval', 'event'];
     if (mode && !validModes.includes(mode as string)) {
       return apiError(
         c,
-        { code: ERROR_CODES.VALIDATION_ERROR, message: `mode must be one of: ${validModes.join(', ')}` },
+        {
+          code: ERROR_CODES.VALIDATION_ERROR,
+          message: `mode must be one of: ${validModes.join(', ')}`,
+        },
         400
       );
     }
@@ -245,7 +263,11 @@ backgroundAgentsRoutes.post('/:id/pause', async (c) => {
 
     const paused = await service.pauseAgent(agentId, userId);
     if (!paused) {
-      return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: 'Agent is not running' }, 400);
+      return apiError(
+        c,
+        { code: ERROR_CODES.VALIDATION_ERROR, message: 'Agent is not running' },
+        400
+      );
     }
 
     return apiResponse(c, { state: 'paused' });
@@ -266,7 +288,11 @@ backgroundAgentsRoutes.post('/:id/resume', async (c) => {
 
     const resumed = await service.resumeAgent(agentId, userId);
     if (!resumed) {
-      return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: 'Agent is not paused' }, 400);
+      return apiError(
+        c,
+        { code: ERROR_CODES.VALIDATION_ERROR, message: 'Agent is not paused' },
+        400
+      );
     }
 
     return apiResponse(c, { state: 'running' });
@@ -287,7 +313,11 @@ backgroundAgentsRoutes.post('/:id/stop', async (c) => {
 
     const stopped = await service.stopAgent(agentId, userId);
     if (!stopped) {
-      return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: 'Agent is not running' }, 400);
+      return apiError(
+        c,
+        { code: ERROR_CODES.VALIDATION_ERROR, message: 'Agent is not running' },
+        400
+      );
     }
 
     return apiResponse(c, { state: 'stopped' });
@@ -338,7 +368,11 @@ backgroundAgentsRoutes.post('/:id/message', async (c) => {
 
     const { message } = body as { message?: string };
     if (!message || typeof message !== 'string') {
-      return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: 'message is required' }, 400);
+      return apiError(
+        c,
+        { code: ERROR_CODES.VALIDATION_ERROR, message: 'message is required' },
+        400
+      );
     }
 
     const service = getBackgroundAgentService();

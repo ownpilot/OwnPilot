@@ -775,7 +775,9 @@ export function convertDefinitionToReactFlow(
         data: {
           label: def.label ?? 'Switch',
           expression: def.expression ?? '',
-          cases: (def.cases as Array<{ label: string; value: string }>) ?? [{ label: 'case_1', value: '' }],
+          cases: (def.cases as Array<{ label: string; value: string }>) ?? [
+            { label: 'case_1', value: '' },
+          ],
           ...(def.description != null ? { description: def.description } : {}),
         },
       };

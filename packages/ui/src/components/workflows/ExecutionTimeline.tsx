@@ -203,7 +203,10 @@ export function ExecutionTimeline({ nodeResults, nodes }: ExecutionTimelineProps
                       </div>
                       {node.error && (
                         <div className="text-xs text-error">
-                          Error: {node.error.length > 100 ? node.error.substring(0, 100) + '...' : node.error}
+                          Error:{' '}
+                          {node.error.length > 100
+                            ? node.error.substring(0, 100) + '...'
+                            : node.error}
                         </div>
                       )}
                       {!node.error && node.output !== undefined && (

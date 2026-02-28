@@ -37,9 +37,7 @@ export function LlmConfigPanel({
   const [provider, setProvider] = useState(
     data.provider && data.provider !== 'default' ? data.provider : ''
   );
-  const [model, setModel] = useState(
-    data.model && data.model !== 'default' ? data.model : ''
-  );
+  const [model, setModel] = useState(data.model && data.model !== 'default' ? data.model : '');
   const [systemPrompt, setSystemPrompt] = useState(data.systemPrompt ?? '');
   const [userMessage, setUserMessage] = useState(data.userMessage ?? '');
   const [temperature, setTemperature] = useState(data.temperature ?? 0.7);
@@ -561,7 +559,6 @@ export function LlmConfigPanel({
               nodeId={node.id}
               onUpdate={onUpdate}
             />
-
 
             <RetryTimeoutFields
               data={data as unknown as Record<string, unknown>}

@@ -164,11 +164,31 @@ describe('scanExtensions', () => {
   it('filters extensions by userId', () => {
     mockGetExtService.mockReturnValue({
       getAll: () => [
-        { id: 'ext-1', userId: 'user1', name: 'Mine', format: 'ownpilot', status: 'enabled', manifest: {} },
-        { id: 'ext-2', userId: 'other', name: 'Theirs', format: 'ownpilot', status: 'enabled', manifest: {} },
+        {
+          id: 'ext-1',
+          userId: 'user1',
+          name: 'Mine',
+          format: 'ownpilot',
+          status: 'enabled',
+          manifest: {},
+        },
+        {
+          id: 'ext-2',
+          userId: 'other',
+          name: 'Theirs',
+          format: 'ownpilot',
+          status: 'enabled',
+          manifest: {},
+        },
       ],
     });
-    mockAudit.mockReturnValue({ blocked: false, riskLevel: 'low', warnings: [], reasons: [], undeclaredTools: [] });
+    mockAudit.mockReturnValue({
+      blocked: false,
+      riskLevel: 'low',
+      warnings: [],
+      reasons: [],
+      undeclaredTools: [],
+    });
 
     const result = scanExtensions('user1');
     expect(result.count).toBe(1);
@@ -178,7 +198,14 @@ describe('scanExtensions', () => {
   it('scores high-risk extension at 40 and counts as issue', () => {
     mockGetExtService.mockReturnValue({
       getAll: () => [
-        { id: 'ext-3', userId: 'u', name: 'Risky', format: 'ownpilot', status: 'enabled', manifest: {} },
+        {
+          id: 'ext-3',
+          userId: 'u',
+          name: 'Risky',
+          format: 'ownpilot',
+          status: 'enabled',
+          manifest: {},
+        },
       ],
     });
     mockAudit.mockReturnValue({
@@ -202,8 +229,20 @@ describe('scanExtensions', () => {
       ],
     });
     mockAudit
-      .mockReturnValueOnce({ blocked: false, riskLevel: 'low', warnings: [], reasons: [], undeclaredTools: [] })
-      .mockReturnValueOnce({ blocked: false, riskLevel: 'medium', warnings: ['warn'], reasons: [], undeclaredTools: [] });
+      .mockReturnValueOnce({
+        blocked: false,
+        riskLevel: 'low',
+        warnings: [],
+        reasons: [],
+        undeclaredTools: [],
+      })
+      .mockReturnValueOnce({
+        blocked: false,
+        riskLevel: 'medium',
+        warnings: ['warn'],
+        reasons: [],
+        undeclaredTools: [],
+      });
 
     const result = scanExtensions('u');
     expect(result.score).toBe(Math.round((95 + 70) / 2)); // 83
@@ -225,7 +264,13 @@ describe('scanCustomTools', () => {
   it('uses analyzeToolCode and calculateSecurityScore', async () => {
     mockCreateToolsRepo.mockReturnValue({
       list: vi.fn().mockResolvedValue([
-        { id: 't1', name: 'my_tool', code: 'return 1;', status: 'active', permissions: ['network'] },
+        {
+          id: 't1',
+          name: 'my_tool',
+          code: 'return 1;',
+          status: 'active',
+          permissions: ['network'],
+        },
       ]),
     });
     mockAnalyze.mockReturnValue({
@@ -249,9 +294,11 @@ describe('scanCustomTools', () => {
 
   it('counts low-score tools as issues', async () => {
     mockCreateToolsRepo.mockReturnValue({
-      list: vi.fn().mockResolvedValue([
-        { id: 't1', name: 'risky', code: 'dangerous_code()', status: 'active', permissions: [] },
-      ]),
+      list: vi
+        .fn()
+        .mockResolvedValue([
+          { id: 't1', name: 'risky', code: 'dangerous_code()', status: 'active', permissions: [] },
+        ]),
     });
     mockAnalyze.mockReturnValue({
       valid: false,
@@ -523,7 +570,14 @@ describe('scanPlatform', () => {
     // Add a blocked extension
     mockGetExtService.mockReturnValue({
       getAll: () => [
-        { id: 'e1', userId: 'user1', name: 'Bad', format: 'ownpilot', status: 'enabled', manifest: {} },
+        {
+          id: 'e1',
+          userId: 'user1',
+          name: 'Bad',
+          format: 'ownpilot',
+          status: 'enabled',
+          manifest: {},
+        },
       ],
     });
     mockAudit.mockReturnValue({
@@ -537,7 +591,13 @@ describe('scanPlatform', () => {
     // Add a dangerous custom tool
     mockCreateToolsRepo.mockReturnValue({
       list: vi.fn().mockResolvedValue([
-        { id: 't1', name: 'bad_tool', code: 'dangerous_code()', status: 'active', permissions: [] },
+        {
+          id: 't1',
+          name: 'bad_tool',
+          code: 'dangerous_code()',
+          status: 'active',
+          permissions: [],
+        },
       ]),
     });
     mockAnalyze.mockReturnValue({
@@ -573,7 +633,14 @@ describe('scanPlatform', () => {
     // Extension with high risk -> score 40
     mockGetExtService.mockReturnValue({
       getAll: () => [
-        { id: 'e1', userId: 'u', name: 'Risky', format: 'ownpilot', status: 'enabled', manifest: {} },
+        {
+          id: 'e1',
+          userId: 'u',
+          name: 'Risky',
+          format: 'ownpilot',
+          status: 'enabled',
+          manifest: {},
+        },
       ],
     });
     mockAudit.mockReturnValue({
@@ -603,26 +670,44 @@ describe('scanPlatform', () => {
         { id: 'e1', userId: 'u', name: 'Bad', format: 'ownpilot', status: 'enabled', manifest: {} },
       ],
     });
-    mockAudit.mockReturnValue({ blocked: true, riskLevel: 'critical', warnings: ['x'], reasons: ['x'], undeclaredTools: [] });
+    mockAudit.mockReturnValue({
+      blocked: true,
+      riskLevel: 'critical',
+      warnings: ['x'],
+      reasons: ['x'],
+      undeclaredTools: [],
+    });
 
     // Dangerous custom tool
     mockCreateToolsRepo.mockReturnValue({
-      list: vi.fn().mockResolvedValue([
-        { id: 't1', name: 'bad', code: 'dangerous_code()', status: 'active', permissions: [] },
-      ]),
+      list: vi
+        .fn()
+        .mockResolvedValue([
+          { id: 't1', name: 'bad', code: 'dangerous_code()', status: 'active', permissions: [] },
+        ]),
     });
     mockAnalyze.mockReturnValue({
-      valid: true, errors: [], warnings: [],
+      valid: true,
+      errors: [],
+      warnings: [],
       securityScore: { score: 10, category: 'dangerous', factors: {} },
-      dataFlowRisks: [], bestPractices: { followed: [], violated: [] },
-      suggestedPermissions: [], stats: {},
+      dataFlowRisks: [],
+      bestPractices: { followed: [], violated: [] },
+      suggestedPermissions: [],
+      stats: {},
     });
     mockCalcScore.mockReturnValue({ score: 10, category: 'dangerous', factors: {} });
 
     // Risky trigger
     mockCreateTriggersRepo.mockReturnValue({
       list: vi.fn().mockResolvedValue([
-        { id: 'tr1', name: 'Bad trigger', type: 'schedule', enabled: true, action: { type: 'tool', payload: { tool: 'shell_exec' } } },
+        {
+          id: 'tr1',
+          name: 'Bad trigger',
+          type: 'schedule',
+          enabled: true,
+          action: { type: 'tool', payload: { tool: 'shell_exec' } },
+        },
       ]),
     });
 

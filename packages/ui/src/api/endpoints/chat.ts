@@ -56,7 +56,11 @@ export const chatApi = {
   /** Get unified conversation (merges AI + channel messages) */
   getUnifiedHistory: (id: string) =>
     apiClient.get<{
-      conversation: Conversation & { source: 'web' | 'channel'; channelPlatform?: string; channelSenderName?: string };
+      conversation: Conversation & {
+        source: 'web' | 'channel';
+        channelPlatform?: string;
+        channelSenderName?: string;
+      };
       messages: UnifiedMessage[];
       channelInfo?: ChannelInfo | null;
     }>(`/chat/history/${id}/unified`),

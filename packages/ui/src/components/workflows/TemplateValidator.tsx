@@ -32,10 +32,7 @@ function extractTemplates(value: string): string[] {
 }
 
 /** Validate template references against known upstream nodes and aliases */
-function validateTemplates(
-  templates: string[],
-  upstreamNodes: ToolNodeType[]
-): ValidationIssue[] {
+function validateTemplates(templates: string[], upstreamNodes: ToolNodeType[]): ValidationIssue[] {
   const nodeIds = new Set(upstreamNodes.map((n) => n.id));
   const aliases = new Set<string>();
   for (const n of upstreamNodes) {

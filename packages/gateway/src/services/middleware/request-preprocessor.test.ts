@@ -280,7 +280,10 @@ describe('Request Preprocessor', () => {
 
     it('selects task extension for task-related request', () => {
       const index = buildTestIndex(testExtensions);
-      const routing = classifyRequest('Add a new task to buy groceries and mark it high priority', index);
+      const routing = classifyRequest(
+        'Add a new task to buy groceries and mark it high priority',
+        index
+      );
       expect(routing.relevantExtensionIds).toContain('task-ext');
     });
 
@@ -305,10 +308,7 @@ describe('Request Preprocessor', () => {
 
     it('falls back to top N when no strong match', () => {
       const index = buildTestIndex(testExtensions);
-      const routing = classifyRequest(
-        'Tell me a story about dragons and medieval knights',
-        index
-      );
+      const routing = classifyRequest('Tell me a story about dragons and medieval knights', index);
       // No extension matches dragons/knights, but should still return some
       expect(routing.relevantExtensionIds.length).toBeGreaterThan(0);
       expect(routing.relevantExtensionIds.length).toBeLessThanOrEqual(2);
@@ -427,9 +427,7 @@ describe('Request Preprocessor', () => {
 
     it('does not match tables for unrelated requests', () => {
       const index = buildTestIndex([]);
-      index.customTables = [
-        { displayName: 'Contacts', keywords: new Set(['contacts', 'people']) },
-      ];
+      index.customTables = [{ displayName: 'Contacts', keywords: new Set(['contacts', 'people']) }];
 
       const routing = classifyRequest('What is the weather like today?', index);
       expect(routing.relevantTables).toBeUndefined();
@@ -444,7 +442,10 @@ describe('Request Preprocessor', () => {
     it('matches MCP servers by tool keywords', () => {
       const index = buildTestIndex([]);
       index.mcpServers = [
-        { name: 'github', keywords: new Set(['github', 'repository', 'pull', 'request', 'issue', 'commit']) },
+        {
+          name: 'github',
+          keywords: new Set(['github', 'repository', 'pull', 'request', 'issue', 'commit']),
+        },
       ];
 
       const routing = classifyRequest('Create a new issue on the GitHub repository', index);
@@ -454,9 +455,7 @@ describe('Request Preprocessor', () => {
 
     it('does not match MCP servers for unrelated requests', () => {
       const index = buildTestIndex([]);
-      index.mcpServers = [
-        { name: 'github', keywords: new Set(['github', 'repository']) },
-      ];
+      index.mcpServers = [{ name: 'github', keywords: new Set(['github', 'repository']) }];
 
       const routing = classifyRequest('Send an email to my team about lunch', index);
       expect(routing.relevantMcpServers).toBeUndefined();

@@ -57,7 +57,10 @@ function HttpRequestNodeComponent({ data, selected }: NodeProps<HttpRequestNodeT
   const style = statusStyles[status];
   const StatusIcon = statusIcons[status];
   const method = (data.method as string) ?? 'GET';
-  const mStyle = methodStyles[method] ?? { bg: 'bg-blue-100 dark:bg-blue-900/30', text: 'text-blue-700 dark:text-blue-300' };
+  const mStyle = methodStyles[method] ?? {
+    bg: 'bg-blue-100 dark:bg-blue-900/30',
+    text: 'text-blue-700 dark:text-blue-300',
+  };
   const url = (data.url as string) ?? '';
 
   return (
@@ -105,7 +108,9 @@ function HttpRequestNodeComponent({ data, selected }: NodeProps<HttpRequestNodeT
 
         {/* Method badge + URL preview */}
         <div className="flex items-center gap-1.5 mt-1">
-          <span className={`px-1.5 py-0.5 text-[9px] font-bold rounded ${mStyle.bg} ${mStyle.text}`}>
+          <span
+            className={`px-1.5 py-0.5 text-[9px] font-bold rounded ${mStyle.bg} ${mStyle.text}`}
+          >
             {method}
           </span>
           {url && (

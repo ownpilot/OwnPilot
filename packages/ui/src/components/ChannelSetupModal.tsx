@@ -236,23 +236,20 @@ export function ChannelSetupModal({ onClose, onSuccess }: ChannelSetupModalProps
     if (step !== 'qr' || !platform) return;
 
     // Subscribe to channel:qr for real-time QR updates
-    const unsubQr = subscribe<{ channelId: string; qr: string }>(
-      'channel:qr',
-      async (data) => {
-        if (data.channelId === platform.pluginId && data.qr) {
-          try {
-            const dataUrl = await QRCode.toDataURL(data.qr, {
-              width: 280,
-              margin: 2,
-              color: { dark: '#000000', light: '#ffffff' },
-            });
-            setQrDataUrl(dataUrl);
-          } catch {
-            // QR generation failed
-          }
+    const unsubQr = subscribe<{ channelId: string; qr: string }>('channel:qr', async (data) => {
+      if (data.channelId === platform.pluginId && data.qr) {
+        try {
+          const dataUrl = await QRCode.toDataURL(data.qr, {
+            width: 280,
+            margin: 2,
+            color: { dark: '#000000', light: '#ffffff' },
+          });
+          setQrDataUrl(dataUrl);
+        } catch {
+          // QR generation failed
         }
       }
-    );
+    });
 
     // Subscribe to channel:status for connection success
     const unsubStatus = subscribe<{
@@ -500,11 +497,7 @@ export function ChannelSetupModal({ onClose, onSuccess }: ChannelSetupModalProps
 
               {qrDataUrl ? (
                 <div className="bg-white p-3 rounded-xl shadow-md">
-                  <img
-                    src={qrDataUrl}
-                    alt="WhatsApp QR Code"
-                    className="w-[280px] h-[280px]"
-                  />
+                  <img src={qrDataUrl} alt="WhatsApp QR Code" className="w-[280px] h-[280px]" />
                 </div>
               ) : (
                 <div className="w-[280px] h-[280px] bg-bg-tertiary dark:bg-dark-bg-tertiary rounded-xl flex items-center justify-center">
@@ -538,7 +531,9 @@ export function ChannelSetupModal({ onClose, onSuccess }: ChannelSetupModalProps
                   </p>
                   {result.botInfo?.username && (
                     <p className="text-sm text-text-muted dark:text-dark-text-muted mt-1">
-                      {platform?.qrBased ? `+${result.botInfo.username}` : `@${result.botInfo.username}`}
+                      {platform?.qrBased
+                        ? `+${result.botInfo.username}`
+                        : `@${result.botInfo.username}`}
                     </p>
                   )}
                   {result.botInfo?.firstName && (

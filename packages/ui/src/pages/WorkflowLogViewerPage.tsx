@@ -350,9 +350,7 @@ function NodeResultCard({
           <ChevronRight className="w-3.5 h-3.5 shrink-0" />
         )}
         <StatusIcon className="w-4 h-4 shrink-0" />
-        <span className="text-sm font-medium flex-1 truncate">
-          {result.nodeId}
-        </span>
+        <span className="text-sm font-medium flex-1 truncate">{result.nodeId}</span>
         {result.retryAttempts != null && result.retryAttempts > 0 && (
           <span className="px-1.5 py-0.5 text-[10px] bg-warning/10 text-warning rounded-full">
             {result.retryAttempts} {result.retryAttempts === 1 ? 'retry' : 'retries'}

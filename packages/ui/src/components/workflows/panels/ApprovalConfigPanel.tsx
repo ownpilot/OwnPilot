@@ -112,7 +112,9 @@ export function ApprovalConfigPanel({
             className="w-full px-2 py-1 text-xs bg-bg-primary dark:bg-dark-bg-primary border border-border dark:border-dark-border rounded text-text-primary dark:text-dark-text-primary resize-none"
           />
           <p className="text-[10px] text-text-muted dark:text-dark-text-muted">
-            {'This message will be shown when the workflow pauses for approval. Supports {{template}} expressions.'}
+            {
+              'This message will be shown when the workflow pauses for approval. Supports {{template}} expressions.'
+            }
           </p>
           <TemplateValidator value={approvalMessage} upstreamNodes={upstreamNodes} />
         </div>
@@ -162,7 +164,9 @@ export function ApprovalConfigPanel({
                         : 'bg-text-muted/20 text-text-muted'
                 }`}
               >
-                {data.executionStatus === 'running' ? 'AWAITING APPROVAL' : (data.executionStatus as string).toUpperCase()}
+                {data.executionStatus === 'running'
+                  ? 'AWAITING APPROVAL'
+                  : (data.executionStatus as string).toUpperCase()}
               </span>
             </div>
             {data.executionError && (

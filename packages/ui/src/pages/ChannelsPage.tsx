@@ -119,7 +119,11 @@ export function ChannelsPage() {
   const { subscribe } = useGateway();
 
   const [channels, setChannels] = useState<Channel[]>([]);
-  const [summary, setSummary] = useState<{ total: number; connected: number; disconnected: number }>({
+  const [summary, setSummary] = useState<{
+    total: number;
+    connected: number;
+    disconnected: number;
+  }>({
     total: 0,
     connected: 0,
     disconnected: 0,
@@ -254,7 +258,12 @@ export function ChannelsPage() {
 
   const handleLogout = useCallback(
     async (channelId: string) => {
-      if (!confirm('Logout will clear session data. You will need to re-authenticate (e.g. scan QR code) on next connect. Continue?')) return;
+      if (
+        !confirm(
+          'Logout will clear session data. You will need to re-authenticate (e.g. scan QR code) on next connect. Continue?'
+        )
+      )
+        return;
       setActionLoading('logout');
       try {
         await channelsApi.logout(channelId);
@@ -463,7 +472,9 @@ export function ChannelsPage() {
                       </span>
                     </div>
                     <div className="flex items-center gap-1.5 mt-0.5">
-                      <div className={`w-1.5 h-1.5 rounded-full ${getStatusColor(ch.status).replace('text-', 'bg-')}`} />
+                      <div
+                        className={`w-1.5 h-1.5 rounded-full ${getStatusColor(ch.status).replace('text-', 'bg-')}`}
+                      />
                       <span className="text-[10px] text-text-muted dark:text-dark-text-muted capitalize">
                         {ch.status}
                       </span>
@@ -581,7 +592,13 @@ function ChannelDetail({
           <div className="flex items-center gap-2 mt-1">
             <StatusIcon status={channel.status} />
             <span className={`text-sm font-medium ${getStatusColor(channel.status)}`}>
-              {channel.status === 'connected' ? 'Connected' : channel.status === 'connecting' ? 'Connecting...' : channel.status === 'error' ? 'Error' : 'Disconnected'}
+              {channel.status === 'connected'
+                ? 'Connected'
+                : channel.status === 'connecting'
+                  ? 'Connecting...'
+                  : channel.status === 'error'
+                    ? 'Error'
+                    : 'Disconnected'}
             </span>
           </div>
           {channel.botInfo && (
@@ -656,11 +673,16 @@ function ChannelDetail({
               </thead>
               <tbody className="divide-y divide-border dark:divide-dark-border">
                 {users.map((user) => (
-                  <tr key={user.id} className="hover:bg-bg-tertiary/50 dark:hover:bg-dark-bg-tertiary/50">
+                  <tr
+                    key={user.id}
+                    className="hover:bg-bg-tertiary/50 dark:hover:bg-dark-bg-tertiary/50"
+                  >
                     <td className="px-3 py-2">
                       <div className="flex items-center gap-2">
                         <div className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-[10px] font-bold">
-                          {(user.displayName ?? user.platformUsername ?? user.platformUserId).charAt(0).toUpperCase()}
+                          {(user.displayName ?? user.platformUsername ?? user.platformUserId)
+                            .charAt(0)
+                            .toUpperCase()}
                         </div>
                         <div>
                           <span className="font-medium text-text-primary dark:text-dark-text-primary">
