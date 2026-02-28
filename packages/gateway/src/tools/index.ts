@@ -17,3 +17,4 @@ export {
 } from './notification-tools.js';
 export { CODING_AGENT_TOOLS, executeCodingAgentTool } from './coding-agent-tools.js';
 export { CLI_TOOL_TOOLS, executeCliToolTool } from './cli-tool-tools.js';
+export { BACKGROUND_AGENT_TOOLS, executeBackgroundAgentTool } from './background-agent-tools.js';

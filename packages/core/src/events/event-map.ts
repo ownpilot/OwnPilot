@@ -353,6 +353,56 @@ export interface McpServerDisconnectedData {
 }
 
 // ============================================================================
+// Background Agent Event Data
+// ============================================================================
+
+export interface BackgroundAgentStartedData {
+  agentId: string;
+  userId: string;
+  name: string;
+}
+
+export interface BackgroundAgentCycleStartData {
+  agentId: string;
+  cycleNumber: number;
+}
+
+export interface BackgroundAgentCycleCompleteData {
+  agentId: string;
+  cycleNumber: number;
+  success: boolean;
+  toolCallsCount: number;
+  durationMs: number;
+  outputPreview: string;
+}
+
+export interface BackgroundAgentStoppedData {
+  agentId: string;
+  userId: string;
+  reason: 'user' | 'completed' | 'failed' | 'budget_exceeded';
+}
+
+export interface BackgroundAgentErrorData {
+  agentId: string;
+  error: string;
+  cycleNumber: number;
+}
+
+export interface BackgroundAgentPausedData {
+  agentId: string;
+}
+
+export interface BackgroundAgentResumedData {
+  agentId: string;
+}
+
+export interface BackgroundAgentMessageData {
+  agentId: string;
+  from: string;
+  content: string;
+}
+
+// ============================================================================
 // Master Event Map
 // ============================================================================
 
@@ -438,6 +488,16 @@ export interface EventMap {
   'gateway.workspace.deleted': GatewayWorkspaceDeletedData;
   'gateway.system.notification': GatewaySystemNotificationData;
   'gateway.system.status': GatewaySystemStatusData;
+
+  // --- Background Agent Events ---
+  'background-agent.started': BackgroundAgentStartedData;
+  'background-agent.cycle.start': BackgroundAgentCycleStartData;
+  'background-agent.cycle.complete': BackgroundAgentCycleCompleteData;
+  'background-agent.stopped': BackgroundAgentStoppedData;
+  'background-agent.error': BackgroundAgentErrorData;
+  'background-agent.paused': BackgroundAgentPausedData;
+  'background-agent.resumed': BackgroundAgentResumedData;
+  'background-agent.message': BackgroundAgentMessageData;
 }
 
 // ============================================================================

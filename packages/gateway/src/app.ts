@@ -70,6 +70,7 @@ import {
   cliProvidersRoutes,
   cliToolsRoutes,
   securityRoutes,
+  backgroundAgentsRoutes,
 } from './routes/index.js';
 import {
   RATE_LIMIT_WINDOW_MS,
@@ -314,6 +315,9 @@ export function createApp(config: Partial<GatewayConfig> = {}): Hono {
   // Security Scanner (unified vulnerability analysis)
   app.route('/api/v1/security', securityRoutes);
 
+  // Background Agents (persistent, long-running autonomous agents)
+  app.route('/api/v1/background-agents', backgroundAgentsRoutes);
+
   // Root route (API-only mode, when UI is not bundled)
   if (!UI_AVAILABLE) {
     app.get('/', (c) => {
@@ -398,6 +402,8 @@ export function createApp(config: Partial<GatewayConfig> = {}): Hono {
         cliTools: '/api/v1/cli-tools',
         // Security Scanner (unified vulnerability analysis)
         security: '/api/v1/security',
+        // Background Agents (persistent autonomous agents)
+        backgroundAgents: '/api/v1/background-agents',
         // Webhooks (external service callbacks, no auth required)
         webhooks: '/webhooks/telegram/:secret',
       },

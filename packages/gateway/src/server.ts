@@ -361,6 +361,11 @@ async function main() {
   const { getCodingAgentService } = await import('./services/coding-agent-service.js');
   registry.register(Services.CodingAgent, getCodingAgentService());
 
+  // 21. Background Agent Service (persistent, long-running autonomous agents)
+  const { getBackgroundAgentService } = await import('./services/background-agent-service.js');
+  const bgAgentService = getBackgroundAgentService();
+  registry.register(Services.BackgroundAgent, bgAgentService);
+
   // Start trigger engine (proactive automation)
   log.info('Starting Trigger Engine...');
   try {
@@ -481,6 +486,14 @@ async function main() {
     log.warn('Autonomy Engine failed to start', { error: String(error) });
   }
 
+  // Start Background Agent Service (resume autoStart + interrupted agents)
+  try {
+    await bgAgentService.start();
+    log.info('Background Agent Service started.');
+  } catch (error) {
+    log.warn('Background Agent Service failed to start', { error: String(error) });
+  }
+
   // Seed example plans (only creates if not already present)
   try {
     const planSeed = await seedExamplePlans('default');
@@ -539,6 +552,10 @@ async function main() {
   wsGateway.attachToServer(server as Server);
   log.info(`WebSocket Gateway attached at ws://${host}:${port}/ws`);
 
+  // Start EventBusBridge (bidirectional EventBus ↔ WebSocket)
+  wsGateway.startEventBridge();
+  log.info('EventBusBridge started — WS clients can subscribe/publish events');
+
   // Wire debug log entries to WebSocket broadcast
   const { debugLog } = await import('@ownpilot/core');
   debugLog.onEntry = (entry) => {
@@ -591,6 +608,16 @@ async function main() {
       stopSessionCleanup();
     } catch (e) {
       log.warn('UI session cleanup stop error', { error: String(e) });
+    }
+
+    // 4.7. Stop background agent service (persist all sessions)
+    try {
+      const { getBackgroundAgentService: getBgSvc } = await import(
+        './services/background-agent-service.js'
+      );
+      await getBgSvc().stop();
+    } catch (e) {
+      log.warn('Background agent service stop error', { error: String(e) });
     }
 
     // 5. Stop approval manager cleanup

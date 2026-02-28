@@ -96,6 +96,17 @@ export type {
   RegisterCustomCliToolInput,
 } from './cli-tools';
 export { workflowsApi } from './workflows';
+export { backgroundAgentsApi } from './background-agents';
+export type {
+  BackgroundAgentConfig,
+  BackgroundAgentSession,
+  BackgroundAgentHistoryEntry,
+  BackgroundAgentMode,
+  BackgroundAgentState,
+  BackgroundAgentLimits,
+  BackgroundAgentToolCall,
+  CreateBackgroundAgentInput,
+} from './background-agents';
 export type {
   McpServer,
   McpServerTool,
