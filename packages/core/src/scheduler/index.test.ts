@@ -346,14 +346,16 @@ describe('getNextRunTime', () => {
     // From: 23:30 local time → next should be midnight the following day
     const from = new Date();
     from.setHours(23, 30, 0, 0); // 23:30 local time today
-    const expectedDate = from.getDate() + 1; // tomorrow's day-of-month
+    // Compute tomorrow properly (handles month-end rollover)
+    const tomorrow = new Date(from);
+    tomorrow.setDate(tomorrow.getDate() + 1);
     const next = getNextRunTime('0 0 * * *', from);
     expect(next).not.toBeNull();
     // matchesCron uses getHours() / getMinutes() — local time
     expect(next!.getHours()).toBe(0);
     expect(next!.getMinutes()).toBe(0);
     // Day should have rolled over
-    expect(next!.getDate()).toBe(expectedDate % 32 || 1); // handles month-end rollover loosely
+    expect(next!.getDate()).toBe(tomorrow.getDate());
   });
 
   it('works across a month boundary', () => {

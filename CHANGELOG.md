@@ -5,6 +5,41 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.4] - 2026-02-28
+
+### Added
+
+- **Background Agents** — Persistent autonomous agents that run independently on interval, continuous, or event-driven schedules with rate limiting, budget tracking, auto-pause on errors, and graceful shutdown
+- **Background Agent Full Tool Access** — Background agents now have the same capabilities as chat agents: all 170+ tools, extension/skill tools, plugin tools, MCP tools, memory injection, and configurable provider/model selection
+- **Background Agent Workspace Isolation** — Each background agent gets an isolated file workspace for safe file operations
+- **WhatsApp Baileys Integration** — Replaced Meta Cloud API with Baileys library for WhatsApp; QR code authentication (no Meta Business account needed), self-chat mode with loop prevention, session persistence in app data directory
+- **Channel User Approval System** — Multi-step verification for channel users: approval code flow, manual admin approval, user blocking/unblocking with real-time notifications
+- **EventBus Deep Integration** — Unified event backbone across the entire system; EventBusBridge translates dot-notation events to WebSocket colon-notation for real-time UI updates
+- **Event Monitor UI** — Live event stream viewer for debugging EventBus events in the web UI
+- **Extension SDK** — Extensions can call any of 150+ built-in tools via `utils.callTool()`, with `utils.listTools()`, Config Center access, and blocked tool enforcement
+- **6 Default Extensions** — Daily Briefing, Knowledge Base, Project Tracker, Smart Search, Automation Builder, Contact Enricher bundled out-of-the-box
+- **Extension Security Audit** — LLM-powered security analysis for skills and extensions before installation
+- **Selective Extension Injection** — Request-preprocessor routing for targeted extension injection per conversation
+- **Channel Soft Disconnect / Hard Logout** — `disconnect()` preserves session for instant reconnect; `logout()` clears session data requiring re-authentication (e.g. new QR scan)
+- **Workflow Enhancements** — 7 new node types, input_schema column, workflow versioning and approvals
+
+### Changed
+
+- Extension tools synced into shared ToolRegistry with `ext.*`/`skill.*` namespace prefixes
+- Channel user events (`first_seen`, `blocked`, `unblocked`, `pending`) emitted via EventBus with complete WS forwarding
+- Channels reduced to Telegram + WhatsApp (Discord/Slack/LINE/Matrix removed)
+
+### Fixed
+
+- **Scheduler Day Boundary** — `getNextRunTime` test failed on month-end dates (e.g. Feb 28 → Mar 1) due to incorrect rollover arithmetic
+- **Vitest Constructor Mocks** — Fixed test stability issues with constructor mocking patterns across gateway tests
+- **Test Helpers Build Error** — Added explicit return types to test-helpers to fix TS2742 build error
+
+### Testing
+
+- 366+ test files, 21,500+ tests total
+- New: background-agent-manager, background-agent-runner, background-agent-tools, service-impl logout tests
+
 ## [0.1.3] - 2026-02-26
 
 ### Added
@@ -131,6 +166,7 @@ Initial release of OwnPilot.
 - Docker multi-arch image (amd64 + arm64) published to `ghcr.io/ownpilot/ownpilot`
 - PostgreSQL with pgvector for vector search
 
+[0.1.4]: https://github.com/ownpilot/ownpilot/releases/tag/v0.1.4
 [0.1.3]: https://github.com/ownpilot/ownpilot/releases/tag/v0.1.3
 [0.1.2]: https://github.com/ownpilot/ownpilot/releases/tag/v0.1.2
 [0.1.1]: https://github.com/ownpilot/ownpilot/releases/tag/v0.1.1
