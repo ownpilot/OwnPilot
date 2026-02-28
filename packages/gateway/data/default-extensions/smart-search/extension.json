@@ -1,0 +1,48 @@
+{
+  "id": "smart-search",
+  "name": "Smart Search",
+  "version": "1.0.0",
+  "description": "Search across all your data — memories, notes, tasks, bookmarks, contacts, and custom data tables",
+  "category": "utilities",
+  "icon": "🔍",
+  "author": { "name": "OwnPilot" },
+  "tags": ["search", "find", "lookup", "query", "cross-search"],
+  "keywords": ["find", "search", "look up", "where did I", "do I have", "search everything"],
+  "system_prompt": "You have smart search tools. When the user wants to find something but isn't sure where it is, use smart_search to look across all data sources (memories, notes, tasks, bookmarks, contacts, custom data). For deep research on a topic using local data, use research_topic. Always present results grouped by source.",
+  "tools": [
+    {
+      "name": "smart_search",
+      "description": "Search across all data sources — memories, notes, tasks, bookmarks, contacts, and custom data tables",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "Search query"
+          },
+          "sources": {
+            "type": "string",
+            "description": "Comma-separated sources to search (memories,notes,tasks,bookmarks,contacts,custom_data). Default: all"
+          }
+        },
+        "required": ["query"]
+      },
+      "code": "const sourcesStr = args.sources || 'memories,notes,tasks,bookmarks,contacts,custom_data'; const sources = sourcesStr.split(',').map(s => s.trim()); const results = {}; if (sources.includes('memories')) { try { results.memories = await utils.callTool('search_memories', { query: args.query, limit: 5 }); } catch (e) { results.memories = []; } } if (sources.includes('notes')) { try { results.notes = await utils.callTool('list_notes', { limit: 50 }); if (Array.isArray(results.notes)) { const q = args.query.toLowerCase(); results.notes = results.notes.filter(n => (n.title && n.title.toLowerCase().includes(q)) || (n.content && n.content.toLowerCase().includes(q))); } } catch (e) { results.notes = []; } } if (sources.includes('tasks')) { try { results.tasks = await utils.callTool('list_tasks', {}); if (Array.isArray(results.tasks)) { const q = args.query.toLowerCase(); results.tasks = results.tasks.filter(t => (t.title && t.title.toLowerCase().includes(q)) || (t.description && t.description.toLowerCase().includes(q))); } } catch (e) { results.tasks = []; } } if (sources.includes('bookmarks')) { try { results.bookmarks = await utils.callTool('list_bookmarks', {}); if (Array.isArray(results.bookmarks)) { const q = args.query.toLowerCase(); results.bookmarks = results.bookmarks.filter(b => (b.title && b.title.toLowerCase().includes(q)) || (b.url && b.url.toLowerCase().includes(q))); } } catch (e) { results.bookmarks = []; } } if (sources.includes('contacts')) { try { results.contacts = await utils.callTool('list_contacts', {}); if (Array.isArray(results.contacts)) { const q = args.query.toLowerCase(); results.contacts = results.contacts.filter(c => (c.name && c.name.toLowerCase().includes(q)) || (c.email && c.email.toLowerCase().includes(q))); } } catch (e) { results.contacts = []; } } if (sources.includes('custom_data')) { try { const tables = await utils.callTool('list_custom_tables', {}); if (Array.isArray(tables)) { results.custom_data = {}; for (const t of tables.slice(0, 5)) { try { const records = await utils.callTool('search_custom_records', { table: t.name, query: args.query }); if (Array.isArray(records) && records.length > 0) { results.custom_data[t.name] = records; } } catch (e) {} } } } catch (e) { results.custom_data = {}; } } const totalResults = Object.values(results).reduce((sum, v) => { if (Array.isArray(v)) return sum + v.length; if (typeof v === 'object' && v !== null) return sum + Object.values(v).reduce((s, arr) => s + (Array.isArray(arr) ? arr.length : 0), 0); return sum; }, 0); return { content: { query: args.query, total_results: totalResults, results } };"
+    },
+    {
+      "name": "research_topic",
+      "description": "Deep research on a topic using all local data sources, compiled into a structured report",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "topic": {
+            "type": "string",
+            "description": "Topic to research"
+          }
+        },
+        "required": ["topic"]
+      },
+      "code": "const memories = await utils.callTool('search_memories', { query: args.topic, limit: 10 }); const notes = await utils.callTool('list_notes', { limit: 50 }); const relevantNotes = Array.isArray(notes) ? notes.filter(n => { const q = args.topic.toLowerCase(); return (n.title && n.title.toLowerCase().includes(q)) || (n.content && n.content.toLowerCase().includes(q)); }) : []; const goals = await utils.callTool('list_goals', {}); const relevantGoals = Array.isArray(goals) ? goals.filter(g => { const q = args.topic.toLowerCase(); return (g.title && g.title.toLowerCase().includes(q)) || (g.description && g.description.toLowerCase().includes(q)); }) : []; const bookmarks = await utils.callTool('list_bookmarks', {}); const relevantBookmarks = Array.isArray(bookmarks) ? bookmarks.filter(b => { const q = args.topic.toLowerCase(); return (b.title && b.title.toLowerCase().includes(q)) || (b.url && b.url.toLowerCase().includes(q)); }) : []; return { content: { topic: args.topic, memories, notes: relevantNotes, goals: relevantGoals, bookmarks: relevantBookmarks, sources_checked: ['memories', 'notes', 'goals', 'bookmarks'] } };"
+    }
+  ]
+}

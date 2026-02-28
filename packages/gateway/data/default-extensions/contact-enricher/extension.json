@@ -1,0 +1,52 @@
+{
+  "id": "contact-enricher",
+  "name": "Contact Enricher",
+  "version": "1.0.0",
+  "description": "Enrich contacts with notes, interaction history, and relationship context from memories",
+  "category": "communication",
+  "icon": "👥",
+  "author": { "name": "OwnPilot" },
+  "tags": ["contacts", "people", "relationships", "crm", "notes"],
+  "keywords": ["who is", "contact info", "relationship", "interactions with", "notes about person"],
+  "system_prompt": "You have contact enrichment tools. When the user asks about a person, wants to add context about someone, or wants to review their interactions, use these tools. enrich_contact adds notes and context to existing contacts. find_contact_info searches across contacts, memories, and notes to build a comprehensive profile.",
+  "tools": [
+    {
+      "name": "enrich_contact",
+      "description": "Add notes, context, or tags to a contact and save a memory about the interaction",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Contact name to look up and enrich"
+          },
+          "note": {
+            "type": "string",
+            "description": "Note to add about this contact"
+          },
+          "tags": {
+            "type": "string",
+            "description": "Comma-separated tags (e.g. 'colleague, frontend, berlin')"
+          }
+        },
+        "required": ["name", "note"]
+      },
+      "code": "const contacts = await utils.callTool('list_contacts', {}); const match = Array.isArray(contacts) ? contacts.find(c => c.name && c.name.toLowerCase().includes(args.name.toLowerCase())) : null; if (match) { const existingNotes = match.notes || ''; const updatedNotes = existingNotes ? existingNotes + '\\n' + args.note : args.note; const updateData = { id: match.id, notes: updatedNotes }; if (args.tags) { updateData.tags = args.tags; } await utils.callTool('update_contact', updateData); } await utils.callTool('add_note', { title: 'About ' + args.name, content: args.note, tags: args.tags || 'contact' }); await utils.callTool('create_memory', { content: 'Contact note for ' + args.name + ': ' + args.note }); return { content: { contact: match ? match.name : args.name, found: !!match, note_added: args.note, tags: args.tags || null } };"
+    },
+    {
+      "name": "find_contact_info",
+      "description": "Build a comprehensive profile for a person by searching contacts, memories, and notes",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Person's name to look up"
+          }
+        },
+        "required": ["name"]
+      },
+      "code": "const contacts = await utils.callTool('list_contacts', {}); const match = Array.isArray(contacts) ? contacts.find(c => c.name && c.name.toLowerCase().includes(args.name.toLowerCase())) : null; const memories = await utils.callTool('search_memories', { query: args.name, limit: 10 }); const notes = await utils.callTool('list_notes', { limit: 50 }); const relevantNotes = Array.isArray(notes) ? notes.filter(n => { const q = args.name.toLowerCase(); return (n.title && n.title.toLowerCase().includes(q)) || (n.content && n.content.toLowerCase().includes(q)); }) : []; return { content: { name: args.name, contact: match || null, memories: memories, notes: relevantNotes, profile_complete: !!match } };"
+    }
+  ]
+}

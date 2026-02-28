@@ -46,6 +46,13 @@ data/
 !packages/core/data/
 !packages/core/data/providers/
 !packages/core/data/providers/*.json
+!packages/gateway/data/
+!packages/gateway/data/default-extensions/
+!packages/gateway/data/default-extensions/*/
+!packages/gateway/data/default-extensions/**/*.json
+!packages/gateway/data/example-skills/
+!packages/gateway/data/example-skills/*/
+!packages/gateway/data/example-skills/**/*
 *.db
 *.db-shm
 *.db-wal

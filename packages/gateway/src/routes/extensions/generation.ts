@@ -109,6 +109,36 @@ NOTE: \`require()\` is NOT available. Use the built-in \`crypto\`, \`utils\`, an
 Tool code MUST return an object: \`{ content: { ... } }\`
 On error: \`{ content: { error: "message" } }\`
 
+## OwnPilot SDK — Call Built-in Tools
+
+Extension tools can orchestrate ANY of the 150+ built-in tools. This is the most powerful feature:
+
+- \`await utils.callTool(toolName, args)\` — Call any built-in tool. Returns the tool's parsed result.
+- \`utils.listTools()\` — List all callable tools with name, description, and parameter names.
+- \`utils.getApiKey(serviceName)\` — Get API key for a Config Center service.
+- \`utils.getFieldValue(serviceName, fieldName)\` — Get a specific config field value.
+- \`utils.getConfigEntry(serviceName, label?)\` — Get full config entry data object.
+- \`utils.getConfigEntries(serviceName)\` — Get all entries for a multi-entry service.
+- \`utils.getServiceConfig(serviceName)\` — Get full service config object (legacy).
+
+### Callable Tool Categories:
+- **Memory**: create_memory, search_memories, list_memories, delete_memory
+- **Goals**: create_goal, list_goals, get_goal_details, update_goal, decompose_goal, get_next_actions, complete_step
+- **Tasks**: add_task, list_tasks, complete_task, update_task, delete_task
+- **Notes**: add_note, list_notes, update_note, delete_note
+- **Bookmarks**: add_bookmark, list_bookmarks, delete_bookmark
+- **Calendar**: add_calendar_event, list_calendar_events, delete_calendar_event
+- **Contacts**: add_contact, list_contacts, update_contact, delete_contact
+- **Custom Data**: create_custom_table, list_custom_tables, describe_custom_table, add_custom_record, list_custom_records, get_custom_record, update_custom_record, search_custom_records
+- **Utilities**: get_current_time, calculate, format_json, transform_text, convert_units, extract_entities, extract_table_data, validate_data
+- **Web** (needs "network" permission): http_request, fetch_web_page, search_web
+- **Files** (needs "filesystem" permission): read_file, list_files
+- **Triggers**: create_trigger, list_triggers, update_trigger, delete_trigger
+- **Plans**: create_plan, list_plans, update_plan
+
+### Blocked Tools (security):
+Cannot call: execute_javascript, execute_python, execute_shell, write_file, delete_file, move_file, send_email, git_commit, git_push, create_tool, delete_custom_tool
+
 ## Examples
 
 ### Simple utility extension (no external services):
@@ -178,6 +208,32 @@ On error: \`{ content: { error: "message" } }\`
   "keywords": ["search", "web", "google", "browse"]
 }
 
+### SDK-powered extension (orchestrates built-in tools):
+{
+  "id": "daily-digest",
+  "name": "Daily Digest",
+  "version": "1.0.0",
+  "description": "Compile a daily digest from tasks, calendar events, and active goals",
+  "category": "productivity",
+  "icon": "📋",
+  "tags": ["daily", "briefing", "summary", "productivity"],
+  "system_prompt": "Use get_daily_digest to give the user a summary of their day including pending tasks, upcoming events, and active goals.",
+  "tools": [
+    {
+      "name": "get_daily_digest",
+      "description": "Compile a daily digest with pending tasks, today's calendar events, and active goals",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "include_completed": { "type": "boolean", "description": "Include recently completed tasks (default: false)" }
+        }
+      },
+      "code": "const tasks = await utils.callTool('list_tasks', { status: 'pending' }); const events = await utils.callTool('list_calendar_events', { range: 'today' }); const goals = await utils.callTool('list_goals', { status: 'active' }); const result = { tasks, events, goals }; if (args.include_completed) { result.completed = await utils.callTool('list_tasks', { status: 'completed', limit: 5 }); } return { content: result };"
+    }
+  ],
+  "keywords": ["daily", "digest", "briefing", "tasks", "calendar", "goals"]
+}
+
 ## Rules
 1. Return ONLY valid JSON. No markdown code blocks. No explanation text.
 2. Every tool must have name, description, parameters, and code.
@@ -188,7 +244,10 @@ On error: \`{ content: { error: "message" } }\`
 7. Add relevant tags and keywords for discoverability.
 8. If the extension needs an external API, define it in required_services with config_schema.
 9. Include "network" in permissions for tools that make HTTP requests.
-10. Make tool descriptions clear and specific — the AI uses them to decide which tool to call.`;
+10. Make tool descriptions clear and specific — the AI uses them to decide which tool to call.
+11. PREFER using utils.callTool() to compose existing tools rather than reimplementing functionality.
+12. When the user's description involves data storage, use Custom Data tools (create_custom_table, add_custom_record, etc.) via utils.callTool().
+13. When the user's description involves remembering things, use Memory tools (create_memory, search_memories) via utils.callTool().`;
 
 // ============================================================================
 // Skill Generation Prompt (AgentSkills.io SKILL.md format)
@@ -319,7 +378,30 @@ Always explain WHY a change was suggested.
 7. Choose an appropriate category from: developer, productivity, communication, data, utilities, integrations, media, other.
 8. Add relevant tags for discoverability.
 9. Keep instructions focused — one skill per file, not a general-purpose guide.
-10. Use standard markdown formatting (headings, lists, code blocks, emphasis).`;
+10. Use standard markdown formatting (headings, lists, code blocks, emphasis).
+11. Include \`allowed-tools\` in frontmatter listing every tool the skill instructions reference.
+
+## Available Tools for allowed-tools
+
+Skills can declare \`allowed-tools\` in frontmatter to pre-approve tool usage. Available tools:
+
+- **Memory**: create_memory, search_memories, list_memories, delete_memory
+- **Tasks**: add_task, list_tasks, complete_task, update_task, delete_task
+- **Notes**: add_note, list_notes, update_note, delete_note
+- **Bookmarks**: add_bookmark, list_bookmarks, delete_bookmark
+- **Calendar**: add_calendar_event, list_calendar_events, delete_calendar_event
+- **Contacts**: add_contact, list_contacts, update_contact, delete_contact
+- **Goals**: create_goal, list_goals, get_goal_details, update_goal, decompose_goal, get_next_actions
+- **Custom Data**: create_custom_table, list_custom_tables, add_custom_record, list_custom_records, search_custom_records
+- **Files**: read_file, list_files, write_file, create_folder
+- **Web**: http_request, fetch_web_page, search_web
+- **Code**: execute_javascript, execute_python, execute_shell
+- **Utilities**: get_current_time, calculate, format_json, transform_text, extract_entities, convert_units
+- **Media**: analyze_image, generate_image, read_pdf, create_pdf, text_to_speech
+- **Triggers**: create_trigger, list_triggers, update_trigger
+- **Plans**: create_plan, list_plans, update_plan
+
+Always include relevant allowed-tools when the skill instructions reference tool usage.`;
 
 // ============================================================================
 // Routes
