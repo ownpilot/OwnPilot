@@ -41,6 +41,7 @@ const mockSessionsRepo = vi.hoisted(() => ({
 
 const mockMessagesRepo = vi.hoisted(() => ({
   create: vi.fn().mockResolvedValue(undefined),
+  linkConversation: vi.fn().mockResolvedValue(undefined),
 }));
 
 const mockConfigServicesRepo = vi.hoisted(() => ({
@@ -102,6 +103,7 @@ vi.mock('../db/repositories/channel-sessions.js', () => ({
 vi.mock('../db/repositories/channel-messages.js', () => ({
   ChannelMessagesRepository: class {
     create = mockMessagesRepo.create;
+    linkConversation = mockMessagesRepo.linkConversation;
   },
 }));
 
@@ -1378,7 +1380,7 @@ describe('ChannelServiceImpl', () => {
       it('should resolve provider and model via model routing', async () => {
         await service.processIncomingMessage(message);
 
-        expect(mockResolveForProcess).toHaveBeenCalledWith('telegram');
+        expect(mockResolveForProcess).toHaveBeenCalledWith('channel');
       });
 
       it('should load session conversation onto agent for context continuity', async () => {
