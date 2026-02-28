@@ -9,7 +9,7 @@
  * Follows the TriggerEngine singleton lifecycle pattern.
  */
 
-import { generateId, getServiceRegistry, Services, getErrorMessage } from '@ownpilot/core';
+import { generateId, getServiceRegistry, getEventSystem, Services, getErrorMessage } from '@ownpilot/core';
 import type {
   IPulseService,
   PulseResult,
@@ -27,7 +27,7 @@ import {
 import type { Signal } from './evaluator.js';
 import { DEFAULT_ACTION_COOLDOWNS, type ActionCooldowns } from './executor.js';
 import { getPulseSystemPrompt, buildPulseUserMessage } from './prompt.js';
-import { reportPulseResult, type Broadcaster } from './reporter.js';
+import { reportPulseResult } from './reporter.js';
 import { createAutonomyLogRepo } from '../db/repositories/autonomy-log.js';
 import { settingsRepo } from '../db/repositories/settings.js';
 import {
@@ -87,7 +87,6 @@ export class AutonomyEngine implements IPulseService {
   private timer: ReturnType<typeof setTimeout> | null = null;
   private running = false;
   private activePulse: { pulseId: string; stage: string; startedAt: number } | null = null;
-  private broadcaster?: Broadcaster;
   private lastPulseResult?: PulseResult;
 
   constructor(config: AutonomyEngineConfig) {
@@ -237,9 +236,9 @@ export class AutonomyEngine implements IPulseService {
         signalIds: evaluation.signals.map((s) => s.id),
       };
 
-      // 6. Report (WS broadcast)
+      // 6. Report (via EventBus)
       this.setStage('reporting');
-      await reportPulseResult(result, this.broadcaster);
+      await reportPulseResult(result);
 
       // 7. Log to DB
       await this.logResult(result);
@@ -310,26 +309,41 @@ export class AutonomyEngine implements IPulseService {
   }
 
   // ============================================================================
-  // Injection points (wired in server.ts)
+  // EventBus emission helpers
   // ============================================================================
-
-  setBroadcaster(broadcaster: Broadcaster): void {
-    this.broadcaster = broadcaster;
-  }
 
   private broadcastActivity(
     status: 'started' | 'stage' | 'completed' | 'error',
     stage: string,
     extra?: Record<string, unknown>
   ): void {
-    if (!this.broadcaster) return;
-    this.broadcaster('pulse:activity', {
-      status,
-      stage,
-      pulseId: this.activePulse?.pulseId ?? null,
-      startedAt: this.activePulse?.startedAt ?? null,
-      ...extra,
-    });
+    try {
+      const eventSystem = getEventSystem();
+      const pulseId = this.activePulse?.pulseId ?? 'unknown';
+      if (status === 'started') {
+        eventSystem.emit('pulse.started', 'autonomy-engine', {
+          pulseId,
+          userId: this.config.userId,
+        });
+      } else if (status === 'stage') {
+        eventSystem.emit('pulse.stage', 'autonomy-engine', {
+          pulseId,
+          stage: stage as 'gathering' | 'evaluating' | 'deciding' | 'reporting',
+        });
+      } else if (status === 'completed') {
+        eventSystem.emit('pulse.completed', 'autonomy-engine', {
+          pulseId,
+          userId: this.config.userId,
+          durationMs: (extra?.durationMs as number) ?? 0,
+          signalsFound: (extra?.signalsFound as number) ?? 0,
+          actionsExecuted: (extra?.actionsExecuted as number) ?? 0,
+          llmCalled: true,
+        });
+      }
+      // 'error' status doesn't have a dedicated event type — logged by caller
+    } catch {
+      // EventSystem may not be initialized during tests
+    }
   }
 
   private setStage(stage: string): void {

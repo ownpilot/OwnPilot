@@ -50,6 +50,10 @@ const { mockExecuteTool, mockHasTool } = vi.hoisted(() => ({
   mockHasTool: vi.fn(),
 }));
 
+const mockEventBusUnsub = vi.fn();
+const mockEventBusOnPattern = vi.fn().mockReturnValue(mockEventBusUnsub);
+const mockEventBusEmit = vi.fn();
+
 vi.mock('@ownpilot/core', async (importOriginal) => {
   const actual = await importOriginal<Record<string, unknown>>();
   return {
@@ -61,8 +65,11 @@ vi.mock('@ownpilot/core', async (importOriginal) => {
       Memory: { name: 'memory' },
     },
     getNextRunTime: vi.fn(),
-    // Needed by transitive imports (ws/events.ts, tool-executor.ts → custom-tools.ts)
-    getEventSystem: () => ({ scoped: () => ({ on: vi.fn(), emit: vi.fn() }) }),
+    getEventSystem: () => ({
+      onPattern: mockEventBusOnPattern,
+      emit: mockEventBusEmit,
+      scoped: () => ({ on: vi.fn(), emit: vi.fn() }),
+    }),
     createDynamicToolRegistry: vi.fn(() => ({ register: vi.fn(), execute: vi.fn() })),
     ALL_TOOLS: [],
   };

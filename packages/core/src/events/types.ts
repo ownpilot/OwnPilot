@@ -20,7 +20,14 @@ export type EventCategory =
   | 'plugin'
   | 'system'
   | 'channel'
-  | 'gateway';
+  | 'gateway'
+  | 'trigger'
+  | 'pulse'
+  | 'chat'
+  | 'extension'
+  | 'memory'
+  | 'mcp'
+  | 'background-agent';
 
 // ============================================================================
 // Event Types
@@ -104,6 +111,13 @@ export function deriveCategory(type: string): EventCategory {
     'system',
     'channel',
     'gateway',
+    'trigger',
+    'pulse',
+    'chat',
+    'extension',
+    'memory',
+    'mcp',
+    'background-agent',
   ];
   if (validCategories.includes(firstSegment as EventCategory)) {
     return firstSegment as EventCategory;

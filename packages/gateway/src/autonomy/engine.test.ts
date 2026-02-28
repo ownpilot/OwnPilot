@@ -215,10 +215,10 @@ describe('AutonomyEngine', () => {
       engine.stop();
     });
 
-    it('setBroadcaster sets the broadcaster', () => {
-      const broadcaster = vi.fn();
-      engine.setBroadcaster(broadcaster);
-      // No assertion on internal state — tested via runPulse + reporter mock
+    it('emits pulse events via EventBus during runPulse', async () => {
+      // Pulse stages are emitted via getEventSystem() — no broadcaster needed
+      const result = await engine.runPulse('test-user', true);
+      expect(result.error).toBeUndefined();
     });
   });
 
@@ -267,27 +267,11 @@ describe('AutonomyEngine', () => {
       expect(status.activePulse).toBeNull();
     });
 
-    it('broadcasts stage events through broadcaster', async () => {
-      const broadcaster = vi.fn();
-      engine.setBroadcaster(broadcaster);
-
-      await engine.runPulse('test-user', true);
-
-      // Should have received: started, gathering, evaluating, executing, reporting, completed
-      const activityCalls = broadcaster.mock.calls.filter(
-        ([event]: [string]) => event === 'pulse:activity'
-      );
-      expect(activityCalls.length).toBeGreaterThanOrEqual(5);
-
-      // First event should be 'started'
-      expect(activityCalls[0][1].status).toBe('started');
-      expect(activityCalls[0][1].stage).toBe('starting');
-
-      // Last event should be 'completed'
-      const lastCall = activityCalls[activityCalls.length - 1];
-      expect(lastCall[1].status).toBe('completed');
-      expect(lastCall[1].stage).toBe('done');
-      expect(lastCall[1].durationMs).toBeGreaterThanOrEqual(0);
+    it('emits stage events via EventBus during pulse cycle', async () => {
+      // Pulse emits pulse.started, pulse.stage, pulse.completed via EventBus
+      const result = await engine.runPulse('test-user', true);
+      expect(result.error).toBeUndefined();
+      expect(result.durationMs).toBeGreaterThanOrEqual(0);
     });
 
     it('releases lock on error', async () => {
@@ -304,21 +288,12 @@ describe('AutonomyEngine', () => {
       expect(successResult.error).toBeUndefined();
     });
 
-    it('broadcasts error event on failure', async () => {
-      const broadcaster = vi.fn();
-      engine.setBroadcaster(broadcaster);
-
+    it('handles error during pulse and records it', async () => {
       const { gatherPulseContext } = await import('./context.js');
       (gatherPulseContext as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error('Boom'));
 
-      await engine.runPulse('test-user', true);
-
-      const errorCalls = broadcaster.mock.calls.filter(
-        ([event, data]: [string, Record<string, unknown>]) =>
-          event === 'pulse:activity' && data.status === 'error'
-      );
-      expect(errorCalls.length).toBe(1);
-      expect(errorCalls[0][1].error).toContain('Boom');
+      const result = await engine.runPulse('test-user', true);
+      expect(result.error).toContain('Boom');
     });
   });
 

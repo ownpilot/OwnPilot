@@ -37,11 +37,14 @@ const mockRegistryGet = vi.fn((service: string) => {
   return {};
 });
 
+const mockEventSystemEmit = vi.fn();
+
 vi.mock('@ownpilot/core', async (importOriginal) => {
   const actual = await importOriginal<Record<string, unknown>>();
   return {
     ...actual,
     getServiceRegistry: vi.fn(() => ({ get: mockRegistryGet })),
+    getEventSystem: vi.fn(() => ({ emit: mockEventSystemEmit })),
     Services: { Memory: 'memory', Goal: 'goal', Trigger: 'trigger' },
     getBaseName: vi.fn((name: string) => name.split('.').pop() ?? name),
   };
@@ -74,12 +77,10 @@ vi.mock('../autonomy/index.js', () => ({
 }));
 
 const mockFireTrigger = vi.fn(() => ({ success: true }));
-const mockTriggerEmit = vi.fn();
 
 vi.mock('../triggers/engine.js', () => ({
   getTriggerEngine: vi.fn(() => ({
     fireTrigger: mockFireTrigger,
-    emit: mockTriggerEmit,
   })),
 }));
 
@@ -1154,7 +1155,6 @@ describe('evaluateTriggers', () => {
     vi.clearAllMocks();
     mockTriggerService.listTriggers.mockResolvedValue([]);
     mockFireTrigger.mockResolvedValue({ success: true });
-    mockTriggerEmit.mockResolvedValue(undefined);
   });
 
   it('returns empty arrays when no triggers', async () => {
@@ -1162,21 +1162,25 @@ describe('evaluateTriggers', () => {
     expect(result).toEqual({ triggered: [], pending: [], executed: [] });
   });
 
-  it('always emits chat_completed event at the end', async () => {
+  it('always emits chat.completed event via EventBus at the end', async () => {
     await evaluateTriggers(USER_ID, 'msg', 'resp');
-    expect(mockTriggerEmit).toHaveBeenCalledWith('chat_completed', {
+    expect(mockEventSystemEmit).toHaveBeenCalledWith('chat.completed', 'orchestrator', {
       userId: USER_ID,
+      conversationId: '',
       messageLength: 3,
       responseLength: 4,
+      toolCallsUsed: 0,
     });
   });
 
-  it('emits chat_completed with correct message and response lengths', async () => {
+  it('emits chat.completed with correct message and response lengths', async () => {
     await evaluateTriggers(USER_ID, 'hello world', 'great response here');
-    expect(mockTriggerEmit).toHaveBeenCalledWith('chat_completed', {
+    expect(mockEventSystemEmit).toHaveBeenCalledWith('chat.completed', 'orchestrator', {
       userId: USER_ID,
+      conversationId: '',
       messageLength: 11,
       responseLength: 'great response here'.length, // 19
+      toolCallsUsed: 0,
     });
   });
 

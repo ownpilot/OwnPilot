@@ -135,6 +135,7 @@ Extension tools can orchestrate ANY of the 150+ built-in tools. This is the most
 - **Files** (needs "filesystem" permission): read_file, list_files
 - **Triggers**: create_trigger, list_triggers, update_trigger, delete_trigger
 - **Plans**: create_plan, list_plans, update_plan
+- **Events**: emit_event(event_type, data) — emit a custom event namespaced to your extension; wait_for_event(event_type, timeout_ms) — wait for an event (max 5 min); list_event_categories() — discover available event categories
 
 ### Blocked Tools (security):
 Cannot call: execute_javascript, execute_python, execute_shell, write_file, delete_file, move_file, send_email, git_commit, git_push, create_tool, delete_custom_tool

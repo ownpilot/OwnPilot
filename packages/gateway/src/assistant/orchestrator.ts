@@ -10,7 +10,7 @@
  * It wraps the Agent to provide a fully autonomous personal AI assistant.
  */
 
-import { type ToolCall, getServiceRegistry, Services, getBaseName } from '@ownpilot/core';
+import { type ToolCall, getServiceRegistry, getEventSystem, Services, getBaseName } from '@ownpilot/core';
 import type { CliToolPolicy } from '@ownpilot/core';
 import { getResourceRegistry } from '../services/resource-registry.js';
 import { getApprovalManager, assessRisk, type ActionCategory } from '../autonomy/index.js';
@@ -413,12 +413,18 @@ export async function evaluateTriggers(
     }
   }
 
-  // Emit chat_completed event for any additional event-based triggers
-  await triggerEngine.emit('chat_completed', {
-    userId,
-    messageLength: message.length,
-    responseLength: response.length,
-  });
+  // Emit chat.completed event via EventBus (triggers subscribe automatically)
+  try {
+    getEventSystem().emit('chat.completed', 'orchestrator', {
+      userId,
+      conversationId: '',
+      messageLength: message.length,
+      responseLength: response.length,
+      toolCallsUsed: executed.length,
+    });
+  } catch {
+    // EventSystem may not be initialized during tests
+  }
 
   return { triggered, pending, executed };
 }

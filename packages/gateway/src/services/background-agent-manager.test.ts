@@ -47,8 +47,11 @@ vi.mock('@ownpilot/core', async (importOriginal) => {
     ...actual,
     getEventSystem: () => ({
       emit: vi.fn(),
+      emitRaw: vi.fn(),
       on: vi.fn().mockReturnValue(() => {}),
+      onAny: vi.fn().mockReturnValue(() => {}),
       off: vi.fn(),
+      scoped: () => ({ on: vi.fn(), emit: vi.fn() }),
     }),
   };
 });

@@ -5,19 +5,10 @@
  * Used by the Pulse Engine (Autonomy) to reach out via Telegram and WebSocket.
  */
 
-import { type ToolDefinition, getErrorMessage, getServiceRegistry, Services } from '@ownpilot/core';
-import type { Broadcaster } from '../autonomy/reporter.js';
+import { type ToolDefinition, getEventSystem, getErrorMessage, getServiceRegistry, Services } from '@ownpilot/core';
 import { getLog } from '../services/log.js';
 
 const log = getLog('NotificationTools');
-
-// Module-level broadcaster ref — set by the engine at startup
-let wsBroadcaster: Broadcaster | undefined;
-
-/** Inject the WS broadcaster so notification tools can push to web clients. */
-export function setNotificationBroadcaster(broadcaster: Broadcaster): void {
-  wsBroadcaster = broadcaster;
-}
 
 // =============================================================================
 // Tool Definitions
@@ -128,19 +119,16 @@ export async function executeNotificationTool(
         const telegramSent = await sendTelegramMessage(userId, telegramText);
         if (telegramSent) deliveries.push('telegram');
 
-        // 2. Broadcast via WebSocket (if broadcaster is injected)
-        if (wsBroadcaster) {
-          try {
-            wsBroadcaster('system:notification', {
-              type: urgency === 'high' ? 'warning' : 'info',
-              message,
-              action: 'pulse_notification',
-              data: { urgency },
-            });
-            deliveries.push('websocket');
-          } catch {
-            // WS broadcaster may fail silently
-          }
+        // 2. Emit notification via EventBus (forwarded to WS clients by legacy bridge)
+        try {
+          getEventSystem().emit('gateway.system.notification', 'notification-tool', {
+            type: urgency === 'high' ? 'warning' : ('info' as const),
+            message,
+            action: 'pulse_notification',
+          });
+          deliveries.push('websocket');
+        } catch {
+          // EventSystem may not be initialized
         }
 
         return {

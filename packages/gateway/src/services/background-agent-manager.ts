@@ -62,8 +62,6 @@ interface ManagedAgent {
   persistTimer: ReturnType<typeof setInterval> | null;
 }
 
-export type WsBroadcaster = (type: string, data: unknown) => void;
-
 // ============================================================================
 // Manager
 // ============================================================================
@@ -71,12 +69,6 @@ export type WsBroadcaster = (type: string, data: unknown) => void;
 export class BackgroundAgentManager {
   private agents = new Map<string, ManagedAgent>();
   private running = false;
-  private broadcaster?: WsBroadcaster;
-
-  /** Set WebSocket broadcaster for real-time UI updates */
-  setBroadcaster(fn: WsBroadcaster): void {
-    this.broadcaster = fn;
-  }
 
   /**
    * Boot: resume autoStart agents and interrupted sessions.
@@ -712,16 +704,25 @@ export class BackgroundAgentManager {
   }
 
   private broadcastUpdate(agentId: string, managed: ManagedAgent): void {
-    if (!this.broadcaster) return;
-    this.broadcaster('background-agent.update', {
-      agentId,
-      state: managed.session.state,
-      cyclesCompleted: managed.session.cyclesCompleted,
-      totalToolCalls: managed.session.totalToolCalls,
-      lastCycleAt: managed.session.lastCycleAt,
-      lastCycleDurationMs: managed.session.lastCycleDurationMs,
-      lastCycleError: managed.session.lastCycleError,
-    });
+    try {
+      getEventSystem().emitRaw({
+        type: 'background-agent.update',
+        category: 'background-agent',
+        source: 'background-agent-manager',
+        data: {
+          agentId,
+          state: managed.session.state,
+          cyclesCompleted: managed.session.cyclesCompleted,
+          totalToolCalls: managed.session.totalToolCalls,
+          lastCycleAt: managed.session.lastCycleAt,
+          lastCycleDurationMs: managed.session.lastCycleDurationMs,
+          lastCycleError: managed.session.lastCycleError,
+        },
+        timestamp: new Date().toISOString(),
+      });
+    } catch {
+      // EventSystem may not be initialized during tests
+    }
   }
 }
 

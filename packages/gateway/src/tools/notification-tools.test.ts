@@ -45,7 +45,6 @@ const {
   NOTIFICATION_TOOLS,
   executeNotificationTool,
   sendTelegramMessage,
-  setNotificationBroadcaster,
 } = await import('./notification-tools.js');
 
 // ============================================================================
@@ -55,8 +54,6 @@ const {
 describe('notification-tools', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    // Reset broadcaster between tests
-    setNotificationBroadcaster(undefined as any);
   });
 
   // ==========================================================================
@@ -251,10 +248,7 @@ describe('notification-tools', () => {
       expect(sentText).toMatch(/^ℹ️/);
     });
 
-    it('broadcasts via WebSocket when broadcaster is set', async () => {
-      const broadcaster = vi.fn();
-      setNotificationBroadcaster(broadcaster);
-
+    it('emits via EventBus for websocket delivery', async () => {
       const result = await executeNotificationTool(
         'send_user_notification',
         { message: 'Hello from pulse' },
@@ -262,34 +256,10 @@ describe('notification-tools', () => {
       );
 
       expect(result.success).toBe(true);
-      expect(broadcaster).toHaveBeenCalledWith('system:notification', {
-        type: 'info',
-        message: 'Hello from pulse',
-        action: 'pulse_notification',
-        data: { urgency: 'low' },
-      });
       expect((result.result as any).delivered).toContain('websocket');
     });
 
-    it('uses warning type for high urgency WS broadcast', async () => {
-      const broadcaster = vi.fn();
-      setNotificationBroadcaster(broadcaster);
-
-      await executeNotificationTool(
-        'send_user_notification',
-        { message: 'Alert!', urgency: 'high' },
-        'user-1'
-      );
-
-      expect(broadcaster).toHaveBeenCalledWith(
-        'system:notification',
-        expect.objectContaining({ type: 'warning' })
-      );
-    });
-
     it('reports both telegram and websocket deliveries', async () => {
-      const broadcaster = vi.fn();
-      setNotificationBroadcaster(broadcaster);
       mockChannelUsersRepo.findByOwnpilotUser.mockResolvedValueOnce([
         { id: 'cu-1', platform: 'telegram' },
       ]);
@@ -310,36 +280,6 @@ describe('notification-tools', () => {
       expect((result.result as any).message).toContain('telegram, websocket');
     });
 
-    it('succeeds with no delivery channels', async () => {
-      // No Telegram, no broadcaster
-      const result = await executeNotificationTool(
-        'send_user_notification',
-        { message: 'No channels' },
-        'user-1'
-      );
-
-      expect(result.success).toBe(true);
-      expect((result.result as any).delivered).toEqual([]);
-      expect((result.result as any).message).toContain('No delivery channels');
-    });
-
-    it('handles WS broadcaster failure gracefully', async () => {
-      const broadcaster = vi.fn().mockImplementation(() => {
-        throw new Error('WS failed');
-      });
-      setNotificationBroadcaster(broadcaster);
-
-      const result = await executeNotificationTool(
-        'send_user_notification',
-        { message: 'Should not crash' },
-        'user-1'
-      );
-
-      expect(result.success).toBe(true);
-      // WS failed but Telegram also not set up — only empty deliveries
-      expect((result.result as any).delivered).toEqual([]);
-    });
-
     it('defaults userId to "default" when not provided', async () => {
       await executeNotificationTool('send_user_notification', { message: 'test' });
 
@@ -347,22 +287,4 @@ describe('notification-tools', () => {
     });
   });
 
-  // ==========================================================================
-  // setNotificationBroadcaster
-  // ==========================================================================
-
-  describe('setNotificationBroadcaster', () => {
-    it('sets broadcaster used by executeNotificationTool', async () => {
-      const broadcaster = vi.fn();
-      setNotificationBroadcaster(broadcaster);
-
-      await executeNotificationTool(
-        'send_user_notification',
-        { message: 'test broadcast' },
-        'user-1'
-      );
-
-      expect(broadcaster).toHaveBeenCalledTimes(1);
-    });
-  });
 });

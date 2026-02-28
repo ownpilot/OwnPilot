@@ -55,6 +55,7 @@ import {
   HEARTBEAT_TOOLS,
   EXTENSION_TOOLS,
   NOTIFICATION_TOOLS,
+  EVENT_TOOLS,
   DYNAMIC_TOOL_DEFINITIONS,
 } from './agent-tools.js';
 import {
@@ -164,6 +165,7 @@ async function createAgentFromRecord(record: AgentRecord): Promise<Agent> {
     ...HEARTBEAT_TOOLS,
     ...EXTENSION_TOOLS,
     ...NOTIFICATION_TOOLS,
+    ...EVENT_TOOLS,
   ];
 
   // These tools ALWAYS bypass toolGroup filtering:
@@ -434,6 +436,7 @@ async function createChatAgentInstance(
     ...HEARTBEAT_TOOLS,
     ...EXTENSION_TOOLS,
     ...NOTIFICATION_TOOLS,
+    ...EVENT_TOOLS,
   ];
   const chatAlwaysIncluded = [
     ...DYNAMIC_TOOL_DEFINITIONS,

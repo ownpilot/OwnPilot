@@ -97,6 +97,7 @@ vi.mock('./agent-tools.js', () => ({
   HEARTBEAT_TOOLS: [],
   EXTENSION_TOOLS: [],
   NOTIFICATION_TOOLS: [],
+  EVENT_TOOLS: [],
   DYNAMIC_TOOL_DEFINITIONS: [],
 }));
 

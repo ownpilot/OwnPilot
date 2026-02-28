@@ -175,6 +175,8 @@ vi.mock('../tools/index.js', () => ({
   executePulseTool: vi.fn(),
   NOTIFICATION_TOOLS: [],
   executeNotificationTool: vi.fn(),
+  EVENT_TOOLS: [],
+  executeEventTool: vi.fn(),
 }));
 
 vi.mock('../services/config-tools.js', () => ({

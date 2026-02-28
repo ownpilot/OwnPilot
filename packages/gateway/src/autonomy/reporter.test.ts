@@ -2,18 +2,17 @@
  * Tests for the Pulse Reporter
  *
  * Covers all branches of reportPulseResult:
- * - No broadcaster (early return)
- * - Broadcast notification when reportMessage is set
+ * - Broadcast notification via EventBus when reportMessage is set
  * - Broadcast notification when a successful non-skipped action exists
  * - No notification when there's no reportMessage and no successful actions
  * - data:changed events for memories, goals, notifications
  * - Skipped / failed actions are excluded from data:changed
- * - Error handling (broadcaster throws)
+ * - Error handling (EventBus throws)
+ * - Legacy broadcaster parameter is ignored
  */
 
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import type { PulseResult } from '@ownpilot/core';
-import type { Broadcaster } from './reporter.js';
 
 // ============================================================================
 // Mock log so we can assert on log.debug in the error branch
@@ -29,6 +28,24 @@ const mockLog = {
 vi.mock('../services/log.js', () => ({
   getLog: () => mockLog,
 }));
+
+// ============================================================================
+// Mock EventSystem
+// ============================================================================
+
+const mockEventEmit = vi.fn();
+const mockEventEmitRaw = vi.fn();
+
+vi.mock('@ownpilot/core', async (importOriginal) => {
+  const actual = await importOriginal<Record<string, unknown>>();
+  return {
+    ...actual,
+    getEventSystem: vi.fn(() => ({
+      emit: mockEventEmit,
+      emitRaw: mockEventEmitRaw,
+    })),
+  };
+});
 
 // ============================================================================
 // Helpers
@@ -54,35 +71,17 @@ function makeResult(overrides: Partial<PulseResult> = {}): PulseResult {
 
 describe('reportPulseResult', () => {
   let reportPulseResult: typeof import('./reporter.js').reportPulseResult;
-  let mockBroadcaster: Broadcaster;
 
   beforeEach(async () => {
     vi.clearAllMocks();
     ({ reportPulseResult } = await import('./reporter.js'));
-    mockBroadcaster = vi.fn();
   });
 
   // --------------------------------------------------------------------------
-  // Early return when no broadcaster
+  // Notification broadcasting via EventBus
   // --------------------------------------------------------------------------
 
-  it('returns immediately when no broadcaster is provided', async () => {
-    const result = makeResult({ reportMessage: 'Something happened' });
-    await reportPulseResult(result);
-    // No error thrown, no broadcaster called
-  });
-
-  it('returns immediately when broadcaster is undefined', async () => {
-    const result = makeResult({ reportMessage: 'Something happened' });
-    await reportPulseResult(result, undefined);
-    // No error thrown
-  });
-
-  // --------------------------------------------------------------------------
-  // Notification broadcasting
-  // --------------------------------------------------------------------------
-
-  it('broadcasts system:notification when reportMessage is set', async () => {
+  it('emits system notification via EventBus when reportMessage is set', async () => {
     const result = makeResult({
       pulseId: 'p-100',
       reportMessage: 'Daily summary ready.',
@@ -91,22 +90,20 @@ describe('reportPulseResult', () => {
       actionsExecuted: [],
     });
 
-    await reportPulseResult(result, mockBroadcaster);
+    await reportPulseResult(result);
 
-    expect(mockBroadcaster).toHaveBeenCalledWith('system:notification', {
-      type: 'info',
-      message: 'Daily summary ready.',
-      action: 'pulse',
-      data: {
-        pulseId: 'p-100',
-        signalsFound: 3,
-        actionsExecuted: 0,
-        urgencyScore: 42,
-      },
-    });
+    expect(mockEventEmit).toHaveBeenCalledWith(
+      'gateway.system.notification',
+      'pulse-reporter',
+      {
+        type: 'info',
+        message: 'Daily summary ready.',
+        action: 'pulse',
+      }
+    );
   });
 
-  it('broadcasts notification with default message when reportMessage is empty but a successful action exists', async () => {
+  it('emits notification with default message when reportMessage is empty but a successful action exists', async () => {
     const result = makeResult({
       pulseId: 'p-200',
       reportMessage: '',
@@ -115,58 +112,77 @@ describe('reportPulseResult', () => {
       actionsExecuted: [{ type: 'create_memory', success: true, output: {} }],
     });
 
-    await reportPulseResult(result, mockBroadcaster);
+    await reportPulseResult(result);
 
-    expect(mockBroadcaster).toHaveBeenCalledWith('system:notification', {
-      type: 'info',
-      message: 'Pulse cycle completed.',
-      action: 'pulse',
-      data: {
-        pulseId: 'p-200',
-        signalsFound: 1,
-        actionsExecuted: 1,
-        urgencyScore: 10,
-      },
-    });
+    expect(mockEventEmit).toHaveBeenCalledWith(
+      'gateway.system.notification',
+      'pulse-reporter',
+      {
+        type: 'info',
+        message: 'Pulse cycle completed.',
+        action: 'pulse',
+      }
+    );
   });
 
-  it('does not broadcast notification when reportMessage is empty and all actions are skipped', async () => {
+  it('does not emit notification when reportMessage is empty and all actions are skipped', async () => {
     const result = makeResult({
       reportMessage: '',
       actionsExecuted: [{ type: 'create_memory', success: true, skipped: true, output: {} }],
     });
 
-    await reportPulseResult(result, mockBroadcaster);
+    await reportPulseResult(result);
 
-    // No system:notification call — only data:changed might be emitted (but
-    // skipped actions are excluded from that too).
-    expect(mockBroadcaster).not.toHaveBeenCalledWith('system:notification', expect.anything());
+    expect(mockEventEmit).not.toHaveBeenCalledWith(
+      'gateway.system.notification',
+      expect.anything(),
+      expect.anything()
+    );
   });
 
-  it('does not broadcast notification when reportMessage is empty and all actions failed', async () => {
+  it('does not emit notification when reportMessage is empty and all actions failed', async () => {
     const result = makeResult({
       reportMessage: '',
       actionsExecuted: [{ type: 'create_memory', success: false, output: {}, error: 'fail' }],
     });
 
-    await reportPulseResult(result, mockBroadcaster);
+    await reportPulseResult(result);
 
-    expect(mockBroadcaster).not.toHaveBeenCalledWith('system:notification', expect.anything());
+    expect(mockEventEmit).not.toHaveBeenCalledWith(
+      'gateway.system.notification',
+      expect.anything(),
+      expect.anything()
+    );
   });
 
-  it('does not broadcast notification when reportMessage is empty and no actions exist', async () => {
+  it('does not emit notification when reportMessage is empty and no actions exist', async () => {
     const result = makeResult({
       reportMessage: '',
       actionsExecuted: [],
     });
 
-    await reportPulseResult(result, mockBroadcaster);
+    await reportPulseResult(result);
 
-    expect(mockBroadcaster).not.toHaveBeenCalled();
+    expect(mockEventEmit).not.toHaveBeenCalled();
+    expect(mockEventEmitRaw).not.toHaveBeenCalled();
   });
 
   // --------------------------------------------------------------------------
-  // data:changed events — entity type mapping
+  // Legacy broadcaster parameter is ignored
+  // --------------------------------------------------------------------------
+
+  it('ignores legacy broadcaster parameter', async () => {
+    const mockBroadcaster = vi.fn();
+    const result = makeResult({ reportMessage: 'test' });
+
+    await reportPulseResult(result, mockBroadcaster);
+
+    expect(mockBroadcaster).not.toHaveBeenCalled();
+    expect(mockEventEmit).toHaveBeenCalled();
+  });
+
+  // --------------------------------------------------------------------------
+  // data:changed events — entity type mapping via emitRaw
   // --------------------------------------------------------------------------
 
   it('emits data:changed for memories on create_memory action', async () => {
@@ -175,9 +191,14 @@ describe('reportPulseResult', () => {
       actionsExecuted: [{ type: 'create_memory', success: true, output: {} }],
     });
 
-    await reportPulseResult(result, mockBroadcaster);
+    await reportPulseResult(result);
 
-    expect(mockBroadcaster).toHaveBeenCalledWith('data:changed', { type: 'memories' });
+    expect(mockEventEmitRaw).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'gateway.data.changed',
+        data: { type: 'memories' },
+      })
+    );
   });
 
   it('emits data:changed for memories on run_memory_cleanup action', async () => {
@@ -186,9 +207,14 @@ describe('reportPulseResult', () => {
       actionsExecuted: [{ type: 'run_memory_cleanup', success: true, output: {} }],
     });
 
-    await reportPulseResult(result, mockBroadcaster);
+    await reportPulseResult(result);
 
-    expect(mockBroadcaster).toHaveBeenCalledWith('data:changed', { type: 'memories' });
+    expect(mockEventEmitRaw).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'gateway.data.changed',
+        data: { type: 'memories' },
+      })
+    );
   });
 
   it('emits data:changed for goals on update_goal_progress action', async () => {
@@ -197,9 +223,14 @@ describe('reportPulseResult', () => {
       actionsExecuted: [{ type: 'update_goal_progress', success: true, output: {} }],
     });
 
-    await reportPulseResult(result, mockBroadcaster);
+    await reportPulseResult(result);
 
-    expect(mockBroadcaster).toHaveBeenCalledWith('data:changed', { type: 'goals' });
+    expect(mockEventEmitRaw).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'gateway.data.changed',
+        data: { type: 'goals' },
+      })
+    );
   });
 
   it('emits data:changed for notifications on send_user_notification action', async () => {
@@ -208,9 +239,14 @@ describe('reportPulseResult', () => {
       actionsExecuted: [{ type: 'send_user_notification', success: true, output: {} }],
     });
 
-    await reportPulseResult(result, mockBroadcaster);
+    await reportPulseResult(result);
 
-    expect(mockBroadcaster).toHaveBeenCalledWith('data:changed', { type: 'notifications' });
+    expect(mockEventEmitRaw).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'gateway.data.changed',
+        data: { type: 'notifications' },
+      })
+    );
   });
 
   it('deduplicates data:changed events for the same entity type', async () => {
@@ -222,16 +258,14 @@ describe('reportPulseResult', () => {
       ],
     });
 
-    await reportPulseResult(result, mockBroadcaster);
+    await reportPulseResult(result);
 
     // Should only get ONE data:changed for 'memories', not two
-    const dataChangedCalls = (mockBroadcaster as ReturnType<typeof vi.fn>).mock.calls.filter(
-      ([event]: [string]) => event === 'data:changed'
+    const memoriesEmits = mockEventEmitRaw.mock.calls.filter(
+      ([event]: [{ type: string; data: { type: string } }]) =>
+        event.type === 'gateway.data.changed' && event.data.type === 'memories'
     );
-    const memoriesCalls = dataChangedCalls.filter(
-      ([, data]: [string, { type: string }]) => data.type === 'memories'
-    );
-    expect(memoriesCalls).toHaveLength(1);
+    expect(memoriesEmits).toHaveLength(1);
   });
 
   it('emits multiple data:changed events for different entity types', async () => {
@@ -244,11 +278,17 @@ describe('reportPulseResult', () => {
       ],
     });
 
-    await reportPulseResult(result, mockBroadcaster);
+    await reportPulseResult(result);
 
-    expect(mockBroadcaster).toHaveBeenCalledWith('data:changed', { type: 'memories' });
-    expect(mockBroadcaster).toHaveBeenCalledWith('data:changed', { type: 'goals' });
-    expect(mockBroadcaster).toHaveBeenCalledWith('data:changed', { type: 'notifications' });
+    expect(mockEventEmitRaw).toHaveBeenCalledWith(
+      expect.objectContaining({ data: { type: 'memories' } })
+    );
+    expect(mockEventEmitRaw).toHaveBeenCalledWith(
+      expect.objectContaining({ data: { type: 'goals' } })
+    );
+    expect(mockEventEmitRaw).toHaveBeenCalledWith(
+      expect.objectContaining({ data: { type: 'notifications' } })
+    );
   });
 
   // --------------------------------------------------------------------------
@@ -261,9 +301,12 @@ describe('reportPulseResult', () => {
       actionsExecuted: [{ type: 'create_memory', success: true, skipped: true, output: {} }],
     });
 
-    await reportPulseResult(result, mockBroadcaster);
+    await reportPulseResult(result);
 
-    expect(mockBroadcaster).not.toHaveBeenCalledWith('data:changed', { type: 'memories' });
+    const dataChangedCalls = mockEventEmitRaw.mock.calls.filter(
+      ([event]: [{ type: string }]) => event.type === 'gateway.data.changed'
+    );
+    expect(dataChangedCalls).toHaveLength(0);
   });
 
   it('does not emit data:changed for failed actions', async () => {
@@ -274,9 +317,12 @@ describe('reportPulseResult', () => {
       ],
     });
 
-    await reportPulseResult(result, mockBroadcaster);
+    await reportPulseResult(result);
 
-    expect(mockBroadcaster).not.toHaveBeenCalledWith('data:changed', { type: 'goals' });
+    const dataChangedCalls = mockEventEmitRaw.mock.calls.filter(
+      ([event]: [{ type: string }]) => event.type === 'gateway.data.changed'
+    );
+    expect(dataChangedCalls).toHaveLength(0);
   });
 
   it('does not emit data:changed for unrecognized action types', async () => {
@@ -285,11 +331,10 @@ describe('reportPulseResult', () => {
       actionsExecuted: [{ type: 'some_unknown_action', success: true, output: {} }],
     });
 
-    await reportPulseResult(result, mockBroadcaster);
+    await reportPulseResult(result);
 
-    // Only the notification call, no data:changed
-    const dataChangedCalls = (mockBroadcaster as ReturnType<typeof vi.fn>).mock.calls.filter(
-      ([event]: [string]) => event === 'data:changed'
+    const dataChangedCalls = mockEventEmitRaw.mock.calls.filter(
+      ([event]: [{ type: string }]) => event.type === 'gateway.data.changed'
     );
     expect(dataChangedCalls).toHaveLength(0);
   });
@@ -298,10 +343,10 @@ describe('reportPulseResult', () => {
   // Error handling
   // --------------------------------------------------------------------------
 
-  it('catches errors from broadcaster and logs them via log.debug', async () => {
-    const throwingBroadcaster: Broadcaster = () => {
-      throw new Error('WebSocket closed');
-    };
+  it('catches errors from EventBus and logs them via log.debug', async () => {
+    mockEventEmit.mockImplementation(() => {
+      throw new Error('EventBus closed');
+    });
 
     const result = makeResult({
       reportMessage: 'test',
@@ -309,26 +354,26 @@ describe('reportPulseResult', () => {
     });
 
     // Should NOT throw
-    await reportPulseResult(result, throwingBroadcaster);
+    await reportPulseResult(result);
 
-    expect(mockLog.debug).toHaveBeenCalledWith('WebSocket broadcast failed', {
-      error: 'Error: WebSocket closed',
+    expect(mockLog.debug).toHaveBeenCalledWith('EventBus emission failed', {
+      error: 'Error: EventBus closed',
     });
   });
 
   it('catches non-Error thrown values and stringifies them', async () => {
-    const throwingBroadcaster: Broadcaster = () => {
+    mockEventEmit.mockImplementation(() => {
       throw 'plain string error';
-    };
+    });
 
     const result = makeResult({
       reportMessage: 'test',
       actionsExecuted: [],
     });
 
-    await reportPulseResult(result, throwingBroadcaster);
+    await reportPulseResult(result);
 
-    expect(mockLog.debug).toHaveBeenCalledWith('WebSocket broadcast failed', {
+    expect(mockLog.debug).toHaveBeenCalledWith('EventBus emission failed', {
       error: 'plain string error',
     });
   });

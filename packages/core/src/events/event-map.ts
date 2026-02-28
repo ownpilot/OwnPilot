@@ -403,6 +403,69 @@ export interface BackgroundAgentMessageData {
 }
 
 // ============================================================================
+// Trigger Event Data
+// ============================================================================
+
+export interface TriggerFiredData {
+  triggerId: string;
+  triggerName: string;
+  triggerType: 'schedule' | 'condition' | 'event';
+  actionType: string;
+  manual?: boolean;
+}
+
+export interface TriggerSuccessData {
+  triggerId: string;
+  triggerName: string;
+  durationMs: number;
+  actionType: string;
+  result?: unknown;
+}
+
+export interface TriggerFailedData {
+  triggerId: string;
+  triggerName: string;
+  durationMs: number;
+  actionType: string;
+  error: string;
+}
+
+// ============================================================================
+// Pulse Event Data
+// ============================================================================
+
+export interface PulseStartedData {
+  pulseId: string;
+  userId: string;
+}
+
+export interface PulseStageData {
+  pulseId: string;
+  stage: 'gathering' | 'evaluating' | 'deciding' | 'reporting';
+}
+
+export interface PulseCompletedData {
+  pulseId: string;
+  userId: string;
+  durationMs: number;
+  signalsFound: number;
+  actionsExecuted: number;
+  llmCalled: boolean;
+}
+
+// ============================================================================
+// Chat Event Data
+// ============================================================================
+
+export interface ChatCompletedData {
+  userId: string;
+  conversationId: string;
+  messageLength: number;
+  responseLength: number;
+  toolCallsUsed: number;
+}
+
+// ============================================================================
 // Master Event Map
 // ============================================================================
 
@@ -498,6 +561,19 @@ export interface EventMap {
   'background-agent.paused': BackgroundAgentPausedData;
   'background-agent.resumed': BackgroundAgentResumedData;
   'background-agent.message': BackgroundAgentMessageData;
+
+  // --- Trigger Events ---
+  'trigger.fired': TriggerFiredData;
+  'trigger.success': TriggerSuccessData;
+  'trigger.failed': TriggerFailedData;
+
+  // --- Pulse Events ---
+  'pulse.started': PulseStartedData;
+  'pulse.stage': PulseStageData;
+  'pulse.completed': PulseCompletedData;
+
+  // --- Chat Events ---
+  'chat.completed': ChatCompletedData;
 }
 
 // ============================================================================

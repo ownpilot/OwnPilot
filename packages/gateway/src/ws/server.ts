@@ -17,8 +17,9 @@ import {
 import type { ClientEvents, WSMessage, Channel } from './types.js';
 import { sessionManager } from './session.js';
 import { ClientEventHandler } from './events.js';
-import { getChannelService } from '@ownpilot/core';
+import { getChannelService, getEventSystem } from '@ownpilot/core';
 import { EventBusBridge, setEventBusBridge } from './event-bridge.js';
+import type { ServerEvents } from './types.js';
 import {
   WS_PORT,
   WS_HEARTBEAT_INTERVAL_MS,
@@ -140,6 +141,7 @@ export class WSGateway {
   private httpServer: (HttpServer | HttpsServer | Http2Server | Http2SecureServer) | null = null;
   private upgradeHandler: ((...args: unknown[]) => void) | null = null;
   private eventBridge: EventBusBridge | null = null;
+  private legacyUnsubs: (() => void)[] = [];
 
   constructor(config: WSGatewayConfig = {}) {
     this.config = { ...DEFAULT_CONFIG, ...config };
@@ -155,7 +157,83 @@ export class WSGateway {
     this.eventBridge = new EventBusBridge(sessionManager);
     this.eventBridge.start();
     setEventBusBridge(this.eventBridge);
+
+    // Legacy event forwarding: translate EventBus dot-notation events to
+    // colon-separated WS broadcasts for backward compatibility with existing UI
+    this.setupLegacyEventForwarding();
+
     return this.eventBridge;
+  }
+
+  /**
+   * Forward EventBus events as legacy colon-separated WS broadcasts.
+   * This ensures existing UI components (RealtimeBridge.tsx) continue working
+   * while the Event Monitor page receives dot-notation events via EventBusBridge.
+   */
+  private setupLegacyEventForwarding(): void {
+    const eventSystem = getEventSystem();
+
+    // trigger.success / trigger.failed → trigger:executed
+    this.legacyUnsubs.push(
+      eventSystem.onPattern('trigger.*', (event) => {
+        if (event.type === 'trigger.success' || event.type === 'trigger.failed') {
+          const d = event.data as Record<string, unknown>;
+          this.broadcast('trigger:executed', {
+            triggerId: d.triggerId as string,
+            triggerName: d.triggerName as string,
+            status: event.type === 'trigger.success' ? 'success' : 'failure',
+            durationMs: d.durationMs as number,
+            error: d.error as string | undefined,
+          } as ServerEvents['trigger:executed']);
+        }
+      })
+    );
+
+    // pulse.* → pulse:activity
+    this.legacyUnsubs.push(
+      eventSystem.onPattern('pulse.*', (event) => {
+        const d = event.data as Record<string, unknown>;
+        const stageMap: Record<string, string> = {
+          'pulse.started': 'started',
+          'pulse.stage': 'stage',
+          'pulse.completed': 'completed',
+        };
+        const status = stageMap[event.type] ?? event.type;
+        this.broadcast('pulse:activity', {
+          status,
+          stage: (d.stage as string) ?? status,
+          pulseId: d.pulseId ?? null,
+          ...d,
+        } as ServerEvents['pulse:activity']);
+      })
+    );
+
+    // gateway.system.notification → system:notification
+    this.legacyUnsubs.push(
+      eventSystem.on('gateway.system.notification', (event) => {
+        this.broadcast(
+          'system:notification',
+          event.data as ServerEvents['system:notification']
+        );
+      })
+    );
+
+    // gateway.data.changed → data:changed
+    this.legacyUnsubs.push(
+      eventSystem.onAny('gateway.data.changed', (event) => {
+        this.broadcast('data:changed', event.data as ServerEvents['data:changed']);
+      })
+    );
+
+    // background-agent.update → background-agent:update (colon for WS)
+    this.legacyUnsubs.push(
+      eventSystem.onAny('background-agent.update', (event) => {
+        this.broadcast(
+          'background-agent:update',
+          event.data as ServerEvents['background-agent:update']
+        );
+      })
+    );
   }
 
   /**
@@ -925,6 +1003,10 @@ export class WSGateway {
         clearInterval(this.cleanupTimer);
         this.cleanupTimer = null;
       }
+
+      // Stop legacy event forwarding
+      for (const unsub of this.legacyUnsubs) unsub();
+      this.legacyUnsubs = [];
 
       // Stop EventBusBridge
       if (this.eventBridge) {

@@ -371,14 +371,6 @@ async function main() {
   try {
     const triggerEngine = startTriggerEngine({ userId: 'default' });
 
-    // Wire up the broadcaster for real-time WS events
-    triggerEngine.setBroadcaster((_event, data) =>
-      wsGateway.broadcast(
-        'trigger:executed',
-        data as import('./ws/types.js').ServerEvents['trigger:executed']
-      )
-    );
-
     // Wire up the chat handler once agent system is available.
     // Routes through the MessageBus pipeline so trigger-initiated chats get
     // context injection, persistence, audit logging, and post-processing.
@@ -459,25 +451,6 @@ async function main() {
   try {
     const { getAutonomyEngine, createPulseServiceAdapter } = await import('./autonomy/engine.js');
     const pulseEngine = getAutonomyEngine({ userId: 'default' });
-    const pulseBroadcaster = (event: string, data: unknown) => {
-      if (event === 'pulse:activity') {
-        wsGateway.broadcast(
-          'pulse:activity',
-          data as import('./ws/types.js').ServerEvents['pulse:activity']
-        );
-      } else {
-        wsGateway.broadcast(
-          'system:notification',
-          data as import('./ws/types.js').ServerEvents['system:notification']
-        );
-      }
-    };
-    pulseEngine.setBroadcaster(pulseBroadcaster);
-
-    // Share the broadcaster with notification tools so the agent's
-    // send_user_notification tool can push to web clients
-    const { setNotificationBroadcaster } = await import('./tools/notification-tools.js');
-    setNotificationBroadcaster(pulseBroadcaster);
 
     registry.register(Services.Pulse, createPulseServiceAdapter(pulseEngine));
     pulseEngine.start();

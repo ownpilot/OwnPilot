@@ -18,10 +18,12 @@ import { executeTool, hasTool, waitForToolSync } from '../services/tool-executor
 import {
   getNextRunTime,
   getServiceRegistry,
+  getEventSystem,
   Services,
   type ITriggerService,
   type IGoalService,
   type IMemoryService,
+  type Unsubscribe,
 } from '@ownpilot/core';
 import { executionPermissionsRepo } from '../db/repositories/execution-permissions.js';
 import { downgradePromptToBlocked } from '../services/permission-utils.js';
@@ -82,7 +84,8 @@ export class TriggerEngine {
   private actionHandlers: Map<string, (payload: Record<string, unknown>) => Promise<ActionResult>> =
     new Map();
   private chatHandler: ChatHandler | null = null;
-  private broadcaster: ((event: string, data: Record<string, unknown>) => void) | null = null;
+  private eventBusUnsub: Unsubscribe | null = null;
+  private processingEvents = new Set<string>();
 
   constructor(config: TriggerEngineConfig = {}) {
     this.config = {
@@ -114,13 +117,6 @@ export class TriggerEngine {
     log.info('Chat handler registered');
   }
 
-  /**
-   * Set a broadcaster for real-time WS events.
-   * Called during server initialization once WebSocket gateway is available.
-   */
-  setBroadcaster(fn: (event: string, data: Record<string, unknown>) => void): void {
-    this.broadcaster = fn;
-  }
 
   // ==========================================================================
   // Lifecycle
@@ -171,6 +167,22 @@ export class TriggerEngine {
       })
       .catch((err) => log.error('Tool sync wait failed', { error: err }));
 
+    // Subscribe to ALL EventBus events for universal event-trigger processing
+    try {
+      const eventSystem = getEventSystem();
+      this.eventBusUnsub = eventSystem.onPattern('**', (event) => {
+        // Skip trigger.* events to prevent infinite loops
+        if (event.type.startsWith('trigger.')) return;
+        this.processEventTriggers(event.type, (event.data ?? {}) as Record<string, unknown>)
+          .catch((err) =>
+            log.error('EventBus trigger processing failed', { error: err, eventType: event.type })
+          );
+      });
+      log.info('Subscribed to EventBus for universal event triggers');
+    } catch (err) {
+      log.warn('Failed to subscribe to EventBus', { error: String(err) });
+    }
+
     log.info('Started');
   }
 
@@ -181,6 +193,12 @@ export class TriggerEngine {
     if (!this.running) return;
 
     this.running = false;
+
+    // Unsubscribe from EventBus
+    if (this.eventBusUnsub) {
+      this.eventBusUnsub();
+      this.eventBusUnsub = null;
+    }
 
     if (this.pollTimer) {
       clearInterval(this.pollTimer);
@@ -399,26 +417,49 @@ export class TriggerEngine {
   }
 
   /**
-   * Process event-based triggers
+   * Process event-based triggers.
+   * Queries both dot-notation and legacy underscore-notation event types.
+   * Circuit breaker prevents re-entrant processing of the same event type.
    */
   private async processEventTriggers(
     eventType: string,
     payload: Record<string, unknown>
   ): Promise<void> {
-    const triggers = await this.triggerService.getByEventType(this.config.userId, eventType);
+    // Circuit breaker: skip if we're already processing this event type
+    if (this.processingEvents.has(eventType)) {
+      log.debug('Circuit breaker: skipping re-entrant event', { eventType });
+      return;
+    }
+    this.processingEvents.add(eventType);
 
-    for (const trigger of triggers) {
-      const config = trigger.config as EventConfig;
-
-      // Check filters
-      if (config.filters) {
-        const matches = Object.entries(config.filters).every(
-          ([key, value]) => payload[key] === value
-        );
-        if (!matches) continue;
+    try {
+      // Query triggers matching dot notation AND legacy underscore notation
+      const legacyType = eventType.replace(/\./g, '_');
+      const triggers = await this.triggerService.getByEventType(this.config.userId, eventType);
+      if (legacyType !== eventType) {
+        const legacyTriggers = await this.triggerService.getByEventType(this.config.userId, legacyType);
+        // Deduplicate by ID
+        const seen = new Set(triggers.map((t) => t.id));
+        for (const t of legacyTriggers) {
+          if (!seen.has(t.id)) triggers.push(t);
+        }
       }
 
-      await this.executeTrigger(trigger, payload);
+      for (const trigger of triggers) {
+        const config = trigger.config as EventConfig;
+
+        // Check filters
+        if (config.filters) {
+          const matches = Object.entries(config.filters).every(
+            ([key, value]) => payload[key] === value
+          );
+          if (!matches) continue;
+        }
+
+        await this.executeTrigger(trigger, payload);
+      }
+    } finally {
+      this.processingEvents.delete(eventType);
     }
   }
 
@@ -544,13 +585,13 @@ export class TriggerEngine {
         durationMs
       );
 
-      this.broadcaster?.('trigger:executed', {
-        triggerId: trigger.id,
-        triggerName: trigger.name,
-        status: result.success ? 'success' : 'failure',
-        durationMs,
-        error: result.error,
-      });
+      getEventSystem().emit(
+        result.success ? 'trigger.success' : 'trigger.failed',
+        'trigger-engine',
+        result.success
+          ? { triggerId: trigger.id, triggerName: trigger.name, durationMs, actionType: trigger.action.type, result: result.data }
+          : { triggerId: trigger.id, triggerName: trigger.name, durationMs, actionType: trigger.action.type, error: result.error ?? 'Unknown error' }
+      );
 
       // Calculate next fire time for schedule triggers
       if (trigger.type === 'schedule') {
@@ -583,11 +624,11 @@ export class TriggerEngine {
         errorMessage,
         durationMs
       );
-      this.broadcaster?.('trigger:executed', {
+      getEventSystem().emit('trigger.failed', 'trigger-engine', {
         triggerId: trigger.id,
         triggerName: trigger.name,
-        status: 'failure',
         durationMs,
+        actionType: trigger.action.type,
         error: errorMessage,
       });
       log.error('Trigger failed', { trigger: trigger.name, error });
@@ -659,14 +700,13 @@ export class TriggerEngine {
         durationMs
       );
 
-      this.broadcaster?.('trigger:executed', {
-        triggerId: trigger.id,
-        triggerName: trigger.name,
-        status: result.success ? 'success' : 'failure',
-        durationMs,
-        error: result.error,
-        manual: true,
-      });
+      getEventSystem().emit(
+        result.success ? 'trigger.success' : 'trigger.failed',
+        'trigger-engine',
+        result.success
+          ? { triggerId: trigger.id, triggerName: trigger.name, durationMs, actionType: trigger.action.type, result: result.data }
+          : { triggerId: trigger.id, triggerName: trigger.name, durationMs, actionType: trigger.action.type, error: result.error ?? 'Unknown error' }
+      );
 
       return result;
     } catch (error) {
@@ -682,13 +722,12 @@ export class TriggerEngine {
         errorMessage,
         durationMs
       );
-      this.broadcaster?.('trigger:executed', {
+      getEventSystem().emit('trigger.failed', 'trigger-engine', {
         triggerId: trigger.id,
         triggerName: trigger.name,
-        status: 'failure',
         durationMs,
+        actionType: trigger.action.type,
         error: errorMessage,
-        manual: true,
       });
       return { success: false, error: errorMessage };
     }

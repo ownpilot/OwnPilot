@@ -54,6 +54,8 @@ import {
   executePulseTool,
   NOTIFICATION_TOOLS,
   executeNotificationTool,
+  EVENT_TOOLS,
+  executeEventTool,
 } from '../tools/index.js';
 import { CONFIG_TOOLS, executeConfigTool } from '../services/config-tools.js';
 import type { ExtensionService } from '../services/extension-service.js';
@@ -177,6 +179,7 @@ export function registerGatewayTools(tools: ToolRegistry, userId: string, trace:
     { definitions: EXTENSION_TOOLS, executor: executeExtensionTool, needsUserId: true },
     { definitions: PULSE_TOOLS, executor: executePulseTool, needsUserId: true },
     { definitions: NOTIFICATION_TOOLS, executor: executeNotificationTool, needsUserId: true },
+    { definitions: EVENT_TOOLS, executor: executeEventTool, needsUserId: true },
   ];
 
   for (const group of groups) {
@@ -911,4 +914,5 @@ export {
   HEARTBEAT_TOOLS,
   PULSE_TOOLS,
   NOTIFICATION_TOOLS,
+  EVENT_TOOLS,
 };
