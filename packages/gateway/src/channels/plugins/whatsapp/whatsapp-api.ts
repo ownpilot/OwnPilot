@@ -61,6 +61,7 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
   private readonly pluginId: string;
   private readonly config: WhatsAppBaileysConfig;
   private messageChatMap = new Map<string, string>();
+  private sentMessageIds = new Set<string>();
   private allowedUsers: Set<string> = new Set();
   private qrCode: string | null = null;
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
@@ -129,7 +130,11 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
       this.sock.ev.on('messages.upsert', (upsert) => {
         if (upsert.type !== 'notify') return;
         for (const msg of upsert.messages) {
-          if (msg.key.fromMe) continue;
+          const isSelf = this.isSelfChat(msg.key.remoteJid);
+          // Skip our own messages — EXCEPT self-chat (user messaging themselves)
+          if (msg.key.fromMe && !isSelf) continue;
+          // In self-chat, skip messages the bot sent (prevent infinite loop)
+          if (isSelf && msg.key.id && this.sentMessageIds.has(msg.key.id)) continue;
           this.handleIncomingMessage(msg).catch((err) => {
             log.error('Failed to handle WhatsApp message:', err);
           });
@@ -192,6 +197,12 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
 
       if (lastMessageId) {
         this.trackMessage(lastMessageId, message.platformChatId);
+        // Track our own sent messages to avoid self-chat loops
+        this.sentMessageIds.add(lastMessageId);
+        if (this.sentMessageIds.size > 500) {
+          const first = this.sentMessageIds.values().next().value;
+          if (first !== undefined) this.sentMessageIds.delete(first);
+        }
       }
 
       // Small delay between split messages
@@ -490,6 +501,14 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
   /** Extract phone number from a WhatsApp JID. */
   private phoneFromJid(jid: string): string {
     return jid.split('@')[0]?.split(':')[0] ?? jid;
+  }
+
+  /** Check if a message is sent to the user's own chat (self-chat). */
+  private isSelfChat(remoteJid: string | null | undefined): boolean {
+    if (!remoteJid || !this.sock?.user?.id) return false;
+    const ownPhone = this.sock.user.id.split(':')[0];
+    const chatPhone = this.phoneFromJid(remoteJid);
+    return ownPhone === chatPhone;
   }
 
   private emitConnectionEvent(status: ChannelConnectionStatus): void {
