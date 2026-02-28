@@ -6,7 +6,7 @@
 [![Node.js](https://img.shields.io/badge/Node.js-≥22-green?logo=node.js)](https://nodejs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.9-blue?logo=typescript)](https://www.typescriptlang.org/)
 
-Privacy-first personal AI assistant platform with autonomous agents, tool orchestration, multi-provider support, MCP integration, and Telegram connectivity.
+Privacy-first personal AI assistant platform with autonomous background agents, tool orchestration, multi-provider support, MCP integration, and Telegram + WhatsApp connectivity.
 
 **Self-hosted. Your data stays yours.**
 
@@ -26,6 +26,7 @@ Privacy-first personal AI assistant platform with autonomous agents, tool orches
   - [CLI](#cli-ownpilotcli)
 - [AI Providers](#ai-providers)
 - [Agent System](#agent-system)
+- [Background Agents](#background-agents-1)
 - [Tool System](#tool-system)
 - [MCP Integration](#mcp-integration)
 - [Personal Data](#personal-data)
@@ -60,7 +61,9 @@ Privacy-first personal AI assistant platform with autonomous agents, tool orches
 - **Tool Namespaces** — Qualified tool names with prefixes (`core.`, `custom.`, `plugin.`, `skill.`, `mcp.`) for clear origin tracking
 - **MCP Client** — Connect to external MCP servers (Filesystem, GitHub, Brave Search, etc.) and use their tools natively
 - **MCP Server** — Expose OwnPilot's tools as an MCP endpoint for Claude Desktop and other MCP clients
-- **User Extensions** — Installable tool bundles with custom tools, triggers, services, and configurations
+- **User Extensions** — Installable tool bundles with custom tools, triggers, services, and configurations; Extension SDK provides `utils.callTool()` to invoke any of 170+ built-in tools
+- **6 Default Extensions** — Daily Briefing, Knowledge Base, Project Tracker, Smart Search, Automation Builder, Contact Enricher bundled out-of-the-box
+- **Extension Security Audit** — LLM-powered security analysis for skills and extensions before installation
 - **Skills** — Open standard SKILL.md format (AgentSkills.io) for instruction-based AI knowledge packages
 - **Custom Tools** — Create new tools at runtime via LLM (sandboxed JavaScript)
 - **Connected Apps** — 1000+ OAuth app integrations via Composio (Google, GitHub, Slack, Notion, Stripe, etc.)
@@ -83,6 +86,17 @@ Privacy-first personal AI assistant platform with autonomous agents, tool orches
 - **Custom Providers** — Register any CLI binary as a coding agent provider
 - **Result Persistence** — Task output, exit codes, and duration stored in the database
 
+### Background Agents
+
+- **Persistent Autonomous Agents** — Long-running agents that operate independently with configurable missions, schedules, and tool access
+- **3 Scheduling Modes** — Interval (fixed timer), continuous (adaptive delays), event-driven (reactive to triggers)
+- **Full Tool Access** — Same capabilities as chat agents: 170+ tools, extensions, plugins, MCP tools, memory injection
+- **Configurable Provider/Model** — Each agent can use a different AI provider and model, with fallback to system defaults
+- **Workspace Isolation** — Each agent gets an isolated file workspace for safe file operations
+- **Rate Limiting & Budget** — Cycles-per-hour enforcement, budget tracking with auto-stop, auto-pause on consecutive errors
+- **Session Persistence** — Agent state persisted to DB every 30 seconds, auto-recovery on server restart
+- **Inbox Messaging** — Send messages to running agents; agents process inbox at the start of each cycle
+
 ### CLI Tools
 
 - **40+ Discoverable Tools** — Automatic PATH-based detection of installed CLI tools (linters, formatters, build tools, package managers, security scanners, databases, containers)
@@ -104,8 +118,11 @@ Privacy-first personal AI assistant platform with autonomous agents, tool orches
 
 ### Communication
 
-- **Web UI** — React 19 + Vite 7 + Tailwind CSS 4 with dark mode, 47 pages, 60+ components, code-split
+- **Web UI** — React 19 + Vite 7 + Tailwind CSS 4 with dark mode, 48 pages, 60+ components, code-split
 - **Telegram Bot** — Full bot integration with user/chat filtering, message splitting, HTML/Markdown formatting
+- **WhatsApp (Baileys)** — QR code authentication (no Meta Business account needed), self-chat mode with loop prevention, session persistence
+- **Channel User Approval** — Multi-step verification: approval code flow, manual admin approval, user blocking/unblocking with real-time notifications
+- **EventBus** — Unified event backbone with EventBusBridge translating dot-notation events to WebSocket colon-notation; Event Monitor UI for live debugging
 - **WebSocket** — Real-time broadcasts for all data mutations, event subscriptions, session management
 - **REST API** — 50+ route modules with standardized responses, pagination, and error codes
 
@@ -134,10 +151,10 @@ Privacy-first personal AI assistant platform with autonomous agents, tool orches
               │                 │                  │
      ┌────────┴────────┐       │        ┌─────────┴──────────┐
      │  Telegram Bot   │       │        │  External MCP      │
-     │   (Channels)    │       │        │  Clients/Servers   │
-     └────────┬────────┘       │        └─────────┬──────────┘
-              │                │                   │
-              └────────┬───────┘───────────────────┘
+     │  WhatsApp       │       │        │  Clients/Servers   │
+     │   (Channels)    │       │        └─────────┬──────────┘
+     └────────┬────────┘       │                  │
+              └────────┬───────┘──────────────────┘
                        │
               ┌────────▼────────┐
               │    Gateway      │  Hono HTTP API Server
@@ -146,12 +163,13 @@ Privacy-first personal AI assistant platform with autonomous agents, tool orches
               │  MessageBus     │  Middleware Pipeline
               │  Agent Engine   │  Tool Orchestration
               │  Provider Router│  Smart Model Selection
+              │  Background Agt │  Persistent Autonomous Agents
               │  Coding Agents  │  External AI CLIs
               │  CLI Tools      │  40+ Discoverable Tools
               │  Pulse Engine   │  Proactive Autonomy
               │  MCP Client     │  External Tool Servers
               │  Plugin System  │  Extensible Architecture
-              │  EventBus       │  Typed Event System
+              │  EventBus       │  Unified Event Backbone
               │  WebSocket      │  Real-time Broadcasts
               ├─────────────────┤
               │     Core        │  AI Engine & Tool Framework
@@ -160,11 +178,12 @@ Privacy-first personal AI assistant platform with autonomous agents, tool orches
               └────────┬────────┘
                        │
               ┌────────▼────────┐
-              │   PostgreSQL    │  40+ Repositories
+              │   PostgreSQL    │  43+ Repositories
               │                 │  Conversations, Personal Data,
               │                 │  Memories, Goals, Triggers, Plans,
               │                 │  MCP Servers, User Extensions,
-              │                 │  CLI Tools, Coding Agents
+              │                 │  CLI Tools, Coding Agents,
+              │                 │  Background Agents
               └─────────────────┘
 ```
 
@@ -284,7 +303,7 @@ ownpilot/
 │   │   │   │   ├── adapters/      # PostgreSQL adapter
 │   │   │   │   ├── migrations/    # Schema migrations
 │   │   │   │   └── seeds/         # Default data
-│   │   │   ├── channels/        # Telegram channel plugin
+│   │   │   ├── channels/        # Telegram + WhatsApp channel plugins
 │   │   │   ├── plugins/         # Plugin initialization & registration
 │   │   │   ├── triggers/        # Proactive automation engine
 │   │   │   ├── plans/           # Plan executor with step handlers
@@ -306,9 +325,9 @@ ownpilot/
 │   │   │   └── App.tsx          # Route definitions with lazy loading
 │   │   └── package.json
 │   │
-│   ├── channels/                # Telegram bot (Grammy)
+│   ├── channels/                # Channel plugins (Telegram + WhatsApp)
 │   │   ├── src/
-│   │   │   ├── telegram/        # Telegram Bot API wrapper
+│   │   │   ├── telegram/        # Telegram Bot API wrapper (Grammy)
 │   │   │   ├── manager.ts       # Channel orchestration
 │   │   │   └── types/           # Channel type definitions
 │   │   └── package.json
@@ -356,9 +375,9 @@ The foundational runtime library. Contains the AI engine, tool system, plugin ar
 
 The API server built on [Hono](https://hono.dev/). Handles HTTP/WebSocket communication, database operations, agent execution, MCP integration, plugin management, and channel connectivity.
 
-**~72,000 LOC** across 200+ source files. **188 test files** with **9,800+ tests**.
+**~76,000 LOC** across 210+ source files. **239 test files** with **11,700+ tests**.
 
-**Route Modules (43 top-level + sub-modules):**
+**Route Modules (44 top-level + sub-modules):**
 
 | Category               | Routes                                                                                                                                                                            |
 | ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -366,16 +385,16 @@ The API server built on [Hono](https://hono.dev/). Handles HTTP/WebSocket commun
 | **AI Configuration**   | `models.ts`, `providers.ts`, `model-configs.ts`, `local-providers.ts`, `model-routing.ts`                                                                                         |
 | **Personal Data**      | `personal-data.ts`, `personal-data-tools.ts`, `memories.ts`, `goals.ts`, `expenses.ts`, `custom-data.ts`                                                                          |
 | **Productivity**       | `productivity.ts` (Pomodoro, Habits, Captures)                                                                                                                                    |
-| **Automation**         | `triggers.ts`, `heartbeats.ts`, `plans.ts`, `autonomy.ts`, `workflows.ts`, `workflow-copilot.ts`                                                                                  |
+| **Automation**         | `triggers.ts`, `heartbeats.ts`, `plans.ts`, `autonomy.ts`, `workflows.ts`, `workflow-copilot.ts`, `background-agents.ts`                                                          |
 | **Tools & Extensions** | `tools.ts`, `custom-tools.ts`, `plugins.ts`, `extensions.ts`, `mcp.ts`, `composio.ts`                                                                                             |
 | **Coding & CLI**       | `coding-agents.ts`, `cli-tools.ts`, `cli-providers.ts`                                                                                                                            |
 | **Channels**           | `channels.ts`, `channel-auth.ts`, `webhooks.ts`                                                                                                                                   |
 | **Configuration**      | `settings.ts`, `config-services.ts`, `ui-auth.ts`                                                                                                                                 |
 | **System**             | `health.ts`, `dashboard.ts`, `costs.ts`, `audit.ts`, `debug.ts`, `database.ts`, `profile.ts`, `workspaces.ts`, `file-workspaces.ts`, `execution-permissions.ts`, `error-codes.ts` |
 
-**Services (50+):** MessageBus, ConfigCenter, ToolExecutor, ProviderService, McpClientService, McpServerService, ExtensionService, ComposioService, EmbeddingService, HeartbeatService, AuditService, PluginService, MemoryService, GoalService, TriggerService, PlanService, WorkspaceService, DatabaseService, SessionService, LogService, ResourceService, LocalDiscovery, WorkflowService, AgentSkillsParser, CodingAgentService, CodingAgentSessions, CliToolService, CliToolsDiscovery, ModelRouting, ExecutionApproval, and more.
+**Services (55+):** MessageBus, ConfigCenter, ToolExecutor, ProviderService, McpClientService, McpServerService, ExtensionService, ComposioService, EmbeddingService, HeartbeatService, AuditService, PluginService, MemoryService, GoalService, TriggerService, PlanService, WorkspaceService, DatabaseService, SessionService, LogService, ResourceService, LocalDiscovery, WorkflowService, AgentSkillsParser, CodingAgentService, CodingAgentSessions, CliToolService, CliToolsDiscovery, ModelRouting, ExecutionApproval, BackgroundAgentManager, BackgroundAgentRunner, ChannelVerificationService, and more.
 
-**Repositories (41):** agents, conversations, messages, tasks, notes, bookmarks, calendar, contacts, memories, goals, triggers, plans, expenses, custom-data, custom-tools, plugins, channels, channel-messages, channel-users, channel-sessions, channel-verification, costs, settings, config-services, pomodoro, habits, captures, workspaces, model-configs, execution-permissions, logs, mcp-servers, extensions, local-providers, heartbeats, embedding-cache, workflows, autonomy-log, coding-agent-results, cli-providers, cli-tool-policies.
+**Repositories (43+):** agents, conversations, messages, tasks, notes, bookmarks, calendar, contacts, memories, goals, triggers, plans, expenses, custom-data, custom-tools, plugins, channels, channel-messages, channel-users, channel-sessions, channel-verification, costs, settings, config-services, pomodoro, habits, captures, workspaces, model-configs, execution-permissions, logs, mcp-servers, extensions, local-providers, heartbeats, embedding-cache, workflows, autonomy-log, coding-agent-results, cli-providers, cli-tool-policies, background-agents.
 
 ### UI (`@ownpilot/ui`)
 
@@ -389,13 +408,13 @@ Modern web interface built with React 19, Vite 7, and Tailwind CSS 4. Minimal de
 | Tailwind CSS         | 4.2.0   |
 | prism-react-renderer | 2.4.1   |
 
-**Pages (47):**
+**Pages (50):**
 
 | Page                                                | Description                                                                                |
 | --------------------------------------------------- | ------------------------------------------------------------------------------------------ |
 | **Chat**                                            | Main AI conversation with streaming, tool execution display, context bar, approval dialogs |
 | **Dashboard**                                       | Overview with stats, AI briefing, quick actions                                            |
-| **Inbox**                                           | Read-only channel messages from Telegram                                                   |
+| **Inbox**                                           | Read-only channel messages from Telegram and WhatsApp                                      |
 | **History**                                         | Conversation history with search, archive, bulk operations                                 |
 | **Tasks / Notes / Calendar / Contacts / Bookmarks** | Personal data management                                                                   |
 | **Expenses**                                        | Financial tracking with categories                                                         |
@@ -413,6 +432,9 @@ Modern web interface built with React 19, Vite 7, and Tailwind CSS 4. Minimal de
 | **Models / AI Models / Costs**                      | AI model browser, configuration, and usage tracking                                        |
 | **Providers**                                       | Provider management and status                                                             |
 | **Model Routing**                                   | Per-process model selection with fallback chains                                           |
+| **Background Agents**                               | Create, monitor, and manage persistent autonomous agents with cycle history                |
+| **Event Monitor**                                   | Live EventBus event stream viewer for real-time debugging                                  |
+| **Channels**                                        | Channel management with connect/disconnect/logout, user approval, QR code display          |
 | **Plugins / Workspaces / Wizards**                  | Extension management, workspace management, guided setup wizards                           |
 | **Data Browser / Custom Data**                      | Universal data exploration and custom tables                                               |
 | **Settings / Config Center / API Keys**             | Service configuration, API key management                                                  |
@@ -431,16 +453,17 @@ Modern web interface built with React 19, Vite 7, and Tailwind CSS 4. Minimal de
 
 ### Channels (`@ownpilot/channels`)
 
-Telegram bot built on [Grammy](https://grammy.dev/). Implements the `ChannelHandler` interface with `start()`, `stop()`, `sendMessage()`, and `onMessage()`.
+Multi-platform messaging with Telegram and WhatsApp support. Channel plugins use a builder pattern with unified conversation tracking through the MessageBus pipeline.
 
-| Feature               | Details                                                            |
-| --------------------- | ------------------------------------------------------------------ |
-| **Bot API**           | Grammy with long polling or webhook mode                           |
-| **Access Control**    | User ID and chat ID whitelisting                                   |
-| **Message Splitting** | Intelligent splitting at newlines/spaces for messages > 4096 chars |
-| **Parse Modes**       | HTML, Markdown, MarkdownV2                                         |
-| **Commands**          | `/start`, `/help`, `/reset`                                        |
-| **Channel Manager**   | Orchestrates multiple channels, routes messages through the Agent  |
+| Feature                 | Details                                                                  |
+| ----------------------- | ------------------------------------------------------------------------ |
+| **Telegram**            | Grammy bot with long polling or webhook mode, user/chat filtering        |
+| **WhatsApp (Baileys)**  | QR code auth (no Meta Business account), self-chat mode, session persistence |
+| **User Approval**       | Multi-step verification: approval code, manual admin approval, blocking  |
+| **Message Splitting**   | Intelligent splitting at newlines/spaces for messages > 4096 chars       |
+| **Soft/Hard Disconnect**| `disconnect()` preserves session; `logout()` clears session data         |
+| **Event Integration**   | Channel events forwarded via EventBus → WebSocket for real-time UI       |
+| **Channel Manager**     | Orchestrates multiple channels, routes messages through the MessageBus   |
 
 ### CLI (`@ownpilot/cli`)
 
@@ -564,6 +587,51 @@ Agents are AI assistants with specific system prompts, tool assignments, model p
 - **Execution Context** — Code execution instructions injected into system prompt (not user message)
 - **Context Tracking** — Real-time context bar showing token usage, fill percentage, and per-section breakdown
 - **Streaming** — Real-time SSE responses with tool execution progress events
+
+---
+
+## Background Agents
+
+Persistent autonomous agents that run independently from user chat sessions.
+
+### Configuration
+
+```typescript
+{
+  name: string               // Agent name
+  mission: string            // What the agent should accomplish
+  mode: 'interval' | 'continuous' | 'event'  // Scheduling mode
+  intervalMs: number         // Cycle interval (for interval mode)
+  provider?: string          // AI provider (optional, uses system default)
+  model?: string             // AI model (optional, uses system default)
+  allowedTools: string[]     // Tool whitelist (empty = all tools)
+  autoStart: boolean         // Start on server boot
+  limits: {
+    maxTurnsPerCycle: number   // Max LLM round-trips per cycle
+    maxToolCallsPerCycle: number // Max tool invocations per cycle
+    maxCyclesPerHour: number   // Rate limit
+    cycleTimeoutMs: number     // Per-cycle timeout
+  }
+}
+```
+
+### Lifecycle
+
+| State     | Description                                    |
+| --------- | ---------------------------------------------- |
+| `running` | Agent is actively executing cycles             |
+| `paused`  | Agent is paused, can be resumed                |
+| `stopped` | Agent has been terminated                      |
+| `error`   | Agent encountered an error (auto-pauses after 5 consecutive errors) |
+
+### Features
+
+- **Full tool access** — Same 170+ tools as chat agents, plus extensions, plugins, and MCP tools
+- **Memory injection** — Agent system prompt enhanced with relevant memories and active goals
+- **Workspace isolation** — Each agent gets a dedicated file workspace
+- **Stop conditions** — `MISSION_COMPLETE` sentinel or `max_cycles:N` to auto-stop
+- **Budget tracking** — Auto-stop when budget exceeded
+- **Session persistence** — State saved to DB every 30 seconds; auto-recovery on restart
 
 ---
 
@@ -778,7 +846,7 @@ Visual multi-step automation with a workflow editor:
 
 ## Database
 
-PostgreSQL with 41 repositories via the `pg` adapter.
+PostgreSQL with 43+ repositories via the `pg` adapter.
 
 ### Key Tables
 
@@ -788,7 +856,7 @@ PostgreSQL with 41 repositories via the `pg` adapter.
 
 **Productivity:** `pomodoro_sessions`, `habits`, `captures`
 
-**Autonomous AI:** `memories`, `goals`, `triggers`, `plans`, `heartbeats`, `workflows`, `autonomy_log`
+**Autonomous AI:** `memories`, `goals`, `triggers`, `plans`, `heartbeats`, `workflows`, `autonomy_log`, `background_agents`, `background_agent_sessions`, `background_agent_history`
 
 **Channels:** `channel_messages`, `channel_users`, `channel_sessions`, `channel_verification`
 
@@ -1008,6 +1076,22 @@ Sliding window algorithm with configurable window (default 60s), max requests (d
 | `DELETE` | `/api/v1/coding-agents/sessions/:id` | Stop a running session           |
 | `GET`    | `/api/v1/coding-agents/results`      | List past execution results      |
 
+### Background Agents
+
+| Method   | Endpoint                              | Description                    |
+| -------- | ------------------------------------- | ------------------------------ |
+| `GET`    | `/api/v1/background-agents`           | List all background agents     |
+| `POST`   | `/api/v1/background-agents`           | Create a new background agent  |
+| `GET`    | `/api/v1/background-agents/:id`       | Get agent details + session    |
+| `PATCH`  | `/api/v1/background-agents/:id`       | Update agent config            |
+| `DELETE` | `/api/v1/background-agents/:id`       | Delete agent                   |
+| `POST`   | `/api/v1/background-agents/:id/start` | Start agent                    |
+| `POST`   | `/api/v1/background-agents/:id/pause` | Pause agent                    |
+| `POST`   | `/api/v1/background-agents/:id/resume`| Resume paused agent            |
+| `POST`   | `/api/v1/background-agents/:id/stop`  | Stop agent                     |
+| `GET`    | `/api/v1/background-agents/:id/history` | Paginated cycle history      |
+| `POST`   | `/api/v1/background-agents/:id/message` | Send message to agent inbox  |
+
 ### CLI Tools
 
 | Method   | Endpoint                         | Description                    |
@@ -1057,9 +1141,12 @@ Real-time broadcasts on `ws://localhost:18789`:
 | `data:changed`            | CRUD mutation on any entity (tasks, notes, etc.) |
 | `chat:stream:*`           | Streaming response chunks                        |
 | `tool:start/progress/end` | Tool execution lifecycle                         |
-| `channel:message`         | Incoming Telegram message                        |
+| `channel:message`         | Incoming channel message (Telegram, WhatsApp)    |
+| `channel:status`          | Channel connection/disconnection status change   |
+| `channel:user:*`          | User events (first_seen, pending, blocked, etc.) |
 | `trigger:executed`        | Trigger execution result                         |
 | `coding-agent:session:*`  | Coding agent session lifecycle and output        |
+| `bg-agent:*`              | Background agent lifecycle and cycle results     |
 | `pulse:activity`          | Pulse system proactive activity                  |
 
 ### Response Format
@@ -1231,7 +1318,7 @@ pnpm clean            # Clear all build artifacts
 | **Telegram**   | Grammy 1.40                                   |
 | **CLI**        | Commander.js 14                               |
 | **MCP**        | @modelcontextprotocol/sdk                     |
-| **Testing**    | Vitest 2.x (315+ test files, 19,200+ tests)   |
+| **Testing**    | Vitest 2.x (366+ test files, 21,500+ tests)   |
 | **Linting**    | ESLint 10 (flat config)                       |
 | **Formatting** | Prettier 3.8                                  |
 | **Container**  | Docker multi-arch (ghcr.io/ownpilot/ownpilot) |
