@@ -147,6 +147,8 @@ export interface ServerEvents {
   };
   'channel:message:sent': { channelId: string; messageId: string };
   'channel:message:error': { channelId: string; error: string };
+  'channel:user:pending': { channelId: string; platform: string; userId: string; platformUserId: string; displayName?: string };
+  'channel:user:approved': { channelId: string; platform: string; userId: string; platformUserId: string; displayName?: string };
 
   // Chat events
   'chat:message': { sessionId: string; message: AssistantMessage };

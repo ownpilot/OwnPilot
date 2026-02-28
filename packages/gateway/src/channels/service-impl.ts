@@ -18,6 +18,7 @@ import {
   ChannelEvents,
   type ChannelMessageReceivedData,
   type ChannelConnectionEventData,
+  type ChannelUserVerifiedData,
   getEventBus,
   createEvent,
   type PluginRegistry,
@@ -431,18 +432,16 @@ export class ChannelServiceImpl implements IChannelService {
         return;
       }
 
-      // 4. Check verification (auto-verify whitelisted users, or all users when no restriction)
+      // 4. Check verification — whitelist, approval code, or admin approval
       if (!channelUser.isVerified) {
         const plugin = this.pluginRegistry.get(message.channelPluginId);
         const allowedUsers = plugin ? this.getPluginAllowedUsers(plugin) : [];
+        const approvalCode = plugin ? this.getPluginApprovalCode(plugin) : null;
 
-        // Auto-verify when:
-        // - No allowed_users restriction set (personal assistant, owner didn't restrict access)
-        // - OR user is explicitly whitelisted in Config Center
-        const shouldAutoVerify =
-          allowedUsers.length === 0 || allowedUsers.includes(message.sender.platformUserId);
+        // (a) Explicitly whitelisted in Config Center → auto-verify
+        const isWhitelisted = allowedUsers.includes(message.sender.platformUserId);
 
-        if (shouldAutoVerify) {
+        if (isWhitelisted) {
           const verificationSvc = getChannelVerificationService();
           await verificationSvc.verifyViaWhitelist(
             message.platform,
@@ -453,18 +452,64 @@ export class ChannelServiceImpl implements IChannelService {
           log.info('Auto-verified user', {
             platform: message.platform,
             userId: message.sender.platformUserId,
-            reason: allowedUsers.length === 0 ? 'no-restriction' : 'whitelisted',
+            reason: 'whitelisted',
           });
+        } else if (approvalCode) {
+          // (b) Approval code configured — challenge-response verification
+          if (message.text.trim() === approvalCode) {
+            // Correct code → approve
+            const verificationSvc = getChannelVerificationService();
+            await verificationSvc.verifyViaWhitelist(
+              message.platform,
+              message.sender.platformUserId,
+              message.sender.displayName
+            );
+            channelUser.isVerified = true;
+            log.info('Auto-verified user via approval code', {
+              platform: message.platform,
+              userId: message.sender.platformUserId,
+            });
+
+            const api = this.getChannel(message.channelPluginId);
+            if (api) {
+              await api.sendMessage({
+                platformChatId: message.platformChatId,
+                text: 'Access granted! You can now chat with the AI assistant.',
+                replyToId: message.id,
+              });
+            }
+          } else {
+            // Wrong code → reject
+            const api = this.getChannel(message.channelPluginId);
+            if (api) {
+              await api.sendMessage({
+                platformChatId: message.platformChatId,
+                text: 'Please send the approval code to get access to this bot.',
+                replyToId: message.id,
+              });
+            }
+            return;
+          }
         } else {
-          // User is NOT in the allowed_users list — block access
+          // (c) No code configured — require admin approval via UI
           const api = this.getChannel(message.channelPluginId);
           if (api) {
             await api.sendMessage({
               platformChatId: message.platformChatId,
-              text: 'Sorry, you are not authorized to use this bot.',
+              text: 'Your message has been received. An admin needs to approve your access.',
               replyToId: message.id,
             });
           }
+
+          // Broadcast pending user event to UI
+          wsGateway.broadcast('channel:user:pending', {
+            channelId: message.channelPluginId,
+            platform: message.platform,
+            userId: channelUser.id,
+            platformUserId: message.sender.platformUserId,
+            displayName: message.sender.displayName,
+          });
+
           return;
         }
       }
@@ -965,6 +1010,23 @@ export class ChannelServiceImpl implements IChannelService {
       .filter(Boolean);
   }
 
+  /**
+   * Get the approval code from a channel plugin's Config Center entry.
+   * Returns null if not configured.
+   */
+  private getPluginApprovalCode(plugin: Plugin): string | null {
+    const requiredServices = plugin.manifest.requiredServices as
+      | Array<{ name: string }>
+      | undefined;
+    if (!requiredServices || requiredServices.length === 0) return null;
+
+    const serviceName = requiredServices[0]!.name;
+    const entry = configServicesRepo.getDefaultEntry(serviceName);
+    const raw = entry?.data?.approval_code;
+    if (typeof raw !== 'string' || !raw.trim()) return null;
+    return raw.trim();
+  }
+
   private async handleConnectCommand(
     message: ChannelIncomingMessage,
     channelUserId: string,
@@ -1013,10 +1075,54 @@ export class ChannelServiceImpl implements IChannelService {
       );
       this.unsubscribes.push(unsub);
 
+      // Listen for admin-approved users — send welcome message via their channel
+      const unsubVerified = eventBus.on<ChannelUserVerifiedData>(
+        'channel.user.verified',
+        (event) => {
+          const data = event.data;
+          if (data.verificationMethod !== 'admin') return;
+
+          this.sendApprovalNotification(data.platform, data.platformUserId).catch((err) => {
+            log.warn('Failed to send approval notification', { error: err });
+          });
+        }
+      );
+      this.unsubscribes.push(unsubVerified);
+
       log.info('Subscribed to channel events');
     } catch {
       // EventBus not initialized yet - will be wired later
       log.info('EventBus not ready, events will be subscribed later');
+    }
+  }
+
+  /**
+   * Send a welcome message to a newly approved user via their channel.
+   */
+  private async sendApprovalNotification(
+    platform: string,
+    platformUserId: string
+  ): Promise<void> {
+    const channelPlugins = this.getChannelPlugins().filter(
+      (p) => getChannelPlatform(p) === platform
+    );
+
+    for (const plugin of channelPlugins) {
+      const api = getChannelApi(plugin);
+      if (api.getStatus() !== 'connected') continue;
+
+      try {
+        await api.sendMessage({
+          platformChatId: platformUserId,
+          text: 'You have been approved! You can now chat with the AI assistant.',
+        });
+        return; // Sent successfully — no need to try other plugins
+      } catch (err) {
+        log.debug('Failed to send approval notification via plugin', {
+          pluginId: plugin.manifest.id,
+          error: err,
+        });
+      }
     }
   }
 

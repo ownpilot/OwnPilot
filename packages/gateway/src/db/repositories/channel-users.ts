@@ -185,6 +185,16 @@ export class ChannelUsersRepository extends BaseRepository {
   }
 
   /**
+   * Revoke verification for a channel user.
+   */
+  async unverify(id: string): Promise<void> {
+    await this.execute(
+      `UPDATE channel_users SET is_verified = FALSE, verified_at = NULL, verification_method = NULL WHERE id = $1`,
+      [id]
+    );
+  }
+
+  /**
    * Block a channel user.
    */
   async block(id: string): Promise<void> {

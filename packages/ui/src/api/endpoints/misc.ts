@@ -347,6 +347,14 @@ export const channelsApi = {
     apiClient.get<{ qr: string | null; status: string; botInfo?: { username?: string; firstName?: string } }>(
       `/channels/${channelId}/qr`
     ),
+  approveUser: (userId: string) =>
+    apiClient.post<{ approved: boolean }>(`/channels/auth/users/${userId}/approve`),
+  blockUser: (userId: string) =>
+    apiClient.post<{ blocked: boolean }>(`/channels/auth/users/${userId}/block`),
+  unblockUser: (userId: string) =>
+    apiClient.post<{ unblocked: boolean }>(`/channels/auth/users/${userId}/unblock`),
+  deleteUser: (userId: string) =>
+    apiClient.delete<{ deleted: boolean }>(`/channels/auth/users/${userId}`),
 };
 
 // ---- Expenses ----
