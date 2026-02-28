@@ -18,6 +18,7 @@ import {
   registerCoreTools,
   createPluginSecurityMiddleware,
   createPluginId,
+  qualifyToolName,
 } from '@ownpilot/core';
 import type {
   ToolDefinition,
@@ -132,6 +133,9 @@ export function getSharedToolRegistry(userId = 'default'): ToolRegistry {
 
   // Sync active custom tools from DB into the shared registry (source: 'custom')
   syncCustomToolsIntoRegistry(tools, userId);
+
+  // Sync enabled extension tools into the shared registry (source: 'dynamic', ext.*/skill.*)
+  syncExtensionToolsIntoRegistry(tools);
 
   // Wire the shared registry reference so custom-tools CRUD operations keep it in sync
   setSharedRegistryForCustomTools(tools);
@@ -254,6 +258,142 @@ function syncCustomToolsIntoRegistry(registry: ToolRegistry, userId: string): vo
         error: err,
       });
     });
+}
+
+/**
+ * Sync enabled extension tools into the shared ToolRegistry.
+ * Extension tools get namespaced as ext.{id}.{name} or skill.{id}.{name}.
+ * Also listens for extension install/enable/disable events to stay in sync.
+ */
+function syncExtensionToolsIntoRegistry(registry: ToolRegistry): void {
+  if (!hasServiceRegistry()) return;
+
+  try {
+    const service = getServiceRegistry().get(Services.Extension) as import('./extension-service.js').ExtensionService;
+    const dynamicRegistry = getCustomToolDynamicRegistry();
+    const extToolDefs = service.getToolDefinitions();
+
+    for (const def of extToolDefs) {
+      // Register in DynamicToolRegistry for sandbox execution
+      if (!dynamicRegistry.has(def.name)) {
+        try {
+          dynamicRegistry.register({
+            name: def.name,
+            description: def.description,
+            parameters: def.extensionTool.parameters as never,
+            code: def.extensionTool.code,
+            permissions: def.extensionTool.permissions as never,
+          });
+        } catch {
+          continue;
+        }
+      }
+
+      // Qualify name: ext.{id}.{name} or skill.{id}.{name}
+      const nsPrefix = def.format === 'agentskills' ? 'skill' : 'ext';
+      const qName = qualifyToolName(def.name, nsPrefix, def.extensionId);
+      const toolDef: ToolDefinition = {
+        name: qName,
+        description: def.description,
+        parameters: def.parameters as ToolDefinition['parameters'],
+        category: def.category,
+      };
+
+      registry.register(
+        toolDef,
+        async (args, context) => {
+          const execResult = await dynamicRegistry.execute(
+            def.name,
+            args as Record<string, unknown>,
+            context
+          );
+          return {
+            content: execResult.isError
+              ? String(execResult.content)
+              : JSON.stringify(execResult.content),
+            isError: execResult.isError,
+          };
+        },
+        {
+          source: 'dynamic',
+          pluginId: `${nsPrefix}:${def.extensionId}` as import('@ownpilot/core').PluginId,
+          trustLevel: 'sandboxed',
+          providerName: `${nsPrefix}:${def.extensionId}`,
+        }
+      );
+    }
+
+    if (extToolDefs.length > 0) {
+      log.info(`[tool-executor] Synced ${extToolDefs.length} extension tool(s) into shared registry`);
+    }
+
+    // Listen for extension enable/disable/install events to keep in sync
+    try {
+      const eventSystem = getServiceRegistry().get(Services.Event);
+
+      const resyncExtensionTools = () => {
+        try {
+          const freshDefs = service.getToolDefinitions();
+          for (const d of freshDefs) {
+            const ns = d.format === 'agentskills' ? 'skill' : 'ext';
+            const qn = qualifyToolName(d.name, ns, d.extensionId);
+            if (registry.has(qn)) continue; // already registered
+
+            if (!dynamicRegistry.has(d.name)) {
+              try {
+                dynamicRegistry.register({
+                  name: d.name,
+                  description: d.description,
+                  parameters: d.extensionTool.parameters as never,
+                  code: d.extensionTool.code,
+                  permissions: d.extensionTool.permissions as never,
+                });
+              } catch {
+                continue;
+              }
+            }
+
+            registry.register(
+              {
+                name: qn,
+                description: d.description,
+                parameters: d.parameters as ToolDefinition['parameters'],
+                category: d.category,
+              },
+              async (args, context) => {
+                const res = await dynamicRegistry.execute(
+                  d.name,
+                  args as Record<string, unknown>,
+                  context
+                );
+                return {
+                  content: res.isError ? String(res.content) : JSON.stringify(res.content),
+                  isError: res.isError,
+                };
+              },
+              {
+                source: 'dynamic',
+                pluginId: `${ns}:${d.extensionId}` as import('@ownpilot/core').PluginId,
+                trustLevel: 'sandboxed',
+                providerName: `${ns}:${d.extensionId}`,
+              }
+            );
+          }
+          dynamicRegistry.setCallableTools(registry.getAllTools());
+        } catch (err) {
+          log.warn('[tool-executor] Extension re-sync failed', { error: err });
+        }
+      };
+
+      eventSystem.onAny('extension.installed', resyncExtensionTools);
+      eventSystem.onAny('extension.enabled', resyncExtensionTools);
+      eventSystem.onAny('extension.disabled', resyncExtensionTools);
+    } catch {
+      // EventSystem not available yet
+    }
+  } catch {
+    // Extension service not initialized yet
+  }
 }
 
 /**
