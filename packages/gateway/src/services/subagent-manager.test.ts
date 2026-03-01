@@ -55,18 +55,20 @@ let pendingRunners: Array<{ resolve: (v: unknown) => void; reject: (e: Error) =>
 let runnerHangs = false;
 
 vi.mock('./subagent-runner.js', () => ({
-  SubagentRunner: vi.fn().mockImplementation(() => ({
-    run: vi.fn(() => {
-      if (runnerHangs) {
-        return new Promise((resolve, reject) => {
-          pendingRunners.push({ resolve, reject });
-        });
-      }
-      return Promise.resolve(completedResult);
-    }),
-    cancel: vi.fn(),
-    cancelled: false,
-  })),
+  SubagentRunner: vi.fn().mockImplementation(function () {
+    return {
+      run: vi.fn(() => {
+        if (runnerHangs) {
+          return new Promise((resolve, reject) => {
+            pendingRunners.push({ resolve, reject });
+          });
+        }
+        return Promise.resolve(completedResult);
+      }),
+      cancel: vi.fn(),
+      cancelled: false,
+    };
+  }),
 }));
 
 vi.mock('./log.js', () => ({
