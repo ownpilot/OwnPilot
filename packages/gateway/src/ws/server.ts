@@ -232,6 +232,23 @@ export class WSGateway {
       })
     );
 
+    // subagent.* → subagent:* (spawned, progress, completed)
+    this.legacyUnsubs.push(
+      eventSystem.onAny('subagent.spawned', (event) => {
+        this.broadcast('subagent:spawned', event.data as ServerEvents['subagent:spawned']);
+      })
+    );
+    this.legacyUnsubs.push(
+      eventSystem.onAny('subagent.progress', (event) => {
+        this.broadcast('subagent:progress', event.data as ServerEvents['subagent:progress']);
+      })
+    );
+    this.legacyUnsubs.push(
+      eventSystem.onAny('subagent.completed', (event) => {
+        this.broadcast('subagent:completed', event.data as ServerEvents['subagent:completed']);
+      })
+    );
+
     // channel.user.* → channel:user:* (pending, blocked, unblocked, verified, first_seen)
     this.legacyUnsubs.push(
       eventSystem.onPattern('channel.user.*', (event) => {

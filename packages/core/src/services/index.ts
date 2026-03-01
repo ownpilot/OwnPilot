@@ -245,6 +245,24 @@ export type {
 } from './background-agent-service.js';
 export { DEFAULT_BACKGROUND_AGENT_LIMITS } from './background-agent-service.js';
 
+// Subagent Service
+export type {
+  ISubagentService,
+  SubagentState,
+  SubagentParentType,
+  SubagentLimits,
+  SubagentBudget,
+  SpawnSubagentInput,
+  SubagentSession,
+  SubagentToolCall,
+  SubagentHistoryEntry,
+} from './subagent-service.js';
+export {
+  DEFAULT_SUBAGENT_LIMITS,
+  DEFAULT_SUBAGENT_BUDGET,
+  MAX_SUBAGENT_DEPTH,
+} from './subagent-service.js';
+
 // Config Center
 export * from './config-center.js';
 

@@ -31,6 +31,8 @@ import {
   executeCliToolTool,
   BACKGROUND_AGENT_TOOLS,
   executeBackgroundAgentTool,
+  SUBAGENT_TOOLS,
+  executeSubagentTool,
 } from '../../tools/index.js';
 import { CONFIG_TOOLS, executeConfigTool } from '../config-tools.js';
 import { getErrorMessage } from '../../routes/helpers.js';
@@ -253,6 +255,45 @@ export function createBackgroundAgentToolProvider(userId: string): ToolProvider 
       BACKGROUND_AGENT_TOOLS.map((def) => ({
         definition: def,
         executor: wrapGatewayExecutor(def, executeBackgroundAgentTool, userId),
+      })),
+  };
+}
+
+/**
+ * Create a provider for subagent tools (requires userId).
+ * Uses a custom wrapper because executeSubagentTool needs conversationId from ToolContext.
+ */
+export function createSubagentToolProvider(userId: string): ToolProvider {
+  return {
+    name: 'subagent',
+    getTools: () =>
+      SUBAGENT_TOOLS.map((def) => ({
+        definition: def,
+        executor: async (
+          args: Record<string, unknown>,
+          context: ToolContext
+        ): Promise<ToolExecutionResult> => {
+          try {
+            const effectiveUserId = context?.userId ?? userId;
+            const conversationId = context?.conversationId;
+            const result = await executeSubagentTool(
+              def.name,
+              args,
+              effectiveUserId,
+              conversationId
+            );
+            if (result.success) {
+              const content =
+                typeof result.result === 'string'
+                  ? result.result
+                  : JSON.stringify(result.result, null, 2);
+              return { content };
+            }
+            return { content: result.error ?? 'Unknown error', isError: true };
+          } catch (err) {
+            return { content: getErrorMessage(err, 'Tool execution failed'), isError: true };
+          }
+        },
       })),
   };
 }

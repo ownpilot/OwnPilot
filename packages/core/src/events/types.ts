@@ -27,7 +27,8 @@ export type EventCategory =
   | 'extension'
   | 'memory'
   | 'mcp'
-  | 'background-agent';
+  | 'background-agent'
+  | 'subagent';
 
 // ============================================================================
 // Event Types
@@ -118,6 +119,7 @@ export function deriveCategory(type: string): EventCategory {
     'memory',
     'mcp',
     'background-agent',
+    'subagent',
   ];
   if (validCategories.includes(firstSegment as EventCategory)) {
     return firstSegment as EventCategory;

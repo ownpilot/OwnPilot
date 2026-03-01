@@ -366,6 +366,10 @@ async function main() {
   const bgAgentService = getBackgroundAgentService();
   registry.register(Services.BackgroundAgent, bgAgentService);
 
+  // 22. Subagent Service (ephemeral, task-oriented child agents)
+  const { getSubagentService } = await import('./services/subagent-service.js');
+  registry.register(Services.Subagent, getSubagentService());
+
   // Start trigger engine (proactive automation)
   log.info('Starting Trigger Engine...');
   try {

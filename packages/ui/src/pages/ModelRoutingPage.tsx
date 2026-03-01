@@ -38,6 +38,11 @@ const PROCESSES: Array<{
     label: 'Pulse & Triggers',
     description: 'Scheduled tasks, trigger actions, and autonomy engine',
   },
+  {
+    id: 'subagent',
+    label: 'Subagents',
+    description: 'Ephemeral child agents spawned by the chat agent for parallel task delegation',
+  },
 ];
 
 interface ProcessCardState {
@@ -69,6 +74,7 @@ export function ModelRoutingPage() {
     chat: { routing: emptyRouting, resolved: emptyResolved, isDirty: false, isSaving: false },
     channel: { routing: emptyRouting, resolved: emptyResolved, isDirty: false, isSaving: false },
     pulse: { routing: emptyRouting, resolved: emptyResolved, isDirty: false, isSaving: false },
+    subagent: { routing: emptyRouting, resolved: emptyResolved, isDirty: false, isSaving: false },
   });
 
   // Derived: unique configured provider list for dropdowns

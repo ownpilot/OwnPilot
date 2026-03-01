@@ -37,6 +37,7 @@ import type { IPulseService } from './pulse-service.js';
 import type { ICodingAgentService } from './coding-agent-service.js';
 import type { ICliToolService } from './cli-tool-service.js';
 import type { IBackgroundAgentService } from './background-agent-service.js';
+import type { ISubagentService } from './subagent-service.js';
 
 /**
  * All service tokens.
@@ -119,4 +120,7 @@ export const Services = {
 
   /** Background agents (persistent, long-running autonomous agents) */
   BackgroundAgent: new ServiceToken<IBackgroundAgentService>('background-agent'),
+
+  /** Subagents (ephemeral, task-oriented child agents) */
+  Subagent: new ServiceToken<ISubagentService>('subagent'),
 } as const;

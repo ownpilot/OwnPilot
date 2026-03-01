@@ -107,6 +107,14 @@ export type {
   BackgroundAgentToolCall,
   CreateBackgroundAgentInput,
 } from './background-agents';
+export { subagentsApi } from './subagents';
+export type {
+  SubagentState,
+  SubagentSession as SubagentSessionView,
+  SubagentHistoryEntry as SubagentHistoryView,
+  SubagentToolCall as SubagentToolCallView,
+  SpawnSubagentInput,
+} from './subagents';
 export type {
   McpServer,
   McpServerTool,

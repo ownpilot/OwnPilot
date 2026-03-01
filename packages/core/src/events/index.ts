@@ -92,6 +92,9 @@ export type {
   BackgroundAgentPausedData,
   BackgroundAgentResumedData,
   BackgroundAgentMessageData,
+  SubagentSpawnedData,
+  SubagentProgressData,
+  SubagentCompletedData,
 } from './event-map.js';
 
 // ============================================================================

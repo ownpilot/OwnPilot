@@ -328,6 +328,36 @@ export interface ServerEvents {
     lastCycleError?: string;
   };
 
+  // Subagent events
+  'subagent:spawned': {
+    subagentId: string;
+    parentId: string;
+    parentType: string;
+    userId: string;
+    name: string;
+    task: string;
+  };
+  'subagent:progress': {
+    subagentId: string;
+    parentId: string;
+    name: string;
+    turnsUsed: number;
+    toolCallsUsed: number;
+    lastToolName?: string;
+  };
+  'subagent:completed': {
+    subagentId: string;
+    parentId: string;
+    userId: string;
+    name: string;
+    state: string;
+    result?: string;
+    error?: string;
+    durationMs: number;
+    turnsUsed: number;
+    toolCallsUsed: number;
+  };
+
   // EventBus bridge events
   'event:subscribed': { pattern: string; success: boolean; error?: string };
   'event:unsubscribed': { pattern: string };

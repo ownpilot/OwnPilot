@@ -56,6 +56,8 @@ import {
   executeNotificationTool,
   EVENT_TOOLS,
   executeEventTool,
+  SUBAGENT_TOOLS,
+  executeSubagentTool,
 } from '../tools/index.js';
 import { CONFIG_TOOLS, executeConfigTool } from '../services/config-tools.js';
 import type { ExtensionService } from '../services/extension-service.js';
@@ -201,6 +203,32 @@ export function registerGatewayTools(tools: ToolRegistry, userId: string, trace:
         return toToolResult(result);
       });
     }
+  }
+
+  // Subagent tools (need conversationId from context, registered separately)
+  for (const toolDef of SUBAGENT_TOOLS) {
+    const qName = qualifyToolName(toolDef.name, 'core');
+    tools.register(
+      { ...toolDef, name: qName },
+      async (args, context): Promise<CoreToolResult> => {
+        const startTime = trace
+          ? traceToolCallStart(toolDef.name, args as Record<string, unknown>)
+          : 0;
+
+        const result = await executeSubagentTool(
+          toolDef.name,
+          args as Record<string, unknown>,
+          userId,
+          context?.conversationId
+        );
+
+        if (trace) {
+          traceToolCallEnd(toolDef.name, startTime, result.success, result.result, result.error);
+        }
+
+        return toToolResult(result);
+      }
+    );
   }
 }
 

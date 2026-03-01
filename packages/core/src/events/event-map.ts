@@ -404,6 +404,41 @@ export interface BackgroundAgentMessageData {
 }
 
 // ============================================================================
+// Subagent Event Data
+// ============================================================================
+
+export interface SubagentSpawnedData {
+  subagentId: string;
+  parentId: string;
+  parentType: string;
+  userId: string;
+  name: string;
+  task: string;
+}
+
+export interface SubagentProgressData {
+  subagentId: string;
+  parentId: string;
+  name: string;
+  turnsUsed: number;
+  toolCallsUsed: number;
+  lastToolName?: string;
+}
+
+export interface SubagentCompletedData {
+  subagentId: string;
+  parentId: string;
+  userId: string;
+  name: string;
+  state: string;
+  result?: string;
+  error?: string;
+  durationMs: number;
+  turnsUsed: number;
+  toolCallsUsed: number;
+}
+
+// ============================================================================
 // Trigger Event Data
 // ============================================================================
 
@@ -563,6 +598,11 @@ export interface EventMap {
   'background-agent.paused': BackgroundAgentPausedData;
   'background-agent.resumed': BackgroundAgentResumedData;
   'background-agent.message': BackgroundAgentMessageData;
+
+  // --- Subagent Events ---
+  'subagent.spawned': SubagentSpawnedData;
+  'subagent.progress': SubagentProgressData;
+  'subagent.completed': SubagentCompletedData;
 
   // --- Trigger Events ---
   'trigger.fired': TriggerFiredData;
