@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **Autonomous Subagent System** — Chat agents and background agents can spawn lightweight child agents for parallel task execution with fire-and-forget spawning, budget enforcement (concurrent limits, total spawn limits, nesting depth cap), and independent model selection per subagent
+- **5 Subagent LLM Tools** — `spawn_subagent`, `check_subagent`, `get_subagent_result`, `cancel_subagent`, `list_subagents` for full lifecycle control from within agent conversations
+- **Subagent REST API** — `/api/v1/subagents` endpoints for spawn, list, get, cancel, and execution history
+- **Subagent WebSocket Events** — Real-time `subagent:spawned`, `subagent:progress`, `subagent:completed` events for UI updates
+- **Subagent DB Persistence** — `subagent_history` table for audit trail of completed executions
+- **Subagent Model Routing** — Per-process model routing now supports `subagent` process type alongside chat, channel, and pulse
+
+### Testing
+
+- 389+ test files, 22,100+ tests total (91 new subagent tests across 6 files)
+
 ## [0.1.4] - 2026-02-28
 
 ### Added

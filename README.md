@@ -27,6 +27,7 @@ Privacy-first personal AI assistant platform with autonomous background agents, 
 - [AI Providers](#ai-providers)
 - [Agent System](#agent-system)
 - [Background Agents](#background-agents-1)
+- [Subagents](#subagents)
 - [Tool System](#tool-system)
 - [MCP Integration](#mcp-integration)
 - [Personal Data](#personal-data)
@@ -97,6 +98,15 @@ Privacy-first personal AI assistant platform with autonomous background agents, 
 - **Session Persistence** — Agent state persisted to DB every 30 seconds, auto-recovery on server restart
 - **Inbox Messaging** — Send messages to running agents; agents process inbox at the start of each cycle
 
+### Subagents
+
+- **Parallel Task Delegation** — Chat agents and background agents can spawn lightweight child agents for concurrent task execution
+- **Fire-and-Forget Model** — Spawn returns immediately with a session ID; parent polls for results via `check_subagent`/`get_subagent_result`
+- **Budget Enforcement** — Configurable concurrent limit (default 5), total spawn limit (default 20), and nesting depth cap (max 2 levels)
+- **Full Tool Access** — Subagents inherit the parent's full tool pipeline; optional `allowedTools` restriction
+- **Independent Model Selection** — Each subagent can use a different provider/model (e.g., expensive model for parent, cheap model for subagents)
+- **5 LLM-Callable Tools** — `spawn_subagent`, `check_subagent`, `get_subagent_result`, `cancel_subagent`, `list_subagents`
+
 ### CLI Tools
 
 - **40+ Discoverable Tools** — Automatic PATH-based detection of installed CLI tools (linters, formatters, build tools, package managers, security scanners, databases, containers)
@@ -113,7 +123,7 @@ Privacy-first personal AI assistant platform with autonomous background agents, 
 - **Heartbeats** — Natural language to cron conversion for periodic tasks ("every weekday at 9am")
 - **Plans** — Multi-step autonomous execution with checkpoints, retry logic, and timeout handling
 - **Risk Assessment** — Automatic risk scoring for tool executions with approval workflows
-- **Model Routing** — Per-process model selection (chat, telegram, pulse) with fallback chains
+- **Model Routing** — Per-process model selection (chat, channel, pulse, subagent) with fallback chains
 - **Extended Thinking** — Anthropic extended thinking support for deeper reasoning in complex tasks
 
 ### Communication
@@ -635,6 +645,57 @@ Persistent autonomous agents that run independently from user chat sessions.
 
 ---
 
+## Subagents
+
+Ephemeral child agents for parallel task delegation. Unlike background agents (which are persistent and cycle-based), subagents run once to completion and are discarded.
+
+### How It Works
+
+```
+Parent Agent (chat or background agent)
+  ├─ spawn_subagent("Research pricing")  →  SubagentRunner #1
+  ├─ spawn_subagent("Analyze competitors") → SubagentRunner #2
+  ├─ spawn_subagent("Draft summary")     →  SubagentRunner #3
+  │
+  ├─ check_subagent(#1) → running...
+  ├─ get_subagent_result(#1) → "Pricing analysis: ..."
+  └─ Synthesize final answer from all results
+```
+
+### LLM Tools
+
+| Tool | Description |
+|------|-------------|
+| `spawn_subagent` | Spawn an autonomous subagent for a specific task |
+| `check_subagent` | Check the status of a running subagent |
+| `get_subagent_result` | Get the final result of a completed subagent |
+| `cancel_subagent` | Cancel a running subagent |
+| `list_subagents` | List all subagents in the current session |
+
+### Session Lifecycle
+
+| State | Description |
+|-------|-------------|
+| `pending` | Created, waiting to start |
+| `running` | Actively executing |
+| `completed` | Finished successfully |
+| `failed` | Encountered an error |
+| `cancelled` | Cancelled by parent |
+| `timeout` | Exceeded time limit |
+
+### Budget & Limits
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `maxConcurrent` | 5 | Max active subagents per parent |
+| `maxTotalSpawns` | 20 | Total spawn limit per session |
+| `maxTurns` | 20 | Max LLM round-trips per subagent |
+| `maxToolCalls` | 100 | Max tool invocations per subagent |
+| `timeoutMs` | 120,000 | Per-subagent timeout (2 min) |
+| Nesting depth | 2 | Subagents can spawn sub-subagents (1 level) |
+
+---
+
 ## Tool System
 
 ### Overview
@@ -1092,6 +1153,16 @@ Sliding window algorithm with configurable window (default 60s), max requests (d
 | `GET`    | `/api/v1/background-agents/:id/history` | Paginated cycle history       |
 | `POST`   | `/api/v1/background-agents/:id/message` | Send message to agent inbox   |
 
+### Subagents
+
+| Method   | Endpoint                       | Description                     |
+| -------- | ------------------------------ | ------------------------------- |
+| `GET`    | `/api/v1/subagents`            | List active subagents           |
+| `POST`   | `/api/v1/subagents`            | Spawn a new subagent            |
+| `GET`    | `/api/v1/subagents/:id`        | Get subagent session/result     |
+| `DELETE` | `/api/v1/subagents/:id`        | Cancel a running subagent       |
+| `GET`    | `/api/v1/subagents/history`    | Paginated execution history     |
+
 ### CLI Tools
 
 | Method   | Endpoint                         | Description                    |
@@ -1147,6 +1218,7 @@ Real-time broadcasts on `ws://localhost:18789`:
 | `trigger:executed`        | Trigger execution result                         |
 | `coding-agent:session:*`  | Coding agent session lifecycle and output        |
 | `bg-agent:*`              | Background agent lifecycle and cycle results     |
+| `subagent:*`              | Subagent spawned, progress, and completion       |
 | `pulse:activity`          | Pulse system proactive activity                  |
 
 ### Response Format
