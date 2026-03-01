@@ -148,6 +148,8 @@ vi.mock('../tools/index.js', () => ({
   executeNotificationTool: vi.fn(),
   EVENT_TOOLS: [],
   executeEventTool: vi.fn(),
+  SUBAGENT_TOOLS: [],
+  executeSubagentTool: vi.fn(),
 }));
 vi.mock('../services/config-tools.js', () => ({
   CONFIG_TOOLS: [],
