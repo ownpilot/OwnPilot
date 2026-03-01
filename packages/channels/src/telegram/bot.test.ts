@@ -25,7 +25,9 @@ const { mockBot, mockLog } = vi.hoisted(() => {
 });
 
 vi.mock('grammy', () => ({
-  Bot: vi.fn(() => mockBot),
+  Bot: vi.fn().mockImplementation(function () {
+    return mockBot;
+  }),
   webhookCallback: vi.fn(() => vi.fn()),
 }));
 

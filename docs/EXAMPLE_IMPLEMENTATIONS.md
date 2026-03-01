@@ -1,5 +1,7 @@
 # Example Implementations - Isolated Service Architecture
 
+> **Note (March 2026):** These examples were written in early 2025 as part of a design proposal. The actual implementation differs — see the ServiceRegistry in `packages/core/src/services/` and Tool Namespaces in `packages/core/src/agent/tool-namespace.ts` for the current approach.
+
 ## Overview
 
 This document provides **concrete code examples** for the isolated service architecture. These examples demonstrate how to implement and use each service.

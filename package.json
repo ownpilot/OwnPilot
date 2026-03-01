@@ -27,11 +27,11 @@
   },
   "devDependencies": {
     "@types/node": "^22.19.13",
-    "@vitest/coverage-v8": "^2.1.9",
+    "@vitest/coverage-v8": "^4.0.18",
     "eslint": "^10.0.2",
     "husky": "^9.1.7",
     "prettier": "^3.8.1",
-    "turbo": "^2.8.11",
+    "turbo": "^2.8.12",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.56.1"
   },

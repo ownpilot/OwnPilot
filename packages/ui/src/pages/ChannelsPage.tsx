@@ -300,7 +300,13 @@ export function ChannelsPage() {
 
   const handleClearMessages = useCallback(
     async (channelId: string) => {
-      if (!(await confirm({ message: 'Clear all messages for this channel? This cannot be undone.', variant: 'danger' }))) return;
+      if (
+        !(await confirm({
+          message: 'Clear all messages for this channel? This cannot be undone.',
+          variant: 'danger',
+        }))
+      )
+        return;
       setActionLoading('clear');
       try {
         const resp = await channelsApi.clearMessages(channelId);
@@ -331,7 +337,13 @@ export function ChannelsPage() {
 
   const handleBlockUser = useCallback(
     async (userId: string) => {
-      if (!(await confirm({ message: 'Block this user? They will no longer be able to message the bot.', variant: 'danger' }))) return;
+      if (
+        !(await confirm({
+          message: 'Block this user? They will no longer be able to message the bot.',
+          variant: 'danger',
+        }))
+      )
+        return;
       try {
         await channelsApi.blockUser(userId);
         toast.success('User blocked');
@@ -358,7 +370,10 @@ export function ChannelsPage() {
 
   const handleDeleteUser = useCallback(
     async (userId: string) => {
-      if (!(await confirm({ message: 'Delete this user? This cannot be undone.', variant: 'danger' }))) return;
+      if (
+        !(await confirm({ message: 'Delete this user? This cannot be undone.', variant: 'danger' }))
+      )
+        return;
       try {
         await channelsApi.deleteUser(userId);
         toast.success('User deleted');

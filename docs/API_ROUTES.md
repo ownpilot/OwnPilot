@@ -6,7 +6,7 @@ Complete HTTP API reference for the OwnPilot Gateway, a Hono-based server runnin
 **API Prefix:** `/api/v1`
 **Transport:** HTTP/1.1, Server-Sent Events (SSE), WebSocket (`ws` library)
 **Database:** PostgreSQL via `pg`
-**Authentication:** JWT tokens via `jose` library (planned; currently single-user mode with `userId = "default"`)
+**Authentication:** None, API Key, or JWT (via `jose` library). Configurable via Config Center or environment variables.
 
 All JSON responses follow a standard envelope:
 

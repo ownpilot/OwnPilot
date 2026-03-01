@@ -1134,7 +1134,10 @@ function WorkflowEditorInner() {
 
   const handleImportWorkflow = useCallback(
     async (json: Record<string, unknown>) => {
-      if (nodes.length > 0 && !(await confirm({ message: 'This will replace all current nodes and edges. Continue?' })))
+      if (
+        nodes.length > 0 &&
+        !(await confirm({ message: 'This will replace all current nodes and edges. Continue?' }))
+      )
         return;
 
       const def = json as unknown as WorkflowDefinition;
@@ -1848,7 +1851,10 @@ function WorkflowEditorInner() {
 
   const handleApplyWorkflow = useCallback(
     async (definition: WorkflowDefinition) => {
-      if (nodes.length > 0 && !(await confirm({ message: 'This will replace all current nodes and edges. Continue?' })))
+      if (
+        nodes.length > 0 &&
+        !(await confirm({ message: 'This will replace all current nodes and edges. Continue?' }))
+      )
         return;
 
       const { nodes: rfNodes, edges: rfEdges } = convertDefinitionToReactFlow(

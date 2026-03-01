@@ -1,5 +1,7 @@
 # OwnPilot Architecture Isolation - Implementation Roadmap
 
+> **Note (March 2026):** This roadmap was written in early 2025. Many concepts described here were implemented differently: ServiceRegistry uses in-memory typed tokens (not a DB-backed tool registry), Tool Namespaces were added at the core level, and the EventBus was enhanced with HookBus and ScopedBus. This document is retained for historical reference.
+
 ## Overview
 
 This document provides a **step-by-step implementation guide** for the architecture isolation plan. Each phase is designed to be implemented incrementally without breaking existing functionality.
@@ -573,6 +575,6 @@ If critical issues arise:
 
 ---
 
-**Document Version**: 1.0  
-**Last Updated**: 2025-01-XX  
+**Document Version**: 1.0
+**Last Updated**: 2025-01 (historical)
 **Author**: OwnPilot Architecture Team

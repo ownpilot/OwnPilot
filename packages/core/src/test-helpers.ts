@@ -146,7 +146,7 @@ export function createMockProvider(
  *     EventTypes: { ... },
  *   }));
  */
-export function createMockEventSystem() {
+export function createMockEventSystem(): Record<string, unknown> {
   return {
     emit: vi.fn(),
     emitRaw: vi.fn(),

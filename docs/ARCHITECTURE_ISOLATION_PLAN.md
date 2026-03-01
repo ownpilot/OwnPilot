@@ -1,5 +1,7 @@
 # OwnPilot Architecture Isolation Plan
 
+> **Note (March 2026):** This document was written in early 2025 as a design proposal. Key elements have since been implemented: ServiceRegistry with typed DI tokens, Tool Namespaces (`core.`, `custom.`, `plugin.`, `skill.`, `mcp.`), EventBus with HookBus and ScopedBus, and service isolation via core interfaces. Some planned features (Database ACL, tool_registry DB table) were not implemented as designed — the in-memory ToolRegistry approach was adopted instead.
+
 ## Executive Summary
 
 This document outlines the architectural isolation strategy for OwnPilot's plugin system, tools, database, events, triggers, and plans. The goal is to create **clean service boundaries** that prevent architectural collapse during development.

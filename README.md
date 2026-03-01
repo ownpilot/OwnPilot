@@ -118,13 +118,13 @@ Privacy-first personal AI assistant platform with autonomous background agents, 
 
 ### Communication
 
-- **Web UI** — React 19 + Vite 7 + Tailwind CSS 4 with dark mode, 48 pages, 60+ components, code-split
+- **Web UI** — React 19 + Vite 7 + Tailwind CSS 4 with dark mode, 53 pages, 100+ components, code-split
 - **Telegram Bot** — Full bot integration with user/chat filtering, message splitting, HTML/Markdown formatting
 - **WhatsApp (Baileys)** — QR code authentication (no Meta Business account needed), self-chat mode with loop prevention, session persistence
 - **Channel User Approval** — Multi-step verification: approval code flow, manual admin approval, user blocking/unblocking with real-time notifications
 - **EventBus** — Unified event backbone with EventBusBridge translating dot-notation events to WebSocket colon-notation; Event Monitor UI for live debugging
 - **WebSocket** — Real-time broadcasts for all data mutations, event subscriptions, session management
-- **REST API** — 50+ route modules with standardized responses, pagination, and error codes
+- **REST API** — 110+ route modules with standardized responses, pagination, and error codes
 
 ### Security
 
@@ -158,7 +158,7 @@ Privacy-first personal AI assistant platform with autonomous background agents, 
                        │
               ┌────────▼────────┐
               │    Gateway      │  Hono HTTP API Server
-              │  (Port 8080)    │  50+ Route Modules
+              │  (Port 8080)    │  110+ Route Modules
               ├─────────────────┤
               │  MessageBus     │  Middleware Pipeline
               │  Agent Engine   │  Tool Orchestration
@@ -178,7 +178,7 @@ Privacy-first personal AI assistant platform with autonomous background agents, 
               └────────┬────────┘
                        │
               ┌────────▼────────┐
-              │   PostgreSQL    │  43+ Repositories
+              │   PostgreSQL    │  85+ Repositories
               │                 │  Conversations, Personal Data,
               │                 │  Memories, Goals, Triggers, Plans,
               │                 │  MCP Servers, User Extensions,
@@ -375,9 +375,9 @@ The foundational runtime library. Contains the AI engine, tool system, plugin ar
 
 The API server built on [Hono](https://hono.dev/). Handles HTTP/WebSocket communication, database operations, agent execution, MCP integration, plugin management, and channel connectivity.
 
-**~76,000 LOC** across 210+ source files. **239 test files** with **11,700+ tests**.
+**~76,000 LOC** across 210+ source files. **239 test files** with **11,750+ tests**.
 
-**Route Modules (44 top-level + sub-modules):**
+**Route Modules (44 top-level + 70+ sub-modules):**
 
 | Category               | Routes                                                                                                                                                                            |
 | ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -392,9 +392,9 @@ The API server built on [Hono](https://hono.dev/). Handles HTTP/WebSocket commun
 | **Configuration**      | `settings.ts`, `config-services.ts`, `ui-auth.ts`                                                                                                                                 |
 | **System**             | `health.ts`, `dashboard.ts`, `costs.ts`, `audit.ts`, `debug.ts`, `database.ts`, `profile.ts`, `workspaces.ts`, `file-workspaces.ts`, `execution-permissions.ts`, `error-codes.ts` |
 
-**Services (55+):** MessageBus, ConfigCenter, ToolExecutor, ProviderService, McpClientService, McpServerService, ExtensionService, ComposioService, EmbeddingService, HeartbeatService, AuditService, PluginService, MemoryService, GoalService, TriggerService, PlanService, WorkspaceService, DatabaseService, SessionService, LogService, ResourceService, LocalDiscovery, WorkflowService, AgentSkillsParser, CodingAgentService, CodingAgentSessions, CliToolService, CliToolsDiscovery, ModelRouting, ExecutionApproval, BackgroundAgentManager, BackgroundAgentRunner, ChannelVerificationService, and more.
+**Services (100+):** MessageBus, ConfigCenter, ToolExecutor, ProviderService, McpClientService, McpServerService, ExtensionService, ComposioService, EmbeddingService, HeartbeatService, AuditService, PluginService, MemoryService, GoalService, TriggerService, PlanService, WorkspaceService, DatabaseService, SessionService, LogService, ResourceService, LocalDiscovery, WorkflowService, AgentSkillsParser, CodingAgentService, CodingAgentSessions, CliToolService, CliToolsDiscovery, ModelRouting, ExecutionApproval, BackgroundAgentManager, BackgroundAgentRunner, ChannelVerificationService, and more.
 
-**Repositories (43+):** agents, conversations, messages, tasks, notes, bookmarks, calendar, contacts, memories, goals, triggers, plans, expenses, custom-data, custom-tools, plugins, channels, channel-messages, channel-users, channel-sessions, channel-verification, costs, settings, config-services, pomodoro, habits, captures, workspaces, model-configs, execution-permissions, logs, mcp-servers, extensions, local-providers, heartbeats, embedding-cache, workflows, autonomy-log, coding-agent-results, cli-providers, cli-tool-policies, background-agents.
+**Repositories (85+):** agents, conversations, messages, tasks, notes, bookmarks, calendar, contacts, memories, goals, triggers, plans, expenses, custom-data, custom-tools, plugins, channels, channel-messages, channel-users, channel-sessions, channel-verification, costs, settings, config-services, pomodoro, habits, captures, workspaces, model-configs, execution-permissions, logs, mcp-servers, extensions, local-providers, heartbeats, embedding-cache, workflows, autonomy-log, coding-agent-results, cli-providers, cli-tool-policies, background-agents.
 
 ### UI (`@ownpilot/ui`)
 
@@ -408,7 +408,7 @@ Modern web interface built with React 19, Vite 7, and Tailwind CSS 4. Minimal de
 | Tailwind CSS         | 4.2.0   |
 | prism-react-renderer | 2.4.1   |
 
-**Pages (50):**
+**Pages (53):**
 
 | Page                                                | Description                                                                                |
 | --------------------------------------------------- | ------------------------------------------------------------------------------------------ |
@@ -443,7 +443,7 @@ Modern web interface built with React 19, Vite 7, and Tailwind CSS 4. Minimal de
 | **System**                                          | Database backup/restore, sandbox status, theme, notifications                              |
 | **Profile / Logs / About**                          | User profile, request logs, system info                                                    |
 
-**Key Components (60+):** Layout, ChatInput, MessageList, ContextBar, ContextDetailModal, ToolExecutionDisplay, TraceDisplay, CodeBlock, MarkdownContent, ExecutionApprovalDialog, ExecutionSecurityPanel, SuggestionChips, MemoryCards, WorkspaceSelector, ToastProvider, ConfirmDialog, DynamicConfigForm, ErrorBoundary, SetupWizard, and more.
+**Key Components (100+):** Layout, ChatInput, MessageList, ContextBar, ContextDetailModal, ToolExecutionDisplay, TraceDisplay, CodeBlock, MarkdownContent, ExecutionApprovalDialog, ExecutionSecurityPanel, SuggestionChips, MemoryCards, WorkspaceSelector, ToastProvider, ConfirmDialog, DynamicConfigForm, ErrorBoundary, SetupWizard, and more.
 
 **State Management (Context + Hooks):**
 
@@ -846,7 +846,7 @@ Visual multi-step automation with a workflow editor:
 
 ## Database
 
-PostgreSQL with 43+ repositories via the `pg` adapter.
+PostgreSQL with 85+ repositories via the `pg` adapter.
 
 ### Key Tables
 
@@ -1315,10 +1315,10 @@ pnpm clean            # Clear all build artifacts
 | **API Server** | Hono 4.12                                     |
 | **Web UI**     | React 19 + Vite 7 + Tailwind CSS 4            |
 | **Database**   | PostgreSQL (with pgvector)                    |
-| **Telegram**   | Grammy 1.40                                   |
+| **Telegram**   | Grammy 1.41                                   |
 | **CLI**        | Commander.js 14                               |
 | **MCP**        | @modelcontextprotocol/sdk                     |
-| **Testing**    | Vitest 2.x (366+ test files, 21,500+ tests)   |
+| **Testing**    | Vitest 4.x (383+ test files, 22,000+ tests)   |
 | **Linting**    | ESLint 10 (flat config)                       |
 | **Formatting** | Prettier 3.8                                  |
 | **Container**  | Docker multi-arch (ghcr.io/ownpilot/ownpilot) |

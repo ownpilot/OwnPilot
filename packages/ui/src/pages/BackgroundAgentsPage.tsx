@@ -196,7 +196,13 @@ export function BackgroundAgentsPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!(await confirm({ message: 'Delete this background agent? This cannot be undone.', variant: 'danger' }))) return;
+    if (
+      !(await confirm({
+        message: 'Delete this background agent? This cannot be undone.',
+        variant: 'danger',
+      }))
+    )
+      return;
     try {
       await backgroundAgentsApi.delete(id);
       toast.success('Agent deleted');

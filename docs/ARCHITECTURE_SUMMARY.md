@@ -1,5 +1,7 @@
 # OwnPilot Architecture Isolation - Quick Reference
 
+> **Note (March 2026):** This is a historical design document from early 2025. Refer to the main [ARCHITECTURE.md](./ARCHITECTURE.md) and the project README for current architecture details. The ServiceRegistry, Tool Namespaces, and EventBus systems have been implemented, though not exactly as proposed here.
+
 ## 📋 Service Overview
 
 | Service             | Location                           | Responsibility                                | Database Tables                                               | Events Emitted                                                                      | Events Consumed                   |
@@ -301,6 +303,6 @@ await acl.createPluginTable('my-plugin', {
 
 ---
 
-**Last Updated**: 2025-01-XX  
-**Version**: 1.0  
-**Status**: Design Complete, Ready for Implementation
+**Last Updated**: 2025-01 (historical)
+**Version**: 1.0
+**Status**: Partially implemented — see ServiceRegistry, Tool Namespaces, EventBus
