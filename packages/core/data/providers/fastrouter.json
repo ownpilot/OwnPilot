@@ -12,12 +12,12 @@
   },
   "models": [
     {
-      "id": "openai/gpt-5-nano",
-      "name": "GPT-5 Nano",
+      "id": "openai/gpt-5",
+      "name": "GPT-5",
       "contextWindow": 400000,
       "maxOutput": 128000,
-      "inputPrice": 0.05,
-      "outputPrice": 0.4,
+      "inputPrice": 1.25,
+      "outputPrice": 10,
       "capabilities": [
         "chat",
         "vision",
@@ -46,12 +46,12 @@
       "releaseDate": "2025-08-07"
     },
     {
-      "id": "openai/gpt-5",
-      "name": "GPT-5",
+      "id": "openai/gpt-5-nano",
+      "name": "GPT-5 Nano",
       "contextWindow": 400000,
       "maxOutput": 128000,
-      "inputPrice": 1.25,
-      "outputPrice": 10,
+      "inputPrice": 0.05,
+      "outputPrice": 0.4,
       "capabilities": [
         "chat",
         "vision",
@@ -63,12 +63,12 @@
       "releaseDate": "2025-08-07"
     },
     {
-      "id": "openai/gpt-oss-20b",
-      "name": "GPT OSS 20B",
+      "id": "openai/gpt-oss-120b",
+      "name": "GPT OSS 120B",
       "contextWindow": 131072,
-      "maxOutput": 65536,
-      "inputPrice": 0.05,
-      "outputPrice": 0.2,
+      "maxOutput": 32768,
+      "inputPrice": 0.15,
+      "outputPrice": 0.6,
       "capabilities": [
         "chat",
         "function_calling",
@@ -79,12 +79,12 @@
       "releaseDate": "2025-08-05"
     },
     {
-      "id": "openai/gpt-oss-120b",
-      "name": "GPT OSS 120B",
+      "id": "openai/gpt-oss-20b",
+      "name": "GPT OSS 20B",
       "contextWindow": 131072,
-      "maxOutput": 32768,
-      "inputPrice": 0.15,
-      "outputPrice": 0.6,
+      "maxOutput": 65536,
+      "inputPrice": 0.05,
+      "outputPrice": 0.2,
       "capabilities": [
         "chat",
         "function_calling",

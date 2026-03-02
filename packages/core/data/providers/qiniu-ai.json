@@ -27,25 +27,9 @@
       "releaseDate": "2026-01-13"
     },
     {
-      "id": "minimax/minimax-m2.1",
-      "name": "Minimax/Minimax-M2.1",
-      "contextWindow": 204800,
-      "maxOutput": 128000,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-12-23"
-    },
-    {
-      "id": "stepfun-ai/gelab-zero-4b-preview",
-      "name": "Stepfun-Ai/Gelab Zero 4b Preview",
-      "contextWindow": 8192,
+      "id": "z-ai/autoglm-phone-9b",
+      "name": "Z-Ai/Autoglm Phone 9b",
+      "contextWindow": 12800,
       "maxOutput": 4096,
       "inputPrice": 0,
       "outputPrice": 0,
@@ -75,9 +59,9 @@
       "releaseDate": "2025-12-23"
     },
     {
-      "id": "z-ai/autoglm-phone-9b",
-      "name": "Z-Ai/Autoglm Phone 9b",
-      "contextWindow": 12800,
+      "id": "stepfun-ai/gelab-zero-4b-preview",
+      "name": "Stepfun-Ai/Gelab Zero 4b Preview",
+      "contextWindow": 8192,
       "maxOutput": 4096,
       "inputPrice": 0,
       "outputPrice": 0,
@@ -85,6 +69,22 @@
         "chat",
         "vision",
         "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-12-23"
+    },
+    {
+      "id": "minimax/minimax-m2.1",
+      "name": "Minimax/Minimax-M2.1",
+      "contextWindow": 204800,
+      "maxOutput": 128000,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
         "streaming"
       ],
       "default": false,
@@ -145,8 +145,8 @@
       "releaseDate": "2025-12-18"
     },
     {
-      "id": "x-ai/grok-4-fast-non-reasoning",
-      "name": "X-Ai/Grok-4-Fast-Non-Reasoning",
+      "id": "x-ai/grok-4-fast-reasoning",
+      "name": "X-Ai/Grok-4-Fast-Reasoning",
       "contextWindow": 2000000,
       "maxOutput": 2000000,
       "inputPrice": 0,
@@ -163,8 +163,8 @@
       "releaseDate": "2025-12-18"
     },
     {
-      "id": "x-ai/grok-4-fast-reasoning",
-      "name": "X-Ai/Grok-4-Fast-Reasoning",
+      "id": "x-ai/grok-4-fast-non-reasoning",
+      "name": "X-Ai/Grok-4-Fast-Non-Reasoning",
       "contextWindow": 2000000,
       "maxOutput": 2000000,
       "inputPrice": 0,
@@ -528,21 +528,6 @@
       "releaseDate": "2025-09-19"
     },
     {
-      "id": "qwen3-next-80b-a3b-instruct",
-      "name": "Qwen3 Next 80B A3B Instruct",
-      "contextWindow": 131072,
-      "maxOutput": 32768,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-09-12"
-    },
-    {
       "id": "qwen3-next-80b-a3b-thinking",
       "name": "Qwen3 Next 80B A3B Thinking",
       "contextWindow": 131072,
@@ -553,6 +538,21 @@
         "chat",
         "function_calling",
         "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-09-12"
+    },
+    {
+      "id": "qwen3-next-80b-a3b-instruct",
+      "name": "Qwen3 Next 80B A3B Instruct",
+      "contextWindow": 131072,
+      "maxOutput": 32768,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "function_calling",
         "streaming"
       ],
       "default": false,
@@ -654,8 +654,8 @@
       "releaseDate": "2025-08-19"
     },
     {
-      "id": "doubao-seed-1.6-flash",
-      "name": "Doubao-Seed 1.6 Flash",
+      "id": "doubao-seed-1.6-thinking",
+      "name": "Doubao-Seed 1.6 Thinking",
       "contextWindow": 256000,
       "maxOutput": 32000,
       "inputPrice": 0,
@@ -688,8 +688,8 @@
       "releaseDate": "2025-08-15"
     },
     {
-      "id": "doubao-seed-1.6-thinking",
-      "name": "Doubao-Seed 1.6 Thinking",
+      "id": "doubao-seed-1.6-flash",
+      "name": "Doubao-Seed 1.6 Flash",
       "contextWindow": 256000,
       "maxOutput": 32000,
       "inputPrice": 0,
@@ -765,6 +765,22 @@
       "releaseDate": "2025-08-12"
     },
     {
+      "id": "gpt-oss-120b",
+      "name": "gpt-oss-120b",
+      "contextWindow": 128000,
+      "maxOutput": 4096,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-08-06"
+    },
+    {
       "id": "claude-4.1-opus",
       "name": "Claude 4.1 Opus",
       "contextWindow": 200000,
@@ -798,38 +814,6 @@
       "releaseDate": "2025-08-06"
     },
     {
-      "id": "gpt-oss-120b",
-      "name": "gpt-oss-120b",
-      "contextWindow": 128000,
-      "maxOutput": 4096,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-08-06"
-    },
-    {
-      "id": "deepseek-r1-0528",
-      "name": "DeepSeek-R1-0528",
-      "contextWindow": 128000,
-      "maxOutput": 32000,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-08-05"
-    },
-    {
       "id": "kimi-k2",
       "name": "Kimi K2",
       "contextWindow": 128000,
@@ -845,14 +829,15 @@
       "releaseDate": "2025-08-05"
     },
     {
-      "id": "glm-4.5",
-      "name": "GLM 4.5",
-      "contextWindow": 131072,
-      "maxOutput": 98304,
+      "id": "claude-3.7-sonnet",
+      "name": "Claude 3.7 Sonnet",
+      "contextWindow": 200000,
+      "maxOutput": 128000,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
         "chat",
+        "vision",
         "function_calling",
         "reasoning",
         "streaming"
@@ -861,48 +846,15 @@
       "releaseDate": "2025-08-05"
     },
     {
-      "id": "deepseek-r1",
-      "name": "DeepSeek-R1",
-      "contextWindow": 128000,
-      "maxOutput": 32000,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-08-05"
-    },
-    {
-      "id": "qwen-turbo",
-      "name": "Qwen-Turbo",
-      "contextWindow": 1000000,
-      "maxOutput": 4096,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-08-05"
-    },
-    {
-      "id": "gemini-2.5-flash",
-      "name": "Gemini 2.5 Flash",
-      "contextWindow": 1048576,
+      "id": "claude-4.0-sonnet",
+      "name": "Claude 4.0 Sonnet",
+      "contextWindow": 200000,
       "maxOutput": 64000,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
         "chat",
         "vision",
-        "audio",
         "function_calling",
         "reasoning",
         "streaming"
@@ -911,94 +863,10 @@
       "releaseDate": "2025-08-05"
     },
     {
-      "id": "qwen2.5-vl-7b-instruct",
-      "name": "Qwen 2.5 VL 7B Instruct",
-      "contextWindow": 128000,
-      "maxOutput": 8192,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "vision",
-        "audio",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-08-05"
-    },
-    {
-      "id": "gemini-2.0-flash-lite",
-      "name": "Gemini 2.0 Flash Lite",
-      "contextWindow": 1048576,
-      "maxOutput": 8192,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "vision",
-        "audio",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-08-05"
-    },
-    {
-      "id": "qwen2.5-vl-72b-instruct",
-      "name": "Qwen 2.5 VL 72B Instruct",
-      "contextWindow": 128000,
-      "maxOutput": 8192,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "vision",
-        "audio",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-08-05"
-    },
-    {
-      "id": "qwen-max-2025-01-25",
-      "name": "Qwen2.5-Max-2025-01-25",
+      "id": "qwen-vl-max-2025-01-25",
+      "name": "Qwen VL-MAX-2025-01-25",
       "contextWindow": 128000,
       "maxOutput": 4096,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-08-05"
-    },
-    {
-      "id": "gemini-2.0-flash",
-      "name": "Gemini 2.0 Flash",
-      "contextWindow": 1048576,
-      "maxOutput": 8192,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "vision",
-        "audio",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-08-05"
-    },
-    {
-      "id": "gemini-2.5-flash-lite",
-      "name": "Gemini 2.5 Flash Lite",
-      "contextWindow": 1048576,
-      "maxOutput": 64000,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
@@ -1028,10 +896,221 @@
       "releaseDate": "2025-08-05"
     },
     {
+      "id": "glm-4.5",
+      "name": "GLM 4.5",
+      "contextWindow": 131072,
+      "maxOutput": 98304,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-08-05"
+    },
+    {
+      "id": "qwen2.5-vl-7b-instruct",
+      "name": "Qwen 2.5 VL 7B Instruct",
+      "contextWindow": 128000,
+      "maxOutput": 8192,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "audio",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-08-05"
+    },
+    {
+      "id": "gemini-2.5-flash",
+      "name": "Gemini 2.5 Flash",
+      "contextWindow": 1048576,
+      "maxOutput": 64000,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "audio",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-08-05"
+    },
+    {
+      "id": "claude-4.0-opus",
+      "name": "Claude 4.0 Opus",
+      "contextWindow": 200000,
+      "maxOutput": 32000,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-08-05"
+    },
+    {
+      "id": "qwen-turbo",
+      "name": "Qwen-Turbo",
+      "contextWindow": 1000000,
+      "maxOutput": 4096,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-08-05"
+    },
+    {
+      "id": "deepseek-r1-0528",
+      "name": "DeepSeek-R1-0528",
+      "contextWindow": 128000,
+      "maxOutput": 32000,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-08-05"
+    },
+    {
+      "id": "deepseek-r1",
+      "name": "DeepSeek-R1",
+      "contextWindow": 128000,
+      "maxOutput": 32000,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-08-05"
+    },
+    {
+      "id": "qwen3-32b",
+      "name": "Qwen3 32B",
+      "contextWindow": 40000,
+      "maxOutput": 4096,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-08-05"
+    },
+    {
+      "id": "doubao-1.5-vision-pro",
+      "name": "Doubao 1.5 Vision Pro",
+      "contextWindow": 128000,
+      "maxOutput": 16000,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-08-05"
+    },
+    {
+      "id": "gemini-2.5-flash-lite",
+      "name": "Gemini 2.5 Flash Lite",
+      "contextWindow": 1048576,
+      "maxOutput": 64000,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "audio",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-08-05"
+    },
+    {
       "id": "deepseek-v3-0324",
       "name": "DeepSeek-V3-0324",
       "contextWindow": 128000,
       "maxOutput": 16000,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-08-05"
+    },
+    {
+      "id": "doubao-1.5-pro-32k",
+      "name": "Doubao 1.5 Pro 32k",
+      "contextWindow": 128000,
+      "maxOutput": 12000,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-08-05"
+    },
+    {
+      "id": "qwen2.5-vl-72b-instruct",
+      "name": "Qwen 2.5 VL 72B Instruct",
+      "contextWindow": 128000,
+      "maxOutput": 8192,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "audio",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-08-05"
+    },
+    {
+      "id": "qwen3-235b-a22b",
+      "name": "Qwen 3 235B A22B",
+      "contextWindow": 128000,
+      "maxOutput": 32000,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
@@ -1059,74 +1138,44 @@
       "releaseDate": "2025-08-05"
     },
     {
-      "id": "claude-4.0-opus",
-      "name": "Claude 4.0 Opus",
-      "contextWindow": 200000,
-      "maxOutput": 32000,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-08-05"
-    },
-    {
-      "id": "doubao-1.5-pro-32k",
-      "name": "Doubao 1.5 Pro 32k",
-      "contextWindow": 128000,
-      "maxOutput": 12000,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-08-05"
-    },
-    {
-      "id": "qwen3-235b-a22b",
-      "name": "Qwen 3 235B A22B",
-      "contextWindow": 128000,
-      "maxOutput": 32000,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-08-05"
-    },
-    {
-      "id": "claude-3.7-sonnet",
-      "name": "Claude 3.7 Sonnet",
-      "contextWindow": 200000,
-      "maxOutput": 128000,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-08-05"
-    },
-    {
       "id": "MiniMax-M1",
       "name": "MiniMax M1",
       "contextWindow": 1000000,
       "maxOutput": 80000,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-08-05"
+    },
+    {
+      "id": "gemini-2.0-flash-lite",
+      "name": "Gemini 2.0 Flash Lite",
+      "contextWindow": 1048576,
+      "maxOutput": 8192,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "audio",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-08-05"
+    },
+    {
+      "id": "qwen3-30b-a3b",
+      "name": "Qwen3 30B A3B",
+      "contextWindow": 40000,
+      "maxOutput": 4096,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
@@ -1157,58 +1206,10 @@
       "releaseDate": "2025-08-05"
     },
     {
-      "id": "claude-4.0-sonnet",
-      "name": "Claude 4.0 Sonnet",
-      "contextWindow": 200000,
-      "maxOutput": 64000,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-08-05"
-    },
-    {
-      "id": "doubao-1.5-vision-pro",
-      "name": "Doubao 1.5 Vision Pro",
-      "contextWindow": 128000,
-      "maxOutput": 16000,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "vision",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-08-05"
-    },
-    {
-      "id": "qwen3-30b-a3b",
-      "name": "Qwen3 30B A3B",
-      "contextWindow": 40000,
-      "maxOutput": 4096,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-08-05"
-    },
-    {
-      "id": "qwen-vl-max-2025-01-25",
-      "name": "Qwen VL-MAX-2025-01-25",
-      "contextWindow": 128000,
-      "maxOutput": 4096,
+      "id": "gemini-2.0-flash",
+      "name": "Gemini 2.0 Flash",
+      "contextWindow": 1048576,
+      "maxOutput": 8192,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
@@ -1222,16 +1223,15 @@
       "releaseDate": "2025-08-05"
     },
     {
-      "id": "qwen3-32b",
-      "name": "Qwen3 32B",
-      "contextWindow": 40000,
+      "id": "qwen-max-2025-01-25",
+      "name": "Qwen2.5-Max-2025-01-25",
+      "contextWindow": 128000,
       "maxOutput": 4096,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
         "chat",
         "function_calling",
-        "reasoning",
         "streaming"
       ],
       "default": false,

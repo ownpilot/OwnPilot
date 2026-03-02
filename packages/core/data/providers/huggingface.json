@@ -296,10 +296,10 @@
       "releaseDate": "2025-05-28"
     },
     {
-      "id": "Qwen/Qwen3-Embedding-8B",
-      "name": "Qwen 3 Embedding 8B",
+      "id": "Qwen/Qwen3-Embedding-4B",
+      "name": "Qwen 3 Embedding 4B",
       "contextWindow": 32000,
-      "maxOutput": 4096,
+      "maxOutput": 2048,
       "inputPrice": 0.01,
       "outputPrice": 0,
       "capabilities": [
@@ -310,10 +310,10 @@
       "releaseDate": "2025-01-01"
     },
     {
-      "id": "Qwen/Qwen3-Embedding-4B",
-      "name": "Qwen 3 Embedding 4B",
+      "id": "Qwen/Qwen3-Embedding-8B",
+      "name": "Qwen 3 Embedding 8B",
       "contextWindow": 32000,
-      "maxOutput": 2048,
+      "maxOutput": 4096,
       "inputPrice": 0.01,
       "outputPrice": 0,
       "capabilities": [

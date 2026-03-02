@@ -12,15 +12,14 @@
   },
   "models": [
     {
-      "id": "llama-4-maverick-17b-128e-instruct-fp8",
-      "name": "Llama-4-Maverick-17B-128E-Instruct-FP8",
+      "id": "cerebras-llama-4-maverick-17b-128e-instruct",
+      "name": "Cerebras-Llama-4-Maverick-17B-128E-Instruct",
       "contextWindow": 128000,
       "maxOutput": 4096,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
         "chat",
-        "vision",
         "function_calling",
         "streaming"
       ],
@@ -74,14 +73,15 @@
       "releaseDate": "2025-04-05"
     },
     {
-      "id": "cerebras-llama-4-maverick-17b-128e-instruct",
-      "name": "Cerebras-Llama-4-Maverick-17B-128E-Instruct",
+      "id": "llama-4-maverick-17b-128e-instruct-fp8",
+      "name": "Llama-4-Maverick-17B-128E-Instruct-FP8",
       "contextWindow": 128000,
       "maxOutput": 4096,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
         "chat",
+        "vision",
         "function_calling",
         "streaming"
       ],

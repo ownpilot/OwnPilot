@@ -12,10 +12,28 @@
   },
   "models": [
     {
+      "id": "openai-gpt-53-codex",
+      "name": "GPT-5.3 Codex",
+      "contextWindow": 400000,
+      "maxOutput": 131072,
+      "inputPrice": 2.19,
+      "outputPrice": 17.5,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-02-24"
+    },
+    {
       "id": "gemini-3-1-pro-preview",
       "name": "Gemini 3.1 Pro Preview",
       "contextWindow": 1000000,
-      "maxOutput": 250000,
+      "maxOutput": 65000,
       "inputPrice": 2.5,
       "outputPrice": 15,
       "capabilities": [
@@ -27,7 +45,7 @@
         "reasoning",
         "streaming"
       ],
-      "default": true,
+      "default": false,
       "releaseDate": "2026-02-19"
     },
     {
@@ -146,6 +164,38 @@
         "function_calling",
         "json_mode",
         "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-01-27"
+    },
+    {
+      "id": "qwen3-coder-480b-a35b-instruct-turbo",
+      "name": "Qwen 3 Coder 480B Turbo",
+      "contextWindow": 256000,
+      "maxOutput": 65536,
+      "inputPrice": 0.35,
+      "outputPrice": 1.5,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-01-27"
+    },
+    {
+      "id": "nvidia-nemotron-3-nano-30b-a3b",
+      "name": "NVIDIA Nemotron 3 Nano 30B",
+      "contextWindow": 128000,
+      "maxOutput": 12288,
+      "inputPrice": 0.075,
+      "outputPrice": 0.3,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
         "streaming"
       ],
       "default": false,
@@ -291,15 +341,14 @@
       "releaseDate": "2025-12-02"
     },
     {
-      "id": "grok-41-fast",
-      "name": "Grok 4.1 Fast",
+      "id": "grok-code-fast-1",
+      "name": "Grok Code Fast 1",
       "contextWindow": 256000,
       "maxOutput": 64000,
-      "inputPrice": 0.5,
-      "outputPrice": 1.25,
+      "inputPrice": 0.25,
+      "outputPrice": 1.87,
       "capabilities": [
         "chat",
-        "vision",
         "function_calling",
         "json_mode",
         "reasoning",
@@ -309,14 +358,15 @@
       "releaseDate": "2025-12-01"
     },
     {
-      "id": "grok-code-fast-1",
-      "name": "Grok Code Fast 1",
+      "id": "grok-41-fast",
+      "name": "Grok 4.1 Fast",
       "contextWindow": 256000,
       "maxOutput": 64000,
-      "inputPrice": 0.25,
-      "outputPrice": 1.87,
+      "inputPrice": 0.5,
+      "outputPrice": 1.25,
       "capabilities": [
         "chat",
+        "vision",
         "function_calling",
         "json_mode",
         "reasoning",
@@ -405,29 +455,28 @@
       "releaseDate": "2025-04-29"
     },
     {
-      "id": "qwen3-4b",
-      "name": "Venice Small",
-      "contextWindow": 32000,
-      "maxOutput": 8000,
-      "inputPrice": 0.05,
-      "outputPrice": 0.15,
+      "id": "qwen3-coder-480b-a35b-instruct",
+      "name": "Qwen 3 Coder 480b",
+      "contextWindow": 256000,
+      "maxOutput": 64000,
+      "inputPrice": 0.75,
+      "outputPrice": 3,
       "capabilities": [
         "chat",
         "function_calling",
         "json_mode",
-        "reasoning",
         "streaming"
       ],
       "default": false,
       "releaseDate": "2025-04-29"
     },
     {
-      "id": "qwen3-235b-a22b-thinking-2507",
-      "name": "Qwen 3 235B A22B Thinking 2507",
-      "contextWindow": 128000,
-      "maxOutput": 32000,
-      "inputPrice": 0.45,
-      "outputPrice": 3.5,
+      "id": "qwen3-4b",
+      "name": "Venice Small",
+      "contextWindow": 32000,
+      "maxOutput": 8000,
+      "inputPrice": 0.05,
+      "outputPrice": 0.15,
       "capabilities": [
         "chat",
         "function_calling",
@@ -455,16 +504,17 @@
       "releaseDate": "2025-04-29"
     },
     {
-      "id": "qwen3-coder-480b-a35b-instruct",
-      "name": "Qwen 3 Coder 480b",
-      "contextWindow": 256000,
-      "maxOutput": 64000,
-      "inputPrice": 0.75,
-      "outputPrice": 3,
+      "id": "qwen3-235b-a22b-thinking-2507",
+      "name": "Qwen 3 235B A22B Thinking 2507",
+      "contextWindow": 128000,
+      "maxOutput": 32000,
+      "inputPrice": 0.45,
+      "outputPrice": 3.5,
       "capabilities": [
         "chat",
         "function_calling",
         "json_mode",
+        "reasoning",
         "streaming"
       ],
       "default": false,
@@ -518,12 +568,12 @@
       "releaseDate": "2025-03-18"
     },
     {
-      "id": "claude-sonnet-45",
-      "name": "Claude Sonnet 4.5",
-      "contextWindow": 198000,
-      "maxOutput": 49500,
-      "inputPrice": 3.75,
-      "outputPrice": 18.75,
+      "id": "openai-gpt-52-codex",
+      "name": "GPT-5.2 Codex",
+      "contextWindow": 256000,
+      "maxOutput": 64000,
+      "inputPrice": 2.19,
+      "outputPrice": 17.5,
       "capabilities": [
         "chat",
         "vision",
@@ -536,12 +586,12 @@
       "releaseDate": "2025-01-15"
     },
     {
-      "id": "openai-gpt-52-codex",
-      "name": "GPT-5.2 Codex",
-      "contextWindow": 256000,
-      "maxOutput": 64000,
-      "inputPrice": 2.19,
-      "outputPrice": 17.5,
+      "id": "claude-sonnet-45",
+      "name": "Claude Sonnet 4.5",
+      "contextWindow": 198000,
+      "maxOutput": 49500,
+      "inputPrice": 3.75,
+      "outputPrice": 18.75,
       "capabilities": [
         "chat",
         "vision",
