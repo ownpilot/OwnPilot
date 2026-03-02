@@ -47,6 +47,18 @@ vi.mock('../db/repositories/local-providers.js', () => ({
   localProvidersRepo: mockLocalProvidersRepo,
 }));
 
+vi.mock('../db/repositories/souls.js', () => ({
+  getSoulsRepository: vi.fn(() => ({
+    getByAgentId: vi.fn().mockResolvedValue(null),
+  })),
+}));
+
+vi.mock('../db/repositories/agent-messages.js', () => ({
+  getAgentMessagesRepository: vi.fn(() => ({
+    countUnread: vi.fn().mockResolvedValue(0),
+  })),
+}));
+
 const mockResolveProviderAndModel = vi.fn(async (p: string, m: string) => ({
   provider: p,
   model: m,
@@ -98,6 +110,7 @@ vi.mock('./agent-tools.js', () => ({
   EXTENSION_TOOLS: [],
   NOTIFICATION_TOOLS: [],
   EVENT_TOOLS: [],
+  SOUL_COMMUNICATION_TOOLS: [],
   DYNAMIC_TOOL_DEFINITIONS: [],
 }));
 

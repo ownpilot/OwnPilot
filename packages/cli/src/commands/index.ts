@@ -26,3 +26,22 @@ export {
   workspaceInfo,
 } from './workspace.js';
 export { tunnelStartNgrok, tunnelStartCloudflare, tunnelStop, tunnelStatus } from './tunnel.js';
+export {
+  soulList,
+  soulGet,
+  soulDelete,
+  soulFeedback,
+  soulVersions,
+  crewList,
+  crewGet,
+  crewPause,
+  crewResume,
+  crewDisband,
+  crewTemplates,
+  msgList,
+  msgSend,
+  msgAgent,
+  heartbeatList,
+  heartbeatStats,
+  heartbeatAgent,
+} from './soul.js';

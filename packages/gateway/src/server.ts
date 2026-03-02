@@ -447,6 +447,14 @@ async function main() {
       }
     });
 
+    // Register 'run_heartbeat' action handler (Soul Heartbeat Runner)
+    triggerEngine.registerActionHandler('run_heartbeat', async (payload) => {
+      const agentId = payload.agentId as string;
+      if (!agentId) return { success: false, error: 'Missing agentId in payload' };
+      const { runAgentHeartbeat } = await import('./services/soul-heartbeat-service.js');
+      return await runAgentHeartbeat(agentId);
+    });
+
     // Seed default triggers (only creates if not already present)
     const triggerSeed = await initializeDefaultTriggers('default');
     if (triggerSeed.created > 0) {

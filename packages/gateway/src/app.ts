@@ -79,6 +79,10 @@ import {
   browserRoutes,
   skillsRoutes,
   edgeRoutes,
+  soulRoutes,
+  crewRoutes,
+  agentMessageRoutes,
+  heartbeatLogRoutes,
 } from './routes/index.js';
 import {
   RATE_LIMIT_WINDOW_MS,
@@ -349,6 +353,12 @@ export function createApp(config: Partial<GatewayConfig> = {}): Hono {
 
   // Edge devices (IoT/MQTT delegation)
   app.route('/api/v1/edge', edgeRoutes);
+
+  // Agent Souls & Crews
+  app.route('/api/v1/souls', soulRoutes);
+  app.route('/api/v1/crews', crewRoutes);
+  app.route('/api/v1/agent-messages', agentMessageRoutes);
+  app.route('/api/v1/heartbeat-logs', heartbeatLogRoutes);
 
   // Root route (API-only mode, when UI is not bundled)
   if (!UI_AVAILABLE) {

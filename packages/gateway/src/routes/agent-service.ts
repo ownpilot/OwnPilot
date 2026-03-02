@@ -23,6 +23,7 @@ import {
   createProvider,
   createFallbackProvider,
   type ProviderConfig,
+  buildSoulPrompt,
 } from '@ownpilot/core';
 import type { SessionInfo } from '../types/index.js';
 import { agentsRepo, type AgentRecord } from '../db/repositories/index.js';
@@ -34,6 +35,8 @@ import {
   getEnabledToolGroupIds,
 } from './settings.js';
 import { localProvidersRepo } from '../db/repositories/local-providers.js';
+import { getSoulsRepository } from '../db/repositories/souls.js';
+import { getAgentMessagesRepository } from '../db/repositories/agent-messages.js';
 import { gatewayConfigCenter } from '../services/config-center-impl.js';
 import { getLog } from '../services/log.js';
 import { BASE_SYSTEM_PROMPT } from './agent-prompt.js';
@@ -56,6 +59,7 @@ import {
   EXTENSION_TOOLS,
   NOTIFICATION_TOOLS,
   EVENT_TOOLS,
+  SOUL_COMMUNICATION_TOOLS,
   DYNAMIC_TOOL_DEFINITIONS,
 } from './agent-tools.js';
 import {
@@ -166,6 +170,7 @@ async function createAgentFromRecord(record: AgentRecord): Promise<Agent> {
     ...EXTENSION_TOOLS,
     ...NOTIFICATION_TOOLS,
     ...EVENT_TOOLS,
+    ...SOUL_COMMUNICATION_TOOLS,
   ];
 
   // These tools ALWAYS bypass toolGroup filtering:
@@ -200,7 +205,21 @@ async function createAgentFromRecord(record: AgentRecord): Promise<Agent> {
 
   const toolDefs = [...filteredStandardTools, ...alwaysIncludedToolDefs];
 
-  const basePrompt = record.systemPrompt ?? 'You are a helpful personal AI assistant.';
+  // ── Soul prompt injection ──
+  // If this agent has a soul, prepend the soul prompt to the base system prompt.
+  let soulSection = '';
+  try {
+    const soul = await getSoulsRepository().getByAgentId(record.id);
+    if (soul) {
+      const pendingInbox = await getAgentMessagesRepository().countUnread(record.id);
+      soulSection = buildSoulPrompt(soul, [], pendingInbox);
+    }
+  } catch {
+    // Soul lookup failure is non-fatal — agent works without a soul
+  }
+
+  const rawBasePrompt = record.systemPrompt ?? 'You are a helpful personal AI assistant.';
+  const basePrompt = soulSection ? `${soulSection}\n\n${rawBasePrompt}` : rawBasePrompt;
 
   const { systemPrompt: enhancedPrompt } = await injectMemoryIntoPrompt(basePrompt, {
     userId: 'default',
@@ -437,6 +456,7 @@ async function createChatAgentInstance(
     ...EXTENSION_TOOLS,
     ...NOTIFICATION_TOOLS,
     ...EVENT_TOOLS,
+    ...SOUL_COMMUNICATION_TOOLS,
   ];
   const chatAlwaysIncluded = [
     ...DYNAMIC_TOOL_DEFINITIONS,

@@ -62,6 +62,8 @@ import {
   executeOrchestraTool,
   ARTIFACT_TOOLS,
   executeArtifactTool,
+  SOUL_COMMUNICATION_TOOLS,
+  executeSoulCommunicationTool,
 } from '../tools/index.js';
 import { CONFIG_TOOLS, executeConfigTool } from '../services/config-tools.js';
 import type { ExtensionService } from '../services/extension-service.js';
@@ -186,6 +188,11 @@ export function registerGatewayTools(tools: ToolRegistry, userId: string, trace:
     { definitions: PULSE_TOOLS, executor: executePulseTool, needsUserId: true },
     { definitions: NOTIFICATION_TOOLS, executor: executeNotificationTool, needsUserId: true },
     { definitions: EVENT_TOOLS, executor: executeEventTool, needsUserId: true },
+    {
+      definitions: SOUL_COMMUNICATION_TOOLS,
+      executor: executeSoulCommunicationTool,
+      needsUserId: true,
+    },
   ];
 
   for (const group of groups) {
@@ -990,4 +997,5 @@ export {
   PULSE_TOOLS,
   NOTIFICATION_TOOLS,
   EVENT_TOOLS,
+  SOUL_COMMUNICATION_TOOLS,
 };

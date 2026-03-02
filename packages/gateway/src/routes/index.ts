@@ -56,3 +56,7 @@ export { voiceRoutes } from './voice.js';
 export { browserRoutes } from './browser.js';
 export { skillsRoutes } from './skills.js';
 export { edgeRoutes } from './edge.js';
+export { soulRoutes } from './souls.js';
+export { crewRoutes } from './crews.js';
+export { agentMessageRoutes } from './agent-messages.js';
+export { heartbeatLogRoutes } from './heartbeat-logs.js';

@@ -1,0 +1,347 @@
+/**
+ * Heartbeat Runner
+ *
+ * Executes heartbeat cycles for agents with souls.
+ * Triggered by the existing cron/trigger system.
+ * Handles task filtering, execution, output routing, and budget enforcement.
+ */
+
+import type { AgentSoul, HeartbeatTask, HeartbeatResult, HeartbeatTaskResult } from './types.js';
+import type { IAgentCommunicationBus } from './communication.js';
+import type { ISoulRepository, IHeartbeatLogRepository } from './evolution.js';
+import type { BudgetTracker } from './budget-tracker.js';
+import type { Result } from '../../types/result.js';
+
+// ============================================================
+// Agent engine interface (minimal subset)
+// ============================================================
+
+export interface IHeartbeatAgentEngine {
+  processMessage(request: {
+    agentId: string;
+    message: string;
+    context?: Record<string, unknown>;
+  }): Promise<{
+    content: string;
+    tokenUsage?: { input: number; output: number };
+    cost?: number;
+  }>;
+
+  saveMemory?(agentId: string, content: string, source: string): Promise<void>;
+  sendToChannel?(channel: string, message: string, chatId?: string): Promise<void>;
+  createNote?(note: { content: string; category: string; source: string }): Promise<void>;
+}
+
+export interface IHeartbeatEventBus {
+  emit(event: string, payload: unknown): void;
+}
+
+// ============================================================
+// Heartbeat Runner
+// ============================================================
+
+export class HeartbeatRunner {
+  constructor(
+    private agentEngine: IHeartbeatAgentEngine,
+    private soulRepo: ISoulRepository,
+    private communicationBus: IAgentCommunicationBus,
+    private heartbeatLogRepo: IHeartbeatLogRepository,
+    private budgetTracker: BudgetTracker,
+    private eventBus?: IHeartbeatEventBus
+  ) {}
+
+  /**
+   * Run a full heartbeat cycle for the given agent.
+   */
+  async runHeartbeat(agentId: string): Promise<Result<HeartbeatResult, Error>> {
+    const soul = await this.soulRepo.getByAgentId(agentId);
+    if (!soul || !soul.heartbeat.enabled) {
+      return {
+        ok: false,
+        error: new Error('Soul not found or heartbeat disabled'),
+      };
+    }
+
+    // Quiet hours check
+    if (this.isQuietHours(soul)) {
+      return {
+        ok: true,
+        value: this.createSkippedResult(agentId, soul, 'quiet_hours'),
+      };
+    }
+
+    // Budget check
+    const budgetOk = await this.budgetTracker.checkBudget(agentId, soul.autonomy);
+    if (!budgetOk) {
+      await this.handleBudgetExceeded(agentId, soul);
+      return { ok: false, error: new Error('Daily budget exceeded') };
+    }
+
+    const result: HeartbeatResult = {
+      agentId,
+      soulVersion: soul.evolution.version,
+      startedAt: new Date(),
+      completedAt: new Date(),
+      durationMs: 0,
+      tasks: [],
+      totalTokens: { input: 0, output: 0 },
+      totalCost: 0,
+    };
+
+    // Filter tasks that should run this cycle
+    const tasksToRun = this.filterTasksToRun(soul.heartbeat.checklist);
+
+    for (const task of tasksToRun) {
+      // Per-cycle budget check
+      if (result.totalCost >= soul.autonomy.maxCostPerCycle) {
+        result.tasks.push({
+          taskId: task.id,
+          taskName: task.name,
+          status: 'skipped',
+          error: 'Cycle budget exceeded',
+          tokenUsage: { input: 0, output: 0 },
+          cost: 0,
+          durationMs: 0,
+        });
+        continue;
+      }
+
+      const taskResult = await this.executeTask(agentId, soul, task);
+      result.tasks.push(taskResult);
+      result.totalTokens.input += taskResult.tokenUsage.input;
+      result.totalTokens.output += taskResult.tokenUsage.output;
+      result.totalCost += taskResult.cost;
+
+      // Route output
+      if (taskResult.status === 'success' && task.outputTo) {
+        await this.routeOutput(agentId, soul, task, taskResult.output || '');
+      }
+
+      // Update task status in DB
+      await this.soulRepo.updateTaskStatus(agentId, task.id, {
+        lastRunAt: new Date(),
+        lastResult: taskResult.status,
+        lastError: taskResult.error,
+        consecutiveFailures:
+          taskResult.status === 'failure' ? (task.consecutiveFailures || 0) + 1 : 0,
+      });
+    }
+
+    result.completedAt = new Date();
+    result.durationMs = result.completedAt.getTime() - result.startedAt.getTime();
+
+    // Log to DB
+    await this.heartbeatLogRepo.create({
+      agentId,
+      soulVersion: soul.evolution.version,
+      tasksRun: result.tasks
+        .filter((t) => t.status === 'success')
+        .map((t) => ({ id: t.taskId, name: t.taskName })),
+      tasksSkipped: result.tasks
+        .filter((t) => t.status === 'skipped')
+        .map((t) => ({ id: t.taskId, reason: t.error })),
+      tasksFailed: result.tasks
+        .filter((t) => t.status === 'failure')
+        .map((t) => ({ id: t.taskId, error: t.error })),
+      durationMs: result.durationMs,
+      tokenUsage: result.totalTokens,
+      cost: result.totalCost,
+    });
+
+    await this.budgetTracker.recordSpend(agentId, result.totalCost);
+
+    // Emit event
+    this.eventBus?.emit('soul.heartbeat.completed', {
+      agentId,
+      soulVersion: soul.evolution.version,
+      tasksRun: result.tasks.length,
+      tasksFailed: result.tasks.filter((t) => t.status === 'failure').length,
+      cost: result.totalCost,
+    });
+
+    return { ok: true, value: result };
+  }
+
+  /**
+   * Execute a single heartbeat task.
+   */
+  private async executeTask(
+    agentId: string,
+    _soul: AgentSoul,
+    task: HeartbeatTask
+  ): Promise<HeartbeatTaskResult> {
+    const startTime = Date.now();
+    try {
+      const taskPrompt =
+        task.prompt ||
+        `Execute the following heartbeat task:
+**${task.name}**: ${task.description}
+${task.tools.length ? `Available tools: ${task.tools.join(', ')}` : ''}
+Be concise and focused. Report your findings clearly.`.trim();
+
+      const response = await this.agentEngine.processMessage({
+        agentId,
+        message: taskPrompt,
+        context: {
+          isHeartbeat: true,
+          heartbeatTaskId: task.id,
+          allowedTools: task.tools.length > 0 ? task.tools : undefined,
+        },
+      });
+
+      return {
+        taskId: task.id,
+        taskName: task.name,
+        status: 'success',
+        output: response.content,
+        tokenUsage: response.tokenUsage || { input: 0, output: 0 },
+        cost: response.cost || 0,
+        durationMs: Date.now() - startTime,
+      };
+    } catch (error) {
+      return {
+        taskId: task.id,
+        taskName: task.name,
+        status: 'failure',
+        error: error instanceof Error ? error.message : String(error),
+        tokenUsage: { input: 0, output: 0 },
+        cost: 0,
+        durationMs: Date.now() - startTime,
+      };
+    }
+  }
+
+  /**
+   * Filter tasks that should run this heartbeat cycle.
+   */
+  private filterTasksToRun(checklist: HeartbeatTask[]): HeartbeatTask[] {
+    const now = new Date();
+    return checklist.filter((task) => {
+      if (task.schedule === 'every') return true;
+
+      if (task.schedule === 'daily' && task.dailyAt) {
+        const [h, m] = task.dailyAt.split(':').map(Number);
+        const todayTarget = new Date(now);
+        todayTarget.setHours(h!, m, 0, 0);
+        if (!task.lastRunAt || task.lastRunAt < todayTarget) {
+          if (now.getHours() >= h!) return true;
+        }
+        return false;
+      }
+
+      if (task.schedule === 'weekly' && task.weeklyOn !== undefined) {
+        if (now.getDay() === task.weeklyOn) {
+          if (!task.lastRunAt || this.daysSince(task.lastRunAt) >= 6) return true;
+        }
+        return false;
+      }
+
+      // Staleness — force re-run if stale
+      if (task.lastRunAt && task.stalenessHours > 0) {
+        const hoursSince = (now.getTime() - task.lastRunAt.getTime()) / (1000 * 60 * 60);
+        if (hoursSince > task.stalenessHours) return true;
+      }
+
+      return false;
+    });
+  }
+
+  /**
+   * Route task output to its configured destination.
+   */
+  private async routeOutput(
+    agentId: string,
+    soul: AgentSoul,
+    task: HeartbeatTask,
+    output: string
+  ): Promise<void> {
+    if (!task.outputTo) return;
+
+    switch (task.outputTo.type) {
+      case 'memory':
+        await this.agentEngine.saveMemory?.(agentId, output, 'heartbeat');
+        break;
+      case 'inbox':
+        await this.communicationBus.send({
+          from: agentId,
+          to: task.outputTo.agentId,
+          type: 'task_result',
+          subject: `[Heartbeat] ${task.name}`,
+          content: output,
+          priority: task.priority === 'critical' ? 'urgent' : 'normal',
+          requiresResponse: false,
+        });
+        break;
+      case 'channel':
+        await this.agentEngine.sendToChannel?.(task.outputTo.channel, output, task.outputTo.chatId);
+        break;
+      case 'note':
+        await this.agentEngine.createNote?.({
+          content: output,
+          category: task.outputTo.category || 'heartbeat',
+          source: `${soul.identity.name} heartbeat`,
+        });
+        break;
+      case 'broadcast':
+        await this.communicationBus.broadcast(task.outputTo.crewId, {
+          from: agentId,
+          type: 'knowledge_share',
+          subject: `[${soul.identity.name}] ${task.name}`,
+          content: output,
+          priority: 'normal',
+          requiresResponse: false,
+        });
+        break;
+    }
+  }
+
+  private isQuietHours(soul: AgentSoul): boolean {
+    if (!soul.heartbeat.quietHours) return false;
+    const currentHour = new Date().getHours();
+    const startHour = parseInt(soul.heartbeat.quietHours.start.split(':')[0]!, 10);
+    const endHour = parseInt(soul.heartbeat.quietHours.end.split(':')[0]!, 10);
+    if (startHour > endHour) {
+      return currentHour >= startHour || currentHour < endHour;
+    }
+    return currentHour >= startHour && currentHour < endHour;
+  }
+
+  private daysSince(date: Date): number {
+    return (Date.now() - date.getTime()) / (1000 * 60 * 60 * 24);
+  }
+
+  private createSkippedResult(agentId: string, soul: AgentSoul, reason: string): HeartbeatResult {
+    return {
+      agentId,
+      soulVersion: soul.evolution.version,
+      startedAt: new Date(),
+      completedAt: new Date(),
+      durationMs: 0,
+      tasks: [
+        {
+          taskId: 'all',
+          taskName: 'all',
+          status: 'skipped',
+          error: reason,
+          tokenUsage: { input: 0, output: 0 },
+          cost: 0,
+          durationMs: 0,
+        },
+      ],
+      totalTokens: { input: 0, output: 0 },
+      totalCost: 0,
+    };
+  }
+
+  private async handleBudgetExceeded(agentId: string, soul: AgentSoul): Promise<void> {
+    if (soul.autonomy.pauseOnBudgetExceeded) {
+      await this.soulRepo.setHeartbeatEnabled(agentId, false);
+    }
+    if (soul.autonomy.notifyUserOnPause) {
+      await this.agentEngine.sendToChannel?.(
+        'telegram',
+        `${soul.identity.name} ${soul.identity.emoji} paused — daily budget ($${soul.autonomy.maxCostPerDay}) exceeded.`
+      );
+    }
+  }
+}

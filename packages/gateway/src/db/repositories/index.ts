@@ -379,3 +379,9 @@ export {
 
 // Artifacts repository
 export { ArtifactsRepository, createArtifactsRepository } from './artifacts.js';
+
+// Soul system repositories
+export { SoulsRepository, getSoulsRepository } from './souls.js';
+export { CrewsRepository, getCrewsRepository } from './crews.js';
+export { AgentMessagesRepository, getAgentMessagesRepository } from './agent-messages.js';
+export { HeartbeatLogRepository, getHeartbeatLogRepository } from './heartbeat-log.js';

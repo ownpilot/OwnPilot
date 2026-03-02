@@ -154,6 +154,8 @@ vi.mock('../tools/index.js', () => ({
   executeOrchestraTool: vi.fn(),
   ARTIFACT_TOOLS: [],
   executeArtifactTool: vi.fn(),
+  SOUL_COMMUNICATION_TOOLS: [],
+  executeSoulCommunicationTool: vi.fn(),
 }));
 vi.mock('../services/config-tools.js', () => ({
   CONFIG_TOOLS: [],

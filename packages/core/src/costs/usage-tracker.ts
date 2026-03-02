@@ -7,13 +7,7 @@
 import { EventEmitter } from 'node:events';
 import { getLog } from '../services/get-log.js';
 import { generateId } from '../services/id-utils.js';
-import type {
-  AIProvider,
-  DailyUsage,
-  ProviderUsage,
-  UsageRecord,
-  UsageSummary,
-} from './types.js';
+import type { AIProvider, DailyUsage, ProviderUsage, UsageRecord, UsageSummary } from './types.js';
 import { calculateCost } from './calculator.js';
 
 export const costLog = getLog('Costs');

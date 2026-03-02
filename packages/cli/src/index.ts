@@ -70,6 +70,25 @@ import {
   skillCheckUpdates,
   skillAudit,
 } from './commands/skill.js';
+import {
+  soulList,
+  soulGet,
+  soulDelete,
+  soulFeedback,
+  soulVersions,
+  crewList,
+  crewGet,
+  crewPause,
+  crewResume,
+  crewDisband,
+  crewTemplates,
+  msgList,
+  msgSend,
+  msgAgent,
+  heartbeatList,
+  heartbeatStats,
+  heartbeatAgent,
+} from './commands/soul.js';
 
 // Load environment variables from .env (fallback)
 loadEnv({ quiet: true });
@@ -272,6 +291,67 @@ skillCmd
   .command('audit [id]')
   .description('Run security audit on a skill')
   .action((id) => skillAudit(id));
+
+// Soul commands for agent identity management
+const soulCmd = program.command('soul').description('Manage agent souls (persistent identities)');
+
+soulCmd.command('list').description('List all agent souls').action(soulList);
+
+soulCmd.command('get <agentId>').description('Show soul details (JSON)').action(soulGet);
+
+soulCmd.command('delete <agentId>').description('Delete an agent soul').action(soulDelete);
+
+soulCmd
+  .command('feedback <agentId> <type> <content>')
+  .description('Send feedback (praise/correction/directive/personality_tweak)')
+  .action(soulFeedback);
+
+soulCmd.command('versions <agentId>').description('List soul version history').action(soulVersions);
+
+// Crew commands for autonomous teams
+const crewCmd = program.command('crew').description('Manage agent crews (autonomous teams)');
+
+crewCmd.command('list').description('List all crews').action(crewList);
+
+crewCmd.command('get <id>').description('Show crew details (JSON)').action(crewGet);
+
+crewCmd.command('pause <id>').description('Pause a crew').action(crewPause);
+
+crewCmd.command('resume <id>').description('Resume a paused crew').action(crewResume);
+
+crewCmd.command('disband <id>').description('Disband a crew').action(crewDisband);
+
+crewCmd.command('templates').description('List available crew templates').action(crewTemplates);
+
+// Message commands for inter-agent communication
+const msgCmd = program.command('msg').description('Agent inter-communication messages');
+
+msgCmd.command('list').description('List recent agent messages').action(msgList);
+
+msgCmd
+  .command('send <agentId> <content>')
+  .description('Send a message to an agent')
+  .action(msgSend);
+
+msgCmd
+  .command('agent <agentId>')
+  .description('Show messages for a specific agent')
+  .action(msgAgent);
+
+// Heartbeat commands for autonomous execution logs
+const heartbeatCmd = program.command('heartbeat').description('View heartbeat execution logs');
+
+heartbeatCmd.command('list').description('List recent heartbeat logs').action(heartbeatList);
+
+heartbeatCmd
+  .command('stats [agentId]')
+  .description('Show heartbeat statistics')
+  .action(heartbeatStats);
+
+heartbeatCmd
+  .command('agent <agentId>')
+  .description('Show heartbeat logs for a specific agent')
+  .action(heartbeatAgent);
 
 // Parse arguments
 program.parse();

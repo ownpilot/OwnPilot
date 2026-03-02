@@ -143,6 +143,8 @@ vi.mock('../tools/index.js', () => ({
   executeTriggerTool: vi.fn(),
   PLAN_TOOLS: [],
   executePlanTool: vi.fn(),
+  SOUL_COMMUNICATION_TOOLS: [],
+  executeSoulCommunicationTool: vi.fn(),
 }));
 
 vi.mock('../services/config-tools.js', () => ({

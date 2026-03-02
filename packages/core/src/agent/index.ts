@@ -357,6 +357,72 @@ export {
   createRetryWrapper,
 } from './retry.js';
 
+// Soul System (persistent identity, heartbeat, crews, communication)
+export {
+  buildSoulPrompt,
+  estimateSoulTokens,
+  AgentCommunicationBus,
+  BudgetTracker,
+  HeartbeatRunner,
+  SoulEvolutionEngine,
+  CrewManager,
+  getCrewTemplate,
+  listCrewTemplates,
+} from './soul/index.js';
+
+// Soul Communication Tools (tool definitions for agent-to-agent messaging)
+export {
+  SOUL_COMMUNICATION_TOOLS,
+  SOUL_COMMUNICATION_TOOL_NAMES,
+} from './tools/soul-communication-tools.js';
+
+export type {
+  AgentSoul,
+  SoulIdentity,
+  SoulVoice,
+  SoulPurpose,
+  SoulAutonomy,
+  SoulHeartbeat,
+  QuietHours,
+  HeartbeatTask,
+  HeartbeatOutput,
+  SoulRelationships,
+  SoulEvolution,
+  SoulFeedback,
+  SoulBootSequence,
+  HeartbeatResult,
+  HeartbeatTaskResult,
+  AgentCrew,
+  CrewCoordinationPattern,
+  CrewStatus,
+  CrewMember,
+  CrewStatusReport,
+  CrewAgentStatus,
+  SoulVersion,
+  AgentMessageType,
+  MessagePriority,
+  MessageStatus,
+  AgentMessage,
+  AgentAttachment,
+  MessageQueryOptions,
+  IAgentCommunicationBus,
+  SoulMemoryRef,
+  IAgentMessageRepository,
+  ICommunicationEventBus,
+  IBudgetDatabase,
+  IHeartbeatAgentEngine,
+  IHeartbeatEventBus,
+  ISoulRepository,
+  IHeartbeatLogRepository,
+  HeartbeatLogEntry,
+  IReflectionEngine,
+  ICrewRepository,
+  IAgentRepository as ISoulAgentRepository,
+  ITriggerRepository as ISoulTriggerRepository,
+  CrewTemplate,
+  AgentSoulTemplate,
+} from './soul/index.js';
+
 // Debug logging for AI interactions
 export {
   // Types

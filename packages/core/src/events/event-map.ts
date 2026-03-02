@@ -578,6 +578,54 @@ export interface ChatCompletedData {
 }
 
 // ============================================================================
+// Soul Event Data
+// ============================================================================
+
+export interface SoulCreatedData {
+  soulId: string;
+  agentId: string;
+  name: string;
+}
+
+export interface SoulUpdatedData {
+  soulId: string;
+  agentId: string;
+  version: number;
+}
+
+export interface SoulDeletedData {
+  soulId: string;
+  agentId: string;
+}
+
+export interface SoulHeartbeatCompletedData {
+  agentId: string;
+  soulVersion: number;
+  tasksRun: number;
+  tasksFailed: number;
+  cost: number;
+}
+
+export interface SoulMessageSentData {
+  messageId: string;
+  from: string;
+  to: string;
+  type: string;
+  subject: string;
+}
+
+export interface SoulCrewDeployedData {
+  crewId: string;
+  templateId: string;
+  agentCount: number;
+}
+
+export interface SoulCrewStatusChangedData {
+  crewId: string;
+  status: string;
+}
+
+// ============================================================================
 // Master Event Map
 // ============================================================================
 
@@ -705,6 +753,15 @@ export interface EventMap {
 
   // --- Chat Events ---
   'chat.completed': ChatCompletedData;
+
+  // --- Soul Events ---
+  'soul.created': SoulCreatedData;
+  'soul.updated': SoulUpdatedData;
+  'soul.deleted': SoulDeletedData;
+  'soul.heartbeat.completed': SoulHeartbeatCompletedData;
+  'soul.message.sent': SoulMessageSentData;
+  'soul.crew.deployed': SoulCrewDeployedData;
+  'soul.crew.status_changed': SoulCrewStatusChangedData;
 }
 
 // ============================================================================
