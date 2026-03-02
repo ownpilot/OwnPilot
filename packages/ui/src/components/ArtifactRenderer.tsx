@@ -156,7 +156,12 @@ function FormRenderer({ content, className }: { content: string; className?: str
   );
 }
 
-export function ArtifactRenderer({ type, content, dataBindings, className }: ArtifactRendererProps) {
+export function ArtifactRenderer({
+  type,
+  content,
+  dataBindings,
+  className,
+}: ArtifactRendererProps) {
   switch (type) {
     case 'html':
     case 'chart':

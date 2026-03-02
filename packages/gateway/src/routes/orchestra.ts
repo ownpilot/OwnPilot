@@ -19,7 +19,11 @@ orchestraRoutes.get('/', async (c) => {
   try {
     const parentId = c.req.query('parentId');
     if (!parentId) {
-      return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: 'parentId query parameter is required' }, 400);
+      return apiError(
+        c,
+        { code: ERROR_CODES.VALIDATION_ERROR, message: 'parentId query parameter is required' },
+        400
+      );
     }
 
     const engine = getOrchestraEngine();
@@ -93,7 +97,11 @@ orchestraRoutes.delete('/:id', async (c) => {
     }
 
     if (execution.state !== 'running') {
-      return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: 'Execution is not running' }, 400);
+      return apiError(
+        c,
+        { code: ERROR_CODES.VALIDATION_ERROR, message: 'Execution is not running' },
+        400
+      );
     }
 
     engine.cancel(id);

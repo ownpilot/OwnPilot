@@ -77,10 +77,7 @@ export class UCPPipeline {
    * Execute a middleware chain in order.
    * Each middleware calls `next()` to pass to the next one.
    */
-  private async runChain(
-    msg: UCPMessage,
-    chain: NamedUCPMiddleware[]
-  ): Promise<UCPMessage> {
+  private async runChain(msg: UCPMessage, chain: NamedUCPMiddleware[]): Promise<UCPMessage> {
     let index = 0;
     let current = msg;
 

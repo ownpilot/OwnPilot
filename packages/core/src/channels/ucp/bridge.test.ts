@@ -80,11 +80,13 @@ describe('UCPBridgeManager', () => {
 
   describe('bridgeMessage', () => {
     it('forwards inbound message to target channel', async () => {
-      manager.addBridge(makeBridge({
-        sourceChannelId: 'channel.telegram',
-        targetChannelId: 'channel.whatsapp',
-        direction: 'both',
-      }));
+      manager.addBridge(
+        makeBridge({
+          sourceChannelId: 'channel.telegram',
+          targetChannelId: 'channel.whatsapp',
+          direction: 'both',
+        })
+      );
 
       const msg = makeMessage({
         channelInstanceId: 'channel.telegram',
@@ -102,11 +104,13 @@ describe('UCPBridgeManager', () => {
     });
 
     it('forwards reverse direction (target → source)', async () => {
-      manager.addBridge(makeBridge({
-        sourceChannelId: 'channel.telegram',
-        targetChannelId: 'channel.whatsapp',
-        direction: 'both',
-      }));
+      manager.addBridge(
+        makeBridge({
+          sourceChannelId: 'channel.telegram',
+          targetChannelId: 'channel.whatsapp',
+          direction: 'both',
+        })
+      );
 
       const msg = makeMessage({
         channelInstanceId: 'channel.whatsapp',
@@ -119,11 +123,13 @@ describe('UCPBridgeManager', () => {
     });
 
     it('respects one-way bridge direction', async () => {
-      manager.addBridge(makeBridge({
-        sourceChannelId: 'channel.telegram',
-        targetChannelId: 'channel.whatsapp',
-        direction: 'source_to_target',
-      }));
+      manager.addBridge(
+        makeBridge({
+          sourceChannelId: 'channel.telegram',
+          targetChannelId: 'channel.whatsapp',
+          direction: 'source_to_target',
+        })
+      );
 
       // Forward direction: source → target
       const msg1 = makeMessage({
@@ -159,9 +165,11 @@ describe('UCPBridgeManager', () => {
     });
 
     it('applies filter pattern', async () => {
-      manager.addBridge(makeBridge({
-        filterPattern: 'urgent|important',
-      }));
+      manager.addBridge(
+        makeBridge({
+          filterPattern: 'urgent|important',
+        })
+      );
 
       // Non-matching message
       const msg1 = makeMessage({
@@ -198,16 +206,20 @@ describe('UCPBridgeManager', () => {
     });
 
     it('bridges to multiple targets', async () => {
-      manager.addBridge(makeBridge({
-        id: 'b-1',
-        sourceChannelId: 'channel.telegram',
-        targetChannelId: 'channel.whatsapp',
-      }));
-      manager.addBridge(makeBridge({
-        id: 'b-2',
-        sourceChannelId: 'channel.telegram',
-        targetChannelId: 'channel.email',
-      }));
+      manager.addBridge(
+        makeBridge({
+          id: 'b-1',
+          sourceChannelId: 'channel.telegram',
+          targetChannelId: 'channel.whatsapp',
+        })
+      );
+      manager.addBridge(
+        makeBridge({
+          id: 'b-2',
+          sourceChannelId: 'channel.telegram',
+          targetChannelId: 'channel.email',
+        })
+      );
 
       const msg = makeMessage({ direction: 'inbound' });
       const count = await manager.bridgeMessage(msg);
@@ -216,9 +228,11 @@ describe('UCPBridgeManager', () => {
     });
 
     it('ignores invalid filter regex (forwards anyway)', async () => {
-      manager.addBridge(makeBridge({
-        filterPattern: '[invalid(regex',
-      }));
+      manager.addBridge(
+        makeBridge({
+          filterPattern: '[invalid(regex',
+        })
+      );
 
       const msg = makeMessage({ direction: 'inbound' });
       // Invalid regex is silently ignored — message still bridges
@@ -230,10 +244,7 @@ describe('UCPBridgeManager', () => {
   describe('loadBridges', () => {
     it('loads bridges from a store', async () => {
       const store: BridgeStore = {
-        getAll: vi.fn().mockResolvedValue([
-          makeBridge({ id: 'b-1' }),
-          makeBridge({ id: 'b-2' }),
-        ]),
+        getAll: vi.fn().mockResolvedValue([makeBridge({ id: 'b-1' }), makeBridge({ id: 'b-2' })]),
         getById: vi.fn(),
         getByChannel: vi.fn(),
         save: vi.fn(),

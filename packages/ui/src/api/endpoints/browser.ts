@@ -77,11 +77,9 @@ export interface CreateBrowserWorkflowInput {
 export const browserApi = {
   getConfig: () => apiClient.get<BrowserConfig>('/browser/config'),
 
-  navigate: (url: string) =>
-    apiClient.post<BrowserNavigateResult>('/browser/navigate', { url }),
+  navigate: (url: string) => apiClient.post<BrowserNavigateResult>('/browser/navigate', { url }),
 
-  action: (action: BrowserAction) =>
-    apiClient.post<BrowserActionResult>('/browser/action', action),
+  action: (action: BrowserAction) => apiClient.post<BrowserActionResult>('/browser/action', action),
 
   screenshot: (opts?: { fullPage?: boolean; selector?: string }) =>
     apiClient.post<BrowserScreenshotResult>('/browser/screenshot', opts ?? {}),

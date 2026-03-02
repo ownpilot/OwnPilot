@@ -14,8 +14,15 @@ interface VoiceButtonProps {
 }
 
 export function VoiceButton({ onTranscription, disabled }: VoiceButtonProps) {
-  const { isRecording, isTranscribing, isSupported, error, startRecording, stopRecording, cancelRecording } =
-    useVoice();
+  const {
+    isRecording,
+    isTranscribing,
+    isSupported,
+    error,
+    startRecording,
+    stopRecording,
+    cancelRecording,
+  } = useVoice();
 
   if (!isSupported) return null;
 
@@ -49,7 +56,9 @@ export function VoiceButton({ onTranscription, disabled }: VoiceButtonProps) {
               ? 'text-primary bg-primary/10'
               : 'text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-primary hover:bg-bg-secondary dark:hover:bg-dark-bg-secondary'
         }`}
-        aria-label={isRecording ? 'Stop recording' : isTranscribing ? 'Transcribing...' : 'Voice input'}
+        aria-label={
+          isRecording ? 'Stop recording' : isTranscribing ? 'Transcribing...' : 'Voice input'
+        }
         title={
           isRecording
             ? 'Click to stop (right-click to cancel)'

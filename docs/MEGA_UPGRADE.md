@@ -12,6 +12,7 @@
 **Language:** TypeScript 5.9 (strict, ES2023, NodeNext)
 **Monorepo:** pnpm workspaces + Turborepo
 **Packages:**
+
 - `packages/core` — AI runtime, providers, tools, types, sandbox, crypto, audit, privacy, plugins, events, services
 - `packages/gateway` — Hono API server, routes (37+), repositories (32+), channels, triggers, plans, middleware
 - `packages/ui` — React 19 + Vite 6 + Tailwind CSS 4, 28+ pages
@@ -29,6 +30,7 @@
 ## PHASE 1: UNIVERSAL CHANNEL PROTOCOL (UCP)
 
 ### WHY
+
 OwnPilot has 3 channels (Telegram, Discord, Slack). Competitors have 14-17. But adding channels one by one = maintenance hell. UCP creates a protocol layer where new channels can be added in ~50-100 lines of adapter code, and cross-channel features (unified threads, bridging, capability negotiation) become possible.
 
 ### WHAT TO BUILD
@@ -41,40 +43,73 @@ Create `packages/core/src/channels/ucp/types.ts`:
 // Universal Channel Protocol — message normalization layer
 
 export type ChannelType =
-  | 'telegram' | 'discord' | 'slack' | 'whatsapp' | 'signal'
-  | 'matrix' | 'teams' | 'email' | 'sms' | 'web' | 'line'
-  | 'wechat' | 'imessage' | 'custom';
+  | 'telegram'
+  | 'discord'
+  | 'slack'
+  | 'whatsapp'
+  | 'signal'
+  | 'matrix'
+  | 'teams'
+  | 'email'
+  | 'sms'
+  | 'web'
+  | 'line'
+  | 'wechat'
+  | 'imessage'
+  | 'custom';
 
 export type ContentType =
-  | 'text' | 'image' | 'file' | 'audio' | 'video'
-  | 'location' | 'contact' | 'reaction' | 'sticker'
-  | 'card' | 'button_group' | 'form';
+  | 'text'
+  | 'image'
+  | 'file'
+  | 'audio'
+  | 'video'
+  | 'location'
+  | 'contact'
+  | 'reaction'
+  | 'sticker'
+  | 'card'
+  | 'button_group'
+  | 'form';
 
 export type ChannelFeature =
-  | 'rich_text' | 'markdown' | 'html'
-  | 'images' | 'files' | 'audio' | 'video'
-  | 'reactions' | 'threads' | 'editing' | 'deletion'
-  | 'typing_indicator' | 'read_receipts'
-  | 'buttons' | 'cards' | 'forms'
-  | 'voice_messages' | 'stickers' | 'polls';
+  | 'rich_text'
+  | 'markdown'
+  | 'html'
+  | 'images'
+  | 'files'
+  | 'audio'
+  | 'video'
+  | 'reactions'
+  | 'threads'
+  | 'editing'
+  | 'deletion'
+  | 'typing_indicator'
+  | 'read_receipts'
+  | 'buttons'
+  | 'cards'
+  | 'forms'
+  | 'voice_messages'
+  | 'stickers'
+  | 'polls';
 
 export interface UCPMessage {
   id: string;
-  externalId: string;              // original platform message ID
+  externalId: string; // original platform message ID
   channel: ChannelType;
-  channelInstanceId: string;       // which specific bot/account
+  channelInstanceId: string; // which specific bot/account
   direction: 'inbound' | 'outbound';
   sender: UCPIdentity;
   recipient?: UCPIdentity;
   content: UCPContent[];
-  threadId?: string;               // cross-channel unified thread
+  threadId?: string; // cross-channel unified thread
   replyToId?: string;
   timestamp: Date;
   metadata: UCPMetadata;
 }
 
 export interface UCPIdentity {
-  id: string;                      // platform-specific user ID
+  id: string; // platform-specific user ID
   displayName?: string;
   username?: string;
   avatarUrl?: string;
@@ -115,18 +150,18 @@ export interface UCPFormField {
   label: string;
   type: 'text' | 'number' | 'select' | 'date' | 'boolean';
   required: boolean;
-  options?: string[];            // for select
+  options?: string[]; // for select
   defaultValue?: unknown;
 }
 
 export interface UCPMetadata {
-  raw?: unknown;                 // original platform message object
-  conversationId?: string;       // OwnPilot conversation link
+  raw?: unknown; // original platform message object
+  conversationId?: string; // OwnPilot conversation link
   workspaceId?: string;
   isEdited?: boolean;
   isForwarded?: boolean;
   forwardedFrom?: UCPIdentity;
-  replyChain?: string[];         // message IDs in reply chain
+  replyChain?: string[]; // message IDs in reply chain
 }
 
 export interface ChannelCapabilities {
@@ -134,7 +169,7 @@ export interface ChannelCapabilities {
   features: Map<ChannelFeature, boolean>;
   limits: {
     maxTextLength?: number;
-    maxFileSize?: number;        // bytes
+    maxFileSize?: number; // bytes
     maxImageSize?: number;
     maxButtons?: number;
     supportedMediaTypes?: string[];
@@ -159,7 +194,9 @@ export abstract class ChannelAdapter extends EventEmitter {
   // Lifecycle
   abstract connect(config: Record<string, unknown>): Promise<void>;
   abstract disconnect(): Promise<void>;
-  isConnected(): boolean { return this.connected; }
+  isConnected(): boolean {
+    return this.connected;
+  }
 
   // REQUIRED: Implement these two methods to create a new channel adapter
   // Everything else is handled by the framework
@@ -302,11 +339,20 @@ export class TelegramAdapter extends ChannelAdapter {
   readonly capabilities: ChannelCapabilities = {
     channel: 'telegram',
     features: new Map([
-      ['rich_text', true], ['markdown', true], ['images', true],
-      ['files', true], ['audio', true], ['video', true],
-      ['reactions', true], ['threads', true], ['editing', true],
-      ['deletion', true], ['typing_indicator', true],
-      ['buttons', true], ['stickers', true], ['voice_messages', true],
+      ['rich_text', true],
+      ['markdown', true],
+      ['images', true],
+      ['files', true],
+      ['audio', true],
+      ['video', true],
+      ['reactions', true],
+      ['threads', true],
+      ['editing', true],
+      ['deletion', true],
+      ['typing_indicator', true],
+      ['buttons', true],
+      ['stickers', true],
+      ['voice_messages', true],
       ['polls', true],
     ]),
     limits: {
@@ -317,10 +363,18 @@ export class TelegramAdapter extends ChannelAdapter {
     },
   };
 
-  async connect(config: { token: string; allowedUsers?: string[]; allowedChats?: string[] }) { /* ... */ }
-  async disconnect() { /* ... */ }
-  protected normalize(raw: TelegramUpdate): UCPMessage { /* ... */ }
-  protected async denormalize(msg: UCPMessage): Promise<void> { /* ... */ }
+  async connect(config: { token: string; allowedUsers?: string[]; allowedChats?: string[] }) {
+    /* ... */
+  }
+  async disconnect() {
+    /* ... */
+  }
+  protected normalize(raw: TelegramUpdate): UCPMessage {
+    /* ... */
+  }
+  protected async denormalize(msg: UCPMessage): Promise<void> {
+    /* ... */
+  }
 }
 ```
 
@@ -331,25 +385,30 @@ Do the same for Discord and Slack adapters.
 After UCP is in place, add these built-in adapters. Each should be ~100-200 lines:
 
 **WhatsApp** — `packages/channels/src/whatsapp/adapter.ts`
+
 - Use `whatsapp-web.js` or WhatsApp Business API
 - Features: text, images, files, audio, video, reactions, buttons, location
 
 **Email** — `packages/channels/src/email/adapter.ts`
+
 - IMAP (inbound) + SMTP (outbound) via `nodemailer` + `imapflow`
 - Features: text (html), files (attachments), threads (In-Reply-To)
 - Inbound: poll IMAP inbox for new messages → normalize → agent
 - Outbound: agent response → format as email → SMTP send
 
 **Matrix** — `packages/channels/src/matrix/adapter.ts`
+
 - Use `matrix-js-sdk`
 - Features: rich_text, images, files, reactions, threads, editing, deletion, read_receipts
 
 **SMS** — `packages/channels/src/sms/adapter.ts`
+
 - Use Twilio API (`twilio` package)
 - Features: text only, very limited (160 chars SMS, or MMS for media)
 - Auto-split long messages
 
 **Webhook** — `packages/channels/src/webhook/adapter.ts`
+
 - Generic HTTP webhook (inbound POST + outbound POST)
 - For custom integrations without a dedicated adapter
 - User configures inbound URL pattern and outbound URL
@@ -422,6 +481,7 @@ packages/ui/src/components/UnifiedThread.tsx     # NEW
 ```
 
 ### ACCEPTANCE CRITERIA
+
 - [ ] Existing Telegram/Discord/Slack work unchanged after refactor
 - [ ] New WhatsApp adapter connects and sends/receives messages
 - [ ] Email adapter polls IMAP and sends via SMTP
@@ -436,6 +496,7 @@ packages/ui/src/components/UnifiedThread.tsx     # NEW
 ## PHASE 2: AGENT ORCHESTRA (Multi-Agent Collaboration)
 
 ### WHY
+
 OwnPilot has 29 agents but they work in isolation. The Orchestrator agent exists but doesn't delegate to other agents programmatically. Adding agent-to-agent communication enables complex multi-step workflows where each agent uses its optimal provider/model.
 
 ### WHAT TO BUILD
@@ -447,12 +508,12 @@ Create `packages/core/src/agent/orchestra.ts`:
 ```typescript
 export interface AgentTask {
   id: string;
-  agentId: string;                    // which agent to delegate to
-  input: string;                       // task description
-  context?: Record<string, unknown>;   // shared context from previous agents
-  dependsOn?: string[];                // task IDs that must complete first
-  timeout?: number;                    // ms
-  optional?: boolean;                  // if true, failure doesn't block pipeline
+  agentId: string; // which agent to delegate to
+  input: string; // task description
+  context?: Record<string, unknown>; // shared context from previous agents
+  dependsOn?: string[]; // task IDs that must complete first
+  timeout?: number; // ms
+  optional?: boolean; // if true, failure doesn't block pipeline
 }
 
 export interface OrchestraResult {
@@ -470,17 +531,17 @@ export interface OrchestraResult {
 export interface OrchestraPlan {
   id: string;
   description: string;
-  tasks: AgentTask[];                  // dependency graph
-  strategy: 'sequential' | 'parallel' | 'dag';  // dag = directed acyclic graph
-  maxCost?: number;                    // budget limit
-  maxDuration?: number;                // total timeout
+  tasks: AgentTask[]; // dependency graph
+  strategy: 'sequential' | 'parallel' | 'dag'; // dag = directed acyclic graph
+  maxCost?: number; // budget limit
+  maxDuration?: number; // total timeout
 }
 
 export class AgentOrchestra {
   constructor(
     private agentEngine: AgentEngine,
     private providerRouter: ProviderRouter,
-    private memoryService: MemoryService,
+    private memoryService: MemoryService
   ) {}
 
   // Plan generation — Orchestrator agent creates the plan
@@ -523,10 +584,10 @@ Enhance the provider router to support per-agent model preferences:
 // Agent config enhancement
 interface AgentConfig {
   // ... existing fields ...
-  preferredProvider?: string;        // "anthropic" for coding agents
-  preferredModel?: string;           // "claude-sonnet-4-5" for coding
+  preferredProvider?: string; // "anthropic" for coding agents
+  preferredModel?: string; // "claude-sonnet-4-5" for coding
   routingStrategy?: RoutingStrategy; // override global strategy
-  costBudgetPerCall?: number;        // max cost for single agent call
+  costBudgetPerCall?: number; // max cost for single agent call
 }
 
 // Provider routing per-agent:
@@ -569,6 +630,7 @@ packages/ui/src/pages/AgentsPage.tsx                 # Show delegation flow visu
 ```
 
 ### ACCEPTANCE CRITERIA
+
 - [ ] Orchestrator agent can delegate to Code Assistant and get results
 - [ ] Parallel delegation works (Research + Code simultaneously)
 - [ ] Per-agent provider routing works (coding tasks → Claude, research → Perplexity)
@@ -581,6 +643,7 @@ packages/ui/src/pages/AgentsPage.tsx                 # Show delegation flow visu
 ## PHASE 3: ARTIFACTS SYSTEM WITH DATA BINDING
 
 ### WHY
+
 Neither OpenClaw's Canvas nor Claude's Artifacts persist beyond the session or bind to live data. OwnPilot already has a full personal data layer (tasks, expenses, goals, calendar) — binding artifacts to this data creates persistent, auto-updating dashboards that no competitor can match.
 
 ### WHAT TO BUILD
@@ -594,12 +657,12 @@ export type ArtifactType = 'react' | 'html' | 'svg' | 'markdown' | 'chart' | 'fo
 
 export interface Artifact {
   id: string;
-  conversationId: string;          // which conversation created it
+  conversationId: string; // which conversation created it
   type: ArtifactType;
   title: string;
-  content: string;                  // source code (React/HTML/SVG/MD)
-  dataBindings?: DataBinding[];     // live data connections
-  pinned: boolean;                  // pinned to dashboard
+  content: string; // source code (React/HTML/SVG/MD)
+  dataBindings?: DataBinding[]; // live data connections
+  pinned: boolean; // pinned to dashboard
   version: number;
   tags: string[];
   createdAt: Date;
@@ -608,24 +671,31 @@ export interface Artifact {
 
 export interface DataBinding {
   id: string;
-  variableName: string;             // e.g., "tasks", "expenses_monthly"
+  variableName: string; // e.g., "tasks", "expenses_monthly"
   source: DataBindingSource;
-  refreshInterval?: number;         // ms, 0 = on-demand only
+  refreshInterval?: number; // ms, 0 = on-demand only
   lastValue?: unknown;
   lastRefreshed?: Date;
 }
 
 export type DataBindingSource =
-  | { type: 'query'; entity: string; filter: Record<string, unknown>; }
-  | { type: 'aggregate'; entity: string; operation: 'count' | 'sum' | 'avg'; field?: string; filter?: Record<string, unknown>; }
-  | { type: 'goal'; goalId: string; }
-  | { type: 'memory'; query: string; limit?: number; }
-  | { type: 'custom'; toolName: string; params: Record<string, unknown>; };
+  | { type: 'query'; entity: string; filter: Record<string, unknown> }
+  | {
+      type: 'aggregate';
+      entity: string;
+      operation: 'count' | 'sum' | 'avg';
+      field?: string;
+      filter?: Record<string, unknown>;
+    }
+  | { type: 'goal'; goalId: string }
+  | { type: 'memory'; query: string; limit?: number }
+  | { type: 'custom'; toolName: string; params: Record<string, unknown> };
 ```
 
 #### 3.2 Artifact Renderer (UI)
 
 Create `packages/ui/src/components/ArtifactRenderer.tsx`:
+
 - Sandboxed iframe for React/HTML artifacts
 - Data injection via postMessage
 - Auto-refresh on data change (WebSocket subscription)
@@ -685,6 +755,7 @@ Create `packages/ui/src/components/ArtifactRenderer.tsx`:
 #### 3.4 Dashboard Integration
 
 Enhance `packages/ui/src/pages/DashboardPage.tsx`:
+
 - Grid layout for pinned artifacts (drag-and-drop reorder)
 - Each pinned artifact renders in a card with auto-refresh
 - Add/remove artifacts from dashboard
@@ -747,6 +818,7 @@ packages/core/src/agent/tools/artifact-tools.ts
 ```
 
 ### ACCEPTANCE CRITERIA
+
 - [ ] Agent creates HTML artifact with expense chart
 - [ ] Artifact displays correctly in sandboxed iframe
 - [ ] Data binding `{{expenses.monthly}}` auto-refreshes when new expense added
@@ -760,6 +832,7 @@ packages/core/src/agent/tools/artifact-tools.ts
 ## PHASE 4: VOICE PIPELINE
 
 ### WHY
+
 Voice is the most natural interface for a personal assistant. OwnPilot already has TTS/STT tools but they're not integrated into the conversation flow. A voice pipeline that works across all channels (Telegram voice messages, Discord voice, web microphone) creates a unified voice experience.
 
 ### WHAT TO BUILD
@@ -771,7 +844,13 @@ Create `packages/core/src/voice/`:
 ```typescript
 // packages/core/src/voice/types.ts
 
-export type VoiceProvider = 'openai' | 'elevenlabs' | 'google' | 'azure' | 'deepgram' | 'local-whisper';
+export type VoiceProvider =
+  | 'openai'
+  | 'elevenlabs'
+  | 'google'
+  | 'azure'
+  | 'deepgram'
+  | 'local-whisper';
 
 export interface VoiceConfig {
   sttProvider: VoiceProvider;
@@ -806,7 +885,7 @@ export interface TTSResult {
 export class VoicePipeline {
   constructor(
     private config: VoiceConfig,
-    private agentEngine: AgentEngine,
+    private agentEngine: AgentEngine
   ) {}
 
   async processVoiceMessage(
@@ -888,6 +967,7 @@ packages/ui/src/hooks/useVoice.ts
 ```
 
 ### ACCEPTANCE CRITERIA
+
 - [ ] Send voice message on Telegram → agent responds with text + voice
 - [ ] Web UI microphone records, transcribes, agent responds, TTS plays
 - [ ] Voice mode toggle in UI settings
@@ -900,6 +980,7 @@ packages/ui/src/hooks/useVoice.ts
 ## PHASE 5: BROWSER AGENT
 
 ### WHY
+
 OpenClaw has Chrome CDP control. Adding headless browser capabilities to OwnPilot enables web automation, form filling, page monitoring — all protected by OwnPilot's security layer (PII detection, autonomy levels, sandbox).
 
 ### WHAT TO BUILD
@@ -959,6 +1040,7 @@ Dockerfile
 ```
 
 ### ACCEPTANCE CRITERIA
+
 - [ ] `browse_web("https://example.com")` returns page text
 - [ ] `fill_form` detects PII fields and warns at autonomy level 0-1
 - [ ] `take_screenshot` returns a viewable screenshot
@@ -972,6 +1054,7 @@ Dockerfile
 ## PHASE 6: SKILLS PLATFORM
 
 ### WHY
+
 A skills platform enables community contributions. Instead of OwnPilot maintaining everything, community developers create channel adapters, tools, agent profiles, artifact templates — distributed via npm.
 
 ### WHAT TO BUILD
@@ -1014,10 +1097,22 @@ export interface SkillManifest {
 }
 
 export type SkillPermission =
-  | 'tasks' | 'notes' | 'calendar' | 'contacts' | 'expenses'
-  | 'memories' | 'goals' | 'conversations' | 'custom-data'
-  | 'network' | 'filesystem' | 'browser' | 'email'
-  | 'channels' | 'triggers' | 'plans';
+  | 'tasks'
+  | 'notes'
+  | 'calendar'
+  | 'contacts'
+  | 'expenses'
+  | 'memories'
+  | 'goals'
+  | 'conversations'
+  | 'custom-data'
+  | 'network'
+  | 'filesystem'
+  | 'browser'
+  | 'email'
+  | 'channels'
+  | 'triggers'
+  | 'plans';
 ```
 
 ### FILES TO CREATE/MODIFY
@@ -1044,6 +1139,7 @@ packages/cli/src/commands/skill.ts
 ```
 
 ### ACCEPTANCE CRITERIA
+
 - [ ] `ownpilot skill install @ownpilot/skill-example` works
 - [ ] Installed skill's tools appear in `search_tools` results
 - [ ] Permission review shown before installation
@@ -1056,6 +1152,7 @@ packages/cli/src/commands/skill.ts
 ## PHASE 7: EDGE DELEGATION PROTOCOL
 
 ### WHY
+
 Instead of running a full LLM on cheap hardware (bad quality), OwnPilot becomes the brain and edge devices become the hands. $2 ESP32 with thin agent → MQTT → OwnPilot server → intelligent decisions.
 
 ### WHAT TO BUILD
@@ -1121,6 +1218,7 @@ docker-compose.yml
 ## GENERAL RULES FOR ALL PHASES
 
 ### Code Quality
+
 - TypeScript strict mode, no `any`
 - All functions have JSDoc comments
 - All public APIs have full type definitions
@@ -1128,18 +1226,21 @@ docker-compose.yml
 - Follow existing code style (check .prettierrc, eslint config)
 
 ### Testing
+
 - Unit tests for every new module (Vitest)
 - Integration tests for API routes
 - Minimum 80% coverage for new code
 - Test command: `pnpm test`
 
 ### Database
+
 - All migrations are idempotent (IF NOT EXISTS)
 - Include rollback in every migration
 - Seed data for new features where applicable
 - Repository pattern for all DB access
 
 ### Security
+
 - Autonomy levels respected for ALL new tool executions
 - PII detection applied to all new data flows
 - Audit trail for all new operations
@@ -1147,6 +1248,7 @@ docker-compose.yml
 - No secrets in code or logs
 
 ### UI
+
 - Follow existing Tailwind CSS 4 patterns
 - Dark mode support for all new pages/components
 - Responsive design (mobile-friendly)
@@ -1154,6 +1256,7 @@ docker-compose.yml
 - Use existing Layout, ConfirmDialog patterns
 
 ### API
+
 - Follow existing Hono route patterns
 - Consistent error responses: `{ error: string, details?: unknown }`
 - Rate limiting applied to new routes
@@ -1161,12 +1264,14 @@ docker-compose.yml
 - WebSocket for real-time features (use existing ws/ pattern)
 
 ### Dependencies
+
 - Minimize new dependencies
 - Use `pnpm --filter <package> add <dep>` for package-scoped installs
 - No native/binary dependencies except for browser (playwright) and MQTT
 - Check license compatibility (MIT preferred)
 
 ### Documentation
+
 - Update README.md feature list for each phase
 - Add JSDoc to all public APIs
 - Update API Reference section for new routes
@@ -1189,6 +1294,7 @@ Phase 7: Edge Delegation
 Each phase is independent and can be implemented, tested, and deployed separately. Do NOT attempt all phases in a single session. Complete one phase, ensure all tests pass and the app runs correctly, then move to the next.
 
 **For each phase, follow this workflow:**
+
 1. Create new files (types first, then implementation, then tests)
 2. Modify existing files (minimal changes, use existing patterns)
 3. Add database migration

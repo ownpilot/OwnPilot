@@ -23,7 +23,13 @@
 // ============================================================================
 
 /** Subagent lifecycle states */
-export type SubagentState = 'pending' | 'running' | 'completed' | 'failed' | 'cancelled' | 'timeout';
+export type SubagentState =
+  | 'pending'
+  | 'running'
+  | 'completed'
+  | 'failed'
+  | 'cancelled'
+  | 'timeout';
 
 /** Who can be a parent of a subagent */
 export type SubagentParentType = 'chat' | 'background-agent' | 'subagent';

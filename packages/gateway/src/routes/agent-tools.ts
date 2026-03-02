@@ -212,79 +212,70 @@ export function registerGatewayTools(tools: ToolRegistry, userId: string, trace:
   // Subagent tools (need conversationId from context, registered separately)
   for (const toolDef of SUBAGENT_TOOLS) {
     const qName = qualifyToolName(toolDef.name, 'core');
-    tools.register(
-      { ...toolDef, name: qName },
-      async (args, context): Promise<CoreToolResult> => {
-        const startTime = trace
-          ? traceToolCallStart(toolDef.name, args as Record<string, unknown>)
-          : 0;
+    tools.register({ ...toolDef, name: qName }, async (args, context): Promise<CoreToolResult> => {
+      const startTime = trace
+        ? traceToolCallStart(toolDef.name, args as Record<string, unknown>)
+        : 0;
 
-        const result = await executeSubagentTool(
-          toolDef.name,
-          args as Record<string, unknown>,
-          userId,
-          context?.conversationId
-        );
+      const result = await executeSubagentTool(
+        toolDef.name,
+        args as Record<string, unknown>,
+        userId,
+        context?.conversationId
+      );
 
-        if (trace) {
-          traceToolCallEnd(toolDef.name, startTime, result.success, result.result, result.error);
-        }
-
-        return toToolResult(result);
+      if (trace) {
+        traceToolCallEnd(toolDef.name, startTime, result.success, result.result, result.error);
       }
-    );
+
+      return toToolResult(result);
+    });
   }
 
   // Orchestra tools (need conversationId from context, registered separately)
   for (const toolDef of ORCHESTRA_TOOL_DEFINITIONS) {
     const qName = qualifyToolName(toolDef.name, 'core');
-    tools.register(
-      { ...toolDef, name: qName },
-      async (args, context): Promise<CoreToolResult> => {
-        const startTime = trace
-          ? traceToolCallStart(toolDef.name, args as Record<string, unknown>)
-          : 0;
+    tools.register({ ...toolDef, name: qName }, async (args, context): Promise<CoreToolResult> => {
+      const startTime = trace
+        ? traceToolCallStart(toolDef.name, args as Record<string, unknown>)
+        : 0;
 
-        const result = await executeOrchestraTool(
-          toolDef.name,
-          args as Record<string, unknown>,
-          userId,
-          context?.conversationId ?? ''
-        );
+      const result = await executeOrchestraTool(
+        toolDef.name,
+        args as Record<string, unknown>,
+        userId,
+        context?.conversationId ?? ''
+      );
 
-        if (trace) {
-          traceToolCallEnd(toolDef.name, startTime, result.success, result.result, result.error);
-        }
-
-        return toToolResult(result);
+      if (trace) {
+        traceToolCallEnd(toolDef.name, startTime, result.success, result.result, result.error);
       }
-    );
+
+      return toToolResult(result);
+    });
   }
 
   // Artifact tools (need conversationId from context, registered separately)
   for (const toolDef of ARTIFACT_TOOLS) {
     const qName = qualifyToolName(toolDef.name, 'core');
-    tools.register(
-      { ...toolDef, name: qName },
-      async (args, context): Promise<CoreToolResult> => {
-        const startTime = trace
-          ? traceToolCallStart(toolDef.name, args as Record<string, unknown>)
-          : 0;
+    tools.register({ ...toolDef, name: qName }, async (args, context): Promise<CoreToolResult> => {
+      const startTime = trace
+        ? traceToolCallStart(toolDef.name, args as Record<string, unknown>)
+        : 0;
 
-        const result = await executeArtifactTool(
-          toolDef.name,
-          args as Record<string, unknown>,
-          userId,
-          context?.conversationId ?? ''
-        );
+      const result = await executeArtifactTool(
+        toolDef.name,
+        args as Record<string, unknown>,
+        userId,
+        context?.conversationId ?? ''
+      );
 
-        if (trace) {
-          traceToolCallEnd(toolDef.name, startTime, result.success, result.result, result.error);
-        }
-
-        return toToolResult(result);
+      if (trace) {
+        traceToolCallEnd(toolDef.name, startTime, result.success, result.result, result.error);
       }
-    );
+
+      return toToolResult(result);
+    });
   }
 }
 

@@ -209,7 +209,9 @@ describe('detectLanguage', () => {
   });
 
   it('detects German text', () => {
-    const result = detectLanguage('Der schnelle braune Fuchs springt über den faulen Hund und die Katze');
+    const result = detectLanguage(
+      'Der schnelle braune Fuchs springt über den faulen Hund und die Katze'
+    );
     expect(result.code).toBe('de');
     expect(result.confidence).toBeGreaterThan(0);
   });

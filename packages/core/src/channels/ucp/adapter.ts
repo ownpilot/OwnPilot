@@ -109,9 +109,7 @@ export abstract class UCPChannelAdapter implements ChannelPluginAPI {
   reactToMessage?(_platformMessageId: string, _emoji: string): Promise<void>;
 
   /** Resolve user info from platform ID (optional) */
-  resolveUser?(
-    _platformUserId: string
-  ): Promise<{
+  resolveUser?(_platformUserId: string): Promise<{
     platformUserId: string;
     platform: ChannelPlatform;
     displayName: string;

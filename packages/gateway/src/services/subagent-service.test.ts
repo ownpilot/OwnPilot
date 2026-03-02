@@ -179,9 +179,7 @@ describe('SubagentServiceImpl', () => {
     });
 
     it('returns empty when no matching userId', () => {
-      mockManager.listByParent.mockReturnValue([
-        makeSession({ userId: 'user-1' }),
-      ]);
+      mockManager.listByParent.mockReturnValue([makeSession({ userId: 'user-1' })]);
 
       const result = service.listByParent('conv-1', 'user-other');
       expect(result).toEqual([]);

@@ -23,7 +23,12 @@ const PREFIX = 'model_routing:';
 
 export type RoutingProcess = 'chat' | 'channel' | 'pulse' | 'subagent';
 
-export const VALID_PROCESSES: readonly RoutingProcess[] = ['chat', 'channel', 'pulse', 'subagent'] as const;
+export const VALID_PROCESSES: readonly RoutingProcess[] = [
+  'chat',
+  'channel',
+  'pulse',
+  'subagent',
+] as const;
 
 export interface ProcessRouting {
   provider: string | null;

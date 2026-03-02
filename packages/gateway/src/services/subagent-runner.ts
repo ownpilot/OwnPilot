@@ -87,7 +87,10 @@ export class SubagentRunner {
    * Execute the subagent task. Returns when task is complete.
    */
   async run(
-    onToolEnd?: (tc: ToolCall, result: { content: string; isError: boolean; durationMs: number }) => void
+    onToolEnd?: (
+      tc: ToolCall,
+      result: { content: string; isError: boolean; durationMs: number }
+    ) => void
   ): Promise<SubagentExecutionResult> {
     const startTime = Date.now();
 
@@ -239,28 +242,36 @@ export class SubagentRunner {
     try {
       await registerDynamicTools(tools, userId, conversationId, false);
     } catch (err) {
-      log.debug(`[subagent:${this.input.name}] Dynamic tools registration failed: ${getErrorMessage(err)}`);
+      log.debug(
+        `[subagent:${this.input.name}] Dynamic tools registration failed: ${getErrorMessage(err)}`
+      );
     }
 
     // 4. Plugin tools
     try {
       registerPluginTools(tools, false);
     } catch (err) {
-      log.debug(`[subagent:${this.input.name}] Plugin tools registration failed: ${getErrorMessage(err)}`);
+      log.debug(
+        `[subagent:${this.input.name}] Plugin tools registration failed: ${getErrorMessage(err)}`
+      );
     }
 
     // 5. Extension/Skill tools
     try {
       registerExtensionTools(tools, userId, false);
     } catch (err) {
-      log.debug(`[subagent:${this.input.name}] Extension tools registration failed: ${getErrorMessage(err)}`);
+      log.debug(
+        `[subagent:${this.input.name}] Extension tools registration failed: ${getErrorMessage(err)}`
+      );
     }
 
     // 6. MCP tools (external MCP servers)
     try {
       registerMcpTools(tools, false);
     } catch (err) {
-      log.debug(`[subagent:${this.input.name}] MCP tools registration failed: ${getErrorMessage(err)}`);
+      log.debug(
+        `[subagent:${this.input.name}] MCP tools registration failed: ${getErrorMessage(err)}`
+      );
     }
 
     // Build system prompt

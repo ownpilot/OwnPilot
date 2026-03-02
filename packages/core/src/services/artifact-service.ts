@@ -101,11 +101,7 @@ export interface ArtifactQuery {
 export interface IArtifactService {
   createArtifact(userId: string, input: CreateArtifactInput): Promise<Artifact>;
   getArtifact(userId: string, id: string): Promise<Artifact | null>;
-  updateArtifact(
-    userId: string,
-    id: string,
-    input: UpdateArtifactInput
-  ): Promise<Artifact | null>;
+  updateArtifact(userId: string, id: string, input: UpdateArtifactInput): Promise<Artifact | null>;
   deleteArtifact(userId: string, id: string): Promise<boolean>;
   listArtifacts(
     userId: string,

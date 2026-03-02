@@ -120,7 +120,8 @@ const browserScreenshotDef: ToolDefinition = {
     properties: {
       fullPage: {
         type: 'boolean',
-        description: 'Capture the full scrollable page instead of just the viewport (default: false)',
+        description:
+          'Capture the full scrollable page instead of just the viewport (default: false)',
       },
       selector: {
         type: 'string',

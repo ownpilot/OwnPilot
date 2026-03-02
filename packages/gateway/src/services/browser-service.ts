@@ -494,7 +494,10 @@ export class BrowserService {
   // --------------------------------------------------------------------------
 
   private async getPageText(page: Page): Promise<string> {
-    const text: string = await page.$eval('body', (el) => (el as unknown as { innerText: string }).innerText ?? '');
+    const text: string = await page.$eval(
+      'body',
+      (el) => (el as unknown as { innerText: string }).innerText ?? ''
+    );
     return text.substring(0, MAX_TEXT_LENGTH);
   }
 

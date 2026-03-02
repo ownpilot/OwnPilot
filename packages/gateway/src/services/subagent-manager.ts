@@ -23,7 +23,11 @@ import type {
   SubagentToolCall,
   ToolCall,
 } from '@ownpilot/core';
-import { DEFAULT_SUBAGENT_LIMITS, DEFAULT_SUBAGENT_BUDGET, MAX_SUBAGENT_DEPTH } from '@ownpilot/core';
+import {
+  DEFAULT_SUBAGENT_LIMITS,
+  DEFAULT_SUBAGENT_BUDGET,
+  MAX_SUBAGENT_DEPTH,
+} from '@ownpilot/core';
 import { SubagentRunner } from './subagent-runner.js';
 import { SubagentsRepository } from '../db/repositories/subagents.js';
 import { getLog } from './log.js';
@@ -193,7 +197,8 @@ export class SubagentManager {
     managed.runner.cancel();
     managed.session.state = 'cancelled';
     managed.session.completedAt = new Date();
-    managed.session.durationMs = managed.session.completedAt.getTime() - managed.session.spawnedAt.getTime();
+    managed.session.durationMs =
+      managed.session.completedAt.getTime() - managed.session.spawnedAt.getTime();
 
     log.info(`Cancelled subagent "${managed.session.name}" [${subagentId}]`);
 
@@ -266,7 +271,11 @@ export class SubagentManager {
 
   // ---------- Private Helpers ----------
 
-  private executeInBackground(id: string, managed: ManagedSubagent, input: SpawnSubagentInput): void {
+  private executeInBackground(
+    id: string,
+    managed: ManagedSubagent,
+    input: SpawnSubagentInput
+  ): void {
     // Mark as running
     managed.session.state = 'running';
     managed.session.startedAt = new Date();
@@ -376,7 +385,11 @@ export class SubagentManager {
       this.cleanup();
     }, CLEANUP_INTERVAL_MS);
     // Don't keep process alive just for cleanup
-    if (this.cleanupTimer && typeof this.cleanupTimer === 'object' && 'unref' in this.cleanupTimer) {
+    if (
+      this.cleanupTimer &&
+      typeof this.cleanupTimer === 'object' &&
+      'unref' in this.cleanupTimer
+    ) {
       this.cleanupTimer.unref();
     }
   }

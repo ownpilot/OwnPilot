@@ -109,7 +109,10 @@ describe('SubagentManager', () => {
     vi.clearAllMocks();
     pendingRunners = [];
     runnerHangs = false;
-    manager = new SubagentManager({ maxConcurrent: 3, maxTotalSpawns: 5, maxTotalTokens: 0 }, mockRepo as never);
+    manager = new SubagentManager(
+      { maxConcurrent: 3, maxTotalSpawns: 5, maxTotalTokens: 0 },
+      mockRepo as never
+    );
   });
 
   afterEach(() => {
@@ -180,9 +183,9 @@ describe('SubagentManager', () => {
     });
 
     it('rejects when nesting depth exceeds max', async () => {
-      await expect(
-        manager.spawn(makeSpawnInput({ _depth: 3 }))
-      ).rejects.toThrow(/nesting depth limit/);
+      await expect(manager.spawn(makeSpawnInput({ _depth: 3 }))).rejects.toThrow(
+        /nesting depth limit/
+      );
     });
 
     it('allows depth = 0 (top-level)', async () => {

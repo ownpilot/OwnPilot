@@ -23,10 +23,7 @@ const log = getLog('ArtifactDataResolver');
  * Resolve a single data binding to its current value.
  * Returns null on any error (never throws).
  */
-export async function resolveBinding(
-  userId: string,
-  binding: DataBinding
-): Promise<unknown> {
+export async function resolveBinding(userId: string, binding: DataBinding): Promise<unknown> {
   try {
     return await resolveSource(userId, binding.source);
   } catch (err) {
@@ -56,10 +53,7 @@ export async function resolveAllBindings(
 // Internal resolvers
 // ============================================================================
 
-async function resolveSource(
-  userId: string,
-  source: DataBindingSource
-): Promise<unknown> {
+async function resolveSource(userId: string, source: DataBindingSource): Promise<unknown> {
   switch (source.type) {
     case 'query':
       return resolveQuery(userId, source);
@@ -159,7 +153,9 @@ async function resolveAggregate(
 
   // Use a repository instance just for the query method
   const repo = new TasksRepository(userId);
-  const rows = await (repo as unknown as { query: <T extends object>(sql: string, params: unknown[]) => Promise<T[]> }).query<{ result: string }>(sql, params);
+  const rows = await (
+    repo as unknown as { query: <T extends object>(sql: string, params: unknown[]) => Promise<T[]> }
+  ).query<{ result: string }>(sql, params);
   const val = rows[0]?.result;
   return val !== undefined ? parseFloat(val) : null;
 }
