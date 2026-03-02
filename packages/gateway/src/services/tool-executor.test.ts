@@ -76,6 +76,7 @@ const mockExtensionProvider = { name: 'extension', getTools: vi.fn(() => []) };
 const mockCodingAgentProvider = { name: 'coding-agent', getTools: vi.fn(() => []) };
 const mockCliToolProvider = { name: 'cli-tools', getTools: vi.fn(() => []) };
 const mockBackgroundAgentProvider = { name: 'background-agent', getTools: vi.fn(() => []) };
+const mockBrowserProvider = { name: 'browser', getTools: vi.fn(() => []) };
 
 vi.mock('./tool-providers/index.js', () => ({
   createMemoryToolProvider: vi.fn(() => mockMemoryProvider),
@@ -90,6 +91,7 @@ vi.mock('./tool-providers/index.js', () => ({
   createCodingAgentToolProvider: vi.fn(() => mockCodingAgentProvider),
   createCliToolProvider: vi.fn(() => mockCliToolProvider),
   createBackgroundAgentToolProvider: vi.fn(() => mockBackgroundAgentProvider),
+  createBrowserToolProvider: vi.fn(() => mockBrowserProvider),
 }));
 
 import {
@@ -112,6 +114,7 @@ import {
   createCodingAgentToolProvider,
   createCliToolProvider,
   createBackgroundAgentToolProvider,
+  createBrowserToolProvider,
 } from './tool-providers/index.js';
 
 // ---------------------------------------------------------------------------
@@ -149,7 +152,7 @@ describe('Tool Executor', () => {
       expect(mockToolRegistry.setConfigCenter).toHaveBeenCalledWith({ mocked: true });
     });
 
-    it('registers all 12 gateway tool providers', () => {
+    it('registers all 13 gateway tool providers', () => {
       getSharedToolRegistry('user-1');
 
       expect(createMemoryToolProvider).toHaveBeenCalledWith('user-1');
@@ -163,8 +166,9 @@ describe('Tool Executor', () => {
       expect(createExtensionToolProvider).toHaveBeenCalledWith('user-1');
       expect(createCodingAgentToolProvider).toHaveBeenCalledWith('user-1');
       expect(createBackgroundAgentToolProvider).toHaveBeenCalledWith('user-1');
+      expect(createBrowserToolProvider).toHaveBeenCalledWith('user-1');
 
-      expect(mockToolRegistry.registerProvider).toHaveBeenCalledTimes(12);
+      expect(mockToolRegistry.registerProvider).toHaveBeenCalledTimes(13);
       expect(mockToolRegistry.registerProvider).toHaveBeenCalledWith(mockMemoryProvider);
       expect(mockToolRegistry.registerProvider).toHaveBeenCalledWith(mockGoalProvider);
       expect(mockToolRegistry.registerProvider).toHaveBeenCalledWith(mockCustomDataProvider);
@@ -177,6 +181,7 @@ describe('Tool Executor', () => {
       expect(mockToolRegistry.registerProvider).toHaveBeenCalledWith(mockCodingAgentProvider);
       expect(mockToolRegistry.registerProvider).toHaveBeenCalledWith(mockCliToolProvider);
       expect(mockToolRegistry.registerProvider).toHaveBeenCalledWith(mockBackgroundAgentProvider);
+      expect(mockToolRegistry.registerProvider).toHaveBeenCalledWith(mockBrowserProvider);
     });
 
     it('returns cached registry on subsequent calls', () => {

@@ -38,6 +38,9 @@ RUN pnpm build
 # ============================================
 FROM node:22-alpine AS production
 
+# Install Chromium for headless browser automation (puppeteer-core)
+RUN apk add --no-cache chromium nss freetype harfbuzz ca-certificates ttf-freefont
+
 # Install pnpm (pinned to match packageManager field)
 RUN corepack enable && corepack prepare pnpm@10.29.3 --activate
 
@@ -75,6 +78,7 @@ RUN mkdir -p /app/data && chown -R ownpilot:ownpilot /app/data
 ENV NODE_ENV=production
 ENV PORT=8080
 ENV HOST=0.0.0.0
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
 
 # Switch to non-root user
 USER ownpilot

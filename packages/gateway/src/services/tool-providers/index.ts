@@ -37,6 +37,8 @@ import {
   executeOrchestraTool,
   ARTIFACT_TOOLS,
   executeArtifactTool,
+  BROWSER_TOOLS,
+  executeBrowserTool,
 } from '../../tools/index.js';
 import { CONFIG_TOOLS, executeConfigTool } from '../config-tools.js';
 import { getErrorMessage } from '../../routes/helpers.js';
@@ -376,6 +378,20 @@ export function createArtifactToolProvider(userId: string): ToolProvider {
             return { content: getErrorMessage(err, 'Tool execution failed'), isError: true };
           }
         },
+      })),
+  };
+}
+
+/**
+ * Create a provider for browser automation tools (requires userId).
+ */
+export function createBrowserToolProvider(userId: string): ToolProvider {
+  return {
+    name: 'browser',
+    getTools: () =>
+      BROWSER_TOOLS.map((def) => ({
+        definition: def,
+        executor: wrapGatewayExecutor(def, executeBrowserTool, userId),
       })),
   };
 }

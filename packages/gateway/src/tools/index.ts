@@ -29,3 +29,8 @@ export {
   ARTIFACT_TOOL_NAMES,
   executeArtifactTool,
 } from './artifact-tools.js';
+export {
+  BROWSER_TOOLS,
+  BROWSER_TOOL_NAMES,
+  executeBrowserTool,
+} from './browser-tools.js';
