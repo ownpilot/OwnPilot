@@ -103,7 +103,10 @@ export class BackgroundAgentManager {
             await this.startAgent(config);
             log.info(`Auto-started agent: ${config.name} [${config.id}]`);
           } catch (err) {
-            log.error('Failed to auto-start agent', { agentId: config.id, error: getErrorMessage(err) });
+            log.error('Failed to auto-start agent', {
+              agentId: config.id,
+              error: getErrorMessage(err),
+            });
           }
         }
       }
@@ -507,7 +510,11 @@ export class BackgroundAgentManager {
     // Budget check
     if (session.config.limits.totalBudgetUsd !== undefined) {
       if (session.totalCostUsd >= session.config.limits.totalBudgetUsd) {
-        log.warn('Agent budget exceeded', { agentId, totalCostUsd: session.totalCostUsd, budgetUsd: session.config.limits.totalBudgetUsd });
+        log.warn('Agent budget exceeded', {
+          agentId,
+          totalCostUsd: session.totalCostUsd,
+          budgetUsd: session.config.limits.totalBudgetUsd,
+        });
         await this.stopAgent(agentId, 'budget_exceeded');
         return;
       }
@@ -583,7 +590,10 @@ export class BackgroundAgentManager {
 
     // Auto-pause on too many consecutive errors
     if (managed.consecutiveErrors >= MAX_CONSECUTIVE_ERRORS) {
-      log.warn('Agent auto-pausing due to consecutive errors', { agentId, consecutiveErrors: MAX_CONSECUTIVE_ERRORS });
+      log.warn('Agent auto-pausing due to consecutive errors', {
+        agentId,
+        consecutiveErrors: MAX_CONSECUTIVE_ERRORS,
+      });
       this.emitEvent('background-agent.error', {
         agentId,
         error: `Auto-paused after ${MAX_CONSECUTIVE_ERRORS} consecutive errors`,

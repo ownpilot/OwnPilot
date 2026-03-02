@@ -1135,7 +1135,11 @@ describe('WSGateway', () => {
     it('handles upgrade for matching path', () => {
       const { upgradeHandler } = setupGatewayWithUpgrade();
       const mockSocket = { write: vi.fn(), destroy: vi.fn() };
-      const request = { url: '/ws', headers: { host: 'localhost' }, socket: { remoteAddress: '127.0.0.1' } };
+      const request = {
+        url: '/ws',
+        headers: { host: 'localhost' },
+        socket: { remoteAddress: '127.0.0.1' },
+      };
       const head = Buffer.from('');
 
       mockWss.handleUpgrade.mockImplementation(
@@ -1153,7 +1157,11 @@ describe('WSGateway', () => {
     it('destroys socket for non-matching path', () => {
       const { upgradeHandler } = setupGatewayWithUpgrade();
       const mockSocket = { write: vi.fn(), destroy: vi.fn() };
-      const request = { url: '/other-path', headers: { host: 'localhost' }, socket: { remoteAddress: '127.0.0.1' } };
+      const request = {
+        url: '/other-path',
+        headers: { host: 'localhost' },
+        socket: { remoteAddress: '127.0.0.1' },
+      };
       const head = Buffer.from('');
 
       upgradeHandler(request, mockSocket, head);
@@ -1166,7 +1174,11 @@ describe('WSGateway', () => {
       process.env.API_KEYS = 'valid-key';
       const { upgradeHandler } = setupGatewayWithUpgrade();
       const mockSocket = { write: vi.fn(), destroy: vi.fn() };
-      const request = { url: '/ws?token=wrong-key', headers: { host: 'localhost' }, socket: { remoteAddress: '127.0.0.1' } };
+      const request = {
+        url: '/ws?token=wrong-key',
+        headers: { host: 'localhost' },
+        socket: { remoteAddress: '127.0.0.1' },
+      };
       const head = Buffer.from('');
 
       upgradeHandler(request, mockSocket, head);
@@ -1180,7 +1192,11 @@ describe('WSGateway', () => {
       process.env.API_KEYS = 'valid-key';
       const { upgradeHandler } = setupGatewayWithUpgrade();
       const mockSocket = { write: vi.fn(), destroy: vi.fn() };
-      const request = { url: '/ws?token=valid-key', headers: { host: 'localhost' }, socket: { remoteAddress: '127.0.0.1' } };
+      const request = {
+        url: '/ws?token=valid-key',
+        headers: { host: 'localhost' },
+        socket: { remoteAddress: '127.0.0.1' },
+      };
       const head = Buffer.from('');
 
       mockWss.handleUpgrade.mockImplementation(

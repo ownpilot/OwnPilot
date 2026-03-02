@@ -71,6 +71,8 @@ vi.mock('../../tools/index.js', () => ({
     },
   ],
   executePlanTool: vi.fn(async () => ({ success: true, result: {} })),
+  SOUL_COMMUNICATION_TOOLS: [],
+  executeSoulCommunicationTool: vi.fn(),
 }));
 
 // Need to mock MEMORY_TOOLS, GOAL_TOOLS, CUSTOM_DATA_TOOLS, PERSONAL_DATA_TOOLS from core

@@ -289,6 +289,7 @@ export function initToolSourceMappings(tools: {
   planNames: string[];
   heartbeatNames: string[];
   extensionNames?: string[];
+  soulCommunicationNames?: string[];
 }) {
   addGatewayTools(tools.memoryNames, 'routes/memories.ts', 'executeMemoryTool');
   addGatewayTools(tools.goalNames, 'routes/goals.ts', 'executeGoalTool');
@@ -303,6 +304,13 @@ export function initToolSourceMappings(tools: {
   addGatewayTools(tools.heartbeatNames, 'tools/heartbeat-tools.ts', 'executeHeartbeatTool');
   if (tools.extensionNames?.length) {
     addGatewayTools(tools.extensionNames, 'tools/extension-tools.ts', 'executeExtensionTool');
+  }
+  if (tools.soulCommunicationNames?.length) {
+    addGatewayTools(
+      tools.soulCommunicationNames,
+      'tools/soul-communication-tools.ts',
+      'executeSoulCommunicationTool'
+    );
   }
 }
 

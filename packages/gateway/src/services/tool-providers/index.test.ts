@@ -178,6 +178,8 @@ vi.mock('../../tools/index.js', () => ({
   executeHeartbeatTool: mocks.executeHeartbeatTool,
   EXTENSION_TOOLS: mocks.EXTENSION_TOOLS,
   executeExtensionTool: mocks.executeExtensionTool,
+  SOUL_COMMUNICATION_TOOLS: [],
+  executeSoulCommunicationTool: vi.fn(),
 }));
 
 vi.mock('../config-tools.js', () => ({

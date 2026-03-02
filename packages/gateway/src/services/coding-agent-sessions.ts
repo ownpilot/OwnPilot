@@ -591,7 +591,6 @@ export class CodingAgentSessionManager {
 
 /** Strip ANSI escape codes from output text */
 function stripAnsi(text: string): string {
-   
   return text.replace(/\x1B\[[0-9;]*[A-Za-z]/g, '').replace(/\x1B\][^\x07]*\x07/g, '');
 }
 

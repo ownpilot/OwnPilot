@@ -25,6 +25,8 @@ import {
   executeHeartbeatTool,
   EXTENSION_TOOLS,
   executeExtensionTool,
+  SOUL_COMMUNICATION_TOOLS,
+  executeSoulCommunicationTool,
   CODING_AGENT_TOOLS,
   executeCodingAgentTool,
   CLI_TOOL_TOOLS,
@@ -408,6 +410,20 @@ export function createEdgeToolProvider(userId: string): ToolProvider {
       EDGE_TOOLS.map((def) => ({
         definition: def,
         executor: wrapGatewayExecutor(def, executeEdgeTool, userId),
+      })),
+  };
+}
+
+/**
+ * Create a provider for soul communication tools (requires userId).
+ */
+export function createSoulCommunicationToolProvider(userId: string): ToolProvider {
+  return {
+    name: 'soul-communication',
+    getTools: () =>
+      SOUL_COMMUNICATION_TOOLS.map((def) => ({
+        definition: def,
+        executor: wrapGatewayExecutor(def, executeSoulCommunicationTool, userId),
       })),
   };
 }

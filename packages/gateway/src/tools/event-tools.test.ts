@@ -218,7 +218,10 @@ describe('event-tools', () => {
       const result = await executeEventTool('list_event_categories', {});
 
       expect(result.success).toBe(true);
-      const categories = (result.result as Record<string, unknown>).categories as Record<string, unknown>;
+      const categories = (result.result as Record<string, unknown>).categories as Record<
+        string,
+        unknown
+      >;
       expect(categories).toHaveProperty('agent');
       expect(categories).toHaveProperty('memory');
       expect(categories).toHaveProperty('trigger');

@@ -346,7 +346,12 @@ export class SubagentManager {
         managed.session.durationMs =
           managed.session.completedAt.getTime() - managed.session.spawnedAt.getTime();
 
-        log.error('Subagent execution error', { subagentId: id, name: managed.session.name, parentId: managed.session.parentId, error: managed.session.error });
+        log.error('Subagent execution error', {
+          subagentId: id,
+          name: managed.session.name,
+          parentId: managed.session.parentId,
+          error: managed.session.error,
+        });
 
         this.persistSession(managed.session);
         this.emitCompleted(managed.session);
@@ -355,7 +360,10 @@ export class SubagentManager {
 
   private persistSession(session: SubagentSession): void {
     this.repo.saveExecution(session).catch((err) => {
-      log.error('Failed to persist subagent history', { subagentId: session.id, error: getErrorMessage(err) });
+      log.error('Failed to persist subagent history', {
+        subagentId: session.id,
+        error: getErrorMessage(err),
+      });
     });
   }
 

@@ -42,7 +42,6 @@ import {
   resetToolPermissionService,
 } from './tool-permission-service.js';
 
-
 // Access mocks
 const { getEnabledToolGroupIds } = await import('../routes/settings.js');
 const { cliToolPoliciesRepo } = await import('../db/repositories/cli-tool-policies.js');
