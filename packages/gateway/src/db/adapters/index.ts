@@ -16,6 +16,7 @@ import { getLog } from '../../services/log.js';
 const log = getLog('DbAdapter');
 
 let adapter: DatabaseAdapter | null = null;
+let adapterPromise: Promise<DatabaseAdapter> | null = null;
 let schemaInitialized = false;
 
 /**
@@ -40,10 +41,21 @@ export async function createAdapter(config?: DatabaseConfig): Promise<DatabaseAd
  * Creates one if not exists
  */
 export async function getAdapter(): Promise<DatabaseAdapter> {
-  if (!adapter) {
-    adapter = await createAdapter();
+  if (adapter) return adapter;
+
+  // Use a promise lock to prevent duplicate initialization under concurrent calls
+  if (!adapterPromise) {
+    adapterPromise = createAdapter()
+      .then((a) => {
+        adapter = a;
+        return a;
+      })
+      .catch((err) => {
+        adapterPromise = null;
+        throw err;
+      });
   }
-  return adapter;
+  return adapterPromise;
 }
 
 /**
@@ -76,5 +88,6 @@ export async function closeAdapter(): Promise<void> {
   if (adapter) {
     await adapter.close();
     adapter = null;
+    adapterPromise = null;
   }
 }

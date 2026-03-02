@@ -397,22 +397,35 @@ export class CodingAgentSessionManager {
   // Cleanup
   // ===========================================================================
 
-  /** Stop cleanup timer (for graceful shutdown) */
+  /** Stop cleanup timer and terminate all sessions (for graceful shutdown) */
   stop(): void {
     if (this.cleanupTimer) {
       clearInterval(this.cleanupTimer);
       this.cleanupTimer = null;
     }
 
-    // Terminate all active sessions
+    // Terminate all active sessions with SIGTERM then SIGKILL fallback
     for (const managed of this.sessions.values()) {
       if (managed.pty) {
         try {
           managed.pty.kill('SIGTERM');
-          managed.pty.dispose();
         } catch {
-          // Best effort
+          // Process already dead
         }
+        // Schedule a SIGKILL fallback if process doesn't exit in 5 seconds
+        const pty = managed.pty;
+        setTimeout(() => {
+          try {
+            pty.kill('SIGKILL');
+          } catch {
+            // Already dead
+          }
+          try {
+            pty.dispose();
+          } catch {
+            // Best effort
+          }
+        }, 5000).unref();
         managed.pty = null;
       }
     }

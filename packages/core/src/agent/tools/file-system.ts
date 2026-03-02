@@ -77,6 +77,11 @@ async function isPathAllowedAsync(filePath: string, workspaceDir?: string): Prom
       resolvedPath = path.normalize(targetPath);
     }
 
+    // Reject null bytes and other injection attempts
+    if (resolvedPath.includes('\0')) {
+      return false;
+    }
+
     // Self-protection: NEVER allow access to OwnPilot's own files
     if (isOwnPilotPath(resolvedPath)) {
       return false;
@@ -87,8 +92,15 @@ async function isPathAllowedAsync(filePath: string, workspaceDir?: string): Prom
     for (const allowed of allowedPaths) {
       const resolvedAllowed = path.resolve(allowed);
 
-      // Check exact match or proper subdirectory (with path separator)
-      if (resolvedPath === resolvedAllowed || resolvedPath.startsWith(resolvedAllowed + path.sep)) {
+      // Normalize separators for cross-platform comparison (Windows backslash → forward slash)
+      const normalizedPath = resolvedPath.replace(/\\/g, '/');
+      const normalizedAllowed = resolvedAllowed.replace(/\\/g, '/');
+
+      // Check exact match or proper subdirectory (with forward slash separator)
+      if (
+        normalizedPath === normalizedAllowed ||
+        normalizedPath.startsWith(normalizedAllowed + '/')
+      ) {
         return true;
       }
     }

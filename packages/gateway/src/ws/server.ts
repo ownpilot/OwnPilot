@@ -34,6 +34,31 @@ import { getLog } from '../services/log.js';
 
 const log = getLog('WebSocket');
 
+/** Rate limiter for WS auth attempts per IP */
+const authAttempts = new Map<string, { count: number; resetAt: number }>();
+const WS_AUTH_MAX_ATTEMPTS = 10;
+const WS_AUTH_WINDOW_MS = 60_000;
+
+function isAuthRateLimited(clientIp: string): boolean {
+  const now = Date.now();
+  const attempts = authAttempts.get(clientIp);
+  if (attempts && attempts.resetAt > now) {
+    if (attempts.count >= WS_AUTH_MAX_ATTEMPTS) {
+      return true;
+    }
+    attempts.count++;
+  } else {
+    authAttempts.set(clientIp, { count: 1, resetAt: now + WS_AUTH_WINDOW_MS });
+  }
+  // Periodic cleanup (every 100 entries)
+  if (authAttempts.size > 100) {
+    for (const [ip, entry] of authAttempts) {
+      if (entry.resetAt <= now) authAttempts.delete(ip);
+    }
+  }
+  return false;
+}
+
 /**
  * Validate a WebSocket authentication token.
  * Reads API_KEYS from env (same keys used for HTTP auth).
@@ -363,6 +388,15 @@ export class WSGateway {
       const url = new URL(request.url ?? '/', `http://${request.headers.host}`);
 
       if (url.pathname === this.config.path) {
+        // Rate limit auth attempts per IP
+        const clientIp = request.socket.remoteAddress ?? 'unknown';
+        if (isAuthRateLimited(clientIp)) {
+          log.warn('WebSocket auth rate limited', { clientIp });
+          socket.write('HTTP/1.1 429 Too Many Requests\r\n\r\n');
+          socket.destroy();
+          return;
+        }
+
         // Authenticate before upgrading: token via query param or Authorization header
         const token = url.searchParams.get('token') ?? null;
         if (!validateWsToken(token)) {
@@ -439,6 +473,14 @@ export class WSGateway {
       return;
     }
 
+    // Rate limit auth attempts per IP
+    const clientIp = request.socket.remoteAddress ?? 'unknown';
+    if (isAuthRateLimited(clientIp)) {
+      log.warn('WebSocket auth rate limited', { clientIp });
+      socket.close(1008, 'Rate limited');
+      return;
+    }
+
     // Authenticate (standalone mode — upgrade handler already checks for attachToServer mode)
     const url = new URL(request.url ?? '/', `http://${request.headers.host}`);
     const token = url.searchParams.get('token') ?? null;
@@ -511,7 +553,7 @@ export class WSGateway {
         this.clientHandler
           .process(eventType, message.payload as ClientEvents[typeof eventType], sessionId)
           .catch((error) => {
-            log.error('Error processing event', { eventType, error });
+            log.error('Error processing event', { eventType, error, sessionId });
             this.sendError(sessionId, 'HANDLER_ERROR', 'Failed to process event');
           });
       } else {
@@ -1126,6 +1168,11 @@ export class WSGateway {
       });
     });
   }
+}
+
+/** Reset auth rate limiter state (for tests) */
+export function resetAuthRateLimit(): void {
+  authAttempts.clear();
 }
 
 /**

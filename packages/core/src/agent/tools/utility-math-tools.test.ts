@@ -146,12 +146,9 @@ describe('calculateExecutor', () => {
     expect(parse(result).result).toBe(4);
   });
 
-  it('should reject round() due to "d" not in validation regex', async () => {
-    // BUG: The validator regex does not include 'd', so round() is rejected
-    // despite being defined in mathFunctions. Math.round(3.5) → strip 'Math.' →
-    // 'round(3.5)' → 'd' fails validation.
+  it('should calculate round(3.5)', async () => {
     const result = await calculateExecutor({ expression: 'round(3.5)' });
-    expect(result.isError).toBe(true);
+    expect(parse(result).result).toBe(4);
   });
 
   it('should calculate exp(0)', async () => {
@@ -173,20 +170,22 @@ describe('calculateExecutor', () => {
 
   // --- Logarithms ---
 
-  it('should compute log(100) as Math.log (natural log, not log10)', async () => {
-    // BUG: Despite mapping log→Math.log10 in mathFunctions, the replacement
-    // uses the key name: Math.${name}() → Math.log() which is natural log.
-    // So log(100) = Math.log(100) ≈ 4.6052, NOT Math.log10(100) = 2.
+  it('should compute log(100) as natural logarithm', async () => {
     const result = await calculateExecutor({ expression: 'log(100)' });
     const data = parse(result);
     expect(data.result).toBeCloseTo(4.6052, 4);
   });
 
-  it('should error on ln(e) because Math.ln does not exist', async () => {
-    // BUG: ln(e) → Math.ln(Math.E) but Math.ln is not a real JS function.
-    // The replacement uses Math.${name} with name='ln', which doesn't exist.
+  it('should compute log10(100) as base-10 logarithm', async () => {
+    const result = await calculateExecutor({ expression: 'log10(100)' });
+    const data = parse(result);
+    expect(data.result).toBe(2);
+  });
+
+  it('should compute ln(e) as natural log (alias for log)', async () => {
     const result = await calculateExecutor({ expression: 'ln(e)' });
-    expect(result.isError).toBe(true);
+    const data = parse(result);
+    expect(data.result).toBeCloseTo(1, 4);
   });
 
   // --- Precision parameter ---

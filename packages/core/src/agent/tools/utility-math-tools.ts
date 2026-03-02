@@ -17,7 +17,7 @@ import { getErrorMessage } from '../../services/error-utils.js';
 export const calculateTool: ToolDefinition = {
   name: 'calculate',
   brief: 'Evaluate math expressions with functions and percentages',
-  description: `Perform mathematical calculations. Call this whenever the user asks to compute, calculate, or do math. Supports arithmetic (+,-,*,/), percentages ("15% of 250"), powers (2^10), and functions (sqrt, sin, cos, log, abs, floor, ceil, round). Returns the numeric result.`,
+  description: `Perform mathematical calculations. Call this whenever the user asks to compute, calculate, or do math. Supports arithmetic (+,-,*,/), percentages ("15% of 250"), powers (2^10), and functions (sqrt, sin, cos, tan, log, log10, ln, abs, floor, ceil, round, exp). Returns the numeric result.`,
   category: 'Utilities',
   parameters: {
     type: 'object',
@@ -53,24 +53,27 @@ export const calculateExecutor: ToolExecutor = async (args): Promise<ToolExecuti
     expr = expr.replace(/\^/g, '**');
 
     // Handle common math functions
-    const mathFunctions: Record<string, (x: number) => number> = {
-      sqrt: Math.sqrt,
-      sin: Math.sin,
-      cos: Math.cos,
-      tan: Math.tan,
-      log: Math.log10,
-      ln: Math.log,
-      abs: Math.abs,
-      floor: Math.floor,
-      ceil: Math.ceil,
-      round: Math.round,
-      exp: Math.exp,
+    // Map user-facing function names to Math.* method names
+    // Note: Math.ln doesn't exist in JS — both log and ln map to Math.log (natural log)
+    const mathFunctionMap: Record<string, string> = {
+      sqrt: 'sqrt',
+      sin: 'sin',
+      cos: 'cos',
+      tan: 'tan',
+      log: 'log', // natural logarithm (standard convention)
+      log10: 'log10', // base-10 logarithm (explicit)
+      ln: 'log', // alias for natural log → Math.log
+      abs: 'abs',
+      floor: 'floor',
+      ceil: 'ceil',
+      round: 'round',
+      exp: 'exp',
     };
 
-    // Replace function calls
-    for (const [name, _fn] of Object.entries(mathFunctions)) {
+    // Replace function calls with their Math.* equivalents
+    for (const [name, mathMethod] of Object.entries(mathFunctionMap)) {
       const regex = new RegExp(`${name}\\s*\\(([^)]+)\\)`, 'gi');
-      expr = expr.replace(regex, `Math.${name}($1)`);
+      expr = expr.replace(regex, `Math.${mathMethod}($1)`);
     }
 
     // Handle pi and e constants
@@ -79,7 +82,7 @@ export const calculateExecutor: ToolExecutor = async (args): Promise<ToolExecuti
 
     // Validate expression (only allow safe characters)
     if (
-      !/^[0-9+\-*/().%\s,Math.PIELOGSQRTSINCOSTABNFLRCEUXP]+$/i.test(expr.replace(/Math\./g, ''))
+      !/^[0-9+\-*/().%\s,Math.PIELOGSQRTSINCOSTABNFLRCEUDXP]+$/i.test(expr.replace(/Math\./g, ''))
     ) {
       return {
         content: JSON.stringify({ error: 'Invalid characters in expression' }),

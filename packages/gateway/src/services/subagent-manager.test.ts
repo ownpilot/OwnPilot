@@ -366,6 +366,8 @@ describe('SubagentManager', () => {
 
   describe('dispose', () => {
     it('stops the cleanup timer', () => {
+      // Flush the deferred setImmediate(() => this.startCleanup()) from constructor
+      vi.advanceTimersByTime(0);
       const spy = vi.spyOn(global, 'clearInterval');
       manager.dispose();
       expect(spy).toHaveBeenCalled();
