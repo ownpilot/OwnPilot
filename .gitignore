@@ -53,6 +53,8 @@ data/
 !packages/gateway/data/example-skills/
 !packages/gateway/data/example-skills/*/
 !packages/gateway/data/example-skills/**/*
+!packages/ui/src/**/data/
+!packages/ui/src/**/data/*.ts
 *.db
 *.db-shm
 *.db-wal

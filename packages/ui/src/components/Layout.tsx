@@ -47,7 +47,6 @@ import {
   Terminal,
   ShieldCheck,
   Send,
-  Repeat,
   MonitorCheck,
   LayoutTemplate,
 } from './icons';
@@ -110,7 +109,7 @@ const navGroups: NavGroup[] = [
       { to: '/plans', icon: ListChecks, label: 'Plans' },
       { to: '/triggers', icon: Zap, label: 'Triggers' },
       { to: '/workflows', icon: GitBranch, label: 'Workflows' },
-      { to: '/background-agents', icon: Repeat, label: 'Background Agents' },
+      { to: '/autonomous', icon: Bot, label: 'Autonomous Agents' },
       { to: '/artifacts', icon: LayoutTemplate, label: 'Artifacts' },
       { to: '/approvals', icon: ShieldCheck, label: 'Approvals' },
       { to: '/autonomy', icon: Shield, label: 'Autonomy' },

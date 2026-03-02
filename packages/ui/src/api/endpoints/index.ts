@@ -138,6 +138,17 @@ export type {
   SkillPermissionData,
   SkillUpdateInfo,
 } from './skills';
+export { soulsApi, crewsApi, agentMessagesApi, heartbeatLogsApi } from './souls';
+export type {
+  AgentSoul,
+  SoulVersion,
+  AgentCrew,
+  CrewMember,
+  AgentMessage as SoulAgentMessage,
+  HeartbeatLog,
+  HeartbeatStats,
+  CrewTemplate,
+} from './souls';
 export { edgeApi } from './edge';
 export type {
   EdgeDevice,

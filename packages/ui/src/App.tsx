@@ -145,8 +145,15 @@ const SecurityPage = lazy(() =>
 const SecurityDashboardPage = lazy(() =>
   import('./pages/SecurityDashboardPage').then((m) => ({ default: m.SecurityDashboardPage }))
 );
-const BackgroundAgentsPage = lazy(() =>
-  import('./pages/BackgroundAgentsPage').then((m) => ({ default: m.BackgroundAgentsPage }))
+const AutonomousHubPage = lazy(() =>
+  import('./pages/autonomous/AutonomousHubPage').then((m) => ({
+    default: m.AutonomousHubPage,
+  }))
+);
+const AgentProfilePage = lazy(() =>
+  import('./pages/autonomous/AgentProfilePage').then((m) => ({
+    default: m.AgentProfilePage,
+  }))
 );
 const EventMonitorPage = lazy(() =>
   import('./pages/EventMonitorPage').then((m) => ({ default: m.EventMonitorPage }))
@@ -221,8 +228,15 @@ export function App() {
         <Route path="custom-data" element={page(<CustomDataPage />)} />
         <Route path="data-browser" element={page(<DataBrowserPage />)} />
         <Route path="coding-agents" element={page(<CodingAgentsPage />)} />
-        <Route path="background-agents" element={page(<BackgroundAgentsPage />)} />
+        <Route path="autonomous" element={page(<AutonomousHubPage />)} />
+        <Route path="autonomous/agent/:id" element={page(<AgentProfilePage />)} />
         <Route path="artifacts" element={page(<ArtifactsPage />)} />
+        {/* Old autonomous routes → redirect to unified hub */}
+        <Route path="background-agents" element={<Navigate to="/autonomous" replace />} />
+        <Route path="crews" element={<Navigate to="/autonomous?tab=crews" replace />} />
+        <Route path="souls" element={<Navigate to="/autonomous" replace />} />
+        <Route path="agent-comms" element={<Navigate to="/autonomous?tab=messages" replace />} />
+        <Route path="heartbeat-logs" element={<Navigate to="/autonomous?tab=activity" replace />} />
         <Route path="event-monitor" element={page(<EventMonitorPage />)} />
         <Route path="channels" element={page(<ChannelsPage />)} />
         <Route path="inbox" element={<Navigate to="/history" replace />} />
