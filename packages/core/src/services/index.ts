@@ -277,6 +277,18 @@ export type {
   ArtifactQuery,
 } from './artifact-service.js';
 
+// Edge Service
+export type { IEdgeService } from './edge-service.js';
+export type {
+  EdgeDevice,
+  EdgeCommand,
+  EdgeTelemetry,
+  RegisterDeviceInput,
+  UpdateDeviceInput,
+  EdgeDeviceQuery,
+  EdgeCommandInput,
+} from './edge-service.js';
+
 // Config Center
 export * from './config-center.js';
 

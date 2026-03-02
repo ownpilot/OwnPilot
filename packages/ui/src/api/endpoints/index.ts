@@ -138,6 +138,22 @@ export type {
   SkillPermissionData,
   SkillUpdateInfo,
 } from './skills';
+export { edgeApi } from './edge';
+export type {
+  EdgeDevice,
+  EdgeCommand,
+  EdgeTelemetry,
+  EdgeSensor,
+  EdgeActuator,
+  EdgeDeviceType,
+  EdgeProtocol,
+  EdgeDeviceStatus,
+  EdgeCommandStatus,
+  RegisterDeviceInput as EdgeRegisterInput,
+  UpdateDeviceInput as EdgeUpdateInput,
+  EdgeDeviceListQuery,
+  MqttStatus,
+} from './edge';
 export type {
   Artifact,
   ArtifactVersion,

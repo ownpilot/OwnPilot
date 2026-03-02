@@ -71,6 +71,9 @@ export * from './security/code-analyzer.js';
 // Channels (unified multi-platform messaging)
 export * from './channels/index.js';
 
+// Edge (IoT/edge device delegation)
+export * from './edge/index.js';
+
 // Version — derived from package.json so it stays in sync
 import { createRequire } from 'node:module';
 const _require = createRequire(import.meta.url);

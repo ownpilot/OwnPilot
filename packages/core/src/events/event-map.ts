@@ -523,6 +523,49 @@ export interface PulseCompletedData {
 }
 
 // ============================================================================
+// Edge Event Data
+// ============================================================================
+
+export interface EdgeDeviceRegisteredData {
+  deviceId: string;
+  name: string;
+  type: string;
+  userId: string;
+}
+
+export interface EdgeDeviceRemovedData {
+  deviceId: string;
+  userId: string;
+}
+
+export interface EdgeDeviceStatusData {
+  deviceId: string;
+  status: 'online' | 'offline' | 'error';
+  userId: string;
+}
+
+export interface EdgeTelemetryEventData {
+  deviceId: string;
+  sensorId: string;
+  value: unknown;
+  userId: string;
+}
+
+export interface EdgeCommandSentData {
+  commandId: string;
+  deviceId: string;
+  commandType: string;
+  userId: string;
+}
+
+export interface EdgeCommandCompletedData {
+  commandId: string;
+  deviceId: string;
+  status: string;
+  userId: string;
+}
+
+// ============================================================================
 // Chat Event Data
 // ============================================================================
 
@@ -651,6 +694,14 @@ export interface EventMap {
   'pulse.started': PulseStartedData;
   'pulse.stage': PulseStageData;
   'pulse.completed': PulseCompletedData;
+
+  // --- Edge Events ---
+  'edge.device.registered': EdgeDeviceRegisteredData;
+  'edge.device.removed': EdgeDeviceRemovedData;
+  'edge.device.status': EdgeDeviceStatusData;
+  'edge.telemetry': EdgeTelemetryEventData;
+  'edge.command.sent': EdgeCommandSentData;
+  'edge.command.completed': EdgeCommandCompletedData;
 
   // --- Chat Events ---
   'chat.completed': ChatCompletedData;

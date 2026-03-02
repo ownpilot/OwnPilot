@@ -59,6 +59,8 @@ services:
       - RATE_LIMIT_DISABLED=${RATE_LIMIT_DISABLED:-false}
       - RATE_LIMIT_WINDOW_MS=${RATE_LIMIT_WINDOW_MS:-60000}
       - RATE_LIMIT_MAX=${RATE_LIMIT_MAX:-500}
+      # MQTT (Edge Delegation)
+      - MQTT_BROKER_URL=${MQTT_BROKER_URL:-}
       # Logging
       - LOG_LEVEL=${LOG_LEVEL:-info}
     volumes:
@@ -76,10 +78,29 @@ services:
         condition: service_healthy
         required: false
 
+  # Eclipse Mosquitto MQTT Broker (for Edge Delegation)
+  mosquitto:
+    image: eclipse-mosquitto:2
+    container_name: ownpilot-mosquitto
+    restart: unless-stopped
+    ports:
+      - '${MQTT_PORT:-1883}:1883'
+    volumes:
+      - mosquitto-data:/mosquitto/data
+      - mosquitto-log:/mosquitto/log
+    networks:
+      - ownpilot-network
+    profiles:
+      - mqtt
+
 volumes:
   gateway-data:
     driver: local
   postgres-data:
+    driver: local
+  mosquitto-data:
+    driver: local
+  mosquitto-log:
     driver: local
 
 networks:

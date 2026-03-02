@@ -42,6 +42,7 @@ import {
   createCliToolProvider,
   createBackgroundAgentToolProvider,
   createBrowserToolProvider,
+  createEdgeToolProvider,
 } from './tool-providers/index.js';
 import { createCustomToolsRepo } from '../db/repositories/custom-tools.js';
 import {
@@ -57,7 +58,11 @@ import { hasServiceRegistry, getServiceRegistry, Services } from '@ownpilot/core
 import type { IAuditService } from '@ownpilot/core';
 import { checkToolPermission } from './tool-permission-service.js';
 import type { ToolExecContext } from './permission-utils.js';
-import { checkPermission, getRequiredPermission, logPermissionDenied } from './extension-permissions.js';
+import {
+  checkPermission,
+  getRequiredPermission,
+  logPermissionDenied,
+} from './extension-permissions.js';
 import { getExtensionSandbox } from './extension-sandbox.js';
 import type { SkillPermission } from './extension-types.js';
 import { extensionsRepo } from '../db/repositories/extensions.js';
@@ -135,6 +140,7 @@ export function getSharedToolRegistry(userId = 'default'): ToolRegistry {
   tools.registerProvider(createCliToolProvider(userId));
   tools.registerProvider(createBackgroundAgentToolProvider(userId));
   tools.registerProvider(createBrowserToolProvider(userId));
+  tools.registerProvider(createEdgeToolProvider(userId));
 
   // Register plugin tools into the shared registry (source: 'plugin')
   initPluginToolsIntoRegistry(tools);
@@ -399,8 +405,9 @@ function syncExtensionToolsIntoRegistry(registry: ToolRegistry): void {
 
             const rec = extensionsRepo.getById(d.extensionId);
             const sandbox = rec?.manifest?.runtime?.sandbox === 'worker';
-            const perms = (rec?.settings as Record<string, unknown>)
-              ?.grantedPermissions as SkillPermission[] | undefined;
+            const perms = (rec?.settings as Record<string, unknown>)?.grantedPermissions as
+              | SkillPermission[]
+              | undefined;
 
             registry.register(
               {

@@ -252,7 +252,8 @@ export interface ServerEvents {
       | 'conversation'
       | 'mcp_server'
       | 'workflow'
-      | 'artifact';
+      | 'artifact'
+      | 'edge-device';
     action: 'created' | 'updated' | 'deleted';
     id?: string;
     count?: number;

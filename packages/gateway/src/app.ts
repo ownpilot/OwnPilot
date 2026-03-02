@@ -78,6 +78,7 @@ import {
   voiceRoutes,
   browserRoutes,
   skillsRoutes,
+  edgeRoutes,
 } from './routes/index.js';
 import {
   RATE_LIMIT_WINDOW_MS,
@@ -346,6 +347,9 @@ export function createApp(config: Partial<GatewayConfig> = {}): Hono {
   // Skills (npm discovery, install, permissions)
   app.route('/api/v1/skills', skillsRoutes);
 
+  // Edge devices (IoT/MQTT delegation)
+  app.route('/api/v1/edge', edgeRoutes);
+
   // Root route (API-only mode, when UI is not bundled)
   if (!UI_AVAILABLE) {
     app.get('/', (c) => {
@@ -442,6 +446,8 @@ export function createApp(config: Partial<GatewayConfig> = {}): Hono {
         browser: '/api/v1/browser',
         // Skills (npm discovery, install, permissions)
         skills: '/api/v1/skills',
+        // Edge devices (IoT/MQTT delegation)
+        edge: '/api/v1/edge',
         // Webhooks (external service callbacks, no auth required)
         webhooks: '/webhooks/telegram/:secret',
       },

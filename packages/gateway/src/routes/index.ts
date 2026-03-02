@@ -55,3 +55,4 @@ export { artifactsRoutes } from './artifacts.js';
 export { voiceRoutes } from './voice.js';
 export { browserRoutes } from './browser.js';
 export { skillsRoutes } from './skills.js';
+export { edgeRoutes } from './edge.js';

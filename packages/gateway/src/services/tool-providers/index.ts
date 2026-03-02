@@ -39,6 +39,8 @@ import {
   executeArtifactTool,
   BROWSER_TOOLS,
   executeBrowserTool,
+  EDGE_TOOLS,
+  executeEdgeTool,
 } from '../../tools/index.js';
 import { CONFIG_TOOLS, executeConfigTool } from '../config-tools.js';
 import { getErrorMessage } from '../../routes/helpers.js';
@@ -392,6 +394,20 @@ export function createBrowserToolProvider(userId: string): ToolProvider {
       BROWSER_TOOLS.map((def) => ({
         definition: def,
         executor: wrapGatewayExecutor(def, executeBrowserTool, userId),
+      })),
+  };
+}
+
+/**
+ * Create a provider for edge device tools (requires userId).
+ */
+export function createEdgeToolProvider(userId: string): ToolProvider {
+  return {
+    name: 'edge',
+    getTools: () =>
+      EDGE_TOOLS.map((def) => ({
+        definition: def,
+        executor: wrapGatewayExecutor(def, executeEdgeTool, userId),
       })),
   };
 }
