@@ -270,10 +270,7 @@ export class OrchestraEngine {
   // Strategy Implementations
   // --------------------------------------------------------------------------
 
-  private async executeSequential(
-    managed: ManagedExecution,
-    userId: string
-  ): Promise<void> {
+  private async executeSequential(managed: ManagedExecution, userId: string): Promise<void> {
     const { execution } = managed;
 
     for (const task of execution.plan.tasks) {
@@ -290,10 +287,7 @@ export class OrchestraEngine {
     }
   }
 
-  private async executeParallel(
-    managed: ManagedExecution,
-    userId: string
-  ): Promise<void> {
+  private async executeParallel(managed: ManagedExecution, userId: string): Promise<void> {
     const { execution } = managed;
 
     const promises = execution.plan.tasks.map((task) =>
@@ -418,9 +412,7 @@ export class OrchestraEngine {
 
       // Add results from dependency tasks
       if (task.dependsOn && task.dependsOn.length > 0) {
-        const depResults = execution.taskResults.filter((r) =>
-          task.dependsOn!.includes(r.taskId)
-        );
+        const depResults = execution.taskResults.filter((r) => task.dependsOn!.includes(r.taskId));
         if (depResults.length > 0) {
           contextParts.push('## Results from previous tasks:');
           for (const dr of depResults) {
@@ -540,11 +532,7 @@ export class OrchestraEngine {
 // Module-level helpers
 // ============================================================================
 
-function buildDelegationPrompt(
-  agentName: string,
-  agentSystemPrompt: string,
-  task: string
-): string {
+function buildDelegationPrompt(agentName: string, agentSystemPrompt: string, task: string): string {
   const parts: string[] = [];
 
   if (agentSystemPrompt) {
@@ -572,7 +560,10 @@ function extractPreferred(
   return typeof value === 'string' && value !== 'default' ? value : undefined;
 }
 
-function emitEvent(type: keyof import('@ownpilot/core').EventMap, data: Record<string, unknown>): void {
+function emitEvent(
+  type: keyof import('@ownpilot/core').EventMap,
+  data: Record<string, unknown>
+): void {
   try {
     const events = getEventSystem();
     events.emit(type, 'orchestra-engine', data);

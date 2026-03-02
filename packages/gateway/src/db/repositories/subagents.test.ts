@@ -170,7 +170,10 @@ describe('SubagentsRepository', () => {
     it('returns paginated history for a parent', async () => {
       mockAdapter.query
         .mockResolvedValueOnce([{ count: '2' }])
-        .mockResolvedValueOnce([makeHistoryRow(), makeHistoryRow({ id: 'sub-2', name: 'Analyze data' })]);
+        .mockResolvedValueOnce([
+          makeHistoryRow(),
+          makeHistoryRow({ id: 'sub-2', name: 'Analyze data' }),
+        ]);
 
       const result = await repo.getHistory('conv-1', 20, 0);
 
@@ -205,7 +208,9 @@ describe('SubagentsRepository', () => {
     });
 
     it('parses tool_calls JSON correctly', async () => {
-      mockAdapter.query.mockResolvedValueOnce([{ count: '1' }]).mockResolvedValueOnce([makeHistoryRow()]);
+      mockAdapter.query
+        .mockResolvedValueOnce([{ count: '1' }])
+        .mockResolvedValueOnce([makeHistoryRow()]);
 
       const result = await repo.getHistory('conv-1');
       expect(result.entries[0].toolCalls).toHaveLength(1);
@@ -214,7 +219,9 @@ describe('SubagentsRepository', () => {
     });
 
     it('parses tokens_used JSON correctly', async () => {
-      mockAdapter.query.mockResolvedValueOnce([{ count: '1' }]).mockResolvedValueOnce([makeHistoryRow()]);
+      mockAdapter.query
+        .mockResolvedValueOnce([{ count: '1' }])
+        .mockResolvedValueOnce([makeHistoryRow()]);
 
       const result = await repo.getHistory('conv-1');
       expect(result.entries[0].tokensUsed).toEqual({ prompt: 100, completion: 200 });
@@ -297,7 +304,9 @@ describe('SubagentsRepository', () => {
 
   describe('row mapping', () => {
     it('maps spawned_at and completed_at to Date objects', async () => {
-      mockAdapter.query.mockResolvedValueOnce([{ count: '1' }]).mockResolvedValueOnce([makeHistoryRow()]);
+      mockAdapter.query
+        .mockResolvedValueOnce([{ count: '1' }])
+        .mockResolvedValueOnce([makeHistoryRow()]);
 
       const result = await repo.getHistory('conv-1');
       const entry = result.entries[0];

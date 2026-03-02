@@ -103,7 +103,8 @@ skillsRoutes.post('/check-updates', async (c) => {
     const updates: { id: string; name: string; current: string; latest: string }[] = [];
 
     for (const ext of allExtensions) {
-      const npmPkg = ext.manifest.npm_package ?? (ext.settings as Record<string, unknown>).npmPackage;
+      const npmPkg =
+        ext.manifest.npm_package ?? (ext.settings as Record<string, unknown>).npmPackage;
       const npmVersion =
         ext.manifest.npm_version ?? (ext.settings as Record<string, unknown>).npmVersion;
       if (typeof npmPkg === 'string' && typeof npmVersion === 'string') {
@@ -145,7 +146,11 @@ skillsRoutes.get('/permissions/:id', (c) => {
     const ext = extensionsRepo.getById(id);
 
     if (!ext || ext.userId !== userId) {
-      return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Extension ${id} not found` }, 404);
+      return apiError(
+        c,
+        { code: ERROR_CODES.NOT_FOUND, message: `Extension ${id} not found` },
+        404
+      );
     }
 
     const declaredPermissions = ext.manifest.permissions ?? { required: [], optional: [] };
@@ -178,7 +183,11 @@ skillsRoutes.post('/permissions/:id', async (c) => {
 
     const ext = extensionsRepo.getById(id);
     if (!ext || ext.userId !== userId) {
-      return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Extension ${id} not found` }, 404);
+      return apiError(
+        c,
+        { code: ERROR_CODES.NOT_FOUND, message: `Extension ${id} not found` },
+        404
+      );
     }
 
     // Store granted permissions in settings

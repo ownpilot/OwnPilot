@@ -63,7 +63,9 @@ export const voiceApi = {
     });
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ error: { message: 'Transcription failed' } }));
+      const error = await response
+        .json()
+        .catch(() => ({ error: { message: 'Transcription failed' } }));
       throw new Error(error?.error?.message || `HTTP ${response.status}`);
     }
 

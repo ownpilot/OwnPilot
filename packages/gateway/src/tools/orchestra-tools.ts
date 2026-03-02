@@ -33,7 +33,8 @@ The delegated agent runs as a subagent with full tool access. By default, this t
     properties: {
       agent_name: {
         type: 'string',
-        description: 'Name of the agent to delegate to (e.g., "Code Assistant", "Research Assistant")',
+        description:
+          'Name of the agent to delegate to (e.g., "Code Assistant", "Research Assistant")',
       },
       task: {
         type: 'string',

@@ -664,35 +664,35 @@ Parent Agent (chat or background agent)
 
 ### LLM Tools
 
-| Tool | Description |
-|------|-------------|
-| `spawn_subagent` | Spawn an autonomous subagent for a specific task |
-| `check_subagent` | Check the status of a running subagent |
-| `get_subagent_result` | Get the final result of a completed subagent |
-| `cancel_subagent` | Cancel a running subagent |
-| `list_subagents` | List all subagents in the current session |
+| Tool                  | Description                                      |
+| --------------------- | ------------------------------------------------ |
+| `spawn_subagent`      | Spawn an autonomous subagent for a specific task |
+| `check_subagent`      | Check the status of a running subagent           |
+| `get_subagent_result` | Get the final result of a completed subagent     |
+| `cancel_subagent`     | Cancel a running subagent                        |
+| `list_subagents`      | List all subagents in the current session        |
 
 ### Session Lifecycle
 
-| State | Description |
-|-------|-------------|
-| `pending` | Created, waiting to start |
-| `running` | Actively executing |
-| `completed` | Finished successfully |
-| `failed` | Encountered an error |
-| `cancelled` | Cancelled by parent |
-| `timeout` | Exceeded time limit |
+| State       | Description               |
+| ----------- | ------------------------- |
+| `pending`   | Created, waiting to start |
+| `running`   | Actively executing        |
+| `completed` | Finished successfully     |
+| `failed`    | Encountered an error      |
+| `cancelled` | Cancelled by parent       |
+| `timeout`   | Exceeded time limit       |
 
 ### Budget & Limits
 
-| Setting | Default | Description |
-|---------|---------|-------------|
-| `maxConcurrent` | 5 | Max active subagents per parent |
-| `maxTotalSpawns` | 20 | Total spawn limit per session |
-| `maxTurns` | 20 | Max LLM round-trips per subagent |
-| `maxToolCalls` | 100 | Max tool invocations per subagent |
-| `timeoutMs` | 120,000 | Per-subagent timeout (2 min) |
-| Nesting depth | 2 | Subagents can spawn sub-subagents (1 level) |
+| Setting          | Default | Description                                 |
+| ---------------- | ------- | ------------------------------------------- |
+| `maxConcurrent`  | 5       | Max active subagents per parent             |
+| `maxTotalSpawns` | 20      | Total spawn limit per session               |
+| `maxTurns`       | 20      | Max LLM round-trips per subagent            |
+| `maxToolCalls`   | 100     | Max tool invocations per subagent           |
+| `timeoutMs`      | 120,000 | Per-subagent timeout (2 min)                |
+| Nesting depth    | 2       | Subagents can spawn sub-subagents (1 level) |
 
 ---
 
@@ -1155,13 +1155,13 @@ Sliding window algorithm with configurable window (default 60s), max requests (d
 
 ### Subagents
 
-| Method   | Endpoint                       | Description                     |
-| -------- | ------------------------------ | ------------------------------- |
-| `GET`    | `/api/v1/subagents`            | List active subagents           |
-| `POST`   | `/api/v1/subagents`            | Spawn a new subagent            |
-| `GET`    | `/api/v1/subagents/:id`        | Get subagent session/result     |
-| `DELETE` | `/api/v1/subagents/:id`        | Cancel a running subagent       |
-| `GET`    | `/api/v1/subagents/history`    | Paginated execution history     |
+| Method   | Endpoint                    | Description                 |
+| -------- | --------------------------- | --------------------------- |
+| `GET`    | `/api/v1/subagents`         | List active subagents       |
+| `POST`   | `/api/v1/subagents`         | Spawn a new subagent        |
+| `GET`    | `/api/v1/subagents/:id`     | Get subagent session/result |
+| `DELETE` | `/api/v1/subagents/:id`     | Cancel a running subagent   |
+| `GET`    | `/api/v1/subagents/history` | Paginated execution history |
 
 ### CLI Tools
 

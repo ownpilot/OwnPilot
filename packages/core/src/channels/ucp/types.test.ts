@@ -30,9 +30,7 @@ function makeMessage(overrides: Partial<UCPMessage> = {}): UCPMessage {
   };
 }
 
-function makeCapabilities(
-  overrides: Partial<UCPChannelCapabilities> = {}
-): UCPChannelCapabilities {
+function makeCapabilities(overrides: Partial<UCPChannelCapabilities> = {}): UCPChannelCapabilities {
   return {
     channel: 'sms',
     features: new Set(),
@@ -187,7 +185,10 @@ describe('adaptContent', () => {
       content: [
         { type: 'text', text: 'Hello', format: 'markdown' },
         { type: 'image', url: 'https://example.com/img.png', mimeType: 'image/png' },
-        { type: 'button_group', buttons: [{ id: '1', label: 'OK', action: 'callback' as const, value: 'ok' }] },
+        {
+          type: 'button_group',
+          buttons: [{ id: '1', label: 'OK', action: 'callback' as const, value: 'ok' }],
+        },
       ],
     });
     const cap = makeCapabilities(); // minimal features
@@ -204,7 +205,12 @@ describe('adaptContent', () => {
 
   it('does not mutate the original message', () => {
     const original = makeMessage({
-      content: [{ type: 'button_group', buttons: [{ id: '1', label: 'X', action: 'callback' as const, value: 'x' }] }],
+      content: [
+        {
+          type: 'button_group',
+          buttons: [{ id: '1', label: 'X', action: 'callback' as const, value: 'x' }],
+        },
+      ],
     });
     const cap = makeCapabilities();
 

@@ -36,10 +36,7 @@ export interface BridgeStore {
  * Function to send a UCPMessage to a specific channel instance.
  * Provided by the ChannelService during bridge setup.
  */
-export type BridgeSendFn = (
-  channelInstanceId: string,
-  msg: UCPMessage
-) => Promise<string>;
+export type BridgeSendFn = (channelInstanceId: string, msg: UCPMessage) => Promise<string>;
 
 // ============================================================================
 // Bridge Manager

@@ -101,9 +101,15 @@ function workerMain() {
 
       // Create callTool bridge — sends request to main thread, waits for response
       let callToolCounter = 0;
-      const pendingCalls = new Map<string, { resolve: (v: unknown) => void; reject: (e: Error) => void }>();
+      const pendingCalls = new Map<
+        string,
+        { resolve: (v: unknown) => void; reject: (e: Error) => void }
+      >();
 
-      const callToolBridge = (name: string, toolArgs: Record<string, unknown> = {}): Promise<unknown> => {
+      const callToolBridge = (
+        name: string,
+        toolArgs: Record<string, unknown> = {}
+      ): Promise<unknown> => {
         const requestId = `ct-${++callToolCounter}`;
         return new Promise((resolve, reject) => {
           pendingCalls.set(requestId, { resolve, reject });

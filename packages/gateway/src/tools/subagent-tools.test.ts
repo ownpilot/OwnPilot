@@ -168,11 +168,7 @@ describe('executeSubagentTool', () => {
     });
 
     it('returns error when task is missing', async () => {
-      const result = await executeSubagentTool(
-        'spawn_subagent',
-        { name: 'Test' },
-        'user-1'
-      );
+      const result = await executeSubagentTool('spawn_subagent', { name: 'Test' }, 'user-1');
 
       expect(result.success).toBe(false);
       expect(result.error).toContain('task');
@@ -402,9 +398,7 @@ describe('executeSubagentTool', () => {
 
     it('truncates long task descriptions', async () => {
       const longTask = 'A'.repeat(200);
-      mockService.listByParent.mockReturnValue([
-        makeSession({ task: longTask }),
-      ]);
+      mockService.listByParent.mockReturnValue([makeSession({ task: longTask })]);
 
       const result = await executeSubagentTool('list_subagents', {}, 'user-1', 'conv-1');
 

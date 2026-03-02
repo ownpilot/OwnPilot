@@ -36,14 +36,7 @@ const PERMISSION_TOOL_MAP: Record<SkillPermission, string[]> = {
     'add_goal_step',
     'update_goal_step',
   ],
-  tasks: [
-    'create_task',
-    'update_task',
-    'delete_task',
-    'list_tasks',
-    'get_task',
-    'complete_task',
-  ],
+  tasks: ['create_task', 'update_task', 'delete_task', 'list_tasks', 'get_task', 'complete_task'],
   contacts: [
     'create_contact',
     'update_contact',
@@ -52,21 +45,8 @@ const PERMISSION_TOOL_MAP: Record<SkillPermission, string[]> = {
     'search_contacts',
     'get_contact',
   ],
-  calendar: [
-    'create_event',
-    'update_event',
-    'delete_event',
-    'list_events',
-    'get_event',
-  ],
-  notes: [
-    'create_note',
-    'update_note',
-    'delete_note',
-    'list_notes',
-    'get_note',
-    'search_notes',
-  ],
+  calendar: ['create_event', 'update_event', 'delete_event', 'list_events', 'get_event'],
+  notes: ['create_note', 'update_note', 'delete_note', 'list_notes', 'get_note', 'search_notes'],
   'custom-data': [
     'create_table',
     'add_record',
@@ -95,12 +75,7 @@ const PERMISSION_TOOL_MAP: Record<SkillPermission, string[]> = {
     'add_plan_step',
     'update_plan_step',
   ],
-  network: [
-    'http_request',
-    'fetch_web_page',
-    'search_web',
-    'call_json_api',
-  ],
+  network: ['http_request', 'fetch_web_page', 'search_web', 'call_json_api'],
   browser: [
     'browse_web',
     'browser_click',
@@ -109,18 +84,8 @@ const PERMISSION_TOOL_MAP: Record<SkillPermission, string[]> = {
     'browser_screenshot',
     'browser_extract',
   ],
-  config: [
-    'get_config',
-    'set_config',
-    'list_config',
-  ],
-  expenses: [
-    'create_expense',
-    'update_expense',
-    'delete_expense',
-    'list_expenses',
-    'get_expense',
-  ],
+  config: ['get_config', 'set_config', 'list_config'],
+  expenses: ['create_expense', 'update_expense', 'delete_expense', 'list_expenses', 'get_expense'],
   bookmarks: [
     'create_bookmark',
     'update_bookmark',
@@ -197,9 +162,7 @@ export function getPermissionDescription(permission: SkillPermission): string {
 /**
  * Categorize permissions by sensitivity level.
  */
-export function getPermissionSensitivity(
-  permission: SkillPermission
-): 'low' | 'medium' | 'high' {
+export function getPermissionSensitivity(permission: SkillPermission): 'low' | 'medium' | 'high' {
   const high: SkillPermission[] = ['network', 'browser', 'config'];
   const medium: SkillPermission[] = ['contacts', 'calendar', 'expenses', 'custom-data', 'triggers'];
   if (high.includes(permission)) return 'high';

@@ -53,7 +53,10 @@ voiceRoutes.post('/transcribe', async (c) => {
     if (!file || typeof file === 'string') {
       return apiError(
         c,
-        { code: ERROR_CODES.VALIDATION_ERROR, message: 'Audio file is required (multipart field "file")' },
+        {
+          code: ERROR_CODES.VALIDATION_ERROR,
+          message: 'Audio file is required (multipart field "file")',
+        },
         400
       );
     }
@@ -114,11 +117,7 @@ voiceRoutes.post('/synthesize', async (c) => {
     }>();
 
     if (!body.text?.trim()) {
-      return apiError(
-        c,
-        { code: ERROR_CODES.VALIDATION_ERROR, message: 'text is required' },
-        400
-      );
+      return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: 'text is required' }, 400);
     }
 
     if (body.text.length > 4096) {

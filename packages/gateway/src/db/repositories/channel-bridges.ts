@@ -54,10 +54,7 @@ export class ChannelBridgesRepository extends BaseRepository implements BridgeSt
   }
 
   async getById(id: string): Promise<UCPBridgeConfig | null> {
-    const row = await this.queryOne<BridgeRow>(
-      'SELECT * FROM channel_bridges WHERE id = $1',
-      [id]
-    );
+    const row = await this.queryOne<BridgeRow>('SELECT * FROM channel_bridges WHERE id = $1', [id]);
     return row ? rowToBridge(row) : null;
   }
 
@@ -72,9 +69,7 @@ export class ChannelBridgesRepository extends BaseRepository implements BridgeSt
     return rows.map(rowToBridge);
   }
 
-  async save(
-    config: Omit<UCPBridgeConfig, 'id' | 'createdAt'>
-  ): Promise<UCPBridgeConfig> {
+  async save(config: Omit<UCPBridgeConfig, 'id' | 'createdAt'>): Promise<UCPBridgeConfig> {
     const id = generateId('bridge');
     const now = new Date();
 

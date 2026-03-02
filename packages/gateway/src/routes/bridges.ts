@@ -23,9 +23,7 @@ bridgeRoutes.get('/', async (c) => {
     const repo = getRepo();
     const channelId = c.req.query('channelId');
 
-    const bridges = channelId
-      ? await repo.getByChannel(channelId)
-      : await repo.getAll();
+    const bridges = channelId ? await repo.getByChannel(channelId) : await repo.getAll();
 
     return apiResponse(c, bridges);
   } catch (e) {
@@ -65,20 +63,30 @@ bridgeRoutes.post('/', async (c) => {
     if (!sourceChannelId || !targetChannelId) {
       return apiError(
         c,
-        { code: ERROR_CODES.VALIDATION_ERROR, message: 'sourceChannelId and targetChannelId are required' },
+        {
+          code: ERROR_CODES.VALIDATION_ERROR,
+          message: 'sourceChannelId and targetChannelId are required',
+        },
         400
       );
     }
 
     if (sourceChannelId === targetChannelId) {
-      return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: 'Cannot bridge a channel to itself' }, 400);
+      return apiError(
+        c,
+        { code: ERROR_CODES.VALIDATION_ERROR, message: 'Cannot bridge a channel to itself' },
+        400
+      );
     }
 
     const validDirections = ['source_to_target', 'target_to_source', 'both'];
     if (direction && !validDirections.includes(direction)) {
       return apiError(
         c,
-        { code: ERROR_CODES.VALIDATION_ERROR, message: `Invalid direction. Must be one of: ${validDirections.join(', ')}` },
+        {
+          code: ERROR_CODES.VALIDATION_ERROR,
+          message: `Invalid direction. Must be one of: ${validDirections.join(', ')}`,
+        },
         400
       );
     }
@@ -88,7 +96,14 @@ bridgeRoutes.post('/', async (c) => {
       try {
         new RegExp(filterPattern);
       } catch {
-        return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: 'Invalid filter pattern (must be valid regex)' }, 400);
+        return apiError(
+          c,
+          {
+            code: ERROR_CODES.VALIDATION_ERROR,
+            message: 'Invalid filter pattern (must be valid regex)',
+          },
+          400
+        );
       }
     }
 
@@ -128,7 +143,14 @@ bridgeRoutes.patch('/:id', async (c) => {
       try {
         new RegExp(body.filterPattern);
       } catch {
-        return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: 'Invalid filter pattern (must be valid regex)' }, 400);
+        return apiError(
+          c,
+          {
+            code: ERROR_CODES.VALIDATION_ERROR,
+            message: 'Invalid filter pattern (must be valid regex)',
+          },
+          400
+        );
       }
     }
 

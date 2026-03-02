@@ -90,7 +90,9 @@ export class VoiceService {
   ): Promise<TranscribeResult> {
     const config = await resolveAudioConfig();
     if (!config) {
-      throw new Error('Voice service not configured. Set up an AI provider or Audio Service in Config Center.');
+      throw new Error(
+        'Voice service not configured. Set up an AI provider or Audio Service in Config Center.'
+      );
     }
 
     const result: WhisperResult = await callWhisperTranscribe(
@@ -115,7 +117,9 @@ export class VoiceService {
   async synthesize(text: string, opts?: SynthesizeOptions): Promise<SynthesizeResult> {
     const config = await resolveAudioConfig();
     if (!config) {
-      throw new Error('Voice service not configured. Set up an AI provider or Audio Service in Config Center.');
+      throw new Error(
+        'Voice service not configured. Set up an AI provider or Audio Service in Config Center.'
+      );
     }
 
     const voice = opts?.voice || 'alloy';

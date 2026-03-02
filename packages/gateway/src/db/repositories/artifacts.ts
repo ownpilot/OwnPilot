@@ -78,9 +78,7 @@ function rowToVersion(row: ArtifactVersionRow): ArtifactVersion {
     artifactId: row.artifact_id,
     version: row.version,
     content: row.content,
-    dataBindings: row.data_bindings
-      ? parseJsonField<DataBinding[]>(row.data_bindings, [])
-      : null,
+    dataBindings: row.data_bindings ? parseJsonField<DataBinding[]>(row.data_bindings, []) : null,
     createdAt: new Date(row.created_at),
   };
 }
@@ -191,10 +189,10 @@ export class ArtifactsRepository extends BaseRepository {
    * Delete an artifact
    */
   async delete(id: string): Promise<boolean> {
-    const result = await this.execute(
-      'DELETE FROM artifacts WHERE id = $1 AND user_id = $2',
-      [id, this.userId]
-    );
+    const result = await this.execute('DELETE FROM artifacts WHERE id = $1 AND user_id = $2', [
+      id,
+      this.userId,
+    ]);
     return result.changes > 0;
   }
 

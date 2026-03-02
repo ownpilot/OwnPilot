@@ -258,10 +258,7 @@ export interface UCPBridgeConfig {
  * - Text truncated to channel's maxTextLength
  * - Cards → text blocks if channel lacks 'cards'
  */
-export function adaptContent(
-  msg: UCPMessage,
-  capabilities: UCPChannelCapabilities
-): UCPMessage {
+export function adaptContent(msg: UCPMessage, capabilities: UCPChannelCapabilities): UCPMessage {
   const adapted: UCPMessage = {
     ...msg,
     content: msg.content.map((c) => adaptBlock(c, capabilities)),

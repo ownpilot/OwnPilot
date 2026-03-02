@@ -100,11 +100,7 @@ export interface IOrchestraService {
    * Execute an orchestra plan.
    * Returns execution result with all task outcomes.
    */
-  executePlan(
-    plan: OrchestraPlan,
-    parentId: string,
-    userId: string
-  ): Promise<OrchestraExecution>;
+  executePlan(plan: OrchestraPlan, parentId: string, userId: string): Promise<OrchestraExecution>;
 
   /** Get a running or completed execution by ID */
   getExecution(executionId: string): OrchestraExecution | null;

@@ -59,11 +59,7 @@ browserRoutes.post('/action', async (c) => {
     const actionType = body.type as string;
 
     if (!actionType) {
-      return apiError(
-        c,
-        { code: ERROR_CODES.VALIDATION_ERROR, message: 'type is required' },
-        400
-      );
+      return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: 'type is required' }, 400);
     }
 
     const service = getBrowserService();
@@ -125,7 +121,10 @@ browserRoutes.post('/action', async (c) => {
         if (!Array.isArray(body.fields))
           return apiError(
             c,
-            { code: ERROR_CODES.VALIDATION_ERROR, message: 'fields array is required for fill_form' },
+            {
+              code: ERROR_CODES.VALIDATION_ERROR,
+              message: 'fields array is required for fill_form',
+            },
             400
           );
         const result = await service.fillForm(userId, body.fields);
@@ -199,16 +198,15 @@ browserRoutes.post('/workflows', async (c) => {
     const body = await c.req.json();
 
     if (!body.name) {
-      return apiError(
-        c,
-        { code: ERROR_CODES.VALIDATION_ERROR, message: 'name is required' },
-        400
-      );
+      return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: 'name is required' }, 400);
     }
     if (!Array.isArray(body.steps) || body.steps.length === 0) {
       return apiError(
         c,
-        { code: ERROR_CODES.VALIDATION_ERROR, message: 'steps array is required and must not be empty' },
+        {
+          code: ERROR_CODES.VALIDATION_ERROR,
+          message: 'steps array is required and must not be empty',
+        },
         400
       );
     }
@@ -235,11 +233,7 @@ browserRoutes.get('/workflows/:id', async (c) => {
     const workflow = await repo.getById(id, userId);
 
     if (!workflow) {
-      return apiError(
-        c,
-        { code: ERROR_CODES.NOT_FOUND, message: `Workflow ${id} not found` },
-        404
-      );
+      return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Workflow ${id} not found` }, 404);
     }
     return apiResponse(c, workflow);
   } catch (err) {
@@ -256,11 +250,7 @@ browserRoutes.patch('/workflows/:id', async (c) => {
     const workflow = await repo.update(id, userId, body);
 
     if (!workflow) {
-      return apiError(
-        c,
-        { code: ERROR_CODES.NOT_FOUND, message: `Workflow ${id} not found` },
-        404
-      );
+      return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Workflow ${id} not found` }, 404);
     }
     return apiResponse(c, workflow);
   } catch (err) {
@@ -276,11 +266,7 @@ browserRoutes.delete('/workflows/:id', async (c) => {
     const deleted = await repo.delete(id, userId);
 
     if (!deleted) {
-      return apiError(
-        c,
-        { code: ERROR_CODES.NOT_FOUND, message: `Workflow ${id} not found` },
-        404
-      );
+      return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Workflow ${id} not found` }, 404);
     }
     return apiResponse(c, { message: `Workflow ${id} deleted` });
   } catch (err) {

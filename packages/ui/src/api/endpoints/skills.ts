@@ -69,9 +69,7 @@ export interface SkillUpdateInfo {
 export const skillsApi = {
   /** Search npm for OwnPilot skills */
   search: (query: string, limit = 20) =>
-    apiClient.get<NpmSearchResult>(
-      `/skills/search?q=${encodeURIComponent(query)}&limit=${limit}`
-    ),
+    apiClient.get<NpmSearchResult>(`/skills/search?q=${encodeURIComponent(query)}&limit=${limit}`),
 
   /** Get npm package info */
   getPackageInfo: (name: string) =>
@@ -82,8 +80,7 @@ export const skillsApi = {
     apiClient.post<NpmInstallResult>('/skills/install-npm', { packageName }),
 
   /** Check all installed skills for updates */
-  checkUpdates: () =>
-    apiClient.post<{ updates: SkillUpdateInfo[] }>('/skills/check-updates'),
+  checkUpdates: () => apiClient.post<{ updates: SkillUpdateInfo[] }>('/skills/check-updates'),
 
   /** List all available permission categories */
   listPermissions: () =>
@@ -95,8 +92,7 @@ export const skillsApi = {
 
   /** Update granted permissions for an extension */
   updatePermissions: (extensionId: string, grantedPermissions: string[]) =>
-    apiClient.post<{ grantedPermissions: string[] }>(
-      `/skills/permissions/${extensionId}`,
-      { grantedPermissions }
-    ),
+    apiClient.post<{ grantedPermissions: string[] }>(`/skills/permissions/${extensionId}`, {
+      grantedPermissions,
+    }),
 };

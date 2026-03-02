@@ -8,7 +8,13 @@ import { apiClient } from '../client';
 // Types
 // =============================================================================
 
-export type SubagentState = 'pending' | 'running' | 'completed' | 'failed' | 'cancelled' | 'timeout';
+export type SubagentState =
+  | 'pending'
+  | 'running'
+  | 'completed'
+  | 'failed'
+  | 'cancelled'
+  | 'timeout';
 
 export interface SubagentToolCall {
   tool: string;
@@ -84,14 +90,11 @@ export interface SpawnSubagentInput {
 
 export const subagentsApi = {
   list: (parentId?: string) =>
-    apiClient.get<SubagentSession[]>(
-      parentId ? `/subagents?parentId=${parentId}` : '/subagents'
-    ),
+    apiClient.get<SubagentSession[]>(parentId ? `/subagents?parentId=${parentId}` : '/subagents'),
 
   get: (id: string) => apiClient.get<SubagentSession>(`/subagents/${id}`),
 
-  spawn: (input: SpawnSubagentInput) =>
-    apiClient.post<SubagentSession>('/subagents', input),
+  spawn: (input: SpawnSubagentInput) => apiClient.post<SubagentSession>('/subagents', input),
 
   cancel: (id: string) => apiClient.delete(`/subagents/${id}`),
 

@@ -64,9 +64,12 @@ export function SubagentCard({ subagentId, initialData, onComplete }: SubagentCa
   // Fetch session data on mount if not provided
   useEffect(() => {
     if (!initialData) {
-      subagentsApi.get(subagentId).then(setSession).catch(() => {
-        /* Subagent may have been cleaned up */
-      });
+      subagentsApi
+        .get(subagentId)
+        .then(setSession)
+        .catch(() => {
+          /* Subagent may have been cleaned up */
+        });
     }
   }, [subagentId, initialData]);
 
@@ -75,15 +78,17 @@ export function SubagentCard({ subagentId, initialData, onComplete }: SubagentCa
     const unsubs: Array<() => void> = [];
 
     unsubs.push(
-      subscribe<{ subagentId: string; turnsUsed: number; toolCallsUsed: number; lastToolName?: string }>(
-        'subagent:progress',
-        (data) => {
-          if (data.subagentId !== subagentId) return;
-          setSession((prev) =>
-            prev ? { ...prev, turnsUsed: data.turnsUsed, toolCallsUsed: data.toolCallsUsed } : prev
-          );
-        }
-      )
+      subscribe<{
+        subagentId: string;
+        turnsUsed: number;
+        toolCallsUsed: number;
+        lastToolName?: string;
+      }>('subagent:progress', (data) => {
+        if (data.subagentId !== subagentId) return;
+        setSession((prev) =>
+          prev ? { ...prev, turnsUsed: data.turnsUsed, toolCallsUsed: data.toolCallsUsed } : prev
+        );
+      })
     );
 
     unsubs.push(
@@ -181,7 +186,9 @@ export function SubagentCard({ subagentId, initialData, onComplete }: SubagentCa
         <div className="border-t border-border dark:border-dark-border px-3 py-2 space-y-3">
           {/* Task description */}
           <div>
-            <span className="text-xs font-medium text-text-muted dark:text-dark-text-muted">Task</span>
+            <span className="text-xs font-medium text-text-muted dark:text-dark-text-muted">
+              Task
+            </span>
             <p className="text-xs text-text-secondary dark:text-dark-text-secondary mt-0.5 whitespace-pre-wrap">
               {session.task}
             </p>
@@ -252,12 +259,14 @@ export function SubagentCard({ subagentId, initialData, onComplete }: SubagentCa
           <div className="flex items-center gap-3 text-xs text-text-muted dark:text-dark-text-muted pt-1 border-t border-border/50 dark:border-dark-border/50">
             <span className="flex items-center gap-1">
               <Clock className="w-3 h-3" />
-              Spawned {new Date(session.spawnedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              Spawned{' '}
+              {new Date(session.spawnedAt).toLocaleTimeString([], {
+                hour: '2-digit',
+                minute: '2-digit',
+              })}
             </span>
             {session.tokensUsed && (
-              <span>
-                {session.tokensUsed.prompt + session.tokensUsed.completion} tokens
-              </span>
+              <span>{session.tokensUsed.prompt + session.tokensUsed.completion} tokens</span>
             )}
           </div>
 

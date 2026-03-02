@@ -127,11 +127,9 @@ export async function skillList(): Promise<void> {
 
     for (const ext of data) {
       const npmPkg =
-        ext.manifest?.npm_package ??
-        (ext.settings as Record<string, unknown>)?.npmPackage;
+        ext.manifest?.npm_package ?? (ext.settings as Record<string, unknown>)?.npmPackage;
       const npmVersion =
-        ext.manifest?.npm_version ??
-        (ext.settings as Record<string, unknown>)?.npmVersion;
+        ext.manifest?.npm_version ?? (ext.settings as Record<string, unknown>)?.npmVersion;
       const source = npmPkg ? `npm:${npmPkg}` : 'local';
       const version = npmVersion ? String(npmVersion) : '-';
 
@@ -499,7 +497,8 @@ export async function skillAudit(id?: string): Promise<void> {
     if (result.findings.length > 0) {
       console.log('\n  Findings:');
       for (const f of result.findings) {
-        const icon = f.severity === 'high' ? '\u{1F534}' : f.severity === 'medium' ? '\u{1F7E1}' : '\u{1F7E2}';
+        const icon =
+          f.severity === 'high' ? '\u{1F534}' : f.severity === 'medium' ? '\u{1F7E1}' : '\u{1F7E2}';
         console.log(`    ${icon} [${f.severity}] ${f.message}`);
       }
     } else {

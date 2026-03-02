@@ -102,20 +102,16 @@ export const artifactsApi = {
 
   get: (id: string) => apiClient.get<Artifact>(`/artifacts/${id}`),
 
-  create: (input: CreateArtifactInput) =>
-    apiClient.post<Artifact>('/artifacts', input),
+  create: (input: CreateArtifactInput) => apiClient.post<Artifact>('/artifacts', input),
 
   update: (id: string, input: UpdateArtifactInput) =>
     apiClient.patch<Artifact>(`/artifacts/${id}`, input),
 
   delete: (id: string) => apiClient.delete(`/artifacts/${id}`),
 
-  togglePin: (id: string) =>
-    apiClient.post<Artifact>(`/artifacts/${id}/pin`),
+  togglePin: (id: string) => apiClient.post<Artifact>(`/artifacts/${id}/pin`),
 
-  refresh: (id: string) =>
-    apiClient.post<Artifact>(`/artifacts/${id}/refresh`),
+  refresh: (id: string) => apiClient.post<Artifact>(`/artifacts/${id}/refresh`),
 
-  getVersions: (id: string) =>
-    apiClient.get<ArtifactVersion[]>(`/artifacts/${id}/versions`),
+  getVersions: (id: string) => apiClient.get<ArtifactVersion[]>(`/artifacts/${id}/versions`),
 };

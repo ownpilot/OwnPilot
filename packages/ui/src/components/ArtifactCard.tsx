@@ -120,7 +120,9 @@ export function ArtifactCard({
           <span className="font-medium text-text-secondary dark:text-dark-text-secondary truncate flex-1 text-left">
             {artifact.title}
           </span>
-          <span className="text-xs text-text-muted dark:text-dark-text-muted">v{artifact.version}</span>
+          <span className="text-xs text-text-muted dark:text-dark-text-muted">
+            v{artifact.version}
+          </span>
           {expanded ? (
             <ChevronDown className="w-3 h-3 text-text-muted" />
           ) : (

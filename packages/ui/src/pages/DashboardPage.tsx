@@ -292,9 +292,7 @@ export function DashboardPage() {
                         : prev.filter((a) => a.id !== updated.id)
                     )
                   }
-                  onDelete={(id) =>
-                    setPinnedArtifacts((prev) => prev.filter((a) => a.id !== id))
-                  }
+                  onDelete={(id) => setPinnedArtifacts((prev) => prev.filter((a) => a.id !== id))}
                 />
               ))}
             </div>
