@@ -66,7 +66,8 @@ export class SubagentManager {
   constructor(budget?: Partial<SubagentBudget>, repo?: SubagentsRepository) {
     this.budget = { ...DEFAULT_SUBAGENT_BUDGET, ...budget };
     this.repo = repo ?? new SubagentsRepository();
-    this.startCleanup();
+    // Defer cleanup start to allow EventSystem and other services to initialize
+    setImmediate(() => this.startCleanup());
   }
 
   /**
@@ -379,8 +380,13 @@ export class SubagentManager {
   }
 
   private startCleanup(): void {
+    if (this.cleanupTimer) return; // Already started
     this.cleanupTimer = setInterval(() => {
-      this.cleanup();
+      try {
+        this.cleanup();
+      } catch (err) {
+        log.error(`Subagent cleanup error: ${getErrorMessage(err)}`);
+      }
     }, CLEANUP_INTERVAL_MS);
     // Don't keep process alive just for cleanup
     if (

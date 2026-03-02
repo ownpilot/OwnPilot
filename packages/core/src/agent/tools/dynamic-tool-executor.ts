@@ -13,6 +13,7 @@ import { UTILITY_TOOLS } from './utility-tools.js';
 import { getBaseName } from '../tool-namespace.js';
 import type { DynamicToolDefinition } from './dynamic-tool-types.js';
 import { isToolCallAllowed } from './dynamic-tool-permissions.js';
+import { getErrorMessage } from '../../services/error-utils.js';
 import { createSafeFetch, mapPermissions, createSandboxUtils } from './dynamic-tool-sandbox.js';
 
 /**
@@ -204,7 +205,16 @@ export async function executeDynamicTool(
     ${tool.code}
   `;
 
-  const result = await sandbox.execute(wrappedCode);
+  let result: Awaited<ReturnType<typeof sandbox.execute>>;
+  try {
+    result = await sandbox.execute(wrappedCode);
+  } catch (fatalError) {
+    return {
+      content: `Fatal sandbox error: ${getErrorMessage(fatalError)}`,
+      isError: true,
+      metadata: { dynamicTool: tool.name, fatal: true },
+    };
+  }
 
   if (result.ok) {
     const execResult = result.value;

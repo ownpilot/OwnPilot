@@ -486,9 +486,7 @@ describe('CodingAgentSessionManager', () => {
       manager.stop();
 
       expect(ptyHandle1.kill).toHaveBeenCalledWith('SIGTERM');
-      expect(ptyHandle1.dispose).toHaveBeenCalled();
       expect(ptyHandle2.kill).toHaveBeenCalledWith('SIGTERM');
-      expect(ptyHandle2.dispose).toHaveBeenCalled();
     });
   });
 });

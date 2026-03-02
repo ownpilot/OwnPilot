@@ -206,7 +206,10 @@ export class BackgroundAgentManager {
 
     this.agents.set(config.id, managed);
 
-    // Start periodic session persistence
+    // Start periodic session persistence (clear first to prevent leaks on rapid restart)
+    if (managed.persistTimer) {
+      clearInterval(managed.persistTimer);
+    }
     managed.persistTimer = setInterval(() => {
       this.persistSession(config.id).catch((err) => {
         log.error(`Session persist error for ${config.id}: ${getErrorMessage(err)}`);
@@ -433,6 +436,15 @@ export class BackgroundAgentManager {
   }
 
   private subscribeToEvents(agentId: string, managed: ManagedAgent): void {
+    // Clear existing subscriptions first to prevent duplicates on pause/resume
+    if (managed.eventSubscriptions.length > 0) {
+      const eventSystem = getEventSystem();
+      for (const sub of managed.eventSubscriptions) {
+        eventSystem.off(sub.eventType, sub.handler);
+      }
+      managed.eventSubscriptions = [];
+    }
+
     const eventSystem = getEventSystem();
     const filters = managed.session.config.eventFilters ?? [];
 

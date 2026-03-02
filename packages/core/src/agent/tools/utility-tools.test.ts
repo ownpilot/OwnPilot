@@ -221,11 +221,10 @@ describe('calculateExecutor', () => {
     expect(data.result).toBeCloseTo(Math.log(100), 4);
   });
 
-  it('handles ln(1) - maps to Math.ln which does not exist, so it errors', async () => {
-    // The executor replaces ln() with Math.ln() but Math.ln is undefined,
-    // so runInNewContext throws an error
+  it('handles ln(1) as natural log (alias for Math.log)', async () => {
     const result = await calculateExecutor({ expression: 'ln(1)' });
-    expect(result.isError).toBe(true);
+    const data = parseContent(result.content);
+    expect(data.result).toBe(0); // ln(1) = 0
   });
 
   it('handles abs function', async () => {
@@ -246,11 +245,10 @@ describe('calculateExecutor', () => {
     expect(data.result).toBe(4);
   });
 
-  it('rejects round() because "d" is not in the allowed character set', async () => {
-    // The validation regex does not include 'd', so Math.round expressions
-    // are rejected by the character whitelist even though round is a listed function
+  it('handles round() function', async () => {
     const result = await calculateExecutor({ expression: 'round(3.5)' });
-    expect(result.isError).toBe(true);
+    const data = parseContent(result.content);
+    expect(data.result).toBe(4);
   });
 
   it('handles pi constant', async () => {
