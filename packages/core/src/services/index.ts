@@ -294,3 +294,11 @@ export * from './config-center.js';
 
 // Weather Service
 export * from './weather-service.js';
+
+// Safe JSON Utilities
+export {
+  safeJsonParse,
+  safeJsonParseWithDefault,
+  safeJsonStringify,
+  isValidJson,
+} from '../utils/safe-json.js';

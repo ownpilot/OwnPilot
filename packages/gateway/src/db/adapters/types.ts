@@ -49,8 +49,10 @@ export interface DatabaseAdapter {
 
   /**
    * Execute multiple statements in a transaction
+   * @param fn - Function containing transaction operations
+   * @param timeoutMs - Transaction timeout in milliseconds (default: 30000)
    */
-  transaction<T>(fn: () => Promise<T>): Promise<T>;
+  transaction<T>(fn: () => Promise<T>, timeoutMs?: number): Promise<T>;
 
   /**
    * Execute raw SQL (for schema changes)

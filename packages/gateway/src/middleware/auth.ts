@@ -15,14 +15,24 @@ import { apiError, ERROR_CODES, getErrorMessage } from '../routes/helpers.js';
  */
 function apiKeyMatches(candidate: string, validKeys: string[]): boolean {
   const candidateBuf = Buffer.from(candidate);
+  let result = false;
+
   for (const key of validKeys) {
     const keyBuf = Buffer.from(key);
-    // timingSafeEqual requires equal-length buffers
-    if (candidateBuf.length === keyBuf.length && timingSafeEqual(candidateBuf, keyBuf)) {
-      return true;
-    }
+    // Always perform timing-safe comparison to avoid leaking key length info
+    // Pad shorter buffer to match longer one to prevent early return timing leaks
+    const maxLen = Math.max(candidateBuf.length, keyBuf.length);
+    const paddedCandidate = Buffer.alloc(maxLen);
+    const paddedKey = Buffer.alloc(maxLen);
+    candidateBuf.copy(paddedCandidate);
+    keyBuf.copy(paddedKey);
+
+    // Only mark as match if lengths are equal AND content matches
+    const equal = timingSafeEqual(paddedCandidate, paddedKey);
+    result = result || (candidateBuf.length === keyBuf.length && equal);
   }
-  return false;
+
+  return result;
 }
 
 /**
@@ -105,7 +115,7 @@ async function validateJWT(
   const secretKey = createSecretKey(Buffer.from(secret, 'utf-8'));
 
   const { payload } = await jwtVerify(token, secretKey, {
-    algorithms: ['HS256', 'HS384', 'HS512'],
+    algorithms: ['HS256'], // Only allow HS256 to prevent algorithm confusion attacks
   });
 
   if (!payload.sub) {

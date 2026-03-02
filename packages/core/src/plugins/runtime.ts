@@ -265,6 +265,8 @@ export class SecurePluginRuntime extends EventEmitter {
       timeout: ReturnType<typeof setTimeout>;
     }
   > = new Map();
+  // Registration locks to prevent race conditions in concurrent plugin loading
+  private readonly registrationLocks = new Map<string, Promise<Result<PluginInstance, string>>>();
 
   constructor(config: Partial<RuntimeConfig> = {}) {
     super();
@@ -287,6 +289,7 @@ export class SecurePluginRuntime extends EventEmitter {
 
   /**
    * Load a plugin from manifest
+   * Uses registration locks to prevent race conditions with concurrent loads of the same plugin.
    */
   async load(
     manifest: MarketplaceManifest,
@@ -298,6 +301,33 @@ export class SecurePluginRuntime extends EventEmitter {
     }
 
     // Check if already loaded
+    if (this.plugins.has(manifest.id)) {
+      return err(`Plugin ${manifest.id} is already loaded`);
+    }
+
+    // Check if another concurrent load is in progress for this plugin
+    const existingLock = this.registrationLocks.get(manifest.id);
+    if (existingLock) {
+      return existingLock;
+    }
+
+    // Create a lock for this registration
+    const loadPromise = this.loadInternal(manifest, options).finally(() => {
+      this.registrationLocks.delete(manifest.id);
+    });
+
+    this.registrationLocks.set(manifest.id, loadPromise);
+    return loadPromise;
+  }
+
+  /**
+   * Internal load implementation - do not call directly, use load() instead
+   */
+  private async loadInternal(
+    manifest: MarketplaceManifest,
+    options: LoadOptions = {}
+  ): Promise<Result<PluginInstance, string>> {
+    // Double-check after acquiring lock
     if (this.plugins.has(manifest.id)) {
       return err(`Plugin ${manifest.id} is already loaded`);
     }

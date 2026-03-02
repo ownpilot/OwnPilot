@@ -12,9 +12,11 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 // ---------------------------------------------------------------------------
 
 const mockIsPrivateUrl = vi.hoisted(() => vi.fn());
+const mockIsPrivateUrlAsync = vi.hoisted(() => vi.fn());
 
 vi.mock('./dynamic-tool-permissions.js', () => ({
   isPrivateUrl: mockIsPrivateUrl,
+  isPrivateUrlAsync: mockIsPrivateUrlAsync,
 }));
 
 // ---------------------------------------------------------------------------
@@ -41,6 +43,7 @@ describe('createSafeFetch', () => {
 
   it('allows public URLs', async () => {
     mockIsPrivateUrl.mockReturnValue(false);
+    mockIsPrivateUrlAsync.mockResolvedValue(false);
     const safeFetch = createSafeFetch('my_tool');
     await safeFetch('https://api.example.com/data');
     expect(globalThis.fetch).toHaveBeenCalledWith(
@@ -51,34 +54,39 @@ describe('createSafeFetch', () => {
 
   it('blocks private URLs with SSRF error', async () => {
     mockIsPrivateUrl.mockReturnValue(true);
+    mockIsPrivateUrlAsync.mockResolvedValue(true);
     const safeFetch = createSafeFetch('my_tool');
     await expect(safeFetch('http://localhost:8080/admin')).rejects.toThrow('SSRF blocked');
   });
 
   it('includes tool name in error message', async () => {
     mockIsPrivateUrl.mockReturnValue(true);
+    mockIsPrivateUrlAsync.mockResolvedValue(true);
     const safeFetch = createSafeFetch('weather_tool');
     await expect(safeFetch('http://127.0.0.1')).rejects.toThrow('weather_tool');
   });
 
   it('handles URL object input', async () => {
     mockIsPrivateUrl.mockReturnValue(false);
+    mockIsPrivateUrlAsync.mockResolvedValue(false);
     const safeFetch = createSafeFetch('my_tool');
     const url = new URL('https://example.com/path');
     await safeFetch(url);
-    expect(mockIsPrivateUrl).toHaveBeenCalledWith('https://example.com/path');
+    expect(mockIsPrivateUrlAsync).toHaveBeenCalledWith('https://example.com/path');
   });
 
   it('handles Request object input', async () => {
     mockIsPrivateUrl.mockReturnValue(false);
+    mockIsPrivateUrlAsync.mockResolvedValue(false);
     const safeFetch = createSafeFetch('my_tool');
     const req = new Request('https://example.com/api');
     await safeFetch(req);
-    expect(mockIsPrivateUrl).toHaveBeenCalledWith('https://example.com/api');
+    expect(mockIsPrivateUrlAsync).toHaveBeenCalledWith('https://example.com/api');
   });
 
   it('passes init options through to real fetch', async () => {
     mockIsPrivateUrl.mockReturnValue(false);
+    mockIsPrivateUrlAsync.mockResolvedValue(false);
     const safeFetch = createSafeFetch('my_tool');
     const init = { method: 'POST', body: 'data' };
     await safeFetch('https://example.com', init);
@@ -90,6 +98,7 @@ describe('createSafeFetch', () => {
 
   it('does not override caller-provided signal', async () => {
     mockIsPrivateUrl.mockReturnValue(false);
+    mockIsPrivateUrlAsync.mockResolvedValue(false);
     const safeFetch = createSafeFetch('my_tool');
     const controller = new AbortController();
     await safeFetch('https://example.com', { signal: controller.signal });

@@ -14,21 +14,49 @@
 import type { ToolMiddleware, ToolMiddlewareContext, ToolExecutionResult } from '../types.js';
 
 // ---------------------------------------------------------------------------
-// Rate limiter (simple in-memory token bucket)
+// Rate limiter (simple in-memory token bucket with TTL cleanup)
 // ---------------------------------------------------------------------------
 
-const rateLimits = new Map<string, { tokens: number; lastRefill: number }>();
+interface RateLimitEntry {
+  tokens: number;
+  lastRefill: number;
+  lastAccess: number;
+}
+
+const rateLimits = new Map<string, RateLimitEntry>();
 const MAX_TOKENS = 60; // 60 calls per window
 const REFILL_WINDOW_MS = 60_000; // 1 minute window
+const TTL_MS = 5 * 60_000; // 5 minutes TTL for cleanup
+
+let lastCleanup = Date.now();
+const CLEANUP_INTERVAL_MS = 60_000; // Cleanup every minute
+
+function cleanupStaleEntries(): void {
+  const now = Date.now();
+  if (now - lastCleanup < CLEANUP_INTERVAL_MS) return;
+
+  lastCleanup = now;
+  for (const [key, entry] of rateLimits) {
+    if (now - entry.lastAccess > TTL_MS) {
+      rateLimits.delete(key);
+    }
+  }
+}
 
 function checkRateLimit(key: string): void {
+  // Periodic cleanup
+  cleanupStaleEntries();
+
   const now = Date.now();
   let bucket = rateLimits.get(key);
 
   if (!bucket) {
-    bucket = { tokens: MAX_TOKENS, lastRefill: now };
+    bucket = { tokens: MAX_TOKENS, lastRefill: now, lastAccess: now };
     rateLimits.set(key, bucket);
   }
+
+  // Update last access time
+  bucket.lastAccess = now;
 
   // Refill tokens based on elapsed time
   const elapsed = now - bucket.lastRefill;

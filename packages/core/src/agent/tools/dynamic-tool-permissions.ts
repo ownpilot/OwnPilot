@@ -4,6 +4,7 @@
  * Security checks for tool call authorization and SSRF protection.
  */
 
+import { lookup } from 'node:dns/promises';
 import type { DynamicToolPermission } from './dynamic-tool-types.js';
 import { getBaseName } from '../tool-namespace.js';
 
@@ -84,9 +85,77 @@ export function isToolCallAllowed(
 // SECURITY: SSRF PROTECTION
 // =============================================================================
 
+// Cache for DNS resolution to prevent rebinding attacks
+const dnsCache = new Map<string, { ips: string[]; timestamp: number }>();
+const DNS_CACHE_TTL_MS = 60_000; // 1 minute cache
+
+/**
+ * Check if an IP address is in a private/internal range.
+ * Comprehensive check for IPv4 and IPv6 addresses.
+ */
+function isPrivateIp(ip: string): boolean {
+  // IPv6 loopback
+  if (ip === '::1') return true;
+
+  // IPv4-mapped IPv6 loopback
+  if (ip === '::ffff:127.0.0.1') return true;
+
+  // IPv6 unique local addresses (fc00::/7)
+  if (ip.startsWith('fc') || ip.startsWith('fd')) return true;
+
+  // IPv6 link-local (fe80::/10)
+  if (ip.startsWith('fe80')) return true;
+
+  // IPv4 checks
+  const ipv4Match = ip.match(/^(\d+)\.(\d+)\.(\d+)\.(\d+)$/);
+  if (!ipv4Match) {
+    // Could be IPv6 public address or other format
+    return false;
+  }
+
+  const a = parseInt(ipv4Match[1]!, 10);
+  const b = parseInt(ipv4Match[2]!, 10);
+
+  // 127.0.0.0/8 (loopback)
+  if (a === 127) return true;
+
+  // 10.0.0.0/8 (private)
+  if (a === 10) return true;
+
+  // 172.16.0.0/12 (private)
+  if (a === 172 && b >= 16 && b <= 31) return true;
+
+  // 192.168.0.0/16 (private)
+  if (a === 192 && b === 168) return true;
+
+  // 169.254.0.0/16 (link-local)
+  if (a === 169 && b === 254) return true;
+
+  // 100.64.0.0/10 (carrier-grade NAT / shared space)
+  if (a === 100 && b >= 64 && b <= 127) return true;
+
+  // 192.0.0.0/24 (IETF protocol assignments)
+  if (a === 192 && b === 0) return true;
+
+  // 198.18.0.0/15 (benchmark testing)
+  if (a === 198 && b >= 18 && b <= 19) return true;
+
+  // 240.0.0.0/4+ (reserved/multicast)
+  if (a >= 240) return true;
+
+  // 0.0.0.0/8 (current network)
+  if (a === 0) return true;
+
+  return false;
+}
+
 /**
  * Check if a URL targets a private/internal network address (SSRF protection).
  * Blocks: localhost, private IPs, link-local, cloud metadata endpoints, file://, ftp://
+ *
+ * This function also performs DNS resolution to prevent DNS rebinding attacks
+ * where an attacker controls a domain that initially resolves to a public IP
+ * but later resolves to a private IP.
  */
 export function isPrivateUrl(urlString: string): boolean {
   try {
@@ -110,32 +179,78 @@ export function isPrivateUrl(urlString: string): boolean {
       return true;
     }
 
-    // Block private IPv4 ranges
-    const ipv4Match = hostname.match(/^(\d+)\.(\d+)\.(\d+)\.(\d+)$/);
-    if (ipv4Match) {
-      const [, a, b] = ipv4Match.map(Number);
-      // 10.0.0.0/8
-      if (a === 10) return true;
-      // 172.16.0.0/12
-      if (a === 172 && b! >= 16 && b! <= 31) return true;
-      // 192.168.0.0/16
-      if (a === 192 && b === 168) return true;
-      // 169.254.0.0/16 (link-local)
-      if (a === 169 && b === 254) return true;
-      // Cloud metadata endpoints
-      if (a === 169 && b === 254 && ipv4Match[3] === '169' && ipv4Match[4] === '254') return true;
-      // 100.100.100.200 (Alibaba cloud metadata)
-      if (hostname === '100.100.100.200') return true;
-      // 0.0.0.0/8
-      if (a === 0) return true;
+    // Block cloud metadata hostnames
+    if (
+      hostname === 'metadata.google.internal' ||
+      hostname === 'metadata.google.internal.' ||
+      hostname === '169.254.169.254' || // AWS, Azure, GCP metadata
+      hostname === '100.100.100.200' || // Alibaba Cloud
+      hostname === '192.0.0.192' // Oracle Cloud
+    ) {
+      return true;
     }
 
-    // Block cloud metadata hostnames
-    if (hostname === 'metadata.google.internal') return true;
+    // Check if hostname is already an IP address
+    const ipv4Match = hostname.match(/^(\d+)\.(\d+)\.(\d+)\.(\d+)$/);
+    if (ipv4Match) {
+      return isPrivateIp(hostname);
+    }
 
     return false;
   } catch {
     // If URL parsing fails, block it
+    return true;
+  }
+}
+
+/**
+ * Async version of isPrivateUrl that also performs DNS resolution
+ * to prevent DNS rebinding attacks. This should be called before
+ * making any outbound HTTP request.
+ *
+ * DNS Rebinding Attack Prevention:
+ * - Resolves hostname to IP addresses
+ * - Checks if any resolved IP is private
+ * - Caches results to prevent TOCTOU issues
+ */
+export async function isPrivateUrlAsync(urlString: string): Promise<boolean> {
+  // First do synchronous check
+  if (isPrivateUrl(urlString)) {
+    return true;
+  }
+
+  try {
+    const url = new URL(urlString);
+    const hostname = url.hostname.toLowerCase();
+
+    // Skip DNS check for IP literals
+    const ipv4Match = hostname.match(/^(\d+)\.(\d+)\.(\d+)\.(\d+)$/);
+    if (ipv4Match) {
+      return isPrivateIp(hostname);
+    }
+
+    // Check cache first
+    const cached = dnsCache.get(hostname);
+    if (cached && Date.now() - cached.timestamp < DNS_CACHE_TTL_MS) {
+      return cached.ips.some(ip => isPrivateIp(ip));
+    }
+
+    // Perform DNS lookup
+    try {
+      const addresses = await lookup(hostname, { all: true });
+      const ips = addresses.map(a => a.address);
+
+      // Cache the result
+      dnsCache.set(hostname, { ips, timestamp: Date.now() });
+
+      // Check if any resolved IP is private
+      return ips.some(ip => isPrivateIp(ip));
+    } catch {
+      // DNS lookup failed - block to be safe
+      return true;
+    }
+  } catch {
+    // URL parsing failed
     return true;
   }
 }

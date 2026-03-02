@@ -12,6 +12,14 @@ import {
   WEB_FETCH_TOOLS,
 } from './web-fetch.js';
 
+// Mock DNS lookups for SSRF protection
+vi.mock('node:dns/promises', () => ({
+  lookup: vi.fn(async (hostname: string) => {
+    // Return a public IP for any hostname in tests
+    return [{ address: '93.184.216.34', family: 4 }];
+  }),
+}));
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------

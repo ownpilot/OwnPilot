@@ -8,7 +8,7 @@
 import * as crypto from 'node:crypto';
 import type { SandboxPermissions } from '../../sandbox/types.js';
 import type { DynamicToolPermission } from './dynamic-tool-types.js';
-import { isPrivateUrl } from './dynamic-tool-permissions.js';
+import { isPrivateUrlAsync } from './dynamic-tool-permissions.js';
 
 // =============================================================================
 // SSRF-SAFE FETCH
@@ -28,7 +28,7 @@ export function createSafeFetch(toolName: string): typeof globalThis.fetch {
         : input instanceof URL
           ? input.href
           : (input as Request).url;
-    if (isPrivateUrl(url)) {
+    if (await isPrivateUrlAsync(url)) {
       throw new Error(
         `[SSRF blocked] Tool '${toolName}' attempted to access a private/internal URL: ${new URL(url).hostname}. ` +
           `Only public URLs are allowed.`

@@ -4,6 +4,19 @@
  */
 
 import type { ToolDefinition, ToolExecutor, ToolExecutionResult } from '../tools.js';
+import { isPrivateUrlAsync } from './dynamic-tool-permissions.js';
+
+/**
+ * Escape HTML entities to prevent XSS
+ */
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
 
 // Security: Maximum response size (5MB)
 const MAX_RESPONSE_SIZE = 5 * 1024 * 1024;
@@ -86,8 +99,8 @@ export function isBlockedUrl(url: string): boolean {
  * Validate the final URL after redirects to prevent SSRF via open redirects.
  * Returns an error message if blocked, or null if safe.
  */
-function checkRedirectTarget(finalUrl: string, originalUrl: string): string | null {
-  if (isBlockedUrl(finalUrl)) {
+async function checkRedirectTarget(finalUrl: string, originalUrl: string): Promise<string | null> {
+  if (isBlockedUrl(finalUrl) || (await isPrivateUrlAsync(finalUrl))) {
     return `Request was redirected to a blocked internal address (${finalUrl}). Original URL: ${originalUrl}`;
   }
   return null;
@@ -146,7 +159,7 @@ function extractLinks(html: string, baseUrl: string): Array<{ text: string; href
 }
 
 /**
- * Extract metadata from HTML
+ * Extract metadata from HTML with XSS protection
  */
 function extractMetadata(html: string): Record<string, string> {
   const metadata: Record<string, string> = {};
@@ -154,7 +167,7 @@ function extractMetadata(html: string): Record<string, string> {
   // Title
   const titleMatch = html.match(/<title[^>]*>(.*?)<\/title>/i);
   if (titleMatch && titleMatch[1]) {
-    metadata.title = titleMatch[1].trim();
+    metadata.title = escapeHtml(titleMatch[1].trim());
   }
 
   // Meta tags
@@ -165,7 +178,7 @@ function extractMetadata(html: string): Record<string, string> {
     const name = match[2]?.toLowerCase();
     const content = match[4];
     if (name && content) {
-      metadata[name] = content;
+      metadata[name] = escapeHtml(content);
     }
   }
 
@@ -228,8 +241,8 @@ export const httpRequestExecutor: ToolExecutor = async (
   const json = params.json as Record<string, unknown> | undefined;
   const timeout = Math.min((params.timeout as number) || 10000, REQUEST_TIMEOUT);
 
-  // Security check
-  if (isBlockedUrl(url)) {
+  // Security check with DNS rebinding protection
+  if (isBlockedUrl(url) || (await isPrivateUrlAsync(url))) {
     return {
       content: { error: 'This URL is blocked for security reasons (internal/private network)' },
       isError: true,
@@ -260,7 +273,7 @@ export const httpRequestExecutor: ToolExecutor = async (
     clearTimeout(timeoutId);
 
     // Check if redirect landed on a blocked internal address
-    const redirectError = checkRedirectTarget(response.url, url);
+    const redirectError = await checkRedirectTarget(response.url, url);
     if (redirectError) {
       return { content: { error: redirectError }, isError: true };
     }
@@ -392,7 +405,7 @@ export const fetchWebPageExecutor: ToolExecutor = async (
     clearTimeout(timeoutId);
 
     // Check if redirect landed on a blocked internal address
-    const redirectError = checkRedirectTarget(response.url, url);
+    const redirectError = await checkRedirectTarget(response.url, url);
     if (redirectError) {
       return { content: { error: redirectError }, isError: true };
     }
@@ -644,7 +657,7 @@ export const jsonApiExecutor: ToolExecutor = async (
     clearTimeout(timeoutId);
 
     // Check if redirect landed on a blocked internal address
-    const redirectError = checkRedirectTarget(response.url, url);
+    const redirectError = await checkRedirectTarget(response.url, url);
     if (redirectError) {
       return { content: { error: redirectError }, isError: true };
     }

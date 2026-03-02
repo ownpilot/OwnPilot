@@ -85,9 +85,21 @@ export class PostgresAdapter implements DatabaseAdapter {
     };
   }
 
-  async transaction<T>(fn: () => Promise<T>): Promise<T> {
+  async transaction<T>(fn: () => Promise<T>, timeoutMs = 30000): Promise<T> {
     if (!this.pool) throw new Error('Database not initialized');
     const client = await this.pool.connect();
+
+    // Set up transaction timeout
+    const timeoutId = setTimeout(async () => {
+      log.error('[PostgreSQL] Transaction timeout, forcing rollback');
+      try {
+        await client.query('ROLLBACK');
+      } catch (err) {
+        // Client might already be disconnected
+      }
+      client.release();
+    }, timeoutMs);
+
     try {
       await client.query('BEGIN');
       const result = await fn();
@@ -101,6 +113,7 @@ export class PostgresAdapter implements DatabaseAdapter {
       }
       throw error;
     } finally {
+      clearTimeout(timeoutId);
       client.release();
     }
   }
