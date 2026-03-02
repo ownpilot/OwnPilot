@@ -73,13 +73,13 @@ async function ensureAudioService(): Promise<void> {
 // API Key Resolution
 // ============================================================================
 
-interface AudioApiConfig {
+export interface AudioApiConfig {
   apiKey: string;
   baseUrl: string;
   providerType: string;
 }
 
-async function resolveAudioConfig(): Promise<AudioApiConfig | null> {
+export async function resolveAudioConfig(): Promise<AudioApiConfig | null> {
   // Check dedicated audio service first
   const audioKey = configServicesRepo.getFieldValue(AUDIO_SERVICE, 'api_key') as string | undefined;
   if (audioKey) {
@@ -205,7 +205,7 @@ const textToSpeechOverride: ToolExecutor = async (
   }
 };
 
-async function callOpenAITTS(
+export async function callOpenAITTS(
   apiKey: string,
   baseUrl: string,
   text: string,
@@ -227,7 +227,7 @@ async function callOpenAITTS(
   return Buffer.from(await response.arrayBuffer());
 }
 
-async function callElevenLabsTTS(
+export async function callElevenLabsTTS(
   apiKey: string,
   baseUrl: string,
   text: string,
@@ -339,14 +339,14 @@ const speechToTextOverride: ToolExecutor = async (
   }
 };
 
-interface WhisperResult {
+export interface WhisperResult {
   text: string;
   language?: string;
   duration?: number;
   segments?: Array<{ start: number; end: number; text: string }>;
 }
 
-async function callWhisperTranscribe(
+export async function callWhisperTranscribe(
   apiKey: string,
   baseUrl: string,
   audioBuffer: Buffer,

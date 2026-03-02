@@ -13,6 +13,7 @@ import {
 import { ToolExecutionDisplay } from './ToolExecutionDisplay';
 import { TraceDisplay } from './TraceDisplay';
 import { MarkdownContent } from './MarkdownContent';
+import { VoicePlayButton } from './VoicePlayButton';
 import type { Message } from '../types';
 
 interface MessageListProps {
@@ -192,6 +193,7 @@ function MessageBubble({ message, onRetry, showRetry, workspaceId }: MessageBubb
               </>
             )}
           </button>
+          {!isUser && displayContent && <VoicePlayButton text={displayContent} />}
           <span className="text-xs text-text-muted dark:text-dark-text-muted">
             {new Date(message.timestamp).toLocaleTimeString([], {
               hour: '2-digit',

@@ -116,6 +116,8 @@ export type {
   SpawnSubagentInput,
 } from './subagents';
 export { artifactsApi } from './artifacts';
+export { voiceApi } from './voice';
+export type { VoiceConfig, TranscribeResult } from './voice';
 export type {
   Artifact,
   ArtifactVersion,

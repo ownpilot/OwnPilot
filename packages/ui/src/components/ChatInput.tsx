@@ -9,6 +9,7 @@ import {
 } from 'react';
 import { Send, StopCircle, X, Image } from './icons';
 import { ToolPicker, type ResourceAttachment, type ResourceType } from './ToolPicker';
+import { VoiceButton } from './VoiceButton';
 import type { MessageAttachment } from '../types';
 
 /** File attachment being previewed (with base64 data) */
@@ -296,6 +297,15 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(function Ch
           >
             <Image className="w-5 h-5" />
           </button>
+
+          {/* Voice Input Button */}
+          <VoiceButton
+            onTranscription={(text) => {
+              setValue((prev) => (prev ? `${prev} ${text}` : text));
+              setTimeout(() => textareaRef.current?.focus(), 0);
+            }}
+            disabled={isLoading}
+          />
 
           {/* Textarea */}
           <div className="flex-1">

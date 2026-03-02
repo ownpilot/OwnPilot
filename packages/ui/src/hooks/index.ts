@@ -8,3 +8,4 @@ export * from './useDebouncedValue';
 export * from './useDebouncedCallback';
 export * from './useModalClose';
 export * from './useAuth';
+export * from './useVoice';

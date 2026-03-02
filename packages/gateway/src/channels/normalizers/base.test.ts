@@ -1,6 +1,14 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import type { ChannelIncomingMessage } from '@ownpilot/core';
 import { baseNormalizer, stripInternalTags } from './base.js';
+
+// Mock the voice service so audio transcription is a no-op in tests
+vi.mock('../../services/voice-service.js', () => ({
+  getVoiceService: () => ({
+    isAvailable: async () => false,
+    transcribe: async () => ({ text: '' }),
+  }),
+}));
 
 // ============================================================================
 // Helpers
@@ -72,13 +80,13 @@ describe('stripInternalTags', () => {
 // ============================================================================
 
 describe('baseNormalizer.normalizeIncoming', () => {
-  it('passes through text as-is', () => {
-    const result = baseNormalizer.normalizeIncoming(makeMsg({ text: 'Hello world' }));
+  it('passes through text as-is', async () => {
+    const result = await baseNormalizer.normalizeIncoming(makeMsg({ text: 'Hello world' }));
     expect(result.text).toBe('Hello world');
   });
 
-  it('returns [Attachment] for empty text with attachments', () => {
-    const result = baseNormalizer.normalizeIncoming(
+  it('returns [Attachment] for empty text with attachments', async () => {
+    const result = await baseNormalizer.normalizeIncoming(
       makeMsg({
         text: '',
         attachments: [
@@ -95,14 +103,14 @@ describe('baseNormalizer.normalizeIncoming', () => {
     expect(result.text).toBe('[Attachment]');
   });
 
-  it('returns empty string for empty text with no attachments', () => {
-    const result = baseNormalizer.normalizeIncoming(makeMsg({ text: '' }));
+  it('returns empty string for empty text with no attachments', async () => {
+    const result = await baseNormalizer.normalizeIncoming(makeMsg({ text: '' }));
     expect(result.text).toBe('');
   });
 
-  it('converts attachments to base64 data URIs', () => {
+  it('converts attachments to base64 data URIs', async () => {
     const data = Buffer.from('hello');
-    const result = baseNormalizer.normalizeIncoming(
+    const result = await baseNormalizer.normalizeIncoming(
       makeMsg({
         attachments: [
           { type: 'document', mimeType: 'text/plain', data, filename: 'f.txt', size: 5 },
@@ -113,8 +121,8 @@ describe('baseNormalizer.normalizeIncoming', () => {
     expect(result.attachments![0].data).toMatch(/^data:text\/plain;base64,/);
   });
 
-  it('filters out attachments without data', () => {
-    const result = baseNormalizer.normalizeIncoming(
+  it('filters out attachments without data', async () => {
+    const result = await baseNormalizer.normalizeIncoming(
       makeMsg({
         attachments: [{ type: 'image', mimeType: 'image/png', filename: 'no-data.png', size: 0 }],
       })
@@ -122,8 +130,8 @@ describe('baseNormalizer.normalizeIncoming', () => {
     expect(result.attachments).toBeUndefined();
   });
 
-  it('handles message with no attachments', () => {
-    const result = baseNormalizer.normalizeIncoming(makeMsg({ text: 'hi' }));
+  it('handles message with no attachments', async () => {
+    const result = await baseNormalizer.normalizeIncoming(makeMsg({ text: 'hi' }));
     expect(result.attachments).toBeUndefined();
   });
 });

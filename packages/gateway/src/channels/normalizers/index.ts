@@ -31,7 +31,7 @@ export interface ChannelNormalizer {
    * Normalize an incoming channel message into a clean text + attachments pair.
    * Handles platform-specific HTML entities, command prefixes, etc.
    */
-  normalizeIncoming(msg: ChannelIncomingMessage): NormalizedIncoming;
+  normalizeIncoming(msg: ChannelIncomingMessage): NormalizedIncoming | Promise<NormalizedIncoming>;
 
   /**
    * Normalize the outgoing agent response for the target platform.

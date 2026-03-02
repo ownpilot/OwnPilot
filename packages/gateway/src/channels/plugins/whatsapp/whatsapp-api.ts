@@ -11,6 +11,7 @@ import makeWASocket, {
   makeCacheableSignalKeyStore,
   DisconnectReason,
   fetchLatestBaileysVersion,
+  downloadMediaMessage,
   type WASocket,
   type WAMessage,
 } from '@whiskeysockets/baileys';
@@ -441,11 +442,19 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
         filename: m.documentMessage.fileName ?? undefined,
       });
     }
-    // Audio messages
+    // Audio messages — download binary for auto-transcription
     else if (m.audioMessage) {
+      let audioData: Uint8Array | undefined;
+      try {
+        const buffer = await downloadMediaMessage(msg, 'buffer', {});
+        audioData = buffer instanceof Buffer ? new Uint8Array(buffer) : undefined;
+      } catch {
+        // Download failed — metadata-only fallback
+      }
       attachments.push({
         type: 'audio',
         mimeType: m.audioMessage.mimetype ?? 'audio/ogg',
+        data: audioData,
       });
     }
     // Video messages

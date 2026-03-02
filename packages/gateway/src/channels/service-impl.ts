@@ -944,7 +944,7 @@ export class ChannelServiceImpl implements IChannelService {
     // Normalize incoming message via channel normalizer
     const { getNormalizer } = await import('./normalizers/index.js');
     const channelNormalizer = getNormalizer(message.platform);
-    const incoming = channelNormalizer.normalizeIncoming(message);
+    const incoming = await channelNormalizer.normalizeIncoming(message);
 
     // Build NormalizedMessage from normalized incoming
     const normalized: NormalizedMessage = {

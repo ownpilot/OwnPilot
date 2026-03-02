@@ -52,3 +52,4 @@ export { subagentRoutes } from './subagents.js';
 export { bridgeRoutes } from './bridges.js';
 export { orchestraRoutes } from './orchestra.js';
 export { artifactsRoutes } from './artifacts.js';
+export { voiceRoutes } from './voice.js';

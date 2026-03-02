@@ -3,6 +3,7 @@
  *
  * Default normalizer for platforms without a specific implementation.
  * Pass-through with basic internal tag stripping.
+ * Auto-transcribes audio attachments via VoiceService when available.
  */
 
 import type { ChannelIncomingMessage, NormalizedAttachment } from '@ownpilot/core';
@@ -27,10 +28,43 @@ export function stripInternalTags(text: string): string {
   return result.trim();
 }
 
+/** MIME type → file extension mapping for audio */
+const AUDIO_MIME_EXT: Record<string, string> = {
+  'audio/ogg': 'ogg',
+  'audio/mpeg': 'mp3',
+  'audio/mp4': 'm4a',
+  'audio/wav': 'wav',
+  'audio/webm': 'webm',
+  'audio/flac': 'flac',
+  'audio/x-m4a': 'm4a',
+};
+
+/**
+ * Attempt to transcribe an audio attachment via VoiceService.
+ * Returns the transcription text, or null on any error.
+ */
+export async function transcribeAudioAttachment(
+  data: Uint8Array,
+  mimeType: string
+): Promise<string | null> {
+  try {
+    const { getVoiceService } = await import('../../services/voice-service.js');
+    const service = getVoiceService();
+    if (!(await service.isAvailable())) return null;
+
+    const ext = AUDIO_MIME_EXT[mimeType] || 'ogg';
+    const result = await service.transcribe(Buffer.from(data), `voice.${ext}`);
+    return result.text?.trim() || null;
+  } catch {
+    // Voice service not configured or transcription failed — silent
+    return null;
+  }
+}
+
 export const baseNormalizer: ChannelNormalizer = {
   platform: 'default',
 
-  normalizeIncoming(msg: ChannelIncomingMessage): NormalizedIncoming {
+  async normalizeIncoming(msg: ChannelIncomingMessage): Promise<NormalizedIncoming> {
     // Convert attachments to base64 data URIs
     const attachments: NormalizedAttachment[] | undefined = msg.attachments
       ?.filter((a) => a.data)
@@ -42,8 +76,27 @@ export const baseNormalizer: ChannelNormalizer = {
         size: a.size,
       }));
 
+    // Auto-transcribe audio attachments
+    const transcriptions: string[] = [];
+    const audioAttachments = msg.attachments?.filter((a) => a.type === 'audio' && a.data);
+    if (audioAttachments?.length) {
+      for (const att of audioAttachments) {
+        const text = await transcribeAudioAttachment(att.data!, att.mimeType);
+        if (text) transcriptions.push(text);
+      }
+    }
+
+    // Build final text: transcription prefix + original text
+    let text = msg.text || '';
+    if (transcriptions.length > 0) {
+      const prefix = transcriptions.map((t) => `[Voice message]: ${t}`).join('\n');
+      text = text ? `${prefix}\n\n${text}` : prefix;
+    } else if (!text && attachments?.length) {
+      text = '[Attachment]';
+    }
+
     return {
-      text: msg.text || (attachments?.length ? '[Attachment]' : ''),
+      text,
       attachments: attachments?.length ? attachments : undefined,
     };
   },
