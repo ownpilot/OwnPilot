@@ -78,11 +78,13 @@
 
 ## Monitoring & Observability
 
-### OBS-001: Insufficient Context in Error Logs
+> OBS-001 resolved — structured context objects added to all error/warn logs in background-agent-manager and subagent-manager (2026-03-02).
 
-**Location**: Various locations
+### OBS-001: Insufficient Context in Error Logs — Fixed
 
-**Description**: Many error logs don't include enough context for debugging (userId, sessionId, correlation IDs).
+**Location**: `background-agent-manager.ts`, `subagent-manager.ts`
+
+**Description**: Converted 12 template-literal error/warn logs to structured context objects with `agentId`, `error`, `subagentId`, etc.
 
 **Solution**: Standardize error logging with structured context:
 ```typescript
@@ -117,6 +119,7 @@ log.error('Operation failed', {
 | TEST-002 | Missing budget enforcement tests | Added 3 budget + 1 rate limit tests for BackgroundAgentManager | 2026-03-02 |
 | TOOL-001 | Fetch timeout not configurable | Added 30s AbortController timeout to `createSafeFetch` | 2026-03-02 |
 | TOOL-002 | Missing file download size validation | Added 100MB Content-Length pre-check + post-download size guard | 2026-03-02 |
+| OBS-001 | Insufficient context in error logs | Structured context objects in background-agent-manager + subagent-manager | 2026-03-02 |
 | BUG-011 | Chat history cache not cleared | Fixed in commit with cache cleanup | 2026-02-18 |
 | - | Grammy middleware ordering | Commands now registered before message handlers | 2026-02-19 |
 | - | CLAUDECODE env var blocking child processes | `delete env.CLAUDECODE` in spawn | 2026-02-25 |
@@ -142,4 +145,4 @@ log.error('Operation failed', {
 ---
 
 *This document is maintained by the development team.*
-*Last updated: 2026-03-02 | Open: 1 Sec (hardening) + 1 Obs | Resolved: 15 bugs + 1 security + 3 speculative closed*
+*Last updated: 2026-03-02 | Open: 1 Sec (hardening only) | Resolved: 16 bugs + 1 security + 1 observability + 3 speculative closed*

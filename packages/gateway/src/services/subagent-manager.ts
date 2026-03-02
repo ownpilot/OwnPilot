@@ -346,7 +346,7 @@ export class SubagentManager {
         managed.session.durationMs =
           managed.session.completedAt.getTime() - managed.session.spawnedAt.getTime();
 
-        log.error(`Subagent "${managed.session.name}" [${id}] error: ${managed.session.error}`);
+        log.error('Subagent execution error', { subagentId: id, name: managed.session.name, parentId: managed.session.parentId, error: managed.session.error });
 
         this.persistSession(managed.session);
         this.emitCompleted(managed.session);
@@ -355,7 +355,7 @@ export class SubagentManager {
 
   private persistSession(session: SubagentSession): void {
     this.repo.saveExecution(session).catch((err) => {
-      log.error(`Failed to persist subagent history: ${getErrorMessage(err)}`);
+      log.error('Failed to persist subagent history', { subagentId: session.id, error: getErrorMessage(err) });
     });
   }
 
@@ -385,7 +385,7 @@ export class SubagentManager {
       try {
         this.cleanup();
       } catch (err) {
-        log.error(`Subagent cleanup error: ${getErrorMessage(err)}`);
+        log.error('Subagent cleanup error', { error: getErrorMessage(err) });
       }
     }, CLEANUP_INTERVAL_MS);
     // Don't keep process alive just for cleanup

@@ -87,11 +87,11 @@ export class BackgroundAgentManager {
           await this.startAgent(config);
           log.info(`Resumed interrupted agent: ${config.name} [${config.id}]`);
         } catch (err) {
-          log.error(`Failed to resume agent ${config.id}: ${getErrorMessage(err)}`);
+          log.error('Failed to resume agent', { agentId: config.id, error: getErrorMessage(err) });
         }
       }
     } catch (err) {
-      log.error(`Failed to load interrupted sessions: ${getErrorMessage(err)}`);
+      log.error('Failed to load interrupted sessions', { error: getErrorMessage(err) });
     }
 
     // Start autoStart agents that don't have interrupted sessions
@@ -103,12 +103,12 @@ export class BackgroundAgentManager {
             await this.startAgent(config);
             log.info(`Auto-started agent: ${config.name} [${config.id}]`);
           } catch (err) {
-            log.error(`Failed to auto-start agent ${config.id}: ${getErrorMessage(err)}`);
+            log.error('Failed to auto-start agent', { agentId: config.id, error: getErrorMessage(err) });
           }
         }
       }
     } catch (err) {
-      log.error(`Failed to load autoStart agents: ${getErrorMessage(err)}`);
+      log.error('Failed to load autoStart agents', { error: getErrorMessage(err) });
     }
 
     log.info(`Background Agent Manager started (${this.agents.size} agents running)`);
@@ -212,7 +212,7 @@ export class BackgroundAgentManager {
     }
     managed.persistTimer = setInterval(() => {
       this.persistSession(config.id).catch((err) => {
-        log.error(`Session persist error for ${config.id}: ${getErrorMessage(err)}`);
+        log.error('Session persist error', { agentId: config.id, error: getErrorMessage(err) });
       });
     }, SESSION_PERSIST_INTERVAL_MS);
 
@@ -412,7 +412,7 @@ export class BackgroundAgentManager {
 
     managed.timer = setTimeout(() => {
       this.executeCycle(agentId).catch((err) => {
-        log.error(`Cycle execution error for ${agentId}: ${getErrorMessage(err)}`);
+        log.error('Cycle execution error', { agentId, error: getErrorMessage(err) });
       });
     }, delay);
   }
@@ -422,7 +422,7 @@ export class BackgroundAgentManager {
 
     managed.timer = setTimeout(() => {
       this.executeCycle(agentId).catch((err) => {
-        log.error(`Cycle execution error for ${agentId}: ${getErrorMessage(err)}`);
+        log.error('Cycle execution error', { agentId, error: getErrorMessage(err) });
       });
     }, interval);
   }
@@ -430,7 +430,7 @@ export class BackgroundAgentManager {
   private scheduleImmediate(agentId: string, managed: ManagedAgent): void {
     managed.timer = setTimeout(() => {
       this.executeCycle(agentId).catch((err) => {
-        log.error(`Cycle execution error for ${agentId}: ${getErrorMessage(err)}`);
+        log.error('Cycle execution error', { agentId, error: getErrorMessage(err) });
       });
     }, 0);
   }
@@ -497,7 +497,7 @@ export class BackgroundAgentManager {
       if (session.config.mode !== 'event') {
         managed.timer = setTimeout(() => {
           this.executeCycle(agentId).catch((err) => {
-            log.error(`Rate-limited cycle retry error for ${agentId}: ${getErrorMessage(err)}`);
+            log.error('Rate-limited cycle retry error', { agentId, error: getErrorMessage(err) });
           });
         }, 60_000); // Retry in 1 minute
       }
@@ -507,7 +507,7 @@ export class BackgroundAgentManager {
     // Budget check
     if (session.config.limits.totalBudgetUsd !== undefined) {
       if (session.totalCostUsd >= session.config.limits.totalBudgetUsd) {
-        log.warn(`Agent ${agentId} has exceeded budget (${session.totalCostUsd} USD)`);
+        log.warn('Agent budget exceeded', { agentId, totalCostUsd: session.totalCostUsd, budgetUsd: session.config.limits.totalBudgetUsd });
         await this.stopAgent(agentId, 'budget_exceeded');
         return;
       }
@@ -560,7 +560,7 @@ export class BackgroundAgentManager {
       const repo = getBackgroundAgentsRepository();
       await repo.saveHistory(agentId, cycleNumber, result);
     } catch (err) {
-      log.error(`Failed to save cycle history for ${agentId}: ${getErrorMessage(err)}`);
+      log.error('Failed to save cycle history', { agentId, error: getErrorMessage(err) });
     }
 
     // Emit cycle complete event
@@ -583,7 +583,7 @@ export class BackgroundAgentManager {
 
     // Auto-pause on too many consecutive errors
     if (managed.consecutiveErrors >= MAX_CONSECUTIVE_ERRORS) {
-      log.warn(`Agent ${agentId} hit ${MAX_CONSECUTIVE_ERRORS} consecutive errors, auto-pausing`);
+      log.warn('Agent auto-pausing due to consecutive errors', { agentId, consecutiveErrors: MAX_CONSECUTIVE_ERRORS });
       this.emitEvent('background-agent.error', {
         agentId,
         error: `Auto-paused after ${MAX_CONSECUTIVE_ERRORS} consecutive errors`,
@@ -638,7 +638,7 @@ export class BackgroundAgentManager {
     if (result.outputMessage.includes('MISSION_COMPLETE')) {
       log.info(`Agent ${agentId} reported MISSION_COMPLETE`);
       this.stopAgent(agentId, 'completed').catch((err) => {
-        log.error(`Failed to stop completed agent ${agentId}: ${getErrorMessage(err)}`);
+        log.error('Failed to stop completed agent', { agentId, error: getErrorMessage(err) });
       });
       return true;
     }
@@ -651,7 +651,7 @@ export class BackgroundAgentManager {
         if (session.cyclesCompleted >= maxCycles) {
           log.info(`Agent ${agentId} reached max_cycles:${maxCycles}`);
           this.stopAgent(agentId, 'completed').catch((err) => {
-            log.error(`Failed to stop completed agent ${agentId}: ${getErrorMessage(err)}`);
+            log.error('Failed to stop completed agent', { agentId, error: getErrorMessage(err) });
           });
           return true;
         }
