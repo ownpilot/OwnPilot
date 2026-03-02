@@ -6,7 +6,6 @@
  */
 
 import { useState, useCallback, useEffect } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArtifactCard } from '../components/ArtifactCard';
 import { EmptyState } from '../components/EmptyState';
 import { SkeletonCard } from '../components/Skeleton';
@@ -51,74 +50,62 @@ const FILTER_TABS: FilterTab[] = [
 // =============================================================================
 
 export function ArtifactsPage() {
-  const queryClient = useQueryClient();
   const { subscribe } = useGateway();
   const [activeTab, setActiveTab] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchInput, setSearchInput] = useState('');
+  const [artifacts, setArtifacts] = useState<Artifact[]>([]);
+  const [total, setTotal] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const currentFilter = FILTER_TABS.find((t) => t.key === activeTab)?.filter ?? {};
-
-  const { data, isLoading, refetch } = useQuery({
-    queryKey: ['artifacts', activeTab, searchQuery],
-    queryFn: () =>
-      artifactsApi.list({
-        ...currentFilter,
+  const fetchArtifacts = useCallback(async () => {
+    const filter = FILTER_TABS.find((t) => t.key === activeTab)?.filter ?? {};
+    try {
+      const data = await artifactsApi.list({
+        ...filter,
         search: searchQuery || undefined,
         limit: 50,
-      }),
-  });
+      });
+      setArtifacts(data?.artifacts ?? []);
+      setTotal(data?.total ?? 0);
+    } catch {
+      // API client handles error reporting
+    } finally {
+      setIsLoading(false);
+    }
+  }, [activeTab, searchQuery]);
+
+  useEffect(() => {
+    setIsLoading(true);
+    fetchArtifacts();
+  }, [fetchArtifacts]);
 
   // WS-driven refresh
   useEffect(() => {
     const unsub = subscribe<{ entity: string }>('data:changed', (payload) => {
       if (payload.entity === 'artifact') {
-        queryClient.invalidateQueries({ queryKey: ['artifacts'] });
+        fetchArtifacts();
       }
     });
-    return () => { unsub(); };
-  }, [subscribe, queryClient]);
+    return () => {
+      unsub();
+    };
+  }, [subscribe, fetchArtifacts]);
 
   // Debounced search
-  const [searchInput, setSearchInput] = useState('');
   useEffect(() => {
     const t = setTimeout(() => setSearchQuery(searchInput), 300);
     return () => clearTimeout(t);
   }, [searchInput]);
 
-  const handleDelete = useCallback(
-    (id: string) => {
-      queryClient.setQueryData<{ artifacts: Artifact[]; total: number }>(
-        ['artifacts', activeTab, searchQuery],
-        (old) => {
-          if (!old) return old;
-          return {
-            artifacts: old.artifacts.filter((a) => a.id !== id),
-            total: old.total - 1,
-          };
-        }
-      );
-    },
-    [queryClient, activeTab, searchQuery]
-  );
+  const handleDelete = useCallback((id: string) => {
+    setArtifacts((prev) => prev.filter((a) => a.id !== id));
+    setTotal((prev) => Math.max(0, prev - 1));
+  }, []);
 
-  const handleUpdate = useCallback(
-    (updated: Artifact) => {
-      queryClient.setQueryData<{ artifacts: Artifact[]; total: number }>(
-        ['artifacts', activeTab, searchQuery],
-        (old) => {
-          if (!old) return old;
-          return {
-            ...old,
-            artifacts: old.artifacts.map((a) => (a.id === updated.id ? updated : a)),
-          };
-        }
-      );
-    },
-    [queryClient, activeTab, searchQuery]
-  );
-
-  const artifacts = data?.artifacts ?? [];
-  const total = data?.total ?? 0;
+  const handleUpdate = useCallback((updated: Artifact) => {
+    setArtifacts((prev) => prev.map((a) => (a.id === updated.id ? updated : a)));
+  }, []);
 
   return (
     <div className="flex flex-col h-full">
@@ -133,7 +120,10 @@ export function ArtifactsPage() {
           </p>
         </div>
         <button
-          onClick={() => refetch()}
+          onClick={() => {
+            setIsLoading(true);
+            fetchArtifacts();
+          }}
           className="p-2 rounded-lg hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary transition-colors"
           title="Refresh"
         >
