@@ -828,6 +828,10 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
         this.qrCode = null;
         this.emitConnectionEvent('disconnected');
         log.error(`WhatsApp permanently disconnected (code: ${statusCode}) — reconnect DISABLED to prevent ban escalation`);
+        // Auto-clear stale session so the next connect() generates a fresh QR
+        clearSession(this.pluginId).catch((err) => {
+          log.warn('Failed to clear stale WhatsApp session', { error: String(err) });
+        });
       } else {
         // Temporary disconnect — auto-reconnect with backoff
         this.status = 'reconnecting';

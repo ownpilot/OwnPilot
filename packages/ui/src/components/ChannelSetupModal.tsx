@@ -119,6 +119,7 @@ export function ChannelSetupModal({ onClose, onSuccess }: ChannelSetupModalProps
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [tokenError, setTokenError] = useState<string | null>(null);
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
+  const [qrError, setQrError] = useState<string | null>(null);
   const [result, setResult] = useState<{
     success: boolean;
     message: string;
@@ -154,6 +155,8 @@ export function ChannelSetupModal({ onClose, onSuccess }: ChannelSetupModalProps
   const startQrSetup = useCallback(async () => {
     if (!platform) return;
 
+    setQrDataUrl(null);
+    setQrError(null);
     setStep('connecting');
 
     try {
@@ -262,7 +265,8 @@ export function ChannelSetupModal({ onClose, onSuccess }: ChannelSetupModalProps
       status: string;
       botInfo?: { username?: string; firstName?: string } | null;
     }>('channel:status', (data) => {
-      if (data.channelId === platform.pluginId && data.status === 'connected') {
+      if (data.channelId !== platform.pluginId) return;
+      if (data.status === 'connected') {
         setResult({
           success: true,
           message: 'Channel connected!',
@@ -270,6 +274,13 @@ export function ChannelSetupModal({ onClose, onSuccess }: ChannelSetupModalProps
         });
         setStep('result');
         toast.success(`${platform.name} connected`);
+      } else if (data.status === 'disconnected' || data.status === 'error') {
+        // Session expired or connection failed — tell user to logout & retry
+        setQrError(
+          data.status === 'disconnected'
+            ? 'Session expired. Logout the channel first, then try again to get a fresh QR code.'
+            : 'Connection failed. Please check your network and try again.'
+        );
       }
     });
 
@@ -287,16 +298,28 @@ export function ChannelSetupModal({ onClose, onSuccess }: ChannelSetupModalProps
           toast.success(`${platform.name} connected`);
           return;
         }
+        if (resp.status === 'disconnected' || resp.status === 'error') {
+          setQrError(
+            resp.status === 'disconnected'
+              ? 'Session expired. Logout the channel first, then try again to get a fresh QR code.'
+              : 'Connection failed. Please check your network and try again.'
+          );
+          return;
+        }
         if (resp.qr) {
-          const dataUrl = await QRCode.toDataURL(resp.qr, {
-            width: 280,
-            margin: 2,
-            color: { dark: '#000000', light: '#ffffff' },
-          });
-          setQrDataUrl(dataUrl);
+          try {
+            const dataUrl = await QRCode.toDataURL(resp.qr, {
+              width: 280,
+              margin: 2,
+              color: { dark: '#000000', light: '#ffffff' },
+            });
+            setQrDataUrl(dataUrl);
+          } catch {
+            setQrError('Failed to render QR code. Please try again.');
+          }
         }
       } catch {
-        // Poll failure is non-critical
+        // Poll failure — gateway unreachable, will retry
       }
     };
 
@@ -317,6 +340,7 @@ export function ChannelSetupModal({ onClose, onSuccess }: ChannelSetupModalProps
   const handleRetry = useCallback(() => {
     setResult(null);
     setQrDataUrl(null);
+    setQrError(null);
     setStep('token');
   }, []);
 
@@ -327,9 +351,11 @@ export function ChannelSetupModal({ onClose, onSuccess }: ChannelSetupModalProps
       setRestrictIds('');
       setTokenError(null);
       setQrDataUrl(null);
+      setQrError(null);
       setStep('platform');
     } else if (step === 'qr') {
       setQrDataUrl(null);
+      setQrError(null);
       setStep('token');
     }
   }, [step]);
@@ -521,32 +547,61 @@ export function ChannelSetupModal({ onClose, onSuccess }: ChannelSetupModalProps
           {/* Step 3b: QR Code Scan */}
           {step === 'qr' && (
             <div className="flex flex-col items-center justify-center py-4">
-              <p className="text-sm text-text-secondary dark:text-dark-text-secondary mb-4 text-center">
-                Open WhatsApp on your phone, go to{' '}
-                <strong>Settings &gt; Linked Devices &gt; Link a Device</strong>, then scan this
-                code:
-              </p>
-
-              {qrDataUrl ? (
-                <div className="bg-white p-3 rounded-xl shadow-md">
-                  <img src={qrDataUrl} alt="WhatsApp QR Code" className="w-[280px] h-[280px]" />
+              {qrError ? (
+                /* Error state */
+                <div className="w-full space-y-4">
+                  <div className="flex items-start gap-3 p-4 rounded-lg border border-error/30 bg-error/5">
+                    <AlertTriangle className="w-5 h-5 text-error shrink-0 mt-0.5" />
+                    <p className="text-sm text-text-secondary dark:text-dark-text-secondary">
+                      {qrError}
+                    </p>
+                  </div>
+                  <div className="flex justify-between">
+                    <button
+                      onClick={handleBack}
+                      className="px-4 py-2 text-sm text-text-secondary dark:text-dark-text-secondary hover:text-text-primary transition-colors"
+                    >
+                      Back
+                    </button>
+                    <button
+                      onClick={() => { setQrError(null); startQrSetup(); }}
+                      className="px-4 py-2 text-sm font-medium bg-primary text-white rounded-lg hover:bg-primary-hover transition-colors"
+                    >
+                      Retry
+                    </button>
+                  </div>
                 </div>
               ) : (
-                <div className="w-[280px] h-[280px] bg-bg-tertiary dark:bg-dark-bg-tertiary rounded-xl flex items-center justify-center">
-                  <LoadingSpinner />
-                </div>
+                /* Normal QR state */
+                <>
+                  <p className="text-sm text-text-secondary dark:text-dark-text-secondary mb-4 text-center">
+                    Open WhatsApp on your phone, go to{' '}
+                    <strong>Settings &gt; Linked Devices &gt; Link a Device</strong>, then scan this
+                    code:
+                  </p>
+
+                  {qrDataUrl ? (
+                    <div className="bg-white p-3 rounded-xl shadow-md">
+                      <img src={qrDataUrl} alt="WhatsApp QR Code" className="w-[280px] h-[280px]" />
+                    </div>
+                  ) : (
+                    <div className="w-[280px] h-[280px] bg-bg-tertiary dark:bg-dark-bg-tertiary rounded-xl flex items-center justify-center">
+                      <LoadingSpinner />
+                    </div>
+                  )}
+
+                  <p className="text-xs text-text-muted dark:text-dark-text-muted mt-4">
+                    {qrDataUrl ? 'QR code expires in ~20s — will refresh automatically' : 'Generating QR code...'}
+                  </p>
+
+                  <button
+                    onClick={handleBack}
+                    className="mt-4 px-4 py-2 text-sm text-text-secondary dark:text-dark-text-secondary hover:text-text-primary transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </>
               )}
-
-              <p className="text-xs text-text-muted dark:text-dark-text-muted mt-4">
-                Waiting for QR scan...
-              </p>
-
-              <button
-                onClick={handleBack}
-                className="mt-4 px-4 py-2 text-sm text-text-secondary dark:text-dark-text-secondary hover:text-text-primary transition-colors"
-              >
-                Cancel
-              </button>
             </div>
           )}
 
