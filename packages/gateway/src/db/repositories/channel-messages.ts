@@ -264,6 +264,65 @@ export class ChannelMessagesRepository extends BaseRepository {
     return row ? new Date(row.created_at) : null;
   }
 
+  /**
+   * Get distinct chats (by sender) for a channel, with message count and last activity.
+   * Derives chat list from existing messages — no schema migration needed.
+   */
+  async getDistinctChats(
+    channelId: string,
+    limit = 20,
+    offset = 0
+  ): Promise<{
+    chats: Array<{
+      id: string;
+      displayName: string | null;
+      platform: string;
+      messageCount: number;
+      lastMessageAt: string;
+    }>;
+    total: number;
+  }> {
+    const rows = await this.query<{
+      sender_id: string;
+      sender_name: string | null;
+      message_count: string;
+      last_message_at: string;
+      total_count: string;
+    }>(
+      `SELECT
+         sender_id,
+         (SELECT m2.sender_name FROM channel_messages m2
+          WHERE m2.sender_id = channel_messages.sender_id AND m2.channel_id = $1
+          ORDER BY m2.created_at DESC LIMIT 1) AS sender_name,
+         COUNT(*)          AS message_count,
+         MAX(created_at)   AS last_message_at,
+         COUNT(*) OVER()   AS total_count
+       FROM channel_messages
+       WHERE channel_id = $1
+         AND direction = 'inbound'
+         AND sender_id IS NOT NULL
+       GROUP BY sender_id
+       ORDER BY last_message_at DESC
+       LIMIT $2 OFFSET $3`,
+      [channelId, limit, offset]
+    );
+
+    // Extract platform from channelId (e.g., "channel.whatsapp" → "whatsapp")
+    const platform = channelId.includes('.') ? channelId.split('.').pop() ?? channelId : channelId;
+    const total = rows.length > 0 ? parseInt(rows[0]!.total_count, 10) : 0;
+
+    return {
+      chats: rows.map((r) => ({
+        id: r.sender_id,
+        displayName: r.sender_name ?? null,
+        platform,
+        messageCount: parseInt(r.message_count, 10),
+        lastMessageAt: r.last_message_at,
+      })),
+      total,
+    };
+  }
+
   async countInbox(): Promise<number> {
     const row = await this.queryOne<{ count: string }>(
       `SELECT COUNT(*) as count FROM channel_messages WHERE direction = 'inbound'`

@@ -82,6 +82,33 @@ interface WhatsAppBaileysConfig {
 }
 
 // ============================================================================
+// Group/Chat Listing Types
+// ============================================================================
+
+export interface WhatsAppGroupSummary {
+  id: string;
+  subject: string;
+  description: string | null;
+  participantCount: number;
+  createdAt: number | null;
+  owner: string | null;
+  isAnnounceGroup: boolean;
+  isLocked: boolean;
+  isCommunity: boolean;
+  isCommunityAnnounce: boolean;
+  linkedParent: string | null;
+}
+
+export interface WhatsAppGroupDetail extends WhatsAppGroupSummary {
+  participants: Array<{
+    jid: string;
+    phone: string;
+    isAdmin: boolean;
+    isSuperAdmin: boolean;
+  }>;
+}
+
+// ============================================================================
 // WhatsApp Baileys API
 // ============================================================================
 
@@ -113,6 +140,13 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
   private msgRetryCounterCache = new SimpleTTLCache<number>(300_000); // 5 min TTL
   // Anti-ban: device info cache (reduces protocol overhead — WAHA pattern)
   private userDevicesCache = new SimpleTTLCache<string[]>(300_000); // 5 min TTL
+
+  // Group listing cache (5 min TTL — prevents excessive groupFetchAllParticipating calls)
+  private groupsCache: WhatsAppGroupSummary[] | null = null;
+  private groupsRawParticipants: Map<string, Array<{ id: string; admin?: string | null }>> | null = null;
+  private groupsCacheTime = 0;
+  private groupsFetchInFlight: Promise<WhatsAppGroupSummary[]> | null = null;
+  private static readonly GROUPS_CACHE_TTL = 5 * 60_000;
 
   constructor(config: Record<string, unknown>, pluginId: string) {
     this.pluginId = pluginId;
@@ -396,6 +430,122 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
   }
 
   // ==========================================================================
+  // Group/Chat Listing — Extended API (duck-type guard accessed)
+  // ==========================================================================
+
+  /**
+   * List all WhatsApp groups the account participates in.
+   * Uses groupFetchAllParticipating() — ONE safe Baileys call.
+   * Results cached for 5 minutes to prevent excessive WhatsApp API calls.
+   * Profile pictures deliberately omitted (Evolution API bottleneck: 69 sequential calls).
+   */
+  async listGroups(includeParticipants = false): Promise<WhatsAppGroupSummary[] | WhatsAppGroupDetail[]> {
+    const sock = this.sock;
+    if (!sock || this.status !== 'connected') {
+      throw new Error('WhatsApp is not connected');
+    }
+
+    // Return cache if valid and participants not requested
+    const cacheAge = Date.now() - this.groupsCacheTime;
+    if (!includeParticipants && this.groupsCache && cacheAge < WhatsAppChannelAPI.GROUPS_CACHE_TTL) {
+      return this.groupsCache;
+    }
+
+    // Deduplicate concurrent requests — reuse in-flight promise (anti-ban: prevents double API call)
+    if (!this.groupsFetchInFlight) {
+      this.groupsFetchInFlight = (async () => {
+        try {
+          const raw = await sock.groupFetchAllParticipating();
+          const groups = Object.values(raw);
+
+          const summaries: WhatsAppGroupSummary[] = groups.map((g) => ({
+            id: g.id,
+            subject: g.subject ?? '',
+            description: g.desc ?? null,
+            participantCount: g.participants?.length ?? 0,
+            createdAt: g.creation ?? null,
+            owner: g.owner ? this.normalizeJid(g.owner) : null,
+            isAnnounceGroup: g.announce ?? false,
+            isLocked: g.restrict ?? false,
+            isCommunity: (g as unknown as Record<string, unknown>).isCommunity === true,
+            isCommunityAnnounce: (g as unknown as Record<string, unknown>).isCommunityAnnounce === true,
+            linkedParent: ((g as unknown as Record<string, unknown>).linkedParent as string) ?? null,
+          }));
+
+          // Only update cache if socket is still the same (guards against stale write after disconnect)
+          if (this.sock === sock) {
+            this.groupsCache = summaries;
+            this.groupsCacheTime = Date.now();
+            // Cache raw participants for includeParticipants=true requests within same TTL window
+            this.groupsRawParticipants = new Map(
+              groups.map((g) => [g.id, (g.participants ?? []).map((p) => ({ id: p.id, admin: p.admin }))])
+            );
+          }
+
+          return summaries;
+        } finally {
+          this.groupsFetchInFlight = null;
+        }
+      })();
+    }
+
+    const summaries = await this.groupsFetchInFlight;
+
+    if (!includeParticipants) return summaries;
+
+    // Build detail from cached summaries + cached raw participants (single fetch, no double API call)
+    return summaries.map((s) => {
+      const rawParticipants = this.groupsRawParticipants?.get(s.id) ?? [];
+      return {
+        ...s,
+        participants: rawParticipants.map((p) => ({
+          jid: this.normalizeJid(p.id),
+          phone: this.phoneFromJid(p.id),
+          isAdmin: p.admin === 'admin' || p.admin === 'superadmin',
+          isSuperAdmin: p.admin === 'superadmin',
+        })),
+      };
+    });
+  }
+
+  /**
+   * Fetch full metadata for a single group by JID.
+   * Uses groupMetadata() — one targeted Baileys call per invocation.
+   */
+  async getGroup(groupJid: string): Promise<WhatsAppGroupDetail> {
+    if (!groupJid.endsWith('@g.us')) {
+      throw new Error(`Invalid group JID: expected @g.us suffix`);
+    }
+
+    const sock = this.sock;
+    if (!sock || this.status !== 'connected') {
+      throw new Error('WhatsApp is not connected');
+    }
+
+    const g = await sock.groupMetadata(groupJid);
+
+    return {
+      id: g.id,
+      subject: g.subject ?? '',
+      description: g.desc ?? null,
+      participantCount: g.participants?.length ?? 0,
+      createdAt: g.creation ?? null,
+      owner: g.owner ? this.normalizeJid(g.owner) : null,
+      isAnnounceGroup: g.announce ?? false,
+      isLocked: g.restrict ?? false,
+      isCommunity: (g as unknown as Record<string, unknown>).isCommunity === true,
+      isCommunityAnnounce: (g as unknown as Record<string, unknown>).isCommunityAnnounce === true,
+      linkedParent: ((g as unknown as Record<string, unknown>).linkedParent as string) ?? null,
+      participants: (g.participants ?? []).map((p) => ({
+        jid: this.normalizeJid(p.id),
+        phone: this.phoneFromJid(p.id),
+        isAdmin: p.admin === 'admin' || p.admin === 'superadmin',
+        isSuperAdmin: p.admin === 'superadmin',
+      })),
+    };
+  }
+
+  // ==========================================================================
   // Message Tracking
   // ==========================================================================
 
@@ -427,6 +577,9 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
       } catch {
         /* already closed */
       }
+      this.groupsCache = null;
+      this.groupsRawParticipants = null;
+      this.groupsCacheTime = 0;
       this.sock = null;
     }
   }
@@ -844,6 +997,18 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
   /** Extract phone number from a WhatsApp JID. */
   private phoneFromJid(jid: string): string {
     return jid.split('@')[0]?.split(':')[0] ?? jid;
+  }
+
+  /**
+   * Normalize a WhatsApp JID by stripping device suffix.
+   * "15551234567:3@s.whatsapp.net" -> "15551234567@s.whatsapp.net"
+   */
+  private normalizeJid(jid: string): string {
+    if (!jid || !jid.includes(':')) return jid;
+    const [userPart, domain] = jid.split('@');
+    if (!domain) return jid;
+    const phone = userPart!.split(':')[0]!;
+    return `${phone}@${domain}`;
   }
 
   /** Check if a message is sent to the user's own chat (self-chat). */

@@ -10,7 +10,7 @@ import { getChannelService, getDefaultPluginRegistry } from '@ownpilot/core';
 import { ChannelMessagesRepository } from '../db/repositories/channel-messages.js';
 import { channelUsersRepo } from '../db/repositories/channel-users.js';
 import { configServicesRepo } from '../db/repositories/config-services.js';
-import { apiResponse, apiError, ERROR_CODES, notFoundError, getErrorMessage } from './helpers.js';
+import { apiResponse, apiError, ERROR_CODES, notFoundError, getErrorMessage, getPaginationParams } from './helpers.js';
 import { pagination } from '../middleware/pagination.js';
 import { refreshChannelApi } from '../plugins/init.js';
 import { wsGateway } from '../ws/server.js';
@@ -54,6 +54,22 @@ function hasQrCode(api: unknown): api is ChannelAPIWithQrCode {
     api !== null &&
     'getQrCode' in api &&
     typeof (api as Record<string, unknown>).getQrCode === 'function'
+  );
+}
+
+interface ChannelAPIWithGroups {
+  listGroups(includeParticipants?: boolean): Promise<unknown[]>;
+  getGroup(groupJid: string): Promise<unknown>;
+}
+
+function hasGroups(api: unknown): api is ChannelAPIWithGroups {
+  return (
+    typeof api === 'object' &&
+    api !== null &&
+    'listGroups' in api &&
+    typeof (api as Record<string, unknown>).listGroups === 'function' &&
+    'getGroup' in api &&
+    typeof (api as Record<string, unknown>).getGroup === 'function'
   );
 }
 
@@ -497,6 +513,156 @@ channelRoutes.get('/:id/stats', async (c) => {
       {
         code: ERROR_CODES.FETCH_FAILED,
         message: getErrorMessage(error, 'Failed to fetch channel stats'),
+      },
+      500
+    );
+  }
+});
+
+/**
+ * GET /channels/:id/groups - List WhatsApp groups
+ */
+channelRoutes.get('/:id/groups', async (c) => {
+  const pluginId = c.req.param('id');
+  const service = getChannelService();
+  const api = service.getChannel(pluginId);
+
+  if (!api) {
+    return notFoundError(c, 'Channel', pluginId);
+  }
+
+  if (api.getStatus() !== 'connected') {
+    return apiError(
+      c,
+      { code: ERROR_CODES.SERVICE_UNAVAILABLE, message: 'Channel is not connected' },
+      503
+    );
+  }
+
+  if (!hasGroups(api)) {
+    return apiError(
+      c,
+      { code: ERROR_CODES.INVALID_REQUEST, message: 'Channel does not support group listing' },
+      400
+    );
+  }
+
+  try {
+    const includeParticipants = c.req.query('includeParticipants') === 'true';
+    const groups = await api.listGroups(includeParticipants);
+    return apiResponse(c, { groups, count: groups.length });
+  } catch (error) {
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.FETCH_FAILED,
+        message: getErrorMessage(error, 'Failed to fetch groups'),
+      },
+      500
+    );
+  }
+});
+
+/**
+ * GET /channels/:id/groups/:groupJid - Get single group details
+ */
+channelRoutes.get('/:id/groups/:groupJid', async (c) => {
+  const pluginId = c.req.param('id');
+  const rawGroupJid = c.req.param('groupJid');
+  const service = getChannelService();
+  const api = service.getChannel(pluginId);
+
+  if (!api) {
+    return notFoundError(c, 'Channel', pluginId);
+  }
+
+  if (api.getStatus() !== 'connected') {
+    return apiError(
+      c,
+      { code: ERROR_CODES.SERVICE_UNAVAILABLE, message: 'Channel is not connected' },
+      503
+    );
+  }
+
+  if (!hasGroups(api)) {
+    return apiError(
+      c,
+      { code: ERROR_CODES.INVALID_REQUEST, message: 'Channel does not support group listing' },
+      400
+    );
+  }
+
+  // Decode URL-encoded JID and auto-append @g.us if missing
+  let groupJid: string;
+  try {
+    groupJid = decodeURIComponent(rawGroupJid);
+  } catch {
+    return apiError(
+      c,
+      { code: ERROR_CODES.INVALID_REQUEST, message: 'Invalid group JID encoding' },
+      400
+    );
+  }
+  if (!groupJid.includes('@')) {
+    groupJid = `${groupJid}@g.us`;
+  }
+
+  // Validate JID format: numeric prefix + @g.us (prevents injection of arbitrary strings into Baileys)
+  if (!/^\d[\d-]*@g\.us$/.test(groupJid)) {
+    return apiError(
+      c,
+      { code: ERROR_CODES.INVALID_REQUEST, message: 'Invalid group JID format' },
+      400
+    );
+  }
+
+  try {
+    const group = await api.getGroup(groupJid);
+    return apiResponse(c, group);
+  } catch (error) {
+    const msg = getErrorMessage(error, '');
+    if (msg.includes('not-authorized') || msg.includes('item-not-found') || msg.includes('not found')) {
+      return apiError(
+        c,
+        { code: ERROR_CODES.NOT_FOUND, message: 'Group not found' },
+        404
+      );
+    }
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.FETCH_FAILED,
+        message: getErrorMessage(error, 'Failed to fetch group'),
+      },
+      500
+    );
+  }
+});
+
+/**
+ * GET /channels/:id/chats - List distinct chats from message history
+ */
+channelRoutes.get('/:id/chats', async (c) => {
+  const pluginId = c.req.param('id');
+  const service = getChannelService();
+  const channels = service.listChannels();
+  const ch = channels.find((x) => x.pluginId === pluginId);
+
+  if (!ch) {
+    return notFoundError(c, 'Channel', pluginId);
+  }
+
+  try {
+    const { limit, offset } = getPaginationParams(c, 20, 100);
+    const messagesRepo = new ChannelMessagesRepository();
+    const result = await messagesRepo.getDistinctChats(pluginId, limit, offset);
+    return apiResponse(c, { chats: result.chats, count: result.chats.length, total: result.total });
+  } catch (error) {
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.FETCH_FAILED,
+        message: getErrorMessage(error, 'Failed to fetch chats'),
       },
       500
     );
