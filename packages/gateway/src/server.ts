@@ -322,6 +322,18 @@ async function main() {
     log.warn('Channel auto-connect had errors', { error: String(err) });
   });
 
+  // Print pairing banner if no owner has been claimed yet
+  try {
+    const { hasAnyOwner, getPairingKey, printPairingBanner } = await import('./services/pairing-service.js');
+    const claimed = await hasAnyOwner();
+    if (!claimed) {
+      const key = await getPairingKey();
+      printPairingBanner(key);
+    }
+  } catch (err) {
+    log.warn('Could not check owner/pairing state', { error: String(err) });
+  }
+
   // 9. Plugin Service (wraps PluginRegistry)
   registry.register(Services.Plugin, await createPluginService());
 

@@ -65,6 +65,12 @@ const mockConversationsRepo = vi.hoisted(() => ({
 
 const mockGetOrCreateChatAgent = vi.hoisted(() => vi.fn());
 const mockIsDemoMode = vi.hoisted(() => vi.fn().mockResolvedValue(false));
+
+// Pairing service mocks (owner = sender by default so existing tests pass)
+const mockGetOwnerUserId = vi.hoisted(() => vi.fn().mockResolvedValue('user-456'));
+const mockClaimOwnership = vi.hoisted(() =>
+  vi.fn().mockResolvedValue({ success: false, alreadyClaimed: true, message: 'Already claimed.' })
+);
 const mockResolveForProcess = vi.hoisted(() =>
   vi.fn().mockResolvedValue({
     provider: 'openai',
@@ -140,6 +146,11 @@ vi.mock('../routes/settings.js', () => ({
 
 vi.mock('../db/repositories/conversations.js', () => ({
   createConversationsRepository: () => mockConversationsRepo,
+}));
+
+vi.mock('../services/pairing-service.js', () => ({
+  getOwnerUserId: mockGetOwnerUserId,
+  claimOwnership: mockClaimOwnership,
 }));
 
 // ============================================================================
@@ -343,6 +354,11 @@ describe('ChannelServiceImpl', () => {
     // Default: EventBus available
     mockGetEventBus.mockReturnValue(mockEventBus);
     mockEventBus.on.mockReturnValue(vi.fn());
+
+    // Default: sender IS the owner so existing tests pass the owner check
+    mockGetOwnerUserId.mockResolvedValue('user-456');
+    // Default: ownership already claimed → /connect falls through to verifyToken
+    mockClaimOwnership.mockResolvedValue({ success: false, alreadyClaimed: true, message: 'Already claimed.' });
 
     service = new ChannelServiceImpl(registry as never, {
       usersRepo: mockUsersRepo as never,
@@ -989,6 +1005,39 @@ describe('ChannelServiceImpl', () => {
         // Should not save message or proceed
         expect(mockMessagesRepo.create).not.toHaveBeenCalled();
         expect(mockWsGateway.broadcast).not.toHaveBeenCalled();
+      });
+
+      it('silently drops messages from non-owners when an owner is claimed', async () => {
+        // getOwnerUserId returns a different user → sender is NOT owner
+        mockGetOwnerUserId.mockResolvedValue('owner-user-different');
+
+        await service.processIncomingMessage(message); // sender is 'user-456'
+
+        expect(mockMessagesRepo.create).not.toHaveBeenCalled();
+        expect(mockSessionsRepo.findActive).not.toHaveBeenCalled();
+        expect(channelPlugin.api.sendMessage).not.toHaveBeenCalled();
+      });
+
+      it('silently drops all messages when no owner has been claimed yet', async () => {
+        // No owner claimed on this platform yet
+        mockGetOwnerUserId.mockResolvedValue(null);
+
+        await service.processIncomingMessage(message);
+
+        expect(mockMessagesRepo.create).not.toHaveBeenCalled();
+        expect(mockSessionsRepo.findActive).not.toHaveBeenCalled();
+        expect(channelPlugin.api.sendMessage).not.toHaveBeenCalled();
+      });
+
+      it('passes through messages from the claimed owner', async () => {
+        // getOwnerUserId returns 'user-456' (same as test sender) — already the default
+        mockGetOwnerUserId.mockResolvedValue('user-456');
+        mockGetOrCreateChatAgent.mockResolvedValue(createMockAgent());
+
+        await service.processIncomingMessage(message);
+
+        // Should proceed to session lookup (owner is allowed)
+        expect(mockSessionsRepo.findActive).toHaveBeenCalled();
       });
     });
 

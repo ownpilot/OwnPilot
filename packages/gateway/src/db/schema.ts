@@ -976,6 +976,14 @@ CREATE TABLE IF NOT EXISTS subagent_history (
   spawned_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   completed_at TIMESTAMPTZ
 );
+
+-- System settings: gateway-level key-value store.
+-- Used for pairing key and per-platform owner identity.
+CREATE TABLE IF NOT EXISTS system_settings (
+  key        TEXT PRIMARY KEY,
+  value      TEXT,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
 `;
 
 /**

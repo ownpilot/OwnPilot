@@ -49,6 +49,10 @@ import { wsGateway } from '../ws/server.js';
 import { truncate, getErrorMessage } from '../routes/helpers.js';
 import { getLog } from '../services/log.js';
 import { tryGetService } from '../services/service-helpers.js';
+import {
+  claimOwnership,
+  getOwnerUserId,
+} from '../services/pairing-service.js';
 
 const log = getLog('ChannelService');
 
@@ -532,18 +536,39 @@ export class ChannelServiceImpl implements IChannelService {
         return;
       }
 
-      // 3. Handle /connect command for verification
+      // 3. Handle /connect — pairing key claim takes priority over everything
       if (message.text.startsWith('/connect ')) {
-        const token = message.text.slice('/connect '.length).trim();
-        await this.handleConnectCommand(message, channelUser.id, token);
+        const submittedKey = message.text.slice('/connect '.length).trim();
+        await this.handleConnectCommand(message, channelUser.id, submittedKey);
+        return;
+      }
+
+      // 3b. Owner check — only the claimed owner gets AI responses.
+      //     If no owner is claimed yet on this platform, silently drop all
+      //     non-/connect messages (users should claim via /connect KEY first).
+      const ownerUserId = await getOwnerUserId(message.platform);
+      if (ownerUserId !== null) {
+        // Owner IS claimed — drop if not the owner
+        if (message.sender.platformUserId !== ownerUserId) {
+          log.debug('Dropping message from non-owner', {
+            platform: message.platform,
+            sender: message.sender.platformUserId,
+          });
+          return;
+        }
+      } else {
+        // No owner claimed — drop silently (user must /connect first)
+        log.debug('Dropping message — no owner claimed yet', {
+          platform: message.platform,
+          sender: message.sender.platformUserId,
+        });
         return;
       }
 
       // 4. Check verification — whitelist, approval code, or admin approval
       if (!channelUser.isVerified) {
-        // WhatsApp: self-chat filtering in whatsapp-api.ts guarantees only the
-        // account owner's messages reach here → auto-verify, no whitelist needed
         if (message.platform === 'whatsapp') {
+          // Owner confirmed above — auto-verify
           const verificationSvc = getChannelVerificationService();
           await verificationSvc.verifyViaWhitelist(
             message.platform,
@@ -551,7 +576,7 @@ export class ChannelServiceImpl implements IChannelService {
             message.sender.displayName
           );
           channelUser.isVerified = true;
-          log.info('Auto-verified WhatsApp self-chat user', {
+          log.info('Auto-verified WhatsApp owner', {
             userId: message.sender.platformUserId,
           });
         } else {
@@ -1169,29 +1194,60 @@ export class ChannelServiceImpl implements IChannelService {
   private async handleConnectCommand(
     message: ChannelIncomingMessage,
     _channelUserId: string,
-    token: string
+    submittedKey: string
   ): Promise<void> {
-    const result = await this.verificationService.verifyToken(
-      token,
+    const api = this.getChannel(message.channelPluginId);
+
+    // Try pairing key claim first
+    const claim = await claimOwnership(
       message.platform,
       message.sender.platformUserId,
-      message.sender.displayName,
-      message.sender.username
+      message.platformChatId,
+      submittedKey
     );
 
-    const api = this.getChannel(message.channelPluginId);
-    if (!api) return;
-
-    if (result.success) {
-      await api.sendMessage({
-        platformChatId: message.platformChatId,
-        text: `Verified! You are now connected as an OwnPilot user. You can start chatting with the AI assistant.`,
-        replyToId: message.id,
+    if (claim.success) {
+      log.info('Owner claimed via pairing key', {
+        platform: message.platform,
+        userId: message.sender.platformUserId,
       });
-    } else {
+      if (api) {
+        await api.sendMessage({
+          platformChatId: message.platformChatId,
+          text: `✅ Ownership confirmed! You are now the owner of this OwnPilot channel. You can start chatting with the AI assistant.`,
+          replyToId: message.id,
+        });
+      }
+      return;
+    }
+
+    if (claim.alreadyClaimed) {
+      // Platform already has an owner — try old token-based verification
+      // so users the owner shared access with can still connect
+      const tokenResult = await this.verificationService.verifyToken(
+        submittedKey,
+        message.platform,
+        message.sender.platformUserId,
+        message.sender.displayName,
+        message.sender.username
+      );
+      if (api) {
+        await api.sendMessage({
+          platformChatId: message.platformChatId,
+          text: tokenResult.success
+            ? `Verified! You are now connected as an OwnPilot user.`
+            : `Verification failed. Please try again with a valid token.`,
+          replyToId: message.id,
+        });
+      }
+      return;
+    }
+
+    // Wrong pairing key — send hint
+    if (api) {
       await api.sendMessage({
         platformChatId: message.platformChatId,
-        text: `Verification failed. Please generate a new token in the OwnPilot web interface and try again with /connect YOUR_TOKEN`,
+        text: `Invalid key. Please check the OwnPilot console for the correct pairing key and try again with /connect YOUR-KEY`,
         replyToId: message.id,
       });
     }
