@@ -67,6 +67,7 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
   private qrCode: string | null = null;
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
   private reconnectAttempt = 0;
+  private isReconnecting = false;
 
   constructor(config: Record<string, unknown>, pluginId: string) {
     this.pluginId = pluginId;
@@ -91,15 +92,12 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
   async connect(): Promise<void> {
     if (this.status === 'connected' || this.status === 'connecting') return;
 
-    // Clean up any existing socket
-    if (this.sock) {
-      try {
-        this.sock.end(undefined);
-      } catch {
-        /* already closed */
-      }
-      this.sock = null;
-    }
+    // Prevent concurrent reconnection attempts
+    if (this.isReconnecting) return;
+    this.isReconnecting = true;
+
+    // Clean up any existing socket — remove listeners first, then end
+    this.cleanupSocket();
 
     this.status = 'connecting';
     this.emitConnectionEvent('connecting');
@@ -145,8 +143,10 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
       // Save credentials on update
       this.sock.ev.on('creds.update', saveCreds);
 
+      this.isReconnecting = false;
       log.info('WhatsApp socket created, waiting for authentication...');
     } catch (error) {
+      this.isReconnecting = false;
       this.status = 'error';
       this.emitConnectionEvent('error');
       throw new Error(`Failed to connect WhatsApp: ${getErrorMessage(error)}`);
@@ -155,14 +155,11 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
 
   async disconnect(): Promise<void> {
     this.clearReconnectTimer();
-
-    if (this.sock) {
-      this.sock.end(undefined);
-      this.sock = null;
-    }
+    this.cleanupSocket();
 
     this.qrCode = null;
     this.reconnectAttempt = 0;
+    this.isReconnecting = false;
     this.status = 'disconnected';
     this.emitConnectionEvent('disconnected');
     log.info('WhatsApp disconnected (session preserved — reconnect without QR)');
@@ -179,16 +176,16 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
       try {
         await this.sock.logout();
       } catch {
-        // logout may fail if already disconnected — just end the socket
-        this.sock.end(undefined);
+        // logout may fail if already disconnected
       }
-      this.sock = null;
     }
+    this.cleanupSocket();
 
     await clearSession(this.pluginId);
 
     this.qrCode = null;
     this.reconnectAttempt = 0;
+    this.isReconnecting = false;
     this.status = 'disconnected';
     this.emitConnectionEvent('disconnected');
     log.info('WhatsApp logged out (session cleared — new QR scan required)');
@@ -299,6 +296,26 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
   // Private — Connection Handling
   // ==========================================================================
 
+  /** Safely close and clean up the current socket, removing all event listeners. */
+  private cleanupSocket(): void {
+    if (this.sock) {
+      try {
+        // Remove all listeners first to prevent ghost events
+        this.sock.ev.removeAllListeners('connection.update');
+        this.sock.ev.removeAllListeners('messages.upsert');
+        this.sock.ev.removeAllListeners('creds.update');
+      } catch {
+        /* listeners may already be gone */
+      }
+      try {
+        this.sock.end(undefined);
+      } catch {
+        /* already closed */
+      }
+      this.sock = null;
+    }
+  }
+
   private handleConnectionUpdate(update: {
     connection?: string;
     lastDisconnect?: { error?: Error | undefined; date?: Date };
@@ -360,22 +377,30 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
         // Temporary disconnect — auto-reconnect with backoff
         this.status = 'reconnecting';
         this.emitConnectionEvent('reconnecting');
-        this.scheduleReconnect();
+        this.scheduleReconnect(statusCode);
+        const baseDelay = statusCode === 440 ? 10000 : 3000;
+        const delay = Math.min(baseDelay * Math.pow(2, this.reconnectAttempt - 1), 60000);
         log.warn(
-          `WhatsApp disconnected (code: ${statusCode}), reconnecting in ${this.getReconnectDelay()}ms...`
+          `WhatsApp disconnected (code: ${statusCode}), reconnecting in ${delay}ms...`
         );
       }
     }
   }
 
-  private scheduleReconnect(): void {
+  private scheduleReconnect(statusCode?: number): void {
     this.clearReconnectTimer();
-    const delay = this.getReconnectDelay();
+
+    // For 440 (connectionReplaced): use longer base delay to avoid reconnect storm
+    const baseDelay = statusCode === 440 ? 10000 : 3000;
+    const delay = Math.min(baseDelay * Math.pow(2, this.reconnectAttempt), 60000);
     this.reconnectAttempt++;
 
     this.reconnectTimer = setTimeout(() => {
       log.info(`WhatsApp reconnect attempt ${this.reconnectAttempt}...`);
-      this.sock = null;
+      // Clean up socket properly before reconnecting
+      this.cleanupSocket();
+      this.isReconnecting = false; // Reset flag so connect() can proceed
+      this.status = 'reconnecting'; // Ensure guard in connect() passes
       this.connect().catch((err) => {
         log.error('WhatsApp reconnect failed:', err);
         this.status = 'error';
@@ -385,7 +410,7 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
   }
 
   private getReconnectDelay(): number {
-    // Exponential backoff: 3s, 6s, 12s, 24s, max 60s
+    // Used only for the log message now
     return Math.min(3000 * Math.pow(2, this.reconnectAttempt), 60000);
   }
 
