@@ -39,6 +39,7 @@ import { MAX_MESSAGE_CHAT_MAP_SIZE } from '../../../config/defaults.js';
 import { splitMessage } from '../../utils/message-utils.js';
 import { getSessionDir, clearSession } from './session-store.js';
 import { wsGateway } from '../../../ws/server.js';
+import type { ChannelMessageAttachmentInput } from '../../../db/repositories/channel-messages.js';
 
 const log = getLog('WhatsApp');
 const WHATSAPP_MAX_LENGTH = 4096;
@@ -351,13 +352,7 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
                 else if (m?.documentMessage?.caption) text = m.documentMessage.caption;
 
                 // Extract attachments and download media (with retry on expired URLs)
-                const attachments: Array<{
-                  type: string;
-                  mimeType: string;
-                  filename?: string;
-                  url: string;
-                  data?: Uint8Array;
-                }> = [];
+                const attachments: ChannelMessageAttachmentInput[] = [];
 
                 // Image messages — download binary
                 if (m?.imageMessage) {
@@ -1170,7 +1165,7 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
     if (!m) return;
 
     let text = '';
-    const attachments: ChannelAttachment[] = [];
+    const attachments: ChannelMessageAttachmentInput[] = [];
 
     // Text messages
     if (m.conversation) {
@@ -1184,6 +1179,7 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
       const imageData = await this.downloadMediaWithRetry(msg);
       attachments.push({
         type: 'image',
+        url: '',
         mimeType: m.imageMessage.mimetype ?? 'image/jpeg',
         data: imageData,
       });
@@ -1194,6 +1190,7 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
       const docData = await this.downloadMediaWithRetry(msg);
       attachments.push({
         type: 'file',
+        url: '',
         mimeType: m.documentMessage.mimetype ?? 'application/octet-stream',
         filename: m.documentMessage.fileName ?? undefined,
         data: docData,
@@ -1204,6 +1201,7 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
       const audioData = await this.downloadMediaWithRetry(msg);
       attachments.push({
         type: 'audio',
+        url: '',
         mimeType: m.audioMessage.mimetype ?? 'audio/ogg',
         data: audioData,
       });
@@ -1214,6 +1212,7 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
       const videoData = await this.downloadMediaWithRetry(msg);
       attachments.push({
         type: 'video',
+        url: '',
         mimeType: m.videoMessage.mimetype ?? 'video/mp4',
         data: videoData,
       });
@@ -1223,6 +1222,7 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
       const stickerData = await this.downloadMediaWithRetry(msg);
       attachments.push({
         type: 'image',
+        url: '',
         mimeType: m.stickerMessage.mimetype ?? 'image/webp',
         data: stickerData,
       });
@@ -1256,7 +1256,7 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
       platformChatId: isGroup ? remoteJid : phone,
       sender,
       text: text || (attachments.length > 0 ? '[Attachment]' : ''),
-      attachments: attachments.length > 0 ? attachments : undefined,
+      attachments: attachments.length > 0 ? (attachments as unknown as ChannelAttachment[]) : undefined,
       timestamp,
       metadata: {
         platformMessageId: messageId,
@@ -1368,16 +1368,24 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
       reuploadRequest: this.sock.updateMediaMessage.bind(this.sock),
     };
 
+    // Check if message has media content
+    const msgAny = msg.message as any;
+    const hasMediaKey = !!(msgAny?.imageMessage?.mediaKey || msgAny?.videoMessage?.mediaKey || msgAny?.documentMessage?.mediaKey || msgAny?.audioMessage?.mediaKey || msgAny?.stickerMessage?.mediaKey);
+    const hasUrl = !!(msgAny?.imageMessage?.url || msgAny?.videoMessage?.url || msgAny?.documentMessage?.url || msgAny?.audioMessage?.url || msgAny?.stickerMessage?.url);
+    log.info(`[downloadMediaWithRetry] hasMediaKey=${hasMediaKey}, hasUrl=${hasUrl}`);
+
     try {
       // First attempt
       const buffer = await downloadMediaMessage(msg, 'buffer', {}, downloadOptions);
       if (buffer) {
+        log.info(`[downloadMediaWithRetry] Success, size=${buffer.length}`);
         // Convert Buffer to Uint8Array if needed
         if (Buffer.isBuffer(buffer)) {
           return new Uint8Array(buffer);
         }
         return buffer;
       }
+      log.warn('[downloadMediaWithRetry] Buffer is empty/undefined');
     } catch (error: any) {
       const errorMsg = error?.message?.toString() || '';
       const is410Gone = errorMsg.includes('410') || errorMsg.includes('Gone') || errorMsg.includes('status code 410');

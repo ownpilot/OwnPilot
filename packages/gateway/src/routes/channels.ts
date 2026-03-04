@@ -143,6 +143,51 @@ channelRoutes.post('/messages/:messageId/read', (c) => {
 });
 
 /**
+ * GET /channels/messages/:messageId/media/:index
+ * Serve binary attachment data stored as base64 in the DB.
+ * index = 0-based attachment position in the attachments array.
+ */
+channelRoutes.get('/messages/:messageId/media/:index', async (c) => {
+  try {
+    const messageId = c.req.param('messageId');
+    const index = parseInt(c.req.param('index') ?? '0', 10);
+
+    const messagesRepo = new ChannelMessagesRepository();
+    const msg = await messagesRepo.getById(messageId);
+
+    if (!msg) {
+      return apiError(c, { code: 'NOT_FOUND', message: 'Message not found' }, 404);
+    }
+
+    const attachment = msg.attachments?.[index];
+    if (!attachment) {
+      return apiError(c, { code: 'NOT_FOUND', message: 'Attachment not found' }, 404);
+    }
+
+    if (!attachment.data) {
+      return apiError(c, { code: 'NOT_FOUND', message: 'No binary data stored for this attachment' }, 404);
+    }
+
+    const buffer = Buffer.from(attachment.data, 'base64');
+    const mimeType = attachment.mimeType ?? 'application/octet-stream';
+    const filename = attachment.filename ?? `attachment_${index}`;
+
+    return new Response(buffer, {
+      status: 200,
+      headers: {
+        'Content-Type': mimeType,
+        'Content-Length': String(buffer.length),
+        'Content-Disposition': `attachment; filename="${filename}"`,
+        'Cache-Control': 'private, max-age=3600',
+      },
+    });
+  } catch (error) {
+    log.error('Failed to serve message media:', error);
+    return apiError(c, { code: 'INTERNAL_ERROR', message: getErrorMessage(error, 'Failed to serve media') }, 500);
+  }
+});
+
+/**
  * DELETE /channels/messages - Clear all inbox messages
  */
 channelRoutes.delete('/messages', async (c) => {

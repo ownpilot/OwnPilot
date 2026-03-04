@@ -6,6 +6,20 @@
 
 import { BaseRepository, parseJsonField, parseJsonFieldNullable } from './base.js';
 
+export interface ChannelMessageAttachment {
+  type: string;
+  url: string;
+  name?: string;
+  /** MIME type (e.g. image/jpeg, application/octet-stream) */
+  mimeType?: string;
+  /** Original filename for documents */
+  filename?: string;
+  /** Binary content as base64 string */
+  data?: string;
+  /** File size in bytes */
+  size?: number;
+}
+
 export interface ChannelMessage {
   id: string;
   channelId: string;
@@ -15,15 +29,45 @@ export interface ChannelMessage {
   senderName?: string;
   content: string;
   contentType: string;
-  attachments?: Array<{
-    type: string;
-    url: string;
-    name?: string;
-  }>;
+  attachments?: ChannelMessageAttachment[];
   replyToId?: string;
   conversationId?: string;
   metadata: Record<string, unknown>;
   createdAt: Date;
+}
+
+/**
+ * Serialize an attachment array for DB storage.
+ * Converts Uint8Array/Buffer data to base64 string so JSON.stringify works correctly.
+ */
+export function serializeAttachments(
+  attachments: Array<{
+    type: string;
+    url?: string;
+    name?: string;
+    mimeType?: string;
+    filename?: string;
+    data?: Uint8Array | Buffer | string;
+    size?: number;
+  }>
+): ChannelMessageAttachment[] {
+  return attachments.map((a) => {
+    let dataStr: string | undefined;
+    if (a.data instanceof Uint8Array || Buffer.isBuffer(a.data)) {
+      dataStr = Buffer.from(a.data as Uint8Array).toString('base64');
+    } else if (typeof a.data === 'string') {
+      dataStr = a.data;
+    }
+    return {
+      type: a.type,
+      url: a.url ?? '',
+      name: a.name,
+      mimeType: a.mimeType,
+      filename: a.filename,
+      data: dataStr,
+      size: a.size ?? (a.data ? (a.data as Uint8Array).length : undefined),
+    };
+  });
 }
 
 interface ChannelMessageRow {
@@ -60,6 +104,17 @@ function rowToChannelMessage(row: ChannelMessageRow): ChannelMessage {
   };
 }
 
+/** Input attachment type — accepts Uint8Array/Buffer for binary data before serialization */
+export type ChannelMessageAttachmentInput = {
+  type: string;
+  url?: string;
+  name?: string;
+  mimeType?: string;
+  filename?: string;
+  data?: Uint8Array | Buffer | string;
+  size?: number;
+};
+
 export class ChannelMessagesRepository extends BaseRepository {
   async create(data: {
     id: string;
@@ -70,11 +125,12 @@ export class ChannelMessagesRepository extends BaseRepository {
     senderName?: string;
     content: string;
     contentType?: string;
-    attachments?: ChannelMessage['attachments'];
+    attachments?: ChannelMessageAttachmentInput[];
     replyToId?: string;
     conversationId?: string;
     metadata?: Record<string, unknown>;
   }): Promise<ChannelMessage> {
+    const serialized = data.attachments ? serializeAttachments(data.attachments) : null;
     await this.execute(
       `INSERT INTO channel_messages (
         id, channel_id, external_id, direction, sender_id, sender_name,
@@ -89,7 +145,7 @@ export class ChannelMessagesRepository extends BaseRepository {
         data.senderName ?? null,
         data.content,
         data.contentType ?? 'text',
-        data.attachments ? JSON.stringify(data.attachments) : null,
+        serialized ? JSON.stringify(serialized) : null,
         data.replyToId ?? null,
         data.conversationId ?? null,
         JSON.stringify(data.metadata ?? {}),
@@ -379,7 +435,7 @@ export class ChannelMessagesRepository extends BaseRepository {
     senderName?: string;
     content: string;
     contentType?: string;
-    attachments?: ChannelMessage['attachments'];
+    attachments?: ChannelMessageAttachmentInput[];
     metadata?: Record<string, unknown>;
     createdAt?: Date;
   }>): Promise<number> {
@@ -392,6 +448,7 @@ export class ChannelMessagesRepository extends BaseRepository {
       await this.transaction(async () => {
         for (const data of batch) {
           try {
+            const serialized = data.attachments ? serializeAttachments(data.attachments) : null;
             const result = await this.execute(
               `INSERT INTO channel_messages (
                 id, channel_id, external_id, direction, sender_id, sender_name,
@@ -407,7 +464,7 @@ export class ChannelMessagesRepository extends BaseRepository {
                 data.senderName ?? null,
                 data.content,
                 data.contentType ?? 'text',
-                data.attachments ? JSON.stringify(data.attachments) : null,
+                serialized ? JSON.stringify(serialized) : null,
                 JSON.stringify(data.metadata ?? {}),
                 data.createdAt ? data.createdAt.toISOString() : new Date().toISOString(),
               ]
