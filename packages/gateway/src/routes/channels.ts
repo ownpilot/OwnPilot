@@ -640,6 +640,59 @@ channelRoutes.get('/:id/groups/:groupJid', async (c) => {
 });
 
 /**
+ * GET /channels/:id/groups/:groupJid/messages - Get messages for a specific group
+ * Returns messages from DB (no WhatsApp API call — anti-ban safe).
+ */
+channelRoutes.get('/:id/groups/:groupJid/messages', async (c) => {
+  const pluginId = c.req.param('id');
+  const rawGroupJid = c.req.param('groupJid');
+
+  // Decode URL-encoded JID and auto-append @g.us if missing
+  let groupJid: string;
+  try {
+    groupJid = decodeURIComponent(rawGroupJid);
+  } catch {
+    return apiError(
+      c,
+      { code: ERROR_CODES.INVALID_REQUEST, message: 'Invalid group JID encoding' },
+      400
+    );
+  }
+  if (!groupJid.includes('@')) {
+    groupJid = `${groupJid}@g.us`;
+  }
+
+  // Validate JID format: numeric prefix + @g.us (prevents injection)
+  if (!/^\d[\d-]*@g\.us$/.test(groupJid)) {
+    return apiError(
+      c,
+      { code: ERROR_CODES.INVALID_REQUEST, message: 'Invalid group JID format' },
+      400
+    );
+  }
+
+  try {
+    const { limit, offset } = getPaginationParams(c, 50, 200);
+    const messagesRepo = new ChannelMessagesRepository();
+    const result = await messagesRepo.getByChat(pluginId, groupJid, limit, offset);
+    return apiResponse(c, {
+      messages: result.messages,
+      count: result.messages.length,
+      total: result.total,
+    });
+  } catch (error) {
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.FETCH_FAILED,
+        message: getErrorMessage(error, 'Failed to fetch group messages'),
+      },
+      500
+    );
+  }
+});
+
+/**
  * GET /channels/:id/chats - List distinct chats from message history
  */
 channelRoutes.get('/:id/chats', async (c) => {
@@ -889,11 +942,24 @@ channelRoutes.post('/:id/reply', async (c) => {
 channelRoutes.get('/:id/messages', pagination({ defaultLimit: 50, maxLimit: 200 }), async (c) => {
   const channelId = c.req.param('id');
   const { limit, offset } = c.get('pagination')!;
+  const chatId = c.req.query('chatId');
 
   try {
     const messagesRepo = new ChannelMessagesRepository();
-    const messages = await messagesRepo.getByChannel(channelId, limit, offset);
 
+    // If chatId provided, filter by specific chat JID (group or DM)
+    if (chatId) {
+      const result = await messagesRepo.getByChat(channelId, chatId, limit, offset);
+      return apiResponse(c, {
+        messages: result.messages,
+        count: result.messages.length,
+        total: result.total,
+        limit,
+        offset,
+      });
+    }
+
+    const messages = await messagesRepo.getByChannel(channelId, limit, offset);
     return apiResponse(c, { messages, count: messages.length, limit, offset });
   } catch (error) {
     return apiError(

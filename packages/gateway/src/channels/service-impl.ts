@@ -491,6 +491,47 @@ export class ChannelServiceImpl implements IChannelService {
         return;
       }
 
+      // 2b. Group messages: save to DB + broadcast but skip AI routing (anti-ban: no auto-reply to groups)
+      if (message.metadata?.isGroup === true) {
+        try {
+          await this.messagesRepo.create({
+            id: message.id,
+            channelId: message.channelPluginId,
+            externalId: message.metadata?.platformMessageId?.toString(),
+            direction: 'inbound',
+            senderId: message.sender.platformUserId,
+            senderName: message.sender.displayName,
+            content: message.text,
+            contentType: 'text',
+            attachments: message.attachments?.map((a) => ({
+              type: a.type,
+              url: a.url ?? '',
+              name: a.filename,
+            })),
+            replyToId: message.replyToId,
+            metadata: message.metadata,
+          });
+        } catch (error) {
+          log.warn('Failed to save group message', { error });
+        }
+
+        wsGateway.broadcast('channel:message', {
+          id: message.id,
+          channelId: message.channelPluginId,
+          channelType: message.platform,
+          sender: message.sender.displayName,
+          content: message.text,
+          timestamp: message.timestamp.toISOString(),
+          direction: 'incoming',
+        });
+
+        log.info('Group message saved to DB (AI routing skipped)', {
+          platform: message.platform,
+          chatId: message.platformChatId,
+        });
+        return;
+      }
+
       // 3. Handle /connect command for verification
       if (message.text.startsWith('/connect ')) {
         const token = message.text.slice('/connect '.length).trim();

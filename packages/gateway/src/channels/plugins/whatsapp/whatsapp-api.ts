@@ -855,20 +855,32 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
     }
     */
 
-    // SAFETY: Only process messages from standard WhatsApp JIDs (@s.whatsapp.net)
-    // Skip: groups (@g.us), broadcasts (@broadcast), LID (@lid), newsletter (@newsletter)
+    // SAFETY: Only process DMs (@s.whatsapp.net) and groups (@g.us).
+    // Skip: broadcasts (@broadcast), LID (@lid), newsletter (@newsletter), status (@s.whatsapp.net status)
     // NOTE: If LID resolution above is activated, @lid messages will be
     //   resolved to @s.whatsapp.net BEFORE this check, so they will pass through.
-    if (!remoteJid.endsWith('@s.whatsapp.net')) {
-      log.info(`[WhatsApp] Skipping non-DM message from ${remoteJid} (only @s.whatsapp.net processed)`);
+    const isGroup = remoteJid.endsWith('@g.us');
+    const isDM = remoteJid.endsWith('@s.whatsapp.net');
+    if (!isDM && !isGroup) {
+      log.info(`[WhatsApp] Skipping non-chat message from ${remoteJid} (only @s.whatsapp.net and @g.us processed)`);
       return;
     }
 
-    // Extract phone number from JID
-    const phone = this.phoneFromJid(remoteJid);
+    // For group messages, extract participant (individual sender) from msg.key.participant
+    // For DMs, sender is derived from remoteJid
+    const participantJid = isGroup ? (msg.key.participant ?? '') : remoteJid;
+    const phone = isGroup
+      ? this.phoneFromJid(participantJid)
+      : this.phoneFromJid(remoteJid);
 
-    // Access control — if allowed_users is set, ONLY those users get AI responses
-    if (this.allowedUsers.size > 0 && !this.allowedUsers.has(phone)) {
+    // Skip group messages where participant cannot be determined
+    if (isGroup && !participantJid) {
+      log.info(`[WhatsApp] Skipping group message without participant from ${remoteJid}`);
+      return;
+    }
+
+    // Access control — if allowed_users is set, ONLY those users get AI responses (DM only)
+    if (!isGroup && this.allowedUsers.size > 0 && !this.allowedUsers.has(phone)) {
       log.info(`[WhatsApp] Skipping message from ${phone} (not in allowed_users)`);
       return;
     }
@@ -931,7 +943,6 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
     if (!text && attachments.length === 0) return;
 
     const messageId = msg.key.id ?? '';
-    const isGroup = remoteJid.endsWith('@g.us');
 
     const sender: ChannelUser = {
       platformUserId: phone,
@@ -952,7 +963,8 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
       id: `${this.pluginId}:${messageId}`,
       channelPluginId: this.pluginId,
       platform: 'whatsapp',
-      platformChatId: phone,
+      // For groups: platformChatId = group JID; for DMs: phone number
+      platformChatId: isGroup ? remoteJid : phone,
       sender,
       text: text || (attachments.length > 0 ? '[Attachment]' : ''),
       attachments: attachments.length > 0 ? attachments : undefined,
@@ -962,6 +974,8 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
         jid: remoteJid,
         isGroup,
         pushName: msg.pushName || undefined,
+        // For groups: store participant JID so we know who sent it
+        ...(isGroup && { participant: participantJid }),
       },
     };
 

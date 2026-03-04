@@ -323,6 +323,37 @@ export class ChannelMessagesRepository extends BaseRepository {
     };
   }
 
+  /**
+   * Get messages for a specific chat (group or DM) by JID.
+   * Filters on metadata->>'jid' which stores the full chat JID
+   * (e.g., "120363xxx@g.us" for groups, "316xxx@s.whatsapp.net" for DMs).
+   */
+  async getByChat(
+    channelId: string,
+    chatJid: string,
+    limit = 50,
+    offset = 0
+  ): Promise<{ messages: ChannelMessage[]; total: number }> {
+    const rows = await this.query<ChannelMessageRow & { total_count: string }>(
+      `SELECT
+         *,
+         COUNT(*) OVER() AS total_count
+       FROM channel_messages
+       WHERE channel_id = $1
+         AND metadata->>'jid' = $2
+       ORDER BY created_at ASC
+       LIMIT $3 OFFSET $4`,
+      [channelId, chatJid, limit, offset]
+    );
+
+    const total = rows.length > 0 ? parseInt(rows[0]!.total_count, 10) : 0;
+
+    return {
+      messages: rows.map((r) => rowToChannelMessage(r)),
+      total,
+    };
+  }
+
   async countInbox(): Promise<number> {
     const row = await this.queryOne<{ count: string }>(
       `SELECT COUNT(*) as count FROM channel_messages WHERE direction = 'inbound'`
