@@ -867,23 +867,22 @@ function ChannelDetail({
               />
             </>
           ) : (
-            <>
-              <ActionButton
-                icon={Power}
-                label="Connect"
-                variant="success"
-                loading={actionLoading === 'connect'}
-                onClick={() => onConnect(channel.id)}
-              />
-              <ActionButton
-                icon={LogOut}
-                label="Logout"
-                variant="danger"
-                loading={actionLoading === 'logout'}
-                onClick={() => onLogout(channel.id)}
-              />
-            </>
+            <ActionButton
+              icon={Power}
+              label="Connect"
+              variant="success"
+              loading={actionLoading === 'connect'}
+              onClick={() => onConnect(channel.id)}
+            />
           )}
+          {/* Logout is always available — clears session so next connect requires re-auth */}
+          <ActionButton
+            icon={LogOut}
+            label="Logout"
+            variant="danger"
+            loading={actionLoading === 'logout'}
+            onClick={() => onLogout(channel.id)}
+          />
           <ActionButton
             icon={Trash2}
             label="Clear Messages"
