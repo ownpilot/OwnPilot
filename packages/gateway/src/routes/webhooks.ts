@@ -163,14 +163,6 @@ webhookRoutes.post('/trigger/:triggerId', async (c) => {
     }
   }
 
-  // Extract payload from body
-  let _payload: Record<string, unknown> = {};
-  try {
-    _payload = await c.req.json();
-  } catch {
-    // Non-JSON body is OK — just pass empty payload
-  }
-
   // Fire the workflow via the trigger's action
   if (trigger.action?.type === 'workflow' && trigger.action.payload?.workflowId) {
     const workflowId = trigger.action.payload.workflowId as string;

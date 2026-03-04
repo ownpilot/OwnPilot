@@ -5,7 +5,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Navigate } from 'react-router-dom';
 import { soulsApi, heartbeatLogsApi, agentMessagesApi, crewsApi } from '../../api/endpoints/souls';
 import { agentsApi } from '../../api/endpoints/agents';
 import type {
@@ -57,6 +57,7 @@ export function AgentProfilePage() {
   const { confirm } = useDialog();
   const [activeTab, setActiveTab] = useState<ProfileTab>('overview');
   const [isLoading, setIsLoading] = useState(true);
+  const [isActionInFlight, setIsActionInFlight] = useState(false);
   const [fetchError, setFetchError] = useState<string | null>(null);
 
   // Agent data
@@ -151,7 +152,8 @@ export function AgentProfilePage() {
 
   // Actions
   const handlePause = useCallback(async () => {
-    if (!id) return;
+    if (!id || isActionInFlight) return;
+    setIsActionInFlight(true);
     try {
       if (bgAgent) {
         await backgroundAgentsApi.pause(id);
@@ -162,14 +164,17 @@ export function AgentProfilePage() {
         });
       }
       toast.success('Agent paused');
-      fetchData();
+      await fetchData();
     } catch {
       toast.error('Failed to pause');
+    } finally {
+      setIsActionInFlight(false);
     }
-  }, [id, bgAgent, soul, toast, fetchData]);
+  }, [id, isActionInFlight, bgAgent, soul, toast, fetchData]);
 
   const handleResume = useCallback(async () => {
-    if (!id) return;
+    if (!id || isActionInFlight) return;
+    setIsActionInFlight(true);
     try {
       if (bgAgent) {
         await backgroundAgentsApi.resume(id);
@@ -180,11 +185,13 @@ export function AgentProfilePage() {
         });
       }
       toast.success('Agent resumed');
-      fetchData();
+      await fetchData();
     } catch {
       toast.error('Failed to resume');
+    } finally {
+      setIsActionInFlight(false);
     }
-  }, [id, bgAgent, soul, toast, fetchData]);
+  }, [id, isActionInFlight, bgAgent, soul, toast, fetchData]);
 
   const handleDelete = useCallback(async () => {
     if (!id) return;
@@ -270,6 +277,8 @@ export function AgentProfilePage() {
     { key: 'budget', label: 'Budget' },
   ];
 
+  if (!id) return <Navigate to="/autonomous" replace />;
+
   if (isLoading) return <LoadingSpinner message="Loading agent..." />;
 
   if (!soul && !bgAgent) {
@@ -348,17 +357,19 @@ export function AgentProfilePage() {
           {(status === 'running' || status === 'waiting') && (
             <button
               onClick={handlePause}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-sm border border-warning text-warning rounded-lg hover:bg-warning/10 transition-colors"
+              disabled={isActionInFlight}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-sm border border-warning text-warning rounded-lg hover:bg-warning/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <Pause className="w-4 h-4" /> Pause
+              <Pause className="w-4 h-4" /> {isActionInFlight ? 'Pausing...' : 'Pause'}
             </button>
           )}
           {(status === 'paused' || status === 'idle' || status === 'stopped') && (
             <button
               onClick={handleResume}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-sm border border-success text-success rounded-lg hover:bg-success/10 transition-colors"
+              disabled={isActionInFlight}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-sm border border-success text-success rounded-lg hover:bg-success/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <Play className="w-4 h-4" /> Resume
+              <Play className="w-4 h-4" /> {isActionInFlight ? 'Resuming...' : 'Resume'}
             </button>
           )}
           <button
@@ -392,7 +403,7 @@ export function AgentProfilePage() {
         {activeTab === 'overview' && (
           <TabContent>
             <OverviewTab
-              agentId={id!}
+              agentId={id}
               soul={soul}
               bgAgent={bgAgent}
               agentData={agentData}
@@ -495,28 +506,37 @@ function OverviewTab({
   // Load providers when editing
   useEffect(() => {
     if (isEditingProvider) {
-      providersApi.list().then((data) => {
-        const list = data.providers.map((p) => ({ id: p.id, name: p.name }));
-        setProviders(list);
-      });
+      providersApi
+        .list()
+        .then((data) => {
+          const list = data.providers.map((p) => ({ id: p.id, name: p.name }));
+          setProviders(list);
+        })
+        .catch(() => toast.error('Failed to load providers'));
     }
   }, [isEditingProvider]);
 
   // Load models when provider changes
   useEffect(() => {
     if (editProvider) {
-      providersApi.models(editProvider).then((data) => {
-        setModels(data.models);
-      });
+      providersApi
+        .models(editProvider)
+        .then((data) => {
+          setModels(data.models);
+        })
+        .catch(() => toast.error('Failed to load models'));
     }
   }, [editProvider]);
 
   // Load fallback models when fallback provider changes
   useEffect(() => {
     if (editFallbackProvider) {
-      providersApi.models(editFallbackProvider).then((data) => {
-        setFallbackModels(data.models);
-      });
+      providersApi
+        .models(editFallbackProvider)
+        .then((data) => {
+          setFallbackModels(data.models);
+        })
+        .catch(() => toast.error('Failed to load fallback models'));
     }
   }, [editFallbackProvider]);
 

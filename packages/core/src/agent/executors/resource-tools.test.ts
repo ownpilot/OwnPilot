@@ -121,28 +121,31 @@ describe('RESOURCE_EXECUTORS.create_task', () => {
     expect(writtenData[1].title).toBe('New task');
   });
 
-  it('handles null resolveWorkspacePath gracefully', async () => {
+  it('returns error when no workspace configured', async () => {
     mockResolveWorkspacePath.mockReturnValue(null);
 
     const result = await fn({ title: 'No workspace' });
-    // Task is still "created" — just not persisted to disk
-    expect(result.content).toContain('Task created');
+    expect(result.isError).toBe(true);
+    expect(result.content).toContain('Error: No workspace configured');
   });
 
   it('does not show description line when not provided', async () => {
-    mockResolveWorkspacePath.mockReturnValue(null);
+    mockResolveWorkspacePath.mockReturnValue('/workspace/tasks');
+    mockExistsSync.mockReturnValue(false);
     const result = await fn({ title: 'No desc' });
     expect(result.content).not.toContain('\uD83D\uDCDD');
   });
 
   it('does not show due date line when not provided', async () => {
-    mockResolveWorkspacePath.mockReturnValue(null);
+    mockResolveWorkspacePath.mockReturnValue('/workspace/tasks');
+    mockExistsSync.mockReturnValue(false);
     const result = await fn({ title: 'No due' });
     expect(result.content).not.toContain('Due:');
   });
 
   it('does not show tags line when tags array is empty', async () => {
-    mockResolveWorkspacePath.mockReturnValue(null);
+    mockResolveWorkspacePath.mockReturnValue('/workspace/tasks');
+    mockExistsSync.mockReturnValue(false);
     const result = await fn({ title: 'No tags', tags: [] });
     expect(result.content).not.toContain('Tags:');
   });
@@ -609,14 +612,16 @@ describe('RESOURCE_EXECUTORS.create_bookmark', () => {
     expect(written).toHaveLength(2);
   });
 
-  it('handles null resolveWorkspacePath gracefully', async () => {
+  it('returns error when no workspace configured', async () => {
     mockResolveWorkspacePath.mockReturnValue(null);
     const result = await fn({ url: 'https://example.com', title: 'Test' });
-    expect(result.content).toContain('Bookmark saved');
+    expect(result.isError).toBe(true);
+    expect(result.content).toContain('Error: No workspace configured');
   });
 
   it('does not show description when not provided', async () => {
-    mockResolveWorkspacePath.mockReturnValue(null);
+    mockResolveWorkspacePath.mockReturnValue('/workspace/bookmarks');
+    mockExistsSync.mockReturnValue(false);
     const result = await fn({ url: 'https://example.com', title: 'Test' });
     // The note emoji is used for description
     const lines = (result.content as string).split('\n');
@@ -625,7 +630,8 @@ describe('RESOURCE_EXECUTORS.create_bookmark', () => {
   });
 
   it('does not show tags when empty', async () => {
-    mockResolveWorkspacePath.mockReturnValue(null);
+    mockResolveWorkspacePath.mockReturnValue('/workspace/bookmarks');
+    mockExistsSync.mockReturnValue(false);
     const result = await fn({ url: 'https://example.com', title: 'Test', tags: [] });
     const content = result.content as string;
     expect(content).not.toContain('\uD83C\uDFF7');

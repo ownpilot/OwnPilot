@@ -973,44 +973,6 @@ export class ToolRegistry {
     }
   }
 
-  /**
-   * Collect all middleware that applies to a given tool name.
-   */
-  private getMiddleware(toolName: string): ToolMiddleware[] {
-    const perTool = this.perToolMiddleware.get(toolName) ?? [];
-    return [...this.globalMiddleware, ...perTool];
-  }
-
-  /**
-   * Run middleware 'before' hooks. Modifies context.args in-place if middleware changes them.
-   */
-  private async runBeforeMiddleware(
-    middleware: ToolMiddleware[],
-    ctx: ToolMiddlewareContext
-  ): Promise<void> {
-    for (const mw of middleware) {
-      if (mw.before) {
-        await mw.before(ctx);
-      }
-    }
-  }
-
-  /**
-   * Run middleware 'after' hooks. Returns possibly-transformed result.
-   */
-  private async runAfterMiddleware(
-    middleware: ToolMiddleware[],
-    ctx: ToolMiddlewareContext,
-    result: ToolExecutionResult
-  ): Promise<ToolExecutionResult> {
-    let current = result;
-    for (const mw of middleware) {
-      if (mw.after) {
-        current = await mw.after(ctx, current);
-      }
-    }
-    return current;
-  }
 
   /**
    * Clear all tools

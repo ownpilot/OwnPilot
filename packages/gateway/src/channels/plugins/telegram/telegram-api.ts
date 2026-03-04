@@ -9,11 +9,7 @@
 import { randomBytes } from 'node:crypto';
 import { Bot } from 'grammy';
 import type { Message } from 'grammy/types';
-import {
-  registerApprovalHandler,
-  requestTelegramApproval,
-  clearPendingApprovals,
-} from './approval-handler.js';
+import { TelegramApprovalHandler } from './approval-handler.js';
 import { TelegramProgressManager } from './progress-manager.js';
 import { downloadTelegramAttachments } from './file-handler.js';
 import {
@@ -65,6 +61,7 @@ export interface TelegramChannelConfig {
 // ============================================================================
 
 export class TelegramChannelAPI implements ChannelPluginAPI {
+  private readonly approvalHandler = new TelegramApprovalHandler();
   private bot: Bot | null = null;
   private status: ChannelConnectionStatus = 'disconnected';
   private readonly config: TelegramChannelConfig;
@@ -125,7 +122,7 @@ export class TelegramChannelAPI implements ChannelPluginAPI {
       this.bot = new Bot(this.config.bot_token);
 
       // Register inline keyboard approval handler
-      registerApprovalHandler(this.bot);
+      this.approvalHandler.register(this.bot);
 
       // ── Command handlers (MUST be registered BEFORE bot.on('message')!) ──
       // Grammy's middleware chain is sequential: if bot.on('message') runs first
@@ -327,11 +324,17 @@ export class TelegramChannelAPI implements ChannelPluginAPI {
         });
       });
 
-      // Install error handler
+      // Install error handler — only set channel to error for connection-level failures
       this.bot.catch((err) => {
-        log.error('[Telegram] Bot error:', err);
-        this.status = 'error';
-        this.emitConnectionEvent('error');
+        const httpCode = (err as { error_code?: number }).error_code;
+        const isConnectionError = httpCode === 401 || httpCode === 409;
+        if (isConnectionError) {
+          log.error('[Telegram] Connection-level bot error:', err);
+          this.status = 'error';
+          this.emitConnectionEvent('error');
+        } else {
+          log.error('[Telegram] Per-request bot error (non-fatal):', err);
+        }
       });
 
       if (this.config.webhook_url) {
@@ -383,21 +386,23 @@ export class TelegramChannelAPI implements ChannelPluginAPI {
 
   async disconnect(): Promise<void> {
     // Deny all pending approvals before stopping
-    clearPendingApprovals();
+    this.approvalHandler.clearAll();
 
     if (this.bot) {
       // In webhook mode, deregister the webhook from Telegram and cleanup handler
       if (this.webhookMode) {
-        try {
-          await this.bot.api.deleteWebhook();
-        } catch (err) {
-          log.warn('[Telegram] Failed to delete webhook:', getErrorMessage(err));
-        }
+        // Unregister internal handler first — even if Telegram API call fails,
+        // the local route must not process stale requests
         try {
           const { unregisterWebhookHandler } = await import('./webhook.js');
           unregisterWebhookHandler();
         } catch {
           /* best effort */
+        }
+        try {
+          await this.bot.api.deleteWebhook();
+        } catch (err) {
+          log.warn('[Telegram] Failed to delete webhook:', getErrorMessage(err));
         }
       }
       this.bot.stop();
@@ -553,7 +558,7 @@ export class TelegramChannelAPI implements ChannelPluginAPI {
     params: { toolName: string; description: string; riskLevel?: string }
   ): Promise<boolean> {
     if (!this.bot) return false;
-    return requestTelegramApproval(this.bot, chatId, params);
+    return this.approvalHandler.request(this.bot, chatId, params);
   }
 
   async resolveUser(_platformUserId: string): Promise<ChannelUser | null> {
@@ -572,6 +577,9 @@ export class TelegramChannelAPI implements ChannelPluginAPI {
   // --------------------------------------------------------------------------
 
   private async handleIncomingMessage(message: Message): Promise<void> {
+    // Ignore messages from bots to prevent feedback loops
+    if (message.from?.is_bot) return;
+
     // Accept text, captions, or messages with media attachments
     const hasMedia = !!(
       message.photo ||

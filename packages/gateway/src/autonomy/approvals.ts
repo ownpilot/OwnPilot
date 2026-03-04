@@ -369,8 +369,8 @@ export class ApprovalManager extends EventEmitter {
   }
 
   private generateAlternatives(
-    category: ActionCategory,
-    actionType: string,
+    _category: ActionCategory,
+    _actionType: string,
     params: Record<string, unknown>
   ): Array<{
     description: string;

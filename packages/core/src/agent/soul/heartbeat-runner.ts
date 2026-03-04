@@ -75,6 +75,17 @@ export class HeartbeatRunner {
     const budgetOk = await this.budgetTracker.checkBudget(agentId, soul.autonomy);
     if (!budgetOk) {
       await this.handleBudgetExceeded(agentId, soul);
+      // Log the skipped run so history is complete
+      await this.heartbeatLogRepo.create({
+        agentId,
+        soulVersion: soul.evolution.version,
+        tasksRun: [],
+        tasksSkipped: soul.heartbeat.checklist.map((t) => ({ id: t.id, reason: 'budget_exceeded' })),
+        tasksFailed: [],
+        durationMs: 0,
+        tokenUsage: { input: 0, output: 0 },
+        cost: 0,
+      });
       return { ok: false, error: new Error('Daily budget exceeded') };
     }
 
@@ -227,9 +238,9 @@ Be concise and focused. Report your findings clearly.`.trim();
       if (task.schedule === 'daily' && task.dailyAt) {
         const [h, m] = task.dailyAt.split(':').map(Number);
         const todayTarget = new Date(now);
-        todayTarget.setHours(h!, m, 0, 0);
-        if (!task.lastRunAt || task.lastRunAt < todayTarget) {
-          if (now.getHours() >= h!) return true;
+        todayTarget.setHours(h!, m ?? 0, 0, 0);
+        if ((!task.lastRunAt || task.lastRunAt < todayTarget) && now >= todayTarget) {
+          return true;
         }
         return false;
       }
@@ -306,19 +317,32 @@ Be concise and focused. Report your findings clearly.`.trim();
     const { start, end, timezone } = soul.heartbeat.quietHours;
     const now = new Date();
 
-    // Get current hour in the configured timezone
-    const currentHour = timezone
-      ? parseInt(now.toLocaleString('en-US', { timeZone: timezone, hour: 'numeric', hour12: false }), 10)
-      : now.getHours();
-
-    const startHour = parseInt(start.split(':')[0]!, 10);
-    const endHour = parseInt(end.split(':')[0]!, 10);
-
-    if (startHour > endHour) {
-      // Spanning midnight (e.g., 22:00 - 06:00)
-      return currentHour >= startHour || currentHour < endHour;
+    // Get current time as total minutes (HH:MM) in the configured timezone
+    let currentTotalMinutes: number;
+    if (timezone) {
+      const parts = now.toLocaleString('en-US', {
+        timeZone: timezone,
+        hour: 'numeric',
+        minute: 'numeric',
+        hour12: false,
+      });
+      // Format: "HH:MM" or "H:MM"
+      const [hStr, mStr] = parts.split(':');
+      currentTotalMinutes = parseInt(hStr ?? '0', 10) * 60 + parseInt(mStr ?? '0', 10);
+    } else {
+      currentTotalMinutes = now.getHours() * 60 + now.getMinutes();
     }
-    return currentHour >= startHour && currentHour < endHour;
+
+    const [startH, startM] = start.split(':').map(Number);
+    const [endH, endM] = end.split(':').map(Number);
+    const startTotal = (startH ?? 0) * 60 + (startM ?? 0);
+    const endTotal = (endH ?? 0) * 60 + (endM ?? 0);
+
+    if (startTotal > endTotal) {
+      // Spanning midnight (e.g., 22:30 - 06:00)
+      return currentTotalMinutes >= startTotal || currentTotalMinutes < endTotal;
+    }
+    return currentTotalMinutes >= startTotal && currentTotalMinutes < endTotal;
   }
 
   private daysSince(date: Date): number {

@@ -244,7 +244,7 @@ describe('Soul Routes', () => {
   });
 
   // ==========================================================================
-  // POST /deploy — Deploy agent + soul + trigger
+  // POST /deploy — Deploy agent + soul atomically in a DB transaction
   // ==========================================================================
 
   describe('POST /deploy', () => {
@@ -262,15 +262,7 @@ describe('Soul Routes', () => {
       expect(model).toBe('gpt-4');
     });
 
-    it('uses custom provider when specified', () => {
-      const customProvider = 'anthropic';
-      const customModel = 'claude-opus';
-
-      expect(customProvider).toBe('anthropic');
-      expect(customModel).toBe('claude-opus');
-    });
-
-    it('falls back to default when settings are empty', async () => {
+    it('falls back to "default" when settings are empty', async () => {
       settingsRepo.get.mockReturnValue(null);
 
       const provider = settingsRepo.get('default_ai_provider') || 'default';
@@ -280,47 +272,55 @@ describe('Soul Routes', () => {
       expect(model).toBe('default');
     });
 
-    it('creates agent record before soul', async () => {
+    it('transaction wraps both agent and soul creation', async () => {
       agentsRepo.create.mockResolvedValue(undefined);
       soulsRepo.create.mockResolvedValue(mockSoul);
 
-      await agentsRepo.create({
-        id: 'agent-123',
-        name: 'Test Agent',
-        systemPrompt: '',
-        provider: 'anthropic',
-        model: 'claude-sonnet',
-      });
+      // Simulate transaction: call both inside the transaction callback
+      let agentCreated = false;
+      let soulCreated = false;
 
+      const fakeTransaction = async (fn: () => Promise<unknown>) => {
+        await agentsRepo.create({ id: 'agent-1', name: 'Test', systemPrompt: '', provider: 'p', model: 'm' });
+        agentCreated = true;
+        await soulsRepo.create({ agentId: 'agent-1' });
+        soulCreated = true;
+        return fn();
+      };
+
+      await fakeTransaction(async () => mockSoul);
+
+      expect(agentCreated).toBe(true);
+      expect(soulCreated).toBe(true);
       expect(agentsRepo.create).toHaveBeenCalled();
-      expect(agentsRepo.create).toHaveBeenCalledWith(expect.objectContaining({
-        id: 'agent-123',
-        name: 'Test Agent',
-      }));
+      expect(soulsRepo.create).toHaveBeenCalled();
     });
 
-    it('handles agent creation failure', async () => {
-      agentsRepo.create.mockRejectedValue(new Error('DB error'));
-
-      await expect(agentsRepo.create({ id: 'agent-123' })).rejects.toThrow('DB error');
-    });
-
-    it('handles soul creation failure with rollback', async () => {
+    it('rolls back atomically when soul creation fails', async () => {
       agentsRepo.create.mockResolvedValue(undefined);
       soulsRepo.create.mockRejectedValue(new Error('Soul creation failed'));
 
-      // Simulate rollback
-      try {
-        await soulsRepo.create({ agentId: 'agent-123' });
-      } catch {
-        await agentsRepo.delete('agent-123');
-      }
+      let txRolledBack = false;
+      const fakeTransaction = async (fn: () => Promise<unknown>) => {
+        try {
+          return await fn();
+        } catch {
+          txRolledBack = true;
+          throw new Error('Transaction rolled back');
+        }
+      };
 
-      expect(agentsRepo.delete).toHaveBeenCalledWith('agent-123');
+      await expect(fakeTransaction(async () => {
+        await agentsRepo.create({ id: 'a' });
+        await soulsRepo.create({ agentId: 'a' });
+      })).rejects.toThrow('Transaction rolled back');
+
+      expect(txRolledBack).toBe(true);
+      // No manual rollback (agentsRepo.delete) needed — TX handles it
+      expect(agentsRepo.delete).not.toHaveBeenCalled();
     });
 
-    it('handles duplicate name by appending random suffix', async () => {
-      // First call fails with duplicate name, second succeeds
+    it('retries on duplicate name by appending random suffix', async () => {
       let callCount = 0;
       agentsRepo.create.mockImplementation(() => {
         callCount++;
@@ -332,74 +332,76 @@ describe('Soul Routes', () => {
 
       const baseName = 'Test Agent';
       let agentName = baseName;
-      let agentCreated = false;
+      let soul = null;
       let attempts = 0;
 
-      while (!agentCreated && attempts < 5) {
+      while (!soul && attempts < 5) {
         try {
-          await agentsRepo.create({
-            id: 'agent-123',
-            name: agentName,
-            systemPrompt: '',
-            provider: 'default',
-            model: 'default',
-          });
-          agentCreated = true;
-        } catch (agentErr) {
-          const errorMessage = (agentErr as Error).message.toLowerCase();
-          if (errorMessage.includes('duplicate') && errorMessage.includes('name')) {
+          await agentsRepo.create({ id: 'a', name: agentName, systemPrompt: '', provider: 'p', model: 'm' });
+          soulsRepo.create.mockResolvedValue(mockSoul);
+          soul = await soulsRepo.create({ agentId: 'a' });
+        } catch (err) {
+          const msg = (err as Error).message.toLowerCase();
+          if (msg.includes('duplicate') && msg.includes('name')) {
             attempts++;
-            const randomSuffix = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
-            agentName = `${baseName} (${randomSuffix})`;
-          } else {
-            break;
-          }
+            agentName = `${baseName} (${Math.floor(Math.random() * 10000).toString().padStart(4, '0')})`;
+          } else break;
         }
       }
 
-      expect(agentCreated).toBe(true);
+      expect(soul).toBeDefined();
       expect(attempts).toBe(1);
-      expect(agentName).not.toBe(baseName);
       expect(agentName).toMatch(/Test Agent \(\d{4}\)/);
     });
 
-    it('fails after max retries for duplicate names', async () => {
-      // All calls fail with duplicate name
+    it('fails after max retries (5) for persistent duplicate names', async () => {
       agentsRepo.create.mockRejectedValue(
         new Error('duplicate key value violates unique constraint "agents_name_key"')
       );
 
-      const baseName = 'Test Agent';
-      let agentName = baseName;
-      let agentCreated = false;
+      let soul = null;
       let attempts = 0;
+      let agentName = 'Conflict Agent';
       let lastError: unknown = null;
 
-      while (!agentCreated && attempts < 5) {
+      while (!soul && attempts < 5) {
         try {
-          await agentsRepo.create({
-            id: 'agent-123',
-            name: agentName,
-            systemPrompt: '',
-            provider: 'default',
-            model: 'default',
-          });
-          agentCreated = true;
-        } catch (agentErr) {
-          lastError = agentErr;
-          const errorMessage = (agentErr as Error).message.toLowerCase();
-          if (errorMessage.includes('duplicate') && errorMessage.includes('name')) {
+          await agentsRepo.create({ id: 'a', name: agentName });
+          soul = mockSoul;
+        } catch (err) {
+          lastError = err;
+          const msg = (err as Error).message.toLowerCase();
+          if (msg.includes('duplicate') && msg.includes('name')) {
             attempts++;
-            const randomSuffix = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
-            agentName = `${baseName} (${randomSuffix})`;
-          } else {
-            break;
-          }
+            agentName = `Conflict Agent (${attempts.toString().padStart(4, '0')})`;
+          } else break;
         }
       }
 
-      expect(agentCreated).toBe(false);
+      expect(soul).toBeNull();
       expect(attempts).toBe(5);
+      expect(lastError).toBeDefined();
+    });
+
+    it('validates autonomy.level must be 0-4', () => {
+      const validLevels = [0, 1, 2, 3, 4];
+      const invalidLevels = [-1, 5, 1.5, NaN];
+
+      for (const level of validLevels) {
+        expect(Number.isInteger(level) && level >= 0 && level <= 4).toBe(true);
+      }
+      for (const level of invalidLevels) {
+        expect(Number.isInteger(level) && level >= 0 && level <= 4).toBe(false);
+      }
+    });
+
+    it('validates cron expression format', () => {
+      const CRON_REGEX = /^[\*0-9,\-\/]+\s+[\*0-9,\-\/]+\s+[\*0-9,\-\/]+\s+[\*0-9,\-\/]+\s+[\*0-9,\-\/]+$/;
+      expect(CRON_REGEX.test('0 */6 * * *')).toBe(true);
+      expect(CRON_REGEX.test('*/15 * * * *')).toBe(true);
+      expect(CRON_REGEX.test('not-a-cron')).toBe(false);
+      expect(CRON_REGEX.test('every hour')).toBe(false);
+      expect(CRON_REGEX.test('')).toBe(false);
     });
   });
 

@@ -247,24 +247,13 @@ export class UserContainerOrchestrator {
       info.lastActivityAt = new Date();
     }
 
-    // Build exec command based on language
-    let _execCmd: string[];
-    switch (language) {
-      case 'python':
-        _execCmd = ['python', '-c', code];
-        break;
-      case 'javascript':
-        _execCmd = ['node', '-e', code];
-        break;
-      case 'shell':
-        _execCmd = ['sh', '-c', code];
-        break;
-      default:
-        return {
-          executionId,
-          status: 'failed',
-          error: `Unsupported language: ${language}`,
-        };
+    // Validate language before building docker exec args
+    if (!['python', 'javascript', 'shell'].includes(language)) {
+      return {
+        executionId,
+        status: 'failed',
+        error: `Unsupported language: ${language}`,
+      };
     }
 
     return new Promise((resolve) => {

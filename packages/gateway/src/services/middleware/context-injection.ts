@@ -54,7 +54,7 @@ export function clearInjectionCache(userId?: string): void {
  * Expects `ctx.get('agent')` to be set by the route handler before processing.
  */
 export function createContextInjectionMiddleware(): MessageMiddleware {
-  return async (message, ctx, next) => {
+  return async (_message, ctx, next) => {
     const agent = ctx.get<{
       getConversation(): { systemPrompt?: string };
       updateSystemPrompt(p: string): void;

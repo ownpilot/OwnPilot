@@ -540,6 +540,18 @@ export class WorkflowsRepository extends BaseRepository {
     return parseInt(row?.count ?? '0', 10);
   }
 
+  /** Return all distinct tool names used by active workflows — avoids loading full node data. */
+  async getActiveToolNames(): Promise<string[]> {
+    const rows = await this.query<{ tool_name: string }>(
+      `SELECT DISTINCT jsonb_path_query(nodes, '$[*] ? (@.type == "tool").data.toolName') #>> '{}' AS tool_name
+       FROM workflows
+       WHERE user_id = $1 AND status = 'active'
+         AND nodes IS NOT NULL`,
+      [this.userId]
+    );
+    return rows.map((r) => r.tool_name).filter(Boolean);
+  }
+
   async markRun(id: string): Promise<void> {
     await this.execute(
       `UPDATE workflows SET last_run = $1, run_count = run_count + 1, updated_at = $1 WHERE id = $2 AND user_id = $3`,

@@ -407,24 +407,25 @@ describe('ChannelMessagesRepository', () => {
   // ---- deleteByChannel ----
 
   describe('deleteByChannel', () => {
-    it('returns number of deleted messages', async () => {
-      mockAdapter.execute.mockResolvedValueOnce({ changes: 5 });
+    it('returns count and ids of deleted messages', async () => {
+      const rows = [{ id: 'msg-1' }, { id: 'msg-2' }, { id: 'msg-3' }, { id: 'msg-4' }, { id: 'msg-5' }];
+      mockAdapter.query.mockResolvedValueOnce(rows);
 
       const result = await repo.deleteByChannel('ch-1');
 
-      expect(result).toBe(5);
-      expect(mockAdapter.execute).toHaveBeenCalledWith(
+      expect(result).toEqual({ count: 5, ids: ['msg-1', 'msg-2', 'msg-3', 'msg-4', 'msg-5'] });
+      expect(mockAdapter.query).toHaveBeenCalledWith(
         expect.stringContaining('DELETE FROM channel_messages WHERE channel_id = $1'),
         ['ch-1']
       );
     });
 
-    it('returns 0 when no messages to delete', async () => {
-      mockAdapter.execute.mockResolvedValueOnce({ changes: 0 });
+    it('returns count 0 and empty ids when no messages to delete', async () => {
+      mockAdapter.query.mockResolvedValueOnce([]);
 
       const result = await repo.deleteByChannel('ch-empty');
 
-      expect(result).toBe(0);
+      expect(result).toEqual({ count: 0, ids: [] });
     });
   });
 

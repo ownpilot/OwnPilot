@@ -6,7 +6,7 @@
  * through EventBus, handles verification, and manages sessions.
  */
 
-import { randomUUID } from 'node:crypto';
+import { randomUUID, timingSafeEqual } from 'node:crypto';
 import {
   type IChannelService,
   type ChannelOutgoingMessage,
@@ -500,6 +500,21 @@ export class ChannelServiceImpl implements IChannelService {
 
       // 4. Check verification — whitelist, approval code, or admin approval
       if (!channelUser.isVerified) {
+        // WhatsApp: self-chat filtering in whatsapp-api.ts guarantees only the
+        // account owner's messages reach here → auto-verify, no whitelist needed
+        if (message.platform === 'whatsapp') {
+          const verificationSvc = getChannelVerificationService();
+          await verificationSvc.verifyViaWhitelist(
+            message.platform,
+            message.sender.platformUserId,
+            message.sender.displayName
+          );
+          channelUser.isVerified = true;
+          log.info('Auto-verified WhatsApp self-chat user', {
+            userId: message.sender.platformUserId,
+          });
+        } else {
+
         const plugin = this.pluginRegistry.get(message.channelPluginId);
         const allowedUsers = plugin ? this.getPluginAllowedUsers(plugin) : [];
         const approvalCode = plugin ? this.getPluginApprovalCode(plugin) : null;
@@ -522,7 +537,12 @@ export class ChannelServiceImpl implements IChannelService {
           });
         } else if (approvalCode) {
           // (b) Approval code configured — challenge-response verification
-          if (message.text.trim() === approvalCode) {
+          const submittedCode = Buffer.from(message.text.trim());
+          const expectedCode = Buffer.from(approvalCode);
+          const codeMatches =
+            submittedCode.length === expectedCode.length &&
+            timingSafeEqual(submittedCode, expectedCode);
+          if (codeMatches) {
             // Correct code → approve
             const verificationSvc = getChannelVerificationService();
             await verificationSvc.verifyViaWhitelist(
@@ -589,6 +609,7 @@ export class ChannelServiceImpl implements IChannelService {
 
           return;
         }
+        } // end else (non-whatsapp verification)
       }
 
       // 5. Save incoming message (conversationId wired after session creation below)
@@ -829,7 +850,7 @@ export class ChannelServiceImpl implements IChannelService {
       );
       const userMessage = isProviderError
         ? 'No AI provider configured. Please set up an API key (e.g. OpenAI, Anthropic) in OwnPilot Settings or Config Center.'
-        : `Sorry, I encountered an error: ${errMsg.substring(0, 200)}`;
+        : 'Sorry, I encountered an internal error. Please try again.';
 
       // Try to send error reply
       try {
@@ -1106,7 +1127,7 @@ export class ChannelServiceImpl implements IChannelService {
 
   private async handleConnectCommand(
     message: ChannelIncomingMessage,
-    channelUserId: string,
+    _channelUserId: string,
     token: string
   ): Promise<void> {
     const result = await this.verificationService.verifyToken(
@@ -1208,6 +1229,7 @@ export class ChannelServiceImpl implements IChannelService {
       unsub();
     }
     this.unsubscribes = [];
+    this.sessionLocks.clear();
     log.info('ChannelService disposed');
   }
 }

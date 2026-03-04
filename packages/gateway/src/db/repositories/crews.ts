@@ -2,7 +2,7 @@
  * Crew Repository — CRUD for agent_crews and agent_crew_members
  */
 
-import { BaseRepository, parseJsonField } from './base.js';
+import { BaseRepository } from './base.js';
 import type { AgentCrew, CrewMember, CrewCoordinationPattern, CrewStatus } from '@ownpilot/core';
 
 // ── DB Row Types ────────────────────────────────────
@@ -60,10 +60,11 @@ export class CrewsRepository extends BaseRepository {
     templateId?: string;
     coordinationPattern: CrewCoordinationPattern;
     status: CrewStatus;
+    workspaceId?: string | null;
   }): Promise<AgentCrew> {
     const rows = await this.query<CrewRow>(
-      `INSERT INTO agent_crews (name, description, template_id, coordination_pattern, status)
-       VALUES ($1, $2, $3, $4, $5)
+      `INSERT INTO agent_crews (name, description, template_id, coordination_pattern, status, workspace_id)
+       VALUES ($1, $2, $3, $4, $5, $6)
        RETURNING *`,
       [
         data.name,
@@ -71,26 +72,42 @@ export class CrewsRepository extends BaseRepository {
         data.templateId ?? null,
         data.coordinationPattern,
         data.status,
+        data.workspaceId ?? null,
       ]
     );
     return rowToCrew(rows[0]!);
   }
 
-  async getById(id: string): Promise<AgentCrew | null> {
-    const row = await this.queryOne<CrewRow>(`SELECT * FROM agent_crews WHERE id = $1`, [id]);
+  async getById(id: string, userId?: string | null): Promise<AgentCrew | null> {
+    const row = userId
+      ? await this.queryOne<CrewRow>(
+          `SELECT * FROM agent_crews WHERE id = $1 AND workspace_id = $2`,
+          [id, userId]
+        )
+      : await this.queryOne<CrewRow>(`SELECT * FROM agent_crews WHERE id = $1`, [id]);
     return row ? rowToCrew(row) : null;
   }
 
-  async list(limit: number, offset: number): Promise<AgentCrew[]> {
-    const rows = await this.query<CrewRow>(
-      `SELECT * FROM agent_crews ORDER BY created_at DESC LIMIT $1 OFFSET $2`,
-      [limit, offset]
-    );
+  async list(userId: string | null, limit: number, offset: number): Promise<AgentCrew[]> {
+    const rows = userId
+      ? await this.query<CrewRow>(
+          `SELECT * FROM agent_crews WHERE workspace_id = $1 ORDER BY created_at DESC LIMIT $2 OFFSET $3`,
+          [userId, limit, offset]
+        )
+      : await this.query<CrewRow>(
+          `SELECT * FROM agent_crews ORDER BY created_at DESC LIMIT $1 OFFSET $2`,
+          [limit, offset]
+        );
     return rows.map(rowToCrew);
   }
 
-  async count(): Promise<number> {
-    const row = await this.queryOne<{ count: string }>(`SELECT COUNT(*) AS count FROM agent_crews`);
+  async count(userId?: string | null): Promise<number> {
+    const row = userId
+      ? await this.queryOne<{ count: string }>(
+          `SELECT COUNT(*) AS count FROM agent_crews WHERE workspace_id = $1`,
+          [userId]
+        )
+      : await this.queryOne<{ count: string }>(`SELECT COUNT(*) AS count FROM agent_crews`);
     return parseInt(row?.count ?? '0', 10);
   }
 

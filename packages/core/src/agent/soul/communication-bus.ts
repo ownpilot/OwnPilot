@@ -60,12 +60,33 @@ export interface ICommunicationEventBus {
 export class AgentCommunicationBus implements IAgentCommunicationBus {
   // Rate limiting state (agentId -> rate limit entry)
   private rateLimits = new Map<string, RateLimitEntry>();
+  private cleanupTimer: ReturnType<typeof setInterval> | null = null;
 
   constructor(
     private messageRepo: IAgentMessageRepository,
     private eventBus: ICommunicationEventBus,
     private maxMessagesPerMinute = DEFAULT_MAX_MESSAGES_PER_MINUTE
-  ) {}
+  ) {
+    // Evict expired rate-limit entries every 5 minutes to prevent unbounded map growth
+    this.cleanupTimer = setInterval(() => {
+      const now = Date.now();
+      for (const [agentId, entry] of this.rateLimits) {
+        if (now - entry.windowStart > RATE_LIMIT_WINDOW_MS) {
+          this.rateLimits.delete(agentId);
+        }
+      }
+    }, 5 * 60_000);
+    this.cleanupTimer.unref?.(); // Don't prevent process exit
+  }
+
+  /** Stop the background cleanup timer. */
+  dispose(): void {
+    if (this.cleanupTimer) {
+      clearInterval(this.cleanupTimer);
+      this.cleanupTimer = null;
+    }
+    this.rateLimits.clear();
+  }
 
   /** Send a message to another agent. Returns the message ID. */
   async send(msg: Omit<AgentMessage, 'id' | 'status' | 'createdAt'>): Promise<string> {

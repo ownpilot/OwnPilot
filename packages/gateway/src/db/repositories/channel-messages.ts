@@ -221,11 +221,12 @@ export class ChannelMessagesRepository extends BaseRepository {
     return result.changes > 0;
   }
 
-  async deleteByChannel(channelId: string): Promise<number> {
-    const result = await this.execute(`DELETE FROM channel_messages WHERE channel_id = $1`, [
-      channelId,
-    ]);
-    return result.changes;
+  async deleteByChannel(channelId: string): Promise<{ count: number; ids: string[] }> {
+    const rows = await this.query<{ id: string }>(
+      `DELETE FROM channel_messages WHERE channel_id = $1 RETURNING id`,
+      [channelId]
+    );
+    return { count: rows.length, ids: rows.map((r) => r.id) };
   }
 
   async deleteAll(): Promise<number> {

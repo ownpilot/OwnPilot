@@ -36,6 +36,9 @@ interface PlatformInfo {
   docsUrl: string;
   restrictLabel: string;
   restrictField: string;
+  restrictPlaceholder?: string;
+  /** If true, the restrict field is required and shown prominently (not inside advanced). */
+  restrictRequired?: boolean;
   Icon: React.ComponentType<{ className?: string }>;
   validateToken: (v: string) => string | null;
   /** If true, uses QR code authentication instead of token input. */
@@ -64,8 +67,10 @@ const PLATFORMS: PlatformInfo[] = [
     tokenPlaceholder: '',
     tokenHint: 'Scan QR code with your WhatsApp app',
     docsUrl: 'https://github.com/WhiskeySockets/Baileys',
-    restrictLabel: 'Allowed Phone Numbers (comma-separated, optional)',
-    restrictField: 'allowed_users',
+    restrictLabel: 'Your Phone Number',
+    restrictField: 'my_phone',
+    restrictPlaceholder: '905551234567',
+    restrictRequired: true,
     Icon: WhatsApp,
     validateToken: () => null,
     qrBased: true,
@@ -434,27 +439,51 @@ export function ChannelSetupModal({ onClose, onSuccess }: ChannelSetupModalProps
                 </div>
               )}
 
-              {/* Advanced toggle */}
-              <button
-                onClick={() => setShowAdvanced(!showAdvanced)}
-                className="text-sm text-text-muted dark:text-dark-text-muted hover:text-text-primary dark:hover:text-dark-text-primary transition-colors"
-              >
-                {showAdvanced ? 'Hide' : 'Show'} advanced options
-              </button>
-
-              {showAdvanced && (
+              {/* Required field — shown prominently (e.g. WhatsApp phone number) */}
+              {platform.restrictRequired && (
                 <div>
-                  <label className="block text-sm font-medium text-text-secondary dark:text-dark-text-secondary mb-1">
-                    {platform.restrictLabel}
+                  <label className="block text-sm font-medium text-text-primary dark:text-dark-text-primary mb-1">
+                    {platform.restrictLabel} <span className="text-error">*</span>
                   </label>
                   <input
                     type="text"
                     value={restrictIds}
                     onChange={(e) => setRestrictIds(e.target.value)}
-                    placeholder="e.g. 123456789, 987654321"
+                    placeholder={platform.restrictPlaceholder ?? ''}
                     className="w-full px-3 py-2 rounded-lg border border-border dark:border-dark-border bg-bg-secondary dark:bg-dark-bg-secondary text-text-primary dark:text-dark-text-primary focus:outline-none focus:ring-2 focus:ring-primary"
+                    autoFocus={platform.qrBased}
                   />
+                  <p className="text-xs text-text-muted dark:text-dark-text-muted mt-1">
+                    International format without + or spaces. Used for self-chat and message routing.
+                  </p>
                 </div>
+              )}
+
+              {/* Advanced toggle — only for optional restrict fields */}
+              {!platform.restrictRequired && (
+                <>
+                  <button
+                    onClick={() => setShowAdvanced(!showAdvanced)}
+                    className="text-sm text-text-muted dark:text-dark-text-muted hover:text-text-primary dark:hover:text-dark-text-primary transition-colors"
+                  >
+                    {showAdvanced ? 'Hide' : 'Show'} advanced options
+                  </button>
+
+                  {showAdvanced && (
+                    <div>
+                      <label className="block text-sm font-medium text-text-secondary dark:text-dark-text-secondary mb-1">
+                        {platform.restrictLabel}
+                      </label>
+                      <input
+                        type="text"
+                        value={restrictIds}
+                        onChange={(e) => setRestrictIds(e.target.value)}
+                        placeholder={platform.restrictPlaceholder ?? 'e.g. 123456789, 987654321'}
+                        className="w-full px-3 py-2 rounded-lg border border-border dark:border-dark-border bg-bg-secondary dark:bg-dark-bg-secondary text-text-primary dark:text-dark-text-primary focus:outline-none focus:ring-2 focus:ring-primary"
+                      />
+                    </div>
+                  )}
+                </>
               )}
 
               {/* Buttons */}
@@ -467,7 +496,10 @@ export function ChannelSetupModal({ onClose, onSuccess }: ChannelSetupModalProps
                 </button>
                 <button
                   onClick={handleSubmit}
-                  disabled={!platform.qrBased && !token.trim()}
+                  disabled={
+                    (!platform.qrBased && !token.trim()) ||
+                    (!!platform.restrictRequired && !restrictIds.trim())
+                  }
                   className="px-6 py-2 text-sm font-medium bg-primary text-white rounded-lg hover:bg-primary-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   {platform.qrBased ? 'Start Setup' : 'Connect'}

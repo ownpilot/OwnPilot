@@ -27,7 +27,6 @@ import {
 } from '@ownpilot/core';
 import { createWorkflowApprovalsRepository } from '../../db/repositories/workflow-approvals.js';
 import { getErrorMessage } from '../../routes/helpers.js';
-import { getLog } from '../log.js';
 import {
   topologicalSort,
   getDownstreamNodes,
@@ -50,7 +49,6 @@ import {
 import { executeForEachNode } from './foreach-executor.js';
 import type { WorkflowProgressEvent } from './types.js';
 
-const _log = getLog('WorkflowService');
 
 export class WorkflowService implements IWorkflowService {
   private activeExecutions = new Map<string, AbortController>();

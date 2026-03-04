@@ -17,7 +17,7 @@ import {
 import { localProvidersRepo } from '../db/repositories/index.js';
 import { getApiKey } from './settings.js';
 import { getApprovalManager, checkAutonomy, AutonomyLevel } from '../autonomy/index.js';
-import type { ActionCategory, AutonomyDecision } from '../autonomy/index.js';
+import type { ActionCategory } from '../autonomy/index.js';
 import type { SoulAutonomy } from '@ownpilot/core';
 import {
   MAX_AGENT_CACHE_SIZE,

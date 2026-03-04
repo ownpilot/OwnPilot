@@ -43,6 +43,19 @@ export class EmbeddingQueue {
   private timer: ReturnType<typeof setInterval> | null = null;
   private running = false;
 
+  // Stored as class fields so they can be unsubscribed in stop()
+  private readonly onMemoryCreated = (event: { data: { needsEmbedding?: boolean; memoryId: string; userId: string; content: string } }) => {
+    if (event.data.needsEmbedding) {
+      this.enqueue(event.data.memoryId, event.data.userId, event.data.content);
+    }
+  };
+
+  private readonly onMemoryUpdated = (event: { data: { needsEmbedding?: boolean; memoryId: string; userId: string; content?: string } }) => {
+    if (event.data.needsEmbedding && event.data.content) {
+      this.enqueue(event.data.memoryId, event.data.userId, event.data.content);
+    }
+  };
+
   private queueKey(memoryId: string, userId: string): string {
     return `${userId}:${memoryId}`;
   }
@@ -61,28 +74,28 @@ export class EmbeddingQueue {
 
     // Subscribe to memory events for automatic embedding generation
     const eventSystem = getEventSystem();
-    eventSystem.on('memory.created', (event) => {
-      if (event.data.needsEmbedding) {
-        this.enqueue(event.data.memoryId, event.data.userId, event.data.content);
-      }
-    });
-    eventSystem.on('memory.updated', (event) => {
-      if (event.data.needsEmbedding && event.data.content) {
-        this.enqueue(event.data.memoryId, event.data.userId, event.data.content);
-      }
-    });
+    eventSystem.on('memory.created', this.onMemoryCreated as never);
+    eventSystem.on('memory.updated', this.onMemoryUpdated as never);
 
     log.info('Embedding queue started');
   }
 
   /**
-   * Stop the background worker.
+   * Stop the background worker and unsubscribe event listeners.
    */
   stop(): void {
     this.running = false;
     if (this.timer) {
       clearInterval(this.timer);
       this.timer = null;
+    }
+    // Unsubscribe to prevent listener leaks on restart
+    try {
+      const eventSystem = getEventSystem();
+      eventSystem.off('memory.created', this.onMemoryCreated as never);
+      eventSystem.off('memory.updated', this.onMemoryUpdated as never);
+    } catch {
+      // Event system may already be torn down during shutdown
     }
     log.info('Embedding queue stopped');
   }

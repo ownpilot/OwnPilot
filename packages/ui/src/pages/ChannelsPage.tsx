@@ -5,7 +5,7 @@
  * message stats, users, and provides connect/disconnect/reconnect actions.
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { channelsApi } from '../api/endpoints/misc';
 import { useGateway } from '../hooks/useWebSocket';
 import { useToast } from '../components/ToastProvider';
@@ -298,6 +298,13 @@ export function ChannelsPage() {
     [toast, loadChannels]
   );
 
+  const handleSendTest = useCallback(
+    async (channelId: string, text: string, chatId?: string) => {
+      await channelsApi.send(channelId, { text, ...(chatId ? { chatId } : {}) });
+    },
+    []
+  );
+
   const handleClearMessages = useCallback(
     async (channelId: string) => {
       if (
@@ -524,6 +531,7 @@ export function ChannelsPage() {
               onLogout={handleLogout}
               onReconnect={handleReconnect}
               onClearMessages={handleClearMessages}
+              onSendTest={handleSendTest}
               onApproveUser={handleApproveUser}
               onBlockUser={handleBlockUser}
               onUnblockUser={handleUnblockUser}
@@ -571,6 +579,7 @@ function ChannelDetail({
   onLogout,
   onReconnect,
   onClearMessages,
+  onSendTest,
   onApproveUser,
   onBlockUser,
   onUnblockUser,
@@ -586,11 +595,44 @@ function ChannelDetail({
   onLogout: (id: string) => void;
   onReconnect: (id: string) => void;
   onClearMessages: (id: string) => void;
+  onSendTest: (id: string, text: string, chatId?: string) => Promise<void>;
   onApproveUser: (userId: string) => void;
   onBlockUser: (userId: string) => void;
   onUnblockUser: (userId: string) => void;
   onDeleteUser: (userId: string) => void;
 }) {
+  const toast = useToast();
+  const [showTestForm, setShowTestForm] = useState(false);
+  const [testText, setTestText] = useState('Hello! This is a test message from OwnPilot.');
+  const [testChatId, setTestChatId] = useState('');
+  const [isSending, setIsSending] = useState(false);
+  const textRef = useRef<HTMLTextAreaElement>(null);
+
+  // For WhatsApp, chatId is own phone (self-chat) — auto-filled from botInfo if available
+  const isWhatsApp = channel.type === 'whatsapp';
+  const autoChat = channel.botInfo?.username ?? '';
+  // Hide chat ID input for WhatsApp when we already know the own number
+  const chatIdAutoResolved = isWhatsApp && !!autoChat;
+
+  const handleSend = async () => {
+    const text = testText.trim();
+    if (!text) return;
+    const chatId = chatIdAutoResolved ? autoChat : testChatId.trim() || undefined;
+    if (!chatIdAutoResolved && !chatId) {
+      toast.error('Enter a Chat ID to send the test message');
+      return;
+    }
+    setIsSending(true);
+    try {
+      await onSendTest(channel.id, text, chatId);
+      toast.success('Test message sent');
+      setShowTestForm(false);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to send test message');
+    } finally {
+      setIsSending(false);
+    }
+  };
   return (
     <div className="p-6 space-y-6">
       {/* Channel header */}
@@ -796,6 +838,16 @@ function ChannelDetail({
           {channel.status === 'connected' ? (
             <>
               <ActionButton
+                icon={Send}
+                label="Send Test"
+                variant="success"
+                loading={false}
+                onClick={() => {
+                  setShowTestForm((v) => !v);
+                  setTimeout(() => textRef.current?.focus(), 50);
+                }}
+              />
+              <ActionButton
                 icon={RefreshCw}
                 label="Reconnect"
                 loading={actionLoading === 'reconnect'}
@@ -835,6 +887,72 @@ function ChannelDetail({
             onClick={() => onClearMessages(channel.id)}
           />
         </div>
+
+        {/* Inline test message form */}
+        {showTestForm && channel.status === 'connected' && (
+          <div className="mt-3 p-3 border border-border dark:border-dark-border rounded-lg space-y-2 bg-bg-secondary dark:bg-dark-bg-secondary">
+            <p className="text-xs font-medium text-text-primary dark:text-dark-text-primary">
+              Send Test Message
+            </p>
+            {/* Chat ID — hidden for WhatsApp when own number is known, visible for others */}
+            {!chatIdAutoResolved ? (
+              <div className="space-y-1">
+                <label className="text-[10px] text-text-muted dark:text-dark-text-muted uppercase tracking-wide">
+                  Chat ID
+                </label>
+                <input
+                  type="text"
+                  value={testChatId}
+                  onChange={(e) => setTestChatId(e.target.value)}
+                  placeholder="e.g. 123456789"
+                  className="w-full px-2.5 py-1.5 text-xs rounded border border-border dark:border-dark-border bg-bg-primary dark:bg-dark-bg-primary text-text-primary dark:text-dark-text-primary placeholder:text-text-muted focus:outline-none focus:border-primary"
+                />
+              </div>
+            ) : (
+              <p className="text-[10px] text-text-muted dark:text-dark-text-muted">
+                Sending to self-chat · {autoChat}
+              </p>
+            )}
+            <div className="space-y-1">
+              <label className="text-[10px] text-text-muted dark:text-dark-text-muted uppercase tracking-wide">
+                Message
+              </label>
+              <textarea
+                ref={textRef}
+                value={testText}
+                onChange={(e) => setTestText(e.target.value)}
+                rows={2}
+                className="w-full px-2.5 py-1.5 text-xs rounded border border-border dark:border-dark-border bg-bg-primary dark:bg-dark-bg-primary text-text-primary dark:text-dark-text-primary placeholder:text-text-muted focus:outline-none focus:border-primary resize-none"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handleSend();
+                }}
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleSend}
+                disabled={isSending || !testText.trim()}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-primary text-white rounded-md hover:bg-primary/90 transition-colors disabled:opacity-50"
+              >
+                {isSending ? (
+                  <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <Send className="w-3 h-3" />
+                )}
+                {isSending ? 'Sending...' : 'Send'}
+              </button>
+              <button
+                onClick={() => setShowTestForm(false)}
+                className="text-xs text-text-muted dark:text-dark-text-muted hover:text-text-primary dark:hover:text-dark-text-primary transition-colors"
+              >
+                Cancel
+              </button>
+              <span className="text-[10px] text-text-muted dark:text-dark-text-muted ml-auto">
+                Ctrl+Enter to send
+              </span>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

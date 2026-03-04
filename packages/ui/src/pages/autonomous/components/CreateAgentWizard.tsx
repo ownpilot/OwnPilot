@@ -15,6 +15,14 @@ import { TemplateCatalog } from './TemplateCatalog';
 import { SkillSelector } from './SkillSelector';
 import { cronToHuman } from '../helpers';
 
+async function getDefaultProviderModel(): Promise<{ provider: string; model: string }> {
+  const settings = await settingsApi.get();
+  return {
+    provider: settings.defaultProvider || 'openai',
+    model: settings.defaultModel || 'gpt-4o',
+  };
+}
+
 interface Props {
   templates: CrewTemplate[];
   initialStep?: 'type' | 'templates';
@@ -105,18 +113,6 @@ export function CreateAgentWizard({
     setStep('review');
   };
 
-  // Get default provider/model from settings
-async function getDefaultProviderModel(): Promise<{ provider: string; model: string }> {
-  try {
-    const settings = await settingsApi.get();
-    return {
-      provider: settings.defaultProvider || 'openai',
-      model: settings.defaultModel || 'gpt-4o',
-    };
-  } catch {
-    return { provider: 'openai', model: 'gpt-4o' };
-  }
-}
 
 const inputClass =
     'w-full rounded-lg border border-border dark:border-dark-border bg-bg-primary dark:bg-dark-bg-primary text-text-primary dark:text-dark-text-primary px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary';

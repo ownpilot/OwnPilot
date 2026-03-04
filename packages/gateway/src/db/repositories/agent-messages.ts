@@ -202,6 +202,24 @@ export class AgentMessagesRepository extends BaseRepository {
     );
     return rows.map(rowToMessage);
   }
+
+  /** Batch-fetch unread counts for multiple agents. O(1) query via GROUP BY. */
+  async countUnreadByAgentIds(agentIds: string[]): Promise<Map<string, number>> {
+    if (agentIds.length === 0) return new Map();
+    const placeholders = agentIds.map((_, i) => `$${i + 1}`).join(', ');
+    const rows = await this.query<{ to_agent_id: string; count: string }>(
+      `SELECT to_agent_id, COUNT(*) AS count
+       FROM agent_messages
+       WHERE to_agent_id IN (${placeholders}) AND status != 'read'
+       GROUP BY to_agent_id`,
+      agentIds
+    );
+    const result = new Map<string, number>();
+    for (const row of rows) {
+      result.set(row.to_agent_id, parseInt(row.count, 10));
+    }
+    return result;
+  }
 }
 
 // ── Singleton ──

@@ -67,6 +67,15 @@ export interface ExtensionManifest {
   npm_package?: string;
   /** npm version (if installed from npm registry) */
   npm_version?: string;
+
+  /** Security audit result — populated by installFromManifest() for UI display */
+  _security?: {
+    riskLevel: string;
+    blocked: boolean;
+    warnings: string[];
+    undeclaredTools: string[];
+    auditedAt: number;
+  };
 }
 
 /** Manifest format: 'ownpilot' = native tool bundles, 'agentskills' = open standard (SKILL.md) */

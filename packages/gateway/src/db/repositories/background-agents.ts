@@ -414,7 +414,7 @@ export class BackgroundAgentsRepository extends BaseRepository {
   }
 
   async clearInbox(agentId: string): Promise<string[]> {
-    const _row = await this.queryOne<{ inbox: string }>(
+    await this.queryOne<{ inbox: string }>(
       `UPDATE background_agent_sessions
        SET inbox = '[]'::jsonb
        WHERE agent_id = $1

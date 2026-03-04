@@ -16,6 +16,7 @@ import {
   ERROR_CODES,
   getErrorMessage,
   getPaginationParams,
+  getUserId,
 } from './helpers.js';
 
 export const crewRoutes = new Hono();
@@ -24,9 +25,13 @@ export const crewRoutes = new Hono();
 
 crewRoutes.get('/', async (c) => {
   try {
+    const userId = getUserId(c);
     const { limit, offset } = getPaginationParams(c);
     const repo = getCrewsRepository();
-    const [crews, total] = await Promise.all([repo.list(limit, offset), repo.count()]);
+    const [crews, total] = await Promise.all([
+      repo.list(userId, limit, offset),
+      repo.count(userId),
+    ]);
     return apiResponse(c, { items: crews, total, limit, offset });
   } catch (err) {
     return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(err) }, 500);
@@ -54,6 +59,7 @@ crewRoutes.get('/templates/:id', (c) => {
 
 crewRoutes.post('/deploy', async (c) => {
   try {
+    const userId = getUserId(c);
     const body = await c.req.json<{
       templateId: string;
       provider?: string;
@@ -99,6 +105,7 @@ crewRoutes.post('/deploy', async (c) => {
       templateId,
       coordinationPattern: template.coordinationPattern,
       status: 'active',
+      workspaceId: userId,
     });
 
     const agentResults: { agentId: string; name: string; status: 'created' | 'failed'; error?: string }[] = [];
@@ -217,8 +224,9 @@ crewRoutes.post('/deploy', async (c) => {
 crewRoutes.get('/:id', async (c) => {
   try {
     const crewId = c.req.param('id');
+    const userId = getUserId(c);
     const crewRepo = getCrewsRepository();
-    const crew = await crewRepo.getById(crewId);
+    const crew = await crewRepo.getById(crewId, userId);
     if (!crew) {
       return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Crew not found' }, 404);
     }
@@ -227,21 +235,25 @@ crewRoutes.get('/:id', async (c) => {
     const soulRepo = getSoulsRepository();
     const hbRepo = getHeartbeatLogRepository();
 
-    const agents = await Promise.all(
-      members.map(async (m) => {
-        const soul = await soulRepo.getByAgentId(m.agentId);
-        const lastHB = await hbRepo.getLatest(m.agentId);
-        return {
-          agentId: m.agentId,
-          role: m.role,
-          name: soul?.identity.name || 'Unknown',
-          emoji: soul?.identity.emoji || '?',
-          heartbeatEnabled: soul?.heartbeat.enabled ?? false,
-          lastHeartbeat: lastHB?.createdAt || null,
-          soulVersion: soul?.evolution.version || 0,
-        };
-      })
-    );
+    // Batch-fetch souls and heartbeats to avoid N+1 queries
+    const agentIds = members.map((m) => m.agentId);
+    const [latestHBMap, ...souls] = await Promise.all([
+      hbRepo.getLatestByAgentIds(agentIds),
+      ...members.map((m) => soulRepo.getByAgentId(m.agentId)),
+    ]);
+
+    const agents = members.map((m, i) => {
+      const soul = souls[i];
+      return {
+        agentId: m.agentId,
+        role: m.role,
+        name: soul?.identity.name || 'Unknown',
+        emoji: soul?.identity.emoji || '?',
+        heartbeatEnabled: soul?.heartbeat.enabled ?? false,
+        lastHeartbeat: latestHBMap.get(m.agentId)?.createdAt || null,
+        soulVersion: soul?.evolution.version || 0,
+      };
+    });
 
     return apiResponse(c, { ...crew, agents });
   } catch (err) {
@@ -254,8 +266,9 @@ crewRoutes.get('/:id', async (c) => {
 crewRoutes.post('/:id/pause', async (c) => {
   try {
     const crewId = c.req.param('id');
+    const userId = getUserId(c);
     const repo = getCrewsRepository();
-    const crew = await repo.getById(crewId);
+    const crew = await repo.getById(crewId, userId);
     if (!crew) {
       return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Crew not found' }, 404);
     }
@@ -277,8 +290,9 @@ crewRoutes.post('/:id/pause', async (c) => {
 crewRoutes.post('/:id/resume', async (c) => {
   try {
     const crewId = c.req.param('id');
+    const userId = getUserId(c);
     const repo = getCrewsRepository();
-    const crew = await repo.getById(crewId);
+    const crew = await repo.getById(crewId, userId);
     if (!crew) {
       return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Crew not found' }, 404);
     }
@@ -300,8 +314,9 @@ crewRoutes.post('/:id/resume', async (c) => {
 crewRoutes.delete('/:id', async (c) => {
   try {
     const crewId = c.req.param('id');
+    const userId = getUserId(c);
     const repo = getCrewsRepository();
-    const crew = await repo.getById(crewId);
+    const crew = await repo.getById(crewId, userId);
     if (!crew) {
       return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Crew not found' }, 404);
     }
@@ -316,14 +331,8 @@ crewRoutes.delete('/:id', async (c) => {
     for (const member of members) {
       const agentId = member.agentId;
 
-      // 1. Find and delete heartbeat triggers for this agent
-      const triggers = await triggerRepo.list({});
-      for (const trigger of triggers) {
-        const action = trigger.action as { type?: string; agentId?: string };
-        if (action?.type === 'run_heartbeat' && action?.agentId === agentId) {
-          await triggerRepo.delete(trigger.id);
-        }
-      }
+      // 1. Delete heartbeat triggers for this agent (single JSONB query, no full-table scan)
+      await triggerRepo.deleteHeartbeatTriggersForAgent(agentId);
 
       // 2. Delete soul
       await soulRepo.delete(agentId);
@@ -353,6 +362,7 @@ crewRoutes.delete('/:id', async (c) => {
 crewRoutes.post('/:id/message', async (c) => {
   try {
     const crewId = c.req.param('id');
+    const userId = getUserId(c);
     const body = await c.req.json<{ from?: string; message: string; priority?: 'low' | 'normal' | 'high' }>();
 
     if (!body.message) {
@@ -360,7 +370,7 @@ crewRoutes.post('/:id/message', async (c) => {
     }
 
     const repo = getCrewsRepository();
-    const crew = await repo.getById(crewId);
+    const crew = await repo.getById(crewId, userId);
     if (!crew) {
       return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Crew not found' }, 404);
     }
@@ -412,6 +422,7 @@ crewRoutes.post('/:id/message', async (c) => {
 crewRoutes.post('/:id/delegate', async (c) => {
   try {
     const crewId = c.req.param('id');
+    const userId = getUserId(c);
     const body = await c.req.json<{
       fromAgentId: string;
       toAgentId: string;
@@ -429,7 +440,7 @@ crewRoutes.post('/:id/delegate', async (c) => {
     }
 
     const repo = getCrewsRepository();
-    const crew = await repo.getById(crewId);
+    const crew = await repo.getById(crewId, userId);
     if (!crew) {
       return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Crew not found' }, 404);
     }
@@ -478,8 +489,9 @@ crewRoutes.post('/:id/delegate', async (c) => {
 crewRoutes.get('/:id/status', async (c) => {
   try {
     const crewId = c.req.param('id');
+    const userId = getUserId(c);
     const repo = getCrewsRepository();
-    const crew = await repo.getById(crewId);
+    const crew = await repo.getById(crewId, userId);
     if (!crew) {
       return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Crew not found' }, 404);
     }
@@ -490,27 +502,28 @@ crewRoutes.get('/:id/status', async (c) => {
     const { getAgentMessagesRepository } = await import('../db/repositories/agent-messages.js');
     const msgRepo = getAgentMessagesRepository();
 
-    const agents = await Promise.all(
-      members.map(async (m) => {
-        const soul = await soulRepo.getByAgentId(m.agentId);
-        const lastHB = await hbRepo.getLatest(m.agentId);
+    // Batch-fetch souls, heartbeats, and unread counts to avoid N+1 queries
+    const agentIds = members.map((m) => m.agentId);
+    const [latestHBMap, unreadMap, ...souls] = await Promise.all([
+      hbRepo.getLatestByAgentIds(agentIds),
+      msgRepo.countUnreadByAgentIds(agentIds),
+      ...members.map((m) => soulRepo.getByAgentId(m.agentId)),
+    ]);
 
-        // Count unread messages
-        const unreadCount = await msgRepo.countUnread(m.agentId);
-
-        return {
-          agentId: m.agentId,
-          role: m.role,
-          name: soul?.identity.name || 'Unknown',
-          emoji: soul?.identity.emoji || '?',
-          status: soul?.heartbeat.enabled ? 'running' : 'paused',
-          lastHeartbeat: lastHB?.createdAt || null,
-          unreadMessages: unreadCount,
-          mission: soul?.purpose.mission || '',
-          peers: soul?.relationships.peers || [],
-        };
-      })
-    );
+    const agents = members.map((m, i) => {
+      const soul = souls[i];
+      return {
+        agentId: m.agentId,
+        role: m.role,
+        name: soul?.identity.name || 'Unknown',
+        emoji: soul?.identity.emoji || '?',
+        status: soul?.heartbeat.enabled ? 'running' : 'paused',
+        lastHeartbeat: latestHBMap.get(m.agentId)?.createdAt || null,
+        unreadMessages: unreadMap.get(m.agentId) ?? 0,
+        mission: soul?.purpose.mission || '',
+        peers: soul?.relationships.peers || [],
+      };
+    });
 
     // Calculate coordination metrics
     const activeAgents = agents.filter((a) => a.status === 'healthy').length;
@@ -540,6 +553,7 @@ crewRoutes.get('/:id/status', async (c) => {
 crewRoutes.post('/:id/sync', async (c) => {
   try {
     const crewId = c.req.param('id');
+    const userId = getUserId(c);
     const body = await c.req.json<{ context: string; importance?: 'low' | 'medium' | 'high' }>();
 
     if (!body.context) {
@@ -547,7 +561,7 @@ crewRoutes.post('/:id/sync', async (c) => {
     }
 
     const repo = getCrewsRepository();
-    const crew = await repo.getById(crewId);
+    const crew = await repo.getById(crewId, userId);
     if (!crew) {
       return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Crew not found' }, 404);
     }

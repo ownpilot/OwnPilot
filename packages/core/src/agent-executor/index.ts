@@ -87,19 +87,6 @@ export interface AgentExecutionResult {
   };
 }
 
-/**
- * Turn result (single iteration of the loop)
- */
-interface _TurnResult {
-  /** Response from LLM */
-  response: string;
-  /** Tool calls requested */
-  toolCalls?: ToolCall[];
-  /** Whether agent is done */
-  done: boolean;
-  /** Reason for completion */
-  doneReason?: 'complete' | 'max_turns' | 'max_tool_calls' | 'error';
-}
 
 /**
  * LLM Provider for execution

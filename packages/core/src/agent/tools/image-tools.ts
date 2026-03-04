@@ -99,7 +99,6 @@ export const analyzeImageExecutor: ToolExecutor = async (
   const detailLevel = (params.detailLevel as string) || 'medium';
 
   try {
-    let _imageData: string;
     let imageFormat: string;
     let imageSource: 'file' | 'url' | 'base64';
 
@@ -118,13 +117,10 @@ export const analyzeImageExecutor: ToolExecutor = async (
           isError: true,
         };
       }
-
-      _imageData = source;
     } else if (source.startsWith('data:image/')) {
       imageSource = 'base64';
       const match = source.match(/data:image\/(\w+);base64,/);
       imageFormat = match?.[1] || 'unknown';
-      _imageData = source;
     } else {
       // File path
       imageSource = 'file';
@@ -162,10 +158,8 @@ export const analyzeImageExecutor: ToolExecutor = async (
         };
       }
 
-      // Read and encode
-      const buffer = await fs.readFile(source);
-      const mimeType = getMimeType(imageFormat);
-      _imageData = `data:${mimeType};base64,${buffer.toString('base64')}`;
+      // Read and validate the file (actual data passed to Vision API at integration time)
+      await fs.readFile(source);
     }
 
     // Build analysis prompt based on task
@@ -511,17 +505,6 @@ function getFormatFromUrl(url: string): string {
   }
 }
 
-function getMimeType(format: string): string {
-  const mimeTypes: Record<string, string> = {
-    jpg: 'image/jpeg',
-    jpeg: 'image/jpeg',
-    png: 'image/png',
-    gif: 'image/gif',
-    webp: 'image/webp',
-    bmp: 'image/bmp',
-  };
-  return mimeTypes[format.toLowerCase()] || 'application/octet-stream';
-}
 
 // ============================================================================
 // EXPORT ALL IMAGE TOOLS

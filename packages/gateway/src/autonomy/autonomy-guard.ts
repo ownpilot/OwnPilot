@@ -52,9 +52,9 @@ export interface AutonomyGuardContext {
  */
 export function checkAutonomy(
   context: AutonomyGuardContext,
-  category: ActionCategory,
+  _category: ActionCategory,
   actionType: string,
-  description: string
+  _description: string
 ): AutonomyDecision {
   const { autonomy, agentName } = context;
   const level = autonomy.level;

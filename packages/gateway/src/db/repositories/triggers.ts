@@ -295,6 +295,30 @@ export class TriggersRepository extends BaseRepository {
   }
 
   /**
+   * Delete all 'run_heartbeat' triggers for a specific agent (used during crew delete).
+   * Detaches history rows before deleting to preserve audit trail.
+   */
+  async deleteHeartbeatTriggersForAgent(agentId: string): Promise<number> {
+    // Detach history for these triggers first
+    await this.execute(
+      `UPDATE trigger_history th
+       SET trigger_name = COALESCE(th.trigger_name, t.name), trigger_id = NULL
+       FROM triggers t
+       WHERE t.id = th.trigger_id
+         AND t.action->>'type' = 'run_heartbeat'
+         AND t.action->>'agentId' = $1`,
+      [agentId]
+    );
+    const result = await this.execute(
+      `DELETE FROM triggers
+       WHERE action->>'type' = 'run_heartbeat'
+         AND action->>'agentId' = $1`,
+      [agentId]
+    );
+    return result.changes;
+  }
+
+  /**
    * List triggers with filters
    */
   async list(query: TriggerQuery = {}): Promise<Trigger[]> {

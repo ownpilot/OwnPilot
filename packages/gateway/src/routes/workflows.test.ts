@@ -27,6 +27,7 @@ const mockRepo = {
   getRecentLogs: vi.fn().mockResolvedValue([]),
   countLogsForWorkflow: vi.fn().mockResolvedValue(0),
   getLogsForWorkflow: vi.fn().mockResolvedValue([]),
+  getActiveToolNames: vi.fn().mockResolvedValue([]),
 };
 
 const mockService = {
@@ -602,40 +603,9 @@ describe('Workflow Routes', () => {
 
   describe('GET /workflows/active-tool-names', () => {
     it('returns tool names from active workflows only', async () => {
-      mockRepo.getPage.mockResolvedValue([
-        {
-          ...sampleWorkflow,
-          id: 'wf-active',
-          status: 'active',
-          nodes: [
-            {
-              id: 'n1',
-              type: 'tool',
-              position: { x: 0, y: 0 },
-              data: { toolName: 'core.read_file', toolArgs: {}, label: 'Read' },
-            },
-            {
-              id: 'n2',
-              type: 'tool',
-              position: { x: 0, y: 0 },
-              data: { toolName: 'custom.my_tool', toolArgs: {}, label: 'My Tool' },
-            },
-          ],
-        },
-        {
-          ...sampleWorkflow,
-          id: 'wf-inactive',
-          status: 'inactive',
-          nodes: [
-            {
-              id: 'n3',
-              type: 'tool',
-              position: { x: 0, y: 0 },
-              data: { toolName: 'should_not_appear', toolArgs: {}, label: 'Skip' },
-            },
-          ],
-        },
-      ]);
+      // getActiveToolNames queries DB with WHERE status='active', so it returns
+      // only tool names from active workflows directly
+      mockRepo.getActiveToolNames.mockResolvedValue(['core.read_file', 'custom.my_tool']);
 
       const res = await app.request('/workflows/active-tool-names');
 
@@ -647,7 +617,7 @@ describe('Workflow Routes', () => {
     });
 
     it('returns empty array when no active workflows', async () => {
-      mockRepo.getPage.mockResolvedValue([]);
+      mockRepo.getActiveToolNames.mockResolvedValue([]);
 
       const res = await app.request('/workflows/active-tool-names');
 
@@ -657,34 +627,8 @@ describe('Workflow Routes', () => {
     });
 
     it('deduplicates tool names across workflows', async () => {
-      mockRepo.getPage.mockResolvedValue([
-        {
-          ...sampleWorkflow,
-          id: 'wf-a',
-          status: 'active',
-          nodes: [
-            {
-              id: 'n1',
-              type: 'tool',
-              position: { x: 0, y: 0 },
-              data: { toolName: 'shared_tool', toolArgs: {}, label: 'T' },
-            },
-          ],
-        },
-        {
-          ...sampleWorkflow,
-          id: 'wf-b',
-          status: 'active',
-          nodes: [
-            {
-              id: 'n2',
-              type: 'tool',
-              position: { x: 0, y: 0 },
-              data: { toolName: 'shared_tool', toolArgs: {}, label: 'T' },
-            },
-          ],
-        },
-      ]);
+      // DB uses DISTINCT so duplicates are already removed
+      mockRepo.getActiveToolNames.mockResolvedValue(['shared_tool']);
 
       const res = await app.request('/workflows/active-tool-names');
 
@@ -694,33 +638,8 @@ describe('Workflow Routes', () => {
     });
 
     it('skips non-tool nodes', async () => {
-      mockRepo.getPage.mockResolvedValue([
-        {
-          ...sampleWorkflow,
-          id: 'wf-mix',
-          status: 'active',
-          nodes: [
-            {
-              id: 'n1',
-              type: 'trigger',
-              position: { x: 0, y: 0 },
-              data: { triggerType: 'manual', label: 'Start' },
-            },
-            {
-              id: 'n2',
-              type: 'tool',
-              position: { x: 0, y: 0 },
-              data: { toolName: 'real_tool', toolArgs: {}, label: 'Tool' },
-            },
-            {
-              id: 'n3',
-              type: 'condition',
-              position: { x: 0, y: 0 },
-              data: { expression: 'true', label: 'Check' },
-            },
-          ],
-        },
-      ]);
+      // DB query uses type filter ($[*] ? (@.type == "tool")), so only tool nodes are returned
+      mockRepo.getActiveToolNames.mockResolvedValue(['real_tool']);
 
       const res = await app.request('/workflows/active-tool-names');
 

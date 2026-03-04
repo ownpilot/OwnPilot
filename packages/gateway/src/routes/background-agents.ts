@@ -23,12 +23,6 @@ import {
 
 export const backgroundAgentsRoutes = new Hono();
 
-// Debug middleware to log all incoming requests
-backgroundAgentsRoutes.use('*', async (c, next) => {
-  console.log(`[BackgroundAgents] ${c.req.method} ${c.req.path}`);
-  await next();
-});
-
 // =============================================================================
 // 1. STATIC ROUTES (no params)
 // =============================================================================
@@ -341,22 +335,53 @@ backgroundAgentsRoutes.patch('/:id', async (c) => {
   try {
     const userId = getUserId(c);
     const agentId = c.req.param('id');
-    const body = await c.req.json();
+    const body = await c.req.json() as Record<string, unknown>;
+
+    const validModes = ['continuous', 'interval', 'event'];
+    if (body.mode !== undefined && !validModes.includes(body.mode as string)) {
+      return apiError(
+        c,
+        { code: ERROR_CODES.VALIDATION_ERROR, message: `mode must be one of: ${validModes.join(', ')}` },
+        400
+      );
+    }
+
+    // Validate limits upper bounds to prevent abuse
+    let validatedLimits: Record<string, number> | undefined;
+    if (typeof body.limits === 'object' && body.limits !== null) {
+      const rawLimits = body.limits as Record<string, unknown>;
+      const LIMITS_MAX: Record<string, number> = {
+        maxTurns: 500,
+        maxToolCalls: 5000,
+        timeoutMs: 3_600_000, // 1 hour
+        maxTokens: 200_000,
+      };
+      for (const [key, val] of Object.entries(rawLimits)) {
+        if (typeof val !== 'number' || !Number.isFinite(val) || val <= 0) {
+          return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: `limits.${key} must be a positive finite number` }, 400);
+        }
+        const cap = LIMITS_MAX[key];
+        if (cap !== undefined && val > cap) {
+          return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: `limits.${key} exceeds maximum allowed value (${cap})` }, 400);
+        }
+      }
+      validatedLimits = rawLimits as Record<string, number>;
+    }
 
     const service = getBackgroundAgentService();
 
     const updated = await service.updateAgent(agentId, userId, {
-      name: body.name,
-      mission: body.mission,
-      mode: body.mode,
-      allowedTools: body.allowed_tools,
-      limits: body.limits,
-      intervalMs: body.interval_ms,
-      eventFilters: body.event_filters,
-      autoStart: body.auto_start,
-      stopCondition: body.stop_condition,
-      provider: body.provider,
-      model: body.model,
+      name: typeof body.name === 'string' ? body.name : undefined,
+      mission: typeof body.mission === 'string' ? body.mission : undefined,
+      mode: body.mode as BackgroundAgentMode | undefined,
+      allowedTools: Array.isArray(body.allowed_tools) ? (body.allowed_tools as string[]) : undefined,
+      limits: validatedLimits,
+      intervalMs: typeof body.interval_ms === 'number' ? body.interval_ms : undefined,
+      eventFilters: Array.isArray(body.event_filters) ? (body.event_filters as string[]) : undefined,
+      autoStart: typeof body.auto_start === 'boolean' ? body.auto_start : undefined,
+      stopCondition: typeof body.stop_condition === 'string' ? body.stop_condition : undefined,
+      provider: typeof body.provider === 'string' ? body.provider : undefined,
+      model: typeof body.model === 'string' ? body.model : undefined,
     });
 
     if (!updated) {
@@ -386,9 +411,6 @@ backgroundAgentsRoutes.delete('/:id', async (c) => {
     return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(err) }, 500);
   }
 });
-
-// Debug: Log registered routes
-console.log('[BackgroundAgents] Routes registered:', backgroundAgentsRoutes.routes.map((r: unknown) => (r as { method: string; path: string }).method + ' ' + (r as { method: string; path: string }).path).join(', '));
 
 // ── GET /:id/logs — stream agent execution logs (NEW) ──────────────────────
 backgroundAgentsRoutes.get('/:id/logs', async (c) => {

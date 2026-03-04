@@ -18,7 +18,7 @@ export function buildWhatsAppChannelPlugin() {
       version: '2.0.0',
       description: 'Connect to WhatsApp via QR code scan — no Meta Business account needed',
       author: { name: 'OwnPilot' },
-      capabilities: ['tools', 'events'] as PluginCapability[],
+      capabilities: ['events'] as PluginCapability[],
       permissions: ['network'] as PluginPermission[],
       icon: '💬',
       requiredServices: [
@@ -29,12 +29,13 @@ export function buildWhatsAppChannelPlugin() {
           docsUrl: 'https://github.com/WhiskeySockets/Baileys',
           configSchema: [
             {
-              name: 'allowed_users',
-              label: 'Allowed Phone Numbers',
+              name: 'my_phone',
+              label: 'My Phone Number',
               type: 'string',
               description:
-                'Comma-separated phone numbers in international format (empty = allow all)',
-              placeholder: '14155551234, 905551234567',
+                'Your WhatsApp number in international format without + or spaces (e.g. 905551234567)',
+              placeholder: '905551234567',
+              required: true,
               order: 0,
             },
           ],
@@ -45,49 +46,12 @@ export function buildWhatsAppChannelPlugin() {
     .channelApi((config) => {
       const resolvedConfig = {
         ...config,
-        allowed_users:
-          (config.allowed_users as string) ??
-          (configServicesRepo.getFieldValue('whatsapp_baileys', 'allowed_users') as string) ??
+        my_phone:
+          (config.my_phone as string) ??
+          (configServicesRepo.getFieldValue('whatsapp_baileys', 'my_phone') as string) ??
           '',
       };
       return new WhatsAppChannelAPI(resolvedConfig, 'channel.whatsapp');
     })
-    .tool(
-      {
-        name: 'channel_whatsapp_send',
-        description: 'Send a message to a WhatsApp user via the connected account',
-        parameters: {
-          type: 'object',
-          properties: {
-            phone_number: {
-              type: 'string',
-              description: 'Recipient phone number in international format (e.g. 14155551234)',
-            },
-            text: {
-              type: 'string',
-              description: 'Message text to send',
-            },
-          },
-          required: ['phone_number', 'text'],
-        },
-      },
-      async (params) => {
-        const { getChannelService } = await import('@ownpilot/core');
-        const service = getChannelService();
-        const api = service.getChannel('channel.whatsapp');
-        if (!api || api.getStatus() !== 'connected') {
-          return {
-            content: 'WhatsApp is not connected. Please connect it first.',
-          };
-        }
-        const msgId = await api.sendMessage({
-          platformChatId: String(params.phone_number),
-          text: String(params.text),
-        });
-        return {
-          content: `Message sent to ${params.phone_number} (message ID: ${msgId})`,
-        };
-      }
-    )
     .build();
 }

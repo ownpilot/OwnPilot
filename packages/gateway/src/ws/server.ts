@@ -49,6 +49,17 @@ const authAttempts = new Map<string, { count: number; resetAt: number }>();
 const WS_AUTH_MAX_ATTEMPTS = 10;
 const WS_AUTH_WINDOW_MS = 60_000;
 
+// Periodic cleanup to prevent unbounded growth — runs every 2 minutes
+const _authCleanupTimer = setInterval(() => {
+  const now = Date.now();
+  for (const [ip, entry] of authAttempts) {
+    if (entry.resetAt <= now) authAttempts.delete(ip);
+  }
+}, 2 * 60_000);
+if (typeof _authCleanupTimer === 'object' && 'unref' in _authCleanupTimer) {
+  _authCleanupTimer.unref();
+}
+
 function isAuthRateLimited(clientIp: string): boolean {
   const now = Date.now();
   const attempts = authAttempts.get(clientIp);
@@ -59,12 +70,6 @@ function isAuthRateLimited(clientIp: string): boolean {
     attempts.count++;
   } else {
     authAttempts.set(clientIp, { count: 1, resetAt: now + WS_AUTH_WINDOW_MS });
-  }
-  // Periodic cleanup (every 100 entries)
-  if (authAttempts.size > 100) {
-    for (const [ip, entry] of authAttempts) {
-      if (entry.resetAt <= now) authAttempts.delete(ip);
-    }
   }
   return false;
 }
@@ -1187,6 +1192,13 @@ export function resetAuthRateLimit(): void {
 }
 
 /**
- * Global WebSocket gateway instance
+ * Global WebSocket gateway instance.
+ * Reads WS_ALLOWED_ORIGINS or falls back to CORS_ORIGINS env var.
+ * Empty list = allow all (self-hosted default).
  */
-export const wsGateway = new WSGateway();
+const _wsAllowedOrigins = (process.env.WS_ALLOWED_ORIGINS ?? process.env.CORS_ORIGINS ?? '')
+  .split(',')
+  .map((s) => s.trim())
+  .filter(Boolean);
+
+export const wsGateway = new WSGateway({ allowedOrigins: _wsAllowedOrigins });

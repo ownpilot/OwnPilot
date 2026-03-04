@@ -178,7 +178,7 @@ async function main() {
   log.info(`POSTGRES_DB=${process.env.POSTGRES_DB || 'ownpilot'}`);
 
   // Initialize data directories (creates platform-specific directories)
-  const _dataPaths = initializeDataDirectories();
+  initializeDataDirectories();
   const dataInfo = getDataDirectoryInfo();
 
   log.info(`Data directory: ${dataInfo.root}`);

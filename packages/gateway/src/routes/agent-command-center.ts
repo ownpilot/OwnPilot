@@ -10,7 +10,7 @@
 
 import { Hono } from 'hono';
 import { randomUUID } from 'node:crypto';
-import { apiResponse, apiError, ERROR_CODES, getErrorMessage } from './helpers.js';
+import { apiResponse, apiError, ERROR_CODES, getErrorMessage, getUserId } from './helpers.js';
 import { getSoulsRepository } from '../db/repositories/souls.js';
 import { getBackgroundAgentService } from '../services/background-agent-service.js';
 import { getCrewsRepository } from '../db/repositories/crews.js';
@@ -27,6 +27,7 @@ export const agentCommandCenterRoutes = new Hono();
 
 agentCommandCenterRoutes.post('/command', async (c) => {
   try {
+    const userId = getUserId(c);
     const body = await c.req.json<{
       targets: { type: 'soul' | 'background' | 'crew'; id: string }[];
       command: string;
@@ -81,7 +82,7 @@ agentCommandCenterRoutes.post('/command', async (c) => {
 
           case 'background': {
             const bgService = getBackgroundAgentService();
-            const config = await bgService.getAgent(target.id, 'system');
+            const config = await bgService.getAgent(target.id, userId);
             if (!config) {
               results.push({ target, success: false, error: 'Background agent not found' });
               continue;
@@ -89,19 +90,19 @@ agentCommandCenterRoutes.post('/command', async (c) => {
 
             switch (body.command) {
               case 'start':
-                await bgService.startAgent(target.id, 'system');
+                await bgService.startAgent(target.id, userId);
                 result = { status: 'started' };
                 break;
               case 'pause':
-                await bgService.pauseAgent(target.id, 'system');
+                await bgService.pauseAgent(target.id, userId);
                 result = { status: 'paused' };
                 break;
               case 'resume':
-                await bgService.resumeAgent(target.id, 'system');
+                await bgService.resumeAgent(target.id, userId);
                 result = { status: 'resumed' };
                 break;
               case 'stop':
-                await bgService.stopAgent(target.id, 'system');
+                await bgService.stopAgent(target.id, userId);
                 result = { status: 'stopped' };
                 break;
               default:
@@ -112,7 +113,7 @@ agentCommandCenterRoutes.post('/command', async (c) => {
 
           case 'crew': {
             const crewRepo = getCrewsRepository();
-            const crew = await crewRepo.getById(target.id);
+            const crew = await crewRepo.getById(target.id, userId);
             if (!crew) {
               results.push({ target, success: false, error: 'Crew not found' });
               continue;
@@ -194,7 +195,6 @@ agentCommandCenterRoutes.post('/deploy-fleet', async (c) => {
     const model = body.model ?? defaultModel ?? 'claude-sonnet-4-5-20251001';
 
     const soulRepo = getSoulsRepository();
-    const fleetId = randomUUID();
     const agents: { agentId: string; role: string; name: string }[] = [];
 
     // Create fleet crew
@@ -313,19 +313,20 @@ agentCommandCenterRoutes.post('/deploy-fleet', async (c) => {
 
 agentCommandCenterRoutes.get('/status', async (c) => {
   try {
+    const userId = getUserId(c);
     const soulRepo = getSoulsRepository();
     const bgService = getBackgroundAgentService();
     const crewRepo = getCrewsRepository();
 
-    // Get all souls (admin view - no user filter)
-    const souls = await soulRepo.list(null, 1000, 0);
+    // Get all souls for this user
+    const souls = await soulRepo.list(userId, 1000, 0);
 
-    // Get all background agents
-    const bgAgents = await bgService.listAgents('system');
-    const bgSessions = bgService.listSessions('system');
+    // Get all background agents for this user
+    const bgAgents = await bgService.listAgents(userId);
+    const bgSessions = bgService.listSessions(userId);
 
-    // Get all crews
-    const crews = await crewRepo.list(100, 0);
+    // Get all crews for this user
+    const crews = await crewRepo.list(userId, 100, 0);
 
     // Aggregate status
     const soulStatuses = await Promise.all(
@@ -542,6 +543,7 @@ agentCommandCenterRoutes.get('/activity', async (c) => {
 
 agentCommandCenterRoutes.post('/execute', async (c) => {
   try {
+    const userId = getUserId(c);
     const body = await c.req.json<{
       targets: { type: 'soul' | 'background'; id: string; task?: string }[];
       parallel?: boolean;
@@ -563,7 +565,7 @@ agentCommandCenterRoutes.post('/execute', async (c) => {
             const result = await runAgentHeartbeat(target.id);
             return { target, success: result.success, error: result.error };
           } else {
-            const executed = await bgService.executeNow(target.id, 'system', target.task);
+            const executed = await bgService.executeNow(target.id, userId, target.task);
             return { target, success: executed };
           }
         } catch (err) {
@@ -580,7 +582,7 @@ agentCommandCenterRoutes.post('/execute', async (c) => {
             const result = await runAgentHeartbeat(target.id);
             results.push({ target, success: result.success, error: result.error });
           } else {
-            const executed = await bgService.executeNow(target.id, 'system', target.task);
+            const executed = await bgService.executeNow(target.id, userId, target.task);
             results.push({ target, success: executed });
           }
         } catch (err) {
@@ -606,13 +608,14 @@ agentCommandCenterRoutes.post('/execute', async (c) => {
 
 agentCommandCenterRoutes.get('/analytics', async (c) => {
   try {
+    const userId = getUserId(c);
     const soulRepo = getSoulsRepository();
     const hbRepo = getHeartbeatLogRepository();
     const crewRepo = getCrewsRepository();
 
     const [souls, crews] = await Promise.all([
-      soulRepo.list(null, 1000, 0),
-      crewRepo.list(100, 0),
+      soulRepo.list(userId, 1000, 0),
+      crewRepo.list(userId, 100, 0),
     ]);
 
     // Aggregate stats across all agents
@@ -722,4 +725,3 @@ agentCommandCenterRoutes.post('/tools/batch-update', async (c) => {
   }
 });
 
-console.log('[AgentCommandCenter] Routes registered');

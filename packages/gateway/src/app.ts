@@ -143,8 +143,12 @@ export function createApp(config: Partial<GatewayConfig> = {}): Hono {
   app.use(
     '*',
     secureHeaders({
-      // HSTS - force HTTPS for 2 years, include subdomains, preload eligible
-      strictTransportSecurity: 'max-age=63072000; includeSubDomains; preload',
+      // HSTS - force HTTPS. The `preload` directive opts into browser preload lists,
+      // which is inappropriate for self-hosted instances where HTTPS may not be used.
+      // Only add preload when HTTPS_ONLY=true is explicitly set.
+      strictTransportSecurity: process.env.HTTPS_ONLY === 'true'
+        ? 'max-age=63072000; includeSubDomains; preload'
+        : 'max-age=31536000; includeSubDomains',
       // Prevent MIME type sniffing
       xContentTypeOptions: 'nosniff',
       // Prevent clickjacking - only allow same origin framing

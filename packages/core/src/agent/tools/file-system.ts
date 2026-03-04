@@ -112,32 +112,6 @@ async function isPathAllowedAsync(filePath: string, workspaceDir?: string): Prom
 }
 
 /**
- * Synchronous path check for backward compatibility (less secure, use async when possible)
- */
-function _isPathAllowed(filePath: string, workspaceDir?: string): boolean {
-  const targetPath = path.isAbsolute(filePath)
-    ? path.resolve(filePath)
-    : path.resolve(getWorkspaceDir(workspaceDir), filePath);
-
-  // Normalize to resolve .. and . segments
-  const normalizedPath = path.normalize(targetPath);
-
-  // Self-protection: NEVER allow access to OwnPilot's own files
-  if (isOwnPilotPath(normalizedPath)) {
-    return false;
-  }
-
-  const allowedPaths = getAllowedPaths(workspaceDir);
-
-  return allowedPaths.some((allowed) => {
-    const resolvedAllowed = path.resolve(allowed);
-    return (
-      normalizedPath === resolvedAllowed || normalizedPath.startsWith(resolvedAllowed + path.sep)
-    );
-  });
-}
-
-/**
  * Resolve a file path, making relative paths relative to workspace
  * @param filePath Path to resolve
  * @param workspaceDir Optional workspace directory override from context
@@ -277,7 +251,6 @@ export const writeFileExecutor: ToolExecutor = async (
   const rawPath = args.path as string;
   const content = args.content as string;
   const append = args.append as boolean | undefined;
-  const _createDirs = args.createDirs as boolean | undefined;
 
   // Resolve relative paths to workspace directory
   const filePath = resolveFilePath(rawPath, context.workspaceDir);

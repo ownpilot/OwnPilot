@@ -67,7 +67,7 @@ export function AutonomousHubPage() {
   // Sync tab state with URL on back/forward navigation
   useEffect(() => {
     const urlTab = (searchParams.get('tab') as HubTab | null) || 'agents';
-    if (urlTab !== activeTab) setActiveTab(urlTab);
+    setActiveTab(urlTab);
   }, [searchParams]);
 
   // Fetch templates for wizard

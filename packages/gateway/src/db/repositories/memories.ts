@@ -454,7 +454,8 @@ export class MemoriesRepository extends BaseRepository {
    * Memories that have not been accessed recently lose importance
    */
   async decay(options: { daysThreshold?: number; decayFactor?: number } = {}): Promise<number> {
-    const daysThreshold = options.daysThreshold ?? 30;
+    // Clamp to prevent absurd values; use numeric multiplication — no string concat
+    const daysThreshold = Math.max(1, Math.min(3650, options.daysThreshold ?? 30));
     const decayFactor = options.decayFactor ?? 0.9;
 
     const result = await this.execute(
@@ -464,8 +465,8 @@ export class MemoriesRepository extends BaseRepository {
         updated_at = NOW()
       WHERE user_id = $2
         AND importance > 0.1
-        AND (accessed_at IS NULL OR accessed_at < NOW() - ($3 || ' days')::INTERVAL)
-        AND created_at < NOW() - ($4 || ' days')::INTERVAL
+        AND (accessed_at IS NULL OR accessed_at < NOW() - ($3 * INTERVAL '1 day'))
+        AND created_at < NOW() - ($4 * INTERVAL '1 day')
     `,
       [decayFactor, this.userId, daysThreshold, daysThreshold]
     );
@@ -476,7 +477,8 @@ export class MemoriesRepository extends BaseRepository {
    * Clean up low-importance memories
    */
   async cleanup(options: { maxAge?: number; minImportance?: number } = {}): Promise<number> {
-    const maxAge = options.maxAge ?? 90; // days
+    // Clamp to prevent absurd values; use numeric multiplication — no string concat
+    const maxAge = Math.max(1, Math.min(3650, options.maxAge ?? 90));
     const minImportance = options.minImportance ?? 0.1;
 
     const result = await this.execute(
@@ -484,8 +486,8 @@ export class MemoriesRepository extends BaseRepository {
       DELETE FROM memories
       WHERE user_id = $1
         AND importance < $2
-        AND created_at < NOW() - ($3 || ' days')::INTERVAL
-        AND (accessed_at IS NULL OR accessed_at < NOW() - ($4 || ' days')::INTERVAL)
+        AND created_at < NOW() - ($3 * INTERVAL '1 day')
+        AND (accessed_at IS NULL OR accessed_at < NOW() - ($4 * INTERVAL '1 day'))
     `,
       [this.userId, minImportance, maxAge, maxAge]
     );

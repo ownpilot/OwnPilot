@@ -230,7 +230,6 @@ export class CodeGenerator {
    */
   async generate(request: CodeGenerationRequest): Promise<CodeGenerationResponse> {
     const language = request.language ?? this.config.defaultLanguage;
-    const _startTime = Date.now();
 
     try {
       // Without LLM provider, use template-based generation

@@ -49,7 +49,8 @@ const baileysLogger = pino({ level: 'silent' }) as ReturnType<typeof pino>;
 // ============================================================================
 
 interface WhatsAppBaileysConfig {
-  allowed_users?: string;
+  /** Own phone number in international format without + (e.g. 905551234567) */
+  my_phone: string;
 }
 
 // ============================================================================
@@ -63,24 +64,17 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
   private readonly config: WhatsAppBaileysConfig;
   private messageChatMap = new Map<string, string>();
   private sentMessageIds = new Set<string>();
-  private allowedUsers: Set<string> = new Set();
   private qrCode: string | null = null;
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
   private reconnectAttempt = 0;
 
   constructor(config: Record<string, unknown>, pluginId: string) {
     this.pluginId = pluginId;
-    this.config = {
-      allowed_users: config.allowed_users ? String(config.allowed_users) : undefined,
-    };
-
-    // Parse allowed users
-    if (this.config.allowed_users) {
-      this.config.allowed_users
-        .split(',')
-        .map((s) => s.trim())
-        .filter(Boolean)
-        .forEach((phone) => this.allowedUsers.add(phone));
+    // Normalize phone: strip all non-digit characters
+    const raw = config.my_phone ? String(config.my_phone).replace(/\D/g, '') : '';
+    this.config = { my_phone: raw };
+    if (!raw) {
+      log.debug('WhatsApp: my_phone not configured — will auto-detect from sock.user.id on connect');
     }
   }
 
@@ -91,9 +85,12 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
   async connect(): Promise<void> {
     if (this.status === 'connected' || this.status === 'connecting') return;
 
-    // Clean up any existing socket
+    // Clean up any existing socket — remove listeners first to prevent stale handlers on reconnect
     if (this.sock) {
       try {
+        this.sock.ev.removeAllListeners('connection.update');
+        this.sock.ev.removeAllListeners('messages.upsert');
+        this.sock.ev.removeAllListeners('creds.update');
         this.sock.end(undefined);
       } catch {
         /* already closed */
@@ -120,6 +117,10 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
         browser: ['OwnPilot', 'Chrome', '22.0'],
         generateHighQualityLinkPreview: false,
         syncFullHistory: false,
+        markOnlineOnConnect: false,
+        // Required for Baileys to properly decrypt incoming messages
+        // especially those sent from the primary device (phone → self-chat)
+        getMessage: async (_key) => ({ conversation: '' }),
       });
 
       // Handle connection updates (QR code, connect, disconnect)
@@ -127,15 +128,40 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
         this.handleConnectionUpdate(update);
       });
 
-      // Handle incoming messages
+      // Handle incoming messages — self-chat only
       this.sock.ev.on('messages.upsert', (upsert) => {
-        if (upsert.type !== 'notify') return;
+        // Raw log — BEFORE any filter, so we can see all events in the gateway log
+        log.info(`[upsert] type=${upsert.type} count=${upsert.messages.length} jids=${upsert.messages.map((m) => m.key.remoteJid).join(',')}`);
+
+        // Accept both 'notify' (real-time) and 'append' (some Baileys versions send
+        // self-chat messages as append rather than notify)
+        if (upsert.type !== 'notify' && upsert.type !== 'append') return;
+
         for (const msg of upsert.messages) {
-          const isSelf = this.isSelfChat(msg.key.remoteJid);
-          // Skip our own messages — EXCEPT self-chat (user messaging themselves)
-          if (msg.key.fromMe && !isSelf) continue;
-          // In self-chat, skip messages the bot sent (prevent infinite loop)
-          if (isSelf && msg.key.id && this.sentMessageIds.has(msg.key.id)) continue;
+          const jid = msg.key.remoteJid ?? '';
+          const isSelf = this.isSelfChat(jid);
+          const isBotMsg = !!(msg.key.id && this.sentMessageIds.has(msg.key.id));
+
+          const chatPhone = this.phoneFromJid(jid);
+          log.info(`[msg] type=${upsert.type} jid=${jid} chatPhone=${chatPhone} fromMe=${msg.key.fromMe} isSelf=${isSelf} isBotMsg=${isBotMsg} id=${msg.key.id?.slice(0, 8)}`);
+
+          // Only process self-chat messages
+          if (!isSelf) continue;
+          // Skip bot's own sent messages to prevent infinite loop
+          // Note: fromMe=true for BOTH user and bot in self-chat — can't use as a guard here
+          if (isBotMsg) continue;
+          // For 'append' type: skip old history messages (older than 5 minutes)
+          if (upsert.type === 'append') {
+            const rawTs = msg.messageTimestamp;
+            const tsMs =
+              typeof rawTs === 'number'
+                ? rawTs * 1000
+                : typeof rawTs === 'object' && rawTs !== null && 'toNumber' in rawTs
+                  ? (rawTs as { toNumber(): number }).toNumber() * 1000
+                  : 0;
+            if (tsMs && Date.now() - tsMs > 5 * 60 * 1000) continue;
+          }
+
           this.handleIncomingMessage(msg).catch((err) => {
             log.error('Failed to handle WhatsApp message:', err);
           });
@@ -157,6 +183,9 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
     this.clearReconnectTimer();
 
     if (this.sock) {
+      this.sock.ev.removeAllListeners('connection.update');
+      this.sock.ev.removeAllListeners('messages.upsert');
+      this.sock.ev.removeAllListeners('creds.update');
       this.sock.end(undefined);
       this.sock = null;
     }
@@ -176,6 +205,9 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
     this.clearReconnectTimer();
 
     if (this.sock) {
+      this.sock.ev.removeAllListeners('connection.update');
+      this.sock.ev.removeAllListeners('messages.upsert');
+      this.sock.ev.removeAllListeners('creds.update');
       try {
         await this.sock.logout();
       } catch {
@@ -264,13 +296,14 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
   }
 
   getBotInfo(): { username?: string; firstName?: string } | null {
-    if (!this.sock?.user) return null;
-    const user = this.sock.user;
-    // Baileys user.id format: "phone:device@s.whatsapp.net"
-    const phone = user.id?.split(':')[0] ?? user.id;
+    // Try live sock.user first, fall back to configured my_phone
+    const phone = this.sock?.user?.id
+      ? (this.sock.user.id.split(':')[0] ?? this.sock.user.id)
+      : this.config.my_phone || null;
+    if (!phone) return null;
     return {
       username: phone,
-      firstName: user.name ?? undefined,
+      firstName: this.sock?.user?.name ?? undefined,
     };
   }
 
@@ -330,7 +363,16 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
       this.emitConnectionEvent('connected');
 
       const info = this.getBotInfo();
-      log.info(`WhatsApp connected as ${info?.username ?? 'unknown'} (${info?.firstName ?? ''})`);
+      const sockPhone = this.sock?.user?.id?.split(':')[0] ?? '';
+
+      // Auto-populate my_phone from the connected account if not manually configured.
+      // This ensures self-chat detection works even without explicit Config Center setup.
+      if (!this.config.my_phone && sockPhone) {
+        this.config.my_phone = sockPhone;
+        log.info(`WhatsApp connected — phone=${sockPhone} display=${info?.username ?? 'unknown'} (my_phone auto-detected)`);
+      } else {
+        log.info(`WhatsApp connected — phone=${this.config.my_phone || sockPhone || '(unknown)'} display=${info?.username ?? 'unknown'}`);
+      }
 
       // Broadcast status update
       try {
@@ -404,13 +446,8 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
     const remoteJid = msg.key.remoteJid;
     if (!remoteJid) return;
 
-    // Extract phone number from JID
+    // Extract phone number from JID (will be own number in self-chat)
     const phone = this.phoneFromJid(remoteJid);
-
-    // Access control
-    if (this.allowedUsers.size > 0 && !this.allowedUsers.has(phone)) {
-      return;
-    }
 
     // Extract message content
     const m = msg.message;
@@ -447,7 +484,10 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
       let audioData: Uint8Array | undefined;
       try {
         const buffer = await downloadMediaMessage(msg, 'buffer', {});
-        audioData = buffer instanceof Buffer ? new Uint8Array(buffer) : undefined;
+        // buffer is Buffer | null; Buffer extends Uint8Array
+        if (buffer instanceof Buffer) {
+          audioData = new Uint8Array(buffer.buffer, buffer.byteOffset, buffer.byteLength);
+        }
       } catch {
         // Download failed — metadata-only fallback
       }
@@ -516,6 +556,7 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
           { message: channelMessage }
         )
       );
+      log.info(`[msg] → dispatched to pipeline: "${text.slice(0, 60)}" from chatId=${phone}`);
     } catch (err) {
       log.error('Failed to emit WhatsApp message event:', err);
     }
@@ -538,12 +579,27 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
     return jid.split('@')[0]?.split(':')[0] ?? jid;
   }
 
-  /** Check if a message is sent to the user's own chat (self-chat). */
+  /** Check if a message is in the user's own self-chat (Notes to Self). */
   private isSelfChat(remoteJid: string | null | undefined): boolean {
-    if (!remoteJid || !this.sock?.user?.id) return false;
-    const ownPhone = this.sock.user.id.split(':')[0];
+    if (!remoteJid) return false;
     const chatPhone = this.phoneFromJid(remoteJid);
-    return ownPhone === chatPhone;
+
+    // Primary: compare against live sock.user.id
+    // sock.user.id format: "905551234567:0@s.whatsapp.net" or "905551234567@s.whatsapp.net"
+    // Use phoneFromJid to safely strip both "@..." and ":..." suffixes
+    if (this.sock?.user?.id) {
+      const ownPhone = this.phoneFromJid(this.sock.user.id);
+      log.debug(`[isSelfChat] sockPhone=${ownPhone} chatPhone=${chatPhone} match=${ownPhone === chatPhone}`);
+      if (ownPhone === chatPhone) return true;
+    }
+
+    // Fallback: compare against configured my_phone
+    if (this.config.my_phone) {
+      log.debug(`[isSelfChat] cfgPhone=${this.config.my_phone} chatPhone=${chatPhone} match=${this.config.my_phone === chatPhone}`);
+      return this.config.my_phone === chatPhone;
+    }
+
+    return false;
   }
 
   private emitConnectionEvent(status: ChannelConnectionStatus): void {

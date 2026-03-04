@@ -29,6 +29,7 @@ import { getEventSystem, type PluginCustomData, type PluginStatusData } from '..
 export type PluginCapability =
   | 'tools' // Provides tools
   | 'handlers' // Message handlers
+  | 'events' // Emits/subscribes to events
   | 'storage' // Has storage needs
   | 'scheduled' // Has scheduled tasks
   | 'notifications' // Can send notifications

@@ -199,11 +199,9 @@ export const sendEmailExecutor: ToolExecutor = async (
     }
   }
 
-  // Try to use nodemailer if available
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let _nodemailer: any = null; // Optional dependency - dynamically imported
+  // Check if nodemailer is available
   try {
-    _nodemailer = await tryImport('nodemailer');
+    await tryImport('nodemailer');
   } catch {
     return {
       content: {
@@ -364,10 +362,9 @@ export const listEmailsExecutor: ToolExecutor = async (
   const since = params.since as string | undefined;
   const before = params.before as string | undefined;
 
-  // Try to use imapflow
-  let _imapflow: unknown;
+  // Check if imapflow is available
   try {
-    _imapflow = await tryImport('imapflow');
+    await tryImport('imapflow');
   } catch {
     return {
       content: {

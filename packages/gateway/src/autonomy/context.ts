@@ -176,7 +176,7 @@ async function gatherMemories(
 
 async function gatherActivity(
   _registry: ReturnType<typeof getServiceRegistry>,
-  userId: string,
+  _userId: string,
   now: Date,
   ctx: PulseContext
 ): Promise<void> {

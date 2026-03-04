@@ -268,10 +268,8 @@ chatRoutes.post('/', async (c) => {
 
   // Workspace — set on every request (cheap), but prompt section only on first
   const sessionId = body.workspaceId || body.conversationId || conversationId;
-  let _sessionWorkspacePath: string | undefined;
   try {
     const sessionWorkspace = getOrCreateSessionWorkspace(sessionId, body.agentId);
-    _sessionWorkspacePath = sessionWorkspace.path;
     agent.setWorkspaceDir(sessionWorkspace.path);
 
     if (!isPromptInitialized) {

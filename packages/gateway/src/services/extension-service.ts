@@ -160,7 +160,7 @@ export class ExtensionService implements IExtensionService {
     }
 
     // Store security metadata in manifest for UI display
-    (manifest as unknown as Record<string, unknown>)._security = {
+    manifest._security = {
       riskLevel: securityResult.riskLevel,
       blocked: false,
       warnings: securityResult.warnings,

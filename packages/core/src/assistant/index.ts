@@ -397,8 +397,8 @@ export interface CodeResult {
  * Uses the sandbox module for safe execution
  */
 export async function executeCode(
-  code: string,
-  language: string,
+  _code: string,
+  _language: string,
   _timeout: number = 30000
 ): Promise<{ success: boolean; output?: string; error?: string }> {
   // This would use the sandbox module for execution
@@ -419,9 +419,6 @@ export async function executeCode(
 export class PersonalAssistant {
   private config: AssistantConfig;
   private pluginRegistry?: PluginRegistry;
-  private memoryStore?: SecureMemoryStore;
-  private scheduler?: Scheduler;
-  private llmProvider?: LLMProvider;
   private codeGenerator: CodeGenerator;
 
   constructor(config: AssistantConfig) {
@@ -442,9 +439,10 @@ export class PersonalAssistant {
     llmProvider?: LLMProvider;
   }): void {
     this.pluginRegistry = deps.pluginRegistry;
-    this.memoryStore = deps.memoryStore;
-    this.scheduler = deps.scheduler;
-    this.llmProvider = deps.llmProvider;
+    // memoryStore, scheduler, llmProvider reserved for future LLM integration
+    void deps.memoryStore;
+    void deps.scheduler;
+    void deps.llmProvider;
   }
 
   /**
@@ -619,7 +617,7 @@ export class PersonalAssistant {
    * Handle scheduling requests
    */
   private async handleScheduleRequest(
-    message: string,
+    _message: string,
     intent: IntentResult,
     _request: AssistantRequest
   ): Promise<AssistantResponse> {
@@ -686,7 +684,7 @@ export class PersonalAssistant {
    * Handle general requests (delegate to LLM)
    */
   private async handleGeneralRequest(
-    message: string,
+    _message: string,
     intent: IntentResult,
     _request: AssistantRequest
   ): Promise<AssistantResponse> {

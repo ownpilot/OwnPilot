@@ -749,7 +749,7 @@ describe('createRateLimitMiddleware', () => {
   // -------------------------------------------------------------------------
 
   describe('store overflow', () => {
-    it('returns 429 for a new client when the store is at capacity', async () => {
+    it('evicts oldest entry and admits new client when the store is at capacity', async () => {
       vi.useFakeTimers();
       const now = Date.now();
       vi.setSystemTime(now);
@@ -767,13 +767,12 @@ describe('createRateLimitMiddleware', () => {
         await app.request('/test', { headers: { 'X-Forwarded-For': ip } });
       }
 
-      // A brand-new IP must be rejected
+      // A brand-new IP must be admitted (oldest entry is evicted, not the new client rejected).
+      // This prevents DoS where an attacker fills the store to block all new legitimate IPs.
       const res = await app.request('/test', {
         headers: { 'X-Forwarded-For': '99.99.99.99' },
       });
-      expect(res.status).toBe(429);
-      const body = await res.json();
-      expect(body.error.code).toBe('RATE_LIMITED');
+      expect(res.status).toBe(200);
     }, 60_000 /* generous timeout for 10k requests */);
 
     it('allows an existing client to continue when store is full', async () => {
@@ -1334,7 +1333,7 @@ describe('createSlidingWindowRateLimiter', () => {
   // -------------------------------------------------------------------------
 
   describe('store overflow', () => {
-    it('returns 429 for a new client when store is at capacity', async () => {
+    it('evicts oldest entry and admits new client when store is at capacity', async () => {
       vi.useFakeTimers();
       vi.setSystemTime(Date.now());
 
@@ -1351,12 +1350,12 @@ describe('createSlidingWindowRateLimiter', () => {
         await app.request('/test', { headers: { 'X-Forwarded-For': ip } });
       }
 
+      // A brand-new IP must be admitted (oldest entry is evicted, not the new client rejected).
+      // This prevents DoS where an attacker fills the store to block all new legitimate IPs.
       const res = await app.request('/test', {
         headers: { 'X-Forwarded-For': '99.99.99.99' },
       });
-      expect(res.status).toBe(429);
-      const body = await res.json();
-      expect(body.error.code).toBe('RATE_LIMITED');
+      expect(res.status).toBe(200);
     }, 60_000);
 
     it('allows an existing client through when store is full', async () => {

@@ -11,9 +11,6 @@
 
 import { getEventSystem, type IScopedBus, type IHookBus, type TypedEvent } from '@ownpilot/core';
 import type { ServerEvents, ClientEvents } from './types.js';
-import { getLog } from '../services/log.js';
-
-const _log = getLog('WSEvents');
 
 type EventHandler<T = unknown> = (data: T) => void | Promise<void>;
 

@@ -342,11 +342,8 @@ export class EdgeCommandsRepository extends BaseRepository {
 // ============================================================================
 
 export class EdgeTelemetryRepository extends BaseRepository {
-  private userId: string;
-
-  constructor(userId = 'default') {
+  constructor(_userId = 'default') {
     super();
-    this.userId = userId;
   }
 
   async insert(deviceId: string, sensorId: string, value: unknown): Promise<EdgeTelemetry> {

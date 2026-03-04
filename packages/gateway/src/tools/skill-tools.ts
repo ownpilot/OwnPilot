@@ -10,7 +10,7 @@ import { getNpmInstaller } from '../services/skill-npm-installer.js';
 import { getExtensionService } from '../services/extension-service.js';
 import { extensionsRepo } from '../db/repositories/extensions.js';
 import { getErrorMessage } from '@ownpilot/core';
-import { parseAgentSkillsMd, parseSkillMdFrontmatter, scanSkillDirectory } from '../services/agentskills-parser.js';
+import { parseSkillMdFrontmatter, scanSkillDirectory } from '../services/agentskills-parser.js';
 import { readFileSync, existsSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';

@@ -45,11 +45,18 @@ channelAuthRoutes.post('/generate-token', async (c) => {
  * Check verification status for a platform user.
  */
 channelAuthRoutes.get('/status/:platform/:platformUserId', async (c) => {
+  const userId = getUserId(c);
   const { platform, platformUserId } = c.req.param();
   const service = getChannelVerificationService();
-  const verified = await service.isVerified(platform, platformUserId);
 
   const user = await channelUsersRepo.findByPlatform(platform, platformUserId);
+
+  // Only return data for the authenticated user's own linked accounts
+  if (user && user.ownpilotUserId !== userId) {
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Not found' }, 404);
+  }
+
+  const verified = await service.isVerified(platform, platformUserId);
 
   return apiResponse(c, {
     platform,

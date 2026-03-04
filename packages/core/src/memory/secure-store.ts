@@ -48,6 +48,8 @@ export class SecureMemoryStore {
   private readonly config: Required<SecureMemoryConfig>;
   private readonly salt: Buffer;
   private entries: Map<string, EncryptedMemoryEntry> = new Map();
+  /** Per-user secondary index: userIdHash → Set<entryId>. Enables O(1) per-user queries. */
+  private userIndex: Map<string, Set<string>> = new Map();
   private auditLog: AuditLogEntry[] = [];
   private purgeTimer: NodeJS.Timeout | null = null;
   private initialized = false;
@@ -59,15 +61,15 @@ export class SecureMemoryStore {
     this.config = {
       storageDir: config.storageDir ?? dataDir,
       pbkdf2Iterations: config.pbkdf2Iterations ?? PBKDF2_DEFAULT_ITERATIONS,
-      installationSalt: config.installationSalt ?? process.env.MEMORY_SALT ?? crypto.randomUUID(),
+      installationSalt: config.installationSalt ?? process.env.MEMORY_SALT ?? '',
       auditLog: config.auditLog ?? true,
       auditRetentionDays: config.auditRetentionDays ?? 30,
       purgeInterval: config.purgeInterval ?? 3600000, // 1 hour
       maxEntriesPerUser: config.maxEntriesPerUser ?? 10000,
     };
 
-    // Generate installation-specific salt
-    this.salt = createHash('sha256').update(this.config.installationSalt).digest();
+    // Salt is resolved in initialize() once the storageDir is ready
+    this.salt = Buffer.alloc(32);
   }
 
   /**
@@ -77,6 +79,12 @@ export class SecureMemoryStore {
     if (this.initialized) return;
 
     await fs.mkdir(this.config.storageDir, { recursive: true });
+
+    // Resolve installation salt: env > explicit config > persisted file > generate new
+    const resolvedSalt = await this.loadOrCreateSalt();
+    const saltBuffer = createHash('sha256').update(resolvedSalt).digest();
+    saltBuffer.copy(this.salt);
+
     await this.loadEntries();
     await this.loadAuditLog();
 
@@ -135,7 +143,7 @@ export class SecureMemoryStore {
       const existing = this.findByContentHash(userIdHash, contentHash);
       if (existing) {
         // Update existing instead of creating duplicate
-        return this.updateInternal(existing.id, userId, masterKey, content, options);
+        return await this.updateInternal(existing.id, userId, masterKey, content, options);
       }
 
       // Encrypt content
@@ -170,6 +178,7 @@ export class SecureMemoryStore {
       };
 
       this.entries.set(id, entry);
+      this.userIndexAdd(userIdHash, id);
       await this.saveEntries();
       await this.logAudit('create', userId, id, type, true);
 
@@ -250,8 +259,13 @@ export class SecureMemoryStore {
     const userIdHash = hashUserId(userId, this.config.installationSalt);
     const results: MemoryEntry[] = [];
 
-    // Filter entries
-    let candidates = Array.from(this.entries.values()).filter((e) => e.userIdHash === userIdHash);
+    // Filter entries — use per-user index for O(1) lookup instead of O(n) scan
+    const userEntryIds = this.userIndex.get(userIdHash);
+    let candidates = userEntryIds
+      ? Array.from(userEntryIds)
+          .map((id) => this.entries.get(id))
+          .filter((e): e is EncryptedMemoryEntry => e !== undefined)
+      : [];
 
     // Apply type filter
     if (criteria.type) {
@@ -355,7 +369,7 @@ export class SecureMemoryStore {
       accessLevel?: AccessLevel;
     } = {}
   ): Promise<boolean> {
-    return this.updateInternal(memoryId, userId, masterKey, content, options) === memoryId;
+    return (await this.updateInternal(memoryId, userId, masterKey, content, options)) === memoryId;
   }
 
   /**
@@ -379,6 +393,7 @@ export class SecureMemoryStore {
 
     // Delete entry
     this.entries.delete(memoryId);
+    this.userIndexRemove(userIdHash, memoryId);
     await this.saveEntries();
     await this.logAudit('delete', userId, memoryId, entry.type, true);
 
@@ -394,11 +409,13 @@ export class SecureMemoryStore {
     const userIdHash = hashUserId(userId, this.config.installationSalt);
     let deleted = 0;
 
-    for (const [id, entry] of this.entries) {
-      if (entry.userIdHash === userIdHash) {
+    const userIds = this.userIndex.get(userIdHash);
+    if (userIds) {
+      for (const id of userIds) {
         this.entries.delete(id);
         deleted++;
       }
+      this.userIndex.delete(userIdHash);
     }
 
     if (deleted > 0) {
@@ -427,9 +444,10 @@ export class SecureMemoryStore {
     this.ensureInitialized();
 
     const userIdHash = hashUserId(userId, this.config.installationSalt);
-    const userEntries = Array.from(this.entries.values()).filter(
-      (e) => e.userIdHash === userIdHash
-    );
+    const userEntryIds = this.userIndex.get(userIdHash) ?? new Set<string>();
+    const userEntries = Array.from(userEntryIds)
+      .map((id) => this.entries.get(id))
+      .filter((e): e is EncryptedMemoryEntry => e !== undefined);
 
     const byType: Record<string, number> = {};
     const byAccessLevel: Record<string, number> = {};
@@ -537,6 +555,7 @@ export class SecureMemoryStore {
     await this.saveAuditLog();
 
     this.entries.clear();
+    this.userIndex.clear();
     this.auditLog = [];
     this.initialized = false;
   }
@@ -551,13 +570,13 @@ export class SecureMemoryStore {
     }
   }
 
-  private updateInternal(
+  private async updateInternal(
     memoryId: string,
     userId: string,
     masterKey: string,
     content: unknown,
     options: Record<string, unknown>
-  ): string {
+  ): Promise<string> {
     const entry = this.entries.get(memoryId);
     if (!entry) {
       throw new Error('Memory entry not found');
@@ -590,11 +609,8 @@ export class SecureMemoryStore {
       }
       if (options.expiresAt) entry.metadata.expiresAt = options.expiresAt as string;
 
-      // Save synchronously in this context
-      this.saveEntries().catch((e) => log.error('Save failed:', e));
-      this.logAudit('update', userId, memoryId, entry.type, true).catch((e) =>
-        log.error('Audit log failed:', e)
-      );
+      await this.saveEntries();
+      await this.logAudit('update', userId, memoryId, entry.type, true);
 
       return memoryId;
     } finally {
@@ -602,22 +618,36 @@ export class SecureMemoryStore {
     }
   }
 
-  private countUserEntries(userIdHash: string): number {
-    let count = 0;
-    for (const entry of this.entries.values()) {
-      if (entry.userIdHash === userIdHash) count++;
+  private userIndexAdd(userIdHash: string, id: string): void {
+    let set = this.userIndex.get(userIdHash);
+    if (!set) {
+      set = new Set();
+      this.userIndex.set(userIdHash, set);
     }
-    return count;
+    set.add(id);
+  }
+
+  private userIndexRemove(userIdHash: string, id: string): void {
+    const set = this.userIndex.get(userIdHash);
+    if (set) {
+      set.delete(id);
+      if (set.size === 0) this.userIndex.delete(userIdHash);
+    }
+  }
+
+  private countUserEntries(userIdHash: string): number {
+    return this.userIndex.get(userIdHash)?.size ?? 0;
   }
 
   private findByContentHash(
     userIdHash: string,
     contentHash: string
   ): EncryptedMemoryEntry | undefined {
-    for (const entry of this.entries.values()) {
-      if (entry.userIdHash === userIdHash && entry.contentHash === contentHash) {
-        return entry;
-      }
+    const userIds = this.userIndex.get(userIdHash);
+    if (!userIds) return undefined;
+    for (const id of userIds) {
+      const entry = this.entries.get(id);
+      if (entry?.contentHash === contentHash) return entry;
     }
     return undefined;
   }
@@ -632,6 +662,7 @@ export class SecureMemoryStore {
     for (const [id, entry] of this.entries) {
       if (this.isExpired(entry)) {
         this.entries.delete(id);
+        this.userIndexRemove(entry.userIdHash, id);
         purged++;
       }
     }
@@ -642,6 +673,37 @@ export class SecureMemoryStore {
     }
 
     return purged;
+  }
+
+  /**
+   * Load or create the installation salt file.
+   * Priority: explicit config/env > persisted file > generate new.
+   */
+  private async loadOrCreateSalt(): Promise<string> {
+    // Highest priority: explicit config or env var
+    if (this.config.installationSalt) {
+      return this.config.installationSalt;
+    }
+
+    const saltFile = path.join(this.config.storageDir, 'salt.key');
+    try {
+      const existing = await fs.readFile(saltFile, 'utf-8');
+      const trimmed = existing.trim();
+      if (trimmed.length >= 32) return trimmed;
+    } catch {
+      // File doesn't exist yet — generate a new one
+    }
+
+    // Generate a new salt and persist it
+    const newSalt = randomBytes(32).toString('hex');
+    try {
+      await fs.writeFile(saltFile, newSalt, { mode: 0o600 });
+    } catch (err) {
+      log.warn('Could not persist installation salt — set MEMORY_SALT env var to avoid key loss on restart', {
+        error: String(err),
+      });
+    }
+    return newSalt;
   }
 
   private async loadEntries(): Promise<void> {
@@ -655,6 +717,12 @@ export class SecureMemoryStore {
       const log = getLog('SecureStore');
       log.debug('Failed to load entries, starting with empty store:', error);
       this.entries = new Map();
+    }
+
+    // Rebuild per-user index
+    this.userIndex.clear();
+    for (const [id, entry] of this.entries) {
+      this.userIndexAdd(entry.userIdHash, id);
     }
   }
 

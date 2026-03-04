@@ -87,7 +87,7 @@ const mockChannelMessagesRepo = {
   count: vi.fn(async () => 0),
   deleteAll: vi.fn(async () => 5),
   create: vi.fn(async () => undefined),
-  deleteByChannel: vi.fn(async () => 3),
+  deleteByChannel: vi.fn(async () => ({ count: 3, ids: [] })),
 };
 
 vi.mock('../db/repositories/channel-messages.js', () => ({
@@ -726,7 +726,7 @@ describe('Channels Routes', () => {
     });
 
     it('clears messages for specific channel when channelId is given', async () => {
-      mockChannelMessagesRepo.deleteByChannel.mockResolvedValue(3);
+      mockChannelMessagesRepo.deleteByChannel.mockResolvedValue({ count: 3, ids: [] });
 
       const res = await app.request('/channels/messages?channelId=channel.telegram', {
         method: 'DELETE',

@@ -112,3 +112,5 @@ packages/**/*.py
 packages/**/*.csv
 packages/**/*.png
 packages/**/*.b64
+docs/MINIMAX_CHECK.md
+docs/QWEN_CHECK.md

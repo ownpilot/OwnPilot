@@ -345,17 +345,8 @@ workflowRoutes.get('/logs/:logId', async (c) => {
 workflowRoutes.get('/active-tool-names', async (c) => {
   const userId = getUserId(c);
   const repo = createWorkflowsRepository(userId);
-  const workflows = await repo.getPage(1000, 0);
-
-  const activeToolNames = new Set<string>();
-  for (const wf of workflows) {
-    if (wf.status !== 'active') continue;
-    for (const node of wf.nodes) {
-      if (node.type === 'tool' && (node.data as { toolName?: string }).toolName) {
-        activeToolNames.add((node.data as { toolName: string }).toolName);
-      }
-    }
-  }
+  const toolNamesArr = await repo.getActiveToolNames();
+  const activeToolNames = new Set<string>(toolNamesArr);
 
   return apiResponse(c, [...activeToolNames]);
 });
@@ -841,36 +832,42 @@ workflowRoutes.post('/:id/run', async (c) => {
     );
   }
 
-  // Execute asynchronously and return the log ID immediately
-  let logId: string | null = null;
+  // Promise that resolves as soon as the 'started' event fires with a logId
+  let resolveLogId!: (id: string) => void;
+  const logIdPromise = new Promise<string>((resolve) => {
+    resolveLogId = resolve;
+  });
 
-  // Start execution in background — capture log ID from first 'started' event
+  // Start execution in background — signal logIdPromise on first 'started' event
   const executionPromise = service.executeWorkflow(
     id,
     userId,
     async (event) => {
       if (event.type === 'started' && event.logId) {
-        logId = event.logId;
+        resolveLogId(event.logId);
       }
     },
     { inputs }
   );
 
-  // Wait briefly for the started event so we can return the logId
-  await new Promise<void>((resolve) => {
-    const check = () => {
-      if (logId) return resolve();
-      setTimeout(check, 50);
-    };
-    check();
-    // Timeout after 5 seconds — return what we have
-    setTimeout(resolve, 5000);
-  });
+  // Race: logId arrives quickly (typical) vs 5 s timeout (workflow crashed before started)
+  const logId = await Promise.race([
+    logIdPromise,
+    new Promise<null>((resolve) => setTimeout(() => resolve(null), 5000)),
+  ]);
 
   // Don't await the full execution — it runs in the background
   executionPromise.catch(() => {
     /* execution errors are logged in the workflow log */
   });
+
+  if (!logId) {
+    return apiError(
+      c,
+      { code: ERROR_CODES.INTERNAL_ERROR, message: 'Workflow did not start within timeout' },
+      500
+    );
+  }
 
   return apiResponse(c, {
     logId,

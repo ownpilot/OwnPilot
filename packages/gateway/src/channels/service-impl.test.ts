@@ -1649,7 +1649,7 @@ describe('ChannelServiceImpl', () => {
 
         expect(channelPlugin.api.sendMessage).toHaveBeenCalledWith(
           expect.objectContaining({
-            text: expect.stringContaining('Something unexpected'),
+            text: expect.stringContaining('Sorry, I encountered an internal error'),
           })
         );
       });

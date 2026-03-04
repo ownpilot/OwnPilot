@@ -396,7 +396,7 @@ export class AutonomyEngine implements IPulseService {
   // ============================================================================
 
   private async runAgentPulse(
-    userId: string,
+    _userId: string,
     ctx: PulseContext,
     signals: Signal[],
     directives: PulseDirectives,

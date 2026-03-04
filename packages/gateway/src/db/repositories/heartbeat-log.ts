@@ -135,6 +135,24 @@ export class HeartbeatLogRepository extends BaseRepository {
       failureRate: totalCycles > 0 ? failureCount / totalCycles : 0,
     };
   }
+
+  /** Batch-fetch the latest heartbeat entry for each agent ID. O(1) query via DISTINCT ON. */
+  async getLatestByAgentIds(agentIds: string[]): Promise<Map<string, HeartbeatLogEntry>> {
+    if (agentIds.length === 0) return new Map();
+    const placeholders = agentIds.map((_, i) => `$${i + 1}`).join(', ');
+    const rows = await this.query<HeartbeatLogRow>(
+      `SELECT DISTINCT ON (agent_id) *
+       FROM heartbeat_log
+       WHERE agent_id IN (${placeholders})
+       ORDER BY agent_id, created_at DESC`,
+      agentIds
+    );
+    const result = new Map<string, HeartbeatLogEntry>();
+    for (const row of rows) {
+      result.set(row.agent_id, rowToEntry(row));
+    }
+    return result;
+  }
 }
 
 // ── Singleton ──

@@ -90,8 +90,10 @@ backupRoutes.post('/backup', async (c) => {
     args.push('-Fp'); // Plain SQL format
   }
 
-  const env = {
-    ...process.env,
+  // Minimal env — avoids leaking API keys, secrets, etc. to the pg_dump child process
+  const env: Record<string, string> = {
+    PATH: process.env.PATH ?? '/usr/bin:/bin',
+    HOME: process.env.HOME ?? '',
     PGPASSWORD: config.postgresPassword || '',
   };
 
@@ -221,8 +223,10 @@ backupRoutes.post('/restore', async (c) => {
         backupPath,
       ];
 
-  const env = {
-    ...process.env,
+  // Minimal env — avoids leaking API keys, secrets, etc. to the pg restore child process
+  const env: Record<string, string> = {
+    PATH: process.env.PATH ?? '/usr/bin:/bin',
+    HOME: process.env.HOME ?? '',
     PGPASSWORD: config.postgresPassword || '',
   };
 

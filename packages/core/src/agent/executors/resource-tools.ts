@@ -15,11 +15,18 @@ import { safeJsonParseWithDefault } from '../../utils/safe-json.js';
 
 export const RESOURCE_EXECUTORS: Record<string, ToolExecutor> = {
   create_task: async (args) => {
-    const title = args.title as string;
-    const description = args.description as string | undefined;
-    const dueDate = args.due_date as string | undefined;
-    const priority = (args.priority as string) ?? 'medium';
-    const tags = (args.tags as string[]) ?? [];
+    const title = typeof args.title === 'string' ? args.title : String(args.title ?? '');
+    const description = typeof args.description === 'string' ? args.description : undefined;
+    const dueDate = typeof args.due_date === 'string' ? args.due_date : undefined;
+    const priority = typeof args.priority === 'string' ? args.priority : 'medium';
+    const tags = Array.isArray(args.tags)
+      ? (args.tags as unknown[]).filter((t): t is string => typeof t === 'string')
+      : [];
+
+    const tasksPath = resolveWorkspacePath('tasks');
+    if (!tasksPath) {
+      return { content: 'Error: No workspace configured', isError: true };
+    }
 
     const taskId = randomUUID().slice(0, 8);
     const task = {
@@ -33,21 +40,18 @@ export const RESOURCE_EXECUTORS: Record<string, ToolExecutor> = {
       createdAt: new Date().toISOString(),
     };
 
-    const tasksPath = resolveWorkspacePath('tasks');
-    if (tasksPath) {
-      if (!fs.existsSync(tasksPath)) {
-        await fsp.mkdir(tasksPath, { recursive: true });
-      }
-
-      const tasksFile = path.join(tasksPath, 'tasks.json');
-      let tasks: unknown[] = [];
-      if (fs.existsSync(tasksFile)) {
-        const content = await fsp.readFile(tasksFile, 'utf-8');
-        tasks = safeJsonParseWithDefault<unknown[]>(content, []);
-      }
-      tasks.push(task);
-      await fsp.writeFile(tasksFile, JSON.stringify(tasks, null, 2));
+    if (!fs.existsSync(tasksPath)) {
+      await fsp.mkdir(tasksPath, { recursive: true });
     }
+
+    const tasksFile = path.join(tasksPath, 'tasks.json');
+    let tasks: unknown[] = [];
+    if (fs.existsSync(tasksFile)) {
+      const content = await fsp.readFile(tasksFile, 'utf-8');
+      tasks = safeJsonParseWithDefault<unknown[]>(content, []);
+    }
+    tasks.push(task);
+    await fsp.writeFile(tasksFile, JSON.stringify(tasks, null, 2));
 
     return {
       content: `\u2705 Task created (ID: ${taskId})
@@ -57,8 +61,8 @@ export const RESOURCE_EXECUTORS: Record<string, ToolExecutor> = {
   },
 
   list_tasks: async (args) => {
-    const filter = (args.filter as string) ?? 'all';
-    const tagFilter = args.tag as string | undefined;
+    const filter = typeof args.filter === 'string' ? args.filter : 'all';
+    const tagFilter = typeof args.tag === 'string' ? args.tag : undefined;
 
     const tasksPath = resolveWorkspacePath('tasks/tasks.json');
     if (!tasksPath || !fs.existsSync(tasksPath)) {
@@ -106,7 +110,7 @@ export const RESOURCE_EXECUTORS: Record<string, ToolExecutor> = {
   },
 
   complete_task: async (args) => {
-    const taskId = args.task_id as string;
+    const taskId = typeof args.task_id === 'string' ? args.task_id : String(args.task_id ?? '');
 
     const tasksPath = resolveWorkspacePath('tasks/tasks.json');
     if (!tasksPath || !fs.existsSync(tasksPath)) {
@@ -134,10 +138,12 @@ export const RESOURCE_EXECUTORS: Record<string, ToolExecutor> = {
   },
 
   create_note: async (args) => {
-    const title = args.title as string;
-    const content = args.content as string;
-    const category = (args.category as string) ?? 'general';
-    const tags = (args.tags as string[]) ?? [];
+    const title = typeof args.title === 'string' ? args.title : String(args.title ?? '');
+    const content = typeof args.content === 'string' ? args.content : String(args.content ?? '');
+    const category = typeof args.category === 'string' ? args.category : 'general';
+    const tags = Array.isArray(args.tags)
+      ? (args.tags as unknown[]).filter((t): t is string => typeof t === 'string')
+      : [];
 
     const notesDir = resolveWorkspacePath(`notes/${category}`);
     if (!notesDir) {
@@ -171,22 +177,27 @@ ${content}
   },
 
   search_notes: async (args) => {
-    const query = (args.query as string).toLowerCase();
-    const category = args.category as string | undefined;
+    const query = (typeof args.query === 'string' ? args.query : String(args.query ?? '')).toLowerCase();
+    const category = typeof args.category === 'string' ? args.category : undefined;
 
     const notesDir = resolveWorkspacePath(category ? `notes/${category}` : 'notes');
     if (!notesDir || !fs.existsSync(notesDir)) {
       return { content: 'No notes found.' };
     }
 
+    const MAX_DEPTH = 5;
+    const MAX_RESULTS = 100;
     const results: string[] = [];
 
-    const searchDir = async (dir: string, prefix = '') => {
+    const searchDir = async (dir: string, prefix = '', depth = 0) => {
+      if (depth >= MAX_DEPTH || results.length >= MAX_RESULTS) return;
       const entries = await fsp.readdir(dir, { withFileTypes: true });
       for (const entry of entries) {
+        if (results.length >= MAX_RESULTS) return;
+        if (entry.isSymbolicLink?.()) continue;
         const fullPath = path.join(dir, entry.name);
         if (entry.isDirectory()) {
-          await searchDir(fullPath, prefix ? `${prefix}/${entry.name}` : entry.name);
+          await searchDir(fullPath, prefix ? `${prefix}/${entry.name}` : entry.name, depth + 1);
         } else if (entry.name.endsWith('.md')) {
           const content = (await fsp.readFile(fullPath, 'utf-8')).toLowerCase();
           if (content.includes(query) || entry.name.toLowerCase().includes(query)) {
@@ -203,14 +214,22 @@ ${content}
       return { content: `No notes found matching "${query}"` };
     }
 
-    return { content: `\u{1F50D} Found ${results.length} note(s):\n${results.join('\n')}` };
+    const truncated = results.length >= MAX_RESULTS ? ` (showing first ${MAX_RESULTS})` : '';
+    return { content: `\u{1F50D} Found ${results.length} note(s)${truncated}:\n${results.join('\n')}` };
   },
 
   create_bookmark: async (args) => {
-    const url = args.url as string;
-    const title = args.title as string;
-    const description = args.description as string | undefined;
-    const tags = (args.tags as string[]) ?? [];
+    const url = typeof args.url === 'string' ? args.url : String(args.url ?? '');
+    const title = typeof args.title === 'string' ? args.title : String(args.title ?? '');
+    const description = typeof args.description === 'string' ? args.description : undefined;
+    const tags = Array.isArray(args.tags)
+      ? (args.tags as unknown[]).filter((t): t is string => typeof t === 'string')
+      : [];
+
+    const bookmarksDir = resolveWorkspacePath('bookmarks');
+    if (!bookmarksDir) {
+      return { content: 'Error: No workspace configured', isError: true };
+    }
 
     const bookmark = {
       id: randomUUID().slice(0, 8),
@@ -221,21 +240,18 @@ ${content}
       createdAt: new Date().toISOString(),
     };
 
-    const bookmarksDir = resolveWorkspacePath('bookmarks');
-    if (bookmarksDir) {
-      if (!fs.existsSync(bookmarksDir)) {
-        await fsp.mkdir(bookmarksDir, { recursive: true });
-      }
-
-      const bookmarksFile = path.join(bookmarksDir, 'bookmarks.json');
-      let bookmarks: unknown[] = [];
-      if (fs.existsSync(bookmarksFile)) {
-        const content = await fsp.readFile(bookmarksFile, 'utf-8');
-        bookmarks = safeJsonParseWithDefault<unknown[]>(content, []);
-      }
-      bookmarks.push(bookmark);
-      await fsp.writeFile(bookmarksFile, JSON.stringify(bookmarks, null, 2));
+    if (!fs.existsSync(bookmarksDir)) {
+      await fsp.mkdir(bookmarksDir, { recursive: true });
     }
+
+    const bookmarksFile = path.join(bookmarksDir, 'bookmarks.json');
+    let bookmarks: unknown[] = [];
+    if (fs.existsSync(bookmarksFile)) {
+      const content = await fsp.readFile(bookmarksFile, 'utf-8');
+      bookmarks = safeJsonParseWithDefault<unknown[]>(content, []);
+    }
+    bookmarks.push(bookmark);
+    await fsp.writeFile(bookmarksFile, JSON.stringify(bookmarks, null, 2));
 
     return {
       content: `\u{1F516} Bookmark saved!
@@ -245,8 +261,8 @@ ${content}
   },
 
   list_bookmarks: async (args) => {
-    const tagFilter = args.tag as string | undefined;
-    const searchQuery = args.search as string | undefined;
+    const tagFilter = typeof args.tag === 'string' ? args.tag : undefined;
+    const searchQuery = typeof args.search === 'string' ? args.search : undefined;
 
     const bookmarksPath = resolveWorkspacePath('bookmarks/bookmarks.json');
     if (!bookmarksPath || !fs.existsSync(bookmarksPath)) {

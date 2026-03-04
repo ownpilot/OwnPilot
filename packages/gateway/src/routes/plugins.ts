@@ -482,6 +482,7 @@ pluginsRoutes.get('/meta/capabilities', (c) => {
   const capabilities: Record<PluginCapability, string> = {
     tools: 'Provides tools that can be invoked by the AI',
     handlers: 'Message handlers for custom processing',
+    events: 'Emits or subscribes to system events',
     storage: 'Has persistent storage needs',
     scheduled: 'Has scheduled/recurring tasks',
     notifications: 'Can send notifications',

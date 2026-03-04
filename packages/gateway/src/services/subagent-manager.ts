@@ -234,7 +234,7 @@ export class SubagentManager {
         parentSubs?.delete(id);
         if (parentSubs?.size === 0) {
           this.parentIndex.delete(managed.session.parentId);
-          this.spawnCounts.delete(managed.session.parentId);
+          // Do NOT delete spawnCounts — it's a lifetime total, not an active counter
         }
       }
       this.sessions.delete(id);

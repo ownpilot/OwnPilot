@@ -332,7 +332,7 @@ Select the best agent to handle this request.`;
   /**
    * Create fallback result
    */
-  private fallbackResult(message: string, reason: string): AgentRoutingResult {
+  private fallbackResult(_message: string, reason: string): AgentRoutingResult {
     return {
       agentId: this.config.defaultAgentId,
       confidence: 0.5,

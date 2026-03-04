@@ -13,6 +13,7 @@ import type { AgentSoul } from '@ownpilot/core';
 import { getSoulsRepository } from '../db/repositories/souls.js';
 import { agentsRepo } from '../db/repositories/agents.js';
 import { createTriggersRepository } from '../db/repositories/triggers.js';
+import { getAdapterSync } from '../db/adapters/index.js';
 import { getHeartbeatLogRepository } from '../db/repositories/heartbeat-log.js';
 import { getSharedToolRegistry } from '../services/tool-executor.js';
 import { runAgentHeartbeat } from '../services/soul-heartbeat-service.js';
@@ -25,12 +26,6 @@ import {
 } from './helpers.js';
 
 export const soulRoutes = new Hono();
-
-// Debug middleware to log all incoming requests
-soulRoutes.use('*', async (c, next) => {
-  console.log(`[Souls] ${c.req.method} ${c.req.path}`);
-  await next();
-});
 
 // ── GET / — list all souls ──────────────────────────
 
@@ -74,7 +69,26 @@ soulRoutes.post('/', async (c) => {
         400
       );
     }
-    const soul = await getSoulsRepository().create(body);
+    // Validate autonomy.level range
+    const autonomyLevel = (body as Record<string, unknown> & { autonomy?: { level?: unknown } }).autonomy?.level;
+    if (autonomyLevel !== undefined && (typeof autonomyLevel !== 'number' || !Number.isInteger(autonomyLevel) || autonomyLevel < 0 || autonomyLevel > 4)) {
+      return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: 'autonomy.level must be an integer 0–4' }, 400);
+    }
+
+    // Only pass known soul fields — prevent mass assignment of internal DB columns
+    const soulData = {
+      agentId: body.agentId as string,
+      identity: body.identity,
+      purpose: body.purpose,
+      autonomy: body.autonomy,
+      heartbeat: body.heartbeat,
+      relationships: body.relationships,
+      evolution: body.evolution,
+      bootSequence: body.bootSequence,
+      provider: body.provider,
+      skillAccess: body.skillAccess,
+    };
+    const soul = await getSoulsRepository().create(soulData);
     return apiResponse(c, soul, 201);
   } catch (err) {
     return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(err) }, 500);
@@ -139,6 +153,12 @@ soulRoutes.post('/deploy', async (c) => {
       };
     }>();
 
+    // Validate autonomy.level range
+    const autonomyLevel = body.autonomy?.level;
+    if (autonomyLevel !== undefined && (typeof autonomyLevel !== 'number' || !Number.isInteger(autonomyLevel) || autonomyLevel < 0 || autonomyLevel > 4)) {
+      return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: 'autonomy.level must be an integer 0–4' }, 400);
+    }
+
     // Get default provider/model if not specified
     // Note: settings are loaded from cache synchronously
     const { settingsRepo } = await import('../db/repositories/index.js');
@@ -148,134 +168,118 @@ soulRoutes.post('/deploy', async (c) => {
     const agentProvider = body.provider || defaultProvider || 'default';
     const agentModel = body.model || defaultModel || 'default';
 
-    console.log('[Souls Deploy] Creating agent with provider:', agentProvider, 'model:', agentModel);
-
     const agentId = randomUUID();
     let agentName = body.identity?.name ?? 'Unnamed Agent';
 
-    // 1. Create agent record (with duplicate name handling)
-    let agentCreated = false;
+    // 1+2. Create agent + soul atomically in a DB transaction.
+    // Retries up to 5 times on duplicate name conflict — the whole transaction is
+    // retried with an incremented suffix, so no partial state can be left behind.
+    let soul;
     let attempts = 0;
     let lastError: unknown = null;
+    const adapter = getAdapterSync();
 
-    while (!agentCreated && attempts < 5) {
+    while (!soul && attempts < 5) {
       try {
-        await agentsRepo.create({
-          id: agentId,
-          name: agentName,
-          systemPrompt: '',
-          provider: agentProvider,
-          model: agentModel,
+        const soulRepo = getSoulsRepository();
+        soul = await adapter.transaction(async () => {
+          await agentsRepo.create({
+            id: agentId,
+            name: agentName,
+            systemPrompt: '',
+            provider: agentProvider,
+            model: agentModel,
+          });
+          return soulRepo.create({
+            agentId,
+            identity: {
+              name: agentName,
+              emoji: body.identity?.emoji ?? '🤖',
+              role: body.identity?.role ?? 'Agent',
+              personality: body.identity?.personality ?? 'Helpful and professional',
+              voice: {
+                tone: body.identity?.voice?.tone ?? 'neutral',
+                language: (body.identity?.voice?.language as 'en' | 'tr' | 'both') ?? 'en',
+                quirks: body.identity?.voice?.quirks ?? [],
+              },
+              boundaries: body.identity?.boundaries ?? [],
+            },
+            purpose: {
+              mission: body.purpose?.mission ?? 'Assist with tasks',
+              goals: body.purpose?.goals ?? [],
+              expertise: body.purpose?.expertise ?? [],
+              toolPreferences: body.purpose?.toolPreferences ?? [],
+            },
+            autonomy: {
+              level: (body.autonomy?.level as 0 | 1 | 2 | 3 | 4) ?? 3,
+              allowedActions: body.autonomy?.allowedActions ?? ['search_web', 'create_note', 'read_url', 'search_memories'],
+              blockedActions: body.autonomy?.blockedActions ?? ['delete_data', 'execute_code'],
+              requiresApproval: body.autonomy?.requiresApproval ?? ['send_message_to_user'],
+              maxCostPerCycle: body.autonomy?.maxCostPerCycle ?? 0.5,
+              maxCostPerDay: body.autonomy?.maxCostPerDay ?? 5.0,
+              maxCostPerMonth: body.autonomy?.maxCostPerMonth ?? 100.0,
+              pauseOnConsecutiveErrors: 5,
+              pauseOnBudgetExceeded: true,
+              notifyUserOnPause: true,
+            },
+            heartbeat: {
+              enabled: body.heartbeat?.enabled ?? false,
+              interval: body.heartbeat?.interval ?? '0 */6 * * *',
+              checklist: (body.heartbeat?.checklist as []) ?? [],
+              selfHealingEnabled: body.heartbeat?.selfHealingEnabled ?? false,
+              maxDurationMs: body.heartbeat?.maxDurationMs ?? 120000,
+            },
+            relationships: {
+              delegates: body.relationships?.delegates ?? [],
+              peers: body.relationships?.peers ?? [],
+              channels: body.relationships?.channels ?? [],
+            },
+            evolution: {
+              version: 1,
+              evolutionMode: body.evolution?.evolutionMode ?? 'supervised',
+              coreTraits: body.evolution?.coreTraits ?? [],
+              mutableTraits: body.evolution?.mutableTraits ?? [],
+              learnings: [],
+              feedbackLog: [],
+            },
+            bootSequence: {
+              onStart: body.bootSequence?.onStart ?? [],
+              onHeartbeat: body.bootSequence?.onHeartbeat ?? ['read_inbox'],
+              onMessage: body.bootSequence?.onMessage ?? [],
+            },
+            provider: {
+              providerId: agentProvider,
+              modelId: agentModel,
+            },
+            skillAccess: {
+              allowed: body.skillAccess?.allowed ?? [],
+              blocked: body.skillAccess?.blocked ?? [],
+            },
+          });
         });
-        agentCreated = true;
-        console.log('[Souls Deploy] Agent record created:', agentId, 'with name:', agentName);
-      } catch (agentErr) {
-        lastError = agentErr;
-        const errorMessage = getErrorMessage(agentErr).toLowerCase();
-
-        // Check if it's a duplicate name error
+      } catch (txErr) {
+        lastError = txErr;
+        const errorMessage = getErrorMessage(txErr).toLowerCase();
         if (errorMessage.includes('duplicate') && errorMessage.includes('name')) {
           attempts++;
-          // Append random suffix to make name unique
           const randomSuffix = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
           agentName = `${body.identity?.name ?? 'Unnamed Agent'} (${randomSuffix})`;
-          console.log(`[Souls Deploy] Name conflict, retrying with: ${agentName}`);
         } else {
-          // Other error, don't retry
-          break;
+          break; // Non-name error — don't retry
         }
       }
     }
 
-    if (!agentCreated) {
-      console.error('[Souls Deploy] Failed to create agent record:', lastError);
-      return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: `Failed to create agent: ${getErrorMessage(lastError)}` }, 500);
-    }
-
-    // 2. Create soul
-    let soul;
-    try {
-      const soulRepo = getSoulsRepository();
-      soul = await soulRepo.create({
-      agentId,
-      identity: {
-        name: agentName,
-        emoji: body.identity?.emoji ?? '🤖',
-        role: body.identity?.role ?? 'Agent',
-        personality: body.identity?.personality ?? 'Helpful and professional',
-        voice: {
-          tone: body.identity?.voice?.tone ?? 'neutral',
-          language: (body.identity?.voice?.language as 'en' | 'tr' | 'both') ?? 'en',
-          quirks: body.identity?.voice?.quirks ?? [],
-        },
-        boundaries: body.identity?.boundaries ?? [],
-      },
-      purpose: {
-        mission: body.purpose?.mission ?? 'Assist with tasks',
-        goals: body.purpose?.goals ?? [],
-        expertise: body.purpose?.expertise ?? [],
-        toolPreferences: body.purpose?.toolPreferences ?? [],
-      },
-      autonomy: {
-        level: (body.autonomy?.level as 0 | 1 | 2 | 3 | 4) ?? 3,
-        allowedActions: body.autonomy?.allowedActions ?? ['search_web', 'create_note', 'read_url', 'search_memories'],
-        blockedActions: body.autonomy?.blockedActions ?? ['delete_data', 'execute_code'],
-        requiresApproval: body.autonomy?.requiresApproval ?? ['send_message_to_user'],
-        maxCostPerCycle: body.autonomy?.maxCostPerCycle ?? 0.5,
-        maxCostPerDay: body.autonomy?.maxCostPerDay ?? 5.0,
-        maxCostPerMonth: body.autonomy?.maxCostPerMonth ?? 100.0,
-        pauseOnConsecutiveErrors: 5,
-        pauseOnBudgetExceeded: true,
-        notifyUserOnPause: true,
-      },
-      heartbeat: {
-        enabled: body.heartbeat?.enabled ?? false,
-        interval: body.heartbeat?.interval ?? '0 */6 * * *',
-        checklist: (body.heartbeat?.checklist as []) ?? [],
-        selfHealingEnabled: body.heartbeat?.selfHealingEnabled ?? false,
-        maxDurationMs: body.heartbeat?.maxDurationMs ?? 120000,
-      },
-      relationships: {
-        delegates: body.relationships?.delegates ?? [],
-        peers: body.relationships?.peers ?? [],
-        channels: body.relationships?.channels ?? [],
-      },
-      evolution: {
-        version: 1,
-        evolutionMode: body.evolution?.evolutionMode ?? 'supervised',
-        coreTraits: body.evolution?.coreTraits ?? [],
-        mutableTraits: body.evolution?.mutableTraits ?? [],
-        learnings: [],
-        feedbackLog: [],
-      },
-      bootSequence: {
-        onStart: body.bootSequence?.onStart ?? [],
-        onHeartbeat: body.bootSequence?.onHeartbeat ?? ['read_inbox'],
-        onMessage: body.bootSequence?.onMessage ?? [],
-      },
-      provider: {
-        providerId: agentProvider,
-        modelId: agentModel,
-      },
-      skillAccess: {
-        allowed: body.skillAccess?.allowed ?? [],
-        blocked: body.skillAccess?.blocked ?? [],
-      },
-    });
-    console.log('[Souls Deploy] Soul created for agent:', agentId);
-    } catch (soulErr) {
-      console.error('[Souls Deploy] Failed to create soul:', soulErr);
-      // Rollback: delete the agent record
-      try {
-        await agentsRepo.delete(agentId);
-        console.log('[Souls Deploy] Rolled back agent creation:', agentId);
-      } catch (rollbackErr) {
-        console.error('[Souls Deploy] Failed to rollback agent:', rollbackErr);
-      }
-      return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: `Failed to create soul: ${getErrorMessage(soulErr)}` }, 500);
+    if (!soul) {
+      return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: `Failed to deploy agent: ${getErrorMessage(lastError)}` }, 500);
     }
 
     // 3. Create heartbeat trigger if enabled and interval is valid
+    const CRON_REGEX = /^[\*0-9,\-\/]+\s+[\*0-9,\-\/]+\s+[\*0-9,\-\/]+\s+[\*0-9,\-\/]+\s+[\*0-9,\-\/]+$/;
+    if (body.heartbeat?.enabled && body.heartbeat?.interval && !CRON_REGEX.test(body.heartbeat.interval.trim())) {
+      return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: 'heartbeat.interval must be a valid cron expression (e.g. "0 */6 * * *")' }, 400);
+    }
+
     let triggerCreated = false;
     if (body.heartbeat?.enabled && body.heartbeat?.interval?.trim()) {
       const triggerRepo = createTriggersRepository();
@@ -289,7 +293,7 @@ soulRoutes.post('/deploy', async (c) => {
         });
         triggerCreated = true;
       } catch (triggerError) {
-        console.warn(`Failed to create heartbeat trigger for ${agentId}:`, triggerError);
+        // Trigger creation failure is non-fatal — agent still deployed
       }
     }
 
@@ -1019,9 +1023,21 @@ soulRoutes.put('/:agentId', async (c) => {
       );
     }
 
+    // Only allow explicitly listed fields — prevent mass assignment of id, agentId, workspaceId, createdAt
+    const allowedUpdates: Partial<AgentSoul> = {};
+    if (body.identity !== undefined) allowedUpdates.identity = body.identity;
+    if (body.purpose !== undefined) allowedUpdates.purpose = body.purpose;
+    if (body.autonomy !== undefined) allowedUpdates.autonomy = body.autonomy;
+    if (body.heartbeat !== undefined) allowedUpdates.heartbeat = body.heartbeat;
+    if (body.relationships !== undefined) allowedUpdates.relationships = body.relationships;
+    if (body.evolution !== undefined) allowedUpdates.evolution = body.evolution;
+    if (body.bootSequence !== undefined) allowedUpdates.bootSequence = body.bootSequence;
+    if (body.provider !== undefined) allowedUpdates.provider = body.provider;
+    if (body.skillAccess !== undefined) allowedUpdates.skillAccess = body.skillAccess;
+
     const updated = {
       ...existing,
-      ...body,
+      ...allowedUpdates,
       agentId,
       id: existing.id,
       updatedAt: new Date(),

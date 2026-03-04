@@ -136,13 +136,16 @@ channelRoutes.delete('/messages', async (c) => {
 
     let deleted: number;
     if (channelId) {
-      deleted = await messagesRepo.deleteByChannel(channelId);
+      const result = await messagesRepo.deleteByChannel(channelId);
+      deleted = result.count;
+      // Evict only the deleted channel's message IDs from the read-tracking cache
+      for (const id of result.ids) {
+        readMessageIds.delete(id);
+      }
     } else {
       deleted = await messagesRepo.deleteAll();
+      readMessageIds.clear();
     }
-
-    // Clear read tracking
-    readMessageIds.clear();
 
     wsGateway.broadcast('data:changed', { entity: 'channel', action: 'deleted' });
 
@@ -559,8 +562,8 @@ channelRoutes.post('/:id/send', async (c) => {
       );
     }
 
-    // If chatId not provided, try to use the first allowed_user from Config Center
-    // (in Telegram, private chat ID == user ID)
+    // If chatId not provided, auto-resolve from Config Center:
+    // For WhatsApp: use my_phone (self-chat). For Telegram/others: use allowed_users.
     if (!chatId) {
       const registry = await getDefaultPluginRegistry();
       const plugin = registry.get(pluginId);
@@ -568,9 +571,13 @@ channelRoutes.post('/:id/send', async (c) => {
         | Array<{ name: string }>
         | undefined;
       if (requiredServices?.length) {
-        const raw = configServicesRepo.getFieldValue(requiredServices[0]!.name, 'allowed_users');
-        if (typeof raw === 'string' && raw.trim()) {
-          chatId = raw.split(',')[0]!.trim();
+        const svcName = requiredServices[0]!.name;
+        // Try my_phone first (WhatsApp self-chat), then allowed_users (Telegram)
+        const myPhone = configServicesRepo.getFieldValue(svcName, 'my_phone');
+        const allowedUsers = configServicesRepo.getFieldValue(svcName, 'allowed_users');
+        const resolved = (myPhone as string) || (allowedUsers as string);
+        if (typeof resolved === 'string' && resolved.trim()) {
+          chatId = resolved.split(',')[0]!.trim();
         }
       }
     }
@@ -580,7 +587,7 @@ channelRoutes.post('/:id/send', async (c) => {
         c,
         {
           code: ERROR_CODES.INVALID_REQUEST,
-          message: 'chatId is required (configure allowed_users in Config Center for auto-resolve)',
+          message: 'chatId is required. For WhatsApp: configure My Phone Number in Config Center.',
         },
         400
       );

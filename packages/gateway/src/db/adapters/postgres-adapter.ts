@@ -90,7 +90,18 @@ export class PostgresAdapter implements DatabaseAdapter {
     const client = await this.pool.connect();
 
     let timedOut = false;
-    let timeoutCleanupDone = false;
+    let clientReleased = false;
+
+    const releaseClient = () => {
+      if (!clientReleased) {
+        clientReleased = true;
+        try {
+          client.release();
+        } catch (releaseError) {
+          log.error('[PostgreSQL] Client release failed:', releaseError);
+        }
+      }
+    };
 
     // Set up transaction timeout
     const timeoutId = setTimeout(async () => {
@@ -102,8 +113,7 @@ export class PostgresAdapter implements DatabaseAdapter {
         // Client might already be disconnected - log but don't throw
         log.debug('[PostgreSQL] Rollback during timeout cleanup failed:', err);
       }
-      timeoutCleanupDone = true;
-      // Don't release client here - let finally block handle it
+      releaseClient();
     }, timeoutMs);
 
     try {
@@ -125,15 +135,7 @@ export class PostgresAdapter implements DatabaseAdapter {
       throw error;
     } finally {
       clearTimeout(timeoutId);
-      // Only release client if timeout cleanup didn't already happen
-      if (!timeoutCleanupDone) {
-        try {
-          client.release();
-        } catch (releaseError) {
-          log.error('[PostgreSQL] Client release failed:', releaseError);
-        }
-      }
-      // If timeout cleanup happened, client is already released
+      releaseClient();
     }
   }
 
