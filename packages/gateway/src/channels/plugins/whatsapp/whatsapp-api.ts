@@ -53,11 +53,18 @@ class SimpleTTLCache<V> {
   get(key: string): V | undefined {
     const entry = this.data.get(key);
     if (!entry) return undefined;
-    if (Date.now() > entry.expires) { this.data.delete(key); return undefined; }
+    if (Date.now() > entry.expires) {
+      this.data.delete(key);
+      return undefined;
+    }
     return entry.value;
   }
-  del(key: string): void { this.data.delete(key); }
-  flushAll(): void { this.data.clear(); }
+  del(key: string): void {
+    this.data.delete(key);
+  }
+  flushAll(): void {
+    this.data.clear();
+  }
 }
 
 // Anti-ban constants
@@ -148,7 +155,8 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
 
   // Group listing cache (5 min TTL — prevents excessive groupFetchAllParticipating calls)
   private groupsCache: WhatsAppGroupSummary[] | null = null;
-  private groupsRawParticipants: Map<string, Array<{ id: string; admin?: string | null }>> | null = null;
+  private groupsRawParticipants: Map<string, Array<{ id: string; admin?: string | null }>> | null =
+    null;
   private groupsCacheTime = 0;
   private groupsFetchInFlight: Promise<WhatsAppGroupSummary[]> | null = null;
   private static readonly GROUPS_CACHE_TTL = 5 * 60_000;
@@ -239,7 +247,9 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
 
       // Handle incoming messages
       this.sock.ev.on('messages.upsert', (upsert) => {
-        log.info(`[WhatsApp] UPSERT EVENT received — type: ${upsert.type}, count: ${upsert.messages.length}`);
+        log.info(
+          `[WhatsApp] UPSERT EVENT received — type: ${upsert.type}, count: ${upsert.messages.length}`
+        );
 
         // Cache ALL messages for getMessage retry/decryption (both append and notify)
         for (const msg of upsert.messages) {
@@ -250,7 +260,9 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
 
         if (upsert.type !== 'notify') return;
         for (const msg of upsert.messages) {
-          log.info(`[WhatsApp] Processing message — jid: ${msg.key.remoteJid}, fromMe: ${msg.key.fromMe}, id: ${msg.key.id}`);
+          log.info(
+            `[WhatsApp] Processing message — jid: ${msg.key.remoteJid}, fromMe: ${msg.key.fromMe}, id: ${msg.key.id}`
+          );
 
           // Anti-ban: deduplication — skip already-processed messages (reconnect replays)
           const msgId = msg.key.id;
@@ -286,117 +298,207 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
 
       // Handle passive history sync (WhatsApp sends past messages on first connect)
       // Uses promise queue to serialize concurrent batches (Baileys can fire multiple events rapidly)
-      this.sock.ev.on('messaging-history.set', ({ messages, chats, contacts, syncType, progress, isLatest }) => {
-        this.historySyncQueue = this.historySyncQueue.then(async () => {
-          try {
-            const syncTypeName = syncType != null ? proto.HistorySync.HistorySyncType[syncType] ?? String(syncType) : 'unknown';
-            log.info(`[WhatsApp] History sync received — type: ${syncTypeName}, messages: ${messages.length}, chats: ${chats?.length ?? 0}, contacts: ${contacts?.length ?? 0}, progress: ${progress ?? 'N/A'}%, isLatest: ${isLatest ?? 'N/A'}`);
+      this.sock.ev.on(
+        'messaging-history.set',
+        ({ messages, chats, contacts, syncType, progress, isLatest }) => {
+          this.historySyncQueue = this.historySyncQueue.then(async () => {
+            try {
+              const syncTypeName =
+                syncType != null
+                  ? (proto.HistorySync.HistorySyncType[syncType] ?? String(syncType))
+                  : 'unknown';
+              log.info(
+                `[WhatsApp] History sync received — type: ${syncTypeName}, messages: ${messages.length}, chats: ${chats?.length ?? 0}, contacts: ${contacts?.length ?? 0}, progress: ${progress ?? 'N/A'}%, isLatest: ${isLatest ?? 'N/A'}`
+              );
 
-            if (messages.length === 0) {
-              log.info('[WhatsApp] History sync batch empty — skipping');
-              return;
-            }
-
-            const { ChannelMessagesRepository } = await import('../../../db/repositories/channel-messages.js');
-            const messagesRepo = new ChannelMessagesRepository();
-
-            // Transform WAMessage[] to DB rows
-            const rows: Array<Parameters<typeof messagesRepo.createBatch>[0][number]> = [];
-
-            for (const msg of messages) {
-              const remoteJid = msg.key?.remoteJid;
-              if (!remoteJid) continue;
-
-              const isGroup = remoteJid.endsWith('@g.us');
-              const isDM = remoteJid.endsWith('@s.whatsapp.net');
-              if (!isDM && !isGroup) continue;
-
-              // Skip protocol/stub messages (Baileys isRealMessage pattern — WAHA best practice)
-              if (msg.messageStubType != null && !msg.message) continue;
-
-              // Skip our own outbound messages (except self-chat)
-              const isSelf = this.isSelfChat(remoteJid);
-              if (msg.key.fromMe && !isSelf) continue;
-
-              const messageId = msg.key.id ?? '';
-              if (!messageId) continue;
-
-              // Extract text content
-              const m = msg.message;
-              let text = '';
-              if (m?.conversation) text = m.conversation;
-              else if (m?.extendedTextMessage?.text) text = m.extendedTextMessage.text;
-              else if (m?.imageMessage?.caption) text = m.imageMessage.caption;
-              else if (m?.videoMessage?.caption) text = m.videoMessage.caption;
-              else if (m?.documentMessage?.caption) text = m.documentMessage.caption;
-
-              // Skip empty messages (no text, no recognizable content)
-              if (!text && !m?.imageMessage && !m?.audioMessage && !m?.videoMessage && !m?.documentMessage) continue;
-              if (!text) text = '[Attachment]';
-
-              const participantJid = isGroup ? (msg.key.participant ?? '') : remoteJid;
-              const phone = this.phoneFromJid(participantJid || remoteJid);
-
-              // Parse timestamp (handles number, protobuf Long, and BigInt)
-              const rawTs = msg.messageTimestamp;
-              let timestamp: Date;
-              if (typeof rawTs === 'number') {
-                timestamp = new Date(rawTs * 1000);
-              } else if (typeof rawTs === 'bigint') {
-                timestamp = new Date(Number(rawTs) * 1000);
-              } else if (typeof rawTs === 'object' && rawTs !== null && 'toNumber' in rawTs) {
-                timestamp = new Date((rawTs as { toNumber(): number }).toNumber() * 1000);
-              } else {
-                // No valid timestamp — skip message (bad data is worse than missing data)
-                log.warn(`[WhatsApp] History sync: skipping message ${messageId} — no valid timestamp`);
-                continue;
+              if (messages.length === 0) {
+                log.info('[WhatsApp] History sync batch empty — skipping');
+                return;
               }
 
-              rows.push({
-                id: `${this.pluginId}:${messageId}`,
-                channelId: this.pluginId,
-                externalId: messageId,
-                direction: 'inbound' as const,
-                senderId: phone,
-                senderName: msg.pushName || phone,
-                content: text,
-                contentType: (m?.imageMessage || m?.audioMessage || m?.videoMessage || m?.documentMessage) ? 'attachment' : 'text',
-                metadata: {
-                  platformMessageId: messageId,
-                  jid: remoteJid,
-                  isGroup,
-                  pushName: msg.pushName || undefined,
-                  ...(isGroup && participantJid ? { participant: participantJid } : {}),
-                  historySync: true,
-                  syncType: syncTypeName,
-                },
-                createdAt: timestamp,
-              });
+              const { ChannelMessagesRepository } =
+                await import('../../../db/repositories/channel-messages.js');
+              const messagesRepo = new ChannelMessagesRepository();
 
-              // Seed processedMsgIds to prevent double-processing on reconnect
-              if (messageId) {
-                this.processedMsgIds.add(messageId);
-                if (this.processedMsgIds.size > PROCESSED_MSG_IDS_CAP) {
-                  const first = this.processedMsgIds.values().next().value;
-                  if (first !== undefined) this.processedMsgIds.delete(first);
+              // Transform WAMessage[] to DB rows
+              const rows: Array<Parameters<typeof messagesRepo.createBatch>[0][number]> = [];
+
+              for (const msg of messages) {
+                const remoteJid = msg.key?.remoteJid;
+                if (!remoteJid) continue;
+
+                const isGroup = remoteJid.endsWith('@g.us');
+                const isDM = remoteJid.endsWith('@s.whatsapp.net');
+                if (!isDM && !isGroup) continue;
+
+                // Skip protocol/stub messages (Baileys isRealMessage pattern — WAHA best practice)
+                if (msg.messageStubType != null && !msg.message) continue;
+
+                // Skip our own outbound messages (except self-chat)
+                const isSelf = this.isSelfChat(remoteJid);
+                if (msg.key.fromMe && !isSelf) continue;
+
+                const messageId = msg.key.id ?? '';
+                if (!messageId) continue;
+
+                // Extract text content
+                const m = msg.message;
+                let text = '';
+                if (m?.conversation) text = m.conversation;
+                else if (m?.extendedTextMessage?.text) text = m.extendedTextMessage.text;
+                else if (m?.imageMessage?.caption) text = m.imageMessage.caption;
+                else if (m?.videoMessage?.caption) text = m.videoMessage.caption;
+                else if (m?.documentMessage?.caption) text = m.documentMessage.caption;
+
+                // Extract attachments and download media (with retry on expired URLs)
+                const attachments: Array<{
+                  type: string;
+                  mimeType: string;
+                  filename?: string;
+                  url: string;
+                  data?: Uint8Array;
+                }> = [];
+
+                // Image messages — download binary
+                if (m?.imageMessage) {
+                  const imageData = await this.downloadMediaWithRetry(msg);
+                  attachments.push({
+                    type: 'image',
+                    mimeType: m.imageMessage.mimetype ?? 'image/jpeg',
+                    url: '', // Don't store expired URL
+                    data: imageData,
+                  });
                 }
+
+                // Video messages — download binary
+                if (m?.videoMessage) {
+                  const videoData = await this.downloadMediaWithRetry(msg);
+                  attachments.push({
+                    type: 'video',
+                    mimeType: m.videoMessage.mimetype ?? 'video/mp4',
+                    url: '',
+                    data: videoData,
+                  });
+                }
+
+                // Audio messages — download binary
+                if (m?.audioMessage) {
+                  const audioData = await this.downloadMediaWithRetry(msg);
+                  attachments.push({
+                    type: 'audio',
+                    mimeType: m.audioMessage.mimetype ?? 'audio/ogg',
+                    url: '',
+                    data: audioData,
+                  });
+                }
+
+                // Document messages — download binary
+                if (m?.documentMessage) {
+                  const docData = await this.downloadMediaWithRetry(msg);
+                  attachments.push({
+                    type: 'file',
+                    mimeType: m.documentMessage.mimetype ?? 'application/octet-stream',
+                    filename: m.documentMessage.fileName ?? undefined,
+                    url: '',
+                    data: docData,
+                  });
+                }
+
+                // Sticker messages — download binary (stored as image)
+                if (m?.stickerMessage) {
+                  const stickerData = await this.downloadMediaWithRetry(msg);
+                  attachments.push({
+                    type: 'image',
+                    mimeType: m.stickerMessage.mimetype ?? 'image/webp',
+                    url: '',
+                    data: stickerData,
+                  });
+                }
+
+                // Skip empty messages (no text, no recognizable content)
+                if (
+                  !text &&
+                  !m?.imageMessage &&
+                  !m?.audioMessage &&
+                  !m?.videoMessage &&
+                  !m?.documentMessage &&
+                  !m?.stickerMessage
+                )
+                  continue;
+                if (!text) text = '[Attachment]';
+
+                const participantJid = isGroup ? (msg.key.participant ?? '') : remoteJid;
+                const phone = this.phoneFromJid(participantJid || remoteJid);
+
+                // Parse timestamp (handles number, protobuf Long, and BigInt)
+                const rawTs = msg.messageTimestamp;
+                let timestamp: Date;
+                if (typeof rawTs === 'number') {
+                  timestamp = new Date(rawTs * 1000);
+                } else if (typeof rawTs === 'bigint') {
+                  timestamp = new Date(Number(rawTs) * 1000);
+                } else if (typeof rawTs === 'object' && rawTs !== null && 'toNumber' in rawTs) {
+                  timestamp = new Date((rawTs as { toNumber(): number }).toNumber() * 1000);
+                } else {
+                  // No valid timestamp — skip message (bad data is worse than missing data)
+                  log.warn(
+                    `[WhatsApp] History sync: skipping message ${messageId} — no valid timestamp`
+                  );
+                  continue;
+                }
+
+                rows.push({
+                  id: `${this.pluginId}:${messageId}`,
+                  channelId: this.pluginId,
+                  externalId: messageId,
+                  direction: 'inbound' as const,
+                  senderId: phone,
+                  senderName: msg.pushName || phone,
+                  content: text,
+                  contentType:
+                    m?.imageMessage || m?.audioMessage || m?.videoMessage || m?.documentMessage || m?.stickerMessage
+                      ? 'attachment'
+                      : 'text',
+                  attachments: attachments.length > 0 ? attachments : undefined,
+                  metadata: {
+                    platformMessageId: messageId,
+                    jid: remoteJid,
+                    isGroup,
+                    pushName: msg.pushName || undefined,
+                    ...(isGroup && participantJid ? { participant: participantJid } : {}),
+                    historySync: true,
+                    syncType: syncTypeName,
+                  },
+                  createdAt: timestamp,
+                });
+
+                // Seed processedMsgIds to prevent double-processing on reconnect
+                if (messageId) {
+                  this.processedMsgIds.add(messageId);
+                  if (this.processedMsgIds.size > PROCESSED_MSG_IDS_CAP) {
+                    const first = this.processedMsgIds.values().next().value;
+                    if (first !== undefined) this.processedMsgIds.delete(first);
+                  }
+                }
+
+                // NOTE: Do NOT seed messageCache from history — it wastes cache slots
+                // that real-time getMessage retry needs. History messages are already delivered.
               }
 
-              // NOTE: Do NOT seed messageCache from history — it wastes cache slots
-              // that real-time getMessage retry needs. History messages are already delivered.
+              if (rows.length > 0) {
+                const inserted = await messagesRepo.createBatch(rows);
+                log.info(
+                  `[WhatsApp] History sync saved ${inserted}/${rows.length} messages to DB (type: ${syncTypeName})`
+                );
+              } else {
+                log.info('[WhatsApp] History sync — no processable messages in batch');
+              }
+            } catch (err) {
+              log.error('[WhatsApp] History sync failed:', err);
             }
-
-            if (rows.length > 0) {
-              const inserted = await messagesRepo.createBatch(rows);
-              log.info(`[WhatsApp] History sync saved ${inserted}/${rows.length} messages to DB (type: ${syncTypeName})`);
-            } else {
-              log.info('[WhatsApp] History sync — no processable messages in batch');
-            }
-          } catch (err) {
-            log.error('[WhatsApp] History sync failed:', err);
-          }
-        });
-      });
+          });
+        }
+      );
 
       this.isReconnecting = false;
       log.info('WhatsApp socket created, waiting for authentication...');
@@ -561,7 +663,9 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
    * Results cached for 5 minutes to prevent excessive WhatsApp API calls.
    * Profile pictures deliberately omitted (Evolution API bottleneck: 69 sequential calls).
    */
-  async listGroups(includeParticipants = false): Promise<WhatsAppGroupSummary[] | WhatsAppGroupDetail[]> {
+  async listGroups(
+    includeParticipants = false
+  ): Promise<WhatsAppGroupSummary[] | WhatsAppGroupDetail[]> {
     const sock = this.sock;
     if (!sock || this.status !== 'connected') {
       throw new Error('WhatsApp is not connected');
@@ -569,7 +673,11 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
 
     // Return cache if valid and participants not requested
     const cacheAge = Date.now() - this.groupsCacheTime;
-    if (!includeParticipants && this.groupsCache && cacheAge < WhatsAppChannelAPI.GROUPS_CACHE_TTL) {
+    if (
+      !includeParticipants &&
+      this.groupsCache &&
+      cacheAge < WhatsAppChannelAPI.GROUPS_CACHE_TTL
+    ) {
       return this.groupsCache;
     }
 
@@ -590,8 +698,10 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
             isAnnounceGroup: g.announce ?? false,
             isLocked: g.restrict ?? false,
             isCommunity: (g as unknown as Record<string, unknown>).isCommunity === true,
-            isCommunityAnnounce: (g as unknown as Record<string, unknown>).isCommunityAnnounce === true,
-            linkedParent: ((g as unknown as Record<string, unknown>).linkedParent as string) ?? null,
+            isCommunityAnnounce:
+              (g as unknown as Record<string, unknown>).isCommunityAnnounce === true,
+            linkedParent:
+              ((g as unknown as Record<string, unknown>).linkedParent as string) ?? null,
           }));
 
           // Only update cache if socket is still the same (guards against stale write after disconnect)
@@ -600,7 +710,10 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
             this.groupsCacheTime = Date.now();
             // Cache raw participants for includeParticipants=true requests within same TTL window
             this.groupsRawParticipants = new Map(
-              groups.map((g) => [g.id, (g.participants ?? []).map((p) => ({ id: p.id, admin: p.admin }))])
+              groups.map((g) => [
+                g.id,
+                (g.participants ?? []).map((p) => ({ id: p.id, admin: p.admin })),
+              ])
             );
           }
 
@@ -660,7 +773,9 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
       0 // oldest timestamp = 0 means "from the beginning"
     );
 
-    log.info(`[WhatsApp] On-demand history fetch requested — group: ${groupJid}, count: ${count}, sessionId: ${sessionId}`);
+    log.info(
+      `[WhatsApp] On-demand history fetch requested — group: ${groupJid}, count: ${count}, sessionId: ${sessionId}`
+    );
     return sessionId;
   }
 
@@ -800,14 +915,17 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
       const statusCode = (error as Boom)?.output?.statusCode;
       const isLoggedOut = statusCode === DisconnectReason.loggedOut;
       // Anti-ban: 403 (forbidden), 402, 406 are PERMANENT — reconnecting makes it worse
-      const isPermanentDisconnect = isLoggedOut || statusCode === 403 || statusCode === 402 || statusCode === 406;
+      const isPermanentDisconnect =
+        isLoggedOut || statusCode === 403 || statusCode === 402 || statusCode === 406;
 
       if (isPermanentDisconnect) {
         // Permanent disconnect — stop reconnect, need new QR or account action
         this.status = 'disconnected';
         this.qrCode = null;
         this.emitConnectionEvent('disconnected');
-        log.error(`WhatsApp permanently disconnected (code: ${statusCode}) — reconnect DISABLED to prevent ban escalation`);
+        log.error(
+          `WhatsApp permanently disconnected (code: ${statusCode}) — reconnect DISABLED to prevent ban escalation`
+        );
       } else {
         // Temporary disconnect — auto-reconnect with backoff
         this.status = 'reconnecting';
@@ -815,9 +933,7 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
         this.scheduleReconnect(statusCode);
         const baseDelay = statusCode === 440 ? 10000 : 3000;
         const delay = Math.min(baseDelay * Math.pow(2, this.reconnectAttempt - 1), 60000);
-        log.warn(
-          `WhatsApp disconnected (code: ${statusCode}), reconnecting in ${delay}ms...`
-        );
+        log.warn(`WhatsApp disconnected (code: ${statusCode}), reconnecting in ${delay}ms...`);
       }
     }
   }
@@ -829,7 +945,9 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
     if (statusCode === 440) {
       this.consecutive440Count++;
       if (this.consecutive440Count >= MAX_CONSECUTIVE_440) {
-        log.error(`WhatsApp: ${MAX_CONSECUTIVE_440} consecutive 440 errors — stopping reconnect to avoid ban`);
+        log.error(
+          `WhatsApp: ${MAX_CONSECUTIVE_440} consecutive 440 errors — stopping reconnect to avoid ban`
+        );
         this.status = 'error';
         this.emitConnectionEvent('error');
         return;
@@ -912,7 +1030,9 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
       const oldestInWindow = this.globalSendTimes[0]!;
       const waitMs = oldestInWindow + RATE_LIMIT_WINDOW_MS - Date.now();
       if (waitMs > 0) {
-        log.info(`[RateLimit] Global throttle: waiting ${waitMs}ms (${this.globalSendTimes.length}/${RATE_LIMIT_MAX_MESSAGES} in window)`);
+        log.info(
+          `[RateLimit] Global throttle: waiting ${waitMs}ms (${this.globalSendTimes.length}/${RATE_LIMIT_MAX_MESSAGES} in window)`
+        );
         await new Promise((r) => setTimeout(r, waitMs));
       }
     }
@@ -966,7 +1086,9 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
   // ==========================================================================
 
   private async handleIncomingMessage(msg: WAMessage): Promise<void> {
-    log.info(`[WhatsApp] handleIncomingMessage called — jid: ${msg.key.remoteJid}, pushName: ${msg.pushName}`);
+    log.info(
+      `[WhatsApp] handleIncomingMessage called — jid: ${msg.key.remoteJid}, pushName: ${msg.pushName}`
+    );
     let remoteJid = msg.key.remoteJid;
     if (!remoteJid) return;
 
@@ -1020,7 +1142,9 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
     const isGroup = remoteJid.endsWith('@g.us');
     const isDM = remoteJid.endsWith('@s.whatsapp.net');
     if (!isDM && !isGroup) {
-      log.info(`[WhatsApp] Skipping non-chat message from ${remoteJid} (only @s.whatsapp.net and @g.us processed)`);
+      log.info(
+        `[WhatsApp] Skipping non-chat message from ${remoteJid} (only @s.whatsapp.net and @g.us processed)`
+      );
       return;
     }
 
@@ -1054,44 +1178,53 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
     } else if (m.extendedTextMessage?.text) {
       text = m.extendedTextMessage.text;
     }
-    // Image messages
+    // Image messages — download binary
     else if (m.imageMessage) {
       text = m.imageMessage.caption ?? '';
+      const imageData = await this.downloadMediaWithRetry(msg);
       attachments.push({
         type: 'image',
         mimeType: m.imageMessage.mimetype ?? 'image/jpeg',
+        data: imageData,
       });
     }
-    // Document messages
+    // Document messages — download binary
     else if (m.documentMessage) {
       text = m.documentMessage.caption ?? '';
+      const docData = await this.downloadMediaWithRetry(msg);
       attachments.push({
         type: 'file',
         mimeType: m.documentMessage.mimetype ?? 'application/octet-stream',
         filename: m.documentMessage.fileName ?? undefined,
+        data: docData,
       });
     }
     // Audio messages — download binary for auto-transcription
     else if (m.audioMessage) {
-      let audioData: Uint8Array | undefined;
-      try {
-        const buffer = await downloadMediaMessage(msg, 'buffer', {});
-        audioData = buffer instanceof Buffer ? new Uint8Array(buffer) : undefined;
-      } catch {
-        // Download failed — metadata-only fallback
-      }
+      const audioData = await this.downloadMediaWithRetry(msg);
       attachments.push({
         type: 'audio',
         mimeType: m.audioMessage.mimetype ?? 'audio/ogg',
         data: audioData,
       });
     }
-    // Video messages
+    // Video messages — download binary
     else if (m.videoMessage) {
       text = m.videoMessage.caption ?? '';
+      const videoData = await this.downloadMediaWithRetry(msg);
       attachments.push({
         type: 'video',
         mimeType: m.videoMessage.mimetype ?? 'video/mp4',
+        data: videoData,
+      });
+    }
+    // Sticker messages — download binary (stored as image)
+    else if (m.stickerMessage) {
+      const stickerData = await this.downloadMediaWithRetry(msg);
+      attachments.push({
+        type: 'image',
+        mimeType: m.stickerMessage.mimetype ?? 'image/webp',
+        data: stickerData,
       });
     }
 
@@ -1213,5 +1346,63 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
     } catch {
       // EventBus may not be ready during early boot
     }
+  }
+
+  /**
+   * Download media from a WhatsApp message with automatic retry on expired URLs.
+   *
+   * WhatsApp media URLs expire after some time (410 Gone). When this happens,
+   * we use reuploadRequest (sock.updateMediaMessage) to get a fresh URL.
+   *
+   * @param msg - The WhatsApp message containing media
+   * @returns Uint8Array binary data, or undefined if download fails
+   */
+  private async downloadMediaWithRetry(msg: WAMessage): Promise<Uint8Array | undefined> {
+    if (!this.sock) {
+      log.warn('[downloadMediaWithRetry] No sock available');
+      return undefined;
+    }
+
+    const downloadOptions = {
+      logger: log as any,
+      reuploadRequest: this.sock.updateMediaMessage.bind(this.sock),
+    };
+
+    try {
+      // First attempt
+      const buffer = await downloadMediaMessage(msg, 'buffer', {}, downloadOptions);
+      if (buffer) {
+        // Convert Buffer to Uint8Array if needed
+        if (Buffer.isBuffer(buffer)) {
+          return new Uint8Array(buffer);
+        }
+        return buffer;
+      }
+    } catch (error: any) {
+      const errorMsg = error?.message?.toString() || '';
+      const is410Gone = errorMsg.includes('410') || errorMsg.includes('Gone') || errorMsg.includes('status code 410');
+      const is404NotFound = errorMsg.includes('404') || errorMsg.includes('Not Found') || errorMsg.includes('status code 404');
+
+      log.warn(`[downloadMediaWithRetry] First attempt failed: ${errorMsg.slice(0, 200)}`);
+
+      // Retry on 410 Gone or 404 Not Found
+      if (is410Gone || is404NotFound) {
+        try {
+          log.info('[downloadMediaWithRetry] Retrying with reuploadRequest...');
+          const buffer = await downloadMediaMessage(msg, 'buffer', {}, downloadOptions);
+          if (buffer) {
+            if (Buffer.isBuffer(buffer)) {
+              return new Uint8Array(buffer);
+            }
+            return buffer;
+          }
+        } catch (retryError: any) {
+          const retryErrorMsg = retryError?.message?.toString() || '';
+          log.error(`[downloadMediaWithRetry] Retry failed: ${retryErrorMsg.slice(0, 200)}`);
+        }
+      }
+    }
+
+    return undefined;
   }
 }
