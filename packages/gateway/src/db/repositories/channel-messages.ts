@@ -413,8 +413,9 @@ export class ChannelMessagesRepository extends BaseRepository {
               ]
             );
             if (result.changes > 0) inserted++;
-          } catch {
-            // ON CONFLICT or other error — skip, continue with next
+          } catch (err) {
+            // ON CONFLICT DO NOTHING won't throw — this catches real DB errors
+            console.warn('[createBatch] Row insert failed:', { id: data.id, error: String(err) });
           }
         }
       });

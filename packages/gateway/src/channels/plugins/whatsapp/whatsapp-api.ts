@@ -67,6 +67,7 @@ const RATE_LIMIT_WINDOW_MS = 60_000; // 1 minute
 const RATE_LIMIT_MAX_MESSAGES = 20; // max 20 messages per minute (global)
 const RATE_LIMIT_PER_JID_MS = 3_000; // min 3s gap per recipient
 const MESSAGE_CACHE_SIZE = 500; // getMessage cache for retry/decryption
+const PROCESSED_MSG_IDS_CAP = 5000; // dedup cap for processedMsgIds (shared across upsert + history sync)
 
 // Baileys logger — silent in production to prevent leaking JIDs/message content
 const baileysLogger = pino({
@@ -141,8 +142,8 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
   // Anti-ban: device info cache (reduces protocol overhead — WAHA pattern)
   private userDevicesCache = new SimpleTTLCache<string[]>(300_000); // 5 min TTL
 
-  // History sync tracking
-  private historySyncInProgress = false;
+  // History sync tracking — promise queue serializes concurrent batches (Node.js can context-switch at await)
+  private historySyncQueue: Promise<void> = Promise.resolve();
   private lastHistoryFetchTime: number | null = null;
 
   // Group listing cache (5 min TTL — prevents excessive groupFetchAllParticipating calls)
@@ -268,7 +269,7 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
           if (msgId) {
             this.processedMsgIds.add(msgId);
             // Cap the set to prevent memory leak
-            if (this.processedMsgIds.size > 1000) {
+            if (this.processedMsgIds.size > PROCESSED_MSG_IDS_CAP) {
               const first = this.processedMsgIds.values().next().value;
               if (first !== undefined) this.processedMsgIds.delete(first);
             }
@@ -284,115 +285,117 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
       this.sock.ev.on('creds.update', saveCreds);
 
       // Handle passive history sync (WhatsApp sends past messages on first connect)
-      this.sock.ev.on('messaging-history.set', async ({ messages, chats, contacts, syncType, progress, isLatest }) => {
-        try {
-          const syncTypeName = syncType != null ? proto.HistorySync.HistorySyncType[syncType] ?? String(syncType) : 'unknown';
-          log.info(`[WhatsApp] History sync received — type: ${syncTypeName}, messages: ${messages.length}, chats: ${chats?.length ?? 0}, contacts: ${contacts?.length ?? 0}, progress: ${progress ?? 'N/A'}%, isLatest: ${isLatest ?? 'N/A'}`);
+      // Uses promise queue to serialize concurrent batches (Baileys can fire multiple events rapidly)
+      this.sock.ev.on('messaging-history.set', ({ messages, chats, contacts, syncType, progress, isLatest }) => {
+        this.historySyncQueue = this.historySyncQueue.then(async () => {
+          try {
+            const syncTypeName = syncType != null ? proto.HistorySync.HistorySyncType[syncType] ?? String(syncType) : 'unknown';
+            log.info(`[WhatsApp] History sync received — type: ${syncTypeName}, messages: ${messages.length}, chats: ${chats?.length ?? 0}, contacts: ${contacts?.length ?? 0}, progress: ${progress ?? 'N/A'}%, isLatest: ${isLatest ?? 'N/A'}`);
 
-          if (messages.length === 0) {
-            log.info('[WhatsApp] History sync batch empty — skipping');
-            return;
-          }
+            if (messages.length === 0) {
+              log.info('[WhatsApp] History sync batch empty — skipping');
+              return;
+            }
 
-          if (this.historySyncInProgress) {
-            log.warn('[WhatsApp] History sync already in progress — queuing');
-          }
-          this.historySyncInProgress = true;
+            const { ChannelMessagesRepository } = await import('../../../db/repositories/channel-messages.js');
+            const messagesRepo = new ChannelMessagesRepository();
 
-          const { ChannelMessagesRepository } = await import('../../../db/repositories/channel-messages.js');
-          const messagesRepo = new ChannelMessagesRepository();
+            // Transform WAMessage[] to DB rows
+            const rows: Array<Parameters<typeof messagesRepo.createBatch>[0][number]> = [];
 
-          // Transform WAMessage[] to DB rows
-          const rows: Array<Parameters<typeof messagesRepo.createBatch>[0][number]> = [];
+            for (const msg of messages) {
+              const remoteJid = msg.key?.remoteJid;
+              if (!remoteJid) continue;
 
-          for (const msg of messages) {
-            const remoteJid = msg.key?.remoteJid;
-            if (!remoteJid) continue;
+              const isGroup = remoteJid.endsWith('@g.us');
+              const isDM = remoteJid.endsWith('@s.whatsapp.net');
+              if (!isDM && !isGroup) continue;
 
-            const isGroup = remoteJid.endsWith('@g.us');
-            const isDM = remoteJid.endsWith('@s.whatsapp.net');
-            if (!isDM && !isGroup) continue;
+              // Skip protocol/stub messages (Baileys isRealMessage pattern — WAHA best practice)
+              if (msg.messageStubType != null && !msg.message) continue;
 
-            // Skip our own messages (except self-chat)
-            const isSelf = this.isSelfChat(remoteJid);
-            if (msg.key.fromMe && !isSelf) continue;
+              // Skip our own outbound messages (except self-chat)
+              const isSelf = this.isSelfChat(remoteJid);
+              if (msg.key.fromMe && !isSelf) continue;
 
-            const messageId = msg.key.id ?? '';
-            if (!messageId) continue;
+              const messageId = msg.key.id ?? '';
+              if (!messageId) continue;
 
-            // Extract text content
-            const m = msg.message;
-            let text = '';
-            if (m?.conversation) text = m.conversation;
-            else if (m?.extendedTextMessage?.text) text = m.extendedTextMessage.text;
-            else if (m?.imageMessage?.caption) text = m.imageMessage.caption;
-            else if (m?.videoMessage?.caption) text = m.videoMessage.caption;
-            else if (m?.documentMessage?.caption) text = m.documentMessage.caption;
+              // Extract text content
+              const m = msg.message;
+              let text = '';
+              if (m?.conversation) text = m.conversation;
+              else if (m?.extendedTextMessage?.text) text = m.extendedTextMessage.text;
+              else if (m?.imageMessage?.caption) text = m.imageMessage.caption;
+              else if (m?.videoMessage?.caption) text = m.videoMessage.caption;
+              else if (m?.documentMessage?.caption) text = m.documentMessage.caption;
 
-            // Skip empty messages (no text, no recognizable content)
-            if (!text && !m?.imageMessage && !m?.audioMessage && !m?.videoMessage && !m?.documentMessage) continue;
-            if (!text) text = '[Attachment]';
+              // Skip empty messages (no text, no recognizable content)
+              if (!text && !m?.imageMessage && !m?.audioMessage && !m?.videoMessage && !m?.documentMessage) continue;
+              if (!text) text = '[Attachment]';
 
-            const participantJid = isGroup ? (msg.key.participant ?? '') : remoteJid;
-            const phone = this.phoneFromJid(participantJid || remoteJid);
+              const participantJid = isGroup ? (msg.key.participant ?? '') : remoteJid;
+              const phone = this.phoneFromJid(participantJid || remoteJid);
 
-            // Parse timestamp
-            const rawTs = msg.messageTimestamp;
-            const timestamp =
-              typeof rawTs === 'number'
-                ? new Date(rawTs * 1000)
-                : typeof rawTs === 'object' && rawTs !== null && 'toNumber' in rawTs
-                  ? new Date((rawTs as { toNumber(): number }).toNumber() * 1000)
-                  : new Date();
-
-            rows.push({
-              id: `${this.pluginId}:${messageId}`,
-              channelId: this.pluginId,
-              externalId: messageId,
-              direction: 'inbound' as const,
-              senderId: phone,
-              senderName: msg.pushName || phone,
-              content: text,
-              contentType: (m?.imageMessage || m?.audioMessage || m?.videoMessage || m?.documentMessage) ? 'attachment' : 'text',
-              metadata: {
-                platformMessageId: messageId,
-                jid: remoteJid,
-                isGroup,
-                pushName: msg.pushName || undefined,
-                ...(isGroup && participantJid ? { participant: participantJid } : {}),
-                historySync: true,
-                syncType: syncTypeName,
-              },
-              createdAt: timestamp,
-            });
-
-            // Seed processedMsgIds to prevent double-processing on reconnect
-            if (messageId) {
-              this.processedMsgIds.add(messageId);
-              if (this.processedMsgIds.size > 5000) {
-                const first = this.processedMsgIds.values().next().value;
-                if (first !== undefined) this.processedMsgIds.delete(first);
+              // Parse timestamp (handles number, protobuf Long, and BigInt)
+              const rawTs = msg.messageTimestamp;
+              let timestamp: Date;
+              if (typeof rawTs === 'number') {
+                timestamp = new Date(rawTs * 1000);
+              } else if (typeof rawTs === 'bigint') {
+                timestamp = new Date(Number(rawTs) * 1000);
+              } else if (typeof rawTs === 'object' && rawTs !== null && 'toNumber' in rawTs) {
+                timestamp = new Date((rawTs as { toNumber(): number }).toNumber() * 1000);
+              } else {
+                // No valid timestamp — skip message (bad data is worse than missing data)
+                log.warn(`[WhatsApp] History sync: skipping message ${messageId} — no valid timestamp`);
+                continue;
               }
+
+              rows.push({
+                id: `${this.pluginId}:${messageId}`,
+                channelId: this.pluginId,
+                externalId: messageId,
+                direction: 'inbound' as const,
+                senderId: phone,
+                senderName: msg.pushName || phone,
+                content: text,
+                contentType: (m?.imageMessage || m?.audioMessage || m?.videoMessage || m?.documentMessage) ? 'attachment' : 'text',
+                metadata: {
+                  platformMessageId: messageId,
+                  jid: remoteJid,
+                  isGroup,
+                  pushName: msg.pushName || undefined,
+                  ...(isGroup && participantJid ? { participant: participantJid } : {}),
+                  historySync: true,
+                  syncType: syncTypeName,
+                },
+                createdAt: timestamp,
+              });
+
+              // Seed processedMsgIds to prevent double-processing on reconnect
+              if (messageId) {
+                this.processedMsgIds.add(messageId);
+                if (this.processedMsgIds.size > PROCESSED_MSG_IDS_CAP) {
+                  const first = this.processedMsgIds.values().next().value;
+                  if (first !== undefined) this.processedMsgIds.delete(first);
+                }
+              }
+
+              // NOTE: Do NOT seed messageCache from history — it wastes cache slots
+              // that real-time getMessage retry needs. History messages are already delivered.
             }
 
-            // Seed messageCache for getMessage retry/decryption
-            if (messageId && m) {
-              this.cacheMessage(messageId, m);
+            if (rows.length > 0) {
+              const inserted = await messagesRepo.createBatch(rows);
+              log.info(`[WhatsApp] History sync saved ${inserted}/${rows.length} messages to DB (type: ${syncTypeName})`);
+            } else {
+              log.info('[WhatsApp] History sync — no processable messages in batch');
             }
+          } catch (err) {
+            log.error('[WhatsApp] History sync failed:', err);
           }
-
-          if (rows.length > 0) {
-            const inserted = await messagesRepo.createBatch(rows);
-            log.info(`[WhatsApp] History sync saved ${inserted}/${rows.length} messages to DB (type: ${syncTypeName})`);
-          } else {
-            log.info('[WhatsApp] History sync — no processable messages in batch');
-          }
-
-          this.historySyncInProgress = false;
-        } catch (err) {
-          this.historySyncInProgress = false;
-          log.error('[WhatsApp] History sync failed:', err);
-        }
+        });
       });
 
       this.isReconnecting = false;
@@ -642,12 +645,13 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
       throw new Error('WhatsApp is not connected');
     }
 
-    // Rate limit: max 1 call per 30 seconds
+    // Rate limit: max 1 call per 30 seconds (atomic check+set to prevent TOCTOU race)
     const now = Date.now();
-    if (this.lastHistoryFetchTime && now - this.lastHistoryFetchTime < 30_000) {
+    const lastFetch = this.lastHistoryFetchTime;
+    this.lastHistoryFetchTime = now; // Set FIRST to block concurrent requests
+    if (lastFetch && now - lastFetch < 30_000) {
       throw new Error('Rate limited — wait 30 seconds between history fetch requests');
     }
-    this.lastHistoryFetchTime = now;
 
     // Use a minimal key to request from the beginning
     const sessionId = await sock.fetchMessageHistory(
@@ -733,7 +737,7 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
       this.groupsCache = null;
       this.groupsRawParticipants = null;
       this.groupsCacheTime = 0;
-      this.historySyncInProgress = false;
+      this.historySyncQueue = Promise.resolve();
       this.sock = null;
     }
   }

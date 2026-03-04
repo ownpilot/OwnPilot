@@ -720,7 +720,8 @@ channelRoutes.post('/:id/groups/:groupJid/sync', async (c) => {
       return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'Channel does not support history fetch' }, 501);
     }
 
-    const count = parseInt(c.req.query('count') ?? '50', 10);
+    const rawCount = parseInt(c.req.query('count') ?? '50', 10);
+    const count = isNaN(rawCount) || rawCount < 1 ? 50 : rawCount;
     const sessionId = await (api.fetchGroupHistory as (jid: string, count: number) => Promise<string>)(groupJid, Math.min(count, 50));
 
     return apiResponse(c, {
