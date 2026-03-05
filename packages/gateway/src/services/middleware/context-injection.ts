@@ -147,6 +147,26 @@ export function createContextInjectionMiddleware(): MessageMiddleware {
         agent.updateSystemPrompt(finalPrompt);
       }
 
+      // Debug: log each injected suffix with its char count
+      const sections: Array<[string, number]> = [
+        ['base_prompt', basePrompt.length],
+        ['extensions', extensionSuffix.length],
+        ['soul_skills', skillsSuffix.length],
+        ['tool_suggestions', toolSuggestionSuffix.length],
+        ['data_hints', dataHintSuffix.length],
+        ['orchestrator', orchestratorSuffix.length],
+        ['request_focus', focusSuffix.length],
+      ];
+      const activeRows = sections
+        .filter(([, len]) => len > 0)
+        .map(([name, len]) => `  ${name.padEnd(20)} ${len.toString().padStart(5)} chars`)
+        .join('\n');
+      log.info(
+        `System prompt final: ${finalPrompt.length} chars total (base ${basePrompt.length})\n` +
+          `  ${'SECTION'.padEnd(20)} ${'CHARS'.padStart(5)}\n` +
+          activeRows
+      );
+
       ctx.set('contextStats', stats);
     } catch (error) {
       const errorMsg = getErrorMessage(error, String(error));

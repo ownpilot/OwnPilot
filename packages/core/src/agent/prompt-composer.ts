@@ -14,6 +14,9 @@
 import type { ToolDefinition } from './types.js';
 import type { UserProfile } from '../memory/conversation.js';
 import { getBaseName } from './tool-namespace.js';
+import { getLog } from '../services/get-log.js';
+
+const log = getLog('PromptComposer');
 
 // =============================================================================
 // Types
@@ -313,29 +316,35 @@ export class PromptComposer {
    * Compose a complete system prompt
    */
   compose(context: PromptContext): string {
-    const sections: string[] = [];
+    // Track named sections for debug logging: [name, content]
+    const namedSections: Array<[string, string]> = [];
+
+    const push = (name: string, text: string) => namedSections.push([name, text]);
 
     // 1. Base prompt
-    sections.push(context.basePrompt);
+    push('base_prompt', context.basePrompt);
 
     // 2. User profile
     if (this.options.includeUserProfile && context.userProfile) {
       const userInfo = formatUserProfile(context.userProfile);
       if (userInfo) {
-        sections.push(PROMPT_SECTIONS.userProfile.replace('{{userInfo}}', userInfo));
+        push('user_profile', PROMPT_SECTIONS.userProfile.replace('{{userInfo}}', userInfo));
       }
     }
 
     // 3. Custom instructions
     if (context.customInstructions && context.customInstructions.length > 0) {
       const instructions = context.customInstructions.map((i) => `- ${i}`).join('\n');
-      sections.push(PROMPT_SECTIONS.customInstructions.replace('{{instructions}}', instructions));
+      push(
+        'custom_instructions',
+        PROMPT_SECTIONS.customInstructions.replace('{{instructions}}', instructions)
+      );
     }
 
     // 4. Available tools
     if (this.options.includeToolDescriptions && context.tools && context.tools.length > 0) {
       const toolList = formatTools(context.tools);
-      sections.push(PROMPT_SECTIONS.tools.replace('{{toolList}}', toolList));
+      push('tools', PROMPT_SECTIONS.tools.replace('{{toolList}}', toolList));
 
       // 4a. Automation context (only if automation tools are registered)
       const hasAutomationTools = context.tools.some((t) => {
@@ -347,7 +356,7 @@ export class PromptComposer {
         );
       });
       if (hasAutomationTools) {
-        sections.push(PROMPT_SECTIONS.automation);
+        push('automation_hint', PROMPT_SECTIONS.automation);
       }
     }
 
@@ -359,7 +368,8 @@ export class PromptComposer {
       if (ws.homeDir) allowedDirs.push(`- Home: \`${ws.homeDir}\``);
       if (ws.tempDir) allowedDirs.push(`- Temp: \`${ws.tempDir}\``);
 
-      sections.push(
+      push(
+        'workspace',
         PROMPT_SECTIONS.workspace
           .replace('{{allowedDirs}}', allowedDirs.join('\n'))
           .replace(/\{\{workspaceDir\}\}/g, ws.workspaceDir)
@@ -371,14 +381,15 @@ export class PromptComposer {
     if (this.options.includeCapabilities && context.capabilities) {
       const capsList = formatCapabilities(context.capabilities);
       if (capsList) {
-        sections.push(PROMPT_SECTIONS.capabilities.replace('{{capabilitiesList}}', capsList));
+        push('capabilities', PROMPT_SECTIONS.capabilities.replace('{{capabilitiesList}}', capsList));
       }
     }
 
     // 6. Time context
     if (this.options.includeTimeContext && context.timeContext) {
       const tc = context.timeContext;
-      sections.push(
+      push(
+        'time_context',
         PROMPT_SECTIONS.timeContext
           .replace('{{time}}', tc.currentTime.toLocaleString())
           .replace('{{dayOfWeek}}', tc.dayOfWeek)
@@ -405,19 +416,33 @@ export class PromptComposer {
       }
 
       if (contextLines.length > 0) {
-        sections.push(
+        push(
+          'conversation_context',
           PROMPT_SECTIONS.conversationContext.replace('{{contextInfo}}', contextLines.join('\n'))
         );
       }
     }
 
     // Combine all sections
-    let prompt = sections.join('\n\n---\n\n');
+    let prompt = namedSections.map(([, text]) => text).join('\n\n---\n\n');
 
     // Truncate if too long
     if (prompt.length > this.options.maxPromptLength) {
       prompt = this.truncatePrompt(prompt, this.options.maxPromptLength);
     }
+
+    // Debug: log each injected section with its char count
+    const total = prompt.length;
+    const divider = '\n\n---\n\n'.length;
+    const overhead = Math.max(0, (namedSections.length - 1) * divider);
+    const rows = namedSections
+      .map(([name, text]) => `  ${name.padEnd(22)} ${text.length.toString().padStart(5)} chars`)
+      .join('\n');
+    log.info(
+      `System prompt composed: ${total} chars (overhead ${overhead} dividers)\n` +
+        `  ${'SECTION'.padEnd(22)} ${'CHARS'.padStart(5)}\n` +
+        rows
+    );
 
     return prompt;
   }
