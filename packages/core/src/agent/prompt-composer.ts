@@ -15,6 +15,7 @@ import type { ToolDefinition } from './types.js';
 import type { UserProfile } from '../memory/conversation.js';
 import { getBaseName } from './tool-namespace.js';
 import { getLog } from '../services/get-log.js';
+import { debugLog } from './debug.js';
 
 const log = getLog('PromptComposer');
 
@@ -431,12 +432,20 @@ export class PromptComposer {
       prompt = this.truncatePrompt(prompt, this.options.maxPromptLength);
     }
 
-    // Debug: log each injected section with name, char count, and full content
-    const total = prompt.length;
-    const sectionDump = namedSections
-      .map(([name, text]) => `\n──── ${name} (${text.length} chars) ────\n${text}`)
-      .join('\n');
-    log.info(`System prompt composed: ${total} chars total${sectionDump}`);
+    // Debug: record each section in debugLog so /api/v1/debug shows the full breakdown
+    const sections = namedSections.map(([name, text]) => ({ name, chars: text.length, content: text }));
+    debugLog.add({
+      type: 'system_prompt',
+      data: {
+        stage: 'compose',
+        totalChars: prompt.length,
+        sections,
+      },
+    });
+    log.info(
+      `System prompt composed: ${prompt.length} chars — ` +
+        sections.map((s) => `${s.name}:${s.chars}`).join(', ')
+    );
 
     return prompt;
   }
