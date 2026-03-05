@@ -14,7 +14,7 @@
  */
 
 import type { MessageMiddleware } from '@ownpilot/core';
-import { getServiceRegistry, Services, type IExtensionService, debugLog } from '@ownpilot/core';
+import { getServiceRegistry, Services, type IExtensionService, debugLog, getTimeContext } from '@ownpilot/core';
 import { buildEnhancedSystemPrompt } from '../../assistant/index.js';
 import { getErrorMessage } from '../../routes/helpers.js';
 import type { RequestRouting } from './request-preprocessor.js';
@@ -133,28 +133,78 @@ export function createContextInjectionMiddleware(): MessageMiddleware {
         ? `\n---\n## Request Focus\n${routing.intentHint}`
         : '';
 
-      // 6. Combine — extensions + skills go BEFORE ## Current Context so they land in
-      // Anthropic's cached block (static content). Dynamic content goes after.
+      // 6. Combine sections with Anthropic prompt-cache awareness.
+      //
+      // Layout goal:
+      //   [STATIC / cached block]  extensions + skills + orchestrator (memories/goals)
+      //   [DYNAMIC / uncached]     ## Current Context (time, hourly), tool suggestions,
+      //                            data hints, request focus
+      //
+      // Anthropic splits at the first occurrence of "## Current Context",
+      // "## Code Execution", or "## File Operations". Everything before that
+      // split gets cache_control:ephemeral — so we place stable content there.
+      //
+      // Orchestrator (memories/goals) is now placed in the STATIC block so
+      // Anthropic caches it when memories/goals haven't changed.
+      //
+      // When the base prompt contains ## Current Context (set at agent-creation
+      // time by PromptComposer), we regenerate it with the current hour so the
+      // AI always sees the correct date/time.
+
       const CACHE_SPLIT_MARKER = '\n\n---\n\n## Current Context';
       const splitIdx = basePrompt.indexOf(CACHE_SPLIT_MARKER);
+
       const finalPrompt =
         splitIdx > 0
-          ? // Insert extensions+skills before the time context (cacheable)
-            basePrompt.slice(0, splitIdx) +
-            extensionSuffix +
-            skillsSuffix +
-            basePrompt.slice(splitIdx) +
-            toolSuggestionSuffix +
-            dataHintSuffix +
-            orchestratorSuffix +
-            focusSuffix
-          : // Fallback: no time context marker found, append everything after
+          ? (() => {
+              // Build a fresh ## Current Context block (rounded to hour)
+              const tc = getTimeContext();
+              const rounded = new Date(tc.currentTime);
+              rounded.setMinutes(0, 0, 0);
+              const timeStr = rounded.toLocaleString(undefined, {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false,
+              });
+              const freshTimeContext =
+                `\n\n---\n\n## Current Context` +
+                `\n- Current time: ${timeStr}` +
+                `\n- Day: ${tc.dayOfWeek}` +
+                `\n- User's timezone: ${tc.timezone ?? 'Unknown'}`;
+
+              // Preserve sections after ## Current Context in base prompt
+              // (## Code Execution, ## File Operations added by the chat route)
+              const oldTimeEnd = basePrompt.indexOf(
+                '\n\n---\n\n',
+                splitIdx + CACHE_SPLIT_MARKER.length
+              );
+              const afterTimeContext = oldTimeEnd >= 0 ? basePrompt.slice(oldTimeEnd) : '';
+
+              return (
+                // Static (cached) block: base content + extensions + skills + orchestrator
+                basePrompt.slice(0, splitIdx) +
+                extensionSuffix +
+                skillsSuffix +
+                orchestratorSuffix +
+                // Dynamic (uncached) block: fresh time + code/file sections + routing
+                freshTimeContext +
+                afterTimeContext +
+                toolSuggestionSuffix +
+                dataHintSuffix +
+                focusSuffix
+              );
+            })()
+          : // Fallback: no ## Current Context in base prompt — append everything
+            // (orchestrator still moves to "before any dynamic content" position)
             basePrompt +
             extensionSuffix +
             skillsSuffix +
+            orchestratorSuffix +
             toolSuggestionSuffix +
             dataHintSuffix +
-            orchestratorSuffix +
             focusSuffix;
 
       if (finalPrompt !== currentSystemPrompt) {
@@ -162,13 +212,14 @@ export function createContextInjectionMiddleware(): MessageMiddleware {
       }
 
       // Debug: record injection breakdown in debugLog so /api/v1/debug shows it
+      // Order reflects final prompt layout: static block first, then dynamic
       const allSuffixes = [
         { name: 'base_prompt', content: basePrompt },
         { name: 'extensions', content: extensionSuffix },
         { name: 'soul_skills', content: skillsSuffix },
+        { name: 'orchestrator [static]', content: orchestratorSuffix },
         { name: 'tool_suggestions', content: toolSuggestionSuffix },
         { name: 'data_hints', content: dataHintSuffix },
-        { name: 'orchestrator', content: orchestratorSuffix },
         { name: 'request_focus', content: focusSuffix },
       ];
       const activeSuffixes = allSuffixes
