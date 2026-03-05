@@ -463,28 +463,32 @@ export class OpenAICompatibleProvider {
         );
       }
 
+      const rawContent =
+        typeof msg.content === 'string'
+          ? msg.content
+          : msg.content.map((part) => {
+              if (part.type === 'text') {
+                return { type: 'text', text: part.text };
+              } else if (part.type === 'image') {
+                // Only include images if provider supports vision
+                if (!this.config.features.vision) {
+                  return { type: 'text', text: '[Image not supported by this provider]' };
+                }
+                return {
+                  type: 'image_url',
+                  image_url: {
+                    url: part.isUrl ? part.data : `data:${part.mediaType};base64,${part.data}`,
+                  },
+                };
+              }
+              return { type: 'text', text: '[Unsupported content]' };
+            });
+
       const base: Msg = {
         role: msg.role,
+        // Strict OpenAI-compatible APIs reject "" when tool_calls present — use null
         content:
-          typeof msg.content === 'string'
-            ? msg.content
-            : msg.content.map((part) => {
-                if (part.type === 'text') {
-                  return { type: 'text', text: part.text };
-                } else if (part.type === 'image') {
-                  // Only include images if provider supports vision
-                  if (!this.config.features.vision) {
-                    return { type: 'text', text: '[Image not supported by this provider]' };
-                  }
-                  return {
-                    type: 'image_url',
-                    image_url: {
-                      url: part.isUrl ? part.data : `data:${part.mediaType};base64,${part.data}`,
-                    },
-                  };
-                }
-                return { type: 'text', text: '[Unsupported content]' };
-              }),
+          msg.role === 'assistant' && msg.toolCalls?.length && rawContent === '' ? null : rawContent,
       };
 
       // Add tool calls for assistant messages

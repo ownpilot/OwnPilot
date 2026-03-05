@@ -145,13 +145,13 @@ export abstract class BaseProvider implements IProvider {
    */
   protected buildMessages(messages: readonly Message[]): Array<{
     role: string;
-    content: string | unknown[];
+    content: string | null | unknown[];
     tool_calls?: unknown[];
     tool_call_id?: string;
   }> {
     type OpenAIMsg = {
       role: string;
-      content: string | unknown[];
+      content: string | null | unknown[];
       tool_calls?: unknown[];
       tool_call_id?: string;
     };
@@ -167,29 +167,35 @@ export abstract class BaseProvider implements IProvider {
         );
       }
 
+      const rawContent =
+        typeof msg.content === 'string'
+          ? msg.content
+          : msg.content.map((part) => {
+              if (part.type === 'text') {
+                return { type: 'text', text: part.text };
+              } else if (part.type === 'image') {
+                return {
+                  type: 'image_url',
+                  image_url: {
+                    url: part.isUrl ? part.data : `data:${part.mediaType};base64,${part.data}`,
+                  },
+                };
+              }
+              return { type: 'text', text: '[Unsupported content]' };
+            });
+
       const base: {
         role: string;
-        content: string | unknown[];
+        content: string | null | unknown[];
         tool_calls?: unknown[];
         tool_call_id?: string;
       } = {
         role: msg.role,
+        // Strict OpenAI-compatible APIs (e.g. code 1214) reject "" when tool_calls present — use null
         content:
-          typeof msg.content === 'string'
-            ? msg.content
-            : msg.content.map((part) => {
-                if (part.type === 'text') {
-                  return { type: 'text', text: part.text };
-                } else if (part.type === 'image') {
-                  return {
-                    type: 'image_url',
-                    image_url: {
-                      url: part.isUrl ? part.data : `data:${part.mediaType};base64,${part.data}`,
-                    },
-                  };
-                }
-                return { type: 'text', text: '[Unsupported content]' };
-              }),
+          msg.role === 'assistant' && msg.toolCalls?.length && rawContent === ''
+            ? null
+            : rawContent,
       };
 
       // Add tool calls for assistant messages
