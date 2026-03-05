@@ -228,7 +228,7 @@ describe('createContextInjectionMiddleware', () => {
       expect(mockLog.info).toHaveBeenCalledWith('Injected 1 memories, 1 goals');
     });
 
-    it('should not log when no memories or goals are injected', async () => {
+    it('should not log memories/goals when none are injected', async () => {
       mockBuildEnhancedSystemPrompt.mockResolvedValue({
         prompt: BASE_PROMPT + '\n---\n## Available Data Resources\n- something',
         stats: { memoriesUsed: 0, goalsUsed: 0 },
@@ -240,7 +240,10 @@ describe('createContextInjectionMiddleware', () => {
 
       await middleware(msg, ctx, next);
 
-      expect(mockLog.info).not.toHaveBeenCalled();
+      // Debug summary log is always emitted; the memories/goals log should NOT appear
+      expect(mockLog.info).not.toHaveBeenCalledWith(
+        expect.stringContaining('memories')
+      );
     });
 
     it('should call next after injection', async () => {
