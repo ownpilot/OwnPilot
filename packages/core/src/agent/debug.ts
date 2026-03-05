@@ -53,7 +53,7 @@ export interface RequestDebugInfo {
   endpoint: string;
   messages: Array<{
     role: string;
-    contentPreview: string;
+    content: string;
     contentLength: number;
   }>;
   tools?: string[];
@@ -79,12 +79,12 @@ export interface ResponseDebugInfo {
   provider: string;
   model: string;
   status: 'success' | 'error';
-  contentPreview?: string;
+  content?: string;
   contentLength?: number;
   toolCalls?: Array<{
     id: string;
     name: string;
-    argumentsPreview: string;
+    arguments: string;
   }>;
   finishReason?: string;
   usage?: TokenUsage;
@@ -111,7 +111,7 @@ export interface ToolResultDebugInfo {
   toolCallId: string;
   name: string;
   success: boolean;
-  resultPreview: string;
+  result: string;
   resultLength: number;
   durationMs: number;
   error?: string;
@@ -226,7 +226,7 @@ export function logRequest(info: RequestDebugInfo): void {
       const msg = info.messages[i];
       if (!msg) continue;
       console.log(
-        `  [${i}] ${msg.role.toUpperCase().padEnd(10)} │ ${truncate(msg.contentPreview, 150)} (${msg.contentLength} chars)`
+        `  [${i}] ${msg.role.toUpperCase().padEnd(10)} │ ${truncate(msg.content, 150)} (${msg.contentLength} chars)`
       );
     }
     if (info.tools?.length) {
@@ -282,9 +282,9 @@ export function logResponse(info: ResponseDebugInfo): void {
 
     if (info.status === 'success') {
       console.log('─'.repeat(40));
-      if (info.contentPreview) {
+      if (info.content) {
         console.log(`Content (${info.contentLength ?? 0} chars):`);
-        console.log(`  ${truncate(info.contentPreview, 500)}`);
+        console.log(`  ${truncate(info.content, 500)}`);
       }
       if (info.toolCalls?.length) {
         console.log('─'.repeat(40));
@@ -292,7 +292,7 @@ export function logResponse(info: ResponseDebugInfo): void {
         for (const tc of info.toolCalls) {
           const idSuffix = tc.id ? tc.id.slice(-8) : 'unknown';
           console.log(`  [${idSuffix}] ${tc.name ?? 'unknown'}`);
-          console.log(`    Args: ${truncate(tc.argumentsPreview ?? '{}', 200)}`);
+          console.log(`    Args: ${truncate(tc.arguments ?? '{}', 200)}`);
         }
       }
     } else {
@@ -337,7 +337,7 @@ export function logToolResult(info: ToolResultDebugInfo): void {
     const statusColor = info.success ? '🟢' : '🔴';
     console.log(`\n⚡ TOOL RESULT ${statusColor} ${info.name} (${info.durationMs}ms)`);
     console.log(`  ID: ${info.toolCallId}`);
-    console.log(`  Result (${info.resultLength} chars): ${truncate(info.resultPreview, 300)}`);
+    console.log(`  Result (${info.resultLength} chars): ${truncate(info.result, 300)}`);
     if (info.error) {
       console.log(`  ❌ Error: ${info.error}`);
     }
@@ -417,8 +417,8 @@ export function buildRequestDebugInfo(
     endpoint,
     messages: messages.map((msg) => ({
       role: msg.role,
-      contentPreview:
-        typeof msg.content === 'string' ? truncate(msg.content, 100) : '[multipart content]',
+      content:
+        typeof msg.content === 'string' ? msg.content : '[multipart content]',
       contentLength:
         typeof msg.content === 'string' ? msg.content.length : JSON.stringify(msg.content).length,
     })),
@@ -478,12 +478,12 @@ export function buildResponseDebugInfo(
     provider,
     model,
     status: error ? 'error' : 'success',
-    contentPreview: content ? truncate(content, 200) : undefined,
+    content: content ?? undefined,
     contentLength: content?.length,
     toolCalls: toolCalls?.map((tc) => ({
       id: tc.id,
       name: tc.name,
-      argumentsPreview: truncate(tc.arguments, 100),
+      arguments: tc.arguments,
     })),
     finishReason,
     usage,

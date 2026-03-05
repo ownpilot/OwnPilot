@@ -198,7 +198,7 @@ export interface ToolResultData {
   success?: boolean;
   durationMs?: number;
   resultLength?: number;
-  resultPreview?: string;
+  result?: string;
   error?: string;
 }
 

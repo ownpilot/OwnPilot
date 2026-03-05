@@ -291,7 +291,7 @@ export async function executeSubagentTool(
           toolCallsUsed: s.toolCallsUsed,
           durationMs: s.durationMs,
           ...(s.state === 'completed' && {
-            resultPreview: s.result?.slice(0, 200) + ((s.result?.length ?? 0) > 200 ? '...' : ''),
+            result: s.result?.slice(0, 200) + ((s.result?.length ?? 0) > 200 ? '...' : ''),
           }),
           ...(s.error && { error: s.error }),
         }));

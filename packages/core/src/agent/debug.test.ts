@@ -36,7 +36,7 @@ function makeRequestInfo(overrides: Partial<RequestDebugInfo> = {}): RequestDebu
     provider: 'openai',
     model: 'gpt-4o',
     endpoint: '/v1/chat/completions',
-    messages: [{ role: 'user', contentPreview: 'hello', contentLength: 5 }],
+    messages: [{ role: 'user', content: 'hello', contentLength: 5 }],
     stream: false,
     ...overrides,
   };
@@ -70,7 +70,7 @@ function makeToolResultInfo(overrides: Partial<ToolResultDebugInfo> = {}): ToolR
     toolCallId: 'tc-1',
     name: 'read_file',
     success: true,
-    resultPreview: 'file contents',
+    result: 'file contents',
     resultLength: 13,
     durationMs: 50,
     ...overrides,
@@ -538,7 +538,7 @@ describe('buildRequestDebugInfo', () => {
     expect(info.messages).toHaveLength(2);
     expect(info.messages[0]!.role).toBe('system');
     expect(info.messages[0]!.contentLength).toBe(15); // 'You are helpful'
-    expect(info.messages[1]!.contentPreview).toBe('Hello there');
+    expect(info.messages[1]!.content).toBe('Hello there');
     expect(info.stream).toBe(false);
   });
 
@@ -550,7 +550,7 @@ describe('buildRequestDebugInfo', () => {
       },
     ];
     const info = buildRequestDebugInfo('openai', 'gpt-4o', '/v1/chat', messages);
-    expect(info.messages[0]!.contentPreview).toBe('[multipart content]');
+    expect(info.messages[0]!.content).toBe('[multipart content]');
     expect(info.messages[0]!.contentLength).toBeGreaterThan(0);
   });
 
@@ -587,12 +587,11 @@ describe('buildRequestDebugInfo', () => {
     expect(info.stream).toBe(true);
   });
 
-  it('should truncate long content previews', () => {
+  it('should store full content without truncation', () => {
     const longContent = 'A'.repeat(500);
     const messages: Message[] = [{ role: 'user', content: longContent }];
     const info = buildRequestDebugInfo('openai', 'gpt-4o', '/v1/chat', messages);
-    // truncate() limits to 100 chars for request content
-    expect(info.messages[0]!.contentPreview.length).toBeLessThan(longContent.length);
+    expect(info.messages[0]!.content).toBe(longContent);
     expect(info.messages[0]!.contentLength).toBe(500);
   });
 });
@@ -609,7 +608,7 @@ describe('buildResponseDebugInfo', () => {
     expect(info.model).toBe('gpt-4o');
     expect(info.status).toBe('success');
     expect(info.durationMs).toBe(150);
-    expect(info.contentPreview).toBe('Hello!');
+    expect(info.content).toBe('Hello!');
     expect(info.contentLength).toBe(6);
     expect(info.finishReason).toBe('stop');
     expect(info.usage!.totalTokens).toBe(15);
@@ -908,8 +907,8 @@ describe('console output branches', () => {
     logRequest(
       makeRequestInfo({
         messages: [
-          { role: 'system', contentPreview: 'You are helpful', contentLength: 15 },
-          { role: 'user', contentPreview: 'Hello', contentLength: 5 },
+          { role: 'system', content: 'You are helpful', contentLength: 15 },
+          { role: 'user', content: 'Hello', contentLength: 5 },
         ],
       })
     );
@@ -922,9 +921,9 @@ describe('console output branches', () => {
     logResponse(
       makeResponseInfo({
         status: 'success',
-        contentPreview: 'Hello',
+        content: 'Hello',
         contentLength: 5,
-        toolCalls: [{ id: 'call_abc12345', name: 'read_file', argumentsPreview: '{}' }],
+        toolCalls: [{ id: 'call_abc12345', name: 'read_file', arguments: '{}' }],
         finishReason: 'stop',
         usage: { promptTokens: 10, completionTokens: 5, totalTokens: 15 },
       })
@@ -1023,7 +1022,7 @@ describe('console output branches', () => {
     logResponse(
       makeResponseInfo({
         status: 'success',
-        toolCalls: [{ id: '', name: '', argumentsPreview: '{}' }],
+        toolCalls: [{ id: '', name: '', arguments: '{}' }],
       })
     );
     expect(console.log).toHaveBeenCalled();

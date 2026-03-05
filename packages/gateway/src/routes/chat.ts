@@ -819,7 +819,7 @@ chatRoutes.post('/', async (c) => {
         duration: tc.duration,
         error: tc.error,
         arguments: (callEntry?.data as { arguments?: Record<string, unknown> })?.arguments,
-        result: (resultEntry?.data as { resultPreview?: string })?.resultPreview,
+        result: (resultEntry?.data as { result?: string })?.result,
       };
     }) ?? [];
 
