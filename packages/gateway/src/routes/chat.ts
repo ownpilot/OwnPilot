@@ -75,11 +75,7 @@ import {
   generateDemoResponse,
   tryGetMessageBus,
 } from './chat-prompt.js';
-import {
-  saveChatToDatabase,
-  saveStreamingChat,
-  runPostChatProcessing,
-} from './chat-persistence.js';
+import { ConversationService, runPostChatProcessing } from '../services/conversation-service.js';
 
 const log = getLog('Chat');
 
@@ -435,8 +431,7 @@ chatRoutes.post('/', async (c) => {
           });
 
           // Save streaming chat to database
-          await saveStreamingChat(state, {
-            userId: streamUserId,
+          await new ConversationService(streamUserId).saveStreamingChat(state, {
             conversationId: body.conversationId || conversationId,
             agentId: body.agentId,
             provider,
@@ -540,8 +535,7 @@ chatRoutes.post('/', async (c) => {
 
     // Persistence middleware saves to ChatRepository but NOT LogsRepository.
     // Save logs here to match what the legacy path does.
-    saveChatToDatabase({
-      userId,
+    new ConversationService(userId).saveLog({
       conversationId: body.conversationId || conversation.id,
       agentId: body.agentId,
       provider,
@@ -939,8 +933,7 @@ chatRoutes.post('/', async (c) => {
   };
 
   // Save chat history to database
-  await saveChatToDatabase({
-    userId,
+  await new ConversationService(userId).saveChat({
     conversationId: body.conversationId || conversation.id,
     agentId: body.agentId,
     provider,

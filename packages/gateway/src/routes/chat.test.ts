@@ -338,9 +338,15 @@ const mockSaveChatToDatabase = vi.fn(async () => {});
 const mockSaveStreamingChat = vi.fn(async () => {});
 const mockRunPostChatProcessing = vi.fn();
 
-vi.mock('./chat-persistence.js', () => ({
-  saveChatToDatabase: (...args: unknown[]) => mockSaveChatToDatabase(...args),
-  saveStreamingChat: (...args: unknown[]) => mockSaveStreamingChat(...args),
+vi.mock('../services/conversation-service.js', () => ({
+  ConversationService: vi.fn(function () {
+    return {
+      saveChat: (...args: unknown[]) => mockSaveChatToDatabase(...args),
+      saveLog: vi.fn(async () => {}),
+      saveStreamingChat: (...args: unknown[]) => mockSaveStreamingChat(...args),
+      saveStreamingLog: vi.fn(async () => {}),
+    };
+  }),
   runPostChatProcessing: (...args: unknown[]) => mockRunPostChatProcessing(...args),
 }));
 

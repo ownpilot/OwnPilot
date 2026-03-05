@@ -40,8 +40,12 @@ vi.mock('../services/execution-approval.js', () => ({
   createApprovalRequest: (...args: unknown[]) => mockCreateApprovalRequest(...args),
 }));
 
-vi.mock('./chat-persistence.js', () => ({
-  saveStreamingChat: (...args: unknown[]) => mockSaveStreamingChat(...args),
+vi.mock('../services/conversation-service.js', () => ({
+  ConversationService: vi.fn(function () {
+    return {
+      saveStreamingLog: (...args: unknown[]) => mockSaveStreamingChat(...args),
+    };
+  }),
   runPostChatProcessing: (...args: unknown[]) => mockRunPostChatProcessing(...args),
 }));
 
@@ -1614,7 +1618,6 @@ describe('processStreamingViaBus', () => {
     await processStreamingViaBus(bus as never, sseStream, makeParams() as never);
     expect(mockSaveStreamingChat).toHaveBeenCalledOnce();
     const [, saveParams] = mockSaveStreamingChat.mock.calls[0]!;
-    expect(saveParams.userId).toBe('user-1');
     expect(saveParams.conversationId).toBe('conv-1');
     expect(saveParams.userMessage).toBe('Hello AI');
     expect(saveParams.assistantContent).toBe('AI response');

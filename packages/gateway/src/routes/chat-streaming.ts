@@ -23,7 +23,7 @@ import { usageTracker } from './costs.js';
 import { extractSuggestions, extractMemoriesFromResponse } from '../utils/index.js';
 import { generateApprovalId, createApprovalRequest } from '../services/execution-approval.js';
 import type { getAgent } from './agent-service.js';
-import { saveStreamingChat, runPostChatProcessing } from './chat-persistence.js';
+import { ConversationService, runPostChatProcessing } from '../services/conversation-service.js';
 
 /**
  * Extract display-friendly tool name and args from a ToolCall.
@@ -593,8 +593,7 @@ export async function processStreamingViaBus(
     .trim();
   if (assistantContent) {
     const toolCalls = result.response.metadata.toolCalls as unknown[] | undefined;
-    await saveStreamingChat(state, {
-      userId,
+    await new ConversationService(userId).saveStreamingLog(state, {
       conversationId,
       agentId,
       provider,
