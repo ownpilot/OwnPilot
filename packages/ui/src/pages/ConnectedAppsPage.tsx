@@ -20,10 +20,22 @@ import type { ComposioApp, ComposioConnection } from '../api/endpoints/composio'
 
 const POPULAR_APPS: ComposioApp[] = [
   {
-    slug: 'google',
-    name: 'Google',
-    description: 'Gmail, Calendar, Drive, Docs, Sheets and more',
+    slug: 'gmail',
+    name: 'Gmail',
+    description: 'Send, read, and manage emails',
     categories: ['productivity'],
+  },
+  {
+    slug: 'googlecalendar',
+    name: 'Google Calendar',
+    description: 'Create and manage calendar events',
+    categories: ['productivity'],
+  },
+  {
+    slug: 'googledrive',
+    name: 'Google Drive',
+    description: 'File storage and sharing',
+    categories: ['storage'],
   },
   {
     slug: 'github',

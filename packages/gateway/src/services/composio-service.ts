@@ -126,16 +126,28 @@ class ComposioService {
 
     const client = (await this.getClient()) as Record<string, unknown>;
     const toolkits = client.toolkits as { get: (q?: unknown) => Promise<unknown> };
-    const response = (await toolkits.get()) as { items?: unknown[] };
+    // SDK returns a flat array of toolkit items (not { items: [...] })
+    const response = await toolkits.get();
+    const items: unknown[] = Array.isArray(response) ? response : [];
 
-    const apps: ComposioApp[] = (response.items || []).map((item: unknown) => {
+    const apps: ComposioApp[] = items.map((item: unknown) => {
       const t = item as Record<string, unknown>;
+      // Fields are nested under `meta` in the SDK response
+      const meta = (t.meta ?? {}) as Record<string, unknown>;
+      const rawCats = meta.categories;
+      const categories = Array.isArray(rawCats)
+        ? rawCats.map((c) => {
+            if (typeof c === 'string') return c;
+            const co = c as Record<string, unknown>;
+            return typeof co.name === 'string' ? co.name : toStr(co.slug);
+          })
+        : undefined;
       return {
         slug: toStr(t.slug),
         name: toStr(t.name) || toStr(t.slug),
-        description: t.description ? toStr(t.description) : undefined,
-        logo: t.logo ? toStr(t.logo) : undefined,
-        categories: Array.isArray(t.categories) ? t.categories.map((c) => toStr(c)) : undefined,
+        description: meta.description ? toStr(meta.description) : undefined,
+        logo: meta.logo ? toStr(meta.logo) : undefined,
+        categories,
       };
     });
 

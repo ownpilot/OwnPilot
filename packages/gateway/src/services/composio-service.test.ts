@@ -85,12 +85,11 @@ describe('ComposioService', () => {
   describe('getAvailableApps', () => {
     it('returns mapped apps from SDK', async () => {
       mockConfigServicesRepo.getFieldValue.mockReturnValue('comp-key');
-      mockComposioInstance.toolkits.get.mockResolvedValue({
-        items: [
-          { slug: 'github', name: 'GitHub', description: 'Git hosting', categories: ['dev'] },
-          { slug: 'gmail', name: 'Gmail', description: 'Email' },
-        ],
-      });
+      // SDK returns a flat array (not { items: [...] })
+      mockComposioInstance.toolkits.get.mockResolvedValue([
+        { slug: 'github', name: 'GitHub', meta: { description: 'Git hosting', categories: ['dev'] } },
+        { slug: 'gmail', name: 'Gmail', meta: {} },
+      ]);
 
       const apps = await composioService.getAvailableApps();
       expect(apps).toHaveLength(2);
@@ -105,7 +104,7 @@ describe('ComposioService', () => {
 
     it('caches results', async () => {
       mockConfigServicesRepo.getFieldValue.mockReturnValue('comp-key');
-      mockComposioInstance.toolkits.get.mockResolvedValue({ items: [{ slug: 'a', name: 'A' }] });
+      mockComposioInstance.toolkits.get.mockResolvedValue([{ slug: 'a', name: 'A', meta: {} }]);
 
       await composioService.getAvailableApps();
       await composioService.getAvailableApps();
