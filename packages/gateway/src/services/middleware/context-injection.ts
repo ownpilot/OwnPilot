@@ -14,7 +14,7 @@
  */
 
 import type { MessageMiddleware } from '@ownpilot/core';
-import { getServiceRegistry, Services, type IExtensionService } from '@ownpilot/core';
+import { getServiceRegistry, Services, type IExtensionService, debugLog } from '@ownpilot/core';
 import { buildEnhancedSystemPrompt } from '../../assistant/index.js';
 import { getErrorMessage } from '../../routes/helpers.js';
 import type { RequestRouting } from './request-preprocessor.js';
@@ -147,21 +147,31 @@ export function createContextInjectionMiddleware(): MessageMiddleware {
         agent.updateSystemPrompt(finalPrompt);
       }
 
-      // Debug: log each suffix with name, char count, and full content
-      const suffixes: Array<[string, string]> = [
-        ['base_prompt', basePrompt],
-        ['extensions', extensionSuffix],
-        ['soul_skills', skillsSuffix],
-        ['tool_suggestions', toolSuggestionSuffix],
-        ['data_hints', dataHintSuffix],
-        ['orchestrator', orchestratorSuffix],
-        ['request_focus', focusSuffix],
+      // Debug: record injection breakdown in debugLog so /api/v1/debug shows it
+      const allSuffixes = [
+        { name: 'base_prompt', content: basePrompt },
+        { name: 'extensions', content: extensionSuffix },
+        { name: 'soul_skills', content: skillsSuffix },
+        { name: 'tool_suggestions', content: toolSuggestionSuffix },
+        { name: 'data_hints', content: dataHintSuffix },
+        { name: 'orchestrator', content: orchestratorSuffix },
+        { name: 'request_focus', content: focusSuffix },
       ];
-      const sectionDump = suffixes
-        .filter(([, text]) => text.length > 0)
-        .map(([name, text]) => `\n──── ${name} (${text.length} chars) ────\n${text}`)
-        .join('\n');
-      log.info(`System prompt final: ${finalPrompt.length} chars total${sectionDump}`);
+      const activeSuffixes = allSuffixes
+        .filter((s) => s.content.length > 0)
+        .map((s) => ({ name: s.name, chars: s.content.length, content: s.content }));
+      debugLog.add({
+        type: 'system_prompt',
+        data: {
+          stage: 'context_injection',
+          totalChars: finalPrompt.length,
+          sections: activeSuffixes,
+        },
+      });
+      log.info(
+        `System prompt final: ${finalPrompt.length} chars — ` +
+          activeSuffixes.map((s) => `${s.name}:${s.chars}`).join(', ')
+      );
 
       ctx.set('contextStats', stats);
     } catch (error) {
