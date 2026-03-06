@@ -1,8 +1,17 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { Hono } from 'hono';
 import { toolsRoutes, getToolRegistry } from './tools.js';
 import { requestId } from '../middleware/request-id.js';
 import { errorHandler } from '../middleware/error-handler.js';
+
+// Mock getAgent to avoid DB dependency in CI
+vi.mock('./agents.js', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('./agents.js')>();
+  return {
+    ...actual,
+    getAgent: vi.fn().mockResolvedValue(undefined),
+  };
+});
 
 describe('Tools Routes', () => {
   let app: Hono;

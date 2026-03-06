@@ -8,19 +8,14 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 // Mocks
 // ---------------------------------------------------------------------------
 
-const {
-  mockMkdir,
-  mockRm,
-  mockExistsSync,
-  mockUseMultiFileAuthState,
-  mockGetDataPath,
-} = vi.hoisted(() => ({
-  mockMkdir: vi.fn(),
-  mockRm: vi.fn(),
-  mockExistsSync: vi.fn(),
-  mockUseMultiFileAuthState: vi.fn(),
-  mockGetDataPath: vi.fn(() => '/app-data'),
-}));
+const { mockMkdir, mockRm, mockExistsSync, mockUseMultiFileAuthState, mockGetDataPath } =
+  vi.hoisted(() => ({
+    mockMkdir: vi.fn(),
+    mockRm: vi.fn(),
+    mockExistsSync: vi.fn(),
+    mockUseMultiFileAuthState: vi.fn(),
+    mockGetDataPath: vi.fn(() => '/app-data'),
+  }));
 
 vi.mock('node:fs/promises', () => ({
   mkdir: mockMkdir,
@@ -63,10 +58,13 @@ describe('getSessionDir', () => {
 
   it('sanitizes pluginId (replaces unsafe chars with _)', () => {
     const dir = getSessionDir('plugin/id:with?special*chars');
-    // Only a-zA-Z0-9._- are kept
-    expect(dir).not.toContain('?');
-    expect(dir).not.toContain('*');
-    expect(dir).not.toContain('/');
+    // The sanitized pluginId segment should not contain unsafe chars
+    const lastSegment = dir.split(/[/\\]/).pop()!;
+    expect(lastSegment).not.toContain('?');
+    expect(lastSegment).not.toContain('*');
+    expect(lastSegment).not.toContain('/');
+    expect(lastSegment).not.toContain(':');
+    expect(lastSegment).toBe('plugin_id_with_special_chars');
   });
 
   it('allows alphanumeric and safe chars unchanged', () => {
@@ -88,17 +86,14 @@ describe('loadAuthState', () => {
 
   it('creates the session directory', async () => {
     await loadAuthState('test-plugin');
-    expect(mockMkdir).toHaveBeenCalledWith(
-      expect.stringContaining('test-plugin'),
-      { recursive: true }
-    );
+    expect(mockMkdir).toHaveBeenCalledWith(expect.stringContaining('test-plugin'), {
+      recursive: true,
+    });
   });
 
   it('calls useMultiFileAuthState with session dir', async () => {
     await loadAuthState('test-plugin');
-    expect(mockUseMultiFileAuthState).toHaveBeenCalledWith(
-      expect.stringContaining('test-plugin')
-    );
+    expect(mockUseMultiFileAuthState).toHaveBeenCalledWith(expect.stringContaining('test-plugin'));
   });
 
   it('returns state, saveCreds, and sessionDir', async () => {
@@ -144,10 +139,10 @@ describe('clearSession', () => {
   it('removes session directory when it exists', async () => {
     mockExistsSync.mockReturnValue(true);
     await clearSession('my-plugin');
-    expect(mockRm).toHaveBeenCalledWith(
-      expect.stringContaining('my-plugin'),
-      { recursive: true, force: true }
-    );
+    expect(mockRm).toHaveBeenCalledWith(expect.stringContaining('my-plugin'), {
+      recursive: true,
+      force: true,
+    });
   });
 
   it('does nothing when session directory does not exist', async () => {
