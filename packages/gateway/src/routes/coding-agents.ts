@@ -175,8 +175,18 @@ codingAgentsRoutes.post('/sessions', async (c) => {
     return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: 'Invalid JSON body' }, 400);
   }
 
-  const { provider, prompt, cwd, model, mode, timeout_seconds, max_turns, max_budget_usd } =
-    body as Record<string, unknown>;
+  const {
+    provider,
+    prompt,
+    cwd,
+    model,
+    mode,
+    timeout_seconds,
+    max_turns,
+    max_budget_usd,
+    skill_ids,
+    permissions,
+  } = body as Record<string, unknown>;
 
   if (!provider || typeof provider !== 'string' || !isValidProvider(provider)) {
     return apiError(
@@ -214,6 +224,19 @@ codingAgentsRoutes.post('/sessions', async (c) => {
         timeout: timeoutSec ? timeoutSec * 1000 : undefined,
         maxTurns: max_turns as number | undefined,
         maxBudgetUsd: max_budget_usd as number | undefined,
+        skillIds: Array.isArray(skill_ids) ? (skill_ids as string[]) : undefined,
+        permissions: permissions as Record<string, unknown> | undefined
+          ? {
+              outputFormat: (permissions as Record<string, unknown>).output_format as string | undefined,
+              fileAccess: (permissions as Record<string, unknown>).file_access as string | undefined,
+              allowedPaths: (permissions as Record<string, unknown>).allowed_paths as string[] | undefined,
+              networkAccess: (permissions as Record<string, unknown>).network_access as boolean | undefined,
+              shellAccess: (permissions as Record<string, unknown>).shell_access as boolean | undefined,
+              gitAccess: (permissions as Record<string, unknown>).git_access as boolean | undefined,
+              autonomy: (permissions as Record<string, unknown>).autonomy as string | undefined,
+              maxFileChanges: (permissions as Record<string, unknown>).max_file_changes as number | undefined,
+            } as import('@ownpilot/core').CodingAgentPermissions
+          : undefined,
       },
       userId
     );

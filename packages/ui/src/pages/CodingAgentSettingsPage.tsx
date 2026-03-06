@@ -34,6 +34,34 @@ interface ProviderMeta {
   authInfo: string;
 }
 
+interface SubscriptionInfo {
+  tier: string;
+  envVar: string;
+  loginSupported: boolean;
+  costNote: string;
+}
+
+const SUBSCRIPTION_INFO: Record<string, SubscriptionInfo> = {
+  'claude-code': {
+    tier: 'Claude Pro ($20/mo) or Claude Max ($100-200/mo)',
+    envVar: 'ANTHROPIC_API_KEY',
+    loginSupported: true,
+    costNote: 'Pro: 5x rate, Max: 20x rate. API key: pay-per-token.',
+  },
+  codex: {
+    tier: 'ChatGPT Plus ($20/mo) or ChatGPT Pro ($200/mo)',
+    envVar: 'CODEX_API_KEY',
+    loginSupported: true,
+    costNote: 'Plus: included with subscription. API key: pay-per-token.',
+  },
+  'gemini-cli': {
+    tier: 'Google AI Studio (free tier) or Gemini Advanced ($20/mo)',
+    envVar: 'GEMINI_API_KEY',
+    loginSupported: true,
+    costNote: 'Free tier: 60 RPM. API key: pay-per-token pricing.',
+  },
+};
+
 const PROVIDER_META: Record<string, ProviderMeta> = {
   'claude-code': {
     icon: 'C',
@@ -198,6 +226,7 @@ function ProviderCard({
   onTest: () => void;
 }) {
   const meta = PROVIDER_META[status.provider];
+  const subInfo = SUBSCRIPTION_INFO[status.provider];
   const color = PROVIDER_COLORS[status.provider] ?? 'bg-gray-500/20 text-gray-500';
 
   return (
@@ -263,6 +292,37 @@ function ProviderCard({
               </div>
             )}
           </div>
+
+          {/* Subscription & auth info */}
+          {subInfo && (
+            <div className="mt-3 p-2.5 rounded-lg bg-bg-tertiary dark:bg-dark-bg-tertiary space-y-1.5">
+              <div className="text-xs font-medium text-text-primary dark:text-dark-text-primary">
+                Subscription & Auth
+              </div>
+              <div className="text-[11px] text-text-muted dark:text-dark-text-muted space-y-1">
+                <div>
+                  <span className="font-medium">Tiers:</span> {subInfo.tier}
+                </div>
+                <div>
+                  <span className="font-medium">Cost:</span> {subInfo.costNote}
+                </div>
+                <div>
+                  <span className="font-medium">Env var:</span>{' '}
+                  <code className="font-mono text-text-primary dark:text-dark-text-primary bg-bg-primary dark:bg-dark-bg-primary px-1 rounded">
+                    {subInfo.envVar}
+                  </code>
+                </div>
+                <div>
+                  <span className="font-medium">Login auth:</span>{' '}
+                  {subInfo.loginSupported ? (
+                    <span className="text-success">Supported (run CLI in interactive mode to log in)</span>
+                  ) : (
+                    <span className="text-error">Not supported</span>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Install command (if not installed) */}
           {!status.installed && meta?.installCommand && (

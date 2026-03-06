@@ -74,6 +74,8 @@ interface NavGroup {
   defaultOpen?: boolean;
   /** If true, hidden in simple mode */
   advancedOnly?: boolean;
+  /** Optional badge text (e.g. "Beta") shown next to group label */
+  badge?: string;
 }
 
 // Main navigation items (always visible)
@@ -135,9 +137,7 @@ const navGroups: NavGroup[] = [
     advancedOnly: true,
     items: [
       { to: '/agents', icon: Bot, label: 'Agents' },
-      { to: '/edge-devices', icon: Wifi, label: 'Edge Devices' },
       { to: '/models', icon: Cpu, label: 'Models' },
-      { to: '/coding-agents', icon: Terminal, label: 'Coding Agents' },
       { to: '/wizards', icon: Sparkles, label: 'Wizards' },
       { to: '/workspaces', icon: HardDrive, label: 'Workspaces' },
       { to: '/custom-data', icon: Database, label: 'Custom Data' },
@@ -145,6 +145,16 @@ const navGroups: NavGroup[] = [
       { to: '/costs', icon: DollarSign, label: 'Costs' },
       { to: '/logs', icon: Activity, label: 'Logs' },
       { to: '/event-monitor', icon: MonitorCheck, label: 'Event Monitor' },
+    ],
+  },
+  {
+    id: 'experimental',
+    label: 'Experimental',
+    icon: Sparkles,
+    badge: 'Beta',
+    items: [
+      { to: '/edge-devices', icon: Wifi, label: 'Edge Devices' },
+      { to: '/coding-agents', icon: Terminal, label: 'Coding Agents' },
     ],
   },
   {
@@ -247,6 +257,11 @@ function CollapsibleGroup({
       >
         <Icon className="w-4 h-4 shrink-0" />
         <span className="flex-1 text-left font-medium">{group.label}</span>
+        {group.badge && (
+          <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-amber-500/20 text-amber-600 dark:text-amber-400">
+            {group.badge}
+          </span>
+        )}
         {isOpen ? (
           <ChevronDown className="w-3.5 h-3.5 shrink-0" />
         ) : (

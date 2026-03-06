@@ -32,6 +32,7 @@ import type {
   CodingAgentSession,
   CodingAgentSessionState,
   CodingAgentResultRecord,
+  CodingAgentPermissions,
 } from '../api/endpoints/coding-agents';
 import type { FileWorkspaceInfo } from '../api/endpoints';
 import { useGateway } from '../hooks/useWebSocket';
@@ -168,13 +169,22 @@ export function CodingAgentsPage() {
 
   // Create session
   const handleCreateSession = useCallback(
-    async (provider: string, prompt: string, mode: 'auto' | 'interactive', cwd?: string) => {
+    async (
+      provider: string,
+      prompt: string,
+      mode: 'auto' | 'interactive',
+      cwd?: string,
+      skillIds?: string[],
+      permissions?: CodingAgentPermissions
+    ) => {
       try {
         const session = await codingAgentsApi.createSession({
           provider,
           prompt,
           mode,
           cwd: cwd || undefined,
+          skill_ids: skillIds?.length ? skillIds : undefined,
+          permissions: permissions || undefined,
         });
         setSessions((prev) => {
           if (prev.some((s) => s.id === session.id)) return prev;
@@ -521,7 +531,14 @@ function NewSessionModal({
 }: {
   statuses: CodingAgentStatus[];
   onClose: () => void;
-  onCreate: (provider: string, prompt: string, mode: 'auto' | 'interactive', cwd?: string) => void;
+  onCreate: (
+    provider: string,
+    prompt: string,
+    mode: 'auto' | 'interactive',
+    cwd?: string,
+    skillIds?: string[],
+    permissions?: CodingAgentPermissions
+  ) => void;
 }) {
   const installedProviders = statuses.filter((s) => s.installed);
   const ptyAvailable = statuses.some((s) => s.ptyAvailable);
@@ -533,6 +550,16 @@ function NewSessionModal({
   const [creating, setCreating] = useState(false);
   const [workspaces, setWorkspaces] = useState<FileWorkspaceInfo[]>([]);
   const [cwdMode, setCwdMode] = useState<'workspace' | 'custom'>('workspace');
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
+  const [permissions, setPermissions] = useState<CodingAgentPermissions>({
+    autonomy: 'semi-auto',
+    file_access: 'read-write',
+    network_access: true,
+    shell_access: true,
+    git_access: true,
+    output_format: 'text',
+  });
 
   // Fetch file workspaces for the picker
   useEffect(() => {
@@ -547,7 +574,14 @@ function NewSessionModal({
     if (!provider || !prompt.trim()) return;
     setCreating(true);
     try {
-      await onCreate(provider, prompt.trim(), mode, cwd.trim() || undefined);
+      await onCreate(
+        provider,
+        prompt.trim(),
+        mode,
+        cwd.trim() || undefined,
+        selectedSkills.length > 0 ? selectedSkills : undefined,
+        permissions
+      );
     } finally {
       setCreating(false);
     }
@@ -759,6 +793,137 @@ function NewSessionModal({
               </div>
             </div>
 
+            {/* Advanced: Skills & Permissions (collapsible) */}
+            <div className="border-t border-border dark:border-dark-border pt-3">
+              <button
+                type="button"
+                onClick={() => setShowAdvanced(!showAdvanced)}
+                className="w-full flex items-center justify-between text-sm font-medium text-text-secondary dark:text-dark-text-secondary hover:text-text-primary dark:hover:text-dark-text-primary transition-colors"
+              >
+                <span>Skills & Permissions</span>
+                {showAdvanced ? (
+                  <ChevronDown className="w-4 h-4" />
+                ) : (
+                  <ChevronRight className="w-4 h-4" />
+                )}
+              </button>
+
+              {showAdvanced && (
+                <div className="mt-3 space-y-4">
+                  {/* Skills selector (lazy-loaded from extensions) */}
+                  <div>
+                    <label className="block text-sm font-medium text-text-primary dark:text-dark-text-primary mb-1.5">
+                      Skills / Instructions
+                    </label>
+                    <p className="text-xs text-text-muted dark:text-dark-text-muted mb-2">
+                      Attach skills to provide context, coding conventions, or rules.
+                    </p>
+                    <SkillsSelectorInline
+                      selected={selectedSkills}
+                      onChange={setSelectedSkills}
+                    />
+                  </div>
+
+                  {/* Permission controls */}
+                  <div>
+                    <label className="block text-sm font-medium text-text-primary dark:text-dark-text-primary mb-2">
+                      Permissions
+                    </label>
+                    <div className="grid grid-cols-2 gap-3">
+                      {/* Autonomy level */}
+                      <div>
+                        <label className="block text-xs text-text-muted dark:text-dark-text-muted mb-1">
+                          Autonomy
+                        </label>
+                        <select
+                          value={permissions.autonomy ?? 'semi-auto'}
+                          onChange={(e) =>
+                            setPermissions((p) => ({
+                              ...p,
+                              autonomy: e.target.value as CodingAgentPermissions['autonomy'],
+                            }))
+                          }
+                          className="w-full px-2.5 py-1.5 rounded-lg border border-border dark:border-dark-border bg-bg-tertiary dark:bg-dark-bg-tertiary text-text-primary dark:text-dark-text-primary text-xs"
+                        >
+                          <option value="supervised">Supervised (asks approval)</option>
+                          <option value="semi-auto">Semi-auto (default)</option>
+                          <option value="full-auto">Full auto (no prompts)</option>
+                        </select>
+                      </div>
+
+                      {/* File access */}
+                      <div>
+                        <label className="block text-xs text-text-muted dark:text-dark-text-muted mb-1">
+                          File Access
+                        </label>
+                        <select
+                          value={permissions.file_access ?? 'read-write'}
+                          onChange={(e) =>
+                            setPermissions((p) => ({
+                              ...p,
+                              file_access: e.target.value as CodingAgentPermissions['file_access'],
+                            }))
+                          }
+                          className="w-full px-2.5 py-1.5 rounded-lg border border-border dark:border-dark-border bg-bg-tertiary dark:bg-dark-bg-tertiary text-text-primary dark:text-dark-text-primary text-xs"
+                        >
+                          <option value="none">No file access</option>
+                          <option value="read-only">Read only</option>
+                          <option value="read-write">Read & write</option>
+                          <option value="full">Full (incl. delete)</option>
+                        </select>
+                      </div>
+
+                      {/* Output format */}
+                      <div>
+                        <label className="block text-xs text-text-muted dark:text-dark-text-muted mb-1">
+                          Output Format
+                        </label>
+                        <select
+                          value={permissions.output_format ?? 'text'}
+                          onChange={(e) =>
+                            setPermissions((p) => ({
+                              ...p,
+                              output_format: e.target.value as CodingAgentPermissions['output_format'],
+                            }))
+                          }
+                          className="w-full px-2.5 py-1.5 rounded-lg border border-border dark:border-dark-border bg-bg-tertiary dark:bg-dark-bg-tertiary text-text-primary dark:text-dark-text-primary text-xs"
+                        >
+                          <option value="text">Plain text</option>
+                          <option value="json">JSON structured</option>
+                          <option value="stream-json">Streaming JSON</option>
+                        </select>
+                      </div>
+
+                      {/* Toggles column */}
+                      <div className="space-y-2">
+                        <ToggleSwitch
+                          label="Network access"
+                          checked={permissions.network_access !== false}
+                          onChange={(v) =>
+                            setPermissions((p) => ({ ...p, network_access: v }))
+                          }
+                        />
+                        <ToggleSwitch
+                          label="Shell access"
+                          checked={permissions.shell_access !== false}
+                          onChange={(v) =>
+                            setPermissions((p) => ({ ...p, shell_access: v }))
+                          }
+                        />
+                        <ToggleSwitch
+                          label="Git access"
+                          checked={permissions.git_access !== false}
+                          onChange={(v) =>
+                            setPermissions((p) => ({ ...p, git_access: v }))
+                          }
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
             {/* Actions */}
             <div className="flex items-center justify-end gap-2 pt-2">
               <button
@@ -815,6 +980,121 @@ function ResultCard({ result }: { result: CodingAgentResultRecord }) {
         {formatRelativeTime(result.createdAt)}
       </div>
     </div>
+  );
+}
+
+// =============================================================================
+// Inline skill selector (compact version for the modal)
+// =============================================================================
+
+function SkillsSelectorInline({
+  selected,
+  onChange,
+}: {
+  selected: string[];
+  onChange: (ids: string[]) => void;
+}) {
+  const [skills, setSkills] = useState<{ id: string; name: string; description?: string }[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    import('../api/endpoints/extensions')
+      .then(({ extensionsApi }) => extensionsApi.list())
+      .then((data) => {
+        setSkills(
+          data
+            .filter((ext) => ext.status === 'enabled')
+            .map((ext) => ({ id: ext.id, name: ext.name, description: ext.description }))
+        );
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="text-xs text-text-muted dark:text-dark-text-muted animate-pulse py-2">
+        Loading skills...
+      </div>
+    );
+  }
+
+  if (skills.length === 0) {
+    return (
+      <div className="text-xs text-text-muted dark:text-dark-text-muted py-2">
+        No skills installed. Install skills from the Skills Hub.
+      </div>
+    );
+  }
+
+  const toggle = (id: string) => {
+    onChange(selected.includes(id) ? selected.filter((s) => s !== id) : [...selected, id]);
+  };
+
+  return (
+    <div className="max-h-32 overflow-y-auto space-y-1 rounded-lg border border-border dark:border-dark-border p-1.5">
+      {skills.map((skill) => {
+        const isSelected = selected.includes(skill.id);
+        return (
+          <button
+            key={skill.id}
+            type="button"
+            onClick={() => toggle(skill.id)}
+            className={`w-full text-left px-2.5 py-1.5 rounded text-xs transition-colors ${
+              isSelected
+                ? 'bg-primary/10 text-primary border border-primary/30'
+                : 'text-text-primary dark:text-dark-text-primary hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary border border-transparent'
+            }`}
+          >
+            <div className="font-medium">{skill.name}</div>
+            {skill.description && (
+              <div className="text-[10px] text-text-muted dark:text-dark-text-muted truncate">
+                {skill.description}
+              </div>
+            )}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+// =============================================================================
+// Toggle switch for permissions
+// =============================================================================
+
+function ToggleSwitch({
+  label,
+  checked,
+  onChange,
+}: {
+  label: string;
+  checked: boolean;
+  onChange: (value: boolean) => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={() => onChange(!checked)}
+      className="flex items-center gap-2 text-xs w-full"
+    >
+      <div
+        className={`w-7 h-4 rounded-full transition-colors relative shrink-0 ${
+          checked ? 'bg-primary' : 'bg-border dark:bg-dark-border'
+        }`}
+      >
+        <div
+          className={`absolute top-0.5 w-3 h-3 rounded-full bg-white transition-transform ${
+            checked ? 'translate-x-3.5' : 'translate-x-0.5'
+          }`}
+        />
+      </div>
+      <span
+        className={`${checked ? 'text-text-primary dark:text-dark-text-primary' : 'text-text-muted dark:text-dark-text-muted'}`}
+      >
+        {label}
+      </span>
+    </button>
   );
 }
 

@@ -36,6 +36,21 @@ export type CodingAgentSessionState =
   | 'failed'
   | 'terminated';
 
+export type CodingAgentOutputFormat = 'text' | 'json' | 'stream-json';
+export type CodingAgentFileAccess = 'none' | 'read-only' | 'read-write' | 'full';
+export type CodingAgentAutonomy = 'supervised' | 'semi-auto' | 'full-auto';
+
+export interface CodingAgentPermissions {
+  output_format?: CodingAgentOutputFormat;
+  file_access?: CodingAgentFileAccess;
+  allowed_paths?: string[];
+  network_access?: boolean;
+  shell_access?: boolean;
+  git_access?: boolean;
+  autonomy?: CodingAgentAutonomy;
+  max_file_changes?: number;
+}
+
 export interface CodingAgentSession {
   id: string;
   provider: string;
@@ -49,6 +64,8 @@ export interface CodingAgentSession {
   completedAt?: string;
   exitCode?: number;
   userId: string;
+  skillIds?: string[];
+  permissions?: CodingAgentPermissions;
 }
 
 export interface CreateCodingSessionInput {
@@ -60,6 +77,8 @@ export interface CreateCodingSessionInput {
   timeout_seconds?: number;
   max_turns?: number;
   max_budget_usd?: number;
+  skill_ids?: string[];
+  permissions?: CodingAgentPermissions;
 }
 
 // =============================================================================
