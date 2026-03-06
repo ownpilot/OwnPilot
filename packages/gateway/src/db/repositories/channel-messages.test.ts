@@ -264,13 +264,13 @@ describe('ChannelMessagesRepository', () => {
         makeMessageRow({ id: 'msg-latest', created_at: '2026-03-05T08:02:53Z' })
       );
 
-      const result = await repo.getLatestByChat('channel.whatsapp', '120363423491841999@g.us');
+      const result = await repo.getLatestByChat('channel.whatsapp', '120363000000000001@g.us');
 
       expect(result).not.toBeNull();
       expect(result!.id).toBe('msg-latest');
       expect(mockAdapter.queryOne).toHaveBeenCalledWith(
         expect.stringContaining("metadata->>'jid' = $2"),
-        ['channel.whatsapp', '120363423491841999@g.us']
+        ['channel.whatsapp', '120363000000000001@g.us']
       );
       const sql = mockAdapter.queryOne.mock.calls[0]?.[0] as string;
       expect(sql).toContain('ORDER BY created_at DESC');
@@ -294,13 +294,13 @@ describe('ChannelMessagesRepository', () => {
         makeMessageRow({ id: 'msg-oldest', created_at: '2026-02-28T08:02:53Z' })
       );
 
-      const result = await repo.getOldestByChat('channel.whatsapp', '120363423491841999@g.us');
+      const result = await repo.getOldestByChat('channel.whatsapp', '120363000000000001@g.us');
 
       expect(result).not.toBeNull();
       expect(result!.id).toBe('msg-oldest');
       expect(mockAdapter.queryOne).toHaveBeenCalledWith(
         expect.stringContaining("metadata->>'jid' = $2"),
-        ['channel.whatsapp', '120363423491841999@g.us']
+        ['channel.whatsapp', '120363000000000001@g.us']
       );
       const sql = mockAdapter.queryOne.mock.calls[0]?.[0] as string;
       expect(sql).toContain('ORDER BY created_at ASC');
@@ -326,7 +326,7 @@ describe('ChannelMessagesRepository', () => {
 
       const result = await repo.getNextByChatAfter(
         'channel.whatsapp',
-        '120363423491841999@g.us',
+        '120363000000000001@g.us',
         new Date('2026-03-05T08:02:53Z')
       );
 
@@ -334,7 +334,7 @@ describe('ChannelMessagesRepository', () => {
       expect(result!.id).toBe('msg-next');
       expect(mockAdapter.queryOne).toHaveBeenCalledWith(
         expect.stringContaining("created_at > $3"),
-        ['channel.whatsapp', '120363423491841999@g.us', '2026-03-05T08:02:53.000Z']
+        ['channel.whatsapp', '120363000000000001@g.us', '2026-03-05T08:02:53.000Z']
       );
       const sql = mockAdapter.queryOne.mock.calls[0]?.[0] as string;
       expect(sql).toContain('ORDER BY created_at ASC');

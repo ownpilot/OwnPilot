@@ -541,7 +541,7 @@ describe('Channels Routes', () => {
         content: '[Attachment]',
         contentType: 'attachment',
         attachments: [{ type: 'file', url: '', filename: '2313JJ_12_V1.SOR' }],
-        metadata: { platformMessageId: 'wam-1', jid: '120363423491841999@g.us' },
+        metadata: { platformMessageId: 'wam-1', jid: '120363000000000001@g.us' },
       });
 
       const res = await app.request('/channels/channel.telegram/messages/msg-1/retry-media', {
@@ -555,7 +555,7 @@ describe('Channels Routes', () => {
       expect(json.data.size).toBe(3);
       expect(retryMediaDownload).toHaveBeenCalledWith({
         messageId: 'wam-1',
-        remoteJid: '120363423491841999@g.us',
+        remoteJid: '120363000000000001@g.us',
         participant: undefined,
         fromMe: false,
       });
@@ -601,7 +601,7 @@ describe('Channels Routes', () => {
         content: '[Attachment]',
         contentType: 'attachment',
         attachments: null,
-        metadata: { platformMessageId: 'wam-2', jid: '120363423491841999@g.us' },
+        metadata: { platformMessageId: 'wam-2', jid: '120363000000000001@g.us' },
       });
 
       const res = await app.request('/channels/channel.telegram/messages/msg-2/retry-media', {
@@ -614,7 +614,7 @@ describe('Channels Routes', () => {
       expect(json.data.downloaded).toBe(true);
       expect(retryMediaDownload).toHaveBeenCalledWith({
         messageId: 'wam-2',
-        remoteJid: '120363423491841999@g.us',
+        remoteJid: '120363000000000001@g.us',
         participant: undefined,
         fromMe: false,
       });
@@ -652,7 +652,7 @@ describe('Channels Routes', () => {
           content: '[Attachment]',
           contentType: 'attachment',
           attachments: [{ type: 'file', url: '', filename: 'cold-cache.bin' }],
-          metadata: { platformMessageId: 'wam-3', jid: '120363423491841999@g.us', fromMe: true },
+          metadata: { platformMessageId: 'wam-3', jid: '120363000000000001@g.us', fromMe: true },
           createdAt: new Date('2026-03-05T08:00:00Z'),
         })
         // first poll after fetchGroupHistory sees repaired data
@@ -672,7 +672,7 @@ describe('Channels Routes', () => {
               data: 'AQID',
             },
           ],
-          metadata: { platformMessageId: 'wam-3', jid: '120363423491841999@g.us' },
+          metadata: { platformMessageId: 'wam-3', jid: '120363000000000001@g.us' },
         });
       mockChannelMessagesRepo.getNextByChatAfter.mockResolvedValueOnce({
         id: 'msg-next',
@@ -683,7 +683,7 @@ describe('Channels Routes', () => {
         attachments: [{ type: 'file', url: '', filename: 'next.bin' }],
         metadata: {
           platformMessageId: 'wam-next',
-          jid: '120363423491841999@g.us',
+          jid: '120363000000000001@g.us',
           fromMe: false,
           participant: '111111111@s.whatsapp.net',
         },
@@ -700,7 +700,7 @@ describe('Channels Routes', () => {
       expect(json.data.downloaded).toBe(true);
       expect(json.data.source).toBe('history-sync-repair');
       expect(fetchGroupHistoryFromAnchor).toHaveBeenCalledWith({
-        groupJid: '120363423491841999@g.us',
+        groupJid: '120363000000000001@g.us',
         messageId: 'wam-next',
         messageTimestamp: 1772697610,
         count: 50,
