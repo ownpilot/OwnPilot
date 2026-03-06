@@ -359,6 +359,22 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
                 const parsedMetadata = extractWhatsAppMessageMetadata(m);
                 const attachments: ChannelMessageAttachmentInput[] = [];
 
+                // DIAGNOSTIC: Log raw proto media fields for document messages
+                // to determine if on-demand history sync includes mediaKey.
+                if (m.documentMessage) {
+                  const d = m.documentMessage;
+                  log.info(
+                    `[WhatsApp] PROTO-DIAG doc msgId=${messageId} jid=${remoteJid} ` +
+                    `syncType=${syncTypeName} ` +
+                    `fileName=${d.fileName ?? 'null'} ` +
+                    `mediaKey=${d.mediaKey ? 'PRESENT(' + Buffer.from(d.mediaKey as Uint8Array).toString('base64').slice(0, 12) + '...)' : 'ABSENT'} ` +
+                    `directPath=${d.directPath ? 'PRESENT' : 'ABSENT'} ` +
+                    `url=${d.url ? 'PRESENT' : 'ABSENT'} ` +
+                    `mimetype=${d.mimetype ?? 'null'} ` +
+                    `fileLength=${d.fileLength ?? 'null'}`
+                  );
+                }
+
                 // Download each detected media payload (if any) while preserving text.
                 for (const media of parsedPayload.media) {
                   const mediaData = await this.downloadMediaWithRetry(msg);

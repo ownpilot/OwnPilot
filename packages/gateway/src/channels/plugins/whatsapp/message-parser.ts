@@ -22,6 +22,12 @@ export interface ParsedWhatsAppMessageMetadata {
     hasMediaKey: boolean;
     hasUrl: boolean;
     hasDirectPath: boolean;
+    /** Base64-encoded mediaKey (AES-256-CBC per-message key). Present only when WhatsApp includes it. */
+    mediaKey?: string;
+    /** CDN direct path for media download. */
+    directPath?: string;
+    /** Full CDN URL for media download. */
+    url?: string;
   };
 }
 
@@ -115,14 +121,27 @@ export function extractWhatsAppMessageMetadata(
           ? (rawSize as { toNumber(): number }).toNumber()
           : undefined;
 
+  const doc = message.documentMessage;
+  const mediaKeyRaw = doc.mediaKey;
+  const mediaKey = mediaKeyRaw
+    ? (mediaKeyRaw instanceof Uint8Array
+        ? Buffer.from(mediaKeyRaw).toString('base64')
+        : typeof mediaKeyRaw === 'string'
+          ? mediaKeyRaw
+          : undefined)
+    : undefined;
+
   return {
     document: {
-      filename: message.documentMessage.fileName ?? undefined,
-      mimeType: message.documentMessage.mimetype ?? 'application/octet-stream',
+      filename: doc.fileName ?? undefined,
+      mimeType: doc.mimetype ?? 'application/octet-stream',
       size,
-      hasMediaKey: Boolean(message.documentMessage.mediaKey),
-      hasUrl: Boolean(message.documentMessage.url),
-      hasDirectPath: Boolean(message.documentMessage.directPath),
+      hasMediaKey: Boolean(mediaKeyRaw),
+      hasUrl: Boolean(doc.url),
+      hasDirectPath: Boolean(doc.directPath),
+      mediaKey,
+      directPath: doc.directPath ?? undefined,
+      url: doc.url ?? undefined,
     },
   };
 }

@@ -79,6 +79,9 @@ describe('parseWhatsAppMessagePayload', () => {
         hasMediaKey: true,
         hasUrl: true,
         hasDirectPath: true,
+        mediaKey: Buffer.from(new Uint8Array([1, 2, 3])).toString('base64'),
+        directPath: '/v/t62/path',
+        url: 'https://mmg.whatsapp.net/test',
       },
     });
   });
