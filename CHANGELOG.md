@@ -5,6 +5,51 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.6] - 2026-03-06
+
+### Added
+
+- **Conversation Sidebar** — Persistent conversation sidebar with ID-based session persistence, inline rename support, and auto-refresh on channel events
+- **Pairing Key Ownership** — Per-channel rotating pairing keys for channel access control with revoke support; pairing key banner on Channels page
+- **WhatsApp Group Support** — Group message storage, group messages API endpoint, group/chat listing endpoints, and passive history sync with on-demand fetch
+- **WhatsApp Anti-Ban Hardening** — P0 anti-ban safety filters, auto-reply protection, history sync race condition fixes, and 440 connectionReplaced reconnect loop fix
+- **WhatsApp Auto-Claim Owner** — Automatically claim channel ownership on first self-chat message, removing the need for manual `/connect`
+- **Crew Orchestration Engine** — Runtime crew orchestration with Plans tab integration and agent lifecycle fixes
+- **Debug System Prompt Breakdown** — Full system prompt section breakdown logged on every request with DebugDrawer UI showing per-section drill-down
+- **Perplexity Agent API** — Added Perplexity Agent API provider configuration
+
+### Fixed
+
+- **Anthropic Prompt Caching** — Moved orchestrator to static cache block; round time context to hour boundary to prevent cache invalidation; moved extensions before cache split point
+- **Provider Empty Content** — Send `null` content instead of `""` for assistant messages with tool_calls (fixes Anthropic validation errors)
+- **Composio Integration** — Fixed `getAvailableApps` flat-array response handling, meta field mapping, and invalid `'google'` slug
+- **Chat Double-Persistence** — Extracted ConversationService, fixed messages being persisted twice
+- **WhatsApp QR Code** — Fixed QR code not appearing when session is stale/expired
+- **WhatsApp Self-Chat** — Fixed intermittent self-chat send failures
+- **Channel Owner Flow** — Reply with `/connect` instructions when no owner claimed; sidebar auto-refresh on channel events
+- **UI Logout Button** — Show Logout button in both connected and disconnected channel states
+- **Extension Creator DOM Error** — Resolved `insertBefore` DOM error in extension creator (#8)
+- **Debug Log Truncation** — Removed truncation from debug log entries, store full section content
+- **Soul Agent Pipeline** — 17 FIXPLAN fixes across heartbeat pipeline and extension creator (commit `12e996d`)
+
+### Changed
+
+- Extracted `ConversationService` from chat route for cleaner separation of concerns
+- Channel history improvements for better message threading
+- Removed unused code and improved type safety in resource tools
+- Removed generated `models-dev-full.json` artifact, updated `.gitignore`
+
+### Security
+
+- **SSRF / DNS Rebinding Protection** — `isBlockedUrl()` sync hostname check + `isPrivateUrlAsync()` with DNS rebinding detection and 1-min cache; applied to browser service, `/fetch-url`, and web-fetch executors
+- **Rate Limiter TTL Cleanup** — Fixed memory leak in sliding window rate limiter
+- **XSS Escaping** — Added output escaping for user-controlled content in HTML responses
+
+### Testing
+
+- 389+ test files, 22,100+ tests total
+- New: soul agent unit tests (127 core tests across 6 files), gateway soul coverage (souls repo, communication tools, heartbeat service)
+
 ## [0.1.5] - 2026-03-02
 
 ### Added
@@ -209,6 +254,7 @@ Initial release of OwnPilot.
 - Docker multi-arch image (amd64 + arm64) published to `ghcr.io/ownpilot/ownpilot`
 - PostgreSQL with pgvector for vector search
 
+[0.1.6]: https://github.com/ownpilot/ownpilot/releases/tag/v0.1.6
 [0.1.5]: https://github.com/ownpilot/ownpilot/releases/tag/v0.1.5
 [0.1.4]: https://github.com/ownpilot/ownpilot/releases/tag/v0.1.4
 [0.1.3]: https://github.com/ownpilot/ownpilot/releases/tag/v0.1.3

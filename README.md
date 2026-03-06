@@ -198,8 +198,9 @@ Privacy-first personal AI assistant platform with soul agents, autonomous backgr
 
 - **Web UI** — React 19 + Vite 7 + Tailwind CSS 4 with dark mode, 57+ pages, 120+ components, code-split
 - **Telegram Bot** — Full bot integration with user/chat filtering, message splitting, HTML/Markdown formatting
-- **WhatsApp (Baileys)** — QR code authentication (no Meta Business account needed), self-chat mode with loop prevention, session persistence
+- **WhatsApp (Baileys)** — QR code authentication (no Meta Business account needed), self-chat mode with loop prevention, session persistence, group message support with passive history sync
 - **Channel User Approval** — Multi-step verification: approval code flow, manual admin approval, user blocking/unblocking with real-time notifications
+- **Channel Pairing Keys** — Per-channel rotating pairing keys for ownership verification with revoke support
 - **EventBus** — Unified event backbone with EventBusBridge translating dot-notation events to WebSocket colon-notation; Event Monitor UI for live debugging
 - **WebSocket** — Real-time broadcasts for all data mutations, event subscriptions, session management
 - **REST API** — 120+ route modules with standardized responses, pagination, and error codes
@@ -214,6 +215,7 @@ Privacy-first personal AI assistant platform with soul agents, autonomous backgr
 - **Authentication** — None, API Key, or JWT modes
 - **Rate Limiting** — Sliding window with burst support
 - **Tamper-Evident Audit** — Hash chain verification for audit logs
+- **SSRF Protection** — DNS rebinding detection, private IP blocking, and async URL validation with 1-min cache across browser service, fetch-url, and web-fetch executors
 
 ---
 
@@ -547,8 +549,9 @@ Multi-platform messaging with Telegram and WhatsApp support. Channel plugins use
 | Feature                  | Details                                                                      |
 | ------------------------ | ---------------------------------------------------------------------------- |
 | **Telegram**             | Grammy bot with long polling or webhook mode, user/chat filtering            |
-| **WhatsApp (Baileys)**   | QR code auth (no Meta Business account), self-chat mode, session persistence |
+| **WhatsApp (Baileys)**   | QR code auth (no Meta Business account), self-chat mode, group support, history sync |
 | **User Approval**        | Multi-step verification: approval code, manual admin approval, blocking      |
+| **Pairing Keys**         | Per-channel rotating ownership keys with revoke support                      |
 | **Message Splitting**    | Intelligent splitting at newlines/spaces for messages > 4096 chars           |
 | **Soft/Hard Disconnect** | `disconnect()` preserves session; `logout()` clears session data             |
 | **Event Integration**    | Channel events forwarded via EventBus → WebSocket for real-time UI           |
