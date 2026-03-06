@@ -155,6 +155,9 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
   // Anti-ban: message deduplication (prevent double AI responses on reconnect)
   private processedMsgIds = new Set<string>();
 
+  // Reconnect gap tracking — records when the socket last went offline
+  private lastDisconnectedAt: number | null = null;
+
   // Anti-ban: retry counter cache (prevents infinite retry loops — Evolution + WAHA pattern)
   private msgRetryCounterCache = new SimpleTTLCache<number>(300_000); // 5 min TTL
   // Anti-ban: device info cache (reduces protocol overhead — WAHA pattern)
@@ -273,6 +276,16 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
           }
         }
 
+        if (upsert.type === 'append') {
+          // Offline/reconnect messages: save to DB but do NOT trigger AI responses.
+          // Serialized via historySyncQueue to prevent race conditions with messaging-history.set.
+          // SAFETY: NEVER emit MESSAGE_RECEIVED from this path.
+          this.handleOfflineMessages(upsert.messages).catch((err) => {
+            log.error('[WhatsApp] Failed to handle offline messages:', err);
+          });
+          return;
+        }
+
         if (upsert.type !== 'notify') return;
         for (const msg of upsert.messages) {
           log.info(
@@ -294,12 +307,7 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
 
           // Track as processed BEFORE handling (idempotency)
           if (msgId) {
-            this.processedMsgIds.add(msgId);
-            // Cap the set to prevent memory leak
-            if (this.processedMsgIds.size > PROCESSED_MSG_IDS_CAP) {
-              const first = this.processedMsgIds.values().next().value;
-              if (first !== undefined) this.processedMsgIds.delete(first);
-            }
+            this.addToProcessedMsgIds(msgId);
           }
 
           this.handleIncomingMessage(msg).catch((err) => {
@@ -438,11 +446,7 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
 
                 // Seed processedMsgIds to prevent double-processing on reconnect
                 if (messageId) {
-                  this.processedMsgIds.add(messageId);
-                  if (this.processedMsgIds.size > PROCESSED_MSG_IDS_CAP) {
-                    const first = this.processedMsgIds.values().next().value;
-                    if (first !== undefined) this.processedMsgIds.delete(first);
-                  }
+                  this.addToProcessedMsgIds(messageId);
                 }
 
                 // Keep history media payload in cache so retry endpoint can patch stale DB rows.
@@ -1100,6 +1104,12 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
 
     // Connected
     if (connection === 'open') {
+      // Log reconnection gap duration (helps debug missed messages)
+      if (this.lastDisconnectedAt) {
+        const gapMs = Date.now() - this.lastDisconnectedAt;
+        log.info(`[WhatsApp] Reconnected after ${Math.round(gapMs / 1000)}s gap`);
+      }
+
       this.status = 'connected';
       this.qrCode = null;
       this.reconnectAttempt = 0;
@@ -1129,6 +1139,7 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
 
     // Disconnected
     if (connection === 'close') {
+      this.lastDisconnectedAt = Date.now();
       const error = lastDisconnect?.error;
       const statusCode = (error as Boom)?.output?.statusCode;
       const isLoggedOut = statusCode === DisconnectReason.loggedOut;
@@ -1620,6 +1631,162 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
     if (!domain) return jid;
     const phone = userPart!.split(':')[0]!;
     return `${phone}@${domain}`;
+  }
+
+  /** Add a message ID to the dedup set with FIFO cap eviction. */
+  private addToProcessedMsgIds(messageId: string): void {
+    this.processedMsgIds.add(messageId);
+    if (this.processedMsgIds.size > PROCESSED_MSG_IDS_CAP) {
+      const first = this.processedMsgIds.values().next().value;
+      if (first !== undefined) this.processedMsgIds.delete(first);
+    }
+  }
+
+  /**
+   * Parse a WAMessage timestamp to a Date object.
+   * Handles number, BigInt, and protobuf Long formats.
+   * Returns null if timestamp is invalid (caller decides whether to skip or fallback).
+   */
+  private parseMessageTimestamp(rawTs: WAMessage['messageTimestamp']): Date | null {
+    const seconds = this.extractMessageTimestampSeconds(rawTs);
+    return seconds != null ? new Date(seconds * 1000) : null;
+  }
+
+  /**
+   * Save offline/reconnect messages (type='append') to DB without triggering AI responses.
+   * Serialized via historySyncQueue to prevent race conditions with messaging-history.set.
+   *
+   * SAFETY: This method MUST NEVER emit MESSAGE_RECEIVED or call handleIncomingMessage.
+   * Offline messages are stored for history completeness only.
+   *
+   * Design decisions (backed by 10-agent research):
+   * - Batch-collect all messages, then single createBatch call (not per-message create)
+   * - Metadata-only for media (no downloadMediaWithRetry — ban risk)
+   * - Serialized via historySyncQueue (prevents race with history sync)
+   * - Uses createBatch with ON CONFLICT DO NOTHING (DB-level dedup)
+   */
+  private async handleOfflineMessages(messages: WAMessage[]): Promise<void> {
+    if (messages.length === 0) return;
+
+    // Serialize with history sync to prevent race conditions
+    this.historySyncQueue = this.historySyncQueue.then(async () => {
+      try {
+        const { ChannelMessagesRepository } =
+          await import('../../../db/repositories/channel-messages.js');
+        const messagesRepo = new ChannelMessagesRepository();
+
+        const rows: Array<Parameters<typeof messagesRepo.createBatch>[0][number]> = [];
+
+        for (const msg of messages) {
+          const remoteJid = msg.key?.remoteJid;
+          if (!remoteJid) continue;
+
+          const isGroup = remoteJid.endsWith('@g.us');
+          const isDM = remoteJid.endsWith('@s.whatsapp.net');
+          if (!isDM && !isGroup) continue;
+
+          // Skip protocol/stub messages (Baileys isRealMessage pattern)
+          if (msg.messageStubType != null && !msg.message) continue;
+
+          // Skip our own messages (except self-chat)
+          const isSelf = this.isSelfChat(remoteJid);
+          if (msg.key.fromMe && !isSelf) continue;
+
+          const messageId = msg.key.id ?? '';
+          if (!messageId) continue;
+
+          const m = msg.message;
+          if (!m) continue;
+
+          // Dedup: skip if already processed by notify or history sync
+          if (this.processedMsgIds.has(messageId)) continue;
+
+          // Skip group messages without participant (can't determine sender)
+          if (isGroup && !msg.key.participant) continue;
+
+          const parsedPayload = parseWhatsAppMessagePayload(m);
+          const parsedMetadata = extractWhatsAppMessageMetadata(m);
+
+          // Metadata-only for media: extract metadata but do NOT download binary.
+          // CDN URLs may be expired, and burst downloads trigger ban detection.
+          // Media can be recovered later via the recover-media endpoint with throttling.
+          const attachments: ChannelMessageAttachmentInput[] = [];
+          for (const media of parsedPayload.media) {
+            attachments.push(this.toAttachmentInput(media, undefined));
+          }
+
+          // Skip empty messages (no text, no recognizable content)
+          if (!parsedPayload.text && parsedPayload.media.length === 0) continue;
+          const contentText = parsedPayload.text || parsedPayload.media[0]?.filename || '[Attachment]';
+
+          const participantJid = isGroup ? (msg.key.participant ?? '') : remoteJid;
+          const phone = this.phoneFromJid(participantJid || remoteJid);
+
+          // Parse timestamp
+          const timestamp = this.parseMessageTimestamp(msg.messageTimestamp);
+          if (!timestamp) {
+            log.warn(`[WhatsApp] Offline: skipping message ${messageId} — no valid timestamp`);
+            continue;
+          }
+
+          const resolvedName = await this.resolveDisplayName(phone, msg.pushName || undefined);
+
+          rows.push({
+            id: `${this.pluginId}:${messageId}`,
+            channelId: this.pluginId,
+            externalId: messageId,
+            direction: 'inbound' as const,
+            senderId: phone,
+            senderName: resolvedName,
+            content: contentText,
+            contentType: parsedPayload.media.length > 0 ? 'attachment' : 'text',
+            attachments: attachments.length > 0 ? attachments : undefined,
+            metadata: {
+              platformMessageId: messageId,
+              jid: remoteJid,
+              isGroup,
+              pushName: msg.pushName || undefined,
+              ...(isGroup && participantJid ? { participant: participantJid } : {}),
+              offlineSync: true,
+              ...parsedMetadata,
+            },
+            createdAt: timestamp,
+          });
+
+          // Seed processedMsgIds to prevent double-processing if notify arrives later
+          this.addToProcessedMsgIds(messageId);
+        }
+
+        if (rows.length > 0) {
+          const inserted = await messagesRepo.createBatch(rows);
+
+          // Enrich existing rows with media metadata (same pattern as history sync)
+          const enrichItems = rows
+            .map((row) => {
+              const doc = (row.metadata as Record<string, unknown>)?.document as
+                | WhatsAppDocumentMetadata
+                | undefined;
+              return doc?.mediaKey ? { id: row.id, documentMeta: doc } : null;
+            })
+            .filter((item): item is NonNullable<typeof item> => item !== null);
+
+          const enriched = enrichItems.length > 0
+            ? await messagesRepo.enrichMediaMetadataBatch(enrichItems)
+            : 0;
+          if (enriched > 0) {
+            log.info(`[WhatsApp] Offline sync enriched ${enriched} existing rows with mediaKey`);
+          }
+
+          log.info(
+            `[WhatsApp] Offline sync saved ${inserted}/${rows.length} messages to DB (from ${messages.length} append messages)`
+          );
+        } else {
+          log.info(`[WhatsApp] Offline sync — no processable messages in ${messages.length} append batch`);
+        }
+      } catch (err) {
+        log.error('[WhatsApp] Offline sync failed:', err);
+      }
+    });
   }
 
   /** Check if a message is sent to the user's own chat (self-chat). */
