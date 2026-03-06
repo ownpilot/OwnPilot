@@ -272,6 +272,19 @@ export class ChannelMessagesRepository extends BaseRepository {
     );
   }
 
+  /**
+   * Replace attachments JSON for an existing message.
+   * Used by retry-media flow after downloading missing binary payload.
+   */
+  async updateAttachments(id: string, attachments: ChannelMessageAttachmentInput[]): Promise<boolean> {
+    const serialized = serializeAttachments(attachments);
+    const result = await this.execute(
+      `UPDATE channel_messages SET attachments = $1 WHERE id = $2`,
+      [JSON.stringify(serialized), id]
+    );
+    return result.changes > 0;
+  }
+
   async delete(id: string): Promise<boolean> {
     const result = await this.execute(`DELETE FROM channel_messages WHERE id = $1`, [id]);
     return result.changes > 0;
@@ -423,6 +436,60 @@ export class ChannelMessagesRepository extends BaseRepository {
   }
 
   /**
+   * Get the latest message for a specific chat JID in a channel.
+   * Useful as an anchor when requesting additional history from the provider.
+   */
+  async getLatestByChat(channelId: string, chatJid: string): Promise<ChannelMessage | null> {
+    const row = await this.queryOne<ChannelMessageRow>(
+      `SELECT * FROM channel_messages
+       WHERE channel_id = $1
+         AND metadata->>'jid' = $2
+       ORDER BY created_at DESC
+       LIMIT 1`,
+      [channelId, chatJid]
+    );
+    return row ? rowToChannelMessage(row) : null;
+  }
+
+  /**
+   * Get the oldest message for a specific chat JID in a channel.
+   * Useful as an "oldest known" anchor for provider-side history backfill requests.
+   */
+  async getOldestByChat(channelId: string, chatJid: string): Promise<ChannelMessage | null> {
+    const row = await this.queryOne<ChannelMessageRow>(
+      `SELECT * FROM channel_messages
+       WHERE channel_id = $1
+         AND metadata->>'jid' = $2
+       ORDER BY created_at ASC
+       LIMIT 1`,
+      [channelId, chatJid]
+    );
+    return row ? rowToChannelMessage(row) : null;
+  }
+
+  /**
+   * Get the earliest message strictly newer than a timestamp for a chat.
+   * Useful when an API expects an "oldest known" anchor and we want to
+   * include a specific older target message in the returned history window.
+   */
+  async getNextByChatAfter(
+    channelId: string,
+    chatJid: string,
+    createdAfter: Date
+  ): Promise<ChannelMessage | null> {
+    const row = await this.queryOne<ChannelMessageRow>(
+      `SELECT * FROM channel_messages
+       WHERE channel_id = $1
+         AND metadata->>'jid' = $2
+         AND created_at > $3
+       ORDER BY created_at ASC
+       LIMIT 1`,
+      [channelId, chatJid, createdAfter.toISOString()]
+    );
+    return row ? rowToChannelMessage(row) : null;
+  }
+
+  /**
    * Batch insert messages with deduplication (ON CONFLICT DO NOTHING).
    * Used for history sync — processes in chunks of 100 for memory safety.
    */
@@ -469,7 +536,17 @@ export class ChannelMessagesRepository extends BaseRepository {
                 data.createdAt ? data.createdAt.toISOString() : new Date().toISOString(),
               ]
             );
-            if (result.changes > 0) inserted++;
+            if (result.changes > 0) {
+              inserted++;
+              continue;
+            }
+
+            // Conflict path: if row already exists with missing attachment binary,
+            // repair it using the fresh attachment payload from history sync.
+            if (serialized && serialized.length > 0) {
+              const repaired = await this.repairMissingAttachmentData(data.id, serialized);
+              if (repaired) inserted++;
+            }
           } catch (err) {
             // ON CONFLICT DO NOTHING won't throw — this catches real DB errors
             console.warn('[createBatch] Row insert failed:', { id: data.id, error: String(err) });
@@ -482,6 +559,70 @@ export class ChannelMessagesRepository extends BaseRepository {
       }
     }
     return inserted;
+  }
+
+  /**
+   * Fill missing attachment.data for an existing row when a duplicate message arrives
+   * with binary payload (history re-sync, retry, etc.).
+   */
+  private async repairMissingAttachmentData(
+    id: string,
+    incoming: ChannelMessageAttachment[]
+  ): Promise<boolean> {
+    const incomingHasBinary = incoming.some((a) => typeof a.data === 'string' && a.data.length > 0);
+    if (!incomingHasBinary) return false;
+
+    const existing = await this.getById(id);
+    if (!existing?.attachments || existing.attachments.length === 0) return false;
+
+    const merged: ChannelMessageAttachment[] = [];
+    const maxLen = Math.max(existing.attachments.length, incoming.length);
+    let changed = false;
+
+    for (let index = 0; index < maxLen; index++) {
+      const current = existing.attachments[index];
+      const next = incoming[index];
+
+      if (!current && next) {
+        const hasData = typeof next.data === 'string' && next.data.length > 0;
+        merged.push(next);
+        if (hasData) changed = true;
+        continue;
+      }
+
+      if (!current) continue;
+      if (!next) {
+        merged.push(current);
+        continue;
+      }
+
+      const currentMissing = !current.data || current.data.length === 0;
+      const nextHasData = typeof next.data === 'string' && next.data.length > 0;
+
+      if (currentMissing && nextHasData) {
+        changed = true;
+        merged.push({
+          ...current,
+          type: next.type ?? current.type,
+          url: next.url ?? current.url,
+          name: next.name ?? current.name,
+          mimeType: next.mimeType ?? current.mimeType,
+          filename: next.filename ?? current.filename,
+          size: next.size ?? current.size,
+          data: next.data,
+        });
+      } else {
+        merged.push(current);
+      }
+    }
+
+    if (!changed) return false;
+
+    const result = await this.execute(
+      `UPDATE channel_messages SET attachments = $1 WHERE id = $2`,
+      [JSON.stringify(merged), id]
+    );
+    return result.changes > 0;
   }
 
   async countInbox(): Promise<number> {

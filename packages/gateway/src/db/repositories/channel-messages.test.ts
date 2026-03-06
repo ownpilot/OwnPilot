@@ -70,6 +70,10 @@ describe('ChannelMessagesRepository', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mockAdapter.query.mockReset().mockResolvedValue([]);
+    mockAdapter.queryOne.mockReset().mockResolvedValue(null);
+    mockAdapter.execute.mockReset().mockResolvedValue({ changes: 0 });
+    mockAdapter.transaction.mockReset().mockImplementation((fn: () => Promise<unknown>) => fn());
     repo = new ChannelMessagesRepository();
   });
 
@@ -252,6 +256,104 @@ describe('ChannelMessagesRepository', () => {
     });
   });
 
+  // ---- getLatestByChat ----
+
+  describe('getLatestByChat', () => {
+    it('returns latest message for a specific chat ordered by created_at DESC', async () => {
+      mockAdapter.queryOne.mockResolvedValueOnce(
+        makeMessageRow({ id: 'msg-latest', created_at: '2026-03-05T08:02:53Z' })
+      );
+
+      const result = await repo.getLatestByChat('channel.whatsapp', '120363423491841999@g.us');
+
+      expect(result).not.toBeNull();
+      expect(result!.id).toBe('msg-latest');
+      expect(mockAdapter.queryOne).toHaveBeenCalledWith(
+        expect.stringContaining("metadata->>'jid' = $2"),
+        ['channel.whatsapp', '120363423491841999@g.us']
+      );
+      const sql = mockAdapter.queryOne.mock.calls[0]?.[0] as string;
+      expect(sql).toContain('ORDER BY created_at DESC');
+      expect(sql).toContain('LIMIT 1');
+    });
+
+    it('returns null when chat has no messages', async () => {
+      mockAdapter.queryOne.mockResolvedValueOnce(null);
+
+      const result = await repo.getLatestByChat('channel.whatsapp', 'missing@g.us');
+
+      expect(result).toBeNull();
+    });
+  });
+
+  // ---- getOldestByChat ----
+
+  describe('getOldestByChat', () => {
+    it('returns oldest message for a specific chat ordered by created_at ASC', async () => {
+      mockAdapter.queryOne.mockResolvedValueOnce(
+        makeMessageRow({ id: 'msg-oldest', created_at: '2026-02-28T08:02:53Z' })
+      );
+
+      const result = await repo.getOldestByChat('channel.whatsapp', '120363423491841999@g.us');
+
+      expect(result).not.toBeNull();
+      expect(result!.id).toBe('msg-oldest');
+      expect(mockAdapter.queryOne).toHaveBeenCalledWith(
+        expect.stringContaining("metadata->>'jid' = $2"),
+        ['channel.whatsapp', '120363423491841999@g.us']
+      );
+      const sql = mockAdapter.queryOne.mock.calls[0]?.[0] as string;
+      expect(sql).toContain('ORDER BY created_at ASC');
+      expect(sql).toContain('LIMIT 1');
+    });
+
+    it('returns null when chat has no messages', async () => {
+      mockAdapter.queryOne.mockResolvedValueOnce(null);
+
+      const result = await repo.getOldestByChat('channel.whatsapp', 'missing@g.us');
+
+      expect(result).toBeNull();
+    });
+  });
+
+  // ---- getNextByChatAfter ----
+
+  describe('getNextByChatAfter', () => {
+    it('returns earliest newer message for a specific chat ordered by created_at ASC', async () => {
+      mockAdapter.queryOne.mockResolvedValueOnce(
+        makeMessageRow({ id: 'msg-next', created_at: '2026-03-05T08:03:10Z' })
+      );
+
+      const result = await repo.getNextByChatAfter(
+        'channel.whatsapp',
+        '120363423491841999@g.us',
+        new Date('2026-03-05T08:02:53Z')
+      );
+
+      expect(result).not.toBeNull();
+      expect(result!.id).toBe('msg-next');
+      expect(mockAdapter.queryOne).toHaveBeenCalledWith(
+        expect.stringContaining("created_at > $3"),
+        ['channel.whatsapp', '120363423491841999@g.us', '2026-03-05T08:02:53.000Z']
+      );
+      const sql = mockAdapter.queryOne.mock.calls[0]?.[0] as string;
+      expect(sql).toContain('ORDER BY created_at ASC');
+      expect(sql).toContain('LIMIT 1');
+    });
+
+    it('returns null when there is no newer message', async () => {
+      mockAdapter.queryOne.mockResolvedValueOnce(null);
+
+      const result = await repo.getNextByChatAfter(
+        'channel.whatsapp',
+        'missing@g.us',
+        new Date('2026-03-05T08:02:53Z')
+      );
+
+      expect(result).toBeNull();
+    });
+  });
+
   // ---- getInbox ----
 
   describe('getInbox', () => {
@@ -380,6 +482,118 @@ describe('ChannelMessagesRepository', () => {
     });
   });
 
+  // ---- createBatch ----
+
+  describe('createBatch', () => {
+    it('repairs existing row when insert conflicts and incoming attachment has binary data', async () => {
+      mockAdapter.execute
+        // INSERT ... ON CONFLICT DO NOTHING
+        .mockResolvedValueOnce({ changes: 0 })
+        // UPDATE attachments for repair
+        .mockResolvedValueOnce({ changes: 1 });
+
+      mockAdapter.queryOne.mockResolvedValueOnce(
+        makeMessageRow({
+          id: 'msg-1',
+          content_type: 'attachment',
+          attachments: JSON.stringify([
+            {
+              type: 'file',
+              url: '',
+              filename: 'old.SOR',
+              mimeType: 'application/octet-stream',
+            },
+          ]),
+        })
+      );
+
+      const repaired = await repo.createBatch([
+        {
+          id: 'msg-1',
+          channelId: 'channel.whatsapp',
+          direction: 'inbound',
+          content: '[Attachment]',
+          contentType: 'attachment',
+          attachments: [
+            {
+              type: 'file',
+              url: '',
+              filename: 'old.SOR',
+              mimeType: 'application/octet-stream',
+              data: new Uint8Array([1, 2, 3]),
+            },
+          ],
+        },
+      ]);
+
+      expect(repaired).toBe(1);
+      expect(mockAdapter.execute).toHaveBeenNthCalledWith(
+        2,
+        expect.stringContaining('UPDATE channel_messages SET attachments = $1 WHERE id = $2'),
+        expect.any(Array)
+      );
+      const updateParams = mockAdapter.execute.mock.calls[1]?.[1] as unknown[];
+      expect(updateParams[1]).toBe('msg-1');
+      const parsed = JSON.parse(String(updateParams[0])) as Array<Record<string, unknown>>;
+      expect(parsed).toHaveLength(1);
+      expect(parsed[0]).toEqual(
+        expect.objectContaining({
+          type: 'file',
+          url: '',
+          mimeType: 'application/octet-stream',
+          filename: 'old.SOR',
+          data: 'AQID',
+          size: 3,
+        })
+      );
+    });
+
+    it('does not overwrite existing attachment data during conflict repair', async () => {
+      mockAdapter.execute
+        // INSERT ... ON CONFLICT DO NOTHING
+        .mockResolvedValueOnce({ changes: 0 });
+
+      mockAdapter.queryOne.mockResolvedValueOnce(
+        makeMessageRow({
+          id: 'msg-1',
+          content_type: 'attachment',
+          attachments: JSON.stringify([
+            {
+              type: 'file',
+              url: '',
+              filename: 'old.SOR',
+              mimeType: 'application/octet-stream',
+              data: 'ZXhpc3Rpbmc=',
+              size: 8,
+            },
+          ]),
+        })
+      );
+
+      const repaired = await repo.createBatch([
+        {
+          id: 'msg-1',
+          channelId: 'channel.whatsapp',
+          direction: 'inbound',
+          content: '[Attachment]',
+          contentType: 'attachment',
+          attachments: [
+            {
+              type: 'file',
+              url: '',
+              filename: 'old.SOR',
+              mimeType: 'application/octet-stream',
+              data: new Uint8Array([1, 2, 3]),
+            },
+          ],
+        },
+      ]);
+
+      expect(repaired).toBe(0);
+      expect(mockAdapter.execute).toHaveBeenCalledTimes(1);
+    });
+  });
+
   // ---- delete ----
 
   describe('delete', () => {
@@ -399,6 +613,56 @@ describe('ChannelMessagesRepository', () => {
       mockAdapter.execute.mockResolvedValueOnce({ changes: 0 });
 
       const result = await repo.delete('missing');
+
+      expect(result).toBe(false);
+    });
+  });
+
+  // ---- updateAttachments ----
+
+  describe('updateAttachments', () => {
+    it('updates serialized attachments for an existing message', async () => {
+      mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
+
+      const result = await repo.updateAttachments('msg-1', [
+        {
+          type: 'file',
+          url: '',
+          mimeType: 'application/octet-stream',
+          filename: '2313JJ_12_V1.SOR',
+          data: new Uint8Array([1, 2, 3]),
+        },
+      ]);
+
+      expect(result).toBe(true);
+      expect(mockAdapter.execute).toHaveBeenCalledWith(
+        expect.stringContaining('UPDATE channel_messages SET attachments = $1 WHERE id = $2'),
+        [
+          JSON.stringify([
+            {
+              type: 'file',
+              url: '',
+              name: undefined,
+              mimeType: 'application/octet-stream',
+              filename: '2313JJ_12_V1.SOR',
+              data: 'AQID',
+              size: 3,
+            },
+          ]),
+          'msg-1',
+        ]
+      );
+    });
+
+    it('returns false when no rows are updated', async () => {
+      mockAdapter.execute.mockResolvedValueOnce({ changes: 0 });
+
+      const result = await repo.updateAttachments('missing', [
+        {
+          type: 'file',
+          url: '',
+        },
+      ]);
 
       expect(result).toBe(false);
     });

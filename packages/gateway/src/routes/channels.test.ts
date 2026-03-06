@@ -84,9 +84,12 @@ vi.mock('@ownpilot/core', async (importOriginal) => {
 const mockChannelMessagesRepo = {
   getByChannel: vi.fn(async () => []),
   getAll: vi.fn(async () => []),
+  getById: vi.fn(async () => null),
+  getNextByChatAfter: vi.fn(async () => null),
   count: vi.fn(async () => 0),
   deleteAll: vi.fn(async () => 5),
   create: vi.fn(async () => undefined),
+  updateAttachments: vi.fn(async () => true),
   deleteByChannel: vi.fn(async () => 3),
 };
 
@@ -513,6 +516,199 @@ describe('Channels Routes', () => {
       expect(res.status).toBe(500);
       const json = await res.json();
       expect(json.error.code).toBe('FETCH_FAILED');
+    });
+  });
+
+  // ========================================================================
+  // POST /channels/:id/messages/:messageId/retry-media
+  // ========================================================================
+
+  describe('POST /channels/:id/messages/:messageId/retry-media', () => {
+    it('retries media download and updates DB attachment data', async () => {
+      const retryMediaDownload = vi.fn(async () => ({
+        data: new Uint8Array([1, 2, 3]),
+        size: 3,
+        mimeType: 'application/octet-stream',
+        filename: '2313JJ_12_V1.SOR',
+      }));
+      mockService.getChannel.mockImplementation((id: string) =>
+        id === 'channel.telegram' ? { ...telegramApi, retryMediaDownload } : undefined
+      );
+      mockChannelMessagesRepo.getById.mockResolvedValueOnce({
+        id: 'msg-1',
+        channelId: 'channel.telegram',
+        externalId: 'wam-1',
+        content: '[Attachment]',
+        contentType: 'attachment',
+        attachments: [{ type: 'file', url: '', filename: '2313JJ_12_V1.SOR' }],
+        metadata: { platformMessageId: 'wam-1', jid: '120363423491841999@g.us' },
+      });
+
+      const res = await app.request('/channels/channel.telegram/messages/msg-1/retry-media', {
+        method: 'POST',
+      });
+
+      expect(res.status).toBe(200);
+      const json = await res.json();
+      expect(json.success).toBe(true);
+      expect(json.data.downloaded).toBe(true);
+      expect(json.data.size).toBe(3);
+      expect(retryMediaDownload).toHaveBeenCalledWith({
+        messageId: 'wam-1',
+        remoteJid: '120363423491841999@g.us',
+        participant: undefined,
+        fromMe: false,
+      });
+      expect(mockChannelMessagesRepo.updateAttachments).toHaveBeenCalledWith(
+        'msg-1',
+        expect.arrayContaining([
+          expect.objectContaining({
+            type: 'file',
+            filename: '2313JJ_12_V1.SOR',
+            data: 'AQID',
+            size: 3,
+          }),
+        ])
+      );
+    });
+
+    it('returns 501 when channel API does not support retryMediaDownload', async () => {
+      mockService.getChannel.mockReturnValue(telegramApi);
+
+      const res = await app.request('/channels/channel.telegram/messages/msg-1/retry-media', {
+        method: 'POST',
+      });
+
+      expect(res.status).toBe(501);
+      const json = await res.json();
+      expect(json.error.code).toBe('INVALID_REQUEST');
+    });
+
+    it('retries media when history row has contentType=attachment but attachments is null', async () => {
+      const retryMediaDownload = vi.fn(async () => ({
+        data: new Uint8Array([9, 8, 7]),
+        size: 3,
+        mimeType: 'application/octet-stream',
+        filename: 'history-file.bin',
+      }));
+      mockService.getChannel.mockImplementation((id: string) =>
+        id === 'channel.telegram' ? { ...telegramApi, retryMediaDownload } : undefined
+      );
+      mockChannelMessagesRepo.getById.mockResolvedValueOnce({
+        id: 'msg-2',
+        channelId: 'channel.telegram',
+        externalId: 'wam-2',
+        content: '[Attachment]',
+        contentType: 'attachment',
+        attachments: null,
+        metadata: { platformMessageId: 'wam-2', jid: '120363423491841999@g.us' },
+      });
+
+      const res = await app.request('/channels/channel.telegram/messages/msg-2/retry-media', {
+        method: 'POST',
+      });
+
+      expect(res.status).toBe(200);
+      const json = await res.json();
+      expect(json.success).toBe(true);
+      expect(json.data.downloaded).toBe(true);
+      expect(retryMediaDownload).toHaveBeenCalledWith({
+        messageId: 'wam-2',
+        remoteJid: '120363423491841999@g.us',
+        participant: undefined,
+        fromMe: false,
+      });
+      expect(mockChannelMessagesRepo.updateAttachments).toHaveBeenCalledWith(
+        'msg-2',
+        expect.arrayContaining([
+          expect.objectContaining({
+            type: 'file',
+            filename: 'history-file.bin',
+            data: 'CQgH',
+            size: 3,
+          }),
+        ])
+      );
+    });
+
+    it('falls back to group history sync when retry cache is cold and returns repaired attachment', async () => {
+      const retryMediaDownload = vi.fn(async () => {
+        throw new Error('Message payload not found in cache for retry');
+      });
+      const fetchGroupHistory = vi.fn(async () => 'history-session-1');
+      const fetchGroupHistoryFromAnchor = vi.fn(async () => 'history-session-anchor-1');
+      mockService.getChannel.mockImplementation((id: string) =>
+        id === 'channel.telegram'
+          ? { ...telegramApi, retryMediaDownload, fetchGroupHistory, fetchGroupHistoryFromAnchor }
+          : undefined
+      );
+
+      mockChannelMessagesRepo.getById
+        // initial row read
+        .mockResolvedValueOnce({
+          id: 'msg-3',
+          channelId: 'channel.telegram',
+          externalId: 'wam-3',
+          content: '[Attachment]',
+          contentType: 'attachment',
+          attachments: [{ type: 'file', url: '', filename: 'cold-cache.bin' }],
+          metadata: { platformMessageId: 'wam-3', jid: '120363423491841999@g.us', fromMe: true },
+          createdAt: new Date('2026-03-05T08:00:00Z'),
+        })
+        // first poll after fetchGroupHistory sees repaired data
+        .mockResolvedValueOnce({
+          id: 'msg-3',
+          channelId: 'channel.telegram',
+          externalId: 'wam-3',
+          content: '[Attachment]',
+          contentType: 'attachment',
+          attachments: [
+            {
+              type: 'file',
+              url: '',
+              filename: 'cold-cache.bin',
+              mimeType: 'application/octet-stream',
+              size: 3,
+              data: 'AQID',
+            },
+          ],
+          metadata: { platformMessageId: 'wam-3', jid: '120363423491841999@g.us' },
+        });
+      mockChannelMessagesRepo.getNextByChatAfter.mockResolvedValueOnce({
+        id: 'msg-next',
+        channelId: 'channel.telegram',
+        externalId: 'wam-next',
+        content: '[Attachment]',
+        contentType: 'attachment',
+        attachments: [{ type: 'file', url: '', filename: 'next.bin' }],
+        metadata: {
+          platformMessageId: 'wam-next',
+          jid: '120363423491841999@g.us',
+          fromMe: false,
+          participant: '111111111@s.whatsapp.net',
+        },
+        createdAt: new Date('2026-03-05T08:00:10Z'),
+      });
+
+      const res = await app.request('/channels/channel.telegram/messages/msg-3/retry-media', {
+        method: 'POST',
+      });
+
+      expect(res.status).toBe(200);
+      const json = await res.json();
+      expect(json.success).toBe(true);
+      expect(json.data.downloaded).toBe(true);
+      expect(json.data.source).toBe('history-sync-repair');
+      expect(fetchGroupHistoryFromAnchor).toHaveBeenCalledWith({
+        groupJid: '120363423491841999@g.us',
+        messageId: 'wam-next',
+        messageTimestamp: 1772697610,
+        count: 50,
+        fromMe: false,
+        participant: '111111111@s.whatsapp.net',
+      });
+      expect(fetchGroupHistory).not.toHaveBeenCalled();
+      expect(mockChannelMessagesRepo.updateAttachments).not.toHaveBeenCalled();
     });
   });
 
