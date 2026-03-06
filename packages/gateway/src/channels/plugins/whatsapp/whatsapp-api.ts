@@ -925,11 +925,19 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
     // Step 2: Explicit re-upload request — asks sender's phone to re-upload file to CDN.
     // Baileys downloadMediaMessage has a bug in RC9: checks error.status but Boom sets
     // output.statusCode, so automatic reuploadRequest never triggers. We call it explicitly.
+    // Timeout: updateMediaMessage waits indefinitely for sender's phone response.
+    // Add 30s timeout to prevent infinite hang if sender is offline.
     log.info(
       `[retryMediaFromMetadata] Requesting media re-upload from sender's phone for msgId=${params.messageId}`
     );
 
-    const updatedMsg = await this.sock.updateMediaMessage(reconstructedMsg);
+    const REUPLOAD_TIMEOUT_MS = 30_000;
+    const updatedMsg = await Promise.race([
+      this.sock.updateMediaMessage(reconstructedMsg),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('Re-upload request timed out — sender phone may be offline')), REUPLOAD_TIMEOUT_MS)
+      ),
+    ]);
 
     log.info(
       `[retryMediaFromMetadata] Re-upload response received for msgId=${params.messageId}, ` +

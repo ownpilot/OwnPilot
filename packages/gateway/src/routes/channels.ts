@@ -374,83 +374,82 @@ channelRoutes.post('/:id/messages/:messageId/retry-media', async (c) => {
       const isCacheMiss = retryErrMsg.includes('cache');
       const isGroupJid = remoteJid.endsWith('@g.us');
 
-      // Fallback: if cache is cold after restart, trigger on-demand history sync once
-      // and wait briefly for DB repair path (createBatch conflict repair) to fill data.
-      if (isCacheMiss && isGroupJid && hasHistoryFetch(api)) {
-        const messageTimestamp = Math.floor(msg.createdAt.getTime() / 1000);
-        const nextAnchor =
-          messageTimestamp > 0
-            ? await messagesRepo.getNextByChatAfter(msg.channelId, remoteJid, msg.createdAt)
-            : null;
-        const anchorMetadata = nextAnchor?.metadata ?? {};
-        const anchorMessageId =
-          typeof anchorMetadata.platformMessageId === 'string' && anchorMetadata.platformMessageId.length > 0
-            ? anchorMetadata.platformMessageId
-            : nextAnchor?.externalId;
-        const anchorTimestamp =
-          nextAnchor?.createdAt instanceof Date
-            ? Math.floor(nextAnchor.createdAt.getTime() / 1000)
-            : messageTimestamp;
-        const anchorFromMe = anchorMetadata.fromMe === true;
-        const anchorParticipant =
-          typeof anchorMetadata.participant === 'string' ? anchorMetadata.participant : undefined;
+      // SHORT-CIRCUIT: If stored metadata (mediaKey) exists in DB, skip history sync
+      // entirely and go directly to re-upload. This avoids the 30s history sync rate
+      // limit and reduces per-file time from ~40s to ~2s.
+      retryResult = await tryStoredMetadataReupload(api, metadata, platformMessageId, remoteJid, participant, fromMe);
 
-        if (hasAnchorHistoryFetch(api) && anchorMessageId && anchorTimestamp > 0) {
-          await api.fetchGroupHistoryFromAnchor({
-            groupJid: remoteJid,
-            messageId: anchorMessageId,
-            messageTimestamp: anchorTimestamp,
-            count: 50,
-            fromMe: anchorFromMe,
-            participant: anchorParticipant,
-          });
-        } else {
-          await api.fetchGroupHistory(remoteJid, 50);
-        }
-        const startedAt = Date.now();
-        const timeoutMs = 12_000;
-        const pollIntervalMs = 800;
+      if (!retryResult) {
+        // No stored metadata available — fall back to history sync + poll
+        if (isCacheMiss && isGroupJid && hasHistoryFetch(api)) {
+          const messageTimestamp = Math.floor(msg.createdAt.getTime() / 1000);
+          const nextAnchor =
+            messageTimestamp > 0
+              ? await messagesRepo.getNextByChatAfter(msg.channelId, remoteJid, msg.createdAt)
+              : null;
+          const anchorMetadata = nextAnchor?.metadata ?? {};
+          const anchorMessageId =
+            typeof anchorMetadata.platformMessageId === 'string' && anchorMetadata.platformMessageId.length > 0
+              ? anchorMetadata.platformMessageId
+              : nextAnchor?.externalId;
+          const anchorTimestamp =
+            nextAnchor?.createdAt instanceof Date
+              ? Math.floor(nextAnchor.createdAt.getTime() / 1000)
+              : messageTimestamp;
+          const anchorFromMe = anchorMetadata.fromMe === true;
+          const anchorParticipant =
+            typeof anchorMetadata.participant === 'string' ? anchorMetadata.participant : undefined;
 
-        while (Date.now() - startedAt < timeoutMs) {
-          try {
-            retryResult = await api.retryMediaDownload({
-              messageId: platformMessageId,
-              remoteJid,
-              participant,
-              fromMe,
+          if (hasAnchorHistoryFetch(api) && anchorMessageId && anchorTimestamp > 0) {
+            await api.fetchGroupHistoryFromAnchor({
+              groupJid: remoteJid,
+              messageId: anchorMessageId,
+              messageTimestamp: anchorTimestamp,
+              count: 50,
+              fromMe: anchorFromMe,
+              participant: anchorParticipant,
             });
-            break;
-          } catch {
-            // keep polling; DB may still be repaired by history sync conflict path
+          } else {
+            await api.fetchGroupHistory(remoteJid, 50);
           }
+          const startedAt = Date.now();
+          const timeoutMs = 12_000;
+          const pollIntervalMs = 800;
 
-          const refreshed = await messagesRepo.getById(messageId);
-          const refreshedAttachment = refreshed?.attachments?.[attachmentIndex];
-          if (refreshedAttachment?.data) {
-            return apiResponse(c, {
-              downloaded: true,
-              messageId,
-              attachmentIndex,
-              size: refreshedAttachment.size ?? null,
-              mimeType: refreshedAttachment.mimeType ?? null,
-              filename: refreshedAttachment.filename ?? null,
-              source: 'history-sync-repair',
-            });
+          while (Date.now() - startedAt < timeoutMs) {
+            try {
+              retryResult = await api.retryMediaDownload({
+                messageId: platformMessageId,
+                remoteJid,
+                participant,
+                fromMe,
+              });
+              break;
+            } catch {
+              // keep polling; DB may still be repaired by history sync conflict path
+            }
+
+            const refreshed = await messagesRepo.getById(messageId);
+            const refreshedAttachment = refreshed?.attachments?.[attachmentIndex];
+            if (refreshedAttachment?.data) {
+              return apiResponse(c, {
+                downloaded: true,
+                messageId,
+                attachmentIndex,
+                size: refreshedAttachment.size ?? null,
+                mimeType: refreshedAttachment.mimeType ?? null,
+                filename: refreshedAttachment.filename ?? null,
+                source: 'history-sync-repair',
+              });
+            }
+            await new Promise((resolve) => setTimeout(resolve, pollIntervalMs));
           }
-          await new Promise((resolve) => setTimeout(resolve, pollIntervalMs));
-        }
-        if (retryResult) {
-          // fallback recovered cache and download path
-          // continue with normal attachment update flow below
+          if (!retryResult) {
+            throw error;
+          }
         } else {
-          // Last resort: try stored metadata re-upload (sender's phone re-uploads file)
-          retryResult = await tryStoredMetadataReupload(api, metadata, platformMessageId, remoteJid, participant, fromMe);
-          if (!retryResult) throw error;
+          throw error;
         }
-      } else {
-        // Not a cache miss or not a group — try stored metadata as fallback
-        retryResult = await tryStoredMetadataReupload(api, metadata, platformMessageId, remoteJid, participant, fromMe);
-        if (!retryResult) throw error;
       }
     }
 
@@ -482,6 +481,132 @@ channelRoutes.post('/:id/messages/:messageId/retry-media', async (c) => {
     const status = message.includes('cache') ? 409 : 500;
     return apiError(c, { code: ERROR_CODES.FETCH_FAILED, message }, status);
   }
+});
+
+/**
+ * POST /channels/:id/batch-retry-media
+ * Batch re-download missing attachment data for multiple messages.
+ * Uses stored metadata (mediaKey) path directly — skips history sync for speed.
+ * Throttles requests to avoid WhatsApp rate limits.
+ */
+channelRoutes.post('/:id/batch-retry-media', async (c) => {
+  const pluginId = c.req.param('id');
+
+  const service = getChannelService();
+  const api = service.getChannel(pluginId);
+  if (!api) {
+    return notFoundError(c, 'Channel', pluginId);
+  }
+  if (!hasMediaRetry(api)) {
+    return apiError(
+      c,
+      { code: ERROR_CODES.INVALID_REQUEST, message: 'Channel does not support media retry' },
+      501
+    );
+  }
+
+  let body: { messageIds?: string[]; throttleMs?: number };
+  try {
+    body = await c.req.json();
+  } catch {
+    return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'Invalid JSON body' }, 400);
+  }
+
+  const { messageIds, throttleMs = 5000 } = body;
+  if (!Array.isArray(messageIds) || messageIds.length === 0) {
+    return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'messageIds array required' }, 400);
+  }
+  if (messageIds.length > 50) {
+    return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'Maximum 50 messages per batch' }, 400);
+  }
+
+  const messagesRepo = new ChannelMessagesRepository();
+  const results: Array<{
+    messageId: string;
+    success: boolean;
+    size?: number;
+    filename?: string | null;
+    mimeType?: string | null;
+    error?: string;
+  }> = [];
+
+  for (let i = 0; i < messageIds.length; i++) {
+    const msgId = messageIds[i]!;
+    try {
+      const msg = await messagesRepo.getById(msgId);
+      if (!msg || msg.channelId !== pluginId) {
+        results.push({ messageId: msgId, success: false, error: 'Message not found' });
+        continue;
+      }
+
+      const attachments = [...(msg.attachments ?? [])];
+      if (!attachments[0]) {
+        if (msg.contentType === 'attachment') {
+          attachments[0] = { type: 'file', url: '' };
+        } else {
+          results.push({ messageId: msgId, success: false, error: 'No attachment' });
+          continue;
+        }
+      }
+
+      if (attachments[0]!.data) {
+        results.push({ messageId: msgId, success: false, error: 'Data already exists' });
+        continue;
+      }
+
+      const metadata = msg.metadata ?? {};
+      const platformMessageId =
+        typeof metadata.platformMessageId === 'string' && metadata.platformMessageId.trim().length > 0
+          ? metadata.platformMessageId
+          : msg.externalId;
+      const remoteJid = typeof metadata.jid === 'string' ? metadata.jid : '';
+      const participant = typeof metadata.participant === 'string' ? metadata.participant : undefined;
+      const fromMe = metadata.fromMe === true;
+
+      if (!platformMessageId || !remoteJid) {
+        results.push({ messageId: msgId, success: false, error: 'Missing metadata (platformMessageId or jid)' });
+        continue;
+      }
+
+      // Direct stored metadata path — no cache retry, no history sync
+      const result = await tryStoredMetadataReupload(api, metadata, platformMessageId, remoteJid, participant, fromMe);
+
+      if (result) {
+        const updatedAttachments = attachments;
+        updatedAttachments[0] = {
+          ...updatedAttachments[0]!,
+          mimeType: result.mimeType ?? updatedAttachments[0]!.mimeType,
+          filename: result.filename ?? updatedAttachments[0]!.filename,
+          data: Buffer.from(result.data).toString('base64'),
+          size: result.size,
+        };
+        await messagesRepo.updateAttachments(msgId, updatedAttachments);
+        results.push({
+          messageId: msgId,
+          success: true,
+          size: result.size,
+          filename: result.filename,
+          mimeType: result.mimeType,
+        });
+      } else {
+        results.push({ messageId: msgId, success: false, error: 'No stored metadata (mediaKey/directPath/url)' });
+      }
+    } catch (err) {
+      results.push({ messageId: msgId, success: false, error: getErrorMessage(err, 'Re-upload failed') });
+    }
+
+    // Throttle between requests (skip after last)
+    if (i < messageIds.length - 1 && throttleMs > 0) {
+      await new Promise((resolve) => setTimeout(resolve, throttleMs));
+    }
+  }
+
+  return apiResponse(c, {
+    total: messageIds.length,
+    succeeded: results.filter((r) => r.success).length,
+    failed: results.filter((r) => !r.success).length,
+    results,
+  });
 });
 
 /**
