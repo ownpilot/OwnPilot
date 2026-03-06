@@ -5,6 +5,7 @@
  */
 
 import { BaseRepository, parseJsonField, parseJsonFieldNullable } from './base.js';
+import type { WhatsAppDocumentMetadata } from '../../channels/plugins/whatsapp/message-parser.js';
 
 export interface ChannelMessageAttachment {
   type: string;
@@ -295,7 +296,7 @@ export class ChannelMessagesRepository extends BaseRepository {
    */
   async enrichMediaMetadata(
     id: string,
-    documentMeta: { mediaKey?: string; directPath?: string; url?: string; hasMediaKey?: boolean; hasUrl?: boolean; hasDirectPath?: boolean }
+    documentMeta: Partial<WhatsAppDocumentMetadata>
   ): Promise<boolean> {
     if (!documentMeta.mediaKey) return false;
     const patch = JSON.stringify({
@@ -318,6 +319,61 @@ export class ChannelMessagesRepository extends BaseRepository {
       [id, patch]
     );
     return result.changes > 0;
+  }
+
+  /**
+   * Batch enrich multiple messages with media metadata in a single SQL round-trip.
+   * Replaces the N+1 loop of individual enrichMediaMetadata() calls.
+   * Uses CTE + VALUES for O(1) DB round-trips instead of O(N).
+   */
+  async enrichMediaMetadataBatch(
+    items: Array<{ id: string; documentMeta: Partial<WhatsAppDocumentMetadata> }>
+  ): Promise<number> {
+    const filtered = items.filter((item) => item.documentMeta.mediaKey);
+    if (filtered.length === 0) return 0;
+
+    const BATCH_SIZE = 500;
+    let totalUpdated = 0;
+
+    for (let i = 0; i < filtered.length; i += BATCH_SIZE) {
+      const batch = filtered.slice(i, i + BATCH_SIZE);
+      const values: string[] = [];
+      const params: unknown[] = [];
+
+      for (let j = 0; j < batch.length; j++) {
+        const item = batch[j]!;
+        const paramIdx = j * 2;
+        values.push(`($${paramIdx + 1}, $${paramIdx + 2}::jsonb)`);
+        params.push(
+          item.id,
+          JSON.stringify({
+            mediaKey: item.documentMeta.mediaKey,
+            directPath: item.documentMeta.directPath ?? null,
+            url: item.documentMeta.url ?? null,
+            hasMediaKey: true,
+            hasUrl: Boolean(item.documentMeta.url),
+            hasDirectPath: Boolean(item.documentMeta.directPath),
+          })
+        );
+      }
+
+      const result = await this.execute(
+        `WITH batch_updates(id, patch) AS (VALUES ${values.join(', ')})
+         UPDATE channel_messages m
+         SET metadata = jsonb_set(
+           m.metadata,
+           '{document}',
+           COALESCE(m.metadata->'document', '{}'::jsonb) || b.patch
+         )
+         FROM batch_updates b
+         WHERE m.id = b.id
+           AND (m.metadata->'document'->>'mediaKey' IS NULL OR m.metadata->'document'->>'mediaKey' = '')`,
+        params
+      );
+      totalUpdated += result.changes;
+    }
+
+    return totalUpdated;
   }
 
   /**

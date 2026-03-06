@@ -330,12 +330,6 @@ export async function parseJsonBody<T = unknown>(
   c: Context,
   validator?: (data: unknown) => T
 ): Promise<T | null> {
-  // Validate Content-Type first
-  const contentTypeError = requireJsonContent(c);
-  if (contentTypeError) {
-    return contentTypeError && null;
-  }
-
   try {
     const data = await c.req.json();
 

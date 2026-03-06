@@ -47,8 +47,9 @@ uiAuthRoutes.get('/status', (c) => {
  * Authenticate with password, receive a session token.
  */
 uiAuthRoutes.post('/login', async (c) => {
-  const body = ((await parseJsonBody(c)) ?? {}) as { password?: string };
-  const { password } = body;
+  const body = await parseJsonBody(c);
+  if (!body) return c.body(null);
+  const { password } = body as { password?: string };
 
   if (!password || typeof password !== 'string') {
     return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'Password is required' }, 400);
@@ -89,11 +90,12 @@ uiAuthRoutes.post('/logout', (c) => {
  * Set (first time) or change (requires current password) the UI password.
  */
 uiAuthRoutes.post('/password', async (c) => {
-  const body = ((await parseJsonBody(c)) ?? {}) as {
+  const body = await parseJsonBody(c);
+  if (!body) return c.body(null);
+  const { password, currentPassword } = body as {
     password?: string;
     currentPassword?: string;
   };
-  const { password, currentPassword } = body;
 
   if (!password || typeof password !== 'string') {
     return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'Password is required' }, 400);

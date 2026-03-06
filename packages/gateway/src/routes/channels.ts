@@ -8,6 +8,7 @@
 import { Hono } from 'hono';
 import { getChannelService, getDefaultPluginRegistry } from '@ownpilot/core';
 import { ChannelMessagesRepository } from '../db/repositories/channel-messages.js';
+import type { WhatsAppDocumentMetadata } from '../channels/plugins/whatsapp/message-parser.js';
 import { channelUsersRepo } from '../db/repositories/channel-users.js';
 import { configServicesRepo } from '../db/repositories/config-services.js';
 import { apiResponse, apiError, ERROR_CODES, notFoundError, getErrorMessage, getPaginationParams } from './helpers.js';
@@ -23,6 +24,22 @@ export const channelRoutes = new Hono();
 // In-memory read tracking (message IDs that have been read)
 const MAX_READ_IDS = 2000;
 const readMessageIds = new Set<string>();
+
+// Concurrency guard for media recovery — prevents parallel downloads that risk WhatsApp ban.
+// Lock key = channelId (ban is connection-level, not group-level).
+const mediaRecoveryLocks = new Map<string, number>();
+const MEDIA_LOCK_TTL_MS = 5 * 60 * 1000; // 5 min safety net
+
+function acquireMediaLock(channelId: string): boolean {
+  const ts = mediaRecoveryLocks.get(channelId);
+  if (ts && Date.now() - ts < MEDIA_LOCK_TTL_MS) return false;
+  mediaRecoveryLocks.set(channelId, Date.now());
+  return true;
+}
+
+function releaseMediaLock(channelId: string): void {
+  mediaRecoveryLocks.delete(channelId);
+}
 
 function addReadMessageId(id: string): void {
   if (readMessageIds.size >= MAX_READ_IDS) {
@@ -505,6 +522,13 @@ channelRoutes.post('/:id/batch-retry-media', async (c) => {
     );
   }
 
+  // Concurrency guard — shared with recover-media (ban is connection-level)
+  if (!acquireMediaLock(pluginId)) {
+    return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'Media recovery already in progress for this channel. Try again later.' }, 409);
+  }
+
+  try {
+
   let body: { messageIds?: string[]; throttleMs?: number };
   try {
     body = await c.req.json();
@@ -607,6 +631,10 @@ channelRoutes.post('/:id/batch-retry-media', async (c) => {
     failed: results.filter((r) => !r.success).length,
     results,
   });
+
+  } finally {
+    releaseMediaLock(pluginId);
+  }
 });
 
 /**
@@ -646,6 +674,12 @@ channelRoutes.post('/:id/recover-media', async (c) => {
     return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'groupJid is required' }, 400);
   }
 
+  // Concurrency guard — prevent parallel downloads on same channel (ban risk)
+  if (!acquireMediaLock(pluginId)) {
+    return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'Media recovery already in progress for this channel. Try again later.' }, 409);
+  }
+
+  try {
   // Validate date strings if provided
   const parsedDateFrom = dateFrom ? new Date(dateFrom) : undefined;
   const parsedDateTo = dateTo ? new Date(dateTo) : undefined;
@@ -667,7 +701,7 @@ channelRoutes.post('/:id/recover-media', async (c) => {
     limit: 1000,
   });
   const needsKeyMsgs = allNeedingRecovery.filter((m) => {
-    const doc = (m.metadata as Record<string, unknown>)?.document as { mediaKey?: string } | undefined;
+    const doc = (m.metadata as Record<string, unknown>)?.document as Pick<WhatsAppDocumentMetadata, 'mediaKey'> | undefined;
     return !doc?.mediaKey;
   });
   const totalNeedsKey = needsKeyMsgs.length;
@@ -699,7 +733,7 @@ channelRoutes.post('/:id/recover-media', async (c) => {
     : allNeedingRecovery;
   // Filter to only those WITH mediaKey (ready for download), apply limit
   const downloadable = readyMsgs.filter((m) => {
-    const doc = (m.metadata as Record<string, unknown>)?.document as { mediaKey?: string } | undefined;
+    const doc = (m.metadata as Record<string, unknown>)?.document as Pick<WhatsAppDocumentMetadata, 'mediaKey'> | undefined;
     return doc?.mediaKey;
   }).slice(0, limit);
 
@@ -812,6 +846,9 @@ channelRoutes.post('/:id/recover-media', async (c) => {
     failed: results.filter((r) => !r.success).length,
     results,
   });
+  } finally {
+    releaseMediaLock(pluginId);
+  }
 });
 
 /**

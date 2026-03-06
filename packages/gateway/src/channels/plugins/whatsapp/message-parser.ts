@@ -14,21 +14,28 @@ export interface ParsedWhatsAppMessagePayload {
   media: WhatsAppMediaDescriptor[];
 }
 
+/**
+ * Document attachment metadata extracted from WhatsApp proto.
+ * Stored in channel_messages.metadata.document JSONB column.
+ * Used for media persistence, recovery, and re-download workflows.
+ */
+export interface WhatsAppDocumentMetadata {
+  filename?: string;
+  mimeType?: string;
+  size?: number;
+  hasMediaKey: boolean;
+  hasUrl: boolean;
+  hasDirectPath: boolean;
+  /** Base64-encoded mediaKey (AES-256-CBC per-message key). Present only when WhatsApp includes it. */
+  mediaKey?: string;
+  /** CDN direct path for media download. */
+  directPath?: string;
+  /** Full CDN URL for media download. */
+  url?: string;
+}
+
 export interface ParsedWhatsAppMessageMetadata {
-  document?: {
-    filename?: string;
-    mimeType?: string;
-    size?: number;
-    hasMediaKey: boolean;
-    hasUrl: boolean;
-    hasDirectPath: boolean;
-    /** Base64-encoded mediaKey (AES-256-CBC per-message key). Present only when WhatsApp includes it. */
-    mediaKey?: string;
-    /** CDN direct path for media download. */
-    directPath?: string;
-    /** Full CDN URL for media download. */
-    url?: string;
-  };
+  document?: WhatsAppDocumentMetadata;
 }
 
 /**

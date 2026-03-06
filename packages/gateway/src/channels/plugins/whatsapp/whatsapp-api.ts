@@ -44,6 +44,7 @@ import {
   extractWhatsAppMessageMetadata,
   parseWhatsAppMessagePayload,
   type WhatsAppMediaDescriptor,
+  type WhatsAppDocumentMetadata,
 } from './message-parser.js';
 
 const log = getLog('WhatsApp');
@@ -448,18 +449,20 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
 
                 // Enrich existing rows with media metadata from fresh protos.
                 // createBatch uses ON CONFLICT DO NOTHING, so re-delivered messages
-                // with mediaKey are silently dropped. This pass merges the new
-                // mediaKey/directPath/url into rows that were missing them.
-                let enriched = 0;
-                for (const row of rows) {
-                  const doc = (row.metadata as Record<string, unknown>)?.document as
-                    | { mediaKey?: string; directPath?: string; url?: string }
-                    | undefined;
-                  if (doc?.mediaKey) {
-                    const updated = await messagesRepo.enrichMediaMetadata(row.id, doc);
-                    if (updated) enriched++;
-                  }
-                }
+                // with mediaKey are silently dropped. This batch pass merges the new
+                // mediaKey/directPath/url into rows that were missing them (single SQL).
+                const enrichItems = rows
+                  .map((row) => {
+                    const doc = (row.metadata as Record<string, unknown>)?.document as
+                      | WhatsAppDocumentMetadata
+                      | undefined;
+                    return doc?.mediaKey ? { id: row.id, documentMeta: doc } : null;
+                  })
+                  .filter((item): item is NonNullable<typeof item> => item !== null);
+
+                const enriched = enrichItems.length > 0
+                  ? await messagesRepo.enrichMediaMetadataBatch(enrichItems)
+                  : 0;
                 if (enriched > 0) {
                   log.info(
                     `[WhatsApp] History sync enriched ${enriched} existing rows with mediaKey (type: ${syncTypeName})`
