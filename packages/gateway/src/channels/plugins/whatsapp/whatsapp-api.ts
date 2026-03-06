@@ -857,6 +857,105 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
   }
 
   /**
+   * Retry media download using stored metadata (mediaKey, directPath, url) from the DB.
+   * Reconstructs a minimal WAMessage proto and calls downloadMediaWithRetry,
+   * which will automatically trigger reuploadRequest on 410/404 (expired CDN URL).
+   *
+   * This is the key method for recovering old media whose CDN URLs have expired:
+   * the sender's phone re-uploads the file, giving us a fresh URL.
+   */
+  async retryMediaFromMetadata(params: {
+    messageId: string;
+    remoteJid: string;
+    participant?: string;
+    fromMe?: boolean;
+    mediaKey: string;       // base64-encoded
+    directPath: string;
+    url: string;
+    mimeType?: string;
+    filename?: string;
+    fileLength?: number;
+  }): Promise<{ data: Uint8Array; size: number; mimeType?: string; filename?: string }> {
+    if (!this.sock || this.status !== 'connected') {
+      throw new Error('WhatsApp is not connected');
+    }
+
+    const mediaKeyBuffer = Buffer.from(params.mediaKey, 'base64');
+
+    // Reconstruct minimal WAMessage with documentMessage proto
+    const reconstructedMsg: WAMessage = {
+      key: {
+        id: params.messageId,
+        remoteJid: params.remoteJid,
+        fromMe: params.fromMe ?? false,
+        participant: params.participant,
+      },
+      message: {
+        documentMessage: {
+          url: params.url,
+          directPath: params.directPath,
+          mediaKey: new Uint8Array(mediaKeyBuffer),
+          mimetype: params.mimeType ?? 'application/octet-stream',
+          fileName: params.filename,
+          fileLength: params.fileLength != null ? BigInt(params.fileLength) as any : undefined,
+        },
+      },
+    };
+
+    log.info(
+      `[retryMediaFromMetadata] Attempting download for msgId=${params.messageId} ` +
+      `file=${params.filename ?? 'unknown'} via stored metadata`
+    );
+
+    // Step 1: Try direct download first (unlikely to work for expired URLs)
+    try {
+      const data = await this.downloadMediaWithRetry(reconstructedMsg);
+      if (data) {
+        log.info(
+          `[retryMediaFromMetadata] Direct download success! msgId=${params.messageId} size=${data.length}`
+        );
+        return { data, size: data.length, mimeType: params.mimeType, filename: params.filename };
+      }
+    } catch (err: any) {
+      log.info(
+        `[retryMediaFromMetadata] Direct download failed (expected for expired URLs): ${err?.message?.slice(0, 200)}`
+      );
+    }
+
+    // Step 2: Explicit re-upload request — asks sender's phone to re-upload file to CDN.
+    // Baileys downloadMediaMessage has a bug in RC9: checks error.status but Boom sets
+    // output.statusCode, so automatic reuploadRequest never triggers. We call it explicitly.
+    log.info(
+      `[retryMediaFromMetadata] Requesting media re-upload from sender's phone for msgId=${params.messageId}`
+    );
+
+    const updatedMsg = await this.sock.updateMediaMessage(reconstructedMsg);
+
+    log.info(
+      `[retryMediaFromMetadata] Re-upload response received for msgId=${params.messageId}, ` +
+      `hasNewUrl=${!!updatedMsg?.message?.documentMessage?.url}`
+    );
+
+    // Step 3: Download with fresh URL from re-uploaded message
+    const data = await this.downloadMediaWithRetry(updatedMsg);
+    if (!data) {
+      throw new Error('Media download failed after re-upload request');
+    }
+
+    log.info(
+      `[retryMediaFromMetadata] Success! msgId=${params.messageId} ` +
+      `file=${params.filename ?? 'unknown'} size=${data.length}`
+    );
+
+    return {
+      data,
+      size: data.length,
+      mimeType: params.mimeType,
+      filename: params.filename,
+    };
+  }
+
+  /**
    * Fetch full metadata for a single group by JID.
    * Uses groupMetadata() — one targeted Baileys call per invocation.
    */

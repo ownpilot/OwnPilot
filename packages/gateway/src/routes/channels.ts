@@ -80,6 +80,18 @@ interface ChannelAPIWithMediaRetry {
     participant?: string;
     fromMe?: boolean;
   }): Promise<{ data: Uint8Array; size: number; mimeType?: string; filename?: string }>;
+  retryMediaFromMetadata?(params: {
+    messageId: string;
+    remoteJid: string;
+    participant?: string;
+    fromMe?: boolean;
+    mediaKey: string;
+    directPath: string;
+    url: string;
+    mimeType?: string;
+    filename?: string;
+    fileLength?: number;
+  }): Promise<{ data: Uint8Array; size: number; mimeType?: string; filename?: string }>;
 }
 
 function hasMediaRetry(api: unknown): api is ChannelAPIWithMediaRetry {
@@ -122,6 +134,42 @@ function hasAnchorHistoryFetch(api: unknown): api is ChannelAPIWithAnchorHistory
     'fetchGroupHistoryFromAnchor' in api &&
     typeof (api as Record<string, unknown>).fetchGroupHistoryFromAnchor === 'function'
   );
+}
+
+/**
+ * Try to download media using stored metadata (mediaKey/directPath/url from DB).
+ * This triggers a re-upload request to the sender's phone when CDN URLs are expired.
+ * Returns null if stored metadata is not available or the channel doesn't support it.
+ */
+async function tryStoredMetadataReupload(
+  api: ChannelAPIWithMediaRetry,
+  metadata: Record<string, unknown>,
+  platformMessageId: string,
+  remoteJid: string,
+  participant: string | undefined,
+  fromMe: boolean,
+): Promise<{ data: Uint8Array; size: number; mimeType?: string; filename?: string } | null> {
+  if (!api.retryMediaFromMetadata) return null;
+
+  const docMeta = metadata.document as Record<string, unknown> | undefined;
+  const mediaKey = typeof docMeta?.mediaKey === 'string' ? docMeta.mediaKey : undefined;
+  const directPath = typeof docMeta?.directPath === 'string' ? docMeta.directPath : undefined;
+  const url = typeof docMeta?.url === 'string' ? docMeta.url : undefined;
+
+  if (!mediaKey || !directPath || !url) return null;
+
+  return api.retryMediaFromMetadata({
+    messageId: platformMessageId,
+    remoteJid,
+    participant,
+    fromMe,
+    mediaKey,
+    directPath,
+    url,
+    mimeType: typeof docMeta?.mimeType === 'string' ? docMeta.mimeType : undefined,
+    filename: typeof docMeta?.filename === 'string' ? docMeta.filename : undefined,
+    fileLength: typeof docMeta?.size === 'number' ? docMeta.size : undefined,
+  });
 }
 
 /** Extract bot info from a channel API if available. */
@@ -395,10 +443,14 @@ channelRoutes.post('/:id/messages/:messageId/retry-media', async (c) => {
           // fallback recovered cache and download path
           // continue with normal attachment update flow below
         } else {
-          throw error;
+          // Last resort: try stored metadata re-upload (sender's phone re-uploads file)
+          retryResult = await tryStoredMetadataReupload(api, metadata, platformMessageId, remoteJid, participant, fromMe);
+          if (!retryResult) throw error;
         }
       } else {
-        throw error;
+        // Not a cache miss or not a group — try stored metadata as fallback
+        retryResult = await tryStoredMetadataReupload(api, metadata, platformMessageId, remoteJid, participant, fromMe);
+        if (!retryResult) throw error;
       }
     }
 
