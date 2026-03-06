@@ -2,7 +2,8 @@
  * Coding Agent Settings Page
  *
  * Provider configuration: install status, API keys, version info,
- * test connectivity. Accessible at /settings/coding-agents.
+ * test connectivity. Per-provider permissions, skills, budgets.
+ * Accessible at /settings/coding-agents.
  */
 
 import { useState, useEffect, useCallback } from 'react';
@@ -17,9 +18,21 @@ import {
   ExternalLink,
   Play,
   AlertCircle,
+  Shield,
+  Puzzle,
+  DollarSign,
+  Plus,
+  Trash2,
+  Save,
 } from '../components/icons';
 import { codingAgentsApi } from '../api';
-import type { CodingAgentStatus, CodingAgentTestResult } from '../api/endpoints/coding-agents';
+import type {
+  CodingAgentStatus,
+  CodingAgentTestResult,
+  CodingAgentPermissionProfile,
+  SkillAttachment,
+  CodingAgentSubscription,
+} from '../api/endpoints/coding-agents';
 
 // =============================================================================
 // Provider metadata
@@ -96,12 +109,19 @@ const PROVIDER_COLORS: Record<string, string> = {
 };
 
 // =============================================================================
+// Tab type
+// =============================================================================
+
+type SettingsTab = 'providers' | 'permissions' | 'skills' | 'budget';
+
+// =============================================================================
 // Main Component
 // =============================================================================
 
 export function CodingAgentSettingsPage() {
   const toast = useToast();
   const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState<SettingsTab>('providers');
   const [statuses, setStatuses] = useState<CodingAgentStatus[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [testingProvider, setTestingProvider] = useState<string | null>(null);
@@ -144,6 +164,14 @@ export function CodingAgentSettingsPage() {
   );
 
   const installedCount = statuses.filter((s) => s.installed).length;
+  const providerNames = statuses.map((s) => s.provider);
+
+  const tabs: { id: SettingsTab; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
+    { id: 'providers', label: 'Providers', icon: Terminal },
+    { id: 'permissions', label: 'Permissions', icon: Shield },
+    { id: 'skills', label: 'Skills', icon: Puzzle },
+    { id: 'budget', label: 'Budget', icon: DollarSign },
+  ];
 
   return (
     <div className="max-w-3xl mx-auto px-6 py-6 space-y-6">
@@ -151,7 +179,7 @@ export function CodingAgentSettingsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-lg font-semibold text-text-primary dark:text-dark-text-primary">
-            Coding Agent Providers
+            Coding Agent Settings
           </h2>
           <p className="text-sm text-text-muted dark:text-dark-text-muted">
             {installedCount} of {statuses.length} providers installed
@@ -176,6 +204,60 @@ export function CodingAgentSettingsPage() {
         </div>
       </div>
 
+      {/* Tabs */}
+      <div className="flex gap-1 border-b border-border dark:border-dark-border">
+        {tabs.map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className={`flex items-center gap-1.5 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+              activeTab === tab.id
+                ? 'border-primary text-primary'
+                : 'border-transparent text-text-muted dark:text-dark-text-muted hover:text-text-primary dark:hover:text-dark-text-primary'
+            }`}
+          >
+            <tab.icon className="w-4 h-4" />
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Tab Content */}
+      {activeTab === 'providers' && (
+        <ProvidersTab
+          statuses={statuses}
+          testResults={testResults}
+          testingProvider={testingProvider}
+          isLoading={isLoading}
+          onTest={handleTest}
+        />
+      )}
+      {activeTab === 'permissions' && <PermissionsTab providers={providerNames} />}
+      {activeTab === 'skills' && <SkillsTab providers={providerNames} />}
+      {activeTab === 'budget' && <BudgetTab providers={providerNames} />}
+    </div>
+  );
+}
+
+// =============================================================================
+// Providers Tab (original content)
+// =============================================================================
+
+function ProvidersTab({
+  statuses,
+  testResults,
+  testingProvider,
+  isLoading,
+  onTest,
+}: {
+  statuses: CodingAgentStatus[];
+  testResults: Record<string, CodingAgentTestResult>;
+  testingProvider: string | null;
+  isLoading: boolean;
+  onTest: (provider: string) => void;
+}) {
+  return (
+    <div className="space-y-4">
       {/* Info banner */}
       <div className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/20 text-sm text-blue-600 dark:text-blue-400 flex items-start gap-2">
         <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
@@ -186,25 +268,598 @@ export function CodingAgentSettingsPage() {
         </div>
       </div>
 
-      {/* Provider cards */}
-      <div className="space-y-4">
-        {statuses.map((status) => (
-          <ProviderCard
-            key={status.provider}
-            status={status}
-            testResult={testResults[status.provider]}
-            testing={testingProvider === status.provider}
-            onTest={() => handleTest(status.provider)}
-          />
-        ))}
+      {statuses.map((status) => (
+        <ProviderCard
+          key={status.provider}
+          status={status}
+          testResult={testResults[status.provider]}
+          testing={testingProvider === status.provider}
+          onTest={() => onTest(status.provider)}
+        />
+      ))}
 
-        {statuses.length === 0 && !isLoading && (
-          <div className="text-center py-12 text-text-muted dark:text-dark-text-muted">
-            <Terminal className="w-10 h-10 mx-auto mb-3 opacity-30" />
-            <p>No providers found</p>
-            <p className="text-xs mt-1">Restart the gateway to detect installed CLIs</p>
+      {statuses.length === 0 && !isLoading && (
+        <div className="text-center py-12 text-text-muted dark:text-dark-text-muted">
+          <Terminal className="w-10 h-10 mx-auto mb-3 opacity-30" />
+          <p>No providers found</p>
+          <p className="text-xs mt-1">Restart the gateway to detect installed CLIs</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// =============================================================================
+// Permissions Tab
+// =============================================================================
+
+function PermissionsTab({ providers }: { providers: string[] }) {
+  const toast = useToast();
+  const [perms, setPerms] = useState<Record<string, CodingAgentPermissionProfile>>({});
+  const [isLoading, setIsLoading] = useState(true);
+  const [saving, setSaving] = useState<string | null>(null);
+
+  useEffect(() => {
+    loadPerms();
+  }, []); // eslint-disable-line
+
+  const loadPerms = async () => {
+    try {
+      setIsLoading(true);
+      const list = await codingAgentsApi.listPermissions();
+      const map: Record<string, CodingAgentPermissionProfile> = {};
+      for (const p of list) map[p.providerRef] = p;
+      setPerms(map);
+    } catch {
+      /* ignore - defaults will be used */
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const savePerms = async (provider: string, data: Record<string, unknown>) => {
+    setSaving(provider);
+    try {
+      const record = await codingAgentsApi.updatePermissions(provider, data);
+      setPerms((prev) => ({ ...prev, [provider]: record }));
+      toast.success(`Permissions saved for ${provider}`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to save');
+    } finally {
+      setSaving(null);
+    }
+  };
+
+  if (isLoading) {
+    return <div className="text-center py-8 text-text-muted dark:text-dark-text-muted animate-pulse">Loading permissions...</div>;
+  }
+
+  return (
+    <div className="space-y-4">
+      <p className="text-sm text-text-muted dark:text-dark-text-muted">
+        Configure default permissions for each provider. These apply to new sessions unless overridden.
+      </p>
+      {providers.map((provider) => {
+        const p = perms[provider];
+        const defaults = {
+          io_format: p?.ioFormat ?? 'text',
+          fs_access: p?.fsAccess ?? 'read-write',
+          network_access: p?.networkAccess ?? true,
+          shell_access: p?.shellAccess ?? true,
+          git_access: p?.gitAccess ?? true,
+          autonomy: p?.autonomy ?? 'semi-auto',
+          max_file_changes: p?.maxFileChanges ?? 50,
+        };
+
+        return (
+          <PermissionEditor
+            key={provider}
+            provider={provider}
+            defaults={defaults}
+            saving={saving === provider}
+            onSave={(data) => savePerms(provider, data)}
+          />
+        );
+      })}
+      {providers.length === 0 && (
+        <div className="text-center py-8 text-text-muted dark:text-dark-text-muted">
+          No providers detected
+        </div>
+      )}
+    </div>
+  );
+}
+
+function PermissionEditor({
+  provider,
+  defaults,
+  saving,
+  onSave,
+}: {
+  provider: string;
+  defaults: Record<string, unknown>;
+  saving: boolean;
+  onSave: (data: Record<string, unknown>) => void;
+}) {
+  const [form, setForm] = useState(defaults);
+  const color = PROVIDER_COLORS[provider] ?? 'bg-gray-500/20 text-gray-500';
+  const meta = PROVIDER_META[provider];
+
+  const set = (key: string, value: unknown) => setForm((prev) => ({ ...prev, [key]: value }));
+
+  return (
+    <div className="p-4 rounded-xl border border-border dark:border-dark-border bg-bg-secondary dark:bg-dark-bg-secondary space-y-3">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div className={`w-7 h-7 rounded-lg flex items-center justify-center text-sm font-bold ${color}`}>
+            {meta?.icon ?? '?'}
           </div>
-        )}
+          <h3 className="text-sm font-semibold text-text-primary dark:text-dark-text-primary">
+            {provider}
+          </h3>
+        </div>
+        <button
+          onClick={() => onSave(form)}
+          disabled={saving}
+          className="px-3 py-1 rounded-lg text-xs font-medium bg-primary text-white hover:bg-primary/90 transition-colors disabled:opacity-50 inline-flex items-center gap-1"
+        >
+          {saving ? <RefreshCw className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
+          Save
+        </button>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3 text-xs">
+        <label className="space-y-1">
+          <span className="text-text-muted dark:text-dark-text-muted">Autonomy</span>
+          <select
+            value={form.autonomy as string}
+            onChange={(e) => set('autonomy', e.target.value)}
+            className="w-full px-2 py-1.5 rounded-lg bg-bg-tertiary dark:bg-dark-bg-tertiary border border-border dark:border-dark-border text-text-primary dark:text-dark-text-primary"
+          >
+            <option value="supervised">Supervised</option>
+            <option value="semi-auto">Semi-Auto</option>
+            <option value="full-auto">Full Auto</option>
+          </select>
+        </label>
+        <label className="space-y-1">
+          <span className="text-text-muted dark:text-dark-text-muted">File Access</span>
+          <select
+            value={form.fs_access as string}
+            onChange={(e) => set('fs_access', e.target.value)}
+            className="w-full px-2 py-1.5 rounded-lg bg-bg-tertiary dark:bg-dark-bg-tertiary border border-border dark:border-dark-border text-text-primary dark:text-dark-text-primary"
+          >
+            <option value="none">None</option>
+            <option value="read-only">Read Only</option>
+            <option value="read-write">Read/Write</option>
+            <option value="full">Full</option>
+          </select>
+        </label>
+        <label className="space-y-1">
+          <span className="text-text-muted dark:text-dark-text-muted">Output Format</span>
+          <select
+            value={form.io_format as string}
+            onChange={(e) => set('io_format', e.target.value)}
+            className="w-full px-2 py-1.5 rounded-lg bg-bg-tertiary dark:bg-dark-bg-tertiary border border-border dark:border-dark-border text-text-primary dark:text-dark-text-primary"
+          >
+            <option value="text">Text</option>
+            <option value="json">JSON</option>
+            <option value="stream-json">Stream JSON</option>
+          </select>
+        </label>
+        <label className="space-y-1">
+          <span className="text-text-muted dark:text-dark-text-muted">Max File Changes</span>
+          <input
+            type="number"
+            value={form.max_file_changes as number}
+            onChange={(e) => set('max_file_changes', parseInt(e.target.value) || 50)}
+            className="w-full px-2 py-1.5 rounded-lg bg-bg-tertiary dark:bg-dark-bg-tertiary border border-border dark:border-dark-border text-text-primary dark:text-dark-text-primary"
+          />
+        </label>
+      </div>
+
+      <div className="flex gap-4 text-xs">
+        <ToggleField label="Network" checked={form.network_access as boolean} onChange={(v) => set('network_access', v)} />
+        <ToggleField label="Shell" checked={form.shell_access as boolean} onChange={(v) => set('shell_access', v)} />
+        <ToggleField label="Git" checked={form.git_access as boolean} onChange={(v) => set('git_access', v)} />
+      </div>
+    </div>
+  );
+}
+
+function ToggleField({ label, checked, onChange }: { label: string; checked: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <label className="flex items-center gap-1.5 cursor-pointer select-none">
+      <button
+        type="button"
+        role="switch"
+        aria-checked={checked}
+        onClick={() => onChange(!checked)}
+        className={`relative w-8 h-4.5 rounded-full transition-colors ${checked ? 'bg-primary' : 'bg-gray-300 dark:bg-gray-600'}`}
+      >
+        <span className={`absolute top-0.5 left-0.5 w-3.5 h-3.5 bg-white rounded-full shadow transition-transform ${checked ? 'translate-x-3.5' : ''}`} />
+      </button>
+      <span className="text-text-muted dark:text-dark-text-muted">{label}</span>
+    </label>
+  );
+}
+
+// =============================================================================
+// Skills Tab
+// =============================================================================
+
+function SkillsTab({ providers }: { providers: string[] }) {
+  const toast = useToast();
+  const [skills, setSkills] = useState<Record<string, SkillAttachment[]>>({});
+  const [isLoading, setIsLoading] = useState(true);
+  const [adding, setAdding] = useState<string | null>(null);
+
+  useEffect(() => {
+    loadSkills();
+  }, [providers]); // eslint-disable-line
+
+  const loadSkills = async () => {
+    try {
+      setIsLoading(true);
+      const map: Record<string, SkillAttachment[]> = {};
+      for (const p of providers) {
+        try {
+          map[p] = await codingAgentsApi.listSkillAttachments(p);
+        } catch {
+          map[p] = [];
+        }
+      }
+      setSkills(map);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const addInlineSkill = async (provider: string, label: string, instructions: string) => {
+    setAdding(provider);
+    try {
+      await codingAgentsApi.attachSkill(provider, {
+        type: 'inline',
+        label,
+        instructions,
+      });
+      await loadSkills();
+      toast.success('Skill attached');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to attach skill');
+    } finally {
+      setAdding(null);
+    }
+  };
+
+  const removeSkill = async (provider: string, id: string) => {
+    try {
+      await codingAgentsApi.detachSkill(provider, id);
+      setSkills((prev) => ({
+        ...prev,
+        [provider]: (prev[provider] || []).filter((s) => s.id !== id),
+      }));
+      toast.success('Skill detached');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to detach');
+    }
+  };
+
+  if (isLoading) {
+    return <div className="text-center py-8 text-text-muted dark:text-dark-text-muted animate-pulse">Loading skills...</div>;
+  }
+
+  return (
+    <div className="space-y-4">
+      <p className="text-sm text-text-muted dark:text-dark-text-muted">
+        Attach skills and instructions to each provider. These are injected into the agent&apos;s prompt.
+      </p>
+      {providers.map((provider) => (
+        <ProviderSkillsCard
+          key={provider}
+          provider={provider}
+          skills={skills[provider] || []}
+          adding={adding === provider}
+          onAdd={(label, instructions) => addInlineSkill(provider, label, instructions)}
+          onRemove={(id) => removeSkill(provider, id)}
+        />
+      ))}
+      {providers.length === 0 && (
+        <div className="text-center py-8 text-text-muted dark:text-dark-text-muted">
+          No providers detected
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ProviderSkillsCard({
+  provider,
+  skills,
+  adding,
+  onAdd,
+  onRemove,
+}: {
+  provider: string;
+  skills: SkillAttachment[];
+  adding: boolean;
+  onAdd: (label: string, instructions: string) => void;
+  onRemove: (id: string) => void;
+}) {
+  const [showForm, setShowForm] = useState(false);
+  const [label, setLabel] = useState('');
+  const [instructions, setInstructions] = useState('');
+  const color = PROVIDER_COLORS[provider] ?? 'bg-gray-500/20 text-gray-500';
+  const meta = PROVIDER_META[provider];
+
+  const handleAdd = () => {
+    if (!label.trim() || !instructions.trim()) return;
+    onAdd(label.trim(), instructions.trim());
+    setLabel('');
+    setInstructions('');
+    setShowForm(false);
+  };
+
+  return (
+    <div className="p-4 rounded-xl border border-border dark:border-dark-border bg-bg-secondary dark:bg-dark-bg-secondary space-y-3">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div className={`w-7 h-7 rounded-lg flex items-center justify-center text-sm font-bold ${color}`}>
+            {meta?.icon ?? '?'}
+          </div>
+          <h3 className="text-sm font-semibold text-text-primary dark:text-dark-text-primary">
+            {provider}
+          </h3>
+          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-bg-tertiary dark:bg-dark-bg-tertiary text-text-muted dark:text-dark-text-muted">
+            {skills.length} skill{skills.length !== 1 ? 's' : ''}
+          </span>
+        </div>
+        <button
+          onClick={() => setShowForm(!showForm)}
+          className="px-2 py-1 rounded-lg text-xs font-medium text-primary hover:bg-primary/10 transition-colors inline-flex items-center gap-1"
+        >
+          <Plus className="w-3 h-3" />
+          Add
+        </button>
+      </div>
+
+      {/* Existing skills */}
+      {skills.length > 0 && (
+        <div className="space-y-1.5">
+          {skills.map((skill) => (
+            <div
+              key={skill.id}
+              className="flex items-center justify-between p-2 rounded-lg bg-bg-tertiary dark:bg-dark-bg-tertiary"
+            >
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-medium text-text-primary dark:text-dark-text-primary">
+                    {skill.label || (skill.type === 'extension' ? `Extension: ${skill.extensionId}` : 'Inline')}
+                  </span>
+                  <span className={`text-[9px] px-1 py-0.5 rounded ${skill.type === 'extension' ? 'bg-purple-500/10 text-purple-500' : 'bg-blue-500/10 text-blue-500'}`}>
+                    {skill.type}
+                  </span>
+                </div>
+                {skill.instructions && (
+                  <p className="text-[10px] text-text-muted dark:text-dark-text-muted truncate mt-0.5">
+                    {skill.instructions.slice(0, 100)}
+                    {skill.instructions.length > 100 ? '...' : ''}
+                  </p>
+                )}
+              </div>
+              <button
+                onClick={() => onRemove(skill.id)}
+                className="p-1 rounded text-text-muted hover:text-error hover:bg-error/10 transition-colors shrink-0"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Add form */}
+      {showForm && (
+        <div className="p-3 rounded-lg border border-border dark:border-dark-border space-y-2">
+          <input
+            placeholder="Label (e.g. 'Code Style Rules')"
+            value={label}
+            onChange={(e) => setLabel(e.target.value)}
+            className="w-full px-2 py-1.5 rounded-lg text-xs bg-bg-tertiary dark:bg-dark-bg-tertiary border border-border dark:border-dark-border text-text-primary dark:text-dark-text-primary"
+          />
+          <textarea
+            placeholder="Instructions (injected into agent prompt)"
+            value={instructions}
+            onChange={(e) => setInstructions(e.target.value)}
+            rows={3}
+            className="w-full px-2 py-1.5 rounded-lg text-xs bg-bg-tertiary dark:bg-dark-bg-tertiary border border-border dark:border-dark-border text-text-primary dark:text-dark-text-primary resize-y"
+          />
+          <div className="flex justify-end gap-2">
+            <button
+              onClick={() => setShowForm(false)}
+              className="px-2 py-1 text-xs text-text-muted hover:text-text-primary transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleAdd}
+              disabled={adding || !label.trim() || !instructions.trim()}
+              className="px-3 py-1 rounded-lg text-xs font-medium bg-primary text-white hover:bg-primary/90 transition-colors disabled:opacity-50 inline-flex items-center gap-1"
+            >
+              {adding ? <RefreshCw className="w-3 h-3 animate-spin" /> : <Plus className="w-3 h-3" />}
+              Attach
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// =============================================================================
+// Budget Tab
+// =============================================================================
+
+function BudgetTab({ providers }: { providers: string[] }) {
+  const toast = useToast();
+  const [subs, setSubs] = useState<Record<string, CodingAgentSubscription>>({});
+  const [isLoading, setIsLoading] = useState(true);
+  const [saving, setSaving] = useState<string | null>(null);
+
+  useEffect(() => {
+    loadSubs();
+  }, []); // eslint-disable-line
+
+  const loadSubs = async () => {
+    try {
+      setIsLoading(true);
+      const list = await codingAgentsApi.listSubscriptions();
+      const map: Record<string, CodingAgentSubscription> = {};
+      for (const s of list) map[s.providerRef] = s;
+      setSubs(map);
+    } catch {
+      /* ignore */
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const saveSub = async (provider: string, data: Record<string, unknown>) => {
+    setSaving(provider);
+    try {
+      const record = await codingAgentsApi.updateSubscription(provider, data);
+      setSubs((prev) => ({ ...prev, [provider]: record }));
+      toast.success(`Budget saved for ${provider}`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to save');
+    } finally {
+      setSaving(null);
+    }
+  };
+
+  if (isLoading) {
+    return <div className="text-center py-8 text-text-muted dark:text-dark-text-muted animate-pulse">Loading budgets...</div>;
+  }
+
+  return (
+    <div className="space-y-4">
+      <p className="text-sm text-text-muted dark:text-dark-text-muted">
+        Set monthly budget limits and track spending per provider.
+      </p>
+      {providers.map((provider) => {
+        const sub = subs[provider];
+        return (
+          <BudgetEditor
+            key={provider}
+            provider={provider}
+            sub={sub}
+            saving={saving === provider}
+            onSave={(data) => saveSub(provider, data)}
+          />
+        );
+      })}
+      {providers.length === 0 && (
+        <div className="text-center py-8 text-text-muted dark:text-dark-text-muted">
+          No providers detected
+        </div>
+      )}
+    </div>
+  );
+}
+
+function BudgetEditor({
+  provider,
+  sub,
+  saving,
+  onSave,
+}: {
+  provider: string;
+  sub?: CodingAgentSubscription;
+  saving: boolean;
+  onSave: (data: Record<string, unknown>) => void;
+}) {
+  const [tier, setTier] = useState(sub?.tier ?? '');
+  const [budget, setBudget] = useState(sub?.monthlyBudgetUsd ?? 0);
+  const [maxSessions, setMaxSessions] = useState(sub?.maxConcurrentSessions ?? 3);
+  const color = PROVIDER_COLORS[provider] ?? 'bg-gray-500/20 text-gray-500';
+  const meta = PROVIDER_META[provider];
+  const spent = sub?.currentSpendUsd ?? 0;
+  const pct = budget > 0 ? Math.min((spent / budget) * 100, 100) : 0;
+
+  return (
+    <div className="p-4 rounded-xl border border-border dark:border-dark-border bg-bg-secondary dark:bg-dark-bg-secondary space-y-3">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div className={`w-7 h-7 rounded-lg flex items-center justify-center text-sm font-bold ${color}`}>
+            {meta?.icon ?? '?'}
+          </div>
+          <h3 className="text-sm font-semibold text-text-primary dark:text-dark-text-primary">
+            {provider}
+          </h3>
+        </div>
+        <button
+          onClick={() =>
+            onSave({
+              tier: tier || undefined,
+              monthly_budget_usd: budget,
+              max_concurrent_sessions: maxSessions,
+            })
+          }
+          disabled={saving}
+          className="px-3 py-1 rounded-lg text-xs font-medium bg-primary text-white hover:bg-primary/90 transition-colors disabled:opacity-50 inline-flex items-center gap-1"
+        >
+          {saving ? <RefreshCw className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
+          Save
+        </button>
+      </div>
+
+      {/* Budget progress bar */}
+      {budget > 0 && (
+        <div className="space-y-1">
+          <div className="flex justify-between text-[10px] text-text-muted dark:text-dark-text-muted">
+            <span>${spent.toFixed(2)} spent</span>
+            <span>${budget.toFixed(2)} budget</span>
+          </div>
+          <div className="h-2 rounded-full bg-bg-tertiary dark:bg-dark-bg-tertiary overflow-hidden">
+            <div
+              className={`h-full rounded-full transition-all ${pct > 90 ? 'bg-error' : pct > 70 ? 'bg-yellow-500' : 'bg-primary'}`}
+              style={{ width: `${pct}%` }}
+            />
+          </div>
+        </div>
+      )}
+
+      <div className="grid grid-cols-3 gap-3 text-xs">
+        <label className="space-y-1">
+          <span className="text-text-muted dark:text-dark-text-muted">Tier</span>
+          <input
+            placeholder="e.g. Pro"
+            value={tier}
+            onChange={(e) => setTier(e.target.value)}
+            className="w-full px-2 py-1.5 rounded-lg bg-bg-tertiary dark:bg-dark-bg-tertiary border border-border dark:border-dark-border text-text-primary dark:text-dark-text-primary"
+          />
+        </label>
+        <label className="space-y-1">
+          <span className="text-text-muted dark:text-dark-text-muted">Monthly Budget ($)</span>
+          <input
+            type="number"
+            min={0}
+            step={5}
+            value={budget}
+            onChange={(e) => setBudget(parseFloat(e.target.value) || 0)}
+            className="w-full px-2 py-1.5 rounded-lg bg-bg-tertiary dark:bg-dark-bg-tertiary border border-border dark:border-dark-border text-text-primary dark:text-dark-text-primary"
+          />
+        </label>
+        <label className="space-y-1">
+          <span className="text-text-muted dark:text-dark-text-muted">Max Sessions</span>
+          <input
+            type="number"
+            min={1}
+            max={10}
+            value={maxSessions}
+            onChange={(e) => setMaxSessions(parseInt(e.target.value) || 3)}
+            className="w-full px-2 py-1.5 rounded-lg bg-bg-tertiary dark:bg-dark-bg-tertiary border border-border dark:border-dark-border text-text-primary dark:text-dark-text-primary"
+          />
+        </label>
       </div>
     </div>
   );

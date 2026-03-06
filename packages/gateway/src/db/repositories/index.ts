@@ -369,6 +369,38 @@ export {
   type UpdateCliProviderInput,
 } from './cli-providers.js';
 
+// Coding agent permissions repository
+export {
+  CodingAgentPermissionsRepository,
+  codingAgentPermissionsRepo,
+  createCodingAgentPermissionsRepository,
+  type CodingAgentPermissionRecord,
+  type UpsertPermissionInput,
+  type IoFormat,
+  type FsAccess,
+  type Autonomy,
+} from './coding-agent-permissions.js';
+
+// Coding agent skill attachments repository
+export {
+  CodingAgentSkillAttachmentsRepository,
+  codingAgentSkillAttachmentsRepo,
+  createCodingAgentSkillAttachmentsRepository,
+  type SkillAttachmentRecord,
+  type CreateSkillAttachmentInput,
+  type UpdateSkillAttachmentInput,
+  type SkillAttachmentType,
+} from './coding-agent-skill-attachments.js';
+
+// Coding agent subscriptions repository
+export {
+  CodingAgentSubscriptionsRepository,
+  codingAgentSubscriptionsRepo,
+  createCodingAgentSubscriptionsRepository,
+  type CodingAgentSubscriptionRecord,
+  type UpsertSubscriptionInput,
+} from './coding-agent-subscriptions.js';
+
 // CLI tool policies repository
 export {
   CliToolPoliciesRepository,

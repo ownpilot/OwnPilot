@@ -229,7 +229,114 @@ export const codingAgentsApi = {
 
   /** Get a specific result */
   getResult: (id: string) => apiClient.get<CodingAgentResultRecord>(`/coding-agents/results/${id}`),
+
+  // --- Permissions ---
+
+  /** List all permission profiles */
+  listPermissions: () =>
+    apiClient.get<CodingAgentPermissionProfile[]>('/coding-agents/permissions'),
+
+  /** Get permission profile for a provider */
+  getPermissions: (providerRef: string) =>
+    apiClient.get<CodingAgentPermissionProfile>(`/coding-agents/permissions/${providerRef}`),
+
+  /** Upsert permission profile */
+  updatePermissions: (providerRef: string, data: Record<string, unknown>) =>
+    apiClient.put<CodingAgentPermissionProfile>(
+      `/coding-agents/permissions/${providerRef}`,
+      data
+    ),
+
+  /** Delete permission profile */
+  deletePermissions: (providerRef: string) =>
+    apiClient.delete<{ deleted: boolean }>(`/coding-agents/permissions/${providerRef}`),
+
+  // --- Skill Attachments ---
+
+  /** List skill attachments for a provider */
+  listSkillAttachments: (providerRef: string) =>
+    apiClient.get<SkillAttachment[]>(`/coding-agents/skills/${providerRef}`),
+
+  /** Attach a skill to a provider */
+  attachSkill: (providerRef: string, data: Record<string, unknown>) =>
+    apiClient.post<SkillAttachment>(`/coding-agents/skills/${providerRef}`, data),
+
+  /** Update a skill attachment */
+  updateSkillAttachment: (providerRef: string, id: string, data: Record<string, unknown>) =>
+    apiClient.put<SkillAttachment>(`/coding-agents/skills/${providerRef}/${id}`, data),
+
+  /** Detach a skill */
+  detachSkill: (providerRef: string, id: string) =>
+    apiClient.delete<{ deleted: boolean }>(`/coding-agents/skills/${providerRef}/${id}`),
+
+  // --- Subscriptions ---
+
+  /** List all subscriptions */
+  listSubscriptions: () =>
+    apiClient.get<CodingAgentSubscription[]>('/coding-agents/subscriptions'),
+
+  /** Get subscription for a provider */
+  getSubscription: (providerRef: string) =>
+    apiClient.get<CodingAgentSubscription>(`/coding-agents/subscriptions/${providerRef}`),
+
+  /** Upsert subscription */
+  updateSubscription: (providerRef: string, data: Record<string, unknown>) =>
+    apiClient.put<CodingAgentSubscription>(
+      `/coding-agents/subscriptions/${providerRef}`,
+      data
+    ),
+
+  /** Delete subscription */
+  deleteSubscription: (providerRef: string) =>
+    apiClient.delete<{ deleted: boolean }>(`/coding-agents/subscriptions/${providerRef}`),
 };
+
+// =============================================================================
+// Permission / Skill / Subscription types
+// =============================================================================
+
+export interface CodingAgentPermissionProfile {
+  id: string;
+  userId: string;
+  providerRef: string;
+  ioFormat: string;
+  fsAccess: string;
+  allowedDirs: string[];
+  networkAccess: boolean;
+  shellAccess: boolean;
+  gitAccess: boolean;
+  autonomy: string;
+  maxFileChanges: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SkillAttachment {
+  id: string;
+  userId: string;
+  providerRef: string;
+  type: 'extension' | 'inline';
+  extensionId?: string;
+  label?: string;
+  instructions?: string;
+  priority: number;
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CodingAgentSubscription {
+  id: string;
+  userId: string;
+  providerRef: string;
+  tier?: string;
+  monthlyBudgetUsd: number;
+  currentSpendUsd: number;
+  maxConcurrentSessions: number;
+  resetAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
 
 // =============================================================================
 // CLI Providers API (custom provider registry)
