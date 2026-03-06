@@ -40,6 +40,7 @@ import { splitMessage } from '../../utils/message-utils.js';
 import { getSessionDir, clearSession } from './session-store.js';
 import { wsGateway } from '../../../ws/server.js';
 import type { ChannelMessageAttachmentInput } from '../../../db/repositories/channel-messages.js';
+import { channelUsersRepo } from '../../../db/repositories/channel-users.js';
 import {
   extractWhatsAppMessageMetadata,
   parseWhatsAppMessagePayload,
@@ -162,6 +163,9 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
   // History sync tracking — promise queue serializes concurrent batches (Node.js can context-switch at await)
   private historySyncQueue: Promise<void> = Promise.resolve();
   private lastHistoryFetchTime: number | null = null;
+
+  // Display name resolution cache (LID → display_name from channel_users, 10 min TTL)
+  private displayNameCache = new SimpleTTLCache<string>(10 * 60_000);
 
   // Group listing cache (5 min TTL — prevents excessive groupFetchAllParticipating calls)
   private groupsCache: WhatsAppGroupSummary[] | null = null;
@@ -406,13 +410,16 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
                   continue;
                 }
 
+                // Resolve display name from channel_users cache (LID→name)
+                const resolvedName = await this.resolveDisplayName(phone, msg.pushName || undefined);
+
                 rows.push({
                   id: `${this.pluginId}:${messageId}`,
                   channelId: this.pluginId,
                   externalId: messageId,
                   direction: 'inbound' as const,
                   senderId: phone,
-                  senderName: msg.pushName || phone,
+                  senderName: resolvedName,
                   content: contentText,
                   contentType: parsedPayload.media.length > 0 ? 'attachment' : 'text',
                   attachments: attachments.length > 0 ? attachments : undefined,
@@ -1504,10 +1511,11 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
 
     const messageId = msg.key.id ?? '';
 
+    const resolvedName = await this.resolveDisplayName(phone, msg.pushName || undefined);
     const sender: ChannelUser = {
       platformUserId: phone,
       platform: 'whatsapp',
-      displayName: msg.pushName || phone,
+      displayName: resolvedName,
       username: phone,
     };
 
@@ -1572,6 +1580,34 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
   /** Extract phone number from a WhatsApp JID. */
   private phoneFromJid(jid: string): string {
     return jid.split('@')[0]?.split(':')[0] ?? jid;
+  }
+
+  /**
+   * Resolve a human-readable display name for a sender.
+   * Priority: pushName (if non-empty) → channel_users display_name → phone/LID fallback.
+   * Uses TTL cache to avoid repeated DB lookups.
+   */
+  private async resolveDisplayName(platformUserId: string, pushName?: string): Promise<string> {
+    // If pushName is a real name (not numeric LID), use it directly
+    if (pushName && !/^\d+$/.test(pushName)) return pushName;
+
+    // Check cache first
+    const cached = this.displayNameCache.get(platformUserId);
+    if (cached) return cached;
+
+    // Lookup from channel_users table
+    try {
+      const user = await channelUsersRepo.findByPlatform('whatsapp', platformUserId);
+      if (user?.displayName && !/^\d+$/.test(user.displayName)) {
+        this.displayNameCache.set(platformUserId, user.displayName);
+        return user.displayName;
+      }
+    } catch {
+      // DB not available — fall through to fallback
+    }
+
+    // Fallback to pushName or phone/LID
+    return pushName || platformUserId;
   }
 
   /**
