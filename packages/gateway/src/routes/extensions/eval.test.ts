@@ -246,7 +246,10 @@ describe('Extensions Eval Routes', () => {
     it('extracts JSON from mixed text response', async () => {
       mockComplete.mockResolvedValue({
         ok: true,
-        value: { content: 'Here is my evaluation: {"score": 0.6, "passed": false, "feedback": "Missing keywords"}' },
+        value: {
+          content:
+            'Here is my evaluation: {"score": 0.6, "passed": false, "feedback": "Missing keywords"}',
+        },
       });
 
       const res = await app.request('/ext/ext-1/eval/grade', {

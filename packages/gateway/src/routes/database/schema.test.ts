@@ -258,7 +258,9 @@ describe('Schema Routes', () => {
       await app.request('/db/migrate', { method: 'POST' });
 
       proc.stderr.emit('data', Buffer.from('Warning: deprecated column'));
-      expect((testOperationStatus.output as string[]).some((l) => l.includes('deprecated column'))).toBe(true);
+      expect(
+        (testOperationStatus.output as string[]).some((l) => l.includes('deprecated column'))
+      ).toBe(true);
     });
 
     it('sets lastResult success on close with code 0', async () => {
@@ -279,7 +281,7 @@ describe('Schema Routes', () => {
       proc.emit('close', 1);
       expect(testOperationStatus.isRunning).toBe(false);
       expect(testOperationStatus.lastResult).toBe('failure');
-      expect((testOperationStatus.lastError as string)).toContain('code 1');
+      expect(testOperationStatus.lastError as string).toContain('code 1');
     });
 
     it('sets lastResult failure on process error event', async () => {
@@ -290,7 +292,7 @@ describe('Schema Routes', () => {
       proc.emit('error', new Error('ENOENT: npx not found'));
       expect(testOperationStatus.isRunning).toBe(false);
       expect(testOperationStatus.lastResult).toBe('failure');
-      expect((testOperationStatus.lastError as string)).toContain('npx not found');
+      expect(testOperationStatus.lastError as string).toContain('npx not found');
     });
   });
 });

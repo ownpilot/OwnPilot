@@ -175,7 +175,10 @@ import {
   createSkillToolProvider,
 } from './tool-providers/index.js';
 import { checkToolPermission } from './tool-permission-service.js';
-import { getCustomToolDynamicRegistry, setSharedRegistryForCustomTools } from './custom-tool-registry.js';
+import {
+  getCustomToolDynamicRegistry,
+  setSharedRegistryForCustomTools,
+} from './custom-tool-registry.js';
 import { createCustomToolsRepo } from '../db/repositories/custom-tools.js';
 import { getServiceRegistry, hasServiceRegistry } from '@ownpilot/core';
 import { registerImageOverrides } from './image-overrides.js';
@@ -708,7 +711,9 @@ describe('Tool Executor', () => {
 
     it('waits for the custom tool sync promise after registry creation', async () => {
       let resolveSync!: () => void;
-      const syncPromise = new Promise<void>((res) => { resolveSync = res; });
+      const syncPromise = new Promise<void>((res) => {
+        resolveSync = res;
+      });
       vi.mocked(mockCustomToolsRepo.getActiveTools).mockReturnValue(syncPromise.then(() => []));
 
       getSharedToolRegistry('user-1');
@@ -761,7 +766,9 @@ describe('Tool Executor', () => {
         parameters: {},
         code: '',
         category: null,
-        requiredApiKeys: [{ name: 'API_KEY', displayName: 'API Key', description: '', category: '', docsUrl: '' }],
+        requiredApiKeys: [
+          { name: 'API_KEY', displayName: 'API Key', description: '', category: '', docsUrl: '' },
+        ],
         requiresApproval: true,
         permissions: null,
         metadata: { workflowUsable: true },
@@ -802,10 +809,17 @@ describe('Tool Executor', () => {
 
       // Get the registered executor function
       const registerCall = vi.mocked(mockToolRegistry.registerCustomTool).mock.calls[0];
-      const executor = registerCall[1] as (args: Record<string, unknown>, ctx: unknown) => Promise<unknown>;
+      const executor = registerCall[1] as (
+        args: Record<string, unknown>,
+        ctx: unknown
+      ) => Promise<unknown>;
 
       const result = await executor({ foo: 'bar' }, { userId: 'u', conversationId: 'c' });
-      expect(mockDynamicRegistry.execute).toHaveBeenCalledWith('exec_tool', { foo: 'bar' }, expect.anything());
+      expect(mockDynamicRegistry.execute).toHaveBeenCalledWith(
+        'exec_tool',
+        { foo: 'bar' },
+        expect.anything()
+      );
     });
 
     it('handles getActiveTools failure gracefully', async () => {
@@ -908,8 +922,11 @@ describe('Tool Executor', () => {
 
       // Get the executor function registered
       const registerCall = vi.mocked(mockToolRegistry.register).mock.calls[0];
-      const executor = registerCall[1] as (args: Record<string, unknown>, ctx: unknown) => Promise<unknown>;
-      const result = await executor({ x: 1 }, {}) as { content: string; isError: boolean };
+      const executor = registerCall[1] as (
+        args: Record<string, unknown>,
+        ctx: unknown
+      ) => Promise<unknown>;
+      const result = (await executor({ x: 1 }, {})) as { content: string; isError: boolean };
 
       expect(mockDynamicRegistry.execute).toHaveBeenCalledWith('no_sandbox_tool', { x: 1 }, {});
       expect(result.content).toContain('ext result');
@@ -939,14 +956,19 @@ describe('Tool Executor', () => {
       getSharedToolRegistry('user-1');
 
       const registerCall = vi.mocked(mockToolRegistry.register).mock.calls[0];
-      const executor = registerCall[1] as (args: Record<string, unknown>, ctx: unknown) => Promise<unknown>;
-      const result = await executor({ x: 1 }, {}) as { content: string; isError: boolean };
+      const executor = registerCall[1] as (
+        args: Record<string, unknown>,
+        ctx: unknown
+      ) => Promise<unknown>;
+      const result = (await executor({ x: 1 }, {})) as { content: string; isError: boolean };
 
-      expect(mockSandbox.execute).toHaveBeenCalledWith(expect.objectContaining({
-        extensionId: 'ext-sb',
-        toolName: 'sandboxed_tool',
-        code: 'code here',
-      }));
+      expect(mockSandbox.execute).toHaveBeenCalledWith(
+        expect.objectContaining({
+          extensionId: 'ext-sb',
+          toolName: 'sandboxed_tool',
+          code: 'code here',
+        })
+      );
       expect(result.isError).toBe(false);
       expect(result.content).toContain('sandbox result');
     });
@@ -975,8 +997,11 @@ describe('Tool Executor', () => {
       getSharedToolRegistry('user-1');
 
       const registerCall = vi.mocked(mockToolRegistry.register).mock.calls[0];
-      const executor = registerCall[1] as (args: Record<string, unknown>, ctx: unknown) => Promise<unknown>;
-      const result = await executor({}, {}) as { content: string; isError: boolean };
+      const executor = registerCall[1] as (
+        args: Record<string, unknown>,
+        ctx: unknown
+      ) => Promise<unknown>;
+      const result = (await executor({}, {})) as { content: string; isError: boolean };
 
       expect(result.isError).toBe(true);
       expect(result.content).toBe('Sandbox crashed');
@@ -1094,9 +1119,9 @@ describe('Tool Executor', () => {
       getSharedToolRegistry('user-1');
 
       // Capture the 'plugin.status' handler
-      const onAnyCall = vi.mocked(mockEventSystem.onAny).mock.calls.find(
-        (c) => c[0] === 'plugin.status'
-      );
+      const onAnyCall = vi
+        .mocked(mockEventSystem.onAny)
+        .mock.calls.find((c) => c[0] === 'plugin.status');
       expect(onAnyCall).toBeDefined();
       const statusHandler = onAnyCall![1] as (e: { data: unknown }) => void;
 
@@ -1113,9 +1138,9 @@ describe('Tool Executor', () => {
 
       getSharedToolRegistry('user-1');
 
-      const onAnyCall = vi.mocked(mockEventSystem.onAny).mock.calls.find(
-        (c) => c[0] === 'plugin.status'
-      );
+      const onAnyCall = vi
+        .mocked(mockEventSystem.onAny)
+        .mock.calls.find((c) => c[0] === 'plugin.status');
       const statusHandler = onAnyCall![1] as (e: { data: unknown }) => void;
 
       statusHandler({ data: { pluginId: 'old-plugin', newStatus: 'disabled' } });
@@ -1133,9 +1158,9 @@ describe('Tool Executor', () => {
 
       getSharedToolRegistry('user-1');
 
-      const onAnyCall = vi.mocked(mockEventSystem.onAny).mock.calls.find(
-        (c) => c[0] === 'plugin.status'
-      );
+      const onAnyCall = vi
+        .mocked(mockEventSystem.onAny)
+        .mock.calls.find((c) => c[0] === 'plugin.status');
       const statusHandler = onAnyCall![1] as (e: { data: unknown }) => void;
 
       statusHandler({ data: { pluginId: 'core-plugin', newStatus: 'enabled' } });
@@ -1151,13 +1176,15 @@ describe('Tool Executor', () => {
 
       getSharedToolRegistry('user-1');
 
-      const onAnyCall = vi.mocked(mockEventSystem.onAny).mock.calls.find(
-        (c) => c[0] === 'plugin.status'
-      );
+      const onAnyCall = vi
+        .mocked(mockEventSystem.onAny)
+        .mock.calls.find((c) => c[0] === 'plugin.status');
       const statusHandler = onAnyCall![1] as (e: { data: unknown }) => void;
 
       // Should not throw
-      expect(() => statusHandler({ data: { pluginId: 'plugin-x', newStatus: 'enabled' } })).not.toThrow();
+      expect(() =>
+        statusHandler({ data: { pluginId: 'plugin-x', newStatus: 'enabled' } })
+      ).not.toThrow();
     });
   });
 
@@ -1241,9 +1268,9 @@ describe('Tool Executor', () => {
 
   describe('resyncExtensionTools callback', () => {
     function getResyncCallback() {
-      const call = vi.mocked(mockEventSystem.onAny).mock.calls.find(
-        (c) => c[0] === 'extension.installed'
-      );
+      const call = vi
+        .mocked(mockEventSystem.onAny)
+        .mock.calls.find((c) => c[0] === 'extension.installed');
       return call![1] as () => void;
     }
 
@@ -1340,11 +1367,17 @@ describe('Tool Executor', () => {
       resync();
 
       const calls = vi.mocked(mockToolRegistry.register).mock.calls;
-      const executor = calls[calls.length - 1][1] as (args: Record<string, unknown>, ctx: unknown) => Promise<unknown>;
-      const res = await executor({ x: 1 }, {}) as { content: string; isError: boolean };
+      const executor = calls[calls.length - 1][1] as (
+        args: Record<string, unknown>,
+        ctx: unknown
+      ) => Promise<unknown>;
+      const res = (await executor({ x: 1 }, {})) as { content: string; isError: boolean };
 
       expect(mockSandbox.execute).toHaveBeenCalledWith(
-        expect.objectContaining({ extensionId: 'ext-sandboxed_resync', toolName: 'sandboxed_resync' })
+        expect.objectContaining({
+          extensionId: 'ext-sandboxed_resync',
+          toolName: 'sandboxed_resync',
+        })
       );
       expect(res.isError).toBe(false);
       expect(res.content).toContain('sandboxed result');
@@ -1367,8 +1400,11 @@ describe('Tool Executor', () => {
       resync();
 
       const calls = vi.mocked(mockToolRegistry.register).mock.calls;
-      const executor = calls[calls.length - 1][1] as (args: Record<string, unknown>, ctx: unknown) => Promise<unknown>;
-      const res = await executor({ y: 2 }, {}) as { content: string; isError: boolean };
+      const executor = calls[calls.length - 1][1] as (
+        args: Record<string, unknown>,
+        ctx: unknown
+      ) => Promise<unknown>;
+      const res = (await executor({ y: 2 }, {})) as { content: string; isError: boolean };
 
       expect(mockDynamicRegistry.execute).toHaveBeenCalledWith('dynamic_resync', { y: 2 }, {});
       expect(res.isError).toBe(false);

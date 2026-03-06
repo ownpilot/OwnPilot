@@ -213,9 +213,7 @@ describe('Extensions CRUD Routes', () => {
       mockExtensionsRepo.getById.mockReturnValue(makeExt());
       mockExtensionsRepo.upsert.mockResolvedValue(undefined);
       // First getById = ownership check, second = return updated pkg
-      mockExtService.getById
-        .mockReturnValueOnce(makeExt())
-        .mockReturnValueOnce(updatedExt);
+      mockExtService.getById.mockReturnValueOnce(makeExt()).mockReturnValueOnce(updatedExt);
     }
 
     it('updates name and returns 200', async () => {

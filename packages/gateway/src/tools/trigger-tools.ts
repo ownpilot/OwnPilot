@@ -230,7 +230,13 @@ export async function executeTriggerTool(
           };
         }
         // Validate condition against allowed values to prevent injection
-        const validConditions = ['stale_goals', 'upcoming_deadline', 'memory_threshold', 'low_progress', 'no_activity'];
+        const validConditions = [
+          'stale_goals',
+          'upcoming_deadline',
+          'memory_threshold',
+          'low_progress',
+          'no_activity',
+        ];
         if (!validConditions.includes(args.condition as string)) {
           return {
             success: false,

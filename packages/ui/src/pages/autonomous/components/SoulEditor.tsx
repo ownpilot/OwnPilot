@@ -20,7 +20,14 @@ interface Props {
   agentId: string;
 }
 
-type TabId = 'identity' | 'purpose' | 'autonomy' | 'heartbeat' | 'relationships' | 'evolution' | 'skills';
+type TabId =
+  | 'identity'
+  | 'purpose'
+  | 'autonomy'
+  | 'heartbeat'
+  | 'relationships'
+  | 'evolution'
+  | 'skills';
 
 const soulTabs: { id: TabId; label: string }[] = [
   { id: 'identity', label: 'Identity' },
@@ -538,17 +545,16 @@ export function SoulEditor({ agentId }: Props) {
               Skill Access
             </h4>
             <span className="text-xs text-text-muted dark:text-dark-text-muted">
-              {(edited.skillAccess?.allowed?.length || 0)} skills enabled
+              {edited.skillAccess?.allowed?.length || 0} skills enabled
             </span>
           </div>
           <p className="text-xs text-text-muted dark:text-dark-text-muted">
-            Select which skills this agent can access. Skills provide additional tools and capabilities.
+            Select which skills this agent can access. Skills provide additional tools and
+            capabilities.
           </p>
           <SkillSelector
             selectedSkills={edited.skillAccess?.allowed || []}
-            onChange={(skillIds) =>
-              updateField('skillAccess', 'allowed', skillIds)
-            }
+            onChange={(skillIds) => updateField('skillAccess', 'allowed', skillIds)}
           />
           {edited.skillAccess?.blocked && edited.skillAccess.blocked.length > 0 && (
             <FieldGroup label="Blocked Skills">

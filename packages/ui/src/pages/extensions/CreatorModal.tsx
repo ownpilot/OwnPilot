@@ -239,7 +239,21 @@ export function CreatorModal({
     } catch {
       return '// Error: one or more tool parameter schemas contain invalid JSON.';
     }
-  }, [step, extensionId, name, version, description, category, icon, authorName, tags, systemPrompt, keywords, docsUrl, tools]);
+  }, [
+    step,
+    extensionId,
+    name,
+    version,
+    description,
+    category,
+    icon,
+    authorName,
+    tags,
+    systemPrompt,
+    keywords,
+    docsUrl,
+    tools,
+  ]);
 
   const handleInstall = async () => {
     setError(null);

@@ -263,9 +263,7 @@ export function InstalledTab({ initialFormat, onCountChange }: InstalledTabProps
         <div className="relative">
           <select
             value={formatFilter}
-            onChange={(e) =>
-              setFormatFilter(e.target.value as 'all' | 'agentskills' | 'ownpilot')
-            }
+            onChange={(e) => setFormatFilter(e.target.value as 'all' | 'agentskills' | 'ownpilot')}
             className="appearance-none pl-3 pr-7 py-1.5 text-xs bg-bg-tertiary dark:bg-dark-bg-tertiary border border-border dark:border-dark-border rounded-lg text-text-secondary dark:text-dark-text-secondary focus:outline-none focus:ring-2 focus:ring-primary/50 cursor-pointer"
           >
             <option value="all">All Formats</option>
@@ -295,7 +293,9 @@ export function InstalledTab({ initialFormat, onCountChange }: InstalledTabProps
             <div className="flex items-center gap-1 border border-border dark:border-dark-border rounded-lg overflow-hidden">
               <button
                 onClick={() => bulkToggle(true)}
-                disabled={togglingIds.size > 0 || filteredPackages.every((p) => p.status === 'enabled')}
+                disabled={
+                  togglingIds.size > 0 || filteredPackages.every((p) => p.status === 'enabled')
+                }
                 className="px-2.5 py-1.5 text-xs text-success hover:bg-success/10 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                 title="Enable all shown"
               >
@@ -304,7 +304,9 @@ export function InstalledTab({ initialFormat, onCountChange }: InstalledTabProps
               <div className="w-px h-4 bg-border dark:bg-dark-border" />
               <button
                 onClick={() => bulkToggle(false)}
-                disabled={togglingIds.size > 0 || filteredPackages.every((p) => p.status !== 'enabled')}
+                disabled={
+                  togglingIds.size > 0 || filteredPackages.every((p) => p.status !== 'enabled')
+                }
                 className="px-2.5 py-1.5 text-xs text-text-muted hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                 title="Disable all shown"
               >

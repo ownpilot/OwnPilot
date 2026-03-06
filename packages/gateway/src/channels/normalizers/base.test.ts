@@ -244,9 +244,7 @@ describe('baseNormalizer.normalizeIncoming — audio transcription', () => {
     const result = await baseNormalizer.normalizeIncoming(
       makeMsg({
         text: '',
-        attachments: [
-          { type: 'audio', mimeType: 'audio/ogg', data: Buffer.from('audio data') },
-        ],
+        attachments: [{ type: 'audio', mimeType: 'audio/ogg', data: Buffer.from('audio data') }],
       })
     );
 
@@ -260,9 +258,7 @@ describe('baseNormalizer.normalizeIncoming — audio transcription', () => {
     const result = await baseNormalizer.normalizeIncoming(
       makeMsg({
         text: 'Also typed this',
-        attachments: [
-          { type: 'audio', mimeType: 'audio/ogg', data: Buffer.from('audio') },
-        ],
+        attachments: [{ type: 'audio', mimeType: 'audio/ogg', data: Buffer.from('audio') }],
       })
     );
 
@@ -277,9 +273,7 @@ describe('baseNormalizer.normalizeIncoming — audio transcription', () => {
     const result = await baseNormalizer.normalizeIncoming(
       makeMsg({
         text: 'only text',
-        attachments: [
-          { type: 'audio', mimeType: 'audio/ogg', data: Buffer.from('audio') },
-        ],
+        attachments: [{ type: 'audio', mimeType: 'audio/ogg', data: Buffer.from('audio') }],
       })
     );
 

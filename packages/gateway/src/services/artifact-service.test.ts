@@ -19,7 +19,9 @@ const { mockRepo, MockArtifactsRepository } = vi.hoisted(() => {
     updateBindings: vi.fn(),
     getVersions: vi.fn(),
   };
-  const MockArtifactsRepository = vi.fn(function () { return mockRepo; });
+  const MockArtifactsRepository = vi.fn(function () {
+    return mockRepo;
+  });
   return { mockRepo, MockArtifactsRepository };
 });
 
@@ -80,7 +82,9 @@ describe('ArtifactService', () => {
     mockRepo.list.mockResolvedValue({ artifacts: [sampleArtifact], total: 1 });
     mockRepo.togglePin.mockResolvedValue({ ...sampleArtifact, pinned: true });
     mockRepo.updateBindings.mockResolvedValue(undefined);
-    mockRepo.getVersions.mockResolvedValue([{ version: 1, content: '<html/>', createdAt: new Date() }]);
+    mockRepo.getVersions.mockResolvedValue([
+      { version: 1, content: '<html/>', createdAt: new Date() },
+    ]);
   });
 
   describe('createArtifact', () => {
@@ -211,18 +215,26 @@ describe('ArtifactService', () => {
     });
 
     it('resolves bindings and updates when bindings exist', async () => {
-      const binding = { variableName: 'tasks', source: { type: 'query', entity: 'tasks', filter: {} } };
+      const binding = {
+        variableName: 'tasks',
+        source: { type: 'query', entity: 'tasks', filter: {} },
+      };
       const artifactWithBindings = { ...sampleArtifact, dataBindings: [binding] };
-      const refreshedArtifact = { ...artifactWithBindings, dataBindings: [{ ...binding, lastValue: [] }] };
+      const refreshedArtifact = {
+        ...artifactWithBindings,
+        dataBindings: [{ ...binding, lastValue: [] }],
+      };
 
       mockRepo.getById
         .mockResolvedValueOnce(artifactWithBindings) // first call
-        .mockResolvedValueOnce(refreshedArtifact);   // after update
+        .mockResolvedValueOnce(refreshedArtifact); // after update
       mockResolveAllBindings.mockResolvedValueOnce([{ ...binding, lastValue: [] }]);
 
       const result = await service.refreshBindings('user-1', 'art-1');
       expect(mockResolveAllBindings).toHaveBeenCalledWith('user-1', [binding]);
-      expect(mockRepo.updateBindings).toHaveBeenCalledWith('art-1', [{ ...binding, lastValue: [] }]);
+      expect(mockRepo.updateBindings).toHaveBeenCalledWith('art-1', [
+        { ...binding, lastValue: [] },
+      ]);
       expect(result).toBe(refreshedArtifact);
     });
 

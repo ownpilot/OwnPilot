@@ -279,7 +279,7 @@ describe('Composio Routes', () => {
       mockComposioService.waitForConnection.mockResolvedValueOnce({ id: 'c1', status: 'ACTIVE' });
       const res = await app.request('/composio/connections/c1');
       expect(res.status).toBe(200);
-      const body = await res.json() as { data: { id: string } };
+      const body = (await res.json()) as { data: { id: string } };
       expect(body.data.id).toBe('c1');
     });
 

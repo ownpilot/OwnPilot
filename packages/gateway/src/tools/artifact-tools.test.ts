@@ -128,7 +128,9 @@ describe('Artifact Tools', () => {
     });
 
     it('passes data_bindings to service (fixes "as undefined" bug)', async () => {
-      const bindings = [{ id: 'b1', variableName: 'tasks', source: { type: 'query', entity: 'tasks' } }];
+      const bindings = [
+        { id: 'b1', variableName: 'tasks', source: { type: 'query', entity: 'tasks' } },
+      ];
       mockArtifactService.createArtifact.mockResolvedValue(
         makeArtifact({ dataBindings: bindings })
       );
@@ -148,7 +150,9 @@ describe('Artifact Tools', () => {
     });
 
     it('calls refreshBindings when artifact has data bindings', async () => {
-      const bindings = [{ id: 'b1', variableName: 'tasks', source: { type: 'query', entity: 'tasks' } }];
+      const bindings = [
+        { id: 'b1', variableName: 'tasks', source: { type: 'query', entity: 'tasks' } },
+      ];
       mockArtifactService.createArtifact.mockResolvedValue(
         makeArtifact({ dataBindings: bindings })
       );
@@ -258,8 +262,12 @@ describe('Artifact Tools', () => {
     });
 
     it('passes data_bindings to service on update (fixes "as undefined" bug)', async () => {
-      const bindings = [{ id: 'b2', variableName: 'goals', source: { type: 'goal', goalId: 'g1' } }];
-      mockArtifactService.updateArtifact.mockResolvedValue(makeArtifact({ dataBindings: bindings }));
+      const bindings = [
+        { id: 'b2', variableName: 'goals', source: { type: 'goal', goalId: 'g1' } },
+      ];
+      mockArtifactService.updateArtifact.mockResolvedValue(
+        makeArtifact({ dataBindings: bindings })
+      );
 
       await executeArtifactTool(
         'update_artifact',
@@ -373,12 +381,17 @@ describe('Artifact Tools', () => {
     it('formats artifact dates as ISO strings', async () => {
       mockArtifactService.listArtifacts.mockResolvedValue({
         total: 1,
-        artifacts: [makeArtifact({ createdAt: new Date('2025-03-01'), updatedAt: new Date('2025-03-02') })],
+        artifacts: [
+          makeArtifact({ createdAt: new Date('2025-03-01'), updatedAt: new Date('2025-03-02') }),
+        ],
       });
 
       const result = await executeArtifactTool('list_artifacts', {}, 'user-1', 'conv-1');
 
-      const artifacts = (result.result as Record<string, unknown>).artifacts as Record<string, unknown>[];
+      const artifacts = (result.result as Record<string, unknown>).artifacts as Record<
+        string,
+        unknown
+      >[];
       expect(artifacts[0].createdAt).toBe('2025-03-01T00:00:00.000Z');
       expect(artifacts[0].updatedAt).toBe('2025-03-02T00:00:00.000Z');
     });

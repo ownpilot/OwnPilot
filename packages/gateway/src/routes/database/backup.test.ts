@@ -222,7 +222,9 @@ describe('Backup Routes', () => {
       const spawnOpts = mockSpawn.mock.calls[0][2] as { env: Record<string, string> };
       expect(spawnOpts.env.PGPASSWORD).toBe('testpass');
       // Should NOT contain any API keys etc. — only minimal env
-      expect(Object.keys(spawnOpts.env)).toEqual(expect.arrayContaining(['PATH', 'HOME', 'PGPASSWORD']));
+      expect(Object.keys(spawnOpts.env)).toEqual(
+        expect.arrayContaining(['PATH', 'HOME', 'PGPASSWORD'])
+      );
     });
 
     it('calls setOperationStatus with isRunning: true and operation backup at start', async () => {
@@ -369,7 +371,7 @@ describe('Backup Routes', () => {
       proc.emit('close', 1);
       expect(testOperationStatus.isRunning).toBe(false);
       expect(testOperationStatus.lastResult).toBe('failure');
-      expect((testOperationStatus.lastError as string)).toContain('code 1');
+      expect(testOperationStatus.lastError as string).toContain('code 1');
     });
 
     it('sets lastResult failure on process error event', async () => {
@@ -384,7 +386,7 @@ describe('Backup Routes', () => {
       proc.emit('error', new Error('ENOENT: psql not found'));
       expect(testOperationStatus.isRunning).toBe(false);
       expect(testOperationStatus.lastResult).toBe('failure');
-      expect((testOperationStatus.lastError as string)).toContain('psql not found');
+      expect(testOperationStatus.lastError as string).toContain('psql not found');
     });
 
     it('sets PGPASSWORD in env for restore process', async () => {

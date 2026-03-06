@@ -62,17 +62,28 @@ function getChipStyle(type: ResourceType): string {
 
 function getChipLabel(type: ResourceType): string {
   switch (type) {
-    case 'tool': return 'tool';
-    case 'custom-tool': return 'custom';
-    case 'custom-data': return 'data';
-    case 'builtin-data': return 'built-in';
-    case 'skill': return 'skill';
-    case 'file': return 'file';
-    case 'url': return 'url';
-    case 'composio-action': return 'app';
-    case 'mcp-tool': return 'mcp';
-    case 'artifact': return 'artifact';
-    case 'prompt': return 'prompt';
+    case 'tool':
+      return 'tool';
+    case 'custom-tool':
+      return 'custom';
+    case 'custom-data':
+      return 'data';
+    case 'builtin-data':
+      return 'built-in';
+    case 'skill':
+      return 'skill';
+    case 'file':
+      return 'file';
+    case 'url':
+      return 'url';
+    case 'composio-action':
+      return 'app';
+    case 'mcp-tool':
+      return 'mcp';
+    case 'artifact':
+      return 'artifact';
+    case 'prompt':
+      return 'prompt';
   }
 }
 

@@ -158,18 +158,18 @@ describe('OrchestraRepository', () => {
       await repo.saveExecution(execution);
 
       const params = mockAdapter.query.mock.calls[0]![1] as unknown[];
-      expect(params[0]).toBe('exec-1');                              // id
-      expect(params[1]).toBe('conv-1');                              // parent_id
-      expect(params[2]).toBe('user-1');                              // user_id
-      expect(params[3]).toBe(SAMPLE_PLAN.description);              // description
-      expect(params[4]).toBe(SAMPLE_PLAN.strategy);                 // strategy
-      expect(params[5]).toBe('completed');                           // state
-      expect(params[6]).toBe(JSON.stringify(SAMPLE_PLAN));           // plan JSON
-      expect(params[7]).toBe(JSON.stringify(SAMPLE_TASK_RESULTS));   // task_results JSON
-      expect(params[8]).toBe(2300);                                  // total_duration_ms
-      expect(params[9]).toBeNull();                                  // error (undefined -> null)
-      expect(params[10]).toBe(NOW_ISO);                              // started_at ISO
-      expect(params[11]).toBe(COMPLETED_ISO);                        // completed_at ISO
+      expect(params[0]).toBe('exec-1'); // id
+      expect(params[1]).toBe('conv-1'); // parent_id
+      expect(params[2]).toBe('user-1'); // user_id
+      expect(params[3]).toBe(SAMPLE_PLAN.description); // description
+      expect(params[4]).toBe(SAMPLE_PLAN.strategy); // strategy
+      expect(params[5]).toBe('completed'); // state
+      expect(params[6]).toBe(JSON.stringify(SAMPLE_PLAN)); // plan JSON
+      expect(params[7]).toBe(JSON.stringify(SAMPLE_TASK_RESULTS)); // task_results JSON
+      expect(params[8]).toBe(2300); // total_duration_ms
+      expect(params[9]).toBeNull(); // error (undefined -> null)
+      expect(params[10]).toBe(NOW_ISO); // started_at ISO
+      expect(params[11]).toBe(COMPLETED_ISO); // completed_at ISO
     });
 
     it('should set completedAt to null when not provided', async () => {
@@ -250,9 +250,7 @@ describe('OrchestraRepository', () => {
     });
 
     it('should return correct total from COUNT result', async () => {
-      mockAdapter.query
-        .mockResolvedValueOnce([{ count: '7' }])
-        .mockResolvedValueOnce([]);
+      mockAdapter.query.mockResolvedValueOnce([{ count: '7' }]).mockResolvedValueOnce([]);
 
       const result = await repo.getHistory('user-1');
 
@@ -260,9 +258,7 @@ describe('OrchestraRepository', () => {
     });
 
     it('should return total 0 when COUNT returns no rows', async () => {
-      mockAdapter.query
-        .mockResolvedValueOnce([])
-        .mockResolvedValueOnce([]);
+      mockAdapter.query.mockResolvedValueOnce([]).mockResolvedValueOnce([]);
 
       const result = await repo.getHistory('user-1');
 
@@ -281,9 +277,7 @@ describe('OrchestraRepository', () => {
     });
 
     it('should return empty entries when no rows', async () => {
-      mockAdapter.query
-        .mockResolvedValueOnce([{ count: '0' }])
-        .mockResolvedValueOnce([]);
+      mockAdapter.query.mockResolvedValueOnce([{ count: '0' }]).mockResolvedValueOnce([]);
 
       const result = await repo.getHistory('user-1');
 
@@ -291,9 +285,7 @@ describe('OrchestraRepository', () => {
     });
 
     it('should scope both queries to userId', async () => {
-      mockAdapter.query
-        .mockResolvedValueOnce([{ count: '0' }])
-        .mockResolvedValueOnce([]);
+      mockAdapter.query.mockResolvedValueOnce([{ count: '0' }]).mockResolvedValueOnce([]);
 
       await repo.getHistory('user-42');
 
@@ -304,9 +296,7 @@ describe('OrchestraRepository', () => {
     });
 
     it('should pass limit and offset to SELECT query', async () => {
-      mockAdapter.query
-        .mockResolvedValueOnce([{ count: '100' }])
-        .mockResolvedValueOnce([]);
+      mockAdapter.query.mockResolvedValueOnce([{ count: '100' }]).mockResolvedValueOnce([]);
 
       await repo.getHistory('user-1', 10, 30);
 
@@ -316,9 +306,7 @@ describe('OrchestraRepository', () => {
     });
 
     it('should use default limit=20 and offset=0', async () => {
-      mockAdapter.query
-        .mockResolvedValueOnce([{ count: '5' }])
-        .mockResolvedValueOnce([]);
+      mockAdapter.query.mockResolvedValueOnce([{ count: '5' }]).mockResolvedValueOnce([]);
 
       await repo.getHistory('user-1');
 
@@ -328,9 +316,7 @@ describe('OrchestraRepository', () => {
     });
 
     it('should order by started_at DESC', async () => {
-      mockAdapter.query
-        .mockResolvedValueOnce([{ count: '0' }])
-        .mockResolvedValueOnce([]);
+      mockAdapter.query.mockResolvedValueOnce([{ count: '0' }]).mockResolvedValueOnce([]);
 
       await repo.getHistory('user-1');
 
@@ -453,9 +439,7 @@ describe('OrchestraRepository', () => {
     });
 
     it('should default totalDurationMs to 0 when null', async () => {
-      mockAdapter.queryOne.mockResolvedValueOnce(
-        makeExecutionRow({ total_duration_ms: null })
-      );
+      mockAdapter.queryOne.mockResolvedValueOnce(makeExecutionRow({ total_duration_ms: null }));
 
       const result = await repo.getById('exec-1');
 
@@ -463,9 +447,7 @@ describe('OrchestraRepository', () => {
     });
 
     it('should use fallback for invalid plan JSON', async () => {
-      mockAdapter.queryOne.mockResolvedValueOnce(
-        makeExecutionRow({ plan: 'not-valid-json{{{' })
-      );
+      mockAdapter.queryOne.mockResolvedValueOnce(makeExecutionRow({ plan: 'not-valid-json{{{' }));
 
       const result = await repo.getById('exec-1');
 

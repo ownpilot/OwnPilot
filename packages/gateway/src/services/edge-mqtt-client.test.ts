@@ -142,7 +142,9 @@ describe('EdgeMqttClient', () => {
   });
 
   it('returns false when MQTT package not available', async () => {
-    vi.doMock('mqtt', () => { throw new Error('Module not found'); });
+    vi.doMock('mqtt', () => {
+      throw new Error('Module not found');
+    });
     process.env.MQTT_BROKER_URL = 'mqtt://localhost:1883';
     const result = await client.connect('mqtt://localhost:1883');
     expect(result).toBe(false);
@@ -205,7 +207,11 @@ describe('EdgeMqttClient', () => {
     const handler = vi.fn();
     client.subscribe('ownpilot/user1/devices/d1/telemetry', handler);
 
-    mockMqttClient._emit('message', 'ownpilot/user1/devices/d1/telemetry', Buffer.from('{"temp":22}'));
+    mockMqttClient._emit(
+      'message',
+      'ownpilot/user1/devices/d1/telemetry',
+      Buffer.from('{"temp":22}')
+    );
 
     expect(handler).toHaveBeenCalledWith('ownpilot/user1/devices/d1/telemetry', { temp: 22 });
   });
@@ -242,7 +248,9 @@ describe('EdgeMqttClient', () => {
 
   it('handler errors are caught and logged as warning', () => {
     connectWithMock(client, mockMqttClient);
-    const badHandler = vi.fn(() => { throw new Error('handler blew up'); });
+    const badHandler = vi.fn(() => {
+      throw new Error('handler blew up');
+    });
     client.subscribe('test/topic', badHandler);
 
     mockMqttClient._emit('message', 'test/topic', 'data');
@@ -270,7 +278,11 @@ describe('EdgeMqttClient', () => {
   it('publish sends string payload as-is', async () => {
     (client as any).client = mockMqttClient;
     await client.publish('test/topic', 'raw string');
-    expect(mockMqttClient.publish).toHaveBeenCalledWith('test/topic', 'raw string', expect.any(Function));
+    expect(mockMqttClient.publish).toHaveBeenCalledWith(
+      'test/topic',
+      'raw string',
+      expect.any(Function)
+    );
   });
 
   it('publish rejects when publish cb returns error', async () => {
@@ -404,7 +416,9 @@ describe('EdgeMqttClient', () => {
   describe('doConnect() catch block (lines 151-153)', () => {
     it('returns false and schedules reconnect when connectFn throws', () => {
       // Inject a throwing connectFn
-      (client as any).connectFn = () => { throw new Error('connection refused'); };
+      (client as any).connectFn = () => {
+        throw new Error('connection refused');
+      };
       (client as any).brokerUrl = 'mqtt://localhost:1883';
 
       vi.useFakeTimers();

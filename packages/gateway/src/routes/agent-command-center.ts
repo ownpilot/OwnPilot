@@ -36,14 +36,27 @@ agentCommandCenterRoutes.post('/command', async (c) => {
     }>();
 
     if (!body.targets || !Array.isArray(body.targets) || body.targets.length === 0) {
-      return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: 'targets array is required' }, 400);
+      return apiError(
+        c,
+        { code: ERROR_CODES.VALIDATION_ERROR, message: 'targets array is required' },
+        400
+      );
     }
 
     if (!body.command) {
-      return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: 'command is required' }, 400);
+      return apiError(
+        c,
+        { code: ERROR_CODES.VALIDATION_ERROR, message: 'command is required' },
+        400
+      );
     }
 
-    const results: { target: { type: string; id: string }; success: boolean; result?: unknown; error?: string }[] = [];
+    const results: {
+      target: { type: string; id: string };
+      success: boolean;
+      result?: unknown;
+      error?: string;
+    }[] = [];
 
     // Execute command on each target
     for (const target of body.targets) {
@@ -72,7 +85,10 @@ agentCommandCenterRoutes.post('/command', async (c) => {
               case 'run_once':
                 const { runAgentHeartbeat } = await import('../services/soul-heartbeat-service.js');
                 const hbResult = await runAgentHeartbeat(target.id);
-                result = { status: hbResult.success ? 'executed' : 'failed', error: hbResult.error };
+                result = {
+                  status: hbResult.success ? 'executed' : 'failed',
+                  error: hbResult.error,
+                };
                 break;
               default:
                 result = { status: 'unknown_command', command: body.command };
@@ -180,7 +196,11 @@ agentCommandCenterRoutes.post('/deploy-fleet', async (c) => {
     }>();
 
     if (!body.name || !body.mission) {
-      return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: 'name and mission are required' }, 400);
+      return apiError(
+        c,
+        { code: ERROR_CODES.VALIDATION_ERROR, message: 'name and mission are required' },
+        400
+      );
     }
 
     const count = Math.min(body.agentCount ?? 1, 10); // Max 10 agents per fleet
@@ -230,7 +250,14 @@ agentCommandCenterRoutes.post('/deploy-fleet', async (c) => {
         agentId,
         identity: {
           name,
-          emoji: role === 'coordinator' ? '👑' : role === 'researcher' ? '🔍' : role === 'executor' ? '⚡' : '✓',
+          emoji:
+            role === 'coordinator'
+              ? '👑'
+              : role === 'researcher'
+                ? '🔍'
+                : role === 'executor'
+                  ? '⚡'
+                  : '✓',
           role: role.charAt(0).toUpperCase() + role.slice(1),
           personality: `Specialized ${role} agent`,
           voice: { tone: 'professional', language: 'en', quirks: [] },
@@ -244,7 +271,13 @@ agentCommandCenterRoutes.post('/deploy-fleet', async (c) => {
         },
         autonomy: {
           level: 3,
-          allowedActions: ['search_web', 'create_note', 'read_url', 'search_memories', 'send_message_to_user'],
+          allowedActions: [
+            'search_web',
+            'create_note',
+            'read_url',
+            'search_memories',
+            'send_message_to_user',
+          ],
           blockedActions: ['delete_data', 'execute_code'],
           requiresApproval: [],
           maxCostPerCycle: 0.5,
@@ -297,13 +330,17 @@ agentCommandCenterRoutes.post('/deploy-fleet', async (c) => {
       }
     }
 
-    return apiResponse(c, {
-      fleetId: crew.id,
-      name: body.name,
-      mission: body.mission,
-      agents,
-      coordinationPattern: body.coordinationPattern ?? 'hub_spoke',
-    }, 201);
+    return apiResponse(
+      c,
+      {
+        fleetId: crew.id,
+        name: body.name,
+        mission: body.mission,
+        agents,
+        coordinationPattern: body.coordinationPattern ?? 'hub_spoke',
+      },
+      201
+    );
   } catch (err) {
     return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(err) }, 500);
   }
@@ -331,7 +368,9 @@ agentCommandCenterRoutes.get('/status', async (c) => {
     // Aggregate status
     const soulStatuses = await Promise.all(
       souls.map(async (soul) => {
-        const hbRepo = (await import('../db/repositories/heartbeat-log.js')).getHeartbeatLogRepository();
+        const hbRepo = (
+          await import('../db/repositories/heartbeat-log.js')
+        ).getHeartbeatLogRepository();
         const lastLog = await hbRepo.getLatest(soul.agentId);
         return {
           type: 'soul' as const,
@@ -369,10 +408,12 @@ agentCommandCenterRoutes.get('/status', async (c) => {
       summary: {
         totalAgents: soulStatuses.length + bgStatuses.length,
         totalCrews: crewStatuses.length,
-        running: soulStatuses.filter((s) => s.status === 'healthy' || s.status === 'running').length +
-                 bgStatuses.filter((s) => s.status === 'running').length,
-        paused: soulStatuses.filter((s) => s.status === 'paused').length +
-                bgStatuses.filter((s) => s.status === 'paused').length,
+        running:
+          soulStatuses.filter((s) => s.status === 'healthy' || s.status === 'running').length +
+          bgStatuses.filter((s) => s.status === 'running').length,
+        paused:
+          soulStatuses.filter((s) => s.status === 'paused').length +
+          bgStatuses.filter((s) => s.status === 'paused').length,
       },
       souls: soulStatuses,
       backgroundAgents: bgStatuses,
@@ -396,11 +437,22 @@ agentCommandCenterRoutes.post('/mission', async (c) => {
     }>();
 
     if (!body.mission) {
-      return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: 'mission is required' }, 400);
+      return apiError(
+        c,
+        { code: ERROR_CODES.VALIDATION_ERROR, message: 'mission is required' },
+        400
+      );
     }
 
-    if ((!body.agentIds || body.agentIds.length === 0) && (!body.crewIds || body.crewIds.length === 0)) {
-      return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: 'agentIds or crewIds required' }, 400);
+    if (
+      (!body.agentIds || body.agentIds.length === 0) &&
+      (!body.crewIds || body.crewIds.length === 0)
+    ) {
+      return apiError(
+        c,
+        { code: ERROR_CODES.VALIDATION_ERROR, message: 'agentIds or crewIds required' },
+        400
+      );
     }
 
     const soulRepo = getSoulsRepository();
@@ -550,12 +602,17 @@ agentCommandCenterRoutes.post('/execute', async (c) => {
     }>();
 
     if (!body.targets || !Array.isArray(body.targets) || body.targets.length === 0) {
-      return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: 'targets array is required' }, 400);
+      return apiError(
+        c,
+        { code: ERROR_CODES.VALIDATION_ERROR, message: 'targets array is required' },
+        400
+      );
     }
 
     const { runAgentHeartbeat } = await import('../services/soul-heartbeat-service.js');
     const bgService = getBackgroundAgentService();
-    const results: { target: { type: string; id: string }; success: boolean; error?: string }[] = [];
+    const results: { target: { type: string; id: string }; success: boolean; error?: string }[] =
+      [];
 
     if (body.parallel) {
       // Execute in parallel
@@ -680,7 +737,11 @@ agentCommandCenterRoutes.post('/tools/batch-update', async (c) => {
     }>();
 
     if (!body.agentIds || body.agentIds.length === 0) {
-      return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: 'agentIds is required' }, 400);
+      return apiError(
+        c,
+        { code: ERROR_CODES.VALIDATION_ERROR, message: 'agentIds is required' },
+        400
+      );
     }
 
     const soulRepo = getSoulsRepository();
@@ -724,4 +785,3 @@ agentCommandCenterRoutes.post('/tools/batch-update', async (c) => {
     return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(err) }, 500);
   }
 });
-

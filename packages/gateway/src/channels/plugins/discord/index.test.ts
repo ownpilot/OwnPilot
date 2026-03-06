@@ -8,21 +8,43 @@ import { describe, it, expect, vi } from 'vitest';
 // Mocks
 // ---------------------------------------------------------------------------
 
-const { MockDiscordChannelAPI, mockConfigServicesRepo, capturedMeta, capturedPlatform, capturedChannelApiFactory, capturedTools } = vi.hoisted(() => {
+const {
+  MockDiscordChannelAPI,
+  mockConfigServicesRepo,
+  capturedMeta,
+  capturedPlatform,
+  capturedChannelApiFactory,
+  capturedTools,
+} = vi.hoisted(() => {
   const capturedMeta: any[] = [];
   const capturedPlatform: string[] = [];
   const capturedChannelApiFactory: Function[] = [];
   const capturedTools: Array<{ definition: any; executor: Function }> = [];
 
   const mockBuilder = {
-    meta: vi.fn((m: any) => { capturedMeta.push(m); return mockBuilder; }),
-    platform: vi.fn((p: string) => { capturedPlatform.push(p); return mockBuilder; }),
-    channelApi: vi.fn((f: Function) => { capturedChannelApiFactory.push(f); return mockBuilder; }),
-    tool: vi.fn((def: any, exec: Function) => { capturedTools.push({ definition: def, executor: exec }); return mockBuilder; }),
+    meta: vi.fn((m: any) => {
+      capturedMeta.push(m);
+      return mockBuilder;
+    }),
+    platform: vi.fn((p: string) => {
+      capturedPlatform.push(p);
+      return mockBuilder;
+    }),
+    channelApi: vi.fn((f: Function) => {
+      capturedChannelApiFactory.push(f);
+      return mockBuilder;
+    }),
+    tool: vi.fn((def: any, exec: Function) => {
+      capturedTools.push({ definition: def, executor: exec });
+      return mockBuilder;
+    }),
     build: vi.fn(() => ({ pluginType: 'channel', id: capturedMeta[0]?.id })),
   };
 
-  const MockDiscordChannelAPI = vi.fn().mockImplementation(function (config: any, pluginId: string) {
+  const MockDiscordChannelAPI = vi.fn().mockImplementation(function (
+    config: any,
+    pluginId: string
+  ) {
     return { config, pluginId };
   });
 
@@ -51,10 +73,22 @@ vi.mock('@ownpilot/core', async (importOriginal) => {
     ...actual,
     createChannelPlugin: vi.fn(() => {
       const captureBuilder: any = {
-        meta: vi.fn((m: any) => { capturedMeta.push(m); return captureBuilder; }),
-        platform: vi.fn((p: string) => { capturedPlatform.push(p); return captureBuilder; }),
-        channelApi: vi.fn((f: Function) => { capturedChannelApiFactory.push(f); return captureBuilder; }),
-        tool: vi.fn((def: any, exec: Function) => { capturedTools.push({ definition: def, executor: exec }); return captureBuilder; }),
+        meta: vi.fn((m: any) => {
+          capturedMeta.push(m);
+          return captureBuilder;
+        }),
+        platform: vi.fn((p: string) => {
+          capturedPlatform.push(p);
+          return captureBuilder;
+        }),
+        channelApi: vi.fn((f: Function) => {
+          capturedChannelApiFactory.push(f);
+          return captureBuilder;
+        }),
+        tool: vi.fn((def: any, exec: Function) => {
+          capturedTools.push({ definition: def, executor: exec });
+          return captureBuilder;
+        }),
         build: vi.fn(() => ({ pluginType: 'channel', id: capturedMeta[0]?.id })),
       };
       return captureBuilder;

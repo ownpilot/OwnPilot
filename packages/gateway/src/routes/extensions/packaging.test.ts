@@ -53,7 +53,7 @@ const makeExt = (overrides: Record<string, unknown> = {}) => ({
   name: 'My Skill',
   description: 'A useful skill',
   version: '1.0.0',
-  sourcePath: null,  // always null — no filesystem access
+  sourcePath: null, // always null — no filesystem access
   authorName: 'Test Author',
   installedAt: '2025-01-01T00:00:00.000Z',
   manifest: { format: 'agentskills', name: 'My Skill', instructions: '# Instructions\nDo things.' },

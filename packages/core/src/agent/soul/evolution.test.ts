@@ -97,7 +97,9 @@ describe('SoulEvolutionEngine.applyFeedback()', () => {
   it('throws when soul not found', async () => {
     const repo = { ...makeRepo(makeSoul()), getByAgentId: vi.fn().mockResolvedValue(null) };
     const engine = new SoulEvolutionEngine(repo, makeLogRepo());
-    await expect(engine.applyFeedback('agent-1', makeFeedback('praise', 'well done'))).rejects.toThrow('Soul not found');
+    await expect(
+      engine.applyFeedback('agent-1', makeFeedback('praise', 'well done'))
+    ).rejects.toThrow('Soul not found');
   });
 
   it('snapshots soul BEFORE mutation (createVersion called before version++)', async () => {
@@ -106,8 +108,14 @@ describe('SoulEvolutionEngine.applyFeedback()', () => {
     const engine = new SoulEvolutionEngine(repo, makeLogRepo());
 
     const order: string[] = [];
-    repo.createVersion.mockImplementation(() => { order.push('createVersion'); return Promise.resolve(); });
-    repo.update.mockImplementation((s: AgentSoul) => { order.push(`update@v${s.evolution.version}`); return Promise.resolve(); });
+    repo.createVersion.mockImplementation(() => {
+      order.push('createVersion');
+      return Promise.resolve();
+    });
+    repo.update.mockImplementation((s: AgentSoul) => {
+      order.push(`update@v${s.evolution.version}`);
+      return Promise.resolve();
+    });
 
     await engine.applyFeedback('agent-1', makeFeedback('praise', 'good'));
     expect(order[0]).toBe('createVersion');
@@ -143,7 +151,10 @@ describe('SoulEvolutionEngine.applyFeedback()', () => {
     const soul = makeSoul();
     const repo = makeRepo(soul);
     const engine = new SoulEvolutionEngine(repo, makeLogRepo());
-    const result = await engine.applyFeedback('agent-1', makeFeedback('personality_tweak', 'be warmer'));
+    const result = await engine.applyFeedback(
+      'agent-1',
+      makeFeedback('personality_tweak', 'be warmer')
+    );
     expect(result.evolution.mutableTraits).toContain('be warmer');
     expect(result.evolution.learnings).toContain('Personality: be warmer');
   });
@@ -169,7 +180,9 @@ describe('SoulEvolutionEngine.applyFeedback()', () => {
 
     it('caps feedbackLog at 100', async () => {
       const soul = makeSoul();
-      soul.evolution.feedbackLog = Array.from({ length: 100 }, (_, i) => makeFeedback('praise', `fb-${i}`));
+      soul.evolution.feedbackLog = Array.from({ length: 100 }, (_, i) =>
+        makeFeedback('praise', `fb-${i}`)
+      );
       const repo = makeRepo(soul);
       const engine = new SoulEvolutionEngine(repo, makeLogRepo());
       const result = await engine.applyFeedback('agent-1', makeFeedback('praise', 'new'));
@@ -181,7 +194,10 @@ describe('SoulEvolutionEngine.applyFeedback()', () => {
       soul.identity.boundaries = Array.from({ length: 100 }, (_, i) => `boundary-${i}`);
       const repo = makeRepo(soul);
       const engine = new SoulEvolutionEngine(repo, makeLogRepo());
-      const result = await engine.applyFeedback('agent-1', makeFeedback('correction', 'new-boundary'));
+      const result = await engine.applyFeedback(
+        'agent-1',
+        makeFeedback('correction', 'new-boundary')
+      );
       expect(result.identity.boundaries.length).toBe(100);
       expect(result.identity.boundaries.at(-1)).toBe('new-boundary');
     });
@@ -191,7 +207,10 @@ describe('SoulEvolutionEngine.applyFeedback()', () => {
       soul.evolution.mutableTraits = Array.from({ length: 100 }, (_, i) => `trait-${i}`);
       const repo = makeRepo(soul);
       const engine = new SoulEvolutionEngine(repo, makeLogRepo());
-      const result = await engine.applyFeedback('agent-1', makeFeedback('personality_tweak', 'new-trait'));
+      const result = await engine.applyFeedback(
+        'agent-1',
+        makeFeedback('personality_tweak', 'new-trait')
+      );
       expect(result.evolution.mutableTraits.length).toBe(100);
       expect(result.evolution.mutableTraits.at(-1)).toBe('new-trait');
     });
@@ -228,7 +247,9 @@ describe('SoulEvolutionEngine.selfReflect()', () => {
     const soul = makeSoul({ evolution: { ...makeSoul().evolution, evolutionMode: 'supervised' } });
     const repo = makeRepo(soul);
     const reflectionEngine = {
-      processMessage: vi.fn().mockResolvedValue({ content: 'I should be more concise.\nI should ask for confirmation.' }),
+      processMessage: vi.fn().mockResolvedValue({
+        content: 'I should be more concise.\nI should ask for confirmation.',
+      }),
     };
     const engine = new SoulEvolutionEngine(repo, makeLogRepo(), reflectionEngine);
     const result = await engine.selfReflect('agent-1');
@@ -241,7 +262,9 @@ describe('SoulEvolutionEngine.selfReflect()', () => {
     const soul = makeSoul({ evolution: { ...makeSoul().evolution, evolutionMode: 'autonomous' } });
     const repo = makeRepo(soul);
     const reflectionEngine = {
-      processMessage: vi.fn().mockResolvedValue({ content: 'I should improve.\nI should do better.' }),
+      processMessage: vi
+        .fn()
+        .mockResolvedValue({ content: 'I should improve.\nI should do better.' }),
     };
     const engine = new SoulEvolutionEngine(repo, makeLogRepo(), reflectionEngine);
     const result = await engine.selfReflect('agent-1');
@@ -295,10 +318,18 @@ describe('SoulEvolutionEngine.selfReflect()', () => {
   });
 
   it('autonomous mode: caps learnings at 50 after self-reflection', async () => {
-    const soul = makeSoul({ evolution: { ...makeSoul().evolution, evolutionMode: 'autonomous', learnings: Array.from({ length: 49 }, (_, i) => `l${i}`) } });
+    const soul = makeSoul({
+      evolution: {
+        ...makeSoul().evolution,
+        evolutionMode: 'autonomous',
+        learnings: Array.from({ length: 49 }, (_, i) => `l${i}`),
+      },
+    });
     const repo = makeRepo(soul);
     const reflectionEngine = {
-      processMessage: vi.fn().mockResolvedValue({ content: 'I should do A.\nI should do B.\nI should do C.' }),
+      processMessage: vi
+        .fn()
+        .mockResolvedValue({ content: 'I should do A.\nI should do B.\nI should do C.' }),
     };
     const engine = new SoulEvolutionEngine(repo, makeLogRepo(), reflectionEngine);
     const result = await engine.selfReflect('agent-1');

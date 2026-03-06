@@ -307,18 +307,21 @@ export const readFileExecutor = async (args: unknown, _context: ToolContext): Pr
         extensionNames: ['tx_switch_test'],
       });
 
-      mockFiles.set('tools/extension-tools.ts', [
-        'export async function executeExtensionTool(toolName, args) {',
-        "  switch (toolName) {",
-        "    case 'tx_switch_test': {",
-        '      const result = performAction(args);',
-        '      return { content: String(result) };',
-        '    }',
-        '    default:',
-        '      return null;',
-        '  }',
-        '}',
-      ].join('\n'));
+      mockFiles.set(
+        'tools/extension-tools.ts',
+        [
+          'export async function executeExtensionTool(toolName, args) {',
+          '  switch (toolName) {',
+          "    case 'tx_switch_test': {",
+          '      const result = performAction(args);',
+          '      return { content: String(result) };',
+          '    }',
+          '    default:',
+          '      return null;',
+          '  }',
+          '}',
+        ].join('\n')
+      );
 
       const source = getToolSource('tx_switch_test');
       expect(source).not.toBeNull();
@@ -347,15 +350,18 @@ export const readFileExecutor = async (args: unknown, _context: ToolContext): Pr
 
     it('extractConstFunction: extracts an arrow function from a core tool file', () => {
       // 'calculate' maps to utility-tools.ts with executor calculateExecutor (not yet cached)
-      mockFiles.set('utility-tools.ts', [
-        'export const calculateExecutor = async (',
-        '  args: { expression: string },',
-        '  _context: unknown',
-        '): Promise<{ content: string }> => {',
-        '  const result = mathjs.evaluate(args.expression);',
-        '  return { content: String(result) };',
-        '};',
-      ].join('\n'));
+      mockFiles.set(
+        'utility-tools.ts',
+        [
+          'export const calculateExecutor = async (',
+          '  args: { expression: string },',
+          '  _context: unknown',
+          '): Promise<{ content: string }> => {',
+          '  const result = mathjs.evaluate(args.expression);',
+          '  return { content: String(result) };',
+          '};',
+        ].join('\n')
+      );
 
       const source = getToolSource('calculate');
       expect(source).not.toBeNull();
@@ -365,15 +371,18 @@ export const readFileExecutor = async (args: unknown, _context: ToolContext): Pr
     it('extractFunction (core fallback): extracts a named function when const arrow not present', () => {
       // 'read_pdf' maps to pdf-tools.ts with executor readPdfExecutor (not yet cached)
       // Named function syntax → extractConstFunction returns null → extractFunction succeeds
-      mockFiles.set('pdf-tools.ts', [
-        'export async function readPdfExecutor(',
-        '  args: { path: string },',
-        '  _context: unknown',
-        '): Promise<{ content: string }> {',
-        '  const text = parsePdfFile(args.path);',
-        '  return { content: text };',
-        '}',
-      ].join('\n'));
+      mockFiles.set(
+        'pdf-tools.ts',
+        [
+          'export async function readPdfExecutor(',
+          '  args: { path: string },',
+          '  _context: unknown',
+          '): Promise<{ content: string }> {',
+          '  const text = parsePdfFile(args.path);',
+          '  return { content: text };',
+          '}',
+        ].join('\n')
+      );
 
       const source = getToolSource('read_pdf');
       expect(source).not.toBeNull();

@@ -119,17 +119,19 @@ function buildApp() {
   return app;
 }
 
-function mockCrewRecord(overrides: Partial<{
-  id: string;
-  name: string;
-  description: string;
-  templateId: string;
-  coordinationPattern: string;
-  status: string;
-  workspaceId: string;
-  createdAt: Date;
-  updatedAt: Date;
-}> = {}) {
+function mockCrewRecord(
+  overrides: Partial<{
+    id: string;
+    name: string;
+    description: string;
+    templateId: string;
+    coordinationPattern: string;
+    status: string;
+    workspaceId: string;
+    createdAt: Date;
+    updatedAt: Date;
+  }> = {}
+) {
   return {
     id: overrides.id ?? 'crew-1',
     name: overrides.name ?? 'Test Crew',
@@ -232,7 +234,13 @@ describe('Crew Routes', () => {
   describe('GET /crews/templates - List crew templates', () => {
     it('should return list of templates', async () => {
       vi.mocked(listCrewTemplates).mockReturnValue([
-        { id: 'tpl-1', name: 'Research Crew', description: 'A research crew', coordinationPattern: 'sequential', agents: [] } as never,
+        {
+          id: 'tpl-1',
+          name: 'Research Crew',
+          description: 'A research crew',
+          coordinationPattern: 'sequential',
+          agents: [],
+        } as never,
       ]);
 
       const res = await app.request('/crews/templates');
@@ -324,16 +332,31 @@ describe('Crew Routes', () => {
         coordinationPattern: 'sequential' as const,
         agents: [
           {
-            identity: { name: 'Researcher', role: 'Researcher', emoji: '🔬', personality: 'curious', voice: { tone: 'neutral', language: 'en' }, boundaries: [] },
+            identity: {
+              name: 'Researcher',
+              role: 'Researcher',
+              emoji: '🔬',
+              personality: 'curious',
+              voice: { tone: 'neutral', language: 'en' },
+              boundaries: [],
+            },
             purpose: { mission: 'Research topics' },
-            heartbeat: { enabled: false, interval: '0 */6 * * *', checklist: [], selfHealingEnabled: false, maxDurationMs: 120000 },
+            heartbeat: {
+              enabled: false,
+              interval: '0 */6 * * *',
+              checklist: [],
+              selfHealingEnabled: false,
+              maxDurationMs: 120000,
+            },
             relationships: { peers: [] },
           },
         ],
       };
       vi.mocked(getCrewTemplate).mockReturnValue(template as never);
       mockSettingsRepo.get.mockResolvedValue(null);
-      mockCrewsRepo.create.mockResolvedValue(mockCrewRecord({ id: 'crew-new', name: 'Research Crew' }));
+      mockCrewsRepo.create.mockResolvedValue(
+        mockCrewRecord({ id: 'crew-new', name: 'Research Crew' })
+      );
       mockAgentsRepo.create.mockResolvedValue({ id: 'agent-new' });
       mockSoulsRepo.create.mockResolvedValue(undefined);
       mockCrewsRepo.addMember.mockResolvedValue(undefined);
@@ -360,9 +383,22 @@ describe('Crew Routes', () => {
         coordinationPattern: 'sequential' as const,
         agents: [
           {
-            identity: { name: 'Researcher', role: 'Researcher', emoji: '🔬', personality: 'curious', voice: { tone: 'neutral', language: 'en' }, boundaries: [] },
+            identity: {
+              name: 'Researcher',
+              role: 'Researcher',
+              emoji: '🔬',
+              personality: 'curious',
+              voice: { tone: 'neutral', language: 'en' },
+              boundaries: [],
+            },
             purpose: { mission: 'Research topics' },
-            heartbeat: { enabled: false, interval: '0 */6 * * *', checklist: [], selfHealingEnabled: false, maxDurationMs: 120000 },
+            heartbeat: {
+              enabled: false,
+              interval: '0 */6 * * *',
+              checklist: [],
+              selfHealingEnabled: false,
+              maxDurationMs: 120000,
+            },
             relationships: { peers: [] },
           },
         ],
@@ -702,7 +738,11 @@ describe('Crew Routes', () => {
       const res = await app.request('/crews/crew-1/delegate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fromAgentId: 'agent-1', toAgentId: 'agent-999', task: 'Do something' }),
+        body: JSON.stringify({
+          fromAgentId: 'agent-1',
+          toAgentId: 'agent-999',
+          task: 'Do something',
+        }),
       });
 
       expect(res.status).toBe(404);
@@ -766,9 +806,7 @@ describe('Crew Routes', () => {
 
       mockCrewsRepo.getById.mockResolvedValue(crew);
       mockCrewsRepo.getMembers.mockResolvedValue(members);
-      mockSoulsRepo.getByAgentId
-        .mockResolvedValueOnce(soul1)
-        .mockResolvedValueOnce(soul2);
+      mockSoulsRepo.getByAgentId.mockResolvedValueOnce(soul1).mockResolvedValueOnce(soul2);
       mockSoulsRepo.update.mockResolvedValue(undefined);
 
       const res = await app.request('/crews/crew-1/sync', {

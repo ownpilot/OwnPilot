@@ -8,15 +8,30 @@ import { describe, it, expect, vi } from 'vitest';
 // Mocks
 // ---------------------------------------------------------------------------
 
-const { MockWhatsAppChannelAPI, mockConfigServicesRepo, capturedMeta, capturedPlatform, capturedChannelApiFactory } = vi.hoisted(() => {
+const {
+  MockWhatsAppChannelAPI,
+  mockConfigServicesRepo,
+  capturedMeta,
+  capturedPlatform,
+  capturedChannelApiFactory,
+} = vi.hoisted(() => {
   const capturedMeta: any[] = [];
   const capturedPlatform: string[] = [];
   const capturedChannelApiFactory: Function[] = [];
-  const MockWhatsAppChannelAPI = vi.fn().mockImplementation(function (config: any, pluginId: string) {
+  const MockWhatsAppChannelAPI = vi.fn().mockImplementation(function (
+    config: any,
+    pluginId: string
+  ) {
     return { config, pluginId };
   });
   const mockConfigServicesRepo = { getFieldValue: vi.fn() };
-  return { MockWhatsAppChannelAPI, mockConfigServicesRepo, capturedMeta, capturedPlatform, capturedChannelApiFactory };
+  return {
+    MockWhatsAppChannelAPI,
+    mockConfigServicesRepo,
+    capturedMeta,
+    capturedPlatform,
+    capturedChannelApiFactory,
+  };
 });
 
 vi.mock('@ownpilot/core', async (importOriginal) => {
@@ -25,9 +40,18 @@ vi.mock('@ownpilot/core', async (importOriginal) => {
     ...actual,
     createChannelPlugin: vi.fn(() => {
       const b: any = {
-        meta: vi.fn((m: any) => { capturedMeta.push(m); return b; }),
-        platform: vi.fn((p: string) => { capturedPlatform.push(p); return b; }),
-        channelApi: vi.fn((f: Function) => { capturedChannelApiFactory.push(f); return b; }),
+        meta: vi.fn((m: any) => {
+          capturedMeta.push(m);
+          return b;
+        }),
+        platform: vi.fn((p: string) => {
+          capturedPlatform.push(p);
+          return b;
+        }),
+        channelApi: vi.fn((f: Function) => {
+          capturedChannelApiFactory.push(f);
+          return b;
+        }),
         build: vi.fn(() => ({ id: capturedMeta[0]?.id })),
       };
       return b;
@@ -36,7 +60,9 @@ vi.mock('@ownpilot/core', async (importOriginal) => {
 });
 
 vi.mock('./whatsapp-api.js', () => ({ WhatsAppChannelAPI: MockWhatsAppChannelAPI }));
-vi.mock('../../../db/repositories/config-services.js', () => ({ configServicesRepo: mockConfigServicesRepo }));
+vi.mock('../../../db/repositories/config-services.js', () => ({
+  configServicesRepo: mockConfigServicesRepo,
+}));
 
 import { buildWhatsAppChannelPlugin } from './index.js';
 

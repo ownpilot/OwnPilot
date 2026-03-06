@@ -87,7 +87,11 @@ describe('ComposioService', () => {
       mockConfigServicesRepo.getFieldValue.mockReturnValue('comp-key');
       // SDK returns a flat array (not { items: [...] })
       mockComposioInstance.toolkits.get.mockResolvedValue([
-        { slug: 'github', name: 'GitHub', meta: { description: 'Git hosting', categories: ['dev'] } },
+        {
+          slug: 'github',
+          name: 'GitHub',
+          meta: { description: 'Git hosting', categories: ['dev'] },
+        },
         { slug: 'gmail', name: 'Gmail', meta: {} },
       ]);
 

@@ -58,12 +58,28 @@ const FAKE_TEMPLATE: CrewTemplate = {
 
 function makeCrewRepo() {
   return {
-    create: vi.fn().mockResolvedValue({ id: 'crew-1', name: 'Test Crew', status: 'active', coordinationPattern: 'peer_to_peer', createdAt: new Date() }),
-    getById: vi.fn().mockResolvedValue({ id: 'crew-1', name: 'Test Crew', status: 'active', coordinationPattern: 'peer_to_peer', createdAt: new Date() }),
+    create: vi.fn().mockResolvedValue({
+      id: 'crew-1',
+      name: 'Test Crew',
+      status: 'active',
+      coordinationPattern: 'peer_to_peer',
+      createdAt: new Date(),
+    }),
+    getById: vi.fn().mockResolvedValue({
+      id: 'crew-1',
+      name: 'Test Crew',
+      status: 'active',
+      coordinationPattern: 'peer_to_peer',
+      createdAt: new Date(),
+    }),
     list: vi.fn().mockResolvedValue([]),
     count: vi.fn().mockResolvedValue(0),
     addMember: vi.fn().mockResolvedValue(undefined),
-    getMembers: vi.fn().mockResolvedValue([{ crewId: 'crew-1', agentId: 'agent-1', role: 'member', joinedAt: new Date() }]),
+    getMembers: vi
+      .fn()
+      .mockResolvedValue([
+        { crewId: 'crew-1', agentId: 'agent-1', role: 'member', joinedAt: new Date() },
+      ]),
     updateStatus: vi.fn().mockResolvedValue(undefined),
   };
 }
@@ -141,12 +157,14 @@ function makeMessageRepo() {
   };
 }
 
-function makeManager(overrides: {
-  crewRepo?: ReturnType<typeof makeCrewRepo>;
-  soulRepo?: ReturnType<typeof makeSoulRepo>;
-  agentRepo?: ReturnType<typeof makeAgentRepo>;
-  triggerRepo?: ReturnType<typeof makeTriggerRepo>;
-} = {}) {
+function makeManager(
+  overrides: {
+    crewRepo?: ReturnType<typeof makeCrewRepo>;
+    soulRepo?: ReturnType<typeof makeSoulRepo>;
+    agentRepo?: ReturnType<typeof makeAgentRepo>;
+    triggerRepo?: ReturnType<typeof makeTriggerRepo>;
+  } = {}
+) {
   return new CrewManager(
     overrides.crewRepo ?? makeCrewRepo(),
     overrides.soulRepo ?? makeSoulRepo(),
@@ -191,9 +209,7 @@ describe('CrewManager.deployCrew()', () => {
     const manager = makeManager({ agentRepo });
     await manager.deployCrew('test-crew');
     expect(agentRepo.create).toHaveBeenCalledTimes(1);
-    expect(agentRepo.create).toHaveBeenCalledWith(
-      expect.objectContaining({ name: 'BotA' })
-    );
+    expect(agentRepo.create).toHaveBeenCalledWith(expect.objectContaining({ name: 'BotA' }));
   });
 
   it('creates soul and registers agent as crew member', async () => {

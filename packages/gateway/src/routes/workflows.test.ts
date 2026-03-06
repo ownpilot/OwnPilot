@@ -684,8 +684,18 @@ describe('Workflow Routes', () => {
       const original = {
         ...sampleWorkflow,
         nodes: [
-          { id: 'n1', type: 'toolNode', position: { x: 0, y: 0 }, data: { toolName: 't1', label: 'T1', triggerId: 'trig-1' } },
-          { id: 'n2', type: 'toolNode', position: { x: 0, y: 100 }, data: { toolName: 't2', label: 'T2' } },
+          {
+            id: 'n1',
+            type: 'toolNode',
+            position: { x: 0, y: 0 },
+            data: { toolName: 't1', label: 'T1', triggerId: 'trig-1' },
+          },
+          {
+            id: 'n2',
+            type: 'toolNode',
+            position: { x: 0, y: 100 },
+            data: { toolName: 't2', label: 'T2' },
+          },
         ],
         edges: [{ id: 'e1', source: 'n1', target: 'n2' }],
         variables: { foo: 'bar' },
@@ -739,7 +749,14 @@ describe('Workflow Routes', () => {
     });
 
     it('clones a workflow with no nodes/edges correctly', async () => {
-      const emptyWorkflow = { ...sampleWorkflow, nodes: [], edges: [], variables: {}, description: null, inputSchema: [] };
+      const emptyWorkflow = {
+        ...sampleWorkflow,
+        nodes: [],
+        edges: [],
+        variables: {},
+        description: null,
+        inputSchema: [],
+      };
       const cloned = { ...sampleWorkflow, id: 'wf-clone-2', name: 'Copy of Test Workflow' };
       mockRepo.get.mockResolvedValue(emptyWorkflow);
       mockRepo.create.mockResolvedValue(cloned);
@@ -1380,11 +1397,7 @@ describe('Workflow Routes', () => {
 
       expect(res.status).toBe(200);
       expect(res.headers.get('content-type')).toContain('text/event-stream');
-      expect(mockService.executeWorkflow).toHaveBeenCalledWith(
-        'wf-1',
-        'u1',
-        expect.any(Function)
-      );
+      expect(mockService.executeWorkflow).toHaveBeenCalledWith('wf-1', 'u1', expect.any(Function));
     });
   });
 

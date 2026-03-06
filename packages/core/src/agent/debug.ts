@@ -418,8 +418,7 @@ export function buildRequestDebugInfo(
     endpoint,
     messages: messages.map((msg) => ({
       role: msg.role,
-      content:
-        typeof msg.content === 'string' ? msg.content : '[multipart content]',
+      content: typeof msg.content === 'string' ? msg.content : '[multipart content]',
       contentLength:
         typeof msg.content === 'string' ? msg.content.length : JSON.stringify(msg.content).length,
     })),

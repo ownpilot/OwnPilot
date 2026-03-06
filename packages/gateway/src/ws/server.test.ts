@@ -41,7 +41,9 @@ const mockChannelServiceInst = {
   disconnect: vi.fn(async () => {}),
   send: vi.fn(async () => 'msg-1'),
   getChannel: vi.fn(() => ({ getPlatform: () => 'test-platform', getStatus: () => 'connected' })),
-  listChannels: vi.fn(() => [] as Array<{ pluginId: string; platform: string; name: string; status: string }>),
+  listChannels: vi.fn(
+    () => [] as Array<{ pluginId: string; platform: string; name: string; status: string }>
+  ),
 };
 
 /** Mock event system for setupLegacyEventForwarding */
@@ -1414,7 +1416,9 @@ describe('WSGateway', () => {
       const rateLimitedSocket = { write: vi.fn(), destroy: vi.fn() };
       upgradeHandler(makeReq(), rateLimitedSocket, Buffer.from(''));
 
-      expect(rateLimitedSocket.write).toHaveBeenCalledWith('HTTP/1.1 429 Too Many Requests\r\n\r\n');
+      expect(rateLimitedSocket.write).toHaveBeenCalledWith(
+        'HTTP/1.1 429 Too Many Requests\r\n\r\n'
+      );
       expect(rateLimitedSocket.destroy).toHaveBeenCalled();
     });
   });
@@ -1481,7 +1485,10 @@ describe('WSGateway', () => {
       gw.startEventBridge();
       const cb = getPatternCb('trigger.*');
 
-      cb({ type: 'trigger.success', data: { triggerId: 't-1', triggerName: 'nightly', durationMs: 100 } });
+      cb({
+        type: 'trigger.success',
+        data: { triggerId: 't-1', triggerName: 'nightly', durationMs: 100 },
+      });
 
       expect(mockSessionManager.broadcast).toHaveBeenCalledWith(
         'trigger:executed',
@@ -1494,7 +1501,10 @@ describe('WSGateway', () => {
       gw.startEventBridge();
       const cb = getPatternCb('trigger.*');
 
-      cb({ type: 'trigger.failed', data: { triggerId: 't-2', triggerName: 'daily', durationMs: 50, error: 'Timeout' } });
+      cb({
+        type: 'trigger.failed',
+        data: { triggerId: 't-2', triggerName: 'daily', durationMs: 50, error: 'Timeout' },
+      });
 
       expect(mockSessionManager.broadcast).toHaveBeenCalledWith(
         'trigger:executed',
@@ -1510,9 +1520,9 @@ describe('WSGateway', () => {
 
       cb({ type: 'trigger.created', data: {} });
 
-      const triggerCalls = (mockSessionManager.broadcast as ReturnType<typeof vi.fn>).mock.calls.filter(
-        (c: unknown[]) => c[0] === 'trigger:executed'
-      );
+      const triggerCalls = (
+        mockSessionManager.broadcast as ReturnType<typeof vi.fn>
+      ).mock.calls.filter((c: unknown[]) => c[0] === 'trigger:executed');
       expect(triggerCalls).toHaveLength(0);
     });
 
@@ -1608,7 +1618,10 @@ describe('WSGateway', () => {
 
       cb({ type: 'subagent.spawned', data: { subagentId: 'sa-1' } });
 
-      expect(mockSessionManager.broadcast).toHaveBeenCalledWith('subagent:spawned', expect.objectContaining({ subagentId: 'sa-1' }));
+      expect(mockSessionManager.broadcast).toHaveBeenCalledWith(
+        'subagent:spawned',
+        expect.objectContaining({ subagentId: 'sa-1' })
+      );
     });
 
     it('forwards subagent.progress as subagent:progress', () => {
@@ -1618,7 +1631,10 @@ describe('WSGateway', () => {
 
       cb({ type: 'subagent.progress', data: { subagentId: 'sa-1', progress: 50 } });
 
-      expect(mockSessionManager.broadcast).toHaveBeenCalledWith('subagent:progress', expect.objectContaining({ progress: 50 }));
+      expect(mockSessionManager.broadcast).toHaveBeenCalledWith(
+        'subagent:progress',
+        expect.objectContaining({ progress: 50 })
+      );
     });
 
     it('forwards subagent.completed as subagent:completed', () => {
@@ -1628,7 +1644,10 @@ describe('WSGateway', () => {
 
       cb({ type: 'subagent.completed', data: { subagentId: 'sa-1' } });
 
-      expect(mockSessionManager.broadcast).toHaveBeenCalledWith('subagent:completed', expect.objectContaining({ subagentId: 'sa-1' }));
+      expect(mockSessionManager.broadcast).toHaveBeenCalledWith(
+        'subagent:completed',
+        expect.objectContaining({ subagentId: 'sa-1' })
+      );
     });
 
     it('forwards orchestra.started as orchestra:started', () => {
@@ -1638,7 +1657,10 @@ describe('WSGateway', () => {
 
       cb({ type: 'orchestra.started', data: { orchestraId: 'o-1' } });
 
-      expect(mockSessionManager.broadcast).toHaveBeenCalledWith('orchestra:started', expect.objectContaining({ orchestraId: 'o-1' }));
+      expect(mockSessionManager.broadcast).toHaveBeenCalledWith(
+        'orchestra:started',
+        expect.objectContaining({ orchestraId: 'o-1' })
+      );
     });
 
     it('forwards orchestra.task.complete as orchestra:task:complete', () => {
@@ -1648,7 +1670,10 @@ describe('WSGateway', () => {
 
       cb({ type: 'orchestra.task.complete', data: { taskId: 'task-1' } });
 
-      expect(mockSessionManager.broadcast).toHaveBeenCalledWith('orchestra:task:complete', expect.objectContaining({ taskId: 'task-1' }));
+      expect(mockSessionManager.broadcast).toHaveBeenCalledWith(
+        'orchestra:task:complete',
+        expect.objectContaining({ taskId: 'task-1' })
+      );
     });
 
     it('forwards orchestra.completed as orchestra:completed', () => {
@@ -1658,7 +1683,10 @@ describe('WSGateway', () => {
 
       cb({ type: 'orchestra.completed', data: { orchestraId: 'o-1' } });
 
-      expect(mockSessionManager.broadcast).toHaveBeenCalledWith('orchestra:completed', expect.objectContaining({ orchestraId: 'o-1' }));
+      expect(mockSessionManager.broadcast).toHaveBeenCalledWith(
+        'orchestra:completed',
+        expect.objectContaining({ orchestraId: 'o-1' })
+      );
     });
 
     it('forwards channel.user.pending as channel:user:pending', () => {
@@ -1666,7 +1694,15 @@ describe('WSGateway', () => {
       gw.startEventBridge();
       const cb = getPatternCb('channel.user.*');
 
-      cb({ type: 'channel.user.pending', data: { channelPluginId: 'tg-1', platform: 'telegram', platformUserId: 'u-1', displayName: 'Alice' } });
+      cb({
+        type: 'channel.user.pending',
+        data: {
+          channelPluginId: 'tg-1',
+          platform: 'telegram',
+          platformUserId: 'u-1',
+          displayName: 'Alice',
+        },
+      });
 
       expect(mockSessionManager.broadcast).toHaveBeenCalledWith(
         'channel:user:pending',
@@ -1679,9 +1715,15 @@ describe('WSGateway', () => {
       gw.startEventBridge();
       const cb = getPatternCb('channel.user.*');
 
-      cb({ type: 'channel.user.blocked', data: { channelPluginId: 'tg-1', platform: 'telegram', platformUserId: 'u-1' } });
+      cb({
+        type: 'channel.user.blocked',
+        data: { channelPluginId: 'tg-1', platform: 'telegram', platformUserId: 'u-1' },
+      });
 
-      expect(mockSessionManager.broadcast).toHaveBeenCalledWith('channel:user:blocked', expect.objectContaining({ platform: 'telegram', platformUserId: 'u-1' }));
+      expect(mockSessionManager.broadcast).toHaveBeenCalledWith(
+        'channel:user:blocked',
+        expect.objectContaining({ platform: 'telegram', platformUserId: 'u-1' })
+      );
     });
 
     it('forwards channel.user.unblocked as channel:user:unblocked', () => {
@@ -1689,9 +1731,15 @@ describe('WSGateway', () => {
       gw.startEventBridge();
       const cb = getPatternCb('channel.user.*');
 
-      cb({ type: 'channel.user.unblocked', data: { channelPluginId: 'tg-1', platform: 'telegram', platformUserId: 'u-1' } });
+      cb({
+        type: 'channel.user.unblocked',
+        data: { channelPluginId: 'tg-1', platform: 'telegram', platformUserId: 'u-1' },
+      });
 
-      expect(mockSessionManager.broadcast).toHaveBeenCalledWith('channel:user:unblocked', expect.objectContaining({ platform: 'telegram' }));
+      expect(mockSessionManager.broadcast).toHaveBeenCalledWith(
+        'channel:user:unblocked',
+        expect.objectContaining({ platform: 'telegram' })
+      );
     });
 
     it('forwards channel.user.verified as channel:user:verified', () => {
@@ -1699,11 +1747,23 @@ describe('WSGateway', () => {
       gw.startEventBridge();
       const cb = getPatternCb('channel.user.*');
 
-      cb({ type: 'channel.user.verified', data: { platform: 'telegram', platformUserId: 'u-1', ownpilotUserId: 'op-1', verificationMethod: 'pin' } });
+      cb({
+        type: 'channel.user.verified',
+        data: {
+          platform: 'telegram',
+          platformUserId: 'u-1',
+          ownpilotUserId: 'op-1',
+          verificationMethod: 'pin',
+        },
+      });
 
       expect(mockSessionManager.broadcast).toHaveBeenCalledWith(
         'channel:user:verified',
-        expect.objectContaining({ platform: 'telegram', ownpilotUserId: 'op-1', verificationMethod: 'pin' })
+        expect.objectContaining({
+          platform: 'telegram',
+          ownpilotUserId: 'op-1',
+          verificationMethod: 'pin',
+        })
       );
     });
 
@@ -1712,7 +1772,14 @@ describe('WSGateway', () => {
       gw.startEventBridge();
       const cb = getPatternCb('channel.user.*');
 
-      cb({ type: 'channel.user.first_seen', data: { channelPluginId: 'tg-1', platform: 'telegram', user: { platformUserId: 'u-new', displayName: 'Bob' } } });
+      cb({
+        type: 'channel.user.first_seen',
+        data: {
+          channelPluginId: 'tg-1',
+          platform: 'telegram',
+          user: { platformUserId: 'u-new', displayName: 'Bob' },
+        },
+      });
 
       expect(mockSessionManager.broadcast).toHaveBeenCalledWith(
         'channel:user:first_seen',
@@ -1728,9 +1795,9 @@ describe('WSGateway', () => {
 
       cb({ type: 'channel.user.custom', data: {} });
 
-      const channelUserCalls = (mockSessionManager.broadcast as ReturnType<typeof vi.fn>).mock.calls.filter(
-        (c: unknown[]) => String(c[0]).startsWith('channel:user:')
-      );
+      const channelUserCalls = (
+        mockSessionManager.broadcast as ReturnType<typeof vi.fn>
+      ).mock.calls.filter((c: unknown[]) => String(c[0]).startsWith('channel:user:'));
       expect(channelUserCalls).toHaveLength(0);
     });
   });
@@ -1749,7 +1816,9 @@ describe('WSGateway', () => {
 
     it('sends demo response chunks when isDemoMode returns true', async () => {
       const agentsMod = await import('../routes/agents.js');
-      (agentsMod.getOrCreateDefaultAgent as ReturnType<typeof vi.fn>).mockResolvedValue({ chat: vi.fn() });
+      (agentsMod.getOrCreateDefaultAgent as ReturnType<typeof vi.fn>).mockResolvedValue({
+        chat: vi.fn(),
+      });
       (agentsMod.isDemoMode as ReturnType<typeof vi.fn>).mockResolvedValue(true);
 
       const _gw = new WSGateway();
@@ -1759,15 +1828,33 @@ describe('WSGateway', () => {
       await vi.advanceTimersByTimeAsync(10000);
       await handlerPromise;
 
-      expect(mockSessionManager.send).toHaveBeenCalledWith('session-1', 'chat:stream:start', expect.anything());
-      expect(mockSessionManager.send).toHaveBeenCalledWith('session-1', 'chat:stream:chunk', expect.anything());
-      expect(mockSessionManager.send).toHaveBeenCalledWith('session-1', 'chat:stream:end', expect.anything());
-      expect(mockSessionManager.send).toHaveBeenCalledWith('session-1', 'chat:message', expect.anything());
+      expect(mockSessionManager.send).toHaveBeenCalledWith(
+        'session-1',
+        'chat:stream:start',
+        expect.anything()
+      );
+      expect(mockSessionManager.send).toHaveBeenCalledWith(
+        'session-1',
+        'chat:stream:chunk',
+        expect.anything()
+      );
+      expect(mockSessionManager.send).toHaveBeenCalledWith(
+        'session-1',
+        'chat:stream:end',
+        expect.anything()
+      );
+      expect(mockSessionManager.send).toHaveBeenCalledWith(
+        'session-1',
+        'chat:message',
+        expect.anything()
+      );
     });
 
     it('escapes HTML in demo mode content (covers escapeHtml)', async () => {
       const agentsMod = await import('../routes/agents.js');
-      (agentsMod.getOrCreateDefaultAgent as ReturnType<typeof vi.fn>).mockResolvedValue({ chat: vi.fn() });
+      (agentsMod.getOrCreateDefaultAgent as ReturnType<typeof vi.fn>).mockResolvedValue({
+        chat: vi.fn(),
+      });
       (agentsMod.isDemoMode as ReturnType<typeof vi.fn>).mockResolvedValue(true);
 
       const _gw = new WSGateway();
@@ -1787,7 +1874,9 @@ describe('WSGateway', () => {
 
     it('does nothing in demo mode when sessionId is undefined', async () => {
       const agentsMod = await import('../routes/agents.js');
-      (agentsMod.getOrCreateDefaultAgent as ReturnType<typeof vi.fn>).mockResolvedValue({ chat: vi.fn() });
+      (agentsMod.getOrCreateDefaultAgent as ReturnType<typeof vi.fn>).mockResolvedValue({
+        chat: vi.fn(),
+      });
       (agentsMod.isDemoMode as ReturnType<typeof vi.fn>).mockResolvedValue(true);
 
       const _gw = new WSGateway();
@@ -1797,9 +1886,9 @@ describe('WSGateway', () => {
       await vi.advanceTimersByTimeAsync(5000);
       await handlerPromise;
 
-      const streamStartCalls = (mockSessionManager.send as ReturnType<typeof vi.fn>).mock.calls.filter(
-        (c: unknown[]) => c[1] === 'chat:stream:start'
-      );
+      const streamStartCalls = (
+        mockSessionManager.send as ReturnType<typeof vi.fn>
+      ).mock.calls.filter((c: unknown[]) => c[1] === 'chat:stream:start');
       expect(streamStartCalls).toHaveLength(0);
     });
 
@@ -1816,25 +1905,32 @@ describe('WSGateway', () => {
 
       await handler({ content: 'Hello AI' }, 'session-1');
 
-      expect(mockAgent.chat).toHaveBeenCalledWith('Hello AI', expect.objectContaining({ stream: true }));
+      expect(mockAgent.chat).toHaveBeenCalledWith(
+        'Hello AI',
+        expect.objectContaining({ stream: true })
+      );
       expect(mockSessionManager.send).toHaveBeenCalledWith(
         'session-1',
         'chat:stream:end',
         expect.objectContaining({ fullContent: 'AI response' })
       );
-      expect(mockSessionManager.send).toHaveBeenCalledWith('session-1', 'chat:message', expect.anything());
+      expect(mockSessionManager.send).toHaveBeenCalledWith(
+        'session-1',
+        'chat:message',
+        expect.anything()
+      );
     });
 
     it('sends stream chunks via onChunk in real agent mode', async () => {
       const agentsMod = await import('../routes/agents.js');
       const mockAgent = {
-        chat: vi.fn().mockImplementation(
-          async (_c: string, opts: { onChunk: (c: unknown) => void }) => {
+        chat: vi
+          .fn()
+          .mockImplementation(async (_c: string, opts: { onChunk: (c: unknown) => void }) => {
             opts.onChunk({ content: 'chunk1' });
             opts.onChunk({ content: 'chunk2' });
             return { ok: false };
-          }
-        ),
+          }),
       };
       (agentsMod.getOrCreateDefaultAgent as ReturnType<typeof vi.fn>).mockResolvedValue(mockAgent);
       (agentsMod.isDemoMode as ReturnType<typeof vi.fn>).mockResolvedValue(false);
@@ -1853,12 +1949,12 @@ describe('WSGateway', () => {
     it('sends tool:start events when onChunk delivers toolCalls', async () => {
       const agentsMod = await import('../routes/agents.js');
       const mockAgent = {
-        chat: vi.fn().mockImplementation(
-          async (_c: string, opts: { onChunk: (c: unknown) => void }) => {
+        chat: vi
+          .fn()
+          .mockImplementation(async (_c: string, opts: { onChunk: (c: unknown) => void }) => {
             opts.onChunk({ toolCalls: [{ id: 'tc-1', name: 'search_files' }] });
             return { ok: false };
-          }
-        ),
+          }),
       };
       (agentsMod.getOrCreateDefaultAgent as ReturnType<typeof vi.fn>).mockResolvedValue(mockAgent);
       (agentsMod.isDemoMode as ReturnType<typeof vi.fn>).mockResolvedValue(false);
@@ -1871,13 +1967,17 @@ describe('WSGateway', () => {
       expect(mockSessionManager.send).toHaveBeenCalledWith(
         'session-1',
         'tool:start',
-        expect.objectContaining({ tool: expect.objectContaining({ id: 'tc-1', name: 'search_files' }) })
+        expect.objectContaining({
+          tool: expect.objectContaining({ id: 'tc-1', name: 'search_files' }),
+        })
       );
     });
 
     it('sends chat:error on exception', async () => {
       const agentsMod = await import('../routes/agents.js');
-      (agentsMod.getOrCreateDefaultAgent as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('Agent failure'));
+      (agentsMod.getOrCreateDefaultAgent as ReturnType<typeof vi.fn>).mockRejectedValue(
+        new Error('Agent failure')
+      );
       (agentsMod.isDemoMode as ReturnType<typeof vi.fn>).mockResolvedValue(false);
 
       const _gw = new WSGateway();
@@ -1894,7 +1994,9 @@ describe('WSGateway', () => {
 
     it('does not send chat:error when sessionId is missing on exception', async () => {
       const agentsMod = await import('../routes/agents.js');
-      (agentsMod.getOrCreateDefaultAgent as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('boom'));
+      (agentsMod.getOrCreateDefaultAgent as ReturnType<typeof vi.fn>).mockRejectedValue(
+        new Error('boom')
+      );
       (agentsMod.isDemoMode as ReturnType<typeof vi.fn>).mockResolvedValue(false);
 
       const _gw = new WSGateway();
@@ -1933,7 +2035,9 @@ describe('WSGateway', () => {
       expect(mockSessionManager.send).toHaveBeenCalledWith(
         'session-1',
         'channel:connected',
-        expect.objectContaining({ channel: expect.objectContaining({ id: 'tg-1', type: 'test-platform' }) })
+        expect.objectContaining({
+          channel: expect.objectContaining({ id: 'tg-1', type: 'test-platform' }),
+        })
       );
     });
 
@@ -1943,7 +2047,9 @@ describe('WSGateway', () => {
 
       await handler({ type: 'slack', config: {} }, 'session-1');
 
-      expect(mockChannelServiceInst.connect).toHaveBeenCalledWith(expect.stringContaining('slack-'));
+      expect(mockChannelServiceInst.connect).toHaveBeenCalledWith(
+        expect.stringContaining('slack-')
+      );
     });
 
     it('sends channel:status error when getChannel returns null', async () => {
@@ -1983,9 +2089,9 @@ describe('WSGateway', () => {
       mockSessionManager.send.mockClear();
       await handler({ type: 'telegram', config: { id: 'tg-1' } }, undefined);
 
-      const connectedCalls = (mockSessionManager.send as ReturnType<typeof vi.fn>).mock.calls.filter(
-        (c: unknown[]) => c[1] === 'channel:connected'
-      );
+      const connectedCalls = (
+        mockSessionManager.send as ReturnType<typeof vi.fn>
+      ).mock.calls.filter((c: unknown[]) => c[1] === 'channel:connected');
       expect(connectedCalls).toHaveLength(0);
     });
   });
@@ -2058,7 +2164,10 @@ describe('WSGateway', () => {
       const _gw = new WSGateway();
       const handler = getRegisteredHandler('channel:send');
 
-      await handler({ message: { channelId: 'tg-1', content: 'Hi there', replyToId: null } }, 'session-1');
+      await handler(
+        { message: { channelId: 'tg-1', content: 'Hi there', replyToId: null } },
+        'session-1'
+      );
 
       expect(mockChannelServiceInst.send).toHaveBeenCalledWith(
         'tg-1',
@@ -2142,9 +2251,9 @@ describe('WSGateway', () => {
 
       await handler({}, 'session-1');
 
-      const connectedCalls = (mockSessionManager.send as ReturnType<typeof vi.fn>).mock.calls.filter(
-        (c: unknown[]) => c[1] === 'channel:connected'
-      );
+      const connectedCalls = (
+        mockSessionManager.send as ReturnType<typeof vi.fn>
+      ).mock.calls.filter((c: unknown[]) => c[1] === 'channel:connected');
       expect(connectedCalls).toHaveLength(2);
     });
 
@@ -2182,7 +2291,11 @@ describe('WSGateway', () => {
 
         await handler({ sessionId: 'ca-1', data: 'ls -la\n' }, 'ws-session-1');
 
-        expect(mockCodingAgentSessions.writeToSession).toHaveBeenCalledWith('ca-1', 'user-1', 'ls -la\n');
+        expect(mockCodingAgentSessions.writeToSession).toHaveBeenCalledWith(
+          'ca-1',
+          'user-1',
+          'ls -la\n'
+        );
       });
 
       it('returns early when wsSessionId is undefined', async () => {
@@ -2202,7 +2315,11 @@ describe('WSGateway', () => {
 
         await handler({ sessionId: 'ca-1', data: 'pwd' }, 'ws-session-1');
 
-        expect(mockCodingAgentSessions.writeToSession).toHaveBeenCalledWith('ca-1', 'default', 'pwd');
+        expect(mockCodingAgentSessions.writeToSession).toHaveBeenCalledWith(
+          'ca-1',
+          'default',
+          'pwd'
+        );
       });
     });
 
@@ -2213,7 +2330,12 @@ describe('WSGateway', () => {
 
         await handler({ sessionId: 'ca-1', cols: 120, rows: 30 }, 'ws-session-1');
 
-        expect(mockCodingAgentSessions.resizeSession).toHaveBeenCalledWith('ca-1', 'user-1', 120, 30);
+        expect(mockCodingAgentSessions.resizeSession).toHaveBeenCalledWith(
+          'ca-1',
+          'user-1',
+          120,
+          30
+        );
       });
 
       it('returns early when wsSessionId is undefined', async () => {
@@ -2233,7 +2355,11 @@ describe('WSGateway', () => {
 
         await handler({ sessionId: 'ca-1' }, 'ws-session-1');
 
-        expect(mockCodingAgentSessions.subscribe).toHaveBeenCalledWith('ca-1', 'ws-session-1', 'user-1');
+        expect(mockCodingAgentSessions.subscribe).toHaveBeenCalledWith(
+          'ca-1',
+          'ws-session-1',
+          'user-1'
+        );
       });
 
       it('returns early when wsSessionId is undefined', async () => {
@@ -2319,7 +2445,9 @@ describe('WSGateway', () => {
 
         await handler({ type: 'custom.event', data: { x: 1 } }, 'ws-session-1');
 
-        expect(mockEventBridgeInst.publish).toHaveBeenCalledWith('ws-session-1', 'custom.event', { x: 1 });
+        expect(mockEventBridgeInst.publish).toHaveBeenCalledWith('ws-session-1', 'custom.event', {
+          x: 1,
+        });
       });
 
       it('returns early when no eventBridge', async () => {

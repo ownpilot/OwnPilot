@@ -9,8 +9,4 @@ export const FORMAT_LABELS: Record<string, string> = {
 };
 
 // Re-export from extensions constants for convenience
-export {
-  STATUS_COLORS,
-  CATEGORY_COLORS,
-  EXTENSION_CATEGORIES,
-} from '../extensions/constants';
+export { STATUS_COLORS, CATEGORY_COLORS, EXTENSION_CATEGORIES } from '../extensions/constants';

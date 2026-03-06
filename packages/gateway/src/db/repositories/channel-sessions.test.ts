@@ -257,8 +257,8 @@ describe('ChannelSessionsRepository', () => {
     it('falls back to retry findActive when create throws and retry finds session', async () => {
       // First findActive returns null → try create → throws → retry findActive returns session
       mockAdapter.queryOne
-        .mockResolvedValueOnce(null)               // initial findActive → null
-        .mockResolvedValueOnce(makeSessionRow());  // retry findActive after catch → found
+        .mockResolvedValueOnce(null) // initial findActive → null
+        .mockResolvedValueOnce(makeSessionRow()); // retry findActive after catch → found
 
       // Make create's execute throw
       mockAdapter.execute.mockRejectedValueOnce(new Error('unique_violation'));
@@ -275,7 +275,7 @@ describe('ChannelSessionsRepository', () => {
     it('throws when create fails and retry findActive also returns null', async () => {
       // First findActive → null, create → throws, retry findActive → null → must throw
       mockAdapter.queryOne
-        .mockResolvedValueOnce(null)  // initial findActive
+        .mockResolvedValueOnce(null) // initial findActive
         .mockResolvedValueOnce(null); // retry findActive
 
       mockAdapter.execute.mockRejectedValueOnce(new Error('unique_violation'));

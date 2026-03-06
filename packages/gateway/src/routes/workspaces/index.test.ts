@@ -9,10 +9,24 @@ import { Hono } from 'hono';
 // Mocks
 // ---------------------------------------------------------------------------
 
-vi.mock('./crud.js', () => ({ workspaceCrudRoutes: new Hono().get('/workspaces', (c: any) => c.json({ route: 'crud' })) }));
-vi.mock('./files.js', () => ({ workspaceFileRoutes: new Hono().get('/workspaces/:id/files', (c: any) => c.json({ route: 'files' })) }));
-vi.mock('./execution.js', () => ({ workspaceExecutionRoutes: new Hono().post('/workspaces/:id/exec', (c: any) => c.json({ route: 'execution' })) }));
-vi.mock('./container.js', () => ({ workspaceContainerRoutes: new Hono().get('/system/status', (c: any) => c.json({ route: 'container' })) }));
+vi.mock('./crud.js', () => ({
+  workspaceCrudRoutes: new Hono().get('/workspaces', (c: any) => c.json({ route: 'crud' })),
+}));
+vi.mock('./files.js', () => ({
+  workspaceFileRoutes: new Hono().get('/workspaces/:id/files', (c: any) =>
+    c.json({ route: 'files' })
+  ),
+}));
+vi.mock('./execution.js', () => ({
+  workspaceExecutionRoutes: new Hono().post('/workspaces/:id/exec', (c: any) =>
+    c.json({ route: 'execution' })
+  ),
+}));
+vi.mock('./container.js', () => ({
+  workspaceContainerRoutes: new Hono().get('/system/status', (c: any) =>
+    c.json({ route: 'container' })
+  ),
+}));
 
 import { workspaceRoutes } from './index.js';
 

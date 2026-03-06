@@ -21,7 +21,9 @@ describe('CLI_TOOLS_CATALOG', () => {
       expect(entry.category, `${entry.name} missing category`).toBeTruthy();
       expect(entry.riskLevel, `${entry.name} missing riskLevel`).toBeTruthy();
       expect(entry.defaultPolicy, `${entry.name} missing defaultPolicy`).toBeTruthy();
-      expect(Array.isArray(entry.installMethods), `${entry.name} installMethods not array`).toBe(true);
+      expect(Array.isArray(entry.installMethods), `${entry.name} installMethods not array`).toBe(
+        true
+      );
     }
   });
 
@@ -34,7 +36,10 @@ describe('CLI_TOOLS_CATALOG', () => {
   it('all riskLevels are valid values', () => {
     const validLevels = new Set(['low', 'medium', 'high', 'critical']);
     for (const entry of CLI_TOOLS_CATALOG) {
-      expect(validLevels.has(entry.riskLevel), `${entry.name} invalid riskLevel: ${entry.riskLevel}`).toBe(true);
+      expect(
+        validLevels.has(entry.riskLevel),
+        `${entry.name} invalid riskLevel: ${entry.riskLevel}`
+      ).toBe(true);
     }
   });
 
@@ -56,10 +61,21 @@ describe('CLI_TOOLS_CATALOG', () => {
   });
 
   it('all installMethods are valid values', () => {
-    const valid = new Set(['npm-global', 'pnpm-global', 'npx', 'brew', 'system', 'manual', 'winget', 'scoop']);
+    const valid = new Set([
+      'npm-global',
+      'pnpm-global',
+      'npx',
+      'brew',
+      'system',
+      'manual',
+      'winget',
+      'scoop',
+    ]);
     for (const entry of CLI_TOOLS_CATALOG) {
       for (const method of entry.installMethods) {
-        expect(valid.has(method as string), `${entry.name} invalid installMethod: ${method}`).toBe(true);
+        expect(valid.has(method as string), `${entry.name} invalid installMethod: ${method}`).toBe(
+          true
+        );
       }
     }
   });

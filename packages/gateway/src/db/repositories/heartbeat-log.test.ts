@@ -105,14 +105,14 @@ describe('HeartbeatLogRepository', () => {
       expect(sql).toContain('cost');
 
       const params = mockAdapter.execute.mock.calls[0]![1] as unknown[];
-      expect(params[0]).toBe('agent-1');                              // agent_id
-      expect(params[1]).toBe(3);                                      // soul_version
-      expect(params[2]).toBe('[{"id":"t1","name":"reflect"}]');       // tasks_run JSON
-      expect(params[3]).toBe('[{"id":"t2","reason":"not due"}]');     // tasks_skipped JSON
-      expect(params[4]).toBe('[]');                                   // tasks_failed JSON
-      expect(params[5]).toBe(1200);                                   // duration_ms
-      expect(params[6]).toBe('{"input":100,"output":200}');           // token_usage JSON
-      expect(params[7]).toBe(0.05);                                   // cost
+      expect(params[0]).toBe('agent-1'); // agent_id
+      expect(params[1]).toBe(3); // soul_version
+      expect(params[2]).toBe('[{"id":"t1","name":"reflect"}]'); // tasks_run JSON
+      expect(params[3]).toBe('[{"id":"t2","reason":"not due"}]'); // tasks_skipped JSON
+      expect(params[4]).toBe('[]'); // tasks_failed JSON
+      expect(params[5]).toBe(1200); // duration_ms
+      expect(params[6]).toBe('{"input":100,"output":200}'); // token_usage JSON
+      expect(params[7]).toBe(0.05); // cost
     });
 
     it('should serialize empty arrays correctly', async () => {

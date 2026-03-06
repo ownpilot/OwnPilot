@@ -554,9 +554,7 @@ describe('Webhook Routes', () => {
       const rawBody = '{"data":"hello"}';
       const signature = computeWebhookSignature(rawBody, secret);
 
-      mockTriggersRepo.getByIdGlobal.mockResolvedValue(
-        makeTrigger({ config: { secret } })
-      );
+      mockTriggersRepo.getByIdGlobal.mockResolvedValue(makeTrigger({ config: { secret } }));
 
       const res = await app.request('/webhooks/trigger/trig-001', {
         method: 'POST',

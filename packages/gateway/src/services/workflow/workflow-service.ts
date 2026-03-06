@@ -49,7 +49,6 @@ import {
 import { executeForEachNode } from './foreach-executor.js';
 import type { WorkflowProgressEvent } from './types.js';
 
-
 export class WorkflowService implements IWorkflowService {
   private activeExecutions = new Map<string, AbortController>();
 

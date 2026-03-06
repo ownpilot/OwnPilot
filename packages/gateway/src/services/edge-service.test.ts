@@ -762,7 +762,11 @@ describe('EdgeService MQTT callbacks', () => {
       await statusCallback('ownpilot/user-77/devices/dev-5/status', { status: 'online' });
 
       expect(MockEdgeDevicesRepository).toHaveBeenCalledWith('user-77');
-      expect(mockDevicesRepo.updateStatus).toHaveBeenCalledWith('dev-5', 'online', expect.any(Date));
+      expect(mockDevicesRepo.updateStatus).toHaveBeenCalledWith(
+        'dev-5',
+        'online',
+        expect.any(Date)
+      );
     });
 
     it('logs warning when handleStatus rejects (line 69)', async () => {

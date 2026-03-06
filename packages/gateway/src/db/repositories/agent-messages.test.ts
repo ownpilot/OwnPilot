@@ -193,10 +193,7 @@ describe('AgentMessagesRepository', () => {
 
   describe('getCrewMembers', () => {
     it('returns agent_id array from crew members table', async () => {
-      mockAdapter.query.mockResolvedValueOnce([
-        { agent_id: 'agent-X' },
-        { agent_id: 'agent-Y' },
-      ]);
+      mockAdapter.query.mockResolvedValueOnce([{ agent_id: 'agent-X' }, { agent_id: 'agent-Y' }]);
       const result = await repo.getCrewMembers('crew-1');
       expect(result).toEqual(['agent-X', 'agent-Y']);
       const [sql, params] = mockAdapter.query.mock.calls[0] as [string, unknown[]];

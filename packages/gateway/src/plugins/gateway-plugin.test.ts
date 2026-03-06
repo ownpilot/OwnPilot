@@ -9,11 +9,19 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 // ---------------------------------------------------------------------------
 
 const {
-  mockMemoryTools, mockGoalTools, mockCustomDataTools,
-  mockPersonalDataTools, mockTriggerTools, mockPlanTools,
+  mockMemoryTools,
+  mockGoalTools,
+  mockCustomDataTools,
+  mockPersonalDataTools,
+  mockTriggerTools,
+  mockPlanTools,
 } = vi.hoisted(() => {
   const makeTool = (name: string) => ({
-    definition: { name, description: `Tool ${name}`, parameters: { type: 'object', properties: {}, required: [] } },
+    definition: {
+      name,
+      description: `Tool ${name}`,
+      parameters: { type: 'object', properties: {}, required: [] },
+    },
     executor: vi.fn(),
   });
   return {
@@ -36,7 +44,10 @@ vi.mock('../services/tool-providers/index.js', () => ({
 }));
 
 import { buildGatewayPlugin } from './gateway-plugin.js';
-import { createMemoryToolProvider, createGoalToolProvider } from '../services/tool-providers/index.js';
+import {
+  createMemoryToolProvider,
+  createGoalToolProvider,
+} from '../services/tool-providers/index.js';
 
 // ---------------------------------------------------------------------------
 // Tests
@@ -88,10 +99,7 @@ describe('buildGatewayPlugin', () => {
       ? plugin.manifest.tools.map((t: any) => t.definition?.name ?? t.name)
       : [...(plugin.implementation?.tools?.keys?.() ?? [])];
     // Check at least 6 tools are registered (one per provider)
-    const allNames = [
-      ...Object.keys(plugin).join(' '),
-      JSON.stringify(plugin),
-    ].join(' ');
+    const allNames = [...Object.keys(plugin).join(' '), JSON.stringify(plugin)].join(' ');
     expect(allNames).toBeTruthy();
     // Verify each provider was called and returned its mock tools
     expect(mockMemoryTools[0].definition.name).toBe('memory_search');

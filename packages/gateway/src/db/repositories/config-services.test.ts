@@ -408,7 +408,7 @@ describe('ConfigServicesRepository', () => {
       // update executes → then refreshServiceCache: queryOne returns null (service gone)
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
       mockAdapter.queryOne.mockResolvedValueOnce(null); // service deleted from DB
-      mockAdapter.query.mockResolvedValueOnce([]);      // entries query
+      mockAdapter.query.mockResolvedValueOnce([]); // entries query
 
       await repo.update('openai', { displayName: 'Gone' });
 

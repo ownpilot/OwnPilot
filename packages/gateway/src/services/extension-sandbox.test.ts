@@ -78,7 +78,14 @@ const {
     return mockScriptInstance;
   });
 
-  return { MockWorker, mockParentPort, mockCreateContext, MockScript, getLastWorker, resetWorkerRegistry };
+  return {
+    MockWorker,
+    mockParentPort,
+    mockCreateContext,
+    MockScript,
+    getLastWorker,
+    resetWorkerRegistry,
+  };
 });
 
 vi.mock('node:worker_threads', () => ({
@@ -145,7 +152,13 @@ async function simulateWorkerResult(
   w._emit('message', { type: 'result', success: true, executionTime: 0 });
   await Promise.resolve();
   // Execution result
-  w._emit('message', { type: 'result', success, value: successValue, error, executionTime: execTime });
+  w._emit('message', {
+    type: 'result',
+    success,
+    value: successValue,
+    error,
+    executionTime: execTime,
+  });
 }
 
 // =============================================================================
@@ -201,7 +214,9 @@ describe('ExtensionSandboxManager', () => {
     });
 
     it('sends execute message to worker after ready signal', async () => {
-      const promise = manager.execute(makeOptions({ extensionId: 'ext-x', toolName: 'run', args: { a: 1 } }));
+      const promise = manager.execute(
+        makeOptions({ extensionId: 'ext-x', toolName: 'run', args: { a: 1 } })
+      );
       await simulateWorkerResult('ok', 10);
       await promise;
 
@@ -422,7 +437,9 @@ describe('ExtensionSandboxManager', () => {
       );
       expect(callToolResultMsg).toBeDefined();
       expect((callToolResultMsg![0] as { success: boolean }).success).toBe(false);
-      expect((callToolResultMsg![0] as { error: string }).error).toMatch(/No callTool handler registered/);
+      expect((callToolResultMsg![0] as { error: string }).error).toMatch(
+        /No callTool handler registered/
+      );
       expect(result.success).toBe(true);
     });
 
@@ -458,7 +475,9 @@ describe('ExtensionSandboxManager', () => {
       );
       expect(callToolResultMsg).toBeDefined();
       expect((callToolResultMsg![0] as { success: boolean }).success).toBe(true);
-      expect((callToolResultMsg![0] as { result: { data: string } }).result).toEqual({ data: 'found' });
+      expect((callToolResultMsg![0] as { result: { data: string } }).result).toEqual({
+        data: 'found',
+      });
 
       // Final result
       w._emit('message', { type: 'result', success: true, value: 'done', executionTime: 10 });

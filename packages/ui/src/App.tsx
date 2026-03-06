@@ -246,7 +246,10 @@ export function App() {
         <Route path="tools" element={page(<ToolsPage />)} />
         <Route path="custom-tools" element={page(<CustomToolsPage />)} />
         <Route path="plugins" element={page(<PluginsPage />)} />
-        <Route path="extensions" element={<Navigate to="/skills?tab=installed&format=ownpilot" replace />} />
+        <Route
+          path="extensions"
+          element={<Navigate to="/skills?tab=installed&format=ownpilot" replace />}
+        />
         <Route path="skills" element={page(<SkillsHubPage />)} />
         <Route path="workspaces" element={page(<WorkspacesPage />)} />
         <Route path="models" element={page(<ModelsPage />)} />

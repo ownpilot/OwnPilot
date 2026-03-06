@@ -73,7 +73,9 @@ describe('Artifact Routes', () => {
     mockService.deleteArtifact.mockResolvedValue(true);
     mockService.togglePin.mockResolvedValue({ ...sampleArtifact, pinned: true });
     mockService.refreshBindings.mockResolvedValue(sampleArtifact);
-    mockService.getVersions.mockResolvedValue([{ version: 1, content: '<html/>', createdAt: '2026-01-01' }]);
+    mockService.getVersions.mockResolvedValue([
+      { version: 1, content: '<html/>', createdAt: '2026-01-01' },
+    ]);
     app = createApp();
   });
 
@@ -92,27 +94,42 @@ describe('Artifact Routes', () => {
 
     it('passes type filter to service', async () => {
       await app.request('/artifacts?type=html');
-      expect(mockService.listArtifacts).toHaveBeenCalledWith('user-1', expect.objectContaining({ type: 'html' }));
+      expect(mockService.listArtifacts).toHaveBeenCalledWith(
+        'user-1',
+        expect.objectContaining({ type: 'html' })
+      );
     });
 
     it('passes pinned=true filter to service', async () => {
       await app.request('/artifacts?pinned=true');
-      expect(mockService.listArtifacts).toHaveBeenCalledWith('user-1', expect.objectContaining({ pinned: true }));
+      expect(mockService.listArtifacts).toHaveBeenCalledWith(
+        'user-1',
+        expect.objectContaining({ pinned: true })
+      );
     });
 
     it('passes pinned=false filter to service', async () => {
       await app.request('/artifacts?pinned=false');
-      expect(mockService.listArtifacts).toHaveBeenCalledWith('user-1', expect.objectContaining({ pinned: false }));
+      expect(mockService.listArtifacts).toHaveBeenCalledWith(
+        'user-1',
+        expect.objectContaining({ pinned: false })
+      );
     });
 
     it('passes search filter to service', async () => {
       await app.request('/artifacts?search=hello');
-      expect(mockService.listArtifacts).toHaveBeenCalledWith('user-1', expect.objectContaining({ search: 'hello' }));
+      expect(mockService.listArtifacts).toHaveBeenCalledWith(
+        'user-1',
+        expect.objectContaining({ search: 'hello' })
+      );
     });
 
     it('passes conversationId filter to service', async () => {
       await app.request('/artifacts?conversationId=conv-1');
-      expect(mockService.listArtifacts).toHaveBeenCalledWith('user-1', expect.objectContaining({ conversationId: 'conv-1' }));
+      expect(mockService.listArtifacts).toHaveBeenCalledWith(
+        'user-1',
+        expect.objectContaining({ conversationId: 'conv-1' })
+      );
     });
 
     it('returns 500 when service throws', async () => {

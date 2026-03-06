@@ -180,7 +180,14 @@ describe('EmbeddingQueue', () => {
       expect(createdCall).toBeDefined();
       const handler = createdCall![1] as (e: unknown) => void;
 
-      handler({ data: { needsEmbedding: true, memoryId: 'mem-ev', userId: 'user-ev', content: 'event content' } });
+      handler({
+        data: {
+          needsEmbedding: true,
+          memoryId: 'mem-ev',
+          userId: 'user-ev',
+          content: 'event content',
+        },
+      });
 
       expect(queue.getStats().queueSize).toBe(1);
     });
@@ -191,7 +198,9 @@ describe('EmbeddingQueue', () => {
       const createdCall = mockEventSystemOn.mock.calls.find((c) => c[0] === 'memory.created');
       const handler = createdCall![1] as (e: unknown) => void;
 
-      handler({ data: { needsEmbedding: false, memoryId: 'mem-ev', userId: 'user-ev', content: 'text' } });
+      handler({
+        data: { needsEmbedding: false, memoryId: 'mem-ev', userId: 'user-ev', content: 'text' },
+      });
 
       expect(queue.getStats().queueSize).toBe(0);
     });
@@ -203,7 +212,14 @@ describe('EmbeddingQueue', () => {
       expect(updatedCall).toBeDefined();
       const handler = updatedCall![1] as (e: unknown) => void;
 
-      handler({ data: { needsEmbedding: true, memoryId: 'mem-up', userId: 'user-ev', content: 'updated text' } });
+      handler({
+        data: {
+          needsEmbedding: true,
+          memoryId: 'mem-up',
+          userId: 'user-ev',
+          content: 'updated text',
+        },
+      });
 
       expect(queue.getStats().queueSize).toBe(1);
     });

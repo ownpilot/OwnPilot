@@ -233,19 +233,19 @@ export async function isPrivateUrlAsync(urlString: string): Promise<boolean> {
     // Check cache first
     const cached = dnsCache.get(hostname);
     if (cached && Date.now() - cached.timestamp < DNS_CACHE_TTL_MS) {
-      return cached.ips.some(ip => isPrivateIp(ip));
+      return cached.ips.some((ip) => isPrivateIp(ip));
     }
 
     // Perform DNS lookup
     try {
       const addresses = await lookup(hostname, { all: true });
-      const ips = addresses.map(a => a.address);
+      const ips = addresses.map((a) => a.address);
 
       // Cache the result
       dnsCache.set(hostname, { ips, timestamp: Date.now() });
 
       // Check if any resolved IP is private
-      return ips.some(ip => isPrivateIp(ip));
+      return ips.some((ip) => isPrivateIp(ip));
     } catch {
       // DNS lookup failed - block to be safe
       return true;

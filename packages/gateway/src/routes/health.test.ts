@@ -19,7 +19,7 @@ const { mockExecFile } = vi.hoisted(() => {
     _file: string,
     _args: string[],
     _opts: Record<string, unknown>,
-    callback: (err: Error | null, result?: { stdout: string; stderr: string }) => void,
+    callback: (err: Error | null, result?: { stdout: string; stderr: string }) => void
   ) {
     callback(new Error(`${_file}: command not found`));
   });
@@ -407,9 +407,7 @@ describe('Health Routes', () => {
     it('packages array contains expected packages', async () => {
       const res = await app.request('/health/tool-dependencies');
       const json = await res.json();
-      const packageNames = json.data.packages.map(
-        (p: { package: string }) => p.package,
-      );
+      const packageNames = json.data.packages.map((p: { package: string }) => p.package);
       expect(packageNames).toContain('imapflow');
       expect(packageNames).toContain('nodemailer');
       expect(packageNames).toContain('sharp');
@@ -476,10 +474,10 @@ describe('Health Routes', () => {
           _file: string,
           _args: string[],
           _opts: Record<string, unknown>,
-          callback: (err: Error | null, result?: { stdout: string; stderr: string }) => void,
+          callback: (err: Error | null, result?: { stdout: string; stderr: string }) => void
         ) => {
           callback(null, { stdout: '5.1.2\n', stderr: '' });
-        },
+        }
       );
 
       const res = await app.request('/health/tool-dependencies');

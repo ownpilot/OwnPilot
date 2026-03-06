@@ -354,7 +354,9 @@ describe('validateManifest — triggers edge cases', () => {
     };
     const result = validateManifest(manifest as never);
     expect(result.valid).toBe(false);
-    expect(result.errors.some((e) => e.includes('triggers[0]: missing or invalid "name"'))).toBe(true);
+    expect(result.errors.some((e) => e.includes('triggers[0]: missing or invalid "name"'))).toBe(
+      true
+    );
   });
 
   it('rejects trigger with missing config', () => {

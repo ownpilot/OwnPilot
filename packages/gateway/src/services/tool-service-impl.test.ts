@@ -663,7 +663,11 @@ describe('ToolService', () => {
 
     it('falls back to String() when result.content cannot be JSON.stringify-ed (line 79)', async () => {
       // Return an object whose JSON.stringify throws
-      const unserializable = { toJSON: () => { throw new Error('no serialize'); } };
+      const unserializable = {
+        toJSON: () => {
+          throw new Error('no serialize');
+        },
+      };
       mockExecuteToolCall.mockResolvedValue({ content: unserializable, isError: false });
 
       const svc = new ToolService();

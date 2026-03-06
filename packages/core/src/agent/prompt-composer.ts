@@ -382,7 +382,10 @@ export class PromptComposer {
     if (this.options.includeCapabilities && context.capabilities) {
       const capsList = formatCapabilities(context.capabilities);
       if (capsList) {
-        push('capabilities', PROMPT_SECTIONS.capabilities.replace('{{capabilitiesList}}', capsList));
+        push(
+          'capabilities',
+          PROMPT_SECTIONS.capabilities.replace('{{capabilitiesList}}', capsList)
+        );
       }
     }
 
@@ -443,7 +446,11 @@ export class PromptComposer {
     }
 
     // Debug: record each section in debugLog so /api/v1/debug shows the full breakdown
-    const sections = namedSections.map(([name, text]) => ({ name, chars: text.length, content: text }));
+    const sections = namedSections.map(([name, text]) => ({
+      name,
+      chars: text.length,
+      content: text,
+    }));
     debugLog.add({
       type: 'system_prompt',
       data: {

@@ -557,7 +557,7 @@ describe('CLI Tools Routes', () => {
 
       expect(res.status).toBe(400);
       const json = await res.json();
-      expect(json.error.message).toContain("already exists in the catalog");
+      expect(json.error.message).toContain('already exists in the catalog');
     });
 
     it('returns 400 for invalid category', async () => {

@@ -366,7 +366,11 @@ describe('ChannelServiceImpl', () => {
     // Default: sender IS the owner so existing tests pass the owner check
     mockGetOwnerUserId.mockResolvedValue('user-456');
     // Default: ownership already claimed → /connect falls through to verifyToken
-    mockClaimOwnership.mockResolvedValue({ success: false, alreadyClaimed: true, message: 'Already claimed.' });
+    mockClaimOwnership.mockResolvedValue({
+      success: false,
+      alreadyClaimed: true,
+      message: 'Already claimed.',
+    });
 
     service = new ChannelServiceImpl(registry as never, {
       usersRepo: mockUsersRepo as never,
@@ -1059,7 +1063,10 @@ describe('ChannelServiceImpl', () => {
         waService.dispose();
 
         expect(mockAutoClaimOwnership).toHaveBeenCalledWith(
-          'test-plugin', 'whatsapp', 'user-456', expect.any(String)
+          'test-plugin',
+          'whatsapp',
+          'user-456',
+          expect.any(String)
         );
         expect(mockSessionsRepo.findActive).toHaveBeenCalled();
       });

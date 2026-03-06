@@ -10,7 +10,14 @@ import { getChannelService, getDefaultPluginRegistry } from '@ownpilot/core';
 import { ChannelMessagesRepository } from '../db/repositories/channel-messages.js';
 import { channelUsersRepo } from '../db/repositories/channel-users.js';
 import { configServicesRepo } from '../db/repositories/config-services.js';
-import { apiResponse, apiError, ERROR_CODES, notFoundError, getErrorMessage, getPaginationParams } from './helpers.js';
+import {
+  apiResponse,
+  apiError,
+  ERROR_CODES,
+  notFoundError,
+  getErrorMessage,
+  getPaginationParams,
+} from './helpers.js';
 import { pagination } from '../middleware/pagination.js';
 import { refreshChannelApi } from '../plugins/init.js';
 import { wsGateway } from '../ws/server.js';
@@ -672,12 +679,12 @@ channelRoutes.get('/:id/groups/:groupJid', async (c) => {
     return apiResponse(c, group);
   } catch (error) {
     const msg = getErrorMessage(error, '');
-    if (msg.includes('not-authorized') || msg.includes('item-not-found') || msg.includes('not found')) {
-      return apiError(
-        c,
-        { code: ERROR_CODES.NOT_FOUND, message: 'Group not found' },
-        404
-      );
+    if (
+      msg.includes('not-authorized') ||
+      msg.includes('item-not-found') ||
+      msg.includes('not found')
+    ) {
+      return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Group not found' }, 404);
     }
     return apiError(
       c,
@@ -755,32 +762,50 @@ channelRoutes.post('/:id/groups/:groupJid/sync', async (c) => {
   try {
     groupJid = decodeURIComponent(rawGroupJid);
   } catch {
-    return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'Invalid group JID encoding' }, 400);
+    return apiError(
+      c,
+      { code: ERROR_CODES.INVALID_REQUEST, message: 'Invalid group JID encoding' },
+      400
+    );
   }
   if (!groupJid.includes('@')) {
     groupJid = `${groupJid}@g.us`;
   }
   if (!/^\d[\d-]*@g\.us$/.test(groupJid)) {
-    return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'Invalid group JID format' }, 400);
+    return apiError(
+      c,
+      { code: ERROR_CODES.INVALID_REQUEST, message: 'Invalid group JID format' },
+      400
+    );
   }
 
   try {
     const service = getChannelService();
     const api = service.getChannel(pluginId) as unknown as Record<string, unknown> | null;
     if (!api || typeof api.fetchGroupHistory !== 'function') {
-      return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'Channel does not support history fetch' }, 501);
+      return apiError(
+        c,
+        { code: ERROR_CODES.INVALID_REQUEST, message: 'Channel does not support history fetch' },
+        501
+      );
     }
 
     const rawCount = parseInt(c.req.query('count') ?? '50', 10);
     const count = isNaN(rawCount) || rawCount < 1 ? 50 : rawCount;
-    const sessionId = await (api.fetchGroupHistory as (jid: string, count: number) => Promise<string>)(groupJid, Math.min(count, 50));
+    const sessionId = await (
+      api.fetchGroupHistory as (jid: string, count: number) => Promise<string>
+    )(groupJid, Math.min(count, 50));
 
-    return apiResponse(c, {
-      status: 'accepted',
-      message: 'History fetch requested — messages will arrive asynchronously via history sync',
-      sessionId,
-      groupJid,
-    }, 202);
+    return apiResponse(
+      c,
+      {
+        status: 'accepted',
+        message: 'History fetch requested — messages will arrive asynchronously via history sync',
+        sessionId,
+        groupJid,
+      },
+      202
+    );
   } catch (error) {
     const msg = getErrorMessage(error, 'Failed to trigger history fetch');
     const status = msg.includes('Rate limited') ? 429 : 500;
@@ -1046,7 +1071,14 @@ channelRoutes.get('/:id/messages', pagination({ defaultLimit: 50, maxLimit: 200 
 
   // Validate chatId format — must contain @ domain suffix (prevents arbitrary string injection into metadata query)
   if (chatId !== undefined && (chatId.length === 0 || !chatId.includes('@'))) {
-    return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'Invalid chatId format — must include @ domain suffix' }, 400);
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.INVALID_REQUEST,
+        message: 'Invalid chatId format — must include @ domain suffix',
+      },
+      400
+    );
   }
 
   try {

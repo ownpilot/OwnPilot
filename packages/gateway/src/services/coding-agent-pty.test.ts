@@ -30,11 +30,13 @@ import { runWithPty, spawnStreamingPty } from './coding-agent-pty.js';
 // PTY Mock Helpers
 // ---------------------------------------------------------------------------
 
-function makeMockProc(overrides: Partial<{
-  onDataFn: (data: string) => void;
-  onExitFn: (e: { exitCode: number; signal?: number }) => void;
-  throwOnSpawn: boolean;
-}> = {}) {
+function makeMockProc(
+  overrides: Partial<{
+    onDataFn: (data: string) => void;
+    onExitFn: (e: { exitCode: number; signal?: number }) => void;
+    throwOnSpawn: boolean;
+  }> = {}
+) {
   let dataCallback: ((data: string) => void) | null = null;
   let exitCallback: ((e: { exitCode: number; signal?: number }) => void) | null = null;
 

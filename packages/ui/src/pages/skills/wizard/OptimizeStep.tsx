@@ -103,7 +103,9 @@ export function OptimizeStep({ pkg, onNext, onSkip, onBack }: OptimizeStepProps)
           <textarea
             value={testQueries}
             onChange={(e) => setTestQueries(e.target.value)}
-            placeholder={'Summarize this PDF\nExtract key insights from document\nWhat does this paper say about...'}
+            placeholder={
+              'Summarize this PDF\nExtract key insights from document\nWhat does this paper say about...'
+            }
             rows={4}
             className="w-full px-3 py-2 text-sm bg-bg-tertiary dark:bg-dark-bg-tertiary border border-border dark:border-dark-border rounded-lg text-text-primary dark:text-dark-text-primary placeholder:text-text-muted/50 focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none"
           />
@@ -200,7 +202,11 @@ export function OptimizeStep({ pkg, onNext, onSkip, onBack }: OptimizeStepProps)
                 <div className="flex-1 h-2 bg-bg-tertiary dark:bg-dark-bg-tertiary rounded-full overflow-hidden">
                   <div
                     className={`h-full rounded-full ${
-                      iter.triggerAccuracy >= 0.7 ? 'bg-success' : iter.triggerAccuracy >= 0.4 ? 'bg-warning' : 'bg-error'
+                      iter.triggerAccuracy >= 0.7
+                        ? 'bg-success'
+                        : iter.triggerAccuracy >= 0.4
+                          ? 'bg-warning'
+                          : 'bg-error'
                     }`}
                     style={{ width: `${Math.round(iter.triggerAccuracy * 100)}%` }}
                   />

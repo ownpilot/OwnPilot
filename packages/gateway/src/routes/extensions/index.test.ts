@@ -9,13 +9,31 @@ import { Hono } from 'hono';
 // Mocks
 // ---------------------------------------------------------------------------
 
-vi.mock('./crud.js', () => ({ crudRoutes: new Hono().get('/extensions', (c: any) => c.json({ route: 'crud' })) }));
-vi.mock('./install.js', () => ({ installRoutes: new Hono().post('/extensions/upload', (c: any) => c.json({ route: 'install' })) }));
-vi.mock('./generation.js', () => ({ generationRoutes: new Hono().post('/extensions/generate', (c: any) => c.json({ route: 'generation' })) }));
-vi.mock('./scanner.js', () => ({ scannerRoutes: new Hono().get('/extensions/scan', (c: any) => c.json({ route: 'scanner' })) }));
-vi.mock('./audit.js', () => ({ auditRoutes: new Hono().get('/extensions/:id/audit', (c: any) => c.json({ route: 'audit' })) }));
-vi.mock('./eval.js', () => ({ evalRoutes: new Hono().post('/extensions/:id/eval/run', (c: any) => c.json({ route: 'eval' })) }));
-vi.mock('./packaging.js', () => ({ packagingRoutes: new Hono().get('/extensions/:id/package', (c: any) => c.json({ route: 'packaging' })) }));
+vi.mock('./crud.js', () => ({
+  crudRoutes: new Hono().get('/extensions', (c: any) => c.json({ route: 'crud' })),
+}));
+vi.mock('./install.js', () => ({
+  installRoutes: new Hono().post('/extensions/upload', (c: any) => c.json({ route: 'install' })),
+}));
+vi.mock('./generation.js', () => ({
+  generationRoutes: new Hono().post('/extensions/generate', (c: any) =>
+    c.json({ route: 'generation' })
+  ),
+}));
+vi.mock('./scanner.js', () => ({
+  scannerRoutes: new Hono().get('/extensions/scan', (c: any) => c.json({ route: 'scanner' })),
+}));
+vi.mock('./audit.js', () => ({
+  auditRoutes: new Hono().get('/extensions/:id/audit', (c: any) => c.json({ route: 'audit' })),
+}));
+vi.mock('./eval.js', () => ({
+  evalRoutes: new Hono().post('/extensions/:id/eval/run', (c: any) => c.json({ route: 'eval' })),
+}));
+vi.mock('./packaging.js', () => ({
+  packagingRoutes: new Hono().get('/extensions/:id/package', (c: any) =>
+    c.json({ route: 'packaging' })
+  ),
+}));
 
 import { extensionsRoutes } from './index.js';
 

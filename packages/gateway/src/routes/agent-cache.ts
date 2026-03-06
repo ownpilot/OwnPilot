@@ -138,7 +138,11 @@ export function createSoulAwareApprovalCallback(
   return async (category, actionType, description, params) => {
     // First check: blocked actions always block
     if (autonomy.blockedActions.includes(actionType)) {
-      log.warn(`Action blocked by soul configuration`, { agentId, actionType, reason: 'in blockedActions' });
+      log.warn(`Action blocked by soul configuration`, {
+        agentId,
+        actionType,
+        reason: 'in blockedActions',
+      });
       return false;
     }
 
@@ -152,7 +156,11 @@ export function createSoulAwareApprovalCallback(
 
     // If not allowed and doesn't require approval, it's permanently blocked
     if (!decision.allowed && !decision.requiresApproval) {
-      log.warn(`Action blocked by autonomy guard`, { agentId, actionType, reason: decision.reason });
+      log.warn(`Action blocked by autonomy guard`, {
+        agentId,
+        actionType,
+        reason: decision.reason,
+      });
       return false;
     }
 

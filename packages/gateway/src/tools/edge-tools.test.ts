@@ -116,7 +116,13 @@ describe('Edge Tools', () => {
     });
 
     it('read/control tools are workflowUsable: true', () => {
-      const workflowTools = ['list_edge_devices', 'get_device_status', 'read_sensor', 'send_device_command', 'control_actuator'];
+      const workflowTools = [
+        'list_edge_devices',
+        'get_device_status',
+        'read_sensor',
+        'send_device_command',
+        'control_actuator',
+      ];
       for (const name of workflowTools) {
         const def = EDGE_TOOLS.find((t) => t.name === name);
         expect(def?.workflowUsable, `${name} should be workflowUsable: true`).toBe(true);
@@ -194,7 +200,10 @@ describe('Edge Tools', () => {
 
       const result = await executeEdgeTool('list_edge_devices', {}, 'user-1');
 
-      const devices = (result.result as Record<string, unknown>).devices as Record<string, unknown>[];
+      const devices = (result.result as Record<string, unknown>).devices as Record<
+        string,
+        unknown
+      >[];
       expect(devices[0].lastSeen).toBe('2025-03-01T10:00:00.000Z');
     });
 
@@ -247,7 +256,10 @@ describe('Edge Tools', () => {
 
       const result = await executeEdgeTool('get_device_status', { device_id: 'dev-1' }, 'user-1');
 
-      const sensors = (result.result as Record<string, unknown>).sensors as Record<string, unknown>[];
+      const sensors = (result.result as Record<string, unknown>).sensors as Record<
+        string,
+        unknown
+      >[];
       expect(sensors[0].lastUpdated).toBe('2025-03-01T12:00:00.000Z');
     });
   });
@@ -258,9 +270,7 @@ describe('Edge Tools', () => {
 
   describe('read_sensor', () => {
     it('returns current sensor value', async () => {
-      mockEdgeService.getDevice.mockResolvedValue(
-        makeDevice({ sensors: [makeSensor()] })
-      );
+      mockEdgeService.getDevice.mockResolvedValue(makeDevice({ sensors: [makeSensor()] }));
 
       const result = await executeEdgeTool(
         'read_sensor',
@@ -274,9 +284,7 @@ describe('Edge Tools', () => {
     });
 
     it('returns history when history_limit > 1', async () => {
-      mockEdgeService.getDevice.mockResolvedValue(
-        makeDevice({ sensors: [makeSensor()] })
-      );
+      mockEdgeService.getDevice.mockResolvedValue(makeDevice({ sensors: [makeSensor()] }));
       mockEdgeService.getTelemetryHistory.mockResolvedValue([
         { value: 21.0, recordedAt: new Date('2025-03-01T09:00:00Z') },
         { value: 22.5, recordedAt: new Date('2025-03-01T10:00:00Z') },
@@ -292,14 +300,15 @@ describe('Edge Tools', () => {
       const r = result.result as Record<string, unknown>;
       expect((r.history as unknown[]).length).toBe(2);
       expect(mockEdgeService.getTelemetryHistory).toHaveBeenCalledWith(
-        'user-1', 'dev-1', 'temp-1', 5
+        'user-1',
+        'dev-1',
+        'temp-1',
+        5
       );
     });
 
     it('caps history_limit at 100', async () => {
-      mockEdgeService.getDevice.mockResolvedValue(
-        makeDevice({ sensors: [makeSensor()] })
-      );
+      mockEdgeService.getDevice.mockResolvedValue(makeDevice({ sensors: [makeSensor()] }));
       mockEdgeService.getTelemetryHistory.mockResolvedValue([]);
 
       await executeEdgeTool(
@@ -309,7 +318,10 @@ describe('Edge Tools', () => {
       );
 
       expect(mockEdgeService.getTelemetryHistory).toHaveBeenCalledWith(
-        'user-1', 'dev-1', 'temp-1', 100
+        'user-1',
+        'dev-1',
+        'temp-1',
+        100
       );
     });
 
@@ -396,9 +408,7 @@ describe('Edge Tools', () => {
 
   describe('control_actuator', () => {
     it('sends set_actuator command for a relay', async () => {
-      mockEdgeService.getDevice.mockResolvedValue(
-        makeDevice({ actuators: [makeActuator()] })
-      );
+      mockEdgeService.getDevice.mockResolvedValue(makeDevice({ actuators: [makeActuator()] }));
       mockEdgeService.sendCommand.mockResolvedValue(makeCommand({ commandType: 'set_actuator' }));
 
       const result = await executeEdgeTool(

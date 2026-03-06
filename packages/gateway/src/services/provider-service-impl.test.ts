@@ -180,6 +180,5 @@ describe('ProviderService', () => {
         expect(svc.listModels(p)).toEqual([]);
       }
     });
-
   });
 });

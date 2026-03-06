@@ -13,7 +13,13 @@ interface EditStepProps {
   onBack: () => void;
 }
 
-export function EditStep({ format, content, name: initialName, onInstalled, onBack }: EditStepProps) {
+export function EditStep({
+  format,
+  content,
+  name: initialName,
+  onInstalled,
+  onBack,
+}: EditStepProps) {
   const toast = useToast();
   const [text, setText] = useState(content);
   const [isInstalling, setIsInstalling] = useState(false);
@@ -45,8 +51,8 @@ export function EditStep({ format, content, name: initialName, onInstalled, onBa
           Review & edit — {initialName}
         </h3>
         <p className="text-sm text-text-muted dark:text-dark-text-muted mt-1">
-          Edit the generated{' '}
-          {format === 'agentskills' ? 'SKILL.md' : 'extension manifest'} before installing.
+          Edit the generated {format === 'agentskills' ? 'SKILL.md' : 'extension manifest'} before
+          installing.
         </p>
       </div>
 

@@ -48,7 +48,11 @@ describe('seedExamplePlans', () => {
 
   it('creates a PlansRepository with the given userId', async () => {
     MockPlansRepository.mockImplementation(function () {
-      return { list: vi.fn().mockResolvedValue([]), create: vi.fn().mockResolvedValue({ id: 'p1' }), addStep: vi.fn().mockResolvedValue(undefined) };
+      return {
+        list: vi.fn().mockResolvedValue([]),
+        create: vi.fn().mockResolvedValue({ id: 'p1' }),
+        addStep: vi.fn().mockResolvedValue(undefined),
+      };
     });
     await seedExamplePlans('user-123');
     expect(MockPlansRepository).toHaveBeenCalledWith('user-123');
@@ -56,7 +60,11 @@ describe('seedExamplePlans', () => {
 
   it('defaults userId to "default"', async () => {
     MockPlansRepository.mockImplementation(function () {
-      return { list: vi.fn().mockResolvedValue([]), create: vi.fn().mockResolvedValue({ id: 'p1' }), addStep: vi.fn().mockResolvedValue(undefined) };
+      return {
+        list: vi.fn().mockResolvedValue([]),
+        create: vi.fn().mockResolvedValue({ id: 'p1' }),
+        addStep: vi.fn().mockResolvedValue(undefined),
+      };
     });
     await seedExamplePlans();
     expect(MockPlansRepository).toHaveBeenCalledWith('default');
@@ -65,11 +73,13 @@ describe('seedExamplePlans', () => {
   it('skips plans that already exist', async () => {
     MockPlansRepository.mockImplementation(function () {
       return {
-        list: vi.fn().mockResolvedValue([
-          { name: 'Weekly Goal Review' },
-          { name: 'Daily Memory Digest' },
-          { name: 'Task Cleanup' },
-        ]),
+        list: vi
+          .fn()
+          .mockResolvedValue([
+            { name: 'Weekly Goal Review' },
+            { name: 'Daily Memory Digest' },
+            { name: 'Task Cleanup' },
+          ]),
         create: vi.fn(),
         addStep: vi.fn(),
       };
@@ -116,10 +126,9 @@ describe('seedExamplePlans', () => {
   it('adds steps with correct orderNum (1-based)', async () => {
     MockPlansRepository.mockImplementation(function () {
       return {
-        list: vi.fn().mockResolvedValue([
-          { name: 'Daily Memory Digest' },
-          { name: 'Task Cleanup' },
-        ]),
+        list: vi
+          .fn()
+          .mockResolvedValue([{ name: 'Daily Memory Digest' }, { name: 'Task Cleanup' }]),
         create: vi.fn().mockResolvedValue({ id: 'plan-id' }),
         addStep: vi.fn().mockResolvedValue(undefined),
       };
@@ -137,7 +146,8 @@ describe('seedExamplePlans', () => {
     MockPlansRepository.mockImplementation(function () {
       return {
         list: vi.fn().mockResolvedValue([]),
-        create: vi.fn()
+        create: vi
+          .fn()
           .mockResolvedValueOnce({ id: 'p1' })
           .mockRejectedValueOnce(new Error('DB error'))
           .mockResolvedValueOnce({ id: 'p3' }),

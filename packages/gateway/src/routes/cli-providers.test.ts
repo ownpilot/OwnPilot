@@ -269,7 +269,9 @@ describe('CLI Providers Routes', () => {
     });
 
     it('returns installed: false when binary not found', async () => {
-      mockExecFileSync.mockImplementation(() => { throw new Error('not found'); });
+      mockExecFileSync.mockImplementation(() => {
+        throw new Error('not found');
+      });
 
       const res = await app.request('/cli-providers/prov-1/test', { method: 'POST' });
       expect(res.status).toBe(200);
@@ -280,7 +282,9 @@ describe('CLI Providers Routes', () => {
     it('returns installed: true with undefined version when --version fails', async () => {
       mockExecFileSync
         .mockReturnValueOnce(Buffer.from('/usr/bin/prettier')) // where/which succeeds
-        .mockImplementationOnce(() => { throw new Error('no --version'); }); // --version fails
+        .mockImplementationOnce(() => {
+          throw new Error('no --version');
+        }); // --version fails
 
       const res = await app.request('/cli-providers/prov-1/test', { method: 'POST' });
       expect(res.status).toBe(200);

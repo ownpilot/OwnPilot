@@ -70,9 +70,20 @@ soulRoutes.post('/', async (c) => {
       );
     }
     // Validate autonomy.level range
-    const autonomyLevel = (body as Record<string, unknown> & { autonomy?: { level?: unknown } }).autonomy?.level;
-    if (autonomyLevel !== undefined && (typeof autonomyLevel !== 'number' || !Number.isInteger(autonomyLevel) || autonomyLevel < 0 || autonomyLevel > 4)) {
-      return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: 'autonomy.level must be an integer 0–4' }, 400);
+    const autonomyLevel = (body as Record<string, unknown> & { autonomy?: { level?: unknown } })
+      .autonomy?.level;
+    if (
+      autonomyLevel !== undefined &&
+      (typeof autonomyLevel !== 'number' ||
+        !Number.isInteger(autonomyLevel) ||
+        autonomyLevel < 0 ||
+        autonomyLevel > 4)
+    ) {
+      return apiError(
+        c,
+        { code: ERROR_CODES.VALIDATION_ERROR, message: 'autonomy.level must be an integer 0–4' },
+        400
+      );
     }
 
     // Only pass known soul fields — prevent mass assignment of internal DB columns
@@ -155,8 +166,18 @@ soulRoutes.post('/deploy', async (c) => {
 
     // Validate autonomy.level range
     const autonomyLevel = body.autonomy?.level;
-    if (autonomyLevel !== undefined && (typeof autonomyLevel !== 'number' || !Number.isInteger(autonomyLevel) || autonomyLevel < 0 || autonomyLevel > 4)) {
-      return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: 'autonomy.level must be an integer 0–4' }, 400);
+    if (
+      autonomyLevel !== undefined &&
+      (typeof autonomyLevel !== 'number' ||
+        !Number.isInteger(autonomyLevel) ||
+        autonomyLevel < 0 ||
+        autonomyLevel > 4)
+    ) {
+      return apiError(
+        c,
+        { code: ERROR_CODES.VALIDATION_ERROR, message: 'autonomy.level must be an integer 0–4' },
+        400
+      );
     }
 
     // Get default provider/model if not specified
@@ -212,7 +233,12 @@ soulRoutes.post('/deploy', async (c) => {
             },
             autonomy: {
               level: (body.autonomy?.level as 0 | 1 | 2 | 3 | 4) ?? 3,
-              allowedActions: body.autonomy?.allowedActions ?? ['search_web', 'create_note', 'read_url', 'search_memories'],
+              allowedActions: body.autonomy?.allowedActions ?? [
+                'search_web',
+                'create_note',
+                'read_url',
+                'search_memories',
+              ],
               blockedActions: body.autonomy?.blockedActions ?? ['delete_data', 'execute_code'],
               requiresApproval: body.autonomy?.requiresApproval ?? ['send_message_to_user'],
               maxCostPerCycle: body.autonomy?.maxCostPerCycle ?? 0.5,
@@ -262,7 +288,9 @@ soulRoutes.post('/deploy', async (c) => {
         const errorMessage = getErrorMessage(txErr).toLowerCase();
         if (errorMessage.includes('duplicate') && errorMessage.includes('name')) {
           attempts++;
-          const randomSuffix = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+          const randomSuffix = Math.floor(Math.random() * 10000)
+            .toString()
+            .padStart(4, '0');
           agentName = `${body.identity?.name ?? 'Unnamed Agent'} (${randomSuffix})`;
         } else {
           break; // Non-name error — don't retry
@@ -271,13 +299,32 @@ soulRoutes.post('/deploy', async (c) => {
     }
 
     if (!soul) {
-      return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: `Failed to deploy agent: ${getErrorMessage(lastError)}` }, 500);
+      return apiError(
+        c,
+        {
+          code: ERROR_CODES.INTERNAL_ERROR,
+          message: `Failed to deploy agent: ${getErrorMessage(lastError)}`,
+        },
+        500
+      );
     }
 
     // 3. Create heartbeat trigger if enabled and interval is valid
-    const CRON_REGEX = /^[\*0-9,\-\/]+\s+[\*0-9,\-\/]+\s+[\*0-9,\-\/]+\s+[\*0-9,\-\/]+\s+[\*0-9,\-\/]+$/;
-    if (body.heartbeat?.enabled && body.heartbeat?.interval && !CRON_REGEX.test(body.heartbeat.interval.trim())) {
-      return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: 'heartbeat.interval must be a valid cron expression (e.g. "0 */6 * * *")' }, 400);
+    const CRON_REGEX =
+      /^[\*0-9,\-\/]+\s+[\*0-9,\-\/]+\s+[\*0-9,\-\/]+\s+[\*0-9,\-\/]+\s+[\*0-9,\-\/]+$/;
+    if (
+      body.heartbeat?.enabled &&
+      body.heartbeat?.interval &&
+      !CRON_REGEX.test(body.heartbeat.interval.trim())
+    ) {
+      return apiError(
+        c,
+        {
+          code: ERROR_CODES.VALIDATION_ERROR,
+          message: 'heartbeat.interval must be a valid cron expression (e.g. "0 */6 * * *")',
+        },
+        400
+      );
     }
 
     let triggerCreated = false;
@@ -318,7 +365,17 @@ soulRoutes.post('/deploy', async (c) => {
 // ═══════════════════════════════════════════════════════════════════════════
 
 // Helper to check if a string looks like a UUID or is a reserved keyword
-const RESERVED_KEYWORDS = ['test', 'tools', 'stats', 'command', 'deploy', 'logs', 'memories', 'goals', 'tasks'];
+const RESERVED_KEYWORDS = [
+  'test',
+  'tools',
+  'stats',
+  'command',
+  'deploy',
+  'logs',
+  'memories',
+  'goals',
+  'tasks',
+];
 
 /**
  * Validate and protect core traits during soul evolution.
@@ -347,7 +404,8 @@ function validateEvolutionChanges(
     if (!isSame && oldCoreTraits.length > 0) {
       return {
         valid: false,
-        error: 'Core traits (DNA) cannot be modified after creation. Use mutableTraits for evolution.',
+        error:
+          'Core traits (DNA) cannot be modified after creation. Use mutableTraits for evolution.',
       };
     }
   }
@@ -361,7 +419,8 @@ function validateEvolutionChanges(
     if (oldMode === 'manual' && newMode === 'autonomous') {
       return {
         valid: false,
-        error: 'Cannot transition directly from manual to autonomous evolution. Use supervised first.',
+        error:
+          'Cannot transition directly from manual to autonomous evolution. Use supervised first.',
       };
     }
   }
@@ -439,12 +498,14 @@ soulRoutes.get('/:agentId/memories', async (c) => {
 
     return apiResponse(c, {
       agentId,
-      memories: memories.map((m: { id: string; content: string; source?: string; createdAt?: Date }) => ({
-        id: m.id,
-        content: m.content,
-        source: m.source,
-        createdAt: m.createdAt,
-      })),
+      memories: memories.map(
+        (m: { id: string; content: string; source?: string; createdAt?: Date }) => ({
+          id: m.id,
+          content: m.content,
+          source: m.source,
+          createdAt: m.createdAt,
+        })
+      ),
       learnings: soul.evolution.learnings.slice(-20),
     });
   } catch (err) {
@@ -479,12 +540,14 @@ soulRoutes.get('/:agentId/goals', async (c) => {
       agentId,
       mission: soul.purpose.mission,
       goals: soul.purpose.goals,
-      systemGoals: goals.map((g: { id: string; title: string; status?: string; progress?: number }) => ({
-        id: g.id,
-        title: g.title,
-        status: g.status,
-        progress: g.progress,
-      })),
+      systemGoals: goals.map(
+        (g: { id: string; title: string; status?: string; progress?: number }) => ({
+          id: g.id,
+          title: g.title,
+          status: g.status,
+          progress: g.progress,
+        })
+      ),
     });
   } catch (err) {
     return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(err) }, 500);
@@ -517,10 +580,14 @@ soulRoutes.post('/:agentId/goals', async (c) => {
     soul.updatedAt = new Date();
     await repo.update(soul);
 
-    return apiResponse(c, {
-      agentId,
-      goals: soul.purpose.goals,
-    }, 201);
+    return apiResponse(
+      c,
+      {
+        agentId,
+        goals: soul.purpose.goals,
+      },
+      201
+    );
   } catch (err) {
     return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(err) }, 500);
   }
@@ -575,7 +642,11 @@ soulRoutes.post('/:agentId/mission', async (c) => {
     }>();
 
     if (!body.mission) {
-      return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: 'mission is required' }, 400);
+      return apiError(
+        c,
+        { code: ERROR_CODES.VALIDATION_ERROR, message: 'mission is required' },
+        400
+      );
     }
 
     const repo = getSoulsRepository();
@@ -676,7 +747,11 @@ soulRoutes.get('/:agentId/tools', async (c) => {
     const toolRegistry = getSharedToolRegistry();
 
     if (!toolRegistry) {
-      return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: 'Tool registry not available' }, 500);
+      return apiError(
+        c,
+        { code: ERROR_CODES.INTERNAL_ERROR, message: 'Tool registry not available' },
+        500
+      );
     }
 
     // Get all registered tools
@@ -1016,11 +1091,7 @@ soulRoutes.put('/:agentId', async (c) => {
     // AGENT-HIGH-005: Validate evolution changes protect core traits
     const validation = validateEvolutionChanges(existing, body);
     if (!validation.valid) {
-      return apiError(
-        c,
-        { code: ERROR_CODES.VALIDATION_ERROR, message: validation.error },
-        400
-      );
+      return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: validation.error }, 400);
     }
 
     // Only allow explicitly listed fields — prevent mass assignment of id, agentId, workspaceId, createdAt

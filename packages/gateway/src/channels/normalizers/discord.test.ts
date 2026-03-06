@@ -76,7 +76,9 @@ describe('discordNormalizer', () => {
       const data = Buffer.from('hello');
       const result = discordNormalizer.normalizeIncoming({
         text: 'check this',
-        attachments: [{ type: 'image', data, mimeType: 'image/jpeg', filename: 'img.jpg', size: 5 }],
+        attachments: [
+          { type: 'image', data, mimeType: 'image/jpeg', filename: 'img.jpg', size: 5 },
+        ],
       });
       expect(result.attachments).toHaveLength(1);
       expect(result.attachments![0].data).toMatch(/^data:image\/jpeg;base64,/);

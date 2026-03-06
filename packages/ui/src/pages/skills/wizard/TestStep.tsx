@@ -270,7 +270,11 @@ export function TestStep({ pkg, onNext, onSkip, onBack }: TestStepProps) {
                       <div className="flex-1 h-2 bg-bg-tertiary dark:bg-dark-bg-tertiary rounded-full overflow-hidden">
                         <div
                           className={`h-full rounded-full transition-all ${
-                            res.score >= 0.7 ? 'bg-success' : res.score >= 0.4 ? 'bg-warning' : 'bg-error'
+                            res.score >= 0.7
+                              ? 'bg-success'
+                              : res.score >= 0.4
+                                ? 'bg-warning'
+                                : 'bg-error'
                           }`}
                           style={{ width: `${Math.round(res.score * 100)}%` }}
                         />

@@ -849,7 +849,10 @@ describe('executeLlmNode', () => {
 
   it('returns error when no provider is configured (resolve returns null)', async () => {
     const { resolveProviderAndModel } = await import('../../routes/settings.js');
-    vi.mocked(resolveProviderAndModel).mockResolvedValueOnce({ provider: null as unknown as string, model: null });
+    vi.mocked(resolveProviderAndModel).mockResolvedValueOnce({
+      provider: null as unknown as string,
+      model: null,
+    });
 
     vi.mocked(resolveTemplates).mockReturnValueOnce({ _msg: 'Hello' });
 
@@ -866,7 +869,9 @@ describe('executeLlmNode', () => {
 
   it('uses baseUrl from providerCfg when not specified in node', async () => {
     const { loadProviderConfig } = await import('../../routes/agent-cache.js');
-    vi.mocked(loadProviderConfig).mockReturnValueOnce({ baseUrl: 'https://custom-api.example.com' } as never);
+    vi.mocked(loadProviderConfig).mockReturnValueOnce({
+      baseUrl: 'https://custom-api.example.com',
+    } as never);
 
     vi.mocked(resolveTemplates).mockReturnValueOnce({ _msg: 'Hello' });
     mockProvider.complete.mockResolvedValue({ ok: true, value: { content: 'ok' } });
@@ -902,18 +907,22 @@ describe('executeHttpRequestNode', () => {
     vi.unstubAllGlobals();
   });
 
-  function makeMockResponse(overrides: Partial<{
-    ok: boolean;
-    status: number;
-    statusText: string;
-    headers: Record<string, string>;
-    body: string;
-    contentType: string;
-  }> = {}) {
-    const headers = new Map<string, string>(Object.entries({
-      'content-type': overrides.contentType ?? 'text/plain',
-      ...overrides.headers,
-    }));
+  function makeMockResponse(
+    overrides: Partial<{
+      ok: boolean;
+      status: number;
+      statusText: string;
+      headers: Record<string, string>;
+      body: string;
+      contentType: string;
+    }> = {}
+  ) {
+    const headers = new Map<string, string>(
+      Object.entries({
+        'content-type': overrides.contentType ?? 'text/plain',
+        ...overrides.headers,
+      })
+    );
     return {
       ok: overrides.ok ?? true,
       status: overrides.status ?? 200,
@@ -985,10 +994,12 @@ describe('executeHttpRequestNode', () => {
 
   it('parses JSON response body automatically', async () => {
     vi.mocked(resolveTemplates).mockReturnValue({ _url: 'https://api.example.com/json' });
-    mockFetch.mockResolvedValue(makeMockResponse({
-      body: '{"key":"value"}',
-      contentType: 'application/json',
-    }));
+    mockFetch.mockResolvedValue(
+      makeMockResponse({
+        body: '{"key":"value"}',
+        contentType: 'application/json',
+      })
+    );
 
     const node = makeNode('http1', 'httpRequestNode', {
       method: 'GET',
@@ -1003,12 +1014,14 @@ describe('executeHttpRequestNode', () => {
 
   it('returns error for HTTP 4xx/5xx responses', async () => {
     vi.mocked(resolveTemplates).mockReturnValue({ _url: 'https://api.example.com/error' });
-    mockFetch.mockResolvedValue(makeMockResponse({
-      ok: false,
-      status: 404,
-      statusText: 'Not Found',
-      body: 'Not found',
-    }));
+    mockFetch.mockResolvedValue(
+      makeMockResponse({
+        ok: false,
+        status: 404,
+        statusText: 'Not Found',
+        body: 'Not found',
+      })
+    );
 
     const node = makeNode('http1', 'httpRequestNode', {
       method: 'GET',
@@ -1103,7 +1116,10 @@ describe('executeHttpRequestNode', () => {
 
   it('returns error when content-length exceeds max', async () => {
     vi.mocked(resolveTemplates).mockReturnValue({ _url: 'https://api.example.com/big' });
-    const headers = new Map([['content-length', '2000000'], ['content-type', 'text/plain']]);
+    const headers = new Map([
+      ['content-length', '2000000'],
+      ['content-type', 'text/plain'],
+    ]);
     mockFetch.mockResolvedValue({
       ok: true,
       status: 200,
@@ -1130,7 +1146,7 @@ describe('executeHttpRequestNode', () => {
   it('adds query params to URL', async () => {
     vi.mocked(resolveTemplates).mockReturnValue({
       _url: 'https://api.example.com/search',
-      '_q_q': 'test',
+      _q_q: 'test',
     });
     mockFetch.mockResolvedValue(makeMockResponse());
 
@@ -1472,11 +1488,13 @@ describe('executeSwitchNode', () => {
 
     const result = executeSwitchNode(node, {}, {});
 
-    expect(result.resolvedArgs).toEqual(expect.objectContaining({
-      expression: '42',
-      evaluatedValue: '42',
-      matchedCase: 'Forty-Two',
-    }));
+    expect(result.resolvedArgs).toEqual(
+      expect.objectContaining({
+        expression: '42',
+        evaluatedValue: '42',
+        matchedCase: 'Forty-Two',
+      })
+    );
   });
 
   it('includes timing information', () => {

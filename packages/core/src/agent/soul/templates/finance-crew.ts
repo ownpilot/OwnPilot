@@ -64,7 +64,8 @@ export const financeCrewTemplate: CrewTemplate = {
           {
             id: 'analyst-close',
             name: 'Market close summary',
-            description: 'Summarize market performance: major indices, top movers, key news impact.',
+            description:
+              'Summarize market performance: major indices, top movers, key news impact.',
             schedule: 'daily',
             dailyAt: '16:00',
             tools: ['search_web', 'create_note'],

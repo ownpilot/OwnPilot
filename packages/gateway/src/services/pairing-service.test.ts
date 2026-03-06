@@ -83,9 +83,7 @@ describe('hasAnyOwner()', () => {
   });
 
   it('returns true when telegram owner is set', async () => {
-    mockRepo.get.mockImplementation(async (key) =>
-      key === 'owner_telegram' ? 'user-123' : null
-    );
+    mockRepo.get.mockImplementation(async (key) => (key === 'owner_telegram' ? 'user-123' : null));
     expect(await hasAnyOwner()).toBe(true);
   });
 
@@ -153,7 +151,11 @@ describe('claimOwnership()', () => {
       key === 'owner_telegram' ? 'existing-owner' : null
     );
     const result = await claimOwnership(
-      'channel.telegram', 'telegram', 'new-user', 'chat-1', 'ABCD-1234'
+      'channel.telegram',
+      'telegram',
+      'new-user',
+      'chat-1',
+      'ABCD-1234'
     );
     expect(result.success).toBe(false);
     expect(result.alreadyClaimed).toBe(true);
@@ -163,7 +165,11 @@ describe('claimOwnership()', () => {
   it('rejects when pairing key is not stored for the channel', async () => {
     mockRepo.get.mockResolvedValue(null); // no owner, no pairing key
     const result = await claimOwnership(
-      'channel.telegram', 'telegram', 'user-1', 'chat-1', 'ABCD-1234'
+      'channel.telegram',
+      'telegram',
+      'user-1',
+      'chat-1',
+      'ABCD-1234'
     );
     expect(result.success).toBe(false);
     expect(result.alreadyClaimed).toBe(false);
@@ -174,7 +180,11 @@ describe('claimOwnership()', () => {
       key === 'pairing_key_channel.telegram' ? 'ABCD-1234' : null
     );
     const result = await claimOwnership(
-      'channel.telegram', 'telegram', 'user-1', 'chat-1', 'XXXX-9999'
+      'channel.telegram',
+      'telegram',
+      'user-1',
+      'chat-1',
+      'XXXX-9999'
     );
     expect(result.success).toBe(false);
     expect(result.alreadyClaimed).toBe(false);
@@ -186,16 +196,18 @@ describe('claimOwnership()', () => {
       key === 'pairing_key_channel.telegram' ? 'ABCD-1234' : null
     );
     const result = await claimOwnership(
-      'channel.telegram', 'telegram', 'user-42', 'chat-42', 'ABCD-1234'
+      'channel.telegram',
+      'telegram',
+      'user-42',
+      'chat-42',
+      'ABCD-1234'
     );
     expect(result.success).toBe(true);
     expect(result.alreadyClaimed).toBe(false);
     expect(mockRepo.set).toHaveBeenCalledWith('owner_telegram', 'user-42');
     expect(mockRepo.set).toHaveBeenCalledWith('owner_chat_telegram', 'chat-42');
     // Key must be rotated — new key set for the channel
-    const rotateCall = mockRepo.set.mock.calls.find(
-      ([k]) => k === 'pairing_key_channel.telegram'
-    );
+    const rotateCall = mockRepo.set.mock.calls.find(([k]) => k === 'pairing_key_channel.telegram');
     expect(rotateCall).toBeDefined();
     expect(rotateCall![1]).not.toBe('ABCD-1234'); // new key is different
   });
@@ -205,7 +217,11 @@ describe('claimOwnership()', () => {
       key === 'pairing_key_channel.telegram' ? 'abcd-1234' : null
     );
     const result = await claimOwnership(
-      'channel.telegram', 'telegram', 'user-42', 'chat-42', 'ABCD-1234'
+      'channel.telegram',
+      'telegram',
+      'user-42',
+      'chat-42',
+      'ABCD-1234'
     );
     expect(result.success).toBe(true);
   });
@@ -216,7 +232,11 @@ describe('claimOwnership()', () => {
       return null; // channel.telegram has no key
     });
     const result = await claimOwnership(
-      'channel.telegram', 'telegram', 'user-1', 'chat-1', 'WXYZ-9999'
+      'channel.telegram',
+      'telegram',
+      'user-1',
+      'chat-1',
+      'WXYZ-9999'
     );
     // Should fail — the submitted key matches whatsapp's key, not telegram's
     expect(result.success).toBe(false);
@@ -233,9 +253,7 @@ describe('revokeOwnership()', () => {
     expect(mockRepo.delete).toHaveBeenCalledWith('owner_telegram');
     expect(mockRepo.delete).toHaveBeenCalledWith('owner_chat_telegram');
     // New key must be set
-    const setCall = mockRepo.set.mock.calls.find(
-      ([k]) => k === 'pairing_key_channel.telegram'
-    );
+    const setCall = mockRepo.set.mock.calls.find(([k]) => k === 'pairing_key_channel.telegram');
     expect(setCall).toBeDefined();
     expect(setCall![1]).toMatch(/^[A-Z0-9]{4}-[A-Z0-9]{4}$/);
   });

@@ -20,7 +20,12 @@ const { mockAdapter, mockWriteFile, mockOperationStatus } = vi.hoisted(() => {
     execute: vi.fn(async () => {}),
   };
   const mockWriteFile = vi.fn(async () => {});
-  const mockOperationStatus = { isRunning: false, operation: null, output: [], lastRun: null } as Record<string, unknown>;
+  const mockOperationStatus = {
+    isRunning: false,
+    operation: null,
+    output: [],
+    lastRun: null,
+  } as Record<string, unknown>;
   return { mockAdapter, mockWriteFile, mockOperationStatus };
 });
 
@@ -163,7 +168,9 @@ describe('Transfer Routes', () => {
         .mockResolvedValueOnce({ version: 'PostgreSQL 15.0' });
 
       const res = await app.request('/database/export');
-      expect(res.headers.get('Content-Disposition')).toMatch(/attachment; filename="ownpilot-export-/);
+      expect(res.headers.get('Content-Disposition')).toMatch(
+        /attachment; filename="ownpilot-export-/
+      );
     });
 
     it('returns 500 when adapter.isConnected() returns false', async () => {

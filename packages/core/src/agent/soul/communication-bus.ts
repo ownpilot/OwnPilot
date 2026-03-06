@@ -153,7 +153,9 @@ export class AgentCommunicationBus implements IAgentCommunicationBus {
       }
     }
     if (failed.length > 0) {
-      log.warn(`broadcast for crew ${crewId} had ${failed.length}/${members.length - 1} failed deliveries`);
+      log.warn(
+        `broadcast for crew ${crewId} had ${failed.length}/${members.length - 1} failed deliveries`
+      );
     }
     return { delivered, failed };
   }
@@ -207,7 +209,9 @@ export class AgentCommunicationBus implements IAgentCommunicationBus {
   /**
    * Get current rate limit status for an agent.
    */
-  getRateLimitStatus(agentId: string): { count: number; remaining: number; resetInMs: number } | null {
+  getRateLimitStatus(
+    agentId: string
+  ): { count: number; remaining: number; resetInMs: number } | null {
     const entry = this.rateLimits.get(agentId);
     if (!entry) return null;
 

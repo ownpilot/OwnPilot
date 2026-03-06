@@ -5,9 +5,7 @@ import { BookOpen } from '../../components/icons';
 const InstalledTab = lazy(() =>
   import('./InstalledTab').then((m) => ({ default: m.InstalledTab }))
 );
-const DiscoverTab = lazy(() =>
-  import('./DiscoverTab').then((m) => ({ default: m.DiscoverTab }))
-);
+const DiscoverTab = lazy(() => import('./DiscoverTab').then((m) => ({ default: m.DiscoverTab })));
 const CreateTab = lazy(() => import('./CreateTab').then((m) => ({ default: m.CreateTab })));
 
 type TabId = 'installed' | 'discover' | 'create';
@@ -96,10 +94,7 @@ export function SkillsHubPage() {
       <div className="flex-1 min-h-0 overflow-hidden">
         <Suspense fallback={<TabLoader />}>
           {activeTab === 'installed' && (
-            <InstalledTab
-              initialFormat={formatParam}
-              onCountChange={setInstalledCount}
-            />
+            <InstalledTab initialFormat={formatParam} onCountChange={setInstalledCount} />
           )}
           {activeTab === 'discover' && <DiscoverTab />}
           {activeTab === 'create' && <CreateTab />}

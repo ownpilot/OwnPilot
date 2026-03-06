@@ -312,8 +312,15 @@ export async function executePlanTool(
         stepConfig.trueStep = args.true_step;
         stepConfig.falseStep = args.false_step;
       } else if (type === 'parallel') {
-        const rawSteps = (args.parallel_steps as Array<{ tool_name: string; tool_args?: Record<string, unknown> }>) ?? [];
-        stepConfig.steps = rawSteps.map((s) => ({ toolName: s.tool_name, toolArgs: s.tool_args ?? {} }));
+        const rawSteps =
+          (args.parallel_steps as Array<{
+            tool_name: string;
+            tool_args?: Record<string, unknown>;
+          }>) ?? [];
+        stepConfig.steps = rawSteps.map((s) => ({
+          toolName: s.tool_name,
+          toolArgs: s.tool_args ?? {},
+        }));
       } else if (type === 'loop') {
         stepConfig.toolName = args.tool_name;
         stepConfig.toolArgs = args.tool_args ?? {};

@@ -174,10 +174,7 @@ export function CreateTab() {
               You have an unsaved draft from a previous session.
             </span>
             <div className="flex items-center gap-2 shrink-0">
-              <button
-                onClick={restoreDraft}
-                className="text-primary hover:underline font-medium"
-              >
+              <button onClick={restoreDraft} className="text-primary hover:underline font-medium">
                 Restore
               </button>
               <span className="text-text-muted">·</span>
@@ -203,11 +200,7 @@ export function CreateTab() {
         )}
 
         {step === 'draft' && format && (
-          <DraftStep
-            format={format}
-            onDrafted={handleDrafted}
-            onBack={() => setStep('format')}
-          />
+          <DraftStep format={format} onDrafted={handleDrafted} onBack={() => setStep('format')} />
         )}
 
         {step === 'edit' && format && (

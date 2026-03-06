@@ -8,7 +8,14 @@ import { describe, it, expect, vi } from 'vitest';
 // Mocks
 // ---------------------------------------------------------------------------
 
-const { MockSlackChannelAPI, mockConfigServicesRepo, capturedMeta, capturedPlatform, capturedChannelApiFactory, capturedTools } = vi.hoisted(() => {
+const {
+  MockSlackChannelAPI,
+  mockConfigServicesRepo,
+  capturedMeta,
+  capturedPlatform,
+  capturedChannelApiFactory,
+  capturedTools,
+} = vi.hoisted(() => {
   const capturedMeta: any[] = [];
   const capturedPlatform: string[] = [];
   const capturedChannelApiFactory: Function[] = [];
@@ -17,7 +24,14 @@ const { MockSlackChannelAPI, mockConfigServicesRepo, capturedMeta, capturedPlatf
     return { config, pluginId };
   });
   const mockConfigServicesRepo = { getFieldValue: vi.fn() };
-  return { MockSlackChannelAPI, mockConfigServicesRepo, capturedMeta, capturedPlatform, capturedChannelApiFactory, capturedTools };
+  return {
+    MockSlackChannelAPI,
+    mockConfigServicesRepo,
+    capturedMeta,
+    capturedPlatform,
+    capturedChannelApiFactory,
+    capturedTools,
+  };
 });
 
 vi.mock('@ownpilot/core', async (importOriginal) => {
@@ -26,10 +40,22 @@ vi.mock('@ownpilot/core', async (importOriginal) => {
     ...actual,
     createChannelPlugin: vi.fn(() => {
       const b: any = {
-        meta: vi.fn((m: any) => { capturedMeta.push(m); return b; }),
-        platform: vi.fn((p: string) => { capturedPlatform.push(p); return b; }),
-        channelApi: vi.fn((f: Function) => { capturedChannelApiFactory.push(f); return b; }),
-        tool: vi.fn((def: any, exec: Function) => { capturedTools.push({ definition: def, executor: exec }); return b; }),
+        meta: vi.fn((m: any) => {
+          capturedMeta.push(m);
+          return b;
+        }),
+        platform: vi.fn((p: string) => {
+          capturedPlatform.push(p);
+          return b;
+        }),
+        channelApi: vi.fn((f: Function) => {
+          capturedChannelApiFactory.push(f);
+          return b;
+        }),
+        tool: vi.fn((def: any, exec: Function) => {
+          capturedTools.push({ definition: def, executor: exec });
+          return b;
+        }),
         build: vi.fn(() => ({ id: capturedMeta[0]?.id })),
       };
       return b;
@@ -38,7 +64,9 @@ vi.mock('@ownpilot/core', async (importOriginal) => {
 });
 
 vi.mock('./slack-api.js', () => ({ SlackChannelAPI: MockSlackChannelAPI }));
-vi.mock('../../../db/repositories/config-services.js', () => ({ configServicesRepo: mockConfigServicesRepo }));
+vi.mock('../../../db/repositories/config-services.js', () => ({
+  configServicesRepo: mockConfigServicesRepo,
+}));
 
 import { buildSlackChannelPlugin } from './index.js';
 

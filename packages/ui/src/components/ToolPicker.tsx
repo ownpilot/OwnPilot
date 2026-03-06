@@ -117,16 +117,58 @@ const TABS: {
   color: string;
   activeBg: string;
 }[] = [
-  { id: 'tools',       label: 'Tools',     icon: Wrench,    color: 'text-blue-500',   activeBg: 'bg-blue-500/10' },
-  { id: 'custom-data', label: 'Data',      icon: Table,     color: 'text-emerald-500',activeBg: 'bg-emerald-500/10' },
-  { id: 'builtin-data',label: 'Built-in',  icon: Database,  color: 'text-amber-500',  activeBg: 'bg-amber-500/10' },
-  { id: 'skills',      label: 'Skills',    icon: BookOpen,  color: 'text-violet-500', activeBg: 'bg-violet-500/10' },
-  { id: 'files',       label: 'Files',     icon: Upload,    color: 'text-orange-500', activeBg: 'bg-orange-500/10' },
-  { id: 'url',         label: 'URL',       icon: Link,      color: 'text-sky-500',    activeBg: 'bg-sky-500/10' },
-  { id: 'composio',    label: 'Apps',      icon: Zap,       color: 'text-yellow-500', activeBg: 'bg-yellow-500/10' },
-  { id: 'mcp',         label: 'MCP',       icon: Server,    color: 'text-cyan-500',   activeBg: 'bg-cyan-500/10' },
-  { id: 'artifacts',   label: 'Artifacts', icon: Layout,    color: 'text-pink-500',   activeBg: 'bg-pink-500/10' },
-  { id: 'prompts',     label: 'Prompts',   icon: Clipboard, color: 'text-indigo-500', activeBg: 'bg-indigo-500/10' },
+  { id: 'tools', label: 'Tools', icon: Wrench, color: 'text-blue-500', activeBg: 'bg-blue-500/10' },
+  {
+    id: 'custom-data',
+    label: 'Data',
+    icon: Table,
+    color: 'text-emerald-500',
+    activeBg: 'bg-emerald-500/10',
+  },
+  {
+    id: 'builtin-data',
+    label: 'Built-in',
+    icon: Database,
+    color: 'text-amber-500',
+    activeBg: 'bg-amber-500/10',
+  },
+  {
+    id: 'skills',
+    label: 'Skills',
+    icon: BookOpen,
+    color: 'text-violet-500',
+    activeBg: 'bg-violet-500/10',
+  },
+  {
+    id: 'files',
+    label: 'Files',
+    icon: Upload,
+    color: 'text-orange-500',
+    activeBg: 'bg-orange-500/10',
+  },
+  { id: 'url', label: 'URL', icon: Link, color: 'text-sky-500', activeBg: 'bg-sky-500/10' },
+  {
+    id: 'composio',
+    label: 'Apps',
+    icon: Zap,
+    color: 'text-yellow-500',
+    activeBg: 'bg-yellow-500/10',
+  },
+  { id: 'mcp', label: 'MCP', icon: Server, color: 'text-cyan-500', activeBg: 'bg-cyan-500/10' },
+  {
+    id: 'artifacts',
+    label: 'Artifacts',
+    icon: Layout,
+    color: 'text-pink-500',
+    activeBg: 'bg-pink-500/10',
+  },
+  {
+    id: 'prompts',
+    label: 'Prompts',
+    icon: Clipboard,
+    color: 'text-indigo-500',
+    activeBg: 'bg-indigo-500/10',
+  },
 ];
 
 // --- Hard-coded tool instructions per built-in data type ---
@@ -198,13 +240,48 @@ const BUILTIN_DATA_TOOL_INSTRUCTIONS: Record<string, string> = {
 };
 
 const BUILTIN_DATA_ITEMS: ResourceItem[] = [
-  { name: 'tasks',     description: 'Task management — todos, checklists, task tracking', category: 'Personal Data', type: 'builtin-data' },
-  { name: 'bookmarks', description: 'Saved URL bookmarks and web links',                  category: 'Personal Data', type: 'builtin-data' },
-  { name: 'notes',     description: 'Personal notes and text snippets',                   category: 'Personal Data', type: 'builtin-data' },
-  { name: 'calendar',  description: 'Calendar events and scheduling',                     category: 'Personal Data', type: 'builtin-data' },
-  { name: 'contacts',  description: 'Contact information and address book',               category: 'Personal Data', type: 'builtin-data' },
-  { name: 'memories',  description: 'AI memory and persistent knowledge',                 category: 'AI Data',       type: 'builtin-data' },
-  { name: 'goals',     description: 'Long-term goals and objectives tracking',            category: 'AI Data',       type: 'builtin-data' },
+  {
+    name: 'tasks',
+    description: 'Task management — todos, checklists, task tracking',
+    category: 'Personal Data',
+    type: 'builtin-data',
+  },
+  {
+    name: 'bookmarks',
+    description: 'Saved URL bookmarks and web links',
+    category: 'Personal Data',
+    type: 'builtin-data',
+  },
+  {
+    name: 'notes',
+    description: 'Personal notes and text snippets',
+    category: 'Personal Data',
+    type: 'builtin-data',
+  },
+  {
+    name: 'calendar',
+    description: 'Calendar events and scheduling',
+    category: 'Personal Data',
+    type: 'builtin-data',
+  },
+  {
+    name: 'contacts',
+    description: 'Contact information and address book',
+    category: 'Personal Data',
+    type: 'builtin-data',
+  },
+  {
+    name: 'memories',
+    description: 'AI memory and persistent knowledge',
+    category: 'AI Data',
+    type: 'builtin-data',
+  },
+  {
+    name: 'goals',
+    description: 'Long-term goals and objectives tracking',
+    category: 'AI Data',
+    type: 'builtin-data',
+  },
 ];
 
 // --- Instruction builders ---
@@ -225,7 +302,11 @@ function buildCustomDataInstructions(displayName: string, internalName: string):
   ].join('\n');
 }
 
-function buildToolInstructions(toolName: string, description: string, parameters?: Record<string, unknown>): string {
+function buildToolInstructions(
+  toolName: string,
+  description: string,
+  parameters?: Record<string, unknown>
+): string {
   const lines: string[] = [
     `Tool: ${toolName}`,
     `Description: ${description}`,
@@ -241,19 +322,30 @@ function buildToolInstructions(toolName: string, description: string, parameters
     lines.push('Parameters:');
     for (const [paramName, paramDef] of propEntries) {
       const isRequired = requiredSet.has(paramName);
-      const typeStr = paramDef.enum && Array.isArray(paramDef.enum)
-        ? (paramDef.enum as string[]).map((v) => JSON.stringify(v)).join(' | ')
-        : String(paramDef.type || 'any');
-      lines.push(`  • ${paramName}: ${typeStr}${isRequired ? ' (REQUIRED)' : ''}${paramDef.description ? ` — ${paramDef.description}` : ''}`);
+      const typeStr =
+        paramDef.enum && Array.isArray(paramDef.enum)
+          ? (paramDef.enum as string[]).map((v) => JSON.stringify(v)).join(' | ')
+          : String(paramDef.type || 'any');
+      lines.push(
+        `  • ${paramName}: ${typeStr}${isRequired ? ' (REQUIRED)' : ''}${paramDef.description ? ` — ${paramDef.description}` : ''}`
+      );
     }
     lines.push('');
     const ex: Record<string, unknown> = {};
     for (const [p, d] of propEntries) {
       if (requiredSet.has(p)) {
-        ex[p] = d.enum && Array.isArray(d.enum) ? d.enum[0]
-          : d.type === 'number' || d.type === 'integer' ? 0
-          : d.type === 'boolean' ? true
-          : d.type === 'array' ? [] : d.type === 'object' ? {} : '...';
+        ex[p] =
+          d.enum && Array.isArray(d.enum)
+            ? d.enum[0]
+            : d.type === 'number' || d.type === 'integer'
+              ? 0
+              : d.type === 'boolean'
+                ? true
+                : d.type === 'array'
+                  ? []
+                  : d.type === 'object'
+                    ? {}
+                    : '...';
       }
     }
     lines.push(`Example: ${toolName}(${JSON.stringify(ex)})`);
@@ -264,15 +356,28 @@ function buildToolInstructions(toolName: string, description: string, parameters
 }
 
 function buildSkillInstructions(name: string, instructions: string): string {
-  return [`Skill: ${name}`, 'Follow these skill instructions carefully:', '', instructions].join('\n');
+  return [`Skill: ${name}`, 'Follow these skill instructions carefully:', '', instructions].join(
+    '\n'
+  );
 }
 
 function buildFileInstructions(name: string, content: string): string {
-  return [`Attached File: ${name} (${content.length.toLocaleString()} chars)`, '--- BEGIN FILE CONTENT ---', content, '--- END FILE CONTENT ---'].join('\n');
+  return [
+    `Attached File: ${name} (${content.length.toLocaleString()} chars)`,
+    '--- BEGIN FILE CONTENT ---',
+    content,
+    '--- END FILE CONTENT ---',
+  ].join('\n');
 }
 
 function buildUrlInstructions(url: string, title: string, text: string): string {
-  return [`Web Page: ${url}`, `Title: ${title}`, '--- BEGIN PAGE CONTENT ---', text, '--- END PAGE CONTENT ---'].join('\n');
+  return [
+    `Web Page: ${url}`,
+    `Title: ${title}`,
+    '--- BEGIN PAGE CONTENT ---',
+    text,
+    '--- END PAGE CONTENT ---',
+  ].join('\n');
 }
 
 function buildComposioInstructions(action: string, appName: string, description: string): string {
@@ -284,7 +389,12 @@ function buildComposioInstructions(action: string, appName: string, description:
   ].join('\n');
 }
 
-function buildMcpToolInstructions(toolName: string, serverName: string, description: string, inputSchema?: Record<string, unknown>): string {
+function buildMcpToolInstructions(
+  toolName: string,
+  serverName: string,
+  description: string,
+  inputSchema?: Record<string, unknown>
+): string {
   const lines = [
     `MCP Tool: ${toolName} (from MCP server: ${serverName})`,
     `Description: ${description || 'No description'}`,
@@ -297,7 +407,9 @@ function buildMcpToolInstructions(toolName: string, serverName: string, descript
     lines.push('Parameters:');
     const required = new Set<string>((inputSchema?.required as string[]) || []);
     for (const [p, d] of entries) {
-      lines.push(`  • ${p}: ${String(d.type || 'any')}${required.has(p) ? ' (REQUIRED)' : ''} — ${String(d.description || '')}`);
+      lines.push(
+        `  • ${p}: ${String(d.type || 'any')}${required.has(p) ? ' (REQUIRED)' : ''} — ${String(d.description || '')}`
+      );
     }
   }
   return lines.join('\n');
@@ -305,7 +417,12 @@ function buildMcpToolInstructions(toolName: string, serverName: string, descript
 
 function buildArtifactInstructions(title: string, type: string, content: string): string {
   const truncated = content.length > 8000 ? content.slice(0, 8000) + '\n...[truncated]' : content;
-  return [`Previous AI Artifact: "${title}" (type: ${type})`, '--- BEGIN ARTIFACT CONTENT ---', truncated, '--- END ARTIFACT CONTENT ---'].join('\n');
+  return [
+    `Previous AI Artifact: "${title}" (type: ${type})`,
+    '--- BEGIN ARTIFACT CONTENT ---',
+    truncated,
+    '--- END ARTIFACT CONTENT ---',
+  ].join('\n');
 }
 
 // --- Icon helpers ---
@@ -313,60 +430,98 @@ function buildArtifactInstructions(title: string, type: string, content: string)
 function getItemIcon(item: ResourceItem) {
   if (item.type === 'builtin-data') {
     switch (item.name) {
-      case 'tasks':     return <ListChecks className="w-4 h-4" />;
-      case 'bookmarks': return <Bookmark className="w-4 h-4" />;
-      case 'notes':     return <FileText className="w-4 h-4" />;
-      case 'calendar':  return <Calendar className="w-4 h-4" />;
-      case 'contacts':  return <Users className="w-4 h-4" />;
-      case 'memories':  return <Database className="w-4 h-4" />;
-      case 'goals':     return <Wrench className="w-4 h-4" />;
+      case 'tasks':
+        return <ListChecks className="w-4 h-4" />;
+      case 'bookmarks':
+        return <Bookmark className="w-4 h-4" />;
+      case 'notes':
+        return <FileText className="w-4 h-4" />;
+      case 'calendar':
+        return <Calendar className="w-4 h-4" />;
+      case 'contacts':
+        return <Users className="w-4 h-4" />;
+      case 'memories':
+        return <Database className="w-4 h-4" />;
+      case 'goals':
+        return <Wrench className="w-4 h-4" />;
     }
   }
-  if (item.type === 'custom-data')      return <Table className="w-4 h-4" />;
-  if (item.type === 'skill')            return <BookOpen className="w-4 h-4" />;
-  if (item.type === 'composio-action')  return <Zap className="w-4 h-4" />;
-  if (item.type === 'mcp-tool')         return <Server className="w-4 h-4" />;
-  if (item.type === 'artifact')         return <Layout className="w-4 h-4" />;
-  if (item.type === 'prompt')           return <Clipboard className="w-4 h-4" />;
+  if (item.type === 'custom-data') return <Table className="w-4 h-4" />;
+  if (item.type === 'skill') return <BookOpen className="w-4 h-4" />;
+  if (item.type === 'composio-action') return <Zap className="w-4 h-4" />;
+  if (item.type === 'mcp-tool') return <Server className="w-4 h-4" />;
+  if (item.type === 'artifact') return <Layout className="w-4 h-4" />;
+  if (item.type === 'prompt') return <Clipboard className="w-4 h-4" />;
   return <Wrench className="w-4 h-4" />;
 }
 
 function getIconColor(type: ResourceType): string {
   switch (type) {
-    case 'tool':             return 'text-blue-500';
-    case 'custom-tool':      return 'text-primary';
-    case 'custom-data':      return 'text-emerald-500';
-    case 'builtin-data':     return 'text-amber-500';
-    case 'skill':            return 'text-violet-500';
-    case 'composio-action':  return 'text-yellow-500';
-    case 'mcp-tool':         return 'text-cyan-500';
-    case 'artifact':         return 'text-pink-500';
-    case 'prompt':           return 'text-indigo-500';
-    default:                 return 'text-text-muted';
+    case 'tool':
+      return 'text-blue-500';
+    case 'custom-tool':
+      return 'text-primary';
+    case 'custom-data':
+      return 'text-emerald-500';
+    case 'builtin-data':
+      return 'text-amber-500';
+    case 'skill':
+      return 'text-violet-500';
+    case 'composio-action':
+      return 'text-yellow-500';
+    case 'mcp-tool':
+      return 'text-cyan-500';
+    case 'artifact':
+      return 'text-pink-500';
+    case 'prompt':
+      return 'text-indigo-500';
+    default:
+      return 'text-text-muted';
   }
 }
 
 function getIconBg(type: ResourceType): string {
   switch (type) {
-    case 'tool':            return 'bg-blue-500/10 group-hover:bg-blue-500/20';
-    case 'custom-tool':     return 'bg-primary/10 group-hover:bg-primary/20';
-    case 'custom-data':     return 'bg-emerald-500/10 group-hover:bg-emerald-500/20';
-    case 'builtin-data':    return 'bg-amber-500/10 group-hover:bg-amber-500/20';
-    case 'skill':           return 'bg-violet-500/10 group-hover:bg-violet-500/20';
-    case 'composio-action': return 'bg-yellow-500/10 group-hover:bg-yellow-500/20';
-    case 'mcp-tool':        return 'bg-cyan-500/10 group-hover:bg-cyan-500/20';
-    case 'artifact':        return 'bg-pink-500/10 group-hover:bg-pink-500/20';
-    case 'prompt':          return 'bg-indigo-500/10 group-hover:bg-indigo-500/20';
-    default:                return 'bg-bg-secondary group-hover:bg-bg-tertiary';
+    case 'tool':
+      return 'bg-blue-500/10 group-hover:bg-blue-500/20';
+    case 'custom-tool':
+      return 'bg-primary/10 group-hover:bg-primary/20';
+    case 'custom-data':
+      return 'bg-emerald-500/10 group-hover:bg-emerald-500/20';
+    case 'builtin-data':
+      return 'bg-amber-500/10 group-hover:bg-amber-500/20';
+    case 'skill':
+      return 'bg-violet-500/10 group-hover:bg-violet-500/20';
+    case 'composio-action':
+      return 'bg-yellow-500/10 group-hover:bg-yellow-500/20';
+    case 'mcp-tool':
+      return 'bg-cyan-500/10 group-hover:bg-cyan-500/20';
+    case 'artifact':
+      return 'bg-pink-500/10 group-hover:bg-pink-500/20';
+    case 'prompt':
+      return 'bg-indigo-500/10 group-hover:bg-indigo-500/20';
+    default:
+      return 'bg-bg-secondary group-hover:bg-bg-tertiary';
   }
 }
 
 function matchesSearch(item: ResourceItem, query: string): boolean {
   const trimmed = query.trim().toLowerCase();
   if (!trimmed || trimmed === 'all' || trimmed === '*') return true;
-  const blob = [item.name, item.displayName || '', item.internalName || '', item.description, item.category || '']
-    .join(' ').toLowerCase().replace(/[_-]/g, ' ');
-  return trimmed.split(/\s+/).filter(Boolean).every((w) => blob.includes(w));
+  const blob = [
+    item.name,
+    item.displayName || '',
+    item.internalName || '',
+    item.description,
+    item.category || '',
+  ]
+    .join(' ')
+    .toLowerCase()
+    .replace(/[_-]/g, ' ');
+  return trimmed
+    .split(/\s+/)
+    .filter(Boolean)
+    .every((w) => blob.includes(w));
 }
 
 const CUSTOM_PANEL_TABS: TabId[] = ['files', 'url', 'prompts'];
@@ -387,7 +542,12 @@ export function ToolPicker({ onSelect, disabled }: ToolPickerProps) {
   // URL panel
   const [urlInput, setUrlInput] = useState('');
   const [urlFetching, setUrlFetching] = useState(false);
-  const [urlResult, setUrlResult] = useState<{ url: string; title: string; text: string; charCount: number } | null>(null);
+  const [urlResult, setUrlResult] = useState<{
+    url: string;
+    title: string;
+    text: string;
+    charCount: number;
+  } | null>(null);
   const [urlError, setUrlError] = useState<string | null>(null);
 
   // Files panel
@@ -412,9 +572,12 @@ export function ToolPicker({ onSelect, disabled }: ToolPickerProps) {
   useEffect(() => {
     if (!isOpen) return;
     const handleClickOutside = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) setIsOpen(false);
+      if (containerRef.current && !containerRef.current.contains(e.target as Node))
+        setIsOpen(false);
     };
-    const handleEsc = (e: KeyboardEvent) => { if (e.key === 'Escape') setIsOpen(false); };
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setIsOpen(false);
+    };
     document.addEventListener('mousedown', handleClickOutside);
     document.addEventListener('keydown', handleEsc);
     return () => {
@@ -427,48 +590,74 @@ export function ToolPicker({ onSelect, disabled }: ToolPickerProps) {
 
   const fetchItems = async (tab: TabId) => {
     if (tab === 'files' || tab === 'url') return;
-    if (tab === 'prompts') { setPrompts(loadPrompts()); return; }
+    if (tab === 'prompts') {
+      setPrompts(loadPrompts());
+      return;
+    }
 
     setIsLoading(true);
     setItems([]);
     try {
       if (tab === 'tools') {
-        const [toolGroupsResponse, customData] = await Promise.all([toolsApi.listGrouped(), customToolsApi.list('active')]);
+        const [toolGroupsResponse, customData] = await Promise.all([
+          toolsApi.listGrouped(),
+          customToolsApi.list('active'),
+        ]);
         const builtins: ResourceItem[] = [];
         for (const [category, group] of Object.entries(toolGroupsResponse.categories)) {
-          for (const t of group.tools) builtins.push({ name: t.name, description: t.description || '', category, type: 'tool', parameters: t.parameters });
+          for (const t of group.tools)
+            builtins.push({
+              name: t.name,
+              description: t.description || '',
+              category,
+              type: 'tool',
+              parameters: t.parameters,
+            });
         }
         const customs: ResourceItem[] = (customData.tools || []).map((t) => ({
-          name: t.name, description: t.description || '', category: t.category || 'Custom', type: 'custom-tool' as ResourceType,
+          name: t.name,
+          description: t.description || '',
+          category: t.category || 'Custom',
+          type: 'custom-tool' as ResourceType,
         }));
         setItems([...customs, ...builtins]);
-
       } else if (tab === 'custom-data') {
         const tables = await customDataApi.tables();
-        setItems((Array.isArray(tables) ? tables : []).map((t) => ({
-          name: t.displayName || t.name, displayName: t.displayName || t.name, internalName: t.name,
-          description: t.description || `${t.recordCount ?? 0} records`, category: 'Custom Tables',
-          type: 'custom-data' as ResourceType, recordCount: t.recordCount,
-        })));
-
+        setItems(
+          (Array.isArray(tables) ? tables : []).map((t) => ({
+            name: t.displayName || t.name,
+            displayName: t.displayName || t.name,
+            internalName: t.name,
+            description: t.description || `${t.recordCount ?? 0} records`,
+            category: 'Custom Tables',
+            type: 'custom-data' as ResourceType,
+            recordCount: t.recordCount,
+          }))
+        );
       } else if (tab === 'builtin-data') {
         setItems(BUILTIN_DATA_ITEMS);
-
       } else if (tab === 'skills') {
         const skills = await extensionsApi.list({ format: 'agentskills', status: 'enabled' });
-        setItems((Array.isArray(skills) ? skills : []).map((s) => ({
-          name: s.name, description: s.description || s.manifest.description || 'No description',
-          category: s.category || 'Skills', type: 'skill' as ResourceType,
-          instructions: s.manifest.instructions || s.manifest.system_prompt || '',
-        })));
-
+        setItems(
+          (Array.isArray(skills) ? skills : []).map((s) => ({
+            name: s.name,
+            description: s.description || s.manifest.description || 'No description',
+            category: s.category || 'Skills',
+            type: 'skill' as ResourceType,
+            instructions: s.manifest.instructions || s.manifest.system_prompt || '',
+          }))
+        );
       } else if (tab === 'composio') {
         const res = await composioApi.searchActions('');
-        setItems((res.actions || []).map((a) => ({
-          name: a.slug, displayName: a.name, description: a.description || a.appName,
-          category: a.appName, type: 'composio-action' as ResourceType,
-        })));
-
+        setItems(
+          (res.actions || []).map((a) => ({
+            name: a.slug,
+            displayName: a.name,
+            description: a.description || a.appName,
+            category: a.appName,
+            type: 'composio-action' as ResourceType,
+          }))
+        );
       } else if (tab === 'mcp') {
         const { servers } = await mcpApi.list();
         const connected = servers.filter((s) => s.status === 'connected' || s.connected);
@@ -477,22 +666,31 @@ export function ToolPicker({ onSelect, disabled }: ToolPickerProps) {
             try {
               const { tools } = await mcpApi.tools(server.id);
               return tools.map((t) => ({
-                name: t.name, description: t.description || 'No description',
-                category: server.displayName || server.name, type: 'mcp-tool' as ResourceType,
-                parameters: t.inputSchema, instructions: server.name,
+                name: t.name,
+                description: t.description || 'No description',
+                category: server.displayName || server.name,
+                type: 'mcp-tool' as ResourceType,
+                parameters: t.inputSchema,
+                instructions: server.name,
               }));
-            } catch { return []; }
+            } catch {
+              return [];
+            }
           })
         );
         setItems(groups.flat());
-
       } else if (tab === 'artifacts') {
         const { artifacts } = await artifactsApi.list({ limit: 20 });
-        setItems((artifacts || []).map((a) => ({
-          name: a.id, displayName: a.title || 'Untitled',
-          description: `${a.type} · ${new Date(a.createdAt).toLocaleDateString()}`,
-          category: a.type, type: 'artifact' as ResourceType, instructions: a.content,
-        })));
+        setItems(
+          (artifacts || []).map((a) => ({
+            name: a.id,
+            displayName: a.title || 'Untitled',
+            description: `${a.type} · ${new Date(a.createdAt).toLocaleDateString()}`,
+            category: a.type,
+            type: 'artifact' as ResourceType,
+            instructions: a.content,
+          }))
+        );
       }
     } catch {
       setItems([]);
@@ -512,13 +710,29 @@ export function ToolPicker({ onSelect, disabled }: ToolPickerProps) {
     } else if (item.type === 'builtin-data') {
       toolInstructions = BUILTIN_DATA_TOOL_INSTRUCTIONS[item.name] || `Data source: ${item.name}`;
     } else if (item.type === 'custom-data') {
-      toolInstructions = buildCustomDataInstructions(item.displayName || item.name, item.internalName || item.name);
+      toolInstructions = buildCustomDataInstructions(
+        item.displayName || item.name,
+        item.internalName || item.name
+      );
     } else if (item.type === 'composio-action') {
-      toolInstructions = buildComposioInstructions(item.name, item.category || '', item.description);
+      toolInstructions = buildComposioInstructions(
+        item.name,
+        item.category || '',
+        item.description
+      );
     } else if (item.type === 'mcp-tool') {
-      toolInstructions = buildMcpToolInstructions(item.name, item.instructions || item.category || '', item.description, item.parameters);
+      toolInstructions = buildMcpToolInstructions(
+        item.name,
+        item.instructions || item.category || '',
+        item.description,
+        item.parameters
+      );
     } else if (item.type === 'artifact') {
-      toolInstructions = buildArtifactInstructions(item.displayName || item.name, item.category || 'unknown', item.instructions || '');
+      toolInstructions = buildArtifactInstructions(
+        item.displayName || item.name,
+        item.category || 'unknown',
+        item.instructions || ''
+      );
     } else if (item.type === 'prompt') {
       toolInstructions = '';
       promptText = item.instructions || '';
@@ -526,7 +740,14 @@ export function ToolPicker({ onSelect, disabled }: ToolPickerProps) {
       toolInstructions = buildToolInstructions(item.name, item.description, item.parameters);
     }
 
-    onSelect({ name: item.displayName || item.name, displayName: item.displayName, internalName: item.internalName, type: item.type, toolInstructions, promptText });
+    onSelect({
+      name: item.displayName || item.name,
+      displayName: item.displayName,
+      internalName: item.internalName,
+      type: item.type,
+      toolInstructions,
+      promptText,
+    });
     setIsOpen(false);
     setSearchQuery('');
   };
@@ -551,7 +772,12 @@ export function ToolPicker({ onSelect, disabled }: ToolPickerProps) {
 
   const handleSelectUrl = () => {
     if (!urlResult) return;
-    onSelect({ name: urlResult.url, displayName: urlResult.title || urlResult.url, type: 'url', toolInstructions: buildUrlInstructions(urlResult.url, urlResult.title, urlResult.text) });
+    onSelect({
+      name: urlResult.url,
+      displayName: urlResult.title || urlResult.url,
+      type: 'url',
+      toolInstructions: buildUrlInstructions(urlResult.url, urlResult.title, urlResult.text),
+    });
     setIsOpen(false);
     setUrlInput('');
     setUrlResult(null);
@@ -560,14 +786,22 @@ export function ToolPicker({ onSelect, disabled }: ToolPickerProps) {
   // ---- Files panel ----
 
   const processTextFile = async (file: File) => {
-    if (file.size > 1024 * 1024) { alert(`"${file.name}" is too large (max 1 MB)`); return; }
+    if (file.size > 1024 * 1024) {
+      alert(`"${file.name}" is too large (max 1 MB)`);
+      return;
+    }
     const text = await new Promise<string>((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = () => resolve(reader.result as string);
       reader.onerror = reject;
       reader.readAsText(file);
     });
-    onSelect({ name: file.name, displayName: file.name, type: 'file', toolInstructions: buildFileInstructions(file.name, text) });
+    onSelect({
+      name: file.name,
+      displayName: file.name,
+      type: 'file',
+      toolInstructions: buildFileInstructions(file.name, text),
+    });
     setIsOpen(false);
   };
 
@@ -588,7 +822,15 @@ export function ToolPicker({ onSelect, disabled }: ToolPickerProps) {
 
   const handleSavePrompt = () => {
     if (!newPromptTitle.trim() || !newPromptContent.trim()) return;
-    const updated = [...prompts, { id: crypto.randomUUID(), title: newPromptTitle.trim(), content: newPromptContent.trim(), createdAt: new Date().toISOString() }];
+    const updated = [
+      ...prompts,
+      {
+        id: crypto.randomUUID(),
+        title: newPromptTitle.trim(),
+        content: newPromptContent.trim(),
+        createdAt: new Date().toISOString(),
+      },
+    ];
     setPrompts(updated);
     persistPrompts(updated);
     setNewPromptTitle('');
@@ -603,7 +845,13 @@ export function ToolPicker({ onSelect, disabled }: ToolPickerProps) {
   };
 
   const handleSelectPrompt = (prompt: SavedPrompt) => {
-    onSelect({ name: prompt.title, displayName: prompt.title, type: 'prompt', toolInstructions: '', promptText: prompt.content });
+    onSelect({
+      name: prompt.title,
+      displayName: prompt.title,
+      type: 'prompt',
+      toolInstructions: '',
+      promptText: prompt.content,
+    });
     setIsOpen(false);
   };
 
@@ -611,12 +859,15 @@ export function ToolPicker({ onSelect, disabled }: ToolPickerProps) {
 
   const filteredItems = items.filter((item) => matchesSearch(item, searchQuery));
 
-  const groupedItems = filteredItems.reduce((acc, item) => {
-    const cat = item.category || 'Other';
-    if (!acc[cat]) acc[cat] = [];
-    acc[cat].push(item);
-    return acc;
-  }, {} as Record<string, ResourceItem[]>);
+  const groupedItems = filteredItems.reduce(
+    (acc, item) => {
+      const cat = item.category || 'Other';
+      if (!acc[cat]) acc[cat] = [];
+      acc[cat].push(item);
+      return acc;
+    },
+    {} as Record<string, ResourceItem[]>
+  );
 
   const sortedCategories = Object.keys(groupedItems).sort((a, b) => {
     if (a === 'Custom') return -1;
@@ -627,13 +878,20 @@ export function ToolPicker({ onSelect, disabled }: ToolPickerProps) {
   const emptyMessage = () => {
     if (items.length === 0) {
       switch (activeTab) {
-        case 'tools':       return 'No tools available';
-        case 'custom-data': return 'No custom data tables yet';
-        case 'builtin-data':return 'No built-in data available';
-        case 'skills':      return 'No skills installed yet';
-        case 'composio':    return 'No Composio actions — check Composio is configured';
-        case 'mcp':         return 'No MCP tools — connect an MCP server first';
-        case 'artifacts':   return 'No artifacts yet — AI outputs will appear here';
+        case 'tools':
+          return 'No tools available';
+        case 'custom-data':
+          return 'No custom data tables yet';
+        case 'builtin-data':
+          return 'No built-in data available';
+        case 'skills':
+          return 'No skills installed yet';
+        case 'composio':
+          return 'No Composio actions — check Composio is configured';
+        case 'mcp':
+          return 'No MCP tools — connect an MCP server first';
+        case 'artifacts':
+          return 'No artifacts yet — AI outputs will appear here';
       }
     }
     return 'No results match your search';
@@ -659,8 +917,10 @@ export function ToolPicker({ onSelect, disabled }: ToolPickerProps) {
       </button>
 
       {isOpen && (
-        <div className="absolute bottom-full left-0 mb-2 w-[32rem] bg-bg-primary dark:bg-dark-bg-primary border border-border dark:border-dark-border rounded-xl shadow-xl overflow-hidden z-50 flex" style={{ height: '22rem' }}>
-
+        <div
+          className="absolute bottom-full left-0 mb-2 w-[32rem] bg-bg-primary dark:bg-dark-bg-primary border border-border dark:border-dark-border rounded-xl shadow-xl overflow-hidden z-50 flex"
+          style={{ height: '22rem' }}
+        >
           {/* ── Left sidebar: vertical tab list ── */}
           <div className="w-28 flex-shrink-0 border-r border-border dark:border-dark-border bg-bg-secondary/40 dark:bg-dark-bg-secondary/40 flex flex-col overflow-y-auto py-1">
             {TABS.map((tab) => {
@@ -670,7 +930,10 @@ export function ToolPicker({ onSelect, disabled }: ToolPickerProps) {
                 <button
                   key={tab.id}
                   type="button"
-                  onClick={() => { setActiveTab(tab.id); setSearchQuery(''); }}
+                  onClick={() => {
+                    setActiveTab(tab.id);
+                    setSearchQuery('');
+                  }}
                   className={`flex items-center gap-2 w-full px-3 py-2 text-xs font-medium transition-colors text-left border-r-2 ${
                     isActive
                       ? `${tab.color} ${tab.activeBg} border-current`
@@ -686,11 +949,14 @@ export function ToolPicker({ onSelect, disabled }: ToolPickerProps) {
 
           {/* ── Right: content panel ── */}
           <div className="flex-1 flex flex-col min-w-0">
-
             {/* Panel header */}
-            <div className={`flex items-center gap-2 px-3 py-2.5 border-b border-border dark:border-dark-border ${activeTabDef.activeBg}`}>
+            <div
+              className={`flex items-center gap-2 px-3 py-2.5 border-b border-border dark:border-dark-border ${activeTabDef.activeBg}`}
+            >
               <activeTabDef.icon className={`w-3.5 h-3.5 flex-shrink-0 ${activeTabDef.color}`} />
-              <span className={`text-xs font-semibold ${activeTabDef.color}`}>{activeTabDef.label}</span>
+              <span className={`text-xs font-semibold ${activeTabDef.color}`}>
+                {activeTabDef.label}
+              </span>
             </div>
 
             {/* ── URL panel ── */}
@@ -701,7 +967,9 @@ export function ToolPicker({ onSelect, disabled }: ToolPickerProps) {
                     type="url"
                     value={urlInput}
                     onChange={(e) => setUrlInput(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === 'Enter') handleFetchUrl(); }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleFetchUrl();
+                    }}
                     placeholder="https://example.com/page"
                     autoFocus
                     className="flex-1 px-3 py-1.5 text-sm bg-bg-secondary dark:bg-dark-bg-secondary border border-border dark:border-dark-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 text-text-primary dark:text-dark-text-primary placeholder:text-text-muted/60"
@@ -712,9 +980,11 @@ export function ToolPicker({ onSelect, disabled }: ToolPickerProps) {
                     disabled={urlFetching || !urlInput.trim()}
                     className="px-3 py-1.5 text-sm bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5"
                   >
-                    {urlFetching
-                      ? <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      : <Link className="w-3.5 h-3.5" />}
+                    {urlFetching ? (
+                      <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    ) : (
+                      <Link className="w-3.5 h-3.5" />
+                    )}
                     Fetch
                   </button>
                 </div>
@@ -722,9 +992,15 @@ export function ToolPicker({ onSelect, disabled }: ToolPickerProps) {
                 {urlResult ? (
                   <div className="flex flex-col gap-2">
                     <div className="p-2.5 bg-bg-secondary dark:bg-dark-bg-secondary rounded-lg border border-border dark:border-dark-border">
-                      <p className="text-sm font-medium text-text-primary dark:text-dark-text-primary line-clamp-1">{urlResult.title}</p>
-                      <p className="text-xs text-text-muted dark:text-dark-text-muted mt-0.5 line-clamp-2">{urlResult.text.slice(0, 180)}</p>
-                      <p className="text-[11px] text-text-muted/60 mt-1">{urlResult.charCount.toLocaleString()} chars</p>
+                      <p className="text-sm font-medium text-text-primary dark:text-dark-text-primary line-clamp-1">
+                        {urlResult.title}
+                      </p>
+                      <p className="text-xs text-text-muted dark:text-dark-text-muted mt-0.5 line-clamp-2">
+                        {urlResult.text.slice(0, 180)}
+                      </p>
+                      <p className="text-[11px] text-text-muted/60 mt-1">
+                        {urlResult.charCount.toLocaleString()} chars
+                      </p>
                     </div>
                     <button
                       type="button"
@@ -734,10 +1010,12 @@ export function ToolPicker({ onSelect, disabled }: ToolPickerProps) {
                       Attach to message
                     </button>
                   </div>
-                ) : !urlError && (
-                  <p className="text-xs text-text-muted dark:text-dark-text-muted">
-                    Fetches the page, strips HTML, and injects the extracted text as context.
-                  </p>
+                ) : (
+                  !urlError && (
+                    <p className="text-xs text-text-muted dark:text-dark-text-muted">
+                      Fetches the page, strips HTML, and injects the extracted text as context.
+                    </p>
+                  )
                 )}
               </div>
             )}
@@ -746,7 +1024,10 @@ export function ToolPicker({ onSelect, disabled }: ToolPickerProps) {
             {activeTab === 'files' && (
               <div className="p-3 flex-1 flex flex-col justify-center">
                 <div
-                  onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    setIsDragOver(true);
+                  }}
                   onDragLeave={() => setIsDragOver(false)}
                   onDrop={handleFileDrop}
                   onClick={() => fileInputRef.current?.click()}
@@ -785,14 +1066,21 @@ export function ToolPicker({ onSelect, disabled }: ToolPickerProps) {
                   ) : (
                     <div className="p-2 flex flex-col gap-0.5">
                       {prompts.map((prompt) => (
-                        <div key={prompt.id} className="flex items-start gap-1 px-2 py-2 hover:bg-bg-secondary dark:hover:bg-dark-bg-secondary rounded-lg group">
+                        <div
+                          key={prompt.id}
+                          className="flex items-start gap-1 px-2 py-2 hover:bg-bg-secondary dark:hover:bg-dark-bg-secondary rounded-lg group"
+                        >
                           <button
                             type="button"
                             onClick={() => handleSelectPrompt(prompt)}
                             className="flex-1 text-left min-w-0"
                           >
-                            <p className="text-sm font-medium text-text-primary dark:text-dark-text-primary truncate">{prompt.title}</p>
-                            <p className="text-xs text-text-muted dark:text-dark-text-muted line-clamp-1 mt-0.5">{prompt.content}</p>
+                            <p className="text-sm font-medium text-text-primary dark:text-dark-text-primary truncate">
+                              {prompt.title}
+                            </p>
+                            <p className="text-xs text-text-muted dark:text-dark-text-muted line-clamp-1 mt-0.5">
+                              {prompt.content}
+                            </p>
                           </button>
                           <button
                             type="button"
@@ -825,8 +1113,21 @@ export function ToolPicker({ onSelect, disabled }: ToolPickerProps) {
                       className="w-full px-2.5 py-1.5 text-sm bg-bg-secondary dark:bg-dark-bg-secondary border border-border dark:border-dark-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 text-text-primary dark:text-dark-text-primary placeholder:text-text-muted/60 resize-none"
                     />
                     <div className="flex gap-2">
-                      <button type="button" onClick={() => setShowNewPromptForm(false)} className="flex-1 py-1.5 text-xs text-text-secondary hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary rounded-lg transition-colors">Cancel</button>
-                      <button type="button" onClick={handleSavePrompt} disabled={!newPromptTitle.trim() || !newPromptContent.trim()} className="flex-1 py-1.5 text-xs bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-40 transition-colors">Save</button>
+                      <button
+                        type="button"
+                        onClick={() => setShowNewPromptForm(false)}
+                        className="flex-1 py-1.5 text-xs text-text-secondary hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary rounded-lg transition-colors"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleSavePrompt}
+                        disabled={!newPromptTitle.trim() || !newPromptContent.trim()}
+                        className="flex-1 py-1.5 text-xs bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-40 transition-colors"
+                      >
+                        Save
+                      </button>
                     </div>
                   </div>
                 ) : (
@@ -855,11 +1156,19 @@ export function ToolPicker({ onSelect, disabled }: ToolPickerProps) {
                       type="text"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      placeholder={activeTab === 'tools' ? 'Search… ("all" for everything)' : `Search ${activeTabDef.label.toLowerCase()}…`}
+                      placeholder={
+                        activeTab === 'tools'
+                          ? 'Search… ("all" for everything)'
+                          : `Search ${activeTabDef.label.toLowerCase()}…`
+                      }
                       className="w-full pl-8 pr-7 py-1.5 bg-bg-secondary dark:bg-dark-bg-secondary text-text-primary dark:text-dark-text-primary placeholder:text-text-muted dark:placeholder:text-dark-text-muted border border-border dark:border-dark-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
                     />
                     {searchQuery && (
-                      <button type="button" onClick={() => setSearchQuery('')} className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 text-text-muted hover:text-text-primary dark:hover:text-dark-text-primary">
+                      <button
+                        type="button"
+                        onClick={() => setSearchQuery('')}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 text-text-muted hover:text-text-primary dark:hover:text-dark-text-primary"
+                      >
                         <X className="w-3 h-3" />
                       </button>
                     )}
@@ -868,9 +1177,13 @@ export function ToolPicker({ onSelect, disabled }: ToolPickerProps) {
 
                 <div className="flex-1 overflow-y-auto">
                   {isLoading ? (
-                    <div className="p-4"><LoadingSpinner size="sm" message="Loading…" /></div>
+                    <div className="p-4">
+                      <LoadingSpinner size="sm" message="Loading…" />
+                    </div>
                   ) : filteredItems.length === 0 ? (
-                    <div className="p-4 text-center text-text-muted dark:text-dark-text-muted text-sm">{emptyMessage()}</div>
+                    <div className="p-4 text-center text-text-muted dark:text-dark-text-muted text-sm">
+                      {emptyMessage()}
+                    </div>
                   ) : (
                     <div className="p-2">
                       {sortedCategories.map((category) => (
@@ -885,7 +1198,9 @@ export function ToolPicker({ onSelect, disabled }: ToolPickerProps) {
                               onClick={() => handleSelect(item)}
                               className="w-full flex items-start gap-2.5 px-2 py-1.5 hover:bg-bg-secondary dark:hover:bg-dark-bg-secondary rounded-lg text-left transition-colors group"
                             >
-                              <div className={`mt-0.5 p-1.5 rounded-md transition-colors flex-shrink-0 ${getIconBg(item.type)}`}>
+                              <div
+                                className={`mt-0.5 p-1.5 rounded-md transition-colors flex-shrink-0 ${getIconBg(item.type)}`}
+                              >
                                 <span className={getIconColor(item.type)}>{getItemIcon(item)}</span>
                               </div>
                               <div className="flex-1 min-w-0">
@@ -894,7 +1209,9 @@ export function ToolPicker({ onSelect, disabled }: ToolPickerProps) {
                                     {item.displayName || item.name}
                                   </span>
                                   {item.type === 'custom-tool' && (
-                                    <span className="flex-shrink-0 text-[9px] px-1 py-0.5 bg-primary/10 text-primary rounded-full">custom</span>
+                                    <span className="flex-shrink-0 text-[9px] px-1 py-0.5 bg-primary/10 text-primary rounded-full">
+                                      custom
+                                    </span>
                                   )}
                                   {item.recordCount !== undefined && (
                                     <span className="flex-shrink-0 text-[9px] px-1 py-0.5 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-full">
@@ -902,10 +1219,16 @@ export function ToolPicker({ onSelect, disabled }: ToolPickerProps) {
                                     </span>
                                   )}
                                 </div>
-                                {item.type === 'custom-data' && item.internalName && item.internalName !== item.displayName && (
-                                  <div className="text-[10px] text-text-muted/70 font-mono truncate">{item.internalName}</div>
-                                )}
-                                <div className="text-xs text-text-muted dark:text-dark-text-muted line-clamp-1">{item.description}</div>
+                                {item.type === 'custom-data' &&
+                                  item.internalName &&
+                                  item.internalName !== item.displayName && (
+                                    <div className="text-[10px] text-text-muted/70 font-mono truncate">
+                                      {item.internalName}
+                                    </div>
+                                  )}
+                                <div className="text-xs text-text-muted dark:text-dark-text-muted line-clamp-1">
+                                  {item.description}
+                                </div>
                               </div>
                             </button>
                           ))}

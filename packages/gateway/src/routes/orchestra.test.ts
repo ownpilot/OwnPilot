@@ -27,7 +27,9 @@ vi.mock('../services/orchestra-engine.js', () => ({
 }));
 
 vi.mock('../db/repositories/orchestra.js', () => ({
-  OrchestraRepository: vi.fn(function () { return mockRepo; }),
+  OrchestraRepository: vi.fn(function () {
+    return mockRepo;
+  }),
 }));
 
 const { orchestraRoutes } = await import('./orchestra.js');
@@ -90,7 +92,9 @@ describe('Orchestra Routes', () => {
     });
 
     it('returns 500 when engine throws', async () => {
-      mockEngine.listByParent.mockImplementation(() => { throw new Error('Engine error'); });
+      mockEngine.listByParent.mockImplementation(() => {
+        throw new Error('Engine error');
+      });
       const res = await app.request('/orchestra?parentId=conv-1');
       expect(res.status).toBe(500);
     });
@@ -197,7 +201,9 @@ describe('Orchestra Routes', () => {
 
     it('returns 500 when engine.cancel throws', async () => {
       mockEngine.getExecution.mockReturnValue({ ...sampleExecution, state: 'running' });
-      mockEngine.cancel.mockImplementation(() => { throw new Error('Cancel failed'); });
+      mockEngine.cancel.mockImplementation(() => {
+        throw new Error('Cancel failed');
+      });
 
       const res = await app.request('/orchestra/exec-1', { method: 'DELETE' });
 

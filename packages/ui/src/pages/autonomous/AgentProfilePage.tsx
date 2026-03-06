@@ -113,16 +113,17 @@ export function AgentProfilePage() {
       setSoul(soulData);
       setBgAgent(bgAgentData);
 
-      const [statsData, heartbeatsData, messagesData, crewsData, bgHistoryData, agentInfo] = await Promise.all([
-        heartbeatLogsApi.getStats(id).catch(() => null),
-        heartbeatLogsApi.listByAgent(id, 20, 0).catch(() => [] as HeartbeatLog[]),
-        agentMessagesApi.listByAgent(id, 30, 0).catch(() => [] as AgentMessage[]),
-        crewsApi.list().catch(() => null),
-        bgAgentData
-          ? backgroundAgentsApi.getHistory(id, 20, 0).catch(() => null)
-          : Promise.resolve(null),
-        agentsApi.get(id).catch(() => null),
-      ]);
+      const [statsData, heartbeatsData, messagesData, crewsData, bgHistoryData, agentInfo] =
+        await Promise.all([
+          heartbeatLogsApi.getStats(id).catch(() => null),
+          heartbeatLogsApi.listByAgent(id, 20, 0).catch(() => [] as HeartbeatLog[]),
+          agentMessagesApi.listByAgent(id, 30, 0).catch(() => [] as AgentMessage[]),
+          crewsApi.list().catch(() => null),
+          bgAgentData
+            ? backgroundAgentsApi.getHistory(id, 20, 0).catch(() => null)
+            : Promise.resolve(null),
+          agentsApi.get(id).catch(() => null),
+        ]);
 
       if (statsData) setStats(statsData);
       setHeartbeats(heartbeatsData);
@@ -796,7 +797,9 @@ function OverviewTab({
               </div>
               {getSoulFallbackProviderId() && (
                 <div className="mt-2 pt-2 border-t border-border dark:border-dark-border">
-                  <p className="text-xs text-text-muted dark:text-dark-text-muted mb-1">Fallback:</p>
+                  <p className="text-xs text-text-muted dark:text-dark-text-muted mb-1">
+                    Fallback:
+                  </p>
                   <div className="grid grid-cols-2 gap-2 text-xs">
                     <InfoRow label="Provider" value={getSoulFallbackProviderId() || 'None'} />
                     <InfoRow label="Model" value={getSoulFallbackModelId() || 'Default'} />

@@ -47,7 +47,12 @@ describe('checkAutonomy', () => {
         autonomy: createMockAutonomy({ level: AutonomyLevel.MANUAL }),
       });
 
-      const result = checkAutonomy(ctx, 'tool_execution' as ActionCategory, 'search_memory', 'Search memory');
+      const result = checkAutonomy(
+        ctx,
+        'tool_execution' as ActionCategory,
+        'search_memory',
+        'Search memory'
+      );
 
       expect(result.allowed).toBe(false);
       expect(result.requiresApproval).toBe(true);
@@ -61,7 +66,12 @@ describe('checkAutonomy', () => {
 
       // In MANUAL mode, everything requires approval, including blocked actions
       // (the approval system will handle the block)
-      const result = checkAutonomy(ctx, 'tool_execution' as ActionCategory, 'delete_data', 'Delete data');
+      const result = checkAutonomy(
+        ctx,
+        'tool_execution' as ActionCategory,
+        'delete_data',
+        'Delete data'
+      );
 
       expect(result.requiresApproval).toBe(true);
     });
@@ -73,7 +83,12 @@ describe('checkAutonomy', () => {
         autonomy: createMockAutonomy({ level: AutonomyLevel.ASSISTED }),
       });
 
-      const result = checkAutonomy(ctx, 'tool_execution' as ActionCategory, 'search_memory', 'Search memory');
+      const result = checkAutonomy(
+        ctx,
+        'tool_execution' as ActionCategory,
+        'search_memory',
+        'Search memory'
+      );
 
       expect(result.allowed).toBe(true);
       expect(result.requiresApproval).toBe(false);
@@ -84,7 +99,12 @@ describe('checkAutonomy', () => {
         autonomy: createMockAutonomy({ level: AutonomyLevel.ASSISTED }),
       });
 
-      const result = checkAutonomy(ctx, 'tool_execution' as ActionCategory, 'delete_data', 'Delete data');
+      const result = checkAutonomy(
+        ctx,
+        'tool_execution' as ActionCategory,
+        'delete_data',
+        'Delete data'
+      );
 
       expect(result.allowed).toBe(false);
       expect(result.requiresApproval).toBe(false);
@@ -96,7 +116,12 @@ describe('checkAutonomy', () => {
         autonomy: createMockAutonomy({ level: AutonomyLevel.ASSISTED }),
       });
 
-      const result = checkAutonomy(ctx, 'tool_execution' as ActionCategory, 'unknown_action', 'Unknown action');
+      const result = checkAutonomy(
+        ctx,
+        'tool_execution' as ActionCategory,
+        'unknown_action',
+        'Unknown action'
+      );
 
       expect(result.allowed).toBe(false);
       expect(result.requiresApproval).toBe(true);
@@ -110,7 +135,12 @@ describe('checkAutonomy', () => {
         autonomy: createMockAutonomy({ level: AutonomyLevel.SUPERVISED }),
       });
 
-      const result = checkAutonomy(ctx, 'tool_execution' as ActionCategory, 'search_memory', 'Search memory');
+      const result = checkAutonomy(
+        ctx,
+        'tool_execution' as ActionCategory,
+        'search_memory',
+        'Search memory'
+      );
 
       expect(result.allowed).toBe(true);
       expect(result.requiresApproval).toBe(false);
@@ -121,7 +151,12 @@ describe('checkAutonomy', () => {
         autonomy: createMockAutonomy({ level: AutonomyLevel.SUPERVISED }),
       });
 
-      const result = checkAutonomy(ctx, 'tool_execution' as ActionCategory, 'delete_data', 'Delete data');
+      const result = checkAutonomy(
+        ctx,
+        'tool_execution' as ActionCategory,
+        'delete_data',
+        'Delete data'
+      );
 
       expect(result.allowed).toBe(false);
       expect(result.requiresApproval).toBe(false);
@@ -132,7 +167,12 @@ describe('checkAutonomy', () => {
         autonomy: createMockAutonomy({ level: AutonomyLevel.SUPERVISED }),
       });
 
-      const result = checkAutonomy(ctx, 'tool_execution' as ActionCategory, 'modify_system', 'Modify system');
+      const result = checkAutonomy(
+        ctx,
+        'tool_execution' as ActionCategory,
+        'modify_system',
+        'Modify system'
+      );
 
       expect(result.allowed).toBe(false);
       expect(result.requiresApproval).toBe(true);
@@ -144,7 +184,12 @@ describe('checkAutonomy', () => {
         autonomy: createMockAutonomy({ level: AutonomyLevel.SUPERVISED }),
       });
 
-      const result = checkAutonomy(ctx, 'tool_execution' as ActionCategory, 'some_other_action', 'Some action');
+      const result = checkAutonomy(
+        ctx,
+        'tool_execution' as ActionCategory,
+        'some_other_action',
+        'Some action'
+      );
 
       // Returns neutral - caller should use risk assessment
       expect(result.allowed).toBe(true);
@@ -158,7 +203,12 @@ describe('checkAutonomy', () => {
         autonomy: createMockAutonomy({ level: AutonomyLevel.AUTONOMOUS }),
       });
 
-      const result = checkAutonomy(ctx, 'tool_execution' as ActionCategory, 'search_memory', 'Search memory');
+      const result = checkAutonomy(
+        ctx,
+        'tool_execution' as ActionCategory,
+        'search_memory',
+        'Search memory'
+      );
 
       expect(result.allowed).toBe(true);
       expect(result.requiresApproval).toBe(false);
@@ -170,7 +220,12 @@ describe('checkAutonomy', () => {
         autonomy: createMockAutonomy({ level: AutonomyLevel.AUTONOMOUS }),
       });
 
-      const result = checkAutonomy(ctx, 'tool_execution' as ActionCategory, 'delete_data', 'Delete data');
+      const result = checkAutonomy(
+        ctx,
+        'tool_execution' as ActionCategory,
+        'delete_data',
+        'Delete data'
+      );
 
       expect(result.allowed).toBe(false);
       expect(result.requiresApproval).toBe(false);
@@ -183,7 +238,12 @@ describe('checkAutonomy', () => {
         autonomy: createMockAutonomy({ level: AutonomyLevel.AUTONOMOUS }),
       });
 
-      const result = checkAutonomy(ctx, 'tool_execution' as ActionCategory, 'any_action', 'Any action');
+      const result = checkAutonomy(
+        ctx,
+        'tool_execution' as ActionCategory,
+        'any_action',
+        'Any action'
+      );
 
       expect(result.notify).toBe(true);
       expect(result.severity).toBe('info');
@@ -196,7 +256,12 @@ describe('checkAutonomy', () => {
         autonomy: createMockAutonomy({ level: AutonomyLevel.FULL }),
       });
 
-      const result = checkAutonomy(ctx, 'tool_execution' as ActionCategory, 'search_memory', 'Search memory');
+      const result = checkAutonomy(
+        ctx,
+        'tool_execution' as ActionCategory,
+        'search_memory',
+        'Search memory'
+      );
 
       expect(result.allowed).toBe(true);
       expect(result.requiresApproval).toBe(false);
@@ -208,7 +273,12 @@ describe('checkAutonomy', () => {
         autonomy: createMockAutonomy({ level: AutonomyLevel.FULL }),
       });
 
-      const result = checkAutonomy(ctx, 'tool_execution' as ActionCategory, 'delete_data', 'Delete data');
+      const result = checkAutonomy(
+        ctx,
+        'tool_execution' as ActionCategory,
+        'delete_data',
+        'Delete data'
+      );
 
       expect(result.allowed).toBe(false);
       expect(result.requiresApproval).toBe(false);
@@ -220,7 +290,12 @@ describe('checkAutonomy', () => {
         autonomy: createMockAutonomy({ level: AutonomyLevel.FULL }),
       });
 
-      const result = checkAutonomy(ctx, 'tool_execution' as ActionCategory, 'any_action', 'Any action');
+      const result = checkAutonomy(
+        ctx,
+        'tool_execution' as ActionCategory,
+        'any_action',
+        'Any action'
+      );
 
       expect(result.notify).toBe(false);
     });
@@ -232,7 +307,12 @@ describe('checkAutonomy', () => {
         autonomy: createMockAutonomy({ level: 99 as AutonomyLevel }),
       });
 
-      const result = checkAutonomy(ctx, 'tool_execution' as ActionCategory, 'any_action', 'Any action');
+      const result = checkAutonomy(
+        ctx,
+        'tool_execution' as ActionCategory,
+        'any_action',
+        'Any action'
+      );
 
       expect(result.allowed).toBe(false);
       expect(result.requiresApproval).toBe(true);

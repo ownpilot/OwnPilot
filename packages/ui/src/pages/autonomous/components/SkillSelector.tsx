@@ -5,7 +5,16 @@
 import { useState, useEffect } from 'react';
 import { extensionsApi } from '../../../api/endpoints/extensions';
 import type { ExtensionInfo } from '../../../api/types';
-import { Check, Puzzle, AlertCircle, Eye, X, FileText, Wrench, BookOpen } from '../../../components/icons';
+import {
+  Check,
+  Puzzle,
+  AlertCircle,
+  Eye,
+  X,
+  FileText,
+  Wrench,
+  BookOpen,
+} from '../../../components/icons';
 
 interface Props {
   selectedSkills: string[];

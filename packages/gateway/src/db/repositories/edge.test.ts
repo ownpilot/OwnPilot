@@ -44,9 +44,8 @@ vi.mock('@ownpilot/core', async (importOriginal) => {
   };
 });
 
-const { EdgeDevicesRepository, EdgeCommandsRepository, EdgeTelemetryRepository } = await import(
-  './edge.js'
-);
+const { EdgeDevicesRepository, EdgeCommandsRepository, EdgeTelemetryRepository } =
+  await import('./edge.js');
 
 // ---------------------------------------------------------------------------
 // Sample data helpers
@@ -518,7 +517,10 @@ describe('EdgeCommandsRepository', () => {
       mockAdapter.query.mockResolvedValueOnce([]);
       mockAdapter.queryOne.mockResolvedValueOnce(makeCommandRow());
 
-      const result = await repo.create('edg-1', { commandType: 'reboot', payload: { force: true } });
+      const result = await repo.create('edg-1', {
+        commandType: 'reboot',
+        payload: { force: true },
+      });
 
       expect(result.payload).toEqual({ force: true });
       expect(result.createdAt).toBeInstanceOf(Date);
@@ -795,7 +797,10 @@ describe('EdgeTelemetryRepository', () => {
 
   describe('getHistory', () => {
     it('returns history ordered by recorded_at DESC with default limit', async () => {
-      mockAdapter.query.mockResolvedValueOnce([makeTelemetryRow(), makeTelemetryRow({ id: 'etel-2' })]);
+      mockAdapter.query.mockResolvedValueOnce([
+        makeTelemetryRow(),
+        makeTelemetryRow({ id: 'etel-2' }),
+      ]);
 
       const result = await repo.getHistory('edg-1', 'temp');
 

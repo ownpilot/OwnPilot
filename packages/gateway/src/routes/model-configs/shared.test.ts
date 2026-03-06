@@ -293,7 +293,12 @@ describe('getMergedModels', () => {
   });
 
   it('includes local provider models', async () => {
-    const lp = { id: 'lm-studio', name: 'LM Studio', baseUrl: 'http://localhost:1234', isEnabled: true };
+    const lp = {
+      id: 'lm-studio',
+      name: 'LM Studio',
+      baseUrl: 'http://localhost:1234',
+      isEnabled: true,
+    };
     const lm = {
       localProviderId: 'lm-studio',
       modelId: 'llama-3',
@@ -313,11 +318,15 @@ describe('getMergedModels', () => {
   });
 
   it('skips disabled local provider', async () => {
-    mockLocalListProviders.mockResolvedValue([
-      { id: 'ollama', name: 'Ollama', isEnabled: false },
-    ]);
+    mockLocalListProviders.mockResolvedValue([{ id: 'ollama', name: 'Ollama', isEnabled: false }]);
     mockLocalListModels.mockResolvedValue([
-      { localProviderId: 'ollama', modelId: 'mistral', isEnabled: true, displayName: 'Mistral', capabilities: [] },
+      {
+        localProviderId: 'ollama',
+        modelId: 'mistral',
+        isEnabled: true,
+        displayName: 'Mistral',
+        capabilities: [],
+      },
     ]);
     const result = await getMergedModels('user-1');
     expect(result.filter((m) => m.source === 'local')).toHaveLength(0);
@@ -399,7 +408,13 @@ describe('getMergedProviders', () => {
     const agg = makeAggregator('openrouter', 'OpenRouter');
     mockGetAllAggregatorProviders.mockReturnValue([agg]);
     mockListProvidersModels.mockResolvedValue([
-      { providerId: 'openrouter', isEnabled: true, displayName: 'OpenRouter Custom', apiBaseUrl: 'https://custom.com', apiKeySetting: 'my-setting' },
+      {
+        providerId: 'openrouter',
+        isEnabled: true,
+        displayName: 'OpenRouter Custom',
+        apiBaseUrl: 'https://custom.com',
+        apiKeySetting: 'my-setting',
+      },
     ]);
     const result = await getMergedProviders('user-1');
     const or = result.find((p) => p.id === 'openrouter');

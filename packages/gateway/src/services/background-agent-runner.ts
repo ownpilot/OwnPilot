@@ -19,7 +19,13 @@
  * - MCP tools
  */
 
-import { Agent, ToolRegistry, registerAllTools, getErrorMessage, qualifyToolName } from '@ownpilot/core';
+import {
+  Agent,
+  ToolRegistry,
+  registerAllTools,
+  getErrorMessage,
+  qualifyToolName,
+} from '@ownpilot/core';
 import type {
   AIProvider,
   BackgroundAgentConfig,

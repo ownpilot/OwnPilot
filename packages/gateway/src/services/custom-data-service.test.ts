@@ -6,7 +6,11 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { CustomDataService, CustomDataServiceError, getCustomDataService } from './custom-data-service.js';
+import {
+  CustomDataService,
+  CustomDataServiceError,
+  getCustomDataService,
+} from './custom-data-service.js';
 import type { CustomTableSchema, CustomDataRecord } from '../db/repositories/custom-data.js';
 
 // ---------------------------------------------------------------------------

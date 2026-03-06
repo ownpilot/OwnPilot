@@ -143,22 +143,23 @@ vi.mock('../db/repositories/orchestra.js', () => ({
 // Import after mocks
 // =============================================================================
 
-const { OrchestraEngine, getOrchestraEngine, resetOrchestraEngine } = await import(
-  './orchestra-engine.js'
-);
+const { OrchestraEngine, getOrchestraEngine, resetOrchestraEngine } =
+  await import('./orchestra-engine.js');
 
 // =============================================================================
 // Helpers
 // =============================================================================
 
-function makeAgent(overrides: Partial<{
-  id: string;
-  name: string;
-  systemPrompt: string;
-  provider: string;
-  model: string;
-  config: Record<string, unknown>;
-}> = {}) {
+function makeAgent(
+  overrides: Partial<{
+    id: string;
+    name: string;
+    systemPrompt: string;
+    provider: string;
+    model: string;
+    config: Record<string, unknown>;
+  }> = {}
+) {
   return {
     id: 'agent-1',
     name: 'Research',
@@ -172,14 +173,16 @@ function makeAgent(overrides: Partial<{
   };
 }
 
-function makeTask(overrides: Partial<{
-  id: string;
-  agentName: string;
-  input: string;
-  optional: boolean;
-  dependsOn: string[];
-  timeout: number;
-}> = {}) {
+function makeTask(
+  overrides: Partial<{
+    id: string;
+    agentName: string;
+    input: string;
+    optional: boolean;
+    dependsOn: string[];
+    timeout: number;
+  }> = {}
+) {
   return {
     id: 'task-1',
     agentName: 'Research',
@@ -188,15 +191,17 @@ function makeTask(overrides: Partial<{
   };
 }
 
-function makeSession(overrides: Partial<{
-  id: string;
-  state: string;
-  result: string | null;
-  error: string | null;
-  toolCalls: Array<{ tool: string; args: Record<string, unknown>; result: string }>;
-  tokensUsed: { prompt: number; completion: number } | null;
-  durationMs: number | null;
-}> = {}) {
+function makeSession(
+  overrides: Partial<{
+    id: string;
+    state: string;
+    result: string | null;
+    error: string | null;
+    toolCalls: Array<{ tool: string; args: Record<string, unknown>; result: string }>;
+    tokensUsed: { prompt: number; completion: number } | null;
+    durationMs: number | null;
+  }> = {}
+) {
   return {
     id: 'sub-1',
     parentId: 'conv-1',
@@ -233,10 +238,12 @@ describe('OrchestraEngine', () => {
     vi.clearAllMocks();
 
     // Reset ID counter
-    mockGenerateId.mockImplementation((() => {
-      let c = 0;
-      return () => `orch-${++c}`;
-    })());
+    mockGenerateId.mockImplementation(
+      (() => {
+        let c = 0;
+        return () => `orch-${++c}`;
+      })()
+    );
 
     // Reset spawn session counter
     let spawnCounter = 0;
@@ -370,7 +377,9 @@ describe('OrchestraEngine', () => {
 
     it('passes preferredProvider and preferredModel from agent config', async () => {
       mockAgentsRepoInstance.getByName.mockResolvedValue(
-        makeAgent({ config: { preferredProvider: 'anthropic', preferredModel: 'claude-3-5-sonnet' } })
+        makeAgent({
+          config: { preferredProvider: 'anthropic', preferredModel: 'claude-3-5-sonnet' },
+        })
       );
       mockSubagentServiceInstance.getSession.mockReturnValue(
         makeSession({ state: 'completed', result: 'done' })
@@ -420,7 +429,9 @@ describe('OrchestraEngine', () => {
     });
 
     it('throws when plan exceeds maxTasks limit', async () => {
-      const tasks = Array.from({ length: 11 }, (_, i) => makeTask({ id: `t-${i}`, agentName: 'A' }));
+      const tasks = Array.from({ length: 11 }, (_, i) =>
+        makeTask({ id: `t-${i}`, agentName: 'A' })
+      );
       await expect(
         engine.executePlan(
           { description: 'too many', tasks, strategy: 'sequential' },
@@ -484,10 +495,7 @@ describe('OrchestraEngine', () => {
       await engine.executePlan(
         {
           description: 'Task events',
-          tasks: [
-            makeTask({ id: 't-1' }),
-            makeTask({ id: 't-2' }),
-          ],
+          tasks: [makeTask({ id: 't-1' }), makeTask({ id: 't-2' })],
           strategy: 'sequential',
         },
         'conv-1',
@@ -502,8 +510,9 @@ describe('OrchestraEngine', () => {
 
     it('fails with state=failed when a required task fails', async () => {
       mockAgentsRepoInstance.getByName.mockResolvedValue(makeAgent());
-      mockSubagentServiceInstance.getSession
-        .mockReturnValueOnce(makeSession({ state: 'failed', result: null, error: 'task error' }));
+      mockSubagentServiceInstance.getSession.mockReturnValueOnce(
+        makeSession({ state: 'failed', result: null, error: 'task error' })
+      );
 
       const execution = await engine.executePlan(
         {
@@ -523,7 +532,9 @@ describe('OrchestraEngine', () => {
 
       // First task fails (optional), second succeeds
       mockSubagentServiceInstance.getSession
-        .mockReturnValueOnce(makeSession({ state: 'failed', result: null, error: 'optional task error' }))
+        .mockReturnValueOnce(
+          makeSession({ state: 'failed', result: null, error: 'optional task error' })
+        )
         .mockReturnValueOnce(makeSession({ state: 'completed', result: 'ok' }));
 
       const execution = await engine.executePlan(
@@ -575,7 +586,11 @@ describe('OrchestraEngine', () => {
       mockAgentsRepoInstance.getByName.mockResolvedValue(null);
 
       const execution = await engine.executePlan(
-        { description: 'No agent', tasks: [makeTask({ agentName: 'Ghost' })], strategy: 'sequential' },
+        {
+          description: 'No agent',
+          tasks: [makeTask({ agentName: 'Ghost' })],
+          strategy: 'sequential',
+        },
         'conv-1',
         'user-1'
       );
@@ -618,8 +633,9 @@ describe('OrchestraEngine', () => {
       // Therefore, required task failures in parallel do NOT cause state=failed —
       // they surface in taskResults[].success but the plan itself completes.
       mockAgentsRepoInstance.getByName.mockResolvedValue(makeAgent());
-      mockSubagentServiceInstance.getSession
-        .mockReturnValueOnce(makeSession({ state: 'failed', result: null, error: 'fail' }));
+      mockSubagentServiceInstance.getSession.mockReturnValueOnce(
+        makeSession({ state: 'failed', result: null, error: 'fail' })
+      );
 
       const execution = await engine.executePlan(
         {
@@ -731,10 +747,7 @@ describe('OrchestraEngine', () => {
       const execution = await engine.executePlan(
         {
           description: 'Multi-task cancel',
-          tasks: [
-            makeTask({ id: 't-1' }),
-            makeTask({ id: 't-2' }),
-          ],
+          tasks: [makeTask({ id: 't-1' }), makeTask({ id: 't-2' })],
           strategy: 'sequential',
         },
         'conv-1',
@@ -893,7 +906,11 @@ describe('OrchestraEngine', () => {
       );
 
       const execution = await engine.executePlan(
-        { description: 'Struct test', tasks: [makeTask({ id: 'struct-task' })], strategy: 'sequential' },
+        {
+          description: 'Struct test',
+          tasks: [makeTask({ id: 'struct-task' })],
+          strategy: 'sequential',
+        },
         'conv-1',
         'user-1'
       );

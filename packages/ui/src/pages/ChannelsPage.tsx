@@ -300,12 +300,9 @@ export function ChannelsPage() {
     [toast, loadChannels]
   );
 
-  const handleSendTest = useCallback(
-    async (channelId: string, text: string, chatId?: string) => {
-      await channelsApi.send(channelId, { text, ...(chatId ? { chatId } : {}) });
-    },
-    []
-  );
+  const handleSendTest = useCallback(async (channelId: string, text: string, chatId?: string) => {
+    await channelsApi.send(channelId, { text, ...(chatId ? { chatId } : {}) });
+  }, []);
 
   const handleClearMessages = useCallback(
     async (channelId: string) => {
@@ -1055,10 +1052,14 @@ function PairingBanner() {
     channelsApi
       .getPairing()
       .then((data) => setChannels(data.channels))
-      .catch(() => {/* silently ignore */});
+      .catch(() => {
+        /* silently ignore */
+      });
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    load();
+  }, [load]);
 
   if (channels.length === 0) return null;
 
@@ -1100,10 +1101,7 @@ function PairingBanner() {
     <div className="mx-6 mt-4 space-y-2">
       {/* Unclaimed channels — prominent warning */}
       {unclaimedChannels.map((ch) => (
-        <div
-          key={ch.pluginId}
-          className="p-4 rounded-lg border border-warning/40 bg-warning/5"
-        >
+        <div key={ch.pluginId} className="p-4 rounded-lg border border-warning/40 bg-warning/5">
           <div className="flex items-start gap-3">
             <Key className="w-5 h-5 text-warning mt-0.5 shrink-0" />
             <div className="flex-1 min-w-0">
@@ -1111,11 +1109,14 @@ function PairingBanner() {
                 Claim ownership — {ch.name}
               </p>
               <p className="text-xs text-text-secondary dark:text-dark-text-secondary mt-0.5">
-                Send this command on <span className="capitalize">{ch.platform}</span> to become the owner of this channel.
+                Send this command on <span className="capitalize">{ch.platform}</span> to become the
+                owner of this channel.
               </p>
               <div className="mt-2 flex items-center gap-2">
                 <div className="flex-1 flex items-center gap-2 px-3 py-2 bg-bg-tertiary dark:bg-dark-bg-tertiary rounded-md border border-border dark:border-dark-border font-mono text-sm">
-                  <span className="text-text-muted dark:text-dark-text-muted text-xs">/connect</span>
+                  <span className="text-text-muted dark:text-dark-text-muted text-xs">
+                    /connect
+                  </span>
                   <span className="font-bold text-text-primary dark:text-dark-text-primary tracking-widest">
                     {ch.key}
                   </span>
@@ -1125,9 +1126,15 @@ function PairingBanner() {
                   className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium border border-border dark:border-dark-border rounded-md hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary transition-colors text-text-primary dark:text-dark-text-primary"
                 >
                   {copiedId === ch.pluginId ? (
-                    <><CheckCircle2 className="w-3.5 h-3.5 text-success" />Copied!</>
+                    <>
+                      <CheckCircle2 className="w-3.5 h-3.5 text-success" />
+                      Copied!
+                    </>
                   ) : (
-                    <><Copy className="w-3.5 h-3.5" />Copy</>
+                    <>
+                      <Copy className="w-3.5 h-3.5" />
+                      Copy
+                    </>
                   )}
                 </button>
               </div>

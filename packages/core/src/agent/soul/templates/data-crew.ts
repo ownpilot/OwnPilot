@@ -108,7 +108,7 @@ export const dataCrewTemplate: CrewTemplate = {
             id: 'analyzer-daily',
             name: 'Daily analysis',
             description:
-              'Analyze yesterday\'s data. Identify trends, anomalies, and key insights. Create summary.',
+              "Analyze yesterday's data. Identify trends, anomalies, and key insights. Create summary.",
             schedule: 'daily',
             dailyAt: '10:00',
             tools: ['search_memories', 'create_note'],

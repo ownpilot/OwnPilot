@@ -306,7 +306,9 @@ describe('ArtifactsRepository', () => {
       // UPDATE artifacts
       mockAdapter.query.mockResolvedValueOnce([]);
       // getById (refreshed)
-      mockAdapter.queryOne.mockResolvedValueOnce(makeArtifactRow({ content: '<h1>New</h1>', version: 2 }));
+      mockAdapter.queryOne.mockResolvedValueOnce(
+        makeArtifactRow({ content: '<h1>New</h1>', version: 2 })
+      );
 
       const result = await repo.update('art-1', { content: '<h1>New</h1>' });
 

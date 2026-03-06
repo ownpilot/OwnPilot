@@ -87,14 +87,16 @@ export function ChatPage() {
 
   // Channel mode state
   const [activeConv, setActiveConv] = useState<Conversation | null>(null);
-  const [channelMessages, setChannelMessages] = useState<Array<{
-    id: string;
-    role: 'user' | 'assistant';
-    content: string;
-    timestamp: string;
-    direction: 'inbound' | 'outbound';
-    senderName?: string;
-  }>>([]);
+  const [channelMessages, setChannelMessages] = useState<
+    Array<{
+      id: string;
+      role: 'user' | 'assistant';
+      content: string;
+      timestamp: string;
+      direction: 'inbound' | 'outbound';
+      senderName?: string;
+    }>
+  >([]);
   const [channelInfo, setChannelInfo] = useState<ChannelInfo | null>(null);
   const [isChannelMode, setIsChannelMode] = useState(false);
   const { subscribe } = useGateway();
@@ -127,10 +129,7 @@ export function ChatPage() {
         const isOptimistic =
           role === 'user' &&
           prev.some(
-            (m) =>
-              m.id.startsWith('optimistic:') &&
-              m.content === data.content &&
-              m.role === 'user'
+            (m) => m.id.startsWith('optimistic:') && m.content === data.content && m.role === 'user'
           );
         if (isOptimistic) {
           // Replace the optimistic message with the real one
@@ -349,7 +348,11 @@ export function ChatPage() {
 
   const handleLoadConversation = async (id: string) => {
     try {
-      const { conversation: conv, messages: unified, channelInfo: chInfo } = await chatApi.getUnifiedHistory(id);
+      const {
+        conversation: conv,
+        messages: unified,
+        channelInfo: chInfo,
+      } = await chatApi.getUnifiedHistory(id);
 
       if (conv.source === 'channel') {
         // Channel mode: show unified history in separate state, not useChatStore
@@ -384,7 +387,9 @@ export function ChatPage() {
             role: m.role as 'user' | 'assistant',
             content: m.content,
             timestamp: m.createdAt,
-            toolCalls: (m.toolCalls ?? undefined) as Array<{ id: string; name: string; arguments: Record<string, unknown> }> | undefined,
+            toolCalls: (m.toolCalls ?? undefined) as
+              | Array<{ id: string; name: string; arguments: Record<string, unknown> }>
+              | undefined,
             provider: m.provider ?? undefined,
             model: m.model ?? undefined,
             isError: m.isError,
@@ -408,7 +413,13 @@ export function ChatPage() {
       const optimisticId = `optimistic:${Date.now()}`;
       setChannelMessages((prev) => [
         ...prev,
-        { id: optimisticId, role: 'user', content: text, timestamp: new Date().toISOString(), direction: 'inbound' as const },
+        {
+          id: optimisticId,
+          role: 'user',
+          content: text,
+          timestamp: new Date().toISOString(),
+          direction: 'inbound' as const,
+        },
       ]);
       try {
         await chatApi.sendChannelMessage(activeConv.id, text);
@@ -444,653 +455,665 @@ export function ChatPage() {
         onNew={handleNewChat}
         onSelect={handleLoadConversation}
       />
-
       {/* Main chat area */}
       <div className="flex flex-col flex-1 min-w-0">
-      {/* Header */}
-      <header className="flex items-center justify-between px-6 py-4 border-b border-border dark:border-dark-border">
-        <div className="flex items-center gap-4">
-          <div>
-            <h2 className="text-lg font-semibold text-text-primary dark:text-dark-text-primary flex items-center gap-2">
-              {isChannelMode ? (
-                <>
-                  {activeConv?.channelPlatform === 'telegram' ? (
-                    <Telegram className="w-5 h-5 text-primary" />
-                  ) : activeConv?.channelPlatform === 'whatsapp' ? (
-                    <WhatsApp className="w-5 h-5 text-primary" />
-                  ) : (
-                    <MessageSquare className="w-5 h-5 text-primary" />
-                  )}
-                  {activeConv?.title ?? activeConv?.channelSenderName ?? 'Channel Chat'}
-                  <span className="px-1.5 py-0.5 text-xs font-medium bg-primary/10 text-primary rounded-full capitalize">
-                    {activeConv?.channelPlatform ?? 'channel'}
-                  </span>
-                </>
-              ) : currentAgent ? (
-                <>
-                  <Bot className="w-5 h-5 text-primary" />
-                  {agentDisplayName}
-                </>
-              ) : (
-                'Chat'
-              )}
-            </h2>
-            <p className="text-sm text-text-muted dark:text-dark-text-muted">
-              {isChannelMode ? (
-                `${activeConv?.channelSenderName ? `with ${activeConv.channelSenderName} · ` : ''}Messages go to ${activeConv?.channelPlatform ?? 'channel'}`
-              ) : currentAgent ? (
-                `Using ${currentProviderName} / ${model}`
-              ) : !isLoadingModels && configuredProviders.length > 0 && !isProviderConfigured ? (
-                <span className="text-warning">Provider not configured</span>
-              ) : (
-                'Talk to your AI assistant'
-              )}
-            </p>
-          </div>
-
-          {/* Workspace Selector */}
-          <WorkspaceSelector selectedWorkspaceId={workspaceId} onWorkspaceChange={setWorkspaceId} />
-
-          {/* Provider/Model Selector */}
-          <div className="relative">
-            <button
-              onClick={() => setShowProviderMenu(!showProviderMenu)}
-              disabled={isLoadingModels}
-              className="flex items-center gap-2 px-3 py-1.5 text-sm bg-bg-tertiary dark:bg-dark-bg-tertiary border border-border dark:border-dark-border rounded-lg hover:bg-bg-secondary dark:hover:bg-dark-bg-secondary transition-colors disabled:opacity-50"
-            >
-              {isLoadingModels ? (
-                <span className="text-text-muted dark:text-dark-text-muted animate-pulse">
-                  Loading...
-                </span>
-              ) : (
-                <>
-                  <span className="font-medium text-text-primary dark:text-dark-text-primary">
-                    {currentProviderName}
-                  </span>
-                  <span className="text-text-muted dark:text-dark-text-muted">/ {model}</span>
-                </>
-              )}
-              <svg
-                className={`w-4 h-4 text-text-muted transition-transform ${showProviderMenu ? 'rotate-180' : ''}`}
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M19 9l-7 7-7-7"
-                />
-              </svg>
-            </button>
-
-            {/* Dropdown Menu */}
-            {showProviderMenu && (
-              <div className="absolute top-full left-0 mt-1 w-full sm:w-80 max-w-[90vw] bg-bg-primary dark:bg-dark-bg-primary border border-border dark:border-dark-border rounded-lg shadow-lg dark:shadow-black/50 z-50 max-h-96 overflow-y-auto">
-                {configuredProviders.length === 0 ? (
-                  <div className="p-4 text-center">
-                    <p className="text-sm text-text-muted dark:text-dark-text-muted mb-2">
-                      No providers configured
-                    </p>
-                    <a
-                      href="/settings"
-                      className="text-sm text-primary hover:underline flex items-center justify-center gap-1"
-                    >
-                      <Settings className="w-4 h-4" /> Configure API Keys
-                    </a>
-                  </div>
-                ) : (
-                  Object.entries(modelsByProvider).map(([providerId, providerModels]) => (
-                    <div
-                      key={providerId}
-                      className="border-b border-border dark:border-dark-border last:border-b-0"
-                    >
-                      <div
-                        className={`px-3 py-2 text-sm font-medium cursor-pointer hover:bg-bg-secondary dark:hover:bg-dark-bg-secondary ${
-                          provider === providerId
-                            ? 'bg-primary/10 text-primary'
-                            : 'text-text-primary dark:text-dark-text-primary'
-                        }`}
-                        onClick={() => handleProviderChange(providerId)}
-                      >
-                        {providerNames[providerId] ?? providerId}
-                      </div>
-                      {provider === providerId && (
-                        <div className="px-2 pb-2">
-                          {providerModels.map((m) => (
-                            <button
-                              key={m.id}
-                              onClick={() => {
-                                setModel(m.id);
-                                setShowProviderMenu(false);
-                                // Keep agent context - just update the model being used
-                              }}
-                              className={`w-full text-left px-2 py-1.5 text-xs rounded ${
-                                model === m.id
-                                  ? 'bg-primary text-white'
-                                  : 'text-text-secondary dark:text-dark-text-secondary hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary'
-                              }`}
-                            >
-                              <div className="flex items-center justify-between">
-                                <span>{m.name}</span>
-                                {m.recommended && (
-                                  <span className="text-[10px] opacity-70">Recommended</span>
-                                )}
-                              </div>
-                              {m.description && (
-                                <p className="text-[10px] opacity-60 mt-0.5 line-clamp-1">
-                                  {m.description}
-                                </p>
-                              )}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  ))
-                )}
-              </div>
-            )}
-          </div>
-        </div>
-
-        <button
-          onClick={handleNewChat}
-          className="px-4 py-2 text-sm text-text-secondary dark:text-dark-text-secondary hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary rounded-lg transition-colors"
-        >
-          New Chat
-        </button>
-      </header>
-
-      {/* Session context bar — visible only in web mode */}
-      {!isChannelMode && <ContextBar
-        sessionInfo={sessionInfo}
-        defaultMaxTokens={
-          models.find((m) => m.id === model && m.provider === provider)?.contextWindow
-        }
-        onNewSession={handleNewChat}
-        onShowDetail={() => setShowContextDetail(true)}
-      />}
-
-      {/* Context detail modal */}
-      {!isChannelMode && showContextDetail && (
-        <ContextDetailModal
-          sessionInfo={
-            sessionInfo ?? {
-              sessionId: '',
-              messageCount: 0,
-              estimatedTokens: 0,
-              maxContextTokens:
-                models.find((m) => m.id === model && m.provider === provider)?.contextWindow ??
-                128_000,
-              contextFillPercent: 0,
-            }
-          }
-          provider={provider}
-          model={model}
-          onClose={() => setShowContextDetail(false)}
-          onCompact={handleCompactContext}
-          onClear={handleNewChat}
-        />
-      )}
-
-      {/* Click outside to close menu */}
-      {showProviderMenu && (
-        <div className="fixed inset-0 z-40" onClick={() => setShowProviderMenu(false)} />
-      )}
-
-      {/* Channel mode message list */}
-      {isChannelMode && (
-        <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3">
-          {channelMessages.length === 0 ? (
-            <div className="h-full flex items-center justify-center">
-              <p className="text-text-muted dark:text-dark-text-muted text-sm italic">No messages yet</p>
-            </div>
-          ) : (
-            channelMessages.map((msg) => (
-              <div
-                key={msg.id}
-                className={`flex ${msg.role === 'user' ? 'justify-start' : 'justify-end'}`}
-              >
-                <div
-                  className={`max-w-[75%] px-3 py-2 rounded-lg text-sm whitespace-pre-wrap ${
-                    msg.role === 'user'
-                      ? 'bg-bg-secondary dark:bg-dark-bg-secondary text-text-primary dark:text-dark-text-primary'
-                      : 'bg-primary text-white'
-                  }`}
-                >
-                  {msg.senderName && msg.role === 'user' && (
-                    <p className="text-[10px] opacity-60 mb-0.5 font-medium">{msg.senderName}</p>
-                  )}
-                  {msg.content}
-                  <p className={`text-[10px] mt-1 opacity-50 text-right`}>
-                    {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </p>
-                </div>
-              </div>
-            ))
-          )}
-          <div ref={messagesEndRef} />
-        </div>
-      )}
-
-      {/* Messages */}
-      {!isChannelMode && <div className="flex-1 overflow-y-auto px-6 py-4">
-        {messages.length === 0 ? (
-          <div className="h-full flex items-center justify-center">
-            <div className="text-center max-w-md">
-              <h3 className="text-xl font-medium text-text-primary dark:text-dark-text-primary mb-2">
-                {currentAgent ? `Chat with ${agentDisplayName}` : 'Welcome to OwnPilot'}
-              </h3>
-
-              {!isLoadingModels &&
-              configuredProviders.length === 0 &&
-              localStorage.getItem(STORAGE_KEYS.SETUP_COMPLETE) !== 'true' ? (
-                <Suspense fallback={null}>
-                  <SetupWizard onComplete={() => window.location.reload()} />
-                </Suspense>
-              ) : !isLoadingModels && configuredProviders.length === 0 ? (
-                <>
-                  <div className="p-4 bg-warning/10 border border-warning/20 rounded-lg mb-4">
-                    <div className="flex items-center justify-center gap-2 text-warning mb-2">
-                      <AlertCircle className="w-5 h-5" />
-                      <span className="font-medium">No API Keys</span>
-                    </div>
-                    <p className="text-sm text-text-muted dark:text-dark-text-muted">
-                      Configure at least one AI provider to start chatting.
-                    </p>
-                  </div>
-                  <a
-                    href="/settings/api-keys"
-                    className="inline-flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg transition-colors mb-4"
-                  >
-                    <Settings className="w-4 h-4" />
-                    Configure API Keys
-                  </a>
-                </>
-              ) : (
-                <>
-                  <p className="text-text-muted dark:text-dark-text-muted mb-2">
-                    Start a conversation by typing a message below.
-                  </p>
-                  <p className="text-sm text-text-muted dark:text-dark-text-muted mb-4">
-                    Currently using:{' '}
-                    <span className="font-medium text-primary">{currentProviderName}</span> /{' '}
-                    <span className="font-mono">{model}</span>
-                  </p>
-                </>
-              )}
-
-              {/* Suggestion cards grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-w-lg mx-auto">
-                {[
-                  {
-                    icon: '🚀',
-                    label: 'What can you do?',
-                    prompt:
-                      'What are all the things you can help me with? Give me a quick overview of your capabilities, tools, and what makes you different from a regular chatbot.',
-                  },
-                  {
-                    icon: '🧠',
-                    label: 'My setup & limits',
-                    prompt:
-                      'Tell me about my current setup — which model am I using, what tools are available, and what are the context window limits? How much can you remember in a single conversation?',
-                  },
-                  {
-                    icon: '✅',
-                    label: 'Manage my tasks',
-                    prompt:
-                      'Show me all my current tasks and help me prioritize them. If I have none yet, help me create a task list for today.',
-                  },
-                  {
-                    icon: '📝',
-                    label: 'Take a note',
-                    prompt:
-                      'I want to save a quick note. Help me organize it with tags so I can find it later.',
-                  },
-                  {
-                    icon: '💡',
-                    label: 'Brainstorm with me',
-                    prompt:
-                      "I need fresh ideas. Let's brainstorm — ask me what topic I'm working on and then generate creative angles I haven't considered.",
-                  },
-                  {
-                    icon: '🔍',
-                    label: 'Search the web',
-                    prompt:
-                      'Search the web for the most interesting tech news from this week and give me a brief summary of the top 3 stories.',
-                  },
-                  {
-                    icon: '💻',
-                    label: 'Write & run code',
-                    prompt:
-                      'Show me what you can do with code execution. Write a quick Python script that does something fun and run it.',
-                  },
-                  {
-                    icon: '📊',
-                    label: 'Track something',
-                    prompt:
-                      "I want to start tracking something — maybe expenses, habits, books I've read, or workouts. Help me set up a custom data table for it.",
-                  },
-                ].map((item) => (
-                  <button
-                    key={item.label}
-                    onClick={() => sendMessage(item.prompt)}
-                    className="flex items-center gap-2.5 px-3 py-2.5 text-left rounded-xl border border-border dark:border-dark-border hover:border-primary/40 dark:hover:border-primary/40 hover:bg-bg-secondary dark:hover:bg-dark-bg-secondary transition-all group"
-                  >
-                    <span className="text-base shrink-0">{item.icon}</span>
-                    <span className="text-sm text-text-secondary dark:text-dark-text-secondary group-hover:text-text-primary dark:group-hover:text-dark-text-primary transition-colors">
-                      {item.label}
+        {/* Header */}
+        <header className="flex items-center justify-between px-6 py-4 border-b border-border dark:border-dark-border">
+          <div className="flex items-center gap-4">
+            <div>
+              <h2 className="text-lg font-semibold text-text-primary dark:text-dark-text-primary flex items-center gap-2">
+                {isChannelMode ? (
+                  <>
+                    {activeConv?.channelPlatform === 'telegram' ? (
+                      <Telegram className="w-5 h-5 text-primary" />
+                    ) : activeConv?.channelPlatform === 'whatsapp' ? (
+                      <WhatsApp className="w-5 h-5 text-primary" />
+                    ) : (
+                      <MessageSquare className="w-5 h-5 text-primary" />
+                    )}
+                    {activeConv?.title ?? activeConv?.channelSenderName ?? 'Channel Chat'}
+                    <span className="px-1.5 py-0.5 text-xs font-medium bg-primary/10 text-primary rounded-full capitalize">
+                      {activeConv?.channelPlatform ?? 'channel'}
                     </span>
-                  </button>
-                ))}
-              </div>
-
-              {/* Quick-action pills */}
-              <div className="space-y-3 mt-5 max-w-lg mx-auto">
-                {/* Code Execution */}
-                <div>
-                  <p className="text-xs text-text-muted dark:text-dark-text-muted mb-2 text-center">
-                    Code Execution
-                  </p>
-                  <div className="flex flex-wrap gap-2 justify-center">
-                    {[
-                      {
-                        label: 'Run JavaScript',
-                        prompt:
-                          'Run this JavaScript code:\n\nconsole.log("Hello from Node.js!");\nconst arr = [1, 2, 3, 4, 5];\nconsole.log("Sum:", arr.reduce((a, b) => a + b, 0));\nconsole.log("Reversed:", arr.reverse());',
-                      },
-                      {
-                        label: 'Run Python',
-                        prompt:
-                          'Run this Python code:\n\nimport sys, os, datetime\nprint(f"Python {sys.version}")\nprint(f"Platform: {sys.platform}")\nprint(f"Current time: {datetime.datetime.now()}")\nprint(f"Fibonacci:", [0,1,1,2,3,5,8,13,21,34])',
-                      },
-                      {
-                        label: 'Run Shell',
-                        prompt:
-                          'Run this shell command: echo "=== System Info ===" && uname -a && echo "\\n=== Disk Usage ===" && df -h / && echo "\\n=== Memory ===" && free -h 2>/dev/null || echo "(memory info not available)"',
-                      },
-                    ].map((item) => (
-                      <button
-                        key={item.label}
-                        onClick={() => sendMessage(item.prompt)}
-                        className="px-3 py-1.5 text-sm bg-primary/10 text-primary rounded-full hover:bg-primary hover:text-white transition-colors"
-                      >
-                        {item.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Tools & Productivity */}
-                <div>
-                  <p className="text-xs text-text-muted dark:text-dark-text-muted mb-2 text-center">
-                    Tools & Productivity
-                  </p>
-                  <div className="flex flex-wrap gap-2 justify-center">
-                    {[
-                      {
-                        label: 'Web Search',
-                        prompt:
-                          'Search the web for the most interesting tech news this week and summarize the top 3 stories.',
-                      },
-                      {
-                        label: 'Calculator',
-                        prompt: 'Calculate: (15 * 27) + (sqrt(144) / 3) - 18^2',
-                      },
-                      {
-                        label: 'Plan my day',
-                        prompt:
-                          'Help me plan my day. Ask me what I need to get done and create a structured schedule with time blocks.',
-                      },
-                    ].map((item) => (
-                      <button
-                        key={item.label}
-                        onClick={() => sendMessage(item.prompt)}
-                        className="px-3 py-1.5 text-sm bg-success/10 text-success rounded-full hover:bg-success hover:text-white transition-colors"
-                      >
-                        {item.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
+                  </>
+                ) : currentAgent ? (
+                  <>
+                    <Bot className="w-5 h-5 text-primary" />
+                    {agentDisplayName}
+                  </>
+                ) : (
+                  'Chat'
+                )}
+              </h2>
+              <p className="text-sm text-text-muted dark:text-dark-text-muted">
+                {isChannelMode ? (
+                  `${activeConv?.channelSenderName ? `with ${activeConv.channelSenderName} · ` : ''}Messages go to ${activeConv?.channelPlatform ?? 'channel'}`
+                ) : currentAgent ? (
+                  `Using ${currentProviderName} / ${model}`
+                ) : !isLoadingModels && configuredProviders.length > 0 && !isProviderConfigured ? (
+                  <span className="text-warning">Provider not configured</span>
+                ) : (
+                  'Talk to your AI assistant'
+                )}
+              </p>
             </div>
-          </div>
-        ) : (
-          <>
-            <MessageList
-              messages={messages}
-              onRetry={retryLastMessage}
-              canRetry={!!lastFailedMessage && !isLoading}
-              workspaceId={workspaceId || sessionId}
+
+            {/* Workspace Selector */}
+            <WorkspaceSelector
+              selectedWorkspaceId={workspaceId}
+              onWorkspaceChange={setWorkspaceId}
             />
 
-            {/* Streaming content and progress */}
-            {isLoading && (streamingContent || progressEvents.length > 0) && (
-              <div className="mt-4 p-4 bg-bg-secondary dark:bg-dark-bg-secondary rounded-lg border border-border dark:border-dark-border">
-                {/* Security block banner */}
-                {progressEvents.some(
-                  (e) =>
-                    e.type === 'tool_end' &&
-                    e.result?.preview?.includes('blocked in Execution Security')
-                ) && (
-                  <div className="mb-3 flex items-center gap-2 px-3 py-2 bg-red-500/10 border border-red-500/20 rounded-lg">
-                    <Shield className="w-4 h-4 text-red-500 flex-shrink-0" />
-                    <span className="text-xs text-red-600 dark:text-red-400">
-                      Tool execution was blocked by Execution Security settings. Adjust permissions
-                      in the security panel above.
+            {/* Provider/Model Selector */}
+            <div className="relative">
+              <button
+                onClick={() => setShowProviderMenu(!showProviderMenu)}
+                disabled={isLoadingModels}
+                className="flex items-center gap-2 px-3 py-1.5 text-sm bg-bg-tertiary dark:bg-dark-bg-tertiary border border-border dark:border-dark-border rounded-lg hover:bg-bg-secondary dark:hover:bg-dark-bg-secondary transition-colors disabled:opacity-50"
+              >
+                {isLoadingModels ? (
+                  <span className="text-text-muted dark:text-dark-text-muted animate-pulse">
+                    Loading...
+                  </span>
+                ) : (
+                  <>
+                    <span className="font-medium text-text-primary dark:text-dark-text-primary">
+                      {currentProviderName}
                     </span>
-                  </div>
+                    <span className="text-text-muted dark:text-dark-text-muted">/ {model}</span>
+                  </>
                 )}
+                <svg
+                  className={`w-4 h-4 text-text-muted transition-transform ${showProviderMenu ? 'rotate-180' : ''}`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19 9l-7 7-7-7"
+                  />
+                </svg>
+              </button>
 
-                {/* Local execution warning banner */}
-                {progressEvents.some(
-                  (e) => e.type === 'tool_end' && e.result?.sandboxed === false
-                ) && (
-                  <div className="mb-3 flex items-center gap-2 px-3 py-2 bg-amber-500/10 border border-amber-500/20 rounded-lg">
-                    <AlertTriangle className="w-4 h-4 text-amber-500 flex-shrink-0" />
-                    <span className="text-xs text-amber-600 dark:text-amber-400">
-                      Code is executing directly on your local machine without Docker sandbox.
-                    </span>
-                  </div>
-                )}
-
-                {/* Progress events */}
-                {progressEvents.length > 0 && (
-                  <div className="mb-3 space-y-1">
-                    {progressEvents.slice(-5).map((event, idx) => (
-                      <div
-                        key={`progress-${event.type}-${idx}`}
-                        className="flex items-center gap-2 text-xs text-text-muted dark:text-dark-text-muted"
+              {/* Dropdown Menu */}
+              {showProviderMenu && (
+                <div className="absolute top-full left-0 mt-1 w-full sm:w-80 max-w-[90vw] bg-bg-primary dark:bg-dark-bg-primary border border-border dark:border-dark-border rounded-lg shadow-lg dark:shadow-black/50 z-50 max-h-96 overflow-y-auto">
+                  {configuredProviders.length === 0 ? (
+                    <div className="p-4 text-center">
+                      <p className="text-sm text-text-muted dark:text-dark-text-muted mb-2">
+                        No providers configured
+                      </p>
+                      <a
+                        href="/settings"
+                        className="text-sm text-primary hover:underline flex items-center justify-center gap-1"
                       >
-                        {event.type === 'status' && (
-                          <>
-                            <span className="w-2 h-2 bg-primary rounded-full animate-pulse" />
-                            <span>{event.message}</span>
-                          </>
-                        )}
-                        {event.type === 'tool_start' && (
-                          <>
-                            <span className="w-2 h-2 bg-warning rounded-full animate-pulse" />
-                            <span>
-                              🔧 Running <strong>{event.tool?.name}</strong>...
-                            </span>
-                          </>
-                        )}
-                        {event.type === 'tool_end' && (
-                          <>
-                            <span
-                              className={`w-2 h-2 ${event.result?.success ? 'bg-success' : 'bg-error'} rounded-full`}
-                            />
-                            <span>
-                              {event.result?.success ? '✓' : '✗'} {event.tool?.name}
-                              <span className="opacity-60 ml-1">
-                                ({event.result?.durationMs}ms)
-                              </span>
-                            </span>
-                            {event.result?.preview?.includes('blocked in Execution Security') ? (
-                              <span className="inline-flex items-center gap-0.5 px-1.5 py-0 text-[10px] bg-red-500/15 text-red-600 dark:text-red-400 rounded font-semibold leading-4">
-                                <Shield className="w-3 h-3" />
-                                BLOCKED
-                              </span>
-                            ) : (
-                              event.result?.sandboxed === false && (
-                                <span className="inline-flex items-center gap-0.5 px-1.5 py-0 text-[10px] bg-amber-500/15 text-amber-600 dark:text-amber-400 rounded font-semibold leading-4">
-                                  LOCAL
-                                </span>
-                              )
-                            )}
-                          </>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {/* Thinking section (collapsible, shows streaming thinking content) */}
-                {(isThinking || thinkingContent) && (
-                  <div className="rounded-lg border border-border dark:border-dark-border bg-bg-tertiary/50 dark:bg-dark-bg-tertiary/50 overflow-hidden text-sm">
-                    <button
-                      onClick={() => setThinkingExpanded(!thinkingExpanded)}
-                      className="w-full flex items-center gap-2 px-3 py-2 hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary transition-colors"
-                    >
-                      <div className="text-text-muted dark:text-dark-text-muted">
-                        {thinkingExpanded ? (
-                          <ChevronDown className="w-4 h-4" />
-                        ) : (
-                          <ChevronRight className="w-4 h-4" />
-                        )}
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-text-secondary dark:text-dark-text-secondary font-medium">
-                          Thinking
-                        </span>
-                        {isThinking && (
-                          <div className="flex gap-1">
-                            <span
-                              className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce"
-                              style={{ animationDelay: '0ms' }}
-                            />
-                            <span
-                              className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce"
-                              style={{ animationDelay: '150ms' }}
-                            />
-                            <span
-                              className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce"
-                              style={{ animationDelay: '300ms' }}
-                            />
+                        <Settings className="w-4 h-4" /> Configure API Keys
+                      </a>
+                    </div>
+                  ) : (
+                    Object.entries(modelsByProvider).map(([providerId, providerModels]) => (
+                      <div
+                        key={providerId}
+                        className="border-b border-border dark:border-dark-border last:border-b-0"
+                      >
+                        <div
+                          className={`px-3 py-2 text-sm font-medium cursor-pointer hover:bg-bg-secondary dark:hover:bg-dark-bg-secondary ${
+                            provider === providerId
+                              ? 'bg-primary/10 text-primary'
+                              : 'text-text-primary dark:text-dark-text-primary'
+                          }`}
+                          onClick={() => handleProviderChange(providerId)}
+                        >
+                          {providerNames[providerId] ?? providerId}
+                        </div>
+                        {provider === providerId && (
+                          <div className="px-2 pb-2">
+                            {providerModels.map((m) => (
+                              <button
+                                key={m.id}
+                                onClick={() => {
+                                  setModel(m.id);
+                                  setShowProviderMenu(false);
+                                  // Keep agent context - just update the model being used
+                                }}
+                                className={`w-full text-left px-2 py-1.5 text-xs rounded ${
+                                  model === m.id
+                                    ? 'bg-primary text-white'
+                                    : 'text-text-secondary dark:text-dark-text-secondary hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary'
+                                }`}
+                              >
+                                <div className="flex items-center justify-between">
+                                  <span>{m.name}</span>
+                                  {m.recommended && (
+                                    <span className="text-[10px] opacity-70">Recommended</span>
+                                  )}
+                                </div>
+                                {m.description && (
+                                  <p className="text-[10px] opacity-60 mt-0.5 line-clamp-1">
+                                    {m.description}
+                                  </p>
+                                )}
+                              </button>
+                            ))}
                           </div>
                         )}
                       </div>
-                    </button>
-                    {thinkingExpanded && thinkingContent && (
-                      <div className="border-t border-border dark:border-dark-border px-3 py-2 max-h-64 overflow-y-auto">
-                        <div className="whitespace-pre-wrap text-text-muted dark:text-dark-text-muted text-xs leading-relaxed">
-                          {thinkingContent}
+                    ))
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+
+          <button
+            onClick={handleNewChat}
+            className="px-4 py-2 text-sm text-text-secondary dark:text-dark-text-secondary hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary rounded-lg transition-colors"
+          >
+            New Chat
+          </button>
+        </header>
+
+        {/* Session context bar — visible only in web mode */}
+        {!isChannelMode && (
+          <ContextBar
+            sessionInfo={sessionInfo}
+            defaultMaxTokens={
+              models.find((m) => m.id === model && m.provider === provider)?.contextWindow
+            }
+            onNewSession={handleNewChat}
+            onShowDetail={() => setShowContextDetail(true)}
+          />
+        )}
+
+        {/* Context detail modal */}
+        {!isChannelMode && showContextDetail && (
+          <ContextDetailModal
+            sessionInfo={
+              sessionInfo ?? {
+                sessionId: '',
+                messageCount: 0,
+                estimatedTokens: 0,
+                maxContextTokens:
+                  models.find((m) => m.id === model && m.provider === provider)?.contextWindow ??
+                  128_000,
+                contextFillPercent: 0,
+              }
+            }
+            provider={provider}
+            model={model}
+            onClose={() => setShowContextDetail(false)}
+            onCompact={handleCompactContext}
+            onClear={handleNewChat}
+          />
+        )}
+
+        {/* Click outside to close menu */}
+        {showProviderMenu && (
+          <div className="fixed inset-0 z-40" onClick={() => setShowProviderMenu(false)} />
+        )}
+
+        {/* Channel mode message list */}
+        {isChannelMode && (
+          <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3">
+            {channelMessages.length === 0 ? (
+              <div className="h-full flex items-center justify-center">
+                <p className="text-text-muted dark:text-dark-text-muted text-sm italic">
+                  No messages yet
+                </p>
+              </div>
+            ) : (
+              channelMessages.map((msg) => (
+                <div
+                  key={msg.id}
+                  className={`flex ${msg.role === 'user' ? 'justify-start' : 'justify-end'}`}
+                >
+                  <div
+                    className={`max-w-[75%] px-3 py-2 rounded-lg text-sm whitespace-pre-wrap ${
+                      msg.role === 'user'
+                        ? 'bg-bg-secondary dark:bg-dark-bg-secondary text-text-primary dark:text-dark-text-primary'
+                        : 'bg-primary text-white'
+                    }`}
+                  >
+                    {msg.senderName && msg.role === 'user' && (
+                      <p className="text-[10px] opacity-60 mb-0.5 font-medium">{msg.senderName}</p>
+                    )}
+                    {msg.content}
+                    <p className={`text-[10px] mt-1 opacity-50 text-right`}>
+                      {new Date(msg.timestamp).toLocaleTimeString([], {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
+                    </p>
+                  </div>
+                </div>
+              ))
+            )}
+            <div ref={messagesEndRef} />
+          </div>
+        )}
+
+        {/* Messages */}
+        {!isChannelMode && (
+          <div className="flex-1 overflow-y-auto px-6 py-4">
+            {messages.length === 0 ? (
+              <div className="h-full flex items-center justify-center">
+                <div className="text-center max-w-md">
+                  <h3 className="text-xl font-medium text-text-primary dark:text-dark-text-primary mb-2">
+                    {currentAgent ? `Chat with ${agentDisplayName}` : 'Welcome to OwnPilot'}
+                  </h3>
+
+                  {!isLoadingModels &&
+                  configuredProviders.length === 0 &&
+                  localStorage.getItem(STORAGE_KEYS.SETUP_COMPLETE) !== 'true' ? (
+                    <Suspense fallback={null}>
+                      <SetupWizard onComplete={() => window.location.reload()} />
+                    </Suspense>
+                  ) : !isLoadingModels && configuredProviders.length === 0 ? (
+                    <>
+                      <div className="p-4 bg-warning/10 border border-warning/20 rounded-lg mb-4">
+                        <div className="flex items-center justify-center gap-2 text-warning mb-2">
+                          <AlertCircle className="w-5 h-5" />
+                          <span className="font-medium">No API Keys</span>
                         </div>
+                        <p className="text-sm text-text-muted dark:text-dark-text-muted">
+                          Configure at least one AI provider to start chatting.
+                        </p>
+                      </div>
+                      <a
+                        href="/settings/api-keys"
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg transition-colors mb-4"
+                      >
+                        <Settings className="w-4 h-4" />
+                        Configure API Keys
+                      </a>
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-text-muted dark:text-dark-text-muted mb-2">
+                        Start a conversation by typing a message below.
+                      </p>
+                      <p className="text-sm text-text-muted dark:text-dark-text-muted mb-4">
+                        Currently using:{' '}
+                        <span className="font-medium text-primary">{currentProviderName}</span> /{' '}
+                        <span className="font-mono">{model}</span>
+                      </p>
+                    </>
+                  )}
+
+                  {/* Suggestion cards grid */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-w-lg mx-auto">
+                    {[
+                      {
+                        icon: '🚀',
+                        label: 'What can you do?',
+                        prompt:
+                          'What are all the things you can help me with? Give me a quick overview of your capabilities, tools, and what makes you different from a regular chatbot.',
+                      },
+                      {
+                        icon: '🧠',
+                        label: 'My setup & limits',
+                        prompt:
+                          'Tell me about my current setup — which model am I using, what tools are available, and what are the context window limits? How much can you remember in a single conversation?',
+                      },
+                      {
+                        icon: '✅',
+                        label: 'Manage my tasks',
+                        prompt:
+                          'Show me all my current tasks and help me prioritize them. If I have none yet, help me create a task list for today.',
+                      },
+                      {
+                        icon: '📝',
+                        label: 'Take a note',
+                        prompt:
+                          'I want to save a quick note. Help me organize it with tags so I can find it later.',
+                      },
+                      {
+                        icon: '💡',
+                        label: 'Brainstorm with me',
+                        prompt:
+                          "I need fresh ideas. Let's brainstorm — ask me what topic I'm working on and then generate creative angles I haven't considered.",
+                      },
+                      {
+                        icon: '🔍',
+                        label: 'Search the web',
+                        prompt:
+                          'Search the web for the most interesting tech news from this week and give me a brief summary of the top 3 stories.',
+                      },
+                      {
+                        icon: '💻',
+                        label: 'Write & run code',
+                        prompt:
+                          'Show me what you can do with code execution. Write a quick Python script that does something fun and run it.',
+                      },
+                      {
+                        icon: '📊',
+                        label: 'Track something',
+                        prompt:
+                          "I want to start tracking something — maybe expenses, habits, books I've read, or workouts. Help me set up a custom data table for it.",
+                      },
+                    ].map((item) => (
+                      <button
+                        key={item.label}
+                        onClick={() => sendMessage(item.prompt)}
+                        className="flex items-center gap-2.5 px-3 py-2.5 text-left rounded-xl border border-border dark:border-dark-border hover:border-primary/40 dark:hover:border-primary/40 hover:bg-bg-secondary dark:hover:bg-dark-bg-secondary transition-all group"
+                      >
+                        <span className="text-base shrink-0">{item.icon}</span>
+                        <span className="text-sm text-text-secondary dark:text-dark-text-secondary group-hover:text-text-primary dark:group-hover:text-dark-text-primary transition-colors">
+                          {item.label}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Quick-action pills */}
+                  <div className="space-y-3 mt-5 max-w-lg mx-auto">
+                    {/* Code Execution */}
+                    <div>
+                      <p className="text-xs text-text-muted dark:text-dark-text-muted mb-2 text-center">
+                        Code Execution
+                      </p>
+                      <div className="flex flex-wrap gap-2 justify-center">
+                        {[
+                          {
+                            label: 'Run JavaScript',
+                            prompt:
+                              'Run this JavaScript code:\n\nconsole.log("Hello from Node.js!");\nconst arr = [1, 2, 3, 4, 5];\nconsole.log("Sum:", arr.reduce((a, b) => a + b, 0));\nconsole.log("Reversed:", arr.reverse());',
+                          },
+                          {
+                            label: 'Run Python',
+                            prompt:
+                              'Run this Python code:\n\nimport sys, os, datetime\nprint(f"Python {sys.version}")\nprint(f"Platform: {sys.platform}")\nprint(f"Current time: {datetime.datetime.now()}")\nprint(f"Fibonacci:", [0,1,1,2,3,5,8,13,21,34])',
+                          },
+                          {
+                            label: 'Run Shell',
+                            prompt:
+                              'Run this shell command: echo "=== System Info ===" && uname -a && echo "\\n=== Disk Usage ===" && df -h / && echo "\\n=== Memory ===" && free -h 2>/dev/null || echo "(memory info not available)"',
+                          },
+                        ].map((item) => (
+                          <button
+                            key={item.label}
+                            onClick={() => sendMessage(item.prompt)}
+                            className="px-3 py-1.5 text-sm bg-primary/10 text-primary rounded-full hover:bg-primary hover:text-white transition-colors"
+                          >
+                            {item.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Tools & Productivity */}
+                    <div>
+                      <p className="text-xs text-text-muted dark:text-dark-text-muted mb-2 text-center">
+                        Tools & Productivity
+                      </p>
+                      <div className="flex flex-wrap gap-2 justify-center">
+                        {[
+                          {
+                            label: 'Web Search',
+                            prompt:
+                              'Search the web for the most interesting tech news this week and summarize the top 3 stories.',
+                          },
+                          {
+                            label: 'Calculator',
+                            prompt: 'Calculate: (15 * 27) + (sqrt(144) / 3) - 18^2',
+                          },
+                          {
+                            label: 'Plan my day',
+                            prompt:
+                              'Help me plan my day. Ask me what I need to get done and create a structured schedule with time blocks.',
+                          },
+                        ].map((item) => (
+                          <button
+                            key={item.label}
+                            onClick={() => sendMessage(item.prompt)}
+                            className="px-3 py-1.5 text-sm bg-success/10 text-success rounded-full hover:bg-success hover:text-white transition-colors"
+                          >
+                            {item.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <>
+                <MessageList
+                  messages={messages}
+                  onRetry={retryLastMessage}
+                  canRetry={!!lastFailedMessage && !isLoading}
+                  workspaceId={workspaceId || sessionId}
+                />
+
+                {/* Streaming content and progress */}
+                {isLoading && (streamingContent || progressEvents.length > 0) && (
+                  <div className="mt-4 p-4 bg-bg-secondary dark:bg-dark-bg-secondary rounded-lg border border-border dark:border-dark-border">
+                    {/* Security block banner */}
+                    {progressEvents.some(
+                      (e) =>
+                        e.type === 'tool_end' &&
+                        e.result?.preview?.includes('blocked in Execution Security')
+                    ) && (
+                      <div className="mb-3 flex items-center gap-2 px-3 py-2 bg-red-500/10 border border-red-500/20 rounded-lg">
+                        <Shield className="w-4 h-4 text-red-500 flex-shrink-0" />
+                        <span className="text-xs text-red-600 dark:text-red-400">
+                          Tool execution was blocked by Execution Security settings. Adjust
+                          permissions in the security panel above.
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Local execution warning banner */}
+                    {progressEvents.some(
+                      (e) => e.type === 'tool_end' && e.result?.sandboxed === false
+                    ) && (
+                      <div className="mb-3 flex items-center gap-2 px-3 py-2 bg-amber-500/10 border border-amber-500/20 rounded-lg">
+                        <AlertTriangle className="w-4 h-4 text-amber-500 flex-shrink-0" />
+                        <span className="text-xs text-amber-600 dark:text-amber-400">
+                          Code is executing directly on your local machine without Docker sandbox.
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Progress events */}
+                    {progressEvents.length > 0 && (
+                      <div className="mb-3 space-y-1">
+                        {progressEvents.slice(-5).map((event, idx) => (
+                          <div
+                            key={`progress-${event.type}-${idx}`}
+                            className="flex items-center gap-2 text-xs text-text-muted dark:text-dark-text-muted"
+                          >
+                            {event.type === 'status' && (
+                              <>
+                                <span className="w-2 h-2 bg-primary rounded-full animate-pulse" />
+                                <span>{event.message}</span>
+                              </>
+                            )}
+                            {event.type === 'tool_start' && (
+                              <>
+                                <span className="w-2 h-2 bg-warning rounded-full animate-pulse" />
+                                <span>
+                                  🔧 Running <strong>{event.tool?.name}</strong>...
+                                </span>
+                              </>
+                            )}
+                            {event.type === 'tool_end' && (
+                              <>
+                                <span
+                                  className={`w-2 h-2 ${event.result?.success ? 'bg-success' : 'bg-error'} rounded-full`}
+                                />
+                                <span>
+                                  {event.result?.success ? '✓' : '✗'} {event.tool?.name}
+                                  <span className="opacity-60 ml-1">
+                                    ({event.result?.durationMs}ms)
+                                  </span>
+                                </span>
+                                {event.result?.preview?.includes(
+                                  'blocked in Execution Security'
+                                ) ? (
+                                  <span className="inline-flex items-center gap-0.5 px-1.5 py-0 text-[10px] bg-red-500/15 text-red-600 dark:text-red-400 rounded font-semibold leading-4">
+                                    <Shield className="w-3 h-3" />
+                                    BLOCKED
+                                  </span>
+                                ) : (
+                                  event.result?.sandboxed === false && (
+                                    <span className="inline-flex items-center gap-0.5 px-1.5 py-0 text-[10px] bg-amber-500/15 text-amber-600 dark:text-amber-400 rounded font-semibold leading-4">
+                                      LOCAL
+                                    </span>
+                                  )
+                                )}
+                              </>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Thinking section (collapsible, shows streaming thinking content) */}
+                    {(isThinking || thinkingContent) && (
+                      <div className="rounded-lg border border-border dark:border-dark-border bg-bg-tertiary/50 dark:bg-dark-bg-tertiary/50 overflow-hidden text-sm">
+                        <button
+                          onClick={() => setThinkingExpanded(!thinkingExpanded)}
+                          className="w-full flex items-center gap-2 px-3 py-2 hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary transition-colors"
+                        >
+                          <div className="text-text-muted dark:text-dark-text-muted">
+                            {thinkingExpanded ? (
+                              <ChevronDown className="w-4 h-4" />
+                            ) : (
+                              <ChevronRight className="w-4 h-4" />
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-text-secondary dark:text-dark-text-secondary font-medium">
+                              Thinking
+                            </span>
+                            {isThinking && (
+                              <div className="flex gap-1">
+                                <span
+                                  className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce"
+                                  style={{ animationDelay: '0ms' }}
+                                />
+                                <span
+                                  className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce"
+                                  style={{ animationDelay: '150ms' }}
+                                />
+                                <span
+                                  className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce"
+                                  style={{ animationDelay: '300ms' }}
+                                />
+                              </div>
+                            )}
+                          </div>
+                        </button>
+                        {thinkingExpanded && thinkingContent && (
+                          <div className="border-t border-border dark:border-dark-border px-3 py-2 max-h-64 overflow-y-auto">
+                            <div className="whitespace-pre-wrap text-text-muted dark:text-dark-text-muted text-xs leading-relaxed">
+                              {thinkingContent}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Streaming text */}
+                    {streamingContent && (
+                      <div className="prose prose-sm dark:prose-invert max-w-none">
+                        <div className="whitespace-pre-wrap">
+                          {streamingContent.replace(/<memories>[\s\S]*$/, '').trimEnd()}
+                        </div>
+                        <span className="inline-block w-2 h-4 bg-primary animate-pulse ml-0.5" />
+                      </div>
+                    )}
+
+                    {/* Loading indicator when no content yet */}
+                    {!streamingContent && !isThinking && progressEvents.length === 0 && (
+                      <div className="flex items-center gap-2 text-sm text-text-muted dark:text-dark-text-muted">
+                        <div className="flex gap-1">
+                          <span
+                            className="w-2 h-2 bg-primary rounded-full animate-bounce"
+                            style={{ animationDelay: '0ms' }}
+                          />
+                          <span
+                            className="w-2 h-2 bg-primary rounded-full animate-bounce"
+                            style={{ animationDelay: '150ms' }}
+                          />
+                          <span
+                            className="w-2 h-2 bg-primary rounded-full animate-bounce"
+                            style={{ animationDelay: '300ms' }}
+                          />
+                        </div>
+                        <span>Thinking...</span>
                       </div>
                     )}
                   </div>
                 )}
 
-                {/* Streaming text */}
-                {streamingContent && (
-                  <div className="prose prose-sm dark:prose-invert max-w-none">
-                    <div className="whitespace-pre-wrap">
-                      {streamingContent.replace(/<memories>[\s\S]*$/, '').trimEnd()}
-                    </div>
-                    <span className="inline-block w-2 h-4 bg-primary animate-pulse ml-0.5" />
+                {!isLoading && extractedMemories.length > 0 && messages.length > 0 && (
+                  <div className="px-4">
+                    <MemoryCards
+                      memories={extractedMemories}
+                      onAccept={acceptMemory}
+                      onReject={rejectMemory}
+                    />
                   </div>
                 )}
 
-                {/* Loading indicator when no content yet */}
-                {!streamingContent && !isThinking && progressEvents.length === 0 && (
-                  <div className="flex items-center gap-2 text-sm text-text-muted dark:text-dark-text-muted">
-                    <div className="flex gap-1">
-                      <span
-                        className="w-2 h-2 bg-primary rounded-full animate-bounce"
-                        style={{ animationDelay: '0ms' }}
-                      />
-                      <span
-                        className="w-2 h-2 bg-primary rounded-full animate-bounce"
-                        style={{ animationDelay: '150ms' }}
-                      />
-                      <span
-                        className="w-2 h-2 bg-primary rounded-full animate-bounce"
-                        style={{ animationDelay: '300ms' }}
-                      />
-                    </div>
-                    <span>Thinking...</span>
+                {!isLoading && suggestions.length > 0 && messages.length > 0 && (
+                  <div className="px-4">
+                    <SuggestionChips
+                      suggestions={suggestions}
+                      onSelect={(s) => {
+                        clearSuggestions();
+                        chatInputRef.current?.setValue(s.detail);
+                      }}
+                    />
                   </div>
                 )}
-              </div>
-            )}
 
-            {!isLoading && extractedMemories.length > 0 && messages.length > 0 && (
-              <div className="px-4">
-                <MemoryCards
-                  memories={extractedMemories}
-                  onAccept={acceptMemory}
-                  onReject={rejectMemory}
-                />
-              </div>
+                <div ref={messagesEndRef} />
+              </>
             )}
-
-            {!isLoading && suggestions.length > 0 && messages.length > 0 && (
-              <div className="px-4">
-                <SuggestionChips
-                  suggestions={suggestions}
-                  onSelect={(s) => {
-                    clearSuggestions();
-                    chatInputRef.current?.setValue(s.detail);
-                  }}
-                />
-              </div>
-            )}
-
-            <div ref={messagesEndRef} />
-          </>
+          </div>
         )}
-      </div>}
 
-      {/* Error display (web mode only) */}
-      {!isChannelMode && error && (
-        <div className="mx-6 mb-4 px-4 py-2 bg-error/10 border border-error/20 rounded-lg text-error text-sm">
-          {error}
+        {/* Error display (web mode only) */}
+        {!isChannelMode && error && (
+          <div className="mx-6 mb-4 px-4 py-2 bg-error/10 border border-error/20 rounded-lg text-error text-sm">
+            {error}
+          </div>
+        )}
+
+        {/* Input */}
+        <div className="px-6 py-4 border-t border-border dark:border-dark-border">
+          {!isChannelMode && (
+            <>
+              <ExecutionSecurityPanel />
+              <ToolCallLimitPanel />
+              <ThinkingToggle />
+            </>
+          )}
+          <ChatInput
+            ref={chatInputRef}
+            onSend={isChannelMode ? handleSendChannelMessage : sendMessage}
+            onStop={cancelRequest}
+            isLoading={isLoading}
+            placeholder={
+              isChannelMode ? `Message ${activeConv?.channelPlatform ?? 'channel'}…` : undefined
+            }
+          />
         </div>
-      )}
 
-      {/* Input */}
-      <div className="px-6 py-4 border-t border-border dark:border-dark-border">
-        {!isChannelMode && (
-          <>
-            <ExecutionSecurityPanel />
-            <ToolCallLimitPanel />
-            <ThinkingToggle />
-          </>
+        {/* Execution Approval Dialog */}
+        {pendingApproval && (
+          <Suspense fallback={null}>
+            <ExecutionApprovalDialog approval={pendingApproval} onResolve={resolveApproval} />
+          </Suspense>
         )}
-        <ChatInput
-          ref={chatInputRef}
-          onSend={isChannelMode ? handleSendChannelMessage : sendMessage}
-          onStop={cancelRequest}
-          isLoading={isLoading}
-          placeholder={
-            isChannelMode
-              ? `Message ${activeConv?.channelPlatform ?? 'channel'}…`
-              : undefined
-          }
-        />
-      </div>
-
-      {/* Execution Approval Dialog */}
-      {pendingApproval && (
-        <Suspense fallback={null}>
-          <ExecutionApprovalDialog approval={pendingApproval} onResolve={resolveApproval} />
-        </Suspense>
-      )}
-      </div> {/* end main chat area */}
+      </div>{' '}
+      {/* end main chat area */}
     </div>
   );
 }

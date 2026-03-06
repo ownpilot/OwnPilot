@@ -33,7 +33,13 @@ const whatsAppApi = {
 
 const mockService = {
   listChannels: vi.fn(() => [
-    { pluginId: 'channel.whatsapp', platform: 'whatsapp', name: 'WhatsApp', status: 'connected', icon: 'whatsapp' },
+    {
+      pluginId: 'channel.whatsapp',
+      platform: 'whatsapp',
+      name: 'WhatsApp',
+      status: 'connected',
+      icon: 'whatsapp',
+    },
   ]),
   getChannel: vi.fn((id: string) => (id === 'channel.whatsapp' ? whatsAppApi : undefined)),
   connect: vi.fn(),
@@ -137,12 +143,22 @@ describe('Channels Routes — Extended', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     whatsAppApi.getStatus.mockReturnValue('connected');
-    whatsAppApi.getGroup.mockResolvedValue({ id: '120363001@g.us', name: 'Test Group', participants: [] });
+    whatsAppApi.getGroup.mockResolvedValue({
+      id: '120363001@g.us',
+      name: 'Test Group',
+      participants: [],
+    });
     whatsAppApi.listGroups.mockResolvedValue([{ id: '120363001@g.us', name: 'Test Group' }]);
     whatsAppApi.fetchGroupHistory.mockResolvedValue('session-abc');
     whatsAppApi.getQrCode.mockReturnValue('data:image/png;base64,FAKEQR');
     mockService.listChannels.mockReturnValue([
-      { pluginId: 'channel.whatsapp', platform: 'whatsapp', name: 'WhatsApp', status: 'connected', icon: 'whatsapp' },
+      {
+        pluginId: 'channel.whatsapp',
+        platform: 'whatsapp',
+        name: 'WhatsApp',
+        status: 'connected',
+        icon: 'whatsapp',
+      },
     ]);
     mockService.getChannel.mockImplementation((id: string) =>
       id === 'channel.whatsapp' ? whatsAppApi : undefined
@@ -467,7 +483,14 @@ describe('Channels Routes — Extended', () => {
     it('returns distinct chats for a channel', async () => {
       mockChannelMessagesRepo.getDistinctChats.mockResolvedValue({
         chats: [
-          { id: '123@s.whatsapp.net', displayName: 'Alice', platform: 'whatsapp', messageCount: 5, lastMessageAt: '2024-06-01T12:00:00Z', isGroup: false },
+          {
+            id: '123@s.whatsapp.net',
+            displayName: 'Alice',
+            platform: 'whatsapp',
+            messageCount: 5,
+            lastMessageAt: '2024-06-01T12:00:00Z',
+            isGroup: false,
+          },
         ],
         total: 1,
       });

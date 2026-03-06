@@ -48,9 +48,8 @@ vi.mock('@ownpilot/core', async (importOriginal) => {
 // Dynamic import after mocks
 // ---------------------------------------------------------------------------
 
-const { WorkflowApprovalsRepository, createWorkflowApprovalsRepository } = await import(
-  './workflow-approvals.js'
-);
+const { WorkflowApprovalsRepository, createWorkflowApprovalsRepository } =
+  await import('./workflow-approvals.js');
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -110,15 +109,15 @@ describe('WorkflowApprovalsRepository', () => {
 
       const params = mockAdapter.execute.mock.calls[0]![1] as unknown[];
       expect(params[0]).toBe('wfappr-generated-id'); // id
-      expect(params[1]).toBe('wflog-1');              // workflow_log_id
-      expect(params[2]).toBe('wf-1');                 // workflow_id
-      expect(params[3]).toBe('node-gate');             // node_id
-      expect(params[4]).toBe('default');               // user_id
-      expect(params[5]).toBe('pending');               // status default
-      expect(params[6]).toBe('{"key":"value"}');       // context JSON
-      expect(params[7]).toBe('Please approve');        // message
-      expect(params[8]).toBeNull();                    // expires_at (not provided)
-      expect(typeof params[9]).toBe('string');         // created_at ISO
+      expect(params[1]).toBe('wflog-1'); // workflow_log_id
+      expect(params[2]).toBe('wf-1'); // workflow_id
+      expect(params[3]).toBe('node-gate'); // node_id
+      expect(params[4]).toBe('default'); // user_id
+      expect(params[5]).toBe('pending'); // status default
+      expect(params[6]).toBe('{"key":"value"}'); // context JSON
+      expect(params[7]).toBe('Please approve'); // message
+      expect(params[8]).toBeNull(); // expires_at (not provided)
+      expect(typeof params[9]).toBe('string'); // created_at ISO
 
       expect(result.id).toBe('wfappr-generated-id');
       expect(result.status).toBe('pending');
@@ -139,9 +138,9 @@ describe('WorkflowApprovalsRepository', () => {
       });
 
       const params = mockAdapter.execute.mock.calls[0]![1] as unknown[];
-      expect(params[6]).toBe('{}');    // context defaults to {}
-      expect(params[7]).toBeNull();    // message defaults to null
-      expect(params[8]).toBeNull();    // expires_at defaults to null
+      expect(params[6]).toBe('{}'); // context defaults to {}
+      expect(params[7]).toBeNull(); // message defaults to null
+      expect(params[8]).toBeNull(); // expires_at defaults to null
     });
 
     it('should pass expiresAt as ISO string when provided', async () => {
@@ -398,7 +397,10 @@ describe('WorkflowApprovalsRepository', () => {
     });
 
     it('should map all rows through mapApproval', async () => {
-      const row = makeApprovalRow({ context: '{"taskId":"t1"}', expires_at: '2024-12-31T00:00:00Z' });
+      const row = makeApprovalRow({
+        context: '{"taskId":"t1"}',
+        expires_at: '2024-12-31T00:00:00Z',
+      });
       mockAdapter.query.mockResolvedValueOnce([row]);
 
       const result = await repo.getPending();

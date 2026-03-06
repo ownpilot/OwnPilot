@@ -44,13 +44,17 @@ export class EmbeddingQueue {
   private running = false;
 
   // Stored as class fields so they can be unsubscribed in stop()
-  private readonly onMemoryCreated = (event: { data: { needsEmbedding?: boolean; memoryId: string; userId: string; content: string } }) => {
+  private readonly onMemoryCreated = (event: {
+    data: { needsEmbedding?: boolean; memoryId: string; userId: string; content: string };
+  }) => {
     if (event.data.needsEmbedding) {
       this.enqueue(event.data.memoryId, event.data.userId, event.data.content);
     }
   };
 
-  private readonly onMemoryUpdated = (event: { data: { needsEmbedding?: boolean; memoryId: string; userId: string; content?: string } }) => {
+  private readonly onMemoryUpdated = (event: {
+    data: { needsEmbedding?: boolean; memoryId: string; userId: string; content?: string };
+  }) => {
     if (event.data.needsEmbedding && event.data.content) {
       this.enqueue(event.data.memoryId, event.data.userId, event.data.content);
     }

@@ -27,38 +27,35 @@ export function DiscoverTab() {
   /** Track the latest search request to ignore stale responses */
   const searchSeqRef = useRef(0);
 
-  const doSearch = useCallback(
-    async (q: string, isInitial = false, append = false) => {
-      const seq = ++searchSeqRef.current;
-      if (isInitial) {
-        setIsInitialLoading(true);
-      } else if (append) {
-        setIsLoadingMore(true);
-      } else {
-        setIsSearching(true);
+  const doSearch = useCallback(async (q: string, isInitial = false, append = false) => {
+    const seq = ++searchSeqRef.current;
+    if (isInitial) {
+      setIsInitialLoading(true);
+    } else if (append) {
+      setIsLoadingMore(true);
+    } else {
+      setIsSearching(true);
+    }
+    setError(null);
+    try {
+      const offset = append ? results.length : 0;
+      const res = await skillsApi.search(q, PAGE_SIZE, offset);
+      if (seq !== searchSeqRef.current) return; // stale
+      const pkgs = res.packages ?? [];
+      setResults((prev) => (append ? [...prev, ...pkgs] : pkgs));
+      setTotal(res.total ?? pkgs.length);
+    } catch (err) {
+      if (seq !== searchSeqRef.current) return;
+      const msg = err instanceof Error ? err.message : 'Failed to search npm registry';
+      setError(msg);
+    } finally {
+      if (seq === searchSeqRef.current) {
+        setIsInitialLoading(false);
+        setIsSearching(false);
+        setIsLoadingMore(false);
       }
-      setError(null);
-      try {
-        const offset = append ? results.length : 0;
-        const res = await skillsApi.search(q, PAGE_SIZE, offset);
-        if (seq !== searchSeqRef.current) return; // stale
-        const pkgs = res.packages ?? [];
-        setResults((prev) => (append ? [...prev, ...pkgs] : pkgs));
-        setTotal(res.total ?? pkgs.length);
-      } catch (err) {
-        if (seq !== searchSeqRef.current) return;
-        const msg = err instanceof Error ? err.message : 'Failed to search npm registry';
-        setError(msg);
-      } finally {
-        if (seq === searchSeqRef.current) {
-          setIsInitialLoading(false);
-          setIsSearching(false);
-          setIsLoadingMore(false);
-        }
-      }
-    },
-    []
-  );
+    }
+  }, []);
 
   const loadInstalled = useCallback(async () => {
     try {

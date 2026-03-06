@@ -3,7 +3,16 @@
  */
 
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Eye, Pause, Play, MessageSquare, Heart, Trash2, Clock, FlaskConical } from '../../../components/icons';
+import {
+  Eye,
+  Pause,
+  Play,
+  MessageSquare,
+  Heart,
+  Trash2,
+  Clock,
+  FlaskConical,
+} from '../../../components/icons';
 import type { UnifiedAgent } from '../types';
 import { AgentStatusBadge } from './AgentStatusBadge';
 import { formatTimeAgo, formatCost, cronToHuman } from '../helpers';
@@ -96,15 +105,24 @@ export function AgentCard({ agent, onPause, onResume, onDelete, onTestRun }: Pro
         {agent.lastActiveAt && (
           <span
             className="flex items-center gap-1"
-            title={agent.heartbeatEnabled ? 'Heartbeat is enabled - agent runs automatically' : 'Agent is idle'}
+            title={
+              agent.heartbeatEnabled
+                ? 'Heartbeat is enabled - agent runs automatically'
+                : 'Agent is idle'
+            }
           >
-            <Heart className={`w-3 h-3 ${agent.heartbeatEnabled ? 'text-danger animate-pulse' : ''}`} />
+            <Heart
+              className={`w-3 h-3 ${agent.heartbeatEnabled ? 'text-danger animate-pulse' : ''}`}
+            />
             {formatTimeAgo(agent.lastActiveAt)}
           </span>
         )}
         <span title="API cost consumed today">{formatCost(agent.todayCost)} today</span>
         {agent.unreadMessages > 0 && (
-          <span className="flex items-center gap-1 text-primary" title="Unread messages from other agents">
+          <span
+            className="flex items-center gap-1 text-primary"
+            title="Unread messages from other agents"
+          >
             <MessageSquare className="w-3 h-3" />
             {agent.unreadMessages}
           </span>

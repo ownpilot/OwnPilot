@@ -373,12 +373,15 @@ describe('getEventBusBridge / setEventBusBridge', () => {
   });
 
   it('setEventBusBridge stores the bridge and getEventBusBridge retrieves it', async () => {
-    const { getEventBusBridge, setEventBusBridge, EventBusBridge } = await import('./event-bridge.js');
+    const { getEventBusBridge, setEventBusBridge, EventBusBridge } =
+      await import('./event-bridge.js');
     const fakeEventBus = {
       onPattern: vi.fn(() => vi.fn()),
       emitRaw: vi.fn(),
     } as unknown as Parameters<typeof setEventBusBridge>[0]['eventBus'];
-    const fakeSM = { send: vi.fn() } as unknown as Parameters<typeof setEventBusBridge>[0]['sessionManager'];
+    const fakeSM = { send: vi.fn() } as unknown as Parameters<
+      typeof setEventBusBridge
+    >[0]['sessionManager'];
     const newBridge = new EventBusBridge({ eventBus: fakeEventBus, sessionManager: fakeSM });
     setEventBusBridge(newBridge);
     expect(getEventBusBridge()).toBe(newBridge);

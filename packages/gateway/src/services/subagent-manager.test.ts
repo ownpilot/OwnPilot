@@ -80,9 +80,11 @@ vi.mock('./log.js', () => ({
   }),
 }));
 
-const { SubagentManager, getSubagentManager, resetSubagentManager } = await import('./subagent-manager.js');
+const { SubagentManager, getSubagentManager, resetSubagentManager } =
+  await import('./subagent-manager.js');
 const { SubagentRunner: MockSubagentRunner } = await import('./subagent-runner.js');
-const { SubagentsRepository: MockSubagentsRepository } = await import('../db/repositories/subagents.js');
+const { SubagentsRepository: MockSubagentsRepository } =
+  await import('../db/repositories/subagents.js');
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -411,7 +413,11 @@ describe('SubagentManager', () => {
       vi.mocked(MockSubagentRunner).mockImplementationOnce(function () {
         return {
           run: vi.fn(() =>
-            Promise.resolve({ ...completedResult, success: false, error: 'Subagent timed out after 60000ms' })
+            Promise.resolve({
+              ...completedResult,
+              success: false,
+              error: 'Subagent timed out after 60000ms',
+            })
           ),
           cancel: vi.fn(),
           cancelled: false,
@@ -470,10 +476,20 @@ describe('SubagentManager', () => {
     it('records tool calls and emits progress event', async () => {
       vi.mocked(MockSubagentRunner).mockImplementationOnce(function () {
         return {
-          run: vi.fn((onToolEnd: (tc: { name: string; arguments: string }, result: { content: string; isError: boolean; durationMs: number }) => void) => {
-            onToolEnd({ name: 'core.search', arguments: '{"q":"test"}' }, { content: 'results', isError: false, durationMs: 50 });
-            return Promise.resolve(completedResult);
-          }),
+          run: vi.fn(
+            (
+              onToolEnd: (
+                tc: { name: string; arguments: string },
+                result: { content: string; isError: boolean; durationMs: number }
+              ) => void
+            ) => {
+              onToolEnd(
+                { name: 'core.search', arguments: '{"q":"test"}' },
+                { content: 'results', isError: false, durationMs: 50 }
+              );
+              return Promise.resolve(completedResult);
+            }
+          ),
           cancel: vi.fn(),
           cancelled: false,
         };
@@ -491,10 +507,20 @@ describe('SubagentManager', () => {
     it('handles invalid JSON in tool arguments via safeParseJson fallback', async () => {
       vi.mocked(MockSubagentRunner).mockImplementationOnce(function () {
         return {
-          run: vi.fn((onToolEnd: (tc: { name: string; arguments: string }, result: { content: string; isError: boolean; durationMs: number }) => void) => {
-            onToolEnd({ name: 'my_tool', arguments: 'NOT_VALID_JSON' }, { content: 'err', isError: true, durationMs: 5 });
-            return Promise.resolve(completedResult);
-          }),
+          run: vi.fn(
+            (
+              onToolEnd: (
+                tc: { name: string; arguments: string },
+                result: { content: string; isError: boolean; durationMs: number }
+              ) => void
+            ) => {
+              onToolEnd(
+                { name: 'my_tool', arguments: 'NOT_VALID_JSON' },
+                { content: 'err', isError: true, durationMs: 5 }
+              );
+              return Promise.resolve(completedResult);
+            }
+          ),
           cancel: vi.fn(),
           cancelled: false,
         };

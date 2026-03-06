@@ -458,9 +458,7 @@ describe('Skills Routes', () => {
     });
 
     it('filters out extensions from other users', async () => {
-      mockExtensionsRepo.getAll.mockReturnValue([
-        makeExtWithNpm({ userId: 'other-user' }),
-      ]);
+      mockExtensionsRepo.getAll.mockReturnValue([makeExtWithNpm({ userId: 'other-user' })]);
       mockCheckForUpdate.mockResolvedValue({ hasUpdate: true, latestVersion: '9.9.9' });
 
       const res = await app.request('/skills/check-updates', { method: 'POST' });

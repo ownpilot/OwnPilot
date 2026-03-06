@@ -90,9 +90,9 @@ export function HelpPanel({ onClose }: Props) {
                     Soul
                   </h4>
                   <p className="text-xs text-text-muted dark:text-dark-text-muted">
-                    A soul is the persistent identity of an agent. It includes the agent&apos;s name,
-                    personality, mission, autonomy rules, and learning history. Souls evolve over
-                    time based on feedback.
+                    A soul is the persistent identity of an agent. It includes the agent&apos;s
+                    name, personality, mission, autonomy rules, and learning history. Souls evolve
+                    over time based on feedback.
                   </p>
                 </div>
               </div>
@@ -106,8 +106,8 @@ export function HelpPanel({ onClose }: Props) {
                     Heartbeat
                   </h4>
                   <p className="text-xs text-text-muted dark:text-dark-text-muted">
-                    A heartbeat is the agent&apos;s scheduled wake-up time. Agents check their inbox,
-                    run their checklist of tasks, and go back to sleep. Heartbeats use cron
+                    A heartbeat is the agent&apos;s scheduled wake-up time. Agents check their
+                    inbox, run their checklist of tasks, and go back to sleep. Heartbeats use cron
                     expressions like &quot;0 9 * * *&quot; (daily at 9am).
                   </p>
                 </div>
@@ -138,9 +138,9 @@ export function HelpPanel({ onClose }: Props) {
                     Inbox
                   </h4>
                   <p className="text-xs text-text-muted dark:text-dark-text-muted">
-                    Each agent has an inbox for receiving messages from other agents. When one
-                    agent finds something interesting, it can send a message to another agent&apos;s
-                    inbox for them to read on their next heartbeat.
+                    Each agent has an inbox for receiving messages from other agents. When one agent
+                    finds something interesting, it can send a message to another agent&apos;s inbox
+                    for them to read on their next heartbeat.
                   </p>
                 </div>
               </div>

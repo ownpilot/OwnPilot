@@ -1561,7 +1561,7 @@ describe('agent-tools helpers', () => {
       const { SUBAGENT_TOOLS } = await import('../tools/index.js');
       const { executeSubagentTool } = await import('../tools/index.js');
       const td = { name: 'spawn_agent', description: 'Spawn', parameters: {} };
-      (SUBAGENT_TOOLS as typeof td[]).push(td);
+      (SUBAGENT_TOOLS as (typeof td)[]).push(td);
       try {
         vi.mocked(executeSubagentTool).mockResolvedValue({ success: true, result: 'spawned' });
         const { captured } = captureGatewayExecutors(true);
@@ -1570,8 +1570,8 @@ describe('agent-tools helpers', () => {
         expect(result.content).toContain('spawned');
         expect(mockTraceToolCallEnd).toHaveBeenCalled();
       } finally {
-        const i = (SUBAGENT_TOOLS as typeof td[]).indexOf(td);
-        if (i > -1) (SUBAGENT_TOOLS as typeof td[]).splice(i, 1);
+        const i = (SUBAGENT_TOOLS as (typeof td)[]).indexOf(td);
+        if (i > -1) (SUBAGENT_TOOLS as (typeof td)[]).splice(i, 1);
       }
     });
 
@@ -1579,17 +1579,20 @@ describe('agent-tools helpers', () => {
       const { ORCHESTRA_TOOL_DEFINITIONS } = await import('../tools/index.js');
       const { executeOrchestraTool } = await import('../tools/index.js');
       const td = { name: 'orchestrate', description: 'Orchestrate', parameters: {} };
-      (ORCHESTRA_TOOL_DEFINITIONS as typeof td[]).push(td);
+      (ORCHESTRA_TOOL_DEFINITIONS as (typeof td)[]).push(td);
       try {
-        vi.mocked(executeOrchestraTool).mockResolvedValue({ success: true, result: 'orchestrated' });
+        vi.mocked(executeOrchestraTool).mockResolvedValue({
+          success: true,
+          result: 'orchestrated',
+        });
         const { captured } = captureGatewayExecutors(true);
         const fn = captured[captured.length - 1]!;
         const result = (await fn({}, { conversationId: 'conv-1' })) as { content: string };
         expect(result.content).toContain('orchestrated');
         expect(mockTraceToolCallEnd).toHaveBeenCalled();
       } finally {
-        const i = (ORCHESTRA_TOOL_DEFINITIONS as typeof td[]).indexOf(td);
-        if (i > -1) (ORCHESTRA_TOOL_DEFINITIONS as typeof td[]).splice(i, 1);
+        const i = (ORCHESTRA_TOOL_DEFINITIONS as (typeof td)[]).indexOf(td);
+        if (i > -1) (ORCHESTRA_TOOL_DEFINITIONS as (typeof td)[]).splice(i, 1);
       }
     });
 
@@ -1597,7 +1600,7 @@ describe('agent-tools helpers', () => {
       const { ARTIFACT_TOOLS } = await import('../tools/index.js');
       const { executeArtifactTool } = await import('../tools/index.js');
       const td = { name: 'create_artifact', description: 'Artifact', parameters: {} };
-      (ARTIFACT_TOOLS as typeof td[]).push(td);
+      (ARTIFACT_TOOLS as (typeof td)[]).push(td);
       try {
         vi.mocked(executeArtifactTool).mockResolvedValue({ success: true, result: 'artifact' });
         const { captured } = captureGatewayExecutors(true);
@@ -1606,8 +1609,8 @@ describe('agent-tools helpers', () => {
         expect(result.content).toContain('artifact');
         expect(mockTraceToolCallEnd).toHaveBeenCalled();
       } finally {
-        const i = (ARTIFACT_TOOLS as typeof td[]).indexOf(td);
-        if (i > -1) (ARTIFACT_TOOLS as typeof td[]).splice(i, 1);
+        const i = (ARTIFACT_TOOLS as (typeof td)[]).indexOf(td);
+        if (i > -1) (ARTIFACT_TOOLS as (typeof td)[]).splice(i, 1);
       }
     });
   });
@@ -1690,7 +1693,12 @@ describe('agent-tools helpers', () => {
       mockExecuteCustomToolTool.mockResolvedValue({ success: true, result: [] });
       await registerDynamicTools(reg as any, 'user', 'conv', true);
 
-      for (const name of ['list_custom_tools', 'delete_custom_tool', 'toggle_custom_tool', 'update_custom_tool']) {
+      for (const name of [
+        'list_custom_tools',
+        'delete_custom_tool',
+        'toggle_custom_tool',
+        'update_custom_tool',
+      ]) {
         const fn = byName[name];
         if (fn) await fn({}, {});
       }
@@ -1772,7 +1780,11 @@ describe('agent-tools helpers', () => {
       expect(wrapped.length).toBeGreaterThan(0);
       await wrapped[0]!({}, {});
       expect(mockTraceToolCallEnd).toHaveBeenCalledWith(
-        'plugin_tool', expect.any(Number), true, 'ok', undefined
+        'plugin_tool',
+        expect.any(Number),
+        true,
+        'ok',
+        undefined
       );
     });
 
@@ -1798,7 +1810,11 @@ describe('agent-tools helpers', () => {
       registerPluginTools(reg as any, true);
       await wrapped[0]!({}, {});
       expect(mockTraceToolCallEnd).toHaveBeenCalledWith(
-        'err_plugin', expect.any(Number), false, 'err!', 'err!'
+        'err_plugin',
+        expect.any(Number),
+        false,
+        'err!',
+        'err!'
       );
     });
   });
@@ -1878,7 +1894,11 @@ describe('agent-tools helpers', () => {
       expect(result.isError).toBe(true);
       expect(result.content).toBe('crashed');
       expect(mockTraceToolCallEnd).toHaveBeenCalledWith(
-        'ext_throw', expect.any(Number), false, undefined, 'crashed'
+        'ext_throw',
+        expect.any(Number),
+        false,
+        undefined,
+        'crashed'
       );
     });
   });
@@ -1905,7 +1925,11 @@ describe('agent-tools helpers', () => {
       registerMcpTools(reg as any, true);
       await wrapped[0]!({}, {});
       expect(mockTraceToolCallEnd).toHaveBeenCalledWith(
-        expect.any(String), expect.any(Number), true, 'mcp ok', undefined
+        expect.any(String),
+        expect.any(Number),
+        true,
+        'mcp ok',
+        undefined
       );
     });
   });
@@ -1924,7 +1948,7 @@ describe('agent-tools helpers', () => {
         {}
       );
       expect(result.isError).toBe(true);
-      expect(result.content).toContain("is not available");
+      expect(result.content).toContain('is not available');
       expect(result.content).toContain('Tool is blocked');
     });
   });
@@ -1962,7 +1986,10 @@ describe('agent-tools helpers', () => {
           tags: ['save', 'remember', 'persist'],
         },
       });
-      const result = await executeSearchTools(registry as any, { query: 'save', include_params: false });
+      const result = await executeSearchTools(registry as any, {
+        query: 'save',
+        include_params: false,
+      });
       expect(result.content).toContain('store_memory');
     });
   });

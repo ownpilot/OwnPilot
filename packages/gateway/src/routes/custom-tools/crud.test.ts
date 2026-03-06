@@ -185,7 +185,12 @@ describe('Custom Tools CRUD Routes', () => {
     mockRepo.disable.mockResolvedValue(makeTool({ status: 'disabled' }));
     mockRepo.getActiveTools.mockResolvedValue([
       makeTool(),
-      makeTool({ id: 'ct_002', name: 'another_tool', category: null, metadata: { workflowUsable: true } }),
+      makeTool({
+        id: 'ct_002',
+        name: 'another_tool',
+        category: null,
+        metadata: { workflowUsable: true },
+      }),
     ]);
 
     app = createApp();
@@ -237,25 +242,19 @@ describe('Custom Tools CRUD Routes', () => {
     it('passes status filter to repo', async () => {
       await app.request('/custom-tools?status=active');
 
-      expect(mockRepo.list).toHaveBeenCalledWith(
-        expect.objectContaining({ status: 'active' })
-      );
+      expect(mockRepo.list).toHaveBeenCalledWith(expect.objectContaining({ status: 'active' }));
     });
 
     it('passes category filter to repo', async () => {
       await app.request('/custom-tools?category=utility');
 
-      expect(mockRepo.list).toHaveBeenCalledWith(
-        expect.objectContaining({ category: 'utility' })
-      );
+      expect(mockRepo.list).toHaveBeenCalledWith(expect.objectContaining({ category: 'utility' }));
     });
 
     it('passes createdBy filter to repo', async () => {
       await app.request('/custom-tools?createdBy=llm');
 
-      expect(mockRepo.list).toHaveBeenCalledWith(
-        expect.objectContaining({ createdBy: 'llm' })
-      );
+      expect(mockRepo.list).toHaveBeenCalledWith(expect.objectContaining({ createdBy: 'llm' }));
     });
 
     it('passes limit and offset to repo', async () => {
@@ -270,9 +269,7 @@ describe('Custom Tools CRUD Routes', () => {
       const res = await app.request('/custom-tools?status=invalid_status');
 
       expect(res.status).toBe(200);
-      expect(mockRepo.list).toHaveBeenCalledWith(
-        expect.objectContaining({ status: undefined })
-      );
+      expect(mockRepo.list).toHaveBeenCalledWith(expect.objectContaining({ status: undefined }));
     });
 
     it('returns empty tools array when repo returns empty list', async () => {
@@ -345,9 +342,11 @@ describe('Custom Tools CRUD Routes', () => {
     it('filters templates by category (case-insensitive)', async () => {
       const res = await app.request('/custom-tools/templates?category=network');
       const json = await res.json();
-      expect(json.data.templates.every((t: { category: string }) =>
-        t.category.toLowerCase() === 'network'
-      )).toBe(true);
+      expect(
+        json.data.templates.every(
+          (t: { category: string }) => t.category.toLowerCase() === 'network'
+        )
+      ).toBe(true);
     });
 
     it('returns empty templates array for unknown category', async () => {
@@ -583,9 +582,7 @@ describe('Custom Tools CRUD Routes', () => {
         body: JSON.stringify(validBody),
       });
 
-      expect(mockRepo.create).toHaveBeenCalledWith(
-        expect.objectContaining({ createdBy: 'user' })
-      );
+      expect(mockRepo.create).toHaveBeenCalledWith(expect.objectContaining({ createdBy: 'user' }));
     });
   });
 

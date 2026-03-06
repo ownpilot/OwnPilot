@@ -177,7 +177,9 @@ ${content}
   },
 
   search_notes: async (args) => {
-    const query = (typeof args.query === 'string' ? args.query : String(args.query ?? '')).toLowerCase();
+    const query = (
+      typeof args.query === 'string' ? args.query : String(args.query ?? '')
+    ).toLowerCase();
     const category = typeof args.category === 'string' ? args.category : undefined;
 
     const notesDir = resolveWorkspacePath(category ? `notes/${category}` : 'notes');
@@ -215,7 +217,9 @@ ${content}
     }
 
     const truncated = results.length >= MAX_RESULTS ? ` (showing first ${MAX_RESULTS})` : '';
-    return { content: `\u{1F50D} Found ${results.length} note(s)${truncated}:\n${results.join('\n')}` };
+    return {
+      content: `\u{1F50D} Found ${results.length} note(s)${truncated}:\n${results.join('\n')}`,
+    };
   },
 
   create_bookmark: async (args) => {

@@ -82,9 +82,7 @@ const mockExtension = {
     version: '1.0.0',
     description: 'Test',
     format: 'ownpilot',
-    tools: [
-      { name: 'tool1', description: 'Tool 1', parameters: {} },
-    ],
+    tools: [{ name: 'tool1', description: 'Tool 1', parameters: {} }],
     triggers: [],
   },
   settings: {
@@ -129,7 +127,7 @@ describe('Skill Tools', () => {
     it('exports all skill tools', () => {
       expect(SKILL_TOOLS).toHaveLength(14);
 
-      const toolNames = SKILL_TOOLS.map(t => t.name);
+      const toolNames = SKILL_TOOLS.map((t) => t.name);
       expect(toolNames).toContain('skill_search');
       expect(toolNames).toContain('skill_install');
       expect(toolNames).toContain('skill_list_installed');
@@ -214,7 +212,11 @@ describe('Skill Tools', () => {
     });
 
     it('accepts status filter parameter', async () => {
-      const result = await executeSkillTool('skill_list_installed', { status: 'enabled' }, 'user-1');
+      const result = await executeSkillTool(
+        'skill_list_installed',
+        { status: 'enabled' },
+        'user-1'
+      );
 
       expect(result).toBeDefined();
       expect(typeof result.success).toBe('boolean');
@@ -334,14 +336,22 @@ describe('Skill Tools', () => {
 
   describe('skill_record_usage', () => {
     it('requires skillId', async () => {
-      const result = await executeSkillTool('skill_record_usage', { usageType: 'learned' }, 'user-1');
+      const result = await executeSkillTool(
+        'skill_record_usage',
+        { usageType: 'learned' },
+        'user-1'
+      );
 
       expect(result.success).toBe(false);
       expect(result.error).toContain('skillId');
     });
 
     it('requires valid usageType', async () => {
-      const result = await executeSkillTool('skill_record_usage', { skillId: 'test', usageType: 'invalid' }, 'user-1');
+      const result = await executeSkillTool(
+        'skill_record_usage',
+        { skillId: 'test', usageType: 'invalid' },
+        'user-1'
+      );
 
       expect(result.success).toBe(false);
       expect(result.error).toContain('usageType');
@@ -349,7 +359,11 @@ describe('Skill Tools', () => {
 
     it('validates usageType enum values', async () => {
       const validTypes = ['learned', 'referenced', 'adapted'];
-      const result = await executeSkillTool('skill_record_usage', { skillId: 'test', usageType: 'learned' }, 'user-1');
+      const result = await executeSkillTool(
+        'skill_record_usage',
+        { skillId: 'test', usageType: 'learned' },
+        'user-1'
+      );
 
       // Should proceed to skill lookup (which will fail because skill doesn't exist)
       expect(validTypes).toContain('learned');
@@ -366,7 +380,11 @@ describe('Skill Tools', () => {
     });
 
     it('accepts optional skillId filter', async () => {
-      const result = await executeSkillTool('skill_get_learning_stats', { skillId: 'test-skill' }, 'user-1');
+      const result = await executeSkillTool(
+        'skill_get_learning_stats',
+        { skillId: 'test-skill' },
+        'user-1'
+      );
 
       expect(result).toBeDefined();
       expect(typeof result.success).toBe('boolean');
@@ -393,7 +411,11 @@ describe('Skill Tools', () => {
 
     it('validates both skills exist', async () => {
       // Mock returns null for unknown skills
-      const result = await executeSkillTool('skill_compare', { skillId1: 'unknown1', skillId2: 'unknown2' }, 'user-1');
+      const result = await executeSkillTool(
+        'skill_compare',
+        { skillId1: 'unknown1', skillId2: 'unknown2' },
+        'user-1'
+      );
 
       expect(result.success).toBe(false);
     });
@@ -408,7 +430,11 @@ describe('Skill Tools', () => {
     });
 
     it('accepts mission parameter', async () => {
-      const result = await executeSkillTool('skill_suggest_learning', { mission: 'web scraping and data analysis' }, 'user-1');
+      const result = await executeSkillTool(
+        'skill_suggest_learning',
+        { mission: 'web scraping and data analysis' },
+        'user-1'
+      );
 
       expect(result).toBeDefined();
       expect(typeof result.success).toBe('boolean');
@@ -434,7 +460,11 @@ describe('Skill Tools', () => {
 
   describe('Tool Parameter Validation', () => {
     it('validates skill_search limit parameter type', async () => {
-      const result = await executeSkillTool('skill_search', { query: 'test', limit: 'invalid' }, 'user-1');
+      const result = await executeSkillTool(
+        'skill_search',
+        { query: 'test', limit: 'invalid' },
+        'user-1'
+      );
 
       expect(result).toBeDefined();
       // Should either succeed with default or fail with validation error
@@ -442,7 +472,11 @@ describe('Skill Tools', () => {
     });
 
     it('validates skill_toggle enabled parameter type', async () => {
-      const result = await executeSkillTool('skill_toggle', { skillId: 'test', enabled: 'yes' }, 'user-1');
+      const result = await executeSkillTool(
+        'skill_toggle',
+        { skillId: 'test', enabled: 'yes' },
+        'user-1'
+      );
 
       expect(result).toBeDefined();
       expect(typeof result.success).toBe('boolean');
@@ -547,8 +581,16 @@ const happyExtension = {
     format: 'agentskills' as const,
     instructions: '# Weather Skill\n\nProvides weather forecast tools.',
     tools: [
-      { name: 'get_weather', description: 'Get current weather', parameters: { type: 'object', properties: {} } },
-      { name: 'get_forecast', description: 'Get weather forecast', parameters: { type: 'object', properties: {} } },
+      {
+        name: 'get_weather',
+        description: 'Get current weather',
+        parameters: { type: 'object', properties: {} },
+      },
+      {
+        name: 'get_forecast',
+        description: 'Get weather forecast',
+        parameters: { type: 'object', properties: {} },
+      },
     ],
     triggers: [],
   },
@@ -623,13 +665,29 @@ describe('Happy Path Tests', () => {
     it('returns multiple packages', async () => {
       stableMocks.mockInstaller.search.mockResolvedValue({
         packages: [
-          { name: '@agentskills/weather', version: '1.0.0', description: 'Weather', author: 'A', keywords: [] },
-          { name: '@agentskills/climate', version: '2.0.0', description: 'Climate', author: 'B', keywords: [] },
+          {
+            name: '@agentskills/weather',
+            version: '1.0.0',
+            description: 'Weather',
+            author: 'A',
+            keywords: [],
+          },
+          {
+            name: '@agentskills/climate',
+            version: '2.0.0',
+            description: 'Climate',
+            author: 'B',
+            keywords: [],
+          },
         ],
         total: 2,
       });
 
-      const result = await executeSkillTool('skill_search', { query: 'weather', limit: 10 }, 'user-1');
+      const result = await executeSkillTool(
+        'skill_search',
+        { query: 'weather', limit: 10 },
+        'user-1'
+      );
 
       expect(result.success).toBe(true);
       const r = result.result as Record<string, unknown>;
@@ -715,7 +773,11 @@ describe('Happy Path Tests', () => {
       const disabledExt = { ...happyExtension, id: 'ext-disabled', status: 'disabled' as const };
       stableMocks.mockService.getAll.mockReturnValue([happyExtension, disabledExt]);
 
-      const result = await executeSkillTool('skill_list_installed', { status: 'enabled' }, 'user-1');
+      const result = await executeSkillTool(
+        'skill_list_installed',
+        { status: 'enabled' },
+        'user-1'
+      );
 
       expect(result.success).toBe(true);
       const r = result.result as Record<string, unknown>;
@@ -727,7 +789,11 @@ describe('Happy Path Tests', () => {
     it('filters by agentskills format', async () => {
       stableMocks.mockService.getAll.mockReturnValue([happyExtension, happyOwnpilotExtension]);
 
-      const result = await executeSkillTool('skill_list_installed', { format: 'agentskills' }, 'user-1');
+      const result = await executeSkillTool(
+        'skill_list_installed',
+        { format: 'agentskills' },
+        'user-1'
+      );
 
       expect(result.success).toBe(true);
       const r = result.result as Record<string, unknown>;
@@ -742,7 +808,9 @@ describe('Happy Path Tests', () => {
       const result = await executeSkillTool('skill_list_installed', {}, 'user-1');
 
       expect(result.success).toBe(true);
-      const skills = (result.result as Record<string, unknown>).skills as Array<Record<string, unknown>>;
+      const skills = (result.result as Record<string, unknown>).skills as Array<
+        Record<string, unknown>
+      >;
       expect(skills[0]!.instructionsPreview).toBeDefined();
     });
 
@@ -782,7 +850,11 @@ describe('Happy Path Tests', () => {
       stableMocks.mockService.getById.mockReturnValue(null);
       stableMocks.mockService.getAll.mockReturnValue([happyExtension]);
 
-      const result = await executeSkillTool('skill_get_info', { skillId: 'Weather Skill' }, 'user-1');
+      const result = await executeSkillTool(
+        'skill_get_info',
+        { skillId: 'Weather Skill' },
+        'user-1'
+      );
 
       expect(result.success).toBe(true);
       const r = result.result as Record<string, unknown>;
@@ -865,7 +937,10 @@ describe('Happy Path Tests', () => {
     });
 
     it('calls service.enable with the correct skill ID and userId', async () => {
-      stableMocks.mockService.enable.mockResolvedValue({ ...happyExtension, status: 'enabled' as const });
+      stableMocks.mockService.enable.mockResolvedValue({
+        ...happyExtension,
+        status: 'enabled' as const,
+      });
 
       await executeSkillTool('skill_toggle', { skillId: 'ext-123', enabled: true }, 'user-42');
 
@@ -922,7 +997,10 @@ describe('Happy Path Tests', () => {
         { ...happyExtension, userId: 'user-1' },
         { ...happyExtension, id: 'ext-other', userId: 'user-99' },
       ]);
-      stableMocks.mockInstaller.checkForUpdate.mockResolvedValue({ hasUpdate: false, latestVersion: '1.2.0' });
+      stableMocks.mockInstaller.checkForUpdate.mockResolvedValue({
+        hasUpdate: false,
+        latestVersion: '1.2.0',
+      });
 
       await executeSkillTool('skill_check_updates', {}, 'user-1');
 
@@ -967,7 +1045,11 @@ describe('Happy Path Tests', () => {
       // without touching the filesystem (source: 'manifest').
       stableMocks.mockService.getById.mockReturnValue(happyExtension);
 
-      const result = await executeSkillTool('skill_parse_content', { skillId: 'ext-123' }, 'user-1');
+      const result = await executeSkillTool(
+        'skill_parse_content',
+        { skillId: 'ext-123' },
+        'user-1'
+      );
 
       expect(result.success).toBe(true);
       const r = result.result as Record<string, unknown>;
@@ -982,7 +1064,11 @@ describe('Happy Path Tests', () => {
       stableMocks.mockService.getById.mockReturnValue(null);
       stableMocks.mockService.getAll.mockReturnValue([happyExtension]);
 
-      const result = await executeSkillTool('skill_parse_content', { skillId: 'Weather Skill' }, 'user-1');
+      const result = await executeSkillTool(
+        'skill_parse_content',
+        { skillId: 'Weather Skill' },
+        'user-1'
+      );
 
       expect(result.success).toBe(true);
       const r = result.result as Record<string, unknown>;
@@ -993,7 +1079,11 @@ describe('Happy Path Tests', () => {
       stableMocks.mockService.getById.mockReturnValue(null);
       stableMocks.mockService.getAll.mockReturnValue([]);
 
-      const result = await executeSkillTool('skill_parse_content', { skillId: 'unknown' }, 'user-1');
+      const result = await executeSkillTool(
+        'skill_parse_content',
+        { skillId: 'unknown' },
+        'user-1'
+      );
 
       expect(result.success).toBe(false);
       expect(result.error).toContain('Skill not found');
@@ -1004,12 +1094,20 @@ describe('Happy Path Tests', () => {
       // sourcePath is undefined and settings has no npmPackage → resolveSkillDirectory returns null
       const ownpilotNoInstructions = {
         ...happyOwnpilotExtension,
-        settings: {},  // no npmPackage
-        manifest: { ...happyOwnpilotExtension.manifest, system_prompt: undefined, instructions: undefined },
+        settings: {}, // no npmPackage
+        manifest: {
+          ...happyOwnpilotExtension.manifest,
+          system_prompt: undefined,
+          instructions: undefined,
+        },
       };
       stableMocks.mockService.getById.mockReturnValue(ownpilotNoInstructions);
 
-      const result = await executeSkillTool('skill_parse_content', { skillId: 'ext-456' }, 'user-1');
+      const result = await executeSkillTool(
+        'skill_parse_content',
+        { skillId: 'ext-456' },
+        'user-1'
+      );
 
       // Cannot locate skill directory → error
       expect(result.success).toBe(false);
@@ -1167,16 +1265,12 @@ describe('Happy Path Tests', () => {
       expect(s2.id).toBe('ext-456');
       const comparison = r.comparison as Record<string, unknown>;
       expect(comparison.commonTools).toContain('get_weather');
-      expect((comparison.uniqueToSkill1 as string[])).toContain('get_forecast');
-      expect((comparison.uniqueToSkill2 as string[])).toContain('get_climate');
+      expect(comparison.uniqueToSkill1 as string[]).toContain('get_forecast');
+      expect(comparison.uniqueToSkill2 as string[]).toContain('get_climate');
     });
 
     it('returns error when missing skillId1', async () => {
-      const result = await executeSkillTool(
-        'skill_compare',
-        { skillId2: 'ext-456' },
-        'user-1'
-      );
+      const result = await executeSkillTool('skill_compare', { skillId2: 'ext-456' }, 'user-1');
       expect(result.success).toBe(false);
       expect(result.error).toContain('skillId1');
     });
@@ -1250,8 +1344,8 @@ describe('Happy Path Tests', () => {
 
       // existsSync: first for sourcePath dir (/skills/weather), then for the file itself
       vi.mocked(mockExistsSync)
-        .mockReturnValueOnce(true)   // skillDir exists
-        .mockReturnValueOnce(true);  // reference file exists
+        .mockReturnValueOnce(true) // skillDir exists
+        .mockReturnValueOnce(true); // reference file exists
 
       vi.mocked(mockReadFileSync).mockReturnValue('# API Docs\n\nWeather API reference.');
 
@@ -1284,10 +1378,12 @@ describe('Happy Path Tests', () => {
       stableMocks.mockService.getById.mockReturnValue(extWithSourcePath);
 
       vi.mocked(mockExistsSync)
-        .mockReturnValueOnce(true)   // skillDir exists
-        .mockReturnValueOnce(true);  // script file exists
+        .mockReturnValueOnce(true) // skillDir exists
+        .mockReturnValueOnce(true); // script file exists
 
-      vi.mocked(mockReadFileSync).mockReturnValue('function getWeather(city) { return fetch(...); }');
+      vi.mocked(mockReadFileSync).mockReturnValue(
+        'function getWeather(city) { return fetch(...); }'
+      );
 
       const result = await executeSkillTool(
         'skill_read_script',
@@ -1309,7 +1405,8 @@ describe('Happy Path Tests', () => {
   describe('skill_list_resources happy path', () => {
     it('lists resources in skill directory via sourcePath', async () => {
       const { existsSync: mockExistsSync } = await import('fs');
-      const { scanSkillDirectory: mockScanSkillDirectory } = await import('../services/agentskills-parser.js');
+      const { scanSkillDirectory: mockScanSkillDirectory } =
+        await import('../services/agentskills-parser.js');
 
       const extWithSourcePath = {
         ...happyExtension,
@@ -1319,7 +1416,7 @@ describe('Happy Path Tests', () => {
       stableMocks.mockService.getById.mockReturnValue(extWithSourcePath);
 
       vi.mocked(mockExistsSync)
-        .mockReturnValueOnce(true)   // skillDir exists (resolveSkillDirectory)
+        .mockReturnValueOnce(true) // skillDir exists (resolveSkillDirectory)
         .mockReturnValueOnce(false); // SKILL.md check for hasSkillMd
 
       vi.mocked(mockScanSkillDirectory).mockReturnValue({
@@ -1328,7 +1425,11 @@ describe('Happy Path Tests', () => {
         assetPaths: [],
       });
 
-      const result = await executeSkillTool('skill_list_resources', { skillId: 'ext-123' }, 'user-1');
+      const result = await executeSkillTool(
+        'skill_list_resources',
+        { skillId: 'ext-123' },
+        'user-1'
+      );
 
       expect(result.success).toBe(true);
       const r = result.result as Record<string, unknown>;

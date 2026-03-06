@@ -213,7 +213,7 @@ describe('isPrivateUrlAsync', () => {
   it('returns true if ANY resolved IP is private (multi-A-record)', async () => {
     mockLookup.mockResolvedValue([
       { address: '93.184.216.34', family: 4 }, // public
-      { address: '10.0.0.1', family: 4 },       // private
+      { address: '10.0.0.1', family: 4 }, // private
     ]);
     const result = await isPrivateUrlAsync('https://multi-record-host.example.com');
     expect(result).toBe(true);

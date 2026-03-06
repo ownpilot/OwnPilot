@@ -973,7 +973,6 @@ export class ToolRegistry {
     }
   }
 
-
   /**
    * Clear all tools
    */

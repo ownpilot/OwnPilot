@@ -338,7 +338,9 @@ describe('Chat History & Logs Routes', () => {
       id === 'conv-ch-1' ? sampleChannelConversation : id === 'conv-1' ? sampleConversation : null
     );
     mockChannelSessionsRepo.findByConversation.mockResolvedValue(sampleChannelSession);
-    mockGetChannelServiceImpl.mockReturnValue({ processIncomingMessage: mockProcessIncomingMessage });
+    mockGetChannelServiceImpl.mockReturnValue({
+      processIncomingMessage: mockProcessIncomingMessage,
+    });
     mockProcessIncomingMessage.mockResolvedValue(undefined);
     mockGetOwnerUserId.mockResolvedValue('owner-user-123');
     mockGetOwnerChatId.mockResolvedValue('owner-chat-456');
@@ -801,9 +803,7 @@ describe('Chat History & Logs Routes', () => {
 
       const res = await app.request('/api/history/conv-1/unified');
       const json = await res.json();
-      const assistantMsg = json.data.messages.find(
-        (m: { role: string }) => m.role === 'assistant'
-      );
+      const assistantMsg = json.data.messages.find((m: { role: string }) => m.role === 'assistant');
       expect(assistantMsg.content).toBe('Response here.');
     });
 
@@ -1792,8 +1792,11 @@ describe('Chat History & Logs Routes', () => {
 
   describe('PATCH /api/history/:id (rename)', () => {
     beforeEach(() => {
-      mockChatRepo.updateConversation.mockImplementation(async (id: string, data: { title?: string }) =>
-        id === 'conv-1' ? { ...sampleConversation, title: data.title ?? sampleConversation.title } : null
+      mockChatRepo.updateConversation.mockImplementation(
+        async (id: string, data: { title?: string }) =>
+          id === 'conv-1'
+            ? { ...sampleConversation, title: data.title ?? sampleConversation.title }
+            : null
       );
     });
 
@@ -1809,7 +1812,9 @@ describe('Chat History & Logs Routes', () => {
       expect(json.success).toBe(true);
       expect(json.data.id).toBe('conv-1');
       expect(json.data.title).toBe('New Title');
-      expect(mockChatRepo.updateConversation).toHaveBeenCalledWith('conv-1', { title: 'New Title' });
+      expect(mockChatRepo.updateConversation).toHaveBeenCalledWith('conv-1', {
+        title: 'New Title',
+      });
     });
 
     it('returns 404 when conversation not found', async () => {
@@ -1892,7 +1897,12 @@ describe('Chat History & Logs Routes', () => {
 
       await Promise.resolve();
       const [syntheticMsg] = mockProcessIncomingMessage.mock.calls[0] as [
-        { text: string; channelPluginId: string; platform: string; sender: { platformUserId: string } },
+        {
+          text: string;
+          channelPluginId: string;
+          platform: string;
+          sender: { platformUserId: string };
+        },
       ];
       expect(syntheticMsg.text).toBe('trimmed');
       expect(syntheticMsg.channelPluginId).toBe('whatsapp-plugin');

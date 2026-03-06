@@ -162,7 +162,10 @@ function formatSkillsForPrompt(skills: ExtensionInfo[]): string {
 // System prompt for AI agent designer
 // ---------------------------------------------------------------------------
 
-function buildSystemInstruction(skills: ExtensionInfo[], defaults: { provider: string; model: string }): string {
+function buildSystemInstruction(
+  skills: ExtensionInfo[],
+  defaults: { provider: string; model: string }
+): string {
   return `You are an expert AI agent designer for OwnPilot. Your job is to design complete, production-ready autonomous agents based on user requirements.
 
 ## Agent Configuration Schema
@@ -264,7 +267,8 @@ ${formatSkillsForPrompt(skills)}
 **Data Processing Agent:**
 - tools: ["core.search_memories", "core.create_memory", "core.list_custom_records"]
 - skills: Look for data, analysis, or calculation skills
-- autonomyLevel: 2-3`;}
+- autonomyLevel: 2-3`;
+}
 
 // ---------------------------------------------------------------------------
 // Dedicated agent for the designer (avoids BASE_SYSTEM_PROMPT contamination)

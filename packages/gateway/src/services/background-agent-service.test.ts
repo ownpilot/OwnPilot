@@ -64,7 +64,10 @@ vi.mock('@ownpilot/core', async (importOriginal) => {
   };
 });
 
-import { BackgroundAgentServiceImpl, getBackgroundAgentService } from './background-agent-service.js';
+import {
+  BackgroundAgentServiceImpl,
+  getBackgroundAgentService,
+} from './background-agent-service.js';
 
 // ---------------------------------------------------------------------------
 // Sample data
@@ -137,7 +140,12 @@ describe('BackgroundAgentServiceImpl', () => {
     });
 
     it('uses default allowedTools=[] when not provided', async () => {
-      await service.createAgent({ userId: 'user-1', name: 'Agent', mission: 'X', mode: 'interval' } as any);
+      await service.createAgent({
+        userId: 'user-1',
+        name: 'Agent',
+        mission: 'X',
+        mode: 'interval',
+      } as any);
       const callArg = mockRepo.create.mock.calls[0]![0];
       expect(callArg.allowedTools).toEqual([]);
     });
@@ -155,13 +163,23 @@ describe('BackgroundAgentServiceImpl', () => {
     });
 
     it('autoStart defaults to false', async () => {
-      await service.createAgent({ userId: 'user-1', name: 'Agent', mission: 'X', mode: 'interval' } as any);
+      await service.createAgent({
+        userId: 'user-1',
+        name: 'Agent',
+        mission: 'X',
+        mode: 'interval',
+      } as any);
       const callArg = mockRepo.create.mock.calls[0]![0];
       expect(callArg.autoStart).toBe(false);
     });
 
     it('createdBy defaults to "user"', async () => {
-      await service.createAgent({ userId: 'user-1', name: 'Agent', mission: 'X', mode: 'interval' } as any);
+      await service.createAgent({
+        userId: 'user-1',
+        name: 'Agent',
+        mission: 'X',
+        mode: 'interval',
+      } as any);
       const callArg = mockRepo.create.mock.calls[0]![0];
       expect(callArg.createdBy).toBe('user');
     });

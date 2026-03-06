@@ -35,9 +35,8 @@ vi.mock('@ownpilot/core', async () => {
   };
 });
 
-const { executeBackgroundAgentTool, BACKGROUND_AGENT_TOOLS } = await import(
-  './background-agent-tools.js'
-);
+const { executeBackgroundAgentTool, BACKGROUND_AGENT_TOOLS } =
+  await import('./background-agent-tools.js');
 
 // ---------------------------------------------------------------------------
 // Helpers

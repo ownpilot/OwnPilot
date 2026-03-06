@@ -104,9 +104,7 @@ describe('executeSoulCommunicationTool', () => {
 
     it('creates message in repo with correct fields', async () => {
       const { generateId } = await import('@ownpilot/core');
-      vi.mocked(generateId)
-        .mockReturnValueOnce('msg-abc')
-        .mockReturnValueOnce('thread-xyz');
+      vi.mocked(generateId).mockReturnValueOnce('msg-abc').mockReturnValueOnce('thread-xyz');
 
       const result = await executeSoulCommunicationTool(
         'send_agent_message',
@@ -139,9 +137,7 @@ describe('executeSoulCommunicationTool', () => {
 
     it('returns { messageId, threadId, to, status: sent }', async () => {
       const { generateId } = await import('@ownpilot/core');
-      vi.mocked(generateId)
-        .mockReturnValueOnce('msg-abc')
-        .mockReturnValueOnce('thread-xyz');
+      vi.mocked(generateId).mockReturnValueOnce('msg-abc').mockReturnValueOnce('thread-xyz');
 
       const result = await executeSoulCommunicationTool(
         'send_agent_message',
@@ -160,9 +156,7 @@ describe('executeSoulCommunicationTool', () => {
 
     it('uses generateId for both msgId and threadId', async () => {
       const { generateId } = await import('@ownpilot/core');
-      vi.mocked(generateId)
-        .mockReturnValueOnce('msg-111')
-        .mockReturnValueOnce('thread-222');
+      vi.mocked(generateId).mockReturnValueOnce('msg-111').mockReturnValueOnce('thread-222');
 
       await executeSoulCommunicationTool(
         'send_agent_message',
@@ -228,10 +222,7 @@ describe('executeSoulCommunicationTool', () => {
     });
 
     it('marks messages as read', async () => {
-      const messages = [
-        makeMessage({ id: 'msg-1' }),
-        makeMessage({ id: 'msg-2' }),
-      ];
+      const messages = [makeMessage({ id: 'msg-1' }), makeMessage({ id: 'msg-2' })];
       mockRepo.findForAgent.mockResolvedValueOnce(messages);
 
       await executeSoulCommunicationTool('read_agent_inbox', {}, 'agent-a');
@@ -250,9 +241,7 @@ describe('executeSoulCommunicationTool', () => {
 
     it('returns { count, messages } with mapped fields', async () => {
       const createdAt = new Date('2024-06-01T12:00:00Z');
-      const messages = [
-        makeMessage({ id: 'msg-1', from: 'agent-b', createdAt }),
-      ];
+      const messages = [makeMessage({ id: 'msg-1', from: 'agent-b', createdAt })];
       mockRepo.findForAgent.mockResolvedValueOnce(messages);
 
       const result = await executeSoulCommunicationTool('read_agent_inbox', {}, 'agent-a');
@@ -277,11 +266,7 @@ describe('executeSoulCommunicationTool', () => {
     });
 
     it('passes unread_only=false as unreadOnly: false', async () => {
-      await executeSoulCommunicationTool(
-        'read_agent_inbox',
-        { unread_only: false },
-        'agent-a'
-      );
+      await executeSoulCommunicationTool('read_agent_inbox', { unread_only: false }, 'agent-a');
 
       expect(mockRepo.findForAgent).toHaveBeenCalledWith('agent-a', {
         unreadOnly: false,
@@ -291,11 +276,7 @@ describe('executeSoulCommunicationTool', () => {
     });
 
     it('passes from_agent param through to findForAgent', async () => {
-      await executeSoulCommunicationTool(
-        'read_agent_inbox',
-        { from_agent: 'agent-b' },
-        'agent-a'
-      );
+      await executeSoulCommunicationTool('read_agent_inbox', { from_agent: 'agent-b' }, 'agent-a');
 
       expect(mockRepo.findForAgent).toHaveBeenCalledWith('agent-a', {
         unreadOnly: true,
@@ -442,8 +423,19 @@ describe('executeSoulCommunicationTool', () => {
 
     it('uses the last message in the thread for determining recipient', async () => {
       // Multi-message thread; only the last one should matter
-      const firstMsg = makeMessage({ id: 'msg-1', from: 'agent-a', to: 'agent-b', threadId: 'thread-1' });
-      const lastMsg = makeMessage({ id: 'msg-2', from: 'agent-b', to: 'agent-a', subject: 'Last', threadId: 'thread-1' });
+      const firstMsg = makeMessage({
+        id: 'msg-1',
+        from: 'agent-a',
+        to: 'agent-b',
+        threadId: 'thread-1',
+      });
+      const lastMsg = makeMessage({
+        id: 'msg-2',
+        from: 'agent-b',
+        to: 'agent-a',
+        subject: 'Last',
+        threadId: 'thread-1',
+      });
       mockRepo.findByThread.mockResolvedValueOnce([firstMsg, lastMsg]);
 
       await executeSoulCommunicationTool(
@@ -465,11 +457,7 @@ describe('executeSoulCommunicationTool', () => {
 
   describe('unknown tool', () => {
     it('returns { success: false, error: "Unknown soul communication tool: ..." }', async () => {
-      const result = await executeSoulCommunicationTool(
-        'nonexistent_tool',
-        {},
-        'agent-a'
-      );
+      const result = await executeSoulCommunicationTool('nonexistent_tool', {}, 'agent-a');
 
       expect(result.success).toBe(false);
       expect(result.error).toBe('Unknown soul communication tool: nonexistent_tool');

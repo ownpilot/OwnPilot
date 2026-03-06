@@ -324,7 +324,8 @@ async function main() {
 
   // Print pairing banners for unclaimed channels
   try {
-    const { getPairingKey, printPairingBanner, getOwnerUserId } = await import('./services/pairing-service.js');
+    const { getPairingKey, printPairingBanner, getOwnerUserId } =
+      await import('./services/pairing-service.js');
     const channels = channelService.listChannels();
     for (const ch of channels) {
       const owner = await getOwnerUserId(ch.platform);

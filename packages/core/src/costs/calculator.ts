@@ -65,7 +65,6 @@ export function estimateCost(
   promptText: string,
   estimatedOutputTokens: number = 500
 ): CostEstimate {
-
   // Rough token estimation (1 token ≈ 4 characters for English)
   const estimatedInputTokens = Math.ceil(promptText.length / 4);
   const estimatedCost = calculateCost(

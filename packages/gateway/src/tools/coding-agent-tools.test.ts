@@ -24,7 +24,13 @@ const { mockService, mockMgr, mockResultsRepo, mockGetCodingAgentService, mockGe
     };
     const mockGetCodingAgentService = vi.fn(() => mockService);
     const mockGetSessionManager = vi.fn(() => mockMgr);
-    return { mockService, mockMgr, mockResultsRepo, mockGetCodingAgentService, mockGetSessionManager };
+    return {
+      mockService,
+      mockMgr,
+      mockResultsRepo,
+      mockGetCodingAgentService,
+      mockGetSessionManager,
+    };
   });
 
 vi.mock('../services/coding-agent-service.js', () => ({
@@ -117,7 +123,11 @@ describe('executeCodingAgentTool', () => {
 
       expect(result.success).toBe(true);
       expect(mockService.createSession).toHaveBeenCalledWith(
-        expect.objectContaining({ provider: 'claude-code', prompt: 'Fix the bug', cwd: '/project' }),
+        expect.objectContaining({
+          provider: 'claude-code',
+          prompt: 'Fix the bug',
+          cwd: '/project',
+        }),
         'user-1'
       );
       expect(mockMgr.waitForCompletion).toHaveBeenCalledWith('session-1', 'user-1', 300_000);
@@ -131,14 +141,18 @@ describe('executeCodingAgentTool', () => {
 
     it('uses custom timeout when timeout_seconds is provided (capped at 1800)', async () => {
       await executeCodingAgentTool('run_coding_task', {
-        provider: 'claude-code', prompt: 'task', timeout_seconds: 600,
+        provider: 'claude-code',
+        prompt: 'task',
+        timeout_seconds: 600,
       });
       expect(mockMgr.waitForCompletion).toHaveBeenCalledWith('session-1', 'default', 600_000);
     });
 
     it('caps timeout to 1800 seconds', async () => {
       await executeCodingAgentTool('run_coding_task', {
-        provider: 'claude-code', prompt: 'task', timeout_seconds: 9999,
+        provider: 'claude-code',
+        prompt: 'task',
+        timeout_seconds: 9999,
       });
       expect(mockMgr.waitForCompletion).toHaveBeenCalledWith('session-1', 'default', 1_800_000);
     });
@@ -147,7 +161,8 @@ describe('executeCodingAgentTool', () => {
       mockResultsRepo.getBySessionId.mockResolvedValueOnce(null);
 
       const result = await executeCodingAgentTool('run_coding_task', {
-        provider: 'claude-code', prompt: 'task',
+        provider: 'claude-code',
+        prompt: 'task',
       });
       expect(result.success).toBe(true);
       expect((result.result as Record<string, unknown>).state).toBe('completed');
@@ -155,10 +170,15 @@ describe('executeCodingAgentTool', () => {
 
     it('falls back with error when session state is not completed', async () => {
       mockResultsRepo.getBySessionId.mockResolvedValueOnce(null);
-      mockMgr.waitForCompletion.mockResolvedValueOnce({ id: 'session-1', state: 'failed', exitCode: 1 });
+      mockMgr.waitForCompletion.mockResolvedValueOnce({
+        id: 'session-1',
+        state: 'failed',
+        exitCode: 1,
+      });
 
       const result = await executeCodingAgentTool('run_coding_task', {
-        provider: 'claude-code', prompt: 'task',
+        provider: 'claude-code',
+        prompt: 'task',
       });
       expect(result.success).toBe(false);
       expect(result.error).toContain('failed');
@@ -169,7 +189,8 @@ describe('executeCodingAgentTool', () => {
       mockResultsRepo.getBySessionId.mockResolvedValueOnce({ ...sampleResult, output: longOutput });
 
       const result = await executeCodingAgentTool('run_coding_task', {
-        provider: 'claude-code', prompt: 'task',
+        provider: 'claude-code',
+        prompt: 'task',
       });
       const r = result.result as Record<string, string>;
       expect(r.output.length).toBeLessThan(longOutput.length);
@@ -180,7 +201,8 @@ describe('executeCodingAgentTool', () => {
       mockService.createSession.mockRejectedValueOnce(new Error('Provider not configured'));
 
       const result = await executeCodingAgentTool('run_coding_task', {
-        provider: 'claude-code', prompt: 'task',
+        provider: 'claude-code',
+        prompt: 'task',
       });
       expect(result.success).toBe(false);
       expect(result.error).toContain('Provider not configured');
@@ -188,8 +210,11 @@ describe('executeCodingAgentTool', () => {
 
     it('passes model and max options to createSession', async () => {
       await executeCodingAgentTool('run_coding_task', {
-        provider: 'claude-code', prompt: 'task', model: 'claude-opus-4-6',
-        max_turns: 5, max_budget_usd: 0.5,
+        provider: 'claude-code',
+        prompt: 'task',
+        model: 'claude-opus-4-6',
+        max_turns: 5,
+        max_budget_usd: 0.5,
       });
       expect(mockService.createSession).toHaveBeenCalledWith(
         expect.objectContaining({ model: 'claude-opus-4-6', maxTurns: 5, maxBudgetUsd: 0.5 }),
@@ -217,7 +242,11 @@ describe('executeCodingAgentTool', () => {
     it('returns result by ID', async () => {
       mockResultsRepo.getById.mockResolvedValueOnce(sampleResult);
 
-      const result = await executeCodingAgentTool('get_task_result', { result_id: 'result-1' }, 'user-1');
+      const result = await executeCodingAgentTool(
+        'get_task_result',
+        { result_id: 'result-1' },
+        'user-1'
+      );
       expect(result.success).toBe(true);
       expect((result.result as Record<string, unknown>).id).toBe('result-1');
       expect(mockResultsRepo.getById).toHaveBeenCalledWith('result-1', 'user-1');

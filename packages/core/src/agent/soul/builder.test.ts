@@ -172,8 +172,8 @@ describe('buildSoulPrompt() — learnings', () => {
     // learning-0 … learning-14 (15 total); slice(-10) = learning-5 … learning-14
     soul.evolution.learnings = Array.from({ length: 15 }, (_, i) => `learning-${i}`);
     const result = buildSoulPrompt(soul, [], 0);
-    expect(result).toContain('learning-5');   // first of last 10
-    expect(result).toContain('learning-14');  // last
+    expect(result).toContain('learning-5'); // first of last 10
+    expect(result).toContain('learning-14'); // last
     expect(result).not.toContain('learning-0'); // trimmed
     expect(result).not.toContain('learning-4'); // trimmed
   });

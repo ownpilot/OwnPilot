@@ -8,15 +8,23 @@ import { describe, it, expect, vi } from 'vitest';
 // Mocks
 // ---------------------------------------------------------------------------
 
-const { mockCrudRoutes, mockApprovalRoutes, mockAnalysisRoutes, mockGenerationRoutes } = vi.hoisted(() => {
-  const { Hono } = require('hono');
-  return {
-    mockCrudRoutes: new Hono().get('/tools', (c: any) => c.json({ route: 'crud' })),
-    mockApprovalRoutes: new Hono().get('/tools/:id/approve', (c: any) => c.json({ route: 'approval' })),
-    mockAnalysisRoutes: new Hono().get('/tools/:id/analyze', (c: any) => c.json({ route: 'analysis' })),
-    mockGenerationRoutes: new Hono().get('/tools/generate', (c: any) => c.json({ route: 'generation' })),
-  };
-});
+const { mockCrudRoutes, mockApprovalRoutes, mockAnalysisRoutes, mockGenerationRoutes } = vi.hoisted(
+  () => {
+    const { Hono } = require('hono');
+    return {
+      mockCrudRoutes: new Hono().get('/tools', (c: any) => c.json({ route: 'crud' })),
+      mockApprovalRoutes: new Hono().get('/tools/:id/approve', (c: any) =>
+        c.json({ route: 'approval' })
+      ),
+      mockAnalysisRoutes: new Hono().get('/tools/:id/analyze', (c: any) =>
+        c.json({ route: 'analysis' })
+      ),
+      mockGenerationRoutes: new Hono().get('/tools/generate', (c: any) =>
+        c.json({ route: 'generation' })
+      ),
+    };
+  }
+);
 
 vi.mock('./crud.js', () => ({ crudRoutes: mockCrudRoutes }));
 vi.mock('./approval.js', () => ({ approvalRoutes: mockApprovalRoutes }));
@@ -28,7 +36,12 @@ vi.mock('./generation.js', () => ({
   getActiveCustomToolDefinitions: vi.fn(),
 }));
 
-import { customToolsRoutes, executeCustomToolTool, executeActiveCustomTool, getActiveCustomToolDefinitions } from './index.js';
+import {
+  customToolsRoutes,
+  executeCustomToolTool,
+  executeActiveCustomTool,
+  getActiveCustomToolDefinitions,
+} from './index.js';
 
 // ---------------------------------------------------------------------------
 // Tests

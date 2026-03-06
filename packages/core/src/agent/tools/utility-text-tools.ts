@@ -439,7 +439,9 @@ export const runRegexExecutor: ToolExecutor = async (args): Promise<ToolExecutio
     // Detect nested quantifiers: (...+)+ or (...*)+ or (...+)* — common ReDoS triggers
     if (/\([^)]*[+*][^)]*\)[+*?]/.test(pattern)) {
       return {
-        content: JSON.stringify({ error: 'Regex pattern contains potentially unsafe nested quantifiers' }),
+        content: JSON.stringify({
+          error: 'Regex pattern contains potentially unsafe nested quantifiers',
+        }),
         isError: true,
       };
     }

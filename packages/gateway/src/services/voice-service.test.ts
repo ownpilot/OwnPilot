@@ -8,13 +8,17 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 // Mocks
 // ---------------------------------------------------------------------------
 
-const { mockResolveAudioConfig, mockCallWhisperTranscribe, mockCallOpenAITTS, mockCallElevenLabsTTS } =
-  vi.hoisted(() => ({
-    mockResolveAudioConfig: vi.fn(),
-    mockCallWhisperTranscribe: vi.fn(),
-    mockCallOpenAITTS: vi.fn(),
-    mockCallElevenLabsTTS: vi.fn(),
-  }));
+const {
+  mockResolveAudioConfig,
+  mockCallWhisperTranscribe,
+  mockCallOpenAITTS,
+  mockCallElevenLabsTTS,
+} = vi.hoisted(() => ({
+  mockResolveAudioConfig: vi.fn(),
+  mockCallWhisperTranscribe: vi.fn(),
+  mockCallOpenAITTS: vi.fn(),
+  mockCallElevenLabsTTS: vi.fn(),
+}));
 
 vi.mock('./audio-overrides.js', () => ({
   resolveAudioConfig: mockResolveAudioConfig,
@@ -69,9 +73,9 @@ describe('VoiceService', () => {
   describe('transcribe', () => {
     it('throws when audio config is not configured', async () => {
       mockResolveAudioConfig.mockResolvedValueOnce(null);
-      await expect(
-        service.transcribe(Buffer.from('audio'), 'test.wav')
-      ).rejects.toThrow('Voice service not configured');
+      await expect(service.transcribe(Buffer.from('audio'), 'test.wav')).rejects.toThrow(
+        'Voice service not configured'
+      );
     });
 
     it('transcribes audio using Whisper with OpenAI config', async () => {
@@ -127,7 +131,9 @@ describe('VoiceService', () => {
   describe('synthesize', () => {
     it('throws when audio config is not configured', async () => {
       mockResolveAudioConfig.mockResolvedValueOnce(null);
-      await expect(service.synthesize('Hello world')).rejects.toThrow('Voice service not configured');
+      await expect(service.synthesize('Hello world')).rejects.toThrow(
+        'Voice service not configured'
+      );
     });
 
     it('synthesizes using OpenAI TTS by default', async () => {
@@ -143,10 +149,10 @@ describe('VoiceService', () => {
         'sk-test',
         'https://api.openai.com',
         'Hello world',
-        'alloy',    // default voice
-        'tts-1',    // default model
-        1.0,        // default speed
-        'mp3'       // default format
+        'alloy', // default voice
+        'tts-1', // default model
+        1.0, // default speed
+        'mp3' // default format
       );
     });
 
@@ -170,7 +176,12 @@ describe('VoiceService', () => {
       mockResolveAudioConfig.mockResolvedValueOnce(openaiConfig);
       mockCallOpenAITTS.mockResolvedValueOnce(Buffer.from('audio'));
 
-      await service.synthesize('test', { voice: 'nova', model: 'tts-1-hd', speed: 1.5, format: 'opus' });
+      await service.synthesize('test', {
+        voice: 'nova',
+        model: 'tts-1-hd',
+        speed: 1.5,
+        format: 'opus',
+      });
 
       expect(mockCallOpenAITTS).toHaveBeenCalledWith(
         expect.anything(),
@@ -189,8 +200,13 @@ describe('VoiceService', () => {
 
       await service.synthesize('test', { speed: 0.1 });
       expect(mockCallOpenAITTS).toHaveBeenCalledWith(
-        expect.anything(), expect.anything(), expect.anything(),
-        expect.anything(), expect.anything(), 0.25, expect.anything()
+        expect.anything(),
+        expect.anything(),
+        expect.anything(),
+        expect.anything(),
+        expect.anything(),
+        0.25,
+        expect.anything()
       );
     });
 
@@ -200,8 +216,13 @@ describe('VoiceService', () => {
 
       await service.synthesize('test', { speed: 10 });
       expect(mockCallOpenAITTS).toHaveBeenCalledWith(
-        expect.anything(), expect.anything(), expect.anything(),
-        expect.anything(), expect.anything(), 4.0, expect.anything()
+        expect.anything(),
+        expect.anything(),
+        expect.anything(),
+        expect.anything(),
+        expect.anything(),
+        4.0,
+        expect.anything()
       );
     });
 

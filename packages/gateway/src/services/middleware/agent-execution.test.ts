@@ -1022,7 +1022,8 @@ describe('createAgentExecutionMiddleware', () => {
     });
 
     it('swaps system prompt when it contains "## How to Call Tools" section', async () => {
-      const originalPrompt = '## How to Call Tools\nUse use_tool() pattern.\n\n## Other section\nOther content.';
+      const originalPrompt =
+        '## How to Call Tools\nUse use_tool() pattern.\n\n## Other section\nOther content.';
       const agent = {
         ...createAgent(),
         setDirectToolMode: vi.fn(),
@@ -1042,7 +1043,9 @@ describe('createAgentExecutionMiddleware', () => {
 
       // updateSystemPrompt should have been called with direct-mode instructions
       const calls = agent.updateSystemPrompt.mock.calls;
-      const directModeCall = calls.find((c: unknown[]) => String(c[0]).includes('double underscore'));
+      const directModeCall = calls.find((c: unknown[]) =>
+        String(c[0]).includes('double underscore')
+      );
       expect(directModeCall).toBeDefined();
     });
   });

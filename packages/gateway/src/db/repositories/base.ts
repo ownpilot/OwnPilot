@@ -148,7 +148,9 @@ export abstract class BaseRepository {
         orderClause = defaultOrderBy;
       } else if (allowedOrderByColumns && !allowedOrderByColumns.has(query.orderBy)) {
         // Column not in allowlist - use default
-        log.warn(`[SQL Injection Prevention] Blocked orderBy '${query.orderBy}' - not in allowlist`);
+        log.warn(
+          `[SQL Injection Prevention] Blocked orderBy '${query.orderBy}' - not in allowlist`
+        );
         orderClause = defaultOrderBy;
       } else {
         const dir = query.orderDir === 'asc' ? 'ASC' : 'DESC';

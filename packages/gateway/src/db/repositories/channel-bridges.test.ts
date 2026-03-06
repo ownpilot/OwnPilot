@@ -153,7 +153,10 @@ describe('ChannelBridgesRepository', () => {
 
     it('passes filter_pattern as null when not provided', async () => {
       await repo.save({
-        sourceChannelId: 's', targetChannelId: 't', direction: 'bidirectional', enabled: true,
+        sourceChannelId: 's',
+        targetChannelId: 't',
+        direction: 'bidirectional',
+        enabled: true,
       });
       const [, params] = mockAdapter.query.mock.calls[0] as [string, unknown[]];
       expect(params[4]).toBeNull(); // filterPattern
@@ -161,8 +164,11 @@ describe('ChannelBridgesRepository', () => {
 
     it('passes filter_pattern string when provided', async () => {
       await repo.save({
-        sourceChannelId: 's', targetChannelId: 't', direction: 'unidirectional',
-        filterPattern: 'prefix:*', enabled: false,
+        sourceChannelId: 's',
+        targetChannelId: 't',
+        direction: 'unidirectional',
+        filterPattern: 'prefix:*',
+        enabled: false,
       });
       const [, params] = mockAdapter.query.mock.calls[0] as [string, unknown[]];
       expect(params[4]).toBe('prefix:*');
@@ -200,7 +206,11 @@ describe('ChannelBridgesRepository', () => {
     });
 
     it('sets multiple fields at once', async () => {
-      await repo.update('b-1', { enabled: true, direction: 'unidirectional', sourceChannelId: 'new-src' });
+      await repo.update('b-1', {
+        enabled: true,
+        direction: 'unidirectional',
+        sourceChannelId: 'new-src',
+      });
       const [sql, params] = mockAdapter.query.mock.calls[0] as [string, unknown[]];
       expect(sql).toContain('source_channel_id =');
       expect(sql).toContain('direction =');

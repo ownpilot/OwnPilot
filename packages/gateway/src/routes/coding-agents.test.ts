@@ -482,7 +482,11 @@ describe('Coding Agents Routes', () => {
       const data = await res.json();
       expect(data.success).toBe(true);
       expect(data.data.sent).toBe(true);
-      expect(mockCodingAgentService.writeToSession).toHaveBeenCalledWith('sess-1', 'default', 'y\n');
+      expect(mockCodingAgentService.writeToSession).toHaveBeenCalledWith(
+        'sess-1',
+        'default',
+        'y\n'
+      );
     });
 
     it('should return 400 when data field is missing', async () => {
@@ -566,7 +570,12 @@ describe('Coding Agents Routes', () => {
       const data = await res.json();
       expect(data.success).toBe(true);
       expect(data.data.resized).toBe(true);
-      expect(mockCodingAgentService.resizeSession).toHaveBeenCalledWith('sess-1', 'default', 120, 40);
+      expect(mockCodingAgentService.resizeSession).toHaveBeenCalledWith(
+        'sess-1',
+        'default',
+        120,
+        40
+      );
     });
 
     it('should return 400 for zero cols', async () => {

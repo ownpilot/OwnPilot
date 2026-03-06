@@ -79,7 +79,11 @@ vi.mock('@ownpilot/core', async (importOriginal) => {
       type: _type,
       payload,
     })),
-    EventTypes: { RESOURCE_CREATED: 'resource.created', RESOURCE_UPDATED: 'resource.updated', RESOURCE_DELETED: 'resource.deleted' },
+    EventTypes: {
+      RESOURCE_CREATED: 'resource.created',
+      RESOURCE_UPDATED: 'resource.updated',
+      RESOURCE_DELETED: 'resource.deleted',
+    },
     getServiceRegistry: () => ({ get: () => mockTrigSvc }),
     Services: { Trigger: 'Trigger' },
   };
@@ -150,14 +154,16 @@ function makeManifest(overrides: Partial<ExtensionManifest> = {}): ExtensionMani
   };
 }
 
-function makeRecord(overrides: Partial<{
-  id: string;
-  userId: string;
-  name: string;
-  status: string;
-  sourcePath: string;
-  manifest: ExtensionManifest;
-}> = {}) {
+function makeRecord(
+  overrides: Partial<{
+    id: string;
+    userId: string;
+    name: string;
+    status: string;
+    sourcePath: string;
+    manifest: ExtensionManifest;
+  }> = {}
+) {
   return {
     id: 'test-ext',
     userId: 'default',
@@ -180,7 +186,13 @@ describe('ExtensionService', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    mockAudit.mockReturnValue({ blocked: false, reasons: [], riskLevel: 'low', warnings: [], undeclaredTools: [] });
+    mockAudit.mockReturnValue({
+      blocked: false,
+      reasons: [],
+      riskLevel: 'low',
+      warnings: [],
+      undeclaredTools: [],
+    });
     mockValidateManifest.mockReturnValue({ valid: true, errors: [] });
     mockValidateAgentSkills.mockReturnValue({ valid: true, errors: [] });
     mockRepo.upsert.mockResolvedValue(makeRecord());
@@ -196,7 +208,9 @@ describe('ExtensionService', () => {
 
   describe('install()', () => {
     it('throws IO_ERROR when file cannot be read', async () => {
-      mockReadFile.mockImplementation(() => { throw new Error('ENOENT'); });
+      mockReadFile.mockImplementation(() => {
+        throw new Error('ENOENT');
+      });
       await expect(svc.install('/bad/path.json')).rejects.toThrow(ExtensionError);
       await expect(svc.install('/bad/path.json')).rejects.toMatchObject({ code: 'IO_ERROR' });
     });
@@ -213,9 +227,13 @@ describe('ExtensionService', () => {
 
     it('throws VALIDATION_ERROR when SKILL.md parse fails', async () => {
       mockReadFile.mockReturnValue('bad content');
-      mockParseSkill.mockImplementation(() => { throw new Error('parse error'); });
+      mockParseSkill.mockImplementation(() => {
+        throw new Error('parse error');
+      });
 
-      await expect(svc.install('/dir/SKILL.md')).rejects.toMatchObject({ code: 'VALIDATION_ERROR' });
+      await expect(svc.install('/dir/SKILL.md')).rejects.toMatchObject({
+        code: 'VALIDATION_ERROR',
+      });
     });
 
     it('parses .md via parseExtensionMarkdown', async () => {
@@ -230,9 +248,13 @@ describe('ExtensionService', () => {
 
     it('throws VALIDATION_ERROR when .md parse fails', async () => {
       mockReadFile.mockReturnValue('bad');
-      mockParseMd.mockImplementation(() => { throw new Error('bad md'); });
+      mockParseMd.mockImplementation(() => {
+        throw new Error('bad md');
+      });
 
-      await expect(svc.install('/ext/extension.md')).rejects.toMatchObject({ code: 'VALIDATION_ERROR' });
+      await expect(svc.install('/ext/extension.md')).rejects.toMatchObject({
+        code: 'VALIDATION_ERROR',
+      });
     });
 
     it('parses JSON manifest for .json files', async () => {
@@ -247,7 +269,9 @@ describe('ExtensionService', () => {
     it('throws VALIDATION_ERROR for invalid JSON', async () => {
       mockReadFile.mockReturnValue('not-json{');
 
-      await expect(svc.install('/ext/extension.json')).rejects.toMatchObject({ code: 'VALIDATION_ERROR' });
+      await expect(svc.install('/ext/extension.json')).rejects.toMatchObject({
+        code: 'VALIDATION_ERROR',
+      });
     });
   });
 
@@ -265,29 +289,51 @@ describe('ExtensionService', () => {
 
       expect(result).toEqual(record);
       expect(mockEmit).toHaveBeenCalled();
-      expect(mockESEmit).toHaveBeenCalledWith('extension.installed', 'extension-service', expect.any(Object));
+      expect(mockESEmit).toHaveBeenCalledWith(
+        'extension.installed',
+        'extension-service',
+        expect.any(Object)
+      );
     });
 
     it('throws VALIDATION_ERROR when ownpilot manifest is invalid', async () => {
       mockValidateManifest.mockReturnValue({ valid: false, errors: ['missing name'] });
 
-      await expect(svc.installFromManifest(makeManifest())).rejects.toMatchObject({ code: 'VALIDATION_ERROR' });
+      await expect(svc.installFromManifest(makeManifest())).rejects.toMatchObject({
+        code: 'VALIDATION_ERROR',
+      });
     });
 
     it('throws VALIDATION_ERROR when agentskills manifest is invalid', async () => {
       mockValidateAgentSkills.mockReturnValue({ valid: false, errors: ['bad frontmatter'] });
 
-      await expect(svc.installFromManifest(makeManifest({ format: 'agentskills' }))).rejects.toMatchObject({ code: 'VALIDATION_ERROR' });
+      await expect(
+        svc.installFromManifest(makeManifest({ format: 'agentskills' }))
+      ).rejects.toMatchObject({ code: 'VALIDATION_ERROR' });
     });
 
     it('throws VALIDATION_ERROR when security audit blocks extension', async () => {
-      mockAudit.mockReturnValue({ blocked: true, reasons: ['malicious code'], riskLevel: 'critical', warnings: [], undeclaredTools: [] });
+      mockAudit.mockReturnValue({
+        blocked: true,
+        reasons: ['malicious code'],
+        riskLevel: 'critical',
+        warnings: [],
+        undeclaredTools: [],
+      });
 
-      await expect(svc.installFromManifest(makeManifest())).rejects.toMatchObject({ code: 'VALIDATION_ERROR' });
+      await expect(svc.installFromManifest(makeManifest())).rejects.toMatchObject({
+        code: 'VALIDATION_ERROR',
+      });
     });
 
     it('logs warning when security audit has warnings (non-blocking)', async () => {
-      mockAudit.mockReturnValue({ blocked: false, reasons: [], riskLevel: 'medium', warnings: ['uses eval'], undeclaredTools: [] });
+      mockAudit.mockReturnValue({
+        blocked: false,
+        reasons: [],
+        riskLevel: 'medium',
+        warnings: ['uses eval'],
+        undeclaredTools: [],
+      });
 
       const result = await svc.installFromManifest(makeManifest());
       expect(result).toBeDefined(); // Still installs
@@ -295,13 +341,23 @@ describe('ExtensionService', () => {
 
     it('registers required_services in Config Center', async () => {
       const manifest = makeManifest({
-        required_services: [{
-          name: 'openai',
-          display_name: 'OpenAI',
-          description: 'AI service',
-          category: 'ai',
-          config_schema: [{ name: 'api_key', label: 'API Key', type: 'secret', required: true, description: 'Key' }],
-        }],
+        required_services: [
+          {
+            name: 'openai',
+            display_name: 'OpenAI',
+            description: 'AI service',
+            category: 'ai',
+            config_schema: [
+              {
+                name: 'api_key',
+                label: 'API Key',
+                type: 'secret',
+                required: true,
+                description: 'Key',
+              },
+            ],
+          },
+        ],
       });
 
       await svc.installFromManifest(manifest);
@@ -311,7 +367,9 @@ describe('ExtensionService', () => {
 
     it('continues even when Config Center registration fails', async () => {
       const manifest = makeManifest({
-        required_services: [{ name: 'svc', display_name: 'Svc', description: 'x', category: 'other' }],
+        required_services: [
+          { name: 'svc', display_name: 'Svc', description: 'x', category: 'other' },
+        ],
       });
       mockRegReqs.mockRejectedValue(new Error('Config Center error'));
 
@@ -321,7 +379,14 @@ describe('ExtensionService', () => {
 
     it('activates triggers when record is enabled', async () => {
       const manifest = makeManifest({
-        triggers: [{ name: 'daily', type: 'schedule' as never, config: { expression: '0 9 * * *' } as never, action: { type: 'run_tool' } as never }],
+        triggers: [
+          {
+            name: 'daily',
+            type: 'schedule' as never,
+            config: { expression: '0 9 * * *' } as never,
+            action: { type: 'run_tool' } as never,
+          },
+        ],
       });
       mockRepo.upsert.mockResolvedValue(makeRecord({ status: 'enabled' }));
 
@@ -332,7 +397,9 @@ describe('ExtensionService', () => {
 
     it('does not activate triggers when record is disabled', async () => {
       const manifest = makeManifest({
-        triggers: [{ name: 'daily', type: 'schedule' as never, config: {} as never, action: {} as never }],
+        triggers: [
+          { name: 'daily', type: 'schedule' as never, config: {} as never, action: {} as never },
+        ],
       });
       mockRepo.upsert.mockResolvedValue(makeRecord({ status: 'disabled' }));
 
@@ -343,7 +410,9 @@ describe('ExtensionService', () => {
 
     it('continues when trigger activation fails (non-fatal)', async () => {
       const manifest = makeManifest({
-        triggers: [{ name: 'daily', type: 'schedule' as never, config: {} as never, action: {} as never }],
+        triggers: [
+          { name: 'daily', type: 'schedule' as never, config: {} as never, action: {} as never },
+        ],
       });
       mockRepo.upsert.mockResolvedValue(makeRecord({ status: 'enabled' }));
       mockTrigSvc.createTrigger.mockRejectedValue(new Error('trigger DB error'));
@@ -385,7 +454,11 @@ describe('ExtensionService', () => {
 
       expect(result).toBe(true);
       expect(mockRepo.delete).toHaveBeenCalledWith('test-ext');
-      expect(mockESEmit).toHaveBeenCalledWith('extension.uninstalled', 'extension-service', expect.any(Object));
+      expect(mockESEmit).toHaveBeenCalledWith(
+        'extension.uninstalled',
+        'extension-service',
+        expect.any(Object)
+      );
     });
 
     it('does not emit events when delete returns false', async () => {
@@ -461,7 +534,11 @@ describe('ExtensionService', () => {
 
       expect(result).toEqual(updatedRecord);
       expect(mockRepo.updateStatus).toHaveBeenCalledWith('test-ext', 'enabled');
-      expect(mockESEmit).toHaveBeenCalledWith('extension.enabled', 'extension-service', expect.any(Object));
+      expect(mockESEmit).toHaveBeenCalledWith(
+        'extension.enabled',
+        'extension-service',
+        expect.any(Object)
+      );
     });
 
     it('does not emit when updateStatus returns null', async () => {
@@ -503,7 +580,11 @@ describe('ExtensionService', () => {
 
       expect(result).toEqual(updatedRecord);
       expect(mockRepo.updateStatus).toHaveBeenCalledWith('test-ext', 'disabled');
-      expect(mockESEmit).toHaveBeenCalledWith('extension.disabled', 'extension-service', expect.any(Object));
+      expect(mockESEmit).toHaveBeenCalledWith(
+        'extension.disabled',
+        'extension-service',
+        expect.any(Object)
+      );
     });
 
     it('does not emit events when updateStatus returns null', async () => {
@@ -561,12 +642,14 @@ describe('ExtensionService', () => {
 
     it('returns tool definitions for ownpilot extensions', () => {
       const manifest = makeManifest({
-        tools: [{
-          name: 'search_web',
-          description: 'Search the web',
-          parameters: { type: 'object', properties: {} },
-          code: 'return {};',
-        }],
+        tools: [
+          {
+            name: 'search_web',
+            description: 'Search the web',
+            parameters: { type: 'object', properties: {} },
+            code: 'return {};',
+          },
+        ],
       });
       mockRepo.getEnabled.mockReturnValue([makeRecord({ manifest })]);
 
@@ -774,8 +857,20 @@ describe('ExtensionService', () => {
     });
 
     it('returns sections only for matching ids', () => {
-      const manifest1 = makeManifest({ id: 'ext-1', name: 'Ext 1', format: 'agentskills', tools: [], instructions: 'Skill 1 instructions.' });
-      const manifest2 = makeManifest({ id: 'ext-2', name: 'Ext 2', format: 'agentskills', tools: [], instructions: 'Skill 2 instructions.' });
+      const manifest1 = makeManifest({
+        id: 'ext-1',
+        name: 'Ext 1',
+        format: 'agentskills',
+        tools: [],
+        instructions: 'Skill 1 instructions.',
+      });
+      const manifest2 = makeManifest({
+        id: 'ext-2',
+        name: 'Ext 2',
+        format: 'agentskills',
+        tools: [],
+        instructions: 'Skill 2 instructions.',
+      });
       mockRepo.getEnabled.mockReturnValue([
         { ...makeRecord({ manifest: manifest1 }), id: 'ext-1' },
         { ...makeRecord({ manifest: manifest2 }), id: 'ext-2' },
@@ -877,7 +972,9 @@ describe('ExtensionService', () => {
 
     it('returns error when readdirSync throws', async () => {
       mockExists.mockReturnValue(true);
-      mockReaddir.mockImplementation(() => { throw new Error('perm denied'); });
+      mockReaddir.mockImplementation(() => {
+        throw new Error('perm denied');
+      });
 
       const result = await svc.scanDirectory('/bad-dir');
       expect(result.installed).toBe(0);
@@ -886,7 +983,9 @@ describe('ExtensionService', () => {
     });
 
     // Helper: normalize backslashes to forward slashes for cross-platform checks
-    function norm(p: string) { return p.replace(/\\/g, '/'); }
+    function norm(p: string) {
+      return p.replace(/\\/g, '/');
+    }
 
     it('installs extension.json from subdirectory', async () => {
       mockExists.mockImplementation((p: string) => {
@@ -928,7 +1027,9 @@ describe('ExtensionService', () => {
         return false;
       });
       mockReaddir.mockReturnValue([{ isDirectory: () => true, name: 'bad' }]);
-      mockReadFile.mockImplementation(() => { throw new Error('ENOENT'); });
+      mockReadFile.mockImplementation(() => {
+        throw new Error('ENOENT');
+      });
 
       const result = await svc.scanDirectory('/scan-dir');
       expect(result.installed).toBe(0);

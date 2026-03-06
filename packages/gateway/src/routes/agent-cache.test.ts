@@ -682,8 +682,16 @@ describe('createSoulAwareApprovalCallback', () => {
   });
 
   it('returns false when checkAutonomy returns allowed: false and requiresApproval: false', async () => {
-    mockCheckAutonomy.mockReturnValue({ allowed: false, requiresApproval: false, reason: 'Blocked' });
-    const callback = mod.createSoulAwareApprovalCallback('agent-1', 'TestAgent', baseAutonomy as never);
+    mockCheckAutonomy.mockReturnValue({
+      allowed: false,
+      requiresApproval: false,
+      reason: 'Blocked',
+    });
+    const callback = mod.createSoulAwareApprovalCallback(
+      'agent-1',
+      'TestAgent',
+      baseAutonomy as never
+    );
 
     const result = await callback('communication', 'send_email', 'Send an email', {});
     expect(result).toBe(false);
@@ -691,7 +699,11 @@ describe('createSoulAwareApprovalCallback', () => {
 
   it('returns true when checkAutonomy allows without approval', async () => {
     mockCheckAutonomy.mockReturnValue({ allowed: true, requiresApproval: false, notify: false });
-    const callback = mod.createSoulAwareApprovalCallback('agent-1', 'TestAgent', baseAutonomy as never);
+    const callback = mod.createSoulAwareApprovalCallback(
+      'agent-1',
+      'TestAgent',
+      baseAutonomy as never
+    );
 
     const result = await callback('memory', 'create_memory', 'Save memory', {});
     expect(result).toBe(true);
@@ -713,7 +725,11 @@ describe('createSoulAwareApprovalCallback', () => {
       processDecision: vi.fn(),
     };
     mockGetApprovalManager.mockReturnValue(mockApprovalMgr);
-    const callback = mod.createSoulAwareApprovalCallback('agent-1', 'TestAgent', baseAutonomy as never);
+    const callback = mod.createSoulAwareApprovalCallback(
+      'agent-1',
+      'TestAgent',
+      baseAutonomy as never
+    );
 
     const result = await callback('file', 'read_file', 'Read a file', {});
     expect(result).toBe(true);
@@ -727,7 +743,11 @@ describe('createSoulAwareApprovalCallback', () => {
       processDecision: vi.fn(),
     };
     mockGetApprovalManager.mockReturnValue(mockApprovalMgr);
-    const callback = mod.createSoulAwareApprovalCallback('agent-1', 'TestAgent', baseAutonomy as never);
+    const callback = mod.createSoulAwareApprovalCallback(
+      'agent-1',
+      'TestAgent',
+      baseAutonomy as never
+    );
 
     const result = await callback('file', 'delete_file', 'Delete a file', {});
     expect(result).toBe(false);
@@ -741,7 +761,11 @@ describe('createSoulAwareApprovalCallback', () => {
       processDecision: vi.fn(),
     };
     mockGetApprovalManager.mockReturnValue(mockApprovalMgr);
-    const callback = mod.createSoulAwareApprovalCallback('agent-1', 'TestAgent', baseAutonomy as never);
+    const callback = mod.createSoulAwareApprovalCallback(
+      'agent-1',
+      'TestAgent',
+      baseAutonomy as never
+    );
 
     const result = await callback('file', 'write_file', 'Write to file', {});
     expect(result).toBe(false);

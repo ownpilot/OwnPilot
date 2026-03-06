@@ -38,13 +38,13 @@ sendMessage(ChannelOutgoingMessage)
 
 ## JID Types
 
-| JID Format | Example | Description | Current Status |
-|------------|---------|-------------|----------------|
-| `@s.whatsapp.net` | `YOUR_PHONE_NUMBER@s.whatsapp.net` | Direct message (phone-based) | PROCESSED |
-| `@g.us` | `120363375272168801@g.us` | Group chat | SKIPPED |
-| `@lid` | `179203903344808@lid` | Linked ID (WhatsApp multi-device internal) | SKIPPED (LID resolution available but inactive) |
-| `@broadcast` | `status@broadcast` | Broadcast list / Status | SKIPPED |
-| `@newsletter` | `123456@newsletter` | WhatsApp Channel (public) | SKIPPED |
+| JID Format        | Example                            | Description                                | Current Status                                  |
+| ----------------- | ---------------------------------- | ------------------------------------------ | ----------------------------------------------- |
+| `@s.whatsapp.net` | `YOUR_PHONE_NUMBER@s.whatsapp.net` | Direct message (phone-based)               | PROCESSED                                       |
+| `@g.us`           | `120363375272168801@g.us`          | Group chat                                 | SKIPPED                                         |
+| `@lid`            | `179203903344808@lid`              | Linked ID (WhatsApp multi-device internal) | SKIPPED (LID resolution available but inactive) |
+| `@broadcast`      | `status@broadcast`                 | Broadcast list / Status                    | SKIPPED                                         |
+| `@newsletter`     | `123456@newsletter`                | WhatsApp Channel (public)                  | SKIPPED                                         |
 
 ## Access Control (allowed_users)
 
@@ -69,22 +69,22 @@ Or via OwnPilot UI: Settings → Config Center → WhatsApp → Allowed Phone Nu
 
 ## Anti-Ban Protections (P0 — All Active)
 
-| Protection | Implementation | Reference |
-|------------|---------------|-----------|
-| Browser fingerprint | `Browsers.appropriate('Chrome')` | Evolution API pattern |
-| Offline by default | `markOnlineOnConnect: false` + `sendPresenceUpdate('unavailable')` on connect | Evolution + WAHA |
-| Typing simulation | `available → composing → delay(1-5s) → paused → send → unavailable` | Evolution API `sendMessageWithTyping` |
-| Rate limiting | 20 msg/min global + 3s per-JID gap | Industry consensus |
-| getMessage callback | Returns cached message or `undefined` (NEVER empty string) | Baileys 7.x requirement |
-| Message retry cache | `msgRetryCounterCache` (SimpleTTLCache, 5min) | Evolution + WAHA |
-| Device cache | `userDevicesCache` (SimpleTTLCache, 5min) | WAHA pattern |
-| Transaction retry | `transactionOpts: { maxCommitRetries: 10, delayBetweenTriesMs: 3000 }` | Evolution API |
-| Reconnect cap | Max 10 attempts, exponential backoff + jitter | Both |
-| 440 tracking | 3 consecutive 440 → stop reconnect | Custom |
-| Permanent disconnect | 401/403/402/406 → no reconnect (would escalate ban) | Evolution API |
-| Group skip | `@g.us` messages not processed | Anti-spam |
-| Message dedup | `processedMsgIds` Set (cap 1000) — prevents double AI response on reconnect | Custom |
-| Pino silent | Logger `'silent'` in production — no JID/content leakage | Both |
+| Protection           | Implementation                                                                | Reference                             |
+| -------------------- | ----------------------------------------------------------------------------- | ------------------------------------- |
+| Browser fingerprint  | `Browsers.appropriate('Chrome')`                                              | Evolution API pattern                 |
+| Offline by default   | `markOnlineOnConnect: false` + `sendPresenceUpdate('unavailable')` on connect | Evolution + WAHA                      |
+| Typing simulation    | `available → composing → delay(1-5s) → paused → send → unavailable`           | Evolution API `sendMessageWithTyping` |
+| Rate limiting        | 20 msg/min global + 3s per-JID gap                                            | Industry consensus                    |
+| getMessage callback  | Returns cached message or `undefined` (NEVER empty string)                    | Baileys 7.x requirement               |
+| Message retry cache  | `msgRetryCounterCache` (SimpleTTLCache, 5min)                                 | Evolution + WAHA                      |
+| Device cache         | `userDevicesCache` (SimpleTTLCache, 5min)                                     | WAHA pattern                          |
+| Transaction retry    | `transactionOpts: { maxCommitRetries: 10, delayBetweenTriesMs: 3000 }`        | Evolution API                         |
+| Reconnect cap        | Max 10 attempts, exponential backoff + jitter                                 | Both                                  |
+| 440 tracking         | 3 consecutive 440 → stop reconnect                                            | Custom                                |
+| Permanent disconnect | 401/403/402/406 → no reconnect (would escalate ban)                           | Evolution API                         |
+| Group skip           | `@g.us` messages not processed                                                | Anti-spam                             |
+| Message dedup        | `processedMsgIds` Set (cap 1000) — prevents double AI response on reconnect   | Custom                                |
+| Pino silent          | Logger `'silent'` in production — no JID/content leakage                      | Both                                  |
 
 ## LID Resolution (INACTIVE — Ready to Activate)
 
@@ -92,15 +92,16 @@ WhatsApp's Linked ID system (2024+): some messages arrive as `@lid` instead of `
 
 ### When to activate
 
-| Scenario | Trigger | Action |
-|----------|---------|--------|
-| A | Auto-reply opened to other users, their messages come as `@lid` | Activate LID resolution |
-| B | Group messages enabled, participant JIDs are `@lid` | Activate LID resolution |
-| C | LID-only contacts can't match `allowed_users` | Activate LID resolution |
+| Scenario | Trigger                                                         | Action                  |
+| -------- | --------------------------------------------------------------- | ----------------------- |
+| A        | Auto-reply opened to other users, their messages come as `@lid` | Activate LID resolution |
+| B        | Group messages enabled, participant JIDs are `@lid`             | Activate LID resolution |
+| C        | LID-only contacts can't match `allowed_users`                   | Activate LID resolution |
 
 ### How it works
 
 Baileys provides two JIDs per message:
+
 ```
 key.remoteJid    = 179203903344808@lid           (device/linked ID)
 key.remoteJidAlt = OTHER_PHONE_NUMBER@s.whatsapp.net    (real phone number)
@@ -108,6 +109,7 @@ key.remoteJidAlt = OTHER_PHONE_NUMBER@s.whatsapp.net    (real phone number)
 
 Evolution API swaps them before processing (line 1478-1479 of
 `~/evolution-api-src/src/api/integrations/channel/whatsapp/whatsapp.baileys.service.ts`):
+
 ```typescript
 if (messageRaw.key.remoteJid?.includes('@lid') && messageRaw.key.remoteJidAlt) {
   messageRaw.key.remoteJid = messageRaw.key.remoteJidAlt;
@@ -152,13 +154,13 @@ AND remoteJidAlt proves unreliable.
 
 ### Disabling auto-reply (ranked by speed)
 
-| Method | Speed | Scope | Reversible |
-|--------|-------|-------|------------|
-| Disconnect WhatsApp (UI/API) | Instant | All | Yes |
-| Set `allowed_users` to fake number | Instant (after restart) | All except self | Yes |
-| `UPDATE channel_users SET is_blocked = TRUE WHERE platform = 'whatsapp'` | Instant | Specific users | Yes |
-| `UPDATE channel_users SET is_verified = FALSE WHERE platform = 'whatsapp'` | Instant | All (sends "approval needed" msg) | Yes |
-| Add `auto_reply` toggle to config schema | Code change | Configurable | Yes |
+| Method                                                                     | Speed                   | Scope                             | Reversible |
+| -------------------------------------------------------------------------- | ----------------------- | --------------------------------- | ---------- |
+| Disconnect WhatsApp (UI/API)                                               | Instant                 | All                               | Yes        |
+| Set `allowed_users` to fake number                                         | Instant (after restart) | All except self                   | Yes        |
+| `UPDATE channel_users SET is_blocked = TRUE WHERE platform = 'whatsapp'`   | Instant                 | Specific users                    | Yes        |
+| `UPDATE channel_users SET is_verified = FALSE WHERE platform = 'whatsapp'` | Instant                 | All (sends "approval needed" msg) | Yes        |
+| Add `auto_reply` toggle to config schema                                   | Code change             | Configurable                      | Yes        |
 
 ### TriggerEngine (secondary path)
 
@@ -174,37 +176,45 @@ Not a concern.
 ## Scenarios & Configuration Recipes
 
 ### Scenario 1: Self-chat only (CURRENT)
+
 ```
 allowed_users: "YOUR_PHONE_NUMBER"
 Groups: SKIP
 LID: SKIP
 ```
+
 AI responds only when you message yourself.
 
 ### Scenario 2: Personal assistant for specific people
+
 ```
 allowed_users: "YOUR_PHONE_NUMBER, OTHER_PHONE_NUMBER, 905551234567"
 Groups: SKIP
 LID: Activate resolution (so LID contacts are recognized)
 ```
+
 AI responds to you + listed contacts. Everyone else ignored.
 
 ### Scenario 3: Group bot (e.g., "Sor Euronet")
+
 ```
 allowed_users: "" (empty = all)
 Groups: Enable @g.us processing (modify JID filter)
   + Add mention/keyword trigger (only respond when mentioned or keyword detected)
 LID: Activate resolution
 ```
+
 Requires code change in handleIncomingMessage to allow specific group JIDs.
 
 ### Scenario 4: Full chatbot (all DMs)
+
 ```
 allowed_users: "" (empty = all)
 Groups: SKIP (safer)
 LID: Activate resolution
 Anti-ban: CRITICAL — rate limits, typing simulation, verification gate
 ```
+
 WARNING: High ban risk + API cost. Use channel_users.isVerified as gate.
 
 ## Connection & Session
@@ -236,18 +246,19 @@ docker run -d --name ownpilot \
 
 ## Key Files
 
-| File | Purpose |
-|------|---------|
-| `whatsapp-api.ts` | Core WhatsApp Baileys integration (connect, send, receive, anti-ban) |
-| `index.ts` | Plugin registration, config schema, tool definition |
-| `session-store.ts` | File-based auth state (useMultiFileAuthState wrapper) |
-| `../../service-impl.ts` | ChannelServiceImpl — processIncomingMessage, AI pipeline |
-| `../../../triggers/engine.ts` | TriggerEngine — event-based trigger matching |
-| `../../../routes/agent-service.ts` | AI agent creation (createChatAgentInstance) |
+| File                               | Purpose                                                              |
+| ---------------------------------- | -------------------------------------------------------------------- |
+| `whatsapp-api.ts`                  | Core WhatsApp Baileys integration (connect, send, receive, anti-ban) |
+| `index.ts`                         | Plugin registration, config schema, tool definition                  |
+| `session-store.ts`                 | File-based auth state (useMultiFileAuthState wrapper)                |
+| `../../service-impl.ts`            | ChannelServiceImpl — processIncomingMessage, AI pipeline             |
+| `../../../triggers/engine.ts`      | TriggerEngine — event-based trigger matching                         |
+| `../../../routes/agent-service.ts` | AI agent creation (createChatAgentInstance)                          |
 
 ## Research References
 
 Analysis reports from 6 specialist agents (2026-03-04):
+
 - `/tmp/analysis-evolution-patterns.md` — Evolution API makeWASocket config, getMessage, typing
 - `/tmp/analysis-waha-patterns.md` — WAHA store bind, msgRetryCounterCache, browser fingerprint
 - `/tmp/analysis-ban-bestpractice.md` — Consolidated P0 anti-ban checklist
@@ -259,5 +270,6 @@ Analysis reports from 6 specialist agents (2026-03-04):
 - `/tmp/analysis-waha-lid-handling.md` — LID utilities, SQLite store, jidsFromKey
 
 Cloned source repos (for deep pattern analysis):
+
 - `~/evolution-api-src/` — Evolution API (20MB, main: whatsapp.baileys.service.ts 5122 lines)
 - `~/waha-src/` — WAHA (51MB, main: session.noweb.core.ts 2700+ lines)

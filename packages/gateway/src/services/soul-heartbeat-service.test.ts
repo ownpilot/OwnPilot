@@ -24,22 +24,34 @@ const {
   mockSendTelegramMessage,
 } = vi.hoisted(() => {
   /** Mutable container shared between mock factory and test assertions. */
-  const captured: { engine: Record<string, unknown>; eventBus: { emit: (e: string, p: unknown) => void } } =
-    { engine: {} as Record<string, unknown>, eventBus: { emit: () => void 0 } };
+  const captured: {
+    engine: Record<string, unknown>;
+    eventBus: { emit: (e: string, p: unknown) => void };
+  } = { engine: {} as Record<string, unknown>, eventBus: { emit: () => void 0 } };
 
   const mockRunHeartbeat = vi.fn();
   const mockDispose = vi.fn();
 
-  const MockHeartbeatRunner = vi.fn().mockImplementation(
-    function (this: unknown, agentEngine: unknown, _sr: unknown, _cb: unknown, _hl: unknown, _bt: unknown, eventBus: unknown) {
-      captured.engine = agentEngine as Record<string, unknown>;
-      captured.eventBus = eventBus as { emit: (e: string, p: unknown) => void };
-      return { runHeartbeat: mockRunHeartbeat };
-    }
-  );
+  const MockHeartbeatRunner = vi.fn().mockImplementation(function (
+    this: unknown,
+    agentEngine: unknown,
+    _sr: unknown,
+    _cb: unknown,
+    _hl: unknown,
+    _bt: unknown,
+    eventBus: unknown
+  ) {
+    captured.engine = agentEngine as Record<string, unknown>;
+    captured.eventBus = eventBus as { emit: (e: string, p: unknown) => void };
+    return { runHeartbeat: mockRunHeartbeat };
+  });
 
-  const MockAgentCommunicationBus = vi.fn().mockImplementation(function() { return { dispose: mockDispose }; });
-  const MockBudgetTracker = vi.fn().mockImplementation(function() { return {}; });
+  const MockAgentCommunicationBus = vi.fn().mockImplementation(function () {
+    return { dispose: mockDispose };
+  });
+  const MockBudgetTracker = vi.fn().mockImplementation(function () {
+    return {};
+  });
 
   const mockEmit = vi.fn();
   const mockGetEventSystem = vi.fn().mockReturnValue({ emit: mockEmit });
@@ -92,7 +104,7 @@ const {
 // ---------------------------------------------------------------------------
 
 vi.mock('@ownpilot/core', async (importOriginal) => ({
-  ...await importOriginal<Record<string, unknown>>(),
+  ...(await importOriginal<Record<string, unknown>>()),
   HeartbeatRunner: MockHeartbeatRunner,
   AgentCommunicationBus: MockAgentCommunicationBus,
   BudgetTracker: MockBudgetTracker,
@@ -160,7 +172,10 @@ import {
 // ---------------------------------------------------------------------------
 
 type Engine = {
-  processMessage: (req: { message: string; context?: { allowedTools?: string[] } }) => Promise<unknown>;
+  processMessage: (req: {
+    message: string;
+    context?: { allowedTools?: string[] };
+  }) => Promise<unknown>;
   saveMemory: (agentId: string, content: string, source: string) => Promise<void>;
   createNote: (note: { content: string; source: string; category: string }) => Promise<void>;
   sendToChannel: (channel: string, message: string, chatId?: string) => Promise<void>;
@@ -185,20 +200,29 @@ beforeEach(() => {
   vi.clearAllMocks();
 
   // Re-apply implementations cleared by clearAllMocks on class constructors
-  MockHeartbeatRunner.mockImplementation(
-    function(this: unknown, agentEngine: unknown, _sr: unknown, _cb: unknown, _hl: unknown, _bt: unknown, eventBus: unknown) {
-      captured.engine = agentEngine as Record<string, unknown>;
-      captured.eventBus = eventBus as { emit: (e: string, p: unknown) => void };
-      return { runHeartbeat: mockRunHeartbeat };
-    }
-  );
-  MockAgentCommunicationBus.mockImplementation(function() { return { dispose: mockDispose }; });
-  MockBudgetTracker.mockImplementation(function() { return {}; });
+  MockHeartbeatRunner.mockImplementation(function (
+    this: unknown,
+    agentEngine: unknown,
+    _sr: unknown,
+    _cb: unknown,
+    _hl: unknown,
+    _bt: unknown,
+    eventBus: unknown
+  ) {
+    captured.engine = agentEngine as Record<string, unknown>;
+    captured.eventBus = eventBus as { emit: (e: string, p: unknown) => void };
+    return { runHeartbeat: mockRunHeartbeat };
+  });
+  MockAgentCommunicationBus.mockImplementation(function () {
+    return { dispose: mockDispose };
+  });
+  MockBudgetTracker.mockImplementation(function () {
+    return {};
+  });
   mockGetEventSystem.mockReturnValue({ emit: mockEmit });
   mockGetServiceRegistry.mockReturnValue({ get: vi.fn().mockReturnValue(mockMemoryService) });
   mockGetOrCreateChatAgent.mockResolvedValue({ chat: mockChat });
   mockResolveForProcess.mockResolvedValue({ provider: 'anthropic', model: 'claude-test' });
-
 });
 
 // ---------------------------------------------------------------------------
@@ -223,7 +247,8 @@ describe('getHeartbeatRunner()', () => {
   it('passes soul-repo, commBus, hbLogRepo, and budgetTracker to HeartbeatRunner', () => {
     getHeartbeatRunner();
     // HeartbeatRunner(agentEngine, soulRepo, commBus, hbLogRepo, budgetTracker, eventBus)
-    const [, soulRepo, commBus, hbLogRepo, budgetTracker] = MockHeartbeatRunner.mock.calls[0] as unknown[];
+    const [, soulRepo, commBus, hbLogRepo, budgetTracker] = MockHeartbeatRunner.mock
+      .calls[0] as unknown[];
     expect(soulRepo).toBeDefined();
     expect(commBus).toBeDefined();
     expect(hbLogRepo).toBeDefined();
@@ -416,11 +441,15 @@ describe('heartbeat engine — processMessage()', () => {
 
   it('onBeforeToolCall approves tools in allowedTools list (H2 fix)', async () => {
     initRunner();
-    let capturedFilter: ((tc: { name: string }) => Promise<{ approved: boolean; reason?: string }>) | undefined;
-    mockChat.mockImplementation((_msg: string, opts: { onBeforeToolCall?: typeof capturedFilter }) => {
-      capturedFilter = opts.onBeforeToolCall;
-      return Promise.resolve({ ok: true, value: { content: 'ok', usage: null } });
-    });
+    let capturedFilter:
+      | ((tc: { name: string }) => Promise<{ approved: boolean; reason?: string }>)
+      | undefined;
+    mockChat.mockImplementation(
+      (_msg: string, opts: { onBeforeToolCall?: typeof capturedFilter }) => {
+        capturedFilter = opts.onBeforeToolCall;
+        return Promise.resolve({ ok: true, value: { content: 'ok', usage: null } });
+      }
+    );
 
     await getEngine().processMessage({
       message: 'run',
@@ -452,7 +481,9 @@ describe('event bus adapter', () => {
   it('calls getEventSystem().emit with event, source, and payload (H5 fix)', () => {
     initRunner();
     captured.eventBus.emit('soul.heartbeat.started', { agentId: 'a1' });
-    expect(mockEmit).toHaveBeenCalledWith('soul.heartbeat.started', 'soul-heartbeat', { agentId: 'a1' });
+    expect(mockEmit).toHaveBeenCalledWith('soul.heartbeat.started', 'soul-heartbeat', {
+      agentId: 'a1',
+    });
   });
 
   it('does not throw when getEventSystem throws', () => {

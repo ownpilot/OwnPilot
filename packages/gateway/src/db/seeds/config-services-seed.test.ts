@@ -127,9 +127,7 @@ describe('seedConfigServices', () => {
   });
 
   it('removes stale services not in known list', async () => {
-    mockConfigServicesRepo.list.mockReturnValue([
-      { name: 'stale-service', requiredBy: [] },
-    ]);
+    mockConfigServicesRepo.list.mockReturnValue([{ name: 'stale-service', requiredBy: [] }]);
     mockConfigServicesRepo.delete.mockResolvedValue(undefined);
 
     await seedConfigServices();
@@ -146,9 +144,7 @@ describe('seedConfigServices', () => {
   });
 
   it('does not remove known services', async () => {
-    mockConfigServicesRepo.list.mockReturnValue([
-      { name: 'openweathermap', requiredBy: [] },
-    ]);
+    mockConfigServicesRepo.list.mockReturnValue([{ name: 'openweathermap', requiredBy: [] }]);
 
     await seedConfigServices();
     expect(mockConfigServicesRepo.delete).not.toHaveBeenCalled();

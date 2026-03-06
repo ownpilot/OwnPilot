@@ -9,13 +9,7 @@ import { join, basename, dirname } from 'node:path';
 import { Hono } from 'hono';
 import { getServiceRegistry, Services } from '@ownpilot/core';
 import type { ExtensionService } from '../../services/extension-service.js';
-import {
-  getUserId,
-  apiError,
-  ERROR_CODES,
-  notFoundError,
-  getErrorMessage,
-} from '../helpers.js';
+import { getUserId, apiError, ERROR_CODES, notFoundError, getErrorMessage } from '../helpers.js';
 import { getLog } from '../../services/log.js';
 
 const log = getLog('ExtensionPackaging');
@@ -95,7 +89,9 @@ packagingRoutes.get('/:id/package', async (c) => {
       if (format === 'agentskills') {
         manifestContent = buildSkillMd(manifest);
       } else {
-        const { _security: _s, ...cleanManifest } = manifest as Record<string, unknown> & { _security?: unknown };
+        const { _security: _s, ...cleanManifest } = manifest as Record<string, unknown> & {
+          _security?: unknown;
+        };
         manifestContent = JSON.stringify(cleanManifest, null, 2);
       }
 

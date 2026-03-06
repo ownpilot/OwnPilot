@@ -27,7 +27,8 @@ vi.mock('../services/browser-service.js', () => ({
 }));
 
 // Dynamic import AFTER mocks
-const { executeBrowserTool, BROWSER_TOOLS, BROWSER_TOOL_NAMES } = await import('./browser-tools.js');
+const { executeBrowserTool, BROWSER_TOOLS, BROWSER_TOOL_NAMES } =
+  await import('./browser-tools.js');
 
 // ---------------------------------------------------------------------------
 // Tests

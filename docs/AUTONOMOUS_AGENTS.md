@@ -1,6 +1,7 @@
 # Autonomous Agents (Soul Agents) - Comprehensive Documentation
 
 ## Table of Contents
+
 1. [Core Concepts](#core-concepts)
 2. [What is a Soul?](#what-is-a-soul)
 3. [Heartbeat System](#heartbeat-system)
@@ -20,13 +21,13 @@
 
 The key difference from regular agents: **They can work automatically at scheduled intervals without user prompts.**
 
-| Feature | Regular Agent | Soul Agent (Autonomous) |
-|---------|--------------|------------------------|
-| Trigger | User sends message | Automatic based on schedule |
-| Schedule | None | Cron schedule (hourly, daily, etc.) |
-| Identity | Just a name | Detailed personality (emoji, boundaries, role) |
-| Budget Control | None | Daily/monthly spending limits |
-| Communication with other agents | None | Inbox/broadcast system |
+| Feature                         | Regular Agent      | Soul Agent (Autonomous)                        |
+| ------------------------------- | ------------------ | ---------------------------------------------- |
+| Trigger                         | User sends message | Automatic based on schedule                    |
+| Schedule                        | None               | Cron schedule (hourly, daily, etc.)            |
+| Identity                        | Just a name        | Detailed personality (emoji, boundaries, role) |
+| Budget Control                  | None               | Daily/monthly spending limits                  |
+| Communication with other agents | None               | Inbox/broadcast system                         |
 
 ---
 
@@ -37,6 +38,7 @@ The key difference from regular agents: **They can work automatically at schedul
 A soul contains:
 
 ### 1. Identity
+
 ```typescript
 {
   name: "Radar",           // Display name
@@ -58,6 +60,7 @@ A soul contains:
 **Why important?** This info is injected into EVERY prompt. The agent always behaves with this identity.
 
 ### 2. Purpose
+
 ```typescript
 {
   mission: "Scan Product Hunt for emerging products",
@@ -73,6 +76,7 @@ A soul contains:
 **Why important?** Tells the agent what to do. Tool preferences affect search_tools results.
 
 ### 3. Autonomy
+
 ```typescript
 {
   level: 3,  // 0-4 scale
@@ -88,6 +92,7 @@ A soul contains:
 **Why important?** Security and budget control. Works with restricted permissions.
 
 ### 4. Heartbeat
+
 ```typescript
 {
   enabled: true,
@@ -115,6 +120,7 @@ A soul contains:
 **Why important?** Determines when the agent wakes up and what it does.
 
 ### 5. Relationships
+
 ```typescript
 {
   reportsTo: "user",      // Who to report to
@@ -128,6 +134,7 @@ A soul contains:
 **Why important?** Defines communication and hierarchy within a crew.
 
 ### 6. Evolution
+
 ```typescript
 {
   version: 1,                    // Soul version
@@ -142,6 +149,7 @@ A soul contains:
 **Why important?** Can evolve over time based on user feedback.
 
 ### 7. Boot Sequence
+
 ```typescript
 {
   onStart: [],           // On first start
@@ -191,19 +199,19 @@ A soul contains:
 
 ### Task Schedule Types
 
-| Schedule | Description | Example |
-|----------|-------------|---------|
-| `every` | Run every heartbeat | Every 4 hours |
-| `daily` | Once per day at specific time | dailyAt: "09:00" |
-| `weekly` | Once per week on specific day | weeklyOn: 1 (Monday) |
-| `condition` | When condition is met | Future feature |
+| Schedule    | Description                   | Example              |
+| ----------- | ----------------------------- | -------------------- |
+| `every`     | Run every heartbeat           | Every 4 hours        |
+| `daily`     | Once per day at specific time | dailyAt: "09:00"     |
+| `weekly`    | Once per week on specific day | weeklyOn: 1 (Monday) |
+| `condition` | When condition is met         | Future feature       |
 
 ### Staleness Check
 
 If a task is older than X hours, it's **forced to run** regardless of schedule.
 
 ```typescript
-stalenessHours: 8  // Force run if older than 8 hours
+stalenessHours: 8; // Force run if older than 8 hours
 ```
 
 **Example:** Radar wakes every 4 hours but "weekly brief" runs once a week. If it's stale (>8h), it runs on next wake.
@@ -218,15 +226,16 @@ stalenessHours: 8  // Force run if older than 8 hours
 
 ### Why Use Crews?
 
-| Single Agent | Crew (Multiple Agents) |
-|-------------|----------------------|
-| Single task focused | Complex workflows |
+| Single Agent            | Crew (Multiple Agents)        |
+| ----------------------- | ----------------------------- |
+| Single task focused     | Complex workflows             |
 | Unaware of other agents | Can use each other's findings |
-| One-person orchestra | Specialized roles |
+| One-person orchestra    | Specialized roles             |
 
 ### Coordination Patterns
 
 #### 1. Hub-Spoke
+
 ```
     [Chief]
     /   |   \
@@ -237,6 +246,7 @@ stalenessHours: 8  // Force run if older than 8 hours
 ```
 
 #### 2. Peer-to-Peer
+
 ```
 [Radar] <---> [Spark]
 
@@ -245,6 +255,7 @@ stalenessHours: 8  // Force run if older than 8 hours
 ```
 
 #### 3. Pipeline
+
 ```
 [Scout] -> [Ghost] -> [Publisher]
 
@@ -253,6 +264,7 @@ stalenessHours: 8  // Force run if older than 8 hours
 ```
 
 #### 4. Hierarchical
+
 ```
     [Manager]
     /       \
@@ -287,6 +299,7 @@ stalenessHours: 8  // Force run if older than 8 hours
 ### Communication Types
 
 #### 1. Inbox (Direct Message)
+
 ```typescript
 // Radar -> Spark message
 {
@@ -303,6 +316,7 @@ stalenessHours: 8  // Force run if older than 8 hours
 **When to use?** When one agent needs to send information to a specific other agent.
 
 #### 2. Broadcast (Announcement)
+
 ```typescript
 // Announce to entire crew
 {
@@ -318,24 +332,25 @@ stalenessHours: 8  // Force run if older than 8 hours
 **When to use?** When sharing information with the whole team at once.
 
 #### 3. Memory (Shared Knowledge)
+
 ```typescript
 // Save research result
-await agentEngine.saveMemory(agentId, output, "heartbeat");
+await agentEngine.saveMemory(agentId, output, 'heartbeat');
 ```
 
 **When to use?** For permanent information that other agents can access later.
 
 ### outputTo Destinations
 
-| Destination | Description | Use Case |
-|------------|-------------|----------|
-| `memory` | Save to permanent memory | Research findings |
-| `inbox` | Message another agent | Radar -> Spark |
-| `channel` | Send to Telegram, etc. | User notification |
-| `note` | Save to notes system | Generate report |
-| `broadcast` | Announce to entire crew | Team update |
-| `task` | Add to task list | Create new task |
-| `artifact` | Add to dashboard | Visual report |
+| Destination | Description              | Use Case          |
+| ----------- | ------------------------ | ----------------- |
+| `memory`    | Save to permanent memory | Research findings |
+| `inbox`     | Message another agent    | Radar -> Spark    |
+| `channel`   | Send to Telegram, etc.   | User notification |
+| `note`      | Save to notes system     | Generate report   |
+| `broadcast` | Announce to entire crew  | Team update       |
+| `task`      | Add to task list         | Create new task   |
+| `artifact`  | Add to dashboard         | Visual report     |
 
 ---
 
@@ -402,10 +417,10 @@ Versions stored in `agent_soul_versions` table.
 
 ### Evolution Modes
 
-| Mode | Description |
-|------|-------------|
-| `manual` | Only user updates manually |
-| `supervised` | AI suggests, user approves |
+| Mode         | Description                  |
+| ------------ | ---------------------------- |
+| `manual`     | Only user updates manually   |
+| `supervised` | AI suggests, user approves   |
 | `autonomous` | AI updates itself (careful!) |
 
 ### Learnings
@@ -414,10 +429,10 @@ Agent learns from experience:
 
 ```typescript
 learnings: [
-  "User prefers concise summaries over detailed reports",
+  'User prefers concise summaries over detailed reports',
   "Web searches for 'AI trends' often return irrelevant results",
-  "Morning heartbeats get better engagement than evening"
-]
+  'Morning heartbeats get better engagement than evening',
+];
 ```
 
 These learnings are added to prompts.
@@ -429,11 +444,11 @@ User feedback history:
 ```typescript
 feedbackLog: [
   {
-    type: "praise",  // praise | correction | directive | personality_tweak
-    content: "Great analysis! Include more competitor data next time.",
-    appliedToVersion: 1
-  }
-]
+    type: 'praise', // praise | correction | directive | personality_tweak
+    content: 'Great analysis! Include more competitor data next time.',
+    appliedToVersion: 1,
+  },
+];
 ```
 
 ---
@@ -556,48 +571,59 @@ feedbackLog: [
 ## FAQ
 
 ### Q: What's the difference between regular and soul agents?
+
 **A:** Regular agents only work when users message them. Soul agents wake up automatically at scheduled intervals.
 
 ### Q: How do agents in a crew communicate?
+
 **A:** Via the inbox system. Agent A sends a message to Agent B's inbox. Agent B reads it on next wake.
 
 ### Q: What happens when budget limit is exceeded?
+
 **A:** Agent automatically pauses and notifies the user. Must be manually resumed.
 
 ### Q: What are quiet hours?
+
 **A:** Hours when the agent should not work (e.g., 23:00-07:00). Heartbeats are skipped during these times.
 
 ### Q: What happens when I delete a crew?
+
 **A:**
+
 - **Disband**: Triggers disabled, agents remain passive, data preserved
 - **Delete**: Everything permanently removed (irreversible)
 
 ### Q: Can I change an agent's personality?
+
 **A:** Yes. Update the soul's `identity` field. Changes take effect on next heartbeat.
 
 ### Q: How many crews can I create?
+
 **A:** No technical limit, but each crew consumes budget. Plan according to your resources.
 
 ### Q: Do agents actually "learn"?
+
 **A:** Currently limited. `learnings` array stores notes but automatic learning is not fully implemented.
 
 ### Q: Can I change the heartbeat interval?
+
 **A:** Yes, update the soul's `heartbeat.interval` field. Example: `"0 */6 * * *"` (every 6 hours).
 
 ### Q: Can two crews communicate with each other?
+
 **A:** Not currently. Crews communicate internally, no inter-crew communication.
 
 ---
 
 ## Summary Table
 
-| Concept | Purpose | Example |
-|---------|---------|---------|
-| **Soul** | Agent's identity and settings | Radar's personality, tasks |
-| **Heartbeat** | Scheduled automatic work | Waking every 4 hours |
-| **Crew** | Team of agents | Research Crew (Radar + Spark) |
-| **Template** | Pre-configured crew setup | "research", "content" |
-| **Inbox** | Inter-agent messaging | Radar -> Spark findings |
-| **Budget** | Cost control | Daily $5 limit |
-| **Evolution** | Gradual improvement | Versioning, learning |
-| **Quiet Hours** | Rest periods | No work 23:00-07:00 |
+| Concept         | Purpose                       | Example                       |
+| --------------- | ----------------------------- | ----------------------------- |
+| **Soul**        | Agent's identity and settings | Radar's personality, tasks    |
+| **Heartbeat**   | Scheduled automatic work      | Waking every 4 hours          |
+| **Crew**        | Team of agents                | Research Crew (Radar + Spark) |
+| **Template**    | Pre-configured crew setup     | "research", "content"         |
+| **Inbox**       | Inter-agent messaging         | Radar -> Spark findings       |
+| **Budget**      | Cost control                  | Daily $5 limit                |
+| **Evolution**   | Gradual improvement           | Versioning, learning          |
+| **Quiet Hours** | Rest periods                  | No work 23:00-07:00           |

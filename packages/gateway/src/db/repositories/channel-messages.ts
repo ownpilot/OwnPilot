@@ -320,7 +320,9 @@ export class ChannelMessagesRepository extends BaseRepository {
       [channelId, limit, offset]
     );
 
-    const platform = channelId.includes('.') ? channelId.split('.').pop() ?? channelId : channelId;
+    const platform = channelId.includes('.')
+      ? (channelId.split('.').pop() ?? channelId)
+      : channelId;
     const total = rows.length > 0 ? parseInt(rows[0]!.total_count, 10) : 0;
 
     return {
@@ -371,19 +373,21 @@ export class ChannelMessagesRepository extends BaseRepository {
    * Batch insert messages with deduplication (ON CONFLICT DO NOTHING).
    * Used for history sync — processes in chunks of 100 for memory safety.
    */
-  async createBatch(rows: Array<{
-    id: string;
-    channelId: string;
-    externalId?: string;
-    direction: ChannelMessage['direction'];
-    senderId?: string;
-    senderName?: string;
-    content: string;
-    contentType?: string;
-    attachments?: ChannelMessage['attachments'];
-    metadata?: Record<string, unknown>;
-    createdAt?: Date;
-  }>): Promise<number> {
+  async createBatch(
+    rows: Array<{
+      id: string;
+      channelId: string;
+      externalId?: string;
+      direction: ChannelMessage['direction'];
+      senderId?: string;
+      senderName?: string;
+      content: string;
+      contentType?: string;
+      attachments?: ChannelMessage['attachments'];
+      metadata?: Record<string, unknown>;
+      createdAt?: Date;
+    }>
+  ): Promise<number> {
     if (rows.length === 0) return 0;
     let inserted = 0;
     const BATCH_SIZE = 100;
@@ -422,7 +426,7 @@ export class ChannelMessagesRepository extends BaseRepository {
       });
       // Yield event loop between batches (WAHA pattern)
       if (i + BATCH_SIZE < rows.length) {
-        await new Promise(r => setTimeout(r, 1));
+        await new Promise((r) => setTimeout(r, 1));
       }
     }
     return inserted;

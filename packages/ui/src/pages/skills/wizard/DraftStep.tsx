@@ -51,11 +51,19 @@ export function DraftStep({ format, onDrafted, onBack }: DraftStepProps) {
       if (format === 'agentskills') {
         const res = await extensionsApi.generateSkill(description);
         // Clear saved intent on success
-        try { localStorage.removeItem(intentKey(format)); } catch { /* ignore */ }
+        try {
+          localStorage.removeItem(intentKey(format));
+        } catch {
+          /* ignore */
+        }
         onDrafted(res.content, res.name);
       } else {
         const res = await extensionsApi.generate(description);
-        try { localStorage.removeItem(intentKey(format)); } catch { /* ignore */ }
+        try {
+          localStorage.removeItem(intentKey(format));
+        } catch {
+          /* ignore */
+        }
         onDrafted(
           JSON.stringify(res.manifest, null, 2),
           (res.manifest as { name?: string }).name ?? 'extension'
@@ -98,9 +106,7 @@ export function DraftStep({ format, onDrafted, onBack }: DraftStepProps) {
         />
         <p className="text-xs text-text-muted dark:text-dark-text-muted mt-1.5 flex items-center gap-1.5">
           Be specific about capabilities, constraints, and edge cases.
-          {description.trim() && (
-            <span className="opacity-60">· Draft auto-saved</span>
-          )}
+          {description.trim() && <span className="opacity-60">· Draft auto-saved</span>}
         </p>
       </div>
 

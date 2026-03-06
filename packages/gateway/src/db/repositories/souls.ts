@@ -276,7 +276,10 @@ export class SoulsRepository extends BaseRepository {
   }
 
   /** Batch-update the full checklist in a single SQL statement. */
-  async updateHeartbeatChecklist(agentId: string, checklist: AgentSoul['heartbeat']['checklist']): Promise<void> {
+  async updateHeartbeatChecklist(
+    agentId: string,
+    checklist: AgentSoul['heartbeat']['checklist']
+  ): Promise<void> {
     await this.execute(
       `UPDATE agent_souls
        SET heartbeat = jsonb_set(heartbeat, '{checklist}', $1::jsonb),

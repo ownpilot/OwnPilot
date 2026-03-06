@@ -113,8 +113,7 @@ export function CreateAgentWizard({
     setStep('review');
   };
 
-
-const inputClass =
+  const inputClass =
     'w-full rounded-lg border border-border dark:border-dark-border bg-bg-primary dark:bg-dark-bg-primary text-text-primary dark:text-dark-text-primary px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary';
 
   const handleCreateSoul = async () => {
@@ -142,7 +141,10 @@ const inputClass =
         },
         autonomy: {
           level: templateAutonomyLevel,
-          allowedActions: templateTools.length > 0 ? templateTools : ['search_web', 'create_memory', 'search_memories'],
+          allowedActions:
+            templateTools.length > 0
+              ? templateTools
+              : ['search_web', 'create_memory', 'search_memories'],
           blockedActions: ['delete_data', 'execute_code'],
           requiresApproval: templateAutonomyLevel <= 1 ? ['send_message_to_user'] : [],
           maxCostPerCycle: 0.5,
@@ -595,7 +597,9 @@ const inputClass =
                     </div>
                     {personality && (
                       <div>
-                        <span className="text-text-muted dark:text-dark-text-muted">Personality</span>
+                        <span className="text-text-muted dark:text-dark-text-muted">
+                          Personality
+                        </span>
                         <p className="text-text-primary dark:text-dark-text-primary mt-0.5 text-xs line-clamp-2">
                           {personality}
                         </p>
@@ -610,7 +614,9 @@ const inputClass =
                       </div>
                     )}
                     <div className="flex justify-between">
-                      <span className="text-text-muted dark:text-dark-text-muted">Provider/Model</span>
+                      <span className="text-text-muted dark:text-dark-text-muted">
+                        Provider/Model
+                      </span>
                       <span className="text-text-primary dark:text-dark-text-primary text-xs">
                         {templateProvider || 'default'}/{templateModel || 'default'}
                       </span>
@@ -666,7 +672,9 @@ const inputClass =
                       </div>
                     )}
                     <div className="flex justify-between">
-                      <span className="text-text-muted dark:text-dark-text-muted">Provider/Model</span>
+                      <span className="text-text-muted dark:text-dark-text-muted">
+                        Provider/Model
+                      </span>
                       <span className="text-text-primary dark:text-dark-text-primary text-xs">
                         {templateProvider || 'default'}/{templateModel || 'default'}
                       </span>

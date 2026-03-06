@@ -108,7 +108,12 @@ crewRoutes.post('/deploy', async (c) => {
       workspaceId: userId,
     });
 
-    const agentResults: { agentId: string; name: string; status: 'created' | 'failed'; error?: string }[] = [];
+    const agentResults: {
+      agentId: string;
+      name: string;
+      status: 'created' | 'failed';
+      error?: string;
+    }[] = [];
 
     // 2. Create each agent with soul
     for (const tmpl of template.agents) {
@@ -142,7 +147,13 @@ crewRoutes.post('/deploy', async (c) => {
             pauseOnBudgetExceeded: true,
             notifyUserOnPause: true,
           },
-          heartbeat: tmpl.heartbeat ?? { enabled: false, interval: '0 */6 * * *', checklist: [], selfHealingEnabled: false, maxDurationMs: 120000 },
+          heartbeat: tmpl.heartbeat ?? {
+            enabled: false,
+            interval: '0 */6 * * *',
+            checklist: [],
+            selfHealingEnabled: false,
+            maxDurationMs: 120000,
+          },
           relationships: { ...tmpl.relationships, crewId: crew.id },
           evolution: {
             version: 1,
@@ -363,10 +374,18 @@ crewRoutes.post('/:id/message', async (c) => {
   try {
     const crewId = c.req.param('id');
     const userId = getUserId(c);
-    const body = await c.req.json<{ from?: string; message: string; priority?: 'low' | 'normal' | 'high' }>();
+    const body = await c.req.json<{
+      from?: string;
+      message: string;
+      priority?: 'low' | 'normal' | 'high';
+    }>();
 
     if (!body.message) {
-      return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: 'message is required' }, 400);
+      return apiError(
+        c,
+        { code: ERROR_CODES.VALIDATION_ERROR, message: 'message is required' },
+        400
+      );
     }
 
     const repo = getCrewsRepository();
@@ -399,7 +418,11 @@ crewRoutes.post('/:id/message', async (c) => {
           crewId: crew.id,
           createdAt: new Date(),
         });
-        sent.push({ agentId: member.agentId, name: soul?.identity.name ?? 'Unknown', success: true });
+        sent.push({
+          agentId: member.agentId,
+          name: soul?.identity.name ?? 'Unknown',
+          success: true,
+        });
       } catch {
         sent.push({ agentId: member.agentId, name: 'Unknown', success: false });
       }
@@ -434,7 +457,10 @@ crewRoutes.post('/:id/delegate', async (c) => {
     if (!body.fromAgentId || !body.toAgentId || !body.task) {
       return apiError(
         c,
-        { code: ERROR_CODES.VALIDATION_ERROR, message: 'fromAgentId, toAgentId, and task are required' },
+        {
+          code: ERROR_CODES.VALIDATION_ERROR,
+          message: 'fromAgentId, toAgentId, and task are required',
+        },
         400
       );
     }
@@ -557,7 +583,11 @@ crewRoutes.post('/:id/sync', async (c) => {
     const body = await c.req.json<{ context: string; importance?: 'low' | 'medium' | 'high' }>();
 
     if (!body.context) {
-      return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: 'context is required' }, 400);
+      return apiError(
+        c,
+        { code: ERROR_CODES.VALIDATION_ERROR, message: 'context is required' },
+        400
+      );
     }
 
     const repo = getCrewsRepository();

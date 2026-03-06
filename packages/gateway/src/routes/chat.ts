@@ -536,28 +536,30 @@ chatRoutes.post('/', async (c) => {
 
     // Persistence middleware saves to ChatRepository but NOT LogsRepository.
     // Save logs here to match what the legacy path does.
-    new ConversationService(userId).saveLog({
-      conversationId: body.conversationId || conversation.id,
-      agentId: body.agentId,
-      provider,
-      model,
-      userMessage: body.message,
-      assistantContent: busCleanContent,
-      toolCalls: busToolCalls,
-      trace: busTrace as Record<string, unknown>,
-      usage: busUsage
-        ? {
-            promptTokens: busUsage.input,
-            completionTokens: busUsage.output,
-            totalTokens: busUsage.input + busUsage.output,
-          }
-        : undefined,
-      historyLength: body.historyLength,
-      ipAddress: c.req.header('x-forwarded-for') || c.req.header('x-real-ip'),
-      userAgent: c.req.header('user-agent'),
-    }).catch((err) => {
-      log.warn('Failed to save chat history (MessageBus path):', err);
-    });
+    new ConversationService(userId)
+      .saveLog({
+        conversationId: body.conversationId || conversation.id,
+        agentId: body.agentId,
+        provider,
+        model,
+        userMessage: body.message,
+        assistantContent: busCleanContent,
+        toolCalls: busToolCalls,
+        trace: busTrace as Record<string, unknown>,
+        usage: busUsage
+          ? {
+              promptTokens: busUsage.input,
+              completionTokens: busUsage.output,
+              totalTokens: busUsage.input + busUsage.output,
+            }
+          : undefined,
+        historyLength: body.historyLength,
+        ipAddress: c.req.header('x-forwarded-for') || c.req.header('x-real-ip'),
+        userAgent: c.req.header('user-agent'),
+      })
+      .catch((err) => {
+        log.warn('Failed to save chat history (MessageBus path):', err);
+      });
 
     // Post-processing middleware skips web UI memory extraction — run it here.
     runPostChatProcessing(userId, body.message, busCleanContent, busToolCalls as never);
@@ -1008,14 +1010,22 @@ chatRoutes.get('/conversations/:id', async (c) => {
 chatRoutes.get('/fetch-url', async (c) => {
   const rawUrl = c.req.query('url');
   if (!rawUrl) {
-    return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: 'url query parameter is required' }, 400);
+    return apiError(
+      c,
+      { code: ERROR_CODES.VALIDATION_ERROR, message: 'url query parameter is required' },
+      400
+    );
   }
 
   let parsedUrl: URL;
   try {
     parsedUrl = new URL(rawUrl);
     if (!['http:', 'https:'].includes(parsedUrl.protocol)) {
-      return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: 'Only HTTP/HTTPS URLs are supported' }, 400);
+      return apiError(
+        c,
+        { code: ERROR_CODES.VALIDATION_ERROR, message: 'Only HTTP/HTTPS URLs are supported' },
+        400
+      );
     }
   } catch {
     return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: 'Invalid URL' }, 400);
@@ -1036,7 +1046,11 @@ chatRoutes.get('/fetch-url', async (c) => {
     clearTimeout(timeout);
 
     if (!resp.ok) {
-      return apiError(c, { code: ERROR_CODES.FETCH_FAILED, message: `Server responded with HTTP ${resp.status}` }, 400);
+      return apiError(
+        c,
+        { code: ERROR_CODES.FETCH_FAILED, message: `Server responded with HTTP ${resp.status}` },
+        400
+      );
     }
 
     const html = await resp.text();

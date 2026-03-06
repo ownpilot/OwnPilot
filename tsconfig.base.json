@@ -11,9 +11,7 @@
     "target": "ES2023",
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
-    "lib": [
-      "ES2023"
-    ],
+    "lib": ["ES2023"],
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,
@@ -29,9 +27,5 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true
   },
-  "exclude": [
-    "node_modules",
-    "dist",
-    "coverage"
-  ]
+  "exclude": ["node_modules", "dist", "coverage"]
 }

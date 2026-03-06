@@ -95,11 +95,7 @@ function createApp() {
   return app;
 }
 
-function makeRequest(
-  app: Hono,
-  path: string,
-  body?: Record<string, unknown>
-): Promise<Response> {
+function makeRequest(app: Hono, path: string, body?: Record<string, unknown>): Promise<Response> {
   return app.request(path, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

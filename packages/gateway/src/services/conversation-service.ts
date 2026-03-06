@@ -53,8 +53,7 @@ export interface SaveChatParams {
   attachments?: AttachmentMeta[];
 }
 
-export interface SaveStreamingParams
-  extends Omit<SaveChatParams, 'streaming' | 'trace' | 'usage'> {
+export interface SaveStreamingParams extends Omit<SaveChatParams, 'streaming' | 'trace' | 'usage'> {
   finishReason?: string;
 }
 

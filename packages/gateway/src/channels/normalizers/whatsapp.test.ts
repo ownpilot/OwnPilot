@@ -54,7 +54,9 @@ describe('whatsappNormalizer', () => {
       const data = Buffer.from('image bytes');
       const result = whatsappNormalizer.normalizeIncoming({
         text: 'see attached',
-        attachments: [{ type: 'image', data, mimeType: 'image/jpeg', filename: 'photo.jpg', size: 11 }],
+        attachments: [
+          { type: 'image', data, mimeType: 'image/jpeg', filename: 'photo.jpg', size: 11 },
+        ],
       });
       expect(result.attachments).toHaveLength(1);
       expect(result.attachments![0].data).toMatch(/^data:image\/jpeg;base64,/);
@@ -72,7 +74,9 @@ describe('whatsappNormalizer', () => {
       const data = Buffer.from('x');
       const result = whatsappNormalizer.normalizeIncoming({
         text: '',
-        attachments: [{ type: 'file', data, mimeType: 'application/pdf', filename: 'doc.pdf', size: 1 }],
+        attachments: [
+          { type: 'file', data, mimeType: 'application/pdf', filename: 'doc.pdf', size: 1 },
+        ],
       });
       expect(result.attachments![0].filename).toBe('doc.pdf');
       expect(result.attachments![0].size).toBe(1);
@@ -125,7 +129,9 @@ describe('whatsappNormalizer', () => {
     });
 
     it('strips <suggestions> internal tags', () => {
-      const result = whatsappNormalizer.normalizeOutgoing('<suggestions>hint</suggestions>Response');
+      const result = whatsappNormalizer.normalizeOutgoing(
+        '<suggestions>hint</suggestions>Response'
+      );
       expect(result[0]).not.toContain('<suggestions>');
       expect(result[0]).toContain('Response');
     });

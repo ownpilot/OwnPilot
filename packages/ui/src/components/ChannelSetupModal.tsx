@@ -480,7 +480,8 @@ export function ChannelSetupModal({ onClose, onSuccess }: ChannelSetupModalProps
                     autoFocus={platform.qrBased}
                   />
                   <p className="text-xs text-text-muted dark:text-dark-text-muted mt-1">
-                    International format without + or spaces. Used for self-chat and message routing.
+                    International format without + or spaces. Used for self-chat and message
+                    routing.
                   </p>
                 </div>
               )}
@@ -564,7 +565,10 @@ export function ChannelSetupModal({ onClose, onSuccess }: ChannelSetupModalProps
                       Back
                     </button>
                     <button
-                      onClick={() => { setQrError(null); startQrSetup(); }}
+                      onClick={() => {
+                        setQrError(null);
+                        startQrSetup();
+                      }}
                       className="px-4 py-2 text-sm font-medium bg-primary text-white rounded-lg hover:bg-primary-hover transition-colors"
                     >
                       Retry
@@ -591,7 +595,9 @@ export function ChannelSetupModal({ onClose, onSuccess }: ChannelSetupModalProps
                   )}
 
                   <p className="text-xs text-text-muted dark:text-dark-text-muted mt-4">
-                    {qrDataUrl ? 'QR code expires in ~20s — will refresh automatically' : 'Generating QR code...'}
+                    {qrDataUrl
+                      ? 'QR code expires in ~20s — will refresh automatically'
+                      : 'Generating QR code...'}
                   </p>
 
                   <button

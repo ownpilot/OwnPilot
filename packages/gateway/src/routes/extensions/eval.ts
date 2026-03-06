@@ -34,8 +34,16 @@ export const evalRoutes = new Hono();
 
 /** Providers with native SDK support */
 const NATIVE_PROVIDERS = new Set([
-  'openai', 'anthropic', 'google', 'deepseek', 'groq', 'mistral',
-  'xai', 'together', 'fireworks', 'perplexity',
+  'openai',
+  'anthropic',
+  'google',
+  'deepseek',
+  'groq',
+  'mistral',
+  'xai',
+  'together',
+  'fireworks',
+  'perplexity',
 ]);
 
 const getExtService = () => getServiceRegistry().get(Services.Extension) as ExtensionService;
@@ -57,7 +65,11 @@ async function buildProvider(providerOverride?: string, modelOverride?: string) 
     ? localProv.apiKey || 'local-no-key'
     : await getApiKey(resolved.provider);
   if (!apiKey) {
-    return { provider: null, model: null, error: `API key not configured for: ${resolved.provider}` };
+    return {
+      provider: null,
+      model: null,
+      error: `API key not configured for: ${resolved.provider}`,
+    };
   }
   const providerConfig = coreGetProviderConfig(resolved.provider);
   const providerType = NATIVE_PROVIDERS.has(resolved.provider) ? resolved.provider : 'openai';
@@ -114,7 +126,10 @@ evalRoutes.post('/:id/eval/run', async (c) => {
     if (!result.ok) {
       return apiError(
         c,
-        { code: ERROR_CODES.EXECUTION_ERROR, message: 'LLM call failed: ' + (result.error?.message ?? 'unknown') },
+        {
+          code: ERROR_CODES.EXECUTION_ERROR,
+          message: 'LLM call failed: ' + (result.error?.message ?? 'unknown'),
+        },
         500
       );
     }
@@ -149,7 +164,11 @@ evalRoutes.post('/:id/eval/grade', async (c) => {
   }>(c);
 
   if (!body?.query || !body?.response) {
-    return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: 'query and response are required' }, 400);
+    return apiError(
+      c,
+      { code: ERROR_CODES.VALIDATION_ERROR, message: 'query and response are required' },
+      400
+    );
   }
 
   const { provider, model, error } = await buildProvider();
@@ -219,7 +238,11 @@ evalRoutes.post('/:id/eval/optimize-description', async (c) => {
   }>(c);
 
   if (!body?.testQueries?.length) {
-    return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: 'testQueries array is required' }, 400);
+    return apiError(
+      c,
+      { code: ERROR_CODES.VALIDATION_ERROR, message: 'testQueries array is required' },
+      400
+    );
   }
 
   const numIterations = Math.min(Math.max(body.iterations ?? 3, 1), 5);
@@ -234,7 +257,10 @@ evalRoutes.post('/:id/eval/optimize-description', async (c) => {
   try {
     for (let i = 0; i < numIterations; i++) {
       // Step 1: Generate a proposed description
-      const prevDesc = i === 0 ? (body.currentDescription || 'No description') : (results[i - 1]?.description ?? 'No description');
+      const prevDesc =
+        i === 0
+          ? body.currentDescription || 'No description'
+          : (results[i - 1]?.description ?? 'No description');
       const descPrompt = `You are improving the trigger description for an AI skill named "${skillName}".
 
 Current description: ${prevDesc}

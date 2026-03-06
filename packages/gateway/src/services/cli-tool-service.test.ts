@@ -39,14 +39,17 @@ const {
   );
 
   // A mutable Map so individual tests can reconfigure it
-  const mockCLI_TOOLS_BY_NAME = new Map<string, {
-    name: string;
-    binaryName: string;
-    npxPackage?: string;
-    npmPackage?: string;
-    installMethods: string[];
-    defaultPolicy: string;
-  }>();
+  const mockCLI_TOOLS_BY_NAME = new Map<
+    string,
+    {
+      name: string;
+      binaryName: string;
+      npxPackage?: string;
+      npmPackage?: string;
+      installMethods: string[];
+      defaultPolicy: string;
+    }
+  >();
 
   return {
     mockDiscoverTools,

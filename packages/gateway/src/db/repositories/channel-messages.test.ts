@@ -408,7 +408,13 @@ describe('ChannelMessagesRepository', () => {
 
   describe('deleteByChannel', () => {
     it('returns count and ids of deleted messages', async () => {
-      const rows = [{ id: 'msg-1' }, { id: 'msg-2' }, { id: 'msg-3' }, { id: 'msg-4' }, { id: 'msg-5' }];
+      const rows = [
+        { id: 'msg-1' },
+        { id: 'msg-2' },
+        { id: 'msg-3' },
+        { id: 'msg-4' },
+        { id: 'msg-5' },
+      ];
       mockAdapter.query.mockResolvedValueOnce(rows);
 
       const result = await repo.deleteByChannel('ch-1');

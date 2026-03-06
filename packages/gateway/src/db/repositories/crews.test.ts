@@ -172,7 +172,10 @@ describe('CrewsRepository', () => {
     });
 
     it('maps multiple rows without userId filter', async () => {
-      mockAdapter.query.mockResolvedValueOnce([makeCrewRow({ id: 'c1' }), makeCrewRow({ id: 'c2' })]);
+      mockAdapter.query.mockResolvedValueOnce([
+        makeCrewRow({ id: 'c1' }),
+        makeCrewRow({ id: 'c2' }),
+      ]);
       const result = await repo.list(null, 10, 0);
       expect(result).toHaveLength(2);
       const [sql, params] = mockAdapter.query.mock.calls[0] as [string, unknown[]];
@@ -289,7 +292,9 @@ describe('CrewsRepository', () => {
     });
 
     it('parses joinedAt as Date', async () => {
-      mockAdapter.query.mockResolvedValueOnce([makeMemberRow({ joined_at: '2025-03-15T08:00:00Z' })]);
+      mockAdapter.query.mockResolvedValueOnce([
+        makeMemberRow({ joined_at: '2025-03-15T08:00:00Z' }),
+      ]);
       const result = await repo.getMembers('crew-1');
       expect(result[0].joinedAt).toBeInstanceOf(Date);
     });

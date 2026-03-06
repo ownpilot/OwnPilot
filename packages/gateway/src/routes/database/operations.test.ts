@@ -98,9 +98,7 @@ describe('Operation Routes', () => {
   describe('GET /db/status', () => {
     it('returns 200 with connected status and stats when database is connected', async () => {
       mockIsConnected.mockReturnValue(true);
-      mockQueryOne
-        .mockResolvedValueOnce({ size: '8 MB' })
-        .mockResolvedValueOnce({ count: '15' });
+      mockQueryOne.mockResolvedValueOnce({ size: '8 MB' }).mockResolvedValueOnce({ count: '15' });
 
       const res = await app.request('/db/status');
       expect(res.status).toBe(200);
@@ -162,7 +160,11 @@ describe('Operation Routes', () => {
     });
 
     it('lists backup files from the backup directory', async () => {
-      mockReaddir.mockResolvedValue(['backup-2026-01-01.sql', 'backup-2026-01-02.dump', 'other.txt']);
+      mockReaddir.mockResolvedValue([
+        'backup-2026-01-01.sql',
+        'backup-2026-01-02.dump',
+        'other.txt',
+      ]);
       mockStat.mockResolvedValue({ size: 2048, mtime: new Date('2026-01-02') });
 
       const res = await app.request('/db/status');
@@ -303,9 +305,7 @@ describe('Operation Routes', () => {
         .mockResolvedValueOnce({ size: '16 MB', raw_size: '16777216' })
         .mockResolvedValueOnce({ active_connections: '5', max_connections: '100' })
         .mockResolvedValueOnce({ version: 'PostgreSQL 15.0' });
-      mockQuery.mockResolvedValue([
-        { table_name: 'messages', row_count: '200', size: '4 MB' },
-      ]);
+      mockQuery.mockResolvedValue([{ table_name: 'messages', row_count: '200', size: '4 MB' }]);
 
       const res = await app.request('/db/stats');
       expect(res.status).toBe(200);

@@ -9,9 +9,15 @@ import { Hono } from 'hono';
 // Mocks
 // ---------------------------------------------------------------------------
 
-vi.mock('./models.js', () => ({ modelRoutes: new Hono().get('/models', (c: any) => c.json({ route: 'models' })) }));
-vi.mock('./providers.js', () => ({ providerRoutes: new Hono().get('/providers', (c: any) => c.json({ route: 'providers' })) }));
-vi.mock('./pricing.js', () => ({ pricingRoutes: new Hono().get('/sync', (c: any) => c.json({ route: 'pricing' })) }));
+vi.mock('./models.js', () => ({
+  modelRoutes: new Hono().get('/models', (c: any) => c.json({ route: 'models' })),
+}));
+vi.mock('./providers.js', () => ({
+  providerRoutes: new Hono().get('/providers', (c: any) => c.json({ route: 'providers' })),
+}));
+vi.mock('./pricing.js', () => ({
+  pricingRoutes: new Hono().get('/sync', (c: any) => c.json({ route: 'pricing' })),
+}));
 
 import { modelConfigsRoutes } from './index.js';
 

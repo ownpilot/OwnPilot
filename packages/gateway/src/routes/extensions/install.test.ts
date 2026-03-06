@@ -229,8 +229,8 @@ describe('POST /ext/upload — extension validation', () => {
   it('creates extensions directory when it does not exist', async () => {
     // First existsSync call (extensionsDir) returns false, rest return true
     mockExistsSync
-      .mockReturnValueOnce(false)  // extensionsDir does not exist → mkdirSync called
-      .mockReturnValue(true);       // all manifest candidates exist
+      .mockReturnValueOnce(false) // extensionsDir does not exist → mkdirSync called
+      .mockReturnValue(true); // all manifest candidates exist
     mockExtService.install.mockResolvedValue({ id: 'ext-1', manifest: {} });
 
     const res = await app.request(makeUploadRequest('ext.zip', 'PK'));
@@ -253,9 +253,7 @@ describe('POST /ext/upload — extension validation', () => {
     });
 
     // readdirSync returns one directory entry
-    mockReaddirSync.mockReturnValue([
-      { name: 'my-ext-subdir', isDirectory: () => true },
-    ]);
+    mockReaddirSync.mockReturnValue([{ name: 'my-ext-subdir', isDirectory: () => true }]);
 
     mockExtService.install.mockResolvedValue({ id: 'ext-subdir', manifest: {} });
 
@@ -352,9 +350,7 @@ describe('POST /ext/install — from file path', () => {
   });
 
   it('returns 400 when install throws ExtensionError', async () => {
-    mockExtService.install.mockRejectedValue(
-      new ExtensionError('Not found', 'NOT_FOUND')
-    );
+    mockExtService.install.mockRejectedValue(new ExtensionError('Not found', 'NOT_FOUND'));
 
     const res = await app.request('/ext/install', {
       method: 'POST',

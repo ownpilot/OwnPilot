@@ -128,17 +128,13 @@ describe('auditMiddleware', () => {
   it('uses "default" when no userId in context', async () => {
     const app = createApp(); // no userId middleware
     await app.request('/test');
-    expect(mockLogAudit).toHaveBeenCalledWith(
-      expect.objectContaining({ userId: 'default' })
-    );
+    expect(mockLogAudit).toHaveBeenCalledWith(expect.objectContaining({ userId: 'default' }));
   });
 
   it('uses ip="direct" when TRUSTED_PROXY is not set', async () => {
     const app = createApp('user-1');
     await app.request('/test');
-    expect(mockLogAudit).toHaveBeenCalledWith(
-      expect.objectContaining({ ip: 'direct' })
-    );
+    expect(mockLogAudit).toHaveBeenCalledWith(expect.objectContaining({ ip: 'direct' }));
   });
 
   it('uses x-forwarded-for header when TRUSTED_PROXY=true', async () => {
@@ -147,9 +143,7 @@ describe('auditMiddleware', () => {
     await app.request('/test', {
       headers: { 'x-forwarded-for': '192.168.1.1, 10.0.0.1' },
     });
-    expect(mockLogAudit).toHaveBeenCalledWith(
-      expect.objectContaining({ ip: '192.168.1.1' })
-    );
+    expect(mockLogAudit).toHaveBeenCalledWith(expect.objectContaining({ ip: '192.168.1.1' }));
   });
 
   it('uses x-real-ip when TRUSTED_PROXY=true and no x-forwarded-for', async () => {
@@ -158,17 +152,13 @@ describe('auditMiddleware', () => {
     await app.request('/test', {
       headers: { 'x-real-ip': '10.0.0.5' },
     });
-    expect(mockLogAudit).toHaveBeenCalledWith(
-      expect.objectContaining({ ip: '10.0.0.5' })
-    );
+    expect(mockLogAudit).toHaveBeenCalledWith(expect.objectContaining({ ip: '10.0.0.5' }));
   });
 
   it('uses "unknown" when TRUSTED_PROXY=true but no IP headers', async () => {
     process.env.TRUSTED_PROXY = 'true';
     const app = createApp();
     await app.request('/test');
-    expect(mockLogAudit).toHaveBeenCalledWith(
-      expect.objectContaining({ ip: 'unknown' })
-    );
+    expect(mockLogAudit).toHaveBeenCalledWith(expect.objectContaining({ ip: 'unknown' }));
   });
 });

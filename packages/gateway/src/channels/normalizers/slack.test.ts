@@ -53,7 +53,9 @@ describe('slackNormalizer', () => {
     });
 
     it('replaces <url|text> with just text', () => {
-      const result = slackNormalizer.normalizeIncoming({ text: 'click <https://example.com|here>' });
+      const result = slackNormalizer.normalizeIncoming({
+        text: 'click <https://example.com|here>',
+      });
       expect(result.text).toBe('click here');
     });
 

@@ -285,7 +285,10 @@ export function isJsonContentType(c: Context): boolean {
   const contentType = c.req.header('content-type');
   if (!contentType) return false;
   // Match application/json or application/vnd.api+json, etc.
-  return contentType.startsWith('application/json') || contentType.includes('application/') && contentType.includes('+json');
+  return (
+    contentType.startsWith('application/json') ||
+    (contentType.includes('application/') && contentType.includes('+json'))
+  );
 }
 
 /**

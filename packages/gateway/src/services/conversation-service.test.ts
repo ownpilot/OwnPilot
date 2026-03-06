@@ -257,7 +257,9 @@ describe('ConversationService', () => {
 
       await service.getOrCreate(undefined, { title: 'Brand new' });
 
-      expect(mockChatRepo.getOrCreateConversation).toHaveBeenCalledWith(null, { title: 'Brand new' });
+      expect(mockChatRepo.getOrCreateConversation).toHaveBeenCalledWith(null, {
+        title: 'Brand new',
+      });
     });
   });
 
@@ -412,9 +414,7 @@ describe('ConversationService', () => {
       mockChatRepo.addMessage.mockResolvedValue({ id: 'msg-1' });
 
       const fakePayload = { messages: [{ role: 'user', content: 'hi' }] };
-      mockDebugLog.getRecent.mockReturnValue([
-        { type: 'request', data: { payload: fakePayload } },
-      ]);
+      mockDebugLog.getRecent.mockReturnValue([{ type: 'request', data: { payload: fakePayload } }]);
 
       await service.saveChat(makeSaveChatParams());
 
@@ -761,7 +761,11 @@ describe('clearChannelSession', () => {
     const result = await clearChannelSession('user-1', 'telegram', 'chat-123');
 
     expect(result).toBe(true);
-    expect(mockChannelSessionsRepo.findActive).toHaveBeenCalledWith('user-1', 'telegram', 'chat-123');
+    expect(mockChannelSessionsRepo.findActive).toHaveBeenCalledWith(
+      'user-1',
+      'telegram',
+      'chat-123'
+    );
     expect(mockChannelSessionsRepo.deactivate).toHaveBeenCalledWith('session-abc');
   });
 
@@ -800,7 +804,9 @@ describe('runPostChatProcessing', () => {
   });
 
   it('passes toolCalls to updateGoalProgress when provided', async () => {
-    const toolCalls = [{ id: 'tc-1', name: 'search', arguments: '{}' }] as import('@ownpilot/core').ToolCall[];
+    const toolCalls = [
+      { id: 'tc-1', name: 'search', arguments: '{}' },
+    ] as import('@ownpilot/core').ToolCall[];
 
     runPostChatProcessing('user-1', 'Find stuff', 'Here is what I found', toolCalls);
     await waitForPendingProcessing();
@@ -819,9 +825,7 @@ describe('runPostChatProcessing', () => {
     runPostChatProcessing('user-1', 'msg', 'reply');
     await waitForPendingProcessing();
 
-    expect(mockLog.info).toHaveBeenCalledWith(
-      expect.stringContaining('3 new memories')
-    );
+    expect(mockLog.info).toHaveBeenCalledWith(expect.stringContaining('3 new memories'));
   });
 
   it('logs trigger count when triggers were evaluated', async () => {

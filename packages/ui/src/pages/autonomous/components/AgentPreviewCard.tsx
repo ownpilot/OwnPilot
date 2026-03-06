@@ -96,10 +96,7 @@ export function AgentPreviewCard({ config, onConfirm, confirmLabel, isCreating }
         <div className="flex flex-wrap gap-1">
           <Puzzle className="w-3 h-3 text-text-muted dark:text-dark-text-muted mt-0.5" />
           {config.skills.slice(0, 4).map((skill) => (
-            <span
-              key={skill}
-              className="text-xs px-1.5 py-0.5 rounded bg-primary/10 text-primary"
-            >
+            <span key={skill} className="text-xs px-1.5 py-0.5 rounded bg-primary/10 text-primary">
               {skill}
             </span>
           ))}

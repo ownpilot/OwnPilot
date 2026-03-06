@@ -209,9 +209,21 @@ describe('Soul Routes — HTTP-level', () => {
   describe('GET /:agentId/logs', () => {
     it('returns logs and stats when soul exists', async () => {
       mockHbRepo.listByAgent.mockResolvedValue([
-        { id: 'log-1', createdAt: new Date(), durationMs: 1000, cost: 0.01, tasksRun: ['t1'], tasksFailed: [] },
+        {
+          id: 'log-1',
+          createdAt: new Date(),
+          durationMs: 1000,
+          cost: 0.01,
+          tasksRun: ['t1'],
+          tasksFailed: [],
+        },
       ]);
-      mockHbRepo.getStats.mockResolvedValue({ totalCycles: 10, failureRate: 0.1, totalCost: 0.5, avgDurationMs: 1200 });
+      mockHbRepo.getStats.mockResolvedValue({
+        totalCycles: 10,
+        failureRate: 0.1,
+        totalCost: 0.5,
+        avgDurationMs: 1200,
+      });
 
       const res = await app.request(`/souls/${AGENT_ID}/logs`);
       expect(res.status).toBe(200);
@@ -372,7 +384,11 @@ describe('Soul Routes — HTTP-level', () => {
 
   describe('POST /:agentId/mission', () => {
     it('updates mission and returns accepted status', async () => {
-      const soul = { ...mockSoul, purpose: { ...mockSoul.purpose }, bootSequence: { ...mockSoul.bootSequence } };
+      const soul = {
+        ...mockSoul,
+        purpose: { ...mockSoul.purpose },
+        bootSequence: { ...mockSoul.bootSequence },
+      };
       mockSoulsRepo.getByAgentId.mockResolvedValue(soul);
 
       const res = await app.request(`/souls/${AGENT_ID}/mission`, {
@@ -388,7 +404,11 @@ describe('Soul Routes — HTTP-level', () => {
     });
 
     it('uses default priority "medium" when not specified', async () => {
-      const soul = { ...mockSoul, purpose: { ...mockSoul.purpose }, bootSequence: { ...mockSoul.bootSequence } };
+      const soul = {
+        ...mockSoul,
+        purpose: { ...mockSoul.purpose },
+        bootSequence: { ...mockSoul.bootSequence },
+      };
       mockSoulsRepo.getByAgentId.mockResolvedValue(soul);
 
       const res = await app.request(`/souls/${AGENT_ID}/mission`, {
@@ -401,7 +421,11 @@ describe('Soul Routes — HTTP-level', () => {
     });
 
     it('sets autoPlan tasks when autoPlan is true', async () => {
-      const soul = { ...mockSoul, purpose: { ...mockSoul.purpose }, bootSequence: { ...mockSoul.bootSequence, onHeartbeat: [] } };
+      const soul = {
+        ...mockSoul,
+        purpose: { ...mockSoul.purpose },
+        bootSequence: { ...mockSoul.bootSequence, onHeartbeat: [] },
+      };
       mockSoulsRepo.getByAgentId.mockResolvedValue(soul);
 
       await app.request(`/souls/${AGENT_ID}/mission`, {
@@ -488,7 +512,11 @@ describe('Soul Routes — HTTP-level', () => {
       ]);
       const soul = {
         ...mockSoul,
-        autonomy: { ...mockSoul.autonomy, allowedActions: ['search_web'], blockedActions: ['execute_shell'] },
+        autonomy: {
+          ...mockSoul.autonomy,
+          allowedActions: ['search_web'],
+          blockedActions: ['execute_shell'],
+        },
       };
       mockSoulsRepo.getByAgentId.mockResolvedValue(soul);
 
@@ -548,7 +576,10 @@ describe('Soul Routes — HTTP-level', () => {
 
   describe('PUT /:agentId/tools', () => {
     it('updates allowed and blocked tool lists', async () => {
-      const soul = { ...mockSoul, autonomy: { ...mockSoul.autonomy, allowedActions: [], blockedActions: [] } };
+      const soul = {
+        ...mockSoul,
+        autonomy: { ...mockSoul.autonomy, allowedActions: [], blockedActions: [] },
+      };
       mockSoulsRepo.getByAgentId.mockResolvedValue(soul);
 
       const res = await app.request(`/souls/${AGENT_ID}/tools`, {
@@ -563,7 +594,10 @@ describe('Soul Routes — HTTP-level', () => {
     });
 
     it('only updates allowed when blocked not provided', async () => {
-      const soul = { ...mockSoul, autonomy: { ...mockSoul.autonomy, allowedActions: [], blockedActions: ['old'] } };
+      const soul = {
+        ...mockSoul,
+        autonomy: { ...mockSoul.autonomy, allowedActions: [], blockedActions: ['old'] },
+      };
       mockSoulsRepo.getByAgentId.mockResolvedValue(soul);
 
       const res = await app.request(`/souls/${AGENT_ID}/tools`, {
@@ -691,7 +725,10 @@ describe('Soul Routes — HTTP-level', () => {
   describe('GET /:agentId/stats', () => {
     it('returns stats when soul exists', async () => {
       mockHbRepo.getStats.mockResolvedValue({
-        totalCycles: 5, totalCost: 0.25, avgDurationMs: 2000, failureRate: 0.2,
+        totalCycles: 5,
+        totalCost: 0.25,
+        avgDurationMs: 2000,
+        failureRate: 0.2,
       });
       mockHbRepo.listByAgent.mockResolvedValue([{ createdAt: new Date('2024-06-01') }]);
 
@@ -1197,8 +1234,12 @@ describe('Soul Routes — HTTP-level', () => {
           ...mockSoul.evolution,
           learnings: [],
           feedbackLog: Array(101).fill({
-            id: 'fb-x', type: 'praise', content: 'old', source: 'user',
-            timestamp: new Date(), appliedToVersion: 1,
+            id: 'fb-x',
+            type: 'praise',
+            content: 'old',
+            source: 'user',
+            timestamp: new Date(),
+            appliedToVersion: 1,
           }),
         },
       };

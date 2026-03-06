@@ -37,14 +37,10 @@ vi.mock('../db/repositories/subagents.js', () => ({
   SubagentsRepository: vi.fn().mockImplementation(() => mockRepo),
 }));
 
-const {
-  SubagentServiceImpl,
-  getSubagentService,
-  resetSubagentService,
-} = await import('./subagent-service.js');
-const { SubagentsRepository: MockSubagentsRepository } = await import(
-  '../db/repositories/subagents.js'
-);
+const { SubagentServiceImpl, getSubagentService, resetSubagentService } =
+  await import('./subagent-service.js');
+const { SubagentsRepository: MockSubagentsRepository } =
+  await import('../db/repositories/subagents.js');
 
 // ---------------------------------------------------------------------------
 // Helpers

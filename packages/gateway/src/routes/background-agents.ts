@@ -335,13 +335,16 @@ backgroundAgentsRoutes.patch('/:id', async (c) => {
   try {
     const userId = getUserId(c);
     const agentId = c.req.param('id');
-    const body = await c.req.json() as Record<string, unknown>;
+    const body = (await c.req.json()) as Record<string, unknown>;
 
     const validModes = ['continuous', 'interval', 'event'];
     if (body.mode !== undefined && !validModes.includes(body.mode as string)) {
       return apiError(
         c,
-        { code: ERROR_CODES.VALIDATION_ERROR, message: `mode must be one of: ${validModes.join(', ')}` },
+        {
+          code: ERROR_CODES.VALIDATION_ERROR,
+          message: `mode must be one of: ${validModes.join(', ')}`,
+        },
         400
       );
     }
@@ -358,11 +361,25 @@ backgroundAgentsRoutes.patch('/:id', async (c) => {
       };
       for (const [key, val] of Object.entries(rawLimits)) {
         if (typeof val !== 'number' || !Number.isFinite(val) || val <= 0) {
-          return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: `limits.${key} must be a positive finite number` }, 400);
+          return apiError(
+            c,
+            {
+              code: ERROR_CODES.VALIDATION_ERROR,
+              message: `limits.${key} must be a positive finite number`,
+            },
+            400
+          );
         }
         const cap = LIMITS_MAX[key];
         if (cap !== undefined && val > cap) {
-          return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: `limits.${key} exceeds maximum allowed value (${cap})` }, 400);
+          return apiError(
+            c,
+            {
+              code: ERROR_CODES.VALIDATION_ERROR,
+              message: `limits.${key} exceeds maximum allowed value (${cap})`,
+            },
+            400
+          );
         }
       }
       validatedLimits = rawLimits as Record<string, number>;
@@ -374,10 +391,14 @@ backgroundAgentsRoutes.patch('/:id', async (c) => {
       name: typeof body.name === 'string' ? body.name : undefined,
       mission: typeof body.mission === 'string' ? body.mission : undefined,
       mode: body.mode as BackgroundAgentMode | undefined,
-      allowedTools: Array.isArray(body.allowed_tools) ? (body.allowed_tools as string[]) : undefined,
+      allowedTools: Array.isArray(body.allowed_tools)
+        ? (body.allowed_tools as string[])
+        : undefined,
       limits: validatedLimits,
       intervalMs: typeof body.interval_ms === 'number' ? body.interval_ms : undefined,
-      eventFilters: Array.isArray(body.event_filters) ? (body.event_filters as string[]) : undefined,
+      eventFilters: Array.isArray(body.event_filters)
+        ? (body.event_filters as string[])
+        : undefined,
       autoStart: typeof body.auto_start === 'boolean' ? body.auto_start : undefined,
       stopCondition: typeof body.stop_condition === 'string' ? body.stop_condition : undefined,
       provider: typeof body.provider === 'string' ? body.provider : undefined,
@@ -465,7 +486,11 @@ backgroundAgentsRoutes.post('/:id/execute', async (c) => {
     // Trigger immediate execution cycle
     const executed = await service.executeNow(agentId, userId, body.task);
     if (!executed) {
-      return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: 'Agent is not running' }, 400);
+      return apiError(
+        c,
+        { code: ERROR_CODES.VALIDATION_ERROR, message: 'Agent is not running' },
+        400
+      );
     }
 
     return apiResponse(c, {

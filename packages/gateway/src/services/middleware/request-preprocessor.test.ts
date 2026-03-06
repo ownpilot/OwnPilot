@@ -18,12 +18,16 @@ const { mockGetServiceRegistry, mockCustomDataRepoInst, mockToolRegistryInst } =
   mockCustomDataRepoInst: {
     listTables: vi.fn<
       [],
-      Promise<Array<{ displayName: string; description?: string; columns: Array<{ name: string }> }>>
+      Promise<
+        Array<{ displayName: string; description?: string; columns: Array<{ name: string }> }>
+      >
     >(),
   },
   mockToolRegistryInst: {
-    getAllTools:
-      vi.fn<[], Array<{ definition: { name: string; brief?: string; description: string } }>>(),
+    getAllTools: vi.fn<
+      [],
+      Array<{ definition: { name: string; brief?: string; description: string } }>
+    >(),
   },
 }));
 
@@ -770,11 +774,7 @@ describe('createRequestPreprocessorMiddleware', () => {
     const ctx = makeCtx();
     const next = vi.fn();
 
-    await middleware(
-      { content: 'Perform the no op tool action please' } as any,
-      ctx as any,
-      next
-    );
+    await middleware({ content: 'Perform the no op tool action please' } as any, ctx as any, next);
 
     expect(next).toHaveBeenCalledOnce();
   });

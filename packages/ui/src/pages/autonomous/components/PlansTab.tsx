@@ -26,32 +26,32 @@ import {
 // =============================================================================
 
 const STATUS_STYLES: Record<Plan['status'], string> = {
-  pending:   'bg-gray-100 text-gray-600 dark:bg-gray-500/20 dark:text-gray-400',
-  running:   'bg-blue-100 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400',
-  paused:    'bg-amber-100 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400',
+  pending: 'bg-gray-100 text-gray-600 dark:bg-gray-500/20 dark:text-gray-400',
+  running: 'bg-blue-100 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400',
+  paused: 'bg-amber-100 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400',
   completed: 'bg-green-100 text-green-600 dark:bg-green-500/20 dark:text-green-400',
-  failed:    'bg-red-100 text-red-600 dark:bg-red-500/20 dark:text-red-400',
+  failed: 'bg-red-100 text-red-600 dark:bg-red-500/20 dark:text-red-400',
   cancelled: 'bg-gray-100 text-gray-500 dark:bg-gray-500/20 dark:text-gray-400',
 };
 
 const STEP_STATUS_ICON: Record<PlanStep['status'], typeof CheckCircle2> = {
-  pending:   Clock,
-  running:   RefreshCw,
+  pending: Clock,
+  running: RefreshCw,
   completed: CheckCircle2,
-  failed:    AlertCircle,
-  skipped:   Clock,
-  blocked:   AlertCircle,
-  waiting:   Clock,
+  failed: AlertCircle,
+  skipped: Clock,
+  blocked: AlertCircle,
+  waiting: Clock,
 };
 
 const STEP_STATUS_COLOR: Record<PlanStep['status'], string> = {
-  pending:   'text-gray-400',
-  running:   'text-blue-500 animate-spin',
+  pending: 'text-gray-400',
+  running: 'text-blue-500 animate-spin',
   completed: 'text-green-500',
-  failed:    'text-red-500',
-  skipped:   'text-gray-400',
-  blocked:   'text-amber-500',
-  waiting:   'text-amber-400',
+  failed: 'text-red-500',
+  skipped: 'text-gray-400',
+  blocked: 'text-amber-500',
+  waiting: 'text-amber-400',
 };
 
 function timeAgo(dateStr: string): string {
@@ -87,9 +87,7 @@ function StepRow({ step }: { step: PlanStep }) {
         {step.description && (
           <p className="text-[10px] text-text-muted mt-0.5 truncate">{step.description}</p>
         )}
-        {step.error && (
-          <p className="text-[10px] text-red-500 mt-0.5 truncate">{step.error}</p>
-        )}
+        {step.error && <p className="text-[10px] text-red-500 mt-0.5 truncate">{step.error}</p>}
       </div>
     </div>
   );
@@ -144,7 +142,10 @@ function PlanCard({ plan, onAction, onDelete }: PlanCardProps) {
       >
         <button
           className="text-text-muted hover:text-text-primary transition-colors flex-shrink-0"
-          onClick={(e) => { e.stopPropagation(); toggleExpand(); }}
+          onClick={(e) => {
+            e.stopPropagation();
+            toggleExpand();
+          }}
         >
           {expanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
         </button>
@@ -154,7 +155,9 @@ function PlanCard({ plan, onAction, onDelete }: PlanCardProps) {
             <span className="text-sm font-medium text-text-primary dark:text-dark-text-primary truncate">
               {plan.name}
             </span>
-            <span className={`px-2 py-0.5 text-[10px] font-medium rounded-full ${STATUS_STYLES[plan.status]}`}>
+            <span
+              className={`px-2 py-0.5 text-[10px] font-medium rounded-full ${STATUS_STYLES[plan.status]}`}
+            >
               {plan.status}
             </span>
           </div>
@@ -218,7 +221,9 @@ function PlanCard({ plan, onAction, onDelete }: PlanCardProps) {
               <X className="w-3.5 h-3.5" />
             </button>
           )}
-          {(plan.status === 'completed' || plan.status === 'failed' || plan.status === 'cancelled') && (
+          {(plan.status === 'completed' ||
+            plan.status === 'failed' ||
+            plan.status === 'cancelled') && (
             <button
               onClick={() => onDelete(plan.id)}
               title="Delete plan"
@@ -246,9 +251,7 @@ function PlanCard({ plan, onAction, onDelete }: PlanCardProps) {
               ))}
             </div>
           )}
-          {plan.error && (
-            <p className="text-xs text-red-500 mt-2 pb-1">{plan.error}</p>
-          )}
+          {plan.error && <p className="text-xs text-red-500 mt-2 pb-1">{plan.error}</p>}
         </div>
       )}
     </div>
@@ -287,15 +290,22 @@ function CreatePlanModal({ onClose, onCreated }: { onClose: () => void; onCreate
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
       <div className="bg-bg-primary dark:bg-dark-bg-primary rounded-xl shadow-xl w-full max-w-md">
         <div className="flex items-center justify-between px-5 py-4 border-b border-border dark:border-dark-border">
-          <h2 className="text-base font-semibold text-text-primary dark:text-dark-text-primary">New Plan</h2>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary">
+          <h2 className="text-base font-semibold text-text-primary dark:text-dark-text-primary">
+            New Plan
+          </h2>
+          <button
+            onClick={onClose}
+            className="p-1.5 rounded-lg hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary"
+          >
             <X className="w-4 h-4 text-text-muted" />
           </button>
         </div>
         <form onSubmit={handleSubmit} className="px-5 py-4 space-y-3">
           {error && <p className="text-xs text-red-500">{error}</p>}
           <div>
-            <label className="block text-xs font-medium text-text-secondary dark:text-dark-text-secondary mb-1">Plan Name *</label>
+            <label className="block text-xs font-medium text-text-secondary dark:text-dark-text-secondary mb-1">
+              Plan Name *
+            </label>
             <input
               type="text"
               value={name}
@@ -305,7 +315,9 @@ function CreatePlanModal({ onClose, onCreated }: { onClose: () => void; onCreate
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-text-secondary dark:text-dark-text-secondary mb-1">Goal *</label>
+            <label className="block text-xs font-medium text-text-secondary dark:text-dark-text-secondary mb-1">
+              Goal *
+            </label>
             <textarea
               value={goal}
               onChange={(e) => setGoal(e.target.value)}
@@ -319,7 +331,10 @@ function CreatePlanModal({ onClose, onCreated }: { onClose: () => void; onCreate
           </p>
         </form>
         <div className="px-5 py-3 border-t border-border dark:border-dark-border flex justify-end gap-2">
-          <button onClick={onClose} className="px-4 py-1.5 text-sm text-text-secondary dark:text-dark-text-secondary hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary rounded-lg transition-colors">
+          <button
+            onClick={onClose}
+            className="px-4 py-1.5 text-sm text-text-secondary dark:text-dark-text-secondary hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary rounded-lg transition-colors"
+          >
             Cancel
           </button>
           <button
@@ -362,10 +377,13 @@ export function PlansTab() {
     load();
   }, [load]);
 
-  const handleAction = useCallback(async (id: string, action: string) => {
-    await plansApi.action(id, action);
-    await load();
-  }, [load]);
+  const handleAction = useCallback(
+    async (id: string, action: string) => {
+      await plansApi.action(id, action);
+      await load();
+    },
+    [load]
+  );
 
   const handleDelete = useCallback(async (id: string) => {
     await plansApi.delete(id);
@@ -428,7 +446,10 @@ export function PlansTab() {
       {isLoading ? (
         <div className="space-y-2">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="h-14 rounded-xl bg-bg-secondary dark:bg-dark-bg-secondary animate-pulse" />
+            <div
+              key={i}
+              className="h-14 rounded-xl bg-bg-secondary dark:bg-dark-bg-secondary animate-pulse"
+            />
           ))}
         </div>
       ) : plans.length === 0 ? (
@@ -449,12 +470,7 @@ export function PlansTab() {
       ) : (
         <div className="space-y-2">
           {plans.map((plan) => (
-            <PlanCard
-              key={plan.id}
-              plan={plan}
-              onAction={handleAction}
-              onDelete={handleDelete}
-            />
+            <PlanCard key={plan.id} plan={plan} onAction={handleAction} onDelete={handleDelete} />
           ))}
         </div>
       )}
@@ -462,7 +478,10 @@ export function PlansTab() {
       {showCreate && (
         <CreatePlanModal
           onClose={() => setShowCreate(false)}
-          onCreated={() => { setShowCreate(false); load(); }}
+          onCreated={() => {
+            setShowCreate(false);
+            load();
+          }}
         />
       )}
     </div>

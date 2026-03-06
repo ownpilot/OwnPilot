@@ -16,7 +16,12 @@ vi.mock('fs', () => ({
   readdirSync: (...args: unknown[]) => mockReaddirSync(...args),
 }));
 
-import { parseSkillMdFrontmatter, parseAgentSkillsMd, scanSkillDirectory, isAgentSkillsDir } from './agentskills-parser.js';
+import {
+  parseSkillMdFrontmatter,
+  parseAgentSkillsMd,
+  scanSkillDirectory,
+  isAgentSkillsDir,
+} from './agentskills-parser.js';
 
 // =============================================================================
 // parseSkillMdFrontmatter
@@ -491,9 +496,7 @@ describe('scanSkillDirectory', () => {
 
   it('collects files from references/ subdirectory', () => {
     mockExistsSync.mockImplementation((p: string) => String(p).endsWith('references'));
-    mockReaddirSync.mockReturnValue([
-      { name: 'api-docs.md', isFile: () => true },
-    ]);
+    mockReaddirSync.mockReturnValue([{ name: 'api-docs.md', isFile: () => true }]);
 
     const result = scanSkillDirectory('/skill');
     expect(result.referencePaths).toEqual(['references/api-docs.md']);
@@ -501,9 +504,7 @@ describe('scanSkillDirectory', () => {
 
   it('collects files from assets/ subdirectory', () => {
     mockExistsSync.mockImplementation((p: string) => String(p).endsWith('assets'));
-    mockReaddirSync.mockReturnValue([
-      { name: 'template.json', isFile: () => true },
-    ]);
+    mockReaddirSync.mockReturnValue([{ name: 'template.json', isFile: () => true }]);
 
     const result = scanSkillDirectory('/skill');
     expect(result.assetPaths).toEqual(['assets/template.json']);
@@ -522,7 +523,9 @@ describe('scanSkillDirectory', () => {
 
   it('handles readdirSync throwing (returns empty for that subdir)', () => {
     mockExistsSync.mockImplementation((p: string) => String(p).endsWith('scripts'));
-    mockReaddirSync.mockImplementation(() => { throw new Error('Permission denied'); });
+    mockReaddirSync.mockImplementation(() => {
+      throw new Error('Permission denied');
+    });
 
     const result = scanSkillDirectory('/skill');
     expect(result.scriptPaths).toEqual([]);

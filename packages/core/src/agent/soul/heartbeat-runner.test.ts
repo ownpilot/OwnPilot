@@ -407,18 +407,9 @@ describe('HeartbeatRunner.runHeartbeat() — happy path', () => {
 
   it('batches all checklist updates in a single DB write', async () => {
     const soul = makeSoul();
-    soul.heartbeat.checklist = [
-      makeTask({ id: 'task-1' }),
-      makeTask({ id: 'task-2' }),
-    ];
+    soul.heartbeat.checklist = [makeTask({ id: 'task-1' }), makeTask({ id: 'task-2' })];
     const repo = makeSoulRepo(soul);
-    const runner = new HeartbeatRunner(
-      makeEngine(),
-      repo,
-      makeBus(),
-      makeLogRepo(),
-      makeBudget()
-    );
+    const runner = new HeartbeatRunner(makeEngine(), repo, makeBus(), makeLogRepo(), makeBudget());
     await runner.runHeartbeat('agent-1');
     // N tasks → 1 DB write (not N)
     expect(repo.updateHeartbeatChecklist).toHaveBeenCalledOnce();
@@ -456,10 +447,7 @@ describe('HeartbeatRunner.runHeartbeat() — happy path', () => {
 
   it('accumulates token usage and cost across all tasks', async () => {
     const soul = makeSoul();
-    soul.heartbeat.checklist = [
-      makeTask({ id: 'task-1' }),
-      makeTask({ id: 'task-2' }),
-    ];
+    soul.heartbeat.checklist = [makeTask({ id: 'task-1' }), makeTask({ id: 'task-2' })];
     const engine = makeEngine();
     (engine.processMessage as ReturnType<typeof vi.fn>).mockResolvedValue({
       content: 'ok',
@@ -575,9 +563,7 @@ describe('HeartbeatRunner.runHeartbeat() — pauseOnConsecutiveErrors', () => {
       makeTask({ id: 'task-1', consecutiveFailures: 1 }), // 1 existing → +1 this run = 2
     ];
     const engine = makeEngine();
-    (engine.processMessage as ReturnType<typeof vi.fn>).mockRejectedValue(
-      new Error('LLM error')
-    );
+    (engine.processMessage as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('LLM error'));
 
     const repo = makeSoulRepo(soul);
     const eventBus = makeEventBus();
@@ -606,18 +592,10 @@ describe('HeartbeatRunner.runHeartbeat() — pauseOnConsecutiveErrors', () => {
       makeTask({ id: 'task-1', consecutiveFailures: 0 }), // 0 existing → +1 this run = 1
     ];
     const engine = makeEngine();
-    (engine.processMessage as ReturnType<typeof vi.fn>).mockRejectedValue(
-      new Error('LLM error')
-    );
+    (engine.processMessage as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('LLM error'));
 
     const repo = makeSoulRepo(soul);
-    const runner = new HeartbeatRunner(
-      engine,
-      repo,
-      makeBus(),
-      makeLogRepo(),
-      makeBudget()
-    );
+    const runner = new HeartbeatRunner(engine, repo, makeBus(), makeLogRepo(), makeBudget());
 
     await runner.runHeartbeat('agent-1');
 
@@ -751,9 +729,7 @@ describe('HeartbeatRunner routeOutput()', () => {
   });
 
   it('broadcast: broadcasts to the crew', async () => {
-    const soul = soulWithTask(
-      makeTask({ outputTo: { type: 'broadcast', crewId: 'crew-1' } })
-    );
+    const soul = soulWithTask(makeTask({ outputTo: { type: 'broadcast', crewId: 'crew-1' } }));
     const bus = makeBus();
     const runner = new HeartbeatRunner(
       makeEngine(),
@@ -772,9 +748,7 @@ describe('HeartbeatRunner routeOutput()', () => {
   it('does not route output when task fails', async () => {
     const soul = soulWithTask(makeTask({ outputTo: { type: 'memory' } }));
     const engine = makeEngine();
-    (engine.processMessage as ReturnType<typeof vi.fn>).mockRejectedValue(
-      new Error('LLM fail')
-    );
+    (engine.processMessage as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('LLM fail'));
     const runner = new HeartbeatRunner(
       engine,
       makeSoulRepo(soul),
@@ -825,9 +799,7 @@ describe('HeartbeatRunner filterTasksToRun()', () => {
 
   it('schedule=every always runs', async () => {
     const soul = makeSoul();
-    soul.heartbeat.checklist = [
-      makeTask({ schedule: 'every', lastRunAt: new Date() }),
-    ];
+    soul.heartbeat.checklist = [makeTask({ schedule: 'every', lastRunAt: new Date() })];
     const engine = makeEngine();
     const runner = new HeartbeatRunner(
       engine,

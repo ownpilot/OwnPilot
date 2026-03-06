@@ -38,23 +38,41 @@ function makeSoulRow(overrides: Record<string, unknown> = {}) {
     id: 'soul-1',
     agent_id: 'agent-1',
     identity: JSON.stringify({
-      name: 'Scout', emoji: '🔍', role: 'Researcher', personality: 'curious',
-      voice: { tone: 'neutral', language: 'en' }, boundaries: [],
+      name: 'Scout',
+      emoji: '🔍',
+      role: 'Researcher',
+      personality: 'curious',
+      voice: { tone: 'neutral', language: 'en' },
+      boundaries: [],
     }),
     purpose: JSON.stringify({ mission: 'Test', goals: [], expertise: [], toolPreferences: [] }),
     autonomy: JSON.stringify({
-      level: 2, allowedActions: [], blockedActions: [], requiresApproval: [],
-      maxCostPerCycle: 1, maxCostPerDay: 10, maxCostPerMonth: 100,
-      pauseOnConsecutiveErrors: 5, pauseOnBudgetExceeded: true, notifyUserOnPause: false,
+      level: 2,
+      allowedActions: [],
+      blockedActions: [],
+      requiresApproval: [],
+      maxCostPerCycle: 1,
+      maxCostPerDay: 10,
+      maxCostPerMonth: 100,
+      pauseOnConsecutiveErrors: 5,
+      pauseOnBudgetExceeded: true,
+      notifyUserOnPause: false,
     }),
     heartbeat: JSON.stringify({
-      enabled: true, interval: '*/30 * * * *', checklist: [],
-      selfHealingEnabled: false, maxDurationMs: 120_000,
+      enabled: true,
+      interval: '*/30 * * * *',
+      checklist: [],
+      selfHealingEnabled: false,
+      maxDurationMs: 120_000,
     }),
     relationships: JSON.stringify({ delegates: [], peers: [], channels: [] }),
     evolution: JSON.stringify({
-      version: 1, evolutionMode: 'supervised', coreTraits: [],
-      mutableTraits: [], learnings: [], feedbackLog: [],
+      version: 1,
+      evolutionMode: 'supervised',
+      coreTraits: [],
+      mutableTraits: [],
+      learnings: [],
+      feedbackLog: [],
     }),
     boot_sequence: JSON.stringify({ onStart: [], onHeartbeat: [], onMessage: [] }),
     provider: null,
@@ -162,12 +180,43 @@ describe('SoulsRepository', () => {
       mockAdapter.queryOne.mockResolvedValue(makeSoulRow()); // for the subsequent getByAgentId
       const data = {
         agentId: 'agent-1',
-        identity: { name: 'Bot', emoji: '🤖', role: 'Tester', personality: 'x', voice: { tone: 'n', language: 'en' as const }, boundaries: [] },
+        identity: {
+          name: 'Bot',
+          emoji: '🤖',
+          role: 'Tester',
+          personality: 'x',
+          voice: { tone: 'n', language: 'en' as const },
+          boundaries: [],
+        },
         purpose: { mission: 'M', goals: [], expertise: [], toolPreferences: [] },
-        autonomy: { level: 2 as const, allowedActions: [], blockedActions: [], requiresApproval: [], maxCostPerCycle: 1, maxCostPerDay: 10, maxCostPerMonth: 100, pauseOnConsecutiveErrors: 5, pauseOnBudgetExceeded: true, notifyUserOnPause: false },
-        heartbeat: { enabled: true, interval: '*/30 * * * *', checklist: [], selfHealingEnabled: false, maxDurationMs: 120_000 },
+        autonomy: {
+          level: 2 as const,
+          allowedActions: [],
+          blockedActions: [],
+          requiresApproval: [],
+          maxCostPerCycle: 1,
+          maxCostPerDay: 10,
+          maxCostPerMonth: 100,
+          pauseOnConsecutiveErrors: 5,
+          pauseOnBudgetExceeded: true,
+          notifyUserOnPause: false,
+        },
+        heartbeat: {
+          enabled: true,
+          interval: '*/30 * * * *',
+          checklist: [],
+          selfHealingEnabled: false,
+          maxDurationMs: 120_000,
+        },
         relationships: { delegates: [], peers: [], channels: [] },
-        evolution: { version: 1, evolutionMode: 'supervised' as const, coreTraits: [], mutableTraits: [], learnings: [], feedbackLog: [] },
+        evolution: {
+          version: 1,
+          evolutionMode: 'supervised' as const,
+          coreTraits: [],
+          mutableTraits: [],
+          learnings: [],
+          feedbackLog: [],
+        },
         bootSequence: { onStart: [], onHeartbeat: [], onMessage: [] },
       };
       const soul = await repo.create(data);
@@ -182,16 +231,49 @@ describe('SoulsRepository', () => {
 
     it('throws when getByAgentId returns null after insert', async () => {
       mockAdapter.queryOne.mockResolvedValue(null);
-      await expect(repo.create({
-        agentId: 'a',
-        identity: { name: '', emoji: '', role: '', personality: '', voice: { tone: '', language: 'en' as const }, boundaries: [] },
-        purpose: { mission: '', goals: [], expertise: [], toolPreferences: [] },
-        autonomy: { level: 0 as const, allowedActions: [], blockedActions: [], requiresApproval: [], maxCostPerCycle: 0, maxCostPerDay: 0, maxCostPerMonth: 0, pauseOnConsecutiveErrors: 5, pauseOnBudgetExceeded: true, notifyUserOnPause: false },
-        heartbeat: { enabled: false, interval: '', checklist: [], selfHealingEnabled: false, maxDurationMs: 120_000 },
-        relationships: { delegates: [], peers: [], channels: [] },
-        evolution: { version: 1, evolutionMode: 'manual' as const, coreTraits: [], mutableTraits: [], learnings: [], feedbackLog: [] },
-        bootSequence: { onStart: [], onHeartbeat: [], onMessage: [] },
-      })).rejects.toThrow('Failed to create soul');
+      await expect(
+        repo.create({
+          agentId: 'a',
+          identity: {
+            name: '',
+            emoji: '',
+            role: '',
+            personality: '',
+            voice: { tone: '', language: 'en' as const },
+            boundaries: [],
+          },
+          purpose: { mission: '', goals: [], expertise: [], toolPreferences: [] },
+          autonomy: {
+            level: 0 as const,
+            allowedActions: [],
+            blockedActions: [],
+            requiresApproval: [],
+            maxCostPerCycle: 0,
+            maxCostPerDay: 0,
+            maxCostPerMonth: 0,
+            pauseOnConsecutiveErrors: 5,
+            pauseOnBudgetExceeded: true,
+            notifyUserOnPause: false,
+          },
+          heartbeat: {
+            enabled: false,
+            interval: '',
+            checklist: [],
+            selfHealingEnabled: false,
+            maxDurationMs: 120_000,
+          },
+          relationships: { delegates: [], peers: [], channels: [] },
+          evolution: {
+            version: 1,
+            evolutionMode: 'manual' as const,
+            coreTraits: [],
+            mutableTraits: [],
+            learnings: [],
+            feedbackLog: [],
+          },
+          bootSequence: { onStart: [], onHeartbeat: [], onMessage: [] },
+        })
+      ).rejects.toThrow('Failed to create soul');
     });
   });
 
@@ -213,7 +295,10 @@ describe('SoulsRepository', () => {
     });
 
     it('returns mapped souls', async () => {
-      mockAdapter.query.mockResolvedValue([makeSoulRow(), makeSoulRow({ id: 'soul-2', agent_id: 'agent-2' })]);
+      mockAdapter.query.mockResolvedValue([
+        makeSoulRow(),
+        makeSoulRow({ id: 'soul-2', agent_id: 'agent-2' }),
+      ]);
       const souls = await repo.list(null, 10, 0);
       expect(souls).toHaveLength(2);
     });
@@ -265,15 +350,48 @@ describe('SoulsRepository', () => {
   describe('update()', () => {
     it('updates with all JSON fields and agentId as WHERE param', async () => {
       const soul = {
-        id: 'soul-1', agentId: 'agent-1',
-        identity: { name: 'X', emoji: '', role: '', personality: '', voice: { tone: '', language: 'en' as const }, boundaries: [] },
+        id: 'soul-1',
+        agentId: 'agent-1',
+        identity: {
+          name: 'X',
+          emoji: '',
+          role: '',
+          personality: '',
+          voice: { tone: '', language: 'en' as const },
+          boundaries: [],
+        },
         purpose: { mission: '', goals: [], expertise: [], toolPreferences: [] },
-        autonomy: { level: 0 as const, allowedActions: [], blockedActions: [], requiresApproval: [], maxCostPerCycle: 0, maxCostPerDay: 0, maxCostPerMonth: 0, pauseOnConsecutiveErrors: 5, pauseOnBudgetExceeded: true, notifyUserOnPause: false },
-        heartbeat: { enabled: true, interval: '', checklist: [], selfHealingEnabled: false, maxDurationMs: 120_000 },
+        autonomy: {
+          level: 0 as const,
+          allowedActions: [],
+          blockedActions: [],
+          requiresApproval: [],
+          maxCostPerCycle: 0,
+          maxCostPerDay: 0,
+          maxCostPerMonth: 0,
+          pauseOnConsecutiveErrors: 5,
+          pauseOnBudgetExceeded: true,
+          notifyUserOnPause: false,
+        },
+        heartbeat: {
+          enabled: true,
+          interval: '',
+          checklist: [],
+          selfHealingEnabled: false,
+          maxDurationMs: 120_000,
+        },
         relationships: { delegates: [], peers: [], channels: [] },
-        evolution: { version: 2, evolutionMode: 'supervised' as const, coreTraits: [], mutableTraits: [], learnings: [], feedbackLog: [] },
+        evolution: {
+          version: 2,
+          evolutionMode: 'supervised' as const,
+          coreTraits: [],
+          mutableTraits: [],
+          learnings: [],
+          feedbackLog: [],
+        },
         bootSequence: { onStart: [], onHeartbeat: [], onMessage: [] },
-        createdAt: new Date(), updatedAt: new Date(),
+        createdAt: new Date(),
+        updatedAt: new Date(),
       };
       await repo.update(soul);
       const [sql, params] = mockAdapter.execute.mock.calls[0];
@@ -314,7 +432,17 @@ describe('SoulsRepository', () => {
 
   describe('updateHeartbeatChecklist()', () => {
     it('updates checklist via jsonb_set with serialized array', async () => {
-      const checklist = [{ id: 't1', name: 'Task', schedule: 'every' as const, description: '', tools: [], priority: 'medium' as const, stalenessHours: 0 }];
+      const checklist = [
+        {
+          id: 't1',
+          name: 'Task',
+          schedule: 'every' as const,
+          description: '',
+          tools: [],
+          priority: 'medium' as const,
+          stalenessHours: 0,
+        },
+      ];
       await repo.updateHeartbeatChecklist('agent-1', checklist);
       const [sql, params] = mockAdapter.execute.mock.calls[0];
       expect(sql).toContain('jsonb_set');
@@ -332,8 +460,8 @@ describe('SoulsRepository', () => {
       await repo.createVersion(soul, 'feedback applied', 'user');
       const [sql, params] = mockAdapter.execute.mock.calls[0];
       expect(sql).toContain('INSERT INTO agent_soul_versions');
-      expect(params[0]).toBe('soul-1');   // soul_id
-      expect(params[1]).toBe(5);          // version
+      expect(params[0]).toBe('soul-1'); // soul_id
+      expect(params[1]).toBe(5); // version
       expect(params[2]).toBe(JSON.stringify(soul)); // snapshot
       expect(params[3]).toBe('feedback applied');
       expect(params[4]).toBe('user');
@@ -386,11 +514,29 @@ describe('SoulsRepository', () => {
     it('maps matching task in checklist and executes UPDATE', async () => {
       const soulRow = makeSoulRow({
         heartbeat: JSON.stringify({
-          enabled: true, interval: '*/30 * * * *',
-          selfHealingEnabled: false, maxDurationMs: 120_000,
+          enabled: true,
+          interval: '*/30 * * * *',
+          selfHealingEnabled: false,
+          maxDurationMs: 120_000,
           checklist: [
-            { id: 'task-1', name: 'Check', schedule: 'daily', description: '', tools: [], priority: 'medium', stalenessHours: 0 },
-            { id: 'task-2', name: 'Other', schedule: 'daily', description: '', tools: [], priority: 'low', stalenessHours: 0 },
+            {
+              id: 'task-1',
+              name: 'Check',
+              schedule: 'daily',
+              description: '',
+              tools: [],
+              priority: 'medium',
+              stalenessHours: 0,
+            },
+            {
+              id: 'task-2',
+              name: 'Other',
+              schedule: 'daily',
+              description: '',
+              tools: [],
+              priority: 'low',
+              stalenessHours: 0,
+            },
           ],
         }),
       });
@@ -418,10 +564,20 @@ describe('SoulsRepository', () => {
     it('returns t unchanged for non-matching task', async () => {
       const soulRow = makeSoulRow({
         heartbeat: JSON.stringify({
-          enabled: true, interval: '*/30 * * * *',
-          selfHealingEnabled: false, maxDurationMs: 120_000,
+          enabled: true,
+          interval: '*/30 * * * *',
+          selfHealingEnabled: false,
+          maxDurationMs: 120_000,
           checklist: [
-            { id: 'task-99', name: 'Other', schedule: 'daily', description: '', tools: [], priority: 'low', stalenessHours: 0 },
+            {
+              id: 'task-99',
+              name: 'Other',
+              schedule: 'daily',
+              description: '',
+              tools: [],
+              priority: 'low',
+              stalenessHours: 0,
+            },
           ],
         }),
       });
@@ -457,7 +613,9 @@ describe('SoulsRepository', () => {
 
     it('returns parsed snapshot when DB column is valid JSON', async () => {
       const soulData = { id: 'soul-1', agentId: 'agent-1' };
-      mockAdapter.queryOne.mockResolvedValue(makeVersionRow({ snapshot: JSON.stringify(soulData) }));
+      mockAdapter.queryOne.mockResolvedValue(
+        makeVersionRow({ snapshot: JSON.stringify(soulData) })
+      );
       const ver = await repo.getVersion('soul-1', 3);
       expect(ver?.snapshot).not.toBeNull();
       expect((ver?.snapshot as Record<string, unknown>)?.id).toBe('soul-1');

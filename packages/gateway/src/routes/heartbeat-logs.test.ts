@@ -98,7 +98,11 @@ describe('Heartbeat Log Routes', () => {
       expect(res.status).toBe(200);
       const json = await res.json();
       expect(json.data).toHaveLength(1);
-      expect(mockRepo.listByAgent).toHaveBeenCalledWith('agent-1', expect.any(Number), expect.any(Number));
+      expect(mockRepo.listByAgent).toHaveBeenCalledWith(
+        'agent-1',
+        expect.any(Number),
+        expect.any(Number)
+      );
     });
 
     it('passes pagination params to listByAgent', async () => {

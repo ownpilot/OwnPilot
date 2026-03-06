@@ -13,28 +13,29 @@ import { errorHandler } from '../../middleware/error-handler.js';
 // Mocks
 // ---------------------------------------------------------------------------
 
-const { mockExistsSync, mockReaddirSync, mockAddLocalFile, mockAddFile, mockToBuffer, MockAdmZip } = vi.hoisted(() => {
-  const mockAddLocalFile = vi.fn();
-  const mockAddFile = vi.fn();
-  const mockToBuffer = vi.fn(() => Buffer.from('FAKE-ZIP'));
+const { mockExistsSync, mockReaddirSync, mockAddLocalFile, mockAddFile, mockToBuffer, MockAdmZip } =
+  vi.hoisted(() => {
+    const mockAddLocalFile = vi.fn();
+    const mockAddFile = vi.fn();
+    const mockToBuffer = vi.fn(() => Buffer.from('FAKE-ZIP'));
 
-  const MockAdmZip = vi.fn().mockImplementation(function () {
+    const MockAdmZip = vi.fn().mockImplementation(function () {
+      return {
+        addLocalFile: mockAddLocalFile,
+        addFile: mockAddFile,
+        toBuffer: mockToBuffer,
+      };
+    });
+
     return {
-      addLocalFile: mockAddLocalFile,
-      addFile: mockAddFile,
-      toBuffer: mockToBuffer,
+      mockExistsSync: vi.fn(),
+      mockReaddirSync: vi.fn(),
+      mockAddLocalFile,
+      mockAddFile,
+      mockToBuffer,
+      MockAdmZip,
     };
   });
-
-  return {
-    mockExistsSync: vi.fn(),
-    mockReaddirSync: vi.fn(),
-    mockAddLocalFile,
-    mockAddFile,
-    mockToBuffer,
-    MockAdmZip,
-  };
-});
 
 vi.mock('node:fs', () => ({
   existsSync: mockExistsSync,
@@ -128,9 +129,9 @@ describe('packaging — sourcePath branch', () => {
   it('adds sibling files (not the manifest) from skill directory', async () => {
     mockExistsSync.mockReturnValue(true);
     mockReaddirSync.mockReturnValue([
-      makeEntry('SKILL.md'),              // same as manifest — skip
-      makeEntry('README.md'),             // regular file — include
-      makeEntry('.gitignore'),            // starts with dot — skip
+      makeEntry('SKILL.md'), // same as manifest — skip
+      makeEntry('README.md'), // regular file — include
+      makeEntry('.gitignore'), // starts with dot — skip
     ]);
 
     await app.request('/ext/ext-1/package');
@@ -150,9 +151,7 @@ describe('packaging — sourcePath branch', () => {
 
     // First readdirSync call: the skill dir
     // Second readdirSync call: the scripts/ subdir
-    mockReaddirSync
-      .mockReturnValueOnce([scriptsEntry])
-      .mockReturnValueOnce([fileInScripts]);
+    mockReaddirSync.mockReturnValueOnce([scriptsEntry]).mockReturnValueOnce([fileInScripts]);
 
     await app.request('/ext/ext-1/package');
 

@@ -105,10 +105,7 @@ function parseEmbedding(value: number[] | string | null): number[] | undefined {
  */
 function computeContentHash(content: string): string {
   // Normalize: lowercase, trim, collapse whitespace
-  const normalized = content
-    .toLowerCase()
-    .trim()
-    .replace(/\s+/g, ' ');
+  const normalized = content.toLowerCase().trim().replace(/\s+/g, ' ');
 
   // Simple hash function (FNV-1a variant)
   let hash = 0x811c9dc5;

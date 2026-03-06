@@ -14,7 +14,13 @@
  */
 
 import type { MessageMiddleware } from '@ownpilot/core';
-import { getServiceRegistry, Services, type IExtensionService, debugLog, getTimeContext } from '@ownpilot/core';
+import {
+  getServiceRegistry,
+  Services,
+  type IExtensionService,
+  debugLog,
+  getTimeContext,
+} from '@ownpilot/core';
 import { buildEnhancedSystemPrompt } from '../../assistant/index.js';
 import { getErrorMessage } from '../../routes/helpers.js';
 import type { RequestRouting } from './request-preprocessor.js';
@@ -293,16 +299,30 @@ async function buildSoulSkillsSection(agentId: string): Promise<string> {
     }
 
     const extService = getServiceRegistry().get(Services.Extension) as IExtensionService & {
-      getExtensionById?(id: string): { name: string; description?: string; manifest?: { tools?: { name: string; description?: string }[] } } | undefined;
+      getExtensionById?(id: string):
+        | {
+            name: string;
+            description?: string;
+            manifest?: { tools?: { name: string; description?: string }[] };
+          }
+        | undefined;
     };
 
     const lines: string[] = [];
     lines.push('## Your Available Skills');
-    lines.push('You have been granted access to the following skills. Use them proactively when relevant:\n');
+    lines.push(
+      'You have been granted access to the following skills. Use them proactively when relevant:\n'
+    );
 
     for (const skillId of soul.skillAccess.allowed) {
       // Try to get extension details
-      let skillInfo: { name: string; description?: string; manifest?: { tools?: { name: string; description?: string }[] } } | undefined;
+      let skillInfo:
+        | {
+            name: string;
+            description?: string;
+            manifest?: { tools?: { name: string; description?: string }[] };
+          }
+        | undefined;
 
       if (extService?.getExtensionById) {
         skillInfo = extService.getExtensionById(skillId);

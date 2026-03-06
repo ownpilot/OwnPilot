@@ -163,7 +163,10 @@ describe('Custom Tools Approval Routes', () => {
       mockRepo.reject.mockResolvedValueOnce({ ...pendingTool, status: 'rejected' });
 
       await app.request('/custom-tools/tool-1/reject', { method: 'POST' });
-      expect(wsGateway.broadcast).toHaveBeenCalledWith('data:changed', expect.objectContaining({ action: 'updated' }));
+      expect(wsGateway.broadcast).toHaveBeenCalledWith(
+        'data:changed',
+        expect.objectContaining({ action: 'updated' })
+      );
     });
   });
 });

@@ -1093,5 +1093,4 @@ describe('executeForEachNode', () => {
     expect(case2Skipped).toBeDefined();
     expect(mockExecuteSwitchNode).toHaveBeenCalledTimes(1);
   });
-
 });

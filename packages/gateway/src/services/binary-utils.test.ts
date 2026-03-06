@@ -31,9 +31,7 @@ vi.mock('@ownpilot/core', async (importOriginal) => {
   const actual = await importOriginal<Record<string, unknown>>();
   return {
     ...actual,
-    isBuiltinProvider: vi.fn((p: string) =>
-      ['claude-code', 'codex', 'gemini-cli'].includes(p)
-    ),
+    isBuiltinProvider: vi.fn((p: string) => ['claude-code', 'codex', 'gemini-cli'].includes(p)),
   };
 });
 
@@ -110,7 +108,9 @@ describe('isBinaryInstalled', () => {
   });
 
   it('returns false when binary is not found', () => {
-    mockExecFileSync.mockImplementation(() => { throw new Error('not found'); });
+    mockExecFileSync.mockImplementation(() => {
+      throw new Error('not found');
+    });
     expect(isBinaryInstalled('nonexistent-binary')).toBe(false);
   });
 
@@ -135,7 +135,9 @@ describe('getBinaryVersion', () => {
   });
 
   it('returns undefined when binary fails', () => {
-    mockExecFileSync.mockImplementation(() => { throw new Error('not found'); });
+    mockExecFileSync.mockImplementation(() => {
+      throw new Error('not found');
+    });
     expect(getBinaryVersion('nonexistent')).toBeUndefined();
   });
 
@@ -339,10 +341,14 @@ describe('spawnCliProcess', () => {
       timeout: 1000,
     });
 
-    expect(mockSpawn).toHaveBeenCalledWith('cmd', ['arg1'], expect.objectContaining({
-      cwd: '/tmp/work',
-      env: { MY_VAR: 'value' },
-    }));
+    expect(mockSpawn).toHaveBeenCalledWith(
+      'cmd',
+      ['arg1'],
+      expect.objectContaining({
+        cwd: '/tmp/work',
+        env: { MY_VAR: 'value' },
+      })
+    );
   });
 
   it('exports MAX_OUTPUT_SIZE constant', () => {

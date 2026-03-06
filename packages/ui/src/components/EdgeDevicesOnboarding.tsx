@@ -99,15 +99,21 @@ function FlowDiagram() {
         <div className="flex items-center justify-between mb-2">
           <div className="flex gap-4">
             <div className="flex flex-col items-center gap-1">
-              <div className="w-10 h-10 rounded-lg bg-orange-100 dark:bg-orange-500/20 flex items-center justify-center text-lg">🍓</div>
+              <div className="w-10 h-10 rounded-lg bg-orange-100 dark:bg-orange-500/20 flex items-center justify-center text-lg">
+                🍓
+              </div>
               <span className="text-text-muted text-[10px]">Raspberry Pi</span>
             </div>
             <div className="flex flex-col items-center gap-1">
-              <div className="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-500/20 flex items-center justify-center text-lg">📡</div>
+              <div className="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-500/20 flex items-center justify-center text-lg">
+                📡
+              </div>
               <span className="text-text-muted text-[10px]">ESP32</span>
             </div>
             <div className="flex flex-col items-center gap-1">
-              <div className="w-10 h-10 rounded-lg bg-teal-100 dark:bg-teal-500/20 flex items-center justify-center text-lg">⚡</div>
+              <div className="w-10 h-10 rounded-lg bg-teal-100 dark:bg-teal-500/20 flex items-center justify-center text-lg">
+                ⚡
+              </div>
               <span className="text-text-muted text-[10px]">Arduino</span>
             </div>
           </div>
@@ -122,7 +128,9 @@ function FlowDiagram() {
           </div>
 
           <div className="flex flex-col items-center gap-1">
-            <div className="w-12 h-12 rounded-xl bg-primary/10 border-2 border-primary/30 flex items-center justify-center text-xl">🤖</div>
+            <div className="w-12 h-12 rounded-xl bg-primary/10 border-2 border-primary/30 flex items-center justify-center text-xl">
+              🤖
+            </div>
             <span className="text-text-muted text-[10px]">MQTT Broker</span>
           </div>
 
@@ -136,7 +144,9 @@ function FlowDiagram() {
           </div>
 
           <div className="flex flex-col items-center gap-1">
-            <div className="w-12 h-12 rounded-xl bg-violet-100 dark:bg-violet-500/20 flex items-center justify-center text-xl">🧠</div>
+            <div className="w-12 h-12 rounded-xl bg-violet-100 dark:bg-violet-500/20 flex items-center justify-center text-xl">
+              🧠
+            </div>
             <span className="text-text-muted text-[10px]">OwnPilot</span>
           </div>
         </div>
@@ -213,7 +223,8 @@ const USE_CASES: UseCase[] = [
   {
     emoji: '💡',
     title: 'Actuator Control',
-    description: 'Send commands to relays, LEDs, motors, and servos — triggered by AI or schedules.',
+    description:
+      'Send commands to relays, LEDs, motors, and servos — triggered by AI or schedules.',
     example: '"Turn off all relay switches in zone B."',
   },
   {
@@ -291,8 +302,8 @@ export function EdgeDevicesOnboarding({ onRegister }: Props) {
           Connect Physical Devices to Your AI
         </h1>
         <p className="text-text-secondary dark:text-dark-text-secondary max-w-xl mx-auto leading-relaxed">
-          Edge Devices lets you stream sensor data from IoT hardware into OwnPilot over MQTT,
-          then query, analyze, and control those devices using natural language — or automated triggers.
+          Edge Devices lets you stream sensor data from IoT hardware into OwnPilot over MQTT, then
+          query, analyze, and control those devices using natural language — or automated triggers.
         </p>
         <button
           onClick={onRegister}
@@ -381,7 +392,8 @@ export function EdgeDevicesOnboarding({ onRegister }: Props) {
 
           <div>
             <p className="text-xs font-medium text-text-muted dark:text-dark-text-muted mb-2 flex items-center gap-1.5">
-              <span className="text-base">📡</span> ESP32 / Arduino — C++ (PubSubClient + ArduinoJson)
+              <span className="text-base">📡</span> ESP32 / Arduino — C++ (PubSubClient +
+              ArduinoJson)
             </p>
             <CodeBlock code={ARDUINO_SAMPLE} language="cpp" filename="ownpilot_device.ino" />
           </div>
@@ -390,22 +402,47 @@ export function EdgeDevicesOnboarding({ onRegister }: Props) {
 
       {/* Requirements */}
       <div className="border border-amber-200 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-500/10 rounded-xl p-4 space-y-2">
-        <p className="text-sm font-semibold text-amber-700 dark:text-amber-400">
-          ⚙️ Prerequisites
-        </p>
+        <p className="text-sm font-semibold text-amber-700 dark:text-amber-400">⚙️ Prerequisites</p>
         <ul className="text-xs text-amber-700 dark:text-amber-300 space-y-1 list-none">
           <li>
-            <span className="font-mono bg-amber-100 dark:bg-amber-500/20 px-1.5 py-0.5 rounded">MQTT_BROKER_URL</span>
-            {' '}— set in your OwnPilot <span className="font-mono">.env</span> file (e.g.{' '}
+            <span className="font-mono bg-amber-100 dark:bg-amber-500/20 px-1.5 py-0.5 rounded">
+              MQTT_BROKER_URL
+            </span>{' '}
+            — set in your OwnPilot <span className="font-mono">.env</span> file (e.g.{' '}
             <span className="font-mono">mqtt://localhost:1883</span>)
           </li>
           <li>
-            An MQTT broker running — <a href="https://mosquitto.org" target="_blank" rel="noopener noreferrer" className="underline">Mosquitto</a>,{' '}
-            <a href="https://www.hivemq.com/mqtt-cloud-broker" target="_blank" rel="noopener noreferrer" className="underline">HiveMQ Cloud</a>,{' '}
-            or <a href="https://www.emqx.io" target="_blank" rel="noopener noreferrer" className="underline">EMQX</a>
+            An MQTT broker running —{' '}
+            <a
+              href="https://mosquitto.org"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline"
+            >
+              Mosquitto
+            </a>
+            ,{' '}
+            <a
+              href="https://www.hivemq.com/mqtt-cloud-broker"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline"
+            >
+              HiveMQ Cloud
+            </a>
+            , or{' '}
+            <a
+              href="https://www.emqx.io"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline"
+            >
+              EMQX
+            </a>
           </li>
           <li>
-            Your device's <span className="font-mono">userId</span> from your OwnPilot profile and the <span className="font-mono">deviceId</span> you get after registering
+            Your device's <span className="font-mono">userId</span> from your OwnPilot profile and
+            the <span className="font-mono">deviceId</span> you get after registering
           </li>
         </ul>
       </div>

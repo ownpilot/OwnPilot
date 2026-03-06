@@ -28,7 +28,14 @@ interface DebugEntry {
   duration?: number;
 }
 
-type FilterType = 'all' | 'request' | 'response' | 'tool_call' | 'tool_result' | 'error' | 'system_prompt';
+type FilterType =
+  | 'all'
+  | 'request'
+  | 'response'
+  | 'tool_call'
+  | 'tool_result'
+  | 'error'
+  | 'system_prompt';
 
 const MAX_ENTRIES = 200;
 
@@ -81,9 +88,7 @@ function summarizeEntry(entry: DebugEntry): string {
     case 'response':
       if (d.status === 'error') return d.error ?? 'error';
       return [
-        d.content
-          ? `"${d.content.slice(0, 60)}${d.content.length > 60 ? '...' : ''}"`
-          : '',
+        d.content ? `"${d.content.slice(0, 60)}${d.content.length > 60 ? '...' : ''}"` : '',
         d.toolCalls?.length ? `${d.toolCalls.length} tool calls` : '',
         d.usage ? `${d.usage.totalTokens}tok` : '',
       ]
@@ -108,7 +113,15 @@ function summarizeEntry(entry: DebugEntry): string {
   }
 }
 
-function SystemPromptDetail({ data }: { data: { stage: string; totalChars: number; sections: Array<{ name: string; chars: number; content: string }> } }) {
+function SystemPromptDetail({
+  data,
+}: {
+  data: {
+    stage: string;
+    totalChars: number;
+    sections: Array<{ name: string; chars: number; content: string }>;
+  };
+}) {
   const [openSection, setOpenSection] = useState<string | null>(null);
   return (
     <div className="text-[11px] text-text-secondary dark:text-dark-text-secondary space-y-1 max-h-[400px] overflow-auto">
@@ -116,14 +129,21 @@ function SystemPromptDetail({ data }: { data: { stage: string; totalChars: numbe
         stage: <strong>{data.stage}</strong> — total: <strong>{data.totalChars} chars</strong>
       </div>
       {(data.sections ?? []).map((s) => (
-        <div key={s.name} className="border border-border dark:border-dark-border rounded overflow-hidden">
+        <div
+          key={s.name}
+          className="border border-border dark:border-dark-border rounded overflow-hidden"
+        >
           <button
             onClick={() => setOpenSection(openSection === s.name ? null : s.name)}
             className="w-full flex items-center gap-2 px-2 py-1 bg-bg-tertiary dark:bg-dark-bg-tertiary hover:bg-bg-secondary dark:hover:bg-dark-bg-secondary text-left"
           >
-            <span className="font-semibold text-indigo-600 dark:text-indigo-400 w-36 shrink-0">{s.name}</span>
+            <span className="font-semibold text-indigo-600 dark:text-indigo-400 w-36 shrink-0">
+              {s.name}
+            </span>
             <span className="text-text-muted dark:text-dark-text-muted">{s.chars} chars</span>
-            <span className="ml-auto text-text-muted dark:text-dark-text-muted">{openSection === s.name ? '▴' : '▾'}</span>
+            <span className="ml-auto text-text-muted dark:text-dark-text-muted">
+              {openSection === s.name ? '▴' : '▾'}
+            </span>
           </button>
           {openSection === s.name && (
             <pre className="px-2 py-1.5 whitespace-pre-wrap break-all text-[10px] bg-bg-primary dark:bg-dark-bg-primary text-text-secondary dark:text-dark-text-secondary max-h-[250px] overflow-auto">

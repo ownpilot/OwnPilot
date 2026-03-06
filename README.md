@@ -546,16 +546,16 @@ Modern web interface built with React 19, Vite 7, and Tailwind CSS 4. Minimal de
 
 Multi-platform messaging with Telegram and WhatsApp support. Channel plugins use a builder pattern with unified conversation tracking through the MessageBus pipeline.
 
-| Feature                  | Details                                                                      |
-| ------------------------ | ---------------------------------------------------------------------------- |
-| **Telegram**             | Grammy bot with long polling or webhook mode, user/chat filtering            |
+| Feature                  | Details                                                                              |
+| ------------------------ | ------------------------------------------------------------------------------------ |
+| **Telegram**             | Grammy bot with long polling or webhook mode, user/chat filtering                    |
 | **WhatsApp (Baileys)**   | QR code auth (no Meta Business account), self-chat mode, group support, history sync |
-| **User Approval**        | Multi-step verification: approval code, manual admin approval, blocking      |
-| **Pairing Keys**         | Per-channel rotating ownership keys with revoke support                      |
-| **Message Splitting**    | Intelligent splitting at newlines/spaces for messages > 4096 chars           |
-| **Soft/Hard Disconnect** | `disconnect()` preserves session; `logout()` clears session data             |
-| **Event Integration**    | Channel events forwarded via EventBus → WebSocket for real-time UI           |
-| **Channel Manager**      | Orchestrates multiple channels, routes messages through the MessageBus       |
+| **User Approval**        | Multi-step verification: approval code, manual admin approval, blocking              |
+| **Pairing Keys**         | Per-channel rotating ownership keys with revoke support                              |
+| **Message Splitting**    | Intelligent splitting at newlines/spaces for messages > 4096 chars                   |
+| **Soft/Hard Disconnect** | `disconnect()` preserves session; `logout()` clears session data                     |
+| **Event Integration**    | Channel events forwarded via EventBus → WebSocket for real-time UI                   |
+| **Channel Manager**      | Orchestrates multiple channels, routes messages through the MessageBus               |
 
 ### CLI (`@ownpilot/cli`)
 

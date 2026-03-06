@@ -22,8 +22,8 @@ const log = getLog('PairingService');
 
 // ── DB key helpers ────────────────────────────────────────────────────────────
 
-const pairingKey   = (pluginId: string) => `pairing_key_${pluginId}`;
-const ownerKey     = (platform: string) => `owner_${platform}`;
+const pairingKey = (pluginId: string) => `pairing_key_${pluginId}`;
+const ownerKey = (platform: string) => `owner_${platform}`;
 const ownerChatKey = (platform: string) => `owner_chat_${platform}`;
 
 // ── Key generation ────────────────────────────────────────────────────────────
@@ -196,7 +196,7 @@ export async function revokeOwnership(pluginId: string, platform: string): Promi
  */
 export function printPairingBanner(channelName: string, key: string): void {
   const line = '═'.repeat(54);
-  const pad  = (s: string) => `║  ${s.padEnd(50)}  ║`;
+  const pad = (s: string) => `║  ${s.padEnd(50)}  ║`;
   console.log(`\n╔${line}╗`);
   console.log(pad(''));
   console.log(pad(`  🔑  OwnPilot — Channel Setup`));

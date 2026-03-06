@@ -1127,7 +1127,9 @@ describe('Edge cases', () => {
       emptyContext
     );
     const content = result.content as Record<string, unknown>;
-    expect(content.note).toBe('Page filtering (1-2) is not supported by the pdf-parse library — full text returned.');
+    expect(content.note).toBe(
+      'Page filtering (1-2) is not supported by the pdf-parse library — full text returned.'
+    );
     expect(content.tables).toBeDefined();
     expect((content.tables as unknown[]).length).toBe(1);
   });

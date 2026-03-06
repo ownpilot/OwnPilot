@@ -325,9 +325,20 @@ describe('getAllPermissions', () => {
   it('includes all expected permission categories', () => {
     const perms = getAllPermissions();
     const expected = [
-      'memories', 'goals', 'tasks', 'contacts', 'calendar', 'notes',
-      'custom-data', 'triggers', 'plans', 'network', 'browser', 'config',
-      'expenses', 'bookmarks',
+      'memories',
+      'goals',
+      'tasks',
+      'contacts',
+      'calendar',
+      'notes',
+      'custom-data',
+      'triggers',
+      'plans',
+      'network',
+      'browser',
+      'config',
+      'expenses',
+      'bookmarks',
     ];
     for (const perm of expected) {
       expect(perms).toContain(perm);

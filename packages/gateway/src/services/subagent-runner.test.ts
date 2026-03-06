@@ -187,7 +187,7 @@ describe('SubagentRunner', () => {
     const runner = new SubagentRunner(makeInput({ provider: 'anthropic', model: 'claude-3-opus' }));
     await runner.run();
     expect(mockResolveForProcess).not.toHaveBeenCalled();
-    expect(result => result).toBeTruthy();
+    expect((result) => result).toBeTruthy();
   });
 
   it('falls back to resolveForProcess when provider/model not in input', async () => {

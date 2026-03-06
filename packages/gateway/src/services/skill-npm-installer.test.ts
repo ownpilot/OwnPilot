@@ -513,9 +513,13 @@ describe('NpmSkillInstaller', () => {
 
     it('follows HTTP 301 redirect in fetchJson (lines 266-269)', async () => {
       // First fetchJson call: 301 redirect
-      setupFetchJsonResponse(301, {}, {
-        location: 'https://redirected-registry.example.com/test-skill',
-      });
+      setupFetchJsonResponse(
+        301,
+        {},
+        {
+          location: 'https://redirected-registry.example.com/test-skill',
+        }
+      );
       // Second fetchJson call (redirect target): 200 with actual data
       setupFetchJsonResponse(200, makeRegistryResponse());
 
@@ -525,9 +529,13 @@ describe('NpmSkillInstaller', () => {
     });
 
     it('follows HTTP 302 redirect in fetchJson', async () => {
-      setupFetchJsonResponse(302, {}, {
-        location: 'https://redirected-registry.example.com/test-skill',
-      });
+      setupFetchJsonResponse(
+        302,
+        {},
+        {
+          location: 'https://redirected-registry.example.com/test-skill',
+        }
+      );
       setupFetchJsonResponse(200, makeRegistryResponse());
 
       const info = await installer.getPackageInfo('test-skill');

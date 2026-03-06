@@ -479,7 +479,7 @@ describe('MemoryService — chunked memory', () => {
     const chunkMem2: Memory = { ...parentMem, id: 'mem-chunk-2', content: 'chunk two' };
 
     mockRepo.create
-      .mockResolvedValueOnce(parentMem)  // parent memory
+      .mockResolvedValueOnce(parentMem) // parent memory
       .mockResolvedValueOnce(chunkMem1) // chunk 1
       .mockResolvedValueOnce(chunkMem2); // chunk 2
     mockRepo.update.mockResolvedValueOnce(parentMem);

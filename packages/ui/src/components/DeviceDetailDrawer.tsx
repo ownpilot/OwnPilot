@@ -150,12 +150,17 @@ function SensorsTab({ device }: { device: EdgeDevice }) {
                     </thead>
                     <tbody>
                       {hist.map((h) => (
-                        <tr key={h.id} className="border-t border-border/50 dark:border-dark-border/50">
+                        <tr
+                          key={h.id}
+                          className="border-t border-border/50 dark:border-dark-border/50"
+                        >
                           <td className="py-1 font-mono text-text-primary dark:text-dark-text-primary">
                             {String(h.value)}
                             {sensor.unit ? ` ${sensor.unit}` : ''}
                           </td>
-                          <td className="py-1 text-right text-text-muted">{timeAgo(h.recordedAt)}</td>
+                          <td className="py-1 text-right text-text-muted">
+                            {timeAgo(h.recordedAt)}
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -225,9 +230,7 @@ function CommandsTab({ device }: { device: EdgeDevice }) {
         <p className="text-xs font-medium text-text-secondary dark:text-dark-text-secondary uppercase tracking-wide">
           Send Command
         </p>
-        {sendError && (
-          <p className="text-xs text-red-500">{sendError}</p>
-        )}
+        {sendError && <p className="text-xs text-red-500">{sendError}</p>}
         <input
           type="text"
           value={cmdType}
@@ -380,10 +383,22 @@ function InfoTab({
       </div>
 
       <div className="border-t border-border dark:border-dark-border pt-4 space-y-1 text-xs text-text-muted dark:text-dark-text-muted">
-        <p>Protocol: <span className="text-text-primary dark:text-dark-text-primary">{device.protocol}</span></p>
-        <p>Type: <span className="text-text-primary dark:text-dark-text-primary">{device.type}</span></p>
-        <p>Registered: <span className="text-text-primary dark:text-dark-text-primary">{new Date(device.createdAt).toLocaleDateString()}</span></p>
-        <p>Device ID: <code className="font-mono">{device.id}</code></p>
+        <p>
+          Protocol:{' '}
+          <span className="text-text-primary dark:text-dark-text-primary">{device.protocol}</span>
+        </p>
+        <p>
+          Type: <span className="text-text-primary dark:text-dark-text-primary">{device.type}</span>
+        </p>
+        <p>
+          Registered:{' '}
+          <span className="text-text-primary dark:text-dark-text-primary">
+            {new Date(device.createdAt).toLocaleDateString()}
+          </span>
+        </p>
+        <p>
+          Device ID: <code className="font-mono">{device.id}</code>
+        </p>
       </div>
     </div>
   );

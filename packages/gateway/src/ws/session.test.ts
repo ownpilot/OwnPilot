@@ -877,7 +877,9 @@ describe('SessionManager', () => {
 
     it('does not throw when unsub throws during remove', () => {
       const session = manager.create(createMockSocket());
-      const throwingUnsub = vi.fn(() => { throw new Error('unsub failed'); });
+      const throwingUnsub = vi.fn(() => {
+        throw new Error('unsub failed');
+      });
       manager.addEventSubscription(session.id, 'err.*', throwingUnsub);
       expect(() => manager.remove(session.id)).not.toThrow();
     });

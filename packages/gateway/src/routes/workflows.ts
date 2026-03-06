@@ -22,7 +22,11 @@ import { ERROR_CODES } from './error-codes.js';
 import { createWorkflowsRepository } from '../db/repositories/workflows.js';
 import { createWorkflowApprovalsRepository } from '../db/repositories/workflow-approvals.js';
 import { topologicalSort } from '../services/workflow-service.js';
-import { detectCycle, type ValidationNode, type ValidationEdge } from '../services/workflow/dag-utils.js';
+import {
+  detectCycle,
+  type ValidationNode,
+  type ValidationEdge,
+} from '../services/workflow/dag-utils.js';
 
 import { wsGateway } from '../ws/server.js';
 import { validateBody } from '../middleware/validation.js';

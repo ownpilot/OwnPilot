@@ -69,10 +69,13 @@ describe('AgentCommunicationBus.send()', () => {
     const eventBus = makeEventBus();
     const b = new AgentCommunicationBus(repo, eventBus);
     await b.send(makeMessage('sender', 'receiver'));
-    expect(eventBus.emit).toHaveBeenCalledWith('soul.message.sent', expect.objectContaining({
-      from: 'sender',
-      to: 'receiver',
-    }));
+    expect(eventBus.emit).toHaveBeenCalledWith(
+      'soul.message.sent',
+      expect.objectContaining({
+        from: 'sender',
+        to: 'receiver',
+      })
+    );
     b.dispose();
   });
 
@@ -239,8 +242,9 @@ describe('AgentCommunicationBus.broadcast()', () => {
   it('records failed members when send throws', async () => {
     const repo = makeRepo({
       getCrewMembers: vi.fn().mockResolvedValue(['agent-a', 'agent-b', 'agent-c']),
-      create: vi.fn()
-        .mockResolvedValueOnce(undefined)    // agent-b ok
+      create: vi
+        .fn()
+        .mockResolvedValueOnce(undefined) // agent-b ok
         .mockRejectedValueOnce(new Error('DB error')), // agent-c fails
     });
     const bus = new AgentCommunicationBus(repo, makeEventBus(), 100);
@@ -285,6 +289,9 @@ describe('AgentCommunicationBus.dispose()', () => {
 
   it('can be called multiple times safely', () => {
     const bus = new AgentCommunicationBus(makeRepo(), makeEventBus());
-    expect(() => { bus.dispose(); bus.dispose(); }).not.toThrow();
+    expect(() => {
+      bus.dispose();
+      bus.dispose();
+    }).not.toThrow();
   });
 });

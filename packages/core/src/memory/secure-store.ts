@@ -699,9 +699,12 @@ export class SecureMemoryStore {
     try {
       await fs.writeFile(saltFile, newSalt, { mode: 0o600 });
     } catch (err) {
-      log.warn('Could not persist installation salt — set MEMORY_SALT env var to avoid key loss on restart', {
-        error: String(err),
-      });
+      log.warn(
+        'Could not persist installation salt — set MEMORY_SALT env var to avoid key loss on restart',
+        {
+          error: String(err),
+        }
+      );
     }
     return newSalt;
   }

@@ -161,9 +161,7 @@ describe('BrowserWorkflowsRepository', () => {
     });
 
     it('should pass triggerId when provided', async () => {
-      mockAdapter.query.mockResolvedValueOnce([
-        makeWorkflowRow({ trigger_id: 'trigger-abc' }),
-      ]);
+      mockAdapter.query.mockResolvedValueOnce([makeWorkflowRow({ trigger_id: 'trigger-abc' })]);
 
       await repo.create('user-1', { name: 'WF', steps: [], triggerId: 'trigger-abc' });
 

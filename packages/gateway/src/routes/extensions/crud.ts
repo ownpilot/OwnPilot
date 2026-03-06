@@ -142,11 +142,12 @@ crudRoutes.patch('/:id', async (c) => {
     return notFoundError(c, 'Extension', id);
   }
 
-  const body = (await parseJsonBody<{
-    name?: string;
-    description?: string;
-    version?: string;
-  }>(c)) ?? {};
+  const body =
+    (await parseJsonBody<{
+      name?: string;
+      description?: string;
+      version?: string;
+    }>(c)) ?? {};
 
   const updates: Record<string, unknown> = {};
   if (typeof body.name === 'string') updates.name = body.name;

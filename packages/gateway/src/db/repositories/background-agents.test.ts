@@ -443,7 +443,12 @@ describe('BackgroundAgentsRepository', () => {
       mockAdapter.queryOne.mockResolvedValueOnce(makeAgentRow());
 
       await repo.update('bg-1', 'user-1', {
-        limits: { maxTurnsPerCycle: 5, maxToolCallsPerCycle: 20, maxCyclesPerHour: 10, cycleTimeoutMs: 60000 },
+        limits: {
+          maxTurnsPerCycle: 5,
+          maxToolCallsPerCycle: 20,
+          maxCyclesPerHour: 10,
+          cycleTimeoutMs: 60000,
+        },
         intervalMs: 600000,
         eventFilters: ['goal.created'],
       });
@@ -517,7 +522,12 @@ describe('BackgroundAgentsRepository', () => {
         mission: 'Be thorough',
         mode: 'event',
         allowedTools: ['tool_a'],
-        limits: { maxTurnsPerCycle: 5, maxToolCallsPerCycle: 20, maxCyclesPerHour: 10, cycleTimeoutMs: 60000 },
+        limits: {
+          maxTurnsPerCycle: 5,
+          maxToolCallsPerCycle: 20,
+          maxCyclesPerHour: 10,
+          cycleTimeoutMs: 60000,
+        },
         intervalMs: 600000,
         eventFilters: ['event.created'],
         autoStart: false,
@@ -529,11 +539,11 @@ describe('BackgroundAgentsRepository', () => {
       });
 
       const params = mockAdapter.execute.mock.calls[0]![1] as unknown[];
-      expect(params).toContain(600000);        // intervalMs
+      expect(params).toContain(600000); // intervalMs
       expect(params).toContain('["event.created"]'); // eventFilters
-      expect(params).toContain('done');         // stopCondition
-      expect(params).toContain('anthropic');    // provider
-      expect(params).toContain('claude-3');     // model
+      expect(params).toContain('done'); // stopCondition
+      expect(params).toContain('anthropic'); // provider
+      expect(params).toContain('claude-3'); // model
     });
   });
 });

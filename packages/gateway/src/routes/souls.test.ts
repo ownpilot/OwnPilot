@@ -248,7 +248,14 @@ describe('Soul Routes', () => {
     });
 
     it('validates required fields', () => {
-      const requiredFields = ['agentId', 'identity', 'purpose', 'autonomy', 'heartbeat', 'evolution'];
+      const requiredFields = [
+        'agentId',
+        'identity',
+        'purpose',
+        'autonomy',
+        'heartbeat',
+        'evolution',
+      ];
       expect(requiredFields).toContain('agentId');
       expect(requiredFields).toContain('identity');
       expect(requiredFields).toContain('purpose');
@@ -296,7 +303,13 @@ describe('Soul Routes', () => {
       let soulCreated = false;
 
       const fakeTransaction = async (fn: () => Promise<unknown>) => {
-        await agentsRepo.create({ id: 'agent-1', name: 'Test', systemPrompt: '', provider: 'p', model: 'm' });
+        await agentsRepo.create({
+          id: 'agent-1',
+          name: 'Test',
+          systemPrompt: '',
+          provider: 'p',
+          model: 'm',
+        });
         agentCreated = true;
         await soulsRepo.create({ agentId: 'agent-1' });
         soulCreated = true;
@@ -325,10 +338,12 @@ describe('Soul Routes', () => {
         }
       };
 
-      await expect(fakeTransaction(async () => {
-        await agentsRepo.create({ id: 'a' });
-        await soulsRepo.create({ agentId: 'a' });
-      })).rejects.toThrow('Transaction rolled back');
+      await expect(
+        fakeTransaction(async () => {
+          await agentsRepo.create({ id: 'a' });
+          await soulsRepo.create({ agentId: 'a' });
+        })
+      ).rejects.toThrow('Transaction rolled back');
 
       expect(txRolledBack).toBe(true);
       // No manual rollback (agentsRepo.delete) needed — TX handles it
@@ -340,7 +355,9 @@ describe('Soul Routes', () => {
       agentsRepo.create.mockImplementation(() => {
         callCount++;
         if (callCount === 1) {
-          return Promise.reject(new Error('duplicate key value violates unique constraint "agents_name_key"'));
+          return Promise.reject(
+            new Error('duplicate key value violates unique constraint "agents_name_key"')
+          );
         }
         return Promise.resolve(undefined);
       });
@@ -352,14 +369,22 @@ describe('Soul Routes', () => {
 
       while (!soul && attempts < 5) {
         try {
-          await agentsRepo.create({ id: 'a', name: agentName, systemPrompt: '', provider: 'p', model: 'm' });
+          await agentsRepo.create({
+            id: 'a',
+            name: agentName,
+            systemPrompt: '',
+            provider: 'p',
+            model: 'm',
+          });
           soulsRepo.create.mockResolvedValue(mockSoul);
           soul = await soulsRepo.create({ agentId: 'a' });
         } catch (err) {
           const msg = (err as Error).message.toLowerCase();
           if (msg.includes('duplicate') && msg.includes('name')) {
             attempts++;
-            agentName = `${baseName} (${Math.floor(Math.random() * 10000).toString().padStart(4, '0')})`;
+            agentName = `${baseName} (${Math.floor(Math.random() * 10000)
+              .toString()
+              .padStart(4, '0')})`;
           } else break;
         }
       }
@@ -411,7 +436,8 @@ describe('Soul Routes', () => {
     });
 
     it('validates cron expression format', () => {
-      const CRON_REGEX = /^[\*0-9,\-\/]+\s+[\*0-9,\-\/]+\s+[\*0-9,\-\/]+\s+[\*0-9,\-\/]+\s+[\*0-9,\-\/]+$/;
+      const CRON_REGEX =
+        /^[\*0-9,\-\/]+\s+[\*0-9,\-\/]+\s+[\*0-9,\-\/]+\s+[\*0-9,\-\/]+\s+[\*0-9,\-\/]+$/;
       expect(CRON_REGEX.test('0 */6 * * *')).toBe(true);
       expect(CRON_REGEX.test('*/15 * * * *')).toBe(true);
       expect(CRON_REGEX.test('not-a-cron')).toBe(false);
@@ -602,9 +628,11 @@ describe('Soul Routes', () => {
 
       await soulsRepo.update(updated);
 
-      expect(soulsRepo.update).toHaveBeenCalledWith(expect.objectContaining({
-        identity: expect.objectContaining({ name: 'Updated Name' }),
-      }));
+      expect(soulsRepo.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          identity: expect.objectContaining({ name: 'Updated Name' }),
+        })
+      );
     });
 
     it('returns error for non-existent soul', async () => {
@@ -764,22 +792,28 @@ describe('Soul Routes', () => {
   // ==========================================================================
 
   describe('Reserved Keywords', () => {
-    const reservedKeywords = ['test', 'tools', 'stats', 'command', 'deploy', 'logs', 'memories', 'goals', 'tasks'];
+    const reservedKeywords = [
+      'test',
+      'tools',
+      'stats',
+      'command',
+      'deploy',
+      'logs',
+      'memories',
+      'goals',
+      'tasks',
+    ];
 
     it('blocks reserved keywords as agentId', () => {
-      reservedKeywords.forEach(keyword => {
+      reservedKeywords.forEach((keyword) => {
         expect(reservedKeywords.includes(keyword)).toBe(true);
       });
     });
 
     it('allows valid UUIDs as agentId', () => {
-      const validIds = [
-        'agent-123',
-        '550e8400-e29b-41d4-a716-446655440000',
-        'user-456',
-      ];
+      const validIds = ['agent-123', '550e8400-e29b-41d4-a716-446655440000', 'user-456'];
 
-      validIds.forEach(id => {
+      validIds.forEach((id) => {
         expect(reservedKeywords.includes(id)).toBe(false);
       });
     });
@@ -813,9 +847,21 @@ describe('Soul Routes', () => {
     describe('GET /:agentId/logs', () => {
       it('returns logs and stats when soul exists', async () => {
         hbRepo.listByAgent.mockResolvedValue([
-          { id: 'log-1', createdAt: new Date(), durationMs: 1000, cost: 0.01, tasksRun: ['t1'], tasksFailed: [] },
+          {
+            id: 'log-1',
+            createdAt: new Date(),
+            durationMs: 1000,
+            cost: 0.01,
+            tasksRun: ['t1'],
+            tasksFailed: [],
+          },
         ]);
-        hbRepo.getStats.mockResolvedValue({ totalCycles: 10, failureRate: 0.1, totalCost: 0.5, avgDurationMs: 1200 });
+        hbRepo.getStats.mockResolvedValue({
+          totalCycles: 10,
+          failureRate: 0.1,
+          totalCost: 0.5,
+          avgDurationMs: 1200,
+        });
 
         const res = await app.request('/souls/agent-123/logs');
         expect(res.status).toBe(200);
@@ -853,9 +899,11 @@ describe('Soul Routes', () => {
         const { getServiceRegistry } = await import('@ownpilot/core');
         const registry = getServiceRegistry();
         const memorySvc = registry.get('Memory' as any);
-        (memorySvc as any).listMemories = vi.fn().mockResolvedValue([
-          { id: 'm1', content: 'Test memory', source: 'chat', createdAt: new Date() },
-        ]);
+        (memorySvc as any).listMemories = vi
+          .fn()
+          .mockResolvedValue([
+            { id: 'm1', content: 'Test memory', source: 'chat', createdAt: new Date() },
+          ]);
 
         const res = await app.request('/souls/agent-123/memories');
         expect(res.status).toBe(200);
@@ -883,9 +931,9 @@ describe('Soul Routes', () => {
         const { getServiceRegistry } = await import('@ownpilot/core');
         const registry = getServiceRegistry();
         const goalSvc = registry.get('Goal' as any);
-        (goalSvc as any).listGoals = vi.fn().mockResolvedValue([
-          { id: 'g1', title: 'Test Goal', status: 'active', progress: 0.5 },
-        ]);
+        (goalSvc as any).listGoals = vi
+          .fn()
+          .mockResolvedValue([{ id: 'g1', title: 'Test Goal', status: 'active', progress: 0.5 }]);
 
         const res = await app.request('/souls/agent-123/goals');
         expect(res.status).toBe(200);
@@ -974,7 +1022,11 @@ describe('Soul Routes', () => {
 
     describe('POST /:agentId/mission', () => {
       it('updates mission and returns accepted status', async () => {
-        const soul = { ...mockSoul, purpose: { ...mockSoul.purpose }, bootSequence: { ...mockSoul.bootSequence } };
+        const soul = {
+          ...mockSoul,
+          purpose: { ...mockSoul.purpose },
+          bootSequence: { ...mockSoul.bootSequence },
+        };
         soulsRepo.getByAgentId.mockResolvedValue(soul);
 
         const res = await app.request('/souls/agent-123/mission', {
@@ -989,7 +1041,11 @@ describe('Soul Routes', () => {
       });
 
       it('sets autoPlan tasks when autoPlan is true', async () => {
-        const soul = { ...mockSoul, purpose: { ...mockSoul.purpose }, bootSequence: { ...mockSoul.bootSequence, onHeartbeat: [] } };
+        const soul = {
+          ...mockSoul,
+          purpose: { ...mockSoul.purpose },
+          bootSequence: { ...mockSoul.bootSequence, onHeartbeat: [] },
+        };
         soulsRepo.getByAgentId.mockResolvedValue(soul);
 
         const res = await app.request('/souls/agent-123/mission', {
@@ -1002,7 +1058,11 @@ describe('Soul Routes', () => {
       });
 
       it('uses default priority "medium" when not specified', async () => {
-        const soul = { ...mockSoul, purpose: { ...mockSoul.purpose }, bootSequence: { ...mockSoul.bootSequence } };
+        const soul = {
+          ...mockSoul,
+          purpose: { ...mockSoul.purpose },
+          bootSequence: { ...mockSoul.bootSequence },
+        };
         soulsRepo.getByAgentId.mockResolvedValue(soul);
 
         const res = await app.request('/souls/agent-123/mission', {
@@ -1049,7 +1109,10 @@ describe('Soul Routes', () => {
       });
 
       it('returns 400 when agent is paused', async () => {
-        soulsRepo.getByAgentId.mockResolvedValue({ ...mockSoul, heartbeat: { ...mockSoul.heartbeat, enabled: false } });
+        soulsRepo.getByAgentId.mockResolvedValue({
+          ...mockSoul,
+          heartbeat: { ...mockSoul.heartbeat, enabled: false },
+        });
 
         const res = await app.request('/souls/agent-123/test', { method: 'POST' });
         expect(res.status).toBe(400);
@@ -1057,7 +1120,10 @@ describe('Soul Routes', () => {
 
       it('returns 500 when heartbeat fails', async () => {
         const { runAgentHeartbeat: rhb } = await import('../services/soul-heartbeat-service.js');
-        (rhb as ReturnType<typeof vi.fn>).mockResolvedValue({ success: false, error: 'Heartbeat error' });
+        (rhb as ReturnType<typeof vi.fn>).mockResolvedValue({
+          success: false,
+          error: 'Heartbeat error',
+        });
 
         const res = await app.request('/souls/agent-123/test', { method: 'POST' });
         expect(res.status).toBe(500);
@@ -1081,13 +1147,18 @@ describe('Soul Routes', () => {
       it('returns tools with permission status', async () => {
         const { getSharedToolRegistry: gstr } = await import('../services/tool-executor.js');
         (gstr as ReturnType<typeof vi.fn>).mockReturnValue({
-          getAllTools: vi.fn().mockReturnValue([
-            { definition: { name: 'search_web', description: 'Search the web' } },
-            { definition: { name: 'mcp.browser', description: 'Browser tool' } },
-            { definition: { name: 'custom.my_tool', description: 'My tool' } },
-          ]),
+          getAllTools: vi
+            .fn()
+            .mockReturnValue([
+              { definition: { name: 'search_web', description: 'Search the web' } },
+              { definition: { name: 'mcp.browser', description: 'Browser tool' } },
+              { definition: { name: 'custom.my_tool', description: 'My tool' } },
+            ]),
         });
-        const soul = { ...mockSoul, autonomy: { ...mockSoul.autonomy, allowedActions: ['search_web'], blockedActions: [] } };
+        const soul = {
+          ...mockSoul,
+          autonomy: { ...mockSoul.autonomy, allowedActions: ['search_web'], blockedActions: [] },
+        };
         soulsRepo.getByAgentId.mockResolvedValue(soul);
 
         const res = await app.request('/souls/agent-123/tools');
@@ -1116,7 +1187,10 @@ describe('Soul Routes', () => {
 
     describe('PUT /:agentId/tools', () => {
       it('updates allowed and blocked tool lists', async () => {
-        const soul = { ...mockSoul, autonomy: { ...mockSoul.autonomy, allowedActions: [], blockedActions: [] } };
+        const soul = {
+          ...mockSoul,
+          autonomy: { ...mockSoul.autonomy, allowedActions: [], blockedActions: [] },
+        };
         soulsRepo.getByAgentId.mockResolvedValue(soul);
 
         const res = await app.request('/souls/agent-123/tools', {
@@ -1131,7 +1205,10 @@ describe('Soul Routes', () => {
       });
 
       it('only updates allowed when blocked not provided', async () => {
-        const soul = { ...mockSoul, autonomy: { ...mockSoul.autonomy, allowedActions: [], blockedActions: ['old'] } };
+        const soul = {
+          ...mockSoul,
+          autonomy: { ...mockSoul.autonomy, allowedActions: [], blockedActions: ['old'] },
+        };
         soulsRepo.getByAgentId.mockResolvedValue(soul);
 
         const res = await app.request('/souls/agent-123/tools', {
@@ -1239,7 +1316,12 @@ describe('Soul Routes', () => {
 
     describe('GET /:agentId/stats', () => {
       it('returns stats when soul exists', async () => {
-        hbRepo.getStats.mockResolvedValue({ totalCycles: 5, totalCost: 0.25, avgDurationMs: 2000, failureRate: 0.2 });
+        hbRepo.getStats.mockResolvedValue({
+          totalCycles: 5,
+          totalCost: 0.25,
+          avgDurationMs: 2000,
+          failureRate: 0.2,
+        });
         hbRepo.listByAgent.mockResolvedValue([{ createdAt: new Date() }]);
 
         const res = await app.request('/souls/agent-123/stats');

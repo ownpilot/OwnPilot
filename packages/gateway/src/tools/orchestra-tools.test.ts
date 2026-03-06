@@ -44,9 +44,8 @@ vi.mock('@ownpilot/core', async () => {
   };
 });
 
-const { executeOrchestraTool, ORCHESTRA_TOOL_DEFINITIONS, ORCHESTRA_TOOL_NAMES } = await import(
-  './orchestra-tools.js'
-);
+const { executeOrchestraTool, ORCHESTRA_TOOL_DEFINITIONS, ORCHESTRA_TOOL_NAMES } =
+  await import('./orchestra-tools.js');
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -64,9 +63,7 @@ function makeExecution(overrides: Record<string, unknown> = {}) {
     plan: {
       description: 'Test plan',
       strategy: 'sequential',
-      tasks: [
-        { id: 'task-1', agentName: 'Research Assistant', input: 'Do research' },
-      ],
+      tasks: [{ id: 'task-1', agentName: 'Research Assistant', input: 'Do research' }],
     },
     taskResults: [
       {

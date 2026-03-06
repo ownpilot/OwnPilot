@@ -941,7 +941,9 @@ function makeWorkflow(nodes: WorkflowNode[], edges = [], variables = {}) {
 
 describe('httpRequestNode', () => {
   it('executes httpRequestNode', async () => {
-    const nodes = [makeNode('http1', 'httpRequestNode', { url: 'https://example.com', method: 'GET' })];
+    const nodes = [
+      makeNode('http1', 'httpRequestNode', { url: 'https://example.com', method: 'GET' }),
+    ];
     mockRepo.get.mockResolvedValue(makeWorkflow(nodes));
     mockExecuteHttpRequestNode.mockResolvedValue(makeNodeResult('http1', { status: 200 }));
     mockRepo.getLog.mockResolvedValue(makeLog({ status: 'completed' }));
@@ -952,7 +954,9 @@ describe('httpRequestNode', () => {
   });
 
   it('executes httpRequestNode in dryRun mode', async () => {
-    const nodes = [makeNode('http1', 'httpRequestNode', { url: 'https://example.com', method: 'POST' })];
+    const nodes = [
+      makeNode('http1', 'httpRequestNode', { url: 'https://example.com', method: 'POST' }),
+    ];
     mockRepo.get.mockResolvedValue(makeWorkflow(nodes));
     mockRepo.getLog.mockResolvedValue(makeLog({ status: 'completed' }));
 
@@ -1003,7 +1007,10 @@ describe('switchNode', () => {
       makeEdge('sw1', 'targetDef', 'default'),
     ];
     mockRepo.get.mockResolvedValue(makeWorkflow(nodes, edges));
-    mockExecuteSwitchNode.mockResolvedValue({ ...makeNodeResult('sw1', null), branchTaken: 'caseA' });
+    mockExecuteSwitchNode.mockResolvedValue({
+      ...makeNodeResult('sw1', null),
+      branchTaken: 'caseA',
+    });
     mockExecuteNode.mockResolvedValue(makeNodeResult('targetA', 'ok'));
     mockRepo.getLog.mockResolvedValue(makeLog({ status: 'completed' }));
 
@@ -1049,7 +1056,9 @@ describe('parallelNode', () => {
     const progressEvents: Array<Record<string, unknown>> = [];
     await service.executeWorkflow('wf-1', 'user1', (e) => progressEvents.push(e));
 
-    const nodeComplete = progressEvents.find((e) => e.type === 'node_complete' && e.nodeId === 'par1');
+    const nodeComplete = progressEvents.find(
+      (e) => e.type === 'node_complete' && e.nodeId === 'par1'
+    );
     expect(nodeComplete).toBeDefined();
     expect((nodeComplete!.output as { branchCount: number }).branchCount).toBe(2);
   });
@@ -1082,10 +1091,7 @@ describe('parallelNode', () => {
       makeNode('n1', 'toolNode', { toolName: 't1', toolArgs: {} }),
       makeNode('n2', 'toolNode', { toolName: 't2', toolArgs: {} }),
     ];
-    const edges = [
-      makeEdge('par1', 'n1', 'branch-0'),
-      makeEdge('par1', 'n2', 'branch-1'),
-    ];
+    const edges = [makeEdge('par1', 'n1', 'branch-0'), makeEdge('par1', 'n2', 'branch-1')];
     mockRepo.get.mockResolvedValue(makeWorkflow(nodes, edges));
     mockExecuteNode.mockResolvedValue(makeNodeResult('n1', 'ok'));
     mockRepo.getLog.mockResolvedValue(makeLog({ status: 'completed' }));
@@ -1153,7 +1159,9 @@ describe('stickyNoteNode', () => {
 
 describe('approvalNode', () => {
   it('pauses workflow at approval node and returns awaiting_approval log', async () => {
-    const nodes = [makeNode('ap1', 'approvalNode', { approvalMessage: 'Please approve', timeoutMinutes: 30 })];
+    const nodes = [
+      makeNode('ap1', 'approvalNode', { approvalMessage: 'Please approve', timeoutMinutes: 30 }),
+    ];
     mockRepo.get.mockResolvedValue(makeWorkflow(nodes));
     mockApprovalsRepo.create.mockResolvedValue({ id: 'approval-1' });
     mockRepo.updateLog.mockResolvedValue(undefined);
@@ -1167,12 +1175,16 @@ describe('approvalNode', () => {
     );
     expect(log.status).toBe('awaiting_approval');
     // Should emit done with awaiting_approval
-    const doneEvent = progressEvents.find((e) => e.type === 'done' && e.logStatus === 'awaiting_approval');
+    const doneEvent = progressEvents.find(
+      (e) => e.type === 'done' && e.logStatus === 'awaiting_approval'
+    );
     expect(doneEvent).toBeDefined();
   });
 
   it('executes approvalNode in dryRun mode (no approval created)', async () => {
-    const nodes = [makeNode('ap1', 'approvalNode', { approvalMessage: 'Approve this', timeoutMinutes: 10 })];
+    const nodes = [
+      makeNode('ap1', 'approvalNode', { approvalMessage: 'Approve this', timeoutMinutes: 10 }),
+    ];
     mockRepo.get.mockResolvedValue(makeWorkflow(nodes));
     mockRepo.getLog.mockResolvedValue(makeLog({ status: 'completed' }));
 
@@ -1212,7 +1224,9 @@ describe('subWorkflowNode', () => {
   });
 
   it('executes subWorkflowNode in dryRun mode', async () => {
-    const nodes = [makeNode('sw1', 'subWorkflowNode', { subWorkflowId: 'sub-wf', inputMapping: {} })];
+    const nodes = [
+      makeNode('sw1', 'subWorkflowNode', { subWorkflowId: 'sub-wf', inputMapping: {} }),
+    ];
     mockRepo.get.mockResolvedValue(makeWorkflow(nodes));
     mockRepo.getLog.mockResolvedValue(makeLog({ status: 'completed' }));
 
@@ -1224,9 +1238,7 @@ describe('subWorkflowNode', () => {
   it('returns error when sub-workflow cannot be found at execution time', async () => {
     const nodes = [makeNode('sw1', 'subWorkflowNode', { subWorkflowId: 'sub-wf' })];
     // 1st call: main workflow; 2nd call (subRepo.get): returns null
-    mockRepo.get
-      .mockResolvedValueOnce(makeWorkflow(nodes))
-      .mockResolvedValueOnce(null);
+    mockRepo.get.mockResolvedValueOnce(makeWorkflow(nodes)).mockResolvedValueOnce(null);
     mockRepo.getLog.mockResolvedValue(makeLog({ status: 'failed' }));
 
     const progressEvents: Array<Record<string, unknown>> = [];
@@ -1246,7 +1258,9 @@ describe('subWorkflowNode', () => {
       edges: [],
       variables: {},
     };
-    const mainNodes = [makeNode('sw1', 'subWorkflowNode', { subWorkflowId: 'sub-wf', inputMapping: {} })];
+    const mainNodes = [
+      makeNode('sw1', 'subWorkflowNode', { subWorkflowId: 'sub-wf', inputMapping: {} }),
+    ];
 
     // Call sequence: main workflow → subRepo.get(sub-wf) → recursive executeWorkflow get(sub-wf)
     mockRepo.get
@@ -1263,12 +1277,14 @@ describe('subWorkflowNode', () => {
 
     // getLog: 1st for sub-workflow (with nodeResults so filter callback runs), 2nd for main
     mockRepo.getLog
-      .mockResolvedValueOnce(makeLog({
-        id: 'log-sub',
-        workflowId: 'sub-wf',
-        status: 'completed',
-        nodeResults: { 'sub-n1': makeNodeResult('sub-n1', 'sub result') },
-      }))
+      .mockResolvedValueOnce(
+        makeLog({
+          id: 'log-sub',
+          workflowId: 'sub-wf',
+          status: 'completed',
+          nodeResults: { 'sub-n1': makeNodeResult('sub-n1', 'sub result') },
+        })
+      )
       .mockResolvedValueOnce(makeLog({ id: 'log-main', workflowId: 'wf-1', status: 'completed' }));
 
     const log = await service.executeWorkflow('wf-1', 'user1');
@@ -1281,7 +1297,13 @@ describe('subWorkflowNode', () => {
 describe('additional executeWorkflow paths', () => {
   it('merges input parameters under __inputs namespace', async () => {
     const nodes = [makeNode('n1', 'toolNode', { toolName: 'test', toolArgs: {} })];
-    mockRepo.get.mockResolvedValue({ id: 'wf-1', name: 'Test', nodes, edges: [], variables: { foo: 'bar' } });
+    mockRepo.get.mockResolvedValue({
+      id: 'wf-1',
+      name: 'Test',
+      nodes,
+      edges: [],
+      variables: { foo: 'bar' },
+    });
     mockExecuteNode.mockResolvedValue(makeNodeResult('n1', 'ok'));
     mockRepo.getLog.mockResolvedValue(makeLog({ status: 'completed' }));
 
@@ -1313,7 +1335,9 @@ describe('additional executeWorkflow paths', () => {
   });
 
   it('mirrors node output to alias when outputAlias is set', async () => {
-    const nodes = [makeNode('n1', 'toolNode', { toolName: 'test', toolArgs: {}, outputAlias: 'myOutput' })];
+    const nodes = [
+      makeNode('n1', 'toolNode', { toolName: 'test', toolArgs: {}, outputAlias: 'myOutput' }),
+    ];
     mockRepo.get.mockResolvedValue(makeWorkflow(nodes));
     mockExecuteNode.mockResolvedValue(makeNodeResult('n1', { value: 42 }));
     mockRepo.getLog.mockResolvedValue(makeLog({ status: 'completed' }));
@@ -1327,7 +1351,10 @@ describe('additional executeWorkflow paths', () => {
   it('mirrors error handler output to alias when handler has outputAlias', async () => {
     const nodes = [
       makeNode('n1', 'toolNode', { toolName: 'tool1', toolArgs: {} }),
-      makeNode('handler', 'errorHandlerNode', { continueOnSuccess: false, outputAlias: 'handlerOut' }),
+      makeNode('handler', 'errorHandlerNode', {
+        continueOnSuccess: false,
+        outputAlias: 'handlerOut',
+      }),
     ];
     mockRepo.get.mockResolvedValue(makeWorkflow(nodes, []));
     // n1 fails
@@ -1343,7 +1370,9 @@ describe('additional executeWorkflow paths', () => {
     await service.executeWorkflow('wf-1', 'user1', (e) => progressEvents.push(e));
 
     // Error handler should have been invoked (node_start + node_complete emitted)
-    const handlerStart = progressEvents.find((e) => e.type === 'node_start' && e.nodeId === 'handler');
+    const handlerStart = progressEvents.find(
+      (e) => e.type === 'node_start' && e.nodeId === 'handler'
+    );
     expect(handlerStart).toBeDefined();
   });
 
@@ -1358,7 +1387,12 @@ describe('additional executeWorkflow paths', () => {
     mockRepo.get.mockResolvedValue(makeWorkflow(nodes, edges));
     // n1 fails
     mockExecuteNode
-      .mockResolvedValueOnce({ nodeId: 'n1', status: 'error', error: 'failed', completedAt: new Date().toISOString() })
+      .mockResolvedValueOnce({
+        nodeId: 'n1',
+        status: 'error',
+        error: 'failed',
+        completedAt: new Date().toISOString(),
+      })
       .mockResolvedValueOnce(makeNodeResult('n2', 'recovered'));
     mockRepo.getLog.mockResolvedValue(makeLog({ status: 'completed' }));
 
@@ -1366,15 +1400,21 @@ describe('additional executeWorkflow paths', () => {
     await service.executeWorkflow('wf-1', 'user1', (e) => progressEvents.push(e));
 
     // Error handler node_start should be emitted
-    const handlerStart = progressEvents.find((e) => e.type === 'node_start' && e.nodeId === 'handler');
+    const handlerStart = progressEvents.find(
+      (e) => e.type === 'node_start' && e.nodeId === 'handler'
+    );
     expect(handlerStart).toBeDefined();
     // Error handler node_complete should be emitted
-    const handlerComplete = progressEvents.find((e) => e.type === 'node_complete' && e.nodeId === 'handler');
+    const handlerComplete = progressEvents.find(
+      (e) => e.type === 'node_complete' && e.nodeId === 'handler'
+    );
     expect(handlerComplete).toBeDefined();
   });
 
   it('skips llmNode dryRun without calling executeLlmNode', async () => {
-    const nodes = [makeNode('llm1', 'llmNode', { provider: 'openai', model: 'gpt-4', userMessage: 'Hello' })];
+    const nodes = [
+      makeNode('llm1', 'llmNode', { provider: 'openai', model: 'gpt-4', userMessage: 'Hello' }),
+    ];
     mockRepo.get.mockResolvedValue(makeWorkflow(nodes));
     mockRepo.getLog.mockResolvedValue(makeLog({ status: 'completed' }));
 
@@ -1384,7 +1424,9 @@ describe('additional executeWorkflow paths', () => {
   });
 
   it('executes tool node in dryRun mode without calling executeNode', async () => {
-    const nodes = [makeNode('n1', 'toolNode', { toolName: 'my_tool', toolArgs: { x: '{{n0.output}}' } })];
+    const nodes = [
+      makeNode('n1', 'toolNode', { toolName: 'my_tool', toolArgs: { x: '{{n0.output}}' } }),
+    ];
     mockRepo.get.mockResolvedValue(makeWorkflow(nodes));
     mockRepo.getLog.mockResolvedValue(makeLog({ status: 'completed' }));
 

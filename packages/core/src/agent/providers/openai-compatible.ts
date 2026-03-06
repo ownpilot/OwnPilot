@@ -488,7 +488,9 @@ export class OpenAICompatibleProvider {
         role: msg.role,
         // Strict OpenAI-compatible APIs reject "" when tool_calls present — use null
         content:
-          msg.role === 'assistant' && msg.toolCalls?.length && rawContent === '' ? null : rawContent,
+          msg.role === 'assistant' && msg.toolCalls?.length && rawContent === ''
+            ? null
+            : rawContent,
       };
 
       // Add tool calls for assistant messages

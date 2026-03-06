@@ -13,7 +13,12 @@
  *   belongs to a crew.
  */
 
-import { HeartbeatRunner, AgentCommunicationBus, BudgetTracker, getEventSystem } from '@ownpilot/core';
+import {
+  HeartbeatRunner,
+  AgentCommunicationBus,
+  BudgetTracker,
+  getEventSystem,
+} from '@ownpilot/core';
 import type {
   IHeartbeatAgentEngine,
   IHeartbeatEventBus,
@@ -45,7 +50,8 @@ function createSoulRepoAdapter(): ISoulRepository {
       repo.createVersion(soul, changeReason, changedBy),
     setHeartbeatEnabled: (agentId, enabled) => repo.setHeartbeatEnabled(agentId, enabled),
     updateTaskStatus: (agentId, taskId, status) => repo.updateTaskStatus(agentId, taskId, status),
-    updateHeartbeatChecklist: (agentId, checklist) => repo.updateHeartbeatChecklist(agentId, checklist),
+    updateHeartbeatChecklist: (agentId, checklist) =>
+      repo.updateHeartbeatChecklist(agentId, checklist),
   };
 }
 
@@ -171,55 +177,61 @@ function createHeartbeatAgentEngine(): IHeartbeatAgentEngine {
       const skillAccessAllowed = request.context?.skillAccessAllowed as string[] | undefined;
       const skillAccessBlocked = request.context?.skillAccessBlocked as string[] | undefined;
 
-      const hasToolFilter = !!(allowedTools?.length || skillAccessAllowed?.length || skillAccessBlocked?.length);
+      const hasToolFilter = !!(
+        allowedTools?.length ||
+        skillAccessAllowed?.length ||
+        skillAccessBlocked?.length
+      );
 
       // Wrap agent.chat() in the heartbeat context so communication/crew tools
       // can resolve the correct soul agent ID via AsyncLocalStorage.
-      const result = await runInHeartbeatContext(
-        { agentId: request.agentId, crewId },
-        () =>
-          agent.chat(taskMessage, {
-            onBeforeToolCall: hasToolFilter
-              ? async (toolCall) => {
-                  const name = toolCall.name;
+      const result = await runInHeartbeatContext({ agentId: request.agentId, crewId }, () =>
+        agent.chat(taskMessage, {
+          onBeforeToolCall: hasToolFilter
+            ? async (toolCall) => {
+                const name = toolCall.name;
 
-                  // 1. Blocked skill check — extensionId embedded in namespaced tool name (ext.{id}.{tool} / skill.{id}.{tool})
-                  if (skillAccessBlocked?.length) {
-                    const isBlocked = skillAccessBlocked.some(
+                // 1. Blocked skill check — extensionId embedded in namespaced tool name (ext.{id}.{tool} / skill.{id}.{tool})
+                if (skillAccessBlocked?.length) {
+                  const isBlocked = skillAccessBlocked.some(
+                    (id) => name.startsWith(`ext.${id}.`) || name.startsWith(`skill.${id}.`)
+                  );
+                  if (isBlocked) {
+                    return {
+                      approved: false,
+                      reason: `Extension ${name} is blocked for this soul`,
+                    };
+                  }
+                }
+
+                // 2. Allowed skills check — if set, extension tools must belong to an allowed extension
+                if (skillAccessAllowed?.length) {
+                  const isExtTool = name.startsWith('ext.') || name.startsWith('skill.');
+                  if (isExtTool) {
+                    const isAllowed = skillAccessAllowed.some(
                       (id) => name.startsWith(`ext.${id}.`) || name.startsWith(`skill.${id}.`)
                     );
-                    if (isBlocked) {
-                      return { approved: false, reason: `Extension ${name} is blocked for this soul` };
+                    if (!isAllowed) {
+                      return {
+                        approved: false,
+                        reason: `Extension ${name} not in soul's allowed skills`,
+                      };
                     }
                   }
-
-                  // 2. Allowed skills check — if set, extension tools must belong to an allowed extension
-                  if (skillAccessAllowed?.length) {
-                    const isExtTool = name.startsWith('ext.') || name.startsWith('skill.');
-                    if (isExtTool) {
-                      const isAllowed = skillAccessAllowed.some(
-                        (id) => name.startsWith(`ext.${id}.`) || name.startsWith(`skill.${id}.`)
-                      );
-                      if (!isAllowed) {
-                        return { approved: false, reason: `Extension ${name} not in soul's allowed skills` };
-                      }
-                    }
-                  }
-
-                  // 3. Task-level allowedTools check
-                  if (allowedTools?.length) {
-                    const allowed = allowedTools.some(
-                      (t) => name === t || name.endsWith(`.${t}`)
-                    );
-                    if (!allowed) {
-                      return { approved: false, reason: `Tool ${name} not in task allowedTools` };
-                    }
-                  }
-
-                  return { approved: true };
                 }
-              : undefined,
-          })
+
+                // 3. Task-level allowedTools check
+                if (allowedTools?.length) {
+                  const allowed = allowedTools.some((t) => name === t || name.endsWith(`.${t}`));
+                  if (!allowed) {
+                    return { approved: false, reason: `Tool ${name} not in task allowedTools` };
+                  }
+                }
+
+                return { approved: true };
+              }
+            : undefined,
+        })
       );
 
       if (!result.ok) {
@@ -263,7 +275,10 @@ function createHeartbeatAgentEngine(): IHeartbeatAgentEngine {
           tags: [note.category],
         });
       } catch (err) {
-        log.warn('Failed to create heartbeat note', { category: note.category, error: String(err) });
+        log.warn('Failed to create heartbeat note', {
+          category: note.category,
+          error: String(err),
+        });
       }
     },
 

@@ -864,7 +864,9 @@ describe('WorkflowsRepository', () => {
 
       const [sql, params] = mockAdapter.execute.mock.calls[0];
       expect(sql).toContain('input_schema');
-      expect(params.some((p: unknown) => typeof p === 'string' && String(p).includes('object'))).toBe(true);
+      expect(
+        params.some((p: unknown) => typeof p === 'string' && String(p).includes('object'))
+      ).toBe(true);
     });
   });
 
@@ -962,7 +964,10 @@ describe('WorkflowsRepository', () => {
 
   describe('getVersions', () => {
     it('returns mapped versions', async () => {
-      mockAdapter.query.mockResolvedValueOnce([makeVersionRow(), makeVersionRow({ id: 'wfver-2', version: 2 })]);
+      mockAdapter.query.mockResolvedValueOnce([
+        makeVersionRow(),
+        makeVersionRow({ id: 'wfver-2', version: 2 }),
+      ]);
 
       const versions = await repo.getVersions('wf-1');
 

@@ -420,7 +420,10 @@ export class ExtensionService implements IExtensionService {
           // Path traversal protection: resolve and verify path is within skillDir
           const fullPath = resolve(skillDir, scriptPath);
           const resolvedSkillDir = resolve(skillDir);
-          if (!fullPath.startsWith(resolvedSkillDir + '/') && !fullPath.startsWith(resolvedSkillDir + '\\')) {
+          if (
+            !fullPath.startsWith(resolvedSkillDir + '/') &&
+            !fullPath.startsWith(resolvedSkillDir + '\\')
+          ) {
             console.warn(`[ExtensionService] Path traversal detected for ${pkg.id}: ${scriptPath}`);
             continue; // Skip this script
           }

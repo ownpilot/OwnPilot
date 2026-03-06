@@ -83,7 +83,10 @@ export class HeartbeatRunner {
         agentId,
         soulVersion: soul.evolution.version,
         tasksRun: [],
-        tasksSkipped: soul.heartbeat.checklist.map((t) => ({ id: t.id, reason: 'budget_exceeded' })),
+        tasksSkipped: soul.heartbeat.checklist.map((t) => ({
+          id: t.id,
+          reason: 'budget_exceeded',
+        })),
         tasksFailed: [],
         durationMs: 0,
         tokenUsage: { input: 0, output: 0 },

@@ -10,7 +10,18 @@
  */
 
 import { useState, useMemo } from 'react';
-import { Search, Component, Puzzle, Check, Ban, Minus, Layers, X, Wrench, Settings } from '../../../components/icons';
+import {
+  Search,
+  Component,
+  Puzzle,
+  Check,
+  Ban,
+  Minus,
+  Layers,
+  X,
+  Wrench,
+  Settings,
+} from '../../../components/icons';
 
 export interface Tool {
   name: string;
@@ -92,7 +103,10 @@ export function ToolSelector({
   const allowTool = (toolName: string) => {
     if (readOnly) return;
     if (!allowedTools.includes(toolName)) {
-      onChange([...allowedTools, toolName], blockedTools.filter((t) => t !== toolName));
+      onChange(
+        [...allowedTools, toolName],
+        blockedTools.filter((t) => t !== toolName)
+      );
     }
   };
 

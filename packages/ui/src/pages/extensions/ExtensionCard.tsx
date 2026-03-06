@@ -57,9 +57,7 @@ export function ExtensionCard({
             </h3>
             <p className="text-xs text-text-muted dark:text-dark-text-muted">
               v{pkg.version}
-              {pkg.authorName && (
-                <span className="ml-1.5 opacity-70">by {pkg.authorName}</span>
-              )}
+              {pkg.authorName && <span className="ml-1.5 opacity-70">by {pkg.authorName}</span>}
             </p>
           </div>
         </button>

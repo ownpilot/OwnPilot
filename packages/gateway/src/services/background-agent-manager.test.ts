@@ -802,11 +802,11 @@ describe('BackgroundAgentManager', () => {
       await manager.startAgent(config);
 
       // Continuous mode: 1st cycle at 500ms, subsequent error-backoff cycles at 5000ms each
-      await vi.advanceTimersByTimeAsync(500);   // cycle 1
-      await vi.advanceTimersByTimeAsync(5001);  // cycle 2
-      await vi.advanceTimersByTimeAsync(5001);  // cycle 3
-      await vi.advanceTimersByTimeAsync(5001);  // cycle 4
-      await vi.advanceTimersByTimeAsync(5001);  // cycle 5 → auto-pause
+      await vi.advanceTimersByTimeAsync(500); // cycle 1
+      await vi.advanceTimersByTimeAsync(5001); // cycle 2
+      await vi.advanceTimersByTimeAsync(5001); // cycle 3
+      await vi.advanceTimersByTimeAsync(5001); // cycle 4
+      await vi.advanceTimersByTimeAsync(5001); // cycle 5 → auto-pause
 
       const session = manager.getSession('bg-1');
       expect(session?.state).toBe('paused');

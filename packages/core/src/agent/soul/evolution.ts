@@ -31,7 +31,10 @@ export interface ISoulRepository {
     }
   ): Promise<void>;
   /** Batch-update checklist task statuses in a single DB write. */
-  updateHeartbeatChecklist(agentId: string, checklist: import('./types.js').HeartbeatTask[]): Promise<void>;
+  updateHeartbeatChecklist(
+    agentId: string,
+    checklist: import('./types.js').HeartbeatTask[]
+  ): Promise<void>;
 }
 
 export interface IHeartbeatLogRepository {

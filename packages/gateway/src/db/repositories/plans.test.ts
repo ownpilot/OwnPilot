@@ -33,7 +33,12 @@ vi.mock('../adapters/index.js', () => ({
   getAdapterSync: vi.fn(() => mockAdapter),
 }));
 
-import { PlansRepository, detectDependencyCycle, createPlansRepository, type PlanStep } from './plans.js';
+import {
+  PlansRepository,
+  detectDependencyCycle,
+  createPlansRepository,
+  type PlanStep,
+} from './plans.js';
 
 // ---------------------------------------------------------------------------
 // Helpers

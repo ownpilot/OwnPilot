@@ -1968,7 +1968,11 @@ describe('extended branch coverage', () => {
   it('logs extension tool registration when tools are non-empty', async () => {
     const agentTools = await import('./agent-tools.js');
     vi.mocked(agentTools.registerExtensionTools).mockReturnValueOnce([
-      { name: 'ext-tool', description: 'Extension tool', parameters: { type: 'object' as const, properties: {} } },
+      {
+        name: 'ext-tool',
+        description: 'Extension tool',
+        parameters: { type: 'object' as const, properties: {} },
+      },
     ]);
 
     const { agent } = makeMockAgent();
@@ -1984,7 +1988,11 @@ describe('extended branch coverage', () => {
   it('logs MCP tool registration when tools are non-empty', async () => {
     const agentTools = await import('./agent-tools.js');
     vi.mocked(agentTools.registerMcpTools).mockReturnValueOnce([
-      { name: 'mcp-tool', description: 'MCP tool', parameters: { type: 'object' as const, properties: {} } },
+      {
+        name: 'mcp-tool',
+        description: 'MCP tool',
+        parameters: { type: 'object' as const, properties: {} },
+      },
     ]);
 
     const { agent } = makeMockAgent();
@@ -2002,7 +2010,11 @@ describe('extended branch coverage', () => {
   it('runs tool filter callback for non-empty coreToolDefs in createAgentFromRecord', async () => {
     const agentTools = await import('./agent-tools.js');
     vi.mocked(agentTools.getToolDefinitions).mockReturnValueOnce([
-      { name: 'calculate', description: 'Math', parameters: { type: 'object' as const, properties: {} } },
+      {
+        name: 'calculate',
+        description: 'Math',
+        parameters: { type: 'object' as const, properties: {} },
+      },
     ]);
 
     const { agent } = makeMockAgent();
@@ -2019,7 +2031,10 @@ describe('extended branch coverage', () => {
   // ── Lines 194-196: per-agent toolGroups override path ──
 
   it('uses per-agent toolGroups when resolveRecordTools returns tools', async () => {
-    mockResolveRecordTools.mockReturnValueOnce({ tools: ['calculate', 'generate_uuid'], configuredToolGroups: [] });
+    mockResolveRecordTools.mockReturnValueOnce({
+      tools: ['calculate', 'generate_uuid'],
+      configuredToolGroups: [],
+    });
 
     const { agent } = makeMockAgent();
     const record = makeAgentRecord();
@@ -2032,7 +2047,10 @@ describe('extended branch coverage', () => {
   });
 
   it('uses per-agent configuredToolGroups when non-empty', async () => {
-    mockResolveRecordTools.mockReturnValueOnce({ tools: [], configuredToolGroups: ['math', 'text'] });
+    mockResolveRecordTools.mockReturnValueOnce({
+      tools: [],
+      configuredToolGroups: ['math', 'text'],
+    });
 
     const { agent } = makeMockAgent();
     const record = makeAgentRecord();
@@ -2076,7 +2094,11 @@ describe('extended branch coverage', () => {
   it('runs tool filter callback for non-empty coreToolDefs in createChatAgentInstance', async () => {
     const agentTools = await import('./agent-tools.js');
     vi.mocked(agentTools.getToolDefinitions).mockReturnValueOnce([
-      { name: 'generate_uuid', description: 'UUID', parameters: { type: 'object' as const, properties: {} } },
+      {
+        name: 'generate_uuid',
+        description: 'UUID',
+        parameters: { type: 'object' as const, properties: {} },
+      },
     ]);
 
     const { agent } = makeMockAgent();
@@ -2115,9 +2137,7 @@ describe('extended branch coverage', () => {
     mockCreateAgent.mockReturnValue(agent);
 
     // Primary key available, fallback key not available (returns undefined)
-    mockGetProviderApiKey
-      .mockResolvedValueOnce('primary-key')
-      .mockResolvedValueOnce(undefined);
+    mockGetProviderApiKey.mockResolvedValueOnce('primary-key').mockResolvedValueOnce(undefined);
 
     const result = await mod.getOrCreateChatAgent('openai', 'gpt-4o', {
       provider: 'anthropic',
@@ -2152,7 +2172,11 @@ describe('extended branch coverage', () => {
     // Make standardToolDefs non-empty
     const agentTools = await import('./agent-tools.js');
     vi.mocked(agentTools.getToolDefinitions).mockReturnValueOnce([
-      { name: 'calculate', description: 'Math', parameters: { type: 'object' as const, properties: {} } },
+      {
+        name: 'calculate',
+        description: 'Math',
+        parameters: { type: 'object' as const, properties: {} },
+      },
     ]);
     // Make hasAgentConfig = true so the if-branch filter callback (line 196) runs
     mockResolveRecordTools.mockReturnValueOnce({ tools: ['calculate'], configuredToolGroups: [] });

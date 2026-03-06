@@ -176,15 +176,27 @@ export function ConversationSidebar({ activeId, onNew, onSelect }: Props) {
   const dialog = useDialog();
   const { subscribe } = useGateway();
 
-  const buildQueryParams = useCallback(
-    (q: string, filter: SourceFilter) => {
-      if (filter === 'web') return { limit: 50, offset: 0, search: q || undefined, source: 'web' as const };
-      if (filter === 'whatsapp') return { limit: 50, offset: 0, search: q || undefined, source: 'channel' as const, channelPlatform: 'whatsapp' };
-      if (filter === 'telegram') return { limit: 50, offset: 0, search: q || undefined, source: 'channel' as const, channelPlatform: 'telegram' };
-      return { limit: 50, offset: 0, search: q || undefined };
-    },
-    []
-  );
+  const buildQueryParams = useCallback((q: string, filter: SourceFilter) => {
+    if (filter === 'web')
+      return { limit: 50, offset: 0, search: q || undefined, source: 'web' as const };
+    if (filter === 'whatsapp')
+      return {
+        limit: 50,
+        offset: 0,
+        search: q || undefined,
+        source: 'channel' as const,
+        channelPlatform: 'whatsapp',
+      };
+    if (filter === 'telegram')
+      return {
+        limit: 50,
+        offset: 0,
+        search: q || undefined,
+        source: 'channel' as const,
+        channelPlatform: 'telegram',
+      };
+    return { limit: 50, offset: 0, search: q || undefined };
+  }, []);
 
   const load = useCallback(
     async (q = '', filter: SourceFilter = 'all') => {
@@ -301,9 +313,7 @@ export function ConversationSidebar({ activeId, onNew, onSelect }: Props) {
     if (!trimmed) return;
     try {
       await chatApi.renameConversation(id, trimmed);
-      setConversations((prev) =>
-        prev.map((c) => (c.id === id ? { ...c, title: trimmed } : c))
-      );
+      setConversations((prev) => prev.map((c) => (c.id === id ? { ...c, title: trimmed } : c)));
     } catch {
       toast.error('Failed to rename conversation');
     }
@@ -368,9 +378,16 @@ export function ConversationSidebar({ activeId, onNew, onSelect }: Props) {
       </div>
 
       {/* Source filter tabs */}
-      {(availablePlatforms.size > 0) && (
+      {availablePlatforms.size > 0 && (
         <div className="flex items-center gap-0.5 px-2 py-1 border-b border-border dark:border-dark-border overflow-x-auto">
-          {(['all', 'web', ...(availablePlatforms.has('whatsapp') ? ['whatsapp'] : []), ...(availablePlatforms.has('telegram') ? ['telegram'] : [])] as SourceFilter[]).map((tab) => (
+          {(
+            [
+              'all',
+              'web',
+              ...(availablePlatforms.has('whatsapp') ? ['whatsapp'] : []),
+              ...(availablePlatforms.has('telegram') ? ['telegram'] : []),
+            ] as SourceFilter[]
+          ).map((tab) => (
             <button
               key={tab}
               onClick={() => handleFilterChange(tab)}
@@ -382,13 +399,22 @@ export function ConversationSidebar({ activeId, onNew, onSelect }: Props) {
             >
               {tab === 'all' && 'All'}
               {tab === 'web' && (
-                <><Globe className="w-2.5 h-2.5" />Web</>
+                <>
+                  <Globe className="w-2.5 h-2.5" />
+                  Web
+                </>
               )}
               {tab === 'whatsapp' && (
-                <><WhatsApp className="w-2.5 h-2.5" />WA</>
+                <>
+                  <WhatsApp className="w-2.5 h-2.5" />
+                  WA
+                </>
               )}
               {tab === 'telegram' && (
-                <><Telegram className="w-2.5 h-2.5" />TG</>
+                <>
+                  <Telegram className="w-2.5 h-2.5" />
+                  TG
+                </>
               )}
             </button>
           ))}

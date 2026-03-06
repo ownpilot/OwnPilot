@@ -169,13 +169,12 @@ describe('isToolCallAllowed', () => {
   describe('fixed tools accessible via callTool', () => {
     const noPerms: never[] = [];
 
-    it.each([
-      'create_artifact',
-      'update_artifact',
-      'list_artifacts',
-    ])('artifact tool %s is callable without special permissions', (name) => {
-      expect(isToolCallAllowed(name, noPerms).allowed).toBe(true);
-    });
+    it.each(['create_artifact', 'update_artifact', 'list_artifacts'])(
+      'artifact tool %s is callable without special permissions',
+      (name) => {
+        expect(isToolCallAllowed(name, noPerms).allowed).toBe(true);
+      }
+    );
 
     it.each([
       'list_edge_devices',
@@ -187,15 +186,12 @@ describe('isToolCallAllowed', () => {
       expect(isToolCallAllowed(name, noPerms).allowed).toBe(true);
     });
 
-    it.each([
-      'create_plan',
-      'add_plan_step',
-      'list_plans',
-      'get_plan_details',
-      'execute_plan',
-    ])('plan tool %s is callable without special permissions', (name) => {
-      expect(isToolCallAllowed(name, noPerms).allowed).toBe(true);
-    });
+    it.each(['create_plan', 'add_plan_step', 'list_plans', 'get_plan_details', 'execute_plan'])(
+      'plan tool %s is callable without special permissions',
+      (name) => {
+        expect(isToolCallAllowed(name, noPerms).allowed).toBe(true);
+      }
+    );
 
     it('fetch_web_page requires network permission', () => {
       expect(isToolCallAllowed('fetch_web_page', noPerms).allowed).toBe(false);

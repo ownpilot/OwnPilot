@@ -92,7 +92,12 @@ describe('executeCliToolTool', () => {
         durationMs: 500,
         truncated: false,
       });
-      expect(mockService.executeTool).toHaveBeenCalledWith('eslint', ['src/'], '/project', 'user-1');
+      expect(mockService.executeTool).toHaveBeenCalledWith(
+        'eslint',
+        ['src/'],
+        '/project',
+        'user-1'
+      );
     });
 
     it('returns error when name is missing', async () => {
@@ -111,7 +116,13 @@ describe('executeCliToolTool', () => {
 
     it('uses empty args array when args not provided', async () => {
       mockService.executeTool.mockResolvedValueOnce({
-        success: true, toolName: 'git', exitCode: 0, stdout: '', stderr: '', durationMs: 10, truncated: false,
+        success: true,
+        toolName: 'git',
+        exitCode: 0,
+        stdout: '',
+        stderr: '',
+        durationMs: 10,
+        truncated: false,
       });
 
       await executeCliToolTool('run_cli_tool', { name: 'git', cwd: '/project' });
@@ -121,11 +132,20 @@ describe('executeCliToolTool', () => {
     it('truncates stdout and stderr when over limits', async () => {
       const longOutput = 'x'.repeat(10000);
       mockService.executeTool.mockResolvedValueOnce({
-        success: true, toolName: 'eslint', exitCode: 0,
-        stdout: longOutput, stderr: longOutput, durationMs: 100, truncated: true,
+        success: true,
+        toolName: 'eslint',
+        exitCode: 0,
+        stdout: longOutput,
+        stderr: longOutput,
+        durationMs: 100,
+        truncated: true,
       });
 
-      const result = await executeCliToolTool('run_cli_tool', { name: 'eslint', args: [], cwd: '/project' });
+      const result = await executeCliToolTool('run_cli_tool', {
+        name: 'eslint',
+        args: [],
+        cwd: '/project',
+      });
       const r = result.result as Record<string, string>;
       expect(r.stdout.length).toBeLessThan(longOutput.length);
       expect(r.stderr.length).toBeLessThan(longOutput.length);
@@ -134,19 +154,32 @@ describe('executeCliToolTool', () => {
 
     it('returns error when service throws', async () => {
       mockService.executeTool.mockRejectedValueOnce(new Error('ENOENT: binary not found'));
-      const result = await executeCliToolTool('run_cli_tool', { name: 'eslint', args: [], cwd: '/project' });
+      const result = await executeCliToolTool('run_cli_tool', {
+        name: 'eslint',
+        args: [],
+        cwd: '/project',
+      });
       expect(result.success).toBe(false);
       expect(result.error).toContain('ENOENT');
     });
 
     it('passes failure result from service', async () => {
       mockService.executeTool.mockResolvedValueOnce({
-        success: false, toolName: 'eslint', exitCode: 1,
-        stdout: '', stderr: 'Parse error', durationMs: 50, truncated: false,
+        success: false,
+        toolName: 'eslint',
+        exitCode: 1,
+        stdout: '',
+        stderr: 'Parse error',
+        durationMs: 50,
+        truncated: false,
         error: 'Parse error',
       });
 
-      const result = await executeCliToolTool('run_cli_tool', { name: 'eslint', args: [], cwd: '/project' });
+      const result = await executeCliToolTool('run_cli_tool', {
+        name: 'eslint',
+        args: [],
+        cwd: '/project',
+      });
       expect(result.success).toBe(false);
       expect(result.error).toBe('Parse error');
     });
@@ -156,7 +189,10 @@ describe('executeCliToolTool', () => {
 
   describe('list_cli_tools', () => {
     it('returns list of tools', async () => {
-      const tools = [{ name: 'eslint', installed: true }, { name: 'prettier', installed: false }];
+      const tools = [
+        { name: 'eslint', installed: true },
+        { name: 'prettier', installed: false },
+      ];
       mockService.listTools.mockResolvedValueOnce(tools);
 
       const result = await executeCliToolTool('list_cli_tools', {}, 'user-1');
@@ -184,8 +220,13 @@ describe('executeCliToolTool', () => {
   describe('install_cli_tool', () => {
     it('installs tool and returns result', async () => {
       mockService.installTool.mockResolvedValueOnce({
-        success: true, toolName: 'prettier', exitCode: 0,
-        stdout: 'installed', stderr: '', durationMs: 2000, truncated: false,
+        success: true,
+        toolName: 'prettier',
+        exitCode: 0,
+        stdout: 'installed',
+        stderr: '',
+        durationMs: 2000,
+        truncated: false,
       });
 
       const result = await executeCliToolTool(
@@ -214,7 +255,10 @@ describe('executeCliToolTool', () => {
 
     it('returns error when service throws', async () => {
       mockService.installTool.mockRejectedValueOnce(new Error('npm not found'));
-      const result = await executeCliToolTool('install_cli_tool', { name: 'prettier', method: 'npm-global' });
+      const result = await executeCliToolTool('install_cli_tool', {
+        name: 'prettier',
+        method: 'npm-global',
+      });
       expect(result.success).toBe(false);
       expect(result.error).toContain('npm not found');
     });
@@ -235,11 +279,20 @@ describe('truncateOutput (via run_cli_tool)', () => {
   it('does not truncate output within limit', async () => {
     const output = 'hello world'; // within 8000 chars
     mockService.executeTool.mockResolvedValueOnce({
-      success: true, toolName: 'git', exitCode: 0,
-      stdout: output, stderr: '', durationMs: 10, truncated: false,
+      success: true,
+      toolName: 'git',
+      exitCode: 0,
+      stdout: output,
+      stderr: '',
+      durationMs: 10,
+      truncated: false,
     });
 
-    const result = await executeCliToolTool('run_cli_tool', { name: 'git', args: [], cwd: '/project' });
+    const result = await executeCliToolTool('run_cli_tool', {
+      name: 'git',
+      args: [],
+      cwd: '/project',
+    });
     expect((result.result as Record<string, string>).stdout).toBe('hello world');
   });
 });

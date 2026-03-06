@@ -155,7 +155,14 @@ function makeSoul(agentId = 'agent-1', overrides: Record<string, unknown> = {}) 
   return {
     id: `soul-${agentId}`,
     agentId,
-    identity: { name: 'Test Soul', emoji: '🤖', role: 'Worker', personality: 'helpful', voice: { tone: 'neutral', language: 'en' }, boundaries: [] },
+    identity: {
+      name: 'Test Soul',
+      emoji: '🤖',
+      role: 'Worker',
+      personality: 'helpful',
+      voice: { tone: 'neutral', language: 'en' },
+      boundaries: [],
+    },
     purpose: { mission: 'Be helpful', goals: ['help users'], expertise: [], toolPreferences: [] },
     autonomy: {
       level: 3,
@@ -169,9 +176,22 @@ function makeSoul(agentId = 'agent-1', overrides: Record<string, unknown> = {}) 
       pauseOnBudgetExceeded: true,
       notifyUserOnPause: true,
     },
-    heartbeat: { enabled: true, interval: '0 */6 * * *', checklist: [], selfHealingEnabled: false, maxDurationMs: 120000 },
+    heartbeat: {
+      enabled: true,
+      interval: '0 */6 * * *',
+      checklist: [],
+      selfHealingEnabled: false,
+      maxDurationMs: 120000,
+    },
     relationships: { peers: [], delegates: [], channels: [], crewId: undefined },
-    evolution: { version: 1, evolutionMode: 'manual', coreTraits: [], mutableTraits: [], learnings: [], feedbackLog: [] },
+    evolution: {
+      version: 1,
+      evolutionMode: 'manual',
+      coreTraits: [],
+      mutableTraits: [],
+      learnings: [],
+      feedbackLog: [],
+    },
     bootSequence: { onStart: [], onHeartbeat: [], onMessage: [] },
     createdAt: new Date('2024-01-01'),
     updatedAt: new Date('2024-01-02'),
@@ -251,7 +271,12 @@ describe('Agent Command Center Routes', () => {
     mockCrewsRepo.getMembers.mockResolvedValue([]);
     mockHbLogRepo.getLatest.mockResolvedValue(null);
     mockHbLogRepo.getRecent.mockResolvedValue([]);
-    mockHbLogRepo.getStats.mockResolvedValue({ totalCycles: 0, totalCost: 0, avgDurationMs: 0, failureRate: 0 });
+    mockHbLogRepo.getStats.mockResolvedValue({
+      totalCycles: 0,
+      totalCost: 0,
+      avgDurationMs: 0,
+      failureRate: 0,
+    });
     mockBgService.listAgents.mockResolvedValue([]);
     mockBgService.listSessions.mockReturnValue([]);
     mockAgentMsgsRepo.listByAgent.mockResolvedValue([]);
@@ -649,10 +674,15 @@ describe('Agent Command Center Routes', () => {
     it('deploys a fleet with 201 status', async () => {
       const crew = makeCrew('crew-fleet-1', { name: 'Alpha Fleet' });
       mockCrewsRepo.create.mockResolvedValue(crew);
-      mockAgentsRepo.create.mockResolvedValue({ id: 'new-agent', name: 'Alpha Fleet Coordinator 1' });
+      mockAgentsRepo.create.mockResolvedValue({
+        id: 'new-agent',
+        name: 'Alpha Fleet Coordinator 1',
+      });
       mockSoulsRepo.create.mockResolvedValue(makeSoul('new-agent'));
       mockCrewsRepo.addMember.mockResolvedValue(undefined);
-      mockSoulsRepo.getByAgentId.mockResolvedValue(makeSoul('new-agent', { relationships: { peers: [], delegates: [], channels: [] } }));
+      mockSoulsRepo.getByAgentId.mockResolvedValue(
+        makeSoul('new-agent', { relationships: { peers: [], delegates: [], channels: [] } })
+      );
       mockSoulsRepo.update.mockResolvedValue(undefined);
 
       const res = await app.request('/acc/deploy-fleet', {
@@ -809,7 +839,15 @@ describe('Agent Command Center Routes', () => {
     });
 
     it('shows paused status for soul with disabled heartbeat', async () => {
-      const soul = makeSoul('agent-1', { heartbeat: { enabled: false, interval: '0 */6 * * *', checklist: [], selfHealingEnabled: false, maxDurationMs: 120000 } });
+      const soul = makeSoul('agent-1', {
+        heartbeat: {
+          enabled: false,
+          interval: '0 */6 * * *',
+          checklist: [],
+          selfHealingEnabled: false,
+          maxDurationMs: 120000,
+        },
+      });
       mockSoulsRepo.list.mockResolvedValue([soul]);
       mockHbLogRepo.getLatest.mockResolvedValue(null);
       mockBgService.listAgents.mockResolvedValue([]);
@@ -1288,12 +1326,33 @@ describe('Agent Command Center Routes', () => {
     });
 
     it('aggregates stats across all souls', async () => {
-      const souls = [makeSoul('agent-1'), makeSoul('agent-2', { heartbeat: { enabled: false, interval: '0 */6 * * *', checklist: [], selfHealingEnabled: false, maxDurationMs: 120000 } })];
+      const souls = [
+        makeSoul('agent-1'),
+        makeSoul('agent-2', {
+          heartbeat: {
+            enabled: false,
+            interval: '0 */6 * * *',
+            checklist: [],
+            selfHealingEnabled: false,
+            maxDurationMs: 120000,
+          },
+        }),
+      ];
       mockSoulsRepo.list.mockResolvedValue(souls);
       mockCrewsRepo.list.mockResolvedValue([]);
       mockHbLogRepo.getStats
-        .mockResolvedValueOnce({ totalCycles: 10, totalCost: 0.5, avgDurationMs: 300, failureRate: 0.1 })
-        .mockResolvedValueOnce({ totalCycles: 5, totalCost: 0.25, avgDurationMs: 200, failureRate: 0.0 });
+        .mockResolvedValueOnce({
+          totalCycles: 10,
+          totalCost: 0.5,
+          avgDurationMs: 300,
+          failureRate: 0.1,
+        })
+        .mockResolvedValueOnce({
+          totalCycles: 5,
+          totalCost: 0.25,
+          avgDurationMs: 200,
+          failureRate: 0.0,
+        });
 
       const res = await app.request('/acc/analytics');
 
@@ -1310,8 +1369,18 @@ describe('Agent Command Center Routes', () => {
       mockSoulsRepo.list.mockResolvedValue(souls);
       mockCrewsRepo.list.mockResolvedValue([]);
       mockHbLogRepo.getStats
-        .mockResolvedValueOnce({ totalCycles: 2, totalCost: 0.1, avgDurationMs: 100, failureRate: 0 })
-        .mockResolvedValueOnce({ totalCycles: 20, totalCost: 1.0, avgDurationMs: 200, failureRate: 0 });
+        .mockResolvedValueOnce({
+          totalCycles: 2,
+          totalCost: 0.1,
+          avgDurationMs: 100,
+          failureRate: 0,
+        })
+        .mockResolvedValueOnce({
+          totalCycles: 20,
+          totalCost: 1.0,
+          avgDurationMs: 200,
+          failureRate: 0,
+        });
 
       const res = await app.request('/acc/analytics');
 
@@ -1458,9 +1527,7 @@ describe('Agent Command Center Routes', () => {
 
     it('handles multiple agentIds with partial success', async () => {
       const soul1 = makeSoul('agent-1');
-      mockSoulsRepo.getByAgentId
-        .mockResolvedValueOnce(soul1)
-        .mockResolvedValueOnce(null);
+      mockSoulsRepo.getByAgentId.mockResolvedValueOnce(soul1).mockResolvedValueOnce(null);
       mockSoulsRepo.update.mockResolvedValue(undefined);
 
       const res = await app.request('/acc/tools/batch-update', {

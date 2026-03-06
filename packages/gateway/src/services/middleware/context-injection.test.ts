@@ -241,9 +241,7 @@ describe('createContextInjectionMiddleware', () => {
       await middleware(msg, ctx, next);
 
       // Debug summary log is always emitted; the memories/goals log should NOT appear
-      expect(mockLog.info).not.toHaveBeenCalledWith(
-        expect.stringContaining('memories')
-      );
+      expect(mockLog.info).not.toHaveBeenCalledWith(expect.stringContaining('memories'));
     });
 
     it('should call next after injection', async () => {
@@ -967,7 +965,8 @@ describe('createContextInjectionMiddleware', () => {
   describe('prompt assembly with ## Current Context split marker', () => {
     // A base prompt that contains the cache-split marker, as set by PromptComposer.
     const STATIC_PART = 'You are a helpful assistant.';
-    const TIME_BLOCK = '\n\n---\n\n## Current Context\n- Current time: Jan 01, 2025, 10:00\n- Day: Wednesday';
+    const TIME_BLOCK =
+      '\n\n---\n\n## Current Context\n- Current time: Jan 01, 2025, 10:00\n- Day: Wednesday';
     const PROMPT_WITH_TC = STATIC_PART + TIME_BLOCK;
     const ORCHESTRATOR = '\n---\n## User Context (from memory)\n- Memory X';
 

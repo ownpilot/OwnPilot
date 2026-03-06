@@ -251,8 +251,8 @@ const recordSkillUsageTool: ToolDefinition = {
   description:
     'Record that you have used or learned from a skill. ' +
     'Use this to track: (1) "learned" - you studied the skill and understood how it works, ' +
-    "(2) \"referenced\" - you used the skill's documentation or code as reference, " +
-    "(3) \"adapted\" - you modified the skill's techniques for your own use. " +
+    '(2) "referenced" - you used the skill\'s documentation or code as reference, ' +
+    '(3) "adapted" - you modified the skill\'s techniques for your own use. ' +
     'This builds your personal skill learning history.',
   parameters: {
     type: 'object',
@@ -466,7 +466,9 @@ export async function executeSkillTool(
                 toolCount: p.toolCount,
                 triggerCount: p.triggerCount,
                 installedAt: p.installedAt,
-                ...(instructions ? { instructionsPreview: instructions + (instructions.length >= 200 ? '…' : '') } : {}),
+                ...(instructions
+                  ? { instructionsPreview: instructions + (instructions.length >= 200 ? '…' : '') }
+                  : {}),
               };
             }),
           },
@@ -753,7 +755,7 @@ export async function executeSkillTool(
             scriptPath,
             content,
             contentLength: content.length,
-            note: "Study this code to understand how the skill implements its functionality",
+            note: 'Study this code to understand how the skill implements its functionality',
           },
         };
       } catch (error) {
@@ -808,7 +810,10 @@ export async function executeSkillTool(
 
         if (!skillId) return { success: false, error: 'skillId is required' };
         if (!['learned', 'referenced', 'adapted'].includes(usageType)) {
-          return { success: false, error: 'usageType must be one of: learned, referenced, adapted' };
+          return {
+            success: false,
+            error: 'usageType must be one of: learned, referenced, adapted',
+          };
         }
 
         const service = getExtensionService();
@@ -819,7 +824,14 @@ export async function executeSkillTool(
         await adapter.execute(
           `INSERT INTO skill_usage (agent_id, skill_id, skill_name, usage_type, content, metadata)
            VALUES ($1, $2, $3, $4, $5, $6)`,
-          [userId, pkg.id, pkg.name, usageType, notes || null, JSON.stringify({ timestamp: new Date().toISOString() })]
+          [
+            userId,
+            pkg.id,
+            pkg.name,
+            usageType,
+            notes || null,
+            JSON.stringify({ timestamp: new Date().toISOString() }),
+          ]
         );
 
         return {
@@ -889,9 +901,15 @@ export async function executeSkillTool(
           result: {
             summary: {
               totalUsage: typeCountsRows.reduce((sum, r) => sum + parseInt(r.count), 0),
-              learned: parseInt(typeCountsRows.find((r) => r.usage_type === 'learned')?.count ?? '0'),
-              referenced: parseInt(typeCountsRows.find((r) => r.usage_type === 'referenced')?.count ?? '0'),
-              adapted: parseInt(typeCountsRows.find((r) => r.usage_type === 'adapted')?.count ?? '0'),
+              learned: parseInt(
+                typeCountsRows.find((r) => r.usage_type === 'learned')?.count ?? '0'
+              ),
+              referenced: parseInt(
+                typeCountsRows.find((r) => r.usage_type === 'referenced')?.count ?? '0'
+              ),
+              adapted: parseInt(
+                typeCountsRows.find((r) => r.usage_type === 'adapted')?.count ?? '0'
+              ),
             },
             topSkills: topSkillsRows.map((s) => ({
               skillId: s.skill_id,
@@ -1101,9 +1119,10 @@ export async function executeSkillTool(
  * 1. sourcePath from the extension record (works for both uploaded and npm skills)
  * 2. npm package location (for npm-installed skills without sourcePath)
  */
-async function resolveSkillDirectory(
-  pkg: { sourcePath?: string; settings: Record<string, unknown> }
-): Promise<string | null> {
+async function resolveSkillDirectory(pkg: {
+  sourcePath?: string;
+  settings: Record<string, unknown>;
+}): Promise<string | null> {
   // Strategy 1: sourcePath (covers uploaded SKILL.md and locally installed skills)
   if (pkg.sourcePath) {
     // sourcePath may point to SKILL.md directly or to the directory

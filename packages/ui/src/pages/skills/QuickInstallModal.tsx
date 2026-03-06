@@ -185,13 +185,14 @@ export function QuickInstallModal({ onClose, onInstalled }: QuickInstallModalPro
                   <p className="font-medium text-text-primary dark:text-dark-text-primary">
                     Installed successfully
                   </p>
-                  <p className="text-sm text-text-muted dark:text-dark-text-muted">
-                    {successName}
-                  </p>
+                  <p className="text-sm text-text-muted dark:text-dark-text-muted">{successName}</p>
                 </div>
               ) : (
                 <div
-                  onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    setIsDragging(true);
+                  }}
                   onDragLeave={() => setIsDragging(false)}
                   onDrop={handleDrop}
                   onClick={() => !isInstalling && fileInputRef.current?.click()}
@@ -212,7 +213,9 @@ export function QuickInstallModal({ onClose, onInstalled }: QuickInstallModalPro
                     </div>
                   ) : (
                     <>
-                      <Upload className={`w-10 h-10 mx-auto mb-3 transition-colors ${isDragging ? 'text-primary' : 'text-text-muted dark:text-dark-text-muted'}`} />
+                      <Upload
+                        className={`w-10 h-10 mx-auto mb-3 transition-colors ${isDragging ? 'text-primary' : 'text-text-muted dark:text-dark-text-muted'}`}
+                      />
                       <p className="font-medium text-text-primary dark:text-dark-text-primary mb-1">
                         {isDragging ? 'Drop to install' : 'Drop a file here or click to browse'}
                       </p>
@@ -246,7 +249,9 @@ export function QuickInstallModal({ onClose, onInstalled }: QuickInstallModalPro
               </div>
               <div className="p-3 bg-bg-secondary dark:bg-dark-bg-secondary rounded-lg">
                 <p className="text-xs text-text-muted dark:text-dark-text-muted">
-                  Enter the absolute path to a <span className="font-mono">SKILL.md</span> or <span className="font-mono">extension.json</span> file on the server. The file must be accessible by the OwnPilot gateway process.
+                  Enter the absolute path to a <span className="font-mono">SKILL.md</span> or{' '}
+                  <span className="font-mono">extension.json</span> file on the server. The file
+                  must be accessible by the OwnPilot gateway process.
                 </p>
               </div>
             </div>
@@ -260,11 +265,15 @@ export function QuickInstallModal({ onClose, onInstalled }: QuickInstallModalPro
               <textarea
                 value={jsonText}
                 onChange={(e) => setJsonText(e.target.value)}
-                placeholder={'{\n  "id": "my-extension",\n  "name": "My Extension",\n  "version": "1.0.0",\n  "description": "...",\n  "tools": []\n}'}
+                placeholder={
+                  '{\n  "id": "my-extension",\n  "name": "My Extension",\n  "version": "1.0.0",\n  "description": "...",\n  "tools": []\n}'
+                }
                 className="w-full h-56 px-3 py-2 text-sm font-mono bg-bg-tertiary dark:bg-dark-bg-tertiary border border-border dark:border-dark-border rounded-lg text-text-primary dark:text-dark-text-primary placeholder:text-text-muted/50 focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none"
               />
               <p className="text-xs text-text-muted dark:text-dark-text-muted mt-1.5">
-                Must be a valid OwnPilot extension manifest with <span className="font-mono">id</span>, <span className="font-mono">name</span>, and <span className="font-mono">version</span>.
+                Must be a valid OwnPilot extension manifest with{' '}
+                <span className="font-mono">id</span>, <span className="font-mono">name</span>, and{' '}
+                <span className="font-mono">version</span>.
               </p>
             </div>
           )}

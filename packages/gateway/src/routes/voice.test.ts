@@ -143,11 +143,9 @@ describe('POST /voice/transcribe', () => {
     const json = await res.json();
     expect(json.success).toBe(true);
     expect(json.data.text).toBe('Hello world');
-    expect(mockService.transcribe).toHaveBeenCalledWith(
-      expect.any(Buffer),
-      'recording.webm',
-      { language: undefined }
-    );
+    expect(mockService.transcribe).toHaveBeenCalledWith(expect.any(Buffer), 'recording.webm', {
+      language: undefined,
+    });
   });
 
   it('passes language parameter from form field', async () => {
@@ -160,11 +158,9 @@ describe('POST /voice/transcribe', () => {
     });
 
     expect(res.status).toBe(200);
-    expect(mockService.transcribe).toHaveBeenCalledWith(
-      expect.any(Buffer),
-      'audio.webm',
-      { language: 'fr' }
-    );
+    expect(mockService.transcribe).toHaveBeenCalledWith(expect.any(Buffer), 'audio.webm', {
+      language: 'fr',
+    });
   });
 
   it('returns 503 when voice service is not available', async () => {
@@ -293,7 +289,13 @@ describe('POST /voice/synthesize', () => {
     const res = await app.request('/voice/synthesize', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text: 'Test', voice: 'nova', model: 'tts-1-hd', speed: 1.5, format: 'wav' }),
+      body: JSON.stringify({
+        text: 'Test',
+        voice: 'nova',
+        model: 'tts-1-hd',
+        speed: 1.5,
+        format: 'wav',
+      }),
     });
 
     expect(res.status).toBe(200);

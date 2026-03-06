@@ -439,9 +439,7 @@ describe('ChatRepository', () => {
 
     it('should update agentId and agentName (lines 280-281, 284-285)', async () => {
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
-      mockAdapter.queryOne.mockResolvedValueOnce(
-        makeConversationRow({ title: 'X' })
-      );
+      mockAdapter.queryOne.mockResolvedValueOnce(makeConversationRow({ title: 'X' }));
 
       await repo.updateConversation('conv-1', {
         agentId: 'agent-99',
