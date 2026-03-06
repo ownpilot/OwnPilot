@@ -984,6 +984,151 @@ CREATE TABLE IF NOT EXISTS system_settings (
   value      TEXT,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+-- ORCHESTRA_EXECUTIONS: Multi-agent plan execution audit
+CREATE TABLE IF NOT EXISTS orchestra_executions (
+  id TEXT PRIMARY KEY,
+  parent_id TEXT NOT NULL,
+  user_id TEXT NOT NULL,
+  description TEXT NOT NULL,
+  strategy TEXT NOT NULL,
+  state TEXT NOT NULL,
+  plan JSONB NOT NULL,
+  task_results JSONB NOT NULL DEFAULT '[]',
+  total_duration_ms INTEGER,
+  error TEXT,
+  started_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  completed_at TIMESTAMPTZ
+);
+
+-- ARTIFACTS: AI-generated interactive content with data bindings
+CREATE TABLE IF NOT EXISTS artifacts (
+  id TEXT PRIMARY KEY,
+  conversation_id TEXT,
+  user_id TEXT NOT NULL DEFAULT 'default',
+  type VARCHAR(20) NOT NULL CHECK (type IN ('html', 'svg', 'markdown', 'form', 'chart', 'react')),
+  title VARCHAR(200) NOT NULL,
+  content TEXT NOT NULL,
+  data_bindings JSONB NOT NULL DEFAULT '[]',
+  pinned BOOLEAN NOT NULL DEFAULT false,
+  dashboard_position INTEGER,
+  dashboard_size VARCHAR(10) NOT NULL DEFAULT 'medium' CHECK (dashboard_size IN ('small', 'medium', 'large', 'full')),
+  version INTEGER NOT NULL DEFAULT 1,
+  tags TEXT[] NOT NULL DEFAULT '{}',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- ARTIFACT_VERSIONS: Version history for artifact content
+CREATE TABLE IF NOT EXISTS artifact_versions (
+  id TEXT PRIMARY KEY,
+  artifact_id TEXT NOT NULL REFERENCES artifacts(id) ON DELETE CASCADE,
+  version INTEGER NOT NULL,
+  content TEXT NOT NULL,
+  data_bindings JSONB,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- =====================================================
+-- AGENT SOULS & AUTONOMOUS CREWS
+-- =====================================================
+
+-- Agent Souls — persistent identity injected into prompts
+CREATE TABLE IF NOT EXISTS agent_souls (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  agent_id TEXT NOT NULL,
+  identity JSONB NOT NULL,
+  purpose JSONB NOT NULL,
+  autonomy JSONB NOT NULL,
+  heartbeat JSONB NOT NULL,
+  relationships JSONB DEFAULT '{}',
+  evolution JSONB NOT NULL,
+  boot_sequence JSONB DEFAULT '{}',
+  provider JSONB DEFAULT NULL,
+  skill_access JSONB DEFAULT NULL,
+  workspace_id TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(agent_id)
+);
+
+-- Soul Version History — snapshots for rollback
+CREATE TABLE IF NOT EXISTS agent_soul_versions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  soul_id UUID NOT NULL REFERENCES agent_souls(id) ON DELETE CASCADE,
+  version INTEGER NOT NULL,
+  snapshot JSONB NOT NULL,
+  change_reason TEXT,
+  changed_by VARCHAR(50),
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Skill Usage — track when agents use/learn from skills
+CREATE TABLE IF NOT EXISTS skill_usage (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  agent_id TEXT NOT NULL,
+  skill_id TEXT NOT NULL,
+  skill_name TEXT NOT NULL,
+  usage_type VARCHAR(20) NOT NULL CHECK(usage_type IN ('learned', 'referenced', 'executed', 'adapted')),
+  content TEXT,
+  metadata JSONB DEFAULT '{}',
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Agent Messages — inter-agent communication
+CREATE TABLE IF NOT EXISTS agent_messages (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  from_agent_id TEXT,
+  to_agent_id TEXT,
+  type VARCHAR(30) NOT NULL,
+  subject VARCHAR(200),
+  content TEXT NOT NULL,
+  attachments JSONB DEFAULT '[]',
+  priority VARCHAR(10) DEFAULT 'normal',
+  thread_id UUID,
+  requires_response BOOLEAN DEFAULT false,
+  deadline TIMESTAMPTZ,
+  status VARCHAR(20) DEFAULT 'sent',
+  crew_id TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  read_at TIMESTAMPTZ
+);
+
+-- Crews — groups of collaborating agents
+CREATE TABLE IF NOT EXISTS agent_crews (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name VARCHAR(100) NOT NULL,
+  description TEXT,
+  template_id VARCHAR(50),
+  coordination_pattern VARCHAR(20),
+  status VARCHAR(20) DEFAULT 'active',
+  workspace_id TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Crew Membership — which agents belong to which crew
+CREATE TABLE IF NOT EXISTS agent_crew_members (
+  crew_id UUID NOT NULL REFERENCES agent_crews(id) ON DELETE CASCADE,
+  agent_id TEXT NOT NULL,
+  role VARCHAR(50) DEFAULT 'member',
+  joined_at TIMESTAMPTZ DEFAULT NOW(),
+  PRIMARY KEY (crew_id, agent_id)
+);
+
+-- Heartbeat Log — audit trail for every heartbeat cycle
+CREATE TABLE IF NOT EXISTS heartbeat_log (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  agent_id TEXT NOT NULL,
+  soul_version INTEGER,
+  tasks_run JSONB DEFAULT '[]',
+  tasks_skipped JSONB DEFAULT '[]',
+  tasks_failed JSONB DEFAULT '[]',
+  duration_ms INTEGER,
+  token_usage JSONB DEFAULT '{"input":0,"output":0}',
+  cost DECIMAL(10, 6) DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
 `;
 
 /**
@@ -1917,174 +2062,33 @@ CREATE INDEX IF NOT EXISTS idx_bg_agent_history_agent ON background_agent_histor
 CREATE INDEX IF NOT EXISTS idx_subagent_history_parent ON subagent_history(parent_id, spawned_at DESC);
 CREATE INDEX IF NOT EXISTS idx_subagent_history_user ON subagent_history(user_id, spawned_at DESC);
 
--- ORCHESTRA_EXECUTIONS: Multi-agent plan execution audit
-CREATE TABLE IF NOT EXISTS orchestra_executions (
-  id TEXT PRIMARY KEY,
-  parent_id TEXT NOT NULL,
-  user_id TEXT NOT NULL,
-  description TEXT NOT NULL,
-  strategy TEXT NOT NULL,
-  state TEXT NOT NULL,
-  plan JSONB NOT NULL,
-  task_results JSONB NOT NULL DEFAULT '[]',
-  total_duration_ms INTEGER,
-  error TEXT,
-  started_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  completed_at TIMESTAMPTZ
-);
-
+-- Orchestra indexes
 CREATE INDEX IF NOT EXISTS idx_orchestra_executions_parent ON orchestra_executions(parent_id, started_at DESC);
 CREATE INDEX IF NOT EXISTS idx_orchestra_executions_user ON orchestra_executions(user_id, started_at DESC);
 
--- ARTIFACTS: AI-generated interactive content with data bindings
-CREATE TABLE IF NOT EXISTS artifacts (
-  id TEXT PRIMARY KEY,
-  conversation_id TEXT,
-  user_id TEXT NOT NULL DEFAULT 'default',
-  type VARCHAR(20) NOT NULL CHECK (type IN ('html', 'svg', 'markdown', 'form', 'chart', 'react')),
-  title VARCHAR(200) NOT NULL,
-  content TEXT NOT NULL,
-  data_bindings JSONB NOT NULL DEFAULT '[]',
-  pinned BOOLEAN NOT NULL DEFAULT false,
-  dashboard_position INTEGER,
-  dashboard_size VARCHAR(10) NOT NULL DEFAULT 'medium' CHECK (dashboard_size IN ('small', 'medium', 'large', 'full')),
-  version INTEGER NOT NULL DEFAULT 1,
-  tags TEXT[] NOT NULL DEFAULT '{}',
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
+-- Artifact indexes
 CREATE INDEX IF NOT EXISTS idx_artifacts_user ON artifacts(user_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_artifacts_conversation ON artifacts(conversation_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_artifacts_pinned ON artifacts(user_id, pinned) WHERE pinned = true;
-
--- ARTIFACT_VERSIONS: Version history for artifact content
-CREATE TABLE IF NOT EXISTS artifact_versions (
-  id TEXT PRIMARY KEY,
-  artifact_id TEXT NOT NULL REFERENCES artifacts(id) ON DELETE CASCADE,
-  version INTEGER NOT NULL,
-  content TEXT NOT NULL,
-  data_bindings JSONB,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
 CREATE INDEX IF NOT EXISTS idx_artifact_versions_artifact ON artifact_versions(artifact_id, version DESC);
 
--- =====================================================
--- AGENT SOULS & AUTONOMOUS CREWS
--- =====================================================
-
--- Agent Souls — persistent identity injected into prompts
-CREATE TABLE IF NOT EXISTS agent_souls (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  agent_id TEXT NOT NULL,
-  identity JSONB NOT NULL,
-  purpose JSONB NOT NULL,
-  autonomy JSONB NOT NULL,
-  heartbeat JSONB NOT NULL,
-  relationships JSONB DEFAULT '{}',
-  evolution JSONB NOT NULL,
-  boot_sequence JSONB DEFAULT '{}',
-  provider JSONB DEFAULT NULL,
-  skill_access JSONB DEFAULT NULL,
-  workspace_id TEXT,
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW(),
-  UNIQUE(agent_id)
-);
-
+-- Agent soul indexes
 CREATE INDEX IF NOT EXISTS idx_agent_souls_agent ON agent_souls(agent_id);
-
--- Soul Version History — snapshots for rollback
-CREATE TABLE IF NOT EXISTS agent_soul_versions (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  soul_id UUID NOT NULL REFERENCES agent_souls(id) ON DELETE CASCADE,
-  version INTEGER NOT NULL,
-  snapshot JSONB NOT NULL,
-  change_reason TEXT,
-  changed_by VARCHAR(50),
-  created_at TIMESTAMPTZ DEFAULT NOW()
-);
-
 CREATE INDEX IF NOT EXISTS idx_soul_versions_soul ON agent_soul_versions(soul_id, version DESC);
 
--- Skill Usage — track when agents use/learn from skills
-CREATE TABLE IF NOT EXISTS skill_usage (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  agent_id TEXT NOT NULL,
-  skill_id TEXT NOT NULL,
-  skill_name TEXT NOT NULL,
-  usage_type VARCHAR(20) NOT NULL CHECK(usage_type IN ('learned', 'referenced', 'executed', 'adapted')),
-  content TEXT,
-  metadata JSONB DEFAULT '{}',
-  created_at TIMESTAMPTZ DEFAULT NOW()
-);
-
+-- Skill usage indexes
 CREATE INDEX IF NOT EXISTS idx_skill_usage_agent ON skill_usage(agent_id);
 CREATE INDEX IF NOT EXISTS idx_skill_usage_skill ON skill_usage(skill_id);
 CREATE INDEX IF NOT EXISTS idx_skill_usage_type ON skill_usage(usage_type);
 CREATE INDEX IF NOT EXISTS idx_skill_usage_created ON skill_usage(created_at);
 
--- Agent Messages — inter-agent communication
-CREATE TABLE IF NOT EXISTS agent_messages (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  from_agent_id TEXT,
-  to_agent_id TEXT,
-  type VARCHAR(30) NOT NULL,
-  subject VARCHAR(200),
-  content TEXT NOT NULL,
-  attachments JSONB DEFAULT '[]',
-  priority VARCHAR(10) DEFAULT 'normal',
-  thread_id UUID,
-  requires_response BOOLEAN DEFAULT false,
-  deadline TIMESTAMPTZ,
-  status VARCHAR(20) DEFAULT 'sent',
-  crew_id TEXT,
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  read_at TIMESTAMPTZ
-);
-
+-- Agent message indexes
 CREATE INDEX IF NOT EXISTS idx_agent_messages_to ON agent_messages(to_agent_id, status);
 CREATE INDEX IF NOT EXISTS idx_agent_messages_thread ON agent_messages(thread_id);
 CREATE INDEX IF NOT EXISTS idx_agent_messages_crew ON agent_messages(crew_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_agent_messages_from ON agent_messages(from_agent_id, created_at DESC);
 
--- Crews — groups of collaborating agents
-CREATE TABLE IF NOT EXISTS agent_crews (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  name VARCHAR(100) NOT NULL,
-  description TEXT,
-  template_id VARCHAR(50),
-  coordination_pattern VARCHAR(20),
-  status VARCHAR(20) DEFAULT 'active',
-  workspace_id TEXT,
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
-);
-
--- Crew Membership — which agents belong to which crew
-CREATE TABLE IF NOT EXISTS agent_crew_members (
-  crew_id UUID NOT NULL REFERENCES agent_crews(id) ON DELETE CASCADE,
-  agent_id TEXT NOT NULL,
-  role VARCHAR(50) DEFAULT 'member',
-  joined_at TIMESTAMPTZ DEFAULT NOW(),
-  PRIMARY KEY (crew_id, agent_id)
-);
-
--- Heartbeat Log — audit trail for every heartbeat cycle
-CREATE TABLE IF NOT EXISTS heartbeat_log (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  agent_id TEXT NOT NULL,
-  soul_version INTEGER,
-  tasks_run JSONB DEFAULT '[]',
-  tasks_skipped JSONB DEFAULT '[]',
-  tasks_failed JSONB DEFAULT '[]',
-  duration_ms INTEGER,
-  token_usage JSONB DEFAULT '{"input":0,"output":0}',
-  cost DECIMAL(10, 6) DEFAULT 0,
-  created_at TIMESTAMPTZ DEFAULT NOW()
-);
-
+-- Heartbeat log indexes
 CREATE INDEX IF NOT EXISTS idx_heartbeat_log_agent ON heartbeat_log(agent_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_heartbeat_log_cost ON heartbeat_log(agent_id, created_at) WHERE cost > 0;
 `;
