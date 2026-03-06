@@ -44,7 +44,7 @@ vi.mock('@ownpilot/core', async (importOriginal) => {
   };
 });
 
-import { TriggersRepository } from './triggers.js';
+import { TriggersRepository, createTriggersRepository } from './triggers.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -201,6 +201,39 @@ describe('TriggersRepository', () => {
         })
       ).rejects.toThrow('Failed to create trigger');
     });
+
+    it('throws when cron is empty string (calculateNextFire returns null immediately)', async () => {
+      // calculateNextFire returns null without calling getNextRunTime for empty cron
+      await expect(
+        repo.create({
+          name: 'Empty Cron',
+          type: 'schedule',
+          config: { cron: '' },
+          action: { type: 'goal_check', payload: {} },
+        })
+      ).rejects.toThrow('Cannot create schedule trigger');
+      expect(mockGetNextRunTime).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('getByIdGlobal', () => {
+    it('returns trigger by id without user scope', async () => {
+      mockAdapter.queryOne.mockResolvedValue(triggerRow());
+
+      const trigger = await repo.getByIdGlobal('trigger_1');
+
+      expect(trigger).not.toBeNull();
+      expect(trigger!.id).toBe('trigger_1');
+      const sql = mockAdapter.queryOne.mock.calls[0]![0] as string;
+      expect(sql).not.toContain('user_id');
+    });
+
+    it('returns null when not found', async () => {
+      mockAdapter.queryOne.mockResolvedValue(null);
+
+      const trigger = await repo.getByIdGlobal('nonexistent');
+      expect(trigger).toBeNull();
+    });
   });
 
   describe('get', () => {
@@ -306,6 +339,37 @@ describe('TriggersRepository', () => {
 
       const result = await repo.delete('nonexistent');
       expect(result).toBe(false);
+    });
+
+    it('detaches history rows before deleting when trigger exists', async () => {
+      mockAdapter.queryOne.mockResolvedValueOnce(triggerRow()); // get() finds trigger
+      mockAdapter.execute.mockResolvedValue({ changes: 1 });
+
+      await repo.delete('trigger_1');
+
+      // First execute: UPDATE trigger_history ... (detach)
+      const detachSql = mockAdapter.execute.mock.calls[0]![0] as string;
+      expect(detachSql).toContain('UPDATE trigger_history');
+      expect(detachSql).toContain('trigger_id = NULL');
+      // Second execute: DELETE FROM triggers
+      const deleteSql = mockAdapter.execute.mock.calls[1]![0] as string;
+      expect(deleteSql).toContain('DELETE FROM triggers');
+    });
+  });
+
+  describe('deleteHeartbeatTriggersForAgent', () => {
+    it('detaches history and deletes heartbeat triggers for agent', async () => {
+      mockAdapter.execute
+        .mockResolvedValueOnce({ changes: 0 }) // detach history
+        .mockResolvedValueOnce({ changes: 2 }); // delete triggers
+
+      const count = await repo.deleteHeartbeatTriggersForAgent('agent-123');
+
+      expect(count).toBe(2);
+      const detachSql = mockAdapter.execute.mock.calls[0]![0] as string;
+      expect(detachSql).toContain('trigger_history');
+      const deleteSql = mockAdapter.execute.mock.calls[1]![0] as string;
+      expect(deleteSql).toContain("type' = 'run_heartbeat'");
     });
   });
 
@@ -534,6 +598,22 @@ describe('TriggersRepository', () => {
       const params = mockAdapter.query.mock.calls[0]![1] as unknown[];
       expect(params).toContain(5);
     });
+
+    it('applies status, from, and to filters', async () => {
+      mockAdapter.queryOne.mockResolvedValueOnce({ count: '1' });
+      mockAdapter.query.mockResolvedValueOnce([historyRow()]);
+
+      await repo.getHistoryForTrigger('trigger_1', {
+        status: 'success',
+        from: '2026-01-01',
+        to: '2026-01-31',
+      });
+
+      const sql = mockAdapter.query.mock.calls[0]![0] as string;
+      expect(sql).toContain('status');
+      expect(sql).toContain('fired_at >=');
+      expect(sql).toContain('fired_at <=');
+    });
   });
 
   describe('getRecentHistory', () => {
@@ -546,6 +626,24 @@ describe('TriggersRepository', () => {
       expect(result.rows).toHaveLength(1);
       expect(result.rows[0]!.triggerName).toBe('Daily Check');
       expect(result.total).toBe(1);
+    });
+
+    it('applies status, triggerId, from, and to filters', async () => {
+      mockAdapter.queryOne.mockResolvedValueOnce({ count: '2' });
+      mockAdapter.query.mockResolvedValueOnce([historyRow(), historyRow({ id: 'hist_2' })]);
+
+      await repo.getRecentHistory({
+        status: 'failure',
+        triggerId: 'trigger_1',
+        from: '2026-01-01',
+        to: '2026-01-31',
+      });
+
+      const sql = mockAdapter.query.mock.calls[0]![0] as string;
+      expect(sql).toContain('status');
+      expect(sql).toContain('trigger_id');
+      expect(sql).toContain('fired_at >=');
+      expect(sql).toContain('fired_at <=');
     });
   });
 
@@ -572,6 +670,22 @@ describe('TriggersRepository', () => {
       await repo.cleanupHistory();
 
       expect(mockAdapter.execute).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  // ==========================================================================
+  // Factory
+  // ==========================================================================
+
+  describe('createTriggersRepository', () => {
+    it('returns a TriggersRepository instance', () => {
+      const r = createTriggersRepository('user-x');
+      expect(r).toBeInstanceOf(TriggersRepository);
+    });
+
+    it('uses default userId when not provided', () => {
+      const r = createTriggersRepository();
+      expect(r).toBeInstanceOf(TriggersRepository);
     });
   });
 

@@ -10,6 +10,8 @@ import { installRoutes } from './install.js';
 import { generationRoutes } from './generation.js';
 import { scannerRoutes } from './scanner.js';
 import { auditRoutes } from './audit.js';
+import { evalRoutes } from './eval.js';
+import { packagingRoutes } from './packaging.js';
 
 export const extensionsRoutes = new Hono();
 
@@ -18,4 +20,6 @@ extensionsRoutes.route('', installRoutes);
 extensionsRoutes.route('', generationRoutes);
 extensionsRoutes.route('', scannerRoutes);
 extensionsRoutes.route('', auditRoutes);
+extensionsRoutes.route('', evalRoutes);
+extensionsRoutes.route('', packagingRoutes);
 extensionsRoutes.route('', crudRoutes);

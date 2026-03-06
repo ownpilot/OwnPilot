@@ -449,6 +449,18 @@ describe('Autonomy Routes', () => {
 
       expect(res.status).toBe(404);
     });
+
+    it('returns 403 when action belongs to different user', async () => {
+      mockApprovalManager.getPendingAction.mockReturnValueOnce({
+        ...mockPendingAction,
+        userId: 'other-user',
+      });
+
+      const res = await app.request('/autonomy/approvals/action-1');
+      expect(res.status).toBe(403);
+      const json = await res.json();
+      expect(json.error.code).toBe('ACCESS_DENIED');
+    });
   });
 
   // ========================================================================
@@ -496,6 +508,35 @@ describe('Autonomy Routes', () => {
 
       expect(res.status).toBe(404);
     });
+
+    it('returns 403 when action belongs to different user', async () => {
+      mockApprovalManager.getPendingAction.mockReturnValueOnce({
+        ...mockPendingAction,
+        userId: 'other-user',
+      });
+
+      const res = await app.request('/autonomy/approvals/action-1/decide', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ decision: 'approve' }),
+      });
+
+      expect(res.status).toBe(403);
+      const json = await res.json();
+      expect(json.error.code).toBe('ACCESS_DENIED');
+    });
+
+    it('returns 404 when processDecision returns null for a found pending action', async () => {
+      mockApprovalManager.processDecision.mockReturnValueOnce(null);
+
+      const res = await app.request('/autonomy/approvals/action-1/decide', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ decision: 'approve' }),
+      });
+
+      expect(res.status).toBe(404);
+    });
   });
 
   // ========================================================================
@@ -530,6 +571,23 @@ describe('Autonomy Routes', () => {
       });
 
       expect(res.status).toBe(404);
+    });
+
+    it('returns 403 when action belongs to different user', async () => {
+      mockApprovalManager.getPendingAction.mockReturnValueOnce({
+        ...mockPendingAction,
+        userId: 'other-user',
+      });
+
+      const res = await app.request('/autonomy/approvals/action-1/approve', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      });
+
+      expect(res.status).toBe(403);
+      const json = await res.json();
+      expect(json.error.code).toBe('ACCESS_DENIED');
     });
   });
 
@@ -573,6 +631,18 @@ describe('Autonomy Routes', () => {
       const res = await app.request('/autonomy/approvals/nonexistent', { method: 'DELETE' });
 
       expect(res.status).toBe(404);
+    });
+
+    it('returns 403 when action belongs to different user', async () => {
+      mockApprovalManager.getPendingAction.mockReturnValueOnce({
+        ...mockPendingAction,
+        userId: 'other-user',
+      });
+
+      const res = await app.request('/autonomy/approvals/action-1', { method: 'DELETE' });
+      expect(res.status).toBe(403);
+      const json = await res.json();
+      expect(json.error.code).toBe('ACCESS_DENIED');
     });
   });
 
@@ -620,6 +690,18 @@ describe('Autonomy Routes', () => {
       expect(res.status).toBe(200);
       const json = await res.json();
       expect(json.data.message).toContain('execute_shell');
+    });
+
+    it('returns 400 when tool field is missing', async () => {
+      const res = await app.request('/autonomy/tools/block', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      });
+
+      expect(res.status).toBe(400);
+      const json = await res.json();
+      expect(json.error.code).toBe('INVALID_REQUEST');
     });
   });
 
@@ -713,6 +795,31 @@ describe('Autonomy Routes', () => {
     it('returns 503 when engine not initialized', async () => {
       const res = await app.request('/autonomy/pulse/run', { method: 'POST' });
       expect(res.status).toBe(503);
+    });
+
+    it('runs a pulse and returns result on success', async () => {
+      const pulseResult = { pulseId: 'p-1', actions: [], summary: 'Done' };
+      mockGetAutonomyEngine.mockReturnValueOnce({
+        getStatus: () => ({ activePulse: null }),
+        runPulse: vi.fn().mockResolvedValue(pulseResult),
+      });
+
+      const res = await app.request('/autonomy/pulse/run', { method: 'POST' });
+      expect(res.status).toBe(200);
+      const json = await res.json();
+      expect(json.data.pulseId).toBe('p-1');
+    });
+
+    it('returns 500 on generic engine error during run', async () => {
+      mockGetAutonomyEngine.mockReturnValueOnce({
+        getStatus: () => ({ activePulse: null }),
+        runPulse: vi.fn().mockRejectedValue(new Error('Pulse execution failed')),
+      });
+
+      const res = await app.request('/autonomy/pulse/run', { method: 'POST' });
+      expect(res.status).toBe(500);
+      const json = await res.json();
+      expect(json.error.code).toBe('INTERNAL_ERROR');
     });
   });
 
@@ -881,6 +988,230 @@ describe('Autonomy Routes', () => {
       expect(res.status).toBe(400);
       const json = await res.json();
       expect(json.error.code).toBe('INVALID_REQUEST');
+    });
+
+    it('returns 500 on generic storage error', async () => {
+      mockSettingsRepo.set.mockRejectedValueOnce(new Error('DB write failed'));
+
+      const res = await app.request('/autonomy/pulse/directives', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ disabledRules: [] }),
+      });
+
+      expect(res.status).toBe(500);
+      const json = await res.json();
+      expect(json.error.code).toBe('INTERNAL_ERROR');
+    });
+  });
+
+  // ========================================================================
+  // GET /autonomy/pulse/status
+  // ========================================================================
+
+  describe('GET /autonomy/pulse/status', () => {
+    it('returns 503 when engine not initialized', async () => {
+      const res = await app.request('/autonomy/pulse/status');
+      expect(res.status).toBe(503);
+      const json = await res.json();
+      expect(json.error.code).toBe('SERVICE_UNAVAILABLE');
+    });
+
+    it('returns status when engine is initialized', async () => {
+      mockGetAutonomyEngine.mockReturnValueOnce({
+        getStatus: () => ({ running: true, enabled: true, config: {}, activePulse: null }),
+      });
+
+      const res = await app.request('/autonomy/pulse/status');
+      expect(res.status).toBe(200);
+      const json = await res.json();
+      expect(json.data.running).toBe(true);
+    });
+  });
+
+  // ========================================================================
+  // POST /autonomy/pulse/start
+  // ========================================================================
+
+  describe('POST /autonomy/pulse/start', () => {
+    it('returns 503 when engine not initialized', async () => {
+      const res = await app.request('/autonomy/pulse/start', { method: 'POST' });
+      expect(res.status).toBe(503);
+      const json = await res.json();
+      expect(json.error.code).toBe('SERVICE_UNAVAILABLE');
+    });
+
+    it('starts the engine and returns running status', async () => {
+      const mockEngine = {
+        start: vi.fn(),
+        isRunning: vi.fn().mockReturnValue(true),
+      };
+      mockGetAutonomyEngine.mockReturnValueOnce(mockEngine);
+
+      const res = await app.request('/autonomy/pulse/start', { method: 'POST' });
+      expect(res.status).toBe(200);
+      const json = await res.json();
+      expect(json.data.running).toBe(true);
+      expect(json.data.message).toContain('started');
+      expect(mockEngine.start).toHaveBeenCalled();
+    });
+  });
+
+  // ========================================================================
+  // POST /autonomy/pulse/stop
+  // ========================================================================
+
+  describe('POST /autonomy/pulse/stop', () => {
+    it('returns 503 when engine not initialized', async () => {
+      const res = await app.request('/autonomy/pulse/stop', { method: 'POST' });
+      expect(res.status).toBe(503);
+      const json = await res.json();
+      expect(json.error.code).toBe('SERVICE_UNAVAILABLE');
+    });
+
+    it('stops the engine and returns running status', async () => {
+      const mockEngine = {
+        stop: vi.fn(),
+        isRunning: vi.fn().mockReturnValue(false),
+      };
+      mockGetAutonomyEngine.mockReturnValueOnce(mockEngine);
+
+      const res = await app.request('/autonomy/pulse/stop', { method: 'POST' });
+      expect(res.status).toBe(200);
+      const json = await res.json();
+      expect(json.data.running).toBe(false);
+      expect(json.data.message).toContain('stopped');
+      expect(mockEngine.stop).toHaveBeenCalled();
+    });
+  });
+
+  // ========================================================================
+  // PATCH /autonomy/pulse/settings
+  // ========================================================================
+
+  describe('PATCH /autonomy/pulse/settings', () => {
+    it('returns 503 when engine not initialized', async () => {
+      const res = await app.request('/autonomy/pulse/settings', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ intervalMinutes: 30 }),
+      });
+
+      expect(res.status).toBe(503);
+      const json = await res.json();
+      expect(json.error.code).toBe('SERVICE_UNAVAILABLE');
+    });
+
+    it('updates settings and returns new config', async () => {
+      const mockEngine = {
+        updateSettings: vi.fn(),
+        getStatus: vi.fn().mockReturnValue({ config: { intervalMinutes: 30, enabled: true } }),
+      };
+      mockGetAutonomyEngine.mockReturnValueOnce(mockEngine);
+
+      const res = await app.request('/autonomy/pulse/settings', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ intervalMinutes: 30 }),
+      });
+
+      expect(res.status).toBe(200);
+      const json = await res.json();
+      expect(json.data.config.intervalMinutes).toBe(30);
+      expect(json.data.message).toContain('updated');
+      expect(mockEngine.updateSettings).toHaveBeenCalled();
+    });
+
+    it('returns 400 on validation error', async () => {
+      const { validateBody } = await import('../middleware/validation.js');
+      (validateBody as ReturnType<typeof vi.fn>).mockImplementationOnce(() => {
+        throw new Error('Validation failed: intervalMinutes: too small');
+      });
+
+      const res = await app.request('/autonomy/pulse/settings', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ intervalMinutes: -1 }),
+      });
+
+      expect(res.status).toBe(400);
+      const json = await res.json();
+      expect(json.error.code).toBe('INVALID_REQUEST');
+    });
+
+    it('returns 500 on generic engine error', async () => {
+      const mockEngine = {
+        updateSettings: vi.fn().mockImplementation(() => {
+          throw new Error('Settings write failed');
+        }),
+        getStatus: vi.fn(),
+      };
+      mockGetAutonomyEngine.mockReturnValueOnce(mockEngine);
+
+      const res = await app.request('/autonomy/pulse/settings', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ intervalMinutes: 30 }),
+      });
+
+      expect(res.status).toBe(500);
+      const json = await res.json();
+      expect(json.error.code).toBe('INTERNAL_ERROR');
+    });
+  });
+
+  // ========================================================================
+  // GET /autonomy/pulse/history
+  // ========================================================================
+
+  describe('GET /autonomy/pulse/history', () => {
+    it('returns 503 when engine not initialized', async () => {
+      const res = await app.request('/autonomy/pulse/history');
+      expect(res.status).toBe(503);
+      const json = await res.json();
+      expect(json.error.code).toBe('SERVICE_UNAVAILABLE');
+    });
+
+    it('returns paginated history when engine is initialized', async () => {
+      const mockEngine = {
+        getRecentLogsPaginated: vi.fn().mockResolvedValue({
+          entries: [{ pulseId: 'p-1', summary: 'Done' }],
+          total: 1,
+        }),
+      };
+      mockGetAutonomyEngine.mockReturnValueOnce(mockEngine);
+
+      const res = await app.request('/autonomy/pulse/history');
+      expect(res.status).toBe(200);
+      const json = await res.json();
+      expect(json.data.history).toHaveLength(1);
+      expect(json.data.total).toBe(1);
+    });
+  });
+
+  // ========================================================================
+  // GET /autonomy/pulse/stats
+  // ========================================================================
+
+  describe('GET /autonomy/pulse/stats', () => {
+    it('returns 503 when engine not initialized', async () => {
+      const res = await app.request('/autonomy/pulse/stats');
+      expect(res.status).toBe(503);
+      const json = await res.json();
+      expect(json.error.code).toBe('SERVICE_UNAVAILABLE');
+    });
+
+    it('returns stats when engine is initialized', async () => {
+      const mockStats = { totalPulses: 42, successfulPulses: 40, totalActions: 100 };
+      const mockEngine = {
+        getStats: vi.fn().mockResolvedValue(mockStats),
+      };
+      mockGetAutonomyEngine.mockReturnValueOnce(mockEngine);
+
+      const res = await app.request('/autonomy/pulse/stats');
+      expect(res.status).toBe(200);
+      const json = await res.json();
+      expect(json.data.totalPulses).toBe(42);
     });
   });
 });

@@ -216,6 +216,24 @@ describe('Personal Data Routes', () => {
       expect(json.data.title).toBe('New task');
     });
 
+    it('POST /tasks - returns 400 for invalid JSON body', async () => {
+      const res = await app.request('/pd/tasks', {
+        method: 'POST',
+        body: 'not-json',
+      });
+
+      expect(res.status).toBe(400);
+    });
+
+    it('PATCH /tasks/:id - returns 400 for invalid JSON body', async () => {
+      const res = await app.request('/pd/tasks/t1', {
+        method: 'PATCH',
+        body: 'not-json',
+      });
+
+      expect(res.status).toBe(400);
+    });
+
     it('PATCH /tasks/:id - updates a task', async () => {
       mockTasksRepo.update.mockResolvedValue({ id: 't1', title: 'Updated' });
 
@@ -323,6 +341,16 @@ describe('Personal Data Routes', () => {
       expect(json.data).toEqual(['dev', 'news']);
     });
 
+    it('GET /bookmarks/:id - returns bookmark by id', async () => {
+      mockBookmarksRepo.get.mockResolvedValue({ id: 'b1', url: 'https://example.com' });
+
+      const res = await app.request('/pd/bookmarks/b1');
+
+      expect(res.status).toBe(200);
+      const json = await res.json();
+      expect(json.data.id).toBe('b1');
+    });
+
     it('GET /bookmarks/:id - returns 404 when not found', async () => {
       mockBookmarksRepo.get.mockResolvedValue(null);
 
@@ -343,6 +371,50 @@ describe('Personal Data Routes', () => {
       expect(res.status).toBe(201);
     });
 
+    it('POST /bookmarks - returns 400 for invalid JSON body', async () => {
+      const res = await app.request('/pd/bookmarks', {
+        method: 'POST',
+        body: 'not-json',
+      });
+
+      expect(res.status).toBe(400);
+    });
+
+    it('PATCH /bookmarks/:id - updates a bookmark', async () => {
+      mockBookmarksRepo.update.mockResolvedValue({ id: 'b1', title: 'Updated' });
+
+      const res = await app.request('/pd/bookmarks/b1', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: 'Updated' }),
+      });
+
+      expect(res.status).toBe(200);
+      const json = await res.json();
+      expect(json.data.title).toBe('Updated');
+    });
+
+    it('PATCH /bookmarks/:id - returns 400 for invalid JSON body', async () => {
+      const res = await app.request('/pd/bookmarks/b1', {
+        method: 'PATCH',
+        body: 'not-json',
+      });
+
+      expect(res.status).toBe(400);
+    });
+
+    it('PATCH /bookmarks/:id - returns 404 when not found', async () => {
+      mockBookmarksRepo.update.mockResolvedValue(null);
+
+      const res = await app.request('/pd/bookmarks/nonexistent', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: 'Updated' }),
+      });
+
+      expect(res.status).toBe(404);
+    });
+
     it('POST /bookmarks/:id/favorite - toggles favorite', async () => {
       mockBookmarksRepo.toggleFavorite.mockResolvedValue({ id: 'b1', isFavorite: true });
 
@@ -351,6 +423,14 @@ describe('Personal Data Routes', () => {
       expect(res.status).toBe(200);
       const json = await res.json();
       expect(json.data.isFavorite).toBe(true);
+    });
+
+    it('POST /bookmarks/:id/favorite - returns 404 when not found', async () => {
+      mockBookmarksRepo.toggleFavorite.mockResolvedValue(null);
+
+      const res = await app.request('/pd/bookmarks/nonexistent/favorite', { method: 'POST' });
+
+      expect(res.status).toBe(404);
     });
 
     it('DELETE /bookmarks/:id - deletes a bookmark', async () => {
@@ -415,6 +495,16 @@ describe('Personal Data Routes', () => {
       expect(json.data).toEqual(['ideas', 'meetings']);
     });
 
+    it('GET /notes/:id - returns note by id', async () => {
+      mockNotesRepo.get.mockResolvedValue({ id: 'n1', title: 'My Note' });
+
+      const res = await app.request('/pd/notes/n1');
+
+      expect(res.status).toBe(200);
+      const json = await res.json();
+      expect(json.data.id).toBe('n1');
+    });
+
     it('GET /notes/:id - returns 404 when not found', async () => {
       mockNotesRepo.get.mockResolvedValue(null);
 
@@ -435,12 +525,62 @@ describe('Personal Data Routes', () => {
       expect(res.status).toBe(201);
     });
 
+    it('POST /notes - returns 400 for invalid JSON body', async () => {
+      const res = await app.request('/pd/notes', {
+        method: 'POST',
+        body: 'not-json',
+      });
+
+      expect(res.status).toBe(400);
+    });
+
+    it('PATCH /notes/:id - updates a note', async () => {
+      mockNotesRepo.update.mockResolvedValue({ id: 'n1', title: 'Updated Note' });
+
+      const res = await app.request('/pd/notes/n1', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: 'Updated Note' }),
+      });
+
+      expect(res.status).toBe(200);
+    });
+
+    it('PATCH /notes/:id - returns 400 for invalid JSON body', async () => {
+      const res = await app.request('/pd/notes/n1', {
+        method: 'PATCH',
+        body: 'not-json',
+      });
+
+      expect(res.status).toBe(400);
+    });
+
+    it('PATCH /notes/:id - returns 404 when not found', async () => {
+      mockNotesRepo.update.mockResolvedValue(null);
+
+      const res = await app.request('/pd/notes/nonexistent', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: 'Updated' }),
+      });
+
+      expect(res.status).toBe(404);
+    });
+
     it('POST /notes/:id/pin - toggles pin', async () => {
       mockNotesRepo.togglePin.mockResolvedValue({ id: 'n1', isPinned: true });
 
       const res = await app.request('/pd/notes/n1/pin', { method: 'POST' });
 
       expect(res.status).toBe(200);
+    });
+
+    it('POST /notes/:id/pin - returns 404 when not found', async () => {
+      mockNotesRepo.togglePin.mockResolvedValue(null);
+
+      const res = await app.request('/pd/notes/nonexistent/pin', { method: 'POST' });
+
+      expect(res.status).toBe(404);
     });
 
     it('POST /notes/:id/archive - archives a note', async () => {
@@ -459,6 +599,14 @@ describe('Personal Data Routes', () => {
       expect(res.status).toBe(200);
     });
 
+    it('POST /notes/:id/unarchive - returns 404 when not found', async () => {
+      mockNotesRepo.unarchive.mockResolvedValue(null);
+
+      const res = await app.request('/pd/notes/nonexistent/unarchive', { method: 'POST' });
+
+      expect(res.status).toBe(404);
+    });
+
     it('POST /notes/:id/archive - returns 404 when not found', async () => {
       mockNotesRepo.archive.mockResolvedValue(null);
 
@@ -475,6 +623,14 @@ describe('Personal Data Routes', () => {
       expect(res.status).toBe(200);
       const json = await res.json();
       expect(json.data.deleted).toBe(true);
+    });
+
+    it('DELETE /notes/:id - returns 404 when not found', async () => {
+      mockNotesRepo.delete.mockResolvedValue(false);
+
+      const res = await app.request('/pd/notes/nonexistent', { method: 'DELETE' });
+
+      expect(res.status).toBe(404);
     });
   });
 
@@ -518,6 +674,16 @@ describe('Personal Data Routes', () => {
       expect(res.status).toBe(200);
     });
 
+    it('GET /calendar/:id - returns event by id', async () => {
+      mockCalendarRepo.get.mockResolvedValue({ id: 'e1', title: 'Meeting' });
+
+      const res = await app.request('/pd/calendar/e1');
+
+      expect(res.status).toBe(200);
+      const json = await res.json();
+      expect(json.data.id).toBe('e1');
+    });
+
     it('GET /calendar/:id - returns 404 when not found', async () => {
       mockCalendarRepo.get.mockResolvedValue(null);
 
@@ -538,6 +704,15 @@ describe('Personal Data Routes', () => {
       expect(res.status).toBe(201);
     });
 
+    it('POST /calendar - returns 400 for invalid JSON body', async () => {
+      const res = await app.request('/pd/calendar', {
+        method: 'POST',
+        body: 'not-json',
+      });
+
+      expect(res.status).toBe(400);
+    });
+
     it('PATCH /calendar/:id - updates an event', async () => {
       mockCalendarRepo.update.mockResolvedValue({ id: 'e1', title: 'Updated' });
 
@@ -548,6 +723,27 @@ describe('Personal Data Routes', () => {
       });
 
       expect(res.status).toBe(200);
+    });
+
+    it('PATCH /calendar/:id - returns 400 for invalid JSON body', async () => {
+      const res = await app.request('/pd/calendar/e1', {
+        method: 'PATCH',
+        body: 'not-json',
+      });
+
+      expect(res.status).toBe(400);
+    });
+
+    it('PATCH /calendar/:id - returns 404 when not found', async () => {
+      mockCalendarRepo.update.mockResolvedValue(null);
+
+      const res = await app.request('/pd/calendar/nonexistent', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: 'Updated' }),
+      });
+
+      expect(res.status).toBe(404);
     });
 
     it('DELETE /calendar/:id - deletes an event', async () => {
@@ -628,6 +824,16 @@ describe('Personal Data Routes', () => {
       expect(res.status).toBe(200);
     });
 
+    it('GET /contacts/:id - returns contact by id', async () => {
+      mockContactsRepo.get.mockResolvedValue({ id: 'c1', name: 'Alice' });
+
+      const res = await app.request('/pd/contacts/c1');
+
+      expect(res.status).toBe(200);
+      const json = await res.json();
+      expect(json.data.id).toBe('c1');
+    });
+
     it('GET /contacts/:id - returns 404 when not found', async () => {
       mockContactsRepo.get.mockResolvedValue(null);
 
@@ -646,6 +852,50 @@ describe('Personal Data Routes', () => {
       });
 
       expect(res.status).toBe(201);
+    });
+
+    it('POST /contacts - returns 400 for invalid JSON body', async () => {
+      const res = await app.request('/pd/contacts', {
+        method: 'POST',
+        body: 'not-json',
+      });
+
+      expect(res.status).toBe(400);
+    });
+
+    it('PATCH /contacts/:id - updates a contact', async () => {
+      mockContactsRepo.update.mockResolvedValue({ id: 'c1', name: 'Alice Updated' });
+
+      const res = await app.request('/pd/contacts/c1', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: 'Alice Updated' }),
+      });
+
+      expect(res.status).toBe(200);
+      const json = await res.json();
+      expect(json.data.name).toBe('Alice Updated');
+    });
+
+    it('PATCH /contacts/:id - returns 400 for invalid JSON body', async () => {
+      const res = await app.request('/pd/contacts/c1', {
+        method: 'PATCH',
+        body: 'not-json',
+      });
+
+      expect(res.status).toBe(400);
+    });
+
+    it('PATCH /contacts/:id - returns 404 when not found', async () => {
+      mockContactsRepo.update.mockResolvedValue(null);
+
+      const res = await app.request('/pd/contacts/nonexistent', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: 'Updated' }),
+      });
+
+      expect(res.status).toBe(404);
     });
 
     it('POST /contacts/:id/favorite - toggles favorite', async () => {
@@ -672,6 +922,14 @@ describe('Personal Data Routes', () => {
       expect(res.status).toBe(200);
       const json = await res.json();
       expect(json.data.deleted).toBe(true);
+    });
+
+    it('DELETE /contacts/:id - returns 404 when not found', async () => {
+      mockContactsRepo.delete.mockResolvedValue(false);
+
+      const res = await app.request('/pd/contacts/nonexistent', { method: 'DELETE' });
+
+      expect(res.status).toBe(404);
     });
   });
 

@@ -68,8 +68,10 @@ export interface SkillUpdateInfo {
 
 export const skillsApi = {
   /** Search npm for OwnPilot skills */
-  search: (query: string, limit = 20) =>
-    apiClient.get<NpmSearchResult>(`/skills/search?q=${encodeURIComponent(query)}&limit=${limit}`),
+  search: (query: string, limit = 20, offset = 0) =>
+    apiClient.get<NpmSearchResult>(
+      `/skills/search?q=${encodeURIComponent(query)}&limit=${limit}${offset ? `&offset=${offset}` : ''}`
+    ),
 
   /** Get npm package info */
   getPackageInfo: (name: string) =>

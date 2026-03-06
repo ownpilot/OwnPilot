@@ -233,7 +233,7 @@ export function createContextInjectionMiddleware(): MessageMiddleware {
           sections: activeSuffixes,
         },
       });
-      log.info(
+      log.debug(
         `System prompt final: ${finalPrompt.length} chars — ` +
           activeSuffixes.map((s) => `${s.name}:${s.chars}`).join(', ')
       );

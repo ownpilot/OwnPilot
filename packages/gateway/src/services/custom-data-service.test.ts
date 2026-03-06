@@ -6,7 +6,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { CustomDataService, CustomDataServiceError } from './custom-data-service.js';
+import { CustomDataService, CustomDataServiceError, getCustomDataService } from './custom-data-service.js';
 import type { CustomTableSchema, CustomDataRecord } from '../db/repositories/custom-data.js';
 
 // ---------------------------------------------------------------------------
@@ -358,5 +358,75 @@ describe('CustomDataService', () => {
       const result = await service.getTableStats('contacts');
       expect(result).toEqual({ recordCount: 42 });
     });
+
+    // ── listTables with pluginId filter ──────────────────────────────────────
+
+    it('listTables with pluginId calls getTablesByPlugin', async () => {
+      mockRepo.getTablesByPlugin.mockResolvedValue([fakeTable()]);
+      const result = await service.listTables({ pluginId: 'my-plugin' });
+      expect(mockRepo.getTablesByPlugin).toHaveBeenCalledWith('my-plugin');
+      expect(result).toHaveLength(1);
+    });
+
+    it('listTables without filter calls repo.listTables', async () => {
+      mockRepo.listTables.mockResolvedValue([fakeTable()]);
+      const result = await service.listTables();
+      expect(mockRepo.listTables).toHaveBeenCalled();
+      expect(result).toHaveLength(1);
+    });
+
+    it('getTablesByPlugin delegates to repo', async () => {
+      mockRepo.getTablesByPlugin.mockResolvedValue([fakeTable()]);
+      const result = await service.getTablesByPlugin('plugin-x');
+      expect(mockRepo.getTablesByPlugin).toHaveBeenCalledWith('plugin-x');
+      expect(result).toHaveLength(1);
+    });
+
+    it('updateTable delegates to repo', async () => {
+      const updated = fakeTable({ displayName: 'New Name' });
+      mockRepo.updateTable.mockResolvedValue(updated);
+      const result = await service.updateTable('contacts', { displayName: 'New Name' });
+      expect(result?.displayName).toBe('New Name');
+    });
+
+    it('batchAddRecords returns empty array when records is empty', async () => {
+      const result = await service.batchAddRecords('contacts', []);
+      expect(result).toEqual([]);
+      expect(mockRepo.insertRecord).not.toHaveBeenCalled();
+    });
+
+    it('getRecord delegates to repo', async () => {
+      mockRepo.getRecord.mockResolvedValue(fakeRecord());
+      const result = await service.getRecord('rec-1');
+      expect(result).not.toBeNull();
+      expect(mockRepo.getRecord).toHaveBeenCalledWith('rec-1');
+    });
+
+    it('listRecords delegates to repo', async () => {
+      mockRepo.listRecords.mockResolvedValue({ records: [fakeRecord()], total: 1 });
+      const result = await service.listRecords('contacts', { limit: 5 });
+      expect(result.total).toBe(1);
+    });
+
+    it('searchRecords throws VALIDATION_ERROR for empty query', async () => {
+      await expect(service.searchRecords('contacts', '   ')).rejects.toMatchObject({
+        code: 'VALIDATION_ERROR',
+      });
+    });
+  });
+});
+
+// ── getCustomDataService singleton ──────────────────────────────────────────
+
+describe('getCustomDataService', () => {
+  it('returns a CustomDataService instance', () => {
+    const svc = getCustomDataService();
+    expect(svc).toBeInstanceOf(CustomDataService);
+  });
+
+  it('returns the same singleton on repeated calls', () => {
+    const s1 = getCustomDataService();
+    const s2 = getCustomDataService();
+    expect(s1).toBe(s2);
   });
 });

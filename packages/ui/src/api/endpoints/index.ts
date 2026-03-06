@@ -49,6 +49,8 @@ export {
   expensesApi,
 } from './misc';
 export { extensionsApi } from './extensions';
+export { evalApi } from './eval';
+export type { EvalRunResult, EvalGradeResult, OptimizeIteration, OptimizeResult } from './eval';
 export { mcpApi } from './mcp';
 export { composioApi } from './composio';
 export type {

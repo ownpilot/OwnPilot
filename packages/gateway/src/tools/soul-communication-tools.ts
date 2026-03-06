@@ -8,6 +8,7 @@
 import { generateId, getErrorMessage, SOUL_COMMUNICATION_TOOLS } from '@ownpilot/core';
 import type { AgentMessage } from '@ownpilot/core';
 import { getAgentMessagesRepository } from '../db/repositories/agent-messages.js';
+import { getHeartbeatContext } from '../services/heartbeat-context.js';
 import type { ToolExecutionResult } from '../services/tool-executor.js';
 
 export { SOUL_COMMUNICATION_TOOLS };
@@ -17,7 +18,10 @@ export async function executeSoulCommunicationTool(
   args: Record<string, unknown>,
   userId?: string
 ): Promise<ToolExecutionResult> {
-  const agentId = userId ?? 'unknown';
+  // Prefer heartbeat context (carries the soul agent's ID) over the generic userId
+  // which would otherwise resolve to the human user's ID during heartbeat execution.
+  const hbCtx = getHeartbeatContext();
+  const agentId = hbCtx?.agentId ?? userId ?? 'unknown';
   try {
     switch (toolName) {
       case 'send_agent_message':

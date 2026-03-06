@@ -235,6 +235,17 @@ Be concise and focused. Report your findings clearly.`.trim();
           isHeartbeat: true,
           heartbeatTaskId: task.id,
           allowedTools: task.tools.length > 0 ? task.tools : undefined,
+          // Pass soul's provider preference so the engine can use it
+          provider: soul.provider?.providerId,
+          model: soul.provider?.modelId,
+          fallbackProvider: soul.provider?.fallbackProviderId,
+          fallbackModel: soul.provider?.fallbackModelId,
+          // Pass skill access config so engine can enforce per-soul extension filtering
+          skillAccessAllowed: soul.skillAccess?.allowed,
+          skillAccessBlocked: soul.skillAccess?.blocked,
+          // Pass crew ID so the service layer can inject crew context and communication
+          // tools can resolve the correct soul identity via AsyncLocalStorage
+          crewId: soul.relationships?.crewId,
         },
       });
 

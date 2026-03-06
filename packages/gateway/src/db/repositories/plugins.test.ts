@@ -72,6 +72,20 @@ describe('PluginsRepository', () => {
     repo = new PluginsRepository();
   });
 
+  // ---- uninitialized cache (must run before any initialize() call) ----
+
+  describe('uninitialized cache', () => {
+    it('getById returns null when cache not initialized (line 131)', () => {
+      const result = repo.getById('any-id');
+      expect(result).toBeNull();
+    });
+
+    it('getAll returns empty array when cache not initialized (line 142)', () => {
+      const result = repo.getAll();
+      expect(result).toEqual([]);
+    });
+  });
+
   // ---- initialize / refreshCache ----
 
   describe('initialize', () => {
@@ -376,6 +390,20 @@ describe('PluginsRepository', () => {
 
       expect(result).toBeNull();
       expect(mockAdapter.execute).not.toHaveBeenCalled();
+    });
+
+    it('deletes plugin from cache when DB row no longer exists after update (line 118)', async () => {
+      mockAdapter.query.mockResolvedValueOnce([makePluginRow()]);
+      await repo.initialize();
+      expect(repo.getById('plugin-1')).not.toBeNull();
+
+      // queryOne returns null → refreshPluginCache deletes the entry from cache
+      mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
+      mockAdapter.queryOne.mockResolvedValueOnce(null);
+
+      await repo.updateStatus('plugin-1', 'error');
+
+      expect(repo.getById('plugin-1')).toBeNull();
     });
   });
 

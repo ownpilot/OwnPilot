@@ -37,6 +37,14 @@ describe('extractSuggestions', () => {
     expect(result.suggestions).toEqual([]);
   });
 
+  it('returns content as-is when regex matches but JSON.parse throws (line 88)', () => {
+    // Regex matches [...] but content is invalid JSON → catch block
+    const raw = 'Response.\n<suggestions>[invalid json here]</suggestions>';
+    const result = extractSuggestions(raw);
+    expect(result.content).toBe(raw);
+    expect(result.suggestions).toEqual([]);
+  });
+
   it('returns content as-is when JSON is not an array', () => {
     const raw = 'Response.\n<suggestions>{"key": "value"}</suggestions>';
     const result = extractSuggestions(raw);

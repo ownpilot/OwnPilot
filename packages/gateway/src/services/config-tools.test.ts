@@ -353,6 +353,25 @@ describe('Config Tools', () => {
       );
     });
 
+    it('notes missing required fields in result when required field is absent (line 215)', async () => {
+      mockConfigServicesRepo.getByName.mockReturnValue({
+        name: 'deepl',
+        configSchema: [{ name: 'api_key', label: 'API Key', type: 'secret', required: true }],
+      });
+      mockConfigServicesRepo.getDefaultEntry.mockReturnValue(null);
+      mockConfigServicesRepo.createEntry.mockResolvedValue({ id: 'new-e', label: 'Default' });
+
+      // Omit the required 'api_key' field
+      const result = await executeConfigTool('config_set_entry', {
+        service: 'deepl',
+        data: { some_other_field: 'value' },
+      });
+
+      expect(result.success).toBe(true);
+      const res = result.result as Record<string, unknown>;
+      expect(res.missingRequiredFields).toEqual(['api_key (API Key)']);
+    });
+
     it('returns error for invalid data param', async () => {
       const result = await executeConfigTool('config_set_entry', {
         service: 'deepl',
@@ -403,6 +422,20 @@ describe('Config Tools', () => {
 
       expect(result.success).toBe(false);
       expect(result.error).toContain('Unknown config tool');
+    });
+  });
+
+  describe('outer catch handler (line 310)', () => {
+    it('returns error when unexpected exception is thrown by inner tool', async () => {
+      // getByName throws synchronously — not caught by inner try/catch
+      mockConfigServicesRepo.getByName.mockImplementation(() => {
+        throw new Error('Unexpected DB failure');
+      });
+
+      const result = await executeConfigTool('config_get_service', { service: 'any' });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('Unexpected DB failure');
     });
   });
 });

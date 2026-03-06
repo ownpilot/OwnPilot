@@ -18,6 +18,7 @@ import {
   parseJsonBody,
 } from '../helpers.js';
 import { wsGateway } from '../../ws/server.js';
+import { extensionsRepo } from '../../db/repositories/extensions.js';
 
 export const crudRoutes = new Hono();
 
@@ -125,6 +126,82 @@ crudRoutes.delete('/:id', async (c) => {
 
   wsGateway.broadcast('data:changed', { entity: 'extension', action: 'deleted', id });
   return apiResponse(c, { message: 'Extension uninstalled successfully.' });
+});
+
+/**
+ * PATCH /:id - Update extension metadata (name, description, version)
+ */
+crudRoutes.patch('/:id', async (c) => {
+  const userId = getUserId(c);
+  const id = c.req.param('id');
+
+  const service = getExtService();
+  const pkg = service.getById(id);
+
+  if (!pkg || pkg.userId !== userId) {
+    return notFoundError(c, 'Extension', id);
+  }
+
+  const body = (await parseJsonBody<{
+    name?: string;
+    description?: string;
+    version?: string;
+  }>(c)) ?? {};
+
+  const updates: Record<string, unknown> = {};
+  if (typeof body.name === 'string') updates.name = body.name;
+  if (typeof body.description === 'string') updates.description = body.description;
+  if (typeof body.version === 'string') updates.version = body.version;
+
+  if (Object.keys(updates).length === 0) {
+    return apiError(
+      c,
+      { code: ERROR_CODES.VALIDATION_ERROR, message: 'No valid fields to update' },
+      400
+    );
+  }
+
+  try {
+    // Upsert the record with updated metadata fields
+    const record = extensionsRepo.getById(id);
+    if (!record) return notFoundError(c, 'Extension', id);
+
+    const newName = (updates.name as string | undefined) ?? record.name;
+    const newDesc = (updates.description as string | undefined) ?? record.description ?? '';
+    const newVersion = (updates.version as string | undefined) ?? record.version;
+
+    await extensionsRepo.upsert({
+      id: record.id,
+      userId: record.userId,
+      name: newName,
+      description: newDesc,
+      version: newVersion,
+      category: record.category,
+      format: record.format,
+      icon: record.icon,
+      authorName: record.authorName,
+      manifest: { ...record.manifest, name: newName, description: newDesc, version: newVersion },
+      status: record.status,
+      sourcePath: record.sourcePath,
+      settings: record.settings,
+      toolCount: record.toolCount,
+      triggerCount: record.triggerCount,
+    });
+
+    wsGateway.broadcast('data:changed', { entity: 'extension', action: 'updated', id });
+
+    const updatedPkg = service.getById(id);
+    return apiResponse(c, { package: updatedPkg, message: 'Extension updated.' });
+  } catch (error) {
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.UPDATE_FAILED,
+        message: getErrorMessage(error, 'Failed to update extension'),
+      },
+      500
+    );
+  }
 });
 
 /**

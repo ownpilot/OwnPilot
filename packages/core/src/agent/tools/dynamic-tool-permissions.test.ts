@@ -86,6 +86,17 @@ describe('isToolCallAllowed', () => {
       expect(result.allowed).toBe(false);
     });
 
+    it('allows call_json_api with network permission', () => {
+      const result = isToolCallAllowed('call_json_api', ['network']);
+      expect(result.allowed).toBe(true);
+    });
+
+    it('blocks call_json_api without network permission', () => {
+      const result = isToolCallAllowed('call_json_api', []);
+      expect(result.allowed).toBe(false);
+      expect(result.reason).toContain("requires 'network' permission");
+    });
+
     it('allows search_web with network permission', () => {
       const result = isToolCallAllowed('search_web', ['network']);
       expect(result.allowed).toBe(true);
@@ -150,6 +161,50 @@ describe('isToolCallAllowed', () => {
     it('allows unknown qualified tool', () => {
       const result = isToolCallAllowed('core.get_time', []);
       expect(result.allowed).toBe(true);
+    });
+  });
+
+  // --- Key fixed tools are callable from custom extensions ---
+
+  describe('fixed tools accessible via callTool', () => {
+    const noPerms: never[] = [];
+
+    it.each([
+      'create_artifact',
+      'update_artifact',
+      'list_artifacts',
+    ])('artifact tool %s is callable without special permissions', (name) => {
+      expect(isToolCallAllowed(name, noPerms).allowed).toBe(true);
+    });
+
+    it.each([
+      'list_edge_devices',
+      'get_device_status',
+      'read_sensor',
+      'send_device_command',
+      'control_actuator',
+    ])('edge tool %s is callable without special permissions', (name) => {
+      expect(isToolCallAllowed(name, noPerms).allowed).toBe(true);
+    });
+
+    it.each([
+      'create_plan',
+      'add_plan_step',
+      'list_plans',
+      'get_plan_details',
+      'execute_plan',
+    ])('plan tool %s is callable without special permissions', (name) => {
+      expect(isToolCallAllowed(name, noPerms).allowed).toBe(true);
+    });
+
+    it('fetch_web_page requires network permission', () => {
+      expect(isToolCallAllowed('fetch_web_page', noPerms).allowed).toBe(false);
+      expect(isToolCallAllowed('fetch_web_page', ['network']).allowed).toBe(true);
+    });
+
+    it('call_json_api requires network permission', () => {
+      expect(isToolCallAllowed('call_json_api', noPerms).allowed).toBe(false);
+      expect(isToolCallAllowed('call_json_api', ['network']).allowed).toBe(true);
     });
   });
 });

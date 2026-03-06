@@ -15,6 +15,7 @@ const mockLocalProvidersRepo = {
 };
 const mockGetApiKey = vi.fn().mockResolvedValue(undefined);
 const mockGetApprovalManager = vi.fn();
+const mockCheckAutonomy = vi.fn();
 
 vi.mock('@ownpilot/core', async (importOriginal) => {
   const actual = await importOriginal<Record<string, unknown>>();
@@ -35,9 +36,14 @@ vi.mock('./settings.js', () => ({
   getApiKey: (...args: unknown[]) => mockGetApiKey(...args),
 }));
 
-vi.mock('../autonomy/index.js', () => ({
-  getApprovalManager: (...args: unknown[]) => mockGetApprovalManager(...args),
-}));
+vi.mock('../autonomy/index.js', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../autonomy/index.js')>();
+  return {
+    ...actual,
+    getApprovalManager: (...args: unknown[]) => mockGetApprovalManager(...args),
+    checkAutonomy: (...args: unknown[]) => mockCheckAutonomy(...args),
+  };
+});
 
 vi.mock('../config/defaults.js', () => ({
   MAX_AGENT_CACHE_SIZE: 50,
@@ -649,5 +655,98 @@ describe('evictAgentFromCache', () => {
     expect(mod.agentCache.has('agent_2')).toBe(true);
     expect(mod.agentConfigCache.has('agent_1')).toBe(false);
     expect(mod.agentConfigCache.has('agent_2')).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// createSoulAwareApprovalCallback
+// ---------------------------------------------------------------------------
+
+describe('createSoulAwareApprovalCallback', () => {
+  const baseAutonomy = {
+    level: 1, // ASSISTED
+    blockedActions: [] as string[],
+    allowedActions: [] as string[],
+    notifyOnActions: [] as string[],
+    maxActionsPerHour: 100,
+    requireApprovalFor: [] as string[],
+  };
+
+  it('returns false immediately when actionType is in blockedActions', async () => {
+    const autonomy = { ...baseAutonomy, blockedActions: ['delete_file', 'send_email'] };
+    const callback = mod.createSoulAwareApprovalCallback('agent-1', 'TestAgent', autonomy as never);
+
+    const result = await callback('file', 'delete_file', 'Delete a file', {});
+    expect(result).toBe(false);
+    expect(mockCheckAutonomy).not.toHaveBeenCalled();
+  });
+
+  it('returns false when checkAutonomy returns allowed: false and requiresApproval: false', async () => {
+    mockCheckAutonomy.mockReturnValue({ allowed: false, requiresApproval: false, reason: 'Blocked' });
+    const callback = mod.createSoulAwareApprovalCallback('agent-1', 'TestAgent', baseAutonomy as never);
+
+    const result = await callback('communication', 'send_email', 'Send an email', {});
+    expect(result).toBe(false);
+  });
+
+  it('returns true when checkAutonomy allows without approval', async () => {
+    mockCheckAutonomy.mockReturnValue({ allowed: true, requiresApproval: false, notify: false });
+    const callback = mod.createSoulAwareApprovalCallback('agent-1', 'TestAgent', baseAutonomy as never);
+
+    const result = await callback('memory', 'create_memory', 'Save memory', {});
+    expect(result).toBe(true);
+  });
+
+  it('returns true and logs when autonomous level is >= 3 and notify is true', async () => {
+    const autonomy = { ...baseAutonomy, level: 3 }; // AUTONOMOUS
+    mockCheckAutonomy.mockReturnValue({ allowed: true, requiresApproval: false, notify: true });
+    const callback = mod.createSoulAwareApprovalCallback('agent-1', 'TestAgent', autonomy as never);
+
+    const result = await callback('memory', 'create_memory', 'Save memory', {});
+    expect(result).toBe(true);
+  });
+
+  it('returns true when approvalMgr.requestApproval returns null (auto-approved)', async () => {
+    mockCheckAutonomy.mockReturnValue({ allowed: false, requiresApproval: true });
+    const mockApprovalMgr = {
+      requestApproval: vi.fn().mockResolvedValue(null),
+      processDecision: vi.fn(),
+    };
+    mockGetApprovalManager.mockReturnValue(mockApprovalMgr);
+    const callback = mod.createSoulAwareApprovalCallback('agent-1', 'TestAgent', baseAutonomy as never);
+
+    const result = await callback('file', 'read_file', 'Read a file', {});
+    expect(result).toBe(true);
+    expect(mockApprovalMgr.processDecision).not.toHaveBeenCalled();
+  });
+
+  it('returns false when approval is rejected', async () => {
+    mockCheckAutonomy.mockReturnValue({ allowed: false, requiresApproval: true });
+    const mockApprovalMgr = {
+      requestApproval: vi.fn().mockResolvedValue({ action: { id: 'act-1', status: 'rejected' } }),
+      processDecision: vi.fn(),
+    };
+    mockGetApprovalManager.mockReturnValue(mockApprovalMgr);
+    const callback = mod.createSoulAwareApprovalCallback('agent-1', 'TestAgent', baseAutonomy as never);
+
+    const result = await callback('file', 'delete_file', 'Delete a file', {});
+    expect(result).toBe(false);
+    expect(mockApprovalMgr.processDecision).not.toHaveBeenCalled();
+  });
+
+  it('returns false and calls processDecision(reject) when approval is pending', async () => {
+    mockCheckAutonomy.mockReturnValue({ allowed: false, requiresApproval: true });
+    const mockApprovalMgr = {
+      requestApproval: vi.fn().mockResolvedValue({ action: { id: 'act-2', status: 'pending' } }),
+      processDecision: vi.fn(),
+    };
+    mockGetApprovalManager.mockReturnValue(mockApprovalMgr);
+    const callback = mod.createSoulAwareApprovalCallback('agent-1', 'TestAgent', baseAutonomy as never);
+
+    const result = await callback('file', 'write_file', 'Write to file', {});
+    expect(result).toBe(false);
+    expect(mockApprovalMgr.processDecision).toHaveBeenCalledWith(
+      expect.objectContaining({ actionId: 'act-2', decision: 'reject' })
+    );
   });
 });

@@ -115,6 +115,40 @@ Failed steps retry automatically with exponential backoff (up to max_retries).`,
         type: 'string',
         description: 'For user_input: question to ask the user',
       },
+      condition: {
+        type: 'string',
+        description:
+          'For condition: condition expression. Use "result:<stepId>" to check if a previous step succeeded, or "true"/"false" literals.',
+      },
+      true_step: {
+        type: 'string',
+        description: 'For condition: step ID to jump to when condition is true',
+      },
+      false_step: {
+        type: 'string',
+        description: 'For condition: step ID to jump to when condition is false',
+      },
+      parallel_steps: {
+        type: 'array',
+        description:
+          'For parallel: list of tool calls to run concurrently. Each item: { tool_name, tool_args }',
+        items: {
+          type: 'object',
+          properties: {
+            tool_name: { type: 'string' },
+            tool_args: { type: 'object' },
+          },
+          required: ['tool_name'],
+        },
+      },
+      max_iterations: {
+        type: 'number',
+        description: 'For loop: maximum number of iterations (default: 10)',
+      },
+      sub_plan_id: {
+        type: 'string',
+        description: 'For sub_plan: ID of the plan to execute as a sub-step',
+      },
       dependencies: {
         type: 'array',
         description:
@@ -273,6 +307,19 @@ export async function executePlanTool(
       } else if (type === 'user_input') {
         stepConfig.question = args.question;
         stepConfig.inputType = 'text';
+      } else if (type === 'condition') {
+        stepConfig.condition = args.condition;
+        stepConfig.trueStep = args.true_step;
+        stepConfig.falseStep = args.false_step;
+      } else if (type === 'parallel') {
+        const rawSteps = (args.parallel_steps as Array<{ tool_name: string; tool_args?: Record<string, unknown> }>) ?? [];
+        stepConfig.steps = rawSteps.map((s) => ({ toolName: s.tool_name, toolArgs: s.tool_args ?? {} }));
+      } else if (type === 'loop') {
+        stepConfig.toolName = args.tool_name;
+        stepConfig.toolArgs = args.tool_args ?? {};
+        stepConfig.maxIterations = args.max_iterations;
+      } else if (type === 'sub_plan') {
+        stepConfig.subPlanId = args.sub_plan_id;
       }
 
       const stepInput: CreateStepInput = {

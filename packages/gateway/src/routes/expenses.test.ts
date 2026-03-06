@@ -215,6 +215,42 @@ describe('Expenses Routes', () => {
       expect(json.data.period.name).toBe('all_time');
       expect(json.data.summary.totalExpenses).toBe(3);
     });
+
+    it('returns summary for today', async () => {
+      const res = await app.request('/expenses/summary?period=today');
+
+      expect(res.status).toBe(200);
+      const json = await res.json();
+      expect(json.data.period.name).toBe('today');
+      expect(json.data.summary).toBeDefined();
+    });
+
+    it('returns summary for this_week', async () => {
+      const res = await app.request('/expenses/summary?period=this_week');
+
+      expect(res.status).toBe(200);
+      const json = await res.json();
+      expect(json.data.period.name).toBe('this_week');
+      expect(json.data.summary).toBeDefined();
+    });
+
+    it('returns summary for last_month', async () => {
+      const res = await app.request('/expenses/summary?period=last_month');
+
+      expect(res.status).toBe(200);
+      const json = await res.json();
+      expect(json.data.period.name).toBe('last_month');
+      expect(json.data.summary).toBeDefined();
+    });
+
+    it('returns summary for this_year', async () => {
+      const res = await app.request('/expenses/summary?period=this_year');
+
+      expect(res.status).toBe(200);
+      const json = await res.json();
+      expect(json.data.period.name).toBe('this_year');
+      expect(json.data.summary).toBeDefined();
+    });
   });
 
   // ========================================================================
@@ -278,6 +314,21 @@ describe('Expenses Routes', () => {
       const json = await res.json();
       expect(json.data.currency).toBe('TRY');
     });
+
+    it('returns 500 when storage fails', async () => {
+      const fsMod = await import('node:fs/promises');
+      vi.mocked(fsMod.writeFile).mockRejectedValueOnce(new Error('Disk full'));
+
+      const res = await app.request('/expenses', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount: 50, category: 'food', description: 'Lunch' }),
+      });
+
+      expect(res.status).toBe(500);
+      const json = await res.json();
+      expect(json.error.code).toBe('INTERNAL_ERROR');
+    });
   });
 
   // ========================================================================
@@ -312,6 +363,21 @@ describe('Expenses Routes', () => {
       const json = await res.json();
       expect(json.error.code).toBe('NOT_FOUND');
     });
+
+    it('returns 500 when storage fails', async () => {
+      const fsMod = await import('node:fs/promises');
+      vi.mocked(fsMod.writeFile).mockRejectedValueOnce(new Error('Disk full'));
+
+      const res = await app.request('/expenses/exp_001', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount: 200 }),
+      });
+
+      expect(res.status).toBe(500);
+      const json = await res.json();
+      expect(json.error.code).toBe('INTERNAL_ERROR');
+    });
   });
 
   // ========================================================================
@@ -331,6 +397,17 @@ describe('Expenses Routes', () => {
       const res = await app.request('/expenses/exp_nonexistent', { method: 'DELETE' });
 
       expect(res.status).toBe(404);
+    });
+
+    it('returns 500 when storage fails', async () => {
+      const fsMod = await import('node:fs/promises');
+      vi.mocked(fsMod.writeFile).mockRejectedValueOnce(new Error('Disk full'));
+
+      const res = await app.request('/expenses/exp_001', { method: 'DELETE' });
+
+      expect(res.status).toBe(500);
+      const json = await res.json();
+      expect(json.error.code).toBe('INTERNAL_ERROR');
     });
   });
 });

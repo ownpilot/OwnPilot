@@ -27,6 +27,7 @@ import {
   claimOwnership,
   revokeOwnership,
   printPairingBanner,
+  autoClaimOwnership,
 } from './pairing-service.js';
 
 // ---------------------------------------------------------------------------
@@ -250,6 +251,34 @@ describe('revokeOwnership()', () => {
 // ---------------------------------------------------------------------------
 // printPairingBanner()
 // ---------------------------------------------------------------------------
+
+// ---------------------------------------------------------------------------
+// autoClaimOwnership()
+// ---------------------------------------------------------------------------
+
+describe('autoClaimOwnership()', () => {
+  it('does nothing when platform already has an owner (line 172)', async () => {
+    mockRepo.get.mockResolvedValue('existing-user-id');
+
+    await autoClaimOwnership('channel.telegram', 'telegram', 'new-user', 'chat-123');
+
+    // Should return early — no set calls
+    expect(mockRepo.set).not.toHaveBeenCalled();
+  });
+
+  it('claims ownership when no existing owner (lines 174-178)', async () => {
+    mockRepo.get.mockResolvedValue(null); // no existing owner
+
+    await autoClaimOwnership('channel.telegram', 'telegram', 'user-1', 'chat-abc');
+
+    // Should set owner and owner_chat keys
+    expect(mockRepo.set).toHaveBeenCalledWith('owner_telegram', 'user-1');
+    expect(mockRepo.set).toHaveBeenCalledWith('owner_chat_telegram', 'chat-abc');
+    // Should also rotate the pairing key (set a new key)
+    const keyCall = mockRepo.set.mock.calls.find(([k]) => k === 'pairing_key_channel.telegram');
+    expect(keyCall).toBeDefined();
+  });
+});
 
 describe('printPairingBanner()', () => {
   it('prints the channel name and key to stdout without throwing', () => {

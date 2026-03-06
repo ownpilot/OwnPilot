@@ -36,7 +36,7 @@ vi.mock('../adapters/index.js', () => ({
   getAdapterSync: vi.fn().mockReturnValue(mockAdapter),
 }));
 
-const { MessagesRepository } = await import('./messages.js');
+const { MessagesRepository, createMessagesRepository } = await import('./messages.js');
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -376,6 +376,13 @@ describe('MessagesRepository', () => {
 
         expect(result!.role).toBe(role);
       }
+    });
+  });
+
+  describe('createMessagesRepository factory (line 144)', () => {
+    it('returns a new MessagesRepository instance', () => {
+      const newRepo = createMessagesRepository();
+      expect(newRepo).toBeInstanceOf(MessagesRepository);
     });
   });
 });

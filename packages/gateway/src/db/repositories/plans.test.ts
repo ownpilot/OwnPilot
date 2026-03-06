@@ -33,7 +33,7 @@ vi.mock('../adapters/index.js', () => ({
   getAdapterSync: vi.fn(() => mockAdapter),
 }));
 
-import { PlansRepository, detectDependencyCycle, type PlanStep } from './plans.js';
+import { PlansRepository, detectDependencyCycle, createPlansRepository, type PlanStep } from './plans.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -982,5 +982,17 @@ describe('detectDependencyCycle', () => {
 
     const result = detectDependencyCycle(steps, ['D'], '__new__');
     expect(result).not.toBeNull();
+  });
+});
+
+describe('createPlansRepository', () => {
+  it('returns a PlansRepository instance', () => {
+    const repo = createPlansRepository('user-x');
+    expect(repo).toBeInstanceOf(PlansRepository);
+  });
+
+  it('uses default userId when not provided', () => {
+    const repo = createPlansRepository();
+    expect(repo).toBeInstanceOf(PlansRepository);
   });
 });

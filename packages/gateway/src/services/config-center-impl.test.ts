@@ -14,6 +14,7 @@ const mockConfigServicesRepo = vi.hoisted(() => ({
   getEntryByLabel: vi.fn(),
   getEntries: vi.fn(),
   getFieldValue: vi.fn(),
+  refreshCache: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock('../db/repositories/config-services.js', () => ({
@@ -260,6 +261,16 @@ describe('GatewayConfigCenter', () => {
       mockConfigServicesRepo.getByName.mockReturnValue(null);
 
       expect(center.getServiceDefinition('nonexistent')).toBeNull();
+    });
+  });
+
+  describe('invalidateCache', () => {
+    it('calls configServicesRepo.refreshCache (line 119)', async () => {
+      mockConfigServicesRepo.refreshCache.mockResolvedValue(undefined);
+
+      await center.invalidateCache();
+
+      expect(mockConfigServicesRepo.refreshCache).toHaveBeenCalledOnce();
     });
   });
 

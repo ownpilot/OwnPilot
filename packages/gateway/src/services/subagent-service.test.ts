@@ -37,7 +37,14 @@ vi.mock('../db/repositories/subagents.js', () => ({
   SubagentsRepository: vi.fn().mockImplementation(() => mockRepo),
 }));
 
-const { SubagentServiceImpl } = await import('./subagent-service.js');
+const {
+  SubagentServiceImpl,
+  getSubagentService,
+  resetSubagentService,
+} = await import('./subagent-service.js');
+const { SubagentsRepository: MockSubagentsRepository } = await import(
+  '../db/repositories/subagents.js'
+);
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -263,5 +270,38 @@ describe('SubagentServiceImpl', () => {
 
       expect(mockRepo.getHistory).toHaveBeenCalledWith('conv-1', 10, 5);
     });
+  });
+});
+
+// ── getSubagentService / resetSubagentService singletons ────────────────────
+
+describe('getSubagentService', () => {
+  beforeEach(() => {
+    // Re-apply with regular function (not arrow) for `new` constructor compatibility
+    vi.mocked(MockSubagentsRepository).mockImplementation(function () {
+      return mockRepo as never;
+    });
+    resetSubagentService();
+  });
+  afterEach(() => {
+    resetSubagentService();
+  });
+
+  it('returns a SubagentServiceImpl instance', () => {
+    const svc = getSubagentService();
+    expect(svc).toBeInstanceOf(SubagentServiceImpl);
+  });
+
+  it('returns same singleton on repeated calls', () => {
+    const s1 = getSubagentService();
+    const s2 = getSubagentService();
+    expect(s1).toBe(s2);
+  });
+
+  it('resetSubagentService creates a new instance on next call', () => {
+    const s1 = getSubagentService();
+    resetSubagentService();
+    const s2 = getSubagentService();
+    expect(s1).not.toBe(s2);
   });
 });

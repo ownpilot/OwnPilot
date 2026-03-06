@@ -274,7 +274,7 @@ describe('readPdfExecutor', () => {
 
     const result = await readPdfExecutor({ path: '/test.pdf', pages: '1-3' }, emptyContext);
     expect((result.content as Record<string, unknown>).note).toBe(
-      'Page filtering applied at text level'
+      'Page filtering (1-3) is not supported by the pdf-parse library — full text returned.'
     );
   });
 
@@ -1127,7 +1127,7 @@ describe('Edge cases', () => {
       emptyContext
     );
     const content = result.content as Record<string, unknown>;
-    expect(content.note).toBe('Page filtering applied at text level');
+    expect(content.note).toBe('Page filtering (1-2) is not supported by the pdf-parse library — full text returned.');
     expect(content.tables).toBeDefined();
     expect((content.tables as unknown[]).length).toBe(1);
   });

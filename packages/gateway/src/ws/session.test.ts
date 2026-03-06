@@ -791,6 +791,98 @@ describe('SessionManager', () => {
   // =========================================================================
   // 10. Cleanup
   // =========================================================================
+  // =========================================================================
+  // Event Subscriptions
+  // =========================================================================
+  describe('addEventSubscription', () => {
+    it('returns false for unknown session', () => {
+      expect(manager.addEventSubscription('nonexistent', 'event.*', vi.fn())).toBe(false);
+    });
+
+    it('adds subscription and returns true', () => {
+      const session = manager.create(createMockSocket());
+      const unsub = vi.fn();
+      const result = manager.addEventSubscription(session.id, 'chat.*', unsub);
+      expect(result).toBe(true);
+    });
+
+    it('returns false when subscription limit reached (50)', () => {
+      const session = manager.create(createMockSocket());
+      for (let i = 0; i < 50; i++) {
+        manager.addEventSubscription(session.id, `pattern-${i}`, vi.fn());
+      }
+      // 51st new pattern should be rejected
+      const result = manager.addEventSubscription(session.id, 'overflow-pattern', vi.fn());
+      expect(result).toBe(false);
+    });
+
+    it('replaces existing subscription for same pattern (calls old unsub)', () => {
+      const session = manager.create(createMockSocket());
+      const oldUnsub = vi.fn();
+      const newUnsub = vi.fn();
+      manager.addEventSubscription(session.id, 'event.*', oldUnsub);
+      manager.addEventSubscription(session.id, 'event.*', newUnsub);
+      expect(oldUnsub).toHaveBeenCalled();
+    });
+  });
+
+  describe('removeEventSubscription', () => {
+    it('returns false for unknown session', () => {
+      expect(manager.removeEventSubscription('nonexistent', 'event.*')).toBe(false);
+    });
+
+    it('calls unsubscribe and returns true', () => {
+      const session = manager.create(createMockSocket());
+      const unsub = vi.fn();
+      manager.addEventSubscription(session.id, 'event.*', unsub);
+      const result = manager.removeEventSubscription(session.id, 'event.*');
+      expect(result).toBe(true);
+      expect(unsub).toHaveBeenCalled();
+    });
+
+    it('returns false when pattern not found', () => {
+      const session = manager.create(createMockSocket());
+      const result = manager.removeEventSubscription(session.id, 'nonexistent.*');
+      expect(result).toBe(false);
+    });
+  });
+
+  describe('getEventSubscriptions', () => {
+    it('returns empty array for unknown session', () => {
+      expect(manager.getEventSubscriptions('nonexistent')).toEqual([]);
+    });
+
+    it('returns subscribed patterns', () => {
+      const session = manager.create(createMockSocket());
+      manager.addEventSubscription(session.id, 'chat.*', vi.fn());
+      manager.addEventSubscription(session.id, 'task.*', vi.fn());
+      const patterns = manager.getEventSubscriptions(session.id);
+      expect(patterns).toContain('chat.*');
+      expect(patterns).toContain('task.*');
+      expect(patterns).toHaveLength(2);
+    });
+  });
+
+  describe('remove — cleans up event subscriptions', () => {
+    it('calls all unsubscribe functions on remove', () => {
+      const session = manager.create(createMockSocket());
+      const unsub1 = vi.fn();
+      const unsub2 = vi.fn();
+      manager.addEventSubscription(session.id, 'a.*', unsub1);
+      manager.addEventSubscription(session.id, 'b.*', unsub2);
+      manager.remove(session.id);
+      expect(unsub1).toHaveBeenCalled();
+      expect(unsub2).toHaveBeenCalled();
+    });
+
+    it('does not throw when unsub throws during remove', () => {
+      const session = manager.create(createMockSocket());
+      const throwingUnsub = vi.fn(() => { throw new Error('unsub failed'); });
+      manager.addEventSubscription(session.id, 'err.*', throwingUnsub);
+      expect(() => manager.remove(session.id)).not.toThrow();
+    });
+  });
+
   describe('cleanup', () => {
     beforeEach(() => {
       vi.useFakeTimers();

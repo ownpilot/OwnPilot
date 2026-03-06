@@ -42,7 +42,7 @@ export interface UnifiedAgent {
   backgroundAgent?: BackgroundAgentConfig;
 }
 
-export type HubTab = 'agents' | 'crews' | 'messages' | 'activity';
+export type HubTab = 'agents' | 'crews' | 'messages' | 'activity' | 'plans';
 export type ProfileTab = 'overview' | 'soul' | 'tools' | 'messages' | 'activity' | 'budget';
 
 /** Map background agent state to unified agent status */

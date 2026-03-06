@@ -140,4 +140,14 @@ describe('chunkMarkdown', () => {
       expect(chunks[i]!.index).toBe(i);
     }
   });
+
+  it('hard-splits at maxChunkChars when no paragraph or sentence boundary found (line 119)', () => {
+    // No \n\n or ". " — forces the hard split path (each line is ~10 chars, no periods or double newlines)
+    const line = 'abcdefghij';
+    const text = (line + '\n').repeat(100); // 100 lines × 11 chars = 1100 chars total
+
+    const chunks = chunkMarkdown(text, 300);
+    // Hard split just flushes accumulated content — expect multiple chunks produced
+    expect(chunks.length).toBeGreaterThan(1);
+  });
 });

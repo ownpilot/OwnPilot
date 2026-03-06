@@ -167,12 +167,26 @@ describe('Cost Routes', () => {
       expect(json.data.budget).toBeDefined();
     });
 
-    it('accepts period parameter', async () => {
+    it('accepts period=week', async () => {
       const res = await app.request('/costs?period=week');
 
       expect(res.status).toBe(200);
       const json = await res.json();
       expect(json.data.period).toBe('week');
+    });
+
+    it('accepts period=day', async () => {
+      const res = await app.request('/costs?period=day');
+      expect(res.status).toBe(200);
+      const json = await res.json();
+      expect(json.data.period).toBe('day');
+    });
+
+    it('accepts period=year', async () => {
+      const res = await app.request('/costs?period=year');
+      expect(res.status).toBe(200);
+      const json = await res.json();
+      expect(json.data.period).toBe('year');
     });
   });
 
@@ -260,6 +274,32 @@ describe('Cost Routes', () => {
 
       expect(res.status).toBe(400);
     });
+
+    it('returns 400 when body is invalid JSON', async () => {
+      const res = await app.request('/costs/estimate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: 'not-json',
+      });
+      expect(res.status).toBe(400);
+    });
+
+    it('returns 500 when estimateCost throws', async () => {
+      const { estimateCost } = await import('@ownpilot/core');
+      vi.mocked(estimateCost).mockImplementationOnce(() => {
+        throw new Error('rate limited');
+      });
+
+      const res = await app.request('/costs/estimate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ provider: 'openai', model: 'gpt-4' }),
+      });
+
+      expect(res.status).toBe(500);
+      const json = await res.json();
+      expect(json.error.message).toContain('rate limited');
+    });
   });
 
   // ========================================================================
@@ -293,6 +333,27 @@ describe('Cost Routes', () => {
       const json = await res.json();
       expect(json.data.message).toContain('configured');
       expect(mockBudgetManager.configure).toHaveBeenCalled();
+    });
+
+    it('returns 400 when body is invalid JSON', async () => {
+      const res = await app.request('/costs/budget', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: 'not-json',
+      });
+      expect(res.status).toBe(400);
+    });
+
+    it('returns 500 when configure throws', async () => {
+      mockBudgetManager.configure.mockImplementationOnce(() => {
+        throw new Error('budget error');
+      });
+      const res = await app.request('/costs/budget', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ dailyLimit: 5 }),
+      });
+      expect(res.status).toBe(500);
     });
   });
 
@@ -375,6 +436,31 @@ describe('Cost Routes', () => {
 
       expect(res.status).toBe(400);
     });
+
+    it('returns 400 when body is invalid JSON', async () => {
+      const res = await app.request('/costs/record', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: 'not-json',
+      });
+      expect(res.status).toBe(400);
+    });
+
+    it('returns 500 when record throws', async () => {
+      mockUsageTracker.record.mockRejectedValueOnce(new Error('DB write error'));
+      const res = await app.request('/costs/record', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          provider: 'openai',
+          model: 'gpt-4',
+          inputTokens: 100,
+          outputTokens: 50,
+          latencyMs: 200,
+        }),
+      });
+      expect(res.status).toBe(500);
+    });
   });
 
   // ========================================================================
@@ -399,6 +485,16 @@ describe('Cost Routes', () => {
 
       expect(res.status).toBe(200);
       expect(res.headers.get('Content-Type')).toContain('text/csv');
+    });
+
+    it('returns 500 when export data is not valid JSON', async () => {
+      mockUsageTracker.exportUsage.mockResolvedValue('not valid json {{{{');
+
+      const res = await app.request('/costs/export');
+
+      expect(res.status).toBe(500);
+      const json = await res.json();
+      expect(json.error.message).toContain('export data');
     });
   });
 });

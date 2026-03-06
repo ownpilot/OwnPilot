@@ -835,6 +835,52 @@ describe('invalidateMcpServer', () => {
 });
 
 // =============================================================================
+// Session cleanup timer (lines 39-48)
+// =============================================================================
+
+describe('session cleanup timer', () => {
+  it('cleans up stale sessions after SESSION_MAX_AGE_MS (30 min)', async () => {
+    vi.useFakeTimers();
+    try {
+      // Create session — triggers startSessionCleanup → setInterval
+      await handleMcpRequest(makeRequest('POST'));
+      const opts = transportConstructorCalls[0]!;
+      (opts.onsessioninitialized as (s: string) => void)('stale-sid');
+
+      // Advance fake clock past SESSION_MAX_AGE_MS (30min) + one full interval (5min) + 1ms
+      // Timer fires every 5min; at 35min+1ms the diff (35min+1ms) > SESSION_MAX_AGE_MS (30min)
+      await vi.advanceTimersByTimeAsync(35 * 60 * 1000 + 1);
+
+      expect(mockTransportClose).toHaveBeenCalled();
+      expect(mockLogInfo).toHaveBeenCalledWith('Cleaned up stale MCP session', {
+        sessionId: 'stale-sid',
+      });
+    } finally {
+      vi.useRealTimers();
+      invalidateMcpServer();
+    }
+  });
+
+  it('does not clean up sessions that are still active (< 30 min)', async () => {
+    vi.useFakeTimers();
+    try {
+      await handleMcpRequest(makeRequest('POST'));
+      const opts = transportConstructorCalls[0]!;
+      (opts.onsessioninitialized as (s: string) => void)('active-sid');
+
+      // Advance only 10 minutes — well within SESSION_MAX_AGE_MS
+      await vi.advanceTimersByTimeAsync(10 * 60 * 1000 + 1);
+
+      // Transport should NOT have been closed
+      expect(mockTransportClose).not.toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+      invalidateMcpServer();
+    }
+  });
+});
+
+// =============================================================================
 // Session management integration
 // =============================================================================
 

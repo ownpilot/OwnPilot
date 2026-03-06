@@ -14,6 +14,10 @@ import {
   apiResponse,
   apiError,
   safeKeyCompare,
+  sanitizeId,
+  maskSecret,
+  parseJsonBody,
+  parseJsonBodySafe,
   ERROR_CODES,
 } from './helpers.js';
 
@@ -23,6 +27,8 @@ function createMockContext(overrides: Partial<Context> = {}): Context {
     get: vi.fn(),
     req: {
       query: vi.fn(),
+      header: vi.fn(),
+      json: vi.fn(),
     },
     json: vi.fn((data, status) => ({ data, status })),
     ...overrides,
@@ -504,6 +510,119 @@ describe('Route Helpers', () => {
       expect(ERROR_CODES.NOT_FOUND).toBeDefined();
       expect(ERROR_CODES.INVALID_REQUEST).toBeDefined();
       expect(ERROR_CODES.ERROR).toBeDefined();
+    });
+  });
+
+  describe('sanitizeId', () => {
+    it('returns sanitized string for normal ids', () => {
+      expect(sanitizeId('user-123')).toBe('user-123');
+    });
+
+    it('strips special characters', () => {
+      expect(sanitizeId('hello world!')).toBe('helloworld');
+    });
+
+    it('returns hash-suffixed string for ids longer than 100 chars', () => {
+      const longId = 'a'.repeat(101);
+      const result = sanitizeId(longId);
+      // 67 chars + '-' + 32 hex chars = 100 total
+      expect(result.length).toBe(100);
+      expect(result).toContain('-');
+    });
+  });
+
+  describe('maskSecret', () => {
+    it('masks long secrets showing first 4 and last 4', () => {
+      const result = maskSecret('abcdefghijklmnop'); // 16 chars
+      expect(result).toBe('abcd...mnop');
+    });
+
+    it('returns **** for strings shorter than 12 chars', () => {
+      expect(maskSecret('short')).toBe('****');
+    });
+
+    it('returns **** for non-string values', () => {
+      expect(maskSecret(null)).toBe('****');
+      expect(maskSecret(42)).toBe('****');
+      expect(maskSecret(undefined)).toBe('****');
+    });
+  });
+
+  describe('parseJsonBody', () => {
+    it('returns null when Content-Type is not JSON', async () => {
+      const c = createMockContext();
+      vi.mocked(c.req.header).mockReturnValue('text/plain');
+      const result = await parseJsonBody(c);
+      expect(result).toBeNull();
+      expect(c.json).toHaveBeenCalled();
+    });
+
+    it('returns parsed data when valid JSON and no validator', async () => {
+      const c = createMockContext();
+      vi.mocked(c.req.header).mockReturnValue('application/json');
+      vi.mocked(c.req.json).mockResolvedValue({ name: 'test', count: 42 });
+      const result = await parseJsonBody(c);
+      expect(result).toEqual({ name: 'test', count: 42 });
+    });
+
+    it('returns validated data when validator succeeds', async () => {
+      const c = createMockContext();
+      vi.mocked(c.req.header).mockReturnValue('application/json');
+      vi.mocked(c.req.json).mockResolvedValue({ id: '123' });
+      const result = await parseJsonBody(c, (data: unknown) => (data as { id: string }).id);
+      expect(result).toBe('123');
+    });
+
+    it('returns null and sends error when validator throws Error', async () => {
+      const c = createMockContext();
+      vi.mocked(c.req.header).mockReturnValue('application/json');
+      vi.mocked(c.req.json).mockResolvedValue({ bad: true });
+      const result = await parseJsonBody(c, () => {
+        throw new Error('invalid data');
+      });
+      expect(result).toBeNull();
+      const [response] = vi.mocked(c.json).mock.calls[0];
+      expect((response as { error: { message: string } }).error.message).toContain('invalid data');
+    });
+
+    it('returns null and uses Validation failed message when validator throws non-Error', async () => {
+      const c = createMockContext();
+      vi.mocked(c.req.header).mockReturnValue('application/json');
+      vi.mocked(c.req.json).mockResolvedValue({ bad: true });
+      const result = await parseJsonBody(c, () => {
+        throw 'string error'; // non-Error throw
+      });
+      expect(result).toBeNull();
+      const [response] = vi.mocked(c.json).mock.calls[0];
+      expect((response as { error: { message: string } }).error.message).toContain(
+        'Validation failed'
+      );
+    });
+
+    it('returns null when req.json throws', async () => {
+      const c = createMockContext();
+      vi.mocked(c.req.header).mockReturnValue('application/json');
+      vi.mocked(c.req.json).mockRejectedValue(new Error('parse error'));
+      const result = await parseJsonBody(c);
+      expect(result).toBeNull();
+    });
+  });
+
+  describe('parseJsonBodySafe', () => {
+    it('returns success result with parsed data', async () => {
+      const c = createMockContext();
+      vi.mocked(c.req.json).mockResolvedValue({ value: 42 });
+      const result = await parseJsonBodySafe(c);
+      expect(result.success).toBe(true);
+      if (result.success) expect(result.data).toEqual({ value: 42 });
+    });
+
+    it('returns failure result when req.json throws', async () => {
+      const c = createMockContext();
+      vi.mocked(c.req.json).mockRejectedValue(new Error('Invalid JSON'));
+      const result = await parseJsonBodySafe(c);
+      expect(result.success).toBe(false);
+      if (!result.success) expect(result.error).toContain('Invalid JSON');
     });
   });
 });

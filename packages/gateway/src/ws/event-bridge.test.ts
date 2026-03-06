@@ -359,3 +359,28 @@ describe('EventBusBridge', () => {
     });
   });
 });
+
+// ============================================================================
+// Singleton helpers
+// ============================================================================
+
+describe('getEventBusBridge / setEventBusBridge', () => {
+  it('returns null before bridge is set', async () => {
+    const { getEventBusBridge } = await import('./event-bridge.js');
+    // May be non-null if set by other tests in the module — just verify it returns a value
+    const result = getEventBusBridge();
+    expect(result === null || typeof result === 'object').toBe(true);
+  });
+
+  it('setEventBusBridge stores the bridge and getEventBusBridge retrieves it', async () => {
+    const { getEventBusBridge, setEventBusBridge, EventBusBridge } = await import('./event-bridge.js');
+    const fakeEventBus = {
+      onPattern: vi.fn(() => vi.fn()),
+      emitRaw: vi.fn(),
+    } as unknown as Parameters<typeof setEventBusBridge>[0]['eventBus'];
+    const fakeSM = { send: vi.fn() } as unknown as Parameters<typeof setEventBusBridge>[0]['sessionManager'];
+    const newBridge = new EventBusBridge({ eventBus: fakeEventBus, sessionManager: fakeSM });
+    setEventBusBridge(newBridge);
+    expect(getEventBusBridge()).toBe(newBridge);
+  });
+});

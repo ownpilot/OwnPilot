@@ -154,6 +154,7 @@ const mockChatRepo = {
   updateConversation: vi.fn(async (id: string, data: { isArchived: boolean }) =>
     id === 'conv-1' ? { ...sampleConversation, isArchived: data.isArchived } : null
   ),
+  addMessage: vi.fn(async () => ({})),
 };
 
 const mockChannelSessionsRepo = {
@@ -341,6 +342,7 @@ describe('Chat History & Logs Routes', () => {
     mockProcessIncomingMessage.mockResolvedValue(undefined);
     mockGetOwnerUserId.mockResolvedValue('owner-user-123');
     mockGetOwnerChatId.mockResolvedValue('owner-chat-456');
+    mockChatRepo.addMessage.mockResolvedValue({});
     app = createApp();
   });
 
@@ -1396,6 +1398,467 @@ describe('Chat History & Logs Routes', () => {
       expect(res.status).toBe(500);
       const json = await res.json();
       expect(json.error.message).toContain('Agent not found');
+    });
+  });
+
+  // ========================================================================
+  // GET /history/:id/unified - channel path: channelUserInfo + timeline merge
+  // ========================================================================
+
+  describe('GET /api/history/:id/unified — channel path detail', () => {
+    const channelUser = {
+      id: 'user-ch-1',
+      displayName: 'Alice',
+      platform: 'whatsapp',
+      avatarUrl: 'https://example.com/alice.jpg',
+    };
+
+    const t = (offset: number) => new Date(new Date('2026-01-01T10:00:00.000Z').getTime() + offset);
+
+    it('populates channelUserInfo from channelUsersRepo when user found (line 336)', async () => {
+      const { channelUsersRepo } = await import('../db/repositories/channel-users.js');
+      vi.mocked(channelUsersRepo.getById).mockResolvedValueOnce(channelUser as never);
+
+      mockChatRepo.getConversationWithMessages.mockResolvedValueOnce({
+        conversation: sampleChannelConversation,
+        messages: [],
+      });
+
+      const res = await app.request('/api/history/conv-ch-1/unified');
+      const json = await res.json();
+
+      expect(res.status).toBe(200);
+      expect(json.data.channelInfo.senderName).toBe('Alice');
+      expect(json.data.conversation.channelSenderName).toBe('Alice');
+    });
+
+    it('adds channel messages to unified timeline (lines 364-374)', async () => {
+      const { channelMessagesRepo } = await import('../db/repositories/channel-messages.js');
+      vi.mocked(channelMessagesRepo.getByConversation).mockResolvedValueOnce([
+        {
+          id: 'cm-1',
+          direction: 'inbound',
+          content: 'Hi from WhatsApp',
+          senderName: 'Alice',
+          senderId: 'wa-alice',
+          createdAt: t(0),
+        },
+        {
+          id: 'cm-2',
+          direction: 'outbound',
+          content: 'Hello back',
+          senderName: 'Bot',
+          senderId: 'bot',
+          createdAt: t(1000),
+        },
+      ] as never);
+
+      mockChatRepo.getConversationWithMessages.mockResolvedValueOnce({
+        conversation: sampleChannelConversation,
+        messages: [],
+      });
+
+      const res = await app.request('/api/history/conv-ch-1/unified');
+      const json = await res.json();
+
+      expect(res.status).toBe(200);
+      const msgs = json.data.messages;
+      expect(msgs).toHaveLength(2);
+      expect(msgs[0]).toMatchObject({
+        id: 'cm-1',
+        role: 'user',
+        source: 'channel',
+        direction: 'inbound',
+        senderName: 'Alice',
+        senderId: 'wa-alice',
+      });
+      expect(msgs[1]).toMatchObject({
+        id: 'cm-2',
+        role: 'assistant',
+        source: 'channel',
+        direction: 'outbound',
+      });
+    });
+
+    it('deduplicates AI messages that overlap with channel messages by time (lines 379-391)', async () => {
+      const baseTime = t(0);
+      const { channelMessagesRepo } = await import('../db/repositories/channel-messages.js');
+      vi.mocked(channelMessagesRepo.getByConversation).mockResolvedValueOnce([
+        {
+          id: 'cm-inbound',
+          direction: 'inbound',
+          content: 'Same user msg',
+          senderName: 'Alice',
+          senderId: 'wa-alice',
+          createdAt: baseTime,
+        },
+        {
+          id: 'cm-outbound',
+          direction: 'outbound',
+          content: 'Same assistant msg',
+          senderName: 'Bot',
+          senderId: 'bot',
+          createdAt: new Date(baseTime.getTime() + 500),
+        },
+      ] as never);
+
+      // AI messages at nearly the same time — should be deduplicated
+      mockChatRepo.getConversationWithMessages.mockResolvedValueOnce({
+        conversation: sampleChannelConversation,
+        messages: [
+          {
+            id: 'ai-user',
+            role: 'user',
+            content: 'Same user msg',
+            provider: null,
+            model: null,
+            toolCalls: null,
+            trace: null,
+            isError: false,
+            createdAt: new Date(baseTime.getTime() + 100), // within 2000ms of cm-inbound
+          },
+          {
+            id: 'ai-assistant',
+            role: 'assistant',
+            content: 'Same assistant msg',
+            provider: null,
+            model: null,
+            toolCalls: null,
+            trace: null,
+            isError: false,
+            createdAt: new Date(baseTime.getTime() + 600), // within 2000ms of cm-outbound
+          },
+        ],
+      });
+
+      const res = await app.request('/api/history/conv-ch-1/unified');
+      const json = await res.json();
+
+      // Both AI messages should be deduplicated — only 2 channel messages remain
+      expect(json.data.messages).toHaveLength(2);
+      const sources = json.data.messages.map((m: { source: string }) => m.source);
+      expect(sources).not.toContain('ai');
+    });
+
+    it('includes AI tool messages that have no channel equivalent (lines 394-409)', async () => {
+      const { channelMessagesRepo } = await import('../db/repositories/channel-messages.js');
+      vi.mocked(channelMessagesRepo.getByConversation).mockResolvedValueOnce([] as never);
+
+      mockChatRepo.getConversationWithMessages.mockResolvedValueOnce({
+        conversation: sampleChannelConversation,
+        messages: [
+          {
+            id: 'tool-msg',
+            role: 'tool',
+            content: 'tool result',
+            provider: null,
+            model: null,
+            toolCalls: null,
+            trace: null,
+            isError: false,
+            createdAt: t(0),
+          },
+        ],
+      });
+
+      const res = await app.request('/api/history/conv-ch-1/unified');
+      const json = await res.json();
+
+      expect(json.data.messages).toHaveLength(1);
+      expect(json.data.messages[0].source).toBe('ai');
+      expect(json.data.messages[0].id).toBe('tool-msg');
+    });
+  });
+
+  // ========================================================================
+  // POST /history/:id/channel-reply - Send reply from WebUI to channel
+  // ========================================================================
+
+  describe('POST /api/history/:conversationId/channel-reply', () => {
+    const mockChannelService = {
+      send: vi.fn(async () => 'sent-msg-id-123'),
+    };
+
+    beforeEach(() => {
+      mockGetChannelServiceImpl.mockReturnValue(mockChannelService as never);
+      mockChannelService.send.mockResolvedValue('sent-msg-id-123');
+    });
+
+    it('sends reply and returns sent:true', async () => {
+      const res = await app.request('/api/history/conv-ch-1/channel-reply', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: 'Hello back' }),
+      });
+
+      expect(res.status).toBe(200);
+      const json = await res.json();
+      expect(json.success).toBe(true);
+      expect(json.data.sent).toBe(true);
+      expect(json.data.messageId).toBe('sent-msg-id-123');
+      expect(json.data.channelPluginId).toBe('whatsapp-plugin');
+    });
+
+    it('calls channelService.send with correct params', async () => {
+      await app.request('/api/history/conv-ch-1/channel-reply', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: '  trimmed text  ' }),
+      });
+
+      expect(mockChannelService.send).toHaveBeenCalledWith('whatsapp-plugin', {
+        platformChatId: 'chat-123',
+        text: 'trimmed text',
+      });
+    });
+
+    it('persists to channel_messages and messages table', async () => {
+      const { channelMessagesRepo } = await import('../db/repositories/channel-messages.js');
+
+      await app.request('/api/history/conv-ch-1/channel-reply', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: 'Hello back' }),
+      });
+
+      expect(channelMessagesRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          channelId: 'whatsapp-plugin',
+          externalId: 'sent-msg-id-123',
+          direction: 'outbound',
+          senderId: 'webui',
+          senderName: 'WebUI',
+          content: 'Hello back',
+          conversationId: 'conv-ch-1',
+        })
+      );
+      expect(mockChatRepo.addMessage).toHaveBeenCalledWith(
+        expect.objectContaining({
+          conversationId: 'conv-ch-1',
+          role: 'assistant',
+          content: 'Hello back',
+        })
+      );
+    });
+
+    it('broadcasts WebSocket events', async () => {
+      const { wsGateway } = await import('../ws/server.js');
+
+      await app.request('/api/history/conv-ch-1/channel-reply', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: 'Hello back' }),
+      });
+
+      expect(wsGateway.broadcast).toHaveBeenCalledWith(
+        'channel:message',
+        expect.objectContaining({
+          channelId: 'whatsapp-plugin',
+          content: 'Hello back',
+          direction: 'outgoing',
+        })
+      );
+      expect(wsGateway.broadcast).toHaveBeenCalledWith(
+        'data:changed',
+        expect.objectContaining({ id: 'conv-ch-1', action: 'updated' })
+      );
+    });
+
+    it('returns 400 when text is missing', async () => {
+      const res = await app.request('/api/history/conv-ch-1/channel-reply', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      });
+
+      expect(res.status).toBe(400);
+      const json = await res.json();
+      expect(json.error.message).toContain('text is required');
+    });
+
+    it('returns 400 when text is blank whitespace', async () => {
+      const res = await app.request('/api/history/conv-ch-1/channel-reply', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: '   ' }),
+      });
+
+      expect(res.status).toBe(400);
+    });
+
+    it('returns 404 when conversation not found', async () => {
+      mockChatRepo.getConversation.mockResolvedValueOnce(null);
+
+      const res = await app.request('/api/history/nonexistent/channel-reply', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: 'hello' }),
+      });
+
+      expect(res.status).toBe(404);
+    });
+
+    it('returns 400 when conversation is not channel-sourced', async () => {
+      mockChatRepo.getConversation.mockResolvedValueOnce({
+        ...sampleConversation,
+        metadata: { source: 'web' },
+      });
+
+      const res = await app.request('/api/history/conv-1/channel-reply', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: 'hello' }),
+      });
+
+      expect(res.status).toBe(400);
+      const json = await res.json();
+      expect(json.error.message).toContain('Not a channel conversation');
+    });
+
+    it('returns 404 when no channel session found', async () => {
+      mockChannelSessionsRepo.findByConversation.mockResolvedValueOnce(null);
+
+      const res = await app.request('/api/history/conv-ch-1/channel-reply', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: 'hello' }),
+      });
+
+      expect(res.status).toBe(404);
+      const json = await res.json();
+      expect(json.error.message).toContain('No active channel session');
+    });
+
+    it('returns 503 when channel service is not available', async () => {
+      mockGetChannelServiceImpl.mockReturnValueOnce(null);
+
+      const res = await app.request('/api/history/conv-ch-1/channel-reply', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: 'hello' }),
+      });
+
+      expect(res.status).toBe(503);
+      const json = await res.json();
+      expect(json.error.message).toContain('Channel service not available');
+    });
+
+    it('continues (non-fatal) when channelMessagesRepo.create throws', async () => {
+      const { channelMessagesRepo } = await import('../db/repositories/channel-messages.js');
+      vi.mocked(channelMessagesRepo.create).mockRejectedValueOnce(new Error('DB write failed'));
+
+      const res = await app.request('/api/history/conv-ch-1/channel-reply', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: 'hello' }),
+      });
+
+      // Still 200 — message was sent, persist is non-fatal
+      expect(res.status).toBe(200);
+      const json = await res.json();
+      expect(json.data.sent).toBe(true);
+    });
+
+    it('continues (non-fatal) when chatRepo.addMessage throws', async () => {
+      mockChatRepo.addMessage.mockRejectedValueOnce(new Error('DB write failed'));
+
+      const res = await app.request('/api/history/conv-ch-1/channel-reply', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: 'hello' }),
+      });
+
+      expect(res.status).toBe(200);
+    });
+
+    it('returns 500 when channelService.send throws', async () => {
+      mockChannelService.send.mockRejectedValueOnce(new Error('Send failed'));
+
+      const res = await app.request('/api/history/conv-ch-1/channel-reply', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: 'hello' }),
+      });
+
+      expect(res.status).toBe(500);
+      const json = await res.json();
+      expect(json.error.message).toContain('Send failed');
+    });
+  });
+
+  // ========================================================================
+  // PATCH /history/:id - Rename conversation
+  // ========================================================================
+
+  describe('PATCH /api/history/:id (rename)', () => {
+    beforeEach(() => {
+      mockChatRepo.updateConversation.mockImplementation(async (id: string, data: { title?: string }) =>
+        id === 'conv-1' ? { ...sampleConversation, title: data.title ?? sampleConversation.title } : null
+      );
+    });
+
+    it('renames a conversation and returns updated id + title', async () => {
+      const res = await app.request('/api/history/conv-1', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: 'New Title' }),
+      });
+
+      expect(res.status).toBe(200);
+      const json = await res.json();
+      expect(json.success).toBe(true);
+      expect(json.data.id).toBe('conv-1');
+      expect(json.data.title).toBe('New Title');
+      expect(mockChatRepo.updateConversation).toHaveBeenCalledWith('conv-1', { title: 'New Title' });
+    });
+
+    it('returns 404 when conversation not found', async () => {
+      const res = await app.request('/api/history/nonexistent', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: 'New Title' }),
+      });
+
+      expect(res.status).toBe(404);
+      const json = await res.json();
+      expect(json.error.message).toContain('Conversation not found');
+    });
+
+    it('returns 400 for invalid JSON body', async () => {
+      const res = await app.request('/api/history/conv-1', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: 'not json',
+      });
+
+      expect(res.status).toBe(400);
+      const json = await res.json();
+      expect(json.error.message).toContain('Invalid JSON body');
+    });
+
+    it('returns 500 when repository throws', async () => {
+      mockChatRepo.updateConversation.mockRejectedValueOnce(new Error('DB error'));
+
+      const res = await app.request('/api/history/conv-1', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: 'New Title' }),
+      });
+
+      expect(res.status).toBe(500);
+      const json = await res.json();
+      expect(json.error.message).toContain('DB error');
+    });
+
+    it('omits title field from update when not provided in body', async () => {
+      const res = await app.request('/api/history/conv-1', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      });
+
+      expect(res.status).toBe(200);
+      expect(mockChatRepo.updateConversation).toHaveBeenCalledWith('conv-1', {});
     });
   });
 

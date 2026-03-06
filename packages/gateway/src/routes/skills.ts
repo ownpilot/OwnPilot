@@ -37,6 +37,21 @@ skillsRoutes.get('/search', async (c) => {
 });
 
 // ============================================================================
+// Featured skills (top packages from npm — empty query)
+// ============================================================================
+
+skillsRoutes.get('/featured', async (c) => {
+  try {
+    const limit = Math.min(parseInt(c.req.query('limit') ?? '20', 10), 50);
+    const installer = getNpmInstaller();
+    const results = await installer.search('', limit);
+    return apiResponse(c, results);
+  } catch (err) {
+    return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(err) }, 500);
+  }
+});
+
+// ============================================================================
 // npm Install
 // ============================================================================
 

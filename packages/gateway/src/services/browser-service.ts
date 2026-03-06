@@ -9,38 +9,7 @@
 import type { Browser, Page } from 'puppeteer-core';
 import { hasPII, detectPII, getLog } from '@ownpilot/core';
 import { configServicesRepo } from '../db/repositories/config-services.js';
-
-// SSRF-blocked hostname patterns (private networks, metadata endpoints, localhost)
-const BLOCKED_HOSTS = [
-  'localhost',
-  '127.',
-  '0.0.0.0',
-  '10.',
-  '192.168.',
-  '169.254.',
-  '[::1]',
-  '[fe80:',
-  '[fc00:',
-  '[fd00:',
-  'metadata.google.internal',
-];
-
-function isBlockedUrl(url: string): boolean {
-  try {
-    const parsed = new URL(url);
-    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return true;
-    if (parsed.username || parsed.password) return true;
-    const h = parsed.hostname.toLowerCase();
-    // Block numeric-only hostnames (IP tricks)
-    if (/^(0x[0-9a-f]+|0[0-7]+|\d+)$/i.test(h)) return true;
-    // Block 172.16-31.x.x
-    const m172 = h.match(/^172\.(\d+)\./);
-    if (m172 && Number(m172[1]) >= 16 && Number(m172[1]) <= 31) return true;
-    return BLOCKED_HOSTS.some((b) => h === b || h.startsWith(b));
-  } catch {
-    return true;
-  }
-}
+import { isBlockedUrl } from '../utils/ssrf.js';
 
 const log = getLog('BrowserService');
 

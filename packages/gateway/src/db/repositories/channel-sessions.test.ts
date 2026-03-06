@@ -253,6 +253,81 @@ describe('ChannelSessionsRepository', () => {
       expect(result.id).toBe('generated-uuid');
       expect(mockAdapter.execute).toHaveBeenCalledOnce();
     });
+
+    it('falls back to retry findActive when create throws and retry finds session', async () => {
+      // First findActive returns null → try create → throws → retry findActive returns session
+      mockAdapter.queryOne
+        .mockResolvedValueOnce(null)               // initial findActive → null
+        .mockResolvedValueOnce(makeSessionRow());  // retry findActive after catch → found
+
+      // Make create's execute throw
+      mockAdapter.execute.mockRejectedValueOnce(new Error('unique_violation'));
+
+      const result = await repo.findOrCreate({
+        channelUserId: 'cu-1',
+        channelPluginId: 'cp-1',
+        platformChatId: 'chat-1',
+      });
+
+      expect(result.id).toBe('sess-1');
+    });
+
+    it('throws when create fails and retry findActive also returns null', async () => {
+      // First findActive → null, create → throws, retry findActive → null → must throw
+      mockAdapter.queryOne
+        .mockResolvedValueOnce(null)  // initial findActive
+        .mockResolvedValueOnce(null); // retry findActive
+
+      mockAdapter.execute.mockRejectedValueOnce(new Error('unique_violation'));
+
+      await expect(
+        repo.findOrCreate({
+          channelUserId: 'cu-1',
+          channelPluginId: 'cp-1',
+          platformChatId: 'chat-1',
+        })
+      ).rejects.toThrow('Failed to find or create channel session');
+    });
+  }); // end findOrCreate
+
+  // ---- updateContext ----
+
+  describe('updateContext', () => {
+    it('merges context JSON into the session', async () => {
+      mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
+
+      await repo.updateContext('sess-1', { key: 'value', count: 42 });
+
+      const [sql, params] = mockAdapter.execute.mock.calls[0];
+      expect(sql).toContain('context = context ||');
+      expect(params[0]).toBe(JSON.stringify({ key: 'value', count: 42 }));
+      expect(params[1]).toBe('sess-1');
+    });
+  });
+
+  // ---- cleanupOld ----
+
+  describe('cleanupOld', () => {
+    it('deletes inactive and stale sessions and returns the count', async () => {
+      mockAdapter.execute.mockResolvedValueOnce({ changes: 7 });
+
+      const deleted = await repo.cleanupOld(30);
+
+      expect(deleted).toBe(7);
+      const [sql, params] = mockAdapter.execute.mock.calls[0];
+      expect(sql).toContain('is_active = FALSE');
+      expect(sql).toContain('INTERVAL');
+      expect(params[0]).toBe(30);
+    });
+
+    it('uses default maxAgeDays=90 when not specified', async () => {
+      mockAdapter.execute.mockResolvedValueOnce({ changes: 0 });
+
+      await repo.cleanupOld();
+
+      const [, params] = mockAdapter.execute.mock.calls[0];
+      expect(params[0]).toBe(90);
+    });
   });
 
   // ---- linkConversation ----

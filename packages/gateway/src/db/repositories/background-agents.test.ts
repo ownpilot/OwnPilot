@@ -152,6 +152,30 @@ describe('BackgroundAgentsRepository', () => {
       const sql = mockAdapter.execute.mock.calls[0]![0] as string;
       expect(sql).toContain('INSERT INTO background_agents');
     });
+
+    it('throws when getById returns null after insert (line 177)', async () => {
+      mockAdapter.execute.mockResolvedValueOnce({ changes: 1, rowCount: 1 });
+      mockAdapter.queryOne.mockResolvedValueOnce(null); // getById returns null
+
+      await expect(
+        repo.create({
+          id: 'bg-fail',
+          userId: 'user-1',
+          name: 'Fail Agent',
+          mission: 'Mission',
+          mode: 'interval',
+          allowedTools: [],
+          limits: {
+            maxTurnsPerCycle: 10,
+            maxToolCallsPerCycle: 50,
+            maxCyclesPerHour: 60,
+            cycleTimeoutMs: 120000,
+          },
+          autoStart: false,
+          createdBy: 'user',
+        })
+      ).rejects.toThrow('Failed to create background agent');
+    });
   });
 
   describe('getById', () => {
@@ -350,5 +374,185 @@ describe('BackgroundAgentsRepository', () => {
       const sql = mockAdapter.execute.mock.calls[0]![0] as string;
       expect(sql).toContain('DELETE FROM background_agent_history');
     });
+
+    it('returns 0 when no rows deleted', async () => {
+      mockAdapter.execute.mockResolvedValueOnce({ changes: 0, rowCount: 0 });
+      const count = await repo.cleanupOldHistory(7);
+      expect(count).toBe(0);
+    });
+  });
+
+  describe('deleteSession', () => {
+    it('deletes the session for an agent', async () => {
+      mockAdapter.execute.mockResolvedValueOnce({ changes: 1, rowCount: 1 });
+
+      await repo.deleteSession('bg-1');
+
+      const sql = mockAdapter.execute.mock.calls[0]![0] as string;
+      expect(sql).toContain('DELETE FROM background_agent_sessions WHERE agent_id = $1');
+      expect(mockAdapter.execute.mock.calls[0]![1]).toEqual(['bg-1']);
+    });
+  });
+
+  describe('clearInbox', () => {
+    it('returns an empty array (inbox cleared via runner)', async () => {
+      mockAdapter.queryOne.mockResolvedValueOnce({ inbox: '[]' });
+
+      const result = await repo.clearInbox('bg-1');
+
+      expect(result).toEqual([]);
+      const sql = mockAdapter.queryOne.mock.calls[0]![0] as string;
+      expect(sql).toContain("SET inbox = '[]'");
+      expect(sql).toContain('RETURNING inbox');
+    });
+  });
+
+  describe('update — additional fields', () => {
+    it('updates mission field', async () => {
+      mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
+      mockAdapter.queryOne.mockResolvedValueOnce(makeAgentRow());
+
+      await repo.update('bg-1', 'user-1', { mission: 'New mission' });
+
+      const sql = mockAdapter.execute.mock.calls[0]![0] as string;
+      expect(sql).toContain('mission =');
+    });
+
+    it('updates mode field', async () => {
+      mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
+      mockAdapter.queryOne.mockResolvedValueOnce(makeAgentRow());
+
+      await repo.update('bg-1', 'user-1', { mode: 'event' });
+
+      const sql = mockAdapter.execute.mock.calls[0]![0] as string;
+      expect(sql).toContain('mode =');
+    });
+
+    it('updates allowedTools field', async () => {
+      mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
+      mockAdapter.queryOne.mockResolvedValueOnce(makeAgentRow());
+
+      await repo.update('bg-1', 'user-1', { allowedTools: ['tool_a', 'tool_b'] });
+
+      const sql = mockAdapter.execute.mock.calls[0]![0] as string;
+      expect(sql).toContain('allowed_tools =');
+    });
+
+    it('updates limits, intervalMs, eventFilters', async () => {
+      mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
+      mockAdapter.queryOne.mockResolvedValueOnce(makeAgentRow());
+
+      await repo.update('bg-1', 'user-1', {
+        limits: { maxTurnsPerCycle: 5, maxToolCallsPerCycle: 20, maxCyclesPerHour: 10, cycleTimeoutMs: 60000 },
+        intervalMs: 600000,
+        eventFilters: ['goal.created'],
+      });
+
+      const sql = mockAdapter.execute.mock.calls[0]![0] as string;
+      expect(sql).toContain('limits =');
+      expect(sql).toContain('interval_ms =');
+      expect(sql).toContain('event_filters =');
+    });
+
+    it('updates autoStart, stopCondition, provider, model, workspaceId, skills', async () => {
+      mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
+      mockAdapter.queryOne.mockResolvedValueOnce(makeAgentRow());
+
+      await repo.update('bg-1', 'user-1', {
+        autoStart: false,
+        stopCondition: 'task_complete',
+        provider: 'openai',
+        model: 'gpt-4',
+        workspaceId: 'ws-1',
+        skills: ['skill-a'],
+      });
+
+      const sql = mockAdapter.execute.mock.calls[0]![0] as string;
+      expect(sql).toContain('auto_start =');
+      expect(sql).toContain('stop_condition =');
+      expect(sql).toContain('provider =');
+      expect(sql).toContain('model =');
+      expect(sql).toContain('workspace_id =');
+      expect(sql).toContain('skills =');
+    });
+  });
+
+  describe('loadSession — edge cases', () => {
+    it('returns null for lastCycleAt when row has null', async () => {
+      mockAdapter.queryOne.mockResolvedValueOnce(makeSessionRow({ last_cycle_at: null }));
+      const result = await repo.loadSession('bg-1');
+      expect(result!.lastCycleAt).toBeNull();
+    });
+
+    it('returns null for stoppedAt when row has null', async () => {
+      mockAdapter.queryOne.mockResolvedValueOnce(makeSessionRow({ stopped_at: null }));
+      const result = await repo.loadSession('bg-1');
+      expect(result!.stoppedAt).toBeNull();
+    });
+  });
+
+  describe('getHistory — history row mapping', () => {
+    it('maps null tokens_used and cost_usd to undefined', async () => {
+      mockAdapter.queryOne.mockResolvedValueOnce({ count: '1' });
+      mockAdapter.query.mockResolvedValueOnce([
+        makeHistoryRow({ tokens_used: null, cost_usd: null, error: 'timeout' }),
+      ]);
+
+      const result = await repo.getHistory('bg-1', 10, 0);
+      expect(result.entries[0]!.tokensUsed).toBeUndefined();
+      expect(result.entries[0]!.costUsd).toBeUndefined();
+      expect(result.entries[0]!.error).toBe('timeout');
+    });
+  });
+
+  describe('create — with optional fields', () => {
+    it('passes intervalMs, eventFilters, stopCondition, provider, model, skills', async () => {
+      mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
+      mockAdapter.queryOne.mockResolvedValueOnce(makeAgentRow({ interval_ms: 600000 }));
+
+      await repo.create({
+        id: 'bg-2',
+        userId: 'user-1',
+        name: 'Full Agent',
+        mission: 'Be thorough',
+        mode: 'event',
+        allowedTools: ['tool_a'],
+        limits: { maxTurnsPerCycle: 5, maxToolCallsPerCycle: 20, maxCyclesPerHour: 10, cycleTimeoutMs: 60000 },
+        intervalMs: 600000,
+        eventFilters: ['event.created'],
+        autoStart: false,
+        stopCondition: 'done',
+        provider: 'anthropic',
+        model: 'claude-3',
+        skills: ['skill-1'],
+        createdBy: 'system',
+      });
+
+      const params = mockAdapter.execute.mock.calls[0]![1] as unknown[];
+      expect(params).toContain(600000);        // intervalMs
+      expect(params).toContain('["event.created"]'); // eventFilters
+      expect(params).toContain('done');         // stopCondition
+      expect(params).toContain('anthropic');    // provider
+      expect(params).toContain('claude-3');     // model
+    });
+  });
+});
+
+const { getBackgroundAgentsRepository, createBackgroundAgentsRepository } =
+  await import('./background-agents.js');
+
+describe('BackgroundAgentsRepository factory functions', () => {
+  it('getBackgroundAgentsRepository returns a singleton', () => {
+    const r1 = getBackgroundAgentsRepository();
+    const r2 = getBackgroundAgentsRepository();
+    expect(r1).toBe(r2);
+    expect(r1).toBeInstanceOf(BackgroundAgentsRepository);
+  });
+
+  it('createBackgroundAgentsRepository creates a new instance each time', () => {
+    const r1 = createBackgroundAgentsRepository();
+    const r2 = createBackgroundAgentsRepository();
+    expect(r1).not.toBe(r2);
+    expect(r1).toBeInstanceOf(BackgroundAgentsRepository);
   });
 });

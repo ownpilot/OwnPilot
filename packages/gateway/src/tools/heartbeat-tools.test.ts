@@ -138,6 +138,18 @@ describe('executeHeartbeatTool', () => {
       expect(result.success).toBe(false);
       expect(result.error).toContain('not found');
     });
+
+    it('catches and returns error when service throws (line 217)', async () => {
+      mockService.updateHeartbeat.mockRejectedValue(new Error('DB error'));
+
+      const result = await executeHeartbeatTool('update_heartbeat', {
+        heartbeat_id: 'hb-1',
+        schedule: 'every day',
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('DB error');
+    });
   });
 
   describe('delete_heartbeat', () => {

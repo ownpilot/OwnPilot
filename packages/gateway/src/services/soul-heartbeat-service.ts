@@ -3,6 +3,14 @@
  *
  * Bridges the core HeartbeatRunner with gateway repositories and services.
  * Registers a 'run_heartbeat' action handler with the Trigger Engine.
+ *
+ * Crew orchestration additions:
+ * - runInHeartbeatContext() wraps every agent.chat() call so communication
+ *   tools (read_agent_inbox, send_agent_message, crew tools) resolve the
+ *   correct soul agent ID instead of the generic human userId.
+ * - buildCrewContextForHeartbeat() fetches crew membership + unread count
+ *   and prepends a crew context section to each task prompt when the soul
+ *   belongs to a crew.
  */
 
 import { HeartbeatRunner, AgentCommunicationBus, BudgetTracker, getEventSystem } from '@ownpilot/core';
@@ -12,10 +20,14 @@ import type {
   ISoulRepository,
   IHeartbeatLogRepository,
 } from '@ownpilot/core';
+import { buildCrewContextSection } from '@ownpilot/core';
+import type { CrewContextInfo } from '@ownpilot/core';
 import { getAdapterSync } from '../db/adapters/index.js';
 import { getSoulsRepository } from '../db/repositories/souls.js';
 import { getHeartbeatLogRepository } from '../db/repositories/heartbeat-log.js';
 import { getAgentMessagesRepository } from '../db/repositories/agent-messages.js';
+import { getCrewsRepository } from '../db/repositories/crews.js';
+import { runInHeartbeatContext } from './heartbeat-context.js';
 import { getLog } from '@ownpilot/core';
 
 const log = getLog('SoulHeartbeatService');
@@ -51,6 +63,59 @@ function createHeartbeatLogRepoAdapter(): IHeartbeatLogRepository {
 }
 
 // ============================================================
+// Crew context injection
+// ============================================================
+
+/**
+ * Fetch crew membership info and build the crew context section to prepend to
+ * heartbeat task prompts. Returns null when the agent has no crew or on error.
+ */
+async function buildCrewContextForHeartbeat(
+  agentId: string,
+  crewId: string
+): Promise<string | null> {
+  try {
+    const crewRepo = getCrewsRepository();
+    const soulsRepo = getSoulsRepository();
+    const msgRepo = getAgentMessagesRepository();
+
+    const [crew, members, unreadCount] = await Promise.all([
+      crewRepo.getById(crewId),
+      crewRepo.getMembers(crewId),
+      msgRepo.countUnread(agentId),
+    ]);
+
+    if (!crew || members.length === 0) return null;
+
+    const memberInfos = await Promise.all(
+      members.map(async (m) => {
+        const soul = await soulsRepo.getByAgentId(m.agentId);
+        return {
+          agentId: m.agentId,
+          name: soul?.identity.name ?? m.agentId,
+          emoji: soul?.identity.emoji ?? '🤖',
+          role: m.role,
+          isCurrentAgent: m.agentId === agentId,
+        };
+      })
+    );
+
+    const ctx: CrewContextInfo = {
+      crewId,
+      crewName: crew.name,
+      coordinationPattern: crew.coordinationPattern,
+      members: memberInfos,
+      unreadCount,
+    };
+
+    return buildCrewContextSection(ctx);
+  } catch (err) {
+    log.warn('Failed to build crew context for heartbeat', { agentId, crewId, error: String(err) });
+    return null;
+  }
+}
+
+// ============================================================
 // Minimal Agent Engine (sends heartbeat prompt to the agent)
 // ============================================================
 
@@ -59,32 +124,104 @@ function createHeartbeatAgentEngine(): IHeartbeatAgentEngine {
     async processMessage(request) {
       // Dynamic import to avoid circular dependencies
       const { getOrCreateChatAgent } = await import('../routes/agents.js');
-      const { resolveForProcess } = await import('./model-routing.js');
-      const resolved = await resolveForProcess('pulse');
-      const provider = resolved.provider ?? 'anthropic';
-      // TODO(L2): replace with AGENT_DEFAULT_MODEL constant once added to config/defaults.ts
-      const model = resolved.model ?? 'claude-sonnet-4-5-20250514';
-      const fallback =
-        resolved.fallbackProvider && resolved.fallbackModel
-          ? { provider: resolved.fallbackProvider, model: resolved.fallbackModel }
-          : undefined;
+
+      // Use provider/model from soul config (passed via context) when available,
+      // otherwise fall back to system model routing.
+      const ctxProvider = request.context?.provider as string | undefined;
+      const ctxModel = request.context?.model as string | undefined;
+      const ctxFallbackProvider = request.context?.fallbackProvider as string | undefined;
+      const ctxFallbackModel = request.context?.fallbackModel as string | undefined;
+
+      let provider: string;
+      let model: string;
+      let fallback: { provider: string; model: string } | undefined;
+
+      if (ctxProvider && ctxModel) {
+        provider = ctxProvider;
+        model = ctxModel;
+        fallback =
+          ctxFallbackProvider && ctxFallbackModel
+            ? { provider: ctxFallbackProvider, model: ctxFallbackModel }
+            : undefined;
+      } else {
+        const { resolveForProcess } = await import('./model-routing.js');
+        const resolved = await resolveForProcess('pulse');
+        provider = ctxProvider ?? resolved.provider ?? 'anthropic';
+        model = ctxModel ?? resolved.model ?? 'claude-sonnet-4-5-20250514';
+        fallback =
+          resolved.fallbackProvider && resolved.fallbackModel
+            ? { provider: resolved.fallbackProvider, model: resolved.fallbackModel }
+            : undefined;
+      }
 
       const agent = await getOrCreateChatAgent(provider, model, fallback);
 
-      // H2: Enforce allowedTools restriction via onBeforeToolCall filter
+      // Inject crew context at the top of the task prompt when the soul is in a crew.
+      const crewId = request.context?.crewId as string | undefined;
+      let taskMessage = request.message;
+      if (crewId) {
+        const crewSection = await buildCrewContextForHeartbeat(request.agentId, crewId);
+        if (crewSection) {
+          taskMessage = `${crewSection}\n${taskMessage}`;
+        }
+      }
+
+      // Enforce allowedTools (task-level) and skillAccess (soul-level) restrictions.
       const allowedTools = request.context?.allowedTools as string[] | undefined;
-      const result = await agent.chat(request.message, {
-        onBeforeToolCall: allowedTools?.length
-          ? async (toolCall) => {
-              const allowed = allowedTools.some(
-                (t) => toolCall.name === t || toolCall.name.endsWith(`.${t}`)
-              );
-              return allowed
-                ? { approved: true }
-                : { approved: false, reason: `Tool ${toolCall.name} not in task allowedTools` };
-            }
-          : undefined,
-      });
+      const skillAccessAllowed = request.context?.skillAccessAllowed as string[] | undefined;
+      const skillAccessBlocked = request.context?.skillAccessBlocked as string[] | undefined;
+
+      const hasToolFilter = !!(allowedTools?.length || skillAccessAllowed?.length || skillAccessBlocked?.length);
+
+      // Wrap agent.chat() in the heartbeat context so communication/crew tools
+      // can resolve the correct soul agent ID via AsyncLocalStorage.
+      const result = await runInHeartbeatContext(
+        { agentId: request.agentId, crewId },
+        () =>
+          agent.chat(taskMessage, {
+            onBeforeToolCall: hasToolFilter
+              ? async (toolCall) => {
+                  const name = toolCall.name;
+
+                  // 1. Blocked skill check — extensionId embedded in namespaced tool name (ext.{id}.{tool} / skill.{id}.{tool})
+                  if (skillAccessBlocked?.length) {
+                    const isBlocked = skillAccessBlocked.some(
+                      (id) => name.startsWith(`ext.${id}.`) || name.startsWith(`skill.${id}.`)
+                    );
+                    if (isBlocked) {
+                      return { approved: false, reason: `Extension ${name} is blocked for this soul` };
+                    }
+                  }
+
+                  // 2. Allowed skills check — if set, extension tools must belong to an allowed extension
+                  if (skillAccessAllowed?.length) {
+                    const isExtTool = name.startsWith('ext.') || name.startsWith('skill.');
+                    if (isExtTool) {
+                      const isAllowed = skillAccessAllowed.some(
+                        (id) => name.startsWith(`ext.${id}.`) || name.startsWith(`skill.${id}.`)
+                      );
+                      if (!isAllowed) {
+                        return { approved: false, reason: `Extension ${name} not in soul's allowed skills` };
+                      }
+                    }
+                  }
+
+                  // 3. Task-level allowedTools check
+                  if (allowedTools?.length) {
+                    const allowed = allowedTools.some(
+                      (t) => name === t || name.endsWith(`.${t}`)
+                    );
+                    if (!allowed) {
+                      return { approved: false, reason: `Tool ${name} not in task allowedTools` };
+                    }
+                  }
+
+                  return { approved: true };
+                }
+              : undefined,
+          })
+      );
+
       if (!result.ok) {
         throw result.error;
       }
@@ -202,6 +339,15 @@ export function getHeartbeatRunner(): HeartbeatRunner {
     );
   }
   return runner;
+}
+
+/**
+ * Returns the shared AgentCommunicationBus instance (initialises the runner
+ * if not yet started). Used by crew-tools.ts for broadcast_to_crew.
+ */
+export function getCommunicationBus(): AgentCommunicationBus {
+  getHeartbeatRunner(); // ensures communicationBusInstance is set
+  return communicationBusInstance!;
 }
 
 /**

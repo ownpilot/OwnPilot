@@ -959,4 +959,116 @@ describe('createContextInjectionMiddleware', () => {
       expect(mockBuildEnhancedSystemPrompt).not.toHaveBeenCalled();
     });
   });
+
+  // =========================================================================
+  // Prompt assembly — cache-split layout (## Current Context in base prompt)
+  // =========================================================================
+
+  describe('prompt assembly with ## Current Context split marker', () => {
+    // A base prompt that contains the cache-split marker, as set by PromptComposer.
+    const STATIC_PART = 'You are a helpful assistant.';
+    const TIME_BLOCK = '\n\n---\n\n## Current Context\n- Current time: Jan 01, 2025, 10:00\n- Day: Wednesday';
+    const PROMPT_WITH_TC = STATIC_PART + TIME_BLOCK;
+    const ORCHESTRATOR = '\n---\n## User Context (from memory)\n- Memory X';
+
+    it('places orchestratorSuffix BEFORE ## Current Context when marker is present', async () => {
+      // Agent has a prompt with ## Current Context
+      const agent = createAgent({
+        getConversation: vi.fn().mockReturnValue({ systemPrompt: PROMPT_WITH_TC }),
+      });
+      // buildEnhancedSystemPrompt returns base + orchestrator (base includes ## Current Context)
+      mockBuildEnhancedSystemPrompt.mockResolvedValue({
+        prompt: PROMPT_WITH_TC + ORCHESTRATOR,
+        stats: { memoriesUsed: 1, goalsUsed: 0 },
+      });
+
+      const ctx = createContext({ store: { agent, userId: 'user-1', agentId: 'agent-1' } });
+      await middleware(createMessage(), ctx, vi.fn().mockResolvedValue(createNextResult()));
+
+      const finalPrompt: string = agent.updateSystemPrompt.mock.calls[0][0];
+
+      // Orchestrator section must appear BEFORE "## Current Context" in final prompt
+      const orchestratorPos = finalPrompt.indexOf('## User Context (from memory)');
+      const currentContextPos = finalPrompt.indexOf('## Current Context');
+      expect(orchestratorPos).toBeGreaterThan(-1);
+      expect(currentContextPos).toBeGreaterThan(-1);
+      expect(orchestratorPos).toBeLessThan(currentContextPos);
+    });
+
+    it('final prompt starts with the part BEFORE ## Current Context', async () => {
+      const agent = createAgent({
+        getConversation: vi.fn().mockReturnValue({ systemPrompt: PROMPT_WITH_TC }),
+      });
+      mockBuildEnhancedSystemPrompt.mockResolvedValue({
+        prompt: PROMPT_WITH_TC + ORCHESTRATOR,
+        stats: { memoriesUsed: 1, goalsUsed: 0 },
+      });
+
+      const ctx = createContext({ store: { agent } });
+      await middleware(createMessage(), ctx, vi.fn().mockResolvedValue(createNextResult()));
+
+      const finalPrompt: string = agent.updateSystemPrompt.mock.calls[0][0];
+      expect(finalPrompt.startsWith(STATIC_PART)).toBe(true);
+    });
+
+    it('final prompt contains a fresh ## Current Context block', async () => {
+      const agent = createAgent({
+        getConversation: vi.fn().mockReturnValue({ systemPrompt: PROMPT_WITH_TC }),
+      });
+      mockBuildEnhancedSystemPrompt.mockResolvedValue({
+        prompt: PROMPT_WITH_TC + ORCHESTRATOR,
+        stats: { memoriesUsed: 1, goalsUsed: 0 },
+      });
+
+      const ctx = createContext({ store: { agent } });
+      await middleware(createMessage(), ctx, vi.fn().mockResolvedValue(createNextResult()));
+
+      const finalPrompt: string = agent.updateSystemPrompt.mock.calls[0][0];
+      // The fresh ## Current Context block should be present (regenerated with current time)
+      expect(finalPrompt).toContain('## Current Context');
+      expect(finalPrompt).toContain('- Current time:');
+    });
+
+    it('falls back to linear ordering when ## Current Context is absent', async () => {
+      // Agent prompt has NO ## Current Context
+      const agent = createAgent({
+        getConversation: vi.fn().mockReturnValue({ systemPrompt: BASE_PROMPT }),
+      });
+      mockBuildEnhancedSystemPrompt.mockResolvedValue({
+        prompt: BASE_PROMPT + ORCHESTRATOR,
+        stats: { memoriesUsed: 1, goalsUsed: 0 },
+      });
+
+      const ctx = createContext({ store: { agent } });
+      await middleware(createMessage(), ctx, vi.fn().mockResolvedValue(createNextResult()));
+
+      const finalPrompt: string = agent.updateSystemPrompt.mock.calls[0][0];
+      // Falls back to BASE_PROMPT + orchestratorSuffix (linear)
+      expect(finalPrompt).toContain(BASE_PROMPT);
+      expect(finalPrompt).toContain('## User Context (from memory)');
+      // orchestratorSuffix should be near the end (no split insertion)
+      const baseEnd = finalPrompt.indexOf(BASE_PROMPT) + BASE_PROMPT.length;
+      const orchestratorStart = finalPrompt.indexOf(ORCHESTRATOR);
+      expect(orchestratorStart).toBeGreaterThanOrEqual(baseEnd);
+    });
+
+    it('preserves sections after ## Current Context in base (e.g. ## Code Execution)', async () => {
+      const CODE_SECTION = '\n\n---\n\n## Code Execution\nCode execution is DISABLED.';
+      const PROMPT_WITH_CODE = STATIC_PART + TIME_BLOCK + CODE_SECTION;
+      const agent = createAgent({
+        getConversation: vi.fn().mockReturnValue({ systemPrompt: PROMPT_WITH_CODE }),
+      });
+      mockBuildEnhancedSystemPrompt.mockResolvedValue({
+        prompt: PROMPT_WITH_CODE + ORCHESTRATOR,
+        stats: { memoriesUsed: 0, goalsUsed: 0 },
+      });
+
+      const ctx = createContext({ store: { agent } });
+      await middleware(createMessage(), ctx, vi.fn().mockResolvedValue(createNextResult()));
+
+      const finalPrompt: string = agent.updateSystemPrompt.mock.calls[0][0];
+      // The ## Code Execution section should be preserved in the final prompt
+      expect(finalPrompt).toContain('## Code Execution');
+    });
+  });
 });

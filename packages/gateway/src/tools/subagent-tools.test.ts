@@ -324,6 +324,17 @@ describe('executeSubagentTool', () => {
       expect(result.success).toBe(false);
       expect(result.error).toContain('not found');
     });
+
+    it('returns error when subagent_id is empty (line 226)', async () => {
+      const result = await executeSubagentTool(
+        'get_subagent_result',
+        { subagent_id: '' },
+        'user-1'
+      );
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('subagent_id is required');
+    });
   });
 
   // -------------------------------------------------------------------------

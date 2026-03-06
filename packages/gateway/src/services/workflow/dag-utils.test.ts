@@ -16,6 +16,7 @@ import {
   getDownstreamNodes,
   getDownstreamNodesByHandle,
   getForEachBodyNodes,
+  detectCycle,
 } from './dag-utils.js';
 
 // ---------------------------------------------------------------------------
@@ -306,6 +307,17 @@ describe('getDownstreamNodesByHandle', () => {
     const downstream = getDownstreamNodesByHandle('cond', 'true', edges);
     expect(downstream).toEqual(new Set(['A', 'C']));
   });
+
+  it('skips duplicate target in initial queue (line 118)', () => {
+    // Two edges from A to B with the same handle — initial queue becomes ['B', 'B']
+    // Second dequeue hits line 118: downstream.has('B') → continue
+    const edges: WorkflowEdge[] = [
+      makeEdge('A', 'B', 'true'),
+      { id: 'A-B-dup', source: 'A', target: 'B', sourceHandle: 'true', targetHandle: undefined },
+    ];
+    const downstream = getDownstreamNodesByHandle('A', 'true', edges);
+    expect(downstream).toEqual(new Set(['B']));
+  });
 });
 
 // ============================================================================
@@ -369,5 +381,83 @@ describe('getForEachBodyNodes', () => {
     const { bodyNodes, doneNodes } = getForEachBodyNodes('fe', edges);
     expect(bodyNodes).toEqual(new Set(['b1', 'b2', 'b3', 'b4']));
     expect(doneNodes.size).toBe(0);
+  });
+});
+
+// ============================================================================
+// detectCycle
+// ============================================================================
+
+type ValidationNode = { id: string };
+type ValidationEdge = { source: string; target: string };
+
+function vNode(id: string): ValidationNode {
+  return { id };
+}
+function vEdge(source: string, target: string): ValidationEdge {
+  return { source, target };
+}
+
+describe('detectCycle', () => {
+  it('returns null for empty graph', () => {
+    expect(detectCycle([], [])).toBeNull();
+  });
+
+  it('returns null for single node with no edges', () => {
+    expect(detectCycle([vNode('a')], [])).toBeNull();
+  });
+
+  it('returns null for linear chain', () => {
+    const nodes = [vNode('a'), vNode('b'), vNode('c')];
+    const edges = [vEdge('a', 'b'), vEdge('b', 'c')];
+    expect(detectCycle(nodes, edges)).toBeNull();
+  });
+
+  it('returns null for diamond DAG', () => {
+    const nodes = [vNode('a'), vNode('b'), vNode('c'), vNode('d')];
+    const edges = [vEdge('a', 'b'), vEdge('a', 'c'), vEdge('b', 'd'), vEdge('c', 'd')];
+    expect(detectCycle(nodes, edges)).toBeNull();
+  });
+
+  it('detects self-loop', () => {
+    const result = detectCycle([vNode('a')], [vEdge('a', 'a')]);
+    expect(result).toContain('cycle');
+    expect(result).toContain('a');
+  });
+
+  it('detects two-node cycle', () => {
+    const nodes = [vNode('a'), vNode('b')];
+    const edges = [vEdge('a', 'b'), vEdge('b', 'a')];
+    const result = detectCycle(nodes, edges);
+    expect(result).not.toBeNull();
+    expect(result).toContain('cycle');
+  });
+
+  it('detects three-node cycle', () => {
+    const nodes = [vNode('a'), vNode('b'), vNode('c')];
+    const edges = [vEdge('a', 'b'), vEdge('b', 'c'), vEdge('c', 'a')];
+    const result = detectCycle(nodes, edges);
+    expect(result).not.toBeNull();
+    expect(result).toContain('cycle');
+  });
+
+  it('ignores edges referencing non-existent nodes', () => {
+    const nodes = [vNode('a'), vNode('b')];
+    // Edge to non-existent 'c' should be ignored
+    const edges = [vEdge('a', 'b'), vEdge('b', 'c')];
+    expect(detectCycle(nodes, edges)).toBeNull();
+  });
+
+  it('returns null for disconnected acyclic components', () => {
+    const nodes = [vNode('a'), vNode('b'), vNode('c'), vNode('d')];
+    const edges = [vEdge('a', 'b'), vEdge('c', 'd')];
+    expect(detectCycle(nodes, edges)).toBeNull();
+  });
+
+  it('detects cycle in one component while other is acyclic', () => {
+    const nodes = [vNode('a'), vNode('b'), vNode('x'), vNode('y')];
+    const edges = [vEdge('a', 'b'), vEdge('x', 'y'), vEdge('y', 'x')];
+    const result = detectCycle(nodes, edges);
+    expect(result).not.toBeNull();
   });
 });

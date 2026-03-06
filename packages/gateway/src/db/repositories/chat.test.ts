@@ -340,6 +340,28 @@ describe('ChatRepository', () => {
       expect(sql).toContain('is_archived = $3');
       expect(sql).toContain('ILIKE');
     });
+
+    it('should filter by source (lines 244-245)', async () => {
+      mockAdapter.query.mockResolvedValueOnce([]);
+
+      await repo.listConversations({ source: 'telegram' });
+
+      const sql = mockAdapter.query.mock.calls[0]![0] as string;
+      expect(sql).toContain("metadata->>'source'");
+      const params = mockAdapter.query.mock.calls[0]![1] as unknown[];
+      expect(params).toContain('telegram');
+    });
+
+    it('should filter by channelPlatform (lines 249-250)', async () => {
+      mockAdapter.query.mockResolvedValueOnce([]);
+
+      await repo.listConversations({ channelPlatform: 'whatsapp' });
+
+      const sql = mockAdapter.query.mock.calls[0]![0] as string;
+      expect(sql).toContain("metadata->>'platform'");
+      const params = mockAdapter.query.mock.calls[0]![1] as unknown[];
+      expect(params).toContain('whatsapp');
+    });
   });
 
   // =========================================================================
@@ -413,6 +435,25 @@ describe('ChatRepository', () => {
       const result = await repo.updateConversation('missing', { title: 'X' });
 
       expect(result).toBeNull();
+    });
+
+    it('should update agentId and agentName (lines 280-281, 284-285)', async () => {
+      mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
+      mockAdapter.queryOne.mockResolvedValueOnce(
+        makeConversationRow({ title: 'X' })
+      );
+
+      await repo.updateConversation('conv-1', {
+        agentId: 'agent-99',
+        agentName: 'My Bot',
+      });
+
+      const sql = mockAdapter.execute.mock.calls[0]![0] as string;
+      expect(sql).toContain('agent_id = $');
+      expect(sql).toContain('agent_name = $');
+      const params = mockAdapter.execute.mock.calls[0]![1] as unknown[];
+      expect(params).toContain('agent-99');
+      expect(params).toContain('My Bot');
     });
   });
 
@@ -833,6 +874,22 @@ describe('ChatRepository', () => {
 
       expect(result.title).toBe('Fallback');
     });
+
+    it('should create conversation with the specified id when not found', async () => {
+      // getConversation returns null
+      mockAdapter.queryOne.mockResolvedValueOnce(null);
+      // createConversation: execute + getConversation
+      mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
+      mockAdapter.queryOne.mockResolvedValueOnce(makeConversationRow({ id: 'eval-skill-abc' }));
+
+      await repo.getOrCreateConversation('eval-skill-abc', { title: 'Eval' });
+
+      // The INSERT should include the exact ID (not a random UUID)
+      const sql = mockAdapter.execute.mock.calls[0][0] as string;
+      const params = mockAdapter.execute.mock.calls[0][1] as unknown[];
+      expect(sql).toContain('INSERT INTO conversations');
+      expect(params[0]).toBe('eval-skill-abc');
+    });
   });
 
   // =========================================================================
@@ -983,6 +1040,18 @@ describe('ChatRepository', () => {
       expect(selectSql).toContain('MAKE_INTERVAL(days => $2)');
       const selectParams = mockAdapter.query.mock.calls[0]![1] as unknown[];
       expect(selectParams).toContain(30);
+    });
+
+    it('should return 0 for invalid input: zero days (line 347)', async () => {
+      const result = await repo.deleteOldConversations(0);
+      expect(result).toBe(0);
+      expect(mockAdapter.query).not.toHaveBeenCalled();
+    });
+
+    it('should return 0 for invalid input: NaN days (line 347)', async () => {
+      const result = await repo.deleteOldConversations(NaN);
+      expect(result).toBe(0);
+      expect(mockAdapter.query).not.toHaveBeenCalled();
     });
   });
 

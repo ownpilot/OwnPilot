@@ -16,8 +16,16 @@ const mockFiles = new Map<string, string>();
 
 vi.mock('fs', () => ({
   readFileSync: vi.fn((path: string) => {
-    const content = mockFiles.get(path);
-    if (content !== undefined) return content;
+    // Normalize to forward slashes (Windows compat)
+    const normalizedPath = (path as string).replace(/\\/g, '/');
+    // Exact match first
+    if (mockFiles.has(normalizedPath)) return mockFiles.get(normalizedPath);
+    // Suffix match: allows setting mock files with relative path suffixes
+    for (const [key, val] of mockFiles) {
+      if (normalizedPath.endsWith('/' + key) || normalizedPath === key) {
+        return val;
+      }
+    }
     throw new Error(`ENOENT: no such file ${path}`);
   }),
 }));
@@ -107,6 +115,51 @@ describe('Tool Source Service', () => {
         });
       }).not.toThrow();
     });
+
+    it('includes soulCommunicationNames when provided', () => {
+      expect(() => {
+        initToolSourceMappings({
+          memoryNames: [],
+          goalNames: [],
+          customDataNames: [],
+          personalDataNames: [],
+          triggerNames: [],
+          planNames: [],
+          heartbeatNames: [],
+          soulCommunicationNames: ['broadcast_message', 'send_to_soul'],
+        });
+      }).not.toThrow();
+    });
+
+    it('skips extensionNames when empty array', () => {
+      expect(() => {
+        initToolSourceMappings({
+          memoryNames: [],
+          goalNames: [],
+          customDataNames: [],
+          personalDataNames: [],
+          triggerNames: [],
+          planNames: [],
+          heartbeatNames: [],
+          extensionNames: [],
+        });
+      }).not.toThrow();
+    });
+
+    it('skips soulCommunicationNames when empty array', () => {
+      expect(() => {
+        initToolSourceMappings({
+          memoryNames: [],
+          goalNames: [],
+          customDataNames: [],
+          personalDataNames: [],
+          triggerNames: [],
+          planNames: [],
+          heartbeatNames: [],
+          soulCommunicationNames: [],
+        });
+      }).not.toThrow();
+    });
   });
 
   // ========================================================================
@@ -164,8 +217,9 @@ export const readFileExecutor = async (args: unknown, _context: ToolContext): Pr
       _setMockFile('core/src/agent/tools/file-system.ts', mockFileContent);
 
       const source = getToolSource('read_file');
-      // File won't exist in test, so we expect null
-      expect(source).toBeNull();
+      // With suffix-matching mock, the file is found and executor is extracted
+      expect(source).not.toBeNull();
+      expect(source).toContain('readFileExecutor');
     });
 
     it('strips namespace prefix from tool names', () => {
@@ -196,6 +250,17 @@ export const readFileExecutor = async (args: unknown, _context: ToolContext): Pr
         getToolSource('final_tool');
       }).not.toThrow();
     });
+
+    it('evicts oldest entry when extraction cache is at capacity', () => {
+      // Fill extraction cache to capacity (1000) using fallback to get non-null source
+      for (let i = 0; i < 1000; i++) {
+        getToolSource(`fill_cache_${i}`, () => `source_${i}`);
+      }
+
+      // This call should trigger eviction and still work
+      const result = getToolSource('overflow_tool', () => 'overflow source');
+      expect(result).toBe('overflow source');
+    });
   });
 
   describe('File reading with cache', () => {
@@ -220,6 +285,105 @@ export const readFileExecutor = async (args: unknown, _context: ToolContext): Pr
           _setMockFile(`file_${i}.ts`, `content ${i}`);
         }
       }).not.toThrow();
+    });
+  });
+
+  // =========================================================================
+  // Extraction Function Integration
+  // (Tests extractSwitchCase, extractConstFunction, extractFunction via getToolSource)
+  // =========================================================================
+
+  describe('Extraction function integration', () => {
+    it('extractSwitchCase: extracts a switch case block from a gateway tool file', () => {
+      // Map a fresh tool name to extension-tools.ts
+      initToolSourceMappings({
+        memoryNames: [],
+        goalNames: [],
+        customDataNames: [],
+        personalDataNames: [],
+        triggerNames: [],
+        planNames: [],
+        heartbeatNames: [],
+        extensionNames: ['tx_switch_test'],
+      });
+
+      mockFiles.set('tools/extension-tools.ts', [
+        'export async function executeExtensionTool(toolName, args) {',
+        "  switch (toolName) {",
+        "    case 'tx_switch_test': {",
+        '      const result = performAction(args);',
+        '      return { content: String(result) };',
+        '    }',
+        '    default:',
+        '      return null;',
+        '  }',
+        '}',
+      ].join('\n'));
+
+      const source = getToolSource('tx_switch_test');
+      expect(source).not.toBeNull();
+      expect(source).toContain("case 'tx_switch_test'");
+    });
+
+    it('extractFunction (gateway fallback): falls back when no switch case matches', () => {
+      // tx_func_test maps to same extension-tools.ts (fileCache populated from previous test)
+      // Cached content has no case for tx_func_test → extractSwitchCase returns null
+      // → extractFunction extracts the outer executeExtensionTool function
+      initToolSourceMappings({
+        memoryNames: [],
+        goalNames: [],
+        customDataNames: [],
+        personalDataNames: [],
+        triggerNames: [],
+        planNames: [],
+        heartbeatNames: [],
+        extensionNames: ['tx_func_test'],
+      });
+
+      const source = getToolSource('tx_func_test');
+      expect(source).not.toBeNull();
+      expect(source).toContain('executeExtensionTool');
+    });
+
+    it('extractConstFunction: extracts an arrow function from a core tool file', () => {
+      // 'calculate' maps to utility-tools.ts with executor calculateExecutor (not yet cached)
+      mockFiles.set('utility-tools.ts', [
+        'export const calculateExecutor = async (',
+        '  args: { expression: string },',
+        '  _context: unknown',
+        '): Promise<{ content: string }> => {',
+        '  const result = mathjs.evaluate(args.expression);',
+        '  return { content: String(result) };',
+        '};',
+      ].join('\n'));
+
+      const source = getToolSource('calculate');
+      expect(source).not.toBeNull();
+      expect(source).toContain('calculateExecutor');
+    });
+
+    it('extractFunction (core fallback): extracts a named function when const arrow not present', () => {
+      // 'read_pdf' maps to pdf-tools.ts with executor readPdfExecutor (not yet cached)
+      // Named function syntax → extractConstFunction returns null → extractFunction succeeds
+      mockFiles.set('pdf-tools.ts', [
+        'export async function readPdfExecutor(',
+        '  args: { path: string },',
+        '  _context: unknown',
+        '): Promise<{ content: string }> {',
+        '  const text = parsePdfFile(args.path);',
+        '  return { content: text };',
+        '}',
+      ].join('\n'));
+
+      const source = getToolSource('read_pdf');
+      expect(source).not.toBeNull();
+      expect(source).toContain('readPdfExecutor');
+    });
+
+    it('returns null gracefully when extraction patterns do not match', () => {
+      // generate_uuid maps to utility-tools.ts (cached with calculateExecutor content)
+      // generateUuidExecutor is not in the cached content → returns null
+      expect(() => getToolSource('generate_uuid')).not.toThrow();
     });
   });
 });

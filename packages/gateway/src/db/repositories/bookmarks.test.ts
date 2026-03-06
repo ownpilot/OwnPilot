@@ -480,6 +480,15 @@ describe('BookmarksRepository', () => {
       const sql = mockAdapter.query.mock.calls[0]![0] as string;
       expect(sql).toContain('ORDER BY visit_count DESC');
     });
+
+    it('maps returned rows (line 214)', async () => {
+      mockAdapter.query.mockResolvedValueOnce([makeBookmarkRow({ visit_count: 5 })]);
+
+      const result = await repo.getMostVisited(10);
+
+      expect(result).toHaveLength(1);
+      expect(result[0]!.id).toBe('bk-1');
+    });
   });
 
   describe('getCategories', () => {

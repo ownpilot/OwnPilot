@@ -27,7 +27,7 @@ export const installRoutes = new Hono();
 const getExtService = () => getServiceRegistry().get(Services.Extension) as ExtensionService;
 
 /** Allowed file extensions for upload */
-const ALLOWED_UPLOAD_EXTENSIONS = new Set(['.md', '.json', '.zip']);
+const ALLOWED_UPLOAD_EXTENSIONS = new Set(['.md', '.json', '.zip', '.skill']);
 
 /** Max upload size: 1 MB for single files, 5 MB for ZIP */
 const MAX_SINGLE_FILE_SIZE = 1 * 1024 * 1024;
@@ -127,14 +127,14 @@ installRoutes.post('/upload', async (c) => {
       c,
       {
         code: ERROR_CODES.VALIDATION_ERROR,
-        message: `Invalid file type "${ext}". Allowed: .md, .json, .zip`,
+        message: `Invalid file type "${ext}". Allowed: .md, .json, .zip, .skill`,
       },
       400
     );
   }
 
   // Validate file size
-  const maxSize = ext === '.zip' ? MAX_ZIP_FILE_SIZE : MAX_SINGLE_FILE_SIZE;
+  const maxSize = ext === '.zip' || ext === '.skill' ? MAX_ZIP_FILE_SIZE : MAX_SINGLE_FILE_SIZE;
   if (uploadedFile.size > maxSize) {
     const maxMB = Math.round(maxSize / 1024 / 1024);
     return apiError(
@@ -157,7 +157,7 @@ installRoutes.post('/upload', async (c) => {
   try {
     const fileBuffer = Buffer.from(await uploadedFile.arrayBuffer());
 
-    if (ext === '.zip') {
+    if (ext === '.zip' || ext === '.skill') {
       // ZIP file: extract to temp dir, find manifest, install
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       let AdmZipClass: any = null;
@@ -228,7 +228,7 @@ installRoutes.post('/upload', async (c) => {
           {
             package: record,
             security: zipSecurity,
-            message: 'Extension uploaded and installed from ZIP.',
+            message: `Extension uploaded and installed from ${ext === '.skill' ? '.skill package' : 'ZIP'}.`,
           },
           201
         );

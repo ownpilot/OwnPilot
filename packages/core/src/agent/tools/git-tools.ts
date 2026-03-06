@@ -407,7 +407,9 @@ export const gitCommitExecutor: ToolExecutor = async (
     const args = ['commit'];
     if (all) args.push('-a');
     if (amend) args.push('--amend');
-    args.push('-m', message);
+    // Only set -m when a message is provided; amend without -m reuses the existing message
+    if (message) args.push('-m', message);
+    else if (amend) args.push('--no-edit');
 
     const stdout = await gitExec(args, repoPath);
 

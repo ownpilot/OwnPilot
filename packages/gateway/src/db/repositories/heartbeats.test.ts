@@ -264,6 +264,29 @@ describe('HeartbeatsRepository', () => {
       expect(sql).toContain('cron = $');
       expect(sql).toContain('enabled = $');
     });
+
+    it('should include scheduleText, taskDescription and triggerId in SET clause (lines 162-175)', async () => {
+      mockAdapter.queryOne.mockResolvedValueOnce(makeRow());
+      mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
+      mockAdapter.queryOne.mockResolvedValueOnce(
+        makeRow({ schedule_text: 'every day', task_description: 'Do it', trigger_id: 'trig-1' })
+      );
+
+      await repo.update('hb-1', {
+        scheduleText: 'every day',
+        taskDescription: 'Do it',
+        triggerId: 'trig-1',
+      });
+
+      const sql = mockAdapter.execute.mock.calls[0]![0] as string;
+      expect(sql).toContain('schedule_text = $');
+      expect(sql).toContain('task_description = $');
+      expect(sql).toContain('trigger_id = $');
+      const params = mockAdapter.execute.mock.calls[0]![1] as unknown[];
+      expect(params).toContain('every day');
+      expect(params).toContain('Do it');
+      expect(params).toContain('trig-1');
+    });
   });
 
   // =========================================================================

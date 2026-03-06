@@ -65,6 +65,10 @@ describe('ResourceRegistry', () => {
       expect(() => registry.register(testResource)).toThrow(/already registered/);
     });
 
+    it('throws when name is empty (line 60)', () => {
+      expect(() => registry.register({ ...testResource, name: '' })).toThrow('Resource type name is required');
+    });
+
     it('reports has correctly', () => {
       expect(registry.has('test')).toBe(false);
       registry.register(testResource);

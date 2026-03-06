@@ -431,6 +431,15 @@ describe('HeartbeatService', () => {
       expect(mockRepo.update).not.toHaveBeenCalled();
     });
 
+    it('throws VALIDATION_ERROR when taskDescription is empty string (line 149)', async () => {
+      const existing = fakeHeartbeat();
+      mockRepo.get.mockResolvedValue(existing);
+
+      await expect(
+        service.updateHeartbeat('user-1', 'hb-1', { taskDescription: '' })
+      ).rejects.toThrow('Task description cannot be empty');
+    });
+
     it('updates heartbeat record and emits event', async () => {
       const existing = fakeHeartbeat();
       const updated = fakeHeartbeat({ taskDescription: 'Updated task' });

@@ -5,6 +5,7 @@
  */
 
 import * as fs from 'node:fs/promises';
+import * as os from 'node:os';
 import * as path from 'node:path';
 import type { ToolDefinition, ToolExecutor, ToolExecutionResult } from '../types.js';
 import { getErrorMessage } from '../../services/error-utils.js';
@@ -16,6 +17,9 @@ const MAX_FILE_SIZE = 10 * 1024 * 1024;
 
 /** Maximum recursion depth for directory search */
 const MAX_SEARCH_DEPTH = 20;
+
+/** Maximum recursion depth for directory listing */
+const MAX_LIST_DEPTH = 5;
 
 /**
  * Safely convert a glob pattern to a RegExp.
@@ -34,7 +38,7 @@ function safeGlobToRegex(glob: string): RegExp {
  * @param workspaceDir Optional workspace directory override from context
  */
 function getAllowedPaths(workspaceDir?: string): string[] {
-  const paths = [workspaceDir ?? process.env.WORKSPACE_DIR ?? process.cwd(), '/tmp', 'C:\\Temp'];
+  const paths = [workspaceDir ?? process.env.WORKSPACE_DIR ?? process.cwd(), os.tmpdir()];
 
   // Only add home dir if explicitly enabled (security consideration)
   if (process.env.ALLOW_HOME_DIR_ACCESS === 'true') {
@@ -373,7 +377,7 @@ export const listDirectoryExecutor: ToolExecutor = async (
             type: 'directory',
           });
 
-          if (recursive && depth < 5) {
+          if (recursive && depth < MAX_LIST_DEPTH) {
             await listDir(fullPath, depth + 1);
           }
         } else if (item.isFile()) {
@@ -465,7 +469,10 @@ export const searchFilesExecutor: ToolExecutor = async (
   }
 
   try {
-    const flags = caseSensitive ? 'g' : 'gi';
+    // Do NOT use the 'g' flag — regex.test() with 'g' maintains lastIndex state
+    // across calls, causing alternating match/no-match on the same pattern for
+    // different lines. We only need to know if a line contains the pattern.
+    const flags = caseSensitive ? '' : 'i';
     let regex: RegExp;
     try {
       regex = new RegExp(query, flags);

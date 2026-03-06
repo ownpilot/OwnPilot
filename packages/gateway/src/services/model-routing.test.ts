@@ -47,6 +47,7 @@ import {
   clearProcessRouting,
   isValidProcess,
   VALID_PROCESSES,
+  getChannelRouting,
 } from './model-routing.js';
 
 // ---------------------------------------------------------------------------
@@ -260,6 +261,39 @@ describe('model-routing', () => {
 
       await clearProcessRouting('pulse');
       expect(mockSettingsRepo.deleteByPrefix).toHaveBeenCalledWith('model_routing:pulse:');
+    });
+  });
+
+  // ── getChannelRouting ──────────────────────────────────────────────
+
+  describe('getChannelRouting', () => {
+    it('returns channel config when channel provider is set', () => {
+      mockSettingsRepo.get.mockImplementation((key: string) => {
+        if (key === 'model_routing:channel:provider') return 'anthropic';
+        if (key === 'model_routing:channel:model') return 'claude-3';
+        return null;
+      });
+
+      const result = getChannelRouting();
+      expect(result.provider).toBe('anthropic');
+      expect(result.model).toBe('claude-3');
+    });
+
+    it('falls back to legacy telegram keys when no channel config (lines 99-100)', () => {
+      // channel config: all null; legacy telegram keys have values
+      mockSettingsRepo.get.mockImplementation((key: string) => {
+        if (key === 'model_routing:telegram:provider') return 'openai';
+        if (key === 'model_routing:telegram:model') return 'gpt-4o';
+        if (key === 'model_routing:telegram:fallback_provider') return 'anthropic';
+        if (key === 'model_routing:telegram:fallback_model') return 'claude-3';
+        return null; // all channel: keys return null
+      });
+
+      const result = getChannelRouting();
+      expect(result.provider).toBe('openai');
+      expect(result.model).toBe('gpt-4o');
+      expect(result.fallbackProvider).toBe('anthropic');
+      expect(result.fallbackModel).toBe('claude-3');
     });
   });
 });

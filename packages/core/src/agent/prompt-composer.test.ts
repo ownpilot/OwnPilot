@@ -413,6 +413,19 @@ describe('PromptComposer', () => {
       expect(result).toContain('America/Chicago');
     });
 
+    it('rounds current time to the nearest hour (minutes zeroed)', () => {
+      const tc: TimeContext = {
+        currentTime: new Date(2025, 0, 6, 14, 45, 32), // 14:45:32
+        timezone: 'UTC',
+        dayOfWeek: 'Monday',
+        timeOfDay: 'afternoon',
+      };
+      const result = composer.compose(baseContext({ timeContext: tc }));
+      // Should show 14:00, not 14:45
+      expect(result).not.toContain('14:45');
+      expect(result).toContain('14:00');
+    });
+
     // --- Conversation context ---
 
     it('should include conversation context with message count', () => {

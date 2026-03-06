@@ -850,6 +850,197 @@ describe('WorkflowsRepository', () => {
   });
 
   // =========================================================================
+  // update with inputSchema field
+  // =========================================================================
+
+  describe('update with inputSchema', () => {
+    it('includes input_schema in UPDATE when inputSchema is provided', async () => {
+      // update() calls get(id) first — must return a workflow so it doesn't short-circuit
+      mockAdapter.queryOne
+        .mockResolvedValueOnce(makeWorkflowRow()) // initial get(id) check
+        .mockResolvedValueOnce(makeWorkflowRow()); // get(id) at end of update
+
+      await repo.update('wf-1', { inputSchema: { type: 'object', properties: {} } });
+
+      const [sql, params] = mockAdapter.execute.mock.calls[0];
+      expect(sql).toContain('input_schema');
+      expect(params.some((p: unknown) => typeof p === 'string' && String(p).includes('object'))).toBe(true);
+    });
+  });
+
+  // =========================================================================
+  // getActiveToolNames
+  // =========================================================================
+
+  describe('getActiveToolNames', () => {
+    it('returns tool names from active workflow nodes', async () => {
+      mockAdapter.query.mockResolvedValueOnce([
+        { tool_name: 'core.read_file' },
+        { tool_name: 'custom.my_tool' },
+      ]);
+
+      const names = await repo.getActiveToolNames();
+
+      expect(names).toEqual(['core.read_file', 'custom.my_tool']);
+      const [sql] = mockAdapter.query.mock.calls[0];
+      expect(sql).toContain('workflows');
+      expect(sql).toContain("status = 'active'");
+    });
+
+    it('filters out falsy values from query results', async () => {
+      mockAdapter.query.mockResolvedValueOnce([
+        { tool_name: 'tool-a' },
+        { tool_name: null },
+        { tool_name: '' },
+      ]);
+
+      const names = await repo.getActiveToolNames();
+      expect(names).toEqual(['tool-a']);
+    });
+  });
+
+  // =========================================================================
+  // createVersion
+  // =========================================================================
+
+  function makeVersionRow(overrides: Record<string, unknown> = {}) {
+    return {
+      id: 'wfver-1',
+      workflow_id: 'wf-1',
+      version: 1,
+      nodes: '[]',
+      edges: '[]',
+      variables: '{}',
+      created_at: '2024-06-01T12:00:00Z',
+      ...overrides,
+    };
+  }
+
+  describe('createVersion', () => {
+    it('throws when workflow not found', async () => {
+      mockAdapter.queryOne.mockResolvedValueOnce(null); // get returns null
+
+      await expect(repo.createVersion('wf-missing')).rejects.toThrow('Workflow not found');
+    });
+
+    it('creates a version with next version number', async () => {
+      // get workflow
+      mockAdapter.queryOne.mockResolvedValueOnce(makeWorkflowRow());
+      // get max version
+      mockAdapter.queryOne.mockResolvedValueOnce({ max_version: 3 });
+      // getVersion after insert
+      mockAdapter.queryOne.mockResolvedValueOnce(makeVersionRow({ version: 4 }));
+
+      const version = await repo.createVersion('wf-1');
+
+      expect(version.version).toBe(4);
+      // Two execute calls: INSERT + DELETE cleanup
+      expect(mockAdapter.execute).toHaveBeenCalledTimes(2);
+    });
+
+    it('starts at version 1 when no versions exist (max_version is null)', async () => {
+      mockAdapter.queryOne.mockResolvedValueOnce(makeWorkflowRow());
+      mockAdapter.queryOne.mockResolvedValueOnce({ max_version: null });
+      mockAdapter.queryOne.mockResolvedValueOnce(makeVersionRow({ version: 1 }));
+
+      const version = await repo.createVersion('wf-1');
+      expect(version.version).toBe(1);
+    });
+
+    it('throws when version row not found after insert', async () => {
+      mockAdapter.queryOne.mockResolvedValueOnce(makeWorkflowRow());
+      mockAdapter.queryOne.mockResolvedValueOnce({ max_version: null });
+      mockAdapter.queryOne.mockResolvedValueOnce(null); // getVersion returns null
+
+      await expect(repo.createVersion('wf-1')).rejects.toThrow('Failed to create version');
+    });
+  });
+
+  // =========================================================================
+  // getVersions
+  // =========================================================================
+
+  describe('getVersions', () => {
+    it('returns mapped versions', async () => {
+      mockAdapter.query.mockResolvedValueOnce([makeVersionRow(), makeVersionRow({ id: 'wfver-2', version: 2 })]);
+
+      const versions = await repo.getVersions('wf-1');
+
+      expect(versions).toHaveLength(2);
+      expect(versions[0].workflowId).toBe('wf-1');
+      const [sql, params] = mockAdapter.query.mock.calls[0];
+      expect(sql).toContain('workflow_versions');
+      expect(params).toContain('wf-1');
+    });
+  });
+
+  // =========================================================================
+  // countVersions
+  // =========================================================================
+
+  describe('countVersions', () => {
+    it('returns 0 when no versions', async () => {
+      mockAdapter.queryOne.mockResolvedValueOnce(null);
+      const count = await repo.countVersions('wf-1');
+      expect(count).toBe(0);
+    });
+
+    it('returns parsed count', async () => {
+      mockAdapter.queryOne.mockResolvedValueOnce({ count: '7' });
+      const count = await repo.countVersions('wf-1');
+      expect(count).toBe(7);
+    });
+  });
+
+  // =========================================================================
+  // getVersion
+  // =========================================================================
+
+  describe('getVersion', () => {
+    it('returns null when version not found', async () => {
+      mockAdapter.queryOne.mockResolvedValueOnce(null);
+      const ver = await repo.getVersion('wf-1', 99);
+      expect(ver).toBeNull();
+    });
+
+    it('returns mapped version when found', async () => {
+      mockAdapter.queryOne.mockResolvedValueOnce(makeVersionRow({ version: 5 }));
+      const ver = await repo.getVersion('wf-1', 5);
+      expect(ver?.version).toBe(5);
+      expect(ver?.workflowId).toBe('wf-1');
+    });
+  });
+
+  // =========================================================================
+  // restoreVersion
+  // =========================================================================
+
+  describe('restoreVersion', () => {
+    it('returns null when version not found', async () => {
+      mockAdapter.queryOne.mockResolvedValueOnce(null); // getVersion returns null
+      const result = await repo.restoreVersion('wf-1', 99);
+      expect(result).toBeNull();
+    });
+
+    it('creates snapshot and restores version data', async () => {
+      // 1. getVersion(wf-1, 2) → queryOne
+      mockAdapter.queryOne.mockResolvedValueOnce(makeVersionRow({ version: 2 }));
+      // 2. createVersion: get workflow
+      mockAdapter.queryOne.mockResolvedValueOnce(makeWorkflowRow());
+      // 3. createVersion: max_version query
+      mockAdapter.queryOne.mockResolvedValueOnce({ max_version: 2 });
+      // 4. createVersion: getVersion after INSERT → queryOne
+      mockAdapter.queryOne.mockResolvedValueOnce(makeVersionRow({ version: 3 }));
+      // 5. update: initial get(id) check
+      mockAdapter.queryOne.mockResolvedValueOnce(makeWorkflowRow());
+      // 6. update: get(id) at end to return result
+      mockAdapter.queryOne.mockResolvedValueOnce(makeWorkflowRow());
+
+      const result = await repo.restoreVersion('wf-1', 2);
+      expect(result).not.toBeNull();
+    });
+  });
+
   // createWorkflowsRepository factory
   // =========================================================================
 

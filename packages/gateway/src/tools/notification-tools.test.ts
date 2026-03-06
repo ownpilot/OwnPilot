@@ -283,5 +283,6 @@ describe('notification-tools', () => {
 
       expect(mockChannelUsersRepo.findByOwnpilotUser).toHaveBeenCalledWith('default');
     });
+
   });
 });

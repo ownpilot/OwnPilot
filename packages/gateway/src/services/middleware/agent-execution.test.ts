@@ -855,6 +855,35 @@ describe('createAgentExecutionMiddleware', () => {
       expect(toolCalls[0].arguments).toEqual({});
     });
 
+    it('should use empty object for invalid JSON arguments (line 233)', async () => {
+      const agent = createAgent();
+      agent.chat.mockResolvedValue({
+        ok: true,
+        value: {
+          id: 'r1',
+          content: 'ok',
+          toolCalls: [{ id: 'tc-1', name: 'noop', arguments: 'not-valid-json' }],
+        },
+      });
+      const ctx = createContext({ store: { agent } });
+      const msg = createMessage();
+      const next = vi.fn().mockImplementation(async () => {
+        const pr = (ctx.set as ReturnType<typeof vi.fn>).mock.calls.find(
+          (c: unknown[]) => c[0] === 'pipelineResult'
+        )?.[1] as MessageProcessingResult;
+        return pr;
+      });
+
+      const result = await middleware(msg, ctx, next);
+
+      const toolCalls = result.response.metadata.toolCalls as Array<{
+        id: string;
+        name: string;
+        arguments: unknown;
+      }>;
+      expect(toolCalls[0].arguments).toEqual({});
+    });
+
     it('should not include toolCalls when there are none', async () => {
       const agent = createAgent();
       agent.chat.mockResolvedValue({
@@ -942,6 +971,161 @@ describe('createAgentExecutionMiddleware', () => {
       const result = await middleware(msg, ctx, next);
 
       expect(result.response.content).toBe('');
+    });
+  });
+
+  // =========================================================================
+  // directToolMode
+  // =========================================================================
+
+  describe('directToolMode', () => {
+    it('calls setDirectToolMode(true) and restores to false on success', async () => {
+      const agent = {
+        ...createAgent(),
+        setDirectToolMode: vi.fn(),
+        getConversation: vi.fn().mockReturnValue({ id: 'conv-1', systemPrompt: '## Some prompt' }),
+        updateSystemPrompt: vi.fn(),
+      };
+      const ctx = createContext({ store: { agent, directToolMode: true } });
+      const msg = createMessage();
+      const next = vi.fn().mockImplementation(async () => {
+        const pr = (ctx.set as ReturnType<typeof vi.fn>).mock.calls.find(
+          (c: unknown[]) => c[0] === 'pipelineResult'
+        )?.[1] as MessageProcessingResult;
+        return pr;
+      });
+
+      await middleware(msg, ctx, next);
+
+      expect(agent.setDirectToolMode).toHaveBeenCalledWith(true);
+      expect(agent.setDirectToolMode).toHaveBeenCalledWith(false);
+    });
+
+    it('restores system prompt and directToolMode on agent error', async () => {
+      const agent = {
+        ...createAgent(),
+        setDirectToolMode: vi.fn(),
+        getConversation: vi.fn().mockReturnValue({ id: 'conv-1', systemPrompt: 'original prompt' }),
+        updateSystemPrompt: vi.fn(),
+      };
+      agent.chat.mockRejectedValueOnce(new Error('agent crash'));
+
+      const ctx = createContext({ store: { agent, directToolMode: true } });
+      const msg = createMessage();
+      const next = vi.fn().mockResolvedValue(createNextResult());
+
+      const result = await middleware(msg, ctx, next);
+
+      expect(agent.setDirectToolMode).toHaveBeenCalledWith(false);
+      expect(agent.updateSystemPrompt).toHaveBeenLastCalledWith('original prompt');
+      expect(result.response.content).toContain('agent crash');
+    });
+
+    it('swaps system prompt when it contains "## How to Call Tools" section', async () => {
+      const originalPrompt = '## How to Call Tools\nUse use_tool() pattern.\n\n## Other section\nOther content.';
+      const agent = {
+        ...createAgent(),
+        setDirectToolMode: vi.fn(),
+        getConversation: vi.fn().mockReturnValue({ id: 'conv-1', systemPrompt: originalPrompt }),
+        updateSystemPrompt: vi.fn(),
+      };
+      const ctx = createContext({ store: { agent, directToolMode: true } });
+      const msg = createMessage();
+      const next = vi.fn().mockImplementation(async () => {
+        const pr = (ctx.set as ReturnType<typeof vi.fn>).mock.calls.find(
+          (c: unknown[]) => c[0] === 'pipelineResult'
+        )?.[1] as MessageProcessingResult;
+        return pr;
+      });
+
+      await middleware(msg, ctx, next);
+
+      // updateSystemPrompt should have been called with direct-mode instructions
+      const calls = agent.updateSystemPrompt.mock.calls;
+      const directModeCall = calls.find((c: unknown[]) => String(c[0]).includes('double underscore'));
+      expect(directModeCall).toBeDefined();
+    });
+  });
+
+  // =========================================================================
+  // thinking config
+  // =========================================================================
+
+  describe('thinking config', () => {
+    it('passes thinking config to agent.chat when present in context', async () => {
+      const agent = createAgent();
+      const thinking = { type: 'enabled' as const, budgetTokens: 4096 };
+      const ctx = createContext({ store: { agent, thinking } });
+      const msg = createMessage();
+      const next = vi.fn().mockImplementation(async () => {
+        const pr = (ctx.set as ReturnType<typeof vi.fn>).mock.calls.find(
+          (c: unknown[]) => c[0] === 'pipelineResult'
+        )?.[1] as MessageProcessingResult;
+        return pr;
+      });
+
+      await middleware(msg, ctx, next);
+
+      expect(agent.chat).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({ thinking })
+      );
+    });
+  });
+
+  // =========================================================================
+  // attachments
+  // =========================================================================
+
+  describe('attachments', () => {
+    it('converts image attachments to ContentPart array and passes to agent.chat', async () => {
+      const agent = createAgent();
+      const ctx = createContext({ store: { agent } });
+      const msg = createMessage({
+        content: 'What is in this image?',
+        attachments: [
+          { type: 'image', data: 'base64data==', mimeType: 'image/png' },
+        ] as NormalizedMessage['attachments'],
+      });
+      const next = vi.fn().mockImplementation(async () => {
+        const pr = (ctx.set as ReturnType<typeof vi.fn>).mock.calls.find(
+          (c: unknown[]) => c[0] === 'pipelineResult'
+        )?.[1] as MessageProcessingResult;
+        return pr;
+      });
+
+      await middleware(msg, ctx, next);
+
+      const [chatContent] = agent.chat.mock.calls[0] as [unknown[]];
+      expect(Array.isArray(chatContent)).toBe(true);
+      const parts = chatContent as Array<{ type: string; text?: string; data?: string }>;
+      expect(parts[0]).toMatchObject({ type: 'text', text: 'What is in this image?' });
+      expect(parts[1]).toMatchObject({ type: 'image', data: 'base64data==' });
+    });
+
+    it('skips attachment entries that have no data', async () => {
+      const agent = createAgent();
+      const ctx = createContext({ store: { agent } });
+      const msg = createMessage({
+        content: 'Text only',
+        attachments: [
+          { type: 'image', mimeType: 'image/png' }, // no data
+        ] as NormalizedMessage['attachments'],
+      });
+      const next = vi.fn().mockImplementation(async () => {
+        const pr = (ctx.set as ReturnType<typeof vi.fn>).mock.calls.find(
+          (c: unknown[]) => c[0] === 'pipelineResult'
+        )?.[1] as MessageProcessingResult;
+        return pr;
+      });
+
+      await middleware(msg, ctx, next);
+
+      const [chatContent] = agent.chat.mock.calls[0] as [unknown[]];
+      const parts = chatContent as Array<{ type: string }>;
+      // Only the text part — image was skipped
+      expect(parts).toHaveLength(1);
+      expect(parts[0]).toMatchObject({ type: 'text' });
     });
   });
 });

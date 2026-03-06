@@ -82,10 +82,10 @@ export const readPdfExecutor: ToolExecutor = async (
         metadata: data.metadata,
       };
 
-      // Filter by pages if specified
+      // Note: pdf-parse extracts all text as one block without per-page offsets.
+      // Page-range filtering is not supported; the full text is returned regardless.
       if (pages !== 'all' && data.text) {
-        // Basic page filtering - pdf-parse doesn't provide per-page text easily
-        result.note = 'Page filtering applied at text level';
+        result.note = `Page filtering (${pages}) is not supported by the pdf-parse library — full text returned.`;
       }
 
       if (extractTables) {

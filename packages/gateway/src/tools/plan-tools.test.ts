@@ -213,6 +213,155 @@ describe('Plan Tools', () => {
       );
     });
 
+    it('adds a condition step', async () => {
+      mockPlanService.addStep.mockResolvedValue({
+        id: 's4',
+        name: 'Branch',
+        type: 'condition',
+        orderNum: 4,
+      });
+
+      const result = await executePlanTool('add_plan_step', {
+        plan_id: 'p1',
+        order: 4,
+        type: 'condition',
+        name: 'Branch',
+        condition: 'result:s1',
+        true_step: 's2',
+        false_step: 's3',
+      });
+
+      expect(result.success).toBe(true);
+      expect(mockPlanService.addStep).toHaveBeenCalledWith(
+        'default',
+        'p1',
+        expect.objectContaining({
+          config: {
+            condition: 'result:s1',
+            trueStep: 's2',
+            falseStep: 's3',
+          },
+        })
+      );
+    });
+
+    it('adds a parallel step', async () => {
+      mockPlanService.addStep.mockResolvedValue({
+        id: 's5',
+        name: 'Parallel fetch',
+        type: 'parallel',
+        orderNum: 5,
+      });
+
+      const result = await executePlanTool('add_plan_step', {
+        plan_id: 'p1',
+        order: 5,
+        type: 'parallel',
+        name: 'Parallel fetch',
+        parallel_steps: [
+          { tool_name: 'search_memories', tool_args: { query: 'a' } },
+          { tool_name: 'list_goals', tool_args: {} },
+        ],
+      });
+
+      expect(result.success).toBe(true);
+      expect(mockPlanService.addStep).toHaveBeenCalledWith(
+        'default',
+        'p1',
+        expect.objectContaining({
+          config: {
+            steps: [
+              { toolName: 'search_memories', toolArgs: { query: 'a' } },
+              { toolName: 'list_goals', toolArgs: {} },
+            ],
+          },
+        })
+      );
+    });
+
+    it('adds a loop step', async () => {
+      mockPlanService.addStep.mockResolvedValue({
+        id: 's6',
+        name: 'Poll sensor',
+        type: 'loop',
+        orderNum: 6,
+      });
+
+      const result = await executePlanTool('add_plan_step', {
+        plan_id: 'p1',
+        order: 6,
+        type: 'loop',
+        name: 'Poll sensor',
+        tool_name: 'read_sensor',
+        tool_args: { device_id: 'dev-1', sensor_id: 'temp-1' },
+        max_iterations: 5,
+      });
+
+      expect(result.success).toBe(true);
+      expect(mockPlanService.addStep).toHaveBeenCalledWith(
+        'default',
+        'p1',
+        expect.objectContaining({
+          config: {
+            toolName: 'read_sensor',
+            toolArgs: { device_id: 'dev-1', sensor_id: 'temp-1' },
+            maxIterations: 5,
+          },
+        })
+      );
+    });
+
+    it('adds a sub_plan step', async () => {
+      mockPlanService.addStep.mockResolvedValue({
+        id: 's7',
+        name: 'Run sub-plan',
+        type: 'sub_plan',
+        orderNum: 7,
+      });
+
+      const result = await executePlanTool('add_plan_step', {
+        plan_id: 'p1',
+        order: 7,
+        type: 'sub_plan',
+        name: 'Run sub-plan',
+        sub_plan_id: 'p99',
+      });
+
+      expect(result.success).toBe(true);
+      expect(mockPlanService.addStep).toHaveBeenCalledWith(
+        'default',
+        'p1',
+        expect.objectContaining({
+          config: { subPlanId: 'p99' },
+        })
+      );
+    });
+
+    it('parallel_steps default to empty array when omitted', async () => {
+      mockPlanService.addStep.mockResolvedValue({
+        id: 's8',
+        name: 'Empty parallel',
+        type: 'parallel',
+        orderNum: 8,
+      });
+
+      await executePlanTool('add_plan_step', {
+        plan_id: 'p1',
+        order: 8,
+        type: 'parallel',
+        name: 'Empty parallel',
+        // parallel_steps omitted
+      });
+
+      expect(mockPlanService.addStep).toHaveBeenCalledWith(
+        'default',
+        'p1',
+        expect.objectContaining({
+          config: { steps: [] },
+        })
+      );
+    });
+
     it('handles service errors', async () => {
       mockPlanService.addStep.mockRejectedValue(new Error('Plan not found: p999'));
 
@@ -367,6 +516,19 @@ describe('Plan Tools', () => {
       expect(result.success).toBe(false);
       expect(result.error).toContain('not found');
     });
+
+    it('returns error when executor.execute throws synchronously (line 453)', async () => {
+      mockPlanService.getPlan.mockResolvedValue({ id: 'p1', name: 'Plan A', status: 'pending' });
+      mockPlanService.getSteps.mockResolvedValue([{ id: 's1' }]);
+      mockPlanExecutor.execute.mockImplementation(() => {
+        throw new Error('Sync executor failure');
+      });
+
+      const result = await executePlanTool('execute_plan', { plan_id: 'p1' });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('Sync executor failure');
+    });
   });
 
   // ========================================================================
@@ -390,6 +552,16 @@ describe('Plan Tools', () => {
       const result = await executePlanTool('pause_plan', { plan_id: 'nonexistent' });
 
       expect(result.success).toBe(false);
+    });
+
+    it('returns error when executor.pause throws (line 472)', async () => {
+      mockPlanService.getPlan.mockResolvedValue({ id: 'p1', name: 'Plan A' });
+      mockPlanExecutor.pause.mockRejectedValue(new Error('Pause engine failure'));
+
+      const result = await executePlanTool('pause_plan', { plan_id: 'p1' });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('Pause engine failure');
     });
   });
 

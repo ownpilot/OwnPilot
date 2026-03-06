@@ -9,6 +9,9 @@ const mockCreateProvider = vi.fn();
 const mockInjectMemoryIntoPrompt = vi.fn(async (prompt: string) => ({ systemPrompt: prompt }));
 const mockHasServiceRegistry = vi.fn(() => false);
 const mockGetServiceRegistry = vi.fn();
+const mockBuildSoulPrompt = vi.fn(() => '');
+const mockGetByAgentId = vi.fn(async () => null as unknown);
+const mockCountUnread = vi.fn(async () => 0 as unknown);
 
 vi.mock('@ownpilot/core', async (importOriginal) => {
   const actual = await importOriginal<Record<string, unknown>>();
@@ -27,6 +30,8 @@ vi.mock('@ownpilot/core', async (importOriginal) => {
     unsafeToolId: vi.fn((name: string) => name),
     getBaseName: vi.fn((name: string) => name),
     createProvider: (...args: unknown[]) => mockCreateProvider(...args),
+    buildSoulPrompt: (...args: unknown[]) => mockBuildSoulPrompt(...args),
+    createFallbackProvider: vi.fn(() => ({})),
   };
 });
 
@@ -49,13 +54,13 @@ vi.mock('../db/repositories/local-providers.js', () => ({
 
 vi.mock('../db/repositories/souls.js', () => ({
   getSoulsRepository: vi.fn(() => ({
-    getByAgentId: vi.fn().mockResolvedValue(null),
+    getByAgentId: mockGetByAgentId,
   })),
 }));
 
 vi.mock('../db/repositories/agent-messages.js', () => ({
   getAgentMessagesRepository: vi.fn(() => ({
-    countUnread: vi.fn().mockResolvedValue(0),
+    countUnread: mockCountUnread,
   })),
 }));
 
@@ -150,6 +155,7 @@ vi.mock('./agent-cache.js', () => ({
   pendingChatAgents,
   lruGet: (...args: unknown[]) => mockLruGet(...(args as [Map<string, unknown>, string])),
   createApprovalCallback: (...args: unknown[]) => mockCreateApprovalCallback(...args),
+  createSoulAwareApprovalCallback: vi.fn(() => vi.fn()),
   getProviderApiKey: (...args: unknown[]) => mockGetProviderApiKey(...(args as [string])),
   loadProviderConfig: (...args: unknown[]) => mockLoadProviderConfig(...(args as [string])),
   resolveContextWindow: (...args: unknown[]) =>
@@ -290,6 +296,9 @@ beforeEach(() => {
   }));
   mockHasServiceRegistry.mockReturnValue(false);
   mockGetConfiguredProviderIds.mockResolvedValue(new Set<string>());
+  mockGetByAgentId.mockResolvedValue(null);
+  mockCountUnread.mockResolvedValue(0);
+  mockBuildSoulPrompt.mockReturnValue('');
 });
 
 // =============================================================================
@@ -1946,5 +1955,263 @@ describe('edge cases', () => {
 
     await mod.getOrCreateAgentInstance(record);
     expect(agentConfigCache.has('config-cache-test')).toBe(true);
+  });
+});
+
+// =============================================================================
+// Extended coverage — uncovered branches
+// =============================================================================
+
+describe('extended branch coverage', () => {
+  // ── Lines 149, 155: extension/MCP tool logging when non-empty ──
+
+  it('logs extension tool registration when tools are non-empty', async () => {
+    const agentTools = await import('./agent-tools.js');
+    vi.mocked(agentTools.registerExtensionTools).mockReturnValueOnce([
+      { name: 'ext-tool', description: 'Extension tool', parameters: { type: 'object' as const, properties: {} } },
+    ]);
+
+    const { agent } = makeMockAgent();
+    const record = makeAgentRecord();
+    mockLruGet.mockReturnValueOnce(undefined);
+    mockCreateAgent.mockReturnValue(agent);
+
+    // Should succeed without throwing — line 149 log.info executes
+    const result = await mod.getOrCreateAgentInstance(record);
+    expect(result).toBe(agent);
+  });
+
+  it('logs MCP tool registration when tools are non-empty', async () => {
+    const agentTools = await import('./agent-tools.js');
+    vi.mocked(agentTools.registerMcpTools).mockReturnValueOnce([
+      { name: 'mcp-tool', description: 'MCP tool', parameters: { type: 'object' as const, properties: {} } },
+    ]);
+
+    const { agent } = makeMockAgent();
+    const record = makeAgentRecord();
+    mockLruGet.mockReturnValueOnce(undefined);
+    mockCreateAgent.mockReturnValue(agent);
+
+    // Line 155 log.info executes
+    const result = await mod.getOrCreateAgentInstance(record);
+    expect(result).toBe(agent);
+  });
+
+  // ── Lines 160, 203: filter callbacks when tool definitions non-empty ──
+
+  it('runs tool filter callback for non-empty coreToolDefs in createAgentFromRecord', async () => {
+    const agentTools = await import('./agent-tools.js');
+    vi.mocked(agentTools.getToolDefinitions).mockReturnValueOnce([
+      { name: 'calculate', description: 'Math', parameters: { type: 'object' as const, properties: {} } },
+    ]);
+
+    const { agent } = makeMockAgent();
+    const record = makeAgentRecord();
+    mockLruGet.mockReturnValueOnce(undefined);
+    mockCreateAgent.mockReturnValue(agent);
+
+    // Line 160: .filter callback runs for 'calculate'
+    // Line 203: filteredStandardTools filter callback runs
+    const result = await mod.getOrCreateAgentInstance(record);
+    expect(result).toBe(agent);
+  });
+
+  // ── Lines 194-196: per-agent toolGroups override path ──
+
+  it('uses per-agent toolGroups when resolveRecordTools returns tools', async () => {
+    mockResolveRecordTools.mockReturnValueOnce({ tools: ['calculate', 'generate_uuid'], configuredToolGroups: [] });
+
+    const { agent } = makeMockAgent();
+    const record = makeAgentRecord();
+    mockLruGet.mockReturnValueOnce(undefined);
+    mockCreateAgent.mockReturnValue(agent);
+
+    // Line 192: hasAgentConfig = true → per-agent override (lines 194-196)
+    const result = await mod.getOrCreateAgentInstance(record);
+    expect(result).toBe(agent);
+  });
+
+  it('uses per-agent configuredToolGroups when non-empty', async () => {
+    mockResolveRecordTools.mockReturnValueOnce({ tools: [], configuredToolGroups: ['math', 'text'] });
+
+    const { agent } = makeMockAgent();
+    const record = makeAgentRecord();
+    mockLruGet.mockReturnValueOnce(undefined);
+    mockCreateAgent.mockReturnValue(agent);
+
+    const result = await mod.getOrCreateAgentInstance(record);
+    expect(result).toBe(agent);
+  });
+
+  // ── Lines 216-218: soul prompt injection ──
+
+  it('injects soul prompt when agent has a soul configured', async () => {
+    mockGetByAgentId.mockResolvedValueOnce({
+      id: 'soul-1',
+      agentId: 'agent-1',
+      name: 'Aria',
+      autonomy: 'reactive',
+      personality: { tone: 'friendly' },
+      createdAt: new Date(),
+    });
+    mockBuildSoulPrompt.mockReturnValueOnce('## Soul\nYou have the soul of Aria.');
+
+    const { agent } = makeMockAgent();
+    const record = makeAgentRecord();
+    mockLruGet.mockReturnValueOnce(undefined);
+    mockCreateAgent.mockReturnValue(agent);
+
+    // Lines 216-218 execute: countUnread, buildSoulPrompt, soulAutonomy
+    const result = await mod.getOrCreateAgentInstance(record);
+    expect(result).toBe(agent);
+    // Soul prompt was injected into the system prompt
+    expect(mockInjectMemoryIntoPrompt).toHaveBeenCalledWith(
+      expect.stringContaining('Soul'),
+      expect.anything()
+    );
+  });
+
+  // ── Lines 454, 482: filter callbacks in createChatAgentInstance ──
+
+  it('runs tool filter callback for non-empty coreToolDefs in createChatAgentInstance', async () => {
+    const agentTools = await import('./agent-tools.js');
+    vi.mocked(agentTools.getToolDefinitions).mockReturnValueOnce([
+      { name: 'generate_uuid', description: 'UUID', parameters: { type: 'object' as const, properties: {} } },
+    ]);
+
+    const { agent } = makeMockAgent();
+    mockLruGet.mockReturnValue(undefined);
+    mockCreateAgent.mockReturnValue(agent);
+
+    // Line 454: chatCoreToolDefs filter callback runs
+    // Line 482: filteredChatTools filter callback runs
+    const result = await mod.getOrCreateChatAgent('openai', 'gpt-4o');
+    expect(result).toBe(agent);
+  });
+
+  // ── Lines 528-533: fallback provider creation ──
+
+  it('builds fallback provider when fallback option is given', async () => {
+    const { agent } = makeMockAgent();
+    mockLruGet.mockReturnValue(undefined);
+    mockCreateAgent.mockReturnValue(agent);
+
+    // Both primary and fallback keys are available
+    mockGetProviderApiKey
+      .mockResolvedValueOnce('primary-key')
+      .mockResolvedValueOnce('fallback-key');
+
+    // Lines 528-533 execute: getProviderApiKey, if(fbApiKey), loadProviderConfig, NATIVE_PROVIDERS, createFallbackProvider
+    const result = await mod.getOrCreateChatAgent('openai', 'gpt-4o', {
+      provider: 'anthropic',
+      model: 'claude-3',
+    });
+    expect(result).toBe(agent);
+  });
+
+  it('skips fallback provider when fallback API key is not configured', async () => {
+    const { agent } = makeMockAgent();
+    mockLruGet.mockReturnValue(undefined);
+    mockCreateAgent.mockReturnValue(agent);
+
+    // Primary key available, fallback key not available (returns undefined)
+    mockGetProviderApiKey
+      .mockResolvedValueOnce('primary-key')
+      .mockResolvedValueOnce(undefined);
+
+    const result = await mod.getOrCreateChatAgent('openai', 'gpt-4o', {
+      provider: 'anthropic',
+      model: 'claude-3',
+    });
+    expect(result).toBe(agent);
+  });
+
+  // ── Line 554: fallback provider error path ──
+
+  it('handles fallback provider creation error gracefully', async () => {
+    const { agent } = makeMockAgent();
+    mockLruGet.mockReturnValue(undefined);
+    mockCreateAgent.mockReturnValue(agent);
+
+    // Primary key succeeds, fallback key lookup throws
+    mockGetProviderApiKey
+      .mockResolvedValueOnce('primary-key')
+      .mockRejectedValueOnce(new Error('Fallback key service unavailable'));
+
+    // Line 554: catch block logs the error — agent creation continues without fallback
+    const result = await mod.getOrCreateChatAgent('openai', 'gpt-4o', {
+      provider: 'anthropic',
+      model: 'claude-3',
+    });
+    expect(result).toBe(agent);
+  });
+
+  // ── Line 196: filter callback in per-agent toolGroups (if hasAgentConfig branch) ──
+
+  it('runs filter callback for non-empty standardToolDefs when hasAgentConfig=true (line 196)', async () => {
+    // Make standardToolDefs non-empty
+    const agentTools = await import('./agent-tools.js');
+    vi.mocked(agentTools.getToolDefinitions).mockReturnValueOnce([
+      { name: 'calculate', description: 'Math', parameters: { type: 'object' as const, properties: {} } },
+    ]);
+    // Make hasAgentConfig = true so the if-branch filter callback (line 196) runs
+    mockResolveRecordTools.mockReturnValueOnce({ tools: ['calculate'], configuredToolGroups: [] });
+
+    const { agent } = makeMockAgent();
+    const record = makeAgentRecord();
+    mockLruGet.mockReturnValueOnce(undefined);
+    mockCreateAgent.mockReturnValue(agent);
+
+    const result = await mod.getOrCreateAgentInstance(record);
+    expect(result).toBe(agent);
+  });
+
+  // ── Line 549: onFallback callback invoked inside createFallbackProvider ──
+
+  it('invokes onFallback callback when fallback provider triggers (line 549)', async () => {
+    const { agent } = makeMockAgent();
+    mockLruGet.mockReturnValue(undefined);
+    mockCreateAgent.mockReturnValue(agent);
+
+    mockGetProviderApiKey
+      .mockResolvedValueOnce('primary-key')
+      .mockResolvedValueOnce('fallback-key');
+
+    // Make createFallbackProvider invoke the onFallback callback immediately
+    const core = await import('@ownpilot/core');
+    vi.mocked(core.createFallbackProvider).mockImplementationOnce(
+      (opts: Record<string, unknown>) => {
+        const cb = opts['onFallback'] as
+          | ((failed: string, error: Error, next: string) => void)
+          | undefined;
+        cb?.('primary', new Error('Primary failed'), 'fallback');
+        return {} as import('@ownpilot/core').IProvider;
+      }
+    );
+
+    const result = await mod.getOrCreateChatAgent('openai', 'gpt-4o', {
+      provider: 'anthropic',
+      model: 'claude-3',
+    });
+    expect(result).toBe(agent);
+  });
+
+  // ── Lines 558-560: chat agent cache eviction ──
+
+  it('evicts oldest chat agent when cache reaches max capacity', async () => {
+    // Fill to MAX_CHAT_AGENT_CACHE_SIZE (20)
+    for (let i = 0; i < 20; i++) {
+      chatAgentCache.set(`chat|old-${i}|model`, { id: `old-${i}` });
+    }
+    expect(chatAgentCache.size).toBe(20);
+
+    const { agent } = makeMockAgent();
+    mockLruGet.mockReturnValue(undefined);
+    mockCreateAgent.mockReturnValue(agent);
+
+    // Lines 558-560: cache.size >= MAX, evict oldest, then add new entry
+    await mod.getOrCreateChatAgent('openai', 'gpt-4o');
+    // Evicted one, added one → still at 20
+    expect(chatAgentCache.size).toBe(20);
   });
 });

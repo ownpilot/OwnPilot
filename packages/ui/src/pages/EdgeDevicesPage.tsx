@@ -7,9 +7,11 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import { DeviceCard } from '../components/DeviceCard';
-import { EmptyState } from '../components/EmptyState';
+import { RegisterDeviceModal } from '../components/RegisterDeviceModal';
+import { DeviceDetailDrawer } from '../components/DeviceDetailDrawer';
+import { EdgeDevicesOnboarding } from '../components/EdgeDevicesOnboarding';
 import { SkeletonCard } from '../components/Skeleton';
-import { Cpu, Globe, Power, Circle, Search, RefreshCw } from '../components/icons';
+import { Cpu, Globe, Power, Circle, Search, RefreshCw, Plus } from '../components/icons';
 import { edgeApi } from '../api/endpoints/edge';
 import type { EdgeDevice, EdgeDeviceType, EdgeDeviceStatus } from '../api/endpoints/edge';
 import { useGateway } from '../hooks/useWebSocket';
@@ -47,6 +49,8 @@ export function EdgeDevicesPage() {
   const [total, setTotal] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [mqttConnected, setMqttConnected] = useState(false);
+  const [showRegister, setShowRegister] = useState(false);
+  const [selectedDevice, setSelectedDevice] = useState<EdgeDevice | null>(null);
 
   const fetchDevices = useCallback(async () => {
     const filter = FILTER_TABS.find((t) => t.key === activeTab)?.filter ?? {};
@@ -101,17 +105,40 @@ export function EdgeDevicesPage() {
     return () => clearTimeout(t);
   }, [searchInput]);
 
-  const handleDelete = useCallback((id: string) => {
-    setDevices((prev) => prev.filter((d) => d.id !== id));
-    setTotal((prev) => Math.max(0, prev - 1));
-  }, []);
+  const handleDelete = useCallback(
+    (id: string) => {
+      setDevices((prev) => prev.filter((d) => d.id !== id));
+      setTotal((prev) => Math.max(0, prev - 1));
+      if (selectedDevice?.id === id) setSelectedDevice(null);
+    },
+    [selectedDevice]
+  );
 
-  const handleUpdate = useCallback((updated: EdgeDevice) => {
-    setDevices((prev) => prev.map((d) => (d.id === updated.id ? updated : d)));
+  const handleUpdate = useCallback(
+    (updated: EdgeDevice) => {
+      setDevices((prev) => prev.map((d) => (d.id === updated.id ? updated : d)));
+      if (selectedDevice?.id === updated.id) setSelectedDevice(updated);
+    },
+    [selectedDevice]
+  );
+
+  const handleCreated = useCallback((device: EdgeDevice) => {
+    setDevices((prev) => [device, ...prev]);
+    setTotal((prev) => prev + 1);
+    setShowRegister(false);
   }, []);
 
   return (
     <div className="flex flex-col h-full">
+      {/* Under development banner */}
+      <div className="flex items-center gap-2 px-6 py-2.5 bg-amber-50 dark:bg-amber-500/10 border-b border-amber-200 dark:border-amber-500/30 text-xs text-amber-700 dark:text-amber-400">
+        <span className="text-sm">🚧</span>
+        <span>
+          <span className="font-semibold">Experimental feature</span> — Edge Devices is under active
+          development and not yet ready for production use.
+        </span>
+      </div>
+
       {/* Header */}
       <header className="flex items-center justify-between px-6 py-4 border-b border-border dark:border-dark-border">
         <div>
@@ -142,6 +169,13 @@ export function EdgeDevicesPage() {
             title="Refresh"
           >
             <RefreshCw className="w-4 h-4 text-text-muted" />
+          </button>
+          <button
+            onClick={() => setShowRegister(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            Register Device
           </button>
         </div>
       </header>
@@ -188,15 +222,19 @@ export function EdgeDevicesPage() {
             <SkeletonCard count={6} />
           </div>
         ) : devices.length === 0 ? (
-          <EmptyState
-            icon={Cpu}
-            title="No edge devices"
-            description={
-              searchQuery
-                ? 'No devices match your search'
-                : 'Register IoT devices to monitor sensors and control actuators'
-            }
-          />
+          searchQuery ? (
+            <div className="flex flex-col items-center justify-center py-16 text-center gap-2">
+              <Cpu className="w-8 h-8 text-text-muted" />
+              <p className="text-sm font-medium text-text-primary dark:text-dark-text-primary">
+                No devices match your search
+              </p>
+              <p className="text-xs text-text-muted dark:text-dark-text-muted">
+                Try a different name or clear the filter.
+              </p>
+            </div>
+          ) : (
+            <EdgeDevicesOnboarding onRegister={() => setShowRegister(true)} />
+          )
         ) : (
           <div className="grid gap-4 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
             {devices.map((device) => (
@@ -205,11 +243,24 @@ export function EdgeDevicesPage() {
                 device={device}
                 onDelete={handleDelete}
                 onUpdate={handleUpdate}
+                onClick={() => setSelectedDevice(device)}
               />
             ))}
           </div>
         )}
       </div>
+
+      {/* Modals */}
+      {showRegister && (
+        <RegisterDeviceModal onClose={() => setShowRegister(false)} onCreated={handleCreated} />
+      )}
+      {selectedDevice && (
+        <DeviceDetailDrawer
+          device={selectedDevice}
+          onClose={() => setSelectedDevice(null)}
+          onUpdated={handleUpdate}
+        />
+      )}
     </div>
   );
 }

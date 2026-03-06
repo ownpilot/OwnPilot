@@ -11,7 +11,7 @@
  * - executeTransformerNode: transformer expression evaluation via vm
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type { WorkflowNode, NodeResult } from '../../db/repositories/workflows.js';
 
 // ---------------------------------------------------------------------------
@@ -55,6 +55,15 @@ vi.mock('../../routes/agent-cache.js', () => ({
   NATIVE_PROVIDERS: new Set(['openai', 'anthropic', 'google']),
 }));
 
+vi.mock('../../routes/settings.js', () => ({
+  resolveProviderAndModel: vi.fn(async (provider: string, model: string) => ({
+    provider: provider === 'default' ? 'openai' : provider,
+    model: model === 'default' ? 'gpt-4o-mini' : model,
+  })),
+  getDefaultProvider: vi.fn(async () => 'openai'),
+  getDefaultModel: vi.fn(async () => 'gpt-4o-mini'),
+}));
+
 const mockProvider = {
   complete: vi.fn(),
 };
@@ -79,6 +88,11 @@ import {
   executeConditionNode,
   executeCodeNode,
   executeTransformerNode,
+  executeHttpRequestNode,
+  executeDelayNode,
+  executeNotificationNode,
+  executeMergeNode,
+  executeSwitchNode,
 } from './node-executors.js';
 import { resolveTemplates } from './template-resolver.js';
 
@@ -831,5 +845,651 @@ describe('executeLlmNode', () => {
     expect(createProvider).toHaveBeenCalledWith(
       expect.objectContaining({ apiKey: 'custom-key-123' })
     );
+  });
+
+  it('returns error when no provider is configured (resolve returns null)', async () => {
+    const { resolveProviderAndModel } = await import('../../routes/settings.js');
+    vi.mocked(resolveProviderAndModel).mockResolvedValueOnce({ provider: null as unknown as string, model: null });
+
+    vi.mocked(resolveTemplates).mockReturnValueOnce({ _msg: 'Hello' });
+
+    const node = makeNode('llm1', 'llmNode', {
+      provider: '',
+      model: '',
+      userMessage: 'Hello',
+    });
+
+    const result = await executeLlmNode(node, {}, {});
+    expect(result.status).toBe('error');
+    expect(result.error).toContain('No AI provider configured');
+  });
+
+  it('uses baseUrl from providerCfg when not specified in node', async () => {
+    const { loadProviderConfig } = await import('../../routes/agent-cache.js');
+    vi.mocked(loadProviderConfig).mockReturnValueOnce({ baseUrl: 'https://custom-api.example.com' } as never);
+
+    vi.mocked(resolveTemplates).mockReturnValueOnce({ _msg: 'Hello' });
+    mockProvider.complete.mockResolvedValue({ ok: true, value: { content: 'ok' } });
+
+    const node = makeNode('llm1', 'llmNode', {
+      provider: 'openai',
+      model: 'gpt-4',
+      userMessage: 'Hello',
+    });
+
+    await executeLlmNode(node, {}, {});
+
+    const { createProvider } = await import('@ownpilot/core');
+    expect(createProvider).toHaveBeenCalledWith(
+      expect.objectContaining({ baseUrl: 'https://custom-api.example.com' })
+    );
+  });
+});
+
+// ============================================================================
+// executeHttpRequestNode
+// ============================================================================
+
+describe('executeHttpRequestNode', () => {
+  let mockFetch: ReturnType<typeof vi.fn>;
+
+  beforeEach(() => {
+    mockFetch = vi.fn();
+    vi.stubGlobal('fetch', mockFetch);
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  function makeMockResponse(overrides: Partial<{
+    ok: boolean;
+    status: number;
+    statusText: string;
+    headers: Record<string, string>;
+    body: string;
+    contentType: string;
+  }> = {}) {
+    const headers = new Map<string, string>(Object.entries({
+      'content-type': overrides.contentType ?? 'text/plain',
+      ...overrides.headers,
+    }));
+    return {
+      ok: overrides.ok ?? true,
+      status: overrides.status ?? 200,
+      statusText: overrides.statusText ?? 'OK',
+      headers: {
+        get: (key: string) => headers.get(key) ?? null,
+        forEach: (fn: (v: string, k: string) => void) => headers.forEach(fn),
+      },
+      text: async () => overrides.body ?? 'response body',
+    };
+  }
+
+  it('makes a GET request and returns success result', async () => {
+    vi.mocked(resolveTemplates).mockReturnValue({ _url: 'https://api.example.com/data' });
+    mockFetch.mockResolvedValue(makeMockResponse({ body: 'hello world' }));
+
+    const node = makeNode('http1', 'httpRequestNode', {
+      method: 'GET',
+      url: 'https://api.example.com/data',
+    });
+
+    const result = await executeHttpRequestNode(node, {}, {});
+
+    expect(result.status).toBe('success');
+    expect((result.output as Record<string, unknown>).status).toBe(200);
+    expect((result.output as Record<string, unknown>).body).toBe('hello world');
+  });
+
+  it('blocks SSRF requests to private IP addresses', async () => {
+    vi.mocked(resolveTemplates).mockReturnValue({ _url: 'http://192.168.1.1/admin' });
+
+    const node = makeNode('http1', 'httpRequestNode', {
+      method: 'GET',
+      url: 'http://192.168.1.1/admin',
+    });
+
+    const result = await executeHttpRequestNode(node, {}, {});
+
+    expect(result.status).toBe('error');
+    expect(result.error).toContain('private/internal');
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  it('blocks requests to localhost', async () => {
+    vi.mocked(resolveTemplates).mockReturnValue({ _url: 'http://localhost:3000' });
+
+    const node = makeNode('http1', 'httpRequestNode', {
+      method: 'GET',
+      url: 'http://localhost:3000',
+    });
+
+    const result = await executeHttpRequestNode(node, {}, {});
+
+    expect(result.status).toBe('error');
+    expect(result.error).toContain('private/internal');
+  });
+
+  it('blocks malformed URLs', async () => {
+    vi.mocked(resolveTemplates).mockReturnValue({ _url: 'not-a-valid-url' });
+
+    const node = makeNode('http1', 'httpRequestNode', {
+      method: 'GET',
+      url: 'not-a-valid-url',
+    });
+
+    const result = await executeHttpRequestNode(node, {}, {});
+    expect(result.status).toBe('error');
+  });
+
+  it('parses JSON response body automatically', async () => {
+    vi.mocked(resolveTemplates).mockReturnValue({ _url: 'https://api.example.com/json' });
+    mockFetch.mockResolvedValue(makeMockResponse({
+      body: '{"key":"value"}',
+      contentType: 'application/json',
+    }));
+
+    const node = makeNode('http1', 'httpRequestNode', {
+      method: 'GET',
+      url: 'https://api.example.com/json',
+    });
+
+    const result = await executeHttpRequestNode(node, {}, {});
+
+    expect(result.status).toBe('success');
+    expect((result.output as Record<string, unknown>).body).toEqual({ key: 'value' });
+  });
+
+  it('returns error for HTTP 4xx/5xx responses', async () => {
+    vi.mocked(resolveTemplates).mockReturnValue({ _url: 'https://api.example.com/error' });
+    mockFetch.mockResolvedValue(makeMockResponse({
+      ok: false,
+      status: 404,
+      statusText: 'Not Found',
+      body: 'Not found',
+    }));
+
+    const node = makeNode('http1', 'httpRequestNode', {
+      method: 'GET',
+      url: 'https://api.example.com/error',
+    });
+
+    const result = await executeHttpRequestNode(node, {}, {});
+
+    expect(result.status).toBe('error');
+    expect(result.error).toContain('404');
+  });
+
+  it('adds bearer auth header', async () => {
+    vi.mocked(resolveTemplates).mockReturnValue({
+      _url: 'https://api.example.com/secure',
+      _authToken: 'my-token',
+    });
+    mockFetch.mockResolvedValue(makeMockResponse());
+
+    const node = makeNode('http1', 'httpRequestNode', {
+      method: 'GET',
+      url: 'https://api.example.com/secure',
+      auth: { type: 'bearer', token: 'my-token' },
+    });
+
+    await executeHttpRequestNode(node, {}, {});
+
+    const fetchOpts = mockFetch.mock.calls[0][1];
+    expect(fetchOpts.headers['Authorization']).toBe('Bearer my-token');
+  });
+
+  it('adds basic auth header', async () => {
+    vi.mocked(resolveTemplates).mockReturnValue({
+      _url: 'https://api.example.com/secure',
+      _authUser: 'user',
+      _authPass: 'pass',
+    });
+    mockFetch.mockResolvedValue(makeMockResponse());
+
+    const node = makeNode('http1', 'httpRequestNode', {
+      method: 'GET',
+      url: 'https://api.example.com/secure',
+      auth: { type: 'basic', username: 'user', password: 'pass' },
+    });
+
+    await executeHttpRequestNode(node, {}, {});
+
+    const fetchOpts = mockFetch.mock.calls[0][1];
+    expect(fetchOpts.headers['Authorization']).toContain('Basic ');
+  });
+
+  it('adds apiKey auth header', async () => {
+    vi.mocked(resolveTemplates).mockReturnValue({
+      _url: 'https://api.example.com/secure',
+      _authToken: 'api-key-value',
+    });
+    mockFetch.mockResolvedValue(makeMockResponse());
+
+    const node = makeNode('http1', 'httpRequestNode', {
+      method: 'GET',
+      url: 'https://api.example.com/secure',
+      auth: { type: 'apiKey', headerName: 'X-Custom-Key', token: 'api-key-value' },
+    });
+
+    await executeHttpRequestNode(node, {}, {});
+
+    const fetchOpts = mockFetch.mock.calls[0][1];
+    expect(fetchOpts.headers['X-Custom-Key']).toBe('api-key-value');
+  });
+
+  it('sends POST request with JSON body', async () => {
+    vi.mocked(resolveTemplates).mockReturnValue({
+      _url: 'https://api.example.com/post',
+      _body: '{"name":"test"}',
+    });
+    mockFetch.mockResolvedValue(makeMockResponse());
+
+    const node = makeNode('http1', 'httpRequestNode', {
+      method: 'POST',
+      url: 'https://api.example.com/post',
+      body: '{"name":"test"}',
+      bodyType: 'json',
+    });
+
+    await executeHttpRequestNode(node, {}, {});
+
+    const fetchOpts = mockFetch.mock.calls[0][1];
+    expect(fetchOpts.method).toBe('POST');
+    expect(fetchOpts.body).toBe('{"name":"test"}');
+    expect(fetchOpts.headers['Content-Type']).toBe('application/json');
+  });
+
+  it('returns error when content-length exceeds max', async () => {
+    vi.mocked(resolveTemplates).mockReturnValue({ _url: 'https://api.example.com/big' });
+    const headers = new Map([['content-length', '2000000'], ['content-type', 'text/plain']]);
+    mockFetch.mockResolvedValue({
+      ok: true,
+      status: 200,
+      statusText: 'OK',
+      headers: {
+        get: (k: string) => headers.get(k) ?? null,
+        forEach: (fn: (v: string, k: string) => void) => headers.forEach(fn),
+      },
+      text: async () => 'x'.repeat(100),
+    });
+
+    const node = makeNode('http1', 'httpRequestNode', {
+      method: 'GET',
+      url: 'https://api.example.com/big',
+      maxResponseSize: 1024,
+    });
+
+    const result = await executeHttpRequestNode(node, {}, {});
+
+    expect(result.status).toBe('error');
+    expect(result.error).toContain('Response too large');
+  });
+
+  it('adds query params to URL', async () => {
+    vi.mocked(resolveTemplates).mockReturnValue({
+      _url: 'https://api.example.com/search',
+      '_q_q': 'test',
+    });
+    mockFetch.mockResolvedValue(makeMockResponse());
+
+    const node = makeNode('http1', 'httpRequestNode', {
+      method: 'GET',
+      url: 'https://api.example.com/search',
+      queryParams: { q: 'test' },
+    });
+
+    await executeHttpRequestNode(node, {}, {});
+
+    const calledUrl = mockFetch.mock.calls[0][0] as string;
+    expect(calledUrl).toContain('q=test');
+  });
+
+  it('catches fetch errors and returns error result', async () => {
+    vi.mocked(resolveTemplates).mockReturnValue({ _url: 'https://api.example.com/fail' });
+    mockFetch.mockRejectedValue(new Error('Network error'));
+
+    const node = makeNode('http1', 'httpRequestNode', {
+      method: 'GET',
+      url: 'https://api.example.com/fail',
+    });
+
+    const result = await executeHttpRequestNode(node, {}, {});
+
+    expect(result.status).toBe('error');
+    expect(result.error).toBe('Network error');
+  });
+});
+
+// ============================================================================
+// executeDelayNode
+// ============================================================================
+
+describe('executeDelayNode', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('delays for specified seconds and returns success', async () => {
+    vi.mocked(resolveTemplates).mockReturnValue({ _dur: '2' });
+
+    const node = makeNode('delay1', 'delayNode', { duration: 2, unit: 'seconds' });
+    const promise = executeDelayNode(node, {}, {});
+
+    await vi.advanceTimersByTimeAsync(2001);
+    const result = await promise;
+
+    expect(result.status).toBe('success');
+    expect((result.output as Record<string, unknown>).unit).toBe('seconds');
+    expect((result.output as Record<string, unknown>).value).toBe(2);
+  });
+
+  it('delays for specified minutes', async () => {
+    vi.mocked(resolveTemplates).mockReturnValue({ _dur: '1' });
+
+    const node = makeNode('delay1', 'delayNode', { duration: 1, unit: 'minutes' });
+    const promise = executeDelayNode(node, {}, {});
+
+    await vi.advanceTimersByTimeAsync(61000);
+    const result = await promise;
+
+    expect(result.status).toBe('success');
+    expect((result.output as Record<string, unknown>).delayMs).toBe(60000);
+  });
+
+  it('delays for specified hours (capped at 1 hour)', async () => {
+    vi.mocked(resolveTemplates).mockReturnValue({ _dur: '2' }); // 2 hours → capped at 1 hour
+
+    const node = makeNode('delay1', 'delayNode', { duration: 2, unit: 'hours' });
+    const promise = executeDelayNode(node, {}, {});
+
+    await vi.advanceTimersByTimeAsync(3_600_001);
+    const result = await promise;
+
+    expect(result.status).toBe('success');
+    expect((result.output as Record<string, unknown>).delayMs).toBe(3_600_000);
+  });
+
+  it('returns error for NaN duration', async () => {
+    vi.mocked(resolveTemplates).mockReturnValue({ _dur: 'not-a-number' });
+
+    const node = makeNode('delay1', 'delayNode', { duration: 'not-a-number', unit: 'seconds' });
+    const result = await executeDelayNode(node, {}, {});
+
+    expect(result.status).toBe('error');
+    expect(result.error).toContain('Invalid delay duration');
+  });
+
+  it('returns error for negative duration', async () => {
+    vi.mocked(resolveTemplates).mockReturnValue({ _dur: '-5' });
+
+    const node = makeNode('delay1', 'delayNode', { duration: -5, unit: 'seconds' });
+    const result = await executeDelayNode(node, {}, {});
+
+    expect(result.status).toBe('error');
+    expect(result.error).toContain('Invalid delay duration');
+  });
+
+  it('cancels delay when abortSignal fires', async () => {
+    vi.mocked(resolveTemplates).mockReturnValue({ _dur: '60' });
+
+    const controller = new AbortController();
+    const node = makeNode('delay1', 'delayNode', { duration: 60, unit: 'seconds' });
+
+    const promise = executeDelayNode(node, {}, {}, controller.signal);
+
+    // Abort before timer fires
+    controller.abort();
+    await vi.advanceTimersByTimeAsync(100);
+
+    const result = await promise;
+    expect(result.status).toBe('error');
+    expect(result.error).toContain('cancelled');
+  });
+
+  it('returns error immediately when signal is already aborted', async () => {
+    vi.mocked(resolveTemplates).mockReturnValue({ _dur: '10' });
+
+    const controller = new AbortController();
+    controller.abort(); // Already aborted
+
+    const node = makeNode('delay1', 'delayNode', { duration: 10, unit: 'seconds' });
+    const promise = executeDelayNode(node, {}, {}, controller.signal);
+
+    await vi.advanceTimersByTimeAsync(0);
+    const result = await promise;
+
+    expect(result.status).toBe('error');
+    expect(result.error).toContain('cancelled');
+  });
+});
+
+// ============================================================================
+// executeNotificationNode
+// ============================================================================
+
+describe('executeNotificationNode', () => {
+  beforeEach(() => {
+    // Mock the wsGateway import
+    vi.doMock('../../ws/server.js', () => ({
+      wsGateway: { broadcast: vi.fn() },
+    }));
+  });
+
+  it('returns success immediately with notification metadata', () => {
+    vi.mocked(resolveTemplates).mockReturnValue({ _msg: 'Task completed!' });
+
+    const node = makeNode('notif1', 'notificationNode', {
+      message: 'Task completed!',
+      severity: 'success',
+    });
+
+    const result = executeNotificationNode(node, {}, {});
+
+    expect(result.status).toBe('success');
+    expect((result.output as Record<string, unknown>).sent).toBe(true);
+    expect((result.output as Record<string, unknown>).message).toBe('Task completed!');
+    expect((result.output as Record<string, unknown>).severity).toBe('success');
+  });
+
+  it('defaults to info severity when not specified', () => {
+    vi.mocked(resolveTemplates).mockReturnValue({ _msg: 'Info message' });
+
+    const node = makeNode('notif1', 'notificationNode', {
+      message: 'Info message',
+    });
+
+    const result = executeNotificationNode(node, {}, {});
+
+    expect(result.status).toBe('success');
+    expect((result.output as Record<string, unknown>).severity).toBe('info');
+  });
+
+  it('includes timing information', () => {
+    vi.mocked(resolveTemplates).mockReturnValue({ _msg: 'Test' });
+
+    const node = makeNode('notif1', 'notificationNode', { message: 'Test' });
+    const result = executeNotificationNode(node, {}, {});
+
+    expect(result.durationMs).toBeGreaterThanOrEqual(0);
+    expect(result.startedAt).toBeDefined();
+    expect(result.completedAt).toBeDefined();
+  });
+
+  it('resolves message templates', () => {
+    vi.mocked(resolveTemplates).mockReturnValue({ _msg: 'Hello, resolved!' });
+
+    const node = makeNode('notif1', 'notificationNode', { message: '{{greeting}}' });
+    const result = executeNotificationNode(node, {}, { greeting: 'Hello, resolved!' });
+
+    expect((result.output as Record<string, unknown>).message).toBe('Hello, resolved!');
+  });
+});
+
+// ============================================================================
+// executeMergeNode
+// ============================================================================
+
+describe('executeMergeNode', () => {
+  it('collects outputs from all incoming node IDs', () => {
+    const nodeOutputs = {
+      n1: makeResult('n1', 'output-1'),
+      n2: makeResult('n2', 'output-2'),
+      n3: makeResult('n3', 'output-3'),
+    };
+
+    const node = makeNode('merge1', 'mergeNode', { mode: 'waitAll' });
+    const result = executeMergeNode(node, nodeOutputs, {}, ['n1', 'n2', 'n3']);
+
+    expect(result.status).toBe('success');
+    const output = result.output as Record<string, unknown>;
+    expect(output.results).toEqual({ n1: 'output-1', n2: 'output-2', n3: 'output-3' });
+    expect(output.count).toBe(3);
+    expect(output.mode).toBe('waitAll');
+  });
+
+  it('only includes outputs for provided incomingNodeIds', () => {
+    const nodeOutputs = {
+      n1: makeResult('n1', 'output-1'),
+      n2: makeResult('n2', 'output-2'),
+      n3: makeResult('n3', 'output-3'),
+    };
+
+    const node = makeNode('merge1', 'mergeNode', { mode: 'waitAll' });
+    const result = executeMergeNode(node, nodeOutputs, {}, ['n1', 'n3']);
+
+    const output = result.output as Record<string, unknown>;
+    expect(output.count).toBe(2);
+    expect((output.results as Record<string, unknown>).n2).toBeUndefined();
+  });
+
+  it('returns empty results when no upstream nodes have output', () => {
+    const node = makeNode('merge1', 'mergeNode', {});
+    const result = executeMergeNode(node, {}, {}, ['n1', 'n2']);
+
+    expect(result.status).toBe('success');
+    const output = result.output as Record<string, unknown>;
+    expect(output.count).toBe(0);
+  });
+
+  it('defaults to waitAll mode', () => {
+    const node = makeNode('merge1', 'mergeNode', {});
+    const result = executeMergeNode(node, {}, {}, []);
+
+    expect((result.output as Record<string, unknown>).mode).toBe('waitAll');
+  });
+
+  it('includes timing information', () => {
+    const node = makeNode('merge1', 'mergeNode', {});
+    const result = executeMergeNode(node, {}, {}, []);
+
+    expect(result.durationMs).toBeGreaterThanOrEqual(0);
+    expect(result.startedAt).toBeDefined();
+  });
+});
+
+// ============================================================================
+// executeSwitchNode
+// ============================================================================
+
+describe('executeSwitchNode', () => {
+  it('matches expression result against cases and returns matched label', () => {
+    vi.mocked(resolveTemplates).mockReturnValue({ _expr: '"active"' });
+
+    const node = makeNode('switch1', 'switchNode', {
+      expression: '"active"',
+      cases: [
+        { value: 'active', label: 'Active Branch' },
+        { value: 'inactive', label: 'Inactive Branch' },
+      ],
+    });
+
+    const result = executeSwitchNode(node, {}, {});
+
+    expect(result.status).toBe('success');
+    expect(result.branchTaken).toBe('Active Branch');
+    expect(result.output).toBe('active');
+  });
+
+  it('returns "default" branch when no case matches', () => {
+    vi.mocked(resolveTemplates).mockReturnValue({ _expr: '"unknown"' });
+
+    const node = makeNode('switch1', 'switchNode', {
+      expression: '"unknown"',
+      cases: [
+        { value: 'active', label: 'Active' },
+        { value: 'inactive', label: 'Inactive' },
+      ],
+    });
+
+    const result = executeSwitchNode(node, {}, {});
+
+    expect(result.status).toBe('success');
+    expect(result.branchTaken).toBe('default');
+  });
+
+  it('evaluates expression with upstream outputs', () => {
+    vi.mocked(resolveTemplates).mockReturnValue({ _expr: 'n1 > 50 ? "high" : "low"' });
+
+    const nodeOutputs = { n1: makeResult('n1', 75) };
+    const node = makeNode('switch1', 'switchNode', {
+      expression: 'n1 > 50 ? "high" : "low"',
+      cases: [{ value: 'high', label: 'High Priority' }],
+    });
+
+    const result = executeSwitchNode(node, nodeOutputs, {});
+
+    expect(result.status).toBe('success');
+    expect(result.branchTaken).toBe('High Priority');
+  });
+
+  it('returns error for invalid expression', () => {
+    vi.mocked(resolveTemplates).mockReturnValue({ _expr: 'invalid !! syntax @@' });
+
+    const node = makeNode('switch1', 'switchNode', {
+      expression: 'invalid !! syntax @@',
+      cases: [],
+    });
+
+    const result = executeSwitchNode(node, {}, {});
+
+    expect(result.status).toBe('error');
+    expect(result.error).toBeDefined();
+  });
+
+  it('includes resolvedArgs with expression and evaluated value', () => {
+    vi.mocked(resolveTemplates).mockReturnValue({ _expr: '42' });
+
+    const node = makeNode('switch1', 'switchNode', {
+      expression: '42',
+      cases: [{ value: '42', label: 'Forty-Two' }],
+    });
+
+    const result = executeSwitchNode(node, {}, {});
+
+    expect(result.resolvedArgs).toEqual(expect.objectContaining({
+      expression: '42',
+      evaluatedValue: '42',
+      matchedCase: 'Forty-Two',
+    }));
+  });
+
+  it('includes timing information', () => {
+    vi.mocked(resolveTemplates).mockReturnValue({ _expr: '1' });
+
+    const node = makeNode('switch1', 'switchNode', {
+      expression: '1',
+      cases: [],
+    });
+
+    const result = executeSwitchNode(node, {}, {});
+
+    expect(result.durationMs).toBeGreaterThanOrEqual(0);
+    expect(result.startedAt).toBeDefined();
   });
 });

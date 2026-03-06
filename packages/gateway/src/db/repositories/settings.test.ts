@@ -539,4 +539,14 @@ describe('SettingsRepository', () => {
       expect(settingsRepo).toBeInstanceOf(SettingsRepository);
     });
   });
+
+  describe('initializeSettingsRepo', () => {
+    it('calls initialize on the singleton repo', async () => {
+      const { initializeSettingsRepo, settingsRepo: repo } = await import('./settings.js');
+      const initSpy = vi.spyOn(repo, 'initialize').mockResolvedValueOnce(undefined);
+      await initializeSettingsRepo();
+      expect(initSpy).toHaveBeenCalled();
+      initSpy.mockRestore();
+    });
+  });
 });

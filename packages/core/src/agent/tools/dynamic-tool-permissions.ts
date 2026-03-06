@@ -45,6 +45,7 @@ const BLOCKED_CALLABLE_TOOLS = new Set([
 const PERMISSION_GATED_TOOLS: Record<string, DynamicToolPermission> = {
   http_request: 'network',
   fetch_web_page: 'network',
+  call_json_api: 'network',
   search_web: 'network',
   read_file: 'filesystem',
   list_directory: 'filesystem',

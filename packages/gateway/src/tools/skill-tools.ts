@@ -9,10 +9,11 @@ import type { ToolDefinition } from '@ownpilot/core';
 import { getNpmInstaller } from '../services/skill-npm-installer.js';
 import { getExtensionService } from '../services/extension-service.js';
 import { extensionsRepo } from '../db/repositories/extensions.js';
+import { getAdapter } from '../db/adapters/index.js';
 import { getErrorMessage } from '@ownpilot/core';
 import { parseSkillMdFrontmatter, scanSkillDirectory } from '../services/agentskills-parser.js';
 import { readFileSync, existsSync } from 'fs';
-import { join, dirname } from 'path';
+import { join, dirname, resolve } from 'path';
 import { fileURLToPath } from 'url';
 
 // =============================================================================
@@ -50,7 +51,7 @@ const installSkillTool: ToolDefinition = {
   description:
     'Install a skill from npm. ' +
     'Use skill_search first to find the correct package name. ' +
-    'After installation, the skill\'s tools become available for immediate use.',
+    "After installation, the skill's tools become available for immediate use.",
   parameters: {
     type: 'object',
     properties: {
@@ -68,7 +69,8 @@ const listInstalledSkillsTool: ToolDefinition = {
   name: 'skill_list_installed',
   workflowUsable: true,
   description:
-    'List all installed skills/extensions with their status, tools, and capabilities. ' +
+    'List all installed skills/extensions with their status, format, tools, and capabilities. ' +
+    'format is "agentskills" (SKILL.md instruction-based) or "ownpilot" (native tool bundle). ' +
     'Use this to see what skills are available and which tools they provide.',
   parameters: {
     type: 'object',
@@ -79,6 +81,12 @@ const listInstalledSkillsTool: ToolDefinition = {
         description: 'Filter by status',
         default: 'enabled',
       },
+      format: {
+        type: 'string',
+        enum: ['agentskills', 'ownpilot', 'all'],
+        description: 'Filter by format',
+        default: 'all',
+      },
     },
   },
   category: 'Skills',
@@ -88,8 +96,8 @@ const getSkillInfoTool: ToolDefinition = {
   name: 'skill_get_info',
   workflowUsable: true,
   description:
-    'Get detailed information about an installed skill including its tools, ' +
-    'required configuration, and usage instructions.',
+    'Get detailed information about an installed skill including its format, instructions, ' +
+    'tools, required configuration, and usage instructions.',
   parameters: {
     type: 'object',
     properties: {
@@ -107,7 +115,7 @@ const toggleSkillTool: ToolDefinition = {
   name: 'skill_toggle',
   workflowUsable: false,
   description:
-    'Enable or disable a skill. Disabling prevents the skill\'s tools from being used. ' +
+    "Enable or disable a skill. Disabling prevents the skill's tools from being used. " +
     'Use this if a skill is causing issues or is no longer needed.',
   parameters: {
     type: 'object',
@@ -150,7 +158,7 @@ const parseSkillContentTool: ToolDefinition = {
     'Parse the SKILL.md content of an installed Agentskills.io format skill. ' +
     'Returns the YAML frontmatter (metadata, license, compatibility, allowed-tools) ' +
     'and the markdown body (instructions). Use this to learn how a skill works ' +
-    'and adapt its techniques for your own use.',
+    'and adapt its techniques for your own use. Works for both npm-installed and locally uploaded skills.',
   parameters: {
     type: 'object',
     properties: {
@@ -168,9 +176,9 @@ const readSkillReferenceTool: ToolDefinition = {
   name: 'skill_read_reference',
   workflowUsable: true,
   description:
-    'Read a reference file from an installed skill\'s references/ directory. ' +
+    "Read a reference file from an installed skill's references/ directory. " +
     'References contain documentation, examples, and knowledge that the skill uses. ' +
-    'Use this to learn from the skill\'s knowledge base.',
+    "Use this to learn from the skill's knowledge base.",
   parameters: {
     type: 'object',
     properties: {
@@ -180,7 +188,8 @@ const readSkillReferenceTool: ToolDefinition = {
       },
       referencePath: {
         type: 'string',
-        description: 'Path to reference file (e.g., "references/api-docs.md", "references/examples.json")',
+        description:
+          'Path to reference file (e.g., "references/api-docs.md", "references/examples.json")',
       },
     },
     required: ['skillId', 'referencePath'],
@@ -192,8 +201,8 @@ const readSkillScriptTool: ToolDefinition = {
   name: 'skill_read_script',
   workflowUsable: true,
   description:
-    'Read a script file from an installed skill\'s scripts/ directory. ' +
-    'Scripts contain executable code that implements the skill\'s functionality. ' +
+    "Read a script file from an installed skill's scripts/ directory. " +
+    "Scripts contain executable code that implements the skill's functionality. " +
     'Use this to study how the skill implements its capabilities.',
   parameters: {
     type: 'object',
@@ -242,8 +251,8 @@ const recordSkillUsageTool: ToolDefinition = {
   description:
     'Record that you have used or learned from a skill. ' +
     'Use this to track: (1) "learned" - you studied the skill and understood how it works, ' +
-    '(2) "referenced" - you used the skill\'s documentation or code as reference, ' +
-    '(3) "adapted" - you modified the skill\'s techniques for your own use. ' +
+    "(2) \"referenced\" - you used the skill's documentation or code as reference, " +
+    "(3) \"adapted\" - you modified the skill's techniques for your own use. " +
     'This builds your personal skill learning history.',
   parameters: {
     type: 'object',
@@ -255,7 +264,8 @@ const recordSkillUsageTool: ToolDefinition = {
       usageType: {
         type: 'string',
         enum: ['learned', 'referenced', 'adapted'],
-        description: 'Type of usage: learned (studied), referenced (used as reference), adapted (modified for own use)',
+        description:
+          'Type of usage: learned (studied), referenced (used as reference), adapted (modified for own use)',
       },
       notes: {
         type: 'string',
@@ -412,7 +422,7 @@ export async function executeSkillTool(
             message: `Skill "${packageName}" installed successfully`,
             packageName,
             extensionId: result.extensionId,
-            note: 'The skill\'s tools are now available for use',
+            note: "The skill's tools are now available for use",
           },
         };
       } catch (error) {
@@ -423,29 +433,42 @@ export async function executeSkillTool(
     case 'skill_list_installed': {
       try {
         const service = getExtensionService();
-        const status = args.status as string | undefined;
+        const statusFilter = args.status as string | undefined;
+        const formatFilter = args.format as string | undefined;
 
         let packages = service.getAll();
 
-        if (status && status !== 'all') {
-          packages = packages.filter((p) => p.status === status);
+        if (statusFilter && statusFilter !== 'all') {
+          packages = packages.filter((p) => p.status === statusFilter);
+        }
+        if (formatFilter && formatFilter !== 'all') {
+          packages = packages.filter((p) => (p.manifest.format ?? 'ownpilot') === formatFilter);
         }
 
         return {
           success: true,
           result: {
             count: packages.length,
-            skills: packages.map((p) => ({
-              id: p.id,
-              name: p.name,
-              description: p.description,
-              version: p.version,
-              status: p.status,
-              category: p.category,
-              toolCount: p.toolCount,
-              triggerCount: p.triggerCount,
-              installedAt: p.installedAt,
-            })),
+            skills: packages.map((p) => {
+              const fmt = p.manifest.format ?? 'ownpilot';
+              const instructions =
+                fmt === 'agentskills'
+                  ? (p.manifest.system_prompt || p.manifest.instructions || '').slice(0, 200)
+                  : undefined;
+              return {
+                id: p.id,
+                name: p.name,
+                description: p.description,
+                version: p.version,
+                status: p.status,
+                format: fmt,
+                category: p.category,
+                toolCount: p.toolCount,
+                triggerCount: p.triggerCount,
+                installedAt: p.installedAt,
+                ...(instructions ? { instructionsPreview: instructions + (instructions.length >= 200 ? '…' : '') } : {}),
+              };
+            }),
           },
         };
       } catch (error) {
@@ -467,6 +490,9 @@ export async function executeSkillTool(
           return { success: false, error: `Skill not found: ${skillId}` };
         }
 
+        const fmt = pkg.manifest.format ?? 'ownpilot';
+        const instructions = pkg.manifest.system_prompt || pkg.manifest.instructions || undefined;
+
         return {
           success: true,
           result: {
@@ -475,9 +501,12 @@ export async function executeSkillTool(
             description: pkg.description,
             version: pkg.version,
             status: pkg.status,
+            format: fmt,
             category: pkg.category,
             author: pkg.authorName,
             installedAt: pkg.installedAt,
+            // For agentskills format: full instruction text
+            ...(fmt === 'agentskills' && instructions ? { instructions } : {}),
             tools: pkg.manifest.tools.map((t) => ({
               name: t.name,
               description: t.description,
@@ -495,7 +524,6 @@ export async function executeSkillTool(
               displayName: s.display_name,
               description: s.description,
             })),
-            systemPromptPresent: !!pkg.manifest.system_prompt,
           },
         };
       } catch (error) {
@@ -588,16 +616,38 @@ export async function executeSkillTool(
           return { success: false, error: `Skill not found: ${skillId}` };
         }
 
-        // Find the skill directory from npm package info
-        const npmPackage = (pkg.settings as Record<string, unknown>)?.npmPackage as string | undefined;
-        if (!npmPackage) {
-          return { success: false, error: `Skill ${skillId} does not have npm package info` };
+        // For agentskills format: instructions are already parsed in the manifest
+        const fmt = pkg.manifest.format ?? 'ownpilot';
+        if (fmt === 'agentskills') {
+          const inMemoryInstructions = pkg.manifest.system_prompt || pkg.manifest.instructions;
+          if (inMemoryInstructions) {
+            return {
+              success: true,
+              result: {
+                id: pkg.id,
+                name: pkg.name,
+                format: 'agentskills',
+                frontmatter: {
+                  name: pkg.name,
+                  version: pkg.version,
+                  description: pkg.description,
+                  category: pkg.category,
+                },
+                instructions: inMemoryInstructions,
+                instructionLength: inMemoryInstructions.length,
+                source: 'manifest',
+              },
+            };
+          }
         }
 
-        // Locate skill directory in node_modules
-        const skillDir = await locateSkillDirectory(npmPackage);
+        // Fall back to reading the SKILL.md file from disk
+        const skillDir = await resolveSkillDirectory(pkg);
         if (!skillDir) {
-          return { success: false, error: `Could not locate skill directory for ${npmPackage}` };
+          return {
+            success: false,
+            error: `Cannot locate skill directory for "${pkg.name}". The skill may not have file resources accessible on disk.`,
+          };
         }
 
         const skillMdPath = join(skillDir, 'SKILL.md');
@@ -613,9 +663,11 @@ export async function executeSkillTool(
           result: {
             id: pkg.id,
             name: pkg.name,
+            format: fmt,
             frontmatter,
             instructions: body,
             instructionLength: body.length,
+            source: 'file',
             note: 'Use skill_list_resources to discover scripts and references, then skill_read_reference/skill_read_script to learn from them',
           },
         };
@@ -629,37 +681,22 @@ export async function executeSkillTool(
         const skillId = String(args.skillId ?? '');
         const referencePath = String(args.referencePath ?? '');
 
-        if (!skillId) {
-          return { success: false, error: 'skillId is required' };
-        }
-        if (!referencePath) {
-          return { success: false, error: 'referencePath is required' };
-        }
+        if (!skillId) return { success: false, error: 'skillId is required' };
+        if (!referencePath) return { success: false, error: 'referencePath is required' };
 
         const service = getExtensionService();
         const pkg = service.getById(skillId) ?? service.getAll().find((p) => p.name === skillId);
+        if (!pkg) return { success: false, error: `Skill not found: ${skillId}` };
 
-        if (!pkg) {
-          return { success: false, error: `Skill not found: ${skillId}` };
-        }
-
-        const npmPackage = (pkg.settings as Record<string, unknown>)?.npmPackage as string | undefined;
-        if (!npmPackage) {
-          return { success: false, error: `Skill ${skillId} does not have npm package info` };
-        }
-
-        const skillDir = await locateSkillDirectory(npmPackage);
+        const skillDir = await resolveSkillDirectory(pkg);
         if (!skillDir) {
-          return { success: false, error: `Could not locate skill directory for ${npmPackage}` };
+          return { success: false, error: `Cannot locate skill directory for "${pkg.name}"` };
         }
 
-        // Security: ensure the path stays within the skill directory
-        const filePath = join(skillDir, referencePath);
-        const resolvedPath = filePath; // join resolves .. segments
-        if (!resolvedPath.startsWith(skillDir)) {
+        const filePath = resolve(skillDir, referencePath);
+        if (!filePath.startsWith(resolve(skillDir))) {
           return { success: false, error: 'Invalid reference path: path traversal detected' };
         }
-
         if (!existsSync(filePath)) {
           return { success: false, error: `Reference file not found: ${referencePath}` };
         }
@@ -686,37 +723,22 @@ export async function executeSkillTool(
         const skillId = String(args.skillId ?? '');
         const scriptPath = String(args.scriptPath ?? '');
 
-        if (!skillId) {
-          return { success: false, error: 'skillId is required' };
-        }
-        if (!scriptPath) {
-          return { success: false, error: 'scriptPath is required' };
-        }
+        if (!skillId) return { success: false, error: 'skillId is required' };
+        if (!scriptPath) return { success: false, error: 'scriptPath is required' };
 
         const service = getExtensionService();
         const pkg = service.getById(skillId) ?? service.getAll().find((p) => p.name === skillId);
+        if (!pkg) return { success: false, error: `Skill not found: ${skillId}` };
 
-        if (!pkg) {
-          return { success: false, error: `Skill not found: ${skillId}` };
-        }
-
-        const npmPackage = (pkg.settings as Record<string, unknown>)?.npmPackage as string | undefined;
-        if (!npmPackage) {
-          return { success: false, error: `Skill ${skillId} does not have npm package info` };
-        }
-
-        const skillDir = await locateSkillDirectory(npmPackage);
+        const skillDir = await resolveSkillDirectory(pkg);
         if (!skillDir) {
-          return { success: false, error: `Could not locate skill directory for ${npmPackage}` };
+          return { success: false, error: `Cannot locate skill directory for "${pkg.name}"` };
         }
 
-        // Security: ensure the path stays within the skill directory
-        const filePath = join(skillDir, scriptPath);
-        const resolvedPath = filePath;
-        if (!resolvedPath.startsWith(skillDir)) {
+        const filePath = resolve(skillDir, scriptPath);
+        if (!filePath.startsWith(resolve(skillDir))) {
           return { success: false, error: 'Invalid script path: path traversal detected' };
         }
-
         if (!existsSync(filePath)) {
           return { success: false, error: `Script file not found: ${scriptPath}` };
         }
@@ -731,7 +753,7 @@ export async function executeSkillTool(
             scriptPath,
             content,
             contentLength: content.length,
-            note: 'Study this code to understand how the skill implements its functionality',
+            note: "Study this code to understand how the skill implements its functionality",
           },
         };
       } catch (error) {
@@ -742,25 +764,15 @@ export async function executeSkillTool(
     case 'skill_list_resources': {
       try {
         const skillId = String(args.skillId ?? '');
-        if (!skillId) {
-          return { success: false, error: 'skillId is required' };
-        }
+        if (!skillId) return { success: false, error: 'skillId is required' };
 
         const service = getExtensionService();
         const pkg = service.getById(skillId) ?? service.getAll().find((p) => p.name === skillId);
+        if (!pkg) return { success: false, error: `Skill not found: ${skillId}` };
 
-        if (!pkg) {
-          return { success: false, error: `Skill not found: ${skillId}` };
-        }
-
-        const npmPackage = (pkg.settings as Record<string, unknown>)?.npmPackage as string | undefined;
-        if (!npmPackage) {
-          return { success: false, error: `Skill ${skillId} does not have npm package info` };
-        }
-
-        const skillDir = await locateSkillDirectory(npmPackage);
+        const skillDir = await resolveSkillDirectory(pkg);
         if (!skillDir) {
-          return { success: false, error: `Could not locate skill directory for ${npmPackage}` };
+          return { success: false, error: `Cannot locate skill directory for "${pkg.name}"` };
         }
 
         const resources = scanSkillDirectory(skillDir);
@@ -794,33 +806,20 @@ export async function executeSkillTool(
         const usageType = String(args.usageType ?? '') as 'learned' | 'referenced' | 'adapted';
         const notes = String(args.notes ?? '');
 
-        if (!skillId) {
-          return { success: false, error: 'skillId is required' };
-        }
+        if (!skillId) return { success: false, error: 'skillId is required' };
         if (!['learned', 'referenced', 'adapted'].includes(usageType)) {
           return { success: false, error: 'usageType must be one of: learned, referenced, adapted' };
         }
 
         const service = getExtensionService();
         const pkg = service.getById(skillId) ?? service.getAll().find((p) => p.name === skillId);
+        if (!pkg) return { success: false, error: `Skill not found: ${skillId}` };
 
-        if (!pkg) {
-          return { success: false, error: `Skill not found: ${skillId}` };
-        }
-
-        // Record the usage in database
-        const adapter = await import('../db/adapters/index.js').then(m => m.getAdapter());
+        const adapter = await getAdapter();
         await adapter.execute(
           `INSERT INTO skill_usage (agent_id, skill_id, skill_name, usage_type, content, metadata)
            VALUES ($1, $2, $3, $4, $5, $6)`,
-          [
-            userId,
-            pkg.id,
-            pkg.name,
-            usageType,
-            notes,
-            JSON.stringify({ timestamp: new Date().toISOString() }),
-          ]
+          [userId, pkg.id, pkg.name, usageType, notes || null, JSON.stringify({ timestamp: new Date().toISOString() })]
         );
 
         return {
@@ -843,54 +842,66 @@ export async function executeSkillTool(
         const skillId = args.skillId as string | undefined;
         const limit = Math.min(parseInt(String(args.limit ?? '20'), 10), 100);
 
-        const adapter = await import('../db/adapters/index.js').then(m => m.getAdapter());
+        const adapter = await getAdapter();
 
-        // Get usage counts by type
-        const typeCountsQuery = skillId
-          ? `SELECT usage_type, COUNT(*) as count FROM skill_usage WHERE agent_id = $1 AND skill_id = $2 GROUP BY usage_type`
-          : `SELECT usage_type, COUNT(*) as count FROM skill_usage WHERE agent_id = $1 GROUP BY usage_type`;
-        const typeCountsParams = skillId ? [userId, skillId] : [userId];
-        const typeCounts = await adapter.query(typeCountsQuery, typeCountsParams);
+        const typeCountsRows = skillId
+          ? await adapter.query<{ usage_type: string; count: string }>(
+              `SELECT usage_type, COUNT(*) as count FROM skill_usage WHERE agent_id = $1 AND skill_id = $2 GROUP BY usage_type`,
+              [userId, skillId]
+            )
+          : await adapter.query<{ usage_type: string; count: string }>(
+              `SELECT usage_type, COUNT(*) as count FROM skill_usage WHERE agent_id = $1 GROUP BY usage_type`,
+              [userId]
+            );
 
-        // Get most used skills
-        const topSkillsQuery = `
-          SELECT skill_id, skill_name, COUNT(*) as total_uses,
-                 COUNT(*) FILTER (WHERE usage_type = 'learned') as learned_count,
-                 COUNT(*) FILTER (WHERE usage_type = 'referenced') as referenced_count,
-                 COUNT(*) FILTER (WHERE usage_type = 'adapted') as adapted_count
-          FROM skill_usage
-          WHERE agent_id = $1
-          GROUP BY skill_id, skill_name
-          ORDER BY total_uses DESC
-          LIMIT 10
-        `;
-        const topSkills = await adapter.query(topSkillsQuery, [userId]);
+        const topSkillsRows = await adapter.query<{
+          skill_id: string;
+          skill_name: string;
+          total_uses: string;
+          learned_count: string;
+          referenced_count: string;
+          adapted_count: string;
+        }>(
+          `SELECT skill_id, skill_name, COUNT(*) as total_uses,
+                  COUNT(*) FILTER (WHERE usage_type = 'learned') as learned_count,
+                  COUNT(*) FILTER (WHERE usage_type = 'referenced') as referenced_count,
+                  COUNT(*) FILTER (WHERE usage_type = 'adapted') as adapted_count
+           FROM skill_usage
+           WHERE agent_id = $1
+           GROUP BY skill_id, skill_name
+           ORDER BY total_uses DESC
+           LIMIT 10`,
+          [userId]
+        );
 
-        // Get recent activity
-        const recentQuery = skillId
-          ? `SELECT * FROM skill_usage WHERE agent_id = $1 AND skill_id = $2 ORDER BY created_at DESC LIMIT $3`
-          : `SELECT * FROM skill_usage WHERE agent_id = $1 ORDER BY created_at DESC LIMIT $2`;
-        const recentParams = skillId ? [userId, skillId, limit] : [userId, limit];
-        const recent = await adapter.query(recentQuery, recentParams);
+        const recentRows = skillId
+          ? await adapter.query<Record<string, unknown>>(
+              `SELECT * FROM skill_usage WHERE agent_id = $1 AND skill_id = $2 ORDER BY created_at DESC LIMIT $3`,
+              [userId, skillId, limit]
+            )
+          : await adapter.query<Record<string, unknown>>(
+              `SELECT * FROM skill_usage WHERE agent_id = $1 ORDER BY created_at DESC LIMIT $2`,
+              [userId, limit]
+            );
 
         return {
           success: true,
           result: {
             summary: {
-              totalUsage: typeCounts.reduce((sum, row) => sum + parseInt(String(row.count)), 0),
-              learned: parseInt(String(typeCounts.find((r) => r.usage_type === 'learned')?.count ?? '0')),
-              referenced: parseInt(String(typeCounts.find((r) => r.usage_type === 'referenced')?.count ?? '0')),
-              adapted: parseInt(String(typeCounts.find((r) => r.usage_type === 'adapted')?.count ?? '0')),
+              totalUsage: typeCountsRows.reduce((sum, r) => sum + parseInt(r.count), 0),
+              learned: parseInt(typeCountsRows.find((r) => r.usage_type === 'learned')?.count ?? '0'),
+              referenced: parseInt(typeCountsRows.find((r) => r.usage_type === 'referenced')?.count ?? '0'),
+              adapted: parseInt(typeCountsRows.find((r) => r.usage_type === 'adapted')?.count ?? '0'),
             },
-            topSkills: topSkills.map((s) => ({
-              skillId: String(s.skill_id),
-              skillName: String(s.skill_name),
-              totalUses: parseInt(String(s.total_uses)),
-              learned: parseInt(String(s.learned_count)),
-              referenced: parseInt(String(s.referenced_count)),
-              adapted: parseInt(String(s.adapted_count)),
+            topSkills: topSkillsRows.map((s) => ({
+              skillId: s.skill_id,
+              skillName: s.skill_name,
+              totalUses: parseInt(s.total_uses),
+              learned: parseInt(s.learned_count),
+              referenced: parseInt(s.referenced_count),
+              adapted: parseInt(s.adapted_count),
             })),
-            recentActivity: recent.map((r) => ({
+            recentActivity: recentRows.map((r) => ({
               id: String(r.id),
               skillId: String(r.skill_id),
               skillName: String(r.skill_name),
@@ -918,31 +929,24 @@ export async function executeSkillTool(
         const pkg1 = service.getById(skillId1) ?? service.getAll().find((p) => p.name === skillId1);
         const pkg2 = service.getById(skillId2) ?? service.getAll().find((p) => p.name === skillId2);
 
-        if (!pkg1) {
-          return { success: false, error: `Skill not found: ${skillId1}` };
-        }
-        if (!pkg2) {
-          return { success: false, error: `Skill not found: ${skillId2}` };
-        }
+        if (!pkg1) return { success: false, error: `Skill not found: ${skillId1}` };
+        if (!pkg2) return { success: false, error: `Skill not found: ${skillId2}` };
 
-        // Compare tools
         const tools1 = pkg1.manifest.tools.map((t) => t.name).sort();
         const tools2 = pkg2.manifest.tools.map((t) => t.name).sort();
         const commonTools = tools1.filter((t) => tools2.includes(t));
         const uniqueToSkill1 = tools1.filter((t) => !tools2.includes(t));
         const uniqueToSkill2 = tools2.filter((t) => !tools1.includes(t));
 
-        // Compare categories
         const category1 = pkg1.category ?? 'uncategorized';
         const category2 = pkg2.category ?? 'uncategorized';
 
-        // Get usage stats if available
-        const adapter = await import('../db/adapters/index.js').then(m => m.getAdapter());
-        const usage1 = await adapter.queryOne(
+        const adapter = await getAdapter();
+        const usageRow1 = await adapter.queryOne<{ count: string }>(
           `SELECT COUNT(*) as count FROM skill_usage WHERE agent_id = $1 AND skill_id = $2`,
           [userId, pkg1.id]
         );
-        const usage2 = await adapter.queryOne(
+        const usageRow2 = await adapter.queryOne<{ count: string }>(
           `SELECT COUNT(*) as count FROM skill_usage WHERE agent_id = $1 AND skill_id = $2`,
           [userId, pkg2.id]
         );
@@ -954,19 +958,21 @@ export async function executeSkillTool(
               id: pkg1.id,
               name: pkg1.name,
               description: pkg1.description,
+              format: pkg1.manifest.format ?? 'ownpilot',
               category: category1,
               toolCount: tools1.length,
               version: pkg1.version,
-              yourUsageCount: parseInt(String(usage1?.count ?? '0')),
+              yourUsageCount: parseInt(usageRow1?.count ?? '0'),
             },
             skill2: {
               id: pkg2.id,
               name: pkg2.name,
               description: pkg2.description,
+              format: pkg2.manifest.format ?? 'ownpilot',
               category: category2,
               toolCount: tools2.length,
               version: pkg2.version,
-              yourUsageCount: parseInt(String(usage2?.count ?? '0')),
+              yourUsageCount: parseInt(usageRow2?.count ?? '0'),
             },
             comparison: {
               sameCategory: category1 === category2,
@@ -974,11 +980,15 @@ export async function executeSkillTool(
               commonTools,
               uniqueToSkill1,
               uniqueToSkill2,
-              toolSimilarity: tools1.length > 0 ? Math.round((commonTools.length / Math.max(tools1.length, tools2.length)) * 100) : 0,
+              toolSimilarity:
+                tools1.length > 0 || tools2.length > 0
+                  ? Math.round((commonTools.length / Math.max(tools1.length, tools2.length)) * 100)
+                  : 0,
             },
-            recommendation: commonTools.length > 0
-              ? `These skills share ${commonTools.length} tools. Skill 1 has ${uniqueToSkill1.length} unique tools, Skill 2 has ${uniqueToSkill2.length} unique tools.`
-              : 'These skills have different tool sets and may serve different purposes.',
+            recommendation:
+              commonTools.length > 0
+                ? `These skills share ${commonTools.length} tools. Skill 1 has ${uniqueToSkill1.length} unique tools, Skill 2 has ${uniqueToSkill2.length} unique tools.`
+                : 'These skills have different tool sets and may serve different purposes.',
           },
         };
       } catch (error) {
@@ -993,67 +1003,49 @@ export async function executeSkillTool(
         const service = getExtensionService();
         const allSkills = service.getAll();
 
-        // Get already learned skills
-        const adapter = await import('../db/adapters/index.js').then(m => m.getAdapter());
-        const learnedSkills = await adapter.query(
+        const adapter = await getAdapter();
+        const learnedRows = await adapter.query<{ skill_id: string }>(
           `SELECT DISTINCT skill_id FROM skill_usage WHERE agent_id = $1 AND usage_type = 'learned'`,
           [userId]
         );
-        const learnedSkillIds = new Set(learnedSkills.map((s) => s.skill_id));
+        const learnedSkillIds = new Set(learnedRows.map((s) => s.skill_id));
 
-        // Analyze mission keywords
-        const missionKeywords = mission.toLowerCase().split(/\s+/);
+        const missionKeywords = mission.toLowerCase().split(/\s+/).filter(Boolean);
         const keywordCategories: Record<string, string[]> = {
-          'data': ['data-analysis', 'database', 'csv', 'json', 'api'],
-          'web': ['web-scraping', 'browser', 'http', 'api'],
-          'search': ['search', 'web-search', 'google', 'bing'],
-          'email': ['email', 'gmail', 'smtp', 'imap'],
-          'file': ['file-system', 'storage', 's3', 'dropbox'],
-          'code': ['coding', 'developer', 'git', 'github', 'programming'],
-          'ai': ['ai', 'llm', 'openai', 'anthropic', 'claude'],
-          'communication': ['slack', 'discord', 'telegram', 'messaging'],
+          data: ['data-analysis', 'database', 'csv', 'json', 'api'],
+          web: ['web-scraping', 'browser', 'http', 'api'],
+          search: ['search', 'web-search', 'google', 'bing'],
+          email: ['email', 'gmail', 'smtp', 'imap'],
+          file: ['file-system', 'storage', 's3', 'dropbox'],
+          code: ['coding', 'developer', 'git', 'github', 'programming'],
+          ai: ['ai', 'llm', 'openai', 'anthropic', 'claude'],
+          communication: ['slack', 'discord', 'telegram', 'messaging'],
         };
 
-        // Score skills based on mission relevance
         const scoredSkills = allSkills.map((skill) => {
           let score = 0;
           const skillName = skill.name.toLowerCase();
           const skillDesc = (skill.description ?? '').toLowerCase();
           const category = (skill.category ?? '').toLowerCase();
-
-          // Check if already learned
           const isLearned = learnedSkillIds.has(skill.id);
-          if (isLearned) score -= 10; // Deprioritize already learned
 
-          // Check mission keyword matches
+          if (isLearned) score -= 10;
+
           for (const [keyword, categories] of Object.entries(keywordCategories)) {
             if (missionKeywords.some((m) => m.includes(keyword))) {
-              if (categories.some((c) => category.includes(c) || skillName.includes(c))) {
-                score += 5;
-              }
-              if (categories.some((c) => skillDesc.includes(c))) {
-                score += 3;
-              }
+              if (categories.some((c) => category.includes(c) || skillName.includes(c))) score += 5;
+              if (categories.some((c) => skillDesc.includes(c))) score += 3;
             }
           }
-
-          // Check direct keyword matches
           for (const keyword of missionKeywords) {
             if (skillName.includes(keyword)) score += 4;
             if (skillDesc.includes(keyword)) score += 2;
           }
-
-          // Boost skills with more tools
           score += (skill.toolCount ?? 0) * 0.5;
 
-          return {
-            skill,
-            score,
-            isLearned,
-          };
+          return { skill, score, isLearned };
         });
 
-        // Sort by score and take top suggestions
         const suggestions = scoredSkills
           .filter((s) => s.score > 0 || !s.isLearned)
           .sort((a, b) => b.score - a.score)
@@ -1069,21 +1061,23 @@ export async function executeSkillTool(
               skillId: s.skill.id,
               name: s.skill.name,
               description: s.skill.description,
+              format: s.skill.manifest.format ?? 'ownpilot',
               category: s.skill.category,
               toolCount: s.skill.toolCount,
               isLearned: s.isLearned,
               relevanceScore: Math.round(s.score),
               reason: s.isLearned
-                ? 'Already learned - revisit to deepen knowledge'
+                ? 'Already learned — revisit to deepen knowledge'
                 : s.score > 5
                   ? 'Highly relevant to your mission'
                   : s.score > 0
                     ? 'May be useful for your tasks'
                     : 'Available to explore',
             })),
-            note: suggestions.length === 0
-              ? 'No specific matches found. Use skill_list_installed to browse all available skills.'
-              : `Found ${suggestions.filter((s) => !s.isLearned).length} new skills to learn. Use skill_parse_content and skill_read_reference to study them.`,
+            note:
+              suggestions.length === 0
+                ? 'No specific matches found. Use skill_list_installed to browse all available skills.'
+                : `Found ${suggestions.filter((s) => !s.isLearned).length} new skills to learn. Use skill_parse_content and skill_read_reference to study them.`,
           },
         };
       } catch (error) {
@@ -1101,47 +1095,65 @@ export async function executeSkillTool(
 // =============================================================================
 
 /**
- * Locate a skill's directory in node_modules.
- * Tries multiple resolution strategies to find the installed package.
+ * Resolve the skill's directory on disk.
+ *
+ * Priority order:
+ * 1. sourcePath from the extension record (works for both uploaded and npm skills)
+ * 2. npm package location (for npm-installed skills without sourcePath)
  */
-async function locateSkillDirectory(npmPackage: string): Promise<string | null> {
-  // Strategy 1: Try resolving from current file location (gateway package)
+async function resolveSkillDirectory(
+  pkg: { sourcePath?: string; settings: Record<string, unknown> }
+): Promise<string | null> {
+  // Strategy 1: sourcePath (covers uploaded SKILL.md and locally installed skills)
+  if (pkg.sourcePath) {
+    // sourcePath may point to SKILL.md directly or to the directory
+    const dir = pkg.sourcePath.replace(/[/\\]SKILL\.md$/i, '');
+    if (existsSync(dir)) return dir;
+  }
+
+  // Strategy 2: npm package in node_modules
+  const npmPackage = pkg.settings?.npmPackage as string | undefined;
+  if (npmPackage) {
+    return locateNpmPackageDirectory(npmPackage);
+  }
+
+  return null;
+}
+
+/**
+ * Locate an npm-installed skill's directory in node_modules.
+ */
+async function locateNpmPackageDirectory(npmPackage: string): Promise<string | null> {
+  // Strategy A: relative to gateway package (most reliable in monorepo)
   try {
     const currentFileDir = dirname(fileURLToPath(import.meta.url));
-    const gatewayNodeModules = join(currentFileDir, '..', '..', '..', 'node_modules');
+    const gatewayNodeModules = resolve(currentFileDir, '..', '..', '..', 'node_modules');
     const directPath = join(gatewayNodeModules, npmPackage);
-    if (existsSync(directPath)) {
-      return directPath;
-    }
+    if (existsSync(directPath)) return directPath;
   } catch {
-    // Continue to next strategy
+    /* continue */
   }
 
-  // Strategy 2: Try resolving from current working directory
+  // Strategy B: cwd node_modules (dev server, standalone)
   try {
     const cwdPath = join(process.cwd(), 'node_modules', npmPackage);
-    if (existsSync(cwdPath)) {
-      return cwdPath;
-    }
+    if (existsSync(cwdPath)) return cwdPath;
   } catch {
-    // Continue to next strategy
+    /* continue */
   }
 
-  // Strategy 3: Try using import.meta.resolve (if available)
+  // Strategy C: walk up from cwd looking for node_modules
   try {
-    const resolved = await import.meta.resolve?.(npmPackage);
-    if (resolved) {
-      const resolvedPath = resolved.startsWith('file:') ? fileURLToPath(resolved) : resolved;
-      // For packages, return the package root, not the resolved file
-      const pkgRoot = resolvedPath.includes('/node_modules/')
-        ? resolvedPath.substring(0, resolvedPath.indexOf('/node_modules/') + 14) + npmPackage
-        : resolvedPath;
-      if (existsSync(pkgRoot)) {
-        return pkgRoot;
-      }
+    let dir = process.cwd();
+    for (let i = 0; i < 5; i++) {
+      const candidate = join(dir, 'node_modules', npmPackage);
+      if (existsSync(candidate)) return candidate;
+      const parent = dirname(dir);
+      if (parent === dir) break;
+      dir = parent;
     }
   } catch {
-    // Final fallback failed
+    /* continue */
   }
 
   return null;

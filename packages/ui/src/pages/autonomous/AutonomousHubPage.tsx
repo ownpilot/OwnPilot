@@ -17,6 +17,7 @@ import {
   BookOpen,
   Search,
   Info,
+  ListChecks,
 } from '../../components/icons';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
 import { crewsApi } from '../../api/endpoints/souls';
@@ -30,6 +31,7 @@ import { useToast } from '../../components/ToastProvider';
 import { useDialog } from '../../components/ConfirmDialog';
 
 // Tab components
+import { PlansTab } from './components/PlansTab';
 import { AgentCard } from './components/AgentCard';
 import { GlobalStatusBar } from './components/GlobalStatusBar';
 import { CrewSection } from './components/CrewSection';
@@ -42,6 +44,7 @@ import { HelpPanel } from './components/HelpPanel';
 const TABS: { key: HubTab; label: string; icon: typeof Bot }[] = [
   { key: 'agents', label: 'Agents', icon: Bot },
   { key: 'crews', label: 'Crews', icon: Users },
+  { key: 'plans', label: 'Plans', icon: ListChecks },
   { key: 'messages', label: 'Messages', icon: MessageSquare },
   { key: 'activity', label: 'Activity', icon: Heart },
 ];
@@ -426,6 +429,12 @@ export function AutonomousHubPage() {
       {activeTab === 'crews' && (
         <div className="w-full min-h-[400px] min-w-[800px]">
           <CrewSection crews={crews} templates={templates} onRefresh={refresh} />
+        </div>
+      )}
+
+      {activeTab === 'plans' && (
+        <div className="w-full min-h-[400px] min-w-[800px]">
+          <PlansTab />
         </div>
       )}
 

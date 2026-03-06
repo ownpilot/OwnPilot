@@ -363,6 +363,35 @@ describe('Trigger Tools', () => {
       expect(result.error).toContain('Unknown trigger tool');
     });
   });
+
+  describe('create_trigger condition validation (line 235)', () => {
+    it('rejects condition trigger with invalid condition value', async () => {
+      const result = await executeTriggerTool('create_trigger', {
+        name: 'Bad Condition Value',
+        type: 'condition',
+        condition: 'invalid_condition_name',
+        action_type: 'notification',
+        action_payload: {},
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('Invalid condition');
+      expect(result.error).toContain('invalid_condition_name');
+    });
+  });
+
+  describe('fire_trigger error handling (line 346)', () => {
+    it('returns error when fireTrigger throws', async () => {
+      mockTriggerService.getTrigger.mockResolvedValue({ id: 't1', name: 'Test Trigger' });
+      mockTriggerEngine.fireTrigger.mockRejectedValueOnce(new Error('Engine failure'));
+
+      const result = await executeTriggerTool('fire_trigger', { trigger_id: 't1' });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('Failed to fire trigger');
+      expect(result.error).toContain('Engine failure');
+    });
+  });
 });
 
 describe('workflowUsable flag', () => {

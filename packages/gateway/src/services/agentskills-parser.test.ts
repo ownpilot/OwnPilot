@@ -2,8 +2,21 @@
  * AgentSkills.io SKILL.md Parser Tests
  */
 
-import { describe, it, expect } from 'vitest';
-import { parseSkillMdFrontmatter, parseAgentSkillsMd } from './agentskills-parser.js';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+
+// ---------------------------------------------------------------------------
+// Mock fs — intercept existsSync and readdirSync for scanSkillDirectory tests
+// ---------------------------------------------------------------------------
+
+const mockExistsSync = vi.fn().mockReturnValue(false);
+const mockReaddirSync = vi.fn().mockReturnValue([]);
+
+vi.mock('fs', () => ({
+  existsSync: (...args: unknown[]) => mockExistsSync(...args),
+  readdirSync: (...args: unknown[]) => mockReaddirSync(...args),
+}));
+
+import { parseSkillMdFrontmatter, parseAgentSkillsMd, scanSkillDirectory, isAgentSkillsDir } from './agentskills-parser.js';
 
 // =============================================================================
 // parseSkillMdFrontmatter
@@ -331,5 +344,208 @@ description: Minimal skill with no instructions.
     const manifest = parseAgentSkillsMd(content);
     expect(manifest.instructions).toBe('');
     expect(manifest.system_prompt).toBeUndefined();
+  });
+
+  // category inference tests (cover lines 331, 333, 340 in inferCategory)
+
+  it('infers category "media" from description containing "image" (line 331)', () => {
+    const content = `---
+name: image-processor
+description: Process and analyze images.
+---
+
+Image processing instructions.`;
+
+    const manifest = parseAgentSkillsMd(content);
+    expect(manifest.category).toBe('media');
+  });
+
+  it('infers category "integrations" from description containing "api" (line 333)', () => {
+    const content = `---
+name: api-connector
+description: Connect to external api endpoints.
+---
+
+API connector instructions.`;
+
+    const manifest = parseAgentSkillsMd(content);
+    expect(manifest.category).toBe('integrations');
+  });
+
+  it('infers category "communication" from description containing "email"', () => {
+    const content = `---
+name: email-helper
+description: Send and manage email messages.
+---
+
+Email helper instructions.`;
+
+    const manifest = parseAgentSkillsMd(content);
+    expect(manifest.category).toBe('communication');
+  });
+
+  it('infers category "data" from description containing "database"', () => {
+    const content = `---
+name: db-query
+description: Query databases and handle sql operations.
+---
+
+Database skill instructions.`;
+
+    const manifest = parseAgentSkillsMd(content);
+    expect(manifest.category).toBe('data');
+  });
+
+  it('infers category "productivity" from description containing "calendar"', () => {
+    const content = `---
+name: calendar-sync
+description: Sync and manage calendar events.
+---
+
+Calendar skill instructions.`;
+
+    const manifest = parseAgentSkillsMd(content);
+    expect(manifest.category).toBe('productivity');
+  });
+
+  it('uses skillDir to scan for scripts and references', () => {
+    mockExistsSync.mockImplementation((p: string) => p.endsWith('scripts'));
+    mockReaddirSync.mockReturnValue([
+      { name: 'main.js', isFile: () => true, isDirectory: () => false },
+      { name: 'helper.js', isFile: () => true, isDirectory: () => false },
+    ]);
+
+    const content = `---
+name: scripted-skill
+description: Skill with scripts.
+---
+
+Instructions.`;
+
+    const manifest = parseAgentSkillsMd(content, '/some/skill/dir');
+    expect(manifest.script_paths).toHaveLength(2);
+    expect(manifest.script_paths).toContain('scripts/main.js');
+    expect(manifest.script_paths).toContain('scripts/helper.js');
+  });
+});
+
+// =============================================================================
+// parseSkillMdFrontmatter — edge cases
+// =============================================================================
+
+describe('parseSkillMdFrontmatter — edge cases', () => {
+  beforeEach(() => {
+    mockExistsSync.mockReturnValue(false);
+    mockReaddirSync.mockReturnValue([]);
+    vi.clearAllMocks();
+    mockExistsSync.mockReturnValue(false);
+  });
+
+  it('skips lines that do not match key:value pattern (line 116)', () => {
+    const content = `---
+name: test-skill
+description: Test.
+# This comment line is ignored
+=== not a valid key ===
+valid-key: valid value
+---
+
+Body.`;
+
+    // Should not throw and should still parse valid keys
+    const result = parseSkillMdFrontmatter(content);
+    expect(result.frontmatter.name).toBe('test-skill');
+    expect(result.frontmatter['valid-key']).toBe('valid value');
+  });
+});
+
+// =============================================================================
+// scanSkillDirectory
+// =============================================================================
+
+describe('scanSkillDirectory', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockExistsSync.mockReturnValue(false);
+    mockReaddirSync.mockReturnValue([]);
+  });
+
+  it('returns empty arrays when no subdirectories exist', () => {
+    mockExistsSync.mockReturnValue(false);
+    const result = scanSkillDirectory('/some/skill');
+    expect(result.scriptPaths).toEqual([]);
+    expect(result.referencePaths).toEqual([]);
+    expect(result.assetPaths).toEqual([]);
+  });
+
+  it('collects files from scripts/ subdirectory', () => {
+    mockExistsSync.mockImplementation((p: string) => String(p).endsWith('scripts'));
+    mockReaddirSync.mockReturnValue([
+      { name: 'run.js', isFile: () => true },
+      { name: 'helper.ts', isFile: () => true },
+    ]);
+
+    const result = scanSkillDirectory('/skill');
+    expect(result.scriptPaths).toEqual(['scripts/run.js', 'scripts/helper.ts']);
+  });
+
+  it('collects files from references/ subdirectory', () => {
+    mockExistsSync.mockImplementation((p: string) => String(p).endsWith('references'));
+    mockReaddirSync.mockReturnValue([
+      { name: 'api-docs.md', isFile: () => true },
+    ]);
+
+    const result = scanSkillDirectory('/skill');
+    expect(result.referencePaths).toEqual(['references/api-docs.md']);
+  });
+
+  it('collects files from assets/ subdirectory', () => {
+    mockExistsSync.mockImplementation((p: string) => String(p).endsWith('assets'));
+    mockReaddirSync.mockReturnValue([
+      { name: 'template.json', isFile: () => true },
+    ]);
+
+    const result = scanSkillDirectory('/skill');
+    expect(result.assetPaths).toEqual(['assets/template.json']);
+  });
+
+  it('skips directories within subdirectories (only files)', () => {
+    mockExistsSync.mockImplementation((p: string) => String(p).endsWith('scripts'));
+    mockReaddirSync.mockReturnValue([
+      { name: 'lib', isFile: () => false }, // directory — should be skipped
+      { name: 'main.js', isFile: () => true },
+    ]);
+
+    const result = scanSkillDirectory('/skill');
+    expect(result.scriptPaths).toEqual(['scripts/main.js']);
+  });
+
+  it('handles readdirSync throwing (returns empty for that subdir)', () => {
+    mockExistsSync.mockImplementation((p: string) => String(p).endsWith('scripts'));
+    mockReaddirSync.mockImplementation(() => { throw new Error('Permission denied'); });
+
+    const result = scanSkillDirectory('/skill');
+    expect(result.scriptPaths).toEqual([]);
+  });
+});
+
+// =============================================================================
+// isAgentSkillsDir
+// =============================================================================
+
+describe('isAgentSkillsDir', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockExistsSync.mockReturnValue(false);
+  });
+
+  it('returns true when SKILL.md exists in the directory', () => {
+    mockExistsSync.mockReturnValue(true);
+    expect(isAgentSkillsDir('/some/skill/dir')).toBe(true);
+  });
+
+  it('returns false when SKILL.md does not exist', () => {
+    mockExistsSync.mockReturnValue(false);
+    expect(isAgentSkillsDir('/some/other/dir')).toBe(false);
   });
 });

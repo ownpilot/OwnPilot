@@ -71,6 +71,10 @@ export type {
 export { CrewManager } from './crew-manager.js';
 export type { ICrewRepository, IAgentRepository, ITriggerRepository } from './crew-manager.js';
 
+// Crew Orchestrator
+export { buildCrewContextSection, COORDINATION_GUIDANCE } from './crew-orchestrator.js';
+export type { CrewMemberInfo, CrewContextInfo } from './crew-orchestrator.js';
+
 // Templates
 export { getCrewTemplate, listCrewTemplates } from './templates/index.js';
 export type { CrewTemplate, AgentSoulTemplate } from './templates/index.js';

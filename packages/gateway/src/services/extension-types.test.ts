@@ -253,4 +253,147 @@ describe('validateAgentSkillsFrontmatter', () => {
     expect(result.valid).toBe(false);
     expect(result.errors).toContain('Missing or invalid "description" (required)');
   });
+
+  it('returns error when frontmatter is not an object', () => {
+    const result = validateAgentSkillsFrontmatter('not-an-object');
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContain('Frontmatter must be a YAML object');
+  });
+
+  it('rejects name longer than 64 characters', () => {
+    const result = validateAgentSkillsFrontmatter({
+      name: 'a'.repeat(65),
+      description: 'Valid description.',
+    });
+    expect(result.valid).toBe(false);
+    expect(result.errors.some((e) => e.includes('exceeds 64 characters'))).toBe(true);
+  });
+
+  it('accepts name with consecutive hyphens (normalizes them away)', () => {
+    // normalizeSkillName converts "bad--name" -> "bad-name" (valid)
+    const fm: Record<string, unknown> = { name: 'bad--name', description: 'Valid description.' };
+    const result = validateAgentSkillsFrontmatter(fm);
+    expect(result.valid).toBe(true);
+    expect(fm.name).toBe('bad-name');
+  });
+
+  it('rejects description longer than 1024 characters', () => {
+    const result = validateAgentSkillsFrontmatter({
+      name: 'valid-skill',
+      description: 'x'.repeat(1025),
+    });
+    expect(result.valid).toBe(false);
+    expect(result.errors.some((e) => e.includes('exceeds 1024 characters'))).toBe(true);
+  });
+
+  it('rejects non-string license', () => {
+    const result = validateAgentSkillsFrontmatter({
+      name: 'valid-skill',
+      description: 'Valid description.',
+      license: 42,
+    });
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContain('"license" must be a string');
+  });
+
+  it('rejects non-string compatibility', () => {
+    const result = validateAgentSkillsFrontmatter({
+      name: 'valid-skill',
+      description: 'Valid description.',
+      compatibility: { foo: 'bar' },
+    });
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContain('"compatibility" must be a string');
+  });
+
+  it('rejects compatibility longer than 500 characters', () => {
+    const result = validateAgentSkillsFrontmatter({
+      name: 'valid-skill',
+      description: 'Valid description.',
+      compatibility: 'x'.repeat(501),
+    });
+    expect(result.valid).toBe(false);
+    expect(result.errors.some((e) => e.includes('exceeds 500 characters'))).toBe(true);
+  });
+
+  it('coerces null metadata to undefined (no error)', () => {
+    const fm: Record<string, unknown> = {
+      name: 'valid-skill',
+      description: 'Valid description.',
+      metadata: null,
+    };
+    const result = validateAgentSkillsFrontmatter(fm);
+    expect(result.valid).toBe(true);
+    expect(fm.metadata).toBeUndefined();
+  });
+
+  it('drops invalid non-string non-object metadata silently', () => {
+    const fm: Record<string, unknown> = {
+      name: 'valid-skill',
+      description: 'Valid description.',
+      metadata: [1, 2, 3], // array — invalid
+    };
+    const result = validateAgentSkillsFrontmatter(fm);
+    expect(result.valid).toBe(true);
+    expect(fm.metadata).toBeUndefined();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// validateManifest — trigger name/config/action validation
+// ---------------------------------------------------------------------------
+
+describe('validateManifest — triggers edge cases', () => {
+  it('rejects trigger with missing name', () => {
+    const manifest = {
+      name: 'test-ext',
+      description: 'Test',
+      version: '1.0.0',
+      tools: [],
+      triggers: [{ type: 'schedule', config: {}, action: {} }],
+    };
+    const result = validateManifest(manifest as never);
+    expect(result.valid).toBe(false);
+    expect(result.errors.some((e) => e.includes('triggers[0]: missing or invalid "name"'))).toBe(true);
+  });
+
+  it('rejects trigger with missing config', () => {
+    const manifest = {
+      name: 'test-ext',
+      description: 'Test',
+      version: '1.0.0',
+      tools: [],
+      triggers: [{ name: 'my-trigger', type: 'schedule', action: {} }],
+    };
+    const result = validateManifest(manifest as never);
+    expect(result.valid).toBe(false);
+    expect(result.errors.some((e) => e.includes('missing or invalid "config"'))).toBe(true);
+  });
+
+  it('rejects trigger with missing action', () => {
+    const manifest = {
+      name: 'test-ext',
+      description: 'Test',
+      version: '1.0.0',
+      tools: [],
+      triggers: [{ name: 'my-trigger', type: 'schedule', config: {} }],
+    };
+    const result = validateManifest(manifest as never);
+    expect(result.valid).toBe(false);
+    expect(result.errors.some((e) => e.includes('missing or invalid "action"'))).toBe(true);
+  });
+});
+
+describe('validateManifest — tool name validation', () => {
+  it('rejects tool with missing name', () => {
+    const manifest = {
+      name: 'test-ext',
+      description: 'Test',
+      version: '1.0.0',
+      tools: [{ description: 'no name', parameters: {}, code: 'fn()' }],
+    };
+    const result = validateManifest(manifest as never);
+    expect(result.valid).toBe(false);
+    expect(result.errors.some((e) => e.includes('missing or invalid "name"'))).toBe(true);
+  });
 });

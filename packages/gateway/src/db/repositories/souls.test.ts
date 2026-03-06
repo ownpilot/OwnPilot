@@ -27,7 +27,7 @@ vi.mock('../adapters/index.js', () => ({
   getAdapterSync: vi.fn().mockReturnValue(mockAdapter),
 }));
 
-const { SoulsRepository } = await import('./souls.js');
+const { SoulsRepository, getSoulsRepository } = await import('./souls.js');
 
 // ---------------------------------------------------------------------------
 // Row factories
@@ -368,6 +368,78 @@ describe('SoulsRepository', () => {
     });
   });
 
+  // ── updateTaskStatus ───────────────────────────────────────
+
+  describe('updateTaskStatus()', () => {
+    it('returns early without executing when soul is not found', async () => {
+      // getByAgentId returns null
+      mockAdapter.queryOne.mockResolvedValue(null);
+      await repo.updateTaskStatus('agent-x', 'task-1', {
+        lastRunAt: new Date(),
+        lastResult: 'ok',
+        consecutiveFailures: 0,
+      });
+      // execute should not be called (early return)
+      expect(mockAdapter.execute).not.toHaveBeenCalled();
+    });
+
+    it('maps matching task in checklist and executes UPDATE', async () => {
+      const soulRow = makeSoulRow({
+        heartbeat: JSON.stringify({
+          enabled: true, interval: '*/30 * * * *',
+          selfHealingEnabled: false, maxDurationMs: 120_000,
+          checklist: [
+            { id: 'task-1', name: 'Check', schedule: 'daily', description: '', tools: [], priority: 'medium', stalenessHours: 0 },
+            { id: 'task-2', name: 'Other', schedule: 'daily', description: '', tools: [], priority: 'low', stalenessHours: 0 },
+          ],
+        }),
+      });
+      // getByAgentId → queryOne returns the soul row
+      mockAdapter.queryOne.mockResolvedValueOnce(soulRow);
+
+      const lastRunAt = new Date('2025-01-01T00:00:00Z');
+      await repo.updateTaskStatus('agent-1', 'task-1', {
+        lastRunAt,
+        lastResult: 'done',
+        lastError: undefined,
+        consecutiveFailures: 0,
+      });
+
+      const [sql, params] = mockAdapter.execute.mock.calls[0];
+      expect(sql).toContain('jsonb_set');
+      expect(sql).toContain("'{checklist}'");
+      const checklist = JSON.parse(params[0]);
+      expect(checklist[0].id).toBe('task-1');
+      expect(checklist[0].lastResult).toBe('done');
+      // task-2 should be unchanged
+      expect(checklist[1].id).toBe('task-2');
+    });
+
+    it('returns t unchanged for non-matching task', async () => {
+      const soulRow = makeSoulRow({
+        heartbeat: JSON.stringify({
+          enabled: true, interval: '*/30 * * * *',
+          selfHealingEnabled: false, maxDurationMs: 120_000,
+          checklist: [
+            { id: 'task-99', name: 'Other', schedule: 'daily', description: '', tools: [], priority: 'low', stalenessHours: 0 },
+          ],
+        }),
+      });
+      mockAdapter.queryOne.mockResolvedValueOnce(soulRow);
+
+      await repo.updateTaskStatus('agent-1', 'no-such-task', {
+        lastRunAt: new Date(),
+        lastResult: 'ignored',
+        consecutiveFailures: 0,
+      });
+
+      const [, params] = mockAdapter.execute.mock.calls[0];
+      const checklist = JSON.parse(params[0]);
+      // task-99 stays as-is (no lastResult added)
+      expect(checklist[0].lastResult).toBeUndefined();
+    });
+  });
+
   // ── rowToSoulVersion — M6 fix (snapshot: null) ─────────────
 
   describe('rowToSoulVersion snapshot handling (M6 fix)', () => {
@@ -390,5 +462,20 @@ describe('SoulsRepository', () => {
       expect(ver?.snapshot).not.toBeNull();
       expect((ver?.snapshot as Record<string, unknown>)?.id).toBe('soul-1');
     });
+  });
+});
+
+// ── getSoulsRepository singleton ────────────────────────────
+
+describe('getSoulsRepository()', () => {
+  it('returns a SoulsRepository instance', () => {
+    const repo1 = getSoulsRepository();
+    expect(repo1).toBeInstanceOf(SoulsRepository);
+  });
+
+  it('returns the same singleton instance on repeated calls', () => {
+    const repo1 = getSoulsRepository();
+    const repo2 = getSoulsRepository();
+    expect(repo1).toBe(repo2);
   });
 });

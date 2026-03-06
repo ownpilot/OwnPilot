@@ -8,7 +8,7 @@ vi.mock('../adapters/index.js', () => ({
   getAdapterSync: () => mockAdapter,
 }));
 
-import { CliToolPoliciesRepository } from './cli-tool-policies.js';
+import { CliToolPoliciesRepository, createCliToolPoliciesRepository } from './cli-tool-policies.js';
 
 describe('CliToolPoliciesRepository', () => {
   let repo: CliToolPoliciesRepository;
@@ -166,6 +166,13 @@ describe('CliToolPoliciesRepository', () => {
       ]);
 
       expect(mockAdapter.execute).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  describe('createCliToolPoliciesRepository factory (line 112)', () => {
+    it('returns a new CliToolPoliciesRepository instance', () => {
+      const newRepo = createCliToolPoliciesRepository();
+      expect(newRepo).toBeInstanceOf(CliToolPoliciesRepository);
     });
   });
 });

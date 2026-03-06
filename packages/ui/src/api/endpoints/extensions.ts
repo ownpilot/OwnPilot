@@ -78,6 +78,10 @@ export const extensionsApi = {
       validation: { valid: boolean; errors: string[] };
     }>('/extensions/generate-skill', { description }),
 
+  /** Update extension metadata (name, description, version) */
+  update: (id: string, updates: { name?: string; description?: string; version?: string }) =>
+    apiClient.patch<{ package: ExtensionInfo; message: string }>(`/extensions/${id}`, updates),
+
   /** Run LLM-powered security audit on an installed extension */
   audit: (id: string, options?: { provider?: string; model?: string }) =>
     apiClient.post<ExtensionAuditResult>(`/extensions/${id}/audit`, options ?? {}),

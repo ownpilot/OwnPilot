@@ -656,6 +656,19 @@ describe('gitCommitExecutor', () => {
     expect(gitArgs).toContain('--amend');
   });
 
+  it('uses --no-edit when amending without a message', async () => {
+    succeedWith('commit output');
+    succeedWith('hash\n');
+
+    await gitCommitExecutor({ amend: true });
+
+    const callArgs = mockExecFile.mock.calls[0] as unknown[];
+    const gitArgs = callArgs[1] as string[];
+    expect(gitArgs).toContain('--amend');
+    expect(gitArgs).toContain('--no-edit');
+    expect(gitArgs).not.toContain('-m');
+  });
+
   it('returns error when message is empty and not amending', async () => {
     const result = await gitCommitExecutor({ message: '' });
     expect(result.isError).toBe(true);

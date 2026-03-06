@@ -60,11 +60,8 @@ const AutonomyPage = lazy(() =>
 const PluginsPage = lazy(() =>
   import('./pages/PluginsPage').then((m) => ({ default: m.PluginsPage }))
 );
-const ExtensionsPage = lazy(() =>
-  import('./pages/ExtensionsPage').then((m) => ({ default: m.ExtensionsPage }))
-);
-const SkillsPage = lazy(() =>
-  import('./pages/SkillsPage').then((m) => ({ default: m.SkillsPage }))
+const SkillsHubPage = lazy(() =>
+  import('./pages/skills/SkillsHubPage').then((m) => ({ default: m.SkillsHubPage }))
 );
 const WorkspacesPage = lazy(() =>
   import('./pages/WorkspacesPage').then((m) => ({ default: m.WorkspacesPage }))
@@ -161,6 +158,9 @@ const EventMonitorPage = lazy(() =>
 const ArtifactsPage = lazy(() =>
   import('./pages/ArtifactsPage').then((m) => ({ default: m.ArtifactsPage }))
 );
+const EdgeDevicesPage = lazy(() =>
+  import('./pages/EdgeDevicesPage').then((m) => ({ default: m.EdgeDevicesPage }))
+);
 
 function PageLoader() {
   return (
@@ -231,6 +231,7 @@ export function App() {
         <Route path="autonomous" element={page(<AutonomousHubPage />)} />
         <Route path="autonomous/agent/:id" element={page(<AgentProfilePage />)} />
         <Route path="artifacts" element={page(<ArtifactsPage />)} />
+        <Route path="edge-devices" element={page(<EdgeDevicesPage />)} />
         {/* Old autonomous routes → redirect to unified hub */}
         <Route path="background-agents" element={<Navigate to="/autonomous" replace />} />
         <Route path="crews" element={<Navigate to="/autonomous?tab=crews" replace />} />
@@ -245,8 +246,8 @@ export function App() {
         <Route path="tools" element={page(<ToolsPage />)} />
         <Route path="custom-tools" element={page(<CustomToolsPage />)} />
         <Route path="plugins" element={page(<PluginsPage />)} />
-        <Route path="extensions" element={page(<ExtensionsPage />)} />
-        <Route path="skills" element={page(<SkillsPage />)} />
+        <Route path="extensions" element={<Navigate to="/skills?tab=installed&format=ownpilot" replace />} />
+        <Route path="skills" element={page(<SkillsHubPage />)} />
         <Route path="workspaces" element={page(<WorkspacesPage />)} />
         <Route path="models" element={page(<ModelsPage />)} />
         <Route path="costs" element={page(<CostsPage />)} />

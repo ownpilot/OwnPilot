@@ -80,7 +80,9 @@ vi.mock('./log.js', () => ({
   }),
 }));
 
-const { SubagentManager } = await import('./subagent-manager.js');
+const { SubagentManager, getSubagentManager, resetSubagentManager } = await import('./subagent-manager.js');
+const { SubagentRunner: MockSubagentRunner } = await import('./subagent-runner.js');
+const { SubagentsRepository: MockSubagentsRepository } = await import('../db/repositories/subagents.js');
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -372,5 +374,171 @@ describe('SubagentManager', () => {
       manager.dispose();
       expect(spy).toHaveBeenCalled();
     });
+  });
+
+  // -------------------------------------------------------------------------
+  // getStats — active count
+  // -------------------------------------------------------------------------
+
+  describe('getStats — active count', () => {
+    it('counts running sessions as active', async () => {
+      runnerHangs = true;
+      await manager.spawn(makeSpawnInput({ name: 'Hanging 1' }));
+      await manager.spawn(makeSpawnInput({ name: 'Hanging 2' }));
+
+      const stats = manager.getStats();
+      expect(stats.active).toBe(2);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // executeInBackground — completion and error paths
+  // -------------------------------------------------------------------------
+
+  describe('executeInBackground — success path (then callback)', () => {
+    it('transitions session to completed state after runner resolves', async () => {
+      runnerHangs = false;
+      const session = await manager.spawn(makeSpawnInput());
+      // Flush all microtasks/promises
+      await vi.advanceTimersByTimeAsync(10);
+
+      const updated = manager.getSession(session.id);
+      expect(updated?.state).toBe('completed');
+      expect(updated?.result).toBe('Task completed');
+    });
+
+    it('transitions to timeout state when error contains "timed out"', async () => {
+      vi.mocked(MockSubagentRunner).mockImplementationOnce(function () {
+        return {
+          run: vi.fn(() =>
+            Promise.resolve({ ...completedResult, success: false, error: 'Subagent timed out after 60000ms' })
+          ),
+          cancel: vi.fn(),
+          cancelled: false,
+        };
+      });
+
+      const session = await manager.spawn(makeSpawnInput());
+      await vi.advanceTimersByTimeAsync(10);
+
+      const updated = manager.getSession(session.id);
+      expect(updated?.state).toBe('timeout');
+    });
+  });
+
+  describe('executeInBackground — error path (catch callback)', () => {
+    it('transitions session to failed state when runner rejects', async () => {
+      vi.mocked(MockSubagentRunner).mockImplementationOnce(function () {
+        return {
+          run: vi.fn(() => Promise.reject(new Error('runner crashed'))),
+          cancel: vi.fn(),
+          cancelled: false,
+        };
+      });
+
+      const session = await manager.spawn(makeSpawnInput());
+      await vi.advanceTimersByTimeAsync(10);
+
+      const updated = manager.getSession(session.id);
+      expect(updated?.state).toBe('failed');
+      expect(updated?.error).toBe('runner crashed');
+    });
+
+    it('skips error handling when session was already cancelled (catch branch)', async () => {
+      runnerHangs = true;
+      const session = await manager.spawn(makeSpawnInput());
+
+      // Cancel before runner resolves
+      manager.cancel(session.id);
+
+      // Now reject the runner
+      const pending = pendingRunners.pop()!;
+      pending.reject(new Error('cancelled-error'));
+      await vi.advanceTimersByTimeAsync(10);
+
+      const updated = manager.getSession(session.id);
+      // State should remain 'cancelled', not 'failed'
+      expect(updated?.state).toBe('cancelled');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // onToolEnd callback
+  // -------------------------------------------------------------------------
+
+  describe('onToolEnd callback', () => {
+    it('records tool calls and emits progress event', async () => {
+      vi.mocked(MockSubagentRunner).mockImplementationOnce(function () {
+        return {
+          run: vi.fn((onToolEnd: (tc: { name: string; arguments: string }, result: { content: string; isError: boolean; durationMs: number }) => void) => {
+            onToolEnd({ name: 'core.search', arguments: '{"q":"test"}' }, { content: 'results', isError: false, durationMs: 50 });
+            return Promise.resolve(completedResult);
+          }),
+          cancel: vi.fn(),
+          cancelled: false,
+        };
+      });
+
+      const session = await manager.spawn(makeSpawnInput());
+      await vi.advanceTimersByTimeAsync(10);
+
+      const updated = manager.getSession(session.id);
+      expect(updated?.toolCalls).toHaveLength(1);
+      expect(updated?.toolCalls[0].tool).toBe('core.search');
+      expect(updated?.toolCalls[0].success).toBe(true);
+    });
+
+    it('handles invalid JSON in tool arguments via safeParseJson fallback', async () => {
+      vi.mocked(MockSubagentRunner).mockImplementationOnce(function () {
+        return {
+          run: vi.fn((onToolEnd: (tc: { name: string; arguments: string }, result: { content: string; isError: boolean; durationMs: number }) => void) => {
+            onToolEnd({ name: 'my_tool', arguments: 'NOT_VALID_JSON' }, { content: 'err', isError: true, durationMs: 5 });
+            return Promise.resolve(completedResult);
+          }),
+          cancel: vi.fn(),
+          cancelled: false,
+        };
+      });
+
+      const session = await manager.spawn(makeSpawnInput());
+      await vi.advanceTimersByTimeAsync(10);
+
+      const updated = manager.getSession(session.id);
+      // safeParseJson fallback: { _raw: 'NOT_VALID_JSON' }
+      expect(updated?.toolCalls[0].args).toMatchObject({ _raw: 'NOT_VALID_JSON' });
+    });
+  });
+});
+
+// ── getSubagentManager / resetSubagentManager singletons ────────────────────
+
+describe('getSubagentManager', () => {
+  beforeEach(() => {
+    // Re-apply implementation with a regular function (not arrow) for `new` compatibility
+    vi.mocked(MockSubagentsRepository).mockImplementation(function () {
+      return mockRepo as never;
+    });
+    resetSubagentManager();
+  });
+  afterEach(() => {
+    resetSubagentManager();
+  });
+
+  it('returns a SubagentManager instance', () => {
+    const mgr = getSubagentManager();
+    expect(mgr).toBeInstanceOf(SubagentManager);
+  });
+
+  it('returns the same singleton on repeated calls', () => {
+    const m1 = getSubagentManager();
+    const m2 = getSubagentManager();
+    expect(m1).toBe(m2);
+  });
+
+  it('resetSubagentManager disposes and nullifies the singleton', () => {
+    const m1 = getSubagentManager();
+    resetSubagentManager();
+    const m2 = getSubagentManager();
+    expect(m1).not.toBe(m2);
   });
 });

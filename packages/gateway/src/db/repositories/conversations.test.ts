@@ -336,3 +336,12 @@ describe('ConversationsRepository', () => {
     });
   });
 });
+
+const { createConversationsRepository } = await import('./conversations.js');
+
+describe('createConversationsRepository factory (line 110)', () => {
+  it('returns a new ConversationsRepository instance', () => {
+    const newRepo = createConversationsRepository();
+    expect(newRepo).toBeInstanceOf(ConversationsRepository);
+  });
+});

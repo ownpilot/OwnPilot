@@ -15,6 +15,7 @@ const mockGetToolsBySource = vi.hoisted(() => vi.fn());
 const mockHas = vi.hoisted(() => vi.fn());
 const mockGetNames = vi.hoisted(() => vi.fn());
 const mockUse = vi.hoisted(() => vi.fn());
+const mockExecuteTool = vi.hoisted(() => vi.fn());
 
 vi.mock('./tool-executor.js', () => ({
   getSharedToolRegistry: () => ({
@@ -26,6 +27,7 @@ vi.mock('./tool-executor.js', () => ({
     getNames: mockGetNames,
     use: mockUse,
   }),
+  executeTool: mockExecuteTool,
 }));
 
 // ---------------------------------------------------------------------------
@@ -581,6 +583,95 @@ describe('ToolService', () => {
       const [, , userId2] = mockExecuteToolCall.mock.calls[1];
       expect(userId1).toBe('user-A');
       expect(userId2).toBe('user-B');
+    });
+  });
+
+  // =========================================================================
+  // execSource branch (lines 42-51)
+  // =========================================================================
+
+  describe('execute with execSource', () => {
+    it('routes through executeTool when execSource is provided', async () => {
+      mockExecuteTool.mockResolvedValue({ success: true, result: 'exec-result' });
+
+      const svc = new ToolService('user-1');
+      const result = await svc.execute('my_tool', { key: 'val' }, { execSource: 'webhook' });
+
+      expect(mockExecuteTool).toHaveBeenCalledOnce();
+      expect(mockExecuteToolCall).not.toHaveBeenCalled();
+      expect(result.content).toBe('exec-result');
+      expect(result.isError).toBe(false);
+    });
+
+    it('returns error content when executeTool returns success: false', async () => {
+      mockExecuteTool.mockResolvedValue({ success: false, error: 'Permission denied' });
+
+      const svc = new ToolService('user-1');
+      const result = await svc.execute('my_tool', {}, { execSource: 'agent' });
+
+      expect(result.content).toBe('Permission denied');
+      expect(result.isError).toBe(true);
+    });
+
+    it('falls back to "Tool execution failed" when execSource fails with no error message', async () => {
+      mockExecuteTool.mockResolvedValue({ success: false, error: undefined });
+
+      const svc = new ToolService('user-1');
+      const result = await svc.execute('my_tool', {}, { execSource: 'trigger' });
+
+      expect(result.content).toBe('Tool execution failed');
+      expect(result.isError).toBe(true);
+    });
+
+    it('uses empty string for null result when execSource succeeds', async () => {
+      mockExecuteTool.mockResolvedValue({ success: true, result: null });
+
+      const svc = new ToolService('user-1');
+      const result = await svc.execute('my_tool', {}, { execSource: 'agent' });
+
+      expect(result.content).toBe('');
+      expect(result.isError).toBe(false);
+    });
+
+    it('passes execSource as source in ToolExecContext', async () => {
+      mockExecuteTool.mockResolvedValue({ success: true, result: 'ok' });
+
+      const svc = new ToolService('user-1');
+      await svc.execute('my_tool', {}, { execSource: 'webhook', userId: 'u-2' });
+
+      const [, , , , execContext] = mockExecuteTool.mock.calls[0];
+      expect(execContext.source).toBe('webhook');
+    });
+  });
+
+  // =========================================================================
+  // Circular args (line 59) and circular content (line 79)
+  // =========================================================================
+
+  describe('execute edge cases', () => {
+    it('returns isError: true when args cannot be serialized to JSON (circular reference)', async () => {
+      const circular: Record<string, unknown> = {};
+      circular.self = circular; // Creates circular reference
+
+      const svc = new ToolService();
+      const result = await svc.execute('tool_x', circular);
+
+      expect(result.isError).toBe(true);
+      expect(result.content).toContain('Invalid tool arguments');
+      expect(mockExecuteToolCall).not.toHaveBeenCalled();
+    });
+
+    it('falls back to String() when result.content cannot be JSON.stringify-ed (line 79)', async () => {
+      // Return an object whose JSON.stringify throws
+      const unserializable = { toJSON: () => { throw new Error('no serialize'); } };
+      mockExecuteToolCall.mockResolvedValue({ content: unserializable, isError: false });
+
+      const svc = new ToolService();
+      const result = await svc.execute('tool_x', {});
+
+      // String(unserializable) gives '[object Object]'
+      expect(result.content).toBe('[object Object]');
+      expect(result.isError).toBe(false);
     });
   });
 });

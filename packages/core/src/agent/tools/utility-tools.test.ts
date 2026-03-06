@@ -2134,6 +2134,52 @@ describe('runRegexExecutor', () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     expect((data.result as any[]).length).toBe(2);
   });
+
+  it('rejects patterns longer than 500 characters', async () => {
+    const result = await runRegexExecutor({
+      text: 'hello',
+      pattern: 'a'.repeat(501),
+      operation: 'test',
+    });
+    expect(result.isError).toBe(true);
+    const data = parseContent(result.content);
+    expect(data.error).toContain('too long');
+  });
+
+  it('rejects nested quantifiers (ReDoS protection)', async () => {
+    const result = await runRegexExecutor({
+      text: 'aaaa',
+      pattern: '(a+)+',
+      operation: 'test',
+    });
+    expect(result.isError).toBe(true);
+    const data = parseContent(result.content);
+    expect(data.error).toContain('unsafe nested quantifiers');
+  });
+
+  it('rejects invalid regex flags', async () => {
+    const result = await runRegexExecutor({
+      text: 'hello',
+      pattern: 'h',
+      flags: 'x',
+      operation: 'test',
+    });
+    expect(result.isError).toBe(true);
+    const data = parseContent(result.content);
+    expect(data.error).toContain('Invalid regex flags');
+  });
+
+  it('accepts valid flag combinations', async () => {
+    const result = await runRegexExecutor({
+      text: 'Hello',
+      pattern: 'hello',
+      flags: 'i',
+      operation: 'test',
+    });
+    expect(result.isError).toBeFalsy();
+    const data = parseContent(result.content);
+    expect(data.result).toBe(true);
+  });
 });
 
 // =============================================================================

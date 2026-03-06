@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import {
   extractKeywords,
   tokenizeMessage,
@@ -6,7 +6,44 @@ import {
   buildToolTagIndex,
   classifyRequest,
   clearPreprocessorCache,
+  createRequestPreprocessorMiddleware,
 } from './request-preprocessor.js';
+
+// ============================================================================
+// Mocks for middleware / private function coverage
+// ============================================================================
+
+const { mockGetServiceRegistry, mockCustomDataRepoInst, mockToolRegistryInst } = vi.hoisted(() => ({
+  mockGetServiceRegistry: vi.fn(),
+  mockCustomDataRepoInst: {
+    listTables: vi.fn<
+      [],
+      Promise<Array<{ displayName: string; description?: string; columns: Array<{ name: string }> }>>
+    >(),
+  },
+  mockToolRegistryInst: {
+    getAllTools:
+      vi.fn<[], Array<{ definition: { name: string; brief?: string; description: string } }>>(),
+  },
+}));
+
+vi.mock('../tool-executor.js', () => ({
+  getSharedToolRegistry: vi.fn(() => mockToolRegistryInst),
+}));
+
+vi.mock('../../db/repositories/index.js', () => ({
+  CustomDataRepository: vi.fn(function () {
+    return mockCustomDataRepoInst;
+  }),
+}));
+
+vi.mock('@ownpilot/core', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@ownpilot/core')>();
+  return {
+    ...actual,
+    getServiceRegistry: mockGetServiceRegistry,
+  };
+});
 
 // =============================================================================
 // Helpers
@@ -470,5 +507,587 @@ describe('Request Preprocessor', () => {
     it('clears without error', () => {
       expect(() => clearPreprocessorCache()).not.toThrow();
     });
+  });
+});
+
+// ============================================================================
+// createRequestPreprocessorMiddleware (covers buildToolBriefs, buildCustomDataIndex,
+// buildMcpIndex, getIndexAsync, and the middleware function itself)
+// ============================================================================
+
+describe('createRequestPreprocessorMiddleware', () => {
+  let mockMcpService: {
+    getStatus: ReturnType<typeof vi.fn>;
+    getServerTools: ReturnType<typeof vi.fn>;
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    clearPreprocessorCache();
+
+    // Restore defaults after vi.clearAllMocks() wiped implementations
+    mockToolRegistryInst.getAllTools.mockReturnValue([]);
+    mockCustomDataRepoInst.listTables.mockResolvedValue([]);
+    mockGetServiceRegistry.mockReturnValue({ get: vi.fn(() => undefined) });
+
+    mockMcpService = {
+      getStatus: vi.fn(() => new Map()),
+      getServerTools: vi.fn(() => []),
+    };
+  });
+
+  function makeCtx() {
+    const store = new Map<string, unknown>();
+    return {
+      set: vi.fn((k: string, v: unknown) => {
+        store.set(k, v);
+      }),
+      get: vi.fn((k: string) => store.get(k)),
+    };
+  }
+
+  // ---- Middleware basic paths ----
+
+  it('sets routing in ctx and calls next for a valid message', async () => {
+    const middleware = createRequestPreprocessorMiddleware();
+    const ctx = makeCtx();
+    const next = vi.fn();
+
+    await middleware(
+      { content: 'Send an email to John about the project update' } as any,
+      ctx as any,
+      next
+    );
+
+    expect(next).toHaveBeenCalledOnce();
+    expect(ctx.set).toHaveBeenCalledWith(
+      'routing',
+      expect.objectContaining({
+        relevantExtensionIds: expect.any(Array),
+        suggestedTools: expect.any(Array),
+      })
+    );
+  });
+
+  it('calls next without routing when content is empty string', async () => {
+    const middleware = createRequestPreprocessorMiddleware();
+    const ctx = makeCtx();
+    const next = vi.fn();
+
+    await middleware({ content: '' } as any, ctx as any, next);
+
+    expect(next).toHaveBeenCalledOnce();
+    expect(ctx.set).not.toHaveBeenCalled();
+  });
+
+  it('calls next without routing when content is whitespace only', async () => {
+    const middleware = createRequestPreprocessorMiddleware();
+    const ctx = makeCtx();
+    const next = vi.fn();
+
+    await middleware({ content: '   \t  ' } as any, ctx as any, next);
+
+    expect(next).toHaveBeenCalledOnce();
+    expect(ctx.set).not.toHaveBeenCalled();
+  });
+
+  it('calls next even when preprocessing throws (catch block)', async () => {
+    // Make ctx.set throw to trigger the catch block inside the middleware
+    const middleware = createRequestPreprocessorMiddleware();
+    const ctx = {
+      set: vi.fn(() => {
+        throw new Error('ctx.set failed');
+      }),
+      get: vi.fn(),
+    };
+    const next = vi.fn();
+
+    await middleware(
+      { content: 'Send an email to John about the project update' } as any,
+      ctx as any,
+      next
+    );
+
+    expect(next).toHaveBeenCalledOnce();
+  });
+
+  it('uses cached index on second call without re-querying DB', async () => {
+    const middleware = createRequestPreprocessorMiddleware();
+    const ctx1 = makeCtx();
+    const ctx2 = makeCtx();
+    const next = vi.fn();
+
+    await middleware(
+      { content: 'Send an email about the meeting schedule' } as any,
+      ctx1 as any,
+      next
+    );
+    await middleware(
+      { content: 'Get the weather forecast for tomorrow' } as any,
+      ctx2 as any,
+      next
+    );
+
+    // DB called only once — second call uses cache
+    expect(mockCustomDataRepoInst.listTables).toHaveBeenCalledTimes(1);
+  });
+
+  // ---- Extension service integration (covers getIndexAsync extension path) ----
+
+  it('builds extension index via getServiceRegistry and logs partial ext selection', async () => {
+    const { Services } = await import('@ownpilot/core');
+
+    const mockExtService = {
+      getEnabledMetadata: vi.fn(() => [
+        {
+          id: 'email-ext',
+          name: 'Email Manager',
+          description: 'Send and receive emails',
+          format: 'ownpilot',
+          toolNames: ['send_email'],
+          keywords: ['email'],
+        },
+        {
+          id: 'task-ext',
+          name: 'Task Manager',
+          description: 'Manage tasks and todo lists',
+          format: 'ownpilot',
+          toolNames: ['add_task'],
+          keywords: ['task'],
+        },
+      ]),
+    };
+
+    mockGetServiceRegistry.mockReturnValue({
+      get: vi.fn((token: unknown) => {
+        if (token === (Services as any).Extension) return mockExtService;
+        return undefined;
+      }),
+    });
+
+    const middleware = createRequestPreprocessorMiddleware();
+    const ctx = makeCtx();
+    const next = vi.fn();
+
+    await middleware(
+      { content: 'Send an email to John about the project update meeting' } as any,
+      ctx as any,
+      next
+    );
+
+    expect(next).toHaveBeenCalledOnce();
+    const routing = ctx.set.mock.calls.find((c: unknown[]) => c[0] === 'routing')?.[1] as any;
+    expect(routing.relevantExtensionIds).toContain('email-ext');
+  });
+
+  // ---- buildToolBriefs coverage ----
+
+  it('buildToolBriefs: extracts brief from tool definition with brief field', async () => {
+    mockToolRegistryInst.getAllTools.mockReturnValue([
+      {
+        definition: {
+          name: 'send_email',
+          brief: 'Send an email message',
+          description: 'Sends an email to a recipient.',
+        },
+      },
+    ]);
+
+    const middleware = createRequestPreprocessorMiddleware();
+    const ctx = makeCtx();
+    const next = vi.fn();
+
+    await middleware(
+      { content: 'Please send an email to John about the project updates' } as any,
+      ctx as any,
+      next
+    );
+
+    const routing = ctx.set.mock.calls.find((c: unknown[]) => c[0] === 'routing')?.[1] as any;
+    const tool = routing?.suggestedTools?.find((t: any) => t.name === 'send_email');
+    expect(tool?.brief).toBe('Send an email message');
+  });
+
+  it('buildToolBriefs: falls back to description when brief is absent', async () => {
+    mockToolRegistryInst.getAllTools.mockReturnValue([
+      {
+        definition: {
+          name: 'send_email',
+          description: 'Sends an email message to recipients. Supports HTML and attachments.',
+        },
+      },
+    ]);
+
+    const middleware = createRequestPreprocessorMiddleware();
+    const ctx = makeCtx();
+    const next = vi.fn();
+
+    await middleware(
+      { content: 'Please send an email to John about the project updates' } as any,
+      ctx as any,
+      next
+    );
+
+    const routing = ctx.set.mock.calls.find((c: unknown[]) => c[0] === 'routing')?.[1] as any;
+    const tool = routing?.suggestedTools?.find((t: any) => t.name === 'send_email');
+    // First sentence of description, sliced to 80 chars
+    expect(tool?.brief).toBe('Sends an email message to recipients');
+  });
+
+  it('buildToolBriefs: extracts baseName from dotted namespace tool name', async () => {
+    mockToolRegistryInst.getAllTools.mockReturnValue([
+      {
+        definition: {
+          name: 'core.send_email',
+          brief: 'Send email via core',
+          description: 'Core email sender.',
+        },
+      },
+    ]);
+
+    const middleware = createRequestPreprocessorMiddleware();
+    const ctx = makeCtx();
+    const next = vi.fn();
+
+    await middleware(
+      { content: 'Please send an email to John about updates' } as any,
+      ctx as any,
+      next
+    );
+
+    const routing = ctx.set.mock.calls.find((c: unknown[]) => c[0] === 'routing')?.[1] as any;
+    // baseName = 'send_email' extracted from 'core.send_email'
+    const tool = routing?.suggestedTools?.find((t: any) => t.name === 'send_email');
+    expect(tool?.brief).toBe('Send email via core');
+  });
+
+  it('buildToolBriefs: skips tool with empty description (no brief)', async () => {
+    mockToolRegistryInst.getAllTools.mockReturnValue([
+      { definition: { name: 'no_op_tool', description: '' } },
+    ]);
+
+    const middleware = createRequestPreprocessorMiddleware();
+    const ctx = makeCtx();
+    const next = vi.fn();
+
+    await middleware(
+      { content: 'Perform the no op tool action please' } as any,
+      ctx as any,
+      next
+    );
+
+    expect(next).toHaveBeenCalledOnce();
+  });
+
+  it('buildToolBriefs: handles getAllTools() throwing gracefully', async () => {
+    mockToolRegistryInst.getAllTools.mockImplementation(() => {
+      throw new Error('registry not ready');
+    });
+
+    const middleware = createRequestPreprocessorMiddleware();
+    const ctx = makeCtx();
+    const next = vi.fn();
+
+    await middleware(
+      { content: 'Send an email to John about the project updates' } as any,
+      ctx as any,
+      next
+    );
+
+    expect(next).toHaveBeenCalledOnce();
+  });
+
+  // ---- buildCustomDataIndex coverage ----
+
+  it('buildCustomDataIndex: indexes table with description and columns', async () => {
+    mockCustomDataRepoInst.listTables.mockResolvedValue([
+      {
+        displayName: 'Customer Contacts',
+        description: 'Contact information for clients and customers',
+        columns: [{ name: 'phone_number' }, { name: 'email_address' }],
+      },
+    ]);
+
+    const middleware = createRequestPreprocessorMiddleware();
+    const ctx = makeCtx();
+    const next = vi.fn();
+
+    await middleware(
+      {
+        content: 'Show me all customer contact phone numbers and email addresses please',
+      } as any,
+      ctx as any,
+      next
+    );
+
+    const routing = ctx.set.mock.calls.find((c: unknown[]) => c[0] === 'routing')?.[1] as any;
+    expect(routing?.relevantTables).toContain('Customer Contacts');
+  });
+
+  it('buildCustomDataIndex: indexes table without description', async () => {
+    mockCustomDataRepoInst.listTables.mockResolvedValue([
+      { displayName: 'Inventory Items', columns: [{ name: 'sku_code' }] },
+    ]);
+
+    const middleware = createRequestPreprocessorMiddleware();
+    const ctx = makeCtx();
+    const next = vi.fn();
+
+    await middleware(
+      { content: 'Check inventory sku code stock levels today' } as any,
+      ctx as any,
+      next
+    );
+
+    expect(next).toHaveBeenCalledOnce();
+  });
+
+  it('buildCustomDataIndex: handles listTables() rejecting gracefully', async () => {
+    mockCustomDataRepoInst.listTables.mockRejectedValue(new Error('DB unavailable'));
+
+    const middleware = createRequestPreprocessorMiddleware();
+    const ctx = makeCtx();
+    const next = vi.fn();
+
+    await middleware(
+      { content: 'Show all customer data records and list them' } as any,
+      ctx as any,
+      next
+    );
+
+    expect(next).toHaveBeenCalledOnce();
+  });
+
+  // ---- buildMcpIndex coverage ----
+
+  it('buildMcpIndex: indexes connected server with tools and descriptions', async () => {
+    const { Services } = await import('@ownpilot/core');
+
+    mockMcpService.getStatus.mockReturnValue(
+      new Map([
+        ['github', { connected: true }],
+        ['slack', { connected: false }], // disconnected — skipped
+      ])
+    );
+    mockMcpService.getServerTools.mockImplementation((name: string) =>
+      name === 'github'
+        ? [{ name: 'create_issue', description: 'Create a new issue in the repository' }]
+        : []
+    );
+
+    mockGetServiceRegistry.mockReturnValue({
+      get: vi.fn((token: unknown) => {
+        if (token === (Services as any).McpClient) return mockMcpService;
+        return undefined;
+      }),
+    });
+
+    const middleware = createRequestPreprocessorMiddleware();
+    const ctx = makeCtx();
+    const next = vi.fn();
+
+    await middleware(
+      { content: 'Create a new issue on GitHub repository please help' } as any,
+      ctx as any,
+      next
+    );
+
+    const routing = ctx.set.mock.calls.find((c: unknown[]) => c[0] === 'routing')?.[1] as any;
+    expect(routing?.relevantMcpServers).toContain('github');
+  });
+
+  it('buildMcpIndex: skips disconnected servers', async () => {
+    const { Services } = await import('@ownpilot/core');
+
+    mockMcpService.getStatus.mockReturnValue(new Map([['offline', { connected: false }]]));
+    mockMcpService.getServerTools.mockReturnValue([]);
+
+    mockGetServiceRegistry.mockReturnValue({
+      get: vi.fn((token: unknown) => {
+        if (token === (Services as any).McpClient) return mockMcpService;
+        return undefined;
+      }),
+    });
+
+    const middleware = createRequestPreprocessorMiddleware();
+    const ctx = makeCtx();
+    const next = vi.fn();
+
+    await middleware(
+      { content: 'Use offline server for something useful today' } as any,
+      ctx as any,
+      next
+    );
+
+    const routing = ctx.set.mock.calls.find((c: unknown[]) => c[0] === 'routing')?.[1] as any;
+    expect(routing?.relevantMcpServers).toBeUndefined();
+  });
+
+  it('buildMcpIndex: returns empty when mcpService is undefined', async () => {
+    const { Services } = await import('@ownpilot/core');
+
+    mockGetServiceRegistry.mockReturnValue({
+      get: vi.fn((token: unknown) => {
+        if (token === (Services as any).McpClient) return undefined;
+        return undefined;
+      }),
+    });
+
+    const middleware = createRequestPreprocessorMiddleware();
+    const ctx = makeCtx();
+    const next = vi.fn();
+
+    await middleware(
+      { content: 'Connect to GitHub server and create issue' } as any,
+      ctx as any,
+      next
+    );
+
+    const routing = ctx.set.mock.calls.find((c: unknown[]) => c[0] === 'routing')?.[1] as any;
+    expect(routing?.relevantMcpServers).toBeUndefined();
+  });
+
+  it('buildMcpIndex: limits description keywords to 5 per tool', async () => {
+    const { Services } = await import('@ownpilot/core');
+
+    mockMcpService.getStatus.mockReturnValue(new Map([['bigserver', { connected: true }]]));
+    mockMcpService.getServerTools.mockReturnValue([
+      {
+        name: 'mega_tool',
+        // More than 5 keywords in description
+        description: 'performs alpha beta gamma delta epsilon zeta eta theta iota kappa lambda',
+      },
+    ]);
+
+    mockGetServiceRegistry.mockReturnValue({
+      get: vi.fn((token: unknown) => {
+        if (token === (Services as any).McpClient) return mockMcpService;
+        return undefined;
+      }),
+    });
+
+    const middleware = createRequestPreprocessorMiddleware();
+    const ctx = makeCtx();
+    const next = vi.fn();
+
+    // Verify it runs without throwing
+    await middleware(
+      { content: 'Use bigserver mega tool alpha task action' } as any,
+      ctx as any,
+      next
+    );
+
+    expect(next).toHaveBeenCalledOnce();
+  });
+
+  it('buildMcpIndex: handles getServiceRegistry() throwing gracefully', async () => {
+    // buildMcpIndex has its own try/catch — exception is swallowed, returns []
+    mockGetServiceRegistry.mockImplementation(() => {
+      throw new Error('service registry unavailable');
+    });
+
+    const middleware = createRequestPreprocessorMiddleware();
+    const ctx = makeCtx();
+    const next = vi.fn();
+
+    await middleware(
+      { content: 'Create a GitHub issue from the repository list' } as any,
+      ctx as any,
+      next
+    );
+
+    expect(next).toHaveBeenCalledOnce();
+  });
+
+  it('buildMcpIndex: indexes tool without description', async () => {
+    const { Services } = await import('@ownpilot/core');
+
+    mockMcpService.getStatus.mockReturnValue(new Map([['myserver', { connected: true }]]));
+    mockMcpService.getServerTools.mockReturnValue([{ name: 'list_repos' }]); // no description
+
+    mockGetServiceRegistry.mockReturnValue({
+      get: vi.fn((token: unknown) => {
+        if (token === (Services as any).McpClient) return mockMcpService;
+        return undefined;
+      }),
+    });
+
+    const middleware = createRequestPreprocessorMiddleware();
+    const ctx = makeCtx();
+    const next = vi.fn();
+
+    await middleware(
+      { content: 'List repos from myserver for the project' } as any,
+      ctx as any,
+      next
+    );
+
+    expect(next).toHaveBeenCalledOnce();
+    const routing = ctx.set.mock.calls.find((c: unknown[]) => c[0] === 'routing')?.[1] as any;
+    expect(routing?.relevantMcpServers).toContain('myserver');
+  });
+
+  // ---- Middleware logging paths ----
+
+  it('logs tool suggestions count in parts', async () => {
+    // Message matching tools → parts includes "N tools"
+    const middleware = createRequestPreprocessorMiddleware();
+    const ctx = makeCtx();
+    const next = vi.fn();
+
+    await middleware(
+      { content: 'Please send an email to John about the project status report' } as any,
+      ctx as any,
+      next
+    );
+
+    expect(next).toHaveBeenCalledOnce();
+    // suggestedTools.length > 0 → debug log fires (no assertion on log itself, coverage only)
+    const routing = ctx.set.mock.calls.find((c: unknown[]) => c[0] === 'routing')?.[1] as any;
+    expect(routing?.suggestedTools.length).toBeGreaterThan(0);
+  });
+
+  it('logs table and MCP counts in parts (intentHint included)', async () => {
+    const { Services } = await import('@ownpilot/core');
+
+    mockCustomDataRepoInst.listTables.mockResolvedValue([
+      {
+        displayName: 'Customer Contacts',
+        description: 'Client contact database',
+        columns: [{ name: 'phone' }],
+      },
+    ]);
+
+    mockMcpService.getStatus.mockReturnValue(new Map([['github', { connected: true }]]));
+    mockMcpService.getServerTools.mockReturnValue([
+      { name: 'create_issue', description: 'Create GitHub issue' },
+    ]);
+
+    mockGetServiceRegistry.mockReturnValue({
+      get: vi.fn((token: unknown) => {
+        if (token === (Services as any).McpClient) return mockMcpService;
+        return undefined;
+      }),
+    });
+
+    const middleware = createRequestPreprocessorMiddleware();
+    const ctx = makeCtx();
+    const next = vi.fn();
+
+    await middleware(
+      { content: 'Show customer contact phone from GitHub create issue repository' } as any,
+      ctx as any,
+      next
+    );
+
+    expect(next).toHaveBeenCalledOnce();
+    const routing = ctx.set.mock.calls.find((c: unknown[]) => c[0] === 'routing')?.[1] as any;
+    // Should have both tables and MCP servers matched
+    if (routing?.relevantTables?.length) {
+      expect(routing.relevantTables).toContain('Customer Contacts');
+    }
+    if (routing?.relevantMcpServers?.length) {
+      expect(routing.relevantMcpServers).toContain('github');
+    }
   });
 });

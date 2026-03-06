@@ -5,10 +5,24 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { Hono } from 'hono';
 
 // =============================================================================
 // Mocks - Must be defined inline inside vi.mock factories due to hoisting
 // =============================================================================
+
+// Hoisted mutable references so individual tests can override transaction behaviour
+const { mockTransaction, mockTriggerCreate } = vi.hoisted(() => {
+  const mockTransaction = vi.fn();
+  const mockTriggerCreate = vi.fn();
+  return { mockTransaction, mockTriggerCreate };
+});
+
+vi.mock('../db/adapters/index.js', () => ({
+  getAdapterSync: () => ({
+    transaction: mockTransaction,
+  }),
+}));
 
 vi.mock('../db/repositories/souls.js', () => ({
   getSoulsRepository: () => ({
@@ -34,7 +48,7 @@ vi.mock('../db/repositories/agents.js', () => ({
 
 vi.mock('../db/repositories/triggers.js', () => ({
   createTriggersRepository: () => ({
-    create: vi.fn(),
+    create: mockTriggerCreate,
   }),
 }));
 
@@ -79,6 +93,7 @@ vi.mock('@ownpilot/core', () => ({
 import { agentsRepo } from '../db/repositories/agents.js';
 import { getSoulsRepository } from '../db/repositories/souls.js';
 import { settingsRepo } from '../db/repositories/index.js';
+import { soulRoutes } from './souls.js';
 
 // =============================================================================
 // Test Data
@@ -406,6 +421,144 @@ describe('Soul Routes', () => {
   });
 
   // ==========================================================================
+  // POST /deploy — HTTP-level tests (lines 253-269, 281-285, 291-303, 315-316)
+  // These tests exercise the actual Hono route handler via app.request()
+  // ==========================================================================
+
+  describe('POST /deploy — HTTP handler', () => {
+    let app: Hono;
+
+    const minimalDeployBody = {
+      identity: { name: 'Test Soul' },
+    };
+
+    beforeEach(() => {
+      app = new Hono();
+      app.route('/souls', soulRoutes);
+      vi.clearAllMocks();
+      // Default: transaction succeeds and returns the mockSoul
+      mockTransaction.mockImplementation(async (fn: () => Promise<unknown>) => fn());
+      mockTriggerCreate.mockResolvedValue(undefined);
+    });
+
+    // ── Lines 260-263: non-duplicate DB error breaks out of retry loop → 500 ──
+
+    it('returns 500 when DB throws a non-name error (break branch — line 268)', async () => {
+      // agentsRepo.create is NOT called by the real route — adapter.transaction runs the callback.
+      // We simulate a non-duplicate-name error thrown from inside the transaction.
+      mockTransaction.mockRejectedValue(new Error('connection refused'));
+
+      const res = await app.request('/souls/deploy', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(minimalDeployBody),
+      });
+
+      expect(res.status).toBe(500);
+      const data = await res.json();
+      expect(data.success).toBe(false);
+      expect(data.error.message).toMatch(/connection refused/);
+      // Should NOT have retried — the non-name error breaks immediately
+      expect(mockTransaction).toHaveBeenCalledTimes(1);
+    });
+
+    // ── Lines 253-269: all 5 duplicate-name retries exhausted → soul is null → 500 ──
+
+    it('returns 500 after all 5 duplicate-name retries fail (lines 263-266)', async () => {
+      // Every transaction attempt throws a duplicate name error → loop exhausts 5 attempts
+      mockTransaction.mockRejectedValue(
+        new Error('duplicate key value violates unique constraint "agents_name_key"')
+      );
+
+      const res = await app.request('/souls/deploy', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(minimalDeployBody),
+      });
+
+      expect(res.status).toBe(500);
+      const data = await res.json();
+      expect(data.success).toBe(false);
+      expect(data.error.message).toMatch(/Failed to deploy agent/);
+      // Exactly 5 attempts were made before the while-loop exited
+      expect(mockTransaction).toHaveBeenCalledTimes(5);
+    });
+
+    // ── Lines 281-285: invalid cron string → 400 before trigger creation ──
+
+    it('returns 400 for invalid heartbeat.interval cron format (line 280)', async () => {
+      // Transaction succeeds so soul is not null — route proceeds to cron validation
+      mockTransaction.mockImplementation(async (_fn: () => Promise<unknown>) => mockSoul);
+
+      const res = await app.request('/souls/deploy', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          identity: { name: 'Test Soul' },
+          heartbeat: { enabled: true, interval: 'not a valid cron' },
+        }),
+      });
+
+      expect(res.status).toBe(400);
+      const data = await res.json();
+      expect(data.success).toBe(false);
+      expect(data.error.message).toMatch(/heartbeat\.interval must be a valid cron expression/);
+      // Trigger must NOT have been called
+      expect(mockTriggerCreate).not.toHaveBeenCalled();
+    });
+
+    // ── Lines 291-303 + 315-316: valid cron + enabled heartbeat → trigger created → 201 ──
+
+    it('creates trigger and returns triggerCreated: true on success (lines 291-316)', async () => {
+      mockTransaction.mockImplementation(async (_fn: () => Promise<unknown>) => mockSoul);
+      mockTriggerCreate.mockResolvedValue(undefined);
+
+      const res = await app.request('/souls/deploy', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          identity: { name: 'Test Soul' },
+          heartbeat: { enabled: true, interval: '0 */6 * * *' },
+        }),
+      });
+
+      expect(res.status).toBe(201);
+      const data = await res.json();
+      expect(data.success).toBe(true);
+      expect(data.data.triggerCreated).toBe(true);
+      expect(mockTriggerCreate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'schedule',
+          enabled: true,
+        })
+      );
+    });
+
+    // ── Lines 295-297: trigger creation failure is non-fatal → still returns 201 ──
+
+    it('returns 201 even when trigger creation throws (non-fatal — lines 295-297)', async () => {
+      mockTransaction.mockImplementation(async (_fn: () => Promise<unknown>) => mockSoul);
+      mockTriggerCreate.mockRejectedValue(new Error('trigger DB error'));
+
+      const res = await app.request('/souls/deploy', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          identity: { name: 'Test Soul' },
+          heartbeat: { enabled: true, interval: '*/15 * * * *' },
+        }),
+      });
+
+      expect(res.status).toBe(201);
+      const data = await res.json();
+      expect(data.success).toBe(true);
+      // triggerCreated stays false because trigger threw before setting it to true
+      expect(data.data.triggerCreated).toBe(false);
+      expect(data.data.soul).toBeDefined();
+    });
+  });
+
+  // ==========================================================================
   // GET /:agentId — Get soul
   // ==========================================================================
 
@@ -606,7 +759,8 @@ describe('Soul Routes', () => {
   });
 
   // ==========================================================================
-  // Reserved Keywords Protection
+  // Reserved Keywords Protection — static logic only
+  // (HTTP-level route tests are in souls-http.test.ts)
   // ==========================================================================
 
   describe('Reserved Keywords', () => {
@@ -627,6 +781,539 @@ describe('Soul Routes', () => {
 
       validIds.forEach(id => {
         expect(reservedKeywords.includes(id)).toBe(false);
+      });
+    });
+  });
+
+  // NOTE: HTTP-level tests for the remaining routes (logs, memories, goals, tasks,
+  // mission, test, tools, command, stats, versions) are in souls-http.test.ts
+
+  describe.skip('Soul Routes — HTTP handlers (placeholder — moved to souls-http.test.ts)', () => {
+    let app: Hono;
+    const hbRepo = { listByAgent: vi.fn(), getStats: vi.fn() };
+    const toolRegistry = { getAllTools: vi.fn() };
+
+    beforeEach(() => {
+      app = new Hono();
+      app.route('/souls', soulRoutes);
+      vi.clearAllMocks();
+      soulsRepo.getByAgentId.mockResolvedValue({ ...mockSoul });
+      soulsRepo.update.mockResolvedValue(undefined);
+      soulsRepo.setHeartbeatEnabled.mockResolvedValue(undefined);
+      soulsRepo.getVersions.mockResolvedValue([]);
+      soulsRepo.getVersion.mockResolvedValue(null);
+      soulsRepo.createVersion.mockResolvedValue(undefined);
+      hbRepo.listByAgent.mockResolvedValue([]);
+      hbRepo.getStats.mockResolvedValue(null);
+      toolRegistry.getAllTools.mockReturnValue([]);
+    });
+
+    // ── GET /:agentId/logs ──
+
+    describe('GET /:agentId/logs', () => {
+      it('returns logs and stats when soul exists', async () => {
+        hbRepo.listByAgent.mockResolvedValue([
+          { id: 'log-1', createdAt: new Date(), durationMs: 1000, cost: 0.01, tasksRun: ['t1'], tasksFailed: [] },
+        ]);
+        hbRepo.getStats.mockResolvedValue({ totalCycles: 10, failureRate: 0.1, totalCost: 0.5, avgDurationMs: 1200 });
+
+        const res = await app.request('/souls/agent-123/logs');
+        expect(res.status).toBe(200);
+        const data = await res.json();
+        expect(data.data.logs).toHaveLength(1);
+        expect(data.data.stats.totalCycles).toBe(10);
+        expect(data.data.stats.successRate).toBe(0.9);
+      });
+
+      it('returns 404 when soul not found', async () => {
+        soulsRepo.getByAgentId.mockResolvedValue(null);
+        const res = await app.request('/souls/agent-123/logs');
+        expect(res.status).toBe(404);
+      });
+
+      it('returns 404 for reserved keyword agentId', async () => {
+        const res = await app.request('/souls/logs/logs');
+        expect(res.status).toBe(404);
+      });
+
+      it('computes zero stats when no heartbeat history', async () => {
+        hbRepo.getStats.mockResolvedValue(null);
+        const res = await app.request('/souls/agent-123/logs');
+        expect(res.status).toBe(200);
+        const data = await res.json();
+        expect(data.data.stats.totalCycles).toBe(0);
+        expect(data.data.stats.successRate).toBe(0);
+      });
+    });
+
+    // ── GET /:agentId/memories ──
+
+    describe('GET /:agentId/memories', () => {
+      it('returns memories and learnings when soul exists', async () => {
+        const { getServiceRegistry } = await import('@ownpilot/core');
+        const registry = getServiceRegistry();
+        const memorySvc = registry.get('Memory' as any);
+        (memorySvc as any).listMemories = vi.fn().mockResolvedValue([
+          { id: 'm1', content: 'Test memory', source: 'chat', createdAt: new Date() },
+        ]);
+
+        const res = await app.request('/souls/agent-123/memories');
+        expect(res.status).toBe(200);
+        const data = await res.json();
+        expect(data.data).toHaveProperty('memories');
+        expect(data.data).toHaveProperty('learnings');
+      });
+
+      it('returns 404 when soul not found', async () => {
+        soulsRepo.getByAgentId.mockResolvedValue(null);
+        const res = await app.request('/souls/agent-123/memories');
+        expect(res.status).toBe(404);
+      });
+
+      it('returns 404 for reserved keyword agentId', async () => {
+        const res = await app.request('/souls/memories/memories');
+        expect(res.status).toBe(404);
+      });
+    });
+
+    // ── GET /:agentId/goals ──
+
+    describe('GET /:agentId/goals', () => {
+      it('returns goals when soul exists', async () => {
+        const { getServiceRegistry } = await import('@ownpilot/core');
+        const registry = getServiceRegistry();
+        const goalSvc = registry.get('Goal' as any);
+        (goalSvc as any).listGoals = vi.fn().mockResolvedValue([
+          { id: 'g1', title: 'Test Goal', status: 'active', progress: 0.5 },
+        ]);
+
+        const res = await app.request('/souls/agent-123/goals');
+        expect(res.status).toBe(200);
+        const data = await res.json();
+        expect(data.data.systemGoals).toHaveLength(1);
+        expect(data.data.mission).toBe(mockSoul.purpose.mission);
+      });
+
+      it('returns 404 when soul not found', async () => {
+        soulsRepo.getByAgentId.mockResolvedValue(null);
+        const res = await app.request('/souls/agent-123/goals');
+        expect(res.status).toBe(404);
+      });
+    });
+
+    // ── POST /:agentId/goals ──
+
+    describe('POST /:agentId/goals', () => {
+      it('adds goal and returns updated list', async () => {
+        const soul = { ...mockSoul, purpose: { ...mockSoul.purpose, goals: ['existing'] } };
+        soulsRepo.getByAgentId.mockResolvedValue(soul);
+
+        const res = await app.request('/souls/agent-123/goals', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ goal: 'new goal' }),
+        });
+        expect(res.status).toBe(201);
+        const data = await res.json();
+        expect(data.data.goals).toContain('new goal');
+      });
+
+      it('returns 400 when goal is missing', async () => {
+        const res = await app.request('/souls/agent-123/goals', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({}),
+        });
+        expect(res.status).toBe(400);
+      });
+
+      it('returns 404 when soul not found', async () => {
+        soulsRepo.getByAgentId.mockResolvedValue(null);
+        const res = await app.request('/souls/agent-123/goals', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ goal: 'test' }),
+        });
+        expect(res.status).toBe(404);
+      });
+
+      it('returns 404 for reserved keyword agentId', async () => {
+        const res = await app.request('/souls/goals/goals', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ goal: 'test' }),
+        });
+        expect(res.status).toBe(404);
+      });
+    });
+
+    // ── GET /:agentId/tasks ──
+
+    describe('GET /:agentId/tasks', () => {
+      it('returns boot tasks and checklist', async () => {
+        const res = await app.request('/souls/agent-123/tasks');
+        expect(res.status).toBe(200);
+        const data = await res.json();
+        expect(data.data.bootTasks).toEqual(['read_inbox']);
+        expect(data.data.isRunning).toBe(true);
+      });
+
+      it('returns 404 when soul not found', async () => {
+        soulsRepo.getByAgentId.mockResolvedValue(null);
+        const res = await app.request('/souls/agent-123/tasks');
+        expect(res.status).toBe(404);
+      });
+
+      it('returns 404 for reserved keyword agentId', async () => {
+        const res = await app.request('/souls/tasks/tasks');
+        expect(res.status).toBe(404);
+      });
+    });
+
+    // ── POST /:agentId/mission ──
+
+    describe('POST /:agentId/mission', () => {
+      it('updates mission and returns accepted status', async () => {
+        const soul = { ...mockSoul, purpose: { ...mockSoul.purpose }, bootSequence: { ...mockSoul.bootSequence } };
+        soulsRepo.getByAgentId.mockResolvedValue(soul);
+
+        const res = await app.request('/souls/agent-123/mission', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ mission: 'New mission' }),
+        });
+        expect(res.status).toBe(200);
+        const data = await res.json();
+        expect(data.data.status).toBe('accepted');
+        expect(data.data.mission).toBe('New mission');
+      });
+
+      it('sets autoPlan tasks when autoPlan is true', async () => {
+        const soul = { ...mockSoul, purpose: { ...mockSoul.purpose }, bootSequence: { ...mockSoul.bootSequence, onHeartbeat: [] } };
+        soulsRepo.getByAgentId.mockResolvedValue(soul);
+
+        const res = await app.request('/souls/agent-123/mission', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ mission: 'Autoplan mission', autoPlan: true }),
+        });
+        expect(res.status).toBe(200);
+        expect(soulsRepo.update).toHaveBeenCalled();
+      });
+
+      it('uses default priority "medium" when not specified', async () => {
+        const soul = { ...mockSoul, purpose: { ...mockSoul.purpose }, bootSequence: { ...mockSoul.bootSequence } };
+        soulsRepo.getByAgentId.mockResolvedValue(soul);
+
+        const res = await app.request('/souls/agent-123/mission', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ mission: 'Test mission' }),
+        });
+        const data = await res.json();
+        expect(data.data.priority).toBe('medium');
+      });
+
+      it('returns 400 when mission is missing', async () => {
+        const res = await app.request('/souls/agent-123/mission', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({}),
+        });
+        expect(res.status).toBe(400);
+      });
+
+      it('returns 404 for reserved keyword', async () => {
+        const res = await app.request('/souls/deploy/mission', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ mission: 'test' }),
+        });
+        expect(res.status).toBe(404);
+      });
+    });
+
+    // ── POST /:agentId/test ──
+
+    describe('POST /:agentId/test', () => {
+      const { runAgentHeartbeat } = vi.hoisted(() => ({ runAgentHeartbeat: vi.fn() }));
+
+      it('runs heartbeat and returns success', async () => {
+        const { runAgentHeartbeat: rhb } = await import('../services/soul-heartbeat-service.js');
+        (rhb as ReturnType<typeof vi.fn>).mockResolvedValue({ success: true });
+
+        const res = await app.request('/souls/agent-123/test', { method: 'POST' });
+        expect(res.status).toBe(200);
+        const data = await res.json();
+        expect(data.data.success).toBe(true);
+      });
+
+      it('returns 400 when agent is paused', async () => {
+        soulsRepo.getByAgentId.mockResolvedValue({ ...mockSoul, heartbeat: { ...mockSoul.heartbeat, enabled: false } });
+
+        const res = await app.request('/souls/agent-123/test', { method: 'POST' });
+        expect(res.status).toBe(400);
+      });
+
+      it('returns 500 when heartbeat fails', async () => {
+        const { runAgentHeartbeat: rhb } = await import('../services/soul-heartbeat-service.js');
+        (rhb as ReturnType<typeof vi.fn>).mockResolvedValue({ success: false, error: 'Heartbeat error' });
+
+        const res = await app.request('/souls/agent-123/test', { method: 'POST' });
+        expect(res.status).toBe(500);
+      });
+
+      it('returns 404 when soul not found', async () => {
+        soulsRepo.getByAgentId.mockResolvedValue(null);
+        const res = await app.request('/souls/agent-123/test', { method: 'POST' });
+        expect(res.status).toBe(404);
+      });
+
+      it('returns 404 for reserved keyword', async () => {
+        const res = await app.request('/souls/test/test', { method: 'POST' });
+        expect(res.status).toBe(404);
+      });
+    });
+
+    // ── GET /:agentId/tools ──
+
+    describe('GET /:agentId/tools', () => {
+      it('returns tools with permission status', async () => {
+        const { getSharedToolRegistry: gstr } = await import('../services/tool-executor.js');
+        (gstr as ReturnType<typeof vi.fn>).mockReturnValue({
+          getAllTools: vi.fn().mockReturnValue([
+            { definition: { name: 'search_web', description: 'Search the web' } },
+            { definition: { name: 'mcp.browser', description: 'Browser tool' } },
+            { definition: { name: 'custom.my_tool', description: 'My tool' } },
+          ]),
+        });
+        const soul = { ...mockSoul, autonomy: { ...mockSoul.autonomy, allowedActions: ['search_web'], blockedActions: [] } };
+        soulsRepo.getByAgentId.mockResolvedValue(soul);
+
+        const res = await app.request('/souls/agent-123/tools');
+        expect(res.status).toBe(200);
+        const data = await res.json();
+        expect(data.data.tools).toHaveLength(3);
+        const webTool = data.data.tools.find((t: any) => t.name === 'search_web');
+        expect(webTool.status).toBe('allowed');
+        const mcpTool = data.data.tools.find((t: any) => t.name === 'mcp.browser');
+        expect(mcpTool.category).toBe('mcp');
+      });
+
+      it('returns 404 when soul not found', async () => {
+        soulsRepo.getByAgentId.mockResolvedValue(null);
+        const res = await app.request('/souls/agent-123/tools');
+        expect(res.status).toBe(404);
+      });
+
+      it('returns 404 for reserved keyword', async () => {
+        const res = await app.request('/souls/tools/tools');
+        expect(res.status).toBe(404);
+      });
+    });
+
+    // ── PUT /:agentId/tools ──
+
+    describe('PUT /:agentId/tools', () => {
+      it('updates allowed and blocked tool lists', async () => {
+        const soul = { ...mockSoul, autonomy: { ...mockSoul.autonomy, allowedActions: [], blockedActions: [] } };
+        soulsRepo.getByAgentId.mockResolvedValue(soul);
+
+        const res = await app.request('/souls/agent-123/tools', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ allowed: ['search_web'], blocked: ['execute_shell'] }),
+        });
+        expect(res.status).toBe(200);
+        const data = await res.json();
+        expect(data.data.allowed).toContain('search_web');
+        expect(data.data.blocked).toContain('execute_shell');
+      });
+
+      it('only updates allowed when blocked not provided', async () => {
+        const soul = { ...mockSoul, autonomy: { ...mockSoul.autonomy, allowedActions: [], blockedActions: ['old'] } };
+        soulsRepo.getByAgentId.mockResolvedValue(soul);
+
+        const res = await app.request('/souls/agent-123/tools', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ allowed: ['new_tool'] }),
+        });
+        expect(res.status).toBe(200);
+        const data = await res.json();
+        expect(data.data.blocked).toContain('old'); // unchanged
+      });
+
+      it('returns 404 when soul not found', async () => {
+        soulsRepo.getByAgentId.mockResolvedValue(null);
+        const res = await app.request('/souls/agent-123/tools', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ allowed: [] }),
+        });
+        expect(res.status).toBe(404);
+      });
+    });
+
+    // ── POST /:agentId/command ──
+
+    describe('POST /:agentId/command', () => {
+      it('handles pause command', async () => {
+        const res = await app.request('/souls/agent-123/command', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ command: 'pause' }),
+        });
+        expect(res.status).toBe(200);
+        const data = await res.json();
+        expect(data.data.result.message).toContain('paused');
+        expect(soulsRepo.setHeartbeatEnabled).toHaveBeenCalledWith('agent-123', false);
+      });
+
+      it('handles resume command', async () => {
+        const res = await app.request('/souls/agent-123/command', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ command: 'resume' }),
+        });
+        expect(res.status).toBe(200);
+        const data = await res.json();
+        expect(data.data.result.message).toContain('resumed');
+        expect(soulsRepo.setHeartbeatEnabled).toHaveBeenCalledWith('agent-123', true);
+      });
+
+      it('handles run_heartbeat command', async () => {
+        const res = await app.request('/souls/agent-123/command', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ command: 'run_heartbeat' }),
+        });
+        expect(res.status).toBe(200);
+        const data = await res.json();
+        expect(data.data.result.message).toContain('Heartbeat triggered');
+      });
+
+      it('handles reset_budget command', async () => {
+        const res = await app.request('/souls/agent-123/command', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ command: 'reset_budget' }),
+        });
+        expect(res.status).toBe(200);
+        const data = await res.json();
+        expect(data.data.result.message).toContain('Budget');
+      });
+
+      it('handles unknown command gracefully', async () => {
+        const res = await app.request('/souls/agent-123/command', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ command: 'unknown_cmd' }),
+        });
+        expect(res.status).toBe(200);
+        const data = await res.json();
+        expect(data.data.result.message).toContain('Unknown command');
+      });
+
+      it('returns 400 when command is missing', async () => {
+        const res = await app.request('/souls/agent-123/command', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({}),
+        });
+        expect(res.status).toBe(400);
+      });
+
+      it('returns 404 when soul not found', async () => {
+        soulsRepo.getByAgentId.mockResolvedValue(null);
+        const res = await app.request('/souls/agent-123/command', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ command: 'pause' }),
+        });
+        expect(res.status).toBe(404);
+      });
+    });
+
+    // ── GET /:agentId/stats ──
+
+    describe('GET /:agentId/stats', () => {
+      it('returns stats when soul exists', async () => {
+        hbRepo.getStats.mockResolvedValue({ totalCycles: 5, totalCost: 0.25, avgDurationMs: 2000, failureRate: 0.2 });
+        hbRepo.listByAgent.mockResolvedValue([{ createdAt: new Date() }]);
+
+        const res = await app.request('/souls/agent-123/stats');
+        expect(res.status).toBe(200);
+        const data = await res.json();
+        expect(data.data.stats.totalCycles).toBe(5);
+        expect(data.data.heartbeat.enabled).toBe(true);
+      });
+
+      it('returns zero stats when no history', async () => {
+        hbRepo.getStats.mockResolvedValue(null);
+        hbRepo.listByAgent.mockResolvedValue([]);
+
+        const res = await app.request('/souls/agent-123/stats');
+        expect(res.status).toBe(200);
+        const data = await res.json();
+        expect(data.data.stats.totalCycles).toBe(0);
+        expect(data.data.heartbeat.lastRunAt).toBeNull();
+      });
+
+      it('returns 404 when soul not found', async () => {
+        soulsRepo.getByAgentId.mockResolvedValue(null);
+        const res = await app.request('/souls/agent-123/stats');
+        expect(res.status).toBe(404);
+      });
+
+      it('returns 404 for reserved keyword', async () => {
+        const res = await app.request('/souls/stats/stats');
+        expect(res.status).toBe(404);
+      });
+    });
+
+    // ── GET /:agentId/versions ──
+
+    describe('GET /:agentId/versions', () => {
+      it('returns version list when soul exists', async () => {
+        soulsRepo.getVersions.mockResolvedValue([{ v: 1 }, { v: 2 }]);
+
+        const res = await app.request('/souls/agent-123/versions');
+        expect(res.status).toBe(200);
+        const data = await res.json();
+        expect(data.data).toHaveLength(2);
+      });
+
+      it('returns 404 when soul not found', async () => {
+        soulsRepo.getByAgentId.mockResolvedValue(null);
+        const res = await app.request('/souls/agent-123/versions');
+        expect(res.status).toBe(404);
+      });
+    });
+
+    // ── GET /:agentId/versions/:v ──
+
+    describe('GET /:agentId/versions/:v', () => {
+      it('returns specific version when found', async () => {
+        soulsRepo.getVersion.mockResolvedValue({ v: 1, snapshot: {} });
+
+        const res = await app.request('/souls/agent-123/versions/1');
+        expect(res.status).toBe(200);
+        const data = await res.json();
+        expect(data.data.v).toBe(1);
+      });
+
+      it('returns 404 when version not found', async () => {
+        soulsRepo.getVersion.mockResolvedValue(null);
+
+        const res = await app.request('/souls/agent-123/versions/99');
+        expect(res.status).toBe(404);
+      });
+
+      it('returns 404 when soul not found', async () => {
+        soulsRepo.getByAgentId.mockResolvedValue(null);
+        const res = await app.request('/souls/agent-123/versions/1');
+        expect(res.status).toBe(404);
       });
     });
   });

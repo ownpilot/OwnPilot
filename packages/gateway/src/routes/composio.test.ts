@@ -250,6 +250,70 @@ describe('Composio Routes', () => {
   // Middleware guard
   // ========================================================================
 
+  // ========================================================================
+  // Error paths — all service methods throw
+  // ========================================================================
+
+  describe('GET /composio/connections — error path', () => {
+    it('returns 500 when getConnections throws', async () => {
+      mockComposioService.getConnections.mockRejectedValueOnce(new Error('SDK failure'));
+      const res = await app.request('/composio/connections');
+      expect(res.status).toBe(500);
+    });
+  });
+
+  describe('POST /composio/connections — error path', () => {
+    it('returns 500 when initiateConnection throws', async () => {
+      mockComposioService.initiateConnection.mockRejectedValueOnce(new Error('OAuth error'));
+      const res = await app.request('/composio/connections', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ appName: 'github' }),
+      });
+      expect(res.status).toBe(500);
+    });
+  });
+
+  describe('GET /composio/connections/:id', () => {
+    it('returns connection status', async () => {
+      mockComposioService.waitForConnection.mockResolvedValueOnce({ id: 'c1', status: 'ACTIVE' });
+      const res = await app.request('/composio/connections/c1');
+      expect(res.status).toBe(200);
+      const body = await res.json() as { data: { id: string } };
+      expect(body.data.id).toBe('c1');
+    });
+
+    it('returns 500 when waitForConnection throws', async () => {
+      mockComposioService.waitForConnection.mockRejectedValueOnce(new Error('Timeout'));
+      const res = await app.request('/composio/connections/c1');
+      expect(res.status).toBe(500);
+    });
+  });
+
+  describe('DELETE /composio/connections/:id — error path', () => {
+    it('returns 500 when disconnect throws', async () => {
+      mockComposioService.disconnect.mockRejectedValueOnce(new Error('Disconnect failed'));
+      const res = await app.request('/composio/connections/c1', { method: 'DELETE' });
+      expect(res.status).toBe(500);
+    });
+  });
+
+  describe('POST /composio/connections/:id/refresh — error path', () => {
+    it('returns 500 when refreshConnection throws', async () => {
+      mockComposioService.refreshConnection.mockRejectedValueOnce(new Error('Refresh failed'));
+      const res = await app.request('/composio/connections/c1/refresh', { method: 'POST' });
+      expect(res.status).toBe(500);
+    });
+  });
+
+  describe('GET /composio/actions/search — error path', () => {
+    it('returns 500 when searchActions throws', async () => {
+      mockComposioService.searchActions.mockRejectedValueOnce(new Error('Search failed'));
+      const res = await app.request('/composio/actions/search?q=email');
+      expect(res.status).toBe(500);
+    });
+  });
+
   describe('middleware guard', () => {
     it('blocks all endpoints (except /status) when not configured', async () => {
       mockComposioService.isConfigured.mockReturnValue(false);

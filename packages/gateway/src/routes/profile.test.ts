@@ -219,3 +219,87 @@ describe('Profile Routes', () => {
     });
   });
 });
+
+// ---------------------------------------------------------------------------
+// Error path coverage — all service methods throw
+// ---------------------------------------------------------------------------
+
+describe('Profile Routes — error paths', () => {
+  let app: Hono;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockStore.getProfile.mockResolvedValue({ name: 'Test User', categories: {} });
+    app = createApp();
+  });
+
+  it('GET /profile returns 500 when getProfile throws', async () => {
+    mockStore.getProfile.mockRejectedValueOnce(new Error('DB error'));
+    const res = await app.request('/profile');
+    expect(res.status).toBe(500);
+  });
+
+  it('GET /profile/summary returns 500 when getProfileSummary throws', async () => {
+    mockStore.getProfileSummary.mockRejectedValueOnce(new Error('DB error'));
+    const res = await app.request('/profile/summary');
+    expect(res.status).toBe(500);
+  });
+
+  it('GET /profile/category/:cat returns 500 when getCategory throws', async () => {
+    mockStore.getCategory.mockRejectedValueOnce(new Error('DB error'));
+    const res = await app.request('/profile/category/identity');
+    expect(res.status).toBe(500);
+  });
+
+  it('POST /profile/data returns 500 when set throws', async () => {
+    mockStore.set.mockRejectedValueOnce(new Error('DB error'));
+    const res = await app.request('/profile/data', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ category: 'identity', key: 'name', value: 'Test' }),
+    });
+    expect(res.status).toBe(500);
+  });
+
+  it('DELETE /profile/data returns 500 when delete throws', async () => {
+    mockStore.delete.mockRejectedValueOnce(new Error('DB error'));
+    const res = await app.request('/profile/data', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ category: 'identity', key: 'name' }),
+    });
+    expect(res.status).toBe(500);
+  });
+
+  it('GET /profile/search returns 500 when search throws', async () => {
+    mockStore.search.mockRejectedValueOnce(new Error('DB error'));
+    const res = await app.request('/profile/search?q=test');
+    expect(res.status).toBe(500);
+  });
+
+  it('POST /profile/import returns 500 when importData throws', async () => {
+    mockStore.importData.mockRejectedValueOnce(new Error('DB error'));
+    const res = await app.request('/profile/import', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ entries: [{ category: 'identity', key: 'name', value: 'Test' }] }),
+    });
+    expect(res.status).toBe(500);
+  });
+
+  it('GET /profile/export returns 500 when exportData throws', async () => {
+    mockStore.exportData.mockRejectedValueOnce(new Error('DB error'));
+    const res = await app.request('/profile/export');
+    expect(res.status).toBe(500);
+  });
+
+  it('POST /profile/quick returns 500 when set throws', async () => {
+    mockStore.set.mockRejectedValueOnce(new Error('DB error'));
+    const res = await app.request('/profile/quick', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: 'Test' }),
+    });
+    expect(res.status).toBe(500);
+  });
+});

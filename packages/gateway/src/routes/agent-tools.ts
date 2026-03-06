@@ -64,6 +64,8 @@ import {
   executeArtifactTool,
   SOUL_COMMUNICATION_TOOLS,
   executeSoulCommunicationTool,
+  CREW_TOOLS,
+  executeCrewTool,
 } from '../tools/index.js';
 import { CONFIG_TOOLS, executeConfigTool } from '../services/config-tools.js';
 import type { ExtensionService } from '../services/extension-service.js';
@@ -191,6 +193,11 @@ export function registerGatewayTools(tools: ToolRegistry, userId: string, trace:
     {
       definitions: SOUL_COMMUNICATION_TOOLS,
       executor: executeSoulCommunicationTool,
+      needsUserId: true,
+    },
+    {
+      definitions: CREW_TOOLS,
+      executor: executeCrewTool,
       needsUserId: true,
     },
   ];

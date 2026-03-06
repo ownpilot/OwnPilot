@@ -616,6 +616,288 @@ describe('ChannelMessagesRepository', () => {
     });
   });
 
+  // ---- getByConversation ----
+
+  describe('getByConversation', () => {
+    it('returns messages for a conversation ordered by created_at ASC', async () => {
+      mockAdapter.query.mockResolvedValueOnce([
+        makeMessageRow({ id: 'msg-1', conversation_id: 'conv-1' }),
+        makeMessageRow({ id: 'msg-2', conversation_id: 'conv-1' }),
+      ]);
+
+      const result = await repo.getByConversation('conv-1');
+
+      expect(result).toHaveLength(2);
+      const sql = mockAdapter.query.mock.calls[0][0] as string;
+      expect(sql).toContain('WHERE conversation_id = $1');
+      expect(sql).toContain('ORDER BY created_at ASC');
+      expect(mockAdapter.query).toHaveBeenCalledWith(expect.any(String), ['conv-1', 100, 0]);
+    });
+
+    it('applies custom limit and offset', async () => {
+      mockAdapter.query.mockResolvedValueOnce([]);
+
+      await repo.getByConversation('conv-1', 20, 10);
+
+      expect(mockAdapter.query).toHaveBeenCalledWith(expect.any(String), ['conv-1', 20, 10]);
+    });
+  });
+
+  // ---- getAll ----
+
+  describe('getAll', () => {
+    it('returns all messages when no channelId provided', async () => {
+      mockAdapter.query.mockResolvedValueOnce([makeMessageRow(), makeMessageRow({ id: 'msg-2' })]);
+
+      const result = await repo.getAll();
+
+      expect(result).toHaveLength(2);
+      const sql = mockAdapter.query.mock.calls[0][0] as string;
+      expect(sql).not.toContain('WHERE channel_id');
+      expect(mockAdapter.query).toHaveBeenCalledWith(expect.any(String), [100, 0]);
+    });
+
+    it('returns messages filtered by channelId when provided', async () => {
+      mockAdapter.query.mockResolvedValueOnce([makeMessageRow()]);
+
+      const result = await repo.getAll({ channelId: 'ch-1' });
+
+      expect(result).toHaveLength(1);
+      const sql = mockAdapter.query.mock.calls[0][0] as string;
+      expect(sql).toContain('WHERE channel_id = $1');
+      expect(mockAdapter.query).toHaveBeenCalledWith(expect.any(String), ['ch-1', 100, 0]);
+    });
+
+    it('applies custom limit and offset', async () => {
+      mockAdapter.query.mockResolvedValueOnce([]);
+
+      await repo.getAll({ limit: 25, offset: 50 });
+
+      expect(mockAdapter.query).toHaveBeenCalledWith(expect.any(String), [25, 50]);
+    });
+
+    it('applies custom limit and offset with channelId', async () => {
+      mockAdapter.query.mockResolvedValueOnce([]);
+
+      await repo.getAll({ channelId: 'ch-2', limit: 10, offset: 5 });
+
+      expect(mockAdapter.query).toHaveBeenCalledWith(expect.any(String), ['ch-2', 10, 5]);
+    });
+  });
+
+  // ---- linkConversation ----
+
+  describe('linkConversation', () => {
+    it('updates conversation_id when null', async () => {
+      mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
+
+      await repo.linkConversation('msg-1', 'conv-1');
+
+      expect(mockAdapter.execute).toHaveBeenCalledWith(
+        expect.stringContaining('UPDATE channel_messages SET conversation_id = $1'),
+        ['conv-1', 'msg-1']
+      );
+    });
+  });
+
+  // ---- countSince ----
+
+  describe('countSince', () => {
+    it('returns count of messages since a date', async () => {
+      mockAdapter.queryOne.mockResolvedValueOnce({ count: '7' });
+      const since = new Date('2024-01-01T00:00:00Z');
+
+      const result = await repo.countSince('ch-1', since);
+
+      expect(result).toBe(7);
+      expect(mockAdapter.queryOne).toHaveBeenCalledWith(
+        expect.stringContaining('created_at >= $2'),
+        ['ch-1', since.toISOString()]
+      );
+    });
+
+    it('returns 0 when result is null', async () => {
+      mockAdapter.queryOne.mockResolvedValueOnce(null);
+
+      const result = await repo.countSince('ch-1', new Date());
+
+      expect(result).toBe(0);
+    });
+  });
+
+  // ---- lastMessageAt ----
+
+  describe('lastMessageAt', () => {
+    it('returns a Date when a message exists', async () => {
+      mockAdapter.queryOne.mockResolvedValueOnce({ created_at: '2024-06-01T12:00:00Z' });
+
+      const result = await repo.lastMessageAt('ch-1');
+
+      expect(result).toBeInstanceOf(Date);
+      expect(result!.toISOString()).toBe('2024-06-01T12:00:00.000Z');
+    });
+
+    it('returns null when no messages exist', async () => {
+      mockAdapter.queryOne.mockResolvedValueOnce(null);
+
+      const result = await repo.lastMessageAt('ch-empty');
+
+      expect(result).toBeNull();
+    });
+  });
+
+  // ---- getDistinctChats ----
+
+  describe('getDistinctChats', () => {
+    it('returns distinct chat list and total', async () => {
+      mockAdapter.query.mockResolvedValueOnce([
+        {
+          chat_jid: '123@s.whatsapp.net',
+          display_name: 'Alice',
+          is_group: 'false',
+          message_count: '5',
+          last_message_at: '2024-06-01T12:00:00Z',
+          total_count: '1',
+        },
+      ]);
+
+      const result = await repo.getDistinctChats('channel.whatsapp', 20, 0);
+
+      expect(result.total).toBe(1);
+      expect(result.chats).toHaveLength(1);
+      expect(result.chats[0]!.id).toBe('123@s.whatsapp.net');
+      expect(result.chats[0]!.displayName).toBe('Alice');
+      expect(result.chats[0]!.isGroup).toBe(false);
+      expect(result.chats[0]!.messageCount).toBe(5);
+      expect(result.chats[0]!.platform).toBe('whatsapp');
+    });
+
+    it('returns empty chats and total 0 when no results', async () => {
+      mockAdapter.query.mockResolvedValueOnce([]);
+
+      const result = await repo.getDistinctChats('ch-1');
+
+      expect(result.total).toBe(0);
+      expect(result.chats).toHaveLength(0);
+    });
+
+    it('extracts platform from channelId with dot', async () => {
+      mockAdapter.query.mockResolvedValueOnce([
+        {
+          chat_jid: '456@g.us',
+          display_name: null,
+          is_group: 'true',
+          message_count: '10',
+          last_message_at: '2024-06-02T00:00:00Z',
+          total_count: '1',
+        },
+      ]);
+
+      const result = await repo.getDistinctChats('plugin.telegram');
+
+      expect(result.chats[0]!.platform).toBe('telegram');
+      expect(result.chats[0]!.isGroup).toBe(true);
+    });
+  });
+
+  // ---- getByChat ----
+
+  describe('getByChat', () => {
+    it('returns messages and total for a chat JID', async () => {
+      const row = { ...makeMessageRow(), total_count: '3' };
+      mockAdapter.query.mockResolvedValueOnce([row, row, row]);
+
+      const result = await repo.getByChat('ch-1', '123@s.whatsapp.net', 50, 0);
+
+      expect(result.total).toBe(3);
+      expect(result.messages).toHaveLength(3);
+      const sql = mockAdapter.query.mock.calls[0][0] as string;
+      expect(sql).toContain("metadata->>'jid' = $2");
+      expect(mockAdapter.query).toHaveBeenCalledWith(expect.any(String), [
+        'ch-1',
+        '123@s.whatsapp.net',
+        50,
+        0,
+      ]);
+    });
+
+    it('returns empty messages and total 0 when no results', async () => {
+      mockAdapter.query.mockResolvedValueOnce([]);
+
+      const result = await repo.getByChat('ch-1', 'jid', 50, 0);
+
+      expect(result.total).toBe(0);
+      expect(result.messages).toHaveLength(0);
+    });
+  });
+
+  // ---- createBatch ----
+
+  describe('createBatch', () => {
+    it('returns 0 for empty batch', async () => {
+      const result = await repo.createBatch([]);
+
+      expect(result).toBe(0);
+      expect(mockAdapter.transaction).not.toHaveBeenCalled();
+    });
+
+    it('inserts rows and counts successful insertions', async () => {
+      mockAdapter.execute.mockResolvedValue({ changes: 1 });
+
+      const result = await repo.createBatch([
+        { id: 'msg-1', channelId: 'ch-1', direction: 'inbound', content: 'Hello' },
+        { id: 'msg-2', channelId: 'ch-1', direction: 'outbound', content: 'World' },
+      ]);
+
+      expect(result).toBe(2);
+      expect(mockAdapter.transaction).toHaveBeenCalled();
+    });
+
+    it('counts only rows where changes > 0 (deduplication)', async () => {
+      // First row inserted, second skipped (ON CONFLICT DO NOTHING → changes: 0)
+      mockAdapter.execute
+        .mockResolvedValueOnce({ changes: 1 })
+        .mockResolvedValueOnce({ changes: 0 });
+
+      const result = await repo.createBatch([
+        { id: 'msg-new', channelId: 'ch-1', direction: 'inbound', content: 'New' },
+        { id: 'msg-dup', channelId: 'ch-1', direction: 'inbound', content: 'Dup' },
+      ]);
+
+      expect(result).toBe(1);
+    });
+
+    it('continues processing on row-level errors', async () => {
+      mockAdapter.execute
+        .mockRejectedValueOnce(new Error('DB error'))
+        .mockResolvedValueOnce({ changes: 1 });
+
+      const result = await repo.createBatch([
+        { id: 'msg-err', channelId: 'ch-1', direction: 'inbound', content: 'Fail' },
+        { id: 'msg-ok', channelId: 'ch-1', direction: 'inbound', content: 'OK' },
+      ]);
+
+      expect(result).toBe(1);
+    });
+
+    it('passes correct INSERT SQL with ON CONFLICT DO NOTHING', async () => {
+      mockAdapter.execute.mockResolvedValue({ changes: 1 });
+
+      await repo.createBatch([
+        {
+          id: 'msg-1',
+          channelId: 'ch-1',
+          direction: 'inbound',
+          content: 'Test',
+          createdAt: new Date('2024-01-01T00:00:00Z'),
+        },
+      ]);
+
+      const sql = mockAdapter.execute.mock.calls[0][0] as string;
+      expect(sql).toContain('ON CONFLICT (id) DO NOTHING');
+    });
+  });
+
   // ---- Factory ----
 
   describe('createChannelMessagesRepository', () => {

@@ -198,6 +198,11 @@ describe('parseSchedule', () => {
     expect(() => parseSchedule('Every 24 Hours')).toThrow(HeartbeatParseError);
   });
 
+  it('throws on invalid day of month in monthly schedule (line 225)', () => {
+    expect(() => parseSchedule('Every Month 0th')).toThrow(HeartbeatParseError);
+    expect(() => parseSchedule('Every Month 32nd')).toThrow(HeartbeatParseError);
+  });
+
   // ==========================================================================
   // Normalized output
   // ==========================================================================

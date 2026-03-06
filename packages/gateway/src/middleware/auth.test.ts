@@ -1065,4 +1065,20 @@ describe('createAuthMiddleware — middleware composition', () => {
     expect(log).toContain('second-middleware');
     expect(log).toContain('handler');
   });
+
+  it('skips auth check when sessionAuthenticated is already set (line 45)', async () => {
+    const app = new Hono();
+    // Pre-auth middleware sets sessionAuthenticated
+    app.use('*', async (c, next) => {
+      c.set('sessionAuthenticated' as never, true as never);
+      await next();
+    });
+    // Auth middleware requires an api-key but should be bypassed
+    app.use('*', createAuthMiddleware({ type: 'api-key', apiKeys: ['must-not-be-needed'] }));
+    app.get('/test', (c) => c.json({ ok: true }));
+
+    // No auth header — should still succeed because sessionAuthenticated=true
+    const res = await app.request('/test');
+    expect(res.status).toBe(200);
+  });
 });

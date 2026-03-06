@@ -381,8 +381,8 @@ export const fetchWebPageExecutor: ToolExecutor = async (
   const shouldExtractMetadata = params.extractMetadata !== false;
   const includeRawHtml = params.includeRawHtml === true;
 
-  // Security check
-  if (isBlockedUrl(url)) {
+  // Security check — same dual check as http_request (SSRF + DNS rebinding)
+  if (isBlockedUrl(url) || (await isPrivateUrlAsync(url))) {
     return {
       content: { error: 'This URL is blocked for security reasons (internal/private network)' },
       isError: true,
@@ -625,8 +625,8 @@ export const jsonApiExecutor: ToolExecutor = async (
   const headers = (params.headers as Record<string, string>) || {};
   const bearerToken = params.bearerToken as string | undefined;
 
-  // Security check
-  if (isBlockedUrl(url)) {
+  // Security check — dual check same as http_request (SSRF + DNS rebinding)
+  if (isBlockedUrl(url) || (await isPrivateUrlAsync(url))) {
     return {
       content: { error: 'This URL is blocked for security reasons (internal/private network)' },
       isError: true,

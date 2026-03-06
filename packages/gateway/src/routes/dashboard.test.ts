@@ -200,6 +200,20 @@ describe('Dashboard Routes', () => {
       expect(mockDashboardService.invalidateCache).toHaveBeenCalled();
     });
 
+    it('handles non-JSON body gracefully (catch fallback on line 116)', async () => {
+      // Sending no body / wrong content-type triggers the .catch() fallback
+      const res = await app.request('/dashboard/briefing/refresh', {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body: 'not json',
+      });
+
+      // Route still succeeds because body falls back to { provider: undefined, model: undefined }
+      expect(res.status).toBe(200);
+      const json = await res.json();
+      expect(json.data.refreshed).toBe(true);
+    });
+
     it('returns 500 on refresh failure', async () => {
       mockDashboardService.generateAIBriefing.mockRejectedValue(new Error('fail'));
 
@@ -212,6 +226,84 @@ describe('Dashboard Routes', () => {
       expect(res.status).toBe(500);
       const json = await res.json();
       expect(json.error.code).toBe('REFRESH_FAILED');
+    });
+  });
+
+  // ========================================================================
+  // POST /dashboard/briefing/stream
+  // ========================================================================
+
+  describe('POST /dashboard/briefing/stream', () => {
+    it('returns 400 when no provider is configured', async () => {
+      // Default mock for getDefaultProvider returns null
+      const res = await app.request('/dashboard/briefing/stream', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      });
+
+      expect(res.status).toBe(400);
+      const json = await res.json();
+      expect(json.error.code).toBe('BRIEFING_FAILED');
+    });
+
+    it('starts SSE stream when provider is specified in body', async () => {
+      mockDashboardService.generateAIBriefingStreaming.mockImplementation(
+        async (_data: unknown, _opts: unknown, onChunk: (chunk: string) => Promise<void>) => {
+          await onChunk('Hello ');
+          await onChunk('World');
+          return { summary: 'Streamed briefing', sections: [], cached: false, generatedAt: '' };
+        }
+      );
+
+      const res = await app.request('/dashboard/briefing/stream', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ provider: 'openai', model: 'gpt-4o-mini' }),
+      });
+
+      // SSE response returns 200 with streaming body
+      expect(res.status).toBe(200);
+      expect(res.headers.get('Content-Type')).toContain('text/event-stream');
+    });
+
+    it('emits complete and DONE events after successful streaming', async () => {
+      mockDashboardService.generateAIBriefingStreaming.mockImplementation(
+        async (_data: unknown, _opts: unknown, onChunk: (chunk: string) => Promise<void>) => {
+          await onChunk('chunk1');
+          return { summary: 'Done summary', sections: [], cached: false, generatedAt: '' };
+        }
+      );
+
+      const res = await app.request('/dashboard/briefing/stream', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ provider: 'openai' }),
+      });
+
+      // Consume the body so lines 287-288 (sendEvent complete + [DONE]) execute
+      const body = await res.text();
+      expect(body).toContain('complete');
+      expect(body).toContain('[DONE]');
+    });
+
+    it('handles streaming error gracefully', async () => {
+      mockDashboardService.generateAIBriefingStreaming.mockRejectedValue(
+        new Error('Stream failed')
+      );
+
+      const res = await app.request('/dashboard/briefing/stream', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ provider: 'openai' }),
+      });
+
+      // Still returns 200 (SSE; error is sent as an event in the stream)
+      expect(res.status).toBe(200);
+
+      // Consume body so the async IIFE (catch/finally blocks) actually executes
+      const body = await res.text();
+      expect(body).toContain('error');
     });
   });
 

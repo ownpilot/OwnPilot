@@ -11,6 +11,29 @@ const mockResetSandboxCache = vi.fn();
 const mockEnsureImage = vi.fn();
 const mockGetExecutionMode = vi.fn();
 
+// Mock execFile to always reject so CLI tool checks show not-installed.
+// vi.hoisted() is required here because vi.mock() is hoisted to the top of the file and
+// would reference mockExecFile before it is initialized, causing a TDZ error.
+const { mockExecFile } = vi.hoisted(() => {
+  const mockExecFile = vi.fn(function (
+    _file: string,
+    _args: string[],
+    _opts: Record<string, unknown>,
+    callback: (err: Error | null, result?: { stdout: string; stderr: string }) => void,
+  ) {
+    callback(new Error(`${_file}: command not found`));
+  });
+  return { mockExecFile };
+});
+
+vi.mock('node:child_process', async (importOriginal) => {
+  const actual = await importOriginal<Record<string, unknown>>();
+  return {
+    ...actual,
+    execFile: mockExecFile,
+  };
+});
+
 vi.mock('@ownpilot/core', async (importOriginal) => {
   const actual = await importOriginal<Record<string, unknown>>();
   return {
@@ -362,6 +385,113 @@ describe('Health Routes', () => {
       const json = await res.json();
       expect(json.data.images.python.success).toBe(false);
       expect(json.data.images.python.error).toBe('Unknown error');
+    });
+  });
+
+  describe('GET /health/tool-dependencies', () => {
+    it('returns 200 with packages, cliTools, and summary fields', async () => {
+      const res = await app.request('/health/tool-dependencies');
+      expect(res.status).toBe(200);
+      const json = await res.json();
+      expect(json.success).toBe(true);
+      expect(json.data).toBeDefined();
+      expect(json.data.packages).toBeInstanceOf(Array);
+      expect(json.data.cliTools).toBeInstanceOf(Array);
+      expect(json.data.summary).toBeDefined();
+      expect(typeof json.data.summary.packagesInstalled).toBe('number');
+      expect(typeof json.data.summary.packagesTotal).toBe('number');
+      expect(typeof json.data.summary.cliInstalled).toBe('number');
+      expect(typeof json.data.summary.cliTotal).toBe('number');
+    });
+
+    it('packages array contains expected packages', async () => {
+      const res = await app.request('/health/tool-dependencies');
+      const json = await res.json();
+      const packageNames = json.data.packages.map(
+        (p: { package: string }) => p.package,
+      );
+      expect(packageNames).toContain('imapflow');
+      expect(packageNames).toContain('nodemailer');
+      expect(packageNames).toContain('sharp');
+      expect(packageNames).toContain('pdf-parse');
+      expect(packageNames).toContain('pdfkit');
+    });
+
+    it('summary has correct total counts', async () => {
+      const res = await app.request('/health/tool-dependencies');
+      const json = await res.json();
+      const { summary } = json.data;
+      expect(summary.packagesTotal).toBeGreaterThanOrEqual(5);
+      expect(summary.cliTotal).toBeGreaterThanOrEqual(3);
+      // installed counts must be within bounds
+      expect(summary.packagesInstalled).toBeGreaterThanOrEqual(0);
+      expect(summary.packagesInstalled).toBeLessThanOrEqual(summary.packagesTotal);
+      expect(summary.cliInstalled).toBeGreaterThanOrEqual(0);
+      expect(summary.cliInstalled).toBeLessThanOrEqual(summary.cliTotal);
+    });
+
+    it('each package entry has the required shape', async () => {
+      const res = await app.request('/health/tool-dependencies');
+      const json = await res.json();
+      for (const pkg of json.data.packages) {
+        expect(typeof pkg.package).toBe('string');
+        expect(typeof pkg.category).toBe('string');
+        expect(typeof pkg.description).toBe('string');
+        expect(Array.isArray(pkg.tools)).toBe(true);
+        expect(typeof pkg.installed).toBe('boolean');
+        // version is either a string or null
+        expect(pkg.version === null || typeof pkg.version === 'string').toBe(true);
+      }
+    });
+
+    it('cliTools are marked as not installed when execFile fails', async () => {
+      const res = await app.request('/health/tool-dependencies');
+      const json = await res.json();
+      const cliTools: Array<{ package: string; installed: boolean; type: string }> =
+        json.data.cliTools;
+
+      // All CLI tools should be not-installed because execFile is mocked to reject
+      for (const cli of cliTools) {
+        expect(cli.installed).toBe(false);
+        expect(cli.type).toBe('cli');
+      }
+
+      expect(json.data.summary.cliInstalled).toBe(0);
+    });
+
+    it('cliTools array contains expected tool names', async () => {
+      const res = await app.request('/health/tool-dependencies');
+      const json = await res.json();
+      const cliNames = json.data.cliTools.map((c: { package: string }) => c.package);
+      expect(cliNames).toContain('ffmpeg');
+      expect(cliNames).toContain('claude');
+      expect(cliNames).toContain('codex');
+      expect(cliNames).toContain('gemini');
+    });
+
+    it('marks CLI tool as installed when execFile succeeds', async () => {
+      // First call succeeds (ffmpeg), rest fail
+      mockExecFile.mockImplementationOnce(
+        (
+          _file: string,
+          _args: string[],
+          _opts: Record<string, unknown>,
+          callback: (err: Error | null, result?: { stdout: string; stderr: string }) => void,
+        ) => {
+          callback(null, { stdout: '5.1.2\n', stderr: '' });
+        },
+      );
+
+      const res = await app.request('/health/tool-dependencies');
+      expect(res.status).toBe(200);
+      const json = await res.json();
+
+      const cliTools: Array<{ package: string; installed: boolean; version: string | null }> =
+        json.data.cliTools;
+      const ffmpeg = cliTools.find((c) => c.package === 'ffmpeg');
+      expect(ffmpeg?.installed).toBe(true);
+      expect(ffmpeg?.version).toBe('5.1.2');
+      expect(json.data.summary.cliInstalled).toBeGreaterThanOrEqual(1);
     });
   });
 });

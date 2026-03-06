@@ -5,7 +5,7 @@
  * Mocks getDebugInfo and debugLog from core, plus admin key middleware.
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { Hono } from 'hono';
 import { requestId } from '../middleware/request-id.js';
 import { errorHandler } from '../middleware/error-handler.js';
@@ -260,6 +260,48 @@ describe('Debug Routes', () => {
       expect(json.data.stats.successful).toBe(1);
       expect(json.data.stats.failed).toBe(1);
       expect(json.data.stats.timedOut).toBe(1);
+    });
+  });
+
+  // ========================================================================
+  // Production access control (requireDebugAccess middleware)
+  // ========================================================================
+
+  describe('production access control', () => {
+    const originalNodeEnv = process.env.NODE_ENV;
+    const originalAdminKey = process.env.ADMIN_API_KEY;
+
+    afterEach(() => {
+      process.env.NODE_ENV = originalNodeEnv;
+      if (originalAdminKey === undefined) {
+        delete process.env.ADMIN_API_KEY;
+      } else {
+        process.env.ADMIN_API_KEY = originalAdminKey;
+      }
+    });
+
+    it('returns 503 in production when ADMIN_API_KEY is not set', async () => {
+      process.env.NODE_ENV = 'production';
+      delete process.env.ADMIN_API_KEY;
+
+      const res = await app.request('/debug');
+
+      expect(res.status).toBe(503);
+      const json = await res.json();
+      expect(json.error.code).toBe('SERVICE_UNAVAILABLE');
+    });
+
+    it('returns 403 in production when wrong X-Admin-Key is provided', async () => {
+      process.env.NODE_ENV = 'production';
+      process.env.ADMIN_API_KEY = 'secret-admin-key';
+
+      const res = await app.request('/debug', {
+        headers: { 'X-Admin-Key': 'wrong-key' },
+      });
+
+      expect(res.status).toBe(403);
+      const json = await res.json();
+      expect(json.error.code).toBe('ACCESS_DENIED');
     });
   });
 });

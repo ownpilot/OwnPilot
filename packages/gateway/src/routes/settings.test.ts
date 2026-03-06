@@ -1092,6 +1092,22 @@ describe('Settings Routes', () => {
       const json = await res.json();
       expect(json.error.message).toContain('Unknown tool group');
     });
+
+    it('saves valid tool group IDs and adds alwaysOn groups', async () => {
+      const res = await app.request('/settings/tool-groups', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ enabledGroupIds: ['webFetch', 'media'] }),
+      });
+
+      expect(res.status).toBe(200);
+      const json = await res.json();
+      expect(json.data.enabledGroupIds).toContain('webFetch');
+      expect(json.data.enabledGroupIds).toContain('media');
+      // alwaysOn groups should be automatically included
+      expect(json.data.enabledGroupIds).toContain('core');
+      expect(mockSettingsRepo.set).toHaveBeenCalled();
+    });
   });
 
   // ========================================================================

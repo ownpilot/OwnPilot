@@ -29,7 +29,7 @@ vi.mock('../log.js', () => ({
 }));
 
 // Import after mocks are set up
-import { createPostProcessingMiddleware } from './post-processing.js';
+import { createPostProcessingMiddleware, waitForPendingPostProcessing } from './post-processing.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -652,6 +652,16 @@ describe('createPostProcessingMiddleware', () => {
         expect.any(String),
         undefined
       );
+    });
+  });
+
+  // =========================================================================
+  // waitForPendingPostProcessing
+  // =========================================================================
+
+  describe('waitForPendingPostProcessing', () => {
+    it('resolves immediately when there are no pending tasks (line 20)', async () => {
+      await expect(waitForPendingPostProcessing()).resolves.toBeUndefined();
     });
   });
 });

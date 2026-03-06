@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import * as os from 'node:os';
 import * as path from 'node:path';
 import type { ToolContext, ToolExecutionResult } from '../types.js';
 
@@ -112,11 +113,12 @@ describe('isPathAllowedAsync (via readFileExecutor)', () => {
     expect(data.content).toBe('workspace data');
   });
 
-  it('allows files under /tmp', async () => {
+  it('allows files under the system temp directory', async () => {
     fsMock.stat.mockResolvedValue(makeStat({ size: 5 }));
     fsMock.readFile.mockResolvedValue('tmp data');
 
-    const result = await readFileExecutor({ path: '/tmp/safe.txt' }, ctx());
+    const tmpFile = path.join(os.tmpdir(), 'safe.txt');
+    const result = await readFileExecutor({ path: tmpFile }, ctx());
     expect(result.isError).toBeUndefined();
   });
 

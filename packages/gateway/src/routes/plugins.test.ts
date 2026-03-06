@@ -277,6 +277,12 @@ describe('Plugins Routes', () => {
       expect(json.data.message).toContain('disabled');
       expect(mockPluginsRepo.updateStatus).toHaveBeenCalledWith('plugin-test', 'disabled');
     });
+
+    it('returns 404 for unknown plugin', async () => {
+      const res = await app.request('/plugins/nonexistent/disable', { method: 'POST' });
+
+      expect(res.status).toBe(404);
+    });
   });
 
   // ========================================================================
@@ -335,6 +341,16 @@ describe('Plugins Routes', () => {
 
       expect(res.status).toBe(400);
     });
+
+    it('returns 404 for unknown plugin', async () => {
+      const res = await app.request('/plugins/nonexistent/permissions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ permissions: ['network'] }),
+      });
+
+      expect(res.status).toBe(404);
+    });
   });
 
   // ========================================================================
@@ -380,6 +396,31 @@ describe('Plugins Routes', () => {
 
       expect(res.status).toBe(400);
     });
+
+    it('returns 404 for unknown plugin', async () => {
+      const res = await app.request('/plugins/nonexistent/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ settings: { apiUrl: 'http://x.com' } }),
+      });
+
+      expect(res.status).toBe(404);
+    });
+
+    it('handles onConfigChange hook error gracefully', async () => {
+      samplePlugin.lifecycle.onConfigChange.mockRejectedValueOnce(new Error('Hook failed'));
+
+      const res = await app.request('/plugins/plugin-test/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ settings: { apiUrl: 'http://updated.com' } }),
+      });
+
+      // Should still succeed — catch block logs the error but doesn't fail the request
+      expect(res.status).toBe(200);
+      const json = await res.json();
+      expect(json.data.settings).toBeDefined();
+    });
   });
 
   // ========================================================================
@@ -408,6 +449,12 @@ describe('Plugins Routes', () => {
 
       expect(json.data.services[0].isConfigured).toBe(true);
       expect(json.data.allConfigured).toBe(true);
+    });
+
+    it('returns 404 for unknown plugin', async () => {
+      const res = await app.request('/plugins/nonexistent/required-services');
+
+      expect(res.status).toBe(404);
     });
   });
 

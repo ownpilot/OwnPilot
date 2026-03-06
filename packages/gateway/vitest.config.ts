@@ -27,6 +27,12 @@ export default defineConfig({
         'src/server.ts',
         'src/channels/plugins/telegram/telegram-api.ts',
         'src/middleware/audit.ts',
+        // Pure re-export barrel files — no logic to cover
+        'src/routes/extensions.ts',
+        'src/routes/custom-tools.ts',
+        'src/routes/database.ts',
+        'src/routes/model-configs.ts',
+        'src/routes/workspaces.ts',
       ],
     },
     typecheck: {

@@ -171,6 +171,16 @@ describe('resolveTemplatePath', () => {
     const outputs = { n1: makeResult('n1', { name: 'Alice' }) };
     expect(resolveTemplatePath('n1.output.email', outputs, {})).toBeUndefined();
   });
+
+  it('resolves {{inputs.paramName}} from variables.__inputs (lines 78-79)', () => {
+    const variables = { __inputs: { userId: 'u-42', limit: 10 } };
+    expect(resolveTemplatePath('inputs.userId', {}, variables)).toBe('u-42');
+    expect(resolveTemplatePath('inputs.limit', {}, variables)).toBe(10);
+  });
+
+  it('returns undefined for missing inputs param when __inputs is absent (lines 78-79)', () => {
+    expect(resolveTemplatePath('inputs.anything', {}, {})).toBeUndefined();
+  });
 });
 
 // ============================================================================
@@ -372,5 +382,52 @@ describe('resolveTemplates', () => {
       { config: { region: 'eu-west-1' } }
     );
     expect(result.r).toBe('eu-west-1');
+  });
+
+  // aliasMap resolution tests
+  it('resolves alias to node output (single-part alias)', () => {
+    const outputs = { 'node-abc': makeResult('node-abc', 'hello') };
+    const aliasMap = new Map([['myAlias', 'node-abc']]);
+    const result = resolveTemplates({ val: '{{myAlias}}' }, outputs, {}, aliasMap);
+    expect(result.val).toBe('hello');
+  });
+
+  it('resolves alias.output to node output', () => {
+    const outputs = { 'node-abc': makeResult('node-abc', 'world') };
+    const aliasMap = new Map([['myAlias', 'node-abc']]);
+    const result = resolveTemplates({ val: '{{myAlias.output}}' }, outputs, {}, aliasMap);
+    expect(result.val).toBe('world');
+  });
+
+  it('resolves alias.output.field to nested node output field', () => {
+    const outputs = { 'node-abc': makeResult('node-abc', { greeting: 'hi' }) };
+    const aliasMap = new Map([['myAlias', 'node-abc']]);
+    const result = resolveTemplates({ val: '{{myAlias.output.greeting}}' }, outputs, {}, aliasMap);
+    expect(result.val).toBe('hi');
+  });
+
+  it('returns undefined when alias resolves to missing nodeOutput', () => {
+    const aliasMap = new Map([['myAlias', 'missing-node']]);
+    const result = resolveTemplates({ val: '{{myAlias}}' }, {}, {}, aliasMap);
+    expect(result.val).toBeUndefined();
+  });
+
+  it('resolves alias.field (shorthand, no "output" segment)', () => {
+    const outputs = { 'node-abc': makeResult('node-abc', { city: 'Berlin' }) };
+    const aliasMap = new Map([['myAlias', 'node-abc']]);
+    const result = resolveTemplates({ val: '{{myAlias.city}}' }, outputs, {}, aliasMap);
+    expect(result.val).toBe('Berlin');
+  });
+});
+
+// ============================================================================
+// getNestedValue — JSON parse error branch
+// ============================================================================
+
+describe('getNestedValue — JSON parse error', () => {
+  it('returns undefined when current is a malformed JSON string and further keys remain', () => {
+    // A string that looks like it should be parsed (starts with {) but is invalid JSON
+    const result = getNestedValue('{not valid json}', ['key']);
+    expect(result).toBeUndefined();
   });
 });

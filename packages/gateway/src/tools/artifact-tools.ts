@@ -6,7 +6,7 @@
  * with optional data bindings to personal data.
  */
 
-import { type ToolDefinition, getErrorMessage } from '@ownpilot/core';
+import { type ToolDefinition, type DataBinding, getErrorMessage } from '@ownpilot/core';
 import { getArtifactService } from '../services/artifact-service.js';
 
 // =============================================================================
@@ -174,7 +174,7 @@ export async function executeArtifactTool(
           type: args.type as 'html' | 'svg' | 'markdown' | 'form' | 'chart',
           title: args.title as string,
           content: args.content as string,
-          dataBindings: args.data_bindings as undefined,
+          dataBindings: args.data_bindings as DataBinding[] | undefined,
           pinToDashboard: args.pin_to_dashboard as boolean | undefined,
           dashboardSize: args.dashboard_size as 'small' | 'medium' | 'large' | 'full' | undefined,
           tags: args.tags as string[] | undefined,
@@ -207,7 +207,7 @@ export async function executeArtifactTool(
         const updated = await service.updateArtifact(userId, artifactId, {
           title: args.title as string | undefined,
           content: args.content as string | undefined,
-          dataBindings: args.data_bindings as undefined,
+          dataBindings: args.data_bindings as DataBinding[] | undefined,
           pinned: args.pinned as boolean | undefined,
           tags: args.tags as string[] | undefined,
         });
@@ -232,7 +232,7 @@ export async function executeArtifactTool(
 
     case 'list_artifacts': {
       const { artifacts, total } = await service.listArtifacts(userId, {
-        type: args.type as undefined,
+        type: args.type as 'html' | 'svg' | 'markdown' | 'form' | 'chart' | undefined,
         pinned: args.pinned as boolean | undefined,
         search: args.search as string | undefined,
         limit: (args.limit as number) ?? 20,

@@ -5,7 +5,7 @@
  * logs, and context management.
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { Hono } from 'hono';
 
 // ─── Mock Repository Instances ───────────────────────────────────
@@ -370,6 +370,14 @@ vi.mock('./chat-state.js', () => ({
   execPermHash: vi.fn(() => 'hash-1'),
   boundedSetAdd: vi.fn(),
   boundedMapSet: vi.fn(),
+}));
+
+const mockIsBlockedUrl = vi.hoisted(() => vi.fn(() => false));
+const mockIsPrivateUrlAsync = vi.hoisted(() => vi.fn(async () => false));
+
+vi.mock('../utils/ssrf.js', () => ({
+  isBlockedUrl: (...args: unknown[]) => mockIsBlockedUrl(...args),
+  isPrivateUrlAsync: (...args: unknown[]) => mockIsPrivateUrlAsync(...args),
 }));
 
 // ─── Import route + mocked modules ──────────────────────────────
@@ -1612,6 +1620,88 @@ describe('Chat Routes', () => {
 
       expect(res.status).toBe(200);
       expect(vi.mocked(getAgent)).toHaveBeenCalledWith('my-agent');
+    });
+  });
+
+  // =========================================================================
+  // GET /chat/fetch-url
+  // =========================================================================
+
+  describe('GET /chat/fetch-url', () => {
+    const mockFetch = vi.fn();
+
+    beforeEach(() => {
+      mockIsBlockedUrl.mockReturnValue(false);
+      mockIsPrivateUrlAsync.mockResolvedValue(false);
+      vi.stubGlobal('fetch', mockFetch);
+    });
+
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
+    it('returns 400 when url param is missing', async () => {
+      const res = await app.request('/chat/fetch-url');
+      expect(res.status).toBe(400);
+    });
+
+    it('returns 400 for non-HTTP/S protocol', async () => {
+      const res = await app.request('/chat/fetch-url?url=ftp%3A%2F%2Fexample.com');
+      expect(res.status).toBe(400);
+    });
+
+    it('returns 400 for invalid URL string', async () => {
+      const res = await app.request('/chat/fetch-url?url=not-a-url');
+      expect(res.status).toBe(400);
+    });
+
+    it('returns 400 when isBlockedUrl returns true', async () => {
+      mockIsBlockedUrl.mockReturnValue(true);
+      const res = await app.request('/chat/fetch-url?url=http%3A%2F%2Flocalhost%2Fadmin');
+      expect(res.status).toBe(400);
+    });
+
+    it('returns 400 when isPrivateUrlAsync returns true', async () => {
+      mockIsPrivateUrlAsync.mockResolvedValue(true);
+      const res = await app.request('/chat/fetch-url?url=https%3A%2F%2Fprivate-host.example.com');
+      expect(res.status).toBe(400);
+    });
+
+    it('returns 400 when upstream responds with non-ok status', async () => {
+      mockFetch.mockResolvedValue({ ok: false, status: 403, text: async () => '' });
+      const res = await app.request('/chat/fetch-url?url=https%3A%2F%2Fexample.com%2Fpage');
+      expect(res.status).toBe(400);
+    });
+
+    it('returns 200 with title and text on success', async () => {
+      mockFetch.mockResolvedValue({
+        ok: true,
+        text: async () =>
+          '<html><head><title>Hello World</title></head><body><p>Content here</p></body></html>',
+      });
+      const res = await app.request('/chat/fetch-url?url=https%3A%2F%2Fexample.com%2Fpage');
+      expect(res.status).toBe(200);
+      const json = await res.json();
+      expect(json.data.title).toBe('Hello World');
+      expect(json.data.text).toContain('Content here');
+      expect(json.data.charCount).toBeGreaterThan(0);
+    });
+
+    it('falls back to hostname as title when <title> is absent', async () => {
+      mockFetch.mockResolvedValue({
+        ok: true,
+        text: async () => '<html><body>No title here</body></html>',
+      });
+      const res = await app.request('/chat/fetch-url?url=https%3A%2F%2Fexample.com');
+      expect(res.status).toBe(200);
+      const json = await res.json();
+      expect(json.data.title).toBe('example.com');
+    });
+
+    it('returns 400 when fetch throws (e.g. timeout)', async () => {
+      mockFetch.mockRejectedValue(new Error('AbortError'));
+      const res = await app.request('/chat/fetch-url?url=https%3A%2F%2Fexample.com');
+      expect(res.status).toBe(400);
     });
   });
 });

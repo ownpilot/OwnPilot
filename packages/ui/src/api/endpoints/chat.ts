@@ -129,4 +129,10 @@ export const chatApi = {
       removedMessages: number;
       newTokenEstimate: number;
     }>('/chat/compact', { provider, model, keepRecentMessages }),
+
+  /** Fetch and extract text from a URL (for ToolPicker URL tab) */
+  fetchUrl: (url: string) =>
+    apiClient.get<{ url: string; title: string; text: string; charCount: number }>(
+      `/chat/fetch-url?url=${encodeURIComponent(url)}`
+    ),
 };

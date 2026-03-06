@@ -205,6 +205,25 @@ describe('Triggers Routes', () => {
       const json = await res.json();
       expect(json.error.code).toBe('INVALID_CRON');
     });
+
+    it('returns 400 when service throws on create', async () => {
+      mockTriggerService.createTrigger.mockRejectedValueOnce(new Error('DB constraint violation'));
+
+      const res = await app.request('/triggers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: 'Test',
+          type: 'event',
+          config: { event: 'message.received' },
+          action: { type: 'notification', message: 'Hi' },
+        }),
+      });
+
+      expect(res.status).toBe(400);
+      const json = await res.json();
+      expect(json.error.code).toBe('CREATE_FAILED');
+    });
   });
 
   // ========================================================================
@@ -330,6 +349,46 @@ describe('Triggers Routes', () => {
 
       expect(res.status).toBe(404);
     });
+
+    it('returns 400 when body is invalid JSON', async () => {
+      const res = await app.request('/triggers/t1', {
+        method: 'PATCH',
+        // No Content-Type → parseJsonBody returns null
+        body: 'not json',
+      });
+
+      expect(res.status).toBe(400);
+      const json = await res.json();
+      expect(json.error.code).toBe('INVALID_INPUT');
+    });
+
+    it('returns 400 when cron is not a string on schedule trigger', async () => {
+      mockTriggerService.getTrigger.mockResolvedValueOnce({ id: 't1', type: 'schedule' });
+
+      const res = await app.request('/triggers/t1', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ config: { cron: 123 } }),
+      });
+
+      expect(res.status).toBe(400);
+      const json = await res.json();
+      expect(json.error.code).toBe('INVALID_CRON');
+    });
+
+    it('returns 400 when cron is invalid on schedule trigger', async () => {
+      mockTriggerService.getTrigger.mockResolvedValueOnce({ id: 't1', type: 'schedule' });
+
+      const res = await app.request('/triggers/t1', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ config: { cron: 'invalid' } }),
+      });
+
+      expect(res.status).toBe(400);
+      const json = await res.json();
+      expect(json.error.code).toBe('INVALID_CRON');
+    });
   });
 
   // ========================================================================
@@ -375,6 +434,14 @@ describe('Triggers Routes', () => {
       expect(json.data.message).toContain('disabled');
       expect(mockTriggerService.updateTrigger).toHaveBeenCalledWith('u1', 't1', { enabled: false });
     });
+
+    it('returns 404 when trigger not found', async () => {
+      mockTriggerService.updateTrigger.mockResolvedValueOnce(null);
+
+      const res = await app.request('/triggers/nonexistent/disable', { method: 'POST' });
+
+      expect(res.status).toBe(404);
+    });
   });
 
   // ========================================================================
@@ -408,6 +475,17 @@ describe('Triggers Routes', () => {
       const res = await app.request('/triggers/t1/fire', { method: 'POST' });
 
       expect(res.status).toBe(500);
+    });
+
+    it('returns 500 when engine throws exception', async () => {
+      mockTriggerService.getTrigger.mockResolvedValueOnce({ id: 't1' });
+      mockTriggerEngine.fireTrigger.mockRejectedValueOnce(new Error('Engine crashed'));
+
+      const res = await app.request('/triggers/t1/fire', { method: 'POST' });
+
+      expect(res.status).toBe(500);
+      const json = await res.json();
+      expect(json.error.code).toBe('EXECUTION_ERROR');
     });
   });
 
@@ -483,6 +561,36 @@ describe('Triggers Routes', () => {
       expect(res.status).toBe(200);
       const json = await res.json();
       expect(json.data.deletedCount).toBe(10);
+    });
+
+    it('defaults to 30 days when body is not valid JSON', async () => {
+      mockTriggerService.cleanupHistory.mockResolvedValue(5);
+
+      const res = await app.request('/triggers/cleanup', {
+        method: 'POST',
+        // No Content-Type — json() will throw, catch returns {}
+      });
+
+      expect(res.status).toBe(200);
+      const json = await res.json();
+      expect(json.data.deletedCount).toBe(5);
+      // Should use default of 30 days
+      expect(mockTriggerService.cleanupHistory).toHaveBeenCalledWith('u1', 30);
+    });
+
+    it('defaults to 30 when maxAgeDays is not a finite number', async () => {
+      mockTriggerService.cleanupHistory.mockResolvedValue(3);
+
+      const res = await app.request('/triggers/cleanup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ maxAgeDays: 'not-a-number' }),
+      });
+
+      expect(res.status).toBe(200);
+      const json = await res.json();
+      expect(json.data.deletedCount).toBe(3);
+      expect(mockTriggerService.cleanupHistory).toHaveBeenCalledWith('u1', 30);
     });
   });
 

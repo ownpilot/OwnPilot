@@ -74,6 +74,18 @@ describe('ConfigServicesRepository', () => {
   });
 
   // =========================================================================
+  // Uninitialized cache (must run BEFORE any initialize() call)
+  // =========================================================================
+
+  describe('uninitialized cache', () => {
+    it('getByName returns null and warns when cache not initialized (lines 212-213)', () => {
+      // This test runs before any initialize() call so cacheInitialized is false
+      const result = repo.getByName('not-yet-loaded');
+      expect(result).toBeNull();
+    });
+  });
+
+  // =========================================================================
   // initialize / refreshCache
   // =========================================================================
 
@@ -362,6 +374,45 @@ describe('ConfigServicesRepository', () => {
 
       const params = mockAdapter.execute.mock.calls[0]![1] as unknown[];
       expect(params[0]).toBe(JSON.stringify(newSchema));
+    });
+
+    it('should include description, docsUrl, and multiEntry in SET clause (lines 284-285, 288-289, 296-297)', async () => {
+      mockAdapter.query.mockResolvedValueOnce([makeServiceRow()]).mockResolvedValueOnce([]);
+      await repo.initialize();
+
+      mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
+      mockAdapter.queryOne.mockResolvedValueOnce(makeServiceRow());
+      mockAdapter.query.mockResolvedValueOnce([]);
+
+      await repo.update('openai', {
+        description: 'New description',
+        docsUrl: 'https://new-docs.example.com',
+        multiEntry: true,
+      });
+
+      const sql = mockAdapter.execute.mock.calls[0]![0] as string;
+      expect(sql).toContain('description = $');
+      expect(sql).toContain('docs_url = $');
+      expect(sql).toContain('multi_entry = $');
+      const params = mockAdapter.execute.mock.calls[0]![1] as unknown[];
+      expect(params).toContain('New description');
+      expect(params).toContain('https://new-docs.example.com');
+      expect(params).toContain(true);
+    });
+
+    it('removes service from cache when refreshServiceCache queryOne returns null (line 193)', async () => {
+      mockAdapter.query.mockResolvedValueOnce([makeServiceRow()]).mockResolvedValueOnce([]);
+      await repo.initialize();
+      expect(repo.getByName('openai')).not.toBeNull();
+
+      // update executes → then refreshServiceCache: queryOne returns null (service gone)
+      mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
+      mockAdapter.queryOne.mockResolvedValueOnce(null); // service deleted from DB
+      mockAdapter.query.mockResolvedValueOnce([]);      // entries query
+
+      await repo.update('openai', { displayName: 'Gone' });
+
+      expect(repo.getByName('openai')).toBeNull();
     });
   });
 
@@ -775,6 +826,25 @@ describe('ConfigServicesRepository', () => {
       const params = mockAdapter.execute.mock.calls[0]![1] as unknown[];
       expect(params[0]).toBe('{"new_field":"value"}');
     });
+
+    it('should include is_active in SET clause when isActive provided (lines 502-503)', async () => {
+      mockAdapter.query
+        .mockResolvedValueOnce([makeServiceRow()])
+        .mockResolvedValueOnce([makeEntryRow()]);
+      await repo.initialize();
+
+      mockAdapter.queryOne.mockResolvedValueOnce(makeEntryRow());
+      mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
+      mockAdapter.queryOne.mockResolvedValueOnce(makeServiceRow());
+      mockAdapter.query.mockResolvedValueOnce([makeEntryRow({ is_active: false })]);
+
+      await repo.updateEntry('entry-1', { isActive: false });
+
+      const sql = mockAdapter.execute.mock.calls[0]![0] as string;
+      expect(sql).toContain('is_active = $');
+      const params = mockAdapter.execute.mock.calls[0]![1] as unknown[];
+      expect(params).toContain(false);
+    });
   });
 
   describe('deleteEntry', () => {
@@ -1164,6 +1234,19 @@ describe('ConfigServicesRepository', () => {
         }
       }
     });
+
+    it('returns undefined when field exists in schema but has no envVar and no defaultValue (line 682)', async () => {
+      // Schema field with no envVar and no defaultValue
+      const schema = [{ name: 'custom_field', label: 'Custom', type: 'text' as const }];
+      mockAdapter.query
+        .mockResolvedValueOnce([makeServiceRow({ config_schema: JSON.stringify(schema) })])
+        .mockResolvedValueOnce([makeEntryRow({ data: '{}' })]);
+      await repo.initialize();
+
+      // Field found in schema, data empty, no envVar, no defaultValue → return undefined
+      const result = repo.getFieldValue('openai', 'custom_field');
+      expect(result).toBeUndefined();
+    });
   });
 
   describe('isAvailable', () => {
@@ -1365,6 +1448,19 @@ describe('ConfigServicesRepository', () => {
     it('should be importable', async () => {
       const { initializeConfigServicesRepo } = await import('./config-services.js');
       expect(typeof initializeConfigServicesRepo).toBe('function');
+    });
+
+    it('calls configServicesRepo.initialize() which loads from DB (line 755)', async () => {
+      const { initializeConfigServicesRepo } = await import('./config-services.js');
+      // Provide mock data for the two queries inside refreshCache
+      mockAdapter.query
+        .mockResolvedValueOnce([makeServiceRow()])
+        .mockResolvedValueOnce([makeEntryRow()]);
+
+      await initializeConfigServicesRepo();
+
+      // initialize() triggers two DB queries (services + entries)
+      expect(mockAdapter.query).toHaveBeenCalledTimes(2);
     });
   });
 });

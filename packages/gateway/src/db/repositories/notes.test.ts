@@ -412,6 +412,15 @@ describe('NotesRepository', () => {
       const params = mockAdapter.query.mock.calls[0]![1] as unknown[];
       expect(params).toContain('%50\\%\\_off%');
     });
+
+    it('maps returned rows (line 194)', async () => {
+      mockAdapter.query.mockResolvedValueOnce([makeNoteRow(), makeNoteRow({ id: 'note-2' })]);
+
+      const result = await repo.list();
+
+      expect(result).toHaveLength(2);
+      expect(result[0]!.id).toBe('note-1');
+    });
   });
 
   // =========================================================================

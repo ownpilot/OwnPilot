@@ -647,6 +647,38 @@ describe('Dashboard Service', () => {
 
       vi.useRealTimers();
     });
+
+    it('actually deletes expired cache entries during prune', () => {
+      vi.useFakeTimers();
+
+      const briefing: AIBriefing = {
+        id: 'b1',
+        summary: 'test',
+        priorities: [],
+        insights: [],
+        suggestedFocusAreas: [],
+        generatedAt: '',
+        expiresAt: '',
+        modelUsed: '',
+        cached: false,
+      };
+
+      // Fill 501 entries with TTL=1ms
+      for (let i = 0; i < 501; i++) {
+        briefingCache.set(`del-user-${i}`, briefing, `hash-${i}`, 1);
+      }
+
+      // Advance time so all prior entries are expired
+      vi.advanceTimersByTime(50);
+
+      // Setting one more entry triggers prune again; this time entries ARE expired
+      briefingCache.set('del-user-trigger', briefing, 'hash-trigger', 60000);
+
+      // The expired entries should have been pruned (cache.delete called)
+      expect(briefingCache.get('del-user-0')).toBeNull();
+
+      vi.useRealTimers();
+    });
   });
 
   // ========================================================================
@@ -1431,6 +1463,44 @@ describe('Dashboard Service', () => {
       );
 
       expect(result.modelUsed).toBe('fallback');
+    });
+
+    it('logs error when onChunk callback rejects', async () => {
+      const data = makeBriefingData();
+      // onChunk that rejects — error should be caught and logged, not propagated
+      const onChunk = vi.fn(async () => {
+        throw new Error('Chunk callback failed');
+      });
+
+      const mockAgent = {
+        chat: vi.fn(
+          async (
+            _prompt: string,
+            opts: { stream: boolean; onChunk: (c: { content: string }) => void }
+          ) => {
+            opts.onChunk({ content: '{"summary":"Streamed"' });
+            return {
+              ok: true,
+              value: {
+                content:
+                  '{"summary":"Streamed","priorities":[],"insights":[],"suggestedFocusAreas":[]}',
+              },
+            };
+          }
+        ),
+      };
+      mockGetOrCreateChatAgent.mockResolvedValue(mockAgent);
+
+      // Should not throw despite onChunk rejecting
+      const result = await service.generateAIBriefingStreaming(
+        data,
+        { provider: 'openai', model: 'gpt-4o' },
+        onChunk
+      );
+
+      expect(result).toBeDefined();
+      // onChunk was called (and threw), but execution continued
+      expect(onChunk).toHaveBeenCalled();
     });
 
     it('caches the streaming result', async () => {

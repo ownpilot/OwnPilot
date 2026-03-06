@@ -428,10 +428,26 @@ export const runRegexExecutor: ToolExecutor = async (args): Promise<ToolExecutio
     const replacement = args.replacement as string;
     const flags = (args.flags as string) || '';
 
-    // Guard against excessively long patterns that could cause ReDoS
-    if (pattern.length > 1000) {
+    // Guard against ReDoS: reject patterns that are too long or contain
+    // classic catastrophic-backtracking structures like (a+)+ or (a|a)+
+    if (pattern.length > 500) {
       return {
-        content: JSON.stringify({ error: 'Regex pattern too long (max 1000 characters)' }),
+        content: JSON.stringify({ error: 'Regex pattern too long (max 500 characters)' }),
+        isError: true,
+      };
+    }
+    // Detect nested quantifiers: (...+)+ or (...*)+ or (...+)* — common ReDoS triggers
+    if (/\([^)]*[+*][^)]*\)[+*?]/.test(pattern)) {
+      return {
+        content: JSON.stringify({ error: 'Regex pattern contains potentially unsafe nested quantifiers' }),
+        isError: true,
+      };
+    }
+    // Only allow safe flag combinations
+    const allowedFlags = new Set(['g', 'i', 'm', 's', 'u', 'd']);
+    if ([...flags].some((f) => !allowedFlags.has(f))) {
+      return {
+        content: JSON.stringify({ error: `Invalid regex flags. Allowed: g, i, m, s, u, d` }),
         isError: true,
       };
     }

@@ -49,17 +49,19 @@ interface DeviceCardProps {
   device: EdgeDevice;
   onDelete: (id: string) => void;
   onUpdate: (device: EdgeDevice) => void;
+  onClick: () => void;
 }
 
 // =============================================================================
 // Component
 // =============================================================================
 
-export function DeviceCard({ device, onDelete, onUpdate: _onUpdate }: DeviceCardProps) {
+export function DeviceCard({ device, onDelete, onUpdate: _onUpdate, onClick }: DeviceCardProps) {
   const [isDeleting, setIsDeleting] = useState(false);
   const { confirm } = useDialog();
 
-  const handleDelete = async () => {
+  const handleDelete = async (e: React.MouseEvent) => {
+    e.stopPropagation();
     const confirmed = await confirm({
       title: `Remove "${device.name}"?`,
       message:
@@ -80,7 +82,10 @@ export function DeviceCard({ device, onDelete, onUpdate: _onUpdate }: DeviceCard
   };
 
   return (
-    <div className="bg-bg-primary dark:bg-dark-bg-primary border border-border dark:border-dark-border rounded-xl p-4 hover:shadow-sm transition-shadow">
+    <div
+      onClick={onClick}
+      className="bg-bg-primary dark:bg-dark-bg-primary border border-border dark:border-dark-border rounded-xl p-4 hover:shadow-sm hover:border-primary/40 dark:hover:border-primary/40 transition-all cursor-pointer"
+    >
       {/* Header */}
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-2.5">

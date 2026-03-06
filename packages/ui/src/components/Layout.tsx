@@ -49,6 +49,7 @@ import {
   Send,
   MonitorCheck,
   LayoutTemplate,
+  Wifi,
 } from './icons';
 import { StatsPanel } from './StatsPanel';
 import { RealtimeBridge, type BadgeCounts } from './RealtimeBridge';
@@ -123,8 +124,7 @@ const navGroups: NavGroup[] = [
     items: [
       { to: '/tools', icon: Wrench, label: 'Tools' },
       { to: '/custom-tools', icon: Code, label: 'Custom Tools' },
-      { to: '/extensions', icon: Sparkles, label: 'User Extensions' },
-      { to: '/skills', icon: BookOpen, label: 'Skills' },
+      { to: '/skills', icon: BookOpen, label: 'Skills Hub' },
       { to: '/plugins', icon: Puzzle, label: 'Plugins' },
     ],
   },
@@ -135,6 +135,7 @@ const navGroups: NavGroup[] = [
     advancedOnly: true,
     items: [
       { to: '/agents', icon: Bot, label: 'Agents' },
+      { to: '/edge-devices', icon: Wifi, label: 'Edge Devices' },
       { to: '/models', icon: Cpu, label: 'Models' },
       { to: '/coding-agents', icon: Terminal, label: 'Coding Agents' },
       { to: '/wizards', icon: Sparkles, label: 'Wizards' },

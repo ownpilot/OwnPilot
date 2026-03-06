@@ -52,6 +52,14 @@ describe('extractMemoriesFromResponse', () => {
     expect(result.memories).toEqual([]);
   });
 
+  it('returns content as-is when regex matches but JSON.parse throws (line 89)', () => {
+    // Regex matches [...]  but content is invalid JSON → catch block
+    const raw = 'Response.\n<memories>[invalid json here]</memories>';
+    const result = extractMemoriesFromResponse(raw);
+    expect(result.content).toBe(raw);
+    expect(result.memories).toEqual([]);
+  });
+
   it('returns content as-is when JSON is not an array', () => {
     const raw = 'Response.\n<memories>{"type":"fact","content":"test"}</memories>';
     const result = extractMemoriesFromResponse(raw);

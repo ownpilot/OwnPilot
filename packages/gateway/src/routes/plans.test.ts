@@ -360,6 +360,17 @@ describe('Plans Routes', () => {
 
       expect(res.status).toBe(500);
     });
+
+    it('returns 500 when executor throws', async () => {
+      mockPlanService.getPlan.mockResolvedValue({ id: 'p1', status: 'pending' });
+      mockPlanExecutor.execute.mockRejectedValueOnce(new Error('Executor crashed'));
+
+      const res = await app.request('/plans/p1/execute', { method: 'POST' });
+
+      expect(res.status).toBe(500);
+      const json = await res.json();
+      expect(json.error.code).toBe('EXECUTION_ERROR');
+    });
   });
 
   // ========================================================================
@@ -384,6 +395,17 @@ describe('Plans Routes', () => {
       const res = await app.request('/plans/nonexistent/pause', { method: 'POST' });
 
       expect(res.status).toBe(404);
+    });
+
+    it('returns 500 when pause executor throws', async () => {
+      mockPlanService.getPlan.mockResolvedValue({ id: 'p1', status: 'running' });
+      mockPlanExecutor.pause.mockRejectedValueOnce(new Error('Pause failed'));
+
+      const res = await app.request('/plans/p1/pause', { method: 'POST' });
+
+      expect(res.status).toBe(500);
+      const json = await res.json();
+      expect(json.error.code).toBe('PAUSE_ERROR');
     });
   });
 
@@ -418,6 +440,31 @@ describe('Plans Routes', () => {
 
       expect(res.status).toBe(404);
     });
+
+    it('returns 500 when resume result is not completed', async () => {
+      mockPlanService.getPlan.mockResolvedValue({ id: 'p1', status: 'paused' });
+      mockPlanExecutor.resume.mockResolvedValueOnce({
+        status: 'failed',
+        error: 'Step dependency failed',
+      });
+
+      const res = await app.request('/plans/p1/resume', { method: 'POST' });
+
+      expect(res.status).toBe(500);
+      const json = await res.json();
+      expect(json.error.code).toBe('RESUME_ERROR');
+    });
+
+    it('returns 500 when resume executor throws', async () => {
+      mockPlanService.getPlan.mockResolvedValue({ id: 'p1', status: 'paused' });
+      mockPlanExecutor.resume.mockRejectedValueOnce(new Error('Resume failed unexpectedly'));
+
+      const res = await app.request('/plans/p1/resume', { method: 'POST' });
+
+      expect(res.status).toBe(500);
+      const json = await res.json();
+      expect(json.error.code).toBe('RESUME_ERROR');
+    });
   });
 
   // ========================================================================
@@ -442,6 +489,17 @@ describe('Plans Routes', () => {
       const res = await app.request('/plans/nonexistent/abort', { method: 'POST' });
 
       expect(res.status).toBe(404);
+    });
+
+    it('returns 500 when abort executor throws', async () => {
+      mockPlanService.getPlan.mockResolvedValue({ id: 'p1', status: 'running' });
+      mockPlanExecutor.abort.mockRejectedValueOnce(new Error('Abort failed'));
+
+      const res = await app.request('/plans/p1/abort', { method: 'POST' });
+
+      expect(res.status).toBe(500);
+      const json = await res.json();
+      expect(json.error.code).toBe('ABORT_ERROR');
     });
   });
 
@@ -473,6 +531,49 @@ describe('Plans Routes', () => {
       });
 
       expect(res.status).toBe(404);
+    });
+
+    it('handles request with no JSON body gracefully', async () => {
+      mockPlanService.getPlan.mockResolvedValue({ id: 'p1', status: 'running' });
+
+      const res = await app.request('/plans/p1/checkpoint', {
+        method: 'POST',
+        // No Content-Type — json() throws, catch returns {}
+      });
+
+      expect(res.status).toBe(200);
+      expect(mockPlanExecutor.checkpoint).toHaveBeenCalledWith('p1', undefined);
+    });
+
+    it('returns 400 when checkpoint data is too large', async () => {
+      mockPlanService.getPlan.mockResolvedValue({ id: 'p1', status: 'running' });
+
+      const res = await app.request('/plans/p1/checkpoint', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ data: 'x'.repeat(500001) }),
+      });
+
+      expect(res.status).toBe(400);
+      const json = await res.json();
+      expect(json.error.code).toBe('PAYLOAD_TOO_LARGE');
+    });
+
+    it('returns 500 when checkpoint executor throws', async () => {
+      mockPlanService.getPlan.mockResolvedValue({ id: 'p1', status: 'running' });
+      mockPlanExecutor.checkpoint.mockImplementationOnce(() => {
+        throw new Error('Checkpoint storage failed');
+      });
+
+      const res = await app.request('/plans/p1/checkpoint', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ data: { step: 1 } }),
+      });
+
+      expect(res.status).toBe(500);
+      const json = await res.json();
+      expect(json.error.code).toBe('CHECKPOINT_ERROR');
     });
   });
 
@@ -525,6 +626,96 @@ describe('Plans Routes', () => {
       const res = await app.request('/plans/nonexistent/rollback', { method: 'POST' });
 
       expect(res.status).toBe(404);
+    });
+
+    it('returns 400 when plan has too many steps for batch reset', async () => {
+      mockPlanService.getPlan.mockResolvedValue({
+        id: 'p1',
+        status: 'failed',
+        checkpoint: { step: 2 },
+      });
+      mockPlanExecutor.restoreFromCheckpoint.mockResolvedValueOnce({ step: 2 });
+      mockPlanService.getSteps.mockResolvedValueOnce(
+        Array.from({ length: 201 }, (_, i) => ({ id: `st${i}`, status: 'failed' }))
+      );
+
+      const res = await app.request('/plans/p1/rollback', { method: 'POST' });
+
+      expect(res.status).toBe(400);
+      const json = await res.json();
+      expect(json.error.code).toBe('BATCH_LIMIT_EXCEEDED');
+    });
+
+    it('returns 500 when rollback executor throws', async () => {
+      mockPlanService.getPlan.mockResolvedValue({
+        id: 'p1',
+        status: 'failed',
+        checkpoint: { step: 2 },
+      });
+      mockPlanExecutor.restoreFromCheckpoint.mockRejectedValueOnce(new Error('Restore failed'));
+
+      const res = await app.request('/plans/p1/rollback', { method: 'POST' });
+
+      expect(res.status).toBe(500);
+      const json = await res.json();
+      expect(json.error.code).toBe('ROLLBACK_ERROR');
+    });
+  });
+
+  // ========================================================================
+  // POST /plans/:id/start
+  // ========================================================================
+
+  describe('POST /plans/:id/start', () => {
+    it('starts a plan and returns success', async () => {
+      mockPlanService.getPlan.mockResolvedValue({ id: 'p1', status: 'pending', name: 'My Plan' });
+      mockPlanExecutor.execute.mockResolvedValueOnce({ status: 'completed', completedSteps: 3 });
+
+      const res = await app.request('/plans/p1/start', { method: 'POST' });
+
+      expect(res.status).toBe(200);
+      const json = await res.json();
+      expect(json.data.message).toContain('executed');
+    });
+
+    it('returns 404 when plan not found', async () => {
+      mockPlanService.getPlan.mockResolvedValueOnce(null);
+
+      const res = await app.request('/plans/nonexistent/start', { method: 'POST' });
+
+      expect(res.status).toBe(404);
+    });
+
+    it('returns 400 when plan is already running', async () => {
+      mockPlanService.getPlan.mockResolvedValueOnce({ id: 'p1', status: 'running' });
+
+      const res = await app.request('/plans/p1/start', { method: 'POST' });
+
+      expect(res.status).toBe(400);
+      const json = await res.json();
+      expect(json.error.code).toBe('ALREADY_RUNNING');
+    });
+
+    it('returns 500 when execution ends with non-completed status', async () => {
+      mockPlanService.getPlan.mockResolvedValueOnce({ id: 'p1', status: 'pending', name: 'Test' });
+      mockPlanExecutor.execute.mockResolvedValueOnce({ status: 'failed', error: 'Step failed' });
+
+      const res = await app.request('/plans/p1/start', { method: 'POST' });
+
+      expect(res.status).toBe(500);
+      const json = await res.json();
+      expect(json.error.code).toBe('EXECUTION_ERROR');
+    });
+
+    it('returns 500 when executor throws', async () => {
+      mockPlanService.getPlan.mockResolvedValueOnce({ id: 'p1', status: 'pending', name: 'Test' });
+      mockPlanExecutor.execute.mockRejectedValueOnce(new Error('Start failed'));
+
+      const res = await app.request('/plans/p1/start', { method: 'POST' });
+
+      expect(res.status).toBe(500);
+      const json = await res.json();
+      expect(json.error.code).toBe('EXECUTION_ERROR');
     });
   });
 
@@ -594,6 +785,20 @@ describe('Plans Routes', () => {
       });
 
       expect(res.status).toBe(400);
+    });
+
+    it('returns 500 when addStep throws', async () => {
+      mockPlanService.addStep.mockRejectedValueOnce(new Error('DB error'));
+
+      const res = await app.request('/plans/p1/steps', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'tool_call', name: 'Test Step', orderNum: 1 }),
+      });
+
+      expect(res.status).toBe(500);
+      const json = await res.json();
+      expect(json.error.code).toBe('ADD_STEP_ERROR');
     });
   });
 

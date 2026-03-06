@@ -6,7 +6,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { MemoryService, MemoryServiceError } from './memory-service.js';
+import { MemoryService, MemoryServiceError, getMemoryService } from './memory-service.js';
 import type { Memory } from '../db/repositories/memories.js';
 
 // ---------------------------------------------------------------------------
@@ -440,5 +440,78 @@ describe('MemoryService', () => {
       const result = await service.cleanupMemories('user-1', { maxAge: 90 });
       expect(result).toBe(3);
     });
+  });
+});
+
+// ── Chunked memory creation ──────────────────────────────────────────────────
+
+describe('MemoryService — chunked memory', () => {
+  let service: MemoryService;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    service = new MemoryService();
+  });
+
+  it('creates chunked memory when shouldChunk returns true', async () => {
+    // Override shouldChunk for this test
+    const { shouldChunk, chunkMarkdown } = await import('./chunking.js');
+    vi.mocked(shouldChunk).mockReturnValueOnce(true);
+    vi.mocked(chunkMarkdown).mockReturnValueOnce([
+      { text: 'chunk one', index: 0, headingContext: 'Section A' },
+      { text: 'chunk two', index: 1, headingContext: 'Section A' },
+    ]);
+
+    const parentMem: Memory = {
+      id: 'mem-parent',
+      userId: 'user-1',
+      type: 'fact',
+      content: 'long content that exceeds threshold',
+      source: 'test',
+      importance: 0.5,
+      accessCount: 0,
+      tags: [],
+      metadata: {},
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    const chunkMem1: Memory = { ...parentMem, id: 'mem-chunk-1', content: 'chunk one' };
+    const chunkMem2: Memory = { ...parentMem, id: 'mem-chunk-2', content: 'chunk two' };
+
+    mockRepo.create
+      .mockResolvedValueOnce(parentMem)  // parent memory
+      .mockResolvedValueOnce(chunkMem1) // chunk 1
+      .mockResolvedValueOnce(chunkMem2); // chunk 2
+    mockRepo.update.mockResolvedValueOnce(parentMem);
+
+    const result = await service.createMemory('user-1', {
+      type: 'fact',
+      content: 'long content that exceeds threshold',
+      source: 'test',
+      importance: 0.8,
+    });
+
+    expect(result.id).toBe('mem-parent');
+    // Three creates: parent + 2 chunks
+    expect(mockRepo.create).toHaveBeenCalledTimes(3);
+    // One update: parent with chunk IDs
+    expect(mockRepo.update).toHaveBeenCalledOnce();
+    // Embedding events emitted for each chunk + parent
+    expect(mockEventSystemEmit).toHaveBeenCalledTimes(3);
+  });
+});
+
+// ── getMemoryService singleton ────────────────────────────────────────────────
+
+describe('getMemoryService', () => {
+  it('returns a MemoryService instance', () => {
+    const svc = getMemoryService();
+    expect(svc).toBeInstanceOf(MemoryService);
+  });
+
+  it('returns the same singleton on repeated calls', () => {
+    const s1 = getMemoryService();
+    const s2 = getMemoryService();
+    expect(s1).toBe(s2);
   });
 });

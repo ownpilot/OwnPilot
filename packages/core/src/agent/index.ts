@@ -422,6 +422,10 @@ export type {
   CrewTemplate,
   AgentSoulTemplate,
 } from './soul/index.js';
+export type { CrewMemberInfo, CrewContextInfo } from './soul/index.js';
+
+// Crew Orchestrator helpers (values — not types)
+export { buildCrewContextSection, COORDINATION_GUIDANCE } from './soul/index.js';
 
 // Debug logging for AI interactions
 export {

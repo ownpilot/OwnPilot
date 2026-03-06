@@ -130,6 +130,8 @@ export {
   PenTool,
   FormInput,
   BarChart3,
+  SkipForward,
+  Wifi,
 } from 'lucide-react';
 
 // Custom icons not available in lucide-react

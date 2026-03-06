@@ -5,7 +5,14 @@
  * send commands, read sensors, and control actuators.
  */
 
-import { type ToolDefinition, getErrorMessage } from '@ownpilot/core';
+import {
+  type ToolDefinition,
+  type EdgeDeviceStatus,
+  type EdgeDeviceType,
+  type EdgeSensor,
+  type EdgeActuator,
+  getErrorMessage,
+} from '@ownpilot/core';
 import { getEdgeService } from '../services/edge-service.js';
 
 // =============================================================================
@@ -254,8 +261,8 @@ export async function executeEdgeTool(
     case 'list_edge_devices': {
       try {
         const { devices, total } = await service.listDevices(userId, {
-          status: args.status as undefined,
-          type: args.type as undefined,
+          status: args.status as EdgeDeviceStatus | undefined,
+          type: args.type as EdgeDeviceType | undefined,
           search: args.search as string | undefined,
           limit: 50,
         });
@@ -435,8 +442,8 @@ export async function executeEdgeTool(
           name: args.name as string,
           type: args.type as 'raspberry-pi' | 'esp32' | 'arduino' | 'custom',
           protocol: args.protocol as 'mqtt' | 'websocket' | 'http-poll' | undefined,
-          sensors: args.sensors as undefined,
-          actuators: args.actuators as undefined,
+          sensors: args.sensors as Omit<EdgeSensor, 'lastValue' | 'lastUpdated'>[] | undefined,
+          actuators: args.actuators as Omit<EdgeActuator, 'state'>[] | undefined,
           firmwareVersion: args.firmware_version as string | undefined,
         });
 

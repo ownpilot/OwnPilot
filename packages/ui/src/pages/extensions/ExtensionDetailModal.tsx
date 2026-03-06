@@ -14,6 +14,9 @@ import {
   Brain,
   X,
   Trash2,
+  Edit2,
+  Download,
+  Save,
 } from '../../components/icons';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
 import { useToast } from '../../components/ToastProvider';
@@ -40,6 +43,8 @@ interface ExtensionDetailModalProps {
   onClose: () => void;
   onToggle: () => void;
   onUninstall: () => void;
+  /** Called after metadata is saved so parent can refresh the list */
+  onUpdated?: (updated: ExtensionInfo) => void;
 }
 
 export function ExtensionDetailModal({
@@ -47,22 +52,57 @@ export function ExtensionDetailModal({
   onClose,
   onToggle,
   onUninstall,
+  onUpdated,
 }: ExtensionDetailModalProps) {
   const toast = useToast();
   const isEnabled = pkg.status === 'enabled';
   const manifest = pkg.manifest;
   const security = manifest._security;
   const showServicesTab = (manifest.required_services?.length ?? 0) > 0;
-  const [activeTab, setActiveTab] = useState<'overview' | 'security' | 'services'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'security' | 'services' | 'edit'>(
+    'overview'
+  );
   const [confirmUninstall, setConfirmUninstall] = useState(false);
   const [auditResult, setAuditResult] = useState<ExtensionAuditResult | null>(null);
   const [isAuditing, setIsAuditing] = useState(false);
+
+  // Edit state
+  const [editName, setEditName] = useState(pkg.name);
+  const [editDesc, setEditDesc] = useState(pkg.description ?? manifest.description ?? '');
+  const [editVersion, setEditVersion] = useState(pkg.version);
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     if (activeTab === 'services' && !showServicesTab) {
       setActiveTab('overview');
     }
   }, [activeTab, showServicesTab]);
+
+  // Close on Escape
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', handleKey);
+    return () => document.removeEventListener('keydown', handleKey);
+  }, [onClose]);
+
+  const handleSaveEdit = async () => {
+    setIsSaving(true);
+    try {
+      const result = await extensionsApi.update(pkg.id, {
+        name: editName.trim() || undefined,
+        description: editDesc.trim() || undefined,
+        version: editVersion.trim() || undefined,
+      });
+      toast.success('Skill updated');
+      onUpdated?.(result.package);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Save failed');
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const categoryColor = pkg.category
     ? CATEGORY_COLORS[pkg.category] || CATEGORY_COLORS.other
@@ -174,6 +214,17 @@ export function ExtensionDetailModal({
               Services
             </button>
           )}
+          <button
+            onClick={() => setActiveTab('edit')}
+            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors flex items-center gap-1.5 ${
+              activeTab === 'edit'
+                ? 'border-primary text-primary'
+                : 'border-transparent text-text-muted hover:text-text-secondary dark:hover:text-dark-text-secondary'
+            }`}
+          >
+            <Edit2 className="w-3.5 h-3.5" />
+            Edit
+          </button>
         </div>
 
         {/* Content */}
@@ -497,6 +548,91 @@ export function ExtensionDetailModal({
                 )}
 
                 {auditResult && <AuditResultView result={auditResult} />}
+              </div>
+            </div>
+          )}
+
+          {/* Edit Tab */}
+          {activeTab === 'edit' && (
+            <div className="p-6 space-y-5">
+              <p className="text-xs text-text-muted dark:text-dark-text-muted">
+                Edit metadata only. To modify tool code, replace the file and reload.
+              </p>
+
+              {/* Name */}
+              <div>
+                <label className="block text-sm font-medium text-text-secondary dark:text-dark-text-secondary mb-1.5">
+                  Name
+                </label>
+                <input
+                  type="text"
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  className="w-full px-3 py-2 text-sm bg-bg-tertiary dark:bg-dark-bg-tertiary border border-border dark:border-dark-border rounded-lg text-text-primary dark:text-dark-text-primary focus:outline-none focus:ring-2 focus:ring-primary/50"
+                />
+              </div>
+
+              {/* Version */}
+              <div>
+                <label className="block text-sm font-medium text-text-secondary dark:text-dark-text-secondary mb-1.5">
+                  Version
+                </label>
+                <input
+                  type="text"
+                  value={editVersion}
+                  onChange={(e) => setEditVersion(e.target.value)}
+                  placeholder="1.0.0"
+                  className="w-full px-3 py-2 text-sm bg-bg-tertiary dark:bg-dark-bg-tertiary border border-border dark:border-dark-border rounded-lg text-text-primary dark:text-dark-text-primary focus:outline-none focus:ring-2 focus:ring-primary/50"
+                />
+              </div>
+
+              {/* Description */}
+              <div>
+                <label className="block text-sm font-medium text-text-secondary dark:text-dark-text-secondary mb-1.5">
+                  Description
+                  <span className="ml-1.5 text-xs font-normal text-text-muted dark:text-dark-text-muted">
+                    (used for trigger matching)
+                  </span>
+                </label>
+                <textarea
+                  value={editDesc}
+                  onChange={(e) => setEditDesc(e.target.value)}
+                  rows={4}
+                  placeholder="Describe what this skill does so the agent knows when to activate it..."
+                  className="w-full px-3 py-2 text-sm bg-bg-tertiary dark:bg-dark-bg-tertiary border border-border dark:border-dark-border rounded-lg text-text-primary dark:text-dark-text-primary placeholder:text-text-muted/50 focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none"
+                />
+                <p className="text-xs text-text-muted dark:text-dark-text-muted mt-1">
+                  A clear, specific description improves how reliably this skill triggers on
+                  relevant queries. Use the Optimize step in Create wizard for AI-assisted tuning.
+                </p>
+              </div>
+
+              {/* Download + Save row */}
+              <div className="flex items-center justify-between pt-2">
+                <button
+                  onClick={() => window.open(`/api/v1/extensions/${pkg.id}/package`, '_blank')}
+                  className="flex items-center gap-2 px-4 py-2 text-sm border border-border dark:border-dark-border text-text-secondary dark:text-dark-text-secondary rounded-lg hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary transition-colors"
+                >
+                  <Download className="w-4 h-4" />
+                  Download .skill
+                </button>
+                <button
+                  onClick={handleSaveEdit}
+                  disabled={isSaving}
+                  className="flex items-center gap-2 px-5 py-2 text-sm bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-colors"
+                >
+                  {isSaving ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      Saving…
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-4 h-4" />
+                      Save
+                    </>
+                  )}
+                </button>
               </div>
             </div>
           )}

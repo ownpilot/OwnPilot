@@ -54,6 +54,8 @@ export interface Message {
 }
 
 export interface CreateConversationInput {
+  /** If set, the conversation will be created with this exact ID. */
+  id?: string;
   title?: string;
   agentId?: string;
   agentName?: string;
@@ -183,7 +185,7 @@ export class ChatRepository extends BaseRepository {
   // =====================================================
 
   async createConversation(input: CreateConversationInput): Promise<Conversation> {
-    const id = crypto.randomUUID();
+    const id = input.id ?? crypto.randomUUID();
     const now = new Date().toISOString();
 
     await this.execute(
@@ -482,6 +484,8 @@ export class ChatRepository extends BaseRepository {
     if (conversationId) {
       const existing = await this.getConversation(conversationId);
       if (existing) return existing;
+      // Not found — create with the same ID so agent in-memory UUID stays in sync with DB
+      return this.createConversation({ ...input, id: conversationId });
     }
     return this.createConversation(input);
   }

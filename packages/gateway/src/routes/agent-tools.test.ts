@@ -156,6 +156,10 @@ vi.mock('../tools/index.js', () => ({
   executeArtifactTool: vi.fn(),
   SOUL_COMMUNICATION_TOOLS: [],
   executeSoulCommunicationTool: vi.fn(),
+  CREW_TOOLS: [],
+  executeCrewTool: vi.fn(),
+  SKILL_TOOLS: [],
+  executeSkillTool: vi.fn(),
 }));
 vi.mock('../services/config-tools.js', () => ({
   CONFIG_TOOLS: [],
@@ -192,6 +196,11 @@ vi.mock('../services/log.js', () => ({
     warn: vi.fn(),
     error: vi.fn(),
   }),
+}));
+
+const mockCheckToolPermission = vi.fn().mockResolvedValue({ allowed: true });
+vi.mock('../services/tool-permission-service.js', () => ({
+  checkToolPermission: (...args: unknown[]) => mockCheckToolPermission(...args),
 }));
 
 // Dynamic import after all mocks are in place
@@ -1518,6 +1527,443 @@ describe('agent-tools helpers', () => {
 
       expect(result.isError).toBe(true);
       expect(result.content).toContain('search_tools');
+    });
+  });
+
+  // =========================================================================
+  // registerGatewayTools — trace branch (line 210) and SUBAGENT/ORCHESTRA/ARTIFACT
+  // =========================================================================
+  describe('registerGatewayTools — uncovered executor paths', () => {
+    function captureGatewayExecutors(trace: boolean) {
+      const captured: Array<(args: unknown, ctx: unknown) => Promise<unknown>> = [];
+      const reg = {
+        register: vi.fn((_def: unknown, fn: unknown) => {
+          captured.push(fn as (args: unknown, ctx: unknown) => Promise<unknown>);
+        }),
+        unregister: vi.fn().mockReturnValue(true),
+        has: vi.fn().mockReturnValue(false),
+        execute: vi.fn(),
+      };
+      registerGatewayTools(reg as any, 'user-1', trace);
+      return { reg, captured };
+    }
+
+    it('hits the if(trace) branch in group executor (line 210)', async () => {
+      mockExecuteMemoryTool.mockResolvedValue({ success: true, result: 'stored' });
+      const { captured } = captureGatewayExecutors(true);
+      expect(captured.length).toBeGreaterThan(0);
+      await captured[0]!({}, {});
+      expect(mockTraceToolCallStart).toHaveBeenCalled();
+      expect(mockTraceToolCallEnd).toHaveBeenCalled();
+    });
+
+    it('registers and invokes SUBAGENT_TOOLS executor with trace (lines 221-238)', async () => {
+      const { SUBAGENT_TOOLS } = await import('../tools/index.js');
+      const { executeSubagentTool } = await import('../tools/index.js');
+      const td = { name: 'spawn_agent', description: 'Spawn', parameters: {} };
+      (SUBAGENT_TOOLS as typeof td[]).push(td);
+      try {
+        vi.mocked(executeSubagentTool).mockResolvedValue({ success: true, result: 'spawned' });
+        const { captured } = captureGatewayExecutors(true);
+        const fn = captured[captured.length - 1]!;
+        const result = (await fn({}, { conversationId: 'conv-1' })) as { content: string };
+        expect(result.content).toContain('spawned');
+        expect(mockTraceToolCallEnd).toHaveBeenCalled();
+      } finally {
+        const i = (SUBAGENT_TOOLS as typeof td[]).indexOf(td);
+        if (i > -1) (SUBAGENT_TOOLS as typeof td[]).splice(i, 1);
+      }
+    });
+
+    it('registers and invokes ORCHESTRA_TOOL_DEFINITIONS executor (lines 244-261)', async () => {
+      const { ORCHESTRA_TOOL_DEFINITIONS } = await import('../tools/index.js');
+      const { executeOrchestraTool } = await import('../tools/index.js');
+      const td = { name: 'orchestrate', description: 'Orchestrate', parameters: {} };
+      (ORCHESTRA_TOOL_DEFINITIONS as typeof td[]).push(td);
+      try {
+        vi.mocked(executeOrchestraTool).mockResolvedValue({ success: true, result: 'orchestrated' });
+        const { captured } = captureGatewayExecutors(true);
+        const fn = captured[captured.length - 1]!;
+        const result = (await fn({}, { conversationId: 'conv-1' })) as { content: string };
+        expect(result.content).toContain('orchestrated');
+        expect(mockTraceToolCallEnd).toHaveBeenCalled();
+      } finally {
+        const i = (ORCHESTRA_TOOL_DEFINITIONS as typeof td[]).indexOf(td);
+        if (i > -1) (ORCHESTRA_TOOL_DEFINITIONS as typeof td[]).splice(i, 1);
+      }
+    });
+
+    it('registers and invokes ARTIFACT_TOOLS executor (lines 267-284)', async () => {
+      const { ARTIFACT_TOOLS } = await import('../tools/index.js');
+      const { executeArtifactTool } = await import('../tools/index.js');
+      const td = { name: 'create_artifact', description: 'Artifact', parameters: {} };
+      (ARTIFACT_TOOLS as typeof td[]).push(td);
+      try {
+        vi.mocked(executeArtifactTool).mockResolvedValue({ success: true, result: 'artifact' });
+        const { captured } = captureGatewayExecutors(true);
+        const fn = captured[captured.length - 1]!;
+        const result = (await fn({}, { conversationId: 'conv-1' })) as { content: string };
+        expect(result.content).toContain('artifact');
+        expect(mockTraceToolCallEnd).toHaveBeenCalled();
+      } finally {
+        const i = (ARTIFACT_TOOLS as typeof td[]).indexOf(td);
+        if (i > -1) (ARTIFACT_TOOLS as typeof td[]).splice(i, 1);
+      }
+    });
+  });
+
+  // =========================================================================
+  // registerDynamicTools — meta-tool executor bodies + trace DB branches
+  // =========================================================================
+  describe('registerDynamicTools — meta-tool bodies and CRUD trace', () => {
+    function buildDynReg() {
+      const byName: Record<string, (args: unknown, ctx: unknown) => Promise<unknown>> = {};
+      const reg = {
+        register: vi.fn((def: { name: string }, fn: unknown) => {
+          byName[def.name] = fn as (args: unknown, ctx: unknown) => Promise<unknown>;
+        }),
+        unregister: vi.fn(),
+        has: vi.fn().mockReturnValue(false),
+        execute: vi.fn(),
+        getDefinitions: vi.fn().mockReturnValue([]),
+        getDefinition: vi.fn().mockReturnValue(null),
+      };
+      return { reg, byName };
+    }
+
+    it('invokes search_tools executor body (line 342)', async () => {
+      const { reg, byName } = buildDynReg();
+      await registerDynamicTools(reg as any, 'user', 'conv', false);
+      const fn = byName['search_tools'];
+      if (fn) await fn({ query: 'all' }, {});
+      expect(fn).toBeDefined();
+    });
+
+    it('invokes inspect_tool_source executor body (line 351)', async () => {
+      const { reg, byName } = buildDynReg();
+      await registerDynamicTools(reg as any, 'user', 'conv', false);
+      const fn = byName['inspect_tool_source'];
+      if (fn) {
+        mockCustomToolsRepo.getByName.mockResolvedValueOnce(null);
+        mockFindSimilarToolNames.mockReturnValueOnce([]);
+        await fn({ tool_name: 'nope' }, {});
+      }
+      expect(fn).toBeDefined();
+    });
+
+    it('invokes get_tool_help executor body (line 357)', async () => {
+      const { reg, byName } = buildDynReg();
+      await registerDynamicTools(reg as any, 'user', 'conv', false);
+      const fn = byName['get_tool_help'];
+      if (fn) await fn({ tool_name: 'anything' }, {});
+      expect(fn).toBeDefined();
+    });
+
+    it('invokes use_tool executor body (line 363)', async () => {
+      const { reg, byName } = buildDynReg();
+      await registerDynamicTools(reg as any, 'user', 'conv', false);
+      const fn = byName['use_tool'];
+      if (fn) await fn({ tool_name: 'nonexistent', arguments: {} }, {});
+      expect(fn).toBeDefined();
+    });
+
+    it('invokes batch_use_tool executor body (line 369)', async () => {
+      const { reg, byName } = buildDynReg();
+      await registerDynamicTools(reg as any, 'user', 'conv', false);
+      const fn = byName['batch_use_tool'];
+      if (fn) await fn({ calls: [] }, {});
+      expect(fn).toBeDefined();
+    });
+
+    it('covers trace DB branches for list/delete/toggle/update (lines 324-328)', async () => {
+      const byName: Record<string, (args: unknown, ctx: unknown) => Promise<unknown>> = {};
+      const reg = {
+        register: vi.fn((def: { name: string }, fn: unknown) => {
+          byName[def.name] = fn as (args: unknown, ctx: unknown) => Promise<unknown>;
+        }),
+        unregister: vi.fn(),
+        has: vi.fn().mockReturnValue(false),
+        execute: vi.fn(),
+        getDefinitions: vi.fn().mockReturnValue([]),
+        getDefinition: vi.fn().mockReturnValue(null),
+      };
+      mockExecuteCustomToolTool.mockResolvedValue({ success: true, result: [] });
+      await registerDynamicTools(reg as any, 'user', 'conv', true);
+
+      for (const name of ['list_custom_tools', 'delete_custom_tool', 'toggle_custom_tool', 'update_custom_tool']) {
+        const fn = byName[name];
+        if (fn) await fn({}, {});
+      }
+      expect(mockTraceDbRead).toHaveBeenCalledWith('custom_tools', 'select');
+      expect(mockTraceDbWrite).toHaveBeenCalledWith('custom_tools', 'delete');
+      expect(mockTraceDbWrite).toHaveBeenCalledWith('custom_tools', 'update');
+    });
+
+    it('invokes active custom tool executor with trace (lines 378-395)', async () => {
+      const { executeActiveCustomTool } = await import('./custom-tools.js');
+      vi.mocked(executeActiveCustomTool).mockResolvedValue({ success: true, result: 'custom' });
+      mockGetActiveCustomToolDefinitions.mockResolvedValueOnce([
+        { name: 'my_custom', description: 'Custom', parameters: {} },
+      ]);
+
+      const captured: Array<(args: unknown, ctx: unknown) => Promise<unknown>> = [];
+      const reg = {
+        register: vi.fn((_def: unknown, fn: unknown) => {
+          captured.push(fn as (args: unknown, ctx: unknown) => Promise<unknown>);
+        }),
+        unregister: vi.fn(),
+        has: vi.fn().mockReturnValue(false),
+        execute: vi.fn(),
+        getDefinitions: vi.fn().mockReturnValue([]),
+        getDefinition: vi.fn().mockReturnValue(null),
+      };
+
+      await registerDynamicTools(reg as any, 'user', 'conv', true);
+      const fn = captured[captured.length - 1]!;
+      const result = (await fn({}, {})) as { content: string };
+      expect(result.content).toContain('custom');
+      expect(mockTraceToolCallStart).toHaveBeenCalled();
+      expect(mockTraceToolCallEnd).toHaveBeenCalled();
+    });
+  });
+
+  // =========================================================================
+  // registerPluginTools — stub removal (lines 120-122) + trace (lines 437-445)
+  // =========================================================================
+  describe('registerPluginTools — stub removal and trace', () => {
+    it('unregisters core stubs when plugin provides superseding tool (lines 120-122)', () => {
+      mockGetServiceRegistry.mockReturnValue({
+        get: vi.fn(() => ({
+          getAllTools: vi.fn().mockReturnValue([
+            {
+              pluginId: 'email-plugin',
+              definition: { name: 'email_send', description: 'Send email', parameters: {} },
+              executor: vi.fn(async () => ({ content: 'sent' })),
+            },
+          ]),
+          getEnabled: vi.fn().mockReturnValue([]),
+        })),
+      });
+      const reg = createMockRegistry();
+      registerPluginTools(reg as any, false);
+      expect(reg.unregister).toHaveBeenCalledWith('send_email');
+    });
+
+    it('calls traceToolCallEnd when plugin executor succeeds with trace=true (lines 437-438)', async () => {
+      const pluginFn = vi.fn(async () => ({ content: 'ok', isError: false }));
+      mockGetServiceRegistry.mockReturnValue({
+        get: vi.fn(() => ({
+          getAllTools: vi.fn().mockReturnValue([
+            {
+              pluginId: 'some-plugin',
+              definition: { name: 'plugin_tool', description: 'Plugin', parameters: {} },
+              executor: pluginFn,
+            },
+          ]),
+          getEnabled: vi.fn().mockReturnValue([]),
+        })),
+      });
+      const wrapped: Array<(args: unknown, ctx: unknown) => Promise<unknown>> = [];
+      const reg = createMockRegistry();
+      reg.register.mockImplementation((_def: unknown, fn: unknown) => {
+        wrapped.push(fn as (args: unknown, ctx: unknown) => Promise<unknown>);
+      });
+      registerPluginTools(reg as any, true);
+      expect(wrapped.length).toBeGreaterThan(0);
+      await wrapped[0]!({}, {});
+      expect(mockTraceToolCallEnd).toHaveBeenCalledWith(
+        'plugin_tool', expect.any(Number), true, 'ok', undefined
+      );
+    });
+
+    it('traceToolCallEnd on isError=true (line 438)', async () => {
+      const pluginFn = vi.fn(async () => ({ content: 'err!', isError: true }));
+      mockGetServiceRegistry.mockReturnValue({
+        get: vi.fn(() => ({
+          getAllTools: vi.fn().mockReturnValue([
+            {
+              pluginId: 'err-plugin',
+              definition: { name: 'err_plugin', description: 'Err', parameters: {} },
+              executor: pluginFn,
+            },
+          ]),
+          getEnabled: vi.fn().mockReturnValue([]),
+        })),
+      });
+      const wrapped: Array<(args: unknown, ctx: unknown) => Promise<unknown>> = [];
+      const reg = createMockRegistry();
+      reg.register.mockImplementation((_def: unknown, fn: unknown) => {
+        wrapped.push(fn as (args: unknown, ctx: unknown) => Promise<unknown>);
+      });
+      registerPluginTools(reg as any, true);
+      await wrapped[0]!({}, {});
+      expect(mockTraceToolCallEnd).toHaveBeenCalledWith(
+        'err_plugin', expect.any(Number), false, 'err!', 'err!'
+      );
+    });
+  });
+
+  // =========================================================================
+  // registerExtensionTools — executor invocation (lines 527-552)
+  // =========================================================================
+  describe('registerExtensionTools — executor invocation', () => {
+    function setupExtSvc(toolName: string) {
+      mockGetServiceRegistry.mockReturnValue({
+        get: vi.fn(() => ({
+          getToolDefinitions: vi.fn().mockReturnValue([
+            {
+              name: toolName,
+              description: 'Ext tool',
+              parameters: { type: 'object' },
+              category: 'utility',
+              format: 'ownpilot',
+              extensionId: 'ext-1',
+              extensionTool: { parameters: {}, code: 'return 1;', permissions: [] },
+            },
+          ]),
+        })),
+      });
+    }
+
+    it('executes extension tool with trace=true on success (lines 527-543)', async () => {
+      setupExtSvc('ext_exec');
+      mockDynamicRegistry.has.mockReturnValue(true);
+      mockDynamicRegistry.execute.mockResolvedValue({ content: 'ext ok', isError: false });
+
+      const wrapped: Array<(args: unknown, ctx: unknown) => Promise<unknown>> = [];
+      const reg = createMockRegistry();
+      reg.register.mockImplementation((_def: unknown, fn: unknown) => {
+        wrapped.push(fn as (args: unknown, ctx: unknown) => Promise<unknown>);
+        return { ok: true };
+      });
+      registerExtensionTools(reg as any, 'user', true);
+
+      expect(wrapped.length).toBeGreaterThan(0);
+      const result = (await wrapped[0]!({}, {})) as { content: string };
+      expect(result.content).toBe(JSON.stringify('ext ok'));
+      expect(mockTraceToolCallStart).toHaveBeenCalled();
+      expect(mockTraceToolCallEnd).toHaveBeenCalled();
+    });
+
+    it('returns error string when isError=true (lines 543-548)', async () => {
+      setupExtSvc('ext_err');
+      mockDynamicRegistry.has.mockReturnValue(true);
+      mockDynamicRegistry.execute.mockResolvedValue({ content: 'exec err', isError: true });
+
+      const wrapped: Array<(args: unknown, ctx: unknown) => Promise<unknown>> = [];
+      const reg = createMockRegistry();
+      reg.register.mockImplementation((_def: unknown, fn: unknown) => {
+        wrapped.push(fn as (args: unknown, ctx: unknown) => Promise<unknown>);
+        return { ok: true };
+      });
+      registerExtensionTools(reg as any, 'user', false);
+      const result = (await wrapped[0]!({}, {})) as { content: string; isError?: boolean };
+      expect(result.isError).toBe(true);
+      expect(result.content).toBe('exec err');
+    });
+
+    it('catches thrown errors in extension executor (lines 550-552)', async () => {
+      setupExtSvc('ext_throw');
+      mockDynamicRegistry.has.mockReturnValue(true);
+      mockDynamicRegistry.execute.mockRejectedValue(new Error('crashed'));
+
+      const wrapped: Array<(args: unknown, ctx: unknown) => Promise<unknown>> = [];
+      const reg = createMockRegistry();
+      reg.register.mockImplementation((_def: unknown, fn: unknown) => {
+        wrapped.push(fn as (args: unknown, ctx: unknown) => Promise<unknown>);
+        return { ok: true };
+      });
+      registerExtensionTools(reg as any, 'user', true);
+      const result = (await wrapped[0]!({}, {})) as { content: string; isError?: boolean };
+      expect(result.isError).toBe(true);
+      expect(result.content).toBe('crashed');
+      expect(mockTraceToolCallEnd).toHaveBeenCalledWith(
+        'ext_throw', expect.any(Number), false, undefined, 'crashed'
+      );
+    });
+  });
+
+  // =========================================================================
+  // registerMcpTools — trace=true success path (lines 596-604)
+  // =========================================================================
+  describe('registerMcpTools — trace success path', () => {
+    it('calls traceToolCallEnd on successful MCP result with trace=true (lines 596-597)', async () => {
+      mockSharedToolRegistry.getToolsBySource.mockReturnValue([
+        {
+          definition: { name: 'mcp.ok_tool', description: 'MCP ok', parameters: {} },
+          executor: vi.fn(async () => ({ content: 'mcp ok', isError: false })),
+          pluginId: 'mcp-1',
+          providerName: 'my-mcp',
+        },
+      ]);
+      const wrapped: Array<(args: unknown, ctx: unknown) => Promise<unknown>> = [];
+      const reg = createMockRegistry();
+      reg.has.mockReturnValue(false);
+      reg.register.mockImplementation((_def: unknown, fn: unknown) => {
+        wrapped.push(fn as (args: unknown, ctx: unknown) => Promise<unknown>);
+      });
+      registerMcpTools(reg as any, true);
+      await wrapped[0]!({}, {});
+      expect(mockTraceToolCallEnd).toHaveBeenCalledWith(
+        expect.any(String), expect.any(Number), true, 'mcp ok', undefined
+      );
+    });
+  });
+
+  // =========================================================================
+  // executeUseTool — permission denied (line 666)
+  // =========================================================================
+  describe('executeUseTool — permission denied (line 666)', () => {
+    it('returns error when checkToolPermission denies access', async () => {
+      mockCheckToolPermission.mockResolvedValueOnce({ allowed: false, reason: 'Tool is blocked' });
+      const registry = createMockRegistry({ ok_tool: { name: 'ok_tool', description: 'desc' } });
+      mockValidateRequiredParams.mockReturnValue(null);
+      const result = await executeUseTool(
+        registry as any,
+        { tool_name: 'ok_tool', arguments: {} },
+        {}
+      );
+      expect(result.isError).toBe(true);
+      expect(result.content).toContain("is not available");
+      expect(result.content).toContain('Tool is blocked');
+    });
+  });
+
+  // =========================================================================
+  // executeBatchUseTool — non-string content stringify (line 759-762)
+  // =========================================================================
+  describe('executeBatchUseTool — non-string content (lines 759-762)', () => {
+    it('JSON.stringifies non-string content from tool result', async () => {
+      const registry = createMockRegistry({
+        obj_tool: { name: 'obj_tool', description: 'Returns object' },
+      });
+      mockValidateRequiredParams.mockReturnValue(null);
+      registry.execute.mockResolvedValue({ ok: true, value: { content: { key: 'val' } } });
+      const result = await executeBatchUseTool(
+        registry as any,
+        { calls: [{ tool_name: 'obj_tool', arguments: {} }] },
+        {}
+      );
+      expect(result.content).toContain('"key"');
+      expect(result.content).toContain('"val"');
+    });
+  });
+
+  // =========================================================================
+  // executeSearchTools — tool with tags (line 827)
+  // =========================================================================
+  describe('executeSearchTools — tags in search blob (line 827)', () => {
+    it('matches tool via tag keyword', async () => {
+      const registry = createMockRegistry({
+        store_memory: {
+          name: 'store_memory',
+          description: 'Store something',
+          category: 'memory',
+          tags: ['save', 'remember', 'persist'],
+        },
+      });
+      const result = await executeSearchTools(registry as any, { query: 'save', include_params: false });
+      expect(result.content).toContain('store_memory');
     });
   });
 });

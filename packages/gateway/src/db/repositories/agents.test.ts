@@ -567,6 +567,49 @@ describe('AgentsRepository', () => {
   // Factory
   // =========================================================================
 
+  // =========================================================================
+  // upsertForResync
+  // =========================================================================
+
+  describe('upsertForResync', () => {
+    it('should upsert agent and serialize config (lines 152-153)', async () => {
+      mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
+
+      await repo.upsertForResync({
+        id: 'agent-sync-1',
+        name: 'Synced Bot',
+        provider: 'openai',
+        model: 'gpt-4o',
+        config: { temperature: 0.5 },
+      });
+
+      const sql = mockAdapter.execute.mock.calls[0]![0] as string;
+      expect(sql).toContain('INSERT INTO agents');
+      expect(sql).toContain('ON CONFLICT (id) DO UPDATE');
+      const params = mockAdapter.execute.mock.calls[0]![1] as unknown[];
+      expect(params[0]).toBe('agent-sync-1');
+      expect(params[5]).toBe('{"temperature":0.5}'); // configJson
+    });
+
+    it('should default config to empty object when not provided', async () => {
+      mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
+
+      await repo.upsertForResync({
+        id: 'agent-2',
+        name: 'Bot',
+        provider: 'anthropic',
+        model: 'claude-3',
+      });
+
+      const params = mockAdapter.execute.mock.calls[0]![1] as unknown[];
+      expect(params[5]).toBe('{}');
+    });
+  });
+
+  // =========================================================================
+  // Factory
+  // =========================================================================
+
   describe('createAgentsRepository', () => {
     it('should be importable and return an AgentsRepository instance', async () => {
       const { createAgentsRepository } = await import('./agents.js');

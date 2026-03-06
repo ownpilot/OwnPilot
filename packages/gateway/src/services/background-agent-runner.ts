@@ -19,7 +19,7 @@
  * - MCP tools
  */
 
-import { Agent, ToolRegistry, registerAllTools, getErrorMessage } from '@ownpilot/core';
+import { Agent, ToolRegistry, registerAllTools, getErrorMessage, qualifyToolName } from '@ownpilot/core';
 import type {
   AIProvider,
   BackgroundAgentConfig,
@@ -42,6 +42,8 @@ import {
 import { gatewayConfigCenter } from './config-center-impl.js';
 import { AGENT_DEFAULT_MAX_TOKENS, AGENT_DEFAULT_TEMPERATURE } from '../config/defaults.js';
 import { buildEnhancedSystemPrompt } from '../assistant/orchestrator.js';
+import { getServiceRegistry, Services } from '@ownpilot/core';
+import type { ExtensionService } from '../services/extension-service.js';
 
 const log = getLog('BackgroundAgentRunner');
 
@@ -222,11 +224,31 @@ export class BackgroundAgentRunner {
       );
     }
 
-    // Use allowedTools filter if configured
-    const toolFilter =
-      this.config.allowedTools.length > 0
-        ? this.config.allowedTools.map((t) => t as ToolId)
-        : undefined;
+    // Build tool filter:
+    // - allowedTools: explicit tool name list (exact match)
+    // - skills: extension/skill IDs whose tools should be accessible
+    // When skills are specified, compute their qualified tool names and merge.
+    let toolFilter: ToolId[] | undefined;
+    const allowedSet = new Set(this.config.allowedTools);
+
+    if (this.config.skills && this.config.skills.length > 0) {
+      try {
+        const extService = getServiceRegistry().get(Services.Extension) as ExtensionService;
+        const allowedSkillIds = new Set(this.config.skills);
+        for (const def of extService.getToolDefinitions()) {
+          if (allowedSkillIds.has(def.extensionId)) {
+            const nsPrefix = def.format === 'agentskills' ? 'skill' : 'ext';
+            allowedSet.add(qualifyToolName(def.name, nsPrefix as 'skill' | 'ext', def.extensionId));
+          }
+        }
+      } catch (err) {
+        log.debug(`[${this.config.id}] Skills filter build failed: ${getErrorMessage(err)}`);
+      }
+    }
+
+    if (allowedSet.size > 0) {
+      toolFilter = [...allowedSet].map((t) => t as ToolId);
+    }
 
     const agent = new Agent(
       {

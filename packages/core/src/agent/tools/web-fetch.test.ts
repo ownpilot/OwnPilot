@@ -20,6 +20,8 @@ vi.mock('node:dns/promises', () => ({
   }),
 }));
 
+import { lookup as dnsLookup } from 'node:dns/promises';
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -1238,5 +1240,50 @@ describe('edge cases', () => {
       const callArgs = fetchMock.mock.calls[fetchMock.mock.calls.length - 1][1] as RequestInit;
       expect(callArgs.method).toBe(method);
     }
+  });
+});
+
+// =============================================================================
+// DNS rebinding protection (isPrivateUrlAsync) in fetchWebPageExecutor / jsonApiExecutor
+// =============================================================================
+
+describe('DNS rebinding protection (isPrivateUrlAsync)', () => {
+  const mockLookup = vi.mocked(dnsLookup);
+
+  beforeEach(() => {
+    // Default: public IP
+    mockLookup.mockResolvedValue([{ address: '93.184.216.34', family: 4 }] as any);
+  });
+
+  it('fetchWebPageExecutor blocks when hostname resolves to a private IP', async () => {
+    mockLookup.mockResolvedValueOnce([{ address: '10.0.0.1', family: 4 }] as any);
+    const result = await fetchWebPageExecutor({ url: 'https://internal-host.example.com' }, ctx);
+    expect(result.isError).toBe(true);
+    expect((result.content as any).error).toContain('blocked');
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('jsonApiExecutor blocks when hostname resolves to a private IP', async () => {
+    mockLookup.mockResolvedValueOnce([{ address: '192.168.1.5', family: 4 }] as any);
+    const result = await jsonApiExecutor({ url: 'https://internal-api.example.com' }, ctx);
+    expect(result.isError).toBe(true);
+    expect((result.content as any).error).toContain('blocked');
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('fetchWebPageExecutor allows when hostname resolves to a public IP', async () => {
+    fetchMock.mockResolvedValue(mockResponse({ body: '<html>ok</html>' }));
+    const result = await fetchWebPageExecutor({ url: 'https://public-host.example.com' }, ctx);
+    expect(result.isError).toBe(false);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('jsonApiExecutor allows when hostname resolves to a public IP', async () => {
+    fetchMock.mockResolvedValue(
+      mockResponse({ headers: { 'content-type': 'application/json' }, json: { ok: true } })
+    );
+    const result = await jsonApiExecutor({ url: 'https://public-api.example.com' }, ctx);
+    expect(result.isError).toBe(false);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 });

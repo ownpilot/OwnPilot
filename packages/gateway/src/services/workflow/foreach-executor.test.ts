@@ -21,6 +21,7 @@ const mockExecuteLlmNode = vi.hoisted(() => vi.fn());
 const mockExecuteConditionNode = vi.hoisted(() => vi.fn());
 const mockExecuteCodeNode = vi.hoisted(() => vi.fn());
 const mockExecuteTransformerNode = vi.hoisted(() => vi.fn());
+const mockExecuteSwitchNode = vi.hoisted(() => vi.fn());
 
 // ---------------------------------------------------------------------------
 // Mocks
@@ -55,6 +56,9 @@ vi.mock('./node-executors.js', () => ({
   executeConditionNode: mockExecuteConditionNode,
   executeCodeNode: mockExecuteCodeNode,
   executeTransformerNode: mockExecuteTransformerNode,
+  executeSwitchNode: mockExecuteSwitchNode,
+  executeHttpRequestNode: vi.fn(),
+  executeDelayNode: vi.fn(),
 }));
 
 // ---------------------------------------------------------------------------
@@ -966,4 +970,128 @@ describe('executeForEachNode', () => {
     expect(result.output.errors).toBeUndefined();
     expect(result.error).toBeUndefined();
   });
+
+  it('inner abort check fires between body levels (line 147)', async () => {
+    // Two chained body nodes create two levels; aborting inside level-1 triggers line 147 for level-2
+    const items = ['a'];
+    const abortController = new AbortController();
+
+    const feNode = makeNode('fe1', 'forEachNode', { arrayExpression: '{{source.output}}' });
+    const bodyA = makeNode('bodyA', 'toolNode', { toolName: 'taskA', toolArgs: {} });
+    const bodyB = makeNode('bodyB', 'toolNode', { toolName: 'taskB', toolArgs: {} });
+
+    const edges = [
+      makeEdge('fe1', 'bodyA', 'each'),
+      makeEdge('bodyA', 'bodyB'), // bodyB depends on bodyA → two topological levels
+    ];
+    const nodeMap = new Map<string, WorkflowNode>([
+      ['fe1', feNode],
+      ['bodyA', bodyA],
+      ['bodyB', bodyB],
+    ]);
+
+    vi.mocked(resolveTemplates).mockReturnValue({ _arr: items });
+
+    // Abort the signal while executing bodyA (level-1)
+    mockExecuteNode.mockImplementationOnce(async () => {
+      abortController.abort();
+      return makeNodeResult('bodyA', 'done');
+    });
+
+    const result = await executeForEachNode(
+      feNode,
+      {},
+      {},
+      edges,
+      nodeMap,
+      'user1',
+      abortController.signal,
+      makeToolService()
+    );
+
+    expect(result.status).toBe('error');
+    expect(result.error).toContain('cancelled');
+  });
+
+  it('handles nested forEachNode body type — recursive call (line 173)', async () => {
+    const items = ['a'];
+    const feNode = makeNode('fe1', 'forEachNode', { arrayExpression: '{{source.output}}' });
+    const innerFeNode = makeNode('innerFe', 'forEachNode', {
+      arrayExpression: '{{source.output}}',
+    });
+
+    const edges = [makeEdge('fe1', 'innerFe', 'each')];
+    const nodeMap = new Map<string, WorkflowNode>([
+      ['fe1', feNode],
+      ['innerFe', innerFeNode],
+    ]);
+
+    // First call = outer forEach items; second call = inner forEach (empty → immediate success)
+    vi.mocked(resolveTemplates)
+      .mockReturnValueOnce({ _arr: items })
+      .mockReturnValueOnce({ _arr: [] });
+
+    const result = await executeForEachNode(
+      feNode,
+      {},
+      {},
+      edges,
+      nodeMap,
+      'user1',
+      new AbortController().signal,
+      makeToolService()
+    );
+
+    expect(result.status).toBe('success');
+  });
+
+  it('handles switch node branching in body — skips non-taken handles (lines 248-260)', async () => {
+    const items = ['a'];
+    const feNode = makeNode('fe1', 'forEachNode', { arrayExpression: '{{source.output}}' });
+    const switchNode = makeNode('switchBody', 'switchNode', {
+      cases: [{ label: 'case1' }, { label: 'case2' }],
+    });
+    const case1Node = makeNode('case1Node', 'toolNode', { toolName: 'tool1', toolArgs: {} });
+    const case2Node = makeNode('case2Node', 'toolNode', { toolName: 'tool2', toolArgs: {} });
+
+    const edges = [
+      makeEdge('fe1', 'switchBody', 'each'),
+      makeEdge('switchBody', 'case1Node', 'case1'),
+      makeEdge('switchBody', 'case2Node', 'case2'),
+    ];
+    const nodeMap = new Map<string, WorkflowNode>([
+      ['fe1', feNode],
+      ['switchBody', switchNode],
+      ['case1Node', case1Node],
+      ['case2Node', case2Node],
+    ]);
+
+    vi.mocked(resolveTemplates).mockReturnValue({ _arr: items });
+
+    mockExecuteSwitchNode.mockReturnValue({
+      ...makeNodeResult('switchBody', 'case1'),
+      branchTaken: 'case1',
+    });
+    mockExecuteNode.mockResolvedValue(makeNodeResult('case1Node', 'done'));
+
+    const events: Array<Record<string, unknown>> = [];
+    const result = await executeForEachNode(
+      feNode,
+      {},
+      {},
+      edges,
+      nodeMap,
+      'user1',
+      new AbortController().signal,
+      makeToolService(),
+      (e) => events.push(e)
+    );
+
+    expect(result.status).toBe('success');
+    // case2Node should be skipped (non-taken branch)
+    const case2Skipped = events.find((e) => e.nodeId === 'case2Node' && e.status === 'skipped');
+    expect(case2Skipped).toBeDefined();
+    expect(mockExecuteSwitchNode).toHaveBeenCalledTimes(1);
+  });
+
 });

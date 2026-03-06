@@ -45,28 +45,43 @@ function getChipStyle(type: ResourceType): string {
       return 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20';
     case 'skill':
       return 'bg-violet-500/10 text-violet-600 dark:text-violet-400 border-violet-500/20';
+    case 'file':
+      return 'bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/20';
+    case 'url':
+      return 'bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/20';
+    case 'composio-action':
+      return 'bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 border-yellow-500/20';
+    case 'mcp-tool':
+      return 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500/20';
+    case 'artifact':
+      return 'bg-pink-500/10 text-pink-600 dark:text-pink-400 border-pink-500/20';
+    case 'prompt':
+      return 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20';
   }
 }
 
 function getChipLabel(type: ResourceType): string {
   switch (type) {
-    case 'tool':
-      return 'tool';
-    case 'custom-tool':
-      return 'custom';
-    case 'custom-data':
-      return 'data';
-    case 'builtin-data':
-      return 'built-in';
-    case 'skill':
-      return 'skill';
+    case 'tool': return 'tool';
+    case 'custom-tool': return 'custom';
+    case 'custom-data': return 'data';
+    case 'builtin-data': return 'built-in';
+    case 'skill': return 'skill';
+    case 'file': return 'file';
+    case 'url': return 'url';
+    case 'composio-action': return 'app';
+    case 'mcp-tool': return 'mcp';
+    case 'artifact': return 'artifact';
+    case 'prompt': return 'prompt';
   }
 }
 
 // --- Build hidden context block from attachments ---
 
 function buildContextBlock(attachments: ResourceAttachment[]): string {
-  if (attachments.length === 0) return '';
+  // 'prompt' type attachments are prepended to user text, not injected as context
+  const contextAtts = attachments.filter((a) => a.type !== 'prompt' && a.toolInstructions);
+  if (contextAtts.length === 0) return '';
 
   const lines: string[] = [
     '',
@@ -75,7 +90,7 @@ function buildContextBlock(attachments: ResourceAttachment[]): string {
     '',
   ];
 
-  for (const att of attachments) {
+  for (const att of contextAtts) {
     lines.push(att.toolInstructions);
     lines.push('');
   }
@@ -165,8 +180,13 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(function Ch
     e.preventDefault();
     const hasContent = value.trim() || imagePreviews.length > 0;
     if (hasContent && !isLoading) {
-      // Build final message: user text + hidden context block
-      const userText = value.trim() || (imagePreviews.length > 0 ? 'Analyze this image.' : '');
+      // Prompt attachments prepend their text before the user's message
+      const promptPrefixes = attachments
+        .filter((a) => a.type === 'prompt' && a.promptText)
+        .map((a) => a.promptText!)
+        .join('\n\n');
+      const rawUserText = value.trim() || (imagePreviews.length > 0 ? 'Analyze this image.' : '');
+      const userText = promptPrefixes ? `${promptPrefixes}\n\n${rawUserText}` : rawUserText;
       const contextBlock = buildContextBlock(attachments);
       const finalMessage = userText + contextBlock;
 

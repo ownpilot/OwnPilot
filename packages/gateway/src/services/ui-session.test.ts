@@ -85,6 +85,15 @@ describe('UI Session Service', () => {
     it('returns false for missing salt or hash part', () => {
       expect(verifyPassword('test', ':')).toBe(false);
     });
+
+    it('returns false when stored hash buffer length differs from key length (line 51)', () => {
+      // Create a fake stored hash where the hash part is 32 bytes (64 hex chars)
+      // instead of the expected 64 bytes (128 hex chars). Length mismatch → false.
+      const fakeSalt = 'aa'.repeat(32); // 64-char hex salt
+      const fakeHash = 'bb'.repeat(32); // 64-char hex hash (32 bytes, not 64)
+      const stored = `${fakeSalt}:${fakeHash}`;
+      expect(verifyPassword('any-password', stored)).toBe(false);
+    });
   });
 
   // ── Session Management ────────────────────────────────────────────
