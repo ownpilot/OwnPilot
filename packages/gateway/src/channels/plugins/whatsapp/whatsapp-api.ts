@@ -445,6 +445,27 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
 
               if (rows.length > 0) {
                 const inserted = await messagesRepo.createBatch(rows);
+
+                // Enrich existing rows with media metadata from fresh protos.
+                // createBatch uses ON CONFLICT DO NOTHING, so re-delivered messages
+                // with mediaKey are silently dropped. This pass merges the new
+                // mediaKey/directPath/url into rows that were missing them.
+                let enriched = 0;
+                for (const row of rows) {
+                  const doc = (row.metadata as Record<string, unknown>)?.document as
+                    | { mediaKey?: string; directPath?: string; url?: string }
+                    | undefined;
+                  if (doc?.mediaKey) {
+                    const updated = await messagesRepo.enrichMediaMetadata(row.id, doc);
+                    if (updated) enriched++;
+                  }
+                }
+                if (enriched > 0) {
+                  log.info(
+                    `[WhatsApp] History sync enriched ${enriched} existing rows with mediaKey (type: ${syncTypeName})`
+                  );
+                }
+
                 log.info(
                   `[WhatsApp] History sync saved ${inserted}/${rows.length} messages to DB (type: ${syncTypeName})`
                 );

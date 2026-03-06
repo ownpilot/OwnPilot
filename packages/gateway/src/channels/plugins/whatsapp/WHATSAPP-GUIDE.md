@@ -1,7 +1,7 @@
 # WhatsApp Channel — Architecture & Operations Guide
 
 > Agent-friendly reference. Read this before modifying WhatsApp channel code.
-> Last updated: 2026-03-04 (Session 7 — anti-ban hardening + LID research)
+> Last updated: 2026-03-06 (Session 25 — media recovery pipeline + chunk edge case)
 
 ## Message Flow (Incoming)
 
@@ -56,7 +56,7 @@ sendMessage(ChannelOutgoingMessage)
 ### How to change allowed_users
 
 ```sql
--- Add Selin to allowed users
+-- Add a contact to allowed users
 UPDATE config_entries
 SET data = jsonb_set(data::jsonb, '{allowed_users}', '"YOUR_PHONE_NUMBER, OTHER_PHONE_NUMBER"')::text
 WHERE service_name = 'whatsapp_baileys' AND is_default = true;
@@ -183,13 +183,13 @@ AI responds only when you message yourself.
 
 ### Scenario 2: Personal assistant for specific people
 ```
-allowed_users: "YOUR_PHONE_NUMBER, OTHER_PHONE_NUMBER, 905551234567"
+allowed_users: "YOUR_PHONE_NUMBER, OTHER_PHONE_NUMBER, THIRD_PHONE_NUMBER"
 Groups: SKIP
 LID: Activate resolution (so LID contacts are recognized)
 ```
 AI responds to you + listed contacts. Everyone else ignored.
 
-### Scenario 3: Group bot (e.g., "Sor Euronet")
+### Scenario 3: Group bot (e.g., "Company Support Group")
 ```
 allowed_users: "" (empty = all)
 Groups: Enable @g.us processing (modify JID filter)
@@ -261,3 +261,242 @@ Analysis reports from 6 specialist agents (2026-03-04):
 Cloned source repos (for deep pattern analysis):
 - `~/evolution-api-src/` — Evolution API (20MB, main: whatsapp.baileys.service.ts 5122 lines)
 - `~/waha-src/` — WAHA (51MB, main: session.noweb.core.ts 2700+ lines)
+
+## Media Recovery Pipeline
+
+### Overview
+
+WhatsApp media (images, documents, audio, video) follows a two-phase lifecycle:
+
+1. **Metadata arrives first** — via history sync or real-time events, containing `mediaKey`, `directPath`, and a temporary CDN `url`.
+2. **Binary data is downloaded separately** — using the metadata to decrypt the file from WhatsApp's CDN.
+
+Real-time messages include both phases automatically. History sync messages often arrive with metadata only — the CDN URL expires within hours/days, so binary data must be downloaded promptly or recovered later.
+
+### The Problem: ON CONFLICT DO NOTHING
+
+History sync delivers messages in bulk via the `messaging-history.set` Baileys event. These are inserted using `createBatch()`, which uses `INSERT ... ON CONFLICT DO NOTHING` for deduplication.
+
+The issue: WhatsApp sometimes re-delivers the same messages across multiple history sync rounds. The first delivery may arrive **without** media metadata (e.g., during initial pairing), while a later delivery includes full metadata (`mediaKey`, `directPath`, `url`). Because `ON CONFLICT DO NOTHING` silently skips rows that already exist, the updated media metadata from the second delivery is **lost**.
+
+### The Fix: enrichMediaMetadata()
+
+After each `createBatch()` call, an enrichment pass runs over all messages in the batch:
+
+```
+createBatch(messages)           ← INSERT ... ON CONFLICT DO NOTHING
+  ↓
+for each message with mediaKey:
+  enrichMediaMetadata(id, {     ← UPDATE ... WHERE mediaKey IS NULL
+    mediaKey, directPath, url
+  })
+```
+
+`enrichMediaMetadata()` only updates rows where the existing `mediaKey` is missing — it never overwrites valid metadata. This ensures that re-delivered history sync data is merged into existing rows.
+
+**Code location:** `packages/gateway/src/db/repositories/channel-messages.ts`
+
+### Recovery Endpoints
+
+Three endpoints handle different stages of media recovery:
+
+#### 1. Single Message Retry
+
+```
+POST /api/v1/channels/YOUR_CHANNEL_ID/messages/YOUR_MESSAGE_ID/retry-media
+```
+
+Re-downloads binary data for a single message using its stored `mediaKey`. Works only if the message already has a valid `mediaKey` in the database.
+
+```bash
+curl -X POST http://localhost:8080/api/v1/channels/YOUR_CHANNEL_ID/messages/YOUR_MESSAGE_ID/retry-media
+```
+
+**Query parameters:**
+- `index` — attachment index (default `0`)
+
+**Returns:** `{ downloaded: true, size: 275704, mimeType: "image/jpeg" }` on success.
+
+#### 2. Batch Retry
+
+```
+POST /api/v1/channels/YOUR_CHANNEL_ID/batch-retry-media
+```
+
+Downloads binary data for multiple messages in sequence. Requires all messages to already have `mediaKey`. Throttled to avoid WhatsApp rate limits.
+
+```bash
+curl -X POST http://localhost:8080/api/v1/channels/YOUR_CHANNEL_ID/batch-retry-media \
+  -H "Content-Type: application/json" \
+  -d '{
+    "messageIds": ["MSG_ID_1", "MSG_ID_2", "MSG_ID_3"],
+    "throttleMs": 5000
+  }'
+```
+
+**Parameters:**
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `messageIds` | `string[]` | (required) | Message IDs to retry (max 50) |
+| `throttleMs` | `number` | `5000` | Delay between downloads in milliseconds |
+
+#### 3. Full Recovery Pipeline
+
+```
+POST /api/v1/channels/YOUR_CHANNEL_ID/recover-media
+```
+
+Production-grade endpoint that orchestrates the full pipeline: query DB for gaps, trigger history sync to obtain missing `mediaKey`s, wait for enrichment, then batch-download.
+
+```bash
+# Dry run — see what would be recovered without downloading
+curl -X POST http://localhost:8080/api/v1/channels/YOUR_CHANNEL_ID/recover-media \
+  -H "Content-Type: application/json" \
+  -d '{
+    "groupJid": "YOUR_GROUP_JID@g.us",
+    "dateFrom": "2026-03-01",
+    "dateTo": "2026-03-05",
+    "dryRun": true
+  }'
+
+# Actual recovery — download up to 20 files
+curl -X POST http://localhost:8080/api/v1/channels/YOUR_CHANNEL_ID/recover-media \
+  -H "Content-Type: application/json" \
+  -d '{
+    "groupJid": "YOUR_GROUP_JID@g.us",
+    "dateFrom": "2026-03-01",
+    "dateTo": "2026-03-05",
+    "limit": 20,
+    "throttleMs": 5000
+  }'
+```
+
+**Parameters:**
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `groupJid` | `string` | (required) | Group JID to recover media from |
+| `dateFrom` | `string` | (none) | ISO date — start of recovery window |
+| `dateTo` | `string` | (none) | ISO date — end of recovery window |
+| `limit` | `number` | `20` | Maximum files to download per call |
+| `dryRun` | `boolean` | `false` | If `true`, report what would be downloaded without actually downloading |
+| `throttleMs` | `number` | `5000` | Delay between downloads (ms) |
+| `syncWaitMs` | `number` | `8000` | How long to wait for history sync delivery (ms) |
+| `skipSync` | `boolean` | `false` | Skip the history sync step (use only existing metadata) |
+
+### Safety Guidelines
+
+| Risk | Mitigation |
+|------|------------|
+| WhatsApp rate limit / ban | `limit` caps downloads per call (default 20). `throttleMs` adds delay between each (default 5s). |
+| Runaway downloads | Always use `dryRun: true` first to inspect scope. Never set `limit` above 50 in production. |
+| Wasted bandwidth | Use `dateFrom`/`dateTo` to narrow the recovery window. Use `skipSync: true` if you know metadata is already present. |
+| CDN URL expiry | `retry-media` and `batch-retry-media` use `mediaKey` + `directPath` for decryption, not the CDN URL. URLs expire but keys remain valid. |
+
+### Pipeline Stages (Internal)
+
+```
+recover-media endpoint
+  │
+  ├─ Step 1: Query DB (getAttachmentsNeedingRecovery)
+  │   ├─ needsKey=true  → messages missing mediaKey entirely
+  │   └─ needsData=true → messages with mediaKey but no binary
+  │
+  ├─ Step 2: History sync (if needsKey > 0 && !skipSync)
+  │   ├─ fetchGroupHistory(groupJid, 50)
+  │   └─ Wait syncWaitMs for async delivery + enrichment
+  │
+  ├─ Step 3: Re-query (messages now enriched with mediaKey)
+  │   └─ Filter to downloadable (has mediaKey, missing data)
+  │
+  └─ Step 4: Batch download (throttled, capped by limit)
+      ├─ retryMediaFromMetadata() per message
+      ├─ updateAttachments() to persist binary
+      └─ Return results array with success/failure per file
+```
+
+## Known Limitations — History Sync Chunk Boundary Edge Case
+
+### The Finding
+
+During history sync, WhatsApp delivers messages in "chunks" that cover date ranges. Each chunk normally includes full media metadata (`mediaKey`, `directPath`, `url`) for attachment messages.
+
+In rare cases (~2% observed), a chunk delivers messages **without** any media metadata. This affects **all** messages in the chunk regardless of sender or file type.
+
+Affected messages have these characteristics:
+- `hasUrl: false`
+- `hasMediaKey: false`
+- `size: null`
+- `contentType: 'attachment'` (correctly identified as media)
+- `attachments: [{ type: 'file', url: '' }]` (placeholder, no data)
+
+`enrichMediaMetadata()` **cannot fix these** because WhatsApp never re-sends the mediaKey for these messages — subsequent history syncs return the same chunk with the same missing metadata.
+
+### Observable Pattern
+
+When querying attachment messages for a group over a date range, a sharp boundary is visible:
+
+```
+Day N-1:  12 messages — all have mediaKey  ✅
+Day N:     8 messages — ALL missing mediaKey ❌ (User A: 3, User B: 3, User C: 2)
+Day N+1:   5 messages — ALL missing mediaKey ❌ (User A: 2, User B: 2, User C: 1)
+Day N+2:  10 messages — all have mediaKey  ✅
+```
+
+Key observations:
+- The gap spans exactly 1-2 days with sharp start/end boundaries
+- **All** senders in the affected range are missing metadata (not sender-specific)
+- **All** file types in the range are affected (PDF, JPEG, etc. — not type-specific)
+- Messages before and after the gap have complete metadata
+
+This pattern strongly suggests a **chunk-level** issue rather than a per-message problem.
+
+### Possible Causes
+
+1. **Chunk too large** — The history sync proto for the affected date range exceeded an internal size limit, causing WhatsApp to truncate the media metadata sub-message while preserving the text/envelope data.
+
+2. **Connection interrupted during chunk delivery** — The chunk was partially received (message envelopes arrived, media metadata packet did not), and the client marked it as complete.
+
+3. **Server-side truncation** — WhatsApp's server marked the chunk as "delivered" before the media metadata portion was fully serialized, possibly due to load or timeout.
+
+### Diagnostic Query
+
+To identify affected date ranges in your database:
+
+```sql
+-- Find date ranges with missing mediaKey (chunk boundary detection)
+SELECT
+  DATE(created_at) AS msg_date,
+  COUNT(*) AS total_attachments,
+  COUNT(*) FILTER (WHERE
+    metadata::jsonb->'document'->>'mediaKey' IS NOT NULL
+  ) AS has_key,
+  COUNT(*) FILTER (WHERE
+    metadata::jsonb->'document'->>'mediaKey' IS NULL
+  ) AS missing_key
+FROM channel_messages
+WHERE channel_id = 'YOUR_CHANNEL_ID'
+  AND content_type = 'attachment'
+  AND metadata::jsonb->'document' IS NOT NULL
+GROUP BY DATE(created_at)
+ORDER BY msg_date;
+```
+
+If a date shows `missing_key = total_attachments` (100% missing), it is likely a chunk boundary issue.
+
+### Workarounds
+
+| Method | Success Rate | Description |
+|--------|-------------|-------------|
+| Re-trigger `fetchGroupHistory` | Low (~10%) | Same chunk is likely returned with the same missing metadata. Worth one attempt. |
+| Forward files from phone | 100% | Ask a group member to forward the affected files. Creates a new real-time message with a fresh `mediaKey`. Works for any file type. |
+| Manual export from phone | 100% | Use WhatsApp's "Export chat" or manually save files from the phone's gallery/file manager. Does not go through OwnPilot. |
+| Wait for future history sync | Unknown | A future full re-sync (e.g., after re-pairing) may deliver the chunk correctly. Not guaranteed. |
+
+### Impact Assessment
+
+- **Scope:** ~2% of history sync date ranges in observed deployments
+- **Severity:** Medium — affects only historical media, not real-time messages
+- **Detection:** Run the diagnostic query above; 100% missing on a full date = chunk issue
+- **No code fix possible:** The root cause is in WhatsApp's server-side chunk serialization. OwnPilot correctly processes whatever metadata is delivered.

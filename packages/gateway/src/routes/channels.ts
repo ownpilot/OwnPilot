@@ -610,6 +610,211 @@ channelRoutes.post('/:id/batch-retry-media', async (c) => {
 });
 
 /**
+ * POST /channels/:id/recover-media
+ * Production-grade targeted media recovery pipeline.
+ * Fetches missing mediaKeys via history sync, then batch-downloads files.
+ *
+ * Usage examples:
+ *   "Get last week's documents" → { groupJid, dateFrom, dateTo }
+ *   "Recover all missing files" → { groupJid }
+ *
+ * Pipeline:
+ *   1. Query DB for messages needing recovery (no key or no data)
+ *   2. Trigger fetchGroupHistory to get fresh protos with mediaKey
+ *   3. Wait for async history sync delivery + enrichment
+ *   4. Batch download via stored metadata (retryMediaFromMetadata)
+ */
+channelRoutes.post('/:id/recover-media', async (c) => {
+  const pluginId = c.req.param('id');
+  const service = getChannelService();
+  const api = service.getChannel(pluginId);
+  if (!api) return notFoundError(c, 'Channel', pluginId);
+  if (!hasMediaRetry(api)) {
+    return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'Channel does not support media retry' }, 501);
+  }
+
+  let body: { groupJid?: string; dateFrom?: string; dateTo?: string; throttleMs?: number; syncWaitMs?: number; skipSync?: boolean; limit?: number; dryRun?: boolean } = {};
+  try { body = (await c.req.json()) ?? {}; } catch { /* empty body OK */ }
+
+  const { groupJid, dateFrom, dateTo, skipSync = false, dryRun = false } = body;
+  // Server-side safety caps to prevent ban risk and runaway requests
+  const limit = Math.min(Math.max(body.limit ?? 20, 1), 50);
+  const throttleMs = Math.max(body.throttleMs ?? 5000, 2000);
+  const syncWaitMs = Math.min(Math.max(body.syncWaitMs ?? 8000, 1000), 30000);
+
+  if (!groupJid) {
+    return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'groupJid is required' }, 400);
+  }
+
+  // Validate date strings if provided
+  const parsedDateFrom = dateFrom ? new Date(dateFrom) : undefined;
+  const parsedDateTo = dateTo ? new Date(dateTo) : undefined;
+  if (parsedDateFrom && isNaN(parsedDateFrom.getTime())) {
+    return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'Invalid dateFrom format' }, 400);
+  }
+  if (parsedDateTo && isNaN(parsedDateTo.getTime())) {
+    return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'Invalid dateTo format' }, 400);
+  }
+
+  const messagesRepo = new ChannelMessagesRepository();
+
+  // Step 1: Find messages needing recovery (single query, partition in memory)
+  const allNeedingRecovery = await messagesRepo.getAttachmentsNeedingRecovery(pluginId, {
+    groupJid,
+    dateFrom: parsedDateFrom,
+    dateTo: parsedDateTo,
+    needsData: true,
+    limit: 1000,
+  });
+  const needsKeyMsgs = allNeedingRecovery.filter((m) => {
+    const doc = (m.metadata as Record<string, unknown>)?.document as { mediaKey?: string } | undefined;
+    return !doc?.mediaKey;
+  });
+  const totalNeedsKey = needsKeyMsgs.length;
+  const totalNeedsData = allNeedingRecovery.length;
+
+  // Step 2: Trigger history sync to get mediaKeys (skip for dryRun)
+  let syncTriggered = false;
+  if (totalNeedsKey > 0 && !skipSync && !dryRun && hasHistoryFetch(api)) {
+    try {
+      await (api as unknown as { fetchGroupHistory(jid: string, count: number): Promise<string> })
+        .fetchGroupHistory(groupJid, 50);
+      syncTriggered = true;
+      // Wait for async delivery — history sync fires via messaging-history.set event
+      await new Promise((resolve) => setTimeout(resolve, syncWaitMs));
+    } catch (err) {
+      log.warn(`[recover-media] History sync failed: ${getErrorMessage(err)}`);
+    }
+  }
+
+  // Step 3: Re-query — some messages should now have mediaKey from enrichment
+  const readyMsgs = syncTriggered
+    ? await messagesRepo.getAttachmentsNeedingRecovery(pluginId, {
+        groupJid,
+        dateFrom: parsedDateFrom,
+        dateTo: parsedDateTo,
+        needsData: true,
+        limit: 1000,
+      })
+    : allNeedingRecovery;
+  // Filter to only those WITH mediaKey (ready for download), apply limit
+  const downloadable = readyMsgs.filter((m) => {
+    const doc = (m.metadata as Record<string, unknown>)?.document as { mediaKey?: string } | undefined;
+    return doc?.mediaKey;
+  }).slice(0, limit);
+
+  // Step 4: Batch download (skip if dryRun)
+  const results: Array<{
+    messageId: string;
+    filename: string | null;
+    success: boolean;
+    size?: number;
+    error?: string;
+  }> = [];
+
+  if (dryRun) {
+    return apiResponse(c, {
+      pipeline: { syncTriggered, syncWaitMs, totalNeedsKey, totalNeedsData, downloadable: downloadable.length, stillMissingKey: 0, limit, dryRun: true },
+      succeeded: 0, failed: 0, results: downloadable.map((m) => ({
+        messageId: m.id,
+        filename: ((m.metadata as Record<string, unknown>)?.document as Record<string, unknown>)?.filename as string ?? null,
+        success: false, error: 'dry-run',
+      })),
+    });
+  }
+
+  for (let i = 0; i < downloadable.length; i++) {
+    const msg = downloadable[i]!;
+    const metadata = msg.metadata ?? {};
+    const doc = (metadata as Record<string, unknown>).document as Record<string, unknown> | undefined;
+    const platformMessageId =
+      typeof (metadata as Record<string, unknown>).platformMessageId === 'string'
+        ? (metadata as Record<string, unknown>).platformMessageId as string
+        : msg.externalId;
+    const remoteJid = typeof (metadata as Record<string, unknown>).jid === 'string'
+      ? (metadata as Record<string, unknown>).jid as string : '';
+    const participant = typeof (metadata as Record<string, unknown>).participant === 'string'
+      ? (metadata as Record<string, unknown>).participant as string : undefined;
+    const fromMe = (metadata as Record<string, unknown>).fromMe === true;
+
+    if (!platformMessageId || !remoteJid) {
+      results.push({
+        messageId: msg.id,
+        filename: (doc?.filename as string) ?? null,
+        success: false,
+        error: 'Missing platformMessageId or remoteJid',
+      });
+      continue;
+    }
+
+    try {
+      const result = await tryStoredMetadataReupload(
+        api, metadata as Record<string, unknown>, platformMessageId, remoteJid, participant, fromMe
+      );
+      if (result) {
+        const attachments = [...(msg.attachments ?? [])];
+        if (!attachments[0]) attachments[0] = { type: 'file', url: '' };
+        attachments[0] = {
+          ...attachments[0]!,
+          mimeType: result.mimeType ?? attachments[0]!.mimeType,
+          filename: result.filename ?? attachments[0]!.filename,
+          data: Buffer.from(result.data).toString('base64'),
+          size: result.size,
+        };
+        await messagesRepo.updateAttachments(msg.id, attachments);
+        results.push({
+          messageId: msg.id,
+          filename: (doc?.filename as string) ?? null,
+          success: true,
+          size: result.size,
+        });
+      } else {
+        results.push({
+          messageId: msg.id,
+          filename: (doc?.filename as string) ?? null,
+          success: false,
+          error: 'No stored metadata (mediaKey missing after sync)',
+        });
+      }
+    } catch (err) {
+      results.push({
+        messageId: msg.id,
+        filename: (doc?.filename as string) ?? null,
+        success: false,
+        error: getErrorMessage(err, 'Download failed'),
+      });
+    }
+
+    if (i < downloadable.length - 1 && throttleMs > 0) {
+      await new Promise((resolve) => setTimeout(resolve, throttleMs));
+    }
+  }
+
+  const stillNeedsKey = await messagesRepo.getAttachmentsNeedingRecovery(pluginId, {
+    groupJid,
+    dateFrom: parsedDateFrom,
+    dateTo: parsedDateTo,
+    needsKey: true,
+    needsData: true,
+    limit: 1000,
+  });
+
+  return apiResponse(c, {
+    pipeline: {
+      syncTriggered,
+      syncWaitMs,
+      totalNeedsKey,
+      totalNeedsData,
+      downloadable: downloadable.length,
+      stillMissingKey: stillNeedsKey.length,
+    },
+    succeeded: results.filter((r) => r.success).length,
+    failed: results.filter((r) => !r.success).length,
+    results,
+  });
+});
+
+/**
  * DELETE /channels/messages - Clear all inbox messages
  */
 channelRoutes.delete('/messages', async (c) => {

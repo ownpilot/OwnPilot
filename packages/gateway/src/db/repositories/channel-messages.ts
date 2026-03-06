@@ -285,6 +285,84 @@ export class ChannelMessagesRepository extends BaseRepository {
     return result.changes > 0;
   }
 
+  /**
+   * Enrich existing message metadata with media fields (mediaKey, directPath, url).
+   * Used after history sync re-delivers messages that already exist in DB —
+   * createBatch ON CONFLICT DO NOTHING skips the insert, so we merge media
+   * fields from the fresh proto into the existing row.
+   *
+   * Only updates if the existing row is MISSING mediaKey (won't overwrite).
+   */
+  async enrichMediaMetadata(
+    id: string,
+    documentMeta: { mediaKey?: string; directPath?: string; url?: string; hasMediaKey?: boolean; hasUrl?: boolean; hasDirectPath?: boolean }
+  ): Promise<boolean> {
+    if (!documentMeta.mediaKey) return false;
+    const patch = JSON.stringify({
+      mediaKey: documentMeta.mediaKey,
+      directPath: documentMeta.directPath ?? null,
+      url: documentMeta.url ?? null,
+      hasMediaKey: true,
+      hasUrl: Boolean(documentMeta.url),
+      hasDirectPath: Boolean(documentMeta.directPath),
+    });
+    const result = await this.execute(
+      `UPDATE channel_messages
+       SET metadata = jsonb_set(
+         metadata,
+         '{document}',
+         COALESCE(metadata->'document', '{}'::jsonb) || $2::jsonb
+       )
+       WHERE id = $1
+         AND (metadata->'document'->>'mediaKey' IS NULL OR metadata->'document'->>'mediaKey' = '')`,
+      [id, patch]
+    );
+    return result.changes > 0;
+  }
+
+  /**
+   * Find messages needing media recovery: have document metadata but missing mediaKey or data.
+   * Supports optional date range and group JID filtering.
+   */
+  async getAttachmentsNeedingRecovery(
+    channelId: string,
+    opts?: { groupJid?: string; dateFrom?: Date; dateTo?: Date; needsKey?: boolean; needsData?: boolean; limit?: number }
+  ): Promise<ChannelMessage[]> {
+    const conditions = [`channel_id = $1`, `metadata->'document' IS NOT NULL`];
+    const params: unknown[] = [channelId];
+    let idx = 2;
+
+    if (opts?.groupJid) {
+      conditions.push(`metadata->>'jid' = $${idx}`);
+      params.push(opts.groupJid);
+      idx++;
+    }
+    if (opts?.dateFrom) {
+      conditions.push(`created_at >= $${idx}`);
+      params.push(opts.dateFrom.toISOString());
+      idx++;
+    }
+    if (opts?.dateTo) {
+      conditions.push(`created_at <= $${idx}`);
+      params.push(opts.dateTo.toISOString());
+      idx++;
+    }
+    if (opts?.needsKey) {
+      conditions.push(`(metadata->'document'->>'mediaKey' IS NULL OR metadata->'document'->>'mediaKey' = '')`);
+    }
+    if (opts?.needsData) {
+      // Note: checks only first attachment (index 0) — WhatsApp documents are single-attachment
+      conditions.push(`(attachments->0->>'data' IS NULL OR attachments->0->>'data' = '')`);
+    }
+
+    const queryLimit = opts?.limit ? Math.min(opts.limit, 1000) : 1000;
+    const rows = await this.query<ChannelMessageRow>(
+      `SELECT * FROM channel_messages WHERE ${conditions.join(' AND ')} ORDER BY created_at ASC LIMIT ${queryLimit}`,
+      params
+    );
+    return rows.map((r) => rowToChannelMessage(r));
+  }
+
   async delete(id: string): Promise<boolean> {
     const result = await this.execute(`DELETE FROM channel_messages WHERE id = $1`, [id]);
     return result.changes > 0;
