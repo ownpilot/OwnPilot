@@ -367,7 +367,7 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
 
                 // Skip empty messages (no text, no recognizable content)
                 if (!parsedPayload.text && parsedPayload.media.length === 0) continue;
-                const contentText = parsedPayload.text || '[Attachment]';
+                const contentText = parsedPayload.text || parsedPayload.media[0]?.filename || '[Attachment]';
 
                 const participantJid = isGroup ? (msg.key.participant ?? '') : remoteJid;
                 const phone = this.phoneFromJid(participantJid || remoteJid);
@@ -1379,7 +1379,7 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
       // For groups: platformChatId = group JID; for DMs: phone number
       platformChatId: isGroup ? remoteJid : phone,
       sender,
-      text: text || (attachments.length > 0 ? '[Attachment]' : ''),
+      text: text || (attachments.length > 0 ? (parsedPayload.media[0]?.filename ?? '[Attachment]') : ''),
       attachments: attachments.length > 0 ? (attachments as unknown as ChannelAttachment[]) : undefined,
       timestamp,
       metadata: {
