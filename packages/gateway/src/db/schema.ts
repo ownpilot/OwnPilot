@@ -989,10 +989,11 @@ CREATE TABLE IF NOT EXISTS sor_queue (
   status       TEXT NOT NULL DEFAULT 'pending'
                  CHECK(status IN ('pending', 'processing', 'done', 'error')),
   error        TEXT,
-  retry_count  INT NOT NULL DEFAULT 0,
-  content_hash TEXT,
-  created_at   TIMESTAMP NOT NULL DEFAULT NOW(),
-  processed_at TIMESTAMP,
+  retry_count          INT NOT NULL DEFAULT 0,
+  content_hash         TEXT,
+  created_at           TIMESTAMP NOT NULL DEFAULT NOW(),
+  processing_started_at TIMESTAMP,
+  processed_at         TIMESTAMP,
   UNIQUE(message_id)
 );
 
@@ -1036,6 +1037,22 @@ DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'sor_queue' AND column_name = 'content_hash') THEN
     ALTER TABLE sor_queue ADD COLUMN content_hash TEXT;
   END IF;
+END $$;
+
+-- sor_queue: add processing_started_at for accurate stuck-row detection
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'sor_queue' AND column_name = 'processing_started_at') THEN
+    ALTER TABLE sor_queue ADD COLUMN processing_started_at TIMESTAMP;
+  END IF;
+END $$;
+
+-- sor_jid: store WhatsApp group JID in DB config (override hardcoded trigger default)
+-- To change JID without redeployment: ALTER DATABASE ownpilot SET "app.sor_jid" = 'new_jid@g.us';
+DO $$ BEGIN
+  PERFORM set_config('app.sor_jid', current_setting('app.sor_jid', TRUE), FALSE);
+EXCEPTION WHEN OTHERS THEN
+  -- Set DB-level default if not already configured
+  EXECUTE 'ALTER DATABASE ' || current_database() || ' SET "app.sor_jid" = ''120363423491841999@g.us''';
 END $$;
 
 -- sor_upload_log: create audit log table (idempotent)
@@ -1730,16 +1747,20 @@ END $$;
 -- =====================================================
 
 CREATE OR REPLACE FUNCTION enqueue_sor_message() RETURNS trigger AS $$
+DECLARE
+  _sor_jid TEXT;
 BEGIN
   -- For UPDATE: only fire when binary was just added (was NULL before)
   IF TG_OP = 'UPDATE' AND OLD.attachments->0->>'data' IS NOT NULL THEN
     RETURN NEW;
   END IF;
+  -- Read JID from DB config (ALTER DATABASE SET "app.sor_jid" = '...') with hardcoded fallback
+  _sor_jid := COALESCE(NULLIF(current_setting('app.sor_jid', TRUE), ''), '120363423491841999@g.us');
   IF NEW.direction = 'inbound'
      AND NEW.content ILIKE '%.sor'
      AND COALESCE(NEW.attachments, '[]'::jsonb) != '[]'::jsonb
      AND NEW.attachments->0->>'data' IS NOT NULL
-     AND COALESCE(NEW.metadata, '{}')::jsonb->>'jid' = '120363423491841999@g.us'
+     AND COALESCE(NEW.metadata, '{}')::jsonb->>'jid' = _sor_jid
   THEN
     INSERT INTO sor_queue(id, message_id, channel_id, filename)
     VALUES (
@@ -1749,6 +1770,8 @@ BEGIN
       NEW.content
     )
     ON CONFLICT (message_id) DO NOTHING;
+    -- Notify listener for immediate processing (reduces 60s cron latency → <100ms)
+    PERFORM pg_notify('sor_new_file', NEW.id);
   END IF;
   RETURN NEW;
 END;
