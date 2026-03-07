@@ -214,7 +214,7 @@ describe('CodingAgentService', () => {
 
       expect(mockSpawn).toHaveBeenCalledWith(
         'gemini',
-        ['-p', 'Analyze the code structure', '--output-format', 'json'],
+        ['-p', 'Analyze the code structure', '--yolo', '--output-format', 'json'],
         expect.objectContaining({ stdio: ['pipe', 'pipe', 'pipe'] })
       );
     });

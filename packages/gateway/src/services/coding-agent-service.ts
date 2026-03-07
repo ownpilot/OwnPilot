@@ -145,9 +145,7 @@ function resolveCustomApiKey(customProvider: CliProviderRecord): string | undefi
  */
 function buildSkillsPreamble(skills: CodingAgentSkill[]): string {
   if (skills.length === 0) return '';
-  const sections = skills.map(
-    (s) => `## Skill: ${s.name}\n\n${s.content}`
-  );
+  const sections = skills.map((s) => `## Skill: ${s.name}\n\n${s.content}`);
   return `# Instructions & Skills\n\n${sections.join('\n\n---\n\n')}\n\n---\n\n# Task\n\n`;
 }
 
@@ -241,7 +239,9 @@ async function runClaudeCode(task: CodingAgentTask, apiKey?: string): Promise<Co
   if (perms.fileAccess === 'read-only') {
     allowedTools = allowedTools.filter((t) => !['Edit', 'Write'].includes(t));
   } else if (perms.fileAccess === 'none') {
-    allowedTools = allowedTools.filter((t) => !['Read', 'Edit', 'Write', 'Glob', 'Grep'].includes(t));
+    allowedTools = allowedTools.filter(
+      (t) => !['Read', 'Edit', 'Write', 'Glob', 'Grep'].includes(t)
+    );
   }
 
   try {
@@ -353,7 +353,7 @@ async function runGeminiCli(task: CodingAgentTask, apiKey?: string): Promise<Cod
   const cwd = task.cwd ? validateCwd(task.cwd, await getAllowedDirs()) : process.cwd();
   const timeout = Math.min(task.timeout ?? DEFAULT_TIMEOUT_MS, MAX_TIMEOUT_MS);
 
-  const args = ['-p', task.prompt, '--output-format', 'json'];
+  const args = ['-p', task.prompt, '--yolo', '--output-format', 'json'];
   if (task.model) args.push('--model', task.model);
 
   try {
@@ -586,7 +586,7 @@ class CodingAgentService implements ICodingAgentService {
         if (task.model) args.push('--model', task.model);
         break;
       case 'gemini-cli':
-        args = ['-p', task.prompt];
+        args = ['-p', task.prompt, '--yolo'];
         if (task.model) args.push('--model', task.model);
         break;
       default:
@@ -784,7 +784,7 @@ class CodingAgentService implements ICodingAgentService {
         ];
       case 'gemini-cli':
         if (isInteractive) return [];
-        return ['-p', prompt, ...(input.model ? ['--model', input.model] : [])];
+        return ['-p', prompt, '--yolo', ...(input.model ? ['--model', input.model] : [])];
       default:
         return [prompt];
     }
