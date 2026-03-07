@@ -5,33 +5,13 @@
  */
 
 import { Hono } from 'hono';
-import {
-  createProvider,
-  getProviderConfig as coreGetProviderConfig,
-  type AIProvider,
-} from '@ownpilot/core';
 import { validateManifest, type ExtensionManifest } from '../../services/extension-types.js';
 import { serializeExtensionMarkdown } from '../../services/extension-markdown.js';
 import { parseAgentSkillsMd } from '../../services/agentskills-parser.js';
 import { apiResponse, apiError, ERROR_CODES, getErrorMessage, parseJsonBody } from '../helpers.js';
-import { resolveProviderAndModel, getApiKey } from '../settings.js';
-import { localProvidersRepo } from '../../db/repositories/index.js';
+import { resolveRuntimeProvider } from '../../services/model-execution.js';
 
 export const generationRoutes = new Hono();
-
-/** Providers with native SDK support (others use OpenAI-compatible) */
-const NATIVE_PROVIDERS = new Set([
-  'openai',
-  'anthropic',
-  'google',
-  'deepseek',
-  'groq',
-  'mistral',
-  'xai',
-  'together',
-  'fireworks',
-  'perplexity',
-]);
 
 // ============================================================================
 // AI Generation Prompt
@@ -429,9 +409,8 @@ generationRoutes.post('/generate', async (c) => {
     );
   }
 
-  // 1. Resolve default provider/model
-  const { provider, model } = await resolveProviderAndModel('default', 'default');
-  if (!provider || !model) {
+  const resolved = await resolveRuntimeProvider();
+  if (!resolved.providerId || !resolved.model || !resolved.instance) {
     return apiError(
       c,
       {
@@ -442,35 +421,9 @@ generationRoutes.post('/generate', async (c) => {
     );
   }
 
-  // 2. Get API key
-  const localProv = await localProvidersRepo.getProvider(provider);
-  const apiKey = localProv ? localProv.apiKey || 'local-no-key' : await getApiKey(provider);
-  if (!apiKey) {
-    return apiError(
-      c,
-      {
-        code: ERROR_CODES.INVALID_REQUEST,
-        message: `API key not configured for provider: ${provider}`,
-      },
-      400
-    );
-  }
-
-  // 3. Create provider
-  const providerConfig = coreGetProviderConfig(provider);
-  const providerType = NATIVE_PROVIDERS.has(provider) ? provider : 'openai';
-
-  const providerInstance = createProvider({
-    provider: providerType as AIProvider,
-    apiKey,
-    baseUrl: providerConfig?.baseUrl,
-    headers: providerConfig?.headers,
-  });
-
   try {
-    // 4. Call AI
-    const result = await providerInstance.complete({
-      model: { model, maxTokens: 4096, temperature: 0.7 },
+    const result = await resolved.instance.complete({
+      model: { model: resolved.model, maxTokens: 4096, temperature: 0.7 },
       messages: [
         { role: 'system' as const, content: EXTENSION_GENERATION_PROMPT },
         { role: 'user' as const, content: body.description.trim() },
@@ -560,9 +513,8 @@ generationRoutes.post('/generate-skill', async (c) => {
     );
   }
 
-  // 1. Resolve default provider/model
-  const { provider, model } = await resolveProviderAndModel('default', 'default');
-  if (!provider || !model) {
+  const resolved = await resolveRuntimeProvider();
+  if (!resolved.providerId || !resolved.model || !resolved.instance) {
     return apiError(
       c,
       {
@@ -573,35 +525,9 @@ generationRoutes.post('/generate-skill', async (c) => {
     );
   }
 
-  // 2. Get API key
-  const localProv = await localProvidersRepo.getProvider(provider);
-  const apiKey = localProv ? localProv.apiKey || 'local-no-key' : await getApiKey(provider);
-  if (!apiKey) {
-    return apiError(
-      c,
-      {
-        code: ERROR_CODES.INVALID_REQUEST,
-        message: `API key not configured for provider: ${provider}`,
-      },
-      400
-    );
-  }
-
-  // 3. Create provider
-  const providerConfig = coreGetProviderConfig(provider);
-  const providerType = NATIVE_PROVIDERS.has(provider) ? provider : 'openai';
-
-  const providerInstance = createProvider({
-    provider: providerType as AIProvider,
-    apiKey,
-    baseUrl: providerConfig?.baseUrl,
-    headers: providerConfig?.headers,
-  });
-
   try {
-    // 4. Call AI
-    const result = await providerInstance.complete({
-      model: { model, maxTokens: 4096, temperature: 0.7 },
+    const result = await resolved.instance.complete({
+      model: { model: resolved.model, maxTokens: 4096, temperature: 0.7 },
       messages: [
         { role: 'system' as const, content: SKILL_GENERATION_PROMPT },
         { role: 'user' as const, content: body.description.trim() },

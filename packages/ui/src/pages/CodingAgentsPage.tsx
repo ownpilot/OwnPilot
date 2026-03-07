@@ -503,7 +503,11 @@ function ProviderStatusCard({ status }: { status: CodingAgentStatus }) {
           <span className="text-[10px] text-text-muted dark:text-dark-text-muted">
             {status.installed ? (status.version ?? 'Installed') : 'Not installed'}
           </span>
-          {status.configured && <Key className="w-2.5 h-2.5 text-success ml-1" />}
+          {status.configured && (
+            <Key
+              className={`w-2.5 h-2.5 ml-1 ${status.authMethod === 'login' ? 'text-primary' : 'text-success'}`}
+            />
+          )}
         </div>
       </div>
     </div>

@@ -27,6 +27,7 @@ import { getErrorMessage } from '../../routes/helpers.js';
 import { getLog } from '../log.js';
 import { resolveTemplates } from './template-resolver.js';
 import type { ToolExecutionResult } from './types.js';
+import { createRuntimeProvider, isCliRuntimeProvider } from '../model-execution.js';
 import vm from 'node:vm';
 
 const _log = getLog('WorkflowService');
@@ -140,9 +141,6 @@ export async function executeLlmNode(
       ? (resolveTemplates({ _sp: data.systemPrompt }, nodeOutputs, variables)._sp as string)
       : undefined;
 
-    // Lazy import to avoid circular deps (agent-cache is in routes/)
-    const { getProviderApiKey, loadProviderConfig, NATIVE_PROVIDERS } =
-      await import('../../routes/agent-cache.js');
     const { resolveProviderAndModel } = await import('../../routes/settings.js');
 
     // Resolve provider/model: empty or 'default' → user's configured defaults
@@ -172,25 +170,41 @@ export async function executeLlmNode(
       effectiveModel = resolved.model ?? effectiveModel;
     }
 
-    // Resolve API key: use node-level override or stored key
+    const { getProviderApiKey, loadProviderConfig, NATIVE_PROVIDERS } =
+      await import('../../routes/agent-cache.js');
     const apiKey = data.apiKey || (await getProviderApiKey(effectiveProvider));
-
-    // Resolve base URL and headers from provider config
-    let baseUrl = data.baseUrl;
-    const providerCfg = loadProviderConfig(effectiveProvider);
-    if (!baseUrl) {
-      if (providerCfg?.baseUrl) baseUrl = providerCfg.baseUrl;
+    if (!apiKey && !isCliRuntimeProvider(effectiveProvider)) {
+      return {
+        nodeId: node.id,
+        status: 'error',
+        error: `API key not configured for provider: ${effectiveProvider}`,
+        durationMs: Date.now() - startTime,
+        startedAt: new Date(startTime).toISOString(),
+        completedAt: new Date().toISOString(),
+      };
     }
 
-    // Map non-native providers to openai-compatible
-    const providerType = NATIVE_PROVIDERS.has(effectiveProvider) ? effectiveProvider : 'openai';
-
-    const provider = createProvider({
-      provider: providerType as ProviderConfig['provider'],
-      apiKey,
-      baseUrl,
-      headers: providerCfg?.headers,
-    });
+    const provider =
+      data.apiKey || data.baseUrl
+        ? createProvider({
+            provider: (NATIVE_PROVIDERS.has(effectiveProvider)
+              ? effectiveProvider
+              : 'openai') as ProviderConfig['provider'],
+            apiKey: apiKey ?? 'local-no-key',
+            baseUrl: data.baseUrl || loadProviderConfig(effectiveProvider)?.baseUrl,
+            headers: loadProviderConfig(effectiveProvider)?.headers,
+          })
+        : await createRuntimeProvider(effectiveProvider);
+    if (!provider) {
+      return {
+        nodeId: node.id,
+        status: 'error',
+        error: `No runtime provider available for: ${effectiveProvider}`,
+        durationMs: Date.now() - startTime,
+        startedAt: new Date(startTime).toISOString(),
+        completedAt: new Date().toISOString(),
+      };
+    }
 
     const messages: Array<{ role: 'system' | 'user'; content: string }> = [];
     if (resolvedSystemPrompt) {

@@ -2,19 +2,18 @@
  * Workflow Copilot — SSE streaming endpoint.
  *
  * Lightweight AI chat for generating/editing workflow JSON definitions.
- * Uses createProvider().stream() directly — no agent infrastructure needed.
+ * Uses the shared runtime provider resolver — no agent infrastructure needed.
  */
 
 import { Hono } from 'hono';
 import { streamSSE } from 'hono/streaming';
 import { apiError, getErrorMessage, parseJsonBody } from './helpers.js';
 import { ERROR_CODES } from './error-codes.js';
-import { getProviderApiKey, loadProviderConfig, NATIVE_PROVIDERS } from './agent-cache.js';
-import { resolveProviderAndModel } from './settings.js';
 import { validateBody, workflowCopilotSchema } from '../middleware/validation.js';
-import { createProvider, type ProviderConfig, type Message } from '@ownpilot/core';
+import type { Message } from '@ownpilot/core';
 import { buildCopilotSystemPrompt } from './workflow-copilot-prompt.js';
 import { getLog } from '../services/log.js';
+import { resolveRuntimeProvider } from '../services/model-execution.js';
 
 const log = getLog('WorkflowCopilot');
 
@@ -50,12 +49,8 @@ workflowCopilotRoute.post('/', async (c) => {
   }
 
   // Resolve provider and model (fall back to user defaults)
-  const { provider: resolvedProvider, model: resolvedModel } = await resolveProviderAndModel(
-    body.provider ?? 'default',
-    body.model ?? 'default'
-  );
-
-  if (!resolvedProvider) {
+  const resolved = await resolveRuntimeProvider(body.provider, body.model);
+  if (!resolved.providerId || !resolved.model || !resolved.instance) {
     return apiError(
       c,
       {
@@ -66,31 +61,8 @@ workflowCopilotRoute.post('/', async (c) => {
     );
   }
 
-  const apiKey = await getProviderApiKey(resolvedProvider);
-  if (!apiKey) {
-    return apiError(
-      c,
-      {
-        code: ERROR_CODES.PROVIDER_NOT_FOUND,
-        message: `API key not configured for provider: ${resolvedProvider}`,
-      },
-      400
-    );
-  }
-
-  // Resolve base URL for custom/local providers
-  let baseUrl: string | undefined;
-  const config = loadProviderConfig(resolvedProvider);
-  if (config?.baseUrl) baseUrl = config.baseUrl;
-
-  const providerType = NATIVE_PROVIDERS.has(resolvedProvider) ? resolvedProvider : 'openai';
-
-  const provider = createProvider({
-    provider: providerType as ProviderConfig['provider'],
-    apiKey,
-    baseUrl,
-    headers: config?.headers,
-  });
+  const provider = resolved.instance;
+  const model = resolved.model;
 
   // Build system prompt
   const systemPrompt = buildCopilotSystemPrompt(body.currentWorkflow, body.availableTools);
@@ -108,7 +80,7 @@ workflowCopilotRoute.post('/', async (c) => {
       const generator = provider.stream({
         messages,
         model: {
-          model: resolvedModel ?? 'gpt-4o',
+          model,
           maxTokens: 8192,
           temperature: 0.7,
         },

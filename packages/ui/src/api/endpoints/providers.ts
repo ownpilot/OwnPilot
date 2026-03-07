@@ -32,3 +32,9 @@ export const providersApi = {
       `/providers/${id}/models`
     ),
 };
+
+export const localProviderManagementApi = {
+  toggle: (id: string, enabled: boolean) =>
+    apiClient.patch<void>(`/local-providers/${id}/toggle`, { enabled }),
+  delete: (id: string) => apiClient.delete<void>(`/local-providers/${id}`),
+};

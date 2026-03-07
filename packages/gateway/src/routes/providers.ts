@@ -19,6 +19,12 @@ import {
 import { hasApiKey, getApiKeySource } from './settings.js';
 import { modelConfigsRepo } from '../db/repositories/model-configs.js';
 import { localProvidersRepo } from '../db/repositories/index.js';
+import {
+  getCliRuntimeModels,
+  getCliRuntimeProviderMetadata,
+  isCliRuntimeProvider,
+  listCliRuntimeProviderIds,
+} from '../services/model-execution.js';
 
 const app = new Hono();
 
@@ -121,6 +127,7 @@ const DEFAULT_UI_METADATA: { color: string; apiKeyPlaceholder?: string } = { col
 // Provider categories for UI organization
 const PROVIDER_CATEGORIES: Record<string, string[]> = {
   Popular: ['openai', 'anthropic', 'google', 'deepseek', 'groq', 'mistral', 'xai'],
+  'CLI Providers': ['claude-cli', 'codex-cli', 'gemini-cli'],
   'Cloud Platforms': [
     'azure',
     'amazon-bedrock',
@@ -212,7 +219,35 @@ const PROVIDER_CATEGORIES: Record<string, string[]> = {
  * Get all available provider IDs (from core PROVIDER_IDS)
  */
 function getProviderIds(): string[] {
-  return [...PROVIDER_IDS];
+  return [...PROVIDER_IDS, ...listCliRuntimeProviderIds()];
+}
+
+interface ProviderListItem {
+  id: string;
+  name: string;
+  type: string;
+  baseUrl?: string;
+  apiKeyEnv: string;
+  docsUrl?: string;
+  features: {
+    streaming: boolean;
+    toolUse: boolean;
+    vision: boolean;
+    jsonMode: boolean;
+    systemMessage: boolean;
+  };
+  modelCount: number;
+  isConfigured: boolean;
+  isEnabled: boolean;
+  hasOverride: boolean;
+  configSource: string | null;
+  color: string;
+  apiKeyPlaceholder?: string;
+  transport: 'http' | 'cli' | 'local';
+  authMethod: 'api-key' | 'login' | 'both' | 'none';
+  family: string;
+  fallbackProviderId?: string;
+  version?: string;
 }
 
 /**
@@ -227,7 +262,41 @@ app.get('/', async (c) => {
   const overrideMap = new Map(userOverrides.map((o) => [o.providerId, o]));
 
   // Build provider list with async API key checks
-  const providerPromises = providerIds.map(async (id) => {
+  const providerPromises: Array<Promise<ProviderListItem | null>> = providerIds.map(async (id) => {
+    if (isCliRuntimeProvider(id)) {
+      const meta = getCliRuntimeProviderMetadata(id);
+      if (!meta) return null;
+      const override = overrideMap.get(id);
+      const isEnabled = override?.isEnabled !== false && meta.isAvailable;
+      return {
+        id: meta.id,
+        name: meta.displayName,
+        type: 'cli',
+        baseUrl: undefined,
+        apiKeyEnv: meta.envVar ?? '',
+        docsUrl: meta.docsUrl,
+        features: {
+          streaming: true,
+          toolUse: false,
+          vision: false,
+          jsonMode: false,
+          systemMessage: true,
+        },
+        modelCount: (await getCliRuntimeModels(id)).length,
+        isConfigured: meta.isConfigured && isEnabled,
+        isEnabled,
+        hasOverride: !!override,
+        configSource: meta.isAvailable ? 'cli' : null,
+        color: '#f59e0b',
+        apiKeyPlaceholder: undefined,
+        transport: meta.transport,
+        authMethod: meta.authMethod,
+        family: meta.family,
+        fallbackProviderId: meta.fallbackProviderId,
+        version: meta.version,
+      };
+    }
+
     const config = loadProviderConfig(id);
     if (!config) return null;
 
@@ -261,11 +330,17 @@ app.get('/', async (c) => {
       // UI metadata
       color: uiMeta.color,
       apiKeyPlaceholder: uiMeta.apiKeyPlaceholder,
+      transport: 'http' as const,
+      authMethod: 'api-key' as const,
+      family: config.id,
+      fallbackProviderId: undefined,
     };
   });
 
   const providersWithNulls = await Promise.all(providerPromises);
-  const providers = providersWithNulls.filter((p): p is NonNullable<typeof p> => p !== null);
+  const providers: ProviderListItem[] = providersWithNulls.filter(
+    (p): p is ProviderListItem => p !== null
+  );
 
   // Include local providers (LM Studio, Ollama, etc.)
   const localProviderColors: Record<string, string> = {
@@ -275,10 +350,10 @@ app.get('/', async (c) => {
     vllm: '#f97316',
     custom: '#666666',
   };
-  const dbLocalProviders = await localProvidersRepo.listProviders();
+  const dbLocalProviders = await localProvidersRepo.listProviders(userId);
   for (const lp of dbLocalProviders) {
     if (!lp.isEnabled) continue;
-    const localModels = await localProvidersRepo.listModels(undefined, lp.id);
+    const localModels = await localProvidersRepo.listModels(userId, lp.id);
     providers.push({
       id: lp.id,
       name: lp.name,
@@ -300,6 +375,11 @@ app.get('/', async (c) => {
       configSource: 'database' as const,
       color: localProviderColors[lp.providerType] ?? '#10b981',
       apiKeyPlaceholder: undefined,
+      transport: 'local' as const,
+      authMethod: 'none' as const,
+      family: lp.providerType,
+      fallbackProviderId: undefined,
+      version: undefined,
     });
   }
 
@@ -331,6 +411,36 @@ app.get('/categories', (c) => {
 app.get('/:id', async (c) => {
   const id = c.req.param('id');
   const userId = getUserId(c);
+  if (isCliRuntimeProvider(id)) {
+    const meta = getCliRuntimeProviderMetadata(id);
+    if (!meta) {
+      return apiError(
+        c,
+        { code: ERROR_CODES.PROVIDER_NOT_FOUND, message: `Provider '${id}' not found` },
+        404
+      );
+    }
+
+    return apiResponse(c, {
+      id: meta.id,
+      name: meta.displayName,
+      type: 'cli',
+      apiKeyEnv: meta.envVar ?? '',
+      docsUrl: meta.docsUrl,
+      isConfigured: meta.isConfigured,
+      isEnabled: meta.isAvailable,
+      hasOverride: false,
+      userOverride: null,
+      color: '#f59e0b',
+      apiKeyPlaceholder: undefined,
+      transport: meta.transport,
+      authMethod: meta.authMethod,
+      family: meta.family,
+      fallbackProviderId: meta.fallbackProviderId,
+      version: meta.version,
+      models: await getCliRuntimeModels(id),
+    });
+  }
   const config = loadProviderConfig(id);
 
   if (!config) {
@@ -370,14 +480,34 @@ app.get('/:id', async (c) => {
     // UI metadata
     color: uiMeta.color,
     apiKeyPlaceholder: uiMeta.apiKeyPlaceholder,
+    transport: 'http' as const,
+    authMethod: 'api-key' as const,
+    family: config.id,
+    fallbackProviderId: undefined,
   });
 });
 
 /**
  * GET /providers/:id/models - Get models for a provider
  */
-app.get('/:id/models', (c) => {
+app.get('/:id/models', async (c) => {
   const id = c.req.param('id');
+  if (isCliRuntimeProvider(id)) {
+    const meta = getCliRuntimeProviderMetadata(id);
+    if (!meta) {
+      return apiError(
+        c,
+        { code: ERROR_CODES.PROVIDER_NOT_FOUND, message: `Provider '${id}' not found` },
+        404
+      );
+    }
+    return apiResponse(c, {
+      provider: id,
+      providerName: meta.displayName,
+      models: await getCliRuntimeModels(id),
+      isConfigured: meta.isConfigured,
+    });
+  }
   const config = loadProviderConfig(id);
 
   if (!config) {
@@ -396,12 +526,35 @@ app.get('/:id/models', (c) => {
   });
 });
 
+
 /**
  * GET /providers/:id/config - Get user config overrides for a provider
  */
 app.get('/:id/config', async (c) => {
   const id = c.req.param('id');
   const userId = getUserId(c);
+  if (isCliRuntimeProvider(id)) {
+    const userConfig = await modelConfigsRepo.getUserProviderConfig(userId, id);
+    return apiResponse(c, {
+      providerId: id,
+      baseConfig: null,
+      userOverride: userConfig
+        ? {
+            baseUrl: userConfig.baseUrl,
+            providerType: userConfig.providerType,
+            isEnabled: userConfig.isEnabled,
+            apiKeyEnv: userConfig.apiKeyEnv,
+            notes: userConfig.notes,
+          }
+        : null,
+      effectiveConfig: {
+        type: 'cli',
+        baseUrl: undefined,
+        apiKeyEnv: getCliRuntimeProviderMetadata(id)?.envVar ?? '',
+        isEnabled: userConfig?.isEnabled !== false && !!getCliRuntimeProviderMetadata(id)?.isAvailable,
+      },
+    });
+  }
   const config = loadProviderConfig(id);
 
   if (!config) {
@@ -449,6 +602,16 @@ app.get('/:id/config', async (c) => {
 app.put('/:id/config', async (c) => {
   const id = c.req.param('id');
   const userId = getUserId(c);
+  if (isCliRuntimeProvider(id)) {
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.INVALID_REQUEST,
+        message: 'CLI-backed providers do not support user config overrides',
+      },
+      400
+    );
+  }
   const config = loadProviderConfig(id);
 
   if (!config) {
@@ -508,6 +671,14 @@ app.put('/:id/config', async (c) => {
 app.delete('/:id/config', async (c) => {
   const id = c.req.param('id');
   const userId = getUserId(c);
+  if (isCliRuntimeProvider(id)) {
+    const deleted = await modelConfigsRepo.deleteUserProviderConfig(userId, id);
+    return apiResponse(c, {
+      providerId: id,
+      deleted,
+      restored: true,
+    });
+  }
 
   const deleted = await modelConfigsRepo.deleteUserProviderConfig(userId, id);
 
@@ -523,6 +694,35 @@ app.delete('/:id/config', async (c) => {
 app.patch('/:id/toggle', async (c) => {
   const id = c.req.param('id');
   const userId = getUserId(c);
+  if (isCliRuntimeProvider(id)) {
+    try {
+      const body = await parseJsonBody(c);
+      const { toggleEnabledSchema } = await import('../middleware/validation.js');
+      const parsed = toggleEnabledSchema.safeParse(body);
+
+      if (!parsed.success) {
+        return zodValidationError(c, parsed.error.issues);
+      }
+
+      const { enabled } = parsed.data;
+      await modelConfigsRepo.toggleUserProviderConfig(userId, id, enabled);
+      const userConfig = await modelConfigsRepo.getUserProviderConfig(userId, id);
+
+      return apiResponse(c, {
+        providerId: id,
+        enabled: userConfig?.isEnabled !== false,
+      });
+    } catch (error) {
+      return apiError(
+        c,
+        {
+          code: ERROR_CODES.TOGGLE_FAILED,
+          message: getErrorMessage(error, 'Failed to toggle CLI provider'),
+        },
+        500
+      );
+    }
+  }
   const config = loadProviderConfig(id);
 
   if (!config) {

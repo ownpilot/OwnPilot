@@ -38,7 +38,8 @@ interface ProviderInfo {
   docsUrl?: string;
   color: string;
   isConfigured: boolean;
-  configSource?: 'database' | 'environment' | null;
+  configSource?: 'database' | 'environment' | 'cli' | null;
+  transport?: 'http' | 'cli' | 'local';
 }
 
 const CAPABILITY_ICONS: Record<string, { icon: typeof Zap; label: string }> = {
@@ -195,6 +196,13 @@ export function ModelsPage() {
                                 title="API key set via environment variable"
                               >
                                 <Check className="w-3 h-3" /> ENV
+                              </span>
+                            ) : info?.configSource === 'cli' ? (
+                              <span
+                                className="flex items-center gap-1 text-xs text-primary"
+                                title="Available via installed CLI runtime"
+                              >
+                                <Check className="w-3 h-3" /> CLI
                               </span>
                             ) : (
                               <span className="flex items-center gap-1 text-xs text-success">

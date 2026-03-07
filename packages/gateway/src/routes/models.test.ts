@@ -66,6 +66,7 @@ const sampleProviderConfig2 = {
 
 const mockModelConfigsRepo = {
   getDisabledModelIds: vi.fn(async () => new Set<string>()),
+  getDisabledBuiltinProviderIds: vi.fn(async () => new Set<string>()),
 };
 
 const mockLocalProvidersRepo = {
@@ -115,6 +116,14 @@ vi.mock('../db/repositories/index.js', () => ({
   localProvidersRepo: mockLocalProvidersRepo,
 }));
 
+vi.mock('../services/model-execution.js', () => ({
+  getCliRuntimeModels: vi.fn(() => []),
+  getRuntimeDefaultModel: vi.fn(() => null),
+  isCliRuntimeProvider: vi.fn(() => false),
+  isCliRuntimeProviderAvailable: vi.fn(() => false),
+  listCliRuntimeProviderIds: vi.fn(() => []),
+}));
+
 // Import after mocks
 const { modelsRoutes } = await import('./models.js');
 
@@ -140,6 +149,7 @@ describe('Models Routes', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockModelConfigsRepo.getDisabledModelIds.mockResolvedValue(new Set<string>());
+    mockModelConfigsRepo.getDisabledBuiltinProviderIds.mockResolvedValue(new Set<string>());
     mockLocalProvidersRepo.listProviders.mockResolvedValue([]);
     mockLocalProvidersRepo.listModels.mockResolvedValue([]);
     app = createApp();

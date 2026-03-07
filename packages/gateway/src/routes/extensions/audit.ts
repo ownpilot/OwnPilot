@@ -9,13 +9,7 @@
  */
 
 import { Hono } from 'hono';
-import {
-  createProvider,
-  getProviderConfig as coreGetProviderConfig,
-  getServiceRegistry,
-  Services,
-  type AIProvider,
-} from '@ownpilot/core';
+import { getServiceRegistry, Services } from '@ownpilot/core';
 import type { ExtensionService } from '../../services/extension-service.js';
 import type { ExtensionManifest } from '../../services/extension-types.js';
 import {
@@ -33,27 +27,12 @@ import {
   getErrorMessage,
   parseJsonBody,
 } from '../helpers.js';
-import { resolveProviderAndModel, getApiKey } from '../settings.js';
-import { localProvidersRepo } from '../../db/repositories/index.js';
+import { resolveRuntimeProvider } from '../../services/model-execution.js';
 import { getLog } from '../../services/log.js';
 
 const log = getLog('ExtensionAudit');
 
 export const auditRoutes = new Hono();
-
-/** Providers with native SDK support (others use OpenAI-compatible) */
-const NATIVE_PROVIDERS = new Set([
-  'openai',
-  'anthropic',
-  'google',
-  'deepseek',
-  'groq',
-  'mistral',
-  'xai',
-  'together',
-  'fireworks',
-  'perplexity',
-]);
 
 const getExtService = () => getServiceRegistry().get(Services.Extension) as ExtensionService;
 
@@ -139,45 +118,18 @@ async function runLlmAudit(
   modelOverride?: string
 ): Promise<{ result: SkillLlmAuditResult | null; error: string | null }> {
   try {
-    // 1. Resolve provider/model
-    const resolved = await resolveProviderAndModel(
-      providerOverride ?? 'default',
-      modelOverride ?? 'default'
-    );
-    if (!resolved.provider || !resolved.model) {
+    const resolved = await resolveRuntimeProvider(providerOverride, modelOverride);
+    if (!resolved.providerId || !resolved.model || !resolved.instance) {
       return {
         result: null,
         error: 'No AI provider configured. Set up a provider in Settings for LLM analysis.',
       };
     }
 
-    // 2. Get API key
-    const localProv = await localProvidersRepo.getProvider(resolved.provider);
-    const apiKey = localProv
-      ? localProv.apiKey || 'local-no-key'
-      : await getApiKey(resolved.provider);
-    if (!apiKey) {
-      return {
-        result: null,
-        error: `API key not configured for provider: ${resolved.provider}`,
-      };
-    }
-
-    // 3. Create provider instance
-    const providerConfig = coreGetProviderConfig(resolved.provider);
-    const providerType = NATIVE_PROVIDERS.has(resolved.provider) ? resolved.provider : 'openai';
-
-    const providerInstance = createProvider({
-      provider: providerType as AIProvider,
-      apiKey,
-      baseUrl: providerConfig?.baseUrl,
-      headers: providerConfig?.headers,
-    });
-
-    // 4. Build prompt and call LLM
+    // 2. Build prompt and call LLM
     const prompt = buildLlmAuditPrompt(manifest, staticResult);
 
-    const result = await providerInstance.complete({
+    const result = await resolved.instance.complete({
       model: { model: resolved.model, maxTokens: 4096, temperature: 0.3 },
       messages: [{ role: 'user' as const, content: prompt }],
     });
@@ -194,7 +146,7 @@ async function runLlmAudit(
       return { result: null, error: 'LLM returned empty response' };
     }
 
-    // 5. Parse structured response
+    // 3. Parse structured response
     const auditResult = parseLlmAuditResponse(text);
 
     log.info('LLM audit completed', {

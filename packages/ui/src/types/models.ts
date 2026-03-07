@@ -23,13 +23,19 @@ export interface ProviderInfo {
   name: string;
   type: string;
   baseUrl?: string;
-  apiKeyEnv: string;
+  apiKeyEnv?: string;
   docsUrl?: string;
   isConfigured: boolean;
   isEnabled: boolean;
   hasOverride: boolean;
   color?: string;
   modelCount: number;
+  configSource?: 'database' | 'environment' | 'cli' | null;
+  transport?: 'http' | 'cli' | 'local';
+  authMethod?: 'api-key' | 'login' | 'both' | 'none';
+  family?: string;
+  fallbackProviderId?: string;
+  version?: string;
   features: {
     streaming: boolean;
     toolUse: boolean;
@@ -43,12 +49,18 @@ export interface ProviderInfo {
 export interface ProviderConfig {
   id: string;
   name: string;
-  apiKeyEnv: string;
+  apiKeyEnv?: string;
   baseUrl?: string;
   docsUrl?: string;
   models?: { id: string; name: string }[];
   apiKeyPlaceholder?: string;
   color?: string;
+  transport?: 'http' | 'cli' | 'local';
+  authMethod?: 'api-key' | 'login' | 'both' | 'none';
+  configSource?: 'database' | 'environment' | 'cli' | null;
+  fallbackProviderId?: string;
+  family?: string;
+  version?: string;
 }
 
 /** User override for provider settings */

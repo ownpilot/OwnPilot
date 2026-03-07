@@ -28,15 +28,21 @@ const mockLocalProvidersRepo = {
   getDefault: vi.fn(),
 };
 
+const mockModelConfigsRepo = {
+  getDisabledBuiltinProviderIds: vi.fn(async () => new Set<string>()),
+};
+
 vi.mock('../db/repositories/index.js', () => ({
   settingsRepo: null as unknown, // replaced in beforeEach
   localProvidersRepo: null as unknown,
+  modelConfigsRepo: null as unknown,
 }));
 
 // Patch mock objects onto the module
 import * as repoModule from '../db/repositories/index.js';
 (repoModule as Record<string, unknown>).settingsRepo = mockSettingsRepo;
 (repoModule as Record<string, unknown>).localProvidersRepo = mockLocalProvidersRepo;
+(repoModule as Record<string, unknown>).modelConfigsRepo = mockModelConfigsRepo;
 
 vi.mock('@ownpilot/core', async (importOriginal) => {
   const original = await importOriginal<Record<string, unknown>>();
@@ -84,6 +90,14 @@ vi.mock('../paths/migration.js', () => ({
   })),
 }));
 
+vi.mock('../services/model-execution.js', () => ({
+  getRuntimeDefaultModel: vi.fn(() => null),
+  hasAnyCliRuntimeProviderAvailable: vi.fn(() => false),
+  isCliRuntimeProvider: vi.fn(() => false),
+  isCliRuntimeProviderAvailable: vi.fn(() => false),
+  listCliRuntimeProviderIds: vi.fn(() => []),
+}));
+
 // Import after mocks
 const { settingsRoutes } = await import('./settings.js');
 
@@ -109,6 +123,25 @@ describe('Settings Routes', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mockSettingsRepo.get.mockReset();
+    mockSettingsRepo.set.mockReset();
+    mockSettingsRepo.has.mockReset();
+    mockSettingsRepo.delete.mockReset();
+    mockSettingsRepo.getByPrefix.mockReset();
+    mockLocalProvidersRepo.listProviders.mockReset();
+    mockLocalProvidersRepo.getProvider.mockReset();
+    mockLocalProvidersRepo.getDefault.mockReset();
+    mockModelConfigsRepo.getDisabledBuiltinProviderIds.mockReset();
+
+    mockSettingsRepo.getByPrefix.mockResolvedValue([]);
+    mockSettingsRepo.get.mockResolvedValue(null);
+    mockSettingsRepo.has.mockResolvedValue(false);
+    mockSettingsRepo.set.mockResolvedValue(undefined);
+    mockSettingsRepo.delete.mockResolvedValue(undefined);
+    mockLocalProvidersRepo.listProviders.mockResolvedValue([]);
+    mockLocalProvidersRepo.getProvider.mockResolvedValue(null);
+    mockLocalProvidersRepo.getDefault.mockResolvedValue(null);
+    mockModelConfigsRepo.getDisabledBuiltinProviderIds.mockResolvedValue(new Set<string>());
     app = createApp();
   });
 

@@ -20,9 +20,6 @@ import {
   injectMemoryIntoPrompt,
   unsafeToolId,
   getBaseName,
-  createProvider,
-  createFallbackProvider,
-  type ProviderConfig,
   buildSoulPrompt,
 } from '@ownpilot/core';
 import type { SessionInfo } from '../types/index.js';
@@ -81,6 +78,7 @@ import {
   MAX_AGENT_CACHE_SIZE,
   MAX_CHAT_AGENT_CACHE_SIZE,
 } from './agent-cache.js';
+import { createRuntimeProvider, isCliRuntimeProvider } from '../services/model-execution.js';
 import {
   AGENT_DEFAULT_MAX_TOKENS,
   AGENT_DEFAULT_TEMPERATURE,
@@ -115,7 +113,7 @@ async function createAgentFromRecord(record: AgentRecord): Promise<Agent> {
   }
 
   const apiKey = await getProviderApiKey(resolvedProvider);
-  if (!apiKey) {
+  if (!apiKey && !isCliRuntimeProvider(resolvedProvider)) {
     throw new Error(`API key not configured for provider: ${resolvedProvider}`);
   }
 
@@ -249,7 +247,7 @@ async function createAgentFromRecord(record: AgentRecord): Promise<Agent> {
     systemPrompt: enhancedPrompt,
     provider: {
       provider: providerType as AIProvider,
-      apiKey,
+      apiKey: apiKey ?? '',
       baseUrl,
       headers: providerConfig?.headers,
     },
@@ -264,7 +262,8 @@ async function createAgentFromRecord(record: AgentRecord): Promise<Agent> {
     requestApproval: approvalCallback,
   };
 
-  const agent = createAgent(config, { tools });
+  const providerInstance = await createRuntimeProvider(resolvedProvider);
+  const agent = createAgent(config, { tools, provider: providerInstance ?? undefined });
 
   // Evict oldest entry if cache is at capacity
   if (agentCache.size >= MAX_AGENT_CACHE_SIZE) {
@@ -426,7 +425,7 @@ async function createChatAgentInstance(
   fallback?: { provider: string; model: string }
 ): Promise<Agent> {
   const apiKey = await getProviderApiKey(provider);
-  if (!apiKey) {
+  if (!apiKey && !isCliRuntimeProvider(provider)) {
     throw new Error(`API key not configured for provider: ${provider}`);
   }
 
@@ -506,7 +505,7 @@ async function createChatAgentInstance(
     systemPrompt: enhancedPrompt,
     provider: {
       provider: providerType as AIProvider,
-      apiKey,
+      apiKey: apiKey ?? '',
       baseUrl,
       headers: providerConfig?.headers,
     },
@@ -522,37 +521,11 @@ async function createChatAgentInstance(
     memory: { maxTokens: memoryMaxTokens },
   };
 
-  // Build FallbackProvider if a backup model is configured
   let providerInstance: IProvider | undefined;
-  if (fallback) {
-    try {
-      const fbApiKey = await getProviderApiKey(fallback.provider);
-      if (fbApiKey) {
-        const fbConfig = loadProviderConfig(fallback.provider);
-        const fbType = NATIVE_PROVIDERS.has(fallback.provider) ? fallback.provider : 'openai';
-        providerInstance = createFallbackProvider({
-          primary: {
-            provider: providerType as AIProvider,
-            apiKey,
-            baseUrl,
-            headers: providerConfig?.headers,
-          },
-          fallbacks: [
-            {
-              provider: fbType as AIProvider,
-              apiKey: fbApiKey,
-              baseUrl: fbConfig?.baseUrl,
-              headers: fbConfig?.headers,
-            },
-          ],
-          onFallback: (failed, error, next) => {
-            log.warn(`Fallback triggered: ${String(failed)} -> ${String(next)}: ${error.message}`);
-          },
-        });
-      }
-    } catch (fbErr) {
-      log.warn(`Failed to build fallback provider: ${String(fbErr)}`);
-    }
+  try {
+    providerInstance = (await createRuntimeProvider(provider, fallback?.provider)) ?? undefined;
+  } catch (fbErr) {
+    log.warn(`Failed to build runtime provider: ${String(fbErr)}`);
   }
 
   if (chatAgentCache.size >= MAX_CHAT_AGENT_CACHE_SIZE) {
@@ -732,20 +705,15 @@ export async function compactContext(
   const summaryPrompt = `Summarize the following conversation history into a concise summary (max 200 words). Focus on key topics discussed, decisions made, and important context needed to continue the conversation naturally:\n\n${conversationText}`;
 
   const apiKey = await getProviderApiKey(provider);
-  if (!apiKey) {
+  if (!apiKey && !isCliRuntimeProvider(provider)) {
     return { compacted: false, removedMessages: 0, newTokenEstimate: 0 };
   }
 
-  const providerConfig = loadProviderConfig(provider);
-  const providerType = NATIVE_PROVIDERS.has(provider) ? provider : 'openai';
-
   try {
-    const summaryProvider = createProvider({
-      provider: providerType as ProviderConfig['provider'],
-      apiKey,
-      baseUrl: providerConfig?.baseUrl,
-      headers: providerConfig?.headers,
-    });
+    const summaryProvider = await createRuntimeProvider(provider);
+    if (!summaryProvider) {
+      return { compacted: false, removedMessages: 0, newTokenEstimate: 0 };
+    }
 
     const result = await summaryProvider.complete({
       messages: [{ role: 'user', content: summaryPrompt }],

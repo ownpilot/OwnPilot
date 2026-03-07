@@ -22,7 +22,9 @@ export const MAX_OUTPUT_SIZE = 1_048_576; // 1 MB
 /** Built-in provider env var names (needed by createSanitizedEnv) */
 const API_KEY_ENV_VARS: Record<string, string> = {
   'claude-code': 'ANTHROPIC_API_KEY',
+  'claude-cli': 'ANTHROPIC_API_KEY',
   codex: 'CODEX_API_KEY',
+  'codex-cli': 'CODEX_API_KEY',
   'gemini-cli': 'GEMINI_API_KEY',
 };
 
@@ -119,6 +121,25 @@ export function createSanitizedEnv(
     if (envVarName) {
       env[envVarName] = apiKey;
     }
+  }
+
+  return env;
+}
+
+/**
+ * Create an environment for CLI providers that must use local login/session auth.
+ * Any matching API key env var is removed, even if it exists in the parent process.
+ */
+export function createLoginOnlyCliEnv(
+  provider: string,
+  apiKeyEnvVar?: string
+): Record<string, string> {
+  const env = createSanitizedEnv(provider);
+  const envVarName =
+    apiKeyEnvVar ?? (isBuiltinProvider(provider) ? API_KEY_ENV_VARS[provider] : undefined);
+
+  if (envVarName) {
+    delete env[envVarName];
   }
 
   return env;

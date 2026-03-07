@@ -4,7 +4,7 @@
 
 export { authApi } from './auth';
 export type { AuthStatus, LoginResponse, PasswordResponse, SessionsResponse } from './auth';
-export { providersApi } from './providers';
+export { providersApi, localProviderManagementApi } from './providers';
 export type { ProvidersListData, ProviderConfigData } from './providers';
 export { modelsApi } from './models';
 export { settingsApi, modelRoutingApi } from './settings';
