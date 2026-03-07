@@ -582,7 +582,7 @@ class CodingAgentService implements ICodingAgentService {
         if (task.model) args.push('--model', task.model);
         break;
       case 'codex':
-        args = ['exec', '--full-auto', task.prompt];
+        args = ['exec', '--full-auto', '--skip-git-repo-check', task.prompt];
         if (task.model) args.push('--model', task.model);
         break;
       case 'gemini-cli':
@@ -777,7 +777,8 @@ class CodingAgentService implements ICodingAgentService {
         if (isInteractive) return [];
         return [
           'exec',
-          ...(perms.autonomy === 'full-auto' ? ['--full-auto'] : ['--full-auto']),
+          '--full-auto',
+          '--skip-git-repo-check',
           prompt,
           ...(input.model ? ['--model', input.model] : []),
         ];
