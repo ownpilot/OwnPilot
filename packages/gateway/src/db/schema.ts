@@ -1930,6 +1930,13 @@ DO $$ BEGIN
     ALTER TABLE memories ADD COLUMN content_hash TEXT;
   END IF;
 END $$;
+
+--- ORCHESTRATION RUNS: Add enable_analysis column
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'orchestration_runs' AND column_name = 'enable_analysis') THEN
+    ALTER TABLE orchestration_runs ADD COLUMN enable_analysis BOOLEAN NOT NULL DEFAULT TRUE;
+  END IF;
+END $$;
 `;
 
 export const INDEXES_SQL = `
