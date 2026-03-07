@@ -19,6 +19,8 @@ export interface ChannelMessageAttachment {
   data?: string;
   /** File size in bytes */
   size?: number;
+  /** Local disk path for binary files (e.g. SOR files written to /app/data/sor-files/) */
+  local_path?: string;
 }
 
 export interface ChannelMessage {
@@ -50,6 +52,7 @@ export function serializeAttachments(
     filename?: string;
     data?: Uint8Array | Buffer | string;
     size?: number;
+    local_path?: string;
   }>
 ): ChannelMessageAttachment[] {
   return attachments.map((a) => {
@@ -67,6 +70,7 @@ export function serializeAttachments(
       filename: a.filename,
       data: dataStr,
       size: a.size ?? (a.data ? (a.data as Uint8Array).length : undefined),
+      local_path: a.local_path,
     };
   });
 }
@@ -114,6 +118,8 @@ export type ChannelMessageAttachmentInput = {
   filename?: string;
   data?: Uint8Array | Buffer | string;
   size?: number;
+  /** Local disk path set after writing binary to disk (e.g. SOR files) */
+  local_path?: string;
 };
 
 export class ChannelMessagesRepository extends BaseRepository {

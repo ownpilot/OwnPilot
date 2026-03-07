@@ -84,6 +84,7 @@ import {
   agentMessageRoutes,
   heartbeatLogRoutes,
   agentCommandCenterRoutes,
+  sorFilesRoutes,
 } from './routes/index.js';
 import {
   RATE_LIMIT_WINDOW_MS,
@@ -432,6 +433,9 @@ export function createApp(config: Partial<GatewayConfig> = {}): Hono {
 
   // Agent Command Center (unified control for all agents)
   app.route('/api/v1/agent-command', agentCommandCenterRoutes);
+
+  // SOR file download (binary SOR files written to disk by WhatsApp channel plugin)
+  app.route('/api/v1/sor-files', sorFilesRoutes);
 
   // Root route (API-only mode, when UI is not bundled)
   if (!UI_AVAILABLE) {

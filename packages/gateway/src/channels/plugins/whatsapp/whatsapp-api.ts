@@ -39,6 +39,7 @@ import { MAX_MESSAGE_CHAT_MAP_SIZE } from '../../../config/defaults.js';
 import { splitMessage } from '../../utils/message-utils.js';
 import { getSessionDir, clearSession } from './session-store.js';
 import { wsGateway } from '../../../ws/server.js';
+import fs from 'fs/promises';
 import type { ChannelMessageAttachmentInput } from '../../../db/repositories/channel-messages.js';
 import { channelUsersRepo } from '../../../db/repositories/channel-users.js';
 import {
@@ -391,7 +392,10 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
                 // Download each detected media payload (if any) while preserving text.
                 for (const media of parsedPayload.media) {
                   const mediaData = await this.downloadMediaWithRetry(msg);
-                  attachments.push(this.toAttachmentInput(media, mediaData));
+                  const att = this.toAttachmentInput(media, mediaData);
+                  const localPath = await this.writeSorToDisk(media.filename, messageId, mediaData);
+                  if (localPath) att.local_path = localPath;
+                  attachments.push(att);
                 }
 
                 // Skip empty messages (no text, no recognizable content)
@@ -1344,6 +1348,29 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
     };
   }
 
+  /**
+   * Write a SOR binary to disk under /app/data/sor-files/{messageId}.sor.
+   * Returns the written path, or undefined if not a SOR file or write failed.
+   */
+  private async writeSorToDisk(
+    filename: string | undefined,
+    messageId: string,
+    data: Uint8Array | undefined
+  ): Promise<string | undefined> {
+    if (!filename?.toLowerCase().endsWith('.sor') || !data || !messageId) return undefined;
+    const sorDir = '/app/data/sor-files';
+    const filePath = `${sorDir}/${messageId}.sor`;
+    try {
+      await fs.mkdir(sorDir, { recursive: true });
+      await fs.writeFile(filePath, data);
+      log.info(`[SOR] Written to disk: ${filePath} (${data.length} bytes)`);
+      return filePath;
+    } catch (err) {
+      log.warn(`[SOR] Failed to write to disk: ${err}`);
+      return undefined;
+    }
+  }
+
   /** Enforce rate limits: global 20/min + per-JID 3s gap. Waits if needed. */
   private async enforceRateLimit(jid: string): Promise<void> {
     const now = Date.now();
@@ -1512,15 +1539,18 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
     const text = parsedPayload.text;
     const attachments: ChannelMessageAttachmentInput[] = [];
 
+    const messageId = msg.key.id ?? '';
+
     for (const media of parsedPayload.media) {
       const mediaData = await this.downloadMediaWithRetry(msg);
-      attachments.push(this.toAttachmentInput(media, mediaData));
+      const att = this.toAttachmentInput(media, mediaData);
+      const localPath = await this.writeSorToDisk(media.filename, messageId, mediaData);
+      if (localPath) att.local_path = localPath;
+      attachments.push(att);
     }
 
     // Skip empty messages
     if (!text && attachments.length === 0) return;
-
-    const messageId = msg.key.id ?? '';
 
     const resolvedName = await this.resolveDisplayName(phone, msg.pushName || undefined);
     const sender: ChannelUser = {
