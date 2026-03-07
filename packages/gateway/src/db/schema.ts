@@ -989,9 +989,28 @@ CREATE TABLE IF NOT EXISTS sor_queue (
   status       TEXT NOT NULL DEFAULT 'pending'
                  CHECK(status IN ('pending', 'processing', 'done', 'error')),
   error        TEXT,
+  retry_count  INT NOT NULL DEFAULT 0,
+  content_hash TEXT,
   created_at   TIMESTAMP NOT NULL DEFAULT NOW(),
   processed_at TIMESTAMP,
   UNIQUE(message_id)
+);
+
+-- =====================================================
+-- SOR UPLOAD AUDIT LOG
+-- =====================================================
+
+CREATE TABLE IF NOT EXISTS sor_upload_log (
+  id           TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+  sor_queue_id TEXT NOT NULL REFERENCES sor_queue(id) ON DELETE CASCADE,
+  outcome      TEXT NOT NULL CHECK(outcome IN ('success', 'failure', 'skipped')),
+  http_status  INT,
+  error_message TEXT,
+  content_hash TEXT,
+  content_size INT,
+  opdracht_id  TEXT,
+  duration_ms  INT,
+  created_at   TIMESTAMP NOT NULL DEFAULT NOW()
 );
 `;
 
@@ -1004,6 +1023,34 @@ export const MIGRATIONS_SQL = `
 -- MIGRATIONS: Add missing columns to existing tables
 -- (Safe to run multiple times - idempotent)
 -- =====================================================
+
+-- sor_queue: add retry_count for automatic retry logic
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'sor_queue' AND column_name = 'retry_count') THEN
+    ALTER TABLE sor_queue ADD COLUMN retry_count INT NOT NULL DEFAULT 0;
+  END IF;
+END $$;
+
+-- sor_queue: add content_hash for binary deduplication
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'sor_queue' AND column_name = 'content_hash') THEN
+    ALTER TABLE sor_queue ADD COLUMN content_hash TEXT;
+  END IF;
+END $$;
+
+-- sor_upload_log: create audit log table (idempotent)
+CREATE TABLE IF NOT EXISTS sor_upload_log (
+  id           TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+  sor_queue_id TEXT NOT NULL REFERENCES sor_queue(id) ON DELETE CASCADE,
+  outcome      TEXT NOT NULL CHECK(outcome IN ('success', 'failure', 'skipped')),
+  http_status  INT,
+  error_message TEXT,
+  content_hash TEXT,
+  content_size INT,
+  opdracht_id  TEXT,
+  duration_ms  INT,
+  created_at   TIMESTAMP NOT NULL DEFAULT NOW()
+);
 
 -- Triggers table: ensure 'enabled' column exists
 DO $$ BEGIN
@@ -1684,6 +1731,10 @@ END $$;
 
 CREATE OR REPLACE FUNCTION enqueue_sor_message() RETURNS trigger AS $$
 BEGIN
+  -- For UPDATE: only fire when binary was just added (was NULL before)
+  IF TG_OP = 'UPDATE' AND OLD.attachments->0->>'data' IS NOT NULL THEN
+    RETURN NEW;
+  END IF;
   IF NEW.direction = 'inbound'
      AND NEW.content ILIKE '%.sor'
      AND COALESCE(NEW.attachments, '[]'::jsonb) != '[]'::jsonb
@@ -1705,7 +1756,7 @@ $$ LANGUAGE plpgsql;
 
 DROP TRIGGER IF EXISTS trg_enqueue_sor ON channel_messages;
 CREATE TRIGGER trg_enqueue_sor
-  AFTER INSERT ON channel_messages
+  AFTER INSERT OR UPDATE OF attachments ON channel_messages
   FOR EACH ROW EXECUTE FUNCTION enqueue_sor_message();
 `;
 
@@ -2130,6 +2181,11 @@ CREATE INDEX IF NOT EXISTS idx_heartbeat_log_cost ON heartbeat_log(agent_id, cre
 -- SOR queue indexes
 CREATE INDEX IF NOT EXISTS idx_sor_queue_status ON sor_queue(status);
 CREATE INDEX IF NOT EXISTS idx_sor_queue_created_at ON sor_queue(created_at);
+CREATE INDEX IF NOT EXISTS idx_sor_queue_content_hash ON sor_queue(content_hash) WHERE content_hash IS NOT NULL;
+
+-- SOR upload log indexes
+CREATE INDEX IF NOT EXISTS idx_sor_upload_log_queue ON sor_upload_log(sor_queue_id);
+CREATE INDEX IF NOT EXISTS idx_sor_upload_log_attempted ON sor_upload_log(created_at DESC);
 `;
 
 /**
