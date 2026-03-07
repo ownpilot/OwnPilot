@@ -70,15 +70,17 @@ function TreeNode({
         )}
         <span className="truncate">{entry.name}</span>
       </button>
-      {isDir && expanded && entry.children?.map((child) => (
-        <TreeNode
-          key={child.path}
-          entry={child}
-          depth={depth + 1}
-          selectedPath={selectedPath}
-          onSelect={onSelect}
-        />
-      ))}
+      {isDir &&
+        expanded &&
+        entry.children?.map((child) => (
+          <TreeNode
+            key={child.path}
+            entry={child}
+            depth={depth + 1}
+            selectedPath={selectedPath}
+            onSelect={onSelect}
+          />
+        ))}
     </div>
   );
 }
@@ -173,7 +175,10 @@ export function SkillEditorPage() {
   /* Load extension name */
   useEffect(() => {
     if (!id) return;
-    extensionsApi.getById(id).then((pkg) => setExtensionName(pkg.name)).catch(() => {});
+    extensionsApi
+      .getById(id)
+      .then((pkg) => setExtensionName(pkg.name))
+      .catch(() => {});
   }, [id]);
 
   useEffect(() => {

@@ -319,7 +319,12 @@ export interface ServerEvents {
   // Orchestration events
   'orchestration:created': { id: string; goal: string };
   'orchestration:status': { id: string; status: string };
-  'orchestration:step:started': { id: string; stepIndex: number; prompt: string; sessionId?: string };
+  'orchestration:step:started': {
+    id: string;
+    stepIndex: number;
+    prompt: string;
+    sessionId?: string;
+  };
   'orchestration:step:completed': { id: string; stepIndex: number; exitCode?: number };
   'orchestration:step:analyzed': { id: string; stepIndex: number; analysis: unknown };
   'orchestration:waiting': { id: string; question: string; analysis: unknown };

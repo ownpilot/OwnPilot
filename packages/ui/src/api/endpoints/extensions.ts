@@ -108,8 +108,7 @@ export const extensionsApi = {
     apiClient.post<ExtensionAuditResult>(`/extensions/${id}/audit`, options ?? {}),
 
   /** List all files in a skill's directory as a tree */
-  listFiles: (id: string) =>
-    apiClient.get<FileTreeResult>(`/extensions/${id}/files`),
+  listFiles: (id: string) => apiClient.get<FileTreeResult>(`/extensions/${id}/files`),
 
   /** Read a single file's content */
   readFile: (id: string, path: string) =>

@@ -7,7 +7,14 @@
  * DELETE /:id/files/*path  — Delete a file
  */
 
-import { existsSync, readFileSync, writeFileSync, mkdirSync, unlinkSync, readdirSync } from 'node:fs';
+import {
+  existsSync,
+  readFileSync,
+  writeFileSync,
+  mkdirSync,
+  unlinkSync,
+  readdirSync,
+} from 'node:fs';
 import { join, dirname, basename, resolve, sep } from 'node:path';
 import { Hono } from 'hono';
 import { getServiceRegistry, Services } from '@ownpilot/core';
@@ -141,11 +148,7 @@ fileRoutes.get('/:id/files/:path{.+}', (c) => {
   }
 
   if (!filePath || !isPathSafe(filePath)) {
-    return apiError(
-      c,
-      { code: ERROR_CODES.VALIDATION_ERROR, message: 'Invalid file path' },
-      400
-    );
+    return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: 'Invalid file path' }, 400);
   }
 
   const skillDir = getSkillDir(pkg.sourcePath);
@@ -167,7 +170,11 @@ fileRoutes.get('/:id/files/:path{.+}', (c) => {
   }
 
   if (!existsSync(fullPath)) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `File not found: ${filePath}` }, 404);
+    return apiError(
+      c,
+      { code: ERROR_CODES.NOT_FOUND, message: `File not found: ${filePath}` },
+      404
+    );
   }
 
   try {
@@ -216,11 +223,7 @@ fileRoutes.put('/:id/files/:path{.+}', async (c) => {
   }
 
   if (!filePath || !isPathSafe(filePath)) {
-    return apiError(
-      c,
-      { code: ERROR_CODES.VALIDATION_ERROR, message: 'Invalid file path' },
-      400
-    );
+    return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: 'Invalid file path' }, 400);
   }
 
   const skillDir = getSkillDir(pkg.sourcePath);
@@ -253,11 +256,7 @@ fileRoutes.put('/:id/files/:path{.+}', async (c) => {
       );
     }
   } catch {
-    return apiError(
-      c,
-      { code: ERROR_CODES.VALIDATION_ERROR, message: 'Invalid JSON body' },
-      400
-    );
+    return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: 'Invalid JSON body' }, 400);
   }
 
   try {
@@ -296,11 +295,7 @@ fileRoutes.delete('/:id/files/:path{.+}', (c) => {
   }
 
   if (!filePath || !isPathSafe(filePath)) {
-    return apiError(
-      c,
-      { code: ERROR_CODES.VALIDATION_ERROR, message: 'Invalid file path' },
-      400
-    );
+    return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: 'Invalid file path' }, 400);
   }
 
   // Don't allow deleting the manifest file
@@ -332,7 +327,11 @@ fileRoutes.delete('/:id/files/:path{.+}', (c) => {
   }
 
   if (!existsSync(fullPath)) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `File not found: ${filePath}` }, 404);
+    return apiError(
+      c,
+      { code: ERROR_CODES.NOT_FOUND, message: `File not found: ${filePath}` },
+      404
+    );
   }
 
   try {

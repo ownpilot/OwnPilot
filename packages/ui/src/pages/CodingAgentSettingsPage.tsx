@@ -168,7 +168,11 @@ export function CodingAgentSettingsPage() {
   const installedCount = statuses.filter((s) => s.installed).length;
   const providerNames = statuses.map((s) => s.provider);
 
-  const tabs: { id: SettingsTab; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
+  const tabs: {
+    id: SettingsTab;
+    label: string;
+    icon: React.ComponentType<{ className?: string }>;
+  }[] = [
     { id: 'providers', label: 'Providers', icon: Terminal },
     { id: 'permissions', label: 'Permissions', icon: Shield },
     { id: 'skills', label: 'Skills', icon: Puzzle },
@@ -335,13 +339,18 @@ function PermissionsTab({ providers }: { providers: string[] }) {
   };
 
   if (isLoading) {
-    return <div className="text-center py-8 text-text-muted dark:text-dark-text-muted animate-pulse">Loading permissions...</div>;
+    return (
+      <div className="text-center py-8 text-text-muted dark:text-dark-text-muted animate-pulse">
+        Loading permissions...
+      </div>
+    );
   }
 
   return (
     <div className="space-y-4">
       <p className="text-sm text-text-muted dark:text-dark-text-muted">
-        Configure default permissions for each provider. These apply to new sessions unless overridden.
+        Configure default permissions for each provider. These apply to new sessions unless
+        overridden.
       </p>
       {providers.map((provider) => {
         const p = perms[provider];
@@ -395,7 +404,9 @@ function PermissionEditor({
     <div className="p-4 rounded-xl border border-border dark:border-dark-border bg-bg-secondary dark:bg-dark-bg-secondary space-y-3">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className={`w-7 h-7 rounded-lg flex items-center justify-center text-sm font-bold ${color}`}>
+          <div
+            className={`w-7 h-7 rounded-lg flex items-center justify-center text-sm font-bold ${color}`}
+          >
             {meta?.icon ?? '?'}
           </div>
           <h3 className="text-sm font-semibold text-text-primary dark:text-dark-text-primary">
@@ -462,15 +473,35 @@ function PermissionEditor({
       </div>
 
       <div className="flex gap-4 text-xs">
-        <ToggleField label="Network" checked={form.network_access as boolean} onChange={(v) => set('network_access', v)} />
-        <ToggleField label="Shell" checked={form.shell_access as boolean} onChange={(v) => set('shell_access', v)} />
-        <ToggleField label="Git" checked={form.git_access as boolean} onChange={(v) => set('git_access', v)} />
+        <ToggleField
+          label="Network"
+          checked={form.network_access as boolean}
+          onChange={(v) => set('network_access', v)}
+        />
+        <ToggleField
+          label="Shell"
+          checked={form.shell_access as boolean}
+          onChange={(v) => set('shell_access', v)}
+        />
+        <ToggleField
+          label="Git"
+          checked={form.git_access as boolean}
+          onChange={(v) => set('git_access', v)}
+        />
       </div>
     </div>
   );
 }
 
-function ToggleField({ label, checked, onChange }: { label: string; checked: boolean; onChange: (v: boolean) => void }) {
+function ToggleField({
+  label,
+  checked,
+  onChange,
+}: {
+  label: string;
+  checked: boolean;
+  onChange: (v: boolean) => void;
+}) {
   return (
     <label className="flex items-center gap-1.5 cursor-pointer select-none">
       <button
@@ -480,7 +511,9 @@ function ToggleField({ label, checked, onChange }: { label: string; checked: boo
         onClick={() => onChange(!checked)}
         className={`relative w-8 h-4.5 rounded-full transition-colors ${checked ? 'bg-primary' : 'bg-gray-300 dark:bg-gray-600'}`}
       >
-        <span className={`absolute top-0.5 left-0.5 w-3.5 h-3.5 bg-white rounded-full shadow transition-transform ${checked ? 'translate-x-3.5' : ''}`} />
+        <span
+          className={`absolute top-0.5 left-0.5 w-3.5 h-3.5 bg-white rounded-full shadow transition-transform ${checked ? 'translate-x-3.5' : ''}`}
+        />
       </button>
       <span className="text-text-muted dark:text-dark-text-muted">{label}</span>
     </label>
@@ -549,13 +582,18 @@ function SkillsTab({ providers }: { providers: string[] }) {
   };
 
   if (isLoading) {
-    return <div className="text-center py-8 text-text-muted dark:text-dark-text-muted animate-pulse">Loading skills...</div>;
+    return (
+      <div className="text-center py-8 text-text-muted dark:text-dark-text-muted animate-pulse">
+        Loading skills...
+      </div>
+    );
   }
 
   return (
     <div className="space-y-4">
       <p className="text-sm text-text-muted dark:text-dark-text-muted">
-        Attach skills and instructions to each provider. These are injected into the agent&apos;s prompt.
+        Attach skills and instructions to each provider. These are injected into the agent&apos;s
+        prompt.
       </p>
       {providers.map((provider) => (
         <ProviderSkillsCard
@@ -607,7 +645,9 @@ function ProviderSkillsCard({
     <div className="p-4 rounded-xl border border-border dark:border-dark-border bg-bg-secondary dark:bg-dark-bg-secondary space-y-3">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className={`w-7 h-7 rounded-lg flex items-center justify-center text-sm font-bold ${color}`}>
+          <div
+            className={`w-7 h-7 rounded-lg flex items-center justify-center text-sm font-bold ${color}`}
+          >
             {meta?.icon ?? '?'}
           </div>
           <h3 className="text-sm font-semibold text-text-primary dark:text-dark-text-primary">
@@ -637,9 +677,12 @@ function ProviderSkillsCard({
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-medium text-text-primary dark:text-dark-text-primary">
-                    {skill.label || (skill.type === 'extension' ? `Extension: ${skill.extensionId}` : 'Inline')}
+                    {skill.label ||
+                      (skill.type === 'extension' ? `Extension: ${skill.extensionId}` : 'Inline')}
                   </span>
-                  <span className={`text-[9px] px-1 py-0.5 rounded ${skill.type === 'extension' ? 'bg-purple-500/10 text-purple-500' : 'bg-blue-500/10 text-blue-500'}`}>
+                  <span
+                    className={`text-[9px] px-1 py-0.5 rounded ${skill.type === 'extension' ? 'bg-purple-500/10 text-purple-500' : 'bg-blue-500/10 text-blue-500'}`}
+                  >
                     {skill.type}
                   </span>
                 </div>
@@ -689,7 +732,11 @@ function ProviderSkillsCard({
               disabled={adding || !label.trim() || !instructions.trim()}
               className="px-3 py-1 rounded-lg text-xs font-medium bg-primary text-white hover:bg-primary/90 transition-colors disabled:opacity-50 inline-flex items-center gap-1"
             >
-              {adding ? <RefreshCw className="w-3 h-3 animate-spin" /> : <Plus className="w-3 h-3" />}
+              {adding ? (
+                <RefreshCw className="w-3 h-3 animate-spin" />
+              ) : (
+                <Plus className="w-3 h-3" />
+              )}
               Attach
             </button>
           </div>
@@ -741,7 +788,11 @@ function BudgetTab({ providers }: { providers: string[] }) {
   };
 
   if (isLoading) {
-    return <div className="text-center py-8 text-text-muted dark:text-dark-text-muted animate-pulse">Loading budgets...</div>;
+    return (
+      <div className="text-center py-8 text-text-muted dark:text-dark-text-muted animate-pulse">
+        Loading budgets...
+      </div>
+    );
   }
 
   return (
@@ -793,7 +844,9 @@ function BudgetEditor({
     <div className="p-4 rounded-xl border border-border dark:border-dark-border bg-bg-secondary dark:bg-dark-bg-secondary space-y-3">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className={`w-7 h-7 rounded-lg flex items-center justify-center text-sm font-bold ${color}`}>
+          <div
+            className={`w-7 h-7 rounded-lg flex items-center justify-center text-sm font-bold ${color}`}
+          >
             {meta?.icon ?? '?'}
           </div>
           <h3 className="text-sm font-semibold text-text-primary dark:text-dark-text-primary">
@@ -974,7 +1027,9 @@ function ProviderCard({
                 <div>
                   <span className="font-medium">Login auth:</span>{' '}
                   {subInfo.loginSupported ? (
-                    <span className="text-success">Supported (run CLI in interactive mode to log in)</span>
+                    <span className="text-success">
+                      Supported (run CLI in interactive mode to log in)
+                    </span>
                   ) : (
                     <span className="text-error">Not supported</span>
                   )}

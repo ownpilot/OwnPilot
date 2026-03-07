@@ -126,10 +126,7 @@ export class CodingAgentSkillAttachmentsRepository extends BaseRepository {
     return row ? rowToRecord(row) : null;
   }
 
-  async listByProvider(
-    providerRef: string,
-    userId = 'default'
-  ): Promise<SkillAttachmentRecord[]> {
+  async listByProvider(providerRef: string, userId = 'default'): Promise<SkillAttachmentRecord[]> {
     const rows = await this.query<SkillAttachmentRow>(
       `SELECT * FROM coding_agent_skill_attachments
        WHERE provider_ref = $1 AND user_id = $2

@@ -495,9 +495,7 @@ export function AutoModePanel({ sessionId, session, onTerminate }: AutoModePanel
 
       {/* ---- Input bar ---- */}
       {isActive && (
-        <div
-          className="flex items-center gap-1.5 px-3 py-2 border-t border-zinc-700/50 bg-zinc-800/60 shrink-0"
-        >
+        <div className="flex items-center gap-1.5 px-3 py-2 border-t border-zinc-700/50 bg-zinc-800/60 shrink-0">
           <input
             type="text"
             value={inputText}

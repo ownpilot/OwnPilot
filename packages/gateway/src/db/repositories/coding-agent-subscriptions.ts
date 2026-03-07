@@ -130,11 +130,7 @@ export class CodingAgentSubscriptionsRepository extends BaseRepository {
     return record;
   }
 
-  async addSpend(
-    providerRef: string,
-    userId: string,
-    amountUsd: number
-  ): Promise<void> {
+  async addSpend(providerRef: string, userId: string, amountUsd: number): Promise<void> {
     await this.execute(
       `UPDATE coding_agent_subscriptions
        SET current_spend_usd = current_spend_usd + $1, updated_at = $2

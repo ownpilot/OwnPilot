@@ -392,10 +392,16 @@ settingsRoutes.get('/coding-agents/allowed-dirs', async (c) => {
 settingsRoutes.put('/coding-agents/allowed-dirs', async (c) => {
   const body = await c.req.json();
   if (!Array.isArray(body.dirs)) {
-    return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: '"dirs" must be an array of paths' }, 400);
+    return apiError(
+      c,
+      { code: ERROR_CODES.VALIDATION_ERROR, message: '"dirs" must be an array of paths' },
+      400
+    );
   }
   // Validate each dir is a string
-  const dirs = body.dirs.filter((d: unknown): d is string => typeof d === 'string' && d.trim().length > 0);
+  const dirs = body.dirs.filter(
+    (d: unknown): d is string => typeof d === 'string' && d.trim().length > 0
+  );
   await setAllowedDirs(dirs);
   return apiResponse(c, { dirs });
 });

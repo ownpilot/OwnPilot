@@ -294,8 +294,7 @@ const cancelOrchestrationDef: ToolDefinition = {
 const listOrchestrationsDef: ToolDefinition = {
   name: 'list_orchestrations',
   workflowUsable: true,
-  description:
-    'List recent orchestration runs with their status, step count, and goal summary.',
+  description: 'List recent orchestration runs with their status, step count, and goal summary.',
   parameters: {
     type: 'object',
     properties: {
@@ -540,7 +539,8 @@ export async function executeCodingAgentTool(
       try {
         const runId = args.run_id as string;
         const response = args.response as string;
-        if (!runId || !response) return { success: false, error: 'run_id and response are required' };
+        if (!runId || !response)
+          return { success: false, error: 'run_id and response are required' };
 
         const run = await continueOrchestration(runId, userId, response);
         if (!run) {

@@ -866,10 +866,7 @@ function NewSessionModal({
                     <p className="text-xs text-text-muted dark:text-dark-text-muted mb-2">
                       Attach skills to provide context, coding conventions, or rules.
                     </p>
-                    <SkillsSelectorInline
-                      selected={selectedSkills}
-                      onChange={setSelectedSkills}
-                    />
+                    <SkillsSelectorInline selected={selectedSkills} onChange={setSelectedSkills} />
                   </div>
 
                   {/* Permission controls */}
@@ -931,7 +928,8 @@ function NewSessionModal({
                           onChange={(e) =>
                             setPermissions((p) => ({
                               ...p,
-                              output_format: e.target.value as CodingAgentPermissions['output_format'],
+                              output_format: e.target
+                                .value as CodingAgentPermissions['output_format'],
                             }))
                           }
                           className="w-full px-2.5 py-1.5 rounded-lg border border-border dark:border-dark-border bg-bg-tertiary dark:bg-dark-bg-tertiary text-text-primary dark:text-dark-text-primary text-xs"
@@ -947,23 +945,17 @@ function NewSessionModal({
                         <ToggleSwitch
                           label="Network access"
                           checked={permissions.network_access !== false}
-                          onChange={(v) =>
-                            setPermissions((p) => ({ ...p, network_access: v }))
-                          }
+                          onChange={(v) => setPermissions((p) => ({ ...p, network_access: v }))}
                         />
                         <ToggleSwitch
                           label="Shell access"
                           checked={permissions.shell_access !== false}
-                          onChange={(v) =>
-                            setPermissions((p) => ({ ...p, shell_access: v }))
-                          }
+                          onChange={(v) => setPermissions((p) => ({ ...p, shell_access: v }))}
                         />
                         <ToggleSwitch
                           label="Git access"
                           checked={permissions.git_access !== false}
-                          onChange={(v) =>
-                            setPermissions((p) => ({ ...p, git_access: v }))
-                          }
+                          onChange={(v) => setPermissions((p) => ({ ...p, git_access: v }))}
                         />
                       </div>
                     </div>
