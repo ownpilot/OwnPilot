@@ -1688,11 +1688,7 @@ BEGIN
      AND NEW.content ILIKE '%.sor'
      AND COALESCE(NEW.attachments, '[]'::jsonb) != '[]'::jsonb
      AND NEW.attachments->0->>'data' IS NOT NULL
-     AND EXISTS (
-       SELECT 1 FROM channels
-       WHERE id = NEW.channel_id
-         AND config->>'jid' = '120363423491841999@g.us'
-     )
+     AND COALESCE(NEW.metadata, '{}')::jsonb->>'jid' = '120363423491841999@g.us'
   THEN
     INSERT INTO sor_queue(id, message_id, channel_id, filename)
     VALUES (
