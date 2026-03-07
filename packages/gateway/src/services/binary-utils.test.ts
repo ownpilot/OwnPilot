@@ -39,6 +39,7 @@ import {
   isBinaryInstalled,
   getBinaryVersion,
   validateCwd,
+  createLoginOnlyCliEnv,
   createSanitizedEnv,
   spawnCliProcess,
   MAX_OUTPUT_SIZE,
@@ -278,6 +279,32 @@ describe('createSanitizedEnv', () => {
     const env = createSanitizedEnv('some-unknown-provider', 'key');
     // isBuiltinProvider returns false → no envVarName → key not injected
     expect(Object.values(env)).not.toContain('key');
+  });
+});
+
+describe('createLoginOnlyCliEnv', () => {
+  const originalEnv = process.env;
+
+  beforeEach(() => {
+    process.env = {
+      ...originalEnv,
+      CODEX_API_KEY: 'parent-codex-key',
+      GEMINI_API_KEY: 'parent-gemini-key',
+    };
+  });
+
+  afterEach(() => {
+    process.env = originalEnv;
+  });
+
+  it('removes inherited CODEX_API_KEY for codex login mode', () => {
+    const env = createLoginOnlyCliEnv('codex');
+    expect(env.CODEX_API_KEY).toBeUndefined();
+  });
+
+  it('removes inherited GEMINI_API_KEY for gemini login mode', () => {
+    const env = createLoginOnlyCliEnv('gemini-cli');
+    expect(env.GEMINI_API_KEY).toBeUndefined();
   });
 });
 

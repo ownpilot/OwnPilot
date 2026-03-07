@@ -12,6 +12,41 @@
   },
   "models": [
     {
+      "id": "gpt-5.4",
+      "name": "GPT-5.4",
+      "contextWindow": 1050000,
+      "maxOutput": 128000,
+      "inputPrice": 2.5,
+      "outputPrice": 15,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-03-05"
+    },
+    {
+      "id": "gpt-5.4-pro",
+      "name": "GPT-5.4 Pro",
+      "contextWindow": 1050000,
+      "maxOutput": 128000,
+      "inputPrice": 30,
+      "outputPrice": 180,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-03-05"
+    },
+    {
       "id": "gpt-5.3-codex",
       "name": "GPT-5.3 Codex",
       "contextWindow": 400000,
@@ -26,7 +61,7 @@
         "reasoning",
         "streaming"
       ],
-      "default": true,
+      "default": false,
       "releaseDate": "2026-02-05"
     },
     {

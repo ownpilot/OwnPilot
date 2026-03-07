@@ -19,6 +19,13 @@ import {
 import { modelConfigsRepo } from '../db/repositories/model-configs.js';
 import { localProvidersRepo } from '../db/repositories/index.js';
 import {
+  getCliRuntimeModels,
+  getRuntimeDefaultModel,
+  isCliRuntimeProvider,
+  isCliRuntimeProviderAvailable,
+  listCliRuntimeProviderIds,
+} from '../services/model-execution.js';
+import {
   getUserId,
   apiResponse,
   apiError,
@@ -79,15 +86,34 @@ app.get('/', async (c) => {
 
   const allModels: ModelInfo[] = [];
   const configuredProviders: string[] = [];
-  const availableProviders = getAvailableProviders();
+  const availableProviders = [...getAvailableProviders(), ...listCliRuntimeProviderIds()];
 
   // Get disabled models for filtering
   const disabledModels = enabledOnly
     ? await modelConfigsRepo.getDisabledModelIds(userId)
     : new Set<string>();
+  const disabledProviders = await modelConfigsRepo.getDisabledBuiltinProviderIds(userId);
 
   // Check all available providers
   for (const provider of availableProviders) {
+    if (isCliRuntimeProvider(provider)) {
+      if (isCliRuntimeProviderAvailable(provider) && !disabledProviders.has(provider)) {
+        configuredProviders.push(provider);
+        const cliModels = (await getCliRuntimeModels(provider)).map((m) => ({
+          id: m.id,
+          name: m.name,
+          provider,
+          contextWindow: 0,
+          maxOutputTokens: undefined,
+          inputPrice: 0,
+          outputPrice: 0,
+          capabilities: ['chat'],
+          recommended: m.id === getRuntimeDefaultModel(provider),
+        }));
+        allModels.push(...cliModels);
+      }
+      continue;
+    }
     if (await hasApiKey(provider)) {
       configuredProviders.push(provider);
       let models = convertToModelInfo(provider);
@@ -102,11 +128,11 @@ app.get('/', async (c) => {
   }
 
   // Include models from local providers (LM Studio, Ollama, etc.)
-  const localProviders = await localProvidersRepo.listProviders();
+  const localProviders = await localProvidersRepo.listProviders(userId);
   for (const lp of localProviders) {
     if (!lp.isEnabled) continue;
     configuredProviders.push(lp.id);
-    const localModels = await localProvidersRepo.listModels(undefined, lp.id);
+    const localModels = await localProvidersRepo.listModels(userId, lp.id);
     for (const lm of localModels) {
       if (!lm.isEnabled) continue;
       allModels.push({
@@ -210,6 +236,15 @@ app.post('/sync', async (c) => {
  */
 app.get('/:provider', async (c) => {
   const provider = c.req.param('provider');
+
+  if (isCliRuntimeProvider(provider)) {
+    return apiResponse(c, {
+      provider,
+      providerName: provider,
+      models: await getCliRuntimeModels(provider),
+      isConfigured: isCliRuntimeProviderAvailable(provider),
+    });
+  }
 
   const config = getProviderConfig(provider);
   if (!config) {

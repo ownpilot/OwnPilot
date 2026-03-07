@@ -7,9 +7,9 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useDialog } from './ConfirmDialog';
-import { Check, Server, Edit2, Save, X, ExternalLink, Search } from './icons';
+import { Check, Server, Edit2, Save, X, ExternalLink, Search, Trash, AlertCircle } from './icons';
 import { useToast } from './ToastProvider';
-import { providersApi } from '../api';
+import { localProviderManagementApi, providersApi } from '../api';
 import type { ProviderInfo, UserOverride } from '../types';
 
 // Provider type options - must match ProviderType in configs/types.ts
@@ -19,6 +19,27 @@ const PROVIDER_TYPES = [
   { value: 'anthropic', label: 'Anthropic (Native)' },
   { value: 'google', label: 'Google Gemini (Native)' },
 ];
+
+const CLI_REMOVAL_INFO: Record<
+  string,
+  { packageName: string; binary: string; uninstallCommand: string }
+> = {
+  'claude-cli': {
+    packageName: '@anthropic-ai/claude-code',
+    binary: 'claude',
+    uninstallCommand: 'npm uninstall -g @anthropic-ai/claude-code',
+  },
+  'codex-cli': {
+    packageName: '@openai/codex',
+    binary: 'codex',
+    uninstallCommand: 'npm uninstall -g @openai/codex',
+  },
+  'gemini-cli': {
+    packageName: '@google/gemini-cli',
+    binary: 'gemini',
+    uninstallCommand: 'npm uninstall -g @google/gemini-cli',
+  },
+};
 
 export function ProvidersTab() {
   const { confirm } = useDialog();
@@ -44,6 +65,7 @@ export function ProvidersTab() {
     notes: '',
   });
   const [saving, setSaving] = useState(false);
+  const [cliRemovalProviderId, setCliRemovalProviderId] = useState<string | null>(null);
 
   const fetchProviders = useCallback(async () => {
     try {
@@ -62,12 +84,24 @@ export function ProvidersTab() {
   }, [fetchProviders]);
 
   const handleToggle = async (providerId: string, enabled: boolean) => {
+    const provider = providers.find((p) => p.id === providerId);
+    if (!provider) return;
+
     try {
-      await providersApi.toggle(providerId, enabled);
-      // Update local state
-      setProviders((prev) =>
-        prev.map((p) => (p.id === providerId ? { ...p, isEnabled: enabled, hasOverride: true } : p))
-      );
+      if (provider.transport === 'local') {
+        await localProviderManagementApi.toggle(providerId, enabled);
+        await fetchProviders();
+      } else if (provider.transport === 'cli') {
+        await providersApi.toggle(providerId, enabled);
+        await fetchProviders();
+      } else {
+        await providersApi.toggle(providerId, enabled);
+        setProviders((prev) =>
+          prev.map((p) =>
+            p.id === providerId ? { ...p, isEnabled: enabled, hasOverride: true } : p
+          )
+        );
+      }
       toast.success(enabled ? 'Provider enabled' : 'Provider disabled');
     } catch {
       toast.error('Failed to toggle provider');
@@ -75,6 +109,19 @@ export function ProvidersTab() {
   };
 
   const handleEdit = async (providerId: string) => {
+    const provider = providers.find((p) => p.id === providerId);
+    if (!provider) return;
+
+    if (provider.transport === 'cli') {
+      showCliProviderWarning(provider.name);
+      return;
+    }
+
+    if (provider.transport === 'local') {
+      window.location.href = '/models';
+      return;
+    }
+
     // Fetch current config
     try {
       const data = await providersApi.getConfig(providerId);
@@ -114,6 +161,25 @@ export function ProvidersTab() {
   };
 
   const handleResetOverride = async (providerId: string) => {
+    const provider = providers.find((p) => p.id === providerId);
+    if (!provider) return;
+
+    if (provider.transport === 'cli') {
+      try {
+        await providersApi.resetConfig(providerId);
+        await fetchProviders();
+        toast.success('CLI provider restored in OwnPilot');
+      } catch {
+        toast.error('Failed to restore CLI provider');
+      }
+      return;
+    }
+
+    if (provider.transport === 'local') {
+      toast.warning('Local providers do not have override reset here. Manage them from AI Models.');
+      return;
+    }
+
     if (!(await confirm({ message: 'Reset this provider to default settings?' }))) return;
     try {
       await providersApi.resetConfig(providerId);
@@ -123,6 +189,31 @@ export function ProvidersTab() {
     } catch {
       toast.error('Failed to reset provider config');
     }
+  };
+
+  const handleDeleteLocalProvider = async (providerId: string, providerName: string) => {
+    if (
+      !(await confirm({
+        message: `Delete local provider "${providerName}" and all its models?`,
+        variant: 'danger',
+      }))
+    ) {
+      return;
+    }
+
+    try {
+      await localProviderManagementApi.delete(providerId);
+      await fetchProviders();
+      toast.success('Local provider deleted');
+    } catch {
+      toast.error('Failed to delete local provider');
+    }
+  };
+
+  const showCliProviderWarning = (providerName: string) => {
+    toast.warning(
+      `${providerName} bir CLI runtime provider. Ayrıntılı config düzenlenemez; sadece OwnPilot içinde kaldırabilir veya sistemden uninstall edebilirsin.`
+    );
   };
 
   // Filter and search providers
@@ -140,12 +231,21 @@ export function ProvidersTab() {
     return true;
   });
 
-  // Group by configured status
-  const configuredProviders = filteredProviders.filter((p) => p.isConfigured);
-  const unconfiguredProviders = filteredProviders.filter((p) => !p.isConfigured);
+  // Group by provider type/status
+  const cliProviders = filteredProviders.filter((p) => p.transport === 'cli');
+  const manageableProviders = filteredProviders.filter((p) => p.transport !== 'cli');
+  const configuredProviders = manageableProviders.filter((p) => p.isConfigured);
+  const unconfiguredProviders = manageableProviders.filter((p) => !p.isConfigured);
+  const cliRemovalProvider = cliRemovalProviderId
+    ? providers.find((p) => p.id === cliRemovalProviderId && p.transport === 'cli')
+    : null;
+  const cliRemovalInfo = cliRemovalProvider ? CLI_REMOVAL_INFO[cliRemovalProvider.id] : null;
 
   const renderProviderCard = (provider: ProviderInfo) => {
     const isDisabled = !provider.isEnabled;
+    const isCliProvider = provider.transport === 'cli';
+    const isLocalProvider = provider.transport === 'local';
+    const configuredLabel = isCliProvider ? 'Ready' : isLocalProvider ? 'Local' : 'API Key';
 
     return (
       <div
@@ -171,7 +271,17 @@ export function ProvidersTab() {
               {provider.isConfigured && (
                 <span className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400">
                   <Check className="w-3 h-3" />
-                  API Key
+                  {configuredLabel}
+                </span>
+              )}
+              {isCliProvider && (
+                <span className="text-xs px-1.5 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 rounded">
+                  CLI
+                </span>
+              )}
+              {isLocalProvider && (
+                <span className="text-xs px-1.5 py-0.5 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 rounded">
+                  Local
                 </span>
               )}
               {provider.hasOverride && (
@@ -191,6 +301,25 @@ export function ProvidersTab() {
                   {provider.baseUrl}
                 </p>
               )}
+              {isCliProvider && (
+                <div className="rounded-md border border-amber-200 bg-amber-50 px-2.5 py-2 text-amber-800 dark:border-amber-900/40 dark:bg-amber-900/20 dark:text-amber-200">
+                  <p className="flex items-start gap-1.5">
+                    <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                    <span>
+                      Bu provider yüklü CLI&apos;dan otomatik gelir. Bu sayfadan edit, toggle veya
+                      silme desteklenmez.
+                    </span>
+                  </p>
+                  <p className="mt-1">
+                    API key gerekiyorsa <a href="/settings/api-keys" className="text-primary hover:underline">API Keys</a> sayfasından girin. Bu karttan OwnPilot içinde kaldırabilir, tamamen kaldırmak için uninstall bilgisini açabilirsin.
+                  </p>
+                </div>
+              )}
+              {isLocalProvider && (
+                <p>
+                  Local providers are managed in <a href="/models" className="text-primary hover:underline">AI Models</a>.
+                </p>
+              )}
               <p className="flex items-center gap-2">
                 <span>{provider.modelCount} models</span>
                 {provider.features.vision && <span className="text-purple-500">👁 Vision</span>}
@@ -200,14 +329,19 @@ export function ProvidersTab() {
           </div>
 
           <div className="flex items-center gap-2">
-            {/* Enable/Disable toggle */}
             <button
               onClick={() => handleToggle(provider.id, !provider.isEnabled)}
               className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
                 provider.isEnabled ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-600'
               }`}
               title={
-                provider.isEnabled ? 'Enabled - Click to disable' : 'Disabled - Click to enable'
+                isCliProvider
+                  ? provider.isEnabled
+                    ? 'Remove from OwnPilot'
+                    : 'Show in OwnPilot again'
+                  : provider.isEnabled
+                    ? 'Enabled - Click to disable'
+                    : 'Disabled - Click to enable'
               }
             >
               <span
@@ -217,14 +351,60 @@ export function ProvidersTab() {
               />
             </button>
 
-            {/* Edit button */}
-            <button
-              onClick={() => handleEdit(provider.id)}
-              className="p-1.5 text-gray-500 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors"
-              title="Edit provider settings"
-            >
-              <Edit2 className="w-4 h-4" />
-            </button>
+            {!isCliProvider && !isLocalProvider && (
+              <button
+                onClick={() => handleEdit(provider.id)}
+                className="p-1.5 text-gray-500 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors"
+                title="Edit provider settings"
+              >
+                <Edit2 className="w-4 h-4" />
+              </button>
+            )}
+
+            {isCliProvider && (
+              <>
+                <button
+                  onClick={() => showCliProviderWarning(provider.name)}
+                  className="p-1.5 text-amber-600 hover:text-amber-700 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded transition-colors"
+                  title="CLI provider limitations"
+                >
+                  <AlertCircle className="w-4 h-4" />
+                </button>
+                <a
+                  href="/settings/api-keys"
+                  className="p-1.5 text-gray-500 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors"
+                  title="Manage CLI API keys"
+                >
+                  <Edit2 className="w-4 h-4" />
+                </a>
+                <button
+                  onClick={() => setCliRemovalProviderId(provider.id)}
+                  className="p-1.5 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
+                  title="Uninstall this CLI provider"
+                >
+                  <Trash className="w-4 h-4" />
+                </button>
+              </>
+            )}
+
+            {isLocalProvider && (
+              <>
+                <a
+                  href="/models"
+                  className="p-1.5 text-gray-500 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors"
+                  title="Manage local provider in AI Models"
+                >
+                  <Edit2 className="w-4 h-4" />
+                </a>
+                <button
+                  onClick={() => handleDeleteLocalProvider(provider.id, provider.name)}
+                  className="p-1.5 text-gray-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
+                  title="Delete local provider"
+                >
+                  <Trash className="w-4 h-4" />
+                </button>
+              </>
+            )}
 
             {/* Docs link */}
             {provider.docsUrl && (
@@ -262,6 +442,34 @@ export function ProvidersTab() {
           models.dev sync.
         </p>
       </div>
+
+      {cliProviders.length > 0 && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-900/40 dark:bg-amber-900/20 dark:text-amber-100">
+          <p className="flex items-start gap-2">
+            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+            <span>
+              {cliProviders.length} CLI provider otomatik algılandı. Bunlar bu sayfadan
+              ayrıntılı düzenlenemez. Ama OwnPilot içinden gizleyebilir veya tamamen kaldırmak
+              için ilgili CLI&apos;ı sistemden kaldırabilirsin; API key gerekiyorsa
+              {' '}
+              <a href="/settings/api-keys" className="underline underline-offset-2">
+                API Keys
+              </a>
+              {' '}
+              sayfasını kullanın.
+            </span>
+          </p>
+        </div>
+      )}
+
+      {cliProviders.length > 0 && (
+        <section>
+          <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+            CLI Runtime Providers ({cliProviders.length})
+          </h4>
+          <div className="grid gap-3 md:grid-cols-2">{cliProviders.map(renderProviderCard)}</div>
+        </section>
+      )}
 
       {/* Search and filters */}
       <div className="flex flex-col sm:flex-row gap-4">
@@ -340,7 +548,62 @@ export function ProvidersTab() {
         <div className="text-center py-12 text-gray-500">No providers match your search.</div>
       )}
 
-      {/* Edit Modal */}
+      {cliRemovalProvider && cliRemovalInfo && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-lg w-full mx-4">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                  Remove CLI Provider: {cliRemovalProvider.name}
+                </h3>
+                <button
+                  onClick={() => setCliRemovalProviderId(null)}
+                  className="p-1 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="space-y-4 text-sm text-gray-600 dark:text-gray-300">
+                <p>
+                  Bu provider sistemde kurulu <span className="font-mono">{cliRemovalInfo.binary}</span>
+                  {' '}binary&apos;sinden otomatik algılanıyor. Tamamen kaldırmak için aşağıdaki komutu
+                  kullan.
+                </p>
+                <div>
+                  <p className="font-medium text-gray-900 dark:text-white mb-2">Kaldırma komutu</p>
+                  <pre className="rounded-lg bg-gray-100 dark:bg-gray-900 px-3 py-3 overflow-x-auto text-xs font-mono text-gray-900 dark:text-gray-100">
+                    {cliRemovalInfo.uninstallCommand}
+                  </pre>
+                </div>
+                <div className="space-y-1">
+                  <p>Alternatif olarak `{cliRemovalInfo.binary}` binary&apos;sini `PATH` dışına alabilirsin.</p>
+                  <p>Ardından gateway&apos;i yeniden başlat. Provider listeden otomatik düşer.</p>
+                  <p>OwnPilot içinde sadece gizlemek istiyorsan bu karttaki toggle&apos;ı kapatman yeterli.</p>
+                  <p>
+                    API key kullanıyorsan silmek için{' '}
+                    <a href="/settings/api-keys" className="text-primary hover:underline">
+                      API Keys
+                    </a>{' '}
+                    sayfasını kullan.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex justify-end mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
+                <button
+                  onClick={() => setCliRemovalProviderId(null)}
+                  className="px-4 py-2 text-sm bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Modal - HTTP providers only */}
       {editingProvider && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto">

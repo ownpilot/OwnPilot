@@ -8,11 +8,8 @@
 
 import { Hono } from 'hono';
 import {
-  createProvider,
-  getProviderConfig as coreGetProviderConfig,
   getServiceRegistry,
   Services,
-  type AIProvider,
 } from '@ownpilot/core';
 import type { ExtensionService } from '../../services/extension-service.js';
 import {
@@ -24,27 +21,12 @@ import {
   getErrorMessage,
   parseJsonBody,
 } from '../helpers.js';
-import { resolveProviderAndModel, getApiKey } from '../settings.js';
-import { localProvidersRepo } from '../../db/repositories/index.js';
+import { resolveRuntimeProvider } from '../../services/model-execution.js';
 import { getLog } from '../../services/log.js';
 
 const log = getLog('ExtensionEval');
 
 export const evalRoutes = new Hono();
-
-/** Providers with native SDK support */
-const NATIVE_PROVIDERS = new Set([
-  'openai',
-  'anthropic',
-  'google',
-  'deepseek',
-  'groq',
-  'mistral',
-  'xai',
-  'together',
-  'fireworks',
-  'perplexity',
-]);
 
 const getExtService = () => getServiceRegistry().get(Services.Extension) as ExtensionService;
 
@@ -53,33 +35,11 @@ const getExtService = () => getServiceRegistry().get(Services.Extension) as Exte
 // ---------------------------------------------------------------------------
 
 async function buildProvider(providerOverride?: string, modelOverride?: string) {
-  const resolved = await resolveProviderAndModel(
-    providerOverride ?? 'default',
-    modelOverride ?? 'default'
-  );
-  if (!resolved.provider || !resolved.model) {
+  const resolved = await resolveRuntimeProvider(providerOverride, modelOverride);
+  if (!resolved.providerId || !resolved.model || !resolved.instance) {
     return { provider: null, model: null, error: 'No AI provider configured.' };
   }
-  const localProv = await localProvidersRepo.getProvider(resolved.provider);
-  const apiKey = localProv
-    ? localProv.apiKey || 'local-no-key'
-    : await getApiKey(resolved.provider);
-  if (!apiKey) {
-    return {
-      provider: null,
-      model: null,
-      error: `API key not configured for: ${resolved.provider}`,
-    };
-  }
-  const providerConfig = coreGetProviderConfig(resolved.provider);
-  const providerType = NATIVE_PROVIDERS.has(resolved.provider) ? resolved.provider : 'openai';
-  const instance = createProvider({
-    provider: providerType as AIProvider,
-    apiKey,
-    baseUrl: providerConfig?.baseUrl,
-    headers: providerConfig?.headers,
-  });
-  return { provider: instance, model: resolved.model, error: null };
+  return { provider: resolved.instance, model: resolved.model, error: null };
 }
 
 // ---------------------------------------------------------------------------

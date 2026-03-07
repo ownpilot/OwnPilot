@@ -82,7 +82,7 @@ const PROVIDER_META: Record<string, ProviderMeta> = {
     installCommand: 'npm i -g @anthropic-ai/claude-code',
     docsUrl: 'https://console.anthropic.com',
     docsLabel: 'console.anthropic.com',
-    authInfo: 'Claude Pro subscription or API key (ANTHROPIC_API_KEY)',
+    authInfo: 'Claude CLI login/session auth or ANTHROPIC_API_KEY',
   },
   codex: {
     icon: 'O',
@@ -90,7 +90,7 @@ const PROVIDER_META: Record<string, ProviderMeta> = {
     installCommand: 'npm i -g @openai/codex',
     docsUrl: 'https://platform.openai.com',
     docsLabel: 'platform.openai.com',
-    authInfo: 'ChatGPT Plus subscription or API key (CODEX_API_KEY)',
+    authInfo: 'ChatGPT/Codex CLI login/session auth or CODEX_API_KEY',
   },
   'gemini-cli': {
     icon: 'G',
@@ -98,7 +98,7 @@ const PROVIDER_META: Record<string, ProviderMeta> = {
     installCommand: 'npm i -g @google/gemini-cli',
     docsUrl: 'https://aistudio.google.com',
     docsLabel: 'aistudio.google.com',
-    authInfo: 'Google account login or API key (GEMINI_API_KEY)',
+    authInfo: 'Google account login/session auth or GEMINI_API_KEY',
   },
 };
 
@@ -262,9 +262,8 @@ function ProvidersTab({
       <div className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/20 text-sm text-blue-600 dark:text-blue-400 flex items-start gap-2">
         <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
         <div>
-          <strong>No API key required!</strong> All providers support subscription-based login
-          (Claude Pro, ChatGPT Plus, Google account). API keys are optional — the CLI will prompt
-          you to authenticate on first use in interactive mode.
+          <strong>Login or API key.</strong> CLI providers can use their local authenticated
+          session, and OwnPilot will also forward a configured API key when one is available.
         </div>
       </div>
 
@@ -914,7 +913,7 @@ function ProviderCard({
             {status.configured && (
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-yellow-500/10 text-yellow-600 dark:text-yellow-400">
                 <Key className="w-2.5 h-2.5" />
-                API Key
+                {status.authMethod === 'login' ? 'Login Ready' : 'Ready'}
               </span>
             )}
           </div>

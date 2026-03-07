@@ -7,7 +7,7 @@
 
 import { Hono } from 'hono';
 import { apiResponse, apiError, ERROR_CODES, getErrorMessage } from './helpers.js';
-import { settingsRepo, localProvidersRepo } from '../db/repositories/index.js';
+import { settingsRepo, localProvidersRepo, modelConfigsRepo } from '../db/repositories/index.js';
 import {
   getAvailableProviders,
   getDefaultModelForProvider,
@@ -19,6 +19,12 @@ import {
 } from '@ownpilot/core';
 import { getDataDirectoryInfo } from '../paths/index.js';
 import { getMigrationStatus } from '../paths/migration.js';
+import {
+  isCliRuntimeProvider,
+  isCliRuntimeProviderAvailable,
+  listCliRuntimeProviderIds,
+  getRuntimeDefaultModel,
+} from '../services/model-execution.js';
 
 export const settingsRoutes = new Hono();
 
@@ -37,6 +43,11 @@ settingsRoutes.get('/', async (c) => {
   // Get all API key settings from database only
   const apiKeySettings = await settingsRepo.getByPrefix(API_KEY_PREFIX);
   const configuredProviders = apiKeySettings.map((s) => s.key.replace(API_KEY_PREFIX, ''));
+  const userId = 'default';
+  const disabledProviders = await modelConfigsRepo.getDisabledBuiltinProviderIds(userId);
+  const cliProviders = listCliRuntimeProviderIds().filter(
+    (id) => isCliRuntimeProviderAvailable(id) && !disabledProviders.has(id)
+  );
 
   // Include enabled local providers as configured (they don't need API keys)
   const localProviders = await localProvidersRepo.listProviders();
@@ -46,7 +57,7 @@ settingsRoutes.get('/', async (c) => {
   const localProviderIds = enabledLocalProviders.map((lp) => lp.id);
 
   // Merge: remote configured + local enabled
-  const allConfiguredProviders = [...configuredProviders, ...localProviderIds];
+  const allConfiguredProviders = [...configuredProviders, ...localProviderIds, ...cliProviders];
 
   // Get default provider/model settings
   const defaultProvider = await settingsRepo.get<string>(DEFAULT_PROVIDER_KEY);
@@ -61,7 +72,7 @@ settingsRoutes.get('/', async (c) => {
     demoMode: allConfiguredProviders.length === 0,
     defaultProvider: defaultProvider ?? null,
     defaultModel: defaultModel ?? null,
-    availableProviders,
+    availableProviders: [...availableProviders, ...listCliRuntimeProviderIds()],
   });
 });
 
@@ -204,6 +215,9 @@ settingsRoutes.delete('/api-keys/:provider', async (c) => {
  * Check if a provider has an API key configured (database only)
  */
 export async function hasApiKey(provider: string): Promise<boolean> {
+  if (isCliRuntimeProvider(provider)) {
+    return isCliRuntimeProviderAvailable(provider);
+  }
   const key = `${API_KEY_PREFIX}${provider}`;
   return await settingsRepo.has(key);
 }
@@ -212,6 +226,9 @@ export async function hasApiKey(provider: string): Promise<boolean> {
  * Get API key for a provider (database only)
  */
 export async function getApiKey(provider: string): Promise<string | undefined> {
+  if (isCliRuntimeProvider(provider)) {
+    return undefined;
+  }
   const key = `${API_KEY_PREFIX}${provider}`;
   return (await settingsRepo.get<string>(key)) ?? undefined;
 }
@@ -222,7 +239,13 @@ export async function getApiKey(provider: string): Promise<string | undefined> {
  */
 export async function getConfiguredProviderIds(): Promise<Set<string>> {
   const apiKeySettings = await settingsRepo.getByPrefix(API_KEY_PREFIX);
-  return new Set(apiKeySettings.map((s) => s.key.replace(API_KEY_PREFIX, '')));
+  const disabledProviders = await modelConfigsRepo.getDisabledBuiltinProviderIds('default');
+  return new Set([
+    ...apiKeySettings.map((s) => s.key.replace(API_KEY_PREFIX, '')),
+    ...listCliRuntimeProviderIds().filter(
+      (id) => isCliRuntimeProviderAvailable(id) && !disabledProviders.has(id)
+    ),
+  ]);
 }
 
 /**
@@ -247,10 +270,18 @@ export async function loadApiKeysToEnvironment(): Promise<void> {
  * Returns null if no provider is configured
  */
 export async function getDefaultProvider(): Promise<string | null> {
-  // Check database setting — if the user explicitly chose a default, respect it
+  const disabledProviders = await modelConfigsRepo.getDisabledBuiltinProviderIds('default');
+  // Check database setting
   const savedProvider = await settingsRepo.get<string>(DEFAULT_PROVIDER_KEY);
   if (savedProvider) {
-    // For local providers, check they're enabled
+    if (
+      isCliRuntimeProvider(savedProvider) &&
+      isCliRuntimeProviderAvailable(savedProvider) &&
+      !disabledProviders.has(savedProvider)
+    ) {
+      return savedProvider;
+    }
+    // Check if it's a local provider
     const localProv = await localProvidersRepo.getProvider(savedProvider);
     if (localProv) {
       if (localProv.isEnabled) return savedProvider;
@@ -272,6 +303,14 @@ export async function getDefaultProvider(): Promise<string | null> {
   const firstSetting = apiKeySettings[0];
   if (firstSetting) {
     return firstSetting.key.replace(API_KEY_PREFIX, '');
+  }
+
+  // Fall back to first available CLI provider
+  const cliProvider = listCliRuntimeProviderIds().find(
+    (id) => isCliRuntimeProviderAvailable(id) && !disabledProviders.has(id)
+  );
+  if (cliProvider) {
+    return cliProvider;
   }
 
   // No providers configured
@@ -300,6 +339,10 @@ export async function getDefaultModel(provider?: string): Promise<string | null>
   const actualProvider = provider ?? (await getDefaultProvider());
   if (!actualProvider) {
     return null;
+  }
+
+  if (isCliRuntimeProvider(actualProvider)) {
+    return getRuntimeDefaultModel(actualProvider);
   }
 
   const defaultModel = getDefaultModelForProvider(actualProvider);
@@ -334,6 +377,12 @@ export async function isDemoModeFromSettings(): Promise<boolean> {
   const apiKeySettings = await settingsRepo.getByPrefix(API_KEY_PREFIX);
   if (apiKeySettings.length > 0) return false;
 
+  const disabledProviders = await modelConfigsRepo.getDisabledBuiltinProviderIds('default');
+  const hasEnabledCli = listCliRuntimeProviderIds().some(
+    (id) => isCliRuntimeProviderAvailable(id) && !disabledProviders.has(id)
+  );
+  if (hasEnabledCli) return false;
+
   // Check local providers (Ollama, LM Studio, etc.)
   const localProviders = await localProvidersRepo.listProviders();
   if (localProviders.some((p) => p.isEnabled)) return false;
@@ -345,7 +394,10 @@ export async function isDemoModeFromSettings(): Promise<boolean> {
  * Get the source of an API key (database only now)
  * Returns 'database' if key exists, null otherwise
  */
-export async function getApiKeySource(provider: string): Promise<'database' | null> {
+export async function getApiKeySource(provider: string): Promise<'database' | 'cli' | null> {
+  if (isCliRuntimeProvider(provider)) {
+    return isCliRuntimeProviderAvailable(provider) ? 'cli' : null;
+  }
   const key = `${API_KEY_PREFIX}${provider}`;
   return (await settingsRepo.has(key)) ? 'database' : null;
 }

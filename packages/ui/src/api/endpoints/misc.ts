@@ -240,6 +240,7 @@ export const modelConfigsApi = {
 export const localProvidersApi = {
   list: () => apiClient.get<LocalProvider[]>('/local-providers'),
   templates: () => apiClient.get<LocalProviderTemplate[]>('/local-providers/templates'),
+  get: (id: string) => apiClient.get<LocalProvider>(`/local-providers/${id}`),
   create: (data: {
     name: string;
     providerType: string;
@@ -247,6 +248,21 @@ export const localProvidersApi = {
     apiKey?: string;
     discoveryEndpoint?: string;
   }) => apiClient.post<LocalProvider>('/local-providers', data),
+  update: (
+    id: string,
+    data: {
+      name?: string;
+      baseUrl?: string;
+      apiKey?: string;
+      discoveryEndpoint?: string;
+      isEnabled?: boolean;
+    }
+  ) => apiClient.put<LocalProvider>(`/local-providers/${id}`, data),
+  delete: (id: string) => apiClient.delete<void>(`/local-providers/${id}`),
+  toggle: (id: string, enabled: boolean) =>
+    apiClient.patch<LocalProvider>(`/local-providers/${id}/toggle`, { enabled }),
+  setDefault: (id: string) => apiClient.patch<void>(`/local-providers/${id}/set-default`),
+  discover: (id: string) => apiClient.post<void>(`/local-providers/${id}/discover`),
   models: (id: string) =>
     apiClient.get<Array<{ modelId: string; displayName?: string }>>(
       `/local-providers/${id}/models`

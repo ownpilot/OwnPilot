@@ -40,6 +40,13 @@ vi.mock('./settings.js', () => ({
   getApiKeySource: vi.fn(async () => null),
 }));
 
+vi.mock('../services/model-execution.js', () => ({
+  getCliRuntimeModels: vi.fn(() => []),
+  getCliRuntimeProviderMetadata: vi.fn(() => null),
+  isCliRuntimeProvider: vi.fn(() => false),
+  listCliRuntimeProviderIds: vi.fn(() => []),
+}));
+
 vi.mock('@ownpilot/core', async (importOriginal) => {
   const original = await importOriginal<Record<string, unknown>>();
   return {

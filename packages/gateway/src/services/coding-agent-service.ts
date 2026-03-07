@@ -37,6 +37,7 @@ import {
   getBinaryVersion,
   validateCwd,
   createSanitizedEnv,
+  createLoginOnlyCliEnv,
   spawnCliProcess,
 } from './binary-utils.js';
 import { getLog } from './log.js';
@@ -83,12 +84,13 @@ const CLI_BINARIES: Record<BuiltinCodingAgentProvider, string> = {
 /**
  * Auth method for each built-in provider:
  * - 'api-key': SDK mode requires an API key (Claude Code SDK)
- * - 'both': CLI supports login-based auth OR API key (Codex, Gemini, Claude CLI)
+ * - 'login': CLI uses local login/session auth only
+ * - 'both': CLI supports either login/session auth or API key
  */
 const AUTH_METHODS: Record<BuiltinCodingAgentProvider, 'api-key' | 'login' | 'both'> = {
-  'claude-code': 'both', // SDK needs key, but CLI supports OAuth login
-  codex: 'both', // ChatGPT login or CODEX_API_KEY
-  'gemini-cli': 'both', // Google account login or GEMINI_API_KEY
+  'claude-code': 'both', // SDK needs key, PTY/CLI mode can use login
+  codex: 'both',
+  'gemini-cli': 'both',
 };
 
 // =============================================================================
@@ -288,7 +290,7 @@ async function runCodex(task: CodingAgentTask, apiKey?: string): Promise<CodingA
   try {
     const result = await spawnCliProcess('codex', args, {
       cwd,
-      env: createSanitizedEnv('codex', apiKey),
+      env: apiKey ? createSanitizedEnv('codex', apiKey) : createLoginOnlyCliEnv('codex'),
       timeout,
     });
 
@@ -351,7 +353,9 @@ async function runGeminiCli(task: CodingAgentTask, apiKey?: string): Promise<Cod
   try {
     const result = await spawnCliProcess('gemini', args, {
       cwd,
-      env: createSanitizedEnv('gemini-cli', apiKey),
+      env: apiKey
+        ? createSanitizedEnv('gemini-cli', apiKey)
+        : createLoginOnlyCliEnv('gemini-cli'),
       timeout,
     });
 
@@ -416,7 +420,7 @@ class CodingAgentService implements ICodingAgentService {
     }
 
     // Resolve API key (optional for CLI providers — they support login-based auth)
-    const apiKey = resolveBuiltinApiKey(provider);
+    const apiKey = AUTH_METHODS[provider] === 'login' ? undefined : resolveBuiltinApiKey(provider);
 
     // Check binary availability (for CLI-based providers)
     if (provider !== 'claude-code' || task.mode === 'pty') {
@@ -475,13 +479,14 @@ class CodingAgentService implements ICodingAgentService {
           ? this.isClaudeCodeSdkInstalled() || isBinaryInstalled(binary)
           : isBinaryInstalled(binary);
 
-      const hasApiKey = !!resolveBuiltinApiKey(provider);
+      const hasApiKey = AUTH_METHODS[provider] === 'login' ? false : !!resolveBuiltinApiKey(provider);
+      const configured = AUTH_METHODS[provider] === 'both' ? installed || hasApiKey : hasApiKey;
       return {
         provider: provider as CodingAgentProvider,
         displayName: DISPLAY_NAMES[provider],
         installed,
         hasApiKey,
-        configured: hasApiKey,
+        configured,
         authMethod: AUTH_METHODS[provider],
         version: installed ? getBinaryVersion(binary) : undefined,
         ptyAvailable,
@@ -585,9 +590,13 @@ class CodingAgentService implements ICodingAgentService {
     }
 
     try {
+      const childEnv =
+        (task.provider === 'codex' || task.provider === 'gemini-cli') && !apiKey
+          ? createLoginOnlyCliEnv(task.provider)
+          : createSanitizedEnv(task.provider, apiKey);
       const result = await runWithPty(binary, args, {
         cwd,
-        env: createSanitizedEnv(task.provider, apiKey),
+        env: childEnv,
         timeout,
       });
 
@@ -640,7 +649,7 @@ class CodingAgentService implements ICodingAgentService {
     } else if (isBuiltinProvider(provider)) {
       // Built-in provider
       binary = CLI_BINARIES[provider];
-      apiKey = resolveBuiltinApiKey(provider);
+      apiKey = AUTH_METHODS[provider] === 'login' ? undefined : resolveBuiltinApiKey(provider);
     } else {
       throw new Error(`Unknown provider: ${provider}`);
     }
@@ -655,7 +664,12 @@ class CodingAgentService implements ICodingAgentService {
     }
 
     const cwd = input.cwd ? validateCwd(input.cwd) : process.cwd();
-    const env = createSanitizedEnv(provider, apiKey, apiKeyEnvVar);
+    const env =
+      isBuiltinProvider(provider) &&
+      (provider === 'codex' || provider === 'gemini-cli') &&
+      !apiKey
+        ? createLoginOnlyCliEnv(provider)
+        : createSanitizedEnv(provider, apiKey, apiKeyEnvVar);
 
     // Build CLI args: custom providers get their own template, built-in use existing logic
     let cliArgs: string[];

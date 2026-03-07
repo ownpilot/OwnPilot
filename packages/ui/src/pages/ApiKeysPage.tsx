@@ -241,6 +241,11 @@ export function ApiKeysPage() {
   };
 
   const getProviderPlaceholder = (provider: ProviderConfig): string => {
+    if (provider.transport === 'cli') {
+      return provider.authMethod === 'login'
+        ? 'Login via installed CLI'
+        : 'Optional API key for CLI fallback';
+    }
     // Use API-provided placeholder if available
     if (provider.apiKeyPlaceholder) {
       return provider.apiKeyPlaceholder;
@@ -289,6 +294,7 @@ export function ApiKeysPage() {
     // Standard category order (matches PROVIDER_CATEGORIES in providers.ts)
     const categoryOrder = [
       'Popular',
+      'CLI Providers',
       'Cloud Platforms',
       'Inference Providers',
       'Search & Research',
@@ -332,6 +338,13 @@ export function ApiKeysPage() {
   const renderProviderCard = (provider: ProviderConfig) => {
     const isConfigured = configuredProviders.includes(provider.id);
     const hasNewValue = apiKeys[provider.id] && apiKeys[provider.id]!.trim();
+    const isCliProvider = provider.transport === 'cli';
+    const helperText =
+      provider.authMethod === 'login'
+        ? 'Authenticated via local CLI login'
+        : provider.authMethod === 'both'
+          ? 'Works with local CLI login or an optional API key'
+          : 'Requires an API key';
 
     return (
       <div
@@ -343,13 +356,18 @@ export function ApiKeysPage() {
         <div className="flex items-center justify-between mb-2">
           <label className="text-sm font-medium text-text-secondary dark:text-dark-text-secondary flex items-center gap-2">
             {provider.name}
+            {isCliProvider && (
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-primary/10 text-primary">
+                CLI
+              </span>
+            )}
             {isConfigured && (
               <span className="flex items-center gap-1 text-xs text-success">
-                <Check className="w-3 h-3" /> Configured
+                <Check className="w-3 h-3" /> {isCliProvider ? 'Ready' : 'Configured'}
               </span>
             )}
           </label>
-          {isConfigured && (
+          {isConfigured && !isCliProvider && (
             <button
               onClick={() => handleDeleteKey(provider.id)}
               className="text-xs text-error hover:underline"
@@ -362,11 +380,28 @@ export function ApiKeysPage() {
           type="password"
           value={apiKeys[provider.id] || ''}
           onChange={(e) => updateApiKey(provider.id, e.target.value)}
-          placeholder={isConfigured ? '••••••••••••••••' : getProviderPlaceholder(provider)}
+          placeholder={isConfigured && !isCliProvider ? '••••••••••••••••' : getProviderPlaceholder(provider)}
           className="w-full px-3 py-2 bg-bg-tertiary dark:bg-dark-bg-tertiary border border-border dark:border-dark-border rounded-lg text-text-primary dark:text-dark-text-primary font-mono text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
         />
         <p className="mt-1 text-xs text-text-muted dark:text-dark-text-muted">
-          {isConfigured && !hasNewValue ? (
+          {isCliProvider ? (
+            <>
+              {helperText}
+              {provider.docsUrl ? (
+                <>
+                  {' '}
+                  <a
+                    href={getProviderDocsUrl(provider)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-primary hover:underline"
+                  >
+                    Setup docs
+                  </a>
+                </>
+              ) : null}
+            </>
+          ) : isConfigured && !hasNewValue ? (
             'Enter a new key to update'
           ) : (
             <>

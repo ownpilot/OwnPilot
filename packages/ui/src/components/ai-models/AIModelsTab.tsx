@@ -355,7 +355,7 @@ export function AIModelsTab() {
     )
       return;
     try {
-      await apiClient.delete(`/local-providers/${providerId}`);
+      await localProvidersApi.delete(providerId);
       setSuccess(`Deleted ${name}`);
       setTimeout(() => setSuccess(null), 2000);
       await loadData();
@@ -367,7 +367,9 @@ export function AIModelsTab() {
   // Handle toggle local provider
   const handleToggleLocalProvider = async (providerId: string) => {
     try {
-      await apiClient.patch(`/local-providers/${providerId}/toggle`);
+      const provider = localProviders.find((lp) => lp.id === providerId);
+      if (!provider) return;
+      await localProvidersApi.toggle(providerId, !provider.isEnabled);
       await loadData();
     } catch {
       setError('Failed to toggle provider');
@@ -377,7 +379,7 @@ export function AIModelsTab() {
   // Handle set default local provider
   const handleSetDefaultLocal = async (providerId: string) => {
     try {
-      await apiClient.patch(`/local-providers/${providerId}/set-default`);
+      await localProvidersApi.setDefault(providerId);
       setSuccess('Default provider updated');
       setTimeout(() => setSuccess(null), 2000);
       await loadData();

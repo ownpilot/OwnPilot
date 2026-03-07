@@ -316,17 +316,18 @@ describe('CodingAgentService', () => {
 
       for (const status of statuses) {
         expect(status.displayName).toBeTruthy();
-        expect(status.configured).toBe(false);
         expect(status.ptyAvailable).toBe(false);
       }
     });
 
-    it('detects configured providers', async () => {
+    it('marks CLI providers as configured when installed even without an API key', async () => {
       mockGetApiKey.mockImplementation((name: string) => {
         if (name === 'coding-codex') return 'sk-test';
         return undefined;
       });
-      mockExecFileSync.mockImplementation(() => {
+      mockExecFileSync.mockImplementation((cmd: string, args?: string[]) => {
+        if ((cmd === 'which' || cmd === 'where') && args?.[0] === 'codex') return '/usr/bin/codex';
+        if (cmd === 'codex' && args?.[0] === '--version') return 'codex v1.0.0\n';
         throw new Error('not found');
       });
       mockTryImport.mockRejectedValue(new Error('not installed'));
@@ -336,9 +337,6 @@ describe('CodingAgentService', () => {
 
       const codexStatus = statuses.find((s) => s.provider === 'codex');
       expect(codexStatus?.configured).toBe(true);
-
-      const claudeStatus = statuses.find((s) => s.provider === 'claude-code');
-      expect(claudeStatus?.configured).toBe(false);
     });
   });
 
