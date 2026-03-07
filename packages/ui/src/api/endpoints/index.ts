@@ -60,7 +60,7 @@ export type {
   ComposioStatus,
   ComposioActionInfo,
 } from './composio';
-export { codingAgentsApi, cliProvidersApi } from './coding-agents';
+export { codingAgentsApi, cliProvidersApi, orchestrationApi } from './coding-agents';
 export type {
   CodingAgentStatus,
   CodingAgentTestResult,

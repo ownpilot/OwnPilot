@@ -13,6 +13,13 @@ import { type ToolDefinition, type CodingAgentProvider, getErrorMessage } from '
 import { getCodingAgentService } from '../services/coding-agent-service.js';
 import { getCodingAgentSessionManager } from '../services/coding-agent-sessions.js';
 import { codingAgentResultsRepo } from '../db/repositories/coding-agent-results.js';
+import {
+  startOrchestration,
+  continueOrchestration,
+  cancelOrchestration,
+  getOrchestration,
+  listOrchestrations,
+} from '../services/coding-agent-orchestrator.js';
 
 // =============================================================================
 // Tool Definitions
@@ -173,11 +180,145 @@ const listTaskResultsDef: ToolDefinition = {
   tags: ['coding', 'agent', 'result', 'history'],
 };
 
+// =============================================================================
+// Orchestration Tool Definitions
+// =============================================================================
+
+const orchestrateCodingTaskDef: ToolDefinition = {
+  name: 'orchestrate_coding_task',
+  workflowUsable: true,
+  description: `Start a multi-step coding orchestration. OwnPilot's AI analyzer chains CLI tool sessions together — it spawns a session, analyzes the output, decides the next step, and continues until the goal is achieved.
+
+Use this for complex tasks that require multiple rounds of work:
+- "Build a REST API with auth, tests, and docs"
+- "Refactor the payment module and update all tests"
+- "Set up CI/CD pipeline with linting, testing, and deployment"
+
+The orchestrator works autonomously in auto_mode, or pauses after each step for user review. Returns the orchestration run ID for tracking progress.`,
+  parameters: {
+    type: 'object',
+    properties: {
+      goal: {
+        type: 'string',
+        description: 'High-level goal to achieve — the orchestrator will break this into steps',
+      },
+      provider: {
+        type: 'string',
+        description:
+          "CLI tool to use: 'claude-code', 'codex', or 'gemini-cli'. Default: 'claude-code'.",
+      },
+      cwd: {
+        type: 'string',
+        description: 'Working directory (absolute path) for the CLI tool to operate in',
+      },
+      auto_mode: {
+        type: 'boolean',
+        description:
+          'If true, the orchestrator continues autonomously without pausing. If false (default), pauses after each step for review.',
+      },
+      max_steps: {
+        type: 'number',
+        description: 'Maximum number of steps (default: 10, max: 20)',
+      },
+      model: {
+        type: 'string',
+        description: 'Model override for the CLI tool (optional)',
+      },
+    },
+    required: ['goal', 'cwd'],
+  },
+  category: 'Coding Agents',
+  tags: ['coding', 'agent', 'orchestration', 'multi-step', 'automation'],
+};
+
+const checkOrchestrationDef: ToolDefinition = {
+  name: 'check_orchestration',
+  workflowUsable: true,
+  description:
+    'Check the status of an orchestration run. Returns current status, step progress, and the latest analysis.',
+  parameters: {
+    type: 'object',
+    properties: {
+      run_id: {
+        type: 'string',
+        description: 'The orchestration run ID',
+      },
+    },
+    required: ['run_id'],
+  },
+  category: 'Coding Agents',
+  tags: ['coding', 'agent', 'orchestration', 'status'],
+};
+
+const continueOrchestrationDef: ToolDefinition = {
+  name: 'continue_orchestration',
+  workflowUsable: true,
+  description:
+    'Continue a paused orchestration run by providing the next instruction. Only works when the run is in "waiting_user" status.',
+  parameters: {
+    type: 'object',
+    properties: {
+      run_id: {
+        type: 'string',
+        description: 'The orchestration run ID',
+      },
+      response: {
+        type: 'string',
+        description: 'Your instruction or response to continue the orchestration',
+      },
+    },
+    required: ['run_id', 'response'],
+  },
+  category: 'Coding Agents',
+  tags: ['coding', 'agent', 'orchestration', 'continue'],
+};
+
+const cancelOrchestrationDef: ToolDefinition = {
+  name: 'cancel_orchestration',
+  workflowUsable: true,
+  description: 'Cancel a running or paused orchestration run.',
+  parameters: {
+    type: 'object',
+    properties: {
+      run_id: {
+        type: 'string',
+        description: 'The orchestration run ID to cancel',
+      },
+    },
+    required: ['run_id'],
+  },
+  category: 'Coding Agents',
+  tags: ['coding', 'agent', 'orchestration', 'cancel'],
+};
+
+const listOrchestrationsDef: ToolDefinition = {
+  name: 'list_orchestrations',
+  workflowUsable: true,
+  description:
+    'List recent orchestration runs with their status, step count, and goal summary.',
+  parameters: {
+    type: 'object',
+    properties: {
+      limit: {
+        type: 'number',
+        description: 'Max results (default: 10)',
+      },
+    },
+  },
+  category: 'Coding Agents',
+  tags: ['coding', 'agent', 'orchestration', 'list'],
+};
+
 export const CODING_AGENT_TOOLS: ToolDefinition[] = [
   runCodingTaskDef,
   listCodingAgentsDef,
   getTaskResultDef,
   listTaskResultsDef,
+  orchestrateCodingTaskDef,
+  checkOrchestrationDef,
+  continueOrchestrationDef,
+  cancelOrchestrationDef,
+  listOrchestrationsDef,
 ];
 
 // =============================================================================
@@ -308,6 +449,152 @@ export async function executeCodingAgentTool(
             durationMs: r.durationMs,
             costUsd: r.costUsd,
             exitCode: r.exitCode,
+            createdAt: r.createdAt,
+          })),
+        };
+      } catch (e) {
+        return { success: false, error: getErrorMessage(e) };
+      }
+    }
+
+    case 'orchestrate_coding_task': {
+      try {
+        const goal = args.goal as string;
+        const cwd = args.cwd as string;
+        if (!goal || !cwd) return { success: false, error: 'goal and cwd are required' };
+
+        const maxSteps = args.max_steps
+          ? Math.min(Math.max(args.max_steps as number, 1), 20)
+          : undefined;
+
+        const run = await startOrchestration(
+          {
+            goal,
+            provider: ((args.provider as string) ?? 'claude-code') as CodingAgentProvider,
+            cwd,
+            autoMode: (args.auto_mode as boolean) ?? false,
+            maxSteps,
+            model: args.model as string | undefined,
+          },
+          userId
+        );
+
+        return {
+          success: true,
+          result: {
+            runId: run.id,
+            status: run.status,
+            goal: run.goal,
+            provider: run.provider,
+            autoMode: run.autoMode,
+            maxSteps: run.maxSteps,
+            message: run.autoMode
+              ? 'Orchestration started in auto-mode. Use check_orchestration to monitor progress.'
+              : 'Orchestration started. It will pause after each step for your review. Use continue_orchestration to proceed.',
+          },
+        };
+      } catch (e) {
+        return { success: false, error: getErrorMessage(e) };
+      }
+    }
+
+    case 'check_orchestration': {
+      try {
+        const runId = args.run_id as string;
+        if (!runId) return { success: false, error: 'run_id is required' };
+
+        const run = await getOrchestration(runId, userId);
+        if (!run) return { success: false, error: `Orchestration ${runId} not found` };
+
+        return {
+          success: true,
+          result: {
+            runId: run.id,
+            status: run.status,
+            goal: run.goal,
+            provider: run.provider,
+            currentStep: run.currentStep,
+            totalSteps: run.steps.length,
+            maxSteps: run.maxSteps,
+            autoMode: run.autoMode,
+            totalDurationMs: run.totalDurationMs,
+            steps: run.steps.map((s) => ({
+              index: s.index,
+              status: s.status,
+              summary: s.analysis?.summary ?? s.outputSummary,
+              goalComplete: s.analysis?.goalComplete,
+              confidence: s.analysis?.confidence,
+              hasErrors: s.analysis?.hasErrors,
+              durationMs: s.durationMs,
+              nextPrompt: s.analysis?.nextPrompt,
+              userQuestion: s.analysis?.userQuestion,
+            })),
+          },
+        };
+      } catch (e) {
+        return { success: false, error: getErrorMessage(e) };
+      }
+    }
+
+    case 'continue_orchestration': {
+      try {
+        const runId = args.run_id as string;
+        const response = args.response as string;
+        if (!runId || !response) return { success: false, error: 'run_id and response are required' };
+
+        const run = await continueOrchestration(runId, userId, response);
+        if (!run) {
+          return {
+            success: false,
+            error: `Orchestration ${runId} not found or not in waiting_user status`,
+          };
+        }
+
+        return {
+          success: true,
+          result: {
+            runId: run.id,
+            status: run.status,
+            message: 'Orchestration resumed with your response.',
+          },
+        };
+      } catch (e) {
+        return { success: false, error: getErrorMessage(e) };
+      }
+    }
+
+    case 'cancel_orchestration': {
+      try {
+        const runId = args.run_id as string;
+        if (!runId) return { success: false, error: 'run_id is required' };
+
+        const cancelled = await cancelOrchestration(runId, userId);
+        return {
+          success: cancelled,
+          result: cancelled ? { message: 'Orchestration cancelled' } : undefined,
+          error: cancelled ? undefined : `Orchestration ${runId} not found`,
+        };
+      } catch (e) {
+        return { success: false, error: getErrorMessage(e) };
+      }
+    }
+
+    case 'list_orchestrations': {
+      try {
+        const limit = Math.min(Math.max((args.limit as number) || 10, 1), 50);
+        const runs = await listOrchestrations(userId, limit);
+
+        return {
+          success: true,
+          result: runs.map((r) => ({
+            runId: r.id,
+            goal: r.goal.length > 80 ? r.goal.slice(0, 80) + '...' : r.goal,
+            status: r.status,
+            provider: r.provider,
+            stepsCompleted: r.steps.filter((s) => s.status === 'completed').length,
+            maxSteps: r.maxSteps,
+            autoMode: r.autoMode,
+            totalDurationMs: r.totalDurationMs,
             createdAt: r.createdAt,
           })),
         };

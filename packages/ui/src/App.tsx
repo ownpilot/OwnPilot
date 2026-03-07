@@ -63,6 +63,9 @@ const PluginsPage = lazy(() =>
 const SkillsHubPage = lazy(() =>
   import('./pages/skills/SkillsHubPage').then((m) => ({ default: m.SkillsHubPage }))
 );
+const SkillEditorPage = lazy(() =>
+  import('./pages/skills/SkillEditorPage').then((m) => ({ default: m.SkillEditorPage }))
+);
 const WorkspacesPage = lazy(() =>
   import('./pages/WorkspacesPage').then((m) => ({ default: m.WorkspacesPage }))
 );
@@ -124,6 +127,9 @@ const SystemPage = lazy(() =>
 );
 const CodingAgentsPage = lazy(() =>
   import('./pages/CodingAgentsPage').then((m) => ({ default: m.CodingAgentsPage }))
+);
+const OrchestrationPage = lazy(() =>
+  import('./pages/OrchestrationPage').then((m) => ({ default: m.OrchestrationPage }))
 );
 const CodingAgentSettingsPage = lazy(() =>
   import('./pages/CodingAgentSettingsPage').then((m) => ({ default: m.CodingAgentSettingsPage }))
@@ -228,6 +234,7 @@ export function App() {
         <Route path="custom-data" element={page(<CustomDataPage />)} />
         <Route path="data-browser" element={page(<DataBrowserPage />)} />
         <Route path="coding-agents" element={page(<CodingAgentsPage />)} />
+        <Route path="orchestration" element={page(<OrchestrationPage />)} />
         <Route path="autonomous" element={page(<AutonomousHubPage />)} />
         <Route path="autonomous/agent/:id" element={page(<AgentProfilePage />)} />
         <Route path="artifacts" element={page(<ArtifactsPage />)} />
@@ -251,6 +258,7 @@ export function App() {
           element={<Navigate to="/skills?tab=installed&format=ownpilot" replace />}
         />
         <Route path="skills" element={page(<SkillsHubPage />)} />
+        <Route path="skills/:id/edit" element={page(<SkillEditorPage />)} />
         <Route path="workspaces" element={page(<WorkspacesPage />)} />
         <Route path="models" element={page(<ModelsPage />)} />
         <Route path="costs" element={page(<CostsPage />)} />

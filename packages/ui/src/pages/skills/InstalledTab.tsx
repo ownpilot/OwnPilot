@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Sparkles,
   RefreshCw,
@@ -75,6 +76,7 @@ function ConfirmDialog({
 
 export function InstalledTab({ initialFormat, onCountChange }: InstalledTabProps) {
   const toast = useToast();
+  const navigate = useNavigate();
   const [packages, setPackages] = useState<ExtensionInfo[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedPackage, setSelectedPackage] = useState<ExtensionInfo | null>(null);
@@ -415,6 +417,11 @@ export function InstalledTab({ initialFormat, onCountChange }: InstalledTabProps
           onClose={() => setSelectedPackage(null)}
           onToggle={() => togglePackage(selectedPackage)}
           onUninstall={() => setConfirmUninstall(selectedPackage)}
+          onEditFiles={
+            selectedPackage.sourcePath
+              ? () => navigate(`/skills/${selectedPackage.id}/edit`)
+              : undefined
+          }
           onUpdated={(updated) => {
             setSelectedPackage(updated);
             setPackages((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));

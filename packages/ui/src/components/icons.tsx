@@ -2,6 +2,7 @@
 export {
   Activity,
   AlertCircle,
+  ArrowLeft,
   AlertTriangle,
   Archive,
   Ban,

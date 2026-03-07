@@ -179,6 +179,12 @@ describe('validateCwd', () => {
     expect(result).toBeTruthy();
     expect(require('node:path').isAbsolute(result)).toBe(true);
   });
+
+  it('throws if directory does not exist', () => {
+    expect(() => validateCwd('/nonexistent/path/that/does/not/exist/xyz123')).toThrow(
+      'Working directory does not exist'
+    );
+  });
 });
 
 // ============================================================================

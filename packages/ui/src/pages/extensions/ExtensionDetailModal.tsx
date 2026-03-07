@@ -43,6 +43,8 @@ interface ExtensionDetailModalProps {
   onClose: () => void;
   onToggle: () => void;
   onUninstall: () => void;
+  /** Navigate to the file editor for this skill */
+  onEditFiles?: () => void;
   /** Called after metadata is saved so parent can refresh the list */
   onUpdated?: (updated: ExtensionInfo) => void;
 }
@@ -52,6 +54,7 @@ export function ExtensionDetailModal({
   onClose,
   onToggle,
   onUninstall,
+  onEditFiles,
   onUpdated,
 }: ExtensionDetailModalProps) {
   const toast = useToast();
@@ -686,6 +689,16 @@ export function ExtensionDetailModal({
               <Power className="w-4 h-4" />
               {isEnabled ? 'Disable' : 'Enable'}
             </button>
+            {pkg.sourcePath && onEditFiles && (
+              <button
+                onClick={onEditFiles}
+                className="px-4 py-2 rounded-lg flex items-center gap-2 text-text-secondary hover:text-primary hover:bg-primary/10 transition-colors"
+                title="Edit skill files"
+              >
+                <Edit2 className="w-4 h-4" />
+                Edit Files
+              </button>
+            )}
             {!confirmUninstall ? (
               <button
                 onClick={() => setConfirmUninstall(true)}

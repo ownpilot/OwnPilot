@@ -39,6 +39,27 @@ export interface ExtensionAuditResult {
   llmError: string | null;
 }
 
+export interface FileEntry {
+  path: string;
+  name: string;
+  type: 'file' | 'directory';
+  size?: number;
+  children?: FileEntry[];
+}
+
+export interface FileTreeResult {
+  skillDir: string;
+  manifestFile: string;
+  tree: FileEntry[];
+}
+
+export interface FileContentResult {
+  path: string;
+  content: string;
+  language: string;
+  size: number;
+}
+
 export const extensionsApi = {
   list: (params?: { status?: string; category?: string; format?: string }) => {
     const search = new URLSearchParams();
@@ -85,6 +106,25 @@ export const extensionsApi = {
   /** Run LLM-powered security audit on an installed extension */
   audit: (id: string, options?: { provider?: string; model?: string }) =>
     apiClient.post<ExtensionAuditResult>(`/extensions/${id}/audit`, options ?? {}),
+
+  /** List all files in a skill's directory as a tree */
+  listFiles: (id: string) =>
+    apiClient.get<FileTreeResult>(`/extensions/${id}/files`),
+
+  /** Read a single file's content */
+  readFile: (id: string, path: string) =>
+    apiClient.get<FileContentResult>(`/extensions/${id}/files/${path}`),
+
+  /** Write/create a file */
+  writeFile: (id: string, path: string, content: string) =>
+    apiClient.put<{ path: string; size: number; saved: boolean }>(
+      `/extensions/${id}/files/${path}`,
+      { content }
+    ),
+
+  /** Delete a file */
+  deleteFile: (id: string, path: string) =>
+    apiClient.delete<{ path: string; deleted: boolean }>(`/extensions/${id}/files/${path}`),
 
   upload: async (file: File): Promise<{ package: ExtensionInfo; message: string }> => {
     const formData = new FormData();

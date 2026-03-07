@@ -9,6 +9,7 @@
  */
 
 import { spawn, execFileSync, type ChildProcess } from 'node:child_process';
+import { existsSync } from 'node:fs';
 import { resolve, isAbsolute } from 'node:path';
 import { isBuiltinProvider } from '@ownpilot/core';
 
@@ -75,6 +76,9 @@ export function validateCwd(cwd: string): string {
   }
   if (resolved.includes('..')) {
     throw new Error(`Working directory must not contain path traversal: ${cwd}`);
+  }
+  if (!existsSync(resolved)) {
+    throw new Error(`Working directory does not exist: ${resolved}`);
   }
   return resolved;
 }

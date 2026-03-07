@@ -41,6 +41,51 @@ export type CodingAgentSessionState =
   | 'failed'
   | 'terminated';
 
+// =============================================================================
+// PERMISSIONS & SKILLS
+// =============================================================================
+
+/** Output format the coding agent should use */
+export type CodingAgentOutputFormat = 'text' | 'json' | 'stream-json';
+
+/** File system access level */
+export type CodingAgentFileAccess = 'none' | 'read-only' | 'read-write' | 'full';
+
+/** Autonomy level — how much the agent can do without approval */
+export type CodingAgentAutonomy = 'supervised' | 'semi-auto' | 'full-auto';
+
+/** Per-session permission set for a coding agent */
+export interface CodingAgentPermissions {
+  /** Output format: text (default), json (structured), stream-json (streaming) */
+  outputFormat?: CodingAgentOutputFormat;
+  /** File system access level */
+  fileAccess?: CodingAgentFileAccess;
+  /** Restrict file access to these directories only (empty = cwd only) */
+  allowedPaths?: string[];
+  /** Allow network/internet access */
+  networkAccess?: boolean;
+  /** Allow shell/command execution */
+  shellAccess?: boolean;
+  /** Allow git operations */
+  gitAccess?: boolean;
+  /** Autonomy level */
+  autonomy?: CodingAgentAutonomy;
+  /** Maximum number of files the agent can create/modify */
+  maxFileChanges?: number;
+}
+
+/** A skill/instruction set that can be attached to a coding agent session */
+export interface CodingAgentSkill {
+  /** Unique identifier */
+  id: string;
+  /** Display name */
+  name: string;
+  /** Markdown content (instructions, conventions, rules) */
+  content: string;
+  /** Where the skill came from */
+  source: 'builtin' | 'user' | 'extension';
+}
+
 /** Task definition for a coding agent */
 export interface CodingAgentTask {
   /** Which coding agent to use */
@@ -61,6 +106,10 @@ export interface CodingAgentTask {
   timeout?: number;
   /** Execution mode: auto tries SDK/CLI first, falls back to PTY */
   mode?: CodingAgentMode;
+  /** Skills/instructions to inject into the agent's system prompt */
+  skills?: CodingAgentSkill[];
+  /** Permission constraints for this task */
+  permissions?: CodingAgentPermissions;
 }
 
 /** Result from a coding agent task */
@@ -131,6 +180,10 @@ export interface CodingAgentSession {
   userId: string;
   /** How this session was created */
   source?: 'user' | 'ai-tool';
+  /** Skill IDs attached to this session */
+  skillIds?: string[];
+  /** Permission set for this session */
+  permissions?: CodingAgentPermissions;
 }
 
 /** Input for creating a new coding agent session */
@@ -153,7 +206,23 @@ export interface CreateCodingSessionInput {
   maxBudgetUsd?: number;
   /** How this session is being created */
   source?: 'user' | 'ai-tool';
+  /** Skill IDs to attach (resolved to content before injection) */
+  skillIds?: string[];
+  /** Permission constraints for this session */
+  permissions?: CodingAgentPermissions;
 }
+
+/** Default permissions — safe defaults for supervised use */
+export const DEFAULT_CODING_AGENT_PERMISSIONS: Required<CodingAgentPermissions> = {
+  outputFormat: 'text',
+  fileAccess: 'read-write',
+  allowedPaths: [],
+  networkAccess: true,
+  shellAccess: true,
+  gitAccess: true,
+  autonomy: 'semi-auto',
+  maxFileChanges: 50,
+};
 
 // =============================================================================
 // SERVICE INTERFACE
@@ -188,4 +257,119 @@ export interface ICodingAgentService {
 
   /** Terminate a session (kill PTY process) */
   terminateSession(sessionId: string, userId: string): boolean;
+}
+
+// =============================================================================
+// ORCHESTRATION TYPES
+// =============================================================================
+
+/** Orchestration run status */
+export type OrchestrationRunStatus =
+  | 'planning'
+  | 'running'
+  | 'waiting_user'
+  | 'paused'
+  | 'completed'
+  | 'failed'
+  | 'cancelled';
+
+/** A single step in an orchestration run */
+export interface OrchestrationStep {
+  /** Step index (0-based) */
+  index: number;
+  /** The prompt sent to the CLI tool */
+  prompt: string;
+  /** Session ID (from CodingAgentSessionManager) */
+  sessionId?: string;
+  /** Result DB record ID */
+  resultId?: string;
+  /** Step status */
+  status: 'pending' | 'running' | 'completed' | 'failed' | 'skipped';
+  /** Truncated output summary (for context chaining) */
+  outputSummary?: string;
+  /** Exit code from the CLI tool */
+  exitCode?: number;
+  /** Duration in ms */
+  durationMs?: number;
+  /** AI analysis verdict after this step */
+  analysis?: OrchestrationAnalysis;
+  /** Timestamp */
+  startedAt?: string;
+  completedAt?: string;
+}
+
+/** AI analysis of a CLI tool's output */
+export interface OrchestrationAnalysis {
+  /** What did the CLI tool accomplish? */
+  summary: string;
+  /** Is the overall goal achieved? */
+  goalComplete: boolean;
+  /** Were there errors or issues? */
+  hasErrors: boolean;
+  /** Error details if any */
+  errors?: string[];
+  /** Suggested next prompt for the CLI tool (null = done) */
+  nextPrompt: string | null;
+  /** Confidence 0-1 that the goal is complete */
+  confidence: number;
+  /** Should we ask the user before continuing? */
+  needsUserInput: boolean;
+  /** Question for the user (if needsUserInput) */
+  userQuestion?: string;
+}
+
+/** Input to start an orchestration run */
+export interface StartOrchestrationInput {
+  /** High-level goal description */
+  goal: string;
+  /** Which CLI tool to use */
+  provider: CodingAgentProvider;
+  /** Working directory */
+  cwd: string;
+  /** Model override for the CLI tool */
+  model?: string;
+  /** Max steps before stopping (default: 10) */
+  maxSteps?: number;
+  /** Max total time in ms (default: 30 min) */
+  maxDurationMs?: number;
+  /** Skill IDs to attach to each session */
+  skillIds?: string[];
+  /** Permission constraints */
+  permissions?: CodingAgentPermissions;
+  /** Auto-continue without asking user (full autonomy) */
+  autoMode?: boolean;
+}
+
+/** Full orchestration run state */
+export interface OrchestrationRun {
+  id: string;
+  userId: string;
+  /** High-level goal */
+  goal: string;
+  /** CLI tool provider */
+  provider: CodingAgentProvider;
+  /** Working directory */
+  cwd: string;
+  /** Model override */
+  model?: string;
+  /** Current status */
+  status: OrchestrationRunStatus;
+  /** All steps executed so far */
+  steps: OrchestrationStep[];
+  /** Current step index */
+  currentStep: number;
+  /** Max allowed steps */
+  maxSteps: number;
+  /** Auto-continue mode */
+  autoMode: boolean;
+  /** Skill IDs */
+  skillIds?: string[];
+  /** Permission constraints */
+  permissions?: CodingAgentPermissions;
+  /** Timestamps */
+  createdAt: string;
+  updatedAt: string;
+  completedAt?: string;
+  /** Total duration ms (all steps) */
+  totalDurationMs?: number;
 }

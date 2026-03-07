@@ -36,6 +36,21 @@ export type CodingAgentSessionState =
   | 'failed'
   | 'terminated';
 
+export type CodingAgentOutputFormat = 'text' | 'json' | 'stream-json';
+export type CodingAgentFileAccess = 'none' | 'read-only' | 'read-write' | 'full';
+export type CodingAgentAutonomy = 'supervised' | 'semi-auto' | 'full-auto';
+
+export interface CodingAgentPermissions {
+  output_format?: CodingAgentOutputFormat;
+  file_access?: CodingAgentFileAccess;
+  allowed_paths?: string[];
+  network_access?: boolean;
+  shell_access?: boolean;
+  git_access?: boolean;
+  autonomy?: CodingAgentAutonomy;
+  max_file_changes?: number;
+}
+
 export interface CodingAgentSession {
   id: string;
   provider: string;
@@ -49,6 +64,8 @@ export interface CodingAgentSession {
   completedAt?: string;
   exitCode?: number;
   userId: string;
+  skillIds?: string[];
+  permissions?: CodingAgentPermissions;
 }
 
 export interface CreateCodingSessionInput {
@@ -60,6 +77,8 @@ export interface CreateCodingSessionInput {
   timeout_seconds?: number;
   max_turns?: number;
   max_budget_usd?: number;
+  skill_ids?: string[];
+  permissions?: CodingAgentPermissions;
 }
 
 // =============================================================================
@@ -210,7 +229,114 @@ export const codingAgentsApi = {
 
   /** Get a specific result */
   getResult: (id: string) => apiClient.get<CodingAgentResultRecord>(`/coding-agents/results/${id}`),
+
+  // --- Permissions ---
+
+  /** List all permission profiles */
+  listPermissions: () =>
+    apiClient.get<CodingAgentPermissionProfile[]>('/coding-agents/permissions'),
+
+  /** Get permission profile for a provider */
+  getPermissions: (providerRef: string) =>
+    apiClient.get<CodingAgentPermissionProfile>(`/coding-agents/permissions/${providerRef}`),
+
+  /** Upsert permission profile */
+  updatePermissions: (providerRef: string, data: Record<string, unknown>) =>
+    apiClient.put<CodingAgentPermissionProfile>(
+      `/coding-agents/permissions/${providerRef}`,
+      data
+    ),
+
+  /** Delete permission profile */
+  deletePermissions: (providerRef: string) =>
+    apiClient.delete<{ deleted: boolean }>(`/coding-agents/permissions/${providerRef}`),
+
+  // --- Skill Attachments ---
+
+  /** List skill attachments for a provider */
+  listSkillAttachments: (providerRef: string) =>
+    apiClient.get<SkillAttachment[]>(`/coding-agents/skills/${providerRef}`),
+
+  /** Attach a skill to a provider */
+  attachSkill: (providerRef: string, data: Record<string, unknown>) =>
+    apiClient.post<SkillAttachment>(`/coding-agents/skills/${providerRef}`, data),
+
+  /** Update a skill attachment */
+  updateSkillAttachment: (providerRef: string, id: string, data: Record<string, unknown>) =>
+    apiClient.put<SkillAttachment>(`/coding-agents/skills/${providerRef}/${id}`, data),
+
+  /** Detach a skill */
+  detachSkill: (providerRef: string, id: string) =>
+    apiClient.delete<{ deleted: boolean }>(`/coding-agents/skills/${providerRef}/${id}`),
+
+  // --- Subscriptions ---
+
+  /** List all subscriptions */
+  listSubscriptions: () =>
+    apiClient.get<CodingAgentSubscription[]>('/coding-agents/subscriptions'),
+
+  /** Get subscription for a provider */
+  getSubscription: (providerRef: string) =>
+    apiClient.get<CodingAgentSubscription>(`/coding-agents/subscriptions/${providerRef}`),
+
+  /** Upsert subscription */
+  updateSubscription: (providerRef: string, data: Record<string, unknown>) =>
+    apiClient.put<CodingAgentSubscription>(
+      `/coding-agents/subscriptions/${providerRef}`,
+      data
+    ),
+
+  /** Delete subscription */
+  deleteSubscription: (providerRef: string) =>
+    apiClient.delete<{ deleted: boolean }>(`/coding-agents/subscriptions/${providerRef}`),
 };
+
+// =============================================================================
+// Permission / Skill / Subscription types
+// =============================================================================
+
+export interface CodingAgentPermissionProfile {
+  id: string;
+  userId: string;
+  providerRef: string;
+  ioFormat: string;
+  fsAccess: string;
+  allowedDirs: string[];
+  networkAccess: boolean;
+  shellAccess: boolean;
+  gitAccess: boolean;
+  autonomy: string;
+  maxFileChanges: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SkillAttachment {
+  id: string;
+  userId: string;
+  providerRef: string;
+  type: 'extension' | 'inline';
+  extensionId?: string;
+  label?: string;
+  instructions?: string;
+  priority: number;
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CodingAgentSubscription {
+  id: string;
+  userId: string;
+  providerRef: string;
+  tier?: string;
+  monthlyBudgetUsd: number;
+  currentSpendUsd: number;
+  maxConcurrentSessions: number;
+  resetAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
 
 // =============================================================================
 // CLI Providers API (custom provider registry)
@@ -233,4 +359,93 @@ export const cliProvidersApi = {
 
   /** Test if a CLI provider binary is installed */
   test: (id: string) => apiClient.post<CliProviderTestResult>(`/cli-providers/${id}/test`),
+};
+
+// =============================================================================
+// Orchestration types
+// =============================================================================
+
+export interface OrchestrationAnalysis {
+  summary: string;
+  goalComplete: boolean;
+  hasErrors: boolean;
+  errors?: string[];
+  nextPrompt: string | null;
+  confidence: number;
+  needsUserInput: boolean;
+  userQuestion?: string;
+}
+
+export interface OrchestrationStep {
+  index: number;
+  prompt: string;
+  sessionId?: string;
+  resultId?: string;
+  status: 'pending' | 'running' | 'completed' | 'failed' | 'skipped';
+  outputSummary?: string;
+  exitCode?: number;
+  durationMs?: number;
+  analysis?: OrchestrationAnalysis;
+  startedAt?: string;
+  completedAt?: string;
+}
+
+export interface OrchestrationRun {
+  id: string;
+  userId: string;
+  goal: string;
+  provider: string;
+  cwd: string;
+  model?: string;
+  status: string;
+  steps: OrchestrationStep[];
+  currentStep: number;
+  maxSteps: number;
+  autoMode: boolean;
+  skillIds?: string[];
+  createdAt: string;
+  updatedAt: string;
+  completedAt?: string;
+  totalDurationMs?: number;
+}
+
+// =============================================================================
+// Orchestration API
+// =============================================================================
+
+export const orchestrationApi = {
+  /** Start a new orchestration run */
+  start: (input: {
+    goal: string;
+    provider: string;
+    cwd: string;
+    model?: string;
+    maxSteps?: number;
+    autoMode?: boolean;
+    skillIds?: string[];
+  }) => apiClient.post<{ run: OrchestrationRun }>('/coding-agents/orchestrate', input),
+
+  /** List orchestration runs */
+  list: (limit = 20, offset = 0) =>
+    apiClient.get<{ runs: OrchestrationRun[] }>(
+      `/coding-agents/orchestrate?limit=${limit}&offset=${offset}`
+    ),
+
+  /** Get a specific run */
+  get: (id: string) =>
+    apiClient.get<{ run: OrchestrationRun }>(`/coding-agents/orchestrate/${id}`),
+
+  /** Continue a paused run with user input */
+  continue: (id: string, prompt: string) =>
+    apiClient.post<{ run: OrchestrationRun }>(`/coding-agents/orchestrate/${id}/continue`, {
+      prompt,
+    }),
+
+  /** Cancel a run */
+  cancel: (id: string) =>
+    apiClient.post<{ cancelled: boolean }>(`/coding-agents/orchestrate/${id}/cancel`),
+
+  /** Delete a run */
+  delete: (id: string) =>
+    apiClient.delete<{ deleted: boolean }>(`/coding-agents/orchestrate/${id}`),
 };

@@ -902,6 +902,122 @@ CREATE TABLE IF NOT EXISTS cli_tool_policies (
   UNIQUE(user_id, tool_name)
 );
 
+-- Coding agent per-provider permission profiles
+CREATE TABLE IF NOT EXISTS coding_agent_permissions (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL DEFAULT 'default',
+  provider_ref TEXT NOT NULL,
+  io_format TEXT NOT NULL DEFAULT 'text'
+    CHECK(io_format IN ('text', 'json', 'stream-json')),
+  fs_access TEXT NOT NULL DEFAULT 'read-write'
+    CHECK(fs_access IN ('none', 'read-only', 'read-write', 'full')),
+  allowed_dirs JSONB NOT NULL DEFAULT '[]',
+  network_access BOOLEAN NOT NULL DEFAULT TRUE,
+  shell_access BOOLEAN NOT NULL DEFAULT TRUE,
+  git_access BOOLEAN NOT NULL DEFAULT TRUE,
+  autonomy TEXT NOT NULL DEFAULT 'semi-auto'
+    CHECK(autonomy IN ('supervised', 'semi-auto', 'full-auto')),
+  max_file_changes INTEGER NOT NULL DEFAULT 50,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  UNIQUE(user_id, provider_ref)
+);
+
+-- Coding agent skill attachments (skills/instructions per provider)
+CREATE TABLE IF NOT EXISTS coding_agent_skill_attachments (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL DEFAULT 'default',
+  provider_ref TEXT NOT NULL,
+  type TEXT NOT NULL DEFAULT 'extension'
+    CHECK(type IN ('extension', 'inline')),
+  extension_id TEXT,
+  label TEXT,
+  instructions TEXT,
+  priority INTEGER NOT NULL DEFAULT 0,
+  active BOOLEAN NOT NULL DEFAULT TRUE,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+-- Coding agent subscription/budget tracking
+CREATE TABLE IF NOT EXISTS coding_agent_subscriptions (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL DEFAULT 'default',
+  provider_ref TEXT NOT NULL,
+  tier TEXT,
+  monthly_budget_usd REAL NOT NULL DEFAULT 0,
+  current_spend_usd REAL NOT NULL DEFAULT 0,
+  max_concurrent_sessions INTEGER NOT NULL DEFAULT 3,
+  reset_at TIMESTAMP,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  UNIQUE(user_id, provider_ref)
+);
+
+-- Orchestration runs: multi-step CLI tool orchestration
+CREATE TABLE IF NOT EXISTS orchestration_runs (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL DEFAULT 'default',
+  goal TEXT NOT NULL,
+  provider TEXT NOT NULL,
+  cwd TEXT NOT NULL,
+  model TEXT,
+  status TEXT NOT NULL DEFAULT 'planning' CHECK(status IN ('planning', 'running', 'waiting_user', 'paused', 'completed', 'failed', 'cancelled')),
+  steps JSONB NOT NULL DEFAULT '[]',
+  current_step INTEGER NOT NULL DEFAULT 0,
+  max_steps INTEGER NOT NULL DEFAULT 10,
+  auto_mode BOOLEAN NOT NULL DEFAULT FALSE,
+  skill_ids JSONB NOT NULL DEFAULT '[]',
+  permissions JSONB,
+  total_duration_ms INTEGER,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  completed_at TIMESTAMP
+);
+
+-- =====================================================
+-- EDGE / IoT TABLES
+-- =====================================================
+
+-- Edge devices: registered IoT/edge devices
+CREATE TABLE IF NOT EXISTS edge_devices (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL DEFAULT 'default',
+  name VARCHAR(200) NOT NULL,
+  type VARCHAR(20) NOT NULL CHECK (type IN ('raspberry-pi', 'esp32', 'arduino', 'custom')),
+  protocol VARCHAR(20) NOT NULL DEFAULT 'mqtt' CHECK (protocol IN ('mqtt', 'websocket', 'http-poll')),
+  sensors JSONB NOT NULL DEFAULT '[]',
+  actuators JSONB NOT NULL DEFAULT '[]',
+  status VARCHAR(10) NOT NULL DEFAULT 'offline' CHECK (status IN ('online', 'offline', 'error')),
+  last_seen TIMESTAMPTZ,
+  firmware_version TEXT,
+  metadata JSONB NOT NULL DEFAULT '{}',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Edge commands: command history (server -> device)
+CREATE TABLE IF NOT EXISTS edge_commands (
+  id TEXT PRIMARY KEY,
+  device_id TEXT NOT NULL REFERENCES edge_devices(id) ON DELETE CASCADE,
+  user_id TEXT NOT NULL DEFAULT 'default',
+  command_type VARCHAR(50) NOT NULL,
+  payload JSONB NOT NULL DEFAULT '{}',
+  status VARCHAR(20) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'sent', 'acknowledged', 'completed', 'failed', 'timeout')),
+  result JSONB,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  completed_at TIMESTAMPTZ
+);
+
+-- Edge telemetry: sensor data history (device -> server)
+CREATE TABLE IF NOT EXISTS edge_telemetry (
+  id TEXT PRIMARY KEY,
+  device_id TEXT NOT NULL REFERENCES edge_devices(id) ON DELETE CASCADE,
+  sensor_id TEXT NOT NULL,
+  value JSONB NOT NULL,
+  recorded_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 -- Background agents: persistent, long-running autonomous agents
 CREATE TABLE IF NOT EXISTS background_agents (
   id TEXT PRIMARY KEY,
@@ -2052,6 +2168,29 @@ CREATE INDEX IF NOT EXISTS idx_cli_providers_user_name ON cli_providers(user_id,
 -- CLI tool policies indexes
 CREATE INDEX IF NOT EXISTS idx_cli_tool_policies_user ON cli_tool_policies(user_id);
 CREATE INDEX IF NOT EXISTS idx_cli_tool_policies_user_tool ON cli_tool_policies(user_id, tool_name);
+
+-- Coding agent permissions indexes
+CREATE INDEX IF NOT EXISTS idx_coding_agent_perms_user ON coding_agent_permissions(user_id);
+CREATE INDEX IF NOT EXISTS idx_coding_agent_perms_provider ON coding_agent_permissions(user_id, provider_ref);
+
+-- Coding agent skill attachments indexes
+CREATE INDEX IF NOT EXISTS idx_coding_agent_skills_user ON coding_agent_skill_attachments(user_id);
+CREATE INDEX IF NOT EXISTS idx_coding_agent_skills_provider ON coding_agent_skill_attachments(user_id, provider_ref);
+
+-- Coding agent subscriptions indexes
+CREATE INDEX IF NOT EXISTS idx_coding_agent_subs_user ON coding_agent_subscriptions(user_id);
+CREATE INDEX IF NOT EXISTS idx_coding_agent_subs_provider ON coding_agent_subscriptions(user_id, provider_ref);
+
+-- Orchestration runs indexes
+CREATE INDEX IF NOT EXISTS idx_orchestration_runs_user ON orchestration_runs(user_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_orchestration_runs_status ON orchestration_runs(user_id, status);
+
+-- Edge device indexes
+CREATE INDEX IF NOT EXISTS idx_edge_devices_user ON edge_devices(user_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_edge_devices_status ON edge_devices(user_id, status);
+CREATE INDEX IF NOT EXISTS idx_edge_commands_device ON edge_commands(device_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_edge_telemetry_device_sensor ON edge_telemetry(device_id, sensor_id, recorded_at DESC);
+CREATE INDEX IF NOT EXISTS idx_edge_telemetry_time ON edge_telemetry(recorded_at DESC);
 
 -- Background agent indexes
 CREATE INDEX IF NOT EXISTS idx_background_agents_user ON background_agents(user_id);

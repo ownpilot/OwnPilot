@@ -213,8 +213,22 @@ export type {
   CodingAgentStatus,
   CodingAgentSession,
   CreateCodingSessionInput,
+  CodingAgentOutputFormat,
+  CodingAgentFileAccess,
+  CodingAgentAutonomy,
+  CodingAgentPermissions,
+  CodingAgentSkill,
+  OrchestrationRunStatus,
+  OrchestrationStep,
+  OrchestrationAnalysis,
+  StartOrchestrationInput,
+  OrchestrationRun,
 } from './coding-agent-service.js';
-export { isBuiltinProvider, getCustomProviderName } from './coding-agent-service.js';
+export {
+  isBuiltinProvider,
+  getCustomProviderName,
+  DEFAULT_CODING_AGENT_PERMISSIONS,
+} from './coding-agent-service.js';
 
 // CLI Tool Service
 export type {

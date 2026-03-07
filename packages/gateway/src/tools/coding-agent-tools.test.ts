@@ -83,17 +83,22 @@ const sampleResult = {
 // ---------------------------------------------------------------------------
 
 describe('CODING_AGENT_TOOLS', () => {
-  it('exports an array of 4 tool definitions', () => {
+  it('exports an array of 9 tool definitions', () => {
     expect(Array.isArray(CODING_AGENT_TOOLS)).toBe(true);
-    expect(CODING_AGENT_TOOLS.length).toBe(4);
+    expect(CODING_AGENT_TOOLS.length).toBe(9);
   });
 
-  it('includes run_coding_task, list_coding_agents, get_task_result, list_task_results', () => {
+  it('includes all coding agent and orchestration tools', () => {
     const names = CODING_AGENT_TOOLS.map((t) => t.name);
     expect(names).toContain('run_coding_task');
     expect(names).toContain('list_coding_agents');
     expect(names).toContain('get_task_result');
     expect(names).toContain('list_task_results');
+    expect(names).toContain('orchestrate_coding_task');
+    expect(names).toContain('check_orchestration');
+    expect(names).toContain('continue_orchestration');
+    expect(names).toContain('cancel_orchestration');
+    expect(names).toContain('list_orchestrations');
   });
 
   it('run_coding_task has required params: provider, prompt', () => {

@@ -443,7 +443,7 @@ describe('Coding Agent Tool Definitions', () => {
   it('exports correct tool definitions', async () => {
     const { CODING_AGENT_TOOLS } = await import('../tools/coding-agent-tools.js');
 
-    expect(CODING_AGENT_TOOLS).toHaveLength(4);
+    expect(CODING_AGENT_TOOLS).toHaveLength(9);
 
     const runTask = CODING_AGENT_TOOLS.find((t) => t.name === 'run_coding_task');
     expect(runTask).toBeDefined();

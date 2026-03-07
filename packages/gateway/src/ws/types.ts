@@ -316,6 +316,18 @@ export interface ServerEvents {
   'coding-agent:session:exit': { sessionId: string; exitCode: number; signal?: number };
   'coding-agent:session:error': { sessionId: string; error: string };
 
+  // Orchestration events
+  'orchestration:created': { id: string; goal: string };
+  'orchestration:status': { id: string; status: string };
+  'orchestration:step:started': { id: string; stepIndex: number; prompt: string; sessionId?: string };
+  'orchestration:step:completed': { id: string; stepIndex: number; exitCode?: number };
+  'orchestration:step:analyzed': { id: string; stepIndex: number; analysis: unknown };
+  'orchestration:waiting': { id: string; question: string; analysis: unknown };
+  'orchestration:finished': { id: string; status: string; totalDurationMs: number };
+  'orchestration:cancelled': { id: string };
+  'orchestration:continued': { id: string };
+  'orchestration:error': { id: string; stepIndex: number; error: string };
+
   // Workflow approval events
   'approval:required': { approvalId: string; workflowId: string; nodeId: string };
   'approval:decided': { approvalId: string; status: 'approved' | 'rejected' };

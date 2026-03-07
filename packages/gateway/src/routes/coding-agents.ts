@@ -8,7 +8,18 @@
 import { Hono } from 'hono';
 import type { CodingAgentProvider } from '@ownpilot/core';
 import { getCodingAgentService } from '../services/coding-agent-service.js';
+import {
+  startOrchestration,
+  continueOrchestration,
+  cancelOrchestration,
+  getOrchestration,
+  listOrchestrations,
+} from '../services/coding-agent-orchestrator.js';
 import { codingAgentResultsRepo } from '../db/repositories/coding-agent-results.js';
+import { orchestrationRunsRepo } from '../db/repositories/orchestration-runs.js';
+import { codingAgentPermissionsRepo } from '../db/repositories/coding-agent-permissions.js';
+import { codingAgentSkillAttachmentsRepo } from '../db/repositories/coding-agent-skill-attachments.js';
+import { codingAgentSubscriptionsRepo } from '../db/repositories/coding-agent-subscriptions.js';
 import {
   getUserId,
   apiResponse,
@@ -175,8 +186,18 @@ codingAgentsRoutes.post('/sessions', async (c) => {
     return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: 'Invalid JSON body' }, 400);
   }
 
-  const { provider, prompt, cwd, model, mode, timeout_seconds, max_turns, max_budget_usd } =
-    body as Record<string, unknown>;
+  const {
+    provider,
+    prompt,
+    cwd,
+    model,
+    mode,
+    timeout_seconds,
+    max_turns,
+    max_budget_usd,
+    skill_ids,
+    permissions,
+  } = body as Record<string, unknown>;
 
   if (!provider || typeof provider !== 'string' || !isValidProvider(provider)) {
     return apiError(
@@ -214,6 +235,19 @@ codingAgentsRoutes.post('/sessions', async (c) => {
         timeout: timeoutSec ? timeoutSec * 1000 : undefined,
         maxTurns: max_turns as number | undefined,
         maxBudgetUsd: max_budget_usd as number | undefined,
+        skillIds: Array.isArray(skill_ids) ? (skill_ids as string[]) : undefined,
+        permissions: permissions as Record<string, unknown> | undefined
+          ? {
+              outputFormat: (permissions as Record<string, unknown>).output_format as string | undefined,
+              fileAccess: (permissions as Record<string, unknown>).file_access as string | undefined,
+              allowedPaths: (permissions as Record<string, unknown>).allowed_paths as string[] | undefined,
+              networkAccess: (permissions as Record<string, unknown>).network_access as boolean | undefined,
+              shellAccess: (permissions as Record<string, unknown>).shell_access as boolean | undefined,
+              gitAccess: (permissions as Record<string, unknown>).git_access as boolean | undefined,
+              autonomy: (permissions as Record<string, unknown>).autonomy as string | undefined,
+              maxFileChanges: (permissions as Record<string, unknown>).max_file_changes as number | undefined,
+            } as import('@ownpilot/core').CodingAgentPermissions
+          : undefined,
       },
       userId
     );
@@ -391,4 +425,410 @@ codingAgentsRoutes.get('/results/:id', async (c) => {
   } catch (err) {
     return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(err) }, 500);
   }
+});
+
+// =============================================================================
+// PERMISSION ENDPOINTS (per-provider permission profiles)
+// =============================================================================
+
+// GET /permissions - List all permission profiles
+codingAgentsRoutes.get('/permissions', async (c) => {
+  const userId = getUserId(c);
+  try {
+    const perms = await codingAgentPermissionsRepo.list(userId);
+    return apiResponse(c, perms);
+  } catch (err) {
+    return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(err) }, 500);
+  }
+});
+
+// GET /permissions/:providerRef - Get permission profile for a provider
+codingAgentsRoutes.get('/permissions/:providerRef', async (c) => {
+  const userId = getUserId(c);
+  const providerRef = c.req.param('providerRef');
+
+  try {
+    const perm = await codingAgentPermissionsRepo.getByProvider(providerRef, userId);
+    if (!perm) {
+      return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'No permissions configured' }, 404);
+    }
+    return apiResponse(c, perm);
+  } catch (err) {
+    return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(err) }, 500);
+  }
+});
+
+// PUT /permissions/:providerRef - Upsert permission profile
+codingAgentsRoutes.put('/permissions/:providerRef', async (c) => {
+  const userId = getUserId(c);
+  const providerRef = c.req.param('providerRef');
+
+  const body = await parseJsonBody(c);
+  if (!body) {
+    return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: 'Invalid JSON body' }, 400);
+  }
+
+  const b = body as Record<string, unknown>;
+
+  try {
+    const record = await codingAgentPermissionsRepo.upsert(
+      {
+        providerRef,
+        ioFormat: b.io_format as string | undefined,
+        fsAccess: b.fs_access as string | undefined,
+        allowedDirs: b.allowed_dirs as string[] | undefined,
+        networkAccess: b.network_access as boolean | undefined,
+        shellAccess: b.shell_access as boolean | undefined,
+        gitAccess: b.git_access as boolean | undefined,
+        autonomy: b.autonomy as string | undefined,
+        maxFileChanges: b.max_file_changes as number | undefined,
+      } as Parameters<typeof codingAgentPermissionsRepo.upsert>[0],
+      userId
+    );
+    return apiResponse(c, record);
+  } catch (err) {
+    return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(err) }, 500);
+  }
+});
+
+// DELETE /permissions/:providerRef - Delete permission profile
+codingAgentsRoutes.delete('/permissions/:providerRef', async (c) => {
+  const userId = getUserId(c);
+  const providerRef = c.req.param('providerRef');
+
+  try {
+    const deleted = await codingAgentPermissionsRepo.delete(providerRef, userId);
+    if (!deleted) {
+      return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Not found' }, 404);
+    }
+    return apiResponse(c, { deleted: true });
+  } catch (err) {
+    return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(err) }, 500);
+  }
+});
+
+// =============================================================================
+// SKILL ATTACHMENT ENDPOINTS
+// =============================================================================
+
+// GET /skills/:providerRef - List skill attachments for a provider
+codingAgentsRoutes.get('/skills/:providerRef', async (c) => {
+  const userId = getUserId(c);
+  const providerRef = c.req.param('providerRef');
+
+  try {
+    const skills = await codingAgentSkillAttachmentsRepo.listByProvider(providerRef, userId);
+    return apiResponse(c, skills);
+  } catch (err) {
+    return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(err) }, 500);
+  }
+});
+
+// POST /skills/:providerRef - Attach a skill
+codingAgentsRoutes.post('/skills/:providerRef', async (c) => {
+  const userId = getUserId(c);
+  const providerRef = c.req.param('providerRef');
+
+  const body = await parseJsonBody(c);
+  if (!body) {
+    return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: 'Invalid JSON body' }, 400);
+  }
+
+  const b = body as Record<string, unknown>;
+  const type = b.type as string;
+  if (type !== 'extension' && type !== 'inline') {
+    return apiError(
+      c,
+      { code: ERROR_CODES.VALIDATION_ERROR, message: 'type must be "extension" or "inline"' },
+      400
+    );
+  }
+
+  try {
+    const record = await codingAgentSkillAttachmentsRepo.create(
+      {
+        providerRef,
+        type: type as 'extension' | 'inline',
+        extensionId: b.extension_id as string | undefined,
+        label: b.label as string | undefined,
+        instructions: b.instructions as string | undefined,
+        priority: b.priority as number | undefined,
+      },
+      userId
+    );
+    return apiResponse(c, record, 201);
+  } catch (err) {
+    return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(err) }, 500);
+  }
+});
+
+// PUT /skills/:providerRef/:id - Update a skill attachment
+codingAgentsRoutes.put('/skills/:providerRef/:id', async (c) => {
+  const userId = getUserId(c);
+  const attachmentId = c.req.param('id');
+
+  const body = await parseJsonBody(c);
+  if (!body) {
+    return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: 'Invalid JSON body' }, 400);
+  }
+
+  const b = body as Record<string, unknown>;
+
+  try {
+    const record = await codingAgentSkillAttachmentsRepo.update(
+      attachmentId,
+      {
+        label: b.label as string | undefined,
+        instructions: b.instructions as string | undefined,
+        priority: b.priority as number | undefined,
+        active: b.active as boolean | undefined,
+      },
+      userId
+    );
+    if (!record) {
+      return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Skill attachment not found' }, 404);
+    }
+    return apiResponse(c, record);
+  } catch (err) {
+    return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(err) }, 500);
+  }
+});
+
+// DELETE /skills/:providerRef/:id - Detach a skill
+codingAgentsRoutes.delete('/skills/:providerRef/:id', async (c) => {
+  const userId = getUserId(c);
+  const attachmentId = c.req.param('id');
+
+  try {
+    const deleted = await codingAgentSkillAttachmentsRepo.delete(attachmentId, userId);
+    if (!deleted) {
+      return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Not found' }, 404);
+    }
+    return apiResponse(c, { deleted: true });
+  } catch (err) {
+    return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(err) }, 500);
+  }
+});
+
+// =============================================================================
+// SUBSCRIPTION ENDPOINTS (budget/tier tracking)
+// =============================================================================
+
+// GET /subscriptions - List all subscriptions
+codingAgentsRoutes.get('/subscriptions', async (c) => {
+  const userId = getUserId(c);
+  try {
+    const subs = await codingAgentSubscriptionsRepo.list(userId);
+    return apiResponse(c, subs);
+  } catch (err) {
+    return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(err) }, 500);
+  }
+});
+
+// GET /subscriptions/:providerRef - Get subscription for a provider
+codingAgentsRoutes.get('/subscriptions/:providerRef', async (c) => {
+  const userId = getUserId(c);
+  const providerRef = c.req.param('providerRef');
+
+  try {
+    const sub = await codingAgentSubscriptionsRepo.getByProvider(providerRef, userId);
+    if (!sub) {
+      return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'No subscription configured' }, 404);
+    }
+    return apiResponse(c, sub);
+  } catch (err) {
+    return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(err) }, 500);
+  }
+});
+
+// PUT /subscriptions/:providerRef - Upsert subscription
+codingAgentsRoutes.put('/subscriptions/:providerRef', async (c) => {
+  const userId = getUserId(c);
+  const providerRef = c.req.param('providerRef');
+
+  const body = await parseJsonBody(c);
+  if (!body) {
+    return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: 'Invalid JSON body' }, 400);
+  }
+
+  const b = body as Record<string, unknown>;
+
+  try {
+    const record = await codingAgentSubscriptionsRepo.upsert(
+      {
+        providerRef,
+        tier: b.tier as string | undefined,
+        monthlyBudgetUsd: b.monthly_budget_usd as number | undefined,
+        currentSpendUsd: b.current_spend_usd as number | undefined,
+        maxConcurrentSessions: b.max_concurrent_sessions as number | undefined,
+        resetAt: b.reset_at as string | undefined,
+      },
+      userId
+    );
+    return apiResponse(c, record);
+  } catch (err) {
+    return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(err) }, 500);
+  }
+});
+
+// DELETE /subscriptions/:providerRef - Delete subscription
+codingAgentsRoutes.delete('/subscriptions/:providerRef', async (c) => {
+  const userId = getUserId(c);
+  const providerRef = c.req.param('providerRef');
+
+  try {
+    const deleted = await codingAgentSubscriptionsRepo.delete(providerRef, userId);
+    if (!deleted) {
+      return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Not found' }, 404);
+    }
+    return apiResponse(c, { deleted: true });
+  } catch (err) {
+    return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(err) }, 500);
+  }
+});
+
+// =============================================================================
+// ORCHESTRATION ROUTES
+// =============================================================================
+
+/**
+ * POST /orchestrate - Start a new orchestration run
+ */
+codingAgentsRoutes.post('/orchestrate', async (c) => {
+  const userId = getUserId(c);
+  const body = await parseJsonBody<{
+    goal: string;
+    provider: string;
+    cwd: string;
+    model?: string;
+    maxSteps?: number;
+    autoMode?: boolean;
+    skillIds?: string[];
+    permissions?: Record<string, unknown>;
+  }>(c);
+
+  if (!body?.goal || !body?.provider || !body?.cwd) {
+    return apiError(
+      c,
+      { code: ERROR_CODES.VALIDATION_ERROR, message: 'goal, provider, and cwd are required' },
+      400
+    );
+  }
+
+  if (!isValidProvider(body.provider)) {
+    return apiError(
+      c,
+      { code: ERROR_CODES.VALIDATION_ERROR, message: `Invalid provider: ${body.provider}` },
+      400
+    );
+  }
+
+  try {
+    const run = await startOrchestration(
+      {
+        goal: body.goal,
+        provider: body.provider as CodingAgentProvider,
+        cwd: body.cwd,
+        model: body.model,
+        maxSteps: body.maxSteps,
+        autoMode: body.autoMode,
+        skillIds: body.skillIds,
+        permissions: body.permissions as never,
+      },
+      userId
+    );
+    return apiResponse(c, { run }, 201);
+  } catch (err) {
+    return apiError(
+      c,
+      { code: ERROR_CODES.CREATE_FAILED, message: getErrorMessage(err, 'Failed to start orchestration') },
+      500
+    );
+  }
+});
+
+/**
+ * GET /orchestrate - List orchestration runs
+ */
+codingAgentsRoutes.get('/orchestrate', async (c) => {
+  const userId = getUserId(c);
+  const { limit, offset } = getPaginationParams(c);
+  const runs = await listOrchestrations(userId, limit, offset);
+  return apiResponse(c, { runs, total: runs.length });
+});
+
+/**
+ * GET /orchestrate/:id - Get a specific orchestration run
+ */
+codingAgentsRoutes.get('/orchestrate/:id', async (c) => {
+  const userId = getUserId(c);
+  const id = c.req.param('id');
+  const run = await getOrchestration(id, userId);
+  if (!run) {
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Run not found' }, 404);
+  }
+  return apiResponse(c, { run });
+});
+
+/**
+ * POST /orchestrate/:id/continue - Continue a paused run with user input
+ */
+codingAgentsRoutes.post('/orchestrate/:id/continue', async (c) => {
+  const userId = getUserId(c);
+  const id = c.req.param('id');
+  const body = await parseJsonBody<{ prompt: string }>(c);
+
+  if (!body?.prompt) {
+    return apiError(
+      c,
+      { code: ERROR_CODES.VALIDATION_ERROR, message: 'prompt is required' },
+      400
+    );
+  }
+
+  try {
+    const run = await continueOrchestration(id, userId, body.prompt);
+    if (!run) {
+      return apiError(
+        c,
+        { code: ERROR_CODES.NOT_FOUND, message: 'Run not found or not waiting for input' },
+        404
+      );
+    }
+    return apiResponse(c, { run });
+  } catch (err) {
+    return apiError(
+      c,
+      { code: ERROR_CODES.UPDATE_FAILED, message: getErrorMessage(err, 'Failed to continue') },
+      500
+    );
+  }
+});
+
+/**
+ * POST /orchestrate/:id/cancel - Cancel an orchestration run
+ */
+codingAgentsRoutes.post('/orchestrate/:id/cancel', async (c) => {
+  const userId = getUserId(c);
+  const id = c.req.param('id');
+
+  const cancelled = await cancelOrchestration(id, userId);
+  if (!cancelled) {
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Run not found' }, 404);
+  }
+  return apiResponse(c, { cancelled: true });
+});
+
+/**
+ * DELETE /orchestrate/:id - Delete an orchestration run
+ */
+codingAgentsRoutes.delete('/orchestrate/:id', async (c) => {
+  const userId = getUserId(c);
+  const id = c.req.param('id');
+
+  const deleted = await orchestrationRunsRepo.delete(id, userId);
+  if (!deleted) {
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Run not found' }, 404);
+  }
+  return apiResponse(c, { deleted: true });
 });
