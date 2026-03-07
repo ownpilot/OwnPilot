@@ -976,6 +976,23 @@ CREATE TABLE IF NOT EXISTS subagent_history (
   spawned_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   completed_at TIMESTAMPTZ
 );
+
+-- =====================================================
+-- SOR UPLOAD QUEUE (processed by external Python cron)
+-- =====================================================
+
+CREATE TABLE IF NOT EXISTS sor_queue (
+  id           TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+  message_id   TEXT NOT NULL,
+  channel_id   TEXT NOT NULL,
+  filename     TEXT NOT NULL,
+  status       TEXT NOT NULL DEFAULT 'pending'
+                 CHECK(status IN ('pending', 'processing', 'done', 'error')),
+  error        TEXT,
+  created_at   TIMESTAMP NOT NULL DEFAULT NOW(),
+  processed_at TIMESTAMP,
+  UNIQUE(message_id)
+);
 `;
 
 /**
@@ -1660,6 +1677,40 @@ DO $$ BEGIN
     ALTER TABLE memories ADD COLUMN content_hash TEXT;
   END IF;
 END $$;
+
+-- =====================================================
+-- SOR QUEUE: PG TRIGGER — auto-enqueue on channel_messages INSERT
+-- =====================================================
+
+CREATE OR REPLACE FUNCTION enqueue_sor_message() RETURNS trigger AS $$
+BEGIN
+  IF NEW.direction = 'inbound'
+     AND NEW.content ILIKE '%.sor'
+     AND COALESCE(NEW.attachments, '[]'::jsonb) != '[]'::jsonb
+     AND NEW.attachments->0->>'data' IS NOT NULL
+     AND EXISTS (
+       SELECT 1 FROM channels
+       WHERE id = NEW.channel_id
+         AND config->>'jid' = '120363423491841999@g.us'
+     )
+  THEN
+    INSERT INTO sor_queue(id, message_id, channel_id, filename)
+    VALUES (
+      gen_random_uuid()::text,
+      NEW.id,
+      NEW.channel_id,
+      NEW.content
+    )
+    ON CONFLICT (message_id) DO NOTHING;
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_enqueue_sor ON channel_messages;
+CREATE TRIGGER trg_enqueue_sor
+  AFTER INSERT ON channel_messages
+  FOR EACH ROW EXECUTE FUNCTION enqueue_sor_message();
 `;
 
 export const INDEXES_SQL = `
@@ -2079,6 +2130,10 @@ CREATE TABLE IF NOT EXISTS heartbeat_log (
 
 CREATE INDEX IF NOT EXISTS idx_heartbeat_log_agent ON heartbeat_log(agent_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_heartbeat_log_cost ON heartbeat_log(agent_id, created_at) WHERE cost > 0;
+
+-- SOR queue indexes
+CREATE INDEX IF NOT EXISTS idx_sor_queue_status ON sor_queue(status);
+CREATE INDEX IF NOT EXISTS idx_sor_queue_created_at ON sor_queue(created_at);
 `;
 
 /**
