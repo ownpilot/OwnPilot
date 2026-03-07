@@ -484,6 +484,17 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
                   );
                 }
 
+                // Update local_path for SOR files written to disk (existing rows skipped by ON CONFLICT DO NOTHING)
+                const sorRows = rows.filter((row) => row.attachments?.[0]?.local_path);
+                let sorUpdated = 0;
+                for (const row of sorRows) {
+                  const ok = await messagesRepo.updateAttachments(row.id, row.attachments!);
+                  if (ok) sorUpdated++;
+                }
+                if (sorUpdated > 0) {
+                  log.info(`[WhatsApp] History sync updated local_path for ${sorUpdated} SOR file(s) (type: ${syncTypeName})`);
+                }
+
                 log.info(
                   `[WhatsApp] History sync saved ${inserted}/${rows.length} messages to DB (type: ${syncTypeName})`
                 );
@@ -1805,6 +1816,17 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
             : 0;
           if (enriched > 0) {
             log.info(`[WhatsApp] Offline sync enriched ${enriched} existing rows with mediaKey`);
+          }
+
+          // Update local_path for SOR files written to disk (existing rows skipped by ON CONFLICT DO NOTHING)
+          const sorRows = rows.filter((row) => row.attachments?.[0]?.local_path);
+          let sorUpdated = 0;
+          for (const row of sorRows) {
+            const ok = await messagesRepo.updateAttachments(row.id, row.attachments!);
+            if (ok) sorUpdated++;
+          }
+          if (sorUpdated > 0) {
+            log.info(`[WhatsApp] Offline sync updated local_path for ${sorUpdated} SOR file(s)`);
           }
 
           log.info(
