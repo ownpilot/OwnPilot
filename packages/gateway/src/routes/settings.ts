@@ -351,6 +351,56 @@ export async function getApiKeySource(provider: string): Promise<'database' | nu
 }
 
 // ============================================
+// Coding Agents — Allowed Working Directories
+// ============================================
+
+const ALLOWED_DIRS_KEY = 'coding_agents:allowed_dirs';
+
+/**
+ * Get the list of directories that coding agents are allowed to work in.
+ * Empty array means no restriction (any directory allowed).
+ */
+export async function getAllowedDirs(): Promise<string[]> {
+  const saved = await settingsRepo.get<string>(ALLOWED_DIRS_KEY);
+  if (!saved) return [];
+  try {
+    const parsed = JSON.parse(saved);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Set the list of allowed working directories for coding agents.
+ */
+export async function setAllowedDirs(dirs: string[]): Promise<void> {
+  await settingsRepo.set(ALLOWED_DIRS_KEY, JSON.stringify(dirs));
+}
+
+/**
+ * GET /coding-agents/allowed-dirs
+ */
+settingsRoutes.get('/coding-agents/allowed-dirs', async (c) => {
+  const dirs = await getAllowedDirs();
+  return apiResponse(c, { dirs });
+});
+
+/**
+ * PUT /coding-agents/allowed-dirs
+ */
+settingsRoutes.put('/coding-agents/allowed-dirs', async (c) => {
+  const body = await c.req.json();
+  if (!Array.isArray(body.dirs)) {
+    return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: '"dirs" must be an array of paths' }, 400);
+  }
+  // Validate each dir is a string
+  const dirs = body.dirs.filter((d: unknown): d is string => typeof d === 'string' && d.trim().length > 0);
+  await setAllowedDirs(dirs);
+  return apiResponse(c, { dirs });
+});
+
+// ============================================
 // Sandbox Settings
 // ============================================
 

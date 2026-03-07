@@ -9,8 +9,9 @@
  */
 
 import { spawn, execFileSync, type ChildProcess } from 'node:child_process';
-import { existsSync } from 'node:fs';
-import { resolve, isAbsolute } from 'node:path';
+import { existsSync, readdirSync } from 'node:fs';
+import { resolve, isAbsolute, join } from 'node:path';
+import { homedir } from 'node:os';
 import { isBuiltinProvider } from '@ownpilot/core';
 
 // =============================================================================
@@ -60,14 +61,77 @@ export function getBinaryVersion(binary: string, flag = '--version'): string | u
   }
 }
 
+/**
+ * Known fallback paths for CLI tools not on system PATH.
+ * Checks common package managers and tool installers.
+ */
+const KNOWN_BINARY_LOCATIONS: Record<string, () => string[]> = {
+  codex: () => {
+    const home = homedir();
+    const paths: string[] = [];
+    // Z Code managed installs
+    const zcodeDir = join(home, '.zcode', 'agents', 'codex');
+    try {
+      for (const ver of readdirSync(zcodeDir)) {
+        const exe = join(zcodeDir, ver, process.platform === 'win32' ? 'codex-acp.exe' : 'codex-acp');
+        if (existsSync(exe)) paths.push(exe);
+      }
+    } catch { /* dir not found */ }
+    // npm global
+    const npmBin = join(home, 'AppData', 'Roaming', 'npm', 'codex.cmd');
+    if (existsSync(npmBin)) paths.push(npmBin);
+    return paths;
+  },
+  gemini: () => {
+    const home = homedir();
+    const paths: string[] = [];
+    // Z Code managed installs
+    const cmd = join(home, '.zcode', 'agents', 'gemini-cli', 'node_modules', '.bin',
+      process.platform === 'win32' ? 'gemini.cmd' : 'gemini');
+    if (existsSync(cmd)) paths.push(cmd);
+    // npm global
+    const npmBin = join(home, 'AppData', 'Roaming', 'npm', 'gemini.cmd');
+    if (existsSync(npmBin)) paths.push(npmBin);
+    return paths;
+  },
+  claude: () => {
+    const home = homedir();
+    const paths: string[] = [];
+    const localBin = join(home, '.local', 'bin', process.platform === 'win32' ? 'claude.exe' : 'claude');
+    if (existsSync(localBin)) paths.push(localBin);
+    return paths;
+  },
+};
+
+/**
+ * Resolve a binary to its full path. Checks system PATH first,
+ * then known fallback locations (Z Code, npm global, etc.).
+ * Returns the binary name if on PATH, or the full path if found in fallback.
+ * Returns null if not found anywhere.
+ */
+export function resolveBinaryPath(binary: string): string | null {
+  // Check system PATH first
+  if (isBinaryInstalled(binary)) return binary;
+
+  // Check known fallback locations
+  const locator = KNOWN_BINARY_LOCATIONS[binary];
+  if (locator) {
+    const paths = locator();
+    if (paths.length > 0) return paths[0]!;
+  }
+
+  return null;
+}
+
 // =============================================================================
 // PATH VALIDATION
 // =============================================================================
 
 /**
- * Validate working directory: must be absolute, no path traversal.
+ * Validate working directory: must be absolute, no path traversal, must exist.
+ * If allowedDirs is provided and non-empty, cwd must be inside one of them.
  */
-export function validateCwd(cwd: string): string {
+export function validateCwd(cwd: string, allowedDirs?: string[]): string {
   const resolved = resolve(cwd);
   if (!isAbsolute(resolved)) {
     throw new Error(`Working directory must be an absolute path: ${cwd}`);
@@ -78,6 +142,22 @@ export function validateCwd(cwd: string): string {
   if (!existsSync(resolved)) {
     throw new Error(`Working directory does not exist: ${resolved}`);
   }
+
+  // Enforce allowed directories restriction
+  if (allowedDirs && allowedDirs.length > 0) {
+    const normalizedCwd = resolved.toLowerCase().replace(/\\/g, '/');
+    const isAllowed = allowedDirs.some((dir) => {
+      const normalizedDir = resolve(dir).toLowerCase().replace(/\\/g, '/');
+      return normalizedCwd === normalizedDir || normalizedCwd.startsWith(normalizedDir + '/');
+    });
+    if (!isAllowed) {
+      throw new Error(
+        `Working directory "${resolved}" is not within any allowed directory. ` +
+          `Allowed: ${allowedDirs.join(', ')}. Configure in Settings → Coding Agents.`
+      );
+    }
+  }
+
   return resolved;
 }
 

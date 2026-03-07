@@ -197,11 +197,17 @@ export class CodingAgentSessionManager {
 
       let handle: PtyHandle;
 
-      if (mode === 'interactive') {
-        // Interactive mode: full PTY (requires node-pty)
+      // Always prefer PTY for real terminal experience (colors, cursor, stdin).
+      // Fall back to simple spawn only when node-pty is not available.
+      try {
         handle = await spawnStreamingPty(binary, cliArgs, spawnOptions, streamCallbacks);
-      } else {
-        // Auto mode: simple spawn (no node-pty required)
+      } catch (ptyErr) {
+        if (mode === 'interactive') {
+          // Interactive mode requires PTY — no fallback
+          throw ptyErr;
+        }
+        // Auto mode: graceful fallback to simple process spawn
+        log.info(`PTY not available, falling back to process spawn for session ${sessionId}`);
         handle = spawnStreamingProcess(binary, cliArgs, spawnOptions, streamCallbacks);
       }
 

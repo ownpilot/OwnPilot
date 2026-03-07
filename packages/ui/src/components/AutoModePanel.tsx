@@ -24,6 +24,7 @@ import {
   Terminal as TerminalIcon,
   Search,
   Globe,
+  Send,
 } from './icons';
 import type { CodingAgentSession, CodingAgentSessionState } from '../api/endpoints/coding-agents';
 
@@ -195,6 +196,8 @@ export function AutoModePanel({ sessionId, session, onTerminate }: AutoModePanel
   const [copied, setCopied] = useState(false);
   const [promptExpanded, setPromptExpanded] = useState(false);
   const [currentActivity, setCurrentActivity] = useState<string | null>(null);
+  const [inputText, setInputText] = useState('');
+  const [inputError, setInputError] = useState('');
   const outputRef = useRef<HTMLDivElement>(null);
   const hasReceivedOutput = useRef(false);
   const lineBuffer = useRef(''); // Accumulates partial lines for JSON parsing
@@ -489,6 +492,67 @@ export function AutoModePanel({ sessionId, session, onTerminate }: AutoModePanel
           </pre>
         )}
       </div>
+
+      {/* ---- Input bar ---- */}
+      {isActive && (
+        <div
+          className="flex items-center gap-1.5 px-3 py-2 border-t border-zinc-700/50 bg-zinc-800/60 shrink-0"
+        >
+          <input
+            type="text"
+            value={inputText}
+            onChange={(e) => setInputText(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                const text = inputText ? inputText + '\r' : '\r';
+                codingAgentsApi.sendInput(sessionId, text).catch((err) => {
+                  setInputError(err instanceof Error ? err.message : 'Send failed');
+                  setTimeout(() => setInputError(''), 4000);
+                });
+                setInputText('');
+              }
+            }}
+            placeholder="Type response + Enter"
+            className="flex-1 bg-zinc-900 text-zinc-200 text-xs px-2.5 py-1.5 rounded border border-zinc-700 focus:border-zinc-500 focus:outline-none placeholder-zinc-600 font-mono"
+          />
+          <button
+            onClick={() => {
+              const text = inputText ? inputText + '\r' : '\r';
+              codingAgentsApi.sendInput(sessionId, text).catch((err) => {
+                setInputError(err instanceof Error ? err.message : 'Send failed');
+                setTimeout(() => setInputError(''), 4000);
+              });
+              setInputText('');
+            }}
+            className="p-1.5 rounded text-zinc-400 hover:text-zinc-200 hover:bg-zinc-700 transition-colors"
+            title="Send"
+          >
+            <Send className="w-3.5 h-3.5" />
+          </button>
+          <button
+            onClick={() => {
+              codingAgentsApi.sendInput(sessionId, 'y\r').catch(() => {});
+            }}
+            className="px-2 py-1 text-xs font-mono text-emerald-400 hover:text-emerald-300 hover:bg-zinc-700 rounded"
+            title="Yes + Enter"
+          >
+            y↵
+          </button>
+          <button
+            onClick={() => {
+              codingAgentsApi.sendInput(sessionId, '\x03').catch(() => {});
+            }}
+            className="px-2 py-1 text-xs font-mono text-red-400 hover:text-red-300 hover:bg-zinc-700 rounded"
+            title="Ctrl+C"
+          >
+            ^C
+          </button>
+          {inputError && (
+            <span className="text-xs text-red-400 ml-1 truncate max-w-[140px]">{inputError}</span>
+          )}
+        </div>
+      )}
 
       {/* ---- Status bar ---- */}
       <div className="flex items-center justify-between px-4 py-2 border-t border-zinc-700/50 bg-zinc-800/30 shrink-0">

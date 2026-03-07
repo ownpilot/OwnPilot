@@ -35,11 +35,13 @@ import { cliProvidersRepo, type CliProviderRecord } from '../db/repositories/cli
 import {
   isBinaryInstalled,
   getBinaryVersion,
+  resolveBinaryPath,
   validateCwd,
   createSanitizedEnv,
   spawnCliProcess,
 } from './binary-utils.js';
 import { getLog } from './log.js';
+import { getAllowedDirs } from '../routes/settings.js';
 
 const log = getLog('CodingAgent');
 
@@ -218,7 +220,7 @@ async function runClaudeCode(task: CodingAgentTask, apiKey?: string): Promise<Co
     };
   }
 
-  const cwd = task.cwd ? validateCwd(task.cwd) : process.cwd();
+  const cwd = task.cwd ? validateCwd(task.cwd, await getAllowedDirs()) : process.cwd();
   let output = '';
 
   // Inject skills preamble into the prompt
@@ -278,7 +280,7 @@ async function runClaudeCode(task: CodingAgentTask, apiKey?: string): Promise<Co
  */
 async function runCodex(task: CodingAgentTask, apiKey?: string): Promise<CodingAgentResult> {
   const start = Date.now();
-  const cwd = task.cwd ? validateCwd(task.cwd) : process.cwd();
+  const cwd = task.cwd ? validateCwd(task.cwd, await getAllowedDirs()) : process.cwd();
   const timeout = Math.min(task.timeout ?? DEFAULT_TIMEOUT_MS, MAX_TIMEOUT_MS);
 
   const args = ['exec', '--json', '--full-auto'];
@@ -342,7 +344,7 @@ async function runCodex(task: CodingAgentTask, apiKey?: string): Promise<CodingA
  */
 async function runGeminiCli(task: CodingAgentTask, apiKey?: string): Promise<CodingAgentResult> {
   const start = Date.now();
-  const cwd = task.cwd ? validateCwd(task.cwd) : process.cwd();
+  const cwd = task.cwd ? validateCwd(task.cwd, await getAllowedDirs()) : process.cwd();
   const timeout = Math.min(task.timeout ?? DEFAULT_TIMEOUT_MS, MAX_TIMEOUT_MS);
 
   const args = ['-p', task.prompt, '--output-format', 'json'];
@@ -470,12 +472,15 @@ class CodingAgentService implements ICodingAgentService {
 
     const builtinStatuses = builtinProviders.map((provider) => {
       const binary = CLI_BINARIES[provider];
+      const resolvedPath = resolveBinaryPath(binary);
       const installed =
         provider === 'claude-code'
-          ? this.isClaudeCodeSdkInstalled() || isBinaryInstalled(binary)
-          : isBinaryInstalled(binary);
+          ? this.isClaudeCodeSdkInstalled() || !!resolvedPath
+          : !!resolvedPath;
 
       const hasApiKey = !!resolveBuiltinApiKey(provider);
+      // Use resolved path for version check (full path works with execFileSync)
+      const versionBinary = resolvedPath ?? binary;
       return {
         provider: provider as CodingAgentProvider,
         displayName: DISPLAY_NAMES[provider],
@@ -483,8 +488,9 @@ class CodingAgentService implements ICodingAgentService {
         hasApiKey,
         configured: hasApiKey,
         authMethod: AUTH_METHODS[provider],
-        version: installed ? getBinaryVersion(binary) : undefined,
+        version: installed ? getBinaryVersion(versionBinary) : undefined,
         ptyAvailable,
+        binaryPath: resolvedPath ?? undefined,
       };
     });
 
@@ -511,16 +517,16 @@ class CodingAgentService implements ICodingAgentService {
   async isAvailable(provider: CodingAgentProvider): Promise<boolean> {
     if (isBuiltinProvider(provider)) {
       if (provider === 'claude-code') {
-        return this.isClaudeCodeSdkInstalled() || isBinaryInstalled(CLI_BINARIES[provider]);
+        return this.isClaudeCodeSdkInstalled() || !!resolveBinaryPath(CLI_BINARIES[provider]);
       }
-      return isBinaryInstalled(CLI_BINARIES[provider]);
+      return !!resolveBinaryPath(CLI_BINARIES[provider]);
     }
 
     // Custom provider: check binary
     const customName = getCustomProviderName(provider);
     if (customName) {
       const cp = await cliProvidersRepo.getByName(customName);
-      return cp ? isBinaryInstalled(cp.binary) : false;
+      return cp ? !!resolveBinaryPath(cp.binary) : false;
     }
     return false;
   }
@@ -561,8 +567,8 @@ class CodingAgentService implements ICodingAgentService {
       };
     }
 
-    const binary = CLI_BINARIES[task.provider];
-    const cwd = task.cwd ? validateCwd(task.cwd) : process.cwd();
+    const binary = resolveBinaryPath(CLI_BINARIES[task.provider]) ?? CLI_BINARIES[task.provider];
+    const cwd = task.cwd ? validateCwd(task.cwd, await getAllowedDirs()) : process.cwd();
     const timeout = Math.min(task.timeout ?? DEFAULT_TIMEOUT_MS, MAX_TIMEOUT_MS);
 
     // Build CLI args based on provider
@@ -638,23 +644,26 @@ class CodingAgentService implements ICodingAgentService {
       apiKeyEnvVar = cp.apiKeyEnvVar;
       apiKey = resolveCustomApiKey(cp);
     } else if (isBuiltinProvider(provider)) {
-      // Built-in provider
-      binary = CLI_BINARIES[provider];
+      // Built-in provider — resolve to full path if not on PATH
+      binary = resolveBinaryPath(CLI_BINARIES[provider]) ?? CLI_BINARIES[provider];
       apiKey = resolveBuiltinApiKey(provider);
     } else {
       throw new Error(`Unknown provider: ${provider}`);
     }
 
     // All session modes require the CLI binary
-    if (!isBinaryInstalled(binary)) {
+    const resolvedBinary = resolveBinaryPath(binary);
+    if (!resolvedBinary) {
       const displayName =
         customName ?? (isBuiltinProvider(provider) ? DISPLAY_NAMES[provider] : provider);
       throw new Error(
         `${displayName} CLI not found. Install '${binary}' and ensure it's on your PATH.`
       );
     }
+    binary = resolvedBinary;
 
-    const cwd = input.cwd ? validateCwd(input.cwd) : process.cwd();
+    const allowedDirs = await getAllowedDirs();
+    const cwd = input.cwd ? validateCwd(input.cwd, allowedDirs) : process.cwd();
     const env = createSanitizedEnv(provider, apiKey, apiKeyEnvVar);
 
     // Build CLI args: custom providers get their own template, built-in use existing logic

@@ -184,6 +184,31 @@ describe('validateCwd', () => {
       'Working directory does not exist'
     );
   });
+
+  it('allows cwd when no allowedDirs specified', () => {
+    const result = validateCwd(process.cwd(), []);
+    expect(result).toBe(process.cwd());
+  });
+
+  it('allows cwd within an allowed directory', () => {
+    const cwd = process.cwd();
+    const parent = require('node:path').dirname(cwd);
+    const result = validateCwd(cwd, [parent]);
+    expect(result).toBe(cwd);
+  });
+
+  it('allows cwd that exactly matches an allowed directory', () => {
+    const cwd = process.cwd();
+    const result = validateCwd(cwd, [cwd]);
+    expect(result).toBe(cwd);
+  });
+
+  it('throws when cwd is outside all allowed directories', () => {
+    const cwd = process.cwd();
+    expect(() => validateCwd(cwd, ['/some/other/path/that/exists'])).toThrow(
+      'is not within any allowed directory'
+    );
+  });
 });
 
 // ============================================================================

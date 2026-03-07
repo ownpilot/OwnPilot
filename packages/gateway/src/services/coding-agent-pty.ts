@@ -353,14 +353,11 @@ export function spawnStreamingProcess(
     throw new Error(`Failed to spawn process: no PID (command=${command})`);
   }
 
-  // Close stdin immediately — auto-mode CLIs read prompts from args, not stdin.
-  // Without this, some CLIs (e.g. Claude Code) block waiting for stdin EOF
-  // before processing the -p prompt, causing zero output.
-  try {
-    proc.stdin?.end();
-  } catch {
-    /* stdin may already be closed */
-  }
+  // Keep stdin open so users can send interactive input (e.g. answering
+  // confirmation prompts). Previously stdin was closed immediately, but
+  // this prevented any user input from reaching the CLI process.
+  // Note: some CLIs in -p mode may block waiting for stdin EOF — if needed,
+  // the caller can send EOF via the handle's write() or kill().
 
   const pid = proc.pid;
 

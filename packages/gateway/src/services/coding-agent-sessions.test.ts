@@ -70,6 +70,9 @@ describe('CodingAgentSessionManager', () => {
     vi.clearAllMocks();
     vi.resetModules();
 
+    // Default: PTY not available, falls back to process spawn
+    mockSpawnStreamingPty.mockRejectedValue(new Error('node-pty not available'));
+
     const mod = await import('./coding-agent-sessions.js');
     CodingAgentSessionManager = mod.CodingAgentSessionManager;
     manager = new CodingAgentSessionManager();

@@ -5,7 +5,7 @@
  * and let OwnPilot chain sessions together — analyzing output and deciding next steps.
  */
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useToast } from '../components/ToastProvider';
 import {
   Play,
@@ -23,6 +23,7 @@ import {
   FolderOpen,
   Trash2,
 } from '../components/icons';
+import { XTerminal } from '../components/XTerminal';
 import {
   orchestrationApi,
   codingAgentsApi,
@@ -53,84 +54,6 @@ function StatusBadge({ status }: { status: string }) {
     <span className={`px-2 py-0.5 text-[10px] font-bold rounded-full ${style.bg} ${style.text}`}>
       {style.label}
     </span>
-  );
-}
-
-// =============================================================================
-// Live output viewer — streams CLI output for the active step
-// =============================================================================
-
-function LiveOutput({
-  sessionId,
-  send,
-  subscribe,
-}: {
-  sessionId: string;
-  send: <T>(type: string, payload: T) => void;
-  subscribe: <T>(event: string, handler: (data: T) => void) => () => void;
-}) {
-  const [output, setOutput] = useState('');
-  const containerRef = useRef<HTMLDivElement>(null);
-  const autoScrollRef = useRef(true);
-
-  // Auto-scroll when output changes
-  useEffect(() => {
-    if (autoScrollRef.current && containerRef.current) {
-      containerRef.current.scrollTop = containerRef.current.scrollHeight;
-    }
-  }, [output]);
-
-  // Handle scroll to detect manual scroll-up
-  const handleScroll = () => {
-    if (!containerRef.current) return;
-    const { scrollTop, scrollHeight, clientHeight } = containerRef.current;
-    autoScrollRef.current = scrollHeight - scrollTop - clientHeight < 40;
-  };
-
-  // Subscribe to session output
-  useEffect(() => {
-    // Subscribe via WS to get output stream
-    send('coding-agent:subscribe', { sessionId });
-    const resubTimer = setTimeout(() => send('coding-agent:subscribe', { sessionId }), 500);
-
-    const unsub = subscribe<{ sessionId: string; data: string }>(
-      'coding-agent:session:output',
-      (payload) => {
-        if (payload.sessionId === sessionId) {
-          setOutput((prev) => {
-            const next = prev + payload.data;
-            // Cap at 200KB to prevent memory issues
-            return next.length > 200_000 ? next.slice(-200_000) : next;
-          });
-        }
-      }
-    );
-
-    return () => {
-      clearTimeout(resubTimer);
-      unsub();
-    };
-  }, [sessionId, send, subscribe]);
-
-  return (
-    <div className="border border-border dark:border-dark-border rounded-lg overflow-hidden">
-      <div className="flex items-center gap-2 px-3 py-1.5 bg-bg-tertiary dark:bg-dark-bg-tertiary border-b border-border dark:border-dark-border">
-        <Terminal className="w-3.5 h-3.5 text-primary" />
-        <span className="text-[10px] font-semibold text-text-muted dark:text-dark-text-muted uppercase">
-          Live Output
-        </span>
-        <div className="w-2 h-2 rounded-full bg-success animate-pulse ml-auto" />
-      </div>
-      <div
-        ref={containerRef}
-        onScroll={handleScroll}
-        className="h-56 overflow-y-auto bg-gray-950 p-3 font-mono text-xs text-green-400 whitespace-pre-wrap break-all"
-      >
-        {output || (
-          <span className="text-gray-600">Waiting for output...</span>
-        )}
-      </div>
-    </div>
   );
 }
 
@@ -261,7 +184,6 @@ function NewRunForm({
   const [useManual, setUseManual] = useState(workspaces.length === 0);
   const [autoMode, setAutoMode] = useState(false);
 
-  const installedProviders = providers.filter((p) => p.installed);
   const selectedWorkspace = workspaces.find((w) => w.id === selectedWorkspaceId);
 
   // Resolve the final working directory
@@ -306,9 +228,9 @@ function NewRunForm({
               onChange={(e) => setProvider(e.target.value)}
               className="w-full appearance-none px-3 py-2 pr-8 text-sm bg-bg-tertiary dark:bg-dark-bg-tertiary border border-border dark:border-dark-border rounded-lg text-text-primary dark:text-dark-text-primary focus:outline-none focus:ring-2 focus:ring-primary/50"
             >
-              {installedProviders.map((p) => (
+              {providers.map((p) => (
                 <option key={p.provider} value={p.provider}>
-                  {p.displayName}
+                  {p.displayName}{!p.installed ? ' (not installed)' : ''}
                 </option>
               ))}
             </select>
@@ -731,13 +653,11 @@ export function OrchestrationPage() {
               <div className="flex-1 overflow-y-auto p-5 space-y-4">
                 <StepTimeline steps={selectedRun.steps} />
 
-                {/* Live CLI output for the active step */}
+                {/* Live CLI output for the active step — interactive terminal */}
                 {activeSessionId && selectedRun.status === 'running' && (
-                  <LiveOutput
-                    sessionId={activeSessionId}
-                    send={gateway.send}
-                    subscribe={gateway.subscribe}
-                  />
+                  <div className="border border-border dark:border-dark-border rounded-lg overflow-hidden h-72">
+                    <XTerminal sessionId={activeSessionId} interactive={true} />
+                  </div>
                 )}
               </div>
 

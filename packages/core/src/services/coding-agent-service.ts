@@ -150,6 +150,8 @@ export interface CodingAgentStatus {
   version?: string;
   /** Whether PTY fallback is available */
   ptyAvailable?: boolean;
+  /** Resolved full binary path (when not on system PATH) */
+  binaryPath?: string;
 }
 
 /** Represents an active coding agent terminal session */

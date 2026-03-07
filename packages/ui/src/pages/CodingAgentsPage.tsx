@@ -115,6 +115,7 @@ export function CodingAgentsPage() {
   const [showNewSession, setShowNewSession] = useState(false);
   const [showProviders, setShowProviders] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
+  const [viewMode, setViewMode] = useState<'structured' | 'terminal'>('terminal');
 
   // Fetch data
   const fetchAll = useCallback(async () => {
@@ -332,49 +333,77 @@ export function CodingAgentsPage() {
           </div>
         </div>
 
-        {/* Right panel: terminal or auto mode panel */}
+        {/* Right panel: session view with toggle */}
         <div className="flex-1 min-w-0 flex flex-col">
           {activeSession ? (
-            activeSession.mode === 'auto' ? (
-              /* Auto mode: structured output panel */
-              <AutoModePanel
-                key={activeSession.id}
-                sessionId={activeSession.id}
-                session={activeSession}
-                onTerminate={() => handleTerminate(activeSession.id)}
-              />
-            ) : (
-              /* Interactive mode: session info bar + xterm.js terminal */
-              <>
-                <div className="px-4 py-2 bg-bg-secondary dark:bg-dark-bg-secondary border-b border-border dark:border-dark-border flex items-center gap-3 text-sm">
-                  <div
-                    className={`w-6 h-6 rounded flex items-center justify-center text-xs font-bold ${PROVIDER_COLORS[activeSession.provider] ?? 'bg-gray-500/20'}`}
-                  >
-                    {PROVIDER_META[activeSession.provider]?.icon ?? '?'}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <span className="font-medium text-text-primary dark:text-dark-text-primary truncate block">
-                      {activeSession.displayName}
-                    </span>
-                  </div>
-                  <StateBadge state={activeSession.state} />
-                  {(activeSession.state === 'running' || activeSession.state === 'starting') && (
-                    <button
-                      onClick={() => handleTerminate(activeSession.id)}
-                      className="p-1 rounded text-text-muted hover:text-error transition-colors"
-                      title="Terminate"
-                    >
-                      <StopCircle className="w-3.5 h-3.5" />
-                    </button>
-                  )}
+            <>
+              {/* Session header bar */}
+              <div className="px-4 py-2 bg-bg-secondary dark:bg-dark-bg-secondary border-b border-border dark:border-dark-border flex items-center gap-3 text-sm shrink-0">
+                <div
+                  className={`w-6 h-6 rounded flex items-center justify-center text-xs font-bold ${PROVIDER_COLORS[activeSession.provider] ?? 'bg-gray-500/20'}`}
+                >
+                  {PROVIDER_META[activeSession.provider]?.icon ?? '?'}
                 </div>
+                <div className="flex-1 min-w-0">
+                  <span className="font-medium text-text-primary dark:text-dark-text-primary truncate block">
+                    {activeSession.displayName}
+                  </span>
+                </div>
+
+                {/* View toggle */}
+                {activeSession.mode === 'auto' && (
+                  <div className="flex items-center bg-bg-tertiary dark:bg-dark-bg-tertiary rounded-md p-0.5">
+                    <button
+                      onClick={() => setViewMode('terminal')}
+                      className={`px-2 py-0.5 rounded text-xs font-medium transition-colors ${
+                        viewMode === 'terminal'
+                          ? 'bg-primary/20 text-primary'
+                          : 'text-text-muted hover:text-text-primary dark:hover:text-dark-text-primary'
+                      }`}
+                    >
+                      Terminal
+                    </button>
+                    <button
+                      onClick={() => setViewMode('structured')}
+                      className={`px-2 py-0.5 rounded text-xs font-medium transition-colors ${
+                        viewMode === 'structured'
+                          ? 'bg-primary/20 text-primary'
+                          : 'text-text-muted hover:text-text-primary dark:hover:text-dark-text-primary'
+                      }`}
+                    >
+                      Structured
+                    </button>
+                  </div>
+                )}
+
+                <StateBadge state={activeSession.state} />
+                {(activeSession.state === 'running' || activeSession.state === 'starting') && (
+                  <button
+                    onClick={() => handleTerminate(activeSession.id)}
+                    className="p-1 rounded text-text-muted hover:text-error transition-colors"
+                    title="Terminate"
+                  >
+                    <StopCircle className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+
+              {/* Content: terminal or structured view */}
+              {activeSession.mode === 'auto' && viewMode === 'structured' ? (
+                <AutoModePanel
+                  key={activeSession.id}
+                  sessionId={activeSession.id}
+                  session={activeSession}
+                  onTerminate={() => handleTerminate(activeSession.id)}
+                />
+              ) : (
                 <div className="flex-1 min-h-0 relative">
                   <div className="absolute inset-0">
                     <XTerminal sessionId={activeSession.id} interactive={true} />
                   </div>
                 </div>
-              </>
-            )
+              )}
+            </>
           ) : (
             /* Empty state */
             <div className="flex-1 flex items-center justify-center text-text-muted dark:text-dark-text-muted">
@@ -540,10 +569,12 @@ function NewSessionModal({
     permissions?: CodingAgentPermissions
   ) => void;
 }) {
-  const installedProviders = statuses.filter((s) => s.installed);
   const ptyAvailable = statuses.some((s) => s.ptyAvailable);
 
-  const [provider, setProvider] = useState(() => installedProviders[0]?.provider ?? '');
+  const [provider, setProvider] = useState(() => {
+    const installed = statuses.find((s) => s.installed);
+    return installed?.provider ?? statuses[0]?.provider ?? '';
+  });
   const [prompt, setPrompt] = useState('');
   const [mode, setMode] = useState<'auto' | 'interactive'>('auto');
   const [cwd, setCwd] = useState('');
@@ -616,15 +647,12 @@ function NewSessionModal({
                     <button
                       key={s.provider}
                       type="button"
-                      disabled={!s.installed}
                       onClick={() => setProvider(s.provider)}
                       className={`p-3 rounded-lg border text-center transition-colors ${
                         selected
                           ? 'border-primary bg-primary/10'
-                          : s.installed
-                            ? 'border-border dark:border-dark-border hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary'
-                            : 'border-border dark:border-dark-border opacity-40 cursor-not-allowed'
-                      }`}
+                          : 'border-border dark:border-dark-border hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary'
+                      } ${!s.installed ? 'opacity-60' : ''}`}
                     >
                       <div
                         className={`w-8 h-8 rounded-lg mx-auto mb-1 flex items-center justify-center text-sm font-bold ${color}`}
@@ -646,7 +674,7 @@ function NewSessionModal({
                   );
                 })}
               </div>
-              {installedProviders.length === 0 && (
+              {statuses.length > 0 && !statuses.some((s) => s.installed) && (
                 <p className="text-xs text-error mt-2 flex items-center gap-1">
                   <AlertCircle className="w-3 h-3" />
                   No providers installed. Install at least one CLI tool.

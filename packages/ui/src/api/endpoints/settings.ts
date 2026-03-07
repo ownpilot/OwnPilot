@@ -70,4 +70,8 @@ export const settingsApi = {
     apiClient.get<{ groups: ToolGroupInfo[]; enabledGroupIds: string[] }>('/settings/tool-groups'),
   saveToolGroups: (enabledGroupIds: string[]) =>
     apiClient.put<{ enabledGroupIds: string[] }>('/settings/tool-groups', { enabledGroupIds }),
+  getAllowedDirs: () =>
+    apiClient.get<{ dirs: string[] }>('/settings/coding-agents/allowed-dirs'),
+  setAllowedDirs: (dirs: string[]) =>
+    apiClient.put<{ dirs: string[] }>('/settings/coding-agents/allowed-dirs', { dirs }),
 };

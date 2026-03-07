@@ -24,8 +24,10 @@ import {
   Plus,
   Trash2,
   Save,
+  FolderOpen,
+  Lock,
 } from '../components/icons';
-import { codingAgentsApi } from '../api';
+import { codingAgentsApi, settingsApi } from '../api';
 import type {
   CodingAgentStatus,
   CodingAgentTestResult,
@@ -112,7 +114,7 @@ const PROVIDER_COLORS: Record<string, string> = {
 // Tab type
 // =============================================================================
 
-type SettingsTab = 'providers' | 'permissions' | 'skills' | 'budget';
+type SettingsTab = 'providers' | 'permissions' | 'skills' | 'budget' | 'security';
 
 // =============================================================================
 // Main Component
@@ -171,6 +173,7 @@ export function CodingAgentSettingsPage() {
     { id: 'permissions', label: 'Permissions', icon: Shield },
     { id: 'skills', label: 'Skills', icon: Puzzle },
     { id: 'budget', label: 'Budget', icon: DollarSign },
+    { id: 'security', label: 'Security', icon: Lock },
   ];
 
   return (
@@ -235,6 +238,7 @@ export function CodingAgentSettingsPage() {
       {activeTab === 'permissions' && <PermissionsTab providers={providerNames} />}
       {activeTab === 'skills' && <SkillsTab providers={providerNames} />}
       {activeTab === 'budget' && <BudgetTab providers={providerNames} />}
+      {activeTab === 'security' && <SecurityTab />}
     </div>
   );
 }
@@ -1031,6 +1035,151 @@ function ProviderCard({
             </a>
           )}
         </div>
+      </div>
+    </div>
+  );
+}
+
+// =============================================================================
+// Security Tab — Allowed Working Directories
+// =============================================================================
+
+function SecurityTab() {
+  const toast = useToast();
+  const [dirs, setDirs] = useState<string[]>([]);
+  const [newDir, setNewDir] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  const fetchDirs = useCallback(async () => {
+    try {
+      const result = await settingsApi.getAllowedDirs();
+      setDirs(result.dirs);
+    } catch {
+      /* ignore */
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchDirs();
+  }, [fetchDirs]);
+
+  const handleAdd = () => {
+    const trimmed = newDir.trim();
+    if (!trimmed) return;
+    if (dirs.includes(trimmed)) {
+      toast.warning('Directory already in the list');
+      return;
+    }
+    setDirs((prev) => [...prev, trimmed]);
+    setNewDir('');
+  };
+
+  const handleRemove = (index: number) => {
+    setDirs((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      await settingsApi.setAllowedDirs(dirs);
+      toast.success('Allowed directories saved');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to save');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Allowed Directories */}
+      <div className="bg-bg-secondary dark:bg-dark-bg-secondary rounded-xl p-5 border border-border dark:border-dark-border">
+        <div className="flex items-center gap-2 mb-1">
+          <FolderOpen className="w-4 h-4 text-primary" />
+          <h3 className="text-sm font-semibold text-text-primary dark:text-dark-text-primary">
+            Allowed Working Directories
+          </h3>
+        </div>
+        <p className="text-xs text-text-muted dark:text-dark-text-muted mb-4">
+          Restrict coding agents to only work within these directories. If the list is empty, agents
+          can work in any directory. Subdirectories of allowed paths are also permitted.
+        </p>
+
+        {loading ? (
+          <div className="flex items-center justify-center py-4">
+            <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+          </div>
+        ) : (
+          <>
+            {/* Current dirs */}
+            {dirs.length > 0 ? (
+              <div className="space-y-1.5 mb-3">
+                {dirs.map((dir, i) => (
+                  <div
+                    key={i}
+                    className="flex items-center gap-2 px-3 py-2 bg-bg-tertiary dark:bg-dark-bg-tertiary rounded-lg"
+                  >
+                    <FolderOpen className="w-3.5 h-3.5 text-text-muted shrink-0" />
+                    <span className="text-xs font-mono text-text-primary dark:text-dark-text-primary flex-1 truncate">
+                      {dir}
+                    </span>
+                    <button
+                      onClick={() => handleRemove(i)}
+                      className="p-1 text-text-muted hover:text-error transition-colors"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 px-3 py-2 mb-3 bg-amber-500/10 border border-amber-500/20 rounded-lg">
+                <AlertCircle className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                <span className="text-xs text-amber-700 dark:text-amber-400">
+                  No restrictions — agents can access any directory on this machine.
+                </span>
+              </div>
+            )}
+
+            {/* Add new dir */}
+            <div className="flex items-center gap-2">
+              <input
+                value={newDir}
+                onChange={(e) => setNewDir(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleAdd();
+                  }
+                }}
+                placeholder="D:\Projects  or  /home/user/projects"
+                className="flex-1 px-3 py-2 text-sm bg-bg-tertiary dark:bg-dark-bg-tertiary border border-border dark:border-dark-border rounded-lg text-text-primary dark:text-dark-text-primary placeholder:text-text-muted/60 focus:outline-none focus:ring-2 focus:ring-primary/50 font-mono"
+              />
+              <button
+                onClick={handleAdd}
+                disabled={!newDir.trim()}
+                className="px-3 py-2 text-sm bg-bg-tertiary dark:bg-dark-bg-tertiary border border-border dark:border-dark-border rounded-lg text-text-primary dark:text-dark-text-primary hover:bg-bg-quaternary dark:hover:bg-dark-bg-quaternary disabled:opacity-40 transition-colors"
+              >
+                <Plus className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Save button */}
+            <div className="flex justify-end mt-4">
+              <button
+                onClick={handleSave}
+                disabled={saving}
+                className="flex items-center gap-1.5 px-4 py-2 text-sm bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-colors"
+              >
+                <Save className="w-3.5 h-3.5" />
+                {saving ? 'Saving...' : 'Save'}
+              </button>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

@@ -12,7 +12,6 @@ import { useGateway } from '../hooks/useWebSocket';
 import { useIsMobile } from '../hooks/useMediaQuery';
 import { Terminal, X, ExternalLink, Maximize2, Minimize2, StopCircle } from './icons';
 import { XTerminal } from './XTerminal';
-import { AutoModePanel } from './AutoModePanel';
 import type { CodingAgentSession, CodingAgentSessionState } from '../api/endpoints/coding-agents';
 
 // ---------------------------------------------------------------------------
@@ -392,20 +391,12 @@ export function MiniTerminal() {
         </div>
       )}
 
-      {/* Terminal / Auto mode content */}
+      {/* Terminal content — always use real xterm.js terminal */}
       <div className="flex-1 min-h-0 relative">
         {activeSession ? (
-          activeSession.mode === 'auto' ? (
-            <AutoModePanel
-              key={activeSession.id}
-              sessionId={activeSession.id}
-              session={activeSession}
-            />
-          ) : (
-            <div className="absolute inset-0">
-              <XTerminal key={activeSession.id} sessionId={activeSession.id} interactive={true} />
-            </div>
-          )
+          <div className="absolute inset-0">
+            <XTerminal key={activeSession.id} sessionId={activeSession.id} interactive={true} />
+          </div>
         ) : (
           <div className="flex items-center justify-center h-full text-zinc-500 text-sm">
             No active session
