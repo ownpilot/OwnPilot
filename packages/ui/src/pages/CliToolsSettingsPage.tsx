@@ -229,7 +229,7 @@ export function CliToolsSettingsPage() {
   }
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6 p-6">
+    <div className="flex flex-col h-full">
       {/* Header */}
       <header className="flex items-center justify-between px-6 py-4 border-b border-border dark:border-dark-border">
         <div>
@@ -275,6 +275,8 @@ export function CliToolsSettingsPage() {
         ))}
       </div>
 
+      {/* Tab content */}
+      <div className="flex-1 min-h-0 overflow-y-auto">
       {/* Home Tab */}
       {activeTab === 'home' && (
         <PageHomeTab
@@ -303,6 +305,7 @@ export function CliToolsSettingsPage() {
 
       {/* Settings Tab */}
       {activeTab === 'settings' && (<>
+      <div className="p-6 max-w-5xl mx-auto space-y-6">
       {/* Stats */}
       <div className="grid grid-cols-3 gap-4">
         <div className="rounded-lg border border-border bg-card p-4">
@@ -506,7 +509,9 @@ export function CliToolsSettingsPage() {
           <p>No tools match your filters</p>
         </div>
       )}
+      </div>
       </>)}
+      </div>
 
       {/* Add Custom Tool Modal (portal to body to escape overflow clipping) */}
       {showAddModal &&

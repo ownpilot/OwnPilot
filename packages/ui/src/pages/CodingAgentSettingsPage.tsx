@@ -95,9 +95,9 @@ export function CodingAgentSettingsPage() {
   ];
 
   return (
-    <div className="max-w-3xl mx-auto px-6 py-6 space-y-6">
+    <div className="flex flex-col h-full">
       {/* Header */}
-      <header className="flex items-center justify-between">
+      <header className="flex items-center justify-between px-6 py-4 border-b border-border dark:border-dark-border">
         <div>
           <h2 className="text-lg font-semibold text-text-primary dark:text-dark-text-primary">
             Coding Agent Settings
@@ -126,7 +126,7 @@ export function CodingAgentSettingsPage() {
       </header>
 
       {/* Tabs */}
-      <div className="flex border-b border-border dark:border-dark-border">
+      <div className="flex border-b border-border dark:border-dark-border px-6">
         {tabs.map((tab) => (
           <button
             key={tab.id}
@@ -144,6 +144,7 @@ export function CodingAgentSettingsPage() {
       </div>
 
       {/* Tab Content */}
+      <div className="flex-1 min-h-0 overflow-y-auto">
       {activeTab === 'home' && (
         <PageHomeTab
           heroIcons={[
@@ -230,19 +231,24 @@ export function CodingAgentSettingsPage() {
           ]}
         />
       )}
-      {activeTab === 'providers' && (
-        <ProvidersTab
-          statuses={statuses}
-          testResults={testResults}
-          testingProvider={testingProvider}
-          isLoading={isLoading}
-          onTest={handleTest}
-        />
+      {activeTab !== 'home' && (
+        <div className="p-6 max-w-3xl mx-auto w-full space-y-6">
+          {activeTab === 'providers' && (
+            <ProvidersTab
+              statuses={statuses}
+              testResults={testResults}
+              testingProvider={testingProvider}
+              isLoading={isLoading}
+              onTest={handleTest}
+            />
+          )}
+          {activeTab === 'permissions' && <PermissionsTab providers={providerNames} />}
+          {activeTab === 'skills' && <SkillsTab providers={providerNames} />}
+          {activeTab === 'budget' && <BudgetTab providers={providerNames} />}
+          {activeTab === 'security' && <SecurityTab />}
+        </div>
       )}
-      {activeTab === 'permissions' && <PermissionsTab providers={providerNames} />}
-      {activeTab === 'skills' && <SkillsTab providers={providerNames} />}
-      {activeTab === 'budget' && <BudgetTab providers={providerNames} />}
-      {activeTab === 'security' && <SecurityTab />}
+      </div>
     </div>
   );
 }

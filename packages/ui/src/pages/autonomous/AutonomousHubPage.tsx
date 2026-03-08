@@ -216,10 +216,10 @@ export function AutonomousHubPage() {
   if (isLoading) return <LoadingSpinner message="Loading autonomous agents..." />;
 
   return (
-    <div className="p-6 max-w-6xl mx-auto space-y-6">
+    <div className="flex flex-col h-full">
       {/* Error banner */}
       {loadError && (
-        <div className="flex items-center gap-3 px-4 py-3 bg-danger/10 border border-danger/30 rounded-lg">
+        <div className="flex items-center gap-3 px-4 py-3 mx-6 mt-4 bg-danger/10 border border-danger/30 rounded-lg">
           <span className="text-sm text-danger font-medium">{loadError}</span>
           <button
             onClick={refresh}
@@ -306,6 +306,7 @@ export function AutonomousHubPage() {
       </div>
 
       {/* Tab content */}
+      <div className="flex-1 min-h-0 overflow-y-auto">
       {activeTab === 'home' && (
         <PageHomeTab
           heroIcons={[
@@ -400,7 +401,7 @@ export function AutonomousHubPage() {
       )}
 
       {activeTab === 'agents' && (
-        <div className="space-y-4 min-w-[800px]">
+        <div className="p-6 max-w-6xl mx-auto space-y-4 min-w-[800px]">
           {/* Search + Filters */}
           <div className="flex items-center gap-3">
             <div className="relative">
@@ -526,28 +527,29 @@ export function AutonomousHubPage() {
       )}
 
       {activeTab === 'crews' && (
-        <div className="w-full min-h-[400px] min-w-[800px]">
+        <div className="p-6 max-w-6xl mx-auto w-full min-h-[400px] min-w-[800px]">
           <CrewSection crews={crews} templates={templates} onRefresh={refresh} />
         </div>
       )}
 
       {activeTab === 'plans' && (
-        <div className="w-full min-h-[400px] min-w-[800px]">
+        <div className="p-6 max-w-6xl mx-auto w-full min-h-[400px] min-w-[800px]">
           <PlansTab />
         </div>
       )}
 
       {activeTab === 'messages' && (
-        <div className="w-full min-h-[400px] min-w-[800px]">
+        <div className="p-6 max-w-6xl mx-auto w-full min-h-[400px] min-w-[800px]">
           <CommsPanel agents={agents} />
         </div>
       )}
 
       {activeTab === 'activity' && (
-        <div className="w-full min-h-[400px] min-w-[800px]">
+        <div className="p-6 max-w-6xl mx-auto w-full min-h-[400px] min-w-[800px]">
           <ActivityFeed agents={agents} refreshTrigger={activityRefreshTrigger} />
         </div>
       )}
+      </div>
 
       {/* Create wizard modal */}
       {showWizard && (

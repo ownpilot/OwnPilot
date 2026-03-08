@@ -146,7 +146,7 @@ export function ApprovalsPage() {
   );
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="flex flex-col h-full">
       {/* Header */}
       <header className="flex items-center justify-between px-6 py-4 border-b border-border dark:border-dark-border">
         <div>
@@ -176,6 +176,8 @@ export function ApprovalsPage() {
         ))}
       </div>
 
+      {/* Tab content */}
+      <div className="flex-1 min-h-0 overflow-y-auto">
       {/* Home Tab */}
       {activeTab === 'home' && (
         <PageHomeTab
@@ -204,6 +206,7 @@ export function ApprovalsPage() {
 
       {/* Approvals Tab */}
       {activeTab === 'approvals' && (<>
+      <div className="p-6 max-w-4xl mx-auto space-y-6">
       {/* Tabs */}
       <div className="flex gap-1 p-0.5 bg-bg-tertiary dark:bg-dark-bg-tertiary rounded-lg w-fit">
         {(['pending', 'all'] as const).map((t) => (
@@ -334,7 +337,9 @@ export function ApprovalsPage() {
           })}
         </div>
       )}
+      </div>
       </>)}
+      </div>
     </div>
   );
 }
