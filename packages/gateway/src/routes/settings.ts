@@ -6,7 +6,13 @@
  */
 
 import { Hono } from 'hono';
-import { apiResponse, apiError, ERROR_CODES, getErrorMessage } from './helpers.js';
+import {
+  apiResponse,
+  apiError,
+  ERROR_CODES,
+  getErrorMessage,
+  sanitizeProviderName,
+} from './helpers.js';
 import { settingsRepo, localProvidersRepo } from '../db/repositories/index.js';
 import {
   getAvailableProviders,
@@ -165,7 +171,7 @@ settingsRoutes.post('/api-keys', async (c) => {
 
   // Also set as environment variable for the current process
   // This allows providers to work immediately without restart
-  const sanitizedProvider = body.provider.replace(/[^a-zA-Z0-9_]/g, '').toUpperCase();
+  const sanitizedProvider = sanitizeProviderName(body.provider);
   if (sanitizedProvider) {
     const envVarName = `${sanitizedProvider}_API_KEY`;
     process.env[envVarName] = body.apiKey;
@@ -188,7 +194,7 @@ settingsRoutes.delete('/api-keys/:provider', async (c) => {
   await settingsRepo.delete(key);
 
   // Remove from environment
-  const sanitizedProvider = provider.replace(/[^a-zA-Z0-9_]/g, '').toUpperCase();
+  const sanitizedProvider = sanitizeProviderName(provider);
   if (sanitizedProvider) {
     const envVarName = `${sanitizedProvider}_API_KEY`;
     delete process.env[envVarName];
@@ -234,7 +240,7 @@ export async function loadApiKeysToEnvironment(): Promise<void> {
 
   for (const setting of apiKeySettings) {
     const provider = setting.key.replace(API_KEY_PREFIX, '');
-    const sanitizedProvider = provider.replace(/[^a-zA-Z0-9_]/g, '').toUpperCase();
+    const sanitizedProvider = sanitizeProviderName(provider);
     if (sanitizedProvider) {
       const envVarName = `${sanitizedProvider}_API_KEY`;
       process.env[envVarName] = setting.value as string;

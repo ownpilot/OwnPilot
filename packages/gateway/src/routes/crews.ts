@@ -3,6 +3,9 @@
  */
 
 import { Hono } from 'hono';
+import { getLog } from '../services/log.js';
+
+const log = getLog('CrewsRoute');
 import { randomUUID } from 'node:crypto';
 import { listCrewTemplates, getCrewTemplate } from '@ownpilot/core';
 import { getCrewsRepository } from '../db/repositories/crews.js';
@@ -185,7 +188,7 @@ crewRoutes.post('/deploy', async (c) => {
             });
           } catch (triggerError) {
             // Log but don't fail - agent is still created
-            console.warn(`Failed to create heartbeat trigger for ${agentId}:`, triggerError);
+            log.warn(`Failed to create heartbeat trigger for ${agentId}:`, triggerError);
           }
         }
 

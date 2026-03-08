@@ -6,7 +6,7 @@
  *
  * Implementation split:
  * - agent-prompt.ts:  BASE_SYSTEM_PROMPT constant
- * - agent-tools.ts:   Tool registration + meta-tool executors
+ * - tools/agent-tool-registry.ts: Tool registration + meta-tool executors
  * - agent-cache.ts:   Cache infra, provider/config helpers
  * - agent-service.ts: Public API (create/fetch/manage agents, context, compaction)
  * - agents.ts:        Route handlers (this file) + backward compat re-exports
@@ -33,7 +33,7 @@ import {
 } from '../config/defaults.js';
 
 // Internal imports from split modules
-import { safeStringArray } from './agent-tools.js';
+import { safeStringArray } from '../tools/agent-tool-registry.js';
 import {
   resolveToolGroups,
   resolveRecordTools,

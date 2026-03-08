@@ -28,15 +28,15 @@ import {
   getServiceRegistry,
   Services,
 } from '@ownpilot/core';
-import { executeMemoryTool } from './memories.js';
-import { executeGoalTool } from './goals.js';
-import { executeCustomDataTool } from './custom-data.js';
-import { executePersonalDataTool } from './personal-data-tools.js';
+import { executeMemoryTool } from '../routes/memories.js';
+import { executeGoalTool } from '../routes/goals.js';
+import { executeCustomDataTool } from '../routes/custom-data.js';
+import { executePersonalDataTool } from '../routes/personal-data-tools.js';
 import {
   executeCustomToolTool,
   executeActiveCustomTool,
   getActiveCustomToolDefinitions,
-} from './custom-tools.js';
+} from '../routes/custom-tools.js';
 import { getCustomToolDynamicRegistry } from '../services/custom-tool-registry.js';
 import { getToolSource } from '../services/tool-source.js';
 import { getSharedToolRegistry } from '../services/tool-executor.js';
@@ -66,7 +66,7 @@ import {
   executeSoulCommunicationTool,
   CREW_TOOLS,
   executeCrewTool,
-} from '../tools/index.js';
+} from './index.js';
 import { CONFIG_TOOLS, executeConfigTool } from '../services/config-tools.js';
 import type { ExtensionService } from '../services/extension-service.js';
 import {
@@ -75,7 +75,7 @@ import {
   traceDbWrite,
   traceDbRead,
 } from '../tracing/index.js';
-import { getErrorMessage, truncate } from './helpers.js';
+import { getErrorMessage, truncate } from '../routes/helpers.js';
 import {
   TOOL_ARGS_MAX_SIZE,
   MAX_BATCH_TOOL_CALLS,

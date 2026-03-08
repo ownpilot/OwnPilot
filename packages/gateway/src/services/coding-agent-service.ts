@@ -11,6 +11,10 @@
  * (OAuth, Google account, ChatGPT account) when no API key is provided.
  *
  * PTY fallback is available when node-pty is installed (optional dependency).
+ *
+ * Implementation split:
+ * - coding-agent-providers.ts: Constants, helpers, provider adapters
+ * - coding-agent-service.ts:   CodingAgentService class (this file)
  */
 
 import {
@@ -22,375 +26,32 @@ import {
   type BuiltinCodingAgentProvider,
   type CodingAgentSession,
   type CreateCodingSessionInput,
-  type CodingAgentPermissions,
-  type CodingAgentSkill,
-  DEFAULT_CODING_AGENT_PERMISSIONS,
   isBuiltinProvider,
   getCustomProviderName,
   getErrorMessage,
 } from '@ownpilot/core';
 import { tryImport } from '@ownpilot/core';
-import { configServicesRepo } from '../db/repositories/config-services.js';
 import { cliProvidersRepo, type CliProviderRecord } from '../db/repositories/cli-providers.js';
-import {
-  isBinaryInstalled,
-  getBinaryVersion,
-  validateCwd,
-  createSanitizedEnv,
-  spawnCliProcess,
-} from './binary-utils.js';
+import { isBinaryInstalled, getBinaryVersion, validateCwd, createSanitizedEnv } from './binary-utils.js';
 import { getLog } from './log.js';
 import { getAllowedDirs } from '../routes/settings.js';
+import {
+  DEFAULT_TIMEOUT_MS,
+  MAX_TIMEOUT_MS,
+  DISPLAY_NAMES,
+  CLI_BINARIES,
+  INSTALL_COMMANDS,
+  AUTH_METHODS,
+  resolveBuiltinApiKey,
+  resolveCustomApiKey,
+  resolvePermissions,
+  buildClaudeCodePermissionArgs,
+  runClaudeCode,
+  runCodex,
+  runGeminiCli,
+} from './coding-agent-providers.js';
 
 const log = getLog('CodingAgent');
-
-// =============================================================================
-// CONSTANTS
-// =============================================================================
-
-const DEFAULT_TIMEOUT_MS = 300_000; // 5 minutes
-const MAX_TIMEOUT_MS = 1_800_000; // 30 minutes
-const DEFAULT_MAX_TURNS = 10;
-const DEFAULT_MAX_BUDGET_USD = 1.0;
-
-/** Config Center service names for built-in providers */
-const CONFIG_SERVICE_NAMES: Record<BuiltinCodingAgentProvider, string> = {
-  'claude-code': 'coding-claude-code',
-  codex: 'coding-codex',
-  'gemini-cli': 'coding-gemini',
-};
-
-/** Environment variable names for built-in provider API keys */
-const API_KEY_ENV_VARS: Record<BuiltinCodingAgentProvider, string> = {
-  'claude-code': 'ANTHROPIC_API_KEY',
-  codex: 'CODEX_API_KEY',
-  'gemini-cli': 'GEMINI_API_KEY',
-};
-
-/** Display names for built-in providers */
-const DISPLAY_NAMES: Record<BuiltinCodingAgentProvider, string> = {
-  'claude-code': 'Claude Code',
-  codex: 'OpenAI Codex',
-  'gemini-cli': 'Gemini CLI',
-};
-
-/** CLI binary names for built-in providers */
-const CLI_BINARIES: Record<BuiltinCodingAgentProvider, string> = {
-  'claude-code': 'claude',
-  codex: 'codex',
-  'gemini-cli': 'gemini',
-};
-
-/** npm install commands for built-in providers */
-const INSTALL_COMMANDS: Record<BuiltinCodingAgentProvider, string> = {
-  'claude-code': 'npm install -g @anthropic-ai/claude-code',
-  codex: 'npm install -g @openai/codex',
-  'gemini-cli': 'npm install -g @google/gemini-cli',
-};
-
-/**
- * Auth method for each built-in provider:
- * - 'api-key': SDK mode requires an API key (Claude Code SDK)
- * - 'both': CLI supports login-based auth OR API key (Codex, Gemini, Claude CLI)
- */
-const AUTH_METHODS: Record<BuiltinCodingAgentProvider, 'api-key' | 'login' | 'both'> = {
-  'claude-code': 'both', // SDK needs key, but CLI supports OAuth login
-  codex: 'both', // ChatGPT login or CODEX_API_KEY
-  'gemini-cli': 'both', // Google account login or GEMINI_API_KEY
-};
-
-// =============================================================================
-// HELPERS
-// =============================================================================
-
-/**
- * Resolve API key for a built-in provider from Config Center or environment.
- * Returns undefined if no key is configured — this is OK for CLI providers
- * that support login-based auth.
- */
-function resolveBuiltinApiKey(provider: BuiltinCodingAgentProvider): string | undefined {
-  const serviceName = CONFIG_SERVICE_NAMES[provider];
-  // Try Config Center first
-  const key = configServicesRepo.getApiKey(serviceName);
-  if (key) return key;
-
-  // Fall back to environment variable
-  return process.env[API_KEY_ENV_VARS[provider]];
-}
-
-/**
- * Resolve API key for a custom provider from Config Center or environment.
- */
-function resolveCustomApiKey(customProvider: CliProviderRecord): string | undefined {
-  if (customProvider.authMethod === 'config_center' && customProvider.configServiceName) {
-    const key = configServicesRepo.getApiKey(customProvider.configServiceName);
-    if (key) return key;
-  }
-  if (customProvider.apiKeyEnvVar) {
-    return process.env[customProvider.apiKeyEnvVar];
-  }
-  return undefined;
-}
-
-// isBinaryInstalled, getBinaryVersion, validateCwd, createSanitizedEnv, spawnCliProcess
-// are imported from './binary-utils.js'
-
-// =============================================================================
-// SKILLS & PERMISSIONS HELPERS
-// =============================================================================
-
-/**
- * Build a skills preamble string to prepend to the prompt.
- * Each skill's content is wrapped in a section header.
- */
-function buildSkillsPreamble(skills: CodingAgentSkill[]): string {
-  if (skills.length === 0) return '';
-  const sections = skills.map((s) => `## Skill: ${s.name}\n\n${s.content}`);
-  return `# Instructions & Skills\n\n${sections.join('\n\n---\n\n')}\n\n---\n\n# Task\n\n`;
-}
-
-/**
- * Build permission-related CLI flags for Claude Code.
- * Maps CodingAgentPermissions to --allowed-tools, --disallowed-tools, etc.
- */
-function buildClaudeCodePermissionArgs(perms: CodingAgentPermissions): string[] {
-  const args: string[] = [];
-
-  // File access restrictions
-  if (perms.fileAccess === 'none') {
-    args.push('--disallowed-tools', 'Edit,Write,MultiEdit');
-  } else if (perms.fileAccess === 'read-only') {
-    args.push('--disallowed-tools', 'Edit,Write,MultiEdit,Bash(rm|mv|cp|mkdir)');
-  }
-
-  // Autonomy level → permission mode
-  if (perms.autonomy === 'full-auto') {
-    args.push('--dangerously-skip-permissions');
-  }
-
-  // Network access
-  if (perms.networkAccess === false) {
-    args.push('--disallowed-tools', 'WebFetch,WebSearch');
-  }
-
-  return args;
-}
-
-/**
- * Merge user-supplied permissions with defaults.
- */
-function resolvePermissions(perms?: CodingAgentPermissions): Required<CodingAgentPermissions> {
-  if (!perms) return { ...DEFAULT_CODING_AGENT_PERMISSIONS };
-  return { ...DEFAULT_CODING_AGENT_PERMISSIONS, ...perms };
-}
-
-// =============================================================================
-// PROVIDER ADAPTERS
-// =============================================================================
-
-/**
- * Run a task using the Claude Code SDK.
- * SDK mode REQUIRES an API key (ANTHROPIC_API_KEY).
- */
-async function runClaudeCode(task: CodingAgentTask, apiKey?: string): Promise<CodingAgentResult> {
-  const start = Date.now();
-
-  if (!apiKey) {
-    return {
-      success: false,
-      output: '',
-      provider: 'claude-code',
-      durationMs: Date.now() - start,
-      error:
-        'Claude Code SDK mode requires an API key. Set ANTHROPIC_API_KEY or configure it in Config Center. Alternatively, install the Claude CLI and use PTY mode for OAuth login.',
-    };
-  }
-
-  // Set API key in environment for SDK
-  process.env.ANTHROPIC_API_KEY = apiKey;
-
-  // Lazy-load the SDK
-  let sdkModule: { query: (...args: unknown[]) => AsyncIterable<Record<string, unknown>> };
-  try {
-    sdkModule = (await tryImport('@anthropic-ai/claude-agent-sdk')) as typeof sdkModule;
-  } catch {
-    return {
-      success: false,
-      output: '',
-      provider: 'claude-code',
-      durationMs: Date.now() - start,
-      error:
-        'Claude Code SDK not installed. Install it with: pnpm add @anthropic-ai/claude-agent-sdk',
-    };
-  }
-
-  const cwd = task.cwd ? validateCwd(task.cwd, await getAllowedDirs()) : process.cwd();
-  let output = '';
-
-  // Inject skills preamble into the prompt
-  const skillsPreamble = task.skills?.length ? buildSkillsPreamble(task.skills) : '';
-  const fullPrompt = skillsPreamble + task.prompt;
-
-  // Resolve permissions
-  const perms = resolvePermissions(task.permissions);
-
-  // Build allowed tools based on permissions
-  let allowedTools = task.allowedTools ?? ['Read', 'Edit', 'Bash', 'Glob', 'Grep', 'Write'];
-  if (perms.fileAccess === 'read-only') {
-    allowedTools = allowedTools.filter((t) => !['Edit', 'Write'].includes(t));
-  } else if (perms.fileAccess === 'none') {
-    allowedTools = allowedTools.filter(
-      (t) => !['Read', 'Edit', 'Write', 'Glob', 'Grep'].includes(t)
-    );
-  }
-
-  try {
-    for await (const msg of sdkModule.query({
-      prompt: fullPrompt,
-      options: {
-        allowedTools,
-        permissionMode: perms.autonomy === 'full-auto' ? 'bypassPermissions' : 'bypassPermissions',
-        allowDangerouslySkipPermissions: true,
-        cwd,
-        model: task.model,
-        maxTurns: task.maxTurns ?? DEFAULT_MAX_TURNS,
-        maxBudgetUsd: task.maxBudgetUsd ?? DEFAULT_MAX_BUDGET_USD,
-      },
-    })) {
-      if (msg && 'result' in msg) {
-        output = String(msg.result);
-      }
-    }
-  } catch (err) {
-    return {
-      success: false,
-      output: '',
-      provider: 'claude-code',
-      durationMs: Date.now() - start,
-      error: getErrorMessage(err),
-    };
-  }
-
-  return {
-    success: true,
-    output,
-    provider: 'claude-code',
-    durationMs: Date.now() - start,
-    mode: 'sdk',
-  };
-}
-
-/**
- * Run a task using the OpenAI Codex CLI.
- * API key is optional — Codex supports ChatGPT account login.
- */
-async function runCodex(task: CodingAgentTask, apiKey?: string): Promise<CodingAgentResult> {
-  const start = Date.now();
-  const cwd = task.cwd ? validateCwd(task.cwd, await getAllowedDirs()) : process.cwd();
-  const timeout = Math.min(task.timeout ?? DEFAULT_TIMEOUT_MS, MAX_TIMEOUT_MS);
-
-  const args = ['exec', '--json', '--full-auto'];
-  if (task.model) args.push('--model', task.model);
-  args.push(task.prompt);
-
-  try {
-    const result = await spawnCliProcess('codex', args, {
-      cwd,
-      env: createSanitizedEnv('codex', apiKey),
-      timeout,
-    });
-
-    // Parse JSON Lines output — extract the last message
-    let output = '';
-    const lines = result.stdout.trim().split('\n');
-    for (const line of lines) {
-      try {
-        const parsed = JSON.parse(line) as Record<string, unknown>;
-        // Codex JSON Lines: look for the final assistant message
-        if (parsed.type === 'message' && parsed.role === 'assistant') {
-          output = String(parsed.content ?? '');
-        } else if (parsed.content) {
-          output = String(parsed.content);
-        }
-      } catch {
-        // Not JSON — append as plain text
-        if (line.trim()) output += line + '\n';
-      }
-    }
-
-    // If no parsed output, use raw stdout
-    if (!output && result.stdout.trim()) {
-      output = result.stdout.trim();
-    }
-
-    return {
-      success: result.exitCode === 0,
-      output,
-      provider: 'codex',
-      durationMs: Date.now() - start,
-      exitCode: result.exitCode,
-      error:
-        result.exitCode !== 0 ? result.stderr || `Exited with code ${result.exitCode}` : undefined,
-      mode: 'sdk',
-    };
-  } catch (err) {
-    return {
-      success: false,
-      output: '',
-      provider: 'codex',
-      durationMs: Date.now() - start,
-      error: getErrorMessage(err),
-    };
-  }
-}
-
-/**
- * Run a task using the Google Gemini CLI.
- * API key is optional — Gemini supports Google account login.
- */
-async function runGeminiCli(task: CodingAgentTask, apiKey?: string): Promise<CodingAgentResult> {
-  const start = Date.now();
-  const cwd = task.cwd ? validateCwd(task.cwd, await getAllowedDirs()) : process.cwd();
-  const timeout = Math.min(task.timeout ?? DEFAULT_TIMEOUT_MS, MAX_TIMEOUT_MS);
-
-  const args = ['-p', task.prompt, '--yolo', '--output-format', 'json'];
-  if (task.model) args.push('--model', task.model);
-
-  try {
-    const result = await spawnCliProcess('gemini', args, {
-      cwd,
-      env: createSanitizedEnv('gemini-cli', apiKey),
-      timeout,
-    });
-
-    let output = '';
-    try {
-      const parsed = JSON.parse(result.stdout) as Record<string, unknown>;
-      output = String(parsed.response ?? parsed.content ?? result.stdout);
-    } catch {
-      output = result.stdout.trim();
-    }
-
-    return {
-      success: result.exitCode === 0,
-      output,
-      provider: 'gemini-cli',
-      durationMs: Date.now() - start,
-      exitCode: result.exitCode,
-      error:
-        result.exitCode !== 0 ? result.stderr || `Exited with code ${result.exitCode}` : undefined,
-      mode: 'sdk',
-    };
-  } catch (err) {
-    return {
-      success: false,
-      output: '',
-      provider: 'gemini-cli',
-      durationMs: Date.now() - start,
-      error: getErrorMessage(err),
-    };
-  }
-}
 
 // =============================================================================
 // SERVICE
@@ -737,15 +398,11 @@ class CodingAgentService implements ICodingAgentService {
     const isInteractive = input.mode === 'interactive';
     const perms = resolvePermissions(input.permissions);
 
-    // Prepend skills preamble to prompt if skills are provided
-    // (skillIds are resolved to CodingAgentSkill[] before reaching here)
     const prompt = input.prompt;
 
     switch (input.provider) {
       case 'claude-code': {
         if (isInteractive) return [];
-        // -p: non-interactive print mode (plain text output)
-        // --output-format stream-json --verbose: structured JSON event stream
         const args = [
           '-p',
           prompt,
@@ -755,18 +412,14 @@ class CodingAgentService implements ICodingAgentService {
           ...(input.model ? ['--model', input.model] : []),
         ];
 
-        // Permission-based flags
         if (perms.autonomy === 'full-auto') {
           args.push('--dangerously-skip-permissions');
         } else if (perms.autonomy === 'semi-auto') {
           args.push('--dangerously-skip-permissions');
         }
-        // supervised: no skip-permissions flag — agent will ask for approval
 
-        // Additional permission restrictions
         args.push(...buildClaudeCodePermissionArgs(perms));
 
-        // Max budget
         if (input.maxBudgetUsd) {
           args.push('--max-cost', String(input.maxBudgetUsd));
         }
@@ -798,14 +451,12 @@ class CodingAgentService implements ICodingAgentService {
     const args = [...cp.defaultArgs];
 
     if (cp.promptTemplate) {
-      // Expand template placeholders: {prompt}, {cwd}, {model}
       const expanded = cp.promptTemplate
         .replace(/\{prompt\}/g, input.prompt)
         .replace(/\{cwd\}/g, input.cwd ?? process.cwd())
         .replace(/\{model\}/g, input.model ?? '');
       args.push(expanded);
     } else {
-      // No template: pass prompt as the last argument
       args.push(input.prompt);
     }
 
@@ -870,7 +521,7 @@ let instance: CodingAgentService | null = null;
 export function getCodingAgentService(): CodingAgentService {
   if (!instance) {
     instance = new CodingAgentService();
-    instance.initSessionManager(); // Eagerly load session manager (async, best-effort)
+    instance.initSessionManager();
   }
   return instance;
 }

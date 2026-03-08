@@ -34,6 +34,13 @@ export class PostgresAdapter implements DatabaseAdapter {
       connectionTimeoutMillis: DB_CONNECT_TIMEOUT_MS,
     });
 
+    // Handle idle client errors gracefully — without this listener,
+    // a terminated connection (e.g. admin restart) becomes an uncaught exception
+    // that crashes the process. The pool will automatically replace dead clients.
+    this.pool.on('error', (err: Error) => {
+      log.warn('[PostgreSQL] Idle client error (pool will reconnect):', err.message);
+    });
+
     // Test connection and register pgvector types
     const client = await this.pool.connect();
     try {

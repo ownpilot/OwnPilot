@@ -44,7 +44,7 @@ import {
   registerPluginTools,
   registerExtensionTools,
   registerMcpTools,
-} from '../routes/agent-tools.js';
+} from '../tools/agent-tool-registry.js';
 import { gatewayConfigCenter } from './config-center-impl.js';
 import { AGENT_DEFAULT_MAX_TOKENS, AGENT_DEFAULT_TEMPERATURE } from '../config/defaults.js';
 import { buildEnhancedSystemPrompt } from '../assistant/orchestrator.js';

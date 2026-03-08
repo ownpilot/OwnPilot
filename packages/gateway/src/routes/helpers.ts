@@ -174,6 +174,23 @@ export function apiError(
 }
 
 /**
+ * Sanitize a provider name for safe use as environment variable key.
+ * Strips all non-alphanumeric/underscore characters and uppercases.
+ */
+export function sanitizeProviderName(provider: string): string {
+  return provider.replace(/[^a-zA-Z0-9_]/g, '').toUpperCase();
+}
+
+/**
+ * Clamp a value between min and max bounds, with fallback for non-numeric input.
+ */
+export function clamp(val: unknown, limits: { min: number; max: number }, fallback: number): number {
+  return typeof val === 'number' && !Number.isNaN(val)
+    ? Math.max(limits.min, Math.min(limits.max, val))
+    : fallback;
+}
+
+/**
  * Sanitize a user-provided ID string for safe use in database queries.
  * Strips all characters except word chars and hyphens.
  * For IDs longer than 100 chars, uses a hash suffix to prevent collisions.

@@ -7,6 +7,7 @@
 
 import path from 'node:path';
 import type { ContainerConfig } from '@ownpilot/core';
+import { clamp } from '../helpers.js';
 
 // ============================================
 // Path traversal protection
@@ -61,9 +62,6 @@ export function sanitizeContainerConfig(
   userConfig?: Partial<ContainerConfig>
 ): ContainerConfig {
   if (!userConfig || typeof userConfig !== 'object') return { ...base };
-
-  const clamp = (val: unknown, limits: { min: number; max: number }, fallback: number): number =>
-    typeof val === 'number' ? Math.max(limits.min, Math.min(limits.max, val)) : fallback;
 
   return {
     memoryMB: clamp(userConfig.memoryMB, CONTAINER_LIMITS.memoryMB, base.memoryMB),

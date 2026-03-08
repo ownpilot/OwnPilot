@@ -7,16 +7,23 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-const { mockPool, mockClient, mockLog } = vi.hoisted(() => {
+const { mockPool, mockClient, errorHandlers, mockLog } = vi.hoisted(() => {
   const mockClient = { query: vi.fn().mockResolvedValue({ rows: [] }), release: vi.fn() };
+  const errorHandlers: Map<string, Function[]> = new Map();
   const mockPool = {
     connect: vi.fn().mockResolvedValue(mockClient),
     query: vi.fn().mockResolvedValue({ rows: [], rowCount: 0 }),
     end: vi.fn().mockResolvedValue(undefined),
+    on: vi.fn((event: string, handler: Function) => {
+      if (!errorHandlers.has(event)) errorHandlers.set(event, []);
+      errorHandlers.get(event)!.push(handler);
+      return mockPool;
+    }),
   };
   return {
     mockPool,
     mockClient,
+    errorHandlers,
     mockLog: { info: vi.fn(), error: vi.fn(), warn: vi.fn(), debug: vi.fn() },
   };
 });
@@ -59,6 +66,7 @@ async function makeInitializedAdapter(config) {
 describe('PostgresAdapter', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    errorHandlers.clear();
     mockClient.query.mockResolvedValue({ rows: [] });
     mockClient.release.mockResolvedValue(undefined);
     mockPool.connect.mockResolvedValue(mockClient);
@@ -185,6 +193,22 @@ describe('PostgresAdapter', () => {
       mockPool.connect.mockRejectedValueOnce(new Error('pool exhausted'));
       const adapter = new PostgresAdapter(makeConfig());
       await expect(adapter.initialize()).rejects.toThrow('pool exhausted');
+    });
+
+    it('registers a pool error handler to prevent uncaught exceptions', async () => {
+      await makeInitializedAdapter();
+      expect(mockPool.on).toHaveBeenCalledWith('error', expect.any(Function));
+    });
+
+    it('logs a warning when an idle client error occurs', async () => {
+      await makeInitializedAdapter();
+      const handlers = errorHandlers.get('error') || [];
+      expect(handlers.length).toBeGreaterThan(0);
+      handlers[0](new Error('terminating connection due to administrator command'));
+      expect(mockLog.warn).toHaveBeenCalledWith(
+        expect.stringContaining('Idle client error'),
+        'terminating connection due to administrator command'
+      );
     });
   });
   // isConnected()

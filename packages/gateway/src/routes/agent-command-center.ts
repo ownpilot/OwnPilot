@@ -10,7 +10,14 @@
 
 import { Hono } from 'hono';
 import { randomUUID } from 'node:crypto';
-import { apiResponse, apiError, ERROR_CODES, getErrorMessage, getUserId } from './helpers.js';
+import {
+  apiResponse,
+  apiError,
+  ERROR_CODES,
+  getErrorMessage,
+  getUserId,
+  getIntParam,
+} from './helpers.js';
 import { getSoulsRepository } from '../db/repositories/souls.js';
 import { getBackgroundAgentService } from '../services/background-agent-service.js';
 import { getCrewsRepository } from '../db/repositories/crews.js';
@@ -524,8 +531,7 @@ agentCommandCenterRoutes.post('/mission', async (c) => {
 
 agentCommandCenterRoutes.get('/activity', async (c) => {
   try {
-    const limit = parseInt(c.req.query('limit') ?? '50', 10);
-    const limitNum = Math.min(limit || 50, 100);
+    const limitNum = getIntParam(c, 'limit', 50, 1, 100);
 
     const soulRepo = getSoulsRepository();
     const hbRepo = getHeartbeatLogRepository();

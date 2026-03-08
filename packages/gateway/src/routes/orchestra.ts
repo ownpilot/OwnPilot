@@ -5,7 +5,7 @@
  */
 
 import { Hono } from 'hono';
-import { apiResponse, apiError, ERROR_CODES, getErrorMessage } from './helpers.js';
+import { apiResponse, apiError, ERROR_CODES, getErrorMessage, getPaginationParams } from './helpers.js';
 import { getOrchestraEngine } from '../services/orchestra-engine.js';
 import { OrchestraRepository } from '../db/repositories/orchestra.js';
 
@@ -42,8 +42,7 @@ orchestraRoutes.get('/', async (c) => {
 orchestraRoutes.get('/history', async (c) => {
   try {
     const userId = c.get('userId') ?? 'default';
-    const limit = parseInt(c.req.query('limit') ?? '20', 10);
-    const offset = parseInt(c.req.query('offset') ?? '0', 10);
+    const { limit, offset } = getPaginationParams(c);
 
     const repo = new OrchestraRepository();
     const result = await repo.getHistory(userId, limit, offset);

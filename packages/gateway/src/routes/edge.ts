@@ -14,6 +14,7 @@ import {
   apiError,
   ERROR_CODES,
   getErrorMessage,
+  getIntParam,
   getPaginationParams,
   notFoundError,
   sanitizeId,
@@ -207,7 +208,7 @@ edgeRoutes.get('/:id/commands', async (c) => {
   try {
     const userId = getUserId(c);
     const id = sanitizeId(c.req.param('id'));
-    const limit = parseInt(c.req.query('limit') ?? '50', 10);
+    const limit = getIntParam(c, 'limit', 50, 1, 200);
 
     const service = getEdgeService();
     const commands = await service.getCommandHistory(userId, id, limit);
@@ -245,7 +246,7 @@ edgeRoutes.get('/:id/telemetry/:sensorId', async (c) => {
     const userId = getUserId(c);
     const id = sanitizeId(c.req.param('id'));
     const sensorId = sanitizeId(c.req.param('sensorId'));
-    const limit = parseInt(c.req.query('limit') ?? '100', 10);
+    const limit = getIntParam(c, 'limit', 100, 1, 500);
 
     const service = getEdgeService();
     const telemetry = await service.getTelemetryHistory(userId, id, sensorId, limit);

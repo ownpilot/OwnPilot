@@ -28,7 +28,7 @@ import {
   AGENT_DEFAULT_MAX_TOOL_CALLS,
 } from '../config/defaults.js';
 import { getLog } from '../services/log.js';
-import { safeStringArray } from './agent-tools.js';
+import { safeStringArray } from '../tools/agent-tool-registry.js';
 
 const log = getLog('AgentCache');
 

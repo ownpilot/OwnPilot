@@ -424,7 +424,7 @@ export class ExtensionService implements IExtensionService {
             !fullPath.startsWith(resolvedSkillDir + '/') &&
             !fullPath.startsWith(resolvedSkillDir + '\\')
           ) {
-            console.warn(`[ExtensionService] Path traversal detected for ${pkg.id}: ${scriptPath}`);
+            log.warn(`Path traversal detected for ${pkg.id}: ${scriptPath}`);
             continue; // Skip this script
           }
           const safeFullPath = JSON.stringify(fullPath.replace(/\\/g, '/'));

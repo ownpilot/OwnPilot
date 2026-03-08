@@ -6,7 +6,7 @@
  */
 
 import { Hono } from 'hono';
-import { getUserId, apiResponse, apiError, ERROR_CODES } from './helpers.js';
+import { getUserId, apiResponse, apiError, ERROR_CODES, getIntParam } from './helpers.js';
 import { getErrorMessage, getServiceRegistry, Services } from '@ownpilot/core';
 import { getNpmInstaller } from '../services/skill-npm-installer.js';
 import {
@@ -26,7 +26,7 @@ export const skillsRoutes = new Hono();
 skillsRoutes.get('/search', async (c) => {
   try {
     const q = c.req.query('q') ?? '';
-    const limit = Math.min(parseInt(c.req.query('limit') ?? '20', 10), 50);
+    const limit = getIntParam(c, 'limit', 20, 1, 50);
 
     const installer = getNpmInstaller();
     const results = await installer.search(q, limit);
@@ -42,7 +42,7 @@ skillsRoutes.get('/search', async (c) => {
 
 skillsRoutes.get('/featured', async (c) => {
   try {
-    const limit = Math.min(parseInt(c.req.query('limit') ?? '20', 10), 50);
+    const limit = getIntParam(c, 'limit', 20, 1, 50);
     const installer = getNpmInstaller();
     const results = await installer.search('', limit);
     return apiResponse(c, results);

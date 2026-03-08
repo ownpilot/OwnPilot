@@ -94,14 +94,14 @@ vi.mock('@ownpilot/core', () => ({
 }));
 
 const mockExecuteMemoryTool = vi.fn();
-vi.mock('./memories.js', () => ({ executeMemoryTool: mockExecuteMemoryTool }));
-vi.mock('./goals.js', () => ({ executeGoalTool: vi.fn() }));
-vi.mock('./custom-data.js', () => ({ executeCustomDataTool: vi.fn() }));
-vi.mock('./personal-data-tools.js', () => ({ executePersonalDataTool: vi.fn() }));
+vi.mock('../routes/memories.js', () => ({ executeMemoryTool: mockExecuteMemoryTool }));
+vi.mock('../routes/goals.js', () => ({ executeGoalTool: vi.fn() }));
+vi.mock('../routes/custom-data.js', () => ({ executeCustomDataTool: vi.fn() }));
+vi.mock('../routes/personal-data-tools.js', () => ({ executePersonalDataTool: vi.fn() }));
 
 const mockExecuteCustomToolTool = vi.fn();
 const mockGetActiveCustomToolDefinitions = vi.fn().mockResolvedValue([]);
-vi.mock('./custom-tools.js', () => ({
+vi.mock('../routes/custom-tools.js', () => ({
   executeCustomToolTool: mockExecuteCustomToolTool,
   executeActiveCustomTool: vi.fn(),
   getActiveCustomToolDefinitions: mockGetActiveCustomToolDefinitions,
@@ -133,7 +133,7 @@ const mockCustomToolsRepo = {
 vi.mock('../db/repositories/custom-tools.js', () => ({
   createCustomToolsRepo: vi.fn(() => mockCustomToolsRepo),
 }));
-vi.mock('../tools/index.js', () => ({
+vi.mock('./index.js', () => ({
   TRIGGER_TOOLS: [],
   executeTriggerTool: vi.fn(),
   PLAN_TOOLS: [],
@@ -179,7 +179,7 @@ vi.mock('../tracing/index.js', () => ({
   traceDbWrite: mockTraceDbWrite,
   traceDbRead: mockTraceDbRead,
 }));
-vi.mock('./helpers.js', () => ({
+vi.mock('../routes/helpers.js', () => ({
   getErrorMessage: (err: unknown, fallback?: string) =>
     err instanceof Error ? err.message : (fallback ?? String(err)),
   truncate: (s: string) => s,
@@ -216,7 +216,7 @@ const {
   registerPluginTools,
   registerExtensionTools,
   registerMcpTools,
-} = await import('./agent-tools.js');
+} = await import('./agent-tool-registry.js');
 
 // ---------------------------------------------------------------------------
 // Helper: create a mock ToolRegistry for meta-tool tests
@@ -1708,7 +1708,7 @@ describe('agent-tools helpers', () => {
     });
 
     it('invokes active custom tool executor with trace (lines 378-395)', async () => {
-      const { executeActiveCustomTool } = await import('./custom-tools.js');
+      const { executeActiveCustomTool } = await import('../routes/custom-tools.js');
       vi.mocked(executeActiveCustomTool).mockResolvedValue({ success: true, result: 'custom' });
       mockGetActiveCustomToolDefinitions.mockResolvedValueOnce([
         { name: 'my_custom', description: 'Custom', parameters: {} },

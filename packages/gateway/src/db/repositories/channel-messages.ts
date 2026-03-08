@@ -5,6 +5,9 @@
  */
 
 import { BaseRepository, parseJsonField, parseJsonFieldNullable } from './base.js';
+import { getLog } from '../../services/log.js';
+
+const log = getLog('ChannelMessagesRepo');
 
 export interface ChannelMessage {
   id: string;
@@ -420,7 +423,7 @@ export class ChannelMessagesRepository extends BaseRepository {
             if (result.changes > 0) inserted++;
           } catch (err) {
             // ON CONFLICT DO NOTHING won't throw — this catches real DB errors
-            console.warn('[createBatch] Row insert failed:', { id: data.id, error: String(err) });
+            log.warn('[createBatch] Row insert failed:', { id: data.id, error: String(err) });
           }
         }
       });

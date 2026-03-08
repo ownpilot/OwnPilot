@@ -61,7 +61,7 @@ import {
   EVENT_TOOLS,
   SOUL_COMMUNICATION_TOOLS,
   DYNAMIC_TOOL_DEFINITIONS,
-} from './agent-tools.js';
+} from '../tools/agent-tool-registry.js';
 import {
   NATIVE_PROVIDERS,
   agentCache,

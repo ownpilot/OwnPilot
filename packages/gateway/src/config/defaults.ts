@@ -142,8 +142,29 @@ export const MAX_DAYS_LOOKBACK = 365;
 // Pagination
 // ============================================================================
 
+/** Default page limit for list endpoints */
+export const PAGINATION_DEFAULT_LIMIT = 20;
+
+/** Maximum allowed page limit */
+export const PAGINATION_MAX_LIMIT = 100;
+
 /** Maximum offset for paginated queries */
 export const MAX_PAGINATION_OFFSET = 10_000;
+
+/** Maximum limit for skill search/featured endpoints */
+export const SKILLS_MAX_LIMIT = 50;
+
+/** Maximum limit for edge device command history */
+export const EDGE_COMMANDS_MAX_LIMIT = 200;
+
+/** Maximum limit for edge telemetry history */
+export const EDGE_TELEMETRY_MAX_LIMIT = 500;
+
+/** Maximum limit for channel message history fetch */
+export const CHANNEL_HISTORY_MAX_LIMIT = 50;
+
+/** Maximum limit for activity feed endpoints */
+export const ACTIVITY_MAX_LIMIT = 100;
 
 // ============================================================================
 // Agent Caches
