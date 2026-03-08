@@ -6,7 +6,18 @@
  */
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { AlertCircle, Check, X, Sparkles } from '../components/icons';
+import {
+  AlertCircle,
+  Check,
+  X,
+  Home,
+  Shuffle,
+  Brain,
+  Gauge,
+  DollarSign,
+  Shield,
+} from '../components/icons';
+import { PageHomeTab } from '../components/PageHomeTab';
 import { useToast } from '../components/ToastProvider';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import {
@@ -17,6 +28,13 @@ import {
   type RoutingProcess,
 } from '../api';
 import type { ModelInfo } from '../types';
+
+type TabId = 'home' | 'routing';
+
+const TAB_LABELS: Record<TabId, string> = {
+  home: 'Home',
+  routing: 'Routing',
+};
 
 const PROCESSES: Array<{
   id: RoutingProcess;
@@ -66,6 +84,7 @@ const emptyResolved: ResolvedRouting = {
 
 export function ModelRoutingPage() {
   const toast = useToast();
+  const [activeTab, setActiveTab] = useState<TabId>('home');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [models, setModels] = useState<ModelInfo[]>([]);
@@ -202,45 +221,122 @@ export function ModelRoutingPage() {
     [models, configuredProviders]
   );
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <LoadingSpinner size="md" />
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="p-6">
-        <div className="flex items-center gap-2 text-error">
-          <AlertCircle className="h-5 w-5" />
-          <span>{error}</span>
-        </div>
-      </div>
-    );
-  }
-
   const selectClasses =
     'w-full px-3 py-2 bg-bg-tertiary dark:bg-dark-bg-tertiary border border-border dark:border-dark-border rounded-lg text-text-primary dark:text-dark-text-primary text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 disabled:opacity-50 disabled:cursor-not-allowed';
 
   return (
-    <div className="mx-auto max-w-4xl space-y-6 p-6">
+    <div className="flex flex-col h-full">
       {/* Header */}
-      <div>
-        <div className="flex items-center gap-3">
-          <Sparkles className="h-6 w-6 text-primary" />
-          <h1 className="text-2xl font-semibold text-text-primary dark:text-dark-text-primary">
+      <header className="flex items-center justify-between px-6 py-4 border-b border-border dark:border-dark-border">
+        <div>
+          <h2 className="text-lg font-semibold text-text-primary dark:text-dark-text-primary">
             Model Routing
-          </h1>
+          </h2>
+          <p className="text-sm text-text-muted dark:text-dark-text-muted">
+            Configure which AI provider and model each process uses. Processes without specific
+            configuration use the global default. Optionally set a fallback model for automatic
+            failover.
+          </p>
         </div>
-        <p className="mt-2 text-sm text-text-muted dark:text-dark-text-muted">
-          Configure which AI provider and model each process uses. Processes without specific
-          configuration use the global default. Optionally set a fallback model for automatic
-          failover.
-        </p>
+      </header>
+
+      {/* Tab bar */}
+      <div className="flex border-b border-border dark:border-dark-border px-6">
+        {(['home', 'routing'] as TabId[]).map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px ${
+              activeTab === tab
+                ? 'border-primary text-primary'
+                : 'border-transparent text-text-muted dark:text-dark-text-muted hover:text-text-secondary dark:hover:text-dark-text-secondary hover:border-border dark:hover:border-dark-border'
+            }`}
+          >
+            {tab === 'home' && <Home className="w-3.5 h-3.5" />}
+            {TAB_LABELS[tab]}
+          </button>
+        ))}
       </div>
 
+      {/* Home tab */}
+      {activeTab === 'home' && (
+        <div className="flex-1 overflow-y-auto">
+          <PageHomeTab
+            heroIcons={[
+              { icon: Shuffle, color: 'text-primary bg-primary/10' },
+              { icon: Brain, color: 'text-violet-500 bg-violet-500/10' },
+              { icon: Gauge, color: 'text-emerald-500 bg-emerald-500/10' },
+            ]}
+            title="Smart Model Routing"
+            subtitle="Route AI requests to the right model based on task complexity, cost limits, or custom rules. Optimize for speed, quality, or budget."
+            cta={{ label: 'View Routes', icon: Shuffle, onClick: () => setActiveTab('routing') }}
+            features={[
+              {
+                icon: Shuffle,
+                color: 'text-blue-500 bg-blue-500/10',
+                title: 'Rule-Based Routing',
+                description:
+                  'Route each process to a specific provider and model, or let it fall back to the global default.',
+              },
+              {
+                icon: DollarSign,
+                color: 'text-purple-500 bg-purple-500/10',
+                title: 'Cost Optimization',
+                description:
+                  'Assign cheaper models to simple tasks and reserve powerful models for complex reasoning.',
+              },
+              {
+                icon: Shield,
+                color: 'text-emerald-500 bg-emerald-500/10',
+                title: 'Fallback Chains',
+                description:
+                  'Set a fallback provider and model for automatic failover when the primary is unavailable.',
+              },
+              {
+                icon: Gauge,
+                color: 'text-orange-500 bg-orange-500/10',
+                title: 'Performance Metrics',
+                description:
+                  'See which provider and model each process resolves to — process-level or global default.',
+              },
+            ]}
+            steps={[
+              { title: 'Define routing rules', detail: 'Choose a provider and model for each process — chat, channels, pulse, subagents.' },
+              { title: 'Set model preferences', detail: 'Pick from your configured providers and their available models.' },
+              { title: 'Configure fallbacks', detail: 'Add a fallback provider and model for automatic failover.' },
+              { title: 'Monitor performance', detail: 'Check the effective routing for each process and adjust as needed.' },
+            ]}
+            quickActions={[
+              {
+                icon: Shuffle,
+                label: 'Manage Routes',
+                description: 'Configure provider and model routing per process',
+                onClick: () => setActiveTab('routing'),
+              },
+            ]}
+          />
+        </div>
+      )}
+
+      {/* Routing tab content */}
+      {activeTab === 'routing' && isLoading && (
+        <div className="flex items-center justify-center py-20">
+          <LoadingSpinner size="md" />
+        </div>
+      )}
+
+      {activeTab === 'routing' && !isLoading && error && (
+        <div className="p-6">
+          <div className="flex items-center gap-2 text-error">
+            <AlertCircle className="h-5 w-5" />
+            <span>{error}</span>
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'routing' && !isLoading && !error && (
+      <div className="flex-1 overflow-y-auto">
+      <div className="mx-auto max-w-4xl space-y-6 p-6">
       {/* Process Cards */}
       {PROCESSES.map((proc) => {
         const state = states[proc.id];
@@ -391,6 +487,9 @@ export function ModelRoutingPage() {
           </div>
         );
       })}
+      </div>
+      </div>
+      )}
     </div>
   );
 }

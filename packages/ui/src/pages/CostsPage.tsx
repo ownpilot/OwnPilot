@@ -4,7 +4,15 @@ import { costsApi } from '../api';
 import type { CostSummary, BudgetStatus, ProviderBreakdown, DailyUsage } from '../api';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { useToast } from '../components/ToastProvider';
-import { DollarSign } from '../components/icons';
+import {
+  DollarSign,
+  Home,
+  BarChart,
+  TrendingUp,
+  Calendar,
+  Layers,
+} from '../components/icons';
+import { PageHomeTab } from '../components/PageHomeTab';
 
 type Period = 'day' | 'week' | 'month' | 'year';
 
@@ -19,7 +27,9 @@ export function CostsPage() {
   } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'overview' | 'breakdown' | 'budget'>('overview');
+  const [activeTab, setActiveTab] = useState<'home' | 'overview' | 'breakdown' | 'budget'>(
+    'home'
+  );
 
   // Budget form state
   const [dailyLimit, setDailyLimit] = useState<string>('');
@@ -79,12 +89,14 @@ export function CostsPage() {
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-border dark:border-dark-border">
-        <div className="flex items-center gap-3">
-          <DollarSign className="w-6 h-6 text-success" />
-          <h1 className="text-xl font-semibold text-text-primary dark:text-dark-text-primary">
+      <header className="flex items-center justify-between px-6 py-4 border-b border-border dark:border-dark-border">
+        <div>
+          <h2 className="text-lg font-semibold text-text-primary dark:text-dark-text-primary">
             Cost Dashboard
-          </h1>
+          </h2>
+          <p className="text-sm text-text-muted dark:text-dark-text-muted">
+            AI usage costs and budget tracking
+          </p>
         </div>
 
         {/* Period Selector */}
@@ -103,30 +115,114 @@ export function CostsPage() {
             </button>
           ))}
         </div>
-      </div>
+      </header>
 
       {/* Tabs */}
-      <div className="flex gap-1 p-2 border-b border-border dark:border-dark-border">
-        {(['overview', 'breakdown', 'budget'] as const).map((tab) => (
+      <div className="flex border-b border-border dark:border-dark-border px-6">
+        {(['home', 'overview', 'breakdown', 'budget'] as const).map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
-            className={`px-4 py-2 text-sm rounded-lg transition-colors ${
+            className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px ${
               activeTab === tab
-                ? 'bg-bg-tertiary dark:bg-dark-bg-tertiary text-text-primary dark:text-dark-text-primary'
-                : 'text-text-secondary dark:text-dark-text-secondary hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary'
+                ? 'border-primary text-primary'
+                : 'border-transparent text-text-muted dark:text-dark-text-muted hover:text-text-secondary dark:hover:text-dark-text-secondary hover:border-border dark:hover:border-dark-border'
             }`}
           >
+            {tab === 'home' && <Home className="w-3.5 h-3.5" />}
             {tab.charAt(0).toUpperCase() + tab.slice(1)}
           </button>
         ))}
       </div>
 
-      {/* Content */}
-      <div className="flex-1 overflow-auto p-4 animate-fade-in-up">
-        {error && <div className="mb-4 p-3 bg-error/10 text-error rounded-lg">{error}</div>}
+      {/* Home tab */}
+      {activeTab === 'home' && (
+        <div className="flex-1 overflow-auto p-4">
+          <PageHomeTab
+            heroIcons={[
+              { icon: DollarSign, color: 'text-primary bg-primary/10' },
+              { icon: BarChart, color: 'text-emerald-500 bg-emerald-500/10' },
+              { icon: TrendingUp, color: 'text-violet-500 bg-violet-500/10' },
+            ]}
+            title="Track Your AI Spending"
+            subtitle="Monitor API usage costs across all providers — daily breakdowns, monthly trends, and spending alerts."
+            cta={{
+              label: 'View Daily Costs',
+              icon: Calendar,
+              onClick: () => setActiveTab('overview'),
+            }}
+            features={[
+              {
+                icon: Calendar,
+                color: 'text-primary bg-primary/10',
+                title: 'Daily Breakdown',
+                description:
+                  'See exactly how much you spend each day across all AI providers and models.',
+              },
+              {
+                icon: BarChart,
+                color: 'text-emerald-500 bg-emerald-500/10',
+                title: 'Monthly Overview',
+                description:
+                  'Track monthly spending trends and compare usage across billing periods.',
+              },
+              {
+                icon: Layers,
+                color: 'text-orange-500 bg-orange-500/10',
+                title: 'Provider Costs',
+                description:
+                  'Break down costs by provider to understand where your budget goes.',
+              },
+              {
+                icon: TrendingUp,
+                color: 'text-violet-500 bg-violet-500/10',
+                title: 'Usage Analytics',
+                description:
+                  'Analyze token usage patterns and identify opportunities to optimize costs.',
+              },
+            ]}
+            steps={[
+              {
+                title: 'Connect providers',
+                detail: 'Add your API keys for each AI provider you use.',
+              },
+              {
+                title: 'View cost dashboard',
+                detail: 'Monitor real-time spending across all connected providers.',
+              },
+              {
+                title: 'Set budget alerts',
+                detail: 'Configure daily, weekly, and monthly spending limits.',
+              },
+              {
+                title: 'Optimize usage',
+                detail: 'Use analytics to reduce costs without sacrificing quality.',
+              },
+            ]}
+            quickActions={[
+              {
+                icon: Calendar,
+                label: 'Daily View',
+                description: 'View daily cost breakdown',
+                onClick: () => setActiveTab('overview'),
+              },
+              {
+                icon: BarChart,
+                label: 'Monthly View',
+                description: 'View monthly cost trends',
+                onClick: () => setActiveTab('breakdown'),
+              },
+            ]}
+          />
+        </div>
+      )}
 
-        {activeTab === 'overview' && summary && (
+      {/* Content */}
+      {activeTab !== 'home' && (
+        <div className="flex-1 overflow-auto p-4 animate-fade-in-up">
+          {error && <div className="mb-4 p-3 bg-error/10 text-error rounded-lg">{error}</div>}
+
+          {activeTab === 'overview' && summary && (
           <div className="space-y-6">
             {/* Summary Cards */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -360,6 +456,7 @@ export function CostsPage() {
           </div>
         )}
       </div>
+      )}
     </div>
   );
 }

@@ -1,13 +1,29 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useGateway } from '../hooks/useWebSocket';
 import { memoriesApi } from '../api';
 import type { Memory } from '../api';
-import { Brain, Plus, Trash2, Search, Star, Filter } from '../components/icons';
+import {
+  Brain,
+  Plus,
+  Trash2,
+  Search,
+  Star,
+  Filter,
+  Sparkles,
+  Edit2,
+  Heart,
+  Home,
+} from '../components/icons';
 import { useDialog } from '../components/ConfirmDialog';
 import { useToast } from '../components/ToastProvider';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { EmptyState } from '../components/EmptyState';
 import { useDebouncedValue, useModalClose, useDebouncedCallback } from '../hooks';
+import { PageHomeTab } from '../components/PageHomeTab';
+
+type TabId = 'home' | 'memories';
+const TAB_LABELS: Record<TabId, string> = { home: 'Home', memories: 'Memories' };
 
 const typeColors = {
   fact: 'bg-blue-500/10 text-blue-500',
@@ -24,6 +40,10 @@ const typeLabels = {
 };
 
 export function MemoriesPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab = (searchParams.get('tab') as TabId) || 'home';
+  const setActiveTab = (t: TabId) => setSearchParams(t === 'home' ? {} : { tab: t });
+
   const { confirm } = useDialog();
   const toast = useToast();
   const { subscribe } = useGateway();
@@ -124,6 +144,50 @@ export function MemoriesPage() {
         </button>
       </header>
 
+      {/* URL-based tabs */}
+      <div className="flex border-b border-border dark:border-dark-border px-6">
+        {(['home', 'memories'] as TabId[]).map((t) => (
+          <button key={t} onClick={() => setActiveTab(t)}
+            className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px ${
+              activeTab === t ? 'border-primary text-primary'
+                : 'border-transparent text-text-muted dark:text-dark-text-muted hover:text-text-secondary dark:hover:text-dark-text-secondary hover:border-border dark:hover:border-dark-border'
+            }`}>
+            {t === 'home' && <Home className="w-3.5 h-3.5" />}
+            {TAB_LABELS[t]}
+          </button>
+        ))}
+      </div>
+
+      {/* Home Tab */}
+      {activeTab === 'home' && (
+        <div className="flex-1 overflow-y-auto p-6">
+          <PageHomeTab
+            heroIcons={[
+              { icon: Brain, color: 'text-primary bg-primary/10' },
+              { icon: Heart, color: 'text-violet-500 bg-violet-500/10' },
+              { icon: Search, color: 'text-emerald-500 bg-emerald-500/10' },
+            ]}
+            title="Your AI's Long-Term Memory"
+            subtitle="Memories let your AI remember facts, preferences, and context across conversations — so it gets better over time."
+            cta={{ label: 'View Memories', icon: Brain, onClick: () => setActiveTab('memories') }}
+            features={[
+              { icon: Sparkles, color: 'text-amber-500 bg-amber-500/10', title: 'Auto-Capture', description: 'The AI automatically identifies and saves important facts from conversations.' },
+              { icon: Edit2, color: 'text-blue-500 bg-blue-500/10', title: 'Manual Memories', description: 'Add your own memories manually for things the AI should know.' },
+              { icon: Heart, color: 'text-pink-500 bg-pink-500/10', title: 'Favorites', description: 'Mark important memories as favorites for quick access.' },
+              { icon: Search, color: 'text-green-500 bg-green-500/10', title: 'Semantic Search', description: 'Find memories using natural language — not just keyword matching.' },
+            ]}
+            steps={[
+              { title: 'AI captures key facts automatically', detail: 'During conversations, the AI identifies important information and saves it as memories.' },
+              { title: 'Review saved memories', detail: 'Browse all captured memories, edit them, or remove ones that are no longer relevant.' },
+              { title: 'Mark important ones as favorites', detail: 'Star key memories so they are prioritized in future conversations.' },
+              { title: 'AI recalls them in future conversations', detail: 'The AI uses stored memories to provide more personalized and contextual responses.' },
+            ]}
+          />
+        </div>
+      )}
+
+      {/* Memories Tab */}
+      {activeTab === 'memories' && (<>
       {/* Search and Filters */}
       <div className="flex gap-4 px-6 py-3 border-b border-border dark:border-dark-border">
         <form onSubmit={handleSearch} className="flex-1 flex gap-2">
@@ -190,6 +254,7 @@ export function MemoriesPage() {
           </div>
         )}
       </div>
+      </>)}
 
       {/* Create/Edit Modal */}
       {(showCreateModal || editingMemory) && (

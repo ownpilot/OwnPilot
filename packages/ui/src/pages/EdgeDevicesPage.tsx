@@ -11,10 +11,31 @@ import { RegisterDeviceModal } from '../components/RegisterDeviceModal';
 import { DeviceDetailDrawer } from '../components/DeviceDetailDrawer';
 import { EdgeDevicesOnboarding } from '../components/EdgeDevicesOnboarding';
 import { SkeletonCard } from '../components/Skeleton';
-import { Cpu, Globe, Power, Circle, Search, RefreshCw, Plus } from '../components/icons';
+import {
+  Cpu,
+  Globe,
+  Power,
+  Circle,
+  Search,
+  RefreshCw,
+  Plus,
+  Home,
+  Wifi,
+  Brain,
+  Activity,
+  Zap,
+} from '../components/icons';
+import { PageHomeTab } from '../components/PageHomeTab';
 import { edgeApi } from '../api/endpoints/edge';
 import type { EdgeDevice, EdgeDeviceType, EdgeDeviceStatus } from '../api/endpoints/edge';
 import { useGateway } from '../hooks/useWebSocket';
+
+type PageTabId = 'home' | 'devices';
+
+const PAGE_TAB_LABELS: Record<PageTabId, string> = {
+  home: 'Home',
+  devices: 'Devices',
+};
 
 // =============================================================================
 // Filter tabs
@@ -42,7 +63,8 @@ const FILTER_TABS: FilterTab[] = [
 
 export function EdgeDevicesPage() {
   const { subscribe } = useGateway();
-  const [activeTab, setActiveTab] = useState('all');
+  const [pageTab, setPageTab] = useState<PageTabId>('home');
+  const [filterTab, setFilterTab] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [searchInput, setSearchInput] = useState('');
   const [devices, setDevices] = useState<EdgeDevice[]>([]);
@@ -53,7 +75,7 @@ export function EdgeDevicesPage() {
   const [selectedDevice, setSelectedDevice] = useState<EdgeDevice | null>(null);
 
   const fetchDevices = useCallback(async () => {
-    const filter = FILTER_TABS.find((t) => t.key === activeTab)?.filter ?? {};
+    const filter = FILTER_TABS.find((t) => t.key === filterTab)?.filter ?? {};
     try {
       const data = await edgeApi.list({
         ...filter,
@@ -67,7 +89,7 @@ export function EdgeDevicesPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [activeTab, searchQuery]);
+  }, [filterTab, searchQuery]);
 
   const fetchMqttStatus = useCallback(async () => {
     try {
@@ -180,75 +202,157 @@ export function EdgeDevicesPage() {
         </div>
       </header>
 
-      {/* Filter tabs + search */}
-      <div className="px-6 py-3 border-b border-border dark:border-dark-border flex flex-wrap items-center gap-3">
-        <div className="flex gap-1 flex-wrap">
-          {FILTER_TABS.map((tab) => {
-            const Icon = tab.icon;
-            const isActive = activeTab === tab.key;
-            return (
-              <button
-                key={tab.key}
-                onClick={() => setActiveTab(tab.key)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                  isActive
-                    ? 'bg-primary text-white'
-                    : 'text-text-secondary dark:text-dark-text-secondary hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary'
-                }`}
-              >
-                <Icon className="w-3.5 h-3.5" />
-                {tab.label}
-              </button>
-            );
-          })}
-        </div>
+      {/* Page tab bar */}
+      <div className="flex border-b border-border dark:border-dark-border px-6">
+        {(['home', 'devices'] as PageTabId[]).map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setPageTab(tab)}
+            className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px ${
+              pageTab === tab
+                ? 'border-primary text-primary'
+                : 'border-transparent text-text-muted dark:text-dark-text-muted hover:text-text-secondary dark:hover:text-dark-text-secondary hover:border-border dark:hover:border-dark-border'
+            }`}
+          >
+            {tab === 'home' && <Home className="w-3.5 h-3.5" />}
+            {PAGE_TAB_LABELS[tab]}
+          </button>
+        ))}
+      </div>
 
-        <div className="relative ml-auto">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-text-muted" />
-          <input
-            type="text"
-            placeholder="Search devices..."
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
-            className="pl-8 pr-3 py-1.5 text-xs border border-border dark:border-dark-border rounded-lg bg-bg-primary dark:bg-dark-bg-primary text-text-primary dark:text-dark-text-primary w-48 focus:outline-none focus:ring-1 focus:ring-primary"
+      {/* Home tab */}
+      {pageTab === 'home' && (
+        <div className="flex-1 overflow-y-auto">
+          <PageHomeTab
+            heroIcons={[
+              { icon: Wifi, color: 'text-primary bg-primary/10' },
+              { icon: Cpu, color: 'text-orange-500 bg-orange-500/10' },
+              { icon: Brain, color: 'text-violet-500 bg-violet-500/10' },
+            ]}
+            title="Connect Physical Devices to Your AI"
+            subtitle="Stream sensor data from IoT hardware into OwnPilot over MQTT, then query, analyze, and control devices using natural language."
+            cta={{ label: 'View Devices', icon: Wifi, onClick: () => setPageTab('devices') }}
+            features={[
+              {
+                icon: Wifi,
+                color: 'text-blue-500 bg-blue-500/10',
+                title: 'MQTT Protocol',
+                description:
+                  'Connect devices over the standard MQTT protocol with automatic topic management and QoS.',
+              },
+              {
+                icon: Activity,
+                color: 'text-purple-500 bg-purple-500/10',
+                title: 'Sensor Data',
+                description:
+                  'Stream temperature, humidity, motion, and any custom sensor readings in real time.',
+              },
+              {
+                icon: Zap,
+                color: 'text-emerald-500 bg-emerald-500/10',
+                title: 'Remote Control',
+                description:
+                  'Send commands to your devices — toggle relays, update settings, trigger actions remotely.',
+              },
+              {
+                icon: Brain,
+                color: 'text-orange-500 bg-orange-500/10',
+                title: 'AI Integration',
+                description:
+                  'Let your AI assistant query sensor data, detect anomalies, and control devices via natural language.',
+              },
+            ]}
+            steps={[
+              { title: 'Set up MQTT broker', detail: 'Configure your Mosquitto or other MQTT broker and connect it to OwnPilot.' },
+              { title: 'Register your device', detail: 'Add a new device with its type, capabilities, and MQTT topic.' },
+              { title: 'Flash client code', detail: 'Upload the OwnPilot client library to your microcontroller or SBC.' },
+              { title: 'Watch data flow in', detail: 'See live sensor readings and control your device from the dashboard.' },
+            ]}
+            quickActions={[
+              {
+                icon: Cpu,
+                label: 'Manage Devices',
+                description: 'View, register, and monitor your connected devices',
+                onClick: () => setPageTab('devices'),
+              },
+            ]}
           />
         </div>
-      </div>
+      )}
+
+      {/* Filter tabs + search */}
+      {pageTab === 'devices' && (
+        <div className="px-6 py-3 border-b border-border dark:border-dark-border flex flex-wrap items-center gap-3">
+          <div className="flex gap-1 flex-wrap">
+            {FILTER_TABS.map((tab) => {
+              const Icon = tab.icon;
+              const isActive = filterTab === tab.key;
+              return (
+                <button
+                  key={tab.key}
+                  onClick={() => setFilterTab(tab.key)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                    isActive
+                      ? 'bg-primary text-white'
+                      : 'text-text-secondary dark:text-dark-text-secondary hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary'
+                  }`}
+                >
+                  <Icon className="w-3.5 h-3.5" />
+                  {tab.label}
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="relative ml-auto">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-text-muted" />
+            <input
+              type="text"
+              placeholder="Search devices..."
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              className="pl-8 pr-3 py-1.5 text-xs border border-border dark:border-dark-border rounded-lg bg-bg-primary dark:bg-dark-bg-primary text-text-primary dark:text-dark-text-primary w-48 focus:outline-none focus:ring-1 focus:ring-primary"
+            />
+          </div>
+        </div>
+      )}
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto p-6">
-        {isLoading ? (
-          <div className="grid gap-4 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
-            <SkeletonCard count={6} />
-          </div>
-        ) : devices.length === 0 ? (
-          searchQuery ? (
-            <div className="flex flex-col items-center justify-center py-16 text-center gap-2">
-              <Cpu className="w-8 h-8 text-text-muted" />
-              <p className="text-sm font-medium text-text-primary dark:text-dark-text-primary">
-                No devices match your search
-              </p>
-              <p className="text-xs text-text-muted dark:text-dark-text-muted">
-                Try a different name or clear the filter.
-              </p>
+      {pageTab === 'devices' && (
+        <div className="flex-1 overflow-y-auto p-6">
+          {isLoading ? (
+            <div className="grid gap-4 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
+              <SkeletonCard count={6} />
             </div>
+          ) : devices.length === 0 ? (
+            searchQuery ? (
+              <div className="flex flex-col items-center justify-center py-16 text-center gap-2">
+                <Cpu className="w-8 h-8 text-text-muted" />
+                <p className="text-sm font-medium text-text-primary dark:text-dark-text-primary">
+                  No devices match your search
+                </p>
+                <p className="text-xs text-text-muted dark:text-dark-text-muted">
+                  Try a different name or clear the filter.
+                </p>
+              </div>
+            ) : (
+              <EdgeDevicesOnboarding onRegister={() => setShowRegister(true)} />
+            )
           ) : (
-            <EdgeDevicesOnboarding onRegister={() => setShowRegister(true)} />
-          )
-        ) : (
-          <div className="grid gap-4 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
-            {devices.map((device) => (
-              <DeviceCard
-                key={device.id}
-                device={device}
-                onDelete={handleDelete}
-                onUpdate={handleUpdate}
-                onClick={() => setSelectedDevice(device)}
-              />
-            ))}
-          </div>
-        )}
-      </div>
+            <div className="grid gap-4 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
+              {devices.map((device) => (
+                <DeviceCard
+                  key={device.id}
+                  device={device}
+                  onDelete={handleDelete}
+                  onUpdate={handleUpdate}
+                  onClick={() => setSelectedDevice(device)}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Modals */}
       {showRegister && (

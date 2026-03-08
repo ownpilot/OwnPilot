@@ -1,6 +1,19 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useGateway } from '../hooks/useWebSocket';
-import { Users, Plus, Trash2, Phone, Mail, Building, Star, Search } from '../components/icons';
+import {
+  Users,
+  Plus,
+  Trash2,
+  Phone,
+  Mail,
+  Building,
+  Star,
+  Search,
+  Bot,
+  Download,
+  Home,
+} from '../components/icons';
 import { useDialog } from '../components/ConfirmDialog';
 import { useToast } from '../components/ToastProvider';
 import { SkeletonCard } from '../components/Skeleton';
@@ -9,8 +22,11 @@ import { useDebouncedValue, useModalClose, useDebouncedCallback } from '../hooks
 import { useAnimatedList } from '../hooks/useAnimatedList';
 import { contactsApi } from '../api';
 import type { Contact } from '../api';
+import { PageHomeTab } from '../components/PageHomeTab';
 
 export function ContactsPage() {
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const { confirm } = useDialog();
   const toast = useToast();
   const { subscribe } = useGateway();
@@ -22,6 +38,18 @@ export function ContactsPage() {
   const [editingContact, setEditingContact] = useState<Contact | null>(null);
   const [filter, setFilter] = useState<'all' | 'favorites'>('all');
   const { animatedItems, handleDelete: animatedDelete } = useAnimatedList(contacts);
+
+  type TabId = 'home' | 'contacts';
+  const TAB_LABELS: Record<TabId, string> = { home: 'Home', contacts: 'Contacts' };
+
+  const tabParam = searchParams.get('tab') as TabId | null;
+  const activeTab: TabId =
+    tabParam && (['home', 'contacts'] as string[]).includes(tabParam) ? tabParam : 'home';
+  const setTab = (tab: TabId) => {
+    const params = new URLSearchParams(searchParams);
+    params.set('tab', tab);
+    navigate({ search: params.toString() }, { replace: true });
+  };
 
   const fetchContacts = useCallback(async () => {
     try {
@@ -134,78 +162,163 @@ export function ContactsPage() {
         </button>
       </header>
 
-      {/* Search and Filters */}
-      <div className="px-6 py-3 border-b border-border dark:border-dark-border space-y-3">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted dark:text-dark-text-muted" />
-          <input
-            type="text"
-            placeholder="Search contacts..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 bg-bg-tertiary dark:bg-dark-bg-tertiary border border-border dark:border-dark-border rounded-lg text-text-primary dark:text-dark-text-primary focus:outline-none focus:ring-2 focus:ring-primary/50"
-          />
-        </div>
-        <div className="flex gap-2">
-          {(['all', 'favorites'] as const).map((f) => (
-            <button
-              key={f}
-              onClick={() => setFilter(f)}
-              className={`px-3 py-1 text-sm rounded-full transition-colors ${
-                filter === f
-                  ? 'bg-primary text-white'
-                  : 'bg-bg-tertiary dark:bg-dark-bg-tertiary text-text-secondary dark:text-dark-text-secondary hover:bg-bg-secondary dark:hover:bg-dark-bg-secondary'
-              }`}
-            >
-              {f === 'all' ? 'All' : 'Favorites'}
-            </button>
-          ))}
-        </div>
+      {/* Tab Bar */}
+      <div className="flex border-b border-border dark:border-dark-border px-6">
+        {(['home', 'contacts'] as TabId[]).map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setTab(tab)}
+            className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px ${
+              activeTab === tab
+                ? 'border-primary text-primary'
+                : 'border-transparent text-text-muted dark:text-dark-text-muted hover:text-text-secondary dark:hover:text-dark-text-secondary hover:border-border dark:hover:border-dark-border'
+            }`}
+          >
+            {tab === 'home' && <Home className="w-3.5 h-3.5" />}
+            {TAB_LABELS[tab]}
+          </button>
+        ))}
       </div>
 
-      {/* Content */}
-      <div className="flex-1 overflow-y-auto p-6 animate-fade-in-up">
-        {isLoading ? (
-          <SkeletonCard count={5} />
-        ) : contacts.length === 0 ? (
-          <EmptyState
-            icon={Users}
-            title={searchQuery ? 'No contacts found' : 'No contacts yet'}
-            description={
-              searchQuery
-                ? 'Try a different search term.'
-                : 'Add your first contact to get started.'
-            }
-            action={
-              !searchQuery
-                ? { label: 'Add Contact', onClick: () => setShowCreateModal(true), icon: Plus }
-                : undefined
-            }
-          />
-        ) : (
-          <div className="space-y-6">
-            {sortedGroups.map(([letter, letterContacts]) => (
-              <div key={letter}>
-                <h4 className="text-sm font-medium text-text-muted dark:text-dark-text-muted mb-2 sticky top-0 bg-bg-primary dark:bg-dark-bg-primary py-1">
-                  {letter}
-                </h4>
-                <div className="space-y-2">
-                  {letterContacts.map((contact) => (
-                    <div key={contact.id} className={animClassMap.get(contact.id) || ''}>
-                      <ContactItem
-                        contact={contact}
-                        onEdit={() => setEditingContact(contact)}
-                        onDelete={() => handleDelete(contact.id)}
-                        onToggleFavorite={() => handleToggleFavorite(contact)}
-                      />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
+      {activeTab === 'home' && (
+        <PageHomeTab
+          heroIcons={[
+            { icon: Users, color: 'text-primary bg-primary/10' },
+            { icon: Phone, color: 'text-emerald-500 bg-emerald-500/10' },
+            { icon: Mail, color: 'text-violet-500 bg-violet-500/10' },
+          ]}
+          title="Your Contact Book"
+          subtitle="Store and manage contacts that your AI can reference — for emails, messages, calendar events, and reminders."
+          cta={{
+            label: 'Add Contact',
+            icon: Plus,
+            onClick: () => {
+              setTab('contacts');
+              setShowCreateModal(true);
+            },
+          }}
+          features={[
+            {
+              icon: Users,
+              color: 'text-primary bg-primary/10',
+              title: 'Contact Profiles',
+              description:
+                'Store names, emails, phones, companies, and notes for each contact.',
+            },
+            {
+              icon: Search,
+              color: 'text-emerald-500 bg-emerald-500/10',
+              title: 'Quick Lookup',
+              description: 'Instantly find contacts by name, company, or any detail.',
+            },
+            {
+              icon: Bot,
+              color: 'text-violet-500 bg-violet-500/10',
+              title: 'AI Integration',
+              description:
+                'Your AI can look up contacts when composing emails or scheduling meetings.',
+            },
+            {
+              icon: Download,
+              color: 'text-amber-500 bg-amber-500/10',
+              title: 'Import/Export',
+              description: 'Easily import contacts or export them for backup.',
+            },
+          ]}
+          steps={[
+            { title: 'Add your first contact', detail: 'Click "Add Contact" to create a new entry.' },
+            {
+              title: 'Fill in details',
+              detail: 'Add name, email, phone, company, and notes.',
+            },
+            {
+              title: 'Ask AI about a contact',
+              detail: 'Ask your assistant to find or reference a contact.',
+            },
+            {
+              title: 'Manage & organize',
+              detail: 'Mark favorites, search, and keep your contact book tidy.',
+            },
+          ]}
+        />
+      )}
+
+      {activeTab === 'contacts' && (
+        <>
+          {/* Search and Filters */}
+          <div className="px-6 py-3 border-b border-border dark:border-dark-border space-y-3">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted dark:text-dark-text-muted" />
+              <input
+                type="text"
+                placeholder="Search contacts..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 bg-bg-tertiary dark:bg-dark-bg-tertiary border border-border dark:border-dark-border rounded-lg text-text-primary dark:text-dark-text-primary focus:outline-none focus:ring-2 focus:ring-primary/50"
+              />
+            </div>
+            <div className="flex gap-2">
+              {(['all', 'favorites'] as const).map((f) => (
+                <button
+                  key={f}
+                  onClick={() => setFilter(f)}
+                  className={`px-3 py-1 text-sm rounded-full transition-colors ${
+                    filter === f
+                      ? 'bg-primary text-white'
+                      : 'bg-bg-tertiary dark:bg-dark-bg-tertiary text-text-secondary dark:text-dark-text-secondary hover:bg-bg-secondary dark:hover:bg-dark-bg-secondary'
+                  }`}
+                >
+                  {f === 'all' ? 'All' : 'Favorites'}
+                </button>
+              ))}
+            </div>
           </div>
-        )}
-      </div>
+
+          {/* Content */}
+          <div className="flex-1 overflow-y-auto p-6 animate-fade-in-up">
+            {isLoading ? (
+              <SkeletonCard count={5} />
+            ) : contacts.length === 0 ? (
+              <EmptyState
+                icon={Users}
+                title={searchQuery ? 'No contacts found' : 'No contacts yet'}
+                description={
+                  searchQuery
+                    ? 'Try a different search term.'
+                    : 'Add your first contact to get started.'
+                }
+                action={
+                  !searchQuery
+                    ? { label: 'Add Contact', onClick: () => setShowCreateModal(true), icon: Plus }
+                    : undefined
+                }
+              />
+            ) : (
+              <div className="space-y-6">
+                {sortedGroups.map(([letter, letterContacts]) => (
+                  <div key={letter}>
+                    <h4 className="text-sm font-medium text-text-muted dark:text-dark-text-muted mb-2 sticky top-0 bg-bg-primary dark:bg-dark-bg-primary py-1">
+                      {letter}
+                    </h4>
+                    <div className="space-y-2">
+                      {letterContacts.map((contact) => (
+                        <div key={contact.id} className={animClassMap.get(contact.id) || ''}>
+                          <ContactItem
+                            contact={contact}
+                            onEdit={() => setEditingContact(contact)}
+                            onDelete={() => handleDelete(contact.id)}
+                            onToggleFavorite={() => handleToggleFavorite(contact)}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </>
+      )}
 
       {/* Create/Edit Modal */}
       {(showCreateModal || editingContact) && (

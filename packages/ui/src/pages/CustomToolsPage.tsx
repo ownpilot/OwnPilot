@@ -1,11 +1,33 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { Wrench, Plus, Check, X, Trash, Play, Code } from '../components/icons';
+import {
+  Wrench,
+  Plus,
+  Check,
+  X,
+  Trash,
+  Play,
+  Code,
+  Home,
+  Sparkles,
+  Edit2,
+  Table,
+  Globe,
+  CheckCircle2,
+} from '../components/icons';
+import { PageHomeTab } from '../components/PageHomeTab';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { EmptyState } from '../components/EmptyState';
 import { useToast } from '../components/ToastProvider';
 import { useDebouncedValue, useModalClose } from '../hooks';
 import { customToolsApi } from '../api';
 import type { CustomTool, ToolStats, ToolStatus, ToolPermission } from '../types';
+
+type PageTabId = 'home' | 'tools';
+
+const PAGE_TAB_LABELS: Record<PageTabId, string> = {
+  home: 'Home',
+  tools: 'Tools',
+};
 
 const STATUS_COLORS: Record<ToolStatus, string> = {
   active: 'bg-green-500/10 text-green-600 dark:text-green-400',
@@ -33,6 +55,7 @@ const PERMISSION_LABELS: Record<ToolPermission, string> = {
 
 export function CustomToolsPage() {
   const toast = useToast();
+  const [pageTab, setPageTab] = useState<PageTabId>('home');
   const [tools, setTools] = useState<CustomTool[]>([]);
   const [stats, setStats] = useState<ToolStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -157,8 +180,86 @@ export function CustomToolsPage() {
         </div>
       </header>
 
+      {/* Tab bar */}
+      <div className="flex border-b border-border dark:border-dark-border px-6">
+        {(['home', 'tools'] as PageTabId[]).map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setPageTab(tab)}
+            className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px ${
+              pageTab === tab
+                ? 'border-primary text-primary'
+                : 'border-transparent text-text-muted dark:text-dark-text-muted hover:text-text-secondary dark:hover:text-dark-text-secondary hover:border-border dark:hover:border-dark-border'
+            }`}
+          >
+            {tab === 'home' && <Home className="w-3.5 h-3.5" />}
+            {PAGE_TAB_LABELS[tab]}
+          </button>
+        ))}
+      </div>
+
+      {/* Home tab */}
+      {pageTab === 'home' && (
+        <div className="flex-1 overflow-y-auto">
+          <PageHomeTab
+            heroIcons={[
+              { icon: Wrench, color: 'text-primary bg-primary/10' },
+              { icon: Code, color: 'text-emerald-500 bg-emerald-500/10' },
+              { icon: Sparkles, color: 'text-violet-500 bg-violet-500/10' },
+            ]}
+            title="Create Custom AI Tools"
+            subtitle="Build tools that your AI can call — from simple API wrappers to complex data processors. Define inputs, outputs, and execution logic."
+            cta={{ label: 'View Tools', icon: Wrench, onClick: () => setPageTab('tools') }}
+            features={[
+              {
+                icon: Edit2,
+                color: 'text-blue-500 bg-blue-500/10',
+                title: 'Visual Builder',
+                description:
+                  'Create tools with a guided form — name, description, parameters, and implementation code.',
+              },
+              {
+                icon: Table,
+                color: 'text-purple-500 bg-purple-500/10',
+                title: 'Input Schemas',
+                description:
+                  'Define typed input parameters with JSON Schema so the AI knows exactly what to pass.',
+              },
+              {
+                icon: Globe,
+                color: 'text-emerald-500 bg-emerald-500/10',
+                title: 'API Integration',
+                description:
+                  'Call external APIs, query databases, or interact with any service from your custom tool code.',
+              },
+              {
+                icon: CheckCircle2,
+                color: 'text-orange-500 bg-orange-500/10',
+                title: 'Auto-Approval',
+                description:
+                  'Tools can run automatically or require explicit user approval before each execution.',
+              },
+            ]}
+            steps={[
+              { title: 'Define tool name & description', detail: 'Give your tool a unique name and describe what it does for the AI.' },
+              { title: 'Set input parameters', detail: 'Define the JSON Schema for the arguments your tool accepts.' },
+              { title: 'Write execution logic', detail: 'Implement the tool in JavaScript — access arguments via the args object.' },
+              { title: 'Test & enable', detail: 'Run the tool with sample inputs, then enable it for AI use.' },
+            ]}
+            quickActions={[
+              {
+                icon: Wrench,
+                label: 'Manage Tools',
+                description: 'View, edit, and test your custom tools',
+                onClick: () => setPageTab('tools'),
+              },
+            ]}
+          />
+        </div>
+      )}
+
       {/* Stats Bar */}
-      {stats && (
+      {pageTab === 'tools' && stats && (
         <div className="px-6 py-3 bg-bg-secondary dark:bg-dark-bg-secondary border-b border-border dark:border-dark-border">
           <div className="flex items-center gap-6 text-sm">
             <div className="flex items-center gap-2">
@@ -187,37 +288,39 @@ export function CustomToolsPage() {
       )}
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto p-6 animate-fade-in-up">
-        {isLoading ? (
-          <LoadingSpinner message="Loading custom tools..." />
-        ) : filteredTools.length === 0 ? (
-          <EmptyState
-            icon={Code}
-            title={searchQuery ? 'No tools match your search' : 'No custom tools yet'}
-            description={
-              searchQuery
-                ? 'Try a different search term.'
-                : 'Create your first custom tool or let the AI create one for you.'
-            }
-            action={
-              !searchQuery
-                ? { label: 'Create Tool', onClick: () => setIsCreateModalOpen(true), icon: Plus }
-                : undefined
-            }
-          />
-        ) : (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {filteredTools.map((tool) => (
-              <ToolCard
-                key={tool.id}
-                tool={tool}
-                onClick={() => setSelectedTool(tool)}
-                onAction={handleAction}
-              />
-            ))}
-          </div>
-        )}
-      </div>
+      {pageTab === 'tools' && (
+        <div className="flex-1 overflow-y-auto p-6 animate-fade-in-up">
+          {isLoading ? (
+            <LoadingSpinner message="Loading custom tools..." />
+          ) : filteredTools.length === 0 ? (
+            <EmptyState
+              icon={Code}
+              title={searchQuery ? 'No tools match your search' : 'No custom tools yet'}
+              description={
+                searchQuery
+                  ? 'Try a different search term.'
+                  : 'Create your first custom tool or let the AI create one for you.'
+              }
+              action={
+                !searchQuery
+                  ? { label: 'Create Tool', onClick: () => setIsCreateModalOpen(true), icon: Plus }
+                  : undefined
+              }
+            />
+          ) : (
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {filteredTools.map((tool) => (
+                <ToolCard
+                  key={tool.id}
+                  tool={tool}
+                  onClick={() => setSelectedTool(tool)}
+                  onAction={handleAction}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Tool Detail Modal */}
       {selectedTool && (

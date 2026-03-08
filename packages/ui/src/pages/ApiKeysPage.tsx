@@ -1,10 +1,28 @@
 import { useState, useEffect } from 'react';
-import { Settings, Check, AlertCircle, ChevronDown, ChevronRight, Key } from '../components/icons';
+import { useSearchParams } from 'react-router-dom';
+import {
+  Settings,
+  Check,
+  AlertCircle,
+  ChevronDown,
+  ChevronRight,
+  Key,
+  Lock,
+  Shield,
+  BarChart,
+  RefreshCw,
+  Gauge,
+  Home,
+} from '../components/icons';
 import { useDialog } from '../components/ConfirmDialog';
 import { useToast } from '../components/ToastProvider';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { settingsApi, providersApi, modelsApi, localProvidersApi } from '../api';
 import type { ProviderConfig, LocalProviderInfo, ModelInfo } from '../types';
+import { PageHomeTab } from '../components/PageHomeTab';
+
+type TabId = 'home' | 'keys';
+const TAB_LABELS: Record<TabId, string> = { home: 'Home', keys: 'API Keys' };
 
 interface ProviderCategory {
   name: string;
@@ -15,6 +33,10 @@ interface ProviderCategory {
 const FALLBACK_PROVIDERS: ProviderConfig[] = [];
 
 export function ApiKeysPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab = (searchParams.get('tab') as TabId) || 'home';
+  const setActiveTab = (t: TabId) => setSearchParams(t === 'home' ? {} : { tab: t });
+
   const { confirm } = useDialog();
   const toast = useToast();
   const [apiKeys, setApiKeys] = useState<Record<string, string>>({});
@@ -393,15 +415,61 @@ export function ApiKeysPage() {
 
   return (
     <div className="flex flex-col h-full">
-      <header className="px-6 pt-4 pb-4 border-b border-border dark:border-dark-border">
-        <h2 className="text-lg font-semibold text-text-primary dark:text-dark-text-primary flex items-center gap-2">
-          <Key className="w-5 h-5" />
-          API Keys
-        </h2>
-        <p className="text-sm text-text-muted dark:text-dark-text-muted">
-          Configure API keys for 80+ AI providers
-        </p>
+      <header className="flex items-center justify-between px-6 py-4 border-b border-border dark:border-dark-border">
+        <div>
+          <h2 className="text-lg font-semibold text-text-primary dark:text-dark-text-primary">
+            API Keys
+          </h2>
+          <p className="text-sm text-text-muted dark:text-dark-text-muted">
+            Configure API keys for 80+ AI providers
+          </p>
+        </div>
       </header>
+
+      {/* URL-based tabs */}
+      <div className="flex border-b border-border dark:border-dark-border px-6">
+        {(['home', 'keys'] as TabId[]).map((t) => (
+          <button key={t} onClick={() => setActiveTab(t)}
+            className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px ${
+              activeTab === t ? 'border-primary text-primary'
+                : 'border-transparent text-text-muted dark:text-dark-text-muted hover:text-text-secondary dark:hover:text-dark-text-secondary hover:border-border dark:hover:border-dark-border'
+            }`}>
+            {t === 'home' && <Home className="w-3.5 h-3.5" />}
+            {TAB_LABELS[t]}
+          </button>
+        ))}
+      </div>
+
+      {/* Home Tab */}
+      {activeTab === 'home' && (
+        <div className="flex-1 overflow-y-auto p-6">
+          <PageHomeTab
+            heroIcons={[
+              { icon: Key, color: 'text-primary bg-primary/10' },
+              { icon: Lock, color: 'text-violet-500 bg-violet-500/10' },
+              { icon: Shield, color: 'text-emerald-500 bg-emerald-500/10' },
+            ]}
+            title="Manage API Keys"
+            subtitle="Create and manage API keys for programmatic access to your OwnPilot instance. Each key has scoped permissions and usage tracking."
+            cta={{ label: 'Manage Keys', icon: Key, onClick: () => setActiveTab('keys') }}
+            features={[
+              { icon: Lock, color: 'text-violet-500 bg-violet-500/10', title: 'Scoped Permissions', description: 'Each API key can be restricted to specific actions and resources.' },
+              { icon: BarChart, color: 'text-blue-500 bg-blue-500/10', title: 'Usage Tracking', description: 'Monitor how each key is being used with detailed analytics.' },
+              { icon: RefreshCw, color: 'text-green-500 bg-green-500/10', title: 'Key Rotation', description: 'Rotate keys regularly to maintain security best practices.' },
+              { icon: Gauge, color: 'text-amber-500 bg-amber-500/10', title: 'Rate Limiting', description: 'Set per-key rate limits to prevent abuse and control costs.' },
+            ]}
+            steps={[
+              { title: 'Generate a new key', detail: 'Create an API key with a descriptive name for easy identification.' },
+              { title: 'Set permission scope', detail: 'Choose which APIs and resources the key can access.' },
+              { title: 'Use in your applications', detail: 'Add the key to your application headers for authenticated requests.' },
+              { title: 'Monitor usage & rotate', detail: 'Track usage patterns and rotate keys periodically for security.' },
+            ]}
+          />
+        </div>
+      )}
+
+      {/* Keys Tab */}
+      {activeTab === 'keys' && (
       <div className="flex-1 overflow-y-auto p-6">
         {isLoading ? (
           <LoadingSpinner message="Loading settings..." />
@@ -581,6 +649,7 @@ export function ApiKeysPage() {
           </div>
         )}
       </div>
+      )}
     </div>
   );
 }

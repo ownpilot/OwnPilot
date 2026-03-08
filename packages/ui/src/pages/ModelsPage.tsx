@@ -5,6 +5,7 @@
  */
 
 import { useState, useEffect } from 'react';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { formatNumber as formatNumberBase } from '../utils/formatters';
 import {
   Cpu,
@@ -15,9 +16,18 @@ import {
   Eye,
   Code,
   MessageSquare,
+  Brain,
+  Sparkles,
+  Gauge,
+  Layers,
+  BarChart,
+  DollarSign,
+  Maximize2,
+  Home,
 } from '../components/icons';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { modelsApi, providersApi } from '../api';
+import { PageHomeTab } from '../components/PageHomeTab';
 
 interface ModelInfo {
   id: string;
@@ -59,6 +69,21 @@ function formatPrice(price: number): string {
 }
 
 export function ModelsPage() {
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+
+  type TabId = 'home' | 'models';
+  const TAB_LABELS: Record<TabId, string> = { home: 'Home', models: 'Models' };
+
+  const tabParam = searchParams.get('tab') as TabId | null;
+  const activeTab: TabId =
+    tabParam && (['home', 'models'] as string[]).includes(tabParam) ? tabParam : 'home';
+  const setTab = (tab: TabId) => {
+    const params = new URLSearchParams(searchParams);
+    params.set('tab', tab);
+    navigate({ search: params.toString() }, { replace: true });
+  };
+
   const [models, setModels] = useState<ModelInfo[]>([]);
   const [configuredProviders, setConfiguredProviders] = useState<string[]>([]);
   const [providerInfo, setProviderInfo] = useState<Record<string, ProviderInfo>>({});
@@ -142,98 +167,169 @@ export function ModelsPage() {
         </div>
       </header>
 
-      {/* Content */}
-      <div className="flex-1 overflow-y-auto p-6">
-        {isLoading ? (
-          <LoadingSpinner message="Loading models..." />
-        ) : error ? (
-          <div className="flex flex-col items-center justify-center h-full">
-            <AlertCircle className="w-16 h-16 text-error mb-4" />
-            <p className="text-text-primary dark:text-dark-text-primary">{error}</p>
-          </div>
-        ) : configuredProviders.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full">
-            <Cpu className="w-16 h-16 text-text-muted dark:text-dark-text-muted mb-4" />
-            <h3 className="text-xl font-medium text-text-primary dark:text-dark-text-primary mb-2">
-              No Providers Configured
-            </h3>
-            <p className="text-text-muted dark:text-dark-text-muted mb-4 text-center max-w-md">
-              Add your API keys in Settings to enable AI models from providers like OpenAI,
-              Anthropic, and more.
-            </p>
-            <a
-              href="/settings/api-keys"
-              className="px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg transition-colors"
-            >
-              Configure API Keys
-            </a>
-          </div>
-        ) : (
-          <div className="space-y-8">
-            {Object.entries(modelsByProvider).map(([provider, providerModels]) => {
-              const info = providerInfo[provider];
-              const isConfigured = configuredProviders.includes(provider);
-
-              return (
-                <section key={provider}>
-                  {/* Provider Header */}
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                      <div
-                        className="w-8 h-8 rounded-lg flex items-center justify-center"
-                        style={{ backgroundColor: `${info?.color ?? '#666'}20` }}
-                      >
-                        <Cpu className="w-4 h-4" style={{ color: info?.color ?? '#666' }} />
-                      </div>
-                      <div>
-                        <h3 className="font-medium text-text-primary dark:text-dark-text-primary flex items-center gap-2">
-                          {info?.name ?? provider}
-                          {isConfigured ? (
-                            info?.configSource === 'environment' ? (
-                              <span
-                                className="flex items-center gap-1 text-xs text-amber-500"
-                                title="API key set via environment variable"
-                              >
-                                <Check className="w-3 h-3" /> ENV
-                              </span>
-                            ) : (
-                              <span className="flex items-center gap-1 text-xs text-success">
-                                <Check className="w-3 h-3" /> Configured
-                              </span>
-                            )
-                          ) : (
-                            <span className="text-xs text-warning">Not configured</span>
-                          )}
-                        </h3>
-                        <p className="text-xs text-text-muted dark:text-dark-text-muted">
-                          {providerModels.length} model{providerModels.length !== 1 ? 's' : ''}
-                        </p>
-                      </div>
-                    </div>
-                    {info?.docsUrl && (
-                      <a
-                        href={info.docsUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-sm text-primary hover:underline flex items-center gap-1"
-                      >
-                        Documentation <ExternalLink className="w-3 h-3" />
-                      </a>
-                    )}
-                  </div>
-
-                  {/* Models Grid */}
-                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                    {providerModels.map((model) => (
-                      <ModelCard key={model.id} model={model} isConfigured={isConfigured} />
-                    ))}
-                  </div>
-                </section>
-              );
-            })}
-          </div>
-        )}
+      {/* Tab Bar */}
+      <div className="flex border-b border-border dark:border-dark-border px-6">
+        {(['home', 'models'] as TabId[]).map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setTab(tab)}
+            className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px ${
+              activeTab === tab
+                ? 'border-primary text-primary'
+                : 'border-transparent text-text-muted dark:text-dark-text-muted hover:text-text-secondary dark:hover:text-dark-text-secondary hover:border-border dark:hover:border-dark-border'
+            }`}
+          >
+            {tab === 'home' && <Home className="w-3.5 h-3.5" />}
+            {TAB_LABELS[tab]}
+          </button>
+        ))}
       </div>
+
+      {activeTab === 'home' && (
+        <PageHomeTab
+          heroIcons={[
+            { icon: Brain, color: 'text-primary bg-primary/10' },
+            { icon: Sparkles, color: 'text-violet-500 bg-violet-500/10' },
+            { icon: Gauge, color: 'text-emerald-500 bg-emerald-500/10' },
+          ]}
+          title="AI Model Library"
+          subtitle="Browse and manage available AI models across all providers — compare capabilities, costs, and context windows."
+          cta={{
+            label: 'Browse Models',
+            icon: Brain,
+            onClick: () => setTab('models'),
+          }}
+          features={[
+            {
+              icon: Layers,
+              color: 'text-primary bg-primary/10',
+              title: 'Provider Catalog',
+              description: 'See all models from every configured provider in one place.',
+            },
+            {
+              icon: BarChart,
+              color: 'text-emerald-500 bg-emerald-500/10',
+              title: 'Model Comparison',
+              description: 'Compare context windows, output limits, and capabilities side by side.',
+            },
+            {
+              icon: DollarSign,
+              color: 'text-violet-500 bg-violet-500/10',
+              title: 'Cost Info',
+              description: 'View input and output pricing per million tokens for each model.',
+            },
+            {
+              icon: Maximize2,
+              color: 'text-amber-500 bg-amber-500/10',
+              title: 'Context Windows',
+              description: 'Check how much context each model can handle for your use case.',
+            },
+          ]}
+          steps={[
+            { title: 'Browse available models', detail: 'Explore models from all configured providers.' },
+            { title: 'Compare capabilities', detail: 'Check context size, pricing, and features.' },
+            { title: 'Select for your agents', detail: 'Assign models to agents in the Agents page.' },
+            { title: 'Monitor usage', detail: 'Track token consumption and costs over time.' },
+          ]}
+        />
+      )}
+
+      {activeTab === 'models' && (
+        <>
+          {/* Content */}
+          <div className="flex-1 overflow-y-auto p-6">
+            {isLoading ? (
+              <LoadingSpinner message="Loading models..." />
+            ) : error ? (
+              <div className="flex flex-col items-center justify-center h-full">
+                <AlertCircle className="w-16 h-16 text-error mb-4" />
+                <p className="text-text-primary dark:text-dark-text-primary">{error}</p>
+              </div>
+            ) : configuredProviders.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-full">
+                <Cpu className="w-16 h-16 text-text-muted dark:text-dark-text-muted mb-4" />
+                <h3 className="text-xl font-medium text-text-primary dark:text-dark-text-primary mb-2">
+                  No Providers Configured
+                </h3>
+                <p className="text-text-muted dark:text-dark-text-muted mb-4 text-center max-w-md">
+                  Add your API keys in Settings to enable AI models from providers like OpenAI,
+                  Anthropic, and more.
+                </p>
+                <a
+                  href="/settings/api-keys"
+                  className="px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg transition-colors"
+                >
+                  Configure API Keys
+                </a>
+              </div>
+            ) : (
+              <div className="space-y-8">
+                {Object.entries(modelsByProvider).map(([provider, providerModels]) => {
+                  const info = providerInfo[provider];
+                  const isConfigured = configuredProviders.includes(provider);
+
+                  return (
+                    <section key={provider}>
+                      {/* Provider Header */}
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-3">
+                          <div
+                            className="w-8 h-8 rounded-lg flex items-center justify-center"
+                            style={{ backgroundColor: `${info?.color ?? '#666'}20` }}
+                          >
+                            <Cpu className="w-4 h-4" style={{ color: info?.color ?? '#666' }} />
+                          </div>
+                          <div>
+                            <h3 className="font-medium text-text-primary dark:text-dark-text-primary flex items-center gap-2">
+                              {info?.name ?? provider}
+                              {isConfigured ? (
+                                info?.configSource === 'environment' ? (
+                                  <span
+                                    className="flex items-center gap-1 text-xs text-amber-500"
+                                    title="API key set via environment variable"
+                                  >
+                                    <Check className="w-3 h-3" /> ENV
+                                  </span>
+                                ) : (
+                                  <span className="flex items-center gap-1 text-xs text-success">
+                                    <Check className="w-3 h-3" /> Configured
+                                  </span>
+                                )
+                              ) : (
+                                <span className="text-xs text-warning">Not configured</span>
+                              )}
+                            </h3>
+                            <p className="text-xs text-text-muted dark:text-dark-text-muted">
+                              {providerModels.length} model{providerModels.length !== 1 ? 's' : ''}
+                            </p>
+                          </div>
+                        </div>
+                        {info?.docsUrl && (
+                          <a
+                            href={info.docsUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-sm text-primary hover:underline flex items-center gap-1"
+                          >
+                            Documentation <ExternalLink className="w-3 h-3" />
+                          </a>
+                        )}
+                      </div>
+
+                      {/* Models Grid */}
+                      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                        {providerModels.map((model) => (
+                          <ModelCard key={model.id} model={model} isConfigured={isConfigured} />
+                        ))}
+                      </div>
+                    </section>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </>
+      )}
     </div>
   );
 }

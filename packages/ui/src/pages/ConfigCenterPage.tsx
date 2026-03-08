@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   Globe,
   Key,
@@ -10,13 +11,23 @@ import {
   Server,
   X,
   Edit2,
+  Settings,
+  Home,
 } from '../components/icons';
+import { PageHomeTab } from '../components/PageHomeTab';
 import { ConfigureServiceModal } from '../components/ConfigureServiceModal';
 import { useDialog } from '../components/ConfirmDialog';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { configServicesApi } from '../api';
 import { useToast } from '../components/ToastProvider';
 import type { ConfigEntryView, ConfigServiceView, ConfigServiceStats } from '../api';
+
+type TabId = 'home' | 'config';
+
+const TAB_LABELS: Record<TabId, string> = {
+  home: 'Home',
+  config: 'Configuration',
+};
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -52,6 +63,23 @@ function getCategoryColor(category: string): string {
 // ---------------------------------------------------------------------------
 
 export function ConfigCenterPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabParam = searchParams.get('tab') as TabId | null;
+  const [activeTab, setActiveTab] = useState<TabId>(tabParam || 'home');
+
+  useEffect(() => {
+    const urlTab = (searchParams.get('tab') as TabId | null) || 'home';
+    setActiveTab(urlTab);
+  }, [searchParams]);
+
+  const setTab = useCallback(
+    (tab: TabId) => {
+      setActiveTab(tab);
+      setSearchParams(tab === 'home' ? {} : { tab });
+    },
+    [setSearchParams]
+  );
+
   const { confirm } = useDialog();
   const toast = useToast();
 
@@ -433,7 +461,7 @@ export function ConfigCenterPage() {
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <header className="flex items-center justify-between px-6 pt-4 pb-4 border-b border-border dark:border-dark-border">
+      <header className="flex items-center justify-between px-6 py-4 border-b border-border dark:border-dark-border">
         <div>
           <h2 className="text-lg font-semibold text-text-primary dark:text-dark-text-primary">
             Config Center
@@ -451,6 +479,86 @@ export function ConfigCenterPage() {
         </button>
       </header>
 
+      {/* Tab Bar */}
+      <div className="flex border-b border-border dark:border-dark-border px-6">
+        {(['home', 'config'] as TabId[]).map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setTab(tab)}
+            className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px ${
+              activeTab === tab
+                ? 'border-primary text-primary'
+                : 'border-transparent text-text-muted dark:text-dark-text-muted hover:text-text-secondary dark:hover:text-dark-text-secondary hover:border-border dark:hover:border-dark-border'
+            }`}
+          >
+            {tab === 'home' && <Home className="w-3.5 h-3.5" />}
+            {TAB_LABELS[tab]}
+          </button>
+        ))}
+      </div>
+
+      {activeTab === 'home' && (
+        <PageHomeTab
+          heroIcons={[
+            { icon: Settings, color: 'text-primary bg-primary/10' },
+            { icon: Server, color: 'text-emerald-500 bg-emerald-500/10' },
+            { icon: Key, color: 'text-violet-500 bg-violet-500/10' },
+          ]}
+          title="API Service Configuration"
+          subtitle="Configure AI providers, API keys, and service endpoints — the central hub for connecting your AI to external services."
+          cta={{
+            label: 'Configure Services',
+            icon: Settings,
+            onClick: () => setTab('config'),
+          }}
+          features={[
+            {
+              icon: Server,
+              color: 'text-primary bg-primary/10',
+              title: 'Provider Setup',
+              description: 'Connect to AI providers and external services.',
+            },
+            {
+              icon: Key,
+              color: 'text-emerald-500 bg-emerald-500/10',
+              title: 'API Keys',
+              description: 'Securely manage API keys and credentials.',
+            },
+            {
+              icon: Globe,
+              color: 'text-violet-500 bg-violet-500/10',
+              title: 'Endpoint Config',
+              description: 'Configure custom endpoints and base URLs.',
+            },
+            {
+              icon: CheckCircle2,
+              color: 'text-amber-500 bg-amber-500/10',
+              title: 'Connection Test',
+              description: 'Verify service connectivity and credentials.',
+            },
+          ]}
+          steps={[
+            {
+              title: 'Choose a provider',
+              detail: 'Select from available AI and service providers.',
+            },
+            {
+              title: 'Enter API credentials',
+              detail: 'Provide your API key and configuration details.',
+            },
+            {
+              title: 'Test the connection',
+              detail: 'Verify the service is properly connected.',
+            },
+            {
+              title: 'Start using the service',
+              detail: 'Your AI can now use the configured service.',
+            },
+          ]}
+        />
+      )}
+
+      {activeTab === 'config' && (
       <div className="flex-1 overflow-y-auto p-6">
         {/* Error banner */}
         {error && (
@@ -587,6 +695,8 @@ export function ConfigCenterPage() {
           </>
         )}
       </div>
+
+      )}
 
       {/* Configure Modal */}
       {editingService && (

@@ -19,7 +19,13 @@ import {
   History,
   Copy,
   Code,
+  Home,
+  Target,
+  Star,
+  LayoutTemplate,
+  Sparkles,
 } from '../components/icons';
+import { PageHomeTab } from '../components/PageHomeTab';
 import { useDialog } from '../components/ConfirmDialog';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { EmptyState } from '../components/EmptyState';
@@ -56,10 +62,20 @@ const stepStatusIcons: Record<PlanStep['status'], typeof Circle> = {
   waiting: Clock,
 };
 
+type PlansTabId = 'home' | 'goals' | 'plans' | 'templates';
+
+const PLANS_TABS: { key: PlansTabId; label: string; icon: typeof Target }[] = [
+  { key: 'home', label: 'Home', icon: Home },
+  { key: 'goals', label: 'Goals', icon: Target },
+  { key: 'plans', label: 'Plans', icon: ListChecks },
+  { key: 'templates', label: 'Templates', icon: LayoutTemplate },
+];
+
 export function PlansPage() {
   const { confirm } = useDialog();
   const toast = useToast();
   const { subscribe } = useGateway();
+  const [activeTab, setActiveTab] = useState<PlansTabId>('home');
   const [plans, setPlans] = useState<Plan[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<Plan['status'] | 'all'>('all');
@@ -199,63 +215,177 @@ export function PlansPage() {
         </button>
       </header>
 
-      {/* Filters */}
-      <div className="flex gap-2 px-6 py-3 border-b border-border dark:border-dark-border overflow-x-auto">
-        {(['all', 'pending', 'running', 'paused', 'completed', 'failed', 'cancelled'] as const).map(
-          (status) => (
+      {/* Tab bar */}
+      <div className="flex border-b border-border dark:border-dark-border px-6">
+        {PLANS_TABS.map((tab) => {
+          const Icon = tab.icon;
+          const isActive = activeTab === tab.key;
+          return (
             <button
-              key={status}
-              onClick={() => setStatusFilter(status)}
-              className={`px-3 py-1 text-sm rounded-full transition-colors whitespace-nowrap ${
-                statusFilter === status
-                  ? 'bg-primary text-white'
-                  : 'bg-bg-tertiary dark:bg-dark-bg-tertiary text-text-secondary dark:text-dark-text-secondary hover:bg-bg-secondary dark:hover:bg-dark-bg-secondary'
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px ${
+                isActive
+                  ? 'border-primary text-primary'
+                  : 'border-transparent text-text-muted dark:text-dark-text-muted hover:text-text-secondary dark:hover:text-dark-text-secondary hover:border-border dark:hover:border-dark-border'
               }`}
             >
-              {status.charAt(0).toUpperCase() + status.slice(1)}
+              <Icon className="w-3.5 h-3.5" />
+              {tab.label}
             </button>
-          )
-        )}
+          );
+        })}
       </div>
 
-      {/* Content */}
-      <div className="flex-1 overflow-y-auto p-6 animate-fade-in-up">
-        {isLoading ? (
-          <LoadingSpinner message="Loading plans..." />
-        ) : plans.length === 0 ? (
-          <EmptyState
-            icon={ListChecks}
-            title="No plans yet"
-            description="Plans let the AI execute multi-step workflows autonomously."
-            action={{ label: 'Create Plan', onClick: () => setShowCreateModal(true), icon: Plus }}
+      {/* Home tab */}
+      {activeTab === 'home' && (
+        <div className="flex-1 overflow-y-auto p-6">
+          <PageHomeTab
+            heroIcons={[
+              { icon: Target, color: 'text-primary bg-primary/10' },
+              { icon: ListChecks, color: 'text-orange-500 bg-orange-500/10' },
+              { icon: Star, color: 'text-violet-500 bg-violet-500/10' },
+            ]}
+            title="Plan and Achieve Your Goals"
+            subtitle="Set personal goals, break them into actionable plans, and track progress — with AI-powered suggestions and templates."
+            cta={{
+              label: 'Set a Goal',
+              icon: Target,
+              onClick: () => setActiveTab('goals'),
+            }}
+            features={[
+              {
+                icon: Target,
+                color: 'text-primary bg-primary/10',
+                title: 'Goal Tracking',
+                description:
+                  'Define clear objectives and track your progress toward achieving them over time.',
+              },
+              {
+                icon: ListChecks,
+                color: 'text-orange-500 bg-orange-500/10',
+                title: 'Action Plans',
+                description:
+                  'Break goals into step-by-step plans that the AI can execute autonomously.',
+              },
+              {
+                icon: LayoutTemplate,
+                color: 'text-emerald-500 bg-emerald-500/10',
+                title: 'Templates',
+                description:
+                  'Start from proven plan templates for common workflows and objectives.',
+              },
+              {
+                icon: Sparkles,
+                color: 'text-violet-500 bg-violet-500/10',
+                title: 'AI Suggestions',
+                description:
+                  'Get intelligent recommendations for goals, steps, and optimizations.',
+              },
+            ]}
+            steps={[
+              {
+                title: 'Set a goal',
+                detail: 'Define what you want to achieve with a clear objective.',
+              },
+              {
+                title: 'Break into plans',
+                detail: 'Create actionable multi-step plans to reach your goal.',
+              },
+              {
+                title: 'Track daily progress',
+                detail: 'Monitor completion and adjust as needed.',
+              },
+              {
+                title: 'Review & adjust',
+                detail: 'Analyze results and refine your approach over time.',
+              },
+            ]}
+            quickActions={[
+              {
+                icon: Target,
+                label: 'View Goals',
+                description: 'Browse and manage your goals',
+                onClick: () => setActiveTab('goals'),
+              },
+              {
+                icon: ListChecks,
+                label: 'Browse Plans',
+                description: 'View all execution plans',
+                onClick: () => setActiveTab('plans'),
+              },
+              {
+                icon: LayoutTemplate,
+                label: 'Templates',
+                description: 'Start from a template',
+                onClick: () => setActiveTab('templates'),
+              },
+            ]}
           />
-        ) : (
-          <div className="space-y-3">
-            {plans.map((plan) => (
-              <PlanItem
-                key={plan.id}
-                plan={plan}
-                isExpanded={expandedPlan === plan.id}
-                onToggle={() => setExpandedPlan(expandedPlan === plan.id ? null : plan.id)}
-                onEdit={() => setEditingPlan(plan)}
-                onDelete={() => handleDelete(plan.id)}
-                onStart={() => handleAction(plan.id, 'start')}
-                onPause={() => handleAction(plan.id, 'pause')}
-                onResume={() => handleAction(plan.id, 'resume')}
-                onAbort={() => handleAction(plan.id, 'abort')}
-                onRollback={() => handleRollback(plan.id)}
-                onViewHistory={() => fetchPlanHistory(plan.id)}
-                onStepAdded={() => {
-                  // Refresh the expanded steps
-                  setExpandedPlan(null);
-                  setTimeout(() => setExpandedPlan(plan.id), 100);
-                  fetchPlans();
-                }}
-              />
-            ))}
-          </div>
-        )}
-      </div>
+        </div>
+      )}
+
+      {/* Filters */}
+      {activeTab !== 'home' && (
+        <div className="flex gap-2 px-6 py-3 border-b border-border dark:border-dark-border overflow-x-auto">
+          {(['all', 'pending', 'running', 'paused', 'completed', 'failed', 'cancelled'] as const).map(
+            (status) => (
+              <button
+                key={status}
+                onClick={() => setStatusFilter(status)}
+                className={`px-3 py-1 text-sm rounded-full transition-colors whitespace-nowrap ${
+                  statusFilter === status
+                    ? 'bg-primary text-white'
+                    : 'bg-bg-tertiary dark:bg-dark-bg-tertiary text-text-secondary dark:text-dark-text-secondary hover:bg-bg-secondary dark:hover:bg-dark-bg-secondary'
+                }`}
+              >
+                {status.charAt(0).toUpperCase() + status.slice(1)}
+              </button>
+            )
+          )}
+        </div>
+      )}
+
+      {/* Content */}
+      {activeTab !== 'home' && (
+        <div className="flex-1 overflow-y-auto p-6 animate-fade-in-up">
+          {isLoading ? (
+            <LoadingSpinner message="Loading plans..." />
+          ) : plans.length === 0 ? (
+            <EmptyState
+              icon={ListChecks}
+              title="No plans yet"
+              description="Plans let the AI execute multi-step workflows autonomously."
+              action={{ label: 'Create Plan', onClick: () => setShowCreateModal(true), icon: Plus }}
+            />
+          ) : (
+            <div className="space-y-3">
+              {plans.map((plan) => (
+                <PlanItem
+                  key={plan.id}
+                  plan={plan}
+                  isExpanded={expandedPlan === plan.id}
+                  onToggle={() => setExpandedPlan(expandedPlan === plan.id ? null : plan.id)}
+                  onEdit={() => setEditingPlan(plan)}
+                  onDelete={() => handleDelete(plan.id)}
+                  onStart={() => handleAction(plan.id, 'start')}
+                  onPause={() => handleAction(plan.id, 'pause')}
+                  onResume={() => handleAction(plan.id, 'resume')}
+                  onAbort={() => handleAction(plan.id, 'abort')}
+                  onRollback={() => handleRollback(plan.id)}
+                  onViewHistory={() => fetchPlanHistory(plan.id)}
+                  onStepAdded={() => {
+                    // Refresh the expanded steps
+                    setExpandedPlan(null);
+                    setTimeout(() => setExpandedPlan(plan.id), 100);
+                    fetchPlans();
+                  }}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Create/Edit Modal */}
       {(showCreateModal || editingPlan) && (

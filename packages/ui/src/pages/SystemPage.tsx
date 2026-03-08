@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import {
   Container,
   RefreshCw,
@@ -16,6 +17,9 @@ import {
   Settings,
   Terminal,
   Puzzle,
+  Activity,
+  HardDrive,
+  Home,
 } from '../components/icons';
 import { useDialog } from '../components/ConfirmDialog';
 import { useToast } from '../components/ToastProvider';
@@ -25,6 +29,7 @@ import { useDesktopNotifications } from '../hooks/useDesktopNotifications';
 import { systemApi } from '../api';
 import type { SandboxStatus, DatabaseStatus, BackupInfo, DatabaseStats } from '../api';
 import type { ToolDependenciesResponse } from '../api/endpoints/misc';
+import { PageHomeTab } from '../components/PageHomeTab';
 
 // Helper to format uptime
 function formatUptime(seconds: number): string {
@@ -60,8 +65,22 @@ const CATEGORY_COLORS: Record<string, string> = {
 };
 
 export function SystemPage() {
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const { confirm } = useDialog();
   const toast = useToast();
+
+  type TabId = 'home' | 'system';
+  const TAB_LABELS: Record<TabId, string> = { home: 'Home', system: 'System' };
+
+  const tabParam = searchParams.get('tab') as TabId | null;
+  const activeTab: TabId =
+    tabParam && (['home', 'system'] as string[]).includes(tabParam) ? tabParam : 'home';
+  const setTab = (tab: TabId) => {
+    const params = new URLSearchParams(searchParams);
+    params.set('tab', tab);
+    navigate({ search: params.toString() }, { replace: true });
+  };
   // Theme
   const { theme, setTheme } = useTheme();
   const {
@@ -227,14 +246,86 @@ export function SystemPage() {
 
   return (
     <div className="flex flex-col h-full">
-      <header className="px-6 pt-4 pb-4 border-b border-border dark:border-dark-border">
-        <h2 className="text-lg font-semibold text-text-primary dark:text-dark-text-primary">
-          System
-        </h2>
-        <p className="text-sm text-text-muted dark:text-dark-text-muted">
-          Appearance, tool dependencies, Docker sandbox, database management, and system info
-        </p>
+      {/* Header */}
+      <header className="flex items-center justify-between px-6 py-4 border-b border-border dark:border-dark-border">
+        <div>
+          <h2 className="text-lg font-semibold text-text-primary dark:text-dark-text-primary">
+            System
+          </h2>
+          <p className="text-sm text-text-muted dark:text-dark-text-muted">
+            Appearance, tool dependencies, Docker sandbox, database management, and system info
+          </p>
+        </div>
       </header>
+
+      {/* Tab Bar */}
+      <div className="flex border-b border-border dark:border-dark-border px-6">
+        {(['home', 'system'] as TabId[]).map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setTab(tab)}
+            className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px ${
+              activeTab === tab
+                ? 'border-primary text-primary'
+                : 'border-transparent text-text-muted dark:text-dark-text-muted hover:text-text-secondary dark:hover:text-dark-text-secondary hover:border-border dark:hover:border-dark-border'
+            }`}
+          >
+            {tab === 'home' && <Home className="w-3.5 h-3.5" />}
+            {TAB_LABELS[tab]}
+          </button>
+        ))}
+      </div>
+
+      {activeTab === 'home' && (
+        <PageHomeTab
+          heroIcons={[
+            { icon: Server, color: 'text-primary bg-primary/10' },
+            { icon: Activity, color: 'text-emerald-500 bg-emerald-500/10' },
+            { icon: HardDrive, color: 'text-violet-500 bg-violet-500/10' },
+          ]}
+          title="System Health & Monitoring"
+          subtitle="Monitor server health, database connections, memory usage, and service status — your system dashboard at a glance."
+          cta={{
+            label: 'View System Status',
+            icon: Server,
+            onClick: () => setTab('system'),
+          }}
+          features={[
+            {
+              icon: Activity,
+              color: 'text-primary bg-primary/10',
+              title: 'Health Checks',
+              description: 'Real-time health monitoring for all system components.',
+            },
+            {
+              icon: Database,
+              color: 'text-emerald-500 bg-emerald-500/10',
+              title: 'Database Status',
+              description: 'Monitor database connections, backups, and maintenance.',
+            },
+            {
+              icon: HardDrive,
+              color: 'text-violet-500 bg-violet-500/10',
+              title: 'Memory Usage',
+              description: 'Track memory consumption and resource utilization.',
+            },
+            {
+              icon: Server,
+              color: 'text-amber-500 bg-amber-500/10',
+              title: 'Service Monitor',
+              description: 'Check sandbox status, tool dependencies, and uptime.',
+            },
+          ]}
+          steps={[
+            { title: 'Check system status', detail: 'View overall health and version information.' },
+            { title: 'Review health indicators', detail: 'Check database, sandbox, and service status.' },
+            { title: 'Monitor resource usage', detail: 'Track memory, uptime, and database statistics.' },
+            { title: 'Set up alerts', detail: 'Configure notifications for system events.' },
+          ]}
+        />
+      )}
+
+      {activeTab === 'system' && (
       <div className="flex-1 overflow-y-auto p-6">
         <div className="space-y-6">
           {/* Appearance */}
@@ -939,6 +1030,7 @@ export function SystemPage() {
           </section>
         </div>
       </div>
+      )}
     </div>
   );
 }

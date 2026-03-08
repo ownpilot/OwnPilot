@@ -6,6 +6,7 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useGateway } from '../hooks/useWebSocket';
 import {
   Inbox,
@@ -17,12 +18,19 @@ import {
   Plus,
   Send,
   Trash2,
+  MessageSquare,
+  Bot,
+  Filter,
+  Archive,
+  Activity,
+  Home,
 } from '../components/icons';
 import { channelsApi } from '../api';
 import type { Channel, ChannelMessage } from '../api';
 import { SkeletonCard, SkeletonMessage } from '../components/Skeleton';
 import { MarkdownContent } from '../components/MarkdownContent';
 import { ChannelSetupModal } from '../components/ChannelSetupModal';
+import { PageHomeTab } from '../components/PageHomeTab';
 
 // Helper to get channel icon
 function ChannelIcon({ type, className }: { type: string; className?: string }) {
@@ -55,6 +63,8 @@ function getStatusColor(status: string): string {
 }
 
 export function InboxPage() {
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const { subscribe } = useGateway();
   const [messages, setMessages] = useState<ChannelMessage[]>([]);
   const [channels, setChannels] = useState<Channel[]>([]);
@@ -69,6 +79,18 @@ export function InboxPage() {
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  type TabId = 'home' | 'inbox';
+  const TAB_LABELS: Record<TabId, string> = { home: 'Home', inbox: 'Inbox' };
+
+  const tabParam = searchParams.get('tab') as TabId | null;
+  const activeTab: TabId =
+    tabParam && (['home', 'inbox'] as string[]).includes(tabParam) ? tabParam : 'home';
+  const setTab = (tab: TabId) => {
+    const params = new URLSearchParams(searchParams);
+    params.set('tab', tab);
+    navigate({ search: params.toString() }, { replace: true });
+  };
 
   // Fetch channels from API
   const fetchChannels = useCallback(async () => {
@@ -220,16 +242,13 @@ export function InboxPage() {
     <div className="flex flex-col h-full">
       {/* Header */}
       <header className="flex items-center justify-between px-6 py-4 border-b border-border dark:border-dark-border">
-        <div className="flex items-center gap-3">
-          <Inbox className="w-6 h-6 text-primary" />
-          <div>
-            <h2 className="text-lg font-semibold text-text-primary dark:text-dark-text-primary">
-              Inbox
-            </h2>
-            <p className="text-sm text-text-muted dark:text-dark-text-muted">
-              {unreadCount > 0 ? `${unreadCount} unread` : 'Channel conversation log'}
-            </p>
-          </div>
+        <div>
+          <h2 className="text-lg font-semibold text-text-primary dark:text-dark-text-primary">
+            Inbox
+          </h2>
+          <p className="text-sm text-text-muted dark:text-dark-text-muted">
+            {unreadCount > 0 ? `${unreadCount} unread` : 'Channel conversation log'}
+          </p>
         </div>
 
         <div className="flex items-center gap-4">
@@ -266,252 +285,333 @@ export function InboxPage() {
         </div>
       </header>
 
-      <div className="flex-1 flex overflow-hidden">
-        {/* Channel Sidebar */}
-        <aside className="w-64 border-r border-border dark:border-dark-border bg-bg-secondary dark:bg-dark-bg-secondary overflow-y-auto">
-          <div className="p-4">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-medium text-text-muted dark:text-dark-text-muted">
-                Channels ({channels.length})
-              </h3>
-              <button
-                onClick={() => setShowSetupModal(true)}
-                className="p-1 rounded hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary transition-colors text-text-muted dark:text-dark-text-muted hover:text-primary"
-                title="Add channel"
-              >
-                <Plus className="w-4 h-4" />
-              </button>
-            </div>
+      {/* Tab Bar */}
+      <div className="flex border-b border-border dark:border-dark-border px-6">
+        {(['home', 'inbox'] as TabId[]).map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setTab(tab)}
+            className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px ${
+              activeTab === tab
+                ? 'border-primary text-primary'
+                : 'border-transparent text-text-muted dark:text-dark-text-muted hover:text-text-secondary dark:hover:text-dark-text-secondary hover:border-border dark:hover:border-dark-border'
+            }`}
+          >
+            {tab === 'home' && <Home className="w-3.5 h-3.5" />}
+            {TAB_LABELS[tab]}
+          </button>
+        ))}
+      </div>
 
-            {/* All Messages */}
-            <button
-              onClick={() => {
-                setSelectedChannel(null);
-                fetchInbox();
-              }}
-              className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors mb-2 ${
-                selectedChannel === null
-                  ? 'bg-primary text-white'
-                  : 'text-text-secondary dark:text-dark-text-secondary hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary'
-              }`}
-            >
-              <Inbox className="w-5 h-5" />
-              <span className="flex-1 text-left">All Messages</span>
-              {unreadCount > 0 && (
-                <span
-                  className={`px-2 py-0.5 rounded-full text-xs ${
-                    selectedChannel === null
-                      ? 'bg-white/20 text-white'
-                      : 'bg-primary/10 text-primary'
-                  }`}
-                >
-                  {unreadCount}
-                </span>
-              )}
-            </button>
+      {activeTab === 'home' && (
+        <PageHomeTab
+          heroIcons={[
+            { icon: Inbox, color: 'text-primary bg-primary/10' },
+            { icon: MessageSquare, color: 'text-emerald-500 bg-emerald-500/10' },
+            { icon: Bot, color: 'text-violet-500 bg-violet-500/10' },
+          ]}
+          title="Your Message Inbox"
+          subtitle="View all incoming messages from connected channels — Telegram, WhatsApp, and more — in one unified inbox."
+          cta={{
+            label: 'View Messages',
+            icon: Inbox,
+            onClick: () => {
+              setTab('inbox');
+            },
+          }}
+          features={[
+            {
+              icon: Inbox,
+              color: 'text-primary bg-primary/10',
+              title: 'Unified View',
+              description: 'See all channel messages in one place.',
+            },
+            {
+              icon: Filter,
+              color: 'text-emerald-500 bg-emerald-500/10',
+              title: 'Channel Filter',
+              description: 'Filter messages by channel to focus on one conversation.',
+            },
+            {
+              icon: Archive,
+              color: 'text-violet-500 bg-violet-500/10',
+              title: 'Read-Only Archive',
+              description: 'Browse past conversations as a read-only log.',
+            },
+            {
+              icon: Activity,
+              color: 'text-amber-500 bg-amber-500/10',
+              title: 'Real-Time Updates',
+              description: 'New messages appear instantly via WebSocket.',
+            },
+          ]}
+          steps={[
+            {
+              title: 'Connect a channel',
+              detail: 'Set up Telegram, WhatsApp, or another channel.',
+            },
+            {
+              title: 'Messages appear automatically',
+              detail: 'Incoming and outgoing messages are logged here.',
+            },
+            { title: 'Browse by channel', detail: 'Use the sidebar to filter by channel.' },
+            {
+              title: 'Search past messages',
+              detail: 'Scroll through the conversation history.',
+            },
+          ]}
+        />
+      )}
 
-            {/* Channel List */}
-            <div className="space-y-1">
-              {channels.length === 0 ? (
+      {activeTab === 'inbox' && (
+        <div className="flex-1 flex overflow-hidden">
+          {/* Channel Sidebar */}
+          <aside className="w-64 border-r border-border dark:border-dark-border bg-bg-secondary dark:bg-dark-bg-secondary overflow-y-auto">
+            <div className="p-4">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-medium text-text-muted dark:text-dark-text-muted">
+                  Channels ({channels.length})
+                </h3>
                 <button
                   onClick={() => setShowSetupModal(true)}
-                  className="w-full text-sm text-primary hover:text-primary/80 py-2 px-3 text-left transition-colors"
+                  className="p-1 rounded hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary transition-colors text-text-muted dark:text-dark-text-muted hover:text-primary"
+                  title="Add channel"
                 >
-                  + Add a channel
+                  <Plus className="w-4 h-4" />
                 </button>
-              ) : (
-                channels.map((channel) => {
-                  const channelUnread = getChannelUnread(channel.id);
-                  return (
-                    <button
-                      key={channel.id}
-                      onClick={() => {
-                        setSelectedChannel(channel.id);
-                      }}
-                      className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
-                        selectedChannel === channel.id
-                          ? 'bg-primary text-white'
-                          : 'text-text-secondary dark:text-dark-text-secondary hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary'
-                      }`}
-                    >
-                      <div className="relative flex-shrink-0">
-                        <ChannelIcon type={channel.type} className="w-5 h-5" />
-                        <span
-                          className={`absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full border border-bg-secondary dark:border-dark-bg-secondary ${getStatusColor(channel.status)}`}
-                        />
-                      </div>
-                      <div className="flex-1 text-left min-w-0">
-                        <span className="block truncate">{channel.name}</span>
-                        {channel.botInfo?.username && (
-                          <span
-                            className={`text-xs truncate block ${
-                              selectedChannel === channel.id
-                                ? 'text-white/70'
-                                : 'text-text-muted dark:text-dark-text-muted'
-                            }`}
-                          >
-                            @{channel.botInfo.username}
-                          </span>
-                        )}
-                      </div>
-                      {channelUnread > 0 && (
-                        <span
-                          className={`px-2 py-0.5 rounded-full text-xs ${
-                            selectedChannel === channel.id
-                              ? 'bg-white/20 text-white'
-                              : 'bg-primary/10 text-primary'
-                          }`}
-                        >
-                          {channelUnread}
-                        </span>
-                      )}
-                    </button>
-                  );
-                })
-              )}
-            </div>
-          </div>
-        </aside>
+              </div>
 
-        {/* Conversation Thread */}
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <div className="flex-1 overflow-y-auto px-6 py-4">
-            {sortedMessages.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-full text-text-muted dark:text-dark-text-muted">
-                <Inbox className="w-16 h-16 mb-4 opacity-20" />
-                <p>No messages yet</p>
+              {/* All Messages */}
+              <button
+                onClick={() => {
+                  setSelectedChannel(null);
+                  fetchInbox();
+                }}
+                className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors mb-2 ${
+                  selectedChannel === null
+                    ? 'bg-primary text-white'
+                    : 'text-text-secondary dark:text-dark-text-secondary hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary'
+                }`}
+              >
+                <Inbox className="w-5 h-5" />
+                <span className="flex-1 text-left">All Messages</span>
+                {unreadCount > 0 && (
+                  <span
+                    className={`px-2 py-0.5 rounded-full text-xs ${
+                      selectedChannel === null
+                        ? 'bg-white/20 text-white'
+                        : 'bg-primary/10 text-primary'
+                    }`}
+                  >
+                    {unreadCount}
+                  </span>
+                )}
+              </button>
+
+              {/* Channel List */}
+              <div className="space-y-1">
                 {channels.length === 0 ? (
                   <button
                     onClick={() => setShowSetupModal(true)}
-                    className="text-sm mt-1 text-primary hover:text-primary/80 transition-colors"
+                    className="w-full text-sm text-primary hover:text-primary/80 py-2 px-3 text-left transition-colors"
                   >
-                    Add a channel to start receiving messages
+                    + Add a channel
                   </button>
                 ) : (
-                  <p className="text-sm mt-1">
-                    Messages will appear here when you chat via your channels
-                  </p>
-                )}
-              </div>
-            ) : (
-              <div className="space-y-3 max-w-3xl mx-auto">
-                {sortedMessages.map((message) => {
-                  const isOutgoing = message.direction === 'outgoing';
-
-                  return (
-                    <div
-                      key={message.id}
-                      className={`flex ${isOutgoing ? 'justify-end' : 'justify-start'}`}
-                    >
-                      <div
-                        className={`max-w-[75%] rounded-2xl px-4 py-2.5 ${
-                          isOutgoing
-                            ? 'bg-primary text-white rounded-br-md'
-                            : 'bg-bg-tertiary dark:bg-dark-bg-tertiary text-text-primary dark:text-dark-text-primary rounded-bl-md'
+                  channels.map((channel) => {
+                    const channelUnread = getChannelUnread(channel.id);
+                    return (
+                      <button
+                        key={channel.id}
+                        onClick={() => {
+                          setSelectedChannel(channel.id);
+                        }}
+                        className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
+                          selectedChannel === channel.id
+                            ? 'bg-primary text-white'
+                            : 'text-text-secondary dark:text-dark-text-secondary hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary'
                         }`}
                       >
-                        {/* Sender name for incoming */}
-                        {!isOutgoing && (
-                          <div className="flex items-center gap-2 mb-1">
+                        <div className="relative flex-shrink-0">
+                          <ChannelIcon type={channel.type} className="w-5 h-5" />
+                          <span
+                            className={`absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full border border-bg-secondary dark:border-dark-bg-secondary ${getStatusColor(channel.status)}`}
+                          />
+                        </div>
+                        <div className="flex-1 text-left min-w-0">
+                          <span className="block truncate">{channel.name}</span>
+                          {channel.botInfo?.username && (
                             <span
-                              className={`text-xs font-medium ${
-                                isOutgoing
+                              className={`text-xs truncate block ${
+                                selectedChannel === channel.id
                                   ? 'text-white/70'
                                   : 'text-text-muted dark:text-dark-text-muted'
                               }`}
                             >
-                              {message.sender.name}
+                              @{channel.botInfo.username}
                             </span>
-                          </div>
-                        )}
-                        {isOutgoing && (
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="text-xs font-medium text-white/70">Assistant</span>
-                          </div>
-                        )}
-
-                        {/* Message content */}
-                        <MarkdownContent content={message.content} compact className="text-sm" />
-
-                        {/* Timestamp + status */}
-                        <div
-                          className={`flex items-center gap-1.5 mt-1 ${
-                            isOutgoing ? 'justify-end' : 'justify-start'
-                          }`}
-                        >
+                          )}
+                        </div>
+                        {channelUnread > 0 && (
                           <span
-                            className={`text-[10px] ${
-                              isOutgoing
-                                ? 'text-white/50'
-                                : 'text-text-muted dark:text-dark-text-muted'
+                            className={`px-2 py-0.5 rounded-full text-xs ${
+                              selectedChannel === channel.id
+                                ? 'bg-white/20 text-white'
+                                : 'bg-primary/10 text-primary'
                             }`}
                           >
-                            {formatTimestamp(message.timestamp)}
+                            {channelUnread}
                           </span>
-                          {isOutgoing && <Check className="w-3 h-3 text-white/50" />}
+                        )}
+                      </button>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+          </aside>
+
+          {/* Conversation Thread */}
+          <div className="flex-1 flex flex-col overflow-hidden">
+            <div className="flex-1 overflow-y-auto px-6 py-4">
+              {sortedMessages.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-full text-text-muted dark:text-dark-text-muted">
+                  <Inbox className="w-16 h-16 mb-4 opacity-20" />
+                  <p>No messages yet</p>
+                  {channels.length === 0 ? (
+                    <button
+                      onClick={() => setShowSetupModal(true)}
+                      className="text-sm mt-1 text-primary hover:text-primary/80 transition-colors"
+                    >
+                      Add a channel to start receiving messages
+                    </button>
+                  ) : (
+                    <p className="text-sm mt-1">
+                      Messages will appear here when you chat via your channels
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <div className="space-y-3 max-w-3xl mx-auto">
+                  {sortedMessages.map((message) => {
+                    const isOutgoing = message.direction === 'outgoing';
+
+                    return (
+                      <div
+                        key={message.id}
+                        className={`flex ${isOutgoing ? 'justify-end' : 'justify-start'}`}
+                      >
+                        <div
+                          className={`max-w-[75%] rounded-2xl px-4 py-2.5 ${
+                            isOutgoing
+                              ? 'bg-primary text-white rounded-br-md'
+                              : 'bg-bg-tertiary dark:bg-dark-bg-tertiary text-text-primary dark:text-dark-text-primary rounded-bl-md'
+                          }`}
+                        >
+                          {/* Sender name for incoming */}
+                          {!isOutgoing && (
+                            <div className="flex items-center gap-2 mb-1">
+                              <span
+                                className={`text-xs font-medium ${
+                                  isOutgoing
+                                    ? 'text-white/70'
+                                    : 'text-text-muted dark:text-dark-text-muted'
+                                }`}
+                              >
+                                {message.sender.name}
+                              </span>
+                            </div>
+                          )}
+                          {isOutgoing && (
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="text-xs font-medium text-white/70">Assistant</span>
+                            </div>
+                          )}
+
+                          {/* Message content */}
+                          <MarkdownContent content={message.content} compact className="text-sm" />
+
+                          {/* Timestamp + status */}
+                          <div
+                            className={`flex items-center gap-1.5 mt-1 ${
+                              isOutgoing ? 'justify-end' : 'justify-start'
+                            }`}
+                          >
+                            <span
+                              className={`text-[10px] ${
+                                isOutgoing
+                                  ? 'text-white/50'
+                                  : 'text-text-muted dark:text-dark-text-muted'
+                              }`}
+                            >
+                              {formatTimestamp(message.timestamp)}
+                            </span>
+                            {isOutgoing && <Check className="w-3 h-3 text-white/50" />}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  );
-                })}
-                <div ref={messagesEndRef} />
-              </div>
-            )}
-          </div>
+                    );
+                  })}
+                  <div ref={messagesEndRef} />
+                </div>
+              )}
+            </div>
 
-          {/* Reply form */}
-          <div className="px-6 py-3 border-t border-border dark:border-dark-border bg-bg-secondary dark:bg-dark-bg-secondary">
-            {selectedChannel &&
-            channels.find((c) => c.id === selectedChannel)?.status === 'connected' ? (
-              <form
-                onSubmit={async (e) => {
-                  e.preventDefault();
-                  const text = replyText.trim();
-                  if (!text || isSending || !selectedChannel) return;
-                  setIsSending(true);
-                  try {
-                    await channelsApi.reply(selectedChannel, { text });
-                    setReplyText('');
-                  } catch {
-                    setError('Failed to send reply');
-                  } finally {
-                    setIsSending(false);
-                  }
-                }}
-                className="flex items-end gap-2"
-              >
-                <textarea
-                  value={replyText}
-                  onChange={(e) => setReplyText(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault();
-                      e.currentTarget.form?.requestSubmit();
+            {/* Reply form */}
+            <div className="px-6 py-3 border-t border-border dark:border-dark-border bg-bg-secondary dark:bg-dark-bg-secondary">
+              {selectedChannel &&
+              channels.find((c) => c.id === selectedChannel)?.status === 'connected' ? (
+                <form
+                  onSubmit={async (e) => {
+                    e.preventDefault();
+                    const text = replyText.trim();
+                    if (!text || isSending || !selectedChannel) return;
+                    setIsSending(true);
+                    try {
+                      await channelsApi.reply(selectedChannel, { text });
+                      setReplyText('');
+                    } catch {
+                      setError('Failed to send reply');
+                    } finally {
+                      setIsSending(false);
                     }
                   }}
-                  placeholder="Type a reply..."
-                  rows={1}
-                  maxLength={4096}
-                  className="flex-1 resize-none rounded-lg border border-border dark:border-dark-border bg-bg-primary dark:bg-dark-bg-primary text-text-primary dark:text-dark-text-primary px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-                />
-                <button
-                  type="submit"
-                  disabled={!replyText.trim() || isSending}
-                  className="p-2 rounded-lg bg-primary text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-primary/90 transition-colors"
+                  className="flex items-end gap-2"
                 >
-                  <Send className="w-4 h-4" />
-                </button>
-              </form>
-            ) : (
-              <p className="text-xs text-center text-text-muted dark:text-dark-text-muted">
-                {selectedChannel
-                  ? 'Channel is disconnected. Connect it to reply.'
-                  : 'Select a channel to reply to messages'}
-              </p>
-            )}
+                  <textarea
+                    value={replyText}
+                    onChange={(e) => setReplyText(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        e.currentTarget.form?.requestSubmit();
+                      }
+                    }}
+                    placeholder="Type a reply..."
+                    rows={1}
+                    maxLength={4096}
+                    className="flex-1 resize-none rounded-lg border border-border dark:border-dark-border bg-bg-primary dark:bg-dark-bg-primary text-text-primary dark:text-dark-text-primary px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                  />
+                  <button
+                    type="submit"
+                    disabled={!replyText.trim() || isSending}
+                    className="p-2 rounded-lg bg-primary text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-primary/90 transition-colors"
+                  >
+                    <Send className="w-4 h-4" />
+                  </button>
+                </form>
+              ) : (
+                <p className="text-xs text-center text-text-muted dark:text-dark-text-muted">
+                  {selectedChannel
+                    ? 'Channel is disconnected. Connect it to reply.'
+                    : 'Select a channel to reply to messages'}
+                </p>
+              )}
+            </div>
           </div>
         </div>
-      </div>
+      )}
+
       {showSetupModal && (
         <ChannelSetupModal
           onClose={() => setShowSetupModal(false)}

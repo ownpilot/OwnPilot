@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   Database,
   Plus,
@@ -8,7 +9,12 @@ import {
   ChevronRight,
   Edit3,
   Lock,
+  Filter,
+  Download,
+  Sparkles,
+  Home,
 } from '../components/icons';
+import { PageHomeTab } from '../components/PageHomeTab';
 import { useDialog } from '../components/ConfirmDialog';
 import { useToast } from '../components/ToastProvider';
 import { LoadingSpinner } from '../components/LoadingSpinner';
@@ -17,7 +23,31 @@ import { useDebouncedValue, useModalClose } from '../hooks';
 import { customDataApi } from '../api';
 import type { ColumnDefinition, CustomTable, CustomRecord } from '../api';
 
+type TabId = 'home' | 'data';
+
+const TAB_LABELS: Record<TabId, string> = {
+  home: 'Home',
+  data: 'Data',
+};
+
 export function CustomDataPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabParam = searchParams.get('tab') as TabId | null;
+  const [activeTab, setActiveTab] = useState<TabId>(tabParam || 'home');
+
+  useEffect(() => {
+    const urlTab = (searchParams.get('tab') as TabId | null) || 'home';
+    setActiveTab(urlTab);
+  }, [searchParams]);
+
+  const setTab = useCallback(
+    (tab: TabId) => {
+      setActiveTab(tab);
+      setSearchParams(tab === 'home' ? {} : { tab });
+    },
+    [setSearchParams]
+  );
+
   const { confirm } = useDialog();
   const toast = useToast();
   const [tables, setTables] = useState<CustomTable[]>([]);
@@ -152,6 +182,83 @@ export function CustomDataPage() {
         </button>
       </header>
 
+      {/* Tab Bar */}
+      <div className="flex border-b border-border dark:border-dark-border px-6">
+        {(['home', 'data'] as TabId[]).map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setTab(tab)}
+            className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px ${
+              activeTab === tab
+                ? 'border-primary text-primary'
+                : 'border-transparent text-text-muted dark:text-dark-text-muted hover:text-text-secondary dark:hover:text-dark-text-secondary hover:border-border dark:hover:border-dark-border'
+            }`}
+          >
+            {tab === 'home' && <Home className="w-3.5 h-3.5" />}
+            {TAB_LABELS[tab]}
+          </button>
+        ))}
+      </div>
+
+      {activeTab === 'home' && (
+        <PageHomeTab
+          heroIcons={[
+            { icon: Database, color: 'text-primary bg-primary/10' },
+            { icon: Table, color: 'text-emerald-500 bg-emerald-500/10' },
+            { icon: Sparkles, color: 'text-violet-500 bg-violet-500/10' },
+          ]}
+          title="Your Personal Data Store"
+          subtitle="Store structured data entries your AI can query — personal info, work details, memories, and any custom key-value data."
+          cta={{
+            label: 'New Table',
+            icon: Plus,
+            onClick: () => {
+              setTab('data');
+              setShowCreateTableModal(true);
+            },
+          }}
+          features={[
+            {
+              icon: Database,
+              color: 'text-primary bg-primary/10',
+              title: 'Structured Storage',
+              description: 'Store data in organized tables with typed columns.',
+            },
+            {
+              icon: Filter,
+              color: 'text-emerald-500 bg-emerald-500/10',
+              title: 'Category Filters',
+              description: 'Filter and browse data by table and column type.',
+            },
+            {
+              icon: Search,
+              color: 'text-violet-500 bg-violet-500/10',
+              title: 'AI Queryable',
+              description: 'Your AI can search and query all stored data.',
+            },
+            {
+              icon: Download,
+              color: 'text-amber-500 bg-amber-500/10',
+              title: 'Import/Export',
+              description: 'Import and export your data for backup or migration.',
+            },
+          ]}
+          steps={[
+            { title: 'Add a data entry', detail: 'Create a new table and add your first record.' },
+            { title: 'Categorize it', detail: 'Organize entries using typed columns and tables.' },
+            {
+              title: 'AI can query your data',
+              detail: 'Your AI assistant can search and retrieve stored data.',
+            },
+            {
+              title: 'Manage & update',
+              detail: 'Edit, delete, and maintain your data entries over time.',
+            },
+          ]}
+        />
+      )}
+
+      {activeTab === 'data' && (
       <div className="flex flex-1 overflow-hidden">
         {/* Sidebar - Table List */}
         <aside className="w-64 border-r border-border dark:border-dark-border overflow-y-auto">
@@ -361,6 +468,7 @@ export function CustomDataPage() {
           )}
         </main>
       </div>
+      )}
 
       {/* Create Table Modal */}
       {showCreateTableModal && (

@@ -22,7 +22,11 @@ import {
   RefreshCw,
   Check,
   X,
+  Home,
+  Download,
+  Brain,
 } from '../components/icons';
+import { PageHomeTab } from '../components/PageHomeTab';
 import { chatApi } from '../api';
 import type { Conversation, HistoryMessage, UnifiedMessage, ChannelInfo } from '../api';
 import { useGateway } from '../hooks/useWebSocket';
@@ -93,7 +97,15 @@ function SourceBadge({ source }: { source: ConvSource }) {
   );
 }
 
+type TabId = 'home' | 'history';
+
+const TAB_LABELS: Record<TabId, string> = {
+  home: 'Home',
+  history: 'History',
+};
+
 export function ChatHistoryPage() {
+  const [activeTab, setActiveTab] = useState<TabId>('home');
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [messages, setMessages] = useState<(HistoryMessage | UnifiedMessage)[]>([]);
@@ -434,17 +446,14 @@ export function ChatHistoryPage() {
     <div className="flex flex-col h-full">
       {/* Header */}
       <header className="flex items-center justify-between px-6 py-4 border-b border-border dark:border-dark-border">
-        <div className="flex items-center gap-3">
-          <History className="w-6 h-6 text-primary" />
-          <div>
-            <h2 className="text-lg font-semibold text-text-primary dark:text-dark-text-primary">
-              Chat History
-            </h2>
-            <p className="text-sm text-text-muted dark:text-dark-text-muted">
-              {conversations.length} conversation{conversations.length !== 1 ? 's' : ''}
-              {showArchived ? ' (archived)' : ''}
-            </p>
-          </div>
+        <div>
+          <h2 className="text-lg font-semibold text-text-primary dark:text-dark-text-primary">
+            Chat History
+          </h2>
+          <p className="text-sm text-text-muted dark:text-dark-text-muted">
+            {conversations.length} conversation{conversations.length !== 1 ? 's' : ''}
+            {showArchived ? ' (archived)' : ''}
+          </p>
         </div>
 
         <div className="flex items-center gap-3">
@@ -526,6 +535,96 @@ export function ChatHistoryPage() {
         </div>
       </header>
 
+      {/* Tabs */}
+      <div className="flex border-b border-border dark:border-dark-border px-6">
+        {(['home', 'history'] as TabId[]).map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px ${
+              activeTab === tab
+                ? 'border-primary text-primary'
+                : 'border-transparent text-text-muted dark:text-dark-text-muted hover:text-text-secondary dark:hover:text-dark-text-secondary hover:border-border dark:hover:border-dark-border'
+            }`}
+          >
+            {tab === 'home' && <Home className="w-3.5 h-3.5" />}
+            {tab === 'history' && <History className="w-3.5 h-3.5" />}
+            {TAB_LABELS[tab]}
+          </button>
+        ))}
+      </div>
+
+      {/* Home Tab */}
+      {activeTab === 'home' && (
+        <div className="flex-1 overflow-y-auto p-6">
+          <PageHomeTab
+            heroIcons={[
+              { icon: History, color: 'text-primary bg-primary/10' },
+              { icon: MessageSquare, color: 'text-emerald-500 bg-emerald-500/10' },
+              { icon: Search, color: 'text-violet-500 bg-violet-500/10' },
+            ]}
+            title="Your Conversation Archive"
+            subtitle="Browse, search, and revisit past conversations. Every interaction is preserved for context and reference."
+            cta={{
+              label: 'Browse History',
+              icon: History,
+              onClick: () => setActiveTab('history'),
+            }}
+            features={[
+              {
+                icon: History,
+                color: 'text-primary bg-primary/10',
+                title: 'Full History',
+                description: 'Complete archive of all your conversations.',
+              },
+              {
+                icon: Search,
+                color: 'text-orange-500 bg-orange-500/10',
+                title: 'Search & Filter',
+                description: 'Find conversations by keyword or date.',
+              },
+              {
+                icon: Download,
+                color: 'text-emerald-500 bg-emerald-500/10',
+                title: 'Conversation Export',
+                description: 'Export conversations for backup or analysis.',
+              },
+              {
+                icon: Brain,
+                color: 'text-violet-500 bg-violet-500/10',
+                title: 'Context Recall',
+                description: 'Revisit past context for continuity.',
+              },
+            ]}
+            steps={[
+              {
+                title: 'Browse past conversations',
+                detail: 'See all your conversations in one place.',
+              },
+              { title: 'Search by keyword', detail: 'Find specific topics or messages.' },
+              {
+                title: 'Click to revisit',
+                detail: 'Open any conversation to review details.',
+              },
+              {
+                title: 'Export if needed',
+                detail: 'Download conversations for offline use.',
+              },
+            ]}
+            quickActions={[
+              {
+                icon: History,
+                label: 'View History',
+                description: 'Browse all past conversations.',
+                onClick: () => setActiveTab('history'),
+              },
+            ]}
+          />
+        </div>
+      )}
+
+      {/* History Tab */}
+      {activeTab === 'history' && (
       <div className="flex-1 flex overflow-hidden">
         {/* Conversation List Sidebar */}
         <aside className="w-80 border-r border-border dark:border-dark-border bg-bg-secondary dark:bg-dark-bg-secondary flex flex-col overflow-hidden">
@@ -885,6 +984,7 @@ export function ChatHistoryPage() {
           )}
         </div>
       </div>
+      )}
     </div>
   );
 }

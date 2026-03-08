@@ -4,16 +4,24 @@ import { useToast } from '../components/ToastProvider';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { debugApi } from '../api';
 import type { DebugInfo, DebugLogEntry, LogDetail, RequestLog, LogStats } from '../api';
+import {
+  Home,
+  FileText,
+  Activity,
+  Search,
+  Terminal,
+} from '../components/icons';
+import { PageHomeTab } from '../components/PageHomeTab';
 
 type FilterType = 'all' | 'chat' | 'completion' | 'embedding' | 'tool' | 'agent' | 'other';
 type ErrorFilter = 'all' | 'errors' | 'success';
-type TabType = 'requests' | 'debug';
+type TabType = 'home' | 'requests' | 'debug';
 type DebugFilterType = 'all' | 'tool_call' | 'tool_result' | 'request' | 'response' | 'error';
 
 export function LogsPage() {
   const { confirm } = useDialog();
   const toast = useToast();
-  const [activeTab, setActiveTab] = useState<TabType>('requests');
+  const [activeTab, setActiveTab] = useState<TabType>('home');
 
   // Request logs state
   const [logs, setLogs] = useState<RequestLog[]>([]);
@@ -133,7 +141,7 @@ export function LogsPage() {
     if (activeTab === 'requests') {
       fetchLogs();
       fetchStats();
-    } else {
+    } else if (activeTab === 'debug') {
       fetchDebugLogs();
     }
   }, [activeTab, fetchLogs, fetchStats, fetchDebugLogs]);
@@ -222,51 +230,14 @@ export function LogsPage() {
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-        <div className="flex items-center gap-3">
-          <svg
-            className="w-6 h-6 text-indigo-500"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-            />
-          </svg>
-          <h1 className="text-xl font-semibold text-gray-900 dark:text-white">Logs</h1>
-        </div>
-
-        {/* Tab Switcher */}
-        <div className="flex items-center gap-1 bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
-          <button
-            onClick={() => setActiveTab('requests')}
-            className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
-              activeTab === 'requests'
-                ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow'
-                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-            }`}
-          >
-            Request Logs
-          </button>
-          <button
-            onClick={() => setActiveTab('debug')}
-            className={`px-3 py-1.5 text-sm rounded-md transition-colors flex items-center gap-1.5 ${
-              activeTab === 'debug'
-                ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow'
-                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-            }`}
-          >
-            <span>Debug Logs</span>
-            {debugInfo && debugInfo.summary.toolCalls > 0 && (
-              <span className="px-1.5 py-0.5 text-xs bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 rounded-full">
-                {debugInfo.summary.toolCalls}
-              </span>
-            )}
-          </button>
+      <header className="flex items-center justify-between px-6 py-4 border-b border-border dark:border-dark-border">
+        <div>
+          <h2 className="text-lg font-semibold text-text-primary dark:text-dark-text-primary">
+            Logs
+          </h2>
+          <p className="text-sm text-text-muted dark:text-dark-text-muted">
+            Request and debug log viewer
+          </p>
         </div>
 
         <div className="flex items-center gap-2">
@@ -274,7 +245,7 @@ export function LogsPage() {
             <>
               <button
                 onClick={() => clearOldLogs(30)}
-                className="px-3 py-1.5 text-sm bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors"
+                className="px-3 py-1.5 text-sm bg-bg-tertiary dark:bg-dark-bg-tertiary text-text-secondary dark:text-dark-text-secondary hover:bg-bg-secondary dark:hover:bg-dark-bg-secondary rounded-lg transition-colors"
               >
                 Clear Old
               </button>
@@ -289,29 +260,133 @@ export function LogsPage() {
                   fetchLogs();
                   fetchStats();
                 }}
-                className="px-3 py-1.5 text-sm bg-indigo-500 text-white hover:bg-indigo-600 rounded-lg transition-colors"
+                className="px-3 py-1.5 text-sm bg-primary text-white hover:bg-primary/90 rounded-lg transition-colors"
               >
                 Refresh
               </button>
             </>
-          ) : (
+          ) : activeTab === 'debug' ? (
             <>
               <button
                 onClick={clearDebugLogs}
-                className="px-3 py-1.5 text-sm bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors"
+                className="px-3 py-1.5 text-sm bg-bg-tertiary dark:bg-dark-bg-tertiary text-text-secondary dark:text-dark-text-secondary hover:bg-bg-secondary dark:hover:bg-dark-bg-secondary rounded-lg transition-colors"
               >
                 Clear Debug Logs
               </button>
               <button
                 onClick={fetchDebugLogs}
-                className="px-3 py-1.5 text-sm bg-indigo-500 text-white hover:bg-indigo-600 rounded-lg transition-colors"
+                className="px-3 py-1.5 text-sm bg-primary text-white hover:bg-primary/90 rounded-lg transition-colors"
               >
                 Refresh
               </button>
             </>
-          )}
+          ) : null}
         </div>
+      </header>
+
+      {/* Tab bar */}
+      <div className="flex border-b border-border dark:border-dark-border px-6">
+        {(['home', 'requests', 'debug'] as TabType[]).map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px ${
+              activeTab === tab
+                ? 'border-primary text-primary'
+                : 'border-transparent text-text-muted dark:text-dark-text-muted hover:text-text-secondary dark:hover:text-dark-text-secondary hover:border-border dark:hover:border-dark-border'
+            }`}
+          >
+            {tab === 'home' && <Home className="w-3.5 h-3.5" />}
+            {tab === 'home' ? 'Home' : tab === 'requests' ? 'Request Logs' : 'Debug Logs'}
+            {tab === 'debug' && debugInfo && debugInfo.summary.toolCalls > 0 && (
+              <span className="px-1.5 py-0.5 text-xs bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 rounded-full">
+                {debugInfo.summary.toolCalls}
+              </span>
+            )}
+          </button>
+        ))}
       </div>
+
+      {activeTab === 'home' && (
+        <div className="flex-1 overflow-auto p-4">
+          <PageHomeTab
+            heroIcons={[
+              { icon: FileText, color: 'text-primary bg-primary/10' },
+              { icon: Activity, color: 'text-orange-500 bg-orange-500/10' },
+              { icon: Search, color: 'text-violet-500 bg-violet-500/10' },
+            ]}
+            title="Monitor Every Request"
+            subtitle="Full visibility into AI requests, responses, and system events — with search, filtering, and debug tools."
+            cta={{
+              label: 'View Request Logs',
+              icon: FileText,
+              onClick: () => setActiveTab('requests'),
+            }}
+            features={[
+              {
+                icon: FileText,
+                color: 'text-primary bg-primary/10',
+                title: 'Request Logs',
+                description:
+                  'Browse every AI request with details on tokens, cost, latency, and response status.',
+              },
+              {
+                icon: Terminal,
+                color: 'text-emerald-500 bg-emerald-500/10',
+                title: 'Debug Console',
+                description:
+                  'Inspect tool calls, retries, and errors in a developer-friendly debug view.',
+              },
+              {
+                icon: Search,
+                color: 'text-orange-500 bg-orange-500/10',
+                title: 'Search & Filter',
+                description:
+                  'Filter logs by type, status, date range, and more to find exactly what you need.',
+              },
+              {
+                icon: Activity,
+                color: 'text-violet-500 bg-violet-500/10',
+                title: 'Real-time Stream',
+                description:
+                  'Watch requests flow through the system in real time as your agents work.',
+              },
+            ]}
+            steps={[
+              {
+                title: 'Browse recent requests',
+                detail: 'View the latest AI requests across all providers and agents.',
+              },
+              {
+                title: 'Filter by type or status',
+                detail: 'Narrow down logs to find specific request types or errors.',
+              },
+              {
+                title: 'Inspect request details',
+                detail: 'Click any request to see full token usage, cost, and response data.',
+              },
+              {
+                title: 'Debug with system logs',
+                detail: 'Switch to the debug console for tool calls and internal events.',
+              },
+            ]}
+            quickActions={[
+              {
+                icon: FileText,
+                label: 'Request Logs',
+                description: 'Browse all AI requests',
+                onClick: () => setActiveTab('requests'),
+              },
+              {
+                icon: Terminal,
+                label: 'Debug Console',
+                description: 'View tool calls and system events',
+                onClick: () => setActiveTab('debug'),
+              },
+            ]}
+          />
+        </div>
+      )}
 
       {activeTab === 'requests' ? (
         <>

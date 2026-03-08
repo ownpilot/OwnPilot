@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useDialog } from '../components/ConfirmDialog';
 import { useToast } from '../components/ToastProvider';
+import { PageHomeTab } from '../components/PageHomeTab';
 import {
   Search,
   RefreshCw,
@@ -10,6 +11,10 @@ import {
   AlertCircle,
   Check,
   Link,
+  Home,
+  Globe,
+  Shield,
+  Lock,
 } from '../components/icons';
 import { composioApi } from '../api';
 import type { ComposioApp, ComposioConnection } from '../api/endpoints/composio';
@@ -302,6 +307,17 @@ function AvailableAppCard({
 }
 
 // =============================================================================
+// Tab system
+// =============================================================================
+
+type TabId = 'home' | 'apps';
+
+const TAB_LABELS: Record<TabId, string> = {
+  home: 'Home',
+  apps: 'Apps',
+};
+
+// =============================================================================
 // Main Page
 // =============================================================================
 
@@ -309,6 +325,14 @@ export function ConnectedAppsPage() {
   const { confirm } = useDialog();
   const toast = useToast();
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+
+  const activeTab = (searchParams.get('tab') as TabId) || 'home';
+  const setTab = (tab: TabId) => {
+    const params = new URLSearchParams(searchParams);
+    params.set('tab', tab);
+    navigate({ search: params.toString() }, { replace: true });
+  };
 
   const [composioConfigured, setComposioConfigured] = useState<boolean | null>(null);
   const [connections, setConnections] = useState<ComposioConnection[]>([]);
@@ -458,16 +482,15 @@ export function ConnectedAppsPage() {
 
   return (
     <div className="flex flex-col h-full">
-      <header className="px-6 pt-4 pb-4 border-b border-border dark:border-dark-border">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-lg font-semibold text-text-primary dark:text-dark-text-primary">
-              Connected Apps
-            </h2>
-            <p className="text-sm text-text-muted dark:text-dark-text-muted">
-              Manage 500+ app integrations via Composio
-            </p>
-          </div>
+      <header className="flex items-center justify-between px-6 py-4 border-b border-border dark:border-dark-border">
+        <div>
+          <h2 className="text-lg font-semibold text-text-primary dark:text-dark-text-primary">
+            Connected Apps
+          </h2>
+          <p className="text-sm text-text-muted dark:text-dark-text-muted">
+            Manage 500+ app integrations via Composio
+          </p>
+        </div>
           <button
             onClick={loadData}
             disabled={isLoading}
@@ -476,9 +499,108 @@ export function ConnectedAppsPage() {
           >
             <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
           </button>
-        </div>
       </header>
 
+      {/* Tab Bar */}
+      <div className="flex border-b border-border dark:border-dark-border px-6">
+        {(['home', 'apps'] as TabId[]).map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setTab(tab)}
+            className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px ${
+              activeTab === tab
+                ? 'border-primary text-primary'
+                : 'border-transparent text-text-muted dark:text-dark-text-muted hover:text-text-secondary dark:hover:text-dark-text-secondary hover:border-border dark:hover:border-dark-border'
+            }`}
+          >
+            {tab === 'home' && <Home className="w-3.5 h-3.5" />}
+            {TAB_LABELS[tab]}
+          </button>
+        ))}
+      </div>
+
+      {/* Home Tab */}
+      {activeTab === 'home' && (
+        <div className="flex-1 overflow-y-auto">
+          <PageHomeTab
+            heroIcons={[
+              { icon: Link, color: 'text-primary bg-primary/10' },
+              { icon: Globe, color: 'text-emerald-500 bg-emerald-500/10' },
+              { icon: Shield, color: 'text-violet-500 bg-violet-500/10' },
+            ]}
+            title="Connect Your Favorite Apps"
+            subtitle="Integrate third-party services with your AI — Google, GitHub, Slack, and more. OAuth-based secure connections."
+            cta={{
+              label: 'View Connected Apps',
+              icon: Link,
+              onClick: () => setTab('apps'),
+            }}
+            features={[
+              {
+                icon: Lock,
+                color: 'text-blue-500 bg-blue-500/10',
+                title: 'OAuth Integration',
+                description:
+                  'Securely connect apps using industry-standard OAuth flows. No passwords stored — just tokens.',
+              },
+              {
+                icon: Search,
+                color: 'text-emerald-500 bg-emerald-500/10',
+                title: 'Service Discovery',
+                description:
+                  'Browse 500+ available apps and services. Search by name or category to find what you need.',
+              },
+              {
+                icon: Shield,
+                color: 'text-violet-500 bg-violet-500/10',
+                title: 'Secure Tokens',
+                description:
+                  'Access tokens are encrypted and managed automatically. Revoke access at any time.',
+              },
+              {
+                icon: RefreshCw,
+                color: 'text-amber-500 bg-amber-500/10',
+                title: 'Auto-Refresh',
+                description:
+                  'Expired tokens are automatically refreshed. Your integrations stay connected without manual intervention.',
+              },
+            ]}
+            steps={[
+              {
+                title: 'Choose a service',
+                detail:
+                  'Browse the catalog of 500+ available apps and pick the one you want to integrate.',
+              },
+              {
+                title: 'Authorize via OAuth',
+                detail:
+                  'A secure authorization window opens. Grant access with your existing account.',
+              },
+              {
+                title: 'AI gets access to the app',
+                detail:
+                  'Once authorized, your AI can read and write data through the connected service.',
+              },
+              {
+                title: 'Manage connections',
+                detail:
+                  'View active connections, refresh expired tokens, or disconnect apps at any time.',
+              },
+            ]}
+            quickActions={[
+              {
+                icon: Link,
+                label: 'Manage Apps',
+                description: 'View connected apps and browse available integrations',
+                onClick: () => setTab('apps'),
+              },
+            ]}
+          />
+        </div>
+      )}
+
+      {/* Apps Tab */}
+      {activeTab === 'apps' && (
       <div className="flex-1 overflow-y-auto p-6 space-y-8">
         {/* Loading state */}
         {isLoading && (
@@ -577,6 +699,7 @@ export function ConnectedAppsPage() {
           </section>
         )}
       </div>
+      )}
     </div>
   );
 }

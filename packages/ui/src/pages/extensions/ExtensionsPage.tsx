@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import {
   Sparkles,
   Wrench,
@@ -8,7 +9,11 @@ import {
   Plus,
   Code,
   Upload,
+  Home,
+  Puzzle,
+  Terminal,
 } from '../../components/icons';
+import { PageHomeTab } from '../../components/PageHomeTab';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
 import { EmptyState } from '../../components/EmptyState';
 import { useToast } from '../../components/ToastProvider';
@@ -19,8 +24,28 @@ import { InstallModal } from './InstallModal';
 import { ExtensionDetailModal } from './ExtensionDetailModal';
 import { CreatorModal } from './CreatorModal';
 
+// =============================================================================
+// Tab system
+// =============================================================================
+
+type TabId = 'home' | 'extensions';
+
+const TAB_LABELS: Record<TabId, string> = {
+  home: 'Home',
+  extensions: 'Extensions',
+};
+
 export function ExtensionsPage() {
   const toast = useToast();
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+
+  const activeTab = (searchParams.get('tab') as TabId) || 'home';
+  const setTab = (tab: TabId) => {
+    const params = new URLSearchParams(searchParams);
+    params.set('tab', tab);
+    navigate({ search: params.toString() }, { replace: true });
+  };
   const [packages, setPackages] = useState<ExtensionInfo[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedPackage, setSelectedPackage] = useState<ExtensionInfo | null>(null);
@@ -185,6 +210,107 @@ export function ExtensionsPage() {
         </div>
       </header>
 
+      {/* Tab Bar */}
+      <div className="flex border-b border-border dark:border-dark-border px-6">
+        {(['home', 'extensions'] as TabId[]).map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setTab(tab)}
+            className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px ${
+              activeTab === tab
+                ? 'border-primary text-primary'
+                : 'border-transparent text-text-muted dark:text-dark-text-muted hover:text-text-secondary dark:hover:text-dark-text-secondary hover:border-border dark:hover:border-dark-border'
+            }`}
+          >
+            {tab === 'home' && <Home className="w-3.5 h-3.5" />}
+            {TAB_LABELS[tab]}
+          </button>
+        ))}
+      </div>
+
+      {/* Home Tab */}
+      {activeTab === 'home' && (
+        <div className="flex-1 overflow-y-auto">
+          <PageHomeTab
+            heroIcons={[
+              { icon: Puzzle, color: 'text-primary bg-primary/10' },
+              { icon: Code, color: 'text-emerald-500 bg-emerald-500/10' },
+              { icon: Zap, color: 'text-violet-500 bg-violet-500/10' },
+            ]}
+            title="Build Custom Extensions"
+            subtitle="Extensions are native JavaScript bundles that add tools, triggers, and services to your AI. Write code, define capabilities, deploy instantly."
+            cta={{
+              label: 'View Extensions',
+              icon: Puzzle,
+              onClick: () => setTab('extensions'),
+            }}
+            features={[
+              {
+                icon: Code,
+                color: 'text-blue-500 bg-blue-500/10',
+                title: 'Native Code',
+                description:
+                  'Write JavaScript handlers that run natively in the server runtime. Full access to Node.js APIs.',
+              },
+              {
+                icon: Wrench,
+                color: 'text-emerald-500 bg-emerald-500/10',
+                title: 'Custom Tools',
+                description:
+                  'Define tools with JSON schemas. Your AI can call them during conversations to perform actions.',
+              },
+              {
+                icon: Zap,
+                color: 'text-violet-500 bg-violet-500/10',
+                title: 'Trigger Integration',
+                description:
+                  'Create triggers that fire on schedules, webhooks, or events. Automate workflows effortlessly.',
+              },
+              {
+                icon: Terminal,
+                color: 'text-amber-500 bg-amber-500/10',
+                title: 'SDK Access',
+                description:
+                  'Use the extension SDK to call built-in tools, access databases, and interact with other services.',
+              },
+            ]}
+            steps={[
+              {
+                title: 'Create an extension',
+                detail:
+                  'Use the creator wizard or upload a manifest file to define your extension.',
+              },
+              {
+                title: 'Write tool handlers',
+                detail:
+                  'Implement JavaScript functions that execute when your AI calls your custom tools.',
+              },
+              {
+                title: 'Define triggers',
+                detail:
+                  'Set up event-based or scheduled triggers to automate actions.',
+              },
+              {
+                title: 'Enable & use',
+                detail:
+                  'Enable the extension and your AI immediately gains access to its tools and triggers.',
+              },
+            ]}
+            quickActions={[
+              {
+                icon: Puzzle,
+                label: 'Manage Extensions',
+                description: 'View installed extensions, enable or disable them',
+                onClick: () => setTab('extensions'),
+              },
+            ]}
+          />
+        </div>
+      )}
+
+      {/* Extensions Tab */}
+      {activeTab === 'extensions' && (
+      <>
       {/* Stats Bar */}
       {stats.total > 0 && (
         <div className="px-6 py-3 border-b border-border dark:border-dark-border bg-bg-secondary dark:bg-dark-bg-secondary">
@@ -267,6 +393,8 @@ export function ExtensionsPage() {
           </div>
         )}
       </div>
+      </>
+      )}
 
       {/* Detail Modal */}
       {selectedPackage && (

@@ -9,7 +9,18 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '../components/ToastProvider';
-import { RefreshCw, Terminal, Shield, Puzzle, DollarSign, Lock } from '../components/icons';
+import {
+  RefreshCw,
+  Terminal,
+  Shield,
+  Puzzle,
+  DollarSign,
+  Lock,
+  Home,
+  Layers,
+  BookOpen,
+} from '../components/icons';
+import { PageHomeTab } from '../components/PageHomeTab';
 import { codingAgentsApi } from '../api';
 import type { CodingAgentStatus, CodingAgentTestResult } from '../api/endpoints/coding-agents';
 import {
@@ -20,12 +31,12 @@ import {
   SecurityTab,
 } from './coding-agent-settings-tabs';
 
-type SettingsTab = 'providers' | 'permissions' | 'skills' | 'budget' | 'security';
+type SettingsTab = 'home' | 'providers' | 'permissions' | 'skills' | 'budget' | 'security';
 
 export function CodingAgentSettingsPage() {
   const toast = useToast();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<SettingsTab>('providers');
+  const [activeTab, setActiveTab] = useState<SettingsTab>('home');
   const [statuses, setStatuses] = useState<CodingAgentStatus[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [testingProvider, setTestingProvider] = useState<string | null>(null);
@@ -75,6 +86,7 @@ export function CodingAgentSettingsPage() {
     label: string;
     icon: React.ComponentType<{ className?: string }>;
   }[] = [
+    { id: 'home', label: 'Home', icon: Home },
     { id: 'providers', label: 'Providers', icon: Terminal },
     { id: 'permissions', label: 'Permissions', icon: Shield },
     { id: 'skills', label: 'Skills', icon: Puzzle },
@@ -85,7 +97,7 @@ export function CodingAgentSettingsPage() {
   return (
     <div className="max-w-3xl mx-auto px-6 py-6 space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <header className="flex items-center justify-between">
         <div>
           <h2 className="text-lg font-semibold text-text-primary dark:text-dark-text-primary">
             Coding Agent Settings
@@ -111,27 +123,113 @@ export function CodingAgentSettingsPage() {
             Open Terminal Sessions
           </button>
         </div>
-      </div>
+      </header>
 
       {/* Tabs */}
-      <div className="flex gap-1 border-b border-border dark:border-dark-border">
+      <div className="flex border-b border-border dark:border-dark-border">
         {tabs.map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={`flex items-center gap-1.5 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+            className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px ${
               activeTab === tab.id
                 ? 'border-primary text-primary'
-                : 'border-transparent text-text-muted dark:text-dark-text-muted hover:text-text-primary dark:hover:text-dark-text-primary'
+                : 'border-transparent text-text-muted dark:text-dark-text-muted hover:text-text-secondary dark:hover:text-dark-text-secondary hover:border-border dark:hover:border-dark-border'
             }`}
           >
-            <tab.icon className="w-4 h-4" />
+            <tab.icon className="w-3.5 h-3.5" />
             {tab.label}
           </button>
         ))}
       </div>
 
       {/* Tab Content */}
+      {activeTab === 'home' && (
+        <PageHomeTab
+          heroIcons={[
+            { icon: Terminal, color: 'text-primary bg-primary/10' },
+            { icon: Shield, color: 'text-violet-500 bg-violet-500/10' },
+            { icon: DollarSign, color: 'text-emerald-500 bg-emerald-500/10' },
+          ]}
+          title="Configure Coding Agents"
+          subtitle="Set up providers, permissions, skills, budgets, and security rules for your AI coding assistants."
+          cta={{
+            label: 'View Providers',
+            icon: Terminal,
+            onClick: () => setActiveTab('providers'),
+          }}
+          features={[
+            {
+              icon: Layers,
+              color: 'text-primary bg-primary/10',
+              title: 'Provider Setup',
+              description: 'Install and configure coding agent providers.',
+            },
+            {
+              icon: Lock,
+              color: 'text-orange-500 bg-orange-500/10',
+              title: 'Permission Control',
+              description: 'Set boundaries for what agents can do.',
+            },
+            {
+              icon: BookOpen,
+              color: 'text-emerald-500 bg-emerald-500/10',
+              title: 'Skill Packs',
+              description: 'Enable relevant skill packs for your agents.',
+            },
+            {
+              icon: DollarSign,
+              color: 'text-violet-500 bg-violet-500/10',
+              title: 'Budget Limits',
+              description: 'Control spending and usage limits.',
+            },
+          ]}
+          steps={[
+            { title: 'Add coding providers', detail: 'Install and configure agent backends.' },
+            {
+              title: 'Set permission boundaries',
+              detail: 'Define what actions agents can take.',
+            },
+            { title: 'Enable relevant skills', detail: 'Choose skill packs for your workflow.' },
+            {
+              title: 'Configure budget & security',
+              detail: 'Set spending limits and security rules.',
+            },
+          ]}
+          quickActions={[
+            {
+              icon: Terminal,
+              label: 'Providers',
+              description: 'Manage coding agent providers.',
+              onClick: () => setActiveTab('providers'),
+            },
+            {
+              icon: Shield,
+              label: 'Permissions',
+              description: 'Configure agent permissions.',
+              onClick: () => setActiveTab('permissions'),
+            },
+            {
+              icon: Puzzle,
+              label: 'Skills',
+              description: 'Manage skill packs.',
+              onClick: () => setActiveTab('skills'),
+            },
+            {
+              icon: DollarSign,
+              label: 'Budget',
+              description: 'Set budget and usage limits.',
+              onClick: () => setActiveTab('budget'),
+            },
+            {
+              icon: Lock,
+              label: 'Security',
+              description: 'Configure security rules.',
+              onClick: () => setActiveTab('security'),
+            },
+          ]}
+        />
+      )}
       {activeTab === 'providers' && (
         <ProvidersTab
           statuses={statuses}

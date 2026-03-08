@@ -5,7 +5,7 @@
  * Each card links to a step-by-step wizard flow.
  */
 
-import { useNavigate } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import {
   Key,
   Telegram,
@@ -18,7 +18,11 @@ import {
   Target,
   Zap,
   Link,
+  ListChecks,
+  Settings,
+  Home,
 } from '../components/icons';
+import { PageHomeTab } from '../components/PageHomeTab';
 
 // ============================================================================
 // Wizard Definitions
@@ -117,69 +121,158 @@ function isCompleted(wizardId: string): boolean {
 // ============================================================================
 
 export function WizardsPage() {
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
+  type TabId = 'home' | 'wizards';
+  const TAB_LABELS: Record<TabId, string> = { home: 'Home', wizards: 'Wizards' };
+
+  const tabParam = searchParams.get('tab') as TabId | null;
+  const activeTab: TabId =
+    tabParam && (['home', 'wizards'] as string[]).includes(tabParam) ? tabParam : 'home';
+  const setTab = (tab: TabId) => {
+    const params = new URLSearchParams(searchParams);
+    params.set('tab', tab);
+    navigate({ search: params.toString() }, { replace: true });
+  };
+
+  const completedCount = WIZARDS.filter((w) => isCompleted(w.id)).length;
+
   return (
-    <div className="p-6 md:p-8 max-w-4xl mx-auto">
+    <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="flex items-center gap-3 mb-2">
-        <Sparkles className="w-6 h-6 text-primary" />
-        <h1 className="text-2xl font-bold text-text-primary dark:text-dark-text-primary">
-          Setup Wizards
-        </h1>
+      <header className="flex items-center justify-between px-6 py-4 border-b border-border dark:border-dark-border">
+        <div>
+          <h2 className="text-lg font-semibold text-text-primary dark:text-dark-text-primary">
+            Setup Wizards
+          </h2>
+          <p className="text-sm text-text-muted dark:text-dark-text-muted">
+            {completedCount} of {WIZARDS.length} wizards completed
+          </p>
+        </div>
+      </header>
+
+      {/* Tab Bar */}
+      <div className="flex border-b border-border dark:border-dark-border px-6">
+        {(['home', 'wizards'] as TabId[]).map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setTab(tab)}
+            className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px ${
+              activeTab === tab
+                ? 'border-primary text-primary'
+                : 'border-transparent text-text-muted dark:text-dark-text-muted hover:text-text-secondary dark:hover:text-dark-text-secondary hover:border-border dark:hover:border-dark-border'
+            }`}
+          >
+            {tab === 'home' && <Home className="w-3.5 h-3.5" />}
+            {TAB_LABELS[tab]}
+          </button>
+        ))}
       </div>
-      <p className="text-text-muted dark:text-dark-text-muted mb-8">
-        Step-by-step guides to get OwnPilot fully configured. Each wizard walks you through the
-        setup process.
-      </p>
 
-      {/* Wizard Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-        {WIZARDS.map((w) => {
-          const completed = isCompleted(w.id);
-          const Icon = w.icon;
-          return (
-            <button
-              key={w.id}
-              onClick={() => navigate(`/wizards/${w.id}`)}
-              className="group text-left p-6 rounded-xl border border-border dark:border-dark-border bg-bg-secondary dark:bg-dark-bg-secondary hover:border-primary/50 dark:hover:border-primary/50 hover:shadow-md transition-all"
-            >
-              {/* Icon + Badge */}
-              <div className="flex items-start justify-between mb-4">
-                <div
-                  className={`p-3 rounded-lg bg-bg-tertiary dark:bg-dark-bg-tertiary ${w.color}`}
-                >
-                  <Icon className="w-6 h-6" />
-                </div>
-                {completed && (
-                  <span className="flex items-center gap-1 text-xs font-medium text-success bg-success/10 px-2 py-1 rounded-full">
-                    <Check className="w-3 h-3" />
-                    Done
-                  </span>
-                )}
-              </div>
+      {activeTab === 'home' && (
+        <PageHomeTab
+          heroIcons={[
+            { icon: Sparkles, color: 'text-primary bg-primary/10' },
+            { icon: ListChecks, color: 'text-violet-500 bg-violet-500/10' },
+            { icon: Settings, color: 'text-emerald-500 bg-emerald-500/10' },
+          ]}
+          title="Setup Wizards"
+          subtitle="Guided step-by-step wizards to help you configure features, connect services, and get started quickly."
+          cta={{
+            label: 'View Wizards',
+            icon: Sparkles,
+            onClick: () => setTab('wizards'),
+          }}
+          features={[
+            {
+              icon: ListChecks,
+              color: 'text-primary bg-primary/10',
+              title: 'Step-by-Step',
+              description: 'Follow guided steps to configure each feature correctly.',
+            },
+            {
+              icon: Settings,
+              color: 'text-emerald-500 bg-emerald-500/10',
+              title: 'Auto-Configuration',
+              description: 'Wizards handle complex setup so you do not have to.',
+            },
+            {
+              icon: Sparkles,
+              color: 'text-violet-500 bg-violet-500/10',
+              title: 'Smart Defaults',
+              description: 'Sensible defaults are pre-filled to get you started faster.',
+            },
+            {
+              icon: Zap,
+              color: 'text-amber-500 bg-amber-500/10',
+              title: 'Quick Setup',
+              description: 'Most wizards take just 2-3 minutes to complete.',
+            },
+          ]}
+          steps={[
+            { title: 'Choose a wizard', detail: 'Pick the feature you want to set up.' },
+            { title: 'Follow guided steps', detail: 'Each wizard walks you through the process.' },
+            { title: 'Review configuration', detail: 'Confirm your settings before applying.' },
+            { title: 'Apply settings', detail: 'The wizard applies everything automatically.' },
+          ]}
+        />
+      )}
 
-              {/* Title */}
-              <h3 className="text-base font-semibold text-text-primary dark:text-dark-text-primary mb-1 group-hover:text-primary transition-colors">
-                {w.title}
-              </h3>
+      {activeTab === 'wizards' && (
+        <>
+          <div className="flex-1 overflow-y-auto p-6 animate-fade-in-up">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 max-w-4xl mx-auto">
+              {WIZARDS.map((w) => {
+                const completed = isCompleted(w.id);
+                const Icon = w.icon;
+                return (
+                  <button
+                    key={w.id}
+                    onClick={() => navigate(`/wizards/${w.id}`)}
+                    className="group text-left p-6 rounded-xl border border-border dark:border-dark-border bg-bg-secondary dark:bg-dark-bg-secondary hover:border-primary/50 dark:hover:border-primary/50 hover:shadow-md transition-all"
+                  >
+                    {/* Icon + Badge */}
+                    <div className="flex items-start justify-between mb-4">
+                      <div
+                        className={`p-3 rounded-lg bg-bg-tertiary dark:bg-dark-bg-tertiary ${w.color}`}
+                      >
+                        <Icon className="w-6 h-6" />
+                      </div>
+                      {completed && (
+                        <span className="flex items-center gap-1 text-xs font-medium text-success bg-success/10 px-2 py-1 rounded-full">
+                          <Check className="w-3 h-3" />
+                          Done
+                        </span>
+                      )}
+                    </div>
 
-              {/* Description */}
-              <p className="text-sm text-text-muted dark:text-dark-text-muted mb-4 line-clamp-2">
-                {w.description}
-              </p>
+                    {/* Title */}
+                    <h3 className="text-base font-semibold text-text-primary dark:text-dark-text-primary mb-1 group-hover:text-primary transition-colors">
+                      {w.title}
+                    </h3>
 
-              {/* Footer */}
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-text-muted dark:text-dark-text-muted">{w.time}</span>
-                <span className="text-xs font-medium text-primary opacity-0 group-hover:opacity-100 transition-opacity">
-                  {completed ? 'Run Again' : 'Start'} &rarr;
-                </span>
-              </div>
-            </button>
-          );
-        })}
-      </div>
+                    {/* Description */}
+                    <p className="text-sm text-text-muted dark:text-dark-text-muted mb-4 line-clamp-2">
+                      {w.description}
+                    </p>
+
+                    {/* Footer */}
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-text-muted dark:text-dark-text-muted">
+                        {w.time}
+                      </span>
+                      <span className="text-xs font-medium text-primary opacity-0 group-hover:opacity-100 transition-opacity">
+                        {completed ? 'Run Again' : 'Start'} &rarr;
+                      </span>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }

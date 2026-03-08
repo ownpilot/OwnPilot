@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useGateway } from '../hooks/useWebSocket';
 import { useDebouncedCallback } from '../hooks';
 import { goalsApi } from '../api';
@@ -12,12 +13,20 @@ import {
   Circle,
   AlertTriangle,
   Pause,
+  Star,
+  BarChart,
+  Sparkles,
+  Home,
 } from '../components/icons';
 import { useDialog } from '../components/ConfirmDialog';
 import { useToast } from '../components/ToastProvider';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { EmptyState } from '../components/EmptyState';
 import { useModalClose } from '../hooks';
+import { PageHomeTab } from '../components/PageHomeTab';
+
+type TabId = 'home' | 'goals';
+const TAB_LABELS: Record<TabId, string> = { home: 'Home', goals: 'Goals' };
 
 const statusColors = {
   active: 'bg-primary/10 text-primary',
@@ -40,6 +49,10 @@ const priorityLabels: Record<number, string> = {
 };
 
 export function GoalsPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab = (searchParams.get('tab') as TabId) || 'home';
+  const setActiveTab = (t: TabId) => setSearchParams(t === 'home' ? {} : { tab: t });
+
   const { confirm } = useDialog();
   const toast = useToast();
   const { subscribe } = useGateway();
@@ -141,6 +154,50 @@ export function GoalsPage() {
         </button>
       </header>
 
+      {/* URL-based tabs */}
+      <div className="flex border-b border-border dark:border-dark-border px-6">
+        {(['home', 'goals'] as TabId[]).map((t) => (
+          <button key={t} onClick={() => setActiveTab(t)}
+            className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px ${
+              activeTab === t ? 'border-primary text-primary'
+                : 'border-transparent text-text-muted dark:text-dark-text-muted hover:text-text-secondary dark:hover:text-dark-text-secondary hover:border-border dark:hover:border-dark-border'
+            }`}>
+            {t === 'home' && <Home className="w-3.5 h-3.5" />}
+            {TAB_LABELS[t]}
+          </button>
+        ))}
+      </div>
+
+      {/* Home Tab */}
+      {activeTab === 'home' && (
+        <div className="flex-1 overflow-y-auto p-6">
+          <PageHomeTab
+            heroIcons={[
+              { icon: Target, color: 'text-primary bg-primary/10' },
+              { icon: CheckCircle2, color: 'text-emerald-500 bg-emerald-500/10' },
+              { icon: Star, color: 'text-violet-500 bg-violet-500/10' },
+            ]}
+            title="Set and Track Goals"
+            subtitle="Define personal or professional goals, track milestones, and let your AI help you stay on track with reminders and suggestions."
+            cta={{ label: 'View Goals', icon: Target, onClick: () => setActiveTab('goals') }}
+            features={[
+              { icon: Target, color: 'text-blue-500 bg-blue-500/10', title: 'Goal Setting', description: 'Define clear goals with titles, descriptions, and due dates.' },
+              { icon: CheckCircle2, color: 'text-green-500 bg-green-500/10', title: 'Milestone Tracking', description: 'Break goals into steps and track completion progress.' },
+              { icon: BarChart, color: 'text-amber-500 bg-amber-500/10', title: 'Progress Charts', description: 'Visualize your progress with percentage-based tracking.' },
+              { icon: Sparkles, color: 'text-violet-500 bg-violet-500/10', title: 'AI Coaching', description: 'Get AI-powered suggestions for next actions and motivation.' },
+            ]}
+            steps={[
+              { title: 'Create a goal', detail: 'Define what you want to achieve with a clear title and description.' },
+              { title: 'Define milestones', detail: 'Break your goal into actionable steps the AI can help track.' },
+              { title: 'Track daily progress', detail: 'Update step statuses and watch your progress bar grow.' },
+              { title: 'AI suggests next actions', detail: 'Your AI assistant proactively suggests what to work on next.' },
+            ]}
+          />
+        </div>
+      )}
+
+      {/* Goals Tab */}
+      {activeTab === 'goals' && (<>
       {/* Filters */}
       <div className="flex gap-2 px-6 py-3 border-b border-border dark:border-dark-border">
         {(['all', 'active', 'paused', 'completed', 'abandoned'] as const).map((status) => (
@@ -185,6 +242,7 @@ export function GoalsPage() {
           </div>
         )}
       </div>
+      </>)}
 
       {/* Create/Edit Modal */}
       {(showCreateModal || editingGoal) && (

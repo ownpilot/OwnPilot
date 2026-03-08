@@ -8,7 +8,9 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useToast } from '../components/ToastProvider';
+import { PageHomeTab } from '../components/PageHomeTab';
 import {
   RefreshCw,
   CheckCircle2,
@@ -23,6 +25,11 @@ import {
   Clock,
   Key,
   AlertCircle,
+  Home,
+  Code,
+  Bot,
+  Layers,
+  History,
 } from '../components/icons';
 import { XTerminal } from '../components/XTerminal';
 import { AutoModePanel } from '../components/AutoModePanel';
@@ -102,7 +109,31 @@ const STATE_LABELS: Record<CodingAgentSessionState, string> = {
 // Main Component
 // =============================================================================
 
+type TabId = 'home' | 'agents';
+
+const TAB_LABELS: Record<TabId, string> = {
+  home: 'Home',
+  agents: 'Agents',
+};
+
 export function CodingAgentsPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabParam = searchParams.get('tab') as TabId | null;
+  const [activeTab, setActiveTab] = useState<TabId>(tabParam || 'home');
+
+  useEffect(() => {
+    const urlTab = (searchParams.get('tab') as TabId | null) || 'home';
+    setActiveTab(urlTab);
+  }, [searchParams]);
+
+  const setTab = useCallback(
+    (tab: TabId) => {
+      setActiveTab(tab);
+      setSearchParams(tab === 'home' ? {} : { tab });
+    },
+    [setSearchParams]
+  );
+
   const toast = useToast();
   const { subscribe } = useGateway();
 
@@ -227,7 +258,7 @@ export function CodingAgentsPage() {
   return (
     <div className="flex flex-col flex-1 min-h-0">
       {/* Header */}
-      <header className="flex items-center justify-between px-6 pt-4 pb-4 border-b border-border dark:border-dark-border">
+      <header className="flex items-center justify-between px-6 py-4 border-b border-border dark:border-dark-border">
         <div>
           <h2 className="text-lg font-semibold text-text-primary dark:text-dark-text-primary">
             Coding Agents
@@ -246,7 +277,7 @@ export function CodingAgentsPage() {
             <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
           </button>
           <button
-            onClick={() => setShowNewSession(true)}
+            onClick={() => { setTab('agents'); setShowNewSession(true); }}
             disabled={activeSessions.length >= 3}
             className="px-3 py-1.5 rounded-lg bg-primary text-white text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 inline-flex items-center gap-1.5"
             title={activeSessions.length >= 3 ? 'Maximum 3 concurrent sessions' : 'New session'}
@@ -257,7 +288,75 @@ export function CodingAgentsPage() {
         </div>
       </header>
 
-      {/* Content: split panel */}
+      {/* Tab bar */}
+      <div className="flex border-b border-border dark:border-dark-border px-6">
+        {(['home', 'agents'] as TabId[]).map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setTab(tab)}
+            className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px ${
+              activeTab === tab
+                ? 'border-primary text-primary'
+                : 'border-transparent text-text-muted dark:text-dark-text-muted hover:text-text-secondary dark:hover:text-dark-text-secondary hover:border-border dark:hover:border-dark-border'
+            }`}
+          >
+            {tab === 'home' && <Home className="w-3.5 h-3.5" />}
+            {TAB_LABELS[tab]}
+          </button>
+        ))}
+      </div>
+
+      {/* Home tab */}
+      {activeTab === 'home' && (
+        <PageHomeTab
+          heroIcons={[
+            { icon: Terminal, color: 'text-primary bg-primary/10' },
+            { icon: Code, color: 'text-emerald-500 bg-emerald-500/10' },
+            { icon: Bot, color: 'text-violet-500 bg-violet-500/10' },
+          ]}
+          title="AI-Powered Coding Assistants"
+          subtitle="Spin up coding agents that can read, write, and execute code — powered by Claude, Gemini, or Codex with full terminal access."
+          cta={{ label: 'View Sessions', icon: Terminal, onClick: () => setTab('agents') }}
+          features={[
+            {
+              icon: Layers,
+              color: 'text-blue-500 bg-blue-500/10',
+              title: 'Multi-Provider',
+              description: 'Claude, Gemini, Codex — choose the best coding agent for each task.',
+            },
+            {
+              icon: Terminal,
+              color: 'text-emerald-500 bg-emerald-500/10',
+              title: 'Terminal Access',
+              description: 'Full interactive terminal sessions with live output streaming.',
+            },
+            {
+              icon: Code,
+              color: 'text-orange-500 bg-orange-500/10',
+              title: 'Code Execution',
+              description: 'Agents can read, write, and run code directly in your workspace.',
+            },
+            {
+              icon: History,
+              color: 'text-purple-500 bg-purple-500/10',
+              title: 'Session Management',
+              description: 'Track active sessions, view history, and manage concurrent agents.',
+            },
+          ]}
+          steps={[
+            { title: 'Configure a coding provider', detail: 'Set up Claude Code, Gemini CLI, or Codex.' },
+            { title: 'Start a coding session', detail: 'Launch a new terminal session with your chosen provider.' },
+            { title: 'Give instructions in natural language', detail: 'Describe what you want the agent to build or fix.' },
+            { title: 'Review generated code', detail: 'Inspect the output and iterate as needed.' },
+          ]}
+          quickActions={[
+            { label: 'Manage Sessions', icon: Terminal, description: 'View active sessions and start new coding agents.', onClick: () => setTab('agents') },
+          ]}
+        />
+      )}
+
+      {/* Agents tab — Content: split panel */}
+      {activeTab === 'agents' && (
       <div className="flex-1 flex min-h-0">
         {/* Left sidebar: session list */}
         <div className="w-64 flex-shrink-0 border-r border-border dark:border-dark-border overflow-y-auto flex flex-col">
@@ -429,6 +528,7 @@ export function CodingAgentsPage() {
           )}
         </div>
       </div>
+      )}
 
       {/* New Session Modal */}
       {showNewSession && (

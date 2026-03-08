@@ -18,7 +18,12 @@ import {
   Search,
   Info,
   ListChecks,
+  Home,
+  Brain,
+  DollarSign,
+  Activity,
 } from '../../components/icons';
+import { PageHomeTab } from '../../components/PageHomeTab';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
 import { crewsApi } from '../../api/endpoints/souls';
 import type { CrewTemplate } from '../../api/endpoints/souls';
@@ -42,6 +47,7 @@ import { AIChatCreator } from './components/AIChatCreator';
 import { HelpPanel } from './components/HelpPanel';
 
 const TABS: { key: HubTab; label: string; icon: typeof Bot }[] = [
+  { key: 'home', label: 'Home', icon: Home },
   { key: 'agents', label: 'Agents', icon: Bot },
   { key: 'crews', label: 'Crews', icon: Users },
   { key: 'plans', label: 'Plans', icon: ListChecks },
@@ -52,7 +58,7 @@ const TABS: { key: HubTab; label: string; icon: typeof Bot }[] = [
 export function AutonomousHubPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const tabParam = searchParams.get('tab') as HubTab | null;
-  const [activeTab, setActiveTab] = useState<HubTab>(tabParam || 'agents');
+  const [activeTab, setActiveTab] = useState<HubTab>(tabParam || 'home');
   const [showWizard, setShowWizard] = useState(false);
   const [wizardInitialStep, setWizardInitialStep] = useState<'type' | 'templates'>('type');
   const [showAICreator, setShowAICreator] = useState(false);
@@ -69,7 +75,7 @@ export function AutonomousHubPage() {
 
   // Sync tab state with URL on back/forward navigation
   useEffect(() => {
-    const urlTab = (searchParams.get('tab') as HubTab | null) || 'agents';
+    const urlTab = (searchParams.get('tab') as HubTab | null) || 'home';
     setActiveTab(urlTab);
   }, [searchParams]);
 
@@ -95,7 +101,7 @@ export function AutonomousHubPage() {
   const handleTabChange = useCallback(
     (tab: HubTab) => {
       setActiveTab(tab);
-      setSearchParams(tab === 'agents' ? {} : { tab });
+      setSearchParams(tab === 'home' ? {} : { tab });
     },
     [setSearchParams]
   );
@@ -225,12 +231,12 @@ export function AutonomousHubPage() {
       )}
 
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <header className="flex items-center justify-between px-6 py-4 border-b border-border dark:border-dark-border">
         <div>
-          <h1 className="text-2xl font-bold text-text-primary dark:text-dark-text-primary">
+          <h2 className="text-lg font-semibold text-text-primary dark:text-dark-text-primary">
             Autonomous Agents
-          </h1>
-          <p className="text-sm text-text-muted dark:text-dark-text-muted mt-0.5">
+          </h2>
+          <p className="text-sm text-text-muted dark:text-dark-text-muted">
             Your agents work on your behalf — monitoring, researching, and completing tasks around
             the clock.
           </p>
@@ -265,10 +271,10 @@ export function AutonomousHubPage() {
             New Agent
           </button>
         </div>
-      </div>
+      </header>
 
       {/* Tab bar */}
-      <div className="flex items-center gap-1 border-b border-border dark:border-dark-border">
+      <div className="flex border-b border-border dark:border-dark-border px-6">
         {TABS.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.key;
@@ -276,13 +282,13 @@ export function AutonomousHubPage() {
             <button
               key={tab.key}
               onClick={() => handleTabChange(tab.key)}
-              className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
+              className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px ${
                 isActive
                   ? 'border-primary text-primary'
-                  : 'border-transparent text-text-muted dark:text-dark-text-muted hover:text-text-primary dark:hover:text-dark-text-primary'
+                  : 'border-transparent text-text-muted dark:text-dark-text-muted hover:text-text-secondary dark:hover:text-dark-text-secondary hover:border-border dark:hover:border-dark-border'
               }`}
             >
-              <Icon className="w-4 h-4" />
+              <Icon className="w-3.5 h-3.5" />
               {tab.label}
               {tab.key === 'agents' && (
                 <span className="text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded-full ml-1">
@@ -300,6 +306,99 @@ export function AutonomousHubPage() {
       </div>
 
       {/* Tab content */}
+      {activeTab === 'home' && (
+        <PageHomeTab
+          heroIcons={[
+            { icon: Bot, color: 'text-primary bg-primary/10' },
+            { icon: Brain, color: 'text-violet-500 bg-violet-500/10' },
+            { icon: Users, color: 'text-emerald-500 bg-emerald-500/10' },
+          ]}
+          title="Command Your Autonomous Agents"
+          subtitle="Create AI agents that work independently — with their own goals, tools, budgets, and crew coordination."
+          cta={{ label: 'View Agents', icon: Bot, onClick: () => handleTabChange('agents') }}
+          features={[
+            {
+              icon: Bot,
+              color: 'text-primary bg-primary/10',
+              title: 'Independent Agents',
+              description:
+                'Create agents that run on their own schedule — monitoring, researching, and completing tasks autonomously.',
+            },
+            {
+              icon: Users,
+              color: 'text-emerald-500 bg-emerald-500/10',
+              title: 'Crew Collaboration',
+              description:
+                'Organize agents into crews for coordinated multi-agent workflows and task delegation.',
+            },
+            {
+              icon: DollarSign,
+              color: 'text-amber-500 bg-amber-500/10',
+              title: 'Budget Control',
+              description:
+                'Set spending limits per agent and monitor API costs to keep your autonomous operations within budget.',
+            },
+            {
+              icon: Activity,
+              color: 'text-violet-500 bg-violet-500/10',
+              title: 'Activity Monitoring',
+              description:
+                'Track every heartbeat, message, and action across all your agents in real time.',
+            },
+          ]}
+          steps={[
+            {
+              title: 'Create an agent',
+              detail: 'Use templates, AI chat, or manual setup to define your agent.',
+            },
+            {
+              title: 'Assign tools & budget',
+              detail: 'Give your agent the tools it needs and set spending limits.',
+            },
+            {
+              title: 'Let it work autonomously',
+              detail: 'Your agent runs on a schedule, completing tasks on its own.',
+            },
+            {
+              title: 'Monitor activity & messages',
+              detail: 'Review logs, messages, and results from the activity feed.',
+            },
+          ]}
+          quickActions={[
+            {
+              icon: Bot,
+              label: 'View Agents',
+              description: 'Browse and manage all agents',
+              onClick: () => handleTabChange('agents'),
+            },
+            {
+              icon: Users,
+              label: 'Manage Crews',
+              description: 'Organize agents into teams',
+              onClick: () => handleTabChange('crews'),
+            },
+            {
+              icon: ListChecks,
+              label: 'Browse Plans',
+              description: 'View autonomous execution plans',
+              onClick: () => handleTabChange('plans'),
+            },
+            {
+              icon: MessageSquare,
+              label: 'View Messages',
+              description: 'Read inter-agent communications',
+              onClick: () => handleTabChange('messages'),
+            },
+            {
+              icon: Activity,
+              label: 'Activity Log',
+              description: 'Monitor real-time agent activity',
+              onClick: () => handleTabChange('activity'),
+            },
+          ]}
+        />
+      )}
+
       {activeTab === 'agents' && (
         <div className="space-y-4 min-w-[800px]">
           {/* Search + Filters */}

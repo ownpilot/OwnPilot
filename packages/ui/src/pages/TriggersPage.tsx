@@ -112,11 +112,6 @@ const TAB_LABELS: Record<TabId, string> = {
   activity: 'Activity',
 };
 
-const TAB_DESCRIPTIONS: Record<TabId, string> = {
-  home: 'Overview of the trigger system',
-  triggers: 'View and manage triggers',
-  activity: 'View trigger execution history',
-};
 
 export function TriggersPage() {
   const { confirm } = useDialog();
@@ -433,17 +428,16 @@ export function TriggersPage() {
       )}
 
       {/* Tab bar: Home | Triggers | Activity */}
-      <div className="flex gap-0 px-6 border-b border-border dark:border-dark-border">
+      <div className="flex border-b border-border dark:border-dark-border px-6">
         {(['home', 'triggers', 'activity'] as TabId[]).map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
-            className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors flex items-center gap-1.5 ${
+            className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px ${
               activeTab === tab
                 ? 'border-primary text-primary'
-                : 'border-transparent text-text-muted dark:text-dark-text-muted hover:text-text-primary dark:hover:text-dark-text-primary'
+                : 'border-transparent text-text-muted dark:text-dark-text-muted hover:text-text-secondary dark:hover:text-dark-text-secondary hover:border-border dark:hover:border-dark-border'
             }`}
-            title={TAB_DESCRIPTIONS[tab]}
           >
             {tab === 'home' && <Home className="w-3.5 h-3.5" />}
             {tab === 'activity' && <Activity className="w-3.5 h-3.5" />}

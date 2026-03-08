@@ -53,11 +53,6 @@ const TAB_LABELS: Record<TabId, string> = {
   logs: 'Execution Logs',
 };
 
-const TAB_DESCRIPTIONS: Record<TabId, string> = {
-  home: 'Overview of the workflow system',
-  workflows: 'View and manage workflows',
-  logs: 'View workflow execution logs',
-};
 
 export function WorkflowsPage() {
   const navigate = useNavigate();
@@ -234,7 +229,7 @@ export function WorkflowsPage() {
       </header>
 
       {/* Tab bar */}
-      <div className="flex gap-0 px-6 border-b border-border dark:border-dark-border">
+      <div className="flex border-b border-border dark:border-dark-border px-6">
         {(['home', 'workflows', 'logs'] as TabId[]).map((tab) => (
           <button
             key={tab}
@@ -242,12 +237,11 @@ export function WorkflowsPage() {
               setActiveTab(tab);
               if (tab === 'logs') fetchRecentLogs();
             }}
-            className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors flex items-center gap-1.5 ${
+            className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px ${
               activeTab === tab
                 ? 'border-primary text-primary'
-                : 'border-transparent text-text-muted dark:text-dark-text-muted hover:text-text-primary dark:hover:text-dark-text-primary'
+                : 'border-transparent text-text-muted dark:text-dark-text-muted hover:text-text-secondary dark:hover:text-dark-text-secondary hover:border-border dark:hover:border-dark-border'
             }`}
-            title={TAB_DESCRIPTIONS[tab]}
           >
             {tab === 'home' && <Home className="w-3.5 h-3.5" />}
             {tab === 'logs' && <Activity className="w-3.5 h-3.5" />}

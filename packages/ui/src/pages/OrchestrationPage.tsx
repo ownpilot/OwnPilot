@@ -6,7 +6,9 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useToast } from '../components/ToastProvider';
+import { PageHomeTab } from '../components/PageHomeTab';
 import {
   Play,
   StopCircle,
@@ -22,6 +24,12 @@ import {
   Zap,
   FolderOpen,
   Trash2,
+  Home,
+  GitMerge,
+  Brain,
+  Shuffle,
+  Layers,
+  Shield,
 } from '../components/icons';
 import { XTerminal } from '../components/XTerminal';
 import {
@@ -389,7 +397,31 @@ function NewRunForm({
 // Main page
 // =============================================================================
 
+type TabId = 'home' | 'orchestration';
+
+const TAB_LABELS: Record<TabId, string> = {
+  home: 'Home',
+  orchestration: 'Orchestration',
+};
+
 export function OrchestrationPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabParam = searchParams.get('tab') as TabId | null;
+  const [activeTab, setActiveTab] = useState<TabId>(tabParam || 'home');
+
+  useEffect(() => {
+    const urlTab = (searchParams.get('tab') as TabId | null) || 'home';
+    setActiveTab(urlTab);
+  }, [searchParams]);
+
+  const setTab = useCallback(
+    (tab: TabId) => {
+      setActiveTab(tab);
+      setSearchParams(tab === 'home' ? {} : { tab });
+    },
+    [setSearchParams]
+  );
+
   const toast = useToast();
   const gateway = useGateway();
 
@@ -559,18 +591,13 @@ export function OrchestrationPage() {
     <div className="flex flex-col h-full">
       {/* Header */}
       <header className="flex items-center justify-between px-6 py-4 border-b border-border dark:border-dark-border">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
-            <Zap className="w-5 h-5 text-primary" />
-          </div>
-          <div>
-            <h2 className="text-lg font-semibold text-text-primary dark:text-dark-text-primary">
-              Orchestration
-            </h2>
-            <p className="text-xs text-text-muted dark:text-dark-text-muted">
-              Multi-step CLI tool automation — goal in, results out
-            </p>
-          </div>
+        <div>
+          <h2 className="text-lg font-semibold text-text-primary dark:text-dark-text-primary">
+            Orchestration
+          </h2>
+          <p className="text-sm text-text-muted dark:text-dark-text-muted">
+            Multi-step CLI tool automation — goal in, results out
+          </p>
         </div>
         <div className="flex items-center gap-2">
           <button
@@ -580,7 +607,7 @@ export function OrchestrationPage() {
             <RefreshCw className="w-4 h-4 text-text-muted" />
           </button>
           <button
-            onClick={() => setShowNewForm((s) => !s)}
+            onClick={() => { setTab('orchestration'); setShowNewForm((s) => !s); }}
             className="flex items-center gap-1.5 px-3 py-2 text-sm bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
           >
             <Play className="w-4 h-4" />
@@ -589,178 +616,250 @@ export function OrchestrationPage() {
         </div>
       </header>
 
-      {/* New run form */}
-      {showNewForm && (
-        <div className="px-6 py-4 border-b border-border dark:border-dark-border bg-bg-secondary dark:bg-dark-bg-secondary">
-          <NewRunForm providers={providers} workspaces={workspaces} onStart={handleStart} />
-        </div>
+      {/* Tab bar */}
+      <div className="flex border-b border-border dark:border-dark-border px-6">
+        {(['home', 'orchestration'] as TabId[]).map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setTab(tab)}
+            className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px ${
+              activeTab === tab
+                ? 'border-primary text-primary'
+                : 'border-transparent text-text-muted dark:text-dark-text-muted hover:text-text-secondary dark:hover:text-dark-text-secondary hover:border-border dark:hover:border-dark-border'
+            }`}
+          >
+            {tab === 'home' && <Home className="w-3.5 h-3.5" />}
+            {TAB_LABELS[tab]}
+          </button>
+        ))}
+      </div>
+
+      {/* Home tab */}
+      {activeTab === 'home' && (
+        <PageHomeTab
+          heroIcons={[
+            { icon: GitMerge, color: 'text-primary bg-primary/10' },
+            { icon: Brain, color: 'text-violet-500 bg-violet-500/10' },
+            { icon: Shuffle, color: 'text-emerald-500 bg-emerald-500/10' },
+          ]}
+          title="Orchestrate Complex AI Pipelines"
+          subtitle="Chain multiple AI models and tools into sophisticated pipelines — with branching, parallel execution, and intelligent routing."
+          cta={{ label: 'View Pipelines', icon: GitMerge, onClick: () => setTab('orchestration') }}
+          features={[
+            {
+              icon: GitMerge,
+              color: 'text-blue-500 bg-blue-500/10',
+              title: 'Pipeline Builder',
+              description: 'Design multi-step orchestration pipelines with branching and chaining.',
+            },
+            {
+              icon: Shuffle,
+              color: 'text-emerald-500 bg-emerald-500/10',
+              title: 'Model Routing',
+              description: 'Route tasks to the best model for each step — Claude, Gemini, or Codex.',
+            },
+            {
+              icon: Layers,
+              color: 'text-orange-500 bg-orange-500/10',
+              title: 'Parallel Execution',
+              description: 'Run independent steps in parallel for faster pipeline completion.',
+            },
+            {
+              icon: Shield,
+              color: 'text-purple-500 bg-purple-500/10',
+              title: 'Smart Fallbacks',
+              description: 'Automatic error handling and fallback strategies when steps fail.',
+            },
+          ]}
+          steps={[
+            { title: 'Design your pipeline', detail: 'Define the sequence of steps your AI should execute.' },
+            { title: 'Configure model routing', detail: 'Pick the best CLI tool for each step in the pipeline.' },
+            { title: 'Set execution rules', detail: 'Choose auto-mode, analysis, and fallback behavior.' },
+            { title: 'Deploy & monitor', detail: 'Launch your pipeline and track progress in real time.' },
+          ]}
+          quickActions={[
+            { label: 'View Orchestration', icon: GitMerge, description: 'View and manage your orchestration pipelines.', onClick: () => setTab('orchestration') },
+          ]}
+        />
       )}
 
-      {/* Body — split: run list | run detail */}
-      <div className="flex flex-1 min-h-0">
-        {/* Left: run list */}
-        <div className="w-72 shrink-0 border-r border-border dark:border-dark-border overflow-y-auto">
-          {loading ? (
-            <div className="flex items-center justify-center py-8">
-              <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-            </div>
-          ) : runs.length === 0 ? (
-            <div className="text-center py-8">
-              <Terminal className="w-8 h-8 mx-auto mb-2 text-text-muted/30" />
-              <p className="text-xs text-text-muted">No orchestration runs yet</p>
-            </div>
-          ) : (
-            <div className="py-1">
-              {runs.map((run) => (
-                <button
-                  key={run.id}
-                  onClick={() => setSelectedRunId(run.id)}
-                  className={`w-full px-4 py-3 text-left border-b border-border dark:border-dark-border transition-colors ${
-                    selectedRunId === run.id
-                      ? 'bg-primary/5 border-l-2 border-l-primary'
-                      : 'hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary'
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-xs font-medium text-text-primary dark:text-dark-text-primary truncate flex-1">
-                      {run.goal.slice(0, 50)}
-                      {run.goal.length > 50 ? '...' : ''}
-                    </span>
-                    <StatusBadge status={run.status} />
-                  </div>
-                  <div className="flex items-center gap-2 text-[10px] text-text-muted">
-                    <span>{run.provider}</span>
-                    <span>·</span>
-                    <span>
-                      {run.steps.length}/{run.maxSteps} steps
-                    </span>
-                    {run.totalDurationMs && (
-                      <>
-                        <span>·</span>
-                        <span>{(run.totalDurationMs / 1000).toFixed(0)}s</span>
-                      </>
-                    )}
-                  </div>
-                </button>
-              ))}
+      {/* Orchestration tab */}
+      {activeTab === 'orchestration' && (
+        <>
+          {/* New run form */}
+          {showNewForm && (
+            <div className="px-6 py-4 border-b border-border dark:border-dark-border bg-bg-secondary dark:bg-dark-bg-secondary">
+              <NewRunForm providers={providers} workspaces={workspaces} onStart={handleStart} />
             </div>
           )}
-        </div>
 
-        {/* Right: run detail */}
-        <div className="flex-1 min-w-0 flex flex-col">
-          {selectedRun ? (
-            <>
-              {/* Run header */}
-              <div className="px-5 py-3 border-b border-border dark:border-dark-border bg-bg-secondary dark:bg-dark-bg-secondary">
-                <div className="flex items-center justify-between">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <StatusBadge status={selectedRun.status} />
-                      <span className="text-[10px] text-text-muted font-mono">
-                        {selectedRun.id}
-                      </span>
-                    </div>
-                    <p className="text-sm text-text-primary dark:text-dark-text-primary">
-                      {selectedRun.goal}
-                    </p>
-                    <div className="flex items-center gap-3 mt-1 text-[11px] text-text-muted">
-                      <span>Provider: {selectedRun.provider}</span>
-                      <span>Workspace: {selectedRun.cwd}</span>
-                      <span>Mode: {selectedRun.autoMode ? 'Full auto' : 'Step-by-step'}</span>
-                      {selectedRun.enableAnalysis && <span>AI Analysis: On</span>}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    {['running', 'planning', 'waiting_user'].includes(selectedRun.status) && (
-                      <button
-                        onClick={() => handleCancel(selectedRun.id)}
-                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-error hover:bg-error/10 rounded-lg transition-colors"
-                      >
-                        <StopCircle className="w-3.5 h-3.5" />
-                        Cancel
-                      </button>
-                    )}
-                    {['completed', 'failed', 'cancelled'].includes(selectedRun.status) && (
-                      <button
-                        onClick={() => handleDelete(selectedRun.id)}
-                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-text-muted hover:text-error hover:bg-error/10 rounded-lg transition-colors"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                        Delete
-                      </button>
-                    )}
-                  </div>
+          {/* Body — split: run list | run detail */}
+          <div className="flex flex-1 min-h-0">
+            {/* Left: run list */}
+            <div className="w-72 shrink-0 border-r border-border dark:border-dark-border overflow-y-auto">
+              {loading ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
                 </div>
-              </div>
-
-              {/* Steps timeline + live output */}
-              <div className="flex-1 overflow-y-auto p-5 space-y-4">
-                <StepTimeline steps={selectedRun.steps} />
-
-                {/* Live CLI output for the active step — interactive terminal */}
-                {activeSessionId && selectedRun.status === 'running' && (
-                  <div className="border border-border dark:border-dark-border rounded-lg overflow-hidden h-72">
-                    <XTerminal sessionId={activeSessionId} interactive={true} />
-                  </div>
-                )}
-              </div>
-
-              {/* Continue input (when waiting for user) */}
-              {selectedRun.status === 'waiting_user' && (
-                <div className="px-5 py-3 border-t border-border dark:border-dark-border bg-bg-secondary dark:bg-dark-bg-secondary">
-                  {(() => {
-                    const lastSt = selectedRun.steps[selectedRun.steps.length - 1];
-                    const question = lastSt?.analysis?.userQuestion;
-                    if (!question) return null;
-                    return (
-                      <div className="flex items-start gap-2 mb-2 p-2 bg-amber-500/10 border border-amber-500/20 rounded-lg">
-                        <AlertCircle className="w-3.5 h-3.5 text-amber-500 mt-0.5 shrink-0" />
-                        <p className="text-xs text-amber-700 dark:text-amber-400">{question}</p>
-                      </div>
-                    );
-                  })()}
-                  <div className="flex items-center gap-2">
-                    <input
-                      value={continuePrompt}
-                      onChange={(e) => setContinuePrompt(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' && !e.shiftKey) {
-                          e.preventDefault();
-                          handleContinue();
-                        }
-                      }}
-                      placeholder="Type your response or next instruction..."
-                      className="flex-1 px-3 py-2 text-sm bg-bg-tertiary dark:bg-dark-bg-tertiary border border-border dark:border-dark-border rounded-lg text-text-primary dark:text-dark-text-primary placeholder:text-text-muted/60 focus:outline-none focus:ring-2 focus:ring-primary/50"
-                    />
+              ) : runs.length === 0 ? (
+                <div className="text-center py-8">
+                  <Terminal className="w-8 h-8 mx-auto mb-2 text-text-muted/30" />
+                  <p className="text-xs text-text-muted">No orchestration runs yet</p>
+                </div>
+              ) : (
+                <div className="py-1">
+                  {runs.map((run) => (
                     <button
-                      onClick={handleContinue}
-                      disabled={!continuePrompt.trim() || isContinuing}
-                      className="flex items-center gap-1.5 px-4 py-2 text-sm bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                      key={run.id}
+                      onClick={() => setSelectedRunId(run.id)}
+                      className={`w-full px-4 py-3 text-left border-b border-border dark:border-dark-border transition-colors ${
+                        selectedRunId === run.id
+                          ? 'bg-primary/5 border-l-2 border-l-primary'
+                          : 'hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary'
+                      }`}
                     >
-                      <Send className="w-3.5 h-3.5" />
-                      {isContinuing ? 'Sending...' : 'Continue'}
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-xs font-medium text-text-primary dark:text-dark-text-primary truncate flex-1">
+                          {run.goal.slice(0, 50)}
+                          {run.goal.length > 50 ? '...' : ''}
+                        </span>
+                        <StatusBadge status={run.status} />
+                      </div>
+                      <div className="flex items-center gap-2 text-[10px] text-text-muted">
+                        <span>{run.provider}</span>
+                        <span>·</span>
+                        <span>
+                          {run.steps.length}/{run.maxSteps} steps
+                        </span>
+                        {run.totalDurationMs && (
+                          <>
+                            <span>·</span>
+                            <span>{(run.totalDurationMs / 1000).toFixed(0)}s</span>
+                          </>
+                        )}
+                      </div>
                     </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Right: run detail */}
+            <div className="flex-1 min-w-0 flex flex-col">
+              {selectedRun ? (
+                <>
+                  {/* Run header */}
+                  <div className="px-5 py-3 border-b border-border dark:border-dark-border bg-bg-secondary dark:bg-dark-bg-secondary">
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <StatusBadge status={selectedRun.status} />
+                          <span className="text-[10px] text-text-muted font-mono">
+                            {selectedRun.id}
+                          </span>
+                        </div>
+                        <p className="text-sm text-text-primary dark:text-dark-text-primary">
+                          {selectedRun.goal}
+                        </p>
+                        <div className="flex items-center gap-3 mt-1 text-[11px] text-text-muted">
+                          <span>Provider: {selectedRun.provider}</span>
+                          <span>Workspace: {selectedRun.cwd}</span>
+                          <span>Mode: {selectedRun.autoMode ? 'Full auto' : 'Step-by-step'}</span>
+                          {selectedRun.enableAnalysis && <span>AI Analysis: On</span>}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        {['running', 'planning', 'waiting_user'].includes(selectedRun.status) && (
+                          <button
+                            onClick={() => handleCancel(selectedRun.id)}
+                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-error hover:bg-error/10 rounded-lg transition-colors"
+                          >
+                            <StopCircle className="w-3.5 h-3.5" />
+                            Cancel
+                          </button>
+                        )}
+                        {['completed', 'failed', 'cancelled'].includes(selectedRun.status) && (
+                          <button
+                            onClick={() => handleDelete(selectedRun.id)}
+                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-text-muted hover:text-error hover:bg-error/10 rounded-lg transition-colors"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                            Delete
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Steps timeline + live output */}
+                  <div className="flex-1 overflow-y-auto p-5 space-y-4">
+                    <StepTimeline steps={selectedRun.steps} />
+
+                    {/* Live CLI output for the active step — interactive terminal */}
+                    {activeSessionId && selectedRun.status === 'running' && (
+                      <div className="border border-border dark:border-dark-border rounded-lg overflow-hidden h-72">
+                        <XTerminal sessionId={activeSessionId} interactive={true} />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Continue input (when waiting for user) */}
+                  {selectedRun.status === 'waiting_user' && (
+                    <div className="px-5 py-3 border-t border-border dark:border-dark-border bg-bg-secondary dark:bg-dark-bg-secondary">
+                      {(() => {
+                        const lastSt = selectedRun.steps[selectedRun.steps.length - 1];
+                        const question = lastSt?.analysis?.userQuestion;
+                        if (!question) return null;
+                        return (
+                          <div className="flex items-start gap-2 mb-2 p-2 bg-amber-500/10 border border-amber-500/20 rounded-lg">
+                            <AlertCircle className="w-3.5 h-3.5 text-amber-500 mt-0.5 shrink-0" />
+                            <p className="text-xs text-amber-700 dark:text-amber-400">{question}</p>
+                          </div>
+                        );
+                      })()}
+                      <div className="flex items-center gap-2">
+                        <input
+                          value={continuePrompt}
+                          onChange={(e) => setContinuePrompt(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' && !e.shiftKey) {
+                              e.preventDefault();
+                              handleContinue();
+                            }
+                          }}
+                          placeholder="Type your response or next instruction..."
+                          className="flex-1 px-3 py-2 text-sm bg-bg-tertiary dark:bg-dark-bg-tertiary border border-border dark:border-dark-border rounded-lg text-text-primary dark:text-dark-text-primary placeholder:text-text-muted/60 focus:outline-none focus:ring-2 focus:ring-primary/50"
+                        />
+                        <button
+                          onClick={handleContinue}
+                          disabled={!continuePrompt.trim() || isContinuing}
+                          className="flex items-center gap-1.5 px-4 py-2 text-sm bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                        >
+                          <Send className="w-3.5 h-3.5" />
+                          {isContinuing ? 'Sending...' : 'Continue'}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="flex-1 flex items-center justify-center">
+                  <div className="text-center">
+                    <Zap className="w-12 h-12 mx-auto mb-3 text-text-muted/20" />
+                    <p className="text-sm text-text-muted dark:text-dark-text-muted">
+                      Select a run or start a new orchestration
+                    </p>
+                    <p className="text-xs text-text-muted/60 mt-1 max-w-sm mx-auto">
+                      Set a goal, pick a CLI tool (Claude Code, Codex, Gemini), and let OwnPilot chain
+                      sessions together — analyzing output and deciding next steps automatically.
+                    </p>
                   </div>
                 </div>
               )}
-            </>
-          ) : (
-            <div className="flex-1 flex items-center justify-center">
-              <div className="text-center">
-                <Zap className="w-12 h-12 mx-auto mb-3 text-text-muted/20" />
-                <p className="text-sm text-text-muted dark:text-dark-text-muted">
-                  Select a run or start a new orchestration
-                </p>
-                <p className="text-xs text-text-muted/60 mt-1 max-w-sm mx-auto">
-                  Set a goal, pick a CLI tool (Claude Code, Codex, Gemini), and let OwnPilot chain
-                  sessions together — analyzing output and deciding next steps automatically.
-                </p>
-              </div>
             </div>
-          )}
-        </div>
-      </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }

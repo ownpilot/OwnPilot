@@ -1,9 +1,21 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { settingsApi } from '../api';
 import type { ToolGroupInfo } from '../api';
 import { useToast } from '../components/ToastProvider';
 import { LoadingSpinner } from '../components/LoadingSpinner';
-import { ChevronDown, ChevronRight, Lock, Wrench } from '../components/icons';
+import {
+  ChevronDown,
+  ChevronRight,
+  Lock,
+  Wrench,
+  Layers,
+  Shield,
+  Bot,
+  Settings,
+  Home,
+} from '../components/icons';
+import { PageHomeTab } from '../components/PageHomeTab';
 
 // =============================================================================
 // Tool Group Card
@@ -92,11 +104,25 @@ function ToolGroupCard({
 // =============================================================================
 
 export function ToolGroupsPage() {
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const toast = useToast();
   const [groups, setGroups] = useState<ToolGroupInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
+
+  type TabId = 'home' | 'groups';
+  const TAB_LABELS: Record<TabId, string> = { home: 'Home', groups: 'Groups' };
+
+  const tabParam = searchParams.get('tab') as TabId | null;
+  const activeTab: TabId =
+    tabParam && (['home', 'groups'] as string[]).includes(tabParam) ? tabParam : 'home';
+  const setTab = (tab: TabId) => {
+    const params = new URLSearchParams(searchParams);
+    params.set('tab', tab);
+    navigate({ search: params.toString() }, { replace: true });
+  };
 
   const fetchGroups = useCallback(async () => {
     try {
@@ -148,24 +174,15 @@ export function ToolGroupsPage() {
   const alwaysOnGroups = groups.filter((g) => g.alwaysOn);
   const toggleableGroups = groups.filter((g) => !g.alwaysOn);
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <LoadingSpinner />
-      </div>
-    );
-  }
-
   return (
-    <div className="max-w-3xl mx-auto px-4 py-6">
+    <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <header className="flex items-center justify-between px-6 py-4 border-b border-border dark:border-dark-border">
         <div>
-          <h1 className="text-xl font-semibold text-text-primary flex items-center gap-2">
-            <Wrench className="w-5 h-5" />
+          <h2 className="text-lg font-semibold text-text-primary dark:text-dark-text-primary">
             Tool Groups
-          </h1>
-          <p className="text-sm text-text-muted mt-1">
+          </h2>
+          <p className="text-sm text-text-muted dark:text-dark-text-muted">
             {enabledCount} groups enabled ({totalTools} tools available)
           </p>
         </div>
@@ -188,38 +205,121 @@ export function ToolGroupsPage() {
             {saving ? 'Saving...' : 'Save'}
           </button>
         </div>
+      </header>
+
+      {/* Tab Bar */}
+      <div className="flex border-b border-border dark:border-dark-border px-6">
+        {(['home', 'groups'] as TabId[]).map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setTab(tab)}
+            className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px ${
+              activeTab === tab
+                ? 'border-primary text-primary'
+                : 'border-transparent text-text-muted dark:text-dark-text-muted hover:text-text-secondary dark:hover:text-dark-text-secondary hover:border-border dark:hover:border-dark-border'
+            }`}
+          >
+            {tab === 'home' && <Home className="w-3.5 h-3.5" />}
+            {TAB_LABELS[tab]}
+          </button>
+        ))}
       </div>
 
-      {/* Always-on groups */}
-      {alwaysOnGroups.length > 0 && (
-        <div className="mb-6">
-          <h2 className="text-sm font-medium text-text-muted mb-2 uppercase tracking-wide">
-            Always Enabled
-          </h2>
-          <div className="space-y-2">
-            {alwaysOnGroups.map((group) => (
-              <ToolGroupCard key={group.id} group={group} onToggle={handleToggle} />
-            ))}
-          </div>
-        </div>
+      {activeTab === 'home' && (
+        <PageHomeTab
+          heroIcons={[
+            { icon: Layers, color: 'text-primary bg-primary/10' },
+            { icon: Wrench, color: 'text-emerald-500 bg-emerald-500/10' },
+            { icon: Shield, color: 'text-violet-500 bg-violet-500/10' },
+          ]}
+          title="Organize Tools into Groups"
+          subtitle="Group related tools together for better organization — assign groups to agents or use them to control tool access."
+          cta={{
+            label: 'Manage Groups',
+            icon: Layers,
+            onClick: () => setTab('groups'),
+          }}
+          features={[
+            {
+              icon: Layers,
+              color: 'text-primary bg-primary/10',
+              title: 'Logical Grouping',
+              description: 'Organize tools into meaningful categories for clarity.',
+            },
+            {
+              icon: Bot,
+              color: 'text-emerald-500 bg-emerald-500/10',
+              title: 'Agent Assignment',
+              description: 'Assign tool groups to specific agents for focused capabilities.',
+            },
+            {
+              icon: Lock,
+              color: 'text-violet-500 bg-violet-500/10',
+              title: 'Access Control',
+              description: 'Enable or disable entire groups to control what tools are available.',
+            },
+            {
+              icon: Settings,
+              color: 'text-amber-500 bg-amber-500/10',
+              title: 'Bulk Management',
+              description: 'Toggle, reset, and save group configurations in bulk.',
+            },
+          ]}
+          steps={[
+            { title: 'Create a group', detail: 'Groups are auto-detected from tool categories.' },
+            { title: 'Add tools to the group', detail: 'Each group contains related tools automatically.' },
+            { title: 'Assign to agents', detail: 'Control which agents have access to which groups.' },
+            { title: 'Control access', detail: 'Enable or disable groups to manage available tools.' },
+          ]}
+        />
       )}
 
-      {/* Toggleable groups */}
-      {toggleableGroups.length > 0 && (
-        <div>
-          <h2 className="text-sm font-medium text-text-muted mb-2 uppercase tracking-wide">
-            Optional
-          </h2>
-          <div className="space-y-2">
-            {toggleableGroups.map((group) => (
-              <ToolGroupCard key={group.id} group={group} onToggle={handleToggle} />
-            ))}
-          </div>
-        </div>
-      )}
+      {activeTab === 'groups' && (
+        <>
+          <div className="flex-1 overflow-y-auto p-6 animate-fade-in-up">
+            {loading ? (
+              <div className="flex items-center justify-center py-12">
+                <LoadingSpinner />
+              </div>
+            ) : (
+              <div className="max-w-3xl mx-auto space-y-6">
+                {/* Always-on groups */}
+                {alwaysOnGroups.length > 0 && (
+                  <div>
+                    <h2 className="text-sm font-medium text-text-muted mb-2 uppercase tracking-wide">
+                      Always Enabled
+                    </h2>
+                    <div className="space-y-2">
+                      {alwaysOnGroups.map((group) => (
+                        <ToolGroupCard key={group.id} group={group} onToggle={handleToggle} />
+                      ))}
+                    </div>
+                  </div>
+                )}
 
-      {dirty && (
-        <p className="text-xs text-warning mt-4">You have unsaved changes. Click Save to apply.</p>
+                {/* Toggleable groups */}
+                {toggleableGroups.length > 0 && (
+                  <div>
+                    <h2 className="text-sm font-medium text-text-muted mb-2 uppercase tracking-wide">
+                      Optional
+                    </h2>
+                    <div className="space-y-2">
+                      {toggleableGroups.map((group) => (
+                        <ToolGroupCard key={group.id} group={group} onToggle={handleToggle} />
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {dirty && (
+                  <p className="text-xs text-warning mt-4">
+                    You have unsaved changes. Click Save to apply.
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+        </>
       )}
     </div>
   );

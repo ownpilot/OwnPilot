@@ -1,6 +1,19 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useGateway } from '../hooks/useWebSocket';
-import { Bookmark, Plus, Trash2, Star, ExternalLink, Search, Folder } from '../components/icons';
+import {
+  Bookmark,
+  Plus,
+  Trash2,
+  Star,
+  ExternalLink,
+  Search,
+  Folder,
+  Link,
+  Sparkles,
+  Hash,
+  Home,
+} from '../components/icons';
 import { useDialog } from '../components/ConfirmDialog';
 import { useToast } from '../components/ToastProvider';
 import { SkeletonCard } from '../components/Skeleton';
@@ -9,8 +22,11 @@ import { useDebouncedValue, useModalClose, useDebouncedCallback } from '../hooks
 import { useAnimatedList } from '../hooks/useAnimatedList';
 import { bookmarksApi } from '../api';
 import type { BookmarkItem } from '../api';
+import { PageHomeTab } from '../components/PageHomeTab';
 
 export function BookmarksPage() {
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const { confirm } = useDialog();
   const toast = useToast();
   const { subscribe } = useGateway();
@@ -23,6 +39,18 @@ export function BookmarksPage() {
   const [filter, setFilter] = useState<'all' | 'favorites'>('all');
   const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
   const { animatedItems, handleDelete: animatedDelete } = useAnimatedList(bookmarks);
+
+  type TabId = 'home' | 'bookmarks';
+  const TAB_LABELS: Record<TabId, string> = { home: 'Home', bookmarks: 'Bookmarks' };
+
+  const tabParam = searchParams.get('tab') as TabId | null;
+  const activeTab: TabId =
+    tabParam && (['home', 'bookmarks'] as string[]).includes(tabParam) ? tabParam : 'home';
+  const setTab = (tab: TabId) => {
+    const params = new URLSearchParams(searchParams);
+    params.set('tab', tab);
+    navigate({ search: params.toString() }, { replace: true });
+  };
 
   const fetchBookmarks = useCallback(async () => {
     try {
@@ -120,94 +148,181 @@ export function BookmarksPage() {
         </button>
       </header>
 
-      {/* Search and Filters */}
-      <div className="px-6 py-3 border-b border-border dark:border-dark-border space-y-3">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted dark:text-dark-text-muted" />
-          <input
-            type="text"
-            placeholder="Search bookmarks..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 bg-bg-tertiary dark:bg-dark-bg-tertiary border border-border dark:border-dark-border rounded-lg text-text-primary dark:text-dark-text-primary focus:outline-none focus:ring-2 focus:ring-primary/50"
-          />
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {(['all', 'favorites'] as const).map((f) => (
-            <button
-              key={f}
-              onClick={() => {
-                setFilter(f);
-                setSelectedFolder(null);
-              }}
-              className={`px-3 py-1 text-sm rounded-full transition-colors ${
-                filter === f && !selectedFolder
-                  ? 'bg-primary text-white'
-                  : 'bg-bg-tertiary dark:bg-dark-bg-tertiary text-text-secondary dark:text-dark-text-secondary hover:bg-bg-secondary dark:hover:bg-dark-bg-secondary'
-              }`}
-            >
-              {f === 'all' ? 'All' : 'Favorites'}
-            </button>
-          ))}
-          {folders.length > 0 && (
-            <>
-              <span className="text-text-muted dark:text-dark-text-muted">|</span>
-              {folders.map((folder) => (
+      {/* Tab Bar */}
+      <div className="flex border-b border-border dark:border-dark-border px-6">
+        {(['home', 'bookmarks'] as TabId[]).map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setTab(tab)}
+            className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px ${
+              activeTab === tab
+                ? 'border-primary text-primary'
+                : 'border-transparent text-text-muted dark:text-dark-text-muted hover:text-text-secondary dark:hover:text-dark-text-secondary hover:border-border dark:hover:border-dark-border'
+            }`}
+          >
+            {tab === 'home' && <Home className="w-3.5 h-3.5" />}
+            {TAB_LABELS[tab]}
+          </button>
+        ))}
+      </div>
+
+      {activeTab === 'home' && (
+        <PageHomeTab
+          heroIcons={[
+            { icon: Bookmark, color: 'text-primary bg-primary/10' },
+            { icon: Link, color: 'text-emerald-500 bg-emerald-500/10' },
+            { icon: Star, color: 'text-violet-500 bg-violet-500/10' },
+          ]}
+          title="Save & Organize Links"
+          subtitle="Bookmark URLs, articles, and resources — your AI can search, summarize, and reference them anytime."
+          cta={{
+            label: 'Add Bookmark',
+            icon: Plus,
+            onClick: () => {
+              setTab('bookmarks');
+              setShowCreateModal(true);
+            },
+          }}
+          features={[
+            {
+              icon: Bookmark,
+              color: 'text-primary bg-primary/10',
+              title: 'Quick Save',
+              description: 'Save any URL with a title, description, and tags.',
+            },
+            {
+              icon: Sparkles,
+              color: 'text-emerald-500 bg-emerald-500/10',
+              title: 'Auto-Summary',
+              description: 'AI can summarize bookmarked pages for quick reference.',
+            },
+            {
+              icon: Hash,
+              color: 'text-violet-500 bg-violet-500/10',
+              title: 'Tag System',
+              description: 'Organize bookmarks with tags and folders.',
+            },
+            {
+              icon: Search,
+              color: 'text-amber-500 bg-amber-500/10',
+              title: 'AI Search',
+              description: 'Ask your AI to find or summarize saved links.',
+            },
+          ]}
+          steps={[
+            { title: 'Add a bookmark', detail: 'Click "Add Bookmark" and paste a URL.' },
+            {
+              title: 'AI auto-extracts metadata',
+              detail: 'Title and description are fetched automatically.',
+            },
+            {
+              title: 'Organize with tags',
+              detail: 'Add tags and folders to keep things tidy.',
+            },
+            {
+              title: 'Ask AI about saved links',
+              detail: 'Ask your assistant to search or summarize bookmarks.',
+            },
+          ]}
+        />
+      )}
+
+      {activeTab === 'bookmarks' && (
+        <>
+          {/* Search and Filters */}
+          <div className="px-6 py-3 border-b border-border dark:border-dark-border space-y-3">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted dark:text-dark-text-muted" />
+              <input
+                type="text"
+                placeholder="Search bookmarks..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 bg-bg-tertiary dark:bg-dark-bg-tertiary border border-border dark:border-dark-border rounded-lg text-text-primary dark:text-dark-text-primary focus:outline-none focus:ring-2 focus:ring-primary/50"
+              />
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {(['all', 'favorites'] as const).map((f) => (
                 <button
-                  key={folder}
+                  key={f}
                   onClick={() => {
-                    setSelectedFolder(folder);
-                    setFilter('all');
+                    setFilter(f);
+                    setSelectedFolder(null);
                   }}
-                  className={`flex items-center gap-1 px-3 py-1 text-sm rounded-full transition-colors ${
-                    selectedFolder === folder
+                  className={`px-3 py-1 text-sm rounded-full transition-colors ${
+                    filter === f && !selectedFolder
                       ? 'bg-primary text-white'
                       : 'bg-bg-tertiary dark:bg-dark-bg-tertiary text-text-secondary dark:text-dark-text-secondary hover:bg-bg-secondary dark:hover:bg-dark-bg-secondary'
                   }`}
                 >
-                  <Folder className="w-3 h-3" />
-                  {folder}
+                  {f === 'all' ? 'All' : 'Favorites'}
                 </button>
               ))}
-            </>
-          )}
-        </div>
-      </div>
-
-      {/* Content */}
-      <div className="flex-1 overflow-y-auto p-6 animate-fade-in-up">
-        {isLoading ? (
-          <SkeletonCard count={5} />
-        ) : bookmarks.length === 0 ? (
-          <EmptyState
-            icon={Bookmark}
-            title={searchQuery ? 'No bookmarks found' : 'No bookmarks yet'}
-            description={
-              searchQuery
-                ? 'Try a different search term.'
-                : 'Save your favorite links to access them later.'
-            }
-            action={
-              !searchQuery
-                ? { label: 'Add Bookmark', onClick: () => setShowCreateModal(true), icon: Plus }
-                : undefined
-            }
-          />
-        ) : (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {animatedItems.map(({ item: bookmark, animClass }) => (
-              <div key={bookmark.id} className={animClass}>
-                <BookmarkCard
-                  bookmark={bookmark}
-                  onEdit={() => setEditingBookmark(bookmark)}
-                  onDelete={() => handleDelete(bookmark.id)}
-                  onToggleFavorite={() => handleToggleFavorite(bookmark)}
-                />
-              </div>
-            ))}
+              {folders.length > 0 && (
+                <>
+                  <span className="text-text-muted dark:text-dark-text-muted">|</span>
+                  {folders.map((folder) => (
+                    <button
+                      key={folder}
+                      onClick={() => {
+                        setSelectedFolder(folder);
+                        setFilter('all');
+                      }}
+                      className={`flex items-center gap-1 px-3 py-1 text-sm rounded-full transition-colors ${
+                        selectedFolder === folder
+                          ? 'bg-primary text-white'
+                          : 'bg-bg-tertiary dark:bg-dark-bg-tertiary text-text-secondary dark:text-dark-text-secondary hover:bg-bg-secondary dark:hover:bg-dark-bg-secondary'
+                      }`}
+                    >
+                      <Folder className="w-3 h-3" />
+                      {folder}
+                    </button>
+                  ))}
+                </>
+              )}
+            </div>
           </div>
-        )}
-      </div>
+
+          {/* Content */}
+          <div className="flex-1 overflow-y-auto p-6 animate-fade-in-up">
+            {isLoading ? (
+              <SkeletonCard count={5} />
+            ) : bookmarks.length === 0 ? (
+              <EmptyState
+                icon={Bookmark}
+                title={searchQuery ? 'No bookmarks found' : 'No bookmarks yet'}
+                description={
+                  searchQuery
+                    ? 'Try a different search term.'
+                    : 'Save your favorite links to access them later.'
+                }
+                action={
+                  !searchQuery
+                    ? {
+                        label: 'Add Bookmark',
+                        onClick: () => setShowCreateModal(true),
+                        icon: Plus,
+                      }
+                    : undefined
+                }
+              />
+            ) : (
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {animatedItems.map(({ item: bookmark, animClass }) => (
+                  <div key={bookmark.id} className={animClass}>
+                    <BookmarkCard
+                      bookmark={bookmark}
+                      onEdit={() => setEditingBookmark(bookmark)}
+                      onDelete={() => handleDelete(bookmark.id)}
+                      onToggleFavorite={() => handleToggleFavorite(bookmark)}
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </>
+      )}
 
       {/* Create/Edit Modal */}
       {(showCreateModal || editingBookmark) && (

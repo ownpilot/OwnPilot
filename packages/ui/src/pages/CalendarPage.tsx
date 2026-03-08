@@ -1,12 +1,24 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useGateway } from '../hooks/useWebSocket';
-import { Calendar, Plus, Trash2, Clock, MapPin } from '../components/icons';
+import {
+  Calendar,
+  Plus,
+  Trash2,
+  Clock,
+  MapPin,
+  Bell,
+  Sparkles,
+  Globe,
+  Home,
+} from '../components/icons';
 import { useDialog } from '../components/ConfirmDialog';
 import { useToast } from '../components/ToastProvider';
 import { useModalClose, useDebouncedCallback } from '../hooks';
 import { SkeletonCard } from '../components/Skeleton';
 import { calendarApi } from '../api';
 import type { CalendarEvent } from '../api';
+import { PageHomeTab } from '../components/PageHomeTab';
 
 const colorOptions = [
   { value: 'blue', label: 'Blue', class: 'bg-primary' },
@@ -17,6 +29,8 @@ const colorOptions = [
 ];
 
 export function CalendarPage() {
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const { confirm } = useDialog();
   const toast = useToast();
   const { subscribe } = useGateway();
@@ -26,6 +40,19 @@ export function CalendarPage() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null);
   const [viewMode, setViewMode] = useState<'day' | 'week' | 'month'>('week');
+
+  type TabId = 'home' | 'calendar';
+  const TAB_LABELS: Record<TabId, string> = { home: 'Home', calendar: 'Calendar' };
+
+  const tabParam = searchParams.get('tab') as TabId | null;
+  const activeTab: TabId =
+    tabParam && (['home', 'calendar'] as string[]).includes(tabParam) ? tabParam : 'home';
+  const setTab = (tab: TabId) => {
+    const params = new URLSearchParams(searchParams);
+    params.set('tab', tab);
+    navigate({ search: params.toString() }, { replace: true });
+  };
+
   const fetchEvents = useCallback(async () => {
     try {
       const startDate = getViewStartDate(selectedDate, viewMode);
@@ -124,74 +151,151 @@ export function CalendarPage() {
         </div>
       </header>
 
-      {/* Date Navigation */}
-      <div className="flex items-center justify-between px-6 py-3 border-b border-border dark:border-dark-border">
-        <button
-          onClick={() => setSelectedDate(navigateDate(selectedDate, viewMode, -1))}
-          className="px-3 py-1 text-text-secondary dark:text-dark-text-secondary hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary rounded transition-colors"
-        >
-          Previous
-        </button>
-        <div className="flex items-center gap-3">
-          <h3 className="text-lg font-medium text-text-primary dark:text-dark-text-primary">
-            {formatDateRange(selectedDate, viewMode)}
-          </h3>
+      {/* Tab Bar */}
+      <div className="flex border-b border-border dark:border-dark-border px-6">
+        {(['home', 'calendar'] as TabId[]).map((tab) => (
           <button
-            onClick={() => setSelectedDate(new Date().toISOString().split('T')[0]!)}
-            className="px-2 py-1 text-sm text-primary hover:underline"
+            key={tab}
+            onClick={() => setTab(tab)}
+            className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px ${
+              activeTab === tab
+                ? 'border-primary text-primary'
+                : 'border-transparent text-text-muted dark:text-dark-text-muted hover:text-text-secondary dark:hover:text-dark-text-secondary hover:border-border dark:hover:border-dark-border'
+            }`}
           >
-            Today
+            {tab === 'home' && <Home className="w-3.5 h-3.5" />}
+            {TAB_LABELS[tab]}
           </button>
-        </div>
-        <button
-          onClick={() => setSelectedDate(navigateDate(selectedDate, viewMode, 1))}
-          className="px-3 py-1 text-text-secondary dark:text-dark-text-secondary hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary rounded transition-colors"
-        >
-          Next
-        </button>
+        ))}
       </div>
 
-      {/* Content */}
-      <div className="flex-1 overflow-y-auto p-6">
-        {isLoading ? (
-          <SkeletonCard count={5} />
-        ) : events.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full">
-            <Calendar className="w-16 h-16 text-text-muted dark:text-dark-text-muted mb-4" />
-            <h3 className="text-xl font-medium text-text-primary dark:text-dark-text-primary mb-2">
-              No events scheduled
-            </h3>
-            <p className="text-text-muted dark:text-dark-text-muted mb-4">
-              Add your first event to get started.
-            </p>
+      {activeTab === 'home' && (
+        <PageHomeTab
+          heroIcons={[
+            { icon: Calendar, color: 'text-primary bg-primary/10' },
+            { icon: Clock, color: 'text-emerald-500 bg-emerald-500/10' },
+            { icon: Bell, color: 'text-violet-500 bg-violet-500/10' },
+          ]}
+          title="Your Smart Calendar"
+          subtitle="Manage events, set reminders, and let your AI schedule meetings — all in one intelligent calendar."
+          cta={{
+            label: 'Create Event',
+            icon: Plus,
+            onClick: () => {
+              setTab('calendar');
+              setShowCreateModal(true);
+            },
+          }}
+          features={[
+            {
+              icon: Calendar,
+              color: 'text-primary bg-primary/10',
+              title: 'Event Management',
+              description: 'Create, edit, and organize events with day/week/month views.',
+            },
+            {
+              icon: Bell,
+              color: 'text-emerald-500 bg-emerald-500/10',
+              title: 'Smart Reminders',
+              description: 'Set reminders so you never miss an important event.',
+            },
+            {
+              icon: Sparkles,
+              color: 'text-violet-500 bg-violet-500/10',
+              title: 'AI Scheduling',
+              description: 'Ask your AI to schedule meetings and find free slots.',
+            },
+            {
+              icon: Globe,
+              color: 'text-amber-500 bg-amber-500/10',
+              title: 'Timezone Support',
+              description: 'Handle events across different timezones seamlessly.',
+            },
+          ]}
+          steps={[
+            { title: 'Create an event', detail: 'Click "Add Event" to get started.' },
+            { title: 'Set date & time', detail: 'Pick a date, time, and duration.' },
+            { title: 'Add reminders', detail: 'Set reminders to stay on track.' },
+            {
+              title: 'Ask AI to schedule for you',
+              detail: 'Tell your assistant to create or reschedule events.',
+            },
+          ]}
+        />
+      )}
+
+      {activeTab === 'calendar' && (
+        <>
+          {/* Date Navigation */}
+          <div className="flex items-center justify-between px-6 py-3 border-b border-border dark:border-dark-border">
             <button
-              onClick={() => setShowCreateModal(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg transition-colors"
+              onClick={() => setSelectedDate(navigateDate(selectedDate, viewMode, -1))}
+              className="px-3 py-1 text-text-secondary dark:text-dark-text-secondary hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary rounded transition-colors"
             >
-              <Plus className="w-4 h-4" />
-              Create Event
+              Previous
+            </button>
+            <div className="flex items-center gap-3">
+              <h3 className="text-lg font-medium text-text-primary dark:text-dark-text-primary">
+                {formatDateRange(selectedDate, viewMode)}
+              </h3>
+              <button
+                onClick={() => setSelectedDate(new Date().toISOString().split('T')[0]!)}
+                className="px-2 py-1 text-sm text-primary hover:underline"
+              >
+                Today
+              </button>
+            </div>
+            <button
+              onClick={() => setSelectedDate(navigateDate(selectedDate, viewMode, 1))}
+              className="px-3 py-1 text-text-secondary dark:text-dark-text-secondary hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary rounded transition-colors"
+            >
+              Next
             </button>
           </div>
-        ) : (
-          <div className="space-y-3">
-            {groupEventsByDate(events).map(([date, dateEvents]) => (
-              <div key={date} className="space-y-2">
-                <h4 className="text-sm font-medium text-text-secondary dark:text-dark-text-secondary sticky top-0 bg-bg-primary dark:bg-dark-bg-primary py-1">
-                  {formatDateHeader(date)}
-                </h4>
-                {dateEvents.map((event) => (
-                  <EventItem
-                    key={event.id}
-                    event={event}
-                    onEdit={() => setEditingEvent(event)}
-                    onDelete={() => handleDelete(event.id)}
-                  />
+
+          {/* Content */}
+          <div className="flex-1 overflow-y-auto p-6">
+            {isLoading ? (
+              <SkeletonCard count={5} />
+            ) : events.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-full">
+                <Calendar className="w-16 h-16 text-text-muted dark:text-dark-text-muted mb-4" />
+                <h3 className="text-xl font-medium text-text-primary dark:text-dark-text-primary mb-2">
+                  No events scheduled
+                </h3>
+                <p className="text-text-muted dark:text-dark-text-muted mb-4">
+                  Add your first event to get started.
+                </p>
+                <button
+                  onClick={() => setShowCreateModal(true)}
+                  className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg transition-colors"
+                >
+                  <Plus className="w-4 h-4" />
+                  Create Event
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {groupEventsByDate(events).map(([date, dateEvents]) => (
+                  <div key={date} className="space-y-2">
+                    <h4 className="text-sm font-medium text-text-secondary dark:text-dark-text-secondary sticky top-0 bg-bg-primary dark:bg-dark-bg-primary py-1">
+                      {formatDateHeader(date)}
+                    </h4>
+                    {dateEvents.map((event) => (
+                      <EventItem
+                        key={event.id}
+                        event={event}
+                        onEdit={() => setEditingEvent(event)}
+                        onDelete={() => handleDelete(event.id)}
+                      />
+                    ))}
+                  </div>
                 ))}
               </div>
-            ))}
+            )}
           </div>
-        )}
-      </div>
+        </>
+      )}
 
       {/* Create/Edit Modal */}
       {(showCreateModal || editingEvent) && (

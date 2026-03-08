@@ -5,8 +5,18 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Plus, Trash, Bot, Settings, MessageSquare } from '../components/icons';
+import { useSearchParams, useNavigate } from 'react-router-dom';
+import {
+  Plus,
+  Trash,
+  Bot,
+  Settings,
+  MessageSquare,
+  Brain,
+  Layers,
+  Gauge,
+  Home,
+} from '../components/icons';
 import { useDialog } from '../components/ConfirmDialog';
 import { useToast } from '../components/ToastProvider';
 import { LoadingSpinner } from '../components/LoadingSpinner';
@@ -16,11 +26,25 @@ import { EditAgentModal } from '../components/EditAgentModal';
 import { AgentDetailPanel } from '../components/AgentDetailPanel';
 import { agentsApi } from '../api';
 import type { Agent } from '../types';
+import { PageHomeTab } from '../components/PageHomeTab';
 
 export function AgentsPage() {
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { confirm } = useDialog();
   const toast = useToast();
+
+  type TabId = 'home' | 'agents';
+  const TAB_LABELS: Record<TabId, string> = { home: 'Home', agents: 'Agents' };
+
+  const tabParam = searchParams.get('tab') as TabId | null;
+  const activeTab: TabId =
+    tabParam && (['home', 'agents'] as string[]).includes(tabParam) ? tabParam : 'home';
+  const setTab = (tab: TabId) => {
+    const params = new URLSearchParams(searchParams);
+    params.set('tab', tab);
+    navigate({ search: params.toString() }, { replace: true });
+  };
   const [agents, setAgents] = useState<Agent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -110,33 +134,107 @@ export function AgentsPage() {
         </button>
       </header>
 
-      {/* Content */}
-      <div className="flex-1 overflow-y-auto p-6 animate-fade-in-up">
-        {isLoading ? (
-          <LoadingSpinner message="Loading agents..." />
-        ) : agents.length === 0 ? (
-          <EmptyState
-            icon={Bot}
-            title="No agents yet"
-            description="Create your first AI agent to get started. Agents can use different models and tools to help with various tasks."
-            action={{ label: 'Create Agent', onClick: () => setShowCreateModal(true), icon: Plus }}
-          />
-        ) : (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {agents.map((agent) => (
-              <AgentCard
-                key={agent.id}
-                agent={agent}
-                onDelete={() => deleteAgent(agent.id)}
-                onSelect={() => setSelectedAgent(agent)}
-                onChat={() => handleChatWithAgent(agent)}
-                onConfigure={() => openEditModal(agent.id)}
-                isSelected={selectedAgent?.id === agent.id}
-              />
-            ))}
-          </div>
-        )}
+      {/* Tab Bar */}
+      <div className="flex border-b border-border dark:border-dark-border px-6">
+        {(['home', 'agents'] as TabId[]).map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setTab(tab)}
+            className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px ${
+              activeTab === tab
+                ? 'border-primary text-primary'
+                : 'border-transparent text-text-muted dark:text-dark-text-muted hover:text-text-secondary dark:hover:text-dark-text-secondary hover:border-border dark:hover:border-dark-border'
+            }`}
+          >
+            {tab === 'home' && <Home className="w-3.5 h-3.5" />}
+            {TAB_LABELS[tab]}
+          </button>
+        ))}
       </div>
+
+      {activeTab === 'home' && (
+        <PageHomeTab
+          heroIcons={[
+            { icon: Bot, color: 'text-primary bg-primary/10' },
+            { icon: Brain, color: 'text-violet-500 bg-violet-500/10' },
+            { icon: Settings, color: 'text-emerald-500 bg-emerald-500/10' },
+          ]}
+          title="Configure AI Agents"
+          subtitle="Set up and manage your AI agents — choose providers, models, and customize behavior for different tasks."
+          cta={{
+            label: 'New Agent',
+            icon: Plus,
+            onClick: () => {
+              setTab('agents');
+              setShowCreateModal(true);
+            },
+          }}
+          features={[
+            {
+              icon: Layers,
+              color: 'text-primary bg-primary/10',
+              title: 'Multi-Provider',
+              description: 'Connect to OpenAI, Anthropic, Google, and more providers simultaneously.',
+            },
+            {
+              icon: Brain,
+              color: 'text-violet-500 bg-violet-500/10',
+              title: 'Model Selection',
+              description: 'Pick the right model for each agent based on capability and cost.',
+            },
+            {
+              icon: MessageSquare,
+              color: 'text-emerald-500 bg-emerald-500/10',
+              title: 'Custom Prompts',
+              description: 'Define system prompts that shape each agent personality and behavior.',
+            },
+            {
+              icon: Gauge,
+              color: 'text-amber-500 bg-amber-500/10',
+              title: 'Temperature Control',
+              description: 'Fine-tune creativity vs. precision with temperature and other parameters.',
+            },
+          ]}
+          steps={[
+            { title: 'Create an agent', detail: 'Click "New Agent" and give it a name.' },
+            { title: 'Choose provider & model', detail: 'Select from your configured AI providers.' },
+            { title: 'Customize system prompt', detail: 'Define the agent personality and instructions.' },
+            { title: 'Start using the agent', detail: 'Chat with your agent or assign it to automations.' },
+          ]}
+        />
+      )}
+
+      {activeTab === 'agents' && (
+        <>
+          {/* Content */}
+          <div className="flex-1 overflow-y-auto p-6 animate-fade-in-up">
+            {isLoading ? (
+              <LoadingSpinner message="Loading agents..." />
+            ) : agents.length === 0 ? (
+              <EmptyState
+                icon={Bot}
+                title="No agents yet"
+                description="Create your first AI agent to get started. Agents can use different models and tools to help with various tasks."
+                action={{ label: 'Create Agent', onClick: () => setShowCreateModal(true), icon: Plus }}
+              />
+            ) : (
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {agents.map((agent) => (
+                  <AgentCard
+                    key={agent.id}
+                    agent={agent}
+                    onDelete={() => deleteAgent(agent.id)}
+                    onSelect={() => setSelectedAgent(agent)}
+                    onChat={() => handleChatWithAgent(agent)}
+                    onConfigure={() => openEditModal(agent.id)}
+                    isSelected={selectedAgent?.id === agent.id}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        </>
+      )}
 
       {/* Create Modal */}
       {showCreateModal && (

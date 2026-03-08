@@ -1,6 +1,19 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useGateway } from '../hooks/useWebSocket';
-import { CheckCircle2, Circle, AlertTriangle, Plus, Trash2, Calendar } from '../components/icons';
+import {
+  CheckCircle2,
+  Circle,
+  AlertTriangle,
+  Plus,
+  Trash2,
+  Calendar,
+  ListChecks,
+  Clock,
+  Target,
+  Sparkles,
+  Home,
+} from '../components/icons';
 import { useDialog } from '../components/ConfirmDialog';
 import { useToast } from '../components/ToastProvider';
 import { SkeletonCard } from '../components/Skeleton';
@@ -9,6 +22,7 @@ import { useModalClose, useDebouncedCallback } from '../hooks';
 import { useAnimatedList } from '../hooks/useAnimatedList';
 import { tasksApi } from '../api';
 import type { Task } from '../types';
+import { PageHomeTab } from '../components/PageHomeTab';
 
 const priorityColors = {
   low: 'text-text-muted dark:text-dark-text-muted',
@@ -25,9 +39,23 @@ const priorityBg = {
 };
 
 export function TasksPage() {
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const { confirm } = useDialog();
   const toast = useToast();
   const { subscribe } = useGateway();
+
+  type TabId = 'home' | 'tasks';
+  const TAB_LABELS: Record<TabId, string> = { home: 'Home', tasks: 'Tasks' };
+
+  const tabParam = searchParams.get('tab') as TabId | null;
+  const activeTab: TabId =
+    tabParam && (['home', 'tasks'] as string[]).includes(tabParam) ? tabParam : 'home';
+  const setTab = (tab: TabId) => {
+    const params = new URLSearchParams(searchParams);
+    params.set('tab', tab);
+    navigate({ search: params.toString() }, { replace: true });
+  };
   const [tasks, setTasks] = useState<Task[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'pending' | 'completed' | 'cancelled'>('all');
@@ -135,59 +163,133 @@ export function TasksPage() {
         </button>
       </header>
 
-      {/* Filters */}
-      <div className="flex gap-2 px-6 py-3 border-b border-border dark:border-dark-border">
-        {(['all', 'pending', 'completed', 'cancelled'] as const).map((f) => (
+      {/* Tab Bar */}
+      <div className="flex border-b border-border dark:border-dark-border px-6">
+        {(['home', 'tasks'] as TabId[]).map((tab) => (
           <button
-            key={f}
-            onClick={() => setFilter(f)}
-            className={`px-3 py-1 text-sm rounded-full transition-colors ${
-              filter === f
-                ? 'bg-primary text-white'
-                : 'bg-bg-tertiary dark:bg-dark-bg-tertiary text-text-secondary dark:text-dark-text-secondary hover:bg-bg-secondary dark:hover:bg-dark-bg-secondary'
+            key={tab}
+            onClick={() => setTab(tab)}
+            className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px ${
+              activeTab === tab
+                ? 'border-primary text-primary'
+                : 'border-transparent text-text-muted dark:text-dark-text-muted hover:text-text-secondary dark:hover:text-dark-text-secondary hover:border-border dark:hover:border-dark-border'
             }`}
           >
-            {f.charAt(0).toUpperCase() + f.slice(1)}
+            {tab === 'home' && <Home className="w-3.5 h-3.5" />}
+            {TAB_LABELS[tab]}
           </button>
         ))}
       </div>
 
-      {/* Content */}
-      <div className="flex-1 overflow-y-auto p-6 animate-fade-in-up">
-        {isLoading ? (
-          <SkeletonCard count={5} />
-        ) : tasks.length === 0 ? (
-          <EmptyState
-            icon={CheckCircle2}
-            title={filter === 'all' ? 'No tasks yet' : `No ${filter} tasks`}
-            description={
-              filter === 'all'
-                ? 'Create your first task to get started.'
-                : filter === 'pending'
-                  ? "You're all caught up!"
-                  : 'Complete some tasks to see them here.'
-            }
-            action={
-              filter === 'all'
-                ? { label: 'Create Task', onClick: () => setShowCreateModal(true), icon: Plus }
-                : undefined
-            }
-          />
-        ) : (
-          <div className="space-y-2">
-            {animatedItems.map(({ item: task, animClass }) => (
-              <div key={task.id} className={animClass}>
-                <TaskItem
-                  task={task}
-                  onComplete={() => handleComplete(task.id)}
-                  onEdit={() => setEditingTask(task)}
-                  onDelete={() => handleDelete(task.id)}
-                />
-              </div>
+      {activeTab === 'home' && (
+        <PageHomeTab
+          heroIcons={[
+            { icon: ListChecks, color: 'text-primary bg-primary/10' },
+            { icon: Clock, color: 'text-emerald-500 bg-emerald-500/10' },
+            { icon: CheckCircle2, color: 'text-violet-500 bg-violet-500/10' },
+          ]}
+          title="Manage Your Tasks"
+          subtitle="Track to-dos, prioritize work, and let your AI help you stay productive with smart task management."
+          cta={{
+            label: 'Add Task',
+            icon: Plus,
+            onClick: () => {
+              setTab('tasks');
+              setShowCreateModal(true);
+            },
+          }}
+          features={[
+            {
+              icon: Target,
+              color: 'text-primary bg-primary/10',
+              title: 'Priority Levels',
+              description: 'Assign low, normal, high, or urgent priority to stay focused on what matters.',
+            },
+            {
+              icon: Calendar,
+              color: 'text-emerald-500 bg-emerald-500/10',
+              title: 'Due Dates',
+              description: 'Set deadlines and due times so nothing falls through the cracks.',
+            },
+            {
+              icon: Sparkles,
+              color: 'text-violet-500 bg-violet-500/10',
+              title: 'AI Suggestions',
+              description: 'Your AI can create, update, and prioritize tasks during conversations.',
+            },
+            {
+              icon: Plus,
+              color: 'text-amber-500 bg-amber-500/10',
+              title: 'Quick Capture',
+              description: 'Add tasks in seconds with a title, priority, and optional details.',
+            },
+          ]}
+          steps={[
+            { title: 'Create a task', detail: 'Click "Add Task" and enter a title.' },
+            { title: 'Set priority & due date', detail: 'Choose urgency and add a deadline.' },
+            { title: 'Track progress', detail: 'Filter by status to see pending or completed tasks.' },
+            { title: 'AI reminds you of deadlines', detail: 'Your assistant tracks due dates and nudges you.' },
+          ]}
+        />
+      )}
+
+      {activeTab === 'tasks' && (
+        <>
+          {/* Filters */}
+          <div className="flex gap-2 px-6 py-3 border-b border-border dark:border-dark-border">
+            {(['all', 'pending', 'completed', 'cancelled'] as const).map((f) => (
+              <button
+                key={f}
+                onClick={() => setFilter(f)}
+                className={`px-3 py-1 text-sm rounded-full transition-colors ${
+                  filter === f
+                    ? 'bg-primary text-white'
+                    : 'bg-bg-tertiary dark:bg-dark-bg-tertiary text-text-secondary dark:text-dark-text-secondary hover:bg-bg-secondary dark:hover:bg-dark-bg-secondary'
+                }`}
+              >
+                {f.charAt(0).toUpperCase() + f.slice(1)}
+              </button>
             ))}
           </div>
-        )}
-      </div>
+
+          {/* Content */}
+          <div className="flex-1 overflow-y-auto p-6 animate-fade-in-up">
+            {isLoading ? (
+              <SkeletonCard count={5} />
+            ) : tasks.length === 0 ? (
+              <EmptyState
+                icon={CheckCircle2}
+                title={filter === 'all' ? 'No tasks yet' : `No ${filter} tasks`}
+                description={
+                  filter === 'all'
+                    ? 'Create your first task to get started.'
+                    : filter === 'pending'
+                      ? "You're all caught up!"
+                      : 'Complete some tasks to see them here.'
+                }
+                action={
+                  filter === 'all'
+                    ? { label: 'Create Task', onClick: () => setShowCreateModal(true), icon: Plus }
+                    : undefined
+                }
+              />
+            ) : (
+              <div className="space-y-2">
+                {animatedItems.map(({ item: task, animClass }) => (
+                  <div key={task.id} className={animClass}>
+                    <TaskItem
+                      task={task}
+                      onComplete={() => handleComplete(task.id)}
+                      onEdit={() => setEditingTask(task)}
+                      onDelete={() => handleDelete(task.id)}
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </>
+      )}
 
       {/* Create/Edit Modal */}
       {(showCreateModal || editingTask) && (

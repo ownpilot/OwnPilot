@@ -15,7 +15,12 @@ import {
   Plus,
   Download,
   Upload,
+  Home,
+  FileText,
+  Settings2,
+  User,
 } from '../components/icons';
+import { PageHomeTab } from '../components/PageHomeTab';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { useToast } from '../components/ToastProvider';
 import { profileApi } from '../api';
@@ -56,9 +61,9 @@ export function ProfilePage() {
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'overview' | 'quick' | 'advanced' | 'instructions'>(
-    'overview'
-  );
+  const [activeTab, setActiveTab] = useState<
+    'home' | 'overview' | 'quick' | 'advanced' | 'instructions'
+  >('home');
   const [quickSetup, setQuickSetup] = useState<QuickSetupData>(defaultQuickSetup);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -206,9 +211,9 @@ export function ProfilePage() {
       )}
 
       {/* Tabs */}
-      <div className="px-6 pt-4 border-b border-border dark:border-dark-border">
-        <div className="flex gap-4">
+      <div className="flex border-b border-border dark:border-dark-border px-6">
           {[
+            { id: 'home', label: 'Home', icon: Home },
             { id: 'overview', label: 'Overview', icon: UserCircle },
             { id: 'quick', label: 'Quick Setup', icon: Settings },
             { id: 'instructions', label: 'AI Instructions', icon: Brain },
@@ -217,21 +222,108 @@ export function ProfilePage() {
             <button
               key={id}
               onClick={() => setActiveTab(id as typeof activeTab)}
-              className={`flex items-center gap-2 px-4 py-2 text-sm border-b-2 transition-colors ${
+              className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px ${
                 activeTab === id
                   ? 'border-primary text-primary'
-                  : 'border-transparent text-text-muted dark:text-dark-text-muted hover:text-text-primary dark:hover:text-dark-text-primary'
+                  : 'border-transparent text-text-muted dark:text-dark-text-muted hover:text-text-secondary dark:hover:text-dark-text-secondary hover:border-border dark:hover:border-dark-border'
               }`}
             >
-              <Icon className="w-4 h-4" />
+              <Icon className="w-3.5 h-3.5" />
               {label}
             </button>
           ))}
         </div>
-      </div>
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto p-6">
+        {/* Home Tab */}
+        {activeTab === 'home' && (
+          <PageHomeTab
+            heroIcons={[
+              { icon: UserCircle, color: 'text-primary bg-primary/10' },
+              { icon: Settings, color: 'text-orange-500 bg-orange-500/10' },
+              { icon: Brain, color: 'text-violet-500 bg-violet-500/10' },
+            ]}
+            title="Personalize Your AI Experience"
+            subtitle="Configure your profile, set preferences, and customize how your AI assistant understands and responds to you."
+            cta={{
+              label: 'View Profile',
+              icon: UserCircle,
+              onClick: () => setActiveTab('overview'),
+            }}
+            features={[
+              {
+                icon: User,
+                color: 'text-primary bg-primary/10',
+                title: 'Identity & Preferences',
+                description: 'Set your name, location, and communication style.',
+              },
+              {
+                icon: Settings,
+                color: 'text-orange-500 bg-orange-500/10',
+                title: 'Quick Settings',
+                description: 'Configure essential preferences quickly.',
+              },
+              {
+                icon: FileText,
+                color: 'text-emerald-500 bg-emerald-500/10',
+                title: 'System Instructions',
+                description: 'Tell the AI how to behave with custom instructions.',
+              },
+              {
+                icon: Settings2,
+                color: 'text-violet-500 bg-violet-500/10',
+                title: 'Advanced Config',
+                description: 'Fine-tune hobbies, skills, goals, and more.',
+              },
+            ]}
+            steps={[
+              {
+                title: 'Set your name & language',
+                detail: 'Help the AI know how to address you.',
+              },
+              {
+                title: 'Configure quick preferences',
+                detail: 'Choose communication style and autonomy level.',
+              },
+              {
+                title: 'Add system instructions',
+                detail: 'Define custom behaviors and boundaries.',
+              },
+              {
+                title: 'Fine-tune advanced settings',
+                detail: 'Add hobbies, skills, goals, and food preferences.',
+              },
+            ]}
+            quickActions={[
+              {
+                icon: UserCircle,
+                label: 'Overview',
+                description: 'View your profile summary.',
+                onClick: () => setActiveTab('overview'),
+              },
+              {
+                icon: Settings,
+                label: 'Quick Settings',
+                description: 'Set up essentials quickly.',
+                onClick: () => setActiveTab('quick'),
+              },
+              {
+                icon: Brain,
+                label: 'Instructions',
+                description: 'Manage AI instructions and boundaries.',
+                onClick: () => setActiveTab('instructions'),
+              },
+              {
+                icon: Globe,
+                label: 'Advanced',
+                description: 'Hobbies, skills, goals, and more.',
+                onClick: () => setActiveTab('advanced'),
+              },
+            ]}
+          />
+        )}
+
         {/* Overview Tab */}
         {activeTab === 'overview' && profile && (
           <div className="space-y-6">

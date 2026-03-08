@@ -22,7 +22,13 @@ import {
   Zap,
   ChevronDown,
   ChevronRight,
+  Home,
+  Bell,
+  Eye,
+  Wrench,
+  AlertTriangle,
 } from '../components/icons';
+import { PageHomeTab } from '../components/PageHomeTab';
 
 // ============================================================================
 // Types
@@ -62,10 +68,22 @@ const CATEGORY_COLORS: Record<string, string> = {
 };
 
 // ============================================================================
+// Tabs
+// ============================================================================
+
+type TabId = 'home' | 'monitor';
+
+const TAB_LABELS: Record<TabId, string> = {
+  home: 'Home',
+  monitor: 'Monitor',
+};
+
+// ============================================================================
 // Component
 // ============================================================================
 
 export function EventMonitorPage() {
+  const [activeTab, setActiveTab] = useState<TabId>('home');
   const { send, subscribe, status } = useGateway();
   const toast = useToast();
 
@@ -201,18 +219,15 @@ export function EventMonitorPage() {
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <header className="flex items-center justify-between px-6 py-4 border-b border-border dark:border-dark-border shrink-0">
-        <div className="flex items-center gap-3">
-          <MonitorCheck className="w-5 h-5 text-primary" />
-          <div>
-            <h2 className="text-lg font-semibold text-text-primary dark:text-dark-text-primary">
-              Event Monitor
-            </h2>
-            <p className="text-sm text-text-muted dark:text-dark-text-muted">
-              Real-time EventBus bridge — {subscriptions.length} subscription
-              {subscriptions.length !== 1 ? 's' : ''}, {events.length} events
-            </p>
-          </div>
+      <header className="flex items-center justify-between px-6 py-4 border-b border-border dark:border-dark-border">
+        <div>
+          <h2 className="text-lg font-semibold text-text-primary dark:text-dark-text-primary">
+            Event Monitor
+          </h2>
+          <p className="text-sm text-text-muted dark:text-dark-text-muted">
+            Real-time EventBus bridge — {subscriptions.length} subscription
+            {subscriptions.length !== 1 ? 's' : ''}, {events.length} events
+          </p>
         </div>
         <div className="flex items-center gap-2">
           <button
@@ -243,6 +258,88 @@ export function EventMonitorPage() {
         </div>
       </header>
 
+      {/* Tabs */}
+      <div className="flex border-b border-border dark:border-dark-border px-6">
+        {(['home', 'monitor'] as TabId[]).map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px ${
+              activeTab === tab
+                ? 'border-primary text-primary'
+                : 'border-transparent text-text-muted dark:text-dark-text-muted hover:text-text-secondary dark:hover:text-dark-text-secondary hover:border-border dark:hover:border-dark-border'
+            }`}
+          >
+            {tab === 'home' && <Home className="w-3.5 h-3.5" />}
+            {tab === 'monitor' && <Activity className="w-3.5 h-3.5" />}
+            {TAB_LABELS[tab]}
+          </button>
+        ))}
+      </div>
+
+      {/* Home Tab */}
+      {activeTab === 'home' && (
+        <div className="flex-1 overflow-y-auto p-6">
+          <PageHomeTab
+            heroIcons={[
+              { icon: Activity, color: 'text-primary bg-primary/10' },
+              { icon: Bell, color: 'text-orange-500 bg-orange-500/10' },
+              { icon: Eye, color: 'text-violet-500 bg-violet-500/10' },
+            ]}
+            title="Real-Time Event Monitor"
+            subtitle="Watch system events as they happen — tool calls, agent actions, trigger executions, and errors in real time."
+            cta={{
+              label: 'Open Monitor',
+              icon: Activity,
+              onClick: () => setActiveTab('monitor'),
+            }}
+            features={[
+              {
+                icon: Activity,
+                color: 'text-primary bg-primary/10',
+                title: 'Live Stream',
+                description: 'Watch events flow through the system in real time.',
+              },
+              {
+                icon: Filter,
+                color: 'text-orange-500 bg-orange-500/10',
+                title: 'Event Filtering',
+                description: 'Filter events by type, source, or pattern.',
+              },
+              {
+                icon: Wrench,
+                color: 'text-emerald-500 bg-emerald-500/10',
+                title: 'Tool Tracking',
+                description: 'Monitor tool calls and their results.',
+              },
+              {
+                icon: AlertTriangle,
+                color: 'text-violet-500 bg-violet-500/10',
+                title: 'Error Detection',
+                description: 'Spot errors and issues as they occur.',
+              },
+            ]}
+            steps={[
+              { title: 'Open the monitor', detail: 'Start watching live events.' },
+              { title: 'Filter by event type', detail: 'Focus on specific event categories.' },
+              { title: 'Watch events flow in', detail: 'See real-time system activity.' },
+              { title: 'Inspect event details', detail: 'Click any event for full details.' },
+            ]}
+            quickActions={[
+              {
+                icon: Activity,
+                label: 'View Monitor',
+                description: 'Open the live event stream.',
+                onClick: () => setActiveTab('monitor'),
+              },
+            ]}
+          />
+        </div>
+      )}
+
+      {/* Monitor Tab */}
+      {activeTab === 'monitor' && (
+      <>
       {/* Stats Bar */}
       <div className="flex items-center gap-4 px-6 py-2 border-b border-border dark:border-dark-border bg-bg-secondary dark:bg-dark-bg-secondary text-xs shrink-0">
         <span className="flex items-center gap-1.5 text-text-muted dark:text-dark-text-muted">
@@ -464,6 +561,8 @@ export function EventMonitorPage() {
           </div>
         )}
       </div>
+      </>
+      )}
     </div>
   );
 }

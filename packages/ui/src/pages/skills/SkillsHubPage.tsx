@@ -1,6 +1,7 @@
 import { lazy, Suspense, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { BookOpen } from '../../components/icons';
+import { Home } from '../../components/icons';
+import { HomeTab } from './HomeTab';
 
 const InstalledTab = lazy(() =>
   import('./InstalledTab').then((m) => ({ default: m.InstalledTab }))
@@ -8,12 +9,20 @@ const InstalledTab = lazy(() =>
 const DiscoverTab = lazy(() => import('./DiscoverTab').then((m) => ({ default: m.DiscoverTab })));
 const CreateTab = lazy(() => import('./CreateTab').then((m) => ({ default: m.CreateTab })));
 
-type TabId = 'installed' | 'discover' | 'create';
+type TabId = 'home' | 'installed' | 'discover' | 'create';
 
 const TAB_DESCRIPTIONS: Record<TabId, string> = {
+  home: 'Welcome to the Skills Hub',
   installed: 'Manage your installed skills and extensions',
   discover: 'Browse the npm registry for AgentSkills.io packages',
   create: 'Build a new skill with the guided wizard',
+};
+
+const TAB_LABELS: Record<TabId, string> = {
+  home: 'Home',
+  installed: 'Installed',
+  discover: 'Discover',
+  create: 'Create',
 };
 
 function TabLoader() {
@@ -31,7 +40,9 @@ export function SkillsHubPage() {
 
   const tabParam = searchParams.get('tab') as TabId | null;
   const activeTab: TabId =
-    tabParam && ['installed', 'discover', 'create'].includes(tabParam) ? tabParam : 'installed';
+    tabParam && ['home', 'installed', 'discover', 'create'].includes(tabParam)
+      ? tabParam
+      : 'home';
 
   const setTab = (tab: TabId) => {
     const params = new URLSearchParams(searchParams);
@@ -47,24 +58,19 @@ export function SkillsHubPage() {
     <div className="flex flex-col h-full">
       {/* Header */}
       <header className="flex items-center justify-between px-6 py-4 border-b border-border dark:border-dark-border">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
-            <BookOpen className="w-5 h-5 text-primary" />
-          </div>
-          <div>
-            <h2 className="text-lg font-semibold text-text-primary dark:text-dark-text-primary">
-              Skills Hub
-            </h2>
-            <p className="text-xs text-text-muted dark:text-dark-text-muted">
-              {TAB_DESCRIPTIONS[activeTab]}
-            </p>
-          </div>
+        <div>
+          <h2 className="text-lg font-semibold text-text-primary dark:text-dark-text-primary">
+            Skills Hub
+          </h2>
+          <p className="text-sm text-text-muted dark:text-dark-text-muted">
+            {TAB_DESCRIPTIONS[activeTab]}
+          </p>
         </div>
       </header>
 
       {/* Tab bar */}
       <div className="flex border-b border-border dark:border-dark-border px-6">
-        {(['installed', 'discover', 'create'] as TabId[]).map((tab) => (
+        {(['home', 'installed', 'discover', 'create'] as TabId[]).map((tab) => (
           <button
             key={tab}
             onClick={() => setTab(tab)}
@@ -74,7 +80,8 @@ export function SkillsHubPage() {
                 : 'border-transparent text-text-muted dark:text-dark-text-muted hover:text-text-secondary dark:hover:text-dark-text-secondary hover:border-border dark:hover:border-dark-border'
             }`}
           >
-            {tab.charAt(0).toUpperCase() + tab.slice(1)}
+            {tab === 'home' && <Home className="w-3.5 h-3.5" />}
+            {TAB_LABELS[tab]}
             {tab === 'installed' && installedCount !== null && installedCount > 0 && (
               <span
                 className={`px-1.5 py-0.5 text-[10px] font-bold rounded-full leading-none ${
@@ -92,6 +99,7 @@ export function SkillsHubPage() {
 
       {/* Tab content */}
       <div className="flex-1 min-h-0 overflow-hidden">
+        {activeTab === 'home' && <HomeTab />}
         <Suspense fallback={<TabLoader />}>
           {activeTab === 'installed' && (
             <InstalledTab initialFormat={formatParam} onCountChange={setInstalledCount} />

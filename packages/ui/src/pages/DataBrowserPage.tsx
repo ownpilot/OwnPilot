@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   Database,
   CheckCircle2,
@@ -13,13 +14,25 @@ import {
   Edit3,
   ChevronDown,
   Table,
+  Layers,
+  Folder,
+  Eye,
+  Home,
 } from '../components/icons';
+import { PageHomeTab } from '../components/PageHomeTab';
 import { useDialog } from '../components/ConfirmDialog';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { EmptyState } from '../components/EmptyState';
 import { useToast } from '../components/ToastProvider';
 import { useDebouncedValue, useModalClose } from '../hooks';
 import { apiClient } from '../api/client';
+
+type TabId = 'home' | 'browser';
+
+const TAB_LABELS: Record<TabId, string> = {
+  home: 'Home',
+  browser: 'Browser',
+};
 
 // Data types
 type DataType = 'tasks' | 'bookmarks' | 'notes' | 'calendar' | 'contacts' | 'expenses';
@@ -134,6 +147,23 @@ function formatCellValue(value: unknown, type: string): string {
 }
 
 export function DataBrowserPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabParam = searchParams.get('tab') as TabId | null;
+  const [activeTab, setActiveTab] = useState<TabId>(tabParam || 'home');
+
+  useEffect(() => {
+    const urlTab = (searchParams.get('tab') as TabId | null) || 'home';
+    setActiveTab(urlTab);
+  }, [searchParams]);
+
+  const setTab = useCallback(
+    (tab: TabId) => {
+      setActiveTab(tab);
+      setSearchParams(tab === 'home' ? {} : { tab });
+    },
+    [setSearchParams]
+  );
+
   const { confirm } = useDialog();
   const toast = useToast();
   const [selectedType, setSelectedType] = useState<DataType>('tasks');
@@ -280,6 +310,75 @@ export function DataBrowserPage() {
         </div>
       </header>
 
+      {/* Tab Bar */}
+      <div className="flex border-b border-border dark:border-dark-border px-6">
+        {(['home', 'browser'] as TabId[]).map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setTab(tab)}
+            className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px ${
+              activeTab === tab
+                ? 'border-primary text-primary'
+                : 'border-transparent text-text-muted dark:text-dark-text-muted hover:text-text-secondary dark:hover:text-dark-text-secondary hover:border-border dark:hover:border-dark-border'
+            }`}
+          >
+            {tab === 'home' && <Home className="w-3.5 h-3.5" />}
+            {TAB_LABELS[tab]}
+          </button>
+        ))}
+      </div>
+
+      {activeTab === 'home' && (
+        <PageHomeTab
+          heroIcons={[
+            { icon: Table, color: 'text-primary bg-primary/10' },
+            { icon: Search, color: 'text-emerald-500 bg-emerald-500/10' },
+            { icon: Database, color: 'text-violet-500 bg-violet-500/10' },
+          ]}
+          title="Browse All Your Data"
+          subtitle="Explore all stored data across categories — personal, work, and memories — with powerful search and filtering."
+          cta={{
+            label: 'Browse Data',
+            icon: Table,
+            onClick: () => setTab('browser'),
+          }}
+          features={[
+            {
+              icon: Layers,
+              color: 'text-primary bg-primary/10',
+              title: 'Unified View',
+              description: 'See all your data types in a single interface.',
+            },
+            {
+              icon: Search,
+              color: 'text-emerald-500 bg-emerald-500/10',
+              title: 'Advanced Search',
+              description: 'Search across all data with powerful filtering.',
+            },
+            {
+              icon: Folder,
+              color: 'text-violet-500 bg-violet-500/10',
+              title: 'Category Browser',
+              description: 'Navigate data organized by category and type.',
+            },
+            {
+              icon: Eye,
+              color: 'text-amber-500 bg-amber-500/10',
+              title: 'Data Inspector',
+              description: 'View full details of any data entry.',
+            },
+          ]}
+          steps={[
+            { title: 'Select a category', detail: 'Choose from tasks, bookmarks, notes, and more.' },
+            { title: 'Browse entries', detail: 'View all records in a table layout.' },
+            { title: 'Search by keyword', detail: 'Use the search bar to find specific entries.' },
+            { title: 'View full details', detail: 'Click any entry to inspect its complete data.' },
+          ]}
+        />
+      )}
+
+      {activeTab === 'browser' && (
+      <>
       {/* Click outside handler for type selector */}
       {showTypeSelector && (
         <div className="fixed inset-0 z-40" onClick={() => setShowTypeSelector(false)} />
@@ -419,6 +518,8 @@ export function DataBrowserPage() {
             fetchRecords();
           }}
         />
+      )}
+      </>
       )}
     </div>
   );

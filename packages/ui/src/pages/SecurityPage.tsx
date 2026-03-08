@@ -4,8 +4,18 @@
  * Set, change, or remove UI password protection.
  */
 
-import { useState, useEffect, type FormEvent } from 'react';
-import { ShieldCheck, AlertCircle } from '../components/icons';
+import { useState, useEffect, useCallback, type FormEvent } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import {
+  AlertCircle,
+  Shield,
+  Lock,
+  Key,
+  Users,
+  FileText,
+  Home,
+} from '../components/icons';
+import { PageHomeTab } from '../components/PageHomeTab';
 import { useToast } from '../components/ToastProvider';
 import { useDialog } from '../components/ConfirmDialog';
 import { useAuth } from '../hooks/useAuth';
@@ -13,7 +23,31 @@ import { authApi } from '../api/endpoints/auth';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { STORAGE_KEYS } from '../constants/storage-keys';
 
+type TabId = 'home' | 'security';
+
+const TAB_LABELS: Record<TabId, string> = {
+  home: 'Home',
+  security: 'Security',
+};
+
 export function SecurityPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabParam = searchParams.get('tab') as TabId | null;
+  const [activeTab, setActiveTab] = useState<TabId>(tabParam || 'home');
+
+  useEffect(() => {
+    const urlTab = (searchParams.get('tab') as TabId | null) || 'home';
+    setActiveTab(urlTab);
+  }, [searchParams]);
+
+  const setTab = useCallback(
+    (tab: TabId) => {
+      setActiveTab(tab);
+      setSearchParams(tab === 'home' ? {} : { tab });
+    },
+    [setSearchParams]
+  );
+
   const toast = useToast();
   const { confirm } = useDialog();
   const { passwordConfigured, refreshStatus } = useAuth();
@@ -123,21 +157,97 @@ export function SecurityPage() {
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="border-b border-border dark:border-dark-border px-6 py-4">
-        <div className="flex items-center gap-3">
-          <ShieldCheck className="w-5 h-5 text-primary" />
-          <div>
-            <h1 className="text-lg font-semibold text-text-primary dark:text-dark-text-primary">
-              Security
-            </h1>
-            <p className="text-sm text-text-muted dark:text-dark-text-muted">
-              Manage dashboard password protection
-            </p>
-          </div>
+      <header className="flex items-center justify-between px-6 py-4 border-b border-border dark:border-dark-border">
+        <div>
+          <h2 className="text-lg font-semibold text-text-primary dark:text-dark-text-primary">
+            Security
+          </h2>
+          <p className="text-sm text-text-muted dark:text-dark-text-muted">
+            Manage dashboard password protection
+          </p>
         </div>
+      </header>
+
+      {/* Tab Bar */}
+      <div className="flex border-b border-border dark:border-dark-border px-6">
+        {(['home', 'security'] as TabId[]).map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setTab(tab)}
+            className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px ${
+              activeTab === tab
+                ? 'border-primary text-primary'
+                : 'border-transparent text-text-muted dark:text-dark-text-muted hover:text-text-secondary dark:hover:text-dark-text-secondary hover:border-border dark:hover:border-dark-border'
+            }`}
+          >
+            {tab === 'home' && <Home className="w-3.5 h-3.5" />}
+            {TAB_LABELS[tab]}
+          </button>
+        ))}
       </div>
 
-      {/* Content */}
+      {activeTab === 'home' && (
+        <PageHomeTab
+          heroIcons={[
+            { icon: Shield, color: 'text-primary bg-primary/10' },
+            { icon: Lock, color: 'text-violet-500 bg-violet-500/10' },
+            { icon: Key, color: 'text-emerald-500 bg-emerald-500/10' },
+          ]}
+          title="Security Settings"
+          subtitle="Configure authentication, encryption, and access control to keep your AI assistant and data secure."
+          cta={{
+            label: 'Configure Security',
+            icon: Shield,
+            onClick: () => setTab('security'),
+          }}
+          features={[
+            {
+              icon: Key,
+              color: 'text-primary bg-primary/10',
+              title: 'Authentication',
+              description: 'Set up password protection for your dashboard.',
+            },
+            {
+              icon: Lock,
+              color: 'text-emerald-500 bg-emerald-500/10',
+              title: 'Encryption',
+              description: 'Protect your data with encryption at rest.',
+            },
+            {
+              icon: Users,
+              color: 'text-violet-500 bg-violet-500/10',
+              title: 'Access Control',
+              description: 'Manage who can access your AI assistant.',
+            },
+            {
+              icon: FileText,
+              color: 'text-amber-500 bg-amber-500/10',
+              title: 'Audit Logs',
+              description: 'Monitor security events and access history.',
+            },
+          ]}
+          steps={[
+            {
+              title: 'Review current settings',
+              detail: 'Check your current security configuration status.',
+            },
+            {
+              title: 'Enable two-factor auth',
+              detail: 'Set up password protection for enhanced security.',
+            },
+            {
+              title: 'Set access rules',
+              detail: 'Configure who can access your dashboard.',
+            },
+            {
+              title: 'Monitor security events',
+              detail: 'Track active sessions and security activity.',
+            },
+          ]}
+        />
+      )}
+
+      {activeTab === 'security' && (
       <div className="flex-1 overflow-y-auto p-6 space-y-6 max-w-2xl">
         {/* Status Card */}
         <div className="bg-bg-secondary dark:bg-dark-bg-secondary rounded-lg border border-border dark:border-dark-border p-4">
@@ -248,6 +358,7 @@ export function SecurityPage() {
           </div>
         )}
       </div>
+      )}
     </div>
   );
 }

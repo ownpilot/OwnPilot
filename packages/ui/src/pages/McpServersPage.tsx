@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useDialog } from '../components/ConfirmDialog';
 import { useToast } from '../components/ToastProvider';
+import { PageHomeTab } from '../components/PageHomeTab';
 import {
   Server,
   Terminal,
@@ -26,6 +28,10 @@ import {
   BookOpen,
   Link,
   Wrench,
+  Home,
+  Puzzle,
+  Activity,
+  Layers,
 } from '../components/icons';
 import { mcpApi } from '../api';
 import type {
@@ -926,7 +932,31 @@ function ServerCard({
 // Main Page
 // =============================================================================
 
+type TabId = 'home' | 'servers';
+
+const TAB_LABELS: Record<TabId, string> = {
+  home: 'Home',
+  servers: 'Servers',
+};
+
 export function McpServersPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabParam = searchParams.get('tab') as TabId | null;
+  const [activeTab, setActiveTab] = useState<TabId>(tabParam || 'home');
+
+  useEffect(() => {
+    const urlTab = (searchParams.get('tab') as TabId | null) || 'home';
+    setActiveTab(urlTab);
+  }, [searchParams]);
+
+  const setTab = useCallback(
+    (tab: TabId) => {
+      setActiveTab(tab);
+      setSearchParams(tab === 'home' ? {} : { tab });
+    },
+    [setSearchParams]
+  );
+
   const [servers, setServers] = useState<McpServer[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState<{
@@ -1051,108 +1081,193 @@ export function McpServersPage() {
   });
 
   return (
-    <div className="max-w-3xl mx-auto p-6 space-y-8">
+    <div className="flex flex-col h-full">
       {/* Page Header */}
-      <div>
-        <h1 className="text-xl font-semibold text-text-primary dark:text-dark-text-primary">
-          MCP Integration
-        </h1>
-        <p className="text-sm text-text-muted dark:text-dark-text-muted mt-1">
-          Use OwnPilot as an MCP server for external AI clients, or connect to external MCP servers
-          for additional tools.
-        </p>
+      <header className="flex items-center justify-between px-6 py-4 border-b border-border dark:border-dark-border">
+        <div>
+          <h2 className="text-lg font-semibold text-text-primary dark:text-dark-text-primary">
+            MCP Integration
+          </h2>
+          <p className="text-sm text-text-muted dark:text-dark-text-muted">
+            Use OwnPilot as an MCP server for external AI clients, or connect to external MCP servers
+            for additional tools.
+          </p>
+        </div>
+      </header>
+
+      {/* Tab bar */}
+      <div className="flex border-b border-border dark:border-dark-border px-6">
+        {(['home', 'servers'] as TabId[]).map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setTab(tab)}
+            className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px ${
+              activeTab === tab
+                ? 'border-primary text-primary'
+                : 'border-transparent text-text-muted dark:text-dark-text-muted hover:text-text-secondary dark:hover:text-dark-text-secondary hover:border-border dark:hover:border-dark-border'
+            }`}
+          >
+            {tab === 'home' && <Home className="w-3.5 h-3.5" />}
+            {TAB_LABELS[tab]}
+          </button>
+        ))}
       </div>
 
-      {/* Section 1: OwnPilot as MCP Server */}
-      <OwnPilotServerSection />
-
-      {/* Section 2: External MCP Servers (Client) */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-base font-semibold text-text-primary dark:text-dark-text-primary">
-              External MCP Servers
-            </h2>
-            <p className="text-xs text-text-muted dark:text-dark-text-muted mt-0.5">
-              Connect to external MCP servers to add tools to OwnPilot
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={fetchServers}
-              className="p-2 rounded-lg hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary text-text-muted dark:text-dark-text-muted transition-colors"
-            >
-              <RefreshCw className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => setShowForm({ mode: 'add' })}
-              className="flex items-center gap-1.5 px-3 py-2 text-sm rounded-lg bg-primary text-white hover:bg-primary-dark transition-colors"
-            >
-              <Plus className="w-4 h-4" />
-              Add Server
-            </button>
-          </div>
-        </div>
-
-        {/* Server List */}
-        {loading ? (
-          <div className="text-center text-text-muted dark:text-dark-text-muted py-8">
-            Loading...
-          </div>
-        ) : servers.length === 0 ? (
-          <div className="text-center py-8 space-y-2 border border-dashed border-border dark:border-dark-border rounded-xl">
-            <Link className="w-8 h-8 mx-auto text-text-muted dark:text-dark-text-muted opacity-40" />
-            <p className="text-sm text-text-muted dark:text-dark-text-muted">
-              No external MCP servers configured
-            </p>
-            <p className="text-xs text-text-muted dark:text-dark-text-muted">
-              Add an MCP server or use a preset below
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {servers.map((server) => (
-              <ServerCard
-                key={server.id}
-                server={server}
-                onConnect={() => handleConnect(server)}
-                onDisconnect={() => handleDisconnect(server)}
-                onEdit={() => setShowForm({ mode: 'edit', server })}
-                onDelete={() => handleDelete(server)}
-                connecting={connectingId === server.id}
-              />
-            ))}
-          </div>
-        )}
-
-        {/* Quick Add — Popular MCP Servers */}
-        <div className="space-y-3 pt-2">
-          <h3 className="text-sm font-medium text-text-primary dark:text-dark-text-primary">
-            Quick Add — Popular MCP Servers
-          </h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            {MCP_PRESETS.map((preset) => (
-              <PresetCard
-                key={preset.name}
-                preset={preset}
-                alreadyAdded={servers.some((s) => s.name === preset.name)}
-                onAdd={() => setShowForm({ mode: 'add', preset: preset.form })}
-              />
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Add/Edit Dialog */}
-      {showForm && (
-        <ServerFormDialog
-          title={showForm.mode === 'edit' ? 'Edit MCP Server' : 'Add MCP Server'}
-          initial={
-            showForm.server ? serverToForm(showForm.server) : (showForm.preset ?? EMPTY_FORM)
-          }
-          onSubmit={handleSubmit}
-          onCancel={() => setShowForm(null)}
+      {/* Home tab */}
+      {activeTab === 'home' && (
+        <PageHomeTab
+          heroIcons={[
+            { icon: Server, color: 'text-primary bg-primary/10' },
+            { icon: Globe, color: 'text-emerald-500 bg-emerald-500/10' },
+            { icon: Puzzle, color: 'text-violet-500 bg-violet-500/10' },
+          ]}
+          title="Connect to MCP Servers"
+          subtitle="Model Context Protocol servers extend your AI with external tools and data sources — databases, APIs, file systems, and more."
+          cta={{ label: 'Manage Servers', icon: Server, onClick: () => setTab('servers') }}
+          features={[
+            {
+              icon: Globe,
+              color: 'text-blue-500 bg-blue-500/10',
+              title: 'Protocol Standard',
+              description:
+                'Built on the open Model Context Protocol standard for AI-tool interoperability.',
+            },
+            {
+              icon: Search,
+              color: 'text-emerald-500 bg-emerald-500/10',
+              title: 'Tool Discovery',
+              description:
+                'Automatically discover and register tools from connected MCP servers.',
+            },
+            {
+              icon: Layers,
+              color: 'text-orange-500 bg-orange-500/10',
+              title: 'Multiple Transports',
+              description:
+                'SSE, stdio, HTTP, WebSocket — connect using the transport that fits your setup.',
+            },
+            {
+              icon: Activity,
+              color: 'text-purple-500 bg-purple-500/10',
+              title: 'Live Connection',
+              description:
+                'Monitor server connections in real time with automatic reconnection.',
+            },
+          ]}
+          steps={[
+            { title: 'Add a server URL', detail: 'Enter the MCP server endpoint to connect.' },
+            { title: 'AI discovers available tools', detail: 'Your AI automatically detects tools the server provides.' },
+            { title: 'Use tools in conversations', detail: 'Reference discovered tools naturally in your chats.' },
+            { title: 'Monitor connections', detail: 'Track connection status and health in real time.' },
+          ]}
+          quickActions={[
+            { label: 'Manage Servers', icon: Server, description: 'Add, edit, and monitor your MCP server connections.', onClick: () => setTab('servers') },
+          ]}
+          infoBox={{
+            icon: Globe,
+            color: 'blue',
+            title: 'About MCP',
+            description:
+              'The Model Context Protocol is an open standard for connecting AI to external tools and data. Servers advertise capabilities and your AI calls them on demand.',
+          }}
         />
+      )}
+
+      {/* Servers tab */}
+      {activeTab === 'servers' && (
+        <div className="max-w-3xl mx-auto p-6 space-y-8 flex-1 overflow-y-auto w-full">
+          {/* Section 1: OwnPilot as MCP Server */}
+          <OwnPilotServerSection />
+
+          {/* Section 2: External MCP Servers (Client) */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-base font-semibold text-text-primary dark:text-dark-text-primary">
+                  External MCP Servers
+                </h2>
+                <p className="text-xs text-text-muted dark:text-dark-text-muted mt-0.5">
+                  Connect to external MCP servers to add tools to OwnPilot
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={fetchServers}
+                  className="p-2 rounded-lg hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary text-text-muted dark:text-dark-text-muted transition-colors"
+                >
+                  <RefreshCw className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => setShowForm({ mode: 'add' })}
+                  className="flex items-center gap-1.5 px-3 py-2 text-sm rounded-lg bg-primary text-white hover:bg-primary-dark transition-colors"
+                >
+                  <Plus className="w-4 h-4" />
+                  Add Server
+                </button>
+              </div>
+            </div>
+
+            {/* Server List */}
+            {loading ? (
+              <div className="text-center text-text-muted dark:text-dark-text-muted py-8">
+                Loading...
+              </div>
+            ) : servers.length === 0 ? (
+              <div className="text-center py-8 space-y-2 border border-dashed border-border dark:border-dark-border rounded-xl">
+                <Link className="w-8 h-8 mx-auto text-text-muted dark:text-dark-text-muted opacity-40" />
+                <p className="text-sm text-text-muted dark:text-dark-text-muted">
+                  No external MCP servers configured
+                </p>
+                <p className="text-xs text-text-muted dark:text-dark-text-muted">
+                  Add an MCP server or use a preset below
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {servers.map((server) => (
+                  <ServerCard
+                    key={server.id}
+                    server={server}
+                    onConnect={() => handleConnect(server)}
+                    onDisconnect={() => handleDisconnect(server)}
+                    onEdit={() => setShowForm({ mode: 'edit', server })}
+                    onDelete={() => handleDelete(server)}
+                    connecting={connectingId === server.id}
+                  />
+                ))}
+              </div>
+            )}
+
+            {/* Quick Add — Popular MCP Servers */}
+            <div className="space-y-3 pt-2">
+              <h3 className="text-sm font-medium text-text-primary dark:text-dark-text-primary">
+                Quick Add — Popular MCP Servers
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {MCP_PRESETS.map((preset) => (
+                  <PresetCard
+                    key={preset.name}
+                    preset={preset}
+                    alreadyAdded={servers.some((s) => s.name === preset.name)}
+                    onAdd={() => setShowForm({ mode: 'add', preset: preset.form })}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Add/Edit Dialog */}
+          {showForm && (
+            <ServerFormDialog
+              title={showForm.mode === 'edit' ? 'Edit MCP Server' : 'Add MCP Server'}
+              initial={
+                showForm.server ? serverToForm(showForm.server) : (showForm.preset ?? EMPTY_FORM)
+              }
+              onSubmit={handleSubmit}
+              onCancel={() => setShowForm(null)}
+            />
+          )}
+        </div>
       )}
     </div>
   );

@@ -7,7 +7,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useToast } from '../components/ToastProvider';
 import {
   RefreshCw,
@@ -21,8 +21,15 @@ import {
   Plus,
   Trash2,
   X,
+  Terminal,
+  Wrench,
+  Settings,
+  Lock,
+  Code,
+  Home,
 } from '../components/icons';
 import { cliToolsApi } from '../api';
+import { PageHomeTab } from '../components/PageHomeTab';
 import type {
   CliToolStatus,
   CliToolPolicy,
@@ -88,10 +95,21 @@ const POLICY_INDICATOR: Record<CliToolPolicy, { icon: string; color: string; lab
 };
 
 // =============================================================================
+// Tab types
+// =============================================================================
+
+type TabId = 'home' | 'settings';
+const TAB_LABELS: Record<TabId, string> = { home: 'Home', settings: 'Settings' };
+
+// =============================================================================
 // Component
 // =============================================================================
 
 export function CliToolsSettingsPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab = (searchParams.get('tab') as TabId) || 'home';
+  const setActiveTab = (t: TabId) => setSearchParams(t === 'home' ? {} : { tab: t });
+
   const toast = useToast();
   const [tools, setTools] = useState<CliToolStatus[]>([]);
   const [loading, setLoading] = useState(true);
@@ -213,10 +231,10 @@ export function CliToolsSettingsPage() {
   return (
     <div className="mx-auto max-w-5xl space-y-6 p-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <header className="flex items-center justify-between px-6 py-4 border-b border-border dark:border-dark-border">
         <div>
-          <h1 className="text-2xl font-bold">CLI Tools</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
+          <h2 className="text-lg font-semibold text-text-primary dark:text-dark-text-primary">CLI Tools</h2>
+          <p className="text-sm text-text-muted dark:text-dark-text-muted">
             Manage CLI tools the AI can discover, execute, and install.{' '}
             <Link to="/autonomy" className="text-primary hover:underline">
               Autonomy settings
@@ -241,8 +259,50 @@ export function CliToolsSettingsPage() {
             Refresh
           </button>
         </div>
+      </header>
+
+      {/* URL-based tabs */}
+      <div className="flex border-b border-border dark:border-dark-border px-6">
+        {(['home', 'settings'] as TabId[]).map((t) => (
+          <button key={t} onClick={() => setActiveTab(t)}
+            className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px ${
+              activeTab === t ? 'border-primary text-primary'
+                : 'border-transparent text-text-muted dark:text-dark-text-muted hover:text-text-secondary dark:hover:text-dark-text-secondary hover:border-border dark:hover:border-dark-border'
+            }`}>
+            {t === 'home' && <Home className="w-3.5 h-3.5" />}
+            {TAB_LABELS[t]}
+          </button>
+        ))}
       </div>
 
+      {/* Home Tab */}
+      {activeTab === 'home' && (
+        <PageHomeTab
+          heroIcons={[
+            { icon: Terminal, color: 'text-primary bg-primary/10' },
+            { icon: Wrench, color: 'text-orange-500 bg-orange-500/10' },
+            { icon: Settings, color: 'text-violet-500 bg-violet-500/10' },
+          ]}
+          title="Configure CLI Tools"
+          subtitle="Manage which command-line tools your AI can access — shells, package managers, system utilities, and custom scripts."
+          cta={{ label: 'View Settings', icon: Settings, onClick: () => setActiveTab('settings') }}
+          features={[
+            { icon: Terminal, color: 'text-blue-500 bg-blue-500/10', title: 'Tool Registry', description: 'Browse and manage all discovered CLI tools in one place.' },
+            { icon: Lock, color: 'text-violet-500 bg-violet-500/10', title: 'Permission Control', description: 'Set per-tool policies: allowed, prompt, or blocked.' },
+            { icon: Code, color: 'text-green-500 bg-green-500/10', title: 'Custom Scripts', description: 'Register your own CLI tools and custom scripts.' },
+            { icon: Shield, color: 'text-amber-500 bg-amber-500/10', title: 'Sandboxing', description: 'Risk-level classification ensures safe tool execution.' },
+          ]}
+          steps={[
+            { title: 'Browse available tools', detail: 'The system automatically discovers CLI tools installed on your machine.' },
+            { title: 'Enable or disable access', detail: 'Set each tool to allowed, prompt-before-use, or blocked.' },
+            { title: 'Set execution limits', detail: 'Configure risk levels and batch-apply policies by risk category.' },
+            { title: 'Test tool execution', detail: 'Verify tools work correctly before letting the AI use them.' },
+          ]}
+        />
+      )}
+
+      {/* Settings Tab */}
+      {activeTab === 'settings' && (<>
       {/* Stats */}
       <div className="grid grid-cols-3 gap-4">
         <div className="rounded-lg border border-border bg-card p-4">
@@ -446,6 +506,7 @@ export function CliToolsSettingsPage() {
           <p>No tools match your filters</p>
         </div>
       )}
+      </>)}
 
       {/* Add Custom Tool Modal (portal to body to escape overflow clipping) */}
       {showAddModal &&

@@ -4,6 +4,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useGateway } from '../hooks/useWebSocket';
 import { workflowsApi } from '../api/endpoints/workflows';
 import type { WorkflowApproval } from '../api/types';
@@ -14,13 +15,22 @@ import {
   Clock,
   AlertTriangle,
   GitBranch,
+  Shield,
+  Check,
+  Settings,
+  History,
+  Home,
 } from '../components/icons';
 import { useDialog } from '../components/ConfirmDialog';
 import { useToast } from '../components/ToastProvider';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { EmptyState } from '../components/EmptyState';
+import { PageHomeTab } from '../components/PageHomeTab';
 
+type TabId = 'home' | 'approvals';
 type TabFilter = 'pending' | 'all';
+
+const TAB_LABELS: Record<TabId, string> = { home: 'Home', approvals: 'Approvals' };
 
 const statusStyles: Record<string, string> = {
   pending: 'bg-warning/10 text-warning',
@@ -46,6 +56,10 @@ function formatTimeAgo(dateStr: string): string {
 }
 
 export function ApprovalsPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab = (searchParams.get('tab') as TabId) || 'home';
+  const setActiveTab = (t: TabId) => setSearchParams(t === 'home' ? {} : { tab: t });
+
   const { confirm } = useDialog();
   const toast = useToast();
   const { subscribe } = useGateway();
@@ -134,23 +148,62 @@ export function ApprovalsPage() {
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <ShieldCheck className="w-6 h-6 text-warning" />
-          <div>
-            <h1 className="text-lg font-semibold text-text-primary dark:text-dark-text-primary">
-              Workflow Approvals
-            </h1>
-            <p className="text-xs text-text-muted dark:text-dark-text-muted">
-              Review and approve paused workflow executions
-            </p>
-          </div>
+      <header className="flex items-center justify-between px-6 py-4 border-b border-border dark:border-dark-border">
+        <div>
+          <h2 className="text-lg font-semibold text-text-primary dark:text-dark-text-primary">
+            Workflow Approvals
+          </h2>
+          <p className="text-sm text-text-muted dark:text-dark-text-muted">
+            Review and approve paused workflow executions
+          </p>
         </div>
         <span className="text-xs text-text-muted dark:text-dark-text-muted">
           {total} {tab === 'pending' ? 'pending' : 'total'}
         </span>
+      </header>
+
+      {/* URL-based tabs */}
+      <div className="flex border-b border-border dark:border-dark-border px-6">
+        {(['home', 'approvals'] as TabId[]).map((t) => (
+          <button key={t} onClick={() => setActiveTab(t)}
+            className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px ${
+              activeTab === t ? 'border-primary text-primary'
+                : 'border-transparent text-text-muted dark:text-dark-text-muted hover:text-text-secondary dark:hover:text-dark-text-secondary hover:border-border dark:hover:border-dark-border'
+            }`}>
+            {t === 'home' && <Home className="w-3.5 h-3.5" />}
+            {TAB_LABELS[t]}
+          </button>
+        ))}
       </div>
 
+      {/* Home Tab */}
+      {activeTab === 'home' && (
+        <PageHomeTab
+          heroIcons={[
+            { icon: CheckCircle2, color: 'text-primary bg-primary/10' },
+            { icon: Shield, color: 'text-violet-500 bg-violet-500/10' },
+            { icon: Clock, color: 'text-emerald-500 bg-emerald-500/10' },
+          ]}
+          title="Review & Approve Actions"
+          subtitle="Your AI requests approval before executing sensitive actions. Review pending requests, approve or deny, and set auto-approval rules."
+          cta={{ label: 'View Approvals', icon: CheckCircle2, onClick: () => setActiveTab('approvals') }}
+          features={[
+            { icon: Clock, color: 'text-amber-500 bg-amber-500/10', title: 'Pending Queue', description: 'See all actions waiting for your approval in one place.' },
+            { icon: Check, color: 'text-green-500 bg-green-500/10', title: 'One-Click Approve', description: 'Approve or deny requests with a single click.' },
+            { icon: Settings, color: 'text-violet-500 bg-violet-500/10', title: 'Auto-Rules', description: 'Define rules to automatically approve trusted actions.' },
+            { icon: History, color: 'text-blue-500 bg-blue-500/10', title: 'Audit Trail', description: 'Full history of all approval decisions for accountability.' },
+          ]}
+          steps={[
+            { title: 'AI encounters a gated action', detail: 'When the AI needs to perform a sensitive operation, it pauses and creates an approval request.' },
+            { title: 'Request appears here', detail: 'Pending approvals show up in your queue with full context about the action.' },
+            { title: 'Review & approve/deny', detail: 'Examine the details and approve or reject the request with one click.' },
+            { title: 'Set auto-rules for trusted actions', detail: 'Create rules to automatically approve recurring actions you trust.' },
+          ]}
+        />
+      )}
+
+      {/* Approvals Tab */}
+      {activeTab === 'approvals' && (<>
       {/* Tabs */}
       <div className="flex gap-1 p-0.5 bg-bg-tertiary dark:bg-dark-bg-tertiary rounded-lg w-fit">
         {(['pending', 'all'] as const).map((t) => (
@@ -281,6 +334,7 @@ export function ApprovalsPage() {
           })}
         </div>
       )}
+      </>)}
     </div>
   );
 }

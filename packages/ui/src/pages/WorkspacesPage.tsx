@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   Folder,
   FolderOpen,
@@ -11,7 +12,13 @@ import {
   HardDrive,
   ChevronRight,
   ChevronDown,
+  Layout,
+  Users,
+  Settings,
+  Shuffle,
+  Home,
 } from '../components/icons';
+import { PageHomeTab } from '../components/PageHomeTab';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { EmptyState } from '../components/EmptyState';
 import { useToast } from '../components/ToastProvider';
@@ -20,6 +27,13 @@ import { formatBytes } from '../utils/formatters';
 import { useModalClose } from '../hooks';
 import { STORAGE_KEYS } from '../constants/storage-keys';
 import type { FileWorkspaceInfo, WorkspaceFile } from '../api';
+
+type TabId = 'home' | 'workspaces';
+
+const TAB_LABELS: Record<TabId, string> = {
+  home: 'Home',
+  workspaces: 'Workspaces',
+};
 
 interface WorkspaceStats {
   total: number;
@@ -47,6 +61,23 @@ function formatDate(dateStr: string): string {
 }
 
 export function WorkspacesPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabParam = searchParams.get('tab') as TabId | null;
+  const [activeTab, setActiveTab] = useState<TabId>(tabParam || 'home');
+
+  useEffect(() => {
+    const urlTab = (searchParams.get('tab') as TabId | null) || 'home';
+    setActiveTab(urlTab);
+  }, [searchParams]);
+
+  const setTab = useCallback(
+    (tab: TabId) => {
+      setActiveTab(tab);
+      setSearchParams(tab === 'home' ? {} : { tab });
+    },
+    [setSearchParams]
+  );
+
   const toast = useToast();
   const [workspaces, setWorkspaces] = useState<FileWorkspaceInfo[]>([]);
   const [stats, setStats] = useState<WorkspaceStats | null>(null);
@@ -251,6 +282,87 @@ export function WorkspacesPage() {
         </div>
       </header>
 
+      {/* Tab Bar */}
+      <div className="flex border-b border-border dark:border-dark-border px-6">
+        {(['home', 'workspaces'] as TabId[]).map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setTab(tab)}
+            className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px ${
+              activeTab === tab
+                ? 'border-primary text-primary'
+                : 'border-transparent text-text-muted dark:text-dark-text-muted hover:text-text-secondary dark:hover:text-dark-text-secondary hover:border-border dark:hover:border-dark-border'
+            }`}
+          >
+            {tab === 'home' && <Home className="w-3.5 h-3.5" />}
+            {TAB_LABELS[tab]}
+          </button>
+        ))}
+      </div>
+
+      {activeTab === 'home' && (
+        <PageHomeTab
+          heroIcons={[
+            { icon: Folder, color: 'text-primary bg-primary/10' },
+            { icon: Layout, color: 'text-emerald-500 bg-emerald-500/10' },
+            { icon: Users, color: 'text-violet-500 bg-violet-500/10' },
+          ]}
+          title="Organize with Workspaces"
+          subtitle="Create isolated workspaces for different projects or contexts — each with its own tools, settings, and conversation history."
+          cta={{
+            label: 'View Workspaces',
+            icon: Folder,
+            onClick: () => setTab('workspaces'),
+          }}
+          features={[
+            {
+              icon: Folder,
+              color: 'text-primary bg-primary/10',
+              title: 'Project Isolation',
+              description: 'Keep files and data separate per project.',
+            },
+            {
+              icon: Settings,
+              color: 'text-emerald-500 bg-emerald-500/10',
+              title: 'Custom Settings',
+              description: 'Each workspace can have its own configuration.',
+            },
+            {
+              icon: Users,
+              color: 'text-violet-500 bg-violet-500/10',
+              title: 'Shared Access',
+              description: 'Share workspace files and context with others.',
+            },
+            {
+              icon: Shuffle,
+              color: 'text-amber-500 bg-amber-500/10',
+              title: 'Quick Switch',
+              description: 'Easily switch between workspaces as needed.',
+            },
+          ]}
+          steps={[
+            {
+              title: 'Create a workspace',
+              detail: 'Workspaces are created automatically during chat sessions.',
+            },
+            {
+              title: 'Configure its tools',
+              detail: 'Each workspace has its own file storage and settings.',
+            },
+            {
+              title: 'Switch between workspaces',
+              detail: 'Select any workspace from the sidebar to browse its files.',
+            },
+            {
+              title: 'Each has its own context',
+              detail: 'Workspaces maintain isolated file trees and metadata.',
+            },
+          ]}
+        />
+      )}
+
+      {activeTab === 'workspaces' && (
+      <>
       {/* Stats Bar */}
       {stats && (
         <div className="px-6 py-3 border-b border-border dark:border-dark-border bg-bg-secondary dark:bg-dark-bg-secondary">
@@ -527,6 +639,9 @@ export function WorkspacesPage() {
           )}
         </div>
       </div>
+
+      </>
+      )}
 
       {/* Delete Confirmation Modal */}
       {deleteConfirm && (

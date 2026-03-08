@@ -13,7 +13,15 @@ import {
   CheckCircle2,
   Info,
   RefreshCw,
+  Home,
+  Shield,
+  Lock,
+  Eye,
+  Activity,
+  Key,
+  ShieldAlert,
 } from '../components/icons';
+import { PageHomeTab } from '../components/PageHomeTab';
 import { useToast } from '../components/ToastProvider';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { securityApi } from '../api/endpoints/security';
@@ -23,6 +31,13 @@ import type {
   RiskItem,
   SectionScanResult,
 } from '../api/endpoints/security';
+
+type TabId = 'home' | 'dashboard';
+
+const TAB_LABELS: Record<TabId, string> = {
+  home: 'Home',
+  dashboard: 'Dashboard',
+};
 
 // =============================================================================
 // Score Colors
@@ -271,6 +286,7 @@ function RiskList({ risks }: { risks: RiskItem[] }) {
 
 export function SecurityDashboardPage() {
   const toast = useToast();
+  const [activeTab, setActiveTab] = useState<TabId>('home');
   const [result, setResult] = useState<PlatformScanResult | null>(null);
   const [isScanning, setIsScanning] = useState(false);
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
@@ -300,19 +316,15 @@ export function SecurityDashboardPage() {
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="border-b border-border dark:border-dark-border px-6 py-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <ShieldCheck className="w-5 h-5 text-primary" />
-            <div>
-              <h1 className="text-lg font-semibold text-text-primary dark:text-dark-text-primary">
-                Security Scanner
-              </h1>
-              <p className="text-sm text-text-muted dark:text-dark-text-muted">
-                Unified vulnerability analysis across all platform components
-              </p>
-            </div>
-          </div>
+      <header className="flex items-center justify-between px-6 py-4 border-b border-border dark:border-dark-border">
+        <div>
+          <h2 className="text-lg font-semibold text-text-primary dark:text-dark-text-primary">
+            Security Scanner
+          </h2>
+          <p className="text-sm text-text-muted dark:text-dark-text-muted">
+            Unified vulnerability analysis across all platform components
+          </p>
+        </div>
           <button
             onClick={runScan}
             disabled={isScanning}
@@ -330,10 +342,88 @@ export function SecurityDashboardPage() {
               </>
             )}
           </button>
-        </div>
+      </header>
+
+      {/* Tab bar */}
+      <div className="flex border-b border-border dark:border-dark-border px-6">
+        {(['home', 'dashboard'] as TabId[]).map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px ${
+              activeTab === tab
+                ? 'border-primary text-primary'
+                : 'border-transparent text-text-muted dark:text-dark-text-muted hover:text-text-secondary dark:hover:text-dark-text-secondary hover:border-border dark:hover:border-dark-border'
+            }`}
+          >
+            {tab === 'home' && <Home className="w-3.5 h-3.5" />}
+            {TAB_LABELS[tab]}
+          </button>
+        ))}
       </div>
 
+      {/* Home tab */}
+      {activeTab === 'home' && (
+        <div className="flex-1 overflow-y-auto">
+          <PageHomeTab
+            heroIcons={[
+              { icon: Shield, color: 'text-primary bg-primary/10' },
+              { icon: Lock, color: 'text-violet-500 bg-violet-500/10' },
+              { icon: Eye, color: 'text-emerald-500 bg-emerald-500/10' },
+            ]}
+            title="Security at a Glance"
+            subtitle="Monitor security events, review permissions, track authentication activity, and ensure your AI assistant operates safely."
+            cta={{ label: 'View Security Dashboard', icon: Shield, onClick: () => setActiveTab('dashboard') }}
+            features={[
+              {
+                icon: Activity,
+                color: 'text-blue-500 bg-blue-500/10',
+                title: 'Event Monitoring',
+                description:
+                  'Scan all platform components for vulnerabilities and track security events in real time.',
+              },
+              {
+                icon: Lock,
+                color: 'text-purple-500 bg-purple-500/10',
+                title: 'Permission Audit',
+                description:
+                  'Review which tools and extensions have elevated permissions and identify over-privileged access.',
+              },
+              {
+                icon: Key,
+                color: 'text-emerald-500 bg-emerald-500/10',
+                title: 'Auth Tracking',
+                description:
+                  'Monitor authentication activity and detect suspicious login patterns or credential issues.',
+              },
+              {
+                icon: ShieldAlert,
+                color: 'text-orange-500 bg-orange-500/10',
+                title: 'Threat Detection',
+                description:
+                  'Identify risky configurations, insecure tool code, and potential attack vectors automatically.',
+              },
+            ]}
+            steps={[
+              { title: 'Review security score', detail: 'Run a scan to get an overall health score across all platform components.' },
+              { title: 'Check recent events', detail: 'Examine the top risks and per-section breakdowns for issues.' },
+              { title: 'Audit permissions', detail: 'Review extension and tool permissions to reduce attack surface.' },
+              { title: 'Set up alerts', detail: 'Follow recommendations to harden your platform configuration.' },
+            ]}
+            quickActions={[
+              {
+                icon: Shield,
+                label: 'View Dashboard',
+                description: 'Run scans and review security health',
+                onClick: () => setActiveTab('dashboard'),
+              },
+            ]}
+          />
+        </div>
+      )}
+
       {/* Content */}
+      {activeTab === 'dashboard' && (
       <div className="flex-1 overflow-y-auto p-6">
         {!result && !isScanning && (
           <div className="flex flex-col items-center justify-center h-64 text-center">
@@ -456,6 +546,7 @@ export function SecurityDashboardPage() {
           </div>
         )}
       </div>
+      )}
     </div>
   );
 }
