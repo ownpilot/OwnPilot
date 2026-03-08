@@ -15,7 +15,12 @@ import {
   AlertCircle,
   Copy,
   Upload,
+  Home,
+  Layers,
+  Shuffle,
+  BarChart,
 } from '../components/icons';
+import { PageHomeTab } from '../components/PageHomeTab';
 import { useDialog } from '../components/ConfirmDialog';
 import { useToast } from '../components/ToastProvider';
 import { SkeletonCard } from '../components/Skeleton';
@@ -40,6 +45,20 @@ const logStatusIcons: Record<string, React.ComponentType<{ className?: string }>
   cancelled: AlertCircle,
 };
 
+type TabId = 'home' | 'workflows' | 'logs';
+
+const TAB_LABELS: Record<TabId, string> = {
+  home: 'Home',
+  workflows: 'Workflows',
+  logs: 'Execution Logs',
+};
+
+const TAB_DESCRIPTIONS: Record<TabId, string> = {
+  home: 'Overview of the workflow system',
+  workflows: 'View and manage workflows',
+  logs: 'View workflow execution logs',
+};
+
 export function WorkflowsPage() {
   const navigate = useNavigate();
   const { confirm } = useDialog();
@@ -48,7 +67,7 @@ export function WorkflowsPage() {
   const [workflows, setWorkflows] = useState<Workflow[]>([]);
   const [recentLogs, setRecentLogs] = useState<WorkflowLog[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'workflows' | 'logs'>('workflows');
+  const [activeTab, setActiveTab] = useState<TabId>('home');
 
   const fetchWorkflows = useCallback(async () => {
     try {
@@ -216,34 +235,107 @@ export function WorkflowsPage() {
 
       {/* Tab bar */}
       <div className="flex gap-0 px-6 border-b border-border dark:border-dark-border">
-        <button
-          onClick={() => setActiveTab('workflows')}
-          className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
-            activeTab === 'workflows'
-              ? 'border-primary text-primary'
-              : 'border-transparent text-text-muted dark:text-dark-text-muted hover:text-text-primary dark:hover:text-dark-text-primary'
-          }`}
-        >
-          Workflows
-        </button>
-        <button
-          onClick={() => {
-            setActiveTab('logs');
-            fetchRecentLogs();
-          }}
-          className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors flex items-center gap-1.5 ${
-            activeTab === 'logs'
-              ? 'border-primary text-primary'
-              : 'border-transparent text-text-muted dark:text-dark-text-muted hover:text-text-primary dark:hover:text-dark-text-primary'
-          }`}
-        >
-          <Activity className="w-3.5 h-3.5" />
-          Execution Logs
-        </button>
+        {(['home', 'workflows', 'logs'] as TabId[]).map((tab) => (
+          <button
+            key={tab}
+            onClick={() => {
+              setActiveTab(tab);
+              if (tab === 'logs') fetchRecentLogs();
+            }}
+            className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors flex items-center gap-1.5 ${
+              activeTab === tab
+                ? 'border-primary text-primary'
+                : 'border-transparent text-text-muted dark:text-dark-text-muted hover:text-text-primary dark:hover:text-dark-text-primary'
+            }`}
+            title={TAB_DESCRIPTIONS[tab]}
+          >
+            {tab === 'home' && <Home className="w-3.5 h-3.5" />}
+            {tab === 'logs' && <Activity className="w-3.5 h-3.5" />}
+            {TAB_LABELS[tab]}
+          </button>
+        ))}
       </div>
 
+      {/* Home Tab */}
+      {activeTab === 'home' && (
+        <div className="flex-1 overflow-y-auto">
+          <PageHomeTab
+            heroIcons={[
+              { icon: GitBranch, color: 'text-primary bg-primary/10' },
+              { icon: Play, color: 'text-emerald-500 bg-emerald-500/10' },
+              { icon: Layers, color: 'text-violet-500 bg-violet-500/10' },
+            ]}
+            title="Build Multi-Step Workflows"
+            subtitle="Workflows chain multiple actions into automated pipelines — from simple sequences to complex branching logic."
+            cta={{ label: 'Create Workflow', icon: Plus, onClick: handleCreate }}
+            features={[
+              {
+                icon: GitBranch,
+                color: 'text-primary bg-primary/10',
+                title: 'Visual Editor',
+                description:
+                  'Drag-and-drop workflow builder with a canvas to wire tools and actions together visually.',
+              },
+              {
+                icon: Layers,
+                color: 'text-violet-500 bg-violet-500/10',
+                title: 'Step Types',
+                description:
+                  'Use chat, tool, condition, and transformation nodes to build any automation pipeline.',
+              },
+              {
+                icon: Shuffle,
+                color: 'text-emerald-500 bg-emerald-500/10',
+                title: 'Branching Logic',
+                description:
+                  'Add conditional branches and parallel paths for complex decision-making workflows.',
+              },
+              {
+                icon: BarChart,
+                color: 'text-orange-500 bg-orange-500/10',
+                title: 'Execution Logs',
+                description:
+                  'Track every workflow run with detailed step-by-step logs, timing, and error reporting.',
+              },
+            ]}
+            steps={[
+              { title: 'Create workflow', detail: 'Start a new workflow with a name and description.' },
+              {
+                title: 'Add steps',
+                detail: 'Drag tool nodes, chat nodes, and condition nodes onto the canvas.',
+              },
+              {
+                title: 'Configure connections',
+                detail: 'Wire steps together to define execution order and data flow.',
+              },
+              {
+                title: 'Run & monitor',
+                detail: 'Execute workflows manually or via triggers, and monitor results in real time.',
+              },
+            ]}
+            quickActions={[
+              {
+                icon: GitBranch,
+                label: 'View Workflows',
+                description: 'See all configured workflows',
+                onClick: () => setActiveTab('workflows'),
+              },
+              {
+                icon: Activity,
+                label: 'Execution Logs',
+                description: 'View workflow run history',
+                onClick: () => {
+                  setActiveTab('logs');
+                  fetchRecentLogs();
+                },
+              },
+            ]}
+          />
+        </div>
+      )}
+
       {/* Content */}
-      <div className="flex-1 overflow-y-auto p-6 animate-fade-in-up">
+      <div className={`flex-1 overflow-y-auto p-6 animate-fade-in-up ${activeTab === 'home' ? 'hidden' : ''}`}>
         {activeTab === 'workflows' ? (
           isLoading ? (
             <SkeletonCard count={4} />

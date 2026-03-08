@@ -26,7 +26,12 @@ import {
   ChevronLeft,
   Filter,
   X,
+  Home,
+  Target,
+  Shuffle,
+  ListChecks,
 } from '../components/icons';
+import { PageHomeTab } from '../components/PageHomeTab';
 import { useDialog } from '../components/ConfirmDialog';
 import { useToast } from '../components/ToastProvider';
 import { LoadingSpinner } from '../components/LoadingSpinner';
@@ -99,6 +104,20 @@ interface TriggerStats {
   [key: string]: unknown;
 }
 
+type TabId = 'home' | 'triggers' | 'activity';
+
+const TAB_LABELS: Record<TabId, string> = {
+  home: 'Home',
+  triggers: 'Triggers',
+  activity: 'Activity',
+};
+
+const TAB_DESCRIPTIONS: Record<TabId, string> = {
+  home: 'Overview of the trigger system',
+  triggers: 'View and manage triggers',
+  activity: 'View trigger execution history',
+};
+
 export function TriggersPage() {
   const { confirm } = useDialog();
   const toast = useToast();
@@ -112,7 +131,7 @@ export function TriggersPage() {
   const [history, setHistory] = useState<TriggerHistoryEntry[]>([]);
 
   // New state for enhanced features
-  const [activeTab, setActiveTab] = useState<'triggers' | 'activity'>('triggers');
+  const [activeTab, setActiveTab] = useState<TabId>('home');
   const [stats, setStats] = useState<TriggerStats | null>(null);
   const [engineRunning, setEngineRunning] = useState<boolean | null>(null);
   const [engineLoading, setEngineLoading] = useState(false);
@@ -413,30 +432,100 @@ export function TriggersPage() {
         </div>
       )}
 
-      {/* Tab bar: Triggers | Activity */}
+      {/* Tab bar: Home | Triggers | Activity */}
       <div className="flex gap-0 px-6 border-b border-border dark:border-dark-border">
-        <button
-          onClick={() => setActiveTab('triggers')}
-          className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
-            activeTab === 'triggers'
-              ? 'border-primary text-primary'
-              : 'border-transparent text-text-muted dark:text-dark-text-muted hover:text-text-primary dark:hover:text-dark-text-primary'
-          }`}
-        >
-          Triggers
-        </button>
-        <button
-          onClick={() => setActiveTab('activity')}
-          className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors flex items-center gap-1.5 ${
-            activeTab === 'activity'
-              ? 'border-primary text-primary'
-              : 'border-transparent text-text-muted dark:text-dark-text-muted hover:text-text-primary dark:hover:text-dark-text-primary'
-          }`}
-        >
-          <Activity className="w-3.5 h-3.5" />
-          Activity
-        </button>
+        {(['home', 'triggers', 'activity'] as TabId[]).map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors flex items-center gap-1.5 ${
+              activeTab === tab
+                ? 'border-primary text-primary'
+                : 'border-transparent text-text-muted dark:text-dark-text-muted hover:text-text-primary dark:hover:text-dark-text-primary'
+            }`}
+            title={TAB_DESCRIPTIONS[tab]}
+          >
+            {tab === 'home' && <Home className="w-3.5 h-3.5" />}
+            {tab === 'activity' && <Activity className="w-3.5 h-3.5" />}
+            {TAB_LABELS[tab]}
+          </button>
+        ))}
       </div>
+
+      {/* Home Tab */}
+      {activeTab === 'home' && (
+        <div className="flex-1 overflow-y-auto">
+          <PageHomeTab
+            heroIcons={[
+              { icon: Zap, color: 'text-primary bg-primary/10' },
+              { icon: Clock, color: 'text-orange-500 bg-orange-500/10' },
+              { icon: Target, color: 'text-violet-500 bg-violet-500/10' },
+            ]}
+            title="Automate with Smart Triggers"
+            subtitle="Triggers let your AI react to events automatically — schedules, webhooks, data changes, and custom conditions."
+            cta={{ label: 'Create Trigger', icon: Plus, onClick: () => setShowCreateModal(true) }}
+            features={[
+              {
+                icon: Clock,
+                color: 'text-blue-500 bg-blue-500/10',
+                title: 'Schedule-Based',
+                description:
+                  'Run actions on cron schedules — daily summaries, periodic checks, recurring tasks.',
+              },
+              {
+                icon: Zap,
+                color: 'text-purple-500 bg-purple-500/10',
+                title: 'Event-Driven',
+                description:
+                  'React to system events like messages, data changes, or external webhooks in real time.',
+              },
+              {
+                icon: Shuffle,
+                color: 'text-emerald-500 bg-emerald-500/10',
+                title: 'Conditional Logic',
+                description:
+                  'Define conditions that must be met before a trigger fires, enabling smart filtering.',
+              },
+              {
+                icon: ListChecks,
+                color: 'text-orange-500 bg-orange-500/10',
+                title: 'Execution History',
+                description:
+                  'Track every trigger execution with detailed logs, status, duration, and error details.',
+              },
+            ]}
+            steps={[
+              { title: 'Create trigger', detail: 'Define a new trigger with a name and type.' },
+              {
+                title: 'Set conditions',
+                detail: 'Configure when the trigger should fire — schedule, event, or condition.',
+              },
+              {
+                title: 'Define actions',
+                detail: 'Choose what happens — start a chat, run a tool, execute a workflow.',
+              },
+              {
+                title: 'Monitor executions',
+                detail: 'Track execution history and success rates in the Activity tab.',
+              },
+            ]}
+            quickActions={[
+              {
+                icon: Zap,
+                label: 'View Triggers',
+                description: 'See all configured triggers',
+                onClick: () => setActiveTab('triggers'),
+              },
+              {
+                icon: Activity,
+                label: 'Execution History',
+                description: 'View trigger activity log',
+                onClick: () => setActiveTab('activity'),
+              },
+            ]}
+          />
+        </div>
+      )}
 
       {/* Filters (only for triggers tab) */}
       {activeTab === 'triggers' && (
@@ -458,7 +547,7 @@ export function TriggersPage() {
       )}
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto p-6 animate-fade-in-up">
+      <div className={`flex-1 overflow-y-auto p-6 animate-fade-in-up ${activeTab === 'home' ? 'hidden' : ''}`}>
         {activeTab === 'triggers' ? (
           // Triggers List
           isLoading ? (
