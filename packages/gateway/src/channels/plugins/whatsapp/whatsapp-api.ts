@@ -1684,9 +1684,15 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
       // Skip group JIDs and status broadcasts
       if (contact.id.endsWith('@g.us') || contact.id.endsWith('@broadcast')) continue;
 
+      // Prefer phoneNumber (real phone JID) over id (may be LID format)
+      const phoneJid = (contact as { phoneNumber?: string }).phoneNumber || contact.id;
+
+      // Skip pure LID contacts with no real phone number
+      if (phoneJid.endsWith('@lid')) continue;
+
       const name =
-        contact.name || contact.notify || contact.verifiedName || contact.id.split('@')[0] || contact.id;
-      const phone = this.phoneFromJid(contact.id);
+        contact.name || contact.notify || contact.verifiedName || phoneJid.split('@')[0] || contact.id;
+      const phone = this.phoneFromJid(phoneJid);
       if (!phone) continue;
 
       try {
