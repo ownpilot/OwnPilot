@@ -350,7 +350,7 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
                 `[WhatsApp] History sync received — type: ${syncTypeName}, messages: ${messages.length}, chats: ${chats?.length ?? 0}, contacts: ${contacts?.length ?? 0}, progress: ${progress ?? 'N/A'}%, isLatest: ${isLatest ?? 'N/A'}`
               );
 
-              if (messages.length === 0) {
+              if (messages.length === 0 && (!contacts || contacts.length === 0)) {
                 log.info('[WhatsApp] History sync batch empty — skipping');
                 return;
               }
@@ -520,19 +520,10 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
               // Sync contacts from history sync payload to DB
               if (contacts && contacts.length > 0) {
                 try {
-                  const mappedContacts = contacts
-                    .filter((c: { id?: string; name?: string; notify?: string }) => c.id && (c.name || c.notify))
-                    .map((c: { id: string; name?: string; notify?: string }) => ({
-                      id: c.id,
-                      name: c.name ?? c.notify,
-                      notify: c.notify,
-                    }));
-                  if (mappedContacts.length > 0) {
-                    const synced = await this.syncContactsToDb(mappedContacts);
-                    log.info(
-                      `[WhatsApp] History sync contacts: ${synced}/${contacts.length} synced to DB`
-                    );
-                  }
+                  const synced = await this.syncContactsToDb(contacts);
+                  log.info(
+                    `[WhatsApp] History sync contacts: ${synced}/${contacts.length} synced to DB`
+                  );
                 } catch (contactErr) {
                   log.error('[WhatsApp] History sync contacts failed:', contactErr);
                 }
@@ -1672,7 +1663,7 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
    * Uses ON CONFLICT upsert — safe to call repeatedly (idempotent).
    */
   private async syncContactsToDb(
-    contacts: Array<{ id?: string; name?: string; notify?: string; verifiedName?: string }>
+    contacts: Array<{ id?: string; lid?: string; name?: string; notify?: string; verifiedName?: string; phoneNumber?: string }>
   ): Promise<number> {
     const { ContactsRepository } = await import('../../../db/repositories/contacts.js');
     const repo = new ContactsRepository();
@@ -1684,11 +1675,17 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
       // Skip group JIDs and status broadcasts
       if (contact.id.endsWith('@g.us') || contact.id.endsWith('@broadcast')) continue;
 
-      // Prefer phoneNumber (real phone JID) over id (may be LID format)
-      const phoneJid = (contact as { phoneNumber?: string }).phoneNumber || contact.id;
+      // Resolve real phone JID (WAHA pattern: LID contacts have phoneNumber field)
+      // Priority: phoneNumber (@s.whatsapp.net) > id (if not LID) > skip
+      let phoneJid: string | null = null;
+      if (contact.phoneNumber && !contact.phoneNumber.endsWith('@lid')) {
+        phoneJid = contact.phoneNumber;
+      } else if (!contact.id.endsWith('@lid')) {
+        phoneJid = contact.id;
+      }
 
       // Skip pure LID contacts with no real phone number
-      if (phoneJid.endsWith('@lid')) continue;
+      if (!phoneJid) continue;
 
       const name =
         contact.name || contact.notify || contact.verifiedName || phoneJid.split('@')[0] || contact.id;
